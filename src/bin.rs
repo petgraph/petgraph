@@ -85,14 +85,7 @@ fn make_graph() {
         copygraph::dijkstra(&g, a, |gr, n| gr.edges(n).map(|&x|x))
     );
 
-    let mut rb = RingBuf::new();
-    rb.push_back(a);
-    let mut it = copygraph::graph::BFT{
-        graph: &g,
-        stack: rb,
-        visited: HashSet::new(),
-        neighbors: |g, n| g.neighbors(n),
-    };
+    let mut it = copygraph::graph::BFT::new(&g, a, |&: g, n| g.neighbors(n));
     for node in it {
         println!("Visit {}", node);
     }

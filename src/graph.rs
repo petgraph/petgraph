@@ -268,7 +268,7 @@ pub struct BFT<'a, G, N, F, Neighbors>
     where
         G: 'a,
         N: 'a + Copy + Eq + Hash,
-        F: FnMut(&G, N) -> Neighbors,
+        F: FnMut(&'a G, N) -> Neighbors,
         Neighbors: Iterator<N>,
 {
     pub graph: &'a G,
@@ -277,11 +277,31 @@ pub struct BFT<'a, G, N, F, Neighbors>
     pub neighbors: F,
 }
 
+impl<'a, G, N, F, Neighbors> BFT<'a, G, N, F, Neighbors>
+    where
+        G: 'a,
+        N: 'a + Copy + Eq + Hash,
+        F: FnMut(&'a G, N) -> Neighbors,
+        Neighbors: Iterator<N>,
+{
+    pub fn new(graph: &'a G, start: N, neighbors: F) -> BFT<'a, G, N, F, Neighbors>
+    {
+        let mut rb = RingBuf::new();
+        rb.push_back(start);
+        BFT{
+            graph: graph,
+            stack: rb,
+            visited: HashSet::new(),
+            neighbors: neighbors,
+        }
+    }
+}
+
 impl<'a, G, N, F, Neighbors> Iterator<N> for BFT<'a, G, N, F, Neighbors>
     where
         G: 'a,
         N: 'a + Copy + Eq + Hash,
-        F: FnMut(&G, N) -> Neighbors,
+        F: FnMut(&'a G, N) -> Neighbors,
         Neighbors: Iterator<N>,
 {
     fn next(&mut self) -> Option<N>
