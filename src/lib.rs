@@ -7,6 +7,7 @@ use std::cell::Cell;
 use std::hash::{Writer, Hash};
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::RingBuf;
 use std::collections::BinaryHeap;
 use std::collections::hash_map::{
     Occupied,
@@ -146,3 +147,132 @@ impl<T: Copy + fmt::Show> fmt::Show for NodeCell<T> {
         write!(f, "Node({})", self.0.get())
     }
 }
+
+///
+pub trait GraphNeighbors<'a, N, I> {
+    fn neighbors(&'a self, n: N) -> I;
+}
+
+impl<'a, N, E> GraphNeighbors<'a, N, graph::Neighbors<'a, N>> for Graph<N, E>
+where N: Copy + PartialOrd + Hash + Eq
+{
+    fn neighbors(&'a self, n: N) -> graph::Neighbors<'a, N>
+    {
+        Graph::neighbors(self, n)
+    }
+}
+
+impl<'a, N, E> GraphNeighbors<'a, N, digraph::Neighbors<'a, N, E>> for DiGraph<N, E>
+where N: Copy + Hash + Eq
+{
+    fn neighbors(&'a self, n: N) -> digraph::Neighbors<'a, N, E>
+    {
+        DiGraph::neighbors(self, n)
+    }
+}
+
+/// A breadth first traversal of a graph.
+pub struct BreadthFirst<'a, G, N>
+    where
+        G: 'a,
+        N: 'a + Eq + Hash,
+{
+    pub graph: &'a G,
+    pub stack: RingBuf<N>,
+    pub visited: HashSet<N>,
+}
+
+impl<'a, G, N, Neighbors> BreadthFirst<'a, G, N>
+    where
+        G: 'a + GraphNeighbors<'a, N, Neighbors>,
+        N: 'a + Copy + Eq + Hash,
+        Neighbors: Iterator<N>,
+{
+    pub fn new(graph: &'a G, start: N) -> BreadthFirst<'a, G, N>
+    {
+        let mut rb = RingBuf::new();
+        rb.push_back(start);
+        BreadthFirst{
+            graph: graph,
+            stack: rb,
+            visited: HashSet::new(),
+        }
+    }
+}
+
+impl<'a, G, N, Neighbors> Iterator<N> for BreadthFirst<'a, G, N>
+    where
+        G: 'a + GraphNeighbors<'a, N, Neighbors>,
+        N: 'a + Copy + Eq + Hash,
+        Neighbors: Iterator<N>,
+{
+    fn next(&mut self) -> Option<N>
+    {
+        while let Some(node) = self.stack.pop_front() {
+            if !self.visited.insert(node) {
+                continue;
+            }
+
+            for succ in self.graph.neighbors(node) {
+                if !self.visited.contains(&succ) {
+                    self.stack.push_back(succ);
+                }
+            }
+
+            return Some(node);
+        }
+        None
+    }
+}
+
+/// A depth first traversal of a graph.
+pub struct DepthFirst<'a, G, N>
+    where
+        G: 'a,
+        N: 'a + Copy + Eq + Hash,
+{
+    pub graph: &'a G,
+    pub stack: Vec<N>,
+    pub visited: HashSet<N>,
+}
+
+impl<'a, G, N> DepthFirst<'a, G, N>
+    where
+        G: 'a,
+        N: 'a + Copy + Eq + Hash,
+{
+    pub fn new(graph: &'a G, start: N) -> DepthFirst<'a, G, N>
+    {
+        DepthFirst{
+            graph: graph,
+            stack: vec![start],
+            visited: HashSet::new(),
+        }
+    }
+}
+
+impl<'a, G, N, Neighbors> Iterator<N> for DepthFirst<'a, G, N>
+    where
+        G: 'a + GraphNeighbors<'a, N, Neighbors>,
+        N: 'a + Copy + Eq + Hash,
+        Neighbors: Iterator<N>,
+{
+    fn next(&mut self) -> Option<N>
+    {
+        while let Some(node) = self.stack.pop() {
+            if !self.visited.insert(node) {
+                continue;
+            }
+
+            for succ in self.graph.neighbors(node) {
+                if !self.visited.contains(&succ) {
+                    self.stack.push(succ);
+                }
+            }
+
+            return Some(node);
+        }
+        None
+    }
+}
+

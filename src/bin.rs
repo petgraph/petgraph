@@ -16,6 +16,8 @@ pub use copygraph::{
     Ptr,
     Node,
     NodeCell,
+    BreadthFirst,
+    DepthFirst,
 };
 
 
@@ -85,7 +87,14 @@ fn make_graph() {
         copygraph::dijkstra(&g, a, |gr, n| gr.edges(n).map(|&x|x))
     );
 
-    let mut it = copygraph::graph::BFT::new(&g, a, |&: g, n| g.neighbors(n));
+    //let x = 
+    let mut it = BreadthFirst::new(&g, a);
+    //let mut it = range(0i, 1);
+    for node in it {
+        println!("Visit {}", node);
+    }
+    println!("");
+    let mut it = DepthFirst::new(&g, a);
     for node in it {
         println!("Visit {}", node);
     }
@@ -130,11 +139,11 @@ fn make_graph() {
     g.add_edge(e, f, 6.);
     println!("{}", g);
     println!("{}", copygraph::dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
-    for node in g.traverse_depth_first(a) {
+    for node in DepthFirst::new(&g, a) {
         println!("Visit {}", node);
     }
     println!("");
-    for node in g.traverse_breadth_first(a) {
+    for node in BreadthFirst::new(&g, a) {
         println!("Visit {}", node);
     }
 
@@ -150,6 +159,9 @@ fn make_graph() {
     }
     for elt in g.edges(2) {
         println!("Edge {} => {}", 2i, elt);
+    }
+    for elt in BreadthFirst::new(&g, 2) {
+        println!("Visit: {}", elt);
     }
     //g.remove_node(2);
     g.remove_edge(2, 1);
