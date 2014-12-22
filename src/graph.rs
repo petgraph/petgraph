@@ -13,11 +13,6 @@ use std::slice::{
 };
 use std::fmt;
 
-pub trait Graphlike<'a, N>
-{
-    fn each_neighbor(&'a self, N) -> Neighbors<N>;
-}
-
 /// **Graph\<N, E\>** is a regular graph, with generic node values **N** and edge weights **E**.
 ///
 /// It uses an adjacency list representation, i.e. using *O(|V| + |E|)* space.
