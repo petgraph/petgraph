@@ -4,13 +4,13 @@ use std::slice::{
 };
 use std::fmt;
 
-#[deriving(Copy, Clone, Show, PartialEq, PartialOrd)]
+#[deriving(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
 pub struct NodeIndex(uint);
-#[deriving(Copy, Clone, Show, PartialEq, PartialOrd)]
+#[deriving(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
 pub struct EdgeIndex(uint);
 
-const InvalidEdge: EdgeIndex = EdgeIndex(::std::uint::MAX);
-const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
+const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
+//const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
 /// Index into the EdgeIndex arrays
 enum Dir {
@@ -32,7 +32,13 @@ pub struct Edge<E> {
     b: NodeIndex,
 }
 
-/// **OGraph\<N, E\>** is a graph.
+/// **OGraph\<N, E\>** is a directed graph using an adjacency list representation.
+///
+/// The graph maintains unique indices for nodes and edges, so both node and edge
+/// data may be accessed mutably. Removing nodes or edges from the graph is expensive,
+/// while adding is very cheap.
+///
+/// Based upon the graph implementation in rustc.
 //#[deriving(Show)]
 pub struct OGraph<N> {
     nodes: Vec<Node<N>>,
@@ -77,7 +83,7 @@ pub fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<T>
 }
 
 impl<N> OGraph<N>
-where N: fmt::Show
+//where N: fmt::Show
 {
     pub fn new() -> OGraph<N>
     {
@@ -86,10 +92,31 @@ where N: fmt::Show
 
     pub fn add_node(&mut self, data: N) -> NodeIndex
     {
-        let node = Node{data: data, next: [InvalidEdge, InvalidEdge]};
+        let node = Node{data: data, next: [EdgeEnd, EdgeEnd]};
         let node_idx = NodeIndex(self.nodes.len());
         self.nodes.push(node);
         node_idx
+    }
+
+    pub fn node(&self, a: NodeIndex) -> Option<&N>
+    {
+        self.nodes.get(a.0).map(|n| &n.data)
+    }
+
+    pub fn node_mut(&mut self, a: NodeIndex) -> Option<&mut N>
+    {
+        self.nodes.get_mut(a.0).map(|n| &mut n.data)
+    }
+
+    pub fn neighbors(&self, a: NodeIndex) -> Neighbors<N>
+    {
+        Neighbors{
+            graph: self,
+            next: match self.nodes.get(a.0) {
+                None => EdgeEnd,
+                Some(n) => n.next[0],
+            }
+        }
     }
 
     pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex) -> EdgeIndex
@@ -133,23 +160,23 @@ where N: fmt::Show
         // Remove all edges from and to this node.
         loop {
             let next = self.nodes[a.0].next[0];
-            if next == InvalidEdge {
+            if next == EdgeEnd {
                 break
             }
-            println!("Rmove edge {}", next);
+            //println!("Rmove edge {}", next);
             self.remove_edge(next);
         }
 
         loop {
             let next = self.nodes[a.0].next[1];
-            if next == InvalidEdge {
+            if next == EdgeEnd {
                 break
             }
-            println!("Rmove edge {}", next);
+            //println!("Rmove edge {}", next);
             self.remove_edge(next);
         }
 
-        println!("REMOVED EDGES: {}", self);
+        //println!("REMOVED EDGES: {}", self);
 
         // Adjust all node indices affected
         for edge in self.edges.iter_mut() {
@@ -178,10 +205,10 @@ where N: fmt::Show
             let edge_next = edges[replace.0].next[k];
             // walk through edge list
             let mut cur = fst;
-            while cur != InvalidEdge {
+            while cur != EdgeEnd {
                 let curedge = &mut edges[cur.0];
                 if curedge.next[k] == replace {
-                    println!("Have to replace link in {}", curedge);
+                    //println!("Have to replace link in {}", curedge);
                     curedge.next[k] = edge_next;
                     break
                 } else {
@@ -226,7 +253,7 @@ where N: fmt::Show
         for node in self.nodes.iter_mut() {
             for &k in [0u, 1].iter() {
                 debug_assert!(node.next[k] != e);
-                if node.next[k] != InvalidEdge && node.next[k] > e {
+                if node.next[k] != EdgeEnd && node.next[k] > e {
                     node.next[k].0 -= 1;
                 }
             }
@@ -234,11 +261,30 @@ where N: fmt::Show
         for edge in self.edges.iter_mut() {
             for &k in [0u, 1].iter() {
                 debug_assert!(edge.next[k] != e);
-                if edge.next[k] != InvalidEdge && edge.next[k] > e {
+                if edge.next[k] != EdgeEnd && edge.next[k] > e {
                     edge.next[k].0 -= 1;
                 }
             }
         }
         Some(edge_data)
+    }
+}
+
+pub struct Neighbors<'a, N: 'a> {
+    graph: &'a OGraph<N>,
+    next: EdgeIndex,
+}
+
+impl<'a, N> Iterator<NodeIndex> for Neighbors<'a, N>
+{
+    fn next(&mut self) -> Option<NodeIndex>
+    {
+        match self.graph.edges.get(self.next.0) {
+            None => None,
+            Some(edge) => {
+                self.next = edge.next[0];
+                Some(edge.b)
+            }
+        }
     }
 }

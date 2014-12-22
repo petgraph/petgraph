@@ -19,6 +19,7 @@ use std::fmt;
 pub use scored::MinScored;
 pub use digraph::DiGraph;
 pub use graph::Graph;
+pub use ograph::OGraph;
 mod scored;
 pub mod digraph;
 pub mod graph;
@@ -170,6 +171,14 @@ where N: Copy + Hash + Eq
     fn neighbors(&'a self, n: N) -> digraph::Neighbors<'a, N, E>
     {
         DiGraph::neighbors(self, n)
+    }
+}
+
+impl<'a, N> GraphNeighbors<'a, ograph::NodeIndex, ograph::Neighbors<'a, N>> for OGraph<N>
+{
+    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, N>
+    {
+        OGraph::neighbors(self, n)
     }
 }
 

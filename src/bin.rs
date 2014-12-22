@@ -181,7 +181,13 @@ fn main() {
     og.add_edge(b, a);
     println!("{}", og);
     println!("Remove {}", a);
+    for no in BreadthFirst::new(&og, a) {
+        println!("Visit {}", no);
+    }
     og.remove_node(a);
     //og.remove_edge(ed1);
     println!("{}", og);
+    for no in BreadthFirst::new(&og, a) {
+        println!("Visit {}", no);
+    }
 }
