@@ -4,7 +4,7 @@ petgraph — experiments with graph datastructures
 
 Please read the `API documentation here`__
 
-__ http://bluss.github.io/petgraph
+__ http://bluss.github.io/petulant-avenger-graphlibrary/
 
 License
 =======
