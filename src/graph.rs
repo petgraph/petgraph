@@ -267,6 +267,45 @@ impl<'a, N, E> Iterator<(N, &'a E)> for Edges<'a, N, E>
     }
 }
 
+pub struct BFT<'a, G, N, F, Neighbors>
+    where
+        G: 'a,
+        N: 'a + Copy + PartialOrd + Eq + Hash,
+        F: FnMut(&G, N) -> Neighbors,
+        Neighbors: Iterator<N>,
+{
+    pub graph: &'a G,
+    pub stack: RingBuf<N>,
+    pub visited: HashSet<N>,
+    pub neighbors: F,
+}
+
+impl<'a, G, N, F, Neighbors> Iterator<N> for BFT<'a, G, N, F, Neighbors>
+    where
+        G: 'a,
+        N: 'a + Copy + PartialOrd + Eq + Hash,
+        F: FnMut(&G, N) -> Neighbors,
+        Neighbors: Iterator<N>,
+{
+    fn next(&mut self) -> Option<N>
+    {
+        while let Some(node) = self.stack.pop_front() {
+            if !self.visited.insert(node) {
+                continue;
+            }
+
+            for succ in (self.neighbors)(self.graph, node) {
+                if !self.visited.contains(&succ) {
+                    self.stack.push_back(succ);
+                }
+            }
+
+            return Some(node);
+        }
+        None
+    }
+}
+
 pub struct BreadthFirstTraversal<'a, N, E>
     where N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a
 {

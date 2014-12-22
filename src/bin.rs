@@ -8,6 +8,7 @@ use std::cell::Cell;
 use std::hash::{Writer, Hash};
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::RingBuf;
 use std::collections::BinaryHeap;
 use std::iter::Map;
 use std::collections::hash_map::{
@@ -216,6 +217,18 @@ fn make_graph() {
     println!("Scores= {}", 
         dijkstra(&g, a, |gr, n| gr.edges(n).map(|&x|x))
     );
+
+    let mut rb = RingBuf::new();
+    rb.push_back(a);
+    let mut it = graph::BFT{
+        graph: &g,
+        stack: rb,
+        visited: HashSet::new(),
+        neighbors: |g, n| g.neighbors(n).map(|&x| x),
+    };
+    for node in it {
+        println!("Visit {}", node);
+    }
 
     let mut g: DiGraph<_, f32> = DiGraph::new();
     let node = |name: &'static str| name;
