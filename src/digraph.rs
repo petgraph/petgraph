@@ -142,12 +142,12 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
     ///
     /// If the node **from** does not exist in the graph, return an empty iterator.
     ///
-    /// Iterator element type is **&'a N**.
+    /// Iterator element type is **N**.
     pub fn neighbors(&self, from: N) -> Neighbors<N, E>
     {
-        fn fst<'a, N: Copy, E>(t: &'a (N, E)) -> &'a N
+        fn fst<'a, N: Copy, E>(t: &'a (N, E)) -> N
         {
-            &t.0
+            t.0
         }
 
         Neighbors{iter: self.edges(from).map(fst)}
@@ -261,14 +261,12 @@ impl<'a, N: 'a, E: 'a> Iterator<&'a N> for Nodes<'a, N, E>
     iterator_methods!(&'a N);
 }
 
-type MapPtr<'a, From, To, Iter> = Map<&'a From, &'a To, Iter, for<'b> fn(&'b From) -> &'b To>;
-
 pub struct Neighbors<'a, N: 'a, E: 'a> {
-    iter: MapPtr<'a, (N, E), N, Items<'a, (N, E)>>,
+    iter: Map<&'a (N, E), N, Items<'a, (N, E)>, fn(&(N, E)) -> N>,
 }
 
-impl<'a, N: 'a, E: 'a> Iterator<&'a N> for Neighbors<'a, N, E>
+impl<'a, N: 'a, E: 'a> Iterator<N> for Neighbors<'a, N, E>
 {
-    iterator_methods!(&'a N);
+    iterator_methods!(N);
 }
 

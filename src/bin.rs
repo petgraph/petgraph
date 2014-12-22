@@ -91,7 +91,7 @@ fn make_graph() {
         graph: &g,
         stack: rb,
         visited: HashSet::new(),
-        neighbors: |g, n| g.neighbors(n).map(|&x| x),
+        neighbors: |g, n| g.neighbors(n),
     };
     for node in it {
         println!("Visit {}", node);
