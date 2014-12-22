@@ -40,6 +40,11 @@ impl<N: Eq + Hash + fmt::Show, E: fmt::Show> fmt::Show for Graph<N, E>
     }
 }
 */
+#[inline]
+fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
+{
+    if a <= b { (a, b) } else { (b, a) }
+}
 
 impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
 {
@@ -69,11 +74,8 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         for succ in successors.into_iter() {
             // remove all successor links
             self.remove_single_edge(&succ, &node);
-            let a = node;
-            let b = succ;
-            let edge_key = if a <= b { (a, b) } else { (b, a) };
             // Remove all edge values
-            self.edges.remove(&edge_key);
+            self.edges.remove(&edge_key(node, succ));
         }
         true
     }
@@ -96,8 +98,7 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
             Occupied(ent) => { ent.into_mut().push(a); }
             Vacant(ent) => { ent.set(vec![a]); }
         }
-        let edge_key = if a <= b { (a, b) } else { (b, a) };
-        self.edges.insert(edge_key, edge).is_none()
+        self.edges.insert(edge_key(a, b), edge).is_none()
     }
 
     /// Remove successor relation from a to b
@@ -120,13 +121,11 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
     {
         self.remove_single_edge(&a, &b);
         self.remove_single_edge(&b, &a);
-        let edge_key = if a <= b { (a, b) } else { (b, a) };
-        self.edges.remove(&edge_key)
+        self.edges.remove(&edge_key(a, b))
     }
 
     pub fn contains_edge(&self, a: N, b: N) -> bool {
-        let edge_key = if a <= b { (a, b) } else { (b, a) };
-        self.edges.contains_key(&edge_key)
+        self.edges.contains_key(&edge_key(a, b))
     }
 
     pub fn nodes<'a>(&'a self) -> Nodes<'a, N>
@@ -157,8 +156,7 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
 
     pub fn edge_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
     {
-        let edge_key = if a <= b { (a, b) } else { (b, a) };
-        self.edges.get_mut(&edge_key)
+        self.edges.get_mut(&edge_key(a, b))
     }
 }
 
@@ -211,8 +209,7 @@ impl<'a, N, E> Iterator<(N, &'a E)> for Edges<'a, N, E>
             None => None,
             Some(&b) => {
                 let a = self.from;
-                let edge_key = if a <= b { (a, b) } else { (b, a) };
-                match self.edges.get(&edge_key) {
+                match self.edges.get(&edge_key(a, b)) {
                     None => unreachable!(),
                     Some(edge) => {
                         Some((b, edge))
