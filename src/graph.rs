@@ -221,7 +221,7 @@ macro_rules! iterator_methods(
             self.iter.size_hint()
         }
     )
-)
+);
 
 pub struct Nodes<'a, N: 'a> {
     iter: Keys<'a, N, Vec<N>>
@@ -229,7 +229,7 @@ pub struct Nodes<'a, N: 'a> {
 
 impl<'a, N: 'a> Iterator<&'a N> for Nodes<'a, N>
 {
-    iterator_methods!(&'a N)
+    iterator_methods!(&'a N);
 }
 
 pub struct Neighbors<'a, N: 'a> {
@@ -238,7 +238,7 @@ pub struct Neighbors<'a, N: 'a> {
 
 impl<'a, N: 'a> Iterator<&'a N> for Neighbors<'a, N>
 {
-    iterator_methods!(&'a N)
+    iterator_methods!(&'a N);
 }
 
 pub struct Edges<'a, N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a> {

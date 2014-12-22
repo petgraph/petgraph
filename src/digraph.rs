@@ -250,7 +250,7 @@ macro_rules! iterator_methods(
             self.iter.size_hint()
         }
     )
-)
+);
 
 pub struct Nodes<'a, N: 'a, E: 'a> {
     iter: Keys<'a, N, Vec<(N, E)>>
@@ -258,7 +258,7 @@ pub struct Nodes<'a, N: 'a, E: 'a> {
 
 impl<'a, N: 'a, E: 'a> Iterator<&'a N> for Nodes<'a, N, E>
 {
-    iterator_methods!(&'a N)
+    iterator_methods!(&'a N);
 }
 
 type MapPtr<'a, From, To, Iter> = Map<&'a From, &'a To, Iter, for<'b> fn(&'b From) -> &'b To>;
@@ -269,6 +269,6 @@ pub struct Neighbors<'a, N: 'a, E: 'a> {
 
 impl<'a, N: 'a, E: 'a> Iterator<&'a N> for Neighbors<'a, N, E>
 {
-    iterator_methods!(&'a N)
+    iterator_methods!(&'a N);
 }
 

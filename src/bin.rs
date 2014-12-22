@@ -139,9 +139,9 @@ struct Node<T>(pub T);
 
 pub struct NodeCell<T: Copy>(pub Cell<T>);
 
-impl<'a, T: Copy> Deref<Cell<T>> for NodeCell<T> {
+impl<T: Copy> Deref<Cell<T>> for NodeCell<T> {
     #[inline]
-    fn deref<'a>(&'a self) -> &'a Cell<T> {
+    fn deref(&self) -> &Cell<T> {
         &self.0
     }
 }
