@@ -398,43 +398,48 @@ impl<K: PartialOrd + PartialEq, T> Ord for MinScore<K, T> {
     }
 }
 
-impl<N: Copy + Eq + Hash,
-     K: Default + Add<K, K> + Copy + PartialOrd> DiGraph<N, K>
+pub fn dijkstra<
+    'a,
+    Graph,
+    N: Copy + Eq + Hash + fmt::Show,
+    K: Default + Add<K, K> + Copy + PartialOrd + fmt::Show,
+    Edges: Iterator<(N, K)>,
+    F: FnMut(&'a Graph, N) -> Edges>(
+        graph: &'a Graph, start: N, mut edges: F) -> Vec<(N, K)>
 {
-    pub fn dijkstra(&self, start: N) -> Vec<(N, K)> {
-        let mut visited = HashSet::new();
-        let mut scores = HashMap::new();
-        let mut visit_next = BinaryHeap::new();
-        let zero_score: K = Default::default();
-        scores.insert(start, zero_score);
-        visit_next.push(MinScore(zero_score, start));
-        loop {
-            let MinScore(node_score, node) = match visit_next.pop() {
-                None => break,
-                Some(t) => t,
-            };
-            if visited.contains(&node) {
+    let mut visited = HashSet::new();
+    let mut scores = HashMap::new();
+    let mut visit_next = BinaryHeap::new();
+    let zero_score: K = Default::default();
+    scores.insert(start, zero_score);
+    visit_next.push(MinScore(zero_score, start));
+    loop {
+        let MinScore(node_score, node) = match visit_next.pop() {
+            None => break,
+            Some(t) => t,
+        };
+        if visited.contains(&node) {
+            continue
+        }
+        println!("Visiting {} with score={}", node, node_score);
+        for (next, edge) in edges(graph, node) {
+            if visited.contains(&next) {
                 continue
             }
-            for &(next, edge) in self.edges(node) {
-                if visited.contains(&next) {
-                    continue
-                }
-                let mut next_score = node_score + edge;
-                match scores.entry(next) {
-                    Occupied(ent) => if next_score < *ent.get() {
-                        *ent.into_mut() = next_score
-                    } else {
-                        next_score = *ent.get();
-                    },
-                    Vacant(ent) => { ent.set(next_score); }
-                }
-                visit_next.push(MinScore(next_score, next));
+            let mut next_score = node_score + edge;
+            match scores.entry(next) {
+                Occupied(ent) => if next_score < *ent.get() {
+                    *ent.into_mut() = next_score
+                } else {
+                    next_score = *ent.get();
+                },
+                Vacant(ent) => { ent.set(next_score); }
             }
-            visited.insert(node);
+            visit_next.push(MinScore(next_score, next));
         }
-        scores.into_iter().collect()
+        visited.insert(node);
     }
+    scores.into_iter().collect()
 }
 
 #[deriving(Show)]
@@ -507,7 +512,6 @@ fn make_graph() {
     g.add_diedge(a, b, 7.);
     g.add_diedge(a, c, 9.);
     g.add_diedge(a, d, 14.);
-    g.add_diedge(a, c, 14.);
     g.add_diedge(b, c, 10.);
     g.add_diedge(c, d, 2.);
     g.add_diedge(d, e, 9.);
@@ -519,7 +523,7 @@ fn make_graph() {
     f.set("F'");
 
     println!("Scores= {}", 
-        g.dijkstra(a)
+        dijkstra(&g, a, |gr, n| gr.edges(n).map(|&x|x))
     );
 
     let mut g: DiGraph<_, f32> = DiGraph::new();
@@ -533,13 +537,13 @@ fn make_graph() {
     g.add_diedge(a, b, 7.);
     g.add_diedge(a, c, 9.);
     g.add_diedge(a, d, 14.);
-    g.add_diedge(a, c, 14.);
     g.add_diedge(b, c, 10.);
     g.add_diedge(c, d, 2.);
     g.add_diedge(d, e, 9.);
     g.add_diedge(b, f, 15.);
     g.add_diedge(c, f, 11.);
     g.add_diedge(e, f, 6.);
+
     println!("{}", g);
 
     let root = TypedArena::<Node<_>>::new();
@@ -554,7 +558,6 @@ fn make_graph() {
     g.add_edge(a, b, 7.);
     g.add_edge(a, c, 9.);
     g.add_edge(a, d, 14.);
-    g.add_edge(a, c, 14.);
     g.add_edge(b, c, 10.);
     g.add_edge(c, d, 2.);
     g.add_edge(d, e, 9.);
@@ -562,6 +565,7 @@ fn make_graph() {
     g.add_edge(c, f, 11.);
     g.add_edge(e, f, 6.);
     println!("{}", g);
+    println!("{}", dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
 
     let mut g: Graph<int, int> = Graph::new();
     g.add_node(1);
