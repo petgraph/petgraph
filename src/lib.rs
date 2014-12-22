@@ -3,16 +3,12 @@
 extern crate arena;
 
 use std::default::Default;
-use arena::TypedArena;
 use std::cell::Cell;
 use std::hash::{Writer, Hash};
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::collections::RingBuf;
 use std::collections::BinaryHeap;
-use std::iter::Map;
 use std::collections::hash_map::{
-    Keys,
     Occupied,
     Vacant,
 };
@@ -24,7 +20,6 @@ pub use graph::Graph;
 mod scored;
 pub mod digraph;
 pub mod graph;
-
 
 /// A reference that is hashed and compared by its pointer value.
 #[deriving(Clone)]
