@@ -175,12 +175,13 @@ fn main() {
     let a = og.add_node(0i);
     let b = og.add_node(1i);
     let c = og.add_node(2i);
-    og.add_edge(a, b);
-    og.add_edge(a, c);
+    let ed1 = og.add_edge(a, b);
+    let ed2 = og.add_edge(a, c);
     og.add_edge(b, c);
     og.add_edge(b, a);
     println!("{}", og);
-    println!("Remove {}", a);
-    og.remove_node(a);
+    //println!("Remove {}", a);
+    //og.remove_node(a);
+    og.remove_edge(ed1);
     println!("{}", og);
 }

@@ -12,19 +12,22 @@ pub struct EdgeIndex(uint);
 const InvalidEdge: EdgeIndex = EdgeIndex(::std::uint::MAX);
 const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
+/// Index into the EdgeIndex arrays
+enum InOut {
+    Out = 0,
+    In = 1
+}
 
 #[deriving(Show)]
 pub struct Node<N> {
     pub data: N,
-    first_out: EdgeIndex,
-    first_in: EdgeIndex,
+    next: [EdgeIndex, ..2],
 }
 
-#[deriving(Show)]
+#[deriving(Show, Copy)]
 pub struct Edge<E> {
     pub data: E,
-    next_out: EdgeIndex,
-    next_in: EdgeIndex,
+    next: [EdgeIndex, ..2],
     a: NodeIndex,
     b: NodeIndex,
 }
@@ -83,7 +86,7 @@ where N: fmt::Show
 
     pub fn add_node(&mut self, data: N) -> NodeIndex
     {
-        let node = Node{data: data, first_out: InvalidEdge, first_in: InvalidEdge};
+        let node = Node{data: data, next: [InvalidEdge, InvalidEdge]};
         let node_idx = NodeIndex(self.nodes.len());
         self.nodes.push(node);
         node_idx
@@ -99,11 +102,10 @@ where N: fmt::Show
                     data: (),
                     a: a,
                     b: b,
-                    next_out: an.first_out,
-                    next_in: an.first_in,
+                    next: an.next,
                 };
-                an.first_out = edge_idx;
-                an.first_in = edge_idx;
+                an.next[0] = edge_idx;
+                an.next[1] = edge_idx;
                 self.edges.push(edge);
             }
             Pair::Both(an, bn) => {
@@ -112,11 +114,10 @@ where N: fmt::Show
                     data: (),
                     a: a,
                     b: b,
-                    next_out: an.first_out,
-                    next_in: bn.first_in,
+                    next: [an.next[0], bn.next[1]],
                 };
-                an.first_out = edge_idx;
-                bn.first_in = edge_idx;
+                an.next[0] = edge_idx;
+                bn.next[1] = edge_idx;
                 self.edges.push(edge);
             }
         }
@@ -147,7 +148,7 @@ where N: fmt::Show
 
         // Rewrite edge chains to skip edges to be removed
         for node in self.nodes.iter_mut() {
-            let mut fst = node.first_out;
+            let mut fst = node.next[0];
             loop {
                 println!("Examining {} for node {}", fst, node);
                 match self.edges.get_mut(fst.0) {
@@ -156,13 +157,13 @@ where N: fmt::Show
                         if edge.a == InvalidNode || edge.b == InvalidNode {
                             println!("Edge to SKIP: {}", edge);
                         }
-                        fst = edge.next_out;
+                        fst = edge.next[0];
                     }
                 }
             }
 
             // "in" chain
-            let mut fst = node.first_in;
+            let mut fst = node.next[1];
             loop {
                 println!("Examining {} for node {}", fst, node);
                 match self.edges.get_mut(fst.0) {
@@ -171,7 +172,7 @@ where N: fmt::Show
                         if edge.a == InvalidNode || edge.b == InvalidNode {
                             println!("Edge to SKIP: {}", edge);
                         }
-                        fst = edge.next_in;
+                        fst = edge.next[1];
                     }
                 }
             }
@@ -181,11 +182,42 @@ where N: fmt::Show
         Some(remove_node.data)
     }
 
+    pub fn edge_mut(&mut self, e: EdgeIndex) -> &mut Edge<()>
+    {
+        &mut self.edges[e.0]
+    }
     pub fn remove_edge(&mut self, e: EdgeIndex)
     {
-        let edge = match self.edges.remove(e.0) {
+        // every edge is part of two lists,
+        // outgoing and incoming edges.
+        // Remove it from both
+        let edge = match self.edges.get(e.0) {
             None => return,
-            Some(x) => x,
+            Some(x) => *x,
         };
+        // update start node
+        if self.nodes[edge.a.0].next[0] == e {
+            self.nodes[edge.a.0].next[0] = edge.next[0];
+        } else {
+            // walk through edge list
+            let mut cur = self.nodes[edge.a.0].next[0];
+            while cur != InvalidEdge {
+                let curedge = &mut self.edges[cur.0];
+                if curedge.next[0] == e {
+                    println!("Have to replace link in {}", curedge);
+                }
+                if curedge.next[0] == e {
+                    curedge.next[0] = edge.next[0];
+                    break
+                } else {
+                    cur = curedge.next[0];
+                }
+            }
+        }
+        /*
+        if self.nodes[edge.a.0].next[1] == e {
+            self.nodes[edge.a.0].next[1] = edge.next[1];
+        }
+        */
     }
 }
