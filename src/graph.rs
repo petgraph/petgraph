@@ -141,7 +141,7 @@ impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
     ///
     /// If the node **from** does not exist in the graph, return an empty iterator.
     ///
-    /// Iterator element type is **&'a N**.
+    /// Iterator element type is **N**.
     pub fn neighbors<'a>(&'a self, from: N) -> Neighbors<'a, N>
     {
         Neighbors{iter:
