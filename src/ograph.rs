@@ -5,6 +5,8 @@ use std::slice::{
 use std::fmt;
 use test;
 
+// FIXME: These aren't stable, so a public wrapper of node/edge indices
+// should be lifetimed just like pointers.
 #[deriving(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
 pub struct NodeIndex(uint);
 #[deriving(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
@@ -249,6 +251,55 @@ impl<N> OGraph<N>
 
     fn remove_edge_adjust_indices(&mut self, e: EdgeIndex) -> Option<()>
     {
+        // swap_remove the edge -- only the removed edge
+        // and the edge swapped into place are affected and need updating
+        // indices.
+        let edge = self.edges.swap_remove(e.0).unwrap();
+        if self.edges.len() == e.0 {
+            return Some(edge.data);
+        }
+        let swapped_e = EdgeIndex(self.edges.len());
+        let swapped_edge = self.edges[e.0];
+
+        fn update_edge_list(replace: EdgeIndex, fst: EdgeIndex, new: EdgeIndex, edges: &mut [Edge<()>], d: Dir) {
+            debug_assert!(fst != replace);
+            let k = d as uint;
+            // walk through edge list
+            let mut cur = fst;
+            while cur != EdgeEnd {
+                let curedge = &mut edges[cur.0];
+                if curedge.next[k] == replace {
+                    //println!("Have to replace link in {}", curedge);
+                    curedge.next[k] = new;
+                    break
+                } else {
+                    cur = curedge.next[k];
+                }
+            }
+        }
+        {
+            // List out from A
+            let node = &mut self.nodes[swapped_edge.a.0];
+            let fst = node.next[0];
+            if fst == swapped_e {
+                node.next[0] = e;
+            } else {
+                update_edge_list(swapped_e, fst, e, self.edges[mut], Dir::Out);
+            }
+        }
+        {
+            // List in to B
+            let node = &mut self.nodes[swapped_edge.b.0];
+            let fst = node.next[1];
+            if fst == swapped_e {
+                node.next[1] = e;
+            } else {
+                update_edge_list(swapped_e, fst, e, self.edges[mut], Dir::In);
+            }
+        }
+        // All that refer to the swapped edge need to update.
+        //
+        /*
         // Edge lists are fine, so remove the edge and adjust all edge indices in nodes
         let edge_data = self.edges.remove(e.0).unwrap().data;
         for &k in [0u, 1].iter() {
@@ -265,6 +316,8 @@ impl<N> OGraph<N>
                 }
             }
         }
+        */
+        let edge_data = edge.data;
         Some(edge_data)
     }
 }
@@ -315,6 +368,8 @@ fn bench_remove(b: &mut test::Bencher) {
     }
     //println!("{}", og);
     b.iter(|| {
-        og.remove_node(fst)
+        for _ in range(0, 100i) {
+            og.remove_node(fst);
+        }
     })
 }
