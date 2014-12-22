@@ -116,7 +116,8 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
             Some(..) => {
                 for (_, edges) in self.nodes.iter_mut() {
                     match edges.iter().position(|&(elt, _)| elt == node) {
-                        Some(index) => { edges.remove(index); }
+                        // Use swap_remove because order doesn't matter
+                        Some(index) => { edges.swap_remove(index); }
                         None => {}
                     }
                 }
@@ -166,7 +167,7 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
             Occupied(mut ent) => {
                 match ent.get().iter().position(|&(elt, _)| elt == b) {
                     Some(index) => {
-                        ent.get_mut().remove(index).map(|(_, edge)| edge)
+                        ent.get_mut().swap_remove(index).map(|(_, edge)| edge)
                     }
                     None => None,
                 }
@@ -305,7 +306,7 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
             None => {}
             Some(sus) => {
                 match sus.iter().position(|elt| elt == b) {
-                    Some(index) => { sus.remove(index); }
+                    Some(index) => { sus.swap_remove(index); }
                     None => {}
                 }
             }
