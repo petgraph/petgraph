@@ -177,6 +177,8 @@ fn main() {
     let c = og.add_node(2i);
     let ed1 = og.add_edge(a, b);
     let ed2 = og.add_edge(a, c);
+    og.add_edge(c, a);
+    og.add_edge(a, a);
     og.add_edge(b, c);
     og.add_edge(b, a);
     println!("{}", og);

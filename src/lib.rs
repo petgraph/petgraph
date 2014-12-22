@@ -1,7 +1,7 @@
 #![feature(slicing_syntax)]
 #![feature(macro_rules)]
 #![feature(default_type_params)]
-extern crate arena;
+extern crate test;
 
 use std::default::Default;
 use std::cell::Cell;
