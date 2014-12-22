@@ -1,11 +1,12 @@
 
-/// Hold a score and a scored object in a pair for use with a BinaryHeap.
+/// **MinScored\<K, T\>** holds a score **K** and a scored object **T** in
+/// a pair for use with a **BinaryHeap**.
 ///
-/// MinScored compares in reverse order compared to the score, so that we can
-/// use BinaryHeap as a "min-heap" to extract the score, value pair with the
-/// lowest score.
+/// MinScored compares in reverse order by the score, so that we can
+/// use BinaryHeap as a min-heap to extract the score-value pair with the
+/// least score.
 ///
-/// NOTE: MinScored implements a total order (Eq + Ord), so that it is possible
+/// **Note:** MinScored implements a total order (**Ord**), so that it is possible
 /// to use float types as scores.
 pub struct MinScored<K, T>(pub K, pub T);
 
@@ -28,22 +29,24 @@ impl<K: PartialOrd, T> PartialOrd for MinScored<K, T> {
 impl<K: PartialOrd + PartialEq, T> Ord for MinScored<K, T> {
     #[inline]
     fn cmp(&self, other: &MinScored<K, T>) -> Ordering {
-        // Order NaN first, (NaN is equal to itself and largest)
-        let selfnan = self.0 != self.0;
-        let othernan = other.0 != other.0;
-        if selfnan && othernan {
+        let a = &self.0;
+        let b = &other.0;
+        if a == b {
             Equal
-        } else if selfnan {
-            Less
-        } else if othernan {
+        } else if a < b {
             Greater
-        // Then order in reverse order
-        } else if self.0 < other.0 {
-            Greater
-        } else if self.0 > other.0 {
+        } else if a > b {
             Less
         } else {
-            Equal
+            // these are the NaN cases
+            if a != a && b != b {
+                Equal
+            } else if a != a {
+            // Order NaN less, so that it is last in the MinScore order
+                Less
+            } else {
+                Greater
+            }
         }
     }
 }
