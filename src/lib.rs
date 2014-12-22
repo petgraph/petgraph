@@ -1,3 +1,4 @@
+#![feature(slicing_syntax)]
 #![feature(macro_rules)]
 #![feature(default_type_params)]
 extern crate arena;
@@ -21,6 +22,7 @@ pub use graph::Graph;
 mod scored;
 pub mod digraph;
 pub mod graph;
+pub mod ograph;
 
 /// A reference that is hashed and compared by its pointer value.
 #[deriving(Clone)]

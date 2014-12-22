@@ -6,6 +6,8 @@ extern crate copygraph;
 use arena::TypedArena;
 use std::cell::Cell;
 
+use copygraph::ograph::OGraph;
+
 pub use copygraph::{
     MinScored,
     DiGraph,
@@ -168,4 +170,17 @@ fn make_graph() {
 
 fn main() {
     make_graph();
+
+    let mut og = OGraph::new();
+    let a = og.add_node(0i);
+    let b = og.add_node(1i);
+    let c = og.add_node(2i);
+    og.add_edge(a, b);
+    og.add_edge(a, c);
+    og.add_edge(b, c);
+    og.add_edge(b, a);
+    println!("{}", og);
+    println!("Remove {}", a);
+    og.remove_node(a);
+    println!("{}", og);
 }
