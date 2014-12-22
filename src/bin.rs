@@ -38,6 +38,22 @@ impl<'b, T> PartialEq for Ptr<'b, T>
     }
 }
 
+impl<'b, T> PartialOrd for Ptr<'b, T>
+{
+    fn partial_cmp(&self, other: &Ptr<'b, T>) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'b, T> Ord for Ptr<'b, T>
+{
+    fn cmp(&self, other: &Ptr<'b, T>) -> Ordering {
+        let a = self.0 as *const _;
+        let b = other.0 as *const _;
+        a.cmp(&b)
+    }
+}
+
 impl<'b, T> Deref<T> for Ptr<'b, T> {
     fn deref<'a>(&'a self) -> &'a T {
         self.0
@@ -188,33 +204,44 @@ impl<N: Copy + Eq + Hash, E: Clone> DiGraph<N, E>
 }
 
 /// **Graph**
+#[deriving(Show)]
 pub struct Graph<N: Eq + Hash, E> {
-    gr: DiGraph<N, Option<E>>
+    nodes: HashMap<N, Vec<N>>,
+    edges: HashMap<(N, N), E>,
 }
 
+/*
 impl<N: Eq + Hash + fmt::Show, E: fmt::Show> fmt::Show for Graph<N, E>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.gr.fmt(f)
     }
 }
+*/
 
 //pub type Nodes<'a, N, E> = Keys<'a, N, Vec<(N, E)>>;
 
-impl<N: Copy + Eq + Hash, E> Graph<N, E>
+impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
 {
     pub fn new() -> Graph<N, E>
     {
         Graph {
-            gr: DiGraph::new()
+            nodes: HashMap::new(),
+            edges: HashMap::new(),
         }
     }
 
     pub fn add_node(&mut self, node: N) -> N {
-        self.gr.add_node(node)
+        match self.nodes.entry(node) {
+            Occupied(_) => {}
+            Vacant(ent) => { ent.set(Vec::new()); }
+        }
+        node
     }
 
     pub fn remove_node(&mut self, node: N) {
+        panic!()
+        /*
         // FIXME: Use digraph property
         match self.gr.nodes.remove(&node) {
             None => {}
@@ -227,33 +254,25 @@ impl<N: Copy + Eq + Hash, E> Graph<N, E>
                 }
             }
         }
+        */
     }
 
     /// Add an edge connecting `a` and `b`.
+    ///
+    /// Return true if edge was new
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
     {
-        // Only one edge can own the edge data --
-        // we arbitrarily pick the first here to own it.
-        let insert = |a: N, b: N, edge: Option<E>| -> bool {
-            match self.gr.nodes.entry(a) {
-                Occupied(ent) => {
-                    // Add edge only if it isn't already there
-                    let edges = ent.into_mut();
-                    if edges.iter().position(|&(elt, _)| elt == b).is_none() {
-                        edges.push((b, edge));
-                        true
-                    } else {
-                        false
-                    }
-                }
-                Vacant(ent) => {
-                    ent.set(vec![(b, edge)]);
-                    true
-                }
-            }
-        };
-        insert(a, b, Some(edge)) |
-        insert(b, a, None)
+        // Use PartialOrd to order the edges
+        match self.nodes.entry(a) {
+            Occupied(ent) => { ent.into_mut().push(b); }
+            Vacant(ent) => { ent.set(vec![b]); }
+        }
+        match self.nodes.entry(b) {
+            Occupied(ent) => { ent.into_mut().push(a); }
+            Vacant(ent) => { ent.set(vec![a]); }
+        }
+        let edge_key = if a <= b { (a, b) } else { (b, a) };
+        self.edges.insert(edge_key, edge).is_none()
     }
 
     /// Remove edge from `a` to `b`.
@@ -277,73 +296,52 @@ impl<N: Copy + Eq + Hash, E> Graph<N, E>
         panic!()
     }
 
-    pub fn nodes<'a>(&'a self) -> Nodes<'a, N, Option<E>>
+    pub fn nodes<'a>(&'a self) -> Keys<'a, N, Vec<N>>
     {
-        self.gr.nodes.keys()
+        self.nodes.keys()
     }
 
-    pub fn edges<'a>(&'a self, n: N) -> Edges<'a, N, E>
+    pub fn neighbors<'a>(&'a self, from: N) -> Items<'a, N>
+    {
+        self.nodes[from].iter()
+    }
+
+    pub fn edges<'a>(&'a self, from: N) -> Edges<'a, N, E>
     {
         Edges {
-            from: n,
-            graph: self,
-            iter: self.gr.nodes[n].iter()
+            from: from,
+            iter: self.neighbors(from),
+            edges: &self.edges,
         }
     }
-    /*
-        // Here we need to patch in edges
-        // one of (a, b, Some(E))
-        //        (b, a, None)
-        //
-        // will have the edge.
-        // Also: Unwrap :-(
-        fn map_edge<N: Copy + Eq + Hash, E>(elt: &(N, Option<E>)) -> (N, &E)
-        {
-            let &(node, ref edge_opt) = elt;
-            let edge_ref = match *edge_opt {
-                Some(ref xyz) => xyz,
-                None => {
-                    // Find the edge from the reverse
-                    panic!()
-                }
-            };
-            (node, edge_ref)
-        }
-        self.gr.nodes[n].iter().map(map_edge)
-    }
-    */
 
-    pub fn edges_mut<'a>(&'a mut self, n: N) -> MutItems<'a, (N, E)>
+    pub fn edge_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
     {
-        panic!()
-        //self.nodes[n].iter_mut()
+        let edge_key = if a <= b { (a, b) } else { (b, a) };
+        self.edges.get_mut(&edge_key)
     }
+
 }
 
-pub struct Edges<'a, N: 'a + Copy + Eq + Hash, E: 'a> {
+pub struct Edges<'a, N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a> {
     from: N,
-    graph: &'a Graph<N, E>,
-    iter: Items<'a, (N, Option<E>)>,
+    edges: &'a HashMap<(N, N), E>,
+    iter: Items<'a, N>,
 }
 
-impl<'a, N: 'a + Copy + Eq + Hash, E: 'a> Iterator<(N, &'a E)> for Edges<'a, N, E>
+impl<'a, N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a> Iterator<(N, &'a E)> for Edges<'a, N, E>
 {
     fn next(&mut self) -> Option<(N, &'a E)>
     {
         match self.iter.next() {
             None => None,
-            Some(&(node, ref edge_opt)) => {
-                match *edge_opt {
-                    Some(ref edge) => Some((node, edge)),
-                    None => {
-                        // dig out the other reference
-                        for &(n, ref edge_opt) in self.graph.gr.edges(node) {
-                            if n == self.from {
-                                let edge_ref = edge_opt.as_ref().unwrap();
-                                return Some((node, edge_ref));
-                            }
-                        }
-                        unreachable!()
+            Some(&b) => {
+                let a = self.from;
+                let edge_key = if a <= b { (a, b) } else { (b, a) };
+                match self.edges.get(&edge_key) {
+                    None => unreachable!(),
+                    Some(edge) => {
+                        Some((b, edge))
                     }
                 }
             }
@@ -545,7 +543,7 @@ fn make_graph() {
     println!("{}", g);
 
     let root = TypedArena::<Node<_>>::new();
-    let mut g: DiGraph<_, f32> = DiGraph::new();
+    let mut g: Graph<_, f32> = Graph::new();
     let node = |name: &'static str| Ptr(root.alloc(Node(name.to_string())));
     let a = g.add_node(node("A"));
     let b = g.add_node(node("B"));
@@ -553,16 +551,16 @@ fn make_graph() {
     let d = g.add_node(node("D"));
     let e = g.add_node(node("E"));
     let f = g.add_node(node("F"));
-    g.add_diedge(a, b, 7.);
-    g.add_diedge(a, c, 9.);
-    g.add_diedge(a, d, 14.);
-    g.add_diedge(a, c, 14.);
-    g.add_diedge(b, c, 10.);
-    g.add_diedge(c, d, 2.);
-    g.add_diedge(d, e, 9.);
-    g.add_diedge(b, f, 15.);
-    g.add_diedge(c, f, 11.);
-    g.add_diedge(e, f, 6.);
+    g.add_edge(a, b, 7.);
+    g.add_edge(a, c, 9.);
+    g.add_edge(a, d, 14.);
+    g.add_edge(a, c, 14.);
+    g.add_edge(b, c, 10.);
+    g.add_edge(c, d, 2.);
+    g.add_edge(d, e, 9.);
+    g.add_edge(b, f, 15.);
+    g.add_edge(c, f, 11.);
+    g.add_edge(e, f, 6.);
     println!("{}", g);
 
     let mut g: Graph<int, int> = Graph::new();
@@ -571,8 +569,12 @@ fn make_graph() {
     g.add_edge(1, 2, -1);
 
     println!("{}", g);
+    *g.edge_mut(1, 2).unwrap() = 3;
+    for elt in g.edges(1) {
+        println!("Edge {} => {}", 1i, elt);
+    }
     for elt in g.edges(2) {
-        println!("Edge => {}", elt);
+        println!("Edge {} => {}", 2i, elt);
     }
 }
 
