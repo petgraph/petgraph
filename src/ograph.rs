@@ -6,14 +6,14 @@ use std::fmt;
 
 #[deriving(Copy, Clone, Show, PartialEq, PartialOrd)]
 pub struct NodeIndex(uint);
-#[deriving(Copy, Clone, Show, PartialEq)]
+#[deriving(Copy, Clone, Show, PartialEq, PartialOrd)]
 pub struct EdgeIndex(uint);
 
 const InvalidEdge: EdgeIndex = EdgeIndex(::std::uint::MAX);
 const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
 /// Index into the EdgeIndex arrays
-enum InOut {
+enum Dir {
     Out = 0,
     In = 1
 }
@@ -186,38 +186,70 @@ where N: fmt::Show
     {
         &mut self.edges[e.0]
     }
+
     pub fn remove_edge(&mut self, e: EdgeIndex)
     {
-        // every edge is part of two lists,
-        // outgoing and incoming edges.
-        // Remove it from both
-        let edge = match self.edges.get(e.0) {
-            None => return,
-            Some(x) => *x,
-        };
-        // update start node
-        if self.nodes[edge.a.0].next[0] == e {
-            self.nodes[edge.a.0].next[0] = edge.next[0];
-        } else {
+        fn update_edge_list(replace: EdgeIndex, fst: EdgeIndex, edges: &mut [Edge<()>], d: Dir) {
+            debug_assert!(fst != replace);
+            let k = d as uint;
+            let edge_next = edges[replace.0].next[k];
             // walk through edge list
-            let mut cur = self.nodes[edge.a.0].next[0];
+            let mut cur = fst;
             while cur != InvalidEdge {
-                let curedge = &mut self.edges[cur.0];
-                if curedge.next[0] == e {
+                let curedge = &mut edges[cur.0];
+                if curedge.next[k] == replace {
                     println!("Have to replace link in {}", curedge);
-                }
-                if curedge.next[0] == e {
-                    curedge.next[0] = edge.next[0];
+                    curedge.next[k] = edge_next;
                     break
                 } else {
-                    cur = curedge.next[0];
+                    cur = curedge.next[k];
                 }
             }
         }
-        /*
-        if self.nodes[edge.a.0].next[1] == e {
-            self.nodes[edge.a.0].next[1] = edge.next[1];
+        // every edge is part of two lists,
+        // outgoing and incoming edges.
+        // Remove it from both
+        let (edge_a, edge_b, edge_next) = match self.edges.get(e.0) {
+            None => return,
+            Some(x) => (x.a, x.b, x.next),
+        };
+        {
+            // List out from A
+            let node = &mut self.nodes[edge_a.0];
+            let fst = node.next[0];
+            if fst == e {
+                node.next[0] = edge_next[0];
+            } else {
+                update_edge_list(e, fst, self.edges[mut], Dir::Out);
+            }
         }
-        */
+        {
+            // List in to B
+            let node = &mut self.nodes[edge_b.0];
+            let fst = node.next[1];
+            if fst == e {
+                node.next[1] = edge_next[1];
+            } else {
+                update_edge_list(e, fst, self.edges[mut], Dir::In);
+            }
+        }
+
+        // Edge lists are fine, so remove the edge and adjust all edge indices
+        let edge_data = self.edges.remove(e.0).unwrap().data;
+        for node in self.nodes.iter_mut() {
+            for &k in [0u, 1].iter() {
+                if node.next[k] != InvalidEdge && node.next[k] > e {
+                    node.next[k].0 -= 1;
+                }
+            }
+        }
+        for edge in self.edges.iter_mut() {
+            for &k in [0u, 1].iter() {
+                if edge.next[k] != InvalidEdge && edge.next[k] > e {
+                    edge.next[k].0 -= 1;
+                }
+            }
+        }
+        //Some(edge_data)
     }
 }
