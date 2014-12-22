@@ -109,9 +109,10 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         node
     }
 
-    pub fn remove_node(&mut self, node: N) {
+    /// Return true if node was removed.
+    pub fn remove_node(&mut self, node: N) -> bool {
         match self.nodes.remove(&node) {
-            None => {}
+            None => false,
             Some(..) => {
                 for (_, edges) in self.nodes.iter_mut() {
                     match edges.iter().position(|&(elt, _)| elt == node) {
@@ -119,6 +120,7 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
                         None => {}
                     }
                 }
+                true
             }
         }
     }
@@ -247,22 +249,23 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         node
     }
 
-    pub fn remove_node(&mut self, node: N) {
-        panic!()
-        /*
-        // FIXME: Use digraph property
-        match self.gr.nodes.remove(&node) {
-            None => {}
-            Some(..) => {
-                for (_, edges) in self.gr.nodes.iter_mut() {
-                    match edges.iter().position(|&(elt, _)| elt == node) {
-                        Some(index) => { edges.remove(index); }
-                        None => {}
-                    }
-                }
-            }
+    /// Return true if node was removed.
+    pub fn remove_node(&mut self, node: N) -> bool {
+        // remove node
+        let successors = match self.nodes.remove(&node) {
+            None => return false,
+            Some(sus) => sus,
+        };
+        for succ in successors.into_iter() {
+            // remove all successor links
+            self.remove_single_edge(&succ, &node);
+            let a = node;
+            let b = succ;
+            let edge_key = if a <= b { (a, b) } else { (b, a) };
+            // Remove all edge values
+            self.edges.remove(&edge_key);
         }
-        */
+        true
     }
 
     /// Add an edge connecting `a` and `b`.
@@ -283,25 +286,28 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         self.edges.insert(edge_key, edge).is_none()
     }
 
+    /// Remove successor relation from a to b
+    fn remove_single_edge(&mut self, a: &N, b: &N) {
+        match self.nodes.get_mut(a) {
+            None => {}
+            Some(sus) => {
+                match sus.iter().position(|elt| elt == b) {
+                    Some(index) => { sus.remove(index); }
+                    None => {}
+                }
+            }
+        }
+    }
+
     /// Remove edge from `a` to `b`.
     ///
     /// Return None if the edge didn't exist.
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E>
     {
-        /*
-        match self.nodes.entry(a) {
-            Occupied(mut ent) => {
-                match ent.get().iter().position(|&(elt, _)| elt == b) {
-                    Some(index) => {
-                        ent.get_mut().remove(index).map(|(_, edge)| edge)
-                    }
-                    None => None,
-                }
-            }
-            Vacant(..) => None,
-        }
-        */
-        panic!()
+        self.remove_single_edge(&a, &b);
+        self.remove_single_edge(&b, &a);
+        let edge_key = if a <= b { (a, b) } else { (b, a) };
+        self.edges.remove(&edge_key)
     }
 
     pub fn nodes<'a>(&'a self) -> Keys<'a, N, Vec<N>>
@@ -539,6 +545,9 @@ fn make_graph() {
     for elt in g.edges(2) {
         println!("Edge {} => {}", 2i, elt);
     }
+    //g.remove_node(2);
+    g.remove_edge(2, 1);
+    println!("{}", g);
 }
 
 
