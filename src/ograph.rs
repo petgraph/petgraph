@@ -15,7 +15,8 @@ pub struct EdgeIndex(uint);
 const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
 //const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
-/// Index into the EdgeIndex arrays
+/// Index into the NodeIndex and EdgeIndex arrays
+#[deriving(Copy, Clone, Show, PartialEq)]
 enum Dir {
     Out = 0,
     In = 1
@@ -24,15 +25,17 @@ enum Dir {
 #[deriving(Show)]
 pub struct Node<N> {
     pub data: N,
+    /// Next edge in outgoing and incoming edge lists.
     next: [EdgeIndex, ..2],
 }
 
 #[deriving(Show, Copy)]
 pub struct Edge<E> {
     pub data: E,
+    /// Next edge in outgoing and incoming edge lists.
     next: [EdgeIndex, ..2],
-    a: NodeIndex,
-    b: NodeIndex,
+    /// Start and End node index
+    node: [NodeIndex, ..2],
 }
 
 /// **OGraph\<N, E\>** is a directed graph using an adjacency list representation.
@@ -152,8 +155,7 @@ impl<N> OGraph<N>
             Pair::One(an) => {
                 let edge = Edge {
                     data: (),
-                    a: a,
-                    b: b,
+                    node: [a, b],
                     next: an.next,
                 };
                 an.next[0] = edge_idx;
@@ -164,8 +166,7 @@ impl<N> OGraph<N>
                 // a and b are different indices
                 let edge = Edge {
                     data: (),
-                    a: a,
-                    b: b,
+                    node: [a, b],
                     next: [an.next[0], bn.next[1]],
                 };
                 an.next[0] = edge_idx;
@@ -182,36 +183,36 @@ impl<N> OGraph<N>
             None => return None,
             _ => {}
         }
-        // Remove all edges from and to this node.
-        loop {
-            let next = self.nodes[a.0].next[0];
-            if next == EdgeEnd {
-                break
+        for d in [Dir::Out, Dir::In].iter() { 
+            let k = *d as uint;
+            /*
+            println!("Starting edge removal for k={}, node={}", k, a);
+            for (i, n) in self.nodes.iter().enumerate() {
+                println!("Node {}: Edges={}", i, n.next);
             }
-            //println!("Rmove edge {}", next);
-            self.remove_edge(next);
-        }
-
-        loop {
-            let next = self.nodes[a.0].next[1];
-            if next == EdgeEnd {
-                break
+            for (i, ed) in self.edges.iter().enumerate() {
+                println!("Edge {}: {}", i, ed);
             }
-            //println!("Rmove edge {}", next);
-            self.remove_edge(next);
+            */
+            // Remove all edges from and to this node.
+            loop {
+                let next = self.nodes[a.0].next[k];
+                if next == EdgeEnd {
+                    break
+                }
+                self.remove_edge(next);
+            }
         }
-
-        //println!("REMOVED EDGES: {}", self);
 
         // Adjust all node indices affected
         for edge in self.edges.iter_mut() {
-            debug_assert!(edge.a != a);
-            debug_assert!(edge.b != a);
-            if edge.a > a {
-                edge.a.0 -= 1;
+            debug_assert!(edge.node[0] != a);
+            debug_assert!(edge.node[1] != a);
+            if edge.node[0] > a {
+                edge.node[0].0 -= 1;
             }
-            if edge.b > a {
-                edge.b.0 -= 1;
+            if edge.node[1] > a {
+                edge.node[1].0 -= 1;
             }
         }
         self.nodes.remove(a.0).map(|n|n.data)
@@ -227,18 +228,20 @@ impl<N> OGraph<N>
         // every edge is part of two lists,
         // outgoing and incoming edges.
         // Remove it from both
-        let (edge_a, edge_b, edge_next) = match self.edges.get(e.0) {
+        debug_assert!(self.edges.get(e.0).is_some(), "No such edge: {}", e);
+        let (edge_node, edge_next) = match self.edges.get(e.0) {
             None => return,
-            Some(x) => (x.a, x.b, x.next),
+            Some(x) => (x.node, x.next),
         };
         {
             // List out from A
-            let node = match self.nodes.get_mut(edge_a.0) {
+            let node = match self.nodes.get_mut(edge_node[0].0) {
                 Some(r) => r,
                 None => { debug_assert!(false, "Edge.A not in nodes"); return }
             };
             let fst = node.next[0];
             if fst == e {
+                //println!("Updating first edge 0 for node {}, set to {}", edge_node[0], edge_next[0]);
                 node.next[0] = edge_next[0];
             } else {
                 walk_edge_list(fst, self.edges[mut], Dir::Out, |eidx, curedge| {
@@ -251,12 +254,13 @@ impl<N> OGraph<N>
         }
         {
             // List in to B
-            let node = match self.nodes.get_mut(edge_b.0) {
+            let node = match self.nodes.get_mut(edge_node[1].0) {
                 Some(r) => r,
                 None => { debug_assert!(false, "Edge.B not in nodes"); return }
             };
             let fst = node.next[1];
             if fst == e {
+                //println!("Updating first edge 1 for node {}, set to {}", edge_node[1], edge_next[1]);
                 node.next[1] = edge_next[1];
             } else {
                 walk_edge_list(fst, self.edges[mut], Dir::In, |eidx, curedge| {
@@ -276,16 +280,16 @@ impl<N> OGraph<N>
         // and the edge swapped into place are affected and need updating
         // indices.
         let edge = self.edges.swap_remove(e.0).unwrap();
-        let (swap_a, swap_b) = match self.edges.get(e.0) {
+        let swap = match self.edges.get(e.0) {
             // no elment needed to be swapped.
             None => return Some(edge.data),
-            Some(ed) => (ed.a, ed.b),
+            Some(ed) => ed.node,
         };
         let swapped_e = EdgeIndex(self.edges.len());
 
         {
             // List out from A
-            let node = &mut self.nodes[swap_a.0];
+            let node = &mut self.nodes[swap[0].0];
             let fst = node.next[0];
             if fst == swapped_e {
                 node.next[0] = e;
@@ -300,7 +304,7 @@ impl<N> OGraph<N>
         }
         {
             // List in to B
-            let node = &mut self.nodes[swap_b.0];
+            let node = &mut self.nodes[swap[1].0];
             let fst = node.next[1];
             if fst == swapped_e {
                 node.next[1] = e;
@@ -351,7 +355,7 @@ impl<'a, N> Iterator<NodeIndex> for Neighbors<'a, N>
             None => None,
             Some(edge) => {
                 self.next = edge.next[0];
-                Some(edge.b)
+                Some(edge.node[1])
             }
         }
     }
