@@ -192,4 +192,25 @@ fn main() {
     for no in BreadthFirst::new(&og, a) {
         println!("Visit {}", no);
     }
+
+    let mut g = OGraph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    g.add_edge(a, b); //, 7.);
+    g.add_edge(a, c); //, 9.);
+    g.add_edge(a, d); //, 14.);
+    g.add_edge(b, c); //, 10.);
+    g.add_edge(c, d); //, 2.);
+    g.add_edge(d, e); //, 9.);
+    g.add_edge(b, f); //, 15.);
+    g.add_edge(c, f); //, 11.);
+    g.add_edge(e, f); //, 6.);
+    println!("{}", g);
+    for no in BreadthFirst::new(&g, a) {
+        println!("Visit {} = {}", no, g.node(no));
+    }
 }
