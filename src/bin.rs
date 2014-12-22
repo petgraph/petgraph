@@ -85,7 +85,7 @@ impl<'b, T: fmt::Show> fmt::Show for Ptr<'b, T> {
 
 /// **DiGraph** is a directed graph, with node values and edge weights.
 ///
-/// It uses an Adjacency List representation, i.e. using *O(|N| + |E|)* space.
+/// It uses an adjacency list representation, i.e. using *O(|N| + |E|)* space.
 pub struct DiGraph<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<(N, E)>>,
 }
@@ -198,7 +198,7 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         self.nodes.keys()
     }
 
-    /// If the node `n` does not exist in the graph, returns an empty iterator.
+    /// If the node **n** does not exist in the graph, return an empty iterator.
     pub fn edges<'a>(&'a self, n: N) -> Items<'a, (N, E)>
     {
         match self.nodes.get(&n) {
@@ -207,7 +207,7 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         }
     }
 
-    /// If the node `n` does not exist in the graph, returns an empty iterator.
+    /// If the node **n** does not exist in the graph, return an empty iterator.
     pub fn edges_mut<'a>(&'a mut self, n: N) -> MutItems<'a, (N, E)>
     {
         match self.nodes.get_mut(&n) {
@@ -254,13 +254,13 @@ impl<N: Copy + Eq + Hash, E: Clone> DiGraph<N, E>
 
 /// **Graph** is a regular graph, with node values and edge weights.
 ///
-/// It uses an Adjacency List representation, i.e. using *O(|N| + |E|)* space.
+/// It uses an adjacency list representation, i.e. using *O(|N| + |E|)* space.
 ///
-/// The node type must be suitable as a hash table key (Implementing `Eq + Hash`)
+/// The node type must be suitable as a hash table key (Implementing **Eq + Hash**)
 /// as well as being a simple type.
 ///
-/// The node type must implement `PartialOrd` so that the implementation can
-/// properly order the edge endpoint pair `(a, b)` for any two nodes `a` and `b`.
+/// The node type must implement **PartialOrd** so that the implementation can
+/// properly order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
 #[deriving(Show)]
 pub struct Graph<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<N>>,
@@ -296,7 +296,7 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         node
     }
 
-    /// Return true if node was removed.
+    /// Return **true** if node was removed.
     pub fn remove_node(&mut self, node: N) -> bool {
         // remove node
         let successors = match self.nodes.remove(&node) {
@@ -319,9 +319,9 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         self.nodes.contains_key(&node)
     }
 
-    /// Add an edge connecting `a` and `b`.
+    /// Add an edge connecting **a** and **b**.
     ///
-    /// Return true if edge was new
+    /// Return **true** if edge was new
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
     {
         // Use PartialOrd to order the edges
@@ -350,9 +350,9 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         }
     }
 
-    /// Remove edge from `a` to `b`.
+    /// Remove edge from **a** to **b**.
     ///
-    /// Return None if the edge didn't exist.
+    /// Return **None** if the edge didn't exist.
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E>
     {
         self.remove_single_edge(&a, &b);
@@ -371,7 +371,7 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         self.nodes.keys()
     }
 
-    /// If the node `from` does not exist in the graph, returns an empty iterator.
+    /// If the node **from** does not exist in the graph, return an empty iterator.
     pub fn neighbors<'a>(&'a self, from: N) -> Items<'a, N>
     {
         match self.nodes.get(&from) {
@@ -380,7 +380,7 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         }
     }
 
-    /// If the node `from` does not exist in the graph, returns an empty iterator.
+    /// If the node **from** does not exist in the graph, return an empty iterator.
     pub fn edges<'a>(&'a self, from: N) -> Edges<'a, N, E>
     {
         Edges {
