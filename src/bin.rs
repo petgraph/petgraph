@@ -126,6 +126,10 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         }
     }
 
+    pub fn contains_node(&self, node: N) -> bool {
+        self.nodes.contains_key(&node)
+    }
+
     /// Add directed edge from `a` to `b`.
     ///
     /// Return `true` if an edge was inserted.
@@ -173,6 +177,15 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
                 }
             }
             Vacant(..) => None,
+        }
+    }
+
+    /// Return true if the directed edge from `a` to `b` exists
+    pub fn contains_edge(&mut self, a: N, b: N) -> bool
+    {
+        match self.nodes.get(&a) {
+            None => false,
+            Some(sus) => sus.iter().any(|&(elt, _)| elt == b),
         }
     }
 
@@ -282,6 +295,10 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         true
     }
 
+    pub fn contains_node(&self, node: N) -> bool {
+        self.nodes.contains_key(&node)
+    }
+
     /// Add an edge connecting `a` and `b`.
     ///
     /// Return true if edge was new
@@ -323,6 +340,12 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         let edge_key = if a <= b { (a, b) } else { (b, a) };
         self.edges.remove(&edge_key)
     }
+
+    pub fn contains_edge(&self, a: N, b: N) -> bool {
+        let edge_key = if a <= b { (a, b) } else { (b, a) };
+        self.edges.contains_key(&edge_key)
+    }
+
 
     pub fn nodes<'a>(&'a self) -> Keys<'a, N, Vec<N>>
     {
