@@ -13,7 +13,7 @@ use std::slice::{
 };
 use std::fmt;
 
-/// **DiGraph<N, E>** is a directed graph, with generic node values **N** and
+/// **DiGraph\<N, E\>** is a directed graph, with generic node values **N** and
 /// edge weights **E**.
 ///
 /// It uses an adjacency list representation, i.e. using *O(|V| + |E|)* space.

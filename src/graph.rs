@@ -11,9 +11,9 @@ use std::slice::{
 };
 use std::fmt;
 
-/// **Graph** is a regular graph, with node values and edge weights.
+/// **Graph\<N, E\>** is a regular graph, with generic node values **N** and edge weights **E**.
 ///
-/// It uses an adjacency list representation, i.e. using *O(|N| + |E|)* space.
+/// It uses an adjacency list representation, i.e. using *O(|V| + |E|)* space.
 ///
 /// The node type must be suitable as a hash table key (Implementing **Eq + Hash**)
 /// as well as being a simple type.
