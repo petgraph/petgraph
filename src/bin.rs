@@ -228,7 +228,7 @@ impl<N: Copy + Eq + Hash, E: Clone> DiGraph<N, E>
     }
 
     /// Return a reverse graph.
-    pub fn reverse(&self) -> DiGraph<N, E>
+    pub fn reversed(&self) -> DiGraph<N, E>
     {
         let mut g = DiGraph::new();
         for &node in self.nodes() {
@@ -345,7 +345,6 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         let edge_key = if a <= b { (a, b) } else { (b, a) };
         self.edges.contains_key(&edge_key)
     }
-
 
     pub fn nodes<'a>(&'a self) -> Keys<'a, N, Vec<N>>
     {
