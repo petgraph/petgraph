@@ -124,31 +124,35 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
     }
 
     /// Add directed edge from `a` to `b`.
+    ///
+    /// Return `true` if an edge was inserted.
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
     {
-        let mut did_insert = false;
         // We need both lookups anyway to assert sanity, so
         // add nodes if they don't already exist
+        //
+        // make sure the endpoint exists in the map
+        match self.nodes.entry(b) {
+            Vacant(ent) => { ent.set(Vec::new()); }
+            _ => {}
+        }
+
         match self.nodes.entry(a) {
             Occupied(ent) => {
                 // Add edge only if it isn't already there
                 let edges = ent.into_mut();
                 if edges.iter().position(|&(elt, _)| elt == b).is_none() {
                     edges.push((b, edge));
-                    did_insert = true;
+                    true
+                } else {
+                    false
                 }
             }
             Vacant(ent) => {
                 ent.set(vec![(b, edge)]);
-                did_insert = true;
+                true
             }
         }
-        // make sure both endpoints exist in the map
-        match self.nodes.entry(b) {
-            Vacant(ent) => { ent.set(Vec::new()); }
-            _ => {}
-        }
-        did_insert
     }
 
     /// Remove edge from `a` to `b`.
