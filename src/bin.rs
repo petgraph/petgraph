@@ -83,7 +83,9 @@ impl<'b, T: fmt::Show> fmt::Show for Ptr<'b, T> {
     }
 }
 
-/// **DiGraph** is a *Directed Graph*
+/// **DiGraph** is a directed graph, with node values and edge weights.
+///
+/// It uses an Adjacency List representation, i.e. using *O(|N| + |E|)* space.
 pub struct DiGraph<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<(N, E)>>,
 }
@@ -242,7 +244,15 @@ impl<N: Copy + Eq + Hash, E: Clone> DiGraph<N, E>
     }
 }
 
-/// **Graph**
+/// **Graph** is a regular graph, with node values and edge weights.
+///
+/// It uses an Adjacency List representation, i.e. using *O(|N| + |E|)* space.
+///
+/// The node type must be suitable as a hash table key (Implementing `Eq + Hash`)
+/// as well as being a simple type.
+///
+/// The node type must implement `PartialOrd` so that the implementation can
+/// properly order the edge endpoint pair `(a, b)` for any two nodes `a` and `b`.
 #[deriving(Show)]
 pub struct Graph<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<N>>,
