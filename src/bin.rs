@@ -1,14 +1,14 @@
 #![feature(macro_rules)]
 #![feature(default_type_params)]
 extern crate arena;
-extern crate copygraph;
+extern crate petgraph;
 
 use arena::TypedArena;
 use std::cell::Cell;
 
-use copygraph::ograph::OGraph;
+use petgraph::ograph::OGraph;
 
-pub use copygraph::{
+pub use petgraph::{
     MinScored,
     DiGraph,
     Graph,
@@ -17,6 +17,7 @@ pub use copygraph::{
     NodeCell,
     BreadthFirst,
     DepthFirst,
+    dijkstra,
 };
 
 
@@ -83,7 +84,7 @@ fn make_graph() {
     f.set("F'");
 
     println!("Scores= {}", 
-        copygraph::dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
+        dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
     );
 
     //let x = 
@@ -137,7 +138,7 @@ fn make_graph() {
     g.add_edge(c, f, 11.);
     g.add_edge(e, f, 6.);
     println!("{}", g);
-    println!("{}", copygraph::dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
+    println!("{}", dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
     for node in DepthFirst::new(&g, a) {
         println!("Visit {}", node);
     }
@@ -215,6 +216,6 @@ fn main() {
     }
 
     println!("Scores= {}", 
-        copygraph::dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
+        dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
     );
 }

@@ -1,12 +1,12 @@
 [package]
 
-name = "copygraph"
+name = "petgraph"
 version = "0.0.1"
 authors = ["bluss"]
 
 [lib]
 
-name = "copygraph"
+name = "petgraph"
 
 [[bin]]
 
