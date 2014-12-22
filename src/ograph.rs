@@ -22,6 +22,8 @@ enum Dir {
     In = 1
 }
 
+const DIRECTIONS: [Dir, ..2] = [Dir::Out, Dir::In];
+
 #[deriving(Show)]
 pub struct Node<N> {
     pub data: N,
@@ -183,7 +185,7 @@ impl<N> OGraph<N>
             None => return None,
             _ => {}
         }
-        for d in [Dir::Out, Dir::In].iter() { 
+        for d in DIRECTIONS.iter() { 
             let k = *d as uint;
             /*
             println!("Starting edge removal for k={}, node={}", k, a);
@@ -233,39 +235,22 @@ impl<N> OGraph<N>
             None => return,
             Some(x) => (x.node, x.next),
         };
-        {
-            // List out from A
-            let node = match self.nodes.get_mut(edge_node[0].0) {
+        // List out from A
+        // List in from B
+        for &d in DIRECTIONS.iter() {
+            let k = d as uint;
+            let node = match self.nodes.get_mut(edge_node[k].0) {
                 Some(r) => r,
-                None => { debug_assert!(false, "Edge.A not in nodes"); return }
+                None => { debug_assert!(false, "Edge not in nodes"); return }
             };
-            let fst = node.next[0];
+            let fst = node.next[k];
             if fst == e {
                 //println!("Updating first edge 0 for node {}, set to {}", edge_node[0], edge_next[0]);
-                node.next[0] = edge_next[0];
+                node.next[k] = edge_next[k];
             } else {
-                walk_edge_list(fst, self.edges[mut], Dir::Out, |eidx, curedge| {
-                    if curedge.next[0] == e {
-                        curedge.next[0] = edge_next[0];
-                        false
-                    } else { true }
-                });
-            }
-        }
-        {
-            // List in to B
-            let node = match self.nodes.get_mut(edge_node[1].0) {
-                Some(r) => r,
-                None => { debug_assert!(false, "Edge.B not in nodes"); return }
-            };
-            let fst = node.next[1];
-            if fst == e {
-                //println!("Updating first edge 1 for node {}, set to {}", edge_node[1], edge_next[1]);
-                node.next[1] = edge_next[1];
-            } else {
-                walk_edge_list(fst, self.edges[mut], Dir::In, |eidx, curedge| {
-                    if curedge.next[1] == e {
-                        curedge.next[1] = edge_next[1];
+                walk_edge_list(fst, self.edges[mut], d, |eidx, curedge| {
+                    if curedge.next[k] == e {
+                        curedge.next[k] = edge_next[k];
                         false
                     } else { true }
                 });
@@ -287,56 +272,23 @@ impl<N> OGraph<N>
         };
         let swapped_e = EdgeIndex(self.edges.len());
 
-        {
-            // List out from A
-            let node = &mut self.nodes[swap[0].0];
-            let fst = node.next[0];
+        // List out from A
+        // List in to B
+        for &d in DIRECTIONS.iter() {
+            let k = d as uint;
+            let node = &mut self.nodes[swap[k].0];
+            let fst = node.next[k];
             if fst == swapped_e {
-                node.next[0] = e;
+                node.next[k] = e;
             } else {
-                walk_edge_list(fst, self.edges[mut], Dir::Out, |eidx, curedge| {
-                    if curedge.next[0] == swapped_e {
-                        curedge.next[0] = e;
+                walk_edge_list(fst, self.edges[mut], d, |eidx, curedge| {
+                    if curedge.next[k] == swapped_e {
+                        curedge.next[k] = e;
                         false
                     } else { true }
                 });
             }
         }
-        {
-            // List in to B
-            let node = &mut self.nodes[swap[1].0];
-            let fst = node.next[1];
-            if fst == swapped_e {
-                node.next[1] = e;
-            } else {
-                walk_edge_list(fst, self.edges[mut], Dir::In, |eidx, curedge| {
-                    if curedge.next[1] == swapped_e {
-                        curedge.next[1] = e;
-                        false
-                    } else { true }
-                });
-            }
-        }
-        // All that refer to the swapped edge need to update.
-        //
-        /*
-        // Edge lists are fine, so remove the edge and adjust all edge indices in nodes
-        let edge_data = self.edges.remove(e.0).unwrap().data;
-        for &k in [0u, 1].iter() {
-            for node in self.nodes.iter_mut() {
-                debug_assert!(node.next[k] != e);
-                if node.next[k] != EdgeEnd && node.next[k] > e {
-                    node.next[k].0 -= 1;
-                }
-            }
-            for edge in self.edges.iter_mut() {
-                debug_assert!(edge.next[k] != e);
-                if edge.next[k] != EdgeEnd && edge.next[k] > e {
-                    edge.next[k].0 -= 1;
-                }
-            }
-        }
-        */
         let edge_data = edge.data;
         Some(edge_data)
     }
