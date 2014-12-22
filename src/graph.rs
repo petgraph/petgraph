@@ -26,7 +26,7 @@ use std::fmt;
 ///
 /// The node type must implement **PartialOrd** so that the implementation can
 /// properly order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
-#[deriving(Show)]
+#[deriving(Show, Clone)]
 pub struct Graph<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<N>>,
     edges: HashMap<(N, N), E>,
@@ -46,8 +46,9 @@ fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
     if a <= b { (a, b) } else { (b, a) }
 }
 
-impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
+impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
 {
+    /// Create a new **Graph**.
     pub fn new() -> Graph<N, E>
     {
         Graph {
@@ -56,12 +57,13 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         }
     }
 
-    pub fn add_node(&mut self, node: N) -> N {
-        match self.nodes.entry(node) {
+    /// Add node **n** to the graph.
+    pub fn add_node(&mut self, n: N) -> N {
+        match self.nodes.entry(n) {
             Occupied(_) => {}
             Vacant(ent) => { ent.set(Vec::new()); }
         }
-        node
+        n
     }
 
     /// Return **true** if node was removed.
@@ -80,6 +82,7 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         true
     }
 
+    /// Return **true** if the node is contained in the graph.
     pub fn contains_node(&self, node: N) -> bool {
         self.nodes.contains_key(&node)
     }
@@ -124,16 +127,24 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         self.edges.remove(&edge_key(a, b))
     }
 
+    /// Return **true** if the edge connecting **a** with **b** is contained in the graph.
     pub fn contains_edge(&self, a: N, b: N) -> bool {
         self.edges.contains_key(&edge_key(a, b))
     }
 
+    /// Return an iterator over the nodes of the graph.
+    ///
+    /// Iterator element type is **&'a N**.
     pub fn nodes<'a>(&'a self) -> Nodes<'a, N>
     {
         Nodes{iter: self.nodes.keys()}
     }
 
+    /// Return an iterator over the nodes that are connected with **from** by edges.
+    ///
     /// If the node **from** does not exist in the graph, return an empty iterator.
+    ///
+    /// Iterator element type is **&'a N**.
     pub fn neighbors<'a>(&'a self, from: N) -> Neighbors<'a, N>
     {
         Neighbors{iter:
@@ -144,7 +155,12 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         }
     }
 
+    /// Return an iterator over the nodes that are connected with **from** by edges,
+    /// paired with the edge weight.
+    ///
     /// If the node **from** does not exist in the graph, return an empty iterator.
+    ///
+    /// Iterator element type is **(N, &'a E)**.
     pub fn edges<'a>(&'a self, from: N) -> Edges<'a, N, E>
     {
         Edges {
@@ -154,6 +170,8 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         }
     }
 
+    /// Return a mutable reference to the edge weight connecting **a** with **b**, or
+    /// **None** if the edge does not exist in the graph.
     pub fn edge_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
     {
         self.edges.get_mut(&edge_key(a, b))
