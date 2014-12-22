@@ -149,6 +149,17 @@ impl<N, E> OGraph<N, E>
         }
     }
 
+    pub fn edges(&self, a: NodeIndex) -> Edges<N, E>
+    {
+        Edges{
+            graph: self,
+            next: match self.nodes.get(a.0) {
+                None => EdgeEnd,
+                Some(n) => n.next[0],
+            }
+        }
+    }
+
     pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
     {
         let edge_idx = EdgeIndex(self.edges.len());
@@ -337,6 +348,24 @@ impl<'a, N, E> Iterator<NodeIndex> for Neighbors<'a, N, E>
     }
 }
 
+pub struct Edges<'a, N: 'a, E: 'a> {
+    graph: &'a OGraph<N, E>,
+    next: EdgeIndex,
+}
+
+impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for Edges<'a, N, E>
+{
+    fn next(&mut self) -> Option<(NodeIndex, &'a E)>
+    {
+        match self.graph.edges.get(self.next.0) {
+            None => None,
+            Some(edge) => {
+                self.next = edge.next[0];
+                Some((edge.node[1], &edge.data))
+            }
+        }
+    }
+}
 #[bench]
 fn bench_inser(b: &mut test::Bencher) {
     let mut og = OGraph::new();

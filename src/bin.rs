@@ -213,4 +213,8 @@ fn main() {
     for no in BreadthFirst::new(&g, a) {
         println!("Visit {} = {}", no, g.node(no));
     }
+
+    println!("Scores= {}", 
+        copygraph::dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
+    );
 }
