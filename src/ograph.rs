@@ -43,8 +43,7 @@ pub struct Edge<E> {
 /// **OGraph\<N, E\>** is a directed graph using an adjacency list representation.
 ///
 /// The graph maintains unique indices for nodes and edges, so both node and edge
-/// data may be accessed mutably. Removing nodes or edges from the graph is expensive,
-/// while adding is very cheap.
+/// data may be accessed mutably.
 ///
 /// Based upon the graph implementation in rustc.
 //#[deriving(Show)]
