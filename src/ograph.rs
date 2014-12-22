@@ -255,11 +255,12 @@ impl<N> OGraph<N>
         // and the edge swapped into place are affected and need updating
         // indices.
         let edge = self.edges.swap_remove(e.0).unwrap();
-        if self.edges.len() == e.0 {
-            return Some(edge.data);
-        }
+        let (swap_a, swap_b) = match self.edges.get(e.0) {
+            // no elment needed to be swapped.
+            None => return Some(edge.data),
+            Some(ed) => (ed.a, ed.b),
+        };
         let swapped_e = EdgeIndex(self.edges.len());
-        let swapped_edge = self.edges[e.0];
 
         fn update_edge_list(replace: EdgeIndex, fst: EdgeIndex, new: EdgeIndex, edges: &mut [Edge<()>], d: Dir) {
             debug_assert!(fst != replace);
@@ -279,7 +280,7 @@ impl<N> OGraph<N>
         }
         {
             // List out from A
-            let node = &mut self.nodes[swapped_edge.a.0];
+            let node = &mut self.nodes[swap_a.0];
             let fst = node.next[0];
             if fst == swapped_e {
                 node.next[0] = e;
@@ -289,7 +290,7 @@ impl<N> OGraph<N>
         }
         {
             // List in to B
-            let node = &mut self.nodes[swapped_edge.b.0];
+            let node = &mut self.nodes[swap_b.0];
             let fst = node.next[1];
             if fst == swapped_e {
                 node.next[1] = e;
