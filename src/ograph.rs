@@ -206,18 +206,35 @@ impl<N> OGraph<N>
             }
         }
 
-        // Adjust all node indices affected
-        for edge in self.edges.iter_mut() {
-            debug_assert!(edge.node[0] != a);
-            debug_assert!(edge.node[1] != a);
-            if edge.node[0] > a {
-                edge.node[0].0 -= 1;
-            }
-            if edge.node[1] > a {
-                edge.node[1].0 -= 1;
-            }
+        // Use swap_remove -- only the swapped-in node is going to change
+        // NodeIndex, so we only have to walk its edges and update them.
+
+        let node = match self.nodes.swap_remove(a.0) {
+            None => return None,
+            Some(node) => node,
+        };
+
+        // Find the edge lists of the node that had to relocate.
+        // It may be that no node had to relocate, then we are done already.
+        let swap_edges = match self.nodes.get(a.0) {
+            None => return Some(node.data),
+            Some(ed) => ed.next,
+        };
+
+        // The swapped element's old index
+        let old_index = NodeIndex(self.nodes.len());
+        let new_index = a;
+
+        // Adjust the starts of the out edges, and ends of the in edges.
+        for &d in DIRECTIONS.iter() {
+            let k = d as uint;
+            walk_edge_list(swap_edges[k], self.edges[mut], d, |_, curedge| {
+                debug_assert!(curedge.node[k] == old_index);
+                curedge.node[k] = new_index;
+                true
+            });
         }
-        self.nodes.remove(a.0).map(|n|n.data)
+        Some(node.data)
     }
 
     pub fn edge_mut(&mut self, e: EdgeIndex) -> &mut Edge<()>
