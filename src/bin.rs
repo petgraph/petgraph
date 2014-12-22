@@ -189,6 +189,19 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
     {
         self.nodes[n].iter_mut()
     }
+
+    pub fn edge_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
+    {
+        match self.nodes.get_mut(&a) {
+            Some(succ) => {
+                succ.iter_mut()
+                    .find(|&&(ref n, _)| n == &b)
+                    .map(|&(_, ref mut edge)| edge)
+            }
+            None => None,
+        }
+    }
+
 }
 
 impl<N: Copy + Eq + Hash, E: Clone> DiGraph<N, E>
