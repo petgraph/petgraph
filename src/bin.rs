@@ -21,6 +21,10 @@ use std::slice::{
 };
 use std::fmt;
 
+pub use scored::MinScored;
+mod scored;
+
+
 /// A reference that is hashed and compared by its raw pointer value.
 #[deriving(Clone)]
 pub struct Ptr<'b, T: 'b>(&'b T);
@@ -349,55 +353,6 @@ impl<'a, N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a> Iterator<(N, &'a E)> for 
     }
 }
 
-/// Hold a score and a scored object in a pair for use with a BinaryHeap.
-///
-/// MinScore compares in reverse order compared to the score, so that we can
-/// use BinaryHeap as a "min-heap" to extract the score, value pair with the
-/// lowest score.
-///
-/// NOTE: MinScore implements a total order (Eq + Ord), so that it is possible
-/// to use float types as scores.
-pub struct MinScore<K, T>(pub K, pub T);
-
-impl<K: PartialEq, T> PartialEq for MinScore<K, T> {
-    #[inline]
-    fn eq(&self, other: &MinScore<K, T>) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<K: PartialEq, T> Eq for MinScore<K, T> {}
-
-impl<K: PartialOrd, T> PartialOrd for MinScore<K, T> {
-    #[inline]
-    fn partial_cmp(&self, other: &MinScore<K, T>) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<K: PartialOrd + PartialEq, T> Ord for MinScore<K, T> {
-    #[inline]
-    fn cmp(&self, other: &MinScore<K, T>) -> Ordering {
-        // Order NaN first, (NaN is equal to itself and largest)
-        let selfnan = self.0 != self.0;
-        let othernan = other.0 != other.0;
-        if selfnan && othernan {
-            Equal
-        } else if selfnan {
-            Less
-        } else if othernan {
-            Greater
-        // Then order in reverse order
-        } else if self.0 < other.0 {
-            Greater
-        } else if self.0 > other.0 {
-            Less
-        } else {
-            Equal
-        }
-    }
-}
-
 pub fn dijkstra<
     'a,
     Graph,
@@ -412,9 +367,9 @@ pub fn dijkstra<
     let mut visit_next = BinaryHeap::new();
     let zero_score: K = Default::default();
     scores.insert(start, zero_score);
-    visit_next.push(MinScore(zero_score, start));
+    visit_next.push(MinScored(zero_score, start));
     loop {
-        let MinScore(node_score, node) = match visit_next.pop() {
+        let MinScored(node_score, node) = match visit_next.pop() {
             None => break,
             Some(t) => t,
         };
@@ -435,7 +390,7 @@ pub fn dijkstra<
                 },
                 Vacant(ent) => { ent.set(next_score); }
             }
-            visit_next.push(MinScore(next_score, next));
+            visit_next.push(MinScored(next_score, next));
         }
         visited.insert(node);
     }
