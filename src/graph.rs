@@ -1,7 +1,5 @@
 use std::hash::{Hash};
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::collections::RingBuf;
 use std::iter::Map;
 use std::collections::hash_map::{
     Keys,
