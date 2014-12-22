@@ -1,5 +1,7 @@
 use std::hash::{Hash};
 use std::collections::HashMap;
+use std::collections::HashSet;
+use std::collections::RingBuf;
 use std::iter::Map;
 use std::collections::hash_map::{
     Keys,
@@ -10,6 +12,11 @@ use std::slice::{
     Items,
 };
 use std::fmt;
+
+pub trait Graphlike<'a, N>
+{
+    fn each_neighbor(&'a self, N) -> Neighbors<N>;
+}
 
 /// **Graph\<N, E\>** is a regular graph, with generic node values **N** and edge weights **E**.
 ///
@@ -176,6 +183,28 @@ impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
     {
         self.edges.get_mut(&edge_key(a, b))
     }
+
+    pub fn traverse_breadth_first(&self, start: N) -> BreadthFirstTraversal<N, E>
+    {
+        BreadthFirstTraversal{
+            graph: self,
+            stack: {
+                let mut stack = RingBuf::new();
+                stack.push_back(start);
+                stack
+            },
+            visited: HashSet::new(),
+        }
+    }
+
+    pub fn traverse_depth_first(&self, start: N) -> DepthFirstTraversal<N, E>
+    {
+        DepthFirstTraversal{
+            graph: self,
+            stack: vec![start],
+            visited: HashSet::new(),
+        }
+    }
 }
 
 macro_rules! iterator_methods(
@@ -238,3 +267,62 @@ impl<'a, N, E> Iterator<(N, &'a E)> for Edges<'a, N, E>
     }
 }
 
+pub struct BreadthFirstTraversal<'a, N, E>
+    where N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a
+{
+    graph: &'a Graph<N, E>,
+    stack: RingBuf<N>,
+    visited: HashSet<N>,
+}
+
+impl<'a, N, E> Iterator<N> for BreadthFirstTraversal<'a, N, E>
+    where N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a
+{
+    fn next(&mut self) -> Option<N>
+    {
+        while let Some(node) = self.stack.pop_front() {
+            if !self.visited.insert(node) {
+                continue;
+            }
+
+            for succ in self.graph.neighbors(node) {
+                if !self.visited.contains(succ) {
+                    self.stack.push_back(*succ);
+                }
+            }
+
+            return Some(node);
+        }
+        None
+    }
+}
+
+pub struct DepthFirstTraversal<'a, N, E>
+    where N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a
+{
+    graph: &'a Graph<N, E>,
+    stack: Vec<N>,
+    visited: HashSet<N>,
+}
+
+impl<'a, N, E> Iterator<N> for DepthFirstTraversal<'a, N, E>
+    where N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a
+{
+    fn next(&mut self) -> Option<N>
+    {
+        while let Some(node) = self.stack.pop() {
+            if !self.visited.insert(node) {
+                continue;
+            }
+
+            for succ in self.graph.neighbors(node) {
+                if !self.visited.contains(succ) {
+                    self.stack.push(*succ);
+                }
+            }
+
+            return Some(node);
+        }
+        None
+    }
+}

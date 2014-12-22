@@ -257,6 +257,13 @@ fn make_graph() {
     g.add_edge(e, f, 6.);
     println!("{}", g);
     println!("{}", dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
+    for node in g.traverse_depth_first(a) {
+        println!("Visit {}", node);
+    }
+    println!("");
+    for node in g.traverse_breadth_first(a) {
+        println!("Visit {}", node);
+    }
 
     let mut g: Graph<int, int> = Graph::new();
     g.add_node(1);
