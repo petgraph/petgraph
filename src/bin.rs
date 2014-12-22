@@ -25,7 +25,7 @@ pub use scored::MinScored;
 mod scored;
 
 
-/// A reference that is hashed and compared by its raw pointer value.
+/// A reference that is hashed and compared by its pointer value.
 #[deriving(Clone)]
 pub struct Ptr<'b, T: 'b>(&'b T);
 
@@ -37,6 +37,7 @@ fn ptreq<T>(a: &T, b: &T) -> bool {
 
 impl<'b, T> PartialEq for Ptr<'b, T>
 {
+    /// Ptr compares by pointer equality, i.e if they point to the same value
     fn eq(&self, other: &Ptr<'b, T>) -> bool {
         ptreq(self.0, other.0)
     }
@@ -51,6 +52,7 @@ impl<'b, T> PartialOrd for Ptr<'b, T>
 
 impl<'b, T> Ord for Ptr<'b, T>
 {
+    /// Ptr is ordered by pointer value, i.e. an arbitrary but stable and total order.
     fn cmp(&self, other: &Ptr<'b, T>) -> Ordering {
         let a = self.0 as *const _;
         let b = other.0 as *const _;
