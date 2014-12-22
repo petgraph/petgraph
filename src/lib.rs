@@ -148,7 +148,7 @@ impl<T: Copy + fmt::Show> fmt::Show for NodeCell<T> {
     }
 }
 
-///
+/// A graph trait for accessing the neighbors iterator **I**.
 pub trait GraphNeighbors<'a, N, I> {
     fn neighbors(&'a self, n: N) -> I;
 }
@@ -172,21 +172,22 @@ where N: Copy + Hash + Eq
 }
 
 /// A breadth first traversal of a graph.
+#[deriving(Clone)]
 pub struct BreadthFirst<'a, G, N>
     where
         G: 'a,
-        N: 'a + Eq + Hash,
+        N: Eq + Hash,
 {
     pub graph: &'a G,
     pub stack: RingBuf<N>,
     pub visited: HashSet<N>,
 }
 
-impl<'a, G, N, Neighbors> BreadthFirst<'a, G, N>
+impl<'a, G, N, NIter> BreadthFirst<'a, G, N>
     where
-        G: 'a + GraphNeighbors<'a, N, Neighbors>,
-        N: 'a + Copy + Eq + Hash,
-        Neighbors: Iterator<N>,
+        G: 'a + GraphNeighbors<'a, N, NIter>,
+        N: Copy + Eq + Hash,
+        NIter: Iterator<N>,
 {
     pub fn new(graph: &'a G, start: N) -> BreadthFirst<'a, G, N>
     {
@@ -200,11 +201,11 @@ impl<'a, G, N, Neighbors> BreadthFirst<'a, G, N>
     }
 }
 
-impl<'a, G, N, Neighbors> Iterator<N> for BreadthFirst<'a, G, N>
+impl<'a, G, N, NIter> Iterator<N> for BreadthFirst<'a, G, N>
     where
-        G: 'a + GraphNeighbors<'a, N, Neighbors>,
-        N: 'a + Copy + Eq + Hash,
-        Neighbors: Iterator<N>,
+        G: 'a + GraphNeighbors<'a, N, NIter>,
+        N: Copy + Eq + Hash,
+        NIter: Iterator<N>,
 {
     fn next(&mut self) -> Option<N>
     {
@@ -226,20 +227,22 @@ impl<'a, G, N, Neighbors> Iterator<N> for BreadthFirst<'a, G, N>
 }
 
 /// A depth first traversal of a graph.
+#[deriving(Clone)]
 pub struct DepthFirst<'a, G, N>
     where
         G: 'a,
-        N: 'a + Copy + Eq + Hash,
+        N: Eq + Hash,
 {
     pub graph: &'a G,
     pub stack: Vec<N>,
     pub visited: HashSet<N>,
 }
 
-impl<'a, G, N> DepthFirst<'a, G, N>
+impl<'a, G, N, NIter> DepthFirst<'a, G, N>
     where
-        G: 'a,
-        N: 'a + Copy + Eq + Hash,
+        G: 'a + GraphNeighbors<'a, N, NIter>,
+        N: Copy + Eq + Hash,
+        NIter: Iterator<N>,
 {
     pub fn new(graph: &'a G, start: N) -> DepthFirst<'a, G, N>
     {
@@ -251,11 +254,11 @@ impl<'a, G, N> DepthFirst<'a, G, N>
     }
 }
 
-impl<'a, G, N, Neighbors> Iterator<N> for DepthFirst<'a, G, N>
+impl<'a, G, N, NIter> Iterator<N> for DepthFirst<'a, G, N>
     where
-        G: 'a + GraphNeighbors<'a, N, Neighbors>,
-        N: 'a + Copy + Eq + Hash,
-        Neighbors: Iterator<N>,
+        G: 'a + GraphNeighbors<'a, N, NIter>,
+        N: Copy + Eq + Hash,
+        NIter: Iterator<N>,
 {
     fn next(&mut self) -> Option<N>
     {

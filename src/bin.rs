@@ -4,10 +4,7 @@ extern crate arena;
 extern crate copygraph;
 
 use arena::TypedArena;
-use std::collections::RingBuf;
-use std::collections::HashSet;
 use std::cell::Cell;
-use std::fmt;
 
 pub use copygraph::{
     MinScored,
