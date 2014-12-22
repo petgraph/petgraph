@@ -126,25 +126,49 @@ where N: fmt::Show
 
     pub fn remove_node(&mut self, a: NodeIndex) -> Option<N>
     {
-        let remove_node = match self.nodes.remove(a.0) {
+        match self.nodes.get(a.0) {
             None => return None,
-            Some(n) => n,
-        };
+            _ => {}
+        }
+        // Remove all edges from and to this node.
+        loop {
+            let next = self.nodes[a.0].next[0];
+            if next == InvalidEdge {
+                break
+            }
+            println!("Rmove edge {}", next);
+            self.remove_edge(next);
+        }
+
+        loop {
+            let next = self.nodes[a.0].next[1];
+            if next == InvalidEdge {
+                break
+            }
+            println!("Rmove edge {}", next);
+            self.remove_edge(next);
+        }
+
+        /*
+        while node_next[1] != InvalidEdge {
+            self.remove_edge(node_next[1]);
+        }
+        */
+        println!("REMOVED EDGES: {}", self);
 
         // Adjust all node indices affected
-        // Mark edges to be removed with InvalidNode links
         for edge in self.edges.iter_mut() {
-            if edge.a == a {
-                edge.a = InvalidNode;
-            } else if edge.a > a {
-                edge.a = NodeIndex(edge.a.0 - 1);
+            debug_assert!(edge.a != a);
+            debug_assert!(edge.b != a);
+            if edge.a > a {
+                edge.a.0 -= 1;
             }
-            if edge.b == a {
-                edge.b = InvalidNode;
-            } else if edge.b > a {
-                edge.b = NodeIndex(edge.b.0 - 1);
+            if edge.b > a {
+                edge.b.0 -= 1;
             }
         }
+        self.nodes.remove(a.0).map(|n|n.data)
+        /*
 
         // Rewrite edge chains to skip edges to be removed
         for node in self.nodes.iter_mut() {
@@ -178,8 +202,7 @@ where N: fmt::Show
             }
 
         }
-
-        Some(remove_node.data)
+        */
     }
 
     pub fn edge_mut(&mut self, e: EdgeIndex) -> &mut Edge<()>
@@ -238,6 +261,7 @@ where N: fmt::Show
         let edge_data = self.edges.remove(e.0).unwrap().data;
         for node in self.nodes.iter_mut() {
             for &k in [0u, 1].iter() {
+                debug_assert!(node.next[k] != e);
                 if node.next[k] != InvalidEdge && node.next[k] > e {
                     node.next[k].0 -= 1;
                 }
@@ -245,6 +269,7 @@ where N: fmt::Show
         }
         for edge in self.edges.iter_mut() {
             for &k in [0u, 1].iter() {
+                debug_assert!(edge.next[k] != e);
                 if edge.next[k] != InvalidEdge && edge.next[k] > e {
                     edge.next[k].0 -= 1;
                 }

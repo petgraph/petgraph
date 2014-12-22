@@ -180,8 +180,8 @@ fn main() {
     og.add_edge(b, c);
     og.add_edge(b, a);
     println!("{}", og);
-    //println!("Remove {}", a);
-    //og.remove_node(a);
-    og.remove_edge(ed1);
+    println!("Remove {}", a);
+    og.remove_node(a);
+    //og.remove_edge(ed1);
     println!("{}", og);
 }
