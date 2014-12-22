@@ -14,7 +14,6 @@ use std::collections::hash_map::{
 };
 use std::slice::{
     Items,
-    MutItems,
 };
 use std::fmt;
 
