@@ -202,7 +202,9 @@ impl<N> OGraph<N>
                 if next == EdgeEnd {
                     break
                 }
-                self.remove_edge(next);
+                let ret = self.remove_edge(next);
+                debug_assert!(ret.is_some());
+                let _ = ret;
             }
         }
 
@@ -242,14 +244,15 @@ impl<N> OGraph<N>
         &mut self.edges[e.0]
     }
 
-    pub fn remove_edge(&mut self, e: EdgeIndex)
+    /// Remove an edge and return its edge weight, or None if it didn't exist.
+    pub fn remove_edge(&mut self, e: EdgeIndex) -> Option<()>
     {
         // every edge is part of two lists,
         // outgoing and incoming edges.
         // Remove it from both
-        debug_assert!(self.edges.get(e.0).is_some(), "No such edge: {}", e);
+        //debug_assert!(self.edges.get(e.0).is_some(), "No such edge: {}", e);
         let (edge_node, edge_next) = match self.edges.get(e.0) {
-            None => return,
+            None => return None,
             Some(x) => (x.node, x.next),
         };
         // List out from A
@@ -258,7 +261,11 @@ impl<N> OGraph<N>
             let k = d as uint;
             let node = match self.nodes.get_mut(edge_node[k].0) {
                 Some(r) => r,
-                None => { debug_assert!(false, "Edge not in nodes"); return }
+                None => {
+                    debug_assert!(false, "Edge's endpoint dir={} index={} not found",
+                                  k, edge_node[k]);
+                    return None
+                }
             };
             let fst = node.next[k];
             if fst == e {
@@ -273,7 +280,7 @@ impl<N> OGraph<N>
                 });
             }
         }
-        self.remove_edge_adjust_indices(e);
+        self.remove_edge_adjust_indices(e)
     }
 
     fn remove_edge_adjust_indices(&mut self, e: EdgeIndex) -> Option<()>
