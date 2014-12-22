@@ -149,11 +149,6 @@ where N: fmt::Show
             self.remove_edge(next);
         }
 
-        /*
-        while node_next[1] != InvalidEdge {
-            self.remove_edge(node_next[1]);
-        }
-        */
         println!("REMOVED EDGES: {}", self);
 
         // Adjust all node indices affected
@@ -168,41 +163,6 @@ where N: fmt::Show
             }
         }
         self.nodes.remove(a.0).map(|n|n.data)
-        /*
-
-        // Rewrite edge chains to skip edges to be removed
-        for node in self.nodes.iter_mut() {
-            let mut fst = node.next[0];
-            loop {
-                println!("Examining {} for node {}", fst, node);
-                match self.edges.get_mut(fst.0) {
-                    None => break,
-                    Some(edge) => {
-                        if edge.a == InvalidNode || edge.b == InvalidNode {
-                            println!("Edge to SKIP: {}", edge);
-                        }
-                        fst = edge.next[0];
-                    }
-                }
-            }
-
-            // "in" chain
-            let mut fst = node.next[1];
-            loop {
-                println!("Examining {} for node {}", fst, node);
-                match self.edges.get_mut(fst.0) {
-                    None => break,
-                    Some(edge) => {
-                        if edge.a == InvalidNode || edge.b == InvalidNode {
-                            println!("Edge to SKIP: {}", edge);
-                        }
-                        fst = edge.next[1];
-                    }
-                }
-            }
-
-        }
-        */
     }
 
     pub fn edge_mut(&mut self, e: EdgeIndex) -> &mut Edge<()>
@@ -256,7 +216,11 @@ where N: fmt::Show
                 update_edge_list(e, fst, self.edges[mut], Dir::In);
             }
         }
+        self.remove_edge_adjust_indices(e);
+    }
 
+    fn remove_edge_adjust_indices(&mut self, e: EdgeIndex) -> Option<()>
+    {
         // Edge lists are fine, so remove the edge and adjust all edge indices
         let edge_data = self.edges.remove(e.0).unwrap().data;
         for node in self.nodes.iter_mut() {
@@ -275,6 +239,6 @@ where N: fmt::Show
                 }
             }
         }
-        //Some(edge_data)
+        Some(edge_data)
     }
 }
