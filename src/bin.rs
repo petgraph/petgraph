@@ -83,17 +83,18 @@ impl<'b, T: fmt::Show> fmt::Show for Ptr<'b, T> {
     }
 }
 
-pub fn dijkstra<
-    'a,
-    Graph,
+pub fn dijkstra<'a,
+                Graph, N, K,
+                F, Edges>(graph: &'a Graph, start: N, mut edges: F) -> Vec<(N, K)>
+where
     N: Copy + Eq + Hash + fmt::Show,
     K: Default + Add<K, K> + Copy + PartialOrd + fmt::Show,
+    F: FnMut(&'a Graph, N) -> Edges,
     Edges: Iterator<(N, K)>,
-    F: FnMut(&'a Graph, N) -> Edges>(
-        graph: &'a Graph, start: N, mut edges: F) -> Vec<(N, K)>
 {
     let mut visited = HashSet::new();
     let mut scores = HashMap::new();
+    let mut predecessor = HashMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score: K = Default::default();
     scores.insert(start, zero_score);
@@ -114,16 +115,21 @@ pub fn dijkstra<
             let mut next_score = node_score + edge;
             match scores.entry(next) {
                 Occupied(ent) => if next_score < *ent.get() {
-                    *ent.into_mut() = next_score
+                    *ent.into_mut() = next_score;
+                    predecessor.insert(next, node);
                 } else {
                     next_score = *ent.get();
                 },
-                Vacant(ent) => { ent.set(next_score); }
+                Vacant(ent) => {
+                    ent.set(next_score);
+                    predecessor.insert(next, node);
+                }
             }
             visit_next.push(MinScored(next_score, next));
         }
         visited.insert(node);
     }
+    println!("{}", predecessor);
     scores.into_iter().collect()
 }
 
