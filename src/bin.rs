@@ -198,14 +198,22 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         self.nodes.keys()
     }
 
+    /// If the node `n` does not exist in the graph, returns an empty iterator.
     pub fn edges<'a>(&'a self, n: N) -> Items<'a, (N, E)>
     {
-        self.nodes[n].iter()
+        match self.nodes.get(&n) {
+            Some(edges) => edges.iter(),
+            None => [].iter(),
+        }
     }
 
+    /// If the node `n` does not exist in the graph, returns an empty iterator.
     pub fn edges_mut<'a>(&'a mut self, n: N) -> MutItems<'a, (N, E)>
     {
-        self.nodes[n].iter_mut()
+        match self.nodes.get_mut(&n) {
+            Some(edges) => edges.iter_mut(),
+            None => [].iter_mut(),
+        }
     }
 
     pub fn edge_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
@@ -363,11 +371,16 @@ impl<N: Copy + PartialOrd + Eq + Hash, E> Graph<N, E>
         self.nodes.keys()
     }
 
+    /// If the node `from` does not exist in the graph, returns an empty iterator.
     pub fn neighbors<'a>(&'a self, from: N) -> Items<'a, N>
     {
-        self.nodes[from].iter()
+        match self.nodes.get(&from) {
+            Some(neigh) => neigh.iter(),
+            None => [].iter(),
+        }
     }
 
+    /// If the node `from` does not exist in the graph, returns an empty iterator.
     pub fn edges<'a>(&'a self, from: N) -> Edges<'a, N, E>
     {
         Edges {
