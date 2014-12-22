@@ -174,9 +174,9 @@ where N: Copy + Hash + Eq
     }
 }
 
-impl<'a, N> GraphNeighbors<'a, ograph::NodeIndex, ograph::Neighbors<'a, N>> for OGraph<N>
+impl<'a, N, E> GraphNeighbors<'a, ograph::NodeIndex, ograph::Neighbors<'a, N, E>> for OGraph<N, E>
 {
-    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, N>
+    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, N, E>
     {
         OGraph::neighbors(self, n)
     }

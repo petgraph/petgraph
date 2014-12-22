@@ -175,12 +175,12 @@ fn main() {
     let a = og.add_node(0i);
     let b = og.add_node(1i);
     let c = og.add_node(2i);
-    let ed1 = og.add_edge(a, b);
-    let ed2 = og.add_edge(a, c);
-    og.add_edge(c, a);
-    og.add_edge(a, a);
-    og.add_edge(b, c);
-    og.add_edge(b, a);
+    let ed1 = og.add_edge(a, b, 0i);
+    let ed2 = og.add_edge(a, c, 1);
+    og.add_edge(c, a, 2);
+    og.add_edge(a, a, 3);
+    og.add_edge(b, c, 4);
+    og.add_edge(b, a, 5);
     println!("{}", og);
     println!("Remove {}", a);
     for no in BreadthFirst::new(&og, a) {
@@ -193,22 +193,22 @@ fn main() {
         println!("Visit {}", no);
     }
 
-    let mut g = OGraph::new();
+    let mut g = OGraph::<_, f32>::new();
     let a = g.add_node("A");
     let b = g.add_node("B");
     let c = g.add_node("C");
     let d = g.add_node("D");
     let e = g.add_node("E");
     let f = g.add_node("F");
-    g.add_edge(a, b); //, 7.);
-    g.add_edge(a, c); //, 9.);
-    g.add_edge(a, d); //, 14.);
-    g.add_edge(b, c); //, 10.);
-    g.add_edge(c, d); //, 2.);
-    g.add_edge(d, e); //, 9.);
-    g.add_edge(b, f); //, 15.);
-    g.add_edge(c, f); //, 11.);
-    g.add_edge(e, f); //, 6.);
+    g.add_edge(a, b, 7.);
+    g.add_edge(a, c, 9.);
+    g.add_edge(a, d, 14.);
+    g.add_edge(b, c, 10.);
+    g.add_edge(c, d, 2.);
+    g.add_edge(d, e, 9.);
+    g.add_edge(b, f, 15.);
+    g.add_edge(c, f, 11.);
+    g.add_edge(e, f, 6.);
     println!("{}", g);
     for no in BreadthFirst::new(&g, a) {
         println!("Visit {} = {}", no, g.node(no));

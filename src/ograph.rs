@@ -48,12 +48,12 @@ pub struct Edge<E> {
 ///
 /// Based upon the graph implementation in rustc.
 //#[deriving(Show)]
-pub struct OGraph<N> {
+pub struct OGraph<N, E> {
     nodes: Vec<Node<N>>,
-    edges: Vec<Edge<()>>,
+    edges: Vec<Edge<E>>,
 }
 
-impl<N: fmt::Show> fmt::Show for OGraph<N>
+impl<N: fmt::Show, E: fmt::Show> fmt::Show for OGraph<N, E>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for n in self.nodes.iter() {
@@ -112,10 +112,10 @@ fn walk_edge_list<E, F: FnMut(EdgeIndex, &mut Edge<E>) -> bool>(
     }
 }
 
-impl<N> OGraph<N>
+impl<N, E> OGraph<N, E>
 //where N: fmt::Show
 {
-    pub fn new() -> OGraph<N>
+    pub fn new() -> OGraph<N, E>
     {
         OGraph{nodes: Vec::new(), edges: Vec::new()}
     }
@@ -138,7 +138,7 @@ impl<N> OGraph<N>
         self.nodes.get_mut(a.0).map(|n| &mut n.data)
     }
 
-    pub fn neighbors(&self, a: NodeIndex) -> Neighbors<N>
+    pub fn neighbors(&self, a: NodeIndex) -> Neighbors<N, E>
     {
         Neighbors{
             graph: self,
@@ -149,14 +149,14 @@ impl<N> OGraph<N>
         }
     }
 
-    pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex) -> EdgeIndex
+    pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
     {
         let edge_idx = EdgeIndex(self.edges.len());
         match index_twice(self.nodes[mut], a.0, b.0) {
             Pair::None => panic!("NodeIndices out of bounds"),
             Pair::One(an) => {
                 let edge = Edge {
-                    data: (),
+                    data: data,
                     node: [a, b],
                     next: an.next,
                 };
@@ -167,7 +167,7 @@ impl<N> OGraph<N>
             Pair::Both(an, bn) => {
                 // a and b are different indices
                 let edge = Edge {
-                    data: (),
+                    data: data,
                     node: [a, b],
                     next: [an.next[0], bn.next[1]],
                 };
@@ -239,13 +239,13 @@ impl<N> OGraph<N>
         Some(node.data)
     }
 
-    pub fn edge_mut(&mut self, e: EdgeIndex) -> &mut Edge<()>
+    pub fn edge_mut(&mut self, e: EdgeIndex) -> &mut Edge<E>
     {
         &mut self.edges[e.0]
     }
 
     /// Remove an edge and return its edge weight, or None if it didn't exist.
-    pub fn remove_edge(&mut self, e: EdgeIndex) -> Option<()>
+    pub fn remove_edge(&mut self, e: EdgeIndex) -> Option<E>
     {
         // every edge is part of two lists,
         // outgoing and incoming edges.
@@ -283,7 +283,7 @@ impl<N> OGraph<N>
         self.remove_edge_adjust_indices(e)
     }
 
-    fn remove_edge_adjust_indices(&mut self, e: EdgeIndex) -> Option<()>
+    fn remove_edge_adjust_indices(&mut self, e: EdgeIndex) -> Option<E>
     {
         // swap_remove the edge -- only the removed edge
         // and the edge swapped into place are affected and need updating
@@ -318,12 +318,12 @@ impl<N> OGraph<N>
     }
 }
 
-pub struct Neighbors<'a, N: 'a> {
-    graph: &'a OGraph<N>,
+pub struct Neighbors<'a, N: 'a, E: 'a> {
+    graph: &'a OGraph<N, E>,
     next: EdgeIndex,
 }
 
-impl<'a, N> Iterator<NodeIndex> for Neighbors<'a, N>
+impl<'a, N, E> Iterator<NodeIndex> for Neighbors<'a, N, E>
 {
     fn next(&mut self) -> Option<NodeIndex>
     {
@@ -343,7 +343,7 @@ fn bench_inser(b: &mut test::Bencher) {
     let fst = og.add_node(0i);
     for x in range(1, 125) {
         let n = og.add_node(x);
-        og.add_edge(fst, n);
+        og.add_edge(fst, n, ());
     }
     b.iter(|| {
         og.add_node(1)
@@ -359,7 +359,7 @@ fn bench_remove(b: &mut test::Bencher) {
     let mut prev = fst;
     for x in range(1, 1250) {
         let n = og.add_node(x);
-        og.add_edge(prev, n);
+        og.add_edge(prev, n, ());
         prev = n;
     }
     //println!("{}", og);
