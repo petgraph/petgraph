@@ -27,25 +27,27 @@ pub trait Graphlike<'a, N>
 ///
 /// The node type must implement **PartialOrd** so that the implementation can
 /// properly order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
-#[deriving(Show, Clone)]
+#[deriving(Clone)]
 pub struct Graph<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<N>>,
     edges: HashMap<(N, N), E>,
 }
 
-/*
 impl<N: Eq + Hash + fmt::Show, E: fmt::Show> fmt::Show for Graph<N, E>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.gr.fmt(f)
+        self.nodes.fmt(f)
     }
 }
-*/
+
 #[inline]
 fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
 {
     if a <= b { (a, b) } else { (b, a) }
 }
+
+#[inline]
+fn copy<N: Copy>(n: &N) -> N { *n }
 
 impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
 {
@@ -151,7 +153,7 @@ impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
             match self.nodes.get(&from) {
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
-            }
+            }.map(copy)
         }
     }
 
@@ -233,12 +235,12 @@ impl<'a, N: 'a> Iterator<&'a N> for Nodes<'a, N>
 }
 
 pub struct Neighbors<'a, N: 'a> {
-    iter: Items<'a, N>
+    iter: Map<&'a N, N, Items<'a, N>, fn(&N) -> N>,
 }
 
-impl<'a, N: 'a> Iterator<&'a N> for Neighbors<'a, N>
+impl<'a, N> Iterator<N> for Neighbors<'a, N>
 {
-    iterator_methods!(&'a N);
+    iterator_methods!(N);
 }
 
 pub struct Edges<'a, N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a> {
@@ -254,7 +256,7 @@ impl<'a, N, E> Iterator<(N, &'a E)> for Edges<'a, N, E>
     {
         match self.iter.next() {
             None => None,
-            Some(&b) => {
+            Some(b) => {
                 let a = self.from;
                 match self.edges.get(&edge_key(a, b)) {
                     None => unreachable!(),
@@ -325,8 +327,8 @@ impl<'a, N, E> Iterator<N> for BreadthFirstTraversal<'a, N, E>
             }
 
             for succ in self.graph.neighbors(node) {
-                if !self.visited.contains(succ) {
-                    self.stack.push_back(*succ);
+                if !self.visited.contains(&succ) {
+                    self.stack.push_back(succ);
                 }
             }
 
@@ -355,8 +357,8 @@ impl<'a, N, E> Iterator<N> for DepthFirstTraversal<'a, N, E>
             }
 
             for succ in self.graph.neighbors(node) {
-                if !self.visited.contains(succ) {
-                    self.stack.push(*succ);
+                if !self.visited.contains(&succ) {
+                    self.stack.push(succ);
                 }
             }
 
