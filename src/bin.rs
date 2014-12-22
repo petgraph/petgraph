@@ -6,7 +6,6 @@ use std::default::Default;
 use arena::TypedArena;
 use std::cell::Cell;
 use std::hash::{Writer, Hash};
-use std::kinds;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::BinaryHeap;
@@ -15,10 +14,6 @@ use std::collections::hash_map::{
     Keys,
     Occupied,
     Vacant,
-};
-use std::slice::{
-    Items,
-    MutItems,
 };
 use std::fmt;
 

@@ -13,22 +13,29 @@ use std::slice::{
 };
 use std::fmt;
 
-/// **DiGraph** is a directed graph, with node values and edge weights.
+/// **DiGraph<N, E>** is a directed graph, with generic node values **N** and
+/// edge weights **E**.
 ///
-/// It uses an adjacency list representation, i.e. using *O(|N| + |E|)* space.
+/// It uses an adjacency list representation, i.e. using *O(|V| + |E|)* space.
+///
+/// The node type must be suitable as a hash table key (implementing **Eq
+/// + Hash**) as well as being a simple type.
+///
+#[deriving(Clone)]
 pub struct DiGraph<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<(N, E)>>,
 }
 
-impl<N: Eq + Hash + fmt::Show, E: fmt::Show> fmt::Show for DiGraph<N, E>
+impl<N, E> fmt::Show for DiGraph<N, E> where N: Eq + Hash + fmt::Show, E: fmt::Show
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.nodes.fmt(f)
     }
 }
 
-impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
+impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
 {
+    /// Create a new **DiGraph**.
     pub fn new() -> DiGraph<N, E>
     {
         DiGraph {
@@ -36,18 +43,19 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         }
     }
 
-    pub fn add_node(&mut self, node: N) -> N {
-        self.nodes.insert(node, Vec::new());
-        node
+    /// Add node **n** to the graph.
+    pub fn add_node(&mut self, n: N) -> N {
+        self.nodes.insert(n, Vec::new());
+        n
     }
 
-    /// Return true if node was removed.
-    pub fn remove_node(&mut self, node: N) -> bool {
-        match self.nodes.remove(&node) {
+    /// Return **true** if node **n** was removed.
+    pub fn remove_node(&mut self, n: N) -> bool {
+        match self.nodes.remove(&n) {
             None => false,
             Some(..) => {
                 for (_, edges) in self.nodes.iter_mut() {
-                    match edges.iter().position(|&(elt, _)| elt == node) {
+                    match edges.iter().position(|&(elt, _)| elt == n) {
                         // Use swap_remove because order doesn't matter
                         Some(index) => { edges.swap_remove(index); }
                         None => {}
@@ -58,13 +66,14 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         }
     }
 
-    pub fn contains_node(&self, node: N) -> bool {
-        self.nodes.contains_key(&node)
+    /// Return **true** if the node is contained in the graph.
+    pub fn contains_node(&self, n: N) -> bool {
+        self.nodes.contains_key(&n)
     }
 
-    /// Add directed edge from `a` to `b`.
+    /// Add a directed edge from **a** to **b** to the graph.
     ///
-    /// Return `true` if an edge was inserted.
+    /// Return **true** if edge did not previously exist.
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
     {
         // We need both lookups anyway to assert sanity, so
@@ -94,9 +103,9 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         }
     }
 
-    /// Remove edge from `a` to `b`.
+    /// Remove edge from **a** to **b** from the graph.
     ///
-    /// Return None if the edge didn't exist.
+    /// Return **None** if the edge didn't exist.
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E>
     {
         match self.nodes.entry(a) {
@@ -112,7 +121,7 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         }
     }
 
-    /// Return true if the directed edge from `a` to `b` exists
+    /// Return **true** if the directed edge from **a** to **b** is contained in the graph.
     pub fn contains_edge(&mut self, a: N, b: N) -> bool
     {
         match self.nodes.get(&a) {
@@ -121,39 +130,73 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         }
     }
 
+    /// Return an iterator over the nodes of the graph.
+    ///
+    /// Iterator element type is **&'a N**.
     pub fn nodes<'a>(&'a self) -> Nodes<'a, N, E>
     {
         Nodes{iter: self.nodes.keys()}
     }
 
-    pub fn neighbors(&self, n: N) -> Neighbors<N, E>
+    /// Return an iterator over the nodes that are connected with **from** by edges.
+    ///
+    /// If the node **from** does not exist in the graph, return an empty iterator.
+    ///
+    /// Iterator element type is **&'a N**.
+    pub fn neighbors(&self, from: N) -> Neighbors<N, E>
     {
         fn fst<'a, N: Copy, E>(t: &'a (N, E)) -> &'a N
         {
             &t.0
         }
 
-        Neighbors{iter: self.edges(n).map(fst)}
+        Neighbors{iter: self.edges(from).map(fst)}
     }
 
-    /// If the node **n** does not exist in the graph, return an empty iterator.
-    pub fn edges<'a>(&'a self, n: N) -> Items<'a, (N, E)>
+    /// Return an iterator over the nodes that are connected with **from** by edges,
+    /// paired with the edge weight.
+    ///
+    /// If the node **from** does not exist in the graph, return an empty iterator.
+    ///
+    /// Iterator element type is **&'a (N, E)**.
+    pub fn edges<'a>(&'a self, from: N) -> Items<'a, (N, E)>
     {
-        match self.nodes.get(&n) {
+        match self.nodes.get(&from) {
             Some(edges) => edges.iter(),
             None => [].iter(),
         }
     }
 
-    /// If the node **n** does not exist in the graph, return an empty iterator.
-    pub fn edges_mut<'a>(&'a mut self, n: N) -> MutItems<'a, (N, E)>
+    /// Return an iterator over the nodes that are connected with **from** by edges,
+    /// paired with the edge weight.
+    ///
+    /// If the node **from** does not exist in the graph, return an empty iterator.
+    ///
+    /// Iterator element type is **&'a mut (N, E)**.
+    pub fn edges_mut<'a>(&'a mut self, from: N) -> MutItems<'a, (N, E)>
     {
-        match self.nodes.get_mut(&n) {
+        match self.nodes.get_mut(&from) {
             Some(edges) => edges.iter_mut(),
             None => [].iter_mut(),
         }
     }
 
+    /// Return a reference to the edge weight connecting **a** with **b**, or
+    /// **None** if the edge does not exist in the graph.
+    pub fn edge<'a>(&'a self, a: N, b: N) -> Option<&'a E>
+    {
+        match self.nodes.get(&a) {
+            Some(succ) => {
+                succ.iter()
+                    .find(|&&(ref n, _)| n == &b)
+                    .map(|&(_, ref edge)| edge)
+            }
+            None => None,
+        }
+    }
+
+    /// Return a mutable reference to the edge weight connecting **a** with **b**, or
+    /// **None** if the edge does not exist in the graph.
     pub fn edge_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
     {
         match self.nodes.get_mut(&a) {
@@ -168,16 +211,19 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
 
 }
 
-impl<N: Copy + Eq + Hash, E: Clone> DiGraph<N, E>
+impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash, E: Clone
 {
-    /// Add edge from `a` to `b`.
+    /// Add a directed edges from **a** to **b** and from **b** to **a** to the
+    /// graph.
+    ///
+    /// Return **true** if at least one of the edges did not previously exist.
     pub fn add_diedge(&mut self, a: N, b: N, edge: E) -> bool
     {
         self.add_edge(a, b, edge.clone()) |
         self.add_edge(b, a, edge)
     }
 
-    /// Return a reverse graph.
+    /// Return a cloned graph with all edges reversed.
     pub fn reversed(&self) -> DiGraph<N, E>
     {
         let mut g = DiGraph::new();

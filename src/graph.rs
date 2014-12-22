@@ -1,11 +1,5 @@
-use std::default::Default;
-use arena::TypedArena;
-use std::cell::Cell;
-use std::hash::{Writer, Hash};
-use std::kinds;
+use std::hash::{Hash};
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::collections::BinaryHeap;
 use std::iter::Map;
 use std::collections::hash_map::{
     Keys,
@@ -66,30 +60,29 @@ impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
         n
     }
 
-    /// Return **true** if node was removed.
-    pub fn remove_node(&mut self, node: N) -> bool {
-        // remove node
-        let successors = match self.nodes.remove(&node) {
+    /// Return **true** if node **n** was removed.
+    pub fn remove_node(&mut self, n: N) -> bool {
+        let successors = match self.nodes.remove(&n) {
             None => return false,
             Some(sus) => sus,
         };
         for succ in successors.into_iter() {
             // remove all successor links
-            self.remove_single_edge(&succ, &node);
+            self.remove_single_edge(&succ, &n);
             // Remove all edge values
-            self.edges.remove(&edge_key(node, succ));
+            self.edges.remove(&edge_key(n, succ));
         }
         true
     }
 
     /// Return **true** if the node is contained in the graph.
-    pub fn contains_node(&self, node: N) -> bool {
-        self.nodes.contains_key(&node)
+    pub fn contains_node(&self, n: N) -> bool {
+        self.nodes.contains_key(&n)
     }
 
-    /// Add an edge connecting **a** and **b**.
+    /// Add an edge connecting **a** and **b** to the graph.
     ///
-    /// Return **true** if edge was new
+    /// Return **true** if edge did not previously exist.
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
     {
         // Use PartialOrd to order the edges
@@ -117,7 +110,7 @@ impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
         }
     }
 
-    /// Remove edge from **a** to **b**.
+    /// Remove edge from **a** to **b** from the graph.
     ///
     /// Return **None** if the edge didn't exist.
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E>
@@ -168,6 +161,13 @@ impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
             iter: self.neighbors(from),
             edges: &self.edges,
         }
+    }
+
+    /// Return a reference to the edge weight connecting **a** with **b**, or
+    /// **None** if the edge does not exist in the graph.
+    pub fn edge<'a>(&'a self, a: N, b: N) -> Option<&'a E>
+    {
+        self.edges.get(&edge_key(a, b))
     }
 
     /// Return a mutable reference to the edge weight connecting **a** with **b**, or
