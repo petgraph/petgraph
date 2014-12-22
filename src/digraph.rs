@@ -1,5 +1,4 @@
 
-use std::default::Default;
 use std::hash::{Hash};
 use std::collections::HashMap;
 use std::iter::Map;
@@ -127,6 +126,16 @@ impl<N: Copy + Eq + Hash, E> DiGraph<N, E>
         Nodes{iter: self.nodes.keys()}
     }
 
+    pub fn neighbors(&self, n: N) -> Neighbors<N, E>
+    {
+        fn fst<'a, N: Copy, E>(t: &'a (N, E)) -> &'a N
+        {
+            &t.0
+        }
+
+        Neighbors{iter: self.edges(n).map(fst)}
+    }
+
     /// If the node **n** does not exist in the graph, return an empty iterator.
     pub fn edges<'a>(&'a self, n: N) -> Items<'a, (N, E)>
     {
@@ -202,6 +211,17 @@ pub struct Nodes<'a, N: 'a, E: 'a> {
 }
 
 impl<'a, N: 'a, E: 'a> Iterator<&'a N> for Nodes<'a, N, E>
+{
+    iterator_methods!(&'a N)
+}
+
+type MapPtr<'a, From, To, Iter> = Map<&'a From, &'a To, Iter, for<'b> fn(&'b From) -> &'b To>;
+
+pub struct Neighbors<'a, N: 'a, E: 'a> {
+    iter: MapPtr<'a, (N, E), N, Items<'a, (N, E)>>,
+}
+
+impl<'a, N: 'a, E: 'a> Iterator<&'a N> for Neighbors<'a, N, E>
 {
     iterator_methods!(&'a N)
 }
