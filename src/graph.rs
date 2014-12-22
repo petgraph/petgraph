@@ -267,7 +267,7 @@ impl<'a, N, E> Iterator<(N, &'a E)> for Edges<'a, N, E>
 pub struct BFT<'a, G, N, F, Neighbors>
     where
         G: 'a,
-        N: 'a + Copy + PartialOrd + Eq + Hash,
+        N: 'a + Copy + Eq + Hash,
         F: FnMut(&G, N) -> Neighbors,
         Neighbors: Iterator<N>,
 {
@@ -280,7 +280,7 @@ pub struct BFT<'a, G, N, F, Neighbors>
 impl<'a, G, N, F, Neighbors> Iterator<N> for BFT<'a, G, N, F, Neighbors>
     where
         G: 'a,
-        N: 'a + Copy + PartialOrd + Eq + Hash,
+        N: 'a + Copy + Eq + Hash,
         F: FnMut(&G, N) -> Neighbors,
         Neighbors: Iterator<N>,
 {
