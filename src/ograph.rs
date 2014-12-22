@@ -85,6 +85,28 @@ pub fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<T>
     }
 }
 
+/// Iterate over an edge list.
+fn walk_edge_list<E, F: FnMut(EdgeIndex, &mut Edge<E>) -> bool>(
+    fst: EdgeIndex, edges: &mut [Edge<E>], d: Dir, mut f: F)
+{
+    let k = d as uint;
+    let mut cur = fst;
+    loop {
+        match edges.get_mut(cur.0) {
+            None => {
+                debug_assert!(cur == EdgeEnd);
+                break;
+            }
+            Some(curedge) => {
+                if !f(cur, curedge) {
+                    break;
+                }
+                cur = curedge.next[k];
+            }
+        }
+    }
+}
+
 impl<N> OGraph<N>
 //where N: fmt::Show
 {
@@ -202,23 +224,6 @@ impl<N> OGraph<N>
 
     pub fn remove_edge(&mut self, e: EdgeIndex)
     {
-        fn update_edge_list(replace: EdgeIndex, fst: EdgeIndex, edges: &mut [Edge<()>], d: Dir) {
-            debug_assert!(fst != replace);
-            let k = d as uint;
-            let edge_next = edges[replace.0].next[k];
-            // walk through edge list
-            let mut cur = fst;
-            while cur != EdgeEnd {
-                let curedge = &mut edges[cur.0];
-                if curedge.next[k] == replace {
-                    //println!("Have to replace link in {}", curedge);
-                    curedge.next[k] = edge_next;
-                    break
-                } else {
-                    cur = curedge.next[k];
-                }
-            }
-        }
         // every edge is part of two lists,
         // outgoing and incoming edges.
         // Remove it from both
@@ -228,22 +233,38 @@ impl<N> OGraph<N>
         };
         {
             // List out from A
-            let node = &mut self.nodes[edge_a.0];
+            let node = match self.nodes.get_mut(edge_a.0) {
+                Some(r) => r,
+                None => { debug_assert!(false, "Edge.A not in nodes"); return }
+            };
             let fst = node.next[0];
             if fst == e {
                 node.next[0] = edge_next[0];
             } else {
-                update_edge_list(e, fst, self.edges[mut], Dir::Out);
+                walk_edge_list(fst, self.edges[mut], Dir::Out, |eidx, curedge| {
+                    if curedge.next[0] == e {
+                        curedge.next[0] = edge_next[0];
+                        false
+                    } else { true }
+                });
             }
         }
         {
             // List in to B
-            let node = &mut self.nodes[edge_b.0];
+            let node = match self.nodes.get_mut(edge_b.0) {
+                Some(r) => r,
+                None => { debug_assert!(false, "Edge.B not in nodes"); return }
+            };
             let fst = node.next[1];
             if fst == e {
                 node.next[1] = edge_next[1];
             } else {
-                update_edge_list(e, fst, self.edges[mut], Dir::In);
+                walk_edge_list(fst, self.edges[mut], Dir::In, |eidx, curedge| {
+                    if curedge.next[1] == e {
+                        curedge.next[1] = edge_next[1];
+                        false
+                    } else { true }
+                });
             }
         }
         self.remove_edge_adjust_indices(e);
@@ -262,22 +283,6 @@ impl<N> OGraph<N>
         };
         let swapped_e = EdgeIndex(self.edges.len());
 
-        fn update_edge_list(replace: EdgeIndex, fst: EdgeIndex, new: EdgeIndex, edges: &mut [Edge<()>], d: Dir) {
-            debug_assert!(fst != replace);
-            let k = d as uint;
-            // walk through edge list
-            let mut cur = fst;
-            while cur != EdgeEnd {
-                let curedge = &mut edges[cur.0];
-                if curedge.next[k] == replace {
-                    //println!("Have to replace link in {}", curedge);
-                    curedge.next[k] = new;
-                    break
-                } else {
-                    cur = curedge.next[k];
-                }
-            }
-        }
         {
             // List out from A
             let node = &mut self.nodes[swap_a.0];
@@ -285,7 +290,12 @@ impl<N> OGraph<N>
             if fst == swapped_e {
                 node.next[0] = e;
             } else {
-                update_edge_list(swapped_e, fst, e, self.edges[mut], Dir::Out);
+                walk_edge_list(fst, self.edges[mut], Dir::Out, |eidx, curedge| {
+                    if curedge.next[0] == swapped_e {
+                        curedge.next[0] = e;
+                        false
+                    } else { true }
+                });
             }
         }
         {
@@ -295,7 +305,12 @@ impl<N> OGraph<N>
             if fst == swapped_e {
                 node.next[1] = e;
             } else {
-                update_edge_list(swapped_e, fst, e, self.edges[mut], Dir::In);
+                walk_edge_list(fst, self.edges[mut], Dir::In, |eidx, curedge| {
+                    if curedge.next[1] == swapped_e {
+                        curedge.next[1] = e;
+                        false
+                    } else { true }
+                });
             }
         }
         // All that refer to the swapped edge need to update.
