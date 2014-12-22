@@ -249,18 +249,16 @@ impl<N> OGraph<N>
 
     fn remove_edge_adjust_indices(&mut self, e: EdgeIndex) -> Option<()>
     {
-        // Edge lists are fine, so remove the edge and adjust all edge indices
+        // Edge lists are fine, so remove the edge and adjust all edge indices in nodes
         let edge_data = self.edges.remove(e.0).unwrap().data;
-        for node in self.nodes.iter_mut() {
-            for &k in [0u, 1].iter() {
+        for &k in [0u, 1].iter() {
+            for node in self.nodes.iter_mut() {
                 debug_assert!(node.next[k] != e);
                 if node.next[k] != EdgeEnd && node.next[k] > e {
                     node.next[k].0 -= 1;
                 }
             }
-        }
-        for edge in self.edges.iter_mut() {
-            for &k in [0u, 1].iter() {
+            for edge in self.edges.iter_mut() {
                 debug_assert!(edge.next[k] != e);
                 if edge.next[k] != EdgeEnd && edge.next[k] > e {
                     edge.next[k].0 -= 1;
@@ -315,6 +313,7 @@ fn bench_remove(b: &mut test::Bencher) {
         og.add_edge(prev, n);
         prev = n;
     }
+    //println!("{}", og);
     b.iter(|| {
         og.remove_node(fst)
     })
