@@ -1,0 +1,9 @@
+[package]
+
+name = "refgraph"
+version = "0.0.1"
+authors = ["bluss"]
+
+[[bin]]
+
+name = "bin"
