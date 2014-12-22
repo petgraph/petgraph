@@ -15,9 +15,11 @@ use std::fmt;
 
 /// **Graph\<N, E\>** is a regular graph, with generic node values **N** and edge weights **E**.
 ///
-/// It uses an adjacency list representation, i.e. using *O(|V| + |E|)* space.
+/// It uses an adjacency list representation, i.e. using *O(|N| + |E|)* space.
 ///
-/// The node type must be suitable as a hash table key (Implementing **Eq + Hash**)
+/// The node type must be a simple copyable type and implement **Copy**.
+///
+/// The node type must be suitable as a hash table key (implementing **Eq + Hash**)
 /// as well as being a simple type.
 ///
 /// The node type must implement **PartialOrd** so that the implementation can

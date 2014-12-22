@@ -81,7 +81,7 @@ fn make_graph() {
     f.set("F'");
 
     println!("Scores= {}", 
-        copygraph::dijkstra(&g, a, |gr, n| gr.edges(n).map(|&x|x))
+        copygraph::dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
     );
 
     //let x = 

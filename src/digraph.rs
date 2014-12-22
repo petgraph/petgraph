@@ -16,7 +16,9 @@ use std::fmt;
 /// **DiGraph\<N, E\>** is a directed graph, with generic node values **N** and
 /// edge weights **E**.
 ///
-/// It uses an adjacency list representation, i.e. using *O(|V| + |E|)* space.
+/// It uses an adjacency list representation, i.e. using *O(|N| + |E|)* space.
+///
+/// The node type must be a simple copyable type and implement **Copy**.
 ///
 /// The node type must be suitable as a hash table key (implementing **Eq
 /// + Hash**) as well as being a simple type.
@@ -150,7 +152,12 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
             t.0
         }
 
-        Neighbors{iter: self.edges(from).map(fst)}
+        Neighbors{iter:
+            match self.nodes.get(&from) {
+                Some(edges) => edges.iter(),
+                None => [].iter(),
+            }.map(fst)
+        }
     }
 
     /// Return an iterator over the nodes that are connected with **from** by edges,
@@ -158,12 +165,20 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
     ///
     /// If the node **from** does not exist in the graph, return an empty iterator.
     ///
-    /// Iterator element type is **&'a (N, E)**.
-    pub fn edges<'a>(&'a self, from: N) -> Items<'a, (N, E)>
+    /// Iterator element type is **(N, &'a E)**.
+    pub fn edges<'a>(&'a self, from: N) -> Edges<'a, N, E,>
     {
-        match self.nodes.get(&from) {
-            Some(edges) => edges.iter(),
-            None => [].iter(),
+        fn extract<N: Copy, E>(t: &(N, E)) -> (N, &E)
+        {
+            let (x, ref e) = *t;
+            (x, e)
+        }
+
+        Edges{iter:
+            match self.nodes.get(&from) {
+                Some(edges) => edges.iter(),
+                None => [].iter(),
+            }.map(extract)
         }
     }
 
@@ -228,7 +243,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash, E: Clone
     {
         let mut g = DiGraph::new();
         for &node in self.nodes() {
-            for &(other, ref edge) in self.edges(node) {
+            for (other, edge) in self.edges(node) {
                 g.add_edge(other, node, edge.clone());
             }
         }
@@ -268,5 +283,14 @@ pub struct Neighbors<'a, N: 'a, E: 'a> {
 impl<'a, N: 'a, E: 'a> Iterator<N> for Neighbors<'a, N, E>
 {
     iterator_methods!(N);
+}
+
+pub struct Edges<'a, N: 'a, E: 'a> {
+    iter: Map<&'a (N, E), (N, &'a E), Items<'a, (N, E)>, fn(&(N, E)) -> (N, &E)>,
+}
+
+impl<'a, N: 'a, E: 'a> Iterator<(N, &'a E)> for Edges<'a, N, E>
+{
+    iterator_methods!((N, &'a E));
 }
 
