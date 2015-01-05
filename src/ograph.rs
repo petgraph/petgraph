@@ -606,7 +606,7 @@ pub struct EdgesMut<'a, E: 'a> {
 
 impl<'a, E> EdgesMut<'a, E>
 {
-    fn new(edges: &mut [Edge<E>], next: EdgeIndex, dir: Dir) -> EdgesMut<E>
+    fn new(edges: &'a mut [Edge<E>], next: EdgeIndex, dir: Dir) -> Self
     {
         EdgesMut{
             edges: edges,
