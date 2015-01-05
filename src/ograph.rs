@@ -1,5 +1,8 @@
 use std::hash::{Hash};
+use std::collections::HashSet;
 use std::fmt;
+use std::slice;
+use std::iter;
 use test;
 
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
@@ -123,6 +126,12 @@ impl<N, E> OGraph<N, E>
         OGraph{nodes: Vec::new(), edges: Vec::new()}
     }
 
+    /// Return the number of nodes (vertices) in the graph.
+    pub fn node_count(&self) -> uint
+    {
+        self.nodes.len()
+    }
+
     /// Add a node with weight **data** to the graph.
     pub fn add_node(&mut self, data: N) -> NodeIndex
     {
@@ -190,6 +199,22 @@ impl<N, E> OGraph<N, E>
             next: match self.nodes.get(a.0) {
                 None => [EdgeEnd, EdgeEnd],
                 Some(n) => n.next,
+            }
+        }
+    }
+    
+    /// Return an iterator over nodes that have an edge to **a**.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is **(NodeIndex, &'a E)**.
+    pub fn in_edges(&self, a: NodeIndex) -> EdgesIn<N, E>
+    {
+        EdgesIn{
+            graph: self,
+            next: match self.nodes.get(a.0) {
+                None => EdgeEnd,
+                Some(n) => n.next[1],
             }
         }
     }
@@ -436,6 +461,65 @@ impl<N, E> OGraph<N, E>
             }
         }
     }
+
+    /// Return an iterator over the nodes without incoming edges
+    pub fn initials(&self) -> Initials<N>
+    {
+        Initials{iter: self.nodes.iter().enumerate()}
+    }
+}
+
+pub struct Initials<'a, N: 'a> {
+    iter: iter::Enumerate<slice::Iter<'a, Node<N>>>,
+}
+
+impl<'a, N: 'a> Iterator<NodeIndex> for Initials<'a, N>
+{
+    fn next(&mut self) -> Option<NodeIndex>
+    {
+        loop {
+            match self.iter.next() {
+                None => return None,
+                Some((index, node)) if node.next[1] == EdgeEnd => {
+                    return Some(NodeIndex(index))
+                },
+                _ => continue,
+            }
+        }
+    }
+}
+
+/// Perform a topological sort of the graph.
+///
+/// Return a vector of nodes in topological order: each node is ordered
+/// before its successors.
+///
+/// If the returned vec contains less than all the nodes of the graph, then
+/// the graph was cyclic.
+pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
+{
+    let mut order = Vec::with_capacity(g.node_count());
+    let mut tovisit = HashSet::new();
+    let mut ordered = HashSet::new();
+
+    // find all initial nodes
+    tovisit.extend(g.initials());
+
+    // Take an unvisited element and 
+    while let Some(&nix) = tovisit.iter().next() {
+        tovisit.remove(&nix);
+        order.push(nix);
+        ordered.insert(nix);
+        for neigh in g.neighbors(nix) {
+            // Look at each neighbor, and those that only have incoming edges
+            // from the already ordered list, they are the next to visit.
+            if g.in_edges(neigh).all(|(b, _)| ordered.contains(&b)) {
+                tovisit.insert(neigh);
+            }
+        }
+    }
+
+    order
 }
 
 /// Iterator over the neighbors of a node.
@@ -506,6 +590,26 @@ impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for EdgesBoth<'a, N, E>
         }
     }
 }
+
+pub struct EdgesIn<'a, N: 'a, E: 'a> {
+    graph: &'a OGraph<N, E>,
+    next: EdgeIndex,
+}
+
+impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for EdgesIn<'a, N, E>
+{
+    fn next(&mut self) -> Option<(NodeIndex, &'a E)>
+    {
+        match self.graph.edges.get(self.next.0) {
+            None => None,
+            Some(edge) => {
+                self.next = edge.next[1];
+                Some((edge.node[0], &edge.data))
+            }
+        }
+    }
+}
+
 #[bench]
 fn bench_inser(b: &mut test::Bencher) {
     let mut og = OGraph::new();

@@ -6,7 +6,10 @@ extern crate petgraph;
 use arena::TypedArena;
 use std::cell::Cell;
 
-use petgraph::ograph::OGraph;
+use petgraph::ograph::{
+    OGraph,
+    toposort,
+};
 
 pub use petgraph::{
     MinScored,
@@ -229,4 +232,6 @@ fn main() {
     println!("Scores= {}", 
         dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
     );
+
+    println!("{}", toposort(&g));
 }
