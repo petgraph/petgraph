@@ -30,7 +30,7 @@ pub mod graph;
 pub mod ograph;
 
 /// A reference that is hashed and compared by its pointer value.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct Ptr<'b, T: 'b>(pub &'b T);
 
 impl<'b, T> Copy for Ptr<'b, T> {}
@@ -138,7 +138,7 @@ where
     scores
 }
 
-#[deriving(Show)]
+#[derive(Show)]
 pub struct Node<T>(pub T);
 
 pub struct NodeCell<T: Copy>(pub Cell<T>);
@@ -193,7 +193,7 @@ impl<'a, N, E> GraphNeighbors<'a, ograph::NodeIndex> for OGraph<N, E>
 }
 
 /// A breadth first traversal of a graph.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct BreadthFirst<'a, G, N>
     where
         G: 'a,
@@ -248,7 +248,7 @@ impl<'a, G, N> Iterator for BreadthFirst<'a, G, N>
 }
 
 /// A depth first traversal of a graph.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct DepthFirst<'a, G, N>
     where
         G: 'a,

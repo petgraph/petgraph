@@ -24,7 +24,7 @@ use std::fmt;
 ///
 /// The node type must implement **PartialOrd** so that the implementation can
 /// properly order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct Graph<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<N>>,
     edges: HashMap<(N, N), E>,

@@ -7,16 +7,16 @@ use test;
 
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
 // should be lifetimed just like pointers.
-#[deriving(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
+#[derive(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
 pub struct NodeIndex(uint);
-#[deriving(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
+#[derive(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
 pub struct EdgeIndex(uint);
 
 pub const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
 //const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
 /// Index into the NodeIndex and EdgeIndex arrays
-#[deriving(Copy, Clone, Show, PartialEq)]
+#[derive(Copy, Clone, Show, PartialEq)]
 pub enum Dir {
     Out = 0,
     In = 1
@@ -24,7 +24,7 @@ pub enum Dir {
 
 const DIRECTIONS: [Dir; 2] = [Dir::Out, Dir::In];
 
-#[deriving(Show)]
+#[derive(Show)]
 pub struct Node<N> {
     pub data: N,
     /// Next edge in outgoing and incoming edge lists.
@@ -39,7 +39,7 @@ impl<N> Node<N>
     }
 }
 
-#[deriving(Show, Copy)]
+#[derive(Show, Copy)]
 pub struct Edge<E> {
     pub data: E,
     /// Next edge in outgoing and incoming edge lists.
@@ -78,7 +78,7 @@ impl<E> Edge<E>
 /// all indices stable, but removing a node will force another node to shift its index.
 ///
 /// Removing an edge also shifts the index of another edge.
-//#[deriving(Show)]
+//#[derive(Show)]
 pub struct OGraph<N, E> {
     nodes: Vec<Node<N>>,
     edges: Vec<Edge<E>>,

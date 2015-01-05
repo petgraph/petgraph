@@ -25,7 +25,7 @@ use std::fmt;
 /// The node type must be suitable as a hash table key (implementing **Eq
 /// + Hash**) as well as being a simple type.
 ///
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct DiGraph<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<(N, E)>>,
 }
