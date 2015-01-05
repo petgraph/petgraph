@@ -420,12 +420,13 @@ impl<N, E> OGraph<N, E>
         match self.nodes.get(a.0) {
             None => None,
             Some(node) => {
-                let edix = node.next[0];
+                let mut edix = node.next[0];
                 while edix != EdgeEnd {
                     let edge = &self.edges[edix.0];
                     if edge.node[1] == b {
                         return Some(edix)
                     }
+                    edix = edge.next[0];
                 }
                 None
             }
