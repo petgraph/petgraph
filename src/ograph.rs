@@ -257,7 +257,7 @@ impl<N, E> OGraph<N, E>
     pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
     {
         let edge_idx = EdgeIndex(self.edges.len());
-        match index_twice(self.nodes[mut], a.0, b.0) {
+        match index_twice(self.nodes.as_mut_slice(), a.0, b.0) {
             Pair::None => panic!("NodeIndices out of bounds"),
             Pair::One(an) => {
                 let edge = Edge {
@@ -337,7 +337,7 @@ impl<N, E> OGraph<N, E>
         // Adjust the starts of the out edges, and ends of the in edges.
         for &d in DIRECTIONS.iter() {
             let k = d as uint;
-            for (_, curedge) in EdgesMut::new(self.edges[mut], swap_edges[k], d) {
+            for (_, curedge) in EdgesMut::new(self.edges.as_mut_slice(), swap_edges[k], d) {
                 debug_assert!(curedge.node[k] == old_index);
                 curedge.node[k] = new_index;
             }
@@ -370,7 +370,7 @@ impl<N, E> OGraph<N, E>
                 //println!("Updating first edge 0 for node {}, set to {}", edge_node[0], edge_next[0]);
                 node.next[k] = edge_next[k];
             } else {
-                for (_i, curedge) in EdgesMut::new(self.edges[mut], fst, d) {
+                for (_i, curedge) in EdgesMut::new(self.edges.as_mut_slice(), fst, d) {
                     if curedge.next[k] == e {
                         curedge.next[k] = edge_next[k];
                     }
