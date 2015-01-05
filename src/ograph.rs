@@ -174,6 +174,23 @@ impl<N, E> OGraph<N, E>
         }
     }
 
+    /// Return an iterator of all neighbors that have an edge to **a** from them.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is **NodeIndex**.
+    pub fn direct_predecessors(&self, a: NodeIndex) -> Neighbors<E>
+    {
+        Neighbors{
+            edges: &*self.edges,
+            dir: Dir::In,
+            next: match self.nodes.get(a.0) {
+                None => EdgeEnd,
+                Some(n) => n.next[1],
+            }
+        }
+    }
+
     /// Return an iterator over the neighbors of node **a**, paired with their respective edge
     /// weights.
     ///
@@ -515,7 +532,7 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
         for neigh in g.neighbors(nix) {
             // Look at each neighbor, and those that only have incoming edges
             // from the already ordered list, they are the next to visit.
-            if g.in_edges(neigh).all(|(b, _)| ordered.contains(&b)) {
+            if g.direct_predecessors(neigh).all(|b| ordered.contains(&b)) {
                 tovisit.insert(neigh);
             }
         }
