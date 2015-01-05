@@ -8,6 +8,7 @@
 ///
 /// **Note:** MinScored implements a total order (**Ord**), so that it is possible
 /// to use float types as scores.
+#[deriving(Copy, Clone, Show)]
 pub struct MinScored<K, T>(pub K, pub T);
 
 impl<K: PartialEq, T> PartialEq for MinScored<K, T> {
