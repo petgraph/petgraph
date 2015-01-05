@@ -162,10 +162,11 @@ impl<N, E> OGraph<N, E>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **NodeIndex**.
-    pub fn neighbors(&self, a: NodeIndex) -> Neighbors<N, E>
+    pub fn neighbors(&self, a: NodeIndex) -> Neighbors<E>
     {
         Neighbors{
-            graph: self,
+            edges: &*self.edges,
+            dir: Dir::Out,
             next: match self.nodes.get(a.0) {
                 None => EdgeEnd,
                 Some(n) => n.next[0],
@@ -526,20 +527,22 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is **NodeIndex**.
-pub struct Neighbors<'a, N: 'a, E: 'a> {
-    graph: &'a OGraph<N, E>,
+pub struct Neighbors<'a, E: 'a> {
+    edges: &'a [Edge<E>],
     next: EdgeIndex,
+    dir: Dir,
 }
 
-impl<'a, N, E> Iterator<NodeIndex> for Neighbors<'a, N, E>
+impl<'a, E> Iterator<NodeIndex> for Neighbors<'a, E>
 {
     fn next(&mut self) -> Option<NodeIndex>
     {
-        match self.graph.edges.get(self.next.0) {
+        let k = self.dir as uint;
+        match self.edges.get(self.next.0) {
             None => None,
             Some(edge) => {
-                self.next = edge.next[0];
-                Some(edge.node[1])
+                self.next = edge.next[k];
+                Some(edge.node[1-k])
             }
         }
     }
