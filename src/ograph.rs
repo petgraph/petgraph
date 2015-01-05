@@ -12,7 +12,7 @@ pub struct NodeIndex(uint);
 #[deriving(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
 pub struct EdgeIndex(uint);
 
-const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
+pub const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
 //const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
 /// Index into the NodeIndex and EdgeIndex arrays
@@ -31,6 +31,14 @@ pub struct Node<N> {
     next: [EdgeIndex, ..2],
 }
 
+impl<N> Node<N>
+{
+    pub fn next_edges(&self) -> [EdgeIndex, ..2]
+    {
+        self.next
+    }
+}
+
 #[deriving(Show, Copy)]
 pub struct Edge<E> {
     pub data: E,
@@ -38,6 +46,24 @@ pub struct Edge<E> {
     next: [EdgeIndex, ..2],
     /// Start and End node index
     node: [NodeIndex, ..2],
+}
+
+impl<E> Edge<E>
+{
+    pub fn next_edges(&self) -> [EdgeIndex, ..2]
+    {
+        self.next
+    }
+
+    pub fn source(&self) -> NodeIndex
+    {
+        self.node[0]
+    }
+
+    pub fn target(&self) -> NodeIndex
+    {
+        self.node[1]
+    }
 }
 
 /// **OGraph\<N, E\>** is a directed graph using an adjacency list representation.
