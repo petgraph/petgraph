@@ -387,6 +387,58 @@ impl<N, E> OGraph<N, E>
             }
         }
     }
+
+    pub fn first_out_edge(&self, a: NodeIndex) -> Option<EdgeIndex>
+    {
+        match self.nodes.get(a.0) {
+            None => None,
+            Some(node) => {
+                let edix = node.next[0];
+                if edix == EdgeEnd {
+                    None
+                } else { Some(edix) }
+            }
+        }
+    }
+
+    pub fn next_out_edge(&self, e: EdgeIndex) -> Option<EdgeIndex>
+    {
+        match self.edges.get(e.0) {
+            None => None,
+            Some(node) => {
+                let edix = node.next[0];
+                if edix == EdgeEnd {
+                    None
+                } else { Some(edix) }
+            }
+        }
+    }
+
+    pub fn first_in_edge(&self, a: NodeIndex) -> Option<EdgeIndex>
+    {
+        match self.nodes.get(a.0) {
+            None => None,
+            Some(node) => {
+                let edix = node.next[1];
+                if edix == EdgeEnd {
+                    None
+                } else { Some(edix) }
+            }
+        }
+    }
+
+    pub fn next_in_edge(&self, e: EdgeIndex) -> Option<EdgeIndex>
+    {
+        match self.edges.get(e.0) {
+            None => None,
+            Some(node) => {
+                let edix = node.next[1];
+                if edix == EdgeEnd {
+                    None
+                } else { Some(edix) }
+            }
+        }
+    }
 }
 
 /// Iterator over the neighbors of a node.
