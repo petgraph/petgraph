@@ -11,14 +11,14 @@
 #[deriving(Copy, Clone, Show)]
 pub struct MinScored<K, T>(pub K, pub T);
 
-impl<K: PartialEq, T> PartialEq for MinScored<K, T> {
+impl<K: PartialOrd, T> PartialEq for MinScored<K, T> {
     #[inline]
     fn eq(&self, other: &MinScored<K, T>) -> bool {
-        self.0 == other.0
+        self.cmp(other) == Equal
     }
 }
 
-impl<K: PartialEq, T> Eq for MinScored<K, T> {}
+impl<K: PartialOrd, T> Eq for MinScored<K, T> {}
 
 impl<K: PartialOrd, T> PartialOrd for MinScored<K, T> {
     #[inline]
@@ -27,7 +27,7 @@ impl<K: PartialOrd, T> PartialOrd for MinScored<K, T> {
     }
 }
 
-impl<K: PartialOrd + PartialEq, T> Ord for MinScored<K, T> {
+impl<K: PartialOrd, T> Ord for MinScored<K, T> {
     #[inline]
     fn cmp(&self, other: &MinScored<K, T>) -> Ordering {
         let a = &self.0;
