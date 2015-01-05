@@ -121,28 +121,6 @@ pub fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<T>
     }
 }
 
-/// Iterate over an edge list.
-fn walk_edge_list<E, F: FnMut(EdgeIndex, &mut Edge<E>) -> bool>(
-    fst: EdgeIndex, edges: &mut [Edge<E>], d: Dir, mut f: F)
-{
-    let k = d as uint;
-    let mut cur = fst;
-    loop {
-        match edges.get_mut(cur.0) {
-            None => {
-                debug_assert!(cur == EdgeEnd);
-                break;
-            }
-            Some(curedge) => {
-                if !f(cur, curedge) {
-                    break;
-                }
-                cur = curedge.next[k];
-            }
-        }
-    }
-}
-
 impl<N, E> OGraph<N, E>
 //where N: fmt::Show
 {
@@ -331,11 +309,10 @@ impl<N, E> OGraph<N, E>
         // Adjust the starts of the out edges, and ends of the in edges.
         for &d in DIRECTIONS.iter() {
             let k = d as uint;
-            walk_edge_list(swap_edges[k], self.edges[mut], d, |_, curedge| {
+            for (_, curedge) in EdgesMut::new(self.edges[mut], swap_edges[k], d) {
                 debug_assert!(curedge.node[k] == old_index);
                 curedge.node[k] = new_index;
-                true
-            });
+            }
         }
         Some(node.data)
     }
@@ -373,12 +350,11 @@ impl<N, E> OGraph<N, E>
                 //println!("Updating first edge 0 for node {}, set to {}", edge_node[0], edge_next[0]);
                 node.next[k] = edge_next[k];
             } else {
-                walk_edge_list(fst, self.edges[mut], d, |_i, curedge| {
+                for (_i, curedge) in EdgesMut::new(self.edges[mut], fst, d) {
                     if curedge.next[k] == e {
                         curedge.next[k] = edge_next[k];
-                        false
-                    } else { true }
-                });
+                    }
+                }
             }
         }
         self.remove_edge_adjust_indices(e)
@@ -406,12 +382,11 @@ impl<N, E> OGraph<N, E>
             if fst == swapped_e {
                 node.next[k] = e;
             } else {
-                walk_edge_list(fst, self.edges[mut], d, |_i, curedge| {
+                for (_i, curedge) in EdgesMut::new(self.edges[mut], fst, d) {
                     if curedge.next[k] == swapped_e {
                         curedge.next[k] = e;
-                        false
-                    } else { true }
-                });
+                    }
+                }
             }
         }
         let edge_data = edge.data;
@@ -584,6 +559,50 @@ impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for Edges<'a, N, E>
             Some(edge) => {
                 self.next = edge.next[0];
                 Some((edge.node[1], &edge.data))
+            }
+        }
+    }
+}
+
+pub struct EdgesMut<'a, E: 'a> {
+    edges: &'a mut [Edge<E>],
+    next: EdgeIndex,
+    dir: Dir,
+}
+
+impl<'a, E> EdgesMut<'a, E>
+{
+    fn new(edges: &mut [Edge<E>], next: EdgeIndex, dir: Dir) -> EdgesMut<E>
+    {
+        EdgesMut{
+            edges: edges,
+            next: next,
+            dir: dir
+        }
+    }
+}
+
+impl<'a, E> Iterator<(EdgeIndex, &'a mut Edge<E>)> for EdgesMut<'a, E>
+{
+    fn next(&mut self) -> Option<(EdgeIndex, &'a mut Edge<E>)>
+    {
+        let this_index = self.next;
+        let k = self.dir as uint;
+        match self.edges.get_mut(self.next.0) {
+            None => None,
+            Some(edge) => {
+                self.next = edge.next[k];
+                // We cannot in safe rust, derive a &'a mut from &self,
+                // because the life of &self is shorter than 'a.
+                //
+                // We guarantee that this will not allow two pointers to the same
+                // edge, and use unsafe to extend the life.
+                //
+                // See http://stackoverflow.com/a/25748645/3616050
+                let long_life_edge = unsafe {
+                    &mut *(edge as *mut _)
+                };
+                Some((this_index, long_life_edge))
             }
         }
     }
