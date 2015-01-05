@@ -17,7 +17,7 @@ pub const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
 
 /// Index into the NodeIndex and EdgeIndex arrays
 #[deriving(Copy, Clone, Show, PartialEq)]
-enum Dir {
+pub enum Dir {
     Out = 0,
     In = 1
 }
@@ -33,9 +33,9 @@ pub struct Node<N> {
 
 impl<N> Node<N>
 {
-    pub fn next_edges(&self) -> [EdgeIndex, ..2]
+    pub fn next_edge(&self, dir: Dir) -> EdgeIndex
     {
-        self.next
+        self.next[dir as uint]
     }
 }
 
@@ -50,9 +50,9 @@ pub struct Edge<E> {
 
 impl<E> Edge<E>
 {
-    pub fn next_edges(&self) -> [EdgeIndex, ..2]
+    pub fn next_edge(&self, dir: Dir) -> EdgeIndex
     {
-        self.next
+        self.next[dir as uint]
     }
 
     pub fn source(&self) -> NodeIndex
@@ -97,13 +97,13 @@ impl<N: fmt::Show, E: fmt::Show> fmt::Show for OGraph<N, E>
     }
 }
 
-pub enum Pair<'a, T: 'a> {
+enum Pair<'a, T: 'a> {
     Both(&'a mut T, &'a mut T),
     One(&'a mut T),
     None,
 }
 
-pub fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<T>
+fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<T>
 {
     if a == b {
         slc.get_mut(a).map_or(Pair::None, Pair::One)
@@ -205,10 +205,11 @@ impl<N, E> OGraph<N, E>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **(NodeIndex, &'a E)**.
-    pub fn edges(&self, a: NodeIndex) -> Edges<N, E>
+    pub fn edges(&self, a: NodeIndex) -> Edges<E>
     {
         Edges{
-            graph: self,
+            edges: &*self.edges,
+            dir: Dir::Out,
             next: match self.nodes.get(a.0) {
                 None => EdgeEnd,
                 Some(n) => n.next[0],
@@ -238,10 +239,11 @@ impl<N, E> OGraph<N, E>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **(NodeIndex, &'a E)**.
-    pub fn in_edges(&self, a: NodeIndex) -> EdgesIn<N, E>
+    pub fn in_edges(&self, a: NodeIndex) -> Edges<E>
     {
-        EdgesIn{
-            graph: self,
+        Edges{
+            edges: &*self.edges,
+            dir: Dir::In,
             next: match self.nodes.get(a.0) {
                 None => EdgeEnd,
                 Some(n) => n.next[1],
@@ -575,22 +577,31 @@ impl<'a, E> Iterator<NodeIndex> for Neighbors<'a, E>
     }
 }
 
-pub struct Edges<'a, N: 'a, E: 'a> {
-    graph: &'a OGraph<N, E>,
+pub struct Edges<'a, E: 'a> {
+    edges: &'a [Edge<E>],
     next: EdgeIndex,
+    dir: Dir,
 }
 
-impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for Edges<'a, N, E>
+impl<'a, E> Iterator<(NodeIndex, &'a E)> for Edges<'a, E>
 {
     fn next(&mut self) -> Option<(NodeIndex, &'a E)>
     {
-        match self.graph.edges.get(self.next.0) {
+        let k = self.dir as uint;
+        match self.edges.get(self.next.0) {
             None => None,
             Some(edge) => {
-                self.next = edge.next[0];
-                Some((edge.node[1], &edge.data))
+                self.next = edge.next[k];
+                Some((edge.node[1-k], &edge.data))
             }
         }
+    }
+
+    fn size_hint(&self) -> (uint, Option<uint>)
+    {
+        let low = (self.next != EdgeEnd) as uint;
+        let hi = low * self.edges.len();
+        (low, Some(hi))
     }
 }
 
@@ -660,25 +671,6 @@ impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for EdgesBoth<'a, N, E>
             None => None,
             Some(edge) => {
                 self.next[1] = edge.next[1];
-                Some((edge.node[0], &edge.data))
-            }
-        }
-    }
-}
-
-pub struct EdgesIn<'a, N: 'a, E: 'a> {
-    graph: &'a OGraph<N, E>,
-    next: EdgeIndex,
-}
-
-impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for EdgesIn<'a, N, E>
-{
-    fn next(&mut self) -> Option<(NodeIndex, &'a E)>
-    {
-        match self.graph.edges.get(self.next.0) {
-            None => None,
-            Some(edge) => {
-                self.next = edge.next[1];
                 Some((edge.node[0], &edge.data))
             }
         }
