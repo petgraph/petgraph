@@ -85,7 +85,7 @@ impl<'b, T: fmt::Show> fmt::Show for Ptr<'b, T> {
 
 pub fn dijkstra<'a,
                 Graph, N, K,
-                F, Edges>(graph: &'a Graph, start: N, mut edges: F) -> Vec<(N, K)>
+                F, Edges>(graph: &'a Graph, start: N, mut edges: F) -> HashMap<N, K>
 where
     N: Copy + Eq + Hash + fmt::Show,
     K: Default + Add<K, K> + Copy + PartialOrd + fmt::Show,
@@ -130,7 +130,7 @@ where
         visited.insert(node);
     }
     println!("{}", predecessor);
-    scores.into_iter().collect()
+    scores
 }
 
 #[deriving(Show)]
