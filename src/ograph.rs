@@ -46,6 +46,12 @@ pub struct Edge<E> {
 /// data may be accessed mutably.
 ///
 /// Based upon the graph implementation in rustc.
+///
+/// **NodeIndex** and **EdgeIndex** are types that act as references to nodes and edges,
+/// but these are only stable across certain operations. Adding to the graph keeps
+/// all indices stable, but removing a node will force another node to shift its index.
+///
+/// Removing an edge also shifts the index of another edge.
 //#[deriving(Show)]
 pub struct OGraph<N, E> {
     nodes: Vec<Node<N>>,
@@ -174,7 +180,26 @@ impl<N, E> OGraph<N, E>
         }
     }
 
+    /// Return an iterator over the edgs from **a** to its neighbors, then *to* **a** from its
+    /// neighbors.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is **(NodeIndex, &'a E)**.
+    pub fn edges_both(&self, a: NodeIndex) -> EdgesBoth<N, E>
+    {
+        EdgesBoth{
+            graph: self,
+            next: match self.nodes.get(a.0) {
+                None => [EdgeEnd, EdgeEnd],
+                Some(n) => n.next,
+            }
+        }
+    }
+
     /// Add an edge from **a** to **b** to the graph, with its edge weight.
+    ///
+    /// **Panics** if any of the nodes don't exist.
     pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
     {
         let edge_idx = EdgeIndex(self.edges.len());
@@ -400,6 +425,34 @@ impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for Edges<'a, N, E>
             Some(edge) => {
                 self.next = edge.next[0];
                 Some((edge.node[1], &edge.data))
+            }
+        }
+    }
+}
+
+pub struct EdgesBoth<'a, N: 'a, E: 'a> {
+    graph: &'a OGraph<N, E>,
+    next: [EdgeIndex, ..2],
+}
+
+impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for EdgesBoth<'a, N, E>
+{
+    fn next(&mut self) -> Option<(NodeIndex, &'a E)>
+    {
+        // First any outgoing edges
+        match self.graph.edges.get(self.next[0].0) {
+            None => {}
+            Some(edge) => {
+                self.next[0] = edge.next[0];
+                return Some((edge.node[1], &edge.data))
+            }
+        }
+        // Then incoming edges
+        match self.graph.edges.get(self.next[1].0) {
+            None => None,
+            Some(edge) => {
+                self.next[1] = edge.next[1];
+                Some((edge.node[0], &edge.data))
             }
         }
     }

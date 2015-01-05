@@ -176,12 +176,23 @@ fn main() {
     let a = og.add_node(0i);
     let b = og.add_node(1i);
     let c = og.add_node(2i);
+    let d = og.add_node(3i);
     let ed1 = og.add_edge(a, b, 0i);
     let ed2 = og.add_edge(a, c, 1);
     og.add_edge(c, a, 2);
     og.add_edge(a, a, 3);
     og.add_edge(b, c, 4);
     og.add_edge(b, a, 5);
+    og.add_edge(a, d, 6);
+
+    for no in og.edges(a) {
+        println!("Edges {}", no);
+    }
+
+    for no in og.edges_both(a) {
+        println!("EdgesBoth {}", no);
+    }
+
     println!("{}", og);
     println!("Remove {}", a);
     for no in BreadthFirst::new(&og, a) {
