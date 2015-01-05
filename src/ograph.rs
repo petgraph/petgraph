@@ -350,19 +350,11 @@ impl<N, E> OGraph<N, E>
         &mut self.edges[e.0]
     }
 
-    /// Remove an edge and return its edge weight, or **None** if it didn't exist.
-    pub fn remove_edge(&mut self, e: EdgeIndex) -> Option<E>
+    /// For edge **e** with endpoints **edge_node**, replace links to it,
+    /// with links to **edge_next**.
+    fn change_edge_links(&mut self, edge_node: [NodeIndex, ..2], e: EdgeIndex,
+                         edge_next: [EdgeIndex, ..2])
     {
-        // every edge is part of two lists,
-        // outgoing and incoming edges.
-        // Remove it from both
-        //debug_assert!(self.edges.get(e.0).is_some(), "No such edge: {}", e);
-        let (edge_node, edge_next) = match self.edges.get(e.0) {
-            None => return None,
-            Some(x) => (x.node, x.next),
-        };
-        // List out from A
-        // List in from B
         for &d in DIRECTIONS.iter() {
             let k = d as uint;
             let node = match self.nodes.get_mut(edge_node[k].0) {
@@ -370,7 +362,7 @@ impl<N, E> OGraph<N, E>
                 None => {
                     debug_assert!(false, "Edge's endpoint dir={} index={} not found",
                                   k, edge_node[k]);
-                    return None
+                    return
                 }
             };
             let fst = node.next[k];
@@ -385,6 +377,21 @@ impl<N, E> OGraph<N, E>
                 }
             }
         }
+    }
+
+    /// Remove an edge and return its edge weight, or **None** if it didn't exist.
+    pub fn remove_edge(&mut self, e: EdgeIndex) -> Option<E>
+    {
+        // every edge is part of two lists,
+        // outgoing and incoming edges.
+        // Remove it from both
+        let (edge_node, edge_next) = match self.edges.get(e.0) {
+            None => return None,
+            Some(x) => (x.node, x.next),
+        };
+        // Remove the edge from its in and out lists by replacing it with
+        // a link to the next in the list.
+        self.change_edge_links(edge_node, e, edge_next);
         self.remove_edge_adjust_indices(e)
     }
 
@@ -401,24 +408,10 @@ impl<N, E> OGraph<N, E>
         };
         let swapped_e = EdgeIndex(self.edges.len());
 
-        // List out from A
-        // List in to B
-        for &d in DIRECTIONS.iter() {
-            let k = d as uint;
-            let node = &mut self.nodes[swap[k].0];
-            let fst = node.next[k];
-            if fst == swapped_e {
-                node.next[k] = e;
-            } else {
-                for (_i, curedge) in EdgesMut::new(self.edges[mut], fst, d) {
-                    if curedge.next[k] == swapped_e {
-                        curedge.next[k] = e;
-                    }
-                }
-            }
-        }
-        let edge_data = edge.data;
-        Some(edge_data)
+        // Update the edge lists by replacing links to the old index by references to the new
+        // edge index.
+        self.change_edge_links(swap, swapped_e, [e, e]);
+        Some(edge.data)
     }
 
     /// Lookup an edge from **a** to **b**.
