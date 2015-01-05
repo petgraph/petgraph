@@ -136,6 +136,14 @@ impl<N, E> OGraph<N, E>
         self.nodes.len()
     }
 
+    /// Return the number of edges in the graph.
+    ///
+    /// This will compute in O(1) time.
+    pub fn edge_count(&self) -> uint
+    {
+        self.edges.len()
+    }
+
     /// Add a node with weight **data** to the graph.
     pub fn add_node(&mut self, data: N) -> NodeIndex
     {
