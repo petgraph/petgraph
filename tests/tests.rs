@@ -32,20 +32,10 @@ fn ograph_1()
     assert!(og.find_edge(d, a).is_none());
     assert!(og.find_edge(a, a).is_some());
 
-    for no in og.edges(a) {
-        println!("Edges {}", no);
-    }
+    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![a, c]);
 
-    for no in og.edges_both(a) {
-        println!("EdgesBoth {}", no);
-    }
-
-    println!("{}", og);
-    println!("Remove {}", a);
-    for no in BreadthFirst::new(&og, a) {
-        println!("Visit {}", no);
-    }
     og.remove_node(a);
+    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![c]);
     assert_eq!(og.node_count(), 3);
     assert_eq!(og.edge_count(), 1);
     assert!(og.find_edge(a, b).is_none());
