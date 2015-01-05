@@ -518,8 +518,8 @@ impl<'a, N: 'a> Iterator<NodeIndex> for Initials<'a, N>
 pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
 {
     let mut order = Vec::with_capacity(g.node_count());
+    let mut ordered = HashSet::with_capacity(g.node_count());
     let mut tovisit = Vec::new();
-    let mut ordered = HashSet::new();
 
     // find all initial nodes
     tovisit.extend(g.initials());

@@ -233,5 +233,8 @@ fn main() {
         dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
     );
 
+    let x = g.add_node("X");
+    let y = g.add_node("Y");
+    g.add_edge(x, y, 0.);
     println!("{}", toposort(&g));
 }
