@@ -22,13 +22,13 @@ pub enum Dir {
     In = 1
 }
 
-const DIRECTIONS: [Dir, ..2] = [Dir::Out, Dir::In];
+const DIRECTIONS: [Dir; 2] = [Dir::Out, Dir::In];
 
 #[deriving(Show)]
 pub struct Node<N> {
     pub data: N,
     /// Next edge in outgoing and incoming edge lists.
-    next: [EdgeIndex, ..2],
+    next: [EdgeIndex; 2],
 }
 
 impl<N> Node<N>
@@ -43,9 +43,9 @@ impl<N> Node<N>
 pub struct Edge<E> {
     pub data: E,
     /// Next edge in outgoing and incoming edge lists.
-    next: [EdgeIndex, ..2],
+    next: [EdgeIndex; 2],
     /// Start and End node index
-    node: [NodeIndex, ..2],
+    node: [NodeIndex; 2],
 }
 
 impl<E> Edge<E>
@@ -349,8 +349,8 @@ impl<N, E> OGraph<N, E>
 
     /// For edge **e** with endpoints **edge_node**, replace links to it,
     /// with links to **edge_next**.
-    fn change_edge_links(&mut self, edge_node: [NodeIndex, ..2], e: EdgeIndex,
-                         edge_next: [EdgeIndex, ..2])
+    fn change_edge_links(&mut self, edge_node: [NodeIndex; 2], e: EdgeIndex,
+                         edge_next: [EdgeIndex; 2])
     {
         for &d in DIRECTIONS.iter() {
             let k = d as uint;
@@ -493,8 +493,9 @@ pub struct Initials<'a, N: 'a> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N>>>,
 }
 
-impl<'a, N: 'a> Iterator<NodeIndex> for Initials<'a, N>
+impl<'a, N: 'a> Iterator for Initials<'a, N>
 {
+    type Item = NodeIndex;
     fn next(&mut self) -> Option<NodeIndex>
     {
         loop {
@@ -553,8 +554,9 @@ pub struct Neighbors<'a, E: 'a> {
     dir: Dir,
 }
 
-impl<'a, E> Iterator<NodeIndex> for Neighbors<'a, E>
+impl<'a, E> Iterator for Neighbors<'a, E>
 {
+    type Item = NodeIndex;
     fn next(&mut self) -> Option<NodeIndex>
     {
         let k = self.dir as uint;
@@ -574,8 +576,9 @@ pub struct Edges<'a, E: 'a> {
     dir: Dir,
 }
 
-impl<'a, E> Iterator<(NodeIndex, &'a E)> for Edges<'a, E>
+impl<'a, E> Iterator for Edges<'a, E>
 {
+    type Item = (NodeIndex, &'a E);
     fn next(&mut self) -> Option<(NodeIndex, &'a E)>
     {
         let k = self.dir as uint;
@@ -614,8 +617,9 @@ impl<'a, E> EdgesMut<'a, E>
     }
 }
 
-impl<'a, E> Iterator<(EdgeIndex, &'a mut Edge<E>)> for EdgesMut<'a, E>
+impl<'a, E> Iterator for EdgesMut<'a, E>
 {
+    type Item = (EdgeIndex, &'a mut Edge<E>);
     fn next(&mut self) -> Option<(EdgeIndex, &'a mut Edge<E>)>
     {
         let this_index = self.next;
@@ -642,11 +646,12 @@ impl<'a, E> Iterator<(EdgeIndex, &'a mut Edge<E>)> for EdgesMut<'a, E>
 
 pub struct EdgesBoth<'a, N: 'a, E: 'a> {
     graph: &'a OGraph<N, E>,
-    next: [EdgeIndex, ..2],
+    next: [EdgeIndex; 2],
 }
 
-impl<'a, N, E> Iterator<(NodeIndex, &'a E)> for EdgesBoth<'a, N, E>
+impl<'a, N, E> Iterator for EdgesBoth<'a, N, E>
 {
+    type Item = (NodeIndex, &'a E);
     fn next(&mut self) -> Option<(NodeIndex, &'a E)>
     {
         // First any outgoing edges

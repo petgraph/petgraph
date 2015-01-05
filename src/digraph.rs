@@ -273,8 +273,9 @@ pub struct Nodes<'a, N: 'a, E: 'a> {
     iter: Keys<'a, N, Vec<(N, E)>>
 }
 
-impl<'a, N: 'a, E: 'a> Iterator<&'a N> for Nodes<'a, N, E>
+impl<'a, N: 'a, E: 'a> Iterator for Nodes<'a, N, E>
 {
+    type Item = &'a N;
     iterator_methods!(&'a N);
 }
 
@@ -282,8 +283,9 @@ pub struct Neighbors<'a, N: 'a, E: 'a> {
     iter: Map<&'a (N, E), N, Iter<'a, (N, E)>, fn(&(N, E)) -> N>,
 }
 
-impl<'a, N: 'a, E: 'a> Iterator<N> for Neighbors<'a, N, E>
+impl<'a, N: 'a, E: 'a> Iterator for Neighbors<'a, N, E>
 {
+    type Item = N;
     iterator_methods!(N);
 }
 
@@ -291,8 +293,9 @@ pub struct Edges<'a, N: 'a, E: 'a> {
     iter: Map<&'a (N, E), (N, &'a E), Iter<'a, (N, E)>, fn(&(N, E)) -> (N, &E)>,
 }
 
-impl<'a, N: 'a, E: 'a> Iterator<(N, &'a E)> for Edges<'a, N, E>
+impl<'a, N: 'a, E: 'a> Iterator for Edges<'a, N, E>
 {
+    type Item = (N, &'a E);
     iterator_methods!((N, &'a E));
 }
 
