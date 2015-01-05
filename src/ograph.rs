@@ -114,11 +114,13 @@ fn walk_edge_list<E, F: FnMut(EdgeIndex, &mut Edge<E>) -> bool>(
 impl<N, E> OGraph<N, E>
 //where N: fmt::Show
 {
+    /// Create a new OGraph.
     pub fn new() -> OGraph<N, E>
     {
         OGraph{nodes: Vec::new(), edges: Vec::new()}
     }
 
+    /// Add a node with weight **data** to the graph.
     pub fn add_node(&mut self, data: N) -> NodeIndex
     {
         let node = Node{data: data, next: [EdgeEnd, EdgeEnd]};
@@ -127,16 +129,23 @@ impl<N, E> OGraph<N, E>
         node_idx
     }
 
+    /// Access node data for node **a**.
     pub fn node(&self, a: NodeIndex) -> Option<&N>
     {
         self.nodes.get(a.0).map(|n| &n.data)
     }
 
+    /// Access node data for node **a**.
     pub fn node_mut(&mut self, a: NodeIndex) -> Option<&mut N>
     {
         self.nodes.get_mut(a.0).map(|n| &mut n.data)
     }
 
+    /// Return an iterator of all neighbors that have an edge from **a** to them.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is **NodeIndex**.
     pub fn neighbors(&self, a: NodeIndex) -> Neighbors<N, E>
     {
         Neighbors{
@@ -148,6 +157,12 @@ impl<N, E> OGraph<N, E>
         }
     }
 
+    /// Return an iterator over the neighbors of node **a**, paired with their respective edge
+    /// weights.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is **(NodeIndex, &'a E)**.
     pub fn edges(&self, a: NodeIndex) -> Edges<N, E>
     {
         Edges{
@@ -159,6 +174,7 @@ impl<N, E> OGraph<N, E>
         }
     }
 
+    /// Add an edge from **a** to **b** to the graph, with its edge weight.
     pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
     {
         let edge_idx = EdgeIndex(self.edges.len());
@@ -189,6 +205,8 @@ impl<N, E> OGraph<N, E>
         edge_idx
     }
 
+    /// Remove **a** from the graph if it exists, and return its data value.
+    /// If it doesn't exist in the graph, return **None**.
     pub fn remove_node(&mut self, a: NodeIndex) -> Option<N>
     {
         match self.nodes.get(a.0) {
@@ -254,7 +272,7 @@ impl<N, E> OGraph<N, E>
         &mut self.edges[e.0]
     }
 
-    /// Remove an edge and return its edge weight, or None if it didn't exist.
+    /// Remove an edge and return its edge weight, or **None** if it didn't exist.
     pub fn remove_edge(&mut self, e: EdgeIndex) -> Option<E>
     {
         // every edge is part of two lists,
@@ -326,8 +344,29 @@ impl<N, E> OGraph<N, E>
         let edge_data = edge.data;
         Some(edge_data)
     }
+
+    /// Lookup an edge from **a** to **b**.
+    pub fn find_edge(&self, a: NodeIndex, b: NodeIndex) -> Option<EdgeIndex>
+    {
+        match self.nodes.get(a.0) {
+            None => None,
+            Some(node) => {
+                let mut edix = node.next[0];
+                while edix != EdgeEnd {
+                    let edge = &self.edges[edix.0];
+                    if edge.node[1] == b {
+                        return Some(edix)
+                    }
+                }
+                None
+            }
+        }
+    }
 }
 
+/// Iterator over the neighbors of a node.
+///
+/// Iterator element type is **NodeIndex**.
 pub struct Neighbors<'a, N: 'a, E: 'a> {
     graph: &'a OGraph<N, E>,
     next: EdgeIndex,
