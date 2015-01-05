@@ -4,12 +4,14 @@ use std::collections::HashMap;
 use std::iter::Map;
 use std::collections::hash_map::{
     Keys,
+};
+use std::collections::hash_map::Entry::{
     Occupied,
     Vacant,
 };
 use std::slice::{
-    Items,
-    MutItems,
+    Iter,
+    IterMut,
 };
 use std::fmt;
 
@@ -147,7 +149,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
     /// Iterator element type is **N**.
     pub fn neighbors(&self, from: N) -> Neighbors<N, E>
     {
-        fn fst<'a, N: Copy, E>(t: &'a (N, E)) -> N
+        fn fst<N: Copy, E>(t: &(N, E)) -> N
         {
             t.0
         }
@@ -156,7 +158,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
             match self.nodes.get(&from) {
                 Some(edges) => edges.iter(),
                 None => [].iter(),
-            }.map(fst)
+            }.map(fst as fn(&(N, E)) -> N)
         }
     }
 
@@ -178,7 +180,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
             match self.nodes.get(&from) {
                 Some(edges) => edges.iter(),
                 None => [].iter(),
-            }.map(extract)
+            }.map(extract as fn(&(N, E)) -> (N, &E))
         }
     }
 
@@ -188,7 +190,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
     /// If the node **from** does not exist in the graph, return an empty iterator.
     ///
     /// Iterator element type is **&'a mut (N, E)**.
-    pub fn edges_mut<'a>(&'a mut self, from: N) -> MutItems<'a, (N, E)>
+    pub fn edges_mut<'a>(&'a mut self, from: N) -> IterMut<'a, (N, E)>
     {
         match self.nodes.get_mut(&from) {
             Some(edges) => edges.iter_mut(),
@@ -277,7 +279,7 @@ impl<'a, N: 'a, E: 'a> Iterator<&'a N> for Nodes<'a, N, E>
 }
 
 pub struct Neighbors<'a, N: 'a, E: 'a> {
-    iter: Map<&'a (N, E), N, Items<'a, (N, E)>, fn(&(N, E)) -> N>,
+    iter: Map<&'a (N, E), N, Iter<'a, (N, E)>, fn(&(N, E)) -> N>,
 }
 
 impl<'a, N: 'a, E: 'a> Iterator<N> for Neighbors<'a, N, E>
@@ -286,7 +288,7 @@ impl<'a, N: 'a, E: 'a> Iterator<N> for Neighbors<'a, N, E>
 }
 
 pub struct Edges<'a, N: 'a, E: 'a> {
-    iter: Map<&'a (N, E), (N, &'a E), Items<'a, (N, E)>, fn(&(N, E)) -> (N, &E)>,
+    iter: Map<&'a (N, E), (N, &'a E), Iter<'a, (N, E)>, fn(&(N, E)) -> (N, &E)>,
 }
 
 impl<'a, N: 'a, E: 'a> Iterator<(N, &'a E)> for Edges<'a, N, E>

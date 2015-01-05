@@ -3,11 +3,13 @@ use std::collections::HashMap;
 use std::iter::Map;
 use std::collections::hash_map::{
     Keys,
+};
+use std::collections::hash_map::Entry::{
     Occupied,
     Vacant,
 };
 use std::slice::{
-    Items,
+    Iter,
 };
 use std::fmt;
 
@@ -148,7 +150,7 @@ impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
             match self.nodes.get(&from) {
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
-            }.map(copy)
+            }.map(copy as fn(&N) -> N)
         }
     }
 
@@ -208,7 +210,7 @@ impl<'a, N: 'a> Iterator<&'a N> for Nodes<'a, N>
 }
 
 pub struct Neighbors<'a, N: 'a> {
-    iter: Map<&'a N, N, Items<'a, N>, fn(&N) -> N>,
+    iter: Map<&'a N, N, Iter<'a, N>, fn(&N) -> N>,
 }
 
 impl<'a, N> Iterator<N> for Neighbors<'a, N>

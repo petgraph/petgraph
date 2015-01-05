@@ -1,7 +1,4 @@
 use std::hash::{Hash};
-use std::slice::{
-    Items,
-};
 use std::fmt;
 use test;
 

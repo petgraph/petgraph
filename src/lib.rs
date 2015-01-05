@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::RingBuf;
 use std::collections::BinaryHeap;
-use std::collections::hash_map::{
+use std::collections::hash_map::Entry::{
     Occupied,
     Vacant,
 };
