@@ -116,7 +116,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
             Occupied(mut ent) => {
                 match ent.get().iter().position(|&(elt, _)| elt == b) {
                     Some(index) => {
-                        ent.get_mut().swap_remove(index).map(|(_, edge)| edge)
+                        Some(ent.get_mut().swap_remove(index).1)
                     }
                     None => None,
                 }

@@ -113,8 +113,8 @@ fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<T>
         } else {
             // safe because a, b are in bounds and distinct
             unsafe {
-                let ar = &mut *(slc.unsafe_mut(a) as *mut _);
-                let br = &mut *(slc.unsafe_mut(b) as *mut _);
+                let ar = &mut *(slc.get_unchecked_mut(a) as *mut _);
+                let br = &mut *(slc.get_unchecked_mut(b) as *mut _);
                 Pair::Both(ar, br)
             }
         }
@@ -318,10 +318,7 @@ impl<N, E> OGraph<N, E>
         // Use swap_remove -- only the swapped-in node is going to change
         // NodeIndex, so we only have to walk its edges and update them.
 
-        let node = match self.nodes.swap_remove(a.0) {
-            None => return None,
-            Some(node) => node,
-        };
+        let node = self.nodes.swap_remove(a.0);
 
         // Find the edge lists of the node that had to relocate.
         // It may be that no node had to relocate, then we are done already.
@@ -400,7 +397,7 @@ impl<N, E> OGraph<N, E>
         // swap_remove the edge -- only the removed edge
         // and the edge swapped into place are affected and need updating
         // indices.
-        let edge = self.edges.swap_remove(e.0).unwrap();
+        let edge = self.edges.swap_remove(e.0);
         let swap = match self.edges.get(e.0) {
             // no elment needed to be swapped.
             None => return Some(edge.data),
