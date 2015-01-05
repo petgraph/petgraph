@@ -347,7 +347,7 @@ impl<N, E> OGraph<N, E>
                 //println!("Updating first edge 0 for node {}, set to {}", edge_node[0], edge_next[0]);
                 node.next[k] = edge_next[k];
             } else {
-                walk_edge_list(fst, self.edges[mut], d, |eidx, curedge| {
+                walk_edge_list(fst, self.edges[mut], d, |_i, curedge| {
                     if curedge.next[k] == e {
                         curedge.next[k] = edge_next[k];
                         false
@@ -380,7 +380,7 @@ impl<N, E> OGraph<N, E>
             if fst == swapped_e {
                 node.next[k] = e;
             } else {
-                walk_edge_list(fst, self.edges[mut], d, |eidx, curedge| {
+                walk_edge_list(fst, self.edges[mut], d, |_i, curedge| {
                     if curedge.next[k] == swapped_e {
                         curedge.next[k] = e;
                         false
@@ -398,7 +398,7 @@ impl<N, E> OGraph<N, E>
         match self.nodes.get(a.0) {
             None => None,
             Some(node) => {
-                let mut edix = node.next[0];
+                let edix = node.next[0];
                 while edix != EdgeEnd {
                     let edge = &self.edges[edix.0];
                     if edge.node[1] == b {
