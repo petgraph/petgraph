@@ -30,6 +30,8 @@ pub mod digraph;
 pub mod graph;
 pub mod ograph;
 
+pub mod unionfind;
+
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction
 #[derive(Copy, Clone, Show, PartialEq)]
