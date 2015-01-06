@@ -133,6 +133,12 @@ impl<N, E> OGraph<N, E>
         OGraph{nodes: Vec::new(), edges: Vec::new()}
     }
 
+    /// Create a new OGraph with estimated capacity
+    pub fn with_capacity(nodes: uint, edges: uint) -> Self
+    {
+        OGraph{nodes: Vec::with_capacity(nodes), edges: Vec::with_capacity(edges)}
+    }
+
     /// Return the number of nodes (vertices) in the graph.
     pub fn node_count(&self) -> uint
     {
