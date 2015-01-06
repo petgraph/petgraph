@@ -37,7 +37,7 @@ impl<N, E> fmt::Show for DiGraph<N, E> where N: Eq + Hash + fmt::Show, E: fmt::S
     }
 }
 
-impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
+impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash
 {
     /// Create a new **DiGraph**.
     pub fn new() -> DiGraph<N, E>
@@ -84,12 +84,12 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
         // add nodes if they don't already exist
         //
         // make sure the endpoint exists in the map
-        match self.nodes.entry(b) {
-            Vacant(ent) => { ent.set(Vec::new()); }
+        match self.nodes.entry(&b) {
+            Vacant(ent) => { ent.insert(Vec::new()); }
             _ => {}
         }
 
-        match self.nodes.entry(a) {
+        match self.nodes.entry(&a) {
             Occupied(ent) => {
                 // Add edge only if it isn't already there
                 let edges = ent.into_mut();
@@ -101,7 +101,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
                 }
             }
             Vacant(ent) => {
-                ent.set(vec![(b, edge)]);
+                ent.insert(vec![(b, edge)]);
                 true
             }
         }
@@ -112,7 +112,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
     /// Return **None** if the edge didn't exist.
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E>
     {
-        match self.nodes.entry(a) {
+        match self.nodes.entry(&a) {
             Occupied(mut ent) => {
                 match ent.get().iter().position(|&(elt, _)| elt == b) {
                     Some(index) => {
@@ -228,7 +228,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash
 
 }
 
-impl<N, E> DiGraph<N, E> where N: Copy + Eq + Hash, E: Clone
+impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash, E: Clone
 {
     /// Add a directed edges from **a** to **b** and from **b** to **a** to the
     /// graph.

@@ -46,7 +46,7 @@ fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
 #[inline]
 fn copy<N: Copy>(n: &N) -> N { *n }
 
-impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
+impl<N, E> Graph<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash
 {
     /// Create a new **Graph**.
     pub fn new() -> Graph<N, E>
@@ -59,9 +59,9 @@ impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
 
     /// Add node **n** to the graph.
     pub fn add_node(&mut self, n: N) -> N {
-        match self.nodes.entry(n) {
+        match self.nodes.entry(&n) {
             Occupied(_) => {}
-            Vacant(ent) => { ent.set(Vec::new()); }
+            Vacant(ent) => { ent.insert(Vec::new()); }
         }
         n
     }
@@ -92,13 +92,13 @@ impl<N, E> Graph<N, E> where N: Copy + PartialOrd + Eq + Hash
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
     {
         // Use PartialOrd to order the edges
-        match self.nodes.entry(a) {
+        match self.nodes.entry(&a) {
             Occupied(ent) => { ent.into_mut().push(b); }
-            Vacant(ent) => { ent.set(vec![b]); }
+            Vacant(ent) => { ent.insert(vec![b]); }
         }
-        match self.nodes.entry(b) {
+        match self.nodes.entry(&b) {
             Occupied(ent) => { ent.into_mut().push(a); }
-            Vacant(ent) => { ent.set(vec![a]); }
+            Vacant(ent) => { ent.insert(vec![a]); }
         }
         self.edges.insert(edge_key(a, b), edge).is_none()
     }

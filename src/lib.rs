@@ -41,10 +41,13 @@ pub enum EdgeDirection {
 }
 
 /// A reference that is hashed and compared by its pointer value.
-#[derive(Clone)]
 pub struct Ptr<'b, T: 'b>(pub &'b T);
 
 impl<'b, T> Copy for Ptr<'b, T> {}
+impl<'b, T> Clone for Ptr<'b, T>
+{
+    fn clone(&self) -> Self { *self }
+}
 
 fn ptreq<T>(a: &T, b: &T) -> bool {
     a as *const _ == b as *const _
@@ -103,7 +106,7 @@ pub fn dijkstra<'a,
                 Graph, N, K,
                 F, Edges>(graph: &'a Graph, start: N, mut edges: F) -> HashMap<N, K>
 where
-    N: Copy + Eq + Hash + fmt::Show,
+    N: Copy + Clone + Eq + Hash + fmt::Show,
     K: Default + Add<Output=K> + Copy + PartialOrd + fmt::Show,
     F: FnMut(&'a Graph, N) -> Edges,
     Edges: Iterator<Item=(N, K)>,
@@ -129,7 +132,7 @@ where
                 continue
             }
             let mut next_score = node_score + edge;
-            match scores.entry(next) {
+            match scores.entry(&next) {
                 Occupied(ent) => if next_score < *ent.get() {
                     *ent.into_mut() = next_score;
                     predecessor.insert(next, node);
@@ -137,7 +140,7 @@ where
                     next_score = *ent.get();
                 },
                 Vacant(ent) => {
-                    ent.set(next_score);
+                    ent.insert(next_score);
                     predecessor.insert(next, node);
                 }
             }
@@ -175,7 +178,7 @@ pub trait GraphNeighbors<'a, N> {
 }
 
 impl<'a, N: 'a, E> GraphNeighbors<'a, N> for Graph<N, E>
-where N: Copy + PartialOrd + Hash + Eq
+where N: Copy + Clone + PartialOrd + Hash + Eq
 {
     type Iter = graph::Neighbors<'a, N>;
     fn neighbors(&'a self, n: N) -> graph::Neighbors<'a, N>
@@ -185,7 +188,7 @@ where N: Copy + PartialOrd + Hash + Eq
 }
 
 impl<'a, N: 'a, E: 'a> GraphNeighbors<'a, N> for DiGraph<N, E>
-where N: Copy + Hash + Eq
+where N: Copy + Clone + Hash + Eq
 {
     type Iter = digraph::Neighbors<'a, N, E>;
     fn neighbors(&'a self, n: N) -> digraph::Neighbors<'a, N, E>
