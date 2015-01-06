@@ -4,6 +4,7 @@ use std::fmt;
 use std::slice;
 use std::iter;
 use test;
+use super::{EdgeDirection, Outgoing, Incoming};
 
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
 // should be lifetimed just like pointers.
@@ -15,17 +16,7 @@ pub struct EdgeIndex(uint);
 pub const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
 //const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
-// Index into the NodeIndex and EdgeIndex arrays
-/// Edge direction
-#[derive(Copy, Clone, Show, PartialEq)]
-pub enum Dir {
-    /// A **From** edge is an outward edge *from* the current node.
-    From = 0,
-    /// An **To** edge is an inbound edge *to* the current node.
-    To = 1
-}
-
-const DIRECTIONS: [Dir; 2] = [Dir::From, Dir::To];
+const DIRECTIONS: [EdgeDirection; 2] = [EdgeDirection::Outgoing, EdgeDirection::Incoming];
 
 #[derive(Show)]
 pub struct Node<N> {
@@ -36,7 +27,7 @@ pub struct Node<N> {
 
 impl<N> Node<N>
 {
-    pub fn next_edge(&self, dir: Dir) -> EdgeIndex
+    pub fn next_edge(&self, dir: EdgeDirection) -> EdgeIndex
     {
         self.next[dir as uint]
     }
@@ -53,7 +44,7 @@ pub struct Edge<E> {
 
 impl<E> Edge<E>
 {
-    pub fn next_edge(&self, dir: Dir) -> EdgeIndex
+    pub fn next_edge(&self, dir: EdgeDirection) -> EdgeIndex
     {
         self.next[dir as uint]
     }
@@ -179,7 +170,7 @@ impl<N, E> OGraph<N, E>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **NodeIndex**.
-    pub fn neighbors(&self, a: NodeIndex, dir: Dir) -> Neighbors<E>
+    pub fn neighbors(&self, a: NodeIndex, dir: EdgeDirection) -> Neighbors<E>
     {
         Neighbors{
             edges: &*self.edges,
@@ -197,7 +188,7 @@ impl<N, E> OGraph<N, E>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **(NodeIndex, &'a E)**.
-    pub fn edges(&self, a: NodeIndex, dir: Dir) -> Edges<E>
+    pub fn edges(&self, a: NodeIndex, dir: EdgeDirection) -> Edges<E>
     {
         Edges{
             edges: &*self.edges,
@@ -405,7 +396,7 @@ impl<N, E> OGraph<N, E>
         }
     }
 
-    pub fn first_edge(&self, a: NodeIndex, dir: Dir) -> Option<EdgeIndex>
+    pub fn first_edge(&self, a: NodeIndex, dir: EdgeDirection) -> Option<EdgeIndex>
     {
         match self.nodes.get(a.0) {
             None => None,
@@ -418,7 +409,7 @@ impl<N, E> OGraph<N, E>
         }
     }
 
-    pub fn next_edge(&self, e: EdgeIndex, dir: Dir) -> Option<EdgeIndex>
+    pub fn next_edge(&self, e: EdgeIndex, dir: EdgeDirection) -> Option<EdgeIndex>
     {
         match self.edges.get(e.0) {
             None => None,
@@ -431,26 +422,32 @@ impl<N, E> OGraph<N, E>
         }
     }
 
-    /// Return an iterator over the nodes without incoming edges
-    pub fn initials(&self) -> Initials<N>
+    /// Return an iterator over either the nodes without edges to them or from them.
+    ///
+    /// The nodes in **.without_edges(Incoming)** are the initial nodes and 
+    /// **.without_edges(Outgoing)** are the terminals.
+    pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N>
     {
-        Initials{iter: self.nodes.iter().enumerate()}
+        WithoutEdges{iter: self.nodes.iter().enumerate(), dir: dir}
     }
 }
 
-pub struct Initials<'a, N: 'a> {
+/// An iterator over either the nodes without edges to them or from them.
+pub struct WithoutEdges<'a, N: 'a> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N>>>,
+    dir: EdgeDirection,
 }
 
-impl<'a, N: 'a> Iterator for Initials<'a, N>
+impl<'a, N: 'a> Iterator for WithoutEdges<'a, N>
 {
     type Item = NodeIndex;
     fn next(&mut self) -> Option<NodeIndex>
     {
+        let k = self.dir as uint;
         loop {
             match self.iter.next() {
                 None => return None,
-                Some((index, node)) if node.next[1] == EdgeEnd => {
+                Some((index, node)) if node.next[k] == EdgeEnd => {
                     return Some(NodeIndex(index))
                 },
                 _ => continue,
@@ -473,7 +470,7 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
     let mut tovisit = Vec::new();
 
     // find all initial nodes
-    tovisit.extend(g.initials());
+    tovisit.extend(g.without_edges(Incoming));
 
     // Take an unvisited element and 
     while let Some(nix) = tovisit.pop() {
@@ -482,10 +479,10 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
         }
         order.push(nix);
         ordered.insert(nix);
-        for neigh in g.neighbors(nix, Dir::From) {
+        for neigh in g.neighbors(nix, EdgeDirection::Outgoing) {
             // Look at each neighbor, and those that only have incoming edges
             // from the already ordered list, they are the next to visit.
-            if g.neighbors(neigh, Dir::To).all(|b| ordered.contains(&b)) {
+            if g.neighbors(neigh, EdgeDirection::Incoming).all(|b| ordered.contains(&b)) {
                 tovisit.push(neigh);
             }
         }
@@ -500,7 +497,7 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
 pub struct Neighbors<'a, E: 'a> {
     edges: &'a [Edge<E>],
     next: EdgeIndex,
-    dir: Dir,
+    dir: EdgeDirection,
 }
 
 impl<'a, E> Iterator for Neighbors<'a, E>
@@ -522,7 +519,7 @@ impl<'a, E> Iterator for Neighbors<'a, E>
 pub struct Edges<'a, E: 'a> {
     edges: &'a [Edge<E>],
     next: EdgeIndex,
-    dir: Dir,
+    dir: EdgeDirection,
 }
 
 impl<'a, E> Iterator for Edges<'a, E>
@@ -551,12 +548,12 @@ impl<'a, E> Iterator for Edges<'a, E>
 pub struct EdgesMut<'a, E: 'a> {
     edges: &'a mut [Edge<E>],
     next: EdgeIndex,
-    dir: Dir,
+    dir: EdgeDirection,
 }
 
 impl<'a, E> EdgesMut<'a, E>
 {
-    fn new(edges: &'a mut [Edge<E>], next: EdgeIndex, dir: Dir) -> Self
+    fn new(edges: &'a mut [Edge<E>], next: EdgeIndex, dir: EdgeDirection) -> Self
     {
         EdgesMut{
             edges: edges,

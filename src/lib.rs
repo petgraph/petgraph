@@ -24,10 +24,21 @@ pub use scored::MinScored;
 pub use digraph::DiGraph;
 pub use graph::Graph;
 pub use ograph::OGraph;
+pub use self::EdgeDirection::{Outgoing, Incoming};
 mod scored;
 pub mod digraph;
 pub mod graph;
 pub mod ograph;
+
+// Index into the NodeIndex and EdgeIndex arrays
+/// Edge direction
+#[derive(Copy, Clone, Show, PartialEq)]
+pub enum EdgeDirection {
+    /// A **Outgoing** edge is an outward edge *from* the current node.
+    Outgoing = 0,
+    /// An **Incoming** edge is an inbound edge *to* the current node.
+    Incoming = 1
+}
 
 /// A reference that is hashed and compared by its pointer value.
 #[derive(Clone)]
@@ -188,7 +199,7 @@ impl<'a, N, E> GraphNeighbors<'a, ograph::NodeIndex> for OGraph<N, E>
     type Iter = ograph::Neighbors<'a, E>;
     fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
     {
-        OGraph::neighbors(self, n, ograph::Dir::From)
+        OGraph::neighbors(self, n, EdgeDirection::Outgoing)
     }
 }
 
