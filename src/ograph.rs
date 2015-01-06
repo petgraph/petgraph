@@ -91,13 +91,13 @@ impl<N: fmt::Show, E: fmt::Show> fmt::Show for OGraph<N, E>
     }
 }
 
-enum Pair<'a, T: 'a> {
-    Both(&'a mut T, &'a mut T),
-    One(&'a mut T),
+enum Pair<T> {
+    Both(T, T),
+    One(T),
     None,
 }
 
-fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<T>
+fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<&mut T>
 {
     if a == b {
         slc.get_mut(a).map_or(Pair::None, Pair::One)
