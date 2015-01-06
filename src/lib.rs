@@ -188,7 +188,7 @@ impl<'a, N, E> GraphNeighbors<'a, ograph::NodeIndex> for OGraph<N, E>
     type Iter = ograph::Neighbors<'a, E>;
     fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
     {
-        OGraph::neighbors(self, n)
+        OGraph::neighbors(self, n, ograph::Dir::From)
     }
 }
 

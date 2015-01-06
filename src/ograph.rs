@@ -15,14 +15,17 @@ pub struct EdgeIndex(uint);
 pub const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
 //const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
-/// Index into the NodeIndex and EdgeIndex arrays
+// Index into the NodeIndex and EdgeIndex arrays
+/// Edge direction
 #[derive(Copy, Clone, Show, PartialEq)]
 pub enum Dir {
-    Out = 0,
-    In = 1
+    /// A **From** edge is an outward edge *from* the current node.
+    From = 0,
+    /// An **To** edge is an inbound edge *to* the current node.
+    To = 1
 }
 
-const DIRECTIONS: [Dir; 2] = [Dir::Out, Dir::In];
+const DIRECTIONS: [Dir; 2] = [Dir::From, Dir::To];
 
 #[derive(Show)]
 pub struct Node<N> {
@@ -170,31 +173,14 @@ impl<N, E> OGraph<N, E>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **NodeIndex**.
-    pub fn neighbors(&self, a: NodeIndex) -> Neighbors<E>
+    pub fn neighbors(&self, a: NodeIndex, dir: Dir) -> Neighbors<E>
     {
         Neighbors{
             edges: &*self.edges,
-            dir: Dir::Out,
+            dir: dir,
             next: match self.nodes.get(a.0) {
                 None => EdgeEnd,
-                Some(n) => n.next[0],
-            }
-        }
-    }
-
-    /// Return an iterator of all neighbors that have an edge to **a** from them.
-    ///
-    /// Produces an empty iterator if the node doesn't exist.
-    ///
-    /// Iterator element type is **NodeIndex**.
-    pub fn direct_predecessors(&self, a: NodeIndex) -> Neighbors<E>
-    {
-        Neighbors{
-            edges: &*self.edges,
-            dir: Dir::In,
-            next: match self.nodes.get(a.0) {
-                None => EdgeEnd,
-                Some(n) => n.next[1],
+                Some(n) => n.next[dir as uint],
             }
         }
     }
@@ -205,14 +191,14 @@ impl<N, E> OGraph<N, E>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **(NodeIndex, &'a E)**.
-    pub fn edges(&self, a: NodeIndex) -> Edges<E>
+    pub fn edges(&self, a: NodeIndex, dir: Dir) -> Edges<E>
     {
         Edges{
             edges: &*self.edges,
-            dir: Dir::Out,
+            dir: dir,
             next: match self.nodes.get(a.0) {
                 None => EdgeEnd,
-                Some(n) => n.next[0],
+                Some(n) => n.next[dir as uint],
             }
         }
     }
@@ -234,23 +220,6 @@ impl<N, E> OGraph<N, E>
         }
     }
     
-    /// Return an iterator over nodes that have an edge to **a**.
-    ///
-    /// Produces an empty iterator if the node doesn't exist.
-    ///
-    /// Iterator element type is **(NodeIndex, &'a E)**.
-    pub fn in_edges(&self, a: NodeIndex) -> Edges<E>
-    {
-        Edges{
-            edges: &*self.edges,
-            dir: Dir::In,
-            next: match self.nodes.get(a.0) {
-                None => EdgeEnd,
-                Some(n) => n.next[1],
-            }
-        }
-    }
-
     /// Add an edge from **a** to **b** to the graph, with its edge weight.
     ///
     /// **Panics** if any of the nodes don't exist.
@@ -430,12 +399,12 @@ impl<N, E> OGraph<N, E>
         }
     }
 
-    pub fn first_out_edge(&self, a: NodeIndex) -> Option<EdgeIndex>
+    pub fn first_edge(&self, a: NodeIndex, dir: Dir) -> Option<EdgeIndex>
     {
         match self.nodes.get(a.0) {
             None => None,
             Some(node) => {
-                let edix = node.next[0];
+                let edix = node.next[dir as uint];
                 if edix == EdgeEnd {
                     None
                 } else { Some(edix) }
@@ -443,38 +412,12 @@ impl<N, E> OGraph<N, E>
         }
     }
 
-    pub fn next_out_edge(&self, e: EdgeIndex) -> Option<EdgeIndex>
+    pub fn next_edge(&self, e: EdgeIndex, dir: Dir) -> Option<EdgeIndex>
     {
         match self.edges.get(e.0) {
             None => None,
             Some(node) => {
-                let edix = node.next[0];
-                if edix == EdgeEnd {
-                    None
-                } else { Some(edix) }
-            }
-        }
-    }
-
-    pub fn first_in_edge(&self, a: NodeIndex) -> Option<EdgeIndex>
-    {
-        match self.nodes.get(a.0) {
-            None => None,
-            Some(node) => {
-                let edix = node.next[1];
-                if edix == EdgeEnd {
-                    None
-                } else { Some(edix) }
-            }
-        }
-    }
-
-    pub fn next_in_edge(&self, e: EdgeIndex) -> Option<EdgeIndex>
-    {
-        match self.edges.get(e.0) {
-            None => None,
-            Some(node) => {
-                let edix = node.next[1];
+                let edix = node.next[dir as uint];
                 if edix == EdgeEnd {
                     None
                 } else { Some(edix) }
@@ -533,10 +476,10 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
         }
         order.push(nix);
         ordered.insert(nix);
-        for neigh in g.neighbors(nix) {
+        for neigh in g.neighbors(nix, Dir::From) {
             // Look at each neighbor, and those that only have incoming edges
             // from the already ordered list, they are the next to visit.
-            if g.direct_predecessors(neigh).all(|b| ordered.contains(&b)) {
+            if g.neighbors(neigh, Dir::To).all(|b| ordered.contains(&b)) {
                 tovisit.push(neigh);
             }
         }

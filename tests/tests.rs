@@ -8,6 +8,7 @@ use petgraph::{
 };
 
 use petgraph::ograph::toposort;
+use petgraph::ograph::Dir;
 
 
 #[test]
@@ -32,10 +33,10 @@ fn ograph_1()
     assert!(og.find_edge(d, a).is_none());
     assert!(og.find_edge(a, a).is_some());
 
-    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![a, c]);
+    assert_eq!(og.neighbors(b, Dir::From).collect::<Vec<_>>(), vec![a, c]);
 
     og.remove_node(a);
-    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![c]);
+    assert_eq!(og.neighbors(b, Dir::From).collect::<Vec<_>>(), vec![c]);
     assert_eq!(og.node_count(), 3);
     assert_eq!(og.edge_count(), 1);
     assert!(og.find_edge(a, b).is_none());
@@ -63,7 +64,7 @@ fn ograph_2()
     g.add_edge(b, f, 15.);
     g.add_edge(c, f, 11.);
     g.add_edge(e, f, 6.);
-    let scores = dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    let scores = dijkstra(&g, a, |gr, n| gr.edges(n, Dir::From).map(|(n, &e)| (n, e)));
     assert_eq!(scores[f], 20.);
 
     let x = g.add_node("X");

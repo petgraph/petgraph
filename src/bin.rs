@@ -8,6 +8,7 @@ use std::cell::Cell;
 
 use petgraph::ograph::{
     OGraph,
+    Dir,
     toposort,
 };
 
@@ -188,7 +189,7 @@ fn main() {
     og.add_edge(b, a, 5);
     og.add_edge(a, d, 6);
 
-    for no in og.edges(a) {
+    for no in og.edges(a, Dir::From) {
         println!("Edges {}", no);
     }
 
@@ -230,7 +231,7 @@ fn main() {
     }
 
     println!("Scores= {}", 
-        dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
+        dijkstra(&g, a, |gr, n| gr.edges(n, Dir::From).map(|(n, &e)| (n, e)))
     );
 
     let x = g.add_node("X");
