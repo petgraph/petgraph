@@ -67,7 +67,7 @@ fn make_graph() {
     // Wikipedia example
     let root = TypedArena::<NodeCell<_>>::new();
     let mut g: DiGraph<_, f32> = DiGraph::new();
-    let node = |name: &'static str| Ptr(root.alloc(NodeCell(Cell::new(name))));
+    let node = |&: name: &'static str| Ptr(root.alloc(NodeCell(Cell::new(name))));
     let a = g.add_node(node("A"));
     let b = g.add_node(node("B"));
     let c = g.add_node(node("C"));
@@ -104,7 +104,7 @@ fn make_graph() {
     }
 
     let mut g: DiGraph<_, f32> = DiGraph::new();
-    let node = |name: &'static str| name;
+    let node = |&: name: &'static str| name;
     let a = g.add_node(node("A"));
     let b = g.add_node(node("B"));
     let c = g.add_node(node("C"));
@@ -125,7 +125,7 @@ fn make_graph() {
 
     let root = TypedArena::<Node<_>>::new();
     let mut g: Graph<_, f32> = Graph::new();
-    let node = |name: &'static str| Ptr(root.alloc(Node(name.to_string())));
+    let node = |&: name: &'static str| Ptr(root.alloc(Node(name.to_string())));
     let a = g.add_node(node("A"));
     let b = g.add_node(node("B"));
     let c = g.add_node(node("C"));
