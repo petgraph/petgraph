@@ -51,3 +51,17 @@ fn uf_rand() {
         }
     }
 }
+
+#[test]
+fn uf_u8() {
+    let n = 256;
+    let mut rng: ChaChaRng = thread_rng().gen();
+    let mut u = UnionFind::<u8>::new(n);
+    for i in range(0, n * 8) {
+        let a = rng.gen();
+        let b = rng.gen();
+        let ar = u.find(a);
+        let br = u.find(b);
+        assert_eq!(ar != br, u.union(a, b));
+    }
+}
