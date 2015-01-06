@@ -181,8 +181,8 @@ fn main() {
     let b = og.add_node(1i);
     let c = og.add_node(2i);
     let d = og.add_node(3i);
-    let ed1 = og.add_edge(a, b, 0i);
-    let ed2 = og.add_edge(a, c, 1);
+    let _ = og.add_edge(a, b, 0i);
+    let _ = og.add_edge(a, c, 1);
     og.add_edge(c, a, 2);
     og.add_edge(a, a, 3);
     og.add_edge(b, c, 4);

@@ -3,15 +3,12 @@ use std::collections::HashSet;
 use std::fmt;
 use std::slice;
 use std::iter;
-use std::iter::repeat;
 
 use std::collections::BinaryHeap;
 
 use super::{EdgeDirection, Outgoing, Incoming};
 use super::MinScored;
 
-use super::DepthFirst;
-use super::Undirected;
 use super::unionfind::UnionFind;
 
 #[cfg(test)]
@@ -28,7 +25,7 @@ impl fmt::Show for EdgeIndex
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "EdgeIndex("));
-        if *self == EdgeEnd {
+        if *self == EDGE_END {
             try!(write!(f, "End"));
         } else {
             try!(write!(f, "{}", self.0));
@@ -37,7 +34,7 @@ impl fmt::Show for EdgeIndex
     }
 }
 
-pub const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
+pub const EDGE_END: EdgeIndex = EdgeIndex(::std::uint::MAX);
 //const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
 const DIRECTIONS: [EdgeDirection; 2] = [EdgeDirection::Outgoing, EdgeDirection::Incoming];
@@ -171,7 +168,7 @@ impl<N, E> OGraph<N, E>
     /// Add a node with weight **data** to the graph.
     pub fn add_node(&mut self, data: N) -> NodeIndex
     {
-        let node = Node{data: data, next: [EdgeEnd, EdgeEnd]};
+        let node = Node{data: data, next: [EDGE_END, EDGE_END]};
         let node_idx = NodeIndex(self.nodes.len());
         self.nodes.push(node);
         node_idx
@@ -200,7 +197,7 @@ impl<N, E> OGraph<N, E>
             edges: &*self.edges,
             dir: dir,
             next: match self.nodes.get(a.0) {
-                None => EdgeEnd,
+                None => EDGE_END,
                 Some(n) => n.next[dir as uint],
             }
         }
@@ -216,7 +213,7 @@ impl<N, E> OGraph<N, E>
         NeighborsBoth{
             edges: &*self.edges,
             next: match self.nodes.get(a.0) {
-                None => [EdgeEnd, EdgeEnd],
+                None => [EDGE_END, EDGE_END],
                 Some(n) => n.next,
             }
         }
@@ -234,7 +231,7 @@ impl<N, E> OGraph<N, E>
             edges: &*self.edges,
             dir: dir,
             next: match self.nodes.get(a.0) {
-                None => EdgeEnd,
+                None => EDGE_END,
                 Some(n) => n.next[dir as uint],
             }
         }
@@ -251,7 +248,7 @@ impl<N, E> OGraph<N, E>
         EdgesBoth{
             graph: self,
             next: match self.nodes.get(a.0) {
-                None => [EdgeEnd, EdgeEnd],
+                None => [EDGE_END, EDGE_END],
                 Some(n) => n.next,
             }
         }
@@ -312,7 +309,7 @@ impl<N, E> OGraph<N, E>
             // Remove all edges from and to this node.
             loop {
                 let next = self.nodes[a.0].next[k];
-                if next == EdgeEnd {
+                if next == EDGE_END {
                     break
                 }
                 let ret = self.remove_edge(next);
@@ -462,7 +459,7 @@ impl<N, E> OGraph<N, E>
             None => None,
             Some(node) => {
                 let edix = node.next[dir as uint];
-                if edix == EdgeEnd {
+                if edix == EDGE_END {
                     None
                 } else { Some(edix) }
             }
@@ -475,7 +472,7 @@ impl<N, E> OGraph<N, E>
             None => None,
             Some(node) => {
                 let edix = node.next[dir as uint];
-                if edix == EdgeEnd {
+                if edix == EDGE_END {
                     None
                 } else { Some(edix) }
             }
@@ -507,7 +504,7 @@ impl<'a, N: 'a> Iterator for WithoutEdges<'a, N>
         loop {
             match self.iter.next() {
                 None => return None,
-                Some((index, node)) if node.next[k] == EdgeEnd => {
+                Some((index, node)) if node.next[k] == EDGE_END => {
                     return Some(NodeIndex(index))
                 },
                 _ => continue,
@@ -678,7 +675,7 @@ impl<'a, E> Iterator for Edges<'a, E>
 
     fn size_hint(&self) -> (uint, Option<uint>)
     {
-        let low = (self.next != EdgeEnd) as uint;
+        let low = (self.next != EDGE_END) as uint;
         let hi = low * self.edges.len();
         (low, Some(hi))
     }
