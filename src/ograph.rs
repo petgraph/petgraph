@@ -11,8 +11,21 @@ use test;
 // should be lifetimed just like pointers.
 #[derive(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
 pub struct NodeIndex(uint);
-#[derive(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Hash)]
 pub struct EdgeIndex(uint);
+
+impl fmt::Show for EdgeIndex
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(write!(f, "EdgeIndex("));
+        if *self == EdgeEnd {
+            try!(write!(f, "End"));
+        } else {
+            try!(write!(f, "{}", self.0));
+        }
+        write!(f, ")")
+    }
+}
 
 pub const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
 //const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
@@ -82,11 +95,11 @@ pub struct OGraph<N, E> {
 impl<N: fmt::Show, E: fmt::Show> fmt::Show for OGraph<N, E>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for n in self.nodes.iter() {
-            try!(writeln!(f, "{}", n));
+        for (index, n) in self.nodes.iter().enumerate() {
+            try!(writeln!(f, "{}: {}", index, n));
         }
-        for n in self.edges.iter() {
-            try!(writeln!(f, "{}", n));
+        for (index, n) in self.edges.iter().enumerate() {
+            try!(writeln!(f, "{}: {}", index, n));
         }
         Ok(())
     }
