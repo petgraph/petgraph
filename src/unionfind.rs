@@ -39,32 +39,20 @@ impl UnionFind
     /// **Panics** if **x** is out of bounds.
     pub fn find(&self, x: uint) -> uint
     {
-        let xparent = self.parent[x];
-        if xparent == x {
+        assert!(x < self.parent.len());
+        unsafe {
+            let mut x = x;
+            loop {
+                // Use unchecked indexing because we can trust the internal set ids.
+                debug_assert!(x < self.parent.len());
+                let xparent = *self.parent.get_unchecked(x);
+                if xparent == x {
+                    break
+                }
+                x = xparent;
+            }
             x
-        } else {
-            unsafe {
-                self.find_rep(xparent)
-            }
         }
-    }
-
-    /// Return the reprsentative for **x**.
-    ///
-    /// Use unchecked indexing because we can trust the internal set ids.
-    #[inline]
-    unsafe fn find_rep(&self, x: uint) -> uint
-    {
-        let mut x = x;
-        loop {
-            debug_assert!(x < self.parent.len());
-            let xparent = *self.parent.get_unchecked(x);
-            if xparent == x {
-                break
-            }
-            x = xparent;
-        }
-        x
     }
 
     /// Return the representative for **x**.
@@ -75,19 +63,26 @@ impl UnionFind
     /// **Panics** if **x** is out of bounds.
     pub fn find_mut(&mut self, x: uint) -> uint
     {
-        let xparent = self.parent[x];
+        assert!(x < self.parent.len());
+        unsafe {
+            self.find_mut_recursive(x)
+        }
+    }
+
+    unsafe fn find_mut_recursive(&mut self, x: uint) -> uint
+    {
+        debug_assert!(x < self.parent.len());
+        let xparent = *self.parent.get_unchecked(x);
         if xparent != x {
-            // path compression: update set id to point directly to the representative
-            unsafe {
-                let xrep = self.find_rep(xparent);
-                let xparent = self.parent.get_unchecked_mut(x);
-                *xparent = xrep;
-                *xparent
-            }
+            let xrep = self.find_mut_recursive(xparent);
+            let xparent = self.parent.get_unchecked_mut(x);
+            *xparent = xrep;
+            *xparent
         } else {
             xparent
         }
     }
+
 
     /// Unify the two sets containing **x** and **y**.
     ///

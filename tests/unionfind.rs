@@ -35,7 +35,7 @@ fn uf_test() {
 
 #[test]
 fn uf_rand() {
-    let n = 1 << 16;
+    let n = 1 << 14;
     let mut rng: ChaChaRng = thread_rng().gen();
     let mut u = UnionFind::new(n);
     for i in range(0, n * 8) {
@@ -47,6 +47,7 @@ fn uf_rand() {
         if (i + 1) % n == 0 {
             let set = range(0, n).map(|i| u.find(i)).collect::<HashSet<_>>();
             println!("Disjoint parts={}", set.len());
+            //println!("Disjoint parts={} maxrank={}", set.len(), u.rank.iter().max_by(|t| *t));
         }
     }
 }
