@@ -19,7 +19,7 @@ pub const EdgeEnd: EdgeIndex = EdgeIndex(::std::uint::MAX);
 
 const DIRECTIONS: [EdgeDirection; 2] = [EdgeDirection::Outgoing, EdgeDirection::Incoming];
 
-#[derive(Show)]
+#[derive(Show, Clone)]
 pub struct Node<N> {
     pub data: N,
     /// Next edge in outgoing and incoming edge lists.
@@ -34,7 +34,7 @@ impl<N> Node<N>
     }
 }
 
-#[derive(Show, Copy)]
+#[derive(Show, Clone)]
 pub struct Edge<E> {
     pub data: E,
     /// Next edge in outgoing and incoming edge lists.
@@ -73,7 +73,7 @@ impl<E> Edge<E>
 /// all indices stable, but removing a node will force another node to shift its index.
 ///
 /// Removing an edge also shifts the index of another edge.
-//#[derive(Show)]
+#[derive(Clone)]
 pub struct OGraph<N, E> {
     nodes: Vec<Node<N>>,
     edges: Vec<Edge<E>>,
