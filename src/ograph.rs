@@ -3,8 +3,9 @@ use std::collections::HashSet;
 use std::fmt;
 use std::slice;
 use std::iter;
-use test;
 use super::{EdgeDirection, Outgoing, Incoming};
+#[cfg(test)]
+use test;
 
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
 // should be lifetimed just like pointers.
