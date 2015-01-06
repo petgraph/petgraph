@@ -8,6 +8,11 @@ struct Elt {
 /// A disjoint-set data structure or “Union & Find” datastructure.
 ///
 /// http://en.wikipedia.org/wiki/Disjoint-set_data_structure
+///
+/// Too awesome not to quote:
+///
+/// “The amortized time per operation is **O(α(n))** where **α(n)** is the
+/// inverse of **f(x) = A(x, x)** with **A** being the extremely fast-growing Ackermann function.”
 #[derive(Show, Clone)]
 pub struct UnionFind {
     v: Vec<Elt>,
@@ -15,7 +20,7 @@ pub struct UnionFind {
 
 impl UnionFind
 {
-    /// Create a new **UnionFind**.
+    /// Create a new **UnionFind** of **n** disjoint sets.
     pub fn new(n: uint) -> Self
     {
         let mut v = Vec::with_capacity(n);
@@ -30,17 +35,37 @@ impl UnionFind
     /// **Panics** if **x** is out of bounds.
     pub fn find(&self, x: uint) -> uint
     {
-        let set = self.v[x].set;
-        if set == x {
+        let xparent = self.v[x].set;
+        if xparent == x {
             x
         } else {
-            self.find(set)
+            unsafe {
+                self.find_rep(xparent)
+            }
         }
+    }
+
+    /// Return the reprsentative for **x**.
+    ///
+    /// Use unchecked indexing because we can trust the internal set ids.
+    #[inline]
+    unsafe fn find_rep(&self, x: uint) -> uint
+    {
+        let mut x = x;
+        loop {
+            debug_assert!(x < self.v.len());
+            let xparent = self.v.get_unchecked(x);
+            if xparent.set == x {
+                break
+            }
+            x = xparent.set;
+        }
+        x
     }
 
     /// Return the representative for **x**.
     ///
-    /// Find and write back the found representative, flattening the internal
+    /// Write back the found representative, flattening the internal
     /// datastructure in the process and quicken future lookups.
     ///
     /// **Panics** if **x** is out of bounds.
@@ -54,20 +79,23 @@ impl UnionFind
     /// **Panics** if **x** is out of bounds.
     fn find_compress(&mut self, x: uint) -> Elt
     {
-        // path compression: update set id to point directly to the representative
-        let elt = self.v[x];
-        if elt.set != x {
-            let parent = self.find_compress(elt.set);
-            self.v[x].set = parent.set;
-            parent
+        let xparent = self.v[x];
+        if xparent.set != x {
+            // path compression: update set id to point directly to the representative
+            unsafe {
+                let i = self.find_rep(xparent.set);
+                let xparent = self.v.get_unchecked_mut(x);
+                xparent.set = i;
+                *xparent
+            }
         } else {
-            elt
+            xparent
         }
     }
 
     /// Unify the two sets containing **x** and **y**.
     ///
-    /// Return false if the sets were already the same, true if they were unified.
+    /// Return **false** if the sets were already the same, **true** if they were unified.
     /// 
     /// **Panics** if **x** or **y** is out of bounds.
     pub fn union(&mut self, x: uint, y: uint) -> bool
