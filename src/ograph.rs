@@ -3,7 +3,16 @@ use std::collections::HashSet;
 use std::fmt;
 use std::slice;
 use std::iter;
+use std::iter::repeat;
+
+use std::collections::BinaryHeap;
+
 use super::{EdgeDirection, Outgoing, Incoming};
+use super::MinScored;
+
+use super::DepthFirst;
+use super::Undirected;
+
 #[cfg(test)]
 use test;
 
@@ -519,6 +528,72 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
     }
 
     order
+}
+
+/// Return a *Minimum Spanning Tree* of a graph.
+///
+/// Treat the input graph as undirected.
+pub fn min_spanning_tree<N, E>(g: &OGraph<N, E>) -> OGraph<N, E>
+    where N: Clone, E: Clone + PartialOrd
+{
+    if g.node_count() == 0 {
+        return OGraph::new()
+    }
+    // Create a mst skeleton by copying all nodes
+    let mut mst = OGraph::with_capacity(g.node_count(), g.node_count() - 1);
+    mst.nodes.clone_from(&g.nodes);
+    // reset all edges
+    for node in mst.nodes.iter_mut() {
+        node.next = [EdgeEnd, EdgeEnd];
+    }
+    // Assign each vertex a forest ID, we use this to track the disjointness
+    // of the parts of the pre-MST.
+    let mut forest_map = Vec::with_capacity(g.node_count());
+    for index in range(0, g.node_count()) {
+        forest_map.push(index)
+    }
+    let mut sort_edges = BinaryHeap::with_capacity(g.edge_count());
+    for edge in g.edges.iter() {
+        sort_edges.push(MinScored(edge.data.clone(), edge.clone()));
+    }
+
+    // Kruskal's algorithm.
+    // Algorithm is this:
+    //
+    // 1. Create a pre-MST with all vertices and no edges.
+    // 2. Assign each vertex a tree id.
+    // 3. Repeat:
+    //
+    //  a. Remove the shortest edge from the original graph.
+    //  b. If the edge connects two disjoint trees in the pre-MST,
+    //     add it to it.
+    //  c. Adjust tree ids to reflect the unification of the two subparts.
+
+    while let Some(MinScored(score, edge)) = sort_edges.pop() {
+        //println!("Status of the forest map: {}", forest_map);
+        let a = edge.source();
+        let b = edge.target();
+
+        // check if the edge would connect two disjoint parts
+        let af = forest_map[a.0];
+        let bf = forest_map[b.0];
+        if af == bf {
+            //println!("Skipping edge connecting a={}, b={}", a, b);
+            continue
+        }
+
+        // set the part id in the forest map before we connect the two parts
+        for ni in DepthFirst::new(&Undirected(&mst), b) {
+            forest_map[ni.0] = af;
+        }
+        mst.add_edge(a, b, score);
+    }
+    debug_assert!(mst.node_count() == g.node_count());
+    // If the graph is connected, |E| will be |V| - 1,
+    // otherwise this applies instead to the disjoint parts,
+    // so |E| - |disjoint parts|
+    debug_assert!(mst.edge_count() < g.node_count());
+    mst
 }
 
 /// Iterator over the neighbors of a node.
