@@ -424,12 +424,32 @@ impl<N, E> OGraph<N, E>
             None => None,
             Some(node) => {
                 let mut edix = node.next[0];
-                while edix != EdgeEnd {
-                    let edge = &self.edges[edix.0];
+                while let Some(edge) = self.edges.get(edix.0) {
                     if edge.node[1] == b {
                         return Some(edix)
                     }
                     edix = edge.next[0];
+                }
+                None
+            }
+        }
+    }
+
+    /// Lookup an edge between **a** and **b**.
+    pub fn find_any_edge(&self, a: NodeIndex, b: NodeIndex) -> Option<(EdgeIndex, EdgeDirection)>
+    {
+        match self.nodes.get(a.0) {
+            None => None,
+            Some(node) => {
+                for &d in DIRECTIONS.iter() {
+                    let k = d as uint;
+                    let mut edix = node.next[k];
+                    while let Some(edge) = self.edges.get(edix.0) {
+                        if edge.node[1 - k] == b {
+                            return Some((edix, d))
+                        }
+                        edix = edge.next[k];
+                    }
                 }
                 None
             }
