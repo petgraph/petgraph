@@ -206,6 +206,18 @@ impl<'a, N, E> GraphNeighbors<'a, ograph::NodeIndex> for OGraph<N, E>
     }
 }
 
+/// Wrapper type for walking the graph as if it is undirected
+pub struct Undirected<G>(pub G);
+
+impl<'a, 'b, N, E> GraphNeighbors<'a, ograph::NodeIndex> for Undirected<&'b OGraph<N, E>>
+{
+    type Iter = ograph::NeighborsBoth<'a, E>;
+    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::NeighborsBoth<'a, E>
+    {
+        OGraph::neighbors_both(self.0, n)
+    }
+}
+
 /// A breadth first traversal of a graph.
 #[derive(Clone)]
 pub struct BreadthFirst<'a, G, N>

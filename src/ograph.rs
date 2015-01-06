@@ -196,6 +196,22 @@ impl<N, E> OGraph<N, E>
         }
     }
 
+    /// Return an iterator of all neighbors that have an edge from **a** to them.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is **NodeIndex**.
+    pub fn neighbors_both(&self, a: NodeIndex) -> NeighborsBoth<E>
+    {
+        NeighborsBoth{
+            edges: &*self.edges,
+            next: match self.nodes.get(a.0) {
+                None => [EdgeEnd, EdgeEnd],
+                Some(n) => n.next,
+            }
+        }
+    }
+
     /// Return an iterator over the neighbors of node **a**, paired with their respective edge
     /// weights.
     ///
@@ -525,6 +541,36 @@ impl<'a, E> Iterator for Neighbors<'a, E>
             Some(edge) => {
                 self.next = edge.next[k];
                 Some(edge.node[1-k])
+            }
+        }
+    }
+}
+
+/// Iterator over the neighbors of a node.
+///
+/// Iterator element type is **NodeIndex**.
+pub struct NeighborsBoth<'a, E: 'a> {
+    edges: &'a [Edge<E>],
+    next: [EdgeIndex; 2],
+}
+
+impl<'a, E> Iterator for NeighborsBoth<'a, E>
+{
+    type Item = NodeIndex;
+    fn next(&mut self) -> Option<NodeIndex>
+    {
+        match self.edges.get(self.next[0].0) {
+            None => {}
+            Some(edge) => {
+                self.next[0] = edge.next[0];
+                return Some(edge.node[1])
+            }
+        }
+        match self.edges.get(self.next[1].0) {
+            None => None,
+            Some(edge) => {
+                self.next[1] = edge.next[1];
+                Some(edge.node[0])
             }
         }
     }
