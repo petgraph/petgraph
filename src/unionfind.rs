@@ -1,11 +1,7 @@
+//! **UnionFind** is a disjoint-set data structure.
 
-#[derive(Show, Copy, Clone)]
-struct Elt {
-    rank: uint,
-    set: uint,
-}
 
-/// A disjoint-set data structure or “Union & Find” datastructure.
+/// **UnionFind** is a disjoint-set data structure.
 ///
 /// http://en.wikipedia.org/wiki/Disjoint-set_data_structure
 ///
@@ -15,7 +11,13 @@ struct Elt {
 /// inverse of **f(x) = A(x, x)** with **A** being the extremely fast-growing Ackermann function.”
 #[derive(Show, Clone)]
 pub struct UnionFind {
-    v: Vec<Elt>,
+    parent: Vec<uint>,
+    // It is a balancing tree structure,
+    // so the ranks are logarithmic in the size of the container -- a byte is more than enough.
+    //
+    // Rank is separated out both to save space and to save cache in when searching in the parent
+    // vector.
+    rank: Vec<u8>,
 }
 
 impl UnionFind
@@ -23,11 +25,13 @@ impl UnionFind
     /// Create a new **UnionFind** of **n** disjoint sets.
     pub fn new(n: uint) -> Self
     {
-        let mut v = Vec::with_capacity(n);
+        let mut parent = Vec::with_capacity(n);
+        let mut rank = Vec::with_capacity(n);
         for index in range(0, n) {
-            v.push(Elt{ rank: 0, set: index});
+            parent.push(index);
+            rank.push(0);
         }
-        UnionFind{v: v}
+        UnionFind{parent: parent, rank: rank}
     }
 
     /// Return the representative for **x**.
@@ -35,7 +39,7 @@ impl UnionFind
     /// **Panics** if **x** is out of bounds.
     pub fn find(&self, x: uint) -> uint
     {
-        let xparent = self.v[x].set;
+        let xparent = self.parent[x];
         if xparent == x {
             x
         } else {
@@ -53,12 +57,12 @@ impl UnionFind
     {
         let mut x = x;
         loop {
-            debug_assert!(x < self.v.len());
-            let xparent = self.v.get_unchecked(x);
-            if xparent.set == x {
+            debug_assert!(x < self.parent.len());
+            let xparent = *self.parent.get_unchecked(x);
+            if xparent == x {
                 break
             }
-            x = xparent.set;
+            x = xparent;
         }
         x
     }
@@ -71,21 +75,13 @@ impl UnionFind
     /// **Panics** if **x** is out of bounds.
     pub fn find_mut(&mut self, x: uint) -> uint
     {
-        self.find_compress(x).set
-    }
-
-    /// Return the representative for **x**.
-    ///
-    /// **Panics** if **x** is out of bounds.
-    fn find_compress(&mut self, x: uint) -> Elt
-    {
-        let xparent = self.v[x];
-        if xparent.set != x {
+        let xparent = self.parent[x];
+        if xparent != x {
             // path compression: update set id to point directly to the representative
             unsafe {
-                let i = self.find_rep(xparent.set);
-                let xparent = self.v.get_unchecked_mut(x);
-                xparent.set = i;
+                let xrep = self.find_rep(xparent);
+                let xparent = self.parent.get_unchecked_mut(x);
+                *xparent = xrep;
                 *xparent
             }
         } else {
@@ -104,23 +100,26 @@ impl UnionFind
             return false
         }
 
-        let xrep = self.find_compress(x);
-        let yrep = self.find_compress(y);
+        let xrep = self.find_mut(x);
+        let yrep = self.find_mut(y);
 
-        if xrep.set == yrep.set {
+        if xrep == yrep {
             return false
         }
 
+        let xrank = self.rank[xrep];
+        let yrank = self.rank[yrep];
+
         // The rank corresponds roughly to the depth of the treeset, so put the 
         // smaller set below the larger
-        if xrep.rank < yrep.rank {
-            self.v[xrep.set].set = yrep.set;
-        } else if xrep.rank > yrep.rank {
-            self.v[yrep.set].set = xrep.set;
+        if xrank < yrank {
+            self.parent[xrep] = yrep;
+        } else if xrank > yrank {
+            self.parent[yrep] = xrep;
         } else {
             // put y below x when equal.
-            self.v[yrep.set].set = xrep.set;
-            self.v[xrep.set].rank += 1;
+            self.parent[yrep] = xrep;
+            self.rank[xrep] += 1;
         }
         true
     }
