@@ -200,7 +200,9 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         EdgeType::is_directed(None::<EdgeTy>)
     }
 
-    /// Add a node with weight **data** to the graph.
+    /// Add a node (also called vertex) with weight **data** to the graph.
+    ///
+    /// Return the index of the new node.
     pub fn add_node(&mut self, data: N) -> NodeIndex
     {
         let node = Node{data: data, next: [EDGE_END, EDGE_END]};
@@ -310,6 +312,8 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
     /// **Note:** **OGraph** allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use *.update_edge()* instead.
     ///
+    /// Return the index of the new edge.
+    ///
     /// **Panics** if any of the nodes don't exist.
     pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
     {
@@ -345,15 +349,15 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
     ///
     /// If the edge already exists, its weight is updated.
     ///
-    /// The affected edge's index is returned.
+    /// Return the index of the affected edge.
     ///
     /// **Panics** if any of the nodes don't exist.
     pub fn update_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
     {
         if let Some(ix) = self.find_edge(a, b) {
-            match self.edge_mut(ix) {
+            match self.edge_weight_mut(ix) {
                 Some(ed) => {
-                    ed.data = data;
+                    *ed = data;
                     return ix;
                 }
                 None => {}
@@ -362,6 +366,17 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         self.add_edge(a, b, data)
     }
 
+    /// Access the edge weight for **e**.
+    pub fn edge_weight(&self, e: EdgeIndex) -> Option<&E>
+    {
+        self.edges.get(e.0).map(|ed| &ed.data)
+    }
+
+    /// Access the edge weight for **e** mutably.
+    pub fn edge_weight_mut(&mut self, e: EdgeIndex) -> Option<&mut E>
+    {
+        self.edges.get_mut(e.0).map(|ed| &mut ed.data)
+    }
 
     /// Remove **a** from the graph if it exists, and return its data value.
     /// If it doesn't exist in the graph, return **None**.
@@ -419,16 +434,6 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
             }
         }
         Some(node.data)
-    }
-
-    pub fn edge_data(&mut self, e: EdgeIndex) -> Option<&E>
-    {
-        self.edges.get_mut(e.0).map(|ed| &ed.data)
-    }
-
-    pub fn edge_mut(&mut self, e: EdgeIndex) -> Option<&mut Edge<E>>
-    {
-        self.edges.get_mut(e.0)
     }
 
     /// For edge **e** with endpoints **edge_node**, replace links to it,

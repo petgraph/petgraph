@@ -233,7 +233,7 @@ fn update_edge()
         let _ = gr.update_edge(b, a, 3);
         assert_eq!(gr.edge_count(), 2);
         assert_eq!(e, f);
-        assert_eq!(*gr.edge_data(f).unwrap(), 2);
+        assert_eq!(*gr.edge_weight(f).unwrap(), 2);
     }
 
     {
@@ -244,6 +244,6 @@ fn update_edge()
         let f = gr.update_edge(b, a, 2);
         assert_eq!(gr.edge_count(), 1);
         assert_eq!(e, f);
-        assert_eq!(*gr.edge_data(f).unwrap(), 2);
+        assert_eq!(*gr.edge_weight(f).unwrap(), 2);
     }
 }
