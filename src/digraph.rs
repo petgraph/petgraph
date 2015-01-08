@@ -47,6 +47,11 @@ impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash
         }
     }
 
+    pub fn node_count(&self) -> uint
+    {
+        self.nodes.len()
+    }
+
     /// Add node **n** to the graph.
     pub fn add_node(&mut self, n: N) -> N {
         self.nodes.insert(n, Vec::new());

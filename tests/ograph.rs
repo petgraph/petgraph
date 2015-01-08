@@ -2,12 +2,49 @@ extern crate petgraph;
 
 use petgraph::{
     OGraph,
+    Undirected,
 };
 
 use petgraph::ograph::{
     min_spanning_tree,
     is_cyclic,
 };
+
+#[test]
+fn dfs() {
+    let mut gr = OGraph::new();
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
+    let k = gr.add_node("K");
+    // Z is disconnected.
+    let z = gr.add_node("Z");
+    gr.add_edge(h, i, 1.);
+    gr.add_edge(h, j, 3.);
+    gr.add_edge(i, j, 1.);
+    gr.add_edge(i, k, 2.);
+
+    let mut visited = 0u;
+    petgraph::depth_first_search(&gr, h, |node| {
+        visited += 1;
+        true
+    });
+    assert_eq!(visited, 4);
+
+    let mut visited = 0u;
+    petgraph::depth_first_search(&gr, i, |node| {
+        visited += 1;
+        true
+    });
+    assert_eq!(visited, 3);
+
+    let mut visited = 0u;
+    petgraph::depth_first_search(&Undirected(&gr), i, |node| {
+        visited += 1;
+        true
+    });
+    assert_eq!(visited, 4);
+}
 
 
 

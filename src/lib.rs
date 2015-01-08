@@ -8,6 +8,7 @@ use std::hash::{Writer, Hash};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::RingBuf;
+use std::collections::BitvSet;
 use std::collections::BinaryHeap;
 use std::collections::hash_map::Entry::{
     Occupied,
@@ -216,6 +217,63 @@ impl<'a, 'b, N, E> GraphNeighbors<'a, ograph::NodeIndex> for Undirected<&'b OGra
     }
 }
 
+pub trait VisitMap<N> {
+    fn visit(&mut self, N) -> bool;
+    fn contains(&self, &N) -> bool;
+}
+
+impl VisitMap<ograph::NodeIndex> for BitvSet {
+    fn visit(&mut self, x: ograph::NodeIndex) -> bool {
+        self.insert(x.0)
+    }
+    fn contains(&self, x: &ograph::NodeIndex) -> bool {
+        self.contains(&x.0)
+    }
+}
+
+impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
+    fn visit(&mut self, x: N) -> bool {
+        self.insert(x)
+    }
+    fn contains(&self, x: &N) -> bool {
+        self.contains(x)
+    }
+}
+
+/// Trait for Graph that knows which datastructure is the best for its visitor map
+pub trait Visitable<N> {
+    type Map: VisitMap<N>;
+    fn visit_map(&self) -> Self::Map;
+}
+
+impl<N, E> Visitable<ograph::NodeIndex> for OGraph<N, E>
+{
+    type Map = BitvSet;
+    fn visit_map(&self) -> BitvSet { BitvSet::with_capacity(self.node_count()) }
+}
+
+impl<N, E> Visitable<N> for DiGraph<N, E>
+    where N: Copy + Clone + Eq + Hash
+{
+    type Map = HashSet<N>;
+    fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
+}
+
+impl<N, E> Visitable<N> for Graph<N, E>
+    where N: Copy + Clone + Ord + Eq + Hash
+{
+    type Map = HashSet<N>;
+    fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
+}
+
+impl<'a, N, V: Visitable<N>> Visitable<N> for Undirected<&'a V>
+{
+    type Map = <V as Visitable<N>>::Map;
+    fn visit_map(&self) -> <V as Visitable<N>>::Map {
+        self.0.visit_map()
+    }
+}
+
 /// A breadth first traversal of a graph.
 #[derive(Clone)]
 pub struct BreadthFirst<'a, G, N>
@@ -322,5 +380,35 @@ impl<'a, G, N> Iterator for DepthFirst<'a, G, N>
         }
         None
     }
+}
+
+pub fn depth_first_search<'a, G, N, F>(graph: &'a G, start: N, mut f: F) -> bool
+    where
+        G: 'a + GraphNeighbors<'a, N> + Visitable<N>,
+        N: Clone,
+        <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
+        <G as Visitable<N>>::Map: VisitMap<N>,
+        F: FnMut(N) -> bool,
+{
+    let mut stack = Vec::new();
+    let mut visited = graph.visit_map();
+
+    stack.push(start);
+    while let Some(node) = stack.pop() {
+        if !visited.visit(node.clone()) {
+            continue;
+        }
+
+        for succ in graph.neighbors(node.clone()) {
+            if !visited.contains(&succ) {
+                stack.push(succ);
+            }
+        }
+
+        if !f(node) {
+            return false
+        }
+    }
+    true
 }
 

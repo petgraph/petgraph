@@ -57,6 +57,11 @@ impl<N, E> Graph<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash
         }
     }
 
+    pub fn node_count(&self) -> uint
+    {
+        self.nodes.len()
+    }
+
     /// Add node **n** to the graph.
     pub fn add_node(&mut self, n: N) -> N {
         match self.nodes.entry(&n) {

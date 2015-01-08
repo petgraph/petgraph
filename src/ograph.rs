@@ -14,9 +14,9 @@ use super::unionfind::UnionFind;
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
 // should be lifetimed just like pointers.
 #[derive(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
-pub struct NodeIndex(uint);
+pub struct NodeIndex(pub uint);
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Hash)]
-pub struct EdgeIndex(uint);
+pub struct EdgeIndex(pub uint);
 
 impl fmt::Show for EdgeIndex
 {
