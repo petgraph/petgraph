@@ -548,6 +548,22 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
     order
 }
 
+/// Treat the input graph as undirected.
+pub fn is_cyclic<N, E>(g: &OGraph<N, E>) -> bool
+{
+    let mut edge_sets = UnionFind::new(g.node_count());
+    for edge in g.edges.iter() {
+        let (a, b) = (edge.source(), edge.target());
+
+        // union the two vertices of the edge
+        //  -- if they were already the same, then we have a cycle
+        if !edge_sets.union(a.0, b.0) {
+            return true
+        }
+    }
+    false
+}
+
 /// Return a *Minimum Spanning Tree* of a graph.
 ///
 /// Treat the input graph as undirected.

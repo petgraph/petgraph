@@ -4,7 +4,10 @@ use petgraph::{
     OGraph,
 };
 
-use petgraph::ograph::min_spanning_tree;
+use petgraph::ograph::{
+    min_spanning_tree,
+    is_cyclic,
+};
 
 
 
@@ -86,4 +89,38 @@ fn selfloop() {
     gr.remove_edge(sed);
     assert!(gr.find_edge(a, a).is_none());
     println!("{}", gr);
+}
+
+#[test]
+fn cyclic() {
+    let mut gr = OGraph::<_, f32>::new();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+
+    assert!(!is_cyclic(&gr));
+    gr.add_edge(a, b, 7.);
+    gr.add_edge(c, a, 6.);
+    assert!(!is_cyclic(&gr));
+    {
+        let e = gr.add_edge(a, a, 0.);
+        assert!(is_cyclic(&gr));
+        gr.remove_edge(e);
+        assert!(!is_cyclic(&gr));
+    }
+
+    {
+        let e = gr.add_edge(b, c, 0.);
+        assert!(is_cyclic(&gr));
+        gr.remove_edge(e);
+        assert!(!is_cyclic(&gr));
+    }
+
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    gr.add_edge(b, d, 0.);
+    gr.add_edge(d, e, 0.);
+    assert!(!is_cyclic(&gr));
+    gr.add_edge(c, e, 0.);
+    assert!(is_cyclic(&gr));
 }
