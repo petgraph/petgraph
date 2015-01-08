@@ -207,7 +207,7 @@ fn main() {
         println!("Visit {}", no);
     }
 
-    let mut g = OGraph::<_, f32>::new();
+    let mut g = OGraph::new();
     let a = g.add_node("A");
     let b = g.add_node("B");
     let c = g.add_node("C");

@@ -31,6 +31,23 @@ impl fmt::Show for EdgeIndex
     }
 }
 
+#[derive(Copy, Clone, Show)]
+pub struct Directed;
+#[derive(Copy, Clone, Show)]
+pub struct Undirected;
+
+pub trait EdgeType {
+    fn is_directed(_ig: Option<Self>) -> bool;
+}
+
+impl EdgeType for Directed {
+    fn is_directed(_ig: Option<Self>) -> bool { true }
+}
+
+impl EdgeType for Undirected {
+    fn is_directed(_ig: Option<Self>) -> bool { false }
+}
+
 pub const EDGE_END: EdgeIndex = EdgeIndex(::std::uint::MAX);
 //const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
@@ -91,7 +108,7 @@ impl<E> Edge<E>
 ///
 /// Removing an edge also shifts the index of another edge.
 #[derive(Clone)]
-pub struct OGraph<N, E> {
+pub struct OGraph<N, E, Edges=Directed> {
     nodes: Vec<Node<N>>,
     edges: Vec<Edge<E>>,
 }
@@ -133,14 +150,27 @@ fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<&mut T>
     }
 }
 
-impl<N, E> OGraph<N, E>
-//where N: fmt::Show
+impl<N, E> OGraph<N, E, Undirected>
 {
     /// Create a new OGraph.
-    pub fn new() -> OGraph<N, E>
+    pub fn new_undirected() -> Self
     {
         OGraph{nodes: Vec::new(), edges: Vec::new()}
     }
+}
+
+impl<N, E> OGraph<N, E, Directed>
+{
+    /// Create a new OGraph.
+    pub fn new() -> Self
+    {
+        OGraph{nodes: Vec::new(), edges: Vec::new()}
+    }
+}
+
+impl<N, E, ETy: EdgeType = Directed> OGraph<N, E, ETy>
+//where N: fmt::Show
+{
 
     /// Create a new OGraph with estimated capacity
     pub fn with_capacity(nodes: uint, edges: uint) -> Self
@@ -240,10 +270,10 @@ impl<N, E> OGraph<N, E>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **(NodeIndex, &'a E)**.
-    pub fn edges_both(&self, a: NodeIndex) -> EdgesBoth<N, E>
+    pub fn edges_both(&self, a: NodeIndex) -> EdgesBoth<E>
     {
         EdgesBoth{
-            graph: self,
+            edges: &*self.edges,
             next: match self.nodes.get(a.0) {
                 None => [EDGE_END, EDGE_END],
                 Some(n) => n.next,
@@ -256,6 +286,19 @@ impl<N, E> OGraph<N, E>
     /// **Panics** if any of the nodes don't exist.
     pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
     {
+        /*
+            Check for duplicate edge
+            if let Some(ix) = self.find_edge(a, b) {
+                match self.edge_mut(ix) {
+                    Some(ed) => {
+                        ed.data = data;
+                        return ix;
+                    }
+                    None => {}
+                }
+            }
+        */
+
         let edge_idx = EdgeIndex(self.edges.len());
         match index_twice(self.nodes.as_mut_slice(), a.0, b.0) {
             Pair::None => panic!("NodeIndices out of bounds"),
@@ -342,9 +385,9 @@ impl<N, E> OGraph<N, E>
         Some(node.data)
     }
 
-    pub fn edge_mut(&mut self, e: EdgeIndex) -> &mut Edge<E>
+    pub fn edge_mut(&mut self, e: EdgeIndex) -> Option<&mut Edge<E>>
     {
-        &mut self.edges[e.0]
+        self.edges.get_mut(e.0)
     }
 
     /// For edge **e** with endpoints **edge_node**, replace links to it,
@@ -546,7 +589,7 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
 }
 
 /// Treat the input graph as undirected.
-pub fn is_cyclic<N, E>(g: &OGraph<N, E>) -> bool
+pub fn is_cyclic<N, E, ETy: EdgeType>(g: &OGraph<N, E, ETy>) -> bool
 {
     let mut edge_sets = UnionFind::new(g.node_count());
     for edge in g.edges.iter() {
@@ -564,11 +607,11 @@ pub fn is_cyclic<N, E>(g: &OGraph<N, E>) -> bool
 /// Return a *Minimum Spanning Tree* of a graph.
 ///
 /// Treat the input graph as undirected.
-pub fn min_spanning_tree<N, E>(g: &OGraph<N, E>) -> OGraph<N, E>
+pub fn min_spanning_tree<N, E, ETy: EdgeType>(g: &OGraph<N, E, ETy>) -> OGraph<N, E, ETy>
     where N: Clone, E: Clone + PartialOrd
 {
     if g.node_count() == 0 {
-        return OGraph::new()
+        return OGraph::with_capacity(0, 0)
     }
 
     // Create a mst skeleton by copying all nodes
@@ -739,18 +782,18 @@ impl<'a, E> Iterator for EdgesMut<'a, E>
     }
 }
 
-pub struct EdgesBoth<'a, N: 'a, E: 'a> {
-    graph: &'a OGraph<N, E>,
+pub struct EdgesBoth<'a, E: 'a> {
+    edges: &'a [Edge<E>],
     next: [EdgeIndex; 2],
 }
 
-impl<'a, N, E> Iterator for EdgesBoth<'a, N, E>
+impl<'a, E> Iterator for EdgesBoth<'a, E>
 {
     type Item = (NodeIndex, &'a E);
     fn next(&mut self) -> Option<(NodeIndex, &'a E)>
     {
         // First any outgoing edges
-        match self.graph.edges.get(self.next[0].0) {
+        match self.edges.get(self.next[0].0) {
             None => {}
             Some(edge) => {
                 self.next[0] = edge.next[0];
@@ -758,7 +801,7 @@ impl<'a, N, E> Iterator for EdgesBoth<'a, N, E>
             }
         }
         // Then incoming edges
-        match self.graph.edges.get(self.next[1].0) {
+        match self.edges.get(self.next[1].0) {
             None => None,
             Some(edge) => {
                 self.next[1] = edge.next[1];

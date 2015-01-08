@@ -65,7 +65,7 @@ fn dfs() {
 
 #[test]
 fn mst() {
-    let mut gr = OGraph::<_, f32>::new();
+    let mut gr = OGraph::<_,_>::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
     let c = gr.add_node("C");
@@ -73,7 +73,7 @@ fn mst() {
     let e = gr.add_node("E");
     let f = gr.add_node("F");
     let g = gr.add_node("G");
-    gr.add_edge(a, b, 7.);
+    gr.add_edge(a, b, 7.0_f32);  // closure capture below doesn't work with default float type
     gr.add_edge(a, d, 5.);
     gr.add_edge(d, b, 9.);
     gr.add_edge(b, c, 8.);
@@ -102,7 +102,7 @@ fn mst() {
     let one_of = |&: a: bool, b: bool| {
         (a && !b) || (!a && b)
     };
-    let have_one = |&: x, y| {
+    let have_one = |&: x, y| -> bool {
         one_of(mst.find_edge(x, y).is_some(), mst.find_edge(y, x).is_some())
     };
 
@@ -124,7 +124,7 @@ fn mst() {
 
 #[test]
 fn selfloop() {
-    let mut gr = OGraph::<_, f32>::new();
+    let mut gr = OGraph::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
     let c = gr.add_node("C");
@@ -145,7 +145,7 @@ fn selfloop() {
 
 #[test]
 fn cyclic() {
-    let mut gr = OGraph::<_, f32>::new();
+    let mut gr = OGraph::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
     let c = gr.add_node("C");
@@ -175,4 +175,14 @@ fn cyclic() {
     assert!(!is_cyclic(&gr));
     gr.add_edge(c, e, 0.);
     assert!(is_cyclic(&gr));
+}
+
+#[test]
+fn multi() {
+    let mut gr = OGraph::new();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    gr.add_edge(a, b, ());
+    gr.add_edge(a, b, ());
+    assert_eq!(gr.edge_count(), 2);
 }
