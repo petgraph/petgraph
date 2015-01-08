@@ -253,7 +253,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash, E: Clone
     }
 }
 
-macro_rules! iterator_methods(
+macro_rules! iterator_methods {
     ($elt_type:ty) => (
         #[inline]
         fn next(&mut self) -> Option<$elt_type>
@@ -267,7 +267,7 @@ macro_rules! iterator_methods(
             self.iter.size_hint()
         }
     )
-);
+}
 
 pub struct Nodes<'a, N: 'a, E: 'a> {
     iter: Keys<'a, N, Vec<(N, E)>>

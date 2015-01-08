@@ -1,5 +1,3 @@
-#![feature(macro_rules)]
-#![feature(default_type_params)]
 extern crate arena;
 extern crate petgraph;
 

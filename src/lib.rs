@@ -1,8 +1,5 @@
 #![feature(old_orphan_check)]
-#![feature(associated_types)]
 #![feature(slicing_syntax)]
-#![feature(macro_rules)]
-#![feature(default_type_params)]
 extern crate test;
 
 use std::default::Default;
