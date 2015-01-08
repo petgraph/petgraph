@@ -66,3 +66,24 @@ fn mst() {
     assert!(mst.find_edge(b, c).is_none());
 
 }
+
+#[test]
+fn selfloop() {
+    let mut gr = OGraph::<_, f32>::new();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    gr.add_edge(a, b, 7.);
+    gr.add_edge(c, a, 6.);
+    let sed = gr.add_edge(a, a, 2.);
+
+    assert!(gr.find_edge(a, b).is_some());
+    assert!(gr.find_edge(b, a).is_none());
+    assert!(gr.find_any_edge(b, a).is_some());
+    assert!(gr.find_edge(a, a).is_some());
+    println!("{}", gr);
+
+    gr.remove_edge(sed);
+    assert!(gr.find_edge(a, a).is_none());
+    println!("{}", gr);
+}
