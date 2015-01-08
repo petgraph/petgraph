@@ -3,6 +3,7 @@ extern crate petgraph;
 use petgraph::{
     OGraph,
     Undirected,
+    Reversed,
 };
 
 use petgraph::ograph::{
@@ -30,6 +31,20 @@ fn dfs() {
         true
     });
     assert_eq!(visited, 4);
+
+    let mut visited = 0u;
+    petgraph::depth_first_search(&Reversed(&gr), h, |node| {
+        visited += 1;
+        true
+    });
+    assert_eq!(visited, 1);
+
+    let mut visited = 0u;
+    petgraph::depth_first_search(&Reversed(&gr), k, |node| {
+        visited += 1;
+        true
+    });
+    assert_eq!(visited, 3);
 
     let mut visited = 0u;
     petgraph::depth_first_search(&gr, i, |node| {
