@@ -117,11 +117,7 @@ where
     let zero_score: K = Default::default();
     scores.insert(start, zero_score);
     visit_next.push(MinScored(zero_score, start));
-    loop {
-        let MinScored(node_score, node) = match visit_next.pop() {
-            None => break,
-            Some(t) => t,
-        };
+    while let Some(MinScored(node_score, node)) = visit_next.pop() {
         if visited.contains(&node) {
             continue
         }
