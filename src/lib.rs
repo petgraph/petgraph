@@ -1,4 +1,3 @@
-#![feature(old_orphan_check)]
 #![feature(slicing_syntax)]
 extern crate test;
 
