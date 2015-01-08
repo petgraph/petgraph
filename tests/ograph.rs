@@ -19,42 +19,42 @@ fn dfs() {
     let j = gr.add_node("J");
     let k = gr.add_node("K");
     // Z is disconnected.
-    let z = gr.add_node("Z");
+    let _ = gr.add_node("Z");
     gr.add_edge(h, i, 1.);
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
 
     let mut visited = 0u;
-    petgraph::depth_first_search(&gr, h, |node| {
+    petgraph::depth_first_search(&gr, h, |_| {
         visited += 1;
         true
     });
     assert_eq!(visited, 4);
 
     let mut visited = 0u;
-    petgraph::depth_first_search(&Reversed(&gr), h, |node| {
+    petgraph::depth_first_search(&Reversed(&gr), h, |_| {
         visited += 1;
         true
     });
     assert_eq!(visited, 1);
 
     let mut visited = 0u;
-    petgraph::depth_first_search(&Reversed(&gr), k, |node| {
+    petgraph::depth_first_search(&Reversed(&gr), k, |_| {
         visited += 1;
         true
     });
     assert_eq!(visited, 3);
 
     let mut visited = 0u;
-    petgraph::depth_first_search(&gr, i, |node| {
+    petgraph::depth_first_search(&gr, i, |_| {
         visited += 1;
         true
     });
     assert_eq!(visited, 3);
 
     let mut visited = 0u;
-    petgraph::depth_first_search(&Undirected(&gr), i, |node| {
+    petgraph::depth_first_search(&Undirected(&gr), i, |_| {
         visited += 1;
         true
     });
