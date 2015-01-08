@@ -231,18 +231,11 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
     /// Iterator element type is **NodeIndex**.
     pub fn neighbors(&self, a: NodeIndex) -> Neighbors<E>
     {
-        let mut iter = Neighbors{
-            edges: &*self.edges,
-            next: match self.nodes.get(a.0) {
-                None => [EDGE_END, EDGE_END],
-                Some(n) => n.next,
-            }
-        };
         if EdgeType::is_directed(None::<EdgeTy>) {
-            // remove the in edges
-            iter.next[Incoming as uint] = EDGE_END;
+            self.neighbors_directed(a, Outgoing)
+        } else {
+            self.neighbors_both(a)
         }
-        iter
     }
 
     /// Return an iterator of all neighbors that have an edge from **a** to them.
@@ -250,16 +243,15 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **NodeIndex**.
-    pub fn directed_neighbors(&self, a: NodeIndex, dir: EdgeDirection) -> DiNeighbors<E>
+    pub fn neighbors_directed(&self, a: NodeIndex, dir: EdgeDirection) -> Neighbors<E>
     {
-        DiNeighbors{
-            edges: &*self.edges,
-            dir: dir,
-            next: match self.nodes.get(a.0) {
-                None => EDGE_END,
-                Some(n) => n.next[dir as uint],
-            }
+        let mut iter = self.neighbors_both(a);
+        if EdgeType::is_directed(None::<EdgeTy>) {
+            // remove the other edges not wanted.
+            let k = dir as uint;
+            iter.next[1 - k] = EDGE_END;
         }
+        iter
     }
 
     /// Return an iterator of all neighbors that have an edge from **a** to them.
@@ -315,22 +307,12 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
     
     /// Add an edge from **a** to **b** to the graph, with its edge weight.
     ///
+    /// **Note:** **OGraph** allows adding parallel (“duplicate”) edges. If you want
+    /// to avoid this, use *.update_edge()* instead.
+    ///
     /// **Panics** if any of the nodes don't exist.
     pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
     {
-        /*
-            Check for duplicate edge
-            if let Some(ix) = self.find_edge(a, b) {
-                match self.edge_mut(ix) {
-                    Some(ed) => {
-                        ed.data = data;
-                        return ix;
-                    }
-                    None => {}
-                }
-            }
-        */
-
         let edge_idx = EdgeIndex(self.edges.len());
         match index_twice(self.nodes.as_mut_slice(), a.0, b.0) {
             Pair::None => panic!("NodeIndices out of bounds"),
@@ -358,6 +340,28 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         }
         edge_idx
     }
+
+    /// Update or add an edge from **a** to **b**.
+    ///
+    /// If the edge already exists, its weight is updated.
+    ///
+    /// The affected edge's index is returned.
+    ///
+    /// **Panics** if any of the nodes don't exist.
+    pub fn update_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
+    {
+        if let Some(ix) = self.find_edge(a, b) {
+            match self.edge_mut(ix) {
+                Some(ed) => {
+                    ed.data = data;
+                    return ix;
+                }
+                None => {}
+            }
+        }
+        self.add_edge(a, b, data)
+    }
+
 
     /// Remove **a** from the graph if it exists, and return its data value.
     /// If it doesn't exist in the graph, return **None**.
@@ -415,6 +419,11 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
             }
         }
         Some(node.data)
+    }
+
+    pub fn edge_data(&mut self, e: EdgeIndex) -> Option<&E>
+    {
+        self.edges.get_mut(e.0).map(|ed| &ed.data)
     }
 
     pub fn edge_mut(&mut self, e: EdgeIndex) -> Option<&mut Edge<E>>
@@ -614,10 +623,10 @@ pub fn toposort<N, E>(g: &OGraph<N, E, Directed>) -> Vec<NodeIndex>
         }
         order.push(nix);
         ordered.insert(nix);
-        for neigh in g.directed_neighbors(nix, EdgeDirection::Outgoing) {
+        for neigh in g.neighbors_directed(nix, EdgeDirection::Outgoing) {
             // Look at each neighbor, and those that only have incoming edges
             // from the already ordered list, they are the next to visit.
-            if g.directed_neighbors(neigh, EdgeDirection::Incoming).all(|b| ordered.contains(&b)) {
+            if g.neighbors_directed(neigh, EdgeDirection::Incoming).all(|b| ordered.contains(&b)) {
                 tovisit.push(neigh);
             }
         }
@@ -691,6 +700,7 @@ pub fn min_spanning_tree<N, E, EdgeTy: EdgeType>(g: &OGraph<N, E, EdgeTy>) -> OG
     mst
 }
 
+/*
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is **NodeIndex**.
@@ -715,6 +725,7 @@ impl<'a, E> Iterator for DiNeighbors<'a, E>
         }
     }
 }
+*/
 
 /// Iterator over the neighbors of a node.
 ///

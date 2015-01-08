@@ -222,10 +222,10 @@ impl<'a, 'b, N, E> GraphNeighbors<'a, ograph::NodeIndex> for Undirected<&'b OGra
 
 impl<'a, 'b, N, E, ETy: EdgeType> GraphNeighbors<'a, ograph::NodeIndex> for Reversed<&'b OGraph<N, E, ETy>>
 {
-    type Iter = ograph::DiNeighbors<'a, E>;
-    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::DiNeighbors<'a, E>
+    type Iter = ograph::Neighbors<'a, E>;
+    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
     {
-        OGraph::directed_neighbors(self.0, n, EdgeDirection::Incoming)
+        OGraph::neighbors_directed(self.0, n, EdgeDirection::Incoming)
     }
 }
 
