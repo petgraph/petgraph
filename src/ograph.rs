@@ -117,7 +117,7 @@ pub struct OGraph<N, E, Edges=Directed> {
     edges: Vec<Edge<E>>,
 }
 
-impl<N: fmt::Show, E: fmt::Show> fmt::Show for OGraph<N, E>
+impl<N: fmt::Show, E: fmt::Show, EdgeTy: EdgeType> fmt::Show for OGraph<N, E, EdgeTy>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (index, n) in self.nodes.iter().enumerate() {
@@ -278,16 +278,13 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **(NodeIndex, &'a E)**.
-    pub fn edges(&self, a: NodeIndex, dir: EdgeDirection) -> Edges<E>
+    pub fn edges(&self, a: NodeIndex) -> Edges<E>
     {
-        Edges{
-            edges: &*self.edges,
-            dir: dir,
-            next: match self.nodes.get(a.0) {
-                None => EDGE_END,
-                Some(n) => n.next[dir as uint],
-            }
+        let mut iter = self.edges_both(a);
+        if EdgeType::is_directed(None::<EdgeTy>) {
+            iter.next[Incoming as uint] = EDGE_END;
         }
+        iter
     }
 
     /// Return an iterator over the edgs from **a** to its neighbors, then *to* **a** from its
@@ -296,9 +293,9 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **(NodeIndex, &'a E)**.
-    pub fn edges_both(&self, a: NodeIndex) -> EdgesBoth<E>
+    pub fn edges_both(&self, a: NodeIndex) -> Edges<E>
     {
-        EdgesBoth{
+        Edges{
             edges: &*self.edges,
             next: match self.nodes.get(a.0) {
                 None => [EDGE_END, EDGE_END],
@@ -762,35 +759,6 @@ impl<'a, E> Iterator for Neighbors<'a, E>
     }
 }
 
-pub struct Edges<'a, E: 'a> {
-    edges: &'a [Edge<E>],
-    next: EdgeIndex,
-    dir: EdgeDirection,
-}
-
-impl<'a, E> Iterator for Edges<'a, E>
-{
-    type Item = (NodeIndex, &'a E);
-    fn next(&mut self) -> Option<(NodeIndex, &'a E)>
-    {
-        let k = self.dir as uint;
-        match self.edges.get(self.next.0) {
-            None => None,
-            Some(edge) => {
-                self.next = edge.next[k];
-                Some((edge.node[1-k], &edge.data))
-            }
-        }
-    }
-
-    fn size_hint(&self) -> (uint, Option<uint>)
-    {
-        let low = (self.next != EDGE_END) as uint;
-        let hi = low * self.edges.len();
-        (low, Some(hi))
-    }
-}
-
 pub struct EdgesMut<'a, E: 'a> {
     edges: &'a mut [Edge<E>],
     next: EdgeIndex,
@@ -836,12 +804,12 @@ impl<'a, E> Iterator for EdgesMut<'a, E>
     }
 }
 
-pub struct EdgesBoth<'a, E: 'a> {
+pub struct Edges<'a, E: 'a> {
     edges: &'a [Edge<E>],
     next: [EdgeIndex; 2],
 }
 
-impl<'a, E> Iterator for EdgesBoth<'a, E>
+impl<'a, E> Iterator for Edges<'a, E>
 {
     type Item = (NodeIndex, &'a E);
     fn next(&mut self) -> Option<(NodeIndex, &'a E)>

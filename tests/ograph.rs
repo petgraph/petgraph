@@ -4,6 +4,9 @@ use petgraph::{
     OGraph,
     Undirected,
     Reversed,
+    BreadthFirst,
+    dijkstra,
+    Outgoing,
 };
 
 use petgraph::ograph::{
@@ -246,4 +249,34 @@ fn update_edge()
         assert_eq!(e, f);
         assert_eq!(*gr.edge_weight(f).unwrap(), 2);
     }
+}
+
+#[test]
+fn dijk() {
+    let mut g = OGraph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    g.add_edge(a, b, 7.0_f32);
+    g.add_edge(c, a, 9.);
+    g.add_edge(a, d, 14.);
+    g.add_edge(b, c, 10.);
+    g.add_edge(d, c, 2.);
+    g.add_edge(d, e, 9.);
+    g.add_edge(b, f, 15.);
+    g.add_edge(c, f, 11.);
+    g.add_edge(e, f, 6.);
+    println!("{}", g);
+    for no in BreadthFirst::new(&g, a) {
+        println!("Visit {} = {}", no, g.node(no));
+    }
+
+    let scores = dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    println!("Scores= {}", scores);
+    assert_eq!(scores[c], 9.);
+    assert_eq!(scores[e], 20.);
+    assert_eq!(scores[f], 20.);
 }
