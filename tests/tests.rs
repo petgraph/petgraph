@@ -14,7 +14,7 @@ use petgraph::EdgeDirection;
 #[test]
 fn ograph_1()
 {
-    let mut og = OGraph::new_undirected();
+    let mut og = OGraph::new();
     let a = og.add_node(0);
     let b = og.add_node(1);
     let c = og.add_node(2);
@@ -33,10 +33,10 @@ fn ograph_1()
     assert!(og.find_edge(d, a).is_none());
     assert!(og.find_edge(a, a).is_some());
 
-    assert_eq!(og.neighbors(b, EdgeDirection::Outgoing).collect::<Vec<_>>(), vec![a, c]);
+    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![a, c]);
 
     og.remove_node(a);
-    assert_eq!(og.neighbors(b, EdgeDirection::Outgoing).collect::<Vec<_>>(), vec![c]);
+    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![c]);
     assert_eq!(og.node_count(), 3);
     assert_eq!(og.edge_count(), 1);
     assert!(og.find_edge(a, b).is_none());

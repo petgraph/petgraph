@@ -150,15 +150,6 @@ fn index_twice<T>(slc: &mut [T], a: uint, b: uint) -> Pair<&mut T>
     }
 }
 
-impl<N, E> OGraph<N, E, Undirected>
-{
-    /// Create a new OGraph.
-    pub fn new_undirected() -> Self
-    {
-        OGraph{nodes: Vec::new(), edges: Vec::new()}
-    }
-}
-
 impl<N, E> OGraph<N, E, Directed>
 {
     /// Create a new OGraph.
@@ -168,10 +159,17 @@ impl<N, E> OGraph<N, E, Directed>
     }
 }
 
-impl<N, E, ETy: EdgeType = Directed> OGraph<N, E, ETy>
-//where N: fmt::Show
+impl<N, E> OGraph<N, E, Undirected>
 {
+    /// Create a new OGraph.
+    pub fn new_undirected() -> Self
+    {
+        OGraph{nodes: Vec::new(), edges: Vec::new()}
+    }
+}
 
+impl<N, E, ETy: EdgeType = Directed> OGraph<N, E, ETy>
+{
     /// Create a new OGraph with estimated capacity
     pub fn with_capacity(nodes: uint, edges: uint) -> Self
     {
@@ -218,9 +216,30 @@ impl<N, E, ETy: EdgeType = Directed> OGraph<N, E, ETy>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **NodeIndex**.
-    pub fn neighbors(&self, a: NodeIndex, dir: EdgeDirection) -> Neighbors<E>
+    pub fn neighbors(&self, a: NodeIndex) -> Neighbors<E>
     {
-        Neighbors{
+        let mut iter = Neighbors{
+            edges: &*self.edges,
+            next: match self.nodes.get(a.0) {
+                None => [EDGE_END, EDGE_END],
+                Some(n) => n.next,
+            }
+        };
+        if EdgeType::is_directed(None::<ETy>) {
+            // remove the in edges
+            iter.next[Incoming as uint] = EDGE_END;
+        }
+        iter
+    }
+
+    /// Return an iterator of all neighbors that have an edge from **a** to them.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is **NodeIndex**.
+    pub fn directed_neighbors(&self, a: NodeIndex, dir: EdgeDirection) -> DiNeighbors<E>
+    {
+        DiNeighbors{
             edges: &*self.edges,
             dir: dir,
             next: match self.nodes.get(a.0) {
@@ -235,9 +254,9 @@ impl<N, E, ETy: EdgeType = Directed> OGraph<N, E, ETy>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **NodeIndex**.
-    pub fn neighbors_both(&self, a: NodeIndex) -> NeighborsBoth<E>
+    pub fn neighbors_both(&self, a: NodeIndex) -> Neighbors<E>
     {
-        NeighborsBoth{
+        Neighbors{
             edges: &*self.edges,
             next: match self.nodes.get(a.0) {
                 None => [EDGE_END, EDGE_END],
@@ -457,17 +476,21 @@ impl<N, E, ETy: EdgeType = Directed> OGraph<N, E, ETy>
     /// Lookup an edge from **a** to **b**.
     pub fn find_edge(&self, a: NodeIndex, b: NodeIndex) -> Option<EdgeIndex>
     {
-        match self.nodes.get(a.0) {
-            None => None,
-            Some(node) => {
-                let mut edix = node.next[0];
-                while let Some(edge) = self.edges.get(edix.0) {
-                    if edge.node[1] == b {
-                        return Some(edix)
+        if !EdgeType::is_directed(None::<ETy>) {
+            self.find_any_edge(a, b).map(|(ix, _)| ix)
+        } else {
+            match self.nodes.get(a.0) {
+                None => None,
+                Some(node) => {
+                    let mut edix = node.next[0];
+                    while let Some(edge) = self.edges.get(edix.0) {
+                        if edge.node[1] == b {
+                            return Some(edix)
+                        }
+                        edix = edge.next[0];
                     }
-                    edix = edge.next[0];
+                    None
                 }
-                None
             }
         }
     }
@@ -560,7 +583,7 @@ impl<'a, N: 'a> Iterator for WithoutEdges<'a, N>
 ///
 /// If the returned vec contains less than all the nodes of the graph, then
 /// the graph was cyclic.
-pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
+pub fn toposort<N, E>(g: &OGraph<N, E, Directed>) -> Vec<NodeIndex>
 {
     let mut order = Vec::with_capacity(g.node_count());
     let mut ordered = HashSet::with_capacity(g.node_count());
@@ -576,10 +599,10 @@ pub fn toposort<N, E>(g: &OGraph<N, E>) -> Vec<NodeIndex>
         }
         order.push(nix);
         ordered.insert(nix);
-        for neigh in g.neighbors(nix, EdgeDirection::Outgoing) {
+        for neigh in g.directed_neighbors(nix, EdgeDirection::Outgoing) {
             // Look at each neighbor, and those that only have incoming edges
             // from the already ordered list, they are the next to visit.
-            if g.neighbors(neigh, EdgeDirection::Incoming).all(|b| ordered.contains(&b)) {
+            if g.directed_neighbors(neigh, EdgeDirection::Incoming).all(|b| ordered.contains(&b)) {
                 tovisit.push(neigh);
             }
         }
@@ -656,13 +679,13 @@ pub fn min_spanning_tree<N, E, ETy: EdgeType>(g: &OGraph<N, E, ETy>) -> OGraph<N
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is **NodeIndex**.
-pub struct Neighbors<'a, E: 'a> {
+pub struct DiNeighbors<'a, E: 'a> {
     edges: &'a [Edge<E>],
     next: EdgeIndex,
     dir: EdgeDirection,
 }
 
-impl<'a, E> Iterator for Neighbors<'a, E>
+impl<'a, E> Iterator for DiNeighbors<'a, E>
 {
     type Item = NodeIndex;
     fn next(&mut self) -> Option<NodeIndex>
@@ -681,12 +704,12 @@ impl<'a, E> Iterator for Neighbors<'a, E>
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is **NodeIndex**.
-pub struct NeighborsBoth<'a, E: 'a> {
+pub struct Neighbors<'a, E: 'a> {
     edges: &'a [Edge<E>],
     next: [EdgeIndex; 2],
 }
 
-impl<'a, E> Iterator for NeighborsBoth<'a, E>
+impl<'a, E> Iterator for Neighbors<'a, E>
 {
     type Item = NodeIndex;
     fn next(&mut self) -> Option<NodeIndex>

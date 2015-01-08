@@ -12,6 +12,40 @@ use petgraph::ograph::{
 };
 
 #[test]
+fn undirected()
+{
+    let mut og = OGraph::new_undirected();
+    let a = og.add_node(0);
+    let b = og.add_node(1);
+    let c = og.add_node(2);
+    let d = og.add_node(3);
+    let _ = og.add_edge(a, b, 0);
+    let _ = og.add_edge(a, c, 1);
+    og.add_edge(c, a, 2);
+    og.add_edge(a, a, 3);
+    og.add_edge(b, c, 4);
+    og.add_edge(b, a, 5);
+    og.add_edge(a, d, 6);
+    assert_eq!(og.node_count(), 4);
+    assert_eq!(og.edge_count(), 7);
+
+    assert!(og.find_edge(a, b).is_some());
+    assert!(og.find_edge(d, a).is_some());
+    assert!(og.find_edge(a, a).is_some());
+
+    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![a, c, a]);
+
+    og.remove_node(a);
+    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![c]);
+    assert_eq!(og.node_count(), 3);
+    assert_eq!(og.edge_count(), 1);
+    assert!(og.find_edge(a, b).is_none());
+    assert!(og.find_edge(d, a).is_none());
+    assert!(og.find_edge(a, a).is_none());
+    assert!(og.find_edge(b, c).is_some());
+}
+
+#[test]
 fn dfs() {
     let mut gr = OGraph::new();
     let h = gr.add_node("H");

@@ -21,7 +21,12 @@ pub use scored::MinScored;
 pub use digraph::DiGraph;
 pub use graph::Graph;
 pub use ograph::OGraph;
+use ograph::{
+    EdgeType,
+};
+
 pub use self::EdgeDirection::{Outgoing, Incoming};
+
 mod scored;
 pub mod digraph;
 pub mod graph;
@@ -192,12 +197,12 @@ where N: Copy + Clone + Hash + Eq
     }
 }
 
-impl<'a, N, E> GraphNeighbors<'a, ograph::NodeIndex> for OGraph<N, E>
+impl<'a, N, E, ETy: EdgeType> GraphNeighbors<'a, ograph::NodeIndex> for OGraph<N, E, ETy>
 {
     type Iter = ograph::Neighbors<'a, E>;
     fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
     {
-        OGraph::neighbors(self, n, EdgeDirection::Outgoing)
+        OGraph::neighbors(self, n)
     }
 }
 
@@ -208,19 +213,19 @@ pub struct Reversed<G>(pub G);
 
 impl<'a, 'b, N, E> GraphNeighbors<'a, ograph::NodeIndex> for Undirected<&'b OGraph<N, E>>
 {
-    type Iter = ograph::NeighborsBoth<'a, E>;
-    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::NeighborsBoth<'a, E>
+    type Iter = ograph::Neighbors<'a, E>;
+    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
     {
         OGraph::neighbors_both(self.0, n)
     }
 }
 
-impl<'a, 'b, N, E> GraphNeighbors<'a, ograph::NodeIndex> for Reversed<&'b OGraph<N, E>>
+impl<'a, 'b, N, E, ETy: EdgeType> GraphNeighbors<'a, ograph::NodeIndex> for Reversed<&'b OGraph<N, E, ETy>>
 {
-    type Iter = ograph::Neighbors<'a, E>;
-    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
+    type Iter = ograph::DiNeighbors<'a, E>;
+    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::DiNeighbors<'a, E>
     {
-        OGraph::neighbors(self.0, n, EdgeDirection::Incoming)
+        OGraph::directed_neighbors(self.0, n, EdgeDirection::Incoming)
     }
 }
 
