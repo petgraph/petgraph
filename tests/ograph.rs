@@ -17,7 +17,7 @@ fn mst() {
     let d = gr.add_node("D");
     let e = gr.add_node("E");
     let f = gr.add_node("F");
-    let g = gr.add_node("gr");
+    let g = gr.add_node("G");
     gr.add_edge(a, b, 7.);
     gr.add_edge(a, d, 5.);
     gr.add_edge(d, b, 9.);
@@ -30,10 +30,19 @@ fn mst() {
     gr.add_edge(f, g, 11.);
     gr.add_edge(e, g, 9.);
 
+    // add a disjoint part
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
+    gr.add_edge(h, i, 1.);
+    gr.add_edge(h, j, 3.);
+    gr.add_edge(i, j, 1.);
+
     let mst = min_spanning_tree(&gr);
     println!("MST is:\n{}", mst);
     assert!(mst.node_count() == gr.node_count());
-    assert!(mst.edge_count() == gr.node_count() - 1);
+    // |E| = |N| - 2  because ther are two disconnected components.
+    assert!(mst.edge_count() == gr.node_count() - 2);
 
     let one_of = |&: a: bool, b: bool| {
         (a && !b) || (!a && b)
@@ -42,15 +51,18 @@ fn mst() {
         one_of(mst.find_edge(x, y).is_some(), mst.find_edge(y, x).is_some())
     };
 
+    // check the exact edges are there
     assert!(have_one(a, b));
     assert!(have_one(a, d));
     assert!(have_one(b, e));
     assert!(have_one(e, c));
     assert!(have_one(e, g));
     assert!(have_one(d, f));
+
+    assert!(have_one(h, i));
+    assert!(have_one(i, j));
     
     assert!(mst.find_edge(d, b).is_none());
     assert!(mst.find_edge(b, c).is_none());
 
-    // check the exact edges are there
 }
