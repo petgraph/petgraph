@@ -295,20 +295,18 @@ impl<'a, N, V: Visitable<N>> Visitable<N> for Reversed<&'a V>
 
 /// A breadth first traversal of a graph.
 #[derive(Clone)]
-pub struct BreadthFirst<'a, G, N>
-    where
-        G: 'a,
-        N: Eq + Hash,
+pub struct BreadthFirst<'a, G, N> where
+    G: 'a,
+    N: Eq + Hash,
 {
     pub graph: &'a G,
     pub stack: RingBuf<N>,
     pub visited: HashSet<N>,
 }
 
-impl<'a, G, N> BreadthFirst<'a, G, N>
-    where
-        G: 'a + GraphNeighbors<'a, N>,
-        N: Copy + Eq + Hash,
+impl<'a, G, N> BreadthFirst<'a, G, N> where
+    G: 'a + GraphNeighbors<'a, N>,
+    N: Copy + Eq + Hash,
 {
     pub fn new(graph: &'a G, start: N) -> BreadthFirst<'a, G, N>
     {
@@ -322,11 +320,10 @@ impl<'a, G, N> BreadthFirst<'a, G, N>
     }
 }
 
-impl<'a, G, N> Iterator for BreadthFirst<'a, G, N>
-    where
-        G: 'a + GraphNeighbors<'a, N>,
-        N: Copy + Eq + Hash,
-        <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
+impl<'a, G, N> Iterator for BreadthFirst<'a, G, N> where
+    G: 'a + GraphNeighbors<'a, N>,
+    N: Copy + Eq + Hash,
+    <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
 {
     type Item = N;
     fn next(&mut self) -> Option<N>
@@ -350,20 +347,18 @@ impl<'a, G, N> Iterator for BreadthFirst<'a, G, N>
 
 /// A depth first traversal of a graph.
 #[derive(Clone)]
-pub struct DepthFirst<'a, G, N>
-    where
-        G: 'a,
-        N: Eq + Hash,
+pub struct DepthFirst<'a, G, N> where
+    G: 'a,
+    N: Eq + Hash,
 {
     pub graph: &'a G,
     pub stack: Vec<N>,
     pub visited: HashSet<N>,
 }
 
-impl<'a, G, N> DepthFirst<'a, G, N>
-    where
-        G: 'a + GraphNeighbors<'a, N>,
-        N: Copy + Eq + Hash,
+impl<'a, G, N> DepthFirst<'a, G, N> where
+    G: 'a + GraphNeighbors<'a, N>,
+    N: Copy + Eq + Hash,
 {
     pub fn new(graph: &'a G, start: N) -> DepthFirst<'a, G, N>
     {
@@ -375,11 +370,10 @@ impl<'a, G, N> DepthFirst<'a, G, N>
     }
 }
 
-impl<'a, G, N> Iterator for DepthFirst<'a, G, N>
-    where
-        G: 'a + GraphNeighbors<'a, N>,
-        N: Copy + Eq + Hash,
-        <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
+impl<'a, G, N> Iterator for DepthFirst<'a, G, N> where
+    G: 'a + GraphNeighbors<'a, N>,
+    N: Copy + Eq + Hash,
+    <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
 {
     type Item = N;
     fn next(&mut self) -> Option<N>
@@ -401,13 +395,12 @@ impl<'a, G, N> Iterator for DepthFirst<'a, G, N>
     }
 }
 
-pub fn depth_first_search<'a, G, N, F>(graph: &'a G, start: N, mut f: F) -> bool
-    where
-        G: 'a + GraphNeighbors<'a, N> + Visitable<N>,
-        N: Clone,
-        <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
-        <G as Visitable<N>>::Map: VisitMap<N>,
-        F: FnMut(N) -> bool,
+pub fn depth_first_search<'a, G, N, F>(graph: &'a G, start: N, mut f: F) -> bool where
+    G: 'a + GraphNeighbors<'a, N> + Visitable<N>,
+    N: Clone,
+    <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
+    <G as Visitable<N>>::Map: VisitMap<N>,
+    F: FnMut(N) -> bool,
 {
     let mut stack = Vec::new();
     let mut visited = graph.visit_map();
