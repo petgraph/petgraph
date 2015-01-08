@@ -14,7 +14,7 @@ use std::num;
 #[derive(Show, Clone)]
 pub struct UnionFind<K> where K: num::UnsignedInt
 {
-    // For element at index *i*, store the index of its representative; the reprsentative itself
+    // For element at index *i*, store the index of its parent; the representative itself
     // stores its own index. This forms equivalence classes which are the disjoint sets, each
     // with a unique representative.
     parent: Vec<K>,
@@ -44,13 +44,17 @@ impl<K> UnionFind<K> where K: num::UnsignedInt
         let mut parent = Vec::with_capacity(n);
         let mut rank = Vec::with_capacity(n);
 
-        let mut i: K = num::Int::zero();
+        for _ in range(0, n) {
+            rank.push(0)
+        }
+
         // unroll the first iteration to avoid wraparound in i for K=u8, n=256.
-        rank.push(0);
-        parent.push(i);
+        let mut i: K = num::Int::zero();
+        if n > 0 {
+            parent.push(i);
+        }
         for _ in range(1, n) {
             i = i + num::Int::one();
-            rank.push(0);
             parent.push(i);
         }
         UnionFind{parent: parent, rank: rank}
