@@ -11,9 +11,6 @@ use super::MinScored;
 
 use super::unionfind::UnionFind;
 
-#[cfg(test)]
-use test;
-
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
 // should be lifetimed just like pointers.
 #[derive(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Hash)]
@@ -769,37 +766,4 @@ impl<'a, N, E> Iterator for EdgesBoth<'a, N, E>
             }
         }
     }
-}
-
-#[bench]
-fn bench_inser(b: &mut test::Bencher) {
-    let mut og = OGraph::new();
-    let fst = og.add_node(0i);
-    for x in range(1, 125) {
-        let n = og.add_node(x);
-        og.add_edge(fst, n, ());
-    }
-    b.iter(|| {
-        og.add_node(1)
-    })
-}
-
-#[bench]
-fn bench_remove(b: &mut test::Bencher) {
-    // removal is very slow in a big graph.
-    // and this one doesn't even have many nodes.
-    let mut og = OGraph::new();
-    let fst = og.add_node(0i);
-    let mut prev = fst;
-    for x in range(1, 1250) {
-        let n = og.add_node(x);
-        og.add_edge(prev, n, ());
-        prev = n;
-    }
-    //println!("{}", og);
-    b.iter(|| {
-        for _ in range(0, 100i) {
-            og.remove_node(fst);
-        }
-    })
 }
