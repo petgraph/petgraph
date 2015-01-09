@@ -52,29 +52,35 @@ impl EdgeType for Undirected {
     fn is_directed(_ig: Option<Self>) -> bool { false }
 }
 
+/// An invalid **EdgeIndex** used to denote absence of an edge, for example
+/// to end an adjacency list.
 pub const EDGE_END: EdgeIndex = EdgeIndex(::std::uint::MAX);
-//const InvalidNode: NodeIndex = NodeIndex(::std::uint::MAX);
 
 const DIRECTIONS: [EdgeDirection; 2] = [EdgeDirection::Outgoing, EdgeDirection::Incoming];
 
+/// The graph's node type.
 #[derive(Show, Clone)]
 pub struct Node<N> {
-    pub data: N,
+    /// Associated node data.
+    pub weight: N,
     /// Next edge in outgoing and incoming edge lists.
     next: [EdgeIndex; 2],
 }
 
 impl<N> Node<N>
 {
+    /// Accessor for data structure internals: the first edge in the given direction.
     pub fn next_edge(&self, dir: EdgeDirection) -> EdgeIndex
     {
         self.next[dir as uint]
     }
 }
 
+/// The graph's edge type.
 #[derive(Show, Clone)]
 pub struct Edge<E> {
-    pub data: E,
+    /// Associated edge data.
+    pub weight: E,
     /// Next edge in outgoing and incoming edge lists.
     next: [EdgeIndex; 2],
     /// Start and End node index
@@ -83,16 +89,19 @@ pub struct Edge<E> {
 
 impl<E> Edge<E>
 {
+    /// Accessor for data structure internals: the next edge in the given direction.
     pub fn next_edge(&self, dir: EdgeDirection) -> EdgeIndex
     {
         self.next[dir as uint]
     }
 
+    /// Return the source node index.
     pub fn source(&self) -> NodeIndex
     {
         self.node[0]
     }
 
+    /// Return the target node index.
     pub fn target(&self) -> NodeIndex
     {
         self.node[1]
@@ -100,12 +109,14 @@ impl<E> Edge<E>
 }
 
 /// **OGraph\<N, E, EdgeType\>** is a graph datastructure using an adjacency list representation.
-/// The parameter **EdgeType** determines whether the graph has directed edges or not.
+///
+/// **OGraph** is parameterized over the node weight **N**, edge weight **E** and
+/// the parameter **EdgeType** that determines whether the graph has directed edges or not.
 ///
 /// Based on the graph implementation in rustc.
 ///
 /// The graph maintains unique indices for nodes and edges, and node and edge
-/// data may be accessed mutably.
+/// weights may be accessed mutably.
 ///
 /// **NodeIndex** and **EdgeIndex** are types that act as references to nodes and edges,
 /// but these are only stable across certain operations. Adding to the graph keeps
@@ -200,33 +211,30 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         EdgeType::is_directed(None::<EdgeTy>)
     }
 
-    /// Add a node (also called vertex) with weight **data** to the graph.
+    /// Add a node (also called vertex) with weight **w** to the graph.
     ///
     /// Return the index of the new node.
-    pub fn add_node(&mut self, data: N) -> NodeIndex
+    pub fn add_node(&mut self, w: N) -> NodeIndex
     {
-        let node = Node{data: data, next: [EDGE_END, EDGE_END]};
+        let node = Node{weight: w, next: [EDGE_END, EDGE_END]};
         let node_idx = NodeIndex(self.nodes.len());
         self.nodes.push(node);
         node_idx
     }
 
-    /// Access node data for node **a**.
+    /// Access node weight for node **a**.
     pub fn node(&self, a: NodeIndex) -> Option<&N>
     {
-        self.nodes.get(a.0).map(|n| &n.data)
+        self.nodes.get(a.0).map(|n| &n.weight)
     }
 
-    /// Access node data for node **a**.
+    /// Access node weight for node **a**.
     pub fn node_mut(&mut self, a: NodeIndex) -> Option<&mut N>
     {
-        self.nodes.get_mut(a.0).map(|n| &mut n.data)
+        self.nodes.get_mut(a.0).map(|n| &mut n.weight)
     }
 
-    /// Return an iterator of all neighbor nodes of **a**.
-    ///
-    /// For an undirected graph, this includes all edges between **a** and another node,
-    /// for directed graph, only the outgoing edges from **a**.
+    /// Return an iterator of all nodes with an edge starting from **a**.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
@@ -240,7 +248,9 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         }
     }
 
-    /// Return an iterator of all neighbors that have an edge from **a** to them.
+    /// Return an iterator of all neighbors that have an edge between them and **a**,
+    /// in the specified direction.
+    /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
@@ -256,7 +266,9 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         iter
     }
 
-    /// Return an iterator of all neighbors that have an edge from **a** to them.
+    /// Return an iterator of all neighbors that have an edge between then and **a**,
+    /// in either direction.
+    /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
@@ -307,19 +319,19 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
     /// Add an edge from **a** to **b** to the graph, with its edge weight.
     ///
     /// **Note:** **OGraph** allows adding parallel (“duplicate”) edges. If you want
-    /// to avoid this, use *.update_edge()* instead.
+    /// to avoid this, use [*.update_edge(a, b, weight)*](#method.update_edge) instead.
     ///
     /// Return the index of the new edge.
     ///
     /// **Panics** if any of the nodes don't exist.
-    pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
+    pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex, weight: E) -> EdgeIndex
     {
         let edge_idx = EdgeIndex(self.edges.len());
         match index_twice(self.nodes.as_mut_slice(), a.0, b.0) {
             Pair::None => panic!("NodeIndices out of bounds"),
             Pair::One(an) => {
                 let edge = Edge {
-                    data: data,
+                    weight: weight,
                     node: [a, b],
                     next: an.next,
                 };
@@ -330,7 +342,7 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
             Pair::Both(an, bn) => {
                 // a and b are different indices
                 let edge = Edge {
-                    data: data,
+                    weight: weight,
                     node: [a, b],
                     next: [an.next[0], bn.next[1]],
                 };
@@ -342,40 +354,40 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         edge_idx
     }
 
-    /// Update or add an edge from **a** to **b**.
+    /// Add or update an edge from **a** to **b**.
     ///
     /// If the edge already exists, its weight is updated.
     ///
     /// Return the index of the affected edge.
     ///
     /// **Panics** if any of the nodes don't exist.
-    pub fn update_edge(&mut self, a: NodeIndex, b: NodeIndex, data: E) -> EdgeIndex
+    pub fn update_edge(&mut self, a: NodeIndex, b: NodeIndex, weight: E) -> EdgeIndex
     {
         if let Some(ix) = self.find_edge(a, b) {
             match self.edge_weight_mut(ix) {
                 Some(ed) => {
-                    *ed = data;
+                    *ed = weight;
                     return ix;
                 }
                 None => {}
             }
         }
-        self.add_edge(a, b, data)
+        self.add_edge(a, b, weight)
     }
 
     /// Access the edge weight for **e**.
     pub fn edge_weight(&self, e: EdgeIndex) -> Option<&E>
     {
-        self.edges.get(e.0).map(|ed| &ed.data)
+        self.edges.get(e.0).map(|ed| &ed.weight)
     }
 
     /// Access the edge weight for **e** mutably.
     pub fn edge_weight_mut(&mut self, e: EdgeIndex) -> Option<&mut E>
     {
-        self.edges.get_mut(e.0).map(|ed| &mut ed.data)
+        self.edges.get_mut(e.0).map(|ed| &mut ed.weight)
     }
 
-    /// Remove **a** from the graph if it exists, and return its data value.
+    /// Remove **a** from the graph if it exists, and return its weight.
     /// If it doesn't exist in the graph, return **None**.
     pub fn remove_node(&mut self, a: NodeIndex) -> Option<N>
     {
@@ -414,7 +426,7 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         // Find the edge lists of the node that had to relocate.
         // It may be that no node had to relocate, then we are done already.
         let swap_edges = match self.nodes.get(a.0) {
-            None => return Some(node.data),
+            None => return Some(node.weight),
             Some(ed) => ed.next,
         };
 
@@ -430,7 +442,7 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
                 curedge.node[k] = new_index;
             }
         }
-        Some(node.data)
+        Some(node.weight)
     }
 
     /// For edge **e** with endpoints **edge_node**, replace links to it,
@@ -486,7 +498,7 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         let edge = self.edges.swap_remove(e.0);
         let swap = match self.edges.get(e.0) {
             // no elment needed to be swapped.
-            None => return Some(edge.data),
+            None => return Some(edge.weight),
             Some(ed) => ed.node,
         };
         let swapped_e = EdgeIndex(self.edges.len());
@@ -494,7 +506,7 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         // Update the edge lists by replacing links to the old index by references to the new
         // edge index.
         self.change_edge_links(swap, swapped_e, [e, e]);
-        Some(edge.data)
+        Some(edge.weight)
     }
 
     /// Lookup an edge from **a** to **b**.
@@ -666,7 +678,7 @@ pub fn min_spanning_tree<N, E, EdgeTy: EdgeType>(g: &OGraph<N, E, EdgeTy>) -> OG
     // Create a mst skeleton by copying all nodes
     let mut mst = OGraph::with_capacity(g.node_count(), g.node_count() - 1);
     for node in g.nodes.iter() {
-        mst.add_node(node.data.clone());
+        mst.add_node(node.weight.clone());
     }
 
     // Initially each vertex is its own disjoint subgraph, track the connectedness
@@ -675,7 +687,7 @@ pub fn min_spanning_tree<N, E, EdgeTy: EdgeType>(g: &OGraph<N, E, EdgeTy>) -> OG
 
     let mut sort_edges = BinaryHeap::with_capacity(g.edge_count());
     for edge in g.edges.iter() {
-        sort_edges.push(MinScored(edge.data.clone(), (edge.source(), edge.target())));
+        sort_edges.push(MinScored(edge.weight.clone(), (edge.source(), edge.target())));
     }
 
     // Kruskal's algorithm.
@@ -759,7 +771,7 @@ impl<'a, E> Iterator for Neighbors<'a, E>
     }
 }
 
-pub struct EdgesMut<'a, E: 'a> {
+struct EdgesMut<'a, E: 'a> {
     edges: &'a mut [Edge<E>],
     next: EdgeIndex,
     dir: EdgeDirection,
@@ -804,6 +816,7 @@ impl<'a, E> Iterator for EdgesMut<'a, E>
     }
 }
 
+/// Iterator over the edges of a node.
 pub struct Edges<'a, E: 'a> {
     edges: &'a [Edge<E>],
     next: [EdgeIndex; 2],
@@ -819,7 +832,7 @@ impl<'a, E> Iterator for Edges<'a, E>
             None => {}
             Some(edge) => {
                 self.next[0] = edge.next[0];
-                return Some((edge.node[1], &edge.data))
+                return Some((edge.node[1], &edge.weight))
             }
         }
         // Then incoming edges
@@ -827,7 +840,7 @@ impl<'a, E> Iterator for Edges<'a, E>
             None => None,
             Some(edge) => {
                 self.next[1] = edge.next[1];
-                Some((edge.node[0], &edge.data))
+                Some((edge.node[0], &edge.weight))
             }
         }
     }
