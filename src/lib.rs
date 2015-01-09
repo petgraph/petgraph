@@ -220,7 +220,7 @@ impl<'a, 'b, N, E> IntoNeighbors< ograph::NodeIndex> for &'a Undirected<&'b OGra
     type Iter = ograph::Neighbors<'a, E>;
     fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
     {
-        OGraph::neighbors_both(self.0, n)
+        OGraph::neighbors_undirected(self.0, n)
     }
 }
 

@@ -199,7 +199,7 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
 
     /// Return the number of edges in the graph.
     ///
-    /// This will compute in O(1) time.
+    /// Computes in **O(1)** time.
     pub fn edge_count(&self) -> uint
     {
         self.edges.len()
@@ -213,6 +213,8 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
 
     /// Cast the graph as either undirected or directed. No edge adjustments
     /// are done.
+    ///
+    /// Computes in **O(1)** time.
     pub fn into_edge_type<NewEdgeTy>(self) -> OGraph<N, E, NewEdgeTy> where
         NewEdgeTy: EdgeType
     {
@@ -220,6 +222,8 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     }
 
     /// Add a node (also called vertex) with weight **w** to the graph.
+    ///
+    /// Computes in **O(1)** time.
     ///
     /// Return the index of the new node.
     pub fn add_node(&mut self, w: N) -> NodeIndex
@@ -252,7 +256,7 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
         if EdgeType::is_directed(None::<EdgeTy>) {
             self.neighbors_directed(a, Outgoing)
         } else {
-            self.neighbors_both(a)
+            self.neighbors_undirected(a)
         }
     }
 
@@ -265,7 +269,7 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     /// Iterator element type is **NodeIndex**.
     pub fn neighbors_directed(&self, a: NodeIndex, dir: EdgeDirection) -> Neighbors<E>
     {
-        let mut iter = self.neighbors_both(a);
+        let mut iter = self.neighbors_undirected(a);
         if EdgeType::is_directed(None::<EdgeTy>) {
             // remove the other edges not wanted.
             let k = dir as uint;
@@ -281,7 +285,7 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is **NodeIndex**.
-    pub fn neighbors_both(&self, a: NodeIndex) -> Neighbors<E>
+    pub fn neighbors_undirected(&self, a: NodeIndex) -> Neighbors<E>
     {
         Neighbors{
             edges: &*self.edges,
@@ -329,6 +333,8 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     /// **Note:** **OGraph** allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [*.update_edge(a, b, weight)*](#method.update_edge) instead.
     ///
+    /// Computes in **O(1)** time.
+    ///
     /// Return the index of the new edge.
     ///
     /// **Panics** if any of the nodes don't exist.
@@ -365,6 +371,9 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     /// Add or update an edge from **a** to **b**.
     ///
     /// If the edge already exists, its weight is updated.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to the vertices **a** (and **b**).
     ///
     /// Return the index of the affected edge.
     ///
@@ -483,6 +492,9 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     }
 
     /// Remove an edge and return its edge weight, or **None** if it didn't exist.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the size of four particular edge lists, for
+    /// the vertices of **e** and the vertices of another affected edge.
     pub fn remove_edge(&mut self, e: EdgeIndex) -> Option<E>
     {
         // every edge is part of two lists,
@@ -518,6 +530,9 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     }
 
     /// Lookup an edge from **a** to **b**.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to the vertices **a** (and **b**).
     pub fn find_edge(&self, a: NodeIndex, b: NodeIndex) -> Option<EdgeIndex>
     {
         if !EdgeType::is_directed(None::<EdgeTy>) {
@@ -616,6 +631,8 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     /// *.without_edges(Outgoing)* are the terminals.
     ///
     /// For an undirected graph, the initials/terminals are just the vertices without edges.
+    ///
+    /// The whole iteration computes in **O(|V|)** time.
     pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, EdgeTy>
     {
         WithoutEdges{iter: self.nodes.iter().enumerate(), dir: dir}
