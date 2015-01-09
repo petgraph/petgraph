@@ -213,7 +213,7 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
 
     /// Cast the graph as either undirected or directed. No edge adjustments
     /// are done.
-    pub fn as_edge_type<NewEdgeTy>(self) -> OGraph<N, E, NewEdgeTy> where
+    pub fn into_edge_type<NewEdgeTy>(self) -> OGraph<N, E, NewEdgeTy> where
         NewEdgeTy: EdgeType
     {
         OGraph{nodes: self.nodes, edges: self.edges}
