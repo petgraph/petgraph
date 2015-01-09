@@ -554,6 +554,14 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         }
     }
 
+    /// Reverse the direction of all edges
+    pub fn reverse(&mut self)
+    {
+        for edge in self.edges.iter_mut() {
+            edge.node.swap(0, 1)
+        }
+    }
+
     /// Access the internal node array
     pub fn raw_nodes(&self) -> &[Node<N>]
     {
