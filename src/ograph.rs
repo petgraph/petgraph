@@ -596,21 +596,24 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
 
     /// Return an iterator over either the nodes without edges to them or from them.
     ///
-    /// The nodes in **.without_edges(Incoming)** are the initial nodes and 
-    /// **.without_edges(Outgoing)** are the terminals.
-    pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N>
+    /// The nodes in *.without_edges(Incoming)* are the initial nodes and 
+    /// *.without_edges(Outgoing)* are the terminals.
+    ///
+    /// For an undirected graph, the initials/terminals are just the vertices without edges.
+    pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, EdgeTy>
     {
         WithoutEdges{iter: self.nodes.iter().enumerate(), dir: dir}
     }
 }
 
 /// An iterator over either the nodes without edges to them or from them.
-pub struct WithoutEdges<'a, N: 'a> {
+pub struct WithoutEdges<'a, N: 'a, EdgeTy> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N>>>,
     dir: EdgeDirection,
 }
 
-impl<'a, N: 'a> Iterator for WithoutEdges<'a, N>
+impl<'a, N: 'a, EdgeTy> Iterator for WithoutEdges<'a, N, EdgeTy> where
+    EdgeTy: EdgeType
 {
     type Item = NodeIndex;
     fn next(&mut self) -> Option<NodeIndex>
@@ -619,10 +622,15 @@ impl<'a, N: 'a> Iterator for WithoutEdges<'a, N>
         loop {
             match self.iter.next() {
                 None => return None,
-                Some((index, node)) if node.next[k] == EDGE_END => {
-                    return Some(NodeIndex(index))
+                Some((index, node)) => {
+                    if node.next[k] == EDGE_END &&
+                        (EdgeType::is_directed(None::<EdgeTy>) ||
+                         node.next[1-k] == EDGE_END) {
+                        return Some(NodeIndex(index))
+                    } else {
+                        continue
+                    }
                 },
-                _ => continue,
             }
         }
     }

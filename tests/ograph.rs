@@ -6,12 +6,14 @@ use petgraph::{
     Reversed,
     BreadthFirst,
     dijkstra,
+    Incoming,
     Outgoing,
 };
 
 use petgraph::ograph::{
     min_spanning_tree,
     is_cyclic,
+    NodeIndex,
 };
 
 #[test]
@@ -279,4 +281,30 @@ fn dijk() {
     assert_eq!(scores[c], 9.);
     assert_eq!(scores[e], 20.);
     assert_eq!(scores[f], 20.);
+}
+
+#[test]
+fn without()
+{
+    let mut og = OGraph::new_undirected();
+    let a = og.add_node(0);
+    let b = og.add_node(1);
+    let c = og.add_node(2);
+    let d = og.add_node(3);
+    let _ = og.add_edge(a, b, 0);
+    let _ = og.add_edge(a, c, 1);
+    let v: Vec<NodeIndex> = og.without_edges(Outgoing).collect();
+    assert_eq!(v, vec![d]);
+
+    let mut og = OGraph::new();
+    let a = og.add_node(0);
+    let b = og.add_node(1);
+    let c = og.add_node(2);
+    let d = og.add_node(3);
+    let _ = og.add_edge(a, b, 0);
+    let _ = og.add_edge(a, c, 1);
+    let init: Vec<NodeIndex> = og.without_edges(Incoming).collect();
+    let term: Vec<NodeIndex> = og.without_edges(Outgoing).collect();
+    assert_eq!(init, vec![a, d]);
+    assert_eq!(term, vec![b, c, d]);
 }
