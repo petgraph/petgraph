@@ -183,7 +183,7 @@ impl<N, E> OGraph<N, E, Undirected>
     }
 }
 
-impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
+impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
 {
     /// Create a new **OGraph** with estimated capacity.
     pub fn with_capacity(nodes: uint, edges: uint) -> Self
@@ -209,6 +209,14 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
     pub fn is_directed(&self) -> bool
     {
         EdgeType::is_directed(None::<EdgeTy>)
+    }
+
+    /// Cast the graph as either undirected or directed. No edge adjustments
+    /// are done.
+    pub fn as_edge_type<NewEdgeTy>(self) -> OGraph<N, E, NewEdgeTy> where
+        NewEdgeTy: EdgeType
+    {
+        OGraph{nodes: self.nodes, edges: self.edges}
     }
 
     /// Add a node (also called vertex) with weight **w** to the graph.
