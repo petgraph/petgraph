@@ -1,10 +1,10 @@
 use std::hash::{Hash};
-use std::collections::HashSet;
 use std::fmt;
 use std::slice;
 use std::iter;
 
 use std::collections::BinaryHeap;
+use std::collections::BitvSet;
 
 use super::{EdgeDirection, Outgoing, Incoming};
 use super::MinScored;
@@ -654,7 +654,7 @@ impl<'a, N: 'a, EdgeTy> Iterator for WithoutEdges<'a, N, EdgeTy> where
 pub fn toposort<N, E>(g: &OGraph<N, E, Directed>) -> Vec<NodeIndex>
 {
     let mut order = Vec::with_capacity(g.node_count());
-    let mut ordered = HashSet::with_capacity(g.node_count());
+    let mut ordered = BitvSet::with_capacity(g.node_count());
     let mut tovisit = Vec::new();
 
     // find all initial nodes
@@ -662,15 +662,15 @@ pub fn toposort<N, E>(g: &OGraph<N, E, Directed>) -> Vec<NodeIndex>
 
     // Take an unvisited element and 
     while let Some(nix) = tovisit.pop() {
-        if ordered.contains(&nix) {
+        if ordered.contains(&nix.0) {
             continue;
         }
         order.push(nix);
-        ordered.insert(nix);
-        for neigh in g.neighbors_directed(nix, EdgeDirection::Outgoing) {
+        ordered.insert(nix.0);
+        for neigh in g.neighbors_directed(nix, Outgoing) {
             // Look at each neighbor, and those that only have incoming edges
             // from the already ordered list, they are the next to visit.
-            if g.neighbors_directed(neigh, EdgeDirection::Incoming).all(|b| ordered.contains(&b)) {
+            if g.neighbors_directed(neigh, Incoming).all(|b| ordered.contains(&b.0)) {
                 tovisit.push(neigh);
             }
         }
