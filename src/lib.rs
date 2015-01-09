@@ -110,12 +110,14 @@ pub fn dijkstra<'a,
                 Graph, N, K,
                 F, Edges>(graph: &'a Graph, start: N, mut edges: F) -> HashMap<N, K>
 where
+    Graph: Visitable<N>,
     N: Copy + Clone + Eq + Hash + fmt::Show,
     K: Default + Add<Output=K> + Copy + PartialOrd + fmt::Show,
     F: FnMut(&'a Graph, N) -> Edges,
     Edges: Iterator<Item=(N, K)>,
+    <Graph as Visitable<N>>::Map: VisitMap<N>,
 {
-    let mut visited = HashSet::new();
+    let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
     let mut predecessor = HashMap::new();
     let mut visit_next = BinaryHeap::new();
@@ -146,7 +148,7 @@ where
             }
             visit_next.push(MinScored(next_score, next));
         }
-        visited.insert(node);
+        visited.visit(node);
     }
     println!("{}", predecessor);
     scores
