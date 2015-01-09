@@ -176,35 +176,35 @@ impl<T: Copy + fmt::Show> fmt::Show for NodeCell<T> {
 }
 
 /// A graph trait for accessing the neighbors iterator **I**.
-pub trait GraphNeighbors<'a, N> {
+pub trait IntoNeighbors<N> : Copy {
     type Iter: Iterator<Item=N>;
-    fn neighbors(&'a self, n: N) -> Self::Iter;
+    fn neighbors(self, n: N) -> Self::Iter;
 }
 
-impl<'a, N: 'a, E> GraphNeighbors<'a, N> for Graph<N, E>
+impl<'a, N: 'a, E> IntoNeighbors<N> for &'a Graph<N, E>
 where N: Copy + Clone + PartialOrd + Hash + Eq
 {
     type Iter = graph::Neighbors<'a, N>;
-    fn neighbors(&'a self, n: N) -> graph::Neighbors<'a, N>
+    fn neighbors(self, n: N) -> graph::Neighbors<'a, N>
     {
         Graph::neighbors(self, n)
     }
 }
 
-impl<'a, N: 'a, E: 'a> GraphNeighbors<'a, N> for DiGraph<N, E>
+impl<'a, N: 'a, E: 'a> IntoNeighbors<N> for &'a DiGraph<N, E>
 where N: Copy + Clone + Hash + Eq
 {
     type Iter = digraph::Neighbors<'a, N, E>;
-    fn neighbors(&'a self, n: N) -> digraph::Neighbors<'a, N, E>
+    fn neighbors(self, n: N) -> digraph::Neighbors<'a, N, E>
     {
         DiGraph::neighbors(self, n)
     }
 }
 
-impl<'a, N, E, ETy: EdgeType> GraphNeighbors<'a, ograph::NodeIndex> for OGraph<N, E, ETy>
+impl<'a, N, E, ETy: EdgeType> IntoNeighbors< ograph::NodeIndex> for &'a OGraph<N, E, ETy>
 {
     type Iter = ograph::Neighbors<'a, E>;
-    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
+    fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
     {
         OGraph::neighbors(self, n)
     }
@@ -215,19 +215,19 @@ pub struct Undirected<G>(pub G);
 /// Wrapper type for walking edges the other way
 pub struct Reversed<G>(pub G);
 
-impl<'a, 'b, N, E> GraphNeighbors<'a, ograph::NodeIndex> for Undirected<&'b OGraph<N, E>>
+impl<'a, 'b, N, E> IntoNeighbors< ograph::NodeIndex> for &'a Undirected<&'b OGraph<N, E>>
 {
     type Iter = ograph::Neighbors<'a, E>;
-    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
+    fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
     {
         OGraph::neighbors_both(self.0, n)
     }
 }
 
-impl<'a, 'b, N, E, ETy: EdgeType> GraphNeighbors<'a, ograph::NodeIndex> for Reversed<&'b OGraph<N, E, ETy>>
+impl<'a, 'b, N, E, ETy: EdgeType> IntoNeighbors< ograph::NodeIndex> for &'a Reversed<&'b OGraph<N, E, ETy>>
 {
     type Iter = ograph::Neighbors<'a, E>;
-    fn neighbors(&'a self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
+    fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
     {
         OGraph::neighbors_directed(self.0, n, EdgeDirection::Incoming)
     }
@@ -311,7 +311,8 @@ pub struct BreadthFirst<'a, G, N> where
 }
 
 impl<'a, G, N> BreadthFirst<'a, G, N> where
-    G: 'a + GraphNeighbors<'a, N>,
+    G: 'a,
+    &'a G: IntoNeighbors< N>,
     N: Copy + Eq + Hash,
 {
     pub fn new(graph: &'a G, start: N) -> BreadthFirst<'a, G, N>
@@ -326,10 +327,10 @@ impl<'a, G, N> BreadthFirst<'a, G, N> where
     }
 }
 
-impl<'a, G, N> Iterator for BreadthFirst<'a, G, N> where
-    G: 'a + GraphNeighbors<'a, N>,
+impl<'a, G: 'a, N> Iterator for BreadthFirst<'a, G, N> where
+    &'a G: IntoNeighbors<N>,
     N: Copy + Eq + Hash,
-    <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
+    <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
 {
     type Item = N;
     fn next(&mut self) -> Option<N>
@@ -363,7 +364,8 @@ pub struct DepthFirst<'a, G, N> where
 }
 
 impl<'a, G, N> DepthFirst<'a, G, N> where
-    G: 'a + GraphNeighbors<'a, N>,
+    G: 'a,
+    &'a G: IntoNeighbors< N>,
     N: Copy + Eq + Hash,
 {
     pub fn new(graph: &'a G, start: N) -> DepthFirst<'a, G, N>
@@ -377,9 +379,10 @@ impl<'a, G, N> DepthFirst<'a, G, N> where
 }
 
 impl<'a, G, N> Iterator for DepthFirst<'a, G, N> where
-    G: 'a + GraphNeighbors<'a, N>,
+    G: 'a,
+    &'a G: IntoNeighbors< N>,
     N: Copy + Eq + Hash,
-    <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
+    <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
 {
     type Item = N;
     fn next(&mut self) -> Option<N>
@@ -402,9 +405,10 @@ impl<'a, G, N> Iterator for DepthFirst<'a, G, N> where
 }
 
 pub fn depth_first_search<'a, G, N, F>(graph: &'a G, start: N, mut f: F) -> bool where
-    G: 'a + GraphNeighbors<'a, N> + Visitable<N>,
+    G: 'a + Visitable<N>,
+    &'a G: IntoNeighbors<N>,
     N: Clone,
-    <G as GraphNeighbors<'a, N>>::Iter: Iterator<Item=N>,
+    <&'a G as IntoNeighbors<N>>::Iter: Iterator<Item=N>,
     <G as Visitable<N>>::Map: VisitMap<N>,
     F: FnMut(N) -> bool,
 {
