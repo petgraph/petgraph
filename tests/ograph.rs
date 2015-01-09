@@ -38,6 +38,11 @@ fn undirected()
     assert!(og.find_edge(d, a).is_some());
     assert!(og.find_edge(a, a).is_some());
 
+    for edge in og.raw_edges().iter() {
+        assert!(og.find_edge(edge.source(), edge.target()).is_some());
+        assert!(og.find_edge(edge.target(), edge.source()).is_some());
+    }
+
     assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![a, c, a]);
 
     og.remove_node(a);
@@ -48,6 +53,7 @@ fn undirected()
     assert!(og.find_edge(d, a).is_none());
     assert!(og.find_edge(a, a).is_none());
     assert!(og.find_edge(b, c).is_some());
+
 }
 
 #[test]
@@ -135,26 +141,19 @@ fn mst() {
     let mst = min_spanning_tree(&gr);
     println!("MST is:\n{}", mst);
     assert!(mst.node_count() == gr.node_count());
-    // |E| = |N| - 2  because ther are two disconnected components.
+    // |E| = |N| - 2  because there are two disconnected components.
     assert!(mst.edge_count() == gr.node_count() - 2);
 
-    let one_of = |&: a: bool, b: bool| {
-        (a && !b) || (!a && b)
-    };
-    let have_one = |&: x, y| -> bool {
-        one_of(mst.find_edge(x, y).is_some(), mst.find_edge(y, x).is_some())
-    };
-
     // check the exact edges are there
-    assert!(have_one(a, b));
-    assert!(have_one(a, d));
-    assert!(have_one(b, e));
-    assert!(have_one(e, c));
-    assert!(have_one(e, g));
-    assert!(have_one(d, f));
+    assert!(mst.find_edge(a, b).is_some());
+    assert!(mst.find_edge(a, d).is_some());
+    assert!(mst.find_edge(b, e).is_some());
+    assert!(mst.find_edge(e, c).is_some());
+    assert!(mst.find_edge(e, g).is_some());
+    assert!(mst.find_edge(d, f).is_some());
 
-    assert!(have_one(h, i));
-    assert!(have_one(i, j));
+    assert!(mst.find_edge(h, i).is_some());
+    assert!(mst.find_edge(i, j).is_some());
     
     assert!(mst.find_edge(d, b).is_none());
     assert!(mst.find_edge(b, c).is_none());

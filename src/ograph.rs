@@ -652,7 +652,7 @@ impl<'a, N: 'a, EdgeTy> Iterator for WithoutEdges<'a, N, EdgeTy> where
     }
 }
 
-/// Perform a topological sort of the graph.
+/// Perform a topological sort of a directed graph.
 ///
 /// Return a vector of nodes in topological order: each node is ordered
 /// before its successors.
@@ -687,6 +687,8 @@ pub fn toposort<N, E>(g: &OGraph<N, E, Directed>) -> Vec<NodeIndex>
     order
 }
 
+/// Return **true** if the input graph contains a cycle.
+///
 /// Treat the input graph as undirected.
 pub fn is_cyclic<N, E, EdgeTy: EdgeType>(g: &OGraph<N, E, EdgeTy>) -> bool
 {
@@ -706,11 +708,20 @@ pub fn is_cyclic<N, E, EdgeTy: EdgeType>(g: &OGraph<N, E, EdgeTy>) -> bool
 /// Return a *Minimum Spanning Tree* of a graph.
 ///
 /// Treat the input graph as undirected.
-pub fn min_spanning_tree<N, E, EdgeTy: EdgeType>(g: &OGraph<N, E, EdgeTy>) -> OGraph<N, E, EdgeTy>
-    where N: Clone, E: Clone + PartialOrd
+///
+/// Using Kruskal's algorithm with runtime **O(|E| log |E|)**. We actually
+/// return a minimum spanning forest, i.e. a minimum spanning tree for each connected
+/// component of the graph.
+///
+/// The resulting graph has all the vertices of the input graph (with identical node indices),
+/// and **|V| - c** edges, where **c** is the number of connected components in **g**.
+pub fn min_spanning_tree<N, E, EdgeTy>(g: &OGraph<N, E, EdgeTy>) -> OGraph<N, E, Undirected> where
+    N: Clone,
+    E: Clone + PartialOrd,
+    EdgeTy: EdgeType,
 {
     if g.node_count() == 0 {
-        return OGraph::with_capacity(0, 0)
+        return OGraph::new_undirected()
     }
 
     // Create a mst skeleton by copying all nodes
