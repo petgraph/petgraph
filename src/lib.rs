@@ -106,10 +106,11 @@ impl<'b, T: fmt::Show> fmt::Show for Ptr<'b, T> {
     }
 }
 
-pub fn dijkstra<'a,
-                Graph, N, K,
-                F, Edges>(graph: &'a Graph, start: N, mut edges: F) -> HashMap<N, K>
-where
+/// Dijkstra's shortest path algorithm.
+pub fn dijkstra<'a, Graph, N, K, F, Edges>(graph: &'a Graph,
+                                           start: N,
+                                           goal: Option<N>,
+                                           mut edges: F) -> HashMap<N, K> where
     Graph: Visitable<N>,
     N: Copy + Clone + Eq + Hash + fmt::Show,
     K: Default + Add<Output=K> + Copy + PartialOrd + fmt::Show,
@@ -128,7 +129,6 @@ where
         if visited.contains(&node) {
             continue
         }
-        println!("Visiting {} with score={}", node, node_score);
         for (next, edge) in edges(graph, node) {
             if visited.contains(&next) {
                 continue
@@ -148,9 +148,11 @@ where
             }
             visit_next.push(MinScored(next_score, next));
         }
+        if goal.as_ref() == Some(&node) {
+            break
+        }
         visited.visit(node);
     }
-    println!("{}", predecessor);
     scores
 }
 

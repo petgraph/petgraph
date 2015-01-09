@@ -86,7 +86,7 @@ fn make_graph() {
     f.set("F'");
 
     println!("Scores= {}", 
-        dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
+        dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)))
     );
 
     //let x = 
@@ -140,7 +140,7 @@ fn make_graph() {
     g.add_edge(c, f, 11.);
     g.add_edge(e, f, 6.);
     println!("{}", g);
-    println!("{}", dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
+    println!("{}", dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
     for node in DepthFirst::new(&g, a) {
         println!("Visit {}", node);
     }

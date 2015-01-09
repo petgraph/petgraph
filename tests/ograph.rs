@@ -275,11 +275,14 @@ fn dijk() {
         println!("Visit {} = {}", no, g.node(no));
     }
 
-    let scores = dijkstra(&g, a, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    let scores = dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
     println!("Scores= {}", scores);
     assert_eq!(scores[c], 9.);
     assert_eq!(scores[e], 20.);
     assert_eq!(scores[f], 20.);
+
+    let scores = dijkstra(&g, a, Some(c), |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    assert_eq!(scores[c], 9.);
 }
 
 #[test]
