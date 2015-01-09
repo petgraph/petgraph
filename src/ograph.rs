@@ -89,7 +89,7 @@ pub struct Edge<E> {
 
 impl<E> Edge<E>
 {
-    /// Accessor for data structure internals: the next edge in the given direction.
+    /// Accessor for data structure internals: the next edge for the given direction.
     pub fn next_edge(&self, dir: EdgeDirection) -> EdgeIndex
     {
         self.next[dir as uint]
@@ -554,6 +554,19 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         }
     }
 
+    /// Access the internal node array
+    pub fn raw_nodes(&self) -> &[Node<N>]
+    {
+        &*self.nodes
+    }
+
+    /// Access the internal edge array
+    pub fn raw_edges(&self) -> &[Edge<E>]
+    {
+        &*self.edges
+    }
+
+    /// Accessor for data structure internals: the first edge in the given direction.
     pub fn first_edge(&self, a: NodeIndex, dir: EdgeDirection) -> Option<EdgeIndex>
     {
         match self.nodes.get(a.0) {
@@ -567,6 +580,7 @@ impl<N, E, EdgeTy: EdgeType = Directed> OGraph<N, E, EdgeTy>
         }
     }
 
+    /// Accessor for data structure internals: the next edge for the given direction.
     pub fn next_edge(&self, e: EdgeIndex, dir: EdgeDirection) -> Option<EdgeIndex>
     {
         match self.edges.get(e.0) {
