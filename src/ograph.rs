@@ -235,13 +235,13 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     }
 
     /// Access node weight for node **a**.
-    pub fn node(&self, a: NodeIndex) -> Option<&N>
+    pub fn node_weight(&self, a: NodeIndex) -> Option<&N>
     {
         self.nodes.get(a.0).map(|n| &n.weight)
     }
 
     /// Access node weight for node **a**.
-    pub fn node_mut(&mut self, a: NodeIndex) -> Option<&mut N>
+    pub fn node_weight_mut(&mut self, a: NodeIndex) -> Option<&mut N>
     {
         self.nodes.get_mut(a.0).map(|n| &mut n.weight)
     }

@@ -272,7 +272,7 @@ fn dijk() {
     g.add_edge(e, f, 6.);
     println!("{}", g);
     for no in BreadthFirst::new(&g, a) {
-        println!("Visit {} = {}", no, g.node(no));
+        println!("Visit {} = {}", no, g.node_weight(no));
     }
 
     let scores = dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
