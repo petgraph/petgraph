@@ -585,6 +585,34 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
         }
     }
 
+    /// Retain only nodes that return **true** from the predicate.
+    pub fn retain_nodes<F>(&mut self, mut visit: F) where
+        F: FnMut(&Self, NodeIndex, &Node<N>) -> bool
+    {
+        for index in (0..self.node_count()).rev() {
+            let nix = NodeIndex(index);
+            if !visit(&*self, nix, &self.nodes[nix.0]) {
+                let ret = self.remove_node(nix);
+                debug_assert!(ret.is_some());
+                let _ = ret;
+            }
+        }
+    }
+
+    /// Retain only edges that return **true** from the predicate.
+    pub fn retain_edges<F>(&mut self, mut visit: F) where
+        F: FnMut(&Self, EdgeIndex, &Edge<E>) -> bool
+    {
+        for index in (0..self.edge_count()).rev() {
+            let eix = EdgeIndex(index);
+            if !visit(&*self, eix, &self.edges[eix.0]) {
+                let ret = self.remove_edge(EdgeIndex(index));
+                debug_assert!(ret.is_some());
+                let _ = ret;
+            }
+        }
+    }
+
     /// Access the internal node array
     pub fn raw_nodes(&self) -> &[Node<N>]
     {
