@@ -121,54 +121,6 @@ fn make_graph() {
     g.add_diedge(e, f, 6.);
 
     println!("{:?}", g);
-
-    let root = TypedArena::<Node<_>>::new();
-    let mut g: GraphMap<_, f32> = GraphMap::new();
-    let node = |&: name: &'static str| Ptr(root.alloc(Node(name.to_string())));
-    let a = g.add_node(node("A"));
-    let b = g.add_node(node("B"));
-    let c = g.add_node(node("C"));
-    let d = g.add_node(node("D"));
-    let e = g.add_node(node("E"));
-    let f = g.add_node(node("F"));
-    g.add_edge(a, b, 7.);
-    g.add_edge(a, c, 9.);
-    g.add_edge(a, d, 14.);
-    g.add_edge(b, c, 10.);
-    g.add_edge(c, d, 2.);
-    g.add_edge(d, e, 9.);
-    g.add_edge(b, f, 15.);
-    g.add_edge(c, f, 11.);
-    g.add_edge(e, f, 6.);
-    println!("{:?}", g);
-    println!("{:?}", dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
-    for node in DfsIter::new(&g, a) {
-        println!("Dfs Visit {:?}", node);
-    }
-    println!("");
-    for node in BfsIter::new(&g, a) {
-        println!("Bfs Visit {:?}", node);
-    }
-
-    let mut g: GraphMap<isize, isize> = GraphMap::new();
-    g.add_node(1);
-    g.add_node(2);
-    g.add_edge(1, 2, -1);
-
-    println!("{:?}", g);
-    *g.edge_mut(1, 2).unwrap() = 3;
-    for elt in g.edges(1) {
-        println!("Edge {:?} => {:?}", 1, elt);
-    }
-    for elt in g.edges(2) {
-        println!("Edge {:?} => {:?}", 2, elt);
-    }
-    for elt in BfsIter::new(&g, 2) {
-        println!("Visit: {:?}", elt);
-    }
-    //g.remove_node(2);
-    g.remove_edge(2, 1);
-    println!("{:?}", g);
 }
 
 

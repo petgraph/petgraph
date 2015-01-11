@@ -14,17 +14,18 @@ use std::slice::{
 };
 use std::fmt;
 
-/// **GraphMap\<N, E\>** is a regular graph, with generic node values **N** and edge weights **E**.
+/// **GraphMap\<N, E\>** is an undirected graph, with generic node values **N** and edge weights **E**.
 ///
-/// It uses an adjacency list representation, i.e. using *O(|N| + |E|)* space.
+/// It uses an combined adjacency list and sparse adjacency matrix representation, using *O(|N|
+/// + |E|)* space, and allows testing for edge existance in constant time.
 ///
-/// The node type must be a simple copyable type and implement **Copy**.
+/// The node type **N** must implement Copy and will be used as node identifier, duplicated
+/// into several places in the data structure.
+/// It must be suitable as a hash table key (implementing **Eq + Hash**).
+/// The node type must also implement **PartialOrd** so that the implementation can
+/// order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
 ///
-/// The node type must be suitable as a hash table key (implementing **Eq + Hash**)
-/// as well as being a simple type.
-///
-/// The node type must implement **PartialOrd** so that the implementation can
-/// properly order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
+/// **GraphMap** does not allow parallel edges, but self loops are allowed.
 #[derive(Clone)]
 pub struct GraphMap<N: Eq + Hash<Hasher>, E> {
     nodes: HashMap<N, Vec<N>>,
@@ -47,7 +48,7 @@ fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
 #[inline]
 fn copy<N: Copy>(n: &N) -> N { *n }
 
-impl<N, E> GraphMap<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
+impl<N, E> GraphMap<N, E> where N: Copy + PartialOrd + Eq + Hash<Hasher>
 {
     /// Create a new **GraphMap**.
     pub fn new() -> GraphMap<N, E>
@@ -58,9 +59,16 @@ impl<N, E> GraphMap<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
         }
     }
 
+    /// Return the number of nodes in the graph.
     pub fn node_count(&self) -> usize
     {
         self.nodes.len()
+    }
+
+    /// Return the number of edges in the graph.
+    pub fn edge_count(&self) -> usize
+    {
+        self.edges.len()
     }
 
     /// Add node **n** to the graph.
@@ -94,7 +102,19 @@ impl<N, E> GraphMap<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
 
     /// Add an edge connecting **a** and **b** to the graph.
     ///
+    /// Inserts nodes **a** and/or **b** if they aren't already part of the graph.
+    ///
     /// Return **true** if edge did not previously exist.
+    ///
+    /// ## Example
+    /// ```
+    /// use petgraph::GraphMap;
+    ///
+    /// let mut g = GraphMap::new();
+    /// g.add_edge(1, 2, -1);
+    /// assert_eq!(g.node_count(), 2);
+    /// assert_eq!(g.edge_count(), 1);
+    /// ```
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
     {
         // Use PartialOrd to order the edges
@@ -125,6 +145,21 @@ impl<N, E> GraphMap<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
     /// Remove edge from **a** to **b** from the graph.
     ///
     /// Return **None** if the edge didn't exist.
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// use petgraph::GraphMap;
+    ///
+    /// let mut g = GraphMap::new();
+    /// g.add_node(1);
+    /// g.add_node(2);
+    /// g.add_edge(1, 2, -1);
+    ///
+    /// let edge = g.remove_edge(2, 1);
+    /// assert_eq!(edge, Some(-1));
+    /// assert_eq!(g.edge_count(), 0);
+    /// ```
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E>
     {
         self.remove_single_edge(&a, &b);
@@ -139,10 +174,10 @@ impl<N, E> GraphMap<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
 
     /// Return an iterator over the nodes of the graph.
     ///
-    /// Iterator element type is **&'a N**.
+    /// Iterator element type is **N**.
     pub fn nodes<'a>(&'a self) -> Nodes<'a, N>
     {
-        Nodes{iter: self.nodes.keys()}
+        Nodes{iter: self.nodes.keys().map(copy as fn(&N) -> N)}
     }
 
     /// Return an iterator over the nodes that are connected with **from** by edges.
@@ -177,14 +212,14 @@ impl<N, E> GraphMap<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
 
     /// Return a reference to the edge weight connecting **a** with **b**, or
     /// **None** if the edge does not exist in the graph.
-    pub fn edge<'a>(&'a self, a: N, b: N) -> Option<&'a E>
+    pub fn edge_weight<'a>(&'a self, a: N, b: N) -> Option<&'a E>
     {
         self.edges.get(&edge_key(a, b))
     }
 
     /// Return a mutable reference to the edge weight connecting **a** with **b**, or
     /// **None** if the edge does not exist in the graph.
-    pub fn edge_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
+    pub fn edge_weight_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
     {
         self.edges.get_mut(&edge_key(a, b))
     }
@@ -207,12 +242,12 @@ macro_rules! iterator_methods {
 }
 
 pub struct Nodes<'a, N: 'a> {
-    iter: Keys<'a, N, Vec<N>>
+    iter: Map<&'a N, N, Keys<'a, N, Vec<N>>, fn(&N) -> N>,
 }
 
-impl<'a, N: 'a> Iterator for Nodes<'a, N>
+impl<'a, N> Iterator for Nodes<'a, N>
 {
-    type Item = &'a N;
+    type Item = N;
     iterator_methods!();
 }
 
