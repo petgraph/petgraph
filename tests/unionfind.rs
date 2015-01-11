@@ -46,8 +46,8 @@ fn uf_rand() {
         assert_eq!(ar != br, u.union(a, b));
         if (i + 1) % n == 0 {
             let set = range(0, n).map(|i| u.find(i)).collect::<HashSet<_>>();
-            println!("Disjoint parts={}", set.len());
-            //println!("Disjoint parts={} maxrank={}", set.len(), u.rank.iter().max_by(|t| *t));
+            println!("Disjoint parts={:?}", set.len());
+            //println!("Disjoint parts={:?} maxrank={:?}", set.len(), u.rank.iter().max_by(|t| *t));
         }
     }
 }

@@ -132,10 +132,10 @@ impl<N: fmt::Show, E: fmt::Show, Ty: EdgeType> fmt::Show for OGraph<N, E, Ty>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (index, n) in self.nodes.iter().enumerate() {
-            try!(writeln!(f, "{}: {}", index, n));
+            try!(writeln!(f, "{}: {:?}", index, n));
         }
         for (index, n) in self.edges.iter().enumerate() {
-            try!(writeln!(f, "{}: {}", index, n));
+            try!(writeln!(f, "{}: {:?}", index, n));
         }
         Ok(())
     }
@@ -472,8 +472,8 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
             let node = match self.nodes.get_mut(edge_node[k].0) {
                 Some(r) => r,
                 None => {
-                    debug_assert!(false, "Edge's endpoint dir={} index={} not found",
-                                  k, edge_node[k]);
+                    debug_assert!(false, "Edge's endpoint dir={:?} index={:?} not found",
+                                  d, edge_node[k]);
                     return
                 }
             };

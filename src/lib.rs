@@ -172,7 +172,7 @@ impl<T: Copy> Deref for NodeCell<T> {
 
 impl<T: Copy + fmt::Show> fmt::Show for NodeCell<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Node({})", self.0.get())
+        write!(f, "Node({:?})", self.0.get())
     }
 }
 
