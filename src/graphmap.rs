@@ -144,19 +144,22 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     }
 
     /// Remove successor relation from a to b
-    fn remove_single_edge(&mut self, a: &N, b: &N) {
+    ///
+    /// Return **true** if it did exist.
+    fn remove_single_edge(&mut self, a: &N, b: &N) -> bool
+    {
         match self.nodes.get_mut(a) {
-            None => {}
+            None => false,
             Some(sus) => {
                 match sus.iter().position(|elt| elt == b) {
-                    Some(index) => { sus.swap_remove(index); }
-                    None => {}
+                    Some(index) => { sus.swap_remove(index); true }
+                    None => false,
                 }
             }
         }
     }
 
-    /// Remove edge from **a** to **b** from the graph.
+    /// Remove edge from **a** to **b** from the graph and return the edge weight.
     ///
     /// Return **None** if the edge didn't exist.
     ///
@@ -176,9 +179,11 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     /// ```
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E>
     {
-        self.remove_single_edge(&a, &b);
-        self.remove_single_edge(&b, &a);
-        self.edges.remove(&edge_key(a, b))
+        let exist1 = self.remove_single_edge(&a, &b);
+        let exist2 = self.remove_single_edge(&b, &a);
+        let weight = self.edges.remove(&edge_key(a, b));
+        debug_assert!(exist1 == exist2 && exist1 == weight.is_some());
+        weight
     }
 
     /// Return **true** if the edge connecting **a** with **b** is contained in the graph.

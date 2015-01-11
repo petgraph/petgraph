@@ -54,7 +54,11 @@ fn remov()
     assert_eq!(g.edge_weight(2, 1), Some(&-1));
     assert_eq!(g.neighbors(1).count(), 1);
 
-    g.remove_edge(2, 1);
+    let noexist = g.remove_edge(2, 3);
+    assert_eq!(noexist, None);
+
+    let exist = g.remove_edge(2, 1);
+    assert_eq!(exist, Some(-1));
     assert_eq!(g.edge_count(), 0);
     assert_eq!(g.edge_weight(1, 2), None);
     assert_eq!(g.edge_weight(2, 1), None);
