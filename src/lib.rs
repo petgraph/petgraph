@@ -155,22 +155,3 @@ pub fn dijkstra<'a, G, N, K, F, Edges>(graph: &'a G,
     }
     scores
 }
-
-#[derive(Show)]
-pub struct Node<T>(pub T);
-
-pub struct NodeCell<T: Copy>(pub Cell<T>);
-
-impl<T: Copy> Deref for NodeCell<T> {
-    type Target = Cell<T>;
-    #[inline]
-    fn deref(&self) -> &Cell<T> {
-        &self.0
-    }
-}
-
-impl<T: Copy + fmt::Show> fmt::Show for NodeCell<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Node({:?})", self.0.get())
-    }
-}
