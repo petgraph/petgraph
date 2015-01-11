@@ -120,7 +120,8 @@ impl<E> Edge<E>
 /// weights may be accessed mutably.
 ///
 /// **NodeIndex** and **EdgeIndex** are types that act as references to nodes and edges,
-/// but these are only stable across certain operations. Adding to the graph keeps
+/// but these are only stable across certain operations. **Removing nodes or edges may shift
+/// other indices**. Adding to the graph keeps
 /// all indices stable, but removing a node will force the last node to shift its index to
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 #[derive(Clone)]
@@ -207,6 +208,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
     }
 
     /// Return whether the graph has directed edges or not.
+    #[inline]
     pub fn is_directed(&self) -> bool
     {
         EdgeType::is_directed(None::<Ty>)
@@ -254,7 +256,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
     /// Iterator element type is **NodeIndex**.
     pub fn neighbors(&self, a: NodeIndex) -> Neighbors<E>
     {
-        if EdgeType::is_directed(None::<Ty>) {
+        if self.is_directed() {
             self.neighbors_directed(a, Outgoing)
         } else {
             self.neighbors_undirected(a)
@@ -271,7 +273,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
     pub fn neighbors_directed(&self, a: NodeIndex, dir: EdgeDirection) -> Neighbors<E>
     {
         let mut iter = self.neighbors_undirected(a);
-        if EdgeType::is_directed(None::<Ty>) {
+        if self.is_directed() {
             // remove the other edges not wanted.
             let k = dir as usize;
             iter.next[1 - k] = EDGE_END;
@@ -306,7 +308,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
     pub fn edges(&self, a: NodeIndex) -> Edges<E>
     {
         let mut iter = self.edges_both(a);
-        if EdgeType::is_directed(None::<Ty>) {
+        if self.is_directed() {
             iter.next[Incoming as usize] = EDGE_END;
         }
         iter
@@ -537,7 +539,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
     /// connected to the vertices **a** (and **b**).
     pub fn find_edge(&self, a: NodeIndex, b: NodeIndex) -> Option<EdgeIndex>
     {
-        if !EdgeType::is_directed(None::<Ty>) {
+        if !self.is_directed() {
             self.find_any_edge(a, b).map(|(ix, _)| ix)
         } else {
             match self.nodes.get(a.0) {
