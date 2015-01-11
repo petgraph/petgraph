@@ -485,6 +485,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
                 for (_i, curedge) in EdgesMut::new(self.edges.as_mut_slice(), fst, d) {
                     if curedge.next[k] == e {
                         curedge.next[k] = edge_next[k];
+                        break; // the edge can only be present once in the list.
                     }
                 }
             }
