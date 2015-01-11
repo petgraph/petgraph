@@ -1,5 +1,6 @@
 use std::hash::{Hash};
 use std::collections::HashMap;
+use std::collections::hash_map::Hasher;
 use std::iter::Map;
 use std::collections::hash_map::{
     Keys,
@@ -25,12 +26,12 @@ use std::fmt;
 /// The node type must implement **PartialOrd** so that the implementation can
 /// properly order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
 #[derive(Clone)]
-pub struct Graph<N: Eq + Hash, E> {
+pub struct Graph<N: Eq + Hash<Hasher>, E> {
     nodes: HashMap<N, Vec<N>>,
     edges: HashMap<(N, N), E>,
 }
 
-impl<N: Eq + Hash + fmt::Show, E: fmt::Show> fmt::Show for Graph<N, E>
+impl<N: Eq + Hash<Hasher> + fmt::Show, E: fmt::Show> fmt::Show for Graph<N, E>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.nodes.fmt(f)
@@ -46,7 +47,7 @@ fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
 #[inline]
 fn copy<N: Copy>(n: &N) -> N { *n }
 
-impl<N, E> Graph<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash
+impl<N, E> Graph<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
 {
     /// Create a new **Graph**.
     pub fn new() -> Graph<N, E>
@@ -64,7 +65,7 @@ impl<N, E> Graph<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash
 
     /// Add node **n** to the graph.
     pub fn add_node(&mut self, n: N) -> N {
-        match self.nodes.entry(&n) {
+        match self.nodes.entry(n) {
             Occupied(_) => {}
             Vacant(ent) => { ent.insert(Vec::new()); }
         }
@@ -97,11 +98,11 @@ impl<N, E> Graph<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
     {
         // Use PartialOrd to order the edges
-        match self.nodes.entry(&a) {
+        match self.nodes.entry(a) {
             Occupied(ent) => { ent.into_mut().push(b); }
             Vacant(ent) => { ent.insert(vec![b]); }
         }
-        match self.nodes.entry(&b) {
+        match self.nodes.entry(b) {
             Occupied(ent) => { ent.into_mut().push(a); }
             Vacant(ent) => { ent.insert(vec![a]); }
         }
@@ -225,14 +226,14 @@ impl<'a, N> Iterator for Neighbors<'a, N>
     iterator_methods!(N);
 }
 
-pub struct Edges<'a, N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a> {
+pub struct Edges<'a, N: 'a + Copy + PartialOrd + Eq + Hash<Hasher>, E: 'a> {
     pub from: N,
     pub edges: &'a HashMap<(N, N), E>,
     pub iter: Neighbors<'a, N>,
 }
 
 impl<'a, N, E> Iterator for Edges<'a, N, E>
-    where N: 'a + Copy + PartialOrd + Eq + Hash, E: 'a
+    where N: 'a + Copy + PartialOrd + Eq + Hash<Hasher>, E: 'a
 {
     type Item = (N, &'a E);
     fn next(&mut self) -> Option<(N, &'a E)>

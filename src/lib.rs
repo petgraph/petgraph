@@ -4,7 +4,8 @@ extern crate test;
 use std::default::Default;
 use std::cmp::Ordering;
 use std::cell::Cell;
-use std::hash::{Writer, Hash};
+use std::hash::{self, Hash};
+use std::collections::hash_map::Hasher;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::RingBuf;
@@ -91,9 +92,9 @@ impl<'b, T> Deref for Ptr<'b, T> {
 
 impl<'b, T> Eq for Ptr<'b, T> {}
 
-impl<'b, T, S: Writer> Hash<S> for Ptr<'b, T>
+impl<'b, T, H: hash::Writer + hash::Hasher> Hash<H> for Ptr<'b, T>
 {
-    fn hash(&self, st: &mut S)
+    fn hash(&self, st: &mut H)
     {
         let ptr = (self.0) as *const _;
         ptr.hash(st)
@@ -112,7 +113,7 @@ pub fn dijkstra<'a, Graph, N, K, F, Edges>(graph: &'a Graph,
                                            goal: Option<N>,
                                            mut edges: F) -> HashMap<N, K> where
     Graph: Visitable<N>,
-    N: Copy + Clone + Eq + Hash + fmt::Show,
+    N: Copy + Clone + Eq + Hash<Hasher> + fmt::Show,
     K: Default + Add<Output=K> + Copy + PartialOrd + fmt::Show,
     F: FnMut(&'a Graph, N) -> Edges,
     Edges: Iterator<Item=(N, K)>,
@@ -134,7 +135,7 @@ pub fn dijkstra<'a, Graph, N, K, F, Edges>(graph: &'a Graph,
                 continue
             }
             let mut next_score = node_score + edge;
-            match scores.entry(&next) {
+            match scores.entry(next) {
                 Occupied(ent) => if next_score < *ent.get() {
                     *ent.into_mut() = next_score;
                     predecessor.insert(next, node);
@@ -182,7 +183,7 @@ pub trait IntoNeighbors<N> : Copy {
 }
 
 impl<'a, N: 'a, E> IntoNeighbors<N> for &'a Graph<N, E>
-where N: Copy + Clone + PartialOrd + Hash + Eq
+where N: Copy + Clone + PartialOrd + Hash<Hasher> + Eq
 {
     type Iter = graph::Neighbors<'a, N>;
     fn neighbors(self, n: N) -> graph::Neighbors<'a, N>
@@ -192,7 +193,7 @@ where N: Copy + Clone + PartialOrd + Hash + Eq
 }
 
 impl<'a, N: 'a, E: 'a> IntoNeighbors<N> for &'a DiGraph<N, E>
-where N: Copy + Clone + Hash + Eq
+where N: Copy + Clone + Hash<Hasher> + Eq
 {
     type Iter = digraph::Neighbors<'a, N, E>;
     fn neighbors(self, n: N) -> digraph::Neighbors<'a, N, E>
@@ -247,7 +248,7 @@ impl VisitMap<ograph::NodeIndex> for BitvSet {
     }
 }
 
-impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
+impl<N: Eq + Hash<Hasher>> VisitMap<N> for HashSet<N> {
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
     }
@@ -270,14 +271,14 @@ impl<N, E, Ty> Visitable<ograph::NodeIndex> for OGraph<N, E, Ty> where
 }
 
 impl<N, E> Visitable<N> for DiGraph<N, E>
-    where N: Copy + Clone + Eq + Hash
+    where N: Copy + Clone + Eq + Hash<Hasher>
 {
     type Map = HashSet<N>;
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
 }
 
 impl<N, E> Visitable<N> for Graph<N, E>
-    where N: Copy + Clone + Ord + Eq + Hash
+    where N: Copy + Clone + Ord + Eq + Hash<Hasher>
 {
     type Map = HashSet<N>;
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
@@ -303,7 +304,7 @@ impl<'a, N, V: Visitable<N>> Visitable<N> for Reversed<&'a V>
 #[derive(Clone)]
 pub struct BreadthFirst<'a, G, N> where
     G: 'a,
-    N: Eq + Hash,
+    N: Eq + Hash<Hasher>,
 {
     pub graph: &'a G,
     pub stack: RingBuf<N>,
@@ -313,7 +314,7 @@ pub struct BreadthFirst<'a, G, N> where
 impl<'a, G, N> BreadthFirst<'a, G, N> where
     G: 'a,
     &'a G: IntoNeighbors< N>,
-    N: Copy + Eq + Hash,
+    N: Copy + Eq + Hash<Hasher>,
 {
     pub fn new(graph: &'a G, start: N) -> BreadthFirst<'a, G, N>
     {
@@ -329,7 +330,7 @@ impl<'a, G, N> BreadthFirst<'a, G, N> where
 
 impl<'a, G: 'a, N> Iterator for BreadthFirst<'a, G, N> where
     &'a G: IntoNeighbors<N>,
-    N: Copy + Eq + Hash,
+    N: Copy + Eq + Hash<Hasher>,
     <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
 {
     type Item = N;
@@ -356,7 +357,7 @@ impl<'a, G: 'a, N> Iterator for BreadthFirst<'a, G, N> where
 #[derive(Clone)]
 pub struct DepthFirst<'a, G, N> where
     G: 'a,
-    N: Eq + Hash,
+    N: Eq + Hash<Hasher>,
 {
     pub graph: &'a G,
     pub dfs: Dfs<N, HashSet<N>>,
@@ -369,7 +370,7 @@ pub struct Dfs<N, VM> {
     pub visited: VM,
 }
 
-impl<N> Dfs<N, HashSet<N>> where N: Hash + Eq
+impl<N> Dfs<N, HashSet<N>> where N: Hash<Hasher> + Eq
 {
     /// Create a new **Dfs**.
     fn new_with_hashset(start: N) -> Self
@@ -398,7 +399,7 @@ impl Dfs<(), ()>
 }
 
 impl<'a, G, N> DepthFirst<'a, G, N> where
-    N: Eq + Hash,
+    N: Eq + Hash<Hasher>,
 {
     pub fn new(graph: &'a G, start: N) -> DepthFirst<'a, G, N>
     {
@@ -436,7 +437,7 @@ impl<N, VM> Dfs<N, VM> where N: Clone, VM: VisitMap<N>
 impl<'a, G, N> Iterator for DepthFirst<'a, G, N> where
     G: 'a,
     &'a G: IntoNeighbors< N>,
-    N: Clone + Eq + Hash,
+    N: Clone + Eq + Hash<Hasher>,
     <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
 {
     type Item = N;

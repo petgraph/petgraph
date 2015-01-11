@@ -1,6 +1,7 @@
 
 use std::hash::{Hash};
 use std::collections::HashMap;
+use std::collections::hash_map::Hasher;
 use std::iter::Map;
 use std::collections::hash_map::{
     Keys,
@@ -26,18 +27,20 @@ use std::fmt;
 /// + Hash**) as well as being a simple type.
 ///
 #[derive(Clone)]
-pub struct DiGraph<N: Eq + Hash, E> {
+pub struct DiGraph<N, E>
+{
     nodes: HashMap<N, Vec<(N, E)>>,
 }
 
-impl<N, E> fmt::Show for DiGraph<N, E> where N: Eq + Hash + fmt::Show, E: fmt::Show
+impl<N, E> fmt::Show for DiGraph<N, E> where
+    N: Eq + Hash<Hasher> + fmt::Show, E: fmt::Show,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.nodes.fmt(f)
     }
 }
 
-impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash
+impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash<Hasher>
 {
     /// Create a new **DiGraph**.
     pub fn new() -> DiGraph<N, E>
@@ -89,12 +92,12 @@ impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash
         // add nodes if they don't already exist
         //
         // make sure the endpoint exists in the map
-        match self.nodes.entry(&b) {
+        match self.nodes.entry(b) {
             Vacant(ent) => { ent.insert(Vec::new()); }
             _ => {}
         }
 
-        match self.nodes.entry(&a) {
+        match self.nodes.entry(a) {
             Occupied(ent) => {
                 // Add edge only if it isn't already there
                 let edges = ent.into_mut();
@@ -117,7 +120,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash
     /// Return **None** if the edge didn't exist.
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E>
     {
-        match self.nodes.entry(&a) {
+        match self.nodes.entry(a) {
             Occupied(mut ent) => {
                 match ent.get().iter().position(|&(elt, _)| elt == b) {
                     Some(index) => {
@@ -224,8 +227,8 @@ impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash
         match self.nodes.get_mut(&a) {
             Some(succ) => {
                 succ.iter_mut()
-                    .find(|&&(ref n, _)| n == &b)
-                    .map(|&(_, ref mut edge)| edge)
+                    .find(|&&mut (ref n, _)| n == &b)
+                    .map(|&mut (_, ref mut edge)| edge)
             }
             None => None,
         }
@@ -233,7 +236,7 @@ impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash
 
 }
 
-impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash, E: Clone
+impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash<Hasher>, E: Clone
 {
     /// Add a directed edges from **a** to **b** and from **b** to **a** to the
     /// graph.
