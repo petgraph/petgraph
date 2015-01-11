@@ -587,6 +587,8 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
         }
     }
 
+    /* Removed: Easy to implement externally with iterate in reverse
+     *
     /// Retain only nodes that return **true** from the predicate.
     pub fn retain_nodes<F>(&mut self, mut visit: F) where
         F: FnMut(&Self, NodeIndex, &Node<N>) -> bool
@@ -614,6 +616,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
             }
         }
     }
+    */
 
     /// Access the internal node array
     pub fn raw_nodes(&self) -> &[Node<N>]
