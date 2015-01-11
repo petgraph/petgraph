@@ -191,9 +191,9 @@ impl<N, E> Graph<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
 }
 
 macro_rules! iterator_methods {
-    ($elt_type:ty) => (
+    () => (
         #[inline]
-        fn next(&mut self) -> Option<$elt_type>
+        fn next(&mut self) -> Option<<Self as Iterator>::Item>
         {
             self.iter.next()
         }
@@ -213,7 +213,7 @@ pub struct Nodes<'a, N: 'a> {
 impl<'a, N: 'a> Iterator for Nodes<'a, N>
 {
     type Item = &'a N;
-    iterator_methods!(&'a N);
+    iterator_methods!();
 }
 
 pub struct Neighbors<'a, N: 'a> {
@@ -223,7 +223,7 @@ pub struct Neighbors<'a, N: 'a> {
 impl<'a, N> Iterator for Neighbors<'a, N>
 {
     type Item = N;
-    iterator_methods!(N);
+    iterator_methods!();
 }
 
 pub struct Edges<'a, N: 'a + Copy + PartialOrd + Eq + Hash<Hasher>, E: 'a> {

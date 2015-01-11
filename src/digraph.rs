@@ -262,9 +262,9 @@ impl<N, E> DiGraph<N, E> where N: Copy + Clone + Eq + Hash<Hasher>, E: Clone
 }
 
 macro_rules! iterator_methods {
-    ($elt_type:ty) => (
+    () => (
         #[inline]
-        fn next(&mut self) -> Option<$elt_type>
+        fn next(&mut self) -> Option<<Self as Iterator>::Item>
         {
             self.iter.next()
         }
@@ -284,7 +284,7 @@ pub struct Nodes<'a, N: 'a, E: 'a> {
 impl<'a, N: 'a, E: 'a> Iterator for Nodes<'a, N, E>
 {
     type Item = &'a N;
-    iterator_methods!(&'a N);
+    iterator_methods!();
 }
 
 pub struct Neighbors<'a, N: 'a, E: 'a> {
@@ -294,7 +294,7 @@ pub struct Neighbors<'a, N: 'a, E: 'a> {
 impl<'a, N: 'a, E: 'a> Iterator for Neighbors<'a, N, E>
 {
     type Item = N;
-    iterator_methods!(N);
+    iterator_methods!();
 }
 
 pub struct Edges<'a, N: 'a, E: 'a> {
@@ -304,6 +304,6 @@ pub struct Edges<'a, N: 'a, E: 'a> {
 impl<'a, N: 'a, E: 'a> Iterator for Edges<'a, N, E>
 {
     type Item = (N, &'a E);
-    iterator_methods!((N, &'a E));
+    iterator_methods!();
 }
 

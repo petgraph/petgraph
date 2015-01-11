@@ -281,7 +281,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
         iter
     }
 
-    /// Return an iterator of all neighbors that have an edge between then and **a**,
+    /// Return an iterator of all neighbors that have an edge between them and **a**,
     /// in either direction.
     /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
     ///
