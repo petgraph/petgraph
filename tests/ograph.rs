@@ -333,3 +333,49 @@ fn without()
     assert_eq!(init, vec![a, d]);
     assert_eq!(term, vec![b, c, d]);
 }
+
+
+#[test]
+fn toposort() {
+    let mut gr = OGraph::<_,_>::new();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
+    let g = gr.add_node("G");
+    gr.add_edge(a, b, 7.0);
+    gr.add_edge(a, d, 5.);
+    gr.add_edge(d, b, 9.);
+    gr.add_edge(b, c, 8.);
+    gr.add_edge(b, e, 7.);
+    gr.add_edge(c, e, 5.);
+    gr.add_edge(d, e, 15.);
+    gr.add_edge(d, f, 6.);
+    gr.add_edge(f, e, 8.);
+    gr.add_edge(f, g, 11.);
+    gr.add_edge(e, g, 9.);
+
+    // add a disjoint part
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
+    gr.add_edge(h, i, 1.);
+    gr.add_edge(h, j, 3.);
+    gr.add_edge(i, j, 1.);
+
+    let order = petgraph::ograph::toposort(&gr);
+    println!("{:?}", order);
+    assert_eq!(order.len(), gr.node_count());
+
+    // check all the edges of the graph
+    for edge in gr.raw_edges().iter() {
+        let a = edge.source();
+        let b = edge.target();
+        let ai = order.iter().position(|x| *x == a);
+        let bi = order.iter().position(|x| *x == b);
+        println!("Check that {:?} is before {:?}", a, b);
+        assert!(ai < bi);
+    }
+}
