@@ -201,7 +201,7 @@ where N: Copy + Clone + Hash + Eq
     }
 }
 
-impl<'a, N, E, ETy: EdgeType> IntoNeighbors< ograph::NodeIndex> for &'a OGraph<N, E, ETy>
+impl<'a, N, E, Ty: EdgeType> IntoNeighbors< ograph::NodeIndex> for &'a OGraph<N, E, Ty>
 {
     type Iter = ograph::Neighbors<'a, E>;
     fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
@@ -224,7 +224,7 @@ impl<'a, 'b, N, E> IntoNeighbors< ograph::NodeIndex> for &'a Undirected<&'b OGra
     }
 }
 
-impl<'a, 'b, N, E, ETy: EdgeType> IntoNeighbors< ograph::NodeIndex> for &'a Reversed<&'b OGraph<N, E, ETy>>
+impl<'a, 'b, N, E, Ty: EdgeType> IntoNeighbors< ograph::NodeIndex> for &'a Reversed<&'b OGraph<N, E, Ty>>
 {
     type Iter = ograph::Neighbors<'a, E>;
     fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
@@ -262,8 +262,8 @@ pub trait Visitable<N> {
     fn visit_map(&self) -> Self::Map;
 }
 
-impl<N, E, ETy> Visitable<ograph::NodeIndex> for OGraph<N, E, ETy> where
-    ETy: ograph::EdgeType,
+impl<N, E, Ty> Visitable<ograph::NodeIndex> for OGraph<N, E, Ty> where
+    Ty: ograph::EdgeType,
 {
     type Map = BitvSet;
     fn visit_map(&self) -> BitvSet { BitvSet::with_capacity(self.node_count()) }
@@ -481,11 +481,11 @@ pub fn depth_first_search<'a, G, N, F>(graph: &'a G, start: N, mut f: F) -> bool
 ///
 /// **Note:** The algorithm will not behave correctly if nodes are removed
 /// during iteration. It will not necessarily visit added nodes or edges.
-pub fn depth_first_search_mut<'a, N, E, ETy, F>(graph: &'a mut OGraph<N, E, ETy>,
+pub fn depth_first_search_mut<'a, N, E, Ty, F>(graph: &'a mut OGraph<N, E, Ty>,
                                                 start: ograph::NodeIndex,
                                                 mut f: F) -> bool where
-    ETy: ograph::EdgeType,
-    F: FnMut(&mut OGraph<N, E, ETy>, ograph::NodeIndex) -> bool,
+    Ty: ograph::EdgeType,
+    F: FnMut(&mut OGraph<N, E, Ty>, ograph::NodeIndex) -> bool,
 {
     let mut dfs = Dfs::new(&*graph, start);
     while let Some(node) = dfs.next_node(&*graph) {

@@ -108,10 +108,10 @@ impl<E> Edge<E>
     }
 }
 
-/// **OGraph\<N, E, EdgeType\>** is a graph datastructure using an adjacency list representation.
+/// **OGraph\<N, E, Ty\>** is a graph datastructure using an adjacency list representation.
 ///
 /// **OGraph** is parameterized over the node weight **N**, edge weight **E** and
-/// the parameter **EdgeType** that determines whether the graph has directed edges or not.
+/// the parameter **Ty** that determines whether the graph has directed edges or not.
 ///
 /// Based on the graph implementation in rustc.
 ///
@@ -123,12 +123,12 @@ impl<E> Edge<E>
 /// all indices stable, but removing a node will force the last node to shift its index to
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 #[derive(Clone)]
-pub struct OGraph<N, E, Edges=Directed> {
+pub struct OGraph<N, E, Ty=Directed> {
     nodes: Vec<Node<N>>,
     edges: Vec<Edge<E>>,
 }
 
-impl<N: fmt::Show, E: fmt::Show, EdgeTy: EdgeType> fmt::Show for OGraph<N, E, EdgeTy>
+impl<N: fmt::Show, E: fmt::Show, Ty: EdgeType> fmt::Show for OGraph<N, E, Ty>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (index, n) in self.nodes.iter().enumerate() {
@@ -183,7 +183,7 @@ impl<N, E> OGraph<N, E, Undirected>
     }
 }
 
-impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
+impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
 {
     /// Create a new **OGraph** with estimated capacity.
     pub fn with_capacity(nodes: uint, edges: uint) -> Self
@@ -208,15 +208,15 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     /// Return whether the graph has directed edges or not.
     pub fn is_directed(&self) -> bool
     {
-        EdgeType::is_directed(None::<EdgeTy>)
+        EdgeType::is_directed(None::<Ty>)
     }
 
     /// Cast the graph as either undirected or directed. No edge adjustments
     /// are done.
     ///
     /// Computes in **O(1)** time.
-    pub fn into_edge_type<NewEdgeTy>(self) -> OGraph<N, E, NewEdgeTy> where
-        NewEdgeTy: EdgeType
+    pub fn into_edge_type<NewTy>(self) -> OGraph<N, E, NewTy> where
+        NewTy: EdgeType
     {
         OGraph{nodes: self.nodes, edges: self.edges}
     }
@@ -253,7 +253,7 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     /// Iterator element type is **NodeIndex**.
     pub fn neighbors(&self, a: NodeIndex) -> Neighbors<E>
     {
-        if EdgeType::is_directed(None::<EdgeTy>) {
+        if EdgeType::is_directed(None::<Ty>) {
             self.neighbors_directed(a, Outgoing)
         } else {
             self.neighbors_undirected(a)
@@ -270,7 +270,7 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     pub fn neighbors_directed(&self, a: NodeIndex, dir: EdgeDirection) -> Neighbors<E>
     {
         let mut iter = self.neighbors_undirected(a);
-        if EdgeType::is_directed(None::<EdgeTy>) {
+        if EdgeType::is_directed(None::<Ty>) {
             // remove the other edges not wanted.
             let k = dir as uint;
             iter.next[1 - k] = EDGE_END;
@@ -305,7 +305,7 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     pub fn edges(&self, a: NodeIndex) -> Edges<E>
     {
         let mut iter = self.edges_both(a);
-        if EdgeType::is_directed(None::<EdgeTy>) {
+        if EdgeType::is_directed(None::<Ty>) {
             iter.next[Incoming as uint] = EDGE_END;
         }
         iter
@@ -535,7 +535,7 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     /// connected to the vertices **a** (and **b**).
     pub fn find_edge(&self, a: NodeIndex, b: NodeIndex) -> Option<EdgeIndex>
     {
-        if !EdgeType::is_directed(None::<EdgeTy>) {
+        if !EdgeType::is_directed(None::<Ty>) {
             self.find_any_edge(a, b).map(|(ix, _)| ix)
         } else {
             match self.nodes.get(a.0) {
@@ -661,20 +661,20 @@ impl<N, E, EdgeTy=Directed> OGraph<N, E, EdgeTy> where EdgeTy: EdgeType
     /// For an undirected graph, the initials/terminals are just the vertices without edges.
     ///
     /// The whole iteration computes in **O(|V|)** time.
-    pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, EdgeTy>
+    pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, Ty>
     {
         WithoutEdges{iter: self.nodes.iter().enumerate(), dir: dir}
     }
 }
 
 /// An iterator over either the nodes without edges to them or from them.
-pub struct WithoutEdges<'a, N: 'a, EdgeTy> {
+pub struct WithoutEdges<'a, N: 'a, Ty> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N>>>,
     dir: EdgeDirection,
 }
 
-impl<'a, N: 'a, EdgeTy> Iterator for WithoutEdges<'a, N, EdgeTy> where
-    EdgeTy: EdgeType
+impl<'a, N: 'a, Ty> Iterator for WithoutEdges<'a, N, Ty> where
+    Ty: EdgeType
 {
     type Item = NodeIndex;
     fn next(&mut self) -> Option<NodeIndex>
@@ -685,7 +685,7 @@ impl<'a, N: 'a, EdgeTy> Iterator for WithoutEdges<'a, N, EdgeTy> where
                 None => return None,
                 Some((index, node)) => {
                     if node.next[k] == EDGE_END &&
-                        (EdgeType::is_directed(None::<EdgeTy>) ||
+                        (EdgeType::is_directed(None::<Ty>) ||
                          node.next[1-k] == EDGE_END) {
                         return Some(NodeIndex(index))
                     } else {
@@ -735,7 +735,7 @@ pub fn toposort<N, E>(g: &OGraph<N, E, Directed>) -> Vec<NodeIndex>
 /// Return **true** if the input graph contains a cycle.
 ///
 /// Treat the input graph as undirected.
-pub fn is_cyclic<N, E, EdgeTy: EdgeType>(g: &OGraph<N, E, EdgeTy>) -> bool
+pub fn is_cyclic<N, E, Ty>(g: &OGraph<N, E, Ty>) -> bool where Ty: EdgeType
 {
     let mut edge_sets = UnionFind::new(g.node_count());
     for edge in g.edges.iter() {
@@ -760,10 +760,10 @@ pub fn is_cyclic<N, E, EdgeTy: EdgeType>(g: &OGraph<N, E, EdgeTy>) -> bool
 ///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
 /// and **|V| - c** edges, where **c** is the number of connected components in **g**.
-pub fn min_spanning_tree<N, E, EdgeTy>(g: &OGraph<N, E, EdgeTy>) -> OGraph<N, E, Undirected> where
+pub fn min_spanning_tree<N, E, Ty>(g: &OGraph<N, E, Ty>) -> OGraph<N, E, Undirected> where
     N: Clone,
     E: Clone + PartialOrd,
-    EdgeTy: EdgeType,
+    Ty: EdgeType,
 {
     if g.node_count() == 0 {
         return OGraph::new_undirected()
