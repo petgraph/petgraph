@@ -195,7 +195,7 @@ fn selfloop() {
 
     assert!(gr.find_edge(a, b).is_some());
     assert!(gr.find_edge(b, a).is_none());
-    assert!(gr.find_any_edge(b, a).is_some());
+    assert!(gr.find_edge_undirected(b, a).is_some());
     assert!(gr.find_edge(a, a).is_some());
     println!("{:?}", gr);
 

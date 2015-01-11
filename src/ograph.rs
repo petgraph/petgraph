@@ -540,7 +540,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
     pub fn find_edge(&self, a: NodeIndex, b: NodeIndex) -> Option<EdgeIndex>
     {
         if !self.is_directed() {
-            self.find_any_edge(a, b).map(|(ix, _)| ix)
+            self.find_edge_undirected(a, b).map(|(ix, _)| ix)
         } else {
             match self.nodes.get(a.0) {
                 None => None,
@@ -561,7 +561,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
     /// Lookup an edge between **a** and **b**, in either direction.
     ///
     /// If the graph is undirected, then this is equivalent to *.find_edge()*.
-    pub fn find_any_edge(&self, a: NodeIndex, b: NodeIndex) -> Option<(EdgeIndex, EdgeDirection)>
+    pub fn find_edge_undirected(&self, a: NodeIndex, b: NodeIndex) -> Option<(EdgeIndex, EdgeDirection)>
     {
         match self.nodes.get(a.0) {
             None => None,
