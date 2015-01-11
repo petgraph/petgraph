@@ -5,8 +5,6 @@ use petgraph::{
     OGraph,
     Dfs,
     DfsIter,
-    Undirected,
-    Reversed,
     BreadthFirst,
     dijkstra,
     Incoming,
@@ -17,6 +15,11 @@ use petgraph::ograph::{
     min_spanning_tree,
     is_cyclic,
     NodeIndex,
+};
+
+use petgraph::visit::{
+    Reversed,
+    AsUndirected,
 };
 
 #[test]
@@ -104,13 +107,13 @@ fn dfs() {
     assert_eq!(DfsIter::new(&gr, i).count(), 3);
 
     let mut visited = 0is;
-    Dfs::search(&Undirected(&gr), i, |_| {
+    Dfs::search(&AsUndirected(&gr), i, |_| {
         visited += 1;
         true
     });
     assert_eq!(visited, 4);
 
-    assert_eq!(DfsIter::new(&Undirected(&gr), i).count(), 4);
+    assert_eq!(DfsIter::new(&AsUndirected(&gr), i).count(), 4);
 }
 
 

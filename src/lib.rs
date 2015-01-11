@@ -27,13 +27,11 @@ use ograph::{
 
 pub use self::EdgeDirection::{Outgoing, Incoming};
 pub use visit::{
-    Undirected,
-    Reversed,
     Dfs,
     DfsIter,
     BreadthFirst,
-    VisitMap,
 };
+use visit::VisitMap;
 
 mod scored;
 pub mod digraph;

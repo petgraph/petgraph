@@ -56,11 +56,11 @@ impl<'a, N, E, Ty: ograph::EdgeType> IntoNeighbors< ograph::NodeIndex> for &'a O
 }
 
 /// Wrapper type for walking the graph as if it is undirected
-pub struct Undirected<G>(pub G);
+pub struct AsUndirected<G>(pub G);
 /// Wrapper type for walking edges the other way
 pub struct Reversed<G>(pub G);
 
-impl<'a, 'b, N, E> IntoNeighbors< ograph::NodeIndex> for &'a Undirected<&'b OGraph<N, E>>
+impl<'a, 'b, N, E> IntoNeighbors< ograph::NodeIndex> for &'a AsUndirected<&'b OGraph<N, E>>
 {
     type Iter = ograph::Neighbors<'a, E>;
     fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
@@ -142,7 +142,7 @@ impl<N, E> Visitable for Graph<N, E>
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
 }
 
-impl<'a, V: Graphlike> Graphlike for Undirected<&'a V>
+impl<'a, V: Graphlike> Graphlike for AsUndirected<&'a V>
 {
     type NodeId = <V as Graphlike>::NodeId;
 }
@@ -152,7 +152,7 @@ impl<'a, V: Graphlike> Graphlike for Reversed<&'a V>
     type NodeId = <V as Graphlike>::NodeId;
 }
 
-impl<'a, V: Visitable> Visitable for Undirected<&'a V>
+impl<'a, V: Visitable> Visitable for AsUndirected<&'a V>
 {
     type Map = <V as Visitable>::Map;
     fn visit_map(&self) -> <V as Visitable>::Map {
