@@ -26,6 +26,14 @@ use ograph::{
 };
 
 pub use self::EdgeDirection::{Outgoing, Incoming};
+pub use visit::{
+    Undirected,
+    Reversed,
+    DepthFirst,
+    Dfs,
+    BreadthFirst,
+    VisitMap,
+};
 
 mod scored;
 pub mod digraph;
@@ -108,16 +116,16 @@ impl<'b, T: fmt::Show> fmt::Show for Ptr<'b, T> {
 }
 
 /// Dijkstra's shortest path algorithm.
-pub fn dijkstra<'a, Graph, N, K, F, Edges>(graph: &'a Graph,
+pub fn dijkstra<'a, G, N, K, F, Edges>(graph: &'a G,
                                            start: N,
                                            goal: Option<N>,
                                            mut edges: F) -> HashMap<N, K> where
-    Graph: Visitable<NodeId=N>,
+    G: visit::Visitable<NodeId=N>,
     N: Copy + Clone + Eq + Hash<Hasher> + fmt::Show,
     K: Default + Add<Output=K> + Copy + PartialOrd + fmt::Show,
-    F: FnMut(&'a Graph, N) -> Edges,
+    F: FnMut(&'a G, N) -> Edges,
     Edges: Iterator<Item=(N, K)>,
-    <Graph as Visitable>::Map: VisitMap<N>,
+    <G as visit::Visitable>::Map: VisitMap<N>,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
@@ -175,201 +183,3 @@ impl<T: Copy + fmt::Show> fmt::Show for NodeCell<T> {
         write!(f, "Node({:?})", self.0.get())
     }
 }
-/// A breadth first traversal of a graph.
-#[derive(Clone)]
-pub struct BreadthFirst<'a, G, N> where
-    G: 'a,
-    N: Eq + Hash<Hasher>,
-{
-    pub graph: &'a G,
-    pub stack: RingBuf<N>,
-    pub visited: HashSet<N>,
-}
-
-impl<'a, G, N> BreadthFirst<'a, G, N> where
-    G: 'a,
-    &'a G: IntoNeighbors< N>,
-    N: Copy + Eq + Hash<Hasher>,
-{
-    pub fn new(graph: &'a G, start: N) -> BreadthFirst<'a, G, N>
-    {
-        let mut rb = RingBuf::new();
-        rb.push_back(start);
-        BreadthFirst{
-            graph: graph,
-            stack: rb,
-            visited: HashSet::new(),
-        }
-    }
-}
-
-impl<'a, G: 'a, N> Iterator for BreadthFirst<'a, G, N> where
-    &'a G: IntoNeighbors<N>,
-    N: Copy + Eq + Hash<Hasher>,
-    <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
-{
-    type Item = N;
-    fn next(&mut self) -> Option<N>
-    {
-        while let Some(node) = self.stack.pop_front() {
-            if !self.visited.insert(node) {
-                continue;
-            }
-
-            for succ in self.graph.neighbors(node) {
-                if !self.visited.contains(&succ) {
-                    self.stack.push_back(succ);
-                }
-            }
-
-            return Some(node);
-        }
-        None
-    }
-}
-
-/// An iterator for a depth first traversal of a graph.
-#[derive(Clone)]
-pub struct DepthFirst<'a, G, N> where
-    G: 'a,
-    N: Eq + Hash<Hasher>,
-{
-    pub graph: &'a G,
-    pub dfs: Dfs<N, HashSet<N>>,
-}
-
-/// A depth first traversal of a graph.
-#[derive(Clone)]
-pub struct Dfs<N, VM> {
-    pub stack: Vec<N>,
-    pub visited: VM,
-}
-
-impl<N> Dfs<N, HashSet<N>> where N: Hash<Hasher> + Eq
-{
-    /// Create a new **Dfs**.
-    fn new_with_hashset(start: N) -> Self
-    {
-        Dfs {
-            stack: vec![start],
-            visited: HashSet::new(),
-        }
-    }
-}
-
-impl Dfs<(), ()>
-{
-    /// Create a new **Dfs**, using the graph's visitor map.
-    ///
-    /// **Note:** Does not borrow the graph.
-    pub fn new<N, G>(graph: &G, start: N)
-            -> Dfs<N, <G as Visitable>::Map> where
-        G: Visitable<NodeId=N>,
-    {
-        Dfs {
-            stack: vec![start],
-            visited: graph.visit_map(),
-        }
-    }
-}
-
-impl<'a, G, N> DepthFirst<'a, G, N> where
-    N: Eq + Hash<Hasher>,
-{
-    pub fn new(graph: &'a G, start: N) -> DepthFirst<'a, G, N>
-    {
-        DepthFirst {
-            graph: graph,
-            dfs: Dfs::new_with_hashset(start)
-        }
-    }
-}
-
-impl<N, VM> Dfs<N, VM> where N: Clone, VM: VisitMap<N>
-{
-    /// Return the next node in the dfs, or **None** if the traversal is done.
-    pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
-        &'a G: IntoNeighbors< N>,
-        <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
-    {
-        while let Some(node) = self.stack.pop() {
-            if !self.visited.visit(node.clone()) {
-                continue;
-            }
-
-            for succ in graph.neighbors(node.clone()) {
-                if !self.visited.contains(&succ) {
-                    self.stack.push(succ);
-                }
-            }
-
-            return Some(node);
-        }
-        None
-    }
-}
-
-impl<'a, G, N> Iterator for DepthFirst<'a, G, N> where
-    G: 'a,
-    &'a G: IntoNeighbors< N>,
-    N: Clone + Eq + Hash<Hasher>,
-    <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
-{
-    type Item = N;
-    fn next(&mut self) -> Option<N>
-    {
-        self.dfs.next(self.graph)
-    }
-}
-
-pub fn depth_first_search<'a, G, N, F>(graph: &'a G, start: N, mut f: F) -> bool where
-    G: 'a + Visitable<NodeId=N>,
-    &'a G: IntoNeighbors<N>,
-    N: Clone,
-    <&'a G as IntoNeighbors<N>>::Iter: Iterator<Item=N>,
-    <G as Visitable>::Map: VisitMap<N>,
-    F: FnMut(N) -> bool,
-{
-    let mut stack = Vec::new();
-    let mut visited = graph.visit_map();
-
-    stack.push(start);
-    while let Some(node) = stack.pop() {
-        if !visited.visit(node.clone()) {
-            continue;
-        }
-
-        for succ in graph.neighbors(node.clone()) {
-            if !visited.contains(&succ) {
-                stack.push(succ);
-            }
-        }
-
-        if !f(node) {
-            return false
-        }
-    }
-    true
-}
-
-/// Run a DFS over an **OGraph**, passing a mutable ref to the graph to the
-/// iteration function on each step.
-///
-/// **Note:** The algorithm will not behave correctly if nodes are removed
-/// during iteration. It will not necessarily visit added nodes or edges.
-pub fn depth_first_search_mut<'a, N, E, Ty, F>(graph: &'a mut OGraph<N, E, Ty>,
-                                                start: ograph::NodeIndex,
-                                                mut f: F) -> bool where
-    Ty: ograph::EdgeType,
-    F: FnMut(&mut OGraph<N, E, Ty>, ograph::NodeIndex) -> bool,
-{
-    let mut dfs = Dfs::new(&*graph, start);
-    while let Some(node) = dfs.next(&*graph) {
-        if !f(graph, node) {
-            return false
-        }
-    }
-    true
-}
-
-

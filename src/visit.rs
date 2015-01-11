@@ -1,6 +1,7 @@
 use std::collections::{
     HashSet,
     BitvSet,
+    RingBuf,
 };
 use std::collections::hash_map::Hasher;
 use std::hash::Hash;
@@ -183,4 +184,191 @@ pub enum Color {
 pub trait ColorVisitable : Graphlike {
     type Map;
     fn color_visit_map(&self) -> Self::Map;
+}
+
+/// A breadth first traversal of a graph.
+#[derive(Clone)]
+pub struct BreadthFirst<'a, G, N> where
+    G: 'a,
+    N: Eq + Hash<Hasher>,
+{
+    pub graph: &'a G,
+    pub stack: RingBuf<N>,
+    pub visited: HashSet<N>,
+}
+
+impl<'a, G, N> BreadthFirst<'a, G, N> where
+    G: 'a,
+    &'a G: IntoNeighbors< N>,
+    N: Copy + Eq + Hash<Hasher>,
+{
+    pub fn new(graph: &'a G, start: N) -> BreadthFirst<'a, G, N>
+    {
+        let mut rb = RingBuf::new();
+        rb.push_back(start);
+        BreadthFirst{
+            graph: graph,
+            stack: rb,
+            visited: HashSet::new(),
+        }
+    }
+}
+
+impl<'a, G: 'a, N> Iterator for BreadthFirst<'a, G, N> where
+    &'a G: IntoNeighbors<N>,
+    N: Copy + Eq + Hash<Hasher>,
+    <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
+{
+    type Item = N;
+    fn next(&mut self) -> Option<N>
+    {
+        while let Some(node) = self.stack.pop_front() {
+            if !self.visited.insert(node) {
+                continue;
+            }
+
+            for succ in self.graph.neighbors(node) {
+                if !self.visited.contains(&succ) {
+                    self.stack.push_back(succ);
+                }
+            }
+
+            return Some(node);
+        }
+        None
+    }
+}
+
+/// An iterator for a depth first traversal of a graph.
+#[derive(Clone)]
+pub struct DepthFirst<'a, G, N> where
+    G: 'a,
+    N: Eq + Hash<Hasher>,
+{
+    pub graph: &'a G,
+    pub dfs: Dfs<N, HashSet<N>>,
+}
+
+/// A depth first traversal of a graph.
+///
+/// Using a **Dfs** you can run a traversal over a graph while still retaining
+/// mutable access to it, if you use the following example:
+///
+/// ```
+/// use petgraph::{OGraph, Dfs};
+///
+/// let mut graph = OGraph::<_,()>::new();
+/// let a = graph.add_node(0);
+///
+/// let mut dfs = Dfs::new(&graph, a);
+/// while let Some(nx) = dfs.next(&graph) {
+///     // we can access parts of `graph` mutably here still
+///     *graph.node_weight_mut(nx).unwrap() += 1;
+/// }
+///
+/// assert_eq!(graph.node_weight(a), Some(&1));
+/// ```
+///
+/// **Note:** The algorithm will not behave correctly if nodes are removed
+/// during iteration. It will also not necessarily visit added nodes or edges.
+#[derive(Clone)]
+pub struct Dfs<N, VM> {
+    pub stack: Vec<N>,
+    pub visited: VM,
+}
+
+impl<N> Dfs<N, HashSet<N>> where N: Hash<Hasher> + Eq
+{
+    /// Create a new **Dfs**.
+    fn new_with_hashset(start: N) -> Self
+    {
+        Dfs {
+            stack: vec![start],
+            visited: HashSet::new(),
+        }
+    }
+}
+
+impl Dfs<(), ()>
+{
+    /// Create a new **Dfs**, using the graph's visitor map.
+    ///
+    /// **Note:** Does not borrow the graph.
+    pub fn new<N, G>(graph: &G, start: N)
+            -> Dfs<N, <G as Visitable>::Map> where
+        G: Visitable<NodeId=N>,
+    {
+        Dfs {
+            stack: vec![start],
+            visited: graph.visit_map(),
+        }
+    }
+
+    /// Run a DFS over a graph.
+    pub fn search<'a, N, G, F>(graph: &'a G, start: N, mut f: F) -> bool where
+        N: Clone,
+        G: Visitable<NodeId=N>,
+        &'a G: IntoNeighbors<N>,
+        <&'a G as IntoNeighbors<N>>::Iter: Iterator<Item=N>,
+        <G as Visitable>::Map: VisitMap<N>,
+        F: FnMut(N) -> bool,
+    {
+        let mut dfs = Dfs::new(graph, start);
+        while let Some(node) = dfs.next(graph) {
+            if !f(node) {
+                return false
+            }
+        }
+        true
+    }
+}
+
+impl<N, VM> Dfs<N, VM> where N: Clone, VM: VisitMap<N>
+{
+    /// Return the next node in the dfs, or **None** if the traversal is done.
+    pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
+        &'a G: IntoNeighbors< N>,
+        <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
+    {
+        while let Some(node) = self.stack.pop() {
+            if !self.visited.visit(node.clone()) {
+                continue;
+            }
+
+            for succ in graph.neighbors(node.clone()) {
+                if !self.visited.contains(&succ) {
+                    self.stack.push(succ);
+                }
+            }
+
+            return Some(node);
+        }
+        None
+    }
+
+}
+
+impl<'a, G, N> DepthFirst<'a, G, N> where
+    N: Eq + Hash<Hasher>,
+{
+    pub fn new(graph: &'a G, start: N) -> DepthFirst<'a, G, N>
+    {
+        DepthFirst {
+            graph: graph,
+            dfs: Dfs::new_with_hashset(start)
+        }
+    }
+}
+
+impl<'a, G, N> Iterator for DepthFirst<'a, G, N> where
+    G: 'a,
+    &'a G: IntoNeighbors< N>,
+    N: Clone + Eq + Hash<Hasher>,
+    <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
+{
+    type Item = N;
+    fn next(&mut self) -> Option<N>
+    {
+        self.dfs.next(self.graph)
+    }
 }
