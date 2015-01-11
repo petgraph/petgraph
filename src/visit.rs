@@ -1,5 +1,7 @@
 use std::collections::{
     HashSet,
+    HashMap,
+    Bitv,
     BitvSet,
     RingBuf,
 };
@@ -184,6 +186,88 @@ pub enum Color {
 pub trait ColorVisitable : Graphlike {
     type Map;
     fn color_visit_map(&self) -> Self::Map;
+}
+
+impl<N, E> ColorVisitable for Graph<N, E> where
+    N: Clone + Eq + Hash<Hasher>,
+{
+    type Map = HashMap<N, Color>;
+    fn color_visit_map(&self) -> HashMap<N, Color>
+    {
+        HashMap::new()
+    }
+}
+
+impl<N, E, Ty> ColorVisitable for OGraph<N, E, Ty> where
+    Ty: ograph::EdgeType,
+{
+    type Map = Bitv;
+    fn color_visit_map(&self) -> Bitv
+    {
+        Bitv::from_elem(self.node_count() * 2, false)
+    }
+}
+
+pub trait ColorMap<K> {
+    fn color(&self, &K) -> Color;
+    fn visit(&mut self, K, Color);
+    fn is_white(&self, k: &K) -> bool {
+        self.color(k) == Color::White
+    }
+}
+
+// Use two bits per node.
+// 00 => White
+// 10 => Gray
+// 11 => Black
+impl ColorMap<ograph::NodeIndex> for Bitv
+{
+    fn is_white(&self, k: &ograph::NodeIndex) -> bool {
+        let ix = k.0;
+        self[2*ix]
+    }
+
+    fn color(&self, k: &ograph::NodeIndex) -> Color {
+        let ix = k.0;
+        let white_bit = self[2*ix];
+        let gray_bit = self[2*ix+1];
+        if white_bit {
+            Color::White
+        } else if gray_bit {
+            Color::Gray
+        } else {
+            Color::Black
+        }
+    }
+
+    fn visit(&mut self, k: ograph::NodeIndex, c: Color) {
+        let ix = k.0;
+        match c {
+            Color::White => {
+                self.set(2*ix, false);
+                self.set(2*ix + 1, false);
+            }
+            Color::Gray => {
+                self.set(2*ix, true);
+                self.set(2*ix + 1, false);
+            }
+            Color::Black => {
+                self.set(2*ix, true);
+                self.set(2*ix + 1, true);
+            }
+        }
+    }
+}
+
+impl<K: Eq + Hash<Hasher>> ColorMap<K> for HashMap<K, Color>
+{
+    fn color(&self, k: &K) -> Color {
+        *self.get(k).unwrap_or(&Color::White)
+    }
+
+    fn visit(&mut self, k: K, c: Color) {
+        self.insert(k, c);
+    }
 }
 
 /// A breadth first traversal of a graph.
