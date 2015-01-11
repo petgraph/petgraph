@@ -20,7 +20,7 @@ use std::ops::{Index, IndexMut};
 /// It uses an combined adjacency list and sparse adjacency matrix representation, using *O(|N|
 /// + |E|)* space, and allows testing for edge existance in constant time.
 ///
-/// The node type **N** must implement Copy and will be used as node identifier, duplicated
+/// The node type **N** must implement **Copy** and will be used as node identifier, duplicated
 /// into several places in the data structure.
 /// It must be suitable as a hash table key (implementing **Eq + Hash**).
 /// The node type must also implement **PartialOrd** so that the implementation can
@@ -49,7 +49,11 @@ fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
 #[inline]
 fn copy<N: Copy>(n: &N) -> N { *n }
 
-impl<N, E> GraphMap<N, E> where N: Copy + PartialOrd + Eq + Hash<Hasher>
+/// A trait group for **GraphMap**'s node identifier.
+pub trait NodeTrait : Copy + PartialOrd + Eq + Hash<Hasher> {}
+impl<N> NodeTrait for N where N: Copy + PartialOrd + Eq + Hash<Hasher> {}
+
+impl<N, E> GraphMap<N, E> where N: NodeTrait
 {
     /// Create a new **GraphMap**.
     pub fn new() -> Self
@@ -271,14 +275,15 @@ impl<'a, N> Iterator for Neighbors<'a, N>
     iterator_methods!();
 }
 
-pub struct Edges<'a, N: 'a + Copy + PartialOrd + Eq + Hash<Hasher>, E: 'a> {
+pub struct Edges<'a, N, E: 'a> where N: 'a + NodeTrait
+{
     pub from: N,
     pub edges: &'a HashMap<(N, N), E>,
     pub iter: Neighbors<'a, N>,
 }
 
 impl<'a, N, E> Iterator for Edges<'a, N, E>
-    where N: 'a + Copy + PartialOrd + Eq + Hash<Hasher>, E: 'a
+    where N: 'a + NodeTrait, E: 'a
 {
     type Item = (N, &'a E);
     fn next(&mut self) -> Option<(N, &'a E)>
@@ -298,7 +303,7 @@ impl<'a, N, E> Iterator for Edges<'a, N, E>
     }
 }
 
-impl<N: Copy + PartialOrd + Eq + Hash<Hasher>, E> Index<(N, N)> for GraphMap<N, E>
+impl<N, E> Index<(N, N)> for GraphMap<N, E> where N: NodeTrait
 {
     type Output = E;
     /// Index **GraphMap** by node pairs to access edge weights.
@@ -308,7 +313,7 @@ impl<N: Copy + PartialOrd + Eq + Hash<Hasher>, E> Index<(N, N)> for GraphMap<N, 
     }
 }
 
-impl<N: Copy + PartialOrd + Eq + Hash<Hasher>, E> IndexMut<(N, N)> for GraphMap<N, E>
+impl<N, E> IndexMut<(N, N)> for GraphMap<N, E> where N: NodeTrait
 {
     type Output = E;
     /// Index **GraphMap** by node pairs to access edge weights.
