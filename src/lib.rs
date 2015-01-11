@@ -111,12 +111,12 @@ pub fn dijkstra<'a, Graph, N, K, F, Edges>(graph: &'a Graph,
                                            start: N,
                                            goal: Option<N>,
                                            mut edges: F) -> HashMap<N, K> where
-    Graph: Visitable<N>,
+    Graph: Visitable<NodeId=N>,
     N: Copy + Clone + Eq + Hash<Hasher> + fmt::Show,
     K: Default + Add<Output=K> + Copy + PartialOrd + fmt::Show,
     F: FnMut(&'a Graph, N) -> Edges,
     Edges: Iterator<Item=(N, K)>,
-    <Graph as Visitable<N>>::Map: VisitMap<N>,
+    <Graph as Visitable>::Map: VisitMap<N>,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
@@ -173,6 +173,10 @@ impl<T: Copy + fmt::Show> fmt::Show for NodeCell<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Node({:?})", self.0.get())
     }
+}
+
+pub trait Graphlike {
+    type NodeId: Clone;
 }
 
 /// A graph trait for accessing the neighbors iterator **I**.
@@ -257,44 +261,68 @@ impl<N: Eq + Hash<Hasher>> VisitMap<N> for HashSet<N> {
 }
 
 /// Trait for Graph that knows which datastructure is the best for its visitor map
-pub trait Visitable<N> {
-    type Map: VisitMap<N>;
+pub trait Visitable : Graphlike {
+    type Map: VisitMap<<Self as Graphlike>::Item>;
     fn visit_map(&self) -> Self::Map;
 }
 
-impl<N, E, Ty> Visitable<ograph::NodeIndex> for OGraph<N, E, Ty> where
+impl<N, E, Ty> Graphlike for OGraph<N, E, Ty> {
+    type NodeId = ograph::NodeIndex;
+}
+
+impl<N, E, Ty> Visitable for OGraph<N, E, Ty> where
     Ty: ograph::EdgeType,
 {
     type Map = BitvSet;
     fn visit_map(&self) -> BitvSet { BitvSet::with_capacity(self.node_count()) }
 }
 
-impl<N, E> Visitable<N> for DiGraph<N, E>
+impl<N: Clone, E> Graphlike for DiGraph<N, E>
+{
+    type NodeId = N;
+}
+
+impl<N, E> Visitable for DiGraph<N, E>
     where N: Copy + Clone + Eq + Hash<Hasher>
 {
     type Map = HashSet<N>;
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
 }
 
-impl<N, E> Visitable<N> for Graph<N, E>
+impl<N: Clone, E> Graphlike for Graph<N, E>
+{
+    type NodeId = N;
+}
+
+impl<N, E> Visitable for Graph<N, E>
     where N: Copy + Clone + Ord + Eq + Hash<Hasher>
 {
     type Map = HashSet<N>;
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
 }
 
-impl<'a, N, V: Visitable<N>> Visitable<N> for Undirected<&'a V>
+impl<'a, V: Graphlike> Graphlike for Undirected<&'a V>
 {
-    type Map = <V as Visitable<N>>::Map;
-    fn visit_map(&self) -> <V as Visitable<N>>::Map {
+    type NodeId = <V as Graphlike>::NodeId;
+}
+
+impl<'a, V: Graphlike> Graphlike for Reversed<&'a V>
+{
+    type NodeId = <V as Graphlike>::NodeId;
+}
+
+impl<'a, V: Visitable> Visitable for Undirected<&'a V>
+{
+    type Map = <V as Visitable>::Map;
+    fn visit_map(&self) -> <V as Visitable>::Map {
         self.0.visit_map()
     }
 }
 
-impl<'a, N, V: Visitable<N>> Visitable<N> for Reversed<&'a V>
+impl<'a, V: Visitable> Visitable for Reversed<&'a V>
 {
-    type Map = <V as Visitable<N>>::Map;
-    fn visit_map(&self) -> <V as Visitable<N>>::Map {
+    type Map = <V as Visitable>::Map;
+    fn visit_map(&self) -> <V as Visitable>::Map {
         self.0.visit_map()
     }
 }
@@ -387,8 +415,8 @@ impl Dfs<(), ()>
     ///
     /// **Note:** Does not borrow the graph.
     pub fn new<N, G>(graph: &G, start: N)
-            -> Dfs<N, <G as Visitable<N>>::Map> where
-        G: Visitable<N>,
+            -> Dfs<N, <G as Visitable>::Map> where
+        G: Visitable<NodeId=N>,
     {
         Dfs {
             stack: vec![start],
@@ -447,11 +475,11 @@ impl<'a, G, N> Iterator for DepthFirst<'a, G, N> where
 }
 
 pub fn depth_first_search<'a, G, N, F>(graph: &'a G, start: N, mut f: F) -> bool where
-    G: 'a + Visitable<N>,
+    G: 'a + Visitable<NodeId=N>,
     &'a G: IntoNeighbors<N>,
     N: Clone,
     <&'a G as IntoNeighbors<N>>::Iter: Iterator<Item=N>,
-    <G as Visitable<N>>::Map: VisitMap<N>,
+    <G as Visitable>::Map: VisitMap<N>,
     F: FnMut(N) -> bool,
 {
     let mut stack = Vec::new();
