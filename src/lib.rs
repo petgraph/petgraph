@@ -15,7 +15,6 @@ use std::fmt;
 use std::ops::{Add, Deref};
 
 pub use scored::MinScored;
-pub use digraph::DiGraph;
 pub use graphmap::GraphMap;
 pub use ograph::OGraph;
 
@@ -29,7 +28,6 @@ pub use visit::{
 use visit::VisitMap;
 
 mod scored;
-pub mod digraph;
 pub mod graphmap;
 pub mod ograph;
 pub mod visit;

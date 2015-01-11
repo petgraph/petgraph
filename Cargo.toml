@@ -7,8 +7,3 @@ authors = ["bluss"]
 [lib]
 
 name = "petgraph"
-
-[[bin]]
-
-name = "bin"
-path = "src/bin.rs"

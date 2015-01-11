@@ -10,12 +10,10 @@ use std::hash::Hash;
 
 use super::{
     graphmap,
-    digraph,
     ograph,
     EdgeDirection,
     OGraph,
     GraphMap,
-    DiGraph,
 };
 
 pub trait Graphlike {
@@ -35,16 +33,6 @@ where N: Copy + Clone + PartialOrd + Hash<Hasher> + Eq
     fn neighbors(self, n: N) -> graphmap::Neighbors<'a, N>
     {
         GraphMap::neighbors(self, n)
-    }
-}
-
-impl<'a, N: 'a, E: 'a> IntoNeighbors<N> for &'a DiGraph<N, E>
-where N: Copy + Clone + Hash<Hasher> + Eq
-{
-    type Iter = digraph::Neighbors<'a, N, E>;
-    fn neighbors(self, n: N) -> digraph::Neighbors<'a, N, E>
-    {
-        DiGraph::neighbors(self, n)
     }
 }
 
@@ -119,18 +107,6 @@ impl<N, E, Ty> Visitable for OGraph<N, E, Ty> where
 {
     type Map = BitvSet;
     fn visit_map(&self) -> BitvSet { BitvSet::with_capacity(self.node_count()) }
-}
-
-impl<N: Clone, E> Graphlike for DiGraph<N, E>
-{
-    type NodeId = N;
-}
-
-impl<N, E> Visitable for DiGraph<N, E>
-    where N: Copy + Clone + Eq + Hash<Hasher>
-{
-    type Map = HashSet<N>;
-    fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
 }
 
 impl<N: Clone, E> Graphlike for GraphMap<N, E>
