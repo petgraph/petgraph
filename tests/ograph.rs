@@ -3,6 +3,7 @@ extern crate petgraph;
 
 use petgraph::{
     OGraph,
+    Bfs,
     Dfs,
     DfsIter,
     BreadthFirst,
@@ -114,6 +115,65 @@ fn dfs() {
     assert_eq!(visited, 4);
 
     assert_eq!(DfsIter::new(&AsUndirected(&gr), i).count(), 4);
+}
+
+
+#[test]
+fn bfs() {
+    let mut gr = OGraph::new();
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
+    let k = gr.add_node("K");
+    // Z is disconnected.
+    let _ = gr.add_node("Z");
+    gr.add_edge(h, i, 1.);
+    gr.add_edge(h, j, 3.);
+    gr.add_edge(i, j, 1.);
+    gr.add_edge(i, k, 2.);
+
+    let mut visited = 0is;
+    let mut bfs = Bfs::new(&gr, h);
+    while let Some(_) = bfs.next(&gr) {
+        visited += 1;
+    }
+    assert_eq!(visited, 4);
+
+    let mut visited = 0is;
+    let mut bfs = Bfs::new(&Reversed(&gr), h);
+    while let Some(_) = bfs.next(&Reversed(&gr)) {
+        visited += 1;
+    }
+    assert_eq!(visited, 1);
+
+    let mut visited = 0is;
+    let mut bfs = Bfs::new(&gr, k);
+    while let Some(_) = bfs.next(&gr) {
+        visited += 1;
+    }
+    assert_eq!(visited, 1);
+
+    let mut visited = 0is;
+    let mut bfs = Bfs::new(&Reversed(&gr), k);
+    while let Some(_) = bfs.next(&Reversed(&gr)) {
+        visited += 1;
+    }
+    assert_eq!(visited, 3);
+
+    let mut bfs = Bfs::new(&gr, h);
+    let nx = bfs.next(&gr);
+    assert_eq!(nx, Some(h));
+
+    let nx1 = bfs.next(&gr);
+    assert!(nx1 == Some(i) || nx1 == Some(j));
+
+    let nx2 = bfs.next(&gr);
+    assert!(nx2 == Some(i) || nx2 == Some(j));
+    assert!(nx1 != nx2);
+
+    let nx = bfs.next(&gr);
+    assert_eq!(nx, Some(k));
+    assert_eq!(bfs.next(&gr), None);
 }
 
 

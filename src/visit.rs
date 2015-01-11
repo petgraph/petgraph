@@ -454,3 +454,77 @@ impl<'a, G, N, VM> Iterator for DfsIter<'a, G, N, VM> where
         self.dfs.next(self.graph)
     }
 }
+
+/// A breadth first search (BFS) of a graph.
+///
+/// Using a **Bfs** you can run a traversal over a graph while still retaining
+/// mutable access to it, if you use it like the following example:
+///
+/// ```
+/// use petgraph::{OGraph, Bfs};
+///
+/// let mut graph = OGraph::<_,()>::new();
+/// let a = graph.add_node(0);
+///
+/// let mut bfs = Bfs::new(&graph, a);
+/// while let Some(nx) = bfs.next(&graph) {
+///     // we can access parts of `graph` mutably here still
+///     graph[nx] += 1;
+/// }
+///
+/// assert_eq!(graph.node_weight(a), Some(&1));
+/// ```
+///
+/// **Note:** The algorithm will not behave correctly if nodes are removed
+/// during iteration. It will also not necessarily visit added nodes or edges.
+#[derive(Clone)]
+pub struct Bfs<N, VM> {
+    pub stack: RingBuf<N>,
+    pub discovered: VM,
+}
+
+impl<N, G> Bfs<N, <G as Visitable>::Map> where
+    N: Clone,
+    G: Visitable<NodeId=N>,
+    <G as Visitable>::Map: VisitMap<N>,
+{
+    /// Create a new **Bfs**, using the graph's visitor map.
+    ///
+    /// **Note:** Does not borrow the graph.
+    pub fn new(graph: &G, start: N) -> Self
+    {
+        let mut discovered = graph.visit_map();
+        discovered.visit(start.clone());
+        let mut stack = RingBuf::new();
+        stack.push_front(start.clone());
+        Bfs {
+            stack: stack,
+            discovered: discovered,
+        }
+    }
+}
+
+
+impl<N, VM> Bfs<N, VM> where
+    N: Clone,
+    VM: VisitMap<N>
+{
+    /// Return the next node in the dfs, or **None** if the traversal is done.
+    pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
+        &'a G: IntoNeighbors< N>,
+        <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
+    {
+        while let Some(node) = self.stack.pop_front() {
+            for succ in graph.neighbors(node.clone()) {
+                if self.discovered.visit(succ.clone()) {
+                    self.stack.push_back(succ);
+                }
+            }
+
+            return Some(node);
+        }
+        None
+    }
+
+}
+
