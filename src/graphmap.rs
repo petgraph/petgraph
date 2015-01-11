@@ -13,6 +13,7 @@ use std::slice::{
     Iter,
 };
 use std::fmt;
+use std::ops::{Index, IndexMut};
 
 /// **GraphMap\<N, E\>** is an undirected graph, with generic node values **N** and edge weights **E**.
 ///
@@ -294,5 +295,25 @@ impl<'a, N, E> Iterator for Edges<'a, N, E>
                 }
             }
         }
+    }
+}
+
+impl<N: Copy + PartialOrd + Eq + Hash<Hasher>, E> Index<(N, N)> for GraphMap<N, E>
+{
+    type Output = E;
+    /// Index **GraphMap** by node pairs to access edge weights.
+    fn index(&self, index: &(N, N)) -> &E
+    {
+        self.edge_weight(index.0, index.1).unwrap()
+    }
+}
+
+impl<N: Copy + PartialOrd + Eq + Hash<Hasher>, E> IndexMut<(N, N)> for GraphMap<N, E>
+{
+    type Output = E;
+    /// Index **GraphMap** by node pairs to access edge weights.
+    fn index_mut(&mut self, index: &(N, N)) -> &mut E
+    {
+        self.edge_weight_mut(index.0, index.1).unwrap()
     }
 }
