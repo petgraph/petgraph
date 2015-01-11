@@ -51,11 +51,20 @@ fn copy<N: Copy>(n: &N) -> N { *n }
 impl<N, E> GraphMap<N, E> where N: Copy + PartialOrd + Eq + Hash<Hasher>
 {
     /// Create a new **GraphMap**.
-    pub fn new() -> GraphMap<N, E>
+    pub fn new() -> Self
     {
         GraphMap {
             nodes: HashMap::new(),
             edges: HashMap::new(),
+        }
+    }
+
+    /// Create a new **GraphMap** with estimated capacity.
+    pub fn with_capacity(nodes: usize, edges: usize) -> Self
+    {
+        GraphMap {
+            nodes: HashMap::with_capacity(nodes),
+            edges: HashMap::with_capacity(edges),
         }
     }
 
