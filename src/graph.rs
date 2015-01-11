@@ -109,9 +109,9 @@ impl<E> Edge<E>
     }
 }
 
-/// **OGraph\<N, E, Ty\>** is a graph datastructure using an adjacency list representation.
+/// **Graph\<N, E, Ty\>** is a graph datastructure using an adjacency list representation.
 ///
-/// **OGraph** is parameterized over the node weight **N**, edge weight **E** and
+/// **Graph** is parameterized over the node weight **N**, edge weight **E** and
 /// the parameter **Ty** that determines whether the graph has directed edges or not.
 ///
 /// Based on the graph implementation in rustc.
@@ -125,12 +125,12 @@ impl<E> Edge<E>
 /// all indices stable, but removing a node will force the last node to shift its index to
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 #[derive(Clone)]
-pub struct OGraph<N, E, Ty=Directed> {
+pub struct Graph<N, E, Ty=Directed> {
     nodes: Vec<Node<N>>,
     edges: Vec<Edge<E>>,
 }
 
-impl<N: fmt::Show, E: fmt::Show, Ty: EdgeType> fmt::Show for OGraph<N, E, Ty>
+impl<N: fmt::Show, E: fmt::Show, Ty: EdgeType> fmt::Show for Graph<N, E, Ty>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (index, n) in self.nodes.iter().enumerate() {
@@ -167,30 +167,30 @@ fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T>
     }
 }
 
-impl<N, E> OGraph<N, E, Directed>
+impl<N, E> Graph<N, E, Directed>
 {
-    /// Create a new **OGraph** with directed edges.
+    /// Create a new **Graph** with directed edges.
     pub fn new() -> Self
     {
-        OGraph{nodes: Vec::new(), edges: Vec::new()}
+        Graph{nodes: Vec::new(), edges: Vec::new()}
     }
 }
 
-impl<N, E> OGraph<N, E, Undirected>
+impl<N, E> Graph<N, E, Undirected>
 {
-    /// Create a new **OGraph** with undirected edges.
+    /// Create a new **Graph** with undirected edges.
     pub fn new_undirected() -> Self
     {
-        OGraph{nodes: Vec::new(), edges: Vec::new()}
+        Graph{nodes: Vec::new(), edges: Vec::new()}
     }
 }
 
-impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
+impl<N, E, Ty=Directed> Graph<N, E, Ty> where Ty: EdgeType
 {
-    /// Create a new **OGraph** with estimated capacity.
+    /// Create a new **Graph** with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self
     {
-        OGraph{nodes: Vec::with_capacity(nodes), edges: Vec::with_capacity(edges)}
+        Graph{nodes: Vec::with_capacity(nodes), edges: Vec::with_capacity(edges)}
     }
 
     /// Return the number of nodes (vertices) in the graph.
@@ -218,10 +218,10 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
     /// are done.
     ///
     /// Computes in **O(1)** time.
-    pub fn into_edge_type<NewTy>(self) -> OGraph<N, E, NewTy> where
+    pub fn into_edge_type<NewTy>(self) -> Graph<N, E, NewTy> where
         NewTy: EdgeType
     {
-        OGraph{nodes: self.nodes, edges: self.edges}
+        Graph{nodes: self.nodes, edges: self.edges}
     }
 
     /// Add a node (also called vertex) with weight **w** to the graph.
@@ -333,7 +333,7 @@ impl<N, E, Ty=Directed> OGraph<N, E, Ty> where Ty: EdgeType
     
     /// Add an edge from **a** to **b** to the graph, with its edge weight.
     ///
-    /// **Note:** **OGraph** allows adding parallel (“duplicate”) edges. If you want
+    /// **Note:** **Graph** allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [*.update_edge(a, b, weight)*](#method.update_edge) instead.
     ///
     /// Computes in **O(1)** time.
@@ -711,7 +711,7 @@ impl<'a, N: 'a, Ty> Iterator for WithoutEdges<'a, N, Ty> where
 ///
 /// If the returned vec contains less than all the nodes of the graph, then
 /// the graph was cyclic.
-pub fn toposort<N, E>(g: &OGraph<N, E, Directed>) -> Vec<NodeIndex>
+pub fn toposort<N, E>(g: &Graph<N, E, Directed>) -> Vec<NodeIndex>
 {
     let mut order = Vec::with_capacity(g.node_count());
     let mut ordered = BitvSet::with_capacity(g.node_count());
@@ -742,7 +742,7 @@ pub fn toposort<N, E>(g: &OGraph<N, E, Directed>) -> Vec<NodeIndex>
 /// Return **true** if the input graph contains a cycle.
 ///
 /// Treat the input graph as undirected.
-pub fn is_cyclic<N, E, Ty>(g: &OGraph<N, E, Ty>) -> bool where Ty: EdgeType
+pub fn is_cyclic<N, E, Ty>(g: &Graph<N, E, Ty>) -> bool where Ty: EdgeType
 {
     let mut edge_sets = UnionFind::new(g.node_count());
     for edge in g.edges.iter() {
@@ -767,17 +767,17 @@ pub fn is_cyclic<N, E, Ty>(g: &OGraph<N, E, Ty>) -> bool where Ty: EdgeType
 ///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
 /// and **|V| - c** edges, where **c** is the number of connected components in **g**.
-pub fn min_spanning_tree<N, E, Ty>(g: &OGraph<N, E, Ty>) -> OGraph<N, E, Undirected> where
+pub fn min_spanning_tree<N, E, Ty>(g: &Graph<N, E, Ty>) -> Graph<N, E, Undirected> where
     N: Clone,
     E: Clone + PartialOrd,
     Ty: EdgeType,
 {
     if g.node_count() == 0 {
-        return OGraph::new_undirected()
+        return Graph::new_undirected()
     }
 
     // Create a mst skeleton by copying all nodes
-    let mut mst = OGraph::with_capacity(g.node_count(), g.node_count() - 1);
+    let mut mst = Graph::with_capacity(g.node_count(), g.node_count() - 1);
     for node in g.nodes.iter() {
         mst.add_node(node.weight.clone());
     }
@@ -947,41 +947,41 @@ impl<'a, E> Iterator for Edges<'a, E>
     }
 }
 
-impl<N, E, Ty> Index<NodeIndex> for OGraph<N, E, Ty> where
+impl<N, E, Ty> Index<NodeIndex> for Graph<N, E, Ty> where
     Ty: EdgeType
 {
     type Output = N;
-    /// Index the **OGraph** by **NodeIndex** to access node weights.
+    /// Index the **Graph** by **NodeIndex** to access node weights.
     fn index(&self, index: &NodeIndex) -> &N {
         self.node_weight(*index).unwrap()
     }
 }
 
-impl<N, E, Ty> IndexMut<NodeIndex> for OGraph<N, E, Ty> where
+impl<N, E, Ty> IndexMut<NodeIndex> for Graph<N, E, Ty> where
     Ty: EdgeType
 {
     type Output = N;
-    /// Index the **OGraph** by **NodeIndex** to access node weights.
+    /// Index the **Graph** by **NodeIndex** to access node weights.
     fn index_mut(&mut self, index: &NodeIndex) -> &mut N {
         self.node_weight_mut(*index).unwrap()
     }
 
 }
-impl<N, E, Ty> Index<EdgeIndex> for OGraph<N, E, Ty> where
+impl<N, E, Ty> Index<EdgeIndex> for Graph<N, E, Ty> where
     Ty: EdgeType
 {
     type Output = E;
-    /// Index the **OGraph** by **EdgeIndex** to access edge weights.
+    /// Index the **Graph** by **EdgeIndex** to access edge weights.
     fn index(&self, index: &EdgeIndex) -> &E {
         self.edge_weight(*index).unwrap()
     }
 }
 
-impl<N, E, Ty> IndexMut<EdgeIndex> for OGraph<N, E, Ty> where
+impl<N, E, Ty> IndexMut<EdgeIndex> for Graph<N, E, Ty> where
     Ty: EdgeType
 {
     type Output = E;
-    /// Index the **OGraph** by **EdgeIndex** to access edge weights.
+    /// Index the **Graph** by **EdgeIndex** to access edge weights.
     fn index_mut(&mut self, index: &EdgeIndex) -> &mut E {
         self.edge_weight_mut(*index).unwrap()
     }

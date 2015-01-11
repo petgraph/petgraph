@@ -10,9 +10,9 @@ use std::hash::Hash;
 
 use super::{
     graphmap,
-    ograph,
+    graph,
     EdgeDirection,
-    OGraph,
+    Graph,
     GraphMap,
 };
 
@@ -36,12 +36,12 @@ where N: Copy + Clone + PartialOrd + Hash<Hasher> + Eq
     }
 }
 
-impl<'a, N, E, Ty: ograph::EdgeType> IntoNeighbors< ograph::NodeIndex> for &'a OGraph<N, E, Ty>
+impl<'a, N, E, Ty: graph::EdgeType> IntoNeighbors< graph::NodeIndex> for &'a Graph<N, E, Ty>
 {
-    type Iter = ograph::Neighbors<'a, E>;
-    fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
+    type Iter = graph::Neighbors<'a, E>;
+    fn neighbors(self, n: graph::NodeIndex) -> graph::Neighbors<'a, E>
     {
-        OGraph::neighbors(self, n)
+        Graph::neighbors(self, n)
     }
 }
 
@@ -50,21 +50,21 @@ pub struct AsUndirected<G>(pub G);
 /// Wrapper type for walking edges the other way
 pub struct Reversed<G>(pub G);
 
-impl<'a, 'b, N, E> IntoNeighbors< ograph::NodeIndex> for &'a AsUndirected<&'b OGraph<N, E>>
+impl<'a, 'b, N, E> IntoNeighbors< graph::NodeIndex> for &'a AsUndirected<&'b Graph<N, E>>
 {
-    type Iter = ograph::Neighbors<'a, E>;
-    fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
+    type Iter = graph::Neighbors<'a, E>;
+    fn neighbors(self, n: graph::NodeIndex) -> graph::Neighbors<'a, E>
     {
-        OGraph::neighbors_undirected(self.0, n)
+        Graph::neighbors_undirected(self.0, n)
     }
 }
 
-impl<'a, 'b, N, E, Ty: ograph::EdgeType> IntoNeighbors< ograph::NodeIndex> for &'a Reversed<&'b OGraph<N, E, Ty>>
+impl<'a, 'b, N, E, Ty: graph::EdgeType> IntoNeighbors< graph::NodeIndex> for &'a Reversed<&'b Graph<N, E, Ty>>
 {
-    type Iter = ograph::Neighbors<'a, E>;
-    fn neighbors(self, n: ograph::NodeIndex) -> ograph::Neighbors<'a, E>
+    type Iter = graph::Neighbors<'a, E>;
+    fn neighbors(self, n: graph::NodeIndex) -> graph::Neighbors<'a, E>
     {
-        OGraph::neighbors_directed(self.0, n, EdgeDirection::Incoming)
+        Graph::neighbors_directed(self.0, n, EdgeDirection::Incoming)
     }
 }
 
@@ -74,11 +74,11 @@ pub trait VisitMap<N> {
     fn contains(&self, &N) -> bool;
 }
 
-impl VisitMap<ograph::NodeIndex> for BitvSet {
-    fn visit(&mut self, x: ograph::NodeIndex) -> bool {
+impl VisitMap<graph::NodeIndex> for BitvSet {
+    fn visit(&mut self, x: graph::NodeIndex) -> bool {
         self.insert(x.0)
     }
-    fn contains(&self, x: &ograph::NodeIndex) -> bool {
+    fn contains(&self, x: &graph::NodeIndex) -> bool {
         self.contains(&x.0)
     }
 }
@@ -98,12 +98,12 @@ pub trait Visitable : Graphlike {
     fn visit_map(&self) -> Self::Map;
 }
 
-impl<N, E, Ty> Graphlike for OGraph<N, E, Ty> {
-    type NodeId = ograph::NodeIndex;
+impl<N, E, Ty> Graphlike for Graph<N, E, Ty> {
+    type NodeId = graph::NodeIndex;
 }
 
-impl<N, E, Ty> Visitable for OGraph<N, E, Ty> where
-    Ty: ograph::EdgeType,
+impl<N, E, Ty> Visitable for Graph<N, E, Ty> where
+    Ty: graph::EdgeType,
 {
     type Map = BitvSet;
     fn visit_map(&self) -> BitvSet { BitvSet::with_capacity(self.node_count()) }
@@ -175,8 +175,8 @@ impl<N, E> ColorVisitable for GraphMap<N, E> where
     }
 }
 
-impl<N, E, Ty> ColorVisitable for OGraph<N, E, Ty> where
-    Ty: ograph::EdgeType,
+impl<N, E, Ty> ColorVisitable for Graph<N, E, Ty> where
+    Ty: graph::EdgeType,
 {
     type Map = Bitv;
     fn color_visit_map(&self) -> Bitv
@@ -197,14 +197,14 @@ pub trait ColorMap<K> {
 // 00 => White
 // 10 => Gray
 // 11 => Black
-impl ColorMap<ograph::NodeIndex> for Bitv
+impl ColorMap<graph::NodeIndex> for Bitv
 {
-    fn is_white(&self, k: &ograph::NodeIndex) -> bool {
+    fn is_white(&self, k: &graph::NodeIndex) -> bool {
         let ix = k.0;
         self[2*ix]
     }
 
-    fn color(&self, k: &ograph::NodeIndex) -> Color {
+    fn color(&self, k: &graph::NodeIndex) -> Color {
         let ix = k.0;
         let white_bit = self[2*ix];
         let gray_bit = self[2*ix+1];
@@ -217,7 +217,7 @@ impl ColorMap<ograph::NodeIndex> for Bitv
         }
     }
 
-    fn visit(&mut self, k: ograph::NodeIndex, c: Color) {
+    fn visit(&mut self, k: graph::NodeIndex, c: Color) {
         let ix = k.0;
         match c {
             Color::White => {
@@ -253,9 +253,9 @@ impl<K: Eq + Hash<Hasher>> ColorMap<K> for HashMap<K, Color>
 /// mutable access to it, if you use it like the following example:
 ///
 /// ```
-/// use petgraph::{OGraph, Dfs};
+/// use petgraph::{Graph, Dfs};
 ///
-/// let mut graph = OGraph::<_,()>::new();
+/// let mut graph = Graph::<_,()>::new();
 /// let a = graph.add_node(0);
 ///
 /// let mut dfs = Dfs::new(&graph, a);
@@ -360,9 +360,9 @@ impl<'a, G, N, VM> Iterator for DfsIter<'a, G, N, VM> where
 /// mutable access to it, if you use it like the following example:
 ///
 /// ```
-/// use petgraph::{OGraph, Bfs};
+/// use petgraph::{Graph, Bfs};
 ///
-/// let mut graph = OGraph::<_,()>::new();
+/// let mut graph = Graph::<_,()>::new();
 /// let a = graph.add_node(0);
 ///
 /// let mut bfs = Bfs::new(&graph, a);

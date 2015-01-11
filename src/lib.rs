@@ -16,7 +16,7 @@ use std::ops::{Add, Deref};
 
 pub use scored::MinScored;
 pub use graphmap::GraphMap;
-pub use ograph::OGraph;
+pub use graph::Graph;
 
 pub use self::EdgeDirection::{Outgoing, Incoming};
 pub use visit::{
@@ -29,7 +29,7 @@ use visit::VisitMap;
 
 mod scored;
 pub mod graphmap;
-pub mod ograph;
+pub mod graph;
 pub mod visit;
 
 pub mod unionfind;
