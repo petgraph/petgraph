@@ -239,20 +239,10 @@ impl<'a, G: 'a, N> Iterator for BreadthFirst<'a, G, N> where
     }
 }
 
-/// An iterator for a depth first traversal of a graph.
-#[derive(Clone)]
-pub struct DepthFirst<'a, G, N> where
-    G: 'a,
-    N: Eq + Hash<Hasher>,
-{
-    pub graph: &'a G,
-    pub dfs: Dfs<N, HashSet<N>>,
-}
-
-/// A depth first traversal of a graph.
+/// A depth first search (DFS) of a graph.
 ///
 /// Using a **Dfs** you can run a traversal over a graph while still retaining
-/// mutable access to it, if you use the following example:
+/// mutable access to it, if you use it like the following example:
 ///
 /// ```
 /// use petgraph::{OGraph, Dfs};
@@ -304,6 +294,7 @@ impl Dfs<(), ()>
         }
     }
 
+
     /// Run a DFS over a graph.
     pub fn search<'a, N, G, F>(graph: &'a G, start: N, mut f: F) -> bool where
         N: Clone,
@@ -348,22 +339,36 @@ impl<N, VM> Dfs<N, VM> where N: Clone, VM: VisitMap<N>
 
 }
 
-impl<'a, G, N> DepthFirst<'a, G, N> where
-    N: Eq + Hash<Hasher>,
+/// An iterator for a depth first traversal of a graph.
+#[derive(Clone)]
+pub struct DfsIter<'a, G, N, VM> where
+    G: 'a,
+    //N: Clone,
+    //VM: VisitMap<N>,
 {
-    pub fn new(graph: &'a G, start: N) -> DepthFirst<'a, G, N>
+    graph: &'a G,
+    dfs: Dfs<N, VM>,
+}
+
+impl<'a, G, N> DfsIter<'a, G, N, <G as Visitable>::Map> where
+    N: Clone,
+    G: Visitable<NodeId=N>,
+    <G as Visitable>::Map: VisitMap<N>,
+{
+    pub fn new(graph: &'a G, start: N) -> DfsIter<'a, G, N, <G as Visitable>::Map>
     {
-        DepthFirst {
+        DfsIter {
             graph: graph,
-            dfs: Dfs::new_with_hashset(start)
+            dfs: Dfs::new(graph, start)
         }
     }
 }
 
-impl<'a, G, N> Iterator for DepthFirst<'a, G, N> where
+impl<'a, G, N, VM> Iterator for DfsIter<'a, G, N, VM> where
     G: 'a,
+    N: Clone,
+    VM: VisitMap<N>,
     &'a G: IntoNeighbors< N>,
-    N: Clone + Eq + Hash<Hasher>,
     <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
 {
     type Item = N;

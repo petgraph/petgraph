@@ -19,7 +19,7 @@ pub use petgraph::{
     Node,
     NodeCell,
     BreadthFirst,
-    DepthFirst,
+    DfsIter,
     dijkstra,
 };
 
@@ -97,7 +97,7 @@ fn make_graph() {
         println!("Visit {:?}", node);
     }
     println!("");
-    let mut it = DepthFirst::new(&g, a);
+    let mut it = DfsIter::new(&g, a);
     for node in it {
         println!("Visit {:?}", node);
     }
@@ -142,7 +142,7 @@ fn make_graph() {
     g.add_edge(e, f, 6.);
     println!("{:?}", g);
     println!("{:?}", dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
-    for node in DepthFirst::new(&g, a) {
+    for node in DfsIter::new(&g, a) {
         println!("Visit {:?}", node);
     }
     println!("");

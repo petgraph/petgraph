@@ -29,8 +29,8 @@ pub use self::EdgeDirection::{Outgoing, Incoming};
 pub use visit::{
     Undirected,
     Reversed,
-    DepthFirst,
     Dfs,
+    DfsIter,
     BreadthFirst,
     VisitMap,
 };

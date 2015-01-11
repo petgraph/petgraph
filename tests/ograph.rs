@@ -4,6 +4,7 @@ extern crate petgraph;
 use petgraph::{
     OGraph,
     Dfs,
+    DfsIter,
     Undirected,
     Reversed,
     BreadthFirst,
@@ -100,12 +101,16 @@ fn dfs() {
     });
     assert_eq!(visited, 3);
 
+    assert_eq!(DfsIter::new(&gr, i).count(), 3);
+
     let mut visited = 0is;
     Dfs::search(&Undirected(&gr), i, |_| {
         visited += 1;
         true
     });
     assert_eq!(visited, 4);
+
+    assert_eq!(DfsIter::new(&Undirected(&gr), i).count(), 4);
 }
 
 
