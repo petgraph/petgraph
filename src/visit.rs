@@ -279,26 +279,28 @@ impl<N> Dfs<N, HashSet<N>> where N: Hash<Hasher> + Eq
     }
 }
 
-impl Dfs<(), ()>
+impl<G> Dfs<<G as Graphlike>::NodeId, <G as Visitable>::Map> where
+    G: Visitable,
 {
     /// Create a new **Dfs**, using the graph's visitor map.
     ///
     /// **Note:** Does not borrow the graph.
-    pub fn new<N, G>(graph: &G, start: N)
-            -> Dfs<N, <G as Visitable>::Map> where
-        G: Visitable<NodeId=N>,
+    pub fn new(graph: &G, start: <G as Graphlike>::NodeId) -> Self
     {
         Dfs {
             stack: vec![start],
             visited: graph.visit_map(),
         }
     }
+}
 
 
+impl<N, G> Dfs<N, <G as Visitable>::Map> where
+    G: Visitable<NodeId=N>,
+{
     /// Run a DFS over a graph.
-    pub fn search<'a, N, G, F>(graph: &'a G, start: N, mut f: F) -> bool where
+    pub fn search<'a, F>(graph: &'a G, start: N, mut f: F) -> bool where
         N: Clone,
-        G: Visitable<NodeId=N>,
         &'a G: IntoNeighbors<N>,
         <&'a G as IntoNeighbors<N>>::Iter: Iterator<Item=N>,
         <G as Visitable>::Map: VisitMap<N>,
@@ -314,7 +316,9 @@ impl Dfs<(), ()>
     }
 }
 
-impl<N, VM> Dfs<N, VM> where N: Clone, VM: VisitMap<N>
+impl<N, VM> Dfs<N, VM> where
+    N: Clone,
+    VM: VisitMap<N>
 {
     /// Return the next node in the dfs, or **None** if the traversal is done.
     pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
