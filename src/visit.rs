@@ -318,28 +318,6 @@ impl<N, G> Dfs<N, <G as Visitable>::Map> where
     }
 }
 
-
-impl<N, G> Dfs<N, <G as Visitable>::Map> where
-    G: Visitable<NodeId=N>,
-{
-    /// Run a DFS over a graph.
-    pub fn search<'a, F>(graph: &'a G, start: N, mut f: F) -> bool where
-        N: Clone,
-        &'a G: IntoNeighbors<N>,
-        <&'a G as IntoNeighbors<N>>::Iter: Iterator<Item=N>,
-        <G as Visitable>::Map: VisitMap<N>,
-        F: FnMut(N) -> bool,
-    {
-        let mut dfs = Dfs::new(graph, start);
-        while let Some(node) = dfs.next(graph) {
-            if !f(node) {
-                return false
-            }
-        }
-        true
-    }
-}
-
 impl<N, VM> Dfs<N, VM> where
     N: Clone,
     VM: VisitMap<N>

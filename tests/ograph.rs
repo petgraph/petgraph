@@ -83,13 +83,6 @@ fn dfs() {
 
     assert_eq!(DfsIter::new(&Reversed(&gr), k).count(), 3);
 
-    let mut visited = 0is;
-    Dfs::search(&gr, i, |_| {
-        visited += 1;
-        true
-    });
-    assert_eq!(visited, 3);
-
     assert_eq!(DfsIter::new(&gr, i).count(), 3);
 
     assert_eq!(DfsIter::new(&AsUndirected(&gr), i).count(), 4);
