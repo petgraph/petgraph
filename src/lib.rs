@@ -1,5 +1,4 @@
-#![feature(slicing_syntax)]
-extern crate test;
+#![allow(unstable)]
 
 use std::default::Default;
 use std::cmp::Ordering;
