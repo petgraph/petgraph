@@ -9,12 +9,12 @@ use std::collections::hash_map::Hasher;
 use std::hash::Hash;
 
 use super::{
-    graph,
+    graphmap,
     digraph,
     ograph,
     EdgeDirection,
     OGraph,
-    Graph,
+    GraphMap,
     DiGraph,
 };
 
@@ -28,13 +28,13 @@ pub trait IntoNeighbors<N> : Copy {
     fn neighbors(self, n: N) -> Self::Iter;
 }
 
-impl<'a, N: 'a, E> IntoNeighbors<N> for &'a Graph<N, E>
+impl<'a, N: 'a, E> IntoNeighbors<N> for &'a GraphMap<N, E>
 where N: Copy + Clone + PartialOrd + Hash<Hasher> + Eq
 {
-    type Iter = graph::Neighbors<'a, N>;
-    fn neighbors(self, n: N) -> graph::Neighbors<'a, N>
+    type Iter = graphmap::Neighbors<'a, N>;
+    fn neighbors(self, n: N) -> graphmap::Neighbors<'a, N>
     {
-        Graph::neighbors(self, n)
+        GraphMap::neighbors(self, n)
     }
 }
 
@@ -104,7 +104,7 @@ impl<N: Eq + Hash<Hasher>> VisitMap<N> for HashSet<N> {
     }
 }
 
-/// Trait for Graph that knows which datastructure is the best for its visitor map
+/// Trait for GraphMap that knows which datastructure is the best for its visitor map
 pub trait Visitable : Graphlike {
     type Map: VisitMap<<Self as Graphlike>::Item>;
     fn visit_map(&self) -> Self::Map;
@@ -133,12 +133,12 @@ impl<N, E> Visitable for DiGraph<N, E>
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
 }
 
-impl<N: Clone, E> Graphlike for Graph<N, E>
+impl<N: Clone, E> Graphlike for GraphMap<N, E>
 {
     type NodeId = N;
 }
 
-impl<N, E> Visitable for Graph<N, E>
+impl<N, E> Visitable for GraphMap<N, E>
     where N: Copy + Clone + Ord + Eq + Hash<Hasher>
 {
     type Map = HashSet<N>;
@@ -183,13 +183,13 @@ pub enum Color {
     Black = 2,
 }
 
-/// Trait for Graph that knows which datastructure is the best for its visitor map
+/// Trait for GraphMap that knows which datastructure is the best for its visitor map
 pub trait ColorVisitable : Graphlike {
     type Map;
     fn color_visit_map(&self) -> Self::Map;
 }
 
-impl<N, E> ColorVisitable for Graph<N, E> where
+impl<N, E> ColorVisitable for GraphMap<N, E> where
     N: Clone + Eq + Hash<Hasher>,
 {
     type Map = HashMap<N, Color>;

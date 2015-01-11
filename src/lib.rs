@@ -16,7 +16,7 @@ use std::ops::{Add, Deref};
 
 pub use scored::MinScored;
 pub use digraph::DiGraph;
-pub use graph::Graph;
+pub use graphmap::GraphMap;
 pub use ograph::OGraph;
 
 pub use self::EdgeDirection::{Outgoing, Incoming};
@@ -30,7 +30,7 @@ use visit::VisitMap;
 
 mod scored;
 pub mod digraph;
-pub mod graph;
+pub mod graphmap;
 pub mod ograph;
 pub mod visit;
 

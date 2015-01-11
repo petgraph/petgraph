@@ -14,7 +14,7 @@ use std::slice::{
 };
 use std::fmt;
 
-/// **Graph\<N, E\>** is a regular graph, with generic node values **N** and edge weights **E**.
+/// **GraphMap\<N, E\>** is a regular graph, with generic node values **N** and edge weights **E**.
 ///
 /// It uses an adjacency list representation, i.e. using *O(|N| + |E|)* space.
 ///
@@ -26,12 +26,12 @@ use std::fmt;
 /// The node type must implement **PartialOrd** so that the implementation can
 /// properly order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
 #[derive(Clone)]
-pub struct Graph<N: Eq + Hash<Hasher>, E> {
+pub struct GraphMap<N: Eq + Hash<Hasher>, E> {
     nodes: HashMap<N, Vec<N>>,
     edges: HashMap<(N, N), E>,
 }
 
-impl<N: Eq + Hash<Hasher> + fmt::Show, E: fmt::Show> fmt::Show for Graph<N, E>
+impl<N: Eq + Hash<Hasher> + fmt::Show, E: fmt::Show> fmt::Show for GraphMap<N, E>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.nodes.fmt(f)
@@ -47,12 +47,12 @@ fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
 #[inline]
 fn copy<N: Copy>(n: &N) -> N { *n }
 
-impl<N, E> Graph<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
+impl<N, E> GraphMap<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash<Hasher>
 {
-    /// Create a new **Graph**.
-    pub fn new() -> Graph<N, E>
+    /// Create a new **GraphMap**.
+    pub fn new() -> GraphMap<N, E>
     {
-        Graph {
+        GraphMap {
             nodes: HashMap::new(),
             edges: HashMap::new(),
         }

@@ -13,7 +13,7 @@ use petgraph::ograph::{
 pub use petgraph::{
     MinScored,
     DiGraph,
-    Graph,
+    GraphMap,
     Ptr,
     Incoming, Outgoing,
     Node,
@@ -123,7 +123,7 @@ fn make_graph() {
     println!("{:?}", g);
 
     let root = TypedArena::<Node<_>>::new();
-    let mut g: Graph<_, f32> = Graph::new();
+    let mut g: GraphMap<_, f32> = GraphMap::new();
     let node = |&: name: &'static str| Ptr(root.alloc(Node(name.to_string())));
     let a = g.add_node(node("A"));
     let b = g.add_node(node("B"));
@@ -150,7 +150,7 @@ fn make_graph() {
         println!("Bfs Visit {:?}", node);
     }
 
-    let mut g: Graph<isize, isize> = Graph::new();
+    let mut g: GraphMap<isize, isize> = GraphMap::new();
     g.add_node(1);
     g.add_node(2);
     g.add_edge(1, 2, -1);
