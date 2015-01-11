@@ -440,7 +440,7 @@ impl<'a, G, N> DepthFirst<'a, G, N> where
 impl<N, VM> Dfs<N, VM> where N: Clone, VM: VisitMap<N>
 {
     /// Return the next node in the dfs, or **None** if the traversal is done.
-    pub fn next_node<'a, G>(&mut self, graph: &'a G) -> Option<N> where
+    pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
         &'a G: IntoNeighbors< N>,
         <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
     {
@@ -470,7 +470,7 @@ impl<'a, G, N> Iterator for DepthFirst<'a, G, N> where
     type Item = N;
     fn next(&mut self) -> Option<N>
     {
-        self.dfs.next_node(self.graph)
+        self.dfs.next(self.graph)
     }
 }
 
@@ -516,7 +516,7 @@ pub fn depth_first_search_mut<'a, N, E, Ty, F>(graph: &'a mut OGraph<N, E, Ty>,
     F: FnMut(&mut OGraph<N, E, Ty>, ograph::NodeIndex) -> bool,
 {
     let mut dfs = Dfs::new(&*graph, start);
-    while let Some(node) = dfs.next_node(&*graph) {
+    while let Some(node) = dfs.next(&*graph) {
         if !f(graph, node) {
             return false
         }
