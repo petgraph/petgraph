@@ -115,12 +115,12 @@ impl<'b, T: fmt::Show> fmt::Show for Ptr<'b, T> {
 
 /// Dijkstra's shortest path algorithm.
 pub fn dijkstra<'a, G, N, K, F, Edges>(graph: &'a G,
-                                           start: N,
-                                           goal: Option<N>,
-                                           mut edges: F) -> HashMap<N, K> where
+                                       start: N,
+                                       goal: Option<N>,
+                                       mut edges: F) -> HashMap<N, K> where
     G: visit::Visitable<NodeId=N>,
-    N: Copy + Clone + Eq + Hash<Hasher> + fmt::Show,
-    K: Default + Add<Output=K> + Copy + PartialOrd + fmt::Show,
+    N: Clone + Eq + Hash<Hasher>,
+    K: Default + Add<Output=K> + Copy + PartialOrd,
     F: FnMut(&'a G, N) -> Edges,
     Edges: Iterator<Item=(N, K)>,
     <G as visit::Visitable>::Map: VisitMap<N>,
@@ -130,27 +130,27 @@ pub fn dijkstra<'a, G, N, K, F, Edges>(graph: &'a G,
     let mut predecessor = HashMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score: K = Default::default();
-    scores.insert(start, zero_score);
+    scores.insert(start.clone(), zero_score);
     visit_next.push(MinScored(zero_score, start));
     while let Some(MinScored(node_score, node)) = visit_next.pop() {
         if visited.contains(&node) {
             continue
         }
-        for (next, edge) in edges(graph, node) {
+        for (next, edge) in edges(graph, node.clone()) {
             if visited.contains(&next) {
                 continue
             }
             let mut next_score = node_score + edge;
-            match scores.entry(next) {
+            match scores.entry(next.clone()) {
                 Occupied(ent) => if next_score < *ent.get() {
                     *ent.into_mut() = next_score;
-                    predecessor.insert(next, node);
+                    predecessor.insert(next.clone(), node.clone());
                 } else {
                     next_score = *ent.get();
                 },
                 Vacant(ent) => {
                     ent.insert(next_score);
-                    predecessor.insert(next, node);
+                    predecessor.insert(next.clone(), node.clone());
                 }
             }
             visit_next.push(MinScored(next_score, next));
