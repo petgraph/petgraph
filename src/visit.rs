@@ -81,6 +81,7 @@ impl<'a, 'b, N, E, Ty: ograph::EdgeType> IntoNeighbors< ograph::NodeIndex> for &
 }
 
 pub trait VisitMap<N> {
+    /// Return **true** if the value is not already present.
     fn visit(&mut self, N) -> bool;
     fn contains(&self, &N) -> bool;
 }
@@ -348,20 +349,24 @@ impl<'a, G: 'a, N> Iterator for BreadthFirst<'a, G, N> where
 #[derive(Clone)]
 pub struct Dfs<N, VM> {
     pub stack: Vec<N>,
-    pub visited: VM,
+    pub discovered: VM,
 }
 
-impl<G> Dfs<<G as Graphlike>::NodeId, <G as Visitable>::Map> where
-    G: Visitable,
+impl<N, G> Dfs<N, <G as Visitable>::Map> where
+    N: Clone,
+    G: Visitable<NodeId=N>,
+    <G as Visitable>::Map: VisitMap<N>,
 {
     /// Create a new **Dfs**, using the graph's visitor map.
     ///
     /// **Note:** Does not borrow the graph.
-    pub fn new(graph: &G, start: <G as Graphlike>::NodeId) -> Self
+    pub fn new(graph: &G, start: N) -> Self
     {
+        let mut discovered = graph.visit_map();
+        discovered.visit(start.clone());
         Dfs {
             stack: vec![start],
-            visited: graph.visit_map(),
+            discovered: discovered,
         }
     }
 }
@@ -398,12 +403,8 @@ impl<N, VM> Dfs<N, VM> where
         <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
     {
         while let Some(node) = self.stack.pop() {
-            if !self.visited.visit(node.clone()) {
-                continue;
-            }
-
             for succ in graph.neighbors(node.clone()) {
-                if !self.visited.contains(&succ) {
+                if self.discovered.visit(succ.clone()) {
                     self.stack.push(succ);
                 }
             }
