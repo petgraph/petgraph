@@ -351,18 +351,6 @@ pub struct Dfs<N, VM> {
     pub visited: VM,
 }
 
-impl<N> Dfs<N, HashSet<N>> where N: Hash<Hasher> + Eq
-{
-    /// Create a new **Dfs**.
-    fn new_with_hashset(start: N) -> Self
-    {
-        Dfs {
-            stack: vec![start],
-            visited: HashSet::new(),
-        }
-    }
-}
-
 impl<G> Dfs<<G as Graphlike>::NodeId, <G as Visitable>::Map> where
     G: Visitable,
 {

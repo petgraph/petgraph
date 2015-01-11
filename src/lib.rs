@@ -6,9 +6,6 @@ use std::cell::Cell;
 use std::hash::{self, Hash};
 use std::collections::hash_map::Hasher;
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::collections::RingBuf;
-use std::collections::BitvSet;
 use std::collections::BinaryHeap;
 use std::collections::hash_map::Entry::{
     Occupied,
@@ -21,9 +18,6 @@ pub use scored::MinScored;
 pub use digraph::DiGraph;
 pub use graph::Graph;
 pub use ograph::OGraph;
-use ograph::{
-    EdgeType,
-};
 
 pub use self::EdgeDirection::{Outgoing, Incoming};
 pub use visit::{
