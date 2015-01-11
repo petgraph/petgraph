@@ -901,8 +901,8 @@ impl<'a, E> Iterator for EdgesMut<'a, E>
             None => None,
             Some(edge) => {
                 self.next = edge.next[k];
-                // We cannot in safe rust, derive a &'a mut from &self,
-                // because the life of &self is shorter than 'a.
+                // We cannot in safe rust, derive a &'a mut from &mut self,
+                // when the life of &mut self is shorter than 'a.
                 //
                 // We guarantee that this will not allow two pointers to the same
                 // edge, and use unsafe to extend the life.
