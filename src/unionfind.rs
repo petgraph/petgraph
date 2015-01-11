@@ -27,10 +27,10 @@ pub struct UnionFind<K> where K: num::UnsignedInt
 }
 
 #[inline]
-fn to_uint<K: num::UnsignedInt>(x: K) -> uint { x.to_uint().unwrap() }
+fn to_uint<K: num::UnsignedInt>(x: K) -> usize { x.to_uint().unwrap() }
 
 #[inline]
-unsafe fn get_unchecked<K>(xs: &[K], index: uint) -> &K
+unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K
 {
     debug_assert!(index < xs.len());
     xs.get_unchecked(index)
@@ -39,7 +39,7 @@ unsafe fn get_unchecked<K>(xs: &[K], index: uint) -> &K
 impl<K> UnionFind<K> where K: num::UnsignedInt
 {
     /// Create a new **UnionFind** of **n** disjoint sets.
-    pub fn new(n: uint) -> Self
+    pub fn new(n: usize) -> Self
     {
         let mut parent = Vec::with_capacity(n);
         let mut rank = Vec::with_capacity(n);

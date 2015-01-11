@@ -149,7 +149,7 @@ fn make_graph() {
         println!("Visit {}", node);
     }
 
-    let mut g: Graph<int, int> = Graph::new();
+    let mut g: Graph<isize, isize> = Graph::new();
     g.add_node(1);
     g.add_node(2);
     g.add_edge(1, 2, -1);

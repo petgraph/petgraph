@@ -57,7 +57,7 @@ impl<N, E> Graph<N, E> where N: Copy + Clone + PartialOrd + Eq + Hash
         }
     }
 
-    pub fn node_count(&self) -> uint
+    pub fn node_count(&self) -> usize
     {
         self.nodes.len()
     }
@@ -198,7 +198,7 @@ macro_rules! iterator_methods {
         }
 
         #[inline]
-        fn size_hint(&self) -> (uint, Option<uint>)
+        fn size_hint(&self) -> (usize, Option<usize>)
         {
             self.iter.size_hint()
         }
