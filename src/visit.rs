@@ -253,7 +253,7 @@ impl<'a, G: 'a, N> Iterator for BreadthFirst<'a, G, N> where
 /// let mut dfs = Dfs::new(&graph, a);
 /// while let Some(nx) = dfs.next(&graph) {
 ///     // we can access parts of `graph` mutably here still
-///     *graph.node_weight_mut(nx).unwrap() += 1;
+///     graph[nx] += 1;
 /// }
 ///
 /// assert_eq!(graph.node_weight(a), Some(&1));

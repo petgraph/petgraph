@@ -2,6 +2,7 @@ use std::hash::{Hash};
 use std::fmt;
 use std::slice;
 use std::iter;
+use std::ops::{Index, IndexMut};
 
 use std::collections::BinaryHeap;
 use std::collections::BitvSet;
@@ -938,5 +939,45 @@ impl<'a, E> Iterator for Edges<'a, E>
                 Some((edge.node[0], &edge.weight))
             }
         }
+    }
+}
+
+impl<N, E, Ty> Index<NodeIndex> for OGraph<N, E, Ty> where
+    Ty: EdgeType
+{
+    type Output = N;
+    /// Index the **OGraph** by **NodeIndex** to access node weights.
+    fn index(&self, index: &NodeIndex) -> &N {
+        self.node_weight(*index).unwrap()
+    }
+}
+
+impl<N, E, Ty> IndexMut<NodeIndex> for OGraph<N, E, Ty> where
+    Ty: EdgeType
+{
+    type Output = N;
+    /// Index the **OGraph** by **NodeIndex** to access node weights.
+    fn index_mut(&mut self, index: &NodeIndex) -> &mut N {
+        self.node_weight_mut(*index).unwrap()
+    }
+
+}
+impl<N, E, Ty> Index<EdgeIndex> for OGraph<N, E, Ty> where
+    Ty: EdgeType
+{
+    type Output = E;
+    /// Index the **OGraph** by **EdgeIndex** to access edge weights.
+    fn index(&self, index: &EdgeIndex) -> &E {
+        self.edge_weight(*index).unwrap()
+    }
+}
+
+impl<N, E, Ty> IndexMut<EdgeIndex> for OGraph<N, E, Ty> where
+    Ty: EdgeType
+{
+    type Output = E;
+    /// Index the **OGraph** by **EdgeIndex** to access edge weights.
+    fn index_mut(&mut self, index: &EdgeIndex) -> &mut E {
+        self.edge_weight_mut(*index).unwrap()
     }
 }
