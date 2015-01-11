@@ -4,9 +4,9 @@ extern crate petgraph;
 use petgraph::{
     OGraph,
     Bfs,
+    BfsIter,
     Dfs,
     DfsIter,
-    BreadthFirst,
     dijkstra,
     Incoming,
     Outgoing,
@@ -77,26 +77,11 @@ fn dfs() {
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
 
-    let mut visited = 0is;
-    Dfs::search(&gr, h, |_| {
-        visited += 1;
-        true
-    });
-    assert_eq!(visited, 4);
+    assert_eq!(DfsIter::new(&gr, h).count(), 4);
 
-    let mut visited = 0is;
-    Dfs::search(&Reversed(&gr), h, |_| {
-        visited += 1;
-        true
-    });
-    assert_eq!(visited, 1);
+    assert_eq!(DfsIter::new(&Reversed(&gr), h).count(), 1);
 
-    let mut visited = 0is;
-    Dfs::search(&Reversed(&gr), k, |_| {
-        visited += 1;
-        true
-    });
-    assert_eq!(visited, 3);
+    assert_eq!(DfsIter::new(&Reversed(&gr), k).count(), 3);
 
     let mut visited = 0is;
     Dfs::search(&gr, i, |_| {
@@ -106,13 +91,6 @@ fn dfs() {
     assert_eq!(visited, 3);
 
     assert_eq!(DfsIter::new(&gr, i).count(), 3);
-
-    let mut visited = 0is;
-    Dfs::search(&AsUndirected(&gr), i, |_| {
-        visited += 1;
-        true
-    });
-    assert_eq!(visited, 4);
 
     assert_eq!(DfsIter::new(&AsUndirected(&gr), i).count(), 4);
 }
@@ -132,33 +110,15 @@ fn bfs() {
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
 
-    let mut visited = 0is;
-    let mut bfs = Bfs::new(&gr, h);
-    while let Some(_) = bfs.next(&gr) {
-        visited += 1;
-    }
-    assert_eq!(visited, 4);
+    assert_eq!(BfsIter::new(&gr, h).count(), 4);
 
-    let mut visited = 0is;
-    let mut bfs = Bfs::new(&Reversed(&gr), h);
-    while let Some(_) = bfs.next(&Reversed(&gr)) {
-        visited += 1;
-    }
-    assert_eq!(visited, 1);
+    assert_eq!(BfsIter::new(&Reversed(&gr), h).count(), 1);
 
-    let mut visited = 0is;
-    let mut bfs = Bfs::new(&gr, k);
-    while let Some(_) = bfs.next(&gr) {
-        visited += 1;
-    }
-    assert_eq!(visited, 1);
+    assert_eq!(BfsIter::new(&Reversed(&gr), k).count(), 3);
 
-    let mut visited = 0is;
-    let mut bfs = Bfs::new(&Reversed(&gr), k);
-    while let Some(_) = bfs.next(&Reversed(&gr)) {
-        visited += 1;
-    }
-    assert_eq!(visited, 3);
+    assert_eq!(BfsIter::new(&gr, i).count(), 3);
+
+    assert_eq!(BfsIter::new(&AsUndirected(&gr), i).count(), 4);
 
     let mut bfs = Bfs::new(&gr, h);
     let nx = bfs.next(&gr);
@@ -341,7 +301,7 @@ fn dijk() {
     g.add_edge(c, f, 11.);
     g.add_edge(e, f, 6.);
     println!("{:?}", g);
-    for no in BreadthFirst::new(&g, a) {
+    for no in BfsIter::new(&g, a) {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
 

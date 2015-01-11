@@ -22,7 +22,7 @@ pub use ograph::OGraph;
 pub use self::EdgeDirection::{Outgoing, Incoming};
 pub use visit::{
     Bfs,
-    BreadthFirst,
+    BfsIter,
     Dfs,
     DfsIter,
 };

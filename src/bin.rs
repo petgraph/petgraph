@@ -18,7 +18,7 @@ pub use petgraph::{
     Incoming, Outgoing,
     Node,
     NodeCell,
-    BreadthFirst,
+    BfsIter,
     DfsIter,
     dijkstra,
 };
@@ -91,7 +91,7 @@ fn make_graph() {
     );
 
     //let x = 
-    let mut it = BreadthFirst::new(&g, a);
+    let mut it = BfsIter::new(&g, a);
     //let mut it = range(0, 1);
     for node in it {
         println!("Visit {:?}", node);
@@ -143,11 +143,11 @@ fn make_graph() {
     println!("{:?}", g);
     println!("{:?}", dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e))));
     for node in DfsIter::new(&g, a) {
-        println!("Visit {:?}", node);
+        println!("Dfs Visit {:?}", node);
     }
     println!("");
-    for node in BreadthFirst::new(&g, a) {
-        println!("Visit {:?}", node);
+    for node in BfsIter::new(&g, a) {
+        println!("Bfs Visit {:?}", node);
     }
 
     let mut g: Graph<isize, isize> = Graph::new();
@@ -163,7 +163,7 @@ fn make_graph() {
     for elt in g.edges(2) {
         println!("Edge {:?} => {:?}", 2, elt);
     }
-    for elt in BreadthFirst::new(&g, 2) {
+    for elt in BfsIter::new(&g, 2) {
         println!("Visit: {:?}", elt);
     }
     //g.remove_node(2);

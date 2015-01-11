@@ -271,59 +271,6 @@ impl<K: Eq + Hash<Hasher>> ColorMap<K> for HashMap<K, Color>
     }
 }
 
-/// A breadth first traversal of a graph.
-#[derive(Clone)]
-pub struct BreadthFirst<'a, G, N> where
-    G: 'a,
-    N: Eq + Hash<Hasher>,
-{
-    pub graph: &'a G,
-    pub stack: RingBuf<N>,
-    pub visited: HashSet<N>,
-}
-
-impl<'a, G, N> BreadthFirst<'a, G, N> where
-    G: 'a,
-    &'a G: IntoNeighbors< N>,
-    N: Copy + Eq + Hash<Hasher>,
-{
-    pub fn new(graph: &'a G, start: N) -> BreadthFirst<'a, G, N>
-    {
-        let mut rb = RingBuf::new();
-        rb.push_back(start);
-        BreadthFirst{
-            graph: graph,
-            stack: rb,
-            visited: HashSet::new(),
-        }
-    }
-}
-
-impl<'a, G: 'a, N> Iterator for BreadthFirst<'a, G, N> where
-    &'a G: IntoNeighbors<N>,
-    N: Copy + Eq + Hash<Hasher>,
-    <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
-{
-    type Item = N;
-    fn next(&mut self) -> Option<N>
-    {
-        while let Some(node) = self.stack.pop_front() {
-            if !self.visited.insert(node) {
-                continue;
-            }
-
-            for succ in self.graph.neighbors(node) {
-                if !self.visited.contains(&succ) {
-                    self.stack.push_back(succ);
-                }
-            }
-
-            return Some(node);
-        }
-        None
-    }
-}
-
 /// A depth first search (DFS) of a graph.
 ///
 /// Using a **Dfs** you can run a traversal over a graph while still retaining
@@ -420,8 +367,6 @@ impl<N, VM> Dfs<N, VM> where
 #[derive(Clone)]
 pub struct DfsIter<'a, G, N, VM> where
     G: 'a,
-    //N: Clone,
-    //VM: VisitMap<N>,
 {
     graph: &'a G,
     dfs: Dfs<N, VM>,
@@ -446,7 +391,7 @@ impl<'a, G, N, VM> Iterator for DfsIter<'a, G, N, VM> where
     N: Clone,
     VM: VisitMap<N>,
     &'a G: IntoNeighbors< N>,
-    <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
+    <&'a G as IntoNeighbors<N>>::Iter: Iterator<Item=N>,
 {
     type Item = N;
     fn next(&mut self) -> Option<N>
@@ -528,3 +473,39 @@ impl<N, VM> Bfs<N, VM> where
 
 }
 
+/// An iterator for a breadth first traversal of a graph.
+#[derive(Clone)]
+pub struct BfsIter<'a, G, N, VM> where
+    G: 'a,
+{
+    graph: &'a G,
+    bfs: Bfs<N, VM>,
+}
+
+impl<'a, G, N> BfsIter<'a, G, N, <G as Visitable>::Map> where
+    N: Clone,
+    G: Visitable<NodeId=N>,
+    <G as Visitable>::Map: VisitMap<N>,
+{
+    pub fn new(graph: &'a G, start: N) -> BfsIter<'a, G, N, <G as Visitable>::Map>
+    {
+        BfsIter {
+            graph: graph,
+            bfs: Bfs::new(graph, start)
+        }
+    }
+}
+
+impl<'a, G, N, VM> Iterator for BfsIter<'a, G, N, VM> where
+    G: 'a,
+    N: Clone,
+    VM: VisitMap<N>,
+    &'a G: IntoNeighbors< N>,
+    <&'a G as IntoNeighbors< N>>::Iter: Iterator<Item=N>,
+{
+    type Item = N;
+    fn next(&mut self) -> Option<N>
+    {
+        self.bfs.next(self.graph)
+    }
+}
