@@ -7,7 +7,6 @@ use petgraph::{
     BfsIter,
     Dfs,
     DfsIter,
-    dijkstra,
     Incoming,
     Outgoing,
 };
@@ -21,6 +20,7 @@ use petgraph::graph::{
 use petgraph::visit::{
     Reversed,
     AsUndirected,
+    dijkstra,
 };
 
 #[test]

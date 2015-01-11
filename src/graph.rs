@@ -1,3 +1,5 @@
+//! **Graph\<N, E, Ty\>** is a graph datastructure using an adjacency list representation.
+
 use std::hash::{Hash};
 use std::fmt;
 use std::slice;
@@ -7,15 +9,22 @@ use std::ops::{Index, IndexMut};
 use std::collections::BinaryHeap;
 use std::collections::BitvSet;
 
-use super::{EdgeDirection, Outgoing, Incoming};
+use super::{
+    EdgeDirection, Outgoing, Incoming,
+    Undirected,
+    Directed,
+    EdgeType,
+};
 use super::MinScored;
 
 use super::unionfind::UnionFind;
 
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
 // should be lifetimed just like pointers.
+/// Node identifier.
 #[derive(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct NodeIndex(pub usize);
+/// Edge identifier.
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct EdgeIndex(pub usize);
 
@@ -30,27 +39,6 @@ impl fmt::Show for EdgeIndex
         }
         write!(f, ")")
     }
-}
-
-/// Marker type for a directed graph.
-#[derive(Copy, Clone, Show)]
-pub struct Directed;
-
-/// Marker type for an undirected graph.
-#[derive(Copy, Clone, Show)]
-pub struct Undirected;
-
-/// A graph's edge type determines whether is has directed edges or not.
-pub trait EdgeType {
-    fn is_directed(_ig: Option<Self>) -> bool;
-}
-
-impl EdgeType for Directed {
-    fn is_directed(_ig: Option<Self>) -> bool { true }
-}
-
-impl EdgeType for Undirected {
-    fn is_directed(_ig: Option<Self>) -> bool { false }
 }
 
 /// An invalid **EdgeIndex** used to denote absence of an edge, for example
@@ -808,9 +796,6 @@ pub fn min_spanning_tree<N, E, Ty>(g: &Graph<N, E, Ty>) -> Graph<N, E, Undirecte
     }
 
     debug_assert!(mst.node_count() == g.node_count());
-    // If the graph is connected, |E| will be |V| - 1,
-    // otherwise this applies instead to the disjoint parts,
-    // so |E| - |disjoint parts|
     debug_assert!(mst.edge_count() < g.node_count());
     mst
 }

@@ -2,7 +2,6 @@ extern crate petgraph;
 
 use petgraph::{
     GraphMap,
-    dijkstra,
 };
 
 #[test]
@@ -37,7 +36,7 @@ fn simple() {
 
     // check updated edge weight
     assert_eq!(gr.edge_weight(e, f), Some(&6.));
-    let scores = dijkstra(&gr, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    let scores = petgraph::visit::dijkstra(&gr, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
     assert_eq!(scores.values().map(|f| *f as i32).min(), Some(0));
     assert_eq!(scores.values().map(|f| *f as i32).max(), Some(20));
 }

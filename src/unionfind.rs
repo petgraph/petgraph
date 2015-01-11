@@ -1,4 +1,4 @@
-//! **UnionFind** is a disjoint-set data structure.
+//! **UnionFind\<K\>** is a disjoint-set data structure.
 
 use std::num;
 

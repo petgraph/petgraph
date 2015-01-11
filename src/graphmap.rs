@@ -1,3 +1,5 @@
+//! **GraphMap\<N, E\>** is an undirected graph where node values are mapping keys.
+
 use std::hash::{Hash};
 use std::collections::HashMap;
 use std::collections::hash_map::Hasher;
@@ -17,8 +19,8 @@ use std::ops::{Index, IndexMut};
 
 /// **GraphMap\<N, E\>** is an undirected graph, with generic node values **N** and edge weights **E**.
 ///
-/// It uses an combined adjacency list and sparse adjacency matrix representation, using *O(|N|
-/// + |E|)* space, and allows testing for edge existance in constant time.
+/// It uses an combined adjacency list and sparse adjacency matrix representation, using **O(|V|
+/// + |E|)** space, and allows testing for edge existance in constant time.
 ///
 /// The node type **N** must implement **Copy** and will be used as node identifier, duplicated
 /// into several places in the data structure.

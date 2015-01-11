@@ -1,18 +1,17 @@
 #![allow(unstable)]
 
-use std::default::Default;
+//! **petgraph** is a graph data structure library.
+//!
+//! The most interesting type is [**Graph\<N, E, Ty\>**](./graph/struct.Graph.html) which is
+//! a directed or undirected graph with owned mutably accessible arbitrary node and edge weights.
+//! It is based on rustc's graph implementation.
+
 use std::cmp::Ordering;
 use std::cell::Cell;
 use std::hash::{self, Hash};
 use std::collections::hash_map::Hasher;
-use std::collections::HashMap;
-use std::collections::BinaryHeap;
-use std::collections::hash_map::Entry::{
-    Occupied,
-    Vacant,
-};
 use std::fmt;
-use std::ops::{Add, Deref};
+use std::ops::{Deref};
 
 pub use scored::MinScored;
 pub use graphmap::GraphMap;
@@ -25,7 +24,6 @@ pub use visit::{
     Dfs,
     DfsIter,
 };
-use visit::VisitMap;
 
 mod scored;
 pub mod graphmap;
@@ -43,6 +41,28 @@ pub enum EdgeDirection {
     /// An **Incoming** edge is an inbound edge *to* the current node.
     Incoming = 1
 }
+
+/// Marker type for a directed graph.
+#[derive(Copy, Clone, Show)]
+pub struct Directed;
+
+/// Marker type for an undirected graph.
+#[derive(Copy, Clone, Show)]
+pub struct Undirected;
+
+/// A graph's edge type determines whether is has directed edges or not.
+pub trait EdgeType {
+    fn is_directed(_ig: Option<Self>) -> bool;
+}
+
+impl EdgeType for Directed {
+    fn is_directed(_ig: Option<Self>) -> bool { true }
+}
+
+impl EdgeType for Undirected {
+    fn is_directed(_ig: Option<Self>) -> bool { false }
+}
+
 
 /// A reference that is hashed and compared by its pointer value.
 pub struct Ptr<'b, T: 'b>(pub &'b T);
@@ -104,54 +124,4 @@ impl<'b, T: fmt::Show> fmt::Show for Ptr<'b, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
     }
-}
-
-/// Dijkstra's shortest path algorithm.
-pub fn dijkstra<'a, G, N, K, F, Edges>(graph: &'a G,
-                                       start: N,
-                                       goal: Option<N>,
-                                       mut edges: F) -> HashMap<N, K> where
-    G: visit::Visitable<NodeId=N>,
-    N: Clone + Eq + Hash<Hasher>,
-    K: Default + Add<Output=K> + Copy + PartialOrd,
-    F: FnMut(&'a G, N) -> Edges,
-    Edges: Iterator<Item=(N, K)>,
-    <G as visit::Visitable>::Map: VisitMap<N>,
-{
-    let mut visited = graph.visit_map();
-    let mut scores = HashMap::new();
-    let mut predecessor = HashMap::new();
-    let mut visit_next = BinaryHeap::new();
-    let zero_score: K = Default::default();
-    scores.insert(start.clone(), zero_score);
-    visit_next.push(MinScored(zero_score, start));
-    while let Some(MinScored(node_score, node)) = visit_next.pop() {
-        if visited.contains(&node) {
-            continue
-        }
-        for (next, edge) in edges(graph, node.clone()) {
-            if visited.contains(&next) {
-                continue
-            }
-            let mut next_score = node_score + edge;
-            match scores.entry(next.clone()) {
-                Occupied(ent) => if next_score < *ent.get() {
-                    *ent.into_mut() = next_score;
-                    predecessor.insert(next.clone(), node.clone());
-                } else {
-                    next_score = *ent.get();
-                },
-                Vacant(ent) => {
-                    ent.insert(next_score);
-                    predecessor.insert(next.clone(), node.clone());
-                }
-            }
-            visit_next.push(MinScored(next_score, next));
-        }
-        if goal.as_ref() == Some(&node) {
-            break
-        }
-        visited.visit(node);
-    }
-    scores
 }

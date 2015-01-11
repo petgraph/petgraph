@@ -1,4 +1,10 @@
+//! Graph visitor algorithms.
+//!
+
+use std::default::Default;
+use std::ops::{Add};
 use std::collections::{
+    BinaryHeap,
     HashSet,
     HashMap,
     Bitv,
@@ -6,14 +12,20 @@ use std::collections::{
     RingBuf,
 };
 use std::collections::hash_map::Hasher;
+use std::collections::hash_map::Entry::{
+    Occupied,
+    Vacant,
+};
 use std::hash::Hash;
 
 use super::{
     graphmap,
     graph,
+    EdgeType,
     EdgeDirection,
     Graph,
     GraphMap,
+    MinScored,
 };
 
 pub trait Graphlike {
@@ -36,7 +48,7 @@ where N: Copy + Clone + PartialOrd + Hash<Hasher> + Eq
     }
 }
 
-impl<'a, N, E, Ty: graph::EdgeType> IntoNeighbors< graph::NodeIndex> for &'a Graph<N, E, Ty>
+impl<'a, N, E, Ty: EdgeType> IntoNeighbors< graph::NodeIndex> for &'a Graph<N, E, Ty>
 {
     type Iter = graph::Neighbors<'a, E>;
     fn neighbors(self, n: graph::NodeIndex) -> graph::Neighbors<'a, E>
@@ -59,7 +71,7 @@ impl<'a, 'b, N, E> IntoNeighbors< graph::NodeIndex> for &'a AsUndirected<&'b Gra
     }
 }
 
-impl<'a, 'b, N, E, Ty: graph::EdgeType> IntoNeighbors< graph::NodeIndex> for &'a Reversed<&'b Graph<N, E, Ty>>
+impl<'a, 'b, N, E, Ty: EdgeType> IntoNeighbors< graph::NodeIndex> for &'a Reversed<&'b Graph<N, E, Ty>>
 {
     type Iter = graph::Neighbors<'a, E>;
     fn neighbors(self, n: graph::NodeIndex) -> graph::Neighbors<'a, E>
@@ -103,7 +115,7 @@ impl<N, E, Ty> Graphlike for Graph<N, E, Ty> {
 }
 
 impl<N, E, Ty> Visitable for Graph<N, E, Ty> where
-    Ty: graph::EdgeType,
+    Ty: EdgeType,
 {
     type Map = BitvSet;
     fn visit_map(&self) -> BitvSet { BitvSet::with_capacity(self.node_count()) }
@@ -176,7 +188,7 @@ impl<N, E> ColorVisitable for GraphMap<N, E> where
 }
 
 impl<N, E, Ty> ColorVisitable for Graph<N, E, Ty> where
-    Ty: graph::EdgeType,
+    Ty: EdgeType,
 {
     type Map = Bitv;
     fn color_visit_map(&self) -> Bitv
@@ -462,4 +474,54 @@ impl<'a, G, N, VM> Iterator for BfsIter<'a, G, N, VM> where
     {
         self.bfs.next(self.graph)
     }
+}
+
+/// Dijkstra's shortest path algorithm.
+pub fn dijkstra<'a, G, N, K, F, Edges>(graph: &'a G,
+                                       start: N,
+                                       goal: Option<N>,
+                                       mut edges: F) -> HashMap<N, K> where
+    G: Visitable<NodeId=N>,
+    N: Clone + Eq + Hash<Hasher>,
+    K: Default + Add<Output=K> + Copy + PartialOrd,
+    F: FnMut(&'a G, N) -> Edges,
+    Edges: Iterator<Item=(N, K)>,
+    <G as Visitable>::Map: VisitMap<N>,
+{
+    let mut visited = graph.visit_map();
+    let mut scores = HashMap::new();
+    let mut predecessor = HashMap::new();
+    let mut visit_next = BinaryHeap::new();
+    let zero_score: K = Default::default();
+    scores.insert(start.clone(), zero_score);
+    visit_next.push(MinScored(zero_score, start));
+    while let Some(MinScored(node_score, node)) = visit_next.pop() {
+        if visited.contains(&node) {
+            continue
+        }
+        for (next, edge) in edges(graph, node.clone()) {
+            if visited.contains(&next) {
+                continue
+            }
+            let mut next_score = node_score + edge;
+            match scores.entry(next.clone()) {
+                Occupied(ent) => if next_score < *ent.get() {
+                    *ent.into_mut() = next_score;
+                    predecessor.insert(next.clone(), node.clone());
+                } else {
+                    next_score = *ent.get();
+                },
+                Vacant(ent) => {
+                    ent.insert(next_score);
+                    predecessor.insert(next.clone(), node.clone());
+                }
+            }
+            visit_next.push(MinScored(next_score, next));
+        }
+        if goal.as_ref() == Some(&node) {
+            break
+        }
+        visited.visit(node);
+    }
+    scores
 }
