@@ -284,15 +284,15 @@ impl<K: Eq + Hash<Hasher>> ColorMap<K> for HashMap<K, Color>
 ///
 /// let mut dfs = Dfs::new(&graph, a);
 /// while let Some(nx) = dfs.next(&graph) {
-///     // we can access parts of `graph` mutably here still
+///     // we can access `graph` mutably here still
 ///     graph[nx] += 1;
 /// }
 ///
-/// assert_eq!(graph.node_weight(a), Some(&1));
+/// assert_eq!(graph[a], 1);
 /// ```
 ///
-/// **Note:** The algorithm will not behave correctly if nodes are removed
-/// during iteration. It will also not necessarily visit added nodes or edges.
+/// **Note:** The algorithm may not behave correctly if nodes are removed
+/// during iteration. It may not necessarily visit added nodes or edges.
 #[derive(Clone)]
 pub struct Dfs<N, VM> {
     pub stack: Vec<N>,
@@ -413,15 +413,15 @@ impl<'a, G, N, VM> Iterator for DfsIter<'a, G, N, VM> where
 ///
 /// let mut bfs = Bfs::new(&graph, a);
 /// while let Some(nx) = bfs.next(&graph) {
-///     // we can access parts of `graph` mutably here still
+///     // we can access `graph` mutably here still
 ///     graph[nx] += 1;
 /// }
 ///
-/// assert_eq!(graph.node_weight(a), Some(&1));
+/// assert_eq!(graph[a], 1);
 /// ```
 ///
-/// **Note:** The algorithm will not behave correctly if nodes are removed
-/// during iteration. It will also not necessarily visit added nodes or edges.
+/// **Note:** The algorithm may not behave correctly if nodes are removed
+/// during iteration. It may not necessarily visit added nodes or edges.
 #[derive(Clone)]
 pub struct Bfs<N, VM> {
     pub stack: RingBuf<N>,
