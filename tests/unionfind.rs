@@ -66,3 +66,19 @@ fn uf_u8() {
         assert_eq!(ar != br, u.union(a, b));
     }
 }
+
+#[test]
+fn labeling()
+{
+    let mut u = UnionFind::new(48);
+    for i in (0..24u32) {
+        u.union(i + 1, i);
+    }
+    for i in (25..47) {
+        u.union(i, i + 1);
+    }
+    u.union(23, 25);
+    u.union(24, 23);
+    let v = u.into_labeling();
+    assert!(v.iter().all(|x| *x == v[0]));
+}
