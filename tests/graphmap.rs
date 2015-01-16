@@ -3,6 +3,9 @@ extern crate petgraph;
 use petgraph::{
     GraphMap,
 };
+use petgraph::visit::{
+    DfsIter,
+};
 
 #[test]
 fn simple() {
@@ -65,3 +68,23 @@ fn remov()
     assert_eq!(g.edge_weight(2, 1), None);
     assert_eq!(g.neighbors(1).count(), 0);
 }
+
+#[test]
+fn dfs() {
+    let mut gr = GraphMap::new();
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
+    let k = gr.add_node("K");
+    // Z is disconnected.
+    let z = gr.add_node("Z");
+    gr.add_edge(h, i, 1.);
+    gr.add_edge(h, j, 3.);
+    gr.add_edge(i, j, 1.);
+    gr.add_edge(i, k, 2.);
+
+    assert_eq!(DfsIter::new(&gr, h).count(), 4);
+    assert_eq!(DfsIter::new(&gr, i).count(), 4);
+    assert_eq!(DfsIter::new(&gr, z).count(), 1);
+}
+

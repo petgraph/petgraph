@@ -87,6 +87,7 @@ fn dfs() {
     assert_eq!(DfsIter::new(&gr, i).count(), 3);
 
     assert_eq!(DfsIter::new(&AsUndirected(&gr), i).count(), 4);
+
 }
 
 
