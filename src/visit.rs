@@ -304,6 +304,7 @@ impl<N, G> Dfs<N, <G as Visitable>::Map> where
             discovered: discovered,
         }
     }
+
 }
 
 impl<N, VM> Dfs<N, VM> where
@@ -327,6 +328,14 @@ impl<N, VM> Dfs<N, VM> where
         None
     }
 
+    /// Keep the discovered map, but clear the visit stack and restart
+    /// the dfs from a particular node.
+    pub fn move_to(&mut self, start: N)
+    {
+        self.discovered.visit(start.clone());
+        self.stack.clear();
+        self.stack.push(start);
+    }
 }
 
 /// An iterator for a depth first traversal of a graph.

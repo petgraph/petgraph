@@ -18,6 +18,12 @@ use super::{
 use super::MinScored;
 
 use super::unionfind::UnionFind;
+use super::visit::{
+    Reversed,
+    Dfs,
+    Visitable,
+    VisitMap,
+};
 
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
 // should be lifetimed just like pointers.
@@ -725,6 +731,62 @@ pub fn toposort<N, E>(g: &Graph<N, E, Directed>) -> Vec<NodeIndex>
     }
 
     order
+}
+
+/// Compute *Strongly connected components* using Kosaraju's algorithm.
+///
+/// Return a vector where each element is an scc.
+///
+/// For an undirected graph, the sccs are simply the connected components.
+pub fn scc<N, E, Ty>(g: &Graph<N, E, Ty>) -> Vec<Vec<NodeIndex>> where
+    Ty: EdgeType
+{
+    let mut dfs = Dfs::new(g, NodeIndex(0));
+
+    // First phase, reverse dfs pass, compute finishing times.
+    let mut finish_order = Vec::new();
+    let mut alt_finish = Vec::new();
+    for index in (0..g.node_count()) {
+        if dfs.discovered.contains(&index) {
+            continue
+        }
+        dfs.move_to(NodeIndex(index));
+        while let Some(nx) = dfs.stack.pop() {
+            let mut reach_bottom = true;
+            for succ in g.neighbors_directed(nx, Incoming) {
+                if dfs.discovered.visit(succ) {
+                    reach_bottom = false;
+                    dfs.stack.push(succ);
+                }
+            }
+            if reach_bottom {
+                finish_order.push(nx);
+            } else {
+                alt_finish.push(nx);
+            }
+        }
+        finish_order.extend(alt_finish.drain().rev());
+    }
+
+    dfs.discovered.clear();
+    let mut sccs = Vec::new();
+
+    // Second phase
+    // Process in decreasing finishing time order
+    for &nindex in finish_order.iter().rev() {
+        if dfs.discovered.contains(&nindex.0) {
+            continue;
+        }
+        // Move to the leader node.
+        dfs.move_to(nindex);
+        //let leader = nindex;
+        let mut scc = Vec::new();
+        while let Some(nx) = dfs.next(g) {
+            scc.push(nx);
+        }
+        sccs.push(scc);
+    }
+    sccs
 }
 
 /// Return **true** if the input graph contains a cycle.

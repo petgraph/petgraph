@@ -9,6 +9,7 @@ use petgraph::{
     DfsIter,
     Incoming,
     Outgoing,
+    Undirected,
 };
 
 use petgraph::graph::{
@@ -378,4 +379,67 @@ fn toposort() {
         println!("Check that {:?} is before {:?}", a, b);
         assert!(ai < bi);
     }
+}
+
+#[test]
+fn scc() {
+    let n = NodeIndex;
+    let mut gr = Graph::new();
+    gr.add_node(0);
+    gr.add_node(1);
+    gr.add_node(2);
+    gr.add_node(3);
+    gr.add_node(4);
+    gr.add_node(5);
+    gr.add_node(6);
+    gr.add_node(7);
+    gr.add_node(8);
+    gr.add_node(9);
+    gr.add_edge(n(7), n(1), ());
+    gr.add_edge(n(1), n(4), ());
+    gr.add_edge(n(4), n(7), ());
+    gr.add_edge(n(9), n(7), ());
+    gr.add_edge(n(9), n(3), ());
+    gr.add_edge(n(3), n(6), ());
+    gr.add_edge(n(6), n(9), ());
+    gr.add_edge(n(8), n(6), ());
+    gr.add_edge(n(2), n(8), ());
+    gr.add_edge(n(8), n(5), ());
+    gr.add_edge(n(5), n(2), ());
+
+    let mut sccs = petgraph::graph::scc(&gr);
+
+    let scc_answer = vec![
+        vec![n(1), n(4), n(7)],
+        vec![n(2), n(5), n(8)],
+        vec![n(3), n(6), n(9)]];
+
+    // normalize the result and compare with the answer.
+    for sc in sccs.iter_mut() {
+        sc.sort();
+        sc.dedup();
+    }
+    // sort by minimum element
+    sccs.sort_by(|v, w| v[0].cmp(&w[0]));
+    assert_eq!(sccs, scc_answer);
+
+    // Test an undirected graph just for fun.
+    // Sccs are just connected components.
+    let mut hr = gr.into_edge_type::<Undirected>();
+    // Delete an edge to disconnect it
+    let ed = hr.find_edge(n(7), n(9)).unwrap();
+    assert!(hr.remove_edge(ed).is_some());
+
+    let mut sccs = petgraph::graph::scc(&hr);
+
+    let scc_undir_answer = vec![
+        vec![n(1), n(4), n(7)],
+        vec![n(2), n(3), n(5), n(6), n(8), n(9)]];
+
+    for sc in sccs.iter_mut() {
+        sc.sort();
+        sc.dedup();
+    }
+    sccs.sort_by(|v, w| v[0].cmp(&w[0]));
+    assert_eq!(sccs, scc_undir_answer);
 }
