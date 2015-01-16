@@ -292,9 +292,8 @@ impl<N, G> Dfs<N, <G as Visitable>::Map> where
     G: Visitable<NodeId=N>,
     <G as Visitable>::Map: VisitMap<N>,
 {
-    /// Create a new **Dfs**, using the graph's visitor map.
-    ///
-    /// **Note:** Does not borrow the graph.
+    /// Create a new **Dfs**, using the graph's visitor map, and put **start**
+    /// in the stack of nodes to visit.
     pub fn new(graph: &G, start: N) -> Self
     {
         let mut dfs = Dfs::empty(graph);
@@ -302,7 +301,7 @@ impl<N, G> Dfs<N, <G as Visitable>::Map> where
         dfs
     }
 
-    /// Create a new **Dfs** using the graph's visitor map.
+    /// Create a new **Dfs** using the graph's visitor map, and no stack.
     pub fn empty(graph: &G) -> Self
     {
         Dfs {
@@ -418,9 +417,8 @@ impl<N, G> Bfs<N, <G as Visitable>::Map> where
     G: Visitable<NodeId=N>,
     <G as Visitable>::Map: VisitMap<N>,
 {
-    /// Create a new **Bfs**, using the graph's visitor map.
-    ///
-    /// **Note:** Does not borrow the graph.
+    /// Create a new **Bfs**, using the graph's visitor map, and put **start**
+    /// in the stack of nodes to visit.
     pub fn new(graph: &G, start: N) -> Self
     {
         let mut discovered = graph.visit_map();
