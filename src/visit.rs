@@ -297,14 +297,33 @@ impl<N, G> Dfs<N, <G as Visitable>::Map> where
     /// **Note:** Does not borrow the graph.
     pub fn new(graph: &G, start: N) -> Self
     {
-        let mut discovered = graph.visit_map();
-        discovered.visit(start.clone());
-        Dfs {
-            stack: vec![start],
-            discovered: discovered,
-        }
+        let mut dfs = Dfs::empty(graph);
+        dfs.move_to(start);
+        dfs
     }
 
+    /// Create a new **Dfs** using the graph's visitor map.
+    pub fn empty(graph: &G) -> Self
+    {
+        Dfs {
+            stack: Vec::new(),
+            discovered: graph.visit_map(),
+        }
+    }
+}
+
+impl<N, VM> Dfs<N, VM> where
+    N: Clone,
+    VM: VisitMap<N>
+{
+    /// Keep the discovered map, but clear the visit stack and restart
+    /// the dfs from a particular node.
+    pub fn move_to(&mut self, start: N)
+    {
+        self.discovered.visit(start.clone());
+        self.stack.clear();
+        self.stack.push(start);
+    }
 }
 
 impl<N, VM> Dfs<N, VM> where
@@ -326,15 +345,6 @@ impl<N, VM> Dfs<N, VM> where
             return Some(node);
         }
         None
-    }
-
-    /// Keep the discovered map, but clear the visit stack and restart
-    /// the dfs from a particular node.
-    pub fn move_to(&mut self, start: N)
-    {
-        self.discovered.visit(start.clone());
-        self.stack.clear();
-        self.stack.push(start);
     }
 }
 
