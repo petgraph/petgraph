@@ -106,7 +106,7 @@ impl<N: Eq + Hash<Hasher>> VisitMap<N> for HashSet<N> {
 
 /// Trait for GraphMap that knows which datastructure is the best for its visitor map
 pub trait Visitable : Graphlike {
-    type Map: VisitMap<<Self as Graphlike>::Item>;
+    type Map: VisitMap<<Self as Graphlike>::NodeId>;
     fn visit_map(&self) -> Self::Map;
 }
 
@@ -287,14 +287,11 @@ pub struct Dfs<N, VM> {
     pub discovered: VM,
 }
 
-impl<N, G> Dfs<N, <G as Visitable>::Map> where
-    N: Clone,
-    G: Visitable<NodeId=N>,
-    <G as Visitable>::Map: VisitMap<N>,
+impl<G: Visitable> Dfs<G::NodeId, <G as Visitable>::Map>
 {
     /// Create a new **Dfs**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
-    pub fn new(graph: &G, start: N) -> Self
+    pub fn new(graph: &G, start: G::NodeId) -> Self
     {
         let mut dfs = Dfs::empty(graph);
         dfs.move_to(start);
@@ -356,12 +353,9 @@ pub struct DfsIter<'a, G, N, VM> where
     dfs: Dfs<N, VM>,
 }
 
-impl<'a, G, N> DfsIter<'a, G, N, <G as Visitable>::Map> where
-    N: Clone,
-    G: Visitable<NodeId=N>,
-    <G as Visitable>::Map: VisitMap<N>,
+impl<'a, G: Visitable> DfsIter<'a, G, G::NodeId, <G as Visitable>::Map>
 {
-    pub fn new(graph: &'a G, start: N) -> DfsIter<'a, G, N, <G as Visitable>::Map>
+    pub fn new(graph: &'a G, start: G::NodeId) -> DfsIter<'a, G, G::NodeId, <G as Visitable>::Map>
     {
         DfsIter {
             graph: graph,
@@ -370,15 +364,14 @@ impl<'a, G, N> DfsIter<'a, G, N, <G as Visitable>::Map> where
     }
 }
 
-impl<'a, G, N, VM> Iterator for DfsIter<'a, G, N, VM> where
+impl<'a, G: Visitable, VM> Iterator for DfsIter<'a, G, G::NodeId, VM> where
     G: 'a,
-    N: Clone,
-    VM: VisitMap<N>,
-    G: for<'b> NeighborIter<'b, N>,
-    <G as NeighborIter<'a, N>>::Iter: Iterator<Item=N>,
+    VM: VisitMap<G::NodeId>,
+    G: for<'b> NeighborIter<'b, G::NodeId>,
+    <G as NeighborIter<'a, G::NodeId>>::Iter: Iterator<Item=G::NodeId>,
 {
-    type Item = N;
-    fn next(&mut self) -> Option<N>
+    type Item = G::NodeId;
+    fn next(&mut self) -> Option<G::NodeId>
     {
         self.dfs.next(self.graph)
     }
