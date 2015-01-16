@@ -7,7 +7,6 @@
 //! It is based on rustc's graph implementation.
 
 use std::cmp::Ordering;
-use std::cell::Cell;
 use std::hash::{self, Hash};
 use std::collections::hash_map::Hasher;
 use std::fmt;

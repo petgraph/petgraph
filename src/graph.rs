@@ -1,6 +1,5 @@
 //! **Graph\<N, E, Ty\>** is a graph datastructure using an adjacency list representation.
 
-use std::hash::{Hash};
 use std::fmt;
 use std::slice;
 use std::iter;
@@ -21,7 +20,6 @@ use super::unionfind::UnionFind;
 use super::visit::{
     Reversed,
     Dfs,
-    Visitable,
     VisitMap,
 };
 

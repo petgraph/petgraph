@@ -7,7 +7,6 @@ use std::collections::{
     BinaryHeap,
     HashSet,
     HashMap,
-    Bitv,
     BitvSet,
     RingBuf,
 };
