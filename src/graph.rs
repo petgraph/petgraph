@@ -745,27 +745,18 @@ pub fn scc<N, E, Ty>(g: &Graph<N, E, Ty>) -> Vec<Vec<NodeIndex>> where
 
     // First phase, reverse dfs pass, compute finishing times.
     let mut finish_order = Vec::new();
-    let mut alt_finish = Vec::new();
     for index in (0..g.node_count()) {
         if dfs.discovered.contains(&index) {
             continue
         }
+        // We want to order the vertices by finishing time --
+        // so record when we see them, then reverse all we have seen in this DFS pass.
+        let pass_start = finish_order.len();
         dfs.move_to(NodeIndex(index));
-        while let Some(nx) = dfs.stack.pop() {
-            let mut reach_bottom = true;
-            for succ in g.neighbors_directed(nx, Incoming) {
-                if dfs.discovered.visit(succ) {
-                    reach_bottom = false;
-                    dfs.stack.push(succ);
-                }
-            }
-            if reach_bottom {
-                finish_order.push(nx);
-            } else {
-                alt_finish.push(nx);
-            }
+        while let Some(nx) = dfs.next(&Reversed(g)) {
+            finish_order.push(nx);
         }
-        finish_order.extend(alt_finish.drain().rev());
+        finish_order[pass_start..].reverse();
     }
 
     dfs.discovered.clear();
