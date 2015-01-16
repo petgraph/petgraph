@@ -798,6 +798,25 @@ pub fn is_cyclic<N, E, Ty>(g: &Graph<N, E, Ty>) -> bool where Ty: EdgeType
     false
 }
 
+/// Return the number of connected components of the graph.
+///
+/// For a directed graph, this is the *weakly* connected components.
+pub fn connected_components<N, E, Ty>(g: &Graph<N, E, Ty>) -> usize where Ty: EdgeType
+{
+    let mut vertex_sets = UnionFind::new(g.node_count());
+    for edge in g.edges.iter() {
+        let (a, b) = (edge.source(), edge.target());
+
+        // union the two vertices of the edge
+        vertex_sets.union(a.0, b.0);
+    }
+    let mut labels = vertex_sets.into_labeling();
+    labels.sort();
+    labels.dedup();
+    labels.len()
+}
+
+
 /// Return a *Minimum Spanning Tree* of a graph.
 ///
 /// Treat the input graph as undirected.
