@@ -285,28 +285,28 @@ fn dijk() {
     let d = g.add_node("D");
     let e = g.add_node("E");
     let f = g.add_node("F");
-    g.add_edge(a, b, 7.0_f32);
-    g.add_edge(c, a, 9.);
-    g.add_edge(a, d, 14.);
-    g.add_edge(b, c, 10.);
-    g.add_edge(d, c, 2.);
-    g.add_edge(d, e, 9.);
-    g.add_edge(b, f, 15.);
-    g.add_edge(c, f, 11.);
-    g.add_edge(e, f, 6.);
+    g.add_edge(a, b, 7i32);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
     println!("{:?}", g);
     for no in BfsIter::new(&g, a) {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
 
     let scores = dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
-    println!("Scores= {:?}", scores);
-    assert_eq!(scores[c], 9.);
-    assert_eq!(scores[e], 20.);
-    assert_eq!(scores[f], 20.);
+    let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();
+    scores.sort();
+    assert_eq!(scores,
+       vec![("A", 0), ("B", 7), ("C", 9), ("D", 11), ("E", 20), ("F", 20)]);
 
     let scores = dijkstra(&g, a, Some(c), |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
-    assert_eq!(scores[c], 9.);
+    assert_eq!(scores[c], 9);
 }
 
 #[test]

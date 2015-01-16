@@ -15,30 +15,32 @@ fn simple() {
     let d = gr.add_node(("D"));
     let e = gr.add_node(("E"));
     let f = gr.add_node(("F"));
-    gr.add_edge(a, b, 7.);
-    gr.add_edge(a, c, 9.);
-    gr.add_edge(a, d, 14.);
-    gr.add_edge(b, c, 10.);
-    gr.add_edge(c, d, 2.);
-    gr.add_edge(d, e, 9.);
-    gr.add_edge(b, f, 15.);
-    gr.add_edge(c, f, 11.);
+    gr.add_edge(a, b, 7);
+    gr.add_edge(a, c, 9);
+    gr.add_edge(a, d, 14);
+    gr.add_edge(b, c, 10);
+    gr.add_edge(c, d, 2);
+    gr.add_edge(d, e, 9);
+    gr.add_edge(b, f, 15);
+    gr.add_edge(c, f, 11);
 
-    assert!(gr.add_edge(e, f, 5.));
+    assert!(gr.add_edge(e, f, 5));
 
     // duplicate edges
-    assert!(!gr.add_edge(f, b, 15.));
-    assert!(!gr.add_edge(f, e, 6.));
+    assert!(!gr.add_edge(f, b, 15));
+    assert!(!gr.add_edge(f, e, 6));
     println!("{:?}", gr);
 
     assert_eq!(gr.node_count(), 6);
     assert_eq!(gr.edge_count(), 9);
 
     // check updated edge weight
-    assert_eq!(gr.edge_weight(e, f), Some(&6.));
+    assert_eq!(gr.edge_weight(e, f), Some(&6));
     let scores = petgraph::visit::dijkstra(&gr, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
-    assert_eq!(scores.values().map(|f| *f as i32).min(), Some(0));
-    assert_eq!(scores.values().map(|f| *f as i32).max(), Some(20));
+    let mut scores: Vec<_> = scores.into_iter().collect();
+    scores.sort();
+    assert_eq!(scores,
+       vec![("A", 0), ("B", 7), ("C", 9), ("D", 11), ("E", 20), ("F", 20)]);
 }
 
 #[test]
