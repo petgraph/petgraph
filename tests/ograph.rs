@@ -1,6 +1,8 @@
 #![allow(unstable)]
 extern crate petgraph;
 
+use std::iter::AdditiveIterator;
+
 use petgraph::{
     Graph,
     Bfs,
@@ -395,30 +397,29 @@ fn scc() {
     gr.add_node(6);
     gr.add_node(7);
     gr.add_node(8);
-    gr.add_node(9);
-    gr.add_edge(n(7), n(1), ());
-    gr.add_edge(n(1), n(4), ());
-    gr.add_edge(n(4), n(7), ());
-    gr.add_edge(n(9), n(7), ());
-    gr.add_edge(n(9), n(3), ());
+    gr.add_edge(n(6), n(0), ());
+    gr.add_edge(n(0), n(3), ());
     gr.add_edge(n(3), n(6), ());
-    gr.add_edge(n(6), n(9), ());
     gr.add_edge(n(8), n(6), ());
-    gr.add_edge(n(2), n(8), ());
-    gr.add_edge(n(8), n(5), ());
-    gr.add_edge(n(5), n(2), ());
+    gr.add_edge(n(8), n(2), ());
+    gr.add_edge(n(2), n(5), ());
+    gr.add_edge(n(5), n(8), ());
+    gr.add_edge(n(7), n(5), ());
+    gr.add_edge(n(1), n(7), ());
+    gr.add_edge(n(7), n(4), ());
+    gr.add_edge(n(4), n(1), ());
 
     let mut sccs = petgraph::graph::scc(&gr);
+    assert_eq!(sccs.iter().map(|v| v.len()).sum(), gr.node_count());
 
     let scc_answer = vec![
+        vec![n(0), n(3), n(6)],
         vec![n(1), n(4), n(7)],
-        vec![n(2), n(5), n(8)],
-        vec![n(3), n(6), n(9)]];
+        vec![n(2), n(5), n(8)]];
 
     // normalize the result and compare with the answer.
     for sc in sccs.iter_mut() {
         sc.sort();
-        sc.dedup();
     }
     // sort by minimum element
     sccs.sort_by(|v, w| v[0].cmp(&w[0]));
@@ -428,14 +429,14 @@ fn scc() {
     // Sccs are just connected components.
     let mut hr = gr.into_edge_type::<Undirected>();
     // Delete an edge to disconnect it
-    let ed = hr.find_edge(n(7), n(9)).unwrap();
+    let ed = hr.find_edge(n(6), n(8)).unwrap();
     assert!(hr.remove_edge(ed).is_some());
 
     let mut sccs = petgraph::graph::scc(&hr);
 
     let scc_undir_answer = vec![
-        vec![n(1), n(4), n(7)],
-        vec![n(2), n(3), n(5), n(6), n(8), n(9)]];
+        vec![n(0), n(3), n(6)],
+        vec![n(1), n(2), n(4), n(5), n(7), n(8)]];
 
     for sc in sccs.iter_mut() {
         sc.sort();

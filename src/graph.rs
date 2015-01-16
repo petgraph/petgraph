@@ -741,7 +741,7 @@ pub fn toposort<N, E>(g: &Graph<N, E, Directed>) -> Vec<NodeIndex>
 pub fn scc<N, E, Ty>(g: &Graph<N, E, Ty>) -> Vec<Vec<NodeIndex>> where
     Ty: EdgeType
 {
-    let mut dfs = Dfs::new(g, NodeIndex(0));
+    let mut dfs = Dfs::empty(g);
 
     // First phase, reverse dfs pass, compute finishing times.
     let mut finish_order = Vec::new();
