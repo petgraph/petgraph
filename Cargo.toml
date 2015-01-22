@@ -9,7 +9,7 @@ description = "Graph data structure."
 documentation = "http://bluss.github.io/petulant-avenger-graphlibrary/target/doc/petgraph"
 repository = "https://github.com/bluss/petulant-avenger-graphlibrary"
 
-keywords = ["container", "data-structure", "graph"]
+keywords = ["container", "data-structure", "graph", "unionfind"]
 
 [lib]
 
