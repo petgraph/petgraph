@@ -25,7 +25,7 @@ use std::ops::{Index, IndexMut};
 /// The node type **N** must implement **Copy** and will be used as node identifier, duplicated
 /// into several places in the data structure.
 /// It must be suitable as a hash table key (implementing **Eq + Hash**).
-/// The node type must also implement **PartialOrd** so that the implementation can
+/// The node type must also implement **Ord** so that the implementation can
 /// order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
 ///
 /// **GraphMap** does not allow parallel edges, but self loops are allowed.
@@ -43,7 +43,7 @@ impl<N: Eq + Hash<Hasher> + fmt::Show, E: fmt::Show> fmt::Show for GraphMap<N, E
 }
 
 #[inline]
-fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
+fn edge_key<N: Copy + Ord>(a: N, b: N) -> (N, N)
 {
     if a <= b { (a, b) } else { (b, a) }
 }
@@ -52,8 +52,8 @@ fn edge_key<N: Copy + PartialOrd>(a: N, b: N) -> (N, N)
 fn copy<N: Copy>(n: &N) -> N { *n }
 
 /// A trait group for **GraphMap**'s node identifier.
-pub trait NodeTrait : Copy + PartialOrd + Eq + Hash<Hasher> {}
-impl<N> NodeTrait for N where N: Copy + PartialOrd + Eq + Hash<Hasher> {}
+pub trait NodeTrait : Copy + Ord + Eq + Hash<Hasher> {}
+impl<N> NodeTrait for N where N: Copy + Ord + Eq + Hash<Hasher> {}
 
 impl<N, E> GraphMap<N, E> where N: NodeTrait
 {
@@ -133,7 +133,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     /// ```
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
     {
-        // Use PartialOrd to order the edges
+        // Use Ord to order the edges
         match self.nodes.entry(a) {
             Occupied(ent) => { ent.into_mut().push(b); }
             Vacant(ent) => { ent.insert(vec![b]); }

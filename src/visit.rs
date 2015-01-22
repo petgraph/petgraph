@@ -47,7 +47,7 @@ impl<'a, N, E, Ty: EdgeType> NeighborIter<'a, graph::NodeIndex> for Graph<N, E, 
 }
 
 impl<'a, N, E> NeighborIter<'a, N> for GraphMap<N, E>
-where N: Copy + Clone + PartialOrd + Hash<Hasher> + Eq
+where N: Copy + Clone + Ord + Hash<Hasher> + Eq
 {
     type Iter = graphmap::Neighbors<'a, N>;
     fn neighbors(&'a self, n: N) -> graphmap::Neighbors<'a, N>
