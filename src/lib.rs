@@ -51,15 +51,15 @@ pub struct Undirected;
 
 /// A graph's edge type determines whether is has directed edges or not.
 pub trait EdgeType {
-    fn is_directed(_ig: Option<Self>) -> bool;
+    fn is_directed() -> bool;
 }
 
 impl EdgeType for Directed {
-    fn is_directed(_ig: Option<Self>) -> bool { true }
+    fn is_directed() -> bool { true }
 }
 
 impl EdgeType for Undirected {
-    fn is_directed(_ig: Option<Self>) -> bool { false }
+    fn is_directed() -> bool { false }
 }
 
 

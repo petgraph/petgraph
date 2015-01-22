@@ -203,7 +203,7 @@ impl<N, E, Ty=Directed> Graph<N, E, Ty> where Ty: EdgeType
     #[inline]
     pub fn is_directed(&self) -> bool
     {
-        EdgeType::is_directed(None::<Ty>)
+        <Ty as EdgeType>::is_directed()
     }
 
     /// Cast the graph as either undirected or directed. No edge adjustments
@@ -684,7 +684,7 @@ impl<'a, N: 'a, Ty> Iterator for WithoutEdges<'a, N, Ty> where
                 None => return None,
                 Some((index, node)) => {
                     if node.next[k] == EDGE_END &&
-                        (EdgeType::is_directed(None::<Ty>) ||
+                        (<Ty as EdgeType>::is_directed() ||
                          node.next[1-k] == EDGE_END) {
                         return Some(NodeIndex(index))
                     } else {
