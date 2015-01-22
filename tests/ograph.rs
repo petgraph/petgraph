@@ -483,3 +483,14 @@ fn connected_comp()
     let gr = gr.into_edge_type::<Undirected>();
     assert_eq!(petgraph::graph::connected_components(&gr), 2);
 }
+
+#[should_fail]
+#[test]
+fn oob_index()
+{
+    let mut gr = Graph::<_, ()>::new();
+    let a = gr.add_node(0);
+    let b = gr.add_node(1);
+    gr.remove_node(a);
+    gr[b];
+}
