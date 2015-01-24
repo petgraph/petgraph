@@ -11,6 +11,7 @@ use petgraph::{
     DfsIter,
     Incoming,
     Outgoing,
+    Directed,
     Undirected,
 };
 
@@ -493,4 +494,17 @@ fn oob_index()
     let b = gr.add_node(1);
     gr.remove_node(a);
     gr[b];
+}
+
+#[test]
+fn usize_index()
+{
+    let mut gr = Graph::<_, _, Directed, usize>::with_capacity(0, 0);
+    let a = gr.add_node(0);
+    let b = gr.add_node(1);
+    let e = gr.add_edge(a, b, 1.2);
+    gr[b] += 3;
+    assert_eq!(gr[a], 0);
+    assert_eq!(gr[b], 4);
+    assert_eq!(gr[e], 1.2);
 }
