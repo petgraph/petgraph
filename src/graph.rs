@@ -72,6 +72,12 @@ impl<Ix: IndexType = DefIndex> NodeIndex<Ix>
     {
         self.0.index()
     }
+
+    #[inline]
+    fn end() -> Self
+    {
+        NodeIndex(IndexType::max())
+    }
 }
 
 /// Edge identifier.
@@ -291,6 +297,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     {
         let node = Node{weight: w, next: [EdgeIndex::end(), EdgeIndex::end()]};
         let node_idx = NodeIndex::new(self.nodes.len());
+        assert!(NodeIndex::end() != node_idx);
         self.nodes.push(node);
         node_idx
     }
