@@ -23,8 +23,12 @@ use super::visit::{
     VisitMap,
 };
 
+/// The default i.e. the used index type for node and edge indices in **Graph**.
+/// At the moment, this means that **Graph's** index type is compile-time configurable
+/// by changing this default. **u32** is the default to improve performance in the common case.
 pub type DefIndex = u32;
 
+/// Trait for the unsigned integer type used for node and edge indices.
 pub trait IndexType : Copy + Clone + Ord + fmt::Debug
 {
     fn new(x: usize) -> Self;
