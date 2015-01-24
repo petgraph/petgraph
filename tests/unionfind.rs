@@ -74,7 +74,7 @@ fn labeling()
     for i in (0..24u32) {
         u.union(i + 1, i);
     }
-    for i in (25..47) {
+    for i in (25u32..47) {
         u.union(i, i + 1);
     }
     u.union(23, 25);
