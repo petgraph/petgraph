@@ -187,6 +187,9 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// all indices stable, but removing a node will force the last node to shift its index to
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 ///
+/// The fact that the node and edge indices in the graph are numbered in a compact interval from
+/// 0 to *n* - 1 simplifies some graph algorithms.
+///
 /// The **Ix** parameter is **u32** by default. The goal is that you can ignore this parameter
 /// completely unless you need a very big graph -- then you can use **usize**.
 #[derive(Clone)]
@@ -754,8 +757,8 @@ impl<'a, N: 'a, Ty, Ix> Iterator for WithoutEdges<'a, N, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    type Item = NodeIndex;
-    fn next(&mut self) -> Option<NodeIndex>
+    type Item = NodeIndex<Ix>;
+    fn next(&mut self) -> Option<NodeIndex<Ix>>
     {
         let k = self.dir as usize;
         loop {
@@ -782,7 +785,8 @@ impl<'a, N: 'a, Ty, Ix> Iterator for WithoutEdges<'a, N, Ty, Ix> where
 ///
 /// If the returned vec contains less than all the nodes of the graph, then
 /// the graph was cyclic.
-pub fn toposort<N, E>(g: &Graph<N, E, Directed>) -> Vec<NodeIndex>
+pub fn toposort<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> Vec<NodeIndex<Ix>> where
+    Ix: IndexType,
 {
     let mut order = Vec::with_capacity(g.node_count());
     let mut ordered = BitvSet::with_capacity(g.node_count());
@@ -815,8 +819,9 @@ pub fn toposort<N, E>(g: &Graph<N, E, Directed>) -> Vec<NodeIndex>
 /// Return a vector where each element is an scc.
 ///
 /// For an undirected graph, the sccs are simply the connected components.
-pub fn scc<N, E, Ty>(g: &Graph<N, E, Ty>) -> Vec<Vec<NodeIndex>> where
-    Ty: EdgeType
+pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>> where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     let mut dfs = Dfs::empty(g);
 
@@ -860,7 +865,9 @@ pub fn scc<N, E, Ty>(g: &Graph<N, E, Ty>) -> Vec<Vec<NodeIndex>> where
 /// Return **true** if the input graph contains a cycle.
 ///
 /// Treat the input graph as undirected.
-pub fn is_cyclic<N, E, Ty>(g: &Graph<N, E, Ty>) -> bool where Ty: EdgeType
+pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     let mut edge_sets = UnionFind::new(g.node_count());
     for edge in g.edges.iter() {
@@ -878,7 +885,9 @@ pub fn is_cyclic<N, E, Ty>(g: &Graph<N, E, Ty>) -> bool where Ty: EdgeType
 /// Return the number of connected components of the graph.
 ///
 /// For a directed graph, this is the *weakly* connected components.
-pub fn connected_components<N, E, Ty>(g: &Graph<N, E, Ty>) -> usize where Ty: EdgeType
+pub fn connected_components<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> usize where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     let mut vertex_sets = UnionFind::new(g.node_count());
     for edge in g.edges.iter() {
@@ -904,13 +913,14 @@ pub fn connected_components<N, E, Ty>(g: &Graph<N, E, Ty>) -> usize where Ty: Ed
 ///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
 /// and **|V| - c** edges, where **c** is the number of connected components in **g**.
-pub fn min_spanning_tree<N, E, Ty>(g: &Graph<N, E, Ty>) -> Graph<N, E, Undirected> where
+pub fn min_spanning_tree<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix> where
     N: Clone,
     E: Clone + PartialOrd,
     Ty: EdgeType,
+    Ix: IndexType,
 {
     if g.node_count() == 0 {
-        return Graph::new_undirected()
+        return Graph::with_capacity(0, 0)
     }
 
     // Create a mst skeleton by copying all nodes
