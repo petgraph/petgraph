@@ -2,7 +2,7 @@
 
 //! **petgraph** is a graph data structure library.
 //!
-//! The most interesting type is [**Graph\<N, E, Ty\>**](./graph/struct.Graph.html) which is
+//! The most interesting type is [**Graph**](./graph/struct.Graph.html) which is
 //! a directed or undirected graph with owned mutably accessible arbitrary node and edge weights.
 //! It is based on rustc's graph implementation.
 

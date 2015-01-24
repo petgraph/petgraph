@@ -1,4 +1,4 @@
-//! **Graph\<N, E, Ty\>** is a graph datastructure using an adjacency list representation.
+//! **Graph\<N, E, Ty, Ix\>** is a graph datastructure using an adjacency list representation.
 
 use std::fmt;
 use std::slice;
@@ -23,9 +23,9 @@ use super::visit::{
     VisitMap,
 };
 
-/// The default i.e. the used index type for node and edge indices in **Graph**.
-/// At the moment, this means that **Graph's** index type is compile-time configurable
-/// by changing this default. **u32** is the default to improve performance in the common case.
+/// The default integer type for node and edge indices in **Graph**.
+/// **u32** is the default to reduce the size of the graph's data and improve
+/// performance in the common case.
 pub type DefIndex = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
@@ -170,10 +170,11 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
     }
 }
 
-/// **Graph\<N, E, Ty\>** is a graph datastructure using an adjacency list representation.
+/// **Graph\<N, E, Ty, Ix\>** is a graph datastructure using an adjacency list representation.
 ///
-/// **Graph** is parameterized over the node weight **N**, edge weight **E** and
-/// the parameter **Ty** that determines whether the graph has directed edges or not.
+/// **Graph** is parameterized over the node weight **N**, edge weight **E**, 
+/// edge type **Ty** that determines whether the graph has directed edges or not,
+/// and **Ix** which is the index type used.
 ///
 /// Based on the graph implementation in rustc.
 ///
@@ -185,6 +186,9 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// other indices**. Adding to the graph keeps
 /// all indices stable, but removing a node will force the last node to shift its index to
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
+///
+/// The **Ix** parameter is **u32** by default. The goal is that you can ignore this parameter
+/// completely unless you need a very big graph -- then you can use **usize**.
 #[derive(Clone)]
 pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefIndex> {
     nodes: Vec<Node<N, Ix>>,
