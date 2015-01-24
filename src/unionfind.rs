@@ -11,7 +11,7 @@ use std::num;
 ///
 /// “The amortized time per operation is **O(α(n))** where **α(n)** is the
 /// inverse of **f(x) = A(x, x)** with **A** being the extremely fast-growing Ackermann function.”
-#[derive(Show, Clone)]
+#[derive(Debug, Clone)]
 pub struct UnionFind<K> where K: num::UnsignedInt
 {
     // For element at index *i*, store the index of its parent; the representative itself

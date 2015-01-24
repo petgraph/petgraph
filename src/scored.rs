@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 ///
 /// **Note:** MinScored implements a total order (**Ord**), so that it is possible
 /// to use float types as scores.
-#[derive(Copy, Clone, Show)]
+#[derive(Copy, Clone, Debug)]
 pub struct MinScored<K, T>(pub K, pub T);
 
 impl<K: PartialOrd, T> PartialEq for MinScored<K, T> {

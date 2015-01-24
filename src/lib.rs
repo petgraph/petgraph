@@ -33,7 +33,7 @@ pub mod unionfind;
 
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction
-#[derive(Copy, Clone, Show, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EdgeDirection {
     /// A **Outgoing** edge is an outward edge *from* the current node.
     Outgoing = 0,
@@ -42,11 +42,11 @@ pub enum EdgeDirection {
 }
 
 /// Marker type for a directed graph.
-#[derive(Copy, Clone, Show)]
+#[derive(Copy, Clone, Debug)]
 pub struct Directed;
 
 /// Marker type for an undirected graph.
-#[derive(Copy, Clone, Show)]
+#[derive(Copy, Clone, Debug)]
 pub struct Undirected;
 
 /// A graph's edge type determines whether is has directed edges or not.
@@ -119,7 +119,7 @@ impl<'b, T, H: hash::Writer + hash::Hasher> Hash<H> for Ptr<'b, T>
     }
 }
 
-impl<'b, T: fmt::Show> fmt::Show for Ptr<'b, T> {
+impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
     }

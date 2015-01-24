@@ -25,7 +25,7 @@ use super::visit::{
 
 pub type DefIndex = u32;
 
-pub trait IndexType : Copy + Clone + Ord + fmt::Show
+pub trait IndexType : Copy + Clone + Ord + fmt::Debug
 {
     fn new(x: usize) -> Self;
     fn index(&self) -> usize;
@@ -53,7 +53,7 @@ impl IndexType for u32 {
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
 // should be lifetimed just like pointers.
 /// Node identifier.
-#[derive(Copy, Clone, Show, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct NodeIndex<Ix=DefIndex>(Ix);
 
 impl<Ix: IndexType = DefIndex> NodeIndex<Ix>
@@ -95,7 +95,7 @@ impl<Ix: IndexType = DefIndex> EdgeIndex<Ix>
     }
 }
 
-impl<Ix: IndexType> fmt::Show for EdgeIndex<Ix>
+impl<Ix: IndexType> fmt::Debug for EdgeIndex<Ix>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "EdgeIndex("));
@@ -111,7 +111,7 @@ impl<Ix: IndexType> fmt::Show for EdgeIndex<Ix>
 const DIRECTIONS: [EdgeDirection; 2] = [EdgeDirection::Outgoing, EdgeDirection::Incoming];
 
 /// The graph's node type.
-#[derive(Show, Clone)]
+#[derive(Debug, Clone)]
 pub struct Node<N, Ix: IndexType = DefIndex> {
     /// Associated node data.
     pub weight: N,
@@ -129,7 +129,7 @@ impl<N, Ix: IndexType = DefIndex> Node<N, Ix>
 }
 
 /// The graph's edge type.
-#[derive(Show, Clone)]
+#[derive(Debug, Clone)]
 pub struct Edge<E, Ix: IndexType = DefIndex> {
     /// Associated edge data.
     pub weight: E,
@@ -181,7 +181,7 @@ pub struct Graph<N, E, Ty=Directed> {
     edges: Vec<Edge<E>>,
 }
 
-impl<N: fmt::Show, E: fmt::Show, Ty: EdgeType> fmt::Show for Graph<N, E, Ty>
+impl<N: fmt::Debug, E: fmt::Debug, Ty: EdgeType> fmt::Debug for Graph<N, E, Ty>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (index, n) in self.nodes.iter().enumerate() {

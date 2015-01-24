@@ -35,7 +35,7 @@ pub struct GraphMap<N: Eq + Hash<Hasher>, E> {
     edges: HashMap<(N, N), E>,
 }
 
-impl<N: Eq + Hash<Hasher> + fmt::Show, E: fmt::Show> fmt::Show for GraphMap<N, E>
+impl<N: Eq + Hash<Hasher> + fmt::Debug, E: fmt::Debug> fmt::Debug for GraphMap<N, E>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.nodes.fmt(f)
