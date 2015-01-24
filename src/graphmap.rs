@@ -198,7 +198,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     /// Iterator element type is **N**.
     pub fn nodes<'a>(&'a self) -> Nodes<'a, N>
     {
-        Nodes{iter: self.nodes.keys().map(copy as fn(&N) -> N)}
+        Nodes{iter: self.nodes.keys().map(copy)}
     }
 
     /// Return an iterator over the nodes that are connected with **from** by edges.
@@ -212,7 +212,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
             match self.nodes.get(&from) {
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
-            }.map(copy as fn(&N) -> N)
+            }.map(copy)
         }
     }
 
