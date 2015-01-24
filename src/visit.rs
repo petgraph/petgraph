@@ -27,6 +27,10 @@ use super::{
     MinScored,
 };
 
+use graph::{
+    IndexType,
+};
+
 pub trait Graphlike {
     type NodeId: Clone;
 }
@@ -37,10 +41,12 @@ pub trait NeighborIter<'a, N> {
     fn neighbors(&'a self, n: N) -> Self::Iter;
 }
 
-impl<'a, N, E, Ty: EdgeType> NeighborIter<'a, graph::NodeIndex> for Graph<N, E, Ty>
+impl<'a, N, E, Ty, Ix> NeighborIter<'a, graph::NodeIndex<Ix>> for Graph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
-    type Iter = graph::Neighbors<'a, E>;
-    fn neighbors(&'a self, n: graph::NodeIndex) -> graph::Neighbors<'a, E>
+    type Iter = graph::Neighbors<'a, E, Ix>;
+    fn neighbors(&'a self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'a, E, Ix>
     {
         Graph::neighbors(self, n)
     }
@@ -61,19 +67,24 @@ pub struct AsUndirected<G>(pub G);
 /// Wrapper type for walking edges the other way
 pub struct Reversed<G>(pub G);
 
-impl<'a, 'b, N, E, Ty: EdgeType> NeighborIter<'a, graph::NodeIndex> for AsUndirected<&'b Graph<N, E, Ty>>
+impl<'a, 'b, N, E, Ty, Ix> NeighborIter<'a, graph::NodeIndex<Ix>> for AsUndirected<&'b Graph<N, E, Ty, Ix>> where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
-    type Iter = graph::Neighbors<'a, E>;
-    fn neighbors(&'a self, n: graph::NodeIndex) -> graph::Neighbors<'a, E>
+    type Iter = graph::Neighbors<'a, E, Ix>;
+
+    fn neighbors(&'a self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'a, E, Ix>
     {
         Graph::neighbors_undirected(self.0, n)
     }
 }
 
-impl<'a, 'b, N, E, Ty: EdgeType> NeighborIter<'a, graph::NodeIndex> for Reversed<&'b Graph<N, E, Ty>>
+impl<'a, 'b, N, E, Ty, Ix> NeighborIter<'a, graph::NodeIndex<Ix>> for Reversed<&'b Graph<N, E, Ty, Ix>> where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
-    type Iter = graph::Neighbors<'a, E>;
-    fn neighbors(&'a self, n: graph::NodeIndex) -> graph::Neighbors<'a, E>
+    type Iter = graph::Neighbors<'a, E, Ix>;
+    fn neighbors(&'a self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'a, E, Ix>
     {
         Graph::neighbors_directed(self.0, n, EdgeDirection::Incoming)
     }
@@ -85,11 +96,13 @@ pub trait VisitMap<N> {
     fn contains(&self, &N) -> bool;
 }
 
-impl VisitMap<graph::NodeIndex> for BitvSet {
-    fn visit(&mut self, x: graph::NodeIndex) -> bool {
+impl<Ix> VisitMap<graph::NodeIndex<Ix>> for BitvSet where
+    Ix: IndexType,
+{
+    fn visit(&mut self, x: graph::NodeIndex<Ix>) -> bool {
         self.insert(x.index())
     }
-    fn contains(&self, x: &graph::NodeIndex) -> bool {
+    fn contains(&self, x: &graph::NodeIndex<Ix>) -> bool {
         self.contains(&x.index())
     }
 }
@@ -109,12 +122,15 @@ pub trait Visitable : Graphlike {
     fn visit_map(&self) -> Self::Map;
 }
 
-impl<N, E, Ty> Graphlike for Graph<N, E, Ty> {
-    type NodeId = graph::NodeIndex;
+impl<N, E, Ty, Ix> Graphlike for Graph<N, E, Ty, Ix> where
+    Ix: IndexType,
+{
+    type NodeId = graph::NodeIndex<Ix>;
 }
 
-impl<N, E, Ty> Visitable for Graph<N, E, Ty> where
+impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
+    Ix: IndexType,
 {
     type Map = BitvSet;
     fn visit_map(&self) -> BitvSet { BitvSet::with_capacity(self.node_count()) }

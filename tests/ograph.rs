@@ -503,8 +503,11 @@ fn usize_index()
     let a = gr.add_node(0);
     let b = gr.add_node(1);
     let e = gr.add_edge(a, b, 1.2);
-    gr[b] += 3;
-    assert_eq!(gr[a], 0);
-    assert_eq!(gr[b], 4);
+    let mut dfs = Dfs::new(&gr, a);
+    while let Some(nx) = dfs.next(&gr) {
+        gr[nx] += 1;
+    }
+    assert_eq!(gr[a], 1);
+    assert_eq!(gr[b], 2);
     assert_eq!(gr[e], 1.2);
 }
