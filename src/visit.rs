@@ -87,10 +87,10 @@ pub trait VisitMap<N> {
 
 impl VisitMap<graph::NodeIndex> for BitvSet {
     fn visit(&mut self, x: graph::NodeIndex) -> bool {
-        self.insert(x.0)
+        self.insert(x.index())
     }
     fn contains(&self, x: &graph::NodeIndex) -> bool {
-        self.contains(&x.0)
+        self.contains(&x.index())
     }
 }
 

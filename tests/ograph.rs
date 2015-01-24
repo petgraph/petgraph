@@ -386,7 +386,7 @@ fn toposort() {
 
 #[test]
 fn scc() {
-    let n = NodeIndex;
+    let n = NodeIndex::new;
     let mut gr = Graph::new();
     gr.add_node(0);
     gr.add_node(1);
@@ -449,7 +449,7 @@ fn scc() {
 #[test]
 fn connected_comp()
 {
-    let n = NodeIndex;
+    let n = NodeIndex::new;
     let mut gr = Graph::new();
     gr.add_node(0);
     gr.add_node(1);
