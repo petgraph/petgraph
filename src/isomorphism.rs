@@ -154,9 +154,11 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
     if g0.node_count() != g1.node_count() || g0.edge_count() != g1.edge_count() {
         return false
     }
+
+    /// Return Some(bool) if isomorphism is decided, else None.
     fn try_match<N, E, Ix, Ty>(st: &mut [Vf2State<Ix, Ty>; 2],
                                g0: &Graph<N, E, Ty, Ix>,
-                               g1: &Graph<N, E, Ty, Ix>) -> (bool, bool) where
+                               g1: &Graph<N, E, Ty, Ix>) -> Option<bool> where
         Ix: IndexType,
         Ty: EdgeType,
     {
@@ -166,7 +168,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
 
         // if all are mapped -- we are done and have an iso
         if st[0].is_complete() {
-            return (true, true);
+            return Some(true)
         }
 
         // A "depth first" search of a valid mapping from graph 1 to graph 2
@@ -214,7 +216,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
         let (cand0, cand1) = match (from_index, to_index) {
             (Some(n), Some(m)) => (n, m),
             // No more candidates
-            _ => return (false, false)
+            _ => return None,
         };
 
         let mut nx = NodeIndex::new(cand0);
@@ -332,9 +334,9 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
             }
 
             // Recurse
-            let (is_done, ans) = try_match(st, g0, g1);
-            if is_done {
-                return (true, ans);
+            match try_match(st, g0, g1) {
+                None => {}
+                result => return result,
             }
 
             // Restore state.
@@ -342,11 +344,10 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
                 st[j].pop_mapping(nodes[j], g[j]);
             }
         }
-        (false, false)
+        None
     }
     let mut st = [Vf2State::new(g0.node_count()),
                   Vf2State::new(g1.node_count())];
-    let (_, is_iso) = try_match(&mut st, g0, g1);
-    is_iso
+    try_match(&mut st, g0, g1).unwrap_or(false)
 }
 
