@@ -18,16 +18,18 @@ struct Vf2State<Ix> {
     ins: Vec<usize>,
     /// out[i] is non-zero if i is in either M_0(s) or Tout_0(s)
     out: Vec<usize>,
+    generation: usize,
 }
 
 impl<Ix> Vf2State<Ix> where Ix: IndexType
 {
-    fn new(c0: usize) -> Self
+    pub fn new(c0: usize) -> Self
     {
         let mut state = Vf2State {
             core: Vec::with_capacity(c0),
             ins: Vec::with_capacity(c0),
             out: Vec::with_capacity(c0),
+            generation: 0,
         };
         for _ in (0..c0) {
             state.core.push(NodeIndex::end());
@@ -35,6 +37,57 @@ impl<Ix> Vf2State<Ix> where Ix: IndexType
             state.out.push(0);
         }
         state
+    }
+
+    /// Return **true** if we have a complete mapping
+    pub fn is_complete(&self) -> bool
+    {
+        self.generation == self.core.len()
+    }
+
+    /// Add mapping **from** <-> **to** to the state.
+    pub fn push_mapping<N, E>(&mut self, from: NodeIndex<Ix>, to: NodeIndex<Ix>,
+                              g: &Graph<N, E, Directed, Ix>)
+    {
+        self.generation += 1;
+        let s = self.generation;
+        self.core[from.index()] = to;
+        // update T0 & T1 ins/outs
+        // T0out: Node in G0 not in M0 but successor of a node in M0.
+        // st.out[0]: Node either in M0 or successor of M0
+        for ix in g.neighbors(from) {
+            if self.out[ix.index()] == 0 {
+                self.out[ix.index()] = s;
+            }
+        }
+        for ix in g.neighbors_directed(from, Incoming) {
+            if self.ins[ix.index()] == 0 {
+                self.ins[ix.index()] = s;
+            }
+        }
+    }
+
+    /// Restore the state to before the last added mapping
+    pub fn pop_mapping<N, E>(&mut self, from: NodeIndex<Ix>,
+                             g: &Graph<N, E, Directed, Ix>)
+    {
+        let s = self.generation;
+        self.generation -= 1;
+
+        // undo (n, m) mapping
+        self.core[from.index()] = NodeIndex::end();
+
+        // unmark in ins and outs
+        for ix in g.neighbors(from) {
+            if self.out[ix.index()] == s {
+                self.out[ix.index()] = 0;
+            }
+        }
+        for ix in g.neighbors_directed(from, Incoming) {
+            if self.ins[ix.index()] == s {
+                self.ins[ix.index()] = 0;
+            }
+        }
     }
 }
 
@@ -46,8 +99,7 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
     if g0.node_count() != g1.node_count() || g0.edge_count() != g1.edge_count() {
         return false
     }
-    fn try_match<N, E, Ix: IndexType>(s: usize,
-                                      st: &mut [Vf2State<Ix>; 2],
+    fn try_match<N, E, Ix: IndexType>(st: &mut [Vf2State<Ix>; 2],
                                       g0: &Graph<N, E, Directed, Ix>,
                                       g1: &Graph<N, E, Directed, Ix>) -> (bool, bool)
     {
@@ -56,7 +108,7 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
         let end = NodeIndex::end();
 
         // if all are mapped -- we are done and have an iso
-        if s - 1 == g0.node_count() {
+        if st[0].is_complete() {
             return (true, true);
         }
 
@@ -235,55 +287,25 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
 
             // Add mapping nx <-> mx to the state
             for j in graph_indices.clone() {
-                let node_index = nodes[j];
-                // map nx -> mx and mx -> nx
-                st[j].core[node_index.index()] = nodes[1 - j];
-
-                // update T0 & T1 ins/outs
-                // T0out: Node in G0 not in M0 but successor of a node in M0.
-                // st.out[0]: Node either in M0 or successor of M0
-                for ix in g[j].neighbors(node_index) {
-                    if st[j].out[ix.index()] == 0 {
-                        st[j].out[ix.index()] = s;
-                    }
-                }
-                for ix in g[j].neighbors_directed(node_index, Incoming) {
-                    if st[j].ins[ix.index()] == 0 {
-                        st[j].ins[ix.index()] = s;
-                    }
-                }
+                st[j].push_mapping(nodes[j], nodes[1-j], g[j]);
             }
 
-            // recurse
-            let (is_done, ans) = try_match(s + 1, st, g0, g1);
+            // Recurse
+            let (is_done, ans) = try_match(st, g0, g1);
             if is_done {
                 return (true, ans);
             }
 
+            // Restore state.
             for j in graph_indices.clone() {
-                let node_index = nodes[j];
-
-                // undo (n, m) mapping
-                st[j].core[node_index.index()] = end;
-
-                // unmark in ins and outs
-                for ix in g[j].neighbors(node_index) {
-                    if st[j].out[ix.index()] == s {
-                        st[j].out[ix.index()] = 0;
-                    }
-                }
-                for ix in g[j].neighbors_directed(node_index, Incoming) {
-                    if st[j].ins[ix.index()] == s {
-                        st[j].ins[ix.index()] = 0;
-                    }
-                }
+                st[j].pop_mapping(nodes[j], g[j]);
             }
         }
         (false, false)
     }
     let mut st = [Vf2State::<Ix>::new(g0.node_count()),
                   Vf2State::<Ix>::new(g1.node_count())];
-    let (_, is_iso) = try_match(1, &mut st, g0, g1);
+    let (_, is_iso) = try_match(&mut st, g0, g1);
     is_iso
 }
 
