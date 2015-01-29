@@ -12,7 +12,7 @@ use super::graph::{
 struct Vf2State<Ix, Ty> {
     /// The current mapping M(s) of nodes from G0 → G1 and G1 → G0,
     /// NodeIndex::end() for no mapping.
-    core: Vec<NodeIndex<Ix>>,
+    mapping: Vec<NodeIndex<Ix>>,
     /// out[i] is non-zero if i is in either M_0(s) or Tout_0(s)
     /// These are all the next vertices that are not mapped yet, but
     /// have an outgoing edge from the mapping.
@@ -30,13 +30,13 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
     pub fn new(c0: usize) -> Self
     {
         let mut state = Vf2State {
-            core: Vec::with_capacity(c0),
-            ins: Vec::with_capacity(c0 * <Ty as EdgeType>::is_directed() as usize),
+            mapping: Vec::with_capacity(c0),
             out: Vec::with_capacity(c0),
+            ins: Vec::with_capacity(c0 * <Ty as EdgeType>::is_directed() as usize),
             generation: 0,
         };
         for _ in (0..c0) {
-            state.core.push(NodeIndex::end());
+            state.mapping.push(NodeIndex::end());
             state.out.push(0);
             if <Ty as EdgeType>::is_directed() {
                 state.ins.push(0);
@@ -48,7 +48,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
     /// Return **true** if we have a complete mapping
     pub fn is_complete(&self) -> bool
     {
-        self.generation == self.core.len()
+        self.generation == self.mapping.len()
     }
 
     /// Add mapping **from** <-> **to** to the state.
@@ -57,7 +57,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
     {
         self.generation += 1;
         let s = self.generation;
-        self.core[from.index()] = to;
+        self.mapping[from.index()] = to;
         // update T0 & T1 ins/outs
         // T0out: Node in G0 not in M0 but successor of a node in M0.
         // st.out[0]: Node either in M0 or successor of M0
@@ -83,7 +83,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
         self.generation -= 1;
 
         // undo (n, m) mapping
-        self.core[from.index()] = NodeIndex::end();
+        self.mapping[from.index()] = NodeIndex::end();
 
         // unmark in ins and outs
         for ix in g.neighbors(from) {
@@ -105,7 +105,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
     {
         self.out[from_index..].iter()
                     .enumerate()
-                    .filter(|&(index, elt)| *elt > 0 && self.core[from_index + index] == NodeIndex::end())
+                    .filter(|&(index, elt)| *elt > 0 && self.mapping[from_index + index] == NodeIndex::end())
                     .next()
                     .map(|(index, _)| index)
     }
@@ -118,7 +118,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
         }
         self.ins[from_index..].iter()
                     .enumerate()
-                    .filter(|&(index, elt)| *elt > 0 && self.core[from_index + index] == NodeIndex::end())
+                    .filter(|&(index, elt)| *elt > 0 && self.mapping[from_index + index] == NodeIndex::end())
                     .next()
                     .map(|(index, _)| index)
     }
@@ -126,7 +126,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
     /// Find the next (least) node in the N - M set.
     pub fn next_rest_index(&self, from_index: usize) -> Option<usize>
     {
-        self.core[from_index..].iter()
+        self.mapping[from_index..].iter()
                .enumerate()
                .filter(|&(_, elt)| *elt == NodeIndex::end())
                .next()
@@ -245,7 +245,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
 
             /*
             print!("Mapping state: ");
-            for (index, nmap) in st.core[0].iter().enumerate() {
+            for (index, nmap) in st.mapping[0].iter().enumerate() {
                 if *nmap == end {
                     continue;
                 }
@@ -268,7 +268,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
             for j in graph_indices.clone() {
                 for n_neigh in g[j].neighbors(nodes[j]) {
                     succ_count[j] += 1;
-                    let m_neigh = st[j].core[n_neigh.index()];
+                    let m_neigh = st[j].mapping[n_neigh.index()];
                     if m_neigh == end {
                         continue;
                     }
@@ -288,7 +288,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
                 for j in graph_indices.clone() {
                     for n_neigh in g[j].neighbors_directed(nodes[j], Incoming) {
                         pred_count[j] += 1;
-                        let m_neigh = st[j].core[n_neigh.index()];
+                        let m_neigh = st[j].mapping[n_neigh.index()];
                         if m_neigh == end {
                             continue;
                         }
