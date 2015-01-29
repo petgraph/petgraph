@@ -278,6 +278,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         self.edges.len()
     }
 
+    /// Remove all nodes and edges
+    pub fn clear(&mut self)
+    {
+        self.nodes.clear();
+        self.edges.clear();
+    }
+
     /// Return whether the graph has directed edges or not.
     #[inline]
     pub fn is_directed(&self) -> bool

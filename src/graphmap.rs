@@ -87,6 +87,13 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
         self.edges.len()
     }
 
+    /// Remove all nodes and edges
+    pub fn clear(&mut self)
+    {
+        self.nodes.clear();
+        self.edges.clear();
+    }
+
     /// Add node **n** to the graph.
     pub fn add_node(&mut self, n: N) -> N {
         match self.nodes.entry(n) {
