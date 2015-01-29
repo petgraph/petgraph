@@ -89,6 +89,36 @@ impl<Ix> Vf2State<Ix> where Ix: IndexType
             }
         }
     }
+
+    /// Find the next (least) node in the Tout set.
+    pub fn next_out_index(&self, from_index: usize) -> Option<usize>
+    {
+        self.out[from_index..].iter()
+                    .enumerate()
+                    .filter(|&(index, elt)| *elt > 0 && self.core[from_index + index] == NodeIndex::end())
+                    .next()
+                    .map(|(index, _)| index)
+    }
+
+    /// Find the next (least) node in the Tin set.
+    pub fn next_in_index(&self, from_index: usize) -> Option<usize>
+    {
+        self.ins[from_index..].iter()
+                    .enumerate()
+                    .filter(|&(index, elt)| *elt > 0 && self.core[from_index + index] == NodeIndex::end())
+                    .next()
+                    .map(|(index, _)| index)
+    }
+
+    /// Find the next (least) node in the N - M set.
+    pub fn next_rest_index(&self, from_index: usize) -> Option<usize>
+    {
+        self.core[from_index..].iter()
+               .enumerate()
+               .filter(|&(_, elt)| *elt == NodeIndex::end())
+               .next()
+               .map(|(index, _)| index)
+    }
 }
 
 
@@ -125,49 +155,31 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
         }
         let mut open_list = OpenList::Out;
 
-        // Find the next (least) node in the Tout or Tin set.
-        let next_open_index = |&: st_inout: &[usize], st_core: &[NodeIndex<Ix>]| {
-            st_inout.iter()
-                    .enumerate()
-                    .filter(|&(index, elt)| *elt > 0 && st_core[index] == end)
-                    .next()
-                    .map(|(index, _)| index)
-        };
-
-        // Find the next (least) node in the N - M set.
-        let next_rest_index = |&: st_core: &[NodeIndex<Ix>]| {
-            st_core.iter()
-                   .enumerate()
-                   .filter(|&(_, elt)| *elt == end)
-                   .next()
-                   .map(|(index, _)| index)
-        };
-
         let mut to_index;
         let mut from_index = None;
         // Try the out list
-        to_index = next_open_index(&st[1].out[0..], &st[1].core[0..]);
+        to_index = st[1].next_out_index(0);
 
         if to_index.is_some() {
-            from_index = next_open_index(&st[0].out[0..], &st[0].core[0..]);
+            from_index = st[0].next_out_index(0);
             open_list = OpenList::Out;
         }
 
         // Try the in list
         if to_index.is_none() || from_index.is_none() {
-            to_index = next_open_index(&st[1].ins[0..], &st[1].core[0..]);
+            to_index = st[1].next_in_index(0);
 
             if to_index.is_some() {
-                from_index = next_open_index(&st[0].ins[0..], &st[0].core[0..]);
+                from_index = st[0].next_in_index(0);
                 open_list = OpenList::In;
             }
         }
 
         // Try the other list -- disconnected graph
         if to_index.is_none() || from_index.is_none() {
-            to_index = next_rest_index(&st[1].core[0..]);
+            to_index = st[1].next_rest_index(0);
             if to_index.is_some() {
-                from_index = next_rest_index(&st[0].core[0..]);
+                from_index = st[0].next_rest_index(0);
                 open_list = OpenList::Other;
             }
         }
@@ -188,9 +200,9 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
                 // Find the next node index to try on the `from` side of the mapping
                 let start = nx.index() + 1;
                 let cand0 = match open_list {
-                    OpenList::Out => next_open_index(&st[0].out[start..], &st[0].core[start..]),
-                    OpenList::In => next_open_index(&st[0].ins[start..], &st[0].core[start..]),
-                    OpenList::Other => next_rest_index(&st[0].core[start..]),
+                    OpenList::Out => st[0].next_out_index(start),
+                    OpenList::In => st[0].next_in_index(start),
+                    OpenList::Other => st[0].next_rest_index(start),
                 }.map(|c| c + start); // compensate for start offset.
                 nx = match cand0 {
                     None => break, // no more candidates
