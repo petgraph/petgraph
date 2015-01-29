@@ -196,7 +196,7 @@ impl<'a, V: Visitable> Visitable for Reversed<&'a V>
 ///
 /// **Note:** The algorithm may not behave correctly if nodes are removed
 /// during iteration. It may not necessarily visit added nodes or edges.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Dfs<N, VM> {
     pub stack: Vec<N>,
     pub discovered: VM,

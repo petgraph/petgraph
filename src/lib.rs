@@ -30,6 +30,7 @@ pub mod graph;
 pub mod visit;
 
 pub mod unionfind;
+mod isomorphism;
 
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction
