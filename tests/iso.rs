@@ -3,6 +3,8 @@ extern crate petgraph;
 use petgraph::{
     Graph,
     Directed,
+    Undirected,
+    EdgeType,
 };
 use petgraph::graph::{
     NodeIndex,
@@ -160,9 +162,9 @@ const G3_2: &'static str = "
 ";
 
 /// Parse a text adjacency matrix format into a directed graph
-fn str_to_graph(s: &str) -> Graph<(), (), Directed>
+fn parse_graph<Ty: EdgeType = Directed>(s: &str) -> Graph<(), (), Ty>
 {
-    let mut gr = Graph::new();
+    let mut gr = Graph::with_capacity(0, 0);
     let s = s.trim();
     let mut lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
@@ -175,13 +177,21 @@ fn str_to_graph(s: &str) -> Graph<(), (), Directed>
             while col >= gr.node_count() || row >= gr.node_count() {
                 gr.add_node(());
             }
-            gr.add_edge(NodeIndex::new(row), NodeIndex::new(col), ());
+            gr.update_edge(NodeIndex::new(row), NodeIndex::new(col), ());
         }
     }
     gr
 }
 
-fn graph_to_ad_matrix<N, E>(g: &Graph<N,E,Directed>)
+fn str_to_graph(s: &str) -> Graph<(), (), Undirected> {
+    parse_graph(s)
+}
+
+fn str_to_digraph(s: &str) -> Graph<(), (), Directed> {
+    parse_graph(s)
+}
+
+fn graph_to_ad_matrix<N, E, Ty: EdgeType>(g: &Graph<N,E,Ty>)
 {
     let n = g.node_count();
     for i in (0..n) {
@@ -203,8 +213,8 @@ fn petersen_iso()
 {
     // The correct isomorphism is
     // 0 => 0, 1 => 3, 2 => 1, 3 => 4, 5 => 2, 6 => 5, 7 => 7, 8 => 6, 9 => 8, 4 => 9
-    let peta = str_to_graph(PETERSEN_A);
-    let petb = str_to_graph(PETERSEN_B);
+    let peta = str_to_digraph(PETERSEN_A);
+    let petb = str_to_digraph(PETERSEN_B);
     println!("{:?}", peta);
     graph_to_ad_matrix(&peta);
     println!("");
@@ -213,10 +223,36 @@ fn petersen_iso()
     assert!(petgraph::graph::is_isomorphic(&peta, &petb));
 }
 
-/* graph is too big -- doesn't halt
-*/
 #[test]
-fn praust()
+fn petersen_undir_iso()
+{
+    // The correct isomorphism is
+    // 0 => 0, 1 => 3, 2 => 1, 3 => 4, 5 => 2, 6 => 5, 7 => 7, 8 => 6, 9 => 8, 4 => 9
+    let peta = str_to_digraph(PETERSEN_A);
+    let petb = str_to_digraph(PETERSEN_B);
+    println!("{:?}", peta);
+    graph_to_ad_matrix(&peta);
+    println!("");
+    graph_to_ad_matrix(&petb);
+
+    assert!(petgraph::graph::is_isomorphic(&peta, &petb));
+}
+
+#[test]
+fn praust_dir_no_iso()
+{
+    let a = str_to_digraph(PRAUST_A);
+    let b = str_to_digraph(PRAUST_B);
+    println!("{:?}", a);
+    graph_to_ad_matrix(&a);
+    println!("");
+    graph_to_ad_matrix(&b);
+
+    assert!(!petgraph::graph::is_isomorphic(&a, &b));
+}
+
+#[test]
+fn praust_undir_no_iso()
 {
     let a = str_to_graph(PRAUST_A);
     let b = str_to_graph(PRAUST_B);
@@ -231,40 +267,40 @@ fn praust()
 #[test]
 fn g14_dir_not_iso()
 {
-    let a = str_to_graph(G1D);
-    let b = str_to_graph(G4D);
+    let a = str_to_digraph(G1D);
+    let b = str_to_digraph(G4D);
     assert!(!petgraph::graph::is_isomorphic(&a, &b));
 }
 
 #[test]
 fn g14_undir_not_iso()
 {
-    let a = str_to_graph(G1U);
-    let b = str_to_graph(G4U);
+    let a = str_to_digraph(G1U);
+    let b = str_to_digraph(G4U);
     assert!(!petgraph::graph::is_isomorphic(&a, &b));
 }
 
 #[test]
 fn g12_undir_iso()
 {
-    let a = str_to_graph(G1U);
-    let b = str_to_graph(G2U);
+    let a = str_to_digraph(G1U);
+    let b = str_to_digraph(G2U);
     assert!(petgraph::graph::is_isomorphic(&a, &b));
 }
 
 #[test]
 fn g3_not_iso()
 {
-    let a = str_to_graph(G3_1);
-    let b = str_to_graph(G3_2);
+    let a = str_to_digraph(G3_1);
+    let b = str_to_digraph(G3_2);
     assert!(!petgraph::graph::is_isomorphic(&a, &b));
 }
 
 #[test]
 fn g8_not_iso()
 {
-    let a = str_to_graph(G8_1);
-    let b = str_to_graph(G8_2);
+    let a = str_to_digraph(G8_1);
+    let b = str_to_digraph(G8_2);
     assert_eq!(a.edge_count(), b.edge_count());
     assert_eq!(a.node_count(), b.node_count());
     assert!(!petgraph::graph::is_isomorphic(&a, &b));

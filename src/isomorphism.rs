@@ -1,7 +1,6 @@
 use super::{
     EdgeType,
     Incoming,
-    Directed,
 };
 use super::graph::{
     Graph,
@@ -10,31 +9,38 @@ use super::graph::{
 };
 
 #[derive(Debug)]
-struct Vf2State<Ix> {
+struct Vf2State<Ix, Ty> {
     /// The current mapping M(s) of nodes from G0 → G1 and G1 → G0,
     /// NodeIndex::end() for no mapping.
     core: Vec<NodeIndex<Ix>>,
-    /// ins[i] is non-zero if i is in either M_0(s) or Tin_0(s)
-    ins: Vec<usize>,
     /// out[i] is non-zero if i is in either M_0(s) or Tout_0(s)
+    /// These are all the next vertices that are not mapped yet, but
+    /// have an outgoing edge from the mapping.
     out: Vec<usize>,
+    /// ins[i] is non-zero if i is in either M_0(s) or Tin_0(s)
+    /// These are all the incoming vertices, those not mapped yet, but
+    /// have an edge from them into the mapping.
+    /// Unused if graph is undirected -- it's identical with out in that case.
+    ins: Vec<usize>,
     generation: usize,
 }
 
-impl<Ix> Vf2State<Ix> where Ix: IndexType
+impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
 {
     pub fn new(c0: usize) -> Self
     {
         let mut state = Vf2State {
             core: Vec::with_capacity(c0),
-            ins: Vec::with_capacity(c0),
+            ins: Vec::with_capacity(c0 * <Ty as EdgeType>::is_directed() as usize),
             out: Vec::with_capacity(c0),
             generation: 0,
         };
         for _ in (0..c0) {
             state.core.push(NodeIndex::end());
-            state.ins.push(0);
             state.out.push(0);
+            if <Ty as EdgeType>::is_directed() {
+                state.ins.push(0);
+            }
         }
         state
     }
@@ -47,7 +53,7 @@ impl<Ix> Vf2State<Ix> where Ix: IndexType
 
     /// Add mapping **from** <-> **to** to the state.
     pub fn push_mapping<N, E>(&mut self, from: NodeIndex<Ix>, to: NodeIndex<Ix>,
-                              g: &Graph<N, E, Directed, Ix>)
+                              g: &Graph<N, E, Ty, Ix>)
     {
         self.generation += 1;
         let s = self.generation;
@@ -60,16 +66,18 @@ impl<Ix> Vf2State<Ix> where Ix: IndexType
                 self.out[ix.index()] = s;
             }
         }
-        for ix in g.neighbors_directed(from, Incoming) {
-            if self.ins[ix.index()] == 0 {
-                self.ins[ix.index()] = s;
+        if g.is_directed() {
+            for ix in g.neighbors_directed(from, Incoming) {
+                if self.ins[ix.index()] == 0 {
+                    self.ins[ix.index()] = s;
+                }
             }
         }
     }
 
     /// Restore the state to before the last added mapping
     pub fn pop_mapping<N, E>(&mut self, from: NodeIndex<Ix>,
-                             g: &Graph<N, E, Directed, Ix>)
+                             g: &Graph<N, E, Ty, Ix>)
     {
         let s = self.generation;
         self.generation -= 1;
@@ -83,9 +91,11 @@ impl<Ix> Vf2State<Ix> where Ix: IndexType
                 self.out[ix.index()] = 0;
             }
         }
-        for ix in g.neighbors_directed(from, Incoming) {
-            if self.ins[ix.index()] == s {
-                self.ins[ix.index()] = 0;
+        if g.is_directed() {
+            for ix in g.neighbors_directed(from, Incoming) {
+                if self.ins[ix.index()] == s {
+                    self.ins[ix.index()] = 0;
+                }
             }
         }
     }
@@ -103,6 +113,9 @@ impl<Ix> Vf2State<Ix> where Ix: IndexType
     /// Find the next (least) node in the Tin set.
     pub fn next_in_index(&self, from_index: usize) -> Option<usize>
     {
+        if !<Ty as EdgeType>::is_directed() {
+            return None
+        }
         self.ins[from_index..].iter()
                     .enumerate()
                     .filter(|&(index, elt)| *elt > 0 && self.core[from_index + index] == NodeIndex::end())
@@ -122,16 +135,30 @@ impl<Ix> Vf2State<Ix> where Ix: IndexType
 }
 
 
-pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
-                               g1: &Graph<N, E, Directed, Ix>) -> bool where
+/// Return **true** if the graphs **g0** and **g1** are isomorphic.
+///
+/// Using the VF2 algorithm.
+///
+/// Not implemented: Vertex or edge weight matching.
+///
+/// ## References
+/// 
+/// * A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs
+///   Luigi P. Cordella, Pasquale Foggia, Carlo Sansone,
+///   and Mario Vento
+pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
+                                   g1: &Graph<N, E, Ty, Ix>) -> bool where
     Ix: IndexType,
+    Ty: EdgeType,
 {
     if g0.node_count() != g1.node_count() || g0.edge_count() != g1.edge_count() {
         return false
     }
-    fn try_match<N, E, Ix: IndexType>(st: &mut [Vf2State<Ix>; 2],
-                                      g0: &Graph<N, E, Directed, Ix>,
-                                      g1: &Graph<N, E, Directed, Ix>) -> (bool, bool)
+    fn try_match<N, E, Ix, Ty>(st: &mut [Vf2State<Ix, Ty>; 2],
+                               g0: &Graph<N, E, Ty, Ix>,
+                               g1: &Graph<N, E, Ty, Ix>) -> (bool, bool) where
+        Ix: IndexType,
+        Ty: EdgeType,
     {
         let g = [g0, g1];
         let graph_indices = 0..2us;
@@ -254,22 +281,24 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
             }
 
             // R_pred
-            let mut pred_count = [0, 0];
-            for j in graph_indices.clone() {
-                for n_neigh in g[j].neighbors_directed(nodes[j], Incoming) {
-                    pred_count[j] += 1;
-                    let m_neigh = st[j].core[n_neigh.index()];
-                    if m_neigh == end {
-                        continue;
-                    }
-                    let has_edge = g[1-j].find_edge(m_neigh, nodes[1-j]).is_some();
-                    if !has_edge {
-                        continue 'candidates;
+            if g[0].is_directed() {
+                let mut pred_count = [0, 0];
+                for j in graph_indices.clone() {
+                    for n_neigh in g[j].neighbors_directed(nodes[j], Incoming) {
+                        pred_count[j] += 1;
+                        let m_neigh = st[j].core[n_neigh.index()];
+                        if m_neigh == end {
+                            continue;
+                        }
+                        let has_edge = g[1-j].find_edge(m_neigh, nodes[1-j]).is_some();
+                        if !has_edge {
+                            continue 'candidates;
+                        }
                     }
                 }
-            }
-            if pred_count[0] != pred_count[1] {
-                continue 'candidates;
+                if pred_count[0] != pred_count[1] {
+                    continue 'candidates;
+                }
             }
 
             // Check cardinalities of open sets, important to prune
@@ -315,8 +344,8 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
         }
         (false, false)
     }
-    let mut st = [Vf2State::<Ix>::new(g0.node_count()),
-                  Vf2State::<Ix>::new(g1.node_count())];
+    let mut st = [Vf2State::new(g0.node_count()),
+                  Vf2State::new(g1.node_count())];
     let (_, is_iso) = try_match(&mut st, g0, g1);
     is_iso
 }
