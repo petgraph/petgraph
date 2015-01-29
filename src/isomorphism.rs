@@ -9,6 +9,36 @@ use super::graph::{
     NodeIndex,
 };
 
+#[derive(Debug)]
+struct Vf2State<Ix> {
+    /// The current mapping M(s) of nodes from G0 → G1 and G1 → G0,
+    /// NodeIndex::end() for no mapping.
+    core: Vec<NodeIndex<Ix>>,
+    /// ins[i] is non-zero if i is in either M_0(s) or Tin_0(s)
+    ins: Vec<usize>,
+    /// out[i] is non-zero if i is in either M_0(s) or Tout_0(s)
+    out: Vec<usize>,
+}
+
+impl<Ix> Vf2State<Ix> where Ix: IndexType
+{
+    fn new(c0: usize) -> Self
+    {
+        let mut state = Vf2State {
+            core: Vec::with_capacity(c0),
+            ins: Vec::with_capacity(c0),
+            out: Vec::with_capacity(c0),
+        };
+        for _ in (0..c0) {
+            state.core.push(NodeIndex::end());
+            state.ins.push(0);
+            state.out.push(0);
+        }
+        state
+    }
+}
+
+
 pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
                                g1: &Graph<N, E, Directed, Ix>) -> bool where
     Ix: IndexType,
@@ -16,41 +46,8 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
     if g0.node_count() != g1.node_count() || g0.edge_count() != g1.edge_count() {
         return false
     }
-    #[derive(Debug)]
-    struct Vf2State<Ix> {
-        /// The current mapping M(s) of nodes from G0 → G1 and G1 → G0,
-        /// NodeIndex::end() for no mapping.
-        core: [Vec<NodeIndex<Ix>>; 2],
-        /// ins[0][i] is non-zero if i is in either M_0(s) or Tin_0(s)
-        ins: [Vec<usize>; 2],
-        /// out[0][i] is non-zero if i is in either M_0(s) or Tout_0(s)
-        out: [Vec<usize>; 2],
-    }
-    impl<Ix> Vf2State<Ix> where Ix: IndexType
-    {
-        fn new(c0: usize, c1: usize) -> Self
-        {
-            let mut state = Vf2State {
-                core: [Vec::with_capacity(c0), Vec::with_capacity(c1)],
-                ins: [Vec::with_capacity(c0), Vec::with_capacity(c1)],
-                out: [Vec::with_capacity(c0), Vec::with_capacity(c1)],
-            };
-            for _ in (0..c0) {
-                state.core[0].push(NodeIndex::end());
-                state.ins[0].push(0);
-                state.out[0].push(0);
-            }
-            for _ in (0..c1) {
-                state.core[1].push(NodeIndex::end());
-                state.ins[1].push(0);
-                state.out[1].push(0);
-            }
-            state
-        }
-    }
-
     fn try_match<N, E, Ix: IndexType>(s: usize,
-                                      st: &mut Vf2State<Ix>,
+                                      st: &mut [Vf2State<Ix>; 2],
                                       g0: &Graph<N, E, Directed, Ix>,
                                       g1: &Graph<N, E, Directed, Ix>) -> (bool, bool)
     {
@@ -97,28 +94,28 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
         let mut to_index;
         let mut from_index = None;
         // Try the out list
-        to_index = next_open_index(&st.out[1][0..], &st.core[1][0..]);
+        to_index = next_open_index(&st[1].out[0..], &st[1].core[0..]);
 
         if to_index.is_some() {
-            from_index = next_open_index(&st.out[0][0..], &st.core[0][0..]);
+            from_index = next_open_index(&st[0].out[0..], &st[0].core[0..]);
             open_list = OpenList::Out;
         }
 
         // Try the in list
         if to_index.is_none() || from_index.is_none() {
-            to_index = next_open_index(&st.ins[1][0..], &st.core[1][0..]);
+            to_index = next_open_index(&st[1].ins[0..], &st[1].core[0..]);
 
             if to_index.is_some() {
-                from_index = next_open_index(&st.ins[0][0..], &st.core[0][0..]);
+                from_index = next_open_index(&st[0].ins[0..], &st[0].core[0..]);
                 open_list = OpenList::In;
             }
         }
 
         // Try the other list -- disconnected graph
         if to_index.is_none() || from_index.is_none() {
-            to_index = next_rest_index(&st.core[1][0..]);
+            to_index = next_rest_index(&st[1].core[0..]);
             if to_index.is_some() {
-                from_index = next_rest_index(&st.core[0][0..]);
+                from_index = next_rest_index(&st[0].core[0..]);
                 open_list = OpenList::Other;
             }
         }
@@ -139,9 +136,9 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
                 // Find the next node index to try on the `from` side of the mapping
                 let start = nx.index() + 1;
                 let cand0 = match open_list {
-                    OpenList::Out => next_open_index(&st.out[0][start..], &st.core[0][start..]),
-                    OpenList::In => next_open_index(&st.ins[0][start..], &st.core[0][start..]),
-                    OpenList::Other => next_rest_index(&st.core[0][start..]),
+                    OpenList::Out => next_open_index(&st[0].out[start..], &st[0].core[start..]),
+                    OpenList::In => next_open_index(&st[0].ins[start..], &st[0].core[start..]),
+                    OpenList::Other => next_rest_index(&st[0].core[start..]),
                 }.map(|c| c + start); // compensate for start offset.
                 nx = match cand0 {
                     None => break, // no more candidates
@@ -178,7 +175,7 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
             for j in graph_indices.clone() {
                 for n_neigh in g[j].neighbors(nodes[j]) {
                     succ_count[j] += 1;
-                    let m_neigh = st.core[j][n_neigh.index()];
+                    let m_neigh = st[j].core[n_neigh.index()];
                     if m_neigh == end {
                         continue;
                     }
@@ -197,7 +194,7 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
             for j in graph_indices.clone() {
                 for n_neigh in g[j].neighbors_directed(nodes[j], Incoming) {
                     pred_count[j] += 1;
-                    let m_neigh = st.core[j][n_neigh.index()];
+                    let m_neigh = st[j].core[n_neigh.index()];
                     if m_neigh == end {
                         continue;
                     }
@@ -215,20 +212,20 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
             // the search tree.
             //
             // counts in Tin/Tout
-            let t0in = st.ins[0].iter().filter(|&&x| x > 0).count();
-            let t1in = st.ins[1].iter().filter(|&&x| x > 0).count();
-            let t0out = st.out[0].iter().filter(|&&x| x > 0).count();
-            let t1out = st.out[1].iter().filter(|&&x| x > 0).count();
+            let t0in = st[0].ins.iter().filter(|&&x| x > 0).count();
+            let t1in = st[1].ins.iter().filter(|&&x| x > 0).count();
+            let t0out = st[0].out.iter().filter(|&&x| x > 0).count();
+            let t1out = st[1].out.iter().filter(|&&x| x > 0).count();
             if t0in != t1in || t0out != t1out {
                 continue 'candidates;
             }
 
             // counts in N0 - M0 - Tin - Tout
             // equal to count in N - ins - outs
-            let n0 = st.ins[0].iter().zip(st.out[0].iter())
+            let n0 = st[0].ins.iter().zip(st[0].out.iter())
                         .filter(|&(&a, &b)| a == 0 && b == 0)
                         .count();
-            let n1 = st.ins[1].iter().zip(st.out[1].iter())
+            let n1 = st[1].ins.iter().zip(st[1].out.iter())
                         .filter(|&(&a, &b)| a == 0 && b == 0)
                         .count();
                         
@@ -240,19 +237,19 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
             for j in graph_indices.clone() {
                 let node_index = nodes[j];
                 // map nx -> mx and mx -> nx
-                st.core[j][node_index.index()] = nodes[1 - j];
+                st[j].core[node_index.index()] = nodes[1 - j];
 
                 // update T0 & T1 ins/outs
                 // T0out: Node in G0 not in M0 but successor of a node in M0.
                 // st.out[0]: Node either in M0 or successor of M0
                 for ix in g[j].neighbors(node_index) {
-                    if st.out[j][ix.index()] == 0 {
-                        st.out[j][ix.index()] = s;
+                    if st[j].out[ix.index()] == 0 {
+                        st[j].out[ix.index()] = s;
                     }
                 }
                 for ix in g[j].neighbors_directed(node_index, Incoming) {
-                    if st.ins[j][ix.index()] == 0 {
-                        st.ins[j][ix.index()] = s;
+                    if st[j].ins[ix.index()] == 0 {
+                        st[j].ins[ix.index()] = s;
                     }
                 }
             }
@@ -267,24 +264,25 @@ pub fn is_isomorphic<N, E, Ix>(g0: &Graph<N, E, Directed, Ix>,
                 let node_index = nodes[j];
 
                 // undo (n, m) mapping
-                st.core[j][node_index.index()] = end;
+                st[j].core[node_index.index()] = end;
 
                 // unmark in ins and outs
                 for ix in g[j].neighbors(node_index) {
-                    if st.out[j][ix.index()] == s {
-                        st.out[j][ix.index()] = 0;
+                    if st[j].out[ix.index()] == s {
+                        st[j].out[ix.index()] = 0;
                     }
                 }
                 for ix in g[j].neighbors_directed(node_index, Incoming) {
-                    if st.ins[j][ix.index()] == s {
-                        st.ins[j][ix.index()] = 0;
+                    if st[j].ins[ix.index()] == s {
+                        st[j].ins[ix.index()] = 0;
                     }
                 }
             }
         }
         (false, false)
     }
-    let mut st = Vf2State::<Ix>::new(g0.node_count(), g1.node_count());
+    let mut st = [Vf2State::<Ix>::new(g0.node_count()),
+                  Vf2State::<Ix>::new(g1.node_count())];
     let (_, is_iso) = try_match(1, &mut st, g0, g1);
     is_iso
 }
