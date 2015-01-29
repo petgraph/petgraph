@@ -1,5 +1,6 @@
 extern crate petgraph;
 
+use std::time::Duration;
 use petgraph::{
     Graph,
     Directed,
@@ -248,7 +249,10 @@ fn praust_dir_no_iso()
     println!("");
     graph_to_ad_matrix(&b);
 
-    assert!(!petgraph::graph::is_isomorphic(&a, &b));
+    let t = Duration::span(|| {
+        assert!(!petgraph::graph::is_isomorphic(&a, &b));
+    });
+    println!("{:?}", t);
 }
 
 #[test]
@@ -261,7 +265,10 @@ fn praust_undir_no_iso()
     println!("");
     graph_to_ad_matrix(&b);
 
-    assert!(!petgraph::graph::is_isomorphic(&a, &b));
+    let t = Duration::span(|| {
+        assert!(!petgraph::graph::is_isomorphic(&a, &b));
+    });
+    println!("{:?}", t);
 }
 
 #[test]
