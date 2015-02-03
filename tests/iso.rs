@@ -1,3 +1,4 @@
+extern crate test;
 extern crate petgraph;
 
 use std::time::Duration;
@@ -216,10 +217,12 @@ fn petersen_iso()
     // 0 => 0, 1 => 3, 2 => 1, 3 => 4, 5 => 2, 6 => 5, 7 => 7, 8 => 6, 9 => 8, 4 => 9
     let peta = str_to_digraph(PETERSEN_A);
     let petb = str_to_digraph(PETERSEN_B);
+    /*
     println!("{:?}", peta);
     graph_to_ad_matrix(&peta);
     println!("");
     graph_to_ad_matrix(&petb);
+    */
 
     assert!(petgraph::graph::is_isomorphic(&peta, &petb));
 }
@@ -231,10 +234,6 @@ fn petersen_undir_iso()
     // 0 => 0, 1 => 3, 2 => 1, 3 => 4, 5 => 2, 6 => 5, 7 => 7, 8 => 6, 9 => 8, 4 => 9
     let peta = str_to_digraph(PETERSEN_A);
     let petb = str_to_digraph(PETERSEN_B);
-    println!("{:?}", peta);
-    graph_to_ad_matrix(&peta);
-    println!("");
-    graph_to_ad_matrix(&petb);
 
     assert!(petgraph::graph::is_isomorphic(&peta, &petb));
 }
@@ -244,15 +243,8 @@ fn praust_dir_no_iso()
 {
     let a = str_to_digraph(PRAUST_A);
     let b = str_to_digraph(PRAUST_B);
-    println!("{:?}", a);
-    graph_to_ad_matrix(&a);
-    println!("");
-    graph_to_ad_matrix(&b);
 
-    let t = Duration::span(|| {
-        assert!(!petgraph::graph::is_isomorphic(&a, &b));
-    });
-    println!("{:?}", t);
+    assert!(!petgraph::graph::is_isomorphic(&a, &b));
 }
 
 #[test]
@@ -260,15 +252,32 @@ fn praust_undir_no_iso()
 {
     let a = str_to_graph(PRAUST_A);
     let b = str_to_graph(PRAUST_B);
-    println!("{:?}", a);
-    graph_to_ad_matrix(&a);
-    println!("");
-    graph_to_ad_matrix(&b);
 
-    let t = Duration::span(|| {
-        assert!(!petgraph::graph::is_isomorphic(&a, &b));
-    });
-    println!("{:?}", t);
+    assert!(!petgraph::graph::is_isomorphic(&a, &b));
+}
+
+#[bench]
+fn petersen_iso_bench(b: &mut test::Bencher)
+{
+    b.iter(petersen_iso);
+}
+
+#[bench]
+fn petersen_undir_iso_bench(b: &mut test::Bencher)
+{
+    b.iter(petersen_undir_iso);
+}
+
+#[bench]
+fn praust_dir_no_iso_bench(b: &mut test::Bencher)
+{
+    b.iter(praust_dir_no_iso);
+}
+
+#[bench]
+fn praust_undir_no_iso_bench(b: &mut test::Bencher)
+{
+    b.iter(praust_undir_no_iso);
 }
 
 #[test]
