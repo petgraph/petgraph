@@ -6,7 +6,6 @@ use std::iter;
 use std::ops::{Index, IndexMut};
 
 use std::collections::BinaryHeap;
-use std::collections::BitvSet;
 
 use super::{
     EdgeDirection, Outgoing, Incoming,
@@ -20,6 +19,7 @@ use super::unionfind::UnionFind;
 use super::visit::{
     Reversed,
     Dfs,
+    Visitable,
     VisitMap,
 };
 
@@ -799,7 +799,7 @@ pub fn toposort<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> Vec<NodeIndex<Ix>> w
     Ix: IndexType,
 {
     let mut order = Vec::with_capacity(g.node_count());
-    let mut ordered = BitvSet::with_capacity(g.node_count());
+    let mut ordered = g.visit_map();
     let mut tovisit = Vec::new();
 
     // find all initial nodes
@@ -807,15 +807,15 @@ pub fn toposort<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> Vec<NodeIndex<Ix>> w
 
     // Take an unvisited element and 
     while let Some(nix) = tovisit.pop() {
-        if ordered.contains(&nix.index()) {
+        if ordered.is_visited(&nix) {
             continue;
         }
         order.push(nix);
-        ordered.insert(nix.index());
+        ordered.visit(nix);
         for neigh in g.neighbors_directed(nix, Outgoing) {
             // Look at each neighbor, and those that only have incoming edges
             // from the already ordered list, they are the next to visit.
-            if g.neighbors_directed(neigh, Incoming).all(|b| ordered.contains(&b.index())) {
+            if g.neighbors_directed(neigh, Incoming).all(|b| ordered.is_visited(&b)) {
                 tovisit.push(neigh);
             }
         }

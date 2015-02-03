@@ -93,7 +93,7 @@ impl<'a, 'b, N, E, Ty, Ix> NeighborIter<'a, graph::NodeIndex<Ix>> for Reversed<&
 pub trait VisitMap<N> {
     /// Return **true** if the value is not already present.
     fn visit(&mut self, N) -> bool;
-    fn contains(&self, &N) -> bool;
+    fn is_visited(&self, &N) -> bool;
 }
 
 impl<Ix> VisitMap<graph::NodeIndex<Ix>> for BitvSet where
@@ -102,7 +102,7 @@ impl<Ix> VisitMap<graph::NodeIndex<Ix>> for BitvSet where
     fn visit(&mut self, x: graph::NodeIndex<Ix>) -> bool {
         self.insert(x.index())
     }
-    fn contains(&self, x: &graph::NodeIndex<Ix>) -> bool {
+    fn is_visited(&self, x: &graph::NodeIndex<Ix>) -> bool {
         self.contains(&x.index())
     }
 }
@@ -111,7 +111,7 @@ impl<N: Eq + Hash<Hasher>> VisitMap<N> for HashSet<N> {
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
     }
-    fn contains(&self, x: &N) -> bool {
+    fn is_visited(&self, x: &N) -> bool {
         self.contains(x)
     }
 }
@@ -446,11 +446,11 @@ pub fn dijkstra<'a, G, N, K, F, Edges>(graph: &'a G,
     scores.insert(start.clone(), zero_score);
     visit_next.push(MinScored(zero_score, start));
     while let Some(MinScored(node_score, node)) = visit_next.pop() {
-        if visited.contains(&node) {
+        if visited.is_visited(&node) {
             continue
         }
         for (next, edge) in edges(graph, node.clone()) {
-            if visited.contains(&next) {
+            if visited.is_visited(&next) {
                 continue
             }
             let mut next_score = node_score + edge;
