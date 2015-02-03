@@ -311,22 +311,6 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
                 }
             }
 
-            // Check cardinalities of open sets, important to prune
-            // the search tree.
-            //
-            // counts in N0 - M0 - Tin - Tout
-            // equal to count in N - ins - outs
-            let x0 = st[0].ins.iter().zip(st[0].out.iter())
-                        .filter(|&(&a, &b)| a == 0 && b == 0)
-                        .count();
-            let x1 = st[1].ins.iter().zip(st[1].out.iter())
-                        .filter(|&(&a, &b)| a == 0 && b == 0)
-                        .count();
-                        
-            if x0 != x1 {
-                continue 'candidates;
-            }
-
             // Add mapping nx <-> mx to the state
             for j in graph_indices.clone() {
                 st[j].push_mapping(nodes[j], nodes[1-j], g[j]);
