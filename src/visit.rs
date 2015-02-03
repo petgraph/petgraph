@@ -242,7 +242,6 @@ impl<N, VM> Dfs<N, VM> where
     /// Return the next node in the dfs, or **None** if the traversal is done.
     pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
         G: for<'b> NeighborIter<'b, N>,
-        <G as NeighborIter<'a, N>>::Iter: Iterator<Item=N>,
     {
         while let Some(node) = self.stack.pop() {
             for succ in graph.neighbors(node.clone()) {
@@ -281,7 +280,6 @@ impl<'a, G: Visitable, VM> Iterator for DfsIter<'a, G, G::NodeId, VM> where
     G: 'a,
     VM: VisitMap<G::NodeId>,
     G: for<'b> NeighborIter<'b, G::NodeId>,
-    <G as NeighborIter<'a, G::NodeId>>::Iter: Iterator<Item=G::NodeId>,
 {
     type Item = G::NodeId;
     fn next(&mut self) -> Option<G::NodeId>
@@ -346,7 +344,6 @@ impl<N, VM> Bfs<N, VM> where
     /// Return the next node in the dfs, or **None** if the traversal is done.
     pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
         G: for<'b> NeighborIter<'b, N>,
-        <G as NeighborIter<'a, N>>::Iter: Iterator<Item=N>,
     {
         while let Some(node) = self.stack.pop_front() {
             for succ in graph.neighbors(node.clone()) {
@@ -408,7 +405,6 @@ impl<'a, G, N, VM> Iterator for BfsIter<'a, G, N, VM> where
     N: Clone,
     VM: VisitMap<N>,
     G: for<'b> NeighborIter<'b, N>,
-    <G as NeighborIter<'a, N>>::Iter: Iterator<Item=N>,
 {
     type Item = N;
     fn next(&mut self) -> Option<N>
