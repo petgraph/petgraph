@@ -41,6 +41,33 @@ const PETERSEN_B: &'static str = "
  1 0 1 0 1 0 0 0 0 0
 ";
 
+/// An almost full set, isomorphic
+const FULL_A: &'static str = "
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 0 1 1 1 0 1 
+ 1 1 1 1 1 1 1 1 1 1
+";
+
+const FULL_B: &'static str = "
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 0 1 1 1 0 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1 
+ 1 1 1 1 1 1 1 1 1 1
+";
+
 /// Praust A and B are not isomorphic
 const PRAUST_A: &'static str = "
  0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 
@@ -163,6 +190,18 @@ const G3_2: &'static str = "
 1 1 0
 ";
 
+// Non-isomorphic due to selfloop difference
+const S1: &'static str = "
+1 1 1
+1 0 1
+1 0 0
+";
+const S2: &'static str = "
+1 1 1
+0 1 1
+1 0 0
+";
+
 /// Parse a text adjacency matrix format into a directed graph
 fn parse_graph<Ty: EdgeType = Directed>(s: &str) -> Graph<(), (), Ty>
 {
@@ -239,6 +278,15 @@ fn petersen_undir_iso()
 }
 
 #[test]
+fn full_iso()
+{
+    let a = str_to_graph(FULL_A);
+    let b = str_to_graph(FULL_B);
+
+    assert!(petgraph::graph::is_isomorphic(&a, &b));
+}
+
+#[test]
 fn praust_dir_no_iso()
 {
     let a = str_to_digraph(PRAUST_A);
@@ -270,6 +318,15 @@ fn petersen_undir_iso_bench(bench: &mut test::Bencher)
 {
     let a = str_to_graph(PETERSEN_A);
     let b = str_to_graph(PETERSEN_B);
+
+    bench.iter(|| petgraph::graph::is_isomorphic(&a, &b));
+}
+
+#[bench]
+fn full_iso_bench(bench: &mut test::Bencher)
+{
+    let a = str_to_graph(FULL_A);
+    let b = str_to_graph(FULL_B);
 
     bench.iter(|| petgraph::graph::is_isomorphic(&a, &b));
 }
@@ -347,6 +404,16 @@ fn g8_not_iso()
 {
     let a = str_to_digraph(G8_1);
     let b = str_to_digraph(G8_2);
+    assert_eq!(a.edge_count(), b.edge_count());
+    assert_eq!(a.node_count(), b.node_count());
+    assert!(!petgraph::graph::is_isomorphic(&a, &b));
+}
+
+#[test]
+fn s12_not_iso()
+{
+    let a = str_to_digraph(S1);
+    let b = str_to_digraph(S2);
     assert_eq!(a.edge_count(), b.edge_count());
     assert_eq!(a.node_count(), b.node_count());
     assert!(!petgraph::graph::is_isomorphic(&a, &b));
