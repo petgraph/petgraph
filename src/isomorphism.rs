@@ -22,6 +22,8 @@ struct Vf2State<Ix, Ty> {
     /// have an edge from them into the mapping.
     /// Unused if graph is undirected -- it's identical with out in that case.
     ins: Vec<usize>,
+    out_size: usize,
+    ins_size: usize,
     generation: usize,
 }
 
@@ -33,6 +35,8 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
             mapping: Vec::with_capacity(c0),
             out: Vec::with_capacity(c0),
             ins: Vec::with_capacity(c0 * <Ty as EdgeType>::is_directed() as usize),
+            out_size: 0,
+            ins_size: 0,
             generation: 0,
         };
         for _ in (0..c0) {
@@ -65,6 +69,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
             if self.out[ix.index()] == 0 {
                 self.out[ix.index()] = s;
             }
+            self.out_size += 1;
         }
         if g.is_directed() {
             for ix in g.neighbors_directed(from, Incoming) {
@@ -72,6 +77,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
                     self.ins[ix.index()] = s;
                 }
             }
+            self.ins_size += 1;
         }
     }
 
@@ -90,6 +96,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
             if self.out[ix.index()] == s {
                 self.out[ix.index()] = 0;
             }
+            self.out_size -= 1;
         }
         if g.is_directed() {
             for ix in g.neighbors_directed(from, Incoming) {
@@ -97,6 +104,7 @@ impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
                     self.ins[ix.index()] = 0;
                 }
             }
+            self.ins_size -= 1;
         }
     }
 
@@ -307,24 +315,21 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
             // the search tree.
             //
             // counts in Tin/Tout
-            let t0in = st[0].ins.iter().filter(|&&x| x > 0).count();
-            let t1in = st[1].ins.iter().filter(|&&x| x > 0).count();
-            let t0out = st[0].out.iter().filter(|&&x| x > 0).count();
-            let t1out = st[1].out.iter().filter(|&&x| x > 0).count();
-            if t0in != t1in || t0out != t1out {
+            if st[0].out_size != st[0].out_size ||
+               st[1].ins_size != st[1].ins_size {
                 continue 'candidates;
             }
 
             // counts in N0 - M0 - Tin - Tout
             // equal to count in N - ins - outs
-            let n0 = st[0].ins.iter().zip(st[0].out.iter())
+            let x0 = st[0].ins.iter().zip(st[0].out.iter())
                         .filter(|&(&a, &b)| a == 0 && b == 0)
                         .count();
-            let n1 = st[1].ins.iter().zip(st[1].out.iter())
+            let x1 = st[1].ins.iter().zip(st[1].out.iter())
                         .filter(|&(&a, &b)| a == 0 && b == 0)
                         .count();
                         
-            if n0 != n1 {
+            if x0 != x1 {
                 continue 'candidates;
             }
 
