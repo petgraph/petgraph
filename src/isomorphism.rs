@@ -314,12 +314,6 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
             // Check cardinalities of open sets, important to prune
             // the search tree.
             //
-            // counts in Tin/Tout
-            if st[0].out_size != st[0].out_size ||
-               st[1].ins_size != st[1].ins_size {
-                continue 'candidates;
-            }
-
             // counts in N0 - M0 - Tin - Tout
             // equal to count in N - ins - outs
             let x0 = st[0].ins.iter().zip(st[0].out.iter())
@@ -338,10 +332,16 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
                 st[j].push_mapping(nodes[j], nodes[1-j], g[j]);
             }
 
-            // Recurse
-            match try_match(st, g0, g1) {
-                None => {}
-                result => return result,
+            // Check counts in Tin/Tout
+            if st[0].out_size == st[0].out_size ||
+               st[1].ins_size == st[1].ins_size
+            {
+
+                // Recurse
+                match try_match(st, g0, g1) {
+                    None => {}
+                    result => return result,
+                }
             }
 
             // Restore state.
