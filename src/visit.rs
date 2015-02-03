@@ -257,17 +257,15 @@ impl<N, VM> Dfs<N, VM> where
 }
 
 /// An iterator for a depth first traversal of a graph.
-#[derive(Clone)]
-pub struct DfsIter<'a, G, N, VM> where
-    G: 'a,
+pub struct DfsIter<'a, G: 'a + Visitable>
 {
     graph: &'a G,
-    dfs: Dfs<N, VM>,
+    dfs: Dfs<G::NodeId, G::Map>,
 }
 
-impl<'a, G: Visitable> DfsIter<'a, G, G::NodeId, <G as Visitable>::Map>
+impl<'a, G: Visitable> DfsIter<'a, G>
 {
-    pub fn new(graph: &'a G, start: G::NodeId) -> DfsIter<'a, G, G::NodeId, <G as Visitable>::Map>
+    pub fn new(graph: &'a G, start: G::NodeId) -> Self
     {
         DfsIter {
             graph: graph,
@@ -276,9 +274,7 @@ impl<'a, G: Visitable> DfsIter<'a, G, G::NodeId, <G as Visitable>::Map>
     }
 }
 
-impl<'a, G: Visitable, VM> Iterator for DfsIter<'a, G, G::NodeId, VM> where
-    G: 'a,
-    VM: VisitMap<G::NodeId>,
+impl<'a, G: 'a + Visitable> Iterator for DfsIter<'a, G> where
     G: for<'b> NeighborIter<'b, G::NodeId>,
 {
     type Item = G::NodeId;
@@ -316,14 +312,12 @@ pub struct Bfs<N, VM> {
     pub discovered: VM,
 }
 
-impl<N, G> Bfs<N, <G as Visitable>::Map> where
-    N: Clone,
-    G: Visitable<NodeId=N>,
-    <G as Visitable>::Map: VisitMap<N>,
+impl<G: Visitable> Bfs<G::NodeId, <G as Visitable>::Map> where
+    G::NodeId: Clone,
 {
     /// Create a new **Bfs**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
-    pub fn new(graph: &G, start: N) -> Self
+    pub fn new(graph: &G, start: G::NodeId) -> Self
     {
         let mut discovered = graph.visit_map();
         discovered.visit(start.clone());
@@ -378,20 +372,16 @@ pub fn visitor<G>(graph: &G, start: <G as Graphlike>::NodeId) -> Visitor<G> wher
 */
 
 /// An iterator for a breadth first traversal of a graph.
-#[derive(Clone)]
-pub struct BfsIter<'a, G, N, VM> where
-    G: 'a,
+pub struct BfsIter<'a, G: 'a + Visitable>
 {
     graph: &'a G,
-    bfs: Bfs<N, VM>,
+    bfs: Bfs<G::NodeId, G::Map>,
 }
 
-impl<'a, G, N> BfsIter<'a, G, N, <G as Visitable>::Map> where
-    N: Clone,
-    G: Visitable<NodeId=N>,
-    <G as Visitable>::Map: VisitMap<N>,
+impl<'a, G: Visitable> BfsIter<'a, G> where
+    G::NodeId: Clone,
 {
-    pub fn new(graph: &'a G, start: N) -> BfsIter<'a, G, N, <G as Visitable>::Map>
+    pub fn new(graph: &'a G, start: G::NodeId) -> Self
     {
         BfsIter {
             graph: graph,
@@ -400,14 +390,12 @@ impl<'a, G, N> BfsIter<'a, G, N, <G as Visitable>::Map> where
     }
 }
 
-impl<'a, G, N, VM> Iterator for BfsIter<'a, G, N, VM> where
-    G: 'a,
-    N: Clone,
-    VM: VisitMap<N>,
-    G: for<'b> NeighborIter<'b, N>,
+impl<'a, G: 'a + Visitable> Iterator for BfsIter<'a, G> where
+    G::NodeId: Clone,
+    G: for<'b> NeighborIter<'b, G::NodeId>,
 {
-    type Item = N;
-    fn next(&mut self) -> Option<N>
+    type Item = G::NodeId;
+    fn next(&mut self) -> Option<G::NodeId>
     {
         self.bfs.next(self.graph)
     }
