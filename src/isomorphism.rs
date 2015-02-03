@@ -1,3 +1,5 @@
+use std::collections::Bitv;
+
 use super::{
     EdgeType,
     Incoming,
@@ -8,8 +10,45 @@ use super::graph::{
     NodeIndex,
 };
 
+use super::visit::Graphlike;
+
+trait HasAdjacencyMatrix : Graphlike {
+    type Map;
+    fn adjacency_matrix(&self) -> Self::Map;
+    fn is_adjacent(&self, matrix: &Self::Map, a: Self::NodeId, b: Self::NodeId) -> bool;
+}
+
+impl<N, E, Ty, Ix> HasAdjacencyMatrix for Graph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Map = Bitv;
+
+    fn adjacency_matrix(&self) -> Bitv
+    {
+        let n = self.node_count();
+        let mut matrix = Bitv::with_capacity(n * n);
+        for row in 0..n {
+            for col in 0..n {
+                let index = row * n + col;
+                let flag = self.find_edge(NodeIndex::new(row),
+                                          NodeIndex::new(col)).is_some();
+                matrix.push(flag);
+            }
+        }
+        matrix
+    }
+
+    fn is_adjacent(&self, matrix: &Bitv, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool
+    {
+        let n = self.node_count();
+        let index = n * a.index() + b.index();
+        matrix.get(index).unwrap_or(false)
+    }
+}
+
 #[derive(Debug)]
-struct Vf2State<Ix, Ty> {
+struct Vf2State<Ty, Ix> {
     /// The current mapping M(s) of nodes from G0 → G1 and G1 → G0,
     /// NodeIndex::end() for no mapping.
     mapping: Vec<NodeIndex<Ix>>,
@@ -24,19 +63,24 @@ struct Vf2State<Ix, Ty> {
     ins: Vec<usize>,
     out_size: usize,
     ins_size: usize,
+    adjacency_matrix: Bitv,
     generation: usize,
 }
 
-impl<Ix, Ty> Vf2State<Ix, Ty> where Ix: IndexType, Ty: EdgeType,
+impl<Ty, Ix> Vf2State<Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
-    pub fn new(c0: usize) -> Self
+    pub fn new<N, E>(g: &Graph<N, E, Ty, Ix>) -> Self
     {
+        let c0 = g.node_count();
         let mut state = Vf2State {
             mapping: Vec::with_capacity(c0),
             out: Vec::with_capacity(c0),
-            ins: Vec::with_capacity(c0 * <Ty as EdgeType>::is_directed() as usize),
+            ins: Vec::with_capacity(c0 * (g.is_directed() as usize)),
             out_size: 0,
             ins_size: 0,
+            adjacency_matrix: g.adjacency_matrix(),
             generation: 0,
         };
         for _ in (0..c0) {
@@ -164,7 +208,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
     }
 
     /// Return Some(bool) if isomorphism is decided, else None.
-    fn try_match<N, E, Ix, Ty>(st: &mut [Vf2State<Ix, Ty>; 2],
+    fn try_match<N, E, Ix, Ty>(st: &mut [Vf2State<Ty, Ix>; 2],
                                g0: &Graph<N, E, Ty, Ix>,
                                g1: &Graph<N, E, Ty, Ix>) -> Option<bool> where
         Ix: IndexType,
@@ -280,7 +324,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
                     if m_neigh == end {
                         continue;
                     }
-                    let has_edge = g[1-j].find_edge(nodes[1-j], m_neigh).is_some();
+                    let has_edge = g[1-j].is_adjacent(&st[1-j].adjacency_matrix, nodes[1-j], m_neigh);
                     if !has_edge {
                         continue 'candidates;
                     }
@@ -300,7 +344,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
                         if m_neigh == end {
                             continue;
                         }
-                        let has_edge = g[1-j].find_edge(m_neigh, nodes[1-j]).is_some();
+                        let has_edge = g[1-j].is_adjacent(&st[1-j].adjacency_matrix, m_neigh, nodes[1-j]);
                         if !has_edge {
                             continue 'candidates;
                         }
@@ -335,8 +379,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
         }
         None
     }
-    let mut st = [Vf2State::new(g0.node_count()),
-                  Vf2State::new(g1.node_count())];
+    let mut st = [Vf2State::new(g0), Vf2State::new(g1)];
     try_match(&mut st, g0, g1).unwrap_or(false)
 }
 
