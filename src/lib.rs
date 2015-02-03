@@ -1,4 +1,4 @@
-#![allow(unstable)]
+#![feature(core, hash, std_misc)]
 
 //! **petgraph** is a graph data structure library.
 //!
