@@ -21,16 +21,15 @@ use super::visit::{
 };
 
 /// Dijkstra's shortest path algorithm.
-pub fn dijkstra<'a, G, N, K, F, Edges>(graph: &'a G,
-                                       start: N,
-                                       goal: Option<N>,
-                                       mut edges: F) -> HashMap<N, K> where
-    G: Visitable<NodeId=N>,
-    N: Clone + Eq + Hash<Hasher>,
+pub fn dijkstra<'a, G: Visitable, K, F, Edges>(graph: &'a G,
+                                               start: G::NodeId,
+                                               goal: Option<G::NodeId>,
+                                               mut edges: F) -> HashMap<G::NodeId, K> where
+    G::NodeId: Clone + Eq + Hash<Hasher>,
     K: Default + Add<Output=K> + Copy + PartialOrd,
-    F: FnMut(&'a G, N) -> Edges,
-    Edges: Iterator<Item=(N, K)>,
-    <G as Visitable>::Map: VisitMap<N>,
+    F: FnMut(&'a G, G::NodeId) -> Edges,
+    Edges: Iterator<Item=(G::NodeId, K)>,
+    <G as Visitable>::Map: VisitMap<G::NodeId>,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
