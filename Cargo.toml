@@ -15,5 +15,8 @@ keywords = ["container", "data-structure", "graph", "unionfind"]
 
 name = "petgraph"
 
+[profile.release]
+debug = true
+
 [profile.bench]
 debug = true
