@@ -10,13 +10,13 @@ use super::graph::{
     NodeIndex,
 };
 
-use super::visit::HasAdjacencyMatrix;
+use super::visit::GetAdjacencyMatrix;
 
-impl<N, E, Ty, Ix> HasAdjacencyMatrix for Graph<N, E, Ty, Ix> where
+impl<N, E, Ty, Ix> GetAdjacencyMatrix for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    type Map = Bitv;
+    type AdjMatrix = Bitv;
 
     fn adjacency_matrix(&self) -> Bitv
     {

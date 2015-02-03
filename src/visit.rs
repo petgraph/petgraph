@@ -166,10 +166,10 @@ impl<'a, V: Visitable> Visitable for Reversed<&'a V>
 }
 
 /// Create or access the adjacency matrix of a graph
-pub trait HasAdjacencyMatrix : Graphlike {
-    type Map;
-    fn adjacency_matrix(&self) -> Self::Map;
-    fn is_adjacent(&self, matrix: &Self::Map, a: Self::NodeId, b: Self::NodeId) -> bool;
+pub trait GetAdjacencyMatrix : Graphlike {
+    type AdjMatrix;
+    fn adjacency_matrix(&self) -> Self::AdjMatrix;
+    fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
 }
 
 /// A depth first search (DFS) of a graph.

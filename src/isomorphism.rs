@@ -10,7 +10,7 @@ use super::graph::{
     NodeIndex,
 };
 
-use super::visit::HasAdjacencyMatrix;
+use super::visit::GetAdjacencyMatrix;
 
 #[derive(Debug)]
 struct Vf2State<Ty, Ix> {
