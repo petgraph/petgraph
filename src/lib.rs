@@ -56,10 +56,12 @@ pub trait EdgeType {
 }
 
 impl EdgeType for Directed {
+    #[inline]
     fn is_directed() -> bool { true }
 }
 
 impl EdgeType for Undirected {
+    #[inline]
     fn is_directed() -> bool { false }
 }
 
