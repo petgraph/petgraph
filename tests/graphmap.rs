@@ -7,6 +7,10 @@ use petgraph::visit::{
     DfsIter,
 };
 
+use petgraph::algo::{
+    dijkstra,
+};
+
 #[test]
 fn simple() {
     //let root = TypedArena::<Node<_>>::new();
@@ -39,7 +43,7 @@ fn simple() {
 
     // check updated edge weight
     assert_eq!(gr.edge_weight(e, f), Some(&6));
-    let scores = petgraph::visit::dijkstra(&gr, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    let scores = dijkstra(&gr, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
     let mut scores: Vec<_> = scores.into_iter().collect();
     scores.sort();
     assert_eq!(scores,

@@ -32,6 +32,7 @@ pub mod visit;
 
 pub mod unionfind;
 mod isomorphism;
+mod dijkstra;
 mod traits_graph;
 
 // Index into the NodeIndex and EdgeIndex arrays

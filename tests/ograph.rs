@@ -25,6 +25,8 @@ use petgraph::graph::NodeIndex;
 use petgraph::visit::{
     Reversed,
     AsUndirected,
+};
+use petgraph::algo::{
     dijkstra,
 };
 

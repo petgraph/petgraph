@@ -28,6 +28,7 @@ use super::graph::{
 };
 
 pub use super::isomorphism::is_isomorphic;
+pub use super::dijkstra::dijkstra;
 
 /// Perform a topological sort of a directed graph.
 ///
