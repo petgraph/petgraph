@@ -42,6 +42,9 @@ pub fn dijkstra<'a, G: Visitable, K, F, Edges>(graph: &'a G,
         if visited.is_visited(&node) {
             continue
         }
+        if goal.as_ref() == Some(&node) {
+            break
+        }
         for (next, edge) in edges(graph, node.clone()) {
             if visited.is_visited(&next) {
                 continue
@@ -60,9 +63,6 @@ pub fn dijkstra<'a, G: Visitable, K, F, Edges>(graph: &'a G,
                 }
             }
             visit_next.push(MinScored(next_score, next));
-        }
-        if goal.as_ref() == Some(&node) {
-            break
         }
         visited.visit(node);
     }
