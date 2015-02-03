@@ -25,6 +25,7 @@ pub use visit::{
 };
 
 mod scored;
+pub mod algo;
 pub mod graphmap;
 pub mod graph;
 pub mod visit;
