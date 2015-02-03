@@ -373,7 +373,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
     {
         Neighbors {
-            edges: &*self.edges,
+            edges: &self.edges,
             next: match self.nodes.get(a.index()) {
                 None => [EdgeIndex::end(), EdgeIndex::end()],
                 Some(n) => n.next,
@@ -405,7 +405,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     pub fn edges_both(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         Edges{
-            edges: &*self.edges,
+            edges: &self.edges,
             next: match self.nodes.get(a.index()) {
                 None => [EdgeIndex::end(), EdgeIndex::end()],
                 Some(n) => n.next,
@@ -680,7 +680,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     {
         for index in (0..self.node_count()).rev() {
             let nix = NodeIndex<Ix>(index);
-            if !visit(&*self, nix, &self.nodes[nix.index()]) {
+            if !visit(&self, nix, &self.nodes[nix.index()]) {
                 let ret = self.remove_node(nix);
                 debug_assert!(ret.is_some());
                 let _ = ret;
@@ -694,7 +694,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     {
         for index in (0..self.edge_count()).rev() {
             let eix = EdgeIndex::new(index);
-            if !visit(&*self, eix, &self.edges[eix.index()]) {
+            if !visit(&self, eix, &self.edges[eix.index()]) {
                 let ret = self.remove_edge(EdgeIndex::new(index));
                 debug_assert!(ret.is_some());
                 let _ = ret;
@@ -706,13 +706,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     /// Access the internal node array
     pub fn raw_nodes(&self) -> &[Node<N, Ix>]
     {
-        &*self.nodes
+        &self.nodes
     }
 
     /// Access the internal edge array
     pub fn raw_edges(&self) -> &[Edge<E, Ix>]
     {
-        &*self.edges
+        &self.edges
     }
 
     /// Accessor for data structure internals: the first edge in the given direction.

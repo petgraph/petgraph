@@ -70,7 +70,7 @@ impl<K> UnionFind<K> where K: num::UnsignedInt
             let mut x = x;
             loop {
                 // Use unchecked indexing because we can trust the internal set ids.
-                let xparent = *get_unchecked(&*self.parent, to_uint(x));
+                let xparent = *get_unchecked(&self.parent, to_uint(x));
                 if xparent == x {
                     break
                 }
@@ -96,7 +96,7 @@ impl<K> UnionFind<K> where K: num::UnsignedInt
 
     unsafe fn find_mut_recursive(&mut self, x: K) -> K
     {
-        let xparent = *get_unchecked(&*self.parent, to_uint(x));
+        let xparent = *get_unchecked(&self.parent, to_uint(x));
         if xparent != x {
             let xrep = self.find_mut_recursive(xparent);
             let xparent = self.parent.get_unchecked_mut(to_uint(x));
@@ -150,7 +150,7 @@ impl<K> UnionFind<K> where K: num::UnsignedInt
         // write in the labeling of each element
         unsafe {
             for ix in (0..self.parent.len()) {
-                let k = *get_unchecked(&self.parent[], ix);
+                let k = *get_unchecked(&self.parent, ix);
                 let xrep = self.find_mut_recursive(k);
                 *self.parent.get_unchecked_mut(ix) = xrep;
             }
