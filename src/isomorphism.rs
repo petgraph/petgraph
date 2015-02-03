@@ -281,6 +281,13 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
             // Check that every neighbor of nx is mapped to a neighbor of mx,
             // then check the reverse, from mx to nx. Check that they have the same
             // count of edges.
+            //
+            // Note: We want to check the lookahead measures here if we can,
+            // R_out: Equal for G0, G1: Card(Succ(G, n) ^ Tout); for both Succ and Pred
+            // R_in: Same with Tin
+            // R_new: Equal for G0, G1: Ñ n Pred(G, n); both Succ and Pred,
+            //      Ñ is G0 - M - Tin - Tout
+            // last attempt to add these did not speed up any of the testcases
             let mut succ_count = [0, 0];
             for j in graph_indices.clone() {
                 for n_neigh in g[j].neighbors(nodes[j]) {
