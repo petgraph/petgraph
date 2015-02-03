@@ -80,7 +80,7 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>> whe
     // First phase, reverse dfs pass, compute finishing times.
     let mut finish_order = Vec::new();
     for index in (0..g.node_count()) {
-        if dfs.discovered.contains(&index) {
+        if dfs.discovered.is_visited(&NodeIndex::<Ix>::new(index)) {
             continue
         }
         // We want to order the vertices by finishing time --
@@ -99,7 +99,7 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>> whe
     // Second phase
     // Process in decreasing finishing time order
     for &nindex in finish_order.iter().rev() {
-        if dfs.discovered.contains(&nindex.index()) {
+        if dfs.discovered.is_visited(&nindex) {
             continue;
         }
         // Move to the leader node.
