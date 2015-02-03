@@ -210,7 +210,7 @@ fn parse_graph<Ty: EdgeType = Directed>(s: &str) -> Graph<(), (), Ty>
     let mut lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
         for (col, word) in line.words().enumerate() {
-            let has_edge = word.parse::<i32>().expect("Failed to parse matrix cell");
+            let has_edge = word.parse::<i32>().unwrap();
             assert!(has_edge == 0 || has_edge == 1);
             if has_edge == 0 {
                 continue;
