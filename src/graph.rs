@@ -413,30 +413,26 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     {
         let edge_idx = EdgeIndex::new(self.edges.len());
         assert!(edge_idx != EdgeIndex::end());
+        let mut edge = Edge {
+            weight: weight,
+            node: [a, b],
+            next: [EdgeIndex::end(); 2],
+        };
         match index_twice(self.nodes.as_mut_slice(), a.index(), b.index()) {
-            Pair::None => panic!("NodeIndices out of bounds"),
+            Pair::None => panic!("Graph::add_edge: node indices out of bounds"),
             Pair::One(an) => {
-                let edge = Edge {
-                    weight: weight,
-                    node: [a, b],
-                    next: an.next,
-                };
+                edge.next = an.next;
                 an.next[0] = edge_idx;
                 an.next[1] = edge_idx;
-                self.edges.push(edge);
             }
             Pair::Both(an, bn) => {
                 // a and b are different indices
-                let edge = Edge {
-                    weight: weight,
-                    node: [a, b],
-                    next: [an.next[0], bn.next[1]],
-                };
+                edge.next = [an.next[0], bn.next[1]];
                 an.next[0] = edge_idx;
                 bn.next[1] = edge_idx;
-                self.edges.push(edge);
             }
         }
+        self.edges.push(edge);
         edge_idx
     }
 
