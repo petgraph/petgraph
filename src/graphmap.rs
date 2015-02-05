@@ -270,7 +270,7 @@ macro_rules! iterator_methods {
 }
 
 pub struct Nodes<'a, N: 'a> {
-    iter: Map<&'a N, N, Keys<'a, N, Vec<N>>, fn(&N) -> N>,
+    iter: Map<Keys<'a, N, Vec<N>>, fn(&N) -> N>,
 }
 
 impl<'a, N> Iterator for Nodes<'a, N>
@@ -280,7 +280,7 @@ impl<'a, N> Iterator for Nodes<'a, N>
 }
 
 pub struct Neighbors<'a, N: 'a> {
-    iter: Map<&'a N, N, Iter<'a, N>, fn(&N) -> N>,
+    iter: Map<Iter<'a, N>, fn(&N) -> N>,
 }
 
 impl<'a, N> Iterator for Neighbors<'a, N>
