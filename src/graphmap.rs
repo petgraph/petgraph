@@ -329,7 +329,6 @@ impl<N, E> Index<(N, N)> for GraphMap<N, E> where N: NodeTrait
 
 impl<N, E> IndexMut<(N, N)> for GraphMap<N, E> where N: NodeTrait
 {
-    type Output = E;
     /// Index **GraphMap** by node pairs to access edge weights.
     fn index_mut(&mut self, index: &(N, N)) -> &mut E
     {

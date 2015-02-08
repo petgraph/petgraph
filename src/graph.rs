@@ -925,7 +925,6 @@ impl<N, E, Ty, Ix> IndexMut<NodeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    type Output = N;
     /// Index the **Graph** by **NodeIndex** to access node weights.
     ///
     /// **Panics** if the node doesn't exist.
@@ -951,7 +950,6 @@ impl<N, E, Ty, Ix> IndexMut<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    type Output = E;
     /// Index the **Graph** by **EdgeIndex** to access edge weights.
     ///
     /// **Panics** if the edge doesn't exist.
