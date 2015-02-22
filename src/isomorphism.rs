@@ -183,7 +183,7 @@ pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
         Ty: EdgeType,
     {
         let g = [g0, g1];
-        let graph_indices = 0..2us;
+        let graph_indices = 0..2;
         let end = NodeIndex::end();
 
         // if all are mapped -- we are done and have an iso
