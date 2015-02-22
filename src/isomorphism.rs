@@ -1,4 +1,5 @@
-use std::collections::Bitv;
+use std::marker;
+use std::collections::BitVec;
 
 use super::{
     EdgeType,
@@ -28,8 +29,9 @@ struct Vf2State<Ty, Ix> {
     ins: Vec<usize>,
     out_size: usize,
     ins_size: usize,
-    adjacency_matrix: Bitv,
+    adjacency_matrix: BitVec,
     generation: usize,
+    _etype: marker::PhantomData<Ty>,
 }
 
 impl<Ty, Ix> Vf2State<Ty, Ix> where
@@ -47,6 +49,7 @@ impl<Ty, Ix> Vf2State<Ty, Ix> where
             ins_size: 0,
             adjacency_matrix: g.adjacency_matrix(),
             generation: 0,
+            _etype: marker::PhantomData,
         };
         for _ in (0..c0) {
             state.mapping.push(NodeIndex::end());

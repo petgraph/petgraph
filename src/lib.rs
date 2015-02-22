@@ -6,9 +6,9 @@
 //! a directed or undirected graph with owned mutably accessible arbitrary node and edge weights.
 //! It is based on rustc's graph implementation.
 
+use std::marker;
 use std::cmp::Ordering;
 use std::hash::{self, Hash};
-use std::collections::hash_map::Hasher;
 use std::fmt;
 use std::ops::{Deref};
 
@@ -54,7 +54,7 @@ pub struct Directed;
 pub struct Undirected;
 
 /// A graph's edge type determines whether is has directed edges or not.
-pub trait EdgeType {
+pub trait EdgeType : marker::MarkerTrait {
     fn is_directed() -> bool;
 }
 
@@ -116,9 +116,9 @@ impl<'b, T> Deref for Ptr<'b, T> {
 
 impl<'b, T> Eq for Ptr<'b, T> {}
 
-impl<'b, T, H: hash::Writer + hash::Hasher> Hash<H> for Ptr<'b, T>
+impl<'b, T> Hash for Ptr<'b, T>
 {
-    fn hash(&self, st: &mut H)
+    fn hash<H: hash::Hasher>(&self, st: &mut H)
     {
         let ptr = (self.0) as *const _;
         ptr.hash(st)

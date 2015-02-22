@@ -1,12 +1,12 @@
 //! Graph visitor algorithms.
 //!
 
+use std::marker;
 use std::collections::{
     HashSet,
-    BitvSet,
-    RingBuf,
+    BitSet,
+    VecDeque,
 };
-use std::collections::hash_map::Hasher;
 use std::hash::Hash;
 
 use super::{
@@ -22,7 +22,7 @@ use graph::{
     IndexType,
 };
 
-pub trait Graphlike {
+pub trait Graphlike : marker::MarkerTrait {
     type NodeId: Clone;
 }
 
@@ -44,7 +44,7 @@ impl<'a, N, E, Ty, Ix> NeighborIter<'a, graph::NodeIndex<Ix>> for Graph<N, E, Ty
 }
 
 impl<'a, N, E> NeighborIter<'a, N> for GraphMap<N, E>
-where N: Copy + Clone + Ord + Hash<Hasher> + Eq
+where N: Copy + Clone + Ord + Hash + Eq
 {
     type Iter = graphmap::Neighbors<'a, N>;
     fn neighbors(&'a self, n: N) -> graphmap::Neighbors<'a, N>
@@ -87,7 +87,7 @@ pub trait VisitMap<N> {
     fn is_visited(&self, &N) -> bool;
 }
 
-impl<Ix> VisitMap<graph::NodeIndex<Ix>> for BitvSet where
+impl<Ix> VisitMap<graph::NodeIndex<Ix>> for BitSet where
     Ix: IndexType,
 {
     fn visit(&mut self, x: graph::NodeIndex<Ix>) -> bool {
@@ -98,7 +98,7 @@ impl<Ix> VisitMap<graph::NodeIndex<Ix>> for BitvSet where
     }
 }
 
-impl<N: Eq + Hash<Hasher>> VisitMap<N> for HashSet<N> {
+impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
     }
@@ -123,8 +123,8 @@ impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    type Map = BitvSet;
-    fn visit_map(&self) -> BitvSet { BitvSet::with_capacity(self.node_count()) }
+    type Map = BitSet;
+    fn visit_map(&self) -> BitSet { BitSet::with_capacity(self.node_count()) }
 }
 
 impl<N: Clone, E> Graphlike for GraphMap<N, E>
@@ -133,7 +133,7 @@ impl<N: Clone, E> Graphlike for GraphMap<N, E>
 }
 
 impl<N, E> Visitable for GraphMap<N, E>
-    where N: Copy + Clone + Ord + Eq + Hash<Hasher>
+    where N: Copy + Clone + Ord + Eq + Hash
 {
     type Map = HashSet<N>;
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
@@ -308,7 +308,7 @@ impl<'a, G: 'a + Visitable> Iterator for DfsIter<'a, G> where
 /// during iteration. It may not necessarily visit added nodes or edges.
 #[derive(Clone)]
 pub struct Bfs<N, VM> {
-    pub stack: RingBuf<N>,
+    pub stack: VecDeque<N>,
     pub discovered: VM,
 }
 
@@ -321,7 +321,7 @@ impl<G: Visitable> Bfs<G::NodeId, <G as Visitable>::Map> where
     {
         let mut discovered = graph.visit_map();
         discovered.visit(start.clone());
-        let mut stack = RingBuf::new();
+        let mut stack = VecDeque::new();
         stack.push_front(start.clone());
         Bfs {
             stack: stack,

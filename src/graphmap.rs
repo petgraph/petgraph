@@ -2,7 +2,6 @@
 
 use std::hash::{Hash};
 use std::collections::HashMap;
-use std::collections::hash_map::Hasher;
 use std::iter::Map;
 use std::collections::hash_map::{
     Keys,
@@ -30,12 +29,12 @@ use std::ops::{Index, IndexMut};
 ///
 /// **GraphMap** does not allow parallel edges, but self loops are allowed.
 #[derive(Clone)]
-pub struct GraphMap<N: Eq + Hash<Hasher>, E> {
+pub struct GraphMap<N: Eq + Hash, E> {
     nodes: HashMap<N, Vec<N>>,
     edges: HashMap<(N, N), E>,
 }
 
-impl<N: Eq + Hash<Hasher> + fmt::Debug, E: fmt::Debug> fmt::Debug for GraphMap<N, E>
+impl<N: Eq + Hash + fmt::Debug, E: fmt::Debug> fmt::Debug for GraphMap<N, E>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.nodes.fmt(f)
@@ -52,8 +51,8 @@ fn edge_key<N: Copy + Ord>(a: N, b: N) -> (N, N)
 fn copy<N: Copy>(n: &N) -> N { *n }
 
 /// A trait group for **GraphMap**'s node identifier.
-pub trait NodeTrait : Copy + Ord + Eq + Hash<Hasher> {}
-impl<N> NodeTrait for N where N: Copy + Ord + Eq + Hash<Hasher> {}
+pub trait NodeTrait : Copy + Ord + Eq + Hash {}
+impl<N> NodeTrait for N where N: Copy + Ord + Eq + Hash {}
 
 impl<N, E> GraphMap<N, E> where N: NodeTrait
 {
