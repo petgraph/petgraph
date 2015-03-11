@@ -20,3 +20,5 @@ debug = true
 
 [profile.bench]
 debug = true
+
+[dev-dependencies.rand]

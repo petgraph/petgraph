@@ -1,8 +1,9 @@
 #![allow(unstable)]
 
+extern crate rand;
 extern crate petgraph;
 
-use std::rand::{Rng, thread_rng, ChaChaRng};
+use rand::{Rng, thread_rng, ChaChaRng};
 use std::collections::HashSet;
 use petgraph::unionfind::UnionFind;
 
