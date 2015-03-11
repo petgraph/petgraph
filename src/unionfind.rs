@@ -27,7 +27,7 @@ pub struct UnionFind<K> where K: num::UnsignedInt
 }
 
 #[inline]
-fn to_uint<K: num::UnsignedInt>(x: K) -> usize { x.to_uint().unwrap() }
+fn to_uint<K: num::UnsignedInt>(x: K) -> usize { x.to_usize().unwrap() }
 
 #[inline]
 unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K
