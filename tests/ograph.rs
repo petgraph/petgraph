@@ -492,7 +492,7 @@ fn connected_comp()
     assert_eq!(petgraph::algo::connected_components(&gr), 2);
 }
 
-#[should_fail]
+#[should_panic]
 #[test]
 fn oob_index()
 {
