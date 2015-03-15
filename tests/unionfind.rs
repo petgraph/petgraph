@@ -1,5 +1,3 @@
-#![allow(unstable)]
-
 extern crate rand;
 extern crate petgraph;
 
@@ -11,7 +9,7 @@ use petgraph::unionfind::UnionFind;
 fn uf_test() {
     let n = 8;
     let mut u = UnionFind::new(n);
-    for i in range(0, n) {
+    for i in 0..n {
         assert_eq!(u.find(i), i);
         assert_eq!(u.find_mut(i), i);
         assert!(!u.union(i, i));
@@ -31,7 +29,7 @@ fn uf_test() {
     assert!(u.find(6) != u.find(7));
 
     // check that there are now 3 disjoint sets
-    let set = range(0, n).map(|i| u.find(i)).collect::<HashSet<_>>();
+    let set = (0..n).map(|i| u.find(i)).collect::<HashSet<_>>();
     assert_eq!(set.len(), 3);
 }
 
@@ -40,14 +38,14 @@ fn uf_rand() {
     let n = 1 << 14;
     let mut rng: ChaChaRng = thread_rng().gen();
     let mut u = UnionFind::new(n);
-    for i in range(0, n * 8) {
+    for i in 0..(n * 8) {
         let a = rng.gen_range(0, n);
         let b = rng.gen_range(0, n);
         let ar = u.find(a);
         let br = u.find(b);
         assert_eq!(ar != br, u.union(a, b));
         if (i + 1) % n == 0 {
-            let set = range(0, n).map(|i| u.find(i)).collect::<HashSet<_>>();
+            let set = (0..n).map(|i| u.find(i)).collect::<HashSet<_>>();
             println!("Disjoint parts={:?}", set.len());
             //println!("Disjoint parts={:?} maxrank={:?}", set.len(), u.rank.iter().max_by(|t| *t));
         }
@@ -59,7 +57,7 @@ fn uf_u8() {
     let n = 256;
     let mut rng: ChaChaRng = thread_rng().gen();
     let mut u = UnionFind::<u8>::new(n);
-    for i in range(0, n * 8) {
+    for _ in 0..(n * 8) {
         let a = rng.gen();
         let b = rng.gen();
         let ar = u.find(a);

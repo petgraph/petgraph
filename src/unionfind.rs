@@ -44,7 +44,7 @@ impl<K> UnionFind<K> where K: num::UnsignedInt
         let mut parent = Vec::with_capacity(n);
         let mut rank = Vec::with_capacity(n);
 
-        for _ in range(0, n) {
+        for _ in 0..n {
             rank.push(0)
         }
 
@@ -53,7 +53,7 @@ impl<K> UnionFind<K> where K: num::UnsignedInt
         if n > 0 {
             parent.push(i);
         }
-        for _ in range(1, n) {
+        for _ in 1..n {
             i = i + num::Int::one();
             parent.push(i);
         }
