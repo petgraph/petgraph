@@ -50,12 +50,43 @@ pub fn is_cyclic_undirected<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
     false
 }
 
-/// **Deprecated: Renamed to *is_cyclic_undirected* **.
+/// **Deprecated: Renamed to *is_cyclic_undirected*.**
 pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
     Ty: EdgeType,
     Ix: IndexType,
 {
     is_cyclic_undirected(g)
+}
+
+/// Perform a topological sort of a directed graph.
+///
+/// Visit each node in order (if it is part of a topological order.
+fn generic_toposort<N, E, Ix, F>(g: &Graph<N, E, Directed, Ix>,
+                                 mut visit: F) where
+    Ix: IndexType,
+    F: FnMut(&NodeIndex<Ix>),
+{
+    let mut ordered = g.visit_map();
+    let mut tovisit = Vec::new();
+
+    // find all initial nodes
+    tovisit.extend(g.without_edges(Incoming));
+
+    // Take an unvisited element and find which of its neighbors are next
+    while let Some(nix) = tovisit.pop() {
+        if ordered.is_visited(&nix) {
+            continue;
+        }
+        visit(&nix);
+        ordered.visit(nix);
+        for neigh in g.neighbors_directed(nix, Outgoing) {
+            // Look at each neighbor, and those that only have incoming edges
+            // from the already ordered list, they are the next to visit.
+            if g.neighbors_directed(neigh, Incoming).all(|b| ordered.is_visited(&b)) {
+                tovisit.push(neigh);
+            }
+        }
+    }
 }
 
 /// Check if a directed graph contains cycles.
@@ -67,31 +98,7 @@ pub fn is_cyclic_directed<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> bool where
     Ix: IndexType,
 {
     let mut n_ordered = 0;
-    let mut ordered = g.visit_map();
-    let mut tovisit = Vec::new();
-
-    // find all initial nodes
-    tovisit.extend(g.without_edges(Incoming));
-
-    // No initials means that it is a complete cycle.
-    if tovisit.len() == 0 && g.node_count() != 0 {
-        return true
-    }
-
-    while let Some(nix) = tovisit.pop() {
-        if ordered.is_visited(&nix) {
-            continue;
-        }
-        n_ordered += 1;
-        ordered.visit(nix);
-        for neigh in g.neighbors_directed(nix, Outgoing) {
-            // Look at each neighbor, and those that only have incoming edges
-            // from the already ordered list, they are the next to visit.
-            if g.neighbors_directed(neigh, Incoming).all(|b| ordered.is_visited(&b)) {
-                tovisit.push(neigh);
-            }
-        }
-    }
+    generic_toposort(g, |_| n_ordered += 1);
     n_ordered != g.node_count()
 }
 
@@ -106,28 +113,7 @@ pub fn toposort<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> Vec<NodeIndex<Ix>> w
     Ix: IndexType,
 {
     let mut order = Vec::with_capacity(g.node_count());
-    let mut ordered = g.visit_map();
-    let mut tovisit = Vec::new();
-
-    // find all initial nodes
-    tovisit.extend(g.without_edges(Incoming));
-
-    // Take an unvisited element and 
-    while let Some(nix) = tovisit.pop() {
-        if ordered.is_visited(&nix) {
-            continue;
-        }
-        order.push(nix);
-        ordered.visit(nix);
-        for neigh in g.neighbors_directed(nix, Outgoing) {
-            // Look at each neighbor, and those that only have incoming edges
-            // from the already ordered list, they are the next to visit.
-            if g.neighbors_directed(neigh, Incoming).all(|b| ordered.is_visited(&b)) {
-                tovisit.push(neigh);
-            }
-        }
-    }
-
+    generic_toposort(g, |&ix| order.push(ix));
     order
 }
 
