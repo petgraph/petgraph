@@ -1,11 +1,11 @@
 [package]
 
 name = "petgraph"
-version = "0.0.6"
+version = "0.0.7"
 authors = ["bluss"]
 license = "MIT/Apache-2.0"
 
-description = "Graph data structure."
+description = "Graph data structure library."
 documentation = "http://bluss.github.io/petulant-avenger-graphlibrary/target/doc/petgraph"
 repository = "https://github.com/bluss/petulant-avenger-graphlibrary"
 
