@@ -1,4 +1,5 @@
-#![allow(unstable)]
+#![feature(core)]
+
 extern crate petgraph;
 
 use std::iter::AdditiveIterator;
@@ -21,8 +22,8 @@ use petgraph::algo::{
 use petgraph::graph::NodeIndex;
 
 use petgraph::visit::{
-    Reversed,
-    AsUndirected,
+    //Reversed,
+    //AsUndirected,
 };
 use petgraph::algo::{
     dijkstra,

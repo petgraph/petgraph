@@ -78,7 +78,7 @@ fn dfs() {
     let j = gr.add_node("J");
     let k = gr.add_node("K");
     // Z is disconnected.
-    let z = gr.add_node("Z");
+    let _ = gr.add_node("Z");
     gr.add_edge(h, i, 1.);
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);

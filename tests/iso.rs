@@ -1,7 +1,9 @@
+#![feature(str_words,
+           test)]
+
 extern crate test;
 extern crate petgraph;
 
-use std::time::Duration;
 use petgraph::{
     Graph,
     Directed,
@@ -207,7 +209,7 @@ fn parse_graph<Ty: EdgeType = Directed>(s: &str) -> Graph<(), (), Ty>
 {
     let mut gr = Graph::with_capacity(0, 0);
     let s = s.trim();
-    let mut lines = s.lines().filter(|l| !l.is_empty());
+    let lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
         for (col, word) in line.words().enumerate() {
             let has_edge = word.parse::<i32>().unwrap();
@@ -232,6 +234,7 @@ fn str_to_digraph(s: &str) -> Graph<(), (), Directed> {
     parse_graph(s)
 }
 
+/*
 fn graph_to_ad_matrix<N, E, Ty: EdgeType>(g: &Graph<N,E,Ty>)
 {
     let n = g.node_count();
@@ -248,6 +251,7 @@ fn graph_to_ad_matrix<N, E, Ty: EdgeType>(g: &Graph<N,E,Ty>)
         println!("");
     }
 }
+*/
 
 #[test]
 fn petersen_iso()
@@ -433,9 +437,9 @@ fn iso1()
     let b0 = g0.add_node(1);
     let b1 = g1.add_node(1);
     assert!(petgraph::algo::is_isomorphic(&g0, &g1));
-    let c0 = g0.add_node(2);
+    let _ = g0.add_node(2);
     assert!(!petgraph::algo::is_isomorphic(&g0, &g1));
-    let c1 = g1.add_node(2);
+    let _ = g1.add_node(2);
     assert!(petgraph::algo::is_isomorphic(&g0, &g1));
     g0.add_edge(a0, b0, ());
     assert!(!petgraph::algo::is_isomorphic(&g0, &g1));
@@ -472,8 +476,8 @@ fn iso2()
     // vs
     // b -> a
 
-    let e0 = g0.add_edge(b0, c0, ());
-    let e1 = g1.add_edge(b1, a1, ());
+    let _ = g0.add_edge(b0, c0, ());
+    let _ = g1.add_edge(b1, a1, ());
     assert!(petgraph::algo::is_isomorphic(&g0, &g1));
     let d0 = g0.add_node(3);
     let d1 = g1.add_node(3);
