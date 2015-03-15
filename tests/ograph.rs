@@ -151,7 +151,7 @@ fn mst() {
     let e = gr.add_node("E");
     let f = gr.add_node("F");
     let g = gr.add_node("G");
-    gr.add_edge(a, b, 7.0_f32);  // closure capture below doesn't work with default float type
+    gr.add_edge(a, b, 7.);
     gr.add_edge(a, d, 5.);
     gr.add_edge(d, b, 9.);
     gr.add_edge(b, c, 8.);
@@ -294,7 +294,7 @@ fn dijk() {
     let d = g.add_node("D");
     let e = g.add_node("E");
     let f = g.add_node("F");
-    g.add_edge(a, b, 7i32);
+    g.add_edge(a, b, 7);
     g.add_edge(c, a, 9);
     g.add_edge(a, d, 14);
     g.add_edge(b, c, 10);
