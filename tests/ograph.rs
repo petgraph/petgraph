@@ -15,7 +15,7 @@ use petgraph::{
 
 use petgraph::algo::{
     min_spanning_tree,
-    is_cyclic,
+    is_cyclic_undirected,
 };
 
 use petgraph::graph::NodeIndex;
@@ -221,31 +221,31 @@ fn cyclic() {
     let b = gr.add_node("B");
     let c = gr.add_node("C");
 
-    assert!(!is_cyclic(&gr));
+    assert!(!is_cyclic_undirected(&gr));
     gr.add_edge(a, b, 7.);
     gr.add_edge(c, a, 6.);
-    assert!(!is_cyclic(&gr));
+    assert!(!is_cyclic_undirected(&gr));
     {
         let e = gr.add_edge(a, a, 0.);
-        assert!(is_cyclic(&gr));
+        assert!(is_cyclic_undirected(&gr));
         gr.remove_edge(e);
-        assert!(!is_cyclic(&gr));
+        assert!(!is_cyclic_undirected(&gr));
     }
 
     {
         let e = gr.add_edge(b, c, 0.);
-        assert!(is_cyclic(&gr));
+        assert!(is_cyclic_undirected(&gr));
         gr.remove_edge(e);
-        assert!(!is_cyclic(&gr));
+        assert!(!is_cyclic_undirected(&gr));
     }
 
     let d = gr.add_node("D");
     let e = gr.add_node("E");
     gr.add_edge(b, d, 0.);
     gr.add_edge(d, e, 0.);
-    assert!(!is_cyclic(&gr));
+    assert!(!is_cyclic_undirected(&gr));
     gr.add_edge(c, e, 0.);
-    assert!(is_cyclic(&gr));
+    assert!(is_cyclic_undirected(&gr));
 }
 
 #[test]
@@ -390,6 +390,43 @@ fn toposort() {
         println!("Check that {:?} is before {:?}", a, b);
         assert!(ai < bi);
     }
+}
+
+#[test]
+fn is_cyclic_directed() {
+    let mut gr = Graph::<_,_>::new();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
+    let g = gr.add_node("G");
+    gr.add_edge(a, b, 7.0);
+    gr.add_edge(a, d, 5.);
+    gr.add_edge(d, b, 9.);
+    gr.add_edge(b, c, 8.);
+    gr.add_edge(b, e, 7.);
+    gr.add_edge(c, e, 5.);
+    gr.add_edge(d, e, 15.);
+    gr.add_edge(d, f, 6.);
+    gr.add_edge(f, e, 8.);
+    gr.add_edge(f, g, 11.);
+    gr.add_edge(e, g, 9.);
+
+    assert!(!petgraph::algo::is_cyclic_directed(&gr));
+
+    // add a disjoint part
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
+    gr.add_edge(h, i, 1.);
+    gr.add_edge(h, j, 3.);
+    gr.add_edge(i, j, 1.);
+    assert!(!petgraph::algo::is_cyclic_directed(&gr));
+
+    gr.add_edge(g, e, 0.);
+    assert!(petgraph::algo::is_cyclic_directed(&gr));
 }
 
 #[test]

@@ -30,6 +30,71 @@ use super::graph::{
 pub use super::isomorphism::is_isomorphic;
 pub use super::dijkstra::dijkstra;
 
+/// Return **true** if the input graph contains a cycle.
+///
+/// Treat the input graph as undirected.
+pub fn is_cyclic_undirected<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    let mut edge_sets = UnionFind::new(g.node_count());
+    for edge in g.raw_edges().iter() {
+        let (a, b) = (edge.source(), edge.target());
+
+        // union the two vertices of the edge
+        //  -- if they were already the same, then we have a cycle
+        if !edge_sets.union(a.index(), b.index()) {
+            return true
+        }
+    }
+    false
+}
+
+/// **Deprecated: Renamed to *is_cyclic_undirected* **.
+pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    is_cyclic_undirected(g)
+}
+
+/// Check if a directed graph contains cycles.
+///
+/// Using the topological sort algorithm.
+///
+/// Return **true** if the graph had a cycle.
+pub fn is_cyclic_directed<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> bool where
+    Ix: IndexType,
+{
+    let mut n_ordered = 0;
+    let mut ordered = g.visit_map();
+    let mut tovisit = Vec::new();
+
+    // find all initial nodes
+    tovisit.extend(g.without_edges(Incoming));
+
+    // No initials means that it is a complete cycle.
+    if tovisit.len() == 0 && g.node_count() != 0 {
+        return true
+    }
+
+    while let Some(nix) = tovisit.pop() {
+        if ordered.is_visited(&nix) {
+            continue;
+        }
+        n_ordered += 1;
+        ordered.visit(nix);
+        for neigh in g.neighbors_directed(nix, Outgoing) {
+            // Look at each neighbor, and those that only have incoming edges
+            // from the already ordered list, they are the next to visit.
+            if g.neighbors_directed(neigh, Incoming).all(|b| ordered.is_visited(&b)) {
+                tovisit.push(neigh);
+            }
+        }
+    }
+    n_ordered != g.node_count()
+}
+
 /// Perform a topological sort of a directed graph.
 ///
 /// Return a vector of nodes in topological order: each node is ordered
@@ -112,26 +177,6 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>> whe
         sccs.push(scc);
     }
     sccs
-}
-
-/// Return **true** if the input graph contains a cycle.
-///
-/// Treat the input graph as undirected.
-pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    let mut edge_sets = UnionFind::new(g.node_count());
-    for edge in g.raw_edges().iter() {
-        let (a, b) = (edge.source(), edge.target());
-
-        // union the two vertices of the edge
-        //  -- if they were already the same, then we have a cycle
-        if !edge_sets.union(a.index(), b.index()) {
-            return true
-        }
-    }
-    false
 }
 
 /// Return the number of connected components of the graph.
