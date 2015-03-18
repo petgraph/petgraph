@@ -44,6 +44,24 @@ impl IndexType for u32 {
     fn max() -> Self { ::std::u32::MAX }
 }
 
+impl IndexType for u16 {
+    #[inline(always)]
+    fn new(x: usize) -> Self { x as u16 }
+    #[inline(always)]
+    fn index(&self) -> usize { *self as usize }
+    #[inline(always)]
+    fn max() -> Self { ::std::u16::MAX }
+}
+
+impl IndexType for u8 {
+    #[inline(always)]
+    fn new(x: usize) -> Self { x as u8 }
+    #[inline(always)]
+    fn index(&self) -> usize { *self as usize }
+    #[inline(always)]
+    fn max() -> Self { ::std::u8::MAX }
+}
+
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
 // should be lifetimed just like pointers.
 /// Node identifier.
@@ -302,6 +320,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     /// Computes in **O(1)** time.
     ///
     /// Return the index of the new node.
+    ///
+    /// **Panics** if the Graph is at the maximum number of nodes for its index
+    /// type.
     pub fn add_node(&mut self, w: N) -> NodeIndex<Ix>
     {
         let node = Node{weight: w, next: [EdgeIndex::end(), EdgeIndex::end()]};
@@ -415,6 +436,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     /// Return the index of the new edge.
     ///
     /// **Panics** if any of the nodes don't exist.
+    ///
+    /// **Panics** if the Graph is at the maximum number of edges for its index
+    /// type.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix>
     {
         let edge_idx = EdgeIndex::new(self.edges.len());
