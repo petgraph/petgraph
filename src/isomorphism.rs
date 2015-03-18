@@ -166,21 +166,21 @@ impl<Ty, Ix> Vf2State<Ty, Ix> where
 /// * A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs
 ///   Luigi P. Cordella, Pasquale Foggia, Carlo Sansone,
 ///   and Mario Vento
-pub fn is_isomorphic<N, E, Ix, Ty>(g0: &Graph<N, E, Ty, Ix>,
+pub fn is_isomorphic<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>,
                                    g1: &Graph<N, E, Ty, Ix>) -> bool where
-    Ix: IndexType,
     Ty: EdgeType,
+    Ix: IndexType,
 {
     if g0.node_count() != g1.node_count() || g0.edge_count() != g1.edge_count() {
         return false
     }
 
     /// Return Some(bool) if isomorphism is decided, else None.
-    fn try_match<N, E, Ix, Ty>(st: &mut [Vf2State<Ty, Ix>; 2],
+    fn try_match<N, E, Ty, Ix>(st: &mut [Vf2State<Ty, Ix>; 2],
                                g0: &Graph<N, E, Ty, Ix>,
                                g1: &Graph<N, E, Ty, Ix>) -> Option<bool> where
-        Ix: IndexType,
         Ty: EdgeType,
+        Ix: IndexType,
     {
         let g = [g0, g1];
         let graph_indices = 0..2;
