@@ -556,3 +556,34 @@ fn usize_index()
     assert_eq!(gr[b], 2);
     assert_eq!(gr[e], 1.2);
 }
+
+#[test]
+fn u8_index()
+{
+    let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
+    for _ in 0..255 {
+        gr.add_node(());
+    }
+}
+
+#[should_panic]
+#[test]
+fn u8_index_overflow()
+{
+    let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
+    for _ in 0..256 {
+        gr.add_node(());
+    }
+}
+
+#[should_panic]
+#[test]
+fn u8_index_overflow_edges()
+{
+    let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
+    let a = gr.add_node('a');
+    let b = gr.add_node('b');
+    for _ in 0..256 {
+        gr.add_edge(a, b, ());
+    }
+}
