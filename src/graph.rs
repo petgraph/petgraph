@@ -667,6 +667,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     /// Lookup an edge between **a** and **b**, in either direction.
     ///
     /// If the graph is undirected, then this is equivalent to *.find_edge()*.
+    ///
+    /// Return the edge index and its directionality, with *Outgoing* meaning
+    /// from **a** to **b** and *Incoming* the reverse,
+    /// or **None** if the edge does not exist.
     pub fn find_edge_undirected(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<(EdgeIndex<Ix>, EdgeDirection)>
     {
         match self.nodes.get(a.index()) {
