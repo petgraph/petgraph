@@ -2,6 +2,7 @@ extern crate petgraph;
 
 use petgraph::{
     GraphMap,
+    Dfs,
 };
 
 use petgraph::algo::{
@@ -78,11 +79,26 @@ fn dfs() {
     let j = gr.add_node("J");
     let k = gr.add_node("K");
     // Z is disconnected.
-    let _ = gr.add_node("Z");
+    let z = gr.add_node("Z");
     gr.add_edge(h, i, 1.);
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
+
+    println!("{:?}", gr);
+
+    {
+        let mut cnt = 0;
+        let mut dfs = Dfs::new(&gr, h);
+        while let Some(_) = dfs.next(&gr) { cnt += 1; }
+        assert_eq!(cnt, 4);
+    }
+    {
+        let mut cnt = 0;
+        let mut dfs = Dfs::new(&gr, z);
+        while let Some(_) = dfs.next(&gr) { cnt += 1; }
+        assert_eq!(cnt, 1);
+    }
 
     /*
     assert_eq!(DfsIter::new(&gr, h).count(), 4);
