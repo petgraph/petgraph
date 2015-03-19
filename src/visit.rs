@@ -172,6 +172,18 @@ pub trait GetAdjacencyMatrix : Graphlike {
     fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
 }
 
+impl<N, E> GetAdjacencyMatrix for GraphMap<N, E>
+    where N: Copy + Clone + Ord + Eq + Hash
+{
+    type AdjMatrix = ();
+    #[inline]
+    fn adjacency_matrix(&self) { }
+    #[inline]
+    fn is_adjacent(&self, _: &(), a: N, b: N) -> bool {
+        self.contains_edge(a, b)
+    }
+}
+
 /// A depth first search (DFS) of a graph.
 ///
 /// Using a **Dfs** you can run a traversal over a graph while still retaining
