@@ -211,12 +211,23 @@ impl<N, E, Ty, Ix> fmt::Debug for Graph<N, E, Ty, Ix> where
     N: fmt::Debug, E: fmt::Debug, Ty: EdgeType, Ix: IndexType
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let indent = "    ";
+        let etype = if self.is_directed() { "Directed" } else { "Undirected" };
+        if self.node_count() == 0 {
+            return write!(f, "Graph<{}> {{}}", etype);
+        }
+        try!(writeln!(f, "Graph<{}> {{", etype));
         for (index, n) in self.nodes.iter().enumerate() {
-            try!(writeln!(f, "{}: {:?}", index, n));
+            try!(writeln!(f, "{}{}: Node({:?}),", indent, index, n.weight));
         }
-        for (index, n) in self.edges.iter().enumerate() {
-            try!(writeln!(f, "{}: {:?}", index, n));
+        for (index, e) in self.edges.iter().enumerate() {
+            try!(writeln!(f, "{}{}: Edge(from={}, to={}, weight={:?}),",
+                          indent, index,
+                          e.source().index(),
+                          e.target().index(),
+                          e.weight));
         }
+        try!(write!(f, "}}"));
         Ok(())
     }
 }
