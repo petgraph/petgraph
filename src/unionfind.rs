@@ -1,6 +1,7 @@
 //! **UnionFind\<K\>** is a disjoint-set data structure.
 
-use std::num;
+use std::num::Int;
+use super::graph::IndexType;
 
 /// **UnionFind\<K\>** is a disjoint-set data structure. It tracks set membership of *n* elements
 /// indexed from *0* to *n - 1*. The scalar type is **K** which must be an unsigned integer type.
@@ -12,7 +13,7 @@ use std::num;
 /// “The amortized time per operation is **O(α(n))** where **α(n)** is the
 /// inverse of **f(x) = A(x, x)** with **A** being the extremely fast-growing Ackermann function.”
 #[derive(Debug, Clone)]
-pub struct UnionFind<K> where K: num::UnsignedInt
+pub struct UnionFind<K>
 {
     // For element at index *i*, store the index of its parent; the representative itself
     // stores its own index. This forms equivalence classes which are the disjoint sets, each
@@ -27,7 +28,7 @@ pub struct UnionFind<K> where K: num::UnsignedInt
 }
 
 #[inline]
-fn to_uint<K: num::UnsignedInt>(x: K) -> usize { x.to_usize().unwrap() }
+fn to_uint<K: IndexType>(x: K) -> usize { x.index() }
 
 #[inline]
 unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K
@@ -36,7 +37,7 @@ unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K
     xs.get_unchecked(index)
 }
 
-impl<K> UnionFind<K> where K: num::UnsignedInt
+impl<K> UnionFind<K> where K: IndexType + Int
 {
     /// Create a new **UnionFind** of **n** disjoint sets.
     pub fn new(n: usize) -> Self
@@ -49,12 +50,12 @@ impl<K> UnionFind<K> where K: num::UnsignedInt
         }
 
         // unroll the first iteration to avoid wraparound in i for K=u8, n=256.
-        let mut i: K = num::Int::zero();
+        let mut i: K = Int::zero();
         if n > 0 {
             parent.push(i);
         }
         for _ in 1..n {
-            i = i + num::Int::one();
+            i = i + Int::one();
             parent.push(i);
         }
         UnionFind{parent: parent, rank: rank}
