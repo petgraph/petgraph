@@ -325,7 +325,7 @@ fn dijk() {
        vec![("A", 0), ("B", 7), ("C", 9), ("D", 11), ("E", 20), ("F", 20)]);
 
     let scores = dijkstra(&g, a, Some(c), |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
-    assert_eq!(scores[c], 9);
+    assert_eq!(scores[&c], 9);
 }
 
 #[test]
