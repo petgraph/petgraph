@@ -1,5 +1,4 @@
 #![feature(core,
-           std_misc,
            collections)]
 
 //! **petgraph** is a graph data structure library.
