@@ -14,8 +14,6 @@ use petgraph::{
     Undirected,
 };
 
-use petgraph::parse::DisplayDot;
-
 use petgraph::algo::{
     min_spanning_tree,
     is_cyclic_undirected,
@@ -84,8 +82,6 @@ fn dfs() {
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
-
-    println!("{}", DisplayDot::new(&gr));
 
     /*
     assert_eq!(DfsIter::new(&gr, h).count(), 4);
@@ -176,10 +172,7 @@ fn mst() {
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);
 
-    println!("{}", DisplayDot::new(&gr));
-
     let mst = min_spanning_tree(&gr);
-    println!("{}", DisplayDot::new(&mst));
     println!("MST is:\n{:?}", mst);
     assert!(mst.node_count() == gr.node_count());
     // |E| = |N| - 2  because there are two disconnected components.

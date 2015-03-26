@@ -27,7 +27,6 @@ mod scored;
 pub mod algo;
 pub mod graphmap;
 pub mod graph;
-pub mod parse;
 pub mod visit;
 
 pub mod unionfind;
