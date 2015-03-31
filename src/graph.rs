@@ -459,7 +459,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
             node: [a, b],
             next: [EdgeIndex::end(); 2],
         };
-        match index_twice(self.nodes.as_mut_slice(), a.index(), b.index()) {
+        match index_twice(&mut self.nodes, a.index(), b.index()) {
             Pair::None => panic!("Graph::add_edge: node indices out of bounds"),
             Pair::One(an) => {
                 edge.next = an.next;
@@ -563,7 +563,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         // Adjust the starts of the out edges, and ends of the in edges.
         for &d in DIRECTIONS.iter() {
             let k = d as usize;
-            for (_, curedge) in EdgesMut::new(self.edges.as_mut_slice(), swap_edges[k], d) {
+            for (_, curedge) in EdgesMut::new(&mut self.edges, swap_edges[k], d) {
                 debug_assert!(curedge.node[k] == old_index);
                 curedge.node[k] = new_index;
             }
@@ -591,7 +591,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
                 //println!("Updating first edge 0 for node {}, set to {}", edge_node[0], edge_next[0]);
                 node.next[k] = edge_next[k];
             } else {
-                for (_i, curedge) in EdgesMut::new(self.edges.as_mut_slice(), fst, d) {
+                for (_i, curedge) in EdgesMut::new(&mut self.edges, fst, d) {
                     if curedge.next[k] == e {
                         curedge.next[k] = edge_next[k];
                         break; // the edge can only be present once in the list.
