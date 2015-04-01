@@ -1,6 +1,7 @@
 //! **UnionFind\<K\>** is a disjoint-set data structure.
 
-use std::num::Int;
+use std::ops::Add;
+use std::num::{Zero, One};
 use super::graph::IndexType;
 
 /// **UnionFind\<K\>** is a disjoint-set data structure. It tracks set membership of *n* elements
@@ -37,7 +38,8 @@ unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K
     xs.get_unchecked(index)
 }
 
-impl<K> UnionFind<K> where K: IndexType + Int
+impl<K> UnionFind<K> where
+    K: IndexType + Zero + One + Add<Output=K>
 {
     /// Create a new **UnionFind** of **n** disjoint sets.
     pub fn new(n: usize) -> Self
@@ -50,12 +52,12 @@ impl<K> UnionFind<K> where K: IndexType + Int
         }
 
         // unroll the first iteration to avoid wraparound in i for K=u8, n=256.
-        let mut i: K = Int::zero();
+        let mut i: K = Zero::zero();
         if n > 0 {
             parent.push(i);
         }
         for _ in 1..n {
-            i = i + Int::one();
+            i = i + One::one();
             parent.push(i);
         }
         UnionFind{parent: parent, rank: rank}

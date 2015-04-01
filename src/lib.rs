@@ -1,4 +1,4 @@
-#![feature(core,
+#![feature(zero_one,
            collections)]
 
 //! **petgraph** is a graph data structure library.
