@@ -1,6 +1,5 @@
-#![feature(str_words,
-           test)]
 
+#[cfg(feature = "test")]
 extern crate test;
 extern crate petgraph;
 
@@ -211,7 +210,10 @@ fn parse_graph<Ty: EdgeType = Directed>(s: &str) -> Graph<(), (), Ty>
     let s = s.trim();
     let lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
-        for (col, word) in line.words().enumerate() {
+        for (col, word) in line.split(' ')
+                                .filter(|s| s.len() > 0)
+                                .enumerate()
+        {
             let has_edge = word.parse::<i32>().unwrap();
             assert!(has_edge == 0 || has_edge == 1);
             if has_edge == 0 {
@@ -308,6 +310,7 @@ fn praust_undir_no_iso()
     assert!(!petgraph::algo::is_isomorphic(&a, &b));
 }
 
+#[cfg(feature = "test")]
 #[bench]
 fn petersen_iso_bench(bench: &mut test::Bencher)
 {
@@ -317,6 +320,7 @@ fn petersen_iso_bench(bench: &mut test::Bencher)
     bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
 }
 
+#[cfg(feature = "test")]
 #[bench]
 fn petersen_undir_iso_bench(bench: &mut test::Bencher)
 {
@@ -326,6 +330,7 @@ fn petersen_undir_iso_bench(bench: &mut test::Bencher)
     bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
 }
 
+#[cfg(feature = "test")]
 #[bench]
 fn full_iso_bench(bench: &mut test::Bencher)
 {
@@ -335,6 +340,7 @@ fn full_iso_bench(bench: &mut test::Bencher)
     bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
 }
 
+#[cfg(feature = "test")]
 #[bench]
 fn praust_dir_no_iso_bench(bench: &mut test::Bencher)
 {
@@ -344,6 +350,7 @@ fn praust_dir_no_iso_bench(bench: &mut test::Bencher)
     bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
 }
 
+#[cfg(feature = "test")]
 #[bench]
 fn praust_undir_no_iso_bench(bench: &mut test::Bencher)
 {
