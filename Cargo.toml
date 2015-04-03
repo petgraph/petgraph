@@ -21,4 +21,6 @@ debug = true
 [profile.bench]
 debug = true
 
+[dependencies.fixedbitset]
+
 [dev-dependencies.rand]

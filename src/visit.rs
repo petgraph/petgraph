@@ -4,10 +4,10 @@
 use std::marker;
 use std::collections::{
     HashSet,
-    BitSet,
     VecDeque,
 };
 use std::hash::Hash;
+use fb::FixedBitSet;
 
 use super::{
     graphmap,
@@ -87,14 +87,16 @@ pub trait VisitMap<N> {
     fn is_visited(&self, &N) -> bool;
 }
 
-impl<Ix> VisitMap<graph::NodeIndex<Ix>> for BitSet where
+impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet where
     Ix: IndexType,
 {
     fn visit(&mut self, x: graph::NodeIndex<Ix>) -> bool {
-        self.insert(x.index())
+        let present = self.contains(x.index());
+        self.insert(x.index());
+        !present
     }
     fn is_visited(&self, x: &graph::NodeIndex<Ix>) -> bool {
-        self.contains(&x.index())
+        self.contains(x.index())
     }
 }
 
@@ -123,8 +125,8 @@ impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    type Map = BitSet;
-    fn visit_map(&self) -> BitSet { BitSet::with_capacity(self.node_count()) }
+    type Map = FixedBitSet;
+    fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
 }
 
 impl<N: Clone, E> Graphlike for GraphMap<N, E>

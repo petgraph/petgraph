@@ -1,5 +1,5 @@
 use std::marker;
-use std::collections::BitVec;
+use fb::FixedBitSet;
 
 use super::{
     EdgeType,
@@ -29,7 +29,7 @@ struct Vf2State<Ty, Ix> {
     ins: Vec<usize>,
     out_size: usize,
     ins_size: usize,
-    adjacency_matrix: BitVec,
+    adjacency_matrix: FixedBitSet,
     generation: usize,
     _etype: marker::PhantomData<Ty>,
 }

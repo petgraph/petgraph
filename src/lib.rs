@@ -1,11 +1,11 @@
-#![feature(zero_one,
-           collections)]
 
 //! **petgraph** is a graph data structure library.
 //!
 //! The most interesting type is [**Graph**](./graph/struct.Graph.html) which is
 //! a directed or undirected graph with owned mutably accessible arbitrary node and edge weights.
 //! It is based on rustc's graph implementation.
+
+extern crate fixedbitset as fb;
 
 use std::marker;
 use std::cmp::Ordering;

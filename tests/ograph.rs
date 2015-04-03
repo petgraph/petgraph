@@ -1,8 +1,6 @@
-#![feature(core)]
-
 extern crate petgraph;
 
-use std::iter::AdditiveIterator;
+use std::ops::Add;
 
 use petgraph::{
     Graph,
@@ -456,7 +454,7 @@ fn scc() {
     gr.add_edge(n(4), n(1), ());
 
     let mut sccs = petgraph::algo::scc(&gr);
-    assert_eq!(sccs.iter().map(|v| v.len()).sum(), gr.node_count());
+    assert_eq!(sccs.iter().map(|v| v.len()).fold(0, Add::add), gr.node_count());
 
     let scc_answer = vec![
         vec![n(0), n(3), n(6)],
