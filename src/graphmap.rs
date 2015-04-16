@@ -255,7 +255,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
 macro_rules! iterator_methods {
     () => (
         #[inline]
-        fn next(&mut self) -> Option<<Self as Iterator>::Item>
+        fn next(&mut self) -> Option<Self::Item>
         {
             self.iter.next()
         }

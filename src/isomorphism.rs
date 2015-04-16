@@ -54,7 +54,7 @@ impl<Ty, Ix> Vf2State<Ty, Ix> where
         for _ in (0..c0) {
             state.mapping.push(NodeIndex::end());
             state.out.push(0);
-            if <Ty as EdgeType>::is_directed() {
+            if Ty::is_directed() {
                 state.ins.push(0);
             }
         }
@@ -133,7 +133,7 @@ impl<Ty, Ix> Vf2State<Ty, Ix> where
     /// Find the next (least) node in the Tin set.
     pub fn next_in_index(&self, from_index: usize) -> Option<usize>
     {
-        if !<Ty as EdgeType>::is_directed() {
+        if !Ty::is_directed() {
             return None
         }
         self.ins[from_index..].iter()

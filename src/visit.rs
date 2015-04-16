@@ -111,7 +111,7 @@ impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
 
 /// Trait for GraphMap that knows which datastructure is the best for its visitor map
 pub trait Visitable : Graphlike {
-    type Map: VisitMap<<Self as Graphlike>::NodeId>;
+    type Map: VisitMap<Self::NodeId>;
     fn visit_map(&self) -> Self::Map;
 }
 
@@ -143,26 +143,26 @@ impl<N, E> Visitable for GraphMap<N, E>
 
 impl<'a, V: Graphlike> Graphlike for AsUndirected<&'a V>
 {
-    type NodeId = <V as Graphlike>::NodeId;
+    type NodeId = V::NodeId;
 }
 
 impl<'a, V: Graphlike> Graphlike for Reversed<&'a V>
 {
-    type NodeId = <V as Graphlike>::NodeId;
+    type NodeId = V::NodeId;
 }
 
 impl<'a, V: Visitable> Visitable for AsUndirected<&'a V>
 {
-    type Map = <V as Visitable>::Map;
-    fn visit_map(&self) -> <V as Visitable>::Map {
+    type Map = V::Map;
+    fn visit_map(&self) -> V::Map {
         self.0.visit_map()
     }
 }
 
 impl<'a, V: Visitable> Visitable for Reversed<&'a V>
 {
-    type Map = <V as Visitable>::Map;
-    fn visit_map(&self) -> <V as Visitable>::Map {
+    type Map = V::Map;
+    fn visit_map(&self) -> V::Map {
         self.0.visit_map()
     }
 }
@@ -299,7 +299,7 @@ pub struct Bfs<N, VM> {
     pub discovered: VM,
 }
 
-impl<G: Visitable> Bfs<G::NodeId, <G as Visitable>::Map> where
+impl<G: Visitable> Bfs<G::NodeId, G::Map> where
     G::NodeId: Clone,
 {
     /// Create a new **Bfs**, using the graph's visitor map, and put **start**
