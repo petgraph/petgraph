@@ -1,3 +1,4 @@
+#![feature(test)]
 
 extern crate petgraph;
 extern crate test;

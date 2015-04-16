@@ -24,3 +24,7 @@ debug = true
 [dependencies.fixedbitset]
 
 [dev-dependencies.rand]
+
+[features]
+
+test = []
