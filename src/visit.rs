@@ -1,7 +1,6 @@
 //! Graph visitor algorithms.
 //!
 
-use std::marker;
 use std::collections::{
     HashSet,
     VecDeque,
@@ -22,12 +21,12 @@ use graph::{
     IndexType,
 };
 
-pub trait Graphlike : marker::MarkerTrait {
+pub trait Graphlike {
     type NodeId: Clone;
 }
 
 /// A graph trait for accessing the neighbors iterator
-pub trait NeighborIter<'a> : Graphlike{
+pub trait NeighborIter<'a> : Graphlike {
     type Iter: Iterator<Item=Self::NodeId>;
     fn neighbors(&'a self, n: Self::NodeId) -> Self::Iter;
 }

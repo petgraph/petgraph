@@ -7,7 +7,6 @@
 
 extern crate fixedbitset as fb;
 
-use std::marker;
 use std::cmp::Ordering;
 use std::hash::{self, Hash};
 use std::fmt;
@@ -53,7 +52,7 @@ pub struct Directed;
 pub struct Undirected;
 
 /// A graph's edge type determines whether is has directed edges or not.
-pub trait EdgeType : marker::MarkerTrait {
+pub trait EdgeType {
     fn is_directed() -> bool;
 }
 
