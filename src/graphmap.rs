@@ -316,19 +316,19 @@ impl<'a, N, E> Iterator for Edges<'a, N, E>
     }
 }
 
+/// Index **GraphMap** by node pairs to access edge weights.
 impl<N, E> Index<(N, N)> for GraphMap<N, E> where N: NodeTrait
 {
     type Output = E;
-    /// Index **GraphMap** by node pairs to access edge weights.
     fn index(&self, index: (N, N)) -> &E
     {
         self.edge_weight(index.0, index.1).expect("GraphMap::index: no such edge")
     }
 }
 
+/// Index **GraphMap** by node pairs to access edge weights.
 impl<N, E> IndexMut<(N, N)> for GraphMap<N, E> where N: NodeTrait
 {
-    /// Index **GraphMap** by node pairs to access edge weights.
     fn index_mut(&mut self, index: (N, N)) -> &mut E
     {
         self.edge_weight_mut(index.0, index.1).expect("GraphMap::index: no such edge")

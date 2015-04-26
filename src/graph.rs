@@ -973,51 +973,52 @@ impl<'a, E, Ix> Iterator for Edges<'a, E, Ix> where
     }
 }
 
+/// Index the **Graph** by **NodeIndex** to access node weights.
+///
+/// **Panics** if the node doesn't exist.
 impl<N, E, Ty, Ix> Index<NodeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
     type Output = N;
-    /// Index the **Graph** by **NodeIndex** to access node weights.
-    ///
-    /// **Panics** if the node doesn't exist.
     fn index(&self, index: NodeIndex<Ix>) -> &N {
         &self.nodes[index.index()].weight
     }
 }
 
+/// Index the **Graph** by **NodeIndex** to access node weights.
+///
+/// **Panics** if the node doesn't exist.
 impl<N, E, Ty, Ix> IndexMut<NodeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    /// Index the **Graph** by **NodeIndex** to access node weights.
-    ///
-    /// **Panics** if the node doesn't exist.
     fn index_mut(&mut self, index: NodeIndex<Ix>) -> &mut N {
         &mut self.nodes[index.index()].weight
     }
 
 }
+
+/// Index the **Graph** by **EdgeIndex** to access edge weights.
+///
+/// **Panics** if the edge doesn't exist.
 impl<N, E, Ty, Ix> Index<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
     type Output = E;
-    /// Index the **Graph** by **EdgeIndex** to access edge weights.
-    ///
-    /// **Panics** if the edge doesn't exist.
     fn index(&self, index: EdgeIndex<Ix>) -> &E {
         &self.edges[index.index()].weight
     }
 }
 
+/// Index the **Graph** by **EdgeIndex** to access edge weights.
+///
+/// **Panics** if the edge doesn't exist.
 impl<N, E, Ty, Ix> IndexMut<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    /// Index the **Graph** by **EdgeIndex** to access edge weights.
-    ///
-    /// **Panics** if the edge doesn't exist.
     fn index_mut(&mut self, index: EdgeIndex<Ix>) -> &mut E {
         &mut self.edges[index.index()].weight
     }
