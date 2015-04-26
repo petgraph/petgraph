@@ -21,6 +21,7 @@ use graph::{
     IndexType,
 };
 
+/// Base trait for graphs that defines the node identifier.
 pub trait Graphlike {
     type NodeId: Clone;
 }
@@ -28,6 +29,8 @@ pub trait Graphlike {
 /// A graph trait for accessing the neighbors iterator
 pub trait NeighborIter<'a> : Graphlike {
     type Iter: Iterator<Item=Self::NodeId>;
+
+    /// Return an iterator that visits all neighbors of the node **n**.
     fn neighbors(&'a self, n: Self::NodeId) -> Self::Iter;
 }
 
