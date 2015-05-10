@@ -49,7 +49,7 @@ fn undirected()
     assert!(og.find_edge(d, a).is_some());
     assert!(og.find_edge(a, a).is_some());
 
-    for edge in og.raw_edges().iter() {
+    for edge in og.raw_edges() {
         assert!(og.find_edge(edge.source(), edge.target()).is_some());
         assert!(og.find_edge(edge.target(), edge.source()).is_some());
     }
@@ -381,7 +381,7 @@ fn toposort() {
     assert_eq!(order.len(), gr.node_count());
 
     // check all the edges of the graph
-    for edge in gr.raw_edges().iter() {
+    for edge in gr.raw_edges() {
         let a = edge.source();
         let b = edge.target();
         let ai = order.iter().position(|x| *x == a);

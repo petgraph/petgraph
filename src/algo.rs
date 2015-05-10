@@ -38,7 +38,7 @@ pub fn is_cyclic_undirected<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
     Ix: IndexType,
 {
     let mut edge_sets = UnionFind::new(g.node_count());
-    for edge in g.raw_edges().iter() {
+    for edge in g.raw_edges() {
         let (a, b) = (edge.source(), edge.target());
 
         // union the two vertices of the edge
@@ -173,7 +173,7 @@ pub fn connected_components<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> usize wher
     Ix: IndexType,
 {
     let mut vertex_sets = UnionFind::new(g.node_count());
-    for edge in g.raw_edges().iter() {
+    for edge in g.raw_edges() {
         let (a, b) = (edge.source(), edge.target());
 
         // union the two vertices of the edge
@@ -208,7 +208,7 @@ pub fn min_spanning_tree<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, U
 
     // Create a mst skeleton by copying all nodes
     let mut mst = Graph::with_capacity(g.node_count(), g.node_count() - 1);
-    for node in g.raw_nodes().iter() {
+    for node in g.raw_nodes() {
         mst.add_node(node.weight.clone());
     }
 
@@ -217,7 +217,7 @@ pub fn min_spanning_tree<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, U
     let mut subgraphs = UnionFind::new(g.node_count());
 
     let mut sort_edges = BinaryHeap::with_capacity(g.edge_count());
-    for edge in g.raw_edges().iter() {
+    for edge in g.raw_edges() {
         sort_edges.push(MinScored(edge.weight.clone(), (edge.source(), edge.target())));
     }
 
