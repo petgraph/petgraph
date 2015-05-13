@@ -256,9 +256,9 @@ impl<N, VM> Dfs<N, VM> where
     VM: VisitMap<N>
 {
     /// Return the next node in the dfs, or **None** if the traversal is done.
-    pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
+    pub fn next<G>(&mut self, graph: &G) -> Option<N> where
         G: Graphlike<NodeId=N>,
-        G: for<'b> NeighborIter<'b>,
+        G: for<'a> NeighborIter<'a>,
     {
         while let Some(node) = self.stack.pop() {
             for succ in graph.neighbors(node.clone()) {
@@ -325,9 +325,9 @@ impl<N, VM> Bfs<N, VM> where
     VM: VisitMap<N>
 {
     /// Return the next node in the dfs, or **None** if the traversal is done.
-    pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
+    pub fn next<G>(&mut self, graph: &G) -> Option<N> where
         G: Graphlike<NodeId=N>,
-        G: for<'b> NeighborIter<'b>,
+        G: for<'a> NeighborIter<'a>,
     {
         while let Some(node) = self.stack.pop_front() {
             for succ in graph.neighbors(node.clone()) {
