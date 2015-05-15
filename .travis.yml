@@ -1,9 +1,16 @@
 language: rust
-rust:
-  - nightly
-  - beta
+sudo: false
+matrix:
+  include:
+    - rust: nightly
+    - rust: nightly
+      env:
+       - FEATURES='test'
+       - BENCH=1
+    - rust: stable
 script:
-  - ./travis_cargo.sh build --verbose
-  - ./travis_cargo.sh test --verbose
-  - ./travis_cargo.sh bench --verbose
-  - ./travis_cargo.sh doc --verbose
+  - |
+      cargo build --verbose --features "$FEATURES"
+      cargo test --verbose --features "$FEATURES"
+      [ "$BENCH" != 1 ] || cargo bench --verbose --features "$FEATURES"
+      cargo doc --verbose --features "$FEATURES"
