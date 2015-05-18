@@ -46,7 +46,7 @@ impl<'a, N, E, Ty, Ix> NeighborIter<'a> for Graph<N, E, Ty, Ix> where
 }
 
 impl<'a, N, E> NeighborIter<'a> for GraphMap<N, E>
-where N: Copy + Clone + Ord + Hash + Eq
+where N: Copy + Ord + Hash + Eq
 {
     type Iter = graphmap::Neighbors<'a, N>;
     fn neighbors(&'a self, n: N) -> graphmap::Neighbors<'a, N>
@@ -137,7 +137,7 @@ impl<N: Clone, E> Graphlike for GraphMap<N, E>
 }
 
 impl<N, E> Visitable for GraphMap<N, E>
-    where N: Copy + Clone + Ord + Eq + Hash
+    where N: Copy + Ord + Eq + Hash
 {
     type Map = HashSet<N>;
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
@@ -177,7 +177,7 @@ pub trait GetAdjacencyMatrix : Graphlike {
 }
 
 impl<N, E> GetAdjacencyMatrix for GraphMap<N, E>
-    where N: Copy + Clone + Ord + Eq + Hash
+    where N: Copy + Ord + Eq + Hash
 {
     type AdjMatrix = ();
     #[inline]

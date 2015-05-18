@@ -19,7 +19,7 @@ use super::{
 pub type DefIndex = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
-pub trait IndexType : Copy + Clone + Ord + fmt::Debug + 'static
+pub trait IndexType : Copy + Ord + fmt::Debug + 'static
 {
     fn new(x: usize) -> Self;
     fn index(&self) -> usize;
