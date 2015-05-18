@@ -24,11 +24,10 @@ pub fn dijkstra<'a, G: Visitable, K, F, Edges>(graph: &'a G,
                                                start: G::NodeId,
                                                goal: Option<G::NodeId>,
                                                mut edges: F) -> HashMap<G::NodeId, K> where
-    G::NodeId: Clone + Eq + Hash,
+    G::NodeId: Eq + Hash,
     K: Default + Add<Output=K> + Copy + PartialOrd,
     F: FnMut(&'a G, G::NodeId) -> Edges,
     Edges: Iterator<Item=(G::NodeId, K)>,
-    <G as Visitable>::Map: VisitMap<G::NodeId>,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();

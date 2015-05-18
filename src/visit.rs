@@ -301,8 +301,7 @@ pub struct Bfs<N, VM> {
     pub discovered: VM,
 }
 
-impl<G: Visitable> Bfs<G::NodeId, G::Map> where
-    G::NodeId: Clone,
+impl<G: Visitable> Bfs<G::NodeId, G::Map>
 {
     /// Create a new **Bfs**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
