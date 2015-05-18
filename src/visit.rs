@@ -341,22 +341,3 @@ impl<N, VM> Bfs<N, VM> where
     }
 
 }
-
-/*
-pub struct Visitor<G> where
-    G: Visitable,
-{
-    stack: Vec<<G as Graphlike>::NodeId>,
-    discovered: <G as Visitable>::Map,
-}
-
-pub fn visitor<G>(graph: &G, start: <G as Graphlike>::NodeId) -> Visitor<G> where
-    G: Visitable
-{
-    Visitor{
-        stack: vec![start],
-        discovered: graph.visit_map(),
-    }
-}
-*/
-

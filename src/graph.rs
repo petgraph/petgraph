@@ -541,15 +541,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         }
         for d in DIRECTIONS.iter() { 
             let k = *d as usize;
-            /*
-            println!("Starting edge removal for k={}, node={}", k, a);
-            for (i, n) in self.nodes.iter().enumerate() {
-                println!("Node {}: Edges={}", i, n.next);
-            }
-            for (i, ed) in self.edges.iter().enumerate() {
-                println!("Edge {}: {}", i, ed);
-            }
-            */
+
             // Remove all edges from and to this node.
             loop {
                 let next = self.nodes[a.index()].next[k];
@@ -834,33 +826,6 @@ impl<'a, N: 'a, Ty, Ix> Iterator for WithoutEdges<'a, N, Ty, Ix> where
         }
     }
 }
-
-/*
-/// Iterator over the neighbors of a node.
-///
-/// Iterator element type is **NodeIndex**.
-pub struct DiNeighbors<'a, E: 'a> {
-    edges: &'a [Edge<E>],
-    next: EdgeIndex,
-    dir: EdgeDirection,
-}
-
-impl<'a, E> Iterator for DiNeighbors<'a, E>
-{
-    type Item = NodeIndex;
-    fn next(&mut self) -> Option<NodeIndex>
-    {
-        let k = self.dir as usize;
-        match self.edges.get(self.next.index()) {
-            None => None,
-            Some(edge) => {
-                self.next = edge.next[k];
-                Some(edge.node[1-k])
-            }
-        }
-    }
-}
-*/
 
 /// Iterator over the neighbors of a node.
 ///

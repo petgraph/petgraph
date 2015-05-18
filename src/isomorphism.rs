@@ -263,17 +263,6 @@ pub fn is_isomorphic<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>,
 
             let nodes = [nx, mx];
 
-            /*
-            print!("Mapping state: ");
-            for (index, nmap) in st.mapping[0].iter().enumerate() {
-                if *nmap == end {
-                    continue;
-                }
-                print!("{} => {}, ", index, nmap.index());
-            }
-            println!("{} => {}", nx.index(), mx.index());
-            */
-        
             // Check syntactic feasibility of mapping by ensuring adjacencies
             // of nx map to adjacencies of mx.
             //
