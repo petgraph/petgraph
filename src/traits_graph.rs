@@ -12,6 +12,8 @@ use super::graph::{
 
 use super::visit::GetAdjacencyMatrix;
 
+/// The adjacency matrix for **Graph** is a bitmap that's computed by
+/// *.adjacency_matrix()*.
 impl<N, E, Ty, Ix> GetAdjacencyMatrix for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
