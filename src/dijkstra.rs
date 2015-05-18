@@ -32,7 +32,7 @@ pub fn dijkstra<'a, G: Visitable, K, F, Edges>(graph: &'a G,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
-    let mut predecessor = HashMap::new();
+    //let mut predecessor = HashMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score: K = Default::default();
     scores.insert(start.clone(), zero_score);
@@ -52,13 +52,13 @@ pub fn dijkstra<'a, G: Visitable, K, F, Edges>(graph: &'a G,
             match scores.entry(next.clone()) {
                 Occupied(ent) => if next_score < *ent.get() {
                     *ent.into_mut() = next_score;
-                    predecessor.insert(next.clone(), node.clone());
+                    //predecessor.insert(next.clone(), node.clone());
                 } else {
                     next_score = *ent.get();
                 },
                 Vacant(ent) => {
                     ent.insert(next_score);
-                    predecessor.insert(next.clone(), node.clone());
+                    //predecessor.insert(next.clone(), node.clone());
                 }
             }
             visit_next.push(MinScored(next_score, next));
