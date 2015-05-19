@@ -1,10 +1,20 @@
 
-petgraph — experiments with graph datastructures
-================================================
+petgraph
+========
+
+Graph data structure library.
 
 Please read the `API documentation here`__
 
 __ http://bluss.github.io/petulant-avenger-graphlibrary/
+
+|build_status|_ |crates|_
+
+.. |build_status| image:: https://travis-ci.org/bluss/petulant-avenger-graphlibrary.svg?branch=master
+.. _build_status: https://travis-ci.org/bluss/petulant-avenger-graphlibrary
+
+.. |crates| image:: http://meritbadge.herokuapp.com/petgraph
+.. _crates: https://crates.io/crates/petgraph
 
 License
 =======
