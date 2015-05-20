@@ -4,6 +4,9 @@ use petgraph::{
     GraphMap,
     Dfs,
 };
+use petgraph::visit::{
+    DfsIter,
+};
 
 use petgraph::algo::{
     dijkstra,
@@ -100,10 +103,8 @@ fn dfs() {
         assert_eq!(cnt, 1);
     }
 
-    /*
     assert_eq!(DfsIter::new(&gr, h).count(), 4);
     assert_eq!(DfsIter::new(&gr, i).count(), 4);
     assert_eq!(DfsIter::new(&gr, z).count(), 1);
-    */
 }
 

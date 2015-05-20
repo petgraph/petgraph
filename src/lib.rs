@@ -23,7 +23,9 @@ pub use graph::Graph;
 pub use self::EdgeDirection::{Outgoing, Incoming};
 pub use visit::{
     Bfs,
+    BfsIter,
     Dfs,
+    DfsIter,
 };
 
 mod scored;

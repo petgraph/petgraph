@@ -5,7 +5,9 @@ use std::ops::Add;
 use petgraph::{
     Graph,
     Bfs,
+    BfsIter,
     Dfs,
+    DfsIter,
     Incoming,
     Outgoing,
     Directed,
@@ -20,8 +22,8 @@ use petgraph::algo::{
 use petgraph::graph::NodeIndex;
 
 use petgraph::visit::{
-    //Reversed,
-    //AsUndirected,
+    Reversed,
+    AsUndirected,
 };
 use petgraph::algo::{
     dijkstra,
@@ -81,7 +83,6 @@ fn dfs() {
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
 
-    /*
     assert_eq!(DfsIter::new(&gr, h).count(), 4);
 
     assert_eq!(DfsIter::new(&Reversed(&gr), h).count(), 1);
@@ -91,7 +92,6 @@ fn dfs() {
     assert_eq!(DfsIter::new(&gr, i).count(), 3);
 
     assert_eq!(DfsIter::new(&AsUndirected(&gr), i).count(), 4);
-    */
 
 }
 
@@ -110,7 +110,6 @@ fn bfs() {
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
 
-    /*
     assert_eq!(BfsIter::new(&gr, h).count(), 4);
 
     assert_eq!(BfsIter::new(&Reversed(&gr), h).count(), 1);
@@ -120,7 +119,6 @@ fn bfs() {
     assert_eq!(BfsIter::new(&gr, i).count(), 3);
 
     assert_eq!(BfsIter::new(&AsUndirected(&gr), i).count(), 4);
-    */
 
     let mut bfs = Bfs::new(&gr, h);
     let nx = bfs.next(&gr);
@@ -303,11 +301,9 @@ fn dijk() {
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
     println!("{:?}", g);
-    /*
     for no in BfsIter::new(&g, a) {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
-    */
 
     let scores = dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
     let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();

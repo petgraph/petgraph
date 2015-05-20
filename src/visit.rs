@@ -274,6 +274,38 @@ impl<N, VM> Dfs<N, VM> where
     }
 }
 
+/// An iterator for a depth first traversal of a graph.
+pub struct DfsIter<'a, G: 'a + Visitable>
+{
+    graph: &'a G,
+    dfs: Dfs<G::NodeId, G::Map>,
+}
+
+impl<'a, G: Visitable> DfsIter<'a, G>
+{
+    pub fn new(graph: &'a G, start: G::NodeId) -> Self
+    {
+        // Inline the code from Dfs::new to
+        // work around rust bug #22841
+        let mut dfs = Dfs::empty(graph);
+        dfs.move_to(start);
+        DfsIter {
+            graph: graph,
+            dfs: dfs,
+        }
+    }
+}
+
+impl<'a, G: 'a + Visitable> Iterator for DfsIter<'a, G> where
+    G: for<'b> NeighborIter<'b>,
+{
+    type Item = G::NodeId;
+    fn next(&mut self) -> Option<G::NodeId>
+    {
+        self.dfs.next(self.graph)
+    }
+}
+
 /// A breadth first search (BFS) of a graph.
 ///
 /// Using a **Bfs** you can run a traversal over a graph while still retaining
@@ -341,4 +373,44 @@ impl<N, VM> Bfs<N, VM> where
         None
     }
 
+}
+
+/// An iterator for a breadth first traversal of a graph.
+pub struct BfsIter<'a, G: 'a + Visitable>
+{
+    graph: &'a G,
+    bfs: Bfs<G::NodeId, G::Map>,
+}
+
+impl<'a, G: Visitable> BfsIter<'a, G> where
+    G::NodeId: Clone,
+{
+    pub fn new(graph: &'a G, start: G::NodeId) -> Self
+    {
+        // Inline the code from Bfs::new to
+        // work around rust bug #22841
+        let mut discovered = graph.visit_map();
+        discovered.visit(start.clone());
+        let mut stack = VecDeque::new();
+        stack.push_front(start.clone());
+        let bfs = Bfs {
+            stack: stack,
+            discovered: discovered,
+        };
+        BfsIter {
+            graph: graph,
+            bfs: bfs,
+        }
+    }
+}
+
+impl<'a, G: 'a + Visitable> Iterator for BfsIter<'a, G> where
+    G::NodeId: Clone,
+    G: for<'b> NeighborIter<'b>,
+{
+    type Item = G::NodeId;
+    fn next(&mut self) -> Option<G::NodeId>
+    {
+        self.bfs.next(self.graph)
+    }
 }
