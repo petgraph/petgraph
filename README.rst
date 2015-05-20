@@ -16,8 +16,15 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 .. |crates| image:: http://meritbadge.herokuapp.com/petgraph
 .. _crates: https://crates.io/crates/petgraph
 
+Recent Changes
+--------------
+
+- 0.1.4
+
+  - Add back DfsIter, BfsIter
+
 License
-=======
+-------
 
 Dual-licensed to be compatible with the Rust project.
 
