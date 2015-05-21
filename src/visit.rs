@@ -250,12 +250,7 @@ impl<N, VM> Dfs<N, VM> where
         self.stack.clear();
         self.stack.push(start);
     }
-}
 
-impl<N, VM> Dfs<N, VM> where
-    N: Clone,
-    VM: VisitMap<N>
-{
     /// Return the next node in the dfs, or **None** if the traversal is done.
     pub fn next<G>(&mut self, graph: &G) -> Option<N> where
         G: Graphlike<NodeId=N>,
