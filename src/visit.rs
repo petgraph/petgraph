@@ -295,9 +295,17 @@ impl<'a, G: 'a + Visitable> Iterator for DfsIter<'a, G> where
     G: for<'b> NeighborIter<'b>,
 {
     type Item = G::NodeId;
+
+    #[inline]
     fn next(&mut self) -> Option<G::NodeId>
     {
         self.dfs.next(self.graph)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>)
+    {
+        // Very vauge info about size of traversal
+        (self.dfs.stack.len(), None)
     }
 }
 
@@ -417,6 +425,11 @@ impl<'a, G: 'a + Visitable> Iterator for BfsIter<'a, G> where
     fn next(&mut self) -> Option<G::NodeId>
     {
         self.bfs.next(self.graph)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>)
+    {
+        (self.bfs.stack.len(), None)
     }
 }
 
