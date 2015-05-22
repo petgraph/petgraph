@@ -289,6 +289,13 @@ impl<'a, G: Visitable> DfsIter<'a, G>
             dfs: dfs,
         }
     }
+
+    /// Keep the discovered map, but clear the visit stack and restart
+    /// the DFS traversal from a particular node.
+    pub fn move_to(&mut self, start: G::NodeId)
+    {
+        self.dfs.move_to(start)
+    }
 }
 
 impl<'a, G: 'a + Visitable> Iterator for DfsIter<'a, G> where
