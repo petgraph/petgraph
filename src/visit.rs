@@ -83,6 +83,7 @@ impl<'a, 'b, N, E, Ty, Ix> NeighborIter<'a> for Reversed<&'b Graph<N, E, Ty, Ix>
     }
 }
 
+/// A mapping from node → is_visited.
 pub trait VisitMap<N> {
     /// Return **true** if the value is not already present.
     fn visit(&mut self, N) -> bool;
@@ -213,7 +214,9 @@ impl<N, E> GetAdjacencyMatrix for GraphMap<N, E>
 /// during iteration. It may not necessarily visit added nodes or edges.
 #[derive(Clone, Debug)]
 pub struct Dfs<N, VM> {
+    /// The stack of nodes to visit
     pub stack: Vec<N>,
+    /// The map of discovered nodes
     pub discovered: VM,
 }
 
@@ -350,7 +353,9 @@ impl<'a, G: Visitable> Clone for DfsIter<'a, G> where Dfs<G::NodeId, G::Map>: Cl
 /// during iteration. It may not necessarily visit added nodes or edges.
 #[derive(Clone)]
 pub struct Bfs<N, VM> {
+    /// The queue of nodes to visit
     pub stack: VecDeque<N>,
+    /// The map of discovered nodes
     pub discovered: VM,
 }
 
