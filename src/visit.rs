@@ -301,6 +301,16 @@ impl<'a, G: 'a + Visitable> Iterator for DfsIter<'a, G> where
     }
 }
 
+impl<'a, G: Visitable> Clone for DfsIter<'a, G> where Dfs<G::NodeId, G::Map>: Clone
+{
+    fn clone(&self) -> Self {
+        DfsIter {
+            graph: self.graph,
+            dfs: self.dfs.clone(),
+        }
+    }
+}
+
 /// A breadth first search (BFS) of a graph.
 ///
 /// Using a **Bfs** you can run a traversal over a graph while still retaining
@@ -407,5 +417,15 @@ impl<'a, G: 'a + Visitable> Iterator for BfsIter<'a, G> where
     fn next(&mut self) -> Option<G::NodeId>
     {
         self.bfs.next(self.graph)
+    }
+}
+
+impl<'a, G: Visitable> Clone for BfsIter<'a, G> where Bfs<G::NodeId, G::Map>: Clone
+{
+    fn clone(&self) -> Self {
+        BfsIter {
+            graph: self.graph,
+            bfs: self.bfs.clone(),
+        }
     }
 }

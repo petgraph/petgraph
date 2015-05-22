@@ -84,6 +84,7 @@ fn dfs() {
     gr.add_edge(i, k, 2.);
 
     assert_eq!(DfsIter::new(&gr, h).count(), 4);
+    assert_eq!(DfsIter::new(&gr, h).clone().count(), 4);
 
     assert_eq!(DfsIter::new(&Reversed(&gr), h).count(), 1);
 
@@ -92,7 +93,6 @@ fn dfs() {
     assert_eq!(DfsIter::new(&gr, i).count(), 3);
 
     assert_eq!(DfsIter::new(&AsUndirected(&gr), i).count(), 4);
-
 }
 
 
@@ -111,6 +111,7 @@ fn bfs() {
     gr.add_edge(i, k, 2.);
 
     assert_eq!(BfsIter::new(&gr, h).count(), 4);
+    assert_eq!(BfsIter::new(&gr, h).clone().count(), 4);
 
     assert_eq!(BfsIter::new(&Reversed(&gr), h).count(), 1);
 
