@@ -270,6 +270,19 @@ macro_rules! iterator_wrap {
                     self.iter.size_hint()
                 }
             }
+            impl<$($typarm),*> DoubleEndedIterator for $name <$($typarm),*>
+                where $iter: DoubleEndedIterator<Item=$item>,
+            {
+                #[inline]
+                fn next_back(&mut self) -> Option<Self::Item> {
+                    self.iter.next_back()
+                }
+            }
+
+            impl<$($typarm),*> ExactSizeIterator for $name <$($typarm),*>
+                where $iter: ExactSizeIterator<Item=$item>,
+            {
+            }
         }
     );
 }
