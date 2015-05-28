@@ -112,7 +112,7 @@ impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
     }
 }
 
-/// Trait for GraphMap that knows which datastructure is the best for its visitor map
+/// Trait for which datastructure to use for a graph’s visitor map
 pub trait Visitable : Graphlike {
     type Map: VisitMap<Self::NodeId>;
     fn visit_map(&self) -> Self::Map;
