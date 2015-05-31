@@ -25,7 +25,7 @@ use std::ops::{Index, IndexMut};
 ///
 /// **GraphMap** does not allow parallel edges, but self loops are allowed.
 #[derive(Clone)]
-pub struct GraphMap<N: Eq + Hash, E> {
+pub struct GraphMap<N, E> {
     nodes: HashMap<N, Vec<N>>,
     edges: HashMap<(N, N), E>,
 }
@@ -47,8 +47,8 @@ fn edge_key<N: Copy + Ord>(a: N, b: N) -> (N, N)
 fn copy<N: Copy>(n: &N) -> N { *n }
 
 /// A trait group for **GraphMap**'s node identifier.
-pub trait NodeTrait : Copy + Ord + Eq + Hash {}
-impl<N> NodeTrait for N where N: Copy + Ord + Eq + Hash {}
+pub trait NodeTrait : Copy + Ord + Hash {}
+impl<N> NodeTrait for N where N: Copy + Ord + Hash {}
 
 impl<N, E> GraphMap<N, E> where N: NodeTrait
 {
