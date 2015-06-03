@@ -740,7 +740,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     }
     */
 
-    /// Access the internal node array
+    /// Access the internal node array.
     pub fn raw_nodes(&self) -> &[Node<N, Ix>]
     {
         &self.nodes
@@ -752,13 +752,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         &mut self.nodes
     }
 
-    /// Access the internal edge array
+    /// Access the internal edge array.
     pub fn raw_edges(&self) -> &[Edge<E, Ix>]
     {
         &self.edges
     }
 
-    /// Mutable access to the internal edge array
+    /// Mutable access to the internal edge array.
     pub fn raw_edges_mut(&mut self) -> &mut [Edge<E, Ix>]
     {
         &mut self.edges
