@@ -746,10 +746,22 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         &self.nodes
     }
 
+    /// Mutable access to the internal node array.
+    pub fn raw_nodes_mut(&mut self) -> &mut [Node<N, Ix>]
+    {
+        &mut self.nodes
+    }
+
     /// Access the internal edge array
     pub fn raw_edges(&self) -> &[Edge<E, Ix>]
     {
         &self.edges
+    }
+
+    /// Mutable access to the internal edge array
+    pub fn raw_edges_mut(&mut self) -> &mut [Edge<E, Ix>]
+    {
+        &mut self.edges
     }
 
     /// Accessor for data structure internals: the first edge in the given direction.
