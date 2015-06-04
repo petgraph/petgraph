@@ -231,10 +231,11 @@ impl<N, E, Ty, Ix> fmt::Debug for Graph<N, E, Ty, Ix> where
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let indent = "    ";
         let etype = if self.is_directed() { "Directed" } else { "Undirected" };
+        try!(write!(f, "Graph<{}> {{", etype));
         if self.node_count() == 0 {
-            return write!(f, "Graph<{}> {{}}", etype);
+            return write!(f, "}}");
         }
-        try!(writeln!(f, "Graph<{}> {{", etype));
+        try!(writeln!(f, ""));
         for (index, n) in self.nodes.iter().enumerate() {
             try!(writeln!(f, "{}{}: Node({:?}),", indent, index, n.weight));
         }
