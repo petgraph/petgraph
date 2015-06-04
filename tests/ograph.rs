@@ -20,6 +20,7 @@ use petgraph::algo::{
 };
 
 use petgraph::graph::NodeIndex;
+use petgraph::graph::EdgeIndex;
 
 use petgraph::visit::{
     Reversed,
@@ -580,5 +581,58 @@ fn u8_index_overflow_edges()
     let b = gr.add_node('b');
     for _ in 0..256 {
         gr.add_edge(a, b, ());
+    }
+}
+
+#[test]
+fn test_weight_iterators() {
+    let mut gr = Graph::<_,_>::new();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
+    let g = gr.add_node("G");
+    gr.add_edge(a, b, 7.0);
+    gr.add_edge(a, d, 5.);
+    gr.add_edge(d, b, 9.);
+    gr.add_edge(b, c, 8.);
+    gr.add_edge(b, e, 7.);
+    gr.add_edge(c, e, 5.);
+    gr.add_edge(d, e, 15.);
+    gr.add_edge(d, f, 6.);
+    gr.add_edge(f, e, 8.);
+    gr.add_edge(f, g, 11.);
+    gr.add_edge(e, g, 9.);
+
+    assert_eq!(gr.node_weights_mut().count(), gr.node_count());
+    assert_eq!(gr.edge_weights_mut().count(), gr.edge_count());
+
+    // add a disjoint part
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
+    gr.add_edge(h, i, 1.);
+    gr.add_edge(h, j, 3.);
+    gr.add_edge(i, j, 1.);
+
+    assert_eq!(gr.node_weights_mut().count(), gr.node_count());
+    assert_eq!(gr.edge_weights_mut().count(), gr.edge_count());
+
+    for nw in gr.node_weights_mut() {
+        *nw = "x";
+    }
+    for node in gr.raw_nodes() {
+        assert_eq!(node.weight, "x");
+    }
+
+    let old = gr.clone();
+    for (index, ew) in gr.edge_weights_mut().enumerate() {
+        assert_eq!(old[EdgeIndex::new(index)], *ew);
+        *ew = - *ew;
+    }
+    for (index, edge) in gr.raw_edges().iter().enumerate() {
+        assert_eq!(edge.weight, -1. * old[EdgeIndex::new(index)]);
     }
 }
