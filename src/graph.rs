@@ -746,22 +746,24 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         &self.nodes
     }
 
-    /// Mutable access to the internal node array.
-    pub fn raw_nodes_mut(&mut self) -> &mut [Node<N, Ix>]
-    {
-        &mut self.nodes
-    }
-
     /// Access the internal edge array.
     pub fn raw_edges(&self) -> &[Edge<E, Ix>]
     {
         &self.edges
     }
 
-    /// Mutable access to the internal edge array.
-    pub fn raw_edges_mut(&mut self) -> &mut [Edge<E, Ix>]
+    /// Return an iterator yielding mutable access to all node weights. The order in which weights
+    /// are yielded matches the order of the internal node array.
+    pub fn all_node_weights_mut<'a>(&'a mut self) -> AllNodeWeightsMut<'a, N, Ix>
     {
-        &mut self.edges
+        AllNodeWeightsMut { nodes: self.nodes.iter_mut() }
+    }
+
+    /// Return an iterator yielding mutable access to all edge weights. The order in which weights
+    /// are yielded matches the order of the internal edge array.
+    pub fn all_edge_weights_mut<'a>(&'a mut self) -> AllEdgeWeightsMut<'a, E, Ix>
+    {
+        AllEdgeWeightsMut { edges: self.edges.iter_mut() }
     }
 
     /// Accessor for data structure internals: the first edge in the given direction.
@@ -947,6 +949,34 @@ impl<'a, E, Ix> Iterator for Edges<'a, E, Ix> where
                 Some((edge.node[0], &edge.weight))
             }
         }
+    }
+}
+
+/// Iterator yielding mutable access to all node weights.
+pub struct AllNodeWeightsMut<'a, N: 'a, Ix: IndexType = DefIndex> {
+    nodes: ::std::slice::IterMut<'a, Node<N, Ix>>,
+}
+
+impl<'a, N, Ix> Iterator for AllNodeWeightsMut<'a, N, Ix> where
+    Ix: IndexType,
+{
+    type Item = &'a mut N;
+    fn next(&mut self) -> Option<&'a mut N> {
+        self.nodes.next().map(|node| &mut node.weight)
+    }
+}
+
+/// Iterator yielding mutable access to all edge weights.
+pub struct AllEdgeWeightsMut<'a, E: 'a, Ix: IndexType = DefIndex> {
+    edges: ::std::slice::IterMut<'a, Edge<E, Ix>>,
+}
+
+impl<'a, E, Ix> Iterator for AllEdgeWeightsMut<'a, E, Ix> where
+    Ix: IndexType,
+{
+    type Item = &'a mut E;
+    fn next(&mut self) -> Option<&'a mut E> {
+        self.edges.next().map(|edge| &mut edge.weight)
     }
 }
 
