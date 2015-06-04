@@ -19,6 +19,10 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.6
+
+  - Add Graph::node_weigths_mut and Graph::edge_weights_mut
+
 - 0.1.4
 
   - Add back DfsIter, BfsIter
