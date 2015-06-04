@@ -740,16 +740,18 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     }
     */
 
-    /// Access the internal node array.
-    pub fn raw_nodes(&self) -> &[Node<N, Ix>]
+    /// Return an iterator over either the nodes without edges to them or from them.
+    ///
+    /// The nodes in *.without_edges(Incoming)* are the initial nodes and 
+    /// *.without_edges(Outgoing)* are the terminals.
+    ///
+    /// For an undirected graph, the initials/terminals are just the vertices without edges.
+    ///
+    /// The whole iteration computes in **O(|V|)** time.
+    pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, Ty, Ix>
     {
-        &self.nodes
-    }
-
-    /// Access the internal edge array.
-    pub fn raw_edges(&self) -> &[Edge<E, Ix>]
-    {
-        &self.edges
+        WithoutEdges{iter: self.nodes.iter().enumerate(), dir: dir,
+                     _ty: marker::PhantomData}
     }
 
     /// Return an iterator yielding mutable access to all node weights.
@@ -768,6 +770,21 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     pub fn edge_weights_mut<'a>(&'a mut self) -> EdgeWeightsMut<'a, E, Ix>
     {
         EdgeWeightsMut { edges: self.edges.iter_mut() }
+    }
+
+    // Remaining methods are of the more internal flavour, read-only access to
+    // the data structure's internals.
+
+    /// Access the internal node array.
+    pub fn raw_nodes(&self) -> &[Node<N, Ix>]
+    {
+        &self.nodes
+    }
+
+    /// Access the internal edge array.
+    pub fn raw_edges(&self) -> &[Edge<E, Ix>]
+    {
+        &self.edges
     }
 
     /// Accessor for data structure internals: the first edge in the given direction.
@@ -796,20 +813,6 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
                 } else { Some(edix) }
             }
         }
-    }
-
-    /// Return an iterator over either the nodes without edges to them or from them.
-    ///
-    /// The nodes in *.without_edges(Incoming)* are the initial nodes and 
-    /// *.without_edges(Outgoing)* are the terminals.
-    ///
-    /// For an undirected graph, the initials/terminals are just the vertices without edges.
-    ///
-    /// The whole iteration computes in **O(|V|)** time.
-    pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, Ty, Ix>
-    {
-        WithoutEdges{iter: self.nodes.iter().enumerate(), dir: dir,
-                     _ty: marker::PhantomData}
     }
 }
 
