@@ -969,6 +969,10 @@ impl<'a, N, Ix> Iterator for NodeWeightsMut<'a, N, Ix> where
     fn next(&mut self) -> Option<&'a mut N> {
         self.nodes.next().map(|node| &mut node.weight)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.nodes.size_hint()
+    }
 }
 
 /// Iterator yielding mutable access to all edge weights.
@@ -983,6 +987,10 @@ impl<'a, E, Ix> Iterator for EdgeWeightsMut<'a, E, Ix> where
 
     fn next(&mut self) -> Option<&'a mut E> {
         self.edges.next().map(|edge| &mut edge.weight)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.edges.size_hint()
     }
 }
 
