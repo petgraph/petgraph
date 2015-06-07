@@ -2,8 +2,11 @@
 
 name = "petgraph"
 version = "0.1.6"
-authors = ["bluss"]
 license = "MIT/Apache-2.0"
+authors = [
+"bluss",
+"mitchmindtree",
+]
 
 description = "Graph data structure library. Provides graph types and graph algorithms."
 documentation = "http://bluss.github.io/petulant-avenger-graphlibrary/target/doc/petgraph"
