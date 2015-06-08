@@ -828,6 +828,11 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
             }
         }
     }
+
+    pub fn edge_walker(&self, e: NodeIndex<Ix>, dir: EdgeDirection) -> EdgeWalker<Ix>
+    {
+        EdgeWalker { next: self.first_edge(e, dir), direction: dir }
+    }
 }
 
 /// An iterator over either the nodes without edges to them or from them.
@@ -1102,4 +1107,22 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
+}
+
+#[derive(Clone, Debug)]
+pub struct EdgeWalker<Ix: IndexType> {
+    next: Option<EdgeIndex<Ix>>,
+    direction: EdgeDirection,
+}
+
+impl<Ix: IndexType> EdgeWalker<Ix> {
+    pub fn next<N, E, Ty: EdgeType>(&mut self, gr: &Graph<N, E, Ty, Ix>) -> Option<EdgeIndex<Ix>> {
+        match self.next.take() {
+            None => None,
+            Some(eix) => {
+                self.next = gr.next_edge(eix, self.direction);
+                Some(eix)
+            }
+        }
+    }
 }

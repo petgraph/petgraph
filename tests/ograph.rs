@@ -664,17 +664,10 @@ fn index_twice_mut() {
     // walk the graph and sum incoming edges
     let mut dfs = Dfs::new(&gr, a);
     while let Some(node) = dfs.next(&gr) {
-        if let Some(fedge) = gr.first_edge(node, Incoming) {
-            {
-                let (nw, ew) = gr.index_twice_mut(node, fedge);
-                *nw += *ew;
-            }
-            let mut edge = fedge;
-            while let Some(edge_) = gr.next_edge(edge, Incoming) {
-                let (nw, ew) = gr.index_twice_mut(node, edge_);
-                *nw += *ew;
-                edge = edge_;
-            }
+        let mut edges = gr.edge_walker(node, Incoming);
+        while let Some(edge) = edges.next(&gr) {
+            let (nw, ew) = gr.index_twice_mut(node, edge);
+            *nw += *ew;
         }
     }
 
