@@ -843,6 +843,33 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     /// node or edge indices is fine.
     ///
     /// **Panics** if the indices are equal or if they are out of bounds.
+    ///
+    /// ```
+    /// use petgraph::{Graph, Dfs, Incoming};
+    ///
+    /// let mut gr = Graph::<_,_>::new();
+    /// let a = gr.add_node(0.);
+    /// let b = gr.add_node(0.);
+    /// let c = gr.add_node(0.);
+    /// gr.add_edge(a, b, 3.);
+    /// gr.add_edge(b, c, 2.);
+    /// gr.add_edge(c, b, 1.);
+    ///
+    /// // walk the graph and sum incoming edges into the node weight
+    /// let mut dfs = Dfs::new(&gr, a);
+    /// while let Some(node) = dfs.next(&gr) {
+    ///     let mut edges = gr.walk_edges_directed(node, Incoming);
+    ///     while let Some(edge) = edges.next(&gr) {
+    ///         let (nw, ew) = gr.index_twice_mut(node, edge);
+    ///         *nw += *ew;
+    ///     }
+    /// }
+    ///
+    /// // check the result
+    /// assert_eq!(gr[a], 0.);
+    /// assert_eq!(gr[b], 4.);
+    /// assert_eq!(gr[c], 2.);
+    /// ```
     pub fn index_twice_mut<T, U>(&mut self, i: T, j: U)
         -> (&mut <Self as Index<T>>::Output,
             &mut <Self as Index<U>>::Output)
