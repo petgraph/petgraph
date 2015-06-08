@@ -1061,3 +1061,45 @@ impl<N, E, Ty, Ix> IndexMut<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
         &mut self.edges[index.index()].weight
     }
 }
+
+pub trait GraphIndex : Copy {
+    fn index(&self) -> usize;
+    fn is_node_index() -> bool;
+}
+
+impl<Ix: IndexType> GraphIndex for NodeIndex<Ix> {
+    fn index(&self) -> usize { NodeIndex::index(*self) }
+    fn is_node_index() -> bool { true }
+}
+
+impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
+    fn index(&self) -> usize { EdgeIndex::index(*self) }
+    fn is_node_index() -> bool { false }
+}
+
+/// Index the **Graph** by a tuple of two indices, any combination of
+/// node or edge indices is fine.
+///
+/// **Panics** if the indices are equal or if they are out of bounds.
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
+    where Ty: EdgeType, Ix: IndexType,
+{
+    pub fn index_twice_mut<T, U>(&mut self, i: T, j: U)
+        -> (&mut <Self as Index<T>>::Output,
+            &mut <Self as Index<U>>::Output)
+        where Self: IndexMut<T> + IndexMut<U>,
+              T: GraphIndex,
+              U: GraphIndex,
+    {
+        assert!(T::is_node_index() != U::is_node_index() ||
+                i.index() != j.index());
+
+        // Allow two mutable indexes here -- they are nonoverlapping
+        unsafe {
+            let self_mut = self as *mut _;
+            (<Self as IndexMut<T>>::index_mut(&mut *self_mut, i),
+             <Self as IndexMut<U>>::index_mut(&mut *self_mut, j))
+        }
+    }
+
+}
