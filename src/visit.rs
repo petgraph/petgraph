@@ -103,6 +103,19 @@ impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet where
     }
 }
 
+impl<Ix> VisitMap<graph::EdgeIndex<Ix>> for FixedBitSet where
+    Ix: IndexType,
+{
+    fn visit(&mut self, x: graph::EdgeIndex<Ix>) -> bool {
+        let present = self.contains(x.index());
+        self.insert(x.index());
+        !present
+    }
+    fn is_visited(&self, x: &graph::EdgeIndex<Ix>) -> bool {
+        self.contains(x.index())
+    }
+}
+
 impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
