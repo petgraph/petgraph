@@ -838,6 +838,28 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     {
         WalkEdges { next: self.first_edge(a, dir), direction: dir }
     }
+
+    /// Index the **Graph** by a tuple of two indices, any combination of
+    /// node or edge indices is fine.
+    ///
+    /// **Panics** if the indices are equal or if they are out of bounds.
+    pub fn index_twice_mut<T, U>(&mut self, i: T, j: U)
+        -> (&mut <Self as Index<T>>::Output,
+            &mut <Self as Index<U>>::Output)
+        where Self: IndexMut<T> + IndexMut<U>,
+              T: GraphIndex,
+              U: GraphIndex,
+    {
+        assert!(T::is_node_index() != U::is_node_index() ||
+                i.index() != j.index());
+
+        // Allow two mutable indexes here -- they are nonoverlapping
+        unsafe {
+            let self_mut = self as *mut _;
+            (<Self as IndexMut<T>>::index_mut(&mut *self_mut, i),
+             <Self as IndexMut<U>>::index_mut(&mut *self_mut, j))
+        }
+    }
 }
 
 /// An iterator over either the nodes without edges to them or from them.
@@ -1088,33 +1110,6 @@ impl<Ix: IndexType> GraphIndex for NodeIndex<Ix> {
 impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
     fn index(&self) -> usize { EdgeIndex::index(*self) }
     fn is_node_index() -> bool { false }
-}
-
-/// Index the **Graph** by a tuple of two indices, any combination of
-/// node or edge indices is fine.
-///
-/// **Panics** if the indices are equal or if they are out of bounds.
-impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
-    where Ty: EdgeType, Ix: IndexType,
-{
-    pub fn index_twice_mut<T, U>(&mut self, i: T, j: U)
-        -> (&mut <Self as Index<T>>::Output,
-            &mut <Self as Index<U>>::Output)
-        where Self: IndexMut<T> + IndexMut<U>,
-              T: GraphIndex,
-              U: GraphIndex,
-    {
-        assert!(T::is_node_index() != U::is_node_index() ||
-                i.index() != j.index());
-
-        // Allow two mutable indexes here -- they are nonoverlapping
-        unsafe {
-            let self_mut = self as *mut _;
-            (<Self as IndexMut<T>>::index_mut(&mut *self_mut, i),
-             <Self as IndexMut<U>>::index_mut(&mut *self_mut, j))
-        }
-    }
-
 }
 
 /// A “walker” object that can be used to step through the edge list of a node.
