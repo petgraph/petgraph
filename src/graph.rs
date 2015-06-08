@@ -1130,12 +1130,16 @@ pub trait GraphIndex : Copy {
 }
 
 impl<Ix: IndexType> GraphIndex for NodeIndex<Ix> {
+    #[inline]
     fn index(&self) -> usize { NodeIndex::index(*self) }
+    #[inline]
     fn is_node_index() -> bool { true }
 }
 
 impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
+    #[inline]
     fn index(&self) -> usize { EdgeIndex::index(*self) }
+    #[inline]
     fn is_node_index() -> bool { false }
 }
 
