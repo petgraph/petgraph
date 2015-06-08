@@ -43,7 +43,7 @@ mod traits_graph;
 /// Edge direction
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EdgeDirection {
-    /// A **Outgoing** edge is an outward edge *from* the current node.
+    /// An **Outgoing** edge is an outward edge *from* the current node.
     Outgoing = 0,
     /// An **Incoming** edge is an inbound edge *to* the current node.
     Incoming = 1
