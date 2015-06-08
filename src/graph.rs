@@ -829,9 +829,14 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         }
     }
 
-    pub fn edge_walker(&self, e: NodeIndex<Ix>, dir: EdgeDirection) -> EdgeWalker<Ix>
+    /// Return a “walker” object that can be used to step through the edges
+    /// of the node **a** in direction **dir**.
+    ///
+    /// Note: The walker does not borrow from the graph, this is to allow mixing
+    /// edge walking with mutating the graph's weights.
+    pub fn walk_edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> WalkEdges<Ix>
     {
-        EdgeWalker { next: self.first_edge(e, dir), direction: dir }
+        WalkEdges { next: self.first_edge(a, dir), direction: dir }
     }
 }
 
@@ -1067,8 +1072,11 @@ impl<N, E, Ty, Ix> IndexMut<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     }
 }
 
+/// A  **GraphIndex** is a node or edge index.
 pub trait GraphIndex : Copy {
+    #[doc(hidden)]
     fn index(&self) -> usize;
+    #[doc(hidden)]
     fn is_node_index() -> bool;
 }
 
@@ -1109,18 +1117,23 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
 
 }
 
+/// A “walker” object that can be used to step through the edge list of a node.
+///
+/// See [*.walk_edges_directed()*](struct.Graph.html#method.walk_edges_directed)
+/// for more information.
 #[derive(Clone, Debug)]
-pub struct EdgeWalker<Ix: IndexType> {
+pub struct WalkEdges<Ix: IndexType> {
     next: Option<EdgeIndex<Ix>>,
     direction: EdgeDirection,
 }
 
-impl<Ix: IndexType> EdgeWalker<Ix> {
-    pub fn next<N, E, Ty: EdgeType>(&mut self, gr: &Graph<N, E, Ty, Ix>) -> Option<EdgeIndex<Ix>> {
+impl<Ix: IndexType> WalkEdges<Ix> {
+    /// Fetch the next edge index in the walk for graph **g**.
+    pub fn next<N, E, Ty: EdgeType>(&mut self, g: &Graph<N, E, Ty, Ix>) -> Option<EdgeIndex<Ix>> {
         match self.next.take() {
             None => None,
             Some(eix) => {
-                self.next = gr.next_edge(eix, self.direction);
+                self.next = g.next_edge(eix, self.direction);
                 Some(eix)
             }
         }
