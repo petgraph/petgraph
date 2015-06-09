@@ -12,7 +12,7 @@ description = "Graph data structure library. Provides graph types and graph algo
 documentation = "http://bluss.github.io/petulant-avenger-graphlibrary/target/doc/petgraph"
 repository = "https://github.com/bluss/petulant-avenger-graphlibrary"
 
-keywords = ["container", "data-structure", "graph", "unionfind"]
+keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
 
 [lib]
 
