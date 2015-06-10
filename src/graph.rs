@@ -218,11 +218,22 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 ///
 /// The **Ix** parameter is **u32** by default. The goal is that you can ignore this parameter
 /// completely unless you need a very big graph -- then you can use **usize**.
-#[derive(Clone)]
 pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefIndex> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,
     _ty: marker::PhantomData<Ty>,
+}
+
+impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
+    where N: Clone, E: Clone,
+{
+    fn clone(&self) -> Self {
+        Graph {
+            nodes: self.nodes.clone(),
+            edges: self.edges.clone(),
+            _ty: self._ty.clone(),
+        }
+    }
 }
 
 impl<N, E, Ty, Ix> fmt::Debug for Graph<N, E, Ty, Ix> where
