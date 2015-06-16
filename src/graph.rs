@@ -847,7 +847,11 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     /// edge walking with mutating the graph's weights.
     pub fn walk_edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> WalkEdges<Ix>
     {
-        WalkEdges { next: self.first_edge(a, dir), direction: dir }
+        let first_edge = match self.nodes.get(a.index()) {
+            None => EdgeIndex::end(),
+            Some(node) => node.next[dir as usize],
+        };
+        WalkEdges { next: first_edge, direction: dir }
     }
 
     /// Index the **Graph** by two indices, any combination of
@@ -1160,18 +1164,25 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 /// for more information.
 #[derive(Clone, Debug)]
 pub struct WalkEdges<Ix: IndexType> {
-    next: Option<EdgeIndex<Ix>>,
+    next: EdgeIndex<Ix>, // a valid index or EdgeIndex::max()
     direction: EdgeDirection,
 }
 
 impl<Ix: IndexType> WalkEdges<Ix> {
     /// Fetch the next edge index in the walk for graph **g**.
     pub fn next<N, E, Ty: EdgeType>(&mut self, g: &Graph<N, E, Ty, Ix>) -> Option<EdgeIndex<Ix>> {
-        match self.next.take() {
+        self.next_neighbor(g).map(|(e, _)| e)
+    }
+
+    /// Fetch the next edge index and the edge's target node index in the walk for graph **g**.
+    pub fn next_neighbor<N, E, Ty: EdgeType>(&mut self, g: &Graph<N, E, Ty, Ix>)
+        -> Option<(EdgeIndex<Ix>, NodeIndex<Ix>)> {
+        match g.edges.get(self.next.index()) {
             None => None,
-            Some(eix) => {
-                self.next = g.next_edge(eix, self.direction);
-                Some(eix)
+            Some(edge) => {
+                let edge_index = self.next;
+                self.next = edge.next[self.direction as usize];
+                Some((edge_index, edge.node[self.direction as usize]))
             }
         }
     }
