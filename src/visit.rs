@@ -233,11 +233,14 @@ pub struct Dfs<N, VM> {
     pub discovered: VM,
 }
 
-impl<G: Visitable> Dfs<G::NodeId, G::Map>
+impl<N, VM> Dfs<N, VM>
+    where N: Clone,
+          VM: VisitMap<N>,
 {
     /// Create a new **Dfs**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
-    pub fn new(graph: &G, start: G::NodeId) -> Self
+    pub fn new<G>(graph: &G, start: N) -> Self
+        where G: Visitable<NodeId=N, Map=VM>
     {
         let mut dfs = Dfs::empty(graph);
         dfs.move_to(start);
@@ -245,19 +248,15 @@ impl<G: Visitable> Dfs<G::NodeId, G::Map>
     }
 
     /// Create a new **Dfs** using the graph's visitor map, and no stack.
-    pub fn empty(graph: &G) -> Self
+    pub fn empty<G>(graph: &G) -> Self
+        where G: Visitable<NodeId=N, Map=VM>
     {
         Dfs {
             stack: Vec::new(),
             discovered: graph.visit_map(),
         }
     }
-}
 
-impl<N, VM> Dfs<N, VM> where
-    N: Clone,
-    VM: VisitMap<N>
-{
     /// Keep the discovered map, but clear the visit stack and restart
     /// the dfs from a particular node.
     pub fn move_to(&mut self, start: N)
@@ -372,11 +371,14 @@ pub struct Bfs<N, VM> {
     pub discovered: VM,
 }
 
-impl<G: Visitable> Bfs<G::NodeId, G::Map>
+impl<N, VM> Bfs<N, VM>
+    where N: Clone,
+          VM: VisitMap<N>,
 {
     /// Create a new **Bfs**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
-    pub fn new(graph: &G, start: G::NodeId) -> Self
+    pub fn new<G>(graph: &G, start: N) -> Self
+        where G: Visitable<NodeId=N, Map=VM>
     {
         let mut discovered = graph.visit_map();
         discovered.visit(start.clone());
@@ -387,13 +389,7 @@ impl<G: Visitable> Bfs<G::NodeId, G::Map>
             discovered: discovered,
         }
     }
-}
 
-
-impl<N, VM> Bfs<N, VM> where
-    N: Clone,
-    VM: VisitMap<N>
-{
     /// Return the next node in the dfs, or **None** if the traversal is done.
     pub fn next<G>(&mut self, graph: &G) -> Option<N> where
         G: Graphlike<NodeId=N>,
@@ -414,8 +410,7 @@ impl<N, VM> Bfs<N, VM> where
 }
 
 /// An iterator for a breadth first traversal of a graph.
-pub struct BfsIter<'a, G: 'a + Visitable>
-{
+pub struct BfsIter<'a, G: 'a + Visitable> {
     graph: &'a G,
     bfs: Bfs<G::NodeId, G::Map>,
 }
