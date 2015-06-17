@@ -19,6 +19,11 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.9
+
+  - Fix Dfs/Bfs for a rustc bugfix that disallowed them
+  - Add method next_neighbor() to WalkEdges
+
 - 0.1.8
 
   - Add Graph::walk_edges_directed()
