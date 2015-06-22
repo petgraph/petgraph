@@ -19,6 +19,10 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.10
+  
+  - Fix bug in WalkEdges::next_neighbor()
+
 - 0.1.9
 
   - Fix Dfs/Bfs for a rustc bugfix that disallowed them
