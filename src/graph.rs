@@ -1174,7 +1174,12 @@ impl<Ix: IndexType> WalkEdges<Ix> {
         self.next_neighbor(g).map(|(e, _)| e)
     }
 
-    /// Fetch the next edge index and the edge's target node index in the walk for graph **g**.
+    /// Fetch the next edge index and the next node index in the walk for graph **g**.
+    ///
+    /// The next node indices are always the others than the starting point
+    /// where the **WalkEdges** value was created.
+    /// For an **Outgoing** walk, the target nodes,
+    /// for an **Incoming** walk, the source nodes of the edge.
     pub fn next_neighbor<N, E, Ty: EdgeType>(&mut self, g: &Graph<N, E, Ty, Ix>)
         -> Option<(EdgeIndex<Ix>, NodeIndex<Ix>)> {
         match g.edges.get(self.next.index()) {
@@ -1182,7 +1187,7 @@ impl<Ix: IndexType> WalkEdges<Ix> {
             Some(edge) => {
                 let edge_index = self.next;
                 self.next = edge.next[self.direction as usize];
-                Some((edge_index, edge.node[self.direction as usize]))
+                Some((edge_index, edge.node[1 - self.direction as usize]))
             }
         }
     }

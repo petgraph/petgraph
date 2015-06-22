@@ -638,6 +638,49 @@ fn test_weight_iterators() {
 }
 
 #[test]
+fn walk_edges() {
+    let mut gr = Graph::<_,_>::new();
+    let a = gr.add_node(0.);
+    let b = gr.add_node(1.);
+    let c = gr.add_node(2.);
+    let d = gr.add_node(3.);
+    let e0 = gr.add_edge(a, b, 0.);
+    let e1 = gr.add_edge(a, d, 0.);
+    let e2 = gr.add_edge(b, c, 0.);
+    let e3 = gr.add_edge(c, a, 0.);
+
+    // Set edge weights to difference: target - source.
+    let mut dfs = Dfs::new(&gr, a);
+    while let Some(source) = dfs.next(&gr) {
+        let mut edges = gr.walk_edges_directed(source, Outgoing);
+        while let Some((edge, target)) = edges.next_neighbor(&gr) {
+            gr[edge] = gr[target] - gr[source];
+        }
+    }
+    assert_eq!(gr[e0], 1.);
+    assert_eq!(gr[e1], 3.);
+    assert_eq!(gr[e2], 1.);
+    assert_eq!(gr[e3], -2.);
+
+    let mut nedges = 0;
+    let mut dfs = Dfs::new(&gr, a);
+    while let Some(node) = dfs.next(&gr) {
+        let mut edges = gr.walk_edges_directed(node, Incoming);
+        while let Some((edge, source)) = edges.next_neighbor(&gr) {
+            assert_eq!(gr.find_edge(source, node), Some(edge));
+            nedges += 1;
+        }
+
+        let mut edges = gr.walk_edges_directed(node, Outgoing);
+        while let Some((edge, target)) = edges.next_neighbor(&gr) {
+            assert_eq!(gr.find_edge(node, target), Some(edge));
+            nedges += 1;
+        }
+    }
+    assert_eq!(nedges, 8);
+}
+
+#[test]
 fn index_twice_mut() {
     let mut gr = Graph::<_,_>::new();
     let a = gr.add_node(0.);
