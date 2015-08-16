@@ -19,6 +19,11 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.11
+
+  - Update for well-formedness warnings (Rust RFC 1214), adding
+    new lifetime bounds on NeighborIter and Dfs, impact should be minimal.
+
 - 0.1.10
   
   - Fix bug in WalkEdges::next_neighbor()
