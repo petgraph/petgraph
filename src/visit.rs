@@ -34,7 +34,7 @@ pub trait NeighborIter<'a> : Graphlike {
     fn neighbors(&'a self, n: Self::NodeId) -> Self::Iter;
 }
 
-impl<'a, N, E, Ty, Ix> NeighborIter<'a> for Graph<N, E, Ty, Ix> where
+impl<'a, N, E: 'a, Ty, Ix> NeighborIter<'a> for Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
@@ -45,7 +45,7 @@ impl<'a, N, E, Ty, Ix> NeighborIter<'a> for Graph<N, E, Ty, Ix> where
     }
 }
 
-impl<'a, N, E> NeighborIter<'a> for GraphMap<N, E>
+impl<'a, N: 'a, E> NeighborIter<'a> for GraphMap<N, E>
 where N: Copy + Ord + Hash
 {
     type Iter = graphmap::Neighbors<'a, N>;
@@ -60,7 +60,7 @@ pub struct AsUndirected<G>(pub G);
 /// Wrapper type for walking edges the other way
 pub struct Reversed<G>(pub G);
 
-impl<'a, 'b, N, E, Ty, Ix> NeighborIter<'a> for AsUndirected<&'b Graph<N, E, Ty, Ix>> where
+impl<'a, 'b, N, E: 'a, Ty, Ix> NeighborIter<'a> for AsUndirected<&'b Graph<N, E, Ty, Ix>> where
     Ty: EdgeType,
     Ix: IndexType,
 {
@@ -72,7 +72,7 @@ impl<'a, 'b, N, E, Ty, Ix> NeighborIter<'a> for AsUndirected<&'b Graph<N, E, Ty,
     }
 }
 
-impl<'a, 'b, N, E, Ty, Ix> NeighborIter<'a> for Reversed<&'b Graph<N, E, Ty, Ix>> where
+impl<'a, 'b, N, E: 'a, Ty, Ix> NeighborIter<'a> for Reversed<&'b Graph<N, E, Ty, Ix>> where
     Ty: EdgeType,
     Ix: IndexType,
 {
@@ -267,9 +267,9 @@ impl<N, VM> Dfs<N, VM>
     }
 
     /// Return the next node in the dfs, or **None** if the traversal is done.
-    pub fn next<G>(&mut self, graph: &G) -> Option<N> where
+    pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
         G: Graphlike<NodeId=N>,
-        G: for<'a> NeighborIter<'a>,
+        G: NeighborIter<'a>,
     {
         while let Some(node) = self.stack.pop() {
             for succ in graph.neighbors(node.clone()) {
@@ -314,7 +314,7 @@ impl<'a, G: Visitable> DfsIter<'a, G>
 }
 
 impl<'a, G: 'a + Visitable> Iterator for DfsIter<'a, G> where
-    G: for<'b> NeighborIter<'b>,
+    G: NeighborIter<'a>,
 {
     type Item = G::NodeId;
 
@@ -391,9 +391,9 @@ impl<N, VM> Bfs<N, VM>
     }
 
     /// Return the next node in the dfs, or **None** if the traversal is done.
-    pub fn next<G>(&mut self, graph: &G) -> Option<N> where
+    pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
         G: Graphlike<NodeId=N>,
-        G: for<'a> NeighborIter<'a>,
+        G: NeighborIter<'a>,
     {
         while let Some(node) = self.stack.pop_front() {
             for succ in graph.neighbors(node.clone()) {
@@ -439,7 +439,7 @@ impl<'a, G: Visitable> BfsIter<'a, G> where
 
 impl<'a, G: 'a + Visitable> Iterator for BfsIter<'a, G> where
     G::NodeId: Clone,
-    G: for<'b> NeighborIter<'b>,
+    G: NeighborIter<'a>,
 {
     type Item = G::NodeId;
     fn next(&mut self) -> Option<G::NodeId>
