@@ -1,4 +1,4 @@
-//! **GraphMap\<N, E\>** is an undirected graph where node values are mapping keys.
+//! `GraphMap<N, E>` is an undirected graph where node values are mapping keys.
 
 use std::hash::{Hash};
 use std::collections::HashMap;
@@ -12,18 +12,18 @@ use std::slice::{
 use std::fmt;
 use std::ops::{Index, IndexMut};
 
-/// **GraphMap\<N, E\>** is an undirected graph, with generic node values **N** and edge weights **E**.
+/// `GraphMap<N, E>` is an undirected graph, with generic node values `N` and edge weights `E`.
 ///
 /// It uses an combined adjacency list and sparse adjacency matrix representation, using **O(|V|
 /// + |E|)** space, and allows testing for edge existance in constant time.
 ///
-/// The node type **N** must implement **Copy** and will be used as node identifier, duplicated
+/// The node type `N` must implement `Copy` and will be used as node identifier, duplicated
 /// into several places in the data structure.
-/// It must be suitable as a hash table key (implementing **Eq + Hash**).
-/// The node type must also implement **Ord** so that the implementation can
-/// order the pair (**a**, **b**) for an edge connecting any two nodes **a** and **b**.
+/// It must be suitable as a hash table key (implementing `Eq + Hash`).
+/// The node type must also implement `Ord` so that the implementation can
+/// order the pair (`a`, `b`) for an edge connecting any two nodes `a` and `b`.
 ///
-/// **GraphMap** does not allow parallel edges, but self loops are allowed.
+/// `GraphMap` does not allow parallel edges, but self loops are allowed.
 #[derive(Clone)]
 pub struct GraphMap<N, E> {
     nodes: HashMap<N, Vec<N>>,
@@ -46,13 +46,13 @@ fn edge_key<N: Copy + Ord>(a: N, b: N) -> (N, N)
 #[inline]
 fn copy<N: Copy>(n: &N) -> N { *n }
 
-/// A trait group for **GraphMap**'s node identifier.
+/// A trait group for `GraphMap`'s node identifier.
 pub trait NodeTrait : Copy + Ord + Hash {}
 impl<N> NodeTrait for N where N: Copy + Ord + Hash {}
 
 impl<N, E> GraphMap<N, E> where N: NodeTrait
 {
-    /// Create a new **GraphMap**.
+    /// Create a new `GraphMap`.
     pub fn new() -> Self
     {
         GraphMap {
@@ -61,7 +61,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
         }
     }
 
-    /// Create a new **GraphMap** with estimated capacity.
+    /// Create a new `GraphMap` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self
     {
         GraphMap {
@@ -89,13 +89,13 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
         self.edges.clear();
     }
 
-    /// Add node **n** to the graph.
+    /// Add node `n` to the graph.
     pub fn add_node(&mut self, n: N) -> N {
         self.nodes.entry(n).or_insert_with(|| Vec::new());
         n
     }
 
-    /// Return **true** if node **n** was removed.
+    /// Return `true` if node `n` was removed.
     pub fn remove_node(&mut self, n: N) -> bool {
         let successors = match self.nodes.remove(&n) {
             None => return false,
@@ -110,16 +110,16 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
         true
     }
 
-    /// Return **true** if the node is contained in the graph.
+    /// Return `true` if the node is contained in the graph.
     pub fn contains_node(&self, n: N) -> bool {
         self.nodes.contains_key(&n)
     }
 
-    /// Add an edge connecting **a** and **b** to the graph.
+    /// Add an edge connecting `a` and `b` to the graph.
     ///
-    /// Inserts nodes **a** and/or **b** if they aren't already part of the graph.
+    /// Inserts nodes `a` and/or `b` if they aren't already part of the graph.
     ///
-    /// Return **true** if edge did not previously exist.
+    /// Return `true` if edge did not previously exist.
     ///
     /// ## Example
     /// ```
@@ -144,7 +144,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
 
     /// Remove successor relation from a to b
     ///
-    /// Return **true** if it did exist.
+    /// Return `true` if it did exist.
     fn remove_single_edge(&mut self, a: &N, b: &N) -> bool
     {
         match self.nodes.get_mut(a) {
@@ -158,9 +158,9 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
         }
     }
 
-    /// Remove edge from **a** to **b** from the graph and return the edge weight.
+    /// Remove edge from `a` to `b` from the graph and return the edge weight.
     ///
-    /// Return **None** if the edge didn't exist.
+    /// Return `None` if the edge didn't exist.
     ///
     /// ## Example
     ///
@@ -185,24 +185,24 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
         weight
     }
 
-    /// Return **true** if the edge connecting **a** with **b** is contained in the graph.
+    /// Return `true` if the edge connecting `a` with `b` is contained in the graph.
     pub fn contains_edge(&self, a: N, b: N) -> bool {
         self.edges.contains_key(&edge_key(a, b))
     }
 
     /// Return an iterator over the nodes of the graph.
     ///
-    /// Iterator element type is **N**.
+    /// Iterator element type is `N`.
     pub fn nodes<'a>(&'a self) -> Nodes<'a, N>
     {
         Nodes{iter: self.nodes.keys().map(copy)}
     }
 
-    /// Return an iterator over the nodes that are connected with **from** by edges.
+    /// Return an iterator over the nodes that are connected with `from` by edges.
     ///
-    /// If the node **from** does not exist in the graph, return an empty iterator.
+    /// If the node `from` does not exist in the graph, return an empty iterator.
     ///
-    /// Iterator element type is **N**.
+    /// Iterator element type is `N`.
     pub fn neighbors<'a>(&'a self, from: N) -> Neighbors<'a, N>
     {
         Neighbors{iter:
@@ -213,12 +213,12 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
         }
     }
 
-    /// Return an iterator over the nodes that are connected with **from** by edges,
+    /// Return an iterator over the nodes that are connected with `from` by edges,
     /// paired with the edge weight.
     ///
-    /// If the node **from** does not exist in the graph, return an empty iterator.
+    /// If the node `from` does not exist in the graph, return an empty iterator.
     ///
-    /// Iterator element type is **(N, &'a E)**.
+    /// Iterator element type is `(N, &'a E)`.
     pub fn edges<'a>(&'a self, from: N) -> Edges<'a, N, E>
     {
         Edges {
@@ -228,15 +228,15 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
         }
     }
 
-    /// Return a reference to the edge weight connecting **a** with **b**, or
-    /// **None** if the edge does not exist in the graph.
+    /// Return a reference to the edge weight connecting `a` with `b`, or
+    /// `None` if the edge does not exist in the graph.
     pub fn edge_weight<'a>(&'a self, a: N, b: N) -> Option<&'a E>
     {
         self.edges.get(&edge_key(a, b))
     }
 
-    /// Return a mutable reference to the edge weight connecting **a** with **b**, or
-    /// **None** if the edge does not exist in the graph.
+    /// Return a mutable reference to the edge weight connecting `a` with `b`, or
+    /// `None` if the edge does not exist in the graph.
     pub fn edge_weight_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
     {
         self.edges.get_mut(&edge_key(a, b))
@@ -327,7 +327,7 @@ impl<'a, N, E> Iterator for Edges<'a, N, E>
     }
 }
 
-/// Index **GraphMap** by node pairs to access edge weights.
+/// Index `GraphMap` by node pairs to access edge weights.
 impl<N, E> Index<(N, N)> for GraphMap<N, E> where N: NodeTrait
 {
     type Output = E;
@@ -337,7 +337,7 @@ impl<N, E> Index<(N, N)> for GraphMap<N, E> where N: NodeTrait
     }
 }
 
-/// Index **GraphMap** by node pairs to access edge weights.
+/// Index `GraphMap` by node pairs to access edge weights.
 impl<N, E> IndexMut<(N, N)> for GraphMap<N, E> where N: NodeTrait
 {
     fn index_mut(&mut self, index: (N, N)) -> &mut E

@@ -1,4 +1,4 @@
-//! **Graph\<N, E, Ty, Ix\>** is a graph datastructure using an adjacency list representation.
+//! `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 
 use std::fmt;
 use std::slice;
@@ -13,8 +13,8 @@ use super::{
     EdgeType,
 };
 
-/// The default integer type for node and edge indices in **Graph**.
-/// **u32** is the default to reduce the size of the graph's data and improve
+/// The default integer type for node and edge indices in `Graph`.
+/// `u32` is the default to reduce the size of the graph's data and improve
 /// performance in the common case.
 pub type DefIndex = u32;
 
@@ -123,7 +123,7 @@ impl<Ix: IndexType = DefIndex> EdgeIndex<Ix>
         self.0.index()
     }
 
-    /// An invalid **EdgeIndex** used to denote absence of an edge, for example
+    /// An invalid `EdgeIndex` used to denote absence of an edge, for example
     /// to end an adjacency list.
     #[inline]
     pub fn end() -> Self {
@@ -196,11 +196,11 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
     }
 }
 
-/// **Graph\<N, E, Ty, Ix\>** is a graph datastructure using an adjacency list representation.
+/// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 ///
-/// **Graph** is parameterized over the node weight **N**, edge weight **E**, 
-/// edge type **Ty** that determines whether the graph has directed edges or not,
-/// and **Ix** which is the index type used.
+/// `Graph` is parameterized over the node weight `N`, edge weight `E`,
+/// edge type `Ty` that determines whether the graph has directed edges or not,
+/// and `Ix` which is the index type used.
 ///
 /// Based on the graph implementation in rustc.
 ///
@@ -209,14 +209,14 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// The graph maintains unique indices for nodes and edges, and node and edge
 /// weights may be accessed mutably.
 ///
-/// **NodeIndex** and **EdgeIndex** are types that act as references to nodes and edges,
+/// `NodeIndex` and `EdgeIndex` are types that act as references to nodes and edges,
 /// but these are only stable across certain operations. **Removing nodes or edges may shift
 /// other indices**. Adding to the graph keeps
 /// all indices stable, but removing a node will force the last node to shift its index to
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 ///
-/// The **Ix** parameter is **u32** by default. The goal is that you can ignore this parameter
-/// completely unless you need a very big graph -- then you can use **usize**.
+/// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
+/// completely unless you need a very big graph -- then you can use `usize`.
 ///
 /// ### Tradeoffs With Indices
 ///
@@ -304,7 +304,7 @@ fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T>
 
 impl<N, E> Graph<N, E, Directed>
 {
-    /// Create a new **Graph** with directed edges.
+    /// Create a new `Graph` with directed edges.
     pub fn new() -> Self
     {
         Graph{nodes: Vec::new(), edges: Vec::new(),
@@ -314,7 +314,7 @@ impl<N, E> Graph<N, E, Directed>
 
 impl<N, E> Graph<N, E, Undirected>
 {
-    /// Create a new **Graph** with undirected edges.
+    /// Create a new `Graph` with undirected edges.
     pub fn new_undirected() -> Self
     {
         Graph{nodes: Vec::new(), edges: Vec::new(),
@@ -326,7 +326,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    /// Create a new **Graph** with estimated capacity.
+    /// Create a new `Graph` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self
     {
         Graph{nodes: Vec::with_capacity(nodes), edges: Vec::with_capacity(edges),
@@ -372,7 +372,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
               _ty: marker::PhantomData}
     }
 
-    /// Add a node (also called vertex) with weight **w** to the graph.
+    /// Add a node (also called vertex) with weight `w` to the graph.
     ///
     /// Computes in **O(1)** time.
     ///
@@ -389,23 +389,23 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         node_idx
     }
 
-    /// Access node weight for node **a**.
+    /// Access node weight for node `a`.
     pub fn node_weight(&self, a: NodeIndex<Ix>) -> Option<&N>
     {
         self.nodes.get(a.index()).map(|n| &n.weight)
     }
 
-    /// Access node weight for node **a**.
+    /// Access node weight for node `a`.
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N>
     {
         self.nodes.get_mut(a.index()).map(|n| &mut n.weight)
     }
 
-    /// Return an iterator of all nodes with an edge starting from **a**.
+    /// Return an iterator of all nodes with an edge starting from `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is **NodeIndex<Ix>**.
+    /// Iterator element type is `NodeIndex<Ix>`.
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
     {
         if self.is_directed() {
@@ -415,13 +415,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         }
     }
 
-    /// Return an iterator of all neighbors that have an edge between them and **a**,
+    /// Return an iterator of all neighbors that have an edge between them and `a`,
     /// in the specified direction.
     /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is **NodeIndex<Ix>**.
+    /// Iterator element type is `NodeIndex<Ix>`.
     pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Neighbors<E, Ix>
     {
         let mut iter = self.neighbors_undirected(a);
@@ -433,13 +433,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         iter
     }
 
-    /// Return an iterator of all neighbors that have an edge between them and **a**,
+    /// Return an iterator of all neighbors that have an edge between them and `a`,
     /// in either direction.
     /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is **NodeIndex<Ix>**.
+    /// Iterator element type is `NodeIndex<Ix>`.
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
     {
         Neighbors {
@@ -451,25 +451,25 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         }
     }
 
-    /// Return an iterator over the neighbors of node **a**, paired with their respective edge
+    /// Return an iterator over the neighbors of node `a`, paired with their respective edge
     /// weights.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is **(NodeIndex<Ix>, &'a E)**.
+    /// Iterator element type is `(NodeIndex<Ix>, &'a E)`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         self.edges_directed(a, EdgeDirection::Outgoing)
     }
 
-    /// Return an iterator of all neighbors that have an edge between them and **a**,
+    /// Return an iterator of all neighbors that have an edge between them and `a`,
     /// in the specified direction, paired with the respective edge weights.
     ///
     /// If the graph is undirected, this is equivalent to *.edges(a)*.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is **(NodeIndex<Ix>, &'a E)**.
+    /// Iterator element type is `(NodeIndex<Ix>, &'a E)`.
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Edges<E, Ix>
     {
         let mut iter = self.edges_both(a);
@@ -479,12 +479,12 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         iter
     }
 
-    /// Return an iterator over the edgs from **a** to its neighbors, then *to* **a** from its
+    /// Return an iterator over the edgs from `a` to its neighbors, then *to* `a` from its
     /// neighbors.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is **(NodeIndex<Ix>, &'a E)**.
+    /// Iterator element type is `(NodeIndex<Ix>, &'a E)`.
     pub fn edges_both(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         Edges {
@@ -495,10 +495,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
             }
         }
     }
-    
-    /// Add an edge from **a** to **b** to the graph, with its edge weight.
+
+    /// Add an edge from `a` to `b` to the graph, with its edge weight.
     ///
-    /// **Note:** **Graph** allows adding parallel (“duplicate”) edges. If you want
+    /// **Note:** `Graph` allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [*.update_edge(a, b, weight)*](#method.update_edge) instead.
     ///
     /// Computes in **O(1)** time.
@@ -536,12 +536,12 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         edge_idx
     }
 
-    /// Add or update an edge from **a** to **b**.
+    /// Add or update an edge from `a` to `b`.
     ///
     /// If the edge already exists, its weight is updated.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
-    /// connected to the vertices **a** (and **b**).
+    /// connected to the vertices `a` (and `b`).
     ///
     /// Return the index of the affected edge.
     ///
@@ -560,27 +560,27 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         self.add_edge(a, b, weight)
     }
 
-    /// Access the edge weight for **e**.
+    /// Access the edge weight for `e`.
     pub fn edge_weight(&self, e: EdgeIndex<Ix>) -> Option<&E>
     {
         self.edges.get(e.index()).map(|ed| &ed.weight)
     }
 
-    /// Access the edge weight for **e** mutably.
+    /// Access the edge weight for `e` mutably.
     pub fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E>
     {
         self.edges.get_mut(e.index()).map(|ed| &mut ed.weight)
     }
 
-    /// Remove **a** from the graph if it exists, and return its weight.
-    /// If it doesn't exist in the graph, return **None**.
+    /// Remove `a` from the graph if it exists, and return its weight.
+    /// If it doesn't exist in the graph, return `None`.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N>
     {
         match self.nodes.get(a.index()) {
             None => return None,
             _ => {}
         }
-        for d in DIRECTIONS.iter() { 
+        for d in DIRECTIONS.iter() {
             let k = *d as usize;
 
             // Remove all edges from and to this node.
@@ -622,8 +622,8 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         Some(node.weight)
     }
 
-    /// For edge **e** with endpoints **edge_node**, replace links to it,
-    /// with links to **edge_next**.
+    /// For edge `e` with endpoints `edge_node`, replace links to it,
+    /// with links to `edge_next`.
     fn change_edge_links(&mut self, edge_node: [NodeIndex<Ix>; 2], e: EdgeIndex<Ix>,
                          edge_next: [EdgeIndex<Ix>; 2])
     {
@@ -652,10 +652,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         }
     }
 
-    /// Remove an edge and return its edge weight, or **None** if it didn't exist.
+    /// Remove an edge and return its edge weight, or `None` if it didn't exist.
     ///
     /// Computes in **O(e')** time, where **e'** is the size of four particular edge lists, for
-    /// the vertices of **e** and the vertices of another affected edge.
+    /// the vertices of `e` and the vertices of another affected edge.
     pub fn remove_edge(&mut self, e: EdgeIndex<Ix>) -> Option<E>
     {
         // every edge is part of two lists,
@@ -690,10 +690,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         Some(edge.weight)
     }
 
-    /// Lookup an edge from **a** to **b**.
+    /// Lookup an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
-    /// connected to the vertices **a** (and **b**).
+    /// connected to the vertices `a` (and `b`).
     pub fn find_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<EdgeIndex<Ix>>
     {
         if !self.is_directed() {
@@ -715,13 +715,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         }
     }
 
-    /// Lookup an edge between **a** and **b**, in either direction.
+    /// Lookup an edge between `a` and `b`, in either direction.
     ///
     /// If the graph is undirected, then this is equivalent to *.find_edge()*.
     ///
     /// Return the edge index and its directionality, with *Outgoing* meaning
-    /// from **a** to **b** and *Incoming* the reverse,
-    /// or **None** if the edge does not exist.
+    /// from `a` to `b` and *Incoming* the reverse,
+    /// or `None` if the edge does not exist.
     pub fn find_edge_undirected(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<(EdgeIndex<Ix>, EdgeDirection)>
     {
         match self.nodes.get(a.index()) {
@@ -783,7 +783,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
 
     /// Return an iterator over either the nodes without edges to them or from them.
     ///
-    /// The nodes in *.without_edges(Incoming)* are the initial nodes and 
+    /// The nodes in *.without_edges(Incoming)* are the initial nodes and
     /// *.without_edges(Outgoing)* are the terminals.
     ///
     /// For an undirected graph, the initials/terminals are just the vertices without edges.
@@ -857,7 +857,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     }
 
     /// Return a “walker” object that can be used to step through the edges
-    /// of the node **a** in direction **dir**.
+    /// of the node `a` in direction `dir`.
     ///
     /// Note: The walker does not borrow from the graph, this is to allow mixing
     /// edge walking with mutating the graph's weights.
@@ -870,7 +870,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
         WalkEdges { next: first_edge, direction: dir }
     }
 
-    /// Index the **Graph** by two indices, any combination of
+    /// Index the `Graph` by two indices, any combination of
     /// node or edge indices is fine.
     ///
     /// **Panics** if the indices are equal or if they are out of bounds.
@@ -954,7 +954,7 @@ impl<'a, N: 'a, Ty, Ix> Iterator for WithoutEdges<'a, N, Ty, Ix> where
 
 /// Iterator over the neighbors of a node.
 ///
-/// Iterator element type is **NodeIndex**.
+/// Iterator element type is `NodeIndex`.
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefIndex> where
     Ix: IndexType,
 {
@@ -1101,7 +1101,7 @@ impl<'a, E, Ix> Iterator for EdgeWeightsMut<'a, E, Ix> where
     }
 }
 
-/// Index the **Graph** by **NodeIndex** to access node weights.
+/// Index the `Graph` by `NodeIndex` to access node weights.
 ///
 /// **Panics** if the node doesn't exist.
 impl<N, E, Ty, Ix> Index<NodeIndex<Ix>> for Graph<N, E, Ty, Ix> where
@@ -1114,7 +1114,7 @@ impl<N, E, Ty, Ix> Index<NodeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     }
 }
 
-/// Index the **Graph** by **NodeIndex** to access node weights.
+/// Index the `Graph` by `NodeIndex` to access node weights.
 ///
 /// **Panics** if the node doesn't exist.
 impl<N, E, Ty, Ix> IndexMut<NodeIndex<Ix>> for Graph<N, E, Ty, Ix> where
@@ -1127,7 +1127,7 @@ impl<N, E, Ty, Ix> IndexMut<NodeIndex<Ix>> for Graph<N, E, Ty, Ix> where
 
 }
 
-/// Index the **Graph** by **EdgeIndex** to access edge weights.
+/// Index the `Graph` by `EdgeIndex` to access edge weights.
 ///
 /// **Panics** if the edge doesn't exist.
 impl<N, E, Ty, Ix> Index<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
@@ -1140,7 +1140,7 @@ impl<N, E, Ty, Ix> Index<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     }
 }
 
-/// Index the **Graph** by **EdgeIndex** to access edge weights.
+/// Index the `Graph` by `EdgeIndex` to access edge weights.
 ///
 /// **Panics** if the edge doesn't exist.
 impl<N, E, Ty, Ix> IndexMut<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
@@ -1152,7 +1152,7 @@ impl<N, E, Ty, Ix> IndexMut<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     }
 }
 
-/// A  **GraphIndex** is a node or edge index.
+/// A  `GraphIndex` is a node or edge index.
 pub trait GraphIndex : Copy {
     #[doc(hidden)]
     fn index(&self) -> usize;
@@ -1185,17 +1185,17 @@ pub struct WalkEdges<Ix: IndexType> {
 }
 
 impl<Ix: IndexType> WalkEdges<Ix> {
-    /// Fetch the next edge index in the walk for graph **g**.
+    /// Fetch the next edge index in the walk for graph `g`.
     pub fn next<N, E, Ty: EdgeType>(&mut self, g: &Graph<N, E, Ty, Ix>) -> Option<EdgeIndex<Ix>> {
         self.next_neighbor(g).map(|(e, _)| e)
     }
 
-    /// Fetch the next edge index and the next node index in the walk for graph **g**.
+    /// Fetch the next edge index and the next node index in the walk for graph `g`.
     ///
     /// The next node indices are always the others than the starting point
-    /// where the **WalkEdges** value was created.
-    /// For an **Outgoing** walk, the target nodes,
-    /// for an **Incoming** walk, the source nodes of the edge.
+    /// where the `WalkEdges` value was created.
+    /// For an `Outgoing` walk, the target nodes,
+    /// for an `Incoming` walk, the source nodes of the edge.
     pub fn next_neighbor<N, E, Ty: EdgeType>(&mut self, g: &Graph<N, E, Ty, Ix>)
         -> Option<(EdgeIndex<Ix>, NodeIndex<Ix>)> {
         match g.edges.get(self.next.index()) {
