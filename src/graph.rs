@@ -231,6 +231,9 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// * You can create several graphs using the equal node indices but with
 /// differing weights or differing edges.
 ///
+/// * The `Graph` is a regular rust collection and is `Send + Sync` (as long
+/// as `N` and `E` are).
+///
 pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefIndex> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,
