@@ -204,6 +204,8 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 ///
 /// Based on the graph implementation in rustc.
 ///
+/// ### Graph Indices
+///
 /// The graph maintains unique indices for nodes and edges, and node and edge
 /// weights may be accessed mutably.
 ///
@@ -213,11 +215,22 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// all indices stable, but removing a node will force the last node to shift its index to
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 ///
-/// The fact that the node and edge indices in the graph are numbered in a compact interval from
-/// 0 to *n* - 1 simplifies some graph algorithms.
-///
 /// The **Ix** parameter is **u32** by default. The goal is that you can ignore this parameter
 /// completely unless you need a very big graph -- then you can use **usize**.
+///
+/// ### Tradeoffs With Indices
+///
+/// * The fact that the node and edge indices in the graph are numbered in a compact interval from
+/// 0 to *n* - 1 simplifies some graph algorithms.
+///
+/// * You can select graph index integer type after the size of the graph. A smaller
+/// size has better performance due to cache effects.
+///
+/// * Using indices allows mutation while traversing the graph, see `Dfs`.
+///
+/// * You can create several graphs using the equal node indices but with
+/// differing weights or differing edges.
+///
 pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefIndex> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,
