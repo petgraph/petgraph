@@ -24,6 +24,7 @@ use std::ops::{Deref};
 pub use scored::MinScored;
 pub use graphmap::GraphMap;
 pub use graph::Graph;
+pub use dag::Dag;
 
 pub use self::EdgeDirection::{Outgoing, Incoming};
 pub use visit::{
