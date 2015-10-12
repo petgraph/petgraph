@@ -5,9 +5,14 @@
 //! a directed or undirected graph with arbitrary mutable node and edge weights.
 //! It is based on rustc's graph implementation.
 //!
-//! Petgraph also provides [**GraphMap**](./graphmap/struct.GraphMap.html) which
-//! is an undirected hashmap-backed graph which only allows simple node identifiers
-//! (such as integers or references).
+//! Petgraph also provides:
+//!
+//! - [**GraphMap**](./graphmap/struct.GraphMap.html) - an undirected
+//! hashmap-backed graph which only allows simple node identifiers (such as
+//! integers or references).
+//! - [**Dag**](./dag/struct.Dag.html) - a thin wrapper around **Graph**,
+//! providing a refined API for dealing specifically with directed acyclic
+//! graphs (aka DAGs).
 
 extern crate fixedbitset as fb;
 
@@ -30,6 +35,7 @@ pub use visit::{
 
 mod scored;
 pub mod algo;
+pub mod dag;
 pub mod graphmap;
 pub mod graph;
 pub mod visit;
