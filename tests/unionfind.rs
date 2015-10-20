@@ -65,10 +65,10 @@ fn uf_u8() {
 fn labeling()
 {
     let mut u = UnionFind::<u32>::new(48);
-    for i in (0..24) {
+    for i in 0..24 {
         u.union(i + 1, i);
     }
-    for i in (25..47) {
+    for i in 25..47 {
         u.union(i, i + 1);
     }
     u.union(23, 25);

@@ -132,7 +132,7 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>> whe
     // http://stackoverflow.com/a/26780899/161659
     let mut finished = g.visit_map();
     let mut finish_order = Vec::new();
-    for index in (0..g.node_count()) {
+    for index in 0..g.node_count() {
         if dfs.discovered.is_visited(&NodeIndex::<Ix>::new(index)) {
             continue
         }

@@ -51,7 +51,7 @@ impl<Ty, Ix> Vf2State<Ty, Ix> where
             generation: 0,
             _etype: marker::PhantomData,
         };
-        for _ in (0..c0) {
+        for _ in 0..c0 {
             state.mapping.push(NodeIndex::end());
             state.out.push(0);
             if Ty::is_directed() {

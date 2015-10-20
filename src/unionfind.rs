@@ -151,7 +151,7 @@ impl<K> UnionFind<K> where
     {
         // write in the labeling of each element
         unsafe {
-            for ix in (0..self.parent.len()) {
+            for ix in 0..self.parent.len() {
                 let k = *get_unchecked(&self.parent, ix);
                 let xrep = self.find_mut_recursive(k);
                 *self.parent.get_unchecked_mut(ix) = xrep;
