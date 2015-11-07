@@ -1,7 +1,5 @@
 extern crate petgraph;
 
-use std::ops::Add;
-
 use petgraph::{
     Graph,
     Bfs,
@@ -428,8 +426,19 @@ fn is_cyclic_directed() {
 
 #[test]
 fn scc() {
+    fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>) {
+        // normalize the result and compare with the answer.
+        for scc in res.iter_mut() {
+            scc.sort();
+        }
+        // sort by minimum element
+        res.sort_by(|v, w| v[0].cmp(&w[0]));
+        assert_eq!(res, normalized);
+    }
+
     let n = NodeIndex::new;
     let mut gr = Graph::new();
+
     gr.add_node(0);
     gr.add_node(1);
     gr.add_node(2);
@@ -451,21 +460,12 @@ fn scc() {
     gr.add_edge(n(7), n(4), ());
     gr.add_edge(n(4), n(1), ());
 
-    let mut sccs = petgraph::algo::scc(&gr);
-    assert_eq!(sccs.iter().map(|v| v.len()).fold(0, Add::add), gr.node_count());
-
-    let scc_answer = vec![
+    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(4), n(7)],
-        vec![n(2), n(5), n(8)]];
+        vec![n(2), n(5), n(8)],
+    ]);
 
-    // normalize the result and compare with the answer.
-    for sc in sccs.iter_mut() {
-        sc.sort();
-    }
-    // sort by minimum element
-    sccs.sort_by(|v, w| v[0].cmp(&w[0]));
-    assert_eq!(sccs, scc_answer);
 
     // Test an undirected graph just for fun.
     // Sccs are just connected components.
@@ -474,18 +474,27 @@ fn scc() {
     let ed = hr.find_edge(n(6), n(8)).unwrap();
     assert!(hr.remove_edge(ed).is_some());
 
-    let mut sccs = petgraph::algo::scc(&hr);
-
-    let scc_undir_answer = vec![
+    assert_sccs_eq(petgraph::algo::scc(&hr), vec![
         vec![n(0), n(3), n(6)],
-        vec![n(1), n(2), n(4), n(5), n(7), n(8)]];
+        vec![n(1), n(2), n(4), n(5), n(7), n(8)],
+    ]);
 
-    for sc in sccs.iter_mut() {
-        sc.sort();
-        sc.dedup();
-    }
-    sccs.sort_by(|v, w| v[0].cmp(&w[0]));
-    assert_eq!(sccs, scc_undir_answer);
+
+    // acyclic non-tree, #14
+    let n = NodeIndex::new;
+    let mut gr = Graph::new();
+    gr.add_node(0);
+    gr.add_node(1);
+    gr.add_node(2);
+    gr.add_node(3);
+    gr.add_edge(n(3), n(2), ());
+    gr.add_edge(n(3), n(1), ());
+    gr.add_edge(n(2), n(0), ());
+    gr.add_edge(n(1), n(0), ());
+
+    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+        vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
+    ]);
 }
 
 #[test]
