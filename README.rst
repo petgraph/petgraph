@@ -19,6 +19,10 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.12
+
+  - Fix an algorithm error in scc (#14)
+
 - 0.1.11
 
   - Update for well-formedness warnings (Rust RFC 1214), adding
