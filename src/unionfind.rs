@@ -1,10 +1,10 @@
-//! **UnionFind\<K\>** is a disjoint-set data structure.
+//! `UnionFind<K>` is a disjoint-set data structure.
 
 use std::ops::Add;
 use super::graph::IndexType;
 
-/// **UnionFind\<K\>** is a disjoint-set data structure. It tracks set membership of *n* elements
-/// indexed from *0* to *n - 1*. The scalar type is **K** which must be an unsigned integer type.
+/// `UnionFind<K>` is a disjoint-set data structure. It tracks set membership of *n* elements
+/// indexed from *0* to *n - 1*. The scalar type is `K` which must be an unsigned integer type.
 ///
 /// http://en.wikipedia.org/wiki/Disjoint-set_data_structure
 ///
@@ -40,7 +40,7 @@ unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K
 impl<K> UnionFind<K> where
     K: IndexType + Add<Output=K>
 {
-    /// Create a new **UnionFind** of **n** disjoint sets.
+    /// Create a new `UnionFind` of `n` disjoint sets.
     pub fn new(n: usize) -> Self
     {
         let mut parent = Vec::with_capacity(n);
@@ -62,9 +62,9 @@ impl<K> UnionFind<K> where
         UnionFind{parent: parent, rank: rank}
     }
 
-    /// Return the representative for **x**.
+    /// Return the representative for `x`.
     ///
-    /// **Panics** if **x** is out of bounds.
+    /// **Panics** if `x` is out of bounds.
     pub fn find(&self, x: K) -> K
     {
         assert!(to_uint(x) < self.parent.len());
@@ -82,12 +82,12 @@ impl<K> UnionFind<K> where
         }
     }
 
-    /// Return the representative for **x**.
+    /// Return the representative for `x`.
     ///
     /// Write back the found representative, flattening the internal
     /// datastructure in the process and quicken future lookups.
     ///
-    /// **Panics** if **x** is out of bounds.
+    /// **Panics** if `x` is out of bounds.
     pub fn find_mut(&mut self, x: K) -> K
     {
         assert!(to_uint(x) < self.parent.len());
@@ -110,11 +110,11 @@ impl<K> UnionFind<K> where
     }
 
 
-    /// Unify the two sets containing **x** and **y**.
+    /// Unify the two sets containing `x` and `y`.
     ///
-    /// Return **false** if the sets were already the same, **true** if they were unified.
+    /// Return `false` if the sets were already the same, `true` if they were unified.
     /// 
-    /// **Panics** if **x** or **y** is out of bounds.
+    /// **Panics** if `x` or `y` is out of bounds.
     pub fn union(&mut self, x: K, y: K) -> bool
     {
         if x == y {

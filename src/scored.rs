@@ -1,13 +1,13 @@
 use std::cmp::Ordering;
 
-/// **MinScored\<K, T\>** holds a score **K** and a scored object **T** in
-/// a pair for use with a **BinaryHeap**.
+/// `MinScored<K, T>` holds a score `K` and a scored object `T` in
+/// a pair for use with a `BinaryHeap`.
 ///
 /// MinScored compares in reverse order by the score, so that we can
 /// use BinaryHeap as a min-heap to extract the score-value pair with the
 /// least score.
 ///
-/// **Note:** MinScored implements a total order (**Ord**), so that it is possible
+/// **Note:** MinScored implements a total order (`Ord`), so that it is possible
 /// to use float types as scores.
 #[derive(Copy, Clone, Debug)]
 pub struct MinScored<K, T>(pub K, pub T);

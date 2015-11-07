@@ -1,11 +1,11 @@
 
 //! **petgraph** is a graph data structure library.
 //!
-//! The most prominent type is [**Graph**](./graph/struct.Graph.html) which is
+//! The most prominent type is [`Graph`](./graph/struct.Graph.html) which is
 //! a directed or undirected graph with arbitrary mutable node and edge weights.
 //! It is based on rustc's graph implementation.
 //!
-//! Petgraph also provides [**GraphMap**](./graphmap/struct.GraphMap.html) which
+//! Petgraph also provides [`GraphMap`](./graphmap/struct.GraphMap.html) which
 //! is an undirected hashmap-backed graph which only allows simple node identifiers
 //! (such as integers or references).
 
@@ -43,9 +43,9 @@ mod traits_graph;
 /// Edge direction
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EdgeDirection {
-    /// An **Outgoing** edge is an outward edge *from* the current node.
+    /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
-    /// An **Incoming** edge is an inbound edge *to* the current node.
+    /// An `Incoming` edge is an inbound edge *to* the current node.
     Incoming = 1
 }
 
