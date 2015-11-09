@@ -241,6 +241,18 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     {
         self.edges.get_mut(&edge_key(a, b))
     }
+
+    /// Access the internal nodes HashMap.
+    pub fn raw_nodes(&self) -> &HashMap<N, Vec<N>>
+    {
+        &self.nodes
+    }
+
+    /// Access the internal edge HashMap.
+    pub fn raw_edges(&self) -> &HashMap<(N, N), E>
+    {
+        &self.edges
+    }
 }
 
 /// Utitily macro -- reinterpret passed in macro arguments as items
