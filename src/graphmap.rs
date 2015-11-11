@@ -246,9 +246,9 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     /// Return an iterator over all edges of the graph with their weight in arbitrary order.
     ///
     /// Iterator element type is `((N,N), &'a E)`
-    pub fn all_edges<'a>(&'a self) -> EdgeIter<'a, N, E>
+    pub fn all_edges<'a>(&'a self) -> AllEdges<'a, N, E>
     {
-        EdgeIter {
+        AllEdges {
             inner: self.edges.iter()
         }
     }
@@ -338,11 +338,11 @@ impl<'a, N, E> Iterator for Edges<'a, N, E>
     }
 }
 
-pub struct EdgeIter<'a, N, E: 'a> where N: 'a + NodeTrait {
-    pub inner: HashmapIter<'a, (N, N), E>
+pub struct AllEdges<'a, N, E: 'a> where N: 'a + NodeTrait {
+    inner: HashmapIter<'a, (N, N), E>
 }
 
-impl<'a, N, E> Iterator for EdgeIter<'a, N, E>
+impl<'a, N, E> Iterator for AllEdges<'a, N, E>
     where N: 'a + NodeTrait, E: 'a
 {
     type Item = ((N, N), &'a E);
