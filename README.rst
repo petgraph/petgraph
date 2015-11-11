@@ -19,6 +19,10 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.13
+
+  - Add iterator GraphMap::all_edges
+
 - 0.1.12
 
   - Fix an algorithm error in scc (#14)
