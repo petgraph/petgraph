@@ -6,6 +6,7 @@ use std::iter::Map;
 use std::collections::hash_map::{
     Keys,
 };
+use std::collections::hash_map::Iter as HashmapIter;
 use std::slice::{
     Iter,
 };
@@ -241,6 +242,16 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     {
         self.edges.get_mut(&edge_key(a, b))
     }
+
+    /// Return an iterator over all edges of the graph with their weight in arbitrary order.
+    ///
+    /// Iterator element type is `((N,N), &'a E)`
+    pub fn all_edges<'a>(&'a self) -> AllEdges<'a, N, E>
+    {
+        AllEdges {
+            inner: self.edges.iter()
+        }
+    }
 }
 
 /// Utitily macro -- reinterpret passed in macro arguments as items
@@ -323,6 +334,23 @@ impl<'a, N, E> Iterator for Edges<'a, N, E>
                     }
                 }
             }
+        }
+    }
+}
+
+pub struct AllEdges<'a, N, E: 'a> where N: 'a + NodeTrait {
+    inner: HashmapIter<'a, (N, N), E>
+}
+
+impl<'a, N, E> Iterator for AllEdges<'a, N, E>
+    where N: 'a + NodeTrait, E: 'a
+{
+    type Item = ((N, N), &'a E);
+    fn next(&mut self) -> Option<((N, N), &'a E)>
+    {
+        match self.inner.next() {
+            None => None,
+            Some((k, v)) => Some((*k, v))
         }
     }
 }
