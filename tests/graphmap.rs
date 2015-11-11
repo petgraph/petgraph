@@ -1,5 +1,7 @@
 extern crate petgraph;
 
+use std::collections::HashSet;
+
 use petgraph::{
     GraphMap,
     Dfs,
@@ -108,3 +110,25 @@ fn dfs() {
     assert_eq!(DfsIter::new(&gr, z).count(), 1);
 }
 
+#[test]
+fn edge_iterator() {
+    let mut gr: GraphMap<&str, u64> = GraphMap::new();
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
+    let k = gr.add_node("K");
+    gr.add_edge(h, i, 1);
+    gr.add_edge(h, j, 2);
+    gr.add_edge(i, j, 3);
+    gr.add_edge(i, k, 4);
+
+    let real_edges: HashSet<((&str, &str), u64)> = gr.all_edges().map(|(e, &w)| (e, w)).collect();
+    let expected_edges: HashSet<((&str, &str), u64)> = vec![
+        (("H", "I"), 1),
+        (("H", "J"), 2),
+        (("I", "J"), 3),
+        (("I", "K"), 4)
+    ].iter().cloned().collect();
+
+    assert_eq!(real_edges, expected_edges);
+}
