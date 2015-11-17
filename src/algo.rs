@@ -5,7 +5,8 @@
 //! **Graph** type.
 
 use std::collections::BinaryHeap;
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
+use std::marker::PhantomData;
 use fb::FixedBitSet;
 
 use super::{
@@ -60,39 +61,122 @@ pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
     is_cyclic_undirected(g)
 }
 
-pub struct Toposort<N, VM> {
+#[derive(Clone)]
+pub struct Topo<N, VM> {
     tovisit: Vec<N>,
     ordered: VM,
 }
 
-impl<Ix: IndexType> Toposort<NodeIndex<Ix>, FixedBitSet>
+#[derive(Clone)]
+pub struct TopoWalker<Ix, T> {
+    state: T,
+    _ix: PhantomData<Ix>,
+}
+
+impl<Ix: IndexType> Topo<NodeIndex<Ix>, FixedBitSet>
 {
-    /// Create a new **Toposort**, using the graph's visitor map, and put **start**
+    /// Create a new **Topo**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
     pub fn new<N, E>(graph: &Graph<N, E, Directed, Ix>) -> Self
     {
-        // find all initial nodes
-        let tovisit = graph.without_edges(Incoming).collect();
-
-        Toposort {
+        Topo {
             ordered: graph.visit_map(),
-            tovisit: tovisit,
+            tovisit: Vec::new(),
         }
     }
 
+    pub fn is_cyclic_directed<N, E>(&mut self, graph: &Graph<N, E, Directed, Ix>) -> bool {
+        let mut n_ordered = 0;
+        self.visit(graph, |_, _| n_ordered += 1);
+        n_ordered != graph.node_count()
+    }
+
+    fn visit_impl<N, E, G, F>(&mut self, nix: NodeIndex<Ix>, g: &mut G, f: &mut F)
+        where G: Borrow<Graph<N, E, Directed, Ix>>,
+              F: FnMut(&mut G, NodeIndex<Ix>),
+    {
+        if self.ordered.is_visited(&nix) {
+            return;
+        }
+
+        self.ordered.visit(nix);
+        f(g, nix);
+        let mut edges = (*g).borrow().walk_edges_directed(nix, Outgoing);
+        while let Some(edge) = edges.next((*g).borrow()) {
+            let target = (*g).borrow().raw_edges()[edge.index()].target();
+            // Look at each neighbor, and those that only have incoming edges
+            // from the already ordered list, they are the next to visit.
+            if (*g).borrow().neighbors_directed(target, Incoming).all(|b| self.ordered.is_visited(&b)) {
+                self.visit_impl(target, g, f)
+            }
+        }
+    }
+
+    pub fn visit<N, E, G, F>(&mut self, mut graph: G, mut f: F)
+        where G: Borrow<Graph<N, E, Directed, Ix>>,
+              F: FnMut(&mut G, NodeIndex<Ix>),
+    {
+        self.ordered = graph.borrow().visit_map();
+        for i in 0..graph.borrow().node_count() {
+            self.visit_impl(NodeIndex::new(i), &mut graph, &mut f);
+        }
+    }
+
+    pub fn into_walker<N, E>(mut self, graph: &Graph<N, E, Directed, Ix>)
+        -> TopoWalker<Ix, Self>
+    {
+        self.tovisit.clear();
+        self.tovisit.extend(graph.without_edges(Incoming));
+
+        TopoWalker {
+            state: self,
+            _ix: PhantomData,
+        }
+    }
+
+    pub fn as_walker<'a, N, E>(&'a mut self, graph: &Graph<N, E, Directed, Ix>)
+        -> TopoWalker<Ix, &'a mut Self>
+    {
+        // find all initial nodes
+        self.tovisit.clear();
+        self.tovisit.extend(graph.without_edges(Incoming));
+
+        TopoWalker {
+            state: self,
+            _ix: PhantomData,
+        }
+    }
+}
+
+impl<Ix: IndexType> TopoWalker<Ix, Topo<NodeIndex<Ix>, FixedBitSet>>
+{
+    pub fn new<N, E>(g: &Graph<N, E, Directed, Ix>) -> Self {
+        Topo::new(g).into_walker(g)
+    }
+}
+
+impl<Ix: IndexType, T> TopoWalker<Ix, T>
+{
+    fn state(&mut self) -> &mut Topo<NodeIndex<Ix>, FixedBitSet>
+        where T: BorrowMut<Topo<NodeIndex<Ix>, FixedBitSet>>,
+    {
+        self.state.borrow_mut()
+    }
+
     pub fn next<N, E>(&mut self, g: &Graph<N, E, Directed, Ix>) -> Option<NodeIndex<Ix>>
+        where T: BorrowMut<Topo<NodeIndex<Ix>, FixedBitSet>>,
     {
         // Take an unvisited element and find which of its neighbors are next
-        while let Some(nix) = self.tovisit.pop() {
-            if self.ordered.is_visited(&nix) {
+        while let Some(nix) = self.state().tovisit.pop() {
+            if self.state().ordered.is_visited(&nix) {
                 continue;
             }
-            self.ordered.visit(nix);
-            for neigh in g.borrow().neighbors_directed(nix, Outgoing) {
+            self.state().ordered.visit(nix);
+            for neigh in g.neighbors_directed(nix, Outgoing) {
                 // Look at each neighbor, and those that only have incoming edges
                 // from the already ordered list, they are the next to visit.
-                if g.borrow().neighbors_directed(neigh, Incoming).all(|b| self.ordered.is_visited(&b)) {
-                    self.tovisit.push(neigh);
+                if g.neighbors_directed(neigh, Incoming).all(|b| self.state().ordered.is_visited(&b)) {
+                    self.state().tovisit.push(neigh);
                 }
             }
             return Some(nix);
