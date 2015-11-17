@@ -30,6 +30,8 @@ use petgraph::algo::{
     dijkstra,
 };
 
+use petgraph::visit::GetAdjacencyMatrix;
+
 #[test]
 fn undirected()
 {
@@ -315,6 +317,27 @@ fn dijk() {
 
     let scores = dijkstra(&g, a, Some(c), |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
     assert_eq!(scores[&c], 9);
+}
+
+#[test]
+fn test_generate_dag() {
+    for size in 1..5 {
+        let gen = pg::generate::DAG::new(size);
+        let nedges = (size - 1) * size / 2;
+        let graphs = gen.collect::<Vec<_>>();
+
+        assert_eq!(graphs.len(), 1 << nedges);
+
+        // check that all generated graphs have unique adjacency matrices
+        let mut adjmats = graphs.iter().map(Graph::adjacency_matrix).collect::<Vec<_>>();
+        adjmats.sort();
+        adjmats.dedup();
+        assert_eq!(adjmats.len(), graphs.len());
+        for gr in &graphs {
+            assert!(!petgraph::algo::is_cyclic_directed(gr),
+                    "Assertion failed: {:?} acyclic", gr);
+        }
+    }
 }
 
 #[test]

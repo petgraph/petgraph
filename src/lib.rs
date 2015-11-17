@@ -30,13 +30,13 @@ pub use visit::{
 
 mod scored;
 pub mod algo;
+pub mod generate;
 pub mod graphmap;
 pub mod graph;
 pub mod visit;
-
 pub mod unionfind;
-mod isomorphism;
 mod dijkstra;
+mod isomorphism;
 mod traits_graph;
 
 // Index into the NodeIndex and EdgeIndex arrays
