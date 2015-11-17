@@ -1,7 +1,5 @@
 
-use fb::FixedBitSet;
-use std::default::Default;
-use {Graph, Directed, Undirected, EdgeType};
+use {Graph, Directed, EdgeType};
 use graph::NodeIndex;
 
 // A DAG has the property that the adjacency matrix is lower triangular,
@@ -75,7 +73,6 @@ impl<Ty: EdgeType> Generator<Ty> {
     }
 
     fn state_to_graph(&mut self) -> &Graph<(), (), Ty> {
-        let popcount = self.bits.count_ones() as usize;
         self.g.clear();
         for _ in 0..self.nodes {
             self.g.add_node(());
