@@ -30,6 +30,7 @@ pub use visit::{
 
 mod scored;
 pub mod algo;
+#[doc(hidden)] // Not for public consumption -- only for testing
 pub mod generate;
 pub mod graphmap;
 pub mod graph;
