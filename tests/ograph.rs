@@ -320,9 +320,30 @@ fn dijk() {
 }
 
 #[test]
+fn test_generate_all() {
+    // Number of DAG out of all graphs (all permutations) per node size
+    //            0, 1, 2, 3,  4,   5 .. 
+    let n_dag = &[1, 1, 3, 25, 543, 29281, 3781503];
+    for (size, &dags_exp) in (0..4).zip(n_dag) {
+        let gen = pg::generate::Generator::<Directed>::all(size, true);
+        let nedges = size * size;
+        let graphs = gen.collect::<Vec<_>>();
+
+        assert_eq!(graphs.len(), 1 << nedges);
+
+        // check that all generated graphs have unique adjacency matrices
+        let mut adjmats = graphs.iter().map(Graph::adjacency_matrix).collect::<Vec<_>>();
+        adjmats.sort();
+        adjmats.dedup();
+        assert_eq!(adjmats.len(), graphs.len());
+        let dags = graphs.iter().filter(|g| !pg::algo::is_cyclic_directed(g)).count();
+        assert_eq!(dags_exp, dags);
+    }
+}
+#[test]
 fn test_generate_dag() {
     for size in 1..5 {
-        let gen = pg::generate::DAG::new(size);
+        let gen = pg::generate::Generator::directed_acyclic(size);
         let nedges = (size - 1) * size / 2;
         let graphs = gen.collect::<Vec<_>>();
 
