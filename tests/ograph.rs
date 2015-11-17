@@ -811,8 +811,8 @@ fn index_twice_mut() {
 fn toposort_generic() {
     // This is a DAG, visit it in order
     let mut gr = Graph::<_,_>::new();
-    let a = gr.add_node(("A", 0.));
     let b = gr.add_node(("B", 0.));
+    let a = gr.add_node(("A", 0.));
     let c = gr.add_node(("C", 0.));
     let d = gr.add_node(("D", 0.));
     let e = gr.add_node(("E", 0.));
@@ -839,7 +839,7 @@ fn toposort_generic() {
 
     let mut order = Vec::new();
     index = 0.;
-    let mut topo = pg::algo::TopoWalker::new(&gr);
+    let mut topo = pg::algo::Topo::new(&gr);
     while let Some(nx) = topo.next(&gr) {
         order.push(nx);
         assert_eq!(gr[nx].1, index);
@@ -851,7 +851,6 @@ fn toposort_generic() {
     {
         order.clear();
         let mut topo = pg::algo::Topo::new(&gr);
-        let mut topo = topo.as_walker(&gr);
         while let Some(nx) = topo.next(&gr) {
             order.push(nx);
         }
@@ -860,13 +859,6 @@ fn toposort_generic() {
     }
 
     let mut topo = pg::algo::Topo::new(&gr);
-    order.clear();
-    topo.visit(&gr, |g, nx| {
-        order.push(nx);
-        println!("Visit: {:?} with value {:?}", nx, g[nx]);
-    });
 
-    assert_is_topo_order(&gr, &order);
-
-    assert!(!topo.is_cyclic_directed(&gr));
+    assert!(!topo.is_cyclic(&gr));
 }

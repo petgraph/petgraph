@@ -5,8 +5,7 @@
 //! **Graph** type.
 
 use std::collections::BinaryHeap;
-use std::borrow::{Borrow, BorrowMut};
-use std::marker::PhantomData;
+use std::borrow::{Borrow};
 use fb::FixedBitSet;
 
 use super::{
@@ -67,116 +66,73 @@ pub struct Topo<N, VM> {
     ordered: VM,
 }
 
-#[derive(Clone)]
-pub struct TopoWalker<Ix, T> {
-    state: T,
-    _ix: PhantomData<Ix>,
-}
-
-impl<Ix: IndexType> Topo<NodeIndex<Ix>, FixedBitSet>
-{
-    /// Create a new **Topo**, using the graph's visitor map, and put **start**
-    /// in the stack of nodes to visit.
-    pub fn new<N, E>(graph: &Graph<N, E, Directed, Ix>) -> Self
+impl<N, VM> Topo<N, VM> where N: Clone {
+    /// Create a new **Topo**, using the graph's visitor map with *no* starting
+    /// index specified.
+    pub fn empty<G>(graph: &G) -> Self
+        where G: Visitable<NodeId=N, Map=VM>, G::Map: VisitMap<N>,
     {
         Topo {
             ordered: graph.visit_map(),
             tovisit: Vec::new(),
         }
     }
+}
 
-    pub fn is_cyclic_directed<N, E>(&mut self, graph: &Graph<N, E, Directed, Ix>) -> bool {
+impl<Ix: IndexType> Topo<NodeIndex<Ix>, FixedBitSet> {
+    /// Create a new **Topo**, using the graph's visitor map, and put all
+    /// initial nodes in the to visit list.
+    pub fn new<N, E>(graph: &Graph<N, E, Directed, Ix>) -> Self {
+        let mut topo = Self::empty(graph);
+        topo.reset(graph);
+        topo
+    }
+
+    /// Call `self.reset()` and run a topo order traversal to detect if the
+    /// graph is directed cyclic or not.
+    pub fn is_cyclic<N, E>(&mut self, graph: &Graph<N, E, Directed, Ix>) -> bool {
+        self.reset(graph);
         let mut n_ordered = 0;
-        self.visit(graph, |_, _| n_ordered += 1);
+        while let Some(_) = self.next(graph) {
+            n_ordered += 1;
+        }
         n_ordered != graph.node_count()
     }
 
-    fn visit_impl<N, E, G, F>(&mut self, nix: NodeIndex<Ix>, g: &mut G, f: &mut F)
-        where G: Borrow<Graph<N, E, Directed, Ix>>,
-              F: FnMut(&mut G, NodeIndex<Ix>),
-    {
-        if self.ordered.is_visited(&nix) {
-            return;
-        }
-
-        self.ordered.visit(nix);
-        f(g, nix);
-        let mut edges = (*g).borrow().walk_edges_directed(nix, Outgoing);
-        while let Some(edge) = edges.next((*g).borrow()) {
-            let target = (*g).borrow().raw_edges()[edge.index()].target();
-            // Look at each neighbor, and those that only have incoming edges
-            // from the already ordered list, they are the next to visit.
-            if (*g).borrow().neighbors_directed(target, Incoming).all(|b| self.ordered.is_visited(&b)) {
-                self.visit_impl(target, g, f)
-            }
-        }
-    }
-
-    pub fn visit<N, E, G, F>(&mut self, mut graph: G, mut f: F)
-        where G: Borrow<Graph<N, E, Directed, Ix>>,
-              F: FnMut(&mut G, NodeIndex<Ix>),
-    {
-        self.ordered = graph.borrow().visit_map();
-        for i in 0..graph.borrow().node_count() {
-            self.visit_impl(NodeIndex::new(i), &mut graph, &mut f);
-        }
-    }
-
-    pub fn into_walker<N, E>(mut self, graph: &Graph<N, E, Directed, Ix>)
-        -> TopoWalker<Ix, Self>
-    {
+    /// Clear visited state, and put all initial nodes in the to visit list.
+    pub fn reset<N, E>(&mut self, graph: &Graph<N, E, Directed, Ix>) {
         self.tovisit.clear();
+        self.ordered.clear();
         self.tovisit.extend(graph.without_edges(Incoming));
-
-        TopoWalker {
-            state: self,
-            _ix: PhantomData,
-        }
     }
 
-    pub fn as_walker<'a, N, E>(&'a mut self, graph: &Graph<N, E, Directed, Ix>)
-        -> TopoWalker<Ix, &'a mut Self>
+    /// Clear visited state and put nodes from the iterable in the to visit list.
+    pub fn reset_from<I>(&mut self, iterable: I)
+        where I: IntoIterator<Item=NodeIndex<Ix>>
     {
-        // find all initial nodes
+        self.ordered.clear();
         self.tovisit.clear();
-        self.tovisit.extend(graph.without_edges(Incoming));
-
-        TopoWalker {
-            state: self,
-            _ix: PhantomData,
-        }
-    }
-}
-
-impl<Ix: IndexType> TopoWalker<Ix, Topo<NodeIndex<Ix>, FixedBitSet>>
-{
-    pub fn new<N, E>(g: &Graph<N, E, Directed, Ix>) -> Self {
-        Topo::new(g).into_walker(g)
-    }
-}
-
-impl<Ix: IndexType, T> TopoWalker<Ix, T>
-{
-    fn state(&mut self) -> &mut Topo<NodeIndex<Ix>, FixedBitSet>
-        where T: BorrowMut<Topo<NodeIndex<Ix>, FixedBitSet>>,
-    {
-        self.state.borrow_mut()
+        self.tovisit.extend(iterable);
     }
 
+    /// Return the next node in the current topological order traversal, or
+    /// `None` if the traversal is at end.
+    ///
+    /// *Note:* The graph may not have a complete topological order, and the only
+    /// way to know is to run the whole traversal and make sure it visits every node.
     pub fn next<N, E>(&mut self, g: &Graph<N, E, Directed, Ix>) -> Option<NodeIndex<Ix>>
-        where T: BorrowMut<Topo<NodeIndex<Ix>, FixedBitSet>>,
     {
         // Take an unvisited element and find which of its neighbors are next
-        while let Some(nix) = self.state().tovisit.pop() {
-            if self.state().ordered.is_visited(&nix) {
+        while let Some(nix) = self.tovisit.pop() {
+            if self.ordered.is_visited(&nix) {
                 continue;
             }
-            self.state().ordered.visit(nix);
+            self.ordered.visit(nix);
             for neigh in g.neighbors_directed(nix, Outgoing) {
                 // Look at each neighbor, and those that only have incoming edges
                 // from the already ordered list, they are the next to visit.
-                if g.neighbors_directed(neigh, Incoming).all(|b| self.state().ordered.is_visited(&b)) {
-                    self.state().tovisit.push(neigh);
+                if g.neighbors_directed(neigh, Incoming).all(|b| self.ordered.is_visited(&b)) {
+                    self.tovisit.push(neigh);
                 }
             }
             return Some(nix);
@@ -184,7 +140,6 @@ impl<Ix: IndexType, T> TopoWalker<Ix, T>
         None
     }
 }
-
 
 /// Perform a topological sort of a directed graph **g**.
 ///
