@@ -83,6 +83,39 @@ impl<'a, 'b, N, E: 'a, Ty, Ix> NeighborIter<'a> for Reversed<&'b Graph<N, E, Ty,
     }
 }
 
+/// NeighborsDirected gives access to neighbors of both `Incoming` and `Outgoing`
+/// edges of a node.
+pub trait NeighborsDirected<'a> : Graphlike {
+    type NeighborsDirected: Iterator<Item=Self::NodeId>;
+
+    /// Return an iterator that visits all neighbors of the node **n**.
+    fn neighbors_directed(&'a self, n: Self::NodeId,
+                          d: EdgeDirection) -> Self::NeighborsDirected;
+}
+
+impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NeighborsDirected = graph::Neighbors<'a, E, Ix>;
+    fn neighbors_directed(&'a self, n: graph::NodeIndex<Ix>,
+                          d: EdgeDirection) -> graph::Neighbors<'a, E, Ix>
+    {
+        Graph::neighbors_directed(self, n, d)
+    }
+}
+
+impl<'a, 'b,  G> NeighborsDirected<'a> for Reversed<&'b G>
+    where G: NeighborsDirected<'a>,
+{
+    type NeighborsDirected = <G as NeighborsDirected<'a>>::NeighborsDirected;
+    fn neighbors_directed(&'a self, n: G::NodeId,
+                          d: EdgeDirection) -> Self::NeighborsDirected
+    {
+        self.0.neighbors_directed(n, d.opposite())
+    }
+}
+
 /// A mapping from node → is_visited.
 pub trait VisitMap<N> {
     /// Return **true** if the value is not already present.
@@ -157,28 +190,28 @@ impl<N, E> Visitable for GraphMap<N, E>
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
 }
 
-impl<'a, V: Graphlike> Graphlike for AsUndirected<&'a V>
+impl<'a, G: Graphlike> Graphlike for AsUndirected<&'a G>
 {
-    type NodeId = V::NodeId;
+    type NodeId = G::NodeId;
 }
 
-impl<'a, V: Graphlike> Graphlike for Reversed<&'a V>
+impl<'a, G: Graphlike> Graphlike for Reversed<&'a G>
 {
-    type NodeId = V::NodeId;
+    type NodeId = G::NodeId;
 }
 
-impl<'a, V: Visitable> Visitable for AsUndirected<&'a V>
+impl<'a, G: Visitable> Visitable for AsUndirected<&'a G>
 {
-    type Map = V::Map;
-    fn visit_map(&self) -> V::Map {
+    type Map = G::Map;
+    fn visit_map(&self) -> G::Map {
         self.0.visit_map()
     }
 }
 
-impl<'a, V: Visitable> Visitable for Reversed<&'a V>
+impl<'a, G: Visitable> Visitable for Reversed<&'a G>
 {
-    type Map = V::Map;
-    fn visit_map(&self) -> V::Map {
+    type Map = G::Map;
+    fn visit_map(&self) -> G::Map {
         self.0.visit_map()
     }
 }

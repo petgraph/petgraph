@@ -19,9 +19,11 @@ use super::{
     MinScored,
 };
 use super::visit::{
+    Graphlike,
     Reversed,
     Visitable,
     VisitMap,
+    NeighborsDirected,
 };
 use super::unionfind::UnionFind;
 use super::graph::{
@@ -60,22 +62,52 @@ pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
     is_cyclic_undirected(g)
 }
 
+/// A topological order traversal for a graph.
 #[derive(Clone)]
 pub struct Topo<N, VM> {
     tovisit: Vec<N>,
     ordered: VM,
 }
 
-impl<N, VM> Topo<N, VM> where N: Clone {
+impl<N, VM> Topo<N, VM>
+    where N: Clone,
+          VM: VisitMap<N>,
+{
     /// Create a new **Topo**, using the graph's visitor map with *no* starting
     /// index specified.
     pub fn empty<G>(graph: &G) -> Self
-        where G: Visitable<NodeId=N, Map=VM>, G::Map: VisitMap<N>,
+        where G: Visitable<NodeId=N, Map=VM>
     {
         Topo {
             ordered: graph.visit_map(),
             tovisit: Vec::new(),
         }
+    }
+
+    /// Return the next node in the current topological order traversal, or
+    /// `None` if the traversal is at end.
+    ///
+    /// *Note:* The graph may not have a complete topological order, and the only
+    /// way to know is to run the whole traversal and make sure it visits every node.
+    pub fn next<'a, G>(&mut self, g: &'a G) -> Option<N>
+        where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
+    {
+        // Take an unvisited element and find which of its neighbors are next
+        while let Some(nix) = self.tovisit.pop() {
+            if self.ordered.is_visited(&nix) {
+                continue;
+            }
+            self.ordered.visit(nix.clone());
+            for neigh in g.neighbors_directed(nix.clone(), Outgoing) {
+                // Look at each neighbor, and those that only have incoming edges
+                // from the already ordered list, they are the next to visit.
+                if g.neighbors_directed(neigh.clone(), Incoming).all(|b| self.ordered.is_visited(&b)) {
+                    self.tovisit.push(neigh);
+                }
+            }
+            return Some(nix);
+        }
+        None
     }
 }
 
@@ -104,40 +136,6 @@ impl<Ix: IndexType> Topo<NodeIndex<Ix>, FixedBitSet> {
         self.tovisit.clear();
         self.ordered.clear();
         self.tovisit.extend(graph.without_edges(Incoming));
-    }
-
-    /// Clear visited state and put nodes from the iterable in the to visit list.
-    pub fn reset_from<I>(&mut self, iterable: I)
-        where I: IntoIterator<Item=NodeIndex<Ix>>
-    {
-        self.ordered.clear();
-        self.tovisit.clear();
-        self.tovisit.extend(iterable);
-    }
-
-    /// Return the next node in the current topological order traversal, or
-    /// `None` if the traversal is at end.
-    ///
-    /// *Note:* The graph may not have a complete topological order, and the only
-    /// way to know is to run the whole traversal and make sure it visits every node.
-    pub fn next<N, E>(&mut self, g: &Graph<N, E, Directed, Ix>) -> Option<NodeIndex<Ix>>
-    {
-        // Take an unvisited element and find which of its neighbors are next
-        while let Some(nix) = self.tovisit.pop() {
-            if self.ordered.is_visited(&nix) {
-                continue;
-            }
-            self.ordered.visit(nix);
-            for neigh in g.neighbors_directed(nix, Outgoing) {
-                // Look at each neighbor, and those that only have incoming edges
-                // from the already ordered list, they are the next to visit.
-                if g.neighbors_directed(neigh, Incoming).all(|b| self.ordered.is_visited(&b)) {
-                    self.tovisit.push(neigh);
-                }
-            }
-            return Some(nix);
-        }
-        None
     }
 }
 

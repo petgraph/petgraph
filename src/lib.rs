@@ -50,6 +50,16 @@ pub enum EdgeDirection {
     Incoming = 1
 }
 
+impl EdgeDirection {
+    #[inline]
+    fn opposite(&self) -> EdgeDirection {
+        match *self {
+            Outgoing => Incoming,
+            Incoming => Outgoing,
+        }
+    }
+}
+
 /// Marker type for a directed graph.
 #[derive(Copy, Clone, Debug)]
 pub struct Directed;
