@@ -6,6 +6,7 @@
 
 use std::collections::BinaryHeap;
 use std::borrow::Borrow;
+use fb::FixedBitSet;
 
 use super::{
     Graph,
@@ -58,6 +59,48 @@ pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
 {
     is_cyclic_undirected(g)
 }
+
+pub struct Toposort<N, VM> {
+    tovisit: Vec<N>,
+    ordered: VM,
+}
+
+impl<Ix: IndexType> Toposort<NodeIndex<Ix>, FixedBitSet>
+{
+    /// Create a new **Toposort**, using the graph's visitor map, and put **start**
+    /// in the stack of nodes to visit.
+    pub fn new<N, E>(graph: &Graph<N, E, Directed, Ix>) -> Self
+    {
+        // find all initial nodes
+        let tovisit = graph.without_edges(Incoming).collect();
+
+        Toposort {
+            ordered: graph.visit_map(),
+            tovisit: tovisit,
+        }
+    }
+
+    pub fn next<N, E>(&mut self, g: &Graph<N, E, Directed, Ix>) -> Option<NodeIndex<Ix>>
+    {
+        // Take an unvisited element and find which of its neighbors are next
+        while let Some(nix) = self.tovisit.pop() {
+            if self.ordered.is_visited(&nix) {
+                continue;
+            }
+            self.ordered.visit(nix);
+            for neigh in g.borrow().neighbors_directed(nix, Outgoing) {
+                // Look at each neighbor, and those that only have incoming edges
+                // from the already ordered list, they are the next to visit.
+                if g.borrow().neighbors_directed(neigh, Incoming).all(|b| self.ordered.is_visited(&b)) {
+                    self.tovisit.push(neigh);
+                }
+            }
+            return Some(nix);
+        }
+        None
+    }
+}
+
 
 /// Perform a topological sort of a directed graph **g**.
 ///

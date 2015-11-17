@@ -765,4 +765,12 @@ fn toposort_generic() {
         gr[nx] = index;
         index += 1.;
     });
+
+    index = 0.;
+    let mut topo = pg::algo::Toposort::new(&gr);
+    while let Some(nx) = topo.next(&gr) {
+        assert_eq!(gr[nx], index);
+        index += 1.;
+    }
+    println!("{:?}", gr);
 }
