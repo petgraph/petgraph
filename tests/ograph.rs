@@ -12,6 +12,8 @@ use petgraph::{
     Undirected,
 };
 
+use petgraph as pg;
+
 use petgraph::algo::{
     min_spanning_tree,
     is_cyclic_undirected,
@@ -732,4 +734,35 @@ fn index_twice_mut() {
         }
         println!("Sum {:?}: {:?}", dir, gr);
     }
+}
+
+#[test]
+fn toposort_generic() {
+    // This is a DAG, visit it in order
+    let mut gr = Graph::<_,_>::new();
+    let a = gr.add_node(0.);
+    let b = gr.add_node(0.);
+    let c = gr.add_node(0.);
+    let d = gr.add_node(0.);
+    let e = gr.add_node(0.);
+    let f = gr.add_node(0.);
+    let g = gr.add_node(0.);
+    gr.add_edge(a, b, 7.0);
+    gr.add_edge(a, d, 5.);
+    gr.add_edge(d, b, 9.);
+    gr.add_edge(b, c, 8.);
+    gr.add_edge(b, e, 7.);
+    gr.add_edge(c, e, 5.);
+    gr.add_edge(d, e, 15.);
+    gr.add_edge(d, f, 6.);
+    gr.add_edge(f, e, 8.);
+    gr.add_edge(f, g, 11.);
+    gr.add_edge(e, g, 9.);
+
+    assert!(!pg::algo::is_cyclic_directed(&gr));
+    let mut index = 0.;
+    pg::algo::toposort_generic(&mut gr, |gr, nx| {
+        gr[nx] = index;
+        index += 1.;
+    });
 }
