@@ -4,12 +4,6 @@ use std::default::Default;
 use {Graph, Directed, Undirected, EdgeType};
 use graph::NodeIndex;
 
-/*
-pub struct DAG {
-    size: usize,
-    bits: FixedBitSet,
-}
-
 // A DAG has the property that the adjacency matrix is lower triangular,
 // diagonal zero.
 //
@@ -19,31 +13,8 @@ pub struct DAG {
 // possible edges.
 //
 // For a graph of n=3 nodes we have (n - 1) * n / 2 = 3 possible edges.
-//
-// Gray code
-//
-// gray(x) { x ^ (x >> 1) }
-//
-// See fxtbook on gray codes
-//
-// Use a gray code sequence to efficiently step through the whole set of edges
 
-impl DAG {
-    pub fn new(size: usize) -> Self {
-        DAG {
-            size: size,
-            bits: FixedBitSet::with_capacity(size),
-        }
-    }
-
-    fn state_to_graph(&self) -> Graph<(), (), Directed> {
-        let popcount = self.bits.as_slice().iter()
-                                .fold(0, |acc, x| acc + x.count_ones() as usize);
-        Graph::with_capacity(self.size, popcount)
-    }
-}
-*/
-
+/// A graph generator of “all” graphs of a particular size.
 pub struct Generator<Ty> {
     acyclic: bool,
     selfloops: bool,
@@ -57,6 +28,9 @@ pub struct Generator<Ty> {
 
 impl Generator<Directed> {
     /// Generate all possible Directed acyclic graphs (DAGs) of a particular number of vertices.
+    ///
+    /// These are only generated with one per isomorphism, so they use
+    /// one canonical node labeling where node *i* can only have edges to node *j* if *i < j*.
     ///
     /// For a graph of *k* vertices there are *e = (k - 1) k / 2* possible edges and
     /// *2<sup>e</sup>* DAGs.
@@ -77,6 +51,8 @@ impl Generator<Directed> {
 
 impl<Ty: EdgeType> Generator<Ty> {
     /// Generate all possible graphs of a particular number of vertices.
+    ///
+    /// All permutations are generated, so the graphs are not unique down to isomorphim.
     ///
     /// For a graph of *k* vertices there are *e = k²* possible edges and
     /// *2<sup>k<sup>2</sup></sup>* graphs.
