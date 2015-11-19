@@ -19,6 +19,11 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.14
+
+  - Add new topological order visitor Topo
+  - New graph traits NeighborsDirected, Externals, Revisitable
+
 - 0.1.13
 
   - Add iterator GraphMap::all_edges

@@ -1,5 +1,5 @@
 use std::marker;
-use fb::FixedBitSet;
+use fixedbitset::FixedBitSet;
 
 use super::{
     EdgeType,
