@@ -25,6 +25,7 @@ debug = true
 debug = true
 
 [dependencies.fixedbitset]
+version = "0.1.0"
 
 [dev-dependencies.rand]
 

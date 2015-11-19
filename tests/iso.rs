@@ -570,3 +570,16 @@ const COXETER_B: &'static str = "
  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 1 
  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 1 0
 ";
+
+#[cfg(feature = "test")]
+#[bench]
+fn bench_praust_mst(bb: &mut test::Bencher)
+{
+    let a = str_to_digraph(PRAUST_A);
+    let b = str_to_digraph(PRAUST_B);
+
+    bb.iter(|| {
+        (petgraph::algo::min_spanning_tree(&a),
+        petgraph::algo::min_spanning_tree(&b))
+    });
+}

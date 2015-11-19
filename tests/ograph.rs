@@ -12,6 +12,8 @@ use petgraph::{
     Undirected,
 };
 
+use petgraph as pg;
+
 use petgraph::algo::{
     min_spanning_tree,
     is_cyclic_undirected,
@@ -23,10 +25,13 @@ use petgraph::graph::EdgeIndex;
 use petgraph::visit::{
     Reversed,
     AsUndirected,
+    Topo,
 };
 use petgraph::algo::{
     dijkstra,
 };
+
+use petgraph::visit::GetAdjacencyMatrix;
 
 #[test]
 fn undirected()
@@ -316,6 +321,69 @@ fn dijk() {
 }
 
 #[test]
+fn test_generate_undirected() {
+    for size in 0..4 {
+        let mut gen = pg::generate::Generator::<Undirected>::all(size, true);
+        let nedges = (size * size - size) / 2 + size;
+        let mut n = 0;
+        while let Some(g) = gen.next_ref() {
+            n += 1;
+            println!("{:?}", g);
+        }
+
+        assert_eq!(n, 1 << nedges);
+    }
+}
+
+#[test]
+fn test_generate_directed() {
+    // Number of DAG out of all graphs (all permutations) per node size
+    //            0, 1, 2, 3,  4,   5 .. 
+    let n_dag = &[1, 1, 3, 25, 543, 29281, 3781503];
+    for (size, &dags_exp) in (0..4).zip(n_dag) {
+        let mut gen = pg::generate::Generator::<Directed>::all(size, true);
+        let nedges = size * size;
+        let mut n = 0;
+        let mut dags = 0;
+        while let Some(g) = gen.next_ref() {
+            n += 1;
+            if !pg::algo::is_cyclic_directed(g) {
+                dags += 1;
+            }
+        }
+
+        /*
+        // check that all generated graphs have unique adjacency matrices
+        let mut adjmats = graphs.iter().map(Graph::adjacency_matrix).collect::<Vec<_>>();
+        adjmats.sort(); adjmats.dedup();
+        assert_eq!(adjmats.len(), n);
+        */
+        assert_eq!(dags_exp, dags);
+        assert_eq!(n, 1 << nedges);
+    }
+}
+#[test]
+fn test_generate_dag() {
+    for size in 1..5 {
+        let gen = pg::generate::Generator::directed_acyclic(size);
+        let nedges = (size - 1) * size / 2;
+        let graphs = gen.collect::<Vec<_>>();
+
+        assert_eq!(graphs.len(), 1 << nedges);
+
+        // check that all generated graphs have unique adjacency matrices
+        let mut adjmats = graphs.iter().map(Graph::adjacency_matrix).collect::<Vec<_>>();
+        adjmats.sort();
+        adjmats.dedup();
+        assert_eq!(adjmats.len(), graphs.len());
+        for gr in &graphs {
+            assert!(!petgraph::algo::is_cyclic_directed(gr),
+                    "Assertion failed: {:?} acyclic", gr);
+        }
+    }
+}
+
+#[test]
 fn without()
 {
     let mut og = Graph::new_undirected();
@@ -341,6 +409,20 @@ fn without()
     assert_eq!(term, vec![b, c, d]);
 }
 
+fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex])
+{
+    assert_eq!(gr.node_count(), order.len());
+    // check all the edges of the graph
+    for edge in gr.raw_edges() {
+        let a = edge.source();
+        let b = edge.target();
+        let ai = order.iter().position(|x| *x == a).unwrap();
+        let bi = order.iter().position(|x| *x == b).unwrap();
+        println!("Check that {:?} is before {:?}", a, b);
+        assert!(ai < bi, "Topo order: assertion that node {:?} is before {:?} failed",
+                a, b);
+    }
+}
 
 #[test]
 fn toposort() {
@@ -376,15 +458,7 @@ fn toposort() {
     println!("{:?}", order);
     assert_eq!(order.len(), gr.node_count());
 
-    // check all the edges of the graph
-    for edge in gr.raw_edges() {
-        let a = edge.source();
-        let b = edge.target();
-        let ai = order.iter().position(|x| *x == a);
-        let bi = order.iter().position(|x| *x == b);
-        println!("Check that {:?} is before {:?}", a, b);
-        assert!(ai < bi);
-    }
+    assert_is_topo_order(&gr, &order);
 }
 
 #[test]
@@ -731,5 +805,58 @@ fn index_twice_mut() {
             assert_eq!(s, gr[ni]);
         }
         println!("Sum {:?}: {:?}", dir, gr);
+    }
+}
+
+#[test]
+fn toposort_generic() {
+    // This is a DAG, visit it in order
+    let mut gr = Graph::<_,_>::new();
+    let b = gr.add_node(("B", 0.));
+    let a = gr.add_node(("A", 0.));
+    let c = gr.add_node(("C", 0.));
+    let d = gr.add_node(("D", 0.));
+    let e = gr.add_node(("E", 0.));
+    let f = gr.add_node(("F", 0.));
+    let g = gr.add_node(("G", 0.));
+    gr.add_edge(a, b, 7.0);
+    gr.add_edge(a, d, 5.);
+    gr.add_edge(d, b, 9.);
+    gr.add_edge(b, c, 8.);
+    gr.add_edge(b, e, 7.);
+    gr.add_edge(c, e, 5.);
+    gr.add_edge(d, e, 15.);
+    gr.add_edge(d, f, 6.);
+    gr.add_edge(f, e, 8.);
+    gr.add_edge(f, g, 11.);
+    gr.add_edge(e, g, 9.);
+
+    assert!(!pg::algo::is_cyclic_directed(&gr));
+    let mut index = 0.;
+    let mut topo = Topo::new(&gr);
+    while let Some(nx) = topo.next(&gr) {
+        gr[nx].1 = index;
+        index += 1.;
+    }
+
+    let mut order = Vec::new();
+    index = 0.;
+    let mut topo = Topo::new(&gr);
+    while let Some(nx) = topo.next(&gr) {
+        order.push(nx);
+        assert_eq!(gr[nx].1, index);
+        index += 1.;
+    }
+    println!("{:?}", gr);
+    assert_is_topo_order(&gr, &order);
+
+    {
+        order.clear();
+        let mut topo = Topo::new(&gr);
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+        }
+        println!("{:?}", gr);
+        assert_is_topo_order(&gr, &order);
     }
 }

@@ -5,6 +5,7 @@
 //! **Graph** type.
 
 use std::collections::BinaryHeap;
+use std::borrow::{Borrow};
 
 use super::{
     Graph,
@@ -58,31 +59,35 @@ pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
     is_cyclic_undirected(g)
 }
 
-/// Perform a topological sort of a directed graph.
+/// Perform a topological sort of a directed graph **g**.
 ///
-/// Visit each node in order (if it is part of a topological order.
-fn generic_toposort<N, E, Ix, F>(g: &Graph<N, E, Directed, Ix>,
-                                 mut visit: F) where
-    Ix: IndexType,
-    F: FnMut(&NodeIndex<Ix>),
+/// Visit each node in order (if it is part of a topological order).
+///
+/// You can pass **g** as either **&Graph** or **&mut Graph**, and it
+/// will be passed on to the visitor closure.
+#[inline]
+fn toposort_generic<N, E, Ix, G, F>(mut g: G, mut visit: F)
+    where Ix: IndexType,
+          G: Borrow<Graph<N, E, Directed, Ix>>,
+          F: FnMut(&mut G, NodeIndex<Ix>),
 {
-    let mut ordered = g.visit_map();
+    let mut ordered = g.borrow().visit_map();
     let mut tovisit = Vec::new();
 
     // find all initial nodes
-    tovisit.extend(g.without_edges(Incoming));
+    tovisit.extend(g.borrow().without_edges(Incoming));
 
     // Take an unvisited element and find which of its neighbors are next
     while let Some(nix) = tovisit.pop() {
         if ordered.is_visited(&nix) {
             continue;
         }
-        visit(&nix);
+        visit(&mut g, nix);
         ordered.visit(nix);
-        for neigh in g.neighbors_directed(nix, Outgoing) {
+        for neigh in g.borrow().neighbors_directed(nix, Outgoing) {
             // Look at each neighbor, and those that only have incoming edges
             // from the already ordered list, they are the next to visit.
-            if g.neighbors_directed(neigh, Incoming).all(|b| ordered.is_visited(&b)) {
+            if g.borrow().neighbors_directed(neigh, Incoming).all(|b| ordered.is_visited(&b)) {
                 tovisit.push(neigh);
             }
         }
@@ -98,7 +103,7 @@ pub fn is_cyclic_directed<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> bool where
     Ix: IndexType,
 {
     let mut n_ordered = 0;
-    generic_toposort(g, |_| n_ordered += 1);
+    toposort_generic(g, |_, _| n_ordered += 1);
     n_ordered != g.node_count()
 }
 
@@ -113,7 +118,7 @@ pub fn toposort<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> Vec<NodeIndex<Ix>> w
     Ix: IndexType,
 {
     let mut order = Vec::with_capacity(g.node_count());
-    generic_toposort(g, |&ix| order.push(ix));
+    toposort_generic(g, |_, ix| order.push(ix));
     order
 }
 

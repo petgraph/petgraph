@@ -15,6 +15,8 @@ use super::{
     EdgeDirection,
     Graph,
     GraphMap,
+    Incoming,
+    Outgoing,
 };
 
 use graph::{
@@ -83,6 +85,67 @@ impl<'a, 'b, N, E: 'a, Ty, Ix> NeighborIter<'a> for Reversed<&'b Graph<N, E, Ty,
     }
 }
 
+/// NeighborsDirected gives access to neighbors of both `Incoming` and `Outgoing`
+/// edges of a node.
+pub trait NeighborsDirected<'a> : Graphlike {
+    type NeighborsDirected: Iterator<Item=Self::NodeId>;
+
+    /// Return an iterator that visits all neighbors of the node **n**.
+    fn neighbors_directed(&'a self, n: Self::NodeId,
+                          d: EdgeDirection) -> Self::NeighborsDirected;
+}
+
+impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NeighborsDirected = graph::Neighbors<'a, E, Ix>;
+    fn neighbors_directed(&'a self, n: graph::NodeIndex<Ix>,
+                          d: EdgeDirection) -> graph::Neighbors<'a, E, Ix>
+    {
+        Graph::neighbors_directed(self, n, d)
+    }
+}
+
+impl<'a, 'b,  G> NeighborsDirected<'a> for Reversed<&'b G>
+    where G: NeighborsDirected<'a>,
+{
+    type NeighborsDirected = <G as NeighborsDirected<'a>>::NeighborsDirected;
+    fn neighbors_directed(&'a self, n: G::NodeId,
+                          d: EdgeDirection) -> Self::NeighborsDirected
+    {
+        self.0.neighbors_directed(n, d.opposite())
+    }
+}
+
+/// Externals returns an iterator of all nodes that either have either no
+/// incoming or no outgoing edges.
+pub trait Externals<'a> : Graphlike {
+    type Externals: Iterator<Item=Self::NodeId>;
+
+    /// Return an iterator of all nodes with no edges in the given direction
+    fn externals(&'a self, d: EdgeDirection) -> Self::Externals;
+}
+
+impl<'a, N: 'a, E, Ty, Ix> Externals<'a> for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Externals = graph::WithoutEdges<'a, N, Ty, Ix>;
+    fn externals(&'a self, d: EdgeDirection) -> graph::WithoutEdges<'a, N, Ty, Ix> {
+        Graph::without_edges(self, d)
+    }
+}
+
+impl<'a, 'b,  G> Externals<'a> for Reversed<&'b G>
+    where G: Externals<'a>,
+{
+    type Externals = <G as Externals<'a>>::Externals;
+    fn externals(&'a self, d: EdgeDirection) -> Self::Externals {
+        self.0.externals(d.opposite())
+    }
+}
+
 /// A mapping from node → is_visited.
 pub trait VisitMap<N> {
     /// Return **true** if the value is not already present.
@@ -131,6 +194,11 @@ pub trait Visitable : Graphlike {
     fn visit_map(&self) -> Self::Map;
 }
 
+/// Trait for graph that can reset & resize its visitor map
+pub trait Revisitable : Visitable {
+    fn reset_map(&self, &mut Self::Map);
+}
+
 impl<N, E, Ty, Ix> Graphlike for Graph<N, E, Ty, Ix> where
     Ix: IndexType,
 {
@@ -145,6 +213,16 @@ impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
     fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
 }
 
+impl<N, E, Ty, Ix> Revisitable for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn reset_map(&self, map: &mut Self::Map) {
+        map.clear();
+        map.grow(self.node_count());
+    }
+}
+
 impl<N: Clone, E> Graphlike for GraphMap<N, E>
 {
     type NodeId = N;
@@ -157,28 +235,28 @@ impl<N, E> Visitable for GraphMap<N, E>
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
 }
 
-impl<'a, V: Graphlike> Graphlike for AsUndirected<&'a V>
+impl<'a, G: Graphlike> Graphlike for AsUndirected<&'a G>
 {
-    type NodeId = V::NodeId;
+    type NodeId = G::NodeId;
 }
 
-impl<'a, V: Graphlike> Graphlike for Reversed<&'a V>
+impl<'a, G: Graphlike> Graphlike for Reversed<&'a G>
 {
-    type NodeId = V::NodeId;
+    type NodeId = G::NodeId;
 }
 
-impl<'a, V: Visitable> Visitable for AsUndirected<&'a V>
+impl<'a, G: Visitable> Visitable for AsUndirected<&'a G>
 {
-    type Map = V::Map;
-    fn visit_map(&self) -> V::Map {
+    type Map = G::Map;
+    fn visit_map(&self) -> G::Map {
         self.0.visit_map()
     }
 }
 
-impl<'a, V: Visitable> Visitable for Reversed<&'a V>
+impl<'a, G: Visitable> Visitable for Reversed<&'a G>
 {
-    type Map = V::Map;
-    fn visit_map(&self) -> V::Map {
+    type Map = G::Map;
+    fn visit_map(&self) -> G::Map {
         self.0.visit_map()
     }
 }
@@ -462,3 +540,74 @@ impl<'a, G: Visitable> Clone for BfsIter<'a, G> where Bfs<G::NodeId, G::Map>: Cl
         }
     }
 }
+
+
+/// A topological order traversal for a graph.
+#[derive(Clone)]
+pub struct Topo<N, VM> {
+    tovisit: Vec<N>,
+    ordered: VM,
+}
+
+impl<N, VM> Topo<N, VM>
+    where N: Clone,
+          VM: VisitMap<N>,
+{
+    /// Create a new **Topo**, using the graph's visitor map, and put all
+    /// initial nodes in the to visit list.
+    pub fn new<'a, G>(graph: &'a G) -> Self
+        where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
+    {
+        let mut topo = Self::empty(graph);
+        topo.reset(graph);
+        topo
+    }
+
+    /* Private ntil it has a use */
+    /// Create a new **Topo**, using the graph's visitor map with *no* starting
+    /// index specified.
+    fn empty<G>(graph: &G) -> Self
+        where G: Visitable<NodeId=N, Map=VM>
+    {
+        Topo {
+            ordered: graph.visit_map(),
+            tovisit: Vec::new(),
+        }
+    }
+
+    /// Clear visited state, and put all initial nodes in the to visit list.
+    pub fn reset<'a, G>(&mut self, graph: &'a G)
+        where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
+    {
+        graph.reset_map(&mut self.ordered);
+        self.tovisit.clear();
+        self.tovisit.extend(graph.externals(Incoming));
+    }
+
+    /// Return the next node in the current topological order traversal, or
+    /// `None` if the traversal is at end.
+    ///
+    /// *Note:* The graph may not have a complete topological order, and the only
+    /// way to know is to run the whole traversal and make sure it visits every node.
+    pub fn next<'a, G>(&mut self, g: &'a G) -> Option<N>
+        where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
+    {
+        // Take an unvisited element and find which of its neighbors are next
+        while let Some(nix) = self.tovisit.pop() {
+            if self.ordered.is_visited(&nix) {
+                continue;
+            }
+            self.ordered.visit(nix.clone());
+            for neigh in g.neighbors_directed(nix.clone(), Outgoing) {
+                // Look at each neighbor, and those that only have incoming edges
+                // from the already ordered list, they are the next to visit.
+                if g.neighbors_directed(neigh.clone(), Incoming).all(|b| self.ordered.is_visited(&b)) {
+                    self.tovisit.push(neigh);
+                }
+            }
+            return Some(nix);
+        }
+        None
+    }
+}
+
