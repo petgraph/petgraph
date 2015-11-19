@@ -1,7 +1,7 @@
 [package]
 
 name = "petgraph"
-version = "0.1.13"
+version = "0.1.14"
 license = "MIT/Apache-2.0"
 authors = [
 "bluss",
@@ -19,7 +19,6 @@ keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
 name = "petgraph"
 
 [profile.release]
-debug = true
 
 [profile.bench]
 debug = true
