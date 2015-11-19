@@ -858,8 +858,4 @@ fn toposort_generic() {
         println!("{:?}", gr);
         assert_is_topo_order(&gr, &order);
     }
-
-    let mut topo = pg::algo::Topo::new(&gr);
-
-    assert!(!topo.is_cyclic(&gr));
 }

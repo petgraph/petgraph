@@ -132,19 +132,6 @@ impl<N, VM> Topo<N, VM>
     }
 }
 
-impl<Ix: IndexType> Topo<NodeIndex<Ix>, FixedBitSet> {
-    /// Call `self.reset()` and run a topo order traversal to detect if the
-    /// graph is directed cyclic or not.
-    pub fn is_cyclic<N, E>(&mut self, graph: &Graph<N, E, Directed, Ix>) -> bool {
-        self.reset(graph);
-        let mut n_ordered = 0;
-        while let Some(_) = self.next(graph) {
-            n_ordered += 1;
-        }
-        n_ordered != graph.node_count()
-    }
-}
-
 /// Perform a topological sort of a directed graph **g**.
 ///
 /// Visit each node in order (if it is part of a topological order).
