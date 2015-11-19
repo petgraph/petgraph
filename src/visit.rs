@@ -563,9 +563,10 @@ impl<N, VM> Topo<N, VM>
         topo
     }
 
+    /* Private ntil it has a use */
     /// Create a new **Topo**, using the graph's visitor map with *no* starting
     /// index specified.
-    pub fn empty<G>(graph: &G) -> Self
+    fn empty<G>(graph: &G) -> Self
         where G: Visitable<NodeId=N, Map=VM>
     {
         Topo {
