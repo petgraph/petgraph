@@ -9,7 +9,7 @@
 //! is an undirected hashmap-backed graph which only allows simple node identifiers
 //! (such as integers or references).
 
-extern crate fixedbitset as fb;
+extern crate fixedbitset;
 
 use std::cmp::Ordering;
 use std::hash::{self, Hash};

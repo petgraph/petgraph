@@ -1,12 +1,12 @@
 //! Graph visitor algorithms.
 //!
 
+use fixedbitset::FixedBitSet;
 use std::collections::{
     HashSet,
     VecDeque,
 };
 use std::hash::Hash;
-use fb::FixedBitSet;
 
 use super::{
     graphmap,
