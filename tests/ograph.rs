@@ -832,10 +832,11 @@ fn toposort_generic() {
 
     assert!(!pg::algo::is_cyclic_directed(&gr));
     let mut index = 0.;
-    pg::algo::toposort_generic(&mut gr, |gr, nx| {
+    let mut topo = pg::algo::Topo::new(&gr);
+    while let Some(nx) = topo.next(&gr) {
         gr[nx].1 = index;
         index += 1.;
-    });
+    }
 
     let mut order = Vec::new();
     index = 0.;

@@ -146,7 +146,7 @@ impl<Ix: IndexType> Topo<NodeIndex<Ix>, FixedBitSet> {
 /// You can pass **g** as either **&Graph** or **&mut Graph**, and it
 /// will be passed on to the visitor closure.
 #[inline]
-pub fn toposort_generic<N, E, Ix, G, F>(mut g: G, mut visit: F)
+fn toposort_generic<N, E, Ix, G, F>(mut g: G, mut visit: F)
     where Ix: IndexType,
           G: Borrow<Graph<N, E, Directed, Ix>>,
           F: FnMut(&mut G, NodeIndex<Ix>),
