@@ -25,6 +25,7 @@ use petgraph::graph::EdgeIndex;
 use petgraph::visit::{
     Reversed,
     AsUndirected,
+    Topo,
 };
 use petgraph::algo::{
     dijkstra,
@@ -832,7 +833,7 @@ fn toposort_generic() {
 
     assert!(!pg::algo::is_cyclic_directed(&gr));
     let mut index = 0.;
-    let mut topo = pg::algo::Topo::new(&gr);
+    let mut topo = Topo::new(&gr);
     while let Some(nx) = topo.next(&gr) {
         gr[nx].1 = index;
         index += 1.;
@@ -840,7 +841,7 @@ fn toposort_generic() {
 
     let mut order = Vec::new();
     index = 0.;
-    let mut topo = pg::algo::Topo::new(&gr);
+    let mut topo = Topo::new(&gr);
     while let Some(nx) = topo.next(&gr) {
         order.push(nx);
         assert_eq!(gr[nx].1, index);
@@ -851,7 +852,7 @@ fn toposort_generic() {
 
     {
         order.clear();
-        let mut topo = pg::algo::Topo::new(&gr);
+        let mut topo = Topo::new(&gr);
         while let Some(nx) = topo.next(&gr) {
             order.push(nx);
         }

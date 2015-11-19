@@ -6,7 +6,6 @@
 
 use std::collections::BinaryHeap;
 use std::borrow::{Borrow};
-use fb::FixedBitSet;
 
 use super::{
     Graph,
@@ -19,13 +18,9 @@ use super::{
     MinScored,
 };
 use super::visit::{
-    Graphlike,
     Reversed,
     Visitable,
-    Revisitable,
     VisitMap,
-    NeighborsDirected,
-    Externals,
 };
 use super::unionfind::UnionFind;
 use super::graph::{
@@ -62,74 +57,6 @@ pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
     Ix: IndexType,
 {
     is_cyclic_undirected(g)
-}
-
-/// A topological order traversal for a graph.
-#[derive(Clone)]
-pub struct Topo<N, VM> {
-    tovisit: Vec<N>,
-    ordered: VM,
-}
-
-impl<N, VM> Topo<N, VM>
-    where N: Clone,
-          VM: VisitMap<N>,
-{
-    /// Create a new **Topo**, using the graph's visitor map, and put all
-    /// initial nodes in the to visit list.
-    pub fn new<'a, G>(graph: &'a G) -> Self
-        where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
-    {
-        let mut topo = Self::empty(graph);
-        topo.reset(graph);
-        topo
-    }
-
-    /// Create a new **Topo**, using the graph's visitor map with *no* starting
-    /// index specified.
-    pub fn empty<G>(graph: &G) -> Self
-        where G: Visitable<NodeId=N, Map=VM>
-    {
-        Topo {
-            ordered: graph.visit_map(),
-            tovisit: Vec::new(),
-        }
-    }
-
-    /// Clear visited state, and put all initial nodes in the to visit list.
-    pub fn reset<'a, G>(&mut self, graph: &'a G)
-        where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
-    {
-        graph.reset_map(&mut self.ordered);
-        self.tovisit.clear();
-        self.tovisit.extend(graph.externals(Incoming));
-    }
-
-    /// Return the next node in the current topological order traversal, or
-    /// `None` if the traversal is at end.
-    ///
-    /// *Note:* The graph may not have a complete topological order, and the only
-    /// way to know is to run the whole traversal and make sure it visits every node.
-    pub fn next<'a, G>(&mut self, g: &'a G) -> Option<N>
-        where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
-    {
-        // Take an unvisited element and find which of its neighbors are next
-        while let Some(nix) = self.tovisit.pop() {
-            if self.ordered.is_visited(&nix) {
-                continue;
-            }
-            self.ordered.visit(nix.clone());
-            for neigh in g.neighbors_directed(nix.clone(), Outgoing) {
-                // Look at each neighbor, and those that only have incoming edges
-                // from the already ordered list, they are the next to visit.
-                if g.neighbors_directed(neigh.clone(), Incoming).all(|b| self.ordered.is_visited(&b)) {
-                    self.tovisit.push(neigh);
-                }
-            }
-            return Some(nix);
-        }
-        None
-    }
 }
 
 /// Perform a topological sort of a directed graph **g**.
