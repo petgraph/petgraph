@@ -22,8 +22,10 @@ use super::visit::{
     Graphlike,
     Reversed,
     Visitable,
+    Revisitable,
     VisitMap,
     NeighborsDirected,
+    Externals,
 };
 use super::unionfind::UnionFind;
 use super::graph::{
@@ -73,6 +75,16 @@ impl<N, VM> Topo<N, VM>
     where N: Clone,
           VM: VisitMap<N>,
 {
+    /// Create a new **Topo**, using the graph's visitor map, and put all
+    /// initial nodes in the to visit list.
+    pub fn new<'a, G>(graph: &'a G) -> Self
+        where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
+    {
+        let mut topo = Self::empty(graph);
+        topo.reset(graph);
+        topo
+    }
+
     /// Create a new **Topo**, using the graph's visitor map with *no* starting
     /// index specified.
     pub fn empty<G>(graph: &G) -> Self
@@ -82,6 +94,15 @@ impl<N, VM> Topo<N, VM>
             ordered: graph.visit_map(),
             tovisit: Vec::new(),
         }
+    }
+
+    /// Clear visited state, and put all initial nodes in the to visit list.
+    pub fn reset<'a, G>(&mut self, graph: &'a G)
+        where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
+    {
+        graph.reset_map(&mut self.ordered);
+        self.tovisit.clear();
+        self.tovisit.extend(graph.externals(Incoming));
     }
 
     /// Return the next node in the current topological order traversal, or
@@ -112,14 +133,6 @@ impl<N, VM> Topo<N, VM>
 }
 
 impl<Ix: IndexType> Topo<NodeIndex<Ix>, FixedBitSet> {
-    /// Create a new **Topo**, using the graph's visitor map, and put all
-    /// initial nodes in the to visit list.
-    pub fn new<N, E>(graph: &Graph<N, E, Directed, Ix>) -> Self {
-        let mut topo = Self::empty(graph);
-        topo.reset(graph);
-        topo
-    }
-
     /// Call `self.reset()` and run a topo order traversal to detect if the
     /// graph is directed cyclic or not.
     pub fn is_cyclic<N, E>(&mut self, graph: &Graph<N, E, Directed, Ix>) -> bool {
@@ -129,13 +142,6 @@ impl<Ix: IndexType> Topo<NodeIndex<Ix>, FixedBitSet> {
             n_ordered += 1;
         }
         n_ordered != graph.node_count()
-    }
-
-    /// Clear visited state, and put all initial nodes in the to visit list.
-    pub fn reset<N, E>(&mut self, graph: &Graph<N, E, Directed, Ix>) {
-        self.tovisit.clear();
-        self.ordered.clear();
-        self.tovisit.extend(graph.without_edges(Incoming));
     }
 }
 

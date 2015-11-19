@@ -192,6 +192,11 @@ pub trait Visitable : Graphlike {
     fn visit_map(&self) -> Self::Map;
 }
 
+/// Trait for graph that can reset & resize its visitor map
+pub trait Revisitable : Visitable {
+    fn reset_map(&self, &mut Self::Map);
+}
+
 impl<N, E, Ty, Ix> Graphlike for Graph<N, E, Ty, Ix> where
     Ix: IndexType,
 {
@@ -204,6 +209,16 @@ impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
 {
     type Map = FixedBitSet;
     fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
+}
+
+impl<N, E, Ty, Ix> Revisitable for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn reset_map(&self, map: &mut Self::Map) {
+        map.clear();
+        map.grow(self.node_count());
+    }
 }
 
 impl<N: Clone, E> Graphlike for GraphMap<N, E>
