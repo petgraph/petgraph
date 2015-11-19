@@ -116,6 +116,34 @@ impl<'a, 'b,  G> NeighborsDirected<'a> for Reversed<&'b G>
     }
 }
 
+/// Externals returns an iterator of all nodes that either have either no
+/// incoming or no outgoing edges.
+pub trait Externals<'a> : Graphlike {
+    type Externals: Iterator<Item=Self::NodeId>;
+
+    /// Return an iterator of all nodes with no edges in the given direction
+    fn externals(&'a self, d: EdgeDirection) -> Self::Externals;
+}
+
+impl<'a, N: 'a, E, Ty, Ix> Externals<'a> for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Externals = graph::WithoutEdges<'a, N, Ty, Ix>;
+    fn externals(&'a self, d: EdgeDirection) -> graph::WithoutEdges<'a, N, Ty, Ix> {
+        Graph::without_edges(self, d)
+    }
+}
+
+impl<'a, 'b,  G> Externals<'a> for Reversed<&'b G>
+    where G: Externals<'a>,
+{
+    type Externals = <G as Externals<'a>>::Externals;
+    fn externals(&'a self, d: EdgeDirection) -> Self::Externals {
+        self.0.externals(d.opposite())
+    }
+}
+
 /// A mapping from node → is_visited.
 pub trait VisitMap<N> {
     /// Return **true** if the value is not already present.

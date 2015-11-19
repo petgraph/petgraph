@@ -783,10 +783,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
 
     /// Return an iterator over either the nodes without edges to them or from them.
     ///
-    /// The nodes in *.without_edges(Incoming)* are the initial nodes and
-    /// *.without_edges(Outgoing)* are the terminals.
+    /// The nodes in *.without_edges(Incoming)* are the source nodes and
+    /// *.without_edges(Outgoing)* are the sinks.
     ///
-    /// For an undirected graph, the initials/terminals are just the vertices without edges.
+    /// For an undirected graph, the sinks/sources are just the vertices without edges.
     ///
     /// The whole iteration computes in **O(|V|)** time.
     pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, Ty, Ix>
