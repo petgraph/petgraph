@@ -570,6 +570,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         self.edges.get_mut(e.index()).map(|ed| &mut ed.weight)
     }
 
+    /// Access the source and target nodes for `e`.
+    pub fn edge_endpoints(&self, e: EdgeIndex<Ix>)
+        -> Option<(NodeIndex<Ix>, NodeIndex<Ix>)>
+    {
+        self.edges.get(e.index()).map(|ed| (ed.source(), ed.target()))
+    }
+
     /// Remove `a` from the graph if it exists, and return its weight.
     /// If it doesn't exist in the graph, return `None`.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N>
