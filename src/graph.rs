@@ -186,11 +186,14 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 ///
-/// `Graph` is parameterized over the node weight `N`, edge weight `E`,
-/// edge type `Ty` that determines whether the graph has directed edges or not,
-/// and `Ix` which is the index type used.
+/// `Graph` is parameterized over:
 ///
-/// Based on the graph implementation in rustc.
+/// - Associated data `N` for nodes and `E` for edges, also called *weights*.
+///   The associated data can be of arbitrary type.
+/// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
+/// - Index type `Ix`, which determines the maximum size of the graph.
+///
+/// Based on the graph datastructure used in rustc.
 ///
 /// ### Graph Indices
 ///
@@ -198,9 +201,10 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// weights may be accessed mutably.
 ///
 /// `NodeIndex` and `EdgeIndex` are types that act as references to nodes and edges,
-/// but these are only stable across certain operations. **Removing nodes or edges may shift
-/// other indices**. Adding to the graph keeps
-/// all indices stable, but removing a node will force the last node to shift its index to
+/// but these are only stable across certain operations.
+/// **Adding nodes or edges keeps indices stable.
+/// Removing nodes or edges may shift other indices.**
+/// Removing a node will force the last node to shift its index to
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 ///
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
