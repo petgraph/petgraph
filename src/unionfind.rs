@@ -51,12 +51,12 @@ impl<K> UnionFind<K> where
         }
 
         // unroll the first iteration to avoid wraparound in i for K=u8, n=256.
-        let mut i: K = K::zero();
+        let mut i: K = K::new(0);
         if n > 0 {
             parent.push(i);
         }
         for _ in 1..n {
-            i = i + K::one();
+            i = i + K::new(1);
             parent.push(i);
         }
         UnionFind{parent: parent, rank: rank}

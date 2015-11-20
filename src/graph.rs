@@ -24,8 +24,12 @@ pub trait IndexType : Copy + Ord + fmt::Debug + 'static
     fn new(x: usize) -> Self;
     fn index(&self) -> usize;
     fn max() -> Self;
-    fn zero() -> Self;
-    fn one() -> Self;
+    /// **Deprecated**
+    #[inline]
+    fn zero() -> Self { Self::new(0) }
+    /// **Deprecated**
+    #[inline]
+    fn one() -> Self { Self::new(1) }
 }
 
 impl IndexType for usize {
@@ -35,10 +39,6 @@ impl IndexType for usize {
     fn index(&self) -> Self { *self }
     #[inline(always)]
     fn max() -> Self { ::std::usize::MAX }
-    #[inline(always)]
-    fn zero() -> Self { 0 }
-    #[inline(always)]
-    fn one() -> Self { 1 }
 }
 
 impl IndexType for u32 {
@@ -48,10 +48,6 @@ impl IndexType for u32 {
     fn index(&self) -> usize { *self as usize }
     #[inline(always)]
     fn max() -> Self { ::std::u32::MAX }
-    #[inline(always)]
-    fn zero() -> Self { 0 }
-    #[inline(always)]
-    fn one() -> Self { 1 }
 }
 
 impl IndexType for u16 {
@@ -61,10 +57,6 @@ impl IndexType for u16 {
     fn index(&self) -> usize { *self as usize }
     #[inline(always)]
     fn max() -> Self { ::std::u16::MAX }
-    #[inline(always)]
-    fn zero() -> Self { 0 }
-    #[inline(always)]
-    fn one() -> Self { 1 }
 }
 
 impl IndexType for u8 {
@@ -74,10 +66,6 @@ impl IndexType for u8 {
     fn index(&self) -> usize { *self as usize }
     #[inline(always)]
     fn max() -> Self { ::std::u8::MAX }
-    #[inline(always)]
-    fn zero() -> Self { 0 }
-    #[inline(always)]
-    fn one() -> Self { 1 }
 }
 
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
