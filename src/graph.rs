@@ -445,7 +445,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is `(NodeIndex<Ix>, &'a E)`.
+    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         self.edges_directed(a, EdgeDirection::Outgoing)
@@ -458,7 +458,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is `(NodeIndex<Ix>, &'a E)`.
+    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Edges<E, Ix>
     {
         let mut iter = self.edges_both(a);
@@ -473,7 +473,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is `(NodeIndex<Ix>, &'a E)`.
+    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
     pub fn edges_both(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         Edges {
