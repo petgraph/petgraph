@@ -372,7 +372,8 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     {
         let node = Node{weight: w, next: [EdgeIndex::end(), EdgeIndex::end()]};
         let node_idx = NodeIndex::new(self.nodes.len());
-        assert!(NodeIndex::end() != node_idx);
+        // check for max capacity, except if we use usize
+        assert!(Ix::max().index() == !0 || NodeIndex::end() != node_idx);
         self.nodes.push(node);
         node_idx
     }
@@ -500,7 +501,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix>
     {
         let edge_idx = EdgeIndex::new(self.edges.len());
-        assert!(edge_idx != EdgeIndex::end());
+        assert!(Ix::max().index() == !0 || EdgeIndex::end() != edge_idx);
         let mut edge = Edge {
             weight: weight,
             node: [a, b],
