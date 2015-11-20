@@ -34,12 +34,11 @@ struct Vf2State<Ty, Ix> {
     _etype: marker::PhantomData<Ty>,
 }
 
-impl<Ty, Ix> Vf2State<Ty, Ix> where
-    Ty: EdgeType,
-    Ix: IndexType,
+impl<Ty, Ix> Vf2State<Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
-    pub fn new<N, E>(g: &Graph<N, E, Ty, Ix>) -> Self
-    {
+    pub fn new<N, E>(g: &Graph<N, E, Ty, Ix>) -> Self {
         let c0 = g.node_count();
         let mut state = Vf2State {
             mapping: Vec::with_capacity(c0),
@@ -62,8 +61,7 @@ impl<Ty, Ix> Vf2State<Ty, Ix> where
     }
 
     /// Return **true** if we have a complete mapping
-    pub fn is_complete(&self) -> bool
-    {
+    pub fn is_complete(&self) -> bool {
         self.generation == self.mapping.len()
     }
 
@@ -155,7 +153,7 @@ impl<Ty, Ix> Vf2State<Ty, Ix> where
 }
 
 
-/// Return **true** if the graphs **g0** and **g1** are isomorphic.
+/// Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm.
 ///
@@ -163,13 +161,13 @@ impl<Ty, Ix> Vf2State<Ty, Ix> where
 ///
 /// ## References
 /// 
-/// * A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs
+/// * A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs  
 ///   Luigi P. Cordella, Pasquale Foggia, Carlo Sansone,
 ///   and Mario Vento
 pub fn is_isomorphic<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>,
-                                   g1: &Graph<N, E, Ty, Ix>) -> bool where
-    Ty: EdgeType,
-    Ix: IndexType,
+                                   g1: &Graph<N, E, Ty, Ix>) -> bool
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     if g0.node_count() != g1.node_count() || g0.edge_count() != g1.edge_count() {
         return false
@@ -178,9 +176,9 @@ pub fn is_isomorphic<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>,
     /// Return Some(bool) if isomorphism is decided, else None.
     fn try_match<N, E, Ty, Ix>(st: &mut [Vf2State<Ty, Ix>; 2],
                                g0: &Graph<N, E, Ty, Ix>,
-                               g1: &Graph<N, E, Ty, Ix>) -> Option<bool> where
-        Ty: EdgeType,
-        Ix: IndexType,
+                               g1: &Graph<N, E, Ty, Ix>) -> Option<bool>
+        where Ty: EdgeType,
+              Ix: IndexType,
     {
         let g = [g0, g1];
         let graph_indices = 0..2;

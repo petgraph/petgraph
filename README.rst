@@ -19,6 +19,12 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.15
+
+  - Add Graph::clear_edges()
+  - Add Graph::edge_endpoints()
+  - Add Graph::map() and Graph::filter_map()
+
 - 0.1.14
 
   - Add new topological order visitor Topo

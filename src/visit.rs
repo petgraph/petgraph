@@ -223,6 +223,14 @@ impl<N, E, Ty, Ix> Revisitable for Graph<N, E, Ty, Ix>
     }
 }
 
+impl<'a, G> Revisitable for Reversed<&'a G>
+    where G: Revisitable
+{
+    fn reset_map(&self, map: &mut Self::Map) {
+        self.0.reset_map(map);
+    }
+}
+
 impl<N: Clone, E> Graphlike for GraphMap<N, E>
 {
     type NodeId = N;

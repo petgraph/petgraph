@@ -24,8 +24,12 @@ pub trait IndexType : Copy + Ord + fmt::Debug + 'static
     fn new(x: usize) -> Self;
     fn index(&self) -> usize;
     fn max() -> Self;
-    fn zero() -> Self;
-    fn one() -> Self;
+    /// **Deprecated**
+    #[inline]
+    fn zero() -> Self { Self::new(0) }
+    /// **Deprecated**
+    #[inline]
+    fn one() -> Self { Self::new(1) }
 }
 
 impl IndexType for usize {
@@ -35,10 +39,6 @@ impl IndexType for usize {
     fn index(&self) -> Self { *self }
     #[inline(always)]
     fn max() -> Self { ::std::usize::MAX }
-    #[inline(always)]
-    fn zero() -> Self { 0 }
-    #[inline(always)]
-    fn one() -> Self { 1 }
 }
 
 impl IndexType for u32 {
@@ -48,10 +48,6 @@ impl IndexType for u32 {
     fn index(&self) -> usize { *self as usize }
     #[inline(always)]
     fn max() -> Self { ::std::u32::MAX }
-    #[inline(always)]
-    fn zero() -> Self { 0 }
-    #[inline(always)]
-    fn one() -> Self { 1 }
 }
 
 impl IndexType for u16 {
@@ -61,10 +57,6 @@ impl IndexType for u16 {
     fn index(&self) -> usize { *self as usize }
     #[inline(always)]
     fn max() -> Self { ::std::u16::MAX }
-    #[inline(always)]
-    fn zero() -> Self { 0 }
-    #[inline(always)]
-    fn one() -> Self { 1 }
 }
 
 impl IndexType for u8 {
@@ -74,10 +66,6 @@ impl IndexType for u8 {
     fn index(&self) -> usize { *self as usize }
     #[inline(always)]
     fn max() -> Self { ::std::u8::MAX }
-    #[inline(always)]
-    fn zero() -> Self { 0 }
-    #[inline(always)]
-    fn one() -> Self { 1 }
 }
 
 // FIXME: These aren't stable, so a public wrapper of node/edge indices
@@ -198,11 +186,14 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 ///
-/// `Graph` is parameterized over the node weight `N`, edge weight `E`,
-/// edge type `Ty` that determines whether the graph has directed edges or not,
-/// and `Ix` which is the index type used.
+/// `Graph` is parameterized over:
 ///
-/// Based on the graph implementation in rustc.
+/// - Associated data `N` for nodes and `E` for edges, also called *weights*.
+///   The associated data can be of arbitrary type.
+/// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
+/// - Index type `Ix`, which determines the maximum size of the graph.
+///
+/// Based on the graph datastructure used in rustc.
 ///
 /// ### Graph Indices
 ///
@@ -210,9 +201,10 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// weights may be accessed mutably.
 ///
 /// `NodeIndex` and `EdgeIndex` are types that act as references to nodes and edges,
-/// but these are only stable across certain operations. **Removing nodes or edges may shift
-/// other indices**. Adding to the graph keeps
-/// all indices stable, but removing a node will force the last node to shift its index to
+/// but these are only stable across certain operations.
+/// **Adding nodes or edges keeps indices stable.
+/// Removing nodes or edges may shift other indices.**
+/// Removing a node will force the last node to shift its index to
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 ///
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
@@ -322,9 +314,9 @@ impl<N, E> Graph<N, E, Undirected>
     }
 }
 
-impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
-    Ty: EdgeType,
-    Ix: IndexType,
+impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     /// Create a new `Graph` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self
@@ -334,6 +326,8 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     }
 
     /// Return the number of nodes (vertices) in the graph.
+    ///
+    /// Computes in **O(1)** time.
     pub fn node_count(&self) -> usize
     {
         self.nodes.len()
@@ -348,10 +342,17 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     }
 
     /// Remove all nodes and edges
-    pub fn clear(&mut self)
-    {
+    pub fn clear(&mut self) {
         self.nodes.clear();
         self.edges.clear();
+    }
+
+    /// Remove all edges
+    pub fn clear_edges(&mut self) {
+        self.edges.clear();
+        for node in &mut self.nodes {
+            node.next = [EdgeIndex::end(), EdgeIndex::end()];
+        }
     }
 
     /// Return whether the graph has directed edges or not.
@@ -384,7 +385,8 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     {
         let node = Node{weight: w, next: [EdgeIndex::end(), EdgeIndex::end()]};
         let node_idx = NodeIndex::new(self.nodes.len());
-        assert!(NodeIndex::end() != node_idx);
+        // check for max capacity, except if we use usize
+        assert!(Ix::max().index() == !0 || NodeIndex::end() != node_idx);
         self.nodes.push(node);
         node_idx
     }
@@ -456,7 +458,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is `(NodeIndex<Ix>, &'a E)`.
+    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         self.edges_directed(a, EdgeDirection::Outgoing)
@@ -469,7 +471,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is `(NodeIndex<Ix>, &'a E)`.
+    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Edges<E, Ix>
     {
         let mut iter = self.edges_both(a);
@@ -484,7 +486,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
-    /// Iterator element type is `(NodeIndex<Ix>, &'a E)`.
+    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
     pub fn edges_both(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         Edges {
@@ -512,7 +514,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix>
     {
         let edge_idx = EdgeIndex::new(self.edges.len());
-        assert!(edge_idx != EdgeIndex::end());
+        assert!(Ix::max().index() == !0 || EdgeIndex::end() != edge_idx);
         let mut edge = Edge {
             weight: weight,
             node: [a, b],
@@ -570,6 +572,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     pub fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E>
     {
         self.edges.get_mut(e.index()).map(|ed| &mut ed.weight)
+    }
+
+    /// Access the source and target nodes for `e`.
+    pub fn edge_endpoints(&self, e: EdgeIndex<Ix>)
+        -> Option<(NodeIndex<Ix>, NodeIndex<Ix>)>
+    {
+        self.edges.get(e.index()).map(|ed| (ed.source(), ed.target()))
     }
 
     /// Remove `a` from the graph if it exists, and return its weight.
@@ -918,6 +927,68 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
              <Self as IndexMut<U>>::index_mut(&mut *self_mut, j))
         }
     }
+
+    /// Create a new `Graph` by mapping node and edge weights.
+    ///
+    /// The resulting graph has the same graph indices as `self`.
+    pub fn map<F, G, N2, E2>(&self, mut node_map: F, mut edge_map: G)
+        -> Graph<N2, E2, Ty, Ix>
+        where F: FnMut(NodeIndex<Ix>, &N) -> N2,
+              G: FnMut(EdgeIndex<Ix>, &E) -> E2,
+    {
+        let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
+        for (i, node) in enumerate(&self.nodes) {
+            g.nodes.push(Node {
+                weight: node_map(NodeIndex::new(i), &node.weight),
+                next: node.next,
+            });
+        }
+        for (i, edge) in enumerate(&self.edges) {
+            g.edges.push(Edge {
+                weight: edge_map(EdgeIndex::new(i), &edge.weight),
+                next: edge.next,
+                node: edge.node,
+            });
+        }
+        g
+    }
+
+    /// Create a new `Graph` by mapping nodes and edges.
+    /// A node or edge may be mapped to `None` to exclude it from
+    /// the resulting graph.
+    ///
+    /// Nodes are mapped first with the `node_map` closure, then
+    /// `edge_map` is called for the edges that have not had any endpoint
+    /// removed.
+    ///
+    /// If no nodes are removed, the resulting graph has compatible node
+    /// indices; if neither nodes nor edges are removed, the result has
+    /// the same graph indices as `self`.
+    pub fn filter_map<F, G, N2, E2>(&self, mut node_map: F, mut edge_map: G)
+        -> Graph<N2, E2, Ty, Ix>
+        where F: FnMut(NodeIndex<Ix>, &N) -> Option<N2>,
+              G: FnMut(EdgeIndex<Ix>, &E) -> Option<E2>,
+    {
+        let mut g = Graph::with_capacity(0, 0);
+        // mapping from old node index to new node index, end represents removed.
+        let mut node_index_map = vec![NodeIndex::end(); self.node_count()];
+        for (i, node) in enumerate(&self.nodes) {
+            if let Some(nw) = node_map(NodeIndex::new(i), &node.weight) {
+                node_index_map[i] = g.add_node(nw);
+            }
+        }
+        for (i, edge) in enumerate(&self.edges) {
+            // skip edge if any endpoint was removed
+            let source = node_index_map[edge.source().index()];
+            let target = node_index_map[edge.target().index()];
+            if source != NodeIndex::end() && target != NodeIndex::end() {
+                if let Some(ew) = edge_map(EdgeIndex::new(i), &edge.weight) {
+                    g.add_edge(source, target, ew);
+                }
+            }
+        }
+        g
+    }
 }
 
 /// An iterator over either the nodes without edges to them or from them.
@@ -1207,4 +1278,11 @@ impl<Ix: IndexType> WalkEdges<Ix> {
             }
         }
     }
+}
+
+
+fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
+    where I: IntoIterator,
+{
+    iterable.into_iter().enumerate()
 }

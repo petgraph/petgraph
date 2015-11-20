@@ -860,3 +860,46 @@ fn toposort_generic() {
         assert_is_topo_order(&gr, &order);
     }
 }
+
+#[test]
+fn map_filter_map() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
+    println!("{:?}", g);
+
+    let g2 = g.filter_map(|_, name| Some(*name), |_, &weight| if weight >= 10 {
+        Some(weight)
+    } else { None });
+    assert_eq!(g2.edge_count(), 4);
+    for edge in g2.raw_edges() {
+        assert!(edge.weight >= 10);
+    }
+
+    let g3 = g.filter_map(|i, &name| if i == a || i == e { None } else { Some(name) },
+                          |i, &weight| {
+                              let (source, target) = g.edge_endpoints(i).unwrap();
+                              // don't map edges from a removed node
+                              assert!(source != a);
+                              assert!(target != a);
+                              assert!(source != e);
+                              assert!(target != e);
+                              Some(weight)
+                          });
+    assert_eq!(g3.node_count(), g.node_count() - 2);
+    assert_eq!(g3.edge_count(), g.edge_count() - 5);
+    println!("{:?}", g3);
+}
