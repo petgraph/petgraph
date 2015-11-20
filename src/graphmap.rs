@@ -296,8 +296,11 @@ iterator_wrap! {
 }
 
 pub struct Edges<'a, N, E: 'a> where N: 'a + NodeTrait {
+    /// **Deprecated: should be private**
     pub from: N,
+    /// **Deprecated: should be private**
     pub edges: &'a HashMap<(N, N), E>,
+    /// **Deprecated: should be private**
     pub iter: Neighbors<'a, N>,
 }
 
