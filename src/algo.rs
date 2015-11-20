@@ -31,12 +31,12 @@ use super::graph::{
 pub use super::isomorphism::is_isomorphic;
 pub use super::dijkstra::dijkstra;
 
-/// Return **true** if the input graph contains a cycle.
+/// Return `true` if the input graph contains a cycle.
 ///
-/// Treat the input graph as undirected.
-pub fn is_cyclic_undirected<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
-    Ty: EdgeType,
-    Ix: IndexType,
+/// Always treats the input graph as if undirected.
+pub fn is_cyclic_undirected<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     let mut edge_sets = UnionFind::new(g.node_count());
     for edge in g.raw_edges() {
@@ -51,19 +51,19 @@ pub fn is_cyclic_undirected<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
     false
 }
 
-/// **Deprecated: Renamed to *is_cyclic_undirected*.**
-pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool where
-    Ty: EdgeType,
-    Ix: IndexType,
+/// **Deprecated: Renamed to `is_cyclic_undirected`.**
+pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     is_cyclic_undirected(g)
 }
 
-/// Perform a topological sort of a directed graph **g**.
+/// Perform a topological sort of a directed graph `g`.
 ///
 /// Visit each node in order (if it is part of a topological order).
 ///
-/// You can pass **g** as either **&Graph** or **&mut Graph**, and it
+/// You can pass `g` as either **&Graph** or **&mut Graph**, and it
 /// will be passed on to the visitor closure.
 #[inline]
 fn toposort_generic<N, E, Ix, G, F>(mut g: G, mut visit: F)
@@ -94,13 +94,11 @@ fn toposort_generic<N, E, Ix, G, F>(mut g: G, mut visit: F)
     }
 }
 
-/// Check if a directed graph contains cycles.
+/// Return `true` if the input directed graph contains a cycle.
 ///
 /// Using the topological sort algorithm.
-///
-/// Return **true** if the graph had a cycle.
-pub fn is_cyclic_directed<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> bool where
-    Ix: IndexType,
+pub fn is_cyclic_directed<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> bool
+    where Ix: IndexType,
 {
     let mut n_ordered = 0;
     toposort_generic(g, |_, _| n_ordered += 1);
@@ -114,22 +112,22 @@ pub fn is_cyclic_directed<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> bool where
 ///
 /// If the returned vec contains less than all the nodes of the graph, then
 /// the graph was cyclic.
-pub fn toposort<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> Vec<NodeIndex<Ix>> where
-    Ix: IndexType,
+pub fn toposort<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> Vec<NodeIndex<Ix>>
+    where Ix: IndexType,
 {
     let mut order = Vec::with_capacity(g.node_count());
     toposort_generic(g, |_, ix| order.push(ix));
     order
 }
 
-/// Compute *Strongly connected components* using Kosaraju's algorithm.
+/// Compute the *strongly connected components* using Kosaraju's algorithm.
 ///
 /// Return a vector where each element is an scc.
 ///
 /// For an undirected graph, the sccs are simply the connected components.
-pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>> where
-    Ty: EdgeType,
-    Ix: IndexType,
+pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>>
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     let mut dfs = Dfs::empty(g);
 
@@ -137,13 +135,14 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>> whe
     // http://stackoverflow.com/a/26780899/161659
     let mut finished = g.visit_map();
     let mut finish_order = Vec::new();
-    for index in 0..g.node_count() {
-        if dfs.discovered.is_visited(&NodeIndex::<Ix>::new(index)) {
+    for i in 0..g.node_count() {
+        let nindex = NodeIndex::new(i);
+        if dfs.discovered.is_visited(&nindex) {
             continue
         }
-        dfs.move_to(NodeIndex::new(index));
+        dfs.move_to(nindex);
         while let Some(&nx) = dfs.stack.last() {
-            if finished.visit(nx.clone()) {
+            if finished.visit(nx) {
                 // push again to record finishing time
                 dfs.stack.push(nx);
                 dfs.next(&Reversed(g)).unwrap();
@@ -178,9 +177,9 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>> whe
 /// Return the number of connected components of the graph.
 ///
 /// For a directed graph, this is the *weakly* connected components.
-pub fn connected_components<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> usize where
-    Ty: EdgeType,
-    Ix: IndexType,
+pub fn connected_components<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> usize
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     let mut vertex_sets = UnionFind::new(g.node_count());
     for edge in g.raw_edges() {
@@ -196,7 +195,7 @@ pub fn connected_components<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> usize wher
 }
 
 
-/// Return a *Minimum Spanning Tree* of a graph.
+/// Compute a *minimum spanning tree* of a graph.
 ///
 /// Treat the input graph as undirected.
 ///
@@ -205,12 +204,13 @@ pub fn connected_components<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> usize wher
 /// component of the graph.
 ///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
-/// and **|V| - c** edges, where **c** is the number of connected components in **g**.
-pub fn min_spanning_tree<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix> where
-    N: Clone,
-    E: Clone + PartialOrd,
-    Ty: EdgeType,
-    Ix: IndexType,
+/// and **|V| - c** edges, where **c** is the number of connected components in `g`.
+pub fn min_spanning_tree<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
+    -> Graph<N, E, Undirected, Ix>
+    where N: Clone,
+          E: Clone + PartialOrd,
+          Ty: EdgeType,
+          Ix: IndexType,
 {
     if g.node_count() == 0 {
         return Graph::with_capacity(0, 0)
