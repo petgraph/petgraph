@@ -310,9 +310,9 @@ impl<N, E> Graph<N, E, Undirected>
     }
 }
 
-impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
-    Ty: EdgeType,
-    Ix: IndexType,
+impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     /// Create a new `Graph` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self
@@ -322,6 +322,8 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     }
 
     /// Return the number of nodes (vertices) in the graph.
+    ///
+    /// Computes in **O(1)** time.
     pub fn node_count(&self) -> usize
     {
         self.nodes.len()
@@ -336,10 +338,17 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix> where
     }
 
     /// Remove all nodes and edges
-    pub fn clear(&mut self)
-    {
+    pub fn clear(&mut self) {
         self.nodes.clear();
         self.edges.clear();
+    }
+
+    /// Remove all edges
+    pub fn clear_edges(&mut self) {
+        self.edges.clear();
+        for node in &mut self.nodes {
+            node.next = [EdgeIndex::end(), EdgeIndex::end()];
+        }
     }
 
     /// Return whether the graph has directed edges or not.
