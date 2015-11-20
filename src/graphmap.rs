@@ -31,16 +31,14 @@ pub struct GraphMap<N, E> {
     edges: HashMap<(N, N), E>,
 }
 
-impl<N: Eq + Hash + fmt::Debug, E: fmt::Debug> fmt::Debug for GraphMap<N, E>
-{
+impl<N: Eq + Hash + fmt::Debug, E: fmt::Debug> fmt::Debug for GraphMap<N, E> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.nodes.fmt(f)
     }
 }
 
 #[inline]
-fn edge_key<N: Copy + Ord>(a: N, b: N) -> (N, N)
-{
+fn edge_key<N: Copy + Ord>(a: N, b: N) -> (N, N) {
     if a <= b { (a, b) } else { (b, a) }
 }
 
@@ -51,11 +49,11 @@ fn copy<N: Copy>(n: &N) -> N { *n }
 pub trait NodeTrait : Copy + Ord + Hash {}
 impl<N> NodeTrait for N where N: Copy + Ord + Hash {}
 
-impl<N, E> GraphMap<N, E> where N: NodeTrait
+impl<N, E> GraphMap<N, E>
+    where N: NodeTrait
 {
     /// Create a new `GraphMap`.
-    pub fn new() -> Self
-    {
+    pub fn new() -> Self {
         GraphMap {
             nodes: HashMap::new(),
             edges: HashMap::new(),
@@ -63,8 +61,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     }
 
     /// Create a new `GraphMap` with estimated capacity.
-    pub fn with_capacity(nodes: usize, edges: usize) -> Self
-    {
+    pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         GraphMap {
             nodes: HashMap::with_capacity(nodes),
             edges: HashMap::with_capacity(edges),
@@ -72,20 +69,17 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     }
 
     /// Return the number of nodes in the graph.
-    pub fn node_count(&self) -> usize
-    {
+    pub fn node_count(&self) -> usize {
         self.nodes.len()
     }
 
     /// Return the number of edges in the graph.
-    pub fn edge_count(&self) -> usize
-    {
+    pub fn edge_count(&self) -> usize {
         self.edges.len()
     }
 
     /// Remove all nodes and edges
-    pub fn clear(&mut self)
-    {
+    pub fn clear(&mut self) {
         self.nodes.clear();
         self.edges.clear();
     }
@@ -131,8 +125,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     /// assert_eq!(g.node_count(), 2);
     /// assert_eq!(g.edge_count(), 1);
     /// ```
-    pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool
-    {
+    pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool {
         // Use Ord to order the edges
         self.nodes.entry(a)
                   .or_insert_with(|| Vec::with_capacity(1))
@@ -146,8 +139,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     /// Remove successor relation from a to b
     ///
     /// Return `true` if it did exist.
-    fn remove_single_edge(&mut self, a: &N, b: &N) -> bool
-    {
+    fn remove_single_edge(&mut self, a: &N, b: &N) -> bool {
         match self.nodes.get_mut(a) {
             None => false,
             Some(sus) => {
@@ -177,8 +169,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     /// assert_eq!(edge, Some(-1));
     /// assert_eq!(g.edge_count(), 0);
     /// ```
-    pub fn remove_edge(&mut self, a: N, b: N) -> Option<E>
-    {
+    pub fn remove_edge(&mut self, a: N, b: N) -> Option<E> {
         let exist1 = self.remove_single_edge(&a, &b);
         let exist2 = self.remove_single_edge(&b, &a);
         let weight = self.edges.remove(&edge_key(a, b));
@@ -194,8 +185,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     /// Return an iterator over the nodes of the graph.
     ///
     /// Iterator element type is `N`.
-    pub fn nodes<'a>(&'a self) -> Nodes<'a, N>
-    {
+    pub fn nodes(&self) -> Nodes<N> {
         Nodes{iter: self.nodes.keys().map(copy)}
     }
 
@@ -204,8 +194,7 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     /// If the node `from` does not exist in the graph, return an empty iterator.
     ///
     /// Iterator element type is `N`.
-    pub fn neighbors<'a>(&'a self, from: N) -> Neighbors<'a, N>
-    {
+    pub fn neighbors(&self, from: N) -> Neighbors<N> {
         Neighbors{iter:
             match self.nodes.get(&from) {
                 Some(neigh) => neigh.iter(),
@@ -219,9 +208,8 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
     ///
     /// If the node `from` does not exist in the graph, return an empty iterator.
     ///
-    /// Iterator element type is `(N, &'a E)`.
-    pub fn edges<'a>(&'a self, from: N) -> Edges<'a, N, E>
-    {
+    /// Iterator element type is `(N, &E)`.
+    pub fn edges(&self, from: N) -> Edges<N, E> {
         Edges {
             from: from,
             iter: self.neighbors(from),
@@ -231,23 +219,20 @@ impl<N, E> GraphMap<N, E> where N: NodeTrait
 
     /// Return a reference to the edge weight connecting `a` with `b`, or
     /// `None` if the edge does not exist in the graph.
-    pub fn edge_weight<'a>(&'a self, a: N, b: N) -> Option<&'a E>
-    {
+    pub fn edge_weight(&self, a: N, b: N) -> Option<&E> {
         self.edges.get(&edge_key(a, b))
     }
 
     /// Return a mutable reference to the edge weight connecting `a` with `b`, or
     /// `None` if the edge does not exist in the graph.
-    pub fn edge_weight_mut<'a>(&'a mut self, a: N, b: N) -> Option<&'a mut E>
-    {
+    pub fn edge_weight_mut(&mut self, a: N, b: N) -> Option<&mut E> {
         self.edges.get_mut(&edge_key(a, b))
     }
 
     /// Return an iterator over all edges of the graph with their weight in arbitrary order.
     ///
-    /// Iterator element type is `((N,N), &'a E)`
-    pub fn all_edges<'a>(&'a self) -> AllEdges<'a, N, E>
-    {
+    /// Iterator element type is `((N, N), &E)`
+    pub fn all_edges(&self) -> AllEdges<N, E> {
         AllEdges {
             inner: self.edges.iter()
         }
@@ -310,8 +295,7 @@ iterator_wrap! {
     iter: Map<Iter<'a, N>, fn(&N) -> N>,
 }
 
-pub struct Edges<'a, N, E: 'a> where N: 'a + NodeTrait
-{
+pub struct Edges<'a, N, E: 'a> where N: 'a + NodeTrait {
     pub from: N,
     pub edges: &'a HashMap<(N, N), E>,
     pub iter: Neighbors<'a, N>,
@@ -356,7 +340,8 @@ impl<'a, N, E> Iterator for AllEdges<'a, N, E>
 }
 
 /// Index `GraphMap` by node pairs to access edge weights.
-impl<N, E> Index<(N, N)> for GraphMap<N, E> where N: NodeTrait
+impl<N, E> Index<(N, N)> for GraphMap<N, E>
+    where N: NodeTrait
 {
     type Output = E;
     fn index(&self, index: (N, N)) -> &E
@@ -366,7 +351,8 @@ impl<N, E> Index<(N, N)> for GraphMap<N, E> where N: NodeTrait
 }
 
 /// Index `GraphMap` by node pairs to access edge weights.
-impl<N, E> IndexMut<(N, N)> for GraphMap<N, E> where N: NodeTrait
+impl<N, E> IndexMut<(N, N)> for GraphMap<N, E>
+    where N: NodeTrait
 {
     fn index_mut(&mut self, index: (N, N)) -> &mut E
     {
