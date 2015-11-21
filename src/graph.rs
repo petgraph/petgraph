@@ -362,17 +362,6 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         Ty::is_directed()
     }
 
-    /// Cast the graph as either undirected or directed. No edge adjustments
-    /// are done.
-    ///
-    /// Computes in **O(1)** time.
-    pub fn into_edge_type<NewTy>(self) -> Graph<N, E, NewTy, Ix> where
-        NewTy: EdgeType
-    {
-        Graph{nodes: self.nodes, edges: self.edges,
-              _ty: marker::PhantomData}
-    }
-
     /// Add a node (also called vertex) with weight `w` to the graph.
     ///
     /// Computes in **O(1)** time.
@@ -989,6 +978,18 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         }
         g
     }
+
+    /// Convert the graph into either undirected or directed. No edge adjustments
+    /// are done, so you may want to go over the result to remove or add edges.
+    ///
+    /// Computes in **O(1)** time.
+    pub fn into_edge_type<NewTy>(self) -> Graph<N, E, NewTy, Ix> where
+        NewTy: EdgeType
+    {
+        Graph{nodes: self.nodes, edges: self.edges,
+              _ty: marker::PhantomData}
+    }
+
 }
 
 /// An iterator over either the nodes without edges to them or from them.
