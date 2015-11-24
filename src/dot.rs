@@ -62,9 +62,9 @@ impl<'a, N, E, Ty, Ix> Dot<'a, Graph<N, E, Ty, Ix>>
 
         // output all labels
         for index in g.node_indices() {
-            try!(write!(f, "{}N{}", INDENT, index.index()));
+            try!(write!(f, "{}{}", INDENT, index.index()));
             if self.config.contains(&Config::NodeIndexLabel) {
-                try!(writeln!(f, " [label=\"{}\"]", index.index()));
+                try!(writeln!(f, ""));
             } else {
                 try!(write!(f, " [label=\""));
                 try!(node_fmt(&g[index], &mut |d| write!(f, "{}", Escaped(d))));
@@ -74,7 +74,7 @@ impl<'a, N, E, Ty, Ix> Dot<'a, Graph<N, E, Ty, Ix>>
         }
         // output all edges
         for (i, edge) in g.raw_edges().iter().enumerate() {
-            try!(write!(f, "{}N{} {} N{}",
+            try!(write!(f, "{}{} {} {}",
                         INDENT,
                         edge.source().index(),
                         EDGE[g.is_directed() as usize],
@@ -135,9 +135,9 @@ impl<'a, N, E> Dot<'a, GraphMap<N, E>>
         // output all labels
         for (i, node) in g.nodes().enumerate() {
             labels.insert(node, i);
-            try!(write!(f, "{}N{}", INDENT, i));
+            try!(write!(f, "{}{}", INDENT, i));
             if self.config.contains(&Config::NodeIndexLabel) {
-                try!(writeln!(f, " [label=\"{}\"]", i));
+                try!(writeln!(f, ""));
             } else {
                 try!(write!(f, " [label=\""));
                 try!(node_fmt(&node, &mut |d| write!(f, "{}", Escaped(d))));
@@ -146,7 +146,7 @@ impl<'a, N, E> Dot<'a, GraphMap<N, E>>
         }
         // output all edges
         for (i, ((a, b), edge_weight)) in g.all_edges().enumerate() {
-            try!(write!(f, "{}N{} {} N{}",
+            try!(write!(f, "{}{} {} {}",
                         INDENT,
                         labels[&a],
                         EDGE[0],
