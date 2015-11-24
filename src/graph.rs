@@ -767,45 +767,6 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Reverse the direction of all edges
-    pub fn reverse(&mut self)
-    {
-        for edge in self.edges.iter_mut() {
-            edge.node.swap(0, 1)
-        }
-    }
-
-    /* Removed: Easy to implement externally with iterate in reverse
-     *
-    /// Retain only nodes that return **true** from the predicate.
-    pub fn retain_nodes<F>(&mut self, mut visit: F) where
-        F: FnMut(&Self, NodeIndex<Ix>, &Node<N>) -> bool
-    {
-        for index in (0..self.node_count()).rev() {
-            let nix = NodeIndex<Ix>(index);
-            if !visit(&self, nix, &self.nodes[nix.index()]) {
-                let ret = self.remove_node(nix);
-                debug_assert!(ret.is_some());
-                let _ = ret;
-            }
-        }
-    }
-
-    /// Retain only edges that return **true** from the predicate.
-    pub fn retain_edges<F>(&mut self, mut visit: F) where
-        F: FnMut(&Self, EdgeIndex, &Edge<E>) -> bool
-    {
-        for index in (0..self.edge_count()).rev() {
-            let eix = EdgeIndex::new(index);
-            if !visit(&self, eix, &self.edges[eix.index()]) {
-                let ret = self.remove_edge(EdgeIndex::new(index));
-                debug_assert!(ret.is_some());
-                let _ = ret;
-            }
-        }
-    }
-    */
-
     /// Return an iterator over either the nodes without edges to them or from them.
     ///
     /// The nodes in *.without_edges(Incoming)* are the source nodes and
@@ -953,6 +914,53 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
              <Self as IndexMut<U>>::index_mut(&mut *self_mut, j))
         }
     }
+
+    /// Reverse the direction of all edges
+    pub fn reverse(&mut self)
+    {
+        for edge in self.edges.iter_mut() {
+            edge.node.swap(0, 1)
+        }
+    }
+
+    /// Remove all nodes that return `false` from the `visit` closure.
+    ///
+    /// `visit` provides a mutable reference to the graph, so that
+    /// the graph can be walked and associated data modified. You should
+    /// not add or remove nodes.
+    ///
+    /// The order nodes are visited is not specified.
+    pub fn retain_nodes<F>(&mut self, mut visit: F)
+        where F: FnMut(&mut Self, NodeIndex<Ix>) -> bool
+    {
+        for index in self.node_indices().rev() {
+            if !visit(self, index) {
+                let ret = self.remove_node(index);
+                debug_assert!(ret.is_some());
+                let _ = ret;
+            }
+        }
+    }
+
+    /// Remove all edges that return `false` from the `visit` closure.
+    ///
+    /// `visit` provides a mutable reference to the graph, so that
+    /// the graph can be walked and associated data modified. You should
+    /// not add or remove nodes or edges.
+    ///
+    /// The order edges are visited is not specified.
+    pub fn retain_edges<F>(&mut self, mut visit: F)
+        where F: FnMut(&mut Self, EdgeIndex<Ix>) -> bool
+    {
+        for index in self.edge_indices().rev() {
+            if !visit(self, index) {
+                let ret = self.remove_edge(index);
+                debug_assert!(ret.is_some());
+                let _ = ret;
+            }
+        }
+    }
+
 
     /// Create a new `Graph` from an iterable of edges.
     ///

@@ -893,7 +893,13 @@ fn map_filter_map() {
                           });
     assert_eq!(g3.node_count(), g.node_count() - 2);
     assert_eq!(g3.edge_count(), g.edge_count() - 5);
-    println!("{:?}", g3);
+
+    let mut g4 = g.clone();
+    g4.retain_edges(|gr, i| {
+        let (s, t) = gr.edge_endpoints(i).unwrap();
+        !(s == a || s == e || t == a || t == e)
+    });
+    assert_eq!(g4.edge_count(), g.edge_count() - 5);
 }
 
 #[test]
@@ -910,4 +916,34 @@ fn from_edges() {
     assert_eq!(gr.neighbors(n(1)).count(), 3);
     assert_eq!(gr.neighbors(n(2)).count(), 3);
     assert_eq!(gr.neighbors(n(3)).count(), 3);
+}
+
+#[test]
+fn retain() {
+    let mut gr = Graph::<i32, i32, Undirected>::from_edges(&[
+        (0, 1, 2),
+        (1, 1, 1),
+        (0, 2, 0),
+        (1, 2, 3),
+        (2, 3, 3),
+    ]);
+    gr.retain_edges(|gr, i| {
+        if gr[i] <= 0 { false }
+        else {
+            gr[i] -= 1;
+            let (s, t) = gr.edge_endpoints(i).unwrap();
+            gr[s] += 1;
+            gr[t] += 1;
+
+            gr[i] > 0
+        }
+    });
+
+    assert_eq!(gr.edge_count(), 3);
+    assert_eq!(gr[n(0)], 1);
+    assert_eq!(gr[n(1)], 4);
+    assert_eq!(gr[n(2)], 2);
+    assert_eq!(gr[n(3)], 1);
+    assert!(gr.find_edge(n(1), n(1)).is_none());
+    assert!(gr.find_edge(n(0), n(2)).is_none());
 }
