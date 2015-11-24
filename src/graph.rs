@@ -3,8 +3,8 @@
 use std::cmp;
 use std::fmt;
 use std::iter;
-use std::marker;
-use std::ops::{Index, IndexMut};
+use std::marker::PhantomData;
+use std::ops::{Index, IndexMut, Range};
 use std::slice;
 
 use {
@@ -239,7 +239,7 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefIndex> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,
-    _ty: marker::PhantomData<Ty>,
+    ty: PhantomData<Ty>,
 }
 
 impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
@@ -249,7 +249,7 @@ impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
         Graph {
             nodes: self.nodes.clone(),
             edges: self.edges.clone(),
-            _ty: self._ty.clone(),
+            ty: self.ty.clone(),
         }
     }
 }
@@ -310,7 +310,7 @@ impl<N, E> Graph<N, E, Directed>
     pub fn new() -> Self
     {
         Graph{nodes: Vec::new(), edges: Vec::new(),
-              _ty: marker::PhantomData}
+              ty: PhantomData}
     }
 }
 
@@ -320,7 +320,7 @@ impl<N, E> Graph<N, E, Undirected>
     pub fn new_undirected() -> Self
     {
         Graph{nodes: Vec::new(), edges: Vec::new(),
-              _ty: marker::PhantomData}
+              ty: PhantomData}
     }
 }
 
@@ -332,7 +332,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     pub fn with_capacity(nodes: usize, edges: usize) -> Self
     {
         Graph{nodes: Vec::with_capacity(nodes), edges: Vec::with_capacity(edges),
-              _ty: marker::PhantomData}
+              ty: PhantomData}
     }
 
     /// Return the number of nodes (vertices) in the graph.
@@ -813,23 +813,33 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, Ty, Ix>
     {
         WithoutEdges{iter: self.nodes.iter().enumerate(), dir: dir,
-                     _ty: marker::PhantomData}
+                     ty: PhantomData}
+    }
+
+    /// Return an iterator over the node indices of the graph
+    pub fn node_indices(&self) -> NodeIndices<Ix> {
+        NodeIndices { r: 0..self.node_count(), ty: PhantomData }
     }
 
     /// Return an iterator yielding mutable access to all node weights.
     ///
     /// The order in which weights are yielded matches the order of their
     /// node indices.
-    pub fn node_weights_mut<'a>(&'a mut self) -> NodeWeightsMut<'a, N, Ix>
+    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<N, Ix>
     {
         NodeWeightsMut { nodes: self.nodes.iter_mut() }
+    }
+
+    /// Return an iterator over the edge indices of the graph
+    pub fn edge_indices(&self) -> EdgeIndices<Ix> {
+        EdgeIndices { r: 0..self.edge_count(), ty: PhantomData }
     }
 
     /// Return an iterator yielding mutable access to all edge weights.
     ///
     /// The order in which weights are yielded matches the order of their
     /// edge indices.
-    pub fn edge_weights_mut<'a>(&'a mut self) -> EdgeWeightsMut<'a, E, Ix>
+    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<E, Ix>
     {
         EdgeWeightsMut { edges: self.edges.iter_mut() }
     }
@@ -1067,7 +1077,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         NewTy: EdgeType
     {
         Graph{nodes: self.nodes, edges: self.edges,
-              _ty: marker::PhantomData}
+              ty: PhantomData}
     }
 
 }
@@ -1076,7 +1086,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
 pub struct WithoutEdges<'a, N: 'a, Ty, Ix: IndexType = DefIndex> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
     dir: EdgeDirection,
-    _ty: marker::PhantomData<Ty>,
+    ty: PhantomData<Ty>,
 }
 
 impl<'a, N: 'a, Ty, Ix> Iterator for WithoutEdges<'a, N, Ty, Ix> where
@@ -1368,3 +1378,42 @@ fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
     iterable.into_iter().enumerate()
 }
 
+/// Iterator over the node indices of a graph.
+pub struct NodeIndices<Ix: IndexType> {
+    r: Range<usize>,
+    ty: PhantomData<Ix>,
+}
+
+impl<Ix: IndexType> Iterator for NodeIndices<Ix> {
+    type Item = NodeIndex<Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.r.next().map(node_index)
+    }
+}
+
+impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.r.next_back().map(node_index)
+    }
+}
+
+/// Iterator over the edge indices of a graph.
+pub struct EdgeIndices<Ix: IndexType> {
+    r: Range<usize>,
+    ty: PhantomData<Ix>,
+}
+
+impl<Ix: IndexType> Iterator for EdgeIndices<Ix> {
+    type Item = EdgeIndex<Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.r.next().map(edge_index)
+    }
+}
+
+impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.r.next_back().map(edge_index)
+    }
+}
