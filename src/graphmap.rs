@@ -2,7 +2,7 @@
 
 use std::hash::{Hash};
 use std::collections::HashMap;
-use std::iter::Map;
+use std::iter::Cloned;
 use std::collections::hash_map::{
     Keys,
 };
@@ -41,9 +41,6 @@ impl<N: Eq + Hash + fmt::Debug, E: fmt::Debug> fmt::Debug for GraphMap<N, E> {
 fn edge_key<N: Copy + Ord>(a: N, b: N) -> (N, N) {
     if a <= b { (a, b) } else { (b, a) }
 }
-
-#[inline]
-fn copy<N: Copy>(n: &N) -> N { *n }
 
 /// A trait group for `GraphMap`'s node identifier.
 pub trait NodeTrait : Copy + Ord + Hash {}
@@ -186,7 +183,7 @@ impl<N, E> GraphMap<N, E>
     ///
     /// Iterator element type is `N`.
     pub fn nodes(&self) -> Nodes<N> {
-        Nodes{iter: self.nodes.keys().map(copy)}
+        Nodes{iter: self.nodes.keys().cloned()}
     }
 
     /// Return an iterator over the nodes that are connected with `from` by edges.
@@ -199,7 +196,7 @@ impl<N, E> GraphMap<N, E>
             match self.nodes.get(&from) {
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
-            }.map(copy)
+            }.cloned()
         }
     }
 
@@ -254,6 +251,7 @@ macro_rules! iterator_wrap {
                 iter: $iter,
             }
             impl<$($typarm),*> Iterator for $name <$($typarm),*>
+                where $($bounds)*
             {
                 type Item = $item;
                 #[inline]
@@ -267,7 +265,7 @@ macro_rules! iterator_wrap {
                 }
             }
             impl<$($typarm),*> DoubleEndedIterator for $name <$($typarm),*>
-                where $iter: DoubleEndedIterator<Item=$item>,
+                where $($bounds)*, $iter: DoubleEndedIterator<Item=$item>,
             {
                 #[inline]
                 fn next_back(&mut self) -> Option<Self::Item> {
@@ -276,7 +274,7 @@ macro_rules! iterator_wrap {
             }
 
             impl<$($typarm),*> ExactSizeIterator for $name <$($typarm),*>
-                where $iter: ExactSizeIterator<Item=$item>,
+                where $($bounds)*, $iter: ExactSizeIterator<Item=$item>,
             {
             }
         }
@@ -284,15 +282,15 @@ macro_rules! iterator_wrap {
 }
 
 iterator_wrap! {
-    Nodes <'a, N> where { N: 'a }
+    Nodes <'a, N> where { N: 'a + Clone }
     item: N,
-    iter: Map<Keys<'a, N, Vec<N>>, fn(&N) -> N>,
+    iter: Cloned<Keys<'a, N, Vec<N>>>,
 }
 
 iterator_wrap! {
-    Neighbors <'a, N> where { N: 'a }
+    Neighbors <'a, N> where { N: 'a + Clone }
     item: N,
-    iter: Map<Iter<'a, N>, fn(&N) -> N>,
+    iter: Cloned<Iter<'a, N>>,
 }
 
 pub struct Edges<'a, N, E: 'a> where N: 'a + NodeTrait {
