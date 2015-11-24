@@ -355,20 +355,6 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         self.edges.len()
     }
 
-    /// Remove all nodes and edges
-    pub fn clear(&mut self) {
-        self.nodes.clear();
-        self.edges.clear();
-    }
-
-    /// Remove all edges
-    pub fn clear_edges(&mut self) {
-        self.edges.clear();
-        for node in &mut self.nodes {
-            node.next = [EdgeIndex::end(), EdgeIndex::end()];
-        }
-    }
-
     /// Whether the graph has directed edges or not.
     #[inline]
     pub fn is_directed(&self) -> bool
@@ -404,101 +390,6 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N>
     {
         self.nodes.get_mut(a.index()).map(|n| &mut n.weight)
-    }
-
-    /// Return an iterator of all nodes with an edge starting from `a`.
-    ///
-    /// Produces an empty iterator if the node doesn't exist.
-    ///
-    /// Iterator element type is `NodeIndex<Ix>`.
-    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
-    {
-        if self.is_directed() {
-            self.neighbors_directed(a, Outgoing)
-        } else {
-            self.neighbors_undirected(a)
-        }
-    }
-
-    /// Return an iterator of all neighbors that have an edge between them and `a`,
-    /// in the specified direction.
-    /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
-    ///
-    /// Produces an empty iterator if the node doesn't exist.
-    ///
-    /// Iterator element type is `NodeIndex<Ix>`.
-    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Neighbors<E, Ix>
-    {
-        let mut iter = self.neighbors_undirected(a);
-        if self.is_directed() {
-            // remove the other edges not wanted.
-            let k = dir as usize;
-            iter.next[1 - k] = EdgeIndex::end();
-        }
-        iter
-    }
-
-    /// Return an iterator of all neighbors that have an edge between them and `a`,
-    /// in either direction.
-    /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
-    ///
-    /// Produces an empty iterator if the node doesn't exist.
-    ///
-    /// Iterator element type is `NodeIndex<Ix>`.
-    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
-    {
-        Neighbors {
-            edges: &self.edges,
-            next: match self.nodes.get(a.index()) {
-                None => [EdgeIndex::end(), EdgeIndex::end()],
-                Some(n) => n.next,
-            }
-        }
-    }
-
-    /// Return an iterator over the neighbors of node `a`, paired with their respective edge
-    /// weights.
-    ///
-    /// Produces an empty iterator if the node doesn't exist.
-    ///
-    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
-    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
-    {
-        self.edges_directed(a, EdgeDirection::Outgoing)
-    }
-
-    /// Return an iterator of all neighbors that have an edge between them and `a`,
-    /// in the specified direction, paired with the respective edge weights.
-    ///
-    /// If the graph is undirected, this is equivalent to *.edges(a)*.
-    ///
-    /// Produces an empty iterator if the node doesn't exist.
-    ///
-    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
-    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Edges<E, Ix>
-    {
-        let mut iter = self.edges_both(a);
-        if self.is_directed() {
-            iter.next[1 - dir as usize] = EdgeIndex::end();
-        }
-        iter
-    }
-
-    /// Return an iterator over the edgs from `a` to its neighbors, then *to* `a` from its
-    /// neighbors.
-    ///
-    /// Produces an empty iterator if the node doesn't exist.
-    ///
-    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
-    pub fn edges_both(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
-    {
-        Edges {
-            edges: &self.edges,
-            next: match self.nodes.get(a.index()) {
-                None => [EdgeIndex::end(), EdgeIndex::end()],
-                Some(n) => n.next,
-            }
-        }
     }
 
     /// Add an edge from `a` to `b` to the graph, with its edge weight.
@@ -715,6 +606,101 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         Some(edge.weight)
     }
 
+    /// Return an iterator of all nodes with an edge starting from `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is `NodeIndex<Ix>`.
+    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
+    {
+        if self.is_directed() {
+            self.neighbors_directed(a, Outgoing)
+        } else {
+            self.neighbors_undirected(a)
+        }
+    }
+
+    /// Return an iterator of all neighbors that have an edge between them and `a`,
+    /// in the specified direction.
+    /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is `NodeIndex<Ix>`.
+    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Neighbors<E, Ix>
+    {
+        let mut iter = self.neighbors_undirected(a);
+        if self.is_directed() {
+            // remove the other edges not wanted.
+            let k = dir as usize;
+            iter.next[1 - k] = EdgeIndex::end();
+        }
+        iter
+    }
+
+    /// Return an iterator of all neighbors that have an edge between them and `a`,
+    /// in either direction.
+    /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is `NodeIndex<Ix>`.
+    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
+    {
+        Neighbors {
+            edges: &self.edges,
+            next: match self.nodes.get(a.index()) {
+                None => [EdgeIndex::end(), EdgeIndex::end()],
+                Some(n) => n.next,
+            }
+        }
+    }
+
+    /// Return an iterator over the neighbors of node `a`, paired with their respective edge
+    /// weights.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
+    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
+    {
+        self.edges_directed(a, EdgeDirection::Outgoing)
+    }
+
+    /// Return an iterator of all neighbors that have an edge between them and `a`,
+    /// in the specified direction, paired with the respective edge weights.
+    ///
+    /// If the graph is undirected, this is equivalent to *.edges(a)*.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
+    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Edges<E, Ix>
+    {
+        let mut iter = self.edges_both(a);
+        if self.is_directed() {
+            iter.next[1 - dir as usize] = EdgeIndex::end();
+        }
+        iter
+    }
+
+    /// Return an iterator over the edgs from `a` to its neighbors, then *to* `a` from its
+    /// neighbors.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Iterator element type is `(NodeIndex<Ix>, &E)`.
+    pub fn edges_both(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
+    {
+        Edges {
+            edges: &self.edges,
+            next: match self.nodes.get(a.index()) {
+                None => [EdgeIndex::end(), EdgeIndex::end()],
+                Some(n) => n.next,
+            }
+        }
+    }
+
     /// Lookup an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
@@ -920,6 +906,20 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     {
         for edge in self.edges.iter_mut() {
             edge.node.swap(0, 1)
+        }
+    }
+
+    /// Remove all nodes and edges
+    pub fn clear(&mut self) {
+        self.nodes.clear();
+        self.edges.clear();
+    }
+
+    /// Remove all edges
+    pub fn clear_edges(&mut self) {
+        self.edges.clear();
+        for node in &mut self.nodes {
+            node.next = [EdgeIndex::end(), EdgeIndex::end()];
         }
     }
 
