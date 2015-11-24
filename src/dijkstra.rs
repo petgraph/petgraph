@@ -20,6 +20,18 @@ use super::visit::{
 };
 
 /// Dijkstra's shortest path algorithm.
+///
+/// Compute the length of the shortest path from `start` to every reachable
+/// node.
+///
+/// The graph should be `Visitable`, and `edges` a closure that maps
+/// a node identifier to an iterator of `(n, k)` pairs where `n` is an adjacent
+/// node and `k` the edge weight.
+///
+/// If `goal` is not `None`, then the algorithm terminates once the `goal` node's
+/// cost is calculated.
+///
+/// Returns a `HashMap` that maps `NodeId` to path cost.
 pub fn dijkstra<'a, G: Visitable, K, F, Edges>(graph: &'a G,
                                                start: G::NodeId,
                                                goal: Option<G::NodeId>,
