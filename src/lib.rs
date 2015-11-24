@@ -171,6 +171,15 @@ impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix, E)
     }
 }
 
+impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, &'a E)
+    where Ix: Copy, E: Clone
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        let (a, b, c) = self;
+        (a, b, c.clone())
+    }
+}
+
 impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix)
     where E: Default
 {
