@@ -19,6 +19,7 @@ use petgraph::algo::{
     is_cyclic_undirected,
 };
 
+use petgraph::graph::node_index as n;
 use petgraph::graph::NodeIndex;
 use petgraph::graph::EdgeIndex;
 
@@ -511,8 +512,6 @@ fn scc() {
         res.sort_by(|v, w| v[0].cmp(&w[0]));
         assert_eq!(res, normalized);
     }
-
-    let n = NodeIndex::new;
 
     let gr: Graph<(), ()> = Graph::from_edges(&[
         (6, 0),

@@ -98,6 +98,12 @@ impl<Ix: IndexType> From<Ix> for NodeIndex<Ix> {
     fn from(ix: Ix) -> Self { NodeIndex(ix) }
 }
 
+/// Short version of `NodeIndex::new`
+pub fn node_index<Ix: IndexType>(index: usize) -> NodeIndex<Ix> { NodeIndex::new(index) }
+
+/// Short version of `EdgeIndex::new`
+pub fn edge_index<Ix: IndexType>(index: usize) -> EdgeIndex<Ix> { EdgeIndex::new(index) }
+
 /// Edge identifier.
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct EdgeIndex<Ix=DefIndex>(Ix);
