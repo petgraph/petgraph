@@ -19,6 +19,15 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 
+
+  - Add Graph::node_indices(), Graph::edge_indices()
+  - Add Graph::retain_nodes(), Graph::retain_edges()
+  - Add Graph::extend_with_edges(), Graph::from_edges()
+  - Add functions petgraph::graph::{edge_index, node_index};
+  - Add GraphMap::extend(), GraphMap::from_edges()
+  - Add petgraph::dot::Dot for simple graphviz dot output
+
 - 0.1.15
 
   - Add Graph::clear_edges()
