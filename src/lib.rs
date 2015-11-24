@@ -17,16 +17,16 @@ use std::fmt;
 use std::ops::{Deref};
 
 pub use scored::MinScored;
-pub use graphmap::GraphMap;
 pub use graph::Graph;
+pub use graphmap::GraphMap;
 
-pub use self::EdgeDirection::{Outgoing, Incoming};
 pub use visit::{
     Bfs,
     BfsIter,
     Dfs,
     DfsIter,
 };
+pub use EdgeDirection::{Outgoing, Incoming};
 
 mod scored;
 pub mod algo;
