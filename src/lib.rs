@@ -157,6 +157,31 @@ pub trait IntoWeightedEdge<Ix, E> {
     fn into_edge(self) -> (Ix, Ix, E);
 }
 
+impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix)
+    where E: Default
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        let (s, t) = self;
+        (s, t, E::default())
+    }
+}
+
+impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, E)
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        self
+    }
+}
+
+impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, &'a E)
+    where E: Clone
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        let (a, b, c) = self;
+        (a, b, c.clone())
+    }
+}
+
 impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix)
     where Ix: Copy, E: Default
 {
@@ -171,30 +196,5 @@ impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix, E)
 {
     fn into_edge(self) -> (Ix, Ix, E) {
         self.clone()
-    }
-}
-
-impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, &'a E)
-    where Ix: Copy, E: Clone
-{
-    fn into_edge(self) -> (Ix, Ix, E) {
-        let (a, b, c) = self;
-        (a, b, c.clone())
-    }
-}
-
-impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix)
-    where E: Default
-{
-    fn into_edge(self) -> (Ix, Ix, E) {
-        let (s, t) = self;
-        (s, t, E::default())
-    }
-}
-
-impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, E)
-{
-    fn into_edge(self) -> (Ix, Ix, E) {
-        self
     }
 }
