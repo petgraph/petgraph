@@ -68,8 +68,6 @@ impl IndexType for u8 {
     fn max() -> Self { ::std::u8::MAX }
 }
 
-// FIXME: These aren't stable, so a public wrapper of node/edge indices
-// should be lifetimed just like pointers.
 /// Node identifier.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct NodeIndex<Ix=DefIndex>(Ix);
