@@ -14,6 +14,8 @@ use petgraph::algo::{
     dijkstra,
 };
 
+use petgraph::dot::{Dot, Config};
+
 #[test]
 fn simple() {
     //let root = TypedArena::<Node<_>>::new();
@@ -40,6 +42,7 @@ fn simple() {
     assert!(!gr.add_edge(f, b, 15));
     assert!(!gr.add_edge(f, e, 6));
     println!("{:?}", gr);
+    println!("{}", Dot::with_config(&gr, &[]));
 
     assert_eq!(gr.node_count(), 6);
     assert_eq!(gr.edge_count(), 9);
@@ -155,4 +158,6 @@ fn from_edges() {
     assert_eq!(gr.neighbors(1).count(), 3);
     assert_eq!(gr.neighbors(2).count(), 3);
     assert_eq!(gr.neighbors(3).count(), 3);
+
+    println!("{:?}", Dot::with_config(&gr, &[Config::EdgeNoLabel]));
 }

@@ -34,6 +34,7 @@ pub mod algo;
 pub mod generate;
 pub mod graphmap;
 pub mod graph;
+pub mod dot;
 pub mod visit;
 pub mod unionfind;
 mod dijkstra;
