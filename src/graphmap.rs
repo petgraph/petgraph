@@ -13,6 +13,8 @@ use std::slice::{
 use std::fmt;
 use std::ops::{Index, IndexMut};
 
+use IntoWeightedEdge;
+
 /// `GraphMap<N, E>` is an undirected graph, with generic node values `N` and edge weights `E`.
 ///
 /// It uses an combined adjacency list and sparse adjacency matrix representation, using **O(|V|
@@ -62,6 +64,51 @@ impl<N, E> GraphMap<N, E>
         GraphMap {
             nodes: HashMap::with_capacity(nodes),
             edges: HashMap::with_capacity(edges),
+        }
+    }
+
+    /// Create a new `GraphMap` from an iterable of edges.
+    ///
+    /// Node values are taken directly from the list.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    ///
+    /// ```
+    /// use petgraph::GraphMap;
+    ///
+    /// let gr = GraphMap::<_, ()>::from_edges(&[
+    ///     (0, 1), (0, 2), (0, 3),
+    ///     (1, 2), (1, 3),
+    ///     (2, 3),
+    /// ]);
+    /// ```
+    pub fn from_edges<I>(iterable: I) -> Self
+        where I: IntoIterator,
+              I::Item: IntoWeightedEdge<N, E>
+    {
+        let iter = iterable.into_iter();
+        let (low, _) = iter.size_hint();
+        let mut g = Self::with_capacity(0, low);
+        g.extend(iter);
+        g
+    }
+
+    /// Extend the graph from an iterable of edges.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    pub fn extend<I>(&mut self, iterable: I)
+        where I: IntoIterator,
+              I::Item: IntoWeightedEdge<N, E>
+    {
+        let iter = iterable.into_iter();
+        let (low, _) = iter.size_hint();
+        self.edges.reserve(low);
+
+        for elt in iter {
+            let (source, target, weight) = elt.into_edge();
+            self.add_edge(source, target, weight);
         }
     }
 

@@ -145,3 +145,44 @@ impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
         self.0.fmt(f)
     }
 }
+
+/// Convert an element like `(i, j)` or `(i, j, w)` into
+/// a triple of source, target, edge weight.
+///
+/// For `Graph::from_edges` and `GraphMap::from_edges`.
+pub trait IntoWeightedEdge<Ix, E> {
+    fn into_edge(self) -> (Ix, Ix, E);
+}
+
+impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix)
+    where Ix: Copy, E: Default
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        let (s, t) = *self;
+        (s, t, E::default())
+    }
+}
+
+impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix, E)
+    where Ix: Copy, E: Clone
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        self.clone()
+    }
+}
+
+impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix)
+    where E: Default
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        let (s, t) = self;
+        (s, t, E::default())
+    }
+}
+
+impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, E)
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        self
+    }
+}

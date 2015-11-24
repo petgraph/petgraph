@@ -434,17 +434,19 @@ fn toposort() {
     let e = gr.add_node("E");
     let f = gr.add_node("F");
     let g = gr.add_node("G");
-    gr.add_edge(a, b, 7.0);
-    gr.add_edge(a, d, 5.);
-    gr.add_edge(d, b, 9.);
-    gr.add_edge(b, c, 8.);
-    gr.add_edge(b, e, 7.);
-    gr.add_edge(c, e, 5.);
-    gr.add_edge(d, e, 15.);
-    gr.add_edge(d, f, 6.);
-    gr.add_edge(f, e, 8.);
-    gr.add_edge(f, g, 11.);
-    gr.add_edge(e, g, 9.);
+    gr.extend(&[
+        (a, b, 7.),
+        (a, d, 5.),
+        (d, b, 9.),
+        (b, c, 8.),
+        (b, e, 7.),
+        (c, e, 5.),
+        (d, e, 15.),
+        (d, f, 6.),
+        (f, e, 8.),
+        (f, g, 11.),
+        (e, g, 9.),
+    ]);
 
     // add a disjoint part
     let h = gr.add_node("H");
@@ -511,28 +513,19 @@ fn scc() {
     }
 
     let n = NodeIndex::new;
-    let mut gr = Graph::new();
 
-    gr.add_node(0);
-    gr.add_node(1);
-    gr.add_node(2);
-    gr.add_node(3);
-    gr.add_node(4);
-    gr.add_node(5);
-    gr.add_node(6);
-    gr.add_node(7);
-    gr.add_node(8);
-    gr.add_edge(n(6), n(0), ());
-    gr.add_edge(n(0), n(3), ());
-    gr.add_edge(n(3), n(6), ());
-    gr.add_edge(n(8), n(6), ());
-    gr.add_edge(n(8), n(2), ());
-    gr.add_edge(n(2), n(5), ());
-    gr.add_edge(n(5), n(8), ());
-    gr.add_edge(n(7), n(5), ());
-    gr.add_edge(n(1), n(7), ());
-    gr.add_edge(n(7), n(4), ());
-    gr.add_edge(n(4), n(1), ());
+    let gr: Graph<(), ()> = Graph::from_edges(&[
+        (6, 0),
+        (0, 3),
+        (3, 6),
+        (8, 6),
+        (8, 2),
+        (2, 5),
+        (5, 8),
+        (7, 5),
+        (1, 7),
+        (7, 4),
+        (4, 1)]);
 
     assert_sccs_eq(petgraph::algo::scc(&gr), vec![
         vec![n(0), n(3), n(6)],
@@ -902,4 +895,20 @@ fn map_filter_map() {
     assert_eq!(g3.node_count(), g.node_count() - 2);
     assert_eq!(g3.edge_count(), g.edge_count() - 5);
     println!("{:?}", g3);
+}
+
+#[test]
+fn from_edges() {
+    let n = NodeIndex::new;
+    let gr = Graph::<(), (), Undirected>::from_edges(&[
+        (0, 1), (0, 2), (0, 3),
+        (1, 2), (1, 3),
+        (2, 3),
+    ]);
+    assert_eq!(gr.node_count(), 4);
+    assert_eq!(gr.edge_count(), 6);
+    assert_eq!(gr.neighbors(n(0)).count(), 3);
+    assert_eq!(gr.neighbors(n(1)).count(), 3);
+    assert_eq!(gr.neighbors(n(2)).count(), 3);
+    assert_eq!(gr.neighbors(n(3)).count(), 3);
 }

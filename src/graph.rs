@@ -1,16 +1,18 @@
 //! `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 
+use std::cmp;
 use std::fmt;
-use std::slice;
 use std::iter;
 use std::marker;
 use std::ops::{Index, IndexMut};
+use std::slice;
 
-use super::{
+use {
     EdgeDirection, Outgoing, Incoming,
     Undirected,
     Directed,
     EdgeType,
+    IntoWeightedEdge,
 };
 
 /// The default integer type for node and edge indices in `Graph`.
@@ -90,6 +92,10 @@ impl<Ix: IndexType = DefIndex> NodeIndex<Ix>
     {
         NodeIndex(IndexType::max())
     }
+}
+
+impl<Ix: IndexType> From<Ix> for NodeIndex<Ix> {
+    fn from(ix: Ix) -> Self { NodeIndex(ix) }
 }
 
 /// Edge identifier.
@@ -928,6 +934,63 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         }
     }
 
+    /// Create a new `Graph` from an iterable of edges.
+    ///
+    /// Node weights `N` are set to default values.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    ///
+    /// ```
+    /// use petgraph::Graph;
+    ///
+    /// let gr = Graph::<(), i32>::from_edges(&[
+    ///     (0, 1), (0, 2), (0, 3),
+    ///     (1, 2), (1, 3),
+    ///     (2, 3),
+    /// ]);
+    /// ```
+    pub fn from_edges<I, J>(iterable: I) -> Self
+        where I: IntoIterator,
+              I::Item: IntoWeightedEdge<J, E>,
+              J: Into<NodeIndex<Ix>>,
+              N: Default,
+    {
+        let mut g = Self::with_capacity(0, 0);
+        g.extend(iterable);
+        g
+    }
+
+    /// Extend the graph from an iterable of edges.
+    ///
+    /// Node weights `N` are set to default values.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    pub fn extend<I, J>(&mut self, iterable: I)
+        where I: IntoIterator,
+              I::Item: IntoWeightedEdge<J, E>,
+              J: Into<NodeIndex<Ix>>,
+              N: Default,
+    {
+        let iter = iterable.into_iter();
+        let (low, _) = iter.size_hint();
+        self.edges.reserve(low);
+
+        for elt in iter {
+            let (source, target, weight) = elt.into_edge();
+            let (source, target) = (source.into(), target.into());
+            let nx = cmp::max(source, target);
+            while nx.index() >= self.node_count() {
+                self.add_node(N::default());
+            }
+            self.add_edge(source, target, weight);
+        }
+    }
+
+
     /// Create a new `Graph` by mapping node and edge weights.
     ///
     /// The resulting graph has the same graph indices as `self`.
@@ -1298,3 +1361,4 @@ fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
 {
     iterable.into_iter().enumerate()
 }
+
