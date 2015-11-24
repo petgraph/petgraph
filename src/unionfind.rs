@@ -1,6 +1,5 @@
 //! `UnionFind<K>` is a disjoint-set data structure.
 
-use std::ops::Add;
 use super::graph::IndexType;
 
 /// `UnionFind<K>` is a disjoint-set data structure. It tracks set membership of *n* elements
@@ -28,37 +27,21 @@ pub struct UnionFind<K>
 }
 
 #[inline]
-fn to_uint<K: IndexType>(x: K) -> usize { x.index() }
-
-#[inline]
 unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K
 {
     debug_assert!(index < xs.len());
     xs.get_unchecked(index)
 }
 
-impl<K> UnionFind<K> where
-    K: IndexType + Add<Output=K>
+impl<K> UnionFind<K>
+    where K: IndexType
 {
     /// Create a new `UnionFind` of `n` disjoint sets.
     pub fn new(n: usize) -> Self
     {
-        let mut parent = Vec::with_capacity(n);
-        let mut rank = Vec::with_capacity(n);
+        let rank = vec![0; n];
+        let parent = (0..n).map(K::new).collect::<Vec<K>>();
 
-        for _ in 0..n {
-            rank.push(0)
-        }
-
-        // unroll the first iteration to avoid wraparound in i for K=u8, n=256.
-        let mut i: K = K::new(0);
-        if n > 0 {
-            parent.push(i);
-        }
-        for _ in 1..n {
-            i = i + K::new(1);
-            parent.push(i);
-        }
         UnionFind{parent: parent, rank: rank}
     }
 
@@ -67,12 +50,12 @@ impl<K> UnionFind<K> where
     /// **Panics** if `x` is out of bounds.
     pub fn find(&self, x: K) -> K
     {
-        assert!(to_uint(x) < self.parent.len());
+        assert!(x.index() < self.parent.len());
         unsafe {
             let mut x = x;
             loop {
                 // Use unchecked indexing because we can trust the internal set ids.
-                let xparent = *get_unchecked(&self.parent, to_uint(x));
+                let xparent = *get_unchecked(&self.parent, x.index());
                 if xparent == x {
                     break
                 }
@@ -90,7 +73,7 @@ impl<K> UnionFind<K> where
     /// **Panics** if `x` is out of bounds.
     pub fn find_mut(&mut self, x: K) -> K
     {
-        assert!(to_uint(x) < self.parent.len());
+        assert!(x.index() < self.parent.len());
         unsafe {
             self.find_mut_recursive(x)
         }
@@ -98,10 +81,10 @@ impl<K> UnionFind<K> where
 
     unsafe fn find_mut_recursive(&mut self, x: K) -> K
     {
-        let xparent = *get_unchecked(&self.parent, to_uint(x));
+        let xparent = *get_unchecked(&self.parent, x.index());
         if xparent != x {
             let xrep = self.find_mut_recursive(xparent);
-            let xparent = self.parent.get_unchecked_mut(to_uint(x));
+            let xparent = self.parent.get_unchecked_mut(x.index());
             *xparent = xrep;
             *xparent
         } else {
@@ -127,8 +110,8 @@ impl<K> UnionFind<K> where
             return false
         }
 
-        let xrepu = to_uint(xrep);
-        let yrepu = to_uint(yrep);
+        let xrepu = xrep.index();
+        let yrepu = yrep.index();
         let xrank = self.rank[xrepu];
         let yrank = self.rank[yrepu];
 
