@@ -11,6 +11,7 @@ use std::slice::{
     Iter,
 };
 use std::fmt;
+use std::iter::FromIterator;
 use std::ops::{Index, IndexMut};
 
 use IntoWeightedEdge;
@@ -88,11 +89,7 @@ impl<N, E> GraphMap<N, E>
         where I: IntoIterator,
               I::Item: IntoWeightedEdge<N, E>
     {
-        let iter = iterable.into_iter();
-        let (low, _) = iter.size_hint();
-        let mut g = Self::with_capacity(0, low);
-        g.extend(iter);
-        g
+        Self::from_iter(iterable)
     }
 
     /// Return the number of nodes in the graph.
@@ -263,6 +260,22 @@ impl<N, E> GraphMap<N, E>
         AllEdges {
             inner: self.edges.iter()
         }
+    }
+}
+
+/// Create a new `GraphMap` from an iterable of edges.
+impl<N, E, Item> FromIterator<Item> for GraphMap<N, E>
+    where Item: IntoWeightedEdge<N, E>,
+          N: NodeTrait,
+{
+    fn from_iter<I>(iterable: I) -> Self
+        where I: IntoIterator<Item=Item>,
+    {
+        let iter = iterable.into_iter();
+        let (low, _) = iter.size_hint();
+        let mut g = Self::with_capacity(0, low);
+        g.extend(iter);
+        g
     }
 }
 
