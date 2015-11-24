@@ -613,11 +613,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Iterator element type is `NodeIndex<Ix>`.
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
     {
-        if self.is_directed() {
-            self.neighbors_directed(a, Outgoing)
-        } else {
-            self.neighbors_undirected(a)
-        }
+        self.neighbors_directed(a, Outgoing)
     }
 
     /// Return an iterator of all neighbors that have an edge between them and `a`,
@@ -904,7 +900,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Reverse the direction of all edges
     pub fn reverse(&mut self)
     {
-        for edge in self.edges.iter_mut() {
+        for edge in &mut self.edges {
             edge.node.swap(0, 1)
         }
     }
