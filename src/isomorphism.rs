@@ -78,16 +78,16 @@ impl<Ty, Ix> Vf2State<Ty, Ix>
         for ix in g.neighbors(from) {
             if self.out[ix.index()] == 0 {
                 self.out[ix.index()] = s;
+                self.out_size += 1;
             }
-            self.out_size += 1;
         }
         if g.is_directed() {
             for ix in g.neighbors_directed(from, Incoming) {
                 if self.ins[ix.index()] == 0 {
                     self.ins[ix.index()] = s;
+                    self.ins_size += 1;
                 }
             }
-            self.ins_size += 1;
         }
     }
 
@@ -105,16 +105,16 @@ impl<Ty, Ix> Vf2State<Ty, Ix>
         for ix in g.neighbors(from) {
             if self.out[ix.index()] == s {
                 self.out[ix.index()] = 0;
+                self.out_size -= 1;
             }
-            self.out_size -= 1;
         }
         if g.is_directed() {
             for ix in g.neighbors_directed(from, Incoming) {
                 if self.ins[ix.index()] == s {
                     self.ins[ix.index()] = 0;
+                    self.ins_size -= 1;
                 }
             }
-            self.ins_size -= 1;
         }
     }
 
@@ -322,9 +322,9 @@ pub fn is_isomorphic<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>,
                 st[j].push_mapping(nodes[j], nodes[1-j], g[j]);
             }
 
-            // Check counts in Tin/Tout
-            if st[0].out_size == st[0].out_size ||
-               st[1].ins_size == st[1].ins_size
+            // Check cardinalities of Tin, Tout sets
+            if st[0].out_size == st[1].out_size &&
+               st[0].ins_size == st[1].ins_size
             {
 
                 // Recurse

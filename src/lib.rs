@@ -17,16 +17,16 @@ use std::fmt;
 use std::ops::{Deref};
 
 pub use scored::MinScored;
-pub use graphmap::GraphMap;
 pub use graph::Graph;
+pub use graphmap::GraphMap;
 
-pub use self::EdgeDirection::{Outgoing, Incoming};
 pub use visit::{
     Bfs,
     BfsIter,
     Dfs,
     DfsIter,
 };
+pub use EdgeDirection::{Outgoing, Incoming};
 
 mod scored;
 pub mod algo;
@@ -34,11 +34,14 @@ pub mod algo;
 pub mod generate;
 pub mod graphmap;
 pub mod graph;
+pub mod dot;
 pub mod visit;
 pub mod unionfind;
 mod dijkstra;
 mod isomorphism;
 mod traits_graph;
+#[cfg(feature = "quickcheck")]
+pub mod quickcheck;
 
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction
@@ -143,5 +146,55 @@ impl<'b, T> Hash for Ptr<'b, T>
 impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+/// Convert an element like `(i, j)` or `(i, j, w)` into
+/// a triple of source, target, edge weight.
+///
+/// For `Graph::from_edges` and `GraphMap::from_edges`.
+pub trait IntoWeightedEdge<Ix, E> {
+    fn into_edge(self) -> (Ix, Ix, E);
+}
+
+impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix)
+    where Ix: Copy, E: Default
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        let (s, t) = *self;
+        (s, t, E::default())
+    }
+}
+
+impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix, E)
+    where Ix: Copy, E: Clone
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        self.clone()
+    }
+}
+
+impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, &'a E)
+    where Ix: Copy, E: Clone
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        let (a, b, c) = self;
+        (a, b, c.clone())
+    }
+}
+
+impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix)
+    where E: Default
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        let (s, t) = self;
+        (s, t, E::default())
+    }
+}
+
+impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, E)
+{
+    fn into_edge(self) -> (Ix, Ix, E) {
+        self
     }
 }

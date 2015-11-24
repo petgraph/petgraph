@@ -14,6 +14,8 @@ use petgraph::algo::{
     dijkstra,
 };
 
+use petgraph::dot::{Dot, Config};
+
 #[test]
 fn simple() {
     //let root = TypedArena::<Node<_>>::new();
@@ -40,6 +42,7 @@ fn simple() {
     assert!(!gr.add_edge(f, b, 15));
     assert!(!gr.add_edge(f, e, 6));
     println!("{:?}", gr);
+    println!("{}", Dot::with_config(&gr, &[]));
 
     assert_eq!(gr.node_count(), 6);
     assert_eq!(gr.edge_count(), 9);
@@ -131,4 +134,30 @@ fn edge_iterator() {
     ].iter().cloned().collect();
 
     assert_eq!(real_edges, expected_edges);
+}
+
+#[test]
+fn from_edges() {
+    let gr = GraphMap::from_edges(&[
+        ("a", "b", 1),
+        ("a", "c", 2),
+        ("c", "d", 3),
+    ]);
+    assert_eq!(gr.node_count(), 4);
+    assert_eq!(gr.edge_count(), 3);
+    assert_eq!(gr[("a", "c")], 2);
+
+    let gr = GraphMap::<_, ()>::from_edges(&[
+        (0, 1), (0, 2), (0, 3),
+        (1, 2), (1, 3),
+        (2, 3),
+    ]);
+    assert_eq!(gr.node_count(), 4);
+    assert_eq!(gr.edge_count(), 6);
+    assert_eq!(gr.neighbors(0).count(), 3);
+    assert_eq!(gr.neighbors(1).count(), 3);
+    assert_eq!(gr.neighbors(2).count(), 3);
+    assert_eq!(gr.neighbors(3).count(), 3);
+
+    println!("{:?}", Dot::with_config(&gr, &[Config::EdgeNoLabel]));
 }

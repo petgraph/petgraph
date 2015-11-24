@@ -243,6 +243,14 @@ impl<N, E> Visitable for GraphMap<N, E>
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
 }
 
+impl<N, E> Revisitable for GraphMap<N, E>
+    where N: Copy + Ord + Hash
+{
+    fn reset_map(&self, map: &mut Self::Map) {
+        map.clear();
+    }
+}
+
 impl<'a, G: Graphlike> Graphlike for AsUndirected<&'a G>
 {
     type NodeId = G::NodeId;

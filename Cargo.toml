@@ -23,10 +23,12 @@ name = "petgraph"
 [profile.bench]
 debug = true
 
-[dependencies.fixedbitset]
-version = "0.1.0"
+[dependencies]
+fixedbitset = "0.1.0"
+quickcheck = { optional = true, version = "0.2.24" }
 
-[dev-dependencies.rand]
+[dev-dependencies]
+rand = "0.3"
 
 [features]
 

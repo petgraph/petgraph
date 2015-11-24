@@ -2,7 +2,7 @@
 
 use std::hash::{Hash};
 use std::collections::HashMap;
-use std::iter::Map;
+use std::iter::Cloned;
 use std::collections::hash_map::{
     Keys,
 };
@@ -11,7 +11,10 @@ use std::slice::{
     Iter,
 };
 use std::fmt;
+use std::iter::FromIterator;
 use std::ops::{Index, IndexMut};
+
+use IntoWeightedEdge;
 
 /// `GraphMap<N, E>` is an undirected graph, with generic node values `N` and edge weights `E`.
 ///
@@ -42,9 +45,6 @@ fn edge_key<N: Copy + Ord>(a: N, b: N) -> (N, N) {
     if a <= b { (a, b) } else { (b, a) }
 }
 
-#[inline]
-fn copy<N: Copy>(n: &N) -> N { *n }
-
 /// A trait group for `GraphMap`'s node identifier.
 pub trait NodeTrait : Copy + Ord + Hash {}
 impl<N> NodeTrait for N where N: Copy + Ord + Hash {}
@@ -66,6 +66,30 @@ impl<N, E> GraphMap<N, E>
             nodes: HashMap::with_capacity(nodes),
             edges: HashMap::with_capacity(edges),
         }
+    }
+
+    /// Create a new `GraphMap` from an iterable of edges.
+    ///
+    /// Node values are taken directly from the list.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    ///
+    /// ```
+    /// use petgraph::GraphMap;
+    ///
+    /// let gr = GraphMap::<_, ()>::from_edges(&[
+    ///     (0, 1), (0, 2), (0, 3),
+    ///     (1, 2), (1, 3),
+    ///     (2, 3),
+    /// ]);
+    /// ```
+    pub fn from_edges<I>(iterable: I) -> Self
+        where I: IntoIterator,
+              I::Item: IntoWeightedEdge<N, E>
+    {
+        Self::from_iter(iterable)
     }
 
     /// Return the number of nodes in the graph.
@@ -186,7 +210,7 @@ impl<N, E> GraphMap<N, E>
     ///
     /// Iterator element type is `N`.
     pub fn nodes(&self) -> Nodes<N> {
-        Nodes{iter: self.nodes.keys().map(copy)}
+        Nodes{iter: self.nodes.keys().cloned()}
     }
 
     /// Return an iterator over the nodes that are connected with `from` by edges.
@@ -199,7 +223,7 @@ impl<N, E> GraphMap<N, E>
             match self.nodes.get(&from) {
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
-            }.map(copy)
+            }.cloned()
         }
     }
 
@@ -239,6 +263,43 @@ impl<N, E> GraphMap<N, E>
     }
 }
 
+/// Create a new `GraphMap` from an iterable of edges.
+impl<N, E, Item> FromIterator<Item> for GraphMap<N, E>
+    where Item: IntoWeightedEdge<N, E>,
+          N: NodeTrait,
+{
+    fn from_iter<I>(iterable: I) -> Self
+        where I: IntoIterator<Item=Item>,
+    {
+        let iter = iterable.into_iter();
+        let (low, _) = iter.size_hint();
+        let mut g = Self::with_capacity(0, low);
+        g.extend(iter);
+        g
+    }
+}
+
+/// Extend the graph from an iterable of edges.
+///
+/// Nodes are inserted automatically to match the edges.
+impl<N, E, Item> Extend<Item> for GraphMap<N, E>
+    where Item: IntoWeightedEdge<N, E>,
+          N: NodeTrait,
+{
+    fn extend<I>(&mut self, iterable: I)
+        where I: IntoIterator<Item=Item>,
+    {
+        let iter = iterable.into_iter();
+        let (low, _) = iter.size_hint();
+        self.edges.reserve(low);
+
+        for elt in iter {
+            let (source, target, weight) = elt.into_edge();
+            self.add_edge(source, target, weight);
+        }
+    }
+}
+
 /// Utitily macro -- reinterpret passed in macro arguments as items
 macro_rules! items {
     ($($item:item)*) => ($($item)*);
@@ -254,6 +315,7 @@ macro_rules! iterator_wrap {
                 iter: $iter,
             }
             impl<$($typarm),*> Iterator for $name <$($typarm),*>
+                where $($bounds)*
             {
                 type Item = $item;
                 #[inline]
@@ -267,7 +329,7 @@ macro_rules! iterator_wrap {
                 }
             }
             impl<$($typarm),*> DoubleEndedIterator for $name <$($typarm),*>
-                where $iter: DoubleEndedIterator<Item=$item>,
+                where $($bounds)*, $iter: DoubleEndedIterator<Item=$item>,
             {
                 #[inline]
                 fn next_back(&mut self) -> Option<Self::Item> {
@@ -276,7 +338,7 @@ macro_rules! iterator_wrap {
             }
 
             impl<$($typarm),*> ExactSizeIterator for $name <$($typarm),*>
-                where $iter: ExactSizeIterator<Item=$item>,
+                where $($bounds)*, $iter: ExactSizeIterator<Item=$item>,
             {
             }
         }
@@ -284,15 +346,15 @@ macro_rules! iterator_wrap {
 }
 
 iterator_wrap! {
-    Nodes <'a, N> where { N: 'a }
+    Nodes <'a, N> where { N: 'a + Clone }
     item: N,
-    iter: Map<Keys<'a, N, Vec<N>>, fn(&N) -> N>,
+    iter: Cloned<Keys<'a, N, Vec<N>>>,
 }
 
 iterator_wrap! {
-    Neighbors <'a, N> where { N: 'a }
+    Neighbors <'a, N> where { N: 'a + Clone }
     item: N,
-    iter: Map<Iter<'a, N>, fn(&N) -> N>,
+    iter: Cloned<Iter<'a, N>>,
 }
 
 pub struct Edges<'a, N, E: 'a> where N: 'a + NodeTrait {
