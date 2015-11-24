@@ -24,10 +24,12 @@ static EDGE: [&'static str; 2] = ["--", "->"];
 static INDENT: &'static str = "    ";
 
 impl<'a, G> Dot<'a, G> {
+    /// Create a `Dot` formatting wrapper with default configuration.
     pub fn new(graph: &'a G) -> Self {
         Self::with_config(graph, &[])
     }
 
+    /// Create a `Dot` formatting wrapper with custom configuration.
     pub fn with_config(graph: &'a G, config: &'a [Config]) -> Self {
         Dot {
             graph: graph,
@@ -41,8 +43,11 @@ impl<'a, G> Dot<'a, G> {
 /// This enum does not have an exhaustive definition (will be expanded)
 #[derive(Debug, PartialEq, Eq)]
 pub enum Config {
+    /// Use indices for node labels.
     NodeIndexLabel,
+    /// Use indices for edge labels.
     EdgeIndexLabel,
+    /// Use no edge labels.
     EdgeNoLabel,
     #[doc(hidden)]
     Other
@@ -151,7 +156,9 @@ impl<'a, N, E> Dot<'a, GraphMap<N, E>>
                         labels[&a],
                         EDGE[0],
                         labels[&b]));
-            if self.config.contains(&Config::EdgeIndexLabel) {
+            if self.config.contains(&Config::EdgeNoLabel) {
+                try!(writeln!(f, ""));
+            } else if self.config.contains(&Config::EdgeIndexLabel) {
                 try!(writeln!(f, " [label=\"{}\"]", i));
             } else {
                 try!(write!(f, " [label=\""));
