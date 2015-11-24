@@ -222,19 +222,23 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 ///
 /// ### Tradeoffs With Indices
 ///
-/// * The fact that the node and edge indices in the graph are numbered in a compact interval from
-/// 0 to *n* - 1 simplifies some graph algorithms.
+/// * The fact that the node and edge indices in the graph each are numbered in compact
+/// intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
 ///
 /// * You can select graph index integer type after the size of the graph. A smaller
-/// size has better performance due to cache effects.
+/// size may have better performance.
 ///
 /// * Using indices allows mutation while traversing the graph, see `Dfs`.
 ///
 /// * You can create several graphs using the equal node indices but with
 /// differing weights or differing edges.
 ///
-/// * The `Graph` is a regular rust collection and is `Send + Sync` (as long
-/// as `N` and `E` are).
+/// * The `Graph` is a regular rust collection and is `Send` and `Sync` (as long
+/// as associated data `N` and `E` are).
+///
+/// * Some indices shift during node or edge removal, so that is a drawback
+/// of removing elements. Indices don't allow as much compile time checking as
+/// references.
 ///
 pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefIndex> {
     nodes: Vec<Node<N, Ix>>,
