@@ -1398,6 +1398,10 @@ impl<Ix: IndexType> Iterator for NodeIndices<Ix> {
     fn next(&mut self) -> Option<Self::Item> {
         self.r.next().map(node_index)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.r.size_hint()
+    }
 }
 
 impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
@@ -1417,6 +1421,10 @@ impl<Ix: IndexType> Iterator for EdgeIndices<Ix> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.r.next().map(edge_index)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.r.size_hint()
     }
 }
 
