@@ -95,23 +95,6 @@ impl<N, E> GraphMap<N, E>
         g
     }
 
-    /// Extend the graph from an iterable of edges.
-    ///
-    /// Nodes are inserted automatically to match the edges.
-    pub fn extend<I>(&mut self, iterable: I)
-        where I: IntoIterator,
-              I::Item: IntoWeightedEdge<N, E>
-    {
-        let iter = iterable.into_iter();
-        let (low, _) = iter.size_hint();
-        self.edges.reserve(low);
-
-        for elt in iter {
-            let (source, target, weight) = elt.into_edge();
-            self.add_edge(source, target, weight);
-        }
-    }
-
     /// Return the number of nodes in the graph.
     pub fn node_count(&self) -> usize {
         self.nodes.len()
@@ -279,6 +262,27 @@ impl<N, E> GraphMap<N, E>
     pub fn all_edges(&self) -> AllEdges<N, E> {
         AllEdges {
             inner: self.edges.iter()
+        }
+    }
+}
+
+/// Extend the graph from an iterable of edges.
+///
+/// Nodes are inserted automatically to match the edges.
+impl<N, E, Item> Extend<Item> for GraphMap<N, E>
+    where Item: IntoWeightedEdge<N, E>,
+          N: NodeTrait,
+{
+    fn extend<I>(&mut self, iterable: I)
+        where I: IntoIterator<Item=Item>,
+    {
+        let iter = iterable.into_iter();
+        let (low, _) = iter.size_hint();
+        self.edges.reserve(low);
+
+        for elt in iter {
+            let (source, target, weight) = elt.into_edge();
+            self.add_edge(source, target, weight);
         }
     }
 }

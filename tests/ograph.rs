@@ -435,7 +435,7 @@ fn toposort() {
     let e = gr.add_node("E");
     let f = gr.add_node("F");
     let g = gr.add_node("G");
-    gr.extend(&[
+    gr.extend_with_edges(&[
         (a, b, 7.),
         (a, d, 5.),
         (d, b, 9.),

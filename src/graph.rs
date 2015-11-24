@@ -986,7 +986,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
               N: Default,
     {
         let mut g = Self::with_capacity(0, 0);
-        g.extend(iterable);
+        g.extend_with_edges(iterable);
         g
     }
 
@@ -997,7 +997,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// or they are filled with default values.
     ///
     /// Nodes are inserted automatically to match the edges.
-    pub fn extend<I, J>(&mut self, iterable: I)
+    pub fn extend_with_edges<I, J>(&mut self, iterable: I)
         where I: IntoIterator,
               I::Item: IntoWeightedEdge<J, E>,
               J: Into<NodeIndex<Ix>>,
