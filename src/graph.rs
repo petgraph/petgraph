@@ -931,10 +931,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Create a new `Graph` by mapping node and edge weights.
     ///
     /// The resulting graph has the same graph indices as `self`.
-    pub fn map<F, G, N2, E2>(&self, mut node_map: F, mut edge_map: G)
+    pub fn map<'a, F, G, N2, E2>(&'a self, mut node_map: F, mut edge_map: G)
         -> Graph<N2, E2, Ty, Ix>
-        where F: FnMut(NodeIndex<Ix>, &N) -> N2,
-              G: FnMut(EdgeIndex<Ix>, &E) -> E2,
+        where F: FnMut(NodeIndex<Ix>, &'a N) -> N2,
+              G: FnMut(EdgeIndex<Ix>, &'a E) -> E2,
     {
         let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
         for (i, node) in enumerate(&self.nodes) {
@@ -964,10 +964,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// If no nodes are removed, the resulting graph has compatible node
     /// indices; if neither nodes nor edges are removed, the result has
     /// the same graph indices as `self`.
-    pub fn filter_map<F, G, N2, E2>(&self, mut node_map: F, mut edge_map: G)
+    pub fn filter_map<'a, F, G, N2, E2>(&'a self, mut node_map: F, mut edge_map: G)
         -> Graph<N2, E2, Ty, Ix>
-        where F: FnMut(NodeIndex<Ix>, &N) -> Option<N2>,
-              G: FnMut(EdgeIndex<Ix>, &E) -> Option<E2>,
+        where F: FnMut(NodeIndex<Ix>, &'a N) -> Option<N2>,
+              G: FnMut(EdgeIndex<Ix>, &'a E) -> Option<E2>,
     {
         let mut g = Graph::with_capacity(0, 0);
         // mapping from old node index to new node index, end represents removed.
