@@ -353,7 +353,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Return whether the graph has directed edges or not.
+    /// Whether the graph has directed edges or not.
     #[inline]
     pub fn is_directed(&self) -> bool
     {
