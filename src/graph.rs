@@ -570,6 +570,16 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
 
     /// Remove `a` from the graph if it exists, and return its weight.
     /// If it doesn't exist in the graph, return `None`.
+    ///
+    /// Apart from `a`, this invalidates the last node index in the graph
+    /// (that node will adopt the removed node index). Edge indices are
+    /// invalidated as they would be following the removal of each edge
+    /// with an endpoint in `a`.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of affected
+    /// edges, including *n* calls to `.remove_edge()` where *n* is the number
+    /// of edges with an endpoint in `a`, and including the edges with an
+    /// endpoint in the displaced node.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N>
     {
         match self.nodes.get(a.index()) {
@@ -652,6 +662,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     ///
     /// Computes in **O(e')** time, where **e'** is the size of four particular edge lists, for
     /// the vertices of `e` and the vertices of another affected edge.
+    ///
+    /// Apart from `e`, this invalidates the last edge index in the graph
+    /// (that edge will adopt the removed edge index).
     pub fn remove_edge(&mut self, e: EdgeIndex<Ix>) -> Option<E>
     {
         // every edge is part of two lists,
