@@ -19,7 +19,7 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
-- 
+- 0.1.16
 
   - Add Graph::node_indices(), Graph::edge_indices()
   - Add Graph::retain_nodes(), Graph::retain_edges()
