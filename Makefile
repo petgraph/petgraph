@@ -7,7 +7,7 @@ FEATURES =
 
 VERSIONS = $(patsubst %,target/VERS/%,$(DOCCRATES))
 
-docs: mkdocs subst $(RMDOCS)
+docs: mkdocs mksvgs subst $(RMDOCS)
 
 # https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html
 $(VERSIONS): Cargo.toml
@@ -30,5 +30,9 @@ $(RMDOCS): mkdocs
 	rm -r ./doc/$@
 	sed -i "/searchIndex\['$@'\]/d" doc/search-index.js
 
+mksvgs: mkdocs graph-example.dot
+	dot -Tsvg < ./graph-example.dot > graph-example.svg
+	mv graph-example.svg ./doc/petgraph/graph/
 
-.PHONY: docs mkdocs subst $(DOCCRATES) $(RMDOCS)
+
+.PHONY: docs mkdocs mksvgs subst $(DOCCRATES) $(RMDOCS)

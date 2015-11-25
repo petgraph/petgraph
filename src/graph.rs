@@ -203,7 +203,28 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
+/// The graph uses **O(|V| + |E|)** space, and allows fast node and edge insert
+/// efficient graph search and graph algorithms.
+/// It implements **O(e')** edge lookup and edge and node removals, where **e'**
+/// is some local measure of edge count.
 /// Based on the graph datastructure used in rustc.
+///
+/// ```
+/// use petgraph::Graph;
+/// 
+/// let mut deps = Graph::<&str, &str>::new();
+/// let pg = deps.add_node("petgraph");
+/// let fb = deps.add_node("fixedbitset");
+/// let qc = deps.add_node("quickcheck");
+/// let rand = deps.add_node("rand");
+/// let libc = deps.add_node("libc");
+/// deps.extend_with_edges(&[
+///     (pg, fb), (pg, qc),
+///     (qc, rand), (rand, libc), (qc, libc),
+/// ]);
+/// ```
+///
+/// ![graph-example](graph-example.svg)
 ///
 /// ### Graph Indices
 ///
@@ -339,7 +360,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
               ty: PhantomData}
     }
 
-    /// Return the capacity of the graph's node and edge `Vec`s.
+    /// Return the current node and edge capacity of the graph.
     ///
     /// Computes in **O(1)** time.
     pub fn capacity(&self) -> (usize, usize) {

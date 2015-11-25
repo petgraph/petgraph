@@ -19,6 +19,13 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.17
+
+  - Add Graph::capacity(), GraphMap::capacity()
+  - Fix bug in Graph::reverse()
+  - Graph and GraphMap have `quickcheck::Arbitrary` implementations,
+    if optional feature `quickcheck` is enabled.
+
 - 0.1.16
 
   - Add Graph::node_indices(), Graph::edge_indices()
