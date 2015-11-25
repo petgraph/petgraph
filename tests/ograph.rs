@@ -10,6 +10,7 @@ use petgraph::{
     Outgoing,
     Directed,
     Undirected,
+    EdgeType,
 };
 
 use petgraph as pg;
@@ -20,8 +21,11 @@ use petgraph::algo::{
 };
 
 use petgraph::graph::node_index as n;
-use petgraph::graph::NodeIndex;
-use petgraph::graph::EdgeIndex;
+use petgraph::graph::{
+    NodeIndex,
+    EdgeIndex,
+    IndexType,
+};
 
 use petgraph::visit::{
     Reversed,
@@ -75,6 +79,7 @@ fn undirected()
     assert!(og.find_edge(d, a).is_none());
     assert!(og.find_edge(a, a).is_none());
     assert!(og.find_edge(b, c).is_some());
+    assert_graph_consistent(&og);
 
 }
 
@@ -259,6 +264,7 @@ fn cyclic() {
     assert!(!is_cyclic_undirected(&gr));
     gr.add_edge(c, e, 0.);
     assert!(is_cyclic_undirected(&gr));
+    assert_graph_consistent(&gr);
 }
 
 #[test]
@@ -903,6 +909,7 @@ fn map_filter_map() {
                           });
     assert_eq!(g3.node_count(), g.node_count() - 2);
     assert_eq!(g3.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g3);
 
     let mut g4 = g.clone();
     g4.retain_edges(|gr, i| {
@@ -910,6 +917,7 @@ fn map_filter_map() {
         !(s == a || s == e || t == a || t == e)
     });
     assert_eq!(g4.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g4);
 }
 
 #[test]
@@ -926,6 +934,7 @@ fn from_edges() {
     assert_eq!(gr.neighbors(n(1)).count(), 3);
     assert_eq!(gr.neighbors(n(2)).count(), 3);
     assert_eq!(gr.neighbors(n(3)).count(), 3);
+    assert_graph_consistent(&gr);
 }
 
 #[test]
@@ -956,4 +965,17 @@ fn retain() {
     assert_eq!(gr[n(3)], 1);
     assert!(gr.find_edge(n(1), n(1)).is_none());
     assert!(gr.find_edge(n(0), n(2)).is_none());
+    assert_graph_consistent(&gr);
+}
+
+fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    assert_eq!(g.node_count(), g.node_indices().count());
+    assert_eq!(g.edge_count(), g.edge_indices().count());
+    for edge in g.raw_edges() {
+        assert!(g.find_edge(edge.source(), edge.target()).is_some(),
+                "Edge not in graph! {:?} to {:?}", edge.source(), edge.target());
+    }
 }

@@ -905,10 +905,16 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     }
 
     /// Reverse the direction of all edges
-    pub fn reverse(&mut self)
-    {
+    pub fn reverse(&mut self) {
+        // swap edge endpoints,
+        // edge incoming / outgoing lists,
+        // node incoming / outgoing lists
         for edge in &mut self.edges {
-            edge.node.swap(0, 1)
+            edge.node.swap(0, 1);
+            edge.next.swap(0, 1);
+        }
+        for node in &mut self.nodes {
+            node.next.swap(0, 1);
         }
     }
 
