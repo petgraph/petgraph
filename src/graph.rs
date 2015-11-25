@@ -339,6 +339,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
               ty: PhantomData}
     }
 
+    /// Return the capacity of the graph's node and edge `Vec`s.
+    ///
+    /// Computes in **O(1)** time.
+    pub fn capacity(&self) -> (usize, usize) {
+        (self.nodes.capacity(), self.edges.capacity())
+    }
+
     /// Return the number of nodes (vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
