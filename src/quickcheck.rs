@@ -10,6 +10,11 @@ use graph::{
     IndexType,
 };
 
+/// `Arbitrary` for `Graph` creates a graph by selecting a node count
+/// and a probability for each possible edge to exist.
+///
+/// The result will be simple graph or digraph, with possible
+/// self loops, no parallel edges.
 impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
     where N: Arbitrary,
           E: Arbitrary,
