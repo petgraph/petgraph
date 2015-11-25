@@ -1,4 +1,4 @@
-//! Simple graphviz dot file format output
+//! Simple graphviz dot file format output.
 
 use std::fmt::{self, Display, Write};
 use {

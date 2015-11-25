@@ -1004,7 +1004,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         self.edges.reserve(low);
 
         for elt in iter {
-            let (source, target, weight) = elt.into_edge();
+            let (source, target, weight) = elt.into_weighted_edge();
             let (source, target) = (source.into(), target.into());
             let nx = cmp::max(source, target);
             while nx.index() >= self.node_count() {
