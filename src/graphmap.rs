@@ -102,6 +102,16 @@ impl<N, E> GraphMap<N, E>
         self.edges.len()
     }
 
+    /// Return the capacity of the graph's internal node `HashMap`.
+    pub fn node_capacity(&self) -> usize {
+        self.nodes.capacity()
+    }
+
+    /// Return the capacity of the graph's internal edge `HashMap`.
+    pub fn edge_capacity(&self) -> usize {
+        self.edges.capacity()
+    }
+
     /// Remove all nodes and edges
     pub fn clear(&mut self) {
         self.nodes.clear();

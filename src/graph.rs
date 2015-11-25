@@ -355,6 +355,22 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         self.edges.len()
     }
 
+    /// Return the capacity of the graph's internal node `Vec`.
+    ///
+    /// Computes in **O(1)** time.
+    pub fn node_capacity(&self) -> usize
+    {
+        self.nodes.capacity()
+    }
+
+    /// Return the capacity of the graph's internal edge `Vec`.
+    ///
+    /// Computes in **O(1)** time.
+    pub fn edge_capacity(&self) -> usize
+    {
+        self.edges.capacity()
+    }
+
     /// Whether the graph has directed edges or not.
     #[inline]
     pub fn is_directed(&self) -> bool
