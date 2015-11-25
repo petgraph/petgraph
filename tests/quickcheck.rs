@@ -3,8 +3,9 @@ extern crate quickcheck;
 
 extern crate petgraph;
 
-use petgraph::{Graph, Undirected, Directed, EdgeType};
+use petgraph::{Graph, GraphMap, Undirected, Directed, EdgeType, Incoming, Outgoing};
 use petgraph::algo::{min_spanning_tree, is_cyclic_undirected, is_isomorphic};
+use petgraph::graph::IndexType;
 
 fn prop(g: Graph<(), u32>) -> bool {
     // filter out isolated nodes
@@ -38,6 +39,56 @@ fn prop_undir(g: Graph<(), u32, Undirected>) -> bool {
 fn arbitrary() {
     quickcheck::quickcheck(prop as fn(_) -> bool);
     quickcheck::quickcheck(prop_undir as fn(_) -> bool);
+}
+
+#[test]
+fn reverse_undirected() {
+    fn prop<Ty: EdgeType>(g: Graph<(), (), Ty>) -> bool {
+        if g.edge_count() > 30 {
+            return true; // iso too slow
+        }
+        let mut h = g.clone();
+        h.reverse();
+        is_isomorphic(&g, &h)
+    }
+    quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
+}
+
+fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    assert_eq!(g.node_count(), g.node_indices().count());
+    assert_eq!(g.edge_count(), g.edge_indices().count());
+    for edge in g.raw_edges() {
+        assert!(g.find_edge(edge.source(), edge.target()).is_some(),
+                "Edge not in graph! {:?} to {:?}", edge.source(), edge.target());
+    }
+}
+
+#[test]
+fn reverse_directed() {
+    fn prop<Ty: EdgeType>(mut g: Graph<(), (), Ty>) -> bool {
+        let node_outdegrees = g.node_indices()
+                                .map(|i| g.neighbors_directed(i, Outgoing).count())
+                                .collect::<Vec<_>>();
+        let node_indegrees = g.node_indices()
+                                .map(|i| g.neighbors_directed(i, Incoming).count())
+                                .collect::<Vec<_>>();
+
+        g.reverse();
+        let new_outdegrees = g.node_indices()
+                                .map(|i| g.neighbors_directed(i, Outgoing).count())
+                                .collect::<Vec<_>>();
+        let new_indegrees = g.node_indices()
+                                .map(|i| g.neighbors_directed(i, Incoming).count())
+                                .collect::<Vec<_>>();
+        assert_eq!(node_outdegrees, new_indegrees);
+        assert_eq!(node_indegrees, new_outdegrees);
+        assert_graph_consistent(&g);
+        true
+    }
+    quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
 }
 
 #[test]
@@ -107,4 +158,12 @@ fn retain_edges() {
     }
     quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
     quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
+}
+
+#[test]
+fn qc_graphmap() {
+    fn prop(g: GraphMap<i32, ()>) -> bool {
+        true
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
 }

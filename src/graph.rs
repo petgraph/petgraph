@@ -905,10 +905,16 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     }
 
     /// Reverse the direction of all edges
-    pub fn reverse(&mut self)
-    {
+    pub fn reverse(&mut self) {
+        // swap edge endpoints,
+        // edge incoming / outgoing lists,
+        // node incoming / outgoing lists
         for edge in &mut self.edges {
-            edge.node.swap(0, 1)
+            edge.node.swap(0, 1);
+            edge.next.swap(0, 1);
+        }
+        for node in &mut self.nodes {
+            node.next.swap(0, 1);
         }
     }
 
@@ -1356,7 +1362,7 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 /// See [*.walk_edges_directed()*](struct.Graph.html#method.walk_edges_directed)
 /// for more information.
 #[derive(Clone, Debug)]
-pub struct WalkEdges<Ix: IndexType> {
+pub struct WalkEdges<Ix: IndexType = DefIndex> {
     next: EdgeIndex<Ix>, // a valid index or EdgeIndex::max()
     direction: EdgeDirection,
 }
@@ -1394,7 +1400,7 @@ fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
 }
 
 /// Iterator over the node indices of a graph.
-pub struct NodeIndices<Ix: IndexType> {
+pub struct NodeIndices<Ix: IndexType = DefIndex> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }
@@ -1418,7 +1424,7 @@ impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
 }
 
 /// Iterator over the edge indices of a graph.
-pub struct EdgeIndices<Ix: IndexType> {
+pub struct EdgeIndices<Ix: IndexType = DefIndex> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }
