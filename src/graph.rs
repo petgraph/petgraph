@@ -1356,7 +1356,7 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 /// See [*.walk_edges_directed()*](struct.Graph.html#method.walk_edges_directed)
 /// for more information.
 #[derive(Clone, Debug)]
-pub struct WalkEdges<Ix: IndexType> {
+pub struct WalkEdges<Ix: IndexType = DefIndex> {
     next: EdgeIndex<Ix>, // a valid index or EdgeIndex::max()
     direction: EdgeDirection,
 }
@@ -1394,7 +1394,7 @@ fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
 }
 
 /// Iterator over the node indices of a graph.
-pub struct NodeIndices<Ix: IndexType> {
+pub struct NodeIndices<Ix: IndexType = DefIndex> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }
@@ -1418,7 +1418,7 @@ impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
 }
 
 /// Iterator over the edge indices of a graph.
-pub struct EdgeIndices<Ix: IndexType> {
+pub struct EdgeIndices<Ix: IndexType = DefIndex> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }
