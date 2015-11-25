@@ -68,6 +68,11 @@ impl<N, E> GraphMap<N, E>
         }
     }
 
+    /// Return the capacity of the graph's node and edge `HashMap`s.
+    pub fn capacity(&self) -> (usize, usize) {
+        (self.nodes.capacity(), self.edges.capacity())
+    }
+
     /// Create a new `GraphMap` from an iterable of edges.
     ///
     /// Node values are taken directly from the list.
@@ -100,16 +105,6 @@ impl<N, E> GraphMap<N, E>
     /// Return the number of edges in the graph.
     pub fn edge_count(&self) -> usize {
         self.edges.len()
-    }
-
-    /// Return the capacity of the graph's internal node `HashMap`.
-    pub fn node_capacity(&self) -> usize {
-        self.nodes.capacity()
-    }
-
-    /// Return the capacity of the graph's internal edge `HashMap`.
-    pub fn edge_capacity(&self) -> usize {
-        self.edges.capacity()
     }
 
     /// Remove all nodes and edges

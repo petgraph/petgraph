@@ -339,6 +339,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
               ty: PhantomData}
     }
 
+    /// Return the capacity of the graph's node and edge `Vec`s.
+    ///
+    /// Computes in **O(1)** time.
+    pub fn capacity(&self) -> (usize, usize) {
+        (self.nodes.capacity(), self.edges.capacity())
+    }
+
     /// Return the number of nodes (vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
@@ -353,22 +360,6 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     pub fn edge_count(&self) -> usize
     {
         self.edges.len()
-    }
-
-    /// Return the capacity of the graph's internal node `Vec`.
-    ///
-    /// Computes in **O(1)** time.
-    pub fn node_capacity(&self) -> usize
-    {
-        self.nodes.capacity()
-    }
-
-    /// Return the capacity of the graph's internal edge `Vec`.
-    ///
-    /// Computes in **O(1)** time.
-    pub fn edge_capacity(&self) -> usize
-    {
-        self.edges.capacity()
     }
 
     /// Whether the graph has directed edges or not.
