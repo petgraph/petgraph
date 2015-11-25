@@ -294,7 +294,7 @@ impl<N, E, Item> Extend<Item> for GraphMap<N, E>
         self.edges.reserve(low);
 
         for elt in iter {
-            let (source, target, weight) = elt.into_edge();
+            let (source, target, weight) = elt.into_weighted_edge();
             self.add_edge(source, target, weight);
         }
     }

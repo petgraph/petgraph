@@ -153,13 +153,13 @@ impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
 ///
 /// For `Graph::from_edges` and `GraphMap::from_edges`.
 pub trait IntoWeightedEdge<Ix, E> {
-    fn into_edge(self) -> (Ix, Ix, E);
+    fn into_weighted_edge(self) -> (Ix, Ix, E);
 }
 
 impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix)
     where E: Default
 {
-    fn into_edge(self) -> (Ix, Ix, E) {
+    fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (s, t) = self;
         (s, t, E::default())
     }
@@ -167,7 +167,7 @@ impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix)
 
 impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, E)
 {
-    fn into_edge(self) -> (Ix, Ix, E) {
+    fn into_weighted_edge(self) -> (Ix, Ix, E) {
         self
     }
 }
@@ -175,7 +175,7 @@ impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, E)
 impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, &'a E)
     where E: Clone
 {
-    fn into_edge(self) -> (Ix, Ix, E) {
+    fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (a, b, c) = self;
         (a, b, c.clone())
     }
@@ -184,7 +184,7 @@ impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, &'a E)
 impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix)
     where Ix: Copy, E: Default
 {
-    fn into_edge(self) -> (Ix, Ix, E) {
+    fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (s, t) = *self;
         (s, t, E::default())
     }
@@ -193,7 +193,7 @@ impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix)
 impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix, E)
     where Ix: Copy, E: Clone
 {
-    fn into_edge(self) -> (Ix, Ix, E) {
+    fn into_weighted_edge(self) -> (Ix, Ix, E) {
         self.clone()
     }
 }
