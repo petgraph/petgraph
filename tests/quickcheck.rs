@@ -3,7 +3,7 @@ extern crate quickcheck;
 
 extern crate petgraph;
 
-use petgraph::{Graph, Undirected, Directed, EdgeType};
+use petgraph::{Graph, GraphMap, Undirected, Directed, EdgeType};
 use petgraph::algo::{min_spanning_tree, is_cyclic_undirected, is_isomorphic};
 
 fn prop(g: Graph<(), u32>) -> bool {
@@ -107,4 +107,12 @@ fn retain_edges() {
     }
     quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
     quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
+}
+
+#[test]
+fn qc_graphmap() {
+    fn prop(g: GraphMap<i32, ()>) -> bool {
+        true
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
 }
