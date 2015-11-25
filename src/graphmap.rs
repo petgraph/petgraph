@@ -68,7 +68,7 @@ impl<N, E> GraphMap<N, E>
         }
     }
 
-    /// Return the capacity of the graph's node and edge `HashMap`s.
+    /// Return the current node and edge capacity of the graph.
     pub fn capacity(&self) -> (usize, usize) {
         (self.nodes.capacity(), self.edges.capacity())
     }
