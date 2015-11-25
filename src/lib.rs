@@ -2,8 +2,7 @@
 //! **petgraph** is a graph data structure library.
 //!
 //! The most prominent type is [`Graph`](./graph/struct.Graph.html) which is
-//! a directed or undirected graph with arbitrary mutable node and edge weights.
-//! It is based on rustc's graph implementation.
+//! a directed or undirected graph with arbitrary associated node and edge data.
 //!
 //! Petgraph also provides [`GraphMap`](./graphmap/struct.GraphMap.html) which
 //! is an undirected hashmap-backed graph which only allows simple node identifiers
