@@ -211,7 +211,7 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 ///
 /// ```
 /// use petgraph::Graph;
-/// 
+///
 /// let mut deps = Graph::<&str, &str>::new();
 /// let pg = deps.add_node("petgraph");
 /// let fb = deps.add_node("fixedbitset");
