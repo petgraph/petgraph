@@ -40,6 +40,7 @@ impl<N: Eq + Hash + fmt::Debug, E: fmt::Debug> fmt::Debug for GraphMap<N, E> {
     }
 }
 
+/// Use their natual order to map the node pair (a, b) to a canonical edge id.
 #[inline]
 fn edge_key<N: Copy + Ord>(a: N, b: N) -> (N, N) {
     if a <= b { (a, b) } else { (b, a) }
@@ -155,14 +156,18 @@ impl<N, E> GraphMap<N, E>
     /// assert_eq!(g.edge_count(), 1);
     /// ```
     pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool {
-        // Use Ord to order the edges
-        self.nodes.entry(a)
-                  .or_insert_with(|| Vec::with_capacity(1))
-                  .push(b);
-        self.nodes.entry(b)
-                  .or_insert_with(|| Vec::with_capacity(1))
-                  .push(a);
-        self.edges.insert(edge_key(a, b), edge).is_none()
+        if self.edges.insert(edge_key(a, b), edge).is_none() {
+            // insert in the adjacency list if it's a new edge
+            self.nodes.entry(a)
+                      .or_insert_with(|| Vec::with_capacity(1))
+                      .push(b);
+            self.nodes.entry(b)
+                      .or_insert_with(|| Vec::with_capacity(1))
+                      .push(a);
+            true
+        } else {
+            false
+        }
     }
 
     /// Remove successor relation from a to b
