@@ -2,6 +2,7 @@ extern crate petgraph;
 
 use petgraph::{
     Graph,
+    GraphMap,
     Bfs,
     BfsIter,
     Dfs,
@@ -31,6 +32,7 @@ use petgraph::visit::{
     Reversed,
     AsUndirected,
     Topo,
+    NeighborIter,
 };
 use petgraph::algo::{
     dijkstra,
@@ -1043,3 +1045,49 @@ fn neighbors_selfloops() {
     assert_eq!(&seen_undir, &undir_edges);
 }
 
+
+fn degree<'a, G>(g: &'a G, node: G::NodeId) -> usize
+    where G: NeighborIter<'a>,
+          G::NodeId: PartialEq,
+{
+    // self loops count twice
+    let original_node = node.clone();
+    let mut degree = 0;
+    for v in g.neighbors(node) {
+        degree += if v == original_node { 2 } else { 1 };
+    }
+    degree
+}
+
+#[test]
+fn degree_sequence() {
+    let mut gr = Graph::<usize, (), Undirected>::from_edges(&[
+        (0, 1),
+        (1, 2), (1, 3),
+        (2, 4), (3, 4),
+        (4, 4),
+        (4, 5), (3, 5),
+    ]);
+    gr.add_node(0); // add isolated node
+    let mut degree_sequence = gr.node_indices()
+                                .map(|i| degree(&gr, i))
+                                .collect::<Vec<_>>();
+
+    degree_sequence.sort_by(|x, y| Ord::cmp(y, x));
+    assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
+
+    let mut gr = GraphMap::<_, ()>::from_edges(&[
+        (0, 1),
+        (1, 2), (1, 3),
+        (2, 4), (3, 4),
+        (4, 4),
+        (4, 5), (3, 5),
+    ]);
+    gr.add_node(6); // add isolated node
+    let mut degree_sequence = gr.nodes()
+                                .map(|i| degree(&gr, i))
+                                .collect::<Vec<_>>();
+
+    degree_sequence.sort_by(|x, y| Ord::cmp(y, x));
+    assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
+}

@@ -161,9 +161,11 @@ impl<N, E> GraphMap<N, E>
             self.nodes.entry(a)
                       .or_insert_with(|| Vec::with_capacity(1))
                       .push(b);
-            self.nodes.entry(b)
-                      .or_insert_with(|| Vec::with_capacity(1))
-                      .push(a);
+            if a != b {
+                self.nodes.entry(b)
+                          .or_insert_with(|| Vec::with_capacity(1))
+                          .push(a);
+            }
             true
         } else {
             false
@@ -205,7 +207,7 @@ impl<N, E> GraphMap<N, E>
     /// ```
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E> {
         let exist1 = self.remove_single_edge(&a, &b);
-        let exist2 = self.remove_single_edge(&b, &a);
+        let exist2 = if a != b { self.remove_single_edge(&b, &a) } else { exist1 };
         let weight = self.edges.remove(&edge_key(a, b));
         debug_assert!(exist1 == exist2 && exist1 == weight.is_some());
         weight
