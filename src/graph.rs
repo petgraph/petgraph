@@ -653,13 +653,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Iterator element type is `NodeIndex<Ix>`.
     pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Neighbors<E, Ix>
     {
-        let mut iter = self.neighbors_undirected(a);
-        if self.is_directed() {
-            // remove the other edges not wanted.
-            let k = dir as usize;
-            iter.next[1 - k] = EdgeIndex::end();
+        Neighbors {
+            iter: self.edges_directed(a, dir),
         }
-        iter
     }
 
     /// Return an iterator of all neighbors that have an edge between them and `a`,
@@ -672,11 +668,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
     {
         Neighbors {
-            edges: &self.edges,
-            next: match self.nodes.get(a.index()) {
-                None => [EdgeIndex::end(), EdgeIndex::end()],
-                Some(n) => n.next,
-            }
+            iter: self.edges_both(a),
         }
     }
 
@@ -703,7 +695,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     {
         let mut iter = self.edges_both(a);
         if self.is_directed() {
-            iter.next[1 - dir as usize] = EdgeIndex::end();
+            let k = dir as usize;
+            iter.next[1 - k] = EdgeIndex::end();
+            iter.skip_start = NodeIndex::end();
         }
         iter
     }
@@ -717,6 +711,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     pub fn edges_both(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         Edges {
+            skip_start: a,
             edges: &self.edges,
             next: match self.nodes.get(a.index()) {
                 None => [EdgeIndex::end(), EdgeIndex::end()],
@@ -1162,30 +1157,16 @@ impl<'a, N: 'a, Ty, Ix> Iterator for WithoutEdges<'a, N, Ty, Ix> where
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefIndex> where
     Ix: IndexType,
 {
-    edges: &'a [Edge<E, Ix>],
-    next: [EdgeIndex<Ix>; 2],
+    iter: Edges<'a, E, Ix>,
 }
 
 impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
     Ix: IndexType,
 {
     type Item = NodeIndex<Ix>;
-    fn next(&mut self) -> Option<NodeIndex<Ix>>
-    {
-        match self.edges.get(self.next[0].index()) {
-            None => {}
-            Some(edge) => {
-                self.next[0] = edge.next[0];
-                return Some(edge.node[1])
-            }
-        }
-        match self.edges.get(self.next[1].index()) {
-            None => None,
-            Some(edge) => {
-                self.next[1] = edge.next[1];
-                Some(edge.node[0])
-            }
-        }
+
+    fn next(&mut self) -> Option<NodeIndex<Ix>> {
+        self.iter.next().map(|(index, _)| index)
     }
 }
 
@@ -1238,6 +1219,8 @@ impl<'a, E, Ix> Iterator for EdgesMut<'a, E, Ix> where
 
 /// Iterator over the edges of a node.
 pub struct Edges<'a, E: 'a, Ix: IndexType = DefIndex> {
+    /// starting node to skip over
+    skip_start: NodeIndex<Ix>,
     edges: &'a [Edge<E, Ix>],
     next: [EdgeIndex<Ix>; 2],
 }
@@ -1257,13 +1240,16 @@ impl<'a, E, Ix> Iterator for Edges<'a, E, Ix> where
             }
         }
         // Then incoming edges
-        match self.edges.get(self.next[1].index()) {
-            None => None,
-            Some(edge) => {
-                self.next[1] = edge.next[1];
-                Some((edge.node[0], &edge.weight))
+        // For an "undirected" iterator (traverse both incoming
+        // and outgoing edge lists), make sure we don't double
+        // count selfloops by skipping them in the incoming list.
+        while let Some(edge) = self.edges.get(self.next[1].index()) {
+            self.next[1] = edge.next[1];
+            if edge.node[0] != self.skip_start {
+                return Some((edge.node[0], &edge.weight));
             }
         }
+        None
     }
 }
 
