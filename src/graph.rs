@@ -390,7 +390,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         Ty::is_directed()
     }
 
-    /// Add a node (also called vertex) with weight `w` to the graph.
+    /// Add a node (also called vertex) with associated data `weight` to the graph.
     ///
     /// Computes in **O(1)** time.
     ///
@@ -398,9 +398,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     ///
     /// **Panics** if the Graph is at the maximum number of nodes for its index
     /// type.
-    pub fn add_node(&mut self, w: N) -> NodeIndex<Ix>
+    pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix>
     {
-        let node = Node{weight: w, next: [EdgeIndex::end(), EdgeIndex::end()]};
+        let node = Node{weight: weight, next: [EdgeIndex::end(), EdgeIndex::end()]};
         let node_idx = NodeIndex::new(self.nodes.len());
         // check for max capacity, except if we use usize
         assert!(Ix::max().index() == !0 || NodeIndex::end() != node_idx);
@@ -420,7 +420,8 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         self.nodes.get_mut(a.index()).map(|n| &mut n.weight)
     }
 
-    /// Add an edge from `a` to `b` to the graph, with its edge weight.
+    /// Add an edge from `a` to `b` to the graph, with its associated
+    /// data `weight`.
     ///
     /// **Note:** `Graph` allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [*.update_edge(a, b, weight)*](#method.update_edge) instead.

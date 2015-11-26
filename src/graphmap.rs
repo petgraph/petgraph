@@ -144,9 +144,8 @@ impl<N, E> GraphMap<N, E>
     ///
     /// Inserts nodes `a` and/or `b` if they aren't already part of the graph.
     ///
-    /// Return `true` if edge did not previously exist.
+    /// Return `true` if the edge did not previously exist.
     ///
-    /// ## Example
     /// ```
     /// use petgraph::GraphMap;
     ///
@@ -155,8 +154,8 @@ impl<N, E> GraphMap<N, E>
     /// assert_eq!(g.node_count(), 2);
     /// assert_eq!(g.edge_count(), 1);
     /// ```
-    pub fn add_edge(&mut self, a: N, b: N, edge: E) -> bool {
-        if self.edges.insert(edge_key(a, b), edge).is_none() {
+    pub fn add_edge(&mut self, a: N, b: N, edge_data: E) -> bool {
+        if self.edges.insert(edge_key(a, b), edge_data).is_none() {
             // insert in the adjacency list if it's a new edge
             self.nodes.entry(a)
                       .or_insert_with(|| Vec::with_capacity(1))
@@ -189,18 +188,14 @@ impl<N, E> GraphMap<N, E>
     ///
     /// Return `None` if the edge didn't exist.
     ///
-    /// ## Example
-    ///
     /// ```
     /// use petgraph::GraphMap;
     ///
     /// let mut g = GraphMap::new();
-    /// g.add_node(1);
-    /// g.add_node(2);
     /// g.add_edge(1, 2, -1);
     ///
-    /// let edge = g.remove_edge(2, 1);
-    /// assert_eq!(edge, Some(-1));
+    /// let edge_data = g.remove_edge(2, 1);
+    /// assert_eq!(edge_data, Some(-1));
     /// assert_eq!(g.edge_count(), 0);
     /// ```
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E> {
