@@ -361,8 +361,6 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     }
 
     /// Return the current node and edge capacity of the graph.
-    ///
-    /// Computes in **O(1)** time.
     pub fn capacity(&self) -> (usize, usize) {
         (self.nodes.capacity(), self.edges.capacity())
     }
@@ -466,7 +464,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// If the edge already exists, its weight is updated.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
-    /// connected to the vertices `a` (and `b`).
+    /// connected to `a` (and `b`, if the graph edges are undirected).
     ///
     /// Return the index of the affected edge.
     ///
@@ -647,7 +645,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
 
     /// Return an iterator of all neighbors that have an edge between them and `a`,
     /// in the specified direction.
-    /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
+    /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
@@ -665,7 +663,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
 
     /// Return an iterator of all neighbors that have an edge between them and `a`,
     /// in either direction.
-    /// If the graph is undirected, this is equivalent to *.neighbors(a)*.
+    /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
@@ -695,7 +693,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Return an iterator of all neighbors that have an edge between them and `a`,
     /// in the specified direction, paired with the respective edge weights.
     ///
-    /// If the graph is undirected, this is equivalent to *.edges(a)*.
+    /// If the graph's edges are undirected, this is equivalent to *.edges(a)*.
     ///
     /// Produces an empty iterator if the node doesn't exist.
     ///
@@ -729,7 +727,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Lookup an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
-    /// connected to the vertices `a` (and `b`).
+    /// connected to `a` (and `b`, if the graph edges are undirected).
     pub fn find_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<EdgeIndex<Ix>>
     {
         if !self.is_directed() {
@@ -954,9 +952,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Remove all nodes that return `false` from the `visit` closure.
+    /// Keep all nodes that return `true` from the `visit` closure,
+    /// remove the others.
     ///
-    /// `visit` provides a mutable reference to the graph, so that
+    /// `visit` is provided a mutable reference to the graph, so that
     /// the graph can be walked and associated data modified. You should
     /// not add or remove nodes.
     ///
@@ -973,9 +972,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Remove all edges that return `false` from the `visit` closure.
+    /// Keep all edges that return `true` from the `visit` closure,
+    /// remove the others.
     ///
-    /// `visit` provides a mutable reference to the graph, so that
+    /// `visit` is provided a mutable reference to the graph, so that
     /// the graph can be walked and associated data modified. You should
     /// not add or remove nodes or edges.
     ///
