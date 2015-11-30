@@ -15,7 +15,6 @@ use std::hash::{self, Hash};
 use std::fmt;
 use std::ops::{Deref};
 
-pub use scored::MinScored;
 pub use graph::Graph;
 pub use graphmap::GraphMap;
 

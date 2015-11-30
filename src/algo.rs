@@ -15,8 +15,8 @@ use super::{
     Outgoing,
     Incoming,
     Dfs,
-    MinScored,
 };
+use scored::MinScored;
 use super::visit::{
     Reversed,
     Visitable,

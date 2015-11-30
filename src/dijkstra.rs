@@ -13,7 +13,7 @@ use std::ops::{
     Add,
 };
 
-use super::MinScored;
+use scored::MinScored;
 use super::visit::{
     Visitable,
     VisitMap,
