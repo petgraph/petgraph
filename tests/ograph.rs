@@ -2,6 +2,7 @@ extern crate petgraph;
 
 use petgraph::{
     Graph,
+    GraphMap,
     Bfs,
     BfsIter,
     Dfs,
@@ -31,6 +32,7 @@ use petgraph::visit::{
     Reversed,
     AsUndirected,
     Topo,
+    NeighborIter,
 };
 use petgraph::algo::{
     dijkstra,
@@ -978,4 +980,114 @@ fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
         assert!(g.find_edge(edge.source(), edge.target()).is_some(),
                 "Edge not in graph! {:?} to {:?}", edge.source(), edge.target());
     }
+}
+
+#[test]
+fn neighbors_selfloops() {
+    // Directed graph
+    let mut gr = Graph::<_ ,()>::new();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+    gr.extend_with_edges(&[
+        (a, a),
+        (a, b),
+        (c, a),
+        (a, a),
+    ]);
+
+    let out_edges = [a, a, b];
+    let in_edges = [a, a, c];
+    let undir_edges = [a, a, b, c];
+    let mut seen_out = gr.neighbors(a).collect::<Vec<_>>();
+    seen_out.sort();
+    assert_eq!(&seen_out, &out_edges);
+    let mut seen_in = gr.neighbors_directed(a, Incoming).collect::<Vec<_>>();
+    seen_in.sort();
+    assert_eq!(&seen_in, &in_edges);
+
+    let mut seen_undir = gr.neighbors_undirected(a).collect::<Vec<_>>();
+    seen_undir.sort();
+    assert_eq!(&seen_undir, &undir_edges);
+
+    let mut seen_undir = gr.edges_both(a).map(|(x, _)| x).collect::<Vec<_>>();
+    seen_undir.sort();
+    assert_eq!(&seen_undir, &undir_edges);
+
+    // Undirected graph
+    let mut gr = Graph::<_ ,()>::new_undirected();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+    gr.extend_with_edges(&[
+        (a, a),
+        (a, b),
+        (c, a),
+    ]);
+
+    let out_edges = [a, b, c];
+    let in_edges = [a, b, c];
+    let undir_edges = [a, b, c];
+    let mut seen_out = gr.neighbors(a).collect::<Vec<_>>();
+    seen_out.sort();
+    assert_eq!(&seen_out, &out_edges);
+
+    let mut seen_out = gr.edges(a).map(|(x, _)| x).collect::<Vec<_>>();
+    seen_out.sort();
+    assert_eq!(&seen_out, &out_edges);
+
+    let mut seen_in = gr.neighbors_directed(a, Incoming).collect::<Vec<_>>();
+    seen_in.sort();
+    assert_eq!(&seen_in, &in_edges);
+
+    let mut seen_undir = gr.neighbors_undirected(a).collect::<Vec<_>>();
+    seen_undir.sort();
+    assert_eq!(&seen_undir, &undir_edges);
+}
+
+
+fn degree<'a, G>(g: &'a G, node: G::NodeId) -> usize
+    where G: NeighborIter<'a>,
+          G::NodeId: PartialEq,
+{
+    // self loops count twice
+    let original_node = node.clone();
+    let mut degree = 0;
+    for v in g.neighbors(node) {
+        degree += if v == original_node { 2 } else { 1 };
+    }
+    degree
+}
+
+#[test]
+fn degree_sequence() {
+    let mut gr = Graph::<usize, (), Undirected>::from_edges(&[
+        (0, 1),
+        (1, 2), (1, 3),
+        (2, 4), (3, 4),
+        (4, 4),
+        (4, 5), (3, 5),
+    ]);
+    gr.add_node(0); // add isolated node
+    let mut degree_sequence = gr.node_indices()
+                                .map(|i| degree(&gr, i))
+                                .collect::<Vec<_>>();
+
+    degree_sequence.sort_by(|x, y| Ord::cmp(y, x));
+    assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
+
+    let mut gr = GraphMap::<_, ()>::from_edges(&[
+        (0, 1),
+        (1, 2), (1, 3),
+        (2, 4), (3, 4),
+        (4, 4),
+        (4, 5), (3, 5),
+    ]);
+    gr.add_node(6); // add isolated node
+    let mut degree_sequence = gr.nodes()
+                                .map(|i| degree(&gr, i))
+                                .collect::<Vec<_>>();
+
+    degree_sequence.sort_by(|x, y| Ord::cmp(y, x));
+    assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
 }
