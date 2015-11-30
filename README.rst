@@ -19,6 +19,10 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.1.18
+
+  - Fix bug on calling GraphMap::add_edge with existing edge (#35)
+
 - 0.1.17
 
   - Add Graph::capacity(), GraphMap::capacity()
