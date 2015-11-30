@@ -26,12 +26,6 @@ pub trait IndexType : Copy + Ord + fmt::Debug + 'static
     fn new(x: usize) -> Self;
     fn index(&self) -> usize;
     fn max() -> Self;
-    /// **Deprecated**
-    #[inline]
-    fn zero() -> Self { Self::new(0) }
-    /// **Deprecated**
-    #[inline]
-    fn one() -> Self { Self::new(1) }
 }
 
 impl IndexType for usize {
