@@ -50,7 +50,7 @@ pub enum Config {
     /// Use no edge labels.
     EdgeNoLabel,
     #[doc(hidden)]
-    Other
+    _Incomplete(()),
 }
 
 impl<'a, N, E, Ty, Ix> Dot<'a, Graph<N, E, Ty, Ix>>
