@@ -1010,7 +1010,7 @@ fn neighbors_selfloops() {
     seen_undir.sort();
     assert_eq!(&seen_undir, &undir_edges);
 
-    let mut seen_undir = gr.edges_both(a).map(|(x, _)| x).collect::<Vec<_>>();
+    let mut seen_undir = gr.edges_undirected(a).map(|(x, _)| x).collect::<Vec<_>>();
     seen_undir.sort();
     assert_eq!(&seen_undir, &undir_edges);
 

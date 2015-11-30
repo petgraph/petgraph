@@ -664,7 +664,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
     {
         Neighbors {
-            iter: self.edges_both(a),
+            iter: self.edges_undirected(a),
         }
     }
 
@@ -689,7 +689,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Iterator element type is `(NodeIndex<Ix>, &E)`.
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Edges<E, Ix>
     {
-        let mut iter = self.edges_both(a);
+        let mut iter = self.edges_undirected(a);
         if self.is_directed() {
             let k = dir as usize;
             iter.next[1 - k] = EdgeIndex::end();
@@ -704,7 +704,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is `(NodeIndex<Ix>, &E)`.
-    pub fn edges_both(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
+    pub fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         Edges {
             skip_start: a,
