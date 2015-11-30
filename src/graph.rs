@@ -21,20 +21,17 @@ use {
 pub type DefIndex = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
-pub trait IndexType : Copy + Ord + fmt::Debug + 'static
+///
+/// Marked `unsafe` because: the trait must faithfully preseve
+/// and convert index values.
+pub unsafe trait IndexType : Copy + Ord + fmt::Debug + 'static
 {
     fn new(x: usize) -> Self;
     fn index(&self) -> usize;
     fn max() -> Self;
-    /// **Deprecated**
-    #[inline]
-    fn zero() -> Self { Self::new(0) }
-    /// **Deprecated**
-    #[inline]
-    fn one() -> Self { Self::new(1) }
 }
 
-impl IndexType for usize {
+unsafe impl IndexType for usize {
     #[inline(always)]
     fn new(x: usize) -> Self { x }
     #[inline(always)]
@@ -43,7 +40,7 @@ impl IndexType for usize {
     fn max() -> Self { ::std::usize::MAX }
 }
 
-impl IndexType for u32 {
+unsafe impl IndexType for u32 {
     #[inline(always)]
     fn new(x: usize) -> Self { x as u32 }
     #[inline(always)]
@@ -52,7 +49,7 @@ impl IndexType for u32 {
     fn max() -> Self { ::std::u32::MAX }
 }
 
-impl IndexType for u16 {
+unsafe impl IndexType for u16 {
     #[inline(always)]
     fn new(x: usize) -> Self { x as u16 }
     #[inline(always)]
@@ -61,7 +58,7 @@ impl IndexType for u16 {
     fn max() -> Self { ::std::u16::MAX }
 }
 
-impl IndexType for u8 {
+unsafe impl IndexType for u8 {
     #[inline(always)]
     fn new(x: usize) -> Self { x as u8 }
     #[inline(always)]
@@ -652,13 +649,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Iterator element type is `NodeIndex<Ix>`.
     pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Neighbors<E, Ix>
     {
-        let mut iter = self.neighbors_undirected(a);
-        if self.is_directed() {
-            // remove the other edges not wanted.
-            let k = dir as usize;
-            iter.next[1 - k] = EdgeIndex::end();
+        Neighbors {
+            iter: self.edges_directed(a, dir),
         }
-        iter
     }
 
     /// Return an iterator of all neighbors that have an edge between them and `a`,
@@ -671,11 +664,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
     {
         Neighbors {
-            edges: &self.edges,
-            next: match self.nodes.get(a.index()) {
-                None => [EdgeIndex::end(), EdgeIndex::end()],
-                Some(n) => n.next,
-            }
+            iter: self.edges_undirected(a),
         }
     }
 
@@ -700,9 +689,11 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Iterator element type is `(NodeIndex<Ix>, &E)`.
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Edges<E, Ix>
     {
-        let mut iter = self.edges_both(a);
+        let mut iter = self.edges_undirected(a);
         if self.is_directed() {
-            iter.next[1 - dir as usize] = EdgeIndex::end();
+            let k = dir as usize;
+            iter.next[1 - k] = EdgeIndex::end();
+            iter.skip_start = NodeIndex::end();
         }
         iter
     }
@@ -713,9 +704,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is `(NodeIndex<Ix>, &E)`.
-    pub fn edges_both(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
+    pub fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         Edges {
+            skip_start: a,
             edges: &self.edges,
             next: match self.nodes.get(a.index()) {
                 None => [EdgeIndex::end(), EdgeIndex::end()],
@@ -776,18 +768,20 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Return an iterator over either the nodes without edges to them or from them.
+    /// Return an iterator over either the nodes without edges to them
+    /// (`Incoming`) or from them (`Outgoing`).
     ///
-    /// The nodes in *.without_edges(Incoming)* are the source nodes and
-    /// *.without_edges(Outgoing)* are the sinks.
+    /// An *internal* node has both incoming and outgoing edges.
+    /// The nodes in `.externals(Incoming)` are the source nodes and
+    /// `.externals(Outgoing)` are the sinks of the graph.
     ///
-    /// For an undirected graph, the sinks/sources are just the vertices without edges.
+    /// For a graph with undirected edges, both the sinks and the sources are
+    /// just the nodes without edges.
     ///
     /// The whole iteration computes in **O(|V|)** time.
-    pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, Ty, Ix>
+    pub fn externals(&self, dir: EdgeDirection) -> Externals<N, Ty, Ix>
     {
-        WithoutEdges{iter: self.nodes.iter().enumerate(), dir: dir,
-                     ty: PhantomData}
+        Externals{iter: self.nodes.iter().enumerate(), dir: dir, ty: PhantomData}
     }
 
     /// Return an iterator over the node indices of the graph
@@ -1126,13 +1120,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
 }
 
 /// An iterator over either the nodes without edges to them or from them.
-pub struct WithoutEdges<'a, N: 'a, Ty, Ix: IndexType = DefIndex> {
+pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefIndex> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
     dir: EdgeDirection,
     ty: PhantomData<Ty>,
 }
 
-impl<'a, N: 'a, Ty, Ix> Iterator for WithoutEdges<'a, N, Ty, Ix> where
+impl<'a, N: 'a, Ty, Ix> Iterator for Externals<'a, N, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
@@ -1163,30 +1157,16 @@ impl<'a, N: 'a, Ty, Ix> Iterator for WithoutEdges<'a, N, Ty, Ix> where
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefIndex> where
     Ix: IndexType,
 {
-    edges: &'a [Edge<E, Ix>],
-    next: [EdgeIndex<Ix>; 2],
+    iter: Edges<'a, E, Ix>,
 }
 
 impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
     Ix: IndexType,
 {
     type Item = NodeIndex<Ix>;
-    fn next(&mut self) -> Option<NodeIndex<Ix>>
-    {
-        match self.edges.get(self.next[0].index()) {
-            None => {}
-            Some(edge) => {
-                self.next[0] = edge.next[0];
-                return Some(edge.node[1])
-            }
-        }
-        match self.edges.get(self.next[1].index()) {
-            None => None,
-            Some(edge) => {
-                self.next[1] = edge.next[1];
-                Some(edge.node[0])
-            }
-        }
+
+    fn next(&mut self) -> Option<NodeIndex<Ix>> {
+        self.iter.next().map(|(index, _)| index)
     }
 }
 
@@ -1239,6 +1219,8 @@ impl<'a, E, Ix> Iterator for EdgesMut<'a, E, Ix> where
 
 /// Iterator over the edges of a node.
 pub struct Edges<'a, E: 'a, Ix: IndexType = DefIndex> {
+    /// starting node to skip over
+    skip_start: NodeIndex<Ix>,
     edges: &'a [Edge<E, Ix>],
     next: [EdgeIndex<Ix>; 2],
 }
@@ -1258,13 +1240,16 @@ impl<'a, E, Ix> Iterator for Edges<'a, E, Ix> where
             }
         }
         // Then incoming edges
-        match self.edges.get(self.next[1].index()) {
-            None => None,
-            Some(edge) => {
-                self.next[1] = edge.next[1];
-                Some((edge.node[0], &edge.weight))
+        // For an "undirected" iterator (traverse both incoming
+        // and outgoing edge lists), make sure we don't double
+        // count selfloops by skipping them in the incoming list.
+        while let Some(edge) = self.edges.get(self.next[1].index()) {
+            self.next[1] = edge.next[1];
+            if edge.node[0] != self.skip_start {
+                return Some((edge.node[0], &edge.weight));
             }
         }
+        None
     }
 }
 

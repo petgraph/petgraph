@@ -15,7 +15,6 @@ use std::hash::{self, Hash};
 use std::fmt;
 use std::ops::{Deref};
 
-pub use scored::MinScored;
 pub use graph::Graph;
 pub use graphmap::GraphMap;
 
@@ -87,6 +86,11 @@ impl EdgeType for Undirected {
 
 
 /// A reference that is hashed and compared by its pointer value.
+///
+/// `Ptr` is used for certain configurations of `GraphMap`,
+/// in particular in the combination where the node type for
+/// `GraphMap` is something of type for example `Ptr(&Cell<T>)`,
+/// with the `Cell<T>` being `TypedArena` allocated.
 pub struct Ptr<'b, T: 'b>(pub &'b T);
 
 impl<'b, T> Copy for Ptr<'b, T> {}

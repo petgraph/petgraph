@@ -36,11 +36,11 @@ fn simple() {
     gr.add_edge(b, f, 15);
     gr.add_edge(c, f, 11);
 
-    assert!(gr.add_edge(e, f, 5));
+    assert!(gr.add_edge(e, f, 5).is_none());
 
     // duplicate edges
-    assert!(!gr.add_edge(f, b, 15));
-    assert!(!gr.add_edge(f, e, 6));
+    assert_eq!(gr.add_edge(f, b, 16), Some(15));
+    assert_eq!(gr.add_edge(f, e, 6), Some(5));
     println!("{:?}", gr);
     println!("{}", Dot::with_config(&gr, &[]));
 
@@ -125,13 +125,13 @@ fn edge_iterator() {
     gr.add_edge(i, j, 3);
     gr.add_edge(i, k, 4);
 
-    let real_edges: HashSet<((&str, &str), u64)> = gr.all_edges().map(|(e, &w)| (e, w)).collect();
-    let expected_edges: HashSet<((&str, &str), u64)> = vec![
-        (("H", "I"), 1),
-        (("H", "J"), 2),
-        (("I", "J"), 3),
-        (("I", "K"), 4)
-    ].iter().cloned().collect();
+    let real_edges: HashSet<_> = gr.all_edges().map(|(a, b, &w)| (a, b, w)).collect();
+    let expected_edges: HashSet<_> = vec![
+        ("H", "I", 1),
+        ("H", "J", 2),
+        ("I", "J", 3),
+        ("I", "K", 4)
+    ].into_iter().collect();
 
     assert_eq!(real_edges, expected_edges);
 }

@@ -140,11 +140,14 @@ impl<N, E> GraphMap<N, E>
         self.nodes.contains_key(&n)
     }
 
-    /// Add an edge connecting `a` and `b` to the graph.
+    /// Add an edge connecting `a` and `b` to the graph, with associated
+    /// data `weight`.
     ///
     /// Inserts nodes `a` and/or `b` if they aren't already part of the graph.
     ///
-    /// Return `true` if the edge did not previously exist.
+    /// Return `None` if the edge did not previously exist, otherwise,
+    /// the associated data is updated and the old value is returned
+    /// as `Some(old_weight)`.
     ///
     /// ```
     /// use petgraph::GraphMap;
@@ -154,18 +157,20 @@ impl<N, E> GraphMap<N, E>
     /// assert_eq!(g.node_count(), 2);
     /// assert_eq!(g.edge_count(), 1);
     /// ```
-    pub fn add_edge(&mut self, a: N, b: N, edge_data: E) -> bool {
-        if self.edges.insert(edge_key(a, b), edge_data).is_none() {
+    pub fn add_edge(&mut self, a: N, b: N, weight: E) -> Option<E> {
+        if let old @ Some(_) = self.edges.insert(edge_key(a, b), weight) {
+            old
+        } else {
             // insert in the adjacency list if it's a new edge
             self.nodes.entry(a)
                       .or_insert_with(|| Vec::with_capacity(1))
                       .push(b);
-            self.nodes.entry(b)
-                      .or_insert_with(|| Vec::with_capacity(1))
-                      .push(a);
-            true
-        } else {
-            false
+            if a != b {
+                self.nodes.entry(b)
+                          .or_insert_with(|| Vec::with_capacity(1))
+                          .push(a);
+            }
+            None
         }
     }
 
@@ -200,7 +205,7 @@ impl<N, E> GraphMap<N, E>
     /// ```
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E> {
         let exist1 = self.remove_single_edge(&a, &b);
-        let exist2 = self.remove_single_edge(&b, &a);
+        let exist2 = if a != b { self.remove_single_edge(&b, &a) } else { exist1 };
         let weight = self.edges.remove(&edge_key(a, b));
         debug_assert!(exist1 == exist2 && exist1 == weight.is_some());
         weight
@@ -260,7 +265,7 @@ impl<N, E> GraphMap<N, E>
 
     /// Return an iterator over all edges of the graph with their weight in arbitrary order.
     ///
-    /// Iterator element type is `((N, N), &E)`
+    /// Iterator element type is `(N, N, &E)`
     pub fn all_edges(&self) -> AllEdges<N, E> {
         AllEdges {
             inner: self.edges.iter()
@@ -333,42 +338,36 @@ macro_rules! iterator_wrap {
                     self.iter.size_hint()
                 }
             }
-            impl<$($typarm),*> DoubleEndedIterator for $name <$($typarm),*>
-                where $($bounds)*, $iter: DoubleEndedIterator<Item=$item>,
-            {
-                #[inline]
-                fn next_back(&mut self) -> Option<Self::Item> {
-                    self.iter.next_back()
-                }
-            }
-
-            impl<$($typarm),*> ExactSizeIterator for $name <$($typarm),*>
-                where $($bounds)*, $iter: ExactSizeIterator<Item=$item>,
-            {
-            }
         }
     );
 }
 
 iterator_wrap! {
-    Nodes <'a, N> where { N: 'a + Clone }
+    Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
     iter: Cloned<Keys<'a, N, Vec<N>>>,
 }
 
+impl<'a, N: 'a + NodeTrait> ExactSizeIterator for Nodes<'a, N> { }
+
 iterator_wrap! {
-    Neighbors <'a, N> where { N: 'a + Clone }
+    Neighbors <'a, N> where { N: 'a + NodeTrait }
     item: N,
     iter: Cloned<Iter<'a, N>>,
 }
 
+impl<'a, N: 'a + NodeTrait> DoubleEndedIterator for Neighbors<'a, N> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back()
+    }
+}
+
+impl<'a, N: 'a + NodeTrait> ExactSizeIterator for Neighbors<'a, N> { }
+
 pub struct Edges<'a, N, E: 'a> where N: 'a + NodeTrait {
-    /// **Deprecated: should be private**
-    pub from: N,
-    /// **Deprecated: should be private**
-    pub edges: &'a HashMap<(N, N), E>,
-    /// **Deprecated: should be private**
-    pub iter: Neighbors<'a, N>,
+    from: N,
+    edges: &'a HashMap<(N, N), E>,
+    iter: Neighbors<'a, N>,
 }
 
 impl<'a, N, E> Iterator for Edges<'a, N, E>
@@ -399,12 +398,12 @@ pub struct AllEdges<'a, N, E: 'a> where N: 'a + NodeTrait {
 impl<'a, N, E> Iterator for AllEdges<'a, N, E>
     where N: 'a + NodeTrait, E: 'a
 {
-    type Item = ((N, N), &'a E);
-    fn next(&mut self) -> Option<((N, N), &'a E)>
+    type Item = (N, N, &'a E);
+    fn next(&mut self) -> Option<Self::Item>
     {
         match self.inner.next() {
             None => None,
-            Some((k, v)) => Some((*k, v))
+            Some((&(a, b), v)) => Some((a, b, v))
         }
     }
 }
