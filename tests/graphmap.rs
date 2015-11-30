@@ -125,13 +125,13 @@ fn edge_iterator() {
     gr.add_edge(i, j, 3);
     gr.add_edge(i, k, 4);
 
-    let real_edges: HashSet<((&str, &str), u64)> = gr.all_edges().map(|(e, &w)| (e, w)).collect();
-    let expected_edges: HashSet<((&str, &str), u64)> = vec![
-        (("H", "I"), 1),
-        (("H", "J"), 2),
-        (("I", "J"), 3),
-        (("I", "K"), 4)
-    ].iter().cloned().collect();
+    let real_edges: HashSet<_> = gr.all_edges().map(|(a, b, &w)| (a, b, w)).collect();
+    let expected_edges: HashSet<_> = vec![
+        ("H", "I", 1),
+        ("H", "J", 2),
+        ("I", "J", 3),
+        ("I", "K", 4)
+    ].into_iter().collect();
 
     assert_eq!(real_edges, expected_edges);
 }

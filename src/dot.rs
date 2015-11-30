@@ -150,7 +150,7 @@ impl<'a, N, E> Dot<'a, GraphMap<N, E>>
             }
         }
         // output all edges
-        for (i, ((a, b), edge_weight)) in g.all_edges().enumerate() {
+        for (i, (a, b, edge_weight)) in g.all_edges().enumerate() {
             try!(write!(f, "{}{} {} {}",
                         INDENT,
                         labels[&a],
