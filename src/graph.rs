@@ -21,14 +21,17 @@ use {
 pub type DefIndex = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
-pub trait IndexType : Copy + Ord + fmt::Debug + 'static
+///
+/// Marked `unsafe` because: the trait must faithfully preseve
+/// and convert index values.
+pub unsafe trait IndexType : Copy + Ord + fmt::Debug + 'static
 {
     fn new(x: usize) -> Self;
     fn index(&self) -> usize;
     fn max() -> Self;
 }
 
-impl IndexType for usize {
+unsafe impl IndexType for usize {
     #[inline(always)]
     fn new(x: usize) -> Self { x }
     #[inline(always)]
@@ -37,7 +40,7 @@ impl IndexType for usize {
     fn max() -> Self { ::std::usize::MAX }
 }
 
-impl IndexType for u32 {
+unsafe impl IndexType for u32 {
     #[inline(always)]
     fn new(x: usize) -> Self { x as u32 }
     #[inline(always)]
@@ -46,7 +49,7 @@ impl IndexType for u32 {
     fn max() -> Self { ::std::u32::MAX }
 }
 
-impl IndexType for u16 {
+unsafe impl IndexType for u16 {
     #[inline(always)]
     fn new(x: usize) -> Self { x as u16 }
     #[inline(always)]
@@ -55,7 +58,7 @@ impl IndexType for u16 {
     fn max() -> Self { ::std::u16::MAX }
 }
 
-impl IndexType for u8 {
+unsafe impl IndexType for u8 {
     #[inline(always)]
     fn new(x: usize) -> Self { x as u8 }
     #[inline(always)]
