@@ -338,34 +338,31 @@ macro_rules! iterator_wrap {
                     self.iter.size_hint()
                 }
             }
-            impl<$($typarm),*> DoubleEndedIterator for $name <$($typarm),*>
-                where $($bounds)*, $iter: DoubleEndedIterator<Item=$item>,
-            {
-                #[inline]
-                fn next_back(&mut self) -> Option<Self::Item> {
-                    self.iter.next_back()
-                }
-            }
-
-            impl<$($typarm),*> ExactSizeIterator for $name <$($typarm),*>
-                where $($bounds)*, $iter: ExactSizeIterator<Item=$item>,
-            {
-            }
         }
     );
 }
 
 iterator_wrap! {
-    Nodes <'a, N> where { N: 'a + Clone }
+    Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
     iter: Cloned<Keys<'a, N, Vec<N>>>,
 }
 
+impl<'a, N: 'a + NodeTrait> ExactSizeIterator for Nodes<'a, N> { }
+
 iterator_wrap! {
-    Neighbors <'a, N> where { N: 'a + Clone }
+    Neighbors <'a, N> where { N: 'a + NodeTrait }
     item: N,
     iter: Cloned<Iter<'a, N>>,
 }
+
+impl<'a, N: 'a + NodeTrait> DoubleEndedIterator for Neighbors<'a, N> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back()
+    }
+}
+
+impl<'a, N: 'a + NodeTrait> ExactSizeIterator for Neighbors<'a, N> { }
 
 pub struct Edges<'a, N, E: 'a> where N: 'a + NodeTrait {
     from: N,
