@@ -140,11 +140,14 @@ impl<N, E> GraphMap<N, E>
         self.nodes.contains_key(&n)
     }
 
-    /// Add an edge connecting `a` and `b` to the graph.
+    /// Add an edge connecting `a` and `b` to the graph, with associated
+    /// data `weight`.
     ///
     /// Inserts nodes `a` and/or `b` if they aren't already part of the graph.
     ///
-    /// Return `true` if the edge did not previously exist.
+    /// Return `None` if the edge did not previously exist, otherwise,
+    /// the associated data is updated and the old value is returned
+    /// as `Some(old_weight)`.
     ///
     /// ```
     /// use petgraph::GraphMap;
@@ -154,8 +157,10 @@ impl<N, E> GraphMap<N, E>
     /// assert_eq!(g.node_count(), 2);
     /// assert_eq!(g.edge_count(), 1);
     /// ```
-    pub fn add_edge(&mut self, a: N, b: N, edge_data: E) -> bool {
-        if self.edges.insert(edge_key(a, b), edge_data).is_none() {
+    pub fn add_edge(&mut self, a: N, b: N, weight: E) -> Option<E> {
+        if let old @ Some(_) = self.edges.insert(edge_key(a, b), weight) {
+            old
+        } else {
             // insert in the adjacency list if it's a new edge
             self.nodes.entry(a)
                       .or_insert_with(|| Vec::with_capacity(1))
@@ -165,9 +170,7 @@ impl<N, E> GraphMap<N, E>
                           .or_insert_with(|| Vec::with_capacity(1))
                           .push(a);
             }
-            true
-        } else {
-            false
+            None
         }
     }
 

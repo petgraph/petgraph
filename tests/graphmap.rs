@@ -36,11 +36,11 @@ fn simple() {
     gr.add_edge(b, f, 15);
     gr.add_edge(c, f, 11);
 
-    assert!(gr.add_edge(e, f, 5));
+    assert!(gr.add_edge(e, f, 5).is_none());
 
     // duplicate edges
-    assert!(!gr.add_edge(f, b, 15));
-    assert!(!gr.add_edge(f, e, 6));
+    assert_eq!(gr.add_edge(f, b, 16), Some(15));
+    assert_eq!(gr.add_edge(f, e, 6), Some(5));
     println!("{:?}", gr);
     println!("{}", Dot::with_config(&gr, &[]));
 
