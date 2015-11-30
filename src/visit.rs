@@ -131,9 +131,9 @@ impl<'a, N: 'a, E, Ty, Ix> Externals<'a> for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    type Externals = graph::WithoutEdges<'a, N, Ty, Ix>;
-    fn externals(&'a self, d: EdgeDirection) -> graph::WithoutEdges<'a, N, Ty, Ix> {
-        Graph::without_edges(self, d)
+    type Externals = graph::Externals<'a, N, Ty, Ix>;
+    fn externals(&'a self, d: EdgeDirection) -> graph::Externals<'a, N, Ty, Ix> {
+        Graph::externals(self, d)
     }
 }
 

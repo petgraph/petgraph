@@ -412,7 +412,7 @@ fn without()
     let d = og.add_node(3);
     let _ = og.add_edge(a, b, 0);
     let _ = og.add_edge(a, c, 1);
-    let v: Vec<NodeIndex> = og.without_edges(Outgoing).collect();
+    let v: Vec<NodeIndex> = og.externals(Outgoing).collect();
     assert_eq!(v, vec![d]);
 
     let mut og = Graph::new();
@@ -422,8 +422,8 @@ fn without()
     let d = og.add_node(3);
     let _ = og.add_edge(a, b, 0);
     let _ = og.add_edge(a, c, 1);
-    let init: Vec<NodeIndex> = og.without_edges(Incoming).collect();
-    let term: Vec<NodeIndex> = og.without_edges(Outgoing).collect();
+    let init: Vec<NodeIndex> = og.externals(Incoming).collect();
+    let term: Vec<NodeIndex> = og.externals(Outgoing).collect();
     assert_eq!(init, vec![a, d]);
     assert_eq!(term, vec![b, c, d]);
 }

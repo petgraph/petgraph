@@ -75,7 +75,7 @@ fn toposort_generic<N, E, Ix, G, F>(mut g: G, mut visit: F)
     let mut tovisit = Vec::new();
 
     // find all initial nodes
-    tovisit.extend(g.borrow().without_edges(Incoming));
+    tovisit.extend(g.borrow().externals(Incoming));
 
     // Take an unvisited element and find which of its neighbors are next
     while let Some(nix) = tovisit.pop() {

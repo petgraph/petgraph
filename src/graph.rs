@@ -768,18 +768,20 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Return an iterator over either the nodes without edges to them or from them.
+    /// Return an iterator over either the nodes without edges to them
+    /// (`Incoming`) or from them (`Outgoing`).
     ///
-    /// The nodes in *.without_edges(Incoming)* are the source nodes and
-    /// *.without_edges(Outgoing)* are the sinks.
+    /// An *internal* node has both incoming and outgoing edges.
+    /// The nodes in `.externals(Incoming)` are the source nodes and
+    /// `.externals(Outgoing)` are the sinks of the graph.
     ///
-    /// For an undirected graph, the sinks/sources are just the vertices without edges.
+    /// For a graph with undirected edges, both the sinks and the sources are
+    /// just the nodes without edges.
     ///
     /// The whole iteration computes in **O(|V|)** time.
-    pub fn without_edges(&self, dir: EdgeDirection) -> WithoutEdges<N, Ty, Ix>
+    pub fn externals(&self, dir: EdgeDirection) -> Externals<N, Ty, Ix>
     {
-        WithoutEdges{iter: self.nodes.iter().enumerate(), dir: dir,
-                     ty: PhantomData}
+        Externals{iter: self.nodes.iter().enumerate(), dir: dir, ty: PhantomData}
     }
 
     /// Return an iterator over the node indices of the graph
@@ -1118,13 +1120,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
 }
 
 /// An iterator over either the nodes without edges to them or from them.
-pub struct WithoutEdges<'a, N: 'a, Ty, Ix: IndexType = DefIndex> {
+pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefIndex> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
     dir: EdgeDirection,
     ty: PhantomData<Ty>,
 }
 
-impl<'a, N: 'a, Ty, Ix> Iterator for WithoutEdges<'a, N, Ty, Ix> where
+impl<'a, N: 'a, Ty, Ix> Iterator for Externals<'a, N, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
 {
