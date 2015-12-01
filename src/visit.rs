@@ -48,6 +48,18 @@ impl<'a, N, E: 'a, Ty, Ix> NeighborIter<'a> for Graph<N, E, Ty, Ix> where
     }
 }
 
+impl<'a, N, E: 'a, Ty, Ix> NeighborIter<'a> for StableGraph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Iter = graph::stable::Neighbors<'a, E, Ix>;
+    fn neighbors(&'a self, n: graph::NodeIndex<Ix>)
+        -> graph::stable::Neighbors<'a, E, Ix>
+    {
+        StableGraph::neighbors(self, n)
+    }
+}
+
 impl<'a, N: 'a, E> NeighborIter<'a> for GraphMap<N, E>
 where N: Copy + Ord + Hash
 {
@@ -106,6 +118,18 @@ impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for Graph<N, E, Ty, Ix>
                           d: EdgeDirection) -> graph::Neighbors<'a, E, Ix>
     {
         Graph::neighbors_directed(self, n, d)
+    }
+}
+
+impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NeighborsDirected = graph::stable::Neighbors<'a, E, Ix>;
+    fn neighbors_directed(&'a self, n: graph::NodeIndex<Ix>, d: EdgeDirection)
+        -> graph::stable::Neighbors<'a, E, Ix>
+    {
+        StableGraph::neighbors_directed(self, n, d)
     }
 }
 
