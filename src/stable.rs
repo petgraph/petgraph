@@ -1,3 +1,4 @@
+//! `StableGraph` keeps indices stable across removals.
 
 use std::fmt;
 use std::mem::replace;
@@ -18,12 +19,6 @@ use super::{
     DIRECTIONS,
     Pair,
 };
-
-#[derive(Clone, Debug)]
-pub enum Entry<T> {
-    Empty(usize),
-    Occupied(T),
-}
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
