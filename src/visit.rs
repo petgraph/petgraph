@@ -21,6 +21,7 @@ use super::{
 
 use graph::{
     IndexType,
+    StableGraph,
 };
 
 /// Base trait for graphs that defines the node identifier.
@@ -215,6 +216,30 @@ impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
 }
 
 impl<N, E, Ty, Ix> Revisitable for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn reset_map(&self, map: &mut Self::Map) {
+        map.clear();
+        map.grow(self.node_count());
+    }
+}
+
+impl<N, E, Ty, Ix> Graphlike for StableGraph<N, E, Ty, Ix> where
+    Ix: IndexType,
+{
+    type NodeId = graph::NodeIndex<Ix>;
+}
+
+impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Map = FixedBitSet;
+    fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
+}
+
+impl<N, E, Ty, Ix> Revisitable for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
