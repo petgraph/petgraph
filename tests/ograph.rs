@@ -745,8 +745,8 @@ fn walk_edges() {
     // Set edge weights to difference: target - source.
     let mut dfs = Dfs::new(&gr, a);
     while let Some(source) = dfs.next(&gr) {
-        let mut edges = gr.walk_edges_directed(source, Outgoing);
-        while let Some((edge, target)) = edges.next_neighbor(&gr) {
+        let mut edges = gr.neighbors_directed(source, Outgoing).detach();
+        while let Some((edge, target)) = edges.next(&gr) {
             gr[edge] = gr[target] - gr[source];
         }
     }
@@ -758,14 +758,14 @@ fn walk_edges() {
     let mut nedges = 0;
     let mut dfs = Dfs::new(&gr, a);
     while let Some(node) = dfs.next(&gr) {
-        let mut edges = gr.walk_edges_directed(node, Incoming);
-        while let Some((edge, source)) = edges.next_neighbor(&gr) {
+        let mut edges = gr.neighbors_directed(node, Incoming).detach();
+        while let Some((edge, source)) = edges.next(&gr) {
             assert_eq!(gr.find_edge(source, node), Some(edge));
             nedges += 1;
         }
 
-        let mut edges = gr.walk_edges_directed(node, Outgoing);
-        while let Some((edge, target)) = edges.next_neighbor(&gr) {
+        let mut edges = gr.neighbors_directed(node, Outgoing).detach();
+        while let Some((edge, target)) = edges.next(&gr) {
             assert_eq!(gr.find_edge(node, target), Some(edge));
             nedges += 1;
         }
@@ -801,8 +801,8 @@ fn index_twice_mut() {
         // walk the graph and sum incoming edges
         let mut dfs = Dfs::new(&gr, a);
         while let Some(node) = dfs.next(&gr) {
-            let mut edges = gr.walk_edges_directed(node, *dir);
-            while let Some(edge) = edges.next(&gr) {
+            let mut edges = gr.neighbors_directed(node, *dir).detach();
+            while let Some(edge) = edges.next_edge(&gr) {
                 let (nw, ew) = gr.index_twice_mut(node, edge);
                 *nw += *ew;
             }
