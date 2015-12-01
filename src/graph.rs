@@ -1636,6 +1636,40 @@ pub enum Entry<T> {
     Occupied(T),
 }
 
+/// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
+/// list representation.
+///
+/// The graph **does not invalidate** any unrelated node or edge indices when
+/// items are removed.
+///
+/// `StableGraph` is parameterized over:
+///
+/// - Associated data `N` for nodes and `E` for edges, also called *weights*.
+///   The associated data can be of arbitrary type.
+/// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
+/// - Index type `Ix`, which determines the maximum size of the graph.
+///
+/// The graph uses **O(|V| + |E|)** space, and allows fast node and edge insert,
+/// efficient graph search and graph algorithms.
+///
+/// It implements **O(e')** edge lookup and edge and node removals, where **e'**
+/// is some local measure of edge count.
+///
+/// - Nodes and edges are each numbered in an interval from *0* to some number
+/// *m*, but *not all* indices in the range are valid, since gaps are formed
+/// by deletions.
+///
+/// - You can select graph index integer type after the size of the graph. A smaller
+/// size may have better performance.
+///
+/// - Using indices allows mutation while traversing the graph, see `Dfs`.
+///
+/// - The `StableGraph` is a regular rust collection and is `Send` and `Sync`
+/// (as long as associated data `N` and `E` are).
+///
+/// - Indices don't allow as much compile time checking as references.
+///
+///
 pub struct StableGraph<N, E, Ty = Directed, Ix = DefIndex>
     where Ix: IndexType
 {
@@ -1711,8 +1745,18 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         index
     }
 
+    /// Remove `a` from the graph if it exists, and return its weight.
+    /// If it doesn't exist in the graph, return `None`.
+    ///
+    /// The node index `a` is invalidated, but none other.
+    /// Edge indices are invalidated as they would be following the removal of
+    /// each edge with an endpoint in `a`.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of affected
+    /// edges, including *n* calls to `.remove_edge()` where *n* is the number
+    /// of edges with an endpoint in `a`, and including the edges with an
+    /// endpoint in the displaced node.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N> {
-        // FIXME: As a PoC, only do compact map for nodes, not edges
         let node_weight = match self.g.nodes.get_mut(a.index()) {
             None => return None,
             Some(n) => n.weight.take(),
@@ -1778,6 +1822,12 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Remove an edge and return its edge weight, or `None` if it didn't exist.
+    ///
+    /// Invalidates the edge index `e` but no other.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// conneced to the same endpoints as `e`.
     pub fn remove_edge(&mut self, e: EdgeIndex<Ix>) -> Option<E> {
         // every edge is part of two lists,
         // outgoing and incoming edges.
