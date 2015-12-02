@@ -63,11 +63,11 @@ impl EdgeDirection {
 
 /// Marker type for a directed graph.
 #[derive(Copy, Clone, Debug)]
-pub struct Directed;
+pub enum Directed { }
 
 /// Marker type for an undirected graph.
 #[derive(Copy, Clone, Debug)]
-pub struct Undirected;
+pub enum Undirected { }
 
 /// A graph's edge type determines whether is has directed edges or not.
 pub trait EdgeType {
