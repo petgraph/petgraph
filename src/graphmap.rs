@@ -94,7 +94,7 @@ impl<N, E> GraphMap<N, E>
     /// ```
     pub fn from_edges<I>(iterable: I) -> Self
         where I: IntoIterator,
-              I::Item: IntoWeightedEdge<N, E>
+              I::Item: IntoWeightedEdge<E, NodeId=N>
     {
         Self::from_iter(iterable)
     }
@@ -276,7 +276,7 @@ impl<N, E> GraphMap<N, E>
 
 /// Create a new `GraphMap` from an iterable of edges.
 impl<N, E, Item> FromIterator<Item> for GraphMap<N, E>
-    where Item: IntoWeightedEdge<N, E>,
+    where Item: IntoWeightedEdge<E, NodeId=N>,
           N: NodeTrait,
 {
     fn from_iter<I>(iterable: I) -> Self
@@ -294,7 +294,7 @@ impl<N, E, Item> FromIterator<Item> for GraphMap<N, E>
 ///
 /// Nodes are inserted automatically to match the edges.
 impl<N, E, Item> Extend<Item> for GraphMap<N, E>
-    where Item: IntoWeightedEdge<N, E>,
+    where Item: IntoWeightedEdge<E, NodeId=N>,
           N: NodeTrait,
 {
     fn extend<I>(&mut self, iterable: I)

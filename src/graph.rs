@@ -1004,10 +1004,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     ///     (2, 3),
     /// ]);
     /// ```
-    pub fn from_edges<I, J>(iterable: I) -> Self
+    pub fn from_edges<I>(iterable: I) -> Self
         where I: IntoIterator,
-              I::Item: IntoWeightedEdge<J, E>,
-              J: Into<NodeIndex<Ix>>,
+              I::Item: IntoWeightedEdge<E>,
+              <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
               N: Default,
     {
         let mut g = Self::with_capacity(0, 0);
@@ -1022,10 +1022,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// or they are filled with default values.
     ///
     /// Nodes are inserted automatically to match the edges.
-    pub fn extend_with_edges<I, J>(&mut self, iterable: I)
+    pub fn extend_with_edges<I>(&mut self, iterable: I)
         where I: IntoIterator,
-              I::Item: IntoWeightedEdge<J, E>,
-              J: Into<NodeIndex<Ix>>,
+              I::Item: IntoWeightedEdge<E>,
+              <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
               N: Default,
     {
         let iter = iterable.into_iter();
