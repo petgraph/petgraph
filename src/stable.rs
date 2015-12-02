@@ -416,6 +416,24 @@ pub struct Neighbors<'a, E: 'a, Ix: 'a = DefIndex> where
     next: [EdgeIndex<Ix>; 2],
 }
 
+impl<'a, E, Ix> Neighbors<'a, E, Ix>
+    where Ix: IndexType,
+{
+    /// Return a “walker” object that can be used to step through the
+    /// neighbors and edges from the origin node.
+    ///
+    /// Note: The walker does not borrow from the graph, this is to allow mixing
+    /// edge walking with mutating the graph's weights.
+    pub fn detach(&self) -> WalkNeighbors<Ix> {
+        WalkNeighbors {
+            inner: super::WalkNeighbors {
+                skip_start: self.skip_start,
+                next: self.next
+            },
+        }
+    }
+}
+
 impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
     Ix: IndexType,
 {
@@ -443,6 +461,70 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
             }
         }
         None
+    }
+}
+
+/// A “walker” object that can be used to step through the edge list of a node.
+///
+/// See [*.detach()*](struct.Neighbors.html#method.detach) for more information.
+///
+/// The walker does not borrow from the graph, so it lets you step through
+/// neighbors or incident edges while also mutating graph weights, as
+/// in the following example:
+///
+/// ```
+/// use petgraph::{Dfs, Incoming};
+/// use petgraph::graph::stable::StableGraph;
+///
+/// let mut gr = StableGraph::new();
+/// let a = gr.add_node(0.);
+/// let b = gr.add_node(0.);
+/// let c = gr.add_node(0.);
+/// gr.add_edge(a, b, 3.);
+/// gr.add_edge(b, c, 2.);
+/// gr.add_edge(c, b, 1.);
+///
+/// // step through the graph and sum incoming edges into the node weight
+/// let mut dfs = Dfs::new(&gr, a);
+/// while let Some(node) = dfs.next(&gr) {
+///     // use a detached neighbors walker
+///     let mut edges = gr.neighbors_directed(node, Incoming).detach();
+///     while let Some(edge) = edges.next_edge(&gr) {
+///         gr[node] += gr[edge];
+///     }
+/// }
+///
+/// // check the result
+/// assert_eq!(gr[a], 0.);
+/// assert_eq!(gr[b], 4.);
+/// assert_eq!(gr[c], 2.);
+/// ```
+pub struct WalkNeighbors<Ix> {
+    inner: super::WalkNeighbors<Ix>,
+}
+
+impl<Ix: IndexType> WalkNeighbors<Ix> {
+    /// Step to the next edge and its endpoint node in the walk for graph `g`.
+    ///
+    /// The next node indices are always the others than the starting point
+    /// where the `WalkNeighbors` value was created.
+    /// For an `Outgoing` walk, the target nodes,
+    /// for an `Incoming` walk, the source nodes of the edge.
+    pub fn next<N, E, Ty: EdgeType>(&mut self, g: &StableGraph<N, E, Ty, Ix>)
+        -> Option<(EdgeIndex<Ix>, NodeIndex<Ix>)> {
+        self.inner.next(&g.g)
+    }
+
+    pub fn next_node<N, E, Ty: EdgeType>(&mut self, g: &StableGraph<N, E, Ty, Ix>)
+        -> Option<NodeIndex<Ix>>
+    {
+        self.next(g).map(|t| t.1)
+    }
+
+    pub fn next_edge<N, E, Ty: EdgeType>(&mut self, g: &StableGraph<N, E, Ty, Ix>)
+        -> Option<EdgeIndex<Ix>>
+    {
+        self.next(g).map(|t| t.0)
     }
 }
 
