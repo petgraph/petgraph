@@ -704,7 +704,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Produces an empty iterator if the node doesn't exist.
     ///
     /// Iterator element type is `(NodeIndex<Ix>, &E)`.
-    pub fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
+    fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
         Edges {
             skip_start: a,
