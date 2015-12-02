@@ -745,8 +745,8 @@ fn walk_edges() {
     // Set edge weights to difference: target - source.
     let mut dfs = Dfs::new(&gr, a);
     while let Some(source) = dfs.next(&gr) {
-        let mut edges = gr.walk_edges_directed(source, Outgoing);
-        while let Some((edge, target)) = edges.next_neighbor(&gr) {
+        let mut edges = gr.neighbors_directed(source, Outgoing).detach();
+        while let Some((edge, target)) = edges.next(&gr) {
             gr[edge] = gr[target] - gr[source];
         }
     }
@@ -758,14 +758,14 @@ fn walk_edges() {
     let mut nedges = 0;
     let mut dfs = Dfs::new(&gr, a);
     while let Some(node) = dfs.next(&gr) {
-        let mut edges = gr.walk_edges_directed(node, Incoming);
-        while let Some((edge, source)) = edges.next_neighbor(&gr) {
+        let mut edges = gr.neighbors_directed(node, Incoming).detach();
+        while let Some((edge, source)) = edges.next(&gr) {
             assert_eq!(gr.find_edge(source, node), Some(edge));
             nedges += 1;
         }
 
-        let mut edges = gr.walk_edges_directed(node, Outgoing);
-        while let Some((edge, target)) = edges.next_neighbor(&gr) {
+        let mut edges = gr.neighbors_directed(node, Outgoing).detach();
+        while let Some((edge, target)) = edges.next(&gr) {
             assert_eq!(gr.find_edge(node, target), Some(edge));
             nedges += 1;
         }
@@ -801,8 +801,8 @@ fn index_twice_mut() {
         // walk the graph and sum incoming edges
         let mut dfs = Dfs::new(&gr, a);
         while let Some(node) = dfs.next(&gr) {
-            let mut edges = gr.walk_edges_directed(node, *dir);
-            while let Some(edge) = edges.next(&gr) {
+            let mut edges = gr.neighbors_directed(node, *dir).detach();
+            while let Some(edge) = edges.next_edge(&gr) {
                 let (nw, ew) = gr.index_twice_mut(node, edge);
                 *nw += *ew;
             }
@@ -1013,6 +1013,24 @@ fn neighbors_selfloops() {
     let mut seen_out = gr.edges(a).map(|(x, _)| x).collect::<Vec<_>>();
     seen_out.sort();
     assert_eq!(&seen_out, &out_edges);
+
+    let mut seen_walk = Vec::new();
+    let mut walk = gr.neighbors(a).detach();
+    while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
+    seen_walk.sort();
+    assert_eq!(&seen_walk, &out_edges);
+
+    seen_walk.clear();
+    let mut walk = gr.neighbors_directed(a, Incoming).detach();
+    while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
+    seen_walk.sort();
+    assert_eq!(&seen_walk, &in_edges);
+ 
+    seen_walk.clear();
+    let mut walk = gr.neighbors_undirected(a).detach();
+    while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
+    seen_walk.sort();
+    assert_eq!(&seen_walk, &undir_edges);
 
     // Undirected graph
     let mut gr: Graph<_, (), _> = Graph::new_undirected();
