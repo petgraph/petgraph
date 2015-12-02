@@ -428,3 +428,10 @@ impl<N, E> IndexMut<(N, N)> for GraphMap<N, E>
         self.edge_weight_mut(index.0, index.1).expect("GraphMap::index: no such edge")
     }
 }
+
+/// Create a new empty `GraphMap`.
+impl<N, E> Default for GraphMap<N, E>
+    where N: NodeTrait,
+{
+    fn default() -> Self { GraphMap::new() }
+}
