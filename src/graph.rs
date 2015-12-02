@@ -1342,6 +1342,14 @@ impl<N, E, Ty, Ix> IndexMut<EdgeIndex<Ix>> for Graph<N, E, Ty, Ix> where
     }
 }
 
+/// Create a new empty `Graph`.
+impl<N, E, Ty, Ix> Default for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn default() -> Self { Self::with_capacity(0, 0) }
+}
+
 /// A  `GraphIndex` is a node or edge index.
 pub trait GraphIndex : Copy {
     #[doc(hidden)]
