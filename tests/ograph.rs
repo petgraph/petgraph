@@ -1014,6 +1014,24 @@ fn neighbors_selfloops() {
     seen_out.sort();
     assert_eq!(&seen_out, &out_edges);
 
+    let mut seen_walk = Vec::new();
+    let mut walk = gr.neighbors(a).detach();
+    while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
+    seen_walk.sort();
+    assert_eq!(&seen_walk, &out_edges);
+
+    seen_walk.clear();
+    let mut walk = gr.neighbors_directed(a, Incoming).detach();
+    while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
+    seen_walk.sort();
+    assert_eq!(&seen_walk, &in_edges);
+ 
+    seen_walk.clear();
+    let mut walk = gr.neighbors_undirected(a).detach();
+    while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
+    seen_walk.sort();
+    assert_eq!(&seen_walk, &undir_edges);
+
     // Undirected graph
     let mut gr: Graph<_, (), _> = Graph::new_undirected();
     let a = gr.add_node("a");
