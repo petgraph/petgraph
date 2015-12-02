@@ -1010,9 +1010,9 @@ fn neighbors_selfloops() {
     seen_undir.sort();
     assert_eq!(&seen_undir, &undir_edges);
 
-    let mut seen_undir = gr.edges_undirected(a).map(|(x, _)| x).collect::<Vec<_>>();
-    seen_undir.sort();
-    assert_eq!(&seen_undir, &undir_edges);
+    let mut seen_out = gr.edges(a).map(|(x, _)| x).collect::<Vec<_>>();
+    seen_out.sort();
+    assert_eq!(&seen_out, &out_edges);
 
     // Undirected graph
     let mut gr: Graph<_, (), _> = Graph::new_undirected();
