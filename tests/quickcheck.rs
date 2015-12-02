@@ -112,7 +112,7 @@ fn retain_nodes() {
         assert_eq!(removed, num_negs);
         assert_eq!(num_negs + g.node_count(), nodes);
         assert_eq!(num_pos_post, g.node_count());
-        if og.edge_count() < 30 {
+        if og.node_count() < 30 && og.edge_count() < 30 {
             // check against filter_map
             let filtered = og.filter_map(|_, w| if *w >= 0 { Some(*w) } else { None },
                                          |_, w| Some(*w));
