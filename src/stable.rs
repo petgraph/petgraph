@@ -80,6 +80,7 @@ impl<N, E, Ty, Ix> fmt::Debug for StableGraph<N, E, Ty, Ix> where
 }
 
 impl<N, E> StableGraph<N, E, Directed> {
+    /// Create a new `StableGraph` with directed edges.
     pub fn new() -> Self {
         Self::with_capacity(0, 0)
     }
