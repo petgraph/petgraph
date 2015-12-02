@@ -632,7 +632,15 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
 
     /// Return an iterator of all nodes with an edge starting from `a`.
     ///
+    /// - `Undirected`: All edges from or to `a`.
+    /// - `Directed`: All edges from `a` (outgoing edges).
+    ///
     /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Use [`.neighbors(a).detach()`][1] to get a neighbor walker that does
+    /// not borrow from the graph.
+    ///
+    /// [1]: struct.Neighbors.html#method.detach
     ///
     /// Iterator element type is `NodeIndex<Ix>`.
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
@@ -644,7 +652,16 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// in the specified direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
+    /// - `Undirected`: All edges from or to `a`.
+    /// - `Directed`, `Outgoing`: All edges from `a`.
+    /// - `Directed`, `Incoming`: All edges to `a`.
+    ///
     /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Use [`.neighbors_directed(a, dir).detach()`][1] to get a neighbor walker that does
+    /// not borrow from the graph.
+    ///
+    /// [1]: struct.Neighbors.html#method.detach
     ///
     /// Iterator element type is `NodeIndex<Ix>`.
     pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Neighbors<E, Ix>
@@ -658,7 +675,14 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// in either direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
+    /// - `Undirected` and `Directed`: All edges from or to `a`.
+    ///
     /// Produces an empty iterator if the node doesn't exist.
+    ///
+    /// Use [`.neighbors_undirected(a).detach()`][1] to get a neighbor walker that does
+    /// not borrow from the graph.
+    ///
+    /// [1]: struct.Neighbors.html#method.detach
     ///
     /// Iterator element type is `NodeIndex<Ix>`.
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
@@ -698,7 +722,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         iter
     }
 
-    /// Return an iterator over the edgs from `a` to its neighbors, then *to* `a` from its
+    /// Return an iterator over the edges from `a` to its neighbors, then *to* `a` from its
     /// neighbors.
     ///
     /// Produces an empty iterator if the node doesn't exist.
@@ -1156,7 +1180,14 @@ impl<'a, N: 'a, Ty, Ix> Iterator for Externals<'a, N, Ty, Ix> where
 
 /// Iterator over the neighbors of a node.
 ///
-/// Iterator element type is `NodeIndex`.
+/// Iterator element type is `NodeIndex<Ix>`.
+///
+/// Created with [`.neighbors()`][1], [`.neighbors_directed()`][2] or
+/// [`.neighbors_undirected()`][3].
+///
+/// [1]: struct.Graph.html#method.neighbors
+/// [2]: struct.Graph.html#method.neighbors_directed
+/// [3]: struct.Graph.html#method.neighbors_undirected
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefIndex> where
     Ix: IndexType,
 {
@@ -1389,6 +1420,37 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 /// A “walker” object that can be used to step through the edge list of a node.
 ///
 /// See [*.detach()*](struct.Neighbors.html#method.detach) for more information.
+///
+/// The walker does not borrow from the graph, so it lets you step through
+/// neighbors or incident edges while also mutating graph weights, as
+/// in the following example:
+///
+/// ```
+/// use petgraph::{Graph, Dfs, Incoming};
+///
+/// let mut gr = Graph::new();
+/// let a = gr.add_node(0.);
+/// let b = gr.add_node(0.);
+/// let c = gr.add_node(0.);
+/// gr.add_edge(a, b, 3.);
+/// gr.add_edge(b, c, 2.);
+/// gr.add_edge(c, b, 1.);
+///
+/// // step through the graph and sum incoming edges into the node weight
+/// let mut dfs = Dfs::new(&gr, a);
+/// while let Some(node) = dfs.next(&gr) {
+///     // use a detached neighbors walker
+///     let mut edges = gr.neighbors_directed(node, Incoming).detach();
+///     while let Some(edge) = edges.next_edge(&gr) {
+///         gr[node] += gr[edge];
+///     }
+/// }
+///
+/// // check the result
+/// assert_eq!(gr[a], 0.);
+/// assert_eq!(gr[b], 4.);
+/// assert_eq!(gr[c], 2.);
+/// ```
 pub struct WalkNeighbors<Ix> {
     skip_start: NodeIndex<Ix>,
     next: [EdgeIndex<Ix>; 2],
