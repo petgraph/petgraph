@@ -2,11 +2,12 @@
 //! **petgraph** is a graph data structure library.
 //!
 //! The most prominent type is [`Graph`](./graph/struct.Graph.html) which is
-//! a directed or undirected graph with arbitrary associated node and edge data.
+//! an adjacency list graph with undirected or directed edges and arbitrary
+//! associated data.
 //!
 //! Petgraph also provides [`GraphMap`](./graphmap/struct.GraphMap.html) which
-//! is an undirected hashmap-backed graph which only allows simple node identifiers
-//! (such as integers or references).
+//! is an hashmap-backed graph with undirected edges and only allows simple node
+//! identifiers (such as integers or references).
 
 extern crate fixedbitset;
 

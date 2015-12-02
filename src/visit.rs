@@ -28,7 +28,7 @@ pub trait Graphlike {
     type NodeId: Clone;
 }
 
-/// A graph trait for accessing the neighbors iterator
+/// NeighborIter gives access to the neighbors iterator.
 pub trait NeighborIter<'a> : Graphlike {
     type Iter: Iterator<Item=Self::NodeId>;
 
@@ -59,7 +59,8 @@ where N: Copy + Ord + Hash
 
 /// Wrapper type for walking the graph as if it is undirected
 pub struct AsUndirected<G>(pub G);
-/// Wrapper type for walking edges the other way
+
+/// Wrapper type for walking the graph as if all edges are reversed.
 pub struct Reversed<G>(pub G);
 
 impl<'a, 'b, N, E: 'a, Ty, Ix> NeighborIter<'a> for AsUndirected<&'b Graph<N, E, Ty, Ix>> where
@@ -146,7 +147,7 @@ impl<'a, 'b,  G> Externals<'a> for Reversed<&'b G>
     }
 }
 
-/// A mapping from node → is_visited.
+/// A mapping for storing the visited status for NodeId `N`.
 pub trait VisitMap<N> {
     /// Return **true** if the value is not already present.
     fn visit(&mut self, N) -> bool;
@@ -188,13 +189,13 @@ impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
     }
 }
 
-/// Trait for which datastructure to use for a graph’s visitor map
+/// A graph that can create a visitor map.
 pub trait Visitable : Graphlike {
     type Map: VisitMap<Self::NodeId>;
     fn visit_map(&self) -> Self::Map;
 }
 
-/// Trait for graph that can reset & resize its visitor map
+/// A graph that can reset and resize its visitor map.
 pub trait Revisitable : Visitable {
     fn reset_map(&self, &mut Self::Map);
 }
