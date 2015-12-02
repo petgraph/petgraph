@@ -38,7 +38,7 @@ pub mod quickcheck;
 
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub enum EdgeDirection {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
@@ -47,8 +47,9 @@ pub enum EdgeDirection {
 }
 
 impl EdgeDirection {
+    /// Return the opposite `EdgeDirection`.
     #[inline]
-    fn opposite(&self) -> EdgeDirection {
+    pub fn opposite(&self) -> EdgeDirection {
         match *self {
             Outgoing => Incoming,
             Incoming => Outgoing,
