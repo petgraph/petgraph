@@ -1,18 +1,19 @@
 //! `GraphMap<N, E>` is an undirected graph where node values are mapping keys.
 
-use std::hash::{Hash};
+use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::iter::Cloned;
 use std::collections::hash_map::{
     Keys,
 };
 use std::collections::hash_map::Iter as HashmapIter;
+use std::hash::{self, Hash};
+use std::iter::Cloned;
+use std::iter::FromIterator;
 use std::slice::{
     Iter,
 };
 use std::fmt;
-use std::iter::FromIterator;
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Deref};
 
 use IntoWeightedEdge;
 
@@ -435,3 +436,71 @@ impl<N, E> Default for GraphMap<N, E>
 {
     fn default() -> Self { GraphMap::new() }
 }
+
+/// A reference that is hashed and compared by its pointer value.
+///
+/// `Ptr` is used for certain configurations of `GraphMap`,
+/// in particular in the combination where the node type for
+/// `GraphMap` is something of type for example `Ptr(&Cell<T>)`,
+/// with the `Cell<T>` being `TypedArena` allocated.
+pub struct Ptr<'b, T: 'b>(pub &'b T);
+
+impl<'b, T> Copy for Ptr<'b, T> {}
+impl<'b, T> Clone for Ptr<'b, T>
+{
+    fn clone(&self) -> Self { *self }
+}
+
+fn ptr_eq<T>(a: *const T, b: *const T) -> bool {
+    a == b
+}
+
+impl<'b, T> PartialEq for Ptr<'b, T>
+{
+    /// Ptr compares by pointer equality, i.e if they point to the same value
+    fn eq(&self, other: &Ptr<'b, T>) -> bool {
+        ptr_eq(self.0, other.0)
+    }
+}
+
+impl<'b, T> PartialOrd for Ptr<'b, T>
+{
+    fn partial_cmp(&self, other: &Ptr<'b, T>) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'b, T> Ord for Ptr<'b, T>
+{
+    /// Ptr is ordered by pointer value, i.e. an arbitrary but stable and total order.
+    fn cmp(&self, other: &Ptr<'b, T>) -> Ordering {
+        let a = self.0 as *const _;
+        let b = other.0 as *const _;
+        a.cmp(&b)
+    }
+}
+
+impl<'b, T> Deref for Ptr<'b, T> {
+    type Target = T;
+    fn deref<'a>(&'a self) -> &'a T {
+        self.0
+    }
+}
+
+impl<'b, T> Eq for Ptr<'b, T> {}
+
+impl<'b, T> Hash for Ptr<'b, T>
+{
+    fn hash<H: hash::Hasher>(&self, st: &mut H)
+    {
+        let ptr = (self.0) as *const T;
+        ptr.hash(st)
+    }
+}
+
+impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
