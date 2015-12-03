@@ -1,11 +1,14 @@
 #![cfg(feature="quickcheck")]
 extern crate quickcheck;
-
+extern crate rand;
 extern crate petgraph;
 
+use rand::Rng;
+
 use petgraph::{Graph, GraphMap, Undirected, Directed, EdgeType, Incoming, Outgoing};
-use petgraph::algo::{min_spanning_tree, is_cyclic_undirected, is_isomorphic};
-use petgraph::graph::{IndexType, node_index};
+use petgraph::algo::{min_spanning_tree, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching};
+use petgraph::graph::{IndexType, node_index, edge_index};
+//use petgraph::dot::{Dot, Config};
 
 fn prop(g: Graph<(), u32>) -> bool {
     // filter out isolated nodes
@@ -93,7 +96,7 @@ fn reverse_directed() {
 
 #[test]
 fn retain_nodes() {
-    fn prop<Ty: EdgeType>(mut g: Graph<i32, (), Ty>) -> bool {
+    fn prop<Ty: EdgeType>(mut g: Graph<i32, i32, Ty>) -> bool {
         // Remove all negative nodes, these should be randomly spread
         let og = g.clone();
         let nodes = g.node_count();
@@ -112,13 +115,17 @@ fn retain_nodes() {
         assert_eq!(removed, num_negs);
         assert_eq!(num_negs + g.node_count(), nodes);
         assert_eq!(num_pos_post, g.node_count());
-        if og.node_count() < 30 && og.edge_count() < 30 {
-            // check against filter_map
-            let filtered = og.filter_map(|_, w| if *w >= 0 { Some(*w) } else { None },
-                                         |_, w| Some(*w));
-            assert_eq!(g.node_count(), filtered.node_count());
-            assert!(is_isomorphic(&filtered, &g));
-        }
+
+        // check against filter_map
+        let filtered = og.filter_map(|_, w| if *w >= 0 { Some(*w) } else { None },
+                                     |_, w| Some(*w));
+        assert_eq!(g.node_count(), filtered.node_count());
+        /*
+        println!("Iso of graph with nodes={}, edges={}",
+                 g.node_count(), g.edge_count());
+                 */
+        assert!(is_isomorphic_matching(&filtered, &g, PartialEq::eq, PartialEq::eq));
+
         true
     }
     quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
@@ -158,6 +165,68 @@ fn retain_edges() {
     }
     quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
     quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
+}
+
+#[test]
+fn isomorphism_1() {
+    // using small weights so that duplicates are likely
+    fn prop<Ty: EdgeType>(g: Graph<i8, i8, Ty>) -> bool {
+        let mut rng = rand::thread_rng();
+        // several trials of different isomorphisms of the same graph
+        // mapping of node indices
+        let mut map = g.node_indices().collect::<Vec<_>>();
+        let mut ng = Graph::<_, _, Ty>::with_capacity(g.node_count(), g.edge_count());
+        for _ in 0..1 {
+            rng.shuffle(&mut map);
+            ng.clear();
+
+            for _ in g.node_indices() {
+                ng.add_node(0);
+            }
+            // Assign node weights
+            for i in g.node_indices() {
+                ng[map[i.index()]] = g[i];
+            }
+            // Add edges
+            for i in g.edge_indices() {
+                let (s, t) = g.edge_endpoints(i).unwrap();
+                ng.add_edge(map[s.index()],
+                            map[t.index()],
+                            g[i]);
+            }
+            if g.node_count() < 20 && g.edge_count() < 50 {
+                assert!(is_isomorphic(&g, &ng));
+            }
+            assert!(is_isomorphic_matching(&g, &ng, PartialEq::eq, PartialEq::eq));
+        }
+        true
+    }
+    quickcheck::quickcheck(prop::<Undirected> as fn(_) -> bool);
+    quickcheck::quickcheck(prop::<Directed> as fn(_) -> bool);
+}
+
+#[test]
+fn isomorphism_modify() {
+    // using small weights so that duplicates are likely
+    fn prop<Ty: EdgeType>(g: Graph<i16, i8, Ty>, node: u8, edge: u8) -> bool {
+        let mut ng = g.clone();
+        let i = node_index(node as usize);
+        let j = edge_index(edge as usize);
+        if i.index() < g.node_count() {
+            ng[i] = (g[i] == 0) as i16;
+        }
+        if j.index() < g.edge_count() {
+            ng[j] = (g[j] == 0) as i8;
+        }
+        if i.index() < g.node_count() || j.index() < g.edge_count() {
+            assert!(!is_isomorphic_matching(&g, &ng, PartialEq::eq, PartialEq::eq));
+        } else {
+            assert!(is_isomorphic_matching(&g, &ng, PartialEq::eq, PartialEq::eq));
+        }
+        true
+    }
+    quickcheck::quickcheck(prop::<Undirected> as fn(_, _, _) -> bool);
+    quickcheck::quickcheck(prop::<Directed> as fn(_, _, _) -> bool);
 }
 
 #[test]
