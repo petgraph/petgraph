@@ -1,18 +1,19 @@
 //! `GraphMap<N, E>` is an undirected graph where node values are mapping keys.
 
-use std::hash::{Hash};
+use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::iter::Cloned;
 use std::collections::hash_map::{
     Keys,
 };
 use std::collections::hash_map::Iter as HashmapIter;
+use std::hash::{self, Hash};
+use std::iter::Cloned;
+use std::iter::FromIterator;
 use std::slice::{
     Iter,
 };
 use std::fmt;
-use std::iter::FromIterator;
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Deref};
 
 use IntoWeightedEdge;
 
@@ -93,7 +94,7 @@ impl<N, E> GraphMap<N, E>
     /// ```
     pub fn from_edges<I>(iterable: I) -> Self
         where I: IntoIterator,
-              I::Item: IntoWeightedEdge<N, E>
+              I::Item: IntoWeightedEdge<E, NodeId=N>
     {
         Self::from_iter(iterable)
     }
@@ -275,7 +276,7 @@ impl<N, E> GraphMap<N, E>
 
 /// Create a new `GraphMap` from an iterable of edges.
 impl<N, E, Item> FromIterator<Item> for GraphMap<N, E>
-    where Item: IntoWeightedEdge<N, E>,
+    where Item: IntoWeightedEdge<E, NodeId=N>,
           N: NodeTrait,
 {
     fn from_iter<I>(iterable: I) -> Self
@@ -293,7 +294,7 @@ impl<N, E, Item> FromIterator<Item> for GraphMap<N, E>
 ///
 /// Nodes are inserted automatically to match the edges.
 impl<N, E, Item> Extend<Item> for GraphMap<N, E>
-    where Item: IntoWeightedEdge<N, E>,
+    where Item: IntoWeightedEdge<E, NodeId=N>,
           N: NodeTrait,
 {
     fn extend<I>(&mut self, iterable: I)
@@ -428,3 +429,78 @@ impl<N, E> IndexMut<(N, N)> for GraphMap<N, E>
         self.edge_weight_mut(index.0, index.1).expect("GraphMap::index: no such edge")
     }
 }
+
+/// Create a new empty `GraphMap`.
+impl<N, E> Default for GraphMap<N, E>
+    where N: NodeTrait,
+{
+    fn default() -> Self { GraphMap::new() }
+}
+
+/// A reference that is hashed and compared by its pointer value.
+///
+/// `Ptr` is used for certain configurations of `GraphMap`,
+/// in particular in the combination where the node type for
+/// `GraphMap` is something of type for example `Ptr(&Cell<T>)`,
+/// with the `Cell<T>` being `TypedArena` allocated.
+pub struct Ptr<'b, T: 'b>(pub &'b T);
+
+impl<'b, T> Copy for Ptr<'b, T> {}
+impl<'b, T> Clone for Ptr<'b, T>
+{
+    fn clone(&self) -> Self { *self }
+}
+
+fn ptr_eq<T>(a: *const T, b: *const T) -> bool {
+    a == b
+}
+
+impl<'b, T> PartialEq for Ptr<'b, T>
+{
+    /// Ptr compares by pointer equality, i.e if they point to the same value
+    fn eq(&self, other: &Ptr<'b, T>) -> bool {
+        ptr_eq(self.0, other.0)
+    }
+}
+
+impl<'b, T> PartialOrd for Ptr<'b, T>
+{
+    fn partial_cmp(&self, other: &Ptr<'b, T>) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'b, T> Ord for Ptr<'b, T>
+{
+    /// Ptr is ordered by pointer value, i.e. an arbitrary but stable and total order.
+    fn cmp(&self, other: &Ptr<'b, T>) -> Ordering {
+        let a = self.0 as *const _;
+        let b = other.0 as *const _;
+        a.cmp(&b)
+    }
+}
+
+impl<'b, T> Deref for Ptr<'b, T> {
+    type Target = T;
+    fn deref<'a>(&'a self) -> &'a T {
+        self.0
+    }
+}
+
+impl<'b, T> Eq for Ptr<'b, T> {}
+
+impl<'b, T> Hash for Ptr<'b, T>
+{
+    fn hash<H: hash::Hasher>(&self, st: &mut H)
+    {
+        let ptr = (self.0) as *const T;
+        ptr.hash(st)
+    }
+}
+
+impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+

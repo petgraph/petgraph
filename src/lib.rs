@@ -2,18 +2,14 @@
 //! **petgraph** is a graph data structure library.
 //!
 //! The most prominent type is [`Graph`](./graph/struct.Graph.html) which is
-//! a directed or undirected graph with arbitrary associated node and edge data.
+//! an adjacency list graph with undirected or directed edges and arbitrary
+//! associated data.
 //!
 //! Petgraph also provides [`GraphMap`](./graphmap/struct.GraphMap.html) which
-//! is an undirected hashmap-backed graph which only allows simple node identifiers
-//! (such as integers or references).
+//! is an hashmap-backed graph with undirected edges and only allows simple node
+//! identifiers (such as integers or references).
 
 extern crate fixedbitset;
-
-use std::cmp::Ordering;
-use std::hash::{self, Hash};
-use std::fmt;
-use std::ops::{Deref};
 
 pub use graph::Graph;
 pub use graphmap::GraphMap;
@@ -43,7 +39,7 @@ pub mod quickcheck;
 
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub enum EdgeDirection {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
@@ -52,8 +48,9 @@ pub enum EdgeDirection {
 }
 
 impl EdgeDirection {
+    /// Return the opposite `EdgeDirection`.
     #[inline]
-    fn opposite(&self) -> EdgeDirection {
+    pub fn opposite(&self) -> EdgeDirection {
         match *self {
             Outgoing => Incoming,
             Incoming => Outgoing,
@@ -85,118 +82,58 @@ impl EdgeType for Undirected {
 }
 
 
-/// A reference that is hashed and compared by its pointer value.
-///
-/// `Ptr` is used for certain configurations of `GraphMap`,
-/// in particular in the combination where the node type for
-/// `GraphMap` is something of type for example `Ptr(&Cell<T>)`,
-/// with the `Cell<T>` being `TypedArena` allocated.
-pub struct Ptr<'b, T: 'b>(pub &'b T);
-
-impl<'b, T> Copy for Ptr<'b, T> {}
-impl<'b, T> Clone for Ptr<'b, T>
-{
-    fn clone(&self) -> Self { *self }
-}
-
-fn ptr_eq<T>(a: *const T, b: *const T) -> bool {
-    a == b
-}
-
-impl<'b, T> PartialEq for Ptr<'b, T>
-{
-    /// Ptr compares by pointer equality, i.e if they point to the same value
-    fn eq(&self, other: &Ptr<'b, T>) -> bool {
-        ptr_eq(self.0, other.0)
-    }
-}
-
-impl<'b, T> PartialOrd for Ptr<'b, T>
-{
-    fn partial_cmp(&self, other: &Ptr<'b, T>) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<'b, T> Ord for Ptr<'b, T>
-{
-    /// Ptr is ordered by pointer value, i.e. an arbitrary but stable and total order.
-    fn cmp(&self, other: &Ptr<'b, T>) -> Ordering {
-        let a = self.0 as *const _;
-        let b = other.0 as *const _;
-        a.cmp(&b)
-    }
-}
-
-impl<'b, T> Deref for Ptr<'b, T> {
-    type Target = T;
-    fn deref<'a>(&'a self) -> &'a T {
-        self.0
-    }
-}
-
-impl<'b, T> Eq for Ptr<'b, T> {}
-
-impl<'b, T> Hash for Ptr<'b, T>
-{
-    fn hash<H: hash::Hasher>(&self, st: &mut H)
-    {
-        let ptr = (self.0) as *const T;
-        ptr.hash(st)
-    }
-}
-
-impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
 /// Convert an element like `(i, j)` or `(i, j, w)` into
 /// a triple of source, target, edge weight.
 ///
 /// For `Graph::from_edges` and `GraphMap::from_edges`.
-pub trait IntoWeightedEdge<Ix, E> {
-    fn into_weighted_edge(self) -> (Ix, Ix, E);
+pub trait IntoWeightedEdge<E> {
+    type NodeId;
+    fn into_weighted_edge(self) -> (Self::NodeId, Self::NodeId, E);
 }
 
-impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix)
+impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix)
     where E: Default
 {
+    type NodeId = Ix;
+
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (s, t) = self;
         (s, t, E::default())
     }
 }
 
-impl<Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, E)
+impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, E)
 {
+    type NodeId = Ix;
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         self
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for (Ix, Ix, &'a E)
+impl<'a, Ix, E> IntoWeightedEdge<E> for (Ix, Ix, &'a E)
     where E: Clone
 {
+    type NodeId = Ix;
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (a, b, c) = self;
         (a, b, c.clone())
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix)
+impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix)
     where Ix: Copy, E: Default
 {
+    type NodeId = Ix;
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (s, t) = *self;
         (s, t, E::default())
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<Ix, E> for &'a (Ix, Ix, E)
+impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix, E)
     where Ix: Copy, E: Clone
 {
+    type NodeId = Ix;
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         self.clone()
     }

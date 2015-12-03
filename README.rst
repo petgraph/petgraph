@@ -19,6 +19,34 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.2.0
+
+  - New Features
+
+    - Add Graph::neighbors().detach() to step edges without borrowing.
+      This is more general than, and replaces now deprecated
+      walk_edges_directed. (#39)
+    - Implement Default for Graph, GraphMap
+    - Add method EdgeDirection::opposite()
+
+  - Breaking changes
+
+    - Graph::neighbors() for undirected graphs and Graph::neighbors_undirected
+      for any graph now visit self loop edges once, not twice. (#31)
+    - Renamed Graph::without_edges to Graph::externals
+    - GraphMap::add_edge now returns ``Option<E>``
+    - Element type of ``GraphMap<N, E>::all_edges()`` changed to ``(N, N, &E)``
+
+  - Minor breaking changes
+
+    - IntoWeightedEdge changed a type parameter to associated type
+    - IndexType is now an unsafe trait
+    - Removed IndexType::{one, zero}, use method new instead.
+    - Removed MinScored
+    - Ptr moved to the graphmap module.
+    - Directed, Undirected are now void enums.
+    - Fields of graphmap::Edges are now private (#19)
+
 - 0.1.18
 
   - Fix bug on calling GraphMap::add_edge with existing edge (#35)
