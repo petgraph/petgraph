@@ -51,6 +51,29 @@ impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
         }
         gr
     }
+
+    // shrink the graph by splitting it in two by a very
+    // simple algorithm, just even and odd node indices
+    fn shrink(&self) -> Box<Iterator<Item=Self>> {
+        let self_ = self.clone();
+        Box::new((0..2).filter_map(move |x| {
+            let gr = self_.filter_map(|i, w| {
+                if i.index() % 2 == x {
+                    Some(w.clone())
+                } else {
+                    None
+                }
+            },
+            |_, w| Some(w.clone())
+            );
+            // make sure we shrink
+            if gr.node_count() < self_.node_count() {
+                Some(gr)
+            } else {
+                None
+            }
+        }))
+    }
 }
 
 /// `Arbitrary` for `GraphMap` creates a graph by selecting a node count
