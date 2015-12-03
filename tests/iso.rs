@@ -11,7 +11,13 @@ use petgraph::{
     EdgeType,
 };
 use petgraph::graph::{
-    NodeIndex,
+    node_index,
+    edge_index,
+};
+
+use petgraph::algo::{
+    is_isomorphic,
+    is_isomorphic_matching,
 };
 
 /// Petersen A and B are isomorphic
@@ -223,7 +229,7 @@ fn parse_graph<Ty: EdgeType = Directed>(s: &str) -> Graph<(), (), Ty>
             while col >= gr.node_count() || row >= gr.node_count() {
                 gr.add_node(());
             }
-            gr.update_edge(NodeIndex::new(row), NodeIndex::new(col), ());
+            gr.update_edge(node_index(row), node_index(col), ());
         }
     }
     gr
@@ -501,6 +507,48 @@ fn iso2()
     g1.add_edge(b1, d1, ());
     g1.add_edge(d1, e1, ());
     assert!(petgraph::algo::is_isomorphic(&g0, &g1));
+}
+
+#[test]
+fn iso_matching() {
+    let g0 = Graph::<(), _>::from_edges(&[
+        (0, 0, 1),
+        (0, 1, 2),
+        (0, 2, 3),
+        (1, 2, 4),
+    ]);
+
+    let mut g1 = g0.clone();
+    g1[edge_index(0)] = 0;
+    assert!(!is_isomorphic_matching(&g0, &g1, |x, y| x == y, |x, y| x == y));
+    let mut g2 = g0.clone();
+    g2[edge_index(1)] = 0;
+    assert!(!is_isomorphic_matching(&g0, &g2, |x, y| x == y, |x, y| x == y));
+}
+
+// isomorphism isn't correct for multigraphs.
+// Keep this testcase to document how
+#[should_panic]
+#[test]
+fn iso_multigraph_failure() {
+    let g0 = Graph::<(), ()>::from_edges(&[
+        (0, 0),
+        (0, 0),
+        (0, 1),
+        (1, 1),
+        (1, 1),
+        (1, 0),
+    ]);
+
+    let g1 = Graph::<(), ()>::from_edges(&[
+        (0, 0),
+        (0, 1),
+        (0, 1),
+        (1, 1),
+        (1, 0),
+        (1, 0),
+    ]);
+    assert!(!is_isomorphic(&g0, &g1));
 }
 
 

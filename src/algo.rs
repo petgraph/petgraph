@@ -28,7 +28,10 @@ use super::graph::{
     IndexType,
 };
 
-pub use super::isomorphism::is_isomorphic;
+pub use super::isomorphism::{
+    is_isomorphic,
+    is_isomorphic_matching,
+};
 pub use super::dijkstra::dijkstra;
 
 /// Return `true` if the input graph contains a cycle.
