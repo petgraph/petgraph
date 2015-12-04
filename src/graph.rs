@@ -336,6 +336,169 @@ fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T>
     }
 }
 
+pub enum Vector { }
+pub enum StableVector { }
+
+use self::private::PrivateBackend;
+pub trait Backend : private::PrivateBackend { }
+impl<T> Backend for T where T: private::PrivateBackend { }
+
+pub struct Graph2<N = (), E = (), Ty = Directed, Ix: IndexType = DefIndex, B = Vector>
+    where Graph2<N, E, Ty, Ix, B>: Backend,
+{
+    repr: <Graph2<N, E, Ty, Ix, B> as PrivateBackend>::Repr,
+}
+
+impl<N, E, Ty, Ix, B> Graph2<N, E, Ty, Ix, B>
+    where Ty: EdgeType,
+          Ix: IndexType,
+          Graph2<N, E, Ty, Ix, B>: Backend<N=N, Ix=Ix>,
+{
+    pub fn new() -> Self {
+        Graph2 {
+            repr: <<Graph2<N, E, Ty, Ix, B> as PrivateBackend>::Repr>::new(),
+        }
+    }
+    /// Return the current node and edge capacity of the graph.
+    pub fn capacity(&self) -> (usize, usize) {
+        self.repr.capacity()
+    }
+
+    /// Return the number of nodes (vertices) in the graph.
+    ///
+    /// Computes in **O(1)** time.
+    pub fn node_count(&self) -> usize {
+        self.repr.node_count()
+    }
+
+    /// Return the number of edges in the graph.
+    ///
+    /// Computes in **O(1)** time.
+    pub fn edge_count(&self) -> usize {
+        self.repr.edge_count()
+    }
+
+    pub fn is_directed(&self) -> bool { Ty::is_directed() }
+
+    /// Add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// **Panics** if the Graph is at the maximum number of nodes for its index
+    /// type.
+    pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
+        self.repr.add_node(weight)
+    }
+}
+
+mod private {
+    use EdgeType;
+    use super::{
+        IndexType,
+        DefIndex,
+        Node,
+        Edge,
+        NodeIndex,
+        EdgeIndex,
+        Graph2,
+        Vector,
+        Graph,
+        GraphIface,
+    };
+
+    pub trait PrivateBackend {
+        type Repr: GraphIface<N=Self::N, E=Self::E, Ty=Self::Ty, Ix=Self::Ix>;
+        type N;
+        type E;
+        type Ty;
+        type Ix;
+    }
+
+    impl<N, E, Ix, Ty> PrivateBackend for Graph2<N, E, Ty, Ix, Vector>
+        where Ix: IndexType,
+              Ty: EdgeType,
+    {
+        type Repr = Graph<N, E, Ty, Ix>;
+        type N = N;
+        type E = E;
+        type Ty = Ty;
+        type Ix = Ix;
+    }
+}
+
+trait GraphIface {
+    type N;
+    type E;
+    type Ty;
+    type Ix;
+    fn new() -> Self;
+
+    fn capacity(&self) -> (usize, usize);
+
+    fn node_count(&self) -> usize;
+
+    fn edge_count(&self) -> usize;
+
+    fn is_directed(&self) -> bool where Self::Ty: EdgeType { Self::Ty::is_directed() }
+
+    fn add_node(&mut self, weight: Self::N) -> NodeIndex<Self::Ix>;
+}
+
+impl<N, E, Ty, Ix> GraphIface for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type N = N;
+    type E = E;
+    type Ty = Ty;
+    type Ix = Ix;
+
+    fn new() -> Self {
+        Graph::with_capacity(0, 0)
+    }
+
+    /// Return the current node and edge capacity of the graph.
+    fn capacity(&self) -> (usize, usize) {
+        (self.nodes.capacity(), self.edges.capacity())
+    }
+
+    /// Return the number of nodes (vertices) in the graph.
+    ///
+    /// Computes in **O(1)** time.
+    fn node_count(&self) -> usize
+    {
+        self.nodes.len()
+    }
+
+    /// Return the number of edges in the graph.
+    ///
+    /// Computes in **O(1)** time.
+    fn edge_count(&self) -> usize
+    {
+        self.edges.len()
+    }
+
+    /// Add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// **Panics** if the Graph is at the maximum number of nodes for its index
+    /// type.
+    fn add_node(&mut self, weight: N) -> NodeIndex<Ix>
+    {
+        let node = Node{weight: weight, next: [EdgeIndex::end(), EdgeIndex::end()]};
+        let node_idx = NodeIndex::new(self.nodes.len());
+        // check for max capacity, except if we use usize
+        assert!(Ix::max().index() == !0 || NodeIndex::end() != node_idx);
+        self.nodes.push(node);
+        node_idx
+    }
+}
+
 impl<N, E> Graph<N, E, Directed>
 {
     /// Create a new `Graph` with directed edges.
@@ -1612,4 +1775,6 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
 
 #[path = "stable.rs"]
 pub mod stable;
+
+use self::stable::StableGraph;
 
