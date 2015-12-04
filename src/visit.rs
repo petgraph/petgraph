@@ -573,10 +573,10 @@ impl<N, VM> Topo<N, VM>
     /// Create a new **Topo**, using the graph's visitor map, and put all
     /// initial nodes in the to visit list.
     pub fn new<'a, G>(graph: &'a G) -> Self
-        where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
+        where G: Externals<'a> + Visitable<NodeId=N, Map=VM>,
     {
         let mut topo = Self::empty(graph);
-        topo.reset(graph);
+        topo.tovisit.extend(graph.externals(Incoming));
         topo
     }
 
