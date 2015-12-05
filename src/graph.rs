@@ -416,7 +416,7 @@ mod private {
         type N;
         type E;
         type Ty;
-        type Ix;
+        type Ix: IndexType;
     }
 
     impl<N, E, Ix, Ty> PrivateBackend for Graph2<N, E, Ty, Ix, Vector>
@@ -445,8 +445,9 @@ mod private {
 trait GraphIface {
     type N;
     type E;
+    type Ep;
     type Ty;
-    type Ix;
+    type Ix: IndexType;
     fn new() -> Self;
 
     fn capacity(&self) -> (usize, usize);
@@ -458,6 +459,12 @@ trait GraphIface {
     fn is_directed(&self) -> bool where Self::Ty: EdgeType { Self::Ty::is_directed() }
 
     fn add_node(&mut self, weight: Self::N) -> NodeIndex<Self::Ix>;
+
+    fn neighbors(&self, a: NodeIndex<Self::Ix>) -> Neighbors<Self::Ep, Self::Ix>;
+    fn neighbors_directed(&self, a: NodeIndex<Self::Ix>, dir: EdgeDirection)
+        -> Neighbors<Self::Ep, Self::Ix>;
+    fn neighbors_undirected(&self, a: NodeIndex<Self::Ix>)
+        -> Neighbors<Self::Ep, Self::Ix>;
 }
 
 impl<N, E, Ty, Ix> GraphIface for Graph<N, E, Ty, Ix>
@@ -466,6 +473,7 @@ impl<N, E, Ty, Ix> GraphIface for Graph<N, E, Ty, Ix>
 {
     type N = N;
     type E = E;
+    type Ep = E;
     type Ty = Ty;
     type Ix = Ix;
 
@@ -510,6 +518,20 @@ impl<N, E, Ty, Ix> GraphIface for Graph<N, E, Ty, Ix>
         assert!(Ix::max().index() == !0 || NodeIndex::end() != node_idx);
         self.nodes.push(node);
         node_idx
+    }
+    fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
+        self.neighbors(a)
+    }
+
+    fn neighbors_directed(&self, a: NodeIndex<Self::Ix>, dir: EdgeDirection)
+        -> Neighbors<Self::Ep, Self::Ix>
+    {
+        self.neighbors_directed(a, dir)
+    }
+    fn neighbors_undirected(&self, a: NodeIndex<Self::Ix>)
+        -> Neighbors<Self::Ep, Self::Ix>
+    {
+        self.neighbors_undirected(a)
     }
 }
 
@@ -564,6 +586,7 @@ impl<N, E, Ty, Ix> GraphIface for StableGraph<N, E, Ty, Ix>
 {
     type N = N;
     type E = E;
+    type Ep = Option<E>;
     type Ty = Ty;
     type Ix = Ix;
 
@@ -614,6 +637,36 @@ impl<N, E, Ty, Ix> GraphIface for StableGraph<N, E, Ty, Ix>
         };
         self.node_count += 1;
         index
+    }
+
+    fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<Option<E>, Ix> {
+        self.neighbors_directed(a, Outgoing)
+    }
+
+    fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection)
+        -> Neighbors<Option<E>, Ix>
+    {
+        let mut iter = self.neighbors_undirected(a);
+        if self.is_directed() {
+            let k = dir as usize;
+            iter.iter.next[1 - k] = EdgeIndex::end();
+            iter.iter.skip_start = NodeIndex::end();
+        }
+        iter
+    }
+
+    fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<Option<E>, Ix>
+    {
+        Neighbors {
+            iter: Edges {
+                skip_start: a,
+                edges: &self.g.edges,
+                next: match self.g.nodes.get(a.index()) {
+                    None => [EdgeIndex::end(), EdgeIndex::end()],
+                    Some(n) => n.next,
+                }
+            }
+        }
     }
 }
 
