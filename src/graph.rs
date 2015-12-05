@@ -353,11 +353,11 @@ pub struct Graph2<N = (), E = (), Ty = Directed, Ix: IndexType = DefIndex, B = V
 impl<N, E, Ty, Ix, B> Graph2<N, E, Ty, Ix, B>
     where Ty: EdgeType,
           Ix: IndexType,
-          Graph2<N, E, Ty, Ix, B>: Backend<N=N, Ix=Ix>,
+          Graph2<N, E, Ty, Ix, B>: Backend<N=N, E=E, Ix=Ix>,
 {
     pub fn new() -> Self {
         Graph2 {
-            repr: <<Graph2<N, E, Ty, Ix, B> as PrivateBackend>::Repr>::new(),
+            repr: <<Self as PrivateBackend>::Repr>::new(),
         }
     }
     /// Return the current node and edge capacity of the graph.
@@ -392,6 +392,23 @@ impl<N, E, Ty, Ix, B> Graph2<N, E, Ty, Ix, B>
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         self.repr.add_node(weight)
     }
+
+    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<
+        <Self as PrivateBackend>::Ep, Ix> {
+        self.repr.neighbors(a)
+
+    }
+
+    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, d: EdgeDirection)
+        -> Neighbors<<Self as PrivateBackend>::Ep, Ix> {
+        self.repr.neighbors_directed(a, d)
+    }
+
+    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>)
+        -> Neighbors<<Self as PrivateBackend>::Ep, Ix> {
+        self.repr.neighbors_undirected(a)
+
+    }
 }
 
 mod private {
@@ -412,9 +429,10 @@ mod private {
     };
 
     pub trait PrivateBackend {
-        type Repr: GraphIface<N=Self::N, E=Self::E, Ty=Self::Ty, Ix=Self::Ix>;
+        type Repr: GraphIface<N=Self::N, E=Self::E, Ep=Self::Ep, Ty=Self::Ty, Ix=Self::Ix>;
         type N;
         type E;
+        type Ep;
         type Ty;
         type Ix: IndexType;
     }
@@ -426,6 +444,7 @@ mod private {
         type Repr = Graph<N, E, Ty, Ix>;
         type N = N;
         type E = E;
+        type Ep = E;
         type Ty = Ty;
         type Ix = Ix;
     }
@@ -437,6 +456,7 @@ mod private {
         type Repr = StableGraph<N, E, Ty, Ix>;
         type N = N;
         type E = E;
+        type Ep = Option<E>;
         type Ty = Ty;
         type Ix = Ix;
     }
