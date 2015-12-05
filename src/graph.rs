@@ -4,6 +4,7 @@ use std::cmp;
 use std::fmt;
 use std::iter;
 use std::marker::PhantomData;
+use std::mem::replace;
 use std::ops::{Index, IndexMut, Range};
 use std::slice;
 
@@ -404,8 +405,10 @@ mod private {
         EdgeIndex,
         Graph2,
         Vector,
+        StableVector,
         Graph,
         GraphIface,
+        StableGraph,
     };
 
     pub trait PrivateBackend {
@@ -421,6 +424,17 @@ mod private {
               Ty: EdgeType,
     {
         type Repr = Graph<N, E, Ty, Ix>;
+        type N = N;
+        type E = E;
+        type Ty = Ty;
+        type Ix = Ix;
+    }
+
+    impl<N, E, Ix, Ty> PrivateBackend for Graph2<N, E, Ty, Ix, StableVector>
+        where Ix: IndexType,
+              Ty: EdgeType,
+    {
+        type Repr = StableGraph<N, E, Ty, Ix>;
         type N = N;
         type E = E;
         type Ty = Ty;
@@ -496,6 +510,110 @@ impl<N, E, Ty, Ix> GraphIface for Graph<N, E, Ty, Ix>
         assert!(Ix::max().index() == !0 || NodeIndex::end() != node_idx);
         self.nodes.push(node);
         node_idx
+    }
+}
+
+pub struct StableGraph<N, E, Ty = Directed, Ix = DefIndex>
+    where Ix: IndexType
+{
+    g: Graph<Option<N>, Option<E>, Ty, Ix>,
+    node_count: usize,
+    edge_count: usize,
+    free_node: NodeIndex<Ix>,
+    free_edge: EdgeIndex<Ix>,
+}
+
+impl<N, E, Ty, Ix> fmt::Debug for StableGraph<N, E, Ty, Ix> where
+    N: fmt::Debug, E: fmt::Debug, Ty: EdgeType, Ix: IndexType
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(writeln!(f, "{:?}", self.g));
+        try!(writeln!(f, "free_node={:?}", self.free_node));
+        try!(writeln!(f, "free_edge={:?}", self.free_edge));
+        try!(writeln!(f, "node_count={:?}", self.node_count));
+        try!(writeln!(f, "edge_count={:?}", self.edge_count));
+        Ok(())
+    }
+}
+
+impl<N, E> StableGraph<N, E, Directed> {
+    /// Create a new `StableGraph` with directed edges.
+    pub fn new() -> Self {
+        Self::with_capacity(0, 0)
+    }
+}
+
+impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    pub fn with_capacity(nodes: usize, edges: usize) -> Self {
+        StableGraph {
+            g: Graph::with_capacity(nodes, edges),
+            node_count: 0,
+            edge_count: 0,
+            free_node: NodeIndex::end(),
+            free_edge: EdgeIndex::end(),
+        }
+    }
+}
+
+impl<N, E, Ty, Ix> GraphIface for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type N = N;
+    type E = E;
+    type Ty = Ty;
+    type Ix = Ix;
+
+    fn new() -> Self {
+        StableGraph::with_capacity(0, 0)
+    }
+
+    /// Return the current node and edge capacity of the graph.
+    fn capacity(&self) -> (usize, usize) {
+        self.g.capacity()
+    }
+
+    /*
+    fn clear(&mut self) {
+        self.node_count = 0;
+        self.edge_count = 0;
+        self.free_node = NodeIndex::end();
+        self.free_edge = EdgeIndex::end();
+        self.g.clear();
+    }
+    */
+
+    fn node_count(&self) -> usize {
+        self.node_count
+    }
+
+    fn edge_count(&self) -> usize {
+        self.edge_count
+    }
+
+    /// Whether the graph has directed edges or not.
+    #[inline]
+    fn is_directed(&self) -> bool {
+        Ty::is_directed()
+    }
+
+    fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
+        let index = if self.free_node != NodeIndex::end() {
+            let node_idx = self.free_node;
+            let node_slot = &mut self.g.nodes[node_idx.index()];
+            let _old = replace(&mut node_slot.weight, Some(weight));
+            debug_assert!(_old.is_none());
+            self.free_node = node_slot.next[0].into_node();
+            node_slot.next[0] = EdgeIndex::end();
+            node_idx
+        } else {
+            self.g.add_node(Some(weight))
+        };
+        self.node_count += 1;
+        index
     }
 }
 
@@ -1775,6 +1893,4 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
 
 #[path = "stable.rs"]
 pub mod stable;
-
-use self::stable::StableGraph;
 
