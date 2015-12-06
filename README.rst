@@ -19,6 +19,10 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.2.1
+
+  - Add algorithm ``is_isomorphic_matching``
+
 - 0.2.0
 
   - New Features
