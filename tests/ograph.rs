@@ -339,6 +339,7 @@ fn dijk() {
     assert_eq!(scores[&c], 9);
 }
 
+#[cfg(feature = "unstable")]
 #[test]
 fn test_generate_undirected() {
     for size in 0..4 {
@@ -354,6 +355,7 @@ fn test_generate_undirected() {
     }
 }
 
+#[cfg(feature = "unstable")]
 #[test]
 fn test_generate_directed() {
     // Number of DAG out of all graphs (all permutations) per node size
@@ -381,6 +383,8 @@ fn test_generate_directed() {
         assert_eq!(n, 1 << nedges);
     }
 }
+
+#[cfg(feature = "unstable")]
 #[test]
 fn test_generate_dag() {
     for size in 1..5 {

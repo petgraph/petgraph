@@ -1,3 +1,7 @@
+//! Graph generation. ***Unstable.***
+//!
+//! `feature = "unstable"`
+//!
 
 use {Graph, Directed, EdgeType};
 use graph::NodeIndex;
@@ -13,6 +17,8 @@ use graph::NodeIndex;
 // For a graph of n=3 nodes we have (n - 1) * n / 2 = 3 possible edges.
 
 /// A graph generator of “all” graphs of a particular size.
+///
+/// ***Unstable: API may change at any time.*** Depends on `feature = "unstable"`.
 pub struct Generator<Ty> {
     acyclic: bool,
     selfloops: bool,

@@ -3,7 +3,7 @@ DOCCRATES = petgraph fixedbitset
 # deps to delete the generated docs
 RMDOCS =
 
-FEATURES =
+FEATURES = unstable
 
 VERSIONS = $(patsubst %,target/VERS/%,$(DOCCRATES))
 

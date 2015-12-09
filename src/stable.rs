@@ -1,4 +1,6 @@
-//! `StableGraph` keeps indices stable across removals.
+//! `StableGraph` keeps indices stable across removals.  ***Unstable.***
+//!
+//! `feature = "unstable"`
 
 use std::fmt;
 use std::mem::replace;
@@ -24,6 +26,8 @@ use super::{
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
+///
+/// ***Unstable: API may change at any time.*** Depends on `feature = "unstable"`.
 ///
 /// The graph **does not invalidate** any unrelated node or edge indices when
 /// items are removed.
@@ -133,7 +137,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
             let node_slot = &mut self.g.nodes[node_idx.index()];
             let _old = replace(&mut node_slot.weight, Some(weight));
             debug_assert!(_old.is_none());
-            self.free_node = node_slot.next[0].into_node();
+            self.free_node = node_slot.next[0]._into_node();
             node_slot.next[0] = EdgeIndex::end();
             node_idx
         } else {
@@ -180,7 +184,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         let node_slot = &mut self.g.nodes[a.index()];
         //let node_weight = replace(&mut self.g.nodes[a.index()].weight, Entry::Empty(self.free_node));
         //self.g.nodes[a.index()].next = [EdgeIndex::end(), EdgeIndex::end()];
-        node_slot.next = [self.free_node.into_edge(), EdgeIndex::end()];
+        node_slot.next = [self.free_node._into_edge(), EdgeIndex::end()];
         self.free_node = a;
         self.node_count -= 1;
 

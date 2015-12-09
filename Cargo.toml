@@ -33,3 +33,5 @@ rand = "0.3"
 [features]
 
 test = []
+# For unstable features
+unstable = []
