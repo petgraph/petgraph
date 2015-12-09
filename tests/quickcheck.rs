@@ -13,6 +13,7 @@ use petgraph::algo::{
     is_isomorphic_matching,
 };
 use petgraph::graph::{IndexType, node_index, edge_index};
+#[cfg(feature = "unstable")]
 use petgraph::graph::stable::StableGraph;
 
 fn prop(g: Graph<(), u32>) -> bool {
@@ -258,6 +259,7 @@ fn graph_remove_edge() {
     quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>, _, _) -> bool);
 }
 
+#[cfg(feature = "unstable")]
 #[test]
 fn stable_graph_remove_edge() {
     fn prop<Ty: EdgeType>(mut g: StableGraph<(), (), Ty>, a: u8, b: u8) -> bool {
@@ -283,6 +285,7 @@ fn stable_graph_remove_edge() {
     quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>, _, _) -> bool);
 }
 
+#[cfg(feature = "unstable")]
 #[test]
 fn stable_graph_add_remove_edges() {
     fn prop<Ty: EdgeType>(mut g: StableGraph<(), (), Ty>, edges: Vec<(u8, u8)>) -> bool {
