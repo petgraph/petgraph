@@ -1,6 +1,6 @@
 //! ***Unstable.*** Graph generation.
 //!
-//! ***Unstable: API may change at any time.*** Depends on `feature = "unstable"`.
+//! ***Unstable: API may change at any time.*** Depends on `feature = "generate"`.
 //!
 
 use {Graph, Directed, EdgeType};
@@ -18,7 +18,7 @@ use graph::NodeIndex;
 
 /// A graph generator of “all” graphs of a particular size.
 ///
-/// ***Unstable: API may change at any time.*** Depends on `feature = "unstable"`.
+/// ***Unstable: API may change at any time.*** Depends on `feature = "generate"`.
 pub struct Generator<Ty> {
     acyclic: bool,
     selfloops: bool,

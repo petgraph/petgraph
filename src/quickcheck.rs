@@ -10,6 +10,7 @@ use graph::{
     IndexType,
     node_index,
 };
+#[cfg(feature = "stable_graph")]
 use graph::stable::StableGraph;
 
 use graphmap::{
@@ -78,6 +79,7 @@ impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "stable_graph")]
 /// `Arbitrary` for `StableGraph` creates a graph by selecting a node count
 /// and a probability for each possible edge to exist.
 ///

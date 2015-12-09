@@ -1,4 +1,4 @@
-#![cfg(feature = "unstable")]
+#![cfg(feature = "stable_graph")]
 
 extern crate petgraph;
 

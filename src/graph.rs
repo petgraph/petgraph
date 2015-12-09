@@ -1610,7 +1610,7 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
     }
 }
 
-#[cfg(feature = "unstable")]
+#[cfg(feature = "stable_graph")]
 #[path = "stable.rs"]
 pub mod stable;
 

@@ -1,6 +1,6 @@
 //! ***Unstable.*** `StableGraph` keeps indices stable across removals.
 //!
-//! ***Unstable: API may change at any time.*** Depends on `feature = "unstable"`.
+//! ***Unstable: API may change at any time.*** Depends on `feature = "stable_graph"`.
 //!
 
 use std::fmt;
@@ -32,7 +32,7 @@ use super::{
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
 ///
-/// ***Unstable: API may change at any time.*** Depends on `feature = "unstable"`.
+/// ***Unstable: API may change at any time.*** Depends on `feature = "stable_graph"`.
 ///
 /// The graph **does not invalidate** any unrelated node or edge indices when
 /// items are removed.
