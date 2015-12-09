@@ -356,25 +356,6 @@ impl<N, E> Graph<N, E, Undirected>
     }
 }
 
-pub trait Container<N, E> {
-    type Nodes;
-    type Edges;
-}
-
-pub enum Vector { }
-pub enum VectorFreeList { }
-
-impl<A, B> Container<A, B> for Vector {
-    type Nodes = Vec<A>;
-    type Edges = Vec<B>;
-}
-
-impl<A, B> Container<A, B> for VectorFreeList {
-    type Nodes = Vec<Option<A>>;
-    type Edges = Vec<Option<B>>;
-}
-
-
 impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
