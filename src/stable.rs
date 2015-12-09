@@ -180,6 +180,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         node_weight
     }
 
+    pub fn contains_node(&self, a: NodeIndex<Ix>) -> bool {
+        self.g.nodes.get(a.index()).map_or(false, |no| no.weight.is_some())
+    }
+
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E)
         -> EdgeIndex<Ix>
     {
