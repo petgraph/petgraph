@@ -35,8 +35,8 @@ use super::{
 /// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
-/// The graph uses **O(|V| + |E|)** space, and allows fast node and edge insert,
-/// efficient graph search and graph algorithms.
+/// The graph uses **O(|V| + |E|)** space, and allows fast node and edge insert
+/// and efficient graph search.
 ///
 /// It implements **O(e')** edge lookup and edge and node removals, where **e'**
 /// is some local measure of edge count.
