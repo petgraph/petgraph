@@ -90,7 +90,7 @@ impl<Ix: IndexType = DefIndex> NodeIndex<Ix>
         NodeIndex(IndexType::max())
     }
 
-    fn into_edge(self) -> EdgeIndex<Ix> {
+    fn _into_edge(self) -> EdgeIndex<Ix> {
         EdgeIndex(self.0)
     }
 }
@@ -129,7 +129,7 @@ impl<Ix: IndexType = DefIndex> EdgeIndex<Ix>
         EdgeIndex(IndexType::max())
     }
 
-    fn into_node(self) -> NodeIndex<Ix> {
+    fn _into_node(self) -> NodeIndex<Ix> {
         NodeIndex(self.0)
     }
 }
@@ -1610,6 +1610,7 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
     }
 }
 
+#[cfg(feature = "unstable")]
 #[path = "stable.rs"]
 pub mod stable;
 

@@ -22,6 +22,7 @@ use super::{
 use graph::{
     IndexType,
 };
+#[cfg(feature = "unstable")]
 use graph::stable::StableGraph;
 
 /// Base trait for graphs that defines the node identifier.
@@ -48,6 +49,7 @@ impl<'a, N, E: 'a, Ty, Ix> NeighborIter<'a> for Graph<N, E, Ty, Ix> where
     }
 }
 
+#[cfg(feature = "unstable")]
 impl<'a, N, E: 'a, Ty, Ix> NeighborIter<'a> for StableGraph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
@@ -121,6 +123,7 @@ impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for Graph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "unstable")]
 impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
@@ -249,12 +252,14 @@ impl<N, E, Ty, Ix> Revisitable for Graph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "unstable")]
 impl<N, E, Ty, Ix> Graphlike for StableGraph<N, E, Ty, Ix> where
     Ix: IndexType,
 {
     type NodeId = graph::NodeIndex<Ix>;
 }
 
+#[cfg(feature = "unstable")]
 impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix> where
     Ty: EdgeType,
     Ix: IndexType,
@@ -263,6 +268,7 @@ impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix> where
     fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
 }
 
+#[cfg(feature = "unstable")]
 impl<N, E, Ty, Ix> Revisitable for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
