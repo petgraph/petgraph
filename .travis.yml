@@ -3,13 +3,14 @@ sudo: false
 matrix:
   include:
     - rust: stable
+    - rust: stable
       env:
-      - FEATURES='quickcheck'
+      - FEATURES='unstable quickcheck'
     - rust: beta
     - rust: nightly
     - rust: nightly
       env:
-       - FEATURES='test quickcheck'
+       - FEATURES='test unstable quickcheck'
        - BENCH=1
 script:
   - |
