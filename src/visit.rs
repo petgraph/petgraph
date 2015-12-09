@@ -21,8 +21,8 @@ use super::{
 
 use graph::{
     IndexType,
-    StableGraph,
 };
+use graph::stable::StableGraph;
 
 /// Base trait for graphs that defines the node identifier.
 pub trait Graphlike {
