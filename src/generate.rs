@@ -1,6 +1,6 @@
-//! Graph generation. ***Unstable.***
+//! ***Unstable.*** Graph generation.
 //!
-//! `feature = "unstable"`
+//! ***Unstable: API may change at any time.*** Depends on `feature = "unstable"`.
 //!
 
 use {Graph, Directed, EdgeType};
