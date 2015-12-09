@@ -1867,10 +1867,26 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Access the node weight for `a`.
+    pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N> {
+        match self.g.nodes.get_mut(a.index()) {
+            Some(no) => no.weight.as_mut(),
+            None => None,
+        }
+    }
+
     /// Access the edge weight for `e`.
     pub fn edge_weight(&self, e: EdgeIndex<Ix>) -> Option<&E> {
         match self.g.edges.get(e.index()) {
             Some(ed) => ed.weight.as_ref(),
+            None => None,
+        }
+    }
+
+    /// Access the edge weight for `a`.
+    pub fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E> {
+        match self.g.edges.get_mut(e.index()) {
+            Some(ed) => ed.weight.as_mut(),
             None => None,
         }
     }
@@ -1902,6 +1918,57 @@ impl<N, E, Ty, Ix: IndexType> Clone for StableGraph<N, E, Ty, Ix>
             free_node: self.free_node,
             free_edge: self.free_edge,
         }
+    }
+}
+
+/// Index the `StableGraph` by `NodeIndex` to access node weights.
+///
+/// **Panics** if the node doesn't exist.
+impl<N, E, Ty, Ix> Index<NodeIndex<Ix>> for StableGraph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Output = N;
+    fn index(&self, index: NodeIndex<Ix>) -> &N {
+        self.node_weight(index).unwrap()
+    }
+}
+
+/// Index the `StableGraph` by `NodeIndex` to access node weights.
+///
+/// **Panics** if the node doesn't exist.
+impl<N, E, Ty, Ix> IndexMut<NodeIndex<Ix>> for StableGraph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn index_mut(&mut self, index: NodeIndex<Ix>) -> &mut N {
+        self.node_weight_mut(index).unwrap()
+    }
+
+}
+
+/// Index the `StableGraph` by `EdgeIndex` to access edge weights.
+///
+/// **Panics** if the edge doesn't exist.
+impl<N, E, Ty, Ix> Index<EdgeIndex<Ix>> for StableGraph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Output = E;
+    fn index(&self, index: EdgeIndex<Ix>) -> &E {
+        self.edge_weight(index).unwrap()
+    }
+}
+
+/// Index the `StableGraph` by `EdgeIndex` to access edge weights.
+///
+/// **Panics** if the edge doesn't exist.
+impl<N, E, Ty, Ix> IndexMut<EdgeIndex<Ix>> for StableGraph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn index_mut(&mut self, index: EdgeIndex<Ix>) -> &mut E {
+        self.edge_weight_mut(index).unwrap()
     }
 }
 
