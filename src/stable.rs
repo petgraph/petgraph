@@ -7,6 +7,8 @@ use std::ops::{Index, IndexMut};
 use {
     EdgeType,
     Directed,
+    Outgoing,
+    EdgeDirection,
 };
 use super::{
     DefIndex,
@@ -285,6 +287,23 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
     }
 
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
+        self.neighbors_directed(a, Outgoing)
+    }
+
+    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection)
+        -> Neighbors<E, Ix>
+    {
+        let mut iter = self.neighbors_undirected(a);
+        if self.is_directed() {
+            let k = dir as usize;
+            iter.next[1 - k] = EdgeIndex::end();
+            iter.skip_start = NodeIndex::end();
+        }
+        iter
+    }
+
+    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
+    {
         Neighbors {
             skip_start: a,
             edges: &self.g.edges,
