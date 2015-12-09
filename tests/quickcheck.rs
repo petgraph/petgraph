@@ -284,6 +284,39 @@ fn stable_graph_remove_edge() {
 }
 
 #[test]
+fn stable_graph_add_remove_edges() {
+    fn prop<Ty: EdgeType>(mut g: StableGraph<(), (), Ty>, edges: Vec<(u8, u8)>) -> bool {
+        for &(a, b) in &edges {
+            let a = node_index(a as usize);
+            let b = node_index(b as usize);
+            let edge = g.find_edge(a, b);
+
+            if edge.is_none() && g.contains_node(a) && g.contains_node(b) {
+                let _index = g.add_edge(a, b, ());
+                continue;
+            }
+
+            if !g.is_directed() {
+                assert_eq!(edge.is_some(), g.find_edge(b, a).is_some());
+            }
+            if let Some(ex) = edge {
+                assert!(g.remove_edge(ex).is_some());
+            }
+            //assert_graph_consistent(&g);
+            assert!(g.find_edge(a, b).is_none(), "failed to remove edge {:?} from graph {:?}", (a, b), g);
+            assert!(g.neighbors(a).find(|x| *x == b).is_none());
+            if !g.is_directed() {
+                assert!(g.find_edge(b, a).is_none());
+                assert!(g.neighbors(b).find(|x| *x == a).is_none());
+            }
+        }
+        true
+    }
+    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Undirected>, _) -> bool);
+    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>, _) -> bool);
+}
+
+#[test]
 fn graphmap_remove() {
     fn prop(mut g: GraphMap<i8, ()>, a: i8, b: i8) -> bool {
         let contains = g.contains_edge(a, b);
