@@ -286,6 +286,19 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Lookup an edge from `a` to `b`.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to `a` (and `b`, if the graph edges are undirected).
+    pub fn find_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<EdgeIndex<Ix>>
+    {
+        let index = self.g.find_edge(a, b);
+        if let Some(i) = index {
+            debug_assert!(self.g.edges[i.index()].weight.is_some());
+        }
+        index
+    }
+
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
         self.neighbors_directed(a, Outgoing)
     }
