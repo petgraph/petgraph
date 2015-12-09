@@ -275,6 +275,7 @@ pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefIndex> {
     ty: PhantomData<Ty>,
 }
 
+/// The resulting cloned graph has the same graph indices as `self`.
 impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
     where N: Clone, E: Clone,
 {
@@ -1707,6 +1708,11 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Return the current node and edge capacity of the graph.
+    pub fn capacity(&self) -> (usize, usize) {
+        self.g.capacity()
+    }
+
     pub fn clear(&mut self) {
         self.node_count = 0;
         self.edge_count = 0;
@@ -1881,6 +1887,21 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
 
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<Option<E>, Ix> {
         self.g.neighbors(a)
+    }
+}
+
+/// The resulting cloned graph has the same graph indices as `self`.
+impl<N, E, Ty, Ix: IndexType> Clone for StableGraph<N, E, Ty, Ix>
+    where N: Clone, E: Clone,
+{
+    fn clone(&self) -> Self {
+        StableGraph {
+            g: self.g.clone(),
+            node_count: self.node_count,
+            edge_count: self.edge_count,
+            free_node: self.free_node,
+            free_edge: self.free_edge,
+        }
     }
 }
 
