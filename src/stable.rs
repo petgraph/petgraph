@@ -1,6 +1,7 @@
-//! `StableGraph` keeps indices stable across removals.  ***Unstable.***
+//! ***Unstable.*** `StableGraph` keeps indices stable across removals.
 //!
-//! `feature = "unstable"`
+//! ***Unstable: API may change at any time.*** Depends on `feature = "unstable"`.
+//!
 
 use std::fmt;
 use std::mem::replace;
