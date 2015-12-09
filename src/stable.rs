@@ -95,6 +95,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
+    /// Create a new `StableGraph` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         StableGraph {
             g: Graph::with_capacity(nodes, edges),
@@ -110,6 +111,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         self.g.capacity()
     }
 
+    /// Remove all nodes and edges
     pub fn clear(&mut self) {
         self.node_count = 0;
         self.edge_count = 0;
@@ -118,10 +120,16 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         self.g.clear();
     }
 
+    /// Return the number of nodes (vertices) in the graph.
+    ///
+    /// Computes in **O(1)** time.
     pub fn node_count(&self) -> usize {
         self.node_count
     }
 
+    /// Return the number of edges in the graph.
+    ///
+    /// Computes in **O(1)** time.
     pub fn edge_count(&self) -> usize {
         self.edge_count
     }
@@ -132,6 +140,14 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         Ty::is_directed()
     }
 
+    /// Add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// **Panics** if the Graph is at the maximum number of nodes for its index
+    /// type.
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         let index = if self.free_node != NodeIndex::end() {
             let node_idx = self.free_node;
@@ -196,6 +212,18 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         self.g.nodes.get(a.index()).map_or(false, |no| no.weight.is_some())
     }
 
+    /// Add an edge from `a` to `b` to the graph, with its associated
+    /// data `weight`.
+    ///
+    /// Return the index of the new edge.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// **Panics** if any of the nodes don't exist.<br>
+    /// **Panics** if the Graph is at the maximum number of edges for its index
+    /// type.
+    ///
+    /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E)
         -> EdgeIndex<Ix>
     {
@@ -260,7 +288,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         edge.weight.take()
     }
 
-    /// Access the node weight for `a`.
+    /// Access the weight for node `a`.
+    ///
+    /// Also available with indexing syntax: `&graph[a]`.
     pub fn node_weight(&self, a: NodeIndex<Ix>) -> Option<&N> {
         match self.g.nodes.get(a.index()) {
             Some(no) => no.weight.as_ref(),
@@ -268,7 +298,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         }
     }
 
-    /// Access the node weight for `a`.
+    /// Access the weight for node `a`, mutably.
+    ///
+    /// Also available with indexing syntax: `&mut graph[a]`.
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N> {
         match self.g.nodes.get_mut(a.index()) {
             Some(no) => no.weight.as_mut(),
@@ -276,7 +308,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         }
     }
 
-    /// Access the edge weight for `e`.
+    /// Access the weight for edge `e`.
+    ///
+    /// Also available with indexing syntax: `&graph[e]`.
     pub fn edge_weight(&self, e: EdgeIndex<Ix>) -> Option<&E> {
         match self.g.edges.get(e.index()) {
             Some(ed) => ed.weight.as_ref(),
@@ -284,7 +318,9 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         }
     }
 
-    /// Access the edge weight for `a`.
+    /// Access the weight for edge `e`, mutably
+    ///
+    /// Also available with indexing syntax: `&mut graph[e]`.
     pub fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E> {
         match self.g.edges.get_mut(e.index()) {
             Some(ed) => ed.weight.as_mut(),
@@ -315,10 +351,37 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         index
     }
 
+    /// Return an iterator of all nodes with an edge starting from `a`.
+    ///
+    /// - `Undirected`: All edges from or to `a`.
+    /// - `Directed`: Outgoing edges from `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is `NodeIndex<Ix>`.
+    ///
+    /// Use [`.neighbors(a).detach()`][1] to get a neighbor walker that does
+    /// not borrow from the graph.
+    ///
+    /// [1]: struct.Neighbors.html#method.detach
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
         self.neighbors_directed(a, Outgoing)
     }
 
+    /// Return an iterator of all neighbors that have an edge between them and `a`,
+    /// in the specified direction.
+    /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
+    ///
+    /// - `Undirected`: All edges from or to `a`.
+    /// - `Directed`, `Outgoing`: All edges from `a`.
+    /// - `Directed`, `Incoming`: All edges to `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is `NodeIndex<Ix>`.
+    ///
+    /// Use [`.neighbors_directed(a, dir).detach()`][1] to get a neighbor walker that does
+    /// not borrow from the graph.
+    ///
+    /// [1]: struct.Neighbors.html#method.detach
     pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection)
         -> Neighbors<E, Ix>
     {
@@ -331,6 +394,19 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         iter
     }
 
+    /// Return an iterator of all neighbors that have an edge between them and `a`,
+    /// in either direction.
+    /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
+    ///
+    /// - `Undirected` and `Directed`: All edges from or to `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is `NodeIndex<Ix>`.
+    ///
+    /// Use [`.neighbors_undirected(a).detach()`][1] to get a neighbor walker that does
+    /// not borrow from the graph.
+    ///
+    /// [1]: struct.Neighbors.html#method.detach
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix>
     {
         Neighbors {
