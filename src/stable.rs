@@ -4,8 +4,10 @@
 //!
 
 use std::fmt;
+use std::iter;
 use std::mem::replace;
 use std::ops::{Index, IndexMut};
+use std::slice;
 
 use {
     EdgeType,
@@ -20,7 +22,9 @@ use super::{
     Graph,
     index_twice,
     IndexType,
+    Node,
     NodeIndex,
+    node_index,
     DIRECTIONS,
     Pair,
 };
@@ -305,6 +309,13 @@ impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
         match self.g.nodes.get_mut(a.index()) {
             Some(no) => no.weight.as_mut(),
             None => None,
+        }
+    }
+
+    /// Return an iterator over the node indices of the graph
+    pub fn node_indices(&self) -> NodeIndices<N, Ix> {
+        NodeIndices {
+            iter: self.g.nodes.iter().enumerate(),
         }
     }
 
@@ -618,13 +629,40 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
     }
 }
 
+/// Iterator over the node indices of a graph.
+pub struct NodeIndices<'a, N: 'a, Ix: IndexType = DefIndex> {
+    iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
+}
+
+impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
+    type Item = NodeIndex<Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.by_ref().filter_map(|(i, node)| {
+            if node.weight.is_some() {
+                Some(node_index(i))
+            } else { None }
+        }).next()
+    }
+}
+
+impl<'a, N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'a, N, Ix> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.by_ref().filter_map(|(i, node)| {
+            if node.weight.is_some() {
+                Some(node_index(i))
+            } else { None }
+        }).next_back()
+    }
+}
+
 #[test]
 fn stable_graph() {
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
     let a = gr.add_node(0);
     let b = gr.add_node(1);
     let c = gr.add_node(2);
-    let ed = gr.add_edge(a, b, 1);
+    let _ed = gr.add_edge(a, b, 1);
     println!("{:?}", gr);
     gr.remove_node(b);
     println!("{:?}", gr);
