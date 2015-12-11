@@ -1208,6 +1208,14 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
     }
 }
 
+impl<'a, E, Ix> Clone for Neighbors<'a, E, Ix>
+    where Ix: IndexType,
+{
+    fn clone(&self) -> Self {
+        Neighbors { iter: self.iter.clone() }
+    }
+}
+
 impl<'a, E, Ix> Neighbors<'a, E, Ix>
     where Ix: IndexType,
 {
@@ -1304,6 +1312,18 @@ impl<'a, E, Ix> Iterator for Edges<'a, E, Ix> where
             }
         }
         None
+    }
+}
+
+impl<'a, E, Ix> Clone for Edges<'a, E, Ix>
+    where Ix: IndexType
+{
+    fn clone(&self) -> Self {
+        Edges {
+            skip_start: self.skip_start,
+            edges: self.edges,
+            next: self.next,
+        }
     }
 }
 
@@ -1465,6 +1485,17 @@ pub struct WalkNeighbors<Ix> {
     next: [EdgeIndex<Ix>; 2],
 }
 
+impl<Ix> Clone for WalkNeighbors<Ix>
+    where Ix: IndexType,
+{
+    fn clone(&self) -> Self {
+        WalkNeighbors {
+            skip_start: self.skip_start,
+            next: self.next,
+        }
+    }
+}
+
 impl<Ix: IndexType> WalkNeighbors<Ix> {
     /// Step to the next edge and its endpoint node in the walk for graph `g`.
     ///
@@ -1555,7 +1586,8 @@ fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
 }
 
 /// Iterator over the node indices of a graph.
-pub struct NodeIndices<Ix: IndexType = DefIndex> {
+#[derive(Clone, Debug)]
+pub struct NodeIndices<Ix = DefIndex> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }
@@ -1579,7 +1611,8 @@ impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
 }
 
 /// Iterator over the edge indices of a graph.
-pub struct EdgeIndices<Ix: IndexType = DefIndex> {
+#[derive(Clone, Debug)]
+pub struct EdgeIndices<Ix = DefIndex> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }
