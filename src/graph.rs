@@ -665,6 +665,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
     ///
+    /// For a `Directed` graph, neighbors are listed in reverse order of their
+    /// addition to the graph, so the most recently added edge's neighbor is
+    /// listed first. The order in an `Undirected` graph is arbitrary.
+    ///
     /// Use [`.neighbors_directed(a, dir).detach()`][1] to get a neighbor walker that does
     /// not borrow from the graph.
     ///
