@@ -393,7 +393,7 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Return the index of the new node.
     ///
     /// **Panics** if the Graph is at the maximum number of nodes for its index
-    /// type.
+    /// type (N/A if usize).
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix>
     {
         let node = Node{weight: weight, next: [EdgeIndex::end(), EdgeIndex::end()]};
@@ -429,10 +429,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     ///
     /// **Panics** if any of the nodes don't exist.<br>
     /// **Panics** if the Graph is at the maximum number of edges for its index
-    /// type.
+    /// type (N/A if usize).
     ///
     /// **Note:** `Graph` allows adding parallel (“duplicate”) edges. If you want
-    /// to avoid this, use [*.update_edge(a, b, weight)*](#method.update_edge) instead.
+    /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix>
     {
         let edge_idx = EdgeIndex::new(self.edges.len());
@@ -665,6 +665,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
     ///
+    /// For a `Directed` graph, neighbors are listed in reverse order of their
+    /// addition to the graph, so the most recently added edge's neighbor is
+    /// listed first. The order in an `Undirected` graph is arbitrary.
+    ///
     /// Use [`.neighbors_directed(a, dir).detach()`][1] to get a neighbor walker that does
     /// not borrow from the graph.
     ///
@@ -769,10 +773,10 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
 
     /// Lookup an edge between `a` and `b`, in either direction.
     ///
-    /// If the graph is undirected, then this is equivalent to *.find_edge()*.
+    /// If the graph is undirected, then this is equivalent to `.find_edge()`.
     ///
-    /// Return the edge index and its directionality, with *Outgoing* meaning
-    /// from `a` to `b` and *Incoming* the reverse,
+    /// Return the edge index and its directionality, with `Outgoing` meaning
+    /// from `a` to `b` and `Incoming` the reverse,
     /// or `None` if the edge does not exist.
     pub fn find_edge_undirected(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<(EdgeIndex<Ix>, EdgeDirection)>
     {
@@ -1208,6 +1212,14 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
     }
 }
 
+impl<'a, E, Ix> Clone for Neighbors<'a, E, Ix>
+    where Ix: IndexType,
+{
+    fn clone(&self) -> Self {
+        Neighbors { iter: self.iter.clone() }
+    }
+}
+
 impl<'a, E, Ix> Neighbors<'a, E, Ix>
     where Ix: IndexType,
 {
@@ -1304,6 +1316,18 @@ impl<'a, E, Ix> Iterator for Edges<'a, E, Ix> where
             }
         }
         None
+    }
+}
+
+impl<'a, E, Ix> Clone for Edges<'a, E, Ix>
+    where Ix: IndexType
+{
+    fn clone(&self) -> Self {
+        Edges {
+            skip_start: self.skip_start,
+            edges: self.edges,
+            next: self.next,
+        }
     }
 }
 
@@ -1428,7 +1452,7 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 
 /// A “walker” object that can be used to step through the edge list of a node.
 ///
-/// Created with [*.detach()*](struct.Neighbors.html#method.detach).
+/// Created with [`.detach()`](struct.Neighbors.html#method.detach).
 ///
 /// The walker does not borrow from the graph, so it lets you step through
 /// neighbors or incident edges while also mutating graph weights, as
@@ -1463,6 +1487,17 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 pub struct WalkNeighbors<Ix> {
     skip_start: NodeIndex<Ix>,
     next: [EdgeIndex<Ix>; 2],
+}
+
+impl<Ix> Clone for WalkNeighbors<Ix>
+    where Ix: IndexType,
+{
+    fn clone(&self) -> Self {
+        WalkNeighbors {
+            skip_start: self.skip_start,
+            next: self.next,
+        }
+    }
 }
 
 impl<Ix: IndexType> WalkNeighbors<Ix> {
@@ -1555,7 +1590,8 @@ fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
 }
 
 /// Iterator over the node indices of a graph.
-pub struct NodeIndices<Ix: IndexType = DefIndex> {
+#[derive(Clone, Debug)]
+pub struct NodeIndices<Ix = DefIndex> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }
@@ -1579,7 +1615,8 @@ impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
 }
 
 /// Iterator over the edge indices of a graph.
-pub struct EdgeIndices<Ix: IndexType = DefIndex> {
+#[derive(Clone, Debug)]
+pub struct EdgeIndices<Ix = DefIndex> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }

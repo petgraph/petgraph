@@ -1109,3 +1109,26 @@ fn degree_sequence() {
     degree_sequence.sort_by(|x, y| Ord::cmp(y, x));
     assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
 }
+
+#[test]
+fn neighbor_order() {
+    let mut gr = Graph::new();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+    gr.add_edge(a, b, 0);
+    gr.add_edge(a, a, 1);
+
+    gr.add_edge(c, a, 2);
+
+    gr.add_edge(a, c, 3);
+
+    gr.add_edge(c, a, 4);
+    gr.add_edge(b, a, 5);
+
+    // neighbors (edges) are in lifo order, if it's a directed graph
+    assert_eq!(gr.neighbors(a).collect::<Vec<_>>(),
+               vec![c, a, b]);
+    assert_eq!(gr.neighbors_directed(a, Incoming).collect::<Vec<_>>(),
+               vec![b, c, c, a]);
+}

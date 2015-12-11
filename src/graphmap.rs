@@ -365,6 +365,14 @@ impl<'a, N: 'a + NodeTrait> DoubleEndedIterator for Neighbors<'a, N> {
 
 impl<'a, N: 'a + NodeTrait> ExactSizeIterator for Neighbors<'a, N> { }
 
+impl<'a, N: 'a + NodeTrait> Clone for Neighbors<'a, N> {
+    fn clone(&self) -> Self {
+        Neighbors {
+            iter: self.iter.clone(),
+        }
+    }
+}
+
 pub struct Edges<'a, N, E: 'a> where N: 'a + NodeTrait {
     from: N,
     edges: &'a HashMap<(N, N), E>,
