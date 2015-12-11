@@ -24,6 +24,7 @@ pub use EdgeDirection::{Outgoing, Incoming};
 
 mod scored;
 pub mod algo;
+pub mod builder;
 #[cfg(feature = "unstable")]
 pub mod generate;
 pub mod graphmap;
