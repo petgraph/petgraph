@@ -89,6 +89,10 @@ impl<Ix: IndexType = DefIndex> NodeIndex<Ix>
     {
         NodeIndex(IndexType::max())
     }
+
+    fn _into_edge(self) -> EdgeIndex<Ix> {
+        EdgeIndex(self.0)
+    }
 }
 
 impl<Ix: IndexType> From<Ix> for NodeIndex<Ix> {
@@ -123,6 +127,10 @@ impl<Ix: IndexType = DefIndex> EdgeIndex<Ix>
     #[inline]
     pub fn end() -> Self {
         EdgeIndex(IndexType::max())
+    }
+
+    fn _into_node(self) -> NodeIndex<Ix> {
+        NodeIndex(self.0)
     }
 }
 
@@ -265,6 +273,7 @@ pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefIndex> {
     ty: PhantomData<Ty>,
 }
 
+/// The resulting cloned graph has the same graph indices as `self`.
 impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
     where N: Clone, E: Clone,
 {
@@ -1151,7 +1160,6 @@ impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
         Graph{nodes: self.nodes, edges: self.edges,
               ty: PhantomData}
     }
-
 }
 
 /// An iterator over either the nodes without edges to them or from them.
@@ -1638,3 +1646,8 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
         self.r.next_back().map(edge_index)
     }
 }
+
+#[cfg(feature = "stable_graph")]
+#[path = "stable.rs"]
+pub mod stable;
+

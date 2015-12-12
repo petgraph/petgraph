@@ -6,9 +6,15 @@ extern crate petgraph;
 use rand::Rng;
 
 use petgraph::{Graph, GraphMap, Undirected, Directed, EdgeType, Incoming, Outgoing};
-use petgraph::algo::{min_spanning_tree, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching};
+use petgraph::algo::{
+    min_spanning_tree,
+    is_cyclic_undirected,
+    is_isomorphic,
+    is_isomorphic_matching,
+};
 use petgraph::graph::{IndexType, node_index, edge_index};
-//use petgraph::dot::{Dot, Config};
+#[cfg(feature = "stable_graph")]
+use petgraph::graph::stable::StableGraph;
 
 fn prop(g: Graph<(), u32>) -> bool {
     // filter out isolated nodes
@@ -251,6 +257,66 @@ fn graph_remove_edge() {
     }
     quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>, _, _) -> bool);
     quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>, _, _) -> bool);
+}
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn stable_graph_remove_edge() {
+    fn prop<Ty: EdgeType>(mut g: StableGraph<(), (), Ty>, a: u8, b: u8) -> bool {
+        let a = node_index(a as usize);
+        let b = node_index(b as usize);
+        let edge = g.find_edge(a, b);
+        if !g.is_directed() {
+            assert_eq!(edge.is_some(), g.find_edge(b, a).is_some());
+        }
+        if let Some(ex) = edge {
+            assert!(g.remove_edge(ex).is_some());
+        }
+        //assert_graph_consistent(&g);
+        assert!(g.find_edge(a, b).is_none());
+        assert!(g.neighbors(a).find(|x| *x == b).is_none());
+        if !g.is_directed() {
+            assert!(g.find_edge(b, a).is_none());
+            assert!(g.neighbors(b).find(|x| *x == a).is_none());
+        }
+        true
+    }
+    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Undirected>, _, _) -> bool);
+    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>, _, _) -> bool);
+}
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn stable_graph_add_remove_edges() {
+    fn prop<Ty: EdgeType>(mut g: StableGraph<(), (), Ty>, edges: Vec<(u8, u8)>) -> bool {
+        for &(a, b) in &edges {
+            let a = node_index(a as usize);
+            let b = node_index(b as usize);
+            let edge = g.find_edge(a, b);
+
+            if edge.is_none() && g.contains_node(a) && g.contains_node(b) {
+                let _index = g.add_edge(a, b, ());
+                continue;
+            }
+
+            if !g.is_directed() {
+                assert_eq!(edge.is_some(), g.find_edge(b, a).is_some());
+            }
+            if let Some(ex) = edge {
+                assert!(g.remove_edge(ex).is_some());
+            }
+            //assert_graph_consistent(&g);
+            assert!(g.find_edge(a, b).is_none(), "failed to remove edge {:?} from graph {:?}", (a, b), g);
+            assert!(g.neighbors(a).find(|x| *x == b).is_none());
+            if !g.is_directed() {
+                assert!(g.find_edge(b, a).is_none());
+                assert!(g.neighbors(b).find(|x| *x == a).is_none());
+            }
+        }
+        true
+    }
+    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Undirected>, _) -> bool);
+    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>, _) -> bool);
 }
 
 #[test]

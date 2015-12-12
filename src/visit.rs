@@ -22,6 +22,8 @@ use super::{
 use graph::{
     IndexType,
 };
+#[cfg(feature = "stable_graph")]
+use graph::stable::StableGraph;
 
 /// Base trait for graphs that defines the node identifier.
 pub trait Graphlike {
@@ -44,6 +46,19 @@ impl<'a, N, E: 'a, Ty, Ix> NeighborIter<'a> for Graph<N, E, Ty, Ix> where
     fn neighbors(&'a self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'a, E, Ix>
     {
         Graph::neighbors(self, n)
+    }
+}
+
+#[cfg(feature = "stable_graph")]
+impl<'a, N, E: 'a, Ty, Ix> NeighborIter<'a> for StableGraph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Iter = graph::stable::Neighbors<'a, E, Ix>;
+    fn neighbors(&'a self, n: graph::NodeIndex<Ix>)
+        -> graph::stable::Neighbors<'a, E, Ix>
+    {
+        StableGraph::neighbors(self, n)
     }
 }
 
@@ -105,6 +120,19 @@ impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for Graph<N, E, Ty, Ix>
                           d: EdgeDirection) -> graph::Neighbors<'a, E, Ix>
     {
         Graph::neighbors_directed(self, n, d)
+    }
+}
+
+#[cfg(feature = "stable_graph")]
+impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NeighborsDirected = graph::stable::Neighbors<'a, E, Ix>;
+    fn neighbors_directed(&'a self, n: graph::NodeIndex<Ix>, d: EdgeDirection)
+        -> graph::stable::Neighbors<'a, E, Ix>
+    {
+        StableGraph::neighbors_directed(self, n, d)
     }
 }
 
@@ -215,6 +243,33 @@ impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
 }
 
 impl<N, E, Ty, Ix> Revisitable for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn reset_map(&self, map: &mut Self::Map) {
+        map.clear();
+        map.grow(self.node_count());
+    }
+}
+
+#[cfg(feature = "stable_graph")]
+impl<N, E, Ty, Ix> Graphlike for StableGraph<N, E, Ty, Ix> where
+    Ix: IndexType,
+{
+    type NodeId = graph::NodeIndex<Ix>;
+}
+
+#[cfg(feature = "stable_graph")]
+impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Map = FixedBitSet;
+    fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
+}
+
+#[cfg(feature = "stable_graph")]
+impl<N, E, Ty, Ix> Revisitable for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {

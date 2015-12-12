@@ -24,7 +24,7 @@ pub use EdgeDirection::{Outgoing, Incoming};
 
 mod scored;
 pub mod algo;
-#[doc(hidden)] // Not for public consumption -- only for testing
+#[cfg(feature = "generate")]
 pub mod generate;
 pub mod graphmap;
 pub mod graph;

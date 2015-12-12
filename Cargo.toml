@@ -31,5 +31,11 @@ quickcheck = { optional = true, version = "0.2.24" }
 rand = "0.3"
 
 [features]
+# For unstable features: StableGraph, etc
+stable_graph = []
+generate = []
+unstable = ["generate", "stable_graph"]
 
+# feature flags for testing use only
 test = []
+all = ["test", "unstable", "quickcheck"]
