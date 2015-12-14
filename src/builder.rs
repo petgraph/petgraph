@@ -22,7 +22,7 @@ use graph::{
 };
 
 /// An input error in the builder
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct BuilderError(());
 
 /// `GraphBuilder` is a graph coupled with a mapping
@@ -48,13 +48,6 @@ impl<Key, N, E, Ty, Ix> GraphBuilder<Key, Graph<N, E, Ty, Ix>>
         GraphBuilder {
             node_map: HashMap::with_capacity(node_cap - graph.node_count()),
             graph: graph,
-        }
-    }
-
-    pub fn with_capacity(nodes: usize, edges: usize) -> Self {
-        GraphBuilder {
-            graph: Graph::with_capacity(nodes, edges),
-            node_map: HashMap::with_capacity(nodes),
         }
     }
 
@@ -112,28 +105,34 @@ impl<Key, N, E, Ty, Ix> GraphBuilder<Key, Graph<N, E, Ty, Ix>>
             Err(BuilderError(()))
         }
     }
+}
+
+impl<Key, G> GraphBuilder<Key, G>
+    where G: Graphlike,
+          Key: Hash + Eq,
+{
 
     /// Return a mutable reference to the graph
     ///
     /// **Note:** You should of course not do any operations that shift node
     /// indices on the graph.
-    pub fn graph_mut(&mut self) -> &mut Graph<N, E, Ty, Ix> {
+    pub fn graph_mut(&mut self) -> &mut G {
         &mut self.graph
     }
 
     /// Return a mutable reference to the node map
     ///
-    pub fn node_map_mut(&mut self) -> &mut HashMap<Key, NodeIndex<Ix>> {
+    pub fn node_map_mut(&mut self) -> &mut HashMap<Key, G::NodeId> {
         &mut self.node_map
     }
 
     /// Split the builder into the node map and the graph
-    pub fn into_inner(self) -> (HashMap<Key, NodeIndex<Ix>>, Graph<N, E, Ty, Ix>) {
+    pub fn into_inner(self) -> (HashMap<Key, G::NodeId>, G) {
         (self.node_map, self.graph)
     }
 
     /// Split the builder into the graph
-    pub fn into_graph(self) -> Graph<N, E, Ty, Ix> {
+    pub fn into_graph(self) -> G {
         self.graph
     }
 }
