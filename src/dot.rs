@@ -72,7 +72,7 @@ impl<'a, N, E, Ty, Ix> Dot<'a, Graph<N, E, Ty, Ix>>
                 try!(writeln!(f, ""));
             } else {
                 try!(write!(f, " [label=\""));
-                try!(node_fmt(&g[index], &mut |d| write!(f, "{}", Escaped(d))));
+                try!(node_fmt(&g[index], &mut |d| Escaped(d).fmt(f)));
                 try!(writeln!(f, "\"]"));
             }
 
@@ -90,7 +90,7 @@ impl<'a, N, E, Ty, Ix> Dot<'a, Graph<N, E, Ty, Ix>>
                 try!(writeln!(f, " [label=\"{}\"]", i));
             } else {
                 try!(write!(f, " [label=\""));
-                try!(edge_fmt(&edge.weight, &mut |d| write!(f, "{}", Escaped(d))));
+                try!(edge_fmt(&edge.weight, &mut |d| Escaped(d).fmt(f)));
                 try!(writeln!(f, "\"]"));
             }
         }
@@ -119,8 +119,8 @@ impl<'a, N, E, Ty, Ix> fmt::Debug for Dot<'a, Graph<N, E, Ty, Ix>>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.graph_fmt(f,
-                       |n, cb| cb(&format_args!("{:?}", n)),
-                       |e, cb| cb(&format_args!("{:?}", e)))
+                       |n, cb| cb(&DebugFmt(n)),
+                       |e, cb| cb(&DebugFmt(e)))
     }
 }
 
@@ -145,7 +145,7 @@ impl<'a, N, E> Dot<'a, GraphMap<N, E>>
                 try!(writeln!(f, ""));
             } else {
                 try!(write!(f, " [label=\""));
-                try!(node_fmt(&node, &mut |d| write!(f, "{}", Escaped(d))));
+                try!(node_fmt(&node, &mut |d| Escaped(d).fmt(f)));
                 try!(writeln!(f, "\"]"));
             }
         }
@@ -162,7 +162,7 @@ impl<'a, N, E> Dot<'a, GraphMap<N, E>>
                 try!(writeln!(f, " [label=\"{}\"]", i));
             } else {
                 try!(write!(f, " [label=\""));
-                try!(edge_fmt(&edge_weight, &mut |d| write!(f, "{}", Escaped(d))));
+                try!(edge_fmt(&edge_weight, &mut |d| Escaped(d).fmt(f)));
                 try!(writeln!(f, "\"]"));
             }
         }
@@ -186,12 +186,12 @@ impl<'a, N, E> fmt::Debug for Dot<'a, GraphMap<N, E>>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.graphmap_fmt(f,
-                          |n, cb| cb(&format_args!("{:?}", n)),
-                          |e, cb| cb(&format_args!("{:?}", e)))
+                          |n, cb| cb(&DebugFmt(n)),
+                          |e, cb| cb(&DebugFmt(e)))
     }
 }
 
-/// For Graphviz, we only need to escape double quotes in labels
+/// Escape for Graphviz
 struct Escaper<W>(W);
 
 impl<W> fmt::Write for Escaper<W>
@@ -207,27 +207,36 @@ impl<W> fmt::Write for Escaper<W>
     fn write_char(&mut self, c: char) -> fmt::Result {
         match c {
             '"' => try!(self.0.write_char('\\')),
+            // \l is for left justified linebreak
+            '\n' => return self.0.write_str(r#"\l"#),
             _   => { }
         }
         self.0.write_char(c)
     }
 }
 
-/// Pass Display and Debug through simple escaping filter
+/// Pass Display formatting through a simple escaping filter
 struct Escaped<T>(T);
 
 impl<T> fmt::Display for Escaped<T>
     where T: fmt::Display
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(&mut Escaper(f), "{}", &self.0)
+        if f.alternate() {
+            write!(&mut Escaper(f), "{:#}\\l", &self.0)
+        } else {
+            write!(&mut Escaper(f), "{}", &self.0)
+        }
     }
 }
 
-impl<T> fmt::Debug for Escaped<T>
+/// Pass Debug formatting to Display
+struct DebugFmt<T>(T);
+
+impl<T> fmt::Display for DebugFmt<T>
     where T: fmt::Debug
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(&mut Escaper(f), "{:?}", &self.0)
+        self.0.fmt(f)
     }
 }
