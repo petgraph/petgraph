@@ -211,7 +211,7 @@ const S2: &'static str = "
 ";
 
 /// Parse a text adjacency matrix format into a directed graph
-fn parse_graph<Ty: EdgeType = Directed>(s: &str) -> Graph<(), (), Ty>
+fn parse_graph<Ty: EdgeType>(s: &str) -> Graph<(), (), Ty>
 {
     let mut gr = Graph::with_capacity(0, 0);
     let s = s.trim();
