@@ -147,7 +147,7 @@ impl<Ix: IndexType> fmt::Debug for EdgeIndex<Ix>
     }
 }
 
-const DIRECTIONS: [EdgeDirection; 2] = [EdgeDirection::Outgoing, EdgeDirection::Incoming];
+const DIRECTIONS: [EdgeDirection; 2] = [Outgoing, Incoming];
 
 /// The graph's node type.
 #[derive(Debug, Clone)]

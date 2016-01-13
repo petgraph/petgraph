@@ -42,8 +42,6 @@ use petgraph::dot::{
     Dot,
 };
 
-use petgraph::visit::GetAdjacencyMatrix;
-
 #[test]
 fn undirected()
 {
@@ -387,6 +385,7 @@ fn test_generate_directed() {
 #[cfg(feature = "generate")]
 #[test]
 fn test_generate_dag() {
+    use petgraph::visit::GetAdjacencyMatrix;
     for size in 1..5 {
         let gen = pg::generate::Generator::directed_acyclic(size);
         let nedges = (size - 1) * size / 2;
