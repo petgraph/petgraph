@@ -184,6 +184,45 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>>
     sccs
 }
 
+/// Condense every strongly connected component into a single node and return the result.
+///
+/// If `make_acyclic` is true, self-loops and multi edges are ignored, guaranteeing that
+/// the output is acyclic.
+pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) -> Graph<Vec<N>, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    let sccs = scc(&g);
+    let mut condensed: Graph<Vec<N>, E, Ty, Ix> = Graph::with_capacity(sccs.len(), g.edge_count());
+
+    // Build a map from old indices to new ones.
+    let mut node_map = vec![NodeIndex::end(); g.node_count()];
+    for comp in sccs {
+        let new_nix = condensed.add_node(Vec::new());
+        for nix in comp {
+            node_map[nix.index()] = new_nix;
+        }
+    }
+
+    // Consume nodes and edges of the old graph and insert them into the new one.
+    let (nodes, edges) = g.destructure();
+    for (nix, node) in nodes.into_iter().enumerate() {
+        condensed.node_weight_mut(node_map[nix]).unwrap().push(node.weight);
+    }
+    for edge in edges {
+        let source = node_map[edge.source().index()];
+        let target = node_map[edge.target().index()];
+        if make_acyclic {
+            if source != target {
+                condensed.update_edge(source, target, edge.weight);
+            }
+        } else {
+            condensed.add_edge(source, target, edge.weight);
+        }
+    }
+    condensed
+}
+
 /// Return the number of connected components of the graph.
 ///
 /// For a directed graph, this is the *weakly* connected components.
