@@ -444,6 +444,14 @@ impl<N, E, Ty, Ix: IndexType> Clone for StableGraph<N, E, Ty, Ix>
             free_edge: self.free_edge,
         }
     }
+
+    fn clone_from(&mut self, rhs: &Self) {
+        self.g.clone_from(&rhs.g);
+        self.node_count = rhs.node_count;
+        self.edge_count = rhs.edge_count;
+        self.free_node = rhs.free_node;
+        self.free_edge = rhs.free_edge;
+    }
 }
 
 /// Index the `StableGraph` by `NodeIndex` to access node weights.

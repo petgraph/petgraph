@@ -281,8 +281,14 @@ impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
         Graph {
             nodes: self.nodes.clone(),
             edges: self.edges.clone(),
-            ty: self.ty.clone(),
+            ty: self.ty,
         }
+    }
+
+    fn clone_from(&mut self, rhs: &Self) {
+        self.nodes.clone_from(&rhs.nodes);
+        self.edges.clone_from(&rhs.edges);
+        self.ty = rhs.ty;
     }
 }
 
