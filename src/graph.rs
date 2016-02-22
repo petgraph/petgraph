@@ -214,6 +214,10 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// is some local measure of edge count.
 /// Based on the graph datastructure used in rustc.
 ///
+/// Here's an example of building a graph with directed edges, and below
+/// an illustration of how it could be rendered with graphviz (graphviz rendering
+/// is not a part of petgraph):
+///
 /// ```
 /// use petgraph::Graph;
 ///
@@ -233,8 +237,9 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 ///
 /// ### Graph Indices
 ///
-/// The graph maintains unique indices for nodes and edges, and node and edge
-/// weights may be accessed mutably.
+/// The graph maintains indices for nodes and edges, and node and edge
+/// weights may be accessed mutably. Indices range in a compact interval, for
+/// example for *n* nodes indices are 0 to *n* - 1 inclusive.
 ///
 /// `NodeIndex` and `EdgeIndex` are types that act as references to nodes and edges,
 /// but these are only stable across certain operations.
@@ -246,7 +251,7 @@ impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
 /// completely unless you need a very big graph -- then you can use `usize`.
 ///
-/// ### Tradeoffs With Indices
+/// ### Pros and Cons of Indices
 ///
 /// * The fact that the node and edge indices in the graph each are numbered in compact
 /// intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
@@ -1100,9 +1105,11 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     }
 
 
-    /// Create a new `Graph` by mapping node and edge weights.
+    /// Create a new `Graph` by mapping node and
+    /// edge weights to new values.
     ///
-    /// The resulting graph has the same graph indices as `self`.
+    /// The resulting graph has the same structure and the same
+    /// graph indices as `self`.
     pub fn map<'a, F, G, N2, E2>(&'a self, mut node_map: F, mut edge_map: G)
         -> Graph<N2, E2, Ty, Ix>
         where F: FnMut(NodeIndex<Ix>, &'a N) -> N2,
@@ -1133,6 +1140,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// `edge_map` is called for the edges that have not had any endpoint
     /// removed.
     ///
+    /// The resulting graph has the structure of a subgraph of the original graph.
     /// If no nodes are removed, the resulting graph has compatible node
     /// indices; if neither nodes nor edges are removed, the result has
     /// the same graph indices as `self`.
