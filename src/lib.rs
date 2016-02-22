@@ -35,7 +35,7 @@ mod dijkstra;
 mod isomorphism;
 mod traits_graph;
 #[cfg(feature = "quickcheck")]
-pub mod quickcheck;
+mod quickcheck;
 
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction
