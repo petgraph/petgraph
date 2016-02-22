@@ -362,7 +362,7 @@ impl<N, E> Graph<N, E, Undirected>
     }
 }
 
-impl<N, E, Ty=Directed, Ix=DefIndex> Graph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {

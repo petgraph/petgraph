@@ -95,7 +95,7 @@ impl<N, E> StableGraph<N, E, Directed> {
     }
 }
 
-impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
