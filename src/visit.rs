@@ -366,6 +366,70 @@ pub trait IntoEdgeIdentifiers : GraphRef {
     fn edge_identifiers(self) -> Self::EdgeIdentifiers;
 }
 
+pub trait GraphEdgeRef : GraphRef {
+    type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId>;
+}
+
+pub trait EdgeRef : Copy {
+    type NodeId;
+    type EdgeId;
+    type Weight;
+    fn source(&self) -> Self::NodeId;
+    fn target(&self) -> Self::NodeId;
+    fn weight(&self) -> &Self::Weight;
+    fn id(&self) -> Self::EdgeId;
+}
+
+impl<'a, N, E> EdgeRef for (N, N, &'a E)
+    where N: Copy
+{
+    type NodeId = N;
+    type EdgeId = (N, N);
+    type Weight = E;
+
+    fn source(&self) -> N { self.0 }
+    fn target(&self) -> N { self.1 }
+    fn weight(&self) -> &E { self.2 }
+    fn id(&self) -> (N, N) { (self.0, self.1) }
+}
+
+pub trait IntoEdgeReferences : GraphEdgeRef {
+    type EdgeReferences: Iterator<Item=Self::EdgeRef>;
+    fn edge_references(self) -> Self::EdgeReferences;
+}
+
+impl<'a, N: 'a, E: 'a> GraphEdgeRef for &'a GraphMap<N, E>
+    where N: Copy
+{
+    type EdgeRef = (N, N, &'a E);
+}
+
+impl<'a, N: 'a, E: 'a> IntoEdgeReferences for &'a GraphMap<N, E>
+    where N: NodeTrait
+{
+    type EdgeReferences = graphmap::AllEdges<'a, N, E>;
+    fn edge_references(self) -> Self::EdgeReferences {
+        self.all_edges()
+    }
+}
+
+impl<'a, N: 'a, E: 'a, Ty, Ix> GraphEdgeRef for &'a Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgeRef = graph::EdgeReference<'a, E, Ix>;
+}
+
+impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgeReferences = graph::EdgeReferences<'a, E, Ix>;
+    fn edge_references(self) -> Self::EdgeReferences {
+        (*self).edge_references()
+    }
+}
+
 pub trait NodeIndexable : GraphBase {
     fn node_bound(&self) -> usize;
     fn to_index(Self::NodeId) -> usize;

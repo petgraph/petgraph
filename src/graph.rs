@@ -14,6 +14,7 @@ use {
     EdgeType,
     IntoWeightedEdge,
 };
+use visit::EdgeRef;
 
 /// The default integer type for node and edge indices in `Graph`.
 /// `u32` is the default to reduce the size of the graph's data and improve
@@ -846,6 +847,15 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<Ix> {
         EdgeIndices { r: 0..self.edge_count(), ty: PhantomData }
+    }
+
+    /// Create an iterator over all edges, in indexed order.
+    ///
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    pub fn edge_references(&self) -> EdgeReferences<E, Ix> {
+        EdgeReferences {
+            iter: self.edges.iter().enumerate()
+        }
     }
 
     /// Return an iterator yielding mutable access to all edge weights.
@@ -1720,7 +1730,58 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
     }
 }
 
+/// Reference to a `Graph` edge.
+pub struct EdgeReference<'a, E: 'a, Ix: IndexType = DefIndex> {
+    index: EdgeIndex<Ix>,
+    edge: &'a Edge<E, Ix>,
+}
+
+impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'a, E, Ix: IndexType> Copy for EdgeReference<'a, E, Ix> { }
+
+impl<'a, Ix, E> EdgeRef for EdgeReference<'a, E, Ix>
+    where Ix: IndexType,
+{
+    type NodeId = NodeIndex<Ix>;
+    type EdgeId = EdgeIndex<Ix>;
+    type Weight = E;
+
+    fn source(&self) -> Self::NodeId { self.edge.source() }
+    fn target(&self) -> Self::NodeId { self.edge.target() }
+    fn weight(&self) -> &E { &self.edge.weight }
+    fn id(&self) -> Self::EdgeId { self.index }
+}
+
+
+/// Iterator over all edges of a graph.
+pub struct EdgeReferences<'a, E: 'a, Ix: IndexType = DefIndex> {
+    iter: iter::Enumerate<slice::Iter<'a, Edge<E, Ix>>>,
+}
+
+impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
+    where Ix: IndexType
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|(i, edge)| 
+            EdgeReference {
+                index: edge_index(i),
+                edge: edge,
+            }
+        )
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
 #[cfg(feature = "stable_graph")]
 #[path = "stable.rs"]
 pub mod stable;
-
