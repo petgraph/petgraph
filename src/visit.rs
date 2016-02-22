@@ -361,11 +361,6 @@ impl<'a, 'b,  G> Externals<'a> for Reversed<&'b G>
     }
 }
 
-pub trait IntoEdgeIdentifiers : GraphRef {
-    type EdgeIdentifiers: Iterator<Item=Self::EdgeId>;
-    fn edge_identifiers(self) -> Self::EdgeIdentifiers;
-}
-
 pub trait GraphEdgeRef : GraphRef {
     type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId>;
 }
@@ -436,16 +431,6 @@ pub trait NodeIndexable : GraphBase {
 }
 
 pub trait NodeCompactIndexable : NodeIndexable { }
-
-impl<'a, N, E, Ty, Ix> IntoEdgeIdentifiers for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type EdgeIdentifiers = graph::EdgeIndices<Ix>;
-    fn edge_identifiers(self) -> Self::EdgeIdentifiers {
-        self.edge_indices()
-    }
-}
 
 impl<'a, G> NodeIndexable for &'a G
     where G: NodeIndexable
