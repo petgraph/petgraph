@@ -90,12 +90,16 @@ impl<N, E, Ty, Ix> fmt::Debug for StableGraph<N, E, Ty, Ix> where
 
 impl<N, E> StableGraph<N, E, Directed> {
     /// Create a new `StableGraph` with directed edges.
+    ///
+    /// This is a convenience method. See `StableGraph::with_capacity`
+    /// or `StableGraph::default` for a constructor that is generic in all the
+    /// type parameters of `StableGraph`.
     pub fn new() -> Self {
         Self::with_capacity(0, 0)
     }
 }
 
-impl<N, E, Ty=Directed, Ix=DefIndex> StableGraph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
