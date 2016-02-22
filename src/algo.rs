@@ -9,7 +9,6 @@ use std::borrow::{Borrow};
 
 use super::{
     Graph,
-    Directed,
     Undirected,
     EdgeDirection,
     EdgeType,
@@ -21,11 +20,20 @@ use scored::MinScored;
 use super::visit::{
     Visitable,
     VisitMap,
+    IntoNeighborsDirected,
+    IntoNodeIdentifiers,
+    IntoExternals,
+    NodeIndexable,
+    NodeCompactIndexable,
+    IntoEdgeReferences,
+    EdgeRef,
+    Revisitable,
 };
 use super::unionfind::UnionFind;
 use super::graph::{
-    NodeIndex,
     IndexType,
+    NodeIndex,
+    GraphIndex,
 };
 
 pub use super::isomorphism::{
@@ -34,26 +42,46 @@ pub use super::isomorphism::{
 };
 pub use super::dijkstra::dijkstra;
 
-/// Return `true` if the input graph contains a cycle.
+/// [Generic] Return the number of connected components of the graph.
+///
+/// For a directed graph, this is the *weakly* connected components.
+pub fn connected_components<G>(g: G) -> usize
+    where G: NodeCompactIndexable + IntoEdgeReferences,
+{
+    let mut vertex_sets = UnionFind::new(g.node_bound());
+    for edge in g.edge_references() {
+        let (a, b) = (edge.source(), edge.target());
+
+        // union the two vertices of the edge
+        vertex_sets.union(G::to_index(a), G::to_index(b));
+    }
+    let mut labels = vertex_sets.into_labeling();
+    labels.sort();
+    labels.dedup();
+    labels.len()
+}
+
+
+/// [Generic] Return `true` if the input graph contains a cycle.
 ///
 /// Always treats the input graph as if undirected.
-pub fn is_cyclic_undirected<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool
-    where Ty: EdgeType,
-          Ix: IndexType,
+pub fn is_cyclic_undirected<G>(g: G) -> bool
+    where G: NodeIndexable + IntoEdgeReferences
 {
-    let mut edge_sets = UnionFind::new(g.node_count());
-    for edge in g.raw_edges() {
+    let mut edge_sets = UnionFind::new(g.node_bound());
+    for edge in g.edge_references() {
         let (a, b) = (edge.source(), edge.target());
 
         // union the two vertices of the edge
         //  -- if they were already the same, then we have a cycle
-        if !edge_sets.union(a.index(), b.index()) {
+        if !edge_sets.union(G::to_index(a), G::to_index(b)) {
             return true
         }
     }
     false
 }
 
+/*
 /// **Deprecated: Renamed to `is_cyclic_undirected`.**
 pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool
     where Ty: EdgeType,
@@ -61,90 +89,89 @@ pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool
 {
     is_cyclic_undirected(g)
 }
+*/
 
-/// Perform a topological sort of a directed graph `g`.
+/// [Generic] Perform a topological sort of a directed graph `g`.
 ///
 /// Visit each node in order (if it is part of a topological order).
 ///
 /// You can pass `g` as either **&Graph** or **&mut Graph**, and it
 /// will be passed on to the visitor closure.
 #[inline]
-fn toposort_generic<N, E, Ix, G, F>(mut g: G, mut visit: F)
-    where Ix: IndexType,
-          G: Borrow<Graph<N, E, Directed, Ix>>,
-          F: FnMut(&mut G, NodeIndex<Ix>),
+fn toposort_generic<G, F>(g: G, mut visit: F)
+    where G: IntoNeighborsDirected + IntoExternals + Visitable,
+          F: FnMut(G, G::NodeId),
 {
     let mut ordered = g.borrow().visit_map();
     let mut tovisit = Vec::new();
 
     // find all initial nodes
-    tovisit.extend(g.borrow().externals(Incoming));
+    tovisit.extend(g.externals(Incoming));
 
     // Take an unvisited element and find which of its neighbors are next
     while let Some(nix) = tovisit.pop() {
         if ordered.is_visited(&nix) {
             continue;
         }
-        visit(&mut g, nix);
-        ordered.visit(nix);
-        for neigh in g.borrow().neighbors_directed(nix, Outgoing) {
+        visit(g, nix.clone());
+        ordered.visit(nix.clone());
+        for neigh in g.neighbors_directed(nix, Outgoing) {
             // Look at each neighbor, and those that only have incoming edges
             // from the already ordered list, they are the next to visit.
-            if g.borrow().neighbors_directed(neigh, Incoming).all(|b| ordered.is_visited(&b)) {
+            if g.neighbors_directed(neigh.clone(), Incoming)
+                .all(|b| ordered.is_visited(&b)) {
                 tovisit.push(neigh);
             }
         }
     }
 }
 
-/// Return `true` if the input directed graph contains a cycle.
+/// [Generic] Return `true` if the input directed graph contains a cycle.
 ///
 /// Using the topological sort algorithm.
-pub fn is_cyclic_directed<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> bool
-    where Ix: IndexType,
+pub fn is_cyclic_directed<G>(g: G) -> bool
+    where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
 {
     let mut n_ordered = 0;
     toposort_generic(g, |_, _| n_ordered += 1);
     n_ordered != g.node_count()
 }
 
-/// Perform a topological sort of a directed graph.
+/// [Generic] Perform a topological sort of a directed graph.
 ///
 /// Return a vector of nodes in topological order: each node is ordered
 /// before its successors.
 ///
 /// If the returned vec contains less than all the nodes of the graph, then
 /// the graph was cyclic.
-pub fn toposort<N, E, Ix>(g: &Graph<N, E, Directed, Ix>) -> Vec<NodeIndex<Ix>>
-    where Ix: IndexType,
+pub fn toposort<G>(g: G) -> Vec<G::NodeId>
+    where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
 {
     let mut order = Vec::with_capacity(g.node_count());
     toposort_generic(g, |_, ix| order.push(ix));
     order
 }
 
-/// Compute the *strongly connected components* using Kosaraju's algorithm.
+/// [Generic] Compute the *strongly connected components* using Kosaraju's algorithm.
 ///
 /// Return a vector where each element is an scc.
 ///
 /// For an undirected graph, the sccs are simply the connected components.
-pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>>
-    where Ty: EdgeType,
-          Ix: IndexType,
+pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
+    where G: IntoNeighborsDirected + Revisitable + IntoNodeIdentifiers,
 {
-    let mut dfs = Dfs::empty(g);
+    let mut dfs = Dfs::empty(&g);
 
     // First phase, reverse dfs pass, compute finishing times.
     // http://stackoverflow.com/a/26780899/161659
     let mut finished = g.visit_map();
     let mut finish_order = Vec::new();
-    for i in 0..g.node_count() {
-        let nindex = NodeIndex::new(i);
-        if dfs.discovered.is_visited(&nindex) {
+    for i in g.node_identifiers() {
+        if dfs.discovered.is_visited(&i) {
             continue
         }
 
-        dfs.stack.push(nindex);
+        dfs.stack.push(i);
         while let Some(&nx) = dfs.stack.last() {
             if dfs.discovered.visit(nx) {
                 // First time visiting `nx`: Push neighbors, don't pop `nx`
@@ -163,17 +190,17 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>>
         }
     }
 
-    dfs.discovered.clear();
+    g.reset_map(&mut dfs.discovered);
     let mut sccs = Vec::new();
 
     // Second phase
     // Process in decreasing finishing time order
-    for &nindex in finish_order.iter().rev() {
-        if dfs.discovered.is_visited(&nindex) {
+    for i in finish_order.into_iter().rev() {
+        if dfs.discovered.is_visited(&i) {
             continue;
         }
         // Move to the leader node.
-        dfs.move_to(nindex);
+        dfs.move_to(i);
         //let leader = nindex;
         let mut scc = Vec::new();
         while let Some(nx) = dfs.next(g) {
@@ -223,28 +250,7 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
     condensed
 }
 
-/// Return the number of connected components of the graph.
-///
-/// For a directed graph, this is the *weakly* connected components.
-pub fn connected_components<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> usize
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    let mut vertex_sets = UnionFind::new(g.node_count());
-    for edge in g.raw_edges() {
-        let (a, b) = (edge.source(), edge.target());
-
-        // union the two vertices of the edge
-        vertex_sets.union(a.index(), b.index());
-    }
-    let mut labels = vertex_sets.into_labeling();
-    labels.sort();
-    labels.dedup();
-    labels.len()
-}
-
-
-/// Compute a *minimum spanning tree* of a graph.
+/// [Graph] Compute a *minimum spanning tree* of a graph.
 ///
 /// Treat the input graph as undirected.
 ///
