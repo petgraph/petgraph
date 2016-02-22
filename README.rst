@@ -2,7 +2,7 @@
 petgraph
 ========
 
-Graph data structure library.
+Graph data structure library. Requires Rust 1.6.
 
 Please read the `API documentation here`__
 
@@ -18,6 +18,11 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 
 Recent Changes
 --------------
+
+- 0.2.3
+
+  - Require Rust 1.6: Due to changes in how rust uses type parameter defaults.
+  - Implement Graph::clone_from.
 
 - 0.2.2
 
