@@ -540,7 +540,7 @@ impl<N, VM> Bfs<N, VM>
         }
     }
 
-    /// Return the next node in the dfs, or **None** if the traversal is done.
+    /// Return the next node in the bfs, or **None** if the traversal is done.
     pub fn next<'a, G>(&mut self, graph: &'a G) -> Option<N> where
         G: Graphlike<NodeId=N>,
         G: NeighborIter<'a>,
