@@ -27,7 +27,6 @@ use super::visit::{
     NodeCompactIndexable,
     IntoEdgeReferences,
     EdgeRef,
-    Revisitable,
 };
 use super::unionfind::UnionFind;
 use super::graph::{
@@ -158,7 +157,7 @@ pub fn toposort<G>(g: G) -> Vec<G::NodeId>
 ///
 /// For an undirected graph, the sccs are simply the connected components.
 pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
-    where G: IntoNeighborsDirected + Revisitable + IntoNodeIdentifiers,
+    where G: IntoNeighborsDirected + Visitable + IntoNodeIdentifiers,
 {
     let mut dfs = Dfs::empty(&g);
 

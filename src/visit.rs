@@ -501,10 +501,7 @@ impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
 pub trait Visitable : GraphBase {
     type Map: VisitMap<Self::NodeId>;
     fn visit_map(&self) -> Self::Map;
-}
-
-/// A graph that can reset and resize its visitor map.
-pub trait Revisitable : Visitable {
+    /// Reset the visitor map (and resize to new size of graph if needed)
     fn reset_map(&self, &mut Self::Map);
 }
 
@@ -518,6 +515,9 @@ impl<N, E, Ty, Ix> GraphBase for Graph<N, E, Ty, Ix> where
 impl<'a, G> Visitable for &'a G where G: Visitable {
     type Map = G::Map;
     fn visit_map(&self) -> Self::Map { (**self).visit_map() }
+    fn reset_map(&self, map: &mut Self::Map) {
+        (**self).reset_map(map)
+    }
 }
 
 impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
@@ -526,18 +526,7 @@ impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
 {
     type Map = FixedBitSet;
     fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
-}
 
-impl<'a, G> Revisitable for &'a G where G: Revisitable {
-    fn reset_map(&self, map: &mut Self::Map) {
-        (**self).reset_map(map)
-    }
-}
-
-impl<N, E, Ty, Ix> Revisitable for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
         map.grow(self.node_count());
@@ -559,24 +548,9 @@ impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix> where
 {
     type Map = FixedBitSet;
     fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
-}
-
-#[cfg(feature = "stable_graph")]
-impl<N, E, Ty, Ix> Revisitable for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
         map.grow(self.node_count());
-    }
-}
-
-impl<G> Revisitable for Reversed<G>
-    where G: Revisitable
-{
-    fn reset_map(&self, map: &mut Self::Map) {
-        self.0.reset_map(map);
     }
 }
 
@@ -591,11 +565,6 @@ impl<N, E> Visitable for GraphMap<N, E>
 {
     type Map = HashSet<N>;
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
-}
-
-impl<N, E> Revisitable for GraphMap<N, E>
-    where N: Copy + Ord + Hash
-{
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
     }
@@ -616,6 +585,9 @@ impl<G: Visitable> Visitable for AsUndirected<G>
     fn visit_map(&self) -> G::Map {
         self.0.visit_map()
     }
+    fn reset_map(&self, map: &mut Self::Map) {
+        self.0.reset_map(map);
+    }
 }
 
 impl<G: Visitable> Visitable for Reversed<G>
@@ -623,6 +595,9 @@ impl<G: Visitable> Visitable for Reversed<G>
     type Map = G::Map;
     fn visit_map(&self) -> G::Map {
         self.0.visit_map()
+    }
+    fn reset_map(&self, map: &mut Self::Map) {
+        self.0.reset_map(map);
     }
 }
 
@@ -944,7 +919,7 @@ impl<N, VM> Topo<N, VM>
 
     /// Clear visited state, and put all initial nodes in the to visit list.
     pub fn reset<G>(&mut self, graph: G)
-        where G: IntoExternals + Revisitable<NodeId=N, Map=VM>,
+        where G: IntoExternals + Visitable<NodeId=N, Map=VM>,
     {
         graph.reset_map(&mut self.ordered);
         self.tovisit.clear();
