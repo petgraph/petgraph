@@ -345,6 +345,9 @@ fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T>
 impl<N, E> Graph<N, E, Directed>
 {
     /// Create a new `Graph` with directed edges.
+    ///
+    /// This is a convenience method. Use `Graph::with_capacity` or `Graph::default` for
+    /// a constructor that is generic in all the type parameters of `Graph`.
     pub fn new() -> Self
     {
         Graph{nodes: Vec::new(), edges: Vec::new(),
@@ -355,6 +358,9 @@ impl<N, E> Graph<N, E, Directed>
 impl<N, E> Graph<N, E, Undirected>
 {
     /// Create a new `Graph` with undirected edges.
+    ///
+    /// This is a convenience method. Use `Graph::with_capacity` or `Graph::default` for
+    /// a constructor that is generic in all the type parameters of `Graph`.
     pub fn new_undirected() -> Self
     {
         Graph{nodes: Vec::new(), edges: Vec::new(),
