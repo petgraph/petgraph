@@ -17,6 +17,7 @@ keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
 [lib]
 
 name = "petgraph"
+bench = false
 
 [profile.release]
 

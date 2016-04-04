@@ -582,6 +582,20 @@ fn scc() {
     assert_sccs_eq(petgraph::algo::scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
     ]);
+
+    // Kosaraju bug from PR #60
+    let mut gr = Graph::<(), ()>::new();
+    gr.extend_with_edges(&[
+        (0, 0),
+        (1, 0),
+        (2, 0),
+        (2, 1),
+        (2, 2),
+    ]);
+    gr.add_node(());
+    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+        vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
+    ]);
 }
 
 #[test]

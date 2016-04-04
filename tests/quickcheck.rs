@@ -4,15 +4,20 @@ extern crate rand;
 extern crate petgraph;
 
 use rand::Rng;
+use std::cmp::min;
 
-use petgraph::{Graph, GraphMap, Undirected, Directed, EdgeType, Incoming, Outgoing};
+use petgraph::{
+    Graph, GraphMap, Undirected, Directed, EdgeType, Incoming, Outgoing,
+};
+use petgraph::dot::{Dot, Config};
 use petgraph::algo::{
     min_spanning_tree,
     is_cyclic_undirected,
     is_isomorphic,
     is_isomorphic_matching,
+    scc,
 };
-use petgraph::graph::{IndexType, node_index, edge_index};
+use petgraph::graph::{IndexType, node_index, edge_index, NodeIndex};
 #[cfg(feature = "stable_graph")]
 use petgraph::graph::stable::StableGraph;
 
@@ -344,4 +349,107 @@ fn graphmap_add_remove() {
             g.neighbors(b).find(|x| *x == a).is_none()
     }
     quickcheck::quickcheck(prop as fn(_, _, _) -> bool);
+}
+
+fn tarjan_scc(g: &Graph<(), ()>) -> Vec<Vec<NodeIndex>> {
+    #[derive(Copy, Clone)]
+    #[derive(Debug)]
+    struct NodeData {
+        index: Option<usize>,
+        lowlink: usize,
+        on_stack: bool,
+    }
+    #[derive(Debug)]
+    struct Data<'a> {
+        index: usize,
+        nodes: Vec<NodeData>,
+        stack: Vec<NodeIndex>,
+        sccs: &'a mut Vec<Vec<NodeIndex>>,
+    }
+
+    let mut sccs = Vec::new();
+    {
+        let map = g.node_indices().map(|_| {
+            NodeData { index: None, lowlink: !0, on_stack: false }
+        }).collect();
+
+        let mut data = Data {
+            index: 0,
+            nodes: map,
+            stack: Vec::new(),
+            sccs: &mut sccs,
+        };
+        for n in g.node_indices() {
+            scc_visit(n, g, &mut data);
+        }
+    }
+    fn scc_visit(v: NodeIndex, g: &Graph<(), ()>, data: &mut Data) {
+        macro_rules! node {
+            ($node:expr) => (data.nodes[$node.index()])
+        }
+        if node![v].index.is_some() {
+            // already visited
+            return;
+        }
+        let v_index = data.index;
+        node![v].index = Some(v_index);
+        node![v].lowlink = v_index;
+        node![v].on_stack = true;
+        data.stack.push(v);
+        data.index += 1;
+
+        for w in g.neighbors(v) {
+            match node![w].index {
+                None => {
+                    scc_visit(w, g, data);
+                    node![v].lowlink = min(node![v].lowlink, node![w].lowlink);
+                }
+                Some(w_index) => {
+                    if node![w].on_stack {
+                        // Successor w is in stack S and hence in the current SCC
+                        let v_lowlink = &mut node![v].lowlink;
+                        *v_lowlink = min(*v_lowlink, w_index);
+                    }
+                }
+            }
+        }
+
+        // If v is a root node, pop the stack and generate an SCC
+        if let Some(v_index) = node![v].index {
+            if node![v].lowlink == v_index {
+                let mut cur_scc = Vec::new();
+                loop {
+                    let w = data.stack.pop().unwrap();
+                    node![w].on_stack = false;
+                    cur_scc.push(w);
+                    if w == v { break; }
+                }
+                data.sccs.push(cur_scc);
+            }
+        }
+    }
+    sccs
+}
+
+#[test]
+fn graph_sccs() {
+    fn prop(g: Graph<(), ()>) -> bool {
+        let mut sccs = scc(&g);
+        let mut tsccs = tarjan_scc(&g);
+        // normalize sccs
+        for scc in &mut sccs { scc.sort(); }
+        for scc in &mut tsccs { scc.sort(); }
+        sccs.sort();
+        tsccs.sort();
+        if sccs != tsccs {
+            println!("{:?}",
+                     Dot::with_config(&g, &[Config::EdgeNoLabel,
+                                      Config::NodeIndexLabel]));
+            println!("Sccs {:?}", sccs);
+            println!("Sccs (Tarjan) {:?}", tsccs);
+            return false;
+        }
+        true
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
 }
