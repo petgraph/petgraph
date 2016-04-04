@@ -11,6 +11,7 @@ use super::{
     Graph,
     Directed,
     Undirected,
+    EdgeDirection,
     EdgeType,
     Outgoing,
     Incoming,
@@ -18,7 +19,6 @@ use super::{
 };
 use scored::MinScored;
 use super::visit::{
-    Reversed,
     Visitable,
     VisitMap,
 };
@@ -143,15 +143,22 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>>
         if dfs.discovered.is_visited(&nindex) {
             continue
         }
-        dfs.move_to(nindex);
+
+        dfs.stack.push(nindex);
         while let Some(&nx) = dfs.stack.last() {
-            if finished.visit(nx) {
-                // push again to record finishing time
-                dfs.stack.push(nx);
-                dfs.next(&Reversed(g)).unwrap();
+            if dfs.discovered.visit(nx) {
+                // First time visiting `nx`: Push neighbors, don't pop `nx`
+                for succ in g.neighbors_directed(nx.clone(), EdgeDirection::Incoming) {
+                    if !dfs.discovered.is_visited(&succ) {
+                        dfs.stack.push(succ);
+                    }
+                }
             } else {
                 dfs.stack.pop();
-                finish_order.push(nx);
+                if finished.visit(nx) {
+                    // Second time: All reachable nodes must have been finished
+                    finish_order.push(nx);
+                }
             }
         }
     }
