@@ -19,6 +19,12 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.2.4
+
+  - Fix an algorithm error in scc (#61). This time we have a fuzz test that
+    crosschecks the result of the algorithm vs another implementation, for
+    greater confidence in its correctness.
+
 - 0.2.3
 
   - Require Rust 1.6: Due to changes in how rust uses type parameter defaults.
