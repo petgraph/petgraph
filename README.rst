@@ -21,7 +21,7 @@ Recent Changes
 
 - 0.2.4
 
-  - Fix an algorithm error in scc (#61). This time we have a fuzz test that
+  - Fix an algorithm error in scc (#61). This time we have a test that
     crosschecks the result of the algorithm vs another implementation, for
     greater confidence in its correctness.
 
