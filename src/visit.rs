@@ -658,7 +658,7 @@ impl<N, VM> Topo<N, VM>
         }
     }
 
-    /// Clear visited state, and put all initial nodes in to the visit list.
+    /// Clear visited state, and put all initial nodes into the visit list.
     pub fn reset<'a, G>(&mut self, graph: &'a G)
         where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
     {
@@ -667,7 +667,7 @@ impl<N, VM> Topo<N, VM>
         self.tovisit.extend(graph.externals(Incoming));
     }
 
-    /// Clear visited state, and put a single node in to the visit list.
+    /// Clear visited state, and put a single node into the visit list.
     pub fn reset_with_node<'a, G>(&mut self, graph: &'a G, node: N)
         where G: Revisitable<NodeId=N, Map=VM>,
     {
