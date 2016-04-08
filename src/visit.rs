@@ -618,6 +618,7 @@ impl<'a, G: Visitable> Clone for BfsIter<'a, G> where Bfs<G::NodeId, G::Map>: Cl
 #[derive(Clone)]
 pub struct Topo<N, VM> {
     tovisit: Vec<N>,
+    notvisited: VecDeque<N>,
     ordered: VM,
 }
 
@@ -635,7 +636,16 @@ impl<N, VM> Topo<N, VM>
         topo
     }
 
-    /* Private ntil it has a use */
+    /// Create a new **Topo** from a single node.
+    pub fn from_node<'a, G>(graph: &'a G, node: N) -> Self
+        where G: Visitable<NodeId=N, Map=VM>,
+    {
+        let mut topo = Self::empty(graph);
+        topo.tovisit.push(node);
+        topo
+    }
+
+    /* Private until it has a use */
     /// Create a new **Topo**, using the graph's visitor map with *no* starting
     /// index specified.
     fn empty<G>(graph: &G) -> Self
@@ -644,16 +654,26 @@ impl<N, VM> Topo<N, VM>
         Topo {
             ordered: graph.visit_map(),
             tovisit: Vec::new(),
+            notvisited: VecDeque::new(),
         }
     }
 
-    /// Clear visited state, and put all initial nodes in the to visit list.
+    /// Clear visited state, and put all initial nodes in to the visit list.
     pub fn reset<'a, G>(&mut self, graph: &'a G)
         where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
     {
         graph.reset_map(&mut self.ordered);
         self.tovisit.clear();
         self.tovisit.extend(graph.externals(Incoming));
+    }
+
+    /// Clear visited state, and put a single node in to the visit list.
+    pub fn reset_with_node<'a, G>(&mut self, graph: &'a G, node: N)
+        where G: Revisitable<NodeId=N, Map=VM>,
+    {
+        graph.reset_map(&mut self.ordered);
+        self.tovisit.clear();
+        self.tovisit.push(node);
     }
 
     /// Return the next node in the current topological order traversal, or
@@ -665,21 +685,28 @@ impl<N, VM> Topo<N, VM>
         where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
     {
         // Take an unvisited element and find which of its neighbors are next
-        while let Some(nix) = self.tovisit.pop() {
-            if self.ordered.is_visited(&nix) {
-                continue;
-            }
-            self.ordered.visit(nix.clone());
-            for neigh in g.neighbors_directed(nix.clone(), Outgoing) {
-                // Look at each neighbor, and those that only have incoming edges
-                // from the already ordered list, they are the next to visit.
-                if g.neighbors_directed(neigh.clone(), Incoming).all(|b| self.ordered.is_visited(&b)) {
-                    self.tovisit.push(neigh);
+        loop {
+            while let Some(nix) = self.tovisit.pop() {
+                if self.ordered.is_visited(&nix) {
+                    continue;
                 }
+                self.ordered.visit(nix.clone());
+                for neigh in g.neighbors_directed(nix.clone(), Outgoing) {
+                    // Look at each neighbor, and those that only have incoming edges
+                    // from the already ordered list, they are the next to visit.
+                    if g.neighbors_directed(neigh.clone(), Incoming).all(|b| self.ordered.is_visited(&b)) {
+                        self.tovisit.push(neigh);
+                    } else {
+                        self.notvisited.push_back(neigh);
+                    }
+                }
+                return Some(nix);
             }
-            return Some(nix);
+            if let Some(nix) = self.notvisited.pop_front() {
+                self.tovisit.push(nix);
+            } else {
+                return None;
+            }
         }
-        None
     }
 }
-
