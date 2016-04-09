@@ -622,7 +622,7 @@ fn sub_topo() {
             }
         }
         let mut index = 0;
-        let mut topo = SubTopo::from_node(&gr, graph_index);
+        let mut topo = SubTopo::new(&gr, graph_index);
         while let Some(nx) = topo.next(&gr) {
             gr[nx] = index;
             index += 1;
@@ -630,7 +630,7 @@ fn sub_topo() {
 
         let mut order = Vec::new();
         index = 0;
-        let mut topo = SubTopo::from_node(&gr, graph_index);
+        let mut topo = SubTopo::new(&gr, graph_index);
         while let Some(nx) = topo.next(&gr) {
             order.push(nx);
             assert_eq!(gr[nx], index);
@@ -644,7 +644,7 @@ fn sub_topo() {
 
         {
             order.clear();
-            let mut topo = SubTopo::from_node(&gr, graph_index);
+            let mut topo = SubTopo::new(&gr, graph_index);
             while let Some(nx) = topo.next(&gr) {
                 order.push(nx);
             }

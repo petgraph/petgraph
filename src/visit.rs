@@ -626,7 +626,7 @@ impl<N, VM> Topo<N, VM>
           VM: VisitMap<N>,
 {
     /// Create a new **Topo**, using the graph's visitor map, and put all
-    /// initial nodes in the to visit list.
+    /// initial nodes into the visit list.
     pub fn new<'a, G>(graph: &'a G) -> Self
         where G: Externals<'a> + Visitable<NodeId=N, Map=VM>,
     {
@@ -657,7 +657,7 @@ impl<N, VM> Topo<N, VM>
     }
 
     /// Return the next node in the current topological order traversal, or
-    /// `None` if the traversal is at end.
+    /// `None` if the traversal is at the end.
     ///
     /// *Note:* The graph may not have a complete topological order, and the only
     /// way to know is to run the whole traversal and make sure it visits every node.
@@ -695,19 +695,9 @@ impl<N, VM> SubTopo<N, VM>
     where N: Clone,
           VM: VisitMap<N>,
 {
-    /// Create a new **SubTopo**, using the graph's visitor map, and put all
-    /// initial nodes in the to visit list.
-    pub fn new<'a, G>(graph: &'a G) -> Self
+    /// Create a new **SubTopo**, using the graph's visitor map, and put single node into the visit list.
+    pub fn new<'a, G>(graph: &'a G, node: N) -> Self
         where G: Externals<'a> + Visitable<NodeId=N, Map=VM>,
-    {
-        let mut topo = Self::empty(graph);
-        topo.tovisit.extend(graph.externals(Incoming));
-        topo
-    }
-
-    /// Create a new **SubTopo** from a single node.
-    pub fn from_node<'a, G>(graph: &'a G, node: N) -> Self
-        where G: Visitable<NodeId=N, Map=VM>,
     {
         let mut topo = Self::empty(graph);
         topo.tovisit.push(node);
@@ -727,15 +717,6 @@ impl<N, VM> SubTopo<N, VM>
         }
     }
 
-    /// Clear visited state, and put all initial nodes into the visit list.
-    pub fn reset<'a, G>(&mut self, graph: &'a G)
-        where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
-    {
-        graph.reset_map(&mut self.ordered);
-        self.tovisit.clear();
-        self.tovisit.extend(graph.externals(Incoming));
-    }
-
     /// Clear visited state, and put a single node into the visit list.
     pub fn reset_with_node<'a, G>(&mut self, graph: &'a G, node: N)
         where G: Revisitable<NodeId=N, Map=VM>,
@@ -746,10 +727,9 @@ impl<N, VM> SubTopo<N, VM>
     }
 
     /// Return the next node in the current topological order traversal, or
-    /// `None` if the traversal is at end.
+    /// `None` if the traversal is at the end.
     ///
-    /// *Note:* The graph may not have a complete topological order, and the only
-    /// way to know is to run the whole traversal and make sure it visits every node.
+    /// *Note:* The subgraph may not have a complete topological order.
     pub fn next<'a, G>(&mut self, g: &'a G) -> Option<N>
         where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
     {
