@@ -5,6 +5,7 @@ extern crate petgraph;
 
 use rand::Rng;
 use std::cmp::min;
+use std::collections::HashMap;
 
 use petgraph::{
     Graph, GraphMap, Undirected, Directed, EdgeType, Incoming, Outgoing,
@@ -13,12 +14,14 @@ use petgraph::dot::{Dot, Config};
 use petgraph::algo::{
     condensation,
     min_spanning_tree,
-    is_cyclic_directed,
     is_cyclic_undirected,
+    is_cyclic_directed,
     is_isomorphic,
     is_isomorphic_matching,
+    toposort,
     scc,
 };
+use petgraph::visit::{Topo, SubTopo};
 use petgraph::graph::{IndexType, node_index, edge_index, NodeIndex};
 #[cfg(feature = "stable_graph")]
 use petgraph::graph::stable::StableGraph;
@@ -460,6 +463,197 @@ fn graph_sccs() {
 fn graph_condensation_acyclic() {
     fn prop(g: Graph<(), ()>) -> bool {
         !is_cyclic_directed(&condensation(g, /* make_acyclic */ true))
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
+}
+
+#[derive(Debug, Clone)]
+struct DAG<N: Default + Clone + Send + 'static>(Graph<N, ()>);
+
+impl<N: Default + Clone + Send + 'static> quickcheck::Arbitrary for DAG<N> {
+    fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
+        let nodes = usize::arbitrary(g);
+        if nodes == 0 {
+            return DAG(Graph::with_capacity(0, 0));
+        }
+        let split = g.gen_range(0., 1.);
+        let max_width = f64::sqrt(nodes as f64) as usize;
+        let tall = (max_width as f64 * split) as usize;
+        let fat = max_width - tall;
+
+        let edge_prob = 1. - (1. - g.gen_range(0., 1.)) * (1. - g.gen_range(0., 1.));
+        let edges = ((nodes as f64).powi(2) * edge_prob) as usize;
+        let mut gr = Graph::with_capacity(nodes, edges);
+        let mut nodes = 0;
+        for _ in 0..tall {
+            let cur_nodes = g.gen_range(0, fat);
+            for _ in 0..cur_nodes {
+                gr.add_node(N::default());
+            }
+            for j in 0..nodes {
+                for k in 0..cur_nodes {
+                    if g.gen_range(0., 1.) < edge_prob {
+                        gr.add_edge(NodeIndex::new(j), NodeIndex::new(k + nodes), ());
+                    }
+                }
+            }
+            nodes += cur_nodes;
+        }
+        DAG(gr)
+    }
+
+    // shrink the graph by splitting it in two by a very
+    // simple algorithm, just even and odd node indices
+    fn shrink(&self) -> Box<Iterator<Item=Self>> {
+        let self_ = self.clone();
+        Box::new((0..2).filter_map(move |x| {
+            let gr = self_.0.filter_map(|i, w| {
+                if i.index() % 2 == x {
+                    Some(w.clone())
+                } else {
+                    None
+                }
+            },
+            |_, w| Some(w.clone())
+            );
+            // make sure we shrink
+            if gr.node_count() < self_.0.node_count() {
+                Some(DAG(gr))
+            } else {
+                None
+            }
+        }))
+    }
+}
+
+fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
+    if gr.node_count() != order.len() {
+        println!("Graph ({}) and count ({}) had different amount of nodes.", gr.node_count(), order.len());
+        return false;
+    }
+    // check all the edges of the graph
+    for edge in gr.raw_edges() {
+        let a = edge.source();
+        let b = edge.target();
+        let ai = order.iter().position(|x| *x == a).unwrap();
+        let bi = order.iter().position(|x| *x == b).unwrap();
+        if ai >= bi {
+            println!("{:?} > {:?} ", a, b);
+            return false;
+        }
+    }
+    true
+}
+
+#[test]
+fn full_topo() {
+    fn prop(DAG(gr): DAG<()>) -> bool {
+        let order = toposort(&gr);
+        is_topo_order(&gr, &order)
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
+}
+
+#[test]
+fn full_topo_generic() {
+    fn prop_generic(DAG(mut gr): DAG<usize>) -> bool {
+        assert!(!is_cyclic_directed(&gr));
+        let mut index = 0;
+        let mut topo = Topo::new(&gr);
+        while let Some(nx) = topo.next(&gr) {
+            gr[nx] = index;
+            index += 1;
+        }
+
+        let mut order = Vec::new();
+        index = 0;
+        let mut topo = Topo::new(&gr);
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+            assert_eq!(gr[nx], index);
+            index += 1;
+        }
+        if !is_topo_order(&gr, &order) {
+            println!("{:?}", gr);
+            return false;
+        }
+
+        {
+            order.clear();
+            let mut topo = Topo::new(&gr);
+            while let Some(nx) = topo.next(&gr) {
+                order.push(nx);
+            }
+            if !is_topo_order(&gr, &order) {
+                println!("{:?}", gr);
+                return false;
+            }
+        }
+        true
+    }
+    quickcheck::quickcheck(prop_generic as fn(_) -> bool);
+}
+
+#[test]
+fn sub_topo() {
+    fn prop(DAG(mut gr): DAG<usize>) -> bool {
+        if gr.node_count() == 0 {
+            return true;
+        }
+        assert!(!is_cyclic_directed(&gr));
+        let graph_index = rand::thread_rng().gen_range(0, gr.node_count());
+        let graph_index = NodeIndex::new(graph_index);
+        let mut sub = Graph::new();
+        let sub_index = sub.add_node(graph_index);
+        let mut graph_to_sub = HashMap::new();
+        graph_to_sub.insert(graph_index, sub_index);
+        let mut stack = vec![(graph_index, sub_index)];
+        // TODO: Replace this with Bfs/Dfs that gives edges.
+        while let Some((graph_index, sub_index)) = stack.pop() {
+            for graph_neighbor in gr.neighbors_directed(graph_index, Outgoing) {
+                if graph_to_sub.contains_key(&graph_neighbor) {
+                    continue;
+                }
+                let sub_neighbor = sub.add_node(graph_neighbor);
+                graph_to_sub.insert(graph_neighbor, sub_neighbor);
+                sub.add_edge(sub_index, sub_neighbor, ());
+                stack.push((graph_neighbor, sub_neighbor));
+            }
+        }
+        let mut index = 0;
+        let mut topo = SubTopo::from_node(&gr, graph_index);
+        while let Some(nx) = topo.next(&gr) {
+            gr[nx] = index;
+            index += 1;
+        }
+
+        let mut order = Vec::new();
+        index = 0;
+        let mut topo = SubTopo::from_node(&gr, graph_index);
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+            assert_eq!(gr[nx], index);
+            index += 1;
+        }
+        let mapped_order = order.iter().map(|o| *graph_to_sub.get(o).unwrap()).collect::<Vec<_>>();
+        if !is_topo_order(&sub, &mapped_order) {
+            println!("Subgraph for node {} is {:?} and the order for it is: {:?}", graph_index.index(), sub, order);
+            return false;
+        }
+
+        {
+            order.clear();
+            let mut topo = SubTopo::from_node(&gr, graph_index);
+            while let Some(nx) = topo.next(&gr) {
+                order.push(nx);
+            }
+            let mapped_order = order.iter().map(|o| *graph_to_sub.get(o).unwrap()).collect::<Vec<_>>();
+            if !is_topo_order(&sub, &mapped_order) {
+                println!("Subgraph for node {} is {:?} and the order for it is: {:?}", graph_index.index(), sub, order);
+                return false;
+            }
+        }
+        true
     }
     quickcheck::quickcheck(prop as fn(_) -> bool);
 }
