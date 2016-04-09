@@ -207,7 +207,7 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
     // Consume nodes and edges of the old graph and insert them into the new one.
     let (nodes, edges) = g.destructure();
     for (nix, node) in nodes.into_iter().enumerate() {
-        condensed.node_weight_mut(node_map[nix]).unwrap().push(node.weight);
+        condensed[node_map[nix]].push(node.weight);
     }
     for edge in edges {
         let source = node_map[edge.source().index()];
