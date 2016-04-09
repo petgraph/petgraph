@@ -696,7 +696,7 @@ impl<N, VM> SubTopo<N, VM>
           VM: VisitMap<N>,
 {
     /// Create a new **SubTopo**, using the graph's visitor map, and put single node into the visit list.
-    pub fn new<'a, G>(graph: &'a G, node: N) -> Self
+    pub fn from_node<'a, G>(graph: &'a G, node: N) -> Self
         where G: Externals<'a> + Visitable<NodeId=N, Map=VM>,
     {
         let mut topo = Self::empty(graph);
