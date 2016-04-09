@@ -730,6 +730,7 @@ impl<N, VM> SubTopo<N, VM>
     /// `None` if the traversal is at the end.
     ///
     /// *Note:* The subgraph may not have a complete topological order.
+    /// If there is a cycle in the subgraph, then nodes of that cycle *are* included in this traversal. 
     pub fn next<'a, G>(&mut self, g: &'a G) -> Option<N>
         where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
     {
