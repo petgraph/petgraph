@@ -883,6 +883,12 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         &self.edges
     }
 
+    /// Return the internal arrays, consuming the graph.
+    pub fn destructure(self) -> (Vec<Node<N, Ix>>, Vec<Edge<E, Ix>>)
+    {
+        (self.nodes, self.edges)
+    }
+
     /// Accessor for data structure internals: the first edge in the given direction.
     pub fn first_edge(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Option<EdgeIndex<Ix>>
     {

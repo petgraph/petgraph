@@ -522,18 +522,18 @@ fn is_cyclic_directed() {
     assert!(petgraph::algo::is_cyclic_directed(&gr));
 }
 
+fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>) {
+    // normalize the result and compare with the answer.
+    for scc in res.iter_mut() {
+        scc.sort();
+    }
+    // sort by minimum element
+    res.sort_by(|v, w| v[0].cmp(&w[0]));
+    assert_eq!(res, normalized);
+}
+
 #[test]
 fn scc() {
-    fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>) {
-        // normalize the result and compare with the answer.
-        for scc in res.iter_mut() {
-            scc.sort();
-        }
-        // sort by minimum element
-        res.sort_by(|v, w| v[0].cmp(&w[0]));
-        assert_eq!(res, normalized);
-    }
-
     let gr: Graph<(), ()> = Graph::from_edges(&[
         (6, 0),
         (0, 3),
@@ -596,6 +596,42 @@ fn scc() {
     assert_sccs_eq(petgraph::algo::scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
     ]);
+}
+
+#[test]
+fn condensation()
+{
+    let gr: Graph<(), ()> = Graph::from_edges(&[
+        (6, 0),
+        (0, 3),
+        (3, 6),
+        (8, 6),
+        (8, 2),
+        (2, 3),
+        (2, 5),
+        (5, 8),
+        (7, 5),
+        (1, 7),
+        (7, 4),
+        (4, 1)]);
+
+
+    // make_acyclic = true
+
+    let cond = petgraph::algo::condensation(gr.clone(), true);
+
+    assert!(cond.node_count() == 3);
+    assert!(cond.edge_count() == 2);
+    assert!(!petgraph::algo::is_cyclic_directed(&cond),
+            "Assertion failed: {:?} acyclic", cond);
+
+
+    // make_acyclic = false
+
+    let cond = petgraph::algo::condensation(gr.clone(), false);
+
+    assert!(cond.node_count() == 3);
+    assert!(cond.edge_count() == gr.edge_count());
 }
 
 #[test]
