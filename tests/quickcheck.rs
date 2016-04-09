@@ -14,7 +14,6 @@ use petgraph::dot::{Dot, Config};
 use petgraph::algo::{
     condensation,
     min_spanning_tree,
-    is_cyclic_directed,
     is_cyclic_undirected,
     is_cyclic_directed,
     is_isomorphic,
