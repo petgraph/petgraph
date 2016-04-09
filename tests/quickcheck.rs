@@ -11,7 +11,9 @@ use petgraph::{
 };
 use petgraph::dot::{Dot, Config};
 use petgraph::algo::{
+    condensation,
     min_spanning_tree,
+    is_cyclic_directed,
     is_cyclic_undirected,
     is_isomorphic,
     is_isomorphic_matching,
@@ -450,6 +452,14 @@ fn graph_sccs() {
             return false;
         }
         true
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
+}
+
+#[test]
+fn graph_condensation_acyclic() {
+    fn prop(g: Graph<(), ()>) -> bool {
+        !is_cyclic_directed(&condensation(g, /* make_acyclic */ true))
     }
     quickcheck::quickcheck(prop as fn(_) -> bool);
 }
