@@ -22,7 +22,7 @@ use petgraph::algo::{
     toposort,
     scc,
 };
-use petgraph::visit::Topo;
+use petgraph::visit::{Topo, SubTopo};
 use petgraph::graph::{IndexType, node_index, edge_index, NodeIndex};
 #[cfg(feature = "stable_graph")]
 use petgraph::graph::stable::StableGraph;
@@ -560,7 +560,7 @@ fn full_topo_generic() {
     fn prop_generic(DAG(mut gr): DAG<usize>) -> bool {
         assert!(!is_cyclic_directed(&gr));
         let mut index = 0;
-        let mut topo = petgraph::visit::Topo::new(&gr);
+        let mut topo = Topo::new(&gr);
         while let Some(nx) = topo.next(&gr) {
             gr[nx] = index;
             index += 1;
@@ -568,7 +568,7 @@ fn full_topo_generic() {
 
         let mut order = Vec::new();
         index = 0;
-        let mut topo = petgraph::visit::Topo::new(&gr);
+        let mut topo = Topo::new(&gr);
         while let Some(nx) = topo.next(&gr) {
             order.push(nx);
             assert_eq!(gr[nx], index);
@@ -581,7 +581,7 @@ fn full_topo_generic() {
 
         {
             order.clear();
-            let mut topo = petgraph::visit::Topo::new(&gr);
+            let mut topo = Topo::new(&gr);
             while let Some(nx) = topo.next(&gr) {
                 order.push(nx);
             }
@@ -622,7 +622,7 @@ fn sub_topo() {
             }
         }
         let mut index = 0;
-        let mut topo = Topo::from_node(&gr, graph_index);
+        let mut topo = SubTopo::from_node(&gr, graph_index);
         while let Some(nx) = topo.next(&gr) {
             gr[nx] = index;
             index += 1;
@@ -630,7 +630,7 @@ fn sub_topo() {
 
         let mut order = Vec::new();
         index = 0;
-        let mut topo = Topo::from_node(&gr, graph_index);
+        let mut topo = SubTopo::from_node(&gr, graph_index);
         while let Some(nx) = topo.next(&gr) {
             order.push(nx);
             assert_eq!(gr[nx], index);
@@ -644,7 +644,7 @@ fn sub_topo() {
 
         {
             order.clear();
-            let mut topo = Topo::from_node(&gr, graph_index);
+            let mut topo = SubTopo::from_node(&gr, graph_index);
             while let Some(nx) = topo.next(&gr) {
                 order.push(nx);
             }

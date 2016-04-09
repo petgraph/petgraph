@@ -618,7 +618,6 @@ impl<'a, G: Visitable> Clone for BfsIter<'a, G> where Bfs<G::NodeId, G::Map>: Cl
 #[derive(Clone)]
 pub struct Topo<N, VM> {
     tovisit: Vec<N>,
-    notvisited: VecDeque<N>,
     ordered: VM,
 }
 
@@ -636,7 +635,77 @@ impl<N, VM> Topo<N, VM>
         topo
     }
 
-    /// Create a new **Topo** from a single node.
+    /* Private until it has a use */
+    /// Create a new **Topo**, using the graph's visitor map with *no* starting
+    /// index specified.
+    fn empty<G>(graph: &G) -> Self
+        where G: Visitable<NodeId=N, Map=VM>
+    {
+        Topo {
+            ordered: graph.visit_map(),
+            tovisit: Vec::new(),
+        }
+    }
+
+    /// Clear visited state, and put all initial nodes into the visit list.
+    pub fn reset<'a, G>(&mut self, graph: &'a G)
+        where G: Externals<'a> + Revisitable<NodeId=N, Map=VM>,
+    {
+        graph.reset_map(&mut self.ordered);
+        self.tovisit.clear();
+        self.tovisit.extend(graph.externals(Incoming));
+    }
+
+    /// Return the next node in the current topological order traversal, or
+    /// `None` if the traversal is at end.
+    ///
+    /// *Note:* The graph may not have a complete topological order, and the only
+    /// way to know is to run the whole traversal and make sure it visits every node.
+    pub fn next<'a, G>(&mut self, g: &'a G) -> Option<N>
+        where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
+    {
+        // Take an unvisited element and find which of its neighbors are next
+        while let Some(nix) = self.tovisit.pop() {
+            if self.ordered.is_visited(&nix) {
+                continue;
+            }
+            self.ordered.visit(nix.clone());
+            for neigh in g.neighbors_directed(nix.clone(), Outgoing) {
+                // Look at each neighbor, and those that only have incoming edges
+                // from the already ordered list, they are the next to visit.
+                if g.neighbors_directed(neigh.clone(), Incoming).all(|b| self.ordered.is_visited(&b)) {
+                    self.tovisit.push(neigh);
+                }
+            }
+            return Some(nix);
+        }
+        None
+    }
+}
+
+/// A topological order traversal for a subgraph.
+#[derive(Clone)]
+pub struct SubTopo<N, VM> {
+    tovisit: Vec<N>,
+    notvisited: VecDeque<N>,
+    ordered: VM,
+}
+
+impl<N, VM> SubTopo<N, VM>
+    where N: Clone,
+          VM: VisitMap<N>,
+{
+    /// Create a new **SubTopo**, using the graph's visitor map, and put all
+    /// initial nodes in the to visit list.
+    pub fn new<'a, G>(graph: &'a G) -> Self
+        where G: Externals<'a> + Visitable<NodeId=N, Map=VM>,
+    {
+        let mut topo = Self::empty(graph);
+        topo.tovisit.extend(graph.externals(Incoming));
+        topo
+    }
+
+    /// Create a new **SubTopo** from a single node.
     pub fn from_node<'a, G>(graph: &'a G, node: N) -> Self
         where G: Visitable<NodeId=N, Map=VM>,
     {
@@ -646,12 +715,12 @@ impl<N, VM> Topo<N, VM>
     }
 
     /* Private until it has a use */
-    /// Create a new **Topo**, using the graph's visitor map with *no* starting
+    /// Create a new **SubTopo**, using the graph's visitor map with *no* starting
     /// index specified.
     fn empty<G>(graph: &G) -> Self
         where G: Visitable<NodeId=N, Map=VM>
     {
-        Topo {
+        SubTopo {
             ordered: graph.visit_map(),
             tovisit: Vec::new(),
             notvisited: VecDeque::new(),
