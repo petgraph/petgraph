@@ -883,9 +883,8 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         &self.edges
     }
 
-    /// Return the internal arrays, consuming the graph.
-    pub fn destructure(self) -> (Vec<Node<N, Ix>>, Vec<Edge<E, Ix>>)
-    {
+    /// Convert the graph into a vector of Nodes and a vector of Edges
+    pub fn into_nodes_edges(self) -> (Vec<Node<N, Ix>>, Vec<Edge<E, Ix>>) {
         (self.nodes, self.edges)
     }
 
