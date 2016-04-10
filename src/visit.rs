@@ -625,8 +625,8 @@ impl<N, VM> Topo<N, VM>
     where N: Clone,
           VM: VisitMap<N>,
 {
-    /// Create a new **Topo**, using the graph's visitor map, and put all
-    /// initial nodes into the visit list.
+    /// Create a new `Topo`, using the graph's visitor map, and put all
+    /// initial nodes in the to-visit list.
     pub fn new<'a, G>(graph: &'a G) -> Self
         where G: Externals<'a> + Visitable<NodeId=N, Map=VM>,
     {
@@ -636,7 +636,7 @@ impl<N, VM> Topo<N, VM>
     }
 
     /* Private until it has a use */
-    /// Create a new **Topo**, using the graph's visitor map with *no* starting
+    /// Create a new `Topo`, using the graph's visitor map with *no* starting
     /// index specified.
     fn empty<G>(graph: &G) -> Self
         where G: Visitable<NodeId=N, Map=VM>
@@ -684,6 +684,9 @@ impl<N, VM> Topo<N, VM>
 }
 
 /// A topological order traversal for a subgraph.
+///
+/// SubTopo starts at a node, and does a topological order traversal of
+/// all nodes reachable from the starting point.
 #[derive(Clone)]
 pub struct SubTopo<N, VM> {
     tovisit: Vec<N>,
@@ -695,7 +698,8 @@ impl<N, VM> SubTopo<N, VM>
     where N: Clone,
           VM: VisitMap<N>,
 {
-    /// Create a new **SubTopo**, using the graph's visitor map, and put single node into the visit list.
+    /// Create a new `SubTopo`, using the graph's visitor map, and put single
+    /// node in the to-visit list.
     pub fn from_node<'a, G>(graph: &'a G, node: N) -> Self
         where G: Externals<'a> + Visitable<NodeId=N, Map=VM>,
     {
@@ -705,7 +709,7 @@ impl<N, VM> SubTopo<N, VM>
     }
 
     /* Private until it has a use */
-    /// Create a new **SubTopo**, using the graph's visitor map with *no* starting
+    /// Create a new `SubTopo`, using the graph's visitor map with *no* starting
     /// index specified.
     fn empty<G>(graph: &G) -> Self
         where G: Visitable<NodeId=N, Map=VM>
