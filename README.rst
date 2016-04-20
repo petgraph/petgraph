@@ -19,6 +19,10 @@ __ http://bluss.github.io/petulant-avenger-graphlibrary/
 Recent Changes
 --------------
 
+- 0.2.6
+
+  - Fix warning about type parameter defaults (no functional change)
+
 - 0.2.5
 
   - Add SubTopo, a topo walker for the subgraph reachable from a starting point.
