@@ -71,7 +71,7 @@ unsafe impl IndexType for u8 {
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct NodeIndex<Ix=DefIndex>(Ix);
 
-impl<Ix: IndexType = DefIndex> NodeIndex<Ix>
+impl<Ix: IndexType> NodeIndex<Ix>
 {
     #[inline]
     pub fn new(x: usize) -> Self {
@@ -109,7 +109,7 @@ pub fn edge_index<Ix: IndexType>(index: usize) -> EdgeIndex<Ix> { EdgeIndex::new
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct EdgeIndex<Ix=DefIndex>(Ix);
 
-impl<Ix: IndexType = DefIndex> EdgeIndex<Ix>
+impl<Ix: IndexType> EdgeIndex<Ix>
 {
     #[inline]
     pub fn new(x: usize) -> Self {
@@ -158,7 +158,7 @@ pub struct Node<N, Ix: IndexType = DefIndex> {
     next: [EdgeIndex<Ix>; 2],
 }
 
-impl<N, Ix: IndexType = DefIndex> Node<N, Ix>
+impl<N, Ix: IndexType> Node<N, Ix>
 {
     /// Accessor for data structure internals: the first edge in the given direction.
     pub fn next_edge(&self, dir: EdgeDirection) -> EdgeIndex<Ix>
@@ -178,7 +178,7 @@ pub struct Edge<E, Ix: IndexType = DefIndex> {
     node: [NodeIndex<Ix>; 2],
 }
 
-impl<E, Ix: IndexType = DefIndex> Edge<E, Ix>
+impl<E, Ix: IndexType> Edge<E, Ix>
 {
     /// Accessor for data structure internals: the next edge for the given direction.
     pub fn next_edge(&self, dir: EdgeDirection) -> EdgeIndex<Ix>
