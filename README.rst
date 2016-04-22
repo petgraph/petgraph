@@ -6,18 +6,22 @@ Graph data structure library. Requires Rust 1.6.
 
 Please read the `API documentation here`__
 
-__ http://bluss.github.io/petulant-avenger-graphlibrary/
+__ http://bluss.github.io/petgraph/
 
 |build_status|_ |crates|_
 
-.. |build_status| image:: https://travis-ci.org/bluss/petulant-avenger-graphlibrary.svg?branch=master
-.. _build_status: https://travis-ci.org/bluss/petulant-avenger-graphlibrary
+.. |build_status| image:: https://travis-ci.org/bluss/petgraph.svg?branch=master
+.. _build_status: https://travis-ci.org/bluss/petgraph
 
 .. |crates| image:: http://meritbadge.herokuapp.com/petgraph
 .. _crates: https://crates.io/crates/petgraph
 
 Recent Changes
 --------------
+
+- 0.2.7
+
+  - Update URLs
 
 - 0.2.6
 
