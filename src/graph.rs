@@ -1,4 +1,5 @@
-//! `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
+//! `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list 
+//! representation.
 
 use std::cmp;
 use std::fmt;
@@ -333,16 +334,14 @@ fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T>
 {
     if a == b {
         slc.get_mut(a).map_or(Pair::None, Pair::One)
+    } else if a >= slc.len() || b >= slc.len() {
+        Pair::None
     } else {
-        if a >= slc.len() || b >= slc.len() {
-            Pair::None
-        } else {
-            // safe because a, b are in bounds and distinct
-            unsafe {
-                let ar = &mut *(slc.get_unchecked_mut(a) as *mut _);
-                let br = &mut *(slc.get_unchecked_mut(b) as *mut _);
-                Pair::Both(ar, br)
-            }
+        // safe because a, b are in bounds and distinct
+        unsafe {
+            let ar = &mut *(slc.get_unchecked_mut(a) as *mut _);
+            let br = &mut *(slc.get_unchecked_mut(b) as *mut _);
+            Pair::Both(ar, br)
         }
     }
 }
@@ -498,12 +497,9 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix>
     {
         if let Some(ix) = self.find_edge(a, b) {
-            match self.edge_weight_mut(ix) {
-                Some(ed) => {
-                    *ed = weight;
-                    return ix;
-                }
-                None => {}
+            if let Some(ed) = self.edge_weight_mut(ix) {
+                *ed = weight;
+                return ix;
             }
         }
         self.add_edge(a, b, weight)
@@ -546,11 +542,8 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// endpoint in the displaced node.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N>
     {
-        match self.nodes.get(a.index()) {
-            None => return None,
-            _ => {}
-        }
-        for d in DIRECTIONS.iter() {
+        if self.nodes.get(a.index()).is_none() { return None }
+        for d in &DIRECTIONS {
             let k = *d as usize;
 
             // Remove all edges from and to this node.
@@ -582,7 +575,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         let new_index = a;
 
         // Adjust the starts of the out edges, and ends of the in edges.
-        for &d in DIRECTIONS.iter() {
+        for &d in &DIRECTIONS {
             let k = d as usize;
             for (_, curedge) in EdgesMut::new(&mut self.edges, swap_edges[k], d) {
                 debug_assert!(curedge.node[k] == old_index);
@@ -597,7 +590,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     fn change_edge_links(&mut self, edge_node: [NodeIndex<Ix>; 2], e: EdgeIndex<Ix>,
                          edge_next: [EdgeIndex<Ix>; 2])
     {
-        for &d in DIRECTIONS.iter() {
+        for &d in &DIRECTIONS {
             let k = d as usize;
             let node = match self.nodes.get_mut(edge_node[k].index()) {
                 Some(r) => r,
@@ -809,7 +802,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         match self.nodes.get(a.index()) {
             None => None,
             Some(node) => {
-                for &d in DIRECTIONS.iter() {
+                for &d in &DIRECTIONS {
                     let k = d as usize;
                     let mut edix = node.next[k];
                     while let Some(edge) = self.edges.get(edix.index()) {
@@ -930,7 +923,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// - `Directed`, `Incoming`: All edges to `a`.
     pub fn walk_edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> WalkEdges<Ix>
     {
-        let first_edge = self.first_edge(a, dir).unwrap_or(EdgeIndex::end());
+        let first_edge = self.first_edge(a, dir).unwrap_or_else(EdgeIndex::end);
         WalkEdges { next: first_edge, direction: dir }
     }
 
