@@ -1,5 +1,4 @@
-//! `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list 
-//! representation.
+//! `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 
 use std::cmp;
 use std::fmt;
@@ -542,7 +541,9 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// endpoint in the displaced node.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N>
     {
-        if self.nodes.get(a.index()).is_none() { return None }
+        if self.nodes.get(a.index()).is_none() {
+            return None
+        }
         for d in &DIRECTIONS {
             let k = *d as usize;
 
@@ -923,7 +924,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// - `Directed`, `Incoming`: All edges to `a`.
     pub fn walk_edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> WalkEdges<Ix>
     {
-        let first_edge = self.first_edge(a, dir).unwrap_or_else(EdgeIndex::end);
+        let first_edge = self.first_edge(a, dir).unwrap_or(EdgeIndex::end());
         WalkEdges { next: first_edge, direction: dir }
     }
 

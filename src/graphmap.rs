@@ -117,7 +117,7 @@ impl<N, E> GraphMap<N, E>
 
     /// Add node `n` to the graph.
     pub fn add_node(&mut self, n: N) -> N {
-        self.nodes.entry(n).or_insert_with(Vec::new);
+        self.nodes.entry(n).or_insert(Vec::new());
         n
     }
 
@@ -451,8 +451,14 @@ impl<N, E> Default for GraphMap<N, E>
 /// in particular in the combination where the node type for
 /// `GraphMap` is something of type for example `Ptr(&Cell<T>)`,
 /// with the `Cell<T>` being `TypedArena` allocated.
-#[derive(Copy, Clone)]
 pub struct Ptr<'b, T: 'b>(pub &'b T);
+
+impl<'b, T> Copy for Ptr<'b, T> {}
+impl<'b, T> Clone for Ptr<'b, T>
+{
+    fn clone(&self) -> Self { *self }
+}
+
 
 fn ptr_eq<T>(a: *const T, b: *const T) -> bool {
     a == b

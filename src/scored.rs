@@ -33,15 +33,20 @@ impl<K: PartialOrd, T> Ord for MinScored<K, T> {
     fn cmp(&self, other: &MinScored<K, T>) -> Ordering {
         let a = &self.0;
         let b = &other.0;
-        match b.partial_cmp(a) {
-            Some(ord) => ord,
-            None =>
-                // Order NaN less, so that it is last in the MinScore order
-                if a != a {
-                    if b != b { Ordering::Equal } else { Ordering::Less }
-                } else {
-                    Ordering::Greater
-                }
+        if a == b {
+            Ordering::Equal
+        } else if a < b {
+            Ordering::Greater
+        } else if a > b {
+            Ordering::Less
+        } else if a != a && b != b {
+            // these are the NaN cases
+            Ordering::Equal
+        } else if a != a {
+            // Order NaN less, so that it is last in the MinScore order
+            Ordering::Less
+        } else {
+            Ordering::Greater
         }
     }
 }

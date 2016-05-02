@@ -340,7 +340,7 @@ pub trait GetAdjacencyMatrix : Graphlike {
     fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
 }
 
-/// The `GraphMap? keeps an adjacency matrix internally.
+/// The `GraphMap` keeps an adjacency matrix internally.
 impl<N, E> GetAdjacencyMatrix for GraphMap<N, E>
     where N: Copy + Ord + Hash
 {
