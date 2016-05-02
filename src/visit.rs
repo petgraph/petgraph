@@ -30,7 +30,7 @@ pub trait Graphlike {
     type NodeId: Clone;
 }
 
-/// NeighborIter gives access to the neighbors iterator.
+/// `NeighborIter` gives access to the neighbors iterator.
 pub trait NeighborIter<'a> : Graphlike {
     type Iter: Iterator<Item=Self::NodeId>;
 
@@ -101,8 +101,8 @@ impl<'a, 'b, N, E: 'a, Ty, Ix> NeighborIter<'a> for Reversed<&'b Graph<N, E, Ty,
     }
 }
 
-/// NeighborsDirected gives access to neighbors of both `Incoming` and `Outgoing`
-/// edges of a node.
+/// `NeighborsDirected` gives access to neighbors of both `Incoming` and
+/// `Outgoing` edges of a node.
 pub trait NeighborsDirected<'a> : Graphlike {
     type NeighborsDirected: Iterator<Item=Self::NodeId>;
 
@@ -175,7 +175,7 @@ impl<'a, 'b,  G> Externals<'a> for Reversed<&'b G>
     }
 }
 
-/// A mapping for storing the visited status for NodeId `N`.
+/// A mapping for storing the visited status for `NodeId` `N`.
 pub trait VisitMap<N> {
     /// Return **true** if the value is not already present.
     fn visit(&mut self, N) -> bool;
@@ -340,7 +340,7 @@ pub trait GetAdjacencyMatrix : Graphlike {
     fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
 }
 
-/// The **GraphMap** keeps an adjacency matrix internally.
+/// The `GraphMap` keeps an adjacency matrix internally.
 impl<N, E> GetAdjacencyMatrix for GraphMap<N, E>
     where N: Copy + Ord + Hash
 {
@@ -685,7 +685,7 @@ impl<N, VM> Topo<N, VM>
 
 /// A topological order traversal for a subgraph.
 ///
-/// SubTopo starts at a node, and does a topological order traversal of
+/// `SubTopo` starts at a node, and does a topological order traversal of
 /// all nodes reachable from the starting point.
 #[derive(Clone)]
 pub struct SubTopo<N, VM> {
@@ -722,7 +722,7 @@ impl<N, VM> SubTopo<N, VM>
     }
 
     /// Clear visited state, and put a single node into the visit list.
-    pub fn reset_with_node<'a, G>(&mut self, graph: &'a G, node: N)
+    pub fn reset_with_node<G>(&mut self, graph: &G, node: N)
         where G: Revisitable<NodeId=N, Map=VM>,
     {
         graph.reset_map(&mut self.ordered);

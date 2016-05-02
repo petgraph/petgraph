@@ -148,7 +148,7 @@ pub fn scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>>
         while let Some(&nx) = dfs.stack.last() {
             if dfs.discovered.visit(nx) {
                 // First time visiting `nx`: Push neighbors, don't pop `nx`
-                for succ in g.neighbors_directed(nx.clone(), EdgeDirection::Incoming) {
+                for succ in g.neighbors_directed(nx, EdgeDirection::Incoming) {
                     if !dfs.discovered.is_visited(&succ) {
                         dfs.stack.push(succ);
                     }

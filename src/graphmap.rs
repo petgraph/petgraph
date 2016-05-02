@@ -117,7 +117,7 @@ impl<N, E> GraphMap<N, E>
 
     /// Add node `n` to the graph.
     pub fn add_node(&mut self, n: N) -> N {
-        self.nodes.entry(n).or_insert_with(|| Vec::new());
+        self.nodes.entry(n).or_insert(Vec::new());
         n
     }
 
@@ -459,6 +459,7 @@ impl<'b, T> Clone for Ptr<'b, T>
     fn clone(&self) -> Self { *self }
 }
 
+
 fn ptr_eq<T>(a: *const T, b: *const T) -> bool {
     a == b
 }
@@ -490,7 +491,7 @@ impl<'b, T> Ord for Ptr<'b, T>
 
 impl<'b, T> Deref for Ptr<'b, T> {
     type Target = T;
-    fn deref<'a>(&'a self) -> &'a T {
+    fn deref(&self) -> &T {
         self.0
     }
 }

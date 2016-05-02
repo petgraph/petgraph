@@ -3,12 +3,12 @@ use std::cmp::Ordering;
 /// `MinScored<K, T>` holds a score `K` and a scored object `T` in
 /// a pair for use with a `BinaryHeap`.
 ///
-/// MinScored compares in reverse order by the score, so that we can
-/// use BinaryHeap as a min-heap to extract the score-value pair with the
+/// `MinScored` compares in reverse order by the score, so that we can
+/// use `BinaryHeap` as a min-heap to extract the score-value pair with the
 /// least score.
 ///
-/// **Note:** MinScored implements a total order (`Ord`), so that it is possible
-/// to use float types as scores.
+/// **Note:** `MinScored` implements a total order (`Ord`), so that it is
+/// possible to use float types as scores.
 #[derive(Copy, Clone, Debug)]
 pub struct MinScored<K, T>(pub K, pub T);
 
@@ -39,16 +39,14 @@ impl<K: PartialOrd, T> Ord for MinScored<K, T> {
             Ordering::Greater
         } else if a > b {
             Ordering::Less
-        } else {
+        } else if a != a && b != b {
             // these are the NaN cases
-            if a != a && b != b {
-                Ordering::Equal
-            } else if a != a {
+            Ordering::Equal
+        } else if a != a {
             // Order NaN less, so that it is last in the MinScore order
-                Ordering::Less
-            } else {
-                Ordering::Greater
-            }
+            Ordering::Less
+        } else {
+            Ordering::Greater
         }
     }
 }

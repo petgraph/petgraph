@@ -377,10 +377,8 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
         }
 
         // semantic feasibility: compare associated data for nodes
-        if F::enabled() {
-            if !node_match.eq(&g[0][nodes[0]], &g[1][nodes[1]]) {
-                continue 'candidates;
-            }
+        if F::enabled() && !node_match.eq(&g[0][nodes[0]], &g[1][nodes[1]]) {
+            continue 'candidates;
         }
 
         // semantic feasibility: compare associated data for edges
