@@ -382,69 +382,6 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
               ty: PhantomData}
     }
 
-    /// Return the current node and edge capacity of the graph.
-    pub fn capacity(&self) -> (usize, usize) {
-        (self.nodes.capacity(), self.edges.capacity())
-    }
-
-    /// Reserves capacity for at least `additional` more nodes to be inserted in
-    /// the graph. Graph may reserve more space to avoid frequent reallocations.
-    ///
-    /// **Panics** if the new capacity overflows `usize`.
-    pub fn reserve_nodes(&mut self, additional: usize) {
-        self.nodes.reserve(additional);
-    }
-
-    /// Reserves capacity for at least `additional` more edges to be inserted in
-    /// the graph. Graph may reserve more space to avoid frequent reallocations.
-    ///
-    /// **Panics** if the new capacity overflows `usize`.
-    pub fn reserve_edges(&mut self, additional: usize) {
-        self.edges.reserve(additional);
-    }
-
-    /// Reserves the minimum capacity for exactly `additional` more nodes to be
-    /// inserted in the graph. Does nothing if the capacity is already
-    /// sufficient.
-    ///
-    /// Note that the allocator may give the graph more space than it requests.
-    /// Therefore capacity can not be relied upon to be precisely minimal.
-    /// Prefer `reserve_nodes` if future insertions are expected.
-    ///
-    /// **Panics** if the new capacity overflows `usize`.
-    pub fn reserve_exact_nodes(&mut self, additional: usize) {
-        self.nodes.reserve_exact(additional);
-    }
-
-    /// Reserves the minimum capacity for exactly `additional` more edges to be
-    /// inserted in the graph.
-    /// Does nothing if the capacity is already sufficient.
-    ///
-    /// Note that the allocator may give graph more space than it requests.
-    /// Therefore capacity can not be relied upon to be precisely minimal.
-    /// Prefer `reserve_edges` if future insertions are expected.
-    ///
-    /// **Panics** if the new capacity overflows `usize`.
-    pub fn reserve_exact_edges(&mut self, additional: usize) {
-        self.edges.reserve_exact(additional);
-    }
-
-    /// Shrinks the capacity of the underlying nodes collection as much as possible.
-    pub fn shrink_to_fit_nodes(&mut self) {
-        self.nodes.shrink_to_fit();
-    }
-
-    /// Shrinks the capacity of the underlying edges collection as much as possible.
-    pub fn shrink_to_fit_edges(&mut self) {
-        self.edges.shrink_to_fit();
-    }
-
-    /// Shrinks the capacity of the graph as much as possible.
-    pub fn shrink_to_fit(&mut self) {
-        self.nodes.shrink_to_fit();
-        self.edges.shrink_to_fit();
-    }
-
     /// Return the number of nodes (vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
@@ -1062,6 +999,69 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         for node in &mut self.nodes {
             node.next = [EdgeIndex::end(), EdgeIndex::end()];
         }
+    }
+
+    /// Return the current node and edge capacity of the graph.
+    pub fn capacity(&self) -> (usize, usize) {
+        (self.nodes.capacity(), self.edges.capacity())
+    }
+
+    /// Reserves capacity for at least `additional` more nodes to be inserted in
+    /// the graph. Graph may reserve more space to avoid frequent reallocations.
+    ///
+    /// **Panics** if the new capacity overflows `usize`.
+    pub fn reserve_nodes(&mut self, additional: usize) {
+        self.nodes.reserve(additional);
+    }
+
+    /// Reserves capacity for at least `additional` more edges to be inserted in
+    /// the graph. Graph may reserve more space to avoid frequent reallocations.
+    ///
+    /// **Panics** if the new capacity overflows `usize`.
+    pub fn reserve_edges(&mut self, additional: usize) {
+        self.edges.reserve(additional);
+    }
+
+    /// Reserves the minimum capacity for exactly `additional` more nodes to be
+    /// inserted in the graph. Does nothing if the capacity is already
+    /// sufficient.
+    ///
+    /// Note that the allocator may give the graph more space than it requests.
+    /// Therefore capacity can not be relied upon to be precisely minimal.
+    /// Prefer `reserve_nodes` if future insertions are expected.
+    ///
+    /// **Panics** if the new capacity overflows `usize`.
+    pub fn reserve_exact_nodes(&mut self, additional: usize) {
+        self.nodes.reserve_exact(additional);
+    }
+
+    /// Reserves the minimum capacity for exactly `additional` more edges to be
+    /// inserted in the graph.
+    /// Does nothing if the capacity is already sufficient.
+    ///
+    /// Note that the allocator may give graph more space than it requests.
+    /// Therefore capacity can not be relied upon to be precisely minimal.
+    /// Prefer `reserve_edges` if future insertions are expected.
+    ///
+    /// **Panics** if the new capacity overflows `usize`.
+    pub fn reserve_exact_edges(&mut self, additional: usize) {
+        self.edges.reserve_exact(additional);
+    }
+
+    /// Shrinks the capacity of the underlying nodes collection as much as possible.
+    pub fn shrink_to_fit_nodes(&mut self) {
+        self.nodes.shrink_to_fit();
+    }
+
+    /// Shrinks the capacity of the underlying edges collection as much as possible.
+    pub fn shrink_to_fit_edges(&mut self) {
+        self.edges.shrink_to_fit();
+    }
+
+    /// Shrinks the capacity of the graph as much as possible.
+    pub fn shrink_to_fit(&mut self) {
+        self.nodes.shrink_to_fit();
+        self.edges.shrink_to_fit();
     }
 
     /// Keep all nodes that return `true` from the `visit` closure,
