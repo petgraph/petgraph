@@ -19,6 +19,11 @@ __ http://bluss.github.io/petgraph/
 Recent Changes
 --------------
 
+- 0.2.8
+
+  - Add Graph methods reserve_nodes, reserve_edges, reserve_exact_nodes,
+    reserve_exact_edges, shrink_to_fit_edges, shrink_to_fit_nodes, shrink_to_fit
+
 - 0.2.7
 
   - Update URLs
