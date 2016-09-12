@@ -3,8 +3,6 @@
 extern crate petgraph;
 
 use petgraph::graph::stable::StableGraph;
-use petgraph::graph::node_index;
-
 
 #[test]
 fn node_indices() {
