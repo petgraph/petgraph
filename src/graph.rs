@@ -1026,8 +1026,6 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// inserted in the graph. Does nothing if the capacity is already
     /// sufficient.
     ///
-    /// Note that the allocator may give the graph more space than it requests.
-    /// Therefore capacity can not be relied upon to be precisely minimal.
     /// Prefer `reserve_nodes` if future insertions are expected.
     ///
     /// **Panics** if the new capacity overflows `usize`.
@@ -1039,8 +1037,6 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// inserted in the graph.
     /// Does nothing if the capacity is already sufficient.
     ///
-    /// Note that the allocator may give graph more space than it requests.
-    /// Therefore capacity can not be relied upon to be precisely minimal.
     /// Prefer `reserve_edges` if future insertions are expected.
     ///
     /// **Panics** if the new capacity overflows `usize`.
