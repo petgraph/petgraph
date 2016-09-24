@@ -20,6 +20,7 @@ use petgraph::algo::{
     is_isomorphic_matching,
     toposort,
     scc,
+    dijkstra,
 };
 use petgraph::visit::{Topo, SubTopo};
 use petgraph::graph::{IndexType, node_index, edge_index, NodeIndex};
@@ -652,6 +653,34 @@ fn sub_topo() {
                 println!("Subgraph for node {} is {:?} and the order for it is: {:?}", graph_index.index(), sub, order);
                 return false;
             }
+        }
+        true
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
+}
+
+#[test]
+fn dijkstra_triangle_ineq() {
+    // checks that the distances computed by dijkstra satisfy the triangle
+    // inequality.
+    fn prop(g : Graph<u32, u32>) -> bool {
+        for v in g.node_indices() {
+           let distances = dijkstra(
+                &g,
+                v,
+                None,
+                |g, v| g.edges(v).map(|(v, &e)| (v, e))
+            );
+            for v2 in distances.keys() {
+                let dv2 = distances[v2];
+                // triangle inequality:
+                // d(v,u) <= d(v,v2) + w(v2,u)
+                for (u,w) in g.edges(*v2) {
+                    if distances.contains_key(&u) && distances[&u] > dv2 + w {
+                        return false;
+                    }
+                 }
+               }
         }
         true
     }
