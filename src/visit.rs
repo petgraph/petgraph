@@ -95,18 +95,6 @@ impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>> w
     }
 }
 
-/// **Deprecated**
-///
-/// NeighborsDirected gives access to neighbors of both `Incoming` and `Outgoing`
-/// edges of a node.
-pub trait NeighborsDirected<'a> : GraphBase {
-    type NeighborsDirected: Iterator<Item=Self::NodeId>;
-
-    /// Return an iterator that visits all neighbors of the node **n**.
-    fn neighbors_directed(&'a self, n: Self::NodeId,
-                          d: EdgeDirection) -> Self::NeighborsDirected;
-}
-
 pub trait IntoNeighbors : GraphRef {
     type Neighbors: Iterator<Item=Self::NodeId>;
     fn neighbors(self, n: Self::NodeId) -> Self::Neighbors;
@@ -198,42 +186,6 @@ impl<G> IntoNeighborsDirected for Reversed<G>
     type NeighborsDirected = G::NeighborsDirected;
     fn neighbors_directed(self, n: G::NodeId, d: EdgeDirection)
         -> G::NeighborsDirected
-    {
-        self.0.neighbors_directed(n, d.opposite())
-    }
-}
-
-impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type NeighborsDirected = graph::Neighbors<'a, E, Ix>;
-    fn neighbors_directed(&'a self, n: graph::NodeIndex<Ix>,
-                          d: EdgeDirection) -> graph::Neighbors<'a, E, Ix>
-    {
-        Graph::neighbors_directed(self, n, d)
-    }
-}
-
-#[cfg(feature = "stable_graph")]
-impl<'a, N, E: 'a, Ty, Ix> NeighborsDirected<'a> for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type NeighborsDirected = graph::stable::Neighbors<'a, E, Ix>;
-    fn neighbors_directed(&'a self, n: graph::NodeIndex<Ix>, d: EdgeDirection)
-        -> graph::stable::Neighbors<'a, E, Ix>
-    {
-        StableGraph::neighbors_directed(self, n, d)
-    }
-}
-
-impl<'a, 'b,  G> NeighborsDirected<'a> for Reversed<&'b G>
-    where G: NeighborsDirected<'a>,
-{
-    type NeighborsDirected = <G as NeighborsDirected<'a>>::NeighborsDirected;
-    fn neighbors_directed(&'a self, n: G::NodeId,
-                          d: EdgeDirection) -> Self::NeighborsDirected
     {
         self.0.neighbors_directed(n, d.opposite())
     }
