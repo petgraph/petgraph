@@ -32,7 +32,7 @@ use petgraph::visit::{
     Reversed,
     AsUndirected,
     Topo,
-    NeighborIter,
+    IntoNeighbors,
 };
 use petgraph::algo::{
     dijkstra,
@@ -1117,8 +1117,8 @@ fn neighbors_selfloops() {
 }
 
 
-fn degree<'a, G>(g: &'a G, node: G::NodeId) -> usize
-    where G: NeighborIter<'a>,
+fn degree<'a, G>(g: G, node: G::NodeId) -> usize
+    where G: IntoNeighbors,
           G::NodeId: PartialEq,
 {
     // self loops count twice

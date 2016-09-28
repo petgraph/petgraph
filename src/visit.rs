@@ -53,40 +53,6 @@ impl<G: GraphBase> GraphBase for Reversed<G> {
 
 impl<G: GraphRef> GraphRef for Reversed<G> { }
 
-/// **Deprecated**
-///
-/// NeighborIter gives access to the neighbors iterator.
-pub trait NeighborIter<'a> : GraphBase {
-    type Iter: Iterator<Item=Self::NodeId>;
-
-    /// Return an iterator that visits all neighbors of the node **n**.
-    fn neighbors(&'a self, n: Self::NodeId) -> Self::Iter;
-}
-
-impl<'a, N, E: 'a, Ty, Ix> NeighborIter<'a> for Graph<N, E, Ty, Ix> where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    type Iter = graph::Neighbors<'a, E, Ix>;
-    fn neighbors(&'a self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'a, E, Ix>
-    {
-        Graph::neighbors(self, n)
-    }
-}
-
-#[cfg(feature = "stable_graph")]
-impl<'a, N, E: 'a, Ty, Ix> NeighborIter<'a> for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type Iter = graph::stable::Neighbors<'a, E, Ix>;
-    fn neighbors(&'a self, n: graph::NodeIndex<Ix>)
-        -> graph::stable::Neighbors<'a, E, Ix>
-    {
-        StableGraph::neighbors(self, n)
-    }
-}
-
 #[cfg(feature = "stable_graph")]
 impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
@@ -98,16 +64,6 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
     }
 }
 
-
-impl<'a, N: 'a, E> NeighborIter<'a> for GraphMap<N, E>
-where N: Copy + Ord + Hash
-{
-    type Iter = graphmap::Neighbors<'a, N>;
-    fn neighbors(&'a self, n: N) -> graphmap::Neighbors<'a, N>
-    {
-        GraphMap::neighbors(self, n)
-    }
-}
 
 impl<'a, N: 'a, E> IntoNeighbors for &'a GraphMap<N, E>
     where N: Copy + Ord + Hash
@@ -127,18 +83,6 @@ pub struct AsUndirected<G>(pub G);
 #[derive(Copy, Clone)]
 pub struct Reversed<G>(pub G);
 
-impl<'a, 'b, N, E: 'a, Ty, Ix> NeighborIter<'a> for AsUndirected<&'b Graph<N, E, Ty, Ix>> where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    type Iter = graph::Neighbors<'a, E, Ix>;
-
-    fn neighbors(&'a self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'a, E, Ix>
-    {
-        Graph::neighbors_undirected(self.0, n)
-    }
-}
-
 impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>> where
     Ty: EdgeType,
     Ix: IndexType,
@@ -148,17 +92,6 @@ impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>> w
     fn neighbors(self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'b, E, Ix>
     {
         Graph::neighbors_undirected(self.0, n)
-    }
-}
-
-impl<'a, 'b, N, E: 'a, Ty, Ix> NeighborIter<'a> for Reversed<&'b Graph<N, E, Ty, Ix>> where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    type Iter = graph::Neighbors<'a, E, Ix>;
-    fn neighbors(&'a self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'a, E, Ix>
-    {
-        Graph::neighbors_directed(self.0, n, EdgeDirection::Incoming)
     }
 }
 
