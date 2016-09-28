@@ -16,6 +16,7 @@ use super::{
     Graph,
     GraphMap,
     Incoming,
+    Outgoing,
 };
 
 use graph::{
@@ -966,13 +967,13 @@ pub struct SubTopo<N, VM> {
 }
 
 impl<N, VM> SubTopo<N, VM>
-    where N: Clone,
+    where N: Copy,
           VM: VisitMap<N>,
 {
     /// Create a new `SubTopo`, using the graph's visitor map, and put single
     /// node in the to-visit list.
-    pub fn from_node<'a, G>(graph: &'a G, node: N) -> Self
-        where G: Externals<'a> + Visitable<NodeId=N, Map=VM>,
+    pub fn from_node<G>(graph: G, node: N) -> Self
+        where G: IntoExternals + Visitable<NodeId=N, Map=VM>,
     {
         let mut topo = Self::empty(graph);
         topo.tovisit.push(node);
@@ -982,7 +983,7 @@ impl<N, VM> SubTopo<N, VM>
     /* Private until it has a use */
     /// Create a new `SubTopo`, using the graph's visitor map with *no* starting
     /// index specified.
-    fn empty<G>(graph: &G) -> Self
+    fn empty<G>(graph: G) -> Self
         where G: Visitable<NodeId=N, Map=VM>
     {
         SubTopo {
@@ -995,7 +996,7 @@ impl<N, VM> SubTopo<N, VM>
 
     /// Clear visited state, and put a single node into the visit list.
     pub fn reset_with_node<G>(&mut self, graph: &G, node: N)
-        where G: Revisitable<NodeId=N, Map=VM>,
+        where G: Visitable<NodeId=N, Map=VM>,
     {
         graph.reset_map(&mut self.ordered);
         graph.reset_map(&mut self.discovered);
@@ -1004,8 +1005,8 @@ impl<N, VM> SubTopo<N, VM>
     }
 
     // discover all nodes reachable from `n`
-    fn discover<'a, G>(&mut self, g: &'a G, n: N)
-        where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
+    fn discover<G>(&mut self, g: G, n: N)
+        where G: IntoNeighborsDirected + Visitable<NodeId=N, Map=VM>,
     {
         if self.discovered.is_visited(&n) {
             return;
@@ -1021,8 +1022,8 @@ impl<N, VM> SubTopo<N, VM>
     ///
     /// *Note:* The subgraph may not have a complete topological order.
     /// If there is a cycle in the subgraph, then nodes of that cycle *are* included in this traversal. 
-    pub fn next<'a, G>(&mut self, g: &'a G) -> Option<N>
-        where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
+    pub fn next<G>(&mut self, g: G) -> Option<N>
+        where G: IntoNeighborsDirected + Visitable<NodeId=N, Map=VM>,
     {
         // Take an unvisited element and find which of its neighbors are next
         //

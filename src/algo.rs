@@ -32,7 +32,6 @@ use super::unionfind::UnionFind;
 use super::graph::{
     IndexType,
     NodeIndex,
-    GraphIndex,
 };
 
 pub use super::isomorphism::{
