@@ -209,7 +209,7 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     sccs
 }
 
-/// Condense every strongly connected component into a single node and return the result.
+/// [Graph] Condense every strongly connected component into a single node and return the result.
 ///
 /// If `make_acyclic` is true, self-loops and multi edges are ignored, guaranteeing that
 /// the output is acyclic.
