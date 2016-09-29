@@ -26,7 +26,7 @@ debug = true
 
 [dependencies]
 fixedbitset = "0.1.0"
-quickcheck = { optional = true, version = "0.2.24" }
+quickcheck = { optional = true, version = "0.3" }
 
 [dev-dependencies]
 rand = "0.3"
