@@ -692,6 +692,7 @@ pub struct SubTopo<N, VM> {
     tovisit: Vec<N>,
     notvisited: VecDeque<N>,
     ordered: VM,
+    discovered: VM,
 }
 
 impl<N, VM> SubTopo<N, VM>
@@ -716,6 +717,7 @@ impl<N, VM> SubTopo<N, VM>
     {
         SubTopo {
             ordered: graph.visit_map(),
+            discovered: graph.visit_map(),
             tovisit: Vec::new(),
             notvisited: VecDeque::new(),
         }
@@ -726,8 +728,22 @@ impl<N, VM> SubTopo<N, VM>
         where G: Revisitable<NodeId=N, Map=VM>,
     {
         graph.reset_map(&mut self.ordered);
+        graph.reset_map(&mut self.discovered);
         self.tovisit.clear();
         self.tovisit.push(node);
+    }
+
+    // discover all nodes reachable from `n`
+    fn discover<'a, G>(&mut self, g: &'a G, n: N)
+        where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
+    {
+        if self.discovered.is_visited(&n) {
+            return;
+        }
+        self.discovered.visit(n.clone());
+        for neigh in g.neighbors_directed(n, Outgoing) {
+            self.discover(g, neigh);
+        }
     }
 
     /// Return the next node in the current topological order traversal, or
@@ -739,16 +755,25 @@ impl<N, VM> SubTopo<N, VM>
         where G: NeighborsDirected<'a> + Visitable<NodeId=N, Map=VM>,
     {
         // Take an unvisited element and find which of its neighbors are next
+        //
+        // discovered: All nodes that have been reachable through outgoing paths
+        // from the start
+        // ordered: All nodes that have already been emitted until this point
         loop {
             while let Some(nix) = self.tovisit.pop() {
                 if self.ordered.is_visited(&nix) {
                     continue;
                 }
                 self.ordered.visit(nix.clone());
+                self.discover(g, nix.clone());
                 for neigh in g.neighbors_directed(nix.clone(), Outgoing) {
                     // Look at each neighbor, and those that only have incoming edges
                     // from the already ordered list, they are the next to visit.
-                    if g.neighbors_directed(neigh.clone(), Incoming).all(|b| self.ordered.is_visited(&b)) {
+                    // `discovered` is used to limit this to the induced subgraph
+                    if g.neighbors_directed(neigh.clone(), Incoming)
+                        .filter(|b| self.discovered.is_visited(b))
+                        .all(|b| self.ordered.is_visited(&b))
+                    {
                         self.tovisit.push(neigh);
                     } else {
                         self.notvisited.push_back(neigh);
