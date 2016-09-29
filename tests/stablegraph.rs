@@ -2,7 +2,7 @@
 
 extern crate petgraph;
 
-use petgraph::graph::stable::StableGraph;
+use petgraph::stable_graph::StableGraph;
 use petgraph::graph::node_index as n;
 use petgraph::graph::NodeIndex;
 use petgraph::algo::scc;

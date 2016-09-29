@@ -12,8 +12,12 @@
 extern crate fixedbitset;
 extern crate itertools;
 
+#[doc(no_inline)]
 pub use graph::Graph;
 pub use graphmap::GraphMap;
+#[cfg(feature = "stable_graph")]
+#[doc(no_inline)]
+pub use stable_graph::StableGraph;
 
 pub use visit::{
     Bfs,
@@ -28,7 +32,8 @@ pub mod algo;
 #[cfg(feature = "generate")]
 pub mod generate;
 pub mod graphmap;
-pub mod graph;
+#[path = "graph.rs"]
+mod graph_impl;
 pub mod dot;
 pub mod visit;
 pub mod unionfind;
@@ -37,6 +42,37 @@ mod isomorphism;
 mod traits_graph;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
+
+/// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
+pub mod graph {
+    pub use graph_impl::{
+        Edge,
+        EdgeIndex,
+        EdgeIndices,
+        EdgeReference,
+        EdgeReferences,
+        EdgeWeightsMut,
+        Edges,
+        Externals,
+        Frozen,
+        Graph,
+        Neighbors,
+        Node,
+        NodeIndex,
+        NodeIndices,
+        NodeWeightsMut,
+        WalkEdges,
+        WalkNeighbors,
+        GraphIndex,
+        IndexType,
+        edge_index,
+        node_index,
+        DefIndex,
+    };
+}
+
+#[cfg(feature = "stable_graph")]
+pub use graph_impl::stable as stable_graph;
 
 macro_rules! copyclone {
     ($name:ident) => {

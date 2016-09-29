@@ -11,7 +11,7 @@ use graph::{
     node_index,
 };
 #[cfg(feature = "stable_graph")]
-use graph::stable::StableGraph;
+use stable_graph::StableGraph;
 
 use graphmap::{
     GraphMap,

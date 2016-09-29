@@ -1,5 +1,3 @@
-//! `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
-
 use std::cmp;
 use std::fmt;
 use std::iter;

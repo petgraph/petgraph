@@ -10,6 +10,17 @@ use std::mem::replace;
 use std::ops::{Index, IndexMut};
 use std::slice;
 
+#[doc(no_inline)]
+pub use graph::{
+    NodeIndex,
+    EdgeIndex,
+    GraphIndex,
+    DefIndex,
+    IndexType,
+    node_index,
+    edge_index,
+};
+
 use {
     EdgeType,
     Directed,
@@ -17,15 +28,10 @@ use {
     EdgeDirection,
 };
 use super::{
-    DefIndex,
     Edge,
-    EdgeIndex,
     Graph,
     index_twice,
-    IndexType,
     Node,
-    NodeIndex,
-    node_index,
     DIRECTIONS,
     Pair,
 };
@@ -455,7 +461,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// Nodes are inserted automatically to match the edges.
     ///
     /// ```
-    /// use petgraph::graph::StableGraph;
+    /// use petgraph::stable_graph::StableGraph;
     ///
     /// let gr = StableGraph::<(), i32>::from_edges(&[
     ///     (0, 1), (0, 2), (0, 3),
@@ -654,7 +660,7 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
 ///
 /// ```
 /// use petgraph::{Dfs, Incoming};
-/// use petgraph::graph::stable::StableGraph;
+/// use petgraph::stable_graph::StableGraph;
 ///
 /// let mut gr = StableGraph::new();
 /// let a = gr.add_node(0.);

@@ -24,7 +24,9 @@ use graph::{
     NodeIndex,
 };
 #[cfg(feature = "stable_graph")]
-use graph::stable::StableGraph;
+use stable_graph;
+#[cfg(feature = "stable_graph")]
+use stable_graph::StableGraph;
 use graph::Frozen;
 
 use graphmap::{
@@ -64,7 +66,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    type Neighbors = graph::stable::Neighbors<'a, E, Ix>;
+    type Neighbors = stable_graph::Neighbors<'a, E, Ix>;
     fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
         (*self).neighbors(n)
     }
@@ -152,7 +154,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a StableGraph<N, E, Ty, I
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    type NeighborsDirected = graph::stable::Neighbors<'a, E, Ix>;
+    type NeighborsDirected = stable_graph::Neighbors<'a, E, Ix>;
     fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: EdgeDirection)
         -> Self::NeighborsDirected
     {
@@ -185,7 +187,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    type NodeIdentifiers = graph::stable::NodeIndices<'a, N, Ix>;
+    type NodeIdentifiers = stable_graph::NodeIndices<'a, N, Ix>;
     fn node_identifiers(self) -> Self::NodeIdentifiers {
         StableGraph::node_indices(self)
     }

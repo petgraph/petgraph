@@ -25,7 +25,7 @@ use petgraph::algo::{
 use petgraph::visit::{Topo, SubTopo};
 use petgraph::graph::{IndexType, node_index, edge_index, NodeIndex};
 #[cfg(feature = "stable_graph")]
-use petgraph::graph::stable::StableGraph;
+use petgraph::stable_graph::StableGraph;
 
 fn prop(g: Graph<(), u32>) -> bool {
     // filter out isolated nodes
