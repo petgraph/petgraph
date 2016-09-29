@@ -936,24 +936,6 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// **Deprecated:** Use [`.neighbors_directed(a, dir).detach()`][1] instead.
-    ///
-    /// [1]: struct.Graph.html#method.neighbors_directed
-    ///
-    /// Return a “walker” object that can be used to step through the directed
-    /// edges of the node `a` in direction `dir`.
-    ///
-    /// Note: The walker does not borrow from the graph, this is to allow mixing
-    /// edge walking with mutating the graph's weights.
-    ///
-    /// - `Directed`, `Outgoing`: All edges from `a`.
-    /// - `Directed`, `Incoming`: All edges to `a`.
-    pub fn walk_edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> WalkEdges<Ix>
-    {
-        let first_edge = self.first_edge(a, dir).unwrap_or(EdgeIndex::end());
-        WalkEdges { next: first_edge, direction: dir }
-    }
-
     /// Index the `Graph` by two indices, any combination of
     /// node or edge indices is fine.
     ///
@@ -1654,44 +1636,6 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
         self.next(g).map(|t| t.0)
     }
 }
-
-/// **Deprecated.**
-///
-/// A “walker” object that can be used to step through the edge list of a node.
-///
-/// See [*.walk_edges_directed()*](struct.Graph.html#method.walk_edges_directed)
-/// for more information.
-#[derive(Clone, Debug)]
-pub struct WalkEdges<Ix: IndexType = DefaultIx> {
-    next: EdgeIndex<Ix>, // a valid index or EdgeIndex::max()
-    direction: EdgeDirection,
-}
-
-impl<Ix: IndexType> WalkEdges<Ix> {
-    /// Fetch the next edge index in the walk for graph `g`.
-    pub fn next<N, E, Ty: EdgeType>(&mut self, g: &Graph<N, E, Ty, Ix>) -> Option<EdgeIndex<Ix>> {
-        self.next_neighbor(g).map(|(e, _)| e)
-    }
-
-    /// Fetch the next edge index and the next node index in the walk for graph `g`.
-    ///
-    /// The next node indices are always the others than the starting point
-    /// where the `WalkEdges` value was created.
-    /// For an `Outgoing` walk, the target nodes,
-    /// for an `Incoming` walk, the source nodes of the edge.
-    pub fn next_neighbor<N, E, Ty: EdgeType>(&mut self, g: &Graph<N, E, Ty, Ix>)
-        -> Option<(EdgeIndex<Ix>, NodeIndex<Ix>)> {
-        match g.edges.get(self.next.index()) {
-            None => None,
-            Some(edge) => {
-                let edge_index = self.next;
-                self.next = edge.next[self.direction as usize];
-                Some((edge_index, edge.node[1 - self.direction as usize]))
-            }
-        }
-    }
-}
-
 
 fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
     where I: IntoIterator,

@@ -61,7 +61,6 @@ pub mod graph {
         NodeIndex,
         NodeIndices,
         NodeWeightsMut,
-        WalkEdges,
         WalkNeighbors,
         GraphIndex,
         IndexType,
