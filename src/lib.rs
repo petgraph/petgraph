@@ -10,6 +10,7 @@
 //! identifiers (such as integers or references).
 
 extern crate fixedbitset;
+extern crate itertools;
 
 pub use graph::Graph;
 pub use graphmap::GraphMap;

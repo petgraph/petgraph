@@ -190,7 +190,7 @@ fn mst() {
     let mst = min_spanning_tree(&gr);
     println!("{}", Dot::new(&mst));
     println!("{:?}", Dot::new(&mst));
-    println!("MST is:\n{:?}", mst);
+    println!("MST is:\n{:#?}", mst);
     assert!(mst.node_count() == gr.node_count());
     // |E| = |N| - 2  because there are two disconnected components.
     assert!(mst.edge_count() == gr.node_count() - 2);
