@@ -3,6 +3,7 @@
 //! ***Unstable: API may change at any time.*** Depends on `feature = "stable_graph"`.
 //!
 
+use std::cmp;
 use std::fmt;
 use std::iter;
 use std::mem::replace;
@@ -28,6 +29,7 @@ use super::{
     DIRECTIONS,
     Pair,
 };
+use IntoWeightedEdge;
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
@@ -433,6 +435,61 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
             }
         }
     }
+
+    /// Create a new `StableGraph` from an iterable of edges.
+    ///
+    /// Node weights `N` are set to default values.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    ///
+    /// ```
+    /// use petgraph::graph::StableGraph;
+    ///
+    /// let gr = StableGraph::<(), i32>::from_edges(&[
+    ///     (0, 1), (0, 2), (0, 3),
+    ///     (1, 2), (1, 3),
+    ///     (2, 3),
+    /// ]);
+    /// ```
+    pub fn from_edges<I>(iterable: I) -> Self
+        where I: IntoIterator,
+              I::Item: IntoWeightedEdge<E>,
+              <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
+              N: Default,
+    {
+        let mut g = Self::with_capacity(0, 0);
+        g.extend_with_edges(iterable);
+        g
+    }
+
+    /// Extend the graph from an iterable of edges.
+    ///
+    /// Node weights `N` are set to default values.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    pub fn extend_with_edges<I>(&mut self, iterable: I)
+        where I: IntoIterator,
+              I::Item: IntoWeightedEdge<E>,
+              <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
+              N: Default,
+    {
+        let iter = iterable.into_iter();
+
+        for elt in iter {
+            let (source, target, weight) = elt.into_weighted_edge();
+            let (source, target) = (source.into(), target.into());
+            let nx = cmp::max(source, target);
+            while nx.index() >= self.node_count() {
+                self.add_node(N::default());
+            }
+            self.add_edge(source, target, weight);
+        }
+    }
+
 }
 
 /// The resulting cloned graph has the same graph indices as `self`.
