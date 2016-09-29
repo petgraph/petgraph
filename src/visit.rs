@@ -25,7 +25,7 @@ use graph::{
 };
 #[cfg(feature = "stable_graph")]
 use graph::stable::StableGraph;
-use graph::FrozenGraph;
+use graph::Frozen;
 
 use graphmap::{
     NodeTrait,
@@ -54,7 +54,7 @@ impl<G: GraphBase> GraphBase for Reversed<G> {
 
 impl<G: GraphRef> GraphRef for Reversed<G> { }
 
-impl<'a, G> GraphBase for FrozenGraph<'a, G> where G: GraphBase {
+impl<'a, G> GraphBase for Frozen<'a, G> where G: GraphBase {
     type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
 }
@@ -81,7 +81,7 @@ impl<'a, N: 'a, E> IntoNeighbors for &'a GraphMap<N, E>
     }
 }
 
-impl<'a, 'b, G> IntoNeighbors for &'b FrozenGraph<'a, G>
+impl<'a, 'b, G> IntoNeighbors for &'b Frozen<'a, G>
     where &'b G: IntoNeighbors,
           G: GraphBase<NodeId=<&'b G as GraphBase>::NodeId>,
 {
@@ -464,7 +464,7 @@ impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix> where
     }
 }
 
-impl<'a, G> Visitable for FrozenGraph<'a, G> where G: Visitable {
+impl<'a, G> Visitable for Frozen<'a, G> where G: Visitable {
     type Map = G::Map;
     fn visit_map(&self) -> Self::Map { (**self).visit_map() }
     fn reset_map(&self, map: &mut Self::Map) {

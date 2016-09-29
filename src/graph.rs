@@ -1101,10 +1101,10 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     ///
     /// The order nodes are visited is not specified.
     pub fn retain_nodes<F>(&mut self, mut visit: F)
-        where F: FnMut(FrozenGraph<Self>, NodeIndex<Ix>) -> bool
+        where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool
     {
         for index in self.node_indices().rev() {
-            if !visit(FrozenGraph(self), index) {
+            if !visit(Frozen(self), index) {
                 let ret = self.remove_node(index);
                 debug_assert!(ret.is_some());
                 let _ = ret;
@@ -1120,10 +1120,10 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     ///
     /// The order edges are visited is not specified.
     pub fn retain_edges<F>(&mut self, mut visit: F)
-        where F: FnMut(FrozenGraph<Self>, EdgeIndex<Ix>) -> bool
+        where F: FnMut(Frozen<Self>, EdgeIndex<Ix>) -> bool
     {
         for index in self.edge_indices().rev() {
-            if !visit(FrozenGraph(self), index) {
+            if !visit(Frozen(self), index) {
                 let ret = self.remove_edge(index);
                 debug_assert!(ret.is_some());
                 let _ = ret;
@@ -1807,39 +1807,39 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
 #[path = "stable.rs"]
 pub mod stable;
 
-/// `FrozenGraph` only allows shared access (read-only) to the
+/// `Frozen` only allows shared access (read-only) to the
 /// underlying graph `G`, but it allows mutable access to its
 /// node and edge weights.
 ///
 /// This is used to ensure immutability of the graph's structure
 /// while permitting weights to change.
-pub struct FrozenGraph<'a, G: 'a>(&'a mut G);
+pub struct Frozen<'a, G: 'a>(&'a mut G);
 
-impl<'a, G> FrozenGraph<'a, G> {
+impl<'a, G> Frozen<'a, G> {
     pub fn new(gr: &'a mut G) -> Self {
-        FrozenGraph(gr)
+        Frozen(gr)
     }
 }
 
-impl<'a, G> Deref for FrozenGraph<'a, G> {
+impl<'a, G> Deref for Frozen<'a, G> {
     type Target = G;
     fn deref(&self) -> &G { self.0 }
 }
 
-impl<'a, G, I> Index<I> for FrozenGraph<'a, G>
+impl<'a, G, I> Index<I> for Frozen<'a, G>
     where G: Index<I>
 {
     type Output = G::Output;
     fn index(&self, i: I) -> &G::Output { self.0.index(i) }
 }
 
-impl<'a, G, I> IndexMut<I> for FrozenGraph<'a, G>
+impl<'a, G, I> IndexMut<I> for Frozen<'a, G>
     where G: IndexMut<I>
 {
     fn index_mut(&mut self, i: I) -> &mut G::Output { self.0.index_mut(i) }
 }
 
-impl<'a, N, E, Ty, Ix> FrozenGraph<'a, Graph<N, E, Ty, Ix>>
+impl<'a, N, E, Ty, Ix> Frozen<'a, Graph<N, E, Ty, Ix>>
     where Ty: EdgeType,
           Ix: IndexType,
 {
