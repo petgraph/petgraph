@@ -20,7 +20,7 @@ use visit::EdgeRef;
 /// The default integer type for node and edge indices in `Graph`.
 /// `u32` is the default to reduce the size of the graph's data and improve
 /// performance in the common case.
-pub type DefIndex = u32;
+pub type DefaultIx = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
 ///
@@ -71,7 +71,7 @@ unsafe impl IndexType for u8 {
 
 /// Node identifier.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct NodeIndex<Ix=DefIndex>(Ix);
+pub struct NodeIndex<Ix=DefaultIx>(Ix);
 
 impl<Ix: IndexType> NodeIndex<Ix>
 {
@@ -109,7 +109,7 @@ pub fn edge_index<Ix: IndexType>(index: usize) -> EdgeIndex<Ix> { EdgeIndex::new
 
 /// Edge identifier.
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct EdgeIndex<Ix=DefIndex>(Ix);
+pub struct EdgeIndex<Ix=DefaultIx>(Ix);
 
 impl<Ix: IndexType> EdgeIndex<Ix>
 {
@@ -153,7 +153,7 @@ const DIRECTIONS: [EdgeDirection; 2] = [Outgoing, Incoming];
 
 /// The graph's node type.
 #[derive(Debug, Clone)]
-pub struct Node<N, Ix: IndexType = DefIndex> {
+pub struct Node<N, Ix: IndexType = DefaultIx> {
     /// Associated node data.
     pub weight: N,
     /// Next edge in outgoing and incoming edge lists.
@@ -171,7 +171,7 @@ impl<N, Ix: IndexType> Node<N, Ix>
 
 /// The graph's edge type.
 #[derive(Debug, Clone)]
-pub struct Edge<E, Ix: IndexType = DefIndex> {
+pub struct Edge<E, Ix: IndexType = DefaultIx> {
     /// Associated edge data.
     pub weight: E,
     /// Next edge in outgoing and incoming edge lists.
@@ -274,7 +274,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// of removing elements. Indices don't allow as much compile time checking as
 /// references.
 ///
-pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefIndex> {
+pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefaultIx> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,
     ty: PhantomData<Ty>,
@@ -1265,7 +1265,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
 }
 
 /// An iterator over either the nodes without edges to them or from them.
-pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefIndex> {
+pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
     dir: EdgeDirection,
     ty: PhantomData<Ty>,
@@ -1306,7 +1306,7 @@ impl<'a, N: 'a, Ty, Ix> Iterator for Externals<'a, N, Ty, Ix> where
 /// [1]: struct.Graph.html#method.neighbors
 /// [2]: struct.Graph.html#method.neighbors_directed
 /// [3]: struct.Graph.html#method.neighbors_undirected
-pub struct Neighbors<'a, E: 'a, Ix: 'a = DefIndex> where
+pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> where
     Ix: IndexType,
 {
     iter: Edges<'a, E, Ix>,
@@ -1346,7 +1346,7 @@ impl<'a, E, Ix> Neighbors<'a, E, Ix>
     }
 }
 
-struct EdgesMut<'a, E: 'a, Ix: IndexType = DefIndex> {
+struct EdgesMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
     edges: &'a mut [Edge<E, Ix>],
     next: EdgeIndex<Ix>,
     dir: EdgeDirection,
@@ -1394,7 +1394,7 @@ impl<'a, E, Ix> Iterator for EdgesMut<'a, E, Ix> where
 }
 
 /// Iterator over the edges of a node.
-pub struct Edges<'a, E: 'a, Ix: IndexType = DefIndex> {
+pub struct Edges<'a, E: 'a, Ix: IndexType = DefaultIx> {
     /// starting node to skip over
     skip_start: NodeIndex<Ix>,
     edges: &'a [Edge<E, Ix>],
@@ -1442,7 +1442,7 @@ impl<'a, E, Ix> Clone for Edges<'a, E, Ix>
 }
 
 /// Iterator yielding mutable access to all node weights.
-pub struct NodeWeightsMut<'a, N: 'a, Ix: IndexType = DefIndex> {
+pub struct NodeWeightsMut<'a, N: 'a, Ix: IndexType = DefaultIx> {
     nodes: ::std::slice::IterMut<'a, Node<N, Ix>>,
 }
 
@@ -1461,7 +1461,7 @@ impl<'a, N, Ix> Iterator for NodeWeightsMut<'a, N, Ix> where
 }
 
 /// Iterator yielding mutable access to all edge weights.
-pub struct EdgeWeightsMut<'a, E: 'a, Ix: IndexType = DefIndex> {
+pub struct EdgeWeightsMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
     edges: ::std::slice::IterMut<'a, Edge<E, Ix>>,
 }
 
@@ -1662,7 +1662,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
 /// See [*.walk_edges_directed()*](struct.Graph.html#method.walk_edges_directed)
 /// for more information.
 #[derive(Clone, Debug)]
-pub struct WalkEdges<Ix: IndexType = DefIndex> {
+pub struct WalkEdges<Ix: IndexType = DefaultIx> {
     next: EdgeIndex<Ix>, // a valid index or EdgeIndex::max()
     direction: EdgeDirection,
 }
@@ -1701,7 +1701,7 @@ fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
 
 /// Iterator over the node indices of a graph.
 #[derive(Clone, Debug)]
-pub struct NodeIndices<Ix = DefIndex> {
+pub struct NodeIndices<Ix = DefaultIx> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }
@@ -1726,7 +1726,7 @@ impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
 
 /// Iterator over the edge indices of a graph.
 #[derive(Clone, Debug)]
-pub struct EdgeIndices<Ix = DefIndex> {
+pub struct EdgeIndices<Ix = DefaultIx> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
 }
@@ -1750,7 +1750,7 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
 }
 
 /// Reference to a `Graph` edge.
-pub struct EdgeReference<'a, E: 'a, Ix: IndexType = DefIndex> {
+pub struct EdgeReference<'a, E: 'a, Ix: IndexType = DefaultIx> {
     index: EdgeIndex<Ix>,
     edge: &'a Edge<E, Ix>,
 }
@@ -1778,7 +1778,7 @@ impl<'a, Ix, E> EdgeRef for EdgeReference<'a, E, Ix>
 
 
 /// Iterator over all edges of a graph.
-pub struct EdgeReferences<'a, E: 'a, Ix: IndexType = DefIndex> {
+pub struct EdgeReferences<'a, E: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<E, Ix>>>,
 }
 

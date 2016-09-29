@@ -15,7 +15,7 @@ pub use graph::{
     NodeIndex,
     EdgeIndex,
     GraphIndex,
-    DefIndex,
+    DefaultIx,
     IndexType,
     node_index,
     edge_index,
@@ -73,7 +73,7 @@ use IntoWeightedEdge;
 /// - Indices don't allow as much compile time checking as references.
 ///
 ///
-pub struct StableGraph<N, E, Ty = Directed, Ix = DefIndex>
+pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
     where Ix: IndexType
 {
     g: Graph<Option<N>, Option<E>, Ty, Ix>,
@@ -593,7 +593,7 @@ impl<N, E, Ty, Ix> Default for StableGraph<N, E, Ty, Ix>
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is `NodeIndex`.
-pub struct Neighbors<'a, E: 'a, Ix: 'a = DefIndex> where
+pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> where
     Ix: IndexType,
 {
     /// starting node to skip over
@@ -715,7 +715,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
 }
 
 /// Iterator over the node indices of a graph.
-pub struct NodeIndices<'a, N: 'a, Ix: IndexType = DefIndex> {
+pub struct NodeIndices<'a, N: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
 

@@ -67,7 +67,7 @@ pub mod graph {
         IndexType,
         edge_index,
         node_index,
-        DefIndex,
+        DefaultIx,
     };
 }
 
