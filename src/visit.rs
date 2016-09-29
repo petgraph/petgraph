@@ -361,7 +361,7 @@ impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    fn node_bound(&self) -> usize { self.node_count() }
+    fn node_bound(&self) -> usize { self.node_bound() }
     fn to_index(ix: NodeIndex<Ix>) -> usize { ix.index() }
 }
 
@@ -457,10 +457,12 @@ impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix> where
     Ix: IndexType,
 {
     type Map = FixedBitSet;
-    fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
+    fn visit_map(&self) -> FixedBitSet {
+        FixedBitSet::with_capacity(self.node_bound())
+    }
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
-        map.grow(self.node_count());
+        map.grow(self.node_bound());
     }
 }
 

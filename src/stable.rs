@@ -144,6 +144,16 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.edge_count
     }
 
+    /// Return an upper bound of the node indices in the graph
+    pub fn node_bound(&self) -> usize {
+        self.g.nodes.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
+    }
+
+    /// Return an upper bound of the edge indices in the graph
+    pub fn edge_bound(&self) -> usize {
+        self.g.edges.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
+    }
+
     /// Whether the graph has directed edges or not.
     #[inline]
     pub fn is_directed(&self) -> bool {
