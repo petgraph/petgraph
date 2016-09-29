@@ -4,7 +4,7 @@ use std::cmp;
 use std::fmt;
 use std::iter;
 use std::marker::PhantomData;
-use std::ops::{Index, IndexMut, Range};
+use std::ops::{Deref, Index, IndexMut, Range};
 use std::slice;
 
 use {
@@ -1073,16 +1073,15 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// Keep all nodes that return `true` from the `visit` closure,
     /// remove the others.
     ///
-    /// `visit` is provided a mutable reference to the graph, so that
-    /// the graph can be walked and associated data modified. You should
-    /// not add or remove nodes.
+    /// `visit` is provided a proxy reference to the graph, so that
+    /// the graph can be walked and associated data modified.
     ///
     /// The order nodes are visited is not specified.
     pub fn retain_nodes<F>(&mut self, mut visit: F)
-        where F: FnMut(&mut Self, NodeIndex<Ix>) -> bool
+        where F: FnMut(FrozenGraph<Self>, NodeIndex<Ix>) -> bool
     {
         for index in self.node_indices().rev() {
-            if !visit(self, index) {
+            if !visit(FrozenGraph(self), index) {
                 let ret = self.remove_node(index);
                 debug_assert!(ret.is_some());
                 let _ = ret;
@@ -1093,16 +1092,15 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// Keep all edges that return `true` from the `visit` closure,
     /// remove the others.
     ///
-    /// `visit` is provided a mutable reference to the graph, so that
-    /// the graph can be walked and associated data modified. You should
-    /// not add or remove nodes or edges.
+    /// `visit` is provided a proxy reference to the graph, so that
+    /// the graph can be walked and associated data modified.
     ///
     /// The order edges are visited is not specified.
     pub fn retain_edges<F>(&mut self, mut visit: F)
-        where F: FnMut(&mut Self, EdgeIndex<Ix>) -> bool
+        where F: FnMut(FrozenGraph<Self>, EdgeIndex<Ix>) -> bool
     {
         for index in self.edge_indices().rev() {
-            if !visit(self, index) {
+            if !visit(FrozenGraph(self), index) {
                 let ret = self.remove_edge(index);
                 debug_assert!(ret.is_some());
                 let _ = ret;
@@ -1785,3 +1783,44 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
 #[cfg(feature = "stable_graph")]
 #[path = "stable.rs"]
 pub mod stable;
+
+/// `FrozenGraph` only allows shared access (read-only) to the
+/// underlying graph `G`, but it allows mutable access to its
+/// node and edge weights.
+///
+/// This is used to ensure immutability of the graph's structure
+/// while permitting weights to change.
+pub struct FrozenGraph<'a, G: 'a>(&'a mut G);
+
+impl<'a, G> Deref for FrozenGraph<'a, G> {
+    type Target = G;
+    fn deref(&self) -> &G { self.0 }
+}
+
+impl<'a, G, I> Index<I> for FrozenGraph<'a, G>
+    where G: Index<I>
+{
+    type Output = G::Output;
+    fn index(&self, i: I) -> &G::Output { self.0.index(i) }
+}
+
+impl<'a, G, I> IndexMut<I> for FrozenGraph<'a, G>
+    where G: IndexMut<I>
+{
+    fn index_mut(&mut self, i: I) -> &mut G::Output { self.0.index_mut(i) }
+}
+
+impl<'a, N, E, Ty, Ix> FrozenGraph<'a, Graph<N, E, Ty, Ix>>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    pub fn index_twice_mut<T, U>(&mut self, i: T, j: U)
+        -> (&mut <Graph<N, E, Ty, Ix> as Index<T>>::Output,
+            &mut <Graph<N, E, Ty, Ix> as Index<U>>::Output)
+        where Graph<N, E, Ty, Ix>: IndexMut<T> + IndexMut<U>,
+              T: GraphIndex,
+              U: GraphIndex,
+    {
+        self.0.index_twice_mut(i, j)
+    }
+}

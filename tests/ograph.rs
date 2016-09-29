@@ -1001,7 +1001,7 @@ fn retain() {
         (1, 2, 3),
         (2, 3, 3),
     ]);
-    gr.retain_edges(|gr, i| {
+    gr.retain_edges(|mut gr, i| {
         if gr[i] <= 0 { false }
         else {
             gr[i] -= 1;
