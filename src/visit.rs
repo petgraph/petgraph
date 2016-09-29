@@ -147,6 +147,19 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a Graph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "stable_graph")]
+impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NeighborsDirected = graph::stable::Neighbors<'a, E, Ix>;
+    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: EdgeDirection)
+        -> Self::NeighborsDirected
+    {
+        StableGraph::neighbors_directed(self, n, d)
+    }
+}
+
 pub trait IntoNodeIdentifiers : GraphRef {
     type NodeIdentifiers: Iterator<Item=Self::NodeId>;
     fn node_identifiers(self) -> Self::NodeIdentifiers;
@@ -164,6 +177,21 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a Graph<N, E, Ty, Ix>
 
     fn node_count(&self) -> usize {
         Graph::node_count(self)
+    }
+}
+
+#[cfg(feature = "stable_graph")]
+impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NodeIdentifiers = graph::stable::NodeIndices<'a, N, Ix>;
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
+        StableGraph::node_indices(self)
+    }
+
+    fn node_count(&self) -> usize {
+        StableGraph::node_count(self)
     }
 }
 
@@ -327,6 +355,15 @@ impl<N, E, Ty, Ix> NodeCompactIndexable for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 { }
+
+#[cfg(feature = "stable_graph")]
+impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn node_bound(&self) -> usize { self.node_count() }
+    fn to_index(ix: NodeIndex<Ix>) -> usize { ix.index() }
+}
 
 /// A mapping for storing the visited status for NodeId `N`.
 pub trait VisitMap<N> {
