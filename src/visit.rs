@@ -25,6 +25,7 @@ use graph::{
 };
 #[cfg(feature = "stable_graph")]
 use graph::stable::StableGraph;
+use graph::FrozenGraph;
 
 use graphmap::{
     NodeTrait,
@@ -53,6 +54,11 @@ impl<G: GraphBase> GraphBase for Reversed<G> {
 
 impl<G: GraphRef> GraphRef for Reversed<G> { }
 
+impl<'a, G> GraphBase for FrozenGraph<'a, G> where G: GraphBase {
+    type NodeId = G::NodeId;
+    type EdgeId = G::EdgeId;
+}
+
 #[cfg(feature = "stable_graph")]
 impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
@@ -74,6 +80,17 @@ impl<'a, N: 'a, E> IntoNeighbors for &'a GraphMap<N, E>
         GraphMap::neighbors(self, n)
     }
 }
+
+impl<'a, 'b, G> IntoNeighbors for &'b FrozenGraph<'a, G>
+    where &'b G: IntoNeighbors,
+          G: GraphBase<NodeId=<&'b G as GraphBase>::NodeId>,
+{
+    type Neighbors = <&'b G as IntoNeighbors>::Neighbors;
+    fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
+        (**self).neighbors(n)
+    }
+}
+
 
 /// Wrapper type for walking the graph as if it is undirected
 #[derive(Copy, Clone)]
@@ -407,6 +424,14 @@ impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix> where
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
         map.grow(self.node_count());
+    }
+}
+
+impl<'a, G> Visitable for FrozenGraph<'a, G> where G: Visitable {
+    type Map = G::Map;
+    fn visit_map(&self) -> Self::Map { (**self).visit_map() }
+    fn reset_map(&self, map: &mut Self::Map) {
+        (**self).reset_map(map)
     }
 }
 

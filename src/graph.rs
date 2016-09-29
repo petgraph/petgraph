@@ -1815,6 +1815,12 @@ pub mod stable;
 /// while permitting weights to change.
 pub struct FrozenGraph<'a, G: 'a>(&'a mut G);
 
+impl<'a, G> FrozenGraph<'a, G> {
+    pub fn new(gr: &'a mut G) -> Self {
+        FrozenGraph(gr)
+    }
+}
+
 impl<'a, G> Deref for FrozenGraph<'a, G> {
     type Target = G;
     fn deref(&self) -> &G { self.0 }
