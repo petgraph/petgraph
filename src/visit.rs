@@ -358,15 +358,6 @@ impl<N, E, Ty, Ix> NodeCompactIndexable for Graph<N, E, Ty, Ix>
           Ix: IndexType,
 { }
 
-#[cfg(feature = "stable_graph")]
-impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    fn node_bound(&self) -> usize { self.node_bound() }
-    fn to_index(ix: NodeIndex<Ix>) -> usize { ix.index() }
-}
-
 /// A mapping for storing the visited status for NodeId `N`.
 pub trait VisitMap<N> {
     /// Return **true** if the value is not already present.

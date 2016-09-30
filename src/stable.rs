@@ -36,6 +36,7 @@ use super::{
     Pair,
 };
 use IntoWeightedEdge;
+use visit::NodeIndexable;
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
@@ -148,16 +149,6 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// Computes in **O(1)** time.
     pub fn edge_count(&self) -> usize {
         self.edge_count
-    }
-
-    /// Return an upper bound of the node indices in the graph
-    pub fn node_bound(&self) -> usize {
-        self.g.nodes.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
-    }
-
-    /// Return an upper bound of the edge indices in the graph
-    pub fn edge_bound(&self) -> usize {
-        self.g.edges.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
     }
 
     /// Whether the graph has directed edges or not.
@@ -740,6 +731,18 @@ impl<'a, N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'a, N, Ix> {
         }).next_back()
     }
 }
+
+impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    /// Return an upper bound of the node indices in the graph
+    fn node_bound(&self) -> usize {
+        self.g.nodes.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
+    }
+    fn to_index(ix: NodeIndex<Ix>) -> usize { ix.index() }
+}
+
 
 #[test]
 fn stable_graph() {
