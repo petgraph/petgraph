@@ -33,10 +33,11 @@ itertools = "0.5"
 rand = "0.3"
 
 [features]
-# For unstable features: StableGraph, etc
-stable_graph = []
+# For unstable features
 generate = []
-unstable = ["generate", "stable_graph"]
+unstable = ["generate"]
+default = ["stable_graph"]
+stable_graph = []
 
 # feature flags for testing use only
 test = []

@@ -1,6 +1,6 @@
-//! ***Unstable.*** `StableGraph` keeps indices stable across removals.
+//! `StableGraph` keeps indices stable across removals.
 //!
-//! ***Unstable: API may change at any time.*** Depends on `feature = "stable_graph"`.
+//! Depends on `feature = "stable_graph"`.
 //!
 
 use std::cmp;
@@ -41,7 +41,7 @@ use visit::NodeIndexable;
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
 ///
-/// ***Unstable: API may change at any time.*** Depends on `feature = "stable_graph"`.
+/// Depends on `feature = "stable_graph"`.
 ///
 /// The graph **does not invalidate** any unrelated node or edge indices when
 /// items are removed.
