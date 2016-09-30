@@ -19,6 +19,21 @@ __ http://bluss.github.io/petgraph/
 Recent Changes
 --------------
 
+- 0.3.0-alpha.0
+
+  - Prerelease
+  - Overhaul all graph visitor traits so that they use the ``IntoIterator``
+    style. This makes them composable easier to use.
+  - Add new graph traits, like ``NodeIndexable`` and ``EdgeReferences``.
+  - Port multiple graph algorithms to the new visitor traits.
+  - Help is welcome to port more algorithms (and add new graph traits in the
+    process).
+  - ``Graph::retain_nodes, retain_edges`` now expose the self graph only
+    as wrapped in ``Frozen``, so that weights can be mutated but the
+    graph structure not.
+  - Enable StableGraph by default
+  - Require Rust 1.12 or later
+
 - 0.2.8
 
   - Add Graph methods reserve_nodes, reserve_edges, reserve_exact_nodes,

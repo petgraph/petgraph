@@ -1,7 +1,7 @@
 [package]
 
 name = "petgraph"
-version = "0.2.8"
+version = "0.3.0-alpha.0"
 license = "MIT/Apache-2.0"
 authors = [
 "bluss",
@@ -9,7 +9,7 @@ authors = [
 ]
 
 description = "Graph data structure library. Provides graph types and graph algorithms."
-documentation = "http://bluss.github.io/petgraph"
+documentation = "https://docs.rs/petgraph/"
 repository = "https://github.com/bluss/petgraph"
 
 keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]

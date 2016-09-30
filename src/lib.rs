@@ -9,6 +9,8 @@
 //! is an hashmap-backed graph with undirected edges and only allows simple node
 //! identifiers (such as integers or references).
 
+#![doc(html_root_url = "https://docs.rs/petgraph/0.3/")]
+
 extern crate fixedbitset;
 extern crate itertools;
 
