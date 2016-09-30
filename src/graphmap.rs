@@ -311,33 +311,26 @@ impl<N, E, Item> Extend<Item> for GraphMap<N, E>
     }
 }
 
-/// Utitily macro -- reinterpret passed in macro arguments as items
-macro_rules! items {
-    ($($item:item)*) => ($($item)*);
-}
-
 macro_rules! iterator_wrap {
     ($name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
      item: $item: ty,
      iter: $iter: ty,
      ) => (
-        items! {
-            pub struct $name <$($typarm),*> where $($bounds)* {
-                iter: $iter,
+        pub struct $name <$($typarm),*> where $($bounds)* {
+            iter: $iter,
+        }
+        impl<$($typarm),*> Iterator for $name <$($typarm),*>
+            where $($bounds)*
+        {
+            type Item = $item;
+            #[inline]
+            fn next(&mut self) -> Option<Self::Item> {
+                self.iter.next()
             }
-            impl<$($typarm),*> Iterator for $name <$($typarm),*>
-                where $($bounds)*
-            {
-                type Item = $item;
-                #[inline]
-                fn next(&mut self) -> Option<Self::Item> {
-                    self.iter.next()
-                }
 
-                #[inline]
-                fn size_hint(&self) -> (usize, Option<usize>) {
-                    self.iter.size_hint()
-                }
+            #[inline]
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                self.iter.size_hint()
             }
         }
     );
