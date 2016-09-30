@@ -153,7 +153,7 @@ impl<Ty, Ix> Vf2State<Ty, Ix>
 }
 
 
-/// Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// [Graph] Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, only matching graph syntactically (graph
 /// structure).
@@ -177,7 +177,7 @@ pub fn is_isomorphic<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>,
     try_match(&mut st, g0, g1, &mut NoSemanticMatch, &mut NoSemanticMatch).unwrap_or(false)
 }
 
-/// Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// [Graph] Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, examining both syntactic and semantic
 /// graph isomorphism (graph structure and matching node and edge weights).

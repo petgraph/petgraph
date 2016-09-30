@@ -3,11 +3,23 @@
 //! ***Unstable: API may change at any time.*** Depends on `feature = "stable_graph"`.
 //!
 
+use std::cmp;
 use std::fmt;
 use std::iter;
 use std::mem::replace;
 use std::ops::{Index, IndexMut};
 use std::slice;
+
+#[doc(no_inline)]
+pub use graph::{
+    NodeIndex,
+    EdgeIndex,
+    GraphIndex,
+    DefaultIx,
+    IndexType,
+    node_index,
+    edge_index,
+};
 
 use {
     EdgeType,
@@ -16,18 +28,15 @@ use {
     EdgeDirection,
 };
 use super::{
-    DefIndex,
     Edge,
-    EdgeIndex,
     Graph,
     index_twice,
-    IndexType,
     Node,
-    NodeIndex,
-    node_index,
     DIRECTIONS,
     Pair,
 };
+use IntoWeightedEdge;
+use visit::NodeIndexable;
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
@@ -65,7 +74,7 @@ use super::{
 /// - Indices don't allow as much compile time checking as references.
 ///
 ///
-pub struct StableGraph<N, E, Ty = Directed, Ix = DefIndex>
+pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
     where Ix: IndexType
 {
     g: Graph<Option<N>, Option<E>, Ty, Ix>,
@@ -433,6 +442,61 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
             }
         }
     }
+
+    /// Create a new `StableGraph` from an iterable of edges.
+    ///
+    /// Node weights `N` are set to default values.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    ///
+    /// ```
+    /// use petgraph::stable_graph::StableGraph;
+    ///
+    /// let gr = StableGraph::<(), i32>::from_edges(&[
+    ///     (0, 1), (0, 2), (0, 3),
+    ///     (1, 2), (1, 3),
+    ///     (2, 3),
+    /// ]);
+    /// ```
+    pub fn from_edges<I>(iterable: I) -> Self
+        where I: IntoIterator,
+              I::Item: IntoWeightedEdge<E>,
+              <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
+              N: Default,
+    {
+        let mut g = Self::with_capacity(0, 0);
+        g.extend_with_edges(iterable);
+        g
+    }
+
+    /// Extend the graph from an iterable of edges.
+    ///
+    /// Node weights `N` are set to default values.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    pub fn extend_with_edges<I>(&mut self, iterable: I)
+        where I: IntoIterator,
+              I::Item: IntoWeightedEdge<E>,
+              <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
+              N: Default,
+    {
+        let iter = iterable.into_iter();
+
+        for elt in iter {
+            let (source, target, weight) = elt.into_weighted_edge();
+            let (source, target) = (source.into(), target.into());
+            let nx = cmp::max(source, target);
+            while nx.index() >= self.node_count() {
+                self.add_node(N::default());
+            }
+            self.add_edge(source, target, weight);
+        }
+    }
+
 }
 
 /// The resulting cloned graph has the same graph indices as `self`.
@@ -520,7 +584,7 @@ impl<N, E, Ty, Ix> Default for StableGraph<N, E, Ty, Ix>
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is `NodeIndex`.
-pub struct Neighbors<'a, E: 'a, Ix: 'a = DefIndex> where
+pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> where
     Ix: IndexType,
 {
     /// starting node to skip over
@@ -587,7 +651,7 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
 ///
 /// ```
 /// use petgraph::{Dfs, Incoming};
-/// use petgraph::graph::stable::StableGraph;
+/// use petgraph::stable_graph::StableGraph;
 ///
 /// let mut gr = StableGraph::new();
 /// let a = gr.add_node(0.);
@@ -642,7 +706,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
 }
 
 /// Iterator over the node indices of a graph.
-pub struct NodeIndices<'a, N: 'a, Ix: IndexType = DefIndex> {
+pub struct NodeIndices<'a, N: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
 
@@ -667,6 +731,18 @@ impl<'a, N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'a, N, Ix> {
         }).next_back()
     }
 }
+
+impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    /// Return an upper bound of the node indices in the graph
+    fn node_bound(&self) -> usize {
+        self.g.nodes.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
+    }
+    fn to_index(ix: NodeIndex<Ix>) -> usize { ix.index() }
+}
+
 
 #[test]
 fn stable_graph() {

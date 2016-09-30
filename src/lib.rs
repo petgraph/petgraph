@@ -10,9 +10,14 @@
 //! identifiers (such as integers or references).
 
 extern crate fixedbitset;
+extern crate itertools;
 
+#[doc(no_inline)]
 pub use graph::Graph;
 pub use graphmap::GraphMap;
+#[cfg(feature = "stable_graph")]
+#[doc(no_inline)]
+pub use stable_graph::StableGraph;
 
 pub use visit::{
     Bfs,
@@ -27,7 +32,8 @@ pub mod algo;
 #[cfg(feature = "generate")]
 pub mod generate;
 pub mod graphmap;
-pub mod graph;
+#[path = "graph.rs"]
+mod graph_impl;
 pub mod dot;
 pub mod visit;
 pub mod unionfind;
@@ -35,17 +41,58 @@ mod dijkstra;
 mod isomorphism;
 mod traits_graph;
 #[cfg(feature = "quickcheck")]
-pub mod quickcheck;
+mod quickcheck;
+
+/// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
+pub mod graph {
+    pub use graph_impl::{
+        Edge,
+        EdgeIndex,
+        EdgeIndices,
+        EdgeReference,
+        EdgeReferences,
+        EdgeWeightsMut,
+        Edges,
+        Externals,
+        Frozen,
+        Graph,
+        Neighbors,
+        Node,
+        NodeIndex,
+        NodeIndices,
+        NodeWeightsMut,
+        WalkNeighbors,
+        GraphIndex,
+        IndexType,
+        edge_index,
+        node_index,
+        DefaultIx,
+    };
+}
+
+#[cfg(feature = "stable_graph")]
+pub use graph_impl::stable as stable_graph;
+
+macro_rules! copyclone {
+    ($name:ident) => {
+        impl Clone for $name {
+            #[inline]
+            fn clone(&self) -> Self { *self }
+        }
+    }
+}
 
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
+#[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub enum EdgeDirection {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
     /// An `Incoming` edge is an inbound edge *to* the current node.
     Incoming = 1
 }
+
+copyclone!(EdgeDirection);
 
 impl EdgeDirection {
     /// Return the opposite `EdgeDirection`.
@@ -59,12 +106,14 @@ impl EdgeDirection {
 }
 
 /// Marker type for a directed graph.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Debug)]
 pub enum Directed { }
+copyclone!(Directed);
 
 /// Marker type for an undirected graph.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Debug)]
 pub enum Undirected { }
+copyclone!(Undirected);
 
 /// A graph's edge type determines whether is has directed edges or not.
 pub trait EdgeType {

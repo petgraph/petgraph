@@ -32,7 +32,7 @@ use petgraph::visit::{
     Reversed,
     AsUndirected,
     Topo,
-    NeighborIter,
+    IntoNeighbors,
 };
 use petgraph::algo::{
     dijkstra,
@@ -190,7 +190,7 @@ fn mst() {
     let mst = min_spanning_tree(&gr);
     println!("{}", Dot::new(&mst));
     println!("{:?}", Dot::new(&mst));
-    println!("MST is:\n{:?}", mst);
+    println!("MST is:\n{:#?}", mst);
     assert!(mst.node_count() == gr.node_count());
     // |E| = |N| - 2  because there are two disconnected components.
     assert!(mst.edge_count() == gr.node_count() - 2);
@@ -1001,7 +1001,7 @@ fn retain() {
         (1, 2, 3),
         (2, 3, 3),
     ]);
-    gr.retain_edges(|gr, i| {
+    gr.retain_edges(|mut gr, i| {
         if gr[i] <= 0 { false }
         else {
             gr[i] -= 1;
@@ -1117,8 +1117,8 @@ fn neighbors_selfloops() {
 }
 
 
-fn degree<'a, G>(g: &'a G, node: G::NodeId) -> usize
-    where G: NeighborIter<'a>,
+fn degree<'a, G>(g: G, node: G::NodeId) -> usize
+    where G: IntoNeighbors,
           G::NodeId: PartialEq,
 {
     // self loops count twice
