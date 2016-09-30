@@ -1,5 +1,6 @@
 use std::cmp;
 use std::fmt;
+use std::hash::Hash;
 use std::iter;
 use std::marker::PhantomData;
 use std::mem::size_of;
@@ -26,7 +27,7 @@ pub type DefaultIx = u32;
 ///
 /// Marked `unsafe` because: the trait must faithfully preseve
 /// and convert index values.
-pub unsafe trait IndexType : Copy + Ord + fmt::Debug + 'static
+pub unsafe trait IndexType : Copy + Hash + Ord + fmt::Debug + 'static
 {
     fn new(x: usize) -> Self;
     fn index(&self) -> usize;
