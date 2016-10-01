@@ -7,11 +7,14 @@ use ::{
 use visit::{
     GraphBase,
     GraphRef,
+    GraphEdgeRef,
     IntoNodeIdentifiers,
     IntoNeighbors,
     IntoNeighborsDirected,
+    IntoEdgeReferences,
     IntoExternals,
     Visitable,
+    EdgeRef,
 };
 
 
@@ -77,6 +80,64 @@ impl<G: Visitable> Visitable for Reversed<G>
     }
     fn reset_map(&self, map: &mut Self::Map) {
         self.0.reset_map(map);
+    }
+}
+
+
+/// An edge reference for `Reversed`.
+#[derive(Copy, Clone, Debug)]
+pub struct ReversedEdgeRef<R>(R);
+
+/// An edge reference
+impl<R> EdgeRef for ReversedEdgeRef<R>
+    where R: EdgeRef,
+{
+    type NodeId = R::NodeId;
+    type EdgeId = R::EdgeId;
+    type Weight = R::Weight;
+    fn source(&self) -> Self::NodeId {
+        self.0.target()
+    }
+    fn target(&self) -> Self::NodeId {
+        self.0.source()
+    }
+    fn weight(&self) -> &Self::Weight {
+        self.0.weight()
+    }
+    fn id(&self) -> Self::EdgeId {
+        self.0.id()
+    }
+}
+
+impl<G> GraphEdgeRef for Reversed<G>
+    where G: GraphEdgeRef
+{
+    type EdgeRef = ReversedEdgeRef<G::EdgeRef>;
+}
+
+impl<G> IntoEdgeReferences for Reversed<G>
+    where G: IntoEdgeReferences
+{
+    type EdgeReferences = ReversedEdgeReferences<G::EdgeReferences>;
+    fn edge_references(self) -> Self::EdgeReferences {
+        ReversedEdgeReferences {
+            iter: self.0.edge_references(),
+        }
+    }
+}
+
+/// An iterator of edge references for `Reversed`.
+pub struct ReversedEdgeReferences<I> {
+    iter: I,
+}
+
+impl<I> Iterator for ReversedEdgeReferences<I>
+    where I: Iterator,
+          I::Item: EdgeRef,
+{
+    type Item = ReversedEdgeRef<I::Item>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(ReversedEdgeRef)
     }
 }
 
