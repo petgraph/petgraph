@@ -236,7 +236,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// ]);
 /// ```
 ///
-/// ![graph-example](graph-example.svg)
+/// ![graph-example](https://bluss.github.io/ndarray/images/graph-example.svg)
 ///
 /// ### Graph Indices
 ///
