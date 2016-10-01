@@ -34,6 +34,10 @@ Recent Changes
   - Enable StableGraph by default
   - Require Rust 1.12 or later
 
+- 0.2.9
+
+  - Fix a bug in SubTopo (#81)
+
 - 0.2.8
 
   - Add Graph methods reserve_nodes, reserve_edges, reserve_exact_nodes,
