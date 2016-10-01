@@ -216,6 +216,19 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
     }
 }
 
+impl<G> IntoNodeIdentifiers for Reversed<G>
+    where G: IntoNodeIdentifiers
+{
+    type NodeIdentifiers = G::NodeIdentifiers;
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
+        self.0.node_identifiers()
+    }
+
+    fn node_count(&self) -> usize {
+        self.0.node_count()
+    }
+}
+
 impl<'a, G> IntoNeighbors for &'a G
     where G: Copy + IntoNeighbors
 {
