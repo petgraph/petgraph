@@ -18,6 +18,7 @@ use std::marker::PhantomData;
 
 use {
     EdgeType,
+    Directed,
     Undirected,
     EdgeDirection,
     Incoming,
@@ -27,10 +28,27 @@ use {
 use IntoWeightedEdge;
 use visit::IntoNodeIdentifiers;
 
-/// `GraphMap<N, E>` is an undirected graph, with generic node values `N` and edge weights `E`.
+/// A `GraphMap` with undirected edges.
 ///
-/// It uses an combined adjacency list and sparse adjacency matrix representation, using **O(|V|
-/// + |E|)** space, and allows testing for edge existance in constant time.
+/// For example, an edge between *1* and *2* is equivalent to an edge between
+/// *2* and *1*.
+pub type UnGraphMap<N, E> = GraphMap<N, E, Undirected>;
+/// A `GraphMap` with directed edges.
+///
+/// For example, an edge from *1* to *2* is distinct from an edge from *2* to
+/// *1*.
+pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
+
+/// `GraphMap<N, E, Ty>` is a graph datastructure using an associative array
+/// of its node weights `N`.
+///
+/// It uses an combined adjacency list and sparse adjacency matrix
+/// representation, using **O(|V| + |E|)** space, and allows testing for edge
+/// existance in constant time.
+///
+/// The edge type `Ty` can be `Directed` or `Undirected`.
+///
+/// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
 ///
 /// The node type `N` must implement `Copy` and will be used as node identifier, duplicated
 /// into several places in the data structure.
@@ -40,7 +58,7 @@ use visit::IntoNodeIdentifiers;
 ///
 /// `GraphMap` does not allow parallel edges, but self loops are allowed.
 #[derive(Clone)]
-pub struct GraphMap<N, E, Ty = Undirected> {
+pub struct GraphMap<N, E, Ty> {
     nodes: HashMap<N, Vec<(N, EdgeDirection)>>,
     edges: HashMap<(N, N), E>,
     ty: PhantomData<Ty>,
@@ -56,19 +74,15 @@ impl<N: Eq + Hash + fmt::Debug, E: fmt::Debug, Ty: EdgeType> fmt::Debug for Grap
 pub trait NodeTrait : Copy + Ord + Hash {}
 impl<N> NodeTrait for N where N: Copy + Ord + Hash {}
 
-impl<N, E> GraphMap<N, E>
-    where N: NodeTrait,
-{
-    /// Create a new `GraphMap`.
-    pub fn new() -> GraphMap<N, E> {
-        Self::with_capacity(0, 0)
-    }
-}
-
 impl<N, E, Ty> GraphMap<N, E, Ty>
     where N: NodeTrait,
           Ty: EdgeType,
 {
+    /// Create a new `GraphMap`
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Create a new `GraphMap` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         GraphMap {
@@ -107,9 +121,11 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// Nodes are inserted automatically to match the edges.
     ///
     /// ```
-    /// use petgraph::GraphMap;
+    /// use petgraph::graphmap::UnGraphMap;
     ///
-    /// let gr = GraphMap::<_, ()>::from_edges(&[
+    /// // Create a new undirected GraphMap.
+    /// // Use a type hint to have `()` be the edge weight type.
+    /// let gr = UnGraphMap::<_, ()>::from_edges(&[
     ///     (0, 1), (0, 2), (0, 3),
     ///     (1, 2), (1, 3),
     ///     (2, 3),
@@ -174,12 +190,15 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// as `Some(old_weight)`.
     ///
     /// ```
-    /// use petgraph::GraphMap;
+    /// // Create a GraphMap with directed edges, and add one edge to it
+    /// use petgraph::graphmap::DiGraphMap;
     ///
-    /// let mut g = GraphMap::new();
-    /// g.add_edge(1, 2, -1);
+    /// let mut g = DiGraphMap::new();
+    /// g.add_edge("x", "y", -1);
     /// assert_eq!(g.node_count(), 2);
     /// assert_eq!(g.edge_count(), 1);
+    /// assert!(g.contains_edge("x", "y"));
+    /// assert!(!g.contains_edge("y", "x"));
     /// ```
     pub fn add_edge(&mut self, a: N, b: N, weight: E) -> Option<E> {
         if let old @ Some(_) = self.edges.insert(Self::edge_key(a, b), weight) {
@@ -226,12 +245,13 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// Return `None` if the edge didn't exist.
     ///
     /// ```
-    /// use petgraph::GraphMap;
+    /// // Create a GraphMap with undirected edges, and add and remove an edge.
+    /// use petgraph::graphmap::UnGraphMap;
     ///
-    /// let mut g = GraphMap::new();
-    /// g.add_edge(1, 2, -1);
+    /// let mut g = UnGraphMap::new();
+    /// g.add_edge("x", "y", -1);
     ///
-    /// let edge_data = g.remove_edge(2, 1);
+    /// let edge_data = g.remove_edge("y", "x");
     /// assert_eq!(edge_data, Some(-1));
     /// assert_eq!(g.edge_count(), 0);
     /// ```
@@ -452,7 +472,7 @@ impl<'a, N, Ty> Iterator for NeighborsDirected<'a, N, Ty>
     }
 }
 
-pub struct Edges<'a, N, E: 'a, Ty = Undirected>
+pub struct Edges<'a, N, E: 'a, Ty>
     where N: 'a + NodeTrait,
           Ty: EdgeType
 {
@@ -461,8 +481,9 @@ pub struct Edges<'a, N, E: 'a, Ty = Undirected>
     iter: Neighbors<'a, N, Ty>,
 }
 
-impl<'a, N, E> Iterator for Edges<'a, N, E>
-    where N: 'a + NodeTrait, E: 'a
+impl<'a, N, E, Ty> Iterator for Edges<'a, N, E, Ty>
+    where N: 'a + NodeTrait, E: 'a,
+          Ty: EdgeType,
 {
     type Item = (N, &'a E);
     fn next(&mut self) -> Option<(N, &'a E)>
@@ -471,7 +492,7 @@ impl<'a, N, E> Iterator for Edges<'a, N, E>
             None => None,
             Some(b) => {
                 let a = self.from;
-                match self.edges.get(&GraphMap::<N, E>::edge_key(a, b)) {
+                match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
                     None => unreachable!(),
                     Some(edge) => {
                         Some((b, edge))
@@ -502,31 +523,35 @@ impl<'a, N, E, Ty> Iterator for AllEdges<'a, N, E, Ty>
 }
 
 /// Index `GraphMap` by node pairs to access edge weights.
-impl<N, E> Index<(N, N)> for GraphMap<N, E>
-    where N: NodeTrait
+impl<N, E, Ty> Index<(N, N)> for GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
 {
     type Output = E;
     fn index(&self, index: (N, N)) -> &E
     {
+        let index = Self::edge_key(index.0, index.1);
         self.edge_weight(index.0, index.1).expect("GraphMap::index: no such edge")
     }
 }
 
 /// Index `GraphMap` by node pairs to access edge weights.
-impl<N, E> IndexMut<(N, N)> for GraphMap<N, E>
-    where N: NodeTrait
+impl<N, E, Ty> IndexMut<(N, N)> for GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
 {
-    fn index_mut(&mut self, index: (N, N)) -> &mut E
-    {
+    fn index_mut(&mut self, index: (N, N)) -> &mut E {
+        let index = Self::edge_key(index.0, index.1);
         self.edge_weight_mut(index.0, index.1).expect("GraphMap::index: no such edge")
     }
 }
 
 /// Create a new empty `GraphMap`.
-impl<N, E> Default for GraphMap<N, E>
+impl<N, E, Ty> Default for GraphMap<N, E, Ty>
     where N: NodeTrait,
+          Ty: EdgeType,
 {
-    fn default() -> Self { GraphMap::new() }
+    fn default() -> Self { GraphMap::with_capacity(0, 0) }
 }
 
 /// A reference that is hashed and compared by its pointer value.

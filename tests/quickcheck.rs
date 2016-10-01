@@ -24,7 +24,12 @@ use petgraph::algo::{
 };
 use petgraph::visit::{Topo, SubTopo};
 use petgraph::graph::{IndexType, node_index, edge_index, NodeIndex};
-use petgraph::graphmap::NodeTrait;
+use petgraph::graphmap::{
+    NodeTrait,
+    UnGraphMap,
+    DiGraphMap,
+};
+
 #[cfg(feature = "stable_graph")]
 use petgraph::stable_graph::StableGraph;
 
@@ -366,13 +371,13 @@ fn graphmap_remove() {
         assert_graphmap_consistent(&g);
         true
     }
-    quickcheck::quickcheck(prop as fn(GraphMap<_, _, Directed>, _, _) -> bool);
-    quickcheck::quickcheck(prop as fn(GraphMap<_, _, Undirected>, _, _) -> bool);
+    quickcheck::quickcheck(prop as fn(DiGraphMap<_, _>, _, _) -> bool);
+    quickcheck::quickcheck(prop as fn(UnGraphMap<_, _>, _, _) -> bool);
 }
 
 #[test]
 fn graphmap_add_remove() {
-    fn prop(mut g: GraphMap<i8, ()>, a: i8, b: i8) -> bool {
+    fn prop(mut g: UnGraphMap<i8, ()>, a: i8, b: i8) -> bool {
         assert_eq!(g.contains_edge(a, b), g.add_edge(a, b, ()).is_some());
         g.remove_edge(a, b);
         !g.contains_edge(a, b) &&

@@ -7,6 +7,7 @@ use petgraph::{
     GraphMap,
     Dfs,
     Directed,
+    Undirected,
 };
 use petgraph::visit::{
     DfsIter,
@@ -17,11 +18,15 @@ use petgraph::algo::{
 };
 
 use petgraph::dot::{Dot, Config};
+use petgraph::graphmap::{
+    DiGraphMap,
+    UnGraphMap,
+};
 
 #[test]
 fn simple() {
     //let root = TypedArena::<Node<_>>::new();
-    let mut gr = GraphMap::new();
+    let mut gr = UnGraphMap::new();
     //let node = |&: name: &'static str| Ptr(root.alloc(Node(name.to_string())));
     let a = gr.add_node(("A"));
     let b = gr.add_node(("B"));
@@ -61,7 +66,7 @@ fn simple() {
 #[test]
 fn remov()
 {
-    let mut g = GraphMap::<_, _>::new();
+    let mut g = UnGraphMap::new();
     g.add_node(1);
     g.add_node(2);
     g.add_edge(1, 2, -1);
@@ -108,7 +113,7 @@ fn remove_directed()
 
 #[test]
 fn dfs() {
-    let mut gr = GraphMap::new();
+    let mut gr = UnGraphMap::default();
     let h = gr.add_node("H");
     let i = gr.add_node("I");
     let j = gr.add_node("J");
@@ -142,7 +147,7 @@ fn dfs() {
 
 #[test]
 fn edge_iterator() {
-    let mut gr: GraphMap<&str, u64> = GraphMap::new();
+    let mut gr = UnGraphMap::new();
     let h = gr.add_node("H");
     let i = gr.add_node("I");
     let j = gr.add_node("J");
@@ -165,7 +170,7 @@ fn edge_iterator() {
 
 #[test]
 fn from_edges() {
-    let gr = GraphMap::from_edges(&[
+    let gr = GraphMap::<_, _, Undirected>::from_edges(&[
         ("a", "b", 1),
         ("a", "c", 2),
         ("c", "d", 3),
@@ -174,7 +179,7 @@ fn from_edges() {
     assert_eq!(gr.edge_count(), 3);
     assert_eq!(gr[("a", "c")], 2);
 
-    let gr = GraphMap::<_, ()>::from_edges(&[
+    let gr = GraphMap::<_, (), Undirected>::from_edges(&[
         (0, 1), (0, 2), (0, 3),
         (1, 2), (1, 3),
         (2, 3),
@@ -193,7 +198,7 @@ fn from_edges() {
 #[test]
 fn graphmap_directed() {
     //let root = TypedArena::<Node<_>>::new();
-    let mut gr = GraphMap::<_, (), Directed>::with_capacity(0, 0);
+    let mut gr = DiGraphMap::<_, ()>::with_capacity(0, 0);
     //let node = |&: name: &'static str| Ptr(root.alloc(Node(name.to_string())));
     let a = gr.add_node("A");
     let b = gr.add_node("B");
