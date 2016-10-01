@@ -15,6 +15,7 @@ use std::ops::{
 
 use scored::MinScored;
 use super::visit::{
+    GraphRef,
     Visitable,
     VisitMap,
 };
@@ -32,14 +33,15 @@ use super::visit::{
 /// cost is calculated.
 ///
 /// Returns a `HashMap` that maps `NodeId` to path cost.
-pub fn dijkstra<'a, G: Visitable, K, F, Edges>(graph: &'a G,
-                                               start: G::NodeId,
-                                               goal: Option<G::NodeId>,
-                                               mut edges: F) -> HashMap<G::NodeId, K> where
-    G::NodeId: Eq + Hash,
-    K: Default + Add<Output=K> + Copy + PartialOrd,
-    F: FnMut(&'a G, G::NodeId) -> Edges,
-    Edges: Iterator<Item=(G::NodeId, K)>,
+pub fn dijkstra<G, K, F, Edges>(graph: G,
+                                start: G::NodeId,
+                                goal: Option<G::NodeId>,
+                                mut edges: F) -> HashMap<G::NodeId, K>
+    where G: GraphRef + Visitable,
+          G::NodeId: Eq + Hash,
+          K: Default + Add<Output=K> + Copy + PartialOrd,
+          F: FnMut(G, G::NodeId) -> Edges,
+          Edges: Iterator<Item=(G::NodeId, K)>,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
