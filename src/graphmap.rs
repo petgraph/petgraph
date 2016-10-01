@@ -27,6 +27,7 @@ use {
 
 use IntoWeightedEdge;
 use visit::IntoNodeIdentifiers;
+use graph::Graph;
 
 /// A `GraphMap` with undirected edges.
 ///
@@ -345,6 +346,29 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             inner: self.edges.iter(),
             ty: self.ty,
         }
+    }
+
+    /// Return a `Graph` that corresponds to this `GraphMap`.
+    ///
+    /// Note: node and edge indices in the `Graph` have nothing in common
+    /// with the `GraphMap`s node weights `N`. The node weights `N` are
+    /// used as node weights in the resulting `Graph`, too.
+    pub fn into_graph<Ix>(self) -> Graph<N, E, Ty, Ix>
+        where Ix: ::graph::IndexType,
+    {
+        // assuming two successive iterations of the same hashmap produce the same order
+        let mut gr = Graph::with_capacity(self.node_count(), self.edge_count());
+        // map N -> NodeIndex
+        let mut node_map = HashMap::with_capacity(self.node_count());
+        for (&node, _) in self.nodes.iter() {
+            node_map.insert(node, gr.add_node(node));
+        }
+        for ((a, b), edge_weight) in self.edges.into_iter() {
+            let ai = node_map[&a];
+            let bi = node_map[&b];
+            gr.add_edge(ai, bi, edge_weight);
+        }
+        gr
     }
 }
 

@@ -5,12 +5,14 @@ use std::fmt;
 
 use petgraph::{
     GraphMap,
+    Graph,
     Dfs,
     Directed,
     Undirected,
 };
 use petgraph::visit::{
     DfsIter,
+    EdgeRef,
 };
 
 use petgraph::algo::{
@@ -243,23 +245,51 @@ fn assert_sccs_eq<N>(mut res: Vec<Vec<N>>, mut answer: Vec<Vec<N>>)
 
 #[test]
 fn scc() {
-    let gr: GraphMap<_, (), Directed> = GraphMap::from_edges(&[
-        (6, 0),
-        (0, 3),
-        (3, 6),
-        (8, 6),
-        (8, 2),
-        (2, 5),
-        (5, 8),
-        (7, 5),
-        (1, 7),
-        (7, 4),
-        (4, 1)]);
+    let gr: GraphMap<_, u32, Directed> = GraphMap::from_edges(&[
+        (6, 0, 0),
+        (0, 3, 1),
+        (3, 6, 2),
+        (8, 6, 3),
+        (8, 2, 4),
+        (2, 5, 5),
+        (5, 8, 6),
+        (7, 5, 7),
+        (1, 7, 8),
+        (7, 4, 9),
+        (4, 1, 10)]);
 
     assert_sccs_eq(petgraph::algo::scc(&gr), vec![
         vec![0, 3, 6],
         vec![1, 4, 7],
         vec![2, 5, 8],
     ]);
+}
 
+#[test]
+fn test_into_graph() {
+    let gr: GraphMap<_, u32, Directed> = GraphMap::from_edges(&[
+        (6, 0, 0),
+        (0, 3, 1),
+        (3, 6, 2),
+        (8, 6, 3),
+        (8, 2, 4),
+        (2, 5, 5),
+        (5, 8, 6),
+        (7, 5, 7),
+        (1, 7, 8),
+        (7, 4, 9),
+        (4, 1, 10)]);
+
+    let graph: Graph<_, _, _> = gr.clone().into_graph();
+    println!("{}", Dot::new(&gr));
+    println!("{}", Dot::new(&graph));
+
+    // node weigths in `graph` are node identifiers in `gr`.
+    for edge in graph.edge_references() {
+        let a = edge.source();
+        let b = edge.target();
+        let aw = graph[a];
+        let bw = graph[b];
+        assert_eq!(&gr[(aw, bw)], edge.weight());
+    }
 }
