@@ -552,8 +552,12 @@ impl<N, E> GetAdjacencyMatrix for GraphMap<N, E>
 
 /// A depth first search (DFS) of a graph.
 ///
-/// Using a **Dfs** you can run a traversal over a graph while still retaining
-/// mutable access to it, if you use it like the following example:
+/// The traversal starts at a given node and only traverses nodes reachable
+/// from it.
+///
+/// `Dfs` does not itself borrow the graph, and because of this you can run
+/// a traversal over a graph while still retaining mutable access to it, if you
+/// use it like the following example:
 ///
 /// ```
 /// use petgraph::{Graph, Dfs};
@@ -641,22 +645,16 @@ pub struct DfsIter<G>
 impl<G> DfsIter<G>
     where G: GraphRef + Visitable
 {
-    pub fn new(graph: G, start: G::NodeId) -> Self
-    {
-        // Inline the code from Dfs::new to
-        // work around rust bug #22841
-        let mut dfs = Dfs::empty(graph);
-        dfs.move_to(start);
+    pub fn new(graph: G, start: G::NodeId) -> Self {
         DfsIter {
             graph: graph,
-            dfs: dfs,
+            dfs: Dfs::new(graph, start),
         }
     }
 
     /// Keep the discovered map, but clear the visit stack and restart
     /// the DFS traversal from a particular node.
-    pub fn move_to(&mut self, start: G::NodeId)
-    {
+    pub fn move_to(&mut self, start: G::NodeId) {
         self.dfs.move_to(start)
     }
 }
@@ -693,8 +691,12 @@ impl<G> Clone for DfsIter<G>
 
 /// A breadth first search (BFS) of a graph.
 ///
-/// Using a **Bfs** you can run a traversal over a graph while still retaining
-/// mutable access to it, if you use it like the following example:
+/// The traversal starts at a given node and only traverses nodes reachable
+/// from it.
+///
+/// `Bfs` does not itself borrow the graph, and because of this you can run
+/// a traversal over a graph while still retaining mutable access to it, if you
+/// use it like the following example:
 ///
 /// ```
 /// use petgraph::{Graph, Bfs};
@@ -727,8 +729,8 @@ impl<N, VM> Bfs<N, VM>
 {
     /// Create a new **Bfs**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
-    pub fn new<G>(graph: &G, start: N) -> Self
-        where G: Visitable<NodeId=N, Map=VM>
+    pub fn new<G>(graph: G, start: N) -> Self
+        where G: GraphRef + Visitable<NodeId=N, Map=VM>
     {
         let mut discovered = graph.visit_map();
         discovered.visit(start.clone());
@@ -768,21 +770,10 @@ impl<G: Visitable> BfsIter<G>
     where G::NodeId: Copy,
           G: GraphRef,
 {
-    pub fn new(graph: G, start: G::NodeId) -> Self
-    {
-        // Inline the code from Bfs::new to
-        // work around rust bug #22841
-        let mut discovered = graph.visit_map();
-        discovered.visit(start.clone());
-        let mut stack = VecDeque::new();
-        stack.push_front(start.clone());
-        let bfs = Bfs {
-            stack: stack,
-            discovered: discovered,
-        };
+    pub fn new(graph: G, start: G::NodeId) -> Self {
         BfsIter {
             graph: graph,
-            bfs: bfs,
+            bfs: Bfs::new(graph, start),
         }
     }
 }
