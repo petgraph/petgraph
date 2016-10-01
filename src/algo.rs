@@ -290,7 +290,7 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 
     let mut sccs = Vec::new();
     {
-        let map = g.node_identifiers().map(|_| {
+        let map = (0..g.node_bound()).map(|_| {
             NodeData { index: None, lowlink: !0, on_stack: false }
         }).collect();
 
