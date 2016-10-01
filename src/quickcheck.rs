@@ -21,8 +21,8 @@ use graphmap::{
 /// `Arbitrary` for `Graph` creates a graph by selecting a node count
 /// and a probability for each possible edge to exist.
 ///
-/// The result will be simple graph or digraph, with possible
-/// self loops, no parallel edges.
+/// The result will be simple graph or digraph, self loops
+/// possible, no parallel edges.
 impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
     where N: Arbitrary,
           E: Arbitrary,
@@ -123,10 +123,12 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
 /// `Arbitrary` for `GraphMap` creates a graph by selecting a node count
 /// and a probability for each possible edge to exist.
 ///
-/// The result will be simple graph, selfloops possible.
-impl<N, E> Arbitrary for GraphMap<N, E>
+/// The result will be simple graph or digraph, self loops
+/// possible, no parallel edges.
+impl<N, E, Ty> Arbitrary for GraphMap<N, E, Ty>
     where N: NodeTrait + Arbitrary,
           E: Arbitrary,
+          Ty: EdgeType + Clone + Send + 'static,
 {
     fn arbitrary<G: Gen>(g: &mut G) -> Self {
         let nodes = usize::arbitrary(g);
@@ -145,7 +147,8 @@ impl<N, E> Arbitrary for GraphMap<N, E>
             gr.add_node(node);
         }
         for (index, &i) in nodes.iter().enumerate() {
-            for &j in &nodes[index..] {
+            let js = if Ty::is_directed() { &nodes[..] } else { &nodes[index..] };
+            for &j in js {
                 let p: f64 = g.gen();
                 if p <= edge_prob {
                     gr.add_edge(i, j, E::arbitrary(g));

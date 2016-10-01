@@ -24,8 +24,11 @@ use petgraph::algo::{
 };
 use petgraph::visit::{Topo, SubTopo};
 use petgraph::graph::{IndexType, node_index, edge_index, NodeIndex};
+use petgraph::graphmap::NodeTrait;
 #[cfg(feature = "stable_graph")]
 use petgraph::stable_graph::StableGraph;
+
+use std::fmt;
 
 fn prop(g: Graph<(), u32>) -> bool {
     // filter out isolated nodes
@@ -330,19 +333,41 @@ fn stable_graph_add_remove_edges() {
     quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>, _) -> bool);
 }
 
+fn assert_graphmap_consistent<N, E, Ty>(g: &GraphMap<N, E, Ty>)
+    where Ty: EdgeType,
+          N: NodeTrait + fmt::Debug,
+{
+    for (a, b, _weight) in g.all_edges() {
+        assert!(g.contains_edge(a, b),
+                "Edge not in graph! {:?} to {:?}", a, b);
+        assert!(g.neighbors(a).find(|x| *x == b).is_some(),
+                "Edge {:?} not in neighbor list for {:?}", (a, b), a);
+        if !g.is_directed() {
+            assert!(g.neighbors(b).find(|x| *x == a).is_some(),
+                    "Edge {:?} not in neighbor list for {:?}", (b, a), b);
+        }
+    }
+}
+
 #[test]
 fn graphmap_remove() {
-    fn prop(mut g: GraphMap<i8, ()>, a: i8, b: i8) -> bool {
+    fn prop<Ty: EdgeType>(mut g: GraphMap<i8, (), Ty>, a: i8, b: i8) -> bool {
+        //if g.edge_count() > 20 { return true; }
+        assert_graphmap_consistent(&g);
         let contains = g.contains_edge(a, b);
-        assert_eq!(contains, g.contains_edge(b, a));
+        if !g.is_directed() {
+            assert_eq!(contains, g.contains_edge(b, a));
+        }
         assert_eq!(g.remove_edge(a, b).is_some(), contains);
         assert!(!g.contains_edge(a, b) &&
-            g.neighbors(a).find(|x| *x == b).is_none() &&
-            g.neighbors(b).find(|x| *x == a).is_none());
+            g.neighbors(a).find(|x| *x == b).is_none());
+            //(g.is_directed() || g.neighbors(b).find(|x| *x == a).is_none()));
         assert!(g.remove_edge(a, b).is_none());
+        assert_graphmap_consistent(&g);
         true
     }
-    quickcheck::quickcheck(prop as fn(_, _, _) -> bool);
+    quickcheck::quickcheck(prop as fn(GraphMap<_, _, Directed>, _, _) -> bool);
+    quickcheck::quickcheck(prop as fn(GraphMap<_, _, Undirected>, _, _) -> bool);
 }
 
 #[test]

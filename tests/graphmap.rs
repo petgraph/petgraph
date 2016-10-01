@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use petgraph::{
     GraphMap,
     Dfs,
+    Directed,
 };
 use petgraph::visit::{
     DfsIter,
@@ -59,7 +60,7 @@ fn simple() {
 #[test]
 fn remov()
 {
-    let mut g = GraphMap::new();
+    let mut g = GraphMap::<_, _>::new();
     g.add_node(1);
     g.add_node(2);
     g.add_edge(1, 2, -1);
@@ -73,6 +74,31 @@ fn remov()
 
     let exist = g.remove_edge(2, 1);
     assert_eq!(exist, Some(-1));
+    assert_eq!(g.edge_count(), 0);
+    assert_eq!(g.edge_weight(1, 2), None);
+    assert_eq!(g.edge_weight(2, 1), None);
+    assert_eq!(g.neighbors(1).count(), 0);
+}
+
+#[test]
+fn remove_directed()
+{
+    let mut g = GraphMap::<_, _, Directed>::with_capacity(0, 0);
+    g.add_edge(1, 2, -1);
+    println!("{:?}", g);
+
+    assert_eq!(g.edge_weight(1, 2), Some(&-1));
+    assert_eq!(g.edge_weight(2, 1), None);
+    assert_eq!(g.neighbors(1).count(), 1);
+
+    let noexist = g.remove_edge(2, 3);
+    assert_eq!(noexist, None);
+
+    let exist = g.remove_edge(2, 1);
+    assert_eq!(exist, None);
+    let exist = g.remove_edge(1, 2);
+    assert_eq!(exist, Some(-1));
+    println!("{:?}", g);
     assert_eq!(g.edge_count(), 0);
     assert_eq!(g.edge_weight(1, 2), None);
     assert_eq!(g.edge_weight(2, 1), None);
@@ -160,4 +186,36 @@ fn from_edges() {
     assert_eq!(gr.neighbors(3).count(), 3);
 
     println!("{:?}", Dot::with_config(&gr, &[Config::EdgeNoLabel]));
+}
+
+
+#[test]
+fn graphmap_directed() {
+    //let root = TypedArena::<Node<_>>::new();
+    let mut gr = GraphMap::<_, (), Directed>::with_capacity(0, 0);
+    //let node = |&: name: &'static str| Ptr(root.alloc(Node(name.to_string())));
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let edges = [
+        (a, b),
+        (a, c),
+        (a, d),
+        (b, c),
+        (c, d),
+        (d, e),
+        (b, b),
+    ];
+    gr.extend(&edges);
+
+    // Add reverse edges -- ok!
+    assert!(gr.add_edge(e, d, ()).is_none());
+    // duplicate edge - no
+    assert!(!gr.add_edge(a, b, ()).is_none());
+
+    // duplicate self loop - no
+    assert!(!gr.add_edge(b, b, ()).is_none());
+    println!("{:#?}", gr);
 }
