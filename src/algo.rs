@@ -6,6 +6,7 @@
 
 use std::collections::BinaryHeap;
 use std::borrow::{Borrow};
+use std::cmp::min;
 
 use super::{
     Graph,
@@ -20,6 +21,7 @@ use scored::MinScored;
 use super::visit::{
     Visitable,
     VisitMap,
+    IntoNeighbors,
     IntoNeighborsDirected,
     IntoNodeIdentifiers,
     IntoExternals,
@@ -205,6 +207,103 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
             scc.push(nx);
         }
         sccs.push(scc);
+    }
+    sccs
+}
+
+/// [Generic] Compute the *strongly connected components* using Tarjan's algorithm.
+///
+/// Return a vector where each element is an scc.
+///
+/// For an undirected graph, the sccs are simply the connected components.
+pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
+    where G: IntoNodeIdentifiers + IntoNeighbors + NodeIndexable
+{
+    #[derive(Copy, Clone)]
+    #[derive(Debug)]
+    struct NodeData {
+        index: Option<usize>,
+        lowlink: usize,
+        on_stack: bool,
+    }
+
+    #[derive(Debug)]
+    struct Data<'a, G>
+        where G: NodeIndexable, 
+          G::NodeId: 'a
+    {
+        index: usize,
+        nodes: Vec<NodeData>,
+        stack: Vec<G::NodeId>,
+        sccs: &'a mut Vec<Vec<G::NodeId>>,
+    }
+
+    fn scc_visit<G>(v: G::NodeId, g: G, data: &mut Data<G>) 
+        where G: IntoNeighbors + NodeIndexable
+    {
+        macro_rules! node {
+            ($node:expr) => (data.nodes[G::to_index($node)])
+        }
+
+        if node![v].index.is_some() {
+            // already visited
+            return;
+        }
+
+        let v_index = data.index;
+        node![v].index = Some(v_index);
+        node![v].lowlink = v_index;
+        node![v].on_stack = true;
+        data.stack.push(v);
+        data.index += 1;
+
+        for w in g.neighbors(v) {
+            match node![w].index {
+                None => {
+                    scc_visit(w, g, data);
+                    node![v].lowlink = min(node![v].lowlink, node![w].lowlink);
+                }
+                Some(w_index) => {
+                    if node![w].on_stack {
+                        // Successor w is in stack S and hence in the current SCC
+                        let v_lowlink = &mut node![v].lowlink;
+                        *v_lowlink = min(*v_lowlink, w_index);
+                    }
+                }
+            }
+        }
+
+        // If v is a root node, pop the stack and generate an SCC
+        if let Some(v_index) = node![v].index {
+            if node![v].lowlink == v_index {
+                let mut cur_scc = Vec::new();
+                loop {
+                    let w = data.stack.pop().unwrap();
+                    node![w].on_stack = false;
+                    cur_scc.push(w);
+                    if G::to_index(w) == G::to_index(v) { break; }
+                }
+                data.sccs.push(cur_scc);
+            }
+        }
+    }
+
+    let mut sccs = Vec::new();
+    {
+        let map = (0..g.node_bound()).map(|_| {
+            NodeData { index: None, lowlink: !0, on_stack: false }
+        }).collect();
+
+        let mut data = Data {
+            index: 0,
+            nodes: map,
+            stack: Vec::new(),
+            sccs: &mut sccs,
+        };
+
+        for n in g.node_identifiers() {
+            scc_visit(n, g, &mut data);
+        }
     }
     sccs
 }

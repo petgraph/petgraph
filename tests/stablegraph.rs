@@ -5,7 +5,7 @@ extern crate petgraph;
 use petgraph::stable_graph::StableGraph;
 use petgraph::graph::node_index as n;
 use petgraph::graph::NodeIndex;
-use petgraph::algo::scc;
+use petgraph::algo::{scc, tarjan_scc};
 
 #[test]
 fn node_indices() {
@@ -48,6 +48,31 @@ fn test_scc() {
     gr.remove_node(n(4));
 
     assert_sccs_eq(scc(&gr), vec![
+        vec![n(0), n(3), n(6)],
+        vec![n(1), n(7),   x ],
+        vec![n(2), n(5), n(8)],
+    ]);
+}
+
+
+#[test]
+fn test_tarjan_scc() {
+    let mut gr: StableGraph<(), ()> = StableGraph::from_edges(&[
+        (6, 0),
+        (0, 3),
+        (3, 6),
+        (8, 6), (8, 2),
+        (2, 5), (5, 8), (7, 5),
+        (1, 7),
+        (7, 4),
+        (4, 1)]);
+    // make an identical replacement of n(4) and leave a hole
+    let x = gr.add_node(());
+    gr.add_edge(n(7), x, ());
+    gr.add_edge(x, n(1), ());
+    gr.remove_node(n(4));
+
+    assert_sccs_eq(tarjan_scc(&gr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(7),   x ],
         vec![n(2), n(5), n(8)],
