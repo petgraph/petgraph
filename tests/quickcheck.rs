@@ -418,8 +418,7 @@ quickcheck! {
 quickcheck! {
     fn tarjan_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
         let tsccs = tarjan_scc(&g);
-        let mut firsts = vec(tsccs.iter().map(|v| v[0]));
-        firsts.reverse();
+        let firsts = vec(tsccs.iter().rev().map(|v| v[0]));
         subset_is_topo_order(&g, &firsts)
     }
 }
