@@ -280,8 +280,8 @@ pub fn min_spanning_tree<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
     let mut subgraphs = UnionFind::new(g.node_count());
 
     let mut sort_edges = BinaryHeap::with_capacity(g.edge_count());
-    for edge in g.raw_edges() {
-        sort_edges.push(MinScored(edge.weight.clone(), (edge.source(), edge.target())));
+    for edge in g.edge_references() {
+        sort_edges.push(MinScored(edge.weight().clone(), (edge.source(), edge.target())));
     }
 
     // Kruskal's algorithm.
