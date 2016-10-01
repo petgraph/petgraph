@@ -1,7 +1,10 @@
 #![cfg(feature="quickcheck")]
-extern crate quickcheck;
+#[macro_use] extern crate quickcheck;
 extern crate rand;
 extern crate petgraph;
+
+extern crate odds;
+use odds::prelude::*;
 
 use rand::Rng;
 use std::collections::HashMap;
@@ -22,10 +25,18 @@ use petgraph::algo::{
     tarjan_scc,
     dijkstra,
 };
-use petgraph::visit::{Topo, SubTopo};
+use petgraph::visit::{Topo, SubTopo, Reversed};
 use petgraph::graph::{IndexType, node_index, edge_index, NodeIndex};
+use petgraph::graphmap::{
+    NodeTrait,
+    UnGraphMap,
+    DiGraphMap,
+};
+
 #[cfg(feature = "stable_graph")]
 use petgraph::stable_graph::StableGraph;
+
+use std::fmt;
 
 fn prop(g: Graph<(), u32>) -> bool {
     // filter out isolated nodes
@@ -330,24 +341,46 @@ fn stable_graph_add_remove_edges() {
     quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>, _) -> bool);
 }
 
+fn assert_graphmap_consistent<N, E, Ty>(g: &GraphMap<N, E, Ty>)
+    where Ty: EdgeType,
+          N: NodeTrait + fmt::Debug,
+{
+    for (a, b, _weight) in g.all_edges() {
+        assert!(g.contains_edge(a, b),
+                "Edge not in graph! {:?} to {:?}", a, b);
+        assert!(g.neighbors(a).find(|x| *x == b).is_some(),
+                "Edge {:?} not in neighbor list for {:?}", (a, b), a);
+        if !g.is_directed() {
+            assert!(g.neighbors(b).find(|x| *x == a).is_some(),
+                    "Edge {:?} not in neighbor list for {:?}", (b, a), b);
+        }
+    }
+}
+
 #[test]
 fn graphmap_remove() {
-    fn prop(mut g: GraphMap<i8, ()>, a: i8, b: i8) -> bool {
+    fn prop<Ty: EdgeType>(mut g: GraphMap<i8, (), Ty>, a: i8, b: i8) -> bool {
+        //if g.edge_count() > 20 { return true; }
+        assert_graphmap_consistent(&g);
         let contains = g.contains_edge(a, b);
-        assert_eq!(contains, g.contains_edge(b, a));
+        if !g.is_directed() {
+            assert_eq!(contains, g.contains_edge(b, a));
+        }
         assert_eq!(g.remove_edge(a, b).is_some(), contains);
         assert!(!g.contains_edge(a, b) &&
-            g.neighbors(a).find(|x| *x == b).is_none() &&
-            g.neighbors(b).find(|x| *x == a).is_none());
+            g.neighbors(a).find(|x| *x == b).is_none());
+            //(g.is_directed() || g.neighbors(b).find(|x| *x == a).is_none()));
         assert!(g.remove_edge(a, b).is_none());
+        assert_graphmap_consistent(&g);
         true
     }
-    quickcheck::quickcheck(prop as fn(_, _, _) -> bool);
+    quickcheck::quickcheck(prop as fn(DiGraphMap<_, _>, _, _) -> bool);
+    quickcheck::quickcheck(prop as fn(UnGraphMap<_, _>, _, _) -> bool);
 }
 
 #[test]
 fn graphmap_add_remove() {
-    fn prop(mut g: GraphMap<i8, ()>, a: i8, b: i8) -> bool {
+    fn prop(mut g: UnGraphMap<i8, ()>, a: i8, b: i8) -> bool {
         assert_eq!(g.contains_edge(a, b), g.add_edge(a, b, ()).is_some());
         g.remove_edge(a, b);
         !g.contains_edge(a, b) &&
@@ -357,16 +390,19 @@ fn graphmap_add_remove() {
     quickcheck::quickcheck(prop as fn(_, _, _) -> bool);
 }
 
-#[test]
-fn graph_sccs() {
-    fn prop(g: Graph<(), ()>) -> bool {
+fn sort_sccs<T: Ord>(v: &mut [Vec<T>]) {
+    for scc in &mut *v {
+        scc.sort();
+    }
+    v.sort();
+}
+
+quickcheck! {
+    fn graph_sccs(g: Graph<(), ()>) -> bool {
         let mut sccs = scc(&g);
         let mut tsccs = tarjan_scc(&g);
-        // normalize sccs
-        for scc in &mut sccs { scc.sort(); }
-        for scc in &mut tsccs { scc.sort(); }
-        sccs.sort();
-        tsccs.sort();
+        sort_sccs(&mut sccs);
+        sort_sccs(&mut tsccs);
         if sccs != tsccs {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
@@ -377,7 +413,54 @@ fn graph_sccs() {
         }
         true
     }
-    quickcheck::quickcheck(prop as fn(_) -> bool);
+}
+
+quickcheck! {
+    fn tarjan_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
+        let tsccs = tarjan_scc(&g);
+        let mut firsts = vec(tsccs.iter().map(|v| v[0]));
+        firsts.reverse();
+        subset_is_topo_order(&g, &firsts)
+    }
+}
+
+
+quickcheck! {
+    // Reversed edges gives the same sccs (when sorted)
+    fn graph_reverse_sccs(g: Graph<(), ()>) -> bool {
+        let mut sccs = scc(&g);
+        let mut tsccs = scc(Reversed(&g));
+        sort_sccs(&mut sccs);
+        sort_sccs(&mut tsccs);
+        if sccs != tsccs {
+            println!("{:?}",
+                     Dot::with_config(&g, &[Config::EdgeNoLabel,
+                                      Config::NodeIndexLabel]));
+            println!("Sccs {:?}", sccs);
+            println!("Sccs (Reversed) {:?}", tsccs);
+            return false;
+        }
+        true
+    }
+}
+
+quickcheck! {
+    // Reversed edges gives the same sccs (when sorted)
+    fn graphmap_reverse_sccs(g: DiGraphMap<u16, ()>) -> bool {
+        let mut sccs = scc(&g);
+        let mut tsccs = scc(Reversed(&g));
+        sort_sccs(&mut sccs);
+        sort_sccs(&mut tsccs);
+        if sccs != tsccs {
+            println!("{:?}",
+                     Dot::with_config(&g, &[Config::EdgeNoLabel,
+                                      Config::NodeIndexLabel]));
+            println!("Sccs {:?}", sccs);
+            println!("Sccs (Reversed) {:?}", tsccs);
+            return false;
+        }
+        true
+    }
 }
 
 #[test]
@@ -456,8 +539,38 @@ fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
     for edge in gr.raw_edges() {
         let a = edge.source();
         let b = edge.target();
-        let ai = order.iter().position(|x| *x == a).unwrap();
-        let bi = order.iter().position(|x| *x == b).unwrap();
+        let ai = order.find(&a).unwrap();
+        let bi = order.find(&b).unwrap();
+        if ai >= bi {
+            println!("{:?} > {:?} ", a, b);
+            return false;
+        }
+    }
+    true
+}
+
+
+fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
+    if gr.node_count() < order.len() {
+        println!("Graph (len={}) had less nodes than order (len={})", gr.node_count(), order.len());
+        return false;
+    }
+    // check all the edges of the graph
+    for edge in gr.raw_edges() {
+        let a = edge.source();
+        let b = edge.target();
+        if a == b {
+            continue;
+        }
+        // skip those that are not in the subset
+        let ai = match order.find(&a) {
+            Some(i) => i,
+            None => continue,
+        };
+        let bi = match order.find(&b) {
+            Some(i) => i,
+            None => continue,
+        };
         if ai >= bi {
             println!("{:?} > {:?} ", a, b);
             return false;

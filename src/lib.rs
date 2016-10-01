@@ -37,6 +37,7 @@ pub mod graphmap;
 #[path = "graph.rs"]
 mod graph_impl;
 pub mod dot;
+#[path = "visit/visit.rs"]
 pub mod visit;
 pub mod unionfind;
 mod dijkstra;

@@ -1,6 +1,9 @@
 //! Graph visitor algorithms.
 //!
 
+mod reversed;
+pub use self::reversed::*;
+
 use fixedbitset::FixedBitSet;
 use std::collections::{
     HashSet,
@@ -51,13 +54,6 @@ pub trait GraphRef : Copy + GraphBase { }
 
 impl<'a, G> GraphRef for &'a G where G: GraphBase { }
 
-impl<G: GraphBase> GraphBase for Reversed<G> {
-    type NodeId = G::NodeId;
-    type EdgeId = G::EdgeId;
-}
-
-impl<G: GraphRef> GraphRef for Reversed<G> { }
-
 impl<'a, G> GraphBase for Frozen<'a, G> where G: GraphBase {
     type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
@@ -75,13 +71,13 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
 }
 
 
-impl<'a, N: 'a, E> IntoNeighbors for &'a GraphMap<N, E>
-    where N: Copy + Ord + Hash
+impl<'a, N: 'a, E, Ty> IntoNeighbors for &'a GraphMap<N, E, Ty>
+    where N: Copy + Ord + Hash,
+          Ty: EdgeType,
 {
-    type Neighbors = graphmap::Neighbors<'a, N>;
-    fn neighbors(self, n: N) -> graphmap::Neighbors<'a, N>
-    {
-        GraphMap::neighbors(self, n)
+    type Neighbors = graphmap::Neighbors<'a, N, Ty>;
+    fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
+        self.neighbors(n)
     }
 }
 
@@ -99,10 +95,6 @@ impl<'a, 'b, G> IntoNeighbors for &'b Frozen<'a, G>
 /// Wrapper type for walking the graph as if it is undirected
 #[derive(Copy, Clone)]
 pub struct AsUndirected<G>(pub G);
-
-/// Wrapper type for walking the graph as if all edges are reversed.
-#[derive(Copy, Clone)]
-pub struct Reversed<G>(pub G);
 
 impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>> where
     Ty: EdgeType,
@@ -167,6 +159,19 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a StableGraph<N, E, Ty, I
     }
 }
 
+impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
+    where N: Copy + Ord + Hash,
+          Ty: EdgeType,
+{
+    type NeighborsDirected = graphmap::NeighborsDirected<'a, N, Ty>;
+    fn neighbors_directed(self, n: N, dir: EdgeDirection)
+        -> Self::NeighborsDirected
+    {
+        self.neighbors_directed(n, dir)
+    }
+}
+
+
 /// Access to the sequence of the graph’s `NodeId`s.
 pub trait IntoNodeIdentifiers : GraphRef {
     type NodeIdentifiers: Iterator<Item=Self::NodeId>;
@@ -223,27 +228,6 @@ impl<'a, G> IntoNeighborsDirected for &'a G
     }
 }
 
-impl<G> IntoNeighbors for Reversed<G>
-    where G: IntoNeighborsDirected
-{
-    type Neighbors = G::NeighborsDirected;
-    fn neighbors(self, n: G::NodeId) -> G::NeighborsDirected
-    {
-        self.0.neighbors_directed(n, Incoming)
-    }
-}
-
-impl<G> IntoNeighborsDirected for Reversed<G>
-    where G: IntoNeighborsDirected
-{
-    type NeighborsDirected = G::NeighborsDirected;
-    fn neighbors_directed(self, n: G::NodeId, d: EdgeDirection)
-        -> G::NeighborsDirected
-    {
-        self.0.neighbors_directed(n, d.opposite())
-    }
-}
-
 /// Access to the graph’s nodes without edges to them (`Incoming`) or from them
 /// (`Outgoing`).
 pub trait IntoExternals : GraphRef {
@@ -260,15 +244,6 @@ impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
     type Externals = graph::Externals<'a, N, Ty, Ix>;
     fn externals(self, d: EdgeDirection) -> graph::Externals<'a, N, Ty, Ix> {
         Graph::externals(self, d)
-    }
-}
-
-impl<G> IntoExternals for Reversed<G>
-    where G: IntoExternals,
-{
-    type Externals = G::Externals;
-    fn externals(self, d: EdgeDirection) -> G::Externals {
-        self.0.externals(d.opposite())
     }
 }
 
@@ -307,16 +282,18 @@ pub trait IntoEdgeReferences : GraphEdgeRef {
     fn edge_references(self) -> Self::EdgeReferences;
 }
 
-impl<'a, N: 'a, E: 'a> GraphEdgeRef for &'a GraphMap<N, E>
-    where N: Copy
+impl<'a, N: 'a, E: 'a, Ty> GraphEdgeRef for &'a GraphMap<N, E, Ty>
+    where N: Copy,
+          Ty: EdgeType,
 {
     type EdgeRef = (N, N, &'a E);
 }
 
-impl<'a, N: 'a, E: 'a> IntoEdgeReferences for &'a GraphMap<N, E>
-    where N: NodeTrait
+impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
 {
-    type EdgeReferences = graphmap::AllEdges<'a, N, E>;
+    type EdgeReferences = graphmap::AllEdges<'a, N, E, Ty>;
     fn edge_references(self) -> Self::EdgeReferences {
         self.all_edges()
     }
@@ -483,14 +460,15 @@ impl<'a, G> Visitable for Frozen<'a, G> where G: Visitable {
     }
 }
 
-impl<N: Copy, E> GraphBase for GraphMap<N, E>
+impl<N: Copy, E, Ty> GraphBase for GraphMap<N, E, Ty>
 {
     type NodeId = N;
     type EdgeId = (N, N);
 }
 
-impl<N, E> Visitable for GraphMap<N, E>
-    where N: Copy + Ord + Hash
+impl<N, E, Ty> Visitable for GraphMap<N, E, Ty>
+    where N: Copy + Ord + Hash,
+          Ty: EdgeType,
 {
     type Map = HashSet<N>;
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
@@ -519,17 +497,6 @@ impl<G: Visitable> Visitable for AsUndirected<G>
     }
 }
 
-impl<G: Visitable> Visitable for Reversed<G>
-{
-    type Map = G::Map;
-    fn visit_map(&self) -> G::Map {
-        self.0.visit_map()
-    }
-    fn reset_map(&self, map: &mut Self::Map) {
-        self.0.reset_map(map);
-    }
-}
-
 /// Create or access the adjacency matrix of a graph
 pub trait GetAdjacencyMatrix : GraphBase {
     type AdjMatrix;
@@ -538,8 +505,9 @@ pub trait GetAdjacencyMatrix : GraphBase {
 }
 
 /// The `GraphMap` keeps an adjacency matrix internally.
-impl<N, E> GetAdjacencyMatrix for GraphMap<N, E>
-    where N: Copy + Ord + Hash
+impl<N, E, Ty> GetAdjacencyMatrix for GraphMap<N, E, Ty>
+    where N: Copy + Ord + Hash,
+          Ty: EdgeType,
 {
     type AdjMatrix = ();
     #[inline]

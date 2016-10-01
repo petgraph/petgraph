@@ -124,8 +124,9 @@ impl<'a, N, E, Ty, Ix> fmt::Debug for Dot<'a, Graph<N, E, Ty, Ix>>
     }
 }
 
-impl<'a, N, E> Dot<'a, GraphMap<N, E>>
+impl<'a, N, E, Ty> Dot<'a, GraphMap<N, E, Ty>>
     where N: NodeTrait,
+          Ty: EdgeType,
 {
     fn graphmap_fmt<F, G>(&self, f: &mut fmt::Formatter,
                           mut node_fmt: F, mut edge_fmt: G) -> fmt::Result
@@ -133,7 +134,8 @@ impl<'a, N, E> Dot<'a, GraphMap<N, E>>
               G: FnMut(&E, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
     {
         let g = self.graph;
-        try!(writeln!(f, "{} {{", TYPE[0]));
+        let is_directed = g.is_directed() as usize;
+        try!(writeln!(f, "{} {{", TYPE[is_directed]));
 
         let mut labels = HashMap::new();
 
@@ -154,7 +156,7 @@ impl<'a, N, E> Dot<'a, GraphMap<N, E>>
             try!(write!(f, "{}{} {} {}",
                         INDENT,
                         labels[&a],
-                        EDGE[0],
+                        EDGE[is_directed],
                         labels[&b]));
             if self.config.contains(&Config::EdgeNoLabel) {
                 try!(writeln!(f, ""));
@@ -171,18 +173,20 @@ impl<'a, N, E> Dot<'a, GraphMap<N, E>>
         Ok(())
     }
 }
-impl<'a, N, E> fmt::Display for Dot<'a, GraphMap<N, E>>
+impl<'a, N, E, Ty> fmt::Display for Dot<'a, GraphMap<N, E, Ty>>
     where N: fmt::Display + NodeTrait,
           E: fmt::Display,
+          Ty: EdgeType,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.graphmap_fmt(f, |n, cb| cb(n), |e, cb| cb(e))
     }
 }
 
-impl<'a, N, E> fmt::Debug for Dot<'a, GraphMap<N, E>>
+impl<'a, N, E, Ty> fmt::Debug for Dot<'a, GraphMap<N, E, Ty>>
     where N: fmt::Debug + NodeTrait,
           E: fmt::Debug,
+          Ty: EdgeType,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.graphmap_fmt(f,

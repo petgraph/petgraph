@@ -552,6 +552,12 @@ fn scc() {
         vec![n(1), n(4), n(7)],
         vec![n(2), n(5), n(8)],
     ]);
+    // Reversed edges gives the same sccs (when sorted)
+    assert_sccs_eq(petgraph::algo::scc(Reversed(&gr)), vec![
+        vec![n(0), n(3), n(6)],
+        vec![n(1), n(4), n(7)],
+        vec![n(2), n(5), n(8)],
+    ]);
 
 
     // Test an undirected graph just for fun.
@@ -1215,7 +1221,7 @@ fn degree_sequence() {
     degree_sequence.sort_by(|x, y| Ord::cmp(y, x));
     assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
 
-    let mut gr = GraphMap::<_, ()>::from_edges(&[
+    let mut gr = GraphMap::<_, (), Undirected>::from_edges(&[
         (0, 1),
         (1, 2), (1, 3),
         (2, 4), (3, 4),
