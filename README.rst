@@ -19,6 +19,12 @@ __ http://bluss.github.io/petgraph/
 Recent Changes
 --------------
 
+- 0.3.0-alpha.1
+
+  - Prerelease
+  - Add ``petgraph::algo::tarjan_scc``, a second scc implementation
+  - Better docs
+
 - 0.3.0-alpha.0
 
   - Prerelease
@@ -27,11 +33,11 @@ Recent Changes
   - Add new graph traits, like ``NodeIndexable`` and ``EdgeReferences``.
   - Port multiple graph algorithms to the new visitor traits.
   - Help is welcome to port more algorithms (and add new graph traits in the
-    process).
+    process)!
   - ``Graph::retain_nodes, retain_edges`` now expose the self graph only
     as wrapped in ``Frozen``, so that weights can be mutated but the
     graph structure not.
-  - Enable StableGraph by default
+  - Enable ``StableGraph`` by default
   - Require Rust 1.12 or later
 
 - 0.2.9
