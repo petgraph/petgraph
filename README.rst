@@ -19,6 +19,16 @@ __ http://bluss.github.io/petgraph/
 Recent Changes
 --------------
 
+- 0.3.0-alpha.2
+
+  - Prerelease
+  - ``GraphMap`` can now have directed edges. ``GraphMap::new`` is now generic
+    in the edge type. ``DiGraphMap`` and ``UnGraphMap`` are new type aliases.
+  - Document the scc order in ``tarjan_scc`` (reverse topological).
+  - More visitor traits for ``GraphMap`` and ``Reversed``
+  - ``GraphMap`` now has a method ``.into_graph()`` that makes a ``Graph``.
+  - ``dijkstra`` changed its graph argument from ``&G`` to ``G where G: GraphRef``.
+
 - 0.3.0-alpha.1
 
   - Prerelease
