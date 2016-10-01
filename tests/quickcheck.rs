@@ -3,6 +3,9 @@
 extern crate rand;
 extern crate petgraph;
 
+extern crate odds;
+use odds::prelude::*;
+
 use rand::Rng;
 use std::collections::HashMap;
 
@@ -413,6 +416,16 @@ quickcheck! {
 }
 
 quickcheck! {
+    fn tarjan_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
+        let tsccs = tarjan_scc(&g);
+        let mut firsts = vec(tsccs.iter().map(|v| v[0]));
+        firsts.reverse();
+        subset_is_topo_order(&g, &firsts)
+    }
+}
+
+
+quickcheck! {
     // Reversed edges gives the same sccs (when sorted)
     fn graph_reverse_sccs(g: Graph<(), ()>) -> bool {
         let mut sccs = scc(&g);
@@ -526,8 +539,38 @@ fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
     for edge in gr.raw_edges() {
         let a = edge.source();
         let b = edge.target();
-        let ai = order.iter().position(|x| *x == a).unwrap();
-        let bi = order.iter().position(|x| *x == b).unwrap();
+        let ai = order.find(&a).unwrap();
+        let bi = order.find(&b).unwrap();
+        if ai >= bi {
+            println!("{:?} > {:?} ", a, b);
+            return false;
+        }
+    }
+    true
+}
+
+
+fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
+    if gr.node_count() < order.len() {
+        println!("Graph (len={}) had less nodes than order (len={})", gr.node_count(), order.len());
+        return false;
+    }
+    // check all the edges of the graph
+    for edge in gr.raw_edges() {
+        let a = edge.source();
+        let b = edge.target();
+        if a == b {
+            continue;
+        }
+        // skip those that are not in the subset
+        let ai = match order.find(&a) {
+            Some(i) => i,
+            None => continue,
+        };
+        let bi = match order.find(&b) {
+            Some(i) => i,
+            None => continue,
+        };
         if ai >= bi {
             println!("{:?} > {:?} ", a, b);
             return false;

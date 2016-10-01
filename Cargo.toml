@@ -31,6 +31,7 @@ itertools = "0.5"
 
 [dev-dependencies]
 rand = "0.3"
+odds = { version = "0.2.19" }
 
 [features]
 # For unstable features

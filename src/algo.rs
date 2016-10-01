@@ -213,7 +213,10 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 
 /// [Generic] Compute the *strongly connected components* using Tarjan's algorithm.
 ///
-/// Return a vector where each element is an scc.
+/// Return a vector where each element is a strongly connected component (scc).
+///
+/// The order of `NodeId` within each scc is arbitrary, but the order of
+/// the sccs is their reverse topological sort order.
 ///
 /// For an undirected graph, the sccs are simply the connected components.
 pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
