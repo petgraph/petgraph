@@ -35,7 +35,9 @@ use graphmap::{
 
 /// Base graph trait
 pub trait GraphBase {
+    /// node identifier
     type NodeId: Copy;
+    /// edge identifier
     type EdgeId: Copy;
 }
 
@@ -114,11 +116,14 @@ impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>> w
     }
 }
 
+/// Access to the neighbors of each node
 pub trait IntoNeighbors : GraphRef {
     type Neighbors: Iterator<Item=Self::NodeId>;
     fn neighbors(self, n: Self::NodeId) -> Self::Neighbors;
 }
 
+/// Access to the neighbors of each node, through
+/// incoming or outgoing edges.
 pub trait IntoNeighborsDirected : IntoNeighbors {
     type NeighborsDirected: Iterator<Item=Self::NodeId>;
     fn neighbors_directed(self, n: Self::NodeId, d: EdgeDirection)
@@ -162,6 +167,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a StableGraph<N, E, Ty, I
     }
 }
 
+/// Access to the sequence of the graph’s `NodeId`s.
 pub trait IntoNodeIdentifiers : GraphRef {
     type NodeIdentifiers: Iterator<Item=Self::NodeId>;
     fn node_identifiers(self) -> Self::NodeIdentifiers;
@@ -238,6 +244,8 @@ impl<G> IntoNeighborsDirected for Reversed<G>
     }
 }
 
+/// Access to the graph’s nodes without edges to them (`Incoming`) or from them
+/// (`Outgoing`).
 pub trait IntoExternals : GraphRef {
     type Externals: Iterator<Item=Self::NodeId>;
 
@@ -264,10 +272,12 @@ impl<G> IntoExternals for Reversed<G>
     }
 }
 
+/// A graph that defines edge references
 pub trait GraphEdgeRef : GraphRef {
     type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId>;
 }
 
+/// An edge reference
 pub trait EdgeRef : Copy {
     type NodeId;
     type EdgeId;
@@ -291,6 +301,7 @@ impl<'a, N, E> EdgeRef for (N, N, &'a E)
     fn id(&self) -> (N, N) { (self.0, self.1) }
 }
 
+/// Access to the sequence of the graph’s edges
 pub trait IntoEdgeReferences : GraphEdgeRef {
     type EdgeReferences: Iterator<Item=Self::EdgeRef>;
     fn edge_references(self) -> Self::EdgeReferences;
@@ -328,11 +339,16 @@ impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
     }
 }
 
+/// The graph’s `NodeId`s map to indices
 pub trait NodeIndexable : GraphBase {
     fn node_bound(&self) -> usize;
     fn to_index(Self::NodeId) -> usize;
 }
 
+/// The graph’s `NodeId`s map to indices, in a range without holes.
+///
+/// The graph's node identifiers correspond to exactly the indices
+/// `0..self.node_bound()`.
 pub trait NodeCompactIndexable : NodeIndexable { }
 
 impl<'a, G> NodeIndexable for &'a G
