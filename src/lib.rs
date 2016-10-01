@@ -74,7 +74,7 @@ pub mod graph {
 }
 
 #[cfg(feature = "stable_graph")]
-pub use graph_impl::stable as stable_graph;
+pub use graph_impl::stable_graph;
 
 macro_rules! copyclone {
     ($name:ident) => {

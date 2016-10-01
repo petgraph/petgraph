@@ -1747,8 +1747,8 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
 }
 
 #[cfg(feature = "stable_graph")]
-#[path = "stable.rs"]
-pub mod stable;
+#[path = "stable_graph.rs"]
+pub mod stable_graph;
 
 /// `Frozen` only allows shared access (read-only) to the
 /// underlying graph `G`, but it allows mutable access to its
