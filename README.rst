@@ -6,18 +6,22 @@ Graph data structure library. Requires Rust 1.6.
 
 Please read the `API documentation here`__
 
-__ http://bluss.github.io/petgraph/
+__ https://bluss.github.io/petgraph/
 
 |build_status|_ |crates|_
 
 .. |build_status| image:: https://travis-ci.org/bluss/petgraph.svg?branch=master
 .. _build_status: https://travis-ci.org/bluss/petgraph
 
-.. |crates| image:: http://meritbadge.herokuapp.com/petgraph
+.. |crates| image:: https://meritbadge.herokuapp.com/petgraph
 .. _crates: https://crates.io/crates/petgraph
 
 Recent Changes
 --------------
+
+- 0.2.9
+
+  - Fix a bug in SubTopo (#81)
 
 - 0.2.8
 
