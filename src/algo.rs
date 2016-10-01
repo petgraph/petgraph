@@ -21,6 +21,7 @@ use scored::MinScored;
 use super::visit::{
     Visitable,
     VisitMap,
+    IntoNeighbors,
     IntoNeighborsDirected,
     IntoNodeIdentifiers,
     IntoExternals,
@@ -215,9 +216,8 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 /// Return a vector where each element is an scc.
 ///
 /// For an undirected graph, the sccs are simply the connected components.
-pub fn tarjan_scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix>>>
-    where Ty: EdgeType,
-          Ix: IndexType
+pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
+    where G: IntoNodeIdentifiers + IntoNeighbors + NodeIndexable
 {
     #[derive(Copy, Clone)]
     #[derive(Debug)]
@@ -228,19 +228,21 @@ pub fn tarjan_scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix
     }
 
     #[derive(Debug)]
-    struct Data<'a, Ix: 'a> {
+    struct Data<'a, G>
+        where G: NodeIndexable, 
+          G::NodeId: 'a
+    {
         index: usize,
         nodes: Vec<NodeData>,
-        stack: Vec<NodeIndex<Ix>>,
-        sccs: &'a mut Vec<Vec<NodeIndex<Ix>>>,
+        stack: Vec<G::NodeId>,
+        sccs: &'a mut Vec<Vec<G::NodeId>>,
     }
 
-    fn scc_visit<N, E, Ty, Ix>(v: NodeIndex<Ix>, g: &Graph<N, E, Ty, Ix>, data: &mut Data<Ix>) 
-        where Ty: EdgeType,
-              Ix: IndexType
+    fn scc_visit<G>(v: G::NodeId, g: G, data: &mut Data<G>) 
+        where G: IntoNeighbors + NodeIndexable
     {
         macro_rules! node {
-            ($node:expr) => (data.nodes[$node.index()])
+            ($node:expr) => (data.nodes[G::to_index($node)])
         }
 
         if node![v].index.is_some() {
@@ -279,7 +281,7 @@ pub fn tarjan_scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix
                     let w = data.stack.pop().unwrap();
                     node![w].on_stack = false;
                     cur_scc.push(w);
-                    if w == v { break; }
+                    if G::to_index(w) == G::to_index(v) { break; }
                 }
                 data.sccs.push(cur_scc);
             }
@@ -288,7 +290,7 @@ pub fn tarjan_scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix
 
     let mut sccs = Vec::new();
     {
-        let map = g.node_indices().map(|_| {
+        let map = g.node_identifiers().map(|_| {
             NodeData { index: None, lowlink: !0, on_stack: false }
         }).collect();
 
@@ -298,7 +300,8 @@ pub fn tarjan_scc<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Vec<Vec<NodeIndex<Ix
             stack: Vec::new(),
             sccs: &mut sccs,
         };
-        for n in g.node_indices() {
+
+        for n in g.node_identifiers() {
             scc_visit(n, g, &mut data);
         }
     }
