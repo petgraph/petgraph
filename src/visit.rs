@@ -75,13 +75,13 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
 }
 
 
-impl<'a, N: 'a, E> IntoNeighbors for &'a GraphMap<N, E>
-    where N: Copy + Ord + Hash
+impl<'a, N: 'a, E, Ty> IntoNeighbors for &'a GraphMap<N, E, Ty>
+    where N: Copy + Ord + Hash,
+          Ty: EdgeType,
 {
-    type Neighbors = graphmap::Neighbors<'a, N>;
-    fn neighbors(self, n: N) -> graphmap::Neighbors<'a, N>
-    {
-        GraphMap::neighbors(self, n)
+    type Neighbors = graphmap::Neighbors<'a, N, Ty>;
+    fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
+        self.neighbors(n)
     }
 }
 
@@ -166,6 +166,19 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a StableGraph<N, E, Ty, I
         StableGraph::neighbors_directed(self, n, d)
     }
 }
+
+impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
+    where N: Copy + Ord + Hash,
+          Ty: EdgeType,
+{
+    type NeighborsDirected = graphmap::NeighborsDirected<'a, N, Ty>;
+    fn neighbors_directed(self, n: N, dir: EdgeDirection)
+        -> Self::NeighborsDirected
+    {
+        self.neighbors_directed(n, dir)
+    }
+}
+
 
 /// Access to the sequence of the graph’s `NodeId`s.
 pub trait IntoNodeIdentifiers : GraphRef {
@@ -307,16 +320,18 @@ pub trait IntoEdgeReferences : GraphEdgeRef {
     fn edge_references(self) -> Self::EdgeReferences;
 }
 
-impl<'a, N: 'a, E: 'a> GraphEdgeRef for &'a GraphMap<N, E>
-    where N: Copy
+impl<'a, N: 'a, E: 'a, Ty> GraphEdgeRef for &'a GraphMap<N, E, Ty>
+    where N: Copy,
+          Ty: EdgeType,
 {
     type EdgeRef = (N, N, &'a E);
 }
 
-impl<'a, N: 'a, E: 'a> IntoEdgeReferences for &'a GraphMap<N, E>
-    where N: NodeTrait
+impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
 {
-    type EdgeReferences = graphmap::AllEdges<'a, N, E>;
+    type EdgeReferences = graphmap::AllEdges<'a, N, E, Ty>;
     fn edge_references(self) -> Self::EdgeReferences {
         self.all_edges()
     }
@@ -483,14 +498,15 @@ impl<'a, G> Visitable for Frozen<'a, G> where G: Visitable {
     }
 }
 
-impl<N: Copy, E> GraphBase for GraphMap<N, E>
+impl<N: Copy, E, Ty> GraphBase for GraphMap<N, E, Ty>
 {
     type NodeId = N;
     type EdgeId = (N, N);
 }
 
-impl<N, E> Visitable for GraphMap<N, E>
-    where N: Copy + Ord + Hash
+impl<N, E, Ty> Visitable for GraphMap<N, E, Ty>
+    where N: Copy + Ord + Hash,
+          Ty: EdgeType,
 {
     type Map = HashSet<N>;
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
@@ -538,8 +554,9 @@ pub trait GetAdjacencyMatrix : GraphBase {
 }
 
 /// The `GraphMap` keeps an adjacency matrix internally.
-impl<N, E> GetAdjacencyMatrix for GraphMap<N, E>
-    where N: Copy + Ord + Hash
+impl<N, E, Ty> GetAdjacencyMatrix for GraphMap<N, E, Ty>
+    where N: Copy + Ord + Hash,
+          Ty: EdgeType,
 {
     type AdjMatrix = ();
     #[inline]

@@ -25,6 +25,7 @@ use {
 };
 
 use IntoWeightedEdge;
+use visit::IntoNodeIdentifiers;
 
 /// `GraphMap<N, E>` is an undirected graph, with generic node values `N` and edge weights `E`.
 ///
@@ -39,7 +40,7 @@ use IntoWeightedEdge;
 ///
 /// `GraphMap` does not allow parallel edges, but self loops are allowed.
 #[derive(Clone)]
-pub struct GraphMap<N, E, Ty: EdgeType = Undirected> {
+pub struct GraphMap<N, E, Ty = Undirected> {
     nodes: HashMap<N, Vec<(N, EdgeDirection)>>,
     edges: HashMap<(N, N), E>,
     ty: PhantomData<Ty>,
@@ -269,6 +270,27 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         }
     }
 
+    /// Return an iterator of all neighbors that have an edge between `a`
+    /// and themselves, in the specified direction.
+    ///
+    /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
+    ///
+    /// If the node `a` does not exist in the graph, return an empty iterator.
+    ///
+    /// Iterator element type is `N`.
+    pub fn neighbors_directed(&self, a: N, dir: EdgeDirection)
+        -> NeighborsDirected<N, Ty>
+    {
+        NeighborsDirected {
+            iter: match self.nodes.get(&a) {
+                Some(neigh) => neigh.iter(),
+                None => [].iter(),
+            },
+            dir: dir,
+            ty: self.ty,
+        }
+    }
+
     /// Return an iterator over the nodes that are connected with `from` by edges,
     /// paired with the edge weight.
     ///
@@ -298,9 +320,10 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// Return an iterator over all edges of the graph with their weight in arbitrary order.
     ///
     /// Iterator element type is `(N, N, &E)`
-    pub fn all_edges(&self) -> AllEdges<N, E> {
+    pub fn all_edges(&self) -> AllEdges<N, E, Ty> {
         AllEdges {
-            inner: self.edges.iter()
+            inner: self.edges.iter(),
+            ty: self.ty,
         }
     }
 }
@@ -401,6 +424,34 @@ impl<'a, N, Ty> Iterator for Neighbors<'a, N, Ty>
     }
 }
 
+pub struct NeighborsDirected<'a, N, Ty>
+    where N: 'a,
+          Ty: EdgeType,
+{
+    iter: Iter<'a, (N, EdgeDirection)>,
+    dir: EdgeDirection,
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, N, Ty> Iterator for NeighborsDirected<'a, N, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType
+{
+    type Item = N;
+    fn next(&mut self) -> Option<N> {
+        if Ty::is_directed() {
+            let self_dir = self.dir;
+            (&mut self.iter)
+                .filter_map(move |&(n, dir)| if dir == self_dir {
+                    Some(n)
+                } else { None })
+                .next()
+        } else {
+            self.iter.next().map(|&(n, _)| n)
+        }
+    }
+}
+
 pub struct Edges<'a, N, E: 'a, Ty = Undirected>
     where N: 'a + NodeTrait,
           Ty: EdgeType
@@ -431,12 +482,14 @@ impl<'a, N, E> Iterator for Edges<'a, N, E>
     }
 }
 
-pub struct AllEdges<'a, N, E: 'a> where N: 'a + NodeTrait {
-    inner: HashmapIter<'a, (N, N), E>
+pub struct AllEdges<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
+    inner: HashmapIter<'a, (N, N), E>,
+    ty: PhantomData<Ty>,
 }
 
-impl<'a, N, E> Iterator for AllEdges<'a, N, E>
-    where N: 'a + NodeTrait, E: 'a
+impl<'a, N, E, Ty> Iterator for AllEdges<'a, N, E, Ty>
+    where N: 'a + NodeTrait, E: 'a,
+          Ty: EdgeType,
 {
     type Item = (N, N, &'a E);
     fn next(&mut self) -> Option<Self::Item>
@@ -544,3 +597,38 @@ impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
     }
 }
 
+impl<'a, N, E: 'a, Ty> IntoNodeIdentifiers for &'a GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
+    type NodeIdentifiers = NodeIdentifiers<'a, N, E, Ty>;
+
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
+        NodeIdentifiers {
+            iter: self.nodes.iter(),
+            ty: self.ty,
+            edge_ty: PhantomData,
+        }
+    }
+
+    fn node_count(&self) -> usize {
+        (*self).node_count()
+    }
+}
+
+pub struct NodeIdentifiers<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
+    iter: HashmapIter<'a, N, Vec<(N, EdgeDirection)>>,
+    ty: PhantomData<Ty>,
+    edge_ty: PhantomData<E>,
+}
+
+impl<'a, N, E, Ty> Iterator for NodeIdentifiers<'a, N, E, Ty>
+    where N: 'a + NodeTrait, E: 'a,
+          Ty: EdgeType,
+{
+    type Item = N;
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        self.iter.next().map(|(&n, _)| n)
+    }
+}

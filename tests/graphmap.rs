@@ -1,6 +1,7 @@
 extern crate petgraph;
 
 use std::collections::HashSet;
+use std::fmt;
 
 use petgraph::{
     GraphMap,
@@ -218,4 +219,42 @@ fn graphmap_directed() {
     // duplicate self loop - no
     assert!(!gr.add_edge(b, b, ()).is_none());
     println!("{:#?}", gr);
+}
+
+fn assert_sccs_eq<N>(mut res: Vec<Vec<N>>, mut answer: Vec<Vec<N>>)
+    where N: Ord + fmt::Debug,
+{
+    // normalize the result and compare with the answer.
+    for scc in res.iter_mut() {
+        scc.sort();
+    }
+    res.sort();
+    for scc in answer.iter_mut() {
+        scc.sort();
+    }
+    answer.sort();
+    assert_eq!(res, answer);
+}
+
+#[test]
+fn scc() {
+    let gr: GraphMap<_, (), Directed> = GraphMap::from_edges(&[
+        (6, 0),
+        (0, 3),
+        (3, 6),
+        (8, 6),
+        (8, 2),
+        (2, 5),
+        (5, 8),
+        (7, 5),
+        (1, 7),
+        (7, 4),
+        (4, 1)]);
+
+    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+        vec![0, 3, 6],
+        vec![1, 4, 7],
+        vec![2, 5, 8],
+    ]);
+
 }
