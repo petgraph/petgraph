@@ -416,6 +416,14 @@ quickcheck! {
 }
 
 quickcheck! {
+    fn kosaraju_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
+        let tsccs = scc(&g);
+        let firsts = vec(tsccs.iter().rev().map(|v| v[0]));
+        subset_is_topo_order(&g, &firsts)
+    }
+}
+
+quickcheck! {
     fn tarjan_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
         let tsccs = tarjan_scc(&g);
         let firsts = vec(tsccs.iter().rev().map(|v| v[0]));

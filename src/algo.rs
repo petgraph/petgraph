@@ -154,7 +154,12 @@ pub fn toposort<G>(g: G) -> Vec<G::NodeId>
 
 /// [Generic] Compute the *strongly connected components* using Kosaraju's algorithm.
 ///
-/// Return a vector where each element is an scc.
+/// Return a vector where each element is a strongly connected component (scc).
+///
+/// The order of `NodeId` within each scc is arbitrary, but the order of
+/// the sccs is their postorder (reverse topological sort).
+///
+/// This implementation is iterative and does two passes over the nodes.
 ///
 /// For an undirected graph, the sccs are simply the connected components.
 pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
@@ -199,9 +204,8 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
         if dfs.discovered.is_visited(&i) {
             continue;
         }
-        // Move to the leader node.
+        // Move to the leader node `i`.
         dfs.move_to(i);
-        //let leader = nindex;
         let mut scc = Vec::new();
         while let Some(nx) = dfs.next(g) {
             scc.push(nx);
@@ -216,7 +220,9 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 /// Return a vector where each element is a strongly connected component (scc).
 ///
 /// The order of `NodeId` within each scc is arbitrary, but the order of
-/// the sccs is their reverse topological sort order.
+/// the sccs is their postorder (reverse topological sort).
+///
+/// This implementation is recursive and does one pass over the nodes.
 ///
 /// For an undirected graph, the sccs are simply the connected components.
 pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
