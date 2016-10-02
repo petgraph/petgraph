@@ -764,6 +764,8 @@ impl<N, VM> DfsPostOrder<N, VM>
 /// The traversal starts at a given node and only traverses nodes reachable
 /// from it.
 ///
+/// `Bfs` is not recursive.
+///
 /// `Bfs` does not itself borrow the graph, and because of this you can run
 /// a traversal over a graph while still retaining mutable access to it, if you
 /// use it like the following example:
