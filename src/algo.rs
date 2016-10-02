@@ -83,16 +83,6 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
     false
 }
 
-/*
-/// **Deprecated: Renamed to `is_cyclic_undirected`.**
-pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    is_cyclic_undirected(g)
-}
-*/
-
 /// [Generic] Perform a topological sort of a directed graph `g`.
 ///
 /// Visit each node in order (if it is part of a topological order).
