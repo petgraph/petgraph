@@ -11,25 +11,19 @@ use std::collections::{
 };
 use std::hash::Hash;
 
+use prelude::*;
+
 use super::{
     graphmap,
     graph,
     EdgeType,
-    Direction,
-    Graph,
-    GraphMap,
-    Incoming,
-    Outgoing,
 };
 
 use graph::{
     IndexType,
-    NodeIndex,
 };
 #[cfg(feature = "stable_graph")]
 use stable_graph;
-#[cfg(feature = "stable_graph")]
-use stable_graph::StableGraph;
 use graph::Frozen;
 
 use graphmap::{

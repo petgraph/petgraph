@@ -8,13 +8,10 @@ use std::collections::BinaryHeap;
 use std::borrow::{Borrow};
 use std::cmp::min;
 
+use prelude::*;
+
 use super::{
-    Graph,
-    Undirected,
     EdgeType,
-    Outgoing,
-    Incoming,
-    Dfs,
 };
 use scored::MinScored;
 use super::visit::{
@@ -29,13 +26,11 @@ use super::visit::{
     NodeCompactIndexable,
     IntoEdgeReferences,
     EdgeRef,
-    DfsPostOrder,
     Reversed,
 };
 use super::unionfind::UnionFind;
 use super::graph::{
     IndexType,
-    NodeIndex,
 };
 
 pub use super::isomorphism::{

@@ -2,9 +2,6 @@ extern crate petgraph;
 
 use petgraph::prelude::*;
 use petgraph::{
-    Bfs,
-    Directed,
-    Undirected,
     EdgeType,
 };
 
@@ -28,6 +25,7 @@ use petgraph::visit::{
     Topo,
     IntoNeighbors,
     EdgeRef,
+    Bfs,
     BfsIter,
     DfsIter,
 };

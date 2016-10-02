@@ -16,12 +16,14 @@ pub use graphmap::{
     GraphMap,
 };
 #[doc(no_inline)]
+#[cfg(feature = "stable_graph")]
 pub use stable_graph::{
     StableGraph,
 };
 #[doc(no_inline)]
 pub use visit::{
     Dfs,
+    DfsPostOrder,
 };
 #[doc(no_inline)]
 pub use ::{

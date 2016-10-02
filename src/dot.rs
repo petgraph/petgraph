@@ -1,10 +1,9 @@
 //! Simple graphviz dot file format output.
 
 use std::fmt::{self, Display, Write};
+use prelude::*;
 use {
-    Graph,
     EdgeType,
-    GraphMap,
 };
 use super::graph::IndexType;
 use graphmap::NodeTrait;

@@ -19,15 +19,7 @@ extern crate ordermap;
 
 #[doc(no_inline)]
 pub use graph::Graph;
-pub use graphmap::GraphMap;
-#[cfg(feature = "stable_graph")]
-#[doc(no_inline)]
-pub use stable_graph::StableGraph;
 
-pub use visit::{
-    Bfs,
-    Dfs,
-};
 pub use Direction::{Outgoing, Incoming};
 
 mod scored;

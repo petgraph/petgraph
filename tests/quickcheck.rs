@@ -9,8 +9,9 @@ use odds::prelude::*;
 use rand::Rng;
 use std::collections::HashMap;
 
+use petgraph::prelude::*;
 use petgraph::{
-    Graph, GraphMap, Undirected, Directed, EdgeType, Incoming, Outgoing,
+    EdgeType, 
 };
 use petgraph::dot::{Dot, Config};
 use petgraph::algo::{
@@ -26,15 +27,13 @@ use petgraph::algo::{
     dijkstra,
 };
 use petgraph::visit::{Topo, SubTopo, Reversed};
-use petgraph::graph::{IndexType, node_index, edge_index, NodeIndex};
+use petgraph::graph::{IndexType, node_index, edge_index};
 use petgraph::graphmap::{
     NodeTrait,
     UnGraphMap,
     DiGraphMap,
 };
 
-#[cfg(feature = "stable_graph")]
-use petgraph::stable_graph::StableGraph;
 
 use std::fmt;
 

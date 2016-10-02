@@ -772,7 +772,7 @@ fn stable_graph() {
 
 #[test]
 fn dfs() {
-    use Dfs;
+    use visit::Dfs;
 
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
     let a = gr.add_node("a");

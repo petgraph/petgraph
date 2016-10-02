@@ -3,13 +3,7 @@ extern crate petgraph;
 use std::collections::HashSet;
 use std::fmt;
 
-use petgraph::{
-    GraphMap,
-    Graph,
-    Dfs,
-    Directed,
-    Undirected,
-};
+use petgraph::prelude::*;
 use petgraph::visit::{
     DfsIter,
     EdgeRef,
