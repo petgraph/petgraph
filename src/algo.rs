@@ -1,8 +1,8 @@
 //! Graph algorithms.
 //!
 //! It is a goal to gradually migrate the algorithms to be based on graph traits
-//! so that they are generally applicable. For now, most of these use only the
-//! **Graph** type.
+//! so that they are generally applicable. For now, some of these still require
+//! the `Graph` type.
 
 use std::collections::BinaryHeap;
 use std::borrow::{Borrow};
