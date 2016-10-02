@@ -17,8 +17,10 @@ use petgraph::{
 use petgraph as pg;
 
 use petgraph::algo::{
-    min_spanning_tree,
+    HasPathState,
+    has_path_connecting,
     is_cyclic_undirected,
+    min_spanning_tree,
 };
 
 use petgraph::graph::node_index as n;
@@ -33,6 +35,7 @@ use petgraph::visit::{
     AsUndirected,
     Topo,
     IntoNeighbors,
+    EdgeRef,
 };
 use petgraph::algo::{
     dijkstra,
@@ -996,6 +999,51 @@ fn toposort_generic() {
         println!("{:?}", gr);
         assert_is_topo_order(&gr, &order);
     }
+}
+
+#[test]
+fn test_has_path() {
+    // This is a DAG, visit it in order
+    let mut gr = Graph::<_,_>::new();
+    let b = gr.add_node(("B", 0.));
+    let a = gr.add_node(("A", 0.));
+    let c = gr.add_node(("C", 0.));
+    let d = gr.add_node(("D", 0.));
+    let e = gr.add_node(("E", 0.));
+    let f = gr.add_node(("F", 0.));
+    let g = gr.add_node(("G", 0.));
+    gr.add_edge(a, b, 7.0);
+    gr.add_edge(a, d, 5.);
+    gr.add_edge(d, b, 9.);
+    gr.add_edge(b, c, 8.);
+    gr.add_edge(b, e, 7.);
+    gr.add_edge(c, e, 5.);
+    gr.add_edge(d, e, 15.);
+    gr.add_edge(d, f, 6.);
+    gr.add_edge(f, e, 8.);
+    gr.add_edge(f, g, 11.);
+    gr.add_edge(e, g, 9.);
+    // disconnected island
+
+    let h = gr.add_node(("H", 0.));
+    let i = gr.add_node(("I", 0.));
+    gr.add_edge(h, i, 2.);
+    gr.add_edge(i, h, -2.);
+
+    let mut state = HasPathState::new(&gr);
+
+    gr.add_edge(b, a, 99.);
+
+    assert!(has_path_connecting(&gr, c, c, None));
+
+    for edge in gr.edge_references() {
+        assert!(has_path_connecting(&gr, edge.source(), edge.target(), None));
+    }
+    assert!(has_path_connecting(&gr, a, g, Some(&mut state)));
+    assert!(!has_path_connecting(&gr, a, h, Some(&mut state)));
+    assert!(has_path_connecting(&gr, a, c, None));
+    assert!(has_path_connecting(&gr, a, c, Some(&mut state)));
+    assert!(!has_path_connecting(&gr, h, a, Some(&mut state)));
 }
 
 #[test]

@@ -18,6 +18,7 @@ use super::{
 };
 use scored::MinScored;
 use super::visit::{
+    GraphRef,
     Visitable,
     VisitMap,
     IntoNeighbors,
@@ -136,6 +137,49 @@ pub fn is_cyclic_directed<G>(g: G) -> bool
     let mut n_ordered = 0;
     toposort_generic(g, |_, _| n_ordered += 1);
     n_ordered != g.node_count()
+}
+
+#[derive(Clone, Debug)]
+pub struct HasPathState<N, VM> {
+    dfs: Dfs<N, VM>,
+}
+
+impl<N, VM> HasPathState<N, VM>
+    where N: Copy,
+          VM: VisitMap<N>,
+{
+    /// Create a new `HasPathState`
+    pub fn new<G>(graph: G) -> Self
+        where G: GraphRef + Visitable<NodeId=N, Map=VM>,
+    {
+        HasPathState {
+            dfs: Dfs::empty(graph)
+        }
+    }
+}
+
+/// [Generic] Check if there exists a path starting at `from` and reaching `to`.
+///
+/// `from` and `to` are equal, this function returns true.
+pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
+                              state: Option<&mut HasPathState<G::NodeId, G::Map>>)
+    -> bool
+    where G: IntoNeighbors + Visitable,
+          G::NodeId: PartialEq,
+{
+    let mut local_visitor;
+    let dfs = if let Some(v) = state { &mut v.dfs } else {
+        local_visitor = Dfs::empty(g);
+        &mut local_visitor
+    };
+    dfs.reset(g);
+    dfs.move_to(from);
+    while let Some(x) = dfs.next(g) {
+        if x == to {
+            return true;
+        }
+    }
+    false
 }
 
 /// [Generic] Perform a topological sort of a directed graph.
