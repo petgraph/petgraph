@@ -11,7 +11,6 @@ use std::cmp::min;
 use super::{
     Graph,
     Undirected,
-    EdgeDirection,
     EdgeType,
     Outgoing,
     Incoming,
@@ -29,6 +28,8 @@ use super::visit::{
     NodeCompactIndexable,
     IntoEdgeReferences,
     EdgeRef,
+    DfsPostOrder,
+    Reversed,
 };
 use super::unionfind::UnionFind;
 use super::graph::{
@@ -165,37 +166,24 @@ pub fn toposort<G>(g: G) -> Vec<G::NodeId>
 pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     where G: IntoNeighborsDirected + Visitable + IntoNodeIdentifiers,
 {
-    let mut dfs = Dfs::empty(&g);
+    let mut dfs = DfsPostOrder::empty(g);
 
     // First phase, reverse dfs pass, compute finishing times.
     // http://stackoverflow.com/a/26780899/161659
-    let mut finished = g.visit_map();
-    let mut finish_order = Vec::new();
+    let mut finish_order = Vec::with_capacity(g.node_count());
     for i in g.node_identifiers() {
         if dfs.discovered.is_visited(&i) {
             continue
         }
 
-        dfs.stack.push(i);
-        while let Some(&nx) = dfs.stack.last() {
-            if dfs.discovered.visit(nx) {
-                // First time visiting `nx`: Push neighbors, don't pop `nx`
-                for succ in g.neighbors_directed(nx, EdgeDirection::Incoming) {
-                    if !dfs.discovered.is_visited(&succ) {
-                        dfs.stack.push(succ);
-                    }
-                }
-            } else {
-                dfs.stack.pop();
-                if finished.visit(nx) {
-                    // Second time: All reachable nodes must have been finished
-                    finish_order.push(nx);
-                }
-            }
+        dfs.move_to(i);
+        while let Some(nx) = dfs.next(Reversed(g)) {
+            finish_order.push(nx);
         }
     }
 
-    g.reset_map(&mut dfs.discovered);
+    let mut dfs = Dfs::from_parts(dfs.stack, dfs.discovered);
+    dfs.reset(g);
     let mut sccs = Vec::new();
 
     // Second phase
