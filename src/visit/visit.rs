@@ -518,10 +518,13 @@ impl<N, E, Ty> GetAdjacencyMatrix for GraphMap<N, E, Ty>
     }
 }
 
-/// A depth first search (DFS) of a graph.
+/// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in
+/// preorder (when they are first discovered).
 ///
 /// The traversal starts at a given node and only traverses nodes reachable
 /// from it.
+///
+/// `Dfs` is not recursive.
 ///
 /// `Dfs` does not itself borrow the graph, and because of this you can run
 /// a traversal over a graph while still retaining mutable access to it, if you
@@ -564,6 +567,22 @@ impl<N, VM> Dfs<N, VM>
         let mut dfs = Dfs::empty(graph);
         dfs.move_to(start);
         dfs
+    }
+
+    /// Create a `Dfs` from a vector and a visit map
+    pub fn from_parts(stack: Vec<N>, discovered: VM) -> Self {
+        Dfs {
+            stack: stack,
+            discovered: discovered,
+        }
+    }
+
+    /// Clear the visit state
+    pub fn reset<G>(&mut self, graph: G)
+        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    {
+        graph.reset_map(&mut self.discovered);
+        self.stack.clear();
     }
 
     /// Create a new **Dfs** using the graph's visitor map, and no stack.
