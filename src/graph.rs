@@ -71,7 +71,7 @@ unsafe impl IndexType for u8 {
 }
 
 /// Node identifier.
-#[derive(Copy, Clone, Default, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct NodeIndex<Ix=DefaultIx>(Ix);
 
 impl<Ix: IndexType> NodeIndex<Ix>
@@ -100,6 +100,13 @@ impl<Ix: IndexType> NodeIndex<Ix>
 
 impl<Ix: IndexType> From<Ix> for NodeIndex<Ix> {
     fn from(ix: Ix) -> Self { NodeIndex(ix) }
+}
+
+impl<Ix: fmt::Debug> fmt::Debug for NodeIndex<Ix>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "NodeIndex({:?})", self.0)
+    }
 }
 
 /// Short version of `NodeIndex::new`
