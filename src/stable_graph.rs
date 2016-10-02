@@ -41,7 +41,8 @@ use visit::NodeIndexable;
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
 ///
-/// Depends on `feature = "stable_graph"`.
+/// Depends on crate feature `stable_graph`. *This is a new feature in petgraph.
+/// You can contribute to help it achieve parity with Graph.*
 ///
 /// The graph **does not invalidate** any unrelated node or edge indices when
 /// items are removed.
