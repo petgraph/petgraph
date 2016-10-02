@@ -1,14 +1,16 @@
 
 //! **petgraph** is a graph data structure library.
 //!
-//! The most prominent type is [`Graph`](./graph/struct.Graph.html) which is
-//! an adjacency list graph with undirected or directed edges and arbitrary
-//! associated data.
+//! - [`Graph`](./graph/struct.Graph.html) which is an adjacency list graph with
+//! arbitrary associated data.
 //!
-//! Petgraph also provides [`GraphMap`](./graphmap/struct.GraphMap.html) which
-//! is an hashmap-backed graph with undirected edges and only allows simple node
-//! identifiers (such as integers or references).
-
+//! - [`StableGraph`](./stable_graph/struct.StableGraph.html) is similar
+//! to `Graph`, but it keeps indices stable across removals.
+//!
+//! - [`GraphMap`](./graphmap/struct.GraphMap.html) is an adjacency list graph
+//! which is backed by a hash table and the node identifiers are the keys
+//! into the table.
+//!
 #![doc(html_root_url = "https://docs.rs/petgraph/0.3/")]
 
 extern crate fixedbitset;

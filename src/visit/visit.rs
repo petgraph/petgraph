@@ -1,4 +1,4 @@
-//! Graph visitor algorithms.
+//! Graph traits and graph traversals.
 //!
 
 mod reversed;
