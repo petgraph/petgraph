@@ -1,14 +1,16 @@
 
 //! **petgraph** is a graph data structure library.
 //!
-//! The most prominent type is [`Graph`](./graph/struct.Graph.html) which is
-//! an adjacency list graph with undirected or directed edges and arbitrary
-//! associated data.
+//! - [`Graph`](./graph/struct.Graph.html) which is an adjacency list graph with
+//! arbitrary associated data.
 //!
-//! Petgraph also provides [`GraphMap`](./graphmap/struct.GraphMap.html) which
-//! is an hashmap-backed graph with undirected edges and only allows simple node
-//! identifiers (such as integers or references).
-
+//! - [`StableGraph`](./stable_graph/struct.StableGraph.html) is similar
+//! to `Graph`, but it keeps indices stable across removals.
+//!
+//! - [`GraphMap`](./graphmap/struct.GraphMap.html) is an adjacency list graph
+//! which is backed by a hash table and the node identifiers are the keys
+//! into the table.
+//!
 #![doc(html_root_url = "https://docs.rs/petgraph/0.3/")]
 
 extern crate fixedbitset;
@@ -17,18 +19,8 @@ extern crate ordermap;
 
 #[doc(no_inline)]
 pub use graph::Graph;
-pub use graphmap::GraphMap;
-#[cfg(feature = "stable_graph")]
-#[doc(no_inline)]
-pub use stable_graph::StableGraph;
 
-pub use visit::{
-    Bfs,
-    BfsIter,
-    Dfs,
-    DfsIter,
-};
-pub use EdgeDirection::{Outgoing, Incoming};
+pub use Direction::{Outgoing, Incoming};
 
 mod scored;
 pub mod algo;
@@ -46,6 +38,8 @@ mod isomorphism;
 mod traits_graph;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
+
+pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
@@ -87,27 +81,30 @@ macro_rules! copyclone {
 }
 
 // Index into the NodeIndex and EdgeIndex arrays
-/// Edge direction
+/// Edge direction.
 #[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
-pub enum EdgeDirection {
+pub enum Direction {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
     /// An `Incoming` edge is an inbound edge *to* the current node.
     Incoming = 1
 }
 
-copyclone!(EdgeDirection);
+copyclone!(Direction);
 
-impl EdgeDirection {
-    /// Return the opposite `EdgeDirection`.
+impl Direction {
+    /// Return the opposite `Direction`.
     #[inline]
-    pub fn opposite(&self) -> EdgeDirection {
+    pub fn opposite(&self) -> Direction {
         match *self {
             Outgoing => Incoming,
             Incoming => Outgoing,
         }
     }
 }
+
+#[doc(hidden)]
+pub use Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Copy, Debug)]

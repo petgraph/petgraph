@@ -25,7 +25,7 @@ use {
     EdgeType,
     Directed,
     Outgoing,
-    EdgeDirection,
+    Direction,
 };
 use super::{
     Edge,
@@ -41,7 +41,8 @@ use visit::NodeIndexable;
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
 ///
-/// Depends on `feature = "stable_graph"`.
+/// Depends on crate feature `stable_graph`. *This is a new feature in petgraph.
+/// You can contribute to help it achieve parity with Graph.*
 ///
 /// The graph **does not invalidate** any unrelated node or edge indices when
 /// items are removed.
@@ -406,7 +407,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection)
+    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: Direction)
         -> Neighbors<E, Ix>
     {
         let mut iter = self.neighbors_undirected(a);
@@ -650,7 +651,8 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
 /// in the following example:
 ///
 /// ```
-/// use petgraph::{Dfs, Incoming};
+/// use petgraph::visit::Dfs;
+/// use petgraph::Incoming;
 /// use petgraph::stable_graph::StableGraph;
 ///
 /// let mut gr = StableGraph::new();
@@ -772,7 +774,7 @@ fn stable_graph() {
 
 #[test]
 fn dfs() {
-    use Dfs;
+    use visit::Dfs;
 
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
     let a = gr.add_node("a");

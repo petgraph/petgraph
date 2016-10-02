@@ -1,23 +1,21 @@
 //! Graph algorithms.
 //!
 //! It is a goal to gradually migrate the algorithms to be based on graph traits
-//! so that they are generally applicable. For now, most of these use only the
-//! **Graph** type.
+//! so that they are generally applicable. For now, some of these still require
+//! the `Graph` type.
 
 use std::collections::BinaryHeap;
 use std::borrow::{Borrow};
 use std::cmp::min;
 
+use prelude::*;
+
 use super::{
-    Graph,
-    Undirected,
     EdgeType,
-    Outgoing,
-    Incoming,
-    Dfs,
 };
 use scored::MinScored;
 use super::visit::{
+    GraphRef,
     Visitable,
     VisitMap,
     IntoNeighbors,
@@ -28,13 +26,11 @@ use super::visit::{
     NodeCompactIndexable,
     IntoEdgeReferences,
     EdgeRef,
-    DfsPostOrder,
     Reversed,
 };
 use super::unionfind::UnionFind;
 use super::graph::{
     IndexType,
-    NodeIndex,
 };
 
 pub use super::isomorphism::{
@@ -82,16 +78,6 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
     false
 }
 
-/*
-/// **Deprecated: Renamed to `is_cyclic_undirected`.**
-pub fn is_cyclic<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> bool
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    is_cyclic_undirected(g)
-}
-*/
-
 /// [Generic] Perform a topological sort of a directed graph `g`.
 ///
 /// Visit each node in order (if it is part of a topological order).
@@ -136,6 +122,49 @@ pub fn is_cyclic_directed<G>(g: G) -> bool
     let mut n_ordered = 0;
     toposort_generic(g, |_, _| n_ordered += 1);
     n_ordered != g.node_count()
+}
+
+#[derive(Clone, Debug)]
+pub struct HasPathState<N, VM> {
+    dfs: Dfs<N, VM>,
+}
+
+impl<N, VM> HasPathState<N, VM>
+    where N: Copy,
+          VM: VisitMap<N>,
+{
+    /// Create a new `HasPathState`
+    pub fn new<G>(graph: G) -> Self
+        where G: GraphRef + Visitable<NodeId=N, Map=VM>,
+    {
+        HasPathState {
+            dfs: Dfs::empty(graph)
+        }
+    }
+}
+
+/// [Generic] Check if there exists a path starting at `from` and reaching `to`.
+///
+/// `from` and `to` are equal, this function returns true.
+pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
+                              state: Option<&mut HasPathState<G::NodeId, G::Map>>)
+    -> bool
+    where G: IntoNeighbors + Visitable,
+          G::NodeId: PartialEq,
+{
+    let mut local_visitor;
+    let dfs = if let Some(v) = state { &mut v.dfs } else {
+        local_visitor = Dfs::empty(g);
+        &mut local_visitor
+    };
+    dfs.reset(g);
+    dfs.move_to(from);
+    while let Some(x) = dfs.next(g) {
+        if x == to {
+            return true;
+        }
+    }
+    false
 }
 
 /// [Generic] Perform a topological sort of a directed graph.
@@ -287,9 +316,7 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 
     let mut sccs = Vec::new();
     {
-        let map = (0..g.node_bound()).map(|_| {
-            NodeData { index: None, lowlink: !0, on_stack: false }
-        }).collect();
+        let map = vec![NodeData { index: None, lowlink: !0, on_stack: false }; g.node_bound()];
 
         let mut data = Data {
             index: 0,

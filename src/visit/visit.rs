@@ -1,4 +1,4 @@
-//! Graph visitor algorithms.
+//! Graph traits and graph traversals.
 //!
 
 mod reversed;
@@ -11,25 +11,19 @@ use std::collections::{
 };
 use std::hash::Hash;
 
+use prelude::*;
+
 use super::{
     graphmap,
     graph,
     EdgeType,
-    EdgeDirection,
-    Graph,
-    GraphMap,
-    Incoming,
-    Outgoing,
 };
 
 use graph::{
     IndexType,
-    NodeIndex,
 };
 #[cfg(feature = "stable_graph")]
 use stable_graph;
-#[cfg(feature = "stable_graph")]
-use stable_graph::StableGraph;
 use graph::Frozen;
 
 use graphmap::{
@@ -118,7 +112,7 @@ pub trait IntoNeighbors : GraphRef {
 /// incoming or outgoing edges.
 pub trait IntoNeighborsDirected : IntoNeighbors {
     type NeighborsDirected: Iterator<Item=Self::NodeId>;
-    fn neighbors_directed(self, n: Self::NodeId, d: EdgeDirection)
+    fn neighbors_directed(self, n: Self::NodeId, d: Direction)
         -> Self::NeighborsDirected;
 }
 
@@ -139,7 +133,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a Graph<N, E, Ty, Ix>
           Ix: IndexType,
 {
     type NeighborsDirected = graph::Neighbors<'a, E, Ix>;
-    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: EdgeDirection)
+    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: Direction)
         -> graph::Neighbors<'a, E, Ix>
     {
         Graph::neighbors_directed(self, n, d)
@@ -152,7 +146,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a StableGraph<N, E, Ty, I
           Ix: IndexType,
 {
     type NeighborsDirected = stable_graph::Neighbors<'a, E, Ix>;
-    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: EdgeDirection)
+    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: Direction)
         -> Self::NeighborsDirected
     {
         StableGraph::neighbors_directed(self, n, d)
@@ -164,7 +158,7 @@ impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
           Ty: EdgeType,
 {
     type NeighborsDirected = graphmap::NeighborsDirected<'a, N, Ty>;
-    fn neighbors_directed(self, n: N, dir: EdgeDirection)
+    fn neighbors_directed(self, n: N, dir: Direction)
         -> Self::NeighborsDirected
     {
         self.neighbors_directed(n, dir)
@@ -221,7 +215,7 @@ impl<'a, G> IntoNeighborsDirected for &'a G
     where G: Copy + IntoNeighborsDirected
 {
     type NeighborsDirected = G::NeighborsDirected;
-    fn neighbors_directed(self, n: G::NodeId, d: EdgeDirection)
+    fn neighbors_directed(self, n: G::NodeId, d: Direction)
         -> G::NeighborsDirected
     {
         (*self).neighbors_directed(n, d)
@@ -234,7 +228,7 @@ pub trait IntoExternals : GraphRef {
     type Externals: Iterator<Item=Self::NodeId>;
 
     /// Return an iterator of all nodes with no edges in the given direction
-    fn externals(self, d: EdgeDirection) -> Self::Externals;
+    fn externals(self, d: Direction) -> Self::Externals;
 }
 
 impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
@@ -242,7 +236,7 @@ impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
           Ix: IndexType,
 {
     type Externals = graph::Externals<'a, N, Ty, Ix>;
-    fn externals(self, d: EdgeDirection) -> graph::Externals<'a, N, Ty, Ix> {
+    fn externals(self, d: Direction) -> graph::Externals<'a, N, Ty, Ix> {
         Graph::externals(self, d)
     }
 }
@@ -531,7 +525,8 @@ impl<N, E, Ty> GetAdjacencyMatrix for GraphMap<N, E, Ty>
 /// use it like the following example:
 ///
 /// ```
-/// use petgraph::{Graph, Dfs};
+/// use petgraph::Graph;
+/// use petgraph::visit::Dfs;
 ///
 /// let mut graph = Graph::<_,()>::new();
 /// let a = graph.add_node(0);
@@ -677,7 +672,7 @@ impl<G> Clone for DfsIter<G>
 }
 
 /// Visit nodes in a depth-first-search (DFS) emitting nodes in postorder
-/// (each node after its decendants).
+/// (each node after all its decendants have been emitted).
 ///
 /// `DfsPostOrder` is not recursive.
 ///
@@ -771,7 +766,8 @@ impl<N, VM> DfsPostOrder<N, VM>
 /// use it like the following example:
 ///
 /// ```
-/// use petgraph::{Graph, Bfs};
+/// use petgraph::Graph;
+/// use petgraph::visit::Bfs;
 ///
 /// let mut graph = Graph::<_,()>::new();
 /// let a = graph.add_node(0);
@@ -945,109 +941,3 @@ impl<N, VM> Topo<N, VM>
     }
 }
 
-/// A topological order traversal for a subgraph.
-///
-/// `SubTopo` starts at a node, and does a topological order traversal of
-/// all nodes reachable from the starting point.
-#[derive(Clone)]
-pub struct SubTopo<N, VM> {
-    tovisit: Vec<N>,
-    notvisited: VecDeque<N>,
-    ordered: VM,
-    discovered: VM,
-}
-
-impl<N, VM> SubTopo<N, VM>
-    where N: Copy,
-          VM: VisitMap<N>,
-{
-    /// Create a new `SubTopo`, using the graph's visitor map, and put single
-    /// node in the to-visit list.
-    pub fn from_node<G>(graph: G, node: N) -> Self
-        where G: IntoExternals + Visitable<NodeId=N, Map=VM>,
-    {
-        let mut topo = Self::empty(graph);
-        topo.tovisit.push(node);
-        topo
-    }
-
-    /* Private until it has a use */
-    /// Create a new `SubTopo`, using the graph's visitor map with *no* starting
-    /// index specified.
-    fn empty<G>(graph: G) -> Self
-        where G: Visitable<NodeId=N, Map=VM>
-    {
-        SubTopo {
-            ordered: graph.visit_map(),
-            discovered: graph.visit_map(),
-            tovisit: Vec::new(),
-            notvisited: VecDeque::new(),
-        }
-    }
-
-    /// Clear visited state, and put a single node into the visit list.
-    pub fn reset_with_node<G>(&mut self, graph: &G, node: N)
-        where G: Visitable<NodeId=N, Map=VM>,
-    {
-        graph.reset_map(&mut self.ordered);
-        graph.reset_map(&mut self.discovered);
-        self.tovisit.clear();
-        self.tovisit.push(node);
-    }
-
-    // discover all nodes reachable from `n`
-    fn discover<G>(&mut self, g: G, n: N)
-        where G: IntoNeighborsDirected + Visitable<NodeId=N, Map=VM>,
-    {
-        if self.discovered.is_visited(&n) {
-            return;
-        }
-        self.discovered.visit(n.clone());
-        for neigh in g.neighbors_directed(n, Outgoing) {
-            self.discover(g, neigh);
-        }
-    }
-
-    /// Return the next node in the current topological order traversal, or
-    /// `None` if the traversal is at the end.
-    ///
-    /// *Note:* The subgraph may not have a complete topological order.
-    /// If there is a cycle in the subgraph, then nodes of that cycle *are* included in this traversal. 
-    pub fn next<G>(&mut self, g: G) -> Option<N>
-        where G: IntoNeighborsDirected + Visitable<NodeId=N, Map=VM>,
-    {
-        // Take an unvisited element and find which of its neighbors are next
-        //
-        // discovered: All nodes that have been reachable through outgoing paths
-        // from the start
-        // ordered: All nodes that have already been emitted until this point
-        loop {
-            while let Some(nix) = self.tovisit.pop() {
-                if self.ordered.is_visited(&nix) {
-                    continue;
-                }
-                self.ordered.visit(nix.clone());
-                self.discover(g, nix.clone());
-                for neigh in g.neighbors_directed(nix.clone(), Outgoing) {
-                    // Look at each neighbor, and those that only have incoming edges
-                    // from the already ordered list, they are the next to visit.
-                    // `discovered` is used to limit this to the induced subgraph
-                    if g.neighbors_directed(neigh.clone(), Incoming)
-                        .filter(|b| self.discovered.is_visited(b))
-                        .all(|b| self.ordered.is_visited(&b))
-                    {
-                        self.tovisit.push(neigh);
-                    } else {
-                        self.notvisited.push_back(neigh);
-                    }
-                }
-                return Some(nix);
-            }
-            if let Some(nix) = self.notvisited.pop_front() {
-                self.tovisit.push(nix);
-            } else {
-                return None;
-            }
-        }
-    }
-}

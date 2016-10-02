@@ -19,7 +19,7 @@ use {
     EdgeType,
     Directed,
     Undirected,
-    EdgeDirection,
+    Direction,
     Incoming,
     Outgoing,
 };
@@ -47,20 +47,24 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// representation, using **O(|V| + |E|)** space, and allows testing for edge
 /// existance in constant time.
 ///
-/// The edge type `Ty` can be `Directed` or `Undirected`.
+/// `GraphMap` is parameterized over:
 ///
-/// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
-///
-/// The node type `N` must implement `Copy` and will be used as node identifier, duplicated
-/// into several places in the data structure.
+/// - Associated data `N` for nodes and `E` for edges, called *weights*.
+/// - The node weight `N` must implement `Copy` and will be used as node
+/// identifier, duplicated into several places in the data structure.
 /// It must be suitable as a hash table key (implementing `Eq + Hash`).
 /// The node type must also implement `Ord` so that the implementation can
 /// order the pair (`a`, `b`) for an edge connecting any two nodes `a` and `b`.
+/// - `E` can be of arbitrary type.
+/// - Edge type `Ty` that determines whether the graph edges are directed or
+/// undirected.
+///
+/// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
 ///
 /// `GraphMap` does not allow parallel edges, but self loops are allowed.
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
-    nodes: OrderMap<N, Vec<(N, EdgeDirection)>>,
+    nodes: OrderMap<N, Vec<(N, Direction)>>,
     edges: OrderMap<(N, N), E>,
     ty: PhantomData<Ty>,
 }
@@ -222,7 +226,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// Remove edge relation from a to b
     ///
     /// Return `true` if it did exist.
-    fn remove_single_edge(&mut self, a: &N, b: &N, dir: EdgeDirection) -> bool {
+    fn remove_single_edge(&mut self, a: &N, b: &N, dir: Direction) -> bool {
         match self.nodes.get_mut(a) {
             None => false,
             Some(sus) => {
@@ -299,7 +303,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// If the node `a` does not exist in the graph, return an empty iterator.
     ///
     /// Iterator element type is `N`.
-    pub fn neighbors_directed(&self, a: N, dir: EdgeDirection)
+    pub fn neighbors_directed(&self, a: N, dir: Direction)
         -> NeighborsDirected<N, Ty>
     {
         NeighborsDirected {
@@ -437,14 +441,14 @@ macro_rules! iterator_wrap {
 iterator_wrap! {
     Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
-    iter: Cloned<Keys<'a, N, Vec<(N, EdgeDirection)>>>,
+    iter: Cloned<Keys<'a, N, Vec<(N, Direction)>>>,
 }
 
 pub struct Neighbors<'a, N, Ty = Undirected>
     where N: 'a,
           Ty: EdgeType,
 {
-    iter: Iter<'a, (N, EdgeDirection)>,
+    iter: Iter<'a, (N, Direction)>,
     ty: PhantomData<Ty>,
 }
 
@@ -470,8 +474,8 @@ pub struct NeighborsDirected<'a, N, Ty>
     where N: 'a,
           Ty: EdgeType,
 {
-    iter: Iter<'a, (N, EdgeDirection)>,
-    dir: EdgeDirection,
+    iter: Iter<'a, (N, Direction)>,
+    dir: Direction,
     ty: PhantomData<Ty>,
 }
 
@@ -664,7 +668,7 @@ impl<'a, N, E: 'a, Ty> IntoNodeIdentifiers for &'a GraphMap<N, E, Ty>
 }
 
 pub struct NodeIdentifiers<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    iter: OrderMapIter<'a, N, Vec<(N, EdgeDirection)>>,
+    iter: OrderMapIter<'a, N, Vec<(N, Direction)>>,
     ty: PhantomData<Ty>,
     edge_ty: PhantomData<E>,
 }
