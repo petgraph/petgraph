@@ -25,7 +25,6 @@ use petgraph::visit::{
     Topo,
     IntoNeighbors,
     EdgeRef,
-    Bfs,
     BfsIter,
     DfsIter,
 };

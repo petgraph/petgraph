@@ -22,6 +22,7 @@ pub use stable_graph::{
 };
 #[doc(no_inline)]
 pub use visit::{
+    Bfs,
     Dfs,
     DfsPostOrder,
 };
