@@ -26,7 +26,7 @@ use petgraph::algo::{
     tarjan_scc,
     dijkstra,
 };
-use petgraph::visit::{Topo, SubTopo, Reversed};
+use petgraph::visit::{Topo, Reversed};
 use petgraph::graph::{IndexType, node_index, edge_index};
 use petgraph::graphmap::{
     NodeTrait,
@@ -632,85 +632,6 @@ fn full_topo_generic() {
         true
     }
     quickcheck::quickcheck(prop_generic as fn(_) -> bool);
-}
-
-fn sub_topo_prop(DAG(mut gr): DAG<usize>, start_node: u8) -> bool {
-    if gr.node_count() == 0 {
-        return true;
-    }
-    assert!(!is_cyclic_directed(&gr));
-    let graph_index = NodeIndex::new(start_node as usize % gr.node_count());
-    let mut sub = Graph::new();
-    let sub_index = sub.add_node(graph_index);
-    let mut graph_to_sub = HashMap::new();
-    graph_to_sub.insert(graph_index, sub_index);
-    let mut stack = vec![(graph_index, sub_index)];
-    // TODO: Replace this with Bfs/Dfs that gives edges.
-    while let Some((graph_index, sub_index)) = stack.pop() {
-        for graph_neighbor in gr.neighbors_directed(graph_index, Outgoing) {
-            if graph_to_sub.contains_key(&graph_neighbor) {
-                continue;
-            }
-            let sub_neighbor = sub.add_node(graph_neighbor);
-            graph_to_sub.insert(graph_neighbor, sub_neighbor);
-            sub.add_edge(sub_index, sub_neighbor, ());
-            stack.push((graph_neighbor, sub_neighbor));
-        }
-    }
-    let mut index = 0;
-    let mut topo = SubTopo::from_node(&gr, graph_index);
-    while let Some(nx) = topo.next(&gr) {
-        gr[nx] = index;
-        index += 1;
-    }
-
-    let mut order = Vec::new();
-    index = 0;
-    let mut topo = SubTopo::from_node(&gr, graph_index);
-    while let Some(nx) = topo.next(&gr) {
-        order.push(nx);
-        assert_eq!(gr[nx], index);
-        index += 1;
-    }
-    let mapped_order = order.iter().map(|o| *graph_to_sub.get(o).unwrap()).collect::<Vec<_>>();
-    if !is_topo_order(&sub, &mapped_order) {
-        println!("Subgraph for node {} is {:?} and the order for it is: {:?}", graph_index.index(), sub, order);
-        return false;
-    }
-
-    {
-        order.clear();
-        let mut topo = SubTopo::from_node(&gr, graph_index);
-        while let Some(nx) = topo.next(&gr) {
-            order.push(nx);
-        }
-        let mapped_order = order.iter().map(|o| *graph_to_sub.get(o).unwrap()).collect::<Vec<_>>();
-        if !is_topo_order(&sub, &mapped_order) {
-            println!("Subgraph for node {} is {:?} and the order for it is: {:?}", graph_index.index(), sub, order);
-            return false;
-        }
-    }
-    true
-}
-
-#[test]
-fn sub_topo_quickcheck() {
-    quickcheck::quickcheck(sub_topo_prop as fn(_, _) -> bool);
-}
-
-#[test]
-fn specific_sub_topo_1() {
-    // case that was found with quickcheck
-    let gr = Graph::from_edges(&[
-        (0, 2),
-        (1, 2),
-        (0, 3),
-        (1, 4),
-        (2, 4),
-        (4, 5),
-        (3, 5),
-    ]);
-    assert!(sub_topo_prop(DAG(gr), 0));
 }
 
 #[test]
