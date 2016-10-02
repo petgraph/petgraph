@@ -47,15 +47,19 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// representation, using **O(|V| + |E|)** space, and allows testing for edge
 /// existance in constant time.
 ///
-/// The edge type `Ty` can be `Directed` or `Undirected`.
+/// `GraphMap` is parameterized over:
 ///
-/// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
-///
-/// The node type `N` must implement `Copy` and will be used as node identifier, duplicated
-/// into several places in the data structure.
+/// - Associated data `N` for nodes and `E` for edges, called *weights*.
+/// - The node weight `N` must implement `Copy` and will be used as node
+/// identifier, duplicated into several places in the data structure.
 /// It must be suitable as a hash table key (implementing `Eq + Hash`).
 /// The node type must also implement `Ord` so that the implementation can
 /// order the pair (`a`, `b`) for an edge connecting any two nodes `a` and `b`.
+/// - `E` can be of arbitrary type.
+/// - Edge type `Ty` that determines whether the graph edges are directed or
+/// undirected.
+///
+/// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
 ///
 /// `GraphMap` does not allow parallel edges, but self loops are allowed.
 #[derive(Clone)]
