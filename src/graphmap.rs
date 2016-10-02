@@ -26,6 +26,7 @@ use {
 use IntoWeightedEdge;
 use visit::IntoNodeIdentifiers;
 use graph::Graph;
+use graph::node_index;
 
 /// A `GraphMap` with undirected edges.
 ///
@@ -356,15 +357,13 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     {
         // assuming two successive iterations of the same hashmap produce the same order
         let mut gr = Graph::with_capacity(self.node_count(), self.edge_count());
-        // map N -> NodeIndex
-        let mut node_map = OrderMap::with_capacity(self.node_count());
         for (&node, _) in self.nodes.iter() {
-            node_map.insert(node, gr.add_node(node));
+            gr.add_node(node);
         }
         for ((a, b), edge_weight) in self.edges.into_iter() {
-            let ai = node_map[&a];
-            let bi = node_map[&b];
-            gr.add_edge(ai, bi, edge_weight);
+            let (ai, _, _) = self.nodes.get_pair_index(&a).unwrap();
+            let (bi, _, _) = self.nodes.get_pair_index(&b).unwrap();
+            gr.add_edge(node_index(ai), node_index(bi), edge_weight);
         }
         gr
     }
