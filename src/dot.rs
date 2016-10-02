@@ -13,6 +13,43 @@ use std::collections::HashMap;
 ///
 /// Formatting and options are rather simple, this is mostly intended
 /// for debugging. Exact output may change.
+///
+/// # Examples
+///
+/// ```
+/// use petgraph::Graph;
+/// use petgraph::dot::{Dot, Config};
+///
+/// let mut graph = Graph::<_, ()>::new();
+/// graph.add_node("A");
+/// graph.add_node("B");
+/// graph.add_node("C");
+/// graph.add_node("D");
+/// graph.extend_with_edges(&[
+///     (0, 1), (0, 2), (0, 3),
+///     (1, 2), (1, 3),
+///     (2, 3),
+/// ]);
+///
+/// println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+///
+/// // In this case the output looks like this:
+/// // 
+/// // digraph {
+/// //     0 [label="\"A\""]
+/// //     1 [label="\"B\""]
+/// //     2 [label="\"C\""]
+/// //     3 [label="\"D\""]
+/// //     0 -> 1
+/// //     0 -> 2
+/// //     0 -> 3
+/// //     1 -> 2
+/// //     1 -> 3
+/// //     2 -> 3
+/// // }
+///
+/// // If you need multiple config options, just list them all in the slice.
+/// ```
 pub struct Dot<'a, G: 'a> {
     graph: &'a G,
     config: &'a [Config],
