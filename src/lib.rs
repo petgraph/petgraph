@@ -47,6 +47,8 @@ mod traits_graph;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
 
+pub mod prelude;
+
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
     pub use graph_impl::{

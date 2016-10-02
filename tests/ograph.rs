@@ -1,12 +1,8 @@
 extern crate petgraph;
 
+use petgraph::prelude::*;
 use petgraph::{
-    Graph,
-    GraphMap,
     Bfs,
-    Dfs,
-    Incoming,
-    Outgoing,
     Directed,
     Undirected,
     EdgeType,
@@ -23,8 +19,6 @@ use petgraph::algo::{
 
 use petgraph::graph::node_index as n;
 use petgraph::graph::{
-    NodeIndex,
-    EdgeIndex,
     IndexType,
 };
 
