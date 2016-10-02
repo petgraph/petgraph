@@ -15,7 +15,7 @@ use super::{
     graphmap,
     graph,
     EdgeType,
-    EdgeDirection,
+    Direction,
     Graph,
     GraphMap,
     Incoming,
@@ -118,7 +118,7 @@ pub trait IntoNeighbors : GraphRef {
 /// incoming or outgoing edges.
 pub trait IntoNeighborsDirected : IntoNeighbors {
     type NeighborsDirected: Iterator<Item=Self::NodeId>;
-    fn neighbors_directed(self, n: Self::NodeId, d: EdgeDirection)
+    fn neighbors_directed(self, n: Self::NodeId, d: Direction)
         -> Self::NeighborsDirected;
 }
 
@@ -139,7 +139,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a Graph<N, E, Ty, Ix>
           Ix: IndexType,
 {
     type NeighborsDirected = graph::Neighbors<'a, E, Ix>;
-    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: EdgeDirection)
+    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: Direction)
         -> graph::Neighbors<'a, E, Ix>
     {
         Graph::neighbors_directed(self, n, d)
@@ -152,7 +152,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a StableGraph<N, E, Ty, I
           Ix: IndexType,
 {
     type NeighborsDirected = stable_graph::Neighbors<'a, E, Ix>;
-    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: EdgeDirection)
+    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: Direction)
         -> Self::NeighborsDirected
     {
         StableGraph::neighbors_directed(self, n, d)
@@ -164,7 +164,7 @@ impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
           Ty: EdgeType,
 {
     type NeighborsDirected = graphmap::NeighborsDirected<'a, N, Ty>;
-    fn neighbors_directed(self, n: N, dir: EdgeDirection)
+    fn neighbors_directed(self, n: N, dir: Direction)
         -> Self::NeighborsDirected
     {
         self.neighbors_directed(n, dir)
@@ -221,7 +221,7 @@ impl<'a, G> IntoNeighborsDirected for &'a G
     where G: Copy + IntoNeighborsDirected
 {
     type NeighborsDirected = G::NeighborsDirected;
-    fn neighbors_directed(self, n: G::NodeId, d: EdgeDirection)
+    fn neighbors_directed(self, n: G::NodeId, d: Direction)
         -> G::NeighborsDirected
     {
         (*self).neighbors_directed(n, d)
@@ -234,7 +234,7 @@ pub trait IntoExternals : GraphRef {
     type Externals: Iterator<Item=Self::NodeId>;
 
     /// Return an iterator of all nodes with no edges in the given direction
-    fn externals(self, d: EdgeDirection) -> Self::Externals;
+    fn externals(self, d: Direction) -> Self::Externals;
 }
 
 impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
@@ -242,7 +242,7 @@ impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
           Ix: IndexType,
 {
     type Externals = graph::Externals<'a, N, Ty, Ix>;
-    fn externals(self, d: EdgeDirection) -> graph::Externals<'a, N, Ty, Ix> {
+    fn externals(self, d: Direction) -> graph::Externals<'a, N, Ty, Ix> {
         Graph::externals(self, d)
     }
 }

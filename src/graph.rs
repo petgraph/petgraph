@@ -10,7 +10,7 @@ use std::slice;
 use itertools::Itertools;
 
 use {
-    EdgeDirection, Outgoing, Incoming,
+    Direction, Outgoing, Incoming,
     Undirected,
     Directed,
     EdgeType,
@@ -157,7 +157,7 @@ impl<Ix: IndexType> fmt::Debug for EdgeIndex<Ix>
     }
 }
 
-const DIRECTIONS: [EdgeDirection; 2] = [Outgoing, Incoming];
+const DIRECTIONS: [Direction; 2] = [Outgoing, Incoming];
 
 /// The graph's node type.
 #[derive(Debug, Clone)]
@@ -171,7 +171,7 @@ pub struct Node<N, Ix: IndexType = DefaultIx> {
 impl<N, Ix: IndexType> Node<N, Ix>
 {
     /// Accessor for data structure internals: the first edge in the given direction.
-    pub fn next_edge(&self, dir: EdgeDirection) -> EdgeIndex<Ix>
+    pub fn next_edge(&self, dir: Direction) -> EdgeIndex<Ix>
     {
         self.next[dir as usize]
     }
@@ -191,7 +191,7 @@ pub struct Edge<E, Ix: IndexType = DefaultIx> {
 impl<E, Ix: IndexType> Edge<E, Ix>
 {
     /// Accessor for data structure internals: the next edge for the given direction.
-    pub fn next_edge(&self, dir: EdgeDirection) -> EdgeIndex<Ix>
+    pub fn next_edge(&self, dir: Direction) -> EdgeIndex<Ix>
     {
         self.next[dir as usize]
     }
@@ -729,7 +729,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Neighbors<E, Ix>
+    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Neighbors<E, Ix>
     {
         Neighbors {
             iter: self.edges_directed(a, dir),
@@ -764,7 +764,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// Iterator element type is `(NodeIndex<Ix>, &E)`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ix>
     {
-        self.edges_directed(a, EdgeDirection::Outgoing)
+        self.edges_directed(a, Direction::Outgoing)
     }
 
     /// Return an iterator of all neighbors that have an edge between them and `a`,
@@ -774,7 +774,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `(NodeIndex<Ix>, &E)`.
-    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Edges<E, Ix>
+    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<E, Ix>
     {
         let mut iter = self.edges_undirected(a);
         if self.is_directed() {
@@ -842,7 +842,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// Return the edge index and its directionality, with `Outgoing` meaning
     /// from `a` to `b` and `Incoming` the reverse,
     /// or `None` if the edge does not exist.
-    pub fn find_edge_undirected(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<(EdgeIndex<Ix>, EdgeDirection)>
+    pub fn find_edge_undirected(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<(EdgeIndex<Ix>, Direction)>
     {
         match self.nodes.get(a.index()) {
             None => None,
@@ -873,7 +873,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// just the nodes without edges.
     ///
     /// The whole iteration computes in **O(|V|)** time.
-    pub fn externals(&self, dir: EdgeDirection) -> Externals<N, Ty, Ix>
+    pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix>
     {
         Externals{iter: self.nodes.iter().enumerate(), dir: dir, ty: PhantomData}
     }
@@ -936,7 +936,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     }
 
     /// Accessor for data structure internals: the first edge in the given direction.
-    pub fn first_edge(&self, a: NodeIndex<Ix>, dir: EdgeDirection) -> Option<EdgeIndex<Ix>>
+    pub fn first_edge(&self, a: NodeIndex<Ix>, dir: Direction) -> Option<EdgeIndex<Ix>>
     {
         match self.nodes.get(a.index()) {
             None => None,
@@ -950,7 +950,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     }
 
     /// Accessor for data structure internals: the next edge for the given direction.
-    pub fn next_edge(&self, e: EdgeIndex<Ix>, dir: EdgeDirection) -> Option<EdgeIndex<Ix>>
+    pub fn next_edge(&self, e: EdgeIndex<Ix>, dir: Direction) -> Option<EdgeIndex<Ix>>
     {
         match self.edges.get(e.index()) {
             None => None,
@@ -1276,7 +1276,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
 /// An iterator over either the nodes without edges to them or from them.
 pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
-    dir: EdgeDirection,
+    dir: Direction,
     ty: PhantomData<Ty>,
 }
 
@@ -1358,13 +1358,13 @@ impl<'a, E, Ix> Neighbors<'a, E, Ix>
 struct EdgesMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
     edges: &'a mut [Edge<E, Ix>],
     next: EdgeIndex<Ix>,
-    dir: EdgeDirection,
+    dir: Direction,
 }
 
 impl<'a, E, Ix> EdgesMut<'a, E, Ix> where
     Ix: IndexType,
 {
-    fn new(edges: &'a mut [Edge<E, Ix>], next: EdgeIndex<Ix>, dir: EdgeDirection) -> Self
+    fn new(edges: &'a mut [Edge<E, Ix>], next: EdgeIndex<Ix>, dir: Direction) -> Self
     {
         EdgesMut{
             edges: edges,

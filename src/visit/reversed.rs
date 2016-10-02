@@ -1,6 +1,6 @@
 
 use ::{
-    EdgeDirection,
+    Direction,
     Incoming,
 };
 
@@ -56,7 +56,7 @@ impl<G> IntoNeighborsDirected for Reversed<G>
     where G: IntoNeighborsDirected
 {
     type NeighborsDirected = G::NeighborsDirected;
-    fn neighbors_directed(self, n: G::NodeId, d: EdgeDirection)
+    fn neighbors_directed(self, n: G::NodeId, d: Direction)
         -> G::NeighborsDirected
     {
         self.0.neighbors_directed(n, d.opposite())
@@ -67,7 +67,7 @@ impl<G> IntoExternals for Reversed<G>
     where G: IntoExternals,
 {
     type Externals = G::Externals;
-    fn externals(self, d: EdgeDirection) -> G::Externals {
+    fn externals(self, d: Direction) -> G::Externals {
         self.0.externals(d.opposite())
     }
 }

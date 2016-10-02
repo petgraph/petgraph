@@ -25,7 +25,7 @@ use {
     EdgeType,
     Directed,
     Outgoing,
-    EdgeDirection,
+    Direction,
 };
 use super::{
     Edge,
@@ -406,7 +406,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: EdgeDirection)
+    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: Direction)
         -> Neighbors<E, Ix>
     {
         let mut iter = self.neighbors_undirected(a);

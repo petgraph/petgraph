@@ -26,7 +26,7 @@ pub use visit::{
     Bfs,
     Dfs,
 };
-pub use EdgeDirection::{Outgoing, Incoming};
+pub use Direction::{Outgoing, Incoming};
 
 mod scored;
 pub mod algo;
@@ -85,27 +85,30 @@ macro_rules! copyclone {
 }
 
 // Index into the NodeIndex and EdgeIndex arrays
-/// Edge direction
+/// Edge direction.
 #[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
-pub enum EdgeDirection {
+pub enum Direction {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
     /// An `Incoming` edge is an inbound edge *to* the current node.
     Incoming = 1
 }
 
-copyclone!(EdgeDirection);
+copyclone!(Direction);
 
-impl EdgeDirection {
-    /// Return the opposite `EdgeDirection`.
+impl Direction {
+    /// Return the opposite `Direction`.
     #[inline]
-    pub fn opposite(&self) -> EdgeDirection {
+    pub fn opposite(&self) -> Direction {
         match *self {
             Outgoing => Incoming,
             Incoming => Outgoing,
         }
     }
 }
+
+#[doc(hidden)]
+pub use Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Copy, Debug)]
