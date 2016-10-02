@@ -651,7 +651,8 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
 /// in the following example:
 ///
 /// ```
-/// use petgraph::{Dfs, Incoming};
+/// use petgraph::visit::Dfs;
+/// use petgraph::Incoming;
 /// use petgraph::stable_graph::StableGraph;
 ///
 /// let mut gr = StableGraph::new();

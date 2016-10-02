@@ -969,7 +969,8 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// **Panics** if the indices are equal or if they are out of bounds.
     ///
     /// ```
-    /// use petgraph::{Graph, Dfs, Incoming};
+    /// use petgraph::{Graph, Incoming};
+    /// use petgraph::visit::Dfs;
     ///
     /// let mut gr = Graph::new();
     /// let a = gr.add_node(0.);
@@ -1578,7 +1579,8 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 /// in the following example:
 ///
 /// ```
-/// use petgraph::{Graph, Dfs, Incoming};
+/// use petgraph::{Graph, Incoming};
+/// use petgraph::visit::Dfs;
 ///
 /// let mut gr = Graph::new();
 /// let a = gr.add_node(0.);

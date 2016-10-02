@@ -525,7 +525,8 @@ impl<N, E, Ty> GetAdjacencyMatrix for GraphMap<N, E, Ty>
 /// use it like the following example:
 ///
 /// ```
-/// use petgraph::{Graph, Dfs};
+/// use petgraph::Graph;
+/// use petgraph::visit::Dfs;
 ///
 /// let mut graph = Graph::<_,()>::new();
 /// let a = graph.add_node(0);
@@ -765,7 +766,8 @@ impl<N, VM> DfsPostOrder<N, VM>
 /// use it like the following example:
 ///
 /// ```
-/// use petgraph::{Graph, Bfs};
+/// use petgraph::Graph;
+/// use petgraph::visit::Bfs;
 ///
 /// let mut graph = Graph::<_,()>::new();
 /// let a = graph.add_node(0);
