@@ -676,6 +676,89 @@ impl<G> Clone for DfsIter<G>
     }
 }
 
+/// Visit nodes in a depth-first-search (DFS) emitting nodes in postorder
+/// (each node after its decendants).
+///
+/// `DfsPostOrder` is not recursive.
+///
+/// The traversal starts at a given node and only traverses nodes reachable
+/// from it.
+#[derive(Clone, Debug)]
+pub struct DfsPostOrder<N, VM> {
+    /// The stack of nodes to visit
+    pub stack: Vec<N>,
+    /// The map of discovered nodes
+    pub discovered: VM,
+    /// The map of finished nodes
+    pub finished: VM,
+}
+
+impl<N, VM> DfsPostOrder<N, VM>
+    where N: Copy,
+          VM: VisitMap<N>,
+{
+    /// Create a new `DfsPostOrder` using the graph's visitor map, and put
+    /// `start` in the stack of nodes to visit.
+    pub fn new<G>(graph: G, start: N) -> Self
+        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    {
+        let mut dfs = Self::empty(graph);
+        dfs.move_to(start);
+        dfs
+    }
+
+    /// Create a new `DfsPostOrder` using the graph's visitor map, and no stack.
+    pub fn empty<G>(graph: G) -> Self
+        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    {
+        DfsPostOrder {
+            stack: Vec::new(),
+            discovered: graph.visit_map(),
+            finished: graph.visit_map(),
+        }
+    }
+
+    /// Clear the visit state
+    pub fn reset<G>(&mut self, graph: G)
+        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    {
+        graph.reset_map(&mut self.discovered);
+        graph.reset_map(&mut self.finished);
+        self.stack.clear();
+    }
+
+    /// Keep the discovered and finished map, but clear the visit stack and restart
+    /// the dfs from a particular node.
+    pub fn move_to(&mut self, start: N)
+    {
+        self.stack.clear();
+        self.stack.push(start);
+    }
+
+    /// Return the next node in the traversal, or `None` if the traversal is done.
+    pub fn next<G>(&mut self, graph: G) -> Option<N>
+        where G: IntoNeighbors<NodeId=N>,
+    {
+        while let Some(&nx) = self.stack.last() {
+            if self.discovered.visit(nx) {
+                // First time visiting `nx`: Push neighbors, don't pop `nx`
+                for succ in graph.neighbors(nx) {
+                    if !self.discovered.is_visited(&succ) {
+                        self.stack.push(succ);
+                    }
+                }
+            } else {
+                self.stack.pop();
+                if self.finished.visit(nx) {
+                    // Second time: All reachable nodes must have been finished
+                    return Some(nx);
+                }
+            }
+        }
+        None
+    }
+}
+
 /// A breadth first search (BFS) of a graph.
 ///
 /// The traversal starts at a given node and only traverses nodes reachable
