@@ -677,7 +677,7 @@ impl<G> Clone for DfsIter<G>
 }
 
 /// Visit nodes in a depth-first-search (DFS) emitting nodes in postorder
-/// (each node after its decendants).
+/// (each node after all its decendants have been emitted).
 ///
 /// `DfsPostOrder` is not recursive.
 ///
