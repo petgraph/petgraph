@@ -13,6 +13,7 @@
 
 extern crate fixedbitset;
 extern crate itertools;
+extern crate ordermap;
 
 #[doc(no_inline)]
 pub use graph::Graph;
