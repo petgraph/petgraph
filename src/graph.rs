@@ -329,6 +329,17 @@ impl<'a, N, E, Ty, Ix> fmt::Debug for DebugIndexMap<&'a Graph<N, E, Ty, Ix>>
     }
 }
 
+// Avoid "pretty" debug
+struct NoPretty<T>(T);
+
+impl<T> fmt::Debug for NoPretty<T>
+    where T: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+
 impl<N, E, Ty, Ix> fmt::Debug for Graph<N, E, Ty, Ix>
     where N: fmt::Debug,
           E: fmt::Debug,
@@ -340,7 +351,7 @@ impl<N, E, Ty, Ix> fmt::Debug for Graph<N, E, Ty, Ix>
         let mut fmt_struct = f.debug_struct("Graph");
         fmt_struct.field("Ty", &etype);
         fmt_struct.field("edges", &self.edges.iter()
-            .map(|e| (e.source().index(), e.target().index()))
+            .map(|e| NoPretty((e.source().index(), e.target().index())))
             .format(", "));
         // skip weights if they are ZST!
         if size_of::<N>() != 0 {
