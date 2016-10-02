@@ -4,9 +4,7 @@ use petgraph::{
     Graph,
     GraphMap,
     Bfs,
-    BfsIter,
     Dfs,
-    DfsIter,
     Incoming,
     Outgoing,
     Directed,
@@ -36,6 +34,8 @@ use petgraph::visit::{
     Topo,
     IntoNeighbors,
     EdgeRef,
+    BfsIter,
+    DfsIter,
 };
 use petgraph::algo::{
     dijkstra,

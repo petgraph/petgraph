@@ -24,9 +24,7 @@ pub use stable_graph::StableGraph;
 
 pub use visit::{
     Bfs,
-    BfsIter,
     Dfs,
-    DfsIter,
 };
 pub use EdgeDirection::{Outgoing, Incoming};
 
