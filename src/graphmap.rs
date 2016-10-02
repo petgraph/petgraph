@@ -1,4 +1,5 @@
-//! `GraphMap<N, E>` is an undirected graph where node values are mapping keys.
+//! `GraphMap<N, E, Ty>` is a graph datastructure where node values are mapping
+//! keys.
 
 use std::cmp::Ordering;
 use std::hash::{self, Hash};
