@@ -6,7 +6,7 @@ Graph data structure library. Requires Rust 1.6.
 
 Please read the `API documentation here`__
 
-__ http://bluss.github.io/petgraph/
+__ https://bluss.github.io/petgraph/
 
 |build_status|_ |crates|_
 
@@ -18,6 +18,15 @@ __ http://bluss.github.io/petgraph/
 
 Recent Changes
 --------------
+
+- 0.3.0-alpha.3
+
+  - Prerelease
+  - ``GraphMap`` is based on the ordermap crate. Deterministic iteration
+    order, faster iteration, no side tables needed to convert to ``Graph``.
+  - Add another visitor ``DfsPostOrder``, by extracting some code from ``scc``.
+  - Improve pretty ``Debug`` output for ``Graph``.
+  - ``Dfs`` gained new methods ``from_parts`` and ``reset``.
 
 - 0.3.0-alpha.2
 

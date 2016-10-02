@@ -1,7 +1,7 @@
 [package]
 
 name = "petgraph"
-version = "0.3.0-alpha.2"
+version = "0.3.0-alpha.3"
 license = "MIT/Apache-2.0"
 authors = [
 "bluss",
@@ -28,7 +28,7 @@ debug = true
 fixedbitset = "0.1.0"
 quickcheck = { optional = true, version = "0.3" }
 itertools = "0.5"
-ordermap = { version = "0.2.1" }
+ordermap = { version = "0.2.2" }
 
 [dev-dependencies]
 rand = "0.3"
