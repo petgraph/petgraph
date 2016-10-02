@@ -28,6 +28,7 @@ debug = true
 fixedbitset = "0.1.0"
 quickcheck = { optional = true, version = "0.3" }
 itertools = "0.5"
+ordermap = { version = "0.2.1" }
 
 [dev-dependencies]
 rand = "0.3"

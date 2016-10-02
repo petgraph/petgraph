@@ -1,11 +1,7 @@
-//! `GraphMap<N, E>` is an undirected graph where node values are mapping keys.
+//! `GraphMap<N, E, Ty>` is a graph datastructure where node values are mapping
+//! keys.
 
 use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::collections::hash_map::{
-    Keys,
-};
-use std::collections::hash_map::Iter as HashmapIter;
 use std::hash::{self, Hash};
 use std::iter::Cloned;
 use std::slice::{
@@ -15,6 +11,9 @@ use std::fmt;
 use std::ops::{Index, IndexMut, Deref};
 use std::iter::FromIterator;
 use std::marker::PhantomData;
+use ordermap::OrderMap;
+use ordermap::Iter as OrderMapIter;
+use ordermap::Keys;
 
 use {
     EdgeType,
@@ -28,6 +27,7 @@ use {
 use IntoWeightedEdge;
 use visit::IntoNodeIdentifiers;
 use graph::Graph;
+use graph::node_index;
 
 /// A `GraphMap` with undirected edges.
 ///
@@ -60,8 +60,8 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// `GraphMap` does not allow parallel edges, but self loops are allowed.
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
-    nodes: HashMap<N, Vec<(N, EdgeDirection)>>,
-    edges: HashMap<(N, N), E>,
+    nodes: OrderMap<N, Vec<(N, EdgeDirection)>>,
+    edges: OrderMap<(N, N), E>,
     ty: PhantomData<Ty>,
 }
 
@@ -87,8 +87,8 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// Create a new `GraphMap` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         GraphMap {
-            nodes: HashMap::with_capacity(nodes),
-            edges: HashMap::with_capacity(edges),
+            nodes: OrderMap::with_capacity(nodes),
+            edges: OrderMap::with_capacity(edges),
             ty: PhantomData,
         }
     }
@@ -163,7 +163,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
 
     /// Return `true` if node `n` was removed.
     pub fn remove_node(&mut self, n: N) -> bool {
-        let links = match self.nodes.remove(&n) {
+        let links = match self.nodes.swap_remove(&n) {
             None => return false,
             Some(sus) => sus,
         };
@@ -171,7 +171,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             // remove all successor links
             self.remove_single_edge(&succ, &n, Incoming);
             // Remove all edge values
-            self.edges.remove(&Self::edge_key(n, succ));
+            self.edges.swap_remove(&Self::edge_key(n, succ));
         }
         true
     }
@@ -358,15 +358,13 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     {
         // assuming two successive iterations of the same hashmap produce the same order
         let mut gr = Graph::with_capacity(self.node_count(), self.edge_count());
-        // map N -> NodeIndex
-        let mut node_map = HashMap::with_capacity(self.node_count());
         for (&node, _) in self.nodes.iter() {
-            node_map.insert(node, gr.add_node(node));
+            gr.add_node(node);
         }
         for ((a, b), edge_weight) in self.edges.into_iter() {
-            let ai = node_map[&a];
-            let bi = node_map[&b];
-            gr.add_edge(ai, bi, edge_weight);
+            let (ai, _, _) = self.nodes.get_pair_index(&a).unwrap();
+            let (bi, _, _) = self.nodes.get_pair_index(&b).unwrap();
+            gr.add_edge(node_index(ai), node_index(bi), edge_weight);
         }
         gr
     }
@@ -501,7 +499,7 @@ pub struct Edges<'a, N, E: 'a, Ty>
           Ty: EdgeType
 {
     from: N,
-    edges: &'a HashMap<(N, N), E>,
+    edges: &'a OrderMap<(N, N), E>,
     iter: Neighbors<'a, N, Ty>,
 }
 
@@ -528,7 +526,7 @@ impl<'a, N, E, Ty> Iterator for Edges<'a, N, E, Ty>
 }
 
 pub struct AllEdges<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    inner: HashmapIter<'a, (N, N), E>,
+    inner: OrderMapIter<'a, (N, N), E>,
     ty: PhantomData<Ty>,
 }
 
@@ -666,7 +664,7 @@ impl<'a, N, E: 'a, Ty> IntoNodeIdentifiers for &'a GraphMap<N, E, Ty>
 }
 
 pub struct NodeIdentifiers<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    iter: HashmapIter<'a, N, Vec<(N, EdgeDirection)>>,
+    iter: OrderMapIter<'a, N, Vec<(N, EdgeDirection)>>,
     ty: PhantomData<Ty>,
     edge_ty: PhantomData<E>,
 }
