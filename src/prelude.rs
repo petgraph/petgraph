@@ -13,6 +13,7 @@ pub use graph::{
     DiGraph,
     UnGraph,
 };
+#[cfg(feature = "graphmap")]
 #[doc(no_inline)]
 pub use graphmap::{
     GraphMap,

@@ -1,3 +1,4 @@
+#![cfg(feature = "graphmap")]
 extern crate petgraph;
 
 use std::collections::HashSet;

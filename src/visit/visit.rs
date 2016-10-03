@@ -14,7 +14,6 @@ use std::hash::Hash;
 use prelude::*;
 
 use super::{
-    graphmap,
     graph,
     EdgeType,
 };
@@ -26,7 +25,9 @@ use graph::{
 use stable_graph;
 use graph::Frozen;
 
+#[cfg(feature = "graphmap")]
 use graphmap::{
+    self,
     NodeTrait,
 };
 
@@ -65,6 +66,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
 }
 
 
+#[cfg(feature = "graphmap")]
 impl<'a, N: 'a, E, Ty> IntoNeighbors for &'a GraphMap<N, E, Ty>
     where N: Copy + Ord + Hash,
           Ty: EdgeType,
@@ -153,6 +155,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a StableGraph<N, E, Ty, I
     }
 }
 
+#[cfg(feature = "graphmap")]
 impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
     where N: Copy + Ord + Hash,
           Ty: EdgeType,
@@ -276,6 +279,7 @@ pub trait IntoEdgeReferences : GraphEdgeRef {
     fn edge_references(self) -> Self::EdgeReferences;
 }
 
+#[cfg(feature = "graphmap")]
 impl<'a, N: 'a, E: 'a, Ty> GraphEdgeRef for &'a GraphMap<N, E, Ty>
     where N: Copy,
           Ty: EdgeType,
@@ -283,6 +287,7 @@ impl<'a, N: 'a, E: 'a, Ty> GraphEdgeRef for &'a GraphMap<N, E, Ty>
     type EdgeRef = (N, N, &'a E);
 }
 
+#[cfg(feature = "graphmap")]
 impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
     where N: NodeTrait,
           Ty: EdgeType,
@@ -454,12 +459,14 @@ impl<'a, G> Visitable for Frozen<'a, G> where G: Visitable {
     }
 }
 
+#[cfg(feature = "graphmap")]
 impl<N: Copy, E, Ty> GraphBase for GraphMap<N, E, Ty>
 {
     type NodeId = N;
     type EdgeId = (N, N);
 }
 
+#[cfg(feature = "graphmap")]
 impl<N, E, Ty> Visitable for GraphMap<N, E, Ty>
     where N: Copy + Ord + Hash,
           Ty: EdgeType,
@@ -498,6 +505,7 @@ pub trait GetAdjacencyMatrix : GraphBase {
     fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
 }
 
+#[cfg(feature = "graphmap")]
 /// The `GraphMap` keeps an adjacency matrix internally.
 impl<N, E, Ty> GetAdjacencyMatrix for GraphMap<N, E, Ty>
     where N: Copy + Ord + Hash,

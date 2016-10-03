@@ -17,7 +17,7 @@ branches:
     - master
 script:
   - |
+      cargo build --verbose --no-default-features &&
+      cargo test --verbose --no-default-features &&
       cargo build --verbose --features "$FEATURES" &&
-      cargo test --verbose --features "$FEATURES" &&
-      ([ "$BENCH" != 1 ] || cargo bench --verbose --features "$FEATURES") &&
-      cargo doc --verbose --features "$FEATURES"
+      cargo test --verbose --features "$FEATURES"

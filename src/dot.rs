@@ -6,8 +6,10 @@ use {
     EdgeType,
 };
 use super::graph::IndexType;
+#[cfg(feature = "graphmap")]
 use graphmap::NodeTrait;
-use std::collections::HashMap;
+#[cfg(feature = "graphmap")]
+use ordermap::OrderMap;
 
 /// `Dot` implements output to graphviz .dot format for a graph.
 ///
@@ -160,6 +162,7 @@ impl<'a, N, E, Ty, Ix> fmt::Debug for Dot<'a, Graph<N, E, Ty, Ix>>
     }
 }
 
+#[cfg(feature = "graphmap")]
 impl<'a, N, E, Ty> Dot<'a, GraphMap<N, E, Ty>>
     where N: NodeTrait,
           Ty: EdgeType,
@@ -173,7 +176,7 @@ impl<'a, N, E, Ty> Dot<'a, GraphMap<N, E, Ty>>
         let is_directed = g.is_directed() as usize;
         try!(writeln!(f, "{} {{", TYPE[is_directed]));
 
-        let mut labels = HashMap::new();
+        let mut labels = OrderMap::new();
 
         // output all labels
         for (i, node) in g.nodes().enumerate() {
@@ -209,6 +212,8 @@ impl<'a, N, E, Ty> Dot<'a, GraphMap<N, E, Ty>>
         Ok(())
     }
 }
+
+#[cfg(feature = "graphmap")]
 impl<'a, N, E, Ty> fmt::Display for Dot<'a, GraphMap<N, E, Ty>>
     where N: fmt::Display + NodeTrait,
           E: fmt::Display,
@@ -219,6 +224,7 @@ impl<'a, N, E, Ty> fmt::Display for Dot<'a, GraphMap<N, E, Ty>>
     }
 }
 
+#[cfg(feature = "graphmap")]
 impl<'a, N, E, Ty> fmt::Debug for Dot<'a, GraphMap<N, E, Ty>>
     where N: fmt::Debug + NodeTrait,
           E: fmt::Debug,

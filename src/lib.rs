@@ -14,6 +14,7 @@
 #![doc(html_root_url = "https://docs.rs/petgraph/0.3/")]
 
 extern crate fixedbitset;
+#[cfg(feature = "graphmap")]
 extern crate ordermap;
 
 #[doc(no_inline)]
@@ -25,6 +26,7 @@ mod scored;
 pub mod algo;
 #[cfg(feature = "generate")]
 pub mod generate;
+#[cfg(feature = "graphmap")]
 pub mod graphmap;
 #[path = "graph.rs"]
 mod graph_impl;

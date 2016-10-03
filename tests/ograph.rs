@@ -1243,6 +1243,7 @@ fn degree<'a, G>(g: G, node: G::NodeId) -> usize
     degree
 }
 
+#[cfg(feature = "graphmap")]
 #[test]
 fn degree_sequence() {
     let mut gr = Graph::<usize, (), Undirected>::from_edges(&[
