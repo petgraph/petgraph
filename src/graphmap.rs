@@ -62,6 +62,8 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
 ///
 /// `GraphMap` does not allow parallel edges, but self loops are allowed.
+///
+/// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
     nodes: OrderMap<N, Vec<(N, Direction)>>,

@@ -2,11 +2,11 @@
 petgraph
 ========
 
-Graph data structure library. Requires Rust 1.6.
+Graph data structure library. Requires Rust 1.12.
 
 Please read the `API documentation here`__
 
-__ https://bluss.github.io/petgraph/
+__ https://docs.rs/petgraph/
 
 |build_status|_ |crates|_
 
@@ -16,47 +16,46 @@ __ https://bluss.github.io/petgraph/
 .. |crates| image:: http://meritbadge.herokuapp.com/petgraph
 .. _crates: https://crates.io/crates/petgraph
 
+Crate feature flags:
+
+- ``graphmap`` (default) enable ``GraphMap``.
+- ``stable_graph`` (default) enable ``StableGraph``.
+
 Recent Changes
 --------------
 
-- 0.3.0-alpha.3
+- 0.3.0
 
-  - Prerelease
-  - ``GraphMap`` is based on the ordermap crate. Deterministic iteration
-    order, faster iteration, no side tables needed to convert to ``Graph``.
-  - Add another visitor ``DfsPostOrder``, by extracting some code from ``scc``.
-  - Improve pretty ``Debug`` output for ``Graph``.
-  - ``Dfs`` gained new methods ``from_parts`` and ``reset``.
+  - Overhaul all graph visitor traits so that they use the ``IntoIterator``
+    style. This makes them composable.
 
-- 0.3.0-alpha.2
+    - Multiple graph algorithms use new visitor traits.
+    - **Help is welcome to port more algorithms (and create new graph traits in
+      the process)!**
 
-  - Prerelease
   - ``GraphMap`` can now have directed edges. ``GraphMap::new`` is now generic
     in the edge type. ``DiGraphMap`` and ``UnGraphMap`` are new type aliases.
-  - Document the scc order in ``tarjan_scc`` (reverse topological).
-  - More visitor traits for ``GraphMap`` and ``Reversed``
+  - Add type aliases ``DiGraph, UnGraph, StableDiGraph, StableUnGraph``
+  - ``GraphMap`` is based on the ordermap crate. Deterministic iteration
+    order, faster iteration, no side tables needed to convert to ``Graph``.
+  - Improved docs for a lot of types and functions.
+  - Add graph visitor ``DfsPostOrder``
+  - ``Dfs`` gained new methods ``from_parts`` and ``reset``.
+  - New algo ``has_path_connecting``.
+  - New algo ``tarjan_scc``, a second scc implementation.
+  - Document traversal order in ``Dfs, DfsPostOrder, scc, tarjan_scc``.
+  - Optional graph visitor workspace reuse in ``has_path_connecting``,
+    ``is_cyclic_directed, toposort``.
+  - Improved ``Debug`` formatting for ``Graph, StableGraph``.
+  - Add a prelude module
   - ``GraphMap`` now has a method ``.into_graph()`` that makes a ``Graph``.
-  - ``dijkstra`` changed its graph argument from ``&G`` to ``G where G: GraphRef``.
-
-- 0.3.0-alpha.1
-
-  - Prerelease
-  - Add ``petgraph::algo::tarjan_scc``, a second scc implementation
-  - Better docs
-
-- 0.3.0-alpha.0
-
-  - Prerelease
-  - Overhaul all graph visitor traits so that they use the ``IntoIterator``
-    style. This makes them composable easier to use.
-  - Add new graph traits, like ``NodeIndexable`` and ``EdgeReferences``.
-  - Port multiple graph algorithms to the new visitor traits.
-  - Help is welcome to port more algorithms (and add new graph traits in the
-    process)!
   - ``Graph::retain_nodes, retain_edges`` now expose the self graph only
     as wrapped in ``Frozen``, so that weights can be mutated but the
     graph structure not.
   - Enable ``StableGraph`` by default
+  - Add method ``Graph::contains_edge``.
+  - Renamed ``EdgeDirection`` → ``Direction``.
+  - Remove ``SubTopo``.
   - Require Rust 1.12 or later
 
 - 0.2.9
