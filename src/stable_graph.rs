@@ -7,8 +7,16 @@ use std::cmp;
 use std::fmt;
 use std::iter;
 use std::mem::replace;
+use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
+
+use {
+    EdgeType,
+    Directed,
+    Outgoing,
+    Direction,
+};
 
 #[doc(no_inline)]
 pub use graph::{
@@ -21,12 +29,12 @@ pub use graph::{
     edge_index,
 };
 
-use {
-    EdgeType,
-    Directed,
-    Outgoing,
-    Direction,
+use iter_format::{
+    IterFormatExt,
+    NoPretty,
+    DebugMap,
 };
+
 use super::{
     Edge,
     Graph,
@@ -85,18 +93,47 @@ pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
     free_edge: EdgeIndex<Ix>,
 }
 
-impl<N, E, Ty, Ix> fmt::Debug for StableGraph<N, E, Ty, Ix> where
-    N: fmt::Debug, E: fmt::Debug, Ty: EdgeType, Ix: IndexType
+impl<N, E, Ty, Ix> fmt::Debug for StableGraph<N, E, Ty, Ix>
+    where N: fmt::Debug,
+          E: fmt::Debug,
+          Ty: EdgeType,
+          Ix: IndexType,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(writeln!(f, "{:?}", self.g));
-        try!(writeln!(f, "free_node={:?}", self.free_node));
-        try!(writeln!(f, "free_edge={:?}", self.free_edge));
-        try!(writeln!(f, "node_count={:?}", self.node_count));
-        try!(writeln!(f, "edge_count={:?}", self.edge_count));
-        Ok(())
+        let etype = if self.is_directed() { "Directed" } else { "Undirected" };
+        let mut fmt_struct = f.debug_struct("StableGraph");
+        fmt_struct.field("Ty", &etype);
+        fmt_struct.field("edges", &self.g.edges.iter()
+            .filter(|e| e.weight.is_some())
+            .map(|e| NoPretty((e.source().index(), e.target().index())))
+            .format(", "));
+        // skip weights if they are ZST!
+        if size_of::<N>() != 0 {
+            fmt_struct.field("node weights",
+            &DebugMap(||
+                self.g.nodes.iter()
+                    .map(|n| n.weight.as_ref())
+                    .enumerate()
+                    .filter_map(|(i, wo)| wo.map(move |w| (i, w)))
+                   ));
+        }
+        if size_of::<E>() != 0 {
+            fmt_struct.field("edge weights",
+            &DebugMap(||
+                self.g.edges.iter()
+                    .map(|n| n.weight.as_ref())
+                    .enumerate()
+                    .filter_map(|(i, wo)| wo.map(move |w| (i, w)))
+                   ));
+        }
+        fmt_struct.field("free_node", &self.free_node);
+        fmt_struct.field("free_edge", &self.free_edge);
+        fmt_struct.field("node_count", &self.node_count);
+        fmt_struct.field("edge_count", &self.edge_count);
+        fmt_struct.finish()
     }
 }
+
 
 impl<N, E> StableGraph<N, E, Directed> {
     /// Create a new `StableGraph` with directed edges.

@@ -14,7 +14,13 @@ use {
     EdgeType,
     IntoWeightedEdge,
 };
-use iter_format::IterFormatExt;
+
+use iter_format::{
+    IterFormatExt,
+    NoPretty,
+    DebugMap,
+};
+
 use visit::EdgeRef;
 
 /// The default integer type for node and edge indices in `Graph`.
@@ -306,39 +312,6 @@ impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
     }
 }
 
-// nodes: true, edges: false
-struct DebugIndexMap<G>(bool, G);
-
-impl<'a, N, E, Ty, Ix> fmt::Debug for DebugIndexMap<&'a Graph<N, E, Ty, Ix>>
-    where N: fmt::Debug,
-          E: fmt::Debug,
-          Ty: EdgeType,
-          Ix: IndexType,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.0 {
-            f.debug_map()
-             .entries(self.1.nodes.iter().map(|n| &n.weight).enumerate())
-             .finish()
-        } else {
-            f.debug_map()
-             .entries(self.1.edges.iter().map(|n| &n.weight).enumerate())
-             .finish()
-        }
-    }
-}
-
-// Avoid "pretty" debug
-struct NoPretty<T>(T);
-
-impl<T> fmt::Debug for NoPretty<T>
-    where T: fmt::Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self.0)
-    }
-}
-
 impl<N, E, Ty, Ix> fmt::Debug for Graph<N, E, Ty, Ix>
     where N: fmt::Debug,
           E: fmt::Debug,
@@ -349,15 +322,21 @@ impl<N, E, Ty, Ix> fmt::Debug for Graph<N, E, Ty, Ix>
         let etype = if self.is_directed() { "Directed" } else { "Undirected" };
         let mut fmt_struct = f.debug_struct("Graph");
         fmt_struct.field("Ty", &etype);
-        fmt_struct.field("edges", &self.edges.iter()
-            .map(|e| NoPretty((e.source().index(), e.target().index())))
-            .format(", "));
+        fmt_struct.field("edges",
+             &self.edges
+                 .iter()
+                 .map(|e| NoPretty((e.source().index(), e.target().index())))
+                 .format(", "));
         // skip weights if they are ZST!
         if size_of::<N>() != 0 {
-            fmt_struct.field("node weights", &DebugIndexMap(true, self));
+            fmt_struct.field("node weights", &DebugMap(|| self.nodes.iter()
+                             .map(|n| &n.weight)
+                             .enumerate()));
         }
         if size_of::<E>() != 0 {
-            fmt_struct.field("edge weights", &DebugIndexMap(false, self));
+            fmt_struct.field("edge weights", &DebugMap(|| self.edges.iter()
+                             .map(|n| &n.weight)
+                             .enumerate()));
         }
         fmt_struct.finish()
     }

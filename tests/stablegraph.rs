@@ -46,6 +46,7 @@ fn test_scc() {
     gr.add_edge(n(7), x, ());
     gr.add_edge(x, n(1), ());
     gr.remove_node(n(4));
+    println!("{:?}", gr);
 
     assert_sccs_eq(scc(&gr), vec![
         vec![n(0), n(3), n(6)],
