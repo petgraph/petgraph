@@ -469,7 +469,7 @@ quickcheck! {
 #[test]
 fn graph_condensation_acyclic() {
     fn prop(g: Graph<(), ()>) -> bool {
-        !is_cyclic_directed(&condensation(g, /* make_acyclic */ true))
+        !is_cyclic_directed(&condensation(g, /* make_acyclic */ true), None)
     }
     quickcheck::quickcheck(prop as fn(_) -> bool);
 }
@@ -585,7 +585,7 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
 #[test]
 fn full_topo() {
     fn prop(DAG(gr): DAG<()>) -> bool {
-        let order = toposort(&gr);
+        let order = toposort(&gr, None);
         is_topo_order(&gr, &order)
     }
     quickcheck::quickcheck(prop as fn(_) -> bool);
@@ -594,7 +594,7 @@ fn full_topo() {
 #[test]
 fn full_topo_generic() {
     fn prop_generic(DAG(mut gr): DAG<usize>) -> bool {
-        assert!(!is_cyclic_directed(&gr));
+        assert!(!is_cyclic_directed(&gr, None));
         let mut index = 0;
         let mut topo = Topo::new(&gr);
         while let Some(nx) = topo.next(&gr) {

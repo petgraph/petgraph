@@ -5,7 +5,6 @@
 //! the `Graph` type.
 
 use std::collections::BinaryHeap;
-use std::borrow::{Borrow};
 use std::cmp::min;
 
 use prelude::*;
@@ -82,89 +81,86 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 ///
 /// Visit each node in order (if it is part of a topological order).
 ///
-/// You can pass `g` as either **&Graph** or **&mut Graph**, and it
-/// will be passed on to the visitor closure.
+/// If `space` is not `None`, it is reused instead of creating a temporary
+/// workspace for graph traversal.
 #[inline]
-fn toposort_generic<G, F>(g: G, mut visit: F)
+fn toposort_generic<G, F>(g: G,
+                          space: Option<&mut DfsSpaceType<G>>,
+                          mut visit: F)
     where G: IntoNeighborsDirected + IntoExternals + Visitable,
           F: FnMut(G, G::NodeId),
 {
-    let mut ordered = g.borrow().visit_map();
-    let mut tovisit = Vec::new();
+    with_dfs(g, space, |dfs| {
+        dfs.reset(g);
+        let mut ordered = &mut dfs.discovered;
+        let mut tovisit = &mut dfs.stack;
 
-    // find all initial nodes
-    tovisit.extend(g.externals(Incoming));
+        // find all initial nodes
+        tovisit.extend(g.externals(Incoming));
 
-    // Take an unvisited element and find which of its neighbors are next
-    while let Some(nix) = tovisit.pop() {
-        if ordered.is_visited(&nix) {
-            continue;
-        }
-        visit(g, nix.clone());
-        ordered.visit(nix.clone());
-        for neigh in g.neighbors_directed(nix, Outgoing) {
-            // Look at each neighbor, and those that only have incoming edges
-            // from the already ordered list, they are the next to visit.
-            if g.neighbors_directed(neigh.clone(), Incoming)
-                .all(|b| ordered.is_visited(&b)) {
-                tovisit.push(neigh);
+        // Take an unvisited element and find which of its neighbors are next
+        while let Some(nix) = tovisit.pop() {
+            if ordered.is_visited(&nix) {
+                continue;
+            }
+            visit(g, nix.clone());
+            ordered.visit(nix.clone());
+            for neigh in g.neighbors_directed(nix, Outgoing) {
+                // Look at each neighbor, and those that only have incoming edges
+                // from the already ordered list, they are the next to visit.
+                if g.neighbors_directed(neigh.clone(), Incoming)
+                    .all(|b| ordered.is_visited(&b)) {
+                    tovisit.push(neigh);
+                }
             }
         }
-    }
+    })
 }
 
 /// [Generic] Return `true` if the input directed graph contains a cycle.
 ///
-/// Using the topological sort algorithm.
-pub fn is_cyclic_directed<G>(g: G) -> bool
+/// If `space` is not `None`, it is reused instead of creating a temporary
+/// workspace for graph traversal.
+pub fn is_cyclic_directed<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> bool
     where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
 {
     let mut n_ordered = 0;
-    toposort_generic(g, |_, _| n_ordered += 1);
+    toposort_generic(g, space, |_, _| n_ordered += 1);
     n_ordered != g.node_count()
 }
 
+type DfsSpaceType<G> where G: Visitable = DfsSpace<G::NodeId, G::Map>;
+
+/// Workspace for a graph traversal.
 #[derive(Clone, Debug)]
-pub struct HasPathState<N, VM> {
+pub struct DfsSpace<N, VM> {
     dfs: Dfs<N, VM>,
 }
 
-impl<N, VM> HasPathState<N, VM>
+impl<N, VM> DfsSpace<N, VM>
     where N: Copy,
           VM: VisitMap<N>,
 {
-    /// Create a new `HasPathState`
-    pub fn new<G>(graph: G) -> Self
+    pub fn new<G>(g: G) -> Self
         where G: GraphRef + Visitable<NodeId=N, Map=VM>,
     {
-        HasPathState {
-            dfs: Dfs::empty(graph)
+        DfsSpace {
+            dfs: Dfs::empty(g)
         }
     }
 }
 
-/// [Generic] Check if there exists a path starting at `from` and reaching `to`.
-///
-/// `from` and `to` are equal, this function returns true.
-pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
-                              state: Option<&mut HasPathState<G::NodeId, G::Map>>)
-    -> bool
-    where G: IntoNeighbors + Visitable,
-          G::NodeId: PartialEq,
+impl<N, VM> Default for DfsSpace<N, VM>
+    where VM: VisitMap<N> + Default,
 {
-    let mut local_visitor;
-    let dfs = if let Some(v) = state { &mut v.dfs } else {
-        local_visitor = Dfs::empty(g);
-        &mut local_visitor
-    };
-    dfs.reset(g);
-    dfs.move_to(from);
-    while let Some(x) = dfs.next(g) {
-        if x == to {
-            return true;
+    fn default() -> Self {
+        DfsSpace {
+            dfs: Dfs {
+                stack: <_>::default(),
+                discovered: <_>::default(),
+            }
         }
     }
-    false
 }
 
 /// [Generic] Perform a topological sort of a directed graph.
@@ -172,15 +168,56 @@ pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
 /// Return a vector of nodes in topological order: each node is ordered
 /// before its successors.
 ///
-/// If the returned vec contains less than all the nodes of the graph, then
-/// the graph was cyclic.
-pub fn toposort<G>(g: G) -> Vec<G::NodeId>
+/// NOTE: If the returned vec contains less than all the nodes of the graph,
+/// then the graph had a cycle.
+///
+/// If `space` is not `None`, it is reused instead of creating a temporary
+/// workspace for graph traversal.
+pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> Vec<G::NodeId>
     where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
 {
     let mut order = Vec::with_capacity(g.node_count());
-    toposort_generic(g, |_, ix| order.push(ix));
+    toposort_generic(g, space, |_, ix| order.push(ix));
     order
 }
+
+/// Create a Dfs if it's needed
+fn with_dfs<G, F, R>(g: G, space: Option<&mut DfsSpaceType<G>>, f: F) -> R
+    where G: GraphRef + Visitable,
+          F: FnOnce(&mut Dfs<G::NodeId, G::Map>) -> R
+{
+    let mut local_visitor;
+    let dfs = if let Some(v) = space { &mut v.dfs } else {
+        local_visitor = Dfs::empty(g);
+        &mut local_visitor
+    };
+    f(dfs)
+}
+
+/// [Generic] Check if there exists a path starting at `from` and reaching `to`.
+///
+/// `from` and `to` are equal, this function returns true.
+///
+/// If `space` is not `None`, it is reused instead of creating a temporary
+/// workspace for graph traversal.
+pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
+                              space: Option<&mut DfsSpaceType<G>>)
+    -> bool
+    where G: IntoNeighbors + Visitable,
+          G::NodeId: PartialEq,
+{
+    with_dfs(g, space, |dfs| {
+        dfs.reset(g);
+        dfs.move_to(from);
+        while let Some(x) = dfs.next(g) {
+            if x == to {
+                return true;
+            }
+        }
+        false
+    })
+}
+
 
 /// [Generic] Compute the *strongly connected components* using Kosaraju's algorithm.
 ///

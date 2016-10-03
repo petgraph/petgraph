@@ -8,7 +8,6 @@ use petgraph::{
 use petgraph as pg;
 
 use petgraph::algo::{
-    HasPathState,
     has_path_connecting,
     is_cyclic_undirected,
     min_spanning_tree,
@@ -29,6 +28,7 @@ use petgraph::visit::{
     DfsIter,
 };
 use petgraph::algo::{
+    DfsSpace,
     dijkstra,
 };
 
@@ -360,7 +360,7 @@ fn test_generate_directed() {
         let mut dags = 0;
         while let Some(g) = gen.next_ref() {
             n += 1;
-            if !pg::algo::is_cyclic_directed(g) {
+            if !pg::algo::is_cyclic_directed(g, None) {
                 dags += 1;
             }
         }
@@ -393,7 +393,7 @@ fn test_generate_dag() {
         adjmats.dedup();
         assert_eq!(adjmats.len(), graphs.len());
         for gr in &graphs {
-            assert!(!petgraph::algo::is_cyclic_directed(gr),
+            assert!(!petgraph::algo::is_cyclic_directed(gr, None),
                     "Assertion failed: {:?} acyclic", gr);
         }
     }
@@ -472,7 +472,7 @@ fn toposort() {
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);
 
-    let order = petgraph::algo::toposort(&gr);
+    let order = petgraph::algo::toposort(&gr, None);
     println!("{:?}", order);
     assert_eq!(order.len(), gr.node_count());
 
@@ -501,7 +501,7 @@ fn is_cyclic_directed() {
     gr.add_edge(f, g, 11.);
     gr.add_edge(e, g, 9.);
 
-    assert!(!petgraph::algo::is_cyclic_directed(&gr));
+    assert!(!petgraph::algo::is_cyclic_directed(&gr, None));
 
     // add a disjoint part
     let h = gr.add_node("H");
@@ -510,10 +510,10 @@ fn is_cyclic_directed() {
     gr.add_edge(h, i, 1.);
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);
-    assert!(!petgraph::algo::is_cyclic_directed(&gr));
+    assert!(!petgraph::algo::is_cyclic_directed(&gr, None));
 
     gr.add_edge(g, e, 0.);
-    assert!(petgraph::algo::is_cyclic_directed(&gr));
+    assert!(petgraph::algo::is_cyclic_directed(&gr, None));
 }
 
 fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>) {
@@ -690,7 +690,7 @@ fn condensation()
 
     assert!(cond.node_count() == 3);
     assert!(cond.edge_count() == 2);
-    assert!(!petgraph::algo::is_cyclic_directed(&cond),
+    assert!(!petgraph::algo::is_cyclic_directed(&cond, None),
             "Assertion failed: {:?} acyclic", cond);
 
 
@@ -962,7 +962,7 @@ fn toposort_generic() {
     gr.add_edge(f, g, 11.);
     gr.add_edge(e, g, 9.);
 
-    assert!(!pg::algo::is_cyclic_directed(&gr));
+    assert!(!pg::algo::is_cyclic_directed(&gr, None));
     let mut index = 0.;
     let mut topo = Topo::new(&gr);
     while let Some(nx) = topo.next(&gr) {
@@ -1021,7 +1021,7 @@ fn test_has_path() {
     gr.add_edge(h, i, 2.);
     gr.add_edge(i, h, -2.);
 
-    let mut state = HasPathState::new(&gr);
+    let mut state = DfsSpace::default();
 
     gr.add_edge(b, a, 99.);
 
