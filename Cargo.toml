@@ -27,7 +27,6 @@ debug = true
 [dependencies]
 fixedbitset = "0.1.0"
 quickcheck = { optional = true, version = "0.3" }
-itertools = "0.5"
 ordermap = { version = "0.2.2" }
 
 [dev-dependencies]

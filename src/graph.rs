@@ -7,8 +7,6 @@ use std::mem::size_of;
 use std::ops::{Deref, Index, IndexMut, Range};
 use std::slice;
 
-use itertools::Itertools;
-
 use {
     Direction, Outgoing, Incoming,
     Undirected,
@@ -16,6 +14,7 @@ use {
     EdgeType,
     IntoWeightedEdge,
 };
+use iter_format::IterFormatExt;
 use visit::EdgeRef;
 
 /// The default integer type for node and edge indices in `Graph`.

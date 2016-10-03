@@ -14,7 +14,6 @@
 #![doc(html_root_url = "https://docs.rs/petgraph/0.3/")]
 
 extern crate fixedbitset;
-extern crate itertools;
 extern crate ordermap;
 
 #[doc(no_inline)]
@@ -34,6 +33,7 @@ pub mod dot;
 pub mod visit;
 pub mod unionfind;
 mod dijkstra;
+mod iter_format;
 mod isomorphism;
 mod traits_graph;
 #[cfg(feature = "quickcheck")]
