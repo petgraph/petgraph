@@ -65,6 +65,8 @@ pub mod graph {
         edge_index,
         node_index,
         DefaultIx,
+        DiGraph,
+        UnGraph,
     };
 }
 

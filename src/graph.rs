@@ -293,6 +293,19 @@ pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefaultIx> {
     ty: PhantomData<Ty>,
 }
 
+/// A `Graph` with directed edges.
+///
+/// For example, an edge from *1* to *2* is distinct from an edge from *2* to
+/// *1*.
+pub type DiGraph<N, E, Ix = DefaultIx> = Graph<N, E, Directed, Ix>;
+
+/// A `Graph` with undirected edges.
+///
+/// For example, an edge between *1* and *2* is equivalent to an edge between
+/// *2* and *1*.
+pub type UnGraph<N, E, Ix = DefaultIx> = Graph<N, E, Undirected, Ix>;
+
+
 /// The resulting cloned graph has the same graph indices as `self`.
 impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
     where N: Clone, E: Clone,
