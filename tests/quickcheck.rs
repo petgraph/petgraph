@@ -7,7 +7,6 @@ extern crate odds;
 use odds::prelude::*;
 
 use rand::Rng;
-use std::collections::HashMap;
 
 use petgraph::prelude::*;
 use petgraph::{
@@ -30,8 +29,6 @@ use petgraph::visit::{Topo, Reversed};
 use petgraph::graph::{IndexType, node_index, edge_index};
 use petgraph::graphmap::{
     NodeTrait,
-    UnGraphMap,
-    DiGraphMap,
 };
 
 

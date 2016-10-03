@@ -14,10 +14,6 @@ use petgraph::algo::{
 };
 
 use petgraph::dot::{Dot, Config};
-use petgraph::graphmap::{
-    DiGraphMap,
-    UnGraphMap,
-};
 
 #[test]
 fn simple() {
