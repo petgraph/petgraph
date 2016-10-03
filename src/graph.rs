@@ -230,8 +230,8 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// Based on the graph datastructure used in rustc.
 ///
 /// Here's an example of building a graph with directed edges, and below
-/// an illustration of how it could be rendered with graphviz (graphviz rendering
-/// is not a part of petgraph):
+/// an illustration of how it could be rendered with graphviz (see
+/// [`Dot`](../dot/struct.Dot.html)):
 ///
 /// ```
 /// use petgraph::Graph;
