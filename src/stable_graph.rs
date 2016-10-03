@@ -11,22 +11,15 @@ use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
 
+use prelude::*;
 use {
     EdgeType,
-    Directed,
-    Outgoing,
-    Direction,
 };
 
-#[doc(no_inline)]
-pub use graph::{
-    NodeIndex,
-    EdgeIndex,
-    GraphIndex,
+use graph::{
     DefaultIx,
     IndexType,
     node_index,
-    edge_index,
 };
 
 use iter_format::{
@@ -37,7 +30,6 @@ use iter_format::{
 
 use super::{
     Edge,
-    Graph,
     index_twice,
     Node,
     DIRECTIONS,
@@ -92,6 +84,18 @@ pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
     free_node: NodeIndex<Ix>,
     free_edge: EdgeIndex<Ix>,
 }
+
+/// A `StableGraph` with directed edges.
+///
+/// For example, an edge from *1* to *2* is distinct from an edge from *2* to
+/// *1*.
+pub type StableDiGraph<N, E, Ix = DefaultIx> = StableGraph<N, E, Directed, Ix>;
+
+/// A `StableGraph` with undirected edges.
+///
+/// For example, an edge between *1* and *2* is equivalent to an edge between
+/// *2* and *1*.
+pub type StableUnGraph<N, E, Ix = DefaultIx> = StableGraph<N, E, Undirected, Ix>;
 
 impl<N, E, Ty, Ix> fmt::Debug for StableGraph<N, E, Ty, Ix>
     where N: fmt::Debug,

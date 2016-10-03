@@ -23,6 +23,8 @@ pub use graphmap::{
 #[cfg(feature = "stable_graph")]
 pub use stable_graph::{
     StableGraph,
+    StableDiGraph,
+    StableUnGraph,
 };
 #[doc(no_inline)]
 pub use visit::{
