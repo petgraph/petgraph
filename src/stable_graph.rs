@@ -238,8 +238,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     ///
     /// Computes in **O(e')** time, where **e'** is the number of affected
     /// edges, including *n* calls to `.remove_edge()` where *n* is the number
-    /// of edges with an endpoint in `a`, and including the edges with an
-    /// endpoint in the displaced node.
+    /// of edges with an endpoint in `a`.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N> {
         let node_weight = match self.g.nodes.get_mut(a.index()) {
             None => return None,
