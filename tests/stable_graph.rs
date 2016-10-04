@@ -10,6 +10,7 @@ use petgraph::algo::{scc, tarjan_scc};
 use petgraph::visit::{
     EdgeRef,
     NodeIndexable,
+    IntoEdgeReferences,
 };
 
 use itertools::assert_equal;
@@ -132,6 +133,12 @@ fn test_edges_directed() {
     assert_equal(edges!(gr, x), vec![(x, 16), (x, 14), (n(1), 13)]);
     assert_equal(edges!(gr, n(0)), vec![(n(3), 1)]);
     assert_equal(edges!(gr, n(4)), vec![]);
+}
+
+#[test]
+fn test_edge_references() {
+    let gr = make_graph::<Directed>();
+    assert_eq!(gr.edge_count(), gr.edge_references().count());
 }
 
 #[test]

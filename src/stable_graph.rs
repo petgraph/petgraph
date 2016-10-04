@@ -38,6 +38,8 @@ use super::{
 use IntoWeightedEdge;
 use visit::{
     EdgeRef,
+    GraphEdgeRef,
+    IntoEdgeReferences,
     NodeIndexable,
 };
 
@@ -822,6 +824,54 @@ fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
     x.swap(0, 1);
     x
 }
+
+impl<'a, N: 'a, E: 'a, Ty, Ix> GraphEdgeRef for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgeRef = EdgeReference<'a, E, Ix>;
+}
+
+impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgeReferences = EdgeReferences<'a, E, Ix>;
+    
+    /// Create an iterator over all edges in the graph, in indexed order.
+    ///
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    fn edge_references(self) -> Self::EdgeReferences {
+        EdgeReferences {
+            iter: self.g.edges.iter().enumerate()
+        }
+    }
+
+}
+
+/// Iterator over all edges of a graph.
+pub struct EdgeReferences<'a, E: 'a, Ix: 'a = DefaultIx> {
+    iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
+}
+
+impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
+    where Ix: IndexType
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        (&mut self.iter).filter_map(|(i, edge)|
+            edge.weight.as_ref().map(move |weight| {
+                EdgeReference {
+                    index: edge_index(i),
+                    node: edge.node,
+                    weight: weight,
+                }
+            }))
+            .next()
+    }
+}
+
 
 /// Iterator over the neighbors of a node.
 ///
