@@ -91,44 +91,49 @@ pub enum Config {
     _Incomplete(()),
 }
 
-impl<'a, N, E, Ty, Ix> Dot<'a, Graph<N, E, Ty, Ix>>
-    where Ty: EdgeType,
-          Ix: IndexType,
+use visit::{ IntoNodeReferences, NodeIndexable, IntoEdgeReferences, EdgeRef};
+use visit::{ NodeRef, Prop, };
+use data::{DataMap};
+
+impl<'a, X> Dot<'a, X>
 {
-    fn graph_fmt<F, G>(&self, f: &mut fmt::Formatter,
-                       mut node_fmt: F, mut edge_fmt: G) -> fmt::Result
-        where F: FnMut(&N, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
-              G: FnMut(&E, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
-{
-        let g = self.graph;
+    fn graph_fmt<G, NF, EF, NW, EW>(&self, g: G, f: &mut fmt::Formatter,
+                    mut node_fmt: NF, mut edge_fmt: EF) -> fmt::Result
+        where G: NodeIndexable + IntoNodeReferences + IntoEdgeReferences,
+              G: Prop,
+              G::NodeRef: NodeRef<NodeId=G::NodeId>,
+              G: DataMap<NodeWeight=NW, EdgeWeight=EW>,
+              NF: FnMut(&NW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
+              EF: FnMut(&EW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
+    {
         try!(writeln!(f, "{} {{", TYPE[g.is_directed() as usize]));
 
         // output all labels
-        for index in g.node_indices() {
-            try!(write!(f, "{}{}", INDENT, index.index()));
+        for node in g.node_references() {
+            try!(write!(f, "{}{}", INDENT, G::to_index(node.id())));
             if self.config.contains(&Config::NodeIndexLabel) {
                 try!(writeln!(f, ""));
             } else {
                 try!(write!(f, " [label=\""));
-                try!(node_fmt(&g[index], &mut |d| Escaped(d).fmt(f)));
+                try!(node_fmt(node.weight(), &mut |d| Escaped(d).fmt(f)));
                 try!(writeln!(f, "\"]"));
             }
 
         }
         // output all edges
-        for (i, edge) in g.raw_edges().iter().enumerate() {
+        for (i, edge) in g.edge_references().enumerate() {
             try!(write!(f, "{}{} {} {}",
                         INDENT,
-                        edge.source().index(),
+                        G::to_index(edge.source()),
                         EDGE[g.is_directed() as usize],
-                        edge.target().index()));
+                        G::to_index(edge.target())));
             if self.config.contains(&Config::EdgeNoLabel) {
                 try!(writeln!(f, ""));
             } else if self.config.contains(&Config::EdgeIndexLabel) {
                 try!(writeln!(f, " [label=\"{}\"]", i));
             } else {
                 try!(write!(f, " [label=\""));
-                try!(edge_fmt(&edge.weight, &mut |d| Escaped(d).fmt(f)));
+                try!(edge_fmt(edge.weight(), &mut |d| Escaped(d).fmt(f)));
                 try!(writeln!(f, "\"]"));
             }
         }
@@ -145,7 +150,7 @@ impl<'a, N, E, Ty, Ix> fmt::Display for Dot<'a, Graph<N, E, Ty, Ix>>
           Ix: IndexType,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.graph_fmt(f, |n, cb| cb(n), |e, cb| cb(e))
+        self.graph_fmt(self.graph, f, |n, cb| cb(n), |e, cb| cb(e))
     }
 }
 
@@ -156,7 +161,7 @@ impl<'a, N, E, Ty, Ix> fmt::Debug for Dot<'a, Graph<N, E, Ty, Ix>>
           Ix: IndexType,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.graph_fmt(f,
+        self.graph_fmt(self.graph, f,
                        |n, cb| cb(&DebugFmt(n)),
                        |e, cb| cb(&DebugFmt(e)))
     }

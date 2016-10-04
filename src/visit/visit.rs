@@ -420,6 +420,38 @@ impl<N, E, Ty> Data for GraphMap<N, E, Ty>
     type EdgeWeight = E;
 }
 
+pub trait Prop : GraphBase {
+    /// The kind edges in the graph.
+    type EdgeType: EdgeType;
+
+    fn is_directed(&self) -> bool {
+        <Self::EdgeType>::is_directed()
+    }
+}
+
+impl<'a, G> Prop for &'a G
+    where G: Prop
+{
+    type EdgeType = G::EdgeType;
+    fn is_directed(&self) -> bool { (*self).is_directed() }
+}
+
+impl<N, E, Ty, Ix> Prop for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgeType = Ty;
+}
+
+#[cfg(feature = "graphmap")]
+impl<N, E, Ty> Prop for GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
+    type EdgeType = Ty;
+}
+
+
 #[cfg(feature = "graphmap")]
 impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
     where N: NodeTrait,

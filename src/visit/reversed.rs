@@ -15,6 +15,7 @@ use visit::{
     NodeIndexable,
     Visitable,
     EdgeRef,
+    Prop,
 };
 use data::{Data};
 
@@ -112,6 +113,12 @@ impl<R> EdgeRef for ReversedEdgeRef<R>
     fn id(&self) -> Self::EdgeId {
         self.0.id()
     }
+}
+
+impl<G> Prop for Reversed<G>
+    where G: Prop
+{
+    type EdgeType = G::EdgeType;
 }
 
 impl<G> IntoEdgeReferences for Reversed<G>

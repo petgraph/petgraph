@@ -25,21 +25,6 @@ impl<'a, G> Data for &'a G
     type EdgeWeight = G::EdgeWeight;
 }
 
-pub trait Prop : GraphBase {
-    /// The kind edges in the graph.
-    type EdgeType: EdgeType;
-
-    fn is_directed(&self) -> bool {
-        <Self::EdgeType>::is_directed()
-    }
-}
-
-impl<N, E, Ty, Ix> Prop for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type EdgeType = Ty;
-}
 
 pub trait DataMap : Data {
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight>;
