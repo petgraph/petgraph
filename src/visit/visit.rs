@@ -105,13 +105,24 @@ impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>> w
 }
 
 /// Access to the neighbors of each node
+///
+/// Depending on the graph’s edge type, the neighbors are:
+///
+/// - `Directed`: All targets of edges from `a`.
+/// - `Undirected`: All other endpoints of edges connected to `a`.
 pub trait IntoNeighbors : GraphRef {
     type Neighbors: Iterator<Item=Self::NodeId>;
-    fn neighbors(self, n: Self::NodeId) -> Self::Neighbors;
+    fn neighbors(self, a: Self::NodeId) -> Self::Neighbors;
 }
 
-/// Access to the neighbors of each node, through
-/// incoming or outgoing edges.
+/// Access to the neighbors of each node, through incoming or outgoing edges.
+///
+/// Depending on the graph’s edge type, the neighbors of a given directionality
+/// are:
+///
+/// - `Directed`, `Outgoing`: All targets of edges from `a`.
+/// - `Directed`, `Incoming`: All sources of edges to `a`.
+/// - `Undirected`: All other endpoints of edges connected to `a`.
 pub trait IntoNeighborsDirected : IntoNeighbors {
     type NeighborsDirected: Iterator<Item=Self::NodeId>;
     fn neighbors_directed(self, n: Self::NodeId, d: Direction)
