@@ -122,6 +122,7 @@ pub fn edge_index<Ix: IndexType>(index: usize) -> EdgeIndex<Ix> { EdgeIndex::new
 
 /// Edge identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Debug)]
 pub struct EdgeIndex<Ix=DefaultIx>(Ix);
 
 impl<Ix: IndexType> EdgeIndex<Ix>
@@ -149,6 +150,8 @@ impl<Ix: IndexType> EdgeIndex<Ix>
     }
 }
 
+/*
+ * FIXME: Use this impl again, when we don't need to add so many bounds
 impl<Ix: IndexType> fmt::Debug for EdgeIndex<Ix>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -161,17 +164,26 @@ impl<Ix: IndexType> fmt::Debug for EdgeIndex<Ix>
         write!(f, ")")
     }
 }
+*/
 
 const DIRECTIONS: [Direction; 2] = [Outgoing, Incoming];
 
 /// The graph's node type.
-#[derive(Debug, Clone)]
-pub struct Node<N, Ix: IndexType = DefaultIx> {
+#[derive(Debug)]
+pub struct Node<N, Ix = DefaultIx> {
     /// Associated node data.
     pub weight: N,
     /// Next edge in outgoing and incoming edge lists.
     next: [EdgeIndex<Ix>; 2],
 }
+
+impl<E, Ix> Clone for Node<E, Ix> where E: Clone, Ix: Copy {
+    clone_fields!(Node,
+                  weight,
+                  next,
+                  );
+}
+
 
 impl<N, Ix: IndexType> Node<N, Ix>
 {
@@ -182,15 +194,24 @@ impl<N, Ix: IndexType> Node<N, Ix>
     }
 }
 
+
 /// The graph's edge type.
-#[derive(Debug, Clone)]
-pub struct Edge<E, Ix: IndexType = DefaultIx> {
+#[derive(Debug)]
+pub struct Edge<E, Ix = DefaultIx> {
     /// Associated edge data.
     pub weight: E,
     /// Next edge in outgoing and incoming edge lists.
     next: [EdgeIndex<Ix>; 2],
     /// Start and End node index
     node: [NodeIndex<Ix>; 2],
+}
+
+impl<E, Ix> Clone for Edge<E, Ix> where E: Clone, Ix: Copy {
+    clone_fields!(Edge,
+                  weight,
+                  next,
+                  node,
+                  );
 }
 
 impl<E, Ix: IndexType> Edge<E, Ix>
@@ -287,7 +308,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// of removing elements. Indices don't allow as much compile time checking as
 /// references.
 ///
-pub struct Graph<N, E, Ty = Directed, Ix: IndexType = DefaultIx> {
+pub struct Graph<N, E, Ty = Directed, Ix = DefaultIx> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,
     ty: PhantomData<Ty>,

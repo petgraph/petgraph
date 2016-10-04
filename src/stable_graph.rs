@@ -87,7 +87,6 @@ pub use graph::{
 /// Depends on crate feature `stable_graph` (default). *This is a new feature in
 /// petgraph.  You can contribute to help it achieve parity with Graph.*
 pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
-    where Ix: IndexType
 {
     g: Graph<Option<N>, Option<E>, Ty, Ix>,
     node_count: usize,
@@ -704,7 +703,7 @@ impl<N, E, Ty, Ix> Default for StableGraph<N, E, Ty, Ix>
 
 /// Reference to a `StableGraph` edge.
 #[derive(PartialEq, Debug)]
-pub struct EdgeReference<'a, E: 'a, Ix: IndexType = DefaultIx> {
+pub struct EdgeReference<'a, E: 'a, Ix = DefaultIx> {
     index: EdgeIndex<Ix>,
     node: [NodeIndex<Ix>; 2],
     weight: &'a E,
@@ -809,8 +808,7 @@ fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is `NodeIndex`.
-pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> where
-    Ix: IndexType,
+pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx>
 {
     /// starting node to skip over
     skip_start: NodeIndex<Ix>,
@@ -906,6 +904,10 @@ pub struct WalkNeighbors<Ix> {
     inner: super::WalkNeighbors<Ix>,
 }
 
+impl<Ix: IndexType> Clone for WalkNeighbors<Ix> {
+    clone_fields!(WalkNeighbors, inner);
+}
+
 impl<Ix: IndexType> WalkNeighbors<Ix> {
     /// Step to the next edge and its endpoint node in the walk for graph `g`.
     ///
@@ -932,7 +934,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
 }
 
 /// Iterator over the node indices of a graph.
-pub struct NodeIndices<'a, N: 'a, Ix: IndexType = DefaultIx> {
+pub struct NodeIndices<'a, N: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
 

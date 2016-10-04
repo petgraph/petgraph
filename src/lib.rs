@@ -22,6 +22,8 @@ pub use graph::Graph;
 
 pub use Direction::{Outgoing, Incoming};
 
+#[macro_use]
+mod macros;
 mod scored;
 pub mod algo;
 #[cfg(feature = "generate")]
