@@ -11,15 +11,13 @@ use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
 
-use prelude::*;
 use {
+    Graph,
     EdgeType,
-};
-
-use graph::{
-    DefaultIx,
-    IndexType,
-    node_index,
+    Directed,
+    Undirected,
+    Direction,
+    Outgoing,
 };
 
 use iter_format::{
@@ -37,6 +35,16 @@ use super::{
 };
 use IntoWeightedEdge;
 use visit::NodeIndexable;
+
+// reexport those things that are shared with Graph
+pub use graph::{
+    NodeIndex,
+    EdgeIndex,
+    IndexType,
+    DefaultIx,
+    node_index,
+    edge_index,
+};
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
