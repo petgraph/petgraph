@@ -702,7 +702,7 @@ impl<N, E, Ty, Ix> Default for StableGraph<N, E, Ty, Ix>
 }
 
 /// Reference to a `StableGraph` edge.
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub struct EdgeReference<'a, E: 'a, Ix = DefaultIx> {
     index: EdgeIndex<Ix>,
     node: [NodeIndex<Ix>; 2],
@@ -716,6 +716,14 @@ impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
 }
 
 impl<'a, E, Ix: IndexType> Copy for EdgeReference<'a, E, Ix> { }
+
+impl<'a, E, Ix: IndexType> PartialEq for EdgeReference<'a, E, Ix>
+    where E: PartialEq,
+{
+    fn eq(&self, rhs: &Self) -> bool {
+        self.index == rhs.index && self.weight == rhs.weight
+    }
+}
 
 impl<'a, Ix, E> EdgeReference<'a, E, Ix>
     where Ix: IndexType,
