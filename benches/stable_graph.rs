@@ -47,6 +47,28 @@ fn full_edges_in(bench: &mut Bencher)
     bench.iter(|| a.edges_directed(node_index(1), Incoming).count())
 }
 
+#[bench]
+fn neighbors_default(bench: &mut Bencher)
+{
+    let a = parse_stable_graph::<Directed>(FULL_A);
+
+    bench.iter(|| a.neighbors(node_index(1)).count())
+}
+
+#[bench]
+fn neighbors_out(bench: &mut Bencher)
+{
+    let a = parse_stable_graph::<Directed>(FULL_A);
+    bench.iter(|| a.neighbors_directed(node_index(1), Outgoing).count())
+}
+#[bench]
+fn neighbors_in(bench: &mut Bencher)
+{
+    let a = parse_stable_graph::<Directed>(FULL_A);
+
+    bench.iter(|| a.neighbors_directed(node_index(1), Incoming).count())
+}
+
 /// Parse a text adjacency matrix format into a directed graph
 fn parse_stable_graph<Ty: EdgeType>(s: &str) -> StableGraph<(), (), Ty>
 {
