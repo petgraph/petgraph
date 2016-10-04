@@ -178,7 +178,7 @@ impl<N, Ix: IndexType> Node<N, Ix>
     /// Accessor for data structure internals: the first edge in the given direction.
     pub fn next_edge(&self, dir: Direction) -> EdgeIndex<Ix>
     {
-        self.next[dir as usize]
+        self.next[dir.index()]
     }
 }
 
@@ -198,7 +198,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
     /// Accessor for data structure internals: the next edge for the given direction.
     pub fn next_edge(&self, dir: Direction) -> EdgeIndex<Ix>
     {
-        self.next[dir as usize]
+        self.next[dir.index()]
     }
 
     /// Return the source node index.
@@ -572,7 +572,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
             return None
         }
         for d in &DIRECTIONS {
-            let k = *d as usize;
+            let k = d.index();
 
             // Remove all edges from and to this node.
             loop {
@@ -604,7 +604,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
 
         // Adjust the starts of the out edges, and ends of the in edges.
         for &d in &DIRECTIONS {
-            let k = d as usize;
+            let k = d.index();
             for (_, curedge) in EdgesMut::new(&mut self.edges, swap_edges[k], d) {
                 debug_assert!(curedge.node[k] == old_index);
                 curedge.node[k] = new_index;
@@ -619,7 +619,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
                          edge_next: [EdgeIndex<Ix>; 2])
     {
         for &d in &DIRECTIONS {
-            let k = d as usize;
+            let k = d.index();
             let node = match self.nodes.get_mut(edge_node[k].index()) {
                 Some(r) => r,
                 None => {
@@ -769,7 +769,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     {
         let mut iter = self.edges_undirected(a);
         if self.is_directed() {
-            let k = dir as usize;
+            let k = dir.index();
             iter.next[1 - k] = EdgeIndex::end();
             iter.skip_start = NodeIndex::end();
         }
@@ -839,7 +839,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
             None => None,
             Some(node) => {
                 for &d in &DIRECTIONS {
-                    let k = d as usize;
+                    let k = d.index();
                     let mut edix = node.next[k];
                     while let Some(edge) = self.edges.get(edix.index()) {
                         if edge.node[1 - k] == b {
@@ -932,7 +932,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         match self.nodes.get(a.index()) {
             None => None,
             Some(node) => {
-                let edix = node.next[dir as usize];
+                let edix = node.next[dir.index()];
                 if edix == EdgeIndex::end() {
                     None
                 } else { Some(edix) }
@@ -946,7 +946,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         match self.edges.get(e.index()) {
             None => None,
             Some(node) => {
-                let edix = node.next[dir as usize];
+                let edix = node.next[dir.index()];
                 if edix == EdgeIndex::end() {
                     None
                 } else { Some(edix) }
@@ -1279,7 +1279,7 @@ impl<'a, N: 'a, Ty, Ix> Iterator for Externals<'a, N, Ty, Ix> where
     type Item = NodeIndex<Ix>;
     fn next(&mut self) -> Option<NodeIndex<Ix>>
     {
-        let k = self.dir as usize;
+        let k = self.dir.index();
         loop {
             match self.iter.next() {
                 None => return None,
@@ -1373,7 +1373,7 @@ impl<'a, E, Ix> Iterator for EdgesMut<'a, E, Ix> where
     fn next(&mut self) -> Option<(EdgeIndex<Ix>, &'a mut Edge<E, Ix>)>
     {
         let this_index = self.next;
-        let k = self.dir as usize;
+        let k = self.dir.index();
         match self.edges.get_mut(self.next.index()) {
             None => None,
             Some(edge) => {

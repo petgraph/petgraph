@@ -105,6 +105,14 @@ impl Direction {
             Incoming => Outgoing,
         }
     }
+
+    /// Return `0` for `Outgoing` and `1` for `Incoming`.
+    #[inline]
+    pub fn index(&self) -> usize {
+        *self as usize & 0x1
+        // FIXME: Find out what the best formulation is here(!)
+        // match *self { Outgoing => 0, Incoming => 1, }
+    }
 }
 
 #[doc(hidden)]

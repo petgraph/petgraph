@@ -241,7 +241,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
             return None;
         }
         for d in DIRECTIONS.iter() {
-            let k = *d as usize;
+            let k = d.index();
 
             // Remove all edges from and to this node.
             loop {
@@ -451,7 +451,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     {
         let mut iter = self.neighbors_undirected(a);
         if self.is_directed() {
-            let k = dir as usize;
+            let k = dir.index();
             iter.next[1 - k] = EdgeIndex::end();
             iter.skip_start = NodeIndex::end();
         }
