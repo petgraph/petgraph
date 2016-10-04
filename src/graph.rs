@@ -1748,6 +1748,24 @@ impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
 
 impl<'a, E, Ix: IndexType> Copy for EdgeReference<'a, E, Ix> { }
 
+impl<'a, E, Ix: IndexType> PartialEq for EdgeReference<'a, E, Ix>
+    where E: PartialEq,
+{
+    fn eq(&self, rhs: &Self) -> bool {
+        self.index == rhs.index && self.edge.weight == rhs.edge.weight
+    }
+}
+
+impl<'a, Ix, E> EdgeReference<'a, E, Ix>
+    where Ix: IndexType,
+{
+    /// Access the edge’s weight.
+    ///
+    /// **NOTE** that this method offers a longer lifetime
+    /// than the trait (unfortunately they don't match yet).
+    pub fn weight(&self) -> &'a E { &self.edge.weight }
+}
+
 impl<'a, Ix, E> EdgeRef for EdgeReference<'a, E, Ix>
     where Ix: IndexType,
 {
