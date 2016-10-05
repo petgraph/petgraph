@@ -166,7 +166,6 @@ fn test_edge_iterators_directed() {
 
     println!("{:#?}", gr);
     for i in gr.node_indices() {
-        println!("Check incoming for {:?}, {:?}", i, incoming[i.index()]);
         itertools::assert_equal(
             gr.edges_directed(i, Incoming).map(|e| e.source()),
             incoming[i.index()].iter().rev().cloned());
