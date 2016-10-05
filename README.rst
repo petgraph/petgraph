@@ -24,6 +24,17 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.3.1
+
+  - Add ``.edges(), .edges_directed()`` to ``StableGraph``. Note that these
+    differ from ``Graph``, because this is the signature they will all use
+    in the future.
+  - Add ``.update_edge()`` to ``StableGraph``.
+  - Add reexports of common items in ``stable_graph`` module (for example
+    ``NodeIndex``).
+  - Minor performance improvements to graph iteration
+  - Improved docs for ``visit`` module.
+
 - 0.3.0
 
   - Overhaul all graph visitor traits so that they use the ``IntoIterator``
