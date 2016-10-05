@@ -187,6 +187,18 @@ pub trait IntoNodeIdentifiers : GraphRef {
     fn node_count(&self) -> usize;
 }
 
+impl<'a, G> IntoNodeIdentifiers for &'a G
+    where G: IntoNodeIdentifiers,
+{
+    type NodeIdentifiers = G::NodeIdentifiers;
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
+        (*self).node_identifiers()
+    }
+    fn node_count(&self) -> usize {
+        (*self).node_count()
+    }
+}
+
 impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
@@ -528,6 +540,18 @@ pub trait GetAdjacencyMatrix : GraphBase {
     type AdjMatrix;
     fn adjacency_matrix(&self) -> Self::AdjMatrix;
     fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
+}
+
+impl<'a, G> GetAdjacencyMatrix for &'a G
+    where G: GetAdjacencyMatrix,
+{
+    type AdjMatrix = G::AdjMatrix;
+    fn adjacency_matrix(&self) -> Self::AdjMatrix {
+        (*self).adjacency_matrix()
+    }
+    fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool {
+        (*self).is_adjacent(matrix, a, b)
+    }
 }
 
 #[cfg(feature = "graphmap")]
