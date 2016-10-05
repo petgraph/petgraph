@@ -4,6 +4,11 @@ extern crate rand;
 extern crate petgraph;
 
 extern crate odds;
+
+mod utils;
+
+use utils::Small;
+
 use odds::prelude::*;
 
 use rand::Rng;
@@ -34,51 +39,44 @@ use petgraph::graphmap::{
 
 use std::fmt;
 
-fn prop(g: Graph<(), u32>) -> bool {
-    // filter out isolated nodes
-    let no_singles = g.filter_map(
-        |nx, w| g.neighbors_undirected(nx).next().map(|_| w),
-        |_, w| Some(w));
-    for i in no_singles.node_indices() {
-        assert!(no_singles.neighbors_undirected(i).count() > 0);
-    }
-    assert_eq!(no_singles.edge_count(), g.edge_count());
-    let mst = min_spanning_tree(&no_singles);
-    assert!(!is_cyclic_undirected(&mst));
-    true
-}
-
-fn prop_undir(g: Graph<(), u32, Undirected>) -> bool {
-    // filter out isolated nodes
-    let no_singles = g.filter_map(
-        |nx, w| g.neighbors_undirected(nx).next().map(|_| w),
-        |_, w| Some(w));
-    for i in no_singles.node_indices() {
-        assert!(no_singles.neighbors_undirected(i).count() > 0);
-    }
-    assert_eq!(no_singles.edge_count(), g.edge_count());
-    let mst = min_spanning_tree(&no_singles);
-    assert!(!is_cyclic_undirected(&mst));
-    true
-}
-
-#[test]
-fn arbitrary() {
-    quickcheck::quickcheck(prop as fn(_) -> bool);
-    quickcheck::quickcheck(prop_undir as fn(_) -> bool);
-}
-
-#[test]
-fn reverse_undirected() {
-    fn prop<Ty: EdgeType>(g: Graph<(), (), Ty>) -> bool {
-        if g.edge_count() > 30 {
-            return true; // iso too slow
+quickcheck! {
+    fn mst_directed(g: Small<Graph<(), u32>>) -> bool {
+        // filter out isolated nodes
+        let no_singles = g.filter_map(
+            |nx, w| g.neighbors_undirected(nx).next().map(|_| w),
+            |_, w| Some(w));
+        for i in no_singles.node_indices() {
+            assert!(no_singles.neighbors_undirected(i).count() > 0);
         }
-        let mut h = g.clone();
+        assert_eq!(no_singles.edge_count(), g.edge_count());
+        let mst = min_spanning_tree(&no_singles);
+        assert!(!is_cyclic_undirected(&mst));
+        true
+    }
+}
+
+quickcheck! {
+    fn mst_undirected(g: Graph<(), u32, Undirected>) -> bool {
+        // filter out isolated nodes
+        let no_singles = g.filter_map(
+            |nx, w| g.neighbors_undirected(nx).next().map(|_| w),
+            |_, w| Some(w));
+        for i in no_singles.node_indices() {
+            assert!(no_singles.neighbors_undirected(i).count() > 0);
+        }
+        assert_eq!(no_singles.edge_count(), g.edge_count());
+        let mst = min_spanning_tree(&no_singles);
+        assert!(!is_cyclic_undirected(&mst));
+        true
+    }
+}
+
+quickcheck! {
+    fn reverse_undirected(g: Small<UnGraph<(), ()>>) -> bool {
+        let mut h = (*g).clone();
         h.reverse();
         is_isomorphic(&g, &h)
     }
-    quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
 }
 
 fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
@@ -194,7 +192,7 @@ fn retain_edges() {
 #[test]
 fn isomorphism_1() {
     // using small weights so that duplicates are likely
-    fn prop<Ty: EdgeType>(g: Graph<i8, i8, Ty>) -> bool {
+    fn prop<Ty: EdgeType>(g: Small<Graph<i8, i8, Ty>>) -> bool {
         let mut rng = rand::thread_rng();
         // several trials of different isomorphisms of the same graph
         // mapping of node indices
@@ -232,8 +230,9 @@ fn isomorphism_1() {
 #[test]
 fn isomorphism_modify() {
     // using small weights so that duplicates are likely
-    fn prop<Ty: EdgeType>(g: Graph<i16, i8, Ty>, node: u8, edge: u8) -> bool {
-        let mut ng = g.clone();
+    fn prop<Ty: EdgeType>(g: Small<Graph<i16, i8, Ty>>, node: u8, edge: u8) -> bool {
+        println!("graph {:#?}", g);
+        let mut ng = (*g).clone();
         let i = node_index(node as usize);
         let j = edge_index(edge as usize);
         if i.index() < g.node_count() {
@@ -631,30 +630,30 @@ fn full_topo_generic() {
     quickcheck::quickcheck(prop_generic as fn(_) -> bool);
 }
 
-#[test]
-fn dijkstra_triangle_ineq() {
+quickcheck! {
     // checks that the distances computed by dijkstra satisfy the triangle
     // inequality.
-    fn prop(g : Graph<u32, u32>) -> bool {
-        for v in g.node_indices() {
-           let distances = dijkstra(
-                &g,
-                v,
-                None,
-                |g, v| g.edges(v).map(|(v, &e)| (v, e))
-            );
-            for v2 in distances.keys() {
-                let dv2 = distances[v2];
-                // triangle inequality:
-                // d(v,u) <= d(v,v2) + w(v2,u)
-                for (u,w) in g.edges(*v2) {
-                    if distances.contains_key(&u) && distances[&u] > dv2 + w {
-                        return false;
-                    }
-                 }
-               }
+    fn dijkstra_triangle_ineq(g: Graph<u32, u32>, node: usize) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+        let v = node_index(node % g.node_count());
+        let distances = dijkstra(
+            &g,
+            v,
+            None,
+            |g, v| g.edges(v).map(|(v, &e)| (v, e))
+        );
+        for v2 in distances.keys() {
+            let dv2 = distances[v2];
+            // triangle inequality:
+            // d(v,u) <= d(v,v2) + w(v2,u)
+            for (u,w) in g.edges(*v2) {
+                if distances.contains_key(&u) && distances[&u] > dv2 + w {
+                    return false;
+                }
+            }
         }
         true
     }
-    quickcheck::quickcheck(prop as fn(_) -> bool);
 }
