@@ -416,6 +416,17 @@ impl<Ix> VisitMap<graph::EdgeIndex<Ix>> for FixedBitSet
     }
 }
 
+impl<Ix> VisitMap<Ix> for FixedBitSet
+    where Ix: IndexType,
+{
+    fn visit(&mut self, x: Ix) -> bool {
+        !self.put(x.index())
+    }
+    fn is_visited(&self, x: &Ix) -> bool {
+        self.contains(x.index())
+    }
+}
+
 impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
