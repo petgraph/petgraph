@@ -122,7 +122,6 @@ pub fn edge_index<Ix: IndexType>(index: usize) -> EdgeIndex<Ix> { EdgeIndex::new
 
 /// Edge identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
-#[derive(Debug)]
 pub struct EdgeIndex<Ix=DefaultIx>(Ix);
 
 impl<Ix: IndexType> EdgeIndex<Ix>
@@ -150,6 +149,12 @@ impl<Ix: IndexType> EdgeIndex<Ix>
     }
 }
 
+impl<Ix: fmt::Debug> fmt::Debug for EdgeIndex<Ix>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "EdgeIndex({:?})", self.0)
+    }
+}
 /*
  * FIXME: Use this impl again, when we don't need to add so many bounds
 impl<Ix: IndexType> fmt::Debug for EdgeIndex<Ix>
