@@ -321,6 +321,25 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Add or update an edge from `a` to `b`.
+    /// If the edge already exists, its weight is updated.
+    ///
+    /// Return the index of the affected edge.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to `a` (and `b`, if the graph edges are undirected).
+    ///
+    /// **Panics** if any of the nodes don't exist.
+    pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E)
+        -> EdgeIndex<Ix>
+    {
+        if let Some(ix) = self.find_edge(a, b) {
+            self[ix] = weight;
+            return ix;
+        }
+        self.add_edge(a, b, weight)
+    }
+
     /// Remove an edge and return its edge weight, or `None` if it didn't exist.
     ///
     /// Invalidates the edge index `e` but no other.
