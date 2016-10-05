@@ -44,6 +44,7 @@ use visit::{
 };
 
 // reexport those things that are shared with Graph
+#[doc(no_inline)]
 pub use graph::{
     NodeIndex,
     EdgeIndex,
