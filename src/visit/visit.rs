@@ -92,9 +92,9 @@ impl<'a, 'b, G> IntoNeighbors for &'b Frozen<'a, G>
 #[derive(Copy, Clone)]
 pub struct AsUndirected<G>(pub G);
 
-impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>> where
-    Ty: EdgeType,
-    Ix: IndexType,
+impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>>
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     type Neighbors = graph::Neighbors<'b, E, Ix>;
 
@@ -382,8 +382,8 @@ pub trait VisitMap<N> {
     fn is_visited(&self, &N) -> bool;
 }
 
-impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet where
-    Ix: IndexType,
+impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet
+    where Ix: IndexType,
 {
     fn visit(&mut self, x: graph::NodeIndex<Ix>) -> bool {
         let present = self.contains(x.index());
@@ -395,8 +395,8 @@ impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet where
     }
 }
 
-impl<Ix> VisitMap<graph::EdgeIndex<Ix>> for FixedBitSet where
-    Ix: IndexType,
+impl<Ix> VisitMap<graph::EdgeIndex<Ix>> for FixedBitSet
+    where Ix: IndexType,
 {
     fn visit(&mut self, x: graph::EdgeIndex<Ix>) -> bool {
         let present = self.contains(x.index());
@@ -425,8 +425,8 @@ pub trait Visitable : GraphBase {
     fn reset_map(&self, &mut Self::Map);
 }
 
-impl<N, E, Ty, Ix> GraphBase for Graph<N, E, Ty, Ix> where
-    Ix: IndexType,
+impl<N, E, Ty, Ix> GraphBase for Graph<N, E, Ty, Ix>
+    where Ix: IndexType,
 {
     type NodeId = graph::NodeIndex<Ix>;
     type EdgeId = graph::EdgeIndex<Ix>;
@@ -440,9 +440,9 @@ impl<'a, G> Visitable for &'a G where G: Visitable {
     }
 }
 
-impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
-    Ty: EdgeType,
-    Ix: IndexType,
+impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     type Map = FixedBitSet;
     fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
@@ -454,17 +454,17 @@ impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix> where
 }
 
 #[cfg(feature = "stable_graph")]
-impl<N, E, Ty, Ix> GraphBase for StableGraph<N, E, Ty, Ix> where
-    Ix: IndexType,
+impl<N, E, Ty, Ix> GraphBase for StableGraph<N, E, Ty, Ix>
+    where Ix: IndexType,
 {
     type NodeId = graph::NodeIndex<Ix>;
     type EdgeId = graph::EdgeIndex<Ix>;
 }
 
 #[cfg(feature = "stable_graph")]
-impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix> where
-    Ty: EdgeType,
-    Ix: IndexType,
+impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
 {
     type Map = FixedBitSet;
     fn visit_map(&self) -> FixedBitSet {
@@ -633,8 +633,8 @@ impl<N, VM> Dfs<N, VM>
     }
 
     /// Return the next node in the dfs, or **None** if the traversal is done.
-    pub fn next<G>(&mut self, graph: G) -> Option<N> where
-        G: IntoNeighbors<NodeId=N>,
+    pub fn next<G>(&mut self, graph: G) -> Option<N>
+        where G: IntoNeighbors<NodeId=N>,
     {
         while let Some(node) = self.stack.pop() {
             for succ in graph.neighbors(node.clone()) {
@@ -844,8 +844,8 @@ impl<N, VM> Bfs<N, VM>
     }
 
     /// Return the next node in the dfs, or **None** if the traversal is done.
-    pub fn next<G>(&mut self, graph: G) -> Option<N> where
-        G: IntoNeighbors<NodeId=N>
+    pub fn next<G>(&mut self, graph: G) -> Option<N>
+        where G: IntoNeighbors<NodeId=N>
     {
         while let Some(node) = self.stack.pop_front() {
             for succ in graph.neighbors(node.clone()) {
