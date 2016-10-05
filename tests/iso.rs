@@ -4,10 +4,8 @@
 extern crate test;
 extern crate petgraph;
 
+use petgraph::prelude::*;
 use petgraph::{
-    Graph,
-    Directed,
-    Undirected,
     EdgeType,
 };
 use petgraph::graph::{
@@ -326,6 +324,7 @@ fn petersen_iso_bench(bench: &mut test::Bencher)
 
     bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
 }
+
 
 #[cfg(feature = "test")]
 #[bench]

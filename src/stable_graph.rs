@@ -6,6 +6,7 @@
 use std::cmp;
 use std::fmt;
 use std::iter;
+use std::marker::PhantomData;
 use std::mem::replace;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut};
@@ -17,6 +18,7 @@ use {
     Directed,
     Undirected,
     Direction,
+    Incoming,
     Outgoing,
 };
 
@@ -34,7 +36,12 @@ use super::{
     Pair,
 };
 use IntoWeightedEdge;
-use visit::NodeIndexable;
+use visit::{
+    EdgeRef,
+    GraphEdgeRef,
+    IntoEdgeReferences,
+    NodeIndexable,
+};
 
 // reexport those things that are shared with Graph
 pub use graph::{
@@ -82,7 +89,6 @@ pub use graph::{
 /// Depends on crate feature `stable_graph` (default). *This is a new feature in
 /// petgraph.  You can contribute to help it achieve parity with Graph.*
 pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
-    where Ix: IndexType
 {
     g: Graph<Option<N>, Option<E>, Ty, Ix>,
     node_count: usize,
@@ -443,8 +449,8 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
 
     /// Return an iterator of all nodes with an edge starting from `a`.
     ///
-    /// - `Undirected`: All edges from or to `a`.
     /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges connected to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
@@ -461,9 +467,9 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// in the specified direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
-    /// - `Undirected`: All edges from or to `a`.
     /// - `Directed`, `Outgoing`: All edges from `a`.
     /// - `Directed`, `Incoming`: All edges to `a`.
+    /// - `Undirected`: All edges connected to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
@@ -488,7 +494,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// in either direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
-    /// - `Undirected` and `Directed`: All edges from or to `a`.
+    /// - `Directed` and `Undirected`: All edges connected to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
@@ -506,6 +512,56 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
                 None => [EdgeIndex::end(), EdgeIndex::end()],
                 Some(n) => n.next,
             }
+        }
+    }
+
+    /// Return an iterator of all edges of `a`.
+    ///
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges connected to `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
+        self.edges_directed(a, Outgoing)
+    }
+
+    /// Return an iterator of all edges of `a`, in the specified direction.
+    ///
+    /// - `Directed`, `Outgoing`: All edges from `a`.
+    /// - `Directed`, `Incoming`: All edges to `a`.
+    /// - `Undirected`: All edges connected to `a`.
+    ///
+    /// Produces an empty iterator if the node `a` doesn't exist.<br>
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<E, Ty, Ix>
+    {
+        let mut iter = self.edges_undirected(a);
+        if self.is_directed() {
+            iter.direction = Some(dir);
+        }
+        if self.is_directed() && dir == Incoming {
+            iter.next.swap(0, 1);
+        }
+        iter
+    }
+
+    /// Return an iterator over all edges connected to `a`.
+    ///
+    /// - `Directed` and `Undirected`: All edges connected to `a`.
+    ///
+    /// Produces an empty iterator if the node `a` doesn't exist.<br>
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
+        Edges {
+            skip_start: a,
+            edges: &self.g.edges,
+            direction: None,
+            next: match self.g.nodes.get(a.index()) {
+                None => [EdgeIndex::end(), EdgeIndex::end()],
+                Some(n) => n.next,
+            },
+            ty: PhantomData,
         }
     }
 
@@ -647,11 +703,180 @@ impl<N, E, Ty, Ix> Default for StableGraph<N, E, Ty, Ix>
     fn default() -> Self { Self::with_capacity(0, 0) }
 }
 
+/// Reference to a `StableGraph` edge.
+#[derive(Debug)]
+pub struct EdgeReference<'a, E: 'a, Ix = DefaultIx> {
+    index: EdgeIndex<Ix>,
+    node: [NodeIndex<Ix>; 2],
+    weight: &'a E,
+}
+
+impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'a, E, Ix: IndexType> Copy for EdgeReference<'a, E, Ix> { }
+
+impl<'a, E, Ix: IndexType> PartialEq for EdgeReference<'a, E, Ix>
+    where E: PartialEq,
+{
+    fn eq(&self, rhs: &Self) -> bool {
+        self.index == rhs.index && self.weight == rhs.weight
+    }
+}
+
+impl<'a, Ix, E> EdgeReference<'a, E, Ix>
+    where Ix: IndexType,
+{
+    /// Access the edge’s weight.
+    ///
+    /// **NOTE** that this method offers a longer lifetime
+    /// than the trait (unfortunately they don't match yet).
+    pub fn weight(&self) -> &'a E { self.weight }
+}
+
+impl<'a, Ix, E> EdgeRef for EdgeReference<'a, E, Ix>
+    where Ix: IndexType,
+{
+    type NodeId = NodeIndex<Ix>;
+    type EdgeId = EdgeIndex<Ix>;
+    type Weight = E;
+
+    fn source(&self) -> Self::NodeId { self.node[0] }
+    fn target(&self) -> Self::NodeId { self.node[1] }
+    fn weight(&self) -> &E { self.weight }
+    fn id(&self) -> Self::EdgeId { self.index }
+}
+
+
+/// Iterator over the edges of from or to a node
+pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    /// starting node to skip over
+    skip_start: NodeIndex<Ix>,
+    edges: &'a [Edge<Option<E>, Ix>],
+
+    /// Next edge to visit.
+    /// If we are only following one direction, we only use next[0] regardless.
+    next: [EdgeIndex<Ix>; 2],
+
+    /// Which direction to follow
+    /// None: Both,
+    /// Some(d): d if Directed, Both if Undirected
+    direction: Option<Direction>,
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // First the outgoing or incoming edges (directionality)
+        let k = self.direction.unwrap_or(Outgoing).index();
+        let i = self.next[0].index();
+        match self.edges.get(i) {
+            None => {}
+            Some(&Edge { ref node, weight: Some(ref weight), ref next }) => {
+                self.next[0] = next[k];
+                return Some(EdgeReference {
+                    index: edge_index(i),
+                    node: *node,
+                    weight: weight,
+                });
+            }
+            Some(_otherwise) => unreachable!(),
+        }
+        // Stop here if we only follow one direction
+        if self.direction.is_some() {
+            return None;
+        }
+        // Then incoming edges
+        // For an "undirected" iterator (traverse both incoming
+        // and outgoing edge lists), make sure we don't double
+        // count selfloops by skipping them in the incoming list.
+
+        // We reach here if self.direction was None or Outgoing.
+        debug_assert_eq!(k, 0);
+        while let Some(edge) = self.edges.get(self.next[1].index()) {
+            debug_assert!(edge.weight.is_some());
+            let i = self.next[1].index();
+            self.next[1] = edge.next[1];
+            if edge.node[0] != self.skip_start {
+                return Some(EdgeReference {
+                    index: edge_index(i),
+                    node: swap_pair(edge.node),
+                    weight: edge.weight.as_ref().unwrap(),
+                });
+            }
+        }
+        None
+    }
+}
+
+fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
+    x.swap(0, 1);
+    x
+}
+
+impl<'a, N: 'a, E: 'a, Ty, Ix> GraphEdgeRef for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgeRef = EdgeReference<'a, E, Ix>;
+}
+
+impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgeReferences = EdgeReferences<'a, E, Ix>;
+    
+    /// Create an iterator over all edges in the graph, in indexed order.
+    ///
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    fn edge_references(self) -> Self::EdgeReferences {
+        EdgeReferences {
+            iter: self.g.edges.iter().enumerate()
+        }
+    }
+
+}
+
+/// Iterator over all edges of a graph.
+pub struct EdgeReferences<'a, E: 'a, Ix: 'a = DefaultIx> {
+    iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
+}
+
+impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
+    where Ix: IndexType
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        (&mut self.iter).filter_map(|(i, edge)|
+            edge.weight.as_ref().map(move |weight| {
+                EdgeReference {
+                    index: edge_index(i),
+                    node: edge.node,
+                    weight: weight,
+                }
+            }))
+            .next()
+    }
+}
+
+
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is `NodeIndex`.
-pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> where
-    Ix: IndexType,
+pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx>
 {
     /// starting node to skip over
     skip_start: NodeIndex<Ix>,
@@ -747,6 +972,10 @@ pub struct WalkNeighbors<Ix> {
     inner: super::WalkNeighbors<Ix>,
 }
 
+impl<Ix: IndexType> Clone for WalkNeighbors<Ix> {
+    clone_fields!(WalkNeighbors, inner);
+}
+
 impl<Ix: IndexType> WalkNeighbors<Ix> {
     /// Step to the next edge and its endpoint node in the walk for graph `g`.
     ///
@@ -773,7 +1002,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
 }
 
 /// Iterator over the node indices of a graph.
-pub struct NodeIndices<'a, N: 'a, Ix: IndexType = DefaultIx> {
+pub struct NodeIndices<'a, N: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
 
