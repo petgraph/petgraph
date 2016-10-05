@@ -217,7 +217,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
 }
 
 impl<'a, G> IntoNeighbors for &'a G
-    where G: Copy + IntoNeighbors
+    where G: IntoNeighbors
 {
     type Neighbors = G::Neighbors;
     fn neighbors(self, n: G::NodeId) -> G::Neighbors {
@@ -226,7 +226,7 @@ impl<'a, G> IntoNeighbors for &'a G
 }
 
 impl<'a, G> IntoNeighborsDirected for &'a G
-    where G: Copy + IntoNeighborsDirected
+    where G: IntoNeighborsDirected
 {
     type NeighborsDirected = G::NeighborsDirected;
     fn neighbors_directed(self, n: G::NodeId, d: Direction)
@@ -260,6 +260,11 @@ pub trait GraphEdgeRef : GraphRef {
     type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId>;
 }
 
+impl<'a, G> GraphEdgeRef for &'a G where G: GraphEdgeRef
+{
+    type EdgeRef = G::EdgeRef;
+}
+
 /// An edge reference
 pub trait EdgeRef : Copy {
     type NodeId;
@@ -288,6 +293,15 @@ impl<'a, N, E> EdgeRef for (N, N, &'a E)
 pub trait IntoEdgeReferences : GraphEdgeRef {
     type EdgeReferences: Iterator<Item=Self::EdgeRef>;
     fn edge_references(self) -> Self::EdgeReferences;
+}
+
+impl<'a, G> IntoEdgeReferences for &'a G
+    where G: IntoEdgeReferences
+{
+    type EdgeReferences = G::EdgeReferences;
+    fn edge_references(self) -> Self::EdgeReferences {
+        (*self).edge_references()
+    }
 }
 
 #[cfg(feature = "graphmap")]
