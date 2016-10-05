@@ -1,5 +1,36 @@
 //! Graph traits and graph traversals.
 //!
+//! ### The `Into-` Traits
+//!
+//! Graph traits like [`IntoNeighbors`][in] create iterators and use the same
+//! pattern that `IntoIterator` does: the trait takes a reference to a graph,
+//! and produces an iterator. These traits are quite composable, but with the
+//! limitation that they only use shared references to graphs.
+//!
+//! ### Visitors
+//!
+//! [`Dfs`](struct.Dfs.html), [`Bfs`][bfs], [`DfsPostOrder`][dfspo] and
+//! [`Topo`][topo]  are basic visitors and they use ”walker” methods: the
+//! visitors don't hold the graph as borrowed during traversal, only for the
+//! `.next()` call on the walker.
+//!
+//! [bfs]: struct.Bfs.html
+//! [dfspo]: struct.DfsPostOrder.html
+//! [topo]: struct.Topo.html
+//!
+//! ### Other Graph Traits
+//!
+//! The traits are rather loosely coupled at the moment (which is intentional,
+//! but will develop a bit), and there are traits missing that could be added.
+//!
+//! Not much is needed to be able to use the visitors on a graph. A graph
+//! needs to define [`GraphBase`][gb], [`IntoNeighbors`][in] and
+//! [`Visitable`][vis] as a minimum.
+//!
+//! [gb]: trait.GraphBase.html
+//! [in]: trait.IntoNeighbors.html
+//! [vis]: trait.Visitable.html
+//!
 
 mod reversed;
 pub use self::reversed::*;
@@ -31,7 +62,8 @@ use graphmap::{
     NodeTrait,
 };
 
-/// Base graph trait
+/// Base graph trait: defines the associated node identifier and
+/// edge identifier types.
 pub trait GraphBase {
     /// node identifier
     type NodeId: Copy;
@@ -106,12 +138,13 @@ impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>>
 
 /// Access to the neighbors of each node
 ///
-/// Depending on the graph’s edge type, the neighbors are:
+/// The neighbors are, depending on the graph’s edge type:
 ///
 /// - `Directed`: All targets of edges from `a`.
 /// - `Undirected`: All other endpoints of edges connected to `a`.
 pub trait IntoNeighbors : GraphRef {
     type Neighbors: Iterator<Item=Self::NodeId>;
+    /// Return an iterator of the neighbors of node `a`.
     fn neighbors(self, a: Self::NodeId) -> Self::Neighbors;
 }
 
@@ -354,8 +387,11 @@ impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
 
 /// The graph’s `NodeId`s map to indices
 pub trait NodeIndexable : GraphBase {
+    /// Return an upper bound of the node indices in the graph
+    /// (suitable for the size of a bitmap).
     fn node_bound(&self) -> usize;
-    fn to_index(Self::NodeId) -> usize;
+    /// Convert `a` to an integer index.
+    fn to_index(a: Self::NodeId) -> usize;
 }
 
 /// The graph’s `NodeId`s map to indices, in a range without holes.
@@ -436,9 +472,11 @@ impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
     }
 }
 
-/// A graph that can create a visitor map.
+/// A graph that can create a map that tracks the visited status of its nodes.
 pub trait Visitable : GraphBase {
+    /// The associated map type
     type Map: VisitMap<Self::NodeId>;
+    /// Create a new visitor map
     fn visit_map(&self) -> Self::Map;
     /// Reset the visitor map (and resize to new size of graph if needed)
     fn reset_map(&self, &mut Self::Map);
@@ -542,10 +580,18 @@ impl<G: Visitable> Visitable for AsUndirected<G>
     }
 }
 
-/// Create or access the adjacency matrix of a graph
+/// Create or access the adjacency matrix of a graph.
+///
+/// The implementor can either create an adjacency matrix, or it can return
+/// a placeholder if it has the needed representation internally.
 pub trait GetAdjacencyMatrix : GraphBase {
+    /// The associated adjacency matrix type
     type AdjMatrix;
+    /// Create the adjacency matrix
     fn adjacency_matrix(&self) -> Self::AdjMatrix;
+    /// Return true if there is an edge from `a` to `b`, false otherwise.
+    ///
+    /// Computes in O(1) time.
     fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
 }
 
