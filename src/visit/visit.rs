@@ -425,9 +425,13 @@ impl<N, E, Ty, Ix> NodeCompactIndexable for Graph<N, E, Ty, Ix>
 
 /// A mapping for storing the visited status for NodeId `N`.
 pub trait VisitMap<N> {
-    /// Return **true** if the value is not already present.
-    fn visit(&mut self, N) -> bool;
-    fn is_visited(&self, &N) -> bool;
+    /// Mark `a` as visited.
+    ///
+    /// Return **true** if this is the first visit, false otherwise.
+    fn visit(&mut self, a: N) -> bool;
+
+    /// Return whether `a` has been visited before.
+    fn is_visited(&self, a: &N) -> bool;
 }
 
 impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet
