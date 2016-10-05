@@ -282,14 +282,16 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         Nodes{iter: self.nodes.keys().cloned()}
     }
 
-    /// Return an iterator over the nodes that are connected with `from` by edges.
+    /// Return an iterator of all nodes with an edge starting from `a`.
     ///
-    /// If the node `from` does not exist in the graph, return an empty iterator.
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges from or to `a`.
     ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `N`.
-    pub fn neighbors(&self, from: N) -> Neighbors<N, Ty> {
+    pub fn neighbors(&self, a: N) -> Neighbors<N, Ty> {
         Neighbors {
-            iter: match self.nodes.get(&from) {
+            iter: match self.nodes.get(&a) {
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
             },
@@ -297,13 +299,15 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         }
     }
 
-    /// Return an iterator of all neighbors that have an edge between `a`
-    /// and themselves, in the specified direction.
-    ///
+    /// Return an iterator of all neighbors that have an edge between them and
+    /// `a`, in the specified direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
-    /// If the node `a` does not exist in the graph, return an empty iterator.
+    /// - `Directed`, `Outgoing`: All edges from `a`.
+    /// - `Directed`, `Incoming`: All edges to `a`.
+    /// - `Undirected`: All edges from or to `a`.
     ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `N`.
     pub fn neighbors_directed(&self, a: N, dir: Direction)
         -> NeighborsDirected<N, Ty>
@@ -318,11 +322,13 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         }
     }
 
-    /// Return an iterator over the nodes that are connected with `from` by edges,
-    /// paired with the edge weight.
+    /// Return an iterator of target nodes with an edge starting from `a`,
+    /// paired with their respective edge weights.
     ///
-    /// If the node `from` does not exist in the graph, return an empty iterator.
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges from or to `a`.
     ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `(N, &E)`.
     pub fn edges(&self, from: N) -> Edges<N, E, Ty> {
         Edges {

@@ -712,8 +712,8 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
 
     /// Return an iterator of all nodes with an edge starting from `a`.
     ///
-    /// - `Undirected`: All edges from or to `a`.
     /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges from or to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
@@ -727,13 +727,13 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         self.neighbors_directed(a, Outgoing)
     }
 
-    /// Return an iterator of all neighbors that have an edge between them and `a`,
-    /// in the specified direction.
+    /// Return an iterator of all neighbors that have an edge between them and
+    /// `a`, in the specified direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
-    /// - `Undirected`: All edges from or to `a`.
     /// - `Directed`, `Outgoing`: All edges from `a`.
     /// - `Directed`, `Incoming`: All edges to `a`.
+    /// - `Undirected`: All edges from or to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
@@ -753,11 +753,11 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Return an iterator of all neighbors that have an edge between them and `a`,
-    /// in either direction.
+    /// Return an iterator of all neighbors that have an edge between them and
+    /// `a`, in either direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
-    /// - `Undirected` and `Directed`: All edges from or to `a`.
+    /// - `Directed` and `Undirected`: All edges from or to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
@@ -774,8 +774,11 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Return an iterator over the neighbors of node `a`, paired with their respective edge
-    /// weights.
+    /// Return an iterator of target nodes with an edge starting from `a`,
+    /// paired with their respective edge weights.
+    ///
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges from or to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `(NodeIndex<Ix>, &E)`.
