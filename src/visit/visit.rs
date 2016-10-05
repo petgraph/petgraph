@@ -926,6 +926,10 @@ impl<G: Visitable> Clone for BfsIter<G>
 
 
 /// A topological order traversal for a graph.
+///
+/// **Note** that `Topo` only visits nodes that are not part of cycles,
+/// i.e. nodes in a true DAG. Use other visitors like `DfsPostOrder` or
+/// algorithms like scc to handle graphs with possible cycles.
 #[derive(Clone)]
 pub struct Topo<N, VM> {
     tovisit: Vec<N>,
