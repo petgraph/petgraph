@@ -33,6 +33,7 @@ ordermap = { version = "0.2.2", optional = true }
 rand = "0.3"
 odds = { version = "0.2.19" }
 itertools = { version = "0.5" }
+defmac = "0.1"
 
 [features]
 default = ["graphmap", "stable_graph"]

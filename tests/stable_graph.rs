@@ -2,6 +2,7 @@
 
 extern crate petgraph;
 extern crate itertools;
+#[macro_use] extern crate defmac;
 
 use petgraph::prelude::*;
 use petgraph::stable_graph::node_index as n;
@@ -120,12 +121,9 @@ fn make_graph<Ty>() -> StableGraph<(), i32, Ty>
     gr
 }
 
-macro_rules! edges {
-    ($gr:expr, $x:expr) => ($gr.edges($x).map(|r| (r.target(), *r.weight())));
-}
-macro_rules! edges_dir {
-    ($gr:expr, $x:expr) => ($gr.edges_directed($x, Outgoing).map(|r| (r.target(), *r.weight())));
-}
+defmac!(edges ref gr, x => gr.edges(x).map(|r| (r.target(), *r.weight())));
+defmac!(edges_dir ref gr, x => gr.edges_directed(x, Outgoing).map(|r| (r.target(), *r.weight())));
+
 #[test]
 fn test_edges_directed() {
     let gr = make_graph::<Directed>();
