@@ -66,7 +66,7 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
-    nodes: OrderMap<N, Vec<(N, Direction)>>,
+    nodes: OrderMap<N, Vec<(N, CompactDirection)>>,
     edges: OrderMap<(N, N), E>,
     ty: PhantomData<Ty>,
 }
@@ -80,6 +80,28 @@ impl<N: Eq + Hash + fmt::Debug, E: fmt::Debug, Ty: EdgeType> fmt::Debug for Grap
 /// A trait group for `GraphMap`'s node identifier.
 pub trait NodeTrait : Copy + Ord + Hash {}
 impl<N> NodeTrait for N where N: Copy + Ord + Hash {}
+
+// non-repr(usize) version of Direction
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum CompactDirection {
+    Outgoing,
+    Incoming,
+}
+
+impl From<Direction> for CompactDirection {
+    fn from(d: Direction) -> Self {
+        match d {
+            Outgoing => CompactDirection::Outgoing,
+            Incoming => CompactDirection::Incoming,
+        }
+    }
+}
+
+impl PartialEq<Direction> for CompactDirection {
+    fn eq(&self, rhs: &Direction) -> bool {
+        (*self as usize) == (*rhs as usize)
+    }
+}
 
 impl<N, E, Ty> GraphMap<N, E, Ty>
     where N: NodeTrait,
@@ -214,12 +236,12 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             // insert in the adjacency list if it's a new edge
             self.nodes.entry(a)
                       .or_insert_with(|| Vec::with_capacity(1))
-                      .push((b, Outgoing));
+                      .push((b, CompactDirection::Outgoing));
             if a != b {
                 // self loops don't have the Incoming entry
                 self.nodes.entry(b)
                           .or_insert_with(|| Vec::with_capacity(1))
-                          .push((a, Incoming));
+                          .push((a, CompactDirection::Incoming));
             }
             None
         }
@@ -233,7 +255,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             None => false,
             Some(sus) => {
                 if Ty::is_directed() {
-                    match sus.iter().position(|elt| elt == &(*b, dir)) {
+                    match sus.iter().position(|elt| elt == &(*b, CompactDirection::from(dir))) {
                         Some(index) => { sus.swap_remove(index); true }
                         None => false,
                     }
@@ -264,7 +286,9 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// ```
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E> {
         let exist1 = self.remove_single_edge(&a, &b, Outgoing);
-        let exist2 = if a != b { self.remove_single_edge(&b, &a, Incoming) } else { exist1 };
+        let exist2 = if a != b {
+            self.remove_single_edge(&b, &a, Incoming)
+        } else { exist1 };
         let weight = self.edges.remove(&Self::edge_key(a, b));
         debug_assert!(exist1 == exist2 && exist1 == weight.is_some());
         weight
@@ -449,14 +473,14 @@ macro_rules! iterator_wrap {
 iterator_wrap! {
     Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
-    iter: Cloned<Keys<'a, N, Vec<(N, Direction)>>>,
+    iter: Cloned<Keys<'a, N, Vec<(N, CompactDirection)>>>,
 }
 
 pub struct Neighbors<'a, N, Ty = Undirected>
     where N: 'a,
           Ty: EdgeType,
 {
-    iter: Iter<'a, (N, Direction)>,
+    iter: Iter<'a, (N, CompactDirection)>,
     ty: PhantomData<Ty>,
 }
 
@@ -482,7 +506,7 @@ pub struct NeighborsDirected<'a, N, Ty>
     where N: 'a,
           Ty: EdgeType,
 {
-    iter: Iter<'a, (N, Direction)>,
+    iter: Iter<'a, (N, CompactDirection)>,
     dir: Direction,
     ty: PhantomData<Ty>,
 }
@@ -676,7 +700,7 @@ impl<'a, N, E: 'a, Ty> IntoNodeIdentifiers for &'a GraphMap<N, E, Ty>
 }
 
 pub struct NodeIdentifiers<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    iter: OrderMapIter<'a, N, Vec<(N, Direction)>>,
+    iter: OrderMapIter<'a, N, Vec<(N, CompactDirection)>>,
     ty: PhantomData<Ty>,
     edge_ty: PhantomData<E>,
 }
