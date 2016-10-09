@@ -89,6 +89,7 @@ macro_rules! copyclone {
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction.
 #[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
+#[repr(usize)]
 pub enum Direction {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
@@ -111,9 +112,7 @@ impl Direction {
     /// Return `0` for `Outgoing` and `1` for `Incoming`.
     #[inline]
     pub fn index(&self) -> usize {
-        *self as usize & 0x1
-        // FIXME: Find out what the best formulation is here(!)
-        // match *self { Outgoing => 0, Incoming => 1, }
+        (*self as usize) & 0x1
     }
 }
 
