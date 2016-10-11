@@ -10,17 +10,15 @@ use visit::{
 };
 
 /// A graph filter for nodes.
-pub trait FilterNode<G>
-    where G: GraphBase,
+pub trait FilterNode<N>
 {
-    fn include_node(&self, _node: G::NodeId) -> bool { true }
+    fn include_node(&self, node: N) -> bool { let _ = node; true }
 }
 
-impl<G, F> FilterNode<G> for F
-    where G: GraphBase,
-          F: Fn(G::NodeId) -> bool,
+impl<F, N> FilterNode<N> for F
+    where F: Fn(N) -> bool,
 {
-    fn include_node(&self, n: G::NodeId) -> bool {
+    fn include_node(&self, n: N) -> bool {
         (*self)(n)
     }
 }
@@ -36,12 +34,12 @@ impl<G, F> GraphBase for Filtered<G, F> where G: GraphBase {
 
 impl<'a, G, F> IntoNeighbors for &'a Filtered<G, F>
     where G: IntoNeighbors,
-          F: FilterNode<G>,
+          F: FilterNode<G::NodeId>,
 {
-    type Neighbors = FilteredNeighbors<'a, G, G::Neighbors, F>;
+    type Neighbors = FilteredNeighbors<'a, G::Neighbors, F>;
     fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
         FilteredNeighbors {
-            source: n,
+            include_source: self.1.include_node(n),
             iter: self.0.neighbors(n),
             f: &self.1,
         }
@@ -49,24 +47,22 @@ impl<'a, G, F> IntoNeighbors for &'a Filtered<G, F>
 }
 
 /// A filtered neighbors iterator.
-pub struct FilteredNeighbors<'a, G, I, F: 'a>
-    where G: GraphBase,
+pub struct FilteredNeighbors<'a, I, F: 'a>
 {
-    source: G::NodeId,
+    include_source: bool,
     iter: I,
     f: &'a F,
 }
 
-impl<'a, G, I, F> Iterator for FilteredNeighbors<'a, G, I, F>
-    where G: GraphBase,
-          I: Iterator<Item=G::NodeId>,
-          F: FilterNode<G>,
+impl<'a, I, F> Iterator for FilteredNeighbors<'a, I, F>
+    where I: Iterator,
+          I::Item: Copy,
+          F: FilterNode<I::Item>,
 {
-    type Item = G::NodeId;
+    type Item = I::Item;
     fn next(&mut self) -> Option<Self::Item> {
-        let source = self.source;
         let f = self.f;
-        if !f.include_node(source) {
+        if !self.include_source {
             None
         } else {
             (&mut self.iter).filter(move |&target| f.include_node(target)).next()
@@ -76,13 +72,13 @@ impl<'a, G, I, F> Iterator for FilteredNeighbors<'a, G, I, F>
 
 impl<'a, G, F> IntoNeighborsDirected for &'a Filtered<G, F>
     where G: IntoNeighborsDirected,
-          F: FilterNode<G>,
+          F: FilterNode<G::NodeId>,
 {
-    type NeighborsDirected = FilteredNeighbors<'a, G, G::NeighborsDirected, F>;
+    type NeighborsDirected = FilteredNeighbors<'a, G::NeighborsDirected, F>;
     fn neighbors_directed(self, n: G::NodeId, dir: Direction)
         -> Self::NeighborsDirected {
         FilteredNeighbors {
-            source: n,
+            include_source: self.1.include_node(n),
             iter: self.0.neighbors_directed(n, dir),
             f: &self.1,
         }
