@@ -24,6 +24,13 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.3.2
+
+  - Add ``depth_first_search``, a recursive dfs visitor that emits discovery,
+    finishing and edge classification events.
+  - Add graph adaptor ``Filtered``.
+  - impl ``Debug, NodeIndexable`` for ``Reversed``.
+
 - 0.3.1
 
   - Add ``.edges(), .edges_directed()`` to ``StableGraph``. Note that these
