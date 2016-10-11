@@ -17,9 +17,8 @@ use visit::{
     EdgeRef,
 };
 
-
 /// Wrapper type for walking the graph as if all edges are reversed.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Reversed<G>(pub G);
 
 impl<G: GraphBase> GraphBase for Reversed<G> {
