@@ -37,6 +37,9 @@ mod reversed;
 pub use self::filter::*;
 pub use self::reversed::*;
 
+mod dfsvisit;
+pub use self::dfsvisit::*;
+
 use fixedbitset::FixedBitSet;
 use std::collections::{
     HashSet,

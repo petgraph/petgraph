@@ -1362,3 +1362,82 @@ fn filtered() {
     }
     assert_eq!(set(po), set(g.node_identifiers().filter(|n| (filt.1)(*n))));
 }
+
+
+
+#[test]
+fn dfs_visit() {
+    use petgraph::visit::{Visitable, VisitMap};
+    use petgraph::visit::DfsEvent::*;
+    use petgraph::visit::{Time, depth_first_search};
+    use petgraph::visit::Control;
+    let gr: Graph<(), ()> = Graph::from_edges(&[
+        (0, 5), (0, 2), (0, 3), (0, 1),
+        (1, 3),
+        (2, 3), (2, 4),
+        (4, 0), (4, 5),
+    ]);
+
+    let invalid_time = Time(!0);
+    let mut discover_time = vec![invalid_time; gr.node_count()];
+    let mut finish_time = vec![invalid_time; gr.node_count()];
+    let mut has_tree_edge = gr.visit_map();
+    let mut edges = HashSet::new();
+    depth_first_search(&gr, Some(n(0)), |evt| {
+        println!("Event: {:?}", evt);
+        match evt {
+            Discover(n, t) => discover_time[n.index()] = t,
+            Finish(n, t) => finish_time[n.index()] = t,
+            TreeEdge(u, v) => {
+                // v is an ancestor of u
+                assert!(has_tree_edge.visit(v), "Two tree edges to {:?}!", v);
+                assert!(discover_time[v.index()] == invalid_time);
+                assert!(discover_time[u.index()] != invalid_time);
+                assert!(finish_time[u.index()] == invalid_time);
+                edges.insert((u, v));
+            }
+            BackEdge(u, v) => {
+                // u is an ancestor of v
+                assert!(discover_time[v.index()] != invalid_time);
+                assert!(finish_time[v.index()] == invalid_time);
+                edges.insert((u, v));
+            }
+            CrossForwardEdge(u, v) => {
+                edges.insert((u, v));
+            }
+        }
+    });
+    assert!(discover_time.iter().all(|x| *x != invalid_time));
+    assert!(finish_time.iter().all(|x| *x != invalid_time));
+    assert_eq!(edges.len(), gr.edge_count());
+    assert_eq!(edges, set(gr.edge_references().map(|e| (e.source(), e.target()))));
+    println!("{:?}", discover_time);
+    println!("{:?}", finish_time);
+
+    // find path from 0 to 4
+    let mut predecessor = vec![NodeIndex::end(); gr.node_count()];
+    let start = n(0);
+    let goal = n(4);
+    let ret = depth_first_search(&gr, Some(start), |event| {
+        if let TreeEdge(u, v) = event {
+            predecessor[v.index()] = u;
+            if v == goal {
+                return Control::Break(u);
+            }
+        }
+        Control::Continue
+    });
+    // assert we did terminate early
+    assert!(ret.break_value().is_some());
+    assert!(predecessor.iter().any(|x| *x == NodeIndex::end()));
+
+    let mut next = goal;
+    let mut path = vec![next];
+    while next != start {
+        let pred = predecessor[next.index()];
+        path.push(pred);
+        next = pred;
+    }
+    path.reverse();
+    assert_eq!(&path, &[n(0), n(2), n(4)]);
+}
