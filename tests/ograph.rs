@@ -1,5 +1,8 @@
 extern crate petgraph;
 
+use std::collections::HashSet;
+use std::hash::Hash;
+
 use petgraph::prelude::*;
 use petgraph::{
     EdgeType,
@@ -19,6 +22,8 @@ use petgraph::graph::{
 };
 
 use petgraph::visit::{
+    IntoNodeIdentifiers,
+    Filtered,
     Reversed,
     AsUndirected,
     Topo,
@@ -35,6 +40,13 @@ use petgraph::algo::{
 use petgraph::dot::{
     Dot,
 };
+
+fn set<I>(iter: I) -> HashSet<I::Item>
+    where I: IntoIterator,
+          I::Item: Hash + Eq,
+{
+    iter.into_iter().collect()
+}
 
 #[test]
 fn undirected()
@@ -1318,4 +1330,35 @@ r#"digraph {
     0 -> 0 [label="(\l    1,\l    2\l)\l"]
 }
 "#);
+}
+
+#[test]
+fn filtered() {
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
+    println!("{:?}", g);
+
+    let filt = Filtered(&g, |n: NodeIndex| n != c && n != e);
+
+    let mut dfs = DfsPostOrder::new(&filt, a);
+    let mut po = Vec::new();
+    while let Some(nx) = dfs.next(&filt) {
+        println!("Next: {:?}", nx);
+        po.push(nx);
+    }
+    assert_eq!(set(po), set(g.node_identifiers().filter(|n| (filt.1)(*n))));
 }

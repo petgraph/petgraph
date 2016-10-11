@@ -32,7 +32,9 @@
 //! [vis]: trait.Visitable.html
 //!
 
+mod filter;
 mod reversed;
+pub use self::filter::*;
 pub use self::reversed::*;
 
 use fixedbitset::FixedBitSet;
