@@ -45,7 +45,7 @@ use std::collections::{
     HashSet,
     VecDeque,
 };
-use std::hash::Hash;
+use std::hash::{Hash, BuildHasher};
 
 use prelude::*;
 
@@ -472,7 +472,10 @@ impl<Ix> VisitMap<Ix> for FixedBitSet
     }
 }
 
-impl<N: Eq + Hash> VisitMap<N> for HashSet<N> {
+impl<N, S> VisitMap<N> for HashSet<N, S>
+    where N: Hash + Eq,
+          S: BuildHasher,
+{
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
     }
