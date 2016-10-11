@@ -1,12 +1,16 @@
 
 use prelude::*;
 
+use fixedbitset::FixedBitSet;
+use std::collections::HashSet;
+
 use visit::{
     GraphBase,
     IntoNeighbors,
     IntoNeighborsDirected,
     NodeIndexable,
     Visitable,
+    VisitMap,
 };
 
 /// A graph filter for nodes.
@@ -20,6 +24,24 @@ impl<F, N> FilterNode<N> for F
 {
     fn include_node(&self, n: N) -> bool {
         (*self)(n)
+    }
+}
+
+/// This filter includes the nodes that are contained in the set.
+impl<N> FilterNode<N> for FixedBitSet
+    where FixedBitSet: VisitMap<N>,
+{
+    fn include_node(&self, n: N) -> bool {
+        self.is_visited(&n)
+    }
+}
+
+/// This filter includes the nodes that are contained in the set.
+impl<N, S> FilterNode<N> for HashSet<N, S>
+    where HashSet<N, S>: VisitMap<N>,
+{
+    fn include_node(&self, n: N) -> bool {
+        self.is_visited(&n)
     }
 }
 
