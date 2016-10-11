@@ -11,7 +11,9 @@ pub struct Time(pub u64);
 #[derive(Copy, Clone, Debug)]
 pub enum DfsEvent<N> {
     Discover(N, Time),
+    /// An edge of the tree formed by the traversal.
     TreeEdge(N, N),
+    /// An edge to an already visited node.
     BackEdge(N, N),
     /// A cross or forward edge.
     ///
