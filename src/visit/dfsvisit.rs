@@ -110,7 +110,7 @@ impl<B> ControlFlow for Control<B> {
 /// let mut predecessor = vec![NodeIndex::end(); gr.node_count()];
 /// let start = n(0);
 /// let goal = n(5);
-/// let ret = depth_first_search(&gr, Some(start), |event| {
+/// depth_first_search(&gr, Some(start), |event| {
 ///     if let DfsEvent::TreeEdge(u, v) = event {
 ///         predecessor[v.index()] = u;
 ///         if v == goal {
