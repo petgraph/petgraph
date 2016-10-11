@@ -77,7 +77,7 @@ impl<B> ControlFlow for Control<B> {
 /// Starting points are the nodes in the iterator `starts` (specify just one
 /// start vertex *x* by using `Some(x)`).
 ///
-/// The visit emits discovery and finish events for each reachable vertex,
+/// The traversal emits discovery and finish events for each reachable vertex,
 /// and edge classification of each reachable edge. `visitor` is called for each
 /// event, see [`DfsEvent`][de] for possible values.
 ///
