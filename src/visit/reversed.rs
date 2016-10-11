@@ -13,6 +13,7 @@ use visit::{
     IntoNeighborsDirected,
     IntoEdgeReferences,
     IntoExternals,
+    NodeIndexable,
     Visitable,
     EdgeRef,
 };
@@ -140,3 +141,10 @@ impl<I> Iterator for ReversedEdgeReferences<I>
     }
 }
 
+
+impl<G> NodeIndexable for Reversed<G>
+    where G: NodeIndexable
+{
+    fn node_bound(&self) -> usize { self.0.node_bound() }
+    fn to_index(n: G::NodeId) -> usize { G::to_index(n) }
+}
