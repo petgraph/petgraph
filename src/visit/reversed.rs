@@ -13,13 +13,13 @@ use visit::{
     IntoNeighborsDirected,
     IntoEdgeReferences,
     IntoExternals,
+    NodeIndexable,
     Visitable,
     EdgeRef,
 };
 
-
 /// Wrapper type for walking the graph as if all edges are reversed.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Reversed<G>(pub G);
 
 impl<G: GraphBase> GraphBase for Reversed<G> {
@@ -141,3 +141,10 @@ impl<I> Iterator for ReversedEdgeReferences<I>
     }
 }
 
+
+impl<G> NodeIndexable for Reversed<G>
+    where G: NodeIndexable
+{
+    fn node_bound(&self) -> usize { self.0.node_bound() }
+    fn to_index(n: G::NodeId) -> usize { G::to_index(n) }
+}
