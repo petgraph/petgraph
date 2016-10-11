@@ -1441,3 +1441,32 @@ fn dfs_visit() {
     path.reverse();
     assert_eq!(&path, &[n(0), n(2), n(4)]);
 }
+
+
+#[test]
+fn filtered_post_order() {
+    use petgraph::visit::Filtered;
+
+    let mut gr: Graph<(), ()> = Graph::from_edges(&[
+        (0, 2),
+        (1, 2),
+        (0, 3),
+        (1, 4),
+        (2, 4),
+        (4, 5),
+        (3, 5),
+    ]);
+    // map reachable nodes
+    let mut dfs = Dfs::new(&gr, n(0));
+    while let Some(_) = dfs.next(&gr) { }
+
+    let map = dfs.discovered;
+    gr.add_edge(n(0), n(1), ());
+    let mut po = Vec::new();
+    let mut dfs = DfsPostOrder::new(&gr, n(0));
+    let f = Filtered(&gr, map);
+    while let Some(n) = dfs.next(&f) {
+        po.push(n);
+    }
+    assert!(!po.contains(&n(1)));
+}
