@@ -424,6 +424,8 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
 ///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
 /// and **|V| - c** edges, where **c** is the number of connected components in `g`.
+///
+/// Use `from_elements` to create a graph from the resulting iterator.
 pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
     where G::NodeWeight: Clone,
           G::EdgeWeight: Clone + PartialOrd,
@@ -449,7 +451,7 @@ pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
 
 }
 
-#[must_use]
+/// An iterator producing a minimum spanning forest of a graph.
 pub struct MinSpanningTree<G>
     where G: Data + IntoNodeReferences,
 {
