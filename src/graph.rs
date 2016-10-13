@@ -22,6 +22,8 @@ use iter_format::{
 };
 
 use visit::EdgeRef;
+use visit::{IntoNodeReferences};
+
 
 /// The default integer type for node and edge indices in `Graph`.
 /// `u32` is the default to reduce the size of the graph's data and improve
@@ -1764,25 +1766,17 @@ impl<'a, E, Ix: IndexType> PartialEq for EdgeReference<'a, E, Ix>
     }
 }
 
-use visit::{GraphNodeRef, IntoNodeReferences};
-
 impl<'a, N, E, Ty, Ix> IntoNodeReferences for &'a Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
+    type NodeRef = (NodeIndex<Ix>, &'a N);
     type NodeReferences = NodeReferences<'a, N, Ix>;
     fn node_references(self) -> Self::NodeReferences {
         NodeReferences {
             iter: self.nodes.iter().enumerate()
         }
     }
-}
-
-impl<'a, N, E, Ty, Ix> GraphNodeRef for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type NodeRef = (NodeIndex<Ix>, &'a N);
 }
 
 /// Iterator over all nodes of a graph.

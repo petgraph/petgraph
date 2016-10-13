@@ -357,16 +357,6 @@ impl<'a, N, E> EdgeRef for (N, N, &'a E)
     fn id(&self) -> (N, N) { (self.0, self.1) }
 }
 
-pub trait GraphNodeRef : GraphRef + Data {
-    type NodeRef: NodeRef<Weight=Self::NodeWeight>;
-}
-
-impl<'a, G> GraphNodeRef for &'a G
-    where G: GraphNodeRef,
-{
-    type NodeRef = G::NodeRef;
-}
-
 /// A node reference.
 pub trait NodeRef : Copy {
     type NodeId;
@@ -376,7 +366,8 @@ pub trait NodeRef : Copy {
 }
 
 /// Access to the sequence of the graph’s nodes
-pub trait IntoNodeReferences : GraphNodeRef + IntoNodeIdentifiers {
+pub trait IntoNodeReferences : Data + IntoNodeIdentifiers {
+    type NodeRef: NodeRef<Weight=Self::NodeWeight>;
     type NodeReferences: Iterator<Item=Self::NodeRef>;
     fn node_references(self) -> Self::NodeReferences;
 }
@@ -384,6 +375,7 @@ pub trait IntoNodeReferences : GraphNodeRef + IntoNodeIdentifiers {
 impl<'a, G> IntoNodeReferences for &'a G
     where G: IntoNodeReferences
 {
+    type NodeRef = G::NodeRef;
     type NodeReferences = G::NodeReferences;
     fn node_references(self) -> Self::NodeReferences {
         (*self).node_references()
