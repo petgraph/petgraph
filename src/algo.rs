@@ -424,7 +424,7 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
 ///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
 /// and **|V| - c** edges, where **c** is the number of connected components in `g`.
-pub fn min_spanning_tree<G>(g: G) -> MstIter<G>
+pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
     where G::NodeWeight: Clone,
           G::EdgeWeight: Clone + PartialOrd,
           G: IntoNodeReferences + IntoEdgeReferences + NodeIndexable,
@@ -440,7 +440,7 @@ pub fn min_spanning_tree<G>(g: G) -> MstIter<G>
         sort_edges.push(MinScored(edge.weight().clone(), (edge.source(), edge.target())));
     }
 
-    MstIter {
+    MinSpanningTree {
         _graph: g,
         node_ids: Some(g.node_references()),
         subgraphs: subgraphs,
@@ -450,7 +450,7 @@ pub fn min_spanning_tree<G>(g: G) -> MstIter<G>
 }
 
 #[must_use]
-pub struct MstIter<G>
+pub struct MinSpanningTree<G>
     where G: Data + IntoNodeReferences,
 {
     _graph: G,
@@ -460,7 +460,7 @@ pub struct MstIter<G>
 }
 
 
-impl<G> Iterator for MstIter<G>
+impl<G> Iterator for MinSpanningTree<G>
     where G: IntoNodeReferences + NodeIndexable,
           G::NodeWeight: Clone,
           G::EdgeWeight: PartialOrd,
