@@ -163,7 +163,7 @@ fn bfs() {
 
 #[test]
 fn mst() {
-    use petgraph::build::FromElements;
+    use petgraph::data::FromElements;
 
     let mut gr = Graph::<_,_>::new();
     let a = gr.add_node("A");
