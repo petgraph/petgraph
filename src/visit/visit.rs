@@ -376,7 +376,7 @@ pub trait NodeRef : Copy {
 }
 
 /// Access to the sequence of the graph’s nodes
-pub trait IntoNodeReferences : GraphNodeRef {
+pub trait IntoNodeReferences : GraphNodeRef + IntoNodeIdentifiers {
     type NodeReferences: Iterator<Item=Self::NodeRef>;
     fn node_references(self) -> Self::NodeReferences;
 }
