@@ -65,9 +65,9 @@ pub trait DataMapMut : DataMap {
 pub trait Build : Data + NodeCount {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId;
     fn add_edge(&mut self,
-                   a: Self::NodeId,
-                   b: Self::NodeId,
-                   weight: Self::EdgeWeight) -> Self::EdgeId;
+                a: Self::NodeId,
+                b: Self::NodeId,
+                weight: Self::EdgeWeight) -> Self::EdgeId;
     fn update_edge(&mut self,
                    a: Self::NodeId,
                    b: Self::NodeId,
