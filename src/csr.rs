@@ -81,6 +81,9 @@ impl<N, E, Ty> Csr<N, E, Ty>
             ty: PhantomData,
         }
     }
+}
+
+impl<N, E> Csr<N, E, Directed> {
 
     /// Create a new `Csr` from a sorted sequence of edges
     ///
@@ -144,6 +147,11 @@ impl<N, E, Ty> Csr<N, E, Ty>
 
         self_
     }
+}
+
+impl<N, E, Ty> Csr<N, E, Ty>
+    where Ty: EdgeType
+{
 
     pub fn node_count(&self) -> usize {
         self.row.len() - 1
