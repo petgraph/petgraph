@@ -64,10 +64,16 @@ pub trait DataMapMut : DataMap {
 
 pub trait Build : Data + NodeCount {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId;
+    /// Add a new edge. If parallel edges (duplicate) are not allowed and
+    /// the edge already exists, return `None`.
     fn add_edge(&mut self,
                 a: Self::NodeId,
                 b: Self::NodeId,
-                weight: Self::EdgeWeight) -> Self::EdgeId;
+                weight: Self::EdgeWeight) -> Option<Self::EdgeId> {
+        Some(self.update_edge(a, b, weight))
+    }
+    /// Add or update the edge from `a` to `b`. Return the id of the affected
+    /// edge.
     fn update_edge(&mut self,
                    a: Self::NodeId,
                    b: Self::NodeId,
@@ -128,9 +134,9 @@ impl<N, E, Ty, Ix> Build for Graph<N, E, Ty, Ix>
     fn add_edge(&mut self,
                 a: Self::NodeId,
                 b: Self::NodeId,
-                weight: Self::EdgeWeight) -> Self::EdgeId
+                weight: Self::EdgeWeight) -> Option<Self::EdgeId>
     {
-        self.add_edge(a, b, weight)
+        Some(self.add_edge(a, b, weight))
     }
     fn update_edge(&mut self,
                    a: Self::NodeId,
