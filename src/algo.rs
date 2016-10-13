@@ -414,9 +414,9 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
     condensed
 }
 
-/// [Graph] Compute a *minimum spanning tree* of a graph.
+/// [Generic] Compute a *minimum spanning tree* of a graph.
 ///
-/// Treat the input graph as undirected.
+/// The input graph is treated as if undirected.
 ///
 /// Using Kruskal's algorithm with runtime **O(|E| log |E|)**. We actually
 /// return a minimum spanning forest, i.e. a minimum spanning tree for each connected
@@ -498,7 +498,7 @@ impl<G> Iterator for MstIter<G>
 #[derive(Clone, Debug)]
 pub struct NegativeCycle(());
 
-/// Compute shortest paths from node `a` to all other
+/// [Generic] Compute shortest paths from node `source` to all other.
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
     -> Result<(Vec<f32>, Vec<Option<G::NodeId>>), NegativeCycle>
     where G: IntoNodeIdentifiers + IntoEdges + NodeIndexable,
