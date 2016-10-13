@@ -163,6 +163,8 @@ fn bfs() {
 
 #[test]
 fn mst() {
+    use petgraph::build::FromElements;
+
     let mut gr = Graph::<_,_>::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
@@ -193,7 +195,8 @@ fn mst() {
 
     println!("{}", Dot::new(&gr));
 
-    let mst = min_spanning_tree(&gr);
+    let mst = UnGraph::from_elements(min_spanning_tree(&gr));
+
     println!("{}", Dot::new(&mst));
     println!("{:?}", Dot::new(&mst));
     println!("MST is:\n{:#?}", mst);
