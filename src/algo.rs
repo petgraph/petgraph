@@ -494,7 +494,7 @@ impl<G> Iterator for MstIter<G>
     }
 }
 
-/// A cycle of negative weights was found in the graph.
+/// An algorithm error: a cycle of negative weights was found in the graph.
 #[derive(Clone, Debug)]
 pub struct NegativeCycle(());
 
