@@ -257,12 +257,19 @@ impl<N, E, Ty> Csr<N, E, Ty>
         &self.edges[index..end]
     }
 
-    pub fn edges(&self, node: NodeIndex) -> Edges<E, Ty> {
-        let index = self.row[node];
-        let end = self.row.get(node + 1).cloned().unwrap_or(self.column.len());
+    /// Return an iterator of all edges of `a`.
+    ///
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges connected to `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is `EdgeReference<E, Ty>`.
+    pub fn edges(&self, a: NodeIndex) -> Edges<E, Ty> {
+        let index = self.row[a];
+        let end = self.row.get(a + 1).cloned().unwrap_or(self.column.len());
         Edges {
             index: index,
-            source: node,
+            source: a,
             iter: zip(&self.column[index..end], &self.edges[index..end]),
             ty: PhantomData,
         }
