@@ -34,6 +34,9 @@ const BINARY_SEARCH_CUTOFF: usize = 32;
 /// Self loops are allowed, no parallel edges.
 ///
 /// Fast iteration of the outgoing edges of a vertex.
+///
+/// Implementation notes: `N` is not actually used yet, but it is
+/// “reserved” as the first type parameter for forward compatibility.
 #[derive(Debug)]
 pub struct Csr<N = (), E = (), Ty = Directed> {
     /// Column of next edge
