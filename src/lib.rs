@@ -38,6 +38,7 @@ pub mod visit;
 pub mod data;
 pub mod unionfind;
 mod dijkstra;
+pub mod csr;
 mod iter_format;
 mod isomorphism;
 mod traits_graph;
