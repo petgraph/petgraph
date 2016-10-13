@@ -219,7 +219,7 @@ impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
     }
 }
 
-pub trait IntoEdges : GraphEdgeRef {
+pub trait IntoEdges : IntoEdgeReferences {
     type Edges: Iterator<Item=Self::EdgeRef>;
     fn edges(self, a: Self::NodeId) -> Self::Edges;
 }
@@ -322,17 +322,6 @@ impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
     }
 }
 
-/// A graph that defines edge references
-pub trait GraphEdgeRef : GraphRef + Data {
-    type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId,
-                          Weight=Self::EdgeWeight>;
-}
-
-impl<'a, G> GraphEdgeRef for &'a G where G: GraphEdgeRef
-{
-    type EdgeRef = G::EdgeRef;
-}
-
 /// An edge reference
 pub trait EdgeRef : Copy {
     type NodeId;
@@ -405,7 +394,9 @@ impl<'a, Id, W> NodeRef for (Id, &'a W)
 
 
 /// Access to the sequence of the graph’s edges
-pub trait IntoEdgeReferences : GraphEdgeRef {
+pub trait IntoEdgeReferences : Data + GraphRef {
+    type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId,
+                          Weight=Self::EdgeWeight>;
     type EdgeReferences: Iterator<Item=Self::EdgeRef>;
     fn edge_references(self) -> Self::EdgeReferences;
 }
@@ -413,18 +404,11 @@ pub trait IntoEdgeReferences : GraphEdgeRef {
 impl<'a, G> IntoEdgeReferences for &'a G
     where G: IntoEdgeReferences
 {
+    type EdgeRef = G::EdgeRef;
     type EdgeReferences = G::EdgeReferences;
     fn edge_references(self) -> Self::EdgeReferences {
         (*self).edge_references()
     }
-}
-
-#[cfg(feature = "graphmap")]
-impl<'a, N: 'a, E: 'a, Ty> GraphEdgeRef for &'a GraphMap<N, E, Ty>
-    where N: Copy,
-          Ty: EdgeType,
-{
-    type EdgeRef = (N, N, &'a E);
 }
 
 #[cfg(feature = "graphmap")]
@@ -441,23 +425,18 @@ impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
     where N: NodeTrait,
           Ty: EdgeType,
 {
+    type EdgeRef = (N, N, &'a E);
     type EdgeReferences = graphmap::AllEdges<'a, N, E, Ty>;
     fn edge_references(self) -> Self::EdgeReferences {
         self.all_edges()
     }
 }
 
-impl<'a, N: 'a, E: 'a, Ty, Ix> GraphEdgeRef for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type EdgeRef = graph::EdgeReference<'a, E, Ix>;
-}
-
 impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
+    type EdgeRef = graph::EdgeReference<'a, E, Ix>;
     type EdgeReferences = graph::EdgeReferences<'a, E, Ix>;
     fn edge_references(self) -> Self::EdgeReferences {
         (*self).edge_references()

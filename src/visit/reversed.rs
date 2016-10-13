@@ -7,7 +7,6 @@ use ::{
 use visit::{
     GraphBase,
     GraphRef,
-    GraphEdgeRef,
     IntoNodeIdentifiers,
     IntoNeighbors,
     IntoNeighborsDirected,
@@ -115,15 +114,10 @@ impl<R> EdgeRef for ReversedEdgeRef<R>
     }
 }
 
-impl<G> GraphEdgeRef for Reversed<G>
-    where G: GraphEdgeRef
-{
-    type EdgeRef = ReversedEdgeRef<G::EdgeRef>;
-}
-
 impl<G> IntoEdgeReferences for Reversed<G>
     where G: IntoEdgeReferences
 {
+    type EdgeRef = ReversedEdgeRef<G::EdgeRef>;
     type EdgeReferences = ReversedEdgeReferences<G::EdgeReferences>;
     fn edge_references(self) -> Self::EdgeReferences {
         ReversedEdgeReferences {

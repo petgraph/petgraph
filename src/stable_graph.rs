@@ -38,7 +38,6 @@ use super::{
 use IntoWeightedEdge;
 use visit::{
     EdgeRef,
-    GraphEdgeRef,
     IntoEdgeReferences,
     NodeIndexable,
 };
@@ -826,17 +825,11 @@ fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
     x
 }
 
-impl<'a, N: 'a, E: 'a, Ty, Ix> GraphEdgeRef for &'a StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type EdgeRef = EdgeReference<'a, E, Ix>;
-}
-
 impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
+    type EdgeRef = EdgeReference<'a, E, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ix>;
     
     /// Create an iterator over all edges in the graph, in indexed order.

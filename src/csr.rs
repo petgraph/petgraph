@@ -4,11 +4,12 @@
 use std::marker::PhantomData;
 use std::cmp::max;
 use std::ops::Range;
-use std::iter::Zip;
+use std::iter::{Enumerate, Zip};
+use std::slice::Windows;
 
 use visit::{EdgeRef, GraphBase, IntoNeighbors, NodeIndexable, IntoEdges};
 use visit::{NodeCompactIndexable, IntoNodeIdentifiers, Visitable};
-use visit::GraphEdgeRef;
+use visit::IntoEdgeReferences;
 use data::Data;
 
 use util::zip;
@@ -43,7 +44,8 @@ pub struct Csr<N = (), E = (), Ty = Directed> {
     column: Vec<NodeIndex>,
     /// weight of each edge; lock step with column
     edges: Vec<E>,
-    /// Index of start of row
+    /// Index of start of row Always node_count + 1 long.
+    /// Last element is always equal to column.len()
     row: Vec<NodeIndex>,
     node_weights: Vec<N>,
     edge_count: usize,
@@ -73,7 +75,7 @@ impl<N, E, Ty> Csr<N, E, Ty>
         Csr {
             column: Vec::new(),
             edges: Vec::new(),
-            row: vec![0; n],
+            row: vec![0; n + 1],
             node_weights: Vec::new(),
             edge_count: 0,
             ty: PhantomData,
@@ -90,14 +92,14 @@ impl<N, E, Ty> Csr<N, E, Ty>
         where Edge: Clone + IntoWeightedEdge<E, NodeId=NodeIndex>,
               N: Default,
     {
-        let nodes = match edges.iter().map(|edge|
+        let max_node_id = match edges.iter().map(|edge|
             match edge.clone().into_weighted_edge() {
                 (x, y, _) => max(x, y)
             }).max() {
             None => return Self::with_nodes(0),
             Some(x) => x,
         };
-        let mut self_ = Self::with_nodes(nodes + 1);
+        let mut self_ = Self::with_nodes(max_node_id + 1);
         let mut iter = edges.iter().cloned().peekable();
         {
             let mut rows = self_.row.iter_mut();
@@ -144,7 +146,7 @@ impl<N, E, Ty> Csr<N, E, Ty>
     }
 
     pub fn node_count(&self) -> usize {
-        self.row.len()
+        self.row.len() - 1
     }
 
     pub fn edge_count(&self) -> usize {
@@ -350,10 +352,61 @@ impl<N, E, Ty> Data for Csr<N, E, Ty>
     type EdgeWeight = E;
 }
 
-impl<'a, N, E, Ty> GraphEdgeRef for &'a Csr<N, E, Ty>
+impl<'a, N, E, Ty> IntoEdgeReferences for &'a Csr<N, E, Ty>
     where Ty: EdgeType,
 {
     type EdgeRef = EdgeReference<'a, E, Ty>;
+    type EdgeReferences = EdgeReferences<'a, E, Ty>;
+    fn edge_references(self) -> Self::EdgeReferences {
+        EdgeReferences {
+            index: 0,
+            source_index: 0,
+            edge_ranges: self.row.windows(2).enumerate(),
+            column: &self.column,
+            edges: &self.edges,
+            iter: zip(&[], &[]),
+            ty: self.ty,
+        }
+    }
+}
+
+pub struct EdgeReferences<'a, E: 'a, Ty> {
+    source_index: usize,
+    index: usize,
+    edge_ranges: Enumerate<Windows<'a, usize>>,
+    column: &'a [NodeIndex],
+    edges: &'a [E],
+    iter: Zip<SliceIter<'a, NodeIndex>, SliceIter<'a, E>>,
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, E, Ty> Iterator for EdgeReferences<'a, E, Ty>
+    where Ty: EdgeType,
+{
+    type Item = EdgeReference<'a, E, Ty>;
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some((&j, w)) = self.iter.next() {
+                let index = self.index;
+                self.index += 1;
+                return Some(EdgeReference {
+                    index: index,
+                    source: self.source_index,
+                    target: j,
+                    weight: w,
+                    ty: PhantomData,
+                })
+            }
+            if let Some((i, w)) = self.edge_ranges.next() {
+                let a = w[0];
+                let b = w[1];
+                self.iter = zip(&self.column[a..b], &self.edges[a..b]);
+                self.source_index = i;
+            } else {
+                return None;
+            }
+        }
+    }
 }
 
 impl<'a, N, E, Ty> IntoEdges for &'a Csr<N, E, Ty>
@@ -496,12 +549,12 @@ mod tests {
         m.add_edge(1, 1, ());
         println!("{:?}", m);
         assert_eq!(&m.column, &[0, 2, 0, 1, 2, 2]);
-        assert_eq!(&m.row, &[0, 2, 5]);
+        assert_eq!(&m.row, &[0, 2, 5, 6]);
 
         let added = m.add_edge(1, 2, ());
         assert!(!added);
         assert_eq!(&m.column, &[0, 2, 0, 1, 2, 2]);
-        assert_eq!(&m.row, &[0, 2, 5]);
+        assert_eq!(&m.row, &[0, 2, 5, 6]);
 
         assert_eq!(m.neighbors_slice(1), &[0, 1, 2]);
         assert_eq!(m.node_count(), 3);
@@ -523,7 +576,7 @@ mod tests {
         m.add_edge(2, 2, ());
         println!("{:?}", m);
         assert_eq!(&m.column, &[0, 2, 2, 0, 1, 2]);
-        assert_eq!(&m.row, &[0, 2, 3]);
+        assert_eq!(&m.row, &[0, 2, 3, 6]);
         assert_eq!(m.node_count(), 3);
         assert_eq!(m.edge_count(), 4);
     }
@@ -644,5 +697,34 @@ mod tests {
         ]);
         println!("{:?}", m);
         println!("{:?}", bellman_ford(&m, 0));
+    }
+
+    #[test]
+    fn test_edge_references() {
+        use visit::EdgeRef;
+        use visit::IntoEdgeReferences;
+        let m: Csr<(), _> = Csr::from_sorted_edges(&[
+            (0, 1, 0.5),
+            (0, 2, 2.),
+            (1, 0, 1.),
+            (1, 1, 1.),
+            (1, 2, 1.),
+            (1, 3, 1.),
+            (2, 3, 3.),
+
+            (4, 5, 1.),
+            (5, 7, 2.),
+            (6, 7, 1.),
+            (7, 8, 3.),
+        ]);
+        let mut copy = Vec::new();
+        for e in m.edge_references() {
+            copy.push((e.source(), e.target(), *e.weight()));
+            println!("{:?}", e);
+        }
+        let m2: Csr<(), _> = Csr::from_sorted_edges(&copy);
+        assert_eq!(&m.row, &m2.row);
+        assert_eq!(&m.column, &m2.column);
+        assert_eq!(&m.edges, &m2.edges);
     }
 }
