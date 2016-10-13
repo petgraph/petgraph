@@ -1764,6 +1764,48 @@ impl<'a, E, Ix: IndexType> PartialEq for EdgeReference<'a, E, Ix>
     }
 }
 
+use visit::{GraphNodeRef, IntoNodeReferences};
+
+impl<'a, N, E, Ty, Ix> IntoNodeReferences for &'a Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NodeReferences = NodeReferences<'a, N, Ix>;
+    fn node_references(self) -> Self::NodeReferences {
+        NodeReferences {
+            iter: self.nodes.iter().enumerate()
+        }
+    }
+}
+
+impl<'a, N, E, Ty, Ix> GraphNodeRef for &'a Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NodeRef = (NodeIndex<Ix>, &'a N);
+}
+
+/// Iterator over all nodes of a graph.
+pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
+    iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
+}
+
+impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
+    where Ix: IndexType
+{
+    type Item = (NodeIndex<Ix>, &'a N);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|(i, node)| 
+            (node_index(i), &node.weight)
+        )
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
 impl<'a, Ix, E> EdgeReference<'a, E, Ix>
     where Ix: IndexType,
 {

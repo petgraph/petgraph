@@ -35,6 +35,7 @@ mod graph_impl;
 pub mod dot;
 #[path = "visit/visit.rs"]
 pub mod visit;
+pub mod data;
 pub mod unionfind;
 mod dijkstra;
 mod iter_format;

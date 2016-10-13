@@ -124,4 +124,5 @@ impl<G, F> NodeIndexable for Filtered<G, F>
 {
     fn node_bound(&self) -> usize { self.0.node_bound() }
     fn to_index(n: G::NodeId) -> usize { G::to_index(n) }
+    fn from_index(ix: usize) -> Self::NodeId { G::from_index(ix) }
 }

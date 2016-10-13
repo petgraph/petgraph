@@ -17,6 +17,7 @@ use visit::{
     Visitable,
     EdgeRef,
 };
+use data::{Data};
 
 /// Wrapper type for walking the graph as if all edges are reversed.
 #[derive(Copy, Clone, Debug)]
@@ -28,6 +29,11 @@ impl<G: GraphBase> GraphBase for Reversed<G> {
 }
 
 impl<G: GraphRef> GraphRef for Reversed<G> { }
+
+impl<G: Data> Data for Reversed<G> {
+    type NodeWeight = G::NodeWeight;
+    type EdgeWeight = G::EdgeWeight;
+}
 
 impl<G> IntoNodeIdentifiers for Reversed<G>
     where G: IntoNodeIdentifiers
@@ -147,4 +153,5 @@ impl<G> NodeIndexable for Reversed<G>
 {
     fn node_bound(&self) -> usize { self.0.node_bound() }
     fn to_index(n: G::NodeId) -> usize { G::to_index(n) }
+    fn from_index(ix: usize) -> Self::NodeId { G::from_index(ix) }
 }

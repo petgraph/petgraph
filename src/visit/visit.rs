@@ -67,6 +67,8 @@ use graphmap::{
     NodeTrait,
 };
 
+use data::Data;
+
 /// Base graph trait: defines the associated node identifier and
 /// edge identifier types.
 pub trait GraphBase {
@@ -217,6 +219,21 @@ impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
     }
 }
 
+pub trait IntoEdges : GraphEdgeRef {
+    type Edges: Iterator<Item=Self::EdgeRef>;
+    fn edges(self, a: Self::NodeId) -> Self::Edges;
+}
+
+/// A graph with a known node count.
+pub trait NodeCount : GraphBase {
+    fn node_count(&self) -> usize;
+}
+
+impl<'a, G> NodeCount for &'a G
+    where G: NodeCount,
+{
+    fn node_count(&self) -> usize { (*self).node_count() }
+}
 
 /// Access to the sequence of the graph’s `NodeId`s.
 pub trait IntoNodeIdentifiers : GraphRef {
@@ -306,8 +323,9 @@ impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
 }
 
 /// A graph that defines edge references
-pub trait GraphEdgeRef : GraphRef {
-    type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId>;
+pub trait GraphEdgeRef : GraphRef + Data {
+    type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId,
+                          Weight=Self::EdgeWeight>;
 }
 
 impl<'a, G> GraphEdgeRef for &'a G where G: GraphEdgeRef
@@ -339,6 +357,61 @@ impl<'a, N, E> EdgeRef for (N, N, &'a E)
     fn id(&self) -> (N, N) { (self.0, self.1) }
 }
 
+pub trait GraphNodeRef : GraphRef + Data {
+    type NodeRef: NodeRef<Weight=Self::NodeWeight>;
+}
+
+impl<'a, G> GraphNodeRef for &'a G
+    where G: GraphNodeRef,
+{
+    type NodeRef = G::NodeRef;
+}
+
+/// A node reference.
+pub trait NodeRef : Copy {
+    type NodeId;
+    type Weight;
+    fn id(&self) -> Self::NodeId;
+    fn weight(&self) -> &Self::Weight;
+}
+
+/// Access to the sequence of the graph’s nodes
+pub trait IntoNodeReferences : GraphNodeRef {
+    type NodeReferences: Iterator<Item=Self::NodeRef>;
+    fn node_references(self) -> Self::NodeReferences;
+}
+
+impl<'a, G> IntoNodeReferences for &'a G
+    where G: IntoNodeReferences
+{
+    type NodeReferences = G::NodeReferences;
+    fn node_references(self) -> Self::NodeReferences {
+        (*self).node_references()
+    }
+}
+
+impl<Id> NodeRef for (Id, ())
+    where Id: Copy,
+{
+    type NodeId = Id;
+    type Weight = ();
+    fn id(&self) -> Self::NodeId { self.0 }
+    fn weight(&self) -> &Self::Weight {
+        static DUMMY: () = ();
+        &DUMMY
+    }
+}
+
+impl<'a, Id, W> NodeRef for (Id, &'a W)
+    where Id: Copy,
+{
+    type NodeId = Id;
+    type Weight = W;
+    fn id(&self) -> Self::NodeId { self.0 }
+    fn weight(&self) -> &Self::Weight { self.1 }
+}
+
+
 /// Access to the sequence of the graph’s edges
 pub trait IntoEdgeReferences : GraphEdgeRef {
     type EdgeReferences: Iterator<Item=Self::EdgeRef>;
@@ -360,6 +433,15 @@ impl<'a, N: 'a, E: 'a, Ty> GraphEdgeRef for &'a GraphMap<N, E, Ty>
           Ty: EdgeType,
 {
     type EdgeRef = (N, N, &'a E);
+}
+
+#[cfg(feature = "graphmap")]
+impl<N, E, Ty> Data for GraphMap<N, E, Ty>
+    where N: Copy,
+          Ty: EdgeType,
+{
+    type NodeWeight = N;
+    type EdgeWeight = E;
 }
 
 #[cfg(feature = "graphmap")]
@@ -397,6 +479,7 @@ pub trait NodeIndexable : GraphBase {
     fn node_bound(&self) -> usize;
     /// Convert `a` to an integer index.
     fn to_index(a: Self::NodeId) -> usize;
+    fn from_index(i: usize) -> Self::NodeId;
 }
 
 /// The graph’s `NodeId`s map to indices, in a range without holes.
@@ -410,6 +493,7 @@ impl<'a, G> NodeIndexable for &'a G
 {
     fn node_bound(&self) -> usize { (**self).node_bound() }
     fn to_index(ix: Self::NodeId) -> usize { G::to_index(ix) }
+    fn from_index(ix: usize) -> Self::NodeId { G::from_index(ix) }
 }
 
 impl<'a, G> NodeCompactIndexable for &'a G
@@ -422,7 +506,9 @@ impl<N, E, Ty, Ix> NodeIndexable for Graph<N, E, Ty, Ix>
 {
     fn node_bound(&self) -> usize { self.node_count() }
     fn to_index(ix: NodeIndex<Ix>) -> usize { ix.index() }
+    fn from_index(ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
 }
+
 impl<N, E, Ty, Ix> NodeCompactIndexable for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
@@ -543,6 +629,15 @@ impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix>
         map.clear();
         map.grow(self.node_bound());
     }
+}
+
+#[cfg(feature = "stable_graph")]
+impl<N, E, Ty, Ix> Data for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NodeWeight = N;
+    type EdgeWeight = E;
 }
 
 impl<'a, G> Visitable for Frozen<'a, G> where G: Visitable {
