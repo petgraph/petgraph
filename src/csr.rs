@@ -82,7 +82,8 @@ impl<N, E, Ty> Csr<N, E, Ty>
 
     /// Create a new `Csr` from a sorted sequence of edges
     ///
-    /// Edges **must** be sorted and unique.
+    /// Edges **must** be sorted and unique, where the sort order is the default
+    /// order for the pair *(u, v)* in Rust (*u* has priority).
     ///
     /// Computes in **O(|E| + |V|)** time.
     pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Self
