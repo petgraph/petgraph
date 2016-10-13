@@ -41,6 +41,7 @@ mod dijkstra;
 mod iter_format;
 mod isomorphism;
 mod traits_graph;
+mod util;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
 
