@@ -1981,22 +1981,6 @@ impl<'a, N, E, Ty, Ix> Frozen<'a, Graph<N, E, Ty, Ix>>
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    /// Access the weight for node `a`, mutably.
-    ///
-    /// Also available with indexing syntax: `&mut graph[a]`.
-    pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N>
-    {
-        self.0.node_weight_mut(a)
-    }
-
-    /// Access the weight for edge `e`, mutably.
-    ///
-    /// Also available with indexing syntax: `&mut graph[e]`.
-    pub fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E>
-    {
-        self.0.edge_weight_mut(e)
-    }
-
     /// Index the `Graph` by two indices, any combination of
     /// node or edge indices is fine.
     ///
