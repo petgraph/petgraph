@@ -25,7 +25,6 @@ use super::visit::{
     NodeIndexable,
     NodeCompactIndexable,
     IntoEdgeReferences,
-    EdgeRef,
     IntoEdges,
     Reversed,
 };

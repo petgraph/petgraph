@@ -7,7 +7,6 @@ use std::fmt;
 use petgraph::prelude::*;
 use petgraph::visit::{
     DfsIter,
-    EdgeRef,
 };
 
 use petgraph::algo::{

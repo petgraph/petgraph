@@ -28,7 +28,6 @@ use petgraph::visit::{
     AsUndirected,
     Topo,
     IntoNeighbors,
-    EdgeRef,
     BfsIter,
     DfsIter,
 };

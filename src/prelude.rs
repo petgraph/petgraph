@@ -41,3 +41,8 @@ pub use ::{
     Directed,
     Undirected,
 };
+
+#[doc(no_inline)]
+pub use visit::{
+    EdgeRef,
+};
