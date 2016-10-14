@@ -85,6 +85,12 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     }
 }
 
+/// Csr creation error: edges were not in sorted order.
+#[derive(Clone, Debug)]
+pub struct EdgesNotSorted {
+    first_error: (usize, usize),
+}
+
 impl<N, E, Ix> Csr<N, E, Directed, Ix>
     where Ix: IndexType,
 {
@@ -95,7 +101,7 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
     /// order for the pair *(u, v)* in Rust (*u* has priority).
     ///
     /// Computes in **O(|E| + |V|)** time.
-    pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Self
+    pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Result<Self, EdgesNotSorted>
         where Edge: Clone + IntoWeightedEdge<E, NodeId=NodeIndex<Ix>>,
               N: Default,
     {
@@ -103,7 +109,7 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
             match edge.clone().into_weighted_edge() {
                 (x, y, _) => max(x.index(), y.index())
             }).max() {
-            None => return Self::with_nodes(0),
+            None => return Ok(Self::with_nodes(0)),
             Some(x) => x,
         };
         let mut self_ = Self::with_nodes(max_node_id + 1);
@@ -121,18 +127,32 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
                     if let Some(edge) = iter.peek() {
                         let (n, m, weight) = edge.clone().into_weighted_edge();
                         // check that the edges are in increasing sequence
+                        if node > n.index() {
+                            return Err(EdgesNotSorted {
+                                first_error: (n.index(), m.index()),
+                            });
+                        }
+                        /*
                         debug_assert!(node <= n.index(),
                                       concat!("edges are not sorted, ",
                                               "failed assertion source {:?} <= {:?} ",
                                               "for edge {:?}"),
                                       node, n, (n, m));
+                                      */
                         if n.index() != node {
                             break 'inner;
                         }
                         // check that the edges are in increasing sequence
+                        /*
                         debug_assert!(last_target.map_or(true, |x| m > x),
                                       "edges are not sorted, failed assertion {:?} < {:?}",
                                       last_target, m);
+                                      */
+                        if !last_target.map_or(true, |x| m > x) {
+                            return Err(EdgesNotSorted {
+                                first_error: (n.index(), m.index()),
+                            });
+                        }
                         last_target = Some(m);
                         self_.column.push(m);
                         self_.edges.push(weight);
@@ -149,7 +169,7 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
             }
         }
 
-        self_
+        Ok(self_)
     }
 }
 
@@ -626,7 +646,7 @@ mod tests {
             (0, 1),
             (1, 0),
             (0, 2),
-        ]);
+        ]).unwrap();
         println!("{:?}", m);
     }
 
@@ -639,7 +659,7 @@ mod tests {
             (1, 0),
             (1, 2),
             (1, 1),
-        ]);
+        ]).unwrap();
         println!("{:?}", m);
     }
 
@@ -652,7 +672,7 @@ mod tests {
             (1, 1),
             (2, 2),
             (2, 4),
-        ]);
+        ]).unwrap();
         println!("{:?}", m);
         assert_eq!(m.neighbors_slice(0), &[1, 2]);
         assert_eq!(m.neighbors_slice(1), &[0, 1]);
@@ -674,7 +694,7 @@ mod tests {
             // disconnected subgraph
             (4, 4),
             (4, 5),
-        ]);
+        ]).unwrap();
         println!("{:?}", m);
         let mut dfs = Dfs::new(&m, 0);
         while let Some(_) = dfs.next(&m) {
@@ -711,7 +731,7 @@ mod tests {
             (4, 4),
             (4, 5),
             (5, 2),
-        ]);
+        ]).unwrap();
         println!("{:?}", m);
         println!("{:?}", tarjan_scc(&m));
     }
@@ -731,7 +751,7 @@ mod tests {
             (5, 7, 2.),
             (6, 7, 1.),
             (7, 8, 3.),
-        ]);
+        ]).unwrap();
         println!("{:?}", m);
         println!("{:?}", bellman_ford(&m, 0));
     }
@@ -753,13 +773,13 @@ mod tests {
             (5, 7, 2.),
             (6, 7, 1.),
             (7, 8, 3.),
-        ]);
+        ]).unwrap();
         let mut copy = Vec::new();
         for e in m.edge_references() {
             copy.push((e.source(), e.target(), *e.weight()));
             println!("{:?}", e);
         }
-        let m2: Csr<(), _> = Csr::from_sorted_edges(&copy);
+        let m2: Csr<(), _> = Csr::from_sorted_edges(&copy).unwrap();
         assert_eq!(&m.row, &m2.row);
         assert_eq!(&m.column, &m2.column);
         assert_eq!(&m.edges, &m2.edges);
