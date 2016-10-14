@@ -332,14 +332,20 @@ pub trait Data : GraphBase {
 Data!{delegate_impl []}
 Data!{delegate_impl [['a, G], G, &'a mut G, deref]}
 
-/// An edge reference
+/// An edge reference.
+///
+/// Edge references are used by traits `IntoEdges` and `IntoEdgeReferences`.
 pub trait EdgeRef : Copy {
     type NodeId;
     type EdgeId;
     type Weight;
+    /// The source node of the edge.
     fn source(&self) -> Self::NodeId;
+    /// The target node of the edge.
     fn target(&self) -> Self::NodeId;
+    /// A reference to the weight of the edge.
     fn weight(&self) -> &Self::Weight;
+    /// The edge’s identifier.
     fn id(&self) -> Self::EdgeId;
 }
 
