@@ -471,7 +471,7 @@ impl<G> Iterator for MinSpanningTree<G>
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(ref mut iter) = self.node_ids {
             if let Some(node) = iter.next() {
-                return Some(Element::Node(node.weight().clone()));
+                return Some(Element::Node { weight: node.weight().clone() });
             }
         }
         self.node_ids = None;
@@ -489,7 +489,11 @@ impl<G> Iterator for MinSpanningTree<G>
             let g = self.graph;
             // check if the edge would connect two disjoint parts
             if self.subgraphs.union(g.to_index(a), g.to_index(b)) {
-                return Some(Element::Edge(g.to_index(a), g.to_index(b), score));
+                return Some(Element::Edge {
+                    source: g.to_index(a),
+                    target: g.to_index(b),
+                    weight: score,
+                });
             }
         }
         None

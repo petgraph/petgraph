@@ -227,10 +227,22 @@ impl<N, E, Ty> Create for GraphMap<N, E, Ty>
     }
 }
 
-/// A graph element
+/// A graph element.
+///
+/// A sequence of Elements, for example an iterator, is laid out as follows:
+/// Nodes are implicitly given the index of their appearance in the sequence.
+/// The edges’ source and target fields refer to these indices.
 pub enum Element<N, E> {
-    Node(N),
-    Edge(usize, usize, E),
+    /// A graph node.
+    Node {
+        weight: N,
+    },
+    /// A graph edge.
+    Edge {
+        source: usize,
+        target: usize,
+        weight: E,
+    }
 }
 
 /// Create a graph from an iterator of elements.
@@ -244,11 +256,11 @@ pub trait FromElements : Create {
         let mut map = Vec::new();
         for element in iterable {
             match element {
-                Element::Node(w) => {
-                    map.push(gr.add_node(w));
+                Element::Node { weight } => {
+                    map.push(gr.add_node(weight));
                 }
-                Element::Edge(a, b, w) => {
-                    gr.add_edge(map[a], map[b], w);
+                Element::Edge { source, target, weight } => {
+                    gr.add_edge(map[source], map[target], weight);
                 }
             }
         }
@@ -265,13 +277,13 @@ fn from_elements_indexable<G, I>(iterable: I) -> G
     let map = |gr: &G, i| gr.from_index(i);
     for element in iterable {
         match element {
-            Element::Node(w) => {
-                gr.add_node(w);
+            Element::Node { weight } => {
+                gr.add_node(weight);
             }
-            Element::Edge(a, b, w) => {
-                let from = map(&gr, a);
-                let to = map(&gr, b);
-                gr.add_edge(from, to, w);
+            Element::Edge { source, target, weight } => {
+                let from = map(&gr, source);
+                let to = map(&gr, target);
+                gr.add_edge(from, to, weight);
             }
         }
     }
