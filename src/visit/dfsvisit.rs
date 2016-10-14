@@ -5,7 +5,7 @@ use visit::{VisitMap, Visitable};
 
 /// Strictly monotonically increasing event time for a depth first search.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Default)]
-pub struct Time(pub u64);
+pub struct Time(pub usize);
 
 /// A depth first search (DFS) visitor event.
 #[derive(Copy, Clone, Debug)]
