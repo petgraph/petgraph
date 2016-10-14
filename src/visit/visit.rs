@@ -53,7 +53,11 @@ use std::collections::{
 };
 use std::hash::{Hash, BuildHasher};
 
-use prelude::{Graph, GraphMap, StableGraph, Direction};
+use prelude::{Graph, Direction};
+#[cfg(feature = "graphmap")]
+use prelude::GraphMap;
+#[cfg(feature = "stable_graph")]
+use prelude::StableGraph;
 use graph::{NodeIndex};
 use super::{
     graph,

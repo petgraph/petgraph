@@ -10,6 +10,7 @@ use super::graph::{
     IndexType,
     NodeIndex,
 };
+#[cfg(feature = "stable_graph")]
 use stable_graph::StableGraph;
 use visit::{NodeIndexable, EdgeRef, IntoEdgeReferences};
 
@@ -47,6 +48,7 @@ impl<N, E, Ty, Ix> GetAdjacencyMatrix for Graph<N, E, Ty, Ix> where
 }
 
 
+#[cfg(feature = "stable_graph")]
 /// The adjacency matrix for **Graph** is a bitmap that's computed by
 /// `.adjacency_matrix()`.
 impl<N, E, Ty, Ix> GetAdjacencyMatrix for StableGraph<N, E, Ty, Ix> where

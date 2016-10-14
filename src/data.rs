@@ -2,11 +2,13 @@
 
 
 use Graph;
+#[cfg(feature = "stable_graph")]
 use stable_graph::StableGraph;
 use ::{
     EdgeType,
 };
 use graph::IndexType;
+#[cfg(feature = "graphmap")]
 use graphmap::{GraphMap, NodeTrait};
 use visit::{
     Data,
@@ -99,6 +101,7 @@ impl<N, E, Ty, Ix> DataMapMut for Graph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> DataMap for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType
@@ -111,6 +114,7 @@ impl<N, E, Ty, Ix> DataMap for StableGraph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> DataMapMut for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType
@@ -146,6 +150,7 @@ impl<N, E, Ty, Ix> Build for Graph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> Build for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
@@ -169,6 +174,7 @@ impl<N, E, Ty, Ix> Build for StableGraph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "graphmap")]
 impl<N, E, Ty> Build for GraphMap<N, E, Ty>
     where Ty: EdgeType,
           N: NodeTrait,
@@ -209,6 +215,7 @@ impl<N, E, Ty, Ix> Create for Graph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> Create for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
@@ -218,6 +225,7 @@ impl<N, E, Ty, Ix> Create for StableGraph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "graphmap")]
 impl<N, E, Ty> Create for GraphMap<N, E, Ty>
     where Ty: EdgeType,
           N: NodeTrait,
@@ -303,6 +311,7 @@ impl<N, E, Ty, Ix> FromElements for Graph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> FromElements for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
@@ -315,6 +324,7 @@ impl<N, E, Ty, Ix> FromElements for StableGraph<N, E, Ty, Ix>
     }
 }
 
+#[cfg(feature = "graphmap")]
 impl<N, E, Ty> FromElements for GraphMap<N, E, Ty>
     where Ty: EdgeType,
           N: NodeTrait,
