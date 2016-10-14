@@ -352,7 +352,7 @@ pub trait ElementIterator<N, E> : Iterator<Item=Element<N, E>> {
     }
 }
 
-impl<N, E, I> ElementIterator<N, E> for I
+impl<N, E, I: ?Sized> ElementIterator<N, E> for I
     where I: Iterator<Item=Element<N, E>> { }
 
 /// An iterator that filters graph elements.
