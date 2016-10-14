@@ -10,7 +10,7 @@
 //! ### Graph Traversal
 //!
 //! [`Dfs`](struct.Dfs.html), [`Bfs`][bfs], [`DfsPostOrder`][dfspo] and
-//! [`Topo`][topo]  are basic visitors and they use ”walker” methods: the
+//! [`Topo`][topo]  are basic visitors and they use “walker” methods: the
 //! visitors don't hold the graph as borrowed during traversal, only for the
 //! `.next()` call on the walker.
 //!
