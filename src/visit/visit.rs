@@ -219,6 +219,12 @@ impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
 }
 
 trait_template! {
+/// Access to the edges of each node.
+///
+/// The edges are, depending on the graph’s edge type:
+///
+/// - `Directed`: All edges from `a`.
+/// - `Undirected`: All edges connected to `a`.
 pub trait IntoEdges : IntoEdgeReferences {
     @section type
     type Edges: Iterator<Item=Self::EdgeRef>;
