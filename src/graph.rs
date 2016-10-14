@@ -25,9 +25,12 @@ use visit::EdgeRef;
 use visit::{IntoNodeReferences};
 
 
-/// The default integer type for node and edge indices in `Graph`.
+/// The default integer type for graph indices.
 /// `u32` is the default to reduce the size of the graph's data and improve
 /// performance in the common case.
+///
+/// Used for node and edge indices in `Graph` and `StableGraph`, used
+/// for node indices in `Csr`.
 pub type DefaultIx = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
