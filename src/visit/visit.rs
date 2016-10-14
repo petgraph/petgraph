@@ -420,6 +420,7 @@ impl<N, E, Ty> Data for GraphMap<N, E, Ty>
 }
 
 trait_template! {
+    /// Edge kind property (directed or undirected edges)
 pub trait Prop : GraphBase {
     @section type
     /// The kind edges in the graph.

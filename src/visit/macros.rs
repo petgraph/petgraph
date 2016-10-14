@@ -2,9 +2,11 @@
 /// Define a trait as usual, and a macro that can be used to instantiate
 /// implementations of it.
 ///
-/// Well almost: There *must* be markers of `@section type`, `@section self`
-/// and `@section self_ref` before the associated types, `self` methods
-/// and `&self` methods respectively.
+/// Well almost: There *must* be markers of
+/// `@section type`, `@section self` and `@section self_ref`, `@section self_mut`,
+/// `@section ignore`, before the associated types, `self` methods
+/// and `&self` methods, `&mut self` methods and methods to skip in delegation
+/// respectively.
 macro_rules! trait_template {
     ($(#[$doc:meta])* pub trait $name:ident $($methods:tt)*) => {
         macro_rules! $name {
