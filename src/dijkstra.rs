@@ -9,45 +9,39 @@ use std::collections::hash_map::Entry::{
 
 use std::default::Default;
 use std::hash::Hash;
-use std::ops::{
-    Add,
-};
 
 use scored::MinScored;
 use super::visit::{
-    GraphRef,
     Visitable,
     VisitMap,
+    IntoEdges,
+    EdgeRef,
 };
+use algo::Measure;
 
 /// [Generic] Dijkstra's shortest path algorithm.
 ///
 /// Compute the length of the shortest path from `start` to every reachable
 /// node.
 ///
-/// The graph should be `Visitable`, and `edges` a closure that maps
-/// a node identifier to an iterator of `(n, k)` pairs where `n` is an adjacent
-/// node and `k` the edge weight.
+/// The graph should be `Visitable` and implement `IntoEdges`. The edge
+/// weights are used to compute path costs.
 ///
 /// If `goal` is not `None`, then the algorithm terminates once the `goal` node's
 /// cost is calculated.
 ///
 /// Returns a `HashMap` that maps `NodeId` to path cost.
-pub fn dijkstra<G, K, F, Edges>(graph: G,
-                                start: G::NodeId,
-                                goal: Option<G::NodeId>,
-                                mut edges: F) -> HashMap<G::NodeId, K>
-    where G: GraphRef + Visitable,
+pub fn dijkstra<G>(graph: G, start: G::NodeId, goal: Option<G::NodeId>)
+    -> HashMap<G::NodeId, G::EdgeWeight>
+    where G: IntoEdges + Visitable,
           G::NodeId: Eq + Hash,
-          K: Default + Add<Output=K> + Copy + PartialOrd,
-          F: FnMut(G, G::NodeId) -> Edges,
-          Edges: Iterator<Item=(G::NodeId, K)>,
+          G::EdgeWeight: Measure + Copy,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
     //let mut predecessor = HashMap::new();
     let mut visit_next = BinaryHeap::new();
-    let zero_score: K = Default::default();
+    let zero_score = <G::EdgeWeight>::default();
     scores.insert(start.clone(), zero_score);
     visit_next.push(MinScored(zero_score, start));
     while let Some(MinScored(node_score, node)) = visit_next.pop() {
@@ -57,17 +51,18 @@ pub fn dijkstra<G, K, F, Edges>(graph: G,
         if goal.as_ref() == Some(&node) {
             break
         }
-        for (next, edge) in edges(graph, node.clone()) {
+        for edge in graph.edges(node.clone()) {
+            let next = edge.target();
             if visited.is_visited(&next) {
                 continue
             }
-            let mut next_score = node_score + edge;
+            let mut next_score = node_score + edge.weight().clone();
             match scores.entry(next.clone()) {
                 Occupied(ent) => if next_score < *ent.get() {
                     *ent.into_mut() = next_score;
                     //predecessor.insert(next.clone(), node.clone());
                 } else {
-                    next_score = *ent.get();
+                    next_score = ent.get().clone();
                 },
                 Vacant(ent) => {
                     ent.insert(next_score);
