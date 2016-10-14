@@ -9,7 +9,7 @@ use std::slice::Windows;
 
 use visit::{EdgeRef, GraphBase, IntoNeighbors, NodeIndexable, IntoEdges};
 use visit::{NodeCompactIndexable, IntoNodeIdentifiers, Visitable};
-use visit::{Data, IntoEdgeReferences};
+use visit::{Data, IntoEdgeReferences, NodeCount};
 
 use util::zip;
 
@@ -528,14 +528,19 @@ impl<'a, N, E, Ty> IntoNodeIdentifiers for &'a Csr<N, E, Ty>
     where Ty: EdgeType,
 {
     type NodeIdentifiers = NodeIdentifiers;
-    fn node_count(&self) -> usize {
-        (*self).node_count()
-    }
     fn node_identifiers(self) -> Self::NodeIdentifiers {
         NodeIdentifiers {
             r: 0..self.node_count(),
             ty: PhantomData,
         }
+    }
+}
+
+impl<N, E, Ty> NodeCount for Csr<N, E, Ty>
+    where Ty: EdgeType,
+{
+    fn node_count(&self) -> usize {
+        (*self).node_count()
     }
 }
 

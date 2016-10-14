@@ -13,6 +13,7 @@ use visit::{
     IntoNeighborsDirected,
     IntoEdgeReferences,
     IntoExternals,
+    NodeCount,
     NodeIndexable,
     Visitable,
     EdgeRef,
@@ -135,5 +136,6 @@ NodeIndexable!{delegate_impl [[G], G, Reversed<G>, access0]}
 IntoNodeIdentifiers!{delegate_impl [[G], G, Reversed<G>, access0]}
 IntoNodeReferences!{delegate_impl [[G], G, Reversed<G>, access0]}
 Prop!{delegate_impl [[G], G, Reversed<G>, access0]}
+NodeCount!{delegate_impl [[G], G, Reversed<G>, access0]}
 
 

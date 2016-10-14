@@ -91,15 +91,6 @@ impl<N, E, Ty, Ix> DataMapMut for Graph<N, E, Ty, Ix>
     }
 }
 
-impl<N, E, Ty, Ix> NodeCount for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    fn node_count(&self) -> usize {
-        self.node_count()
-    }
-}
-
 impl<N, E, Ty, Ix> Build for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,

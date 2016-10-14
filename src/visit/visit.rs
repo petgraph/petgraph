@@ -245,8 +245,6 @@ pub trait IntoNodeIdentifiers : GraphRef {
     type NodeIdentifiers: Iterator<Item=Self::NodeId>;
     @section self
     fn node_identifiers(self) -> Self::NodeIdentifiers;
-    @section self_ref
-    fn node_count(&self) -> usize;
 }
 }
 
@@ -260,9 +258,14 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a Graph<N, E, Ty, Ix>
     fn node_identifiers(self) -> graph::NodeIndices<Ix> {
         Graph::node_indices(self)
     }
+}
 
+impl<N, E, Ty, Ix> NodeCount for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
     fn node_count(&self) -> usize {
-        Graph::node_count(self)
+        self.node_count()
     }
 }
 
@@ -275,9 +278,15 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
     fn node_identifiers(self) -> Self::NodeIdentifiers {
         StableGraph::node_indices(self)
     }
+}
 
+#[cfg(feature = "stable_graph")]
+impl<N, E, Ty, Ix> NodeCount for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
     fn node_count(&self) -> usize {
-        StableGraph::node_count(self)
+        self.node_count()
     }
 }
 

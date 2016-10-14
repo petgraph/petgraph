@@ -25,7 +25,7 @@ use {
 };
 
 use IntoWeightedEdge;
-use visit::{IntoNodeIdentifiers, IntoNodeReferences, NodeIndexable};
+use visit::{IntoNodeIdentifiers, NodeCount, IntoNodeReferences, NodeIndexable};
 use graph::Graph;
 use graph::node_index;
 
@@ -693,7 +693,12 @@ impl<'a, N, E: 'a, Ty> IntoNodeIdentifiers for &'a GraphMap<N, E, Ty>
             edge_ty: PhantomData,
         }
     }
+}
 
+impl<N, E, Ty> NodeCount for GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
     fn node_count(&self) -> usize {
         (*self).node_count()
     }

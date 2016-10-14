@@ -24,7 +24,7 @@ use iter_format::{
 use visit::EdgeRef;
 use visit::{Data, IntoNodeIdentifiers, Prop, NodeIndexable, IntoNeighborsDirected};
 use visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
-use visit::{NodeCompactIndexable, GetAdjacencyMatrix};
+use visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount};
 use data::{DataMap, DataMapMut};
 
 
@@ -1938,7 +1938,8 @@ IntoNeighbors!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoNeighborsDirected!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoNodeIdentifiers!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoNodeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-NodeIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 NodeCompactIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+NodeCount!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+NodeIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 Prop!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 Visitable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}

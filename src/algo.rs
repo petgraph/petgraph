@@ -21,6 +21,7 @@ use super::visit::{
     IntoNeighborsDirected,
     IntoNodeIdentifiers,
     IntoExternals,
+    NodeCount,
     NodeIndexable,
     NodeCompactIndexable,
     IntoEdgeReferences,
@@ -127,7 +128,7 @@ fn toposort_generic<G, F>(g: G,
 /// If `space` is not `None`, it is reused instead of creating a temporary
 /// workspace for graph traversal.
 pub fn is_cyclic_directed<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> bool
-    where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
+    where G: NodeCount + IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
 {
     let mut n_ordered = 0;
     toposort_generic(g, space, |_, _| n_ordered += 1);
@@ -179,7 +180,7 @@ impl<N, VM> Default for DfsSpace<N, VM>
 /// If `space` is not `None`, it is reused instead of creating a temporary
 /// workspace for graph traversal.
 pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> Vec<G::NodeId>
-    where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
+    where G: NodeCount + IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
 {
     let mut order = Vec::with_capacity(g.node_count());
     toposort_generic(g, space, |_, ix| order.push(ix));
@@ -241,7 +242,7 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 
     // First phase, reverse dfs pass, compute finishing times.
     // http://stackoverflow.com/a/26780899/161659
-    let mut finish_order = Vec::with_capacity(g.node_count());
+    let mut finish_order = Vec::with_capacity(0);
     for i in g.node_identifiers() {
         if dfs.discovered.is_visited(&i) {
             continue
@@ -503,7 +504,7 @@ pub struct NegativeCycle(());
 /// [Generic] Compute shortest paths from node `source` to all other.
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
     -> Result<(Vec<f32>, Vec<Option<G::NodeId>>), NegativeCycle>
-    where G: IntoNodeIdentifiers + IntoEdges + NodeIndexable,
+    where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
           G: Data<EdgeWeight=f32>,
 {
     let mut predecessor = vec![None; g.node_bound()];
