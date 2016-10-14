@@ -136,13 +136,12 @@ pub fn depth_first_search<G, F, C, I>(graph: G, starts: I, mut visitor: F) -> C
           I: IntoIterator<Item=G::NodeId>,
           C: ControlFlow,
 {
-    let mut time = Time(0);
-    let mut discovered = graph.visit_map();
-    let mut finished = graph.visit_map();
+    let time = &mut Time(0);
+    let discovered = &mut graph.visit_map();
+    let finished = &mut graph.visit_map();
 
     for start in starts {
-        control!(dfs_visitor(graph, start, &mut visitor, &mut discovered, &mut
-                             finished, &mut time));
+        control!(dfs_visitor(graph, start, &mut visitor, discovered, finished, time));
     }
     C::default()
 }
