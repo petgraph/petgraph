@@ -38,7 +38,7 @@ use super::{
 use IntoWeightedEdge;
 use visit::{
     EdgeRef,
-    GraphEdgeRef,
+    IntoEdges,
     IntoEdgeReferences,
     NodeIndexable,
 };
@@ -751,6 +751,17 @@ impl<'a, Ix, E> EdgeRef for EdgeReference<'a, E, Ix>
     fn id(&self) -> Self::EdgeId { self.index }
 }
 
+impl<'a, N, E, Ty, Ix> IntoEdges for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Edges = Edges<'a, E, Ty, Ix>;
+    fn edges(self, a: Self::NodeId) -> Self::Edges {
+        self.edges(a)
+    }
+}
+
+
 
 /// Iterator over the edges of from or to a node
 pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
@@ -826,17 +837,11 @@ fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
     x
 }
 
-impl<'a, N: 'a, E: 'a, Ty, Ix> GraphEdgeRef for &'a StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type EdgeRef = EdgeReference<'a, E, Ix>;
-}
-
 impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
+    type EdgeRef = EdgeReference<'a, E, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ix>;
     
     /// Create an iterator over all edges in the graph, in indexed order.
@@ -1037,7 +1042,8 @@ impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
     fn node_bound(&self) -> usize {
         self.g.nodes.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
     }
-    fn to_index(ix: NodeIndex<Ix>) -> usize { ix.index() }
+    fn to_index(&self, ix: NodeIndex<Ix>) -> usize { ix.index() }
+    fn from_index(&self, ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
 }
 
 

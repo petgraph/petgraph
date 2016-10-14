@@ -14,6 +14,7 @@ use petgraph::algo::{
     has_path_connecting,
     is_cyclic_undirected,
     min_spanning_tree,
+    is_isomorphic_matching,
 };
 
 use petgraph::graph::node_index as n;
@@ -28,7 +29,6 @@ use petgraph::visit::{
     AsUndirected,
     Topo,
     IntoNeighbors,
-    EdgeRef,
     BfsIter,
     DfsIter,
 };
@@ -163,6 +163,8 @@ fn bfs() {
 
 #[test]
 fn mst() {
+    use petgraph::data::FromElements;
+
     let mut gr = Graph::<_,_>::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
@@ -193,7 +195,8 @@ fn mst() {
 
     println!("{}", Dot::new(&gr));
 
-    let mst = min_spanning_tree(&gr);
+    let mst = UnGraph::from_elements(min_spanning_tree(&gr));
+
     println!("{}", Dot::new(&mst));
     println!("{:?}", Dot::new(&mst));
     println!("MST is:\n{:#?}", mst);
@@ -333,13 +336,13 @@ fn dijk() {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
 
-    let scores = dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    let scores = dijkstra(&g, a, None, |e| *e.weight());
     let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();
     scores.sort();
     assert_eq!(scores,
        vec![("A", 0), ("B", 7), ("C", 9), ("D", 11), ("E", 20), ("F", 20)]);
 
-    let scores = dijkstra(&g, a, Some(c), |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    let scores = dijkstra(&g, a, Some(c), |e| *e.weight());
     assert_eq!(scores[&c], 9);
 }
 
@@ -553,13 +556,13 @@ fn scc() {
         (7, 4),
         (4, 1)]);
 
-    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(4), n(7)],
         vec![n(2), n(5), n(8)],
     ]);
     // Reversed edges gives the same sccs (when sorted)
-    assert_sccs_eq(petgraph::algo::scc(Reversed(&gr)), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(Reversed(&gr)), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(4), n(7)],
         vec![n(2), n(5), n(8)],
@@ -573,7 +576,7 @@ fn scc() {
     let ed = hr.find_edge(n(6), n(8)).unwrap();
     assert!(hr.remove_edge(ed).is_some());
 
-    assert_sccs_eq(petgraph::algo::scc(&hr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&hr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(2), n(4), n(5), n(7), n(8)],
     ]);
@@ -591,7 +594,7 @@ fn scc() {
     gr.add_edge(n(2), n(0), ());
     gr.add_edge(n(1), n(0), ());
 
-    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
     ]);
 
@@ -605,7 +608,7 @@ fn scc() {
         (2, 2),
     ]);
     gr.add_node(());
-    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
     ]);
 }
@@ -944,7 +947,7 @@ fn index_twice_mut() {
         // check the sums
         for i in 0..gr.node_count() {
             let ni = NodeIndex::new(i);
-            let s = gr.edges_directed(ni, *dir).map(|(_, &ew)| ew).fold(0., |a, b| a + b);
+            let s = gr.edges_directed(ni, *dir).map(|e| *e.weight()).fold(0., |a, b| a + b);
             assert_eq!(s, gr[ni]);
         }
         println!("Sum {:?}: {:?}", dir, gr);
@@ -1188,7 +1191,7 @@ fn neighbors_selfloops() {
     seen_undir.sort();
     assert_eq!(&seen_undir, &undir_edges);
 
-    let mut seen_out = gr.edges(a).map(|(x, _)| x).collect::<Vec<_>>();
+    let mut seen_out = gr.edges(a).map(|e| e.target()).collect::<Vec<_>>();
     seen_out.sort();
     assert_eq!(&seen_out, &out_edges);
 
@@ -1228,7 +1231,7 @@ fn neighbors_selfloops() {
     seen_out.sort();
     assert_eq!(&seen_out, &out_edges);
 
-    let mut seen_out = gr.edges(a).map(|(x, _)| x).collect::<Vec<_>>();
+    let mut seen_out = gr.edges(a).map(|e| e.target()).collect::<Vec<_>>();
     seen_out.sort();
     assert_eq!(&seen_out, &out_edges);
 
@@ -1469,4 +1472,41 @@ fn filtered_post_order() {
         po.push(n);
     }
     assert!(!po.contains(&n(1)));
+}
+
+#[test]
+fn filter_elements() {
+    use petgraph::data::Element::{Node, Edge};
+    use petgraph::data::FromElements;
+    use petgraph::data::ElementIterator;
+    let elements = vec![
+        Node { weight: "A"},
+        Node { weight: "B"},
+        Node { weight: "C"},
+        Node { weight: "D"},
+        Node { weight: "E"},
+        Node { weight: "F"},
+
+        Edge { source: 0, target: 1, weight: 7 }, 
+        Edge { source: 2, target: 0, weight: 9 }, 
+        Edge { source: 0, target: 3, weight: 14 }, 
+        Edge { source: 1, target: 2, weight: 10 }, 
+        Edge { source: 3, target: 2, weight: 2 }, 
+        Edge { source: 3, target: 4, weight: 9 }, 
+        Edge { source: 1, target: 5, weight: 15 }, 
+        Edge { source: 2, target: 5, weight: 11 }, 
+        Edge { source: 4, target: 5, weight: 6 }, 
+    ];
+    let mut g = DiGraph::<_, _>::from_elements(elements.iter().cloned());
+    println!("{:#?}", g);
+    assert!(g.contains_edge(n(1), n(5)));
+    let g2 = DiGraph::<_, _>::from_elements(elements.iter().cloned().filter_elements(|elt| {
+        match elt {
+            Node { ref weight } if **weight == "B" => false,
+            _ => true,
+        }
+    }));
+    println!("{:#?}", g2);
+    g.remove_node(n(1));
+    assert!(is_isomorphic_matching(&g, &g2, PartialEq::eq, PartialEq::eq));
 }

@@ -5,7 +5,7 @@ use visit::{VisitMap, Visitable};
 
 /// Strictly monotonically increasing event time for a depth first search.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Default)]
-pub struct Time(pub u64);
+pub struct Time(pub usize);
 
 /// A depth first search (DFS) visitor event.
 #[derive(Copy, Clone, Debug)]
@@ -110,7 +110,7 @@ impl<B> ControlFlow for Control<B> {
 /// let mut predecessor = vec![NodeIndex::end(); gr.node_count()];
 /// let start = n(0);
 /// let goal = n(5);
-/// let ret = depth_first_search(&gr, Some(start), |event| {
+/// depth_first_search(&gr, Some(start), |event| {
 ///     if let DfsEvent::TreeEdge(u, v) = event {
 ///         predecessor[v.index()] = u;
 ///         if v == goal {
@@ -136,13 +136,12 @@ pub fn depth_first_search<G, F, C, I>(graph: G, starts: I, mut visitor: F) -> C
           I: IntoIterator<Item=G::NodeId>,
           C: ControlFlow,
 {
-    let mut time = Time(0);
-    let mut discovered = graph.visit_map();
-    let mut finished = graph.visit_map();
+    let time = &mut Time(0);
+    let discovered = &mut graph.visit_map();
+    let finished = &mut graph.visit_map();
 
     for start in starts {
-        control!(dfs_visitor(graph, start, &mut visitor, &mut discovered, &mut
-                             finished, &mut time));
+        control!(dfs_visitor(graph, start, &mut visitor, discovered, finished, time));
     }
     C::default()
 }

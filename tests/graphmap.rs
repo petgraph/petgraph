@@ -7,7 +7,6 @@ use std::fmt;
 use petgraph::prelude::*;
 use petgraph::visit::{
     DfsIter,
-    EdgeRef,
 };
 
 use petgraph::algo::{
@@ -49,7 +48,7 @@ fn simple() {
 
     // check updated edge weight
     assert_eq!(gr.edge_weight(e, f), Some(&6));
-    let scores = dijkstra(&gr, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    let scores = dijkstra(&gr, a, None, |e| *e.weight());
     let mut scores: Vec<_> = scores.into_iter().collect();
     scores.sort();
     assert_eq!(scores,
@@ -249,7 +248,7 @@ fn scc() {
         (7, 4, 9),
         (4, 1, 10)]);
 
-    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![0, 3, 6],
         vec![1, 4, 7],
         vec![2, 5, 8],

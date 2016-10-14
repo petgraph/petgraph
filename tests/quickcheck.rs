@@ -10,6 +10,8 @@ mod utils;
 use utils::Small;
 
 use odds::prelude::*;
+use std::collections::HashSet;
+use std::hash::Hash;
 
 use rand::Rng;
 
@@ -26,16 +28,24 @@ use petgraph::algo::{
     is_isomorphic,
     is_isomorphic_matching,
     toposort,
-    scc,
+    kosaraju_scc,
     tarjan_scc,
     dijkstra,
 };
 use petgraph::visit::{Topo, Reversed};
+use petgraph::data::FromElements;
 use petgraph::graph::{IndexType, node_index, edge_index};
 use petgraph::graphmap::{
     NodeTrait,
 };
 
+fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+          N: Clone, E: Clone + PartialOrd,
+{
+    Graph::from_elements(min_spanning_tree(&g))
+}
 
 use std::fmt;
 
@@ -49,7 +59,7 @@ quickcheck! {
             assert!(no_singles.neighbors_undirected(i).count() > 0);
         }
         assert_eq!(no_singles.edge_count(), g.edge_count());
-        let mst = min_spanning_tree(&no_singles);
+        let mst = mst_graph(&no_singles);
         assert!(!is_cyclic_undirected(&mst));
         true
     }
@@ -65,7 +75,7 @@ quickcheck! {
             assert!(no_singles.neighbors_undirected(i).count() > 0);
         }
         assert_eq!(no_singles.edge_count(), g.edge_count());
-        let mst = min_spanning_tree(&no_singles);
+        let mst = mst_graph(&no_singles);
         assert!(!is_cyclic_undirected(&mst));
         true
     }
@@ -394,7 +404,7 @@ fn sort_sccs<T: Ord>(v: &mut [Vec<T>]) {
 
 quickcheck! {
     fn graph_sccs(g: Graph<(), ()>) -> bool {
-        let mut sccs = scc(&g);
+        let mut sccs = kosaraju_scc(&g);
         let mut tsccs = tarjan_scc(&g);
         sort_sccs(&mut sccs);
         sort_sccs(&mut tsccs);
@@ -412,7 +422,7 @@ quickcheck! {
 
 quickcheck! {
     fn kosaraju_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
-        let tsccs = scc(&g);
+        let tsccs = kosaraju_scc(&g);
         let firsts = vec(tsccs.iter().rev().map(|v| v[0]));
         subset_is_topo_order(&g, &firsts)
     }
@@ -430,8 +440,8 @@ quickcheck! {
 quickcheck! {
     // Reversed edges gives the same sccs (when sorted)
     fn graph_reverse_sccs(g: Graph<(), ()>) -> bool {
-        let mut sccs = scc(&g);
-        let mut tsccs = scc(Reversed(&g));
+        let mut sccs = kosaraju_scc(&g);
+        let mut tsccs = kosaraju_scc(Reversed(&g));
         sort_sccs(&mut sccs);
         sort_sccs(&mut tsccs);
         if sccs != tsccs {
@@ -449,8 +459,8 @@ quickcheck! {
 quickcheck! {
     // Reversed edges gives the same sccs (when sorted)
     fn graphmap_reverse_sccs(g: DiGraphMap<u16, ()>) -> bool {
-        let mut sccs = scc(&g);
-        let mut tsccs = scc(Reversed(&g));
+        let mut sccs = kosaraju_scc(&g);
+        let mut tsccs = kosaraju_scc(Reversed(&g));
         sort_sccs(&mut sccs);
         sort_sccs(&mut tsccs);
         if sccs != tsccs {
@@ -638,22 +648,74 @@ quickcheck! {
             return true;
         }
         let v = node_index(node % g.node_count());
-        let distances = dijkstra(
-            &g,
-            v,
-            None,
-            |g, v| g.edges(v).map(|(v, &e)| (v, e))
-        );
+        let distances = dijkstra(&g, v, None, |e| *e.weight());
         for v2 in distances.keys() {
             let dv2 = distances[v2];
             // triangle inequality:
             // d(v,u) <= d(v,v2) + w(v2,u)
-            for (u,w) in g.edges(*v2) {
+            for edge in g.edges(*v2) {
+                let u = edge.target();
+                let w = edge.weight();
                 if distances.contains_key(&u) && distances[&u] > dv2 + w {
                     return false;
                 }
             }
         }
+        true
+    }
+}
+
+fn set<I>(iter: I) -> HashSet<I::Item>
+    where I: IntoIterator,
+          I::Item: Hash + Eq,
+{
+    iter.into_iter().collect()
+}
+
+
+quickcheck! {
+    fn dfs_visit(gr: Graph<(), ()>, node: usize) -> bool {
+        use petgraph::visit::{Visitable, VisitMap};
+        use petgraph::visit::DfsEvent::*;
+        use petgraph::visit::{Time, depth_first_search};
+        if gr.node_count() == 0 {
+            return true;
+        }
+        let start_node = node_index(node % gr.node_count());
+
+        let invalid_time = Time(!0);
+        let mut discover_time = vec![invalid_time; gr.node_count()];
+        let mut finish_time = vec![invalid_time; gr.node_count()];
+        let mut has_tree_edge = gr.visit_map();
+        let mut edges = HashSet::new();
+        depth_first_search(&gr, Some(start_node).into_iter().chain(gr.node_indices()),
+                           |evt| {
+            match evt {
+                Discover(n, t) => discover_time[n.index()] = t,
+                Finish(n, t) => finish_time[n.index()] = t,
+                TreeEdge(u, v) => {
+                    // v is an ancestor of u
+                    assert!(has_tree_edge.visit(v), "Two tree edges to {:?}!", v);
+                    assert!(discover_time[v.index()] == invalid_time);
+                    assert!(discover_time[u.index()] != invalid_time);
+                    assert!(finish_time[u.index()] == invalid_time);
+                    edges.insert((u, v));
+                }
+                BackEdge(u, v) => {
+                    // u is an ancestor of v
+                    assert!(discover_time[v.index()] != invalid_time);
+                    assert!(finish_time[v.index()] == invalid_time);
+                    edges.insert((u, v));
+                }
+                CrossForwardEdge(u, v) => {
+                    edges.insert((u, v));
+                }
+            }
+        });
+        assert!(discover_time.iter().all(|x| *x != invalid_time));
+        assert!(finish_time.iter().all(|x| *x != invalid_time));
+        assert_eq!(edges.len(), gr.edge_count());
+        assert_eq!(edges, set(gr.edge_references().map(|e| (e.source(), e.target()))));
         true
     }
 }

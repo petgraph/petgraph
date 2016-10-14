@@ -7,10 +7,12 @@ use std::collections::HashSet;
 use visit::{
     GraphBase,
     IntoNeighbors,
+    IntoNodeIdentifiers,
     IntoNeighborsDirected,
     NodeIndexable,
     Visitable,
     VisitMap,
+    GraphProp,
 };
 
 /// A graph filter for nodes.
@@ -107,21 +109,24 @@ impl<'a, G, F> IntoNeighborsDirected for &'a Filtered<G, F>
     }
 }
 
-impl<G, F> Visitable for Filtered<G, F>
-    where G: Visitable,
+impl<'a, G, F> IntoNodeIdentifiers for &'a Filtered<G, F>
+    where G: IntoNodeIdentifiers,
+          F: FilterNode<G::NodeId>,
 {
-    type Map = G::Map;
-    fn visit_map(&self) -> G::Map {
-        self.0.visit_map()
-    }
-    fn reset_map(&self, map: &mut Self::Map) {
-        self.0.reset_map(map);
+    type NodeIdentifiers = FilteredNeighbors<'a, G::NodeIdentifiers, F>;
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
+        FilteredNeighbors {
+            include_source: true,
+            iter: self.0.node_identifiers(),
+            f: &self.1,
+        }
     }
 }
 
-impl<G, F> NodeIndexable for Filtered<G, F>
-    where G: NodeIndexable,
-{
-    fn node_bound(&self) -> usize { self.0.node_bound() }
-    fn to_index(n: G::NodeId) -> usize { G::to_index(n) }
+macro_rules! access0 {
+    ($e:expr) => ($e.0)
 }
+
+NodeIndexable!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}
+GraphProp!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}
+Visitable!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}

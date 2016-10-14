@@ -45,5 +45,4 @@ generate = []
 unstable = ["generate"]
 
 # feature flags for testing use only
-test = []
-all = ["test", "unstable", "quickcheck", "stable_graph", "graphmap"]
+all = ["unstable", "quickcheck", "stable_graph", "graphmap"]

@@ -7,15 +7,19 @@ use ::{
 use visit::{
     GraphBase,
     GraphRef,
-    GraphEdgeRef,
     IntoNodeIdentifiers,
+    IntoNodeReferences,
     IntoNeighbors,
     IntoNeighborsDirected,
     IntoEdgeReferences,
     IntoExternals,
+    NodeCompactIndexable,
+    NodeCount,
     NodeIndexable,
     Visitable,
     EdgeRef,
+    Data,
+    GraphProp,
 };
 
 /// Wrapper type for walking the graph as if all edges are reversed.
@@ -29,18 +33,7 @@ impl<G: GraphBase> GraphBase for Reversed<G> {
 
 impl<G: GraphRef> GraphRef for Reversed<G> { }
 
-impl<G> IntoNodeIdentifiers for Reversed<G>
-    where G: IntoNodeIdentifiers
-{
-    type NodeIdentifiers = G::NodeIdentifiers;
-    fn node_identifiers(self) -> Self::NodeIdentifiers {
-        self.0.node_identifiers()
-    }
-
-    fn node_count(&self) -> usize {
-        self.0.node_count()
-    }
-}
+Data!{delegate_impl [[G], G, Reversed<G>, access0]}
 
 impl<G> IntoNeighbors for Reversed<G>
     where G: IntoNeighborsDirected
@@ -86,10 +79,10 @@ impl<G: Visitable> Visitable for Reversed<G>
 
 /// An edge reference for `Reversed`.
 #[derive(Copy, Clone, Debug)]
-pub struct ReversedEdgeRef<R>(R);
+pub struct ReversedEdgeReference<R>(R);
 
 /// An edge reference
-impl<R> EdgeRef for ReversedEdgeRef<R>
+impl<R> EdgeRef for ReversedEdgeReference<R>
     where R: EdgeRef,
 {
     type NodeId = R::NodeId;
@@ -109,15 +102,10 @@ impl<R> EdgeRef for ReversedEdgeRef<R>
     }
 }
 
-impl<G> GraphEdgeRef for Reversed<G>
-    where G: GraphEdgeRef
-{
-    type EdgeRef = ReversedEdgeRef<G::EdgeRef>;
-}
-
 impl<G> IntoEdgeReferences for Reversed<G>
     where G: IntoEdgeReferences
 {
+    type EdgeRef = ReversedEdgeReference<G::EdgeRef>;
     type EdgeReferences = ReversedEdgeReferences<G::EdgeReferences>;
     fn edge_references(self) -> Self::EdgeReferences {
         ReversedEdgeReferences {
@@ -135,16 +123,21 @@ impl<I> Iterator for ReversedEdgeReferences<I>
     where I: Iterator,
           I::Item: EdgeRef,
 {
-    type Item = ReversedEdgeRef<I::Item>;
+    type Item = ReversedEdgeReference<I::Item>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(ReversedEdgeRef)
+        self.iter.next().map(ReversedEdgeReference)
     }
 }
 
-
-impl<G> NodeIndexable for Reversed<G>
-    where G: NodeIndexable
-{
-    fn node_bound(&self) -> usize { self.0.node_bound() }
-    fn to_index(n: G::NodeId) -> usize { G::to_index(n) }
+macro_rules! access0 {
+    ($e:expr) => ($e.0)
 }
+
+NodeIndexable!{delegate_impl [[G], G, Reversed<G>, access0]}
+NodeCompactIndexable!{delegate_impl [[G], G, Reversed<G>, access0]}
+IntoNodeIdentifiers!{delegate_impl [[G], G, Reversed<G>, access0]}
+IntoNodeReferences!{delegate_impl [[G], G, Reversed<G>, access0]}
+GraphProp!{delegate_impl [[G], G, Reversed<G>, access0]}
+NodeCount!{delegate_impl [[G], G, Reversed<G>, access0]}
+
+

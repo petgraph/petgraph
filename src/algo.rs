@@ -21,15 +21,20 @@ use super::visit::{
     IntoNeighborsDirected,
     IntoNodeIdentifiers,
     IntoExternals,
+    NodeCount,
     NodeIndexable,
     NodeCompactIndexable,
     IntoEdgeReferences,
-    EdgeRef,
+    IntoEdges,
     Reversed,
 };
 use super::unionfind::UnionFind;
 use super::graph::{
     IndexType,
+};
+use visit::{Data, NodeRef, IntoNodeReferences};
+use data::{
+    Element,
 };
 
 pub use super::isomorphism::{
@@ -49,7 +54,7 @@ pub fn connected_components<G>(g: G) -> usize
         let (a, b) = (edge.source(), edge.target());
 
         // union the two vertices of the edge
-        vertex_sets.union(G::to_index(a), G::to_index(b));
+        vertex_sets.union(g.to_index(a), g.to_index(b));
     }
     let mut labels = vertex_sets.into_labeling();
     labels.sort();
@@ -70,7 +75,7 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 
         // union the two vertices of the edge
         //  -- if they were already the same, then we have a cycle
-        if !edge_sets.union(G::to_index(a), G::to_index(b)) {
+        if !edge_sets.union(g.to_index(a), g.to_index(b)) {
             return true
         }
     }
@@ -122,7 +127,7 @@ fn toposort_generic<G, F>(g: G,
 /// If `space` is not `None`, it is reused instead of creating a temporary
 /// workspace for graph traversal.
 pub fn is_cyclic_directed<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> bool
-    where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
+    where G: NodeCount + IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
 {
     let mut n_ordered = 0;
     toposort_generic(g, space, |_, _| n_ordered += 1);
@@ -176,7 +181,7 @@ impl<N, VM> Default for DfsSpace<N, VM>
 pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> Vec<G::NodeId>
     where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
 {
-    let mut order = Vec::with_capacity(g.node_count());
+    let mut order = Vec::with_capacity(0);
     toposort_generic(g, space, |_, ix| order.push(ix));
     order
 }
@@ -218,6 +223,13 @@ pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
     })
 }
 
+/// Renamed to `kosaraju_scc`.
+#[deprecated(note = "renamed to kosaraju_scc")]
+pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
+    where G: IntoNeighborsDirected + Visitable + IntoNodeIdentifiers,
+{
+    kosaraju_scc(g)
+}
 
 /// [Generic] Compute the *strongly connected components* using Kosaraju's algorithm.
 ///
@@ -229,14 +241,14 @@ pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
 /// This implementation is iterative and does two passes over the nodes.
 ///
 /// For an undirected graph, the sccs are simply the connected components.
-pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
+pub fn kosaraju_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     where G: IntoNeighborsDirected + Visitable + IntoNodeIdentifiers,
 {
     let mut dfs = DfsPostOrder::empty(g);
 
     // First phase, reverse dfs pass, compute finishing times.
     // http://stackoverflow.com/a/26780899/161659
-    let mut finish_order = Vec::with_capacity(g.node_count());
+    let mut finish_order = Vec::with_capacity(0);
     for i in g.node_identifiers() {
         if dfs.discovered.is_visited(&i) {
             continue
@@ -305,7 +317,7 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
         where G: IntoNeighbors + NodeIndexable
     {
         macro_rules! node {
-            ($node:expr) => (data.nodes[G::to_index($node)])
+            ($node:expr) => (data.nodes[g.to_index($node)])
         }
 
         if node![v].index.is_some() {
@@ -344,7 +356,7 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
                     let w = data.stack.pop().unwrap();
                     node![w].on_stack = false;
                     cur_scc.push(w);
-                    if G::to_index(w) == G::to_index(v) { break; }
+                    if g.to_index(w) == g.to_index(v) { break; }
                 }
                 data.sccs.push(cur_scc);
             }
@@ -377,7 +389,7 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    let sccs = scc(&g);
+    let sccs = kosaraju_scc(&g);
     let mut condensed: Graph<Vec<N>, E, Ty, Ix> = Graph::with_capacity(sccs.len(), g.edge_count());
 
     // Build a map from old indices to new ones.
@@ -408,9 +420,9 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
     condensed
 }
 
-/// [Graph] Compute a *minimum spanning tree* of a graph.
+/// [Generic] Compute a *minimum spanning tree* of a graph.
 ///
-/// Treat the input graph as undirected.
+/// The input graph is treated as if undirected.
 ///
 /// Using Kruskal's algorithm with runtime **O(|E| log |E|)**. We actually
 /// return a minimum spanning forest, i.e. a minimum spanning tree for each connected
@@ -418,49 +430,157 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
 ///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
 /// and **|V| - c** edges, where **c** is the number of connected components in `g`.
-pub fn min_spanning_tree<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
-    -> Graph<N, E, Undirected, Ix>
-    where N: Clone,
-          E: Clone + PartialOrd,
-          Ty: EdgeType,
-          Ix: IndexType,
+///
+/// Use `from_elements` to create a graph from the resulting iterator.
+pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
+    where G::NodeWeight: Clone,
+          G::EdgeWeight: Clone + PartialOrd,
+          G: IntoNodeReferences + IntoEdgeReferences + NodeIndexable,
 {
-    if g.node_count() == 0 {
-        return Graph::with_capacity(0, 0)
-    }
-
-    // Create a mst skeleton by copying all nodes
-    let mut mst = Graph::with_capacity(g.node_count(), g.node_count() - 1);
-    for node in g.raw_nodes() {
-        mst.add_node(node.weight.clone());
-    }
 
     // Initially each vertex is its own disjoint subgraph, track the connectedness
     // of the pre-MST with a union & find datastructure.
-    let mut subgraphs = UnionFind::new(g.node_count());
+    let subgraphs = UnionFind::new(g.node_bound());
 
-    let mut sort_edges = BinaryHeap::with_capacity(g.edge_count());
-    for edge in g.edge_references() {
+    let edges = g.edge_references();
+    let mut sort_edges = BinaryHeap::with_capacity(edges.size_hint().0);
+    for edge in edges {
         sort_edges.push(MinScored(edge.weight().clone(), (edge.source(), edge.target())));
     }
 
-    // Kruskal's algorithm.
-    // Algorithm is this:
-    //
-    // 1. Create a pre-MST with all the vertices and no edges.
-    // 2. Repeat:
-    //
-    //  a. Remove the shortest edge from the original graph.
-    //  b. If the edge connects two disjoint trees in the pre-MST,
-    //     add the edge.
-    while let Some(MinScored(score, (a, b))) = sort_edges.pop() {
-        // check if the edge would connect two disjoint parts
-        if subgraphs.union(a.index(), b.index()) {
-            mst.add_edge(a, b, score);
+    MinSpanningTree {
+        graph: g,
+        node_ids: Some(g.node_references()),
+        subgraphs: subgraphs,
+        sort_edges: sort_edges,
+    }
+
+}
+
+/// An iterator producing a minimum spanning forest of a graph.
+pub struct MinSpanningTree<G>
+    where G: Data + IntoNodeReferences,
+{
+    graph: G,
+    node_ids: Option<G::NodeReferences>,
+    subgraphs: UnionFind<usize>,
+    sort_edges: BinaryHeap<MinScored<G::EdgeWeight, (G::NodeId, G::NodeId)>>,
+}
+
+
+impl<G> Iterator for MinSpanningTree<G>
+    where G: IntoNodeReferences + NodeIndexable,
+          G::NodeWeight: Clone,
+          G::EdgeWeight: PartialOrd,
+{
+    type Item = Element<G::NodeWeight, G::EdgeWeight>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(ref mut iter) = self.node_ids {
+            if let Some(node) = iter.next() {
+                return Some(Element::Node { weight: node.weight().clone() });
+            }
+        }
+        self.node_ids = None;
+
+        // Kruskal's algorithm.
+        // Algorithm is this:
+        //
+        // 1. Create a pre-MST with all the vertices and no edges.
+        // 2. Repeat:
+        //
+        //  a. Remove the shortest edge from the original graph.
+        //  b. If the edge connects two disjoint trees in the pre-MST,
+        //     add the edge.
+        while let Some(MinScored(score, (a, b))) = self.sort_edges.pop() {
+            let g = self.graph;
+            // check if the edge would connect two disjoint parts
+            if self.subgraphs.union(g.to_index(a), g.to_index(b)) {
+                return Some(Element::Edge {
+                    source: g.to_index(a),
+                    target: g.to_index(b),
+                    weight: score,
+                });
+            }
+        }
+        None
+    }
+}
+
+/// An algorithm error: a cycle of negative weights was found in the graph.
+#[derive(Clone, Debug)]
+pub struct NegativeCycle(());
+
+/// [Generic] Compute shortest paths from node `source` to all other.
+pub fn bellman_ford<G>(g: G, source: G::NodeId)
+    -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
+    where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
+          G::EdgeWeight: FloatMeasure,
+{
+    let mut predecessor = vec![None; g.node_bound()];
+    let mut distance = vec![<_>::infinite(); g.node_bound()];
+
+    let ix = |i| g.to_index(i);
+
+    distance[ix(source)] = <_>::zero();
+    // scan up to |V| - 1 times.
+    for _ in 1..g.node_count() {
+        let mut did_update = false;
+        for i in g.node_identifiers() {
+            for edge in g.edges(i) {
+                let j = edge.target();
+                let w = *edge.weight();
+                if distance[ix(i)] + w < distance[ix(j)] {
+                    distance[ix(j)] = distance[ix(i)] + w;
+                    predecessor[ix(j)] = Some(i);
+                    did_update = true;
+                }
+            }
+        }
+        if !did_update {
+            break;
         }
     }
 
-    debug_assert!(mst.node_count() == g.node_count());
-    debug_assert!(mst.edge_count() < g.node_count());
-    mst
+    // check for negative weight cycle
+    for i in g.node_identifiers() {
+        for edge in g.edges(i) {
+            let j = edge.target();
+            let w = *edge.weight();
+            if distance[ix(i)] + w < distance[ix(j)] {
+                //println!("neg cycle, detected from {} to {}, weight={}", i, j, w);
+                return Err(NegativeCycle(()));
+            }
+        }
+    }
+
+    Ok((distance, predecessor))
 }
+
+use std::ops::Add;
+use std::fmt::Debug;
+
+/// Associated data that can be used for measures (such as length).
+pub trait Measure : Debug + PartialOrd + Add<Self, Output=Self> + Default + Clone {
+}
+
+impl<M> Measure for M
+    where M: Debug + PartialOrd + Add<M, Output=M> + Default + Clone,
+{ }
+
+/// A floating-point measure.
+pub trait FloatMeasure : Measure + Copy {
+    fn zero() -> Self;
+    fn infinite() -> Self;
+}
+
+impl FloatMeasure for f32 {
+    fn zero() -> Self { 0. }
+    fn infinite() -> Self { 1./0. }
+}
+
+impl FloatMeasure for f64 {
+    fn zero() -> Self { 0. }
+    fn infinite() -> Self { 1./0. }
+}
+
