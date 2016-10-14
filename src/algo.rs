@@ -179,9 +179,9 @@ impl<N, VM> Default for DfsSpace<N, VM>
 /// If `space` is not `None`, it is reused instead of creating a temporary
 /// workspace for graph traversal.
 pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> Vec<G::NodeId>
-    where G: NodeCount + IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
+    where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
 {
-    let mut order = Vec::with_capacity(g.node_count());
+    let mut order = Vec::with_capacity(0);
     toposort_generic(g, space, |_, ix| order.push(ix));
     order
 }
