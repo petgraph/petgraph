@@ -22,6 +22,19 @@ macro_rules! define_trait {
     }
 }
 
+macro_rules! remove_sections_inner {
+    ([$($stack:tt)*]) => {
+        $($stack)*
+    };
+    ([$($stack:tt)*] @section $x:ident $($t:tt)*) => {
+        remove_sections_inner!([$($stack)*] $($t)*);
+    };
+    ([$($stack:tt)*] $t:tt $($tail:tt)*) => {
+        remove_sections_inner!([$($stack)* $t] $($tail)*);
+    };
+}
+
+// recurse once into { }, but not more
 macro_rules! remove_sections {
     ([$($stack:tt)*]) => {
         $($stack)*
@@ -31,7 +44,7 @@ macro_rules! remove_sections {
     };
     ([$($stack:tt)*] { $($tail:tt)* }) => {
         $($stack)* {
-            remove_sections!([] $($tail)*);
+            remove_sections_inner!([] $($tail)*);
         }
     };
     ([$($stack:tt)*] $t:tt $($tail:tt)*) => {
@@ -50,12 +63,12 @@ macro_rules! delegate_impl {
         delegate_impl! { [['a, G], G, &'a G, deref] $($rest)* }
     };
     ([[$($param:tt)*], $self_type:ident, $self_wrap:ty, $self_map:ident]
-     pub trait $name:ident : $sup:ty {
+     pub trait $name:ident : $sup:ident $(+ $more_sup:ident)* {
         $(
         @section type
         $(
             $(#[$_attr1:meta])*
-            type $assoc_name:ident : $bound:ty;
+            type $assoc_name:ident $(: $bound:ty)*;
         )+
         )*
         $(
@@ -71,6 +84,10 @@ macro_rules! delegate_impl {
             $(#[$_attr3:meta])*
             fn $fname:ident(&self $(,$arg:ident : $argty:ty)*) -> $ret:ty;
         )+
+        )*
+        $(
+        @section ignore
+        $($tail:tt)*
         )*
     }) => {
         impl<$($param)*> $name for $self_wrap where $self_type: $name {

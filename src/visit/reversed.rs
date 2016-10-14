@@ -8,6 +8,7 @@ use visit::{
     GraphBase,
     GraphRef,
     IntoNodeIdentifiers,
+    IntoNodeReferences,
     IntoNeighbors,
     IntoNeighborsDirected,
     IntoEdgeReferences,
@@ -15,8 +16,8 @@ use visit::{
     NodeIndexable,
     Visitable,
     EdgeRef,
-    Prop,
     Data,
+    Prop,
 };
 
 /// Wrapper type for walking the graph as if all edges are reversed.
@@ -30,10 +31,7 @@ impl<G: GraphBase> GraphBase for Reversed<G> {
 
 impl<G: GraphRef> GraphRef for Reversed<G> { }
 
-impl<G: Data> Data for Reversed<G> {
-    type NodeWeight = G::NodeWeight;
-    type EdgeWeight = G::EdgeWeight;
-}
+Data!{delegate_impl [[G], G, Reversed<G>, access0]}
 
 impl<G> IntoNeighbors for Reversed<G>
     where G: IntoNeighborsDirected
@@ -102,12 +100,6 @@ impl<R> EdgeRef for ReversedEdgeRef<R>
     }
 }
 
-impl<G> Prop for Reversed<G>
-    where G: Prop
-{
-    type EdgeType = G::EdgeType;
-}
-
 impl<G> IntoEdgeReferences for Reversed<G>
     where G: IntoEdgeReferences
 {
@@ -141,4 +133,7 @@ macro_rules! access0 {
 
 NodeIndexable!{delegate_impl [[G], G, Reversed<G>, access0]}
 IntoNodeIdentifiers!{delegate_impl [[G], G, Reversed<G>, access0]}
+IntoNodeReferences!{delegate_impl [[G], G, Reversed<G>, access0]}
+Prop!{delegate_impl [[G], G, Reversed<G>, access0]}
+
 

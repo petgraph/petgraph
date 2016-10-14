@@ -227,11 +227,16 @@ impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
     }
 }
 
+define_trait! {
 pub trait IntoEdges : IntoEdgeReferences {
+    @section type
     type Edges: Iterator<Item=Self::EdgeRef>;
+    @section self
     fn edges(self, a: Self::NodeId) -> Self::Edges;
 }
+}
 
+IntoEdges!{delegate_impl []}
 
 define_trait! {
 /// Access to the sequence of the graph’s `NodeId`s.
@@ -278,14 +283,20 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
 
 IntoNeighborsDirected!{delegate_impl []}
 
+define_trait! {
 /// Access to the graph’s nodes without edges to them (`Incoming`) or from them
 /// (`Outgoing`).
 pub trait IntoExternals : GraphRef {
+    @section type
     type Externals: Iterator<Item=Self::NodeId>;
 
+    @section self
     /// Return an iterator of all nodes with no edges in the given direction
     fn externals(self, d: Direction) -> Self::Externals;
 }
+}
+
+IntoExternals!{delegate_impl []}
 
 impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
@@ -297,20 +308,16 @@ impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
     }
 }
 
+define_trait! {
 /// Define associated data for nodes and edges
 pub trait Data : GraphBase {
+    @section type
     type NodeWeight;
     type EdgeWeight;
 }
-
-impl<'a, G> Data for &'a G
-    where G: Data,
-{
-    type NodeWeight = G::NodeWeight;
-    type EdgeWeight = G::EdgeWeight;
 }
 
-
+Data!{delegate_impl []}
 
 /// An edge reference
 pub trait EdgeRef : Copy {
@@ -344,22 +351,18 @@ pub trait NodeRef : Copy {
     fn weight(&self) -> &Self::Weight;
 }
 
+define_trait! {
 /// Access to the sequence of the graph’s nodes
 pub trait IntoNodeReferences : Data + IntoNodeIdentifiers {
+    @section type
     type NodeRef: NodeRef<NodeId=Self::NodeId, Weight=Self::NodeWeight>;
     type NodeReferences: Iterator<Item=Self::NodeRef>;
+    @section self
     fn node_references(self) -> Self::NodeReferences;
 }
-
-impl<'a, G> IntoNodeReferences for &'a G
-    where G: IntoNodeReferences
-{
-    type NodeRef = G::NodeRef;
-    type NodeReferences = G::NodeReferences;
-    fn node_references(self) -> Self::NodeReferences {
-        (*self).node_references()
-    }
 }
+
+IntoNodeReferences!{delegate_impl []}
 
 impl<Id> NodeRef for (Id, ())
     where Id: Copy,
@@ -383,23 +386,19 @@ impl<'a, Id, W> NodeRef for (Id, &'a W)
 }
 
 
+define_trait! {
 /// Access to the sequence of the graph’s edges
 pub trait IntoEdgeReferences : Data + GraphRef {
+    @section type
     type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId,
                           Weight=Self::EdgeWeight>;
     type EdgeReferences: Iterator<Item=Self::EdgeRef>;
+    @section self
     fn edge_references(self) -> Self::EdgeReferences;
 }
-
-impl<'a, G> IntoEdgeReferences for &'a G
-    where G: IntoEdgeReferences
-{
-    type EdgeRef = G::EdgeRef;
-    type EdgeReferences = G::EdgeReferences;
-    fn edge_references(self) -> Self::EdgeReferences {
-        (*self).edge_references()
-    }
 }
+
+IntoEdgeReferences!{delegate_impl [] }
 
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> Data for GraphMap<N, E, Ty>
@@ -410,21 +409,20 @@ impl<N, E, Ty> Data for GraphMap<N, E, Ty>
     type EdgeWeight = E;
 }
 
+define_trait! {
 pub trait Prop : GraphBase {
+    @section type
     /// The kind edges in the graph.
     type EdgeType: EdgeType;
 
+    @section ignore
     fn is_directed(&self) -> bool {
         <Self::EdgeType>::is_directed()
     }
 }
-
-impl<'a, G> Prop for &'a G
-    where G: Prop
-{
-    type EdgeType = G::EdgeType;
-    fn is_directed(&self) -> bool { (*self).is_directed() }
 }
+
+Prop!{delegate_impl []}
 
 impl<N, E, Ty, Ix> Prop for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
