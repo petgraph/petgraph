@@ -13,6 +13,7 @@ use visit::{
 };
 
 trait_template!{
+    /// Access node and edge weights (associated data).
 pub trait DataMap : Data {
     @section self_ref
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight>;
@@ -25,6 +26,7 @@ DataMap!{delegate_impl []}
 DataMap!{delegate_impl [['a, G], G, &'a mut G, deref_twice]}
 
 trait_template! {
+    /// Access node and edge weights mutably.
 pub trait DataMapMut : DataMap {
     @section self_mut
     fn node_weight_mut(&mut self, id: Self::NodeId) -> Option<&mut Self::NodeWeight>;
@@ -34,6 +36,7 @@ pub trait DataMapMut : DataMap {
 
 DataMapMut!{delegate_impl [['a, G], G, &'a mut G, deref_twice]}
 
+/// A graph that can be extended with further nodes and edges
 pub trait Build : Data + NodeCount {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId;
     /// Add a new edge. If parallel edges (duplicate) are not allowed and
@@ -52,7 +55,8 @@ pub trait Build : Data + NodeCount {
                    weight: Self::EdgeWeight) -> Self::EdgeId;
 }
 
-pub trait Create : Build + DataMapMut {
+/// A graph that can be created
+pub trait Create : Build + DataMapMut + Default {
     fn with_capacity(nodes: usize, edges: usize) -> Self;
 }
 
@@ -134,6 +138,7 @@ pub enum Element<N, E> {
     Edge(usize, usize, E),
 }
 
+/// Create a graph from an iterator of elements.
 pub trait FromElements : Create {
     fn from_elements<I>(iterable: I) -> Self
         where Self: Sized,
