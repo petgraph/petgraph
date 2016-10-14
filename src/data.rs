@@ -10,6 +10,7 @@ use visit::{
     Data,
     NodeCount,
     NodeIndexable,
+    Reversed,
 };
 
 trait_template!{
@@ -21,9 +22,13 @@ pub trait DataMap : Data {
 }
 }
 
+macro_rules! access0 {
+    ($e:expr) => ($e.0);
+}
 
 DataMap!{delegate_impl []}
 DataMap!{delegate_impl [['a, G], G, &'a mut G, deref_twice]}
+DataMap!{delegate_impl [[G], G, Reversed<G>, access0]}
 
 trait_template! {
     /// Access node and edge weights mutably.
@@ -35,6 +40,7 @@ pub trait DataMapMut : DataMap {
 }
 
 DataMapMut!{delegate_impl [['a, G], G, &'a mut G, deref_twice]}
+DataMapMut!{delegate_impl [[G], G, Reversed<G>, access0]}
 
 /// A graph that can be extended with further nodes and edges
 pub trait Build : Data + NodeCount {
