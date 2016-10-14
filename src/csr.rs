@@ -23,7 +23,9 @@ use {
     IntoWeightedEdge,
 };
 
+/// Csr node index type, a plain integer.
 pub type NodeIndex<Ix = DefaultIx> = Ix;
+/// Csr edge index type, a plain integer.
 pub type EdgeIndex = usize;
 
 const BINARY_SEARCH_CUTOFF: usize = 32;
