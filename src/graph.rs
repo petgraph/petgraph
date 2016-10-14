@@ -2005,6 +2005,7 @@ DataMap!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 DataMapMut!{delegate_impl [['a, G], G, Frozen<'a, G>, access0]}
 GetAdjacencyMatrix!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 IntoEdgeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
+IntoEdges!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoNeighbors!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoNeighborsDirected!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoNodeIdentifiers!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
