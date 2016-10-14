@@ -248,7 +248,7 @@ fn scc() {
         (7, 4, 9),
         (4, 1, 10)]);
 
-    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![0, 3, 6],
         vec![1, 4, 7],
         vec![2, 5, 8],

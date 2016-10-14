@@ -26,7 +26,7 @@ use petgraph::algo::{
     is_isomorphic,
     is_isomorphic_matching,
     toposort,
-    scc,
+    kosaraju_scc,
     tarjan_scc,
     dijkstra,
 };
@@ -402,7 +402,7 @@ fn sort_sccs<T: Ord>(v: &mut [Vec<T>]) {
 
 quickcheck! {
     fn graph_sccs(g: Graph<(), ()>) -> bool {
-        let mut sccs = scc(&g);
+        let mut sccs = kosaraju_scc(&g);
         let mut tsccs = tarjan_scc(&g);
         sort_sccs(&mut sccs);
         sort_sccs(&mut tsccs);
@@ -420,7 +420,7 @@ quickcheck! {
 
 quickcheck! {
     fn kosaraju_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
-        let tsccs = scc(&g);
+        let tsccs = kosaraju_scc(&g);
         let firsts = vec(tsccs.iter().rev().map(|v| v[0]));
         subset_is_topo_order(&g, &firsts)
     }
@@ -438,8 +438,8 @@ quickcheck! {
 quickcheck! {
     // Reversed edges gives the same sccs (when sorted)
     fn graph_reverse_sccs(g: Graph<(), ()>) -> bool {
-        let mut sccs = scc(&g);
-        let mut tsccs = scc(Reversed(&g));
+        let mut sccs = kosaraju_scc(&g);
+        let mut tsccs = kosaraju_scc(Reversed(&g));
         sort_sccs(&mut sccs);
         sort_sccs(&mut tsccs);
         if sccs != tsccs {
@@ -457,8 +457,8 @@ quickcheck! {
 quickcheck! {
     // Reversed edges gives the same sccs (when sorted)
     fn graphmap_reverse_sccs(g: DiGraphMap<u16, ()>) -> bool {
-        let mut sccs = scc(&g);
-        let mut tsccs = scc(Reversed(&g));
+        let mut sccs = kosaraju_scc(&g);
+        let mut tsccs = kosaraju_scc(Reversed(&g));
         sort_sccs(&mut sccs);
         sort_sccs(&mut tsccs);
         if sccs != tsccs {

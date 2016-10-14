@@ -223,6 +223,13 @@ pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
     })
 }
 
+/// Renamed to `kosaraju_scc`.
+#[deprecated(note = "renamed to kosaraju_scc")]
+pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
+    where G: IntoNeighborsDirected + Visitable + IntoNodeIdentifiers,
+{
+    kosaraju_scc(g)
+}
 
 /// [Generic] Compute the *strongly connected components* using Kosaraju's algorithm.
 ///
@@ -234,7 +241,7 @@ pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
 /// This implementation is iterative and does two passes over the nodes.
 ///
 /// For an undirected graph, the sccs are simply the connected components.
-pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
+pub fn kosaraju_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     where G: IntoNeighborsDirected + Visitable + IntoNodeIdentifiers,
 {
     let mut dfs = DfsPostOrder::empty(g);
@@ -382,7 +389,7 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    let sccs = scc(&g);
+    let sccs = kosaraju_scc(&g);
     let mut condensed: Graph<Vec<N>, E, Ty, Ix> = Graph::with_capacity(sccs.len(), g.edge_count());
 
     // Build a map from old indices to new ones.

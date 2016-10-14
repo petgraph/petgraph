@@ -116,14 +116,14 @@ fn neighbors_in(bench: &mut Bencher)
 fn sccs_stable_graph(bench: &mut Bencher)
 {
     let a = parse_stable_graph::<Directed>(BIGGER);
-    bench.iter(|| petgraph::algo::scc(&a));
+    bench.iter(|| petgraph::algo::kosaraju_scc(&a));
 }
 
 #[bench]
 fn sccs_graph(bench: &mut Bencher)
 {
     let a = parse_graph::<Directed>(BIGGER);
-    bench.iter(|| petgraph::algo::scc(&a));
+    bench.iter(|| petgraph::algo::kosaraju_scc(&a));
 }
 
 /// Parse a text adjacency matrix format into a directed graph

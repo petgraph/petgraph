@@ -7,7 +7,7 @@ extern crate itertools;
 use petgraph::prelude::*;
 use petgraph::stable_graph::node_index as n;
 use petgraph::EdgeType;
-use petgraph::algo::{scc, tarjan_scc};
+use petgraph::algo::{kosaraju_scc, tarjan_scc};
 use petgraph::visit::{
     NodeIndexable,
     IntoEdgeReferences,
@@ -56,7 +56,7 @@ fn test_scc() {
     gr.remove_node(n(4));
     println!("{:?}", gr);
 
-    assert_sccs_eq(scc(&gr), vec![
+    assert_sccs_eq(kosaraju_scc(&gr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(7),   x ],
         vec![n(2), n(5), n(8)],

@@ -556,13 +556,13 @@ fn scc() {
         (7, 4),
         (4, 1)]);
 
-    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(4), n(7)],
         vec![n(2), n(5), n(8)],
     ]);
     // Reversed edges gives the same sccs (when sorted)
-    assert_sccs_eq(petgraph::algo::scc(Reversed(&gr)), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(Reversed(&gr)), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(4), n(7)],
         vec![n(2), n(5), n(8)],
@@ -576,7 +576,7 @@ fn scc() {
     let ed = hr.find_edge(n(6), n(8)).unwrap();
     assert!(hr.remove_edge(ed).is_some());
 
-    assert_sccs_eq(petgraph::algo::scc(&hr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&hr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(2), n(4), n(5), n(7), n(8)],
     ]);
@@ -594,7 +594,7 @@ fn scc() {
     gr.add_edge(n(2), n(0), ());
     gr.add_edge(n(1), n(0), ());
 
-    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
     ]);
 
@@ -608,7 +608,7 @@ fn scc() {
         (2, 2),
     ]);
     gr.add_node(());
-    assert_sccs_eq(petgraph::algo::scc(&gr), vec![
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
     ]);
 }
