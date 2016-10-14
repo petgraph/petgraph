@@ -67,19 +67,20 @@ use graphmap::{
     NodeTrait,
 };
 
+trait_template!{
 /// Base graph trait: defines the associated node identifier and
 /// edge identifier types.
 pub trait GraphBase {
+    @section type
     /// node identifier
     type NodeId: Copy;
     /// edge identifier
     type EdgeId: Copy;
 }
-
-impl<'a, G> GraphBase for &'a G where G: GraphBase {
-    type NodeId = G::NodeId;
-    type EdgeId = G::EdgeId;
 }
+
+GraphBase!{delegate_impl []}
+GraphBase!{delegate_impl [['a, G], G, &'a mut G, deref]}
 
 /// A copyable reference to a graph.
 pub trait GraphRef : Copy + GraphBase { }
@@ -114,16 +115,6 @@ impl<'a, N: 'a, E, Ty> IntoNeighbors for &'a GraphMap<N, E, Ty>
     }
 }
 
-impl<'a, 'b, G> IntoNeighbors for &'b Frozen<'a, G>
-    where &'b G: IntoNeighbors,
-          G: GraphBase<NodeId=<&'b G as GraphBase>::NodeId>,
-{
-    type Neighbors = <&'b G as IntoNeighbors>::Neighbors;
-    fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
-        (**self).neighbors(n)
-    }
-}
-
 
 /// Wrapper type for walking the graph as if it is undirected
 #[derive(Copy, Clone)]
@@ -141,7 +132,7 @@ impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>>
     }
 }
 
-define_trait! {
+trait_template! {
 /// Access to the neighbors of each node
 ///
 /// The neighbors are, depending on the graph’s edge type:
@@ -159,7 +150,7 @@ pub trait IntoNeighbors : GraphRef {
 
 IntoNeighbors!{delegate_impl []}
 
-define_trait! {
+trait_template! {
 /// Access to the neighbors of each node, through incoming or outgoing edges.
 ///
 /// Depending on the graph’s edge type, the neighbors of a given directionality
@@ -227,7 +218,7 @@ impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
     }
 }
 
-define_trait! {
+trait_template! {
 pub trait IntoEdges : IntoEdgeReferences {
     @section type
     type Edges: Iterator<Item=Self::EdgeRef>;
@@ -238,7 +229,7 @@ pub trait IntoEdges : IntoEdgeReferences {
 
 IntoEdges!{delegate_impl []}
 
-define_trait! {
+trait_template! {
 /// Access to the sequence of the graph’s `NodeId`s.
 pub trait IntoNodeIdentifiers : GraphRef {
     @section type
@@ -283,7 +274,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
 
 IntoNeighborsDirected!{delegate_impl []}
 
-define_trait! {
+trait_template! {
 /// Access to the graph’s nodes without edges to them (`Incoming`) or from them
 /// (`Outgoing`).
 pub trait IntoExternals : GraphRef {
@@ -308,7 +299,7 @@ impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
     }
 }
 
-define_trait! {
+trait_template! {
 /// Define associated data for nodes and edges
 pub trait Data : GraphBase {
     @section type
@@ -318,6 +309,7 @@ pub trait Data : GraphBase {
 }
 
 Data!{delegate_impl []}
+Data!{delegate_impl [['a, G], G, &'a mut G, deref]}
 
 /// An edge reference
 pub trait EdgeRef : Copy {
@@ -351,7 +343,7 @@ pub trait NodeRef : Copy {
     fn weight(&self) -> &Self::Weight;
 }
 
-define_trait! {
+trait_template! {
 /// Access to the sequence of the graph’s nodes
 pub trait IntoNodeReferences : Data + IntoNodeIdentifiers {
     @section type
@@ -386,7 +378,7 @@ impl<'a, Id, W> NodeRef for (Id, &'a W)
 }
 
 
-define_trait! {
+trait_template! {
 /// Access to the sequence of the graph’s edges
 pub trait IntoEdgeReferences : Data + GraphRef {
     @section type
@@ -409,7 +401,7 @@ impl<N, E, Ty> Data for GraphMap<N, E, Ty>
     type EdgeWeight = E;
 }
 
-define_trait! {
+trait_template! {
 pub trait Prop : GraphBase {
     @section type
     /// The kind edges in the graph.
@@ -464,7 +456,7 @@ impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
 }
 
 
-define_trait!{
+trait_template!{
     /// The graph’s `NodeId`s map to indices
     pub trait NodeIndexable : GraphBase {
         @section self_ref
@@ -480,7 +472,7 @@ define_trait!{
 
 NodeIndexable!{delegate_impl []}
 
-define_trait! {
+trait_template! {
 /// A graph with a known node count.
 pub trait NodeCount : GraphBase {
     @section self_ref
@@ -490,15 +482,15 @@ pub trait NodeCount : GraphBase {
 
 NodeCount!{delegate_impl []}
 
+trait_template! {
 /// The graph’s `NodeId`s map to indices, in a range without holes.
 ///
 /// The graph's node identifiers correspond to exactly the indices
 /// `0..self.node_bound()`.
 pub trait NodeCompactIndexable : NodeIndexable { }
+}
 
-impl<'a, G> NodeCompactIndexable for &'a G
-    where G: NodeCompactIndexable
-{ }
+NodeCompactIndexable!{delegate_impl []}
 
 impl<N, E, Ty, Ix> NodeIndexable for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
@@ -570,7 +562,7 @@ impl<N, S> VisitMap<N> for HashSet<N, S>
     }
 }
 
-define_trait!{
+trait_template!{
 /// A graph that can create a map that tracks the visited status of its nodes.
 pub trait Visitable : GraphBase {
     @section type
@@ -637,13 +629,6 @@ impl<N, E, Ty, Ix> Data for StableGraph<N, E, Ty, Ix>
     type EdgeWeight = E;
 }
 
-impl<'a, G> Visitable for Frozen<'a, G> where G: Visitable {
-    type Map = G::Map;
-    fn visit_map(&self) -> Self::Map { (**self).visit_map() }
-    fn reset_map(&self, map: &mut Self::Map) {
-        (**self).reset_map(map)
-    }
-}
 
 #[cfg(feature = "graphmap")]
 impl<N: Copy, E, Ty> GraphBase for GraphMap<N, E, Ty>
@@ -684,13 +669,16 @@ impl<G: Visitable> Visitable for AsUndirected<G>
     }
 }
 
+trait_template! {
 /// Create or access the adjacency matrix of a graph.
 ///
 /// The implementor can either create an adjacency matrix, or it can return
 /// a placeholder if it has the needed representation internally.
 pub trait GetAdjacencyMatrix : GraphBase {
+    @section type
     /// The associated adjacency matrix type
     type AdjMatrix;
+    @section self_ref
     /// Create the adjacency matrix
     fn adjacency_matrix(&self) -> Self::AdjMatrix;
     /// Return true if there is an edge from `a` to `b`, false otherwise.
@@ -698,18 +686,10 @@ pub trait GetAdjacencyMatrix : GraphBase {
     /// Computes in O(1) time.
     fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
 }
-
-impl<'a, G> GetAdjacencyMatrix for &'a G
-    where G: GetAdjacencyMatrix,
-{
-    type AdjMatrix = G::AdjMatrix;
-    fn adjacency_matrix(&self) -> Self::AdjMatrix {
-        (*self).adjacency_matrix()
-    }
-    fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool {
-        (*self).is_adjacent(matrix, a, b)
-    }
 }
+
+
+GetAdjacencyMatrix!{delegate_impl []}
 
 #[cfg(feature = "graphmap")]
 /// The `GraphMap` keeps an adjacency matrix internally.

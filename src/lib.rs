@@ -25,6 +25,14 @@ pub use Direction::{Outgoing, Incoming};
 #[macro_use]
 mod macros;
 mod scored;
+
+// these modules define trait-implementing macros
+#[macro_use]
+#[path = "visit/visit.rs"]
+pub mod visit;
+#[macro_use]
+pub mod data;
+
 pub mod algo;
 #[cfg(feature = "generate")]
 pub mod generate;
@@ -33,9 +41,6 @@ pub mod graphmap;
 #[path = "graph.rs"]
 mod graph_impl;
 pub mod dot;
-#[path = "visit/visit.rs"]
-pub mod visit;
-pub mod data;
 pub mod unionfind;
 mod dijkstra;
 pub mod csr;

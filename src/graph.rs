@@ -22,7 +22,10 @@ use iter_format::{
 };
 
 use visit::EdgeRef;
-use visit::{IntoNodeReferences};
+use visit::{Data, IntoNodeIdentifiers, Prop, NodeIndexable, IntoNeighborsDirected};
+use visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
+use visit::{NodeCompactIndexable, GetAdjacencyMatrix};
+use data::{DataMap, DataMapMut};
 
 
 /// The default integer type for graph indices.
@@ -1921,3 +1924,21 @@ impl<'a, N, E, Ty, Ix> Frozen<'a, Graph<N, E, Ty, Ix>>
         self.0.index_twice_mut(i, j)
     }
 }
+
+macro_rules! access0 {
+    ($e:expr) => ($e.0);
+}
+
+Data!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+DataMap!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+DataMapMut!{delegate_impl [['a, G], G, Frozen<'a, G>, access0]}
+GetAdjacencyMatrix!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+IntoEdgeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
+IntoNeighbors!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
+IntoNeighborsDirected!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
+IntoNodeIdentifiers!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
+IntoNodeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
+NodeIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+NodeCompactIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+Prop!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+Visitable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}

@@ -5,7 +5,7 @@
 /// Well almost: There *must* be markers of `@section type`, `@section self`
 /// and `@section self_ref` before the associated types, `self` methods
 /// and `&self` methods respectively.
-macro_rules! define_trait {
+macro_rules! trait_template {
     ($(#[$doc:meta])* pub trait $name:ident $($methods:tt)*) => {
         macro_rules! $name {
             ($m:ident $extra:tt) => {
@@ -55,6 +55,9 @@ macro_rules! remove_sections {
 macro_rules! deref {
     ($e:expr) => (*$e);
 }
+macro_rules! deref_twice {
+    ($e:expr) => (**$e);
+}
 
 /// Implement a trait by delegation. By default as if we are delegating
 /// from &G to G.
@@ -63,7 +66,7 @@ macro_rules! delegate_impl {
         delegate_impl! { [['a, G], G, &'a G, deref] $($rest)* }
     };
     ([[$($param:tt)*], $self_type:ident, $self_wrap:ty, $self_map:ident]
-     pub trait $name:ident : $sup:ident $(+ $more_sup:ident)* {
+     pub trait $name:ident $(: $sup:ident)* $(+ $more_sup:ident)* {
         $(
         @section type
         $(
@@ -83,6 +86,13 @@ macro_rules! delegate_impl {
         $(
             $(#[$_attr3:meta])*
             fn $fname:ident(&self $(,$arg:ident : $argty:ty)*) -> $ret:ty;
+        )+
+        )*
+        $(
+        @section self_mut
+        $(
+            $(#[$_attr4:meta])*
+            fn $fname_mut:ident(&mut self $(,$arg4:ident : $argty4:ty)*) -> $ret4:ty;
         )+
         )*
         $(
@@ -107,6 +117,13 @@ macro_rules! delegate_impl {
             $(
                 fn $fname(&self $(,$arg: $argty)*) -> $ret {
                     $self_map!(self).$fname($($arg),*)
+                }
+            )*
+            )*
+            $(
+            $(
+                fn $fname_mut(&mut self $(,$arg4: $argty4)*) -> $ret4 {
+                    $self_map!(self).$fname_mut($($arg4),*)
                 }
             )*
             )*

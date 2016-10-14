@@ -12,26 +12,27 @@ use visit::{
     NodeIndexable,
 };
 
+trait_template!{
 pub trait DataMap : Data {
+    @section self_ref
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight>;
     fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight>;
 }
-
-impl<'a, G> DataMap for &'a G
-    where G: DataMap,
-{
-    fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
-        (*self).node_weight(id)
-    }
-    fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
-        (*self).edge_weight(id)
-    }
 }
 
+
+DataMap!{delegate_impl []}
+DataMap!{delegate_impl [['a, G], G, &'a mut G, deref_twice]}
+
+trait_template! {
 pub trait DataMapMut : DataMap {
+    @section self_mut
     fn node_weight_mut(&mut self, id: Self::NodeId) -> Option<&mut Self::NodeWeight>;
     fn edge_weight_mut(&mut self, id: Self::EdgeId) -> Option<&mut Self::EdgeWeight>;
 }
+}
+
+DataMapMut!{delegate_impl [['a, G], G, &'a mut G, deref_twice]}
 
 pub trait Build : Data + NodeCount {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId;
