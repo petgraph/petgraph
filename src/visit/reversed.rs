@@ -79,10 +79,10 @@ impl<G: Visitable> Visitable for Reversed<G>
 
 /// An edge reference for `Reversed`.
 #[derive(Copy, Clone, Debug)]
-pub struct ReversedEdgeRef<R>(R);
+pub struct ReversedEdgeReference<R>(R);
 
 /// An edge reference
-impl<R> EdgeRef for ReversedEdgeRef<R>
+impl<R> EdgeRef for ReversedEdgeReference<R>
     where R: EdgeRef,
 {
     type NodeId = R::NodeId;
@@ -105,7 +105,7 @@ impl<R> EdgeRef for ReversedEdgeRef<R>
 impl<G> IntoEdgeReferences for Reversed<G>
     where G: IntoEdgeReferences
 {
-    type EdgeRef = ReversedEdgeRef<G::EdgeRef>;
+    type EdgeRef = ReversedEdgeReference<G::EdgeRef>;
     type EdgeReferences = ReversedEdgeReferences<G::EdgeReferences>;
     fn edge_references(self) -> Self::EdgeReferences {
         ReversedEdgeReferences {
@@ -123,9 +123,9 @@ impl<I> Iterator for ReversedEdgeReferences<I>
     where I: Iterator,
           I::Item: EdgeRef,
 {
-    type Item = ReversedEdgeRef<I::Item>;
+    type Item = ReversedEdgeReference<I::Item>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(ReversedEdgeRef)
+        self.iter.next().map(ReversedEdgeReference)
     }
 }
 
