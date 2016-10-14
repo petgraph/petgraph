@@ -269,15 +269,21 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
         self.find_edge_pos(a, b).is_ok()
     }
 
-    /// Computes in **O(1)** time.
-    pub fn out_degree(&self, node: NodeIndex<Ix>) -> usize {
-        self.neighbors_slice(node).len()
+    fn neighbors_range(&self, a: NodeIndex<Ix>) -> Range<usize> {
+        let index = self.row[a.index()];
+        let end = self.row.get(a.index() + 1).cloned().unwrap_or(self.column.len());
+        index..end
     }
 
     fn neighbors_of(&self, a: NodeIndex<Ix>) -> (usize, &[Ix]) {
-        let index = self.row[a.index()];
-        let end = self.row.get(a.index() + 1).cloned().unwrap_or(self.column.len());
-        (index, &self.column[index..end])
+        let r = self.neighbors_range(a);
+        (r.start, &self.column[r])
+    }
+
+    /// Computes in **O(1)** time.
+    pub fn out_degree(&self, a: NodeIndex<Ix>) -> usize {
+        let r = self.neighbors_range(a);
+        r.end - r.start
     }
 
     /// Computes in **O(1)** time.
@@ -287,9 +293,7 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
 
     /// Computes in **O(1)** time.
     pub fn edges_slice(&self, a: NodeIndex<Ix>) -> &[E] {
-        let index = self.row[a.index()];
-        let end = self.row.get(a.index() + 1).cloned().unwrap_or(self.column.len());
-        &self.edges[index..end]
+        &self.edges[self.neighbors_range(a)]
     }
 
     /// Return an iterator of all edges of `a`.
@@ -300,12 +304,11 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ty, Ix>`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
-        let index = self.row[a.index()];
-        let end = self.row.get(a.index() + 1).cloned().unwrap_or(self.column.len());
+        let r = self.neighbors_range(a);
         Edges {
-            index: index,
+            index: r.start,
             source: a,
-            iter: zip(&self.column[index..end], &self.edges[index..end]),
+            iter: zip(&self.column[r.clone()], &self.edges[r]),
             ty: self.ty,
         }
     }
