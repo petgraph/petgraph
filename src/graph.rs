@@ -22,7 +22,7 @@ use iter_format::{
 };
 
 use visit::EdgeRef;
-use visit::{Data, IntoNodeIdentifiers, Prop, NodeIndexable, IntoNeighborsDirected};
+use visit::{Data, IntoNodeIdentifiers, GraphProp, NodeIndexable, IntoNeighborsDirected};
 use visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
 use visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount, IntoEdges};
 use data::{DataMap, DataMapMut};
@@ -2013,5 +2013,5 @@ IntoNodeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twic
 NodeCompactIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 NodeCount!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 NodeIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-Prop!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+GraphProp!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 Visitable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}

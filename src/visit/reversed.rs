@@ -19,7 +19,7 @@ use visit::{
     Visitable,
     EdgeRef,
     Data,
-    Prop,
+    GraphProp,
 };
 
 /// Wrapper type for walking the graph as if all edges are reversed.
@@ -137,7 +137,7 @@ NodeIndexable!{delegate_impl [[G], G, Reversed<G>, access0]}
 NodeCompactIndexable!{delegate_impl [[G], G, Reversed<G>, access0]}
 IntoNodeIdentifiers!{delegate_impl [[G], G, Reversed<G>, access0]}
 IntoNodeReferences!{delegate_impl [[G], G, Reversed<G>, access0]}
-Prop!{delegate_impl [[G], G, Reversed<G>, access0]}
+GraphProp!{delegate_impl [[G], G, Reversed<G>, access0]}
 NodeCount!{delegate_impl [[G], G, Reversed<G>, access0]}
 
 

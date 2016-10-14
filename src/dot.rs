@@ -85,14 +85,14 @@ pub enum Config {
 }
 
 use visit::{ IntoNodeReferences, NodeIndexable, IntoEdgeReferences, EdgeRef};
-use visit::{ Data, NodeRef, Prop, };
+use visit::{ Data, NodeRef, GraphProp, };
 
 impl<'a, G> Dot<'a, G>
 {
     fn graph_fmt<NF, EF, NW, EW>(&self, g: G, f: &mut fmt::Formatter,
                     mut node_fmt: NF, mut edge_fmt: EF) -> fmt::Result
         where G: NodeIndexable + IntoNodeReferences + IntoEdgeReferences,
-              G: Prop,
+              G: GraphProp,
               G: Data<NodeWeight=NW, EdgeWeight=EW>,
               NF: FnMut(&NW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
               EF: FnMut(&EW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
@@ -135,7 +135,7 @@ impl<'a, G> Dot<'a, G>
 }
 
 impl<'a, G> fmt::Display for Dot<'a, G>
-    where G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + Prop,
+    where G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
           G::EdgeWeight: fmt::Display,
           G::NodeWeight: fmt::Display,
 {
@@ -145,7 +145,7 @@ impl<'a, G> fmt::Display for Dot<'a, G>
 }
 
 impl<'a, G> fmt::Debug for Dot<'a, G>
-    where G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + Prop,
+    where G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
           G::EdgeWeight: fmt::Debug,
           G::NodeWeight: fmt::Debug,
 {

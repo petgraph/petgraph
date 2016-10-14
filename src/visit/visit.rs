@@ -434,7 +434,7 @@ impl<N, E, Ty> Data for GraphMap<N, E, Ty>
 
 trait_template! {
     /// Edge kind property (directed or undirected edges)
-pub trait Prop : GraphBase {
+pub trait GraphProp : GraphBase {
     @section type
     /// The kind edges in the graph.
     type EdgeType: EdgeType;
@@ -446,9 +446,9 @@ pub trait Prop : GraphBase {
 }
 }
 
-Prop!{delegate_impl []}
+GraphProp!{delegate_impl []}
 
-impl<N, E, Ty, Ix> Prop for Graph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> GraphProp for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
@@ -456,7 +456,7 @@ impl<N, E, Ty, Ix> Prop for Graph<N, E, Ty, Ix>
 }
 
 #[cfg(feature = "stable_graph")]
-impl<N, E, Ty, Ix> Prop for StableGraph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> GraphProp for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
@@ -464,7 +464,7 @@ impl<N, E, Ty, Ix> Prop for StableGraph<N, E, Ty, Ix>
 }
 
 #[cfg(feature = "graphmap")]
-impl<N, E, Ty> Prop for GraphMap<N, E, Ty>
+impl<N, E, Ty> GraphProp for GraphMap<N, E, Ty>
     where N: NodeTrait,
           Ty: EdgeType,
 {

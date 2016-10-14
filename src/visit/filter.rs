@@ -12,7 +12,7 @@ use visit::{
     NodeIndexable,
     Visitable,
     VisitMap,
-    Prop,
+    GraphProp,
 };
 
 /// A graph filter for nodes.
@@ -128,5 +128,5 @@ macro_rules! access0 {
 }
 
 NodeIndexable!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}
-Prop!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}
+GraphProp!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}
 Visitable!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}

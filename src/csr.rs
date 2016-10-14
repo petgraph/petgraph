@@ -9,7 +9,7 @@ use std::slice::Windows;
 
 use visit::{EdgeRef, GraphBase, IntoNeighbors, NodeIndexable, IntoEdges};
 use visit::{NodeCompactIndexable, IntoNodeIdentifiers, Visitable};
-use visit::{Data, IntoEdgeReferences, NodeCount, Prop};
+use visit::{Data, IntoEdgeReferences, NodeCount, GraphProp};
 
 use util::zip;
 
@@ -574,7 +574,7 @@ impl<N, E, Ty, Ix> NodeCount for Csr<N, E, Ty, Ix>
     }
 }
 
-impl<N, E, Ty, Ix> Prop for Csr<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> GraphProp for Csr<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
