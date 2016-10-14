@@ -511,7 +511,7 @@ trait_template! {
 ///
 /// The graph's node identifiers correspond to exactly the indices
 /// `0..self.node_bound()`.
-pub trait NodeCompactIndexable : NodeIndexable { }
+pub trait NodeCompactIndexable : NodeIndexable + NodeCount { }
 }
 
 NodeCompactIndexable!{delegate_impl []}
