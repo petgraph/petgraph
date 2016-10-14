@@ -487,6 +487,14 @@ impl<'a, N, E, Ty, Ix> IntoNeighbors for &'a Csr<N, E, Ty, Ix>
           Ix: IndexType,
 {
     type Neighbors = Neighbors<'a, Ix>;
+
+    /// Return an iterator of all neighbors of `a`.
+    ///
+    /// - `Directed`: Targets of outgoing edges from `a`.
+    /// - `Undirected`: Opposing endpoints of all edges connected to `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is `NodeIndex<Ix>`.
     fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
         Neighbors {
             iter: self.neighbors_slice(n).iter(),
