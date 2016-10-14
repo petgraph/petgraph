@@ -38,6 +38,7 @@ use super::{
 use IntoWeightedEdge;
 use visit::{
     EdgeRef,
+    IntoEdges,
     IntoEdgeReferences,
     NodeIndexable,
 };
@@ -749,6 +750,17 @@ impl<'a, Ix, E> EdgeRef for EdgeReference<'a, E, Ix>
     fn weight(&self) -> &E { self.weight }
     fn id(&self) -> Self::EdgeId { self.index }
 }
+
+impl<'a, N, E, Ty, Ix> IntoEdges for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Edges = Edges<'a, E, Ty, Ix>;
+    fn edges(self, a: Self::NodeId) -> Self::Edges {
+        self.edges(a)
+    }
+}
+
 
 
 /// Iterator over the edges of from or to a node
