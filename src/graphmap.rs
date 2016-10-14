@@ -26,6 +26,7 @@ use {
 
 use IntoWeightedEdge;
 use visit::{IntoNodeIdentifiers, NodeCount, IntoNodeReferences, NodeIndexable};
+use visit::{NodeCompactIndexable};
 use graph::Graph;
 use graph::node_index;
 
@@ -766,4 +767,10 @@ impl<N, E, Ty> NodeIndexable for GraphMap<N, E, Ty>
         let (&key, _) = self.nodes.get_index(ix).unwrap();
         key
     }
+}
+
+impl<N, E, Ty> NodeCompactIndexable for GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
 }
