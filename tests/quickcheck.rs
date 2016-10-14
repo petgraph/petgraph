@@ -646,7 +646,7 @@ quickcheck! {
             return true;
         }
         let v = node_index(node % g.node_count());
-        let distances = dijkstra(&g, v, None);
+        let distances = dijkstra(&g, v, None, |e| *e.weight());
         for v2 in distances.keys() {
             let dv2 = distances[v2];
             // triangle inequality:
