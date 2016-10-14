@@ -503,16 +503,16 @@ pub struct NegativeCycle(());
 
 /// [Generic] Compute shortest paths from node `source` to all other.
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
-    -> Result<(Vec<f32>, Vec<Option<G::NodeId>>), NegativeCycle>
+    -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
     where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
-          G: Data<EdgeWeight=f32>,
+          G::EdgeWeight: FloatMeasure,
 {
     let mut predecessor = vec![None; g.node_bound()];
-    let mut distance = vec![1./0.; g.node_bound()];
+    let mut distance = vec![<_>::infinite(); g.node_bound()];
 
     let ix = |i| g.to_index(i);
 
-    distance[ix(source)] = 0.;
+    distance[ix(source)] = <_>::zero();
     // scan up to |V| - 1 times.
     for _ in 1..g.node_count() {
         let mut did_update = false;
@@ -545,5 +545,32 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
     }
 
     Ok((distance, predecessor))
+}
+
+use std::ops::Add;
+use std::fmt::Debug;
+
+/// Associated data that can be used for measures (such as length).
+pub trait Measure : Debug + PartialOrd + Add<Self, Output=Self> + Default + Clone {
+}
+
+impl<M> Measure for M
+    where M: Debug + PartialOrd + Add<M, Output=M> + Default + Clone,
+{ }
+
+/// A floating-point measure.
+pub trait FloatMeasure : Measure + Copy {
+    fn zero() -> Self;
+    fn infinite() -> Self;
+}
+
+impl FloatMeasure for f32 {
+    fn zero() -> Self { 0. }
+    fn infinite() -> Self { 1./0. }
+}
+
+impl FloatMeasure for f64 {
+    fn zero() -> Self { 0. }
+    fn infinite() -> Self { 1./0. }
 }
 
