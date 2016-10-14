@@ -64,7 +64,7 @@ pub trait Build : Data + NodeCount {
 }
 
 /// A graph that can be created
-pub trait Create : Build + DataMapMut + Default {
+pub trait Create : Build + Default {
     fn with_capacity(nodes: usize, edges: usize) -> Self;
 }
 
@@ -218,6 +218,15 @@ impl<N, E, Ty, Ix> Create for StableGraph<N, E, Ty, Ix>
     }
 }
 
+impl<N, E, Ty> Create for GraphMap<N, E, Ty>
+    where Ty: EdgeType,
+          N: NodeTrait,
+{
+    fn with_capacity(nodes: usize, edges: usize) -> Self {
+        Self::with_capacity(nodes, edges)
+    }
+}
+
 /// A graph element
 pub enum Element<N, E> {
     Node(N),
@@ -284,6 +293,18 @@ impl<N, E, Ty, Ix> FromElements for Graph<N, E, Ty, Ix>
 impl<N, E, Ty, Ix> FromElements for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
+{
+    fn from_elements<I>(iterable: I) -> Self
+        where Self: Sized,
+              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
+    {
+        from_elements_indexable(iterable)
+    }
+}
+
+impl<N, E, Ty> FromElements for GraphMap<N, E, Ty>
+    where Ty: EdgeType,
+          N: NodeTrait,
 {
     fn from_elements<I>(iterable: I) -> Self
         where Self: Sized,
