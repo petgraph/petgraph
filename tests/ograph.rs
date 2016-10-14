@@ -336,13 +336,13 @@ fn dijk() {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
 
-    let scores = dijkstra(&g, a, None, |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    let scores = dijkstra(&g, a, None);
     let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();
     scores.sort();
     assert_eq!(scores,
        vec![("A", 0), ("B", 7), ("C", 9), ("D", 11), ("E", 20), ("F", 20)]);
 
-    let scores = dijkstra(&g, a, Some(c), |gr, n| gr.edges(n).map(|(n, &e)| (n, e)));
+    let scores = dijkstra(&g, a, Some(c));
     assert_eq!(scores[&c], 9);
 }
 
@@ -947,7 +947,7 @@ fn index_twice_mut() {
         // check the sums
         for i in 0..gr.node_count() {
             let ni = NodeIndex::new(i);
-            let s = gr.edges_directed(ni, *dir).map(|(_, &ew)| ew).fold(0., |a, b| a + b);
+            let s = gr.edges_directed(ni, *dir).map(|e| *e.weight()).fold(0., |a, b| a + b);
             assert_eq!(s, gr[ni]);
         }
         println!("Sum {:?}: {:?}", dir, gr);
@@ -1191,7 +1191,7 @@ fn neighbors_selfloops() {
     seen_undir.sort();
     assert_eq!(&seen_undir, &undir_edges);
 
-    let mut seen_out = gr.edges(a).map(|(x, _)| x).collect::<Vec<_>>();
+    let mut seen_out = gr.edges(a).map(|e| e.target()).collect::<Vec<_>>();
     seen_out.sort();
     assert_eq!(&seen_out, &out_edges);
 
@@ -1231,7 +1231,7 @@ fn neighbors_selfloops() {
     seen_out.sort();
     assert_eq!(&seen_out, &out_edges);
 
-    let mut seen_out = gr.edges(a).map(|(x, _)| x).collect::<Vec<_>>();
+    let mut seen_out = gr.edges(a).map(|e| e.target()).collect::<Vec<_>>();
     seen_out.sort();
     assert_eq!(&seen_out, &out_edges);
 

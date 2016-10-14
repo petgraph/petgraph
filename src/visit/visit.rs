@@ -451,18 +451,6 @@ impl<N, E, Ty> Prop for GraphMap<N, E, Ty>
 }
 
 
-#[cfg(feature = "graphmap")]
-impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
-    where N: NodeTrait,
-          Ty: EdgeType,
-{
-    type EdgeRef = (N, N, &'a E);
-    type EdgeReferences = graphmap::AllEdges<'a, N, E, Ty>;
-    fn edge_references(self) -> Self::EdgeReferences {
-        self.all_edges()
-    }
-}
-
 impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,

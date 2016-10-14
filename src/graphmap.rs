@@ -26,7 +26,7 @@ use {
 
 use IntoWeightedEdge;
 use visit::{IntoNodeIdentifiers, NodeCount, IntoNodeReferences, NodeIndexable};
-use visit::{NodeCompactIndexable};
+use visit::{NodeCompactIndexable, IntoEdgeReferences, IntoEdges};
 use graph::Graph;
 use graph::node_index;
 
@@ -544,9 +544,8 @@ impl<'a, N, E, Ty> Iterator for Edges<'a, N, E, Ty>
     where N: 'a + NodeTrait, E: 'a,
           Ty: EdgeType,
 {
-    type Item = (N, &'a E);
-    fn next(&mut self) -> Option<(N, &'a E)>
-    {
+    type Item = (N, N, &'a E);
+    fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
             None => None,
             Some(b) => {
@@ -554,11 +553,22 @@ impl<'a, N, E, Ty> Iterator for Edges<'a, N, E, Ty>
                 match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
                     None => unreachable!(),
                     Some(edge) => {
-                        Some((b, edge))
+                        Some((a, b, edge))
                     }
                 }
             }
         }
+    }
+}
+
+impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
+    type EdgeRef = (N, N, &'a E);
+    type EdgeReferences = AllEdges<'a, N, E, Ty>;
+    fn edge_references(self) -> Self::EdgeReferences {
+        self.all_edges()
     }
 }
 
@@ -580,6 +590,17 @@ impl<'a, N, E, Ty> Iterator for AllEdges<'a, N, E, Ty>
         }
     }
 }
+
+impl<'a, N: 'a, E: 'a, Ty> IntoEdges for &'a GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
+    type Edges = Edges<'a, N, E, Ty>;
+    fn edges(self, a: Self::NodeId) -> Self::Edges {
+        self.edges(a)
+    }
+}
+
 
 /// Index `GraphMap` by node pairs to access edge weights.
 impl<N, E, Ty> Index<(N, N)> for GraphMap<N, E, Ty>
@@ -774,3 +795,4 @@ impl<N, E, Ty> NodeCompactIndexable for GraphMap<N, E, Ty>
           Ty: EdgeType,
 {
 }
+
