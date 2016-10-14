@@ -31,11 +31,19 @@ use petgraph::algo::{
     dijkstra,
 };
 use petgraph::visit::{Topo, Reversed};
+use petgraph::data::FromElements;
 use petgraph::graph::{IndexType, node_index, edge_index};
 use petgraph::graphmap::{
     NodeTrait,
 };
 
+fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+          N: Clone, E: Clone + PartialOrd,
+{
+    Graph::from_elements(min_spanning_tree(&g))
+}
 
 use std::fmt;
 
@@ -49,7 +57,7 @@ quickcheck! {
             assert!(no_singles.neighbors_undirected(i).count() > 0);
         }
         assert_eq!(no_singles.edge_count(), g.edge_count());
-        let mst = min_spanning_tree(&no_singles);
+        let mst = mst_graph(&no_singles);
         assert!(!is_cyclic_undirected(&mst));
         true
     }
@@ -65,7 +73,7 @@ quickcheck! {
             assert!(no_singles.neighbors_undirected(i).count() > 0);
         }
         assert_eq!(no_singles.edge_count(), g.edge_count());
-        let mst = min_spanning_tree(&no_singles);
+        let mst = mst_graph(&no_singles);
         assert!(!is_cyclic_undirected(&mst));
         true
     }
