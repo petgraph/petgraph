@@ -9,7 +9,7 @@ use std::slice::Windows;
 
 use visit::{EdgeRef, GraphBase, IntoNeighbors, NodeIndexable, IntoEdges};
 use visit::{NodeCompactIndexable, IntoNodeIdentifiers, Visitable};
-use visit::{Data, IntoEdgeReferences, NodeCount};
+use visit::{Data, IntoEdgeReferences, NodeCount, Prop};
 
 use util::zip;
 
@@ -552,10 +552,11 @@ impl<Ix> Iterator for NodeIdentifiers<Ix>
     }
 }
 
-impl<'a, N, E, Ty> IntoNodeIdentifiers for &'a Csr<N, E, Ty>
+impl<'a, N, E, Ty, Ix> IntoNodeIdentifiers for &'a Csr<N, E, Ty, Ix>
     where Ty: EdgeType,
+          Ix: IndexType,
 {
-    type NodeIdentifiers = NodeIdentifiers;
+    type NodeIdentifiers = NodeIdentifiers<Ix>;
     fn node_identifiers(self) -> Self::NodeIdentifiers {
         NodeIdentifiers {
             r: 0..self.node_count(),
@@ -564,12 +565,20 @@ impl<'a, N, E, Ty> IntoNodeIdentifiers for &'a Csr<N, E, Ty>
     }
 }
 
-impl<N, E, Ty> NodeCount for Csr<N, E, Ty>
+impl<N, E, Ty, Ix> NodeCount for Csr<N, E, Ty, Ix>
     where Ty: EdgeType,
+          Ix: IndexType,
 {
     fn node_count(&self) -> usize {
         (*self).node_count()
     }
+}
+
+impl<N, E, Ty, Ix> Prop for Csr<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgeType = Ty;
 }
 
 /*

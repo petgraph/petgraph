@@ -445,6 +445,14 @@ impl<N, E, Ty, Ix> Prop for Graph<N, E, Ty, Ix>
     type EdgeType = Ty;
 }
 
+#[cfg(feature = "stable_graph")]
+impl<N, E, Ty, Ix> Prop for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgeType = Ty;
+}
+
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> Prop for GraphMap<N, E, Ty>
     where N: NodeTrait,
