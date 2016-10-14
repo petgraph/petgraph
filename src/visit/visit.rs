@@ -7,16 +7,19 @@
 //! and produces an iterator. These traits are quite composable, but with the
 //! limitation that they only use shared references to graphs.
 //!
-//! ### Visitors
+//! ### Graph Traversal
 //!
 //! [`Dfs`](struct.Dfs.html), [`Bfs`][bfs], [`DfsPostOrder`][dfspo] and
 //! [`Topo`][topo]  are basic visitors and they use ”walker” methods: the
 //! visitors don't hold the graph as borrowed during traversal, only for the
 //! `.next()` call on the walker.
 //!
+//! There is also the callback based traversal [`depth_first_search`][dfs].
+//!
 //! [bfs]: struct.Bfs.html
 //! [dfspo]: struct.DfsPostOrder.html
 //! [topo]: struct.Topo.html
+//! [dfs]: fn.depth_first_search.html
 //!
 //! ### Other Graph Traits
 //!
