@@ -1,7 +1,3 @@
-#![cfg_attr(feature = "test", feature(test))]
-
-#[cfg(feature = "test")]
-extern crate test;
 extern crate petgraph;
 
 use petgraph::prelude::*;
@@ -315,57 +311,6 @@ fn praust_undir_no_iso()
     assert!(!petgraph::algo::is_isomorphic(&a, &b));
 }
 
-#[cfg(feature = "test")]
-#[bench]
-fn petersen_iso_bench(bench: &mut test::Bencher)
-{
-    let a = str_to_digraph(PETERSEN_A);
-    let b = str_to_digraph(PETERSEN_B);
-
-    bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
-}
-
-
-#[cfg(feature = "test")]
-#[bench]
-fn petersen_undir_iso_bench(bench: &mut test::Bencher)
-{
-    let a = str_to_graph(PETERSEN_A);
-    let b = str_to_graph(PETERSEN_B);
-
-    bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
-}
-
-#[cfg(feature = "test")]
-#[bench]
-fn full_iso_bench(bench: &mut test::Bencher)
-{
-    let a = str_to_graph(FULL_A);
-    let b = str_to_graph(FULL_B);
-
-    bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
-}
-
-#[cfg(feature = "test")]
-#[bench]
-fn praust_dir_no_iso_bench(bench: &mut test::Bencher)
-{
-    let a = str_to_digraph(PRAUST_A);
-    let b = str_to_digraph(PRAUST_B);
-
-    bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
-}
-
-#[cfg(feature = "test")]
-#[bench]
-fn praust_undir_no_iso_bench(bench: &mut test::Bencher)
-{
-    let a = str_to_graph(PRAUST_A);
-    let b = str_to_graph(PRAUST_B);
-
-    bench.iter(|| petgraph::algo::is_isomorphic(&a, &b));
-}
-
 #[test]
 fn coxeter_di_iso()
 {
@@ -618,15 +563,3 @@ const COXETER_B: &'static str = "
  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 1 0
 ";
 
-#[cfg(feature = "test")]
-#[bench]
-fn bench_praust_mst(bb: &mut test::Bencher)
-{
-    let a = str_to_digraph(PRAUST_A);
-    let b = str_to_digraph(PRAUST_B);
-
-    bb.iter(|| {
-        (petgraph::algo::min_spanning_tree(&a),
-        petgraph::algo::min_spanning_tree(&b))
-    });
-}
