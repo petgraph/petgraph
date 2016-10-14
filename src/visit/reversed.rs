@@ -35,19 +35,6 @@ impl<G: Data> Data for Reversed<G> {
     type EdgeWeight = G::EdgeWeight;
 }
 
-impl<G> IntoNodeIdentifiers for Reversed<G>
-    where G: IntoNodeIdentifiers
-{
-    type NodeIdentifiers = G::NodeIdentifiers;
-    fn node_identifiers(self) -> Self::NodeIdentifiers {
-        self.0.node_identifiers()
-    }
-
-    fn node_count(&self) -> usize {
-        self.0.node_count()
-    }
-}
-
 impl<G> IntoNeighbors for Reversed<G>
     where G: IntoNeighborsDirected
 {
@@ -148,11 +135,10 @@ impl<I> Iterator for ReversedEdgeReferences<I>
     }
 }
 
-
-impl<G> NodeIndexable for Reversed<G>
-    where G: NodeIndexable
-{
-    fn node_bound(&self) -> usize { self.0.node_bound() }
-    fn to_index(&self, n: G::NodeId) -> usize { self.0.to_index(n) }
-    fn from_index(&self, ix: usize) -> Self::NodeId { self.0.from_index(ix) }
+macro_rules! access0 {
+    ($e:expr) => ($e.0)
 }
+
+NodeIndexable!{delegate_impl [[G], G, Reversed<G>, access0]}
+IntoNodeIdentifiers!{delegate_impl [[G], G, Reversed<G>, access0]}
+

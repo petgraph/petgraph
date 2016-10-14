@@ -32,10 +32,10 @@
 //! [vis]: trait.Visitable.html
 //!
 
-mod filter;
-mod reversed;
 pub use self::filter::*;
 pub use self::reversed::*;
+
+#[macro_use] mod macros;
 
 mod dfsvisit;
 pub use self::dfsvisit::*;
@@ -141,6 +141,7 @@ impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>>
     }
 }
 
+define_trait! {
 /// Access to the neighbors of each node
 ///
 /// The neighbors are, depending on the graph’s edge type:
@@ -148,11 +149,17 @@ impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>>
 /// - `Directed`: All targets of edges from `a`.
 /// - `Undirected`: All other endpoints of edges connected to `a`.
 pub trait IntoNeighbors : GraphRef {
+    @section type
     type Neighbors: Iterator<Item=Self::NodeId>;
+    @section self
     /// Return an iterator of the neighbors of node `a`.
     fn neighbors(self, a: Self::NodeId) -> Self::Neighbors;
 }
+}
 
+IntoNeighbors!{delegate_impl []}
+
+define_trait! {
 /// Access to the neighbors of each node, through incoming or outgoing edges.
 ///
 /// Depending on the graph’s edge type, the neighbors of a given directionality
@@ -162,9 +169,12 @@ pub trait IntoNeighbors : GraphRef {
 /// - `Directed`, `Incoming`: All sources of edges to `a`.
 /// - `Undirected`: All other endpoints of edges connected to `a`.
 pub trait IntoNeighborsDirected : IntoNeighbors {
+    @section type
     type NeighborsDirected: Iterator<Item=Self::NodeId>;
+    @section self
     fn neighbors_directed(self, n: Self::NodeId, d: Direction)
         -> Self::NeighborsDirected;
+}
 }
 
 impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a Graph<N, E, Ty, Ix>
@@ -222,35 +232,20 @@ pub trait IntoEdges : IntoEdgeReferences {
     fn edges(self, a: Self::NodeId) -> Self::Edges;
 }
 
-/// A graph with a known node count.
-pub trait NodeCount : GraphBase {
-    fn node_count(&self) -> usize;
-}
 
-impl<'a, G> NodeCount for &'a G
-    where G: NodeCount,
-{
-    fn node_count(&self) -> usize { (*self).node_count() }
-}
-
+define_trait! {
 /// Access to the sequence of the graph’s `NodeId`s.
 pub trait IntoNodeIdentifiers : GraphRef {
+    @section type
     type NodeIdentifiers: Iterator<Item=Self::NodeId>;
+    @section self
     fn node_identifiers(self) -> Self::NodeIdentifiers;
+    @section self_ref
     fn node_count(&self) -> usize;
 }
-
-impl<'a, G> IntoNodeIdentifiers for &'a G
-    where G: IntoNodeIdentifiers,
-{
-    type NodeIdentifiers = G::NodeIdentifiers;
-    fn node_identifiers(self) -> Self::NodeIdentifiers {
-        (*self).node_identifiers()
-    }
-    fn node_count(&self) -> usize {
-        (*self).node_count()
-    }
 }
+
+IntoNodeIdentifiers!{delegate_impl []}
 
 impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
@@ -281,25 +276,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
     }
 }
 
-impl<'a, G> IntoNeighbors for &'a G
-    where G: IntoNeighbors
-{
-    type Neighbors = G::Neighbors;
-    fn neighbors(self, n: G::NodeId) -> G::Neighbors {
-        (*self).neighbors(n)
-    }
-}
-
-impl<'a, G> IntoNeighborsDirected for &'a G
-    where G: IntoNeighborsDirected
-{
-    type NeighborsDirected = G::NeighborsDirected;
-    fn neighbors_directed(self, n: G::NodeId, d: Direction)
-        -> G::NeighborsDirected
-    {
-        (*self).neighbors_directed(n, d)
-    }
-}
+IntoNeighborsDirected!{delegate_impl []}
 
 /// Access to the graph’s nodes without edges to them (`Incoming`) or from them
 /// (`Outgoing`).
@@ -488,29 +465,38 @@ impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
     }
 }
 
-/// The graph’s `NodeId`s map to indices
-pub trait NodeIndexable : GraphBase {
-    /// Return an upper bound of the node indices in the graph
-    /// (suitable for the size of a bitmap).
-    fn node_bound(&self) -> usize;
-    /// Convert `a` to an integer index.
-    fn to_index(&self, a: Self::NodeId) -> usize;
-    fn from_index(&self, i: usize) -> Self::NodeId;
+
+define_trait!{
+    /// The graph’s `NodeId`s map to indices
+    pub trait NodeIndexable : GraphBase {
+        @section self_ref
+        /// Return an upper bound of the node indices in the graph
+        /// (suitable for the size of a bitmap).
+        fn node_bound(&self) -> usize;
+        /// Convert `a` to an integer index.
+        fn to_index(&self, a: Self::NodeId) -> usize;
+        /// Convert `i` to a node index
+        fn from_index(&self, i: usize) -> Self::NodeId;
+    }
 }
+
+NodeIndexable!{delegate_impl []}
+
+define_trait! {
+/// A graph with a known node count.
+pub trait NodeCount : GraphBase {
+    @section self_ref
+    fn node_count(&self) -> usize;
+}
+}
+
+NodeCount!{delegate_impl []}
 
 /// The graph’s `NodeId`s map to indices, in a range without holes.
 ///
 /// The graph's node identifiers correspond to exactly the indices
 /// `0..self.node_bound()`.
 pub trait NodeCompactIndexable : NodeIndexable { }
-
-impl<'a, G> NodeIndexable for &'a G
-    where G: NodeIndexable
-{
-    fn node_bound(&self) -> usize { (**self).node_bound() }
-    fn to_index(&self, ix: Self::NodeId) -> usize { (*self).to_index(ix) }
-    fn from_index(&self, ix: usize) -> Self::NodeId { (*self).from_index(ix) }
-}
 
 impl<'a, G> NodeCompactIndexable for &'a G
     where G: NodeCompactIndexable
@@ -586,29 +572,26 @@ impl<N, S> VisitMap<N> for HashSet<N, S>
     }
 }
 
+define_trait!{
 /// A graph that can create a map that tracks the visited status of its nodes.
 pub trait Visitable : GraphBase {
+    @section type
     /// The associated map type
     type Map: VisitMap<Self::NodeId>;
+    @section self_ref
     /// Create a new visitor map
     fn visit_map(&self) -> Self::Map;
     /// Reset the visitor map (and resize to new size of graph if needed)
-    fn reset_map(&self, &mut Self::Map);
+    fn reset_map(&self, map: &mut Self::Map) -> ();
 }
+}
+Visitable!{delegate_impl []}
 
 impl<N, E, Ty, Ix> GraphBase for Graph<N, E, Ty, Ix>
     where Ix: IndexType,
 {
     type NodeId = graph::NodeIndex<Ix>;
     type EdgeId = graph::EdgeIndex<Ix>;
-}
-
-impl<'a, G> Visitable for &'a G where G: Visitable {
-    type Map = G::Map;
-    fn visit_map(&self) -> Self::Map { (**self).visit_map() }
-    fn reset_map(&self, map: &mut Self::Map) {
-        (**self).reset_map(map)
-    }
 }
 
 impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix>
@@ -1178,3 +1161,6 @@ impl<N, VM> Topo<N, VM>
     }
 }
 
+
+mod filter;
+mod reversed;
