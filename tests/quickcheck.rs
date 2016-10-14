@@ -646,17 +646,14 @@ quickcheck! {
             return true;
         }
         let v = node_index(node % g.node_count());
-        let distances = dijkstra(
-            &g,
-            v,
-            None,
-            |g, v| g.edges(v).map(|(v, &e)| (v, e))
-        );
+        let distances = dijkstra(&g, v, None);
         for v2 in distances.keys() {
             let dv2 = distances[v2];
             // triangle inequality:
             // d(v,u) <= d(v,v2) + w(v2,u)
-            for (u,w) in g.edges(*v2) {
+            for edge in g.edges(*v2) {
+                let u = edge.target();
+                let w = edge.weight();
                 if distances.contains_key(&u) && distances[&u] > dv2 + w {
                     return false;
                 }
