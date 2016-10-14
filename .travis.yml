@@ -10,7 +10,7 @@ matrix:
     - rust: nightly
     - rust: nightly
       env:
-       - FEATURES='test unstable quickcheck'
+       - FEATURES='unstable quickcheck'
        - BENCH=1
 branches:
   only:
