@@ -14,6 +14,7 @@ use petgraph::algo::{
     has_path_connecting,
     is_cyclic_undirected,
     min_spanning_tree,
+    is_isomorphic_matching,
 };
 
 use petgraph::graph::node_index as n;
@@ -1471,4 +1472,41 @@ fn filtered_post_order() {
         po.push(n);
     }
     assert!(!po.contains(&n(1)));
+}
+
+#[test]
+fn filter_elements() {
+    use petgraph::data::Element::{Node, Edge};
+    use petgraph::data::FromElements;
+    use petgraph::data::ElementIterator;
+    let elements = vec![
+        Node { weight: "A"},
+        Node { weight: "B"},
+        Node { weight: "C"},
+        Node { weight: "D"},
+        Node { weight: "E"},
+        Node { weight: "F"},
+
+        Edge { source: 0, target: 1, weight: 7 }, 
+        Edge { source: 2, target: 0, weight: 9 }, 
+        Edge { source: 0, target: 3, weight: 14 }, 
+        Edge { source: 1, target: 2, weight: 10 }, 
+        Edge { source: 3, target: 2, weight: 2 }, 
+        Edge { source: 3, target: 4, weight: 9 }, 
+        Edge { source: 1, target: 5, weight: 15 }, 
+        Edge { source: 2, target: 5, weight: 11 }, 
+        Edge { source: 4, target: 5, weight: 6 }, 
+    ];
+    let mut g = DiGraph::<_, _>::from_elements(elements.iter().cloned());
+    println!("{:#?}", g);
+    assert!(g.contains_edge(n(1), n(5)));
+    let g2 = DiGraph::<_, _>::from_elements(elements.iter().cloned().filter_elements(|elt| {
+        match elt {
+            Node { ref weight } if **weight == "B" => false,
+            _ => true,
+        }
+    }));
+    println!("{:#?}", g2);
+    g.remove_node(n(1));
+    assert!(is_isomorphic_matching(&g, &g2, PartialEq::eq, PartialEq::eq));
 }

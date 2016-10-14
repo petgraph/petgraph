@@ -232,6 +232,7 @@ impl<N, E, Ty> Create for GraphMap<N, E, Ty>
 /// A sequence of Elements, for example an iterator, is laid out as follows:
 /// Nodes are implicitly given the index of their appearance in the sequence.
 /// The edges’ source and target fields refer to these indices.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Element<N, E> {
     /// A graph node.
     Node {
@@ -323,5 +324,106 @@ impl<N, E, Ty> FromElements for GraphMap<N, E, Ty>
               I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
     {
         from_elements_indexable(iterable)
+    }
+}
+
+/// Iterator adaptors for iterators of `Element`.
+pub trait ElementIterator<N, E> : Iterator<Item=Element<N, E>> {
+    /// Create an iterator adaptor that filters graph elements.
+    ///
+    /// The function `f` is called with each element and if its return value
+    /// is `true` the element is accepted and if `false` it is removed.
+    ///
+    /// `f` is called with mutable references to the node and edge weights,
+    /// so that they can be mutated (but the edge endpoints can not).
+    ///
+    /// This filter adapts the edge source, target numbers in the
+    /// stream so that they are correct after the removals.
+    fn filter_elements<F>(self, f: F) -> FilterElements<Self, F>
+        where Self: Sized,
+              F: FnMut(Element<&mut N, &mut E>) -> bool,
+    {
+        FilterElements {
+            iter: self,
+            node_index: 0,
+            map: Vec::new(),
+            f: f,
+        }
+    }
+}
+
+impl<N, E, I> ElementIterator<N, E> for I
+    where I: Iterator<Item=Element<N, E>> { }
+
+/// An iterator that filters graph elements.
+///
+/// See [`.filter_elements()`][1] for more information.
+///
+/// [1]: trait.ElementIterator.html#method.filter_elements
+pub struct FilterElements<I, F> {
+    iter: I,
+    node_index: usize,
+    map: Vec<usize>,
+    f: F,
+}
+
+impl<I, F, N, E> Iterator for FilterElements<I, F>
+    where I: Iterator<Item=Element<N, E>>,
+          F: FnMut(Element<&mut N, &mut E>) -> bool,
+{
+    type Item = Element<N, E>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let mut elt = match self.iter.next() {
+                None => return None,
+                Some(elt) => elt,
+            };
+            let keep = (self.f)(match elt {
+                Element::Node { ref mut weight } => Element::Node { weight: weight },
+                Element::Edge { source, target, ref mut weight }
+                    => Element::Edge { source: source, target: target, weight: weight },
+            });
+            let is_node = if let Element::Node { .. } = elt { true } else { false };
+            if !keep && is_node {
+                self.map.push(self.node_index);
+            }
+            if is_node {
+                self.node_index += 1;
+            }
+            if !keep {
+                continue;
+            }
+
+            // map edge parts
+            match elt {
+                Element::Edge {
+                    ref mut source,
+                    ref mut target,
+                    ..
+                } => {
+                    // Find the node indices in the map of removed ones.
+                    // If a node was removed, the edge is as well.
+                    // Otherwise the counts are adjusted by the number of nodes
+                    // removed.
+                    // Example: map: [1, 3, 4, 6]
+                    // binary search for 2, result is Err(1). One node has been
+                    // removed before 2.
+                    match self.map.binary_search(source) {
+                        Ok(_) => continue,
+                        Err(i) => *source -= i,
+                    }
+                    match self.map.binary_search(target) {
+                        Ok(_) => continue,
+                        Err(i) => *target -= i,
+                    }
+                    println!("Letting through edge {}, {}", *source, *target);
+                }
+                Element::Node { .. } => {
+                    println!("Letting through node {}", self.node_index - 1);
+                }
+            }
+            return Some(elt);
+        }
     }
 }
