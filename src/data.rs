@@ -175,14 +175,16 @@ fn from_elements_indexable<G, I>(iterable: I) -> G
           I: IntoIterator<Item=Element<G::NodeWeight, G::EdgeWeight>>,
 {
     let mut gr = G::with_capacity(0, 0);
-    let map = G::from_index;
+    let map = |gr: &G, i| gr.from_index(i);
     for element in iterable {
         match element {
             Element::Node(w) => {
                 gr.add_node(w);
             }
             Element::Edge(a, b, w) => {
-                gr.add_edge(map(a), map(b), w);
+                let from = map(&gr, a);
+                let to = map(&gr, b);
+                gr.add_edge(from, to, w);
             }
         }
     }

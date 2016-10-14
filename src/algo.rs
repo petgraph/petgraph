@@ -55,7 +55,7 @@ pub fn connected_components<G>(g: G) -> usize
         let (a, b) = (edge.source(), edge.target());
 
         // union the two vertices of the edge
-        vertex_sets.union(G::to_index(a), G::to_index(b));
+        vertex_sets.union(g.to_index(a), g.to_index(b));
     }
     let mut labels = vertex_sets.into_labeling();
     labels.sort();
@@ -76,7 +76,7 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 
         // union the two vertices of the edge
         //  -- if they were already the same, then we have a cycle
-        if !edge_sets.union(G::to_index(a), G::to_index(b)) {
+        if !edge_sets.union(g.to_index(a), g.to_index(b)) {
             return true
         }
     }
@@ -311,7 +311,7 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
         where G: IntoNeighbors + NodeIndexable
     {
         macro_rules! node {
-            ($node:expr) => (data.nodes[G::to_index($node)])
+            ($node:expr) => (data.nodes[g.to_index($node)])
         }
 
         if node![v].index.is_some() {
@@ -350,7 +350,7 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
                     let w = data.stack.pop().unwrap();
                     node![w].on_stack = false;
                     cur_scc.push(w);
-                    if G::to_index(w) == G::to_index(v) { break; }
+                    if g.to_index(w) == g.to_index(v) { break; }
                 }
                 data.sccs.push(cur_scc);
             }
@@ -443,7 +443,7 @@ pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
     }
 
     MinSpanningTree {
-        _graph: g,
+        graph: g,
         node_ids: Some(g.node_references()),
         subgraphs: subgraphs,
         sort_edges: sort_edges,
@@ -455,7 +455,7 @@ pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
 pub struct MinSpanningTree<G>
     where G: Data + IntoNodeReferences,
 {
-    _graph: G,
+    graph: G,
     node_ids: Option<G::NodeReferences>,
     subgraphs: UnionFind<usize>,
     sort_edges: BinaryHeap<MinScored<G::EdgeWeight, (G::NodeId, G::NodeId)>>,
@@ -487,9 +487,10 @@ impl<G> Iterator for MinSpanningTree<G>
         //  b. If the edge connects two disjoint trees in the pre-MST,
         //     add the edge.
         while let Some(MinScored(score, (a, b))) = self.sort_edges.pop() {
+            let g = self.graph;
             // check if the edge would connect two disjoint parts
-            if self.subgraphs.union(G::to_index(a), G::to_index(b)) {
-                return Some(Element::Edge(G::to_index(a), G::to_index(b), score));
+            if self.subgraphs.union(g.to_index(a), g.to_index(b)) {
+                return Some(Element::Edge(g.to_index(a), g.to_index(b), score));
             }
         }
         None
@@ -509,7 +510,7 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
     let mut predecessor = vec![None; g.node_bound()];
     let mut distance = vec![1./0.; g.node_bound()];
 
-    let ix = G::to_index;
+    let ix = |i| g.to_index(i);
 
     distance[ix(source)] = 0.;
     // scan up to |V| - 1 times.

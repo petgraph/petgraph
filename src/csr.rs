@@ -500,8 +500,8 @@ impl<N, E, Ty, Ix> NodeIndexable for Csr<N, E, Ty, Ix>
           Ix: IndexType,
 {
     fn node_bound(&self) -> usize { self.node_count() }
-    fn to_index(a: Self::NodeId) -> usize { a.index() }
-    fn from_index(ix: usize) -> Self::NodeId { Ix::new(ix) }
+    fn to_index(&self, a: Self::NodeId) -> usize { a.index() }
+    fn from_index(&self, ix: usize) -> Self::NodeId { Ix::new(ix) }
 }
 impl<N, E, Ty> NodeCompactIndexable for Csr<N, E, Ty>
     where Ty: EdgeType { }

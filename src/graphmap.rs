@@ -25,7 +25,7 @@ use {
 };
 
 use IntoWeightedEdge;
-use visit::IntoNodeIdentifiers;
+use visit::{IntoNodeIdentifiers, IntoNodeReferences, NodeIndexable};
 use graph::Graph;
 use graph::node_index;
 
@@ -713,5 +713,52 @@ impl<'a, N, E, Ty> Iterator for NodeIdentifiers<'a, N, E, Ty>
     fn next(&mut self) -> Option<Self::Item>
     {
         self.iter.next().map(|(&n, _)| n)
+    }
+}
+
+impl<'a, N, E, Ty> IntoNodeReferences for &'a GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
+    type NodeRef = (N, &'a N);
+    type NodeReferences = NodeReferences<'a, N, E, Ty>;
+    fn node_references(self) -> Self::NodeReferences {
+        NodeReferences {
+            iter: self.nodes.iter(),
+            ty: self.ty,
+            edge_ty: PhantomData,
+        }
+    }
+}
+
+pub struct NodeReferences<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
+    iter: OrderMapIter<'a, N, Vec<(N, CompactDirection)>>,
+    ty: PhantomData<Ty>,
+    edge_ty: PhantomData<E>,
+}
+
+impl<'a, N, E, Ty> Iterator for NodeReferences<'a, N, E, Ty>
+    where N: 'a + NodeTrait, E: 'a,
+          Ty: EdgeType,
+{
+    type Item = (N, &'a N);
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        self.iter.next().map(|(n, _)| (*n, n))
+    }
+}
+
+impl<N, E, Ty> NodeIndexable for GraphMap<N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
+    fn node_bound(&self) -> usize { self.node_count() }
+    fn to_index(&self, ix: Self::NodeId) -> usize {
+        let (i, _, _) = self.nodes.get_pair_index(&ix).unwrap();
+        i
+    }
+    fn from_index(&self, ix: usize) -> Self::NodeId {
+        let (&key, _) = self.nodes.get_index(ix).unwrap();
+        key
     }
 }

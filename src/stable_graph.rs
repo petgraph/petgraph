@@ -1030,8 +1030,8 @@ impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
     fn node_bound(&self) -> usize {
         self.g.nodes.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
     }
-    fn to_index(ix: NodeIndex<Ix>) -> usize { ix.index() }
-    fn from_index(ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
+    fn to_index(&self, ix: NodeIndex<Ix>) -> usize { ix.index() }
+    fn from_index(&self, ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
 }
 
 

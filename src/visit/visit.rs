@@ -356,7 +356,7 @@ pub trait NodeRef : Copy {
 
 /// Access to the sequence of the graph’s nodes
 pub trait IntoNodeReferences : Data + IntoNodeIdentifiers {
-    type NodeRef: NodeRef<Weight=Self::NodeWeight>;
+    type NodeRef: NodeRef<NodeId=Self::NodeId, Weight=Self::NodeWeight>;
     type NodeReferences: Iterator<Item=Self::NodeRef>;
     fn node_references(self) -> Self::NodeReferences;
 }
@@ -481,8 +481,8 @@ pub trait NodeIndexable : GraphBase {
     /// (suitable for the size of a bitmap).
     fn node_bound(&self) -> usize;
     /// Convert `a` to an integer index.
-    fn to_index(a: Self::NodeId) -> usize;
-    fn from_index(i: usize) -> Self::NodeId;
+    fn to_index(&self, a: Self::NodeId) -> usize;
+    fn from_index(&self, i: usize) -> Self::NodeId;
 }
 
 /// The graph’s `NodeId`s map to indices, in a range without holes.
@@ -495,8 +495,8 @@ impl<'a, G> NodeIndexable for &'a G
     where G: NodeIndexable
 {
     fn node_bound(&self) -> usize { (**self).node_bound() }
-    fn to_index(ix: Self::NodeId) -> usize { G::to_index(ix) }
-    fn from_index(ix: usize) -> Self::NodeId { G::from_index(ix) }
+    fn to_index(&self, ix: Self::NodeId) -> usize { (*self).to_index(ix) }
+    fn from_index(&self, ix: usize) -> Self::NodeId { (*self).from_index(ix) }
 }
 
 impl<'a, G> NodeCompactIndexable for &'a G
@@ -508,8 +508,8 @@ impl<N, E, Ty, Ix> NodeIndexable for Graph<N, E, Ty, Ix>
           Ix: IndexType,
 {
     fn node_bound(&self) -> usize { self.node_count() }
-    fn to_index(ix: NodeIndex<Ix>) -> usize { ix.index() }
-    fn from_index(ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
+    fn to_index(&self, ix: NodeIndex<Ix>) -> usize { ix.index() }
+    fn from_index(&self, ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
 }
 
 impl<N, E, Ty, Ix> NodeCompactIndexable for Graph<N, E, Ty, Ix>
