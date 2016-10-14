@@ -67,8 +67,6 @@ use graphmap::{
     NodeTrait,
 };
 
-use data::Data;
-
 /// Base graph trait: defines the associated node identifier and
 /// edge identifier types.
 pub trait GraphBase {
@@ -321,6 +319,21 @@ impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
         Graph::externals(self, d)
     }
 }
+
+/// Define associated data for nodes and edges
+pub trait Data : GraphBase {
+    type NodeWeight;
+    type EdgeWeight;
+}
+
+impl<'a, G> Data for &'a G
+    where G: Data,
+{
+    type NodeWeight = G::NodeWeight;
+    type EdgeWeight = G::EdgeWeight;
+}
+
+
 
 /// An edge reference
 pub trait EdgeRef : Copy {

@@ -85,8 +85,7 @@ pub enum Config {
 }
 
 use visit::{ IntoNodeReferences, NodeIndexable, IntoEdgeReferences, EdgeRef};
-use visit::{ NodeRef, Prop, };
-use data::{Data};
+use visit::{ Data, NodeRef, Prop, };
 
 impl<'a, G> Dot<'a, G>
 {

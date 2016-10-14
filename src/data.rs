@@ -7,24 +7,10 @@ use ::{
 };
 use graph::IndexType;
 use visit::{
-    GraphBase,
+    Data,
     NodeCount,
     NodeIndexable,
 };
-
-/// Define associated data for nodes and edges
-pub trait Data : GraphBase {
-    type NodeWeight;
-    type EdgeWeight;
-}
-
-impl<'a, G> Data for &'a G
-    where G: Data,
-{
-    type NodeWeight = G::NodeWeight;
-    type EdgeWeight = G::EdgeWeight;
-}
-
 
 pub trait DataMap : Data {
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight>;

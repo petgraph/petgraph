@@ -32,9 +32,8 @@ use super::unionfind::UnionFind;
 use super::graph::{
     IndexType,
 };
-use visit::{NodeRef, IntoNodeReferences};
+use visit::{Data, NodeRef, IntoNodeReferences};
 use data::{
-    Data,
     Element,
 };
 

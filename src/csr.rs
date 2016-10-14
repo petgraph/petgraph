@@ -9,8 +9,7 @@ use std::slice::Windows;
 
 use visit::{EdgeRef, GraphBase, IntoNeighbors, NodeIndexable, IntoEdges};
 use visit::{NodeCompactIndexable, IntoNodeIdentifiers, Visitable};
-use visit::IntoEdgeReferences;
-use data::Data;
+use visit::{Data, IntoEdgeReferences};
 
 use util::zip;
 

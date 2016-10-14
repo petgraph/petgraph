@@ -16,8 +16,8 @@ use visit::{
     Visitable,
     EdgeRef,
     Prop,
+    Data,
 };
-use data::{Data};
 
 /// Wrapper type for walking the graph as if all edges are reversed.
 #[derive(Copy, Clone, Debug)]
