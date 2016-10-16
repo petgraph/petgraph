@@ -130,10 +130,10 @@ impl<B> ControlFlow for Control<B> {
 /// path.reverse();
 /// assert_eq!(&path, &[n(0), n(2), n(4), n(5)]);
 /// ```
-pub fn depth_first_search<G, F, C, I>(graph: G, starts: I, mut visitor: F) -> C
+pub fn depth_first_search<G, I, F, C>(graph: G, starts: I, mut visitor: F) -> C
     where G: IntoNeighbors + Visitable,
-          F: FnMut(DfsEvent<G::NodeId>) -> C,
           I: IntoIterator<Item=G::NodeId>,
+          F: FnMut(DfsEvent<G::NodeId>) -> C,
           C: ControlFlow,
 {
     let time = &mut Time(0);
