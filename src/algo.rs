@@ -97,7 +97,6 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>)
     -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
     where G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
-          G::NodeId: Eq,
 {
     // based on kosaraju scc
     with_dfs(g, space, |dfs| {
@@ -155,7 +154,6 @@ pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>)
 /// workspace for graph traversal.
 pub fn is_cyclic_directed<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> bool
     where G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable,
-          G::NodeId: Eq,
 {
     toposort(g, space).is_err()
 }
@@ -217,7 +215,6 @@ pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
                               space: Option<&mut DfsSpaceType<G>>)
     -> bool
     where G: IntoNeighbors + Visitable,
-          G::NodeId: PartialEq,
 {
     with_dfs(g, space, |dfs| {
         dfs.reset(g);
