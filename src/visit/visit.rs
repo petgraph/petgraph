@@ -237,7 +237,13 @@ trait_template! {
 ///
 /// - `Directed`: All edges from `a`.
 /// - `Undirected`: All edges connected to `a`.
-pub trait IntoEdges : IntoEdgeReferences {
+///
+/// This is an extended version of the trait `IntoNeighbors`; the former
+/// only iterates over the target node identifiers, while this trait
+/// yields edge references (trait [`EdgeRef`][er]).
+///
+/// [er]: trait.EdgeRef.html
+pub trait IntoEdges : IntoEdgeReferences + IntoNeighbors {
     @section type
     type Edges: Iterator<Item=Self::EdgeRef>;
     @section self
