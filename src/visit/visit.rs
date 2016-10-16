@@ -300,31 +300,6 @@ impl<N, E, Ty, Ix> NodeCount for StableGraph<N, E, Ty, Ix>
 IntoNeighborsDirected!{delegate_impl []}
 
 trait_template! {
-/// Access to the graph’s nodes without edges to them (`Incoming`) or from them
-/// (`Outgoing`).
-pub trait IntoExternals : GraphRef {
-    @section type
-    type Externals: Iterator<Item=Self::NodeId>;
-
-    @section self
-    /// Return an iterator of all nodes with no edges in the given direction
-    fn externals(self, d: Direction) -> Self::Externals;
-}
-}
-
-IntoExternals!{delegate_impl []}
-
-impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type Externals = graph::Externals<'a, N, Ty, Ix>;
-    fn externals(self, d: Direction) -> graph::Externals<'a, N, Ty, Ix> {
-        Graph::externals(self, d)
-    }
-}
-
-trait_template! {
 /// Define associated data for nodes and edges
 pub trait Data : GraphBase {
     @section type

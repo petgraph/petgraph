@@ -1,7 +1,7 @@
 
 use {Incoming};
 use super::{IntoNeighbors, IntoNeighborsDirected, Visitable, VisitMap};
-use super::{GraphRef, Reversed, IntoExternals};
+use super::{GraphRef, Reversed, IntoNodeIdentifiers};
 use std::collections::VecDeque;
 
 /// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in
@@ -382,11 +382,19 @@ impl<N, VM> Topo<N, VM>
     /// Create a new `Topo`, using the graph's visitor map, and put all
     /// initial nodes in the to visit list.
     pub fn new<G>(graph: G) -> Self
-        where G: IntoExternals + Visitable<NodeId=N, Map=VM>,
+        where G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable<NodeId=N, Map=VM>,
     {
         let mut topo = Self::empty(graph);
-        topo.tovisit.extend(graph.externals(Incoming));
+        topo.extend_with_initials(graph);
         topo
+    }
+
+    fn extend_with_initials<G>(&mut self, g: G)
+        where G: IntoNodeIdentifiers + IntoNeighborsDirected<NodeId=N>,
+    {
+        // find all initial nodes (nodes without incoming edges)
+        self.tovisit.extend(g.node_identifiers()
+                             .filter(move |&a| g.neighbors_directed(a, Incoming).next().is_none()));
     }
 
     /* Private until it has a use */
@@ -403,11 +411,11 @@ impl<N, VM> Topo<N, VM>
 
     /// Clear visited state, and put all initial nodes in the to visit list.
     pub fn reset<G>(&mut self, graph: G)
-        where G: IntoExternals + Visitable<NodeId=N, Map=VM>,
+        where G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable<NodeId=N, Map=VM>,
     {
         graph.reset_map(&mut self.ordered);
         self.tovisit.clear();
-        self.tovisit.extend(graph.externals(Incoming));
+        self.extend_with_initials(graph);
     }
 
     /// Return the next node in the current topological order traversal, or

@@ -20,7 +20,6 @@ use super::visit::{
     IntoNeighbors,
     IntoNeighborsDirected,
     IntoNodeIdentifiers,
-    IntoExternals,
     NodeCount,
     NodeIndexable,
     NodeCompactIndexable,
@@ -92,7 +91,7 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 fn toposort_generic<G, F>(g: G,
                           space: Option<&mut DfsSpaceType<G>>,
                           mut visit: F)
-    where G: IntoNeighborsDirected + IntoExternals + Visitable,
+    where G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
           F: FnMut(G, G::NodeId),
 {
     with_dfs(g, space, |dfs| {
@@ -100,8 +99,9 @@ fn toposort_generic<G, F>(g: G,
         let mut ordered = &mut dfs.discovered;
         let mut tovisit = &mut dfs.stack;
 
-        // find all initial nodes
-        tovisit.extend(g.externals(Incoming));
+        // find all initial nodes (nodes without incoming edges)
+        tovisit.extend(g.node_identifiers()
+                        .filter(|&a| g.neighbors_directed(a, Incoming).next().is_none()));
 
         // Take an unvisited element and find which of its neighbors are next
         while let Some(nix) = tovisit.pop() {
@@ -127,7 +127,7 @@ fn toposort_generic<G, F>(g: G,
 /// If `space` is not `None`, it is reused instead of creating a temporary
 /// workspace for graph traversal.
 pub fn is_cyclic_directed<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> bool
-    where G: NodeCount + IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
+    where G: NodeCount + IntoNodeIdentifiers + IntoNeighborsDirected + Visitable,
 {
     let mut n_ordered = 0;
     toposort_generic(g, space, |_, _| n_ordered += 1);
@@ -179,7 +179,7 @@ impl<N, VM> Default for DfsSpace<N, VM>
 /// If `space` is not `None`, it is reused instead of creating a temporary
 /// workspace for graph traversal.
 pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> Vec<G::NodeId>
-    where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
+    where G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable,
 {
     let mut order = Vec::with_capacity(0);
     toposort_generic(g, space, |_, ix| order.push(ix));

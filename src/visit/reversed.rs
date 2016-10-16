@@ -12,7 +12,6 @@ use visit::{
     IntoNeighbors,
     IntoNeighborsDirected,
     IntoEdgeReferences,
-    IntoExternals,
     NodeCompactIndexable,
     NodeCount,
     NodeIndexable,
@@ -53,15 +52,6 @@ impl<G> IntoNeighborsDirected for Reversed<G>
         -> G::NeighborsDirected
     {
         self.0.neighbors_directed(n, d.opposite())
-    }
-}
-
-impl<G> IntoExternals for Reversed<G>
-    where G: IntoExternals,
-{
-    type Externals = G::Externals;
-    fn externals(self, d: Direction) -> G::Externals {
-        self.0.externals(d.opposite())
     }
 }
 
