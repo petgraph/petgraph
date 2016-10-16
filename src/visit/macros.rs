@@ -36,13 +36,11 @@ macro_rules! remove_sections_inner {
     };
 }
 
-// recurse once into { }, but not more
+// This is the outer layer, just find the { } of the actual trait definition
+// recurse once into { }, but not more.
 macro_rules! remove_sections {
     ([$($stack:tt)*]) => {
         $($stack)*
-    };
-    ([$($stack:tt)*] @section $x:ident $($t:tt)*) => {
-        remove_sections!([$($stack)*] $($t)*);
     };
     ([$($stack:tt)*] { $($tail:tt)* }) => {
         $($stack)* {
