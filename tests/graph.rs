@@ -457,7 +457,7 @@ fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex])
 }
 
 #[test]
-fn toposort() {
+fn test_toposort() {
     let mut gr = Graph::<_,_>::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
@@ -488,7 +488,7 @@ fn toposort() {
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);
 
-    let order = petgraph::algo::toposort(&gr, None);
+    let order = petgraph::algo::toposort(&gr, None).unwrap();
     println!("{:?}", order);
     assert_eq!(order.len(), gr.node_count());
 
@@ -1006,6 +1006,12 @@ fn toposort_generic() {
         println!("{:?}", gr);
         assert_is_topo_order(&gr, &order);
     }
+    let mut gr2 = gr.clone();
+    gr.add_edge(e, d, -1.);
+    assert!(pg::algo::is_cyclic_directed(&gr, None));
+    assert!(pg::algo::toposort(&gr, None).is_err());
+    gr2.add_edge(d, d, 0.);
+    assert!(pg::algo::toposort(&gr2, None).is_err());
 }
 
 #[test]
