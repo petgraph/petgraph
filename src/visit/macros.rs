@@ -28,6 +28,10 @@ macro_rules! remove_sections_inner {
     ([$($stack:tt)*]) => {
         $($stack)*
     };
+    // escape the following tt
+    ([$($stack:tt)*] @escape $_x:tt $($t:tt)*) => {
+        remove_sections_inner!([$($stack)*] $($t)*);
+    };
     ([$($stack:tt)*] @section $x:ident $($t:tt)*) => {
         remove_sections_inner!([$($stack)*] $($t)*);
     };
@@ -68,6 +72,9 @@ macro_rules! delegate_impl {
     ([[$($param:tt)*], $self_type:ident, $self_wrap:ty, $self_map:ident]
      pub trait $name:ident $(: $sup:ident)* $(+ $more_sup:ident)* {
         $(
+        @escape [type $assoc_name_ext:ident]
+        )*
+        $(
         @section type
         $(
             $(#[$_attr1:meta])*
@@ -105,6 +112,9 @@ macro_rules! delegate_impl {
             $(
                 type $assoc_name = $self_type::$assoc_name;
             )*
+            )*
+            $(
+                type $assoc_name_ext = $self_type::$assoc_name_ext;
             )*
             $(
             $(

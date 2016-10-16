@@ -81,11 +81,13 @@ trait_template!{
 /// Base graph trait: defines the associated node identifier and
 /// edge identifier types.
 pub trait GraphBase {
-    @section type
-    /// node identifier
-    type NodeId: Copy;
+    @escape [type NodeId]
+    @escape [type EdgeId]
+    @section ignore
     /// edge identifier
-    type EdgeId: Copy;
+    type EdgeId: Copy + PartialEq;
+    /// node identifier
+    type NodeId: Copy + PartialEq;
 }
 }
 
@@ -400,7 +402,7 @@ IntoEdgeReferences!{delegate_impl [] }
 
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> Data for GraphMap<N, E, Ty>
-    where N: Copy,
+    where N: Copy + PartialEq,
           Ty: EdgeType,
 {
     type NodeWeight = N;
@@ -634,7 +636,8 @@ impl<N, E, Ty, Ix> Data for StableGraph<N, E, Ty, Ix>
 
 
 #[cfg(feature = "graphmap")]
-impl<N: Copy, E, Ty> GraphBase for GraphMap<N, E, Ty>
+impl<N, E, Ty> GraphBase for GraphMap<N, E, Ty>
+    where N: Copy + PartialEq,
 {
     type NodeId = N;
     type EdgeId = (N, N);

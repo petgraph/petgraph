@@ -43,7 +43,7 @@ pub struct Dfs<N, VM> {
 }
 
 impl<N, VM> Dfs<N, VM>
-    where N: Copy,
+    where N: Copy + PartialEq,
           VM: VisitMap<N>,
 {
     /// Create a new **Dfs**, using the graph's visitor map, and put **start**
@@ -181,7 +181,7 @@ pub struct DfsPostOrder<N, VM> {
 }
 
 impl<N, VM> DfsPostOrder<N, VM>
-    where N: Copy,
+    where N: Copy + PartialEq,
           VM: VisitMap<N>,
 {
     /// Create a new `DfsPostOrder` using the graph's visitor map, and put
@@ -284,7 +284,7 @@ pub struct Bfs<N, VM> {
 }
 
 impl<N, VM> Bfs<N, VM>
-    where N: Copy,
+    where N: Copy + PartialEq,
           VM: VisitMap<N>,
 {
     /// Create a new **Bfs**, using the graph's visitor map, and put **start**
@@ -376,7 +376,7 @@ pub struct Topo<N, VM> {
 }
 
 impl<N, VM> Topo<N, VM>
-    where N: Copy,
+    where N: Copy + PartialEq,
           VM: VisitMap<N>,
 {
     /// Create a new `Topo`, using the graph's visitor map, and put all

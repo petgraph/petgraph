@@ -169,7 +169,7 @@ pub struct DfsSpace<N, VM> {
 }
 
 impl<N, VM> DfsSpace<N, VM>
-    where N: Copy,
+    where N: Copy + PartialEq,
           VM: VisitMap<N>,
 {
     pub fn new<G>(g: G) -> Self
