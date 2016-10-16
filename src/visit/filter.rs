@@ -24,7 +24,8 @@ use data::{DataMap};
 /// A graph filter for nodes.
 pub trait FilterNode<N>
 {
-    fn include_node(&self, node: N) -> bool { let _ = node; true }
+    /// Return true to have the node be part of the graph
+    fn include_node(&self, node: N) -> bool;
 }
 
 impl<F, N> FilterNode<N> for F
@@ -246,10 +247,9 @@ GraphProp!{delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 Visitable!{delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 
 /// A graph filter for edges
-pub trait FilterEdge<Edge>
-{
-    /// The default implementation is to include all edges
-    fn include_edge(&self, edge: Edge) -> bool { let _ = edge; true }
+pub trait FilterEdge<Edge> {
+    /// Return true to have the edge be part of the graph
+    fn include_edge(&self, edge: Edge) -> bool;
 }
 
 impl<F, N> FilterEdge<N> for F
