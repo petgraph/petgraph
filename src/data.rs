@@ -427,11 +427,8 @@ impl<I, F, N, E> Iterator for FilterElements<I, F>
                         Ok(_) => continue,
                         Err(i) => *target -= i,
                     }
-                    println!("Letting through edge {}, {}", *source, *target);
                 }
-                Element::Node { .. } => {
-                    println!("Letting through node {}", self.node_index - 1);
-                }
+                Element::Node { .. } => { }
             }
             return Some(elt);
         }
