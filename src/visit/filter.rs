@@ -54,20 +54,30 @@ impl<N, S> FilterNode<N> for HashSet<N, S>
 
 /// A node-filtered adaptor of a graph.
 #[derive(Copy, Clone, Debug)]
-pub struct Filtered<G, F>(pub G, pub F);
+pub struct NodeFiltered<G, F>(pub G, pub F);
 
-impl<G, F> GraphBase for Filtered<G, F> where G: GraphBase {
+impl<F, G> NodeFiltered<G, F>
+    where G: GraphBase,
+          F: Fn(G::NodeId) -> bool,
+{
+    /// Create an `NodeFiltered` adaptor from the closure `filter`.
+    pub fn from_fn(graph: G, filter: F) -> Self {
+        NodeFiltered(graph, filter)
+    }
+}
+
+impl<G, F> GraphBase for NodeFiltered<G, F> where G: GraphBase {
     type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
 }
 
-impl<'a, G, F> IntoNeighbors for &'a Filtered<G, F>
+impl<'a, G, F> IntoNeighbors for &'a NodeFiltered<G, F>
     where G: IntoNeighbors,
           F: FilterNode<G::NodeId>,
 {
-    type Neighbors = FilteredNeighbors<'a, G::Neighbors, F>;
+    type Neighbors = NodeFilteredNeighbors<'a, G::Neighbors, F>;
     fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
-        FilteredNeighbors {
+        NodeFilteredNeighbors {
             include_source: self.1.include_node(n),
             iter: self.0.neighbors(n),
             f: &self.1,
@@ -76,14 +86,14 @@ impl<'a, G, F> IntoNeighbors for &'a Filtered<G, F>
 }
 
 /// A filtered neighbors iterator.
-pub struct FilteredNeighbors<'a, I, F: 'a>
+pub struct NodeFilteredNeighbors<'a, I, F: 'a>
 {
     include_source: bool,
     iter: I,
     f: &'a F,
 }
 
-impl<'a, I, F> Iterator for FilteredNeighbors<'a, I, F>
+impl<'a, I, F> Iterator for NodeFilteredNeighbors<'a, I, F>
     where I: Iterator,
           I::Item: Copy,
           F: FilterNode<I::Item>,
@@ -99,14 +109,14 @@ impl<'a, I, F> Iterator for FilteredNeighbors<'a, I, F>
     }
 }
 
-impl<'a, G, F> IntoNeighborsDirected for &'a Filtered<G, F>
+impl<'a, G, F> IntoNeighborsDirected for &'a NodeFiltered<G, F>
     where G: IntoNeighborsDirected,
           F: FilterNode<G::NodeId>,
 {
-    type NeighborsDirected = FilteredNeighbors<'a, G::NeighborsDirected, F>;
+    type NeighborsDirected = NodeFilteredNeighbors<'a, G::NeighborsDirected, F>;
     fn neighbors_directed(self, n: G::NodeId, dir: Direction)
         -> Self::NeighborsDirected {
-        FilteredNeighbors {
+        NodeFilteredNeighbors {
             include_source: self.1.include_node(n),
             iter: self.0.neighbors_directed(n, dir),
             f: &self.1,
@@ -114,13 +124,13 @@ impl<'a, G, F> IntoNeighborsDirected for &'a Filtered<G, F>
     }
 }
 
-impl<'a, G, F> IntoNodeIdentifiers for &'a Filtered<G, F>
+impl<'a, G, F> IntoNodeIdentifiers for &'a NodeFiltered<G, F>
     where G: IntoNodeIdentifiers,
           F: FilterNode<G::NodeId>,
 {
-    type NodeIdentifiers = FilteredNeighbors<'a, G::NodeIdentifiers, F>;
+    type NodeIdentifiers = NodeFilteredNeighbors<'a, G::NodeIdentifiers, F>;
     fn node_identifiers(self) -> Self::NodeIdentifiers {
-        FilteredNeighbors {
+        NodeFilteredNeighbors {
             include_source: true,
             iter: self.0.node_identifiers(),
             f: &self.1,
@@ -132,9 +142,9 @@ macro_rules! access0 {
     ($e:expr) => ($e.0)
 }
 
-NodeIndexable!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}
-GraphProp!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}
-Visitable!{delegate_impl [[G, F], G, Filtered<G, F>, access0]}
+NodeIndexable!{delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
+GraphProp!{delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
+Visitable!{delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 
 /// A graph filter for edges
 pub trait FilterEdge<Edge>
@@ -181,9 +191,9 @@ impl<'a, G, F> IntoNeighbors for &'a EdgeFiltered<G, F>
     where G: IntoEdges,
           F: FilterEdge<G::EdgeRef>,
 {
-    type Neighbors = FilteredEdgeNodes<'a, G, F>;
+    type Neighbors = EdgeFilteredNeighbors<'a, G, F>;
     fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
-        FilteredEdgeNodes {
+        EdgeFilteredNeighbors {
             iter: self.0.edges(n),
             f: &self.1,
         }
@@ -191,14 +201,14 @@ impl<'a, G, F> IntoNeighbors for &'a EdgeFiltered<G, F>
 }
 
 /// A filtered neighbors iterator.
-pub struct FilteredEdgeNodes<'a, G, F: 'a>
+pub struct EdgeFilteredNeighbors<'a, G, F: 'a>
     where G: IntoEdges,
 {
     iter: G::Edges,
     f: &'a F,
 }
 
-impl<'a, G, F> Iterator for FilteredEdgeNodes<'a, G, F>
+impl<'a, G, F> Iterator for EdgeFilteredNeighbors<'a, G, F>
     where F: FilterEdge<G::EdgeRef>,
           G: IntoEdges,
 {
@@ -218,9 +228,9 @@ impl<'a, G, F> IntoEdgeReferences for &'a EdgeFiltered<G, F>
           F: FilterEdge<G::EdgeRef>,
 {
     type EdgeRef = G::EdgeRef;
-    type EdgeReferences = FilteredEdges<'a, G, G::EdgeReferences, F>;
+    type EdgeReferences = EdgeFilteredEdges<'a, G, G::EdgeReferences, F>;
     fn edge_references(self) -> Self::EdgeReferences {
-        FilteredEdges {
+        EdgeFilteredEdges {
             graph: PhantomData,
             iter: self.0.edge_references(),
             f: &self.1,
@@ -232,9 +242,9 @@ impl<'a, G, F> IntoEdges for &'a EdgeFiltered<G, F>
     where G: IntoEdges,
           F: FilterEdge<G::EdgeRef>,
 {
-    type Edges = FilteredEdges<'a, G, G::Edges, F>;
+    type Edges = EdgeFilteredEdges<'a, G, G::Edges, F>;
     fn edges(self, n: G::NodeId) -> Self::Edges {
-        FilteredEdges {
+        EdgeFilteredEdges {
             graph: PhantomData,
             iter: self.0.edges(n),
             f: &self.1,
@@ -243,14 +253,14 @@ impl<'a, G, F> IntoEdges for &'a EdgeFiltered<G, F>
 }
 
 /// A filtered edges iterator
-pub struct FilteredEdges<'a, G, I, F: 'a>
+pub struct EdgeFilteredEdges<'a, G, I, F: 'a>
 {
     graph: PhantomData<G>,
     iter: I,
     f: &'a F,
 }
 
-impl<'a, G, I, F> Iterator for FilteredEdges<'a, G, I, F>
+impl<'a, G, I, F> Iterator for EdgeFilteredEdges<'a, G, I, F>
     where F: FilterEdge<G::EdgeRef>,
           G: IntoEdgeReferences,
           I: Iterator<Item=G::EdgeRef>,

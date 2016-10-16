@@ -24,7 +24,7 @@ use petgraph::graph::{
 
 use petgraph::visit::{
     IntoNodeIdentifiers,
-    Filtered,
+    NodeFiltered,
     Reversed,
     AsUndirected,
     Topo,
@@ -1356,7 +1356,7 @@ fn filtered() {
     g.add_edge(e, f, 6);
     println!("{:?}", g);
 
-    let filt = Filtered(&g, |n: NodeIndex| n != c && n != e);
+    let filt = NodeFiltered(&g, |n: NodeIndex| n != c && n != e);
 
     let mut dfs = DfsPostOrder::new(&filt, a);
     let mut po = Vec::new();
@@ -1449,7 +1449,7 @@ fn dfs_visit() {
 
 #[test]
 fn filtered_post_order() {
-    use petgraph::visit::Filtered;
+    use petgraph::visit::NodeFiltered;
 
     let mut gr: Graph<(), ()> = Graph::from_edges(&[
         (0, 2),
@@ -1468,7 +1468,7 @@ fn filtered_post_order() {
     gr.add_edge(n(0), n(1), ());
     let mut po = Vec::new();
     let mut dfs = DfsPostOrder::new(&gr, n(0));
-    let f = Filtered(&gr, map);
+    let f = NodeFiltered(&gr, map);
     while let Some(n) = dfs.next(&f) {
         po.push(n);
     }
