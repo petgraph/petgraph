@@ -31,6 +31,7 @@ use petgraph::visit::{
     IntoNeighbors,
     BfsIter,
     DfsIter,
+    VisitMap,
 };
 use petgraph::algo::{
     DfsSpace,
@@ -1510,3 +1511,44 @@ fn filter_elements() {
     g.remove_node(n(1));
     assert!(is_isomorphic_matching(&g, &g2, PartialEq::eq, PartialEq::eq));
 }
+
+#[test]
+fn test_edge_filtered() {
+    use petgraph::algo::connected_components;
+    use petgraph::visit::EdgeFiltered;
+    use petgraph::visit::IntoEdgeReferences;
+
+    let gr = UnGraph::<(), _>::from_edges(&[
+            // cycle
+            (0, 1, 7),
+            (1, 2, 9),
+            (2, 1, 14),
+
+            // cycle
+            (3, 4, 10),
+            (4, 5, 2),
+            (5, 3, 9),
+
+            // cross edges
+            (0, 3, -1),
+            (1, 4, -2),
+            (2, 5, -3),
+    ]);
+    assert_eq!(connected_components(&gr), 1);
+    let positive_edges = EdgeFiltered::from_fn(&gr, |edge| *edge.weight() >= 0);
+    assert_eq!(positive_edges.edge_references().count(), 6);
+    assert!(positive_edges.edge_references().all(|edge| *edge.weight() >= 0));
+    assert_eq!(connected_components(&positive_edges), 2);
+
+    let mut dfs = DfsPostOrder::new(&positive_edges, n(0));
+    while let Some(_) = dfs.next(&positive_edges) { }
+
+    let n = n::<u32>;
+    for node in &[n(0), n(1), n(2)] {
+        assert!(dfs.discovered.is_visited(node));
+    }
+    for node in &[n(3), n(4), n(5)] {
+        assert!(!dfs.discovered.is_visited(node));
+    }
+}
+

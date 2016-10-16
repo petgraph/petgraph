@@ -15,6 +15,7 @@ use visit::{
     NodeCount,
     NodeIndexable,
     Reversed,
+    EdgeFiltered,
 };
 
 trait_template!{
@@ -33,6 +34,7 @@ macro_rules! access0 {
 DataMap!{delegate_impl []}
 DataMap!{delegate_impl [['a, G], G, &'a mut G, deref_twice]}
 DataMap!{delegate_impl [[G], G, Reversed<G>, access0]}
+DataMap!{delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}
 
 trait_template! {
     /// Access node and edge weights mutably.
