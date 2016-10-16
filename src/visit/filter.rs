@@ -19,6 +19,7 @@ use visit::{
     IntoEdgeReferences,
 };
 use visit::{Data, NodeCompactIndexable, NodeCount};
+use data::{DataMap};
 
 /// A graph filter for nodes.
 pub trait FilterNode<N>
@@ -218,6 +219,22 @@ impl<'a, G, I, F> Iterator for NodeFilteredEdges<'a, G, I, F>
     }
 }
 
+impl<G, F> DataMap for NodeFiltered<G, F>
+    where G: DataMap,
+          F: FilterNode<G::NodeId>,
+{
+    fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
+        if self.1.include_node(id) {
+            self.0.node_weight(id)
+        } else {
+            None
+        }
+    }
+
+    fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
+        self.0.edge_weight(id)
+    }
+}
 
 macro_rules! access0 {
     ($e:expr) => ($e.0)
