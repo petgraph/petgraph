@@ -138,10 +138,92 @@ impl<'a, G, F> IntoNodeIdentifiers for &'a NodeFiltered<G, F>
     }
 }
 
+impl<'a, G, F> IntoEdgeReferences for &'a NodeFiltered<G, F>
+    where G: IntoEdgeReferences,
+          F: FilterNode<G::NodeId>,
+{
+    type EdgeRef = G::EdgeRef;
+    type EdgeReferences = NodeFilteredEdgeReferences<'a, G, G::EdgeReferences, F>;
+    fn edge_references(self) -> Self::EdgeReferences {
+        NodeFilteredEdgeReferences {
+            graph: PhantomData,
+            iter: self.0.edge_references(),
+            f: &self.1,
+        }
+    }
+}
+
+/// A filtered iterator
+pub struct NodeFilteredEdgeReferences<'a, G, I, F: 'a>
+{
+    graph: PhantomData<G>,
+    iter: I,
+    f: &'a F,
+}
+
+impl<'a, G, I, F> Iterator for NodeFilteredEdgeReferences<'a, G, I, F>
+    where F: FilterNode<G::NodeId>,
+          G: IntoEdgeReferences,
+          I: Iterator<Item=G::EdgeRef>,
+{
+    type Item = I::Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        let f = self.f;
+        (&mut self.iter).filter(move |&edge| 
+            f.include_node(edge.source()) && f.include_node(edge.target())
+        ).next()
+    }
+}
+
+impl<'a, G, F> IntoEdges for &'a NodeFiltered<G, F>
+    where G: IntoEdges,
+          F: FilterNode<G::NodeId>,
+{
+    type Edges = NodeFilteredEdges<'a, G, G::Edges, F>;
+    fn edges(self, a: G::NodeId) -> Self::Edges {
+        NodeFilteredEdges {
+            graph: PhantomData,
+            include_source: self.1.include_node(a),
+            iter: self.0.edges(a),
+            f: &self.1,
+        }
+    }
+}
+
+
+/// A filtered iterator
+pub struct NodeFilteredEdges<'a, G, I, F: 'a>
+{
+    graph: PhantomData<G>,
+    include_source: bool,
+    iter: I,
+    f: &'a F,
+}
+
+
+impl<'a, G, I, F> Iterator for NodeFilteredEdges<'a, G, I, F>
+    where F: FilterNode<G::NodeId>,
+          G: IntoEdges,
+          I: Iterator<Item=G::EdgeRef>,
+{
+    type Item = I::Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        if !self.include_source {
+            None
+        } else {
+            let f = self.f;
+            (&mut self.iter).filter(move |&edge|
+                                    f.include_node(edge.target())).next()
+        }
+    }
+}
+
+
 macro_rules! access0 {
     ($e:expr) => ($e.0)
 }
 
+Data!{delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 NodeIndexable!{delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 GraphProp!{delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 Visitable!{delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
