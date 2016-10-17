@@ -12,7 +12,8 @@
 //! [`Dfs`](struct.Dfs.html), [`Bfs`][bfs], [`DfsPostOrder`][dfspo] and
 //! [`Topo`][topo]  are basic visitors and they use “walker” methods: the
 //! visitors don't hold the graph as borrowed during traversal, only for the
-//! `.next()` call on the walker.
+//! `.next()` call on the walker. They can be converted to iterators
+//! through the [`Walker`][w] trait.
 //!
 //! There is also the callback based traversal [`depth_first_search`][dfs].
 //!
@@ -20,6 +21,7 @@
 //! [dfspo]: struct.DfsPostOrder.html
 //! [topo]: struct.Topo.html
 //! [dfs]: fn.depth_first_search.html
+//! [w]: trait.Walker.html
 //!
 //! ### Other Graph Traits
 //!

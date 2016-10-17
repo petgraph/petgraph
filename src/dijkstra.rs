@@ -25,7 +25,7 @@ use algo::Measure;
 ///
 /// The graph should be `Visitable` and implement `IntoEdges`. The function
 /// `edge_cost` should return the cost for a particular edge, which is used
-/// to compute path costs.
+/// to compute path costs. Edge costs must be non-negative.
 ///
 /// If `goal` is not `None`, then the algorithm terminates once the `goal` node's
 /// cost is calculated.
