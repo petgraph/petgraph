@@ -21,7 +21,9 @@ use visit::{
     GraphProp,
 };
 
-/// Wrapper type for walking the graph as if all edges are reversed.
+/// Edge-reversing graph adaptor.
+///
+/// All edges have the opposite direction with `Reversed`.
 #[derive(Copy, Clone, Debug)]
 pub struct Reversed<G>(pub G);
 
