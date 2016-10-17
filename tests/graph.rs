@@ -526,14 +526,22 @@ fn is_cyclic_directed() {
     assert!(petgraph::algo::is_cyclic_directed(&gr, None));
 }
 
-fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>) {
+/// Compare two scc sets. Inside each scc, the order does not matter,
+/// but the order of the sccs is significant.
+fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, mut answer: Vec<Vec<NodeIndex>>,
+                  scc_order_matters: bool) {
     // normalize the result and compare with the answer.
     for scc in res.iter_mut() {
         scc.sort();
     }
-    // sort by minimum element
-    res.sort_by(|v, w| v[0].cmp(&w[0]));
-    assert_eq!(res, normalized);
+    for scc in answer.iter_mut() {
+        scc.sort();
+    }
+    if !scc_order_matters {
+        res.sort();
+        answer.sort();
+    }
+    assert_eq!(res, answer);
 }
 
 #[test]
@@ -553,15 +561,15 @@ fn scc() {
 
     assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![n(0), n(3), n(6)],
-        vec![n(1), n(4), n(7)],
         vec![n(2), n(5), n(8)],
-    ]);
+        vec![n(1), n(4), n(7)],
+    ], true);
     // Reversed edges gives the same sccs (when sorted)
     assert_sccs_eq(petgraph::algo::kosaraju_scc(Reversed(&gr)), vec![
-        vec![n(0), n(3), n(6)],
         vec![n(1), n(4), n(7)],
         vec![n(2), n(5), n(8)],
-    ]);
+        vec![n(0), n(3), n(6)],
+    ], true);
 
 
     // Test an undirected graph just for fun.
@@ -574,7 +582,7 @@ fn scc() {
     assert_sccs_eq(petgraph::algo::kosaraju_scc(&hr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(2), n(4), n(5), n(7), n(8)],
-    ]);
+    ], false);
 
 
     // acyclic non-tree, #14
@@ -591,7 +599,7 @@ fn scc() {
 
     assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
-    ]);
+    ], true);
 
     // Kosaraju bug from PR #60
     let mut gr = Graph::<(), ()>::new();
@@ -603,9 +611,10 @@ fn scc() {
         (2, 2),
     ]);
     gr.add_node(());
+    // no order for the disconnected one
     assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
-    ]);
+    ], false);
 }
 
 
@@ -626,9 +635,9 @@ fn tarjan_scc() {
 
     assert_sccs_eq(petgraph::algo::tarjan_scc(&gr), vec![
         vec![n(0), n(3), n(6)],
-        vec![n(1), n(4), n(7)],
         vec![n(2), n(5), n(8)],
-    ]);
+        vec![n(1), n(4), n(7)],
+    ], true);
 
 
     // Test an undirected graph just for fun.
@@ -639,9 +648,9 @@ fn tarjan_scc() {
     assert!(hr.remove_edge(ed).is_some());
 
     assert_sccs_eq(petgraph::algo::tarjan_scc(&hr), vec![
-        vec![n(0), n(3), n(6)],
         vec![n(1), n(2), n(4), n(5), n(7), n(8)],
-    ]);
+        vec![n(0), n(3), n(6)],
+    ], false);
 
 
     // acyclic non-tree, #14
@@ -658,7 +667,7 @@ fn tarjan_scc() {
 
     assert_sccs_eq(petgraph::algo::tarjan_scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
-    ]);
+    ], true);
 
     // Kosaraju bug from PR #60
     let mut gr = Graph::<(), ()>::new();
@@ -670,9 +679,10 @@ fn tarjan_scc() {
         (2, 2),
     ]);
     gr.add_node(());
+    // no order for the disconnected one
     assert_sccs_eq(petgraph::algo::tarjan_scc(&gr), vec![
         vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
-    ]);
+    ], false);
 }
 
 
