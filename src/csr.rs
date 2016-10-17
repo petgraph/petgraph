@@ -773,7 +773,26 @@ mod tests {
             (7, 8, 3.),
         ]).unwrap();
         println!("{:?}", m);
-        println!("{:?}", bellman_ford(&m, 0));
+        let result = bellman_ford(&m, 0).unwrap();
+        println!("{:?}", result);
+        let answer = [0., 0.5, 1.5, 1.5];
+        assert_eq!(&answer, &result.0[..4]);
+        assert!(answer[4..].iter().all(|&x| f64::is_infinite(x)));
+    }
+
+    #[test]
+    fn test_bellman_ford_neg_cycle() {
+        let m: Csr<(), _> = Csr::from_sorted_edges(&[
+            (0, 1, 0.5),
+            (0, 2, 2.),
+            (1, 0, 1.),
+            (1, 1, -1.),
+            (1, 2, 1.),
+            (1, 3, 1.),
+            (2, 3, 3.),
+        ]).unwrap();
+        let result = bellman_ford(&m, 0);
+        assert!(result.is_err());
     }
 
     #[test]
