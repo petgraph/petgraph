@@ -54,7 +54,7 @@ impl<N, S> FilterNode<N> for HashSet<N, S>
     }
 }
 
-/// A node-filtered adaptor of a graph.
+/// A node-filtering graph adaptor.
 #[derive(Copy, Clone, Debug)]
 pub struct NodeFiltered<G, F>(pub G, pub F);
 
@@ -155,7 +155,7 @@ impl<'a, G, F> IntoEdgeReferences for &'a NodeFiltered<G, F>
     }
 }
 
-/// A filtered iterator
+/// A filtered edges iterator.
 pub struct NodeFilteredEdgeReferences<'a, G, I, F: 'a>
 {
     graph: PhantomData<G>,
@@ -193,7 +193,7 @@ impl<'a, G, F> IntoEdges for &'a NodeFiltered<G, F>
 }
 
 
-/// A filtered iterator
+/// A filtered edges iterator.
 pub struct NodeFilteredEdges<'a, G, I, F: 'a>
 {
     graph: PhantomData<G>,
@@ -260,7 +260,7 @@ impl<F, N> FilterEdge<N> for F
     }
 }
 
-/// An edge-filtered adaptor of a graph.
+/// An edge-filtering graph adaptor.
 ///
 /// The adaptor may filter out edges. The filter implements the trait
 /// `FilterEdge`. Closures of type `Fn(G::EdgeRef) -> bool` already
@@ -351,7 +351,7 @@ impl<'a, G, F> IntoEdges for &'a EdgeFiltered<G, F>
     }
 }
 
-/// A filtered edges iterator
+/// A filtered edges iterator.
 pub struct EdgeFilteredEdges<'a, G, I, F: 'a>
 {
     graph: PhantomData<G>,

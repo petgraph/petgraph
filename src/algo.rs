@@ -86,14 +86,13 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 ///
 /// If the graph was acyclic, return a vector of nodes in topological order:
 /// each node is ordered before its successors.
-///
 /// Otherwise, it will return a `Cycle` error. Self loops are also cycles.
 ///
 /// To handle graphs with cycles, use the scc algorithms or `DfsPostOrder`
 /// instead of this function.
 ///
-/// If `space` is not `None`, it is reused instead of creating a temporary
-/// workspace for graph traversal.
+/// If `space` is not `None`, it is used instead of creating a new workspace for
+/// graph traversal.
 pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>)
     -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
     where G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
@@ -150,8 +149,8 @@ pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>)
 
 /// [Generic] Return `true` if the input directed graph contains a cycle.
 ///
-/// If `space` is not `None`, it is reused instead of creating a temporary
-/// workspace for graph traversal.
+/// If `space` is not `None`, it is used instead of creating a new workspace for
+/// graph traversal.
 pub fn is_cyclic_directed<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> bool
     where G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable,
 {
@@ -207,10 +206,10 @@ fn with_dfs<G, F, R>(g: G, space: Option<&mut DfsSpaceType<G>>, f: F) -> R
 
 /// [Generic] Check if there exists a path starting at `from` and reaching `to`.
 ///
-/// `from` and `to` are equal, this function returns true.
+/// If `from` and `to` are equal, this function returns true.
 ///
-/// If `space` is not `None`, it is reused instead of creating a temporary
-/// workspace for graph traversal.
+/// If `space` is not `None`, it is used instead of creating a new workspace for
+/// graph traversal.
 pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
                               space: Option<&mut DfsSpaceType<G>>)
     -> bool
