@@ -531,6 +531,12 @@ impl<N> Cycle<N> {
 pub struct NegativeCycle(());
 
 /// [Generic] Compute shortest paths from node `source` to all other.
+///
+/// Using the [Bellman–Ford algorithm][bf]; negative edge costs are
+/// permitted, but the graph must not have a cycle of negative weights
+/// (in that case it will return an error).
+///
+/// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
     -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
     where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
