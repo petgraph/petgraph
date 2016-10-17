@@ -301,7 +301,7 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     /// - `Directed`: Outgoing edges from `a`.
     /// - `Undirected`: All edges connected to `a`.
     ///
-    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// **Panics** if the node `a` does not exist.<br>
     /// Iterator element type is `EdgeReference<E, Ty, Ix>`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
         let r = self.neighbors_range(a);
@@ -516,11 +516,11 @@ impl<'a, N, E, Ty, Ix> IntoNeighbors for &'a Csr<N, E, Ty, Ix>
     /// - `Directed`: Targets of outgoing edges from `a`.
     /// - `Undirected`: Opposing endpoints of all edges connected to `a`.
     ///
-    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// **Panics** if the node `a` does not exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
-    fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
+    fn neighbors(self, a: Self::NodeId) -> Self::Neighbors {
         Neighbors {
-            iter: self.neighbors_slice(n).iter(),
+            iter: self.neighbors_slice(a).iter(),
         }
     }
 }
