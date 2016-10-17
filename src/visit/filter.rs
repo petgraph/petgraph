@@ -106,7 +106,7 @@ impl<'a, I, F> Iterator for NodeFilteredNeighbors<'a, I, F>
         if !self.include_source {
             None
         } else {
-            (&mut self.iter).filter(move |&target| f.include_node(target)).next()
+            self.iter.find(move |&target| f.include_node(target))
         }
     }
 }
@@ -171,9 +171,8 @@ impl<'a, G, I, F> Iterator for NodeFilteredEdgeReferences<'a, G, I, F>
     type Item = I::Item;
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
-        (&mut self.iter).filter(move |&edge| 
-            f.include_node(edge.source()) && f.include_node(edge.target())
-        ).next()
+        self.iter.find(move |&edge| f.include_node(edge.source()) &&
+                                    f.include_node(edge.target()))
     }
 }
 
@@ -214,8 +213,7 @@ impl<'a, G, I, F> Iterator for NodeFilteredEdges<'a, G, I, F>
             None
         } else {
             let f = self.f;
-            (&mut self.iter).filter(move |&edge|
-                                    f.include_node(edge.target())).next()
+            self.iter.find(move |&edge| f.include_node(edge.target()))
         }
     }
 }
@@ -367,7 +365,7 @@ impl<'a, G, I, F> Iterator for EdgeFilteredEdges<'a, G, I, F>
     type Item = I::Item;
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
-        (&mut self.iter).filter(move |&edge| f.include_edge(edge)).next()
+        self.iter.find(move |&edge| f.include_edge(edge))
     }
 }
 
