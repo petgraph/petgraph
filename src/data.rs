@@ -343,11 +343,10 @@ pub trait ElementIterator<N, E> : Iterator<Item=Element<N, E>> {
     ///
     /// The function `f` is called with each element and if its return value
     /// is `true` the element is accepted and if `false` it is removed.
-    ///
     /// `f` is called with mutable references to the node and edge weights,
     /// so that they can be mutated (but the edge endpoints can not).
     ///
-    /// This filter adapts the edge source, target numbers in the
+    /// This filter adapts the edge source and target indices in the
     /// stream so that they are correct after the removals.
     fn filter_elements<F>(self, f: F) -> FilterElements<Self, F>
         where Self: Sized,
