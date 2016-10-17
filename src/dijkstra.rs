@@ -36,8 +36,8 @@ pub fn dijkstra<G, F, K>(graph: G, start: G::NodeId, goal: Option<G::NodeId>,
     -> HashMap<G::NodeId, K>
     where G: IntoEdges + Visitable,
           G::NodeId: Eq + Hash,
-          K: Measure + Copy,
           F: FnMut(G::EdgeRef) -> K,
+          K: Measure + Copy,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
