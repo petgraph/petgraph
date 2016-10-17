@@ -24,6 +24,41 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.0
+
+  - Breaking changes in ``Graph``:
+
+    - ``Graph::edges`` and the other edges methods now return an iterator of
+      edge references
+
+  - Other breaking changes:
+
+    - ``toposort`` now returns an error if the graph had a cycle.
+    - ``is_cyclic_directed`` no longer takes a dfs space argument. It is
+      now recursive.
+    - ``scc`` was renamed to ``kosaraju_scc``.
+    - ``min_spanning_tree`` now returns an iterator that needs to be
+      made into a specific graph type deliberately.
+    - ``dijkstra`` now uses the ``IntoEdges`` trait.
+    - ``NodeIndexable`` changed its method signatures.
+    - ``IntoExternals`` was removed, and many other smaller adjustments
+      in graph traits. ``NodeId`` must now implement ``PartialEq``, for example.
+    - ``DfsIter, BfsIter`` were removed in favour of a more general approach
+      with the ``Walker`` trait and its iterator conversion.
+
+  - New features:
+
+    - New graph traits, for example ``IntoEdges`` which returns
+      an iterator of edge references. Everything implements the graph traits
+      much more consistently.
+    - Traits for associated data access and building graphs: ``DataMap``,
+      ``Build, Create, FromElements``.
+    - Graph adaptors: ``EdgeFiltered``. ``Filtered`` was renamed to ``NodeFiltered``.
+    - New algorithms: bellman-ford
+    - New graph: compressed sparse row (``Csr``).
+    - ``GraphMap`` implements ``NodeIndexable``.
+    - ``Dot`` was generalized
+
 - 0.3.2
 
   - Add ``depth_first_search``, a recursive dfs visitor that emits discovery,
