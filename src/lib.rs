@@ -11,7 +11,7 @@
 //! which is backed by a hash table and the node identifiers are the keys
 //! into the table.
 //!
-#![doc(html_root_url = "https://docs.rs/petgraph/0.3/")]
+#![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
 
 extern crate fixedbitset;
 #[cfg(feature = "graphmap")]
