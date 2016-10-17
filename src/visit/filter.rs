@@ -7,16 +7,17 @@ use std::marker::PhantomData;
 
 use visit::{
     GraphBase,
+    GraphProp,
+    IntoEdgeReferences,
+    IntoEdges,
     IntoNeighbors,
+    IntoNeighborsDirected,
     IntoNodeIdentifiers,
     IntoNodeReferences,
-    IntoNeighborsDirected,
     NodeIndexable,
-    Visitable,
+    NodeRef,
     VisitMap,
-    GraphProp,
-    IntoEdges,
-    IntoEdgeReferences,
+    Visitable,
 };
 use visit::{Data, NodeCompactIndexable, NodeCount};
 use data::{DataMap};
@@ -136,6 +137,45 @@ impl<'a, G, F> IntoNodeIdentifiers for &'a NodeFiltered<G, F>
             include_source: true,
             iter: self.0.node_identifiers(),
             f: &self.1,
+        }
+    }
+}
+
+impl<'a, G, F> IntoNodeReferences for &'a NodeFiltered<G, F>
+    where G: IntoNodeReferences,
+          F: FilterNode<G::NodeId>,
+{
+    type NodeRef = G::NodeRef;
+    type NodeReferences = NodeFilteredNodes<'a, G::NodeReferences, F>;
+    fn node_references(self) -> Self::NodeReferences {
+        NodeFilteredNodes {
+            include_source: true,
+            iter: self.0.node_references(),
+            f: &self.1,
+        }
+    }
+}
+
+/// A filtered node references iterator.
+pub struct NodeFilteredNodes<'a, I, F: 'a>
+{
+    include_source: bool,
+    iter: I,
+    f: &'a F,
+}
+
+impl<'a, I, F> Iterator for NodeFilteredNodes<'a, I, F>
+    where I: Iterator,
+          I::Item: Copy + NodeRef,
+          F: FilterNode<<I::Item as NodeRef>::NodeId>,
+{
+    type Item = I::Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        let f = self.f;
+        if !self.include_source {
+            None
+        } else {
+            self.iter.find(move |&target| f.include_node(target.id()))
         }
     }
 }
