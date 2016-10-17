@@ -370,7 +370,7 @@ fn test_generate_directed() {
         let mut dags = 0;
         while let Some(g) = gen.next_ref() {
             n += 1;
-            if !pg::algo::is_cyclic_directed(g, None) {
+            if !pg::algo::is_cyclic_directed(g) {
                 dags += 1;
             }
         }
@@ -403,7 +403,7 @@ fn test_generate_dag() {
         adjmats.dedup();
         assert_eq!(adjmats.len(), graphs.len());
         for gr in &graphs {
-            assert!(!petgraph::algo::is_cyclic_directed(gr, None),
+            assert!(!petgraph::algo::is_cyclic_directed(gr),
                     "Assertion failed: {:?} acyclic", gr);
         }
     }
@@ -511,7 +511,7 @@ fn is_cyclic_directed() {
     gr.add_edge(f, g, 11.);
     gr.add_edge(e, g, 9.);
 
-    assert!(!petgraph::algo::is_cyclic_directed(&gr, None));
+    assert!(!petgraph::algo::is_cyclic_directed(&gr));
 
     // add a disjoint part
     let h = gr.add_node("H");
@@ -520,10 +520,10 @@ fn is_cyclic_directed() {
     gr.add_edge(h, i, 1.);
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);
-    assert!(!petgraph::algo::is_cyclic_directed(&gr, None));
+    assert!(!petgraph::algo::is_cyclic_directed(&gr));
 
     gr.add_edge(g, e, 0.);
-    assert!(petgraph::algo::is_cyclic_directed(&gr, None));
+    assert!(petgraph::algo::is_cyclic_directed(&gr));
 }
 
 /// Compare two scc sets. Inside each scc, the order does not matter,
@@ -710,7 +710,7 @@ fn condensation()
 
     assert!(cond.node_count() == 3);
     assert!(cond.edge_count() == 2);
-    assert!(!petgraph::algo::is_cyclic_directed(&cond, None),
+    assert!(!petgraph::algo::is_cyclic_directed(&cond),
             "Assertion failed: {:?} acyclic", cond);
 
 
@@ -982,7 +982,7 @@ fn toposort_generic() {
     gr.add_edge(f, g, 11.);
     gr.add_edge(e, g, 9.);
 
-    assert!(!pg::algo::is_cyclic_directed(&gr, None));
+    assert!(!pg::algo::is_cyclic_directed(&gr));
     let mut index = 0.;
     let mut topo = Topo::new(&gr);
     while let Some(nx) = topo.next(&gr) {
@@ -1012,9 +1012,10 @@ fn toposort_generic() {
     }
     let mut gr2 = gr.clone();
     gr.add_edge(e, d, -1.);
-    assert!(pg::algo::is_cyclic_directed(&gr, None));
+    assert!(pg::algo::is_cyclic_directed(&gr));
     assert!(pg::algo::toposort(&gr, None).is_err());
     gr2.add_edge(d, d, 0.);
+    assert!(pg::algo::is_cyclic_directed(&gr2));
     assert!(pg::algo::toposort(&gr2, None).is_err());
 }
 

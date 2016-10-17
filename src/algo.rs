@@ -92,7 +92,7 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 /// instead of this function.
 ///
 /// If `space` is not `None`, it is used instead of creating a new workspace for
-/// graph traversal.
+/// graph traversal. The implementation is iterative.
 pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>)
     -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
     where G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
@@ -149,12 +149,19 @@ pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>)
 
 /// [Generic] Return `true` if the input directed graph contains a cycle.
 ///
-/// If `space` is not `None`, it is used instead of creating a new workspace for
-/// graph traversal.
-pub fn is_cyclic_directed<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> bool
-    where G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable,
+/// This implementation is recursive; use `toposort` if an alternative is
+/// needed.
+pub fn is_cyclic_directed<G>(g: G) -> bool
+    where G: IntoNodeIdentifiers + IntoNeighbors + Visitable,
 {
-    toposort(g, space).is_err()
+    use visit::{depth_first_search, DfsEvent};
+
+    depth_first_search(g, g.node_identifiers(), |event| {
+        match event {
+            DfsEvent::BackEdge(_, _) => Err(()),
+            _ => Ok(()),
+        }
+    }).is_err()
 }
 
 type DfsSpaceType<G> where G: Visitable = DfsSpace<G::NodeId, G::Map>;

@@ -478,7 +478,7 @@ quickcheck! {
 #[test]
 fn graph_condensation_acyclic() {
     fn prop(g: Graph<(), ()>) -> bool {
-        !is_cyclic_directed(&condensation(g, /* make_acyclic */ true), None)
+        !is_cyclic_directed(&condensation(g, /* make_acyclic */ true))
     }
     quickcheck::quickcheck(prop as fn(_) -> bool);
 }
@@ -603,7 +603,7 @@ fn full_topo() {
 #[test]
 fn full_topo_generic() {
     fn prop_generic(DAG(mut gr): DAG<usize>) -> bool {
-        assert!(!is_cyclic_directed(&gr, None));
+        assert!(!is_cyclic_directed(&gr));
         let mut index = 0;
         let mut topo = Topo::new(&gr);
         while let Some(nx) = topo.next(&gr) {
