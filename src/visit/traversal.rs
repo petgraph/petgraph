@@ -86,7 +86,7 @@ impl<N, VM> Dfs<N, VM>
     /// the dfs from a particular node.
     pub fn move_to(&mut self, start: N)
     {
-        self.discovered.visit(start.clone());
+        self.discovered.visit(start);
         self.stack.clear();
         self.stack.push(start);
     }
@@ -96,8 +96,8 @@ impl<N, VM> Dfs<N, VM>
         where G: IntoNeighbors<NodeId=N>,
     {
         while let Some(node) = self.stack.pop() {
-            for succ in graph.neighbors(node.clone()) {
-                if self.discovered.visit(succ.clone()) {
+            for succ in graph.neighbors(node) {
+                if self.discovered.visit(succ) {
                     self.stack.push(succ);
                 }
             }
@@ -238,9 +238,9 @@ impl<N, VM> Bfs<N, VM>
         where G: GraphRef + Visitable<NodeId=N, Map=VM>
     {
         let mut discovered = graph.visit_map();
-        discovered.visit(start.clone());
+        discovered.visit(start);
         let mut stack = VecDeque::new();
-        stack.push_front(start.clone());
+        stack.push_front(start);
         Bfs {
             stack: stack,
             discovered: discovered,
@@ -252,8 +252,8 @@ impl<N, VM> Bfs<N, VM>
         where G: IntoNeighbors<NodeId=N>
     {
         while let Some(node) = self.stack.pop_front() {
-            for succ in graph.neighbors(node.clone()) {
-                if self.discovered.visit(succ.clone()) {
+            for succ in graph.neighbors(node) {
+                if self.discovered.visit(succ) {
                     self.stack.push_back(succ);
                 }
             }
@@ -332,7 +332,7 @@ impl<N, VM> Topo<N, VM>
             if self.ordered.is_visited(&nix) {
                 continue;
             }
-            self.ordered.visit(nix.clone());
+            self.ordered.visit(nix);
             for neigh in g.neighbors(nix) {
                 // Look at each neighbor, and those that only have incoming edges
                 // from the already ordered list, they are the next to visit.
