@@ -535,6 +535,10 @@ pub struct NegativeCycle(());
 /// permitted, but the graph must not have a cycle of negative weights
 /// (in that case it will return an error).
 ///
+/// On success, return one vec with path costs, and another one which points
+/// out the predecessor of a node along a shortest path. The vectors
+/// are indexed by the graph's node indices.
+///
 /// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
     -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
@@ -550,15 +554,14 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
     // scan up to |V| - 1 times.
     for _ in 1..g.node_count() {
         let mut did_update = false;
-        for i in g.node_identifiers() {
-            for edge in g.edges(i) {
-                let j = edge.target();
-                let w = *edge.weight();
-                if distance[ix(i)] + w < distance[ix(j)] {
-                    distance[ix(j)] = distance[ix(i)] + w;
-                    predecessor[ix(j)] = Some(i);
-                    did_update = true;
-                }
+        for edge in g.edge_references() {
+            let i = edge.source();
+            let j = edge.target();
+            let w = *edge.weight();
+            if distance[ix(i)] + w < distance[ix(j)] {
+                distance[ix(j)] = distance[ix(i)] + w;
+                predecessor[ix(j)] = Some(i);
+                did_update = true;
             }
         }
         if !did_update {
