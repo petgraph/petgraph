@@ -59,12 +59,13 @@ impl<B> Control<B> {
 /// The empty return value `()` is equivalent to continue.
 pub trait ControlFlow {
     fn continuing() -> Self;
-    #[inline]
-    fn should_break(&self) -> bool { false }
+    fn should_break(&self) -> bool;
 }
 
 impl ControlFlow for () {
     fn continuing() { }
+    #[inline]
+    fn should_break(&self) -> bool { false }
 }
 
 impl<B> ControlFlow for Control<B> {
