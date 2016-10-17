@@ -265,6 +265,8 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     }
 
     /// Computes in **O(log |V|)** time.
+    ///
+    /// **Panics** if the node `a` does not exist.
     pub fn contains_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
         self.find_edge_pos(a, b).is_ok()
     }
@@ -281,17 +283,23 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     }
 
     /// Computes in **O(1)** time.
+    ///
+    /// **Panics** if the node `a` does not exist.
     pub fn out_degree(&self, a: NodeIndex<Ix>) -> usize {
         let r = self.neighbors_range(a);
         r.end - r.start
     }
 
     /// Computes in **O(1)** time.
-    pub fn neighbors_slice(&self, node: NodeIndex<Ix>) -> &[NodeIndex<Ix>] {
-        self.neighbors_of(node).1
+    ///
+    /// **Panics** if the node `a` does not exist.
+    pub fn neighbors_slice(&self, a: NodeIndex<Ix>) -> &[NodeIndex<Ix>] {
+        self.neighbors_of(a).1
     }
 
     /// Computes in **O(1)** time.
+    ///
+    /// **Panics** if the node `a` does not exist.
     pub fn edges_slice(&self, a: NodeIndex<Ix>) -> &[E] {
         &self.edges[self.neighbors_range(a)]
     }
