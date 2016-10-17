@@ -28,9 +28,8 @@ use petgraph::visit::{
     Reversed,
     Topo,
     IntoNeighbors,
-    BfsIter,
-    DfsIter,
     VisitMap,
+    Walker,
 };
 use petgraph::algo::{
     DfsSpace,
@@ -105,14 +104,14 @@ fn dfs() {
 
     println!("{}", Dot::new(&gr));
 
-    assert_eq!(DfsIter::new(&gr, h).count(), 4);
-    assert_eq!(DfsIter::new(&gr, h).clone().count(), 4);
+    assert_eq!(Dfs::new(&gr, h).iter(&gr).count(), 4);
+    assert_eq!(Dfs::new(&gr, h).iter(&gr).clone().count(), 4);
 
-    assert_eq!(DfsIter::new(&Reversed(&gr), h).count(), 1);
+    assert_eq!(Dfs::new(&gr, h).iter(Reversed(&gr)).count(), 1);
 
-    assert_eq!(DfsIter::new(&Reversed(&gr), k).count(), 3);
+    assert_eq!(Dfs::new(&gr, k).iter(Reversed(&gr)).count(), 3);
 
-    assert_eq!(DfsIter::new(&gr, i).count(), 3);
+    assert_eq!(Dfs::new(&gr, i).iter(&gr).count(), 3);
 }
 
 
@@ -130,14 +129,14 @@ fn bfs() {
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
 
-    assert_eq!(BfsIter::new(&gr, h).count(), 4);
-    assert_eq!(BfsIter::new(&gr, h).clone().count(), 4);
+    assert_eq!(Bfs::new(&gr, h).iter(&gr).count(), 4);
+    assert_eq!(Bfs::new(&gr, h).iter(&gr).clone().count(), 4);
 
-    assert_eq!(BfsIter::new(&Reversed(&gr), h).count(), 1);
+    assert_eq!(Bfs::new(&gr, h).iter(Reversed(&gr)).count(), 1);
 
-    assert_eq!(BfsIter::new(&Reversed(&gr), k).count(), 3);
+    assert_eq!(Bfs::new(&gr, k).iter(Reversed(&gr)).count(), 3);
 
-    assert_eq!(BfsIter::new(&gr, i).count(), 3);
+    assert_eq!(Bfs::new(&gr, i).iter(&gr).count(), 3);
 
     let mut bfs = Bfs::new(&gr, h);
     let nx = bfs.next(&gr);
@@ -328,7 +327,7 @@ fn dijk() {
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
     println!("{:?}", g);
-    for no in BfsIter::new(&g, a) {
+    for no in Bfs::new(&g, a).iter(&g) {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
 
