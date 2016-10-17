@@ -236,16 +236,17 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     kosaraju_scc(g)
 }
 
-/// [Generic] Compute the *strongly connected components* using Kosaraju's algorithm.
+/// [Generic] Compute the *strongly connected components* using [Kosaraju's algorithm][1].
+///
+/// [1]: https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm
 ///
 /// Return a vector where each element is a strongly connected component (scc).
-///
-/// The order of `NodeId` within each scc is arbitrary, but the order of
+/// The order of node ids within each scc is arbitrary, but the order of
 /// the sccs is their postorder (reverse topological sort).
 ///
-/// This implementation is iterative and does two passes over the nodes.
-///
 /// For an undirected graph, the sccs are simply the connected components.
+///
+/// This implementation is iterative and does two passes over the nodes.
 pub fn kosaraju_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     where G: IntoNeighborsDirected + Visitable + IntoNodeIdentifiers,
 {
@@ -286,16 +287,17 @@ pub fn kosaraju_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     sccs
 }
 
-/// [Generic] Compute the *strongly connected components* using Tarjan's algorithm.
+/// [Generic] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+///
+/// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 ///
 /// Return a vector where each element is a strongly connected component (scc).
-///
-/// The order of `NodeId` within each scc is arbitrary, but the order of
+/// The order of node ids within each scc is arbitrary, but the order of
 /// the sccs is their postorder (reverse topological sort).
 ///
-/// This implementation is recursive and does one pass over the nodes.
-///
 /// For an undirected graph, the sccs are simply the connected components.
+///
+/// This implementation is recursive and does one pass over the nodes.
 pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     where G: IntoNodeIdentifiers + IntoNeighbors + NodeIndexable
 {
