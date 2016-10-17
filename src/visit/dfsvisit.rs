@@ -23,18 +23,20 @@ pub enum DfsEvent<N> {
     Finish(N, Time),
 }
 
-macro_rules! control {
+/// Return if the expression is a break value.
+macro_rules! try_control {
     ($e:expr) => {
         match $e {
             x => if x.should_break() {
                 return x;
-            } else {
             }
         }
     }
 }
 
-/// Control flow for visitor callbacks.
+/// Control flow for callbacks.
+///
+/// `Break` can carry a value.
 #[derive(Copy, Clone, Debug)]
 pub enum Control<B> {
     Continue,
@@ -42,6 +44,7 @@ pub enum Control<B> {
 }
 
 impl<B> Control<B> {
+    pub fn breaking() -> Control<()> { Control::Break(()) }
     /// Get the value in `Control::Break(_)`, if present.
     pub fn break_value(self) -> Option<B> {
         match self {
@@ -51,25 +54,36 @@ impl<B> Control<B> {
     }
 }
 
-/// The default is `Continue`.
-impl<B> Default for Control<B> {
-    fn default() -> Self { Control::Continue }
-}
-
-/// Control flow for visitor callbacks.
+/// Control flow for callbacks.
 ///
-/// The empty return value `()` will continue until the visit is done.
-pub trait ControlFlow : Default {
+/// The empty return value `()` is equivalent to continue.
+pub trait ControlFlow {
+    fn continuing() -> Self;
     #[inline]
     fn should_break(&self) -> bool { false }
 }
 
-impl ControlFlow for () { }
+impl ControlFlow for () {
+    fn continuing() { }
+}
 
 impl<B> ControlFlow for Control<B> {
+    fn continuing() -> Self { Control::Continue }
     fn should_break(&self) -> bool {
         if let Control::Break(_) = *self { true } else { false }
     }
+}
+
+impl<E> ControlFlow for Result<(), E> {
+    fn continuing() -> Self { Ok(()) }
+    fn should_break(&self) -> bool {
+        if let Err(_) = *self { true } else { false }
+    }
+}
+
+/// The default is `Continue`.
+impl<B> Default for Control<B> {
+    fn default() -> Self { Control::Continue }
 }
 
 /// A recursive depth first search.
@@ -130,10 +144,10 @@ impl<B> ControlFlow for Control<B> {
 /// path.reverse();
 /// assert_eq!(&path, &[n(0), n(2), n(4), n(5)]);
 /// ```
-pub fn depth_first_search<G, F, C, I>(graph: G, starts: I, mut visitor: F) -> C
+pub fn depth_first_search<G, I, F, C>(graph: G, starts: I, mut visitor: F) -> C
     where G: IntoNeighbors + Visitable,
-          F: FnMut(DfsEvent<G::NodeId>) -> C,
           I: IntoIterator<Item=G::NodeId>,
+          F: FnMut(DfsEvent<G::NodeId>) -> C,
           C: ControlFlow,
 {
     let time = &mut Time(0);
@@ -141,9 +155,9 @@ pub fn depth_first_search<G, F, C, I>(graph: G, starts: I, mut visitor: F) -> C
     let finished = &mut graph.visit_map();
 
     for start in starts {
-        control!(dfs_visitor(graph, start, &mut visitor, discovered, finished, time));
+        try_control!(dfs_visitor(graph, start, &mut visitor, discovered, finished, time));
     }
-    C::default()
+    C::continuing()
 }
 
 fn dfs_visitor<G, F, C>(graph: G, u: G::NodeId, visitor: &mut F,
@@ -154,23 +168,23 @@ fn dfs_visitor<G, F, C>(graph: G, u: G::NodeId, visitor: &mut F,
           C: ControlFlow,
 {
     if !discovered.visit(u) {
-        return C::default();
+        return C::continuing();
     }
-    control!(visitor(DfsEvent::Discover(u, time_post_inc(time))));
+    try_control!(visitor(DfsEvent::Discover(u, time_post_inc(time))));
     for v in graph.neighbors(u) {
         if !discovered.is_visited(&v) {
-            control!(visitor(DfsEvent::TreeEdge(u, v)));
-            control!(dfs_visitor(graph, v, visitor, discovered, finished, time));
+            try_control!(visitor(DfsEvent::TreeEdge(u, v)));
+            try_control!(dfs_visitor(graph, v, visitor, discovered, finished, time));
         } else if !finished.is_visited(&v) {
-            control!(visitor(DfsEvent::BackEdge(u, v)));
+            try_control!(visitor(DfsEvent::BackEdge(u, v)));
         } else {
-            control!(visitor(DfsEvent::CrossForwardEdge(u, v)));
+            try_control!(visitor(DfsEvent::CrossForwardEdge(u, v)));
         }
     }
     let first_finish = finished.visit(u);
     debug_assert!(first_finish);
-    control!(visitor(DfsEvent::Finish(u, time_post_inc(time))));
-    C::default()
+    try_control!(visitor(DfsEvent::Finish(u, time_post_inc(time))));
+    C::continuing()
 }
 
 fn time_post_inc(x: &mut Time) -> Time {

@@ -25,7 +25,7 @@ use algo::Measure;
 ///
 /// The graph should be `Visitable` and implement `IntoEdges`. The function
 /// `edge_cost` should return the cost for a particular edge, which is used
-/// to compute path costs.
+/// to compute path costs. Edge costs must be non-negative.
 ///
 /// If `goal` is not `None`, then the algorithm terminates once the `goal` node's
 /// cost is calculated.
@@ -36,15 +36,15 @@ pub fn dijkstra<G, F, K>(graph: G, start: G::NodeId, goal: Option<G::NodeId>,
     -> HashMap<G::NodeId, K>
     where G: IntoEdges + Visitable,
           G::NodeId: Eq + Hash,
-          K: Measure + Copy,
           F: FnMut(G::EdgeRef) -> K,
+          K: Measure + Copy,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
     //let mut predecessor = HashMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score = K::default();
-    scores.insert(start.clone(), zero_score);
+    scores.insert(start, zero_score);
     visit_next.push(MinScored(zero_score, start));
     while let Some(MinScored(node_score, node)) = visit_next.pop() {
         if visited.is_visited(&node) {
@@ -53,18 +53,18 @@ pub fn dijkstra<G, F, K>(graph: G, start: G::NodeId, goal: Option<G::NodeId>,
         if goal.as_ref() == Some(&node) {
             break
         }
-        for edge in graph.edges(node.clone()) {
+        for edge in graph.edges(node) {
             let next = edge.target();
             if visited.is_visited(&next) {
                 continue
             }
             let mut next_score = node_score + edge_cost(edge);
-            match scores.entry(next.clone()) {
+            match scores.entry(next) {
                 Occupied(ent) => if next_score < *ent.get() {
                     *ent.into_mut() = next_score;
                     //predecessor.insert(next.clone(), node.clone());
                 } else {
-                    next_score = ent.get().clone();
+                    next_score = *ent.get();
                 },
                 Vacant(ent) => {
                     ent.insert(next_score);

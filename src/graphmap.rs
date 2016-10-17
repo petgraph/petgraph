@@ -395,10 +395,10 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     {
         // assuming two successive iterations of the same hashmap produce the same order
         let mut gr = Graph::with_capacity(self.node_count(), self.edge_count());
-        for (&node, _) in self.nodes.iter() {
+        for (&node, _) in &self.nodes {
             gr.add_node(node);
         }
-        for ((a, b), edge_weight) in self.edges.into_iter() {
+        for ((a, b), edge_weight) in self.edges {
             let (ai, _, _) = self.nodes.get_pair_index(&a).unwrap();
             let (bi, _, _) = self.nodes.get_pair_index(&b).unwrap();
             gr.add_edge(node_index(ai), node_index(bi), edge_weight);

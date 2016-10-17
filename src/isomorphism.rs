@@ -123,8 +123,8 @@ impl<Ty, Ix> Vf2State<Ty, Ix>
     {
         self.out[from_index..].iter()
                     .enumerate()
-                    .filter(|&(index, elt)| *elt > 0 && self.mapping[from_index + index] == NodeIndex::end())
-                    .next()
+                    .find(move |&(index, elt)| *elt > 0 &&
+                          self.mapping[from_index + index] == NodeIndex::end())
                     .map(|(index, _)| index)
     }
 
@@ -136,8 +136,8 @@ impl<Ty, Ix> Vf2State<Ty, Ix>
         }
         self.ins[from_index..].iter()
                     .enumerate()
-                    .filter(|&(index, elt)| *elt > 0 && self.mapping[from_index + index] == NodeIndex::end())
-                    .next()
+                    .find(move |&(index, elt)| *elt > 0
+                          && self.mapping[from_index + index] == NodeIndex::end())
                     .map(|(index, _)| index)
     }
 
@@ -146,8 +146,7 @@ impl<Ty, Ix> Vf2State<Ty, Ix>
     {
         self.mapping[from_index..].iter()
                .enumerate()
-               .filter(|&(_, elt)| *elt == NodeIndex::end())
-               .next()
+               .find(|&(_, elt)| *elt == NodeIndex::end())
                .map(|(index, _)| index)
     }
 }

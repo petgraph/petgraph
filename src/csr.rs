@@ -265,6 +265,8 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     }
 
     /// Computes in **O(log |V|)** time.
+    ///
+    /// **Panics** if the node `a` does not exist.
     pub fn contains_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
         self.find_edge_pos(a, b).is_ok()
     }
@@ -281,17 +283,23 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     }
 
     /// Computes in **O(1)** time.
+    ///
+    /// **Panics** if the node `a` does not exist.
     pub fn out_degree(&self, a: NodeIndex<Ix>) -> usize {
         let r = self.neighbors_range(a);
         r.end - r.start
     }
 
     /// Computes in **O(1)** time.
-    pub fn neighbors_slice(&self, node: NodeIndex<Ix>) -> &[NodeIndex<Ix>] {
-        self.neighbors_of(node).1
+    ///
+    /// **Panics** if the node `a` does not exist.
+    pub fn neighbors_slice(&self, a: NodeIndex<Ix>) -> &[NodeIndex<Ix>] {
+        self.neighbors_of(a).1
     }
 
     /// Computes in **O(1)** time.
+    ///
+    /// **Panics** if the node `a` does not exist.
     pub fn edges_slice(&self, a: NodeIndex<Ix>) -> &[E] {
         &self.edges[self.neighbors_range(a)]
     }
@@ -301,7 +309,7 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     /// - `Directed`: Outgoing edges from `a`.
     /// - `Undirected`: All edges connected to `a`.
     ///
-    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// **Panics** if the node `a` does not exist.<br>
     /// Iterator element type is `EdgeReference<E, Ty, Ix>`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
         let r = self.neighbors_range(a);
@@ -516,11 +524,11 @@ impl<'a, N, E, Ty, Ix> IntoNeighbors for &'a Csr<N, E, Ty, Ix>
     /// - `Directed`: Targets of outgoing edges from `a`.
     /// - `Undirected`: Opposing endpoints of all edges connected to `a`.
     ///
-    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// **Panics** if the node `a` does not exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
-    fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
+    fn neighbors(self, a: Self::NodeId) -> Self::Neighbors {
         Neighbors {
-            iter: self.neighbors_slice(n).iter(),
+            iter: self.neighbors_slice(a).iter(),
         }
     }
 }
@@ -765,7 +773,26 @@ mod tests {
             (7, 8, 3.),
         ]).unwrap();
         println!("{:?}", m);
-        println!("{:?}", bellman_ford(&m, 0));
+        let result = bellman_ford(&m, 0).unwrap();
+        println!("{:?}", result);
+        let answer = [0., 0.5, 1.5, 1.5];
+        assert_eq!(&answer, &result.0[..4]);
+        assert!(answer[4..].iter().all(|&x| f64::is_infinite(x)));
+    }
+
+    #[test]
+    fn test_bellman_ford_neg_cycle() {
+        let m: Csr<(), _> = Csr::from_sorted_edges(&[
+            (0, 1, 0.5),
+            (0, 2, 2.),
+            (1, 0, 1.),
+            (1, 1, -1.),
+            (1, 2, 1.),
+            (1, 3, 1.),
+            (2, 3, 3.),
+        ]).unwrap();
+        let result = bellman_ford(&m, 0);
+        assert!(result.is_err());
     }
 
     #[test]

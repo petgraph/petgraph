@@ -5,13 +5,9 @@ use std::collections::HashSet;
 use std::fmt;
 
 use petgraph::prelude::*;
-use petgraph::visit::{
-    DfsIter,
-};
+use petgraph::visit::{ Walker, };
 
-use petgraph::algo::{
-    dijkstra,
-};
+use petgraph::algo::{ dijkstra, };
 
 use petgraph::dot::{Dot, Config};
 
@@ -132,9 +128,9 @@ fn dfs() {
         assert_eq!(cnt, 1);
     }
 
-    assert_eq!(DfsIter::new(&gr, h).count(), 4);
-    assert_eq!(DfsIter::new(&gr, i).count(), 4);
-    assert_eq!(DfsIter::new(&gr, z).count(), 1);
+    assert_eq!(Dfs::new(&gr, h).iter(&gr).count(), 4);
+    assert_eq!(Dfs::new(&gr, i).iter(&gr).count(), 4);
+    assert_eq!(Dfs::new(&gr, z).iter(&gr).count(), 1);
 }
 
 #[test]

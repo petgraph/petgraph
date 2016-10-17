@@ -12,7 +12,8 @@
 //! [`Dfs`](struct.Dfs.html), [`Bfs`][bfs], [`DfsPostOrder`][dfspo] and
 //! [`Topo`][topo]  are basic visitors and they use “walker” methods: the
 //! visitors don't hold the graph as borrowed during traversal, only for the
-//! `.next()` call on the walker.
+//! `.next()` call on the walker. They can be converted to iterators
+//! through the [`Walker`][w] trait.
 //!
 //! There is also the callback based traversal [`depth_first_search`][dfs].
 //!
@@ -20,6 +21,7 @@
 //! [dfspo]: struct.DfsPostOrder.html
 //! [topo]: struct.Topo.html
 //! [dfs]: fn.depth_first_search.html
+//! [w]: trait.Walker.html
 //!
 //! ### Other Graph Traits
 //!
@@ -81,11 +83,13 @@ trait_template!{
 /// Base graph trait: defines the associated node identifier and
 /// edge identifier types.
 pub trait GraphBase {
-    @section type
-    /// node identifier
-    type NodeId: Copy;
+    @escape [type NodeId]
+    @escape [type EdgeId]
+    @section ignore
     /// edge identifier
-    type EdgeId: Copy;
+    type EdgeId: Copy + PartialEq;
+    /// node identifier
+    type NodeId: Copy + PartialEq;
 }
 }
 
@@ -125,22 +129,6 @@ impl<'a, N: 'a, E, Ty> IntoNeighbors for &'a GraphMap<N, E, Ty>
     }
 }
 
-
-/// Wrapper type for walking the graph as if it is undirected
-#[derive(Copy, Clone)]
-pub struct AsUndirected<G>(pub G);
-
-impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type Neighbors = graph::Neighbors<'b, E, Ix>;
-
-    fn neighbors(self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'b, E, Ix>
-    {
-        Graph::neighbors_undirected(self.0, n)
-    }
-}
 
 trait_template! {
 /// Access to the neighbors of each node
@@ -235,7 +223,13 @@ trait_template! {
 ///
 /// - `Directed`: All edges from `a`.
 /// - `Undirected`: All edges connected to `a`.
-pub trait IntoEdges : IntoEdgeReferences {
+///
+/// This is an extended version of the trait `IntoNeighbors`; the former
+/// only iterates over the target node identifiers, while this trait
+/// yields edge references (trait [`EdgeRef`][er]).
+///
+/// [er]: trait.EdgeRef.html
+pub trait IntoEdges : IntoEdgeReferences + IntoNeighbors {
     @section type
     type Edges: Iterator<Item=Self::EdgeRef>;
     @section self
@@ -298,31 +292,6 @@ impl<N, E, Ty, Ix> NodeCount for StableGraph<N, E, Ty, Ix>
 }
 
 IntoNeighborsDirected!{delegate_impl []}
-
-trait_template! {
-/// Access to the graph’s nodes without edges to them (`Incoming`) or from them
-/// (`Outgoing`).
-pub trait IntoExternals : GraphRef {
-    @section type
-    type Externals: Iterator<Item=Self::NodeId>;
-
-    @section self
-    /// Return an iterator of all nodes with no edges in the given direction
-    fn externals(self, d: Direction) -> Self::Externals;
-}
-}
-
-IntoExternals!{delegate_impl []}
-
-impl<'a, N: 'a, E, Ty, Ix> IntoExternals for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type Externals = graph::Externals<'a, N, Ty, Ix>;
-    fn externals(self, d: Direction) -> graph::Externals<'a, N, Ty, Ix> {
-        Graph::externals(self, d)
-    }
-}
 
 trait_template! {
 /// Define associated data for nodes and edges
@@ -425,7 +394,7 @@ IntoEdgeReferences!{delegate_impl [] }
 
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> Data for GraphMap<N, E, Ty>
-    where N: Copy,
+    where N: Copy + PartialEq,
           Ty: EdgeType,
 {
     type NodeWeight = N;
@@ -659,7 +628,8 @@ impl<N, E, Ty, Ix> Data for StableGraph<N, E, Ty, Ix>
 
 
 #[cfg(feature = "graphmap")]
-impl<N: Copy, E, Ty> GraphBase for GraphMap<N, E, Ty>
+impl<N, E, Ty> GraphBase for GraphMap<N, E, Ty>
+    where N: Copy + PartialEq,
 {
     type NodeId = N;
     type EdgeId = (N, N);
@@ -674,26 +644,6 @@ impl<N, E, Ty> Visitable for GraphMap<N, E, Ty>
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
-    }
-}
-
-impl<G: GraphBase> GraphBase for AsUndirected<G>
-{
-    type NodeId = G::NodeId;
-    type EdgeId = G::EdgeId;
-}
-
-impl<G: GraphRef> GraphRef for AsUndirected<G> { }
-
-
-impl<G: Visitable> Visitable for AsUndirected<G>
-{
-    type Map = G::Map;
-    fn visit_map(&self) -> G::Map {
-        self.0.visit_map()
-    }
-    fn reset_map(&self, map: &mut Self::Map) {
-        self.0.reset_map(map);
     }
 }
 

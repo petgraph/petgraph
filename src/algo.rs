@@ -20,7 +20,6 @@ use super::visit::{
     IntoNeighbors,
     IntoNeighborsDirected,
     IntoNodeIdentifiers,
-    IntoExternals,
     NodeCount,
     NodeIndexable,
     NodeCompactIndexable,
@@ -82,56 +81,80 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
     false
 }
 
-/// [Generic] Perform a topological sort of a directed graph `g`.
+
+/// [Generic] Perform a topological sort of a directed graph.
 ///
-/// Visit each node in order (if it is part of a topological order).
+/// If the graph was acyclic, return a vector of nodes in topological order:
+/// each node is ordered before its successors.
+/// Otherwise, it will return a `Cycle` error. Self loops are also cycles.
 ///
-/// If `space` is not `None`, it is reused instead of creating a temporary
-/// workspace for graph traversal.
-#[inline]
-fn toposort_generic<G, F>(g: G,
-                          space: Option<&mut DfsSpaceType<G>>,
-                          mut visit: F)
-    where G: IntoNeighborsDirected + IntoExternals + Visitable,
-          F: FnMut(G, G::NodeId),
+/// To handle graphs with cycles, use the scc algorithms or `DfsPostOrder`
+/// instead of this function.
+///
+/// If `space` is not `None`, it is used instead of creating a new workspace for
+/// graph traversal.
+pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>)
+    -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
+    where G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
 {
+    // based on kosaraju scc
     with_dfs(g, space, |dfs| {
         dfs.reset(g);
-        let mut ordered = &mut dfs.discovered;
-        let mut tovisit = &mut dfs.stack;
+        let mut finished = g.visit_map();
 
-        // find all initial nodes
-        tovisit.extend(g.externals(Incoming));
-
-        // Take an unvisited element and find which of its neighbors are next
-        while let Some(nix) = tovisit.pop() {
-            if ordered.is_visited(&nix) {
+        let mut finish_stack = Vec::new();
+        for i in g.node_identifiers() {
+            if dfs.discovered.is_visited(&i) {
                 continue;
             }
-            visit(g, nix.clone());
-            ordered.visit(nix.clone());
-            for neigh in g.neighbors_directed(nix, Outgoing) {
-                // Look at each neighbor, and those that only have incoming edges
-                // from the already ordered list, they are the next to visit.
-                if g.neighbors_directed(neigh.clone(), Incoming)
-                    .all(|b| ordered.is_visited(&b)) {
-                    tovisit.push(neigh);
+            dfs.stack.push(i);
+            while let Some(&nx) = dfs.stack.last() {
+                if dfs.discovered.visit(nx) {
+                    // First time visiting `nx`: Push neighbors, don't pop `nx`
+                    for succ in g.neighbors(nx) {
+                        if succ == nx {
+                            // self cycle
+                            return Err(Cycle(nx));
+                        }
+                        if !dfs.discovered.is_visited(&succ) {
+                            dfs.stack.push(succ);
+                        } 
+                    }
+                } else {
+                    dfs.stack.pop();
+                    if finished.visit(nx) {
+                        // Second time: All reachable nodes must have been finished
+                        finish_stack.push(nx);
+                    }
                 }
             }
         }
+        finish_stack.reverse();
+
+        dfs.reset(g);
+        for &i in &finish_stack {
+            dfs.move_to(i);
+            let mut cycle = false;
+            while let Some(j) = dfs.next(Reversed(g)) {
+                if cycle {
+                    return Err(Cycle(j));
+                }
+                cycle = true;
+            }
+        }
+
+        Ok(finish_stack)
     })
 }
 
 /// [Generic] Return `true` if the input directed graph contains a cycle.
 ///
-/// If `space` is not `None`, it is reused instead of creating a temporary
-/// workspace for graph traversal.
+/// If `space` is not `None`, it is used instead of creating a new workspace for
+/// graph traversal.
 pub fn is_cyclic_directed<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> bool
-    where G: NodeCount + IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
+    where G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable,
 {
-    let mut n_ordered = 0;
-    toposort_generic(g, space, |_, _| n_ordered += 1);
-    n_ordered != g.node_count()
+    toposort(g, space).is_err()
 }
 
 type DfsSpaceType<G> where G: Visitable = DfsSpace<G::NodeId, G::Map>;
@@ -143,7 +166,7 @@ pub struct DfsSpace<N, VM> {
 }
 
 impl<N, VM> DfsSpace<N, VM>
-    where N: Copy,
+    where N: Copy + PartialEq,
           VM: VisitMap<N>,
 {
     pub fn new<G>(g: G) -> Self
@@ -168,24 +191,6 @@ impl<N, VM> Default for DfsSpace<N, VM>
     }
 }
 
-/// [Generic] Perform a topological sort of a directed graph.
-///
-/// Return a vector of nodes in topological order: each node is ordered
-/// before its successors.
-///
-/// NOTE: If the returned vec contains less than all the nodes of the graph,
-/// then the graph had a cycle.
-///
-/// If `space` is not `None`, it is reused instead of creating a temporary
-/// workspace for graph traversal.
-pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>) -> Vec<G::NodeId>
-    where G: IntoNodeIdentifiers + IntoNeighborsDirected + IntoExternals + Visitable,
-{
-    let mut order = Vec::with_capacity(0);
-    toposort_generic(g, space, |_, ix| order.push(ix));
-    order
-}
-
 /// Create a Dfs if it's needed
 fn with_dfs<G, F, R>(g: G, space: Option<&mut DfsSpaceType<G>>, f: F) -> R
     where G: GraphRef + Visitable,
@@ -201,15 +206,14 @@ fn with_dfs<G, F, R>(g: G, space: Option<&mut DfsSpaceType<G>>, f: F) -> R
 
 /// [Generic] Check if there exists a path starting at `from` and reaching `to`.
 ///
-/// `from` and `to` are equal, this function returns true.
+/// If `from` and `to` are equal, this function returns true.
 ///
-/// If `space` is not `None`, it is reused instead of creating a temporary
-/// workspace for graph traversal.
+/// If `space` is not `None`, it is used instead of creating a new workspace for
+/// graph traversal.
 pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
                               space: Option<&mut DfsSpaceType<G>>)
     -> bool
     where G: IntoNeighbors + Visitable,
-          G::NodeId: PartialEq,
 {
     with_dfs(g, space, |dfs| {
         dfs.reset(g);
@@ -231,16 +235,17 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     kosaraju_scc(g)
 }
 
-/// [Generic] Compute the *strongly connected components* using Kosaraju's algorithm.
+/// [Generic] Compute the *strongly connected components* using [Kosaraju's algorithm][1].
+///
+/// [1]: https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm
 ///
 /// Return a vector where each element is a strongly connected component (scc).
-///
-/// The order of `NodeId` within each scc is arbitrary, but the order of
+/// The order of node ids within each scc is arbitrary, but the order of
 /// the sccs is their postorder (reverse topological sort).
 ///
-/// This implementation is iterative and does two passes over the nodes.
-///
 /// For an undirected graph, the sccs are simply the connected components.
+///
+/// This implementation is iterative and does two passes over the nodes.
 pub fn kosaraju_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     where G: IntoNeighborsDirected + Visitable + IntoNodeIdentifiers,
 {
@@ -281,16 +286,17 @@ pub fn kosaraju_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     sccs
 }
 
-/// [Generic] Compute the *strongly connected components* using Tarjan's algorithm.
+/// [Generic] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+///
+/// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 ///
 /// Return a vector where each element is a strongly connected component (scc).
-///
-/// The order of `NodeId` within each scc is arbitrary, but the order of
+/// The order of node ids within each scc is arbitrary, but the order of
 /// the sccs is their postorder (reverse topological sort).
 ///
-/// This implementation is recursive and does one pass over the nodes.
-///
 /// For an undirected graph, the sccs are simply the connected components.
+///
+/// This implementation is recursive and does one pass over the nodes.
 pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     where G: IntoNodeIdentifiers + IntoNeighbors + NodeIndexable
 {
@@ -507,11 +513,33 @@ impl<G> Iterator for MinSpanningTree<G>
     }
 }
 
+/// An algorithm error: a cycle was found in the graph.
+#[derive(Clone, Debug)]
+pub struct Cycle<N>(N);
+
+impl<N> Cycle<N> {
+    /// Return a node id that participates in the cycle
+    pub fn node_id(&self) -> N
+        where N: Copy
+    {
+        self.0
+    }
+}
 /// An algorithm error: a cycle of negative weights was found in the graph.
 #[derive(Clone, Debug)]
 pub struct NegativeCycle(());
 
 /// [Generic] Compute shortest paths from node `source` to all other.
+///
+/// Using the [Bellman–Ford algorithm][bf]; negative edge costs are
+/// permitted, but the graph must not have a cycle of negative weights
+/// (in that case it will return an error).
+///
+/// On success, return one vec with path costs, and another one which points
+/// out the predecessor of a node along a shortest path. The vectors
+/// are indexed by the graph's node indices.
+///
+/// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
     -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
     where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
@@ -526,15 +554,14 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
     // scan up to |V| - 1 times.
     for _ in 1..g.node_count() {
         let mut did_update = false;
-        for i in g.node_identifiers() {
-            for edge in g.edges(i) {
-                let j = edge.target();
-                let w = *edge.weight();
-                if distance[ix(i)] + w < distance[ix(j)] {
-                    distance[ix(j)] = distance[ix(i)] + w;
-                    predecessor[ix(j)] = Some(i);
-                    did_update = true;
-                }
+        for edge in g.edge_references() {
+            let i = edge.source();
+            let j = edge.target();
+            let w = *edge.weight();
+            if distance[ix(i)] + w < distance[ix(j)] {
+                distance[ix(j)] = distance[ix(i)] + w;
+                predecessor[ix(j)] = Some(i);
+                did_update = true;
             }
         }
         if !did_update {

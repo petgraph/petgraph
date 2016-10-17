@@ -12,7 +12,6 @@ use visit::{
     IntoNeighbors,
     IntoNeighborsDirected,
     IntoEdgeReferences,
-    IntoExternals,
     NodeCompactIndexable,
     NodeCount,
     NodeIndexable,
@@ -22,7 +21,9 @@ use visit::{
     GraphProp,
 };
 
-/// Wrapper type for walking the graph as if all edges are reversed.
+/// An edge-reversing graph adaptor.
+///
+/// All edges have the opposite direction with `Reversed`.
 #[derive(Copy, Clone, Debug)]
 pub struct Reversed<G>(pub G);
 
@@ -56,15 +57,6 @@ impl<G> IntoNeighborsDirected for Reversed<G>
     }
 }
 
-impl<G> IntoExternals for Reversed<G>
-    where G: IntoExternals,
-{
-    type Externals = G::Externals;
-    fn externals(self, d: Direction) -> G::Externals {
-        self.0.externals(d.opposite())
-    }
-}
-
 impl<G: Visitable> Visitable for Reversed<G>
 {
     type Map = G::Map;
@@ -77,7 +69,7 @@ impl<G: Visitable> Visitable for Reversed<G>
 }
 
 
-/// An edge reference for `Reversed`.
+/// A reversed edge reference
 #[derive(Copy, Clone, Debug)]
 pub struct ReversedEdgeReference<R>(R);
 
@@ -114,7 +106,7 @@ impl<G> IntoEdgeReferences for Reversed<G>
     }
 }
 
-/// An iterator of edge references for `Reversed`.
+/// A reversed edge references iterator.
 pub struct ReversedEdgeReferences<I> {
     iter: I,
 }

@@ -24,13 +24,12 @@ use petgraph::graph::{
 
 use petgraph::visit::{
     IntoNodeIdentifiers,
-    Filtered,
+    NodeFiltered,
     Reversed,
-    AsUndirected,
     Topo,
     IntoNeighbors,
-    BfsIter,
-    DfsIter,
+    VisitMap,
+    Walker,
 };
 use petgraph::algo::{
     DfsSpace,
@@ -105,16 +104,14 @@ fn dfs() {
 
     println!("{}", Dot::new(&gr));
 
-    assert_eq!(DfsIter::new(&gr, h).count(), 4);
-    assert_eq!(DfsIter::new(&gr, h).clone().count(), 4);
+    assert_eq!(Dfs::new(&gr, h).iter(&gr).count(), 4);
+    assert_eq!(Dfs::new(&gr, h).iter(&gr).clone().count(), 4);
 
-    assert_eq!(DfsIter::new(&Reversed(&gr), h).count(), 1);
+    assert_eq!(Dfs::new(&gr, h).iter(Reversed(&gr)).count(), 1);
 
-    assert_eq!(DfsIter::new(&Reversed(&gr), k).count(), 3);
+    assert_eq!(Dfs::new(&gr, k).iter(Reversed(&gr)).count(), 3);
 
-    assert_eq!(DfsIter::new(&gr, i).count(), 3);
-
-    assert_eq!(DfsIter::new(&AsUndirected(&gr), i).count(), 4);
+    assert_eq!(Dfs::new(&gr, i).iter(&gr).count(), 3);
 }
 
 
@@ -132,16 +129,14 @@ fn bfs() {
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
 
-    assert_eq!(BfsIter::new(&gr, h).count(), 4);
-    assert_eq!(BfsIter::new(&gr, h).clone().count(), 4);
+    assert_eq!(Bfs::new(&gr, h).iter(&gr).count(), 4);
+    assert_eq!(Bfs::new(&gr, h).iter(&gr).clone().count(), 4);
 
-    assert_eq!(BfsIter::new(&Reversed(&gr), h).count(), 1);
+    assert_eq!(Bfs::new(&gr, h).iter(Reversed(&gr)).count(), 1);
 
-    assert_eq!(BfsIter::new(&Reversed(&gr), k).count(), 3);
+    assert_eq!(Bfs::new(&gr, k).iter(Reversed(&gr)).count(), 3);
 
-    assert_eq!(BfsIter::new(&gr, i).count(), 3);
-
-    assert_eq!(BfsIter::new(&AsUndirected(&gr), i).count(), 4);
+    assert_eq!(Bfs::new(&gr, i).iter(&gr).count(), 3);
 
     let mut bfs = Bfs::new(&gr, h);
     let nx = bfs.next(&gr);
@@ -332,7 +327,7 @@ fn dijk() {
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
     println!("{:?}", g);
-    for no in BfsIter::new(&g, a) {
+    for no in Bfs::new(&g, a).iter(&g) {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
 
@@ -456,7 +451,7 @@ fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex])
 }
 
 #[test]
-fn toposort() {
+fn test_toposort() {
     let mut gr = Graph::<_,_>::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
@@ -487,7 +482,7 @@ fn toposort() {
     gr.add_edge(h, j, 3.);
     gr.add_edge(i, j, 1.);
 
-    let order = petgraph::algo::toposort(&gr, None);
+    let order = petgraph::algo::toposort(&gr, None).unwrap();
     println!("{:?}", order);
     assert_eq!(order.len(), gr.node_count());
 
@@ -1005,6 +1000,12 @@ fn toposort_generic() {
         println!("{:?}", gr);
         assert_is_topo_order(&gr, &order);
     }
+    let mut gr2 = gr.clone();
+    gr.add_edge(e, d, -1.);
+    assert!(pg::algo::is_cyclic_directed(&gr, None));
+    assert!(pg::algo::toposort(&gr, None).is_err());
+    gr2.add_edge(d, d, 0.);
+    assert!(pg::algo::toposort(&gr2, None).is_err());
 }
 
 #[test]
@@ -1355,7 +1356,7 @@ fn filtered() {
     g.add_edge(e, f, 6);
     println!("{:?}", g);
 
-    let filt = Filtered(&g, |n: NodeIndex| n != c && n != e);
+    let filt = NodeFiltered(&g, |n: NodeIndex| n != c && n != e);
 
     let mut dfs = DfsPostOrder::new(&filt, a);
     let mut po = Vec::new();
@@ -1448,7 +1449,7 @@ fn dfs_visit() {
 
 #[test]
 fn filtered_post_order() {
-    use petgraph::visit::Filtered;
+    use petgraph::visit::NodeFiltered;
 
     let mut gr: Graph<(), ()> = Graph::from_edges(&[
         (0, 2),
@@ -1467,7 +1468,7 @@ fn filtered_post_order() {
     gr.add_edge(n(0), n(1), ());
     let mut po = Vec::new();
     let mut dfs = DfsPostOrder::new(&gr, n(0));
-    let f = Filtered(&gr, map);
+    let f = NodeFiltered(&gr, map);
     while let Some(n) = dfs.next(&f) {
         po.push(n);
     }
@@ -1510,3 +1511,44 @@ fn filter_elements() {
     g.remove_node(n(1));
     assert!(is_isomorphic_matching(&g, &g2, PartialEq::eq, PartialEq::eq));
 }
+
+#[test]
+fn test_edge_filtered() {
+    use petgraph::algo::connected_components;
+    use petgraph::visit::EdgeFiltered;
+    use petgraph::visit::IntoEdgeReferences;
+
+    let gr = UnGraph::<(), _>::from_edges(&[
+            // cycle
+            (0, 1, 7),
+            (1, 2, 9),
+            (2, 1, 14),
+
+            // cycle
+            (3, 4, 10),
+            (4, 5, 2),
+            (5, 3, 9),
+
+            // cross edges
+            (0, 3, -1),
+            (1, 4, -2),
+            (2, 5, -3),
+    ]);
+    assert_eq!(connected_components(&gr), 1);
+    let positive_edges = EdgeFiltered::from_fn(&gr, |edge| *edge.weight() >= 0);
+    assert_eq!(positive_edges.edge_references().count(), 6);
+    assert!(positive_edges.edge_references().all(|edge| *edge.weight() >= 0));
+    assert_eq!(connected_components(&positive_edges), 2);
+
+    let mut dfs = DfsPostOrder::new(&positive_edges, n(0));
+    while let Some(_) = dfs.next(&positive_edges) { }
+
+    let n = n::<u32>;
+    for node in &[n(0), n(1), n(2)] {
+        assert!(dfs.discovered.is_visited(node));
+    }
+    for node in &[n(3), n(4), n(5)] {
+        assert!(!dfs.discovered.is_visited(node));
+    }
+}
+

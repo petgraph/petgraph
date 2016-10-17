@@ -1836,6 +1836,7 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
 }
 
 /// Reference to a `Graph` edge.
+#[derive(Debug)]
 pub struct EdgeReference<'a, E: 'a, Ix = DefaultIx> {
     index: EdgeIndex<Ix>,
     node: [NodeIndex<Ix>; 2],
