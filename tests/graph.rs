@@ -26,7 +26,6 @@ use petgraph::visit::{
     IntoNodeIdentifiers,
     NodeFiltered,
     Reversed,
-    AsUndirected,
     Topo,
     IntoNeighbors,
     BfsIter,
@@ -114,8 +113,6 @@ fn dfs() {
     assert_eq!(DfsIter::new(&Reversed(&gr), k).count(), 3);
 
     assert_eq!(DfsIter::new(&gr, i).count(), 3);
-
-    assert_eq!(DfsIter::new(&AsUndirected(&gr), i).count(), 4);
 }
 
 
@@ -141,8 +138,6 @@ fn bfs() {
     assert_eq!(BfsIter::new(&Reversed(&gr), k).count(), 3);
 
     assert_eq!(BfsIter::new(&gr, i).count(), 3);
-
-    assert_eq!(BfsIter::new(&AsUndirected(&gr), i).count(), 4);
 
     let mut bfs = Bfs::new(&gr, h);
     let nx = bfs.next(&gr);

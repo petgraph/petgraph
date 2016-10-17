@@ -128,22 +128,6 @@ impl<'a, N: 'a, E, Ty> IntoNeighbors for &'a GraphMap<N, E, Ty>
 }
 
 
-/// Wrapper type for walking the graph as if it is undirected
-#[derive(Copy, Clone)]
-pub struct AsUndirected<G>(pub G);
-
-impl<'b, N, E, Ty, Ix> IntoNeighbors for AsUndirected<&'b Graph<N, E, Ty, Ix>>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type Neighbors = graph::Neighbors<'b, E, Ix>;
-
-    fn neighbors(self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'b, E, Ix>
-    {
-        Graph::neighbors_undirected(self.0, n)
-    }
-}
-
 trait_template! {
 /// Access to the neighbors of each node
 ///
@@ -658,26 +642,6 @@ impl<N, E, Ty> Visitable for GraphMap<N, E, Ty>
     fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
-    }
-}
-
-impl<G: GraphBase> GraphBase for AsUndirected<G>
-{
-    type NodeId = G::NodeId;
-    type EdgeId = G::EdgeId;
-}
-
-impl<G: GraphRef> GraphRef for AsUndirected<G> { }
-
-
-impl<G: Visitable> Visitable for AsUndirected<G>
-{
-    type Map = G::Map;
-    fn visit_map(&self) -> G::Map {
-        self.0.visit_map()
-    }
-    fn reset_map(&self, map: &mut Self::Map) {
-        self.0.reset_map(map);
     }
 }
 
