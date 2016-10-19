@@ -254,7 +254,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         if let None = node_weight {
             return None;
         }
-        for d in DIRECTIONS.iter() {
+        for d in &DIRECTIONS {
             let k = d.index();
 
             // Remove all edges from and to this node.
@@ -843,7 +843,7 @@ impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a StableGraph<N, E, Ty, 
 {
     type EdgeRef = EdgeReference<'a, E, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ix>;
-    
+
     /// Create an iterator over all edges in the graph, in indexed order.
     ///
     /// Iterator element type is `EdgeReference<E, Ix>`.

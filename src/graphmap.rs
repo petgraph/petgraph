@@ -196,7 +196,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             None => return false,
             Some(sus) => sus,
         };
-        for (succ, _) in links.into_iter() {
+        for (succ, _) in links {
             // remove all successor links
             self.remove_single_edge(&succ, &n, Incoming);
             // Remove all edge values

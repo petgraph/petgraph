@@ -218,11 +218,11 @@ fn assert_sccs_eq<N>(mut res: Vec<Vec<N>>, mut answer: Vec<Vec<N>>)
     where N: Ord + fmt::Debug,
 {
     // normalize the result and compare with the answer.
-    for scc in res.iter_mut() {
+    for scc in &mut res {
         scc.sort();
     }
     res.sort();
-    for scc in answer.iter_mut() {
+    for scc in &mut answer {
         scc.sort();
     }
     answer.sort();
