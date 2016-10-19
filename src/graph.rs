@@ -841,6 +841,35 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
+    pub fn edge_entry(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>)
+        -> EdgeEntry<N, E, Ix>
+    {
+        match self.find_edge(a, b) {
+            None => {
+                let edge_idx = edge_index::<Ix>(self.edges.len());
+                assert!(Ix::max().index() == !0 || EdgeIndex::end() != edge_idx);
+                let (an, bn) = match index_twice(&mut self.nodes, a.index(), b.index()) {
+                    Pair::None => panic!("Graph::edge_entry: node indices out of bounds"),
+                    Pair::One(an) => (an, None),
+                    Pair::Both(an, bn) => (an, Some(bn))
+                };
+                EdgeEntry::Vacant(VacantEdgeEntry {
+                    a: a,
+                    b: b,
+                    an: an,
+                    bn: bn,
+                    edges: &mut self.edges,
+                })
+            }
+            Some(i) => {
+                EdgeEntry::Occupied(OccupiedEdgeEntry {
+                    index: i,
+                    edge: &mut self.edges[i.index()],
+                })
+            }
+        }
+    }
+
     /// Lookup if there is an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
@@ -1343,6 +1372,96 @@ impl<'a, N: 'a, Ty, Ix> Iterator for Externals<'a, N, Ty, Ix> where
             }
         }
     }
+}
+
+#[derive(Debug)]
+pub struct OccupiedEdgeEntry<'a, E: 'a, Ix: 'a = DefaultIx> {
+    index: EdgeIndex<Ix>,
+    edge: &'a mut Edge<E, Ix>,
+}
+
+impl<'a, E, Ix> OccupiedEdgeEntry<'a, E, Ix>
+    where Ix: IndexType,
+{
+    pub fn index(&self) -> EdgeIndex<Ix> {
+        self.index
+    }
+
+    pub fn get(&self) -> &E {
+        &self.edge.weight
+    }
+
+    pub fn get_mut(&mut self) -> &mut E {
+        &mut self.edge.weight
+    }
+
+    pub fn into_mut(self) -> &'a mut E {
+        &mut self.edge.weight
+    }
+}
+
+#[derive(Debug)]
+pub struct VacantEdgeEntry<'a, N: 'a, E: 'a, Ix: 'a = DefaultIx> {
+    a: NodeIndex<Ix>,
+    b: NodeIndex<Ix>,
+    an: &'a mut Node<N, Ix>,
+    bn: Option<&'a mut Node<N, Ix>>,
+    edges: &'a mut Vec<Edge<E, Ix>>,
+}
+
+impl<'a, N, E, Ix> VacantEdgeEntry<'a, N, E, Ix>
+    where Ix: IndexType,
+{
+    pub fn index(&self) -> EdgeIndex<Ix> {
+        edge_index(self.edges.len())
+    }
+
+    pub fn add_edge(self, weight: E) -> (EdgeIndex<Ix>, &'a mut E) {
+        let mut edge = Edge {
+            weight: weight,
+            node: [self.a, self.b],
+            next: [EdgeIndex::end(); 2],
+        };
+        let edge_idx = edge_index::<Ix>(self.edges.len());
+        let an = self.an;
+        match self.bn {
+            None => {
+                // self loop
+                edge.next = an.next;
+                an.next[0] = edge_idx;
+                an.next[1] = edge_idx;
+            }
+            Some(bn) => {
+                // a and b are different indices
+                edge.next = [an.next[0], bn.next[1]];
+                an.next[0] = edge_idx;
+                bn.next[1] = edge_idx;
+            }
+        }
+        self.edges.push(edge);
+        (edge_idx, &mut self.edges[edge_idx.index()].weight)
+    }
+}
+
+#[derive(Debug)]
+pub enum EdgeEntry<'a, N: 'a, E: 'a, Ix: 'a = DefaultIx> {
+    Occupied(OccupiedEdgeEntry<'a, E, Ix>),
+    Vacant(VacantEdgeEntry<'a, N, E, Ix>),
+}
+
+impl<'a, N, E, Ix> EdgeEntry<'a, N, E, Ix>
+    where Ix: IndexType,
+{
+    pub fn or_add_edge_with<F>(self, new_weight: F)
+        -> (EdgeIndex<Ix>, &'a mut E)
+        where F: FnOnce() -> E,
+    {
+        match self {
+            EdgeEntry::Occupied(ent) => (ent.index(), ent.into_mut()),
+            EdgeEntry::Vacant(ent) => ent.add_edge(new_weight()),
+        }
+    }
+
 }
 
 /// Iterator over the neighbors of a node.
