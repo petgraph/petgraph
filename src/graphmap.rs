@@ -130,11 +130,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// Use their natual order to map the node pair (a, b) to a canonical edge id.
     #[inline]
     fn edge_key(a: N, b: N) -> (N, N) {
-        if Ty::is_directed() {
-            (a, b)
-        } else {
-            if a <= b { (a, b) } else { (b, a) }
-        }
+        if Ty::is_directed() || a <= b { (a, b) } else { (b, a) }
     }
 
     /// Whether the graph has directed edges.
@@ -196,7 +192,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             None => return false,
             Some(sus) => sus,
         };
-        for (succ, _) in links.into_iter() {
+        for (succ, _) in links {
             // remove all successor links
             self.remove_single_edge(&succ, &n, Incoming);
             // Remove all edge values

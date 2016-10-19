@@ -209,7 +209,7 @@ fn mst() {
 
     assert!(mst.find_edge(h, i).is_some());
     assert!(mst.find_edge(i, j).is_some());
-    
+
     assert!(mst.find_edge(d, b).is_none());
     assert!(mst.find_edge(b, c).is_none());
 
@@ -361,7 +361,7 @@ fn test_generate_undirected() {
 #[test]
 fn test_generate_directed() {
     // Number of DAG out of all graphs (all permutations) per node size
-    //            0, 1, 2, 3,  4,   5 .. 
+    //            0, 1, 2, 3,  4,   5 ..
     let n_dag = &[1, 1, 3, 25, 543, 29281, 3781503];
     for (size, &dags_exp) in (0..4).zip(n_dag) {
         let mut gen = pg::generate::Generator::<Directed>::all(size, true);
@@ -531,10 +531,10 @@ fn is_cyclic_directed() {
 fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, mut answer: Vec<Vec<NodeIndex>>,
                   scc_order_matters: bool) {
     // normalize the result and compare with the answer.
-    for scc in res.iter_mut() {
+    for scc in &mut res {
         scc.sort();
     }
-    for scc in answer.iter_mut() {
+    for scc in &mut answer {
         scc.sort();
     }
     if !scc_order_matters {
@@ -1218,7 +1218,7 @@ fn neighbors_selfloops() {
     while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
     seen_walk.sort();
     assert_eq!(&seen_walk, &in_edges);
- 
+
     seen_walk.clear();
     let mut walk = gr.neighbors_undirected(a).detach();
     while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
@@ -1499,15 +1499,15 @@ fn filter_elements() {
         Node { weight: "E"},
         Node { weight: "F"},
 
-        Edge { source: 0, target: 1, weight: 7 }, 
-        Edge { source: 2, target: 0, weight: 9 }, 
-        Edge { source: 0, target: 3, weight: 14 }, 
-        Edge { source: 1, target: 2, weight: 10 }, 
-        Edge { source: 3, target: 2, weight: 2 }, 
-        Edge { source: 3, target: 4, weight: 9 }, 
-        Edge { source: 1, target: 5, weight: 15 }, 
-        Edge { source: 2, target: 5, weight: 11 }, 
-        Edge { source: 4, target: 5, weight: 6 }, 
+        Edge { source: 0, target: 1, weight: 7 },
+        Edge { source: 2, target: 0, weight: 9 },
+        Edge { source: 0, target: 3, weight: 14 },
+        Edge { source: 1, target: 2, weight: 10 },
+        Edge { source: 3, target: 2, weight: 2 },
+        Edge { source: 3, target: 4, weight: 9 },
+        Edge { source: 1, target: 5, weight: 15 },
+        Edge { source: 2, target: 5, weight: 11 },
+        Edge { source: 4, target: 5, weight: 6 },
     ];
     let mut g = DiGraph::<_, _>::from_elements(elements.iter().cloned());
     println!("{:#?}", g);

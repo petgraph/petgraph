@@ -18,7 +18,7 @@ pub struct Format<'a, I> {
 }
 
 pub trait IterFormatExt : Iterator {
-    fn format<'a>(self, separator: &'a str) -> Format<'a, Self>
+    fn format(self, separator: &str) -> Format<Self>
         where Self: Sized
     {
         Format {
@@ -45,7 +45,7 @@ impl<'a, I> Format<'a, I>
         if let Some(fst) = iter.next() {
             try!(cb(&fst, f));
             for elt in iter {
-                if self.sep.len() > 0 {
+                if !self.sep.is_empty() {
                     try!(f.write_str(self.sep));
                 }
                 try!(cb(&elt, f));

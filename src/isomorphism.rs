@@ -160,7 +160,7 @@ impl<Ty, Ix> Vf2State<Ty, Ix>
 /// The graphs should not be multigraphs.
 ///
 /// **Reference**
-/// 
+///
 /// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento;
 ///   *A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs*
 pub fn is_isomorphic<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>,
@@ -385,7 +385,7 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
             // outgoing edges
             for j in graph_indices.clone() {
                 let mut edges = g[j].neighbors(nodes[j]).detach();
-                while let Some((n_edge, n_neigh)) = edges.next(&g[j]) {
+                while let Some((n_edge, n_neigh)) = edges.next(g[j]) {
                     // handle the self loop case; it's not in the mapping (yet)
                     let m_neigh = if nodes[j] != n_neigh {
                         st[j].mapping[n_neigh.index()]
@@ -410,7 +410,7 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
             if g[0].is_directed() {
                 for j in graph_indices.clone() {
                     let mut edges = g[j].neighbors_directed(nodes[j], Incoming).detach();
-                    while let Some((n_edge, n_neigh)) = edges.next(&g[j]) {
+                    while let Some((n_edge, n_neigh)) = edges.next(g[j]) {
                         // the self loop case is handled in outgoing
                         let m_neigh = st[j].mapping[n_neigh.index()];
                         if m_neigh == end {

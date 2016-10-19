@@ -30,7 +30,7 @@ fn node_indices() {
 
 fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>) {
     // normalize the result and compare with the answer.
-    for scc in res.iter_mut() {
+    for scc in &mut res {
         scc.sort();
     }
     // sort by minimum element
