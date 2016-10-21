@@ -520,29 +520,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix>
     {
-        let edge_idx = EdgeIndex::new(self.edges.len());
-        assert!(Ix::max().index() == !0 || EdgeIndex::end() != edge_idx);
-        let mut edge = Edge {
-            weight: weight,
-            node: [a, b],
-            next: [EdgeIndex::end(); 2],
-        };
-        match index_twice(&mut self.nodes, a.index(), b.index()) {
-            Pair::None => panic!("Graph::add_edge: node indices out of bounds"),
-            Pair::One(an) => {
-                edge.next = an.next;
-                an.next[0] = edge_idx;
-                an.next[1] = edge_idx;
-            }
-            Pair::Both(an, bn) => {
-                // a and b are different indices
-                edge.next = [an.next[0], bn.next[1]];
-                an.next[0] = edge_idx;
-                bn.next[1] = edge_idx;
-            }
-        }
-        self.edges.push(edge);
-        edge_idx
+        VacantEdgeEntry::new(self, a, b).add_edge(weight).0
     }
 
     /// Add or update an edge from `a` to `b`.
@@ -845,22 +823,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         -> EdgeEntry<N, E, Ix>
     {
         match self.find_edge(a, b) {
-            None => {
-                let edge_idx = edge_index::<Ix>(self.edges.len());
-                assert!(Ix::max().index() == !0 || EdgeIndex::end() != edge_idx);
-                let (an, bn) = match index_twice(&mut self.nodes, a.index(), b.index()) {
-                    Pair::None => panic!("Graph::edge_entry: node indices out of bounds"),
-                    Pair::One(an) => (an, None),
-                    Pair::Both(an, bn) => (an, Some(bn))
-                };
-                EdgeEntry::Vacant(VacantEdgeEntry {
-                    a: a,
-                    b: b,
-                    an: an,
-                    bn: bn,
-                    edges: &mut self.edges,
-                })
-            }
+            None => EdgeEntry::Vacant(VacantEdgeEntry::new(self, a, b)),
             Some(i) => {
                 EdgeEntry::Occupied(OccupiedEdgeEntry {
                     index: i,
@@ -1412,6 +1375,27 @@ pub struct VacantEdgeEntry<'a, N: 'a, E: 'a, Ix: 'a = DefaultIx> {
 impl<'a, N, E, Ix> VacantEdgeEntry<'a, N, E, Ix>
     where Ix: IndexType,
 {
+    fn new<Ty>(graph: &'a mut Graph<N, E, Ty, Ix>,
+               a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Self
+        where Ty: EdgeType
+    {
+        let edge_idx = edge_index::<Ix>(graph.edges.len());
+        assert!(Ix::max().index() == !0 || EdgeIndex::end() != edge_idx);
+        let (an, bn) = match index_twice(&mut graph.nodes, a.index(), b.index()) {
+            Pair::None => panic!("Graph: node index {} or {} out of bounds",
+                                 a.index(), b.index()),
+            Pair::One(an) => (an, None),
+            Pair::Both(an, bn) => (an, Some(bn))
+        };
+        VacantEdgeEntry {
+            a: a,
+            b: b,
+            an: an,
+            bn: bn,
+            edges: &mut graph.edges,
+        }
+    }
+
     pub fn index(&self) -> EdgeIndex<Ix> {
         edge_index(self.edges.len())
     }
