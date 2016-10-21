@@ -1,14 +1,16 @@
+//! Compute dominators of a control-flow graph.
+//!
 //! # The Dominance Relation
 //!
-//! In a directed graph with a root node `R`, a node `A` is said to *dominate* a
-//! node `B` iff every path from `R` to `B` contains `A`.
+//! In a directed graph with a root node **R**, a node **A** is said to *dominate* a
+//! node **B** iff every path from **R** to **B** contains **A**.
 //!
-//! The node `A` is said to *strictly dominate* the node `B` iff `A` dominates
-//! `B` and `A != B`.
+//! The node **A** is said to *strictly dominate* the node **B** iff **A** dominates
+//! **B** and **A ≠ B**.
 //!
-//! The node `A` is said to be the *immediate dominator* of a node `B` iff it
-//! strictly dominates `B` and there does not exist any node `C` where `A`
-//! dominates `C` and `C` dominates `B`.
+//! The node **A** is said to be the *immediate dominator* of a node **B** iff it
+//! strictly dominates **B** and there does not exist any node **C** where **A**
+//! dominates **C** and **C** dominates **B**.
 
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -105,8 +107,8 @@ const UNDEFINED: usize = ::std::usize::MAX;
 /// This is an implementation of the engineered ["Simple, Fast Dominance
 /// Algorithm"][0] discovered by Cooper et al.
 ///
-/// This algorithm is `O(v^2)`, and therefore has slower theoretical running time
-/// than the Lenguaer-Tarjan algorithm (which is `O(e * log(v)`). However,
+/// This algorithm is **O(|V|²)**, and therefore has slower theoretical running time
+/// than the Lenguaer-Tarjan algorithm (which is **O(|E| log |V|)**. However,
 /// Cooper et al found it to be faster in practice on control flow graphs of up
 /// to ~30,000 vertices.
 ///
