@@ -4,6 +4,8 @@
 //! so that they are generally applicable. For now, some of these still require
 //! the `Graph` type.
 
+pub mod dominators;
+
 use std::collections::BinaryHeap;
 use std::cmp::min;
 
