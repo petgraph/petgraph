@@ -24,6 +24,11 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.1
+
+  - Add new algorithm ``simple_fast`` for computing dominators in a control-flow
+    graph.
+
 - 0.4.0
 
   - Breaking changes in ``Graph``:
