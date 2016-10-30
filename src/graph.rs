@@ -819,6 +819,9 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
+    /// Return an “entry” for the edge from `a` to `b` which is either
+    /// `Vacant` if the edge does not exist, or `Occupied` if at least
+    /// one such edge exists.
     pub fn edge_entry(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>)
         -> EdgeEntry<N, E, Ix>
     {
@@ -1346,6 +1349,7 @@ pub struct OccupiedEdgeEntry<'a, E: 'a, Ix: 'a = DefaultIx> {
 impl<'a, E, Ix> OccupiedEdgeEntry<'a, E, Ix>
     where Ix: IndexType,
 {
+    /// Return the index of the edge
     pub fn index(&self) -> EdgeIndex<Ix> {
         self.index
     }
@@ -1396,10 +1400,12 @@ impl<'a, N, E, Ix> VacantEdgeEntry<'a, N, E, Ix>
         }
     }
 
+    /// Return the index that the edge would use if added.
     pub fn index(&self) -> EdgeIndex<Ix> {
         edge_index(self.edges.len())
     }
 
+    /// Add the edge using `weight`.
     pub fn add_edge(self, weight: E) -> (EdgeIndex<Ix>, &'a mut E) {
         let mut edge = Edge {
             weight: weight,
@@ -1427,15 +1433,21 @@ impl<'a, N, E, Ix> VacantEdgeEntry<'a, N, E, Ix>
     }
 }
 
+/// An edge “entry” item.
 #[derive(Debug)]
 pub enum EdgeEntry<'a, N: 'a, E: 'a, Ix: 'a = DefaultIx> {
+    /// A reference to an existing edge
     Occupied(OccupiedEdgeEntry<'a, E, Ix>),
+    /// A representation of an edge that can be added
     Vacant(VacantEdgeEntry<'a, N, E, Ix>),
 }
 
 impl<'a, N, E, Ix> EdgeEntry<'a, N, E, Ix>
     where Ix: IndexType,
 {
+    /// If the edge is occupied, add it by using the weight returned
+    /// by `new_weight`; return the index of the edge and a mutable
+    /// reference to the edge weight in either case.
     pub fn or_add_edge_with<F>(self, new_weight: F)
         -> (EdgeIndex<Ix>, &'a mut E)
         where F: FnOnce() -> E,
@@ -1913,6 +1925,41 @@ impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
     }
 }
 
+impl<'a, N, E, Ty, Ix> IntoNodeReferences for &'a Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NodeRef = (NodeIndex<Ix>, &'a N);
+    type NodeReferences = NodeReferences<'a, N, Ix>;
+    fn node_references(self) -> Self::NodeReferences {
+        NodeReferences {
+            iter: self.nodes.iter().enumerate()
+        }
+    }
+}
+
+/// Iterator over all nodes of a graph.
+pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
+    iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
+}
+
+impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
+    where Ix: IndexType
+{
+    type Item = (NodeIndex<Ix>, &'a N);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|(i, node)| 
+            (node_index(i), &node.weight)
+        )
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+
 /// Iterator over the edge indices of a graph.
 #[derive(Clone, Debug)]
 pub struct EdgeIndices<Ix = DefaultIx> {
@@ -1959,40 +2006,6 @@ impl<'a, E, Ix: IndexType> PartialEq for EdgeReference<'a, E, Ix>
 {
     fn eq(&self, rhs: &Self) -> bool {
         self.index == rhs.index && self.weight == rhs.weight
-    }
-}
-
-impl<'a, N, E, Ty, Ix> IntoNodeReferences for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    type NodeRef = (NodeIndex<Ix>, &'a N);
-    type NodeReferences = NodeReferences<'a, N, Ix>;
-    fn node_references(self) -> Self::NodeReferences {
-        NodeReferences {
-            iter: self.nodes.iter().enumerate()
-        }
-    }
-}
-
-/// Iterator over all nodes of a graph.
-pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
-    iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
-}
-
-impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
-    where Ix: IndexType
-{
-    type Item = (NodeIndex<Ix>, &'a N);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(i, node)| 
-            (node_index(i), &node.weight)
-        )
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
     }
 }
 
