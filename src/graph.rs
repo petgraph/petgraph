@@ -395,12 +395,14 @@ enum Pair<T> {
     None,
 }
 
-fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T>
-{
-    if a == b {
-        slc.get_mut(a).map_or(Pair::None, Pair::One)
-    } else if a >= slc.len() || b >= slc.len() {
+use std::cmp::max;
+
+/// Get mutable references at index `a` and `b`.
+fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T> {
+    if max(a, b) >= slc.len() {
         Pair::None
+    } else if a == b {
+        Pair::One(&mut slc[max(a, b)])
     } else {
         // safe because a, b are in bounds and distinct
         unsafe {
