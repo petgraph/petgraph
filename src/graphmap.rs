@@ -211,7 +211,8 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     }
 
     /// Add an edge connecting `a` and `b` to the graph, with associated
-    /// data `weight`.
+    /// data `weight`. For a directed graph, the edge is directed from `a`
+    /// to `b`.
     ///
     /// Inserts nodes `a` and/or `b` if they aren't already part of the graph.
     ///
