@@ -639,7 +639,8 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         // Adjust the starts of the out edges, and ends of the in edges.
         for &d in &DIRECTIONS {
             let k = d.index();
-            for (_, curedge) in EdgesMut::new(&mut self.edges, swap_edges[k], d) {
+            let mut edges = edges_walker_mut(&mut self.edges, swap_edges[k], d);
+            while let Some(curedge) = edges.next_edge() {
                 debug_assert!(curedge.node[k] == old_index);
                 curedge.node[k] = new_index;
             }
@@ -667,7 +668,8 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
                 //println!("Updating first edge 0 for node {}, set to {}", edge_node[0], edge_next[0]);
                 node.next[k] = edge_next[k];
             } else {
-                for (_i, curedge) in EdgesMut::new(&mut self.edges, fst, d) {
+                let mut edges = edges_walker_mut(&mut self.edges, fst, d);
+                while let Some(curedge) = edges.next_edge() {
                     if curedge.next[k] == e {
                         curedge.next[k] = edge_next[k];
                         break; // the edge can only be present once in the list.
@@ -1418,48 +1420,38 @@ impl<'a, E, Ix> Neighbors<'a, E, Ix>
     }
 }
 
-struct EdgesMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
+struct EdgesWalkerMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
     edges: &'a mut [Edge<E, Ix>],
     next: EdgeIndex<Ix>,
     dir: Direction,
 }
 
-impl<'a, E, Ix> EdgesMut<'a, E, Ix> where
-    Ix: IndexType,
+fn edges_walker_mut<E, Ix>(edges: &mut [Edge<E, Ix>], next: EdgeIndex<Ix>, dir: Direction)
+    -> EdgesWalkerMut<E, Ix>
+    where Ix: IndexType,
 {
-    fn new(edges: &'a mut [Edge<E, Ix>], next: EdgeIndex<Ix>, dir: Direction) -> Self
-    {
-        EdgesMut{
-            edges: edges,
-            next: next,
-            dir: dir
-        }
+    EdgesWalkerMut {
+        edges: edges,
+        next: next,
+        dir: dir
     }
 }
 
-impl<'a, E, Ix> Iterator for EdgesMut<'a, E, Ix> where
+impl<'a, E, Ix> EdgesWalkerMut<'a, E, Ix> where
     Ix: IndexType,
 {
-    type Item = (EdgeIndex<Ix>, &'a mut Edge<E, Ix>);
-    fn next(&mut self) -> Option<(EdgeIndex<Ix>, &'a mut Edge<E, Ix>)>
-    {
+    fn next_edge(&mut self) -> Option<&mut Edge<E, Ix>> {
+        self.next().map(|t| t.1)
+    }
+
+    fn next(&mut self) -> Option<(EdgeIndex<Ix>, &mut Edge<E, Ix>)> {
         let this_index = self.next;
         let k = self.dir.index();
         match self.edges.get_mut(self.next.index()) {
             None => None,
             Some(edge) => {
                 self.next = edge.next[k];
-                // We cannot in safe rust, derive a &'a mut from &mut self,
-                // when the life of &mut self is shorter than 'a.
-                //
-                // We guarantee that this will not allow two pointers to the same
-                // edge, and use unsafe to extend the life.
-                //
-                // See http://stackoverflow.com/a/25748645/3616050
-                let long_life_edge = unsafe {
-                    &mut *(edge as *mut _)
-                };
-                Some((this_index, long_life_edge))
+                Some((this_index, edge))
             }
         }
     }
