@@ -5,7 +5,6 @@ extern crate test;
 
 use petgraph::graph::Graph;
 
-
 #[bench]
 fn bench_inser(b: &mut test::Bencher) {
     let mut og = Graph::new();
@@ -16,6 +15,21 @@ fn bench_inser(b: &mut test::Bencher) {
     }
     b.iter(|| {
         og.add_node(1)
+    })
+}
+
+#[bench]
+fn bench_add_edge(b: &mut test::Bencher) {
+    let mut og = Graph::new();
+    for _ in 0..100 {
+        og.add_node(());
+    }
+
+    b.iter(|| {
+        for (a, b) in og.node_indices().zip(og.node_indices().skip(1)) {
+            og.add_edge(a, b, ());
+        }
+        og.clear_edges();
     })
 }
 
