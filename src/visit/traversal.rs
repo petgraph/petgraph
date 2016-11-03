@@ -403,6 +403,15 @@ impl<W, C> Iterator for WalkerIter<W, C>
     }
 }
 
+impl<'a, C, W: ?Sized> Walker<C> for &'a mut W
+    where W: Walker<C>,
+{
+    type Item = W::Item;
+    fn walk_next(&mut self, context: C) -> Option<Self::Item> {
+        (**self).walk_next(context)
+    }
+}
+
 impl<G> Walker<G> for Dfs<G::NodeId, G::Map>
     where G: IntoNeighbors + Visitable
 {

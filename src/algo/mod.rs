@@ -34,6 +34,7 @@ use super::graph::{
     IndexType,
 };
 use visit::{Data, NodeRef, IntoNodeReferences};
+use visit::Walker;
 use data::{
     Element,
 };
@@ -227,12 +228,7 @@ pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
     with_dfs(g, space, |dfs| {
         dfs.reset(g);
         dfs.move_to(from);
-        while let Some(x) = dfs.next(g) {
-            if x == to {
-                return true;
-            }
-        }
-        false
+        dfs.iter(g).any(|x| x == to)
     })
 }
 
