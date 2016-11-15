@@ -28,7 +28,6 @@ mod scored;
 
 // these modules define trait-implementing macros
 #[macro_use]
-#[path = "visit/visit.rs"]
 pub mod visit;
 #[macro_use]
 pub mod data;
