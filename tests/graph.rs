@@ -491,6 +491,16 @@ fn test_toposort() {
 }
 
 #[test]
+fn test_toposort_eq() {
+    let mut g = Graph::<_,_>::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    g.add_edge(a, b, ());
+
+    assert_eq!(petgraph::algo::toposort(&g, None), Ok(vec![a, b]));
+}
+
+#[test]
 fn is_cyclic_directed() {
     let mut gr = Graph::<_,_>::new();
     let a = gr.add_node("A");

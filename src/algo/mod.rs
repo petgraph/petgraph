@@ -523,7 +523,7 @@ impl<G> Iterator for MinSpanningTree<G>
 }
 
 /// An algorithm error: a cycle was found in the graph.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Cycle<N>(N);
 
 impl<N> Cycle<N> {
