@@ -535,7 +535,7 @@ impl<N> Cycle<N> {
     }
 }
 /// An algorithm error: a cycle of negative weights was found in the graph.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NegativeCycle(());
 
 /// [Generic] Compute shortest paths from node `source` to all other.
