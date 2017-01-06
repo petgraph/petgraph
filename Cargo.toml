@@ -37,13 +37,14 @@ itertools = { version = "0.5" }
 defmac = "0.1"
 
 [features]
-default = ["graphmap", "stable_graph"]
+default = ["graphmap", "stable_graph", "dense_graph"]
 graphmap = ["ordermap"]
 stable_graph = []
+dense_graph = []
 
 # For unstable features
 generate = []
 unstable = ["generate"]
 
 # feature flags for testing use only
-all = ["unstable", "quickcheck", "stable_graph", "graphmap"]
+all = ["unstable", "quickcheck", "dense_graph", "stable_graph", "graphmap"]
