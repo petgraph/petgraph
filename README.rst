@@ -24,6 +24,12 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.2
+
+  - Move the ``visit.rs`` file due to changed rules for a module’s directory
+    ownership in Rust, resolving a future compat warning.
+  - The error types ``Cycle, NegativeCycle`` now implement ``PartialEq``.
+
 - 0.4.1
 
   - Add new algorithm ``simple_fast`` for computing dominators in a control-flow
