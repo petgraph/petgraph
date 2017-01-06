@@ -50,6 +50,8 @@ pub mod algo;
 pub mod generate;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
+#[cfg(feature = "matrix_graph")]
+pub mod matrix_graph;
 mod graph_impl;
 pub mod dot;
 pub mod unionfind;
