@@ -1,7 +1,7 @@
 [package]
 
 name = "petgraph"
-version = "0.4.2"
+version = "0.4.3"
 license = "MIT/Apache-2.0"
 authors = [
 "bluss",
@@ -13,6 +13,7 @@ documentation = "https://docs.rs/petgraph/"
 repository = "https://github.com/bluss/petgraph"
 
 keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
+categories = ["data-structures"]
 
 [lib]
 

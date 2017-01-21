@@ -24,6 +24,10 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.3
+
+  - Add crate categories
+
 - 0.4.2
 
   - Move the ``visit.rs`` file due to changed rules for a module’s directory
