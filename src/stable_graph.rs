@@ -48,6 +48,7 @@ use visit::{
 pub use graph::{
     NodeIndex,
     EdgeIndex,
+    GraphIndex,
     IndexType,
     DefaultIx,
     node_index,
@@ -563,6 +564,28 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
                 Some(n) => n.next,
             },
             ty: PhantomData,
+        }
+    }
+
+    /// Index the `Graph` by two indices, any combination of
+    /// node or edge indices is fine.
+    ///
+    /// **Panics** if the indices are equal or if they are out of bounds.
+    pub fn index_twice_mut<T, U>(&mut self, i: T, j: U)
+        -> (&mut <Self as Index<T>>::Output,
+            &mut <Self as Index<U>>::Output)
+        where Self: IndexMut<T> + IndexMut<U>,
+              T: GraphIndex,
+              U: GraphIndex,
+    {
+        assert!(T::is_node_index() != U::is_node_index() ||
+                i.index() != j.index());
+
+        // Allow two mutable indexes here -- they are nonoverlapping
+        unsafe {
+            let self_mut = self as *mut _;
+            (<Self as IndexMut<T>>::index_mut(&mut *self_mut, i),
+             <Self as IndexMut<U>>::index_mut(&mut *self_mut, j))
         }
     }
 
