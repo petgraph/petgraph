@@ -34,6 +34,7 @@ use super::{
     Node,
     DIRECTIONS,
     Pair,
+    Frozen,
 };
 use IntoWeightedEdge;
 use visit::{
@@ -289,11 +290,11 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// Computes in **O(n + e')** time, where **n** is the number of node indices and
     ///  **e'** is the number of affected edges, including *n* calls to `.remove_edge()`
     /// where *n* is the number of edges with an endpoint in a removed node.
-    pub fn retain_nodes<F>(&mut self, mut f: F) -> Vec<N> where F: FnMut(&N) -> bool {
+    pub fn retain_nodes<F>(&mut self, mut f: F) -> Vec<N> where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool {
         let mut out = Vec::new();
         for i in 0..self.g.node_count() {
             let ix = node_index(i);
-            if self.node_weight(ix).map_or(false, |w| {!f(&w)}) {
+            if !f(Frozen(self), ix) {
                 out.push(self.remove_node(ix).unwrap());
             }
         }
@@ -1137,7 +1138,7 @@ fn test_retain_nodes() {
 
     assert_eq!(gr.node_count(), 5);
     assert_eq!(gr.edge_count(), 8);
-    gr.retain_nodes(|n| {*n >= "c"});
+    gr.retain_nodes(|frozen_gr, ix| {frozen_gr[ix] >= "c"});
     assert_eq!(gr.node_count(), 3);
     assert_eq!(gr.edge_count(), 2);
 }
