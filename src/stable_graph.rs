@@ -290,15 +290,13 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// Computes in **O(n + e')** time, where **n** is the number of node indices and
     ///  **e'** is the number of affected edges, including *n* calls to `.remove_edge()`
     /// where *n* is the number of edges with an endpoint in a removed node.
-    pub fn retain_nodes<F>(&mut self, mut f: F) -> Vec<N> where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool {
-        let mut out = Vec::new();
+    pub fn retain_nodes<F>(&mut self, mut f: F) where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool {
         for i in 0..self.g.node_count() {
             let ix = node_index(i);
             if !f(Frozen(self), ix) {
-                out.push(self.remove_node(ix).unwrap());
+                self.remove_node(ix).unwrap();
             }
         }
-        out
     }
 
     pub fn contains_node(&self, a: NodeIndex<Ix>) -> bool {
