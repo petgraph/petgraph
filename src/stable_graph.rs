@@ -294,7 +294,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         for i in 0..self.g.node_count() {
             let ix = node_index(i);
             if !f(Frozen(self), ix) {
-                self.remove_node(ix).unwrap();
+                self.remove_node(ix);
             }
         }
     }
