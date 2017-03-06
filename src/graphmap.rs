@@ -3,7 +3,10 @@
 
 use std::cmp::Ordering;
 use std::hash::{self, Hash};
-use std::iter::Cloned;
+use std::iter::{
+    Cloned,
+    DoubleEndedIterator,
+};
 use std::slice::{
     Iter,
 };
@@ -12,7 +15,9 @@ use std::ops::{Index, IndexMut, Deref};
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 use ordermap::OrderMap;
-use ordermap::Iter as OrderMapIter;
+use ordermap::{
+    Iter as OrderMapIter, IterMut as OrderMapIterMut
+};
 use ordermap::Keys;
 
 use {
@@ -385,6 +390,17 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         }
     }
 
+    /// Return an iterator over all edges of the graph in arbitrary order, with a mutable reference
+    /// to their weight.
+    ///
+    /// Iterator element type is `(N, N, &mut E)`
+    pub fn all_edges_mut(&mut self) -> AllEdgesMut<N, E, Ty> {
+        AllEdgesMut {
+            inner: self.edges.iter_mut(),
+            ty: self.ty,
+        }
+    }
+
     /// Return a `Graph` that corresponds to this `GraphMap`.
     ///
     /// Note: node and edge indices in the `Graph` have nothing in common
@@ -588,6 +604,71 @@ impl<'a, N, E, Ty> Iterator for AllEdges<'a, N, E, Ty>
             None => None,
             Some((&(a, b), v)) => Some((a, b, v))
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+
+    fn count(self) -> usize {
+        self.inner.count()
+    }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        self.inner.nth(n).map(|(&(n1, n2), weight)| (n1, n2, weight))
+    }
+
+    fn last(self) -> Option<Self::Item> {
+        self.inner.last().map(|(&(n1, n2), weight)| (n1, n2, weight))
+    }
+}
+
+impl<'a, N, E, Ty> DoubleEndedIterator for AllEdges<'a, N, E, Ty>
+    where N: 'a + NodeTrait, E: 'a,
+          Ty: EdgeType,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().map(|(&(n1, n2), weight)| (n1, n2, weight))
+    }
+}
+
+pub struct AllEdgesMut<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
+    inner: OrderMapIterMut<'a, (N, N), E>,
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, N, E, Ty> Iterator for AllEdgesMut<'a, N, E, Ty>
+    where N: 'a + NodeTrait, E: 'a,
+          Ty: EdgeType,
+{
+    type Item = (N, N, &'a mut E);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(&(n1, n2), weight)| (n1, n2, weight))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+
+    fn count(self) -> usize {
+        self.inner.count()
+    }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        self.inner.nth(n).map(|(&(n1, n2), weight)| (n1, n2, weight))
+    }
+
+    fn last(self) -> Option<Self::Item> {
+        self.inner.last().map(|(&(n1, n2), weight)| (n1, n2, weight))
+    }
+}
+
+impl<'a, N, E, Ty> DoubleEndedIterator for AllEdgesMut<'a, N, E, Ty>
+    where N: 'a + NodeTrait, E: 'a,
+          Ty: EdgeType,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().map(|(&(n1, n2), weight)| (n1, n2, weight))
     }
 }
 

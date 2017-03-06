@@ -279,3 +279,23 @@ fn test_into_graph() {
         assert_eq!(&gr[(aw, bw)], edge.weight());
     }
 }
+
+#[test]
+fn test_all_edges_mut() {
+    // graph with edge weights equal to in+out
+    let mut graph: GraphMap<_, u32, Directed> = GraphMap::from_edges(&[
+        (0, 1, 1),
+        (1, 2, 3),
+        (2, 0, 2),
+    ]);
+
+    // change it so edge weight is equal to 2 * (in+out)
+    for (start, end, weight) in graph.all_edges_mut() {
+        *weight = (start + end) * 2;
+    }
+
+    // test it
+    for (start, end, weight) in graph.all_edges() {
+        assert_eq!((start + end) * 2, *weight);
+    }
+}
