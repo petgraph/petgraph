@@ -7,7 +7,7 @@ use test::Bencher;
 use petgraph::prelude::*;
 
 use petgraph::{EdgeType};
-use petgraph::dense_graph::{DenseGraph, node_index};
+use petgraph::dense_graph::{DenseGraph, NodeIndex, node_index};
 
 /// An almost full set
 const FULL_A: &'static str = "
@@ -174,3 +174,34 @@ fn parse_graph<Ty: EdgeType>(s: &str) -> Graph<(), (), Ty>
     gr
 }
 
+#[bench]
+fn dense_graph_add_edges_from_root(bench: &mut Bencher)
+{
+    bench.iter(|| {
+        let mut gr: DenseGraph<(), ()> = DenseGraph::new();
+        let a = gr.add_node(());
+
+        for _ in 0..100 {
+            let b = gr.add_node(());
+            gr.add_edge(a, b, ());
+        }
+    });
+}
+
+#[bench]
+fn dense_graph_add_adjacent_edges(bench: &mut Bencher)
+{
+    bench.iter(|| {
+        let mut gr: DenseGraph<(), ()> = DenseGraph::new();
+        let mut prev: Option<NodeIndex> = None;
+        for _ in 0..100 {
+            let b = gr.add_node(());
+
+            if let Some(a) = prev {
+                gr.add_edge(a, b, ());
+            }
+
+            prev = Some(b);
+        }
+    });
+}

@@ -41,8 +41,8 @@ const INITIAL_RESIZE: usize = 10;
 
 fn ensure_len<T>(vec: &mut OptionVec<T>, min_len: usize) where T: Clone {
     if vec.len() <= min_len {
-        let next_power_of_2_len = (min_len + 2) & !1;
-        vec.resize(cmp::max(next_power_of_2_len, INITIAL_RESIZE), None);
+        let next_len = min_len + 1;
+        vec.resize(cmp::max(next_len, INITIAL_RESIZE), None);
     }
 }
 
