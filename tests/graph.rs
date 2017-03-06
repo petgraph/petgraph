@@ -1491,8 +1491,8 @@ fn filtered_post_order() {
     let mut po = Vec::new();
     let mut dfs = DfsPostOrder::new(&gr, n(0));
     let f = NodeFiltered(&gr, map);
-    while let Some(n) = dfs.next(&f) {
-        po.push(n);
+    while let Some(node) = dfs.next(&f) {
+        po.push(node);
     }
     assert!(!po.contains(&n(1)));
 }
