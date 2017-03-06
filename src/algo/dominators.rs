@@ -257,11 +257,11 @@ mod tests {
         let all_doms: Vec<_> = doms.dominators(2).unwrap().collect();
         assert_eq!(vec![2, 1, 0], all_doms);
 
-        assert_eq!(None, doms.dominators(99).map(|_| unreachable!()));
+        assert_eq!(None::<()>, doms.dominators(99).map(|_| unreachable!()));
 
         let strict_doms: Vec<_> = doms.strict_dominators(2).unwrap().collect();
         assert_eq!(vec![1, 0], strict_doms);
 
-        assert_eq!(None, doms.strict_dominators(99).map(|_| unreachable!()));
+        assert_eq!(None::<()>, doms.strict_dominators(99).map(|_| unreachable!()));
     }
 }
