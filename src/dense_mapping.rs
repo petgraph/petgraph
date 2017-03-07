@@ -1,4 +1,3 @@
-use std::cmp;
 use std::collections::HashSet;
 use std::mem;
 use std::ops::{Index, IndexMut};
@@ -23,8 +22,7 @@ impl<T: Clone> DenseMapping<T> {
         // Resize the vector to make sure we aren't out of bounds
         let elements_len = self.elements.len();
         if elements_len <= id {
-            let new_len = cmp::max(id + 1, elements_len) * 2;
-            self.elements.resize(new_len, None);
+            self.elements.resize(id + 1, None);
         }
 
         // Swap the previous value with the new value

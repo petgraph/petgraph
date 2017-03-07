@@ -1,7 +1,6 @@
 use std::collections::hash_set;
 use std::marker::PhantomData;
 use std::ops::{Index, IndexMut};
-use std::cmp;
 
 use dense_mapping::{DenseMapping, IdIterator};
 use fixedbitset::FixedBitSet;
@@ -36,15 +35,6 @@ use visit::{
 pub use graph::{node_index, edge_index};
 
 type OptionVec<T> = Vec<Option<T>>;
-
-const INITIAL_RESIZE: usize = 10;
-
-fn ensure_len<T>(vec: &mut OptionVec<T>, min_len: usize) where T: Clone {
-    if vec.len() <= min_len {
-        let next_len = min_len + 1;
-        vec.resize(cmp::max(next_len, INITIAL_RESIZE), None);
-    }
-}
 
 type Matrix = OptionVec<OptionVec<EdgeList>>;
 
@@ -118,7 +108,10 @@ impl<N, E, Ty, Ix> DenseGraph<N, E, Ty, Ix>
         let (id, _) = self.nodes.add(weight);
 
         // Resize the matrix if necessary
-        ensure_len(&mut self.matrix, id);
+        let matrix_len = self.matrix.len();
+        if matrix_len <= id {
+            self.matrix.resize(id + 1, None);
+        }
 
         NodeIndex::new(id)
     }
@@ -176,7 +169,10 @@ impl<N, E, Ty, Ix> DenseGraph<N, E, Ty, Ix>
 
                 // Make sure node "source" has an entry for "target"
                 let mut neighbors = neighbors.as_mut().unwrap();
-                ensure_len(&mut neighbors, target);
+                let neighbors_len = neighbors.len();
+                if neighbors_len <= target {
+                    neighbors.resize(target + 1, None);
+                }
 
                 let ref mut edges = neighbors[target];
                 if edges.is_none() {
