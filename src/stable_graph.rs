@@ -34,6 +34,7 @@ use super::{
     Node,
     DIRECTIONS,
     Pair,
+    Frozen,
 };
 use IntoWeightedEdge;
 use visit::{
@@ -278,6 +279,25 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.node_count -= 1;
 
         node_weight
+    }
+
+    /// Retain only nodes from the graph if the `f` returns true and return the weights of the
+    /// removed nodes. If no nodes are removed, the Vec is empty.
+    ///
+    /// The node indecies of the removed nodes are invalidated, but none other.
+    /// Edge indices are invalidated as they would be following the removal of
+    /// each edge with an endpoint in a removed node.
+    ///
+    /// Computes in **O(n + e')** time, where **n** is the number of node indices and
+    ///  **e'** is the number of affected edges, including *n* calls to `.remove_edge()`
+    /// where *n* is the number of edges with an endpoint in a removed node.
+    pub fn retain_nodes<F>(&mut self, mut f: F) where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool {
+        for i in 0..self.g.node_count() {
+            let ix = node_index(i);
+            if self.contains_node(ix) && !f(Frozen(self), ix) {
+                self.remove_node(ix);
+            }
+        }
     }
 
     pub fn contains_node(&self, a: NodeIndex<Ix>) -> bool {
@@ -1118,4 +1138,30 @@ fn dfs() {
     while let Some(next) = dfs.next(&gr) {
         println!("dfs visit => {:?}, weight={:?}", next, &gr[next]);
     }
+}
+
+#[test]
+fn test_retain_nodes() {
+    let mut gr = StableGraph::<_, _>::with_capacity(6, 6);
+    let a = gr.add_node("a");
+    let f = gr.add_node("f");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+    let d = gr.add_node("d");
+    let e = gr.add_node("e");
+    gr.add_edge(a, b, 1);
+    gr.add_edge(a, c, 2);
+    gr.add_edge(b, c, 3);
+    gr.add_edge(b, d, 4);
+    gr.add_edge(c, d, 5);
+    gr.add_edge(d, b, 6);
+    gr.add_edge(c, b, 7);
+    gr.add_edge(d, e, 8);
+    gr.remove_node(f);
+
+    assert_eq!(gr.node_count(), 5);
+    assert_eq!(gr.edge_count(), 8);
+    gr.retain_nodes(|frozen_gr, ix| {frozen_gr[ix] >= "c"});
+    assert_eq!(gr.node_count(), 3);
+    assert_eq!(gr.edge_count(), 2);
 }
