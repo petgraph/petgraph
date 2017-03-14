@@ -281,25 +281,6 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         node_weight
     }
 
-    /// Retain only nodes from the graph if the `f` returns true and return the weights of the
-    /// removed nodes. If no nodes are removed, the Vec is empty.
-    ///
-    /// The node indecies of the removed nodes are invalidated, but none other.
-    /// Edge indices are invalidated as they would be following the removal of
-    /// each edge with an endpoint in a removed node.
-    ///
-    /// Computes in **O(n + e')** time, where **n** is the number of node indices and
-    ///  **e'** is the number of affected edges, including *n* calls to `.remove_edge()`
-    /// where *n* is the number of edges with an endpoint in a removed node.
-    pub fn retain_nodes<F>(&mut self, mut f: F) where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool {
-        for i in 0..self.g.node_count() {
-            let ix = node_index(i);
-            if self.contains_node(ix) && !f(Frozen(self), ix) {
-                self.remove_node(ix);
-            }
-        }
-    }
-
     pub fn contains_node(&self, a: NodeIndex<Ix>) -> bool {
         self.g.nodes.get(a.index()).map_or(false, |no| no.weight.is_some())
     }
@@ -608,6 +589,26 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
              <Self as IndexMut<U>>::index_mut(&mut *self_mut, j))
         }
     }
+
+    /// Retain only nodes from the graph if the `f` returns true and return the weights of the
+    /// removed nodes. If no nodes are removed, the Vec is empty.
+    ///
+    /// The node indecies of the removed nodes are invalidated, but none other.
+    /// Edge indices are invalidated as they would be following the removal of
+    /// each edge with an endpoint in a removed node.
+    ///
+    /// Computes in **O(n + e')** time, where **n** is the number of node indices and
+    ///  **e'** is the number of affected edges, including *n* calls to `.remove_edge()`
+    /// where *n* is the number of edges with an endpoint in a removed node.
+    pub fn retain_nodes<F>(&mut self, mut f: F) where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool {
+        for i in 0..self.g.node_count() {
+            let ix = node_index(i);
+            if self.contains_node(ix) && !f(Frozen(self), ix) {
+                self.remove_node(ix);
+            }
+        }
+    }
+
 
     /// Create a new `StableGraph` from an iterable of edges.
     ///
