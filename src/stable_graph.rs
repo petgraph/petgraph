@@ -590,20 +590,25 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
-    /// Retain only nodes from the graph if the `f` returns true and return the weights of the
-    /// removed nodes. If no nodes are removed, the Vec is empty.
+    /// Keep all nodes that return `true` from the `visit` closure,
+    /// remove the others.
     ///
-    /// The node indecies of the removed nodes are invalidated, but none other.
+    /// `visit` is provided a proxy reference to the graph, so that
+    /// the graph can be walked and associated data modified.
+    ///
+    /// The order nodes are visited is not specified.
+    ///
+    /// The node indices of the removed nodes are invalidated, but none other.
     /// Edge indices are invalidated as they would be following the removal of
     /// each edge with an endpoint in a removed node.
     ///
     /// Computes in **O(n + e')** time, where **n** is the number of node indices and
     ///  **e'** is the number of affected edges, including *n* calls to `.remove_edge()`
     /// where *n* is the number of edges with an endpoint in a removed node.
-    pub fn retain_nodes<F>(&mut self, mut f: F) where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool {
+    pub fn retain_nodes<F>(&mut self, mut visit: F) where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool {
         for i in 0..self.g.node_count() {
             let ix = node_index(i);
-            if self.contains_node(ix) && !f(Frozen(self), ix) {
+            if self.contains_node(ix) && !visit(Frozen(self), ix) {
                 self.remove_node(ix);
             }
         }
