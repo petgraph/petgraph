@@ -24,6 +24,12 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.4
+
+  - Add ``GraphMap::all_edges_mut()`` iterator by @Binero
+  - Add ``StableGraph::retain_nodes`` by @Rupsbant
+  - Add ``StableGraph::index_twice_mut`` by @christolliday
+
 - 0.4.3
 
   - Add crate categories
