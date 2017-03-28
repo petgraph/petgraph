@@ -31,6 +31,7 @@ use petgraph::algo::{
     kosaraju_scc,
     tarjan_scc,
     dijkstra,
+    bellman_ford,
 };
 use petgraph::visit::{Topo, Reversed};
 use petgraph::data::FromElements;
@@ -716,6 +717,23 @@ quickcheck! {
         assert!(finish_time.iter().all(|x| *x != invalid_time));
         assert_eq!(edges.len(), gr.edge_count());
         assert_eq!(edges, set(gr.edge_references().map(|e| (e.source(), e.target()))));
+        true
+    }
+}
+
+quickcheck! {
+    fn test_bellman_ford(gr: Graph<(), f32>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            bellman_ford(&gr, start).unwrap();
+        }
         true
     }
 }
