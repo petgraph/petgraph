@@ -5,6 +5,7 @@
 //! the `Graph` type.
 
 pub mod dominators;
+mod push_relabel;
 
 use std::collections::BinaryHeap;
 use std::cmp::min;
@@ -43,6 +44,7 @@ pub use super::isomorphism::{
     is_isomorphic_matching,
 };
 pub use super::dijkstra::dijkstra;
+pub use self::push_relabel::{push_relabel_max_flow, push_relabel_min_cut};
 
 /// [Generic] Return the number of connected components of the graph.
 ///
