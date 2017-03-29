@@ -191,17 +191,17 @@ impl<'a, Ix, E> IntoWeightedEdge<E> for (Ix, Ix, &'a E)
 }
 
 impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix)
-    where Ix: Copy, E: Default
+    where Ix: Clone, E: Default
 {
     type NodeId = Ix;
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
-        let (s, t) = *self;
-        (s, t, E::default())
+        let (ref s, ref t) = *self;
+        (s.clone(), t.clone(), E::default())
     }
 }
 
 impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix, E)
-    where Ix: Copy, E: Clone
+    where Ix: Clone, E: Clone
 {
     type NodeId = Ix;
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
