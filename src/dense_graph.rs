@@ -1,6 +1,7 @@
 use std::collections::hash_set;
 use std::marker::PhantomData;
 use std::ops::{Index, IndexMut};
+use std::cmp;
 
 use dense_mapping::{DenseMapping, IdIterator};
 use fixedbitset::FixedBitSet;
