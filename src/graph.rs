@@ -321,6 +321,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// of removing elements. Indices don't allow as much compile time checking as
 /// references.
 ///
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct Graph<N, E, Ty = Directed, Ix = DefaultIx> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,

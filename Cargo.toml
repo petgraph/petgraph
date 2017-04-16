@@ -29,6 +29,8 @@ debug = true
 fixedbitset = { version = "0.1.4" }
 quickcheck = { optional = true, version = "0.4", default-features = false }
 ordermap = { version = "0.2.2", optional = true }
+serde = { version = "0.9.13", optional = true }
+serde_derive = { version = "0.9.13", optional = true }
 
 [dev-dependencies]
 rand = "0.3"
@@ -40,6 +42,7 @@ defmac = "0.1"
 default = ["graphmap", "stable_graph"]
 graphmap = ["ordermap"]
 stable_graph = []
+petgraph_serde = ["serde", "serde_derive"]
 
 # For unstable features
 generate = []
