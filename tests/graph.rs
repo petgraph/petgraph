@@ -1,4 +1,5 @@
 extern crate petgraph;
+extern crate serde_json;
 
 use std::collections::HashSet;
 use std::hash::Hash;
@@ -87,6 +88,23 @@ fn undirected()
     assert!(og.find_edge(b, c).is_some());
     assert_graph_consistent(&og);
 
+}
+
+#[test]
+fn serde() {
+    let mut og = Graph::new_undirected();
+    let a = og.add_node(0);
+    let b = og.add_node(1);
+    let c = og.add_node(2);
+    let d = og.add_node(3);
+    let _ = og.add_edge(a, b, 0);
+    let _ = og.add_edge(a, c, 1);
+    og.add_edge(c, a, 2);
+    og.add_edge(a, a, 3);
+    og.add_edge(b, c, 4);
+    og.add_edge(b, a, 5);
+    og.add_edge(a, d, 6);
+    let ser = serde_json::to_string(&og);
 }
 
 #[test]

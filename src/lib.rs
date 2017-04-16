@@ -17,6 +17,12 @@ extern crate fixedbitset;
 #[cfg(feature = "graphmap")]
 extern crate ordermap;
 
+#[cfg(feature = "petgraph_serde")]
+extern crate serde;
+#[cfg(feature = "petgraph_serde")]
+#[macro_use]
+extern crate serde_derive;
+
 #[doc(no_inline)]
 pub use graph::Graph;
 
@@ -128,11 +134,13 @@ pub use Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Copy, Debug)]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub enum Directed { }
 copyclone!(Directed);
 
 /// Marker type for an undirected graph.
 #[derive(Copy, Debug)]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub enum Undirected { }
 copyclone!(Undirected);
 

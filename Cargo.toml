@@ -37,6 +37,7 @@ rand = "0.3"
 odds = { version = "0.2.19" }
 itertools = { version = "0.5" }
 defmac = "0.1"
+serde_json = "*"
 
 [features]
 default = ["graphmap", "stable_graph"]
