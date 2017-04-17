@@ -421,6 +421,18 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         }
         gr
     }
+
+    /// Access the internal nodes HashMap.
+    pub fn raw_nodes(&self) -> &HashMap<N, Vec<N>>
+    {
+        &self.nodes
+    }
+
+    /// Access the internal edge HashMap.
+    pub fn raw_edges(&self) -> &HashMap<(N, N), E>
+    {
+        &self.edges
+    }
 }
 
 /// Create a new `GraphMap` from an iterable of edges.
