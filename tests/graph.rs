@@ -104,7 +104,11 @@ fn serde() {
     og.add_edge(b, c, 4);
     og.add_edge(b, a, 5);
     og.add_edge(a, d, 6);
-    let ser = serde_json::to_string(&og);
+    // smoke test round-trip through serialization
+    // would be ideal to assert that the two are equal 
+    let ser = serde_json::to_string(&og).unwrap();
+    println!("Serialized test graph:\n{}", ser);
+    let de: Graph<i64, i64> = serde_json::from_str(&ser).unwrap();
 }
 
 #[test]

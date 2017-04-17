@@ -91,7 +91,7 @@ pub use graph::{
 ///
 /// Depends on crate feature `stable_graph` (default). *This is a new feature in
 /// petgraph.  You can contribute to help it achieve parity with Graph.*
-#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
 {
     g: Graph<Option<N>, Option<E>, Ty, Ix>,

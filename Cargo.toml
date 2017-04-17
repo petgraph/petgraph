@@ -29,21 +29,19 @@ debug = true
 fixedbitset = { version = "0.1.4" }
 quickcheck = { optional = true, version = "0.4", default-features = false }
 ordermap = { version = "0.2.2", optional = true }
-serde = { version = "0.9.13", optional = true }
-serde_derive = { version = "0.9.13", optional = true }
+serde = { version = "0.9.13", optional = true, features = ["derive"] }
 
 [dev-dependencies]
 rand = "0.3"
 odds = { version = "0.2.19" }
 itertools = { version = "0.5" }
 defmac = "0.1"
-serde_json = "*"
+serde_json = "0.9.10"
 
 [features]
 default = ["graphmap", "stable_graph"]
 graphmap = ["ordermap"]
 stable_graph = []
-petgraph_serde = ["serde", "serde_derive"]
 
 # For unstable features
 generate = []
