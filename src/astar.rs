@@ -11,27 +11,28 @@ use std::hash::Hash;
 
 use scored::MinScored;
 use super::visit::{
-    Visitable,
-    VisitMap,
-    IntoEdges,
     EdgeRef,
+    GraphBase,
+    IntoEdges,
+    VisitMap,
+    Visitable,
 };
 
 use algo::Measure;
 
 /// [Generic] A* shortest path algorithm.
 ///
-/// Compute the length of the shortest path from `start` to the goal node.
+/// Compute the length of the shortest path from `start` to `finish`.
 ///
 /// The graph should be `Visitable` and implement `IntoEdges`. The function `edge_cost` should
-/// return the cost for a particular edge, which is used to compute path costs.  The function
-/// `estimate_cost` should return the estimated cost to the goal for a particular node, also used
+/// return the cost for a particular edge, which is used to compute path costs. The function
+/// `estimate_cost` should return the estimated cost to the finish for a particular node, also used
 /// to compute path costs. Edge costs must be non-negative.
 ///
-/// Returns a `HashMap` that maps `NodeId` to path cost.
-pub fn astar<G, F, H, K>(graph: G, start: G::NodeId, goal: Option<G::NodeId>,
+/// Returns a Path of subsequent `NodeId` from start to finish, if one was found.
+pub fn astar<G, F, H, K>(graph: G, start: G::NodeId, finish: G::NodeId,
                          mut edge_cost: F, mut estimate_cost: H)
-    -> HashMap<G::NodeId, K>
+    -> Option<Path<G>>
     where G: IntoEdges + Visitable,
           G::NodeId: Eq + Hash,
           F: FnMut(G::EdgeRef) -> K,
@@ -41,19 +42,28 @@ pub fn astar<G, F, H, K>(graph: G, start: G::NodeId, goal: Option<G::NodeId>,
     let mut visited = graph.visit_map();
     let mut visit_next = BinaryHeap::new();
     let mut scores = HashMap::new();
+    let mut path_tracker = PathTracker::<G>::new();
 
     let zero_score = K::default();
     scores.insert(start, zero_score);
     visit_next.push(MinScored(estimate_cost(start), start));
 
     while let Some(MinScored(_, node)) = visit_next.pop() {
+        if node == finish {
+            return Some(path_tracker.reconstruct_path_to(finish));
+        }
+
+        // Don't visit the same node several times, as the first time it was visited it was using
+        // the shortest available path.
         if visited.is_visited(&node) {
             continue
         }
 
-        if goal.as_ref() == Some(&node) {
-            break
-        }
+        visited.visit(node);
+
+        // This lookup can be unwrapped without fear of panic since the node was necessarily scored
+        // before adding him to `visit_next`.
+        let node_score = *scores.get(&node).unwrap();
 
         for edge in graph.edges(node) {
             let next = edge.target();
@@ -61,26 +71,70 @@ pub fn astar<G, F, H, K>(graph: G, start: G::NodeId, goal: Option<G::NodeId>,
                 continue
             }
 
-            let node_score = *scores.get(&node).unwrap();
             let mut next_score = node_score + edge_cost(edge);
 
-            // TODO: understand this section
             match scores.entry(next) {
-                Occupied(ent) => if next_score < *ent.get() {
-                    *ent.into_mut() = next_score;
-                } else {
-                    next_score = *ent.get();
+                Occupied(ent) => {
+                    let old_score = *ent.get();
+                    if next_score < old_score {
+                        *ent.into_mut() = next_score;
+                        path_tracker.set_predecessor(next, node);
+                    } else {
+                        next_score = old_score;
+                    }
                 },
                 Vacant(ent) => {
                     ent.insert(next_score);
+                    path_tracker.set_predecessor(next, node);
                 }
             }
 
             let next_estimate_score = next_score + estimate_cost(next);
             visit_next.push(MinScored(next_estimate_score, next));
         }
-        visited.visit(node);
     }
 
-    scores
+    None
+}
+
+pub type Path<G: GraphBase> = Vec<G::NodeId>;
+
+struct PathTracker<G>
+    where G: GraphBase,
+          G::NodeId: Eq + Hash,
+{
+    came_from: HashMap<G::NodeId, G::NodeId>,
+}
+
+impl<G> PathTracker<G>
+    where G: GraphBase,
+          G::NodeId: Eq + Hash,
+{
+    fn new() -> PathTracker<G> {
+        PathTracker {
+            came_from: HashMap::new(),
+        }
+    }
+
+    fn set_predecessor(&mut self, node: G::NodeId, previous: G::NodeId) {
+        self.came_from.insert(node, previous);
+    }
+
+    fn reconstruct_path_to(&self, last: G::NodeId) -> Path<G> {
+        let mut path = vec![last];
+
+        let mut current = last;
+        loop {
+            if let Some(&previous) = self.came_from.get(&current) {
+                path.push(previous);
+                current = previous;
+            } else {
+                break
+            }
+        }
+
+        path.reverse();
+
+        path
+    }
 }
