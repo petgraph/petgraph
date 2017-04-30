@@ -220,8 +220,8 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     ///
     /// Return the index of the new node.
     ///
-    /// **Panics** if the Graph is at the maximum number of nodes for its index
-    /// type.
+    /// **Panics** if the `StableGraph` is at the maximum number of nodes for
+    /// its index type.
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         let index = if self.free_node != NodeIndex::end() {
             let node_idx = self.free_node;
@@ -293,8 +293,8 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// Computes in **O(1)** time.
     ///
     /// **Panics** if any of the nodes don't exist.<br>
-    /// **Panics** if the Graph is at the maximum number of edges for its index
-    /// type.
+    /// **Panics** if the `StableGraph` is at the maximum number of edges for
+    /// its index type.
     ///
     /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E)
@@ -568,7 +568,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
-    /// Index the `Graph` by two indices, any combination of
+    /// Index the `StableGraph` by two indices, any combination of
     /// node or edge indices is fine.
     ///
     /// **Panics** if the indices are equal or if they are out of bounds.
