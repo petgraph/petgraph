@@ -5,15 +5,19 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
 
-pub struct IntoElements<'a, G>(pub &'a G) where G: 'a + Data + GraphBase;
+/// Turn a graph with clonable weights that implementings the correct taits into its Elements.
+pub struct IntoElements<'a, G>(pub &'a G) where G: 'a;
 
-impl<'a, G, N, E> IntoIterator for IntoElements<'a, G>
-    where G: 'a + DataMap + Data<NodeWeight = N, EdgeWeight = E>,
+
+//Todo: weights do not need to be cloneable. I couldn't get the lifetimes of EdgeWeight to work.
+/// Graphs that have a Cloneable weigths and implement the necessary traits can be deconstructed into elements.
+impl<'a, G> IntoIterator for IntoElements<'a, G>
+    where G: 'a + DataMap + Data,
           &'a G: IntoNodeIdentifiers + IntoEdgeReferences,
           &'a G: GraphBase<NodeId = G::NodeId, EdgeId = G::EdgeId>,
-          &'a G: Data<NodeWeight = N, EdgeWeight = E>,
-          N: Clone,
-          E: Clone,
+          &'a G: Data<EdgeWeight = G::EdgeWeight>,
+          G::NodeWeight: Clone,
+          G::EdgeWeight: Clone,
           G::NodeId: Eq + Hash + Clone,
           G::EdgeId: Clone
 {
@@ -51,13 +55,14 @@ impl<'a, G, N, E> IntoIterator for IntoElements<'a, G>
     }
 }
 
-pub fn rebuild<'a, G, H, N, E>(g: &'a G) -> H
-    where G: 'a + DataMap + Data<NodeWeight = N, EdgeWeight = E>,
+/// Rebuild a graph with Cloneable weights into another graph.
+pub fn rebuild<'a, G, H>(g: &'a G) -> H
+    where G: 'a + DataMap + Data,
           &'a G: IntoNodeIdentifiers + IntoEdgeReferences,
           &'a G: GraphBase<NodeId = G::NodeId, EdgeId = G::EdgeId>,
-          &'a G: Data<NodeWeight = N, EdgeWeight = E>,
-          N: Clone,
-          E: Clone,
+          &'a G: Data<EdgeWeight = G::EdgeWeight>,
+          G::NodeWeight: Clone,
+          G::EdgeWeight: Clone,
           G::NodeId: Eq + Hash + Clone,
           G::EdgeId: Clone,
           H: FromElements,
