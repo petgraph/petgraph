@@ -31,6 +31,7 @@ mod scored;
 pub mod visit;
 #[macro_use]
 pub mod data;
+pub mod into_elements;
 
 pub mod algo;
 #[cfg(feature = "generate")]
