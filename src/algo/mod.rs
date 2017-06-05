@@ -9,6 +9,8 @@ pub mod dominators;
 use std::collections::BinaryHeap;
 use std::cmp::min;
 
+use fixedbitset::FixedBitSet;
+
 use prelude::*;
 
 use super::{
@@ -235,6 +237,30 @@ pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
         false
     })
 }
+
+/// [Generic] Compute the *transitive closure*.
+pub fn transitive_closure<G>(g: G) -> FixedBitSet
+    where G: NodeIndexable + NodeCount + IntoNeighbors + IntoNodeIdentifiers + Visitable
+{
+
+    let n = g.node_count();
+    let mut matrix = FixedBitSet::with_capacity(n * n);
+    let mut dfs = Dfs::empty(g);
+
+    for node in g.node_identifiers() {
+        dfs.reset(g);
+        dfs.move_to(node);
+        let i = g.to_index(node);
+        matrix.put(i * n + i);
+        while let Some(visited) = dfs.next(g) {
+            let i = i * n + g.to_index(visited);
+            matrix.put(i);
+        }
+    }
+
+    matrix
+}
+
 
 /// Renamed to `kosaraju_scc`.
 #[deprecated(note = "renamed to kosaraju_scc")]

@@ -16,6 +16,7 @@ use petgraph::algo::{
     is_cyclic_undirected,
     min_spanning_tree,
     is_isomorphic_matching,
+    transitive_closure,
 };
 
 use petgraph::graph::node_index as n;
@@ -1073,6 +1074,32 @@ fn test_has_path() {
     assert!(has_path_connecting(&gr, a, c, None));
     assert!(has_path_connecting(&gr, a, c, Some(&mut state)));
     assert!(!has_path_connecting(&gr, h, a, Some(&mut state)));
+}
+
+#[test]
+fn test_transitive_closure() {
+    let expected = [
+        1, 1, 1, 1,
+        1, 1, 1, 1,
+        1, 1, 1, 1,
+        0, 0, 0, 1,
+    ];
+
+    let g = Graph::<(), ()>::from_edges(&[(0, 1), (0, 2), (1, 2), (2, 0), (2, 3)]);
+    let tc = transitive_closure(&g);
+
+    for (i, v) in expected.iter().map(|&v| v == 1).enumerate() {
+        assert_eq!(v, tc[i]);
+    }
+
+    let n = g.node_count() as u32;
+
+    for col in 0..n {
+        for row in 0..n {
+            assert_eq!(tc[(row * n + col) as usize],
+                       has_path_connecting(&g, row.into(), col.into(), None));
+        }
+    }
 }
 
 #[test]
