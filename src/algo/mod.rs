@@ -33,7 +33,7 @@ use super::unionfind::UnionFind;
 use super::graph::{
     IndexType,
 };
-use visit::{Data, NodeRef, IntoNodeReferences};
+use visit::{Data, NodeRef, IntoNodeReferences, GraphProp};
 use data::{
     Element,
 };
@@ -551,7 +551,7 @@ pub struct NegativeCycle(());
 /// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
     -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
-    where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
+    where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable + GraphProp,
           G::EdgeWeight: FloatMeasure,
 {
     let mut predecessor = vec![None; g.node_bound()];
@@ -570,6 +570,11 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
             if distance[ix(i)] + w < distance[ix(j)] {
                 distance[ix(j)] = distance[ix(i)] + w;
                 predecessor[ix(j)] = Some(i);
+                did_update = true;
+            }
+            if !g.is_directed() && distance[ix(j)] + w < distance[ix(i)] {
+                distance[ix(i)] = distance[ix(j)] + w;
+                predecessor[ix(i)] = Some(j);
                 did_update = true;
             }
         }
