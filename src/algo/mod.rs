@@ -556,6 +556,7 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
 {
     let mut predecessor = vec![None; g.node_bound()];
     let mut distance = vec![<_>::infinite(); g.node_bound()];
+    let is_undirected = !g.is_directed();
 
     let ix = |i| g.to_index(i);
 
@@ -572,7 +573,7 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
                 predecessor[ix(j)] = Some(i);
                 did_update = true;
             }
-            if !g.is_directed() && distance[ix(j)] + w < distance[ix(i)] {
+            if is_undirected && distance[ix(j)] + w < distance[ix(i)] {
                 distance[ix(i)] = distance[ix(j)] + w;
                 predecessor[ix(i)] = Some(j);
                 did_update = true;

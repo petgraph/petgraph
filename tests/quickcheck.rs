@@ -737,3 +737,20 @@ quickcheck! {
         true
     }
 }
+
+quickcheck! {
+    fn test_bellman_ford_undir(gr: Graph<(), f32, Undirected>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            bellman_ford(&gr, start).unwrap();
+        }
+        true
+    }
+}
