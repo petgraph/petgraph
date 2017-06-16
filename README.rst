@@ -24,6 +24,10 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.5
+
+  - Fix ``max`` ambiguity error with current rust nightly by @daboross (#153)
+
 - 0.4.4
 
   - Add ``GraphMap::all_edges_mut()`` iterator by @Binero
