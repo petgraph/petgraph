@@ -19,6 +19,10 @@ __ https://bluss.github.io/petgraph/
 Recent Changes
 --------------
 
+- 0.2.10
+
+  - Fix compilation with rust nightly
+
 - 0.2.9
 
   - Fix a bug in SubTopo (#81)
