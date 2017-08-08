@@ -12,7 +12,9 @@ use super::graph::{
 };
 #[cfg(feature = "stable_graph")]
 use stable_graph::StableGraph;
-use visit::{NodeIndexable, EdgeRef, IntoEdgeReferences};
+#[cfg(feature = "stable_graph")]
+use visit::{NodeIndexable, IntoEdgeReferences};
+use visit::EdgeRef;
 
 use super::visit::GetAdjacencyMatrix;
 
