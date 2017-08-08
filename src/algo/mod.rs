@@ -17,6 +17,7 @@ use super::{
 use scored::MinScored;
 use super::visit::{
     GraphRef,
+    GraphBase,
     Visitable,
     VisitMap,
     IntoNeighbors,
@@ -166,7 +167,7 @@ pub fn is_cyclic_directed<G>(g: G) -> bool
     }).is_err()
 }
 
-type DfsSpaceType<G> where G: Visitable = DfsSpace<G::NodeId, G::Map>;
+type DfsSpaceType<G> = DfsSpace<<G as GraphBase>::NodeId, <G as Visitable>::Map>;
 
 /// Workspace for a graph traversal.
 #[derive(Clone, Debug)]
