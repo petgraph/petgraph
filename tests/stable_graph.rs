@@ -121,7 +121,6 @@ fn make_graph<Ty>() -> StableGraph<(), i32, Ty>
 }
 
 defmac!(edges ref gr, x => gr.edges(x).map(|r| (r.target(), *r.weight())));
-defmac!(edges_dir ref gr, x => gr.edges_directed(x, Outgoing).map(|r| (r.target(), *r.weight())));
 
 #[test]
 fn test_edges_directed() {
