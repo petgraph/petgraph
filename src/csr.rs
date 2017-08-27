@@ -1,9 +1,8 @@
-
 //! Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
 
 use std::marker::PhantomData;
 use std::cmp::max;
-use std::ops::Range;
+use std::ops::{Range, Index, IndexMut};
 use std::iter::{Enumerate, Zip};
 use std::slice::Windows;
 
@@ -36,9 +35,6 @@ const BINARY_SEARCH_CUTOFF: usize = 32;
 /// Self loops are allowed, no parallel edges.
 ///
 /// Fast iteration of the outgoing edges of a vertex.
-///
-/// Implementation notes: `N` is not actually used yet, but it is
-/// “reserved” as the first type parameter for forward compatibility.
 #[derive(Debug)]
 pub struct Csr<N = (), E = (), Ty = Directed, Ix = DefaultIx> {
     /// Column of next edge
@@ -51,6 +47,15 @@ pub struct Csr<N = (), E = (), Ty = Directed, Ix = DefaultIx> {
     node_weights: Vec<N>,
     edge_count: usize,
     ty: PhantomData<Ty>,
+}
+
+impl<N, E, Ty, Ix> Default for Csr<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<N: Clone, E: Clone, Ty, Ix: Clone> Clone for Csr<N, E, Ty, Ix> {
@@ -70,15 +75,31 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
+    /// Create an empty `Csr`.
+    pub fn new() -> Self {
+        Csr {
+            column: vec![],
+            edges: vec![],
+            row: vec![0; 1],
+            node_weights: vec![],
+            edge_count: 0,
+            ty: PhantomData,
+        }
+    }
+
     /// Create a new `Csr` with `n` nodes.
     pub fn with_nodes(n: usize) -> Self
-        where N: Default,
+        where N: Default + Clone,
     {
         Csr {
             column: Vec::new(),
             edges: Vec::new(),
             row: vec![0; n + 1],
-            node_weights: Vec::new(),
+            node_weights: {
+                let mut v = Vec::new();
+                v.resize(n, N::default());
+                v
+            },
             edge_count: 0,
             ty: PhantomData,
         }
@@ -103,7 +124,7 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
     /// Computes in **O(|E| + |V|)** time.
     pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Result<Self, EdgesNotSorted>
         where Edge: Clone + IntoWeightedEdge<E, NodeId=NodeIndex<Ix>>,
-              N: Default,
+              N: Default + Clone,
     {
         let max_node_id = match edges.iter().map(|edge|
             match edge.clone().into_weighted_edge() {
@@ -204,6 +225,14 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
         if !self.is_directed() {
             self.edge_count = 0;
         }
+    }
+
+    /// Adds a new node with the given weight, returning the corresponding node index.
+    pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
+        let i = self.row.len() - 1;
+        self.row.insert(i, 0);
+        self.node_weights.insert(i, weight);
+        Ix::new(i)
     }
 
     /// Return `true` if the edge was added
@@ -541,8 +570,32 @@ impl<N, E, Ty, Ix> NodeIndexable for Csr<N, E, Ty, Ix>
     fn to_index(&self, a: Self::NodeId) -> usize { a.index() }
     fn from_index(&self, ix: usize) -> Self::NodeId { Ix::new(ix) }
 }
-impl<N, E, Ty> NodeCompactIndexable for Csr<N, E, Ty>
-    where Ty: EdgeType { }
+
+impl<N, E, Ty, Ix> NodeCompactIndexable for Csr<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+}
+
+impl<N, E, Ty, Ix> Index<NodeIndex<Ix>> for Csr<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Output = N;
+
+    fn index(&self, ix: NodeIndex<Ix>) -> &N {
+        &self.node_weights[ix.index()]
+    }
+}
+
+impl<N, E, Ty, Ix> IndexMut<NodeIndex<Ix>> for Csr<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn index_mut(&mut self, ix: NodeIndex<Ix>) -> &mut N {
+        &mut self.node_weights[ix.index()]
+    }
+}
 
 pub struct NodeIdentifiers<Ix = DefaultIx> {
     r: Range<usize>,
@@ -822,5 +875,27 @@ mod tests {
         assert_eq!(&m.row, &m2.row);
         assert_eq!(&m.column, &m2.column);
         assert_eq!(&m.edges, &m2.edges);
+    }
+
+    #[test]
+    fn test_add_node() {
+        let mut g: Csr = Csr::new();
+        let a = g.add_node(());
+        let b = g.add_node(());
+        let c = g.add_node(());
+
+        assert!(g.add_edge(a, b, ()));
+        assert!(g.add_edge(b, c, ()));
+        assert!(g.add_edge(c, a, ()));
+
+        println!("{:?}", g);
+
+        assert_eq!(g.node_count(), 3);
+
+        assert_eq!(g.neighbors_slice(a), &[b]);
+        assert_eq!(g.neighbors_slice(b), &[c]);
+        assert_eq!(g.neighbors_slice(c), &[a]);
+
+        assert_eq!(g.edge_count(), 3);
     }
 }
