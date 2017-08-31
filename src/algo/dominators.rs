@@ -231,9 +231,9 @@ fn simple_fast_post_order<G>(graph: G,
         post_order.push(node);
 
         for successor in graph.neighbors(node) {
-            let mut predecessors = predecessor_sets.entry(successor)
-                .or_insert_with(HashSet::new);
-            predecessors.insert(node);
+            predecessor_sets.entry(successor)
+                .or_insert_with(HashSet::new)
+                .insert(node);
         }
     }
 
