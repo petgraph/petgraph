@@ -120,7 +120,7 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
     /// Computes in **O(|E| + |V|)** time.
     pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Result<Self, EdgesNotSorted>
         where Edge: Clone + IntoWeightedEdge<E, NodeId=NodeIndex<Ix>>,
-              N: Default + Clone,
+              N: Default,
     {
         let max_node_id = match edges.iter().map(|edge|
             match edge.clone().into_weighted_edge() {
