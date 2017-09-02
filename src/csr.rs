@@ -89,17 +89,13 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
 
     /// Create a new `Csr` with `n` nodes.
     pub fn with_nodes(n: usize) -> Self
-        where N: Default + Clone,
+        where N: Default,
     {
         Csr {
             column: Vec::new(),
             edges: Vec::new(),
             row: vec![0; n + 1],
-            node_weights: {
-                let mut v = Vec::new();
-                v.resize(n, N::default());
-                v
-            },
+            node_weights: (0..n).map(|_| N::default()).collect(),
             edge_count: 0,
             ty: PhantomData,
         }
