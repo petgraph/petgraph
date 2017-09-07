@@ -256,9 +256,9 @@ pub enum Element<N, E> {
 
 /// Create a graph from an iterator of elements.
 pub trait FromElements : Create {
-    fn from_elements<I>(iterable: &mut I) -> Self
+    fn from_elements<I>(iterable: I) -> Self
         where Self: Sized,
-              I: Iterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>
+              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>
     {
         let mut gr = Self::with_capacity(0, 0);
         // usize -> NodeId map
@@ -277,9 +277,9 @@ pub trait FromElements : Create {
     }
 }
 
-fn from_elements_indexable<G, I>(iterable: &mut I) -> G
+fn from_elements_indexable<G, I>(iterable: I) -> G
     where G: Create + NodeIndexable,
-          I: Iterator<Item=Element<G::NodeWeight, G::EdgeWeight>>
+          I: IntoIterator<Item=Element<G::NodeWeight, G::EdgeWeight>>,
 {
     let mut gr = G::with_capacity(0, 0);
     let map = |gr: &G, i| gr.from_index(i);
@@ -302,9 +302,9 @@ impl<N, E, Ty, Ix> FromElements for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    fn from_elements<I>(iterable: &mut I) -> Self
+    fn from_elements<I>(iterable: I) -> Self
         where Self: Sized,
-              I: Iterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>
+              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
     {
         from_elements_indexable(iterable)
     }
@@ -315,9 +315,9 @@ impl<N, E, Ty, Ix> FromElements for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    fn from_elements<I>(iterable: &mut I) -> Self
+    fn from_elements<I>(iterable: I) -> Self
         where Self: Sized,
-              I: Iterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>
+              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
     {
         from_elements_indexable(iterable)
     }
@@ -328,9 +328,9 @@ impl<N, E, Ty> FromElements for GraphMap<N, E, Ty>
     where Ty: EdgeType,
           N: NodeTrait,
 {
-    fn from_elements<I>(iterable: &mut I) -> Self
+    fn from_elements<I>(iterable: I) -> Self
         where Self: Sized,
-              I: Iterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>
+              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
     {
         from_elements_indexable(iterable)
     }

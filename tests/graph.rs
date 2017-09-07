@@ -191,7 +191,7 @@ fn mst() {
 
     println!("{}", Dot::new(&gr));
 
-    let mst = UnGraph::from_elements(&mut min_spanning_tree(&gr));
+    let mst = UnGraph::from_elements(min_spanning_tree(&gr));
 
     println!("{}", Dot::new(&mst));
     println!("{:?}", Dot::new(&mst));
@@ -1520,10 +1520,10 @@ fn filter_elements() {
         Edge { source: 2, target: 5, weight: 11 },
         Edge { source: 4, target: 5, weight: 6 },
     ];
-    let mut g = DiGraph::<_, _>::from_elements(&mut elements.iter().cloned());
+    let mut g = DiGraph::<_, _>::from_elements(elements.iter().cloned());
     println!("{:#?}", g);
     assert!(g.contains_edge(n(1), n(5)));
-    let g2 = DiGraph::<_, _>::from_elements(&mut elements.iter().cloned().filter_elements(|elt| {
+    let g2 = DiGraph::<_, _>::from_elements(elements.iter().cloned().filter_elements(|elt| {
         match elt {
             Node { ref weight } if **weight == "B" => false,
             _ => true,
@@ -1638,7 +1638,6 @@ fn test_dominators_simple_fast() {
     // http://www.cs.princeton.edu/courses/archive/spr03/cs423/download/dominators.pdf.
 
     let mut graph = DiGraph::<_, _>::new();
-
     let r = graph.add_node("r");
     let a = graph.add_node("a");
     let b = graph.add_node("b");
