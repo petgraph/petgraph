@@ -2,7 +2,6 @@ extern crate petgraph;
 
 use petgraph::*;
 use petgraph::stable_graph::StableGraph;
-use petgraph::graphmap::GraphMap;
 use petgraph::into_elements::{IntoElements, rebuild};
 use petgraph::data::Element;
 
