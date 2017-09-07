@@ -55,11 +55,9 @@ pub fn astar<G, F, H, K>(graph: G, start: G::NodeId, finish: G::NodeId,
 
         // Don't visit the same node several times, as the first time it was visited it was using
         // the shortest available path.
-        if visited.is_visited(&node) {
+        if !visited.visit(node) {
             continue
         }
-
-        visited.visit(node);
 
         // This lookup can be unwrapped without fear of panic since the node was necessarily scored
         // before adding him to `visit_next`.
