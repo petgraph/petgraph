@@ -33,7 +33,7 @@ ordermap = { version = "0.2.2", optional = true }
 [dev-dependencies]
 rand = "0.3"
 odds = { version = "0.2.19" }
-itertools = { version = "0.5" }
+itertools = { version = "0.6.2" }
 defmac = "0.1"
 
 [features]
