@@ -764,19 +764,19 @@ impl<N, E, Ty, Ix> From<Graph<N, E, Ty, Ix>> for StableGraph<N, E, Ty, Ix>
           Ix: IndexType,
 {
     fn from(g: Graph<N, E, Ty, Ix>) -> Self {
-        let nodes: Vec<_> = g.nodes.into_iter().map(|e| Node {
+        let nodes = g.nodes.into_iter().map(|e| Node {
             weight: Some(e.weight),
             next: e.next,
-        }).collect();
-        let edges: Vec<_> = g.edges.into_iter().map(|e| Edge {
+        });
+        let edges = g.edges.into_iter().map(|e| Edge {
             weight: Some(e.weight),
             node: e.node,
             next: e.next,
-        }).collect();
+        });
         StableGraph {
             node_count: nodes.len(),
             edge_count: edges.len(),
-            g: Graph { edges: edges, nodes: nodes, ty: g.ty },
+            g: Graph { edges: edges.collect(), nodes: nodes.collect(), ty: g.ty },
             free_node: NodeIndex::end(),
             free_edge: EdgeIndex::end(),
         }
