@@ -24,16 +24,46 @@ use algo::Measure;
 ///
 /// Compute the length of the shortest path from `start` to `finish`.
 ///
-/// The graph should be `Visitable` and implement `IntoEdges`. The function `edge_cost` should
-/// return the cost for a particular edge, which is used to compute path costs. The function
-/// `estimate_cost` should return the estimated cost to the finish for a particular node, also used
-/// to compute path costs. Edge costs must be non-negative.
+/// `finish` is implicitly given via the `is_goal` callback, which should return `true` if the
+/// given node is the finish node.
+///
+/// The function `edge_cost` should return the cost for a particular edge, which is used to compute
+/// path costs.
+///
+/// The function `estimate_cost` should return the estimated cost to the finish for a particular
+/// node, also used to compute path costs.
+///
+/// ```
+/// use petgraph::Graph;
+/// use petgraph::algo::astar;
+///
+/// let mut g = Graph::new();
+/// let a = g.add_node((0., 0.));
+/// let b = g.add_node((2., 0.));
+/// let c = g.add_node((1., 1.));
+/// let d = g.add_node((0., 2.));
+/// let e = g.add_node((3., 3.));
+/// let f = g.add_node((4., 2.));
+/// let ab = g.add_edge(a, b, 2);
+/// let ad = g.add_edge(a, d, 4);
+/// let bc = g.add_edge(b, c, 1);
+/// let bf = g.add_edge(b, f, 7);
+/// let ce = g.add_edge(c, e, 5);
+/// let ef = g.add_edge(e, f, 1);
+/// let de = g.add_edge(d, e, 1);
+///
+/// let path = astar(&g, a, |finish| finish == f, |e| *e.weight(), |_| 0);
+/// assert_eq!(path, Some(vec![a, d, e, f]));
+/// ```
+///
+/// The graph should be `Visitable` and implement `IntoEdges`. Edge costs must be non-negative.
 ///
 /// Returns a Path of subsequent `NodeId` from start to finish, if one was found.
-pub fn astar<G, F, H, K>(graph: G, start: G::NodeId, finish: G::NodeId,
-                         mut edge_cost: F, mut estimate_cost: H)
+pub fn astar<G, F, H, K, IsGoal>(graph: G, start: G::NodeId, is_goal: IsGoal,
+                                     mut edge_cost: F, mut estimate_cost: H)
     -> Option<Path<G>>
     where G: IntoEdges + Visitable,
+          IsGoal: Fn(G::NodeId) -> bool,
           G::NodeId: Eq + Hash,
           F: FnMut(G::EdgeRef) -> K,
           H: FnMut(G::NodeId) -> K,
@@ -49,8 +79,8 @@ pub fn astar<G, F, H, K>(graph: G, start: G::NodeId, finish: G::NodeId,
     visit_next.push(MinScored(estimate_cost(start), start));
 
     while let Some(MinScored(_, node)) = visit_next.pop() {
-        if node == finish {
-            return Some(path_tracker.reconstruct_path_to(finish));
+        if is_goal(node) {
+            return Some(path_tracker.reconstruct_path_to(node));
         }
 
         // Don't visit the same node several times, as the first time it was visited it was using
