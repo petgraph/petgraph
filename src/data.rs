@@ -275,7 +275,6 @@ pub trait FromElements : Create {
         }
         gr
     }
-        
 }
 
 fn from_elements_indexable<G, I>(iterable: I) -> G
@@ -299,36 +298,7 @@ fn from_elements_indexable<G, I>(iterable: I) -> G
     gr
 }
 
-impl<N, E, Ty, Ix> FromElements for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    fn from_elements<I>(iterable: I) -> Self
-        where Self: Sized,
-              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
-    {
-        from_elements_indexable(iterable)
-    }
-}
-
-#[cfg(feature = "stable_graph")]
-impl<N, E, Ty, Ix> FromElements for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    fn from_elements<I>(iterable: I) -> Self
-        where Self: Sized,
-              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
-    {
-        from_elements_indexable(iterable)
-    }
-}
-
-#[cfg(feature = "graphmap")]
-impl<N, E, Ty> FromElements for GraphMap<N, E, Ty>
-    where Ty: EdgeType,
-          N: NodeTrait,
-{
+impl<G: Create + NodeIndexable> FromElements for G {
     fn from_elements<I>(iterable: I) -> Self
         where Self: Sized,
               I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
