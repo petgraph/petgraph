@@ -362,10 +362,10 @@ fn astar_test() {
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
 
-    let path = astar(&g, a, e, |e| *e.weight(), |_| 0);
+    let path = astar(&g, a, |finish| finish == e, |e| *e.weight(), |_| 0);
     assert_eq!(path, Some(vec![a, d, e]));
 
-    let path = astar(&g, e, b, |e| *e.weight(), |_| 0);
+    let path = astar(&g, e, |finish| finish == b, |e| *e.weight(), |_| 0);
     assert_eq!(path, None);
 }
 
