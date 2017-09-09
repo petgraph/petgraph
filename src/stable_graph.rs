@@ -753,6 +753,36 @@ impl<N, E, Ty, Ix> Default for StableGraph<N, E, Ty, Ix>
     fn default() -> Self { Self::with_capacity(0, 0) }
 }
 
+/// Convert a `Graph` into a `StableGraph`
+///
+/// Computes in **O(|V| + |E|)** time.
+///
+/// The resulting graph has the same node and edge indices as
+/// the original graph.
+impl<N, E, Ty, Ix> From<Graph<N, E, Ty, Ix>> for StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn from(g: Graph<N, E, Ty, Ix>) -> Self {
+        let nodes: Vec<_> = g.nodes.into_iter().map(|e| Node {
+            weight: Some(e.weight),
+            next: e.next,
+        }).collect();
+        let edges: Vec<_> = g.edges.into_iter().map(|e| Edge {
+            weight: Some(e.weight),
+            node: e.node,
+            next: e.next,
+        }).collect();
+        StableGraph {
+            node_count: nodes.len(),
+            edge_count: edges.len(),
+            g: Graph { edges: edges, nodes: nodes, ty: g.ty },
+            free_node: NodeIndex::end(),
+            free_edge: EdgeIndex::end(),
+        }
+    }
+}
+
 /// Reference to a `StableGraph` edge.
 #[derive(Debug)]
 pub struct EdgeReference<'a, E: 'a, Ix = DefaultIx> {
