@@ -404,9 +404,15 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
 
     /// Return a `Graph` that corresponds to this `GraphMap`.
     ///
-    /// Note: node and edge indices in the `Graph` have nothing in common
-    /// with the `GraphMap`s node weights `N`. The node weights `N` are
-    /// used as node weights in the resulting `Graph`, too.
+    /// 1. Note that node and edge indices in the `Graph` have nothing in common
+    ///    with the `GraphMap`s node weights `N`. The node weights `N` are used as
+    ///    node weights in the resulting `Graph`, too.
+    /// 2. Note that the index type is user-chosen.
+    ///
+    /// Computes in **O(|N| + |E|)** time (average).
+    ///
+    /// **Panics** if the number of nodes or edges does not fit with
+    /// the resulting graph's index type.
     pub fn into_graph<Ix>(self) -> Graph<N, E, Ty, Ix>
         where Ix: ::graph::IndexType,
     {
