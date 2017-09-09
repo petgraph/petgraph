@@ -409,7 +409,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     ///    node weights in the resulting `Graph`, too.
     /// 2. Note that the index type is user-chosen.
     ///
-    /// Computes in **O(|N| + |E|)** time (average).
+    /// Computes in **O(|V| + |E|)** time (average).
     ///
     /// **Panics** if the number of nodes or edges does not fit with
     /// the resulting graph's index type.
