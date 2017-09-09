@@ -344,7 +344,7 @@ fn dijk() {
 }
 
 #[test]
-fn astar_test() {
+fn test_astar_null_heuristic() {
     let mut g = Graph::new();
     let a = g.add_node("A");
     let b = g.add_node("B");
@@ -367,6 +367,38 @@ fn astar_test() {
 
     let path = astar(&g, e, |finish| finish == b, |e| *e.weight(), |_| 0);
     assert_eq!(path, None);
+}
+
+#[test]
+fn test_astar_manhattan_heuristic() {
+    let mut g = Graph::new();
+    let a = g.add_node((0., 0.));
+    let b = g.add_node((2., 0.));
+    let c = g.add_node((1., 1.));
+    let d = g.add_node((0., 2.));
+    let e = g.add_node((3., 3.));
+    let f = g.add_node((4., 2.));
+    g.add_edge(a, b, 2.);
+    g.add_edge(a, d, 4.);
+    g.add_edge(b, c, 1.);
+    g.add_edge(b, f, 7.);
+    g.add_edge(c, e, 5.);
+    g.add_edge(e, f, 1.);
+    g.add_edge(d, e, 1.);
+
+    let path = astar(&g, a, |finish| finish == f, |e| *e.weight(),
+    |node| {
+        let (x1, y1): (f32, f32) = g[node];
+        let (x2, y2): (f32, f32) = g[f];
+
+        let (x, y) = (x2 + x1, y2 + y1);
+
+        x.powi(2) + y.powi(2)
+    });
+
+    // TODO: check this on paper
+    assert_eq!(path, Some(vec![a, d, e, f]));
+    // assert_eq!(path, Some(vec![a, b, f]));
 }
 
 #[cfg(feature = "generate")]
