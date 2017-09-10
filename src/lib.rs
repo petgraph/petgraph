@@ -37,6 +37,8 @@ pub mod algo;
 pub mod generate;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
+#[cfg(feature = "dense_graph")]
+pub mod dense_graph;
 #[path = "graph.rs"]
 mod graph_impl;
 pub mod dot;
@@ -46,6 +48,7 @@ pub mod csr;
 mod iter_format;
 mod isomorphism;
 mod traits_graph;
+mod dense_mapping;
 mod util;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
