@@ -169,10 +169,6 @@ impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
         let mut nodes = input.nodes;
         let node_holes = input.node_holes;
         let edges = input.edges;
-        if nodes.len() >= <Ix as IndexType>::max().index() {
-            Err(invalid_length_err::<Ix, _>("node", nodes.len()))?
-        }
-
         if edges.len() >= <Ix as IndexType>::max().index() {
             Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
         }
@@ -185,6 +181,10 @@ impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
                 weight: None,
                 next: [EdgeIndex::end(); 2],
             });
+        }
+
+        if nodes.len() >= <Ix as IndexType>::max().index() {
+            Err(invalid_length_err::<Ix, _>("node", nodes.len()))?
         }
 
         let node_bound = nodes.len();
