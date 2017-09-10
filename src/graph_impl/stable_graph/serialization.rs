@@ -15,6 +15,7 @@ use util::rev;
 use serde_utils::MappedSequenceVisitor;
 use serde_utils::CollectSeqWithLength;
 use serde_utils::{IntoSerializable, FromDeserialized};
+use visit::NodeIndexable;
 
 use super::super::serialization::{EdgeProperty, invalid_length_err, invalid_node_err};
 
@@ -131,10 +132,12 @@ impl<'a, N, E, Ty, Ix> IntoSerializable for &'a StableGraph<N, E, Ty, Ix>
 {
     type Output = SerStableGraph<'a, N, E, Ix>;
     fn into_serializable(self) -> Self::Output {
+        let nodes = &self.raw_nodes()[..self.node_bound()];
+        let edges = &self.raw_edges()[..self.edge_bound()];
         SerStableGraph {
-            nodes: self.raw_nodes(),
-            node_holes: self.raw_nodes(),
-            edges: self.raw_edges(),
+            nodes: nodes,
+            node_holes: nodes,
+            edges: edges,
             edge_property: EdgeProperty::from(PhantomData::<Ty>),
         }
     }
