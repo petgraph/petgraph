@@ -868,18 +868,22 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         } else {
             match self.nodes.get(a.index()) {
                 None => None,
-                Some(node) => {
-                    let mut edix = node.next[0];
-                    while let Some(edge) = self.edges.get(edix.index()) {
-                        if edge.node[1] == b {
-                            return Some(edix)
-                        }
-                        edix = edge.next[0];
-                    }
-                    None
-                }
+                Some(node) => self.find_edge_directed_from_node(node, b)
             }
         }
+    }
+
+    fn find_edge_directed_from_node(&self, node: &Node<N, Ix>, b: NodeIndex<Ix>)
+        -> Option<EdgeIndex<Ix>>
+    {
+        let mut edix = node.next[0];
+        while let Some(edge) = self.edges.get(edix.index()) {
+            if edge.node[1] == b {
+                return Some(edix)
+            }
+            edix = edge.next[0];
+        }
+        None
     }
 
     /// Lookup an edge between `a` and `b`, in either direction.
@@ -893,20 +897,24 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     {
         match self.nodes.get(a.index()) {
             None => None,
-            Some(node) => {
-                for &d in &DIRECTIONS {
-                    let k = d.index();
-                    let mut edix = node.next[k];
-                    while let Some(edge) = self.edges.get(edix.index()) {
-                        if edge.node[1 - k] == b {
-                            return Some((edix, d))
-                        }
-                        edix = edge.next[k];
-                    }
+            Some(node) => self.find_edge_undirected_from_node(node, b),
+        }
+    }
+
+    fn find_edge_undirected_from_node(&self, node: &Node<N, Ix>, b: NodeIndex<Ix>)
+        -> Option<(EdgeIndex<Ix>, Direction)>
+    {
+        for &d in &DIRECTIONS {
+            let k = d.index();
+            let mut edix = node.next[k];
+            while let Some(edge) = self.edges.get(edix.index()) {
+                if edge.node[1 - k] == b {
+                    return Some((edix, d))
                 }
-                None
+                edix = edge.next[k];
             }
         }
+        None
     }
 
     /// Return an iterator over either the nodes without edges to them

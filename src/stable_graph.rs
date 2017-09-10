@@ -451,12 +451,31 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// connected to `a` (and `b`, if the graph edges are undirected).
     pub fn find_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<EdgeIndex<Ix>>
     {
-        let index = self.g.find_edge(a, b);
-        if let Some(i) = index {
-            debug_assert!(self.g.edges[i.index()].weight.is_some());
+        if !self.is_directed() {
+            self.find_edge_undirected(a, b).map(|(ix, _)| ix)
+        } else {
+            match self.get_node(a) {
+                None => None,
+                Some(node) => self.g.find_edge_directed_from_node(node, b)
+            }
         }
-        index
     }
+
+    /// Lookup an edge between `a` and `b`, in either direction.
+    ///
+    /// If the graph is undirected, then this is equivalent to `.find_edge()`.
+    ///
+    /// Return the edge index and its directionality, with `Outgoing` meaning
+    /// from `a` to `b` and `Incoming` the reverse,
+    /// or `None` if the edge does not exist.
+    pub fn find_edge_undirected(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<(EdgeIndex<Ix>, Direction)>
+    {
+        match self.get_node(a) {
+            None => None,
+            Some(node) => self.g.find_edge_undirected_from_node(node, b),
+        }
+    }
+
 
     /// Return an iterator of all nodes with an edge starting from `a`.
     ///
