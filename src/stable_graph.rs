@@ -122,10 +122,14 @@ impl<N, E, Ty, Ix> fmt::Debug for StableGraph<N, E, Ty, Ix>
         let etype = if self.is_directed() { "Directed" } else { "Undirected" };
         let mut fmt_struct = f.debug_struct("StableGraph");
         fmt_struct.field("Ty", &etype);
-        fmt_struct.field("edges", &self.g.edges.iter()
-            .filter(|e| e.weight.is_some())
-            .map(|e| NoPretty((e.source().index(), e.target().index())))
-            .format(", "));
+        fmt_struct.field("node_count", &self.node_count);
+        fmt_struct.field("edge_count", &self.edge_count);
+        if self.g.edges.iter().any(|e| e.weight.is_some()) {
+            fmt_struct.field("edges", &self.g.edges.iter()
+                .filter(|e| e.weight.is_some())
+                .map(|e| NoPretty((e.source().index(), e.target().index())))
+                .format(", "));
+        }
         // skip weights if they are ZST!
         if size_of::<N>() != 0 {
             fmt_struct.field("node weights",
@@ -147,8 +151,6 @@ impl<N, E, Ty, Ix> fmt::Debug for StableGraph<N, E, Ty, Ix>
         }
         fmt_struct.field("free_node", &self.free_node);
         fmt_struct.field("free_edge", &self.free_edge);
-        fmt_struct.field("node_count", &self.node_count);
-        fmt_struct.field("edge_count", &self.edge_count);
         fmt_struct.finish()
     }
 }
