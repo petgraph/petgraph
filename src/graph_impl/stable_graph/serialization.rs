@@ -144,24 +144,6 @@ impl<'a, N, E, Ty, Ix> IntoSerializable for &'a StableGraph<N, E, Ty, Ix>
     }
 }
 
-impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
-    where Ix: IndexType,
-          Ty: EdgeType,
-{
-    type Input = DeserStableGraph<N, E, Ix>;
-    fn from_deserialized<E2>(input: Self::Input) -> Result<Self, E2>
-        where E2: Error
-    {
-        if input.edge_property.is_directed() != Ty::is_directed() {
-            return Err(E2::custom(format_args!("graph edge property mismatch, \
-                                               expected {:?}, found {:?}",
-                                               EdgeProperty::from(PhantomData::<Ty>),
-            input.edge_property)));
-        }
-        assemble_stable_graph(input.nodes, input.node_holes, input.edges)
-    }
-}
-
 impl<N, E, Ty, Ix> Serialize for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType + Serialize,
@@ -175,46 +157,51 @@ impl<N, E, Ty, Ix> Serialize for StableGraph<N, E, Ty, Ix>
     }
 }
 
-fn assemble_stable_graph<N, E, Ty, Ix, E2>(mut nodes: Vec<Node<Option<N>, Ix>>,
-                                           node_holes: Vec<NodeIndex<Ix>>,
-                                           edges: Vec<Edge<Option<E>, Ix>>)
-                                           -> Result<StableGraph<N, E, Ty, Ix>, E2>
-    where E2: Error,
+impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
+    where Ix: IndexType,
           Ty: EdgeType,
-          Ix: IndexType,
 {
-    if nodes.len() >= <Ix as IndexType>::max().index() {
-        Err(invalid_length_err::<Ix, _>("node", nodes.len()))?
-    }
+    type Input = DeserStableGraph<N, E, Ix>;
+    fn from_deserialized<E2>(input: Self::Input) -> Result<Self, E2>
+        where E2: Error
+    {
+        let ty = PhantomData::<Ty>::from_deserialized(input.edge_property)?;
+        let mut nodes = input.nodes;
+        let node_holes = input.node_holes;
+        let edges = input.edges;
+        if nodes.len() >= <Ix as IndexType>::max().index() {
+            Err(invalid_length_err::<Ix, _>("node", nodes.len()))?
+        }
 
-    if edges.len() >= <Ix as IndexType>::max().index() {
-        Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
-    }
+        if edges.len() >= <Ix as IndexType>::max().index() {
+            Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
+        }
 
-    // insert Nones for each hole
-    let mut offset = node_holes.len();
-    for hole_pos in rev(node_holes) {
-        offset -= 1;
-        nodes.insert(hole_pos.index() + offset, Node {
-            weight: None,
-            next: [EdgeIndex::end(); 2],
-        });
-    }
+        // insert Nones for each hole
+        let mut offset = node_holes.len();
+        for hole_pos in rev(node_holes) {
+            offset -= 1;
+            nodes.insert(hole_pos.index() + offset, Node {
+                weight: None,
+                next: [EdgeIndex::end(); 2],
+            });
+        }
 
-    let node_bound = nodes.len();
-    let mut sgr = StableGraph {
-        g: Graph {
-            nodes: nodes,
-            edges: edges,
-            ty: PhantomData,
-        },
-        node_count: 0,
-        edge_count: 0,
-        free_edge: EdgeIndex::end(),
-        free_node: NodeIndex::end(),
-    };
-    sgr.link_edges().map_err(|i| invalid_node_err(i.index(), node_bound))?;
-    Ok(sgr)
+        let node_bound = nodes.len();
+        let mut sgr = StableGraph {
+            g: Graph {
+                nodes: nodes,
+                edges: edges,
+                ty: ty,
+            },
+            node_count: 0,
+            edge_count: 0,
+            free_edge: EdgeIndex::end(),
+            free_node: NodeIndex::end(),
+        };
+        sgr.link_edges().map_err(|i| invalid_node_err(i.index(), node_bound))?;
+        Ok(sgr)
+    }
 }
 
 impl<'de, N, E, Ty, Ix> Deserialize<'de> for StableGraph<N, E, Ty, Ix>
