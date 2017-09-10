@@ -157,8 +157,7 @@ fn deser_graph_node_holes<'de, D, Ix>(deserializer: D) -> Result<Vec<NodeIndex<I
     where D: Deserializer<'de>,
           Ix: IndexType + Deserialize<'de>,
 {
-    deserializer.deserialize_seq(MappedSequenceVisitor::<NodeIndex<Ix>, NodeIndex<Ix>, _>::new(|x| {
-        println!("Found value: {:?}", x.index());
+    deserializer.deserialize_seq(MappedSequenceVisitor::<NodeIndex<Ix>, NodeIndex<Ix>, _>::new(|_| {
         Err("Graph can not have holes in the node set, found non-empty node_holes")
     }))
 }
