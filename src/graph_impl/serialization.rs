@@ -207,11 +207,7 @@ impl<'a, N, E, Ty, Ix> IntoSerializable for &'a Graph<N, E, Ty, Ix>
             nodes: &self.nodes,
             node_holes: &[],
             edges: &self.edges,
-            edge_property: if self.is_directed() {
-                EdgeProperty::Directed
-            } else {
-                EdgeProperty::Undirected
-            },
+            edge_property: EdgeProperty::from(PhantomData::<Ty>),
         }
     }
 }
