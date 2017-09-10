@@ -454,59 +454,52 @@ fn bincode_stablegraph_to_graph_i32_1() {
 }
 
 quickcheck! {
-    fn json_graph_to_bigger_graph(g1: DiGraph<i32, i32, u16>) -> bool {
+    fn json_graph_to_bigger_graph(g1: DiGraph<i32, i32, u16>) -> () {
         let json1 = to_string(&g1).unwrap();
         let g2: DiGraph<i32, i32, usize> = from_str(&json1).unwrap();
         let json2 = to_string(&g2).unwrap();
         let g3: DiGraph<i32, i32, u16> = from_str(&json2).unwrap();
         assert_graph_eq(&g1, &g3);
-        true
     }
-    fn json_graph_to_stablegraph_to_graph(g1: Graph<i32, i32>) -> bool {
+    fn json_graph_to_stablegraph_to_graph(g1: Graph<i32, i32>) -> () {
         let json1 = to_string(&g1).unwrap();
         let sg: StableGraph<i32, i32> = from_str(&json1).unwrap();
         let json2 = to_string(&sg).unwrap();
         let g2: Graph<i32, i32> = from_str(&json2).unwrap();
         assert_graph_eq(&g1, &g2);
-        true
     }
 
-    fn json_stablegraph_to_stablegraph(g1: StableGraph<i32, i32>) -> bool {
+    fn json_stablegraph_to_stablegraph(g1: StableGraph<i32, i32>) -> () {
         let json1 = to_string(&g1).unwrap();
         let sg: StableGraph<i32, i32> = from_str(&json1).unwrap();
         assert_stable_graph_eq(&g1, &sg);
-        true
     }
 
-    fn bincode_graph_to_graph_nils(g1: Graph<(), ()>) -> bool {
+    fn bincode_graph_to_graph_nils(g1: Graph<(), ()>) -> () {
         let g2: Graph<(), ()> = recode!(g1);
         assert_graph_eq(&g1, &g2);
-        true
     }
 
-    fn bincode_graph_to_stablegraph_to_graph_nils(g1: Graph<(), ()>) -> bool {
+    fn bincode_graph_to_stablegraph_to_graph_nils(g1: Graph<(), ()>) -> () {
         let data = encode!(g1);
         let sg: StableGraph<(), ()> = decode!(data);
         let data2 = encode!(sg);
         let g2: Graph<(), ()> = decode!(data2);
         assert_eq!(data, data2);
         assert_graph_eq(&g1, &g2);
-        true
     }
 
-    fn bincode_graph_to_stablegraph_to_graph_u16(g1: DiGraph<i32, i32, u16>) -> bool {
+    fn bincode_graph_to_stablegraph_to_graph_u16(g1: DiGraph<i32, i32, u16>) -> () {
         let data = encode!(g1);
         let sg: StableDiGraph<i32, i32, u16> = decode!(data);
         let data2 = encode!(sg);
         let g2: DiGraph<i32, i32, u16> = decode!(data2);
         assert_eq!(data, data2);
         assert_graph_eq(&g1, &g2);
-        true
     }
 
-    fn bincode_stablegraph_to_stablegraph(g1: StableGraph<i32, i32>) -> bool {
+    fn bincode_stablegraph_to_stablegraph(g1: StableGraph<i32, i32>) -> () {
         let g2: StableGraph<i32, i32> = recode!(g1);
         assert_stable_graph_eq(&g1, &g2);
-        true
     }
 }
