@@ -45,6 +45,9 @@ mod dijkstra;
 pub mod csr;
 mod iter_format;
 mod isomorphism;
+#[cfg(feature = "serde")]
+#[macro_use]
+extern crate serde;
 mod traits_graph;
 mod util;
 #[cfg(feature = "quickcheck")]
@@ -96,6 +99,7 @@ macro_rules! copyclone {
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction.
 #[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(usize)]
 pub enum Direction {
     /// An `Outgoing` edge is an outward edge *from* the current node.
@@ -128,11 +132,13 @@ pub use Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Directed { }
 copyclone!(Directed);
 
 /// Marker type for an undirected graph.
 #[derive(Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Undirected { }
 copyclone!(Undirected);
 
