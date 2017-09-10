@@ -135,11 +135,7 @@ impl<'a, N, E, Ty, Ix> IntoSerializable for &'a StableGraph<N, E, Ty, Ix>
             nodes: self.raw_nodes(),
             node_holes: self.raw_nodes(),
             edges: self.raw_edges(),
-            edge_property: if self.is_directed() {
-                EdgeProperty::Directed
-            } else {
-                EdgeProperty::Undirected
-            },
+            edge_property: EdgeProperty::from(PhantomData::<Ty>),
         }
     }
 }
