@@ -55,7 +55,9 @@ fn ser_stable_graph_nodes<S, N, Ix>(nodes: &&[Node<Option<N>, Ix>], serializer: 
           Ix: Serialize + IndexType,
 {
     serializer.collect_seq_with_length(
-        nodes.iter().map(|node| node.weight.is_some() as usize).sum(),
+        nodes.iter()
+             .filter(|node| node.weight.is_some())
+             .count(),
         nodes.iter()
              .filter_map(|node| node.weight.as_ref()))
 }
@@ -66,7 +68,9 @@ fn ser_stable_graph_node_holes<S, N, Ix>(nodes: &&[Node<Option<N>, Ix>], seriali
           Ix: Serialize + IndexType,
 {
     serializer.collect_seq_with_length(
-        nodes.iter().map(|node| node.weight.is_none() as usize).sum(),
+        nodes.iter()
+             .filter(|node| node.weight.is_none())
+             .count(),
         nodes.iter()
              .enumerate()
              .filter_map(|(i, node)| if node.weight.is_none() { Some(NodeIndex::<Ix>::new(i)) } else { None }))
