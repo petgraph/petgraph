@@ -284,7 +284,13 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     }
 
     pub fn contains_node(&self, a: NodeIndex<Ix>) -> bool {
-        self.g.nodes.get(a.index()).map_or(false, |no| no.weight.is_some())
+        self.get_node(a).is_some()
+    }
+
+    // Return the Node if it is not vacant (non-None weight)
+    fn get_node(&self, a: NodeIndex<Ix>) -> Option<&Node<Option<N>, Ix>> {
+        self.g.nodes.get(a.index())
+                    .and_then(|node| node.weight.as_ref().map(move |_| node))
     }
 
     /// Add an edge from `a` to `b` to the graph, with its associated
@@ -445,12 +451,31 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// connected to `a` (and `b`, if the graph edges are undirected).
     pub fn find_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<EdgeIndex<Ix>>
     {
-        let index = self.g.find_edge(a, b);
-        if let Some(i) = index {
-            debug_assert!(self.g.edges[i.index()].weight.is_some());
+        if !self.is_directed() {
+            self.find_edge_undirected(a, b).map(|(ix, _)| ix)
+        } else {
+            match self.get_node(a) {
+                None => None,
+                Some(node) => self.g.find_edge_directed_from_node(node, b)
+            }
         }
-        index
     }
+
+    /// Lookup an edge between `a` and `b`, in either direction.
+    ///
+    /// If the graph is undirected, then this is equivalent to `.find_edge()`.
+    ///
+    /// Return the edge index and its directionality, with `Outgoing` meaning
+    /// from `a` to `b` and `Incoming` the reverse,
+    /// or `None` if the edge does not exist.
+    pub fn find_edge_undirected(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<(EdgeIndex<Ix>, Direction)>
+    {
+        match self.get_node(a) {
+            None => None,
+            Some(node) => self.g.find_edge_undirected_from_node(node, b),
+        }
+    }
+
 
     /// Return an iterator of all nodes with an edge starting from `a`.
     ///
@@ -513,7 +538,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         Neighbors {
             skip_start: a,
             edges: &self.g.edges,
-            next: match self.g.nodes.get(a.index()) {
+            next: match self.get_node(a) {
                 None => [EdgeIndex::end(), EdgeIndex::end()],
                 Some(n) => n.next,
             }
@@ -562,7 +587,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
             skip_start: a,
             edges: &self.g.edges,
             direction: None,
-            next: match self.g.nodes.get(a.index()) {
+            next: match self.get_node(a) {
                 None => [EdgeIndex::end(), EdgeIndex::end()],
                 Some(n) => n.next,
             },
@@ -1160,7 +1185,9 @@ impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
 {
     /// Return an upper bound of the node indices in the graph
     fn node_bound(&self) -> usize {
-        self.g.nodes.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
+        self.node_indices()
+            .next_back()
+            .map_or(0, |i| i.index() + 1)
     }
     fn to_index(&self, ix: NodeIndex<Ix>) -> usize { ix.index() }
     fn from_index(&self, ix: usize) -> Self::NodeId { NodeIndex::new(ix) }

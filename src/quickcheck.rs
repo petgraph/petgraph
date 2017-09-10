@@ -17,6 +17,7 @@ use graphmap::{
     GraphMap,
     NodeTrait,
 };
+use visit::NodeIndexable;
 
 /// `Arbitrary` for `Graph` creates a graph by selecting a node count
 /// and a probability for each possible edge to exist.
@@ -113,6 +114,16 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
                 let p: f64 = g.gen();
                 if p <= edge_prob {
                     gr.add_edge(i, j, E::arbitrary(g));
+                }
+            }
+        }
+        if bool::arbitrary(g) {
+            // potentially remove nodes to make holes in nodes & edge sets
+            let n = u8::arbitrary(g) % (gr.node_count() as u8);
+            for _ in 0..n {
+                let ni = node_index(usize::arbitrary(g) % gr.node_bound());
+                if gr.node_weight(ni).is_some() {
+                    gr.remove_node(ni);
                 }
             }
         }
