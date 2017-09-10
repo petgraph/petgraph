@@ -171,9 +171,14 @@ impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
 
         // insert Nones for each hole
         let mut offset = node_holes.len();
+        let node_bound = node_holes.len() + nodes.len();
         for hole_pos in rev(node_holes) {
             offset -= 1;
-            nodes.insert(hole_pos.index() + offset, Node {
+            if hole_pos.index() >= node_bound {
+                Err(invalid_node_err(hole_pos.index(), node_bound))?;
+            }
+            let insert_pos = hole_pos.index() - offset;
+            nodes.insert(insert_pos, Node {
                 weight: None,
                 next: [EdgeIndex::end(); 2],
             });
@@ -212,3 +217,43 @@ impl<'de, N, E, Ty, Ix> Deserialize<'de> for StableGraph<N, E, Ty, Ix>
         Self::from_deserialized(DeserStableGraph::deserialize(deserializer)?)
     }
 }
+
+#[test]
+fn test_from_deserialized_with_holes() {
+    use graph::node_index;
+    use stable_graph::StableUnGraph;
+    use serde::de::value::Error as SerdeError;
+    use itertools::assert_equal;
+
+    let input = DeserStableGraph::<_, (), u32> {
+        nodes: vec![
+            Node {
+                weight: Some(1),
+                next: [EdgeIndex::end(); 2],
+            },
+            Node {
+                weight: Some(4),
+                next: [EdgeIndex::end(); 2],
+            },
+            Node {
+                weight: Some(5),
+                next: [EdgeIndex::end(); 2],
+            },
+        ],
+        node_holes: vec![
+            node_index(0),
+            node_index(2),
+            node_index(3),
+            node_index(6),
+        ],
+        edges: vec![],
+        edge_property: EdgeProperty::Undirected,
+    };
+    let graph = StableUnGraph::from_deserialized::<SerdeError>(input).unwrap();
+
+    assert_eq!(graph.node_count(), 3);
+    assert_equal(
+        graph.raw_nodes().iter().map(|n| n.weight.as_ref().cloned()),
+        vec![None, Some(1), None, None, Some(4), Some(5), None]);
+}
+
