@@ -28,6 +28,22 @@ fn node_indices() {
     assert_eq!(iter.next(), None);
 }
 
+#[test]
+fn node_bound() {
+    let mut g = StableGraph::<_, ()>::new();
+    assert_eq!(g.node_bound(), g.node_count());
+    for i in 0..10 {
+        g.add_node(i);
+        assert_eq!(g.node_bound(), g.node_count());
+    }
+    let full_count = g.node_count();
+    g.remove_node(n(0));
+    g.remove_node(n(2));
+    assert_eq!(g.node_bound(), full_count);
+    g.clear();
+    assert_eq!(g.node_bound(), 0);
+}
+
 fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>) {
     // normalize the result and compare with the answer.
     for scc in &mut res {
