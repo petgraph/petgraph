@@ -735,6 +735,12 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.g.raw_edges()
     }
 
+    fn edge_bound(&self) -> usize {
+        self.edge_references()
+            .next_back()
+            .map_or(0, |edge| edge.id().index() + 1)
+    }
+
     #[cfg(feature = "serde-1")]
     /// Fix up node and edge links after deserialization
     fn link_edges(&mut self) -> Result<(), NodeIndex<Ix>> {
