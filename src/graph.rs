@@ -85,6 +85,7 @@ unsafe impl IndexType for u8 {
 
 /// Node identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct NodeIndex<Ix=DefaultIx>(Ix);
 
 impl<Ix: IndexType> NodeIndex<Ix>
@@ -130,6 +131,7 @@ pub fn edge_index<Ix: IndexType>(index: usize) -> EdgeIndex<Ix> { EdgeIndex::new
 
 /// Edge identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EdgeIndex<Ix=DefaultIx>(Ix);
 
 impl<Ix: IndexType> EdgeIndex<Ix>
@@ -183,6 +185,7 @@ const DIRECTIONS: [Direction; 2] = [Outgoing, Incoming];
 
 /// The graph's node type.
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Node<N, Ix = DefaultIx> {
     /// Associated node data.
     pub weight: N,
@@ -210,6 +213,7 @@ impl<N, Ix: IndexType> Node<N, Ix>
 
 /// The graph's edge type.
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Edge<E, Ix = DefaultIx> {
     /// Associated edge data.
     pub weight: E,
@@ -321,6 +325,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// of removing elements. Indices don't allow as much compile time checking as
 /// references.
 ///
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Graph<N, E, Ty = Directed, Ix = DefaultIx> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,
