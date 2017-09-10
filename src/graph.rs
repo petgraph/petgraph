@@ -369,11 +369,15 @@ impl<N, E, Ty, Ix> fmt::Debug for Graph<N, E, Ty, Ix>
         let etype = if self.is_directed() { "Directed" } else { "Undirected" };
         let mut fmt_struct = f.debug_struct("Graph");
         fmt_struct.field("Ty", &etype);
-        fmt_struct.field("edges",
-             &self.edges
-                 .iter()
-                 .map(|e| NoPretty((e.source().index(), e.target().index())))
-                 .format(", "));
+        fmt_struct.field("node_count", &self.node_count());
+        fmt_struct.field("edge_count", &self.edge_count());
+        if self.edge_count() > 0 {
+            fmt_struct.field("edges",
+                 &self.edges
+                     .iter()
+                     .map(|e| NoPretty((e.source().index(), e.target().index())))
+                     .format(", "));
+        }
         // skip weights if they are ZST!
         if size_of::<N>() != 0 {
             fmt_struct.field("node weights", &DebugMap(|| self.nodes.iter()
