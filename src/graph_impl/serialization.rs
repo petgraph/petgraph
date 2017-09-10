@@ -115,6 +115,23 @@ impl<Ty> From<PhantomData<Ty>> for EdgeProperty where Ty: EdgeType {
 }
 
 
+impl<Ty> FromDeserialized for PhantomData<Ty> where Ty: EdgeType
+{
+    type Input = EdgeProperty;
+    fn from_deserialized<E2>(input: Self::Input) -> Result<Self, E2>
+        where E2: Error
+    {
+        if input.is_directed() != Ty::is_directed() {
+            Err(E2::custom(format_args!("graph edge property mismatch, \
+                                        expected {:?}, found {:?}",
+                                        EdgeProperty::from(PhantomData::<Ty>),
+                                        input)))
+        } else {
+            Ok(PhantomData)
+        }
+    }
+}
+
 fn ser_graph_nodes<S, N, Ix>(nodes: &&[Node<N, Ix>], serializer: S) -> Result<S::Ok, S::Error>
     where S: Serializer,
           N: Serialize,
@@ -199,24 +216,6 @@ impl<'a, N, E, Ty, Ix> IntoSerializable for &'a Graph<N, E, Ty, Ix>
     }
 }
 
-impl<'a, N, E, Ty, Ix> FromDeserialized for Graph<N, E, Ty, Ix>
-    where Ix: IndexType,
-          Ty: EdgeType,
-{
-    type Input = DeserGraph<N, E, Ix>;
-    fn from_deserialized<E2>(input: Self::Input) -> Result<Self, E2>
-        where E2: Error
-    {
-        if input.edge_property.is_directed() != Ty::is_directed() {
-            return Err(E2::custom(format_args!("graph edge property mismatch, \
-                                               expected {:?}, found {:?}",
-                                               EdgeProperty::from(PhantomData::<Ty>),
-            input.edge_property)));
-        }
-        assemble_graph(input.nodes, input.edges)
-    }
-}
-
 impl<N, E, Ty, Ix> Serialize for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType + Serialize,
@@ -244,28 +243,36 @@ pub fn invalid_length_err<Ix, E>(node_or_edge: &str, len: usize) -> E
                            node_or_edge, len, <Ix as IndexType>::max().index()))
 }
 
-fn assemble_graph<N, E, Ty, Ix, E2>(nodes: Vec<Node<N, Ix>>, edges: Vec<Edge<E, Ix>>) -> Result<Graph<N, E, Ty, Ix>, E2>
-    where E2: Error,
+impl<'a, N, E, Ty, Ix> FromDeserialized for Graph<N, E, Ty, Ix>
+    where Ix: IndexType,
           Ty: EdgeType,
-          Ix: IndexType,
 {
-    if nodes.len() >= <Ix as IndexType>::max().index() {
-        Err(invalid_length_err::<Ix, _>("node", nodes.len()))?
-    }
+    type Input = DeserGraph<N, E, Ix>;
+    fn from_deserialized<E2>(input: Self::Input) -> Result<Self, E2>
+        where E2: Error
+    {
+        let ty = PhantomData::<Ty>::from_deserialized(input.edge_property)?;
+        let nodes = input.nodes;
+        let edges = input.edges;
+        if nodes.len() >= <Ix as IndexType>::max().index() {
+            Err(invalid_length_err::<Ix, _>("node", nodes.len()))?
+        }
 
-    if edges.len() >= <Ix as IndexType>::max().index() {
-        Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
-    }
+        if edges.len() >= <Ix as IndexType>::max().index() {
+            Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
+        }
 
-    let mut gr = Graph {
-        nodes: nodes,
-        edges: edges,
-        ty: PhantomData,
-    };
-    let nc = gr.node_count();
-    gr.link_edges().map_err(|i| invalid_node_err(i.index(), nc))?;
-    Ok(gr)
+        let mut gr = Graph {
+            nodes: nodes,
+            edges: edges,
+            ty: ty,
+        };
+        let nc = gr.node_count();
+        gr.link_edges().map_err(|i| invalid_node_err(i.index(), nc))?;
+        Ok(gr)
+    }
 }
+
 
 impl<'de, N, E, Ty, Ix> Deserialize<'de> for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
