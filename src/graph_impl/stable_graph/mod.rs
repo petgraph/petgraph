@@ -799,11 +799,15 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         let mut free_node_len = 0;
         while free_node != NodeIndex::end() {
             if let Some(n) = self.g.nodes.get(free_node.index()) {
-                free_node = n.next[0]._into_node();
-                free_node_len += 1;
-            } else {
-                debug_assert!(false, "Corrupt free list: missing {:?}", free_node.index());
+                if let None = n.weight {
+                    free_node = n.next[0]._into_node();
+                    free_node_len += 1;
+                    continue;
+                }
+                debug_assert!(false, "Corrupt free list: pointing to existing {:?}",
+                              free_node.index());
             }
+            debug_assert!(false, "Corrupt free list: missing {:?}", free_node.index());
         }
         debug_assert_eq!(self.node_count(), self.raw_nodes().len() - free_node_len);
 
@@ -811,11 +815,15 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         let mut free_edge = self.free_edge;
         while free_edge != EdgeIndex::end() {
             if let Some(n) = self.g.edges.get(free_edge.index()) {
-                free_edge = n.next[0];
-                free_edge_len += 1;
-            } else {
-                debug_assert!(false, "Corrupt free list: missing {:?}", free_edge.index());
+                if let None = n.weight {
+                    free_edge = n.next[0];
+                    free_edge_len += 1;
+                    continue;
+                }
+                debug_assert!(false, "Corrupt free list: pointing to existing {:?}",
+                              free_node.index());
             }
+            debug_assert!(false, "Corrupt free list: missing {:?}", free_edge.index());
         }
         debug_assert_eq!(self.edge_count(), self.raw_edges().len() - free_edge_len);
     }
