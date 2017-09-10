@@ -643,6 +643,29 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         g
     }
 
+    /// Create a new `StableGraph` by mapping node and
+    /// edge weights to new values.
+    ///
+    /// The resulting graph has the same structure and the same
+    /// graph indices as `self`.
+    pub fn map<'a, F, G, N2, E2>(&'a self, mut node_map: F, mut edge_map: G)
+        -> StableGraph<N2, E2, Ty, Ix>
+        where F: FnMut(NodeIndex<Ix>, &'a N) -> N2,
+              G: FnMut(EdgeIndex<Ix>, &'a E) -> E2,
+    {
+        let g = self.g.map(
+            move |i, w| w.as_ref().map(|w| node_map(i, w)),
+            move |i, w| w.as_ref().map(|w| edge_map(i, w)));
+        StableGraph {
+            g: g,
+            node_count: self.node_count,
+            edge_count: self.edge_count,
+            free_node: self.free_node,
+            free_edge: self.free_edge,
+        }
+    }
+
+
     /// Extend the graph from an iterable of edges.
     ///
     /// Node weights `N` are set to default values.
@@ -954,6 +977,22 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
                 }
             }))
             .next()
+    }
+}
+
+impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
+    where Ix: IndexType
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        (&mut self.iter).filter_map(|(i, edge)|
+            edge.weight.as_ref().map(move |weight| {
+                EdgeReference {
+                    index: edge_index(i),
+                    node: edge.node,
+                    weight: weight,
+                }
+            }))
+            .next_back()
     }
 }
 
