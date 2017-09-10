@@ -284,7 +284,13 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     }
 
     pub fn contains_node(&self, a: NodeIndex<Ix>) -> bool {
-        self.g.nodes.get(a.index()).map_or(false, |no| no.weight.is_some())
+        self.get_node(a).is_some()
+    }
+
+    // Return the Node if it is not vacant (non-None weight)
+    fn get_node(&self, a: NodeIndex<Ix>) -> Option<&Node<Option<N>, Ix>> {
+        self.g.nodes.get(a.index())
+                    .and_then(|node| node.weight.as_ref().map(move |_| node))
     }
 
     /// Add an edge from `a` to `b` to the graph, with its associated
@@ -513,7 +519,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         Neighbors {
             skip_start: a,
             edges: &self.g.edges,
-            next: match self.g.nodes.get(a.index()) {
+            next: match self.get_node(a) {
                 None => [EdgeIndex::end(), EdgeIndex::end()],
                 Some(n) => n.next,
             }
@@ -562,7 +568,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
             skip_start: a,
             edges: &self.g.edges,
             direction: None,
-            next: match self.g.nodes.get(a.index()) {
+            next: match self.get_node(a) {
                 None => [EdgeIndex::end(), EdgeIndex::end()],
                 Some(n) => n.next,
             },

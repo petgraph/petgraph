@@ -200,3 +200,46 @@ fn test_edge_iterators_undir() {
             gr.edges(i));
     }
 }
+
+#[test]
+fn iterators_undir() {
+    let mut g = StableUnGraph::<_, _>::default();
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let c = g.add_node(2);
+    let d = g.add_node(3);
+    g.extend_with_edges(&[
+        (a, b, 1),
+        (a, c, 2),
+        (b, c, 3),
+        (c, c, 4),
+        (a, d, 5),
+    ]);
+    g.remove_node(b);
+
+    itertools::assert_equal(
+        g.neighbors(a),
+        vec![d, c],
+    );
+    itertools::assert_equal(
+        g.neighbors(c),
+        vec![c, a],
+    );
+    itertools::assert_equal(
+        g.neighbors(d),
+        vec![a],
+    );
+
+    // the node that was removed
+    itertools::assert_equal(
+        g.neighbors(b),
+        vec![],
+    );
+
+    // remove one more
+    g.remove_node(c);
+    itertools::assert_equal(
+        g.neighbors(c),
+        vec![],
+    );
+}
