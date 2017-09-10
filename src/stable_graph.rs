@@ -980,6 +980,22 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
     }
 }
 
+impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
+    where Ix: IndexType
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        (&mut self.iter).filter_map(|(i, edge)|
+            edge.weight.as_ref().map(move |weight| {
+                EdgeReference {
+                    index: edge_index(i),
+                    node: edge.node,
+                    weight: weight,
+                }
+            }))
+            .next_back()
+    }
+}
+
 
 /// Iterator over the neighbors of a node.
 ///
