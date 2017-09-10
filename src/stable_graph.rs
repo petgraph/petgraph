@@ -1160,7 +1160,9 @@ impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
 {
     /// Return an upper bound of the node indices in the graph
     fn node_bound(&self) -> usize {
-        self.g.nodes.iter().rposition(|elt| elt.weight.is_some()).unwrap_or(0) + 1
+        self.node_indices()
+            .next_back()
+            .map_or(0, |i| i.index() + 1)
     }
     fn to_index(&self, ix: NodeIndex<Ix>) -> usize { ix.index() }
     fn from_index(&self, ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
