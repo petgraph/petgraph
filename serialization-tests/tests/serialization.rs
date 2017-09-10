@@ -442,6 +442,39 @@ fn bincode_graph_to_graph_i32_1() {
 }
 
 #[test]
+fn bincode_stablegraph_added2_removed2() {
+    // StableGraph { Ty: "Directed", node_count: 4, edge_count: 1, edges: (0,
+    // 2), node weights: {0: -55, 2: 83, 3: -12, 5: -2}, edge weights: {0: 75},
+    //   free_node: NodeIndex(1), free_edge: EdgeIndex(4294967295) }
+    let mut g1 = StableGraph::<i32, i32>::new();
+    let x = 1729;
+    let a = g1.add_node(x);
+    let b = g1.add_node(x + 1);
+    g1.remove_node(a);
+    g1.remove_node(b);
+    let g2: StableGraph<i32, i32> = recode!(g1);
+
+    assert_stable_graph_eq(&g1, &g2);
+}
+
+#[test]
+fn bincode_stablegraph_added3_removed2() {
+    // StableGraph { Ty: "Directed", node_count: 1, edge_count: 0, node weights:
+    // {2: -87}, edge weights: {}, free_node: NodeIndex(3), free_edge:
+    // EdgeIndex(3) }
+    let mut g1 = StableGraph::<i32, i32>::new();
+    let x = 1729;
+    let a = g1.add_node(x);
+    let b = g1.add_node(x + 1);
+    let _c = g1.add_node(x + 2);
+    g1.remove_node(a);
+    g1.remove_node(b);
+    let g2: StableGraph<i32, i32> = recode!(g1);
+
+    assert_stable_graph_eq(&g1, &g2);
+}
+
+#[test]
 fn bincode_stablegraph_to_graph_i32_1() {
     let mut g1 = StableGraph::<i32, i32>::new();
     let x = 1729;
