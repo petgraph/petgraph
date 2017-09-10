@@ -1936,6 +1936,20 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
     }
 }
 
+impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
+    where Ix: IndexType
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back().map(|(i, edge)|
+            EdgeReference {
+                index: edge_index(i),
+                node: edge.node,
+                weight: &edge.weight,
+            }
+        )
+    }
+}
+
 #[cfg(feature = "stable_graph")]
 #[path = "stable_graph.rs"]
 pub mod stable_graph;
