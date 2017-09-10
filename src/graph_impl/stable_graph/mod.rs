@@ -11,6 +11,7 @@ use std::mem::replace;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
+use itertools::Itertools;
 
 use {
     Graph,
@@ -23,7 +24,6 @@ use {
 };
 
 use iter_format::{
-    IterFormatExt,
     NoPretty,
     DebugMap,
 };
@@ -55,6 +55,10 @@ pub use graph::{
     node_index,
     edge_index,
 };
+#[cfg(feature = "serde-1")]
+use util::enumerate;
+#[cfg(feature = "serde-1")]
+mod serialization;
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
@@ -639,6 +643,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
                 self.remove_node(ix);
             }
         }
+        self.check_free_lists();
     }
 
 
@@ -719,6 +724,95 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    //
+    // internal methods
+    //
+    fn raw_nodes(&self) -> &[Node<Option<N>, Ix>] {
+        self.g.raw_nodes()
+    }
+
+    fn raw_edges(&self) -> &[Edge<Option<E>, Ix>] {
+        self.g.raw_edges()
+    }
+
+    #[cfg(feature = "serde-1")]
+    /// Fix up node and edge links after deserialization
+    fn link_edges(&mut self) -> Result<(), NodeIndex<Ix>> {
+        // set up free node list
+        self.node_count = 0;
+        self.edge_count = 0;
+        let mut free_node = NodeIndex::end();
+        for (node_index, node) in enumerate(&mut self.g.nodes) {
+            if node.weight.is_some() {
+                self.node_count += 1;
+            } else {
+                // free node
+                node.next = [free_node._into_edge(), EdgeIndex::end()];
+                free_node = NodeIndex::new(node_index);
+            }
+        }
+        self.free_node = free_node;
+
+        let mut free_edge = EdgeIndex::end();
+        for (edge_index, edge) in enumerate(&mut self.g.edges) {
+            if edge.weight.is_none() {
+                // free edge
+                edge.next = [free_edge, EdgeIndex::end()];
+                free_edge = EdgeIndex::new(edge_index);
+                continue;
+            }
+            let a = edge.source();
+            let b = edge.target();
+            let edge_idx = EdgeIndex::new(edge_index);
+            match index_twice(&mut self.g.nodes, a.index(), b.index()) {
+                Pair::None => return Err(if a > b { a } else { b }),
+                Pair::One(an) => {
+                    edge.next = an.next;
+                    an.next[0] = edge_idx;
+                    an.next[1] = edge_idx;
+                }
+                Pair::Both(an, bn) => {
+                    // a and b are different indices
+                    edge.next = [an.next[0], bn.next[1]];
+                    an.next[0] = edge_idx;
+                    bn.next[1] = edge_idx;
+                }
+            }
+            self.edge_count += 1;
+        }
+        self.free_edge = free_edge;
+        Ok(())
+    }
+
+    #[cfg(not(debug_assertions))]
+    fn check_free_lists(&self) { }
+    #[cfg(debug_assertions)]
+    // internal method to debug check the free lists (linked lists)
+    fn check_free_lists(&self) {
+        let mut free_node = self.free_node;
+        let mut free_node_len = 0;
+        while free_node != NodeIndex::end() {
+            if let Some(n) = self.g.nodes.get(free_node.index()) {
+                free_node = n.next[0]._into_node();
+                free_node_len += 1;
+            } else {
+                debug_assert!(false, "Corrupt free list: missing {:?}", free_node.index());
+            }
+        }
+        debug_assert_eq!(self.node_count(), self.raw_nodes().len() - free_node_len);
+
+        let mut free_edge_len = 0;
+        let mut free_edge = self.free_edge;
+        while free_edge != EdgeIndex::end() {
+            if let Some(n) = self.g.edges.get(free_edge.index()) {
+                free_edge = n.next[0];
+                free_edge_len += 1;
+            } else {
+                debug_assert!(false, "Corrupt free list: missing {:?}", free_edge.index());
+            }
+        }
+        debug_assert_eq!(self.edge_count(), self.raw_edges().len() - free_edge_len);
+    }
 }
 
 /// The resulting cloned graph has the same graph indices as `self`.
@@ -1206,8 +1300,11 @@ fn stable_graph() {
     println!("{:?}", gr);
     let d = gr.add_node(3);
     println!("{:?}", gr);
+    gr.check_free_lists();
     gr.remove_node(a);
+    gr.check_free_lists();
     gr.remove_node(c);
+    gr.check_free_lists();
     println!("{:?}", gr);
     gr.add_edge(d, d, 2);
     println!("{:?}", gr);
@@ -1218,6 +1315,7 @@ fn stable_graph() {
     for neigh in gr.neighbors(d) {
         println!("edge {:?} -> {:?}", d, neigh);
     }
+    gr.check_free_lists();
 }
 
 #[test]
@@ -1268,4 +1366,6 @@ fn test_retain_nodes() {
     gr.retain_nodes(|frozen_gr, ix| {frozen_gr[ix] >= "c"});
     assert_eq!(gr.node_count(), 3);
     assert_eq!(gr.edge_count(), 2);
+
+    gr.check_free_lists();
 }

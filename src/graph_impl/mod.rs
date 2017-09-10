@@ -16,16 +16,20 @@ use {
 };
 
 use iter_format::{
-    IterFormatExt,
     NoPretty,
     DebugMap,
 };
+use itertools::Itertools;
+use itertools::enumerate;
 
 use visit::EdgeRef;
 use visit::{Data, IntoNodeIdentifiers, GraphProp, NodeIndexable, IntoNeighborsDirected};
 use visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
 use visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount, IntoEdges};
 use data::{DataMap, DataMapMut};
+
+#[cfg(feature = "serde-1")]
+mod serialization;
 
 
 /// The default integer type for graph indices.
@@ -1327,6 +1331,35 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         Graph{nodes: self.nodes, edges: self.edges,
               ty: PhantomData}
     }
+
+
+    //
+    // internal methods
+    //
+    #[cfg(feature = "serde-1")]
+    /// Fix up node and edge links after deserialization
+    fn link_edges(&mut self) -> Result<(), NodeIndex<Ix>> {
+        for (edge_index, edge) in enumerate(&mut self.edges) {
+            let a = edge.source();
+            let b = edge.target();
+            let edge_idx = EdgeIndex::new(edge_index);
+            match index_twice(&mut self.nodes, a.index(), b.index()) {
+                Pair::None => return Err(if a > b { a } else { b }),
+                Pair::One(an) => {
+                    edge.next = an.next;
+                    an.next[0] = edge_idx;
+                    an.next[1] = edge_idx;
+                }
+                Pair::Both(an, bn) => {
+                    // a and b are different indices
+                    edge.next = [an.next[0], bn.next[1]];
+                    an.next[0] = edge_idx;
+                    bn.next[1] = edge_idx;
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 /// An iterator over either the nodes without edges to them or from them.
@@ -1785,12 +1818,6 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
     }
 }
 
-fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
-    where I: IntoIterator,
-{
-    iterable.into_iter().enumerate()
-}
-
 /// Iterator over the node indices of a graph.
 #[derive(Clone, Debug)]
 pub struct NodeIndices<Ix = DefaultIx> {
@@ -1963,7 +1990,6 @@ impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
 }
 
 #[cfg(feature = "stable_graph")]
-#[path = "stable_graph.rs"]
 pub mod stable_graph;
 
 /// `Frozen` only allows shared access (read-only) to the
@@ -2036,3 +2062,5 @@ NodeCount!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 NodeIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 GraphProp!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 Visitable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+
+

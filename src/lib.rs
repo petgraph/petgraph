@@ -16,6 +16,13 @@
 extern crate fixedbitset;
 #[cfg(feature = "graphmap")]
 extern crate ordermap;
+extern crate itertools;
+
+#[cfg(feature = "serde-1")]
+extern crate serde;
+#[cfg(feature = "serde-1")]
+#[macro_use]
+extern crate serde_derive;
 
 #[doc(no_inline)]
 pub use graph::Graph;
@@ -37,7 +44,6 @@ pub mod algo;
 pub mod generate;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
-#[path = "graph.rs"]
 mod graph_impl;
 pub mod dot;
 pub mod unionfind;
@@ -50,6 +56,8 @@ mod traits_graph;
 mod util;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
+#[cfg(feature = "serde-1")]
+mod serde_utils;
 
 pub mod prelude;
 
