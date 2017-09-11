@@ -210,6 +210,27 @@ fn test_edge_iterators_undir() {
 }
 
 #[test]
+#[should_panic(expected="is not a node")]
+fn add_edge_vacant() {
+    let mut g = StableGraph::<_, _>::new();
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let _ = g.add_node(2);
+    let _ = g.remove_node(b);
+    g.add_edge(a, b, 1);
+}
+
+#[test]
+#[should_panic(expected="is not a node")]
+fn add_edge_oob() {
+    let mut g = StableGraph::<_, _>::new();
+    let a = g.add_node(0);
+    let _ = g.add_node(1);
+    let _ = g.add_node(2);
+    g.add_edge(a, n(4), 1);
+}
+
+#[test]
 fn test_node_references() {
     let gr = scc_graph();
 

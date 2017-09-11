@@ -315,34 +315,64 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E)
         -> EdgeIndex<Ix>
     {
+        let edge_idx;
+        let mut new_edge = None::<Edge<_, _>>;
+        {
+            let edge: &mut Edge<_, _>;
 
-        if self.free_edge != EdgeIndex::end() {
-            let edge_idx = self.free_edge;
-            let edge = &mut self.g.edges[edge_idx.index()];
-            let _old = replace(&mut edge.weight, Some(weight));
-            debug_assert!(_old.is_none());
-            self.free_edge = edge.next[0];
-            edge.node = [a, b];
-            match index_twice(&mut self.g.nodes, a.index(), b.index()) {
-                Pair::None => panic!("StableGraph::add_edge: node indices out of bounds"),
+            if self.free_edge != EdgeIndex::end() {
+                edge_idx = self.free_edge;
+                edge = &mut self.g.edges[edge_idx.index()];
+                let _old = replace(&mut edge.weight, Some(weight));
+                debug_assert!(_old.is_none());
+                self.free_edge = edge.next[0];
+                edge.node = [a, b];
+            } else {
+                edge_idx = EdgeIndex::new(self.g.edges.len());
+                assert!(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx);
+                new_edge = Some(Edge {
+                    weight: Some(weight),
+                    node: [a, b],
+                    next: [EdgeIndex::end(); 2],
+                });
+                edge = new_edge.as_mut().unwrap();
+            }
+
+            let wrong_index = match index_twice(&mut self.g.nodes, a.index(), b.index()) {
+                Pair::None => Some(cmp::max(a.index(), b.index())),
                 Pair::One(an) => {
-                    edge.next = an.next;
-                    an.next[0] = edge_idx;
-                    an.next[1] = edge_idx;
+                    if an.weight.is_none() {
+                        Some(a.index())
+                    } else {
+                        edge.next = an.next;
+                        an.next[0] = edge_idx;
+                        an.next[1] = edge_idx;
+                        None
+                    }
                 }
                 Pair::Both(an, bn) => {
                     // a and b are different indices
-                    edge.next = [an.next[0], bn.next[1]];
-                    an.next[0] = edge_idx;
-                    bn.next[1] = edge_idx;
+                    if an.weight.is_none() {
+                        Some(a.index())
+                    } else if bn.weight.is_none() {
+                        Some(b.index())
+                    } else {
+                        edge.next = [an.next[0], bn.next[1]];
+                        an.next[0] = edge_idx;
+                        bn.next[1] = edge_idx;
+                        None
+                    }
                 }
+            };
+            if let Some(i) = wrong_index {
+                panic!("StableGraph::add_edge: node index {} is not a node in the graph", i);
             }
             self.edge_count += 1;
-            edge_idx
-        } else {
-            self.edge_count += 1;
-            self.g.add_edge(a, b, Some(weight))
         }
+        if let Some(edge) = new_edge {
+            self.g.edges.push(edge);
+        }
+        edge_idx
     }
 
     /// Add or update an edge from `a` to `b`.
