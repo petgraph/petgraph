@@ -25,10 +25,8 @@ use super::super::serialization::{EdgeProperty, invalid_length_err, invalid_node
 #[serde(rename = "Graph")]
 #[serde(bound(serialize = "N: Serialize, E: Serialize, Ix: IndexType + Serialize"))]
 pub struct SerStableGraph<'a, N: 'a, E: 'a, Ix: 'a + IndexType> {
-    #[serde(serialize_with="ser_stable_graph_nodes")]
-    nodes: &'a [Node<Option<N>, Ix>],
-    #[serde(serialize_with="ser_stable_graph_node_holes")]
-    node_holes: &'a [Node<Option<N>, Ix>],
+    nodes: Somes<&'a [Node<Option<N>, Ix>]>,
+    node_holes: Holes<&'a [Node<Option<N>, Ix>]>,
     edge_property: EdgeProperty,
     #[serde(serialize_with="ser_stable_graph_edges")]
     edges: &'a [Edge<Option<E>, Ix>],
@@ -49,32 +47,38 @@ pub struct DeserStableGraph<N, E, Ix> {
     edges: Vec<Edge<Option<E>, Ix>>,
 }
 
+/// Somes are the present node weights N, with known length.
+struct Somes<T>(usize, T);
 
-fn ser_stable_graph_nodes<S, N, Ix>(nodes: &&[Node<Option<N>, Ix>], serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer,
-          N: Serialize,
-          Ix: Serialize + IndexType,
+impl<'a, N, Ix> Serialize for Somes<&'a [Node<Option<N>, Ix>]>
+    where N: Serialize,
 {
-    serializer.collect_seq_with_length(
-        nodes.iter()
-             .filter(|node| node.weight.is_some())
-             .count(),
-        nodes.iter()
-             .filter_map(|node| node.weight.as_ref()))
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer,
+    {
+        serializer.collect_seq_with_length(self.0,
+            self.1.iter().filter_map(|node| node.weight.as_ref()))
+    }
 }
 
-fn ser_stable_graph_node_holes<S, N, Ix>(nodes: &&[Node<Option<N>, Ix>], serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer,
-          N: Serialize,
-          Ix: Serialize + IndexType,
+/// Holes are the node indices of vacancies, with known length
+struct Holes<T>(usize, T);
+
+impl<'a, N, Ix> Serialize for Holes<&'a [Node<Option<N>, Ix>]>
+    where Ix: Serialize + IndexType,
 {
-    serializer.collect_seq_with_length(
-        nodes.iter()
-             .filter(|node| node.weight.is_none())
-             .count(),
-        nodes.iter()
-             .enumerate()
-             .filter_map(|(i, node)| if node.weight.is_none() { Some(NodeIndex::<Ix>::new(i)) } else { None }))
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer,
+    {
+        serializer.collect_seq_with_length(self.0,
+            self.1.iter()
+                  .enumerate()
+                  .filter_map(|(i, node)| if node.weight.is_none() {
+                      Some(NodeIndex::<Ix>::new(i))
+                  } else {
+                      None
+                  }))
+    }
 }
 
 fn ser_stable_graph_edges<S, E, Ix>(edges: &&[Edge<Option<E>, Ix>], serializer: S) -> Result<S::Ok, S::Error>
@@ -133,10 +137,12 @@ impl<'a, N, E, Ty, Ix> IntoSerializable for &'a StableGraph<N, E, Ty, Ix>
     type Output = SerStableGraph<'a, N, E, Ix>;
     fn into_serializable(self) -> Self::Output {
         let nodes = &self.raw_nodes()[..self.node_bound()];
+        let node_count = self.node_count();
+        let hole_count = nodes.len() - node_count;
         let edges = &self.raw_edges()[..self.edge_bound()];
         SerStableGraph {
-            nodes: nodes,
-            node_holes: nodes,
+            nodes: Somes(node_count, nodes),
+            node_holes: Holes(hole_count, nodes),
             edges: edges,
             edge_property: EdgeProperty::from(PhantomData::<Ty>),
         }
