@@ -735,6 +735,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.g.raw_edges()
     }
 
+    #[cfg(feature = "serde-1")]
     fn edge_bound(&self) -> usize {
         self.edge_references()
             .next_back()
