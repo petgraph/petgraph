@@ -15,8 +15,29 @@ use serde_utils::{IntoSerializable, FromDeserialized};
 use super::{NodeIndex, EdgeIndex};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
-// Serialization representation for Graph
-// Keep in sync with deserialization and StableGraph
+/// Serialization representation for Graph
+/// Keep in sync with deserialization and StableGraph
+///
+/// The serialization format is as follows, in Pseudorust:
+///
+/// Graph {
+///     nodes: [N],
+///     node_holes: [NodeIndex<Ix>],
+///     edge_property: EdgeProperty,
+///     edges: [Option<(NodeIndex<Ix>, NodeIndex<Ix>, E)>]
+/// }
+///
+/// The same format is used by both Graph and StableGraph.
+/// 
+/// For graph there are restrictions:
+/// node_holes is always empty and edges are always Some
+///
+/// A stable graph serialization that obeys these restrictions
+/// (effectively, it has no interior vacancies) can de deserialized
+/// as a graph.
+///
+/// Node indices are serialized as integers and are fixed size for
+/// binary formats, so the Ix parameter matters there.
 #[derive(Serialize)]
 #[serde(rename = "Graph")]
 #[serde(bound(serialize = "N: Serialize, E: Serialize, Ix: IndexType + Serialize"))]
