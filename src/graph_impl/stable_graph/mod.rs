@@ -39,6 +39,7 @@ use super::{
 use IntoWeightedEdge;
 use visit::{
     EdgeRef,
+    IntoNodeReferences,
     IntoEdges,
     IntoEdgeReferences,
     NodeIndexable,
@@ -55,8 +56,9 @@ pub use graph::{
     node_index,
     edge_index,
 };
-#[cfg(feature = "serde-1")]
+
 use util::enumerate;
+
 #[cfg(feature = "serde-1")]
 mod serialization;
 
@@ -416,7 +418,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// Return an iterator over the node indices of the graph
     pub fn node_indices(&self) -> NodeIndices<N, Ix> {
         NodeIndices {
-            iter: self.g.nodes.iter().enumerate(),
+            iter: enumerate(self.raw_nodes())
         }
     }
 
@@ -940,6 +942,51 @@ impl<N, E, Ty, Ix> From<Graph<N, E, Ty, Ix>> for StableGraph<N, E, Ty, Ix>
             free_node: NodeIndex::end(),
             free_edge: EdgeIndex::end(),
         }
+    }
+}
+
+impl<'a, N, E, Ty, Ix> IntoNodeReferences for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type NodeRef = (NodeIndex<Ix>, &'a N);
+    type NodeReferences = NodeReferences<'a, N, Ix>;
+    fn node_references(self) -> Self::NodeReferences {
+        NodeReferences {
+            iter: enumerate(self.raw_nodes())
+        }
+    }
+}
+
+/// Iterator over all nodes of a graph.
+pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
+    iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
+}
+
+impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
+    where Ix: IndexType
+{
+    type Item = (NodeIndex<Ix>, &'a N);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        (&mut self.iter).filter_map(|(i, node)| {
+            node.weight.as_ref().map(move |w| (node_index(i), w))
+        }).next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, hi) = self.iter.size_hint();
+        (0, hi)
+    }
+}
+
+impl<'a, N, Ix> DoubleEndedIterator for NodeReferences<'a, N, Ix>
+    where Ix: IndexType
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        (&mut self.iter).filter_map(|(i, node)| {
+            node.weight.as_ref().map(move |w| (node_index(i), w))
+        }).next_back()
     }
 }
 
