@@ -16,17 +16,17 @@ use {
 };
 
 use iter_format::{
+    IterFormatExt,
     NoPretty,
     DebugMap,
 };
-use itertools::Itertools;
-use itertools::enumerate;
 
 use visit::EdgeRef;
 use visit::{Data, IntoNodeIdentifiers, GraphProp, NodeIndexable, IntoNeighborsDirected};
 use visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
 use visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount, IntoEdges};
 use data::{DataMap, DataMapMut};
+use util::enumerate;
 
 #[cfg(feature = "serde-1")]
 mod serialization;
