@@ -26,6 +26,35 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.6
+
+  - New optional crate feature: ``"serde-1"``, which enables serialization
+    for ``Graph`` and ``StableGraph`` using serde.
+  - Add methods ``new``, ``add_node`` to ``Csr`` by @jmcomets
+  - Add indexing with ``[]`` by node index, ``NodeCompactIndexable`` for
+    ``Csr`` by @jmcomets
+  - Amend doc for ``GraphMap::into_graph`` (it has a case where it can panic)
+  - Add implementation of ``From<Graph>`` for ``StableGraph``.
+  - Add implementation of ``IntoNodeReferences`` for ``&StableGraph``.
+  - Add method ``StableGraph::map`` that maps associated data
+  - Add method ``StableGraph::find_edge_undirected``
+  - Many ``StableGraph`` bug fixes involving node vacancies (holes left by
+    deletions):
+
+    + ``add_edge(m, n, _)`` now properly panics if nodes m or n don't exist in
+      the graph.
+    + ``neighbors(n)`` and similar neighbor and edge iterator methods now
+      handle n being a vacancy properly. (This produces an empty iterator.)
+    + ``find_edge(m, n)`` now handles m being a vacancy correctly too
+    + ``StableGraph::node_bound`` was fixed for empty graphs and returns 0
+
+  - Add implementation of ``DoubleEndedIterator`` to ``Graph, StableGraph``'s
+    edge references iterators.
+  - Debug output for ``Graph`` now shows node and edge count. ``Graph, StableGraph``
+    show nothing for the edges list if it's empty (no label).
+  - ``Arbitrary`` implementation for ``StableGraph`` now can produce graphs with
+    vacancies (used by quickcheck)
+
 - 0.4.5
 
   - Fix ``max`` ambiguity error with current rust nightly by @daboross (#153)
