@@ -14,7 +14,7 @@ repository = "https://github.com/bluss/petgraph"
 
 
 [dependencies]
-petgraph = { version = "0.4.5", path = "..", features = ["serde-1", "quickcheck"] }
+petgraph = { path = "..", features = ["serde-1", "quickcheck"] }
 itertools = { version = "0.6.2" }
 
 [dev-dependencies]
