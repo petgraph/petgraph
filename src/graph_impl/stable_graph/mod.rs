@@ -11,7 +11,6 @@ use std::mem::replace;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
-use itertools::Itertools;
 
 use {
     Graph,
@@ -24,6 +23,7 @@ use {
 };
 
 use iter_format::{
+    IterFormatExt,
     NoPretty,
     DebugMap,
 };
