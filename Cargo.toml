@@ -1,7 +1,7 @@
 [package]
 
 name = "petgraph"
-version = "0.4.5"
+version = "0.4.6"
 license = "MIT/Apache-2.0"
 authors = [
 "bluss",
@@ -53,3 +53,6 @@ all = ["unstable", "quickcheck", "stable_graph", "graphmap"]
 
 [workspace]
 members = ["serialization-tests"]
+
+[package.metadata.docs.rs]
+features = ["serde-1", "quickcheck"]
