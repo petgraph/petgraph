@@ -23,6 +23,9 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
+#[cfg(test)]
+extern crate itertools;
+
 #[doc(no_inline)]
 pub use graph::Graph;
 
