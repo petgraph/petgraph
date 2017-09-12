@@ -233,6 +233,7 @@ impl<'a, N, E, Ty, Ix> IntoSerializable for &'a Graph<N, E, Ty, Ix>
     }
 }
 
+/// Requires crate feature `"serde-1"`
 impl<N, E, Ty, Ix> Serialize for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType + Serialize,
@@ -291,6 +292,7 @@ impl<'a, N, E, Ty, Ix> FromDeserialized for Graph<N, E, Ty, Ix>
 }
 
 
+/// Requires crate feature `"serde-1"`
 impl<'de, N, E, Ty, Ix> Deserialize<'de> for Graph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType + Deserialize<'de>,

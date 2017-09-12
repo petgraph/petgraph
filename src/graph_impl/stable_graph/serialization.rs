@@ -149,6 +149,7 @@ impl<'a, N, E, Ty, Ix> IntoSerializable for &'a StableGraph<N, E, Ty, Ix>
     }
 }
 
+/// Requires crate feature `"serde-1"`
 impl<N, E, Ty, Ix> Serialize for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType + Serialize,
@@ -214,6 +215,7 @@ impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
     }
 }
 
+/// Requires crate feature `"serde-1"`
 impl<'de, N, E, Ty, Ix> Deserialize<'de> for StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType + Deserialize<'de>,
