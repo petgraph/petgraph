@@ -10,6 +10,7 @@ use petgraph::EdgeType;
 use petgraph::algo::{kosaraju_scc, tarjan_scc};
 use petgraph::visit::{
     NodeIndexable,
+    IntoNodeReferences,
     IntoEdgeReferences,
 };
 
@@ -54,8 +55,7 @@ fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>)
     assert_eq!(res, normalized);
 }
 
-#[test]
-fn test_scc() {
+fn scc_graph() -> StableGraph<(), ()> {
     let mut gr: StableGraph<(), ()> = StableGraph::from_edges(&[
         (6, 0),
         (0, 3),
@@ -70,8 +70,15 @@ fn test_scc() {
     gr.add_edge(n(7), x, ());
     gr.add_edge(x, n(1), ());
     gr.remove_node(n(4));
+    gr
+}
+
+#[test]
+fn test_scc() {
+    let gr = scc_graph();
     println!("{:?}", gr);
 
+    let x = n(gr.node_bound() - 1);
     assert_sccs_eq(kosaraju_scc(&gr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(7),   x ],
@@ -199,6 +206,15 @@ fn test_edge_iterators_undir() {
             gr.edges_directed(i, Incoming),
             gr.edges(i));
     }
+}
+
+#[test]
+fn test_node_references() {
+    let gr = scc_graph();
+
+    itertools::assert_equal(
+        gr.node_references().map(|(i, _)| i),
+        gr.node_indices());
 }
 
 #[test]
