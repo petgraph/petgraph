@@ -23,7 +23,7 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
-#[cfg(test)]
+#[cfg(all(feature = "serde-1", test))]
 extern crate itertools;
 
 #[doc(no_inline)]
