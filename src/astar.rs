@@ -93,7 +93,7 @@ pub fn astar<G, F, H, K, IsGoal>(graph: G, start: G::NodeId, mut is_goal: IsGoal
 
         // This lookup can be unwrapped without fear of panic since the node was necessarily scored
         // before adding him to `visit_next`.
-        let node_score = *scores.get(&node).unwrap();
+        let node_score = scores[&node];
 
         for edge in graph.edges(node) {
             let next = edge.target();
