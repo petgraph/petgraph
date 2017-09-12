@@ -13,6 +13,7 @@ use petgraph::visit::{
     IntoNodeReferences,
     IntoEdgeReferences,
 };
+use petgraph::dot::Dot;
 
 use itertools::assert_equal;
 
@@ -258,4 +259,22 @@ fn iterators_undir() {
         g.neighbors(c),
         vec![],
     );
+}
+
+#[test]
+fn dot() {
+    let mut gr = StableGraph::new();
+    let a = gr.add_node("x");
+    let b = gr.add_node("y");
+    gr.add_edge(a, a, "10");
+    gr.add_edge(a, b, "20");
+    let dot_output = format!("{}", Dot::new(&gr));
+    assert_eq!(dot_output,
+r#"digraph {
+    0 [label="x"]
+    1 [label="y"]
+    0 -> 0 [label="10"]
+    0 -> 1 [label="20"]
+}
+"#);
 }
