@@ -7,18 +7,14 @@ extern crate bincode;
 #[macro_use] extern crate defmac;
 
 use std::collections::HashSet;
+use std::fmt::Debug;
+use std::iter::FromIterator;
 
 use itertools::{Itertools, repeat_n};
 use itertools::assert_equal;
 
-use std::fmt::Debug;
-use std::iter::FromIterator;
-
-use serde_json::{to_string, from_str};
-
 use petgraph::prelude::*;
 use petgraph::EdgeType;
-use petgraph::stable_graph::StableDiGraph;
 use petgraph::graph::{node_index, edge_index, IndexType};
 use petgraph::visit::EdgeRef;
 use petgraph::visit::NodeIndexable;
@@ -107,79 +103,80 @@ pub fn assert_stable_graph_eq<N, E>(g: &StableGraph<N, E>, h: &StableGraph<N, E>
 }
 
 
-#[test]
-fn test_ser_graph_str() {
-    let mut g = Graph::new();
+fn make_graph<Ty, Ix>() -> Graph<&'static str, i32, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    let mut g = Graph::default();
     let a = g.add_node("A");
     let b = g.add_node("B");
     let c = g.add_node("C");
     let d = g.add_node("D");
     let e = g.add_node("E");
     let f = g.add_node("F");
-    g.add_edge(a, b, 7);
-    g.add_edge(c, a, 9);
-    g.add_edge(a, d, 14);
-    g.add_edge(b, c, 10);
-    g.add_edge(d, c, 2);
-    g.add_edge(d, e, 9);
-    g.add_edge(b, f, 15);
-    g.add_edge(c, f, 11);
-    g.add_edge(e, f, 6);
+    g.extend_with_edges(&[
+        (a, b, 7),
+        (c, a, 9),
+        (a, d, 14),
+        (b, c, 10),
+        (d, c, 2),
+        (d, e, 9),
+        (b, f, 15),
+        (c, f, 11),
+        (e, f, 6),
+    ]);
     // Remove a node to make the structure a bit more interesting
     g.remove_node(d);
-    println!("{:#?}", g);
+    g
+}
 
-    println!("{:?}",
-             serde_json::to_string(&g));
-    println!("{}",
-             serde_json::to_string(&g).unwrap());
+fn make_stable_graph<Ty, Ix>() -> StableGraph<&'static str, i32, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    let mut g = StableGraph::default();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    g.extend_with_edges(&[
+        (a, b, 7),
+        (c, a, 9),
+        (a, d, 14),
+        (b, c, 10),
+        (d, c, 2),
+        (d, e, 9),
+        (b, f, 15),
+        (c, f, 11),
+        (e, f, 6),
+    ]);
+    // Remove a node to make the structure a bit more interesting
+    g.remove_node(d);
+    g
+}
 
-    let json = serde_json::to_string(&g).unwrap();
+// json macros
+defmac!(tojson ref g => serde_json::to_string(g).unwrap());
+defmac!(fromjson ref data => serde_json::from_str(data).unwrap());
+defmac!(rejson ref g => fromjson!(tojson!(g)));
 
-    let g2: Result<Graph<String, i32>, _> = serde_json::from_str(&json);
-    println!("{:?}", g2);
-    let g2 = g2.unwrap();
-    assert_graph_eq(&g, &g2);
-    assert_graph_eq(&g2, &g);
+#[test]
+fn json_graph_str_i32() {
+    let g1: DiGraph<_, _> = make_graph();
+    let g2: Graph<String, i32> = rejson!(g1);
+    assert_graph_eq(&g1, &g2);
+    assert_graph_eq(&g2, &g1);
 }
 
 #[test]
-fn test_ser_graph_nils() {
-    let mut g: Graph<(), ()> = Graph::new();
-    let a = g.add_node(());
-    let b = g.add_node(());
-    let c = g.add_node(());
-    let d = g.add_node(());
-    let e = g.add_node(());
-    let f = g.add_node(());
-    g.extend_with_edges(&[
-    (a, b),
-    (c, a),
-    (a, d),
-    (b, c),
-    (d, c),
-    (d, e),
-    (b, f),
-    (c, f),
-    (e, f)]);
+fn json_graph_nils() {
+    let g1 = make_graph().map(|_, _| (), |_, _| ());
 
-    // Remove a node to make the structure a bit more interesting
-    g.remove_node(d);
-    println!("{:?}", g);
-
-    println!("{:?}",
-             serde_json::to_string(&g));
-    println!("{}",
-             serde_json::to_string(&g).unwrap());
-
-    let json = serde_json::to_string(&g).unwrap();
-
-    let g2: Result<Graph<(), ()>, _> = serde_json::from_str(&json);
-    println!("{:?}", g2);
-
-    let g2 = g2.unwrap();
-    assert_graph_eq(&g, &g2);
-    assert_graph_eq(&g2, &g);
+    let g2: Graph<(), ()> = rejson!(g1);
+    assert_graph_eq(&g1, &g2);
+    assert_graph_eq(&g2, &g1);
 }
 
 const DIGRAPH_NILS: &str = r#"{
@@ -213,50 +210,54 @@ type DiGraphNilsU8 = DiGraph<(), (), u8>;
 type DiGraphStrI32 = DiGraph<String, i32>;
 
 #[test]
-fn test_from_string_directed_ok() {
-    serde_json::from_str::<DiGraphNils>(DIGRAPH_NILS).unwrap();
+fn from_json_digraph_nils() {
+    let _: DiGraphNils = fromjson!(DIGRAPH_NILS);
 }
 
 #[test]
 #[should_panic(expected="edge property mismatch")]
-fn test_from_string_directed_mismatch() {
-    serde_json::from_str::<UnGraphNils>(DIGRAPH_NILS).unwrap();
+fn from_json_graph_nils_edge_property_mismatch() {
+    let _: UnGraphNils = fromjson!(DIGRAPH_NILS);
 }
 
 #[test]
 #[should_panic(expected="does not exist")]
-fn test_from_string_index_oob() {
-    serde_json::from_str::<DiGraphNils>(DIGRAPH_NILS_INDEX_OOB).unwrap();
+fn from_json_graph_nils_index_oob() {
+    let _: DiGraphNils = fromjson!(DIGRAPH_NILS_INDEX_OOB);
 }
 
 #[test]
 #[should_panic(expected="expected u8")]
-fn test_from_string_index_too_large() {
-    serde_json::from_str::<DiGraphNilsU8>(DIGRAPH_NILS_INDEX_OUTSIDE_U8).unwrap();
+fn from_json_graph_nils_index_too_large() {
+    let _: DiGraphNilsU8 = fromjson!(DIGRAPH_NILS_INDEX_OUTSIDE_U8);
 }
 
 #[test]
-fn test_from_string_directed_str_i32() {
-    serde_json::from_str::<DiGraphStrI32>(DIGRAPH_STRI32).unwrap();
+fn from_json_graph_directed_str_i32() {
+    let _: DiGraphStrI32 = fromjson!(DIGRAPH_STRI32);
 }
 
 #[test]
 #[should_panic(expected="expected unit")]
-fn test_from_string_directed_wrong_weight_type() {
-    serde_json::from_str::<DiGraphNils>(DIGRAPH_STRI32).unwrap();
+fn from_json_graph_from_edge_type_1() {
+    let _: DiGraphNils = fromjson!(DIGRAPH_STRI32);
 }
 
 #[test]
-fn test_from_string_digraph_str_i32() {
+#[should_panic(expected="expected a string")]
+fn from_json_graph_from_edge_type_2() {
+    let _: DiGraphStrI32 = fromjson!(DIGRAPH_NILS);
+}
+
+#[test]
+fn from_json_digraph_str_i32() {
     let g4nodes = ["A","B","C","D","E","F"];
     let g4edges = [[0,1,7],[2,0,9],[0,3,14],[1,2,10],[3,2,2],[3,4,9],[1,5,15],[2,5,11],[4,5,6]];
 
     type GSI = DiGraph<String, i32>;
     type GSISmall = DiGraph<String, i32, u8>;
 
-    let g4 = serde_json::from_str::<GSI>(DIGRAPH_STRI32);
-    println!("{:?}", g4);
-    let g4 = g4.unwrap(); // assert
+    let g4: GSI = fromjson!(DIGRAPH_STRI32);
 
     for ni in g4.node_indices() {
         assert_eq!(&g4nodes[ni.index()], &g4[ni]);
@@ -271,13 +272,11 @@ fn test_from_string_digraph_str_i32() {
         assert_eq!(edge_data[2], g4[e.id()]);
     }
 
-    let g4small = serde_json::from_str::<GSISmall>(DIGRAPH_STRI32);
-    println!("{:?}", g4small);
-    g4small.unwrap(); // assert
+    let _g4small: GSISmall = fromjson!(DIGRAPH_STRI32);
 }
 
 #[test]
-fn test_nodes_too_big() {
+fn from_json_nodes_too_big() {
     // ensure we fail if node or edge count exceeds index max
     use serde_json::from_str;
 
@@ -301,17 +300,16 @@ fn test_nodes_too_big() {
     type H1 = DiGraph<i32, i32>;
 
     assert!(from_str::<G8>(j1_big).is_err());
-    println!("{:?}", from_str::<G8>(j1_big));
-    from_str::<G16>(j1_big).unwrap(); // assert
-    from_str::<G32>(j1_big).unwrap(); // assert
-    from_str::<G64>(j1_big).unwrap(); // assert
+    let _: G16 = fromjson!(j1_big); // assert
+    let _: G32 = fromjson!(j1_big); // assert
+    let _: G64 = fromjson!(j1_big); // assert
 
     // other edge weight is also ok -- because it has no edges
-    from_str::<H1>(j1_big).unwrap(); // assert
+    let _: H1 = fromjson!(j1_big); // assert
 }
 
 #[test]
-fn test_edges_too_big() {
+fn from_json_edges_too_big() {
     // ensure we fail if node or edge count exceeds index max
     use serde_json::from_str;
 
@@ -330,88 +328,26 @@ fn test_edges_too_big() {
 
     assert!(from_str::<G8>(&j1_big).is_err());
     assert!(from_str::<G16>(&j1_big).is_err());
-    assert!(from_str::<G32>(&j1_big).is_ok());
-    assert!(from_str::<G64>(&j1_big).is_ok());
+    let _: G32 = fromjson!(j1_big); // assert
+    let _: G64 = fromjson!(j1_big); // assert
 }
 
-use petgraph::stable_graph::StableGraph;
-
-
 #[test]
-fn test_stable_graph_str() {
-    let mut g = StableGraph::new();
-    let a = g.add_node("A");
-    let b = g.add_node("B");
-    let c = g.add_node("C");
-    let d = g.add_node("D");
-    let e = g.add_node("E");
-    let f = g.add_node("F");
-    g.add_edge(a, b, 7);
-    g.add_edge(c, a, 9);
-    g.add_edge(a, d, 14);
-    g.add_edge(b, c, 10);
-    g.add_edge(d, c, 2);
-    g.add_edge(d, e, 9);
-    g.add_edge(b, f, 15);
-    g.add_edge(c, f, 11);
-    g.add_edge(e, f, 6);
+fn json_stable_graph_str() {
+    let g1 = make_stable_graph();
 
-    // Remove a node to make the structure a bit more interesting
-    g.remove_node(d);
+    let g2: StableGraph<String, i32> = rejson!(g1);
 
-    println!("{:#?}", g);
-
-    println!("{:?}",
-             serde_json::to_string(&g));
-    println!("{}",
-             serde_json::to_string(&g).unwrap());
-
-    let json = serde_json::to_string(&g).unwrap();
-
-    let g2: Result<StableGraph<String, i32>, _> = serde_json::from_str(&json);
-    let g2 = g2.unwrap();
-    println!("{:?}", g2);
     // map &str -> String
-    let g1 = g.map(|_, s| s.to_string(), |_, &w| w);
+    let g1 = g1.map(|_, s| s.to_string(), |_, &w| w);
     assert_stable_graph_eq(&g1, &g2);
 }
 
 #[test]
-fn test_stable_graph_nils() {
-    let mut g: StableGraph<(), ()> = StableGraph::new();
-
-    let a = g.add_node(());
-    let b = g.add_node(());
-    let c = g.add_node(());
-    let d = g.add_node(());
-    let e = g.add_node(());
-    let f = g.add_node(());
-    g.extend_with_edges(&[
-    (a, b),
-    (c, a),
-    (a, d),
-    (b, c),
-    (d, c),
-    (d, e),
-    (b, f),
-    (c, f),
-    (e, f)]);
-
-    // Remove a node to make the structure a bit more interesting
-    g.remove_node(d);
-
-    println!("{:?}", g);
-
-    println!("{:?}",
-             serde_json::to_string(&g));
-    println!("{}",
-             serde_json::to_string(&g).unwrap());
-
-    let json = serde_json::to_string(&g).unwrap();
-    let g2: Result<StableGraph<(), ()>, _> = serde_json::from_str(&json);
-    let g2 = g2.unwrap();
-    println!("{:?}", g2);
-    assert_stable_graph_eq(&g, &g2);
+fn json_stable_graph_nils() {
+    let g1 = make_stable_graph().map(|_, _| (), |_, _| ());
+    let g2 = rejson!(g1);
+    assert_stable_graph_eq(&g1, &g2);
 }
 
 
@@ -420,11 +356,18 @@ defmac!(encode ref g => bincode::serialize(g, bincode::Infinite).unwrap());
 defmac!(decode ref data => bincode::deserialize(data).unwrap());
 defmac!(recode ref g => decode!(encode!(g)));
 
-
 #[test]
 fn bincode_stablegraph_to_graph_i32_0() {
     let g1 = StableGraph::<i32, i32>::new();
-    let _g2: Graph<i32, i32> = recode!(g1);
+    let g2: Graph<i32, i32> = recode!(g1);
+    assert_graph_eq(&g2, &Graph::<i32, i32>::default());
+}
+
+#[test]
+fn bincode_graph_to_stablegraph_i32_0() {
+    let g1 = Graph::<i32, i32>::new();
+    let g2: StableGraph<i32, i32> = recode!(g1);
+    assert_stable_graph_eq(&g2, &StableGraph::<i32, i32>::default());
 }
 
 #[test]
@@ -432,17 +375,14 @@ fn bincode_graph_to_graph_i32_1() {
     let mut g1 = Graph::<i32, i32>::new();
     let x = 1729;
     g1.add_node(x);
-    let data = encode!(g1);
-    println!("");
-    println!("{:02x}", data.iter().format(" "));
-
-    let g2: Graph<i32, i32> = bincode::deserialize(&data).unwrap();
+    let g2: Graph<i32, i32> = recode!(g1);
 
     assert_graph_eq(&g1, &g2);
 }
 
 #[test]
 fn bincode_stablegraph_added2_removed2() {
+    // from quickcheck failure case:
     // StableGraph { Ty: "Directed", node_count: 4, edge_count: 1, edges: (0,
     // 2), node weights: {0: -55, 2: 83, 3: -12, 5: -2}, edge weights: {0: 75},
     //   free_node: NodeIndex(1), free_edge: EdgeIndex(4294967295) }
@@ -459,6 +399,7 @@ fn bincode_stablegraph_added2_removed2() {
 
 #[test]
 fn bincode_stablegraph_added3_removed2() {
+    // from quickcheck failure case:
     // StableGraph { Ty: "Directed", node_count: 1, edge_count: 0, node weights:
     // {2: -87}, edge weights: {}, free_node: NodeIndex(3), free_edge:
     // EdgeIndex(3) }
@@ -487,25 +428,21 @@ fn bincode_stablegraph_to_graph_i32_1() {
 }
 
 quickcheck! {
-    fn json_graph_to_bigger_graph(g1: DiGraph<i32, i32, u16>) -> () {
-        let json1 = to_string(&g1).unwrap();
-        let g2: DiGraph<i32, i32, usize> = from_str(&json1).unwrap();
-        let json2 = to_string(&g2).unwrap();
-        let g3: DiGraph<i32, i32, u16> = from_str(&json2).unwrap();
-        assert_graph_eq(&g1, &g3);
-    }
     fn json_graph_to_stablegraph_to_graph(g1: Graph<i32, i32>) -> () {
-        let json1 = to_string(&g1).unwrap();
-        let sg: StableGraph<i32, i32> = from_str(&json1).unwrap();
-        let json2 = to_string(&sg).unwrap();
-        let g2: Graph<i32, i32> = from_str(&json2).unwrap();
+        let sg: StableGraph<i32, i32> = rejson!(g1);
+        let g2: Graph<i32, i32> = rejson!(sg);
         assert_graph_eq(&g1, &g2);
     }
 
     fn json_stablegraph_to_stablegraph(g1: StableGraph<i32, i32>) -> () {
-        let json1 = to_string(&g1).unwrap();
-        let sg: StableGraph<i32, i32> = from_str(&json1).unwrap();
+        let sg: StableGraph<i32, i32> = rejson!(g1);
         assert_stable_graph_eq(&g1, &sg);
+    }
+
+    fn json_graph_to_bigger_graph(g1: DiGraph<i32, i32, u16>) -> () {
+        let g2: DiGraph<i32, i32, usize> = rejson!(g1);
+        let g3: DiGraph<i32, i32, u16> = rejson!(g2);
+        assert_graph_eq(&g1, &g3);
     }
 
     fn bincode_graph_to_graph_nils(g1: Graph<(), ()>) -> () {
