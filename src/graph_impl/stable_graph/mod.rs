@@ -93,8 +93,9 @@ mod serialization;
 ///
 /// - Indices don't allow as much compile time checking as references.
 ///
-/// Depends on crate feature `stable_graph` (default). *This is a new feature in
-/// petgraph.  You can contribute to help it achieve parity with Graph.*
+/// Depends on crate feature `stable_graph` (default). *Stable Graph is still
+/// missing a few methods compared to Graph. You can contribute to help it
+/// achieve parity.*
 pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
 {
     g: Graph<Option<N>, Option<E>, Ty, Ix>,
