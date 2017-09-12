@@ -734,6 +734,8 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.g.raw_nodes()
     }
 
+    // used by check_free_lists conditionally
+    #[allow(unused)]
     fn raw_edges(&self) -> &[Edge<Option<E>, Ix>] {
         self.g.raw_edges()
     }
