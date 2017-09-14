@@ -97,7 +97,7 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 ///
 /// If `space` is not `None`, it is used instead of creating a new workspace for
 /// graph traversal. The implementation is iterative.
-pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>)
+pub fn toposort<G>(g: G, space: Option<&mut DfsSpace<G::NodeId, G::Map>>)
     -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
     where G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
 {
@@ -222,7 +222,7 @@ fn with_dfs<G, F, R>(g: G, space: Option<&mut DfsSpaceType<G>>, f: F) -> R
 /// If `space` is not `None`, it is used instead of creating a new workspace for
 /// graph traversal.
 pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
-                              space: Option<&mut DfsSpaceType<G>>)
+                              space: Option<&mut DfsSpace<G::NodeId, G::Map>>)
     -> bool
     where G: IntoNeighbors + Visitable,
 {
