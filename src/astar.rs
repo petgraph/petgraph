@@ -55,15 +55,16 @@ use algo::Measure;
 /// ]);
 ///
 /// let path = astar(&g, a, |finish| finish == f, |e| *e.weight(), |_| 0);
-/// assert_eq!(path, Some(vec![a, d, e, f]));
+/// assert_eq!(path, Some((6, vec![a, d, e, f])));
 /// ```
 ///
 /// The graph should be `Visitable` and implement `IntoEdges`. Edge costs must be non-negative.
 ///
-/// Returns a Path of subsequent `NodeId` from start to finish, if one was found.
+/// Returns the total cost + the path of subsequent `NodeId` from start to finish, if one was
+/// found.
 pub fn astar<G, F, H, K, IsGoal>(graph: G, start: G::NodeId, mut is_goal: IsGoal,
                                      mut edge_cost: F, mut estimate_cost: H)
-    -> Option<Vec<G::NodeId>>
+    -> Option<(K, Vec<G::NodeId>)>
     where G: IntoEdges + Visitable,
           IsGoal: FnMut(G::NodeId) -> bool,
           G::NodeId: Eq + Hash,
@@ -82,7 +83,9 @@ pub fn astar<G, F, H, K, IsGoal>(graph: G, start: G::NodeId, mut is_goal: IsGoal
 
     while let Some(MinScored(_, node)) = visit_next.pop() {
         if is_goal(node) {
-            return Some(path_tracker.reconstruct_path_to(node));
+            let path = path_tracker.reconstruct_path_to(node);
+            let cost = scores[&node];
+            return Some((cost, path));
         }
 
         // Don't visit the same node several times, as the first time it was visited it was using

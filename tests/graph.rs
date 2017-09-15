@@ -363,7 +363,7 @@ fn test_astar_null_heuristic() {
     g.add_edge(e, f, 6);
 
     let path = astar(&g, a, |finish| finish == e, |e| *e.weight(), |_| 0);
-    assert_eq!(path, Some(vec![a, d, e]));
+    assert_eq!(path, Some((23, vec![a, d, e])));
 
     let path = astar(&g, e, |finish| finish == b, |e| *e.weight(), |_| 0);
     assert_eq!(path, None);
@@ -396,9 +396,7 @@ fn test_astar_manhattan_heuristic() {
         x.powi(2) + y.powi(2)
     });
 
-    // TODO: check this on paper
-    assert_eq!(path, Some(vec![a, d, e, f]));
-    // assert_eq!(path, Some(vec![a, b, f]));
+    assert_eq!(path, Some((6., vec![a, d, e, f])));
 }
 
 #[cfg(feature = "generate")]
