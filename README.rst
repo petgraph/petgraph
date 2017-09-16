@@ -31,6 +31,7 @@ Recent Changes
   - New algorithm by @jmcomets: A* search algorithm in ``petgraph::algo::astar``
   - One ``StableGraph`` bug fix whose patch was supposed to be in the previous
     version:
+
     + ``add_edge(m, n, _)`` now properly always panics if nodes m or n don't
       exist in the graph.
 
