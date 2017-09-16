@@ -22,16 +22,20 @@ use algo::Measure;
 
 /// [Generic] A* shortest path algorithm.
 ///
-/// Compute the length of the shortest path from `start` to `finish`.
+/// Computes the shortest path from `start` to `finish`, including the total path cost.
 ///
 /// `finish` is implicitly given via the `is_goal` callback, which should return `true` if the
 /// given node is the finish node.
 ///
-/// The function `edge_cost` should return the cost for a particular edge, which is used to compute
-/// path costs.
+/// The function `edge_cost` should return the cost for a particular edge. Edge costs must be
+/// non-negative.
 ///
 /// The function `estimate_cost` should return the estimated cost to the finish for a particular
-/// node, also used to compute path costs.
+/// node. For the algorithm to find the actual shortest path, it should be admissible, meaning that
+/// it should never overestimate the actual cost to get to the nearest goal node. Estimate costs
+/// must also be non-negative.
+///
+/// The graph should be `Visitable` and implement `IntoEdges`.
 ///
 /// ```
 /// use petgraph::Graph;
@@ -57,8 +61,6 @@ use algo::Measure;
 /// let path = astar(&g, a, |finish| finish == f, |e| *e.weight(), |_| 0);
 /// assert_eq!(path, Some((6, vec![a, d, e, f])));
 /// ```
-///
-/// The graph should be `Visitable` and implement `IntoEdges`. Edge costs must be non-negative.
 ///
 /// Returns the total cost + the path of subsequent `NodeId` from start to finish, if one was
 /// found.
