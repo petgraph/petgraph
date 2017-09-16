@@ -2,8 +2,10 @@
 #[macro_use] extern crate quickcheck;
 extern crate rand;
 extern crate petgraph;
+#[macro_use] extern crate defmac;
 
 extern crate odds;
+extern crate itertools;
 
 mod utils;
 
@@ -14,6 +16,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use rand::Rng;
+use itertools::assert_equal;
 
 use petgraph::prelude::*;
 use petgraph::{
@@ -34,6 +37,12 @@ use petgraph::algo::{
     bellman_ford,
 };
 use petgraph::visit::{Topo, Reversed};
+use petgraph::visit::{
+    IntoNodeReferences,
+    IntoEdgeReferences,
+    NodeIndexable,
+    EdgeRef,
+};
 use petgraph::data::FromElements;
 use petgraph::graph::{IndexType, node_index, edge_index};
 use petgraph::graphmap::{
@@ -735,5 +744,66 @@ quickcheck! {
             bellman_ford(&gr, start).unwrap();
         }
         true
+    }
+}
+
+defmac!(iter_eq a, b => a.eq(b));
+defmac!(nodes_eq ref a, ref b => a.node_references().eq(b.node_references()));
+defmac!(edgew_eq ref a, ref b => a.edge_references().eq(b.edge_references()));
+defmac!(edges_eq ref a, ref b =>
+        iter_eq!(
+            a.edge_references().map(|e| (e.source(), e.target())),
+            b.edge_references().map(|e| (e.source(), e.target()))));
+
+quickcheck! {
+    fn test_di_from(gr1: DiGraph<i32, i32>) -> () {
+        let sgr = StableGraph::from(gr1.clone());
+        let gr2 = Graph::from(sgr);
+
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+    fn test_un_from(gr1: UnGraph<i32, i32>) -> () {
+        let sgr = StableGraph::from(gr1.clone());
+        let gr2 = Graph::from(sgr);
+
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+
+    fn test_graph_from_stable_graph(gr1: StableDiGraph<usize, usize>) -> () {
+        let mut gr1 = gr1;
+        let gr2 = Graph::from(gr1.clone());
+
+        // renumber the stablegraph nodes and put the new index in the
+        // associated data
+        let mut index = 0;
+        for i in 0..gr1.node_bound() {
+            let ni = node_index(i);
+            if gr1.contains_node(ni) {
+                gr1[ni] = index;
+                index += 1;
+            }
+        }
+        if let Some(edge_bound) = gr1.edge_references().next_back()
+            .map(|ed| ed.id().index() + 1)
+        {
+            index = 0;
+            for i in 0..edge_bound {
+                let ni = edge_index(i);
+                if gr1.edge_weight(ni).is_some() {
+                    gr1[ni] = index;
+                    index += 1;
+                }
+            }
+        }
+
+        assert_equal(
+            // Remap the stablegraph to compact indices
+            gr1.edge_references().map(|ed| (edge_index(*ed.weight()), gr1[ed.source()], gr1[ed.target()])),
+            gr2.edge_references().map(|ed| (ed.id(), ed.source().index(), ed.target().index()))
+        );
     }
 }
