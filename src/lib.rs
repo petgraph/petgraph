@@ -55,6 +55,7 @@ mod dijkstra;
 mod astar;
 pub mod csr;
 mod iter_format;
+mod iter_utils;
 mod isomorphism;
 mod traits_graph;
 mod util;
