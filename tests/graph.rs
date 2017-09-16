@@ -365,6 +365,10 @@ fn test_astar_null_heuristic() {
     let path = astar(&g, a, |finish| finish == e, |e| *e.weight(), |_| 0);
     assert_eq!(path, Some((23, vec![a, d, e])));
 
+    // check against dijkstra
+    let dijkstra_run = dijkstra(&g, a, Some(e), |e| *e.weight());
+    assert_eq!(dijkstra_run[&e], 23);
+
     let path = astar(&g, e, |finish| finish == b, |e| *e.weight(), |_| 0);
     assert_eq!(path, None);
 }
@@ -395,6 +399,10 @@ fn test_astar_manhattan_heuristic() {
     });
 
     assert_eq!(path, Some((6., vec![a, d, e, f])));
+
+    // check against dijkstra
+    let dijkstra_run = dijkstra(&g, a, Some(f), |e| *e.weight());
+    assert_eq!(dijkstra_run[&f], 6.);
 }
 
 #[cfg(feature = "generate")]
