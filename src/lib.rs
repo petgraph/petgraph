@@ -52,6 +52,7 @@ mod graph_impl;
 pub mod dot;
 pub mod unionfind;
 mod dijkstra;
+mod astar;
 pub mod csr;
 mod iter_format;
 mod isomorphism;

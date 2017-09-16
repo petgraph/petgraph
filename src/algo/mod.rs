@@ -44,6 +44,7 @@ pub use super::isomorphism::{
     is_isomorphic_matching,
 };
 pub use super::dijkstra::dijkstra;
+pub use super::astar::astar;
 
 /// [Generic] Return the number of connected components of the graph.
 ///
