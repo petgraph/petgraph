@@ -391,9 +391,7 @@ fn test_astar_manhattan_heuristic() {
         let (x1, y1): (f32, f32) = g[node];
         let (x2, y2): (f32, f32) = g[f];
 
-        let (x, y) = (x2 + x1, y2 + y1);
-
-        x.powi(2) + y.powi(2)
+        (x2 - x1).abs() + (y2 - y1).abs()
     });
 
     assert_eq!(path, Some((6., vec![a, d, e, f])));
