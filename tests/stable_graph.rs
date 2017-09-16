@@ -299,3 +299,47 @@ r#"digraph {
 }
 "#);
 }
+
+defmac!(iter_eq a, b => a.eq(b));
+defmac!(nodes_eq ref a, ref b => a.node_references().eq(b.node_references()));
+defmac!(edgew_eq ref a, ref b => a.edge_references().eq(b.edge_references()));
+defmac!(edges_eq ref a, ref b =>
+        iter_eq!(
+            a.edge_references().map(|e| (e.source(), e.target())),
+            b.edge_references().map(|e| (e.source(), e.target()))));
+
+#[test]
+fn from() {
+    let mut gr1 = StableGraph::new();
+    let a = gr1.add_node(1);
+    let b = gr1.add_node(2);
+    let c = gr1.add_node(3);
+    gr1.add_edge(a, a, 10);
+    gr1.add_edge(a, b, 20);
+    gr1.add_edge(b, c, 30);
+    gr1.add_edge(a, c, 40);
+
+    let gr2 = Graph::from(gr1.clone());
+    let gr3 = StableGraph::from(gr2.clone());
+    assert!(nodes_eq!(gr1, gr3));
+    assert!(edgew_eq!(gr1, gr3));
+    assert!(edges_eq!(gr1, gr3));
+
+    gr1.remove_node(b);
+
+    let gr4 = Graph::from(gr1.clone());
+    let gr5 = StableGraph::from(gr4.clone());
+
+    let mut ans = StableGraph::new();
+    let a = ans.add_node(1);
+    let c = ans.add_node(3);
+    ans.add_edge(a, a, 10);
+    ans.add_edge(a, c, 40);
+
+    assert!(nodes_eq!(gr4, ans));
+    assert!(edges_eq!(gr4, ans));
+
+    assert!(nodes_eq!(gr5, ans));
+    assert!(edgew_eq!(gr5, ans));
+    assert!(edges_eq!(gr5, ans));
+}
