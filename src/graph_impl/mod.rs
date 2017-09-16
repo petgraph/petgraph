@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::iter;
 use std::marker::PhantomData;
 use std::mem::size_of;
-use std::ops::{Deref, Index, IndexMut, Range};
+use std::ops::{Index, IndexMut, Range};
 use std::slice;
 
 use {
@@ -22,10 +22,7 @@ use iter_format::{
 };
 
 use visit::EdgeRef;
-use visit::{Data, IntoNodeIdentifiers, GraphProp, NodeIndexable, IntoNeighborsDirected};
-use visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
-use visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount, IntoEdges};
-use data::{DataMap, DataMapMut};
+use visit::{IntoNodeReferences, IntoEdges};
 use util::enumerate;
 
 #[cfg(feature = "serde-1")]
@@ -1991,6 +1988,7 @@ impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
 
 #[cfg(feature = "stable_graph")]
 pub mod stable_graph;
+mod frozen;
 
 /// `Frozen` only allows shared access (read-only) to the
 /// underlying graph `G`, but it allows mutable access to its
@@ -1999,68 +1997,4 @@ pub mod stable_graph;
 /// This is used to ensure immutability of the graph's structure
 /// while permitting weights to change.
 pub struct Frozen<'a, G: 'a>(&'a mut G);
-
-impl<'a, G> Frozen<'a, G> {
-    pub fn new(gr: &'a mut G) -> Self {
-        Frozen(gr)
-    }
-}
-
-impl<'a, G> Deref for Frozen<'a, G> {
-    type Target = G;
-    fn deref(&self) -> &G { self.0 }
-}
-
-impl<'a, G, I> Index<I> for Frozen<'a, G>
-    where G: Index<I>
-{
-    type Output = G::Output;
-    fn index(&self, i: I) -> &G::Output { self.0.index(i) }
-}
-
-impl<'a, G, I> IndexMut<I> for Frozen<'a, G>
-    where G: IndexMut<I>
-{
-    fn index_mut(&mut self, i: I) -> &mut G::Output { self.0.index_mut(i) }
-}
-
-impl<'a, N, E, Ty, Ix> Frozen<'a, Graph<N, E, Ty, Ix>>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    /// Index the `Graph` by two indices, any combination of
-    /// node or edge indices is fine.
-    ///
-    /// **Panics** if the indices are equal or if they are out of bounds.
-    pub fn index_twice_mut<T, U>(&mut self, i: T, j: U)
-        -> (&mut <Graph<N, E, Ty, Ix> as Index<T>>::Output,
-            &mut <Graph<N, E, Ty, Ix> as Index<U>>::Output)
-        where Graph<N, E, Ty, Ix>: IndexMut<T> + IndexMut<U>,
-              T: GraphIndex,
-              U: GraphIndex,
-    {
-        self.0.index_twice_mut(i, j)
-    }
-}
-
-macro_rules! access0 {
-    ($e:expr) => ($e.0);
-}
-
-Data!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-DataMap!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-DataMapMut!{delegate_impl [['a, G], G, Frozen<'a, G>, access0]}
-GetAdjacencyMatrix!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-IntoEdgeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoEdges!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoNeighbors!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoNeighborsDirected!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoNodeIdentifiers!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoNodeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-NodeCompactIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-NodeCount!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-NodeIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-GraphProp!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-Visitable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-
 
