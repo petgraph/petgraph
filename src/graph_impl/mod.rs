@@ -1819,7 +1819,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
 #[derive(Clone, Debug)]
 pub struct NodeIndices<Ix = DefaultIx> {
     r: Range<usize>,
-    ty: PhantomData<Ix>,
+    ty: PhantomData<fn() -> Ix>,
 }
 
 impl<Ix: IndexType> Iterator for NodeIndices<Ix> {
@@ -1844,7 +1844,7 @@ impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
 #[derive(Clone, Debug)]
 pub struct EdgeIndices<Ix = DefaultIx> {
     r: Range<usize>,
-    ty: PhantomData<Ix>,
+    ty: PhantomData<fn() -> Ix>,
 }
 
 impl<Ix: IndexType> Iterator for EdgeIndices<Ix> {
