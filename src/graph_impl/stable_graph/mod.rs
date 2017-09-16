@@ -27,6 +27,7 @@ use iter_format::{
     NoPretty,
     DebugMap,
 };
+use iter_utils::IterUtilsExt;
 
 use super::{
     Edge,
@@ -479,6 +480,13 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         match self.g.edges.get(e.index()) {
             Some(ed) if ed.weight.is_some() => Some((ed.source(), ed.target())),
             _otherwise => None,
+        }
+    }
+
+    /// Return an iterator over the node indices of the graph
+    pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
+        EdgeIndices {
+            iter: enumerate(self.raw_edges())
         }
     }
 
@@ -1001,9 +1009,9 @@ impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
     type Item = (NodeIndex<Ix>, &'a N);
 
     fn next(&mut self) -> Option<Self::Item> {
-        (&mut self.iter).filter_map(|(i, node)| {
+        self.iter.find_map(|(i, node)| {
             node.weight.as_ref().map(move |w| (node_index(i), w))
-        }).next()
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1016,9 +1024,9 @@ impl<'a, N, Ix> DoubleEndedIterator for NodeReferences<'a, N, Ix>
     where Ix: IndexType
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        (&mut self.iter).filter_map(|(i, node)| {
+        self.iter.rfind_map(|(i, node)| {
             node.weight.as_ref().map(move |w| (node_index(i), w))
-        }).next_back()
+        })
     }
 }
 
@@ -1184,7 +1192,7 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
     type Item = EdgeReference<'a, E, Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        (&mut self.iter).filter_map(|(i, edge)|
+        self.iter.find_map(|(i, edge)|
             edge.weight.as_ref().map(move |weight| {
                 EdgeReference {
                     index: edge_index(i),
@@ -1192,7 +1200,6 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
                     weight: weight,
                 }
             }))
-            .next()
     }
 }
 
@@ -1200,7 +1207,7 @@ impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
     where Ix: IndexType
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        (&mut self.iter).filter_map(|(i, edge)|
+        self.iter.rfind_map(|(i, edge)|
             edge.weight.as_ref().map(move |weight| {
                 EdgeReference {
                     index: edge_index(i),
@@ -1208,7 +1215,6 @@ impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
                     weight: weight,
                 }
             }))
-            .next_back()
     }
 }
 
@@ -1350,21 +1356,26 @@ impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.by_ref().filter_map(|(i, node)| {
+        self.iter.find_map(|(i, node)| {
             if node.weight.is_some() {
                 Some(node_index(i))
             } else { None }
-        }).next()
+        })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, hi) = self.iter.size_hint();
+        (0, hi)
     }
 }
 
 impl<'a, N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'a, N, Ix> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.by_ref().filter_map(|(i, node)| {
+        self.iter.rfind_map(|(i, node)| {
             if node.weight.is_some() {
                 Some(node_index(i))
             } else { None }
-        }).next_back()
+        })
     }
 }
 
@@ -1380,6 +1391,38 @@ impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
     }
     fn to_index(&self, ix: NodeIndex<Ix>) -> usize { ix.index() }
     fn from_index(&self, ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
+}
+
+/// Iterator over the edge indices of a graph.
+pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
+    iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
+}
+
+impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
+    type Item = EdgeIndex<Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.find_map(|(i, node)| {
+            if node.weight.is_some() {
+                Some(edge_index(i))
+            } else { None }
+        })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, hi) = self.iter.size_hint();
+        (0, hi)
+    }
+}
+
+impl<'a, E, Ix: IndexType> DoubleEndedIterator for EdgeIndices<'a, E, Ix> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.rfind_map(|(i, node)| {
+            if node.weight.is_some() {
+                Some(edge_index(i))
+            } else { None }
+        })
+    }
 }
 
 
