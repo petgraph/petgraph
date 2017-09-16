@@ -985,6 +985,45 @@ impl<N, E, Ty, Ix> From<Graph<N, E, Ty, Ix>> for StableGraph<N, E, Ty, Ix>
     }
 }
 
+/// Convert a `StableGraph` into a `Graph`
+///
+/// Computes in **O(|V| + |E|)** time.
+///
+/// This translates into a graph with node and edge indices in a compact
+/// interval without holes (like `Graph`s always are).
+///
+/// Only if the stable graph had no vacancies after deletions (if was node bound
+/// equal to node count, and the same for edges), would the resulting graph have
+/// the same node and edge indices as the input.
+impl<N, E, Ty, Ix> From<StableGraph<N, E, Ty, Ix>> for Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn from(graph: StableGraph<N, E, Ty, Ix>) -> Self {
+        let mut result_g = Graph::with_capacity(graph.node_count(), graph.edge_count());
+        // mapping from old node index to new node index
+        let mut node_index_map = vec![NodeIndex::end(); graph.node_bound()];
+
+        for (i, node) in enumerate(graph.g.nodes) {
+            if let Some(nw) = node.weight {
+                node_index_map[i] = result_g.add_node(nw);
+            }
+        }
+        for edge in graph.g.edges {
+            let source_index = edge.source().index();
+            let target_index = edge.target().index();
+            if let Some(ew) = edge.weight {
+                let source = node_index_map[source_index];
+                let target = node_index_map[target_index];
+                debug_assert!(source != NodeIndex::end());
+                debug_assert!(target != NodeIndex::end());
+                result_g.add_edge(source, target, ew);
+            }
+        }
+        result_g
+    }
+}
+
 impl<'a, N, E, Ty, Ix> IntoNodeReferences for &'a StableGraph<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
