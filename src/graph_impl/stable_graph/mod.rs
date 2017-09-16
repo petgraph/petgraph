@@ -1362,6 +1362,11 @@ impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
             } else { None }
         })
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, hi) = self.iter.size_hint();
+        (0, hi)
+    }
 }
 
 impl<'a, N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'a, N, Ix> {
@@ -1402,6 +1407,11 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
                 Some(edge_index(i))
             } else { None }
         })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, hi) = self.iter.size_hint();
+        (0, hi)
     }
 }
 
