@@ -482,6 +482,13 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Return an iterator over the node indices of the graph
+    pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
+        EdgeIndices {
+            iter: enumerate(self.raw_edges())
+        }
+    }
+
     /// Lookup an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
@@ -1380,6 +1387,33 @@ impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
     }
     fn to_index(&self, ix: NodeIndex<Ix>) -> usize { ix.index() }
     fn from_index(&self, ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
+}
+
+/// Iterator over the edge indices of a graph.
+pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
+    iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
+}
+
+impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
+    type Item = EdgeIndex<Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.by_ref().filter_map(|(i, node)| {
+            if node.weight.is_some() {
+                Some(edge_index(i))
+            } else { None }
+        }).next()
+    }
+}
+
+impl<'a, E, Ix: IndexType> DoubleEndedIterator for EdgeIndices<'a, E, Ix> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.by_ref().filter_map(|(i, node)| {
+            if node.weight.is_some() {
+                Some(edge_index(i))
+            } else { None }
+        }).next_back()
+    }
 }
 
 
