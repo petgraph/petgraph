@@ -1840,6 +1840,8 @@ impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
     }
 }
 
+impl<Ix: IndexType> ExactSizeIterator for NodeIndices<Ix> {}
+
 /// Iterator over the edge indices of a graph.
 #[derive(Clone, Debug)]
 pub struct EdgeIndices<Ix = DefaultIx> {
@@ -1864,6 +1866,8 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
         self.r.next_back().map(edge_index)
     }
 }
+
+impl<Ix: IndexType> ExactSizeIterator for EdgeIndices<Ix> {}
 
 /// Reference to a `Graph` edge.
 #[derive(Debug)]
@@ -1922,6 +1926,20 @@ impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
         self.iter.size_hint()
     }
 }
+
+impl<'a, N, Ix> DoubleEndedIterator for NodeReferences<'a, N, Ix>
+    where Ix: IndexType
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back().map(|(i, node)|
+            (node_index(i), &node.weight)
+        )
+    }
+}
+
+impl<'a, N, Ix> ExactSizeIterator for NodeReferences<'a, N, Ix>
+    where Ix: IndexType
+{ }
 
 impl<'a, Ix, E> EdgeReference<'a, E, Ix>
     where Ix: IndexType,
@@ -1985,6 +2003,10 @@ impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
         )
     }
 }
+
+impl<'a, E, Ix> ExactSizeIterator for EdgeReferences<'a, E, Ix>
+    where Ix: IndexType
+{}
 
 #[cfg(feature = "stable_graph")]
 pub mod stable_graph;
