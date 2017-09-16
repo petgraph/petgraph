@@ -90,21 +90,9 @@ fn test_scc() {
 
 #[test]
 fn test_tarjan_scc() {
-    let mut gr: StableGraph<(), ()> = StableGraph::from_edges(&[
-        (6, 0),
-        (0, 3),
-        (3, 6),
-        (8, 6), (8, 2),
-        (2, 5), (5, 8), (7, 5),
-        (1, 7),
-        (7, 4),
-        (4, 1)]);
-    // make an identical replacement of n(4) and leave a hole
-    let x = gr.add_node(());
-    gr.add_edge(n(7), x, ());
-    gr.add_edge(x, n(1), ());
-    gr.remove_node(n(4));
+    let gr = scc_graph();
 
+    let x = n(gr.node_bound() - 1);
     assert_sccs_eq(tarjan_scc(&gr), vec![
         vec![n(0), n(3), n(6)],
         vec![n(1), n(7),   x ],
