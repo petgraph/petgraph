@@ -761,6 +761,17 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Create a new `StableGraph` by mapping nodes and edges.
+    /// A node or edge may be mapped to `None` to exclude it from
+    /// the resulting graph.
+    ///
+    /// Nodes are mapped first with the `node_map` closure, then
+    /// `edge_map` is called for the edges that have not had any endpoint
+    /// removed.
+    ///
+    /// The resulting graph has the structure of a subgraph of the original graph.
+    /// Nodes and edges that are not removed maintain their old node or edge
+    /// indices.
     pub fn filter_map<'a, F, G, N2, E2>(&'a self, mut node_map: F, mut edge_map: G)
         -> StableGraph<N2, E2, Ty, Ix>
         where F: FnMut(NodeIndex<Ix>, &'a N) -> Option<N2>,
