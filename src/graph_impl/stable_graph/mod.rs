@@ -989,10 +989,10 @@ impl<N, E, Ty, Ix> From<Graph<N, E, Ty, Ix>> for StableGraph<N, E, Ty, Ix>
 ///
 /// Computes in **O(|V| + |E|)** time.
 ///
-/// This translates into a graph with node and edge indices in a compact
-/// interval without holes (like `Graph`s always are).
+/// This translates the stable graph into a graph with node and edge indices in
+/// a compact interval without holes (like `Graph`s always are).
 ///
-/// Only if the stable graph had no vacancies after deletions (if was node bound
+/// Only if the stable graph had no vacancies after deletions (if node bound was
 /// equal to node count, and the same for edges), would the resulting graph have
 /// the same node and edge indices as the input.
 impl<N, E, Ty, Ix> From<StableGraph<N, E, Ty, Ix>> for Graph<N, E, Ty, Ix>
