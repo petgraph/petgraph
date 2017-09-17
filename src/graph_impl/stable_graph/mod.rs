@@ -212,6 +212,19 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.g.clear();
     }
 
+    /// Remove all edges
+    pub fn clear_edges(&mut self) {
+        self.edge_count = 0;
+        self.free_edge = EdgeIndex::end();
+        self.g.edges.clear();
+        // clear edges without touching the free list
+        for node in &mut self.g.nodes {
+            if let Some(_) = node.weight {
+                node.next = [EdgeIndex::end(), EdgeIndex::end()];
+            }
+        }
+    }
+
     /// Return the number of nodes (vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
@@ -709,7 +722,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     ///  **e'** is the number of affected edges, including *n* calls to `.remove_edge()`
     /// where *n* is the number of edges with an endpoint in a removed node.
     pub fn retain_nodes<F>(&mut self, mut visit: F) where F: FnMut(Frozen<Self>, NodeIndex<Ix>) -> bool {
-        for i in 0..self.g.node_count() {
+        for i in 0..self.node_bound() {
             let ix = node_index(i);
             if self.contains_node(ix) && !visit(Frozen(self), ix) {
                 self.remove_node(ix);
@@ -718,6 +731,31 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.check_free_lists();
     }
 
+    /// Keep all edges that return `true` from the `visit` closure,
+    /// remove the others.
+    ///
+    /// `visit` is provided a proxy reference to the graph, so that
+    /// the graph can be walked and associated data modified.
+    ///
+    /// The order edges are visited is not specified.
+    ///
+    /// The edge indices of the removed edes are invalidated, but none other.
+    /// Edge indices are invalidated as they would be following the removal of
+    /// each edge with an endpoint in a removed edge.
+    ///
+    /// Computes in **O(e'')** time, **e'** is the number of affected edges,
+    /// including the calls to `.remove_edge()` for each removed edge.
+    pub fn retain_edges<F>(&mut self, mut visit: F)
+        where F: FnMut(Frozen<Self>, EdgeIndex<Ix>) -> bool
+    {
+        for i in 0..self.edge_bound() {
+            let ix = edge_index(i);
+            if self.edge_weight(ix).is_some() && !visit(Frozen(self), ix) {
+                self.remove_edge(ix);
+            }
+        }
+        self.check_free_lists();
+    }
 
     /// Create a new `StableGraph` from an iterable of edges.
     ///
