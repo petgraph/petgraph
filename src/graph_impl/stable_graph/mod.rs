@@ -104,6 +104,14 @@ pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
     g: Graph<Option<N>, Option<E>, Ty, Ix>,
     node_count: usize,
     edge_count: usize,
+
+    // node and edge free lists (both work the same way)
+    //
+    // free_node, if not NodeIndex::end(), points to a node index
+    // that is vacant (after a deletion).  The next item in the list is kept in
+    // that Node's Node.next[0] field. For Node, it's a node index stored
+    // in an EdgeIndex location, and the _into_edge()/_into_node() methods
+    // convert.
     free_node: NodeIndex<Ix>,
     free_edge: EdgeIndex<Ix>,
 }
@@ -248,6 +256,15 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         index
     }
 
+    /// free_node: Which free list to update for the vacancy
+    fn add_vacant_node(&mut self, free_node: &mut NodeIndex<Ix>) {
+        let node_idx = self.g.add_node(None);
+        // link the free list
+        let node_slot = &mut self.g.nodes[node_idx.index()];
+        node_slot.next[0] = free_node._into_edge();
+        *free_node = node_idx;
+    }
+
     /// Remove `a` from the graph if it exists, and return its weight.
     /// If it doesn't exist in the graph, return `None`.
     ///
@@ -374,6 +391,20 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
             self.g.edges.push(edge);
         }
         edge_idx
+    }
+
+    /// free_edge: Which free list to update for the vacancy
+    fn add_vacant_edge(&mut self, free_edge: &mut EdgeIndex<Ix>) {
+        let edge_idx = EdgeIndex::new(self.g.edges.len());
+        debug_assert!(edge_idx != EdgeIndex::end());
+        let mut edge = Edge {
+            weight: None,
+            node: [NodeIndex::end(); 2],
+            next: [EdgeIndex::end(); 2],
+        };
+        edge.next[0] = *free_edge;
+        *free_edge = edge_idx;
+        self.g.edges.push(edge);
     }
 
     /// Add or update an edge from `a` to `b`.
@@ -738,6 +769,61 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Create a new `StableGraph` by mapping nodes and edges.
+    /// A node or edge may be mapped to `None` to exclude it from
+    /// the resulting graph.
+    ///
+    /// Nodes are mapped first with the `node_map` closure, then
+    /// `edge_map` is called for the edges that have not had any endpoint
+    /// removed.
+    ///
+    /// The resulting graph has the structure of a subgraph of the original graph.
+    /// Nodes and edges that are not removed maintain their old node or edge
+    /// indices.
+    pub fn filter_map<'a, F, G, N2, E2>(&'a self, mut node_map: F, mut edge_map: G)
+        -> StableGraph<N2, E2, Ty, Ix>
+        where F: FnMut(NodeIndex<Ix>, &'a N) -> Option<N2>,
+              G: FnMut(EdgeIndex<Ix>, &'a E) -> Option<E2>,
+    {
+        let node_bound = self.node_bound();
+        let edge_bound = self.edge_bound();
+        let mut result_g = StableGraph::with_capacity(node_bound, edge_bound);
+        // use separate free lists so that
+        // add_node / add_edge below do not reuse the tombstones
+        let mut free_node = NodeIndex::end();
+        let mut free_edge = EdgeIndex::end();
+
+        // the stable graph keeps the node map itself
+
+        for (i, node) in enumerate(self.raw_nodes()) {
+            if i >= node_bound { break; }
+            if let Some(node_weight) = node.weight.as_ref() {
+                if let Some(new_weight) = node_map(NodeIndex::new(i), node_weight) {
+                    result_g.add_node(new_weight);
+                    continue;
+                }
+            }
+            result_g.add_vacant_node(&mut free_node);
+        }
+        for (i, edge) in enumerate(self.raw_edges()) {
+            if i >= edge_bound { break; }
+            let source = edge.source();
+            let target = edge.target();
+            if let Some(edge_weight) = edge.weight.as_ref() {
+                if result_g.contains_node(source) && result_g.contains_node(target) {
+                    if let Some(new_weight) = edge_map(EdgeIndex::new(i), edge_weight) {
+                        result_g.add_edge(source, target, new_weight);
+                        continue;
+                    }
+                }
+            }
+            result_g.add_vacant_edge(&mut free_edge);
+        }
+        result_g.free_node = free_node;
+        result_g.free_edge = free_edge;
+        result_g.check_free_lists();
+        result_g
+    }
 
     /// Extend the graph from an iterable of edges.
     ///
@@ -772,13 +858,10 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.g.raw_nodes()
     }
 
-    // used by check_free_lists conditionally
-    #[allow(unused)]
     fn raw_edges(&self) -> &[Edge<Option<E>, Ix>] {
         self.g.raw_edges()
     }
 
-    #[cfg(feature = "serde-1")]
     fn edge_bound(&self) -> usize {
         self.edge_references()
             .next_back()
