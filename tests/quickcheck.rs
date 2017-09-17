@@ -806,4 +806,32 @@ quickcheck! {
             gr2.edge_references().map(|ed| (ed.id(), ed.source().index(), ed.target().index()))
         );
     }
+
+    fn stable_di_graph_map_id(gr1: StableDiGraph<usize, usize>) -> () {
+        let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+
+    fn stable_un_graph_map_id(gr1: StableUnGraph<usize, usize>) -> () {
+        let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+
+    fn stable_di_graph_filter_map_id(gr1: StableDiGraph<usize, usize>) -> () {
+        let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+
+    fn test_stable_un_graph_filter_map_id(gr1: StableUnGraph<usize, usize>) -> () {
+        let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
 }
