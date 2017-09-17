@@ -174,6 +174,10 @@ Recent Changes
   - Remove ``SubTopo``.
   - Require Rust 1.12 or later
 
+- 0.2.10
+
+  - Fix compilation with rust nightly
+
 - 0.2.9
 
   - Fix a bug in SubTopo (#81)
