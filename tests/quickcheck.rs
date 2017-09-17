@@ -834,4 +834,41 @@ quickcheck! {
         assert!(edgew_eq!(gr1, gr2));
         assert!(edges_eq!(gr1, gr2));
     }
+
+    fn stable_di_graph_filter_map_remove(gr1: Small<StableDiGraph<i32, i32>>,
+                                         nodes: Vec<usize>,
+                                         edges: Vec<usize>) -> ()
+    {
+        let gr2 = gr1.filter_map(|ix, &nw| {
+            if !nodes.contains(&ix.index()) { Some(nw) } else { None }
+        },
+        |ix, &ew| {
+            if !edges.contains(&ix.index()) { Some(ew) } else { None }
+        });
+        let check_nodes = &set(gr1.node_indices()) - &set(nodes.iter().map(|&i| node_index(i)));
+        let mut check_edges = &set(gr1.edge_indices()) - &set(edges.iter().map(|&i| edge_index(i)));
+        // remove all edges with endpoint in removed nodes
+        for edge in gr1.edge_references() {
+            if nodes.contains(&edge.source().index()) ||
+                nodes.contains(&edge.target().index()) {
+                check_edges.remove(&edge.id());
+            }
+        }
+        // assert maintained
+        for i in check_nodes {
+            assert_eq!(gr1[i], gr2[i]);
+        }
+        for i in check_edges {
+            assert_eq!(gr1[i], gr2[i]);
+            assert_eq!(gr1.edge_endpoints(i), gr2.edge_endpoints(i));
+        }
+
+        // assert removals
+        for i in nodes {
+            assert!(gr2.node_weight(node_index(i)).is_none());
+        }
+        for i in edges {
+            assert!(gr2.edge_weight(edge_index(i)).is_none());
+        }
+    }
 }
