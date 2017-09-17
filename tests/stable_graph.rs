@@ -46,6 +46,18 @@ fn node_bound() {
     assert_eq!(g.node_bound(), 0);
 }
 
+#[test]
+fn clear_edges() {
+    let mut gr = scc_graph();
+    gr.remove_node(n(1));
+    gr.clear_edges();
+    // check that we use the free list for the vacancies
+    assert_eq!(gr.add_node(()), n(1));
+    assert_eq!(gr.add_node(()), n(4));
+    assert!(gr.edge_references().next().is_none());
+    assert!(gr.node_indices().all(|i| gr.neighbors(i).next().is_none()));
+}
+
 fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>) {
     // normalize the result and compare with the answer.
     for scc in &mut res {
