@@ -104,6 +104,14 @@ pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx>
     g: Graph<Option<N>, Option<E>, Ty, Ix>,
     node_count: usize,
     edge_count: usize,
+
+    // node and edge free lists (both work the same way)
+    //
+    // free_node, if not NodeIndex::end(), points to a node index
+    // that is vacant (after a deletion).  The next item in the list is kept in
+    // that Node's Node.next[0] field. For Node, it's a node index stored
+    // in an EdgeIndex location, and the _into_edge()/_into_node() methods
+    // convert.
     free_node: NodeIndex<Ix>,
     free_edge: EdgeIndex<Ix>,
 }
