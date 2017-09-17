@@ -212,6 +212,19 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.g.clear();
     }
 
+    /// Remove all edges
+    pub fn clear_edges(&mut self) {
+        self.edge_count = 0;
+        self.free_edge = EdgeIndex::end();
+        self.g.edges.clear();
+        // clear edges without touching the free list
+        for node in &mut self.g.nodes {
+            if let Some(_) = node.weight {
+                node.next = [EdgeIndex::end(), EdgeIndex::end()];
+            }
+        }
+    }
+
     /// Return the number of nodes (vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
