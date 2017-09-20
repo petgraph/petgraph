@@ -26,6 +26,24 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.8
+
+  - ``StableGraph`` learned new methods nearing parity with ``Graph``.  Note
+    that the ``StableGraph`` methods preserve index stability even in the batch
+    removal methods like ``filter_map`` and ``retain_edges``.
+
+    + Added ``.filter_map()``, which maps associated node and edge data
+    + Added ``.retain_edges()``, ``.edge_indices()`` and ``.clear_edges()``
+
+  - Existing ``Graph`` iterators gained some trait impls:
+
+    + ``.node_indices(), .edge_indices()`` are ``ExactSizeIterator``
+    + ``.node_references()`` is now
+      ``DoubleEndedIterator + ExactSizeIterator``.
+    + ``.edge_references()`` is now ``ExactSizeIterator``.
+
+  - Implemented ``From<StableGraph>`` for ``Graph``.
+
 - 0.4.7
 
   - New algorithm by @jmcomets: A* search algorithm in ``petgraph::algo::astar``
