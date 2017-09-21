@@ -17,6 +17,7 @@ use std::hash::Hash;
 
 use rand::Rng;
 use itertools::assert_equal;
+use itertools::cloned;
 
 use petgraph::prelude::*;
 use petgraph::{
@@ -862,8 +863,8 @@ quickcheck! {
         |ix, &ew| {
             if !edges.contains(&ix.index()) { Some(ew) } else { None }
         });
-        let check_nodes = &set(gr1.node_indices()) - &set(nodes.iter().map(|&i| node_index(i)));
-        let mut check_edges = &set(gr1.edge_indices()) - &set(edges.iter().map(|&i| edge_index(i)));
+        let check_nodes = &set(gr1.node_indices()) - &set(cloned(&nodes).map(node_index));
+        let mut check_edges = &set(gr1.edge_indices()) - &set(cloned(&edges).map(edge_index));
         // remove all edges with endpoint in removed nodes
         for edge in gr1.edge_references() {
             if nodes.contains(&edge.source().index()) ||
