@@ -33,7 +33,7 @@ use super::unionfind::UnionFind;
 use super::graph::{
     IndexType,
 };
-use visit::{Data, NodeRef, IntoNodeReferences, GraphProp};
+use visit::{Data, NodeRef, IntoNodeReferences};
 use data::{
     Element,
 };
@@ -551,12 +551,11 @@ pub struct NegativeCycle(());
 /// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
     -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
-    where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable + GraphProp,
+    where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
           G::EdgeWeight: FloatMeasure,
 {
     let mut predecessor = vec![None; g.node_bound()];
     let mut distance = vec![<_>::infinite(); g.node_bound()];
-    let is_undirected = !g.is_directed();
 
     let ix = |i| g.to_index(i);
 
@@ -564,19 +563,16 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
     // scan up to |V| - 1 times.
     for _ in 1..g.node_count() {
         let mut did_update = false;
-        for edge in g.edge_references() {
-            let i = edge.source();
-            let j = edge.target();
-            let w = *edge.weight();
-            if distance[ix(i)] + w < distance[ix(j)] {
-                distance[ix(j)] = distance[ix(i)] + w;
-                predecessor[ix(j)] = Some(i);
-                did_update = true;
-            }
-            if is_undirected && distance[ix(j)] + w < distance[ix(i)] {
-                distance[ix(i)] = distance[ix(j)] + w;
-                predecessor[ix(i)] = Some(j);
-                did_update = true;
+        for i in g.node_identifiers() {
+            for edge in g.edges(i) {
+                let i = edge.source();
+                let j = edge.target();
+                let w = *edge.weight();
+                if distance[ix(i)] + w < distance[ix(j)] {
+                    distance[ix(j)] = distance[ix(i)] + w;
+                    predecessor[ix(j)] = Some(i);
+                    did_update = true;
+                }
             }
         }
         if !did_update {
