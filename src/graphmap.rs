@@ -216,7 +216,8 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     }
 
     /// Add an edge connecting `a` and `b` to the graph, with associated
-    /// data `weight`.
+    /// data `weight`. For a directed graph, the edge is directed from `a`
+    /// to `b`.
     ///
     /// Inserts nodes `a` and/or `b` if they aren't already part of the graph.
     ///
@@ -403,9 +404,15 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
 
     /// Return a `Graph` that corresponds to this `GraphMap`.
     ///
-    /// Note: node and edge indices in the `Graph` have nothing in common
-    /// with the `GraphMap`s node weights `N`. The node weights `N` are
-    /// used as node weights in the resulting `Graph`, too.
+    /// 1. Note that node and edge indices in the `Graph` have nothing in common
+    ///    with the `GraphMap`s node weights `N`. The node weights `N` are used as
+    ///    node weights in the resulting `Graph`, too.
+    /// 2. Note that the index type is user-chosen.
+    ///
+    /// Computes in **O(|V| + |E|)** time (average).
+    ///
+    /// **Panics** if the number of nodes or edges does not fit with
+    /// the resulting graph's index type.
     pub fn into_graph<Ix>(self) -> Graph<N, E, Ty, Ix>
         where Ix: ::graph::IndexType,
     {

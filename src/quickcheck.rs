@@ -13,16 +13,22 @@ use graph::{
 #[cfg(feature = "stable_graph")]
 use stable_graph::StableGraph;
 
+#[cfg(feature = "graphmap")]
 use graphmap::{
     GraphMap,
     NodeTrait,
 };
+use visit::NodeIndexable;
 
 /// `Arbitrary` for `Graph` creates a graph by selecting a node count
 /// and a probability for each possible edge to exist.
 ///
 /// The result will be simple graph or digraph, self loops
 /// possible, no parallel edges.
+///
+/// The exact properties of the produced graph is subject to change.
+///
+/// Requires crate feature `"quickcheck"`
 impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
     where N: Arbitrary,
           E: Arbitrary,
@@ -85,6 +91,10 @@ impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
 ///
 /// The result will be simple graph or digraph, with possible
 /// self loops, no parallel edges.
+///
+/// The exact properties of the produced graph is subject to change.
+///
+/// Requires crate features `"quickcheck"` and `"stable_graph"`
 impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
     where N: Arbitrary,
           E: Arbitrary,
@@ -116,6 +126,16 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
                 }
             }
         }
+        if bool::arbitrary(g) {
+            // potentially remove nodes to make holes in nodes & edge sets
+            let n = u8::arbitrary(g) % (gr.node_count() as u8);
+            for _ in 0..n {
+                let ni = node_index(usize::arbitrary(g) % gr.node_bound());
+                if gr.node_weight(ni).is_some() {
+                    gr.remove_node(ni);
+                }
+            }
+        }
         gr
     }
 }
@@ -125,6 +145,11 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
 ///
 /// The result will be simple graph or digraph, self loops
 /// possible, no parallel edges.
+///
+/// The exact properties of the produced graph is subject to change.
+///
+/// Requires crate features `"quickcheck"` and `"graphmap"`
+#[cfg(feature = "graphmap")]
 impl<N, E, Ty> Arbitrary for GraphMap<N, E, Ty>
     where N: NodeTrait + Arbitrary,
           E: Arbitrary,

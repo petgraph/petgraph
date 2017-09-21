@@ -11,11 +11,22 @@
 //! which is backed by a hash table and the node identifiers are the keys
 //! into the table.
 //!
+//! Optional crate feature: `"serde-1"`, see the Readme for more information.
+//!
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
 
 extern crate fixedbitset;
 #[cfg(feature = "graphmap")]
 extern crate ordermap;
+
+#[cfg(feature = "serde-1")]
+extern crate serde;
+#[cfg(feature = "serde-1")]
+#[macro_use]
+extern crate serde_derive;
+
+#[cfg(all(feature = "serde-1", test))]
+extern crate itertools;
 
 #[doc(no_inline)]
 pub use graph::Graph;
@@ -37,18 +48,21 @@ pub mod algo;
 pub mod generate;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
-#[path = "graph.rs"]
 mod graph_impl;
 pub mod dot;
 pub mod unionfind;
 mod dijkstra;
+mod astar;
 pub mod csr;
 mod iter_format;
+mod iter_utils;
 mod isomorphism;
 mod traits_graph;
 mod util;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
+#[cfg(feature = "serde-1")]
+mod serde_utils;
 
 pub mod prelude;
 

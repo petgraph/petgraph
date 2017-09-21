@@ -17,6 +17,7 @@ use super::{
 use scored::MinScored;
 use super::visit::{
     GraphRef,
+    GraphBase,
     Visitable,
     VisitMap,
     IntoNeighbors,
@@ -43,6 +44,7 @@ pub use super::isomorphism::{
     is_isomorphic_matching,
 };
 pub use super::dijkstra::dijkstra;
+pub use super::astar::astar;
 
 /// [Generic] Return the number of connected components of the graph.
 ///
@@ -95,7 +97,7 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 ///
 /// If `space` is not `None`, it is used instead of creating a new workspace for
 /// graph traversal. The implementation is iterative.
-pub fn toposort<G>(g: G, space: Option<&mut DfsSpaceType<G>>)
+pub fn toposort<G>(g: G, space: Option<&mut DfsSpace<G::NodeId, G::Map>>)
     -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
     where G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
 {
@@ -166,7 +168,7 @@ pub fn is_cyclic_directed<G>(g: G) -> bool
     }).is_err()
 }
 
-type DfsSpaceType<G> where G: Visitable = DfsSpace<G::NodeId, G::Map>;
+type DfsSpaceType<G> = DfsSpace<<G as GraphBase>::NodeId, <G as Visitable>::Map>;
 
 /// Workspace for a graph traversal.
 #[derive(Clone, Debug)]
@@ -220,7 +222,7 @@ fn with_dfs<G, F, R>(g: G, space: Option<&mut DfsSpaceType<G>>, f: F) -> R
 /// If `space` is not `None`, it is used instead of creating a new workspace for
 /// graph traversal.
 pub fn has_path_connecting<G>(g: G, from: G::NodeId, to: G::NodeId,
-                              space: Option<&mut DfsSpaceType<G>>)
+                              space: Option<&mut DfsSpace<G::NodeId, G::Map>>)
     -> bool
     where G: IntoNeighbors + Visitable,
 {

@@ -2,8 +2,10 @@
 #[macro_use] extern crate quickcheck;
 extern crate rand;
 extern crate petgraph;
+#[macro_use] extern crate defmac;
 
 extern crate odds;
+extern crate itertools;
 
 mod utils;
 
@@ -14,6 +16,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use rand::Rng;
+use itertools::assert_equal;
 
 use petgraph::prelude::*;
 use petgraph::{
@@ -34,6 +37,12 @@ use petgraph::algo::{
     bellman_ford,
 };
 use petgraph::visit::{Topo, Reversed};
+use petgraph::visit::{
+    IntoNodeReferences,
+    IntoEdgeReferences,
+    NodeIndexable,
+    EdgeRef,
+};
 use petgraph::data::FromElements;
 use petgraph::graph::{IndexType, node_index, edge_index};
 use petgraph::graphmap::{
@@ -752,5 +761,131 @@ quickcheck! {
             bellman_ford(&gr, start).unwrap();
         }
         true
+    }
+}
+
+defmac!(iter_eq a, b => a.eq(b));
+defmac!(nodes_eq ref a, ref b => a.node_references().eq(b.node_references()));
+defmac!(edgew_eq ref a, ref b => a.edge_references().eq(b.edge_references()));
+defmac!(edges_eq ref a, ref b =>
+        iter_eq!(
+            a.edge_references().map(|e| (e.source(), e.target())),
+            b.edge_references().map(|e| (e.source(), e.target()))));
+
+quickcheck! {
+    fn test_di_from(gr1: DiGraph<i32, i32>) -> () {
+        let sgr = StableGraph::from(gr1.clone());
+        let gr2 = Graph::from(sgr);
+
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+    fn test_un_from(gr1: UnGraph<i32, i32>) -> () {
+        let sgr = StableGraph::from(gr1.clone());
+        let gr2 = Graph::from(sgr);
+
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+
+    fn test_graph_from_stable_graph(gr1: StableDiGraph<usize, usize>) -> () {
+        let mut gr1 = gr1;
+        let gr2 = Graph::from(gr1.clone());
+
+        // renumber the stablegraph nodes and put the new index in the
+        // associated data
+        let mut index = 0;
+        for i in 0..gr1.node_bound() {
+            let ni = node_index(i);
+            if gr1.contains_node(ni) {
+                gr1[ni] = index;
+                index += 1;
+            }
+        }
+        if let Some(edge_bound) = gr1.edge_references().next_back()
+            .map(|ed| ed.id().index() + 1)
+        {
+            index = 0;
+            for i in 0..edge_bound {
+                let ni = edge_index(i);
+                if gr1.edge_weight(ni).is_some() {
+                    gr1[ni] = index;
+                    index += 1;
+                }
+            }
+        }
+
+        assert_equal(
+            // Remap the stablegraph to compact indices
+            gr1.edge_references().map(|ed| (edge_index(*ed.weight()), gr1[ed.source()], gr1[ed.target()])),
+            gr2.edge_references().map(|ed| (ed.id(), ed.source().index(), ed.target().index()))
+        );
+    }
+
+    fn stable_di_graph_map_id(gr1: StableDiGraph<usize, usize>) -> () {
+        let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+
+    fn stable_un_graph_map_id(gr1: StableUnGraph<usize, usize>) -> () {
+        let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+
+    fn stable_di_graph_filter_map_id(gr1: StableDiGraph<usize, usize>) -> () {
+        let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+
+    fn test_stable_un_graph_filter_map_id(gr1: StableUnGraph<usize, usize>) -> () {
+        let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
+        assert!(nodes_eq!(gr1, gr2));
+        assert!(edgew_eq!(gr1, gr2));
+        assert!(edges_eq!(gr1, gr2));
+    }
+
+    fn stable_di_graph_filter_map_remove(gr1: Small<StableDiGraph<i32, i32>>,
+                                         nodes: Vec<usize>,
+                                         edges: Vec<usize>) -> ()
+    {
+        let gr2 = gr1.filter_map(|ix, &nw| {
+            if !nodes.contains(&ix.index()) { Some(nw) } else { None }
+        },
+        |ix, &ew| {
+            if !edges.contains(&ix.index()) { Some(ew) } else { None }
+        });
+        let check_nodes = &set(gr1.node_indices()) - &set(nodes.iter().map(|&i| node_index(i)));
+        let mut check_edges = &set(gr1.edge_indices()) - &set(edges.iter().map(|&i| edge_index(i)));
+        // remove all edges with endpoint in removed nodes
+        for edge in gr1.edge_references() {
+            if nodes.contains(&edge.source().index()) ||
+                nodes.contains(&edge.target().index()) {
+                check_edges.remove(&edge.id());
+            }
+        }
+        // assert maintained
+        for i in check_nodes {
+            assert_eq!(gr1[i], gr2[i]);
+        }
+        for i in check_edges {
+            assert_eq!(gr1[i], gr2[i]);
+            assert_eq!(gr1.edge_endpoints(i), gr2.edge_endpoints(i));
+        }
+
+        // assert removals
+        for i in nodes {
+            assert!(gr2.node_weight(node_index(i)).is_none());
+        }
+        for i in edges {
+            assert!(gr2.edge_weight(edge_index(i)).is_none());
+        }
     }
 }
