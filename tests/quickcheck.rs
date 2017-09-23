@@ -138,7 +138,7 @@ fn reverse_directed() {
 }
 
 #[test]
-fn retain_nodes() {
+fn graph_retain_nodes() {
     fn prop<Ty: EdgeType>(mut g: Graph<i32, i32, Ty>) -> bool {
         // Remove all negative nodes, these should be randomly spread
         let og = g.clone();
@@ -176,7 +176,7 @@ fn retain_nodes() {
 }
 
 #[test]
-fn retain_edges() {
+fn graph_retain_edges() {
     fn prop<Ty: EdgeType>(mut g: Graph<(), i32, Ty>) -> bool {
         // Remove all negative edges, these should be randomly spread
         let og = g.clone();
@@ -208,6 +208,40 @@ fn retain_edges() {
     }
     quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
     quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
+}
+
+#[test]
+fn stable_graph_retain_edges() {
+    fn prop<Ty: EdgeType>(mut g: StableGraph<(), i32, Ty>) -> bool {
+        // Remove all negative edges, these should be randomly spread
+        let og = g.clone();
+        let edges = g.edge_count();
+        let num_negs = g.edge_references().filter(|n| *n.weight() < 0).count();
+        let mut removed = 0;
+        g.retain_edges(|g, i| {
+            let keep = g[i] >= 0;
+            if !keep {
+                removed += 1;
+            }
+            keep
+        });
+        let num_negs_post = g.edge_references().filter(|n| *n.weight() < 0).count();
+        let num_pos_post = g.edge_references().filter(|n| *n.weight() >= 0).count();
+        assert_eq!(num_negs_post, 0);
+        assert_eq!(removed, num_negs);
+        assert_eq!(num_negs + g.edge_count(), edges);
+        assert_eq!(num_pos_post, g.edge_count());
+        if og.edge_count() < 30 {
+            // check against filter_map
+            let filtered = og.filter_map(
+                |_, w| Some(*w),
+                |_, w| if *w >= 0 { Some(*w) } else { None });
+            assert_eq!(g.node_count(), filtered.node_count());
+        }
+        true
+    }
+    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>) -> bool);
+    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Undirected>) -> bool);
 }
 
 #[test]
