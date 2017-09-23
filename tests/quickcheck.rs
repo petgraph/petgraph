@@ -747,6 +747,23 @@ quickcheck! {
     }
 }
 
+quickcheck! {
+    fn test_bellman_ford_undir(gr: Graph<(), f32, Undirected>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            bellman_ford(&gr, start).unwrap();
+        }
+        true
+    }
+}
+
 defmac!(iter_eq a, b => a.eq(b));
 defmac!(nodes_eq ref a, ref b => a.node_references().eq(b.node_references()));
 defmac!(edgew_eq ref a, ref b => a.edge_references().eq(b.edge_references()));

@@ -565,14 +565,16 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
     // scan up to |V| - 1 times.
     for _ in 1..g.node_count() {
         let mut did_update = false;
-        for edge in g.edge_references() {
-            let i = edge.source();
-            let j = edge.target();
-            let w = *edge.weight();
-            if distance[ix(i)] + w < distance[ix(j)] {
-                distance[ix(j)] = distance[ix(i)] + w;
-                predecessor[ix(j)] = Some(i);
-                did_update = true;
+        for i in g.node_identifiers() {
+            for edge in g.edges(i) {
+                let i = edge.source();
+                let j = edge.target();
+                let w = *edge.weight();
+                if distance[ix(i)] + w < distance[ix(j)] {
+                    distance[ix(j)] = distance[ix(i)] + w;
+                    predecessor[ix(j)] = Some(i);
+                    did_update = true;
+                }
             }
         }
         if !did_update {
