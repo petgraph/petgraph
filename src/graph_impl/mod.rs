@@ -1264,19 +1264,17 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
               G: FnMut(EdgeIndex<Ix>, &'a E) -> E2,
     {
         let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
-        for (i, node) in enumerate(&self.nodes) {
-            g.nodes.push(Node {
+        g.nodes.extend(enumerate(&self.nodes).map(|(i, node)|
+            Node {
                 weight: node_map(NodeIndex::new(i), &node.weight),
                 next: node.next,
-            });
-        }
-        for (i, edge) in enumerate(&self.edges) {
-            g.edges.push(Edge {
+            }));
+        g.edges.extend(enumerate(&self.edges).map(|(i, edge)| 
+            Edge {
                 weight: edge_map(EdgeIndex::new(i), &edge.weight),
                 next: edge.next,
                 node: edge.node,
-            });
-        }
+            }));
         g
     }
 

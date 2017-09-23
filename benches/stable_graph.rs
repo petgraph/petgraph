@@ -176,3 +176,17 @@ fn parse_graph<Ty: EdgeType>(s: &str) -> Graph<(), (), Ty>
     gr
 }
 
+
+#[bench]
+fn stable_graph_map(bench: &mut Bencher)
+{
+    let a = parse_stable_graph::<Directed>(BIGGER);
+    bench.iter(|| a.map(|i, _| i, |i, _| i));
+}
+
+#[bench]
+fn graph_map(bench: &mut Bencher)
+{
+    let a = parse_graph::<Directed>(BIGGER);
+    bench.iter(|| a.map(|i, _| i, |i, _| i));
+}
