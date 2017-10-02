@@ -26,6 +26,12 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.9
+
+  - Fix ``bellman_ford`` to work correctly with undirected graphs (#152) by
+    @carrutstick
+  - Performance improvements for ``Graph, Stablegraph``'s ``.map()``.
+
 - 0.4.8
 
   - ``StableGraph`` learned new methods nearing parity with ``Graph``.  Note
