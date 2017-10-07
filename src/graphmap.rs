@@ -422,8 +422,8 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             gr.add_node(node);
         }
         for ((a, b), edge_weight) in self.edges {
-            let (ai, _, _) = self.nodes.get_pair_index(&a).unwrap();
-            let (bi, _, _) = self.nodes.get_pair_index(&b).unwrap();
+            let (ai, _, _) = self.nodes.get_full(&a).unwrap();
+            let (bi, _, _) = self.nodes.get_full(&b).unwrap();
             gr.add_edge(node_index(ai), node_index(bi), edge_weight);
         }
         gr
@@ -869,7 +869,7 @@ impl<N, E, Ty> NodeIndexable for GraphMap<N, E, Ty>
 {
     fn node_bound(&self) -> usize { self.node_count() }
     fn to_index(&self, ix: Self::NodeId) -> usize {
-        let (i, _, _) = self.nodes.get_pair_index(&ix).unwrap();
+        let (i, _, _) = self.nodes.get_full(&ix).unwrap();
         i
     }
     fn from_index(&self, ix: usize) -> Self::NodeId {
