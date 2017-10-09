@@ -36,7 +36,7 @@ serde_derive = { version = "1.0", optional = true }
 rand = "0.3"
 odds = { version = "0.2.19" }
 defmac = "0.1"
-itertools = { version = "0.6.2" }
+itertools = { version = "0.7.0", default-features = false }
 
 [features]
 default = ["graphmap", "stable_graph"]
