@@ -2,11 +2,10 @@
 /// Define a trait as usual, and a macro that can be used to instantiate
 /// implementations of it.
 ///
-/// Well almost: There *must* be markers of
-/// `@section type`, `@section self` and `@section self_ref`, `@section self_mut`,
-/// `@section ignore`, before the associated types, `self` methods
-/// and `&self` methods, `&mut self` methods and methods to skip in delegation
-/// respectively.
+/// There *must* be section markers in the trait defition:
+/// @section type for associated types
+/// @section self for methods
+/// @section nodelegate for arbitrary tail that is not forwarded.
 macro_rules! trait_template {
     ($(#[$doc:meta])* pub trait $name:ident $($methods:tt)*) => {
         macro_rules! $name {
@@ -17,9 +16,20 @@ macro_rules! trait_template {
                 }
             }
         }
+
         remove_sections! { [] 
             $(#[$doc])*
             pub trait $name $($methods)*
+
+            // This is where the trait definition is reproduced by the macro.
+            // It makes the source links point to this place!
+            //
+            // I'm sorry, you'll have to find the source by looking at the
+            // source of the module the trait is defined in.
+            //
+            // We use this nifty macro so that we can automatically generate
+            // delegation trait impls and implement the graph traits for more
+            // types and combinators.
         }
     }
 }
@@ -71,39 +81,33 @@ macro_rules! delegate_impl {
     };
     ([[$($param:tt)*], $self_type:ident, $self_wrap:ty, $self_map:ident]
      pub trait $name:ident $(: $sup:ident)* $(+ $more_sup:ident)* {
+
+        // "Escaped" associated types. Stripped before making the `trait`
+        // itself, but forwarded when delegating impls.
         $(
         @escape [type $assoc_name_ext:ident]
+        // Associated types. Forwarded.
         )*
         $(
         @section type
         $(
-            $(#[$_attr1:meta])*
-            type $assoc_name:ident $(: $bound:ty)*;
+            $(#[$_assoc_attr:meta])*
+            type $assoc_name:ident $(: $assoc_bound:ty)*;
         )+
         )*
+        // Methods. Forwarded. Using $self_map!(self) around the self argument.
+        // Methods must use receiver `self` or explicit type like `self: &Self`
+        // &self and &mut self are _not_ supported.
         $(
         @section self
         $(
-            $(#[$_attr2:meta])*
-            fn $fname_self:ident(self $(,$arg2:ident : $argty2:ty)*) -> $ret2:ty;
+            $(#[$_method_attr:meta])*
+            fn $method_name:ident(self $(: $self_selftype:ty)* $(,$marg:ident : $marg_ty:ty)*) -> $mret:ty;
         )+
         )*
+        // Arbitrary tail that is ignored when forwarding.
         $(
-        @section self_ref
-        $(
-            $(#[$_attr3:meta])*
-            fn $fname:ident(&self $(,$arg:ident : $argty:ty)*) -> $ret:ty;
-        )+
-        )*
-        $(
-        @section self_mut
-        $(
-            $(#[$_attr4:meta])*
-            fn $fname_mut:ident(&mut self $(,$arg4:ident : $argty4:ty)*) -> $ret4:ty;
-        )+
-        )*
-        $(
-        @section ignore
+        @section nodelegate
         $($tail:tt)*
         )*
     }) => {
@@ -118,22 +122,8 @@ macro_rules! delegate_impl {
             )*
             $(
             $(
-                fn $fname_self(self $(,$arg2: $argty2)*) -> $ret2 {
-                    $self_map!(self).$fname_self($($arg2),*)
-                }
-            )*
-            )*
-            $(
-            $(
-                fn $fname(&self $(,$arg: $argty)*) -> $ret {
-                    $self_map!(self).$fname($($arg),*)
-                }
-            )*
-            )*
-            $(
-            $(
-                fn $fname_mut(&mut self $(,$arg4: $argty4)*) -> $ret4 {
-                    $self_map!(self).$fname_mut($($arg4),*)
+                fn $method_name(self $(: $self_selftype)* $(,$marg: $marg_ty)*) -> $mret {
+                    $self_map!(self).$method_name($($marg),*)
                 }
             )*
             )*
