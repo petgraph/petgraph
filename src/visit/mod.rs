@@ -241,6 +241,31 @@ pub trait IntoEdges : IntoEdgeReferences + IntoNeighbors {
 IntoEdges!{delegate_impl []}
 
 trait_template! {
+/// Access to all edges of each node, in the specified direction.
+///
+/// The edges are, depending on the direction and the graph’s edge type:
+///
+///
+/// - `Directed`, `Outgoing`: All edges from `a`.
+/// - `Directed`, `Incoming`: All edges to `a`.
+/// - `Undirected`: All edges connected to `a`.
+///
+/// This is an extended version of the trait `IntoNeighborsDirected`; the former
+/// only iterates over the target node identifiers, while this trait
+/// yields edge references (trait [`EdgeRef`][er]).
+///
+/// [er]: trait.EdgeRef.html
+pub trait IntoEdgesDirected : IntoEdges + IntoNeighborsDirected {
+    @section type
+    type EdgesDirected: Iterator<Item=Self::EdgeRef>;
+    @section self
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected;
+}
+}
+
+IntoEdgesDirected!{delegate_impl []}
+
+trait_template! {
 /// Access to the sequence of the graph’s `NodeId`s.
 pub trait IntoNodeIdentifiers : GraphRef {
     @section type

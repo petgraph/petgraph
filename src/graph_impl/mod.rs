@@ -22,7 +22,7 @@ use iter_format::{
 };
 
 use visit::EdgeRef;
-use visit::{IntoNodeReferences, IntoEdges};
+use visit::{IntoNodeReferences, IntoEdges, IntoEdgesDirected};
 use util::enumerate;
 
 #[cfg(feature = "serde-1")]
@@ -1507,6 +1507,16 @@ impl<'a, N, E, Ty, Ix> IntoEdges for &'a Graph<N, E, Ty, Ix>
     type Edges = Edges<'a, E, Ty, Ix>;
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         self.edges(a)
+    }
+}
+
+impl<'a, N, E, Ty, Ix> IntoEdgesDirected for &'a Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgesDirected = Edges<'a, E, Ty, Ix>;
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
+        self.edges_directed(a, dir)
     }
 }
 

@@ -10,7 +10,7 @@ use {
 };
 use visit::{Data, IntoNodeIdentifiers, GraphProp, NodeIndexable, IntoNeighborsDirected};
 use visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
-use visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount, IntoEdges};
+use visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount, IntoEdges, IntoEdgesDirected};
 use data::{DataMap, DataMapMut};
 
 
@@ -67,6 +67,7 @@ DataMapMut!{delegate_impl [['a, G], G, Frozen<'a, G>, access0]}
 GetAdjacencyMatrix!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 IntoEdgeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoEdges!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
+IntoEdgesDirected!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoNeighbors!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoNeighborsDirected!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
 IntoNodeIdentifiers!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
