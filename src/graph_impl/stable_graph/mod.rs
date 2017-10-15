@@ -42,6 +42,7 @@ use visit::{
     EdgeRef,
     IntoNodeReferences,
     IntoEdges,
+    IntoEdgesDirected,
     IntoEdgeReferences,
     NodeIndexable,
 };
@@ -1247,6 +1248,15 @@ impl<'a, N, E, Ty, Ix> IntoEdges for &'a StableGraph<N, E, Ty, Ix>
     }
 }
 
+impl<'a, N, E, Ty, Ix> IntoEdgesDirected for &'a StableGraph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgesDirected = Edges<'a, E, Ty, Ix>;
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
+        self.edges_directed(a, dir)
+    }
+}
 
 
 /// Iterator over the edges of from or to a node
