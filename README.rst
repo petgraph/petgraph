@@ -26,6 +26,11 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.4.10
+
+  - Add graph trait ``IntoEdgesDirected``
+  - Update dependencies
+
 - 0.4.9
 
   - Fix ``bellman_ford`` to work correctly with undirected graphs (#152) by
