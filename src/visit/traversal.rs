@@ -109,7 +109,7 @@ impl<N, VM> Dfs<N, VM>
 }
 
 /// Visit nodes in a depth-first-search (DFS) emitting nodes in postorder
-/// (each node after all its decendants have been emitted).
+/// (each node after all its descendants have been emitted).
 ///
 /// `DfsPostOrder` is not recursive.
 ///
