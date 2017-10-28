@@ -39,7 +39,7 @@ use petgraph::algo::{
 };
 
 use petgraph::dot::{
-    Dot,
+    Dot
 };
 
 fn set<I>(iter: I) -> HashSet<I::Item>
@@ -332,15 +332,27 @@ fn dijk() {
     for no in Bfs::new(&g, a).iter(&g) {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
-
-    let scores = dijkstra(&g, a, None, |e| *e.weight());
+    let (scores,predecessors) = dijkstra(&g, a, None, |e| *e.weight());
+    // testing the distance map
     let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();
     scores.sort();
     assert_eq!(scores,
        vec![("A", 0), ("B", 7), ("C", 9), ("D", 11), ("E", 20), ("F", 20)]);
+    // testing the predecessor map
+    let mut predecessors: Vec<_> = predecessors.into_iter().map(|(n,s)| (g[n],g[s])).collect();
+    predecessors.sort();
+    assert_eq!(predecessors,
+        vec![("B","A"),("C","A"),("D","C"),("E","D"),("F","C")]);
 
-    let scores = dijkstra(&g, a, Some(c), |e| *e.weight());
+    // Testing the goal node feature
+    // testing the algo reached a node with the correct cost
+    let (scores,predecessors) = dijkstra(&g, a, Some(c), |e| *e.weight());
     assert_eq!(scores[&c], 9);
+    // testing the predecessor map does not contain all nodes
+    let mut predecessors: Vec<_> = predecessors.into_iter().map(|(n,s)| (g[n],g[s])).collect();
+    predecessors.sort();
+    assert_eq!(predecessors,
+        vec![("B","A"),("C","A"),("D","A"),("F","B")]);
 }
 
 #[test]
@@ -366,7 +378,7 @@ fn test_astar_null_heuristic() {
     assert_eq!(path, Some((23, vec![a, d, e])));
 
     // check against dijkstra
-    let dijkstra_run = dijkstra(&g, a, Some(e), |e| *e.weight());
+    let (dijkstra_run,_) = dijkstra(&g, a, Some(e), |e| *e.weight());
     assert_eq!(dijkstra_run[&e], 23);
 
     let path = astar(&g, e, |finish| finish == b, |e| *e.weight(), |_| 0);
@@ -405,7 +417,7 @@ fn test_astar_manhattan_heuristic() {
     assert_eq!(path, Some((6., vec![a, d, e, f])));
 
     // check against dijkstra
-    let dijkstra_run = dijkstra(&g, a, None, |e| *e.weight());
+    let (dijkstra_run,_) = dijkstra(&g, a, None, |e| *e.weight());
 
     for end in g.node_indices() {
         let astar_path = astar(&g, a, |finish| finish == end, |e| *e.weight(),
@@ -1711,7 +1723,7 @@ fn test_dominators_simple_fast() {
     // http://www.cs.princeton.edu/courses/archive/spr03/cs423/download/dominators.pdf.
 
     let mut graph = DiGraph::<_, _>::new();
-    
+
     let r = graph.add_node("r");
     let a = graph.add_node("a");
     let b = graph.add_node("b");
