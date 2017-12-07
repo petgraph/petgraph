@@ -16,12 +16,12 @@ fn simple() {
     //let root = TypedArena::<Node<_>>::new();
     let mut gr = UnGraphMap::new();
     //let node = |&: name: &'static str| Ptr(root.alloc(Node(name.to_string())));
-    let a = gr.add_node(("A"));
-    let b = gr.add_node(("B"));
-    let c = gr.add_node(("C"));
-    let d = gr.add_node(("D"));
-    let e = gr.add_node(("E"));
-    let f = gr.add_node(("F"));
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
     gr.add_edge(a, b, 7);
     gr.add_edge(a, c, 9);
     gr.add_edge(a, d, 14);
