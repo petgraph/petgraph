@@ -1418,7 +1418,7 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
             None => {}
             Some(edge) => {
                 self.next[0] = edge.next[0];
-                return Some((edge.node[1]));
+                return Some(edge.node[1]);
             }
         }
         // Then incoming edges
@@ -1428,7 +1428,7 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
         while let Some(edge) = self.edges.get(self.next[1].index()) {
             self.next[1] = edge.next[1];
             if edge.node[0] != self.skip_start {
-                return Some((edge.node[0]));
+                return Some(edge.node[0]);
             }
         }
         None
