@@ -760,8 +760,8 @@ impl<'b, T> Ord for Ptr<'b, T>
 {
     /// Ptr is ordered by pointer value, i.e. an arbitrary but stable and total order.
     fn cmp(&self, other: &Ptr<'b, T>) -> Ordering {
-        let a = self.0 as *const _;
-        let b = other.0 as *const _;
+        let a: *const T = self.0;
+        let b: *const T = other.0;
         a.cmp(&b)
     }
 }
