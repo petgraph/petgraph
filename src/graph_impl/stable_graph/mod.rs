@@ -220,7 +220,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.g.edges.clear();
         // clear edges without touching the free list
         for node in &mut self.g.nodes {
-            if let Some(_) = node.weight {
+            if node.weight.is_some() {
                 node.next = [EdgeIndex::end(), EdgeIndex::end()];
             }
         }
@@ -294,7 +294,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
             None => return None,
             Some(n) => n.weight.take(),
         };
-        if let None = node_weight {
+        if node_weight.is_none() {
             return None;
         }
         for d in &DIRECTIONS {
@@ -965,7 +965,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         let mut free_node_len = 0;
         while free_node != NodeIndex::end() {
             if let Some(n) = self.g.nodes.get(free_node.index()) {
-                if let None = n.weight {
+                if n.weight.is_none() {
                     free_node = n.next[0]._into_node();
                     free_node_len += 1;
                     continue;
@@ -981,7 +981,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         let mut free_edge = self.free_edge;
         while free_edge != EdgeIndex::end() {
             if let Some(n) = self.g.edges.get(free_edge.index()) {
-                if let None = n.weight {
+                if n.weight.is_none() {
                     free_edge = n.next[0];
                     free_edge_len += 1;
                     continue;
