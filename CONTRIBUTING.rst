@@ -91,6 +91,11 @@ Any team_ member can review a pull request implementing a new algorithm, but the
 final decision whether or not the algorithm is appropriate for inclusion in the
 ``petgraph`` crate is left to ``@bluss``.
 
+Additionally, assuming that the new algorithm is merged into ``petgraph``, you
+are *strongly* encouraged to join the ``petgraph`` team_! *You* are the best
+person to review any future bug fixes, performance improvements, and whatever
+other changes that affect this new algorithm.
+
 Where We Need Help
 ------------------
 
