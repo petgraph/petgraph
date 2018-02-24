@@ -741,8 +741,6 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// The order edges are visited is not specified.
     ///
     /// The edge indices of the removed edes are invalidated, but none other.
-    /// Edge indices are invalidated as they would be following the removal of
-    /// each edge with an endpoint in a removed edge.
     ///
     /// Computes in **O(e'')** time, **e'** is the number of affected edges,
     /// including the calls to `.remove_edge()` for each removed edge.
