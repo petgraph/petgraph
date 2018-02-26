@@ -1539,6 +1539,24 @@ fn dfs_visit() {
     }
     path.reverse();
     assert_eq!(&path, &[n(0), n(2), n(4)]);
+
+    // check that if we prune 2, we never see 4.
+    let start = n(0);
+    let prune = n(2);
+    let nongoal = n(4);
+    let ret = depth_first_search(&gr, Some(start), |event| {
+        if let Discover(n, _) = event {
+            if n == prune {
+                return Control::Prune;
+            }
+        } else if let TreeEdge(u, v) = event {
+            if v == nongoal {
+                return Control::Break(u);
+            }
+        }
+        Control::Continue
+    });
+    assert!(ret.break_value().is_none());
 }
 
 
