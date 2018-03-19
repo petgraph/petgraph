@@ -93,13 +93,13 @@ impl<B> ControlFlow for Control<B> {
     }
 }
 
-impl<E> ControlFlow for Result<(), E> {
-    fn continuing() -> Self { Ok(()) }
+impl<C: ControlFlow, E> ControlFlow for Result<C, E> {
+    fn continuing() -> Self { Ok(C::continuing()) }
     fn should_break(&self) -> bool {
         self.is_err()
     }
     fn should_prune(&self) -> bool {
-        false
+        if let Ok(ref c) = *self { c.should_prune() } else { false }
     }
 }
 
