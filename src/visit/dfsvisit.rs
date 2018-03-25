@@ -96,7 +96,7 @@ impl<B> ControlFlow for Control<B> {
 impl<C: ControlFlow, E> ControlFlow for Result<C, E> {
     fn continuing() -> Self { Ok(C::continuing()) }
     fn should_break(&self) -> bool {
-        self.is_err()
+        if let Ok(ref c) = *self { c.should_break() } else { true }
     }
     fn should_prune(&self) -> bool {
         if let Ok(ref c) = *self { c.should_prune() } else { false }
@@ -122,8 +122,9 @@ impl<B> Default for Control<B> {
 /// change the control flow of the search. `Control::Break` will stop the
 /// the visit early, returning the contained value from the function.
 /// `Control::Prune` will stop traversing any additional edges from the current
-/// node and proceed immediately to the `Finish` event. Attempting to prune a
-/// node from its `Finish` event will cause a panic.
+/// node and proceed immediately to the `Finish` event.
+///
+/// ***Panics** if you attempt to prune a node from its `Finish` event.
 ///
 /// [de]: enum.DfsEvent.html
 ///
