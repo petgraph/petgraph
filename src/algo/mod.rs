@@ -556,7 +556,7 @@ pub struct NegativeCycle(());
 /// ```rust
 /// use petgraph::Graph;
 /// use petgraph::algo::bellman_ford;
-/// use petgraph::algo::NegativeCycle;
+/// use petgraph::prelude::*;
 ///
 /// let mut g = Graph::new();
 /// let a = g.add_node(()); // node with no weight
@@ -590,8 +590,20 @@ pub struct NegativeCycle(());
 ///                    ))
 ///           );
 /// // Node f (indice 5) can be reach from a with a path costing 6.
-/// // Predecessor of f is Some(e) which predecessor is Some(d) wich predecessor is Some(a).
+/// // Predecessor of f is Some(e) which predecessor is Some(d) which predecessor is Some(a).
 /// // Thus the path from a to f is a <-> d <-> e <-> f
+///
+/// let graph_with_neg_cycle = Graph::<(), f32, Undirected>::from_edges(&[
+///         (0, 1, -2.0),
+///         (0, 3, -4.0),
+///         (1, 2, -1.0),
+///         (1, 5, -25.0),
+///         (2, 4, -5.0),
+///         (4, 5, -25.0),
+///         (3, 4, -1.0),
+/// ]);
+///
+/// assert!(bellman_ford(&graph_with_neg_cycle, NodeIndex::new(0)).is_err());
 /// ```
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
     -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
