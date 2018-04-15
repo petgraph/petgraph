@@ -58,8 +58,6 @@ pub mod matrix_graph;
 mod graph_impl;
 pub mod dot;
 pub mod unionfind;
-mod dijkstra;
-mod astar;
 mod simple_paths;
 pub mod csr;
 mod iter_format;
