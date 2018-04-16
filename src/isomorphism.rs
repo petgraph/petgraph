@@ -252,7 +252,7 @@ fn try_match<N, E, Ty, Ix, F, G>(mut st: &mut [Vf2State<Ty, Ix>; 2],
     }
 
     #[derive(Clone, PartialEq, Debug)]
-    enum Frame<N> {
+    enum Frame<N: marker::Copy> {
         Outer,
         Inner{ nodes: [N; 2], open_list: OpenList },
         Unwind{ nodes: [N; 2], open_list: OpenList },
@@ -438,7 +438,7 @@ fn try_match<N, E, Ty, Ix, F, G>(mut st: &mut [Vf2State<Ty, Ix>; 2],
         }
         true
     };
-    let mut stack = vec![Frame::Outer];
+    let mut stack: Vec<Frame<NodeIndex<Ix>>> = vec![Frame::Outer];
 
     while let Some(frame) = stack.pop() {
         match frame {
