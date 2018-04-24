@@ -29,7 +29,7 @@ use visit::{GraphRef};
 /// println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
 ///
 /// // In this case the output looks like this:
-/// // 
+/// //
 /// // digraph {
 /// //     0 [label="\"A\""]
 /// //     1 [label="\"B\""]
@@ -171,10 +171,10 @@ impl<W> fmt::Write for Escaper<W>
 
     fn write_char(&mut self, c: char) -> fmt::Result {
         match c {
-            '"' => try!(self.0.write_char('\\')),
+            '"' | '\\' => try!(self.0.write_char('\\')),
             // \l is for left justified linebreak
-            '\n' => return self.0.write_str(r#"\l"#),
-            _   => { }
+            '\n' => return self.0.write_str("\\l"),
+            _ => {}
         }
         self.0.write_char(c)
     }
@@ -188,7 +188,7 @@ impl<T> fmt::Display for Escaped<T>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
-            write!(&mut Escaper(f), "{:#}\\l", &self.0)
+            write!(&mut Escaper(f), "{:#}\n", &self.0)
         } else {
             write!(&mut Escaper(f), "{}", &self.0)
         }
@@ -204,4 +204,14 @@ impl<T> fmt::Display for DebugFmt<T>
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
     }
+}
+
+#[test]
+fn test_escape() {
+    let mut buff = String::new();
+    {
+        let mut e = Escaper(&mut buff);
+        let _ = e.write_str("\" \\ \n");
+    }
+    assert_eq!(buff, "\\\" \\\\ \\l");
 }

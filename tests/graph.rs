@@ -1420,12 +1420,13 @@ fn dot() {
         b: &'static str,
     };
     let mut gr = Graph::new();
-    let a = gr.add_node(Record { a: 1, b: "abc" });
+    let a = gr.add_node(Record { a: 1, b: r"abc\" });
     gr.add_edge(a, a, (1, 2));
     let dot_output = format!("{:#?}", Dot::new(&gr));
     assert_eq!(dot_output,
+    // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
 r#"digraph {
-    0 [label="Record {\l    a: 1,\l    b: \"abc\"\l}\l"]
+    0 [label="Record {\l    a: 1,\l    b: \"abc\\\\\"\l}\l"]
     0 -> 0 [label="(\l    1,\l    2\l)\l"]
 }
 "#);
@@ -1711,7 +1712,7 @@ fn test_dominators_simple_fast() {
     // http://www.cs.princeton.edu/courses/archive/spr03/cs423/download/dominators.pdf.
 
     let mut graph = DiGraph::<_, _>::new();
-    
+
     let r = graph.add_node("r");
     let a = graph.add_node("a");
     let b = graph.add_node("b");
