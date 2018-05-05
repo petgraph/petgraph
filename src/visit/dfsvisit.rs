@@ -78,7 +78,7 @@ impl<B> ControlFlow for Control<B> {
 impl<E> ControlFlow for Result<(), E> {
     fn continuing() -> Self { Ok(()) }
     fn should_break(&self) -> bool {
-        if let Err(_) = *self { true } else { false }
+        self.is_err()
     }
 }
 
