@@ -3,23 +3,61 @@
 
 use std::borrow::Cow;
 use std::collections::HashSet;
-use std::fmt;
-use std::io::Cursor;
-use visit::EdgeRef;
-use visit::GraphProp;
-use visit::GraphRef;
-use visit::IntoEdgeReferences;
-use visit::IntoNodeReferences;
-use visit::NodeIndexable;
-use visit::NodeRef;
+use std::io::{Cursor, Write};
+use std::string::ToString;
+use visit::{EdgeRef, GraphProp, GraphRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable,
+            NodeRef};
 use xml::common::XmlVersion;
 use xml::writer::events::XmlEvent;
-use xml::writer::EventWriter;
-use xml::writer::Result as WriterResult;
+use xml::writer::{EventWriter, Result as WriterResult};
 use xml::EmitterConfig;
 
 static NAMESPACE_URL: &str = "http://graphml.graphdrawing.org/xmlns";
 
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+struct Attribute {
+    name: String,
+    for_: For,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+enum For {
+    Node,
+    Edge,
+}
+
+impl For {
+    fn to_str(&self) -> &'static str {
+        match *self {
+            For::Node => "node",
+            For::Edge => "edge",
+        }
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
+pub struct Config {
+    node_weights: bool,
+    edge_weights: bool,
+}
+
+impl Config {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn export_edge_weights(mut self, state: bool) -> Self {
+        self.edge_weights = state;
+        self
+    }
+
+    pub fn export_node_weights(mut self, state: bool) -> Self {
+        self.node_weights = state;
+        self
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct GraphML<G> {
     graph: G,
     config: Config,
@@ -32,6 +70,7 @@ where
     pub fn new(graph: G) -> Self {
         Self::with_config(graph, Config::default())
     }
+
     pub fn with_config(graph: G, config: Config) -> Self {
         Self { graph, config }
     }
@@ -42,84 +81,114 @@ where
         G: IntoEdgeReferences,
         G: IntoNodeReferences,
         G: NodeIndexable,
-        G::EdgeWeight: fmt::Display,
-        G::NodeWeight: fmt::Display,
+        G::EdgeWeight: ToString,
+        G::NodeWeight: ToString,
     {
         let mut buff = Cursor::new(Vec::new());
         {
             // let mut writer = EventWriter::new(&mut buff);
             let mut writer =
                 EventWriter::new_with_config(&mut buff, EmitterConfig::new().perform_indent(true));
-            self.do_write(
+            self.emit_graphml(
                 &mut writer,
-                |ew| vec![("weight".into(), format!("{}", ew).into())],
-                |nw| vec![("weight".into(), format!("{}", nw).into())],
+                |ew| vec![("weight".into(), ew.to_string().into())],
+                |nw| vec![("weight".into(), nw.to_string().into())],
             ).expect("Creating a GraphML output should never cause any errors");
         }
         String::from_utf8(buff.into_inner()).unwrap()
     }
 
-    pub fn to_string_with_label_functions<EL, NL>(&self, edge_labels: EL, node_labels: NL) -> String
+    pub fn to_string_with_weight_functions<EW, NW>(
+        &self,
+        edge_weights: EW,
+        node_weights: NW,
+    ) -> String
     where
         G: GraphProp,
         G: IntoEdgeReferences,
         G: IntoNodeReferences,
         G: NodeIndexable,
-        for<'a> EL: Fn(&'a G::EdgeWeight) -> Vec<(Cow<'a, str>, Cow<'a, str>)>,
-        for<'b> NL: Fn(&'b G::NodeWeight) -> Vec<(Cow<'b, str>, Cow<'b, str>)>,
+        for<'a> EW: Fn(&'a G::EdgeWeight) -> Vec<(String, Cow<'a, str>)>,
+        for<'b> NW: Fn(&'b G::NodeWeight) -> Vec<(String, Cow<'b, str>)>,
     {
         let mut buff = Cursor::new(Vec::new());
         {
-            // let mut writer = EventWriter::new(&mut buff);
             let mut writer =
                 EventWriter::new_with_config(&mut buff, EmitterConfig::new().perform_indent(true));
-            self.do_write(&mut writer, edge_labels, node_labels)
+            self.emit_graphml(&mut writer, edge_weights, node_weights)
                 .expect("Creating a GraphML output should never cause any errors");
         }
         String::from_utf8(buff.into_inner()).unwrap()
     }
 
-    fn do_write<EL, NL, W>(
+    fn emit_graphml<EW, NW, W>(
         &self,
         writer: &mut EventWriter<W>,
-        edge_labels: EL,
-        node_labels: NL,
+        edge_labels: EW,
+        node_labels: NW,
     ) -> WriterResult<()>
     where
         G: GraphProp,
         G: IntoNodeReferences,
         G: IntoEdgeReferences,
         G: NodeIndexable,
-        W: ::std::io::Write,
-        for<'a> EL: Fn(&'a G::EdgeWeight) -> Vec<(Cow<'a, str>, Cow<'a, str>)>,
-        for<'b> NL: Fn(&'b G::NodeWeight) -> Vec<(Cow<'b, str>, Cow<'b, str>)>,
+        W: Write,
+        for<'a> EW: Fn(&'a G::EdgeWeight) -> Vec<(String, Cow<'a, str>)>,
+        for<'b> NW: Fn(&'b G::NodeWeight) -> Vec<(String, Cow<'b, str>)>,
     {
-        #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-        enum For {
-            Node,
-            Edge,
-        };
-        impl For {
-            fn to_string(&self) -> &'static str {
-                match *self {
-                    For::Node => "node",
-                    For::Edge => "edge",
-                }
-            }
-        }
-        #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-        struct Attribute<'l> {
-            name: Cow<'l, str>,
-            for_: For,
-        };
+        // Store information about the attributes for nodes and edges.
+        // We cannot know in advance what the attribute names will be, so we just keep track of what gets emitted.
         let mut attributes: HashSet<Attribute> = HashSet::new();
 
+        // XML/GraphML boilerplate
         writer.write(XmlEvent::StartDocument {
             version: XmlVersion::Version10,
             encoding: Some("UTF-8"),
             standalone: None,
         })?;
         writer.write(XmlEvent::start_element("graphml").attr("xmlns", NAMESPACE_URL))?;
+
+        // emit graph with nodes/edges and possibly weights
+        self.emit_graph(writer, &mut attributes, edge_labels, node_labels)?;
+        // Emit <key> tags for all the attributes
+        self.emit_keys(writer, &attributes)?;
+
+        writer.write(XmlEvent::end_element())?; // end graphml
+        Ok(())
+    }
+
+    fn emit_graph<EW, NW, W>(
+        &self,
+        writer: &mut EventWriter<W>,
+        attributes: &mut HashSet<Attribute>,
+        edge_labels: EW,
+        node_labels: NW,
+    ) -> WriterResult<()>
+    where
+        G: GraphProp,
+        G: IntoNodeReferences,
+        G: IntoEdgeReferences,
+        G: NodeIndexable,
+        W: Write,
+        for<'a> EW: Fn(&'a G::EdgeWeight) -> Vec<(String, Cow<'a, str>)>,
+        for<'b> NW: Fn(&'b G::NodeWeight) -> Vec<(String, Cow<'b, str>)>,
+    {
+        // convenience function to turn a NodeId into a String
+        let node2str_id = |node: G::NodeId| -> String { format!("n{}", self.graph.to_index(node)) };
+        // Emit an attribute for either node or edge
+        // This will also keep track of updating the global attributes list
+        let mut emit_attribute = |writer: &mut EventWriter<_>,
+                                  name: String,
+                                  data: &str,
+                                  for_: For|
+         -> WriterResult<()> {
+            writer.write(XmlEvent::start_element("data").attr("key", &*name))?;
+            attributes.insert(Attribute { name, for_ });
+            writer.write(XmlEvent::characters(data))?;
+            writer.write(XmlEvent::end_element()) // end data
+        };
+
+        // Each graph needs a default edge type
         writer.write(XmlEvent::start_element("graph").attr(
             "edgedefault",
             if self.graph.is_directed() {
@@ -128,98 +197,65 @@ where
                 "undirected"
             },
         ))?;
+
+        // Emit nodes
         for node in self.graph.node_references() {
-            writer.write(
-                XmlEvent::start_element("node")
-                    .attr("id", &format!("n{}", self.graph.to_index(node.id()))),
-            )?;
-            // Print weights/labels
-            if self.config.node_labels {
+            writer.write(XmlEvent::start_element("node").attr("id", &*node2str_id(node.id())))?;
+            // Print weights
+            if self.config.node_weights {
                 let datas = node_labels(&node.weight());
                 for (name, data) in datas {
-                    writer.write(XmlEvent::start_element("data").attr("key", &*name))?;
-                    attributes.insert(Attribute {
-                        name: name.into_owned().into(),
-                        for_: For::Node,
-                    });
-                    writer.write(XmlEvent::characters(&*data))?;
-                    writer.write(XmlEvent::end_element())?; // data
+                    emit_attribute(writer, name, &*data, For::Node)?;
                 }
             }
-            writer.write(XmlEvent::end_element())?; // node
+            writer.write(XmlEvent::end_element())?; // end node
         }
+
+        // Emit edges
         for (i, edge) in self.graph.edge_references().enumerate() {
             writer.write(
                 XmlEvent::start_element("edge")
                     .attr("id", &format!("e{}", i))
-                    .attr(
-                        "source",
-                        &format!("n{}", self.graph.to_index(edge.source())),
-                    )
-                    .attr(
-                        "target",
-                        &format!("n{}", self.graph.to_index(edge.target())),
-                    ),
+                    .attr("source", &*node2str_id(edge.source()))
+                    .attr("target", &*node2str_id(edge.target())),
             )?;
-            // Print weights/labels
-            if self.config.edge_labels {
+            // Print weights
+            if self.config.edge_weights {
                 let datas = edge_labels(&edge.weight());
                 for (name, data) in datas {
-                    writer.write(XmlEvent::start_element("data").attr("key", &*name))?;
-                    attributes.insert(Attribute {
-                        name: name.into_owned().into(),
-                        for_: For::Edge,
-                    });
-                    writer.write(XmlEvent::characters(&*data))?;
-                    writer.write(XmlEvent::end_element())?; // data
+                    emit_attribute(writer, name, &*data, For::Edge)?;
                 }
             }
-            writer.write(XmlEvent::end_element())?; // node
+            writer.write(XmlEvent::end_element())?; // end edge
         }
-        writer.write(XmlEvent::end_element())?; // graph
+        writer.write(XmlEvent::end_element()) // end graph
+    }
 
+    fn emit_keys<W>(
+        &self,
+        writer: &mut EventWriter<W>,
+        attributes: &HashSet<Attribute>,
+    ) -> WriterResult<()>
+    where
+        W: Write,
+    {
         for attr in attributes {
             writer.write(
                 XmlEvent::start_element("key")
                     .attr("id", &*attr.name)
-                    .attr("for", attr.for_.to_string())
+                    .attr("for", attr.for_.to_str())
                     .attr("attr.name", &*attr.name)
                     .attr("attr.type", "string"),
             )?;
-            writer.write(XmlEvent::end_element())?; // key
+            writer.write(XmlEvent::end_element())?; // end key
         }
-
-        writer.write(XmlEvent::end_element())?; // graphml
         Ok(())
-    }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
-pub struct Config {
-    node_labels: bool,
-    edge_labels: bool,
-}
-
-impl Config {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn export_edge_labels(mut self, state: bool) -> Self {
-        self.edge_labels = state;
-        self
-    }
-
-    pub fn export_node_labels(mut self, state: bool) -> Self {
-        self.node_labels = state;
-        self
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::Config;
-    use super::GraphML;
+    use super::{Config, GraphML};
     use graph::Graph;
 
     #[test]
@@ -240,11 +276,11 @@ mod test {
     }
 
     #[test]
-    fn single_node_with_display_label() {
+    fn single_node_with_display_weight() {
         let mut deps = Graph::<&str, &str>::new();
         deps.add_node("petgraph");
 
-        let graphml = GraphML::with_config(&deps, Config::new().export_node_labels(true));
+        let graphml = GraphML::with_config(&deps, Config::new().export_node_weights(true));
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -280,13 +316,13 @@ mod test {
     }
 
     #[test]
-    fn single_edge_with_display_label() {
+    fn single_edge_with_display_weight() {
         let mut deps = Graph::<&str, &str>::new();
         let pg = deps.add_node("petgraph");
         let fb = deps.add_node("fixedbitset");
         deps.update_edge(pg, fb, "depends on");
 
-        let graphml = GraphML::with_config(&deps, Config::new().export_edge_labels(true));
+        let graphml = GraphML::with_config(&deps, Config::new().export_edge_weights(true));
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -303,7 +339,7 @@ mod test {
     }
 
     #[test]
-    fn node_and_edge_display_label() {
+    fn node_and_edge_display_weight() {
         let mut deps = Graph::<&str, &str>::new();
         let pg = deps.add_node("petgraph");
         let fb = deps.add_node("fixedbitset");
@@ -312,8 +348,8 @@ mod test {
         let graphml = GraphML::with_config(
             &deps,
             Config::new()
-                .export_edge_labels(true)
-                .export_node_labels(true),
+                .export_edge_weights(true)
+                .export_node_weights(true),
         );
         let xml = graphml.to_string();
         let expected1 = r#"<?xml version="1.0" encoding="UTF-8"?>
