@@ -341,7 +341,7 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
 
     fn neighbors_range(&self, a: NodeIndex<Ix>) -> Range<usize> {
         let index = self.row[a.index()];
-        let end = self.row.get(a.index() + 1).cloned().unwrap_or(self.column.len());
+        let end = self.row.get(a.index() + 1).cloned().unwrap_or_else(|| self.column.len());
         index..end
     }
 
