@@ -58,12 +58,12 @@ impl Config {
 }
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub struct GraphML<G> {
+pub struct GraphMl<G> {
     graph: G,
     config: Config,
 }
 
-impl<G> GraphML<G>
+impl<G> GraphMl<G>
 where
     G: GraphRef,
 {
@@ -255,7 +255,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::{Config, GraphML};
+    use super::{Config, GraphMl};
     use graph::Graph;
 
     #[test]
@@ -263,7 +263,7 @@ mod test {
         let mut deps = Graph::<&str, &str>::new();
         deps.add_node("petgraph");
 
-        let graphml = GraphML::new(&deps);
+        let graphml = GraphMl::new(&deps);
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -280,7 +280,7 @@ mod test {
         let mut deps = Graph::<&str, &str>::new();
         deps.add_node("petgraph");
 
-        let graphml = GraphML::with_config(&deps, Config::new().export_node_weights(true));
+        let graphml = GraphMl::with_config(&deps, Config::new().export_node_weights(true));
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -302,7 +302,7 @@ mod test {
         let fb = deps.add_node("fixedbitset");
         deps.extend_with_edges(&[(pg, fb)]);
 
-        let graphml = GraphML::new(&deps);
+        let graphml = GraphMl::new(&deps);
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -322,7 +322,7 @@ mod test {
         let fb = deps.add_node("fixedbitset");
         deps.update_edge(pg, fb, "depends on");
 
-        let graphml = GraphML::with_config(&deps, Config::new().export_edge_weights(true));
+        let graphml = GraphMl::with_config(&deps, Config::new().export_edge_weights(true));
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -345,7 +345,7 @@ mod test {
         let fb = deps.add_node("fixedbitset");
         deps.update_edge(pg, fb, "depends on");
 
-        let graphml = GraphML::with_config(
+        let graphml = GraphMl::with_config(
             &deps,
             Config::new()
                 .export_edge_weights(true)
