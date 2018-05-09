@@ -5,8 +5,9 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::io::{Cursor, Write};
 use std::string::ToString;
-use visit::{EdgeRef, GraphProp, GraphRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable,
-            NodeRef};
+use visit::{
+    EdgeRef, GraphProp, GraphRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable, NodeRef,
+};
 use xml::common::XmlVersion;
 use xml::writer::events::XmlEvent;
 use xml::writer::{EventWriter, Result as WriterResult};
@@ -37,6 +38,7 @@ impl For {
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct Config {
+    pretty_print: bool,
     node_weights: bool,
     edge_weights: bool,
 }
@@ -44,6 +46,11 @@ pub struct Config {
 impl Config {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn pretty_print(mut self, state: bool) -> Self {
+        self.pretty_print = state;
+        self
     }
 
     pub fn export_edge_weights(mut self, state: bool) -> Self {
@@ -87,8 +94,10 @@ where
         let mut buff = Cursor::new(Vec::new());
         {
             // let mut writer = EventWriter::new(&mut buff);
-            let mut writer =
-                EventWriter::new_with_config(&mut buff, EmitterConfig::new().perform_indent(true));
+            let mut writer = EventWriter::new_with_config(
+                &mut buff,
+                EmitterConfig::new().perform_indent(self.config.pretty_print),
+            );
             self.emit_graphml(
                 &mut writer,
                 |ew| vec![("weight".into(), ew.to_string().into())],
@@ -263,7 +272,7 @@ mod test {
         let mut deps = Graph::<&str, &str>::new();
         deps.add_node("petgraph");
 
-        let graphml = GraphMl::new(&deps);
+        let graphml = GraphMl::with_config(&deps, Config::new().pretty_print(true));
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -276,11 +285,26 @@ mod test {
     }
 
     #[test]
+    fn single_node_disable_pretty() {
+        let mut deps = Graph::<&str, &str>::new();
+        deps.add_node("petgraph");
+
+        let graphml = GraphMl::with_config(&deps, Config::new().pretty_print(false));
+        let xml = graphml.to_string();
+        let expected = r#"<?xml version="1.0" encoding="UTF-8"?><graphml xmlns="http://graphml.graphdrawing.org/xmlns"><graph edgedefault="directed"><node id="n0" /></graph></graphml>"#;
+
+        assert_eq!(expected, xml);
+    }
+
+    #[test]
     fn single_node_with_display_weight() {
         let mut deps = Graph::<&str, &str>::new();
         deps.add_node("petgraph");
 
-        let graphml = GraphMl::with_config(&deps, Config::new().export_node_weights(true));
+        let graphml = GraphMl::with_config(
+            &deps,
+            Config::new().pretty_print(true).export_node_weights(true),
+        );
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -302,7 +326,7 @@ mod test {
         let fb = deps.add_node("fixedbitset");
         deps.extend_with_edges(&[(pg, fb)]);
 
-        let graphml = GraphMl::new(&deps);
+        let graphml = GraphMl::with_config(&deps, Config::new().pretty_print(true));
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -322,7 +346,10 @@ mod test {
         let fb = deps.add_node("fixedbitset");
         deps.update_edge(pg, fb, "depends on");
 
-        let graphml = GraphMl::with_config(&deps, Config::new().export_edge_weights(true));
+        let graphml = GraphMl::with_config(
+            &deps,
+            Config::new().pretty_print(true).export_edge_weights(true),
+        );
         let xml = graphml.to_string();
         let expected = r#"<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -348,6 +375,7 @@ mod test {
         let graphml = GraphMl::with_config(
             &deps,
             Config::new()
+                .pretty_print(true)
                 .export_edge_weights(true)
                 .export_node_weights(true),
         );
