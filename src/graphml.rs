@@ -79,7 +79,10 @@ where
     }
 
     pub fn with_config(graph: G, config: Config) -> Self {
-        Self { graph, config }
+        Self {
+            graph: graph,
+            config: config,
+    }
     }
 
     pub fn to_string(&self) -> String
@@ -192,7 +195,10 @@ where
                                   for_: For|
          -> WriterResult<()> {
             writer.write(XmlEvent::start_element("data").attr("key", &*name))?;
-            attributes.insert(Attribute { name, for_ });
+            attributes.insert(Attribute {
+                name: name,
+                for_: for_,
+            });
             writer.write(XmlEvent::characters(data))?;
             writer.write(XmlEvent::end_element()) // end data
         };
