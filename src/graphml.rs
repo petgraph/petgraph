@@ -16,7 +16,7 @@ static NAMESPACE_URL: &str = "http://graphml.graphdrawing.org/xmlns";
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 struct Attribute {
-    name: String,
+    name: Cow<'static, str>,
     for_: For,
 }
 
@@ -108,8 +108,8 @@ where
         G: IntoEdgeReferences,
         G: IntoNodeReferences,
         G: NodeIndexable,
-        for<'a> EW: Fn(&'a G::EdgeWeight) -> Vec<(String, Cow<'a, str>)>,
-        for<'b> NW: Fn(&'b G::NodeWeight) -> Vec<(String, Cow<'b, str>)>,
+        for<'a> EW: Fn(&'a G::EdgeWeight) -> Vec<(Cow<'static, str>, Cow<'a, str>)>,
+        for<'b> NW: Fn(&'b G::NodeWeight) -> Vec<(Cow<'static, str>, Cow<'b, str>)>,
     {
         let mut buff = Cursor::new(Vec::new());
         {
@@ -133,8 +133,8 @@ where
         G: IntoEdgeReferences,
         G: NodeIndexable,
         W: Write,
-        for<'a> EW: Fn(&'a G::EdgeWeight) -> Vec<(String, Cow<'a, str>)>,
-        for<'b> NW: Fn(&'b G::NodeWeight) -> Vec<(String, Cow<'b, str>)>,
+        for<'a> EW: Fn(&'a G::EdgeWeight) -> Vec<(Cow<'static, str>, Cow<'a, str>)>,
+        for<'b> NW: Fn(&'b G::NodeWeight) -> Vec<(Cow<'static, str>, Cow<'b, str>)>,
     {
         // Store information about the attributes for nodes and edges.
         // We cannot know in advance what the attribute names will be, so we just keep track of what gets emitted.
@@ -170,15 +170,15 @@ where
         G: IntoEdgeReferences,
         G: NodeIndexable,
         W: Write,
-        for<'a> EW: Fn(&'a G::EdgeWeight) -> Vec<(String, Cow<'a, str>)>,
-        for<'b> NW: Fn(&'b G::NodeWeight) -> Vec<(String, Cow<'b, str>)>,
+        for<'a> EW: Fn(&'a G::EdgeWeight) -> Vec<(Cow<'static, str>, Cow<'a, str>)>,
+        for<'b> NW: Fn(&'b G::NodeWeight) -> Vec<(Cow<'static, str>, Cow<'b, str>)>,
     {
         // convenience function to turn a NodeId into a String
         let node2str_id = |node: G::NodeId| -> String { format!("n{}", self.graph.to_index(node)) };
         // Emit an attribute for either node or edge
         // This will also keep track of updating the global attributes list
         let mut emit_attribute = |writer: &mut EventWriter<_>,
-                                  name: String,
+                                  name: Cow<'static, str>,
                                   data: &str,
                                   for_: For|
          -> WriterResult<()> {
