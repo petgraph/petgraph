@@ -21,6 +21,9 @@ extern crate fixedbitset;
 #[cfg(feature = "graphmap")]
 extern crate ordermap;
 
+#[cfg(feature = "graphml")]
+extern crate xml;
+
 #[cfg(feature = "serde-1")]
 extern crate serde;
 #[cfg(feature = "serde-1")]
@@ -50,6 +53,8 @@ pub mod algo;
 pub mod generate;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
+#[cfg(feature = "graphml")]
+pub mod graphml;
 mod graph_impl;
 pub mod dot;
 pub mod unionfind;
