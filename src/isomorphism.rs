@@ -173,7 +173,7 @@ pub fn is_isomorphic<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>,
     }
 
     let mut st = [Vf2State::new(g0), Vf2State::new(g1)];
-    return try_match(&mut st, g0, g1, &mut NoSemanticMatch, &mut NoSemanticMatch).unwrap_or(false);
+    try_match(&mut st, g0, g1, &mut NoSemanticMatch, &mut NoSemanticMatch).unwrap_or(false)
 }
 
 /// [Graph] Return `true` if the graphs `g0` and `g1` are isomorphic.
