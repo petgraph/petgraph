@@ -1462,7 +1462,85 @@ fn filtered() {
     assert_eq!(set(po), set(g.node_identifiers().filter(|n| (filt.1)(*n))));
 }
 
+#[test]
+fn filtered_edge_reverse() {
+    use petgraph::visit::EdgeFiltered;
+    #[derive(Eq, PartialEq)]
+    enum E {
+        A,
+        B,
+    }
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    let h = g.add_node("H");
+    let i = g.add_node("I");
+    let j = g.add_node("J");
 
+    g.add_edge(a, b, E::A);
+    g.add_edge(b, c, E::A);
+    g.add_edge(c, d, E::B);
+    g.add_edge(d, e, E::A);
+    g.add_edge(e, f, E::A);
+    g.add_edge(e, h, E::A);
+    g.add_edge(e, i, E::A);
+    g.add_edge(i, j, E::A);
+
+    let ef_a = EdgeFiltered::from_fn(&g, |edge| *edge.weight() == E::A);
+    let ef_b = EdgeFiltered::from_fn(&g, |edge| *edge.weight() == E::B);
+
+    // DFS down from a, filtered by E::A.
+    let mut po = Vec::new();
+    let mut dfs = Dfs::new(&ef_a, a);
+    while let Some(next_n_ix) = dfs.next(&ef_a) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![a, b, c]));
+
+    // Reversed DFS from f, filtered by E::A.
+    let mut dfs = Dfs::new(&Reversed(&ef_a), f);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_a)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![d, e, f]));
+
+    // Reversed DFS from j, filtered by E::A.
+    let mut dfs = Dfs::new(&Reversed(&ef_a), j);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_a)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![d, e, i, j]));
+
+    // Reversed DFS from c, filtered by E::A.
+    let mut dfs = Dfs::new(&Reversed(&ef_a), c);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_a)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![a, b, c]));
+
+    // Reversed DFS from c, filtered by E::B.
+    let mut dfs = Dfs::new(&Reversed(&ef_b), c);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_b)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![c]));
+
+    // Reversed DFS from d, filtered by E::B.
+    let mut dfs = Dfs::new(&Reversed(&ef_b), d);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_b)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![c, d]));
+}
 
 #[test]
 fn dfs_visit() {

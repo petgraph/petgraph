@@ -10,6 +10,7 @@ use visit::{
     GraphProp,
     IntoEdgeReferences,
     IntoEdges,
+    IntoEdgesDirected,
     IntoNeighbors,
     IntoNeighborsDirected,
     IntoNodeIdentifiers,
@@ -337,6 +338,21 @@ impl<'a, G, F> IntoNeighbors for &'a EdgeFiltered<G, F>
     }
 }
 
+impl<'a, G, F> IntoNeighborsDirected for &'a EdgeFiltered<G, F>
+where
+    G: IntoEdgesDirected,
+    F: FilterEdge<G::EdgeRef>,
+{
+    type NeighborsDirected = EdgeFilteredNeighborsDirected<'a, G, F>;
+    fn neighbors_directed(self, n: G::NodeId, dir: Direction) -> Self::NeighborsDirected {
+        EdgeFilteredNeighborsDirected {
+            iter: self.0.edges_directed(n, dir),
+            f: &self.1,
+            dir,
+        }
+    }
+}
+
 /// A filtered neighbors iterator.
 pub struct EdgeFilteredNeighbors<'a, G, F: 'a>
     where G: IntoEdges,
@@ -406,6 +422,40 @@ impl<'a, G, I, F> Iterator for EdgeFilteredEdges<'a, G, I, F>
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         self.iter.find(move |&edge| f.include_edge(edge))
+    }
+}
+
+/// A filtered neighbors-directed iterator.
+pub struct EdgeFilteredNeighborsDirected<'a, G, F: 'a>
+where
+    G: IntoEdgesDirected,
+{
+    iter: G::EdgesDirected,
+    f: &'a F,
+    dir: Direction,
+}
+
+impl<'a, G, F> Iterator for EdgeFilteredNeighborsDirected<'a, G, F>
+where
+    F: FilterEdge<G::EdgeRef>,
+    G: IntoEdgesDirected,
+{
+    type Item = G::NodeId;
+    fn next(&mut self) -> Option<Self::Item> {
+        let f = self.f;
+        let dir = self.dir;
+        (&mut self.iter)
+            .filter_map(move |edge| {
+                if f.include_edge(edge) {
+                    match dir {
+                        Direction::Incoming => Some(edge.source()),
+                        Direction::Outgoing => Some(edge.target()),
+                    }
+                } else {
+                    None
+                }
+            })
+            .next()
     }
 }
 
