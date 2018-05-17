@@ -348,7 +348,7 @@ where
         EdgeFilteredNeighborsDirected {
             iter: self.0.edges_directed(n, dir),
             f: &self.1,
-            dir,
+            dir: dir,
         }
     }
 }
