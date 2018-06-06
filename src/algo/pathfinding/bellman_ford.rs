@@ -1,7 +1,7 @@
 use crate::algo::Measure;
 use crate::visit::{IntoEdges, NodeCount, IntoNodeIdentifiers, EdgeRef};
 
-use super::path::{Path, PredecessorMap, CostMap};
+use super::path::{Path, PredecessorMap, CostMap, NoPredecessorMap};
 
 pub struct BellmanFord<G>
     where G: IntoEdges + NodeCount + IntoNodeIdentifiers
@@ -100,8 +100,8 @@ impl<G, F, K, C> BellmanFordBuilder2<G, F, K, C>
         }
     }
 
-    pub fn path_all(self, start: G::NodeId) -> Result<Path<G, K, C, ()>, NegativeCycle> {
-        self.predecessor_map(()).path_all(start)
+    pub fn path_all(self, start: G::NodeId) -> Result<Path<G, K, C, NoPredecessorMap>, NegativeCycle> {
+        self.predecessor_map(NoPredecessorMap).path_all(start)
     }
 }
 

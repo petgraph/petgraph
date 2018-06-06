@@ -48,7 +48,14 @@ impl<G, K, C, P> Path<G, K, C, P>
     pub fn into_costs(self) -> C {
         self.costs
     }
+}
 
+impl<G, K, C, P> Path<G, K, C, P>
+    where G: GraphBase,
+          K: Measure + Copy,
+          C: CostMap<G, Cost = K>,
+          P: PredecessorMap<G> + PredecessorMapConfigured<G>,
+{
     pub fn into_nodes(self) -> Option<(K, Vec<G::NodeId>)> {
         self.goal
             .map(|node| {
@@ -76,8 +83,15 @@ pub trait PredecessorMap<G: GraphBase> {
     fn set(&mut self, node: G::NodeId, pred: G::NodeId);
 }
 
-pub trait CostMap<G: GraphBase>
-    : for<'a> Index<&'a G::NodeId, Output = <Self as CostMap<G>>::Cost> {
+/// Marker trait used to differentiate explicitly configured predecessor maps from the default.
+/// This is needed to cause a compile-time error when the user tries to rebuild the path without
+/// configuring a predecessor map, which would likely cause a panic.
+pub trait PredecessorMapConfigured<G: GraphBase> : PredecessorMap<G> {
+}
+
+pub trait CostMap<G: GraphBase> :
+    for<'a> Index<&'a G::NodeId, Output = <Self as CostMap<G>>::Cost>
+{
     type Cost: Measure;
 
     fn initialize(&mut self, graph: G, node: G::NodeId);
@@ -102,6 +116,12 @@ impl<G> PredecessorMap<G> for HashMap<G::NodeId, G::NodeId>
     fn set(&mut self, node: G::NodeId, pred: G::NodeId) {
         self.insert(node, pred);
     }
+}
+
+impl<G> PredecessorMapConfigured<G> for HashMap<G::NodeId, G::NodeId>
+    where G: GraphBase,
+          G::NodeId: Eq + Hash
+{
 }
 
 impl<G, K> CostMap<G> for HashMap<G::NodeId, K>
@@ -202,6 +222,11 @@ impl<G> PredecessorMap<G> for IndexableNodeMap<G, Option<G::NodeId>>
     }
 }
 
+impl<G> PredecessorMapConfigured<G> for IndexableNodeMap<G, Option<G::NodeId>>
+    where G: GraphBase + NodeIndexable
+{
+}
+
 impl<G, K> CostMap<G> for IndexableNodeMap<G, K>
     where G: GraphBase + NodeIndexable,
           K: FloatMeasure
@@ -234,8 +259,10 @@ impl<G, K> CostMap<G> for IndexableNodeMap<G, K>
     }
 }
 
-impl<G> PredecessorMap<G> for ()
-    where G: GraphBase
+pub struct NoPredecessorMap;
+
+impl<G> PredecessorMap<G> for NoPredecessorMap
+    where G: GraphBase,
 {
     fn initialize(&mut self, _graph: G) {
         // noop

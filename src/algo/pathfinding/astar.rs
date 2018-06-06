@@ -4,7 +4,7 @@ use crate::algo::Measure;
 use crate::scored::MinScored;
 use crate::visit::{IntoEdges, VisitMap, Visitable, EdgeRef};
 
-use super::path::{Path, PredecessorMap, CostMap};
+use super::path::{Path, PredecessorMap, CostMap, NoPredecessorMap};
 
 pub struct Astar<G>
     where G: IntoEdges + Visitable
@@ -137,18 +137,18 @@ impl<G, F, H, K, C> AstarBuilder3<G, F, H, K, C>
         }
     }
 
-    pub fn path(self, start: G::NodeId, end: G::NodeId) -> Path<G, K, C, ()> {
-        self.predecessor_map(()).path(start, end)
+    pub fn path(self, start: G::NodeId, end: G::NodeId) -> Path<G, K, C, NoPredecessorMap> {
+        self.predecessor_map(NoPredecessorMap).path(start, end)
     }
 
-    pub fn path_with<Pred>(self, start: G::NodeId, goal_pred: Pred) -> Path<G, K, C, ()>
+    pub fn path_with<Pred>(self, start: G::NodeId, goal_pred: Pred) -> Path<G, K, C, NoPredecessorMap>
         where Pred: Fn(G::NodeId) -> bool
     {
-        self.predecessor_map(()).path_with(start, goal_pred)
+        self.predecessor_map(NoPredecessorMap).path_with(start, goal_pred)
     }
 
-    pub fn path_all(self, start: G::NodeId) -> Path<G, K, C, ()> {
-        self.predecessor_map(()).path_all(start)
+    pub fn path_all(self, start: G::NodeId) -> Path<G, K, C, NoPredecessorMap> {
+        self.predecessor_map(NoPredecessorMap).path_all(start)
     }
 }
 
