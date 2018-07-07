@@ -12,9 +12,21 @@ mod path;
 pub use self::astar::Astar;
 pub use self::bellman_ford::{BellmanFord, NegativeCycle};
 pub use self::dijkstra::Dijkstra;
-pub use self::path::Path;
 
-use self::path::IndexableNodeMap;
+pub use self::path::{Path, IndexableNodeMap};
+
+/// Builders used for type safe configuration of pathfinding algorithms. Mainly here to appear in
+/// generated documentation.
+pub mod builders {
+    pub use super::astar::{AstarBuilder1, AstarBuilder2, AstarBuilder3, ConfiguredAstar};
+    pub use super::bellman_ford::{BellmanFordBuilder1, BellmanFordBuilder2, ConfiguredBellmanFord};
+    pub use super::dijkstra::{DijkstraBuilder1, DijkstraBuilder2, ConfiguredDijkstra};
+}
+
+/// Traits used to configure the pathfinding, such as predecessors or costs.
+pub mod traits {
+    pub use super::path::{CostMap, PredecessorMap, PredecessorMapConfigured};
+}
 
 /// \[Generic\] Dijkstra's shortest path algorithm.
 ///

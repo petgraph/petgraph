@@ -3,6 +3,31 @@ use crate::visit::{IntoEdges, NodeCount, IntoNodeIdentifiers, EdgeRef};
 
 use super::path::{Path, PredecessorMap, CostMap, NoPredecessorMap};
 
+/// Type safe builder style configuration of [`bellman_ford`](fn.bellman_ford.html).
+///
+/// Both the edge cost function and the predecessor map may be omitted.
+///
+/// The edge cost may only be omitted if the graph's weights implement
+/// [`FloatMeasure`](../trait.FloatMeasure.html).
+///
+/// Omitting the predecessor map opts out of path tracking, speeding up the running time of the
+/// algorithm on the other hand.
+///
+/// # Example
+///
+/// ```ignore
+/// let path = BellmanFord::new(graph)
+///     .edge_cost(|e| *e.weight())
+///     .cost_map(HashMap::new())
+///     .predecessor_map(HashMap::new())
+///     .path_all(start);
+///
+/// if let Ok(path) = path {
+///     // the returned path object contains both the predecessor map and the cost map
+/// } else {
+///     // there is a cycle of negative weights
+/// }
+/// ```
 pub struct BellmanFord<G>
     where G: IntoEdges + NodeCount + IntoNodeIdentifiers
 {

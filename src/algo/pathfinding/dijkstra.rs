@@ -4,6 +4,40 @@ use crate::visit::{IntoEdges, Visitable, EdgeRef};
 use super::astar::astar_shortest_paths;
 use super::path::{Path, PredecessorMap, CostMap, NoPredecessorMap};
 
+/// Type safe builder style configuration of [`dijkstra`](fn.dijkstra.html).
+///
+/// Both the edge cost function and the predecessor map may be omitted.
+///
+/// The edge cost may only be omitted if the graph's weights implement
+/// [`Measure`](../trait.Measure.html).
+///
+/// Omitting the predecessor map opts out of path tracking, speeding up the running time of the
+/// algorithm on the other hand.
+///
+/// # Example
+///
+/// ```ignore
+/// let path = Dijkstra::new(graph)
+///     .edge_cost(|e| *e.weight())
+///     .cost_map(HashMap::new())
+///     .predecessor_map(HashMap::new())
+///     .path(start, end);
+///
+/// if let Some((cost, nodes)) = path.into_nodes() {
+///     // there is a path
+/// } else {
+///     // no path
+/// }
+/// ```
+///
+/// ## All costs, edge weights, no predecessor tracking
+///
+/// ```ignore
+/// let costs = Dijkstra::new(graph)
+///     .cost_map(HashMap::new())
+///     .path_all()
+///     .into_costs();
+/// ```
 pub struct Dijkstra<G>
     where G: IntoEdges + Visitable
 {

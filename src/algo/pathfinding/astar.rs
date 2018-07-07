@@ -6,6 +6,32 @@ use crate::visit::{IntoEdges, VisitMap, Visitable, EdgeRef};
 
 use super::path::{Path, PredecessorMap, CostMap, NoPredecessorMap};
 
+/// Type safe builder style configuration of [`astar`](fn.astar.html).
+///
+/// Both the edge cost function and the predecessor map may be omitted.
+///
+/// The edge cost may only be omitted if the graph's weights implement
+/// [`Measure`](../trait.Measure.html).
+///
+/// Omitting the predecessor map opts out of path tracking, speeding up the running time of the
+/// algorithm on the other hand.
+///
+/// # Example
+///
+/// ```ignore
+/// let path = Astar::new(graph)
+///     .edge_cost(|e| *e.weight())
+///     .estimate_cost(|e| *e.weight())
+///     .cost_map(HashMap::new())
+///     .predecessor_map(HashMap::new())
+///     .path(start, end);
+///
+/// if let Some((cost, nodes)) = path.into_nodes() {
+///     // there is a path
+/// } else {
+///     // no path
+/// }
+/// ```
 pub struct Astar<G>
     where G: IntoEdges + Visitable
 {
