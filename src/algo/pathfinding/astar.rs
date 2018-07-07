@@ -212,7 +212,7 @@ pub fn astar_shortest_paths<G, K, GoalP, EdgeF, EdgeH, DMap, PMap>(graph: G,
           EdgeH: Fn(G::NodeId) -> K,
           DMap: CostMap<G, Cost = K>,
           PMap: PredecessorMap<G>,
-          K: Measure + Copy
+          K: Measure + Copy,
 {
     predecessors.initialize(graph);
     costs.initialize(graph, start);
@@ -235,7 +235,7 @@ pub fn astar_shortest_paths<G, K, GoalP, EdgeF, EdgeH, DMap, PMap>(graph: G,
 
         // This lookup can be unwrapped without fear of panic since the node was necessarily scored
         // before adding him to `visit_next`.
-        let node_cost = costs[&node];
+        let node_cost = *costs.get(&node).unwrap();
 
         for edge in graph.edges(node) {
             let next = edge.target();

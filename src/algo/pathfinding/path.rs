@@ -59,7 +59,7 @@ impl<G, K, C, P> Path<G, K, C, P>
     pub fn into_nodes(self) -> Option<(K, Vec<G::NodeId>)> {
         self.goal
             .map(|node| {
-                let total_cost = self.costs.get(node).unwrap();
+                let total_cost = self.costs.get(&node).unwrap().clone();
                 let mut path = vec![node];
 
                 let mut current = node;
@@ -89,14 +89,18 @@ pub trait PredecessorMap<G: GraphBase> {
 pub trait PredecessorMapConfigured<G: GraphBase> : PredecessorMap<G> {
 }
 
-pub trait CostMap<G: GraphBase> :
-    for<'a> Index<&'a G::NodeId, Output = <Self as CostMap<G>>::Cost>
-{
+pub trait CostMap<G: GraphBase> {
     type Cost: Measure;
 
     fn initialize(&mut self, graph: G, node: G::NodeId);
 
-    fn get(&self, node: G::NodeId) -> Option<Self::Cost>;
+    fn get(&self, node: &G::NodeId) -> Option<&Self::Cost>;
+
+    fn get_or_infinite(&self, node: &G::NodeId) -> Self::Cost
+        where Self::Cost : FloatMeasure
+    {
+        self.get(node).cloned().unwrap_or(Self::Cost::infinite())
+    }
 
     fn consider(&mut self, node: G::NodeId, cost: Self::Cost) -> bool;
 }
@@ -136,8 +140,8 @@ impl<G, K> CostMap<G> for HashMap<G::NodeId, K>
         self.insert(node, <_>::default());
     }
 
-    fn get(&self, node: G::NodeId) -> Option<Self::Cost> {
-        self.get(&node).cloned()
+    fn get(&self, node: &G::NodeId) -> Option<&Self::Cost> {
+        self.get(node)
     }
 
     fn consider(&mut self, node: G::NodeId, cost: Self::Cost) -> bool {
@@ -239,14 +243,20 @@ impl<G, K> CostMap<G> for IndexableNodeMap<G, K>
         self.node_map[ix] = K::zero();
     }
 
-    fn get(&self, node: G::NodeId) -> Option<Self::Cost> {
-        let ix = self.ix(node);
-        let cost = self.node_map[ix];
-        if cost != K::infinite() {
+    fn get(&self, node: &G::NodeId) -> Option<&Self::Cost> {
+        let ix = self.ix(*node);
+        let cost = &self.node_map[ix];
+        if *cost != K::infinite() {
             Some(cost)
         } else {
             None
         }
+    }
+
+    fn get_or_infinite(&self, node: &G::NodeId) -> Self::Cost
+        where Self::Cost : FloatMeasure
+    {
+        self.node_map[self.ix(*node)]
     }
 
     fn consider(&mut self, node: G::NodeId, cost: Self::Cost) -> bool {
@@ -254,6 +264,35 @@ impl<G, K> CostMap<G> for IndexableNodeMap<G, K>
         let better = cost < self.node_map[ix];
         if better {
             self.node_map[ix] = cost;
+        }
+        better
+    }
+}
+
+impl<G, K> CostMap<G> for IndexableNodeMap<G, Option<K>>
+    where G: GraphBase + NodeIndexable,
+          K: Measure,
+{
+    type Cost = K;
+
+    fn initialize(&mut self, graph: G, node: G::NodeId) {
+        self.initialize(graph, None);
+        let ix = self.ix(node);
+        self.node_map[ix] = Some(K::default());
+    }
+
+    fn get(&self, node: &G::NodeId) -> Option<&Self::Cost> {
+        let ix = self.ix(*node);
+        self.node_map[ix].as_ref()
+    }
+
+    fn consider(&mut self, node: G::NodeId, cost: Self::Cost) -> bool {
+        let ix = self.ix(node);
+        let better = self.node_map[ix].as_ref()
+            .map(|old_cost| *old_cost < cost)
+            .unwrap_or(true);
+        if better {
+            self.node_map[ix] = Some(cost);
         }
         better
     }

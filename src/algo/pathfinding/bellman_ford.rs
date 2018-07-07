@@ -1,4 +1,4 @@
-use crate::algo::Measure;
+use crate::algo::FloatMeasure;
 use crate::visit::{IntoEdges, NodeCount, IntoNodeIdentifiers, EdgeRef};
 
 use super::path::{Path, PredecessorMap, CostMap, NoPredecessorMap};
@@ -18,7 +18,7 @@ impl<G> BellmanFord<G>
 
     pub fn edge_cost<F, K>(self, edge_cost: F) -> BellmanFordBuilder1<G, F, K>
         where F: Fn(G::EdgeRef) -> K,
-              K: Measure
+              K: FloatMeasure
     {
         BellmanFordBuilder1 {
             graph: self.graph,
@@ -29,7 +29,7 @@ impl<G> BellmanFord<G>
 
 impl<G> BellmanFord<G>
     where G: IntoEdges + NodeCount + IntoNodeIdentifiers,
-          G::EdgeWeight: Measure + Copy
+          G::EdgeWeight: FloatMeasure,
 {
     pub fn cost_map<C>(self, costs: C) -> BellmanFordBuilder2<G, fn(G::EdgeRef) -> G::EdgeWeight, G::EdgeWeight, C>
         where C: CostMap<G, Cost = G::EdgeWeight>,
@@ -50,7 +50,7 @@ fn edge_weight<G>(edge: G::EdgeRef) -> G::EdgeWeight
 pub struct BellmanFordBuilder1<G, F, K>
     where G: IntoEdges + NodeCount + IntoNodeIdentifiers,
           F: Fn(G::EdgeRef) -> K,
-          K: Measure
+          K: FloatMeasure
 {
     graph: G,
     edge_cost: F,
@@ -59,7 +59,7 @@ pub struct BellmanFordBuilder1<G, F, K>
 impl<G, F, K> BellmanFordBuilder1<G, F, K>
     where G: IntoEdges + NodeCount + IntoNodeIdentifiers,
           F: Fn(G::EdgeRef) -> K,
-          K: Measure + Copy
+          K: FloatMeasure,
 {
     pub fn cost_map<C>(self, costs: C) -> BellmanFordBuilder2<G, F, K, C>
         where C: CostMap<G, Cost = K>,
@@ -75,7 +75,7 @@ impl<G, F, K> BellmanFordBuilder1<G, F, K>
 pub struct BellmanFordBuilder2<G, F, K, C>
     where G: IntoEdges + NodeCount + IntoNodeIdentifiers,
           F: Fn(G::EdgeRef) -> K,
-          K: Measure + Copy,
+          K: FloatMeasure,
           C: CostMap<G, Cost = K>,
 {
     graph: G,
@@ -86,7 +86,7 @@ pub struct BellmanFordBuilder2<G, F, K, C>
 impl<G, F, K, C> BellmanFordBuilder2<G, F, K, C>
     where G: IntoEdges + NodeCount + IntoNodeIdentifiers,
           F: Fn(G::EdgeRef) -> K,
-          K: Measure + Copy,
+          K: FloatMeasure,
           C: CostMap<G, Cost = K>,
 {
     pub fn predecessor_map<P>(self, predecessors: P) -> ConfiguredBellmanFord<G, F, K, C, P>
@@ -108,7 +108,7 @@ impl<G, F, K, C> BellmanFordBuilder2<G, F, K, C>
 pub struct ConfiguredBellmanFord<G, F, K, C, P>
     where G: IntoEdges + NodeCount + IntoNodeIdentifiers,
           F: Fn(G::EdgeRef) -> K,
-          K: Measure + Copy,
+          K: FloatMeasure,
           C: CostMap<G, Cost = K>,
           P: PredecessorMap<G>,
 {
@@ -121,7 +121,7 @@ pub struct ConfiguredBellmanFord<G, F, K, C, P>
 impl<G, F, K, C, P> ConfiguredBellmanFord<G, F, K, C, P>
     where G: IntoEdges + NodeCount + IntoNodeIdentifiers,
           F: Fn(G::EdgeRef) -> K,
-          K: Measure + Copy,
+          K: FloatMeasure,
           C: CostMap<G, Cost = K>,
           P: PredecessorMap<G>,
 {
@@ -153,7 +153,7 @@ fn bellman_ford_shortest_paths<G, K, EdgeF, DMap, PMap>(graph: G,
           EdgeF: Fn(G::EdgeRef) -> K,
           DMap: CostMap<G, Cost = K>,
           PMap: PredecessorMap<G>,
-          K: Measure + Copy
+          K: FloatMeasure, // TODO: loosen this restriction
 {
     predecessors.initialize(graph);
     costs.initialize(graph, start);
@@ -166,7 +166,7 @@ fn bellman_ford_shortest_paths<G, K, EdgeF, DMap, PMap>(graph: G,
                 let node = edge.source();
                 let next = edge.target();
 
-                let node_cost = costs[&node];
+                let node_cost = costs.get_or_infinite(&node);
                 let next_cost = node_cost + edge_cost(edge);
                 let replaced = costs.consider(next, next_cost);
                 if replaced {
@@ -183,10 +183,10 @@ fn bellman_ford_shortest_paths<G, K, EdgeF, DMap, PMap>(graph: G,
 
     // check for negative weight cycle
     for node in graph.node_identifiers() {
-        let node_cost = costs[&node];
+        let node_cost = costs.get_or_infinite(&node);
         for edge in graph.edges(node) {
             let next = edge.target();
-            if node_cost + edge_cost(edge) < costs[&next] {
+            if node_cost + edge_cost(edge) < costs.get_or_infinite(&next){
                 return Err(NegativeCycle(()));
             }
         }
