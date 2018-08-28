@@ -1711,7 +1711,6 @@ fn test_dominators_simple_fast() {
     // http://www.cs.princeton.edu/courses/archive/spr03/cs423/download/dominators.pdf.
 
     let mut graph = DiGraph::<_, _>::new();
-    
     let r = graph.add_node("r");
     let a = graph.add_node("a");
     let b = graph.add_node("b");

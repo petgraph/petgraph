@@ -258,7 +258,7 @@ pub enum Element<N, E> {
 pub trait FromElements : Create {
     fn from_elements<I>(iterable: I) -> Self
         where Self: Sized,
-              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
+              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>
     {
         let mut gr = Self::with_capacity(0, 0);
         // usize -> NodeId map
@@ -275,7 +275,6 @@ pub trait FromElements : Create {
         }
         gr
     }
-        
 }
 
 fn from_elements_indexable<G, I>(iterable: I) -> G
