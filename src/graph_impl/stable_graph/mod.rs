@@ -685,6 +685,22 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Return an iterator over either the nodes without edges to them
+    /// (`Incoming`) or from them (`Outgoing`).
+    ///
+    /// An *internal* node has both incoming and outgoing edges.
+    /// The nodes in `.externals(Incoming)` are the source nodes and
+    /// `.externals(Outgoing)` are the sinks of the graph.
+    ///
+    /// For a graph with undirected edges, both the sinks and the sources are
+    /// just the nodes without edges.
+    ///
+    /// The whole iteration computes in **O(|V|)** time.
+    pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix>
+    {
+        Externals { iter: self.raw_nodes().iter().enumerate(), dir: dir, ty: PhantomData }
+    }
+
     /// Index the `StableGraph` by two indices, any combination of
     /// node or edge indices is fine.
     ///
@@ -1386,6 +1402,38 @@ impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
     }
 }
 
+/// An iterator over either the nodes without edges to them or from them.
+pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
+    iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
+    dir: Direction,
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, N: 'a, Ty, Ix> Iterator for Externals<'a, N, Ty, Ix> where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Item = NodeIndex<Ix>;
+    fn next(&mut self) -> Option<NodeIndex<Ix>>
+    {
+        let k = self.dir.index();
+        loop {
+            match self.iter.next() {
+                None => return None,
+                Some((index, node)) => {
+                    if node.weight.is_some() &&
+                        node.next[k] == EdgeIndex::end() &&
+                        (Ty::is_directed() ||
+                         node.next[1-k] == EdgeIndex::end()) {
+                        return Some(NodeIndex::new(index))
+                    } else {
+                        continue
+                    }
+                },
+            }
+        }
+    }
+}
 
 /// Iterator over the neighbors of a node.
 ///
