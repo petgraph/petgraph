@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 
-use std::hash::Hash;
+use std::hash::{Hash, BuildHasher};
 
 use std::ops::Index;
 
@@ -150,9 +150,10 @@ pub trait CostMap<G: GraphBase> {
     fn consider(&mut self, node: G::NodeId, cost: Self::Cost) -> bool;
 }
 
-impl<G> PredecessorMap<G> for HashMap<G::NodeId, G::NodeId>
+impl<G, S> PredecessorMap<G> for HashMap<G::NodeId, G::NodeId, S>
     where G: GraphBase,
           G::NodeId: Eq + Hash,
+          S: BuildHasher,
 {
     fn initialize(&mut self, _graph: G) {
         self.clear();
@@ -167,16 +168,18 @@ impl<G> PredecessorMap<G> for HashMap<G::NodeId, G::NodeId>
     }
 }
 
-impl<G> PredecessorMapConfigured<G> for HashMap<G::NodeId, G::NodeId>
+impl<G, S> PredecessorMapConfigured<G> for HashMap<G::NodeId, G::NodeId, S>
     where G: GraphBase,
           G::NodeId: Eq + Hash,
+          S: BuildHasher,
 {
 }
 
-impl<G, K> CostMap<G> for HashMap<G::NodeId, K>
+impl<G, K, S> CostMap<G> for HashMap<G::NodeId, K, S>
     where G: GraphBase,
           G::NodeId: Eq + Hash,
           K: Measure,
+          S: BuildHasher,
 {
     type Cost = K;
 
