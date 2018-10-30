@@ -14,11 +14,11 @@ repository = "https://github.com/bluss/petgraph"
 
 
 [dependencies]
-petgraph = { path = "..", features = ["serde-1", "quickcheck"] }
+petgraph = { path = "..", features = ["serde-1", "check"] }
 itertools = { version = "0.6.2" }
 
 [dev-dependencies]
 serde_json = "1.0"
-quickcheck = { version = "0.4", default-features = false }
-bincode = { version = "0.9" }
+quickcheck = { version = "0.7.1", default-features = false }
+bincode = "1.0.1"
 defmac = "0.1"

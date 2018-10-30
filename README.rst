@@ -198,7 +198,7 @@ Recent Changes
   - ``GraphMap`` can now have directed edges. ``GraphMap::new`` is now generic
     in the edge type. ``DiGraphMap`` and ``UnGraphMap`` are new type aliases.
   - Add type aliases ``DiGraph, UnGraph, StableDiGraph, StableUnGraph``
-  - ``GraphMap`` is based on the ordermap crate. Deterministic iteration
+  - ``GraphMap`` is based on the indexmap crate. Deterministic iteration
     order, faster iteration, no side tables needed to convert to ``Graph``.
   - Improved docs for a lot of types and functions.
   - Add graph visitor ``DfsPostOrder``
@@ -308,7 +308,7 @@ Recent Changes
   - Add Graph::capacity(), GraphMap::capacity()
   - Fix bug in Graph::reverse()
   - Graph and GraphMap have `quickcheck::Arbitrary` implementations,
-    if optional feature `quickcheck` is enabled.
+    if optional feature `check` is enabled.
 
 - 0.1.16
 

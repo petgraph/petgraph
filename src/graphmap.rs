@@ -14,11 +14,11 @@ use std::fmt;
 use std::ops::{Index, IndexMut, Deref};
 use std::iter::FromIterator;
 use std::marker::PhantomData;
-use ordermap::OrderMap;
-use ordermap::{
-    Iter as OrderMapIter, IterMut as OrderMapIterMut
+use indexmap::IndexMap;
+use indexmap::map::{
+    Iter as IndexMapIter, IterMut as IndexMapIterMut
 };
-use ordermap::Keys;
+use indexmap::map::Keys;
 
 use {
     EdgeType,
@@ -72,8 +72,8 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
-    nodes: OrderMap<N, Vec<(N, CompactDirection)>>,
-    edges: OrderMap<(N, N), E>,
+    nodes: IndexMap<N, Vec<(N, CompactDirection)>>,
+    edges: IndexMap<(N, N), E>,
     ty: PhantomData<Ty>,
 }
 
@@ -121,8 +121,8 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// Create a new `GraphMap` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         GraphMap {
-            nodes: OrderMap::with_capacity(nodes),
-            edges: OrderMap::with_capacity(edges),
+            nodes: IndexMap::with_capacity(nodes),
+            edges: IndexMap::with_capacity(edges),
             ty: PhantomData,
         }
     }
@@ -559,7 +559,7 @@ pub struct Edges<'a, N, E: 'a, Ty>
           Ty: EdgeType
 {
     from: N,
-    edges: &'a OrderMap<(N, N), E>,
+    edges: &'a IndexMap<(N, N), E>,
     iter: Neighbors<'a, N, Ty>,
 }
 
@@ -596,7 +596,7 @@ impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
 }
 
 pub struct AllEdges<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    inner: OrderMapIter<'a, (N, N), E>,
+    inner: IndexMapIter<'a, (N, N), E>,
     ty: PhantomData<Ty>,
 }
 
@@ -640,7 +640,7 @@ impl<'a, N, E, Ty> DoubleEndedIterator for AllEdges<'a, N, E, Ty>
 }
 
 pub struct AllEdgesMut<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    inner: OrderMapIterMut<'a, (N, N), E>,
+    inner: IndexMapIterMut<'a, (N, N), E>,
     ty: PhantomData<Ty>,
 }
 
@@ -815,7 +815,7 @@ impl<N, E, Ty> NodeCount for GraphMap<N, E, Ty>
 }
 
 pub struct NodeIdentifiers<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    iter: OrderMapIter<'a, N, Vec<(N, CompactDirection)>>,
+    iter: IndexMapIter<'a, N, Vec<(N, CompactDirection)>>,
     ty: PhantomData<Ty>,
     edge_ty: PhantomData<E>,
 }
@@ -847,7 +847,7 @@ impl<'a, N, E, Ty> IntoNodeReferences for &'a GraphMap<N, E, Ty>
 }
 
 pub struct NodeReferences<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    iter: OrderMapIter<'a, N, Vec<(N, CompactDirection)>>,
+    iter: IndexMapIter<'a, N, Vec<(N, CompactDirection)>>,
     ty: PhantomData<Ty>,
     edge_ty: PhantomData<E>,
 }
