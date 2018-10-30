@@ -800,10 +800,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Return an iterator of all edges of `a`.
-    ///
-    /// - `Directed`: Outgoing edges from `a`.
-    /// - `Undirected`: All edges connected to `a`.
+    /// Return an iterator of all outgoing edges of `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
@@ -813,9 +810,8 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
 
     /// Return an iterator of all edges of `a`, in the specified direction.
     ///
-    /// - `Directed`, `Outgoing`: All edges from `a`.
-    /// - `Directed`, `Incoming`: All edges to `a`.
-    /// - `Undirected`: All edges connected to `a`.
+    /// - `Outgoing`: All edges from `a`.
+    /// - `Incoming`: All edges to `a`.
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
@@ -837,7 +833,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
+    pub fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
         Edges {
             skip_start: a,
             edges: &self.edges,
