@@ -939,6 +939,15 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         NodeIndices { r: 0..self.node_count(), ty: PhantomData }
     }
 
+    /// Return an iterator yielding immutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// node indices.
+    pub fn node_weights(&self) -> NodeWeights<N, Ix>
+    {
+        NodeWeights { nodes: self.nodes.iter() }
+    }
+
     /// Return an iterator yielding mutable access to all node weights.
     ///
     /// The order in which weights are yielded matches the order of their
@@ -1608,9 +1617,28 @@ impl<'a, E, Ty, Ix> Clone for Edges<'a, E, Ty, Ix>
     }
 }
 
+/// Iterator yielding immutable access to all node weights.
+pub struct NodeWeights<'a, N: 'a, Ix: IndexType = DefaultIx> {
+    nodes: ::std::slice::Iter<'a, Node<N, Ix>>,
+}
+
 /// Iterator yielding mutable access to all node weights.
 pub struct NodeWeightsMut<'a, N: 'a, Ix: IndexType = DefaultIx> {
     nodes: ::std::slice::IterMut<'a, Node<N, Ix>>,
+}
+
+impl<'a, N, Ix> Iterator for NodeWeights<'a, N, Ix> where
+    Ix: IndexType,
+{
+    type Item = &'a N;
+
+    fn next(&mut self) -> Option<&'a N> {
+        self.nodes.next().map(|node| &node.weight)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.nodes.size_hint()
+    }
 }
 
 impl<'a, N, Ix> Iterator for NodeWeightsMut<'a, N, Ix> where
@@ -2032,4 +2060,18 @@ mod frozen;
 /// See indexing implementations and the traits `Data` and `DataMap`
 /// for read-write access to the graph's weights.
 pub struct Frozen<'a, G: 'a>(&'a mut G);
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn can_iter_all_node_weights() {
+        let mut graph: Graph<i32, i32> = Graph::new();
+        for i in 0..8 {
+            graph.add_node(i);
+        }
+
+        assert_eq!(8, graph.node_weights().count());
+    }
+}
 
