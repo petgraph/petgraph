@@ -44,11 +44,17 @@ fn simple() {
 
     // check updated edge weight
     assert_eq!(gr.edge_weight(e, f), Some(&6));
-    let scores = dijkstra(&gr, a, None, |e| *e.weight());
+    let (scores,predecessors) = dijkstra(&gr, a, None, |e| *e.weight());
+    // testing the distance map
     let mut scores: Vec<_> = scores.into_iter().collect();
     scores.sort();
     assert_eq!(scores,
        vec![("A", 0), ("B", 7), ("C", 9), ("D", 11), ("E", 20), ("F", 20)]);
+    // testing the predecessor map
+    let mut predecessors: Vec<_> = predecessors.into_iter().collect();
+    predecessors.sort();
+    assert_eq!(predecessors,
+        vec![("B","A"),("C","A"),("D","C"),("E","D"),("F","C")]);
 }
 
 #[test]
