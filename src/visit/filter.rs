@@ -349,6 +349,7 @@ where
             iter: self.0.edges_directed(n, dir),
             f: &self.1,
             dir: dir,
+            from: n,
         }
     }
 }
@@ -433,6 +434,7 @@ where
     iter: G::EdgesDirected,
     f: &'a F,
     dir: Direction,
+    from: G::NodeId,
 }
 
 impl<'a, G, F> Iterator for EdgeFilteredNeighborsDirected<'a, G, F>
@@ -444,12 +446,17 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         let dir = self.dir;
+        let from = self.from;
         (&mut self.iter)
             .filter_map(move |edge| {
                 if f.include_edge(edge) {
-                    match dir {
-                        Direction::Incoming => Some(edge.source()),
-                        Direction::Outgoing => Some(edge.target()),
+                    if edge.source() != from {
+                        Some(edge.source())
+                    } else if edge.target() != from {
+                        Some(edge.target())
+                    } else {
+                        // source == target 
+                        Some(from)
                     }
                 } else {
                     None
