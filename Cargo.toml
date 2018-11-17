@@ -31,7 +31,6 @@ quickcheck = { optional = true, version = "0.7.1", default-features = false }
 indexmap = { version = "1.0.2", optional = true }
 serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }
-rand = { version = "0.5.5", optional = true }
 
 [dev-dependencies]
 rand = "0.5.5"
@@ -44,14 +43,13 @@ default = ["graphmap", "stable_graph"]
 graphmap = ["indexmap"]
 serde-1 = ["serde", "serde_derive"]
 stable_graph = []
-check = ["quickcheck", "rand"]
 
 # For unstable features
 generate = []
 unstable = ["generate"]
 
 # feature flags for testing use only
-all = ["unstable", "check", "stable_graph", "graphmap"]
+all = ["unstable", "quickcheck", "stable_graph", "graphmap"]
 
 [workspace]
 members = ["serialization-tests"]

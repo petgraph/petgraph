@@ -1,7 +1,5 @@
 extern crate quickcheck;
-extern crate rand;
 use self::quickcheck::{Gen, Arbitrary};
-use self::rand::Rng;
 
 use {
     Graph,
@@ -20,6 +18,15 @@ use graphmap::{
     NodeTrait,
 };
 use visit::NodeIndexable;
+
+/// Return a random float in the range [0, 1.)
+fn random_01<G: Gen>(g: &mut G) -> f64 {
+    // from rand
+    let bits = 53;
+    let scale = 1. / ((1u64 << bits) as f64);
+    let x = g.next_u64();
+    (x >> (64 - bits)) as f64 * scale
+}
 
 /// `Arbitrary` for `Graph` creates a graph by selecting a node count
 /// and a probability for each possible edge to exist.
@@ -42,7 +49,7 @@ impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
             return Graph::with_capacity(0, 0);
         }
         // use X² for edge probability (bias towards lower)
-        let edge_prob = g.gen_range(0., 1.) * g.gen_range(0., 1.);
+        let edge_prob = random_01(g) * random_01(g);
         let edges = ((nodes as f64).powi(2) * edge_prob) as usize;
         let mut gr = Graph::with_capacity(nodes, edges);
         for _ in 0..nodes {
@@ -53,7 +60,7 @@ impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
                 if !gr.is_directed() && i > j {
                     continue;
                 }
-                let p: f64 = g.gen();
+                let p: f64 = random_01(g);
                 if p <= edge_prob {
                     gr.add_edge(i, j, E::arbitrary(g));
                 }
@@ -108,7 +115,7 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
             return StableGraph::with_capacity(0, 0);
         }
         // use X² for edge probability (bias towards lower)
-        let edge_prob = g.gen_range(0., 1.) * g.gen_range(0., 1.);
+        let edge_prob = random_01(g) * random_01(g);
         let edges = ((nodes as f64).powi(2) * edge_prob) as usize;
         let mut gr = StableGraph::with_capacity(nodes, edges);
         for _ in 0..nodes {
@@ -121,7 +128,7 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
                 if !gr.is_directed() && i > j {
                     continue;
                 }
-                let p: f64 = g.gen();
+                let p: f64 = random_01(g);
                 if p <= edge_prob {
                     gr.add_edge(i, j, E::arbitrary(g));
                 }
@@ -189,7 +196,7 @@ impl<N, E, Ty> Arbitrary for GraphMap<N, E, Ty>
         nodes.dedup();
 
         // use X² for edge probability (bias towards lower)
-        let edge_prob = g.gen_range(0., 1.) * g.gen_range(0., 1.);
+        let edge_prob = random_01(g) * random_01(g);
         let edges = ((nodes.len() as f64).powi(2) * edge_prob) as usize;
         let mut gr = GraphMap::with_capacity(nodes.len(), edges);
         for &node in &nodes {
@@ -198,7 +205,7 @@ impl<N, E, Ty> Arbitrary for GraphMap<N, E, Ty>
         for (index, &i) in nodes.iter().enumerate() {
             let js = if Ty::is_directed() { &nodes[..] } else { &nodes[index..] };
             for &j in js {
-                let p: f64 = g.gen();
+                let p: f64 = random_01(g);
                 if p <= edge_prob {
                     gr.add_edge(i, j, E::arbitrary(g));
                 }
