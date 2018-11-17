@@ -49,6 +49,41 @@ pub use super::astar::astar;
 /// [Generic] Return the number of connected components of the graph.
 ///
 /// For a directed graph, this is the *weakly* connected components.
+/// # Example
+/// ```rust
+/// use petgraph::Graph;
+/// use petgraph::algo::connected_components;
+/// use petgraph::prelude::*;
+///
+/// let mut graph : Graph<(),(),Directed>= Graph::new();
+/// let a = graph.add_node(()); // node with no weight
+/// let b = graph.add_node(());
+/// let c = graph.add_node(());
+/// let d = graph.add_node(());
+/// let e = graph.add_node(());
+/// let f = graph.add_node(());
+/// let g = graph.add_node(());
+/// let h = graph.add_node(());
+///
+/// graph.extend_with_edges(&[
+///     (a, b),
+///     (b, c),
+///     (c, d),
+///     (d, a),
+///     (e, f),
+///     (f, g),
+///     (g, h),
+///     (h, e)
+/// ]);
+/// // a ----> b       e ----> f
+/// // ^       |       ^       |
+/// // |       v       |       v
+/// // d <---- c       h <---- g
+///
+/// assert_eq!(connected_components(&graph),2);
+/// graph.add_edge(b,e,());
+/// assert_eq!(connected_components(&graph),1);
+/// ```
 pub fn connected_components<G>(g: G) -> usize
     where G: NodeCompactIndexable + IntoEdgeReferences,
 {
@@ -122,7 +157,7 @@ pub fn toposort<G>(g: G, space: Option<&mut DfsSpace<G::NodeId, G::Map>>)
                         }
                         if !dfs.discovered.is_visited(&succ) {
                             dfs.stack.push(succ);
-                        } 
+                        }
                     }
                 } else {
                     dfs.stack.pop();
@@ -321,7 +356,7 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 
     #[derive(Debug)]
     struct Data<'a, G>
-        where G: NodeIndexable, 
+        where G: NodeIndexable,
           G::NodeId: 'a
     {
         index: usize,
@@ -330,7 +365,7 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
         sccs: &'a mut Vec<Vec<G::NodeId>>,
     }
 
-    fn scc_visit<G>(v: G::NodeId, g: G, data: &mut Data<G>) 
+    fn scc_visit<G>(v: G::NodeId, g: G, data: &mut Data<G>)
         where G: IntoNeighbors + NodeIndexable
     {
         macro_rules! node {
@@ -402,6 +437,82 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 ///
 /// If `make_acyclic` is true, self-loops and multi edges are ignored, guaranteeing that
 /// the output is acyclic.
+/// # Example
+/// ```rust
+/// use petgraph::Graph;
+/// use petgraph::algo::condensation;
+/// use petgraph::prelude::*;
+///
+/// let mut graph : Graph<(),(),Directed> = Graph::new();
+/// let a = graph.add_node(()); // node with no weight
+/// let b = graph.add_node(());
+/// let c = graph.add_node(());
+/// let d = graph.add_node(());
+/// let e = graph.add_node(());
+/// let f = graph.add_node(());
+/// let g = graph.add_node(());
+/// let h = graph.add_node(());
+///
+/// graph.extend_with_edges(&[
+///     (a, b),
+///     (b, c),
+///     (c, d),
+///     (d, a),
+///     (b, e),
+///     (e, f),
+///     (f, g),
+///     (g, h),
+///     (h, e)
+/// ]);
+///
+/// // a ----> b ----> e ----> f
+/// // ^       |       ^       |
+/// // |       v       |       v
+/// // d <---- c       h <---- g
+///
+/// let condensed_graph = condensation(graph,false);
+/// let A = NodeIndex::new(0);
+/// let B = NodeIndex::new(1);
+/// assert_eq!(condensed_graph.node_count(), 2);
+/// assert_eq!(condensed_graph.edge_count(), 9);
+/// assert_eq!(condensed_graph.neighbors(A).collect::<Vec<_>>(), vec![A, A, A, A]);
+/// assert_eq!(condensed_graph.neighbors(B).collect::<Vec<_>>(), vec![A, B, B, B, B]);
+/// ```
+/// If `make_acyclic` is true, self-loops and multi edges are ignored:
+///
+/// ```rust
+/// # use petgraph::Graph;
+/// # use petgraph::algo::condensation;
+/// # use petgraph::prelude::*;
+/// #
+/// # let mut graph : Graph<(),(),Directed> = Graph::new();
+/// # let a = graph.add_node(()); // node with no weight
+/// # let b = graph.add_node(());
+/// # let c = graph.add_node(());
+/// # let d = graph.add_node(());
+/// # let e = graph.add_node(());
+/// # let f = graph.add_node(());
+/// # let g = graph.add_node(());
+/// # let h = graph.add_node(());
+/// #
+/// # graph.extend_with_edges(&[
+/// #    (a, b),
+/// #    (b, c),
+/// #    (c, d),
+/// #    (d, a),
+/// #    (b, e),
+/// #    (e, f),
+/// #    (f, g),
+/// #    (g, h),
+/// #    (h, e)
+/// # ]);
+/// let acyclic_condensed_graph = condensation(graph, true);
+/// let A = NodeIndex::new(0);
+/// let B = NodeIndex::new(1);
+/// assert_eq!(acyclic_condensed_graph.node_count(), 2);
+/// assert_eq!(acyclic_condensed_graph.edge_count(), 1);
+/// assert_eq!(acyclic_condensed_graph.neighbors(B).collect::<Vec<_>>(), vec![A]);
+/// ```
 pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) -> Graph<Vec<N>, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
@@ -551,6 +662,60 @@ pub struct NegativeCycle(());
 /// are indexed by the graph's node indices.
 ///
 /// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
+///
+/// # Example
+/// ```rust
+/// use petgraph::Graph;
+/// use petgraph::algo::bellman_ford;
+/// use petgraph::prelude::*;
+///
+/// let mut g = Graph::new();
+/// let a = g.add_node(()); // node with no weight
+/// let b = g.add_node(());
+/// let c = g.add_node(());
+/// let d = g.add_node(());
+/// let e = g.add_node(());
+/// let f = g.add_node(());
+/// g.extend_with_edges(&[
+///     (0, 1, 2.0),
+///     (0, 3, 4.0),
+///     (1, 2, 1.0),
+///     (1, 5, 7.0),
+///     (2, 4, 5.0),
+///     (4, 5, 1.0),
+///     (3, 4, 1.0),
+/// ]);
+///
+/// // Graph represented with the weight of each edge
+/// //
+/// //     2       1
+/// // a ----- b ----- c
+/// // | 4     | 7     |
+/// // d       f       | 5
+/// // | 1     | 1     |
+/// // \------ e ------/
+///
+/// let path = bellman_ford(&g, a);
+/// assert_eq!(path, Ok((vec![0.0 ,     2.0,    3.0,    4.0,     5.0,     6.0],
+///                      vec![None, Some(a),Some(b),Some(a), Some(d), Some(e)]
+///                    ))
+///           );
+/// // Node f (indice 5) can be reach from a with a path costing 6.
+/// // Predecessor of f is Some(e) which predecessor is Some(d) which predecessor is Some(a).
+/// // Thus the path from a to f is a <-> d <-> e <-> f
+///
+/// let graph_with_neg_cycle = Graph::<(), f32, Undirected>::from_edges(&[
+///         (0, 1, -2.0),
+///         (0, 3, -4.0),
+///         (1, 2, -1.0),
+///         (1, 5, -25.0),
+///         (2, 4, -5.0),
+///         (4, 5, -25.0),
+///         (3, 4, -1.0),
+/// ]);
+///
+/// assert!(bellman_ford(&graph_with_neg_cycle, NodeIndex::new(0)).is_err());
+/// ```
 pub fn bellman_ford<G>(g: G, source: G::NodeId)
     -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
     where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
@@ -623,4 +788,3 @@ impl FloatMeasure for f64 {
     fn zero() -> Self { 0. }
     fn infinite() -> Self { 1./0. }
 }
-
