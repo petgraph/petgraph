@@ -352,7 +352,7 @@ fn json_stable_graph_nils() {
 
 
 // bincode macros
-defmac!(encode ref g => bincode::serialize(g, bincode::Infinite).unwrap());
+defmac!(encode ref g => bincode::serialize(g).unwrap());
 defmac!(decode ref data => bincode::deserialize(data).unwrap());
 defmac!(recode ref g => decode!(encode!(g)));
 

@@ -1,6 +1,7 @@
 extern crate quickcheck;
-
+extern crate rand;
 use self::quickcheck::{Gen, Arbitrary};
+use self::rand::Rng;
 
 use {
     Graph,

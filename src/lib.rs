@@ -19,7 +19,7 @@
 
 extern crate fixedbitset;
 #[cfg(feature = "graphmap")]
-extern crate ordermap;
+extern crate indexmap;
 
 #[cfg(feature = "serde-1")]
 extern crate serde;
