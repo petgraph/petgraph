@@ -1,5 +1,8 @@
 extern crate petgraph;
 
+use std::fs::File;
+use std::io::prelude::*;
+
 use petgraph::prelude::*;
 use petgraph::{
     EdgeType,
@@ -237,6 +240,15 @@ fn str_to_digraph(s: &str) -> Graph<(), (), Directed> {
     parse_graph(s)
 }
 
+/// Parse a file in adjacency matrix format into a directed graph
+fn graph_from_file(path: &str) -> Graph<(), (), Directed>
+{
+    let mut f = File::open(path).expect("file not found");
+    let mut contents = String::new();
+    f.read_to_string(&mut contents).expect("failed to read from file");
+    parse_graph(&contents)
+}
+
 /*
 fn graph_to_ad_matrix<N, E, Ty: EdgeType>(g: &Graph<N,E,Ty>)
 {
@@ -468,6 +480,20 @@ fn iso_matching() {
     let mut g2 = g0.clone();
     g2[edge_index(1)] = 0;
     assert!(!is_isomorphic_matching(&g0, &g2, |x, y| x == y, |x, y| x == y));
+}
+
+#[test]
+fn iso_100n_100e() {
+    let g0 = graph_from_file("tests/res/graph_100n_100e.txt");
+    let g1 = graph_from_file("tests/res/graph_100n_100e_iso.txt");
+    assert!(petgraph::algo::is_isomorphic(&g0, &g1));
+}
+
+#[test]
+fn iso_large() {
+    let g0 = graph_from_file("tests/res/graph_1000n_1000e.txt");
+    let g1 = graph_from_file("tests/res/graph_1000n_1000e_iso.txt");
+    assert!(petgraph::algo::is_isomorphic(&g0, &g1));
 }
 
 // isomorphism isn't correct for multigraphs.
