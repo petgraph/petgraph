@@ -158,6 +158,10 @@ impl<Ix: IndexType> EdgeIndex<Ix>
     }
 }
 
+impl<Ix: IndexType> From<Ix> for EdgeIndex<Ix> {
+    fn from(ix: Ix) -> Self { EdgeIndex(ix) }
+}
+
 impl<Ix: fmt::Debug> fmt::Debug for EdgeIndex<Ix>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
