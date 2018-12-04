@@ -535,6 +535,14 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Lookup if there is an edge from `a` to `b`.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to `a` (and `b`, if the graph edges are undirected).
+    pub fn contains_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
+        self.find_edge(a, b).is_some()
+    }
+
     /// Lookup an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
