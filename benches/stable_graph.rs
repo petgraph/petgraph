@@ -126,6 +126,16 @@ fn sccs_graph(bench: &mut Bencher)
     bench.iter(|| petgraph::algo::kosaraju_scc(&a));
 }
 
+// Ideally, we wouldn't clone inside the benched function, but it's a
+// negligible part of its runtime (< 1%)
+#[bench]
+fn compute_fas(bench: &mut Bencher) {
+    let g = parse_stable_graph::<Directed>(BIGGER);
+    bench.iter(|| {
+        g.clone().approximate_fas(|_| 1usize);
+    });
+}
+
 /// Parse a text adjacency matrix format into a directed graph
 fn parse_stable_graph<Ty: EdgeType>(s: &str) -> StableGraph<(), (), Ty>
 {
