@@ -132,7 +132,7 @@ fn sccs_graph(bench: &mut Bencher)
 fn compute_fas(bench: &mut Bencher) {
     let g = parse_stable_graph::<Directed>(BIGGER);
     bench.iter(|| {
-        g.clone().approximate_fas(|_| 1usize);
+        g.clone().approximate_fas(|_, _| 1usize);
     });
 }
 

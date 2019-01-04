@@ -952,7 +952,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// // | 3     ^ 3     |
     /// // \-----> e <-----/
     ///
-    /// let fas = g.approximate_fas(|e| *e.weight());
+    /// let fas = g.approximate_fas(|g, e| *g.edge_weight(e).unwrap());
     /// assert_eq!(vec![(e, f, 3.0)], fas);
     /// ```
     ///
@@ -965,42 +965,41 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         mut edge_cost: F,
     ) -> Vec<(NodeIndex<Ix>, NodeIndex<Ix>, E)>
     where
-        F: FnMut(EdgeReference<E, Ix>) -> K,
+        F: FnMut(&StableGraph<N, E, Ty, Ix>, EdgeIndex<Ix>) -> K,
         K: Default + Copy + PartialOrd + Sub<K, Output = K> + Add<K, Output = K>,
     {
         let zero_weight = <K as Default>::default();
 
         let mut arc_set = Vec::new();
-        let mut predecessor = vec![None; self.node_bound()];
+        let mut predecessor = vec![<EdgeIndex<Ix>>::end(); self.node_bound()];
         let mut edge_cost_reduction = vec![zero_weight; self.edge_bound()];
         let mut cycle = Vec::new();
         let mut discovered = self.visit_map();
         let mut finished = self.visit_map();
 
-        // keep cycles until there are none left by removing one of their edges
+        // keep removing cycles until there are none left by removing one of their edges
         loop {
-            // FIXME: this unsafe block shouldn't be necessary. im sure our borrow is sound
-            let borrow: &Self = unsafe { ::std::mem::transmute(&*self) };
             discovered.as_mut_slice().copy_from_slice(finished.as_slice());
 
-            let lowest_cost =
-                borrow
-                .node_identifiers()
-                .filter_map(|start| borrow.find_cycle_arc(&mut predecessor, &mut discovered, &mut finished, start))
+            let min_weight = self.node_identifiers()
+                .filter_map(|start| self.find_cycle_arc(&mut predecessor, &mut discovered, &mut finished, start))
                 .next()
                 .map(|e| {
-                    let orig_edge_cost = edge_cost(e);
+                    let mut pred = e.id();
+                    let orig_edge_cost = edge_cost(self, pred);
                     let mut min_weight = orig_edge_cost - edge_cost_reduction[e.id().index()];
-                    let mut pred = e;
+                    let end = e.target();
+                    let mut start = self.edge_endpoints(pred).unwrap().0;
 
                     cycle.clear();
                     cycle.push((e.id(), orig_edge_cost));
 
-                    while e.target() != pred.source() {
-                        pred = predecessor[pred.source().index()].unwrap();
-                        let orig_edge_cost = edge_cost(pred);
-                        let edge_weight = orig_edge_cost - edge_cost_reduction[pred.id().index()];
-                        cycle.push((pred.id(), orig_edge_cost));
+                    while end != start {
+                        pred = predecessor[start.index()];
+                        start = self.edge_endpoints(pred).unwrap().0;
+                        let orig_edge_cost = edge_cost(self, pred);
+                        let edge_weight = orig_edge_cost - edge_cost_reduction[pred.index()];
+                        cycle.push((pred, orig_edge_cost));
 
                         if edge_weight < min_weight {
                             min_weight = edge_weight;
@@ -1010,7 +1009,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
                     min_weight
                 });
 
-            if let Some(min_weight) = lowest_cost {
+            if let Some(min_weight) = min_weight {
                 let mut removable = true;
 
                 // update the weights of all arcs in the cycle and remove the
@@ -1031,9 +1030,8 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
                 break;
             }
         }
-
-        let arc_set_len = arc_set.len();
-        let mut result_set = Vec::with_capacity(arc_set_len);
+        
+        let mut result_set = Vec::with_capacity(arc_set.len());
         
         // always include the last edge, since re-adding that
         // will always introduce a cycle
@@ -1047,14 +1045,12 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
 
         // try to re-add edges without introducing cycles
         for (start, end, w, _edge_cost) in arc_set {
-            // FIXME: again, this transmute shouldnt be necessary i think
-            let borrow: &Self = unsafe { ::std::mem::transmute(&*self) };
             let edge_id = self.add_edge(start, end, w);
 
             discovered.clear();
             finished.clear();
 
-            if borrow.find_cycle_arc(&mut predecessor, &mut discovered, &mut finished, start).is_some() {
+            if self.find_cycle_arc(&mut predecessor, &mut discovered, &mut finished, start).is_some() {
                 let w = self.remove_edge(edge_id).unwrap();
                 result_set.push((start, end, w));
             }
@@ -1083,7 +1079,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// Returns a reference to an edge in a cycle, keeping track of all
     /// predecessors, discovered nodes and finished nodes
     fn find_cycle_arc<'g>(&'g self,
-        predecessor: &mut Vec<Option<EdgeReference<'g, E, Ix>>>,
+        predecessor: &mut Vec<EdgeIndex<Ix>>,
         discovered: &mut <Self as Visitable>::Map,
         finished: &mut <Self as Visitable>::Map,
         start: NodeIndex<Ix>
@@ -1098,7 +1094,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
             let v = e.target();
 
             if !discovered.is_visited(&v) {
-                predecessor[v.index()] = Some(e);
+                predecessor[v.index()] = e.id();
                 
                 if let Some(e2) = self.find_cycle_arc(predecessor, discovered, finished, v) {
                     return Some(e2);

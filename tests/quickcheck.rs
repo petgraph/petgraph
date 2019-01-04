@@ -532,7 +532,7 @@ fn graph_condensation_acyclic() {
 fn removed_fas_is_acyclic() {
     fn prop(mut g: StableDiGraph<u32, u32>) -> bool {
         let mut clone = g.clone();
-        let fas = clone.approximate_fas(|e| *e.weight());
+        let fas = clone.approximate_fas(|g, e| *g.edge_weight(e).unwrap());
         for e in fas {
             let edge = g.find_edge(e.0, e.1).unwrap();
             g.remove_edge(edge);
