@@ -34,6 +34,34 @@ fn uf_test() {
 }
 
 #[test]
+fn uf_test_with_equiv() {
+    let n = 8;
+    let mut u = UnionFind::new(n);
+    for i in 0..n {
+        assert_eq!(u.find(i), i);
+        assert_eq!(u.find_mut(i), i);
+        assert!(u.equiv(i, i));
+    }
+
+    u.union(0, 1);
+    assert!(u.equiv(0, 1));
+    u.union(1, 3);
+    u.union(1, 4);
+    u.union(4, 7);
+    assert!(u.equiv(0, 7));
+    assert!(u.equiv(1, 3));
+    assert!(!u.equiv(0, 2));
+    assert!(u.equiv(7, 0));
+    u.union(5, 6);
+    assert!(u.equiv(6, 5));
+    assert!(!u.equiv(6, 7));
+
+    // check that there are now 3 disjoint sets
+    let set = (0..n).map(|i| u.find(i)).collect::<HashSet<_>>();
+    assert_eq!(set.len(), 3);
+}
+
+#[test]
 fn uf_rand() {
     let n = 1 << 14;
     let mut rng = ChaChaRng::from_rng(thread_rng()).unwrap();

@@ -92,6 +92,12 @@ impl<K> UnionFind<K>
         }
     }
 
+    /// Returns `true` if the given elements belong to the same set, and returns
+    /// `false` otherwise.
+    pub fn equiv(&self, x: K, y: K) -> bool {
+        self.find(x) == self.find(y)        
+    }
+
 
     /// Unify the two sets containing `x` and `y`.
     ///
