@@ -854,6 +854,24 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
+    /// Return an iterator over all edges connecting `a` and `b`.
+    ///
+    /// - `Directed` and `Undirected`: All edges connecting `a` and `b`.
+    ///
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    pub fn edges_connecting(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> MultipleEdges<E, Ty, Ix>
+    {
+        MultipleEdges {
+            match_end: b,
+            edges: &self.edges,
+            next: match self.nodes.get(a.index()) {
+                None => [EdgeIndex::end(), EdgeIndex::end()],
+                Some(n) => n.next,
+            },
+            ty: PhantomData,
+        }
+    }
+
     /// Lookup if there is an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
@@ -1592,6 +1610,61 @@ impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
     }
 }
 
+/// Iterator over the multiple edges between two nodes
+pub struct MultipleEdges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    /// The end node
+    match_end: NodeIndex<Ix>,
+
+    edges: &'a [Edge<E, Ix>],
+
+    /// Next edge to visit.
+    next: [EdgeIndex<Ix>; 2],
+
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, E, Ty, Ix> Iterator for MultipleEdges<'a, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<EdgeReference<'a, E, Ix>> {
+        // First any outgoing edges
+        while let Some(edge) = self.edges.get(self.next[0].index()) {
+            let i = self.next[0].index();
+            self.next[0] = edge.next[0];
+            // Make sure we only return edges with the right end node.
+            if edge.node[1] == self.match_end {
+                return Some(EdgeReference {
+                    index: edge_index(i),
+                    node: edge.node,
+                    weight: &edge.weight,
+                });
+            }
+        }
+
+        // Then incoming edges
+        while let Some(edge) = self.edges.get(self.next[1].index()) {
+            let i = self.next[1].index();
+            self.next[1] = edge.next[1];
+            // Make sure we only return edges with the right end node.
+            if edge.node[0] == self.match_end {
+                return Some(EdgeReference {
+                    index: edge_index(i),
+                    node: edge.node,
+                    weight: &edge.weight,
+                });
+            }
+        }
+        None
+    }
+}
+
+
 fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
     x.swap(0, 1);
     x
@@ -2036,4 +2109,3 @@ mod frozen;
 /// See indexing implementations and the traits `Data` and `DataMap`
 /// for read-write access to the graph's weights.
 pub struct Frozen<'a, G: 'a>(&'a mut G);
-
