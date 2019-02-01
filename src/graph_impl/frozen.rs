@@ -1,4 +1,8 @@
+#[cfg(not(feature = "no_std"))]
 use std::ops::{Deref, Index, IndexMut};
+
+#[cfg(feature = "no_std")]
+use core::ops::{Deref, Index, IndexMut};
 
 use super::Frozen;
 use crate::data::{DataMap, DataMapMut};

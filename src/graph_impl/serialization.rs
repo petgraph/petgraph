@@ -1,6 +1,12 @@
 use serde::de::Error;
 
+#[cfg(feature = "no_std")]
+use core::marker::PhantomData;
+#[cfg(not(feature = "no_std"))]
 use std::marker::PhantomData;
+
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 use crate::prelude::*;
 

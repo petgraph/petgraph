@@ -1,10 +1,23 @@
-use std::collections::{BinaryHeap, HashMap};
+#[cfg(feature = "alloc")]
+use alloc::{
+    collections::{BinaryHeap, BTreeMap as HashMap},
+    vec::Vec,
+};
 
-use std::hash::Hash;
+#[cfg(feature = "std")]
+use std::{
+    hash::Hash,
+    collections::{BinaryHeap, HashMap}
+};
+
+#[cfg(feature = "no_std")]
+use core::hash::Hash;
 
 use super::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
-use crate::algo::Measure;
-use crate::scored::MinScored;
+use crate::{
+    algo::Measure,
+    scored::MinScored
+};
 
 /// \[Generic\] k'th shortest path algorithm.
 ///
@@ -79,7 +92,7 @@ pub fn k_shortest_path<G, F, K>(
 ) -> HashMap<G::NodeId, K>
 where
     G: IntoEdges + Visitable + NodeCount + NodeIndexable,
-    G::NodeId: Eq + Hash,
+    G::NodeId: Eq + Hash + Ord,
     F: FnMut(G::EdgeRef) -> K,
     K: Measure + Copy,
 {

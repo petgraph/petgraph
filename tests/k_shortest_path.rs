@@ -1,7 +1,12 @@
 use petgraph::algo::k_shortest_path;
 use petgraph::prelude::*;
 use petgraph::Graph;
+
+#[cfg(not(feature = "alloc"))]
 use std::collections::HashMap;
+
+#[cfg(feature = "alloc")]
+use alloc::collections::BTreeMap as HashMap;
 
 #[test]
 fn second_shortest_path() {

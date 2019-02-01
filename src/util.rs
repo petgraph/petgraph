@@ -1,4 +1,8 @@
+#[cfg(not(feature = "no_std"))]
 use std::iter;
+
+#[cfg(feature = "no_std")]
+use core::iter;
 
 pub fn enumerate<I>(iterable: I) -> iter::Enumerate<I::IntoIter>
 where

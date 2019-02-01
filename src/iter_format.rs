@@ -1,7 +1,9 @@
 //! Formatting utils
+#[cfg(not(feature = "no_std"))]
+use std::{cell::RefCell, fmt};
 
-use std::cell::RefCell;
-use std::fmt;
+#[cfg(feature = "no_std")]
+use core::{cell::RefCell, fmt};
 
 /// Format the iterator like a map
 pub struct DebugMap<F>(pub F);

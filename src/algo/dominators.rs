@@ -12,9 +12,22 @@
 //! strictly dominates **B** and there does not exist any node **C** where **A**
 //! dominates **C** and **C** dominates **B**.
 
-use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet, hash_map::Iter};
-use std::hash::Hash;
+#[cfg(feature = "alloc")]
+use alloc::{
+    collections::{BTreeMap as HashMap, BTreeSet as HashSet, btree_map::Iter},
+    vec::Vec,
+};
+
+#[cfg(feature = "no_std")]
+use core::{cmp::Ordering, hash::Hash, usize, iter::Iterator};
+
+#[cfg(not(feature = "no_std"))]
+use std::{
+    cmp::Ordering,
+    collections::{HashMap, HashSet},
+    hash::Hash,
+    usize,
+};
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 
@@ -28,9 +41,64 @@ where
     dominators: HashMap<N, N>,
 }
 
+#[cfg(not(feature = "alloc"))]
 impl<N> Dominators<N>
 where
     N: Copy + Eq + Hash,
+{
+    /// Get the root node used to construct these dominance relations.
+    pub fn root(&self) -> N {
+        self.root
+    }
+
+    /// Get the immediate dominator of the given node.
+    ///
+    /// Returns `None` for any node that is not reachable from the root, and for
+    /// the root itself.
+    pub fn immediate_dominator(&self, node: N) -> Option<N> {
+        if node == self.root {
+            None
+        } else {
+            self.dominators.get(&node).cloned()
+        }
+    }
+
+    /// Iterate over the given node's that strict dominators.
+    ///
+    /// If the given node is not reachable from the root, then `None` is
+    /// returned.
+    pub fn strict_dominators(&self, node: N) -> Option<DominatorsIter<N>> {
+        if self.dominators.contains_key(&node) {
+            Some(DominatorsIter {
+                dominators: self,
+                node: self.immediate_dominator(node),
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Iterate over all of the given node's dominators (including the given
+    /// node itself).
+    ///
+    /// If the given node is not reachable from the root, then `None` is
+    /// returned.
+    pub fn dominators(&self, node: N) -> Option<DominatorsIter<N>> {
+        if self.dominators.contains_key(&node) {
+            Some(DominatorsIter {
+                dominators: self,
+                node: Some(node),
+            })
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<N> Dominators<N>
+where
+    N: Copy + Eq + Hash + Ord,
 {
     /// Get the root node used to construct these dominance relations.
     pub fn root(&self) -> N {
@@ -98,7 +166,7 @@ where
     dominators: &'a Dominators<N>,
     node: Option<N>,
 }
-
+#[cfg(not(feature = "alloc"))]
 impl<'a, N> Iterator for DominatorsIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
@@ -114,6 +182,7 @@ where
     }
 }
 
+#[cfg(feature = "alloc")]
 /// Iterator for nodes dominated by a given node.
 pub struct DominatedByIter<'a, N>
 where
@@ -123,6 +192,7 @@ where
     node: N,
 }
 
+#[cfg(feature = "alloc")]
 impl<'a, N> Iterator for DominatedByIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
@@ -141,7 +211,7 @@ where
 
 /// The undefined dominator sentinel, for when we have not yet discovered a
 /// node's dominator.
-const UNDEFINED: usize = ::std::usize::MAX;
+const UNDEFINED: usize = usize::MAX;
 
 /// This is an implementation of the engineered ["Simple, Fast Dominance
 /// Algorithm"][0] discovered by Cooper et al.
@@ -152,10 +222,92 @@ const UNDEFINED: usize = ::std::usize::MAX;
 /// to ~30,000 vertices.
 ///
 /// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
+#[cfg(not(feature = "alloc"))]
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
 where
     G: IntoNeighbors + Visitable,
     <G as GraphBase>::NodeId: Eq + Hash,
+{
+    let (post_order, predecessor_sets) = simple_fast_post_order(graph, root);
+    let length = post_order.len();
+    debug_assert!(length > 0);
+    debug_assert!(post_order.last() == Some(&root));
+
+    // From here on out we use indices into `post_order` instead of actual
+    // `NodeId`s wherever possible. This greatly improves the performance of
+    // this implementation, but we have to pay a little bit of upfront cost to
+    // convert our data structures to play along first.
+
+    // Maps a node to its index into `post_order`.
+    let node_to_post_order_idx: HashMap<_, _> = post_order
+        .iter()
+        .enumerate()
+        .map(|(idx, &node)| (node, idx))
+        .collect();
+
+    // Maps a node's `post_order` index to its set of predecessors's indices
+    // into `post_order` (as a vec).
+    let idx_to_predecessor_vec =
+        predecessor_sets_to_idx_vecs(&post_order, &node_to_post_order_idx, predecessor_sets);
+
+    let mut dominators = vec![UNDEFINED; length];
+    dominators[length - 1] = length - 1;
+
+    let mut changed = true;
+    while changed {
+        changed = false;
+
+        // Iterate in reverse post order, skipping the root.
+
+        for idx in (0..length - 1).rev() {
+            debug_assert!(post_order[idx] != root);
+
+            // Take the intersection of every predecessor's dominator set; that
+            // is the current best guess at the immediate dominator for this
+            // node.
+
+            let new_idom_idx = {
+                let mut predecessors = idx_to_predecessor_vec[idx]
+                    .iter()
+                    .filter(|&&p| dominators[p] != UNDEFINED);
+                let new_idom_idx = predecessors.next().expect(
+                    "Because the root is initialized to dominate itself, and is the \
+                     first node in every path, there must exist a predecessor to this \
+                     node that also has a dominator",
+                );
+                predecessors.fold(*new_idom_idx, |new_idom_idx, &predecessor_idx| {
+                    intersect(&dominators, new_idom_idx, predecessor_idx)
+                })
+            };
+
+            debug_assert!(new_idom_idx < length);
+
+            if new_idom_idx != dominators[idx] {
+                dominators[idx] = new_idom_idx;
+                changed = true;
+            }
+        }
+    }
+
+    // All done! Translate the indices back into proper `G::NodeId`s.
+
+    debug_assert!(!dominators.iter().any(|&dom| dom == UNDEFINED));
+
+    Dominators {
+        root: root,
+        dominators: dominators
+            .into_iter()
+            .enumerate()
+            .map(|(idx, dom_idx)| (post_order[idx], post_order[dom_idx]))
+            .collect(),
+    }
+}
+
+#[cfg(feature = "alloc")]
+pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
+where
+    G: IntoNeighbors + Visitable,
+    <G as GraphBase>::NodeId: Eq + Hash + Ord,
 {
     let (post_order, predecessor_sets) = simple_fast_post_order(graph, root);
     let length = post_order.len();
@@ -242,6 +394,7 @@ fn intersect(dominators: &[usize], mut finger1: usize, mut finger2: usize) -> us
     }
 }
 
+#[cfg(not(feature = "alloc"))]
 fn predecessor_sets_to_idx_vecs<N>(
     post_order: &[N],
     node_to_post_order_idx: &HashMap<N, usize>,
@@ -266,6 +419,32 @@ where
         .collect()
 }
 
+#[cfg(feature = "alloc")]
+fn predecessor_sets_to_idx_vecs<N>(
+    post_order: &[N],
+    node_to_post_order_idx: &HashMap<N, usize>,
+    mut predecessor_sets: HashMap<N, HashSet<N>>,
+) -> Vec<Vec<usize>>
+where
+    N: Copy + Eq + Hash + Ord,
+{
+    post_order
+        .iter()
+        .map(|node| {
+            predecessor_sets
+                .remove(node)
+                .map(|predecessors| {
+                    predecessors
+                        .into_iter()
+                        .map(|p| *node_to_post_order_idx.get(&p).unwrap())
+                        .collect()
+                })
+                .unwrap_or_else(Vec::new)
+        })
+        .collect()
+}
+
+#[cfg(not(feature = "alloc"))]
 fn simple_fast_post_order<G>(
     graph: G,
     root: G::NodeId,
@@ -291,7 +470,34 @@ where
     (post_order, predecessor_sets)
 }
 
+#[cfg(feature = "alloc")]
+fn simple_fast_post_order<G>(
+    graph: G,
+    root: G::NodeId,
+) -> (Vec<G::NodeId>, HashMap<G::NodeId, HashSet<G::NodeId>>)
+where
+    G: IntoNeighbors + Visitable,
+    <G as GraphBase>::NodeId: Eq + Hash + Ord,
+{
+    let mut post_order = vec![];
+    let mut predecessor_sets = HashMap::new();
+
+    for node in DfsPostOrder::new(graph, root).iter(graph) {
+        post_order.push(node);
+
+        for successor in graph.neighbors(node) {
+            predecessor_sets
+                .entry(successor)
+                .or_insert_with(HashSet::new)
+                .insert(node);
+        }
+    }
+
+    (post_order, predecessor_sets)
+}
+
 #[cfg(test)]
+#[cfg(feature = "alloc")]
 mod tests {
     use super::*;
 

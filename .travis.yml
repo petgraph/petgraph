@@ -12,6 +12,9 @@ jobs:
     - rust: nightly
     - rust: nightly
       env:
+      - FEATURES='no_std'
+    - rust: nightly
+      env:
        - FEATURES='unstable quickcheck'
        - BENCH=1
 branches:
