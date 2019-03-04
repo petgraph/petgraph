@@ -5,6 +5,7 @@
 //! the `Graph` type.
 
 pub mod dominators;
+pub mod topology_sorting;
 
 use std::collections::BinaryHeap;
 use std::cmp::min;
@@ -758,8 +759,15 @@ pub fn bellman_ford<G>(g: G, source: G::NodeId)
     Ok((distance, predecessor))
 }
 
+
+pub fn ordered_list<'a, N, T: Topology<'a, N>>(t: &'a T) -> TopologySorting<'a, N> {
+    t.get_ordered_list()
+}
+
 use std::ops::Add;
 use std::fmt::Debug;
+use algo::topology_sorting::Topology;
+use algo::topology_sorting::TopologySorting;
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure : Debug + PartialOrd + Add<Self, Output=Self> + Default + Clone {
