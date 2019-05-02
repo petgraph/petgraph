@@ -51,6 +51,7 @@ use visit::{
 #[doc(no_inline)]
 pub use graph::{
     NodeIndex,
+    NodeWeightsMut,
     EdgeIndex,
     GraphIndex,
     IndexType,
@@ -496,6 +497,12 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         NodeIndices {
             iter: enumerate(self.raw_nodes())
         }
+    }
+
+    /// Return an iterator yielding mutable access to all node weights.
+    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<Option<N>, Ix>
+    {
+        self.g.node_weights_mut()
     }
 
     /// Access the weight for edge `e`.
