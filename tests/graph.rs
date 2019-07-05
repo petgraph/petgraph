@@ -1426,8 +1426,8 @@ fn dot() {
     assert_eq!(dot_output,
     // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
 r#"digraph {
-    0 [label="Record {\l    a: 1,\l    b: \"abc\\\\\"\l}\l"]
-    0 -> 0 [label="(\l    1,\l    2\l)\l"]
+    0 [label="Record {\l    a: 1,\l    b: \"abc\\\\\",\l}\l"]
+    0 -> 0 [label="(\l    1,\l    2,\l)\l"]
 }
 "#);
 }
