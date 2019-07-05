@@ -9,7 +9,7 @@ use petgraph::EdgeType;
 use petgraph as pg;
 
 use petgraph::algo::{
-    dominators, has_path_connecting, is_cyclic_undirected, is_isomorphic_matching,
+    dominators, has_path_connecting, is_cyclic_undirected, is_isomorphic_matching, is_bipartite_undirected,
     min_spanning_tree,
 };
 
@@ -277,6 +277,77 @@ fn cyclic() {
     gr.add_edge(c, e, 0.);
     assert!(is_cyclic_undirected(&gr));
     assert_graph_consistent(&gr);
+}
+
+#[test]
+fn bipartite() {
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+
+        let d = gr.add_node("D");
+        let e = gr.add_node("E");
+        let f = gr.add_node("F");
+
+        gr.add_edge(a, d, 7.);
+        gr.add_edge(b, d, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        let e_index = gr.add_edge(a, b, 6.);
+
+        assert!(!is_bipartite_undirected(&gr, a));
+
+        gr.remove_edge(e_index);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        gr.add_edge(b, e, 7.);
+        gr.add_edge(b, f, 6.);
+        gr.add_edge(c, e, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+    }
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+        let d = gr.add_node("D");
+        let e = gr.add_node("E");
+
+        let f = gr.add_node("F");
+        let g = gr.add_node("G");
+        let h = gr.add_node("H");
+
+        gr.add_edge(a, f, 7.);
+        gr.add_edge(a, g, 7.);
+        gr.add_edge(a, h, 7.);
+
+        gr.add_edge(b, f, 6.);
+        gr.add_edge(b, g, 6.);
+        gr.add_edge(b, h, 6.);
+
+        gr.add_edge(c, f, 6.);
+        gr.add_edge(c, g, 6.);
+        gr.add_edge(c, h, 6.);
+
+        gr.add_edge(d, f, 6.);
+        gr.add_edge(d, g, 6.);
+        gr.add_edge(d, h, 6.);
+
+        gr.add_edge(e, f, 6.);
+        gr.add_edge(e, g, 6.);
+        gr.add_edge(e, h, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        gr.add_edge(a, b, 6.);
+
+        assert!(!is_bipartite_undirected(&gr, a));
+    }
 }
 
 #[test]
