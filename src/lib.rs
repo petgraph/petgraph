@@ -51,6 +51,7 @@ pub mod generate;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
 mod graph_impl;
+pub mod adj;
 pub mod dot;
 pub mod unionfind;
 mod dijkstra;

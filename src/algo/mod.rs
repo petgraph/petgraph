@@ -5,6 +5,7 @@
 //! the `Graph` type.
 
 pub mod dominators;
+pub mod tred;
 
 use std::collections::BinaryHeap;
 use std::cmp::min;

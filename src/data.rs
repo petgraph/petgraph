@@ -2,6 +2,7 @@
 
 
 use Graph;
+use csr::Csr;
 #[cfg(feature = "stable_graph")]
 use stable_graph::StableGraph;
 use ::{
@@ -10,12 +11,16 @@ use ::{
 use graph::IndexType;
 #[cfg(feature = "graphmap")]
 use graphmap::{GraphMap, NodeTrait};
+#[cfg(feature = "graphmap")]
+use indexmap::IndexMap;
 use visit::{
+    GraphBase,
     Data,
     NodeCount,
     NodeIndexable,
     Reversed,
 };
+use std::hash::Hash;
 
 trait_template!{
     /// Access node and edge weights (associated data).
@@ -433,3 +438,67 @@ impl<I, F, N, E> Iterator for FilterElements<I, F>
         }
     }
 }
+
+pub trait NodeIndexMap<Ix, T> {
+    fn get(&self, a: Ix) -> Option<&T>;
+    fn set(&mut self, a: Ix, value: T) -> Option<T>;
+}
+
+pub trait NodeIndexMappable<T>: GraphBase {
+    type Map: NodeIndexMap<Self::NodeId, T>;
+    fn new_node_index_map(&self) -> Self::Map;
+}
+
+impl<Ix: IndexType, T> NodeIndexMap<Ix, T> for Vec<Option<T>> {
+    fn get(&self, a: Ix) -> Option<&T> {
+        self.as_slice().get(a.index()).unwrap_or(&None).as_ref()
+    }
+    fn set(&mut self, a: Ix, value: T) -> Option<T> {
+        match self.get_mut(a.index()) {
+            None => None,
+            Some(x) => {
+                let mut res = Some(value);
+                std::mem::swap(&mut res, x);
+                res
+            }
+        }
+    }
+}
+
+impl<N, E, T: Clone, Ty: EdgeType, Ix: IndexType> NodeIndexMappable<T> for Graph<N, E, Ty, Ix> {
+    type Map = Vec<Option<T>>;
+    fn new_node_index_map(&self) -> Self::Map {
+        vec![None; self.node_count()]
+    }
+}
+impl<N, E, T: Clone, Ty: EdgeType, Ix: IndexType> NodeIndexMappable<T> for StableGraph<N, E, Ty, Ix> {
+    type Map = Vec<Option<T>>;
+    fn new_node_index_map(&self) -> Self::Map {
+        vec![None; self.node_count()]
+    }
+}
+impl<N, E, T: Clone, Ty: EdgeType, Ix: IndexType> NodeIndexMappable<T> for Csr<N, E, Ty, Ix> {
+    type Map = Vec<Option<T>>;
+    fn new_node_index_map(&self) -> Self::Map {
+        vec![None; self.node_count()]
+    }
+}
+
+#[cfg(feature = "graphmap")]
+impl<N: Copy + Ord + Hash, T> NodeIndexMap<N, T> for IndexMap<N, T> {
+    fn get(&self, a: N) -> Option<&T> {
+        IndexMap::get(&self, &a)
+    }
+    fn set(&mut self, a: N, value: T) -> Option<T> {
+        self.insert(a, value)
+    }
+}
+
+#[cfg(feature = "graphmap")]
+impl<N: Copy + Ord + Hash, E, T: Clone, Ty: EdgeType> NodeIndexMappable<T> for GraphMap<N, E, Ty> {
+    type Map = IndexMap<N, T>;
+    fn new_node_index_map(&self) -> Self::Map {
+        IndexMap::new()
+    }
+}
+
