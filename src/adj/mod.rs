@@ -16,12 +16,17 @@ pub struct EdgeIndex<Ix = DefaultIx>
 where
     Ix: IndexType,
 {
+    /// Source of the edge.
     from: NodeIndex<Ix>,
+    /// Index of the sucessor in the successor list.
     successor_index: usize,
 }
 
 iterator_wrap! {
 impl (Iterator) for
+/// An Iterator over the indices of the outgoing edges from a node.
+///
+/// It does not borrow the graph during iteration.
 struct OutgoingEdgeIndices <Ix> where { Ix: IndexType }
 item: EdgeIndex<Ix>,
 iter: std::iter::Map<std::iter::Zip<Range<usize>, std::iter::Repeat<NodeIndex<Ix>>>, fn((usize, NodeIndex<Ix>)) -> EdgeIndex<Ix>>,
@@ -30,23 +35,30 @@ iter: std::iter::Map<std::iter::Zip<Range<usize>, std::iter::Repeat<NodeIndex<Ix
 /// Weighted sucessor
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 struct WSuc<E, Ix: IndexType> {
+    /// Index of the sucessor.
     suc: Ix,
+    /// Weight of the edge to `suc`.
     weight: E,
 }
 
+/// One row of the adjacency list.
 type Row<E, Ix> = Vec<WSuc<E, Ix>>;
 type RowIter<'a, E, Ix> = std::slice::Iter<'a, WSuc<E, Ix>>;
 
 iterator_wrap! {
 impl (Iterator DoubleEndedIterator ExactSizeIterator) for
+/// An iterator over the indices of the neighbors of a node.
 struct Neighbors<'a, E, Ix> where { Ix: IndexType }
 item: NodeIndex<Ix>,
 iter: std::iter::Map<RowIter<'a, E, Ix>, fn(&WSuc<E, Ix>) -> NodeIndex<Ix>>,
 }
 
+/// A reference to an edge of the graph.
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
 pub struct EdgeReference<'a, E, Ix: IndexType> {
+    /// index of the edge
     id: EdgeIndex<Ix>,
+    /// a reference to the corresponding item in the adjacency list
     edge: &'a WSuc<E, Ix>,
 }
 
@@ -112,16 +124,19 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
 
 iterator_wrap! {
     impl (Iterator DoubleEndedIterator ExactSizeIterator) for
+    /// An iterator over all node indices in the graph.
     struct NodeIndices <Ix> where {}
     item: Ix,
     iter: std::iter::Map<Range<usize>, fn(usize) -> Ix>,
 }
 
-/// An adjacency list with labeled edges. Can be interpreted as a directed graph
+/// An adjacency list with labeled edges.
+///
+/// Can be interpreted as a directed graph
 /// with unweighted nodes.
 ///
 /// This is the most simple adjacency list you can imagine. `Graph`, in contrast,
-/// maintains the both the list of successors and predecessors for each node,
+/// maintains both the list of successors and predecessors for each node,
 /// which is a different trade-off.
 pub struct List<E, Ix = DefaultIx>
 where
@@ -346,6 +361,7 @@ where
         edge_list.finish()
     }
 }
+
 impl<E, Ix> fmt::Debug for List<E, Ix>
 where
     E: fmt::Debug,
@@ -435,6 +451,7 @@ type SomeIter<'a, E, Ix> = std::iter::Map<
 
 iterator_wrap! {
 impl (Iterator) for
+/// An iterator over the [`EdgeReference`] of all the edges of the graph.
 struct EdgeReferences<'a, E, Ix> where { Ix: IndexType }
 item: EdgeReference<'a, E, Ix>,
 iter: std::iter::FlatMap<
@@ -485,6 +502,7 @@ impl<'a, Ix: IndexType, E> visit::IntoEdgeReferences for &'a List<E, Ix> {
 
 iterator_wrap! {
 impl (Iterator) for
+/// Iterator over the [`EdgeReference`] of the outgoing edges from a node.
 struct OutgoingEdgeReferences<'a, E, Ix> where { Ix: IndexType }
 item: EdgeReference<'a, E, Ix>,
 iter: SomeIter<'a, E, Ix>,
