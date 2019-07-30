@@ -44,14 +44,23 @@ item: NodeIndex<Ix>,
 iter: std::iter::Map<RowIter<'a, E, Ix>, fn(&WSuc<E, Ix>) -> NodeIndex<Ix>>,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Eq, PartialEq, Ord, PartialOrd)]
 pub struct EdgeReference<'a, E, Ix: IndexType> {
     id: EdgeIndex<Ix>,
     edge: &'a WSuc<E, Ix>,
 }
 
-// FIXME: why E: Copy ?
-impl<'a, E: Copy, Ix: IndexType> visit::EdgeRef for EdgeReference<'a, E, Ix> {
+impl<'a, E, Ix: IndexType> Copy for EdgeReference<'a, E, Ix> {}
+impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
+    fn clone(&self) -> Self {
+        EdgeReference {
+            id: self.id,
+            edge: self.edge,
+        }
+    }
+}
+
+impl<'a, E, Ix: IndexType> visit::EdgeRef for EdgeReference<'a, E, Ix> {
     type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex<Ix>;
     type Weight = E;
@@ -316,10 +325,9 @@ impl<E, Ix: IndexType> List<E, Ix> {
     }
 }
 
-// FIXME: Why Copy ?
 impl<'a, E, Ix> fmt::Debug for EdgeReferences<'a, E, Ix>
 where
-    E: fmt::Debug + Copy,
+    E: fmt::Debug,
     Ix: IndexType,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -338,10 +346,9 @@ where
         edge_list.finish()
     }
 }
-// FIXME: Why Copy ?
 impl<E, Ix> fmt::Debug for List<E, Ix>
 where
-    E: fmt::Debug + Copy,
+    E: fmt::Debug,
     Ix: IndexType,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -428,7 +435,6 @@ type SomeIter<'a, E, Ix> = std::iter::Map<
 
 iterator_wrap! {
 impl (Iterator) for
-#[derive(Clone)]
 struct EdgeReferences<'a, E, Ix> where { Ix: IndexType }
 item: EdgeReference<'a, E, Ix>,
 iter: std::iter::FlatMap<
@@ -440,6 +446,14 @@ iter: std::iter::FlatMap<
         (usize, &'a Vec<WSuc<E, Ix>>)
     ) -> SomeIter<'a, E, Ix>,
 >,
+}
+
+impl<'a, E, Ix: IndexType> Clone for EdgeReferences<'a, E, Ix> {
+    fn clone(&self) -> Self {
+        EdgeReferences {
+            iter: self.iter.clone(),
+        }
+    }
 }
 
 fn proj1<'a, E, Ix: IndexType>(
@@ -459,8 +473,8 @@ fn proj2<'a, E, Ix: IndexType>(
         .zip(std::iter::repeat(Ix::new(row_index)))
         .map(proj1 as _)
 }
-// FIXME: Why E: Copy ?
-impl<'a, Ix: IndexType, E: Copy> visit::IntoEdgeReferences for &'a List<E, Ix> {
+
+impl<'a, Ix: IndexType, E> visit::IntoEdgeReferences for &'a List<E, Ix> {
     type EdgeRef = EdgeReference<'a, E, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ix>;
     fn edge_references(self) -> Self::EdgeReferences {
@@ -475,8 +489,8 @@ struct OutgoingEdgeReferences<'a, E, Ix> where { Ix: IndexType }
 item: EdgeReference<'a, E, Ix>,
 iter: SomeIter<'a, E, Ix>,
 }
-// FIXME: Why E: Copy ?
-impl<'a, Ix: IndexType, E: Copy> visit::IntoEdges for &'a List<E, Ix> {
+
+impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
     type Edges = OutgoingEdgeReferences<'a, E, Ix>;
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         let iter = self.suc[a.index()]
