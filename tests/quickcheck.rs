@@ -45,11 +45,9 @@ use petgraph::visit::{
     IntoNeighbors,
     NodeIndexable,
     EdgeRef,
-    NodeRef,
     Visitable,
     IntoNodeIdentifiers,
     EdgeFiltered,
-    VisitMap,
 };
 use petgraph::data::FromElements;
 use petgraph::graph::{IndexType, node_index, edge_index};
@@ -964,8 +962,8 @@ where G: Visitable + IntoNodeIdentifiers + IntoNeighbors
 }
 
 quickcheck! {
-    fn test_tred(g: Graph<(), (), Directed>) -> bool {
-        let acyclic = condensation(g, true);
+    fn test_tred(g: DAG<()>) -> bool {
+        let acyclic = g.0;
         println!("acyclic graph {:#?}", &acyclic);
         let toposort = toposort(&acyclic, None).unwrap();
         println!("Toposort:");
@@ -994,7 +992,7 @@ quickcheck! {
             println!("tclos is not the transitive closure of tred");
             return false
         }
-        // check the transitive reduction
+        // check the transitive reduction is a transitive reduction
         for i in tred.edge_references() {
             let filtered = EdgeFiltered::from_fn(&tred, |edge| {
                 edge.source() !=i.source() || edge.target() != i.target()
@@ -1006,6 +1004,7 @@ quickcheck! {
                 return false
             }
         }
+        // check that the transitive reduction is included in the original graph
         for i in tred.edge_references() {
             if acyclic.find_edge(toposort[i.source().index()], toposort[i.target().index()]).is_none() {
                 println!("tred is not included in the original graph");

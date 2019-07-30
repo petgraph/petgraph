@@ -40,13 +40,15 @@ pub fn transitive_reduction_closure<Ix: IndexType>(
     }
     for i in g.node_indices().rev() {
         for x in g.neighbors(i) {
-            tred.add_edge(i, x, ());
-            tclos.add_edge(i, x, ());
-            for e in tclos.edge_indices_from(x) {
-                let y = tclos.edge_endpoints(e).unwrap().1;
-                if !mark[y.index()] {
-                    mark.insert(y.index());
-                    tclos.add_edge(i, y, ());
+            if !mark[x.index()] {
+                tred.add_edge(i, x, ());
+                tclos.add_edge(i, x, ());
+                for e in tclos.edge_indices_from(x) {
+                    let y = tclos.edge_endpoints(e).unwrap().1;
+                    if !mark[y.index()] {
+                        mark.insert(y.index());
+                        tclos.add_edge(i, y, ());
+                    }
                 }
             }
         }
@@ -55,4 +57,24 @@ pub fn transitive_reduction_closure<Ix: IndexType>(
         }
     }
     (tred, tclos)
+}
+
+#[test]
+fn test_easy_tred() {
+    let mut input = List::new();
+    let a: u8 = input.add_node();
+    let b = input.add_node();
+    let c = input.add_node();
+    input.add_edge(a, b, ());
+    input.add_edge(a, c, ());
+    input.add_edge(b, c, ());
+    let (tred, tclos) = transitive_reduction_closure(&input);
+    assert_eq!(tred.node_count(), 3);
+    assert_eq!(tclos.node_count(), 3);
+    assert!(tred.find_edge(a, b).is_some());
+    assert!(tred.find_edge(b, c).is_some());
+    assert!(tred.find_edge(a, c).is_none());
+    assert!(tclos.find_edge(a, b).is_some());
+    assert!(tclos.find_edge(b, c).is_some());
+    assert!(tclos.find_edge(a, c).is_some());
 }
