@@ -13,15 +13,18 @@ macro_rules! clone_fields {
 
 macro_rules! iterator_wrap {
     (impl () for 
-     $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
+    struct $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
      item: $item: ty,
      iter: $iter: ty,
      ) => ();
-    (impl (Iterator $($rest:tt)*)  for 
-     $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
+    (
+    impl (Iterator $($rest:tt)*)  for 
+    $(#[$derive:meta])*
+     struct $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
      item: $item: ty,
      iter: $iter: ty,
      ) => (
+         $(#[$derive])*
         pub struct $name <$($typarm),*> where $($bounds)* {
             iter: $iter,
         }
@@ -41,13 +44,16 @@ macro_rules! iterator_wrap {
         }
         iterator_wrap!(
             impl ($($rest)*)  for
-            $name <$($typarm),*> where { $($bounds)* }
+            struct $name <$($typarm),*> where { $($bounds)* }
             item: $item,
             iter: $iter,
             );
         );
-    (impl (ExactSizeIterator $($rest:tt)*)  for
-     $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
+    
+    (
+impl (ExactSizeIterator $($rest:tt)*)  for
+    $(#[$derive:meta])*
+     struct $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
      item: $item: ty,
      iter: $iter: ty,
      ) => (
@@ -61,13 +67,17 @@ macro_rules! iterator_wrap {
         }
         iterator_wrap!(
             impl ($($rest)*)  for
-            $name <$($typarm),*> where { $($bounds)* }
+         $(#[$derive])*
+            struct $name <$($typarm),*> where { $($bounds)* }
             item: $item,
             iter: $iter,
             );
     );
-    (impl (DoubleEndedIterator $($rest:tt)*)  for
-     $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
+    
+    (
+impl (DoubleEndedIterator $($rest:tt)*)  for
+    $(#[$derive:meta])*
+     struct $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
      item: $item: ty,
      iter: $iter: ty,
      ) => (
@@ -88,7 +98,8 @@ macro_rules! iterator_wrap {
         }
         iterator_wrap!(
             impl ($($rest)*)  for
-            $name <$($typarm),*> where { $($bounds)* }
+         $(#[$derive])*
+           struct $name <$($typarm),*> where { $($bounds)* }
             item: $item,
             iter: $iter,
             );

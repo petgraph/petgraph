@@ -1,6 +1,8 @@
 use fixedbitset::FixedBitSet;
+use iter_format::NoPretty;
+use std::fmt;
 use std::ops::Range;
-use visit::{self, IntoNeighbors};
+use visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors};
 
 #[doc(no_inline)]
 pub use graph::{DefaultIx, IndexType};
@@ -20,7 +22,7 @@ where
 
 iterator_wrap! {
 impl (Iterator) for
-OutgoingEdgeIndices <Ix> where { Ix: IndexType }
+struct OutgoingEdgeIndices <Ix> where { Ix: IndexType }
 item: EdgeIndex<Ix>,
 iter: std::iter::Map<std::iter::Zip<Range<usize>, std::iter::Repeat<NodeIndex<Ix>>>, fn((usize, NodeIndex<Ix>)) -> EdgeIndex<Ix>>,
 }
@@ -37,7 +39,7 @@ type RowIter<'a, E, Ix> = std::slice::Iter<'a, WSuc<E, Ix>>;
 
 iterator_wrap! {
 impl (Iterator DoubleEndedIterator ExactSizeIterator) for
-Neighbors<'a, E, Ix> where { Ix: IndexType }
+struct Neighbors<'a, E, Ix> where { Ix: IndexType }
 item: NodeIndex<Ix>,
 iter: std::iter::Map<RowIter<'a, E, Ix>, fn(&WSuc<E, Ix>) -> NodeIndex<Ix>>,
 }
@@ -101,7 +103,7 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
 
 iterator_wrap! {
     impl (Iterator DoubleEndedIterator ExactSizeIterator) for
-    NodeIndices <Ix> where {}
+    struct NodeIndices <Ix> where {}
     item: Ix,
     iter: std::iter::Map<Range<usize>, fn(usize) -> Ix>,
 }
@@ -314,6 +316,45 @@ impl<E, Ix: IndexType> List<E, Ix> {
     }
 }
 
+// FIXME: Why Copy ?
+impl<'a, E, Ix> fmt::Debug for EdgeReferences<'a, E, Ix>
+where
+    E: fmt::Debug + Copy,
+    Ix: IndexType,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut edge_list = f.debug_list();
+        let iter: Self = self.clone();
+        for e in iter {
+            if std::mem::size_of::<E>() != 0 {
+                edge_list.entry(&(
+                    NoPretty((e.source().index(), e.target().index())),
+                    e.weight(),
+                ));
+            } else {
+                edge_list.entry(&NoPretty((e.source().index(), e.target().index())));
+            }
+        }
+        edge_list.finish()
+    }
+}
+// FIXME: Why Copy ?
+impl<E, Ix> fmt::Debug for List<E, Ix>
+where
+    E: fmt::Debug + Copy,
+    Ix: IndexType,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut fmt_struct = f.debug_struct("adj::List");
+        fmt_struct.field("node_count", &self.node_count());
+        fmt_struct.field("edge_count", &self.edge_count());
+        if self.edge_count() > 0 {
+            fmt_struct.field("edges", &self.edge_references());
+        }
+        fmt_struct.finish()
+    }
+}
+
 impl<E, Ix> visit::GraphBase for List<E, Ix>
 where
     Ix: IndexType,
@@ -387,7 +428,8 @@ type SomeIter<'a, E, Ix> = std::iter::Map<
 
 iterator_wrap! {
 impl (Iterator) for
-EdgeReferences<'a, E, Ix> where { Ix: IndexType }
+#[derive(Clone)]
+struct EdgeReferences<'a, E, Ix> where { Ix: IndexType }
 item: EdgeReference<'a, E, Ix>,
 iter: std::iter::FlatMap<
     std::iter::Enumerate<
@@ -429,7 +471,7 @@ impl<'a, Ix: IndexType, E: Copy> visit::IntoEdgeReferences for &'a List<E, Ix> {
 
 iterator_wrap! {
 impl (Iterator) for
-OutgoingEdgeReferences<'a, E, Ix> where { Ix: IndexType }
+struct OutgoingEdgeReferences<'a, E, Ix> where { Ix: IndexType }
 item: EdgeReference<'a, E, Ix>,
 iter: SomeIter<'a, E, Ix>,
 }

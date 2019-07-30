@@ -963,45 +963,56 @@ where G: Visitable + IntoNodeIdentifiers + IntoNeighbors
     res
 }
 
-fn is_tred_tclos<'a, Ix: IndexType>(tred: &'a petgraph::adj::List<(), Ix>, tclos: &'a petgraph::adj::List<(), Ix>) -> bool
-{
-    // check the nodes
-    assert!(nodes_eq!(tred, tclos));
-    // check the closure
-    let mut clos_edges: Vec<(Ix, Ix)> = tclos.edge_references().map(|i| (i.source(), i.target())).collect();
-    clos_edges.sort();
-    let mut tred_closure = naive_closure(tred);
-    tred_closure.sort();
-    if tred_closure != clos_edges {
-        return false
-    }
-    // check the transitive reduction
-    for i in tred.edge_references() {
-        let filtered = EdgeFiltered::from_fn(tred, |edge| {
-            edge.source() !=i.source() || edge.target() != i.target()
-        });
-        let new = naive_closure_edgecount(&filtered);
-        if new >= clos_edges.len() {
-            return false
-        }
-    }
-    true
-}
-
 quickcheck! {
     fn test_tred(g: Graph<(), (), Directed>) -> bool {
         let acyclic = condensation(g, true);
+        println!("acyclic graph {:#?}", &acyclic);
         let toposort = toposort(&acyclic, None).unwrap();
+        println!("Toposort:");
+        for (new, old) in toposort.iter().enumerate() {
+            println!("{} -> {}", old.index(), new);
+        }
         let toposorted: petgraph::adj::List<(), u32> = tred::to_toposorted_adjacency_list(&acyclic, &toposort);
+        println!("toposorted adjacency list: {:#?}", &toposorted);
         let (tred, tclos) = tred::transitive_reduction_closure(&toposorted);
-        if !is_tred_tclos(&tred, &tclos) {
+        println!("tred: {:#?}", &tred);
+        println!("tclos: {:#?}", &tclos);
+        if tred.node_count() != tclos.node_count() {
+            println!("Different node count");
+            return false;
+        }
+        if acyclic.node_count() != tclos.node_count() {
+            println!("Different node count from original graph");
+            return false;
+        }
+        // check the closure
+        let mut clos_edges: Vec<(_, _)> = tclos.edge_references().map(|i| (i.source(), i.target())).collect();
+        clos_edges.sort();
+        let mut tred_closure = naive_closure(&tred);
+        tred_closure.sort();
+        if tred_closure != clos_edges {
+            println!("tclos is not the transitive closure of tred");
             return false
         }
+        // check the transitive reduction
         for i in tred.edge_references() {
-            if acyclic.find_edge(toposort[i.source().index()], toposort[i.target().index()]).is_none() {
+            let filtered = EdgeFiltered::from_fn(&tred, |edge| {
+                edge.source() !=i.source() || edge.target() != i.target()
+            });
+            let new = naive_closure_edgecount(&filtered);
+            if new >= clos_edges.len() {
+                println!("when removing ({} -> {}) the transitive closure does not shrink", 
+                         i.source().index(), i.target().index());
                 return false
             }
         }
+        for i in tred.edge_references() {
+            if acyclic.find_edge(toposort[i.source().index()], toposort[i.target().index()]).is_none() {
+                println!("tred is not included in the original graph");
+                return false
+            }
+        }
+        println!("ok!");
         true
     }
 }

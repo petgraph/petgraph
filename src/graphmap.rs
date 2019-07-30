@@ -471,7 +471,7 @@ impl<N, E, Ty, Item> Extend<Item> for GraphMap<N, E, Ty>
 
 iterator_wrap! {
     impl (Iterator DoubleEndedIterator ExactSizeIterator) for
-    Nodes <'a, N> where { N: 'a + NodeTrait }
+    struct Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
     iter: Cloned<Keys<'a, N, Vec<(N, CompactDirection)>>>,
 }
