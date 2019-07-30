@@ -5,12 +5,9 @@ use adj::List;
 use data::{NodeIndexMap, NodeIndexMappable};
 use fixedbitset::FixedBitSet;
 use graph::IndexType;
-use visit::{GraphBase, IntoNeighborsDirected, NodeCount};
+use visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount};
 
-pub fn to_toposorted_adjacency_list<G, Ix: IndexType>(
-    g: G,
-    toposort: Vec<G::NodeId>,
-) -> List<(), Ix>
+pub fn to_toposorted_adjacency_list<G, Ix: IndexType>(g: G, toposort: &[G::NodeId]) -> List<(), Ix>
 where
     G: GraphBase + IntoNeighborsDirected + NodeIndexMappable<Ix> + NodeCount,
 {
@@ -45,7 +42,7 @@ pub fn transitive_reduction_closure<Ix: IndexType>(
         for x in g.neighbors(i) {
             tred.add_edge(i, x, ());
             tclos.add_edge(i, x, ());
-            for e in tclos.edges(x) {
+            for e in tclos.edge_indices_from(x) {
                 let y = tclos.edge_endpoints(e).unwrap().1;
                 if !mark[y.index()] {
                     mark.insert(y.index());

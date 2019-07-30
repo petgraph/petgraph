@@ -26,6 +26,7 @@ use petgraph::{
 use petgraph::dot::{Dot, Config};
 use petgraph::algo::{
     condensation,
+    tred,
     min_spanning_tree,
     is_cyclic_undirected,
     is_cyclic_directed,
@@ -41,8 +42,14 @@ use petgraph::visit::{Topo, Reversed};
 use petgraph::visit::{
     IntoNodeReferences,
     IntoEdgeReferences,
+    IntoNeighbors,
     NodeIndexable,
     EdgeRef,
+    NodeRef,
+    Visitable,
+    IntoNodeIdentifiers,
+    EdgeFiltered,
+    VisitMap,
 };
 use petgraph::data::FromElements;
 use petgraph::graph::{IndexType, node_index, edge_index};
@@ -924,3 +931,78 @@ quickcheck! {
         }
     }
 }
+
+fn naive_closure_foreach<G, F>(g: G, mut f: F)
+where G: Visitable + IntoNeighbors + IntoNodeIdentifiers, F: FnMut(G::NodeId, G::NodeId)
+{
+    let mut dfs = Dfs::empty(&g);
+    for i in g.node_identifiers() {
+        dfs.reset(&g);
+        dfs.move_to(i);
+        while let Some(nx) = dfs.next(&g) {
+            if i != nx {
+                f(i, nx);
+            }
+        }
+    }
+}
+
+fn naive_closure<G>(g: G) -> Vec<(G::NodeId, G::NodeId)>
+where G: Visitable + IntoNodeIdentifiers + IntoNeighbors
+{
+    let mut res = Vec::new();
+    naive_closure_foreach(g, |a, b| res.push((a, b)));
+    res
+}
+
+fn naive_closure_edgecount<G>(g: G) -> usize
+where G: Visitable + IntoNodeIdentifiers + IntoNeighbors
+{
+    let mut res = 0;
+    naive_closure_foreach(g, |_, _| res+=1);
+    res
+}
+
+fn is_tred_tclos<'a, Ix: IndexType>(tred: &'a petgraph::adj::List<(), Ix>, tclos: &'a petgraph::adj::List<(), Ix>) -> bool
+{
+    // check the nodes
+    assert!(nodes_eq!(tred, tclos));
+    // check the closure
+    let mut clos_edges: Vec<(Ix, Ix)> = tclos.edge_references().map(|i| (i.source(), i.target())).collect();
+    clos_edges.sort();
+    let mut tred_closure = naive_closure(tred);
+    tred_closure.sort();
+    if tred_closure != clos_edges {
+        return false
+    }
+    // check the transitive reduction
+    for i in tred.edge_references() {
+        let filtered = EdgeFiltered::from_fn(tred, |edge| {
+            edge.source() !=i.source() || edge.target() != i.target()
+        });
+        let new = naive_closure_edgecount(&filtered);
+        if new >= clos_edges.len() {
+            return false
+        }
+    }
+    true
+}
+
+quickcheck! {
+    fn test_tred(g: Graph<(), (), Directed>) -> bool {
+        let acyclic = condensation(g, true);
+        let toposort = toposort(&acyclic, None).unwrap();
+        let toposorted: petgraph::adj::List<(), u32> = tred::to_toposorted_adjacency_list(&acyclic, &toposort);
+        let (tred, tclos) = tred::transitive_reduction_closure(&toposorted);
+        if !is_tred_tclos(&tred, &tclos) {
+            return false
+        }
+        for i in tred.edge_references() {
+            if acyclic.find_edge(toposort[i.source().index()], toposort[i.target().index()]).is_none() {
+                return false
+            }
+        }
+        true
+    }
+}
+
