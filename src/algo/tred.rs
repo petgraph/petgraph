@@ -1,4 +1,12 @@
-//! Transitive reduction and closure
+//! Compute the transitive reduction and closure of a directed acyclic graph
+//!
+//! ## Transitive reduction and closure
+//! The *transitive closure* of a graph **G = (V, E)** is the graph **Gc = (V, Ec)**
+//! such that **(i, j)** belongs to **Ec** if and only if there is a path connecting
+//! **i** to **j** in **G**. The *transitive reduction* of **G** is the graph **Gr
+//! = (V, Er)** such that **Er** is minimal wrt. inclusion in **E** and the transitive
+//! closure of **Gr** is the same as that of **G**.
+//! The transitive reduction is well-defined for acyclic graphs only.
 
 use crate::Direction;
 use adj::List;
@@ -7,7 +15,23 @@ use fixedbitset::FixedBitSet;
 use graph::IndexType;
 use visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount};
 
-pub fn to_toposorted_adjacency_list<G, Ix: IndexType>(g: G, toposort: &[G::NodeId]) -> List<(), Ix>
+/// Creates a representation of the same graph respecting topological order for use in [`dag_transitive_reduction_closure`].
+///
+/// `toposort` must be a topological order on the node indices of `g` (for example obtained
+/// from [`crate::algo::toposort`]).
+///
+/// The resulting graph is the same as `g` with the following differences:
+/// * Node and edge weights are stripped,
+/// * Node indices are replaced by the corresponding rank in `toposort`,
+/// * Iterating on the neighbors of a node respects topological order.
+///
+/// Runtime: **O(|V| + |E|)**.
+///
+/// Space complexity: **O(|V| + |E|)**.
+pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
+    g: G,
+    toposort: &[G::NodeId],
+) -> List<(), Ix>
 where
     G: GraphBase + IntoNeighborsDirected + NodeIndexMappable<Ix> + NodeCount,
 {
@@ -28,7 +52,26 @@ where
     res
 }
 
-pub fn transitive_reduction_closure<Ix: IndexType>(
+/// Computes the transitive reduction and closure of a DAG.
+///
+/// The algorithm implemented here comes from [On the calculation of
+/// transitive reduction-closure of
+/// orders](https://www.sciencedirect.com/science/article/pii/0012365X9390164O) by Habib, Morvan
+/// and Rampon.
+///
+/// The input graph must be in a very specific format: an adjacency
+/// list such that:
+/// * Node indices are a toposort, and
+/// * The neighbors of all nodes are stored in topological order.
+/// To get such a representation, use the function [`dag_to_toposorted_adjacency_list`].
+///
+/// Runtime complexity: **O(|V| + \sum_{(x, y) \in Er} d(y))** where **d(y)**
+/// denotes the outgoing degree of **y** in the transitive closure of **G**.
+/// This is still **O(|V|³)** in the worst case like the naive algorithm but
+/// should perform better for some classes of graphs.
+///
+/// Space complexity: **O(|E|)**.
+pub fn dag_transitive_reduction_closure<Ix: IndexType>(
     g: &List<(), Ix>,
 ) -> (List<(), Ix>, List<(), Ix>) {
     let mut tred = List::with_capacity(g.node_count());
@@ -38,7 +81,9 @@ pub fn transitive_reduction_closure<Ix: IndexType>(
         tred.add_node();
         tclos.add_node_with_capacity(g.neighbors(i).len());
     }
+    // the algorithm relies on this iterator being toposorted
     for i in g.node_indices().rev() {
+        // the algorighm relies on this iterator being toposorted
         for x in g.neighbors(i) {
             if !mark[x.index()] {
                 tred.add_edge(i, x, ());
@@ -68,7 +113,7 @@ fn test_easy_tred() {
     input.add_edge(a, b, ());
     input.add_edge(a, c, ());
     input.add_edge(b, c, ());
-    let (tred, tclos) = transitive_reduction_closure(&input);
+    let (tred, tclos) = dag_transitive_reduction_closure(&input);
     assert_eq!(tred.node_count(), 3);
     assert_eq!(tclos.node_count(), 3);
     assert!(tred.find_edge(a, b).is_some());

@@ -970,9 +970,9 @@ quickcheck! {
         for (new, old) in toposort.iter().enumerate() {
             println!("{} -> {}", old.index(), new);
         }
-        let toposorted: petgraph::adj::List<(), u32> = tred::to_toposorted_adjacency_list(&acyclic, &toposort);
+        let toposorted: petgraph::adj::List<(), u32> = tred::dag_to_toposorted_adjacency_list(&acyclic, &toposort);
         println!("toposorted adjacency list: {:#?}", &toposorted);
-        let (tred, tclos) = tred::transitive_reduction_closure(&toposorted);
+        let (tred, tclos) = tred::dag_transitive_reduction_closure(&toposorted);
         println!("tred: {:#?}", &tred);
         println!("tclos: {:#?}", &tclos);
         if tred.node_count() != tclos.node_count() {
