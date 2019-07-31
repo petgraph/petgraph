@@ -2,7 +2,6 @@
 
 
 use Graph;
-use csr::Csr;
 #[cfg(feature = "stable_graph")]
 use stable_graph::StableGraph;
 use ::{
@@ -11,16 +10,14 @@ use ::{
 use graph::IndexType;
 #[cfg(feature = "graphmap")]
 use graphmap::{GraphMap, NodeTrait};
-#[cfg(feature = "graphmap")]
-use indexmap::IndexMap;
 use visit::{
     GraphRef,
     Data,
     NodeCount,
     NodeIndexable,
+    NodeCompactIndexable,
     Reversed,
 };
-use std::hash::Hash;
 
 trait_template!{
     /// Access node and edge weights (associated data).
@@ -439,13 +436,26 @@ impl<I, F, N, E> Iterator for FilterElements<I, F>
     }
 }
 
+/// A mapping from node indices to values.
 pub trait NodeIndexMap<Ix, T> {
+    /// Get the value associated with the index in argument.
+    ///
+    /// If [`set`] has not yet been called for this index,
+    /// returns None.
+    ///
+    /// [`set`]: NodeIndexMap::set
     fn get(&self, a: Ix) -> Option<&T>;
+
+    /// Sets the value associated with the index in argument. Returns the old
+    /// value.
     fn set(&mut self, a: Ix, value: T) -> Option<T>;
 }
 
+/// Creation of a mapping from indices to values.
 pub trait NodeIndexMappable<T>: GraphRef {
+    /// The type of the mapping.
     type Map: NodeIndexMap<Self::NodeId, T>;
+    /// Creates a new mapping.
     fn new_node_index_map(self) -> Self::Map;
 }
 
@@ -465,40 +475,15 @@ impl<Ix: IndexType, T> NodeIndexMap<Ix, T> for Vec<Option<T>> {
     }
 }
 
-impl<'a, N, E, T: Clone, Ty: EdgeType, Ix: IndexType> NodeIndexMappable<T> for &'a Graph<N, E, Ty, Ix> {
+impl<G, T> NodeIndexMappable<T> for G 
+where G: NodeCompactIndexable + GraphRef, G::NodeId: IndexType {
     type Map = Vec<Option<T>>;
     fn new_node_index_map(self) -> Self::Map {
-        vec![None; self.node_count()]
+        let n = self.node_bound();
+        let mut res = Vec::with_capacity(n);
+        for _ in 0..n {
+            res.push(None)
+        }
+        res
     }
 }
-impl<'a, N, E, T: Clone, Ty: EdgeType, Ix: IndexType> NodeIndexMappable<T> for &'a StableGraph<N, E, Ty, Ix> {
-    type Map = Vec<Option<T>>;
-    fn new_node_index_map(self) -> Self::Map {
-        vec![None; self.node_count()]
-    }
-}
-impl<'a, N, E, T: Clone, Ty: EdgeType, Ix: IndexType> NodeIndexMappable<T> for &'a Csr<N, E, Ty, Ix> {
-    type Map = Vec<Option<T>>;
-    fn new_node_index_map(self) -> Self::Map {
-        vec![None; self.node_count()]
-    }
-}
-
-#[cfg(feature = "graphmap")]
-impl<N: Copy + Ord + Hash, T> NodeIndexMap<N, T> for IndexMap<N, T> {
-    fn get(&self, a: N) -> Option<&T> {
-        IndexMap::get(&self, &a)
-    }
-    fn set(&mut self, a: N, value: T) -> Option<T> {
-        self.insert(a, value)
-    }
-}
-
-#[cfg(feature = "graphmap")]
-impl<'a, N: Copy + Ord + Hash, E, T: Clone, Ty: EdgeType> NodeIndexMappable<T> for &'a GraphMap<N, E, Ty> {
-    type Map = IndexMap<N, T>;
-    fn new_node_index_map(self) -> Self::Map {
-        IndexMap::new()
-    }
-}
-
