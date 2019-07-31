@@ -18,7 +18,7 @@ use super::visit::{
 };
 use algo::Measure;
 
-/// [Generic] Dijkstra's shortest path algorithm.
+/// \[Generic\] Dijkstra's shortest path algorithm.
 ///
 /// Compute the length of the shortest path from `start` to every reachable
 /// node.

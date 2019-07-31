@@ -20,7 +20,7 @@ use super::visit::{
 
 use algo::Measure;
 
-/// [Generic] A* shortest path algorithm.
+/// \[Generic\] A* shortest path algorithm.
 ///
 /// Computes the shortest path from `start` to `finish`, including the total path cost.
 ///

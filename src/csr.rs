@@ -28,7 +28,9 @@ pub type EdgeIndex = usize;
 
 const BINARY_SEARCH_CUTOFF: usize = 32;
 
-/// Compressed Sparse Row ([`CSR`]) is a sparse adjacency matrix graph.
+/// Compressed Sparse Row
+/// ([`CSR`](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_\(CSR,_CRS_or_Yale_format\)))
+/// is a sparse adjacency matrix graph.
 ///
 /// `CSR` is parameterized over:
 ///
@@ -43,7 +45,6 @@ const BINARY_SEARCH_CUTOFF: usize = 32;
 /// Self loops are allowed, no parallel edges.
 ///
 /// Fast iteration of the outgoing edges of a vertex.
-/// [`CSR`]: https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
 #[derive(Debug)]
 pub struct Csr<N = (), E = (), Ty = Directed, Ix = DefaultIx> {
     /// Column of next edge

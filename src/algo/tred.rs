@@ -18,7 +18,9 @@ use visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount};
 /// Creates a representation of the same graph respecting topological order for use in [`dag_transitive_reduction_closure`].
 ///
 /// `toposort` must be a topological order on the node indices of `g` (for example obtained
-/// from [`crate::algo::toposort`]).
+/// from [`toposort`]).
+///
+/// [`toposort`]: crate::algo::toposort
 ///
 /// The resulting graph is the same as `g` with the following differences:
 /// * Node and edge weights are stripped,
