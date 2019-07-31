@@ -2,7 +2,7 @@ use fixedbitset::FixedBitSet;
 use iter_format::NoPretty;
 use std::fmt;
 use std::ops::Range;
-use visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors};
+use visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors, NodeCount};
 
 #[doc(no_inline)]
 pub use graph::{DefaultIx, IndexType};
@@ -138,6 +138,10 @@ iterator_wrap! {
 /// This is the most simple adjacency list you can imagine. `Graph`, in contrast,
 /// maintains both the list of successors and predecessors for each node,
 /// which is a different trade-off.
+///
+/// Allows parallel edges and self-loops.
+///
+/// Space consumption: **O(|E|)**.
 pub struct List<E, Ix = DefaultIx>
 where
     Ix: IndexType,
@@ -158,17 +162,10 @@ impl<E, Ix: IndexType> List<E, Ix> {
         }
     }
 
-    /// Returns the number of nodes in the list
-    ///
-    /// Computes in **O(1)** time.
-    pub fn node_count(&self) -> usize {
-        self.suc.len()
-    }
-
     /// Returns the number of edges in the list
     ///
     /// Computes in **O(|V|)** time.
-    pub fn edge_count(&self) -> usize {
+    fn edge_count(&self) -> usize {
         self.suc.iter().map(|x| x.len()).sum()
     }
 
@@ -435,7 +432,7 @@ impl<'a, E, Ix: IndexType> IntoNeighbors for &'a List<E, Ix> {
     type Neighbors = Neighbors<'a, E, Ix>;
     /// Returns an iterator of all nodes with an edge starting from `a`.
     /// Panics if `a` is out of bounds.
-    /// Use `edge_indices_from` instead if you do not want to borrow the adjacency list while
+    /// Use [`List::edge_indices_from`] instead if you do not want to borrow the adjacency list while
     /// iterating.
     fn neighbors(self, a: NodeIndex<Ix>) -> Self::Neighbors {
         let proj: fn(&WSuc<E, Ix>) -> NodeIndex<Ix> = |x| x.suc;
@@ -519,3 +516,34 @@ impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
         OutgoingEdgeReferences { iter }
     }
 }
+
+impl<E, Ix: IndexType> visit::GraphProp for List<E, Ix> {
+    type EdgeType = crate::Directed;
+    fn is_directed(&self) -> bool { true }
+}
+
+impl <E, Ix: IndexType> NodeCount for List<E, Ix> {
+    /// Returns the number of nodes in the list
+    ///
+    /// Computes in **O(1)** time.
+    fn node_count(&self) -> usize {
+        self.suc.len()
+    }
+}
+
+impl<E, Ix: IndexType> visit::NodeIndexable for List<E, Ix> {
+    fn node_bound(&self) -> usize {
+        self.node_count()
+    }
+    #[inline]
+    fn to_index(&self, a: Self::NodeId) -> usize {
+        a.index()
+    }
+    #[inline]
+    fn from_index(&self, i: usize) -> Self::NodeId {
+        Ix::new(i)
+    }
+}
+
+impl<E, Ix: IndexType> visit::NodeCompactIndexable for List<E, Ix> {}
+

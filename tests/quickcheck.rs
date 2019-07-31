@@ -48,6 +48,7 @@ use petgraph::visit::{
     Visitable,
     IntoNodeIdentifiers,
     EdgeFiltered,
+    NodeCount
 };
 use petgraph::data::FromElements;
 use petgraph::graph::{IndexType, node_index, edge_index};

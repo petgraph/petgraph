@@ -65,6 +65,8 @@ where
 /// * The neighbors of all nodes are stored in topological order.
 /// To get such a representation, use the function [`dag_to_toposorted_adjacency_list`].
 ///
+/// The output is the pair of the transitive reduction and the transitive closure.
+///
 /// Runtime complexity: **O(|V| + \sum_{(x, y) \in Er} d(y))** where **d(y)**
 /// denotes the outgoing degree of **y** in the transitive closure of **G**.
 /// This is still **O(|V|³)** in the worst case like the naive algorithm but
