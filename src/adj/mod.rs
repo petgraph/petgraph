@@ -1,8 +1,10 @@
+//! Simple adjacency list.
 use fixedbitset::FixedBitSet;
 use iter_format::NoPretty;
 use std::fmt;
 use std::ops::Range;
 use visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors, NodeCount};
+use data::{Build, DataMap, DataMapMut};
 
 #[doc(no_inline)]
 pub use graph::{DefaultIx, IndexType};
@@ -142,6 +144,7 @@ iterator_wrap! {
 /// Allows parallel edges and self-loops.
 ///
 /// Space consumption: **O(|E|)**.
+#[derive(Clone)]
 pub struct List<E, Ix = DefaultIx>
 where
     Ix: IndexType,
@@ -150,7 +153,7 @@ where
 }
 
 impl<E, Ix: IndexType> List<E, Ix> {
-    /// Creates a new, empty adjacency list
+    /// Creates a new, empty adjacency list.
     pub fn new() -> List<E, Ix> {
         List { suc: Vec::new() }
     }
@@ -165,7 +168,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
     /// Returns the number of edges in the list
     ///
     /// Computes in **O(|V|)** time.
-    fn edge_count(&self) -> usize {
+    pub fn edge_count(&self) -> usize {
         self.suc.iter().map(|x| x.len()).sum()
     }
 
@@ -218,33 +221,6 @@ impl<E, Ix: IndexType> List<E, Ix> {
         }
     }
 
-    /// Updates or adds an edge from `a` to `b` to the graph, with its associated
-    /// data `weight`.
-    ///
-    /// Return the index of the new edge.
-    ///
-    /// Computes in **O(e')** time, where **e'** is the number of successors of `a`.
-    ///
-    /// **Panics** if the source node does not exist.<br>
-    pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
-        let row = &mut self.suc[a.index()];
-        for (i, info) in row.iter_mut().enumerate() {
-            if info.suc == b {
-                info.weight = weight;
-                return EdgeIndex {
-                    from: a,
-                    successor_index: i,
-                };
-            }
-        }
-        let rank = row.len();
-        row.push(WSuc { suc: b, weight });
-        EdgeIndex {
-            from: a,
-            successor_index: rank,
-        }
-    }
-
     fn get_edge(&self, e: EdgeIndex<Ix>) -> Option<&WSuc<E, Ix>> {
         self.suc
             .get(e.from.index())
@@ -255,20 +231,6 @@ impl<E, Ix: IndexType> List<E, Ix> {
         self.suc
             .get_mut(e.from.index())
             .and_then(|row| row.get_mut(e.successor_index))
-    }
-
-    /// Accesses the weight of edge `e`
-    ///
-    /// Computes in **O(1)**
-    pub fn edge_weight(&self, e: EdgeIndex<Ix>) -> Option<&E> {
-        self.get_edge(e).map(|x| &x.weight)
-    }
-
-    /// Accesses the weight of edge `e`
-    ///
-    /// Computes in **O(1)**
-    pub fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E> {
-        self.get_edge_mut(e).map(|x| &mut x.weight)
     }
 
     /// Accesses the source and target of edge `e`
@@ -336,6 +298,58 @@ impl<E, Ix: IndexType> List<E, Ix> {
         }
     }
 }
+
+impl<E, Ix: IndexType> Build for List<E, Ix> {
+    /// Adds a new node to the list. This allocates a new `Vec` and then should
+    /// run in amortized **O(1)** time.
+    fn add_node(&mut self, _weight: ()) -> NodeIndex<Ix> {
+        self.add_node()
+    }
+
+    /// Add an edge from `a` to `b` to the graph, with its associated
+    /// data `weight`.
+    ///
+    /// Return the index of the new edge.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// **Panics** if the source node does not exist.<br>
+    ///
+    /// **Note:** `List` allows adding parallel (“duplicate”) edges. If you want
+    /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
+    fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> Option<EdgeIndex<Ix>> {
+        Some(self.add_edge(a, b, weight))
+    }
+
+    /// Updates or adds an edge from `a` to `b` to the graph, with its associated
+    /// data `weight`.
+    ///
+    /// Return the index of the new edge.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of successors of `a`.
+    ///
+    /// **Panics** if the source node does not exist.<br>
+    fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
+        let row = &mut self.suc[a.index()];
+        for (i, info) in row.iter_mut().enumerate() {
+            if info.suc == b {
+                info.weight = weight;
+                return EdgeIndex {
+                    from: a,
+                    successor_index: i,
+                };
+            }
+        }
+        let rank = row.len();
+        row.push(WSuc { suc: b, weight });
+        EdgeIndex {
+            from: a,
+            successor_index: rank,
+        }
+    }
+}
+
+
 
 impl<'a, E, Ix> fmt::Debug for EdgeReferences<'a, E, Ix>
 where
@@ -546,4 +560,40 @@ impl<E, Ix: IndexType> visit::NodeIndexable for List<E, Ix> {
 }
 
 impl<E, Ix: IndexType> visit::NodeCompactIndexable for List<E, Ix> {}
+
+impl<E, Ix: IndexType> DataMap for List<E, Ix> {
+    fn node_weight(&self, n: Self::NodeId) -> Option<&()> {
+        if n.index() < self.suc.len() {
+            Some(&())
+        } else {
+            None
+        }
+    }
+
+    /// Accesses the weight of edge `e`
+    ///
+    /// Computes in **O(1)**
+    fn edge_weight(&self, e: EdgeIndex<Ix>) -> Option<&E> {
+        self.get_edge(e).map(|x| &x.weight)
+    }
+}
+
+impl<E, Ix: IndexType> DataMapMut for List<E, Ix> {
+    fn node_weight_mut(&mut self, n: Self::NodeId) -> Option<&mut ()> {
+        if n.index() < self.suc.len() {
+            // A hack to produce a &'static mut ()
+            // It does not actually allocate according to godbolt
+            let b = Box::new(());
+            Some(Box::leak(b))
+        } else {
+            None
+        }
+    }
+    /// Accesses the weight of edge `e`
+    ///
+    /// Computes in **O(1)**
+    fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E> {
+        self.get_edge_mut(e).map(|x| &mut x.weight)
+    }
+}
 
