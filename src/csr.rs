@@ -937,4 +937,25 @@ mod tests {
 
         assert_eq!(g.edge_count(), 3);
     }
+
+    #[test]
+    fn test_add_node_with_existing_edges() {
+        let mut g: Csr = Csr::new();
+        let a = g.add_node(());
+        let b = g.add_node(());
+
+        assert!(g.add_edge(a, b, ()));
+
+        let c = g.add_node(());
+
+        println!("{:?}", g);
+
+        assert_eq!(g.node_count(), 3);
+
+        assert_eq!(g.neighbors_slice(a), &[b]);
+        assert_eq!(g.neighbors_slice(b), &[]);
+        assert_eq!(g.neighbors_slice(c), &[]);
+
+        assert_eq!(g.edge_count(), 1);
+    }
 }
