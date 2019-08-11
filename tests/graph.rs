@@ -1422,12 +1422,12 @@ fn dot() {
     let mut gr = Graph::new();
     let a = gr.add_node(Record { a: 1, b: r"abc\" });
     gr.add_edge(a, a, (1, 2));
-    let dot_output = format!("{:#?}", Dot::new(&gr));
+    let dot_output = format!("{:?}", Dot::new(&gr));
     assert_eq!(dot_output,
     // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
 r#"digraph {
-    0 [label="Record {\l    a: 1,\l    b: \"abc\\\\\"\l}\l"]
-    0 -> 0 [label="(\l    1,\l    2\l)\l"]
+    0 [label="Record { a: 1, b: \"abc\\\\\" }"]
+    0 -> 0 [label="(1, 2)"]
 }
 "#);
 }
