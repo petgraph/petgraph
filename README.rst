@@ -2,7 +2,7 @@
 petgraph
 ========
 
-Graph data structure library. Requires Rust 1.12.
+Graph data structure library. Requires Rust 1.25 or later.
 
 Please read the `API documentation here`__
 

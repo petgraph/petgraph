@@ -2,9 +2,6 @@ language: rust
 sudo: false
 matrix:
   include:
-    - rust: 1.15.0
-      env:
-      - ALL=' '
     - rust: 1.25.0
       env:
       - ALL=' '
