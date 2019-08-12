@@ -56,7 +56,7 @@ iter: std::iter::Map<RowIter<'a, E, Ix>, fn(&WSuc<E, Ix>) -> NodeIndex<Ix>>,
 }
 
 /// A reference to an edge of the graph.
-#[derive(Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct EdgeReference<'a, E, Ix: IndexType> {
     /// index of the edge
     id: EdgeIndex<Ix>,
