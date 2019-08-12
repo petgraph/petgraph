@@ -153,7 +153,7 @@ copyclone!(Directed);
 pub enum Undirected { }
 copyclone!(Undirected);
 
-/// A graph's edge type determines whether is has directed edges or not.
+/// A graph's edge type determines whether it has directed edges or not.
 pub trait EdgeType {
     fn is_directed() -> bool;
 }

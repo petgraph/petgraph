@@ -445,7 +445,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// Invalidates the edge index `e` but no other.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
-    /// conneced to the same endpoints as `e`.
+    /// connected to the same endpoints as `e`.
     pub fn remove_edge(&mut self, e: EdgeIndex<Ix>) -> Option<E> {
         // every edge is part of two lists,
         // outgoing and incoming edges.

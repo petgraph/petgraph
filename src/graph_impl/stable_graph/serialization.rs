@@ -47,7 +47,7 @@ pub struct DeserStableGraph<N, E, Ix> {
     edges: Vec<Edge<Option<E>, Ix>>,
 }
 
-/// Somes are the present node weights N, with known length.
+/// `Somes` are the present node weights N, with known length.
 struct Somes<T>(usize, T);
 
 impl<'a, N, Ix> Serialize for Somes<&'a [Node<Option<N>, Ix>]>

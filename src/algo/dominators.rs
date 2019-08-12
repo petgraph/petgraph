@@ -108,7 +108,7 @@ const UNDEFINED: usize = ::std::usize::MAX;
 /// Algorithm"][0] discovered by Cooper et al.
 ///
 /// This algorithm is **O(|V|²)**, and therefore has slower theoretical running time
-/// than the Lenguaer-Tarjan algorithm (which is **O(|E| log |V|)**. However,
+/// than the Lengauer-Tarjan algorithm (which is **O(|E| log |V|)**. However,
 /// Cooper et al found it to be faster in practice on control flow graphs of up
 /// to ~30,000 vertices.
 ///

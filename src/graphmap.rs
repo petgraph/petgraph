@@ -51,7 +51,7 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 ///
 /// It uses an combined adjacency list and sparse adjacency matrix
 /// representation, using **O(|V| + |E|)** space, and allows testing for edge
-/// existance in constant time.
+/// existence in constant time.
 ///
 /// `GraphMap` is parameterized over:
 ///
@@ -132,7 +132,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         (self.nodes.capacity(), self.edges.capacity())
     }
 
-    /// Use their natual order to map the node pair (a, b) to a canonical edge id.
+    /// Use their natural order to map the node pair (a, b) to a canonical edge id.
     #[inline]
     fn edge_key(a: N, b: N) -> (N, N) {
         if Ty::is_directed() {
