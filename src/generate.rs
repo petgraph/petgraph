@@ -56,7 +56,7 @@ impl Generator<Directed> {
 impl<Ty: EdgeType> Generator<Ty> {
     /// Generate all possible graphs of a particular number of vertices.
     ///
-    /// All permutations are generated, so the graphs are not unique down to isomorphim.
+    /// All permutations are generated, so the graphs are not unique down to isomorphism.
     ///
     /// For a graph of *k* vertices there are *e = k²* possible edges and
     /// *2<sup>k<sup>2</sup></sup>* graphs.

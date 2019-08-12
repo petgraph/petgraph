@@ -2,7 +2,7 @@
 /// Define a trait as usual, and a macro that can be used to instantiate
 /// implementations of it.
 ///
-/// There *must* be section markers in the trait defition:
+/// There *must* be section markers in the trait definition:
 /// @section type for associated types
 /// @section self for methods
 /// @section nodelegate for arbitrary tail that is not forwarded.
