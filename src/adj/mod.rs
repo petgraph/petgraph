@@ -221,6 +221,9 @@ impl<E, Ix: IndexType> List<E, Ix> {
     /// **Note:** `List` allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
+        if b.index() >= self.suc.len() {
+            panic!("{} is not a valid node index for a {} nodes adjacency list", b.index(), self.suc.len());
+        }
         let row = &mut self.suc[a.index()];
         let rank = row.len();
         row.push(WSuc { suc: b, weight });

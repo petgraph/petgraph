@@ -38,18 +38,18 @@ where
     G: GraphBase + IntoNeighborsDirected + NodeIndexMappable<Ix> + NodeCount,
 {
     let mut res = List::with_capacity(g.node_count());
+    // map from old node index to rank in toposort
     let mut revmap = g.new_node_index_map();
     for (ix, &old_ix) in toposort.iter().enumerate() {
         let ix = Ix::new(ix);
         revmap.set(old_ix, ix);
-        let mut n = 0;
-        for old_pre in g.neighbors_directed(old_ix, Direction::Incoming) {
+        let mut iter = g.neighbors_directed(old_ix, Direction::Incoming);
+        let new_ix: Ix = res.add_node_with_capacity(iter.size_hint().0);
+        debug_assert_eq!(new_ix.index(), ix.index());
+        for old_pre in iter {
             let pre: Ix = revmap.get(old_pre).unwrap().clone();
             res.add_edge(pre, ix, ());
-            n += 1;
         }
-        let new_ix = res.add_node_with_capacity(n);
-        debug_assert_eq!(new_ix.index(), ix.index());
     }
     res
 }
