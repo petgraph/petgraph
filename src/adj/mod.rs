@@ -143,6 +143,10 @@ iterator_wrap! {
 ///
 /// Allows parallel edges and self-loops.
 ///
+/// This data structure is append-only (except for [`clear`]), so indices
+/// returned at some point for a given graph will stay valid with this same
+/// graph until it is dropped or [`clear`] is called.
+///
 /// Space consumption: **O(|E|)**.
 #[derive(Clone)]
 pub struct List<E, Ix = DefaultIx>
@@ -163,6 +167,11 @@ impl<E, Ix: IndexType> List<E, Ix> {
         List {
             suc: Vec::with_capacity(nodes),
         }
+    }
+
+    /// Removes all nodes and edges from the list.
+    pub fn clear(&mut self) {
+        self.suc.clear()
     }
 
     /// Returns the number of edges in the list
