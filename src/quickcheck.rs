@@ -71,7 +71,7 @@ impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
 
     // shrink the graph by splitting it in two by a very
     // simple algorithm, just even and odd node indices
-    fn shrink(&self) -> Box<Iterator<Item=Self>> {
+    fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
         let self_ = self.clone();
         Box::new((0..2).filter_map(move |x| {
             let gr = self_.filter_map(|i, w| {
@@ -149,7 +149,7 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
 
     // shrink the graph by splitting it in two by a very
     // simple algorithm, just even and odd node indices
-    fn shrink(&self) -> Box<Iterator<Item=Self>> {
+    fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
         let self_ = self.clone();
         Box::new((0..2).filter_map(move |x| {
             let gr = self_.filter_map(|i, w| {
