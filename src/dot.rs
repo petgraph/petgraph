@@ -96,8 +96,8 @@ impl<'a, G> Dot<'a, G>
         where G: NodeIndexable + IntoNodeReferences + IntoEdgeReferences,
               G: GraphProp,
               G: Data<NodeWeight=NW, EdgeWeight=EW>,
-              NF: FnMut(&NW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
-              EF: FnMut(&EW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
+              NF: FnMut(&NW, &mut dyn FnMut(&dyn Display) -> fmt::Result) -> fmt::Result,
+              EF: FnMut(&EW, &mut dyn FnMut(&dyn Display) -> fmt::Result) -> fmt::Result,
     {
         if !self.config.contains(&Config::GraphContentOnly) {
             try!(writeln!(f, "{} {{", TYPE[g.is_directed() as usize]));
