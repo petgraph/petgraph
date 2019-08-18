@@ -80,6 +80,8 @@ pub enum Config {
     EdgeIndexLabel,
     /// Use no edge labels.
     EdgeNoLabel,
+    /// Do not print the graph/digraph string.
+    GraphContentOnly,
     #[doc(hidden)]
     _Incomplete(()),
 }
@@ -97,7 +99,9 @@ impl<'a, G> Dot<'a, G>
               NF: FnMut(&NW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
               EF: FnMut(&EW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
     {
-        try!(writeln!(f, "{} {{", TYPE[g.is_directed() as usize]));
+        if !self.config.contains(&Config::GraphContentOnly) {
+            try!(writeln!(f, "{} {{", TYPE[g.is_directed() as usize]));
+        }
 
         // output all labels
         for node in g.node_references() {
@@ -129,7 +133,9 @@ impl<'a, G> Dot<'a, G>
             }
         }
 
-        try!(writeln!(f, "}}"));
+        if !self.config.contains(&Config::GraphContentOnly) {
+            try!(writeln!(f, "}}"));
+        }
         Ok(())
     }
 }
