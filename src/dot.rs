@@ -100,41 +100,41 @@ impl<'a, G> Dot<'a, G>
               EF: FnMut(&EW, &mut dyn FnMut(&dyn Display) -> fmt::Result) -> fmt::Result,
     {
         if !self.config.contains(&Config::GraphContentOnly) {
-            try!(writeln!(f, "{} {{", TYPE[g.is_directed() as usize]));
+            writeln!(f, "{} {{", TYPE[g.is_directed() as usize])?;
         }
 
         // output all labels
         for node in g.node_references() {
-            try!(write!(f, "{}{}", INDENT, g.to_index(node.id())));
+            write!(f, "{}{}", INDENT, g.to_index(node.id()))?;
             if self.config.contains(&Config::NodeIndexLabel) {
-                try!(writeln!(f, ""));
+                writeln!(f, "")?;
             } else {
-                try!(write!(f, " [label=\""));
-                try!(node_fmt(node.weight(), &mut |d| Escaped(d).fmt(f)));
-                try!(writeln!(f, "\"]"));
+                write!(f, " [label=\"")?;
+                node_fmt(node.weight(), &mut |d| Escaped(d).fmt(f))?;
+                writeln!(f, "\"]")?;
             }
 
         }
         // output all edges
         for (i, edge) in g.edge_references().enumerate() {
-            try!(write!(f, "{}{} {} {}",
+            write!(f, "{}{} {} {}",
                         INDENT,
                         g.to_index(edge.source()),
                         EDGE[g.is_directed() as usize],
-                        g.to_index(edge.target())));
+                        g.to_index(edge.target()))?;
             if self.config.contains(&Config::EdgeNoLabel) {
-                try!(writeln!(f, ""));
+                writeln!(f, "")?;
             } else if self.config.contains(&Config::EdgeIndexLabel) {
-                try!(writeln!(f, " [label=\"{}\"]", i));
+                writeln!(f, " [label=\"{}\"]", i)?;
             } else {
-                try!(write!(f, " [label=\""));
-                try!(edge_fmt(edge.weight(), &mut |d| Escaped(d).fmt(f)));
-                try!(writeln!(f, "\"]"));
+                write!(f, " [label=\"")?;
+                edge_fmt(edge.weight(), &mut |d| Escaped(d).fmt(f))?;
+                writeln!(f, "\"]")?;
             }
         }
 
         if !self.config.contains(&Config::GraphContentOnly) {
-            try!(writeln!(f, "}}"));
+            writeln!(f, "}}")?;
         }
         Ok(())
     }
@@ -170,14 +170,14 @@ impl<W> fmt::Write for Escaper<W>
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for c in s.chars() {
-            try!(self.write_char(c));
+            self.write_char(c)?;
         }
         Ok(())
     }
 
     fn write_char(&mut self, c: char) -> fmt::Result {
         match c {
-            '"' | '\\' => try!(self.0.write_char('\\')),
+            '"' | '\\' => self.0.write_char('\\')?,
             // \l is for left justified linebreak
             '\n' => return self.0.write_str("\\l"),
             _ => {}
