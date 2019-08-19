@@ -329,8 +329,9 @@ pub fn kosaraju_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     sccs
 }
 
-/// \[Generic\] Compute the *strongly connected components* using [Tarjan's
-/// algorithm](https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm).
+/// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+///
+/// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 ///
 /// Return a vector where each element is a strongly connected component (scc).
 /// The order of node ids within each scc is arbitrary, but the order of

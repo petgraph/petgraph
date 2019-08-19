@@ -1291,7 +1291,7 @@ pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
     edges: &'a [Edge<Option<E>, Ix>],
 
     /// Next edge to visit.
-    /// If we are only following one direction, we only use next[0] regardless.
+    /// If we are only following one direction, we only use `next[0]` regardless.
     next: [EdgeIndex<Ix>; 2],
 
     /// Which direction to follow
