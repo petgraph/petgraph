@@ -1,3 +1,5 @@
+extern crate petgraph;
+
 use petgraph::Graph;
 
 // cargo run --example find_node
