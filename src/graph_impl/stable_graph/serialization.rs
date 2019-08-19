@@ -5,17 +5,17 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
 use std::marker::PhantomData;
 
-use prelude::*;
+use crate::prelude::*;
 
-use EdgeType;
-use graph::Node;
-use graph::{IndexType, Edge};
-use stable_graph::StableGraph;
-use util::rev;
-use serde_utils::MappedSequenceVisitor;
-use serde_utils::CollectSeqWithLength;
-use serde_utils::{IntoSerializable, FromDeserialized};
-use visit::NodeIndexable;
+use crate::EdgeType;
+use crate::graph::Node;
+use crate::graph::{IndexType, Edge};
+use crate::stable_graph::StableGraph;
+use crate::util::rev;
+use crate::serde_utils::MappedSequenceVisitor;
+use crate::serde_utils::CollectSeqWithLength;
+use crate::serde_utils::{IntoSerializable, FromDeserialized};
+use crate::visit::NodeIndexable;
 
 use super::super::serialization::{EdgeProperty, invalid_length_err, invalid_node_err};
 
@@ -231,8 +231,8 @@ impl<'de, N, E, Ty, Ix> Deserialize<'de> for StableGraph<N, E, Ty, Ix>
 
 #[test]
 fn test_from_deserialized_with_holes() {
-    use graph::node_index;
-    use stable_graph::StableUnGraph;
+    use crate::graph::node_index;
+    use crate::stable_graph::StableUnGraph;
     use serde::de::value::Error as SerdeError;
     use itertools::assert_equal;
 

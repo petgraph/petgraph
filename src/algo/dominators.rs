@@ -15,7 +15,7 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
-use visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
+use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 
 /// The dominance relation for some graph and root.
 #[derive(Debug, Clone)]

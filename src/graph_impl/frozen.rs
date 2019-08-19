@@ -1,17 +1,17 @@
 
 use std::ops::{Deref, Index, IndexMut};
 
-use graph::Graph;
+use crate::graph::Graph;
 use super::Frozen;
-use graph::{IndexType, GraphIndex};
-use {
+use crate::graph::{IndexType, GraphIndex};
+use crate::{
     Direction,
     EdgeType,
 };
-use visit::{Data, IntoNodeIdentifiers, GraphProp, NodeIndexable, IntoNeighborsDirected};
-use visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
-use visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount, IntoEdges, IntoEdgesDirected};
-use data::{DataMap, DataMapMut};
+use crate::visit::{Data, IntoNodeIdentifiers, GraphProp, NodeIndexable, IntoNeighborsDirected};
+use crate::visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
+use crate::visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount, IntoEdges, IntoEdgesDirected};
+use crate::data::{DataMap, DataMapMut};
 
 
 impl<'a, G> Frozen<'a, G> {

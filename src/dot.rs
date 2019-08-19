@@ -2,7 +2,7 @@
 
 use std::fmt::{self, Display, Write};
 
-use visit::{GraphRef};
+use crate::visit::{GraphRef};
 
 /// `Dot` implements output to graphviz .dot format for a graph.
 ///
@@ -86,8 +86,8 @@ pub enum Config {
     _Incomplete(()),
 }
 
-use visit::{ IntoNodeReferences, NodeIndexable, IntoEdgeReferences, EdgeRef};
-use visit::{ Data, NodeRef, GraphProp, };
+use crate::visit::{ IntoNodeReferences, NodeIndexable, IntoEdgeReferences, EdgeRef};
+use crate::visit::{ Data, NodeRef, GraphProp, };
 
 impl<'a, G> Dot<'a, G>
 {

@@ -1,7 +1,7 @@
 
 
-use visit::IntoNeighbors;
-use visit::{VisitMap, Visitable};
+use crate::visit::IntoNeighbors;
+use crate::visit::{VisitMap, Visitable};
 
 /// Strictly monotonically increasing event time for a depth first search.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Default, Hash)]

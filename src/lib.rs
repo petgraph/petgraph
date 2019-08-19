@@ -31,9 +31,9 @@ extern crate serde_derive;
 extern crate itertools;
 
 #[doc(no_inline)]
-pub use graph::Graph;
+pub use crate::graph::Graph;
 
-pub use Direction::{Outgoing, Incoming};
+pub use crate::Direction::{Outgoing, Incoming};
 
 #[macro_use]
 mod macros;
@@ -70,7 +70,7 @@ pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
-    pub use graph_impl::{
+    pub use crate::graph_impl::{
         Edge,
         EdgeIndex,
         EdgeIndices,
@@ -99,7 +99,7 @@ pub mod graph {
 }
 
 #[cfg(feature = "stable_graph")]
-pub use graph_impl::stable_graph;
+pub use crate::graph_impl::stable_graph;
 
 macro_rules! copyclone {
     ($name:ident) => {
@@ -141,7 +141,7 @@ impl Direction {
 }
 
 #[doc(hidden)]
-pub use Direction as EdgeDirection;
+pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Copy, Debug)]
