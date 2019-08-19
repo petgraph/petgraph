@@ -20,7 +20,7 @@ use indexmap::map::{
 };
 use indexmap::map::Keys;
 
-use {
+use crate::{
     EdgeType,
     Directed,
     Undirected,
@@ -29,11 +29,11 @@ use {
     Outgoing,
 };
 
-use IntoWeightedEdge;
-use visit::{IntoNodeIdentifiers, NodeCount, IntoNodeReferences, NodeIndexable};
-use visit::{NodeCompactIndexable, IntoEdgeReferences, IntoEdges};
-use graph::Graph;
-use graph::node_index;
+use crate::IntoWeightedEdge;
+use crate::visit::{IntoNodeIdentifiers, NodeCount, IntoNodeReferences, NodeIndexable};
+use crate::visit::{NodeCompactIndexable, IntoEdgeReferences, IntoEdges};
+use crate::graph::Graph;
+use crate::graph::node_index;
 
 /// A `GraphMap` with undirected edges.
 ///
@@ -51,7 +51,7 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 ///
 /// It uses an combined adjacency list and sparse adjacency matrix
 /// representation, using **O(|V| + |E|)** space, and allows testing for edge
-/// existance in constant time.
+/// existence in constant time.
 ///
 /// `GraphMap` is parameterized over:
 ///
@@ -132,7 +132,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         (self.nodes.capacity(), self.edges.capacity())
     }
 
-    /// Use their natual order to map the node pair (a, b) to a canonical edge id.
+    /// Use their natural order to map the node pair (a, b) to a canonical edge id.
     #[inline]
     fn edge_key(a: N, b: N) -> (N, N) {
         if Ty::is_directed() {
@@ -414,7 +414,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// **Panics** if the number of nodes or edges does not fit with
     /// the resulting graph's index type.
     pub fn into_graph<Ix>(self) -> Graph<N, E, Ty, Ix>
-        where Ix: ::graph::IndexType,
+        where Ix: crate::graph::IndexType,
     {
         // assuming two successive iterations of the same hashmap produce the same order
         let mut gr = Graph::with_capacity(self.node_count(), self.edge_count());

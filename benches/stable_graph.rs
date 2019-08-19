@@ -195,12 +195,12 @@ fn graph_map(bench: &mut Bencher)
 fn stable_graph_retain_nodes(bench: &mut Bencher)
 {
     let mut a = parse_stable_graph::<Directed>(BIGGER);
-    bench.iter(|| a.retain_nodes(|gr, i| (i.index() + 1) % 3700 != 0));
+    bench.iter(|| a.retain_nodes(|_gr, i| (i.index() + 1) % 3700 != 0));
 }
 
 #[bench]
 fn stable_graph_retain_edges(bench: &mut Bencher)
 {
     let mut a = parse_stable_graph::<Directed>(BIGGER);
-    bench.iter(|| a.retain_edges(|gr, i| (i.index() + 1) % 3700 != 0));
+    bench.iter(|| a.retain_edges(|_gr, i| (i.index() + 1) % 3700 != 0));
 }

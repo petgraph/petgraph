@@ -55,26 +55,26 @@ use std::collections::{
 };
 use std::hash::{Hash, BuildHasher};
 
-use prelude::{Graph, Direction};
+use crate::prelude::{Graph, Direction};
 #[cfg(feature = "graphmap")]
-use prelude::GraphMap;
+use crate::prelude::GraphMap;
 #[cfg(feature = "stable_graph")]
-use prelude::StableGraph;
-use graph::{NodeIndex};
+use crate::prelude::StableGraph;
+use crate::graph::{NodeIndex};
 use super::{
     graph,
     EdgeType,
 };
 
-use graph::{
+use crate::graph::{
     IndexType,
 };
 #[cfg(feature = "stable_graph")]
-use stable_graph;
-use graph::Frozen;
+use crate::stable_graph;
+use crate::graph::Frozen;
 
 #[cfg(feature = "graphmap")]
-use graphmap::{
+use crate::graphmap::{
     self,
     NodeTrait,
 };

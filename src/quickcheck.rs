@@ -1,23 +1,23 @@
 extern crate quickcheck;
 use self::quickcheck::{Gen, Arbitrary};
 
-use {
+use crate::{
     Graph,
     EdgeType,
 };
-use graph::{
+use crate::graph::{
     IndexType,
     node_index,
 };
 #[cfg(feature = "stable_graph")]
-use stable_graph::StableGraph;
+use crate::stable_graph::StableGraph;
 
 #[cfg(feature = "graphmap")]
-use graphmap::{
+use crate::graphmap::{
     GraphMap,
     NodeTrait,
 };
-use visit::NodeIndexable;
+use crate::visit::NodeIndexable;
 
 /// Return a random float in the range [0, 1.)
 fn random_01<G: Gen>(g: &mut G) -> f64 {
@@ -71,7 +71,7 @@ impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
 
     // shrink the graph by splitting it in two by a very
     // simple algorithm, just even and odd node indices
-    fn shrink(&self) -> Box<Iterator<Item=Self>> {
+    fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
         let self_ = self.clone();
         Box::new((0..2).filter_map(move |x| {
             let gr = self_.filter_map(|i, w| {
@@ -149,7 +149,7 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
 
     // shrink the graph by splitting it in two by a very
     // simple algorithm, just even and odd node indices
-    fn shrink(&self) -> Box<Iterator<Item=Self>> {
+    fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
         let self_ = self.clone();
         Box::new((0..2).filter_map(move |x| {
             let gr = self_.filter_map(|i, w| {

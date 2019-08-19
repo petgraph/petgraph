@@ -10,12 +10,12 @@ pub mod tred;
 use std::collections::BinaryHeap;
 use std::cmp::min;
 
-use prelude::*;
+use crate::prelude::*;
 
 use super::{
     EdgeType,
 };
-use scored::MinScored;
+use crate::scored::MinScored;
 use super::visit::{
     GraphRef,
     GraphBase,
@@ -35,9 +35,9 @@ use super::unionfind::UnionFind;
 use super::graph::{
     IndexType,
 };
-use visit::{Data, NodeRef, IntoNodeReferences};
-use visit::Walker;
-use data::{
+use crate::visit::{Data, NodeRef, IntoNodeReferences};
+use crate::visit::Walker;
+use crate::data::{
     Element,
 };
 
@@ -195,7 +195,7 @@ pub fn toposort<G>(g: G, space: Option<&mut DfsSpace<G::NodeId, G::Map>>)
 pub fn is_cyclic_directed<G>(g: G) -> bool
     where G: IntoNodeIdentifiers + IntoNeighbors + Visitable,
 {
-    use visit::{depth_first_search, DfsEvent};
+    use crate::visit::{depth_first_search, DfsEvent};
 
     depth_first_search(g, g.node_identifiers(), |event| {
         match event {

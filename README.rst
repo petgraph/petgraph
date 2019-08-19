@@ -2,7 +2,7 @@
 petgraph
 ========
 
-Graph data structure library. Requires Rust 1.12.
+Graph data structure library. Known to support Rust 1.37 and later.
 
 Please read the `API documentation here`__
 
@@ -39,7 +39,7 @@ Recent Changes
 
 - 0.4.11
 
-  - Fix ``petgraph::graph::NodeReferences`` to be publically visible
+  - Fix ``petgraph::graph::NodeReferences`` to be publicly visible
   - Small doc typo and code style files by @shepmaster and @waywardmonkeys
   - Fix a future compat warning with pointer casts
 

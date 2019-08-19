@@ -70,12 +70,12 @@ impl<'a, I> Format<'a, I>
         };
 
         if let Some(fst) = iter.next() {
-            try!(cb(&fst, f));
+            cb(&fst, f)?;
             for elt in iter {
                 if !self.sep.is_empty() {
-                    try!(f.write_str(self.sep));
+                    f.write_str(self.sep)?;
                 }
-                try!(cb(&elt, f));
+                cb(&elt, f)?;
             }
         }
         Ok(())

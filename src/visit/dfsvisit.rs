@@ -1,7 +1,7 @@
 
 
-use visit::IntoNeighbors;
-use visit::{VisitMap, Visitable};
+use crate::visit::IntoNeighbors;
+use crate::visit::{VisitMap, Visitable};
 
 /// Strictly monotonically increasing event time for a depth first search.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Default, Hash)]
@@ -119,7 +119,7 @@ impl<B> Default for Control<B> {
 ///
 /// If the return value of the visitor is simply `()`, the visit runs until it
 /// is finished. If the return value is a `Control<B>`, it can be used to
-/// change the control flow of the search. `Control::Break` will stop the
+/// change the control flow of the search. `Control::Break` will stop
 /// the visit early, returning the contained value from the function.
 /// `Control::Prune` will stop traversing any additional edges from the current
 /// node and proceed immediately to the `Finish` event.

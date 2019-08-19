@@ -571,7 +571,7 @@ impl<N: Default + Clone + Send + 'static> quickcheck::Arbitrary for DAG<N> {
 
     // shrink the graph by splitting it in two by a very
     // simple algorithm, just even and odd node indices
-    fn shrink(&self) -> Box<Iterator<Item=Self>> {
+    fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
         let self_ = self.clone();
         Box::new((0..2).filter_map(move |x| {
             let gr = self_.0.filter_map(|i, w| {

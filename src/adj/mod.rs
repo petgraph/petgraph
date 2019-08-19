@@ -1,13 +1,13 @@
 //! Simple adjacency list.
 use fixedbitset::FixedBitSet;
-use iter_format::NoPretty;
+use crate::iter_format::NoPretty;
 use std::fmt;
 use std::ops::Range;
-use visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors, NodeCount};
-use data::{Build, DataMap, DataMapMut};
+use crate::visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors, NodeCount};
+use crate::data::{Build, DataMap, DataMapMut};
 
 #[doc(no_inline)]
-pub use graph::{DefaultIx, IndexType};
+pub use crate::graph::{DefaultIx, IndexType};
 
 /// Adjacency list node index type, a plain integer.
 pub type NodeIndex<Ix = DefaultIx> = Ix;

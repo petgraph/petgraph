@@ -9,11 +9,11 @@
 //! The transitive reduction is well-defined for acyclic graphs only.
 
 use crate::Direction;
-use adj::List;
-use data::{NodeIndexMap, NodeIndexMappable};
+use crate::adj::List;
+use crate::data::{NodeIndexMap, NodeIndexMappable};
 use fixedbitset::FixedBitSet;
-use graph::IndexType;
-use visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount};
+use crate::graph::IndexType;
+use crate::visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount};
 
 /// Creates a representation of the same graph respecting topological order for use in [`dag_transitive_reduction_closure`].
 ///
@@ -43,7 +43,7 @@ where
     for (ix, &old_ix) in toposort.iter().enumerate() {
         let ix = Ix::new(ix);
         revmap.set(old_ix, ix);
-        let mut iter = g.neighbors_directed(old_ix, Direction::Incoming);
+        let iter = g.neighbors_directed(old_ix, Direction::Incoming);
         let new_ix: Ix = res.add_node_with_capacity(iter.size_hint().0);
         debug_assert_eq!(new_ix.index(), ix.index());
         for old_pre in iter {

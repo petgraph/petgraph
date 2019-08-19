@@ -1,16 +1,16 @@
 //! Graph traits for associated data and graph construction.
 
 
-use Graph;
+use crate::Graph;
 #[cfg(feature = "stable_graph")]
-use stable_graph::StableGraph;
-use ::{
+use crate::stable_graph::StableGraph;
+use crate::{
     EdgeType,
 };
-use graph::IndexType;
+use crate::graph::IndexType;
 #[cfg(feature = "graphmap")]
-use graphmap::{GraphMap, NodeTrait};
-use visit::{
+use crate::graphmap::{GraphMap, NodeTrait};
+use crate::visit::{
     GraphRef,
     Data,
     NodeCount,

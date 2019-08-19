@@ -1,5 +1,5 @@
 
-use {Incoming};
+use crate::{Incoming};
 use super::{IntoNeighbors, IntoNeighborsDirected, Visitable, VisitMap};
 use super::{GraphRef, Reversed, IntoNodeIdentifiers};
 use std::collections::VecDeque;

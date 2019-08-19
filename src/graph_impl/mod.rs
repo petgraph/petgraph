@@ -7,7 +7,7 @@ use std::mem::size_of;
 use std::ops::{Index, IndexMut, Range};
 use std::slice;
 
-use {
+use crate::{
     Direction, Outgoing, Incoming,
     Undirected,
     Directed,
@@ -15,15 +15,15 @@ use {
     IntoWeightedEdge,
 };
 
-use iter_format::{
+use crate::iter_format::{
     IterFormatExt,
     NoPretty,
     DebugMap,
 };
 
-use visit::EdgeRef;
-use visit::{IntoNodeReferences, IntoEdges, IntoEdgesDirected};
-use util::enumerate;
+use crate::visit::EdgeRef;
+use crate::visit::{IntoNodeReferences, IntoEdges, IntoEdgesDirected};
+use crate::util::enumerate;
 
 #[cfg(feature = "serde-1")]
 mod serialization;
@@ -39,7 +39,7 @@ pub type DefaultIx = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
 ///
-/// Marked `unsafe` because: the trait must faithfully preseve
+/// Marked `unsafe` because: the trait must faithfully preserve
 /// and convert index values.
 pub unsafe trait IndexType : Copy + Default + Hash + Ord + fmt::Debug + 'static
 {
@@ -315,7 +315,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 ///
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
-/// completely unless you need a very big graph -- then you can use `usize`.
+/// completely unless you need a very big graph -- then you can use `u64` or `u128`.
 ///
 /// ### Pros and Cons of Indices
 ///
