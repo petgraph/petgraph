@@ -201,7 +201,7 @@ pub fn is_isomorphic_matching<N, E, Ty, Ix, F, G>(g0: &Graph<N, E, Ty, Ix>,
 
 trait SemanticMatcher<T> {
     fn enabled() -> bool;
-    fn eq(&mut self, &T, &T) -> bool;
+    fn eq(&mut self, _: &T, _: &T) -> bool;
 }
 
 struct NoSemanticMatch;
