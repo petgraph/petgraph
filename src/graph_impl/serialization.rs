@@ -3,14 +3,14 @@ use serde::de::Error;
 
 use std::marker::PhantomData;
 
-use prelude::*;
+use crate::prelude::*;
 
-use EdgeType;
-use graph::Node;
-use graph::{IndexType, Edge};
-use serde_utils::MappedSequenceVisitor;
-use serde_utils::CollectSeqWithLength;
-use serde_utils::{IntoSerializable, FromDeserialized};
+use crate::EdgeType;
+use crate::graph::Node;
+use crate::graph::{IndexType, Edge};
+use crate::serde_utils::MappedSequenceVisitor;
+use crate::serde_utils::CollectSeqWithLength;
+use crate::serde_utils::{IntoSerializable, FromDeserialized};
 
 use super::{NodeIndex, EdgeIndex};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};

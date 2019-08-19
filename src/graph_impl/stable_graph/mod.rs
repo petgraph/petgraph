@@ -12,7 +12,7 @@ use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
 
-use {
+use crate::{
     Graph,
     EdgeType,
     Directed,
@@ -22,12 +22,12 @@ use {
     Outgoing,
 };
 
-use iter_format::{
+use crate::iter_format::{
     IterFormatExt,
     NoPretty,
     DebugMap,
 };
-use iter_utils::IterUtilsExt;
+use crate::iter_utils::IterUtilsExt;
 
 use super::{
     Edge,
@@ -37,8 +37,8 @@ use super::{
     Pair,
     Frozen,
 };
-use IntoWeightedEdge;
-use visit::{
+use crate::IntoWeightedEdge;
+use crate::visit::{
     EdgeRef,
     IntoNodeReferences,
     IntoEdges,
@@ -49,7 +49,7 @@ use visit::{
 
 // reexport those things that are shared with Graph
 #[doc(no_inline)]
-pub use graph::{
+pub use crate::graph::{
     NodeIndex,
     EdgeIndex,
     GraphIndex,
@@ -59,7 +59,7 @@ pub use graph::{
     edge_index,
 };
 
-use util::enumerate;
+use crate::util::enumerate;
 
 #[cfg(feature = "serde-1")]
 mod serialization;
@@ -1682,7 +1682,7 @@ fn stable_graph() {
 
 #[test]
 fn dfs() {
-    use visit::Dfs;
+    use crate::visit::Dfs;
 
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
     let a = gr.add_node("a");

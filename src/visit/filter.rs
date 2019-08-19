@@ -1,11 +1,11 @@
 
-use prelude::*;
+use crate::prelude::*;
 
 use fixedbitset::FixedBitSet;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-use visit::{
+use crate::visit::{
     GraphBase,
     GraphProp,
     IntoEdgeReferences,
@@ -20,8 +20,8 @@ use visit::{
     VisitMap,
     Visitable,
 };
-use visit::{Data, NodeCompactIndexable, NodeCount};
-use data::{DataMap};
+use crate::visit::{Data, NodeCompactIndexable, NodeCount};
+use crate::data::{DataMap};
 
 /// A graph filter for nodes.
 pub trait FilterNode<N>

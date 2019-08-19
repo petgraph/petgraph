@@ -9,7 +9,7 @@ use std::collections::hash_map::Entry::{
 
 use std::hash::Hash;
 
-use scored::MinScored;
+use crate::scored::MinScored;
 use super::visit::{
     EdgeRef,
     GraphBase,
@@ -18,7 +18,7 @@ use super::visit::{
     Visitable,
 };
 
-use algo::Measure;
+use crate::algo::Measure;
 
 /// [Generic] A* shortest path algorithm.
 ///

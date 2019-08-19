@@ -7,7 +7,7 @@ use std::mem::size_of;
 use std::ops::{Index, IndexMut, Range};
 use std::slice;
 
-use {
+use crate::{
     Direction, Outgoing, Incoming,
     Undirected,
     Directed,
@@ -15,15 +15,15 @@ use {
     IntoWeightedEdge,
 };
 
-use iter_format::{
+use crate::iter_format::{
     IterFormatExt,
     NoPretty,
     DebugMap,
 };
 
-use visit::EdgeRef;
-use visit::{IntoNodeReferences, IntoEdges, IntoEdgesDirected};
-use util::enumerate;
+use crate::visit::EdgeRef;
+use crate::visit::{IntoNodeReferences, IntoEdges, IntoEdgesDirected};
+use crate::util::enumerate;
 
 #[cfg(feature = "serde-1")]
 mod serialization;
