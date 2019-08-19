@@ -107,7 +107,7 @@ impl<'a, G> Dot<'a, G>
         for node in g.node_references() {
             write!(f, "{}{}", INDENT, g.to_index(node.id()))?;
             if self.config.contains(&Config::NodeIndexLabel) {
-                writeln!(f, "")?;
+                writeln!(f)?;
             } else {
                 write!(f, " [label=\"")?;
                 node_fmt(node.weight(), &mut |d| Escaped(d).fmt(f))?;
@@ -123,7 +123,7 @@ impl<'a, G> Dot<'a, G>
                         EDGE[g.is_directed() as usize],
                         g.to_index(edge.target()))?;
             if self.config.contains(&Config::EdgeNoLabel) {
-                writeln!(f, "")?;
+                writeln!(f)?;
             } else if self.config.contains(&Config::EdgeIndexLabel) {
                 writeln!(f, " [label=\"{}\"]", i)?;
             } else {
@@ -194,7 +194,7 @@ impl<T> fmt::Display for Escaped<T>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
-            write!(&mut Escaper(f), "{:#}\n", &self.0)
+            writeln!(&mut Escaper(f), "{:#}", &self.0)
         } else {
             write!(&mut Escaper(f), "{}", &self.0)
         }
