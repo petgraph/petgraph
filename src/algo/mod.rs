@@ -47,7 +47,7 @@ pub use super::isomorphism::{
 pub use super::dijkstra::dijkstra;
 pub use super::astar::astar;
 
-/// [Generic] Return the number of connected components of the graph.
+/// \[Generic\] Return the number of connected components of the graph.
 ///
 /// For a directed graph, this is the *weakly* connected components.
 /// # Example
@@ -102,7 +102,7 @@ pub fn connected_components<G>(g: G) -> usize
 }
 
 
-/// [Generic] Return `true` if the input graph contains a cycle.
+/// \[Generic\] Return `true` if the input graph contains a cycle.
 ///
 /// Always treats the input graph as if undirected.
 pub fn is_cyclic_undirected<G>(g: G) -> bool
@@ -122,7 +122,7 @@ pub fn is_cyclic_undirected<G>(g: G) -> bool
 }
 
 
-/// [Generic] Perform a topological sort of a directed graph.
+/// \[Generic\] Perform a topological sort of a directed graph.
 ///
 /// If the graph was acyclic, return a vector of nodes in topological order:
 /// each node is ordered before its successors.
@@ -187,7 +187,7 @@ pub fn toposort<G>(g: G, space: Option<&mut DfsSpace<G::NodeId, G::Map>>)
     })
 }
 
-/// [Generic] Return `true` if the input directed graph contains a cycle.
+/// \[Generic\] Return `true` if the input directed graph contains a cycle.
 ///
 /// This implementation is recursive; use `toposort` if an alternative is
 /// needed.
@@ -251,7 +251,7 @@ fn with_dfs<G, F, R>(g: G, space: Option<&mut DfsSpaceType<G>>, f: F) -> R
     f(dfs)
 }
 
-/// [Generic] Check if there exists a path starting at `from` and reaching `to`.
+/// \[Generic\] Check if there exists a path starting at `from` and reaching `to`.
 ///
 /// If `from` and `to` are equal, this function returns true.
 ///
@@ -277,7 +277,7 @@ pub fn scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     kosaraju_scc(g)
 }
 
-/// [Generic] Compute the *strongly connected components* using [Kosaraju's algorithm][1].
+/// \[Generic\] Compute the *strongly connected components* using [Kosaraju's algorithm][1].
 ///
 /// [1]: https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm
 ///
@@ -328,7 +328,7 @@ pub fn kosaraju_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
     sccs
 }
 
-/// [Generic] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+/// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
 ///
 /// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 ///
@@ -544,7 +544,7 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
     condensed
 }
 
-/// [Generic] Compute a *minimum spanning tree* of a graph.
+/// \[Generic\] Compute a *minimum spanning tree* of a graph.
 ///
 /// The input graph is treated as if undirected.
 ///
@@ -647,7 +647,7 @@ impl<N> Cycle<N> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct NegativeCycle(());
 
-/// [Generic] Compute shortest paths from node `source` to all other.
+/// \[Generic\] Compute shortest paths from node `source` to all other.
 ///
 /// Using the [Bellman–Ford algorithm][bf]; negative edge costs are
 /// permitted, but the graph must not have a cycle of negative weights
