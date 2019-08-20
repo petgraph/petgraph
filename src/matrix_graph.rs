@@ -1,3 +1,5 @@
+//! `MatrixGraph<N, E, Ty, Null>` is a graph datastructure backed by an adjacency matrix.
+
 use std::marker::PhantomData;
 use std::ops::{Index, IndexMut};
 
@@ -45,19 +47,20 @@ pub use crate::graph::IndexType;
 // should be reasonably picked.
 type Ix = u16;
 
+/// Node identifier.
 pub type NodeIndex = GraphNodeIndex<Ix>;
 
 mod private {
     pub trait Sealed {}
 
-    impl<N> Sealed for super::NotZero<N> {}
-    impl<N> Sealed for Option<N> {}
+    impl<T> Sealed for super::NotZero<T> {}
+    impl<T> Sealed for Option<T> {}
 }
 
 /// Wrapper trait for an `Option`, allowing user-defined structs to be input as containers when
 /// defining a null element.
 ///
-/// Note: this trait currently is sealed and cannot be implemented for types outside this crate.
+/// Note: this trait is currently *sealed* and cannot be implemented for types outside this crate.
 pub trait Nullable: Default + Into<Option<<Self as Nullable>::Wrapped>> + private::Sealed {
     #[doc(hidden)]
     type Wrapped;
@@ -93,22 +96,23 @@ impl<T> Nullable for Option<T> {
     }
 }
 
-/// Struct used to optimize the memory usage of edge weights `E` in a
-/// [`MatrixGraph`](struct.MatrixGraph.html), by using a sentinel value (such as 0 for numeric
-/// types) instead of the default `Option<E>`.
+/// `NotZero` is used to optimize the memory usage of edge weights `E` in a
+/// [`MatrixGraph`](struct.MatrixGraph.html), replacing the default `Option<E>` sentinel.
+///
+/// Pre-requisite: edge weight should implement [`Zero`](trait.Zero.html).
 ///
 /// Note that if you're already using the standard non-zero types (such as `NonZeroU32`), you don't
-/// have to use this wrapper and can leave the default Null type argument.
-pub struct NotZero<N>(N);
+/// have to use this wrapper and can leave the default `Null` type argument.
+pub struct NotZero<T>(T);
 
-impl<N: Zero> Default for NotZero<N> {
+impl<T: Zero> Default for NotZero<T> {
     fn default() -> Self {
-        NotZero(N::zero())
+        NotZero(T::zero())
     }
 }
 
-impl<N: Zero> Nullable for NotZero<N> {
-    type Wrapped = N;
+impl<T: Zero> Nullable for NotZero<T> {
+    type Wrapped = T;
 
     fn new(value: T) -> Self {
         assert!(!value.is_zero());
@@ -131,14 +135,14 @@ impl<N: Zero> Nullable for NotZero<N> {
     }
 }
 
-impl<N: Zero> Into<Option<N>> for NotZero<N> {
-    fn into(self) -> Option<N> {
+impl<T: Zero> Into<Option<T>> for NotZero<T> {
+    fn into(self) -> Option<T> {
         if !self.is_null() { Some(self.0) }
         else { None }
     }
 }
 
-/// Base trait for types that can be wrapped in a [`NotZero`](trait.NotZero.html).
+/// Base trait for types that can be wrapped in a [`NotZero`](struct.NotZero.html).
 ///
 /// Implementors must provide a singleton object that will be used to mark empty edges in a
 /// [`MatrixGraph`](struct.MatrixGraph.html).
@@ -178,12 +182,31 @@ not_zero_impls!(u8, u16, u32, u64, usize);
 not_zero_impls!(i8, i16, i32, i64, isize);
 not_zero_impls!(f32, f64);
 
+/// Short version of `NodeIndex::new`
 #[inline]
 pub fn node_index(ax: usize) -> NodeIndex {
     debug_assert!(ax.index() <= Ix::max_value() as usize);
     NodeIndex::new(ax)
 }
 
+/// `MatrixGraph<N, E, Ty, Null>` is a graph datastructure using an adjacency matrix
+/// representation.
+///
+/// `MatrixGraph` is parameterized over:
+///
+/// - Associated data `N` for nodes and `E` for edges, called *weights*.
+///   The associated data can be of arbitrary type.
+/// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
+/// - Nullable type `Null`, which denotes the edges' presence (defaults to `Option<E>`). You may
+///   specify [`NotZero<E>`](struct.NotZero.html) if you want to use a sentinel value (such as 0)
+///   to mark the absence of an edge.
+///
+/// The graph uses **O(|V^2|)** space, with fast edge insertion & amortized node insertion, as well
+/// as efficient graph search and graph algorithms on dense graphs.
+///
+/// This graph is backed by a flattened 2D array. For undirected graphs, only the lower triangular
+/// matrix is stored. Since the backing array stores edge weights, it is recommended to box large
+/// edge weights.
 #[derive(Clone)]
 pub struct MatrixGraph<N, E, Ty = Directed, Null: Nullable<Wrapped=E> = Option<E>> {
     node_adjacencies: Vec<Null>,
@@ -193,8 +216,11 @@ pub struct MatrixGraph<N, E, Ty = Directed, Null: Nullable<Wrapped=E> = Option<E
     ty: PhantomData<Ty>,
 }
 
-pub type DiMatrix<N, E, Null: Nullable<Wrapped=E> = Option<E>> = MatrixGraph<N, E, Directed, Null>;
-pub type UnMatrix<N, E, Null: Nullable<Wrapped=E> = Option<E>> = MatrixGraph<N, E, Undirected, Null>;
+/// A `MatrixGraph` with directed edges.
+pub type DiMatrix<N, E, Null = Option<E>> = MatrixGraph<N, E, Directed, Null>;
+
+/// A `MatrixGraph` with undirected edges.
+pub type UnMatrix<N, E, Null = Option<E>> = MatrixGraph<N, E, Undirected, Null>;
 
 impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Ty, Null> {
     /// Create a new `MatrixGraph` with estimated capacity for nodes.
@@ -248,7 +274,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Ty, Null> 
         self.nb_edges
     }
 
-    /// Whether the graph has directed edges or not.
+    /// Return whether the graph has directed edges or not.
     #[inline]
     pub fn is_directed(&self) -> bool {
         Ty::is_directed()
@@ -260,8 +286,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Ty, Null> 
     ///
     /// Return the index of the new node.
     ///
-    /// **Panics** if the Graph is at the maximum number of nodes for its index
-    /// type.
+    /// **Panics** if the MatrixGraph is at the maximum number of nodes for its index type.
     pub fn add_node(&mut self, weight: N) -> NodeIndex {
         node_index(self.nodes.add(weight))
     }
@@ -343,10 +368,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Ty, Null> 
     /// Remove the edge from `a` to `b` to the graph.
     ///
     /// **Panics** if any of the nodes don't exist.
-    /// **Panics** if an edge already exists from `a` to `b`.
-    ///
-    /// **Note:** `MatrixGraph` does not allow adding parallel (“duplicate”) edges. If you want to avoid
-    /// this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
+    /// **Panics** if no edge exists between `a` and `b`.
     pub fn remove_edge(&mut self, a: NodeIndex, b: NodeIndex) -> E {
         let p = self.to_edge_position(a, b);
         let old_weight = mem::replace(&mut self.node_adjacencies[p], Default::default()).into().unwrap();
@@ -385,7 +407,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Ty, Null> 
     ///
     /// Also available with indexing syntax: `&graph[e]`.
     ///
-    /// **Panics** if the edge doesn't exist.
+    /// **Panics** if no edge exists between `a` and `b`.
     pub fn edge_weight(&self, a: NodeIndex, b: NodeIndex) -> &E {
         let p = self.to_edge_position(a, b);
         self.node_adjacencies[p].as_ref().unwrap()
@@ -395,32 +417,51 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Ty, Null> 
     ///
     /// Also available with indexing syntax: `&mut graph[e]`.
     ///
-    /// **Panics** if the edge doesn't exist.
+    /// **Panics** if no edge exists between `a` and `b`.
     pub fn edge_weight_mut(&mut self, a: NodeIndex, b: NodeIndex) -> &mut E {
         let p = self.to_edge_position(a, b);
         self.node_adjacencies[p].as_mut().unwrap()
     }
 
+    /// Return an iterator of all nodes with an edge starting from `a`.
+    ///
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges from or to `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is [`NodeIndex<Ix>`](../graph/struct.NodeIndex.html).
     pub fn neighbors(&self, a: NodeIndex) -> Neighbors<Ty, Null> {
         Neighbors(Edges::on_columns(a.index(), &self.node_adjacencies, self.node_capacity))
     }
 
+    /// Return an iterator of all edges of `a`.
+    ///
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges connected to `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is [`Edges<E, Ix>`](../graph/struct.Edges.html).
     pub fn edges(&self, a: NodeIndex) -> Edges<Ty, Null> {
         Edges::on_columns(a.index(), &self.node_adjacencies, self.node_capacity)
     }
 
-    pub fn node_identifiers(&self) -> NodeIdentifiers {
-        NodeIdentifiers(self.nodes.iter_ids())
-    }
-
-    pub fn node_references(&self) -> NodeReferences<N> {
-        NodeReferences::new(&self.nodes)
-    }
-
-    pub fn edge_references(&self) -> EdgeReferences<Ty, Null> {
-        EdgeReferences::new(&self.node_adjacencies, self.node_capacity)
-    }
-
+    /// Create a new `MatrixGraph` from an iterable of edges.
+    ///
+    /// Node weights `N` are set to default values.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    ///
+    /// ```
+    /// use petgraph::matrix_graph::MatrixGraph;
+    ///
+    /// let gr = MatrixGraph::<(), i32>::from_edges(&[
+    ///     (0, 1), (0, 2), (0, 3),
+    ///     (1, 2), (1, 3),
+    ///     (2, 3),
+    /// ]);
+    /// ```
     pub fn from_edges<I>(iterable: I) -> Self
         where I: IntoIterator,
               I::Item: IntoWeightedEdge<E>,
@@ -458,6 +499,16 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Ty, Null> 
 }
 
 impl<N, E, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Directed, Null> {
+    /// Return an iterator of all neighbors that have an edge between them and
+    /// `a`, in the specified direction.
+    /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
+    ///
+    /// - `Directed`, `Outgoing`: All edges from `a`.
+    /// - `Directed`, `Incoming`: All edges to `a`.
+    /// - `Undirected`: All edges from or to `a`.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is [`NodeIndex<Ix>`](../graph/struct.NodeIndex.html).
     pub fn neighbors_directed(&self, a: NodeIndex, d: Direction) -> Neighbors<Directed, Null> {
         if d == Outgoing {
             self.neighbors(a)
@@ -466,6 +517,14 @@ impl<N, E, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Directed, Null> {
         }
     }
 
+    /// Return an iterator of all edges of `a`, in the specified direction.
+    ///
+    /// - `Directed`, `Outgoing`: All edges from `a`.
+    /// - `Directed`, `Incoming`: All edges to `a`.
+    /// - `Undirected`: All edges connected to `a`.
+    ///
+    /// Produces an empty iterator if the node `a` doesn't exist.<br>
+    /// Iterator element type is [`EdgeReference<E, Ix>`](../graph/struct.EdgeReference.html).
     pub fn edges_directed(&self, a: NodeIndex, d: Direction) -> Edges<Directed, Null> {
         if d == Outgoing {
             self.edges(a)
@@ -475,6 +534,12 @@ impl<N, E, Null: Nullable<Wrapped=E>> MatrixGraph<N, E, Directed, Null> {
     }
 }
 
+/// Iterator over the node identifiers of a graph.
+///
+/// Created from a call to [`.node_identifiers()`][1] on a [`MatrixGraph`][2].
+///
+/// [1]: ../visit/trait.IntoNodeIdentifiers.html#tymethod.node_identifiers
+/// [2]: struct.MatrixGraph.html
 pub struct NodeIdentifiers<'a>(IdIterator<'a>);
 
 impl<'a> Iterator for NodeIdentifiers<'a> {
@@ -485,6 +550,12 @@ impl<'a> Iterator for NodeIdentifiers<'a> {
     }
 }
 
+/// Iterator over all nodes of a graph.
+///
+/// Created from a call to [`.node_references()`][1] on a [`MatrixGraph`][2].
+///
+/// [1]: ../visit/trait.IntoNodeReferences.html#tymethod.node_references
+/// [2]: struct.MatrixGraph.html
 pub struct NodeReferences<'a, N: 'a> {
     nodes: &'a IdStorage<N>,
     iter: IdIterator<'a>,
@@ -508,6 +579,12 @@ impl<'a, N: 'a> Iterator for NodeReferences<'a, N> {
     }
 }
 
+/// Iterator over all edges of a graph.
+///
+/// Created from a call to [`.edge_references()`][1] on a [`MatrixGraph`][2].
+///
+/// [1]: ../visit/trait.IntoEdgeReferences.html#tymethod.edge_references
+/// [2]: struct.MatrixGraph.html
 pub struct EdgeReferences<'a, Ty: EdgeType, Null: 'a + Nullable> {
     row: usize,
     column: usize,
@@ -556,6 +633,14 @@ impl<'a, Ty: EdgeType, Null: Nullable> Iterator for EdgeReferences<'a, Ty, Null>
     }
 }
 
+/// Iterator over the neighbors of a node.
+///
+/// Iterator element type is `NodeIndex<Ix>`.
+///
+/// Created with [`.neighbors()`][1], [`.neighbors_directed()`][2].
+///
+/// [1]: struct.MatrixGraph.html#method.neighbors
+/// [2]: struct.MatrixGraph.html#method.neighbors_directed
 pub struct Neighbors<'a, Ty: EdgeType, Null: 'a + Nullable>(Edges<'a, Ty, Null>);
 
 impl<'a, Ty: EdgeType, Null: Nullable> Iterator for Neighbors<'a, Ty, Null> {
@@ -571,6 +656,12 @@ enum NeighborIterDirection {
     Columns,
 }
 
+/// Iterator over the edges of from or to a node
+///
+/// Created with [`.edges()`][1], [`.edges_directed()`][2].
+///
+/// [1]: struct.MatrixGraph.html#method.edges
+/// [2]: struct.MatrixGraph.html#method.edges_directed
 pub struct Edges<'a, Ty: EdgeType, Null: 'a + Nullable> {
     iter_direction: NeighborIterDirection,
     node_adjacencies: &'a [Null],
@@ -783,7 +874,7 @@ impl<T> IndexMut<usize> for IdStorage<T> {
     }
 }
 
-pub struct IdIterator<'a> {
+struct IdIterator<'a> {
     upper_bound: usize,
     removed_ids: &'a IndexSet<usize>,
     current: Option<usize>,
@@ -937,7 +1028,7 @@ impl<'a, N, E: 'a, Ty: EdgeType, Null: Nullable<Wrapped=E>> IntoNodeIdentifiers 
     type NodeIdentifiers = NodeIdentifiers<'a>;
 
     fn node_identifiers(self) -> Self::NodeIdentifiers {
-        MatrixGraph::node_identifiers(self)
+        NodeIdentifiers(self.nodes.iter_ids())
     }
 }
 
@@ -961,7 +1052,7 @@ impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> IntoNodeReferences for &
     type NodeRef = (NodeIndex, &'a N);
     type NodeReferences = NodeReferences<'a, N>;
     fn node_references(self) -> Self::NodeReferences {
-        MatrixGraph::node_references(self)
+        NodeReferences::new(&self.nodes)
     }
 }
 
@@ -969,7 +1060,7 @@ impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> IntoEdgeReferences for &
     type EdgeRef = (NodeIndex, NodeIndex, &'a E);
     type EdgeReferences = EdgeReferences<'a, Ty, Null>;
     fn edge_references(self) -> Self::EdgeReferences {
-        MatrixGraph::edge_references(self)
+        EdgeReferences::new(&self.node_adjacencies, self.node_capacity)
     }
 }
 
@@ -1344,6 +1435,18 @@ mod tests {
         assert_eq!(g.edges(node_index(4)).count(), 2);
         assert_eq!(g.edges(node_index(5)).count(), 1);
         assert_eq!(g.edges(node_index(6)).count(), 1);
+    }
+
+    #[test]
+    fn test_edges_of_absent_node_is_empty_iterator() {
+        let g: MatrixGraph<char, bool> = MatrixGraph::new();
+        assert_eq!(g.edges(node_index(0)).count(), 0);
+    }
+
+    #[test]
+    fn test_neighbors_of_absent_node_is_empty_iterator() {
+        let g: MatrixGraph<char, bool> = MatrixGraph::new();
+        assert_eq!(g.neighbors(node_index(0)).count(), 0);
     }
 
     #[test]

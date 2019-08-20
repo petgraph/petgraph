@@ -10,6 +10,9 @@
 //! - [`GraphMap`](./graphmap/struct.GraphMap.html) is an adjacency list graph
 //! which is backed by a hash table and the node identifiers are the keys
 //! into the table.
+//!
+//! - [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html) is an adjacency matrix graph.
+//!
 //! - [`CSR`](./csr/struct.Csr.html) is a sparse adjacency matrix graph with
 //! arbitrary associated data.
 //!
