@@ -303,7 +303,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// take its place. Similarly, removing an edge shifts the index of the last edge.
 ///
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
-/// completely unless you need a very big graph -- then you can use `u64` or `u128`.
+/// completely unless you need a very big graph -- then you can use `usize`.
 ///
 /// ### Pros and Cons of Indices
 ///
