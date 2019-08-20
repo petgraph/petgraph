@@ -32,7 +32,7 @@ macro_rules! try_control {
             x => if x.should_break() {
                 return x;
             } else if x.should_prune() {
-                $p;
+                $p
             }
         }
     }
