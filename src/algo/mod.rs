@@ -47,7 +47,7 @@ pub use super::isomorphism::{
 
 pub mod pathfinding;
 
-pub use self::pathfinding::{astar, dijkstra, bellman_ford};
+pub use self::pathfinding::{astar, dijkstra, bellman_ford, NegativeCycle};
 pub use super::simple_paths::all_simple_paths;
 
 /// \[Generic\] Return the number of connected components of the graph.
