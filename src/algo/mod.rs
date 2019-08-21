@@ -30,7 +30,7 @@ use super::visit::{
     IntoEdges,
     Reversed,
 };
-use super::unionfind::UnionFind;
+use disjoint_sets::UnionFind;
 use super::graph::{
     IndexType,
 };
@@ -95,7 +95,7 @@ pub fn connected_components<G>(g: G) -> usize
         // union the two vertices of the edge
         vertex_sets.union(g.to_index(a), g.to_index(b));
     }
-    let mut labels = vertex_sets.into_labeling();
+    let mut labels = vertex_sets.to_vec();
     labels.sort();
     labels.dedup();
     labels.len()

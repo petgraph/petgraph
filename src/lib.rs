@@ -30,6 +30,8 @@ extern crate serde_derive;
 #[cfg(all(feature = "serde-1", test))]
 extern crate itertools;
 
+extern crate disjoint_sets;
+
 #[doc(no_inline)]
 pub use crate::graph::Graph;
 
@@ -52,7 +54,6 @@ pub mod generate;
 pub mod graphmap;
 mod graph_impl;
 pub mod dot;
-pub mod unionfind;
 mod dijkstra;
 mod astar;
 pub mod csr;
