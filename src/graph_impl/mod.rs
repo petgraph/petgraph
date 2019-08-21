@@ -262,6 +262,9 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
+/// The `Graph` is a regular Rust collection and is `Send` and `Sync` (as long
+/// as associated data `N` and `E` are).
+///
 /// The graph uses **O(|V| + |E|)** space, and allows fast node and edge insert,
 /// efficient graph search and graph algorithms.
 /// It implements **O(e')** edge lookup and edge and node removals, where **e'**
@@ -296,16 +299,15 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// example for *n* nodes indices are 0 to *n* - 1 inclusive.
 ///
 /// `NodeIndex` and `EdgeIndex` are types that act as references to nodes and edges,
-/// but these are only stable across certain operations.
-/// **Adding nodes or edges keeps indices stable.
-/// Removing nodes or edges may shift other indices.**
-/// Removing a node will force the last node to shift its index to
-/// take its place. Similarly, removing an edge shifts the index of the last edge.
+/// but these are only stable across certain operations:
+///
+/// * **Removing nodes or edges may shift other indices.** Removing a node will
+/// force the last node to shift its index to take its place. Similarly,
+/// removing an edge shifts the index of the last edge.
+/// * Adding nodes or edges keeps indices stable.
 ///
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
 /// completely unless you need a very big graph -- then you can use `usize`.
-///
-/// ### Pros and Cons of Indices
 ///
 /// * The fact that the node and edge indices in the graph each are numbered in compact
 /// intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
@@ -319,12 +321,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// * You can create several graphs using the equal node indices but with
 /// differing weights or differing edges.
 ///
-/// * The `Graph` is a regular rust collection and is `Send` and `Sync` (as long
-/// as associated data `N` and `E` are).
-///
-/// * Some indices shift during node or edge removal, so that is a drawback
-/// of removing elements. Indices don't allow as much compile time checking as
-/// references.
+/// * Indices don't allow as much compile time checking as references.
 ///
 pub struct Graph<N, E, Ty = Directed, Ix = DefaultIx> {
     nodes: Vec<Node<N, Ix>>,
