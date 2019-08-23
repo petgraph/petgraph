@@ -10,7 +10,7 @@ authors = [
 
 description = "Graph data structure library. Provides graph types and graph algorithms."
 documentation = "https://docs.rs/petgraph/"
-repository = "https://github.com/bluss/petgraph"
+repository = "https://github.com/petgraph/petgraph"
 
 keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
 categories = ["data-structures"]
