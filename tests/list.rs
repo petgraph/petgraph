@@ -3,7 +3,7 @@ extern crate petgraph;
 #[macro_use]
 extern crate defmac;
 
-use petgraph::adj::List;
+use petgraph::adj::{List, UnweightedList};
 use petgraph::prelude::*;
 use petgraph::adj::DefaultIx;
 use petgraph::adj::IndexType;
@@ -64,7 +64,7 @@ fn assert_sccs_eq<Ix: IndexType>(mut res: Vec<Vec<Ix>>, normalized: Vec<Vec<Ix>>
     assert_eq!(res, normalized);
 }
 
-fn scc_graph() -> List<(), DefaultIx> {
+fn scc_graph() -> UnweightedList<DefaultIx> {
     let mut gr = List::new();
     for _ in 0..9 {
         gr.add_node();

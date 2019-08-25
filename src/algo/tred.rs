@@ -9,7 +9,7 @@
 //! The transitive reduction is well-defined for acyclic graphs only.
 
 use crate::Direction;
-use crate::adj::List;
+use crate::adj::{List, UnweightedList};
 use fixedbitset::FixedBitSet;
 use crate::graph::IndexType;
 use crate::visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount, NodeCompactIndexable};
@@ -32,14 +32,14 @@ use crate::visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount, N
 pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
     g: G,
     toposort: &[G::NodeId],
-) -> List<(), Ix>
+) -> UnweightedList<Ix>
 where
     G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
     G::NodeId: IndexType
 {
     let mut res = List::with_capacity(g.node_count());
     // map from old node index to rank in toposort
-    let mut revmap = vec![IndexType::max(); g.node_bound()];
+    let mut revmap = vec![0; g.node_bound()];
     for (ix, &old_ix) in toposort.iter().enumerate() {
         let ix = Ix::new(ix);
         revmap[old_ix.index()] = ix;
@@ -75,9 +75,9 @@ where
 /// should perform better for some classes of graphs.
 ///
 /// Space complexity: **O(|E|)**.
-pub fn dag_transitive_reduction_closure<Ix: IndexType>(
-    g: &List<(), Ix>,
-) -> (List<(), Ix>, List<(), Ix>) {
+pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
+    g: &List<E, Ix>,
+) -> (UnweightedList<Ix>, UnweightedList<Ix>) {
     let mut tred = List::with_capacity(g.node_count());
     let mut tclos = List::with_capacity(g.node_count());
     let mut mark = FixedBitSet::with_capacity(g.node_count());

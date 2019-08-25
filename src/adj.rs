@@ -311,6 +311,11 @@ impl<E, Ix: IndexType> List<E, Ix> {
     }
 }
 
+
+/// A very simple adjacency list with no node or label weights.
+pub type UnweightedList<Ix> = List<(), Ix>;
+
+
 impl<E, Ix: IndexType> Build for List<E, Ix> {
     /// Adds a new node to the list. This allocates a new `Vec` and then should
     /// run in amortized **O(1)** time.
