@@ -10,10 +10,9 @@
 
 use crate::Direction;
 use crate::adj::List;
-use crate::data::{NodeIndexMap, NodeIndexMappable};
 use fixedbitset::FixedBitSet;
 use crate::graph::IndexType;
-use crate::visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount};
+use crate::visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount, NodeCompactIndexable};
 
 /// Creates a representation of the same graph respecting topological order for use in [`dag_transitive_reduction_closure`].
 ///
@@ -35,19 +34,20 @@ pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
     toposort: &[G::NodeId],
 ) -> List<(), Ix>
 where
-    G: GraphBase + IntoNeighborsDirected + NodeIndexMappable<Ix> + NodeCount,
+    G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
+    G::NodeId: IndexType
 {
     let mut res = List::with_capacity(g.node_count());
     // map from old node index to rank in toposort
-    let mut revmap = g.new_node_index_map();
+    let mut revmap = vec![IndexType::max(); g.node_bound()];
     for (ix, &old_ix) in toposort.iter().enumerate() {
         let ix = Ix::new(ix);
-        revmap.set(old_ix, ix);
+        revmap[old_ix.index()] = ix;
         let iter = g.neighbors_directed(old_ix, Direction::Incoming);
         let new_ix: Ix = res.add_node_with_capacity(iter.size_hint().0);
         debug_assert_eq!(new_ix.index(), ix.index());
         for old_pre in iter {
-            let pre: Ix = revmap.get(old_pre).unwrap().clone();
+            let pre: Ix = revmap[old_pre.index()].clone();
             res.add_edge(pre, ix, ());
         }
     }

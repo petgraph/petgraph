@@ -11,11 +11,9 @@ use crate::graph::IndexType;
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{GraphMap, NodeTrait};
 use crate::visit::{
-    GraphRef,
     Data,
     NodeCount,
     NodeIndexable,
-    NodeCompactIndexable,
     Reversed,
 };
 
@@ -433,57 +431,5 @@ impl<I, F, N, E> Iterator for FilterElements<I, F>
             }
             return Some(elt);
         }
-    }
-}
-
-/// A mapping from node indices to values.
-pub trait NodeIndexMap<Ix, T> {
-    /// Get the value associated with the index in argument.
-    ///
-    /// If [`set`] has not yet been called for this index,
-    /// returns None.
-    ///
-    /// [`set`]: NodeIndexMap::set
-    fn get(&self, a: Ix) -> Option<&T>;
-
-    /// Sets the value associated with the index in argument. Returns the old
-    /// value.
-    fn set(&mut self, a: Ix, value: T) -> Option<T>;
-}
-
-/// Creation of a mapping from indices to values.
-pub trait NodeIndexMappable<T>: GraphRef {
-    /// The type of the mapping.
-    type Map: NodeIndexMap<Self::NodeId, T>;
-    /// Creates a new mapping.
-    fn new_node_index_map(self) -> Self::Map;
-}
-
-impl<Ix: IndexType, T> NodeIndexMap<Ix, T> for Vec<Option<T>> {
-    fn get(&self, a: Ix) -> Option<&T> {
-        self.as_slice().get(a.index()).unwrap_or(&None).as_ref()
-    }
-    fn set(&mut self, a: Ix, value: T) -> Option<T> {
-        match self.get_mut(a.index()) {
-            None => None,
-            Some(x) => {
-                let mut res = Some(value);
-                std::mem::swap(&mut res, x);
-                res
-            }
-        }
-    }
-}
-
-impl<G, T> NodeIndexMappable<T> for G 
-where G: NodeCompactIndexable + GraphRef, G::NodeId: IndexType {
-    type Map = Vec<Option<T>>;
-    fn new_node_index_map(self) -> Self::Map {
-        let n = self.node_bound();
-        let mut res = Vec::with_capacity(n);
-        for _ in 0..n {
-            res.push(None)
-        }
-        res
     }
 }
