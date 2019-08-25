@@ -108,6 +108,7 @@ pub fn dag_transitive_reduction_closure<Ix: IndexType>(
     (tred, tclos)
 }
 
+#[cfg(test)]
 #[test]
 fn test_easy_tred() {
     let mut input = List::new();
