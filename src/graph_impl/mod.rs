@@ -938,7 +938,18 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         Externals{iter: self.nodes.iter().enumerate(), dir: dir, ty: PhantomData}
     }
 
-    /// Return an iterator over the node indices of the graph
+    /// Return an iterator over the node indices of the graph.
+    ///
+    /// For example, in a rare case where a graph algorithm were not applicable,
+    /// the following code will iterate through all nodes to find a
+    /// specific index:
+    ///
+    /// ```
+    /// # use petgraph::Graph;
+    /// # let mut g = Graph::<&str, i32>::new();
+    /// # g.add_node("book");
+    /// let index = g.node_indices().find(|i| g[*i] == "book").unwrap();
+    /// ```
     pub fn node_indices(&self) -> NodeIndices<Ix> {
         NodeIndices { r: 0..self.node_count(), ty: PhantomData }
     }
