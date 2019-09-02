@@ -10,8 +10,8 @@ __ https://docs.rs/petgraph/
 
 |build_status|_ |crates|_
 
-.. |build_status| image:: https://travis-ci.org/bluss/petgraph.svg?branch=master
-.. _build_status: https://travis-ci.org/bluss/petgraph
+.. |build_status| image:: https://travis-ci.org/petgraph/petgraph.svg?branch=master
+.. _build_status: https://travis-ci.org/petgraph/petgraph
 
 .. |crates| image:: http://meritbadge.herokuapp.com/petgraph
 .. _crates: https://crates.io/crates/petgraph
