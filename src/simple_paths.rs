@@ -1,29 +1,37 @@
-use std::iter::{from_fn, FromIterator};
+use std::{
+    hash::Hash,
+    iter::{from_fn, FromIterator},
+};
 
 use indexmap::IndexSet;
 
 use crate::{
     Direction::Outgoing,
-    EdgeType,
-    Graph,
-    graph::IndexType,
-    prelude::NodeIndex,
+    visit::{
+        GraphBase,
+        IntoNeighborsDirected,
+        NodeCount,
+    },
 };
 
 /// Returns iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermidiate_nodes` nodes
 /// and at most `max_intermidiate_nodes`, if given, limited by graph's order otherwise
 /// Simple path is path without repetitions
 /// Algorithm is adopted from https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.simple_paths.all_simple_paths.html
-pub fn all_simple_paths<'g, TargetIter: 'g, N, E, Ty, Ix>(graph: &'g Graph<N, E, Ty, Ix>,
-                                                          from: NodeIndex<Ix>,
-                                                          to: NodeIndex<Ix>,
-                                                          min_intermidiate_nodes: usize,
-                                                          max_intermidiate_nodes: Option<usize>) -> impl Iterator<Item=TargetIter> + 'g
-    where Ix: IndexType, Ty: EdgeType, TargetIter: FromIterator<NodeIndex<Ix>>
+pub fn all_simple_paths<'g, TargetColl: 'g, G>(graph: &'g G,
+                                               from: G::NodeId,
+                                               to: G::NodeId,
+                                               min_intermidiate_nodes: usize,
+                                               max_intermidiate_nodes: Option<usize>) -> impl Iterator<Item=TargetColl> + 'g
+    where G: NodeCount,
+          G: GraphBase<NodeId=<&'g G as GraphBase>::NodeId>,
+          &'g G: IntoNeighborsDirected,
+          G::NodeId: Eq + Hash,
+          TargetColl: FromIterator<G::NodeId>
 {
     // how many nodes are allowed in simple path up to target node
     // it is min/max allowed path length minus one, because it is more appropriate when implementing lookahead
-    // that constantly add 1 to length of current path
+    // than constantly add 1 to length of current path
     let max_length = if let Some(l) = max_intermidiate_nodes {
         l + 1
     } else {
@@ -33,7 +41,7 @@ pub fn all_simple_paths<'g, TargetIter: 'g, N, E, Ty, Ix>(graph: &'g Graph<N, E,
     let min_length = min_intermidiate_nodes + 1;
 
     // list of visited nodes
-    let mut visited: IndexSet<NodeIndex<Ix>> = IndexSet::from_iter(Some(from));
+    let mut visited: IndexSet<G::NodeId> = IndexSet::from_iter(Some(from));
     // list of childs of currently exploring path nodes,
     // last elem is list of childs of last visited node
     let mut stack = vec![graph.neighbors_directed(from, Outgoing)];
@@ -44,7 +52,7 @@ pub fn all_simple_paths<'g, TargetIter: 'g, N, E, Ty, Ix>(graph: &'g Graph<N, E,
                 if visited.len() < max_length {
                     if child == to {
                         if visited.len() >= min_length {
-                            let path = visited.iter().cloned().chain(Some(to)).collect::<TargetIter>();
+                            let path = visited.iter().cloned().chain(Some(to)).collect::<TargetColl>();
                             return Some(path);
                         }
                     } else if !visited.contains(&child) {
@@ -53,7 +61,7 @@ pub fn all_simple_paths<'g, TargetIter: 'g, N, E, Ty, Ix>(graph: &'g Graph<N, E,
                     }
                 } else {
                     if (child == to || children.any(|v| v == to)) && visited.len() >= min_length {
-                        let path = visited.iter().cloned().chain(Some(to)).collect::<TargetIter>();
+                        let path = visited.iter().cloned().chain(Some(to)).collect::<TargetColl>();
                         return Some(path);
                     }
                     stack.pop();
@@ -72,7 +80,7 @@ pub fn all_simple_paths<'g, TargetIter: 'g, N, E, Ty, Ix>(graph: &'g Graph<N, E,
 mod test {
     use std::{
         collections::HashSet,
-        iter::FromIterator
+        iter::FromIterator,
     };
 
     use itertools::assert_equal;
