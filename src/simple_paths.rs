@@ -8,7 +8,6 @@ use indexmap::IndexSet;
 use crate::{
     Direction::Outgoing,
     visit::{
-        GraphBase,
         IntoNeighborsDirected,
         NodeCount,
     },
@@ -18,14 +17,13 @@ use crate::{
 /// and at most `max_intermidiate_nodes`, if given, limited by graph's order otherwise
 /// Simple path is path without repetitions
 /// Algorithm is adopted from https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.simple_paths.all_simple_paths.html
-pub fn all_simple_paths<'g, TargetColl: 'g, G>(graph: &'g G,
-                                               from: G::NodeId,
-                                               to: G::NodeId,
-                                               min_intermidiate_nodes: usize,
-                                               max_intermidiate_nodes: Option<usize>) -> impl Iterator<Item=TargetColl> + 'g
+pub fn all_simple_paths<TargetColl, G>(graph: G,
+                                       from: G::NodeId,
+                                       to: G::NodeId,
+                                       min_intermidiate_nodes: usize,
+                                       max_intermidiate_nodes: Option<usize>) -> impl Iterator<Item=TargetColl>
     where G: NodeCount,
-          G: GraphBase<NodeId=<&'g G as GraphBase>::NodeId>,
-          &'g G: IntoNeighborsDirected,
+          G: IntoNeighborsDirected,
           G::NodeId: Eq + Hash,
           TargetColl: FromIterator<G::NodeId>
 {
