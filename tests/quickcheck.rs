@@ -528,6 +528,20 @@ fn graph_condensation_acyclic() {
     quickcheck::quickcheck(prop as fn(_) -> bool);
 }
 
+#[test]
+fn removed_fas_is_acyclic() {
+    fn prop(mut g: StableDiGraph<u32, u32>) -> bool {
+        let mut clone = g.clone();
+        let fas = clone.approximate_fas(|g, e| *g.edge_weight(e).unwrap());
+        for e in fas {
+            let edge = g.find_edge(e.0, e.1).unwrap();
+            g.remove_edge(edge);
+        }
+        !is_cyclic_directed(&g) && !is_cyclic_directed(&clone)
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
+}
+
 #[derive(Debug, Clone)]
 struct DAG<N: Default + Clone + Send + 'static>(Graph<N, ()>);
 

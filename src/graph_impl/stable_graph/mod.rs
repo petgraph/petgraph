@@ -9,7 +9,7 @@ use std::iter;
 use std::marker::PhantomData;
 use std::mem::replace;
 use std::mem::size_of;
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Sub, Add};
 use std::slice;
 
 use crate::{
@@ -41,10 +41,13 @@ use crate::IntoWeightedEdge;
 use crate::visit::{
     EdgeRef,
     IntoNodeReferences,
+    IntoNodeIdentifiers,
     IntoEdges,
     IntoEdgesDirected,
     IntoEdgeReferences,
     NodeIndexable,
+    Visitable,
+    VisitMap,
 };
 
 // reexport those things that are shared with Graph
@@ -912,6 +915,150 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         }
     }
 
+    /// Compute an approximation to the minimum cost feedback arc set (FAS).
+    /// 
+    /// This method is *destructive* and will remove edges from the input graph.
+    /// In particular, the graph will be acyclic after calling it.
+    ///
+    /// Returns the feedback arc set as a vector.
+    ///
+    /// # Example
+    /// ```
+    /// use petgraph::stable_graph::StableGraph;
+    ///
+    /// let mut g = StableGraph::new();
+    /// let a = g.add_node(());
+    /// let b = g.add_node(());
+    /// let c = g.add_node(());
+    /// let d = g.add_node(());
+    /// let e = g.add_node(());
+    /// let f = g.add_node(());
+    /// g.extend_with_edges(&[
+    ///     (b, a, 4.0),
+    ///     (a, d, 2.0),
+    ///     (b, c, 2.0),
+    ///     (f, b, 7.0),
+    ///     (c, e, 5.0),
+    ///     (e, f, 3.0),
+    ///     (d, e, 3.0),
+    /// ]);
+    ///
+    /// // Graph represented with the weight of each edge
+    /// //
+    /// //     4       2
+    /// // a <---- b ----> c
+    /// // v 2     ^ 7     |
+    /// // d       f       | 5
+    /// // | 3     ^ 3     |
+    /// // \-----> e <-----/
+    ///
+    /// let fas = g.approximate_fas(|g, e| *g.edge_weight(e).unwrap());
+    /// assert_eq!(vec![(e, f, 3.0)], fas);
+    /// ```
+    ///
+    /// **Reference**
+    ///
+    /// * Camil Demetrescu, Irene Finocchi;
+    ///   *[Combinatorial Algorithms for Feedback Problems in Directed Graphs](http://wwwusers.di.uniroma1.it/~finocchi/papers/FAS.pdf)*
+    pub fn approximate_fas<F, K>(
+        &mut self,
+        mut edge_cost: F,
+    ) -> Vec<(NodeIndex<Ix>, NodeIndex<Ix>, E)>
+    where
+        F: FnMut(&StableGraph<N, E, Ty, Ix>, EdgeIndex<Ix>) -> K,
+        K: Default + Copy + PartialOrd + Sub<K, Output = K> + Add<K, Output = K>,
+    {
+        let zero_weight = <K as Default>::default();
+
+        let mut arc_set = Vec::new();
+        let mut predecessor = vec![<EdgeIndex<Ix>>::end(); self.node_bound()];
+        let mut edge_cost_reduction = vec![zero_weight; self.edge_bound()];
+        let mut cycle = Vec::new();
+        let mut discovered = self.visit_map();
+        let mut finished = self.visit_map();
+
+        // keep removing cycles until there are none left by removing one of their edges
+        loop {
+            discovered.as_mut_slice().copy_from_slice(finished.as_slice());
+
+            let min_weight = self.node_identifiers()
+                .filter_map(|start| self.find_cycle_arc(&mut predecessor, &mut discovered, &mut finished, start))
+                .next()
+                .map(|e| {
+                    let mut pred = e.id();
+                    let orig_edge_cost = edge_cost(self, pred);
+                    let mut min_weight = orig_edge_cost - edge_cost_reduction[e.id().index()];
+                    let end = e.target();
+                    let mut start = self.edge_endpoints(pred).unwrap().0;
+
+                    cycle.clear();
+                    cycle.push((e.id(), orig_edge_cost));
+
+                    while end != start {
+                        pred = predecessor[start.index()];
+                        start = self.edge_endpoints(pred).unwrap().0;
+                        let orig_edge_cost = edge_cost(self, pred);
+                        let edge_weight = orig_edge_cost - edge_cost_reduction[pred.index()];
+                        cycle.push((pred, orig_edge_cost));
+
+                        if edge_weight < min_weight {
+                            min_weight = edge_weight;
+                        }
+                    }
+
+                    min_weight
+                });
+
+            if let Some(min_weight) = min_weight {
+                let mut removable = true;
+
+                // update the weights of all arcs in the cycle and remove the
+                // first one that hits zero
+                for &(edge_id, orig_edge_cost) in &cycle {
+                    let idx = edge_id.index();
+                    let cost_reduction = edge_cost_reduction[idx] + min_weight;
+                    edge_cost_reduction[idx] = cost_reduction;
+
+                    if removable && orig_edge_cost - cost_reduction <= zero_weight {
+                        let edge_endpoints = self.edge_endpoints(edge_id).unwrap();
+                        let w = self.remove_edge(edge_id).unwrap();
+                        arc_set.push((edge_endpoints.0, edge_endpoints.1, w, orig_edge_cost));
+                        removable = false;
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+        
+        let mut result_set = Vec::with_capacity(arc_set.len());
+        
+        // always include the last edge, since re-adding that
+        // will always introduce a cycle
+        if let Some((start, end, w, _edge_cost)) = arc_set.pop() {
+            result_set.push((start, end, w));
+        }
+
+        // sorting arc_set by decreasing cost in order to re-introduce
+        // the heaviest edges first
+        arc_set.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap_or(cmp::Ordering::Equal));
+
+        // try to re-add edges without introducing cycles
+        for (start, end, w, _edge_cost) in arc_set {
+            let edge_id = self.add_edge(start, end, w);
+
+            discovered.clear();
+            finished.clear();
+
+            if self.find_cycle_arc(&mut predecessor, &mut discovered, &mut finished, start).is_some() {
+                let w = self.remove_edge(edge_id).unwrap();
+                result_set.push((start, end, w));
+            }
+        }
+
+        result_set
+    }
+
     //
     // internal methods
     //
@@ -927,6 +1074,39 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.edge_references()
             .next_back()
             .map_or(0, |edge| edge.id().index() + 1)
+    }
+
+    /// Returns a reference to an edge in a cycle, keeping track of all
+    /// predecessors, discovered nodes and finished nodes
+    fn find_cycle_arc<'g>(&'g self,
+        predecessor: &mut Vec<EdgeIndex<Ix>>,
+        discovered: &mut <Self as Visitable>::Map,
+        finished: &mut <Self as Visitable>::Map,
+        start: NodeIndex<Ix>
+    ) -> Option<EdgeReference<'g, E, Ix>>
+        where Ix: IndexType
+    {
+        if !discovered.visit(start) {
+            return None;
+        }
+
+        for e in self.edges(start) {
+            let v = e.target();
+
+            if !discovered.is_visited(&v) {
+                predecessor[v.index()] = e.id();
+                
+                if let Some(e2) = self.find_cycle_arc(predecessor, discovered, finished, v) {
+                    return Some(e2);
+                }
+            } else if !finished.is_visited(&v) {
+                return Some(e);
+            }
+        }
+
+        finished.visit(start);
+
+        None
     }
 
     #[cfg(feature = "serde-1")]
