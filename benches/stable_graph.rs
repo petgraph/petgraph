@@ -7,8 +7,8 @@ use test::Bencher;
 use petgraph::prelude::*;
 
 #[allow(dead_code)]
-mod factories;
-use factories::*;
+mod common;
+use common::*;
 
 use petgraph::stable_graph::node_index;
 
