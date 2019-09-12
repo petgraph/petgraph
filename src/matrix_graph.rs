@@ -36,6 +36,8 @@ use crate::visit::{
     Visitable,
 };
 
+use crate::data::Build;
+
 pub use crate::graph::IndexType;
 
 // The following types are used to control the max size of the adjacency matrix. Since the maximum
@@ -902,7 +904,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> GraphProp for MatrixGraph<N,
     type EdgeType = Ty;
 }
 
-impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> Data for &'a MatrixGraph<N, E, Ty, Null> {
+impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> Data for MatrixGraph<N, E, Ty, Null> {
     type NodeWeight = N;
     type EdgeWeight = E;
 }
@@ -956,7 +958,7 @@ impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> IntoEdges for &'a Matrix
 
 impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> NodeIndexable for MatrixGraph<N, E, Ty, Null> {
     fn node_bound(&self) -> usize {
-        MatrixGraph::node_count(self)
+        self.node_count()
     }
     fn to_index(&self, ix: NodeIndex) -> usize {
         ix.index()
@@ -967,6 +969,26 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> NodeIndexable for MatrixGrap
 }
 
 impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> NodeCompactIndexable for MatrixGraph<N, E, Ty, Null> {
+}
+
+impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> Build for MatrixGraph<N, E, Ty, Null> {
+    fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
+        self.add_node(weight)
+    }
+
+    fn add_edge(&mut self, a: Self::NodeId, b: Self::NodeId, weight: Self::EdgeWeight) -> Option<Self::EdgeId> {
+        if !self.has_edge(a, b) {
+            MatrixGraph::update_edge(self, a, b, weight);
+            Some((a, b))
+        } else {
+            None
+        }
+    }
+
+    fn update_edge(&mut self, a: Self::NodeId, b: Self::NodeId, weight: Self::EdgeWeight) -> Self::EdgeId {
+        MatrixGraph::update_edge(self, a, b, weight);
+        (a, b)
+    }
 }
 
 #[cfg(test)]
