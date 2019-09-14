@@ -871,6 +871,30 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> NodeCount for MatrixGraph<N,
     }
 }
 
+/// Index the `MatrixGraph` by `NodeIndex` pair to access edge weights.
+///
+/// Also available with indexing syntax: `&graph[e]`.
+///
+/// **Panics** if no edge exists between `a` and `b`.
+impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> Index<(NodeIndex, NodeIndex)> for MatrixGraph<N, E, Ty, Null> {
+    type Output = E;
+
+    fn index(&self, (ax, bx): (NodeIndex, NodeIndex)) -> &E {
+        self.edge_weight(ax, bx)
+    }
+}
+
+/// Index the `MatrixGraph` by `NodeIndex` pair to access edge weights.
+///
+/// Also available with indexing syntax: `&mut graph[e]`.
+///
+/// **Panics** if no edge exists between `a` and `b`.
+impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> IndexMut<(NodeIndex, NodeIndex)> for MatrixGraph<N, E, Ty, Null> {
+    fn index_mut(&mut self, (ax, bx): (NodeIndex, NodeIndex)) -> &mut E {
+        self.edge_weight_mut(ax, bx)
+    }
+}
+
 impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>> GetAdjacencyMatrix for MatrixGraph<N, E, Ty, Null> {
     type AdjMatrix = ();
 
