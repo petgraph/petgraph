@@ -294,28 +294,13 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>, Ix: IndexType> MatrixGraph<N
     ///
     /// **Panics** if the node `a` does not exist.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> N {
-        macro_rules! node_ids {
-            () => {
-                self.node_identifiers()
-                    .filter(|n| n.index() < self.node_capacity)
-            }
-        };
+        for id in self.nodes.iter_ids() {
+            let position = self.to_edge_position(a, NodeIndex::new(id));
+            self.node_adjacencies[position] = Default::default();
 
-        let out_edges_to_remove: Vec<_> = node_ids!()
-            .map(|n| self.to_edge_position(a, n))
-            .filter(|&p| !self.node_adjacencies[p].is_null())
-            .collect();
-        for p in out_edges_to_remove {
-            self.node_adjacencies[p] = Default::default();
-        }
-
-        if Ty::is_directed() {
-            let in_edges_to_remove: Vec<_> = node_ids!()
-                .map(|n| self.to_edge_position(n, a))
-                .filter(|&p| !self.node_adjacencies[p].is_null())
-                .collect();
-            for p in in_edges_to_remove {
-                self.node_adjacencies[p] = Default::default();
+            if Ty::is_directed() {
+                let position = self.to_edge_position(NodeIndex::new(id), a);
+                self.node_adjacencies[position] = Default::default();
             }
         }
 
