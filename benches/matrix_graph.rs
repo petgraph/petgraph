@@ -12,7 +12,7 @@ use petgraph::matrix_graph::{MatrixGraph, node_index};
 #[bench]
 fn add_100_nodes(b: &mut test::Bencher) {
     b.iter(|| {
-        let mut g = MatrixGraph::<(), ()>::with_nodes(100);
+        let mut g = MatrixGraph::<(), ()>::with_capacity(100);
 
         for _ in 0..100 {
             let _ = g.add_node(());
@@ -22,7 +22,7 @@ fn add_100_nodes(b: &mut test::Bencher) {
 
 #[bench]
 fn add_100_edges_to_self(b: &mut test::Bencher) {
-    let mut g = MatrixGraph::<(), ()>::with_nodes(100);
+    let mut g = MatrixGraph::<(), ()>::with_capacity(100);
     let nodes: Vec<_> = (0..100).map(|_| g.add_node(())).collect();
     let g = g;
 
@@ -37,7 +37,7 @@ fn add_100_edges_to_self(b: &mut test::Bencher) {
 
 #[bench]
 fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
-    let mut g = MatrixGraph::<(), ()>::with_nodes(100);
+    let mut g = MatrixGraph::<(), ()>::with_capacity(100);
     let nodes: Vec<_> = (0..100).map(|_| g.add_node(())).collect();
     let g = g;
 

@@ -225,18 +225,18 @@ pub type UnMatrix<N, E, Null = Option<E>, Ix = DefaultIx> = MatrixGraph<N, E, Un
 
 impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>, Ix: IndexType> MatrixGraph<N, E, Ty, Null, Ix> {
     /// Create a new `MatrixGraph` with estimated capacity for nodes.
-    pub fn with_nodes(nodes: usize) -> Self {
+    pub fn with_capacity(node_capacity: usize) -> Self {
         let mut m = Self {
             node_adjacencies: vec![],
             node_capacity: 0,
-            nodes: IdStorage::with_capacity(nodes),
+            nodes: IdStorage::with_capacity(node_capacity),
             nb_edges: 0,
             ty: PhantomData,
             ix: PhantomData,
         };
 
-        debug_assert!(nodes <= <Ix as IndexType>::max().index());
-        m.extend_capacity_for_node(NodeIndex::new(nodes));
+        debug_assert!(node_capacity <= <Ix as IndexType>::max().index());
+        m.extend_capacity_for_node(NodeIndex::new(node_capacity));
 
         m
     }
@@ -934,14 +934,14 @@ impl<'a> Iterator for IdIterator<'a> {
 /// Create a new empty `MatrixGraph`.
 impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped=E>, Ix: IndexType> Default for MatrixGraph<N, E, Ty, Null, Ix> {
     fn default() -> Self {
-        Self::with_nodes(0)
+        Self::with_capacity(0)
     }
 }
 
 impl<N, E> MatrixGraph<N, E, Directed> {
     /// Create a new `MatrixGraph` with directed edges.
     ///
-    /// This is a convenience method. Use `MatrixGraph::with_nodes` or `MatrixGraph::default` for
+    /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
     /// a constructor that is generic in all the type parameters of `MatrixGraph`.
     pub fn new() -> Self {
         MatrixGraph::default()
@@ -951,7 +951,7 @@ impl<N, E> MatrixGraph<N, E, Directed> {
 impl<N, E> MatrixGraph<N, E, Undirected> {
     /// Create a new `MatrixGraph` with undirected edges.
     ///
-    /// This is a convenience method. Use `MatrixGraph::with_nodes` or `MatrixGraph::default` for
+    /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
     /// a constructor that is generic in all the type parameters of `MatrixGraph`.
     pub fn new_undirected() -> Self {
         MatrixGraph::default()
@@ -1150,8 +1150,8 @@ mod tests {
     }
 
     #[test]
-    fn test_with_nodes() {
-        let g = MatrixGraph::<i32, i32>::with_nodes(10);
+    fn test_with_capacity() {
+        let g = MatrixGraph::<i32, i32>::with_capacity(10);
         assert_eq!(g.node_count(), 0);
         assert_eq!(g.edge_count(), 0);
     }
