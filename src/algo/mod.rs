@@ -822,12 +822,6 @@ pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
                 return false;
             }
 
-            /*
-            if is_red && is_neigbour_blue || is_blue && is_neigbour_red {
-                //good
-            }
-            */
-
             if !is_neigbour_red && !is_neigbour_blue {
                 //hasn't been visited yet
 
