@@ -20,6 +20,7 @@ Crate feature flags:
 
 - ``graphmap`` (default) enable ``GraphMap``.
 - ``stable_graph`` (default) enable ``StableGraph``.
+- ``matrix_graph`` (default) enable ``MatrixGraph``.
 - ``serde-1`` (optional) enable serialization for ``Graph, StableGraph`` using
   serde 1.0. Requires Rust version as required by serde.
 

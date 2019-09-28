@@ -41,17 +41,18 @@ defmac = "0.1"
 itertools = { version = "0.8", default-features = false }
 
 [features]
-default = ["graphmap", "stable_graph"]
+default = ["graphmap", "stable_graph", "matrix_graph"]
 graphmap = ["indexmap"]
 serde-1 = ["serde", "serde_derive"]
 stable_graph = []
+matrix_graph = []
 
 # For unstable features
 generate = []
 unstable = ["generate"]
 
 # feature flags for testing use only
-all = ["unstable", "quickcheck", "stable_graph", "graphmap"]
+all = ["unstable", "quickcheck", "matrix_graph", "stable_graph", "graphmap"]
 
 [workspace]
 members = ["serialization-tests"]
