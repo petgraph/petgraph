@@ -294,7 +294,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// ```
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E> {
         let exist1 = self.remove_single_edge(&a, &b, Outgoing);
-        let exist2 = if a != b {
+        let exist2 = if a != b || Ty::is_directed() {
             self.remove_single_edge(&b, &a, Incoming)
         } else { exist1 };
         let weight = self.edges.remove(&Self::edge_key(a, b));

@@ -323,3 +323,16 @@ fn undirected_neighbors_includes_self_loops() {
     assert_eq!(neighbors.next(), Some(node));
     assert_eq!(neighbors.next(), None);
 }
+
+#[test]
+fn self_loops_can_be_removed() {
+    let mut graph = DiGraphMap::new();
+
+    let node = graph.add_node(());
+    graph.add_edge(node, node, ());
+
+    graph.remove_edge(node, node);
+
+    assert_eq!(graph.neighbors_directed(node, Outgoing).next(), None);
+    assert_eq!(graph.neighbors_directed(node, Incoming).next(), None);
+}
