@@ -244,12 +244,13 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             self.nodes.entry(a)
                       .or_insert_with(|| Vec::with_capacity(1))
                       .push((b, CompactDirection::Outgoing));
-            if a != b {
-                // self loops don't have the Incoming entry
+
+            if a != b || Ty::is_directed() {
                 self.nodes.entry(b)
-                          .or_insert_with(|| Vec::with_capacity(1))
-                          .push((a, CompactDirection::Incoming));
+                    .or_insert_with(|| Vec::with_capacity(1))
+                    .push((a, CompactDirection::Incoming));
             }
+
             None
         }
     }
