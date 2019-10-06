@@ -348,6 +348,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
             },
+            start_node: a,
             dir: dir,
             ty: self.ty,
         }
@@ -531,6 +532,7 @@ pub struct NeighborsDirected<'a, N, Ty>
           Ty: EdgeType,
 {
     iter: Iter<'a, (N, CompactDirection)>,
+    start_node: N,
     dir: Direction,
     ty: PhantomData<Ty>,
 }
@@ -543,8 +545,9 @@ impl<'a, N, Ty> Iterator for NeighborsDirected<'a, N, Ty>
     fn next(&mut self) -> Option<N> {
         if Ty::is_directed() {
             let self_dir = self.dir;
+            let start_node = self.start_node;
             (&mut self.iter)
-                .filter_map(move |&(n, dir)| if dir == self_dir {
+                .filter_map(move |&(n, dir)| if dir == self_dir || n == start_node {
                     Some(n)
                 } else { None })
                 .next()

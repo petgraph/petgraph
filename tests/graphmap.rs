@@ -299,3 +299,15 @@ fn test_all_edges_mut() {
         assert_eq!((start + end) * 2, *weight);
     }
 }
+
+
+#[test]
+fn neighbors_incoming_includes_self_loops() {
+    // From issue #281
+    let mut graph = DiGraphMap::new();
+
+    let node = graph.add_node(());
+    graph.add_edge(node, node, ());
+
+    assert_eq!(graph.neighbors_directed(node, Incoming).next(), Some(node));
+}
