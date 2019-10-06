@@ -28,7 +28,7 @@ bench = false
 debug = true
 
 [dependencies]
-fixedbitset = { version = "0.1.4" }
+fixedbitset = { version = "0.2.0", default-features = false }
 quickcheck = { optional = true, version = "0.8", default-features = false }
 indexmap = { version = "1.0.2", optional = true }
 serde = { version = "1.0", optional = true }
