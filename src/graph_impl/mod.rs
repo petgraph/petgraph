@@ -859,9 +859,9 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// - `Directed` and `Undirected`: All edges connecting `a` and `b`.
     ///
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    pub fn edges_connecting(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> MultipleEdges<E, Ty, Ix>
+    pub fn edges_connecting(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> EdgesConnecting<E, Ty, Ix>
     {
-        MultipleEdges {
+        EdgesConnecting {
             match_end: b,
             edges: &self.edges,
             next: match self.nodes.get(a.index()) {
@@ -1291,7 +1291,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
                 weight: node_map(NodeIndex::new(i), &node.weight),
                 next: node.next,
             }));
-        g.edges.extend(enumerate(&self.edges).map(|(i, edge)| 
+        g.edges.extend(enumerate(&self.edges).map(|(i, edge)|
             Edge {
                 weight: edge_map(EdgeIndex::new(i), &edge.weight),
                 next: edge.next,
@@ -1611,7 +1611,7 @@ impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
 }
 
 /// Iterator over the multiple edges between two nodes
-pub struct MultipleEdges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+pub struct EdgesConnecting<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
     where Ty: EdgeType,
           Ix: IndexType,
 {
@@ -1626,7 +1626,7 @@ pub struct MultipleEdges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
     ty: PhantomData<Ty>,
 }
 
-impl<'a, E, Ty, Ix> Iterator for MultipleEdges<'a, E, Ty, Ix>
+impl<'a, E, Ty, Ix> Iterator for EdgesConnecting<'a, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
@@ -2002,7 +2002,7 @@ impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
     type Item = (NodeIndex<Ix>, &'a N);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(i, node)| 
+        self.iter.next().map(|(i, node)|
             (node_index(i), &node.weight)
         )
     }
@@ -2061,7 +2061,7 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
     type Item = EdgeReference<'a, E, Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(i, edge)| 
+        self.iter.next().map(|(i, edge)|
             EdgeReference {
                 index: edge_index(i),
                 node: edge.node,
