@@ -862,12 +862,8 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     pub fn edges_connecting(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> EdgesConnecting<E, Ty, Ix>
     {
         EdgesConnecting {
-            match_end: b,
-            edges: &self.edges,
-            next: match self.nodes.get(a.index()) {
-                None => [EdgeIndex::end(), EdgeIndex::end()],
-                Some(n) => n.next,
-            },
+            target_node: b,
+            edges: self.edges_directed(a, Direction::Outgoing),
             ty: PhantomData,
         }
     }
@@ -1610,19 +1606,13 @@ impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
     }
 }
 
-/// Iterator over the multiple edges between two nodes
+/// Iterator over the multiple directed edges connecting a source node to a target node
 pub struct EdgesConnecting<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    /// The end node
-    match_end: NodeIndex<Ix>,
-
-    edges: &'a [Edge<E, Ix>],
-
-    /// Next edge to visit.
-    next: [EdgeIndex<Ix>; 2],
-
+    target_node: NodeIndex<Ix>,
+    edges: Edges<'a, E, Ty, Ix>,
     ty: PhantomData<Ty>,
 }
 
@@ -1633,33 +1623,12 @@ impl<'a, E, Ty, Ix> Iterator for EdgesConnecting<'a, E, Ty, Ix>
     type Item = EdgeReference<'a, E, Ix>;
 
     fn next(&mut self) -> Option<EdgeReference<'a, E, Ix>> {
-        // First any outgoing edges
-        while let Some(edge) = self.edges.get(self.next[0].index()) {
-            let i = self.next[0].index();
-            self.next[0] = edge.next[0];
-            // Make sure we only return edges with the right end node.
-            if edge.node[1] == self.match_end {
-                return Some(EdgeReference {
-                    index: edge_index(i),
-                    node: edge.node,
-                    weight: &edge.weight,
-                });
+        while let Some(edge) = self.edges.next() {
+            if edge.node[1] == self.target_node {
+                return Some(edge);
             }
         }
 
-        // Then incoming edges
-        while let Some(edge) = self.edges.get(self.next[1].index()) {
-            let i = self.next[1].index();
-            self.next[1] = edge.next[1];
-            // Make sure we only return edges with the right end node.
-            if edge.node[0] == self.match_end {
-                return Some(EdgeReference {
-                    index: edge_index(i),
-                    node: edge.node,
-                    weight: &edge.weight,
-                });
-            }
-        }
         None
     }
 }

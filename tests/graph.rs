@@ -290,16 +290,27 @@ fn iter_multi_edges() {
     let a = gr.add_node("a");
     let b = gr.add_node("b");
     let c = gr.add_node("c");
-    gr.add_edge(a, b, ());
+
+    let mut connecting_edges = HashSet::new();
+
+    gr.add_edge(a, a, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
     gr.add_edge(a, c, ());
-    gr.add_edge(a, b, ());
-    gr.add_edge(b, c, ());
+    gr.add_edge(c, b, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
 
     let mut iter = gr.edges_connecting(a, b);
 
-    assert_eq!(EdgeIndex::new(2), iter.next().unwrap().id());
-    assert_eq!(EdgeIndex::new(0), iter.next().unwrap().id());
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
     assert_eq!(None, iter.next());
+    assert!(connecting_edges.is_empty());
 }
 
 #[test]
