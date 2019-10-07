@@ -854,9 +854,10 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
-    /// Return an iterator over all edges connecting `a` and `b`.
+    /// Return an iterator over all the edges connecting `a` and `b`.
     ///
-    /// - `Directed` and `Undirected`: All edges connecting `a` and `b`.
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges connected to `a`.
     ///
     /// Iterator element type is `EdgeReference<E, Ix>`.
     pub fn edges_connecting(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> EdgesConnecting<E, Ty, Ix>
