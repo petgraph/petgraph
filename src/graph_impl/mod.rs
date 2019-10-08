@@ -851,6 +851,21 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
+    /// Return an iterator over all the edges connecting `a` and `b`.
+    ///
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges connected to `a`.
+    ///
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    pub fn edges_connecting(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> EdgesConnecting<E, Ty, Ix>
+    {
+        EdgesConnecting {
+            target_node: b,
+            edges: self.edges_directed(a, Direction::Outgoing),
+            ty: PhantomData,
+        }
+    }
+
     /// Lookup if there is an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
@@ -1281,7 +1296,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
                 weight: node_map(NodeIndex::new(i), &node.weight),
                 next: node.next,
             }));
-        g.edges.extend(enumerate(&self.edges).map(|(i, edge)| 
+        g.edges.extend(enumerate(&self.edges).map(|(i, edge)|
             Edge {
                 weight: edge_map(EdgeIndex::new(i), &edge.weight),
                 next: edge.next,
@@ -1599,6 +1614,34 @@ impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
         None
     }
 }
+
+/// Iterator over the multiple directed edges connecting a source node to a target node
+pub struct EdgesConnecting<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    target_node: NodeIndex<Ix>,
+    edges: Edges<'a, E, Ty, Ix>,
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, E, Ty, Ix> Iterator for EdgesConnecting<'a, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<EdgeReference<'a, E, Ix>> {
+        while let Some(edge) = self.edges.next() {
+            if edge.node[1] == self.target_node {
+                return Some(edge);
+            }
+        }
+
+        None
+    }
+}
+
 
 fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
     x.swap(0, 1);
@@ -1937,7 +1980,7 @@ impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
     type Item = (NodeIndex<Ix>, &'a N);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(i, node)| 
+        self.iter.next().map(|(i, node)|
             (node_index(i), &node.weight)
         )
     }
@@ -1996,7 +2039,7 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
     type Item = EdgeReference<'a, E, Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(i, edge)| 
+        self.iter.next().map(|(i, edge)|
             EdgeReference {
                 index: edge_index(i),
                 node: edge.node,
@@ -2044,4 +2087,3 @@ mod frozen;
 /// See indexing implementations and the traits `Data` and `DataMap`
 /// for read-write access to the graph's weights.
 pub struct Frozen<'a, G: 'a>(&'a mut G);
-

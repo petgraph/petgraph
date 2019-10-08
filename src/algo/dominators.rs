@@ -46,7 +46,7 @@ impl<N> Dominators<N>
         }
     }
 
-    /// Iterate over the given node's that strict dominators.
+    /// Iterate over the given node's strict dominators.
     ///
     /// If the given node is not reachable from the root, then `None` is
     /// returned.

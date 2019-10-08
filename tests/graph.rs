@@ -283,6 +283,71 @@ fn multi() {
     assert_eq!(gr.edge_count(), 2);
 
 }
+
+#[test]
+fn iter_multi_edges() {
+    let mut gr = Graph::new();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+
+    let mut connecting_edges = HashSet::new();
+
+    gr.add_edge(a, a, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    gr.add_edge(a, c, ());
+    gr.add_edge(c, b, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    gr.add_edge(b, a, ());
+
+    let mut iter = gr.edges_connecting(a, b);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    assert_eq!(None, iter.next());
+    assert!(connecting_edges.is_empty());
+}
+
+#[test]
+fn iter_multi_undirected_edges() {
+    let mut gr = Graph::new_undirected();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+
+    let mut connecting_edges = HashSet::new();
+
+    gr.add_edge(a, a, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    gr.add_edge(a, c, ());
+    gr.add_edge(c, b, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    connecting_edges.insert(gr.add_edge(b, a, ()));
+
+    let mut iter = gr.edges_connecting(a, b);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    assert_eq!(None, iter.next());
+    assert!(connecting_edges.is_empty());
+}
+
 #[test]
 fn update_edge()
 {
@@ -1565,7 +1630,7 @@ fn filtered_edge_reverse() {
     assert_eq!(set(po), set(vec![c, d]));
 
     // Now let's test the same graph but undirected
-    
+
     let mut g = Graph::new_undirected();
     let a = g.add_node("A");
     let b = g.add_node("B");
