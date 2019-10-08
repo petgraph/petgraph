@@ -60,6 +60,7 @@ pub mod dot;
 pub mod unionfind;
 mod dijkstra;
 mod astar;
+mod simple_paths;
 pub mod csr;
 mod iter_format;
 mod iter_utils;

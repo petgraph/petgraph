@@ -46,6 +46,7 @@ pub use super::isomorphism::{
 };
 pub use super::dijkstra::dijkstra;
 pub use super::astar::astar;
+pub use super::simple_paths::all_simple_paths;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///
