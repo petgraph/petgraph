@@ -299,3 +299,40 @@ fn test_all_edges_mut() {
         assert_eq!((start + end) * 2, *weight);
     }
 }
+
+#[test]
+fn neighbors_incoming_includes_self_loops() {
+    let mut graph = DiGraphMap::new();
+
+    let node = graph.add_node(());
+    graph.add_edge(node, node, ());
+
+    let mut neighbors = graph.neighbors_directed(node, Incoming);
+    assert_eq!(neighbors.next(), Some(node));
+    assert_eq!(neighbors.next(), None);
+}
+
+#[test]
+fn undirected_neighbors_includes_self_loops() {
+    let mut graph = UnGraphMap::new();
+
+    let node = graph.add_node(());
+    graph.add_edge(node, node, ());
+
+    let mut neighbors = graph.neighbors(node);
+    assert_eq!(neighbors.next(), Some(node));
+    assert_eq!(neighbors.next(), None);
+}
+
+#[test]
+fn self_loops_can_be_removed() {
+    let mut graph = DiGraphMap::new();
+
+    let node = graph.add_node(());
+    graph.add_edge(node, node, ());
+
+    graph.remove_edge(node, node);
+
+    assert_eq!(graph.neighbors_directed(node, Outgoing).next(), None);
+    assert_eq!(graph.neighbors_directed(node, Incoming).next(), None);
+}
