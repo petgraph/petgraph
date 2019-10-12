@@ -8,6 +8,8 @@ pub mod dominators;
 
 use std::collections::BinaryHeap;
 use std::cmp::min;
+use std::ops::Add;
+use std::fmt::Debug;
 
 use crate::prelude::*;
 
@@ -23,11 +25,9 @@ use super::visit::{
     IntoNeighbors,
     IntoNeighborsDirected,
     IntoNodeIdentifiers,
-    NodeCount,
     NodeIndexable,
     NodeCompactIndexable,
     IntoEdgeReferences,
-    IntoEdges,
     Reversed,
 };
 use super::unionfind::UnionFind;
@@ -44,8 +44,10 @@ pub use super::isomorphism::{
     is_isomorphic,
     is_isomorphic_matching,
 };
-pub use super::dijkstra::dijkstra;
-pub use super::astar::astar;
+
+pub mod pathfinding;
+
+pub use self::pathfinding::{astar, dijkstra, bellman_ford, NegativeCycle};
 pub use super::simple_paths::all_simple_paths;
 
 /// \[Generic\] Return the number of connected components of the graph.
@@ -644,123 +646,6 @@ impl<N> Cycle<N> {
         self.0
     }
 }
-/// An algorithm error: a cycle of negative weights was found in the graph.
-#[derive(Clone, Debug, PartialEq)]
-pub struct NegativeCycle(());
-
-/// \[Generic\] Compute shortest paths from node `source` to all other.
-///
-/// Using the [Bellman–Ford algorithm][bf]; negative edge costs are
-/// permitted, but the graph must not have a cycle of negative weights
-/// (in that case it will return an error).
-///
-/// On success, return one vec with path costs, and another one which points
-/// out the predecessor of a node along a shortest path. The vectors
-/// are indexed by the graph's node indices.
-///
-/// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
-///
-/// # Example
-/// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::bellman_ford;
-/// use petgraph::prelude::*;
-///
-/// let mut g = Graph::new();
-/// let a = g.add_node(()); // node with no weight
-/// let b = g.add_node(());
-/// let c = g.add_node(());
-/// let d = g.add_node(());
-/// let e = g.add_node(());
-/// let f = g.add_node(());
-/// g.extend_with_edges(&[
-///     (0, 1, 2.0),
-///     (0, 3, 4.0),
-///     (1, 2, 1.0),
-///     (1, 5, 7.0),
-///     (2, 4, 5.0),
-///     (4, 5, 1.0),
-///     (3, 4, 1.0),
-/// ]);
-///
-/// // Graph represented with the weight of each edge
-/// //
-/// //     2       1
-/// // a ----- b ----- c
-/// // | 4     | 7     |
-/// // d       f       | 5
-/// // | 1     | 1     |
-/// // \------ e ------/
-///
-/// let path = bellman_ford(&g, a);
-/// assert_eq!(path, Ok((vec![0.0 ,     2.0,    3.0,    4.0,     5.0,     6.0],
-///                      vec![None, Some(a),Some(b),Some(a), Some(d), Some(e)]
-///                    ))
-///           );
-/// // Node f (indice 5) can be reach from a with a path costing 6.
-/// // Predecessor of f is Some(e) which predecessor is Some(d) which predecessor is Some(a).
-/// // Thus the path from a to f is a <-> d <-> e <-> f
-///
-/// let graph_with_neg_cycle = Graph::<(), f32, Undirected>::from_edges(&[
-///         (0, 1, -2.0),
-///         (0, 3, -4.0),
-///         (1, 2, -1.0),
-///         (1, 5, -25.0),
-///         (2, 4, -5.0),
-///         (4, 5, -25.0),
-///         (3, 4, -1.0),
-/// ]);
-///
-/// assert!(bellman_ford(&graph_with_neg_cycle, NodeIndex::new(0)).is_err());
-/// ```
-pub fn bellman_ford<G>(g: G, source: G::NodeId)
-    -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
-    where G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
-          G::EdgeWeight: FloatMeasure,
-{
-    let mut predecessor = vec![None; g.node_bound()];
-    let mut distance = vec![<_>::infinite(); g.node_bound()];
-
-    let ix = |i| g.to_index(i);
-
-    distance[ix(source)] = <_>::zero();
-    // scan up to |V| - 1 times.
-    for _ in 1..g.node_count() {
-        let mut did_update = false;
-        for i in g.node_identifiers() {
-            for edge in g.edges(i) {
-                let i = edge.source();
-                let j = edge.target();
-                let w = *edge.weight();
-                if distance[ix(i)] + w < distance[ix(j)] {
-                    distance[ix(j)] = distance[ix(i)] + w;
-                    predecessor[ix(j)] = Some(i);
-                    did_update = true;
-                }
-            }
-        }
-        if !did_update {
-            break;
-        }
-    }
-
-    // check for negative weight cycle
-    for i in g.node_identifiers() {
-        for edge in g.edges(i) {
-            let j = edge.target();
-            let w = *edge.weight();
-            if distance[ix(i)] + w < distance[ix(j)] {
-                //println!("neg cycle, detected from {} to {}, weight={}", i, j, w);
-                return Err(NegativeCycle(()));
-            }
-        }
-    }
-
-    Ok((distance, predecessor))
-}
-
-use std::ops::Add;
-use std::fmt::Debug;
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure : Debug + PartialOrd + Add<Self, Output=Self> + Default + Clone {
