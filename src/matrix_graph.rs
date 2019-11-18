@@ -495,9 +495,8 @@ impl<N, E, Null: Nullable<Wrapped=E>, Ix: IndexType> MatrixGraph<N, E, Directed,
     /// `a`, in the specified direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
-    /// - `Directed`, `Outgoing`: All edges from `a`.
-    /// - `Directed`, `Incoming`: All edges to `a`.
-    /// - `Undirected`: All edges from or to `a`.
+    /// - `Outgoing`: All edges from `a`.
+    /// - `Incoming`: All edges to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is [`NodeIndex<Ix>`](../graph/struct.NodeIndex.html).
@@ -511,9 +510,8 @@ impl<N, E, Null: Nullable<Wrapped=E>, Ix: IndexType> MatrixGraph<N, E, Directed,
 
     /// Return an iterator of all edges of `a`, in the specified direction.
     ///
-    /// - `Directed`, `Outgoing`: All edges from `a`.
-    /// - `Directed`, `Incoming`: All edges to `a`.
-    /// - `Undirected`: All edges connected to `a`.
+    /// - `Outgoing`: All edges from `a`.
+    /// - `Incoming`: All edges to `a`.
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is [`EdgeReference<E, Ix>`](../graph/struct.EdgeReference.html).

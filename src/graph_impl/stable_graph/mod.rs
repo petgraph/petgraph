@@ -658,33 +658,19 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     ///
     /// - `Directed`, `Outgoing`: All edges from `a`.
     /// - `Directed`, `Incoming`: All edges to `a`.
-    /// - `Undirected`: All edges connected to `a`.
+    /// - `Undirected`, `Outgoing`: All edges connected to `a`, with `a` being the source of each
+    ///   edge.
+    /// - `Undirected`, `Incoming`: All edges connected to `a`, with `a` being the target of each
+    ///   edge.
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<E, Ty, Ix>
     {
-        let mut iter = self.edges_undirected(a);
-        if self.is_directed() {
-            iter.direction = Some(dir);
-        }
-        if self.is_directed() && dir == Incoming {
-            iter.next.swap(0, 1);
-        }
-        iter
-    }
-
-    /// Return an iterator over all edges connected to `a`.
-    ///
-    /// - `Directed` and `Undirected`: All edges connected to `a`.
-    ///
-    /// Produces an empty iterator if the node `a` doesn't exist.<br>
-    /// Iterator element type is `EdgeReference<E, Ix>`.
-    fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
         Edges {
             skip_start: a,
             edges: &self.g.edges,
-            direction: None,
+            direction: dir,
             next: match self.get_node(a) {
                 None => [EdgeIndex::end(), EdgeIndex::end()],
                 Some(n) => n.next,
@@ -1280,7 +1266,6 @@ impl<'a, N, E, Ty, Ix> IntoEdgesDirected for &'a StableGraph<N, E, Ty, Ix>
     }
 }
 
-
 /// Iterator over the edges of from or to a node
 pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
     where Ty: EdgeType,
@@ -1291,13 +1276,11 @@ pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
     edges: &'a [Edge<Option<E>, Ix>],
 
     /// Next edge to visit.
-    /// If we are only following one direction, we only use `next[0]` regardless.
     next: [EdgeIndex<Ix>; 2],
 
-    /// Which direction to follow
-    /// None: Both,
-    /// Some(d): d if Directed, Both if Undirected
-    direction: Option<Direction>,
+    /// For directed graphs: the direction to iterate in
+    /// For undirected graphs: the direction of edges
+    direction: Direction,
     ty: PhantomData<Ty>,
 }
 
@@ -1308,44 +1291,60 @@ impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
     type Item = EdgeReference<'a, E, Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // First the outgoing or incoming edges (directionality)
-        let k = self.direction.unwrap_or(Outgoing).index();
-        let i = self.next[0].index();
-        match self.edges.get(i) {
-            None => {}
-            Some(&Edge { ref node, weight: Some(ref weight), ref next }) => {
-                self.next[0] = next[k];
-                return Some(EdgeReference {
-                    index: edge_index(i),
-                    node: *node,
-                    weight: weight,
-                });
-            }
-            Some(_otherwise) => unreachable!(),
-        }
-        // Stop here if we only follow one direction
-        if self.direction.is_some() {
-            return None;
-        }
-        // Then incoming edges
-        // For an "undirected" iterator (traverse both incoming
-        // and outgoing edge lists), make sure we don't double
-        // count selfloops by skipping them in the incoming list.
+        //      type        direction    |    iterate over    reverse
+        //                               |
+        //    Directed      Outgoing     |      outgoing        no
+        //    Directed      Incoming     |      incoming        no
+        //   Undirected     Outgoing     |        both       incoming
+        //   Undirected     Incoming     |        both       outgoing
 
-        // We reach here if self.direction was None or Outgoing.
-        debug_assert_eq!(k, 0);
-        while let Some(edge) = self.edges.get(self.next[1].index()) {
-            debug_assert!(edge.weight.is_some());
-            let i = self.next[1].index();
-            self.next[1] = edge.next[1];
-            if edge.node[0] != self.skip_start {
+        // For iterate_over, "both" is represented as None.
+        // For reverse, "no" is represented as None.
+        let (iterate_over, reverse) = if Ty::is_directed() {
+            (Some(self.direction), None)
+        } else {
+            (None, Some(self.direction.opposite()))
+        };
+
+        if iterate_over.unwrap_or(Outgoing) == Outgoing {
+            let i = self.next[0].index();
+            if let Some(Edge { node, weight: Some(weight), next }) = self.edges.get(i) {
+                self.next[0] = next[0];
                 return Some(EdgeReference {
                     index: edge_index(i),
-                    node: swap_pair(edge.node),
-                    weight: edge.weight.as_ref().unwrap(),
+                    node: if reverse == Some(Outgoing) {
+                        swap_pair(*node)
+                    } else {
+                        *node
+                    },
+                    weight,
                 });
             }
         }
+
+        if iterate_over.unwrap_or(Incoming) == Incoming {
+            while let Some(Edge { node, weight, next }) = self.edges.get(self.next[1].index()) {
+                debug_assert!(weight.is_some());
+                let edge_index = self.next[1];
+                self.next[1] = next[1];
+                // In any of the "both" situations, self-loops would be iterated over twice.
+                // Skip them here.
+                if iterate_over.is_none() && node[0] == self.skip_start {
+                    continue;
+                }
+
+                return Some(EdgeReference {
+                    index: edge_index,
+                    node: if reverse == Some(Incoming) {
+                        swap_pair(*node)
+                    } else {
+                        *node
+                    },
+                    weight: weight.as_ref().unwrap(),
+                })
+            }
+        }
+
         None
     }
 }

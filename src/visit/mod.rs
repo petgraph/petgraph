@@ -248,7 +248,8 @@ trait_template! {
 ///
 /// - `Directed`, `Outgoing`: All edges from `a`.
 /// - `Directed`, `Incoming`: All edges to `a`.
-/// - `Undirected`: All edges connected to `a`.
+/// - `Undirected`, `Outgoing`: All edges connected to `a`, with `a` being the source of each edge.
+/// - `Undirected`, `Incoming`: All edges connected to `a`, with `a` being the target of each edge.
 ///
 /// This is an extended version of the trait `IntoNeighborsDirected`; the former
 /// only iterates over the target node identifiers, while this trait
