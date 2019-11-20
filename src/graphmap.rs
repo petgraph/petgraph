@@ -349,7 +349,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
                 None => [].iter(),
             },
             start_node: a,
-            dir: dir,
+            dir,
             ty: self.ty,
         }
     }
@@ -364,7 +364,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// Iterator element type is `(N, &E)`.
     pub fn edges(&self, from: N) -> Edges<N, E, Ty> {
         Edges {
-            from: from,
+            from,
             iter: self.neighbors(from),
             edges: &self.edges,
         }

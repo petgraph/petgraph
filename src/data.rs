@@ -356,7 +356,7 @@ pub trait ElementIterator<N, E> : Iterator<Item=Element<N, E>> {
             iter: self,
             node_index: 0,
             map: Vec::new(),
-            f: f,
+            f,
         }
     }
 }
@@ -389,9 +389,9 @@ impl<I, F, N, E> Iterator for FilterElements<I, F>
                 Some(elt) => elt,
             };
             let keep = (self.f)(match elt {
-                Element::Node { ref mut weight } => Element::Node { weight: weight },
+                Element::Node { ref mut weight } => Element::Node { weight },
                 Element::Edge { source, target, ref mut weight }
-                    => Element::Edge { source: source, target: target, weight: weight },
+                    => Element::Edge { source, target, weight },
             });
             let is_node = if let Element::Node { .. } = elt { true } else { false };
             if !keep && is_node {

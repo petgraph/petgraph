@@ -444,7 +444,7 @@ impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
             let index = self.index;
             self.index += 1;
             EdgeReference {
-                index: index,
+                index,
                 source: self.source,
                 target: j,
                 weight: w,
@@ -502,7 +502,7 @@ impl<'a, E, Ty, Ix> Iterator for EdgeReferences<'a, E, Ty, Ix>
                 let index = self.index;
                 self.index += 1;
                 return Some(EdgeReference {
-                    index: index,
+                    index,
                     source: self.source_index,
                     target: j,
                     weight: w,

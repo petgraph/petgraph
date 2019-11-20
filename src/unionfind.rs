@@ -49,7 +49,7 @@ impl<K> UnionFind<K>
         let rank = vec![0; n];
         let parent = (0..n).map(K::new).collect::<Vec<K>>();
 
-        UnionFind{parent: parent, rank: rank}
+        UnionFind{parent, rank}
     }
 
     /// Return the representative for `x`.

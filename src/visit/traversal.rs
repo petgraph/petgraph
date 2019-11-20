@@ -59,8 +59,8 @@ impl<N, VM> Dfs<N, VM>
     /// Create a `Dfs` from a vector and a visit map
     pub fn from_parts(stack: Vec<N>, discovered: VM) -> Self {
         Dfs {
-            stack: stack,
-            discovered: discovered,
+            stack,
+            discovered,
         }
     }
 
@@ -242,8 +242,8 @@ impl<N, VM> Bfs<N, VM>
         let mut stack = VecDeque::new();
         stack.push_front(start);
         Bfs {
-            stack: stack,
-            discovered: discovered,
+            stack,
+            discovered,
         }
     }
 
@@ -364,7 +364,7 @@ pub trait Walker<Context> {
     {
         WalkerIter {
             walker: self,
-            context: context,
+            context,
         }
     }
 }

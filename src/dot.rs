@@ -63,8 +63,8 @@ impl<'a, G> Dot<'a, G> where G: GraphRef {
     /// Create a `Dot` formatting wrapper with custom configuration.
     pub fn with_config(graph: G, config: &'a [Config]) -> Self {
         Dot {
-            graph: graph,
-            config: config,
+            graph,
+            config,
         }
     }
 }

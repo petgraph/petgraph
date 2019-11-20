@@ -180,7 +180,7 @@ pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
     debug_assert!(!dominators.iter().any(|&dom| dom == UNDEFINED));
 
     Dominators {
-        root: root,
+        root,
         dominators: dominators.into_iter()
             .enumerate()
             .map(|(idx, dom_idx)| (post_order[idx], post_order[dom_idx]))

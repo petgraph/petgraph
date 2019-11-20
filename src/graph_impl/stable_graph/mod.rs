@@ -692,7 +692,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// The whole iteration computes in **O(|V|)** time.
     pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix>
     {
-        Externals { iter: self.raw_nodes().iter().enumerate(), dir: dir, ty: PhantomData }
+        Externals { iter: self.raw_nodes().iter().enumerate(), dir, ty: PhantomData }
     }
 
     /// Index the `StableGraph` by two indices, any combination of
@@ -808,7 +808,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
             move |i, w| w.as_ref().map(|w| node_map(i, w)),
             move |i, w| w.as_ref().map(|w| edge_map(i, w)));
         StableGraph {
-            g: g,
+            g,
             node_count: self.node_count,
             edge_count: self.edge_count,
             free_node: self.free_node,
@@ -1388,7 +1388,7 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
                 EdgeReference {
                     index: edge_index(i),
                     node: edge.node,
-                    weight: weight,
+                    weight,
                 }
             }))
     }
@@ -1403,7 +1403,7 @@ impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
                 EdgeReference {
                     index: edge_index(i),
                     node: edge.node,
-                    weight: weight,
+                    weight,
                 }
             }))
     }

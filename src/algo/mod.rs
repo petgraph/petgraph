@@ -576,8 +576,8 @@ pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
     MinSpanningTree {
         graph: g,
         node_ids: Some(g.node_references()),
-        subgraphs: subgraphs,
-        sort_edges: sort_edges,
+        subgraphs,
+        sort_edges,
         node_map: HashMap::new(),
         node_count: 0,
     }

@@ -489,7 +489,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// type (N/A if usize).
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix>
     {
-        let node = Node{weight: weight, next: [EdgeIndex::end(), EdgeIndex::end()]};
+        let node = Node{weight, next: [EdgeIndex::end(), EdgeIndex::end()]};
         let node_idx = NodeIndex::new(self.nodes.len());
         // check for max capacity, except if we use usize
         assert!(<Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx);
@@ -531,7 +531,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         let edge_idx = EdgeIndex::new(self.edges.len());
         assert!(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx);
         let mut edge = Edge {
-            weight: weight,
+            weight,
             node: [a, b],
             next: [EdgeIndex::end(); 2],
         };
@@ -933,7 +933,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// The whole iteration computes in **O(|V|)** time.
     pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix>
     {
-        Externals{iter: self.nodes.iter().enumerate(), dir: dir, ty: PhantomData}
+        Externals{iter: self.nodes.iter().enumerate(), dir, ty: PhantomData}
     }
 
     /// Return an iterator over the node indices of the graph.
@@ -1486,9 +1486,9 @@ fn edges_walker_mut<E, Ix>(edges: &mut [Edge<E, Ix>], next: EdgeIndex<Ix>, dir: 
     where Ix: IndexType,
 {
     EdgesWalkerMut {
-        edges: edges,
-        next: next,
-        dir: dir
+        edges,
+        next,
+        dir
     }
 }
 

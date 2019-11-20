@@ -471,7 +471,7 @@ fn try_match<N, E, Ty, Ix, F, G>(mut st: &mut [Vf2State<Ty, Ix>; 2],
                     // Check cardinalities of Tin, Tout sets
                     if st[0].out_size == st[1].out_size &&
                        st[0].ins_size == st[1].ins_size {
-                           let f0 = Frame::Unwind{nodes: nodes, open_list: ol};
+                           let f0 = Frame::Unwind{nodes, open_list: ol};
                            stack.push(f0);
                            stack.push(Frame::Outer);
                            continue;
