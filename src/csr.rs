@@ -107,15 +107,12 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     /// use petgraph::csr::Csr;
     /// use petgraph::prelude::*;
     ///
-    /// # fn main() {
-    ///
     /// let graph = Csr::<u8,()>::with_nodes(5);
     /// assert_eq!(graph.node_count(),5);
     /// assert_eq!(graph.edge_count(),0);
     ///
     /// assert_eq!(graph[0],0);
     /// assert_eq!(graph[4],0);
-    /// # }
     /// ```
     pub fn with_nodes(n: usize) -> Self
         where N: Default,
@@ -152,15 +149,12 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
     /// use petgraph::csr::Csr;
     /// use petgraph::prelude::*;
     ///
-    /// # fn main() {
-    ///
     /// let graph = Csr::<(),()>::from_sorted_edges(&[
     ///                     (0, 1), (0, 2),
     ///                     (1, 0), (1, 2), (1, 3),
     ///                     (2, 0),
     ///                     (3, 1),
     /// ]);
-    /// # }
     /// ```
     pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Result<Self, EdgesNotSorted>
         where Edge: Clone + IntoWeightedEdge<E, NodeId=NodeIndex<Ix>>,
