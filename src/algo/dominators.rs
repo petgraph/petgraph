@@ -12,6 +12,7 @@
 //! strictly dominates **B** and there does not exist any node **C** where **A**
 //! dominates **C** and **C** dominates **B**.
 
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
@@ -189,14 +190,13 @@ pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
 }
 
 fn intersect(dominators: &[usize], mut finger1: usize, mut finger2: usize) -> usize {
-    while finger1 != finger2 {
-        if finger1 < finger2 {
-            finger1 = dominators[finger1];
-        } else if finger2 < finger1 {
-            finger2 = dominators[finger2];
+    loop {
+        match finger1.cmp(&finger2) {
+            Ordering::Less => finger1 = dominators[finger1],
+            Ordering::Greater => finger2 = dominators[finger2],
+            Ordering::Equal => return finger1,
         }
     }
-    finger1
 }
 
 fn predecessor_sets_to_idx_vecs<N>(post_order: &[N],

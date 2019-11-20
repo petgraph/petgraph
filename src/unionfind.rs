@@ -1,5 +1,6 @@
 //! `UnionFind<K>` is a disjoint-set data structure.
 
+use std::cmp::Ordering;
 use super::graph::IndexType;
 
 /// `UnionFind<K>` is a disjoint-set data structure. It tracks set membership of *n* elements
@@ -101,25 +102,25 @@ impl<K> UnionFind<K>
     /// Returns `true` if the given elements belong to the same set, and returns
     /// `false` otherwise.
     pub fn equiv(&self, x: K, y: K) -> bool {
-        self.find(x) == self.find(y)        
+        self.find(x) == self.find(y)
     }
 
 
     /// Unify the two sets containing `x` and `y`.
     ///
     /// Return `false` if the sets were already the same, `true` if they were unified.
-    /// 
+    ///
     /// **Panics** if `x` or `y` is out of bounds.
     pub fn union(&mut self, x: K, y: K) -> bool
     {
         if x == y {
-            return false
+            return false;
         }
         let xrep = self.find_mut(x);
         let yrep = self.find_mut(y);
 
         if xrep == yrep {
-            return false
+            return false;
         }
 
         let xrepu = xrep.index();
@@ -127,16 +128,15 @@ impl<K> UnionFind<K>
         let xrank = self.rank[xrepu];
         let yrank = self.rank[yrepu];
 
-        // The rank corresponds roughly to the depth of the treeset, so put the 
+        // The rank corresponds roughly to the depth of the treeset, so put the
         // smaller set below the larger
-        if xrank < yrank {
-            self.parent[xrepu] = yrep;
-        } else if xrank > yrank {
-            self.parent[yrepu] = xrep;
-        } else {
-            // put y below x when equal.
-            self.parent[yrepu] = xrep;
-            self.rank[xrepu] += 1;
+        match xrank.cmp(&yrank) {
+            Ordering::Less => self.parent[xrepu] = yrep,
+            Ordering::Greater => self.parent[yrepu] = xrep,
+            Ordering::Equal => {
+                self.parent[yrepu] = xrep;
+                self.rank[xrepu] += 1;
+            }
         }
         true
     }

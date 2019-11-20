@@ -290,13 +290,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     /// edges, including *n* calls to `.remove_edge()` where *n* is the number
     /// of edges with an endpoint in `a`.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N> {
-        let node_weight = match self.g.nodes.get_mut(a.index()) {
-            None => return None,
-            Some(n) => n.weight.take(),
-        };
-        if let None = node_weight {
-            return None;
-        }
+        let node_weight = self.g.nodes.get_mut(a.index())?.weight.take()?;
         for d in &DIRECTIONS {
             let k = d.index();
 
@@ -319,7 +313,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
         self.free_node = a;
         self.node_count -= 1;
 
-        node_weight
+        Some(node_weight)
     }
 
     pub fn contains_node(&self, a: NodeIndex<Ix>) -> bool {
