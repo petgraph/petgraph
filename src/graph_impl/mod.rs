@@ -610,9 +610,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     /// endpoint in the displaced node.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N>
     {
-        if self.nodes.get(a.index()).is_none() {
-            return None
-        }
+        self.nodes.get(a.index())?;
         for d in &DIRECTIONS {
             let k = d.index();
 

@@ -162,7 +162,7 @@ fn parse_graph<Ty, G>(s: &str) -> G
     let lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
         for (col, word) in line.split(' ')
-                                .filter(|s| s.len() > 0)
+                                .filter(|s| !s.is_empty())
                                 .enumerate()
         {
             let has_edge = word.parse::<i32>().unwrap();

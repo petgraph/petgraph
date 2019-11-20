@@ -30,7 +30,7 @@ fn add_100_edges_to_self(b: &mut test::Bencher) {
         let mut g = g.clone();
 
         for &node in nodes.iter() {
-            let _ = g.add_edge(node, node, ());
+            g.add_edge(node, node, ());
         }
     });
 }
@@ -51,14 +51,14 @@ fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
 
             edges
         })
-        .flat_map(|e| e)
+        .flatten()
         .collect();
 
     b.iter(|| {
         let mut g = g.clone();
 
         for &(source, target) in edges_to_add.iter() {
-            let _ = g.add_edge(source, target, ());
+            g.add_edge(source, target, ());
         }
     });
 }
@@ -157,7 +157,7 @@ fn parse_matrix<Ty: EdgeType>(s: &str) -> MatrixGraph<(), (), Ty> {
     let lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
         for (col, word) in line.split(' ')
-                                .filter(|s| s.len() > 0)
+                                .filter(|s| !s.is_empty())
                                 .enumerate()
         {
             let has_edge = word.parse::<i32>().unwrap();
