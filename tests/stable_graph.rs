@@ -331,14 +331,14 @@ fn from() {
     gr1.add_edge(a, c, 40);
 
     let gr2 = Graph::from(gr1.clone());
-    let gr3 = StableGraph::from(gr2.clone());
+    let gr3 = StableGraph::from(gr2);
     assert!(nodes_eq!(gr1, gr3));
     assert!(edgew_eq!(gr1, gr3));
     assert!(edges_eq!(gr1, gr3));
 
     gr1.remove_node(b);
 
-    let gr4 = Graph::from(gr1.clone());
+    let gr4 = Graph::from(gr1);
     let gr5 = StableGraph::from(gr4.clone());
 
     let mut ans = StableGraph::new();
