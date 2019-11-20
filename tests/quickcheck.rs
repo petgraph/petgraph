@@ -36,6 +36,7 @@ use petgraph::algo::{
     tarjan_scc,
     dijkstra,
     bellman_ford,
+    dominators,
 };
 use petgraph::visit::{Topo, Reversed};
 use petgraph::visit::{
@@ -921,6 +922,23 @@ quickcheck! {
         }
         for i in edges {
             assert!(gr2.edge_weight(edge_index(i)).is_none());
+        }
+    }
+}
+
+quickcheck! {
+    fn slt_dominators(gr: Graph<(), ()>) -> bool {
+        if gr.node_count() == 0 {
+            return true;
+        }
+        let mut rng = rand::thread_rng();
+        let idx = rng.gen::<usize>() % gr.node_count();
+        if let Some(root) = gr.node_indices().nth(idx % gr.node_count()) {
+            let dom1 = dominators::simple_fast(&gr, root);
+            let dom2 = dominators::slt(&gr, root);
+            dom1.root() == dom2.root() && gr.node_indices().all(|idx| dom1.immediate_dominator(idx) == dom2.immediate_dominator(idx))
+        } else {
+            false
         }
     }
 }
