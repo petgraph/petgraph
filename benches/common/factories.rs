@@ -9,7 +9,7 @@ use petgraph::EdgeType;
 /// Petersen A and B are isomorphic
 ///
 /// http://www.dharwadker.org/tevet/isomorphism/
-const PETERSEN_A: &'static str = "
+const PETERSEN_A: &str = "
  0 1 0 0 1 0 1 0 0 0
  1 0 1 0 0 0 0 1 0 0
  0 1 0 1 0 0 0 0 1 0
@@ -22,7 +22,7 @@ const PETERSEN_A: &'static str = "
  0 0 0 1 0 0 1 1 0 0
 ";
 
-const PETERSEN_B: &'static str = "
+const PETERSEN_B: &str = "
  0 0 0 1 0 1 0 0 0 1
  0 0 0 1 1 0 1 0 0 0
  0 0 0 0 0 0 1 1 0 1
@@ -36,7 +36,7 @@ const PETERSEN_B: &'static str = "
 ";
 
 /// An almost full set, isomorphic
-const FULL_A: &'static str = "
+const FULL_A: &str = "
  1 1 1 1 1 1 1 1 1 1
  1 1 1 1 1 1 1 1 1 1
  1 1 1 1 1 1 1 1 1 1
@@ -49,7 +49,7 @@ const FULL_A: &'static str = "
  1 1 1 1 1 1 1 1 1 1
 ";
 
-const FULL_B: &'static str = "
+const FULL_B: &str = "
  1 1 1 1 1 1 1 1 1 1
  1 1 1 1 1 1 1 1 1 1
  1 1 0 1 1 1 0 1 1 1
@@ -63,7 +63,7 @@ const FULL_B: &'static str = "
 ";
 
 /// Praust A and B are not isomorphic
-const PRAUST_A: &'static str = "
+const PRAUST_A: &str = "
  0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0
  1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0
  1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0
@@ -86,7 +86,7 @@ const PRAUST_A: &'static str = "
  0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 1 1 0
 ";
 
-const PRAUST_B: &'static str = "
+const PRAUST_B: &str = "
  0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0
  1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0
  1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0
@@ -109,7 +109,7 @@ const PRAUST_B: &'static str = "
  0 0 0 0 0 1 0 0 0 0 0 0 1 0 1 0 0 1 1 0
 ";
 
-const BIGGER: &'static str = "
+const BIGGER: &str = "
  0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 1 1 0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0
  0 0 0 0 0 1 0 0 0 1 1 0 0 0 0 0 0 0 1 0 1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0
  0 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0

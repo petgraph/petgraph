@@ -50,9 +50,9 @@ pub struct Dot<'a, G> {
     config: &'a [Config],
 }
 
-static TYPE: [&'static str; 2] = ["graph", "digraph"];
-static EDGE: [&'static str; 2] = ["--", "->"];
-static INDENT: &'static str = "    ";
+static TYPE: [&str; 2] = ["graph", "digraph"];
+static EDGE: [&str; 2] = ["--", "->"];
+static INDENT: &str = "    ";
 
 impl<'a, G> Dot<'a, G> where G: GraphRef {
     /// Create a `Dot` formatting wrapper with default configuration.

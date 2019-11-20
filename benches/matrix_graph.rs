@@ -94,7 +94,7 @@ fn add_adjacent_edges(bench: &mut test::Bencher) {
 }
 
 /// An almost full set
-const FULL: &'static str = "
+const FULL: &str = "
  1 1 1 1 1 1 1 1 1 1
  1 1 1 1 1 1 1 1 1 1
  1 1 1 1 1 1 1 1 1 1
@@ -107,7 +107,7 @@ const FULL: &'static str = "
  1 1 1 1 1 1 1 1 1 1
 ";
 
-const BIGGER: &'static str = "
+const BIGGER: &str = "
  0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 1 1 0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0
  0 0 0 0 0 1 0 0 0 1 1 0 0 0 0 0 0 0 1 0 1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0
  0 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0

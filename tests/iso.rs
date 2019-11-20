@@ -20,7 +20,7 @@ use petgraph::algo::{
 /// Petersen A and B are isomorphic
 ///
 /// http://www.dharwadker.org/tevet/isomorphism/
-const PETERSEN_A: &'static str = "
+const PETERSEN_A: &str = "
  0 1 0 0 1 0 1 0 0 0 
  1 0 1 0 0 0 0 1 0 0 
  0 1 0 1 0 0 0 0 1 0 
@@ -33,7 +33,7 @@ const PETERSEN_A: &'static str = "
  0 0 0 1 0 0 1 1 0 0
 ";
 
-const PETERSEN_B: &'static str = "
+const PETERSEN_B: &str = "
  0 0 0 1 0 1 0 0 0 1 
  0 0 0 1 1 0 1 0 0 0 
  0 0 0 0 0 0 1 1 0 1 
@@ -47,7 +47,7 @@ const PETERSEN_B: &'static str = "
 ";
 
 /// An almost full set, isomorphic
-const FULL_A: &'static str = "
+const FULL_A: &str = "
  1 1 1 1 1 1 1 1 1 1 
  1 1 1 1 1 1 1 1 1 1 
  1 1 1 1 1 1 1 1 1 1 
@@ -60,7 +60,7 @@ const FULL_A: &'static str = "
  1 1 1 1 1 1 1 1 1 1
 ";
 
-const FULL_B: &'static str = "
+const FULL_B: &str = "
  1 1 1 1 1 1 1 1 1 1 
  1 1 1 1 1 1 1 1 1 1 
  1 1 0 1 1 1 0 1 1 1 
@@ -74,7 +74,7 @@ const FULL_B: &'static str = "
 ";
 
 /// Praust A and B are not isomorphic
-const PRAUST_A: &'static str = "
+const PRAUST_A: &str = "
  0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 
  1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 
  1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 
@@ -97,7 +97,7 @@ const PRAUST_A: &'static str = "
  0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 1 1 0
 ";
 
-const PRAUST_B: &'static str = "
+const PRAUST_B: &str = "
  0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 
  1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 
  1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 
@@ -120,7 +120,7 @@ const PRAUST_B: &'static str = "
  0 0 0 0 0 1 0 0 0 0 0 0 1 0 1 0 0 1 1 0 
 ";
 
-const G1U: &'static str = "
+const G1U: &str = "
 0 1 1 0 1
 1 0 1 0 0
 1 1 0 0 0
@@ -128,7 +128,7 @@ const G1U: &'static str = "
 1 0 0 0 0
 ";
 
-const G2U: &'static str = "
+const G2U: &str = "
 0 1 0 1 0
 1 0 0 1 1
 0 0 0 0 0
@@ -136,7 +136,7 @@ const G2U: &'static str = "
 0 1 0 0 0
 ";
 
-const G4U: &'static str = "
+const G4U: &str = "
 0 1 1 0 1
 1 0 0 1 0
 1 0 0 0 0
@@ -144,7 +144,7 @@ const G4U: &'static str = "
 1 0 0 0 0
 ";
 
-const G1D: &'static str = "
+const G1D: &str = "
 0 1 1 0 1
 0 0 1 0 0
 0 0 0 0 0
@@ -152,7 +152,7 @@ const G1D: &'static str = "
 0 0 0 0 0
 ";
 
-const G4D: &'static str = "
+const G4D: &str = "
 0 1 1 0 1
 0 0 0 1 0
 0 0 0 0 0
@@ -161,7 +161,7 @@ const G4D: &'static str = "
 ";
 
 // G8 1,2 are not iso
-const G8_1: &'static str = "
+const G8_1: &str = "
 0 1 1 0 0 1 1 1
 1 0 1 0 1 0 1 1
 1 1 0 1 0 0 1 1
@@ -172,7 +172,7 @@ const G8_1: &'static str = "
 1 1 1 1 1 1 1 0
 ";
 
-const G8_2: &'static str = "
+const G8_2: &str = "
 0 1 0 1 0 1 1 1
 1 0 1 0 1 0 1 1
 0 1 0 1 0 1 1 1
@@ -184,24 +184,24 @@ const G8_2: &'static str = "
 ";
 
 // G3 1,2 are not iso
-const G3_1: &'static str = "
+const G3_1: &str = "
 0 1 0
 1 0 1
 0 1 0
 ";
-const G3_2: &'static str = "
+const G3_2: &str = "
 0 1 1
 1 0 1
 1 1 0
 ";
 
 // Non-isomorphic due to selfloop difference
-const S1: &'static str = "
+const S1: &str = "
 1 1 1
 1 0 1
 1 0 0
 ";
-const S2: &'static str = "
+const S2: &str = "
 1 1 1
 0 1 1
 1 0 0
@@ -523,7 +523,7 @@ fn iso_multigraph_failure() {
 
 
 /// Isomorphic pair
-const COXETER_A: &'static str = "
+const COXETER_A: &str = "
  0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
  1 0 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
  0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 
@@ -556,7 +556,7 @@ const COXETER_A: &'static str = "
  1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 
 ";
 
-const COXETER_B: &'static str = "
+const COXETER_B: &str = "
  0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 
  0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 
  0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0 0 
