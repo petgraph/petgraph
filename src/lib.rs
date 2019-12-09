@@ -12,7 +12,7 @@
 //! # Example
 //! 
 //! ```rust
-//! use petgraph::prelude::*;
+//! use petgraph::graphmap::UnGraphMap;
 //! use petgraph::algo::{dijkstra, min_spanning_tree};
 //! use petgraph::data::FromElements;
 //! use petgraph::dot::{Dot, Config};
