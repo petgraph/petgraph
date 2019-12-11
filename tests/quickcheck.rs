@@ -816,6 +816,8 @@ quickcheck! {
             }
         }
         true
+    }
+}
 
 defmac!(iter_eq a, b => a.eq(b));
 defmac!(nodes_eq ref a, ref b => a.node_references().eq(b.node_references()));
