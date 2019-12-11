@@ -14,13 +14,13 @@ use std::fmt;
 use std::ops::{Index, IndexMut, Deref};
 use std::iter::FromIterator;
 use std::marker::PhantomData;
-use ordermap::OrderMap;
-use ordermap::{
-    Iter as OrderMapIter, IterMut as OrderMapIterMut
+use indexmap::IndexMap;
+use indexmap::map::{
+    Iter as IndexMapIter, IterMut as IndexMapIterMut
 };
-use ordermap::Keys;
+use indexmap::map::Keys;
 
-use {
+use crate::{
     EdgeType,
     Directed,
     Undirected,
@@ -29,11 +29,11 @@ use {
     Outgoing,
 };
 
-use IntoWeightedEdge;
-use visit::{IntoNodeIdentifiers, NodeCount, IntoNodeReferences, NodeIndexable};
-use visit::{NodeCompactIndexable, IntoEdgeReferences, IntoEdges};
-use graph::Graph;
-use graph::node_index;
+use crate::IntoWeightedEdge;
+use crate::visit::{IntoNodeIdentifiers, NodeCount, IntoNodeReferences, NodeIndexable};
+use crate::visit::{NodeCompactIndexable, IntoEdgeReferences, IntoEdges};
+use crate::graph::Graph;
+use crate::graph::node_index;
 
 /// A `GraphMap` with undirected edges.
 ///
@@ -51,7 +51,7 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 ///
 /// It uses an combined adjacency list and sparse adjacency matrix
 /// representation, using **O(|V| + |E|)** space, and allows testing for edge
-/// existance in constant time.
+/// existence in constant time.
 ///
 /// `GraphMap` is parameterized over:
 ///
@@ -72,8 +72,8 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
-    nodes: OrderMap<N, Vec<(N, CompactDirection)>>,
-    edges: OrderMap<(N, N), E>,
+    nodes: IndexMap<N, Vec<(N, CompactDirection)>>,
+    edges: IndexMap<(N, N), E>,
     ty: PhantomData<Ty>,
 }
 
@@ -121,8 +121,8 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     /// Create a new `GraphMap` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         GraphMap {
-            nodes: OrderMap::with_capacity(nodes),
-            edges: OrderMap::with_capacity(edges),
+            nodes: IndexMap::with_capacity(nodes),
+            edges: IndexMap::with_capacity(edges),
             ty: PhantomData,
         }
     }
@@ -132,7 +132,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         (self.nodes.capacity(), self.edges.capacity())
     }
 
-    /// Use their natual order to map the node pair (a, b) to a canonical edge id.
+    /// Use their natural order to map the node pair (a, b) to a canonical edge id.
     #[inline]
     fn edge_key(a: N, b: N) -> (N, N) {
         if Ty::is_directed() {
@@ -216,7 +216,8 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
     }
 
     /// Add an edge connecting `a` and `b` to the graph, with associated
-    /// data `weight`.
+    /// data `weight`. For a directed graph, the edge is directed from `a`
+    /// to `b`.
     ///
     /// Inserts nodes `a` and/or `b` if they aren't already part of the graph.
     ///
@@ -347,6 +348,7 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
             },
+            start_node: a,
             dir: dir,
             ty: self.ty,
         }
@@ -403,11 +405,17 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
 
     /// Return a `Graph` that corresponds to this `GraphMap`.
     ///
-    /// Note: node and edge indices in the `Graph` have nothing in common
-    /// with the `GraphMap`s node weights `N`. The node weights `N` are
-    /// used as node weights in the resulting `Graph`, too.
+    /// 1. Note that node and edge indices in the `Graph` have nothing in common
+    ///    with the `GraphMap`s node weights `N`. The node weights `N` are used as
+    ///    node weights in the resulting `Graph`, too.
+    /// 2. Note that the index type is user-chosen.
+    ///
+    /// Computes in **O(|V| + |E|)** time (average).
+    ///
+    /// **Panics** if the number of nodes or edges does not fit with
+    /// the resulting graph's index type.
     pub fn into_graph<Ix>(self) -> Graph<N, E, Ty, Ix>
-        where Ix: ::graph::IndexType,
+        where Ix: crate::graph::IndexType,
     {
         // assuming two successive iterations of the same hashmap produce the same order
         let mut gr = Graph::with_capacity(self.node_count(), self.edge_count());
@@ -415,8 +423,8 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             gr.add_node(node);
         }
         for ((a, b), edge_weight) in self.edges {
-            let (ai, _, _) = self.nodes.get_pair_index(&a).unwrap();
-            let (bi, _, _) = self.nodes.get_pair_index(&b).unwrap();
+            let (ai, _, _) = self.nodes.get_full(&a).unwrap();
+            let (bi, _, _) = self.nodes.get_full(&b).unwrap();
             gr.add_edge(node_index(ai), node_index(bi), edge_weight);
         }
         gr
@@ -524,6 +532,7 @@ pub struct NeighborsDirected<'a, N, Ty>
           Ty: EdgeType,
 {
     iter: Iter<'a, (N, CompactDirection)>,
+    start_node: N,
     dir: Direction,
     ty: PhantomData<Ty>,
 }
@@ -536,8 +545,9 @@ impl<'a, N, Ty> Iterator for NeighborsDirected<'a, N, Ty>
     fn next(&mut self) -> Option<N> {
         if Ty::is_directed() {
             let self_dir = self.dir;
+            let start_node = self.start_node;
             (&mut self.iter)
-                .filter_map(move |&(n, dir)| if dir == self_dir {
+                .filter_map(move |&(n, dir)| if dir == self_dir || n == start_node {
                     Some(n)
                 } else { None })
                 .next()
@@ -552,7 +562,7 @@ pub struct Edges<'a, N, E: 'a, Ty>
           Ty: EdgeType
 {
     from: N,
-    edges: &'a OrderMap<(N, N), E>,
+    edges: &'a IndexMap<(N, N), E>,
     iter: Neighbors<'a, N, Ty>,
 }
 
@@ -589,7 +599,7 @@ impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
 }
 
 pub struct AllEdges<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    inner: OrderMapIter<'a, (N, N), E>,
+    inner: IndexMapIter<'a, (N, N), E>,
     ty: PhantomData<Ty>,
 }
 
@@ -633,7 +643,7 @@ impl<'a, N, E, Ty> DoubleEndedIterator for AllEdges<'a, N, E, Ty>
 }
 
 pub struct AllEdgesMut<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    inner: OrderMapIterMut<'a, (N, N), E>,
+    inner: IndexMapIterMut<'a, (N, N), E>,
     ty: PhantomData<Ty>,
 }
 
@@ -753,8 +763,8 @@ impl<'b, T> Ord for Ptr<'b, T>
 {
     /// Ptr is ordered by pointer value, i.e. an arbitrary but stable and total order.
     fn cmp(&self, other: &Ptr<'b, T>) -> Ordering {
-        let a = self.0 as *const _;
-        let b = other.0 as *const _;
+        let a: *const T = self.0;
+        let b: *const T = other.0;
         a.cmp(&b)
     }
 }
@@ -808,7 +818,7 @@ impl<N, E, Ty> NodeCount for GraphMap<N, E, Ty>
 }
 
 pub struct NodeIdentifiers<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    iter: OrderMapIter<'a, N, Vec<(N, CompactDirection)>>,
+    iter: IndexMapIter<'a, N, Vec<(N, CompactDirection)>>,
     ty: PhantomData<Ty>,
     edge_ty: PhantomData<E>,
 }
@@ -840,7 +850,7 @@ impl<'a, N, E, Ty> IntoNodeReferences for &'a GraphMap<N, E, Ty>
 }
 
 pub struct NodeReferences<'a, N, E: 'a, Ty> where N: 'a + NodeTrait {
-    iter: OrderMapIter<'a, N, Vec<(N, CompactDirection)>>,
+    iter: IndexMapIter<'a, N, Vec<(N, CompactDirection)>>,
     ty: PhantomData<Ty>,
     edge_ty: PhantomData<E>,
 }
@@ -862,7 +872,7 @@ impl<N, E, Ty> NodeIndexable for GraphMap<N, E, Ty>
 {
     fn node_bound(&self) -> usize { self.node_count() }
     fn to_index(&self, ix: Self::NodeId) -> usize {
-        let (i, _, _) = self.nodes.get_pair_index(&ix).unwrap();
+        let (i, _, _) = self.nodes.get_full(&ix).unwrap();
         i
     }
     fn from_index(&self, ix: usize) -> Self::NodeId {

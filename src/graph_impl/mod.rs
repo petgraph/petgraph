@@ -4,10 +4,10 @@ use std::hash::Hash;
 use std::iter;
 use std::marker::PhantomData;
 use std::mem::size_of;
-use std::ops::{Deref, Index, IndexMut, Range};
+use std::ops::{Index, IndexMut, Range};
 use std::slice;
 
-use {
+use crate::{
     Direction, Outgoing, Incoming,
     Undirected,
     Directed,
@@ -15,17 +15,18 @@ use {
     IntoWeightedEdge,
 };
 
-use iter_format::{
+use crate::iter_format::{
     IterFormatExt,
     NoPretty,
     DebugMap,
 };
 
-use visit::EdgeRef;
-use visit::{Data, IntoNodeIdentifiers, GraphProp, NodeIndexable, IntoNeighborsDirected};
-use visit::{IntoNeighbors, IntoNodeReferences, IntoEdgeReferences, Visitable};
-use visit::{NodeCompactIndexable, GetAdjacencyMatrix, NodeCount, IntoEdges};
-use data::{DataMap, DataMapMut};
+use crate::visit::EdgeRef;
+use crate::visit::{IntoNodeReferences, IntoEdges, IntoEdgesDirected};
+use crate::util::enumerate;
+
+#[cfg(feature = "serde-1")]
+mod serialization;
 
 
 /// The default integer type for graph indices.
@@ -38,7 +39,7 @@ pub type DefaultIx = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
 ///
-/// Marked `unsafe` because: the trait must faithfully preseve
+/// Marked `unsafe` because: the trait must faithfully preserve
 /// and convert index values.
 pub unsafe trait IndexType : Copy + Default + Hash + Ord + fmt::Debug + 'static
 {
@@ -157,6 +158,10 @@ impl<Ix: IndexType> EdgeIndex<Ix>
     }
 }
 
+impl<Ix: IndexType> From<Ix> for EdgeIndex<Ix> {
+    fn from(ix: Ix) -> Self { EdgeIndex(ix) }
+}
+
 impl<Ix: fmt::Debug> fmt::Debug for EdgeIndex<Ix>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -257,6 +262,9 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
+/// The `Graph` is a regular Rust collection and is `Send` and `Sync` (as long
+/// as associated data `N` and `E` are).
+///
 /// The graph uses **O(|V| + |E|)** space, and allows fast node and edge insert,
 /// efficient graph search and graph algorithms.
 /// It implements **O(e')** edge lookup and edge and node removals, where **e'**
@@ -291,16 +299,15 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// example for *n* nodes indices are 0 to *n* - 1 inclusive.
 ///
 /// `NodeIndex` and `EdgeIndex` are types that act as references to nodes and edges,
-/// but these are only stable across certain operations.
-/// **Adding nodes or edges keeps indices stable.
-/// Removing nodes or edges may shift other indices.**
-/// Removing a node will force the last node to shift its index to
-/// take its place. Similarly, removing an edge shifts the index of the last edge.
+/// but these are only stable across certain operations:
+///
+/// * **Removing nodes or edges may shift other indices.** Removing a node will
+/// force the last node to shift its index to take its place. Similarly,
+/// removing an edge shifts the index of the last edge.
+/// * Adding nodes or edges keeps indices stable.
 ///
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
 /// completely unless you need a very big graph -- then you can use `usize`.
-///
-/// ### Pros and Cons of Indices
 ///
 /// * The fact that the node and edge indices in the graph each are numbered in compact
 /// intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
@@ -314,12 +321,7 @@ impl<E, Ix: IndexType> Edge<E, Ix>
 /// * You can create several graphs using the equal node indices but with
 /// differing weights or differing edges.
 ///
-/// * The `Graph` is a regular rust collection and is `Send` and `Sync` (as long
-/// as associated data `N` and `E` are).
-///
-/// * Some indices shift during node or edge removal, so that is a drawback
-/// of removing elements. Indices don't allow as much compile time checking as
-/// references.
+/// * Indices don't allow as much compile time checking as references.
 ///
 pub struct Graph<N, E, Ty = Directed, Ix = DefaultIx> {
     nodes: Vec<Node<N, Ix>>,
@@ -369,11 +371,15 @@ impl<N, E, Ty, Ix> fmt::Debug for Graph<N, E, Ty, Ix>
         let etype = if self.is_directed() { "Directed" } else { "Undirected" };
         let mut fmt_struct = f.debug_struct("Graph");
         fmt_struct.field("Ty", &etype);
-        fmt_struct.field("edges",
-             &self.edges
-                 .iter()
-                 .map(|e| NoPretty((e.source().index(), e.target().index())))
-                 .format(", "));
+        fmt_struct.field("node_count", &self.node_count());
+        fmt_struct.field("edge_count", &self.edge_count());
+        if self.edge_count() > 0 {
+            fmt_struct.field("edges",
+                 &self.edges
+                     .iter()
+                     .map(|e| NoPretty((e.source().index(), e.target().index())))
+                     .format(", "));
+        }
         // skip weights if they are ZST!
         if size_of::<N>() != 0 {
             fmt_struct.field("node weights", &DebugMap(|| self.nodes.iter()
@@ -486,7 +492,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         let node = Node{weight: weight, next: [EdgeIndex::end(), EdgeIndex::end()]};
         let node_idx = NodeIndex::new(self.nodes.len());
         // check for max capacity, except if we use usize
-        assert!(Ix::max().index() == !0 || NodeIndex::end() != node_idx);
+        assert!(<Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx);
         self.nodes.push(node);
         node_idx
     }
@@ -523,7 +529,7 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix>
     {
         let edge_idx = EdgeIndex::new(self.edges.len());
-        assert!(Ix::max().index() == !0 || EdgeIndex::end() != edge_idx);
+        assert!(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx);
         let mut edge = Edge {
             weight: weight,
             node: [a, b],
@@ -845,6 +851,21 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         }
     }
 
+    /// Return an iterator over all the edges connecting `a` and `b`.
+    ///
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges connected to `a`.
+    ///
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    pub fn edges_connecting(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> EdgesConnecting<E, Ty, Ix>
+    {
+        EdgesConnecting {
+            target_node: b,
+            edges: self.edges_directed(a, Direction::Outgoing),
+            ty: PhantomData,
+        }
+    }
+
     /// Lookup if there is an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
@@ -864,18 +885,22 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         } else {
             match self.nodes.get(a.index()) {
                 None => None,
-                Some(node) => {
-                    let mut edix = node.next[0];
-                    while let Some(edge) = self.edges.get(edix.index()) {
-                        if edge.node[1] == b {
-                            return Some(edix)
-                        }
-                        edix = edge.next[0];
-                    }
-                    None
-                }
+                Some(node) => self.find_edge_directed_from_node(node, b)
             }
         }
+    }
+
+    fn find_edge_directed_from_node(&self, node: &Node<N, Ix>, b: NodeIndex<Ix>)
+        -> Option<EdgeIndex<Ix>>
+    {
+        let mut edix = node.next[0];
+        while let Some(edge) = self.edges.get(edix.index()) {
+            if edge.node[1] == b {
+                return Some(edix)
+            }
+            edix = edge.next[0];
+        }
+        None
     }
 
     /// Lookup an edge between `a` and `b`, in either direction.
@@ -889,20 +914,24 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     {
         match self.nodes.get(a.index()) {
             None => None,
-            Some(node) => {
-                for &d in &DIRECTIONS {
-                    let k = d.index();
-                    let mut edix = node.next[k];
-                    while let Some(edge) = self.edges.get(edix.index()) {
-                        if edge.node[1 - k] == b {
-                            return Some((edix, d))
-                        }
-                        edix = edge.next[k];
-                    }
+            Some(node) => self.find_edge_undirected_from_node(node, b),
+        }
+    }
+
+    fn find_edge_undirected_from_node(&self, node: &Node<N, Ix>, b: NodeIndex<Ix>)
+        -> Option<(EdgeIndex<Ix>, Direction)>
+    {
+        for &d in &DIRECTIONS {
+            let k = d.index();
+            let mut edix = node.next[k];
+            while let Some(edge) = self.edges.get(edix.index()) {
+                if edge.node[1 - k] == b {
+                    return Some((edix, d))
                 }
-                None
+                edix = edge.next[k];
             }
         }
+        None
     }
 
     /// Return an iterator over either the nodes without edges to them
@@ -921,7 +950,18 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
         Externals{iter: self.nodes.iter().enumerate(), dir: dir, ty: PhantomData}
     }
 
-    /// Return an iterator over the node indices of the graph
+    /// Return an iterator over the node indices of the graph.
+    ///
+    /// For example, in a rare case where a graph algorithm were not applicable,
+    /// the following code will iterate through all nodes to find a
+    /// specific index:
+    ///
+    /// ```
+    /// # use petgraph::Graph;
+    /// # let mut g = Graph::<&str, i32>::new();
+    /// # g.add_node("book");
+    /// let index = g.node_indices().find(|i| g[*i] == "book").unwrap();
+    /// ```
     pub fn node_indices(&self) -> NodeIndices<Ix> {
         NodeIndices { r: 0..self.node_count(), ty: PhantomData }
     }
@@ -1251,19 +1291,17 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
               G: FnMut(EdgeIndex<Ix>, &'a E) -> E2,
     {
         let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
-        for (i, node) in enumerate(&self.nodes) {
-            g.nodes.push(Node {
+        g.nodes.extend(enumerate(&self.nodes).map(|(i, node)|
+            Node {
                 weight: node_map(NodeIndex::new(i), &node.weight),
                 next: node.next,
-            });
-        }
-        for (i, edge) in enumerate(&self.edges) {
-            g.edges.push(Edge {
+            }));
+        g.edges.extend(enumerate(&self.edges).map(|(i, edge)|
+            Edge {
                 weight: edge_map(EdgeIndex::new(i), &edge.weight),
                 next: edge.next,
                 node: edge.node,
-            });
-        }
+            }));
         g
     }
 
@@ -1314,6 +1352,35 @@ impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
     {
         Graph{nodes: self.nodes, edges: self.edges,
               ty: PhantomData}
+    }
+
+
+    //
+    // internal methods
+    //
+    #[cfg(feature = "serde-1")]
+    /// Fix up node and edge links after deserialization
+    fn link_edges(&mut self) -> Result<(), NodeIndex<Ix>> {
+        for (edge_index, edge) in enumerate(&mut self.edges) {
+            let a = edge.source();
+            let b = edge.target();
+            let edge_idx = EdgeIndex::new(edge_index);
+            match index_twice(&mut self.nodes, a.index(), b.index()) {
+                Pair::None => return Err(if a > b { a } else { b }),
+                Pair::One(an) => {
+                    edge.next = an.next;
+                    an.next[0] = edge_idx;
+                    an.next[1] = edge_idx;
+                }
+                Pair::Both(an, bn) => {
+                    // a and b are different indices
+                    edge.next = [an.next[0], bn.next[1]];
+                    an.next[0] = edge_idx;
+                    bn.next[1] = edge_idx;
+                }
+            }
+        }
+        Ok(())
     }
 }
 
@@ -1378,7 +1445,7 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
             None => {}
             Some(edge) => {
                 self.next[0] = edge.next[0];
-                return Some((edge.node[1]));
+                return Some(edge.node[1]);
             }
         }
         // Then incoming edges
@@ -1388,7 +1455,7 @@ impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix> where
         while let Some(edge) = self.edges.get(self.next[1].index()) {
             self.next[1] = edge.next[1];
             if edge.node[0] != self.skip_start {
-                return Some((edge.node[0]));
+                return Some(edge.node[0]);
             }
         }
         None
@@ -1470,6 +1537,16 @@ impl<'a, N, E, Ty, Ix> IntoEdges for &'a Graph<N, E, Ty, Ix>
     }
 }
 
+impl<'a, N, E, Ty, Ix> IntoEdgesDirected for &'a Graph<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type EdgesDirected = Edges<'a, E, Ty, Ix>;
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
+        self.edges_directed(a, dir)
+    }
+}
+
 
 /// Iterator over the edges of from or to a node
 pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
@@ -1481,7 +1558,7 @@ pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
     edges: &'a [Edge<E, Ix>],
 
     /// Next edge to visit.
-    /// If we are only following one direction, we only use next[0] regardless.
+    /// If we are only following one direction, we only use `next[0]` regardless.
     next: [EdgeIndex<Ix>; 2],
 
     /// Which direction to follow
@@ -1537,6 +1614,34 @@ impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
         None
     }
 }
+
+/// Iterator over the multiple directed edges connecting a source node to a target node
+pub struct EdgesConnecting<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    target_node: NodeIndex<Ix>,
+    edges: Edges<'a, E, Ty, Ix>,
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, E, Ty, Ix> Iterator for EdgesConnecting<'a, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<EdgeReference<'a, E, Ix>> {
+        while let Some(edge) = self.edges.next() {
+            if edge.node[1] == self.target_node {
+                return Some(edge);
+            }
+        }
+
+        None
+    }
+}
+
 
 fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
     x.swap(0, 1);
@@ -1773,17 +1878,11 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
     }
 }
 
-fn enumerate<I>(iterable: I) -> ::std::iter::Enumerate<I::IntoIter>
-    where I: IntoIterator,
-{
-    iterable.into_iter().enumerate()
-}
-
 /// Iterator over the node indices of a graph.
 #[derive(Clone, Debug)]
 pub struct NodeIndices<Ix = DefaultIx> {
     r: Range<usize>,
-    ty: PhantomData<Ix>,
+    ty: PhantomData<fn() -> Ix>,
 }
 
 impl<Ix: IndexType> Iterator for NodeIndices<Ix> {
@@ -1804,11 +1903,13 @@ impl<Ix: IndexType> DoubleEndedIterator for NodeIndices<Ix> {
     }
 }
 
+impl<Ix: IndexType> ExactSizeIterator for NodeIndices<Ix> {}
+
 /// Iterator over the edge indices of a graph.
 #[derive(Clone, Debug)]
 pub struct EdgeIndices<Ix = DefaultIx> {
     r: Range<usize>,
-    ty: PhantomData<Ix>,
+    ty: PhantomData<fn() -> Ix>,
 }
 
 impl<Ix: IndexType> Iterator for EdgeIndices<Ix> {
@@ -1828,6 +1929,8 @@ impl<Ix: IndexType> DoubleEndedIterator for EdgeIndices<Ix> {
         self.r.next_back().map(edge_index)
     }
 }
+
+impl<Ix: IndexType> ExactSizeIterator for EdgeIndices<Ix> {}
 
 /// Reference to a `Graph` edge.
 #[derive(Debug)]
@@ -1877,7 +1980,7 @@ impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
     type Item = (NodeIndex<Ix>, &'a N);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(i, node)| 
+        self.iter.next().map(|(i, node)|
             (node_index(i), &node.weight)
         )
     }
@@ -1886,6 +1989,20 @@ impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
         self.iter.size_hint()
     }
 }
+
+impl<'a, N, Ix> DoubleEndedIterator for NodeReferences<'a, N, Ix>
+    where Ix: IndexType
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back().map(|(i, node)|
+            (node_index(i), &node.weight)
+        )
+    }
+}
+
+impl<'a, N, Ix> ExactSizeIterator for NodeReferences<'a, N, Ix>
+    where Ix: IndexType
+{ }
 
 impl<'a, Ix, E> EdgeReference<'a, E, Ix>
     where Ix: IndexType,
@@ -1922,7 +2039,7 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
     type Item = EdgeReference<'a, E, Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(i, edge)| 
+        self.iter.next().map(|(i, edge)|
             EdgeReference {
                 index: edge_index(i),
                 node: edge.node,
@@ -1936,77 +2053,37 @@ impl<'a, E, Ix> Iterator for EdgeReferences<'a, E, Ix>
     }
 }
 
-#[cfg(feature = "stable_graph")]
-#[path = "stable_graph.rs"]
-pub mod stable_graph;
+impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
+    where Ix: IndexType
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back().map(|(i, edge)|
+            EdgeReference {
+                index: edge_index(i),
+                node: edge.node,
+                weight: &edge.weight,
+            }
+        )
+    }
+}
 
-/// `Frozen` only allows shared access (read-only) to the
+impl<'a, E, Ix> ExactSizeIterator for EdgeReferences<'a, E, Ix>
+    where Ix: IndexType
+{}
+
+#[cfg(feature = "stable_graph")]
+pub mod stable_graph;
+mod frozen;
+
+/// `Frozen` is a graph wrapper.
+///
+/// The `Frozen` only allows shared access (read-only) to the
 /// underlying graph `G`, but it allows mutable access to its
 /// node and edge weights.
 ///
 /// This is used to ensure immutability of the graph's structure
-/// while permitting weights to change.
+/// while permitting weights to be both read and written.
+///
+/// See indexing implementations and the traits `Data` and `DataMap`
+/// for read-write access to the graph's weights.
 pub struct Frozen<'a, G: 'a>(&'a mut G);
-
-impl<'a, G> Frozen<'a, G> {
-    pub fn new(gr: &'a mut G) -> Self {
-        Frozen(gr)
-    }
-}
-
-impl<'a, G> Deref for Frozen<'a, G> {
-    type Target = G;
-    fn deref(&self) -> &G { self.0 }
-}
-
-impl<'a, G, I> Index<I> for Frozen<'a, G>
-    where G: Index<I>
-{
-    type Output = G::Output;
-    fn index(&self, i: I) -> &G::Output { self.0.index(i) }
-}
-
-impl<'a, G, I> IndexMut<I> for Frozen<'a, G>
-    where G: IndexMut<I>
-{
-    fn index_mut(&mut self, i: I) -> &mut G::Output { self.0.index_mut(i) }
-}
-
-impl<'a, N, E, Ty, Ix> Frozen<'a, Graph<N, E, Ty, Ix>>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{
-    /// Index the `Graph` by two indices, any combination of
-    /// node or edge indices is fine.
-    ///
-    /// **Panics** if the indices are equal or if they are out of bounds.
-    pub fn index_twice_mut<T, U>(&mut self, i: T, j: U)
-        -> (&mut <Graph<N, E, Ty, Ix> as Index<T>>::Output,
-            &mut <Graph<N, E, Ty, Ix> as Index<U>>::Output)
-        where Graph<N, E, Ty, Ix>: IndexMut<T> + IndexMut<U>,
-              T: GraphIndex,
-              U: GraphIndex,
-    {
-        self.0.index_twice_mut(i, j)
-    }
-}
-
-macro_rules! access0 {
-    ($e:expr) => ($e.0);
-}
-
-Data!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-DataMap!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-DataMapMut!{delegate_impl [['a, G], G, Frozen<'a, G>, access0]}
-GetAdjacencyMatrix!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-IntoEdgeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoEdges!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoNeighbors!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoNeighborsDirected!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoNodeIdentifiers!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-IntoNodeReferences!{delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twice]}
-NodeCompactIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-NodeCount!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-NodeIndexable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-GraphProp!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
-Visitable!{delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}

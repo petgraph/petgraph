@@ -16,12 +16,12 @@ fn simple() {
     //let root = TypedArena::<Node<_>>::new();
     let mut gr = UnGraphMap::new();
     //let node = |&: name: &'static str| Ptr(root.alloc(Node(name.to_string())));
-    let a = gr.add_node(("A"));
-    let b = gr.add_node(("B"));
-    let c = gr.add_node(("C"));
-    let d = gr.add_node(("D"));
-    let e = gr.add_node(("E"));
-    let f = gr.add_node(("F"));
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
     gr.add_edge(a, b, 7);
     gr.add_edge(a, c, 9);
     gr.add_edge(a, d, 14);
@@ -298,4 +298,41 @@ fn test_all_edges_mut() {
     for (start, end, weight) in graph.all_edges() {
         assert_eq!((start + end) * 2, *weight);
     }
+}
+
+#[test]
+fn neighbors_incoming_includes_self_loops() {
+    let mut graph = DiGraphMap::new();
+
+    let node = graph.add_node(());
+    graph.add_edge(node, node, ());
+
+    let mut neighbors = graph.neighbors_directed(node, Incoming);
+    assert_eq!(neighbors.next(), Some(node));
+    assert_eq!(neighbors.next(), None);
+}
+
+#[test]
+fn undirected_neighbors_includes_self_loops() {
+    let mut graph = UnGraphMap::new();
+
+    let node = graph.add_node(());
+    graph.add_edge(node, node, ());
+
+    let mut neighbors = graph.neighbors(node);
+    assert_eq!(neighbors.next(), Some(node));
+    assert_eq!(neighbors.next(), None);
+}
+
+#[test]
+fn self_loops_can_be_removed() {
+    let mut graph = DiGraphMap::new();
+
+    let node = graph.add_node(());
+    graph.add_edge(node, node, ());
+
+    graph.remove_edge(node, node);
+
+    assert_eq!(graph.neighbors_directed(node, Outgoing).next(), None);
+    assert_eq!(graph.neighbors_directed(node, Incoming).next(), None);
 }

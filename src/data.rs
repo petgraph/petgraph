@@ -1,16 +1,16 @@
 //! Graph traits for associated data and graph construction.
 
 
-use Graph;
+use crate::Graph;
 #[cfg(feature = "stable_graph")]
-use stable_graph::StableGraph;
-use ::{
+use crate::stable_graph::StableGraph;
+use crate::{
     EdgeType,
 };
-use graph::IndexType;
+use crate::graph::IndexType;
 #[cfg(feature = "graphmap")]
-use graphmap::{GraphMap, NodeTrait};
-use visit::{
+use crate::graphmap::{GraphMap, NodeTrait};
+use crate::visit::{
     Data,
     NodeCount,
     NodeIndexable,
@@ -20,9 +20,9 @@ use visit::{
 trait_template!{
     /// Access node and edge weights (associated data).
 pub trait DataMap : Data {
-    @section self_ref
-    fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight>;
-    fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight>;
+    @section self
+    fn node_weight(self: &Self, id: Self::NodeId) -> Option<&Self::NodeWeight>;
+    fn edge_weight(self: &Self, id: Self::EdgeId) -> Option<&Self::EdgeWeight>;
 }
 }
 
@@ -37,9 +37,9 @@ DataMap!{delegate_impl [[G], G, Reversed<G>, access0]}
 trait_template! {
     /// Access node and edge weights mutably.
 pub trait DataMapMut : DataMap {
-    @section self_mut
-    fn node_weight_mut(&mut self, id: Self::NodeId) -> Option<&mut Self::NodeWeight>;
-    fn edge_weight_mut(&mut self, id: Self::EdgeId) -> Option<&mut Self::EdgeWeight>;
+    @section self
+    fn node_weight_mut(self: &mut Self, id: Self::NodeId) -> Option<&mut Self::NodeWeight>;
+    fn edge_weight_mut(self: &mut Self, id: Self::EdgeId) -> Option<&mut Self::EdgeWeight>;
 }
 }
 

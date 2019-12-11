@@ -1,5 +1,5 @@
 
-use {Incoming};
+use crate::{Incoming};
 use super::{IntoNeighbors, IntoNeighborsDirected, Visitable, VisitMap};
 use super::{GraphRef, Reversed, IntoNodeIdentifiers};
 use std::collections::VecDeque;
@@ -95,7 +95,7 @@ impl<N, VM> Dfs<N, VM>
     pub fn next<G>(&mut self, graph: G) -> Option<N>
         where G: IntoNeighbors<NodeId=N>,
     {
-        while let Some(node) = self.stack.pop() {
+        if let Some(node) = self.stack.pop() {
             for succ in graph.neighbors(node) {
                 if self.discovered.visit(succ) {
                     self.stack.push(succ);
@@ -109,7 +109,7 @@ impl<N, VM> Dfs<N, VM>
 }
 
 /// Visit nodes in a depth-first-search (DFS) emitting nodes in postorder
-/// (each node after all its decendants have been emitted).
+/// (each node after all its descendants have been emitted).
 ///
 /// `DfsPostOrder` is not recursive.
 ///
@@ -251,7 +251,7 @@ impl<N, VM> Bfs<N, VM>
     pub fn next<G>(&mut self, graph: G) -> Option<N>
         where G: IntoNeighbors<NodeId=N>
     {
-        while let Some(node) = self.stack.pop_front() {
+        if let Some(node) = self.stack.pop_front() {
             for succ in graph.neighbors(node) {
                 if self.discovered.visit(succ) {
                     self.stack.push_back(succ);
@@ -400,6 +400,15 @@ impl<W, C> Iterator for WalkerIter<W, C>
     type Item = W::Item;
     fn next(&mut self) -> Option<Self::Item> {
         self.walker.walk_next(self.context.clone())
+    }
+}
+
+impl<'a, C, W: ?Sized> Walker<C> for &'a mut W
+    where W: Walker<C>,
+{
+    type Item = W::Item;
+    fn walk_next(&mut self, context: C) -> Option<Self::Item> {
+        (**self).walk_next(context)
     }
 }
 

@@ -55,26 +55,26 @@ use std::collections::{
 };
 use std::hash::{Hash, BuildHasher};
 
-use prelude::{Graph, Direction};
+use crate::prelude::{Graph, Direction};
 #[cfg(feature = "graphmap")]
-use prelude::GraphMap;
+use crate::prelude::GraphMap;
 #[cfg(feature = "stable_graph")]
-use prelude::StableGraph;
-use graph::{NodeIndex};
+use crate::prelude::StableGraph;
+use crate::graph::{NodeIndex};
 use super::{
     graph,
     EdgeType,
 };
 
-use graph::{
+use crate::graph::{
     IndexType,
 };
 #[cfg(feature = "stable_graph")]
-use stable_graph;
-use graph::Frozen;
+use crate::stable_graph;
+use crate::graph::Frozen;
 
 #[cfg(feature = "graphmap")]
-use graphmap::{
+use crate::graphmap::{
     self,
     NodeTrait,
 };
@@ -83,9 +83,10 @@ trait_template!{
 /// Base graph trait: defines the associated node identifier and
 /// edge identifier types.
 pub trait GraphBase {
+    // FIXME: We can drop this escape/nodelegate stuff in Rust 1.18
     @escape [type NodeId]
     @escape [type EdgeId]
-    @section ignore
+    @section nodelegate
     /// edge identifier
     type EdgeId: Copy + PartialEq;
     /// node identifier
@@ -142,7 +143,7 @@ pub trait IntoNeighbors : GraphRef {
     type Neighbors: Iterator<Item=Self::NodeId>;
     @section self
     /// Return an iterator of the neighbors of node `a`.
-    fn neighbors(self, a: Self::NodeId) -> Self::Neighbors;
+    fn neighbors(self: Self, a: Self::NodeId) -> Self::Neighbors;
 }
 }
 
@@ -238,6 +239,31 @@ pub trait IntoEdges : IntoEdgeReferences + IntoNeighbors {
 }
 
 IntoEdges!{delegate_impl []}
+
+trait_template! {
+/// Access to all edges of each node, in the specified direction.
+///
+/// The edges are, depending on the direction and the graph’s edge type:
+///
+///
+/// - `Directed`, `Outgoing`: All edges from `a`.
+/// - `Directed`, `Incoming`: All edges to `a`.
+/// - `Undirected`: All edges connected to `a`.
+///
+/// This is an extended version of the trait `IntoNeighborsDirected`; the former
+/// only iterates over the target node identifiers, while this trait
+/// yields edge references (trait [`EdgeRef`][er]).
+///
+/// [er]: trait.EdgeRef.html
+pub trait IntoEdgesDirected : IntoEdges + IntoNeighborsDirected {
+    @section type
+    type EdgesDirected: Iterator<Item=Self::EdgeRef>;
+    @section self
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected;
+}
+}
+
+IntoEdgesDirected!{delegate_impl []}
 
 trait_template! {
 /// Access to the sequence of the graph’s `NodeId`s.
@@ -408,7 +434,7 @@ pub trait GraphProp : GraphBase {
     /// The kind edges in the graph.
     type EdgeType: EdgeType;
 
-    @section ignore
+    @section nodelegate
     fn is_directed(&self) -> bool {
         <Self::EdgeType>::is_directed()
     }
@@ -456,14 +482,14 @@ impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
 trait_template!{
     /// The graph’s `NodeId`s map to indices
     pub trait NodeIndexable : GraphBase {
-        @section self_ref
+        @section self
         /// Return an upper bound of the node indices in the graph
         /// (suitable for the size of a bitmap).
-        fn node_bound(&self) -> usize;
+        fn node_bound(self: &Self) -> usize;
         /// Convert `a` to an integer index.
-        fn to_index(&self, a: Self::NodeId) -> usize;
+        fn to_index(self: &Self, a: Self::NodeId) -> usize;
         /// Convert `i` to a node index
-        fn from_index(&self, i: usize) -> Self::NodeId;
+        fn from_index(self: &Self, i: usize) -> Self::NodeId;
     }
 }
 
@@ -472,8 +498,8 @@ NodeIndexable!{delegate_impl []}
 trait_template! {
 /// A graph with a known node count.
 pub trait NodeCount : GraphBase {
-    @section self_ref
-    fn node_count(&self) -> usize;
+    @section self
+    fn node_count(self: &Self) -> usize;
 }
 }
 
@@ -565,11 +591,11 @@ pub trait Visitable : GraphBase {
     @section type
     /// The associated map type
     type Map: VisitMap<Self::NodeId>;
-    @section self_ref
+    @section self
     /// Create a new visitor map
-    fn visit_map(&self) -> Self::Map;
+    fn visit_map(self: &Self) -> Self::Map;
     /// Reset the visitor map (and resize to new size of graph if needed)
-    fn reset_map(&self, map: &mut Self::Map) -> ();
+    fn reset_map(self: &Self, map: &mut Self::Map) -> ();
 }
 }
 Visitable!{delegate_impl []}
@@ -656,13 +682,13 @@ pub trait GetAdjacencyMatrix : GraphBase {
     @section type
     /// The associated adjacency matrix type
     type AdjMatrix;
-    @section self_ref
+    @section self
     /// Create the adjacency matrix
-    fn adjacency_matrix(&self) -> Self::AdjMatrix;
+    fn adjacency_matrix(self: &Self) -> Self::AdjMatrix;
     /// Return true if there is an edge from `a` to `b`, false otherwise.
     ///
     /// Computes in O(1) time.
-    fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
+    fn is_adjacent(self: &Self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool;
 }
 }
 

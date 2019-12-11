@@ -1,7 +1,7 @@
 extern crate rand;
 extern crate petgraph;
 
-use rand::{Rng, thread_rng, ChaChaRng};
+use rand::{Rng, thread_rng, ChaChaRng, SeedableRng};
 use std::collections::HashSet;
 use petgraph::unionfind::UnionFind;
 
@@ -34,9 +34,37 @@ fn uf_test() {
 }
 
 #[test]
+fn uf_test_with_equiv() {
+    let n = 8;
+    let mut u = UnionFind::new(n);
+    for i in 0..n {
+        assert_eq!(u.find(i), i);
+        assert_eq!(u.find_mut(i), i);
+        assert!(u.equiv(i, i));
+    }
+
+    u.union(0, 1);
+    assert!(u.equiv(0, 1));
+    u.union(1, 3);
+    u.union(1, 4);
+    u.union(4, 7);
+    assert!(u.equiv(0, 7));
+    assert!(u.equiv(1, 3));
+    assert!(!u.equiv(0, 2));
+    assert!(u.equiv(7, 0));
+    u.union(5, 6);
+    assert!(u.equiv(6, 5));
+    assert!(!u.equiv(6, 7));
+
+    // check that there are now 3 disjoint sets
+    let set = (0..n).map(|i| u.find(i)).collect::<HashSet<_>>();
+    assert_eq!(set.len(), 3);
+}
+
+#[test]
 fn uf_rand() {
     let n = 1 << 14;
-    let mut rng: ChaChaRng = thread_rng().gen();
+    let mut rng = ChaChaRng::from_rng(thread_rng()).unwrap();
     let mut u = UnionFind::new(n);
     for _ in 0..100 {
         let a = rng.gen_range(0, n);
@@ -50,7 +78,7 @@ fn uf_rand() {
 #[test]
 fn uf_u8() {
     let n = 256;
-    let mut rng: ChaChaRng = thread_rng().gen();
+    let mut rng = ChaChaRng::from_rng(thread_rng()).unwrap();
     let mut u = UnionFind::<u8>::new(n);
     for _ in 0..(n * 8) {
         let a = rng.gen();

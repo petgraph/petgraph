@@ -11,16 +11,32 @@
 //! which is backed by a hash table and the node identifiers are the keys
 //! into the table.
 //!
+//! - [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html) is an adjacency matrix graph.
+//!
+//! - [`CSR`](./csr/struct.Csr.html) is a sparse adjacency matrix graph with
+//! arbitrary associated data.
+//!
+//! Optional crate feature: `"serde-1"`, see the Readme for more information.
+//!
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
 
 extern crate fixedbitset;
 #[cfg(feature = "graphmap")]
-extern crate ordermap;
+extern crate indexmap;
+
+#[cfg(feature = "serde-1")]
+extern crate serde;
+#[cfg(feature = "serde-1")]
+#[macro_use]
+extern crate serde_derive;
+
+#[cfg(all(feature = "serde-1", test))]
+extern crate itertools;
 
 #[doc(no_inline)]
-pub use graph::Graph;
+pub use crate::graph::Graph;
 
-pub use Direction::{Outgoing, Incoming};
+pub use crate::Direction::{Outgoing, Incoming};
 
 #[macro_use]
 mod macros;
@@ -37,24 +53,30 @@ pub mod algo;
 pub mod generate;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
-#[path = "graph.rs"]
+#[cfg(feature = "matrix_graph")]
+pub mod matrix_graph;
 mod graph_impl;
 pub mod dot;
 pub mod unionfind;
 mod dijkstra;
+mod astar;
+mod simple_paths;
 pub mod csr;
 mod iter_format;
+mod iter_utils;
 mod isomorphism;
 mod traits_graph;
 mod util;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
+#[cfg(feature = "serde-1")]
+mod serde_utils;
 
 pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
-    pub use graph_impl::{
+    pub use crate::graph_impl::{
         Edge,
         EdgeIndex,
         EdgeIndices,
@@ -70,6 +92,7 @@ pub mod graph {
         NodeIndex,
         NodeIndices,
         NodeWeightsMut,
+        NodeReferences,
         WalkNeighbors,
         GraphIndex,
         IndexType,
@@ -82,7 +105,7 @@ pub mod graph {
 }
 
 #[cfg(feature = "stable_graph")]
-pub use graph_impl::stable_graph;
+pub use crate::graph_impl::stable_graph;
 
 macro_rules! copyclone {
     ($name:ident) => {
@@ -124,7 +147,7 @@ impl Direction {
 }
 
 #[doc(hidden)]
-pub use Direction as EdgeDirection;
+pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Copy, Debug)]
@@ -136,7 +159,7 @@ copyclone!(Directed);
 pub enum Undirected { }
 copyclone!(Undirected);
 
-/// A graph's edge type determines whether is has directed edges or not.
+/// A graph's edge type determines whether it has directed edges or not.
 pub trait EdgeType {
     fn is_directed() -> bool;
 }

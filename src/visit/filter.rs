@@ -1,15 +1,16 @@
 
-use prelude::*;
+use crate::prelude::*;
 
 use fixedbitset::FixedBitSet;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-use visit::{
+use crate::visit::{
     GraphBase,
     GraphProp,
     IntoEdgeReferences,
     IntoEdges,
+    IntoEdgesDirected,
     IntoNeighbors,
     IntoNeighborsDirected,
     IntoNodeIdentifiers,
@@ -19,8 +20,8 @@ use visit::{
     VisitMap,
     Visitable,
 };
-use visit::{Data, NodeCompactIndexable, NodeCount};
-use data::{DataMap};
+use crate::visit::{Data, NodeCompactIndexable, NodeCount};
+use crate::data::{DataMap};
 
 /// A graph filter for nodes.
 pub trait FilterNode<N>
@@ -337,6 +338,21 @@ impl<'a, G, F> IntoNeighbors for &'a EdgeFiltered<G, F>
     }
 }
 
+impl<'a, G, F> IntoNeighborsDirected for &'a EdgeFiltered<G, F>
+where
+    G: IntoEdgesDirected,
+    F: FilterEdge<G::EdgeRef>,
+{
+    type NeighborsDirected = EdgeFilteredNeighborsDirected<'a, G, F>;
+    fn neighbors_directed(self, n: G::NodeId, dir: Direction) -> Self::NeighborsDirected {
+        EdgeFilteredNeighborsDirected {
+            iter: self.0.edges_directed(n, dir),
+            f: &self.1,
+            from: n,
+        }
+    }
+}
+
 /// A filtered neighbors iterator.
 pub struct EdgeFilteredNeighbors<'a, G, F: 'a>
     where G: IntoEdges,
@@ -406,6 +422,41 @@ impl<'a, G, I, F> Iterator for EdgeFilteredEdges<'a, G, I, F>
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         self.iter.find(move |&edge| f.include_edge(edge))
+    }
+}
+
+/// A filtered neighbors-directed iterator.
+pub struct EdgeFilteredNeighborsDirected<'a, G, F: 'a>
+where
+    G: IntoEdgesDirected,
+{
+    iter: G::EdgesDirected,
+    f: &'a F,
+    from: G::NodeId,
+}
+
+impl<'a, G, F> Iterator for EdgeFilteredNeighborsDirected<'a, G, F>
+where
+    F: FilterEdge<G::EdgeRef>,
+    G: IntoEdgesDirected,
+{
+    type Item = G::NodeId;
+    fn next(&mut self) -> Option<Self::Item> {
+        let f = self.f;
+        let from = self.from;
+        (&mut self.iter)
+            .filter_map(move |edge| {
+                if f.include_edge(edge) {
+                    if edge.source() != from {
+                        Some(edge.source())
+                    } else {
+                        Some(edge.target()) // includes case where from == source == target
+                    }
+                } else {
+                    None
+                }
+            })
+            .next()
     }
 }
 

@@ -1,22 +1,21 @@
-
 //! Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
 
 use std::marker::PhantomData;
 use std::cmp::max;
-use std::ops::Range;
+use std::ops::{Range, Index, IndexMut};
 use std::iter::{Enumerate, Zip};
 use std::slice::Windows;
 
-use visit::{EdgeRef, GraphBase, IntoNeighbors, NodeIndexable, IntoEdges};
-use visit::{NodeCompactIndexable, IntoNodeIdentifiers, Visitable};
-use visit::{Data, IntoEdgeReferences, NodeCount, GraphProp};
+use crate::visit::{EdgeRef, GraphBase, IntoNeighbors, NodeIndexable, IntoEdges};
+use crate::visit::{NodeCompactIndexable, IntoNodeIdentifiers, Visitable};
+use crate::visit::{Data, IntoEdgeReferences, NodeCount, GraphProp};
 
-use util::zip;
+use crate::util::zip;
 
 #[doc(no_inline)]
-pub use graph::{IndexType, DefaultIx};
+pub use crate::graph::{IndexType, DefaultIx};
 
-use {
+use crate::{
     EdgeType,
     Directed,
     IntoWeightedEdge,
@@ -29,7 +28,15 @@ pub type EdgeIndex = usize;
 
 const BINARY_SEARCH_CUTOFF: usize = 32;
 
-/// Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
+/// Compressed Sparse Row ([`CSR`]) is a sparse adjacency matrix graph.
+///
+/// `CSR` is parameterized over:
+///
+/// - Associated data `N` for nodes and `E` for edges, called *weights*.
+///   The associated data can be of arbitrary type.
+/// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
+/// - Index type `Ix`, which determines the maximum size of the graph.
+///
 ///
 /// Using **O(|E| + |V|)** space.
 ///
@@ -37,8 +44,7 @@ const BINARY_SEARCH_CUTOFF: usize = 32;
 ///
 /// Fast iteration of the outgoing edges of a vertex.
 ///
-/// Implementation notes: `N` is not actually used yet, but it is
-/// “reserved” as the first type parameter for forward compatibility.
+/// [`CSR`]: https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
 #[derive(Debug)]
 pub struct Csr<N = (), E = (), Ty = Directed, Ix = DefaultIx> {
     /// Column of next edge
@@ -51,6 +57,15 @@ pub struct Csr<N = (), E = (), Ty = Directed, Ix = DefaultIx> {
     node_weights: Vec<N>,
     edge_count: usize,
     ty: PhantomData<Ty>,
+}
+
+impl<N, E, Ty, Ix> Default for Csr<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<N: Clone, E: Clone, Ty, Ix: Clone> Clone for Csr<N, E, Ty, Ix> {
@@ -70,7 +85,38 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     where Ty: EdgeType,
           Ix: IndexType,
 {
-    /// Create a new `Csr` with `n` nodes.
+    /// Create an empty `Csr`.
+    pub fn new() -> Self {
+        Csr {
+            column: vec![],
+            edges: vec![],
+            row: vec![0; 1],
+            node_weights: vec![],
+            edge_count: 0,
+            ty: PhantomData,
+        }
+    }
+
+    /// Create a new [`Csr`] with `n` nodes. `N` must implement [`Default`] for the weight of each node.
+    ///
+    /// [`Default`]: https://doc.rust-lang.org/nightly/core/default/trait.Default.html
+    /// [`Csr`]: #struct.Csr.html
+    ///
+    /// # Example
+    /// ```rust
+    /// use petgraph::csr::Csr;
+    /// use petgraph::prelude::*;
+    ///
+    /// # fn main() {
+    ///
+    /// let graph = Csr::<u8,()>::with_nodes(5);
+    /// assert_eq!(graph.node_count(),5);
+    /// assert_eq!(graph.edge_count(),0);
+    ///
+    /// assert_eq!(graph[0],0);
+    /// assert_eq!(graph[4],0);
+    /// # }
+    /// ```
     pub fn with_nodes(n: usize) -> Self
         where N: Default,
     {
@@ -78,7 +124,7 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
             column: Vec::new(),
             edges: Vec::new(),
             row: vec![0; n + 1],
-            node_weights: Vec::new(),
+            node_weights: (0..n).map(|_| N::default()).collect(),
             edge_count: 0,
             ty: PhantomData,
         }
@@ -101,6 +147,21 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
     /// order for the pair *(u, v)* in Rust (*u* has priority).
     ///
     /// Computes in **O(|E| + |V|)** time.
+    /// # Example
+    /// ```rust
+    /// use petgraph::csr::Csr;
+    /// use petgraph::prelude::*;
+    ///
+    /// # fn main() {
+    ///
+    /// let graph = Csr::<(),()>::from_sorted_edges(&[
+    ///                     (0, 1), (0, 2),
+    ///                     (1, 0), (1, 2), (1, 3),
+    ///                     (2, 0),
+    ///                     (3, 1),
+    /// ]);
+    /// # }
+    /// ```
     pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Result<Self, EdgesNotSorted>
         where Edge: Clone + IntoWeightedEdge<E, NodeId=NodeIndex<Ix>>,
               N: Default,
@@ -206,6 +267,14 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
         }
     }
 
+    /// Adds a new node with the given weight, returning the corresponding node index.
+    pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
+        let i = self.row.len() - 1;
+        self.row.insert(i, self.column.len());
+        self.node_weights.insert(i, weight);
+        Ix::new(i)
+    }
+
     /// Return `true` if the edge was added
     ///
     /// If you add all edges in row-major order, the time complexity
@@ -273,7 +342,7 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
 
     fn neighbors_range(&self, a: NodeIndex<Ix>) -> Range<usize> {
         let index = self.row[a.index()];
-        let end = self.row.get(a.index() + 1).cloned().unwrap_or(self.column.len());
+        let end = self.row.get(a.index() + 1).cloned().unwrap_or_else(|| self.column.len());
         index..end
     }
 
@@ -541,8 +610,32 @@ impl<N, E, Ty, Ix> NodeIndexable for Csr<N, E, Ty, Ix>
     fn to_index(&self, a: Self::NodeId) -> usize { a.index() }
     fn from_index(&self, ix: usize) -> Self::NodeId { Ix::new(ix) }
 }
-impl<N, E, Ty> NodeCompactIndexable for Csr<N, E, Ty>
-    where Ty: EdgeType { }
+
+impl<N, E, Ty, Ix> NodeCompactIndexable for Csr<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+}
+
+impl<N, E, Ty, Ix> Index<NodeIndex<Ix>> for Csr<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    type Output = N;
+
+    fn index(&self, ix: NodeIndex<Ix>) -> &N {
+        &self.node_weights[ix.index()]
+    }
+}
+
+impl<N, E, Ty, Ix> IndexMut<NodeIndex<Ix>> for Csr<N, E, Ty, Ix>
+    where Ty: EdgeType,
+          Ix: IndexType,
+{
+    fn index_mut(&mut self, ix: NodeIndex<Ix>) -> &mut N {
+        &mut self.node_weights[ix.index()]
+    }
+}
 
 pub struct NodeIdentifiers<Ix = DefaultIx> {
     r: Range<usize>,
@@ -609,11 +702,11 @@ Row   : [0, 2, 5]   <- value index of row start
 #[cfg(test)]
 mod tests {
     use super::Csr;
-    use Undirected;
-    use visit::Dfs;
-    use visit::VisitMap;
-    use algo::tarjan_scc;
-    use algo::bellman_ford;
+    use crate::Undirected;
+    use crate::visit::Dfs;
+    use crate::visit::VisitMap;
+    use crate::algo::tarjan_scc;
+    use crate::algo::bellman_ford;
 
     #[test]
     fn csr1() {
@@ -797,8 +890,8 @@ mod tests {
 
     #[test]
     fn test_edge_references() {
-        use visit::EdgeRef;
-        use visit::IntoEdgeReferences;
+        use crate::visit::EdgeRef;
+        use crate::visit::IntoEdgeReferences;
         let m: Csr<(), _> = Csr::from_sorted_edges(&[
             (0, 1, 0.5),
             (0, 2, 2.),
@@ -822,5 +915,48 @@ mod tests {
         assert_eq!(&m.row, &m2.row);
         assert_eq!(&m.column, &m2.column);
         assert_eq!(&m.edges, &m2.edges);
+    }
+
+    #[test]
+    fn test_add_node() {
+        let mut g: Csr = Csr::new();
+        let a = g.add_node(());
+        let b = g.add_node(());
+        let c = g.add_node(());
+
+        assert!(g.add_edge(a, b, ()));
+        assert!(g.add_edge(b, c, ()));
+        assert!(g.add_edge(c, a, ()));
+
+        println!("{:?}", g);
+
+        assert_eq!(g.node_count(), 3);
+
+        assert_eq!(g.neighbors_slice(a), &[b]);
+        assert_eq!(g.neighbors_slice(b), &[c]);
+        assert_eq!(g.neighbors_slice(c), &[a]);
+
+        assert_eq!(g.edge_count(), 3);
+    }
+
+    #[test]
+    fn test_add_node_with_existing_edges() {
+        let mut g: Csr = Csr::new();
+        let a = g.add_node(());
+        let b = g.add_node(());
+
+        assert!(g.add_edge(a, b, ()));
+
+        let c = g.add_node(());
+
+        println!("{:?}", g);
+
+        assert_eq!(g.node_count(), 3);
+
+        assert_eq!(g.neighbors_slice(a), &[b]);
+        assert_eq!(g.neighbors_slice(b), &[]);
+        assert_eq!(g.neighbors_slice(c), &[]);
+
+        assert_eq!(g.edge_count(), 1);
     }
 }

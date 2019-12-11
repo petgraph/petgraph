@@ -15,7 +15,7 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
-use visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
+use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 
 /// The dominance relation for some graph and root.
 #[derive(Debug, Clone)]
@@ -46,7 +46,7 @@ impl<N> Dominators<N>
         }
     }
 
-    /// Iterate over the given node's that strict dominators.
+    /// Iterate over the given node's strict dominators.
     ///
     /// If the given node is not reachable from the root, then `None` is
     /// returned.
@@ -108,7 +108,7 @@ const UNDEFINED: usize = ::std::usize::MAX;
 /// Algorithm"][0] discovered by Cooper et al.
 ///
 /// This algorithm is **O(|V|²)**, and therefore has slower theoretical running time
-/// than the Lenguaer-Tarjan algorithm (which is **O(|E| log |V|)**. However,
+/// than the Lengauer-Tarjan algorithm (which is **O(|E| log |V|)**. However,
 /// Cooper et al found it to be faster in practice on control flow graphs of up
 /// to ~30,000 vertices.
 ///
@@ -213,7 +213,7 @@ fn predecessor_sets_to_idx_vecs<N>(post_order: &[N],
                         .map(|p| *node_to_post_order_idx.get(&p).unwrap())
                         .collect()
                 })
-                .unwrap_or(vec![])
+                .unwrap_or_else(Vec::new)
         })
         .collect()
 }
@@ -231,9 +231,9 @@ fn simple_fast_post_order<G>(graph: G,
         post_order.push(node);
 
         for successor in graph.neighbors(node) {
-            let mut predecessors = predecessor_sets.entry(successor)
-                .or_insert_with(HashSet::new);
-            predecessors.insert(node);
+            predecessor_sets.entry(successor)
+                .or_insert_with(HashSet::new)
+                .insert(node);
         }
     }
 

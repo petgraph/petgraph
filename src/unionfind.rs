@@ -5,7 +5,7 @@ use super::graph::IndexType;
 /// `UnionFind<K>` is a disjoint-set data structure. It tracks set membership of *n* elements
 /// indexed from *0* to *n - 1*. The scalar type is `K` which must be an unsigned integer type.
 ///
-/// http://en.wikipedia.org/wiki/Disjoint-set_data_structure
+/// <http://en.wikipedia.org/wiki/Disjoint-set_data_structure>
 ///
 /// Too awesome not to quote:
 ///
@@ -31,6 +31,13 @@ unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K
 {
     debug_assert!(index < xs.len());
     xs.get_unchecked(index)
+}
+
+#[inline]
+unsafe fn get_unchecked_mut<K>(xs: &mut [K], index: usize) -> &mut K
+{
+    debug_assert!(index < xs.len());
+    xs.get_unchecked_mut(index)
 }
 
 impl<K> UnionFind<K>
@@ -79,17 +86,22 @@ impl<K> UnionFind<K>
         }
     }
 
-    unsafe fn find_mut_recursive(&mut self, x: K) -> K
+    unsafe fn find_mut_recursive(&mut self, mut x: K) -> K
     {
-        let xparent = *get_unchecked(&self.parent, x.index());
-        if xparent != x {
-            let xrep = self.find_mut_recursive(xparent);
-            let xparent = self.parent.get_unchecked_mut(x.index());
-            *xparent = xrep;
-            *xparent
-        } else {
-            xparent
+        let mut parent = *get_unchecked(&self.parent, x.index());
+        while parent != x {
+            let grandparent = *get_unchecked(&self.parent, parent.index());
+            *get_unchecked_mut(&mut self.parent, x.index()) = grandparent;
+            x = parent;
+            parent = grandparent;
         }
+        x
+    }
+
+    /// Returns `true` if the given elements belong to the same set, and returns
+    /// `false` otherwise.
+    pub fn equiv(&self, x: K, y: K) -> bool {
+        self.find(x) == self.find(y)        
     }
 
 

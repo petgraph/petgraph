@@ -36,6 +36,7 @@ use petgraph::visit::{
 use petgraph::algo::{
     DfsSpace,
     dijkstra,
+    astar,
 };
 
 use petgraph::dot::{
@@ -283,6 +284,71 @@ fn multi() {
     assert_eq!(gr.edge_count(), 2);
 
 }
+
+#[test]
+fn iter_multi_edges() {
+    let mut gr = Graph::new();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+
+    let mut connecting_edges = HashSet::new();
+
+    gr.add_edge(a, a, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    gr.add_edge(a, c, ());
+    gr.add_edge(c, b, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    gr.add_edge(b, a, ());
+
+    let mut iter = gr.edges_connecting(a, b);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    assert_eq!(None, iter.next());
+    assert!(connecting_edges.is_empty());
+}
+
+#[test]
+fn iter_multi_undirected_edges() {
+    let mut gr = Graph::new_undirected();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+
+    let mut connecting_edges = HashSet::new();
+
+    gr.add_edge(a, a, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    gr.add_edge(a, c, ());
+    gr.add_edge(c, b, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    connecting_edges.insert(gr.add_edge(b, a, ()));
+
+    let mut iter = gr.edges_connecting(a, b);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    assert_eq!(None, iter.next());
+    assert!(connecting_edges.is_empty());
+}
+
 #[test]
 fn update_edge()
 {
@@ -341,6 +407,78 @@ fn dijk() {
 
     let scores = dijkstra(&g, a, Some(c), |e| *e.weight());
     assert_eq!(scores[&c], 9);
+}
+
+#[test]
+fn test_astar_null_heuristic() {
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
+
+    let path = astar(&g, a, |finish| finish == e, |e| *e.weight(), |_| 0);
+    assert_eq!(path, Some((23, vec![a, d, e])));
+
+    // check against dijkstra
+    let dijkstra_run = dijkstra(&g, a, Some(e), |e| *e.weight());
+    assert_eq!(dijkstra_run[&e], 23);
+
+    let path = astar(&g, e, |finish| finish == b, |e| *e.weight(), |_| 0);
+    assert_eq!(path, None);
+}
+
+#[test]
+fn test_astar_manhattan_heuristic() {
+    let mut g = Graph::new();
+    let a = g.add_node((0., 0.));
+    let b = g.add_node((2., 0.));
+    let c = g.add_node((1., 1.));
+    let d = g.add_node((0., 2.));
+    let e = g.add_node((3., 3.));
+    let f = g.add_node((4., 2.));
+    let _ = g.add_node((5., 5.)); // no path to node
+    g.add_edge(a, b, 2.);
+    g.add_edge(a, d, 4.);
+    g.add_edge(b, c, 1.);
+    g.add_edge(b, f, 7.);
+    g.add_edge(c, e, 5.);
+    g.add_edge(e, f, 1.);
+    g.add_edge(d, e, 1.);
+
+    let heuristic_for = |f: NodeIndex| {
+        let g = &g;
+        move |node: NodeIndex| -> f32 {
+            let (x1, y1): (f32, f32) = g[node];
+            let (x2, y2): (f32, f32) = g[f];
+
+            (x2 - x1).abs() + (y2 - y1).abs()
+        }
+    };
+    let path = astar(&g, a, |finish| finish == f, |e| *e.weight(), heuristic_for(f));
+
+    assert_eq!(path, Some((6., vec![a, d, e, f])));
+
+    // check against dijkstra
+    let dijkstra_run = dijkstra(&g, a, None, |e| *e.weight());
+
+    for end in g.node_indices() {
+        let astar_path = astar(&g, a, |finish| finish == end, |e| *e.weight(),
+                               heuristic_for(end));
+        assert_eq!(dijkstra_run.get(&end).cloned(),
+                   astar_path.map(|t| t.0));
+    }
 }
 
 #[cfg(feature = "generate")]
@@ -1374,13 +1512,14 @@ fn dot() {
         b: &'static str,
     };
     let mut gr = Graph::new();
-    let a = gr.add_node(Record { a: 1, b: "abc" });
+    let a = gr.add_node(Record { a: 1, b: r"abc\" });
     gr.add_edge(a, a, (1, 2));
-    let dot_output = format!("{:#?}", Dot::new(&gr));
+    let dot_output = format!("{:?}", Dot::new(&gr));
     assert_eq!(dot_output,
+    // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
 r#"digraph {
-    0 [label="Record {\l    a: 1,\l    b: \"abc\"\l}\l"]
-    0 -> 0 [label="(\l    1,\l    2\l)\l"]
+    0 [label="Record { a: 1, b: \"abc\\\\\" }"]
+    0 -> 0 [label="(1, 2)"]
 }
 "#);
 }
@@ -1416,7 +1555,145 @@ fn filtered() {
     assert_eq!(set(po), set(g.node_identifiers().filter(|n| (filt.1)(*n))));
 }
 
+#[test]
+fn filtered_edge_reverse() {
+    use petgraph::visit::EdgeFiltered;
+    #[derive(Eq, PartialEq)]
+    enum E {
+        A,
+        B,
+    }
 
+    // Start with single node graph with loop
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    g.add_edge(a, a, E::A);
+    let ef_a = EdgeFiltered::from_fn(&g, |edge| *edge.weight() == E::A);
+    let mut po = Vec::new();
+    let mut dfs = Dfs::new(&ef_a, a);
+    while let Some(next_n_ix) = dfs.next(&ef_a) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![a]));
+
+    // Check in reverse
+    let mut po = Vec::new();
+    let mut dfs = Dfs::new(&Reversed(&ef_a), a);
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_a)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![a]));
+
+
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    let h = g.add_node("H");
+    let i = g.add_node("I");
+    let j = g.add_node("J");
+
+    g.add_edge(a, b, E::A);
+    g.add_edge(b, c, E::A);
+    g.add_edge(c, d, E::B);
+    g.add_edge(d, e, E::A);
+    g.add_edge(e, f, E::A);
+    g.add_edge(e, h, E::A);
+    g.add_edge(e, i, E::A);
+    g.add_edge(i, j, E::A);
+
+    let ef_a = EdgeFiltered::from_fn(&g, |edge| *edge.weight() == E::A);
+    let ef_b = EdgeFiltered::from_fn(&g, |edge| *edge.weight() == E::B);
+
+    // DFS down from a, filtered by E::A.
+    let mut po = Vec::new();
+    let mut dfs = Dfs::new(&ef_a, a);
+    while let Some(next_n_ix) = dfs.next(&ef_a) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![a, b, c]));
+
+    // Reversed DFS from f, filtered by E::A.
+    let mut dfs = Dfs::new(&Reversed(&ef_a), f);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_a)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![d, e, f]));
+
+    // Reversed DFS from j, filtered by E::A.
+    let mut dfs = Dfs::new(&Reversed(&ef_a), j);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_a)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![d, e, i, j]));
+
+    // Reversed DFS from c, filtered by E::A.
+    let mut dfs = Dfs::new(&Reversed(&ef_a), c);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_a)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![a, b, c]));
+
+    // Reversed DFS from c, filtered by E::B.
+    let mut dfs = Dfs::new(&Reversed(&ef_b), c);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_b)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![c]));
+
+    // Reversed DFS from d, filtered by E::B.
+    let mut dfs = Dfs::new(&Reversed(&ef_b), d);
+    let mut po = Vec::new();
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_b)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![c, d]));
+
+    // Now let's test the same graph but undirected
+
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    let h = g.add_node("H");
+    let i = g.add_node("I");
+    let j = g.add_node("J");
+
+    g.add_edge(a, b, E::A);
+    g.add_edge(b, c, E::A);
+    g.add_edge(c, d, E::B);
+    g.add_edge(d, e, E::A);
+    g.add_edge(e, f, E::A);
+    g.add_edge(e, h, E::A);
+    g.add_edge(e, i, E::A);
+    g.add_edge(i, j, E::A);
+
+    let ef_a = EdgeFiltered::from_fn(&g, |edge| *edge.weight() == E::A);
+    let ef_b = EdgeFiltered::from_fn(&g, |edge| *edge.weight() == E::B);
+    let mut po = Vec::new();
+    let mut dfs = Dfs::new(&Reversed(&ef_b), d);
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_b)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![c, d]));
+
+    let mut po = Vec::new();
+    let mut dfs = Dfs::new(&Reversed(&ef_a), h);
+    while let Some(next_n_ix) = dfs.next(&Reversed(&ef_a)) {
+        po.push(next_n_ix);
+    }
+    assert_eq!(set(po), set(vec![d, e, f, h, i, j]));
+}
 
 #[test]
 fn dfs_visit() {
@@ -1493,6 +1770,24 @@ fn dfs_visit() {
     }
     path.reverse();
     assert_eq!(&path, &[n(0), n(2), n(4)]);
+
+    // check that if we prune 2, we never see 4.
+    let start = n(0);
+    let prune = n(2);
+    let nongoal = n(4);
+    let ret = depth_first_search(&gr, Some(start), |event| {
+        if let Discover(n, _) = event {
+            if n == prune {
+                return Control::Prune;
+            }
+        } else if let TreeEdge(u, v) = event {
+            if v == nongoal {
+                return Control::Break(u);
+            }
+        }
+        Control::Continue
+    });
+    assert!(ret.break_value().is_none());
 }
 
 
@@ -1665,7 +1960,7 @@ fn test_dominators_simple_fast() {
     // http://www.cs.princeton.edu/courses/archive/spr03/cs423/download/dominators.pdf.
 
     let mut graph = DiGraph::<_, _>::new();
-    
+
     let r = graph.add_node("r");
     let a = graph.add_node("a");
     let b = graph.add_node("b");

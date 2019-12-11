@@ -11,8 +11,10 @@ use super::graph::{
     NodeIndex,
 };
 #[cfg(feature = "stable_graph")]
-use stable_graph::StableGraph;
-use visit::{NodeIndexable, EdgeRef, IntoEdgeReferences};
+use crate::stable_graph::StableGraph;
+#[cfg(feature = "stable_graph")]
+use crate::visit::{NodeIndexable, IntoEdgeReferences};
+use crate::visit::EdgeRef;
 
 use super::visit::GetAdjacencyMatrix;
 

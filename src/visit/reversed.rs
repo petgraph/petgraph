@@ -1,10 +1,10 @@
 
-use ::{
+use crate::{
     Direction,
     Incoming,
 };
 
-use visit::{
+use crate::visit::{
     GraphBase,
     GraphRef,
     IntoNodeIdentifiers,

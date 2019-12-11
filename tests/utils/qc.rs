@@ -19,7 +19,7 @@ impl<T> Arbitrary for Small<T>
         Small(T::arbitrary(&mut StdGen::new(g, sz)))
     }
 
-    fn shrink(&self) -> Box<Iterator<Item=Self>> {
+    fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
         Box::new((**self).shrink().map(Small))
     }
 }

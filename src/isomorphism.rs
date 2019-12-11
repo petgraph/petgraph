@@ -201,7 +201,7 @@ pub fn is_isomorphic_matching<N, E, Ty, Ix, F, G>(g0: &Graph<N, E, Ty, Ix>,
 
 trait SemanticMatcher<T> {
     fn enabled() -> bool;
-    fn eq(&mut self, &T, &T) -> bool;
+    fn eq(&mut self, _: &T, _: &T) -> bool;
 }
 
 struct NoSemanticMatch;
@@ -221,7 +221,7 @@ impl<T, F> SemanticMatcher<T> for F where F: FnMut(&T, &T) -> bool {
 }
 
 /// Return Some(bool) if isomorphism is decided, else None.
-fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
+fn try_match<N, E, Ty, Ix, F, G>(mut st: &mut [Vf2State<Ty, Ix>; 2],
                                  g0: &Graph<N, E, Ty, Ix>,
                                  g1: &Graph<N, E, Ty, Ix>,
                                  node_match: &mut F,
@@ -232,14 +232,12 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
           F: SemanticMatcher<N>,
           G: SemanticMatcher<E>,
 {
+    if st[0].is_complete() {
+        return Some(true);
+    }
     let g = [g0, g1];
     let graph_indices = 0..2;
     let end = NodeIndex::end();
-
-    // if all are mapped -- we are done and have an iso
-    if st[0].is_complete() {
-        return Some(true)
-    }
 
     // A "depth first" search of a valid mapping from graph 1 to graph 2
 
@@ -252,67 +250,81 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
         In,
         Other,
     }
-    let mut open_list = OpenList::Out;
 
-    let mut to_index;
-    let mut from_index = None;
-    // Try the out list
-    to_index = st[1].next_out_index(0);
-
-    if to_index.is_some() {
-        from_index = st[0].next_out_index(0);
-        open_list = OpenList::Out;
+    #[derive(Clone, PartialEq, Debug)]
+    enum Frame<N: marker::Copy> {
+        Outer,
+        Inner{ nodes: [N; 2], open_list: OpenList },
+        Unwind{ nodes: [N; 2], open_list: OpenList },
     }
 
-    // Try the in list
-    if to_index.is_none() || from_index.is_none() {
-        to_index = st[1].next_in_index(0);
+    let next_candidate = |st: &mut[Vf2State<Ty, Ix>; 2]|
+        -> Option<(NodeIndex<Ix>, NodeIndex<Ix>, OpenList)> {
+        let mut to_index;
+        let mut from_index = None;
+        let mut open_list = OpenList::Out;
+        // Try the out list
+        to_index = st[1].next_out_index(0);
 
         if to_index.is_some() {
-            from_index = st[0].next_in_index(0);
-            open_list = OpenList::In;
+            from_index = st[0].next_out_index(0);
+            open_list = OpenList::Out;
         }
-    }
+        // Try the in list
+        if to_index.is_none() || from_index.is_none() {
+            to_index = st[1].next_in_index(0);
 
-    // Try the other list -- disconnected graph
-    if to_index.is_none() || from_index.is_none() {
-        to_index = st[1].next_rest_index(0);
-        if to_index.is_some() {
-            from_index = st[0].next_rest_index(0);
-            open_list = OpenList::Other;
+            if to_index.is_some() {
+                from_index = st[0].next_in_index(0);
+                open_list = OpenList::In;
+            }
         }
-    }
-
-    let (cand0, cand1) = match (from_index, to_index) {
-        (Some(n), Some(m)) => (n, m),
-        // No more candidates
-        _ => return None,
+        // Try the other list -- disconnected graph
+        if to_index.is_none() || from_index.is_none() {
+            to_index = st[1].next_rest_index(0);
+            if to_index.is_some() {
+                from_index = st[0].next_rest_index(0);
+                open_list = OpenList::Other;
+            }
+        }
+        match (from_index, to_index) {
+            (Some(n), Some(m)) => Some((NodeIndex::new(n), NodeIndex::new(m), open_list)),
+            // No more candidates
+            _ => None,
+        }
     };
-
-    let mut nx = NodeIndex::new(cand0);
-    let mx = NodeIndex::new(cand1);
-
-    let mut first = true;
-
-    'candidates: loop {
-        if !first {
-            // Find the next node index to try on the `from` side of the mapping
-            let start = nx.index() + 1;
-            let cand0 = match open_list {
-                OpenList::Out => st[0].next_out_index(start),
-                OpenList::In => st[0].next_in_index(start),
-                OpenList::Other => st[0].next_rest_index(start),
-            }.map(|c| c + start); // compensate for start offset.
-            nx = match cand0 {
-                None => break, // no more candidates
-                Some(ix) => NodeIndex::new(ix),
-            };
-            debug_assert!(nx.index() >= start);
+    let next_from_ix = |st: &mut[Vf2State<Ty, Ix>; 2], nx: NodeIndex<Ix>, open_list: OpenList| -> Option<NodeIndex<Ix>> {
+        // Find the next node index to try on the `from` side of the mapping
+        let start = nx.index() + 1;
+        let cand0 = match open_list {
+            OpenList::Out => st[0].next_out_index(start),
+            OpenList::In => st[0].next_in_index(start),
+            OpenList::Other => st[0].next_rest_index(start),
+        }.map(|c| c + start); // compensate for start offset.
+        match cand0 {
+            None => None, // no more candidates
+            Some(ix) => {
+                debug_assert!(ix >= start);
+                Some(NodeIndex::new(ix))
+            },
         }
-        first = false;
-
-        let nodes = [nx, mx];
-
+    };
+    //fn pop_state(nodes: [NodeIndex<Ix>; 2]) {
+    let pop_state = |st: &mut[Vf2State<Ty, Ix>; 2], nodes: [NodeIndex<Ix>; 2]| {
+        // Restore state.
+        for j in graph_indices.clone() {
+            st[j].pop_mapping(nodes[j], g[j]);
+        }
+    };
+    //fn push_state(nodes: [NodeIndex<Ix>; 2]) {
+    let push_state = |st: &mut[Vf2State<Ty, Ix>; 2],nodes: [NodeIndex<Ix>; 2]| {
+        // Add mapping nx <-> mx to the state
+        for j in graph_indices.clone() {
+            st[j].push_mapping(nodes[j], nodes[1-j], g[j]);
+        }
+    };
+    //fn is_feasible(nodes: [NodeIndex<Ix>; 2]) -> bool {
+    let mut is_feasible = |st: &mut[Vf2State<Ty, Ix>; 2], nodes: [NodeIndex<Ix>; 2]| -> bool {
         // Check syntactic feasibility of mapping by ensuring adjacencies
         // of nx map to adjacencies of mx.
         //
@@ -345,14 +357,13 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
                 }
                 let has_edge = g[1-j].is_adjacent(&st[1-j].adjacency_matrix, nodes[1-j], m_neigh);
                 if !has_edge {
-                    continue 'candidates;
+                    return false;
                 }
             }
         }
         if succ_count[0] != succ_count[1] {
-            continue 'candidates;
+            return false;
         }
-
         // R_pred
         if g[0].is_directed() {
             let mut pred_count = [0, 0];
@@ -366,20 +377,18 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
                     }
                     let has_edge = g[1-j].is_adjacent(&st[1-j].adjacency_matrix, m_neigh, nodes[1-j]);
                     if !has_edge {
-                        continue 'candidates;
+                        return false;
                     }
                 }
             }
             if pred_count[0] != pred_count[1] {
-                continue 'candidates;
+                return false;
             }
         }
-
         // semantic feasibility: compare associated data for nodes
         if F::enabled() && !node_match.eq(&g[0][nodes[0]], &g[1][nodes[1]]) {
-            continue 'candidates;
+            return false;
         }
-
         // semantic feasibility: compare associated data for edges
         if G::enabled() {
             // outgoing edges
@@ -398,14 +407,13 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
                     match g[1-j].find_edge(nodes[1 - j], m_neigh) {
                         Some(m_edge) => {
                             if !edge_match.eq(&g[j][n_edge], &g[1-j][m_edge]) {
-                                continue 'candidates;
+                                return false;
                             }
                         }
                         None => unreachable!() // covered by syntactic check
                     }
                 }
             }
-
             // incoming edges
             if g[0].is_directed() {
                 for j in graph_indices.clone() {
@@ -419,7 +427,7 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
                         match g[1-j].find_edge(m_neigh, nodes[1-j]) {
                             Some(m_edge) => {
                                 if !edge_match.eq(&g[j][n_edge], &g[1-j][m_edge]) {
-                                    continue 'candidates;
+                                    return false;
                                 }
                             }
                             None => unreachable!() // covered by syntactic check
@@ -428,29 +436,57 @@ fn try_match<N, E, Ty, Ix, F, G>(st: &mut [Vf2State<Ty, Ix>; 2],
                 }
             }
         }
+        true
+    };
+    let mut stack: Vec<Frame<NodeIndex<Ix>>> = vec![Frame::Outer];
 
-        // Add mapping nx <-> mx to the state
-        for j in graph_indices.clone() {
-            st[j].push_mapping(nodes[j], nodes[1-j], g[j]);
-        }
+    while let Some(frame) = stack.pop() {
+        match frame {
+            Frame::Unwind{nodes, open_list: ol} => {
+                pop_state(&mut st, nodes);
 
-        // Check cardinalities of Tin, Tout sets
-        if st[0].out_size == st[1].out_size &&
-           st[0].ins_size == st[1].ins_size
-        {
-
-            // Recurse
-            match try_match(st, g0, g1, node_match, edge_match) {
-                None => {}
-                result => return result,
+                match next_from_ix(&mut st, nodes[0], ol) {
+                    None => continue,
+                    Some(nx) => {
+                        let f = Frame::Inner{nodes: [nx, nodes[1]], open_list: ol};
+                        stack.push(f);
+                    }
+                }
             }
-        }
-
-        // Restore state.
-        for j in graph_indices.clone() {
-            st[j].pop_mapping(nodes[j], g[j]);
+            Frame::Outer => {
+                match next_candidate(&mut st) {
+                    None => continue,
+                    Some((nx, mx, ol)) => {
+                        let f = Frame::Inner{nodes: [nx, mx], open_list: ol};
+                        stack.push(f); 
+                    }
+                }
+            }
+            Frame::Inner{nodes, open_list: ol} => {
+                if is_feasible(&mut st, nodes) {
+                    push_state(&mut st, nodes);
+                    if st[0].is_complete() {
+                        return Some(true);
+                    }
+                    // Check cardinalities of Tin, Tout sets
+                    if st[0].out_size == st[1].out_size &&
+                       st[0].ins_size == st[1].ins_size {
+                           let f0 = Frame::Unwind{nodes: nodes, open_list: ol};
+                           stack.push(f0);
+                           stack.push(Frame::Outer);
+                           continue;
+                    }
+                    pop_state(&mut st, nodes);
+                }
+                match next_from_ix(&mut st, nodes[0], ol) {
+                    None => continue,
+                    Some(nx) => {
+                        let f = Frame::Inner{nodes: [nx, nodes[1]], open_list: ol};
+                        stack.push(f);
+                    }
+                }
+            }
         }
     }
     None
 }
-

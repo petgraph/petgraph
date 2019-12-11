@@ -2,7 +2,7 @@
 petgraph
 ========
 
-Graph data structure library. Requires Rust 1.12.
+Graph data structure library. Known to support Rust 1.37 and later.
 
 Please read the `API documentation here`__
 
@@ -10,8 +10,8 @@ __ https://docs.rs/petgraph/
 
 |build_status|_ |crates|_
 
-.. |build_status| image:: https://travis-ci.org/bluss/petgraph.svg?branch=master
-.. _build_status: https://travis-ci.org/bluss/petgraph
+.. |build_status| image:: https://travis-ci.org/petgraph/petgraph.svg?branch=master
+.. _build_status: https://travis-ci.org/petgraph/petgraph
 
 .. |crates| image:: http://meritbadge.herokuapp.com/petgraph
 .. _crates: https://crates.io/crates/petgraph
@@ -20,9 +20,98 @@ Crate feature flags:
 
 - ``graphmap`` (default) enable ``GraphMap``.
 - ``stable_graph`` (default) enable ``StableGraph``.
+- ``matrix_graph`` (default) enable ``MatrixGraph``.
+- ``serde-1`` (optional) enable serialization for ``Graph, StableGraph`` using
+  serde 1.0. Requires Rust version as required by serde.
 
 Recent Changes
 --------------
+
+- 0.4.13
+
+  - Fix clippy warnings by @jonasbb
+  - Add docs for ``Csr`` by @ksadorf
+  - Fix conflict with new stable method ``find_map`` in new Rust
+
+- 0.4.12
+
+  - Newtype ``Time`` now also implements ``Hash``
+  - Documentation updates for ``Frozen``.
+
+- 0.4.11
+
+  - Fix ``petgraph::graph::NodeReferences`` to be publicly visible
+  - Small doc typo and code style files by @shepmaster and @waywardmonkeys
+  - Fix a future compat warning with pointer casts
+
+- 0.4.10
+
+  - Add graph trait ``IntoEdgesDirected``
+  - Update dependencies
+
+- 0.4.9
+
+  - Fix ``bellman_ford`` to work correctly with undirected graphs (#152) by
+    @carrutstick
+  - Performance improvements for ``Graph, Stablegraph``'s ``.map()``.
+
+- 0.4.8
+
+  - ``StableGraph`` learned new methods nearing parity with ``Graph``.  Note
+    that the ``StableGraph`` methods preserve index stability even in the batch
+    removal methods like ``filter_map`` and ``retain_edges``.
+
+    + Added ``.filter_map()``, which maps associated node and edge data
+    + Added ``.retain_edges()``, ``.edge_indices()`` and ``.clear_edges()``
+
+  - Existing ``Graph`` iterators gained some trait impls:
+
+    + ``.node_indices(), .edge_indices()`` are ``ExactSizeIterator``
+    + ``.node_references()`` is now
+      ``DoubleEndedIterator + ExactSizeIterator``.
+    + ``.edge_references()`` is now ``ExactSizeIterator``.
+
+  - Implemented ``From<StableGraph>`` for ``Graph``.
+
+- 0.4.7
+
+  - New algorithm by @jmcomets: A* search algorithm in ``petgraph::algo::astar``
+  - One ``StableGraph`` bug fix whose patch was supposed to be in the previous
+    version:
+
+    + ``add_edge(m, n, _)`` now properly always panics if nodes m or n don't
+      exist in the graph.
+
+- 0.4.6
+
+  - New optional crate feature: ``"serde-1"``, which enables serialization
+    for ``Graph`` and ``StableGraph`` using serde.
+  - Add methods ``new``, ``add_node`` to ``Csr`` by @jmcomets
+  - Add indexing with ``[]`` by node index, ``NodeCompactIndexable`` for
+    ``Csr`` by @jmcomets
+  - Amend doc for ``GraphMap::into_graph`` (it has a case where it can panic)
+  - Add implementation of ``From<Graph>`` for ``StableGraph``.
+  - Add implementation of ``IntoNodeReferences`` for ``&StableGraph``.
+  - Add method ``StableGraph::map`` that maps associated data
+  - Add method ``StableGraph::find_edge_undirected``
+  - Many ``StableGraph`` bug fixes involving node vacancies (holes left by
+    deletions):
+
+    + ``neighbors(n)`` and similar neighbor and edge iterator methods now
+      handle n being a vacancy properly. (This produces an empty iterator.)
+    + ``find_edge(m, n)`` now handles m being a vacancy correctly too
+    + ``StableGraph::node_bound`` was fixed for empty graphs and returns 0
+
+  - Add implementation of ``DoubleEndedIterator`` to ``Graph, StableGraph``'s
+    edge references iterators.
+  - Debug output for ``Graph`` now shows node and edge count. ``Graph, StableGraph``
+    show nothing for the edges list if it's empty (no label).
+  - ``Arbitrary`` implementation for ``StableGraph`` now can produce graphs with
+    vacancies (used by quickcheck)
+
+- 0.4.5
+
+  - Fix ``max`` ambiguity error with current rust nightly by @daboross (#153)
 
 - 0.4.4
 
@@ -110,7 +199,7 @@ Recent Changes
   - ``GraphMap`` can now have directed edges. ``GraphMap::new`` is now generic
     in the edge type. ``DiGraphMap`` and ``UnGraphMap`` are new type aliases.
   - Add type aliases ``DiGraph, UnGraph, StableDiGraph, StableUnGraph``
-  - ``GraphMap`` is based on the ordermap crate. Deterministic iteration
+  - ``GraphMap`` is based on the indexmap crate. Deterministic iteration
     order, faster iteration, no side tables needed to convert to ``Graph``.
   - Improved docs for a lot of types and functions.
   - Add graph visitor ``DfsPostOrder``
@@ -131,6 +220,10 @@ Recent Changes
   - Renamed ``EdgeDirection`` → ``Direction``.
   - Remove ``SubTopo``.
   - Require Rust 1.12 or later
+
+- 0.2.10
+
+  - Fix compilation with rust nightly
 
 - 0.2.9
 
@@ -216,7 +309,7 @@ Recent Changes
   - Add Graph::capacity(), GraphMap::capacity()
   - Fix bug in Graph::reverse()
   - Graph and GraphMap have `quickcheck::Arbitrary` implementations,
-    if optional feature `quickcheck` is enabled.
+    if optional feature `check` is enabled.
 
 - 0.1.16
 

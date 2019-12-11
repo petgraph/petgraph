@@ -2,7 +2,7 @@
 
 use std::fmt::{self, Display, Write};
 
-use visit::{GraphRef};
+use crate::visit::{GraphRef};
 
 /// `Dot` implements output to graphviz .dot format for a graph.
 ///
@@ -29,7 +29,7 @@ use visit::{GraphRef};
 /// println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
 ///
 /// // In this case the output looks like this:
-/// // 
+/// //
 /// // digraph {
 /// //     0 [label="\"A\""]
 /// //     1 [label="\"B\""]
@@ -80,12 +80,14 @@ pub enum Config {
     EdgeIndexLabel,
     /// Use no edge labels.
     EdgeNoLabel,
+    /// Do not print the graph/digraph string.
+    GraphContentOnly,
     #[doc(hidden)]
     _Incomplete(()),
 }
 
-use visit::{ IntoNodeReferences, NodeIndexable, IntoEdgeReferences, EdgeRef};
-use visit::{ Data, NodeRef, GraphProp, };
+use crate::visit::{ IntoNodeReferences, NodeIndexable, IntoEdgeReferences, EdgeRef};
+use crate::visit::{ Data, NodeRef, GraphProp, };
 
 impl<'a, G> Dot<'a, G>
 {
@@ -94,42 +96,46 @@ impl<'a, G> Dot<'a, G>
         where G: NodeIndexable + IntoNodeReferences + IntoEdgeReferences,
               G: GraphProp,
               G: Data<NodeWeight=NW, EdgeWeight=EW>,
-              NF: FnMut(&NW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
-              EF: FnMut(&EW, &mut FnMut(&Display) -> fmt::Result) -> fmt::Result,
+              NF: FnMut(&NW, &mut dyn FnMut(&dyn Display) -> fmt::Result) -> fmt::Result,
+              EF: FnMut(&EW, &mut dyn FnMut(&dyn Display) -> fmt::Result) -> fmt::Result,
     {
-        try!(writeln!(f, "{} {{", TYPE[g.is_directed() as usize]));
+        if !self.config.contains(&Config::GraphContentOnly) {
+            writeln!(f, "{} {{", TYPE[g.is_directed() as usize])?;
+        }
 
         // output all labels
         for node in g.node_references() {
-            try!(write!(f, "{}{}", INDENT, g.to_index(node.id())));
+            write!(f, "{}{}", INDENT, g.to_index(node.id()))?;
             if self.config.contains(&Config::NodeIndexLabel) {
-                try!(writeln!(f, ""));
+                writeln!(f)?;
             } else {
-                try!(write!(f, " [label=\""));
-                try!(node_fmt(node.weight(), &mut |d| Escaped(d).fmt(f)));
-                try!(writeln!(f, "\"]"));
+                write!(f, " [label=\"")?;
+                node_fmt(node.weight(), &mut |d| Escaped(d).fmt(f))?;
+                writeln!(f, "\"]")?;
             }
 
         }
         // output all edges
         for (i, edge) in g.edge_references().enumerate() {
-            try!(write!(f, "{}{} {} {}",
+            write!(f, "{}{} {} {}",
                         INDENT,
                         g.to_index(edge.source()),
                         EDGE[g.is_directed() as usize],
-                        g.to_index(edge.target())));
+                        g.to_index(edge.target()))?;
             if self.config.contains(&Config::EdgeNoLabel) {
-                try!(writeln!(f, ""));
+                writeln!(f)?;
             } else if self.config.contains(&Config::EdgeIndexLabel) {
-                try!(writeln!(f, " [label=\"{}\"]", i));
+                writeln!(f, " [label=\"{}\"]", i)?;
             } else {
-                try!(write!(f, " [label=\""));
-                try!(edge_fmt(edge.weight(), &mut |d| Escaped(d).fmt(f)));
-                try!(writeln!(f, "\"]"));
+                write!(f, " [label=\"")?;
+                edge_fmt(edge.weight(), &mut |d| Escaped(d).fmt(f))?;
+                writeln!(f, "\"]")?;
             }
         }
 
-        try!(writeln!(f, "}}"));
+        if !self.config.contains(&Config::GraphContentOnly) {
+            writeln!(f, "}}")?;
+        }
         Ok(())
     }
 }
@@ -164,17 +170,17 @@ impl<W> fmt::Write for Escaper<W>
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for c in s.chars() {
-            try!(self.write_char(c));
+            self.write_char(c)?;
         }
         Ok(())
     }
 
     fn write_char(&mut self, c: char) -> fmt::Result {
         match c {
-            '"' => try!(self.0.write_char('\\')),
+            '"' | '\\' => self.0.write_char('\\')?,
             // \l is for left justified linebreak
-            '\n' => return self.0.write_str(r#"\l"#),
-            _   => { }
+            '\n' => return self.0.write_str("\\l"),
+            _ => {}
         }
         self.0.write_char(c)
     }
@@ -188,7 +194,7 @@ impl<T> fmt::Display for Escaped<T>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
-            write!(&mut Escaper(f), "{:#}\\l", &self.0)
+            writeln!(&mut Escaper(f), "{:#}", &self.0)
         } else {
             write!(&mut Escaper(f), "{}", &self.0)
         }
@@ -204,4 +210,14 @@ impl<T> fmt::Display for DebugFmt<T>
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
     }
+}
+
+#[test]
+fn test_escape() {
+    let mut buff = String::new();
+    {
+        let mut e = Escaper(&mut buff);
+        let _ = e.write_str("\" \\ \n");
+    }
+    assert_eq!(buff, "\\\" \\\\ \\l");
 }
