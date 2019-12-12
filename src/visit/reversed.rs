@@ -7,6 +7,8 @@ use crate::{
 use crate::visit::{
     GraphBase,
     GraphRef,
+    IntoEdges,
+    IntoEdgesDirected,
     IntoNodeIdentifiers,
     IntoNodeReferences,
     IntoNeighbors,
@@ -57,6 +59,28 @@ impl<G> IntoNeighborsDirected for Reversed<G>
     }
 }
 
+impl<G> IntoEdges for Reversed<G>
+    where G: IntoEdgesDirected
+{
+    type Edges = ReversedEdges<G::EdgesDirected>;
+    fn edges(self, a: Self::NodeId) -> Self::Edges {
+        ReversedEdges {
+            iter: self.0.edges_directed(a, Incoming),
+        }
+    }
+}
+
+impl<G> IntoEdgesDirected for Reversed<G>
+    where G: IntoEdgesDirected
+{
+    type EdgesDirected = ReversedEdges<G::EdgesDirected>;
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::Edges {
+        ReversedEdges {
+            iter: self.0.edges_directed(a, dir.opposite()),
+        }
+    }
+}
+
 impl<G: Visitable> Visitable for Reversed<G>
 {
     type Map = G::Map;
@@ -68,6 +92,19 @@ impl<G: Visitable> Visitable for Reversed<G>
     }
 }
 
+/// A reversed edges iterator.
+pub struct ReversedEdges<I> {
+    iter: I,
+}
+
+impl<I> Iterator for ReversedEdges<I>
+    where I: Iterator, I::Item: EdgeRef
+{
+    type Item = ReversedEdgeReference<I::Item>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(ReversedEdgeReference)
+    }
+}
 
 /// A reversed edge reference
 #[derive(Copy, Clone, Debug)]
