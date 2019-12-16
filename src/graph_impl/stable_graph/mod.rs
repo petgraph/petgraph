@@ -208,7 +208,7 @@ where
         self.g.edges.clear();
         // clear edges without touching the free list
         for node in &mut self.g.nodes {
-            if let Some(_) = node.weight {
+            if node.weight.is_some() {
                 node.next = [EdgeIndex::end(), EdgeIndex::end()];
             }
         }
@@ -282,9 +282,7 @@ where
             None => return None,
             Some(n) => n.weight.take(),
         };
-        if let None = node_weight {
-            return None;
-        }
+        node_weight.as_ref()?;
         for d in &DIRECTIONS {
             let k = d.index();
 
@@ -691,7 +689,7 @@ where
     pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix> {
         Externals {
             iter: self.raw_nodes().iter().enumerate(),
-            dir: dir,
+            dir,
             ty: PhantomData,
         }
     }
@@ -826,7 +824,7 @@ where
             move |i, w| w.as_ref().map(|w| edge_map(i, w)),
         );
         StableGraph {
-            g: g,
+            g,
             node_count: self.node_count,
             edge_count: self.edge_count,
             free_node: self.free_node,
@@ -1000,7 +998,7 @@ where
         let mut free_node_len = 0;
         while free_node != NodeIndex::end() {
             if let Some(n) = self.g.nodes.get(free_node.index()) {
-                if let None = n.weight {
+                if n.weight.is_none() {
                     free_node = n.next[0]._into_node();
                     free_node_len += 1;
                     continue;
@@ -1019,7 +1017,7 @@ where
         let mut free_edge = self.free_edge;
         while free_edge != EdgeIndex::end() {
             if let Some(n) = self.g.edges.get(free_edge.index()) {
-                if let None = n.weight {
+                if n.weight.is_none() {
                     free_edge = n.next[0];
                     free_edge_len += 1;
                     continue;
@@ -1372,7 +1370,7 @@ where
                 return Some(EdgeReference {
                     index: edge_index(i),
                     node: *node,
-                    weight: weight,
+                    weight,
                 });
             }
             Some(_otherwise) => unreachable!(),
@@ -1443,7 +1441,7 @@ where
             edge.weight.as_ref().map(move |weight| EdgeReference {
                 index: edge_index(i),
                 node: edge.node,
-                weight: weight,
+                weight,
             })
         })
     }
@@ -1458,7 +1456,7 @@ where
             edge.weight.as_ref().map(move |weight| EdgeReference {
                 index: edge_index(i),
                 node: edge.node,
-                weight: weight,
+                weight,
             })
         })
     }

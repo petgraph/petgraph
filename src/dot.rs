@@ -50,9 +50,9 @@ pub struct Dot<'a, G> {
     config: &'a [Config],
 }
 
-static TYPE: [&'static str; 2] = ["graph", "digraph"];
-static EDGE: [&'static str; 2] = ["--", "->"];
-static INDENT: &'static str = "    ";
+static TYPE: [&str; 2] = ["graph", "digraph"];
+static EDGE: [&str; 2] = ["--", "->"];
+static INDENT: &str = "    ";
 
 impl<'a, G> Dot<'a, G>
 where
@@ -66,8 +66,8 @@ where
     /// Create a `Dot` formatting wrapper with custom configuration.
     pub fn with_config(graph: G, config: &'a [Config]) -> Self {
         Dot {
-            graph: graph,
-            config: config,
+            graph,
+            config,
         }
     }
 }

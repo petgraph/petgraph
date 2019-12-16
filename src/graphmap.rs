@@ -122,14 +122,10 @@ where
     /// Use their natural order to map the node pair (a, b) to a canonical edge id.
     #[inline]
     fn edge_key(a: N, b: N) -> (N, N) {
-        if Ty::is_directed() {
+        if Ty::is_directed() || a <= b {
             (a, b)
         } else {
-            if a <= b {
-                (a, b)
-            } else {
-                (b, a)
-            }
+            (b, a)
         }
     }
 
@@ -354,7 +350,7 @@ where
                 None => [].iter(),
             },
             start_node: a,
-            dir: dir,
+            dir,
             ty: self.ty,
         }
     }
@@ -369,7 +365,7 @@ where
     /// Iterator element type is `(N, &E)`.
     pub fn edges(&self, from: N) -> Edges<N, E, Ty> {
         Edges {
-            from: from,
+            from,
             iter: self.neighbors(from),
             edges: &self.edges,
         }

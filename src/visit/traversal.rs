@@ -59,10 +59,7 @@ where
 
     /// Create a `Dfs` from a vector and a visit map
     pub fn from_parts(stack: Vec<N>, discovered: VM) -> Self {
-        Dfs {
-            stack: stack,
-            discovered: discovered,
-        }
+        Dfs {stack, discovered}
     }
 
     /// Clear the visit state
@@ -250,10 +247,7 @@ where
         discovered.visit(start);
         let mut stack = VecDeque::new();
         stack.push_front(start);
-        Bfs {
-            stack: stack,
-            discovered: discovered,
-        }
+        Bfs {stack, discovered}
     }
 
     /// Return the next node in the bfs, or **None** if the traversal is done.
@@ -384,7 +378,7 @@ pub trait Walker<Context> {
     {
         WalkerIter {
             walker: self,
-            context: context,
+            context,
         }
     }
 }

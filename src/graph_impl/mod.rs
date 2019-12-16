@@ -508,7 +508,7 @@ where
     /// type (N/A if usize).
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         let node = Node {
-            weight: weight,
+            weight,
             next: [EdgeIndex::end(), EdgeIndex::end()],
         };
         let node_idx = NodeIndex::new(self.nodes.len());
@@ -549,7 +549,7 @@ where
         let edge_idx = EdgeIndex::new(self.edges.len());
         assert!(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx);
         let mut edge = Edge {
-            weight: weight,
+            weight,
             node: [a, b],
             next: [EdgeIndex::end(); 2],
         };
@@ -624,9 +624,8 @@ where
     /// of edges with an endpoint in `a`, and including the edges with an
     /// endpoint in the displaced node.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N> {
-        if self.nodes.get(a.index()).is_none() {
-            return None;
-        }
+        self.nodes.get(a.index())?;
+        
         for d in &DIRECTIONS {
             let k = d.index();
 
@@ -971,7 +970,7 @@ where
     pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix> {
         Externals {
             iter: self.nodes.iter().enumerate(),
-            dir: dir,
+            dir,
             ty: PhantomData,
         }
     }
@@ -1552,11 +1551,7 @@ fn edges_walker_mut<E, Ix>(
 where
     Ix: IndexType,
 {
-    EdgesWalkerMut {
-        edges: edges,
-        next: next,
-        dir: dir,
-    }
+    EdgesWalkerMut {edges, next, dir}
 }
 
 impl<'a, E, Ix> EdgesWalkerMut<'a, E, Ix>
@@ -1645,7 +1640,7 @@ where
                 return Some(EdgeReference {
                     index: edge_index(i),
                     node: *node,
-                    weight: weight,
+                    weight,
                 });
             }
         }
