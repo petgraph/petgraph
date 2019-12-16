@@ -1,7 +1,7 @@
+use serde::de::{Deserialize, Error, SeqAccess, Visitor};
+use serde::ser::{Serialize, SerializeSeq, Serializer};
 use std::fmt;
 use std::marker::PhantomData;
-use serde::de::{Error, Visitor, Deserialize, SeqAccess};
-use serde::ser::{Serializer, SerializeSeq, Serialize};
 
 /// Map to serializeable representation
 pub trait IntoSerializable {
@@ -10,25 +10,27 @@ pub trait IntoSerializable {
 }
 
 /// Map from deserialized representation
-pub trait FromDeserialized : Sized {
+pub trait FromDeserialized: Sized {
     type Input;
-    fn from_deserialized<E>(input: Self::Input) -> Result<Self, E> where E: Error;
+    fn from_deserialized<E>(input: Self::Input) -> Result<Self, E>
+    where
+        E: Error;
 }
-
-
 
 /// Serde combinator. A sequence visitor that maps deserialized elements
 /// lazily; the visitor can also emit new errors if the elements have errors.
 pub struct MappedSequenceVisitor<T, R, F>
-    where F: Fn(T) -> Result<R, &'static str>
+where
+    F: Fn(T) -> Result<R, &'static str>,
 {
     f: F,
-    marker: PhantomData<fn() -> T>
+    marker: PhantomData<fn() -> T>,
 }
 
-impl<'de, F, T, R> MappedSequenceVisitor<T, R, F> 
-    where T: Deserialize<'de>,
-          F: Fn(T) -> Result<R, &'static str>,
+impl<'de, F, T, R> MappedSequenceVisitor<T, R, F>
+where
+    T: Deserialize<'de>,
+    F: Fn(T) -> Result<R, &'static str>,
 {
     pub fn new(f: F) -> Self {
         MappedSequenceVisitor {
@@ -38,9 +40,10 @@ impl<'de, F, T, R> MappedSequenceVisitor<T, R, F>
     }
 }
 
-impl<'de, F, T, R> Visitor<'de> for MappedSequenceVisitor<T, R, F> 
-    where T: Deserialize<'de>,
-          F: Fn(T) -> Result<R, &'static str>,
+impl<'de, F, T, R> Visitor<'de> for MappedSequenceVisitor<T, R, F>
+where
+    T: Deserialize<'de>,
+    F: Fn(T) -> Result<R, &'static str>,
 {
     type Value = Vec<R>;
 
@@ -48,7 +51,8 @@ impl<'de, F, T, R> Visitor<'de> for MappedSequenceVisitor<T, R, F>
         write!(formatter, "a sequence")
     }
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-        where A: SeqAccess<'de>,
+    where
+        A: SeqAccess<'de>,
     {
         let mut v = Vec::new();
         while let Some(elem) = seq.next_element()? {
@@ -61,12 +65,11 @@ impl<'de, F, T, R> Visitor<'de> for MappedSequenceVisitor<T, R, F>
     }
 }
 
-
-pub trait CollectSeqWithLength : Serializer {
-    fn collect_seq_with_length<I>(self, length: usize, iterable: I)
-        -> Result<Self::Ok, Self::Error>
-        where I: IntoIterator,
-              I::Item: Serialize
+pub trait CollectSeqWithLength: Serializer {
+    fn collect_seq_with_length<I>(self, length: usize, iterable: I) -> Result<Self::Ok, Self::Error>
+    where
+        I: IntoIterator,
+        I::Item: Serialize,
     {
         let mut count = 0;
         let mut seq = self.serialize_seq(Some(length))?;
@@ -78,15 +81,15 @@ pub trait CollectSeqWithLength : Serializer {
         seq.end()
     }
 
-    fn collect_seq_exact<I>(self, iterable: I)
-        -> Result<Self::Ok, Self::Error>
-        where I: IntoIterator,
-              I::Item: Serialize,
-              I::IntoIter: ExactSizeIterator,
+    fn collect_seq_exact<I>(self, iterable: I) -> Result<Self::Ok, Self::Error>
+    where
+        I: IntoIterator,
+        I::Item: Serialize,
+        I::IntoIter: ExactSizeIterator,
     {
         let iter = iterable.into_iter();
         self.collect_seq_with_length(iter.len(), iter)
     }
 }
 
-impl<S> CollectSeqWithLength for S where S: Serializer { }
+impl<S> CollectSeqWithLength for S where S: Serializer {}

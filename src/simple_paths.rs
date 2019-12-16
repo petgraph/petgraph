@@ -6,26 +6,26 @@ use std::{
 use indexmap::IndexSet;
 
 use crate::{
+    visit::{IntoNeighborsDirected, NodeCount},
     Direction::Outgoing,
-    visit::{
-        IntoNeighborsDirected,
-        NodeCount,
-    },
 };
 
 /// Returns iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermidiate_nodes` nodes
 /// and at most `max_intermidiate_nodes`, if given, limited by graph's order otherwise
 /// Simple path is path without repetitions
 /// Algorithm is adopted from https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.simple_paths.all_simple_paths.html
-pub fn all_simple_paths<TargetColl, G>(graph: G,
-                                       from: G::NodeId,
-                                       to: G::NodeId,
-                                       min_intermidiate_nodes: usize,
-                                       max_intermidiate_nodes: Option<usize>) -> impl Iterator<Item=TargetColl>
-    where G: NodeCount,
-          G: IntoNeighborsDirected,
-          G::NodeId: Eq + Hash,
-          TargetColl: FromIterator<G::NodeId>
+pub fn all_simple_paths<TargetColl, G>(
+    graph: G,
+    from: G::NodeId,
+    to: G::NodeId,
+    min_intermidiate_nodes: usize,
+    max_intermidiate_nodes: Option<usize>,
+) -> impl Iterator<Item = TargetColl>
+where
+    G: NodeCount,
+    G: IntoNeighborsDirected,
+    G::NodeId: Eq + Hash,
+    TargetColl: FromIterator<G::NodeId>,
 {
     // how many nodes are allowed in simple path up to target node
     // it is min/max allowed path length minus one, because it is more appropriate when implementing lookahead
@@ -50,7 +50,11 @@ pub fn all_simple_paths<TargetColl, G>(graph: G,
                 if visited.len() < max_length {
                     if child == to {
                         if visited.len() >= min_length {
-                            let path = visited.iter().cloned().chain(Some(to)).collect::<TargetColl>();
+                            let path = visited
+                                .iter()
+                                .cloned()
+                                .chain(Some(to))
+                                .collect::<TargetColl>();
                             return Some(path);
                         }
                     } else if !visited.contains(&child) {
@@ -59,7 +63,11 @@ pub fn all_simple_paths<TargetColl, G>(graph: G,
                     }
                 } else {
                     if (child == to || children.any(|v| v == to)) && visited.len() >= min_length {
-                        let path = visited.iter().cloned().chain(Some(to)).collect::<TargetColl>();
+                        let path = visited
+                            .iter()
+                            .cloned()
+                            .chain(Some(to))
+                            .collect::<TargetColl>();
                         return Some(path);
                     }
                     stack.pop();
@@ -76,17 +84,11 @@ pub fn all_simple_paths<TargetColl, G>(graph: G,
 
 #[cfg(test)]
 mod test {
-    use std::{
-        collections::HashSet,
-        iter::FromIterator,
-    };
+    use std::{collections::HashSet, iter::FromIterator};
 
     use itertools::assert_equal;
 
-    use crate::{
-        dot::Dot,
-        prelude::DiGraph,
-    };
+    use crate::{dot::Dot, prelude::DiGraph};
 
     use super::all_simple_paths;
 
@@ -105,7 +107,7 @@ mod test {
             (4, 2),
             (4, 5),
             (5, 2),
-            (5, 3)
+            (5, 3),
         ]);
 
         let expexted_simple_paths_0_to_5 = vec![
@@ -120,27 +122,27 @@ mod test {
         ];
 
         println!("{}", Dot::new(&graph));
-        let actual_simple_paths_0_to_5: HashSet<Vec<_>> = all_simple_paths(&graph, 0u32.into(), 5u32.into(), 0, None)
-            .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
-            .collect();
+        let actual_simple_paths_0_to_5: HashSet<Vec<_>> =
+            all_simple_paths(&graph, 0u32.into(), 5u32.into(), 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
         assert_eq!(actual_simple_paths_0_to_5.len(), 8);
-        assert_eq!(HashSet::from_iter(expexted_simple_paths_0_to_5), actual_simple_paths_0_to_5);
+        assert_eq!(
+            HashSet::from_iter(expexted_simple_paths_0_to_5),
+            actual_simple_paths_0_to_5
+        );
     }
 
     #[test]
     fn test_one_simple_path() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[
-            (0, 1),
-            (2, 1)
-        ]);
+        let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
 
-        let expexted_simple_paths_0_to_1 = &[
-            vec![0usize, 1],
-        ];
+        let expexted_simple_paths_0_to_1 = &[vec![0usize, 1]];
         println!("{}", Dot::new(&graph));
-        let actual_simple_paths_0_to_1: Vec<Vec<_>> = all_simple_paths(&graph, 0u32.into(), 1u32.into(), 0, None)
-            .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
-            .collect();
+        let actual_simple_paths_0_to_1: Vec<Vec<_>> =
+            all_simple_paths(&graph, 0u32.into(), 1u32.into(), 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
 
         assert_eq!(actual_simple_paths_0_to_1.len(), 1);
         assert_equal(expexted_simple_paths_0_to_1, &actual_simple_paths_0_to_1);
@@ -148,15 +150,13 @@ mod test {
 
     #[test]
     fn test_no_simple_paths() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[
-            (0, 1),
-            (2, 1)
-        ]);
+        let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
 
         println!("{}", Dot::new(&graph));
-        let actual_simple_paths_0_to_2: Vec<Vec<_>> = all_simple_paths(&graph, 0u32.into(), 2u32.into(), 0, None)
-            .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
-            .collect();
+        let actual_simple_paths_0_to_2: Vec<Vec<_>> =
+            all_simple_paths(&graph, 0u32.into(), 2u32.into(), 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
 
         assert_eq!(actual_simple_paths_0_to_2.len(), 0);
     }

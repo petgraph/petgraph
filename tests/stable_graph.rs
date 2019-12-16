@@ -1,19 +1,16 @@
 #![cfg(feature = "stable_graph")]
 
-extern crate petgraph;
 extern crate itertools;
-#[macro_use] extern crate defmac;
+extern crate petgraph;
+#[macro_use]
+extern crate defmac;
 
+use petgraph::algo::{kosaraju_scc, tarjan_scc};
+use petgraph::dot::Dot;
 use petgraph::prelude::*;
 use petgraph::stable_graph::node_index as n;
+use petgraph::visit::{IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
 use petgraph::EdgeType;
-use petgraph::algo::{kosaraju_scc, tarjan_scc};
-use petgraph::visit::{
-    NodeIndexable,
-    IntoNodeReferences,
-    IntoEdgeReferences,
-};
-use petgraph::dot::Dot;
 
 use itertools::assert_equal;
 
@@ -73,11 +70,15 @@ fn scc_graph() -> StableGraph<(), ()> {
         (6, 0),
         (0, 3),
         (3, 6),
-        (8, 6), (8, 2),
-        (2, 5), (5, 8), (7, 5),
+        (8, 6),
+        (8, 2),
+        (2, 5),
+        (5, 8),
+        (7, 5),
         (1, 7),
         (7, 4),
-        (4, 1)]);
+        (4, 1),
+    ]);
     // make an identical replacement of n(4) and leave a hole
     let x = gr.add_node(());
     gr.add_edge(n(7), x, ());
@@ -92,28 +93,34 @@ fn test_scc() {
     println!("{:?}", gr);
 
     let x = n(gr.node_bound() - 1);
-    assert_sccs_eq(kosaraju_scc(&gr), vec![
-        vec![n(0), n(3), n(6)],
-        vec![n(1), n(7),   x ],
-        vec![n(2), n(5), n(8)],
-    ]);
+    assert_sccs_eq(
+        kosaraju_scc(&gr),
+        vec![
+            vec![n(0), n(3), n(6)],
+            vec![n(1), n(7), x],
+            vec![n(2), n(5), n(8)],
+        ],
+    );
 }
-
 
 #[test]
 fn test_tarjan_scc() {
     let gr = scc_graph();
 
     let x = n(gr.node_bound() - 1);
-    assert_sccs_eq(tarjan_scc(&gr), vec![
-        vec![n(0), n(3), n(6)],
-        vec![n(1), n(7),   x ],
-        vec![n(2), n(5), n(8)],
-    ]);
+    assert_sccs_eq(
+        tarjan_scc(&gr),
+        vec![
+            vec![n(0), n(3), n(6)],
+            vec![n(1), n(7), x],
+            vec![n(2), n(5), n(8)],
+        ],
+    );
 }
 
 fn make_graph<Ty>() -> StableGraph<(), i32, Ty>
-    where Ty: EdgeType,
+where
+    Ty: EdgeType,
 {
     let mut gr = StableGraph::default();
     let mut c = 0..;
@@ -130,7 +137,8 @@ fn make_graph<Ty>() -> StableGraph<(), i32, Ty>
         (1, 7, e()),
         (7, 4, e()),
         (8, 6, e()), // parallel edge
-        (4, 1, e())]);
+        (4, 1, e()),
+    ]);
     // make an identical replacement of n(4) and leave a hole
     let x = gr.add_node(());
     gr.add_edge(n(7), x, e());
@@ -165,7 +173,10 @@ fn test_edge_references() {
 fn test_edges_undirected() {
     let gr = make_graph::<Undirected>();
     let x = n(9);
-    assert_equal(edges!(gr, x), vec![(x, 16), (x, 14), (n(1), 13), (n(7), 12)]);
+    assert_equal(
+        edges!(gr, x),
+        vec![(x, 16), (x, 14), (n(1), 13), (n(7), 12)],
+    );
     assert_equal(edges!(gr, n(0)), vec![(n(3), 1)]);
     assert_equal(edges!(gr, n(4)), vec![]);
 }
@@ -174,9 +185,7 @@ fn test_edges_undirected() {
 fn test_edge_iterators_directed() {
     let gr = make_graph::<Directed>();
     for i in gr.node_indices() {
-        itertools::assert_equal(
-            gr.edges_directed(i, Outgoing),
-            gr.edges(i));
+        itertools::assert_equal(gr.edges_directed(i, Outgoing), gr.edges(i));
     }
     let mut incoming = vec![Vec::new(); gr.node_bound()];
 
@@ -190,7 +199,8 @@ fn test_edge_iterators_directed() {
     for i in gr.node_indices() {
         itertools::assert_equal(
             gr.edges_directed(i, Incoming).map(|e| e.source()),
-            incoming[i.index()].iter().rev().cloned());
+            incoming[i.index()].iter().rev().cloned(),
+        );
     }
 }
 
@@ -198,19 +208,15 @@ fn test_edge_iterators_directed() {
 fn test_edge_iterators_undir() {
     let gr = make_graph::<Undirected>();
     for i in gr.node_indices() {
-        itertools::assert_equal(
-            gr.edges_directed(i, Outgoing),
-            gr.edges(i));
+        itertools::assert_equal(gr.edges_directed(i, Outgoing), gr.edges(i));
     }
     for i in gr.node_indices() {
-        itertools::assert_equal(
-            gr.edges_directed(i, Incoming),
-            gr.edges(i));
+        itertools::assert_equal(gr.edges_directed(i, Incoming), gr.edges(i));
     }
 }
 
 #[test]
-#[should_panic(expected="is not a node")]
+#[should_panic(expected = "is not a node")]
 fn add_edge_vacant() {
     let mut g = StableGraph::<_, _>::new();
     let a = g.add_node(0);
@@ -221,7 +227,7 @@ fn add_edge_vacant() {
 }
 
 #[test]
-#[should_panic(expected="is not a node")]
+#[should_panic(expected = "is not a node")]
 fn add_edge_oob() {
     let mut g = StableGraph::<_, _>::new();
     let a = g.add_node(0);
@@ -234,9 +240,7 @@ fn add_edge_oob() {
 fn test_node_references() {
     let gr = scc_graph();
 
-    itertools::assert_equal(
-        gr.node_references().map(|(i, _)| i),
-        gr.node_indices());
+    itertools::assert_equal(gr.node_references().map(|(i, _)| i), gr.node_indices());
 }
 
 #[test]
@@ -246,40 +250,19 @@ fn iterators_undir() {
     let b = g.add_node(1);
     let c = g.add_node(2);
     let d = g.add_node(3);
-    g.extend_with_edges(&[
-        (a, b, 1),
-        (a, c, 2),
-        (b, c, 3),
-        (c, c, 4),
-        (a, d, 5),
-    ]);
+    g.extend_with_edges(&[(a, b, 1), (a, c, 2), (b, c, 3), (c, c, 4), (a, d, 5)]);
     g.remove_node(b);
 
-    itertools::assert_equal(
-        g.neighbors(a),
-        vec![d, c],
-    );
-    itertools::assert_equal(
-        g.neighbors(c),
-        vec![c, a],
-    );
-    itertools::assert_equal(
-        g.neighbors(d),
-        vec![a],
-    );
+    itertools::assert_equal(g.neighbors(a), vec![d, c]);
+    itertools::assert_equal(g.neighbors(c), vec![c, a]);
+    itertools::assert_equal(g.neighbors(d), vec![a]);
 
     // the node that was removed
-    itertools::assert_equal(
-        g.neighbors(b),
-        vec![],
-    );
+    itertools::assert_equal(g.neighbors(b), vec![]);
 
     // remove one more
     g.remove_node(c);
-    itertools::assert_equal(
-        g.neighbors(c),
-        vec![],
-    );
+    itertools::assert_equal(g.neighbors(c), vec![]);
 }
 
 #[test]
@@ -290,14 +273,16 @@ fn dot() {
     gr.add_edge(a, a, "10");
     gr.add_edge(a, b, "20");
     let dot_output = format!("{}", Dot::new(&gr));
-    assert_eq!(dot_output,
-r#"digraph {
+    assert_eq!(
+        dot_output,
+        r#"digraph {
     0 [label="x"]
     1 [label="y"]
     0 -> 0 [label="10"]
     0 -> 1 [label="20"]
 }
-"#);
+"#
+    );
 }
 
 defmac!(iter_eq a, b => a.eq(b));

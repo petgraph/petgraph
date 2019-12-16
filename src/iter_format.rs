@@ -7,15 +7,14 @@ use std::fmt;
 pub struct DebugMap<F>(pub F);
 
 impl<'a, F, I, K, V> fmt::Debug for DebugMap<F>
-    where F: Fn() -> I,
-          I: IntoIterator<Item=(K, V)>,
-          K: fmt::Debug,
-          V: fmt::Debug,
+where
+    F: Fn() -> I,
+    I: IntoIterator<Item = (K, V)>,
+    K: fmt::Debug,
+    V: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_map()
-         .entries((self.0)())
-         .finish()
+        f.debug_map().entries((self.0)()).finish()
     }
 }
 
@@ -23,7 +22,8 @@ impl<'a, F, I, K, V> fmt::Debug for DebugMap<F>
 pub struct NoPretty<T>(pub T);
 
 impl<T> fmt::Debug for NoPretty<T>
-    where T: fmt::Debug,
+where
+    T: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.0)
@@ -44,9 +44,10 @@ pub struct Format<'a, I> {
     inner: RefCell<Option<I>>,
 }
 
-pub trait IterFormatExt : Iterator {
+pub trait IterFormatExt: Iterator {
     fn format(self, separator: &str) -> Format<Self>
-        where Self: Sized
+    where
+        Self: Sized,
     {
         Format {
             sep: separator,
@@ -55,14 +56,15 @@ pub trait IterFormatExt : Iterator {
     }
 }
 
-impl<I> IterFormatExt for I where I: Iterator { }
-
+impl<I> IterFormatExt for I where I: Iterator {}
 
 impl<'a, I> Format<'a, I>
-    where I: Iterator,
+where
+    I: Iterator,
 {
     fn format<F>(&self, f: &mut fmt::Formatter, mut cb: F) -> fmt::Result
-        where F: FnMut(&I::Item, &mut fmt::Formatter) -> fmt::Result,
+    where
+        F: FnMut(&I::Item, &mut fmt::Formatter) -> fmt::Result,
     {
         let mut iter = match self.inner.borrow_mut().take() {
             Some(t) => t,

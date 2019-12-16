@@ -1,11 +1,13 @@
-#![cfg(feature="quickcheck")]
-#[macro_use] extern crate quickcheck;
-extern crate rand;
+#![cfg(feature = "quickcheck")]
+#[macro_use]
+extern crate quickcheck;
 extern crate petgraph;
-#[macro_use] extern crate defmac;
+extern crate rand;
+#[macro_use]
+extern crate defmac;
 
-extern crate odds;
 extern crate itertools;
+extern crate odds;
 
 mod utils;
 
@@ -15,45 +17,29 @@ use odds::prelude::*;
 use std::collections::HashSet;
 use std::hash::Hash;
 
-use rand::Rng;
 use itertools::assert_equal;
 use itertools::cloned;
+use rand::Rng;
 
-use petgraph::prelude::*;
-use petgraph::{
-    EdgeType, 
-};
-use petgraph::dot::{Dot, Config};
 use petgraph::algo::{
-    condensation,
-    min_spanning_tree,
-    is_cyclic_undirected,
-    is_cyclic_directed,
-    is_isomorphic,
-    is_isomorphic_matching,
-    toposort,
-    kosaraju_scc,
-    tarjan_scc,
-    dijkstra,
-    bellman_ford,
-};
-use petgraph::visit::{Topo, Reversed};
-use petgraph::visit::{
-    IntoNodeReferences,
-    IntoEdgeReferences,
-    NodeIndexable,
-    EdgeRef,
+    bellman_ford, condensation, dijkstra, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
+    is_isomorphic_matching, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
 };
 use petgraph::data::FromElements;
-use petgraph::graph::{IndexType, node_index, edge_index};
-use petgraph::graphmap::{
-    NodeTrait,
-};
+use petgraph::dot::{Config, Dot};
+use petgraph::graph::{edge_index, node_index, IndexType};
+use petgraph::graphmap::NodeTrait;
+use petgraph::prelude::*;
+use petgraph::visit::{EdgeRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
+use petgraph::visit::{Reversed, Topo};
+use petgraph::EdgeType;
 
 fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-          N: Clone, E: Clone + PartialOrd,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+    N: Clone,
+    E: Clone + PartialOrd,
 {
     Graph::from_elements(min_spanning_tree(&g))
 }
@@ -101,34 +87,43 @@ quickcheck! {
 }
 
 fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     assert_eq!(g.node_count(), g.node_indices().count());
     assert_eq!(g.edge_count(), g.edge_indices().count());
     for edge in g.raw_edges() {
-        assert!(g.find_edge(edge.source(), edge.target()).is_some(),
-                "Edge not in graph! {:?} to {:?}", edge.source(), edge.target());
+        assert!(
+            g.find_edge(edge.source(), edge.target()).is_some(),
+            "Edge not in graph! {:?} to {:?}",
+            edge.source(),
+            edge.target()
+        );
     }
 }
 
 #[test]
 fn reverse_directed() {
     fn prop<Ty: EdgeType>(mut g: Graph<(), (), Ty>) -> bool {
-        let node_outdegrees = g.node_indices()
-                                .map(|i| g.neighbors_directed(i, Outgoing).count())
-                                .collect::<Vec<_>>();
-        let node_indegrees = g.node_indices()
-                                .map(|i| g.neighbors_directed(i, Incoming).count())
-                                .collect::<Vec<_>>();
+        let node_outdegrees = g
+            .node_indices()
+            .map(|i| g.neighbors_directed(i, Outgoing).count())
+            .collect::<Vec<_>>();
+        let node_indegrees = g
+            .node_indices()
+            .map(|i| g.neighbors_directed(i, Incoming).count())
+            .collect::<Vec<_>>();
 
         g.reverse();
-        let new_outdegrees = g.node_indices()
-                                .map(|i| g.neighbors_directed(i, Outgoing).count())
-                                .collect::<Vec<_>>();
-        let new_indegrees = g.node_indices()
-                                .map(|i| g.neighbors_directed(i, Incoming).count())
-                                .collect::<Vec<_>>();
+        let new_outdegrees = g
+            .node_indices()
+            .map(|i| g.neighbors_directed(i, Outgoing).count())
+            .collect::<Vec<_>>();
+        let new_indegrees = g
+            .node_indices()
+            .map(|i| g.neighbors_directed(i, Incoming).count())
+            .collect::<Vec<_>>();
         assert_eq!(node_outdegrees, new_indegrees);
         assert_eq!(node_indegrees, new_outdegrees);
         assert_graph_consistent(&g);
@@ -160,14 +155,21 @@ fn graph_retain_nodes() {
         assert_eq!(num_pos_post, g.node_count());
 
         // check against filter_map
-        let filtered = og.filter_map(|_, w| if *w >= 0 { Some(*w) } else { None },
-                                     |_, w| Some(*w));
+        let filtered = og.filter_map(
+            |_, w| if *w >= 0 { Some(*w) } else { None },
+            |_, w| Some(*w),
+        );
         assert_eq!(g.node_count(), filtered.node_count());
         /*
         println!("Iso of graph with nodes={}, edges={}",
                  g.node_count(), g.edge_count());
                  */
-        assert!(is_isomorphic_matching(&filtered, &g, PartialEq::eq, PartialEq::eq));
+        assert!(is_isomorphic_matching(
+            &filtered,
+            &g,
+            PartialEq::eq,
+            PartialEq::eq
+        ));
 
         true
     }
@@ -200,7 +202,8 @@ fn graph_retain_edges() {
             // check against filter_map
             let filtered = og.filter_map(
                 |_, w| Some(*w),
-                |_, w| if *w >= 0 { Some(*w) } else { None });
+                |_, w| if *w >= 0 { Some(*w) } else { None },
+            );
             assert_eq!(g.node_count(), filtered.node_count());
             assert!(is_isomorphic(&filtered, &g));
         }
@@ -235,7 +238,8 @@ fn stable_graph_retain_edges() {
             // check against filter_map
             let filtered = og.filter_map(
                 |_, w| Some(*w),
-                |_, w| if *w >= 0 { Some(*w) } else { None });
+                |_, w| if *w >= 0 { Some(*w) } else { None },
+            );
             assert_eq!(g.node_count(), filtered.node_count());
         }
         true
@@ -267,14 +271,17 @@ fn isomorphism_1() {
             // Add edges
             for i in g.edge_indices() {
                 let (s, t) = g.edge_endpoints(i).unwrap();
-                ng.add_edge(map[s.index()],
-                            map[t.index()],
-                            g[i]);
+                ng.add_edge(map[s.index()], map[t.index()], g[i]);
             }
             if g.node_count() < 20 && g.edge_count() < 50 {
                 assert!(is_isomorphic(&g, &ng));
             }
-            assert!(is_isomorphic_matching(&g, &ng, PartialEq::eq, PartialEq::eq));
+            assert!(is_isomorphic_matching(
+                &g,
+                &ng,
+                PartialEq::eq,
+                PartialEq::eq
+            ));
         }
         true
     }
@@ -297,9 +304,19 @@ fn isomorphism_modify() {
             ng[j] = (g[j] == 0) as i8;
         }
         if i.index() < g.node_count() || j.index() < g.edge_count() {
-            assert!(!is_isomorphic_matching(&g, &ng, PartialEq::eq, PartialEq::eq));
+            assert!(!is_isomorphic_matching(
+                &g,
+                &ng,
+                PartialEq::eq,
+                PartialEq::eq
+            ));
         } else {
-            assert!(is_isomorphic_matching(&g, &ng, PartialEq::eq, PartialEq::eq));
+            assert!(is_isomorphic_matching(
+                &g,
+                &ng,
+                PartialEq::eq,
+                PartialEq::eq
+            ));
         }
         true
     }
@@ -378,7 +395,12 @@ fn stable_graph_add_remove_edges() {
                 assert!(g.remove_edge(ex).is_some());
             }
             //assert_graph_consistent(&g);
-            assert!(g.find_edge(a, b).is_none(), "failed to remove edge {:?} from graph {:?}", (a, b), g);
+            assert!(
+                g.find_edge(a, b).is_none(),
+                "failed to remove edge {:?} from graph {:?}",
+                (a, b),
+                g
+            );
             assert!(g.neighbors(a).find(|x| *x == b).is_none());
             if !g.is_directed() {
                 assert!(g.find_edge(b, a).is_none());
@@ -392,17 +414,30 @@ fn stable_graph_add_remove_edges() {
 }
 
 fn assert_graphmap_consistent<N, E, Ty>(g: &GraphMap<N, E, Ty>)
-    where Ty: EdgeType,
-          N: NodeTrait + fmt::Debug,
+where
+    Ty: EdgeType,
+    N: NodeTrait + fmt::Debug,
 {
     for (a, b, _weight) in g.all_edges() {
-        assert!(g.contains_edge(a, b),
-                "Edge not in graph! {:?} to {:?}", a, b);
-        assert!(g.neighbors(a).find(|x| *x == b).is_some(),
-                "Edge {:?} not in neighbor list for {:?}", (a, b), a);
+        assert!(
+            g.contains_edge(a, b),
+            "Edge not in graph! {:?} to {:?}",
+            a,
+            b
+        );
+        assert!(
+            g.neighbors(a).find(|x| *x == b).is_some(),
+            "Edge {:?} not in neighbor list for {:?}",
+            (a, b),
+            a
+        );
         if !g.is_directed() {
-            assert!(g.neighbors(b).find(|x| *x == a).is_some(),
-                    "Edge {:?} not in neighbor list for {:?}", (b, a), b);
+            assert!(
+                g.neighbors(b).find(|x| *x == a).is_some(),
+                "Edge {:?} not in neighbor list for {:?}",
+                (b, a),
+                b
+            );
         }
     }
 }
@@ -417,9 +452,8 @@ fn graphmap_remove() {
             assert_eq!(contains, g.contains_edge(b, a));
         }
         assert_eq!(g.remove_edge(a, b).is_some(), contains);
-        assert!(!g.contains_edge(a, b) &&
-            g.neighbors(a).find(|x| *x == b).is_none());
-            //(g.is_directed() || g.neighbors(b).find(|x| *x == a).is_none()));
+        assert!(!g.contains_edge(a, b) && g.neighbors(a).find(|x| *x == b).is_none());
+        //(g.is_directed() || g.neighbors(b).find(|x| *x == a).is_none()));
         assert!(g.remove_edge(a, b).is_none());
         assert_graphmap_consistent(&g);
         true
@@ -433,9 +467,9 @@ fn graphmap_add_remove() {
     fn prop(mut g: UnGraphMap<i8, ()>, a: i8, b: i8) -> bool {
         assert_eq!(g.contains_edge(a, b), g.add_edge(a, b, ()).is_some());
         g.remove_edge(a, b);
-        !g.contains_edge(a, b) &&
-            g.neighbors(a).find(|x| *x == b).is_none() &&
-            g.neighbors(b).find(|x| *x == a).is_none()
+        !g.contains_edge(a, b)
+            && g.neighbors(a).find(|x| *x == b).is_none()
+            && g.neighbors(b).find(|x| *x == a).is_none()
     }
     quickcheck::quickcheck(prop as fn(_, _, _) -> bool);
 }
@@ -480,7 +514,6 @@ quickcheck! {
         subset_is_topo_order(&g, &firsts)
     }
 }
-
 
 quickcheck! {
     // Reversed edges gives the same sccs (when sorted)
@@ -565,17 +598,18 @@ impl<N: Default + Clone + Send + 'static> quickcheck::Arbitrary for DAG<N> {
 
     // shrink the graph by splitting it in two by a very
     // simple algorithm, just even and odd node indices
-    fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
         let self_ = self.clone();
         Box::new((0..2).filter_map(move |x| {
-            let gr = self_.0.filter_map(|i, w| {
-                if i.index() % 2 == x {
-                    Some(w.clone())
-                } else {
-                    None
-                }
-            },
-            |_, w| Some(w.clone())
+            let gr = self_.0.filter_map(
+                |i, w| {
+                    if i.index() % 2 == x {
+                        Some(w.clone())
+                    } else {
+                        None
+                    }
+                },
+                |_, w| Some(w.clone()),
             );
             // make sure we shrink
             if gr.node_count() < self_.0.node_count() {
@@ -589,7 +623,11 @@ impl<N: Default + Clone + Send + 'static> quickcheck::Arbitrary for DAG<N> {
 
 fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
     if gr.node_count() != order.len() {
-        println!("Graph ({}) and count ({}) had different amount of nodes.", gr.node_count(), order.len());
+        println!(
+            "Graph ({}) and count ({}) had different amount of nodes.",
+            gr.node_count(),
+            order.len()
+        );
         return false;
     }
     // check all the edges of the graph
@@ -606,10 +644,13 @@ fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
     true
 }
 
-
 fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
     if gr.node_count() < order.len() {
-        println!("Graph (len={}) had less nodes than order (len={})", gr.node_count(), order.len());
+        println!(
+            "Graph (len={}) had less nodes than order (len={})",
+            gr.node_count(),
+            order.len()
+        );
         return false;
     }
     // check all the edges of the graph
@@ -711,12 +752,12 @@ quickcheck! {
 }
 
 fn set<I>(iter: I) -> HashSet<I::Item>
-    where I: IntoIterator,
-          I::Item: Hash + Eq,
+where
+    I: IntoIterator,
+    I::Item: Hash + Eq,
 {
     iter.into_iter().collect()
 }
-
 
 quickcheck! {
     fn dfs_visit(gr: Graph<(), ()>, node: usize) -> bool {

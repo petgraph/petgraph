@@ -1,24 +1,25 @@
-
 extern crate petgraph;
-#[macro_use] extern crate quickcheck;
+#[macro_use]
+extern crate quickcheck;
+extern crate bincode;
 extern crate itertools;
 extern crate serde_json;
-extern crate bincode;
-#[macro_use] extern crate defmac;
+#[macro_use]
+extern crate defmac;
 
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::iter::FromIterator;
 
-use itertools::{Itertools, repeat_n};
 use itertools::assert_equal;
+use itertools::{repeat_n, Itertools};
 
+use petgraph::graph::{edge_index, node_index, IndexType};
 use petgraph::prelude::*;
-use petgraph::EdgeType;
-use petgraph::graph::{node_index, edge_index, IndexType};
 use petgraph::visit::EdgeRef;
-use petgraph::visit::NodeIndexable;
 use petgraph::visit::IntoEdgeReferences;
+use petgraph::visit::NodeIndexable;
+use petgraph::EdgeType;
 
 // graphs are the equal, down to graph indices
 // this is a strict notion of graph equivalence:
@@ -26,20 +27,27 @@ use petgraph::visit::IntoEdgeReferences;
 // * Requires equal node and edge indices, equal weights
 // * Does not require: edge for node order
 pub fn assert_graph_eq<N, N2, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>, h: &Graph<N2, E, Ty, Ix>)
-    where N: PartialEq<N2> + Debug, N2: PartialEq<N2> + Debug, E: PartialEq + Debug,
-          Ty: EdgeType,
-          Ix: IndexType,
+where
+    N: PartialEq<N2> + Debug,
+    N2: PartialEq<N2> + Debug,
+    E: PartialEq + Debug,
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     assert_eq!(g.node_count(), h.node_count());
     assert_eq!(g.edge_count(), h.edge_count());
 
     // same node weigths
-    assert_equal(g.raw_nodes().iter().map(|n| &n.weight),
-                 h.raw_nodes().iter().map(|n| &n.weight));
+    assert_equal(
+        g.raw_nodes().iter().map(|n| &n.weight),
+        h.raw_nodes().iter().map(|n| &n.weight),
+    );
 
     // same edge weigths
-    assert_equal(g.raw_edges().iter().map(|n| &n.weight),
-                 h.raw_edges().iter().map(|n| &n.weight));
+    assert_equal(
+        g.raw_edges().iter().map(|n| &n.weight),
+        h.raw_edges().iter().map(|n| &n.weight),
+    );
 
     for e1 in g.edge_references() {
         let (a2, b2) = h.edge_endpoints(e1.id()).unwrap();
@@ -63,7 +71,9 @@ pub fn assert_graph_eq<N, N2, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>, h: &Graph<N2, 
 // * Requires equal node and edge indices, equal weights
 // * Does not require: edge for node order
 pub fn assert_stable_graph_eq<N, E>(g: &StableGraph<N, E>, h: &StableGraph<N, E>)
-    where N: PartialEq + Debug, E: PartialEq + Debug,
+where
+    N: PartialEq + Debug,
+    E: PartialEq + Debug,
 {
     assert_eq!(g.node_count(), h.node_count());
     assert_eq!(g.edge_count(), h.edge_count());
@@ -71,7 +81,8 @@ pub fn assert_stable_graph_eq<N, E>(g: &StableGraph<N, E>, h: &StableGraph<N, E>
     // same node weigths
     assert_equal(
         (0..g.node_bound()).map(|i| g.node_weight(node_index(i))),
-        (0..h.node_bound()).map(|i| h.node_weight(node_index(i))));
+        (0..h.node_bound()).map(|i| h.node_weight(node_index(i))),
+    );
 
     let last_edge_g = g.edge_references().next_back();
     let last_edge_h = h.edge_references().next_back();
@@ -83,7 +94,8 @@ pub fn assert_stable_graph_eq<N, E>(g: &StableGraph<N, E>, h: &StableGraph<N, E>
         // same edge weigths
         assert_equal(
             (0..lgi).map(|i| g.edge_weight(edge_index(i))),
-            (0..lhi).map(|i| h.edge_weight(edge_index(i))));
+            (0..lhi).map(|i| h.edge_weight(edge_index(i))),
+        );
     }
 
     for e1 in g.edge_references() {
@@ -102,10 +114,10 @@ pub fn assert_stable_graph_eq<N, E>(g: &StableGraph<N, E>, h: &StableGraph<N, E>
     }
 }
 
-
 fn make_graph<Ty, Ix>() -> Graph<&'static str, i32, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     let mut g = Graph::default();
     let a = g.add_node("A");
@@ -131,8 +143,9 @@ fn make_graph<Ty, Ix>() -> Graph<&'static str, i32, Ty, Ix>
 }
 
 fn make_stable_graph<Ty, Ix>() -> StableGraph<&'static str, i32, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     let mut g = StableGraph::default();
     let a = g.add_node("A");
@@ -203,7 +216,6 @@ const DIGRAPH_STRI32: &str = r#"{
     "edges":[[0,1,7],[2,0,9],[0,3,14],[1,2,10],[3,2,2],[3,4,9],[1,5,15],[2,5,11],[4,5,6]]
     }"#;
 
-
 type DiGraphNils = DiGraph<(), ()>;
 type UnGraphNils = UnGraph<(), ()>;
 type DiGraphNilsU8 = DiGraph<(), (), u8>;
@@ -215,19 +227,19 @@ fn from_json_digraph_nils() {
 }
 
 #[test]
-#[should_panic(expected="edge property mismatch")]
+#[should_panic(expected = "edge property mismatch")]
 fn from_json_graph_nils_edge_property_mismatch() {
     let _: UnGraphNils = fromjson!(DIGRAPH_NILS);
 }
 
 #[test]
-#[should_panic(expected="does not exist")]
+#[should_panic(expected = "does not exist")]
 fn from_json_graph_nils_index_oob() {
     let _: DiGraphNils = fromjson!(DIGRAPH_NILS_INDEX_OOB);
 }
 
 #[test]
-#[should_panic(expected="expected u8")]
+#[should_panic(expected = "expected u8")]
 fn from_json_graph_nils_index_too_large() {
     let _: DiGraphNilsU8 = fromjson!(DIGRAPH_NILS_INDEX_OUTSIDE_U8);
 }
@@ -238,21 +250,31 @@ fn from_json_graph_directed_str_i32() {
 }
 
 #[test]
-#[should_panic(expected="expected unit")]
+#[should_panic(expected = "expected unit")]
 fn from_json_graph_from_edge_type_1() {
     let _: DiGraphNils = fromjson!(DIGRAPH_STRI32);
 }
 
 #[test]
-#[should_panic(expected="expected a string")]
+#[should_panic(expected = "expected a string")]
 fn from_json_graph_from_edge_type_2() {
     let _: DiGraphStrI32 = fromjson!(DIGRAPH_NILS);
 }
 
 #[test]
 fn from_json_digraph_str_i32() {
-    let g4nodes = ["A","B","C","D","E","F"];
-    let g4edges = [[0,1,7],[2,0,9],[0,3,14],[1,2,10],[3,2,2],[3,4,9],[1,5,15],[2,5,11],[4,5,6]];
+    let g4nodes = ["A", "B", "C", "D", "E", "F"];
+    let g4edges = [
+        [0, 1, 7],
+        [2, 0, 9],
+        [0, 3, 14],
+        [1, 2, 10],
+        [3, 2, 2],
+        [3, 4, 9],
+        [1, 5, 15],
+        [2, 5, 11],
+        [4, 5, 6],
+    ];
 
     type GSI = DiGraph<String, i32>;
     type GSISmall = DiGraph<String, i32, u8>;
@@ -280,17 +302,19 @@ fn from_json_nodes_too_big() {
     // ensure we fail if node or edge count exceeds index max
     use serde_json::from_str;
 
-    let j1_big = &format!("{}{}{}",
-                          r#"
+    let j1_big = &format!(
+        "{}{}{}",
+        r#"
                           {"nodes": [
                           "#,
-                          repeat_n(0, 300).format(", "),
-                          r#"
+        repeat_n(0, 300).format(", "),
+        r#"
                           ],
                           "edge_property": "directed",
                           "edges": []
                           }
-                          "#);
+                          "#
+    );
 
     type G8 = DiGraph<i32, (), u8>;
     type G16 = DiGraph<i32, (), u16>;
@@ -313,13 +337,15 @@ fn from_json_edges_too_big() {
     // ensure we fail if node or edge count exceeds index max
     use serde_json::from_str;
 
-    let j1_big = format!("{}{}{}",
-                         r#"
+    let j1_big = format!(
+        "{}{}{}",
+        r#"
                          {"nodes": [0],
                          "edge_property": "directed",
                          "edges": ["#,
-                         repeat_n("[0, 0, 1]", (1 << 16) - 1).format(", "),
-                         "]}");
+        repeat_n("[0, 0, 1]", (1 << 16) - 1).format(", "),
+        "]}"
+    );
 
     type G8 = DiGraph<i32, i32, u8>;
     type G16 = DiGraph<i32, i32, u16>;
@@ -349,7 +375,6 @@ fn json_stable_graph_nils() {
     let g2 = rejson!(g1);
     assert_stable_graph_eq(&g1, &g2);
 }
-
 
 // bincode macros
 defmac!(encode ref g => bincode::serialize(g).unwrap());

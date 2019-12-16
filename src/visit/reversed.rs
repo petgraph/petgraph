@@ -1,24 +1,9 @@
-
-use crate::{
-    Direction,
-    Incoming,
-};
+use crate::{Direction, Incoming};
 
 use crate::visit::{
-    GraphBase,
-    GraphRef,
-    IntoNodeIdentifiers,
-    IntoNodeReferences,
-    IntoNeighbors,
-    IntoNeighborsDirected,
-    IntoEdgeReferences,
-    NodeCompactIndexable,
-    NodeCount,
-    NodeIndexable,
-    Visitable,
-    EdgeRef,
-    Data,
-    GraphProp,
+    Data, EdgeRef, GraphBase, GraphProp, GraphRef, IntoEdgeReferences, IntoNeighbors,
+    IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
+    NodeCount, NodeIndexable, Visitable,
 };
 
 /// An edge-reversing graph adaptor.
@@ -32,33 +17,31 @@ impl<G: GraphBase> GraphBase for Reversed<G> {
     type EdgeId = G::EdgeId;
 }
 
-impl<G: GraphRef> GraphRef for Reversed<G> { }
+impl<G: GraphRef> GraphRef for Reversed<G> {}
 
-Data!{delegate_impl [[G], G, Reversed<G>, access0]}
+Data! {delegate_impl [[G], G, Reversed<G>, access0]}
 
 impl<G> IntoNeighbors for Reversed<G>
-    where G: IntoNeighborsDirected
+where
+    G: IntoNeighborsDirected,
 {
     type Neighbors = G::NeighborsDirected;
-    fn neighbors(self, n: G::NodeId) -> G::NeighborsDirected
-    {
+    fn neighbors(self, n: G::NodeId) -> G::NeighborsDirected {
         self.0.neighbors_directed(n, Incoming)
     }
 }
 
 impl<G> IntoNeighborsDirected for Reversed<G>
-    where G: IntoNeighborsDirected
+where
+    G: IntoNeighborsDirected,
 {
     type NeighborsDirected = G::NeighborsDirected;
-    fn neighbors_directed(self, n: G::NodeId, d: Direction)
-        -> G::NeighborsDirected
-    {
+    fn neighbors_directed(self, n: G::NodeId, d: Direction) -> G::NeighborsDirected {
         self.0.neighbors_directed(n, d.opposite())
     }
 }
 
-impl<G: Visitable> Visitable for Reversed<G>
-{
+impl<G: Visitable> Visitable for Reversed<G> {
     type Map = G::Map;
     fn visit_map(&self) -> G::Map {
         self.0.visit_map()
@@ -68,14 +51,14 @@ impl<G: Visitable> Visitable for Reversed<G>
     }
 }
 
-
 /// A reversed edge reference
 #[derive(Copy, Clone, Debug)]
 pub struct ReversedEdgeReference<R>(R);
 
 /// An edge reference
 impl<R> EdgeRef for ReversedEdgeReference<R>
-    where R: EdgeRef,
+where
+    R: EdgeRef,
 {
     type NodeId = R::NodeId;
     type EdgeId = R::EdgeId;
@@ -95,7 +78,8 @@ impl<R> EdgeRef for ReversedEdgeReference<R>
 }
 
 impl<G> IntoEdgeReferences for Reversed<G>
-    where G: IntoEdgeReferences
+where
+    G: IntoEdgeReferences,
 {
     type EdgeRef = ReversedEdgeReference<G::EdgeRef>;
     type EdgeReferences = ReversedEdgeReferences<G::EdgeReferences>;
@@ -112,8 +96,9 @@ pub struct ReversedEdgeReferences<I> {
 }
 
 impl<I> Iterator for ReversedEdgeReferences<I>
-    where I: Iterator,
-          I::Item: EdgeRef,
+where
+    I: Iterator,
+    I::Item: EdgeRef,
 {
     type Item = ReversedEdgeReference<I::Item>;
     fn next(&mut self) -> Option<Self::Item> {
@@ -122,14 +107,14 @@ impl<I> Iterator for ReversedEdgeReferences<I>
 }
 
 macro_rules! access0 {
-    ($e:expr) => ($e.0)
+    ($e:expr) => {
+        $e.0
+    };
 }
 
-NodeIndexable!{delegate_impl [[G], G, Reversed<G>, access0]}
-NodeCompactIndexable!{delegate_impl [[G], G, Reversed<G>, access0]}
-IntoNodeIdentifiers!{delegate_impl [[G], G, Reversed<G>, access0]}
-IntoNodeReferences!{delegate_impl [[G], G, Reversed<G>, access0]}
-GraphProp!{delegate_impl [[G], G, Reversed<G>, access0]}
-NodeCount!{delegate_impl [[G], G, Reversed<G>, access0]}
-
-
+NodeIndexable! {delegate_impl [[G], G, Reversed<G>, access0]}
+NodeCompactIndexable! {delegate_impl [[G], G, Reversed<G>, access0]}
+IntoNodeIdentifiers! {delegate_impl [[G], G, Reversed<G>, access0]}
+IntoNodeReferences! {delegate_impl [[G], G, Reversed<G>, access0]}
+GraphProp! {delegate_impl [[G], G, Reversed<G>, access0]}
+NodeCount! {delegate_impl [[G], G, Reversed<G>, access0]}
