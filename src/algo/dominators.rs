@@ -188,7 +188,7 @@ where
     debug_assert!(!dominators.iter().any(|&dom| dom == UNDEFINED));
 
     Dominators {
-        root: root,
+        root,
         dominators: dominators
             .into_iter()
             .enumerate()
