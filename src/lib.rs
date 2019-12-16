@@ -1,22 +1,108 @@
 
-//! **petgraph** is a graph data structure library.
+//! `petgraph` is a graph data structure library.
+//! 
+//! Graphs are collections of nodes, and edges between nodes. `petgraph`
+//! provides several [graph types](index.html#graph-types) (each differing in the
+//! tradeoffs taken in their internal representation),
+//! [algorithms](./algo/index.html#functions) on those graphs, and functionality to
+//! [output graphs](./doc/petgraph/dot/struct.Dot.html) in
+//! [`graphviz`](https://www.graphviz.org/) format. Both nodes and edges
+//! can have arbitrary associated data, and edges may be either directed or undirected.
+//! 
+//! # Example
+//! 
+//! ```rust
+//! use petgraph::graph::{NodeIndex, UnGraph};
+//! use petgraph::algo::{dijkstra, min_spanning_tree};
+//! use petgraph::data::FromElements;
+//! use petgraph::dot::{Dot, Config};
 //!
-//! - [`Graph`](./graph/struct.Graph.html) which is an adjacency list graph with
-//! arbitrary associated data.
+//! // Create an undirected graph with `i32` nodes and edges with `()` associated data.
+//! let g = UnGraph::<i32, ()>::from_edges(&[
+//!     (1, 2), (2, 3), (3, 4),
+//!     (1, 4)]);
 //!
-//! - [`StableGraph`](./stable_graph/struct.StableGraph.html) is similar
-//! to `Graph`, but it keeps indices stable across removals.
+//! // Find the shortest path from `1` to `4` using `1` as the cost for every edge.
+//! let node_map = dijkstra(&g, 1.into(), Some(4.into()), |_| 1);
+//! assert_eq!(&1i32, node_map.get(&NodeIndex::new(4)).unwrap());
 //!
-//! - [`GraphMap`](./graphmap/struct.GraphMap.html) is an adjacency list graph
-//! which is backed by a hash table and the node identifiers are the keys
-//! into the table.
+//! // Get the minimum spanning tree of the graph as a new graph, and check that
+//! // one edge was trimmed.
+//! let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&g));
+//! assert_eq!(g.raw_edges().len() - 1, mst.raw_edges().len());
 //!
-//! - [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html) is an adjacency matrix graph.
+//! // Output the tree to `graphviz` `DOT` format
+//! println!("{:?}", Dot::with_config(&mst, &[Config::EdgeNoLabel]));
+//! // graph {
+//! //     0 [label="\"0\""]
+//! //     1 [label="\"0\""]
+//! //     2 [label="\"0\""]
+//! //     3 [label="\"0\""]
+//! //     1 -- 2
+//! //     3 -- 4
+//! //     2 -- 3
+//! // }
+//! ```
 //!
-//! - [`CSR`](./csr/struct.Csr.html) is a sparse adjacency matrix graph with
-//! arbitrary associated data.
+//! # Graph types
+//! 
+//! * [`Graph`](./graph/struct.Graph.html) -
+//!   An adjacency list graph with arbitrary associated data.
+//! * [`StableGraph`](./stable_graph/struct.StableGraph.html) -
+//!   Similar to `Graph`, but it keeps indices stable across removals.
+//! * [`GraphMap`](./graphmap/struct.GraphMap.html) -
+//!   An adjacency list graph backed by a hash table. The node identifiers are the keys
+//!   into the table.
+//! * [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html) -
+//!   An adjacency matrix graph.
+//! * [`CSR`](./csr/struct.Csr.html) -
+//!   A sparse adjacency matrix graph with arbitrary associated data.
 //!
-//! Optional crate feature: `"serde-1"`, see the Readme for more information.
+//! ### Generic parameters
+//! 
+//! Each graph type is generic over a handful of parameters. All graphs share 3 common
+//! parameters, `N`, `E`, and `Ty`. This is a broad overview of what those are. Each
+//! type's documentation will have finer detail on these parameters.
+//! 
+//! `N` & `E` are called *weights* in this implementation, and are associated with
+//! nodes and edges respectively. They can generally be of arbitrary type, and don't have to
+//! be what you might conventionally consider weight-like. For example, using `&str` for `N`
+//! will work. Many algorithms that require costs let you provide a cost function that
+//! translates your `N` and `E` weights into costs appropriate to the algorithm. Some graph
+//! types and choices do impose bounds on `N` or `E`.
+//! [`min_spanning_tree`](./algo/fn.min_spanning_tree.html) for example requires edge weights that
+//! implement [`PartialOrd`](https://doc.rust-lang.org/stable/core/cmp/trait.PartialOrd.html).
+//! [`GraphMap`](./graphmap/struct.GraphMap.html) requires node weights that can serve as hash
+//! map keys, since that graph type does not create standalone node indices.
+//! 
+//! `Ty` controls whether edges are [`Directed`](./petgraph/enum.Directed.html) or
+//! [`Undirected`](./petgraph/enum.Unirected.html).
+//! 
+//! `Ix` appears on graph types that use indices. It is exposed so you can control
+//! the size of node and edge indices, and therefore the memory footprint of your graphs.
+//! Allowed values are `u8`, `u16`, `u32`, and `usize`, with `u32` being the default.
+//! 
+//! ### Shorthand types
+//! 
+//! Each graph type vends a few shorthand type definitions that name some specific
+//! generic choices. For example, [`DiGraph<_, _>`](./graph/type.DiGraph.html) is shorthand
+//! for [`Graph<_, _, Undirected>`](graph/struct.Graph.html).
+//! [`UnMatrix<_, _>`](./matrix_graph/type.UnMatrix.html) is shorthand for
+//! [`MatrixGraph<_, _, Undirected>`](./matrix_graph/struct.MatrixGraph.html). Each graph type's
+//! module documentation lists the available shorthand types.
+//! 
+//! # Crate features
+//! 
+//! * **serde-1** -
+//!   Defaults off. Enables serialization for ``Graph, StableGraph`` using
+//!   [`serde 1.0`](https://crates.io/crates/serde). May require a more recent version
+//!   of Rust than petgraph alone.
+//! * **graphmap** -
+//!   Defaults on. Enables [`GraphMap`](./graphmap/struct.GraphMap.html).
+//! * **stable_graph** -
+//!   Defaults on. Enables [`StableGraph`](./stable_graph/struct.StableGraph.html).
+//! * **matrix_graph** -
+//!   Defaults on. Enables [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html).
 //!
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
 
