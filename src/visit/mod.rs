@@ -121,7 +121,7 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
 
 #[cfg(feature = "graphmap")]
 impl<'a, N: 'a, E, Ty> IntoNeighbors for &'a GraphMap<N, E, Ty>
-    where N: Copy + Ord + Hash,
+    where N: NodeTrait,
           Ty: EdgeType,
 {
     type Neighbors = graphmap::Neighbors<'a, N, Ty>;

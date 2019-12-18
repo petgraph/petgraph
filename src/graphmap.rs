@@ -16,7 +16,7 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 use indexmap::IndexMap;
 use indexmap::map::{
-    Iter as IndexMapIter, IterMut as IndexMapIterMut
+    Iter as IndexMapIter, IterMut as IndexMapIterMut, Entry as IndexMapEntry,
 };
 use indexmap::map::Keys;
 
@@ -147,6 +147,20 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         Ty::is_directed()
     }
 
+    /// Insert the edge in the adjacency list. If the graph is undirected, also insert the
+    /// opposite edge.
+    fn insert_node_adjacencies(nodes: &mut IndexMap<N, Vec<(N, CompactDirection)>>, a: N, b: N) {
+        nodes.entry(a)
+            .or_insert_with(|| Vec::with_capacity(1))
+            .push((b, CompactDirection::Outgoing));
+        if a != b {
+            // self loops don't have the Incoming entry
+            nodes.entry(b)
+                .or_insert_with(|| Vec::with_capacity(1))
+                .push((a, CompactDirection::Incoming));
+        }
+    }
+
     /// Create a new `GraphMap` from an iterable of edges.
     ///
     /// Node values are taken directly from the list.
@@ -240,18 +254,34 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
         if let old @ Some(_) = self.edges.insert(Self::edge_key(a, b), weight) {
             old
         } else {
-            // insert in the adjacency list if it's a new edge
-            self.nodes.entry(a)
-                      .or_insert_with(|| Vec::with_capacity(1))
-                      .push((b, CompactDirection::Outgoing));
-            if a != b {
-                // self loops don't have the Incoming entry
-                self.nodes.entry(b)
-                          .or_insert_with(|| Vec::with_capacity(1))
-                          .push((a, CompactDirection::Incoming));
-            }
+            Self::insert_node_adjacencies(&mut self.nodes, a, b);
             None
         }
+    }
+
+    /// Return the edge entry connecting `a` and `b`.
+    /// For a directed graph, the edge is directed from `a` to `b`.
+    ///
+    /// Does *not* insert nodes `a` and/or `b` until done so using the entry.
+    ///
+    /// ```
+    /// use petgraph::graphmap::DiGraphMap;
+    ///
+    /// let mut g = DiGraphMap::new();
+    ///
+    /// *g.edge_entry("x", "y").or_insert(0) += 1;
+    /// *g.edge_entry("x", "y").or_insert(0) += 1;
+    /// *g.edge_entry("x", "y").or_insert(0) += 1;
+    /// *g.edge_entry("x", "y").or_insert(0) += 1;
+    ///
+    /// assert_eq!(g.edge_weight("x", "y"), Some(&4));
+    /// assert_eq!(g.node_count(), 2);
+    /// assert_eq!(g.edge_count(), 1);
+    /// assert!(g.contains_edge("x", "y"));
+    /// assert!(!g.contains_edge("y", "x"));
+    /// ```
+    pub fn edge_entry(&mut self, a: N, b: N) -> Entry<N, E, Ty> {
+        Entry::new(self, a, b)
     }
 
     /// Remove edge relation from a to b
@@ -428,6 +458,75 @@ impl<N, E, Ty> GraphMap<N, E, Ty>
             gr.add_edge(node_index(ai), node_index(bi), edge_weight);
         }
         gr
+    }
+}
+
+/// Create a new `GraphMap` from an iterable of edges.
+pub struct Entry<'a, N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
+    nodes: &'a mut IndexMap<N, Vec<(N, CompactDirection)>>,
+    edge_entry: IndexMapEntry<'a, (N, N), E>,
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, N, E, Ty> Entry<'a, N, E, Ty>
+    where N: NodeTrait,
+          Ty: EdgeType,
+{
+    fn new(gr: &'a mut GraphMap<N, E, Ty>, a: N, b: N) -> Self {
+        let ref mut nodes = gr.nodes;
+        let edge_entry = gr.edges.entry(GraphMap::<_, E, Ty>::edge_key(a, b));
+        Entry { nodes, edge_entry, ty: PhantomData }
+    }
+
+    /// Computes in **O(1)** time (amortized average).
+    pub fn or_insert(mut self, default: E) -> &'a mut E {
+        self.ensure_nodes_adjacent();
+        self.edge_entry.or_insert(default)
+    }
+
+    /// Computes in **O(1)** time (amortized average).
+    pub fn or_insert_with<F>(mut self, call: F) -> &'a mut E
+        where F: FnOnce() -> E,
+    {
+        self.ensure_nodes_adjacent();
+        self.edge_entry.or_insert_with(call)
+    }
+
+    pub fn source(&self) -> N {
+        self.edge_entry.key().0
+    }
+
+    pub fn target(&self) -> N {
+        self.edge_entry.key().1
+    }
+
+    /// Modifies the edge entry if it is occupied.
+    pub fn and_modify<F>(self, f: F) -> Self
+        where F: FnOnce(&mut E),
+    {
+        let Entry { nodes, edge_entry, ty } = self;
+        Entry { nodes, edge_entry: edge_entry.and_modify(f), ty }
+    }
+
+    /// Inserts a default-constructed value in the edge entry if it is vacant and returns a mutable
+    /// reference to it. Otherwise a mutable reference to an already existent edge is returned.
+    ///
+    /// Computes in **O(1)** time (amortized average).
+    pub fn or_default(mut self) -> &'a mut E
+        where E: Default
+    {
+        self.ensure_nodes_adjacent();
+        self.edge_entry.or_default()
+    }
+
+    fn ensure_nodes_adjacent(&mut self) {
+        if let IndexMapEntry::Vacant(ref entry) = self.edge_entry {
+            let (a, b) = entry.key().clone();
+            GraphMap::<_, E, Ty>::insert_node_adjacencies(&mut self.nodes, a, b);
+        }
     }
 }
 
