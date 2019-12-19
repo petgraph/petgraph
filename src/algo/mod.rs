@@ -6,7 +6,6 @@
 
 pub mod dominators;
 
-use core::hash::Hash;
 use std::collections::{BinaryHeap, HashMap};
 use std::cmp::min;
 
@@ -559,8 +558,7 @@ pub fn condensation<N, E, Ty, Ix>(g: Graph<N, E, Ty, Ix>, make_acyclic: bool) ->
 ///
 /// Use `from_elements` to create a graph from the resulting iterator.
 pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
-    where G::NodeId: Eq + Hash,
-          G::NodeWeight: Clone,
+    where G::NodeWeight: Clone,
           G::EdgeWeight: Clone + PartialOrd,
           G: IntoNodeReferences + IntoEdgeReferences + NodeIndexable,
 {
@@ -594,23 +592,23 @@ pub struct MinSpanningTree<G>
     node_ids: Option<G::NodeReferences>,
     subgraphs: UnionFind<usize>,
     sort_edges: BinaryHeap<MinScored<G::EdgeWeight, (G::NodeId, G::NodeId)>>,
-    node_map: HashMap<G::NodeId, usize>,
+    node_map: HashMap<usize, usize>,
     node_count: usize,
 }
 
 
 impl<G> Iterator for MinSpanningTree<G>
     where G: IntoNodeReferences + NodeIndexable,
-          G::NodeId: Eq + Hash,
           G::NodeWeight: Clone,
           G::EdgeWeight: PartialOrd,
 {
     type Item = Element<G::NodeWeight, G::EdgeWeight>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        let g = self.graph;
         if let Some(ref mut iter) = self.node_ids {
             if let Some(node) = iter.next() {
-                self.node_map.insert(node.id(), self.node_count);
+                self.node_map.insert(g.to_index(node.id()), self.node_count);
                 self.node_count += 1;
                 return Some(Element::Node { weight: node.weight().clone() });
             }
@@ -627,17 +625,17 @@ impl<G> Iterator for MinSpanningTree<G>
         //  b. If the edge connects two disjoint trees in the pre-MST,
         //     add the edge.
         while let Some(MinScored(score, (a, b))) = self.sort_edges.pop() {
-            let g = self.graph;
             // check if the edge would connect two disjoint parts
-            if self.subgraphs.union(g.to_index(a), g.to_index(b)) {
-                let (&aid, &bid) = match (self.node_map.get(&a),
-                                          self.node_map.get(&b)) {
+            let (a_index, b_index) = (g.to_index(a), g.to_index(b));
+            if self.subgraphs.union(a_index, b_index) {
+                let (&a_order, &b_order) = match (self.node_map.get(&a_index),
+                                                  self.node_map.get(&b_index)) {
                     (Some(a_id), Some(b_id)) => (a_id, b_id),
                     _ => panic!("Edge references unknown node"),
                 };
                 return Some(Element::Edge {
-                    source: aid,
-                    target: bid,
+                    source: a_order,
+                    target: b_order,
                     weight: score,
                 });
             }
