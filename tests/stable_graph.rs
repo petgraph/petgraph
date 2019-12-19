@@ -7,7 +7,7 @@ extern crate itertools;
 use petgraph::prelude::*;
 use petgraph::stable_graph::node_index as n;
 use petgraph::EdgeType;
-use petgraph::algo::{kosaraju_scc, tarjan_scc};
+use petgraph::algo::{kosaraju_scc, tarjan_scc, min_spanning_tree};
 use petgraph::visit::{
     NodeIndexable,
     IntoNodeReferences,
@@ -342,4 +342,24 @@ fn from() {
     assert!(nodes_eq!(gr5, ans));
     assert!(edgew_eq!(gr5, ans));
     assert!(edges_eq!(gr5, ans));
+}
+
+use petgraph::stable_graph::StableGraph;
+use petgraph::data::FromElements;
+
+#[test]
+fn from_min_spanning_tree() {
+    let mut g = StableGraph::new();
+    let mut nodes = Vec::new();
+    for _ in 0..6 {
+        nodes.push(g.add_node(()));
+    }
+    let es = [(4, 5), (3, 4), (3, 5)];
+    for &(a, b) in es.iter() {
+        g.add_edge(NodeIndex::new(a), NodeIndex::new(b), ());
+    }
+    for i in 0..3 {
+        let _ = g.remove_node(nodes[i]);
+    }
+    let _ = StableGraph::<(),(),Undirected,usize>::from_elements(min_spanning_tree(&g));
 }
