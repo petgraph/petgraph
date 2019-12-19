@@ -86,7 +86,6 @@ impl<N, VM> Dfs<N, VM>
     /// the dfs from a particular node.
     pub fn move_to(&mut self, start: N)
     {
-        self.discovered.visit(start);
         self.stack.clear();
         self.stack.push(start);
     }
@@ -95,14 +94,15 @@ impl<N, VM> Dfs<N, VM>
     pub fn next<G>(&mut self, graph: G) -> Option<N>
         where G: IntoNeighbors<NodeId=N>,
     {
-        if let Some(node) = self.stack.pop() {
-            for succ in graph.neighbors(node) {
-                if self.discovered.visit(succ) {
-                    self.stack.push(succ);
+        while let Some(node) = self.stack.pop() {
+            if self.discovered.visit(node) {
+                for succ in graph.neighbors(node) {
+                    if !self.discovered.is_visited(&succ) {
+                        self.stack.push(succ);
+                    }
                 }
+                return Some(node);
             }
-
-            return Some(node);
         }
         None
     }
