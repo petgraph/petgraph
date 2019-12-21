@@ -14,7 +14,6 @@ use petgraph::visit::{
     IntoEdgeReferences,
 };
 use petgraph::dot::Dot;
-
 use itertools::assert_equal;
 
 #[test]
@@ -177,6 +176,9 @@ fn test_edge_iterators_directed() {
         itertools::assert_equal(
             gr.edges_directed(i, Outgoing),
             gr.edges(i));
+        for edge in gr.edges_directed(i, Outgoing) {
+            assert_eq!(edge.source(), i, "outgoing edges should have a fixed source");
+        }
     }
     let mut incoming = vec![Vec::new(); gr.node_bound()];
 
@@ -191,6 +193,9 @@ fn test_edge_iterators_directed() {
         itertools::assert_equal(
             gr.edges_directed(i, Incoming).map(|e| e.source()),
             incoming[i.index()].iter().rev().cloned());
+        for edge in gr.edges_directed(i, Incoming) {
+            assert_eq!(edge.target(), i, "incoming edges should have a fixed target");
+        }
     }
 }
 
@@ -201,11 +206,17 @@ fn test_edge_iterators_undir() {
         itertools::assert_equal(
             gr.edges_directed(i, Outgoing),
             gr.edges(i));
+        for edge in gr.edges_directed(i, Outgoing) {
+            assert_eq!(edge.source(), i, "outgoing edges should have a fixed source");
+        }
     }
     for i in gr.node_indices() {
         itertools::assert_equal(
             gr.edges_directed(i, Incoming),
             gr.edges(i));
+        for edge in gr.edges_directed(i, Incoming) {
+            assert_eq!(edge.target(), i, "incoming edges should have a fixed target");
+        }
     }
 }
 

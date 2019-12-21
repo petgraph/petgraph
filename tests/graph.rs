@@ -24,6 +24,8 @@ use petgraph::graph::{
 };
 
 use petgraph::visit::{
+    IntoEdges,
+    IntoEdgesDirected,
     IntoNodeIdentifiers,
     NodeFiltered,
     Reversed,
@@ -1105,6 +1107,118 @@ fn index_twice_mut() {
             assert_eq!(s, gr[ni]);
         }
         println!("Sum {:?}: {:?}", dir, gr);
+    }
+}
+
+fn make_edge_iterator_graph<Ty: EdgeType>() -> Graph<f64, f64, Ty> {
+    let mut gr = Graph::default();
+    let a = gr.add_node(0.);
+    let b = gr.add_node(0.);
+    let c = gr.add_node(0.);
+    let d = gr.add_node(0.);
+    let e = gr.add_node(0.);
+    let f = gr.add_node(0.);
+    let g = gr.add_node(0.);
+    gr.add_edge(a, b, 7.0);
+    gr.add_edge(a, d, 5.);
+    gr.add_edge(d, b, 9.);
+    gr.add_edge(b, c, 8.);
+    gr.add_edge(b, e, 7.);
+    gr.add_edge(c, c, 8.);
+    gr.add_edge(c, e, 5.);
+    gr.add_edge(d, e, 15.);
+    gr.add_edge(d, f, 6.);
+    gr.add_edge(f, e, 8.);
+    gr.add_edge(f, g, 11.);
+    gr.add_edge(e, g, 9.);
+
+    gr
+}
+
+#[test]
+fn test_edge_iterators_directed() {
+    let gr = make_edge_iterator_graph::<Directed>();
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            gr.edges_directed(i, Outgoing),
+            gr.edges(i));
+
+        // Reversed reverses edges, so target and source need to be reversed once more.
+        itertools::assert_equal(
+            gr.edges_directed(i, Outgoing).map(|edge| (edge.source(), edge.target())),
+            Reversed(&gr).edges_directed(i, Incoming).map(|edge| (edge.target(), edge.source())));
+
+        for edge in gr.edges_directed(i, Outgoing) {
+            assert_eq!(edge.source(), i, "outgoing edges should have a fixed source");
+        }
+        for edge in Reversed(&gr).edges_directed(i, Incoming) {
+            assert_eq!(edge.target(), i, "reversed incoming edges should have a fixed target");
+        }
+    }
+
+    let mut reversed_gr = gr.clone();
+    reversed_gr.reverse();
+
+    println!("{:#?}", gr);
+    for i in gr.node_indices() {
+        // Compare against reversed graphs two different ways: using .reverse() and Reversed.
+        itertools::assert_equal(
+            gr.edges_directed(i, Incoming),
+            reversed_gr.edges(i));
+
+        // Reversed reverses edges, so target and source need to be reversed once more.
+        itertools::assert_equal(
+            gr.edges_directed(i, Incoming).map(|edge| (edge.source(), edge.target())),
+            Reversed(&gr).edges(i).map(|edge| (edge.target(), edge.source())));
+
+        for edge in gr.edges_directed(i, Incoming) {
+            assert_eq!(edge.target(), i, "incoming edges should have a fixed target");
+        }
+        for edge in Reversed(&gr).edges_directed(i, Outgoing) {
+            assert_eq!(edge.source(), i, "reversed outgoing edges should have a fixed source");
+        }
+    }
+}
+
+#[test]
+fn test_edge_iterators_undir() {
+    let gr = make_edge_iterator_graph::<Undirected>();
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            gr.edges_directed(i, Outgoing),
+            gr.edges(i));
+
+        // Reversed reverses edges, so target and source need to be reversed once more.
+        itertools::assert_equal(
+            gr.edges_directed(i, Outgoing).map(|edge| (edge.source(), edge.target())),
+            Reversed(&gr).edges_directed(i, Incoming).map(|edge| (edge.target(), edge.source())));
+
+        for edge in gr.edges_directed(i, Outgoing) {
+            assert_eq!(edge.source(), i, "outgoing edges should have a fixed source");
+        }
+        for edge in Reversed(&gr).edges_directed(i, Incoming) {
+            assert_eq!(edge.target(), i, "reversed incoming edges should have a fixed target");
+        }
+    }
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            gr.edges_directed(i, Incoming),
+            gr.edges(i));
+
+        // Reversed reverses edges, so target and source need to be reversed once more.
+        itertools::assert_equal(
+            gr.edges_directed(i, Incoming).map(|edge| (edge.source(), edge.target())),
+            Reversed(&gr).edges(i).map(|edge| (edge.target(), edge.source())));
+
+        for edge in gr.edges_directed(i, Incoming) {
+            assert_eq!(edge.target(), i, "incoming edges should have a fixed target");
+        }
+        for edge in Reversed(&gr).edges_directed(i, Outgoing) {
+            assert_eq!(edge.source(), i, "reversed outgoing edges should have a fixed source");
+        }
     }
 }
 
