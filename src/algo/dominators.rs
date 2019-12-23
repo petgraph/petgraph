@@ -167,8 +167,8 @@ where
                     .filter(|&&p| dominators[p] != UNDEFINED);
                 let new_idom_idx = predecessors.next().expect(
                     "Because the root is initialized to dominate itself, and is the \
-                             first node in every path, there must exist a predecessor to this \
-                             node that also has a dominator",
+                     first node in every path, there must exist a predecessor to this \
+                     node that also has a dominator",
                 );
                 predecessors.fold(*new_idom_idx, |new_idom_idx, &predecessor_idx| {
                     intersect(&dominators, new_idom_idx, predecessor_idx)

@@ -158,7 +158,7 @@ where
         if input.is_directed() != Ty::is_directed() {
             Err(E2::custom(format_args!(
                 "graph edge property mismatch, \
-                                        expected {:?}, found {:?}",
+                 expected {:?}, found {:?}",
                 EdgeProperty::from(PhantomData::<Ty>),
                 input
             )))
@@ -277,7 +277,7 @@ where
 {
     E::custom(format_args!(
         "invalid value: node index `{}` does not exist in graph \
-                           with node bound {}",
+         with node bound {}",
         node_index, len
     ))
 }
