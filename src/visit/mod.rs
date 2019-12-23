@@ -535,44 +535,40 @@ pub trait VisitMap<N> {
     /// Mark `a` as visited.
     ///
     /// Return **true** if this is the first visit, false otherwise.
+    ///
+    /// May **panic** if `a` is out of bounds.
     fn visit(&mut self, a: N) -> bool;
 
     /// Return whether `a` has been visited before.
+    ///
+    /// May **panic** if `a` is out of bounds.
     fn is_visited(&self, a: &N) -> bool;
 }
 
-impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet
-    where Ix: IndexType,
-{
-    fn visit(&mut self, x: graph::NodeIndex<Ix>) -> bool {
-        !self.put(x.index())
-    }
-    fn is_visited(&self, x: &graph::NodeIndex<Ix>) -> bool {
-        self.contains(x.index())
-    }
-}
+macro_rules! impl_visit_map_fixed_bit_set(
+    ($index:ty) => {
+        impl<Ix> VisitMap<$index> for FixedBitSet
+            where Ix: IndexType,
+        {
 
-impl<Ix> VisitMap<graph::EdgeIndex<Ix>> for FixedBitSet
-    where Ix: IndexType,
-{
-    fn visit(&mut self, x: graph::EdgeIndex<Ix>) -> bool {
-        !self.put(x.index())
-    }
-    fn is_visited(&self, x: &graph::EdgeIndex<Ix>) -> bool {
-        self.contains(x.index())
-    }
-}
+            fn visit(&mut self, x: $index) -> bool {
+                let idx = x.index();
+                assert!(self.len() > idx);
+                !self.put(idx)
+            }
 
-impl<Ix> VisitMap<Ix> for FixedBitSet
-    where Ix: IndexType,
-{
-    fn visit(&mut self, x: Ix) -> bool {
-        !self.put(x.index())
+            fn is_visited(&self, x: &$index) -> bool {
+                let idx = x.index();
+                assert!(self.len() > idx);
+                self.contains(idx)
+            }
+        }
     }
-    fn is_visited(&self, x: &Ix) -> bool {
-        self.contains(x.index())
-    }
-}
+    );
+
+impl_visit_map_fixed_bit_set!(graph::NodeIndex<Ix>);
+impl_visit_map_fixed_bit_set!(graph::EdgeIndex<Ix>);
+impl_visit_map_fixed_bit_set!(Ix);
 
 impl<N, S> VisitMap<N> for HashSet<N, S>
     where N: Hash + Eq,
