@@ -1,4 +1,3 @@
-
 macro_rules! clone_fields {
     ($name:ident, $($field:ident),+ $(,)*) => (
         fn clone(&self) -> Self {
@@ -10,4 +9,3 @@ macro_rules! clone_fields {
         }
     );
 }
-

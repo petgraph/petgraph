@@ -21,14 +21,16 @@ use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 /// The dominance relation for some graph and root.
 #[derive(Debug, Clone)]
 pub struct Dominators<N>
-    where N: Copy + Eq + Hash
+where
+    N: Copy + Eq + Hash,
 {
     root: N,
     dominators: HashMap<N, N>,
 }
 
 impl<N> Dominators<N>
-    where N: Copy + Eq + Hash
+where
+    N: Copy + Eq + Hash,
 {
     /// Get the root node used to construct these dominance relations.
     pub fn root(&self) -> N {
@@ -81,14 +83,16 @@ impl<N> Dominators<N>
 
 /// Iterator for a node's dominators.
 pub struct DominatorsIter<'a, N>
-    where N: 'a + Copy + Eq + Hash
+where
+    N: 'a + Copy + Eq + Hash,
 {
     dominators: &'a Dominators<N>,
     node: Option<N>,
 }
 
 impl<'a, N> Iterator for DominatorsIter<'a, N>
-    where N: 'a + Copy + Eq + Hash
+where
+    N: 'a + Copy + Eq + Hash,
 {
     type Item = N;
 
@@ -115,8 +119,9 @@ const UNDEFINED: usize = ::std::usize::MAX;
 ///
 /// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
-    where G: IntoNeighbors + Visitable,
-          <G as GraphBase>::NodeId: Eq + Hash
+where
+    G: IntoNeighbors + Visitable,
+    <G as GraphBase>::NodeId: Eq + Hash,
 {
     let (post_order, predecessor_sets) = simple_fast_post_order(graph, root);
     let length = post_order.len();
@@ -129,7 +134,8 @@ pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
     // convert our data structures to play along first.
 
     // Maps a node to its index into `post_order`.
-    let node_to_post_order_idx: HashMap<_, _> = post_order.iter()
+    let node_to_post_order_idx: HashMap<_, _> = post_order
+        .iter()
         .enumerate()
         .map(|(idx, &node)| (node, idx))
         .collect();
@@ -156,12 +162,14 @@ pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
             // node.
 
             let new_idom_idx = {
-                let mut predecessors =
-                    idx_to_predecessor_vec[idx].iter().filter(|&&p| dominators[p] != UNDEFINED);
-                let new_idom_idx = predecessors.next()
-                    .expect("Because the root is initialized to dominate itself, and is the \
+                let mut predecessors = idx_to_predecessor_vec[idx]
+                    .iter()
+                    .filter(|&&p| dominators[p] != UNDEFINED);
+                let new_idom_idx = predecessors.next().expect(
+                    "Because the root is initialized to dominate itself, and is the \
                              first node in every path, there must exist a predecessor to this \
-                             node that also has a dominator");
+                             node that also has a dominator",
+                );
                 predecessors.fold(*new_idom_idx, |new_idom_idx, &predecessor_idx| {
                     intersect(&dominators, new_idom_idx, predecessor_idx)
                 })
@@ -182,7 +190,8 @@ pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
 
     Dominators {
         root,
-        dominators: dominators.into_iter()
+        dominators: dominators
+            .into_iter()
             .enumerate()
             .map(|(idx, dom_idx)| (post_order[idx], post_order[dom_idx]))
             .collect(),
@@ -199,17 +208,22 @@ fn intersect(dominators: &[usize], mut finger1: usize, mut finger2: usize) -> us
     }
 }
 
-fn predecessor_sets_to_idx_vecs<N>(post_order: &[N],
-                                   node_to_post_order_idx: &HashMap<N, usize>,
-                                   mut predecessor_sets: HashMap<N, HashSet<N>>)
-                                   -> Vec<Vec<usize>>
-    where N: Copy + Eq + Hash
+fn predecessor_sets_to_idx_vecs<N>(
+    post_order: &[N],
+    node_to_post_order_idx: &HashMap<N, usize>,
+    mut predecessor_sets: HashMap<N, HashSet<N>>,
+) -> Vec<Vec<usize>>
+where
+    N: Copy + Eq + Hash,
 {
-    post_order.iter()
+    post_order
+        .iter()
         .map(|node| {
-            predecessor_sets.remove(node)
+            predecessor_sets
+                .remove(node)
                 .map(|predecessors| {
-                    predecessors.into_iter()
+                    predecessors
+                        .into_iter()
                         .map(|p| *node_to_post_order_idx.get(&p).unwrap())
                         .collect()
                 })
@@ -218,11 +232,13 @@ fn predecessor_sets_to_idx_vecs<N>(post_order: &[N],
         .collect()
 }
 
-fn simple_fast_post_order<G>(graph: G,
-                             root: G::NodeId)
-                             -> (Vec<G::NodeId>, HashMap<G::NodeId, HashSet<G::NodeId>>)
-    where G: IntoNeighbors + Visitable,
-          <G as GraphBase>::NodeId: Eq + Hash
+fn simple_fast_post_order<G>(
+    graph: G,
+    root: G::NodeId,
+) -> (Vec<G::NodeId>, HashMap<G::NodeId, HashSet<G::NodeId>>)
+where
+    G: IntoNeighbors + Visitable,
+    <G as GraphBase>::NodeId: Eq + Hash,
 {
     let mut post_order = vec![];
     let mut predecessor_sets = HashMap::new();
@@ -231,7 +247,8 @@ fn simple_fast_post_order<G>(graph: G,
         post_order.push(node);
 
         for successor in graph.neighbors(node) {
-            predecessor_sets.entry(successor)
+            predecessor_sets
+                .entry(successor)
                 .or_insert_with(HashSet::new)
                 .insert(node);
         }
@@ -248,10 +265,7 @@ mod tests {
     fn test_iter_dominators() {
         let doms: Dominators<u32> = Dominators {
             root: 0,
-            dominators: [(2, 1), (1, 0), (0, 0)]
-                .iter()
-                .cloned()
-                .collect(),
+            dominators: [(2, 1), (1, 0), (0, 0)].iter().cloned().collect(),
         };
 
         let all_doms: Vec<_> = doms.dominators(2).unwrap().collect();
@@ -262,6 +276,9 @@ mod tests {
         let strict_doms: Vec<_> = doms.strict_dominators(2).unwrap().collect();
         assert_eq!(vec![1, 0], strict_doms);
 
-        assert_eq!(None::<()>, doms.strict_dominators(99).map(|_| unreachable!()));
+        assert_eq!(
+            None::<()>,
+            doms.strict_dominators(99).map(|_| unreachable!())
+        );
     }
 }

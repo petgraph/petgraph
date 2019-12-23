@@ -1,22 +1,10 @@
-use std::collections::{
-    HashMap,
-    BinaryHeap,
-};
-use std::collections::hash_map::Entry::{
-    Occupied,
-    Vacant,
-};
+use std::collections::hash_map::Entry::{Occupied, Vacant};
+use std::collections::{BinaryHeap, HashMap};
 
 use std::hash::Hash;
 
+use super::visit::{EdgeRef, GraphBase, IntoEdges, VisitMap, Visitable};
 use crate::scored::MinScored;
-use super::visit::{
-    EdgeRef,
-    GraphBase,
-    IntoEdges,
-    VisitMap,
-    Visitable,
-};
 
 use crate::algo::Measure;
 
@@ -75,15 +63,20 @@ use crate::algo::Measure;
 ///
 /// Returns the total cost + the path of subsequent `NodeId` from start to finish, if one was
 /// found.
-pub fn astar<G, F, H, K, IsGoal>(graph: G, start: G::NodeId, mut is_goal: IsGoal,
-                                     mut edge_cost: F, mut estimate_cost: H)
-    -> Option<(K, Vec<G::NodeId>)>
-    where G: IntoEdges + Visitable,
-          IsGoal: FnMut(G::NodeId) -> bool,
-          G::NodeId: Eq + Hash,
-          F: FnMut(G::EdgeRef) -> K,
-          H: FnMut(G::NodeId) -> K,
-          K: Measure + Copy,
+pub fn astar<G, F, H, K, IsGoal>(
+    graph: G,
+    start: G::NodeId,
+    mut is_goal: IsGoal,
+    mut edge_cost: F,
+    mut estimate_cost: H,
+) -> Option<(K, Vec<G::NodeId>)>
+where
+    G: IntoEdges + Visitable,
+    IsGoal: FnMut(G::NodeId) -> bool,
+    G::NodeId: Eq + Hash,
+    F: FnMut(G::EdgeRef) -> K,
+    H: FnMut(G::NodeId) -> K,
+    K: Measure + Copy,
 {
     let mut visited = graph.visit_map();
     let mut visit_next = BinaryHeap::new();
@@ -104,7 +97,7 @@ pub fn astar<G, F, H, K, IsGoal>(graph: G, start: G::NodeId, mut is_goal: IsGoal
         // Don't visit the same node several times, as the first time it was visited it was using
         // the shortest available path.
         if !visited.visit(node) {
-            continue
+            continue;
         }
 
         // This lookup can be unwrapped without fear of panic since the node was necessarily scored
@@ -114,7 +107,7 @@ pub fn astar<G, F, H, K, IsGoal>(graph: G, start: G::NodeId, mut is_goal: IsGoal
         for edge in graph.edges(node) {
             let next = edge.target();
             if visited.is_visited(&next) {
-                continue
+                continue;
             }
 
             let mut next_score = node_score + edge_cost(edge);
@@ -128,7 +121,7 @@ pub fn astar<G, F, H, K, IsGoal>(graph: G, start: G::NodeId, mut is_goal: IsGoal
                     } else {
                         next_score = old_score;
                     }
-                },
+                }
                 Vacant(ent) => {
                     ent.insert(next_score);
                     path_tracker.set_predecessor(next, node);
@@ -144,15 +137,17 @@ pub fn astar<G, F, H, K, IsGoal>(graph: G, start: G::NodeId, mut is_goal: IsGoal
 }
 
 struct PathTracker<G>
-    where G: GraphBase,
-          G::NodeId: Eq + Hash,
+where
+    G: GraphBase,
+    G::NodeId: Eq + Hash,
 {
     came_from: HashMap<G::NodeId, G::NodeId>,
 }
 
 impl<G> PathTracker<G>
-    where G: GraphBase,
-          G::NodeId: Eq + Hash,
+where
+    G: GraphBase,
+    G::NodeId: Eq + Hash,
 {
     fn new() -> PathTracker<G> {
         PathTracker {
