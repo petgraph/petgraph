@@ -3,8 +3,8 @@
 extern crate petgraph;
 extern crate test;
 
-use test::Bencher;
 use petgraph::prelude::*;
+use test::Bencher;
 
 #[allow(dead_code)]
 mod common;

@@ -5,9 +5,9 @@ extern crate test;
 
 use test::Bencher;
 
-use petgraph::{EdgeType, Directed, Outgoing, Incoming};
 use petgraph::algo;
-use petgraph::matrix_graph::{MatrixGraph, node_index};
+use petgraph::matrix_graph::{node_index, MatrixGraph};
+use petgraph::{Directed, EdgeType, Incoming, Outgoing};
 
 #[bench]
 fn add_100_nodes(b: &mut test::Bencher) {
@@ -41,7 +41,8 @@ fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
     let nodes: Vec<_> = (0..100).map(|_| g.add_node(())).collect();
     let g = g;
 
-    let edges_to_add: Vec<_> = nodes.iter()
+    let edges_to_add: Vec<_> = nodes
+        .iter()
         .enumerate()
         .map(|(i, &node)| {
             let edges: Vec<_> = (0..5)
@@ -156,10 +157,7 @@ fn parse_matrix<Ty: EdgeType>(s: &str) -> MatrixGraph<(), (), Ty> {
     let s = s.trim();
     let lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
-        for (col, word) in line.split(' ')
-                                .filter(|s| !s.is_empty())
-                                .enumerate()
-        {
+        for (col, word) in line.split(' ').filter(|s| !s.is_empty()).enumerate() {
             let has_edge = word.parse::<i32>().unwrap();
             assert!(has_edge == 0 || has_edge == 1);
             if has_edge == 0 {

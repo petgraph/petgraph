@@ -3,8 +3,8 @@
 //! ***Unstable: API may change at any time.*** Depends on `feature = "generate"`.
 //!
 
-use crate::{Graph, Directed, EdgeType};
 use crate::graph::NodeIndex;
+use crate::{Directed, EdgeType, Graph};
 
 // A DAG has the property that the adjacency matrix is lower triangular,
 // diagonal zero.
@@ -46,7 +46,7 @@ impl Generator<Directed> {
             acyclic: true,
             selfloops: false,
             nodes: nodes,
-            nedges:nedges,
+            nedges: nedges,
             bits: !0,
             g: Graph::with_capacity(nodes, nedges),
         }
@@ -92,7 +92,11 @@ impl<Ty: EdgeType> Generator<Ty> {
         // d 3 4 5 x
         let mut bit = 0;
         for i in 0..self.nodes {
-            let start = if self.acyclic || !self.g.is_directed() { i } else { 0 };
+            let start = if self.acyclic || !self.g.is_directed() {
+                i
+            } else {
+                0
+            };
             for j in start..self.nodes {
                 if i == j && !self.selfloops {
                     continue;

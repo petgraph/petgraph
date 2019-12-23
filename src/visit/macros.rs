@@ -1,4 +1,3 @@
-
 /// Define a trait as usual, and a macro that can be used to instantiate
 /// implementations of it.
 ///
@@ -17,7 +16,7 @@ macro_rules! trait_template {
             }
         }
 
-        remove_sections! { [] 
+        remove_sections! { []
             $(#[$doc])*
             pub trait $name $($methods)*
 
@@ -67,10 +66,14 @@ macro_rules! remove_sections {
 }
 
 macro_rules! deref {
-    ($e:expr) => (*$e);
+    ($e:expr) => {
+        *$e
+    };
 }
 macro_rules! deref_twice {
-    ($e:expr) => (**$e);
+    ($e:expr) => {
+        **$e
+    };
 }
 
 /// Implement a trait by delegation. By default as if we are delegating
@@ -130,4 +133,3 @@ macro_rules! delegate_impl {
         }
     }
 }
-

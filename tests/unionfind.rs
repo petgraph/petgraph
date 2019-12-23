@@ -1,9 +1,9 @@
-extern crate rand;
 extern crate petgraph;
+extern crate rand;
 
-use rand::{Rng, thread_rng, ChaChaRng, SeedableRng};
-use std::collections::HashSet;
 use petgraph::unionfind::UnionFind;
+use rand::{thread_rng, ChaChaRng, Rng, SeedableRng};
+use std::collections::HashSet;
 
 #[test]
 fn uf_test() {
@@ -90,8 +90,7 @@ fn uf_u8() {
 }
 
 #[test]
-fn labeling()
-{
+fn labeling() {
     let mut u = UnionFind::<u32>::new(48);
     for i in 0..24 {
         u.union(i + 1, i);

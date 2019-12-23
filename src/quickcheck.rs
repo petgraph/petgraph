@@ -1,22 +1,13 @@
 extern crate quickcheck;
-use self::quickcheck::{Gen, Arbitrary};
+use self::quickcheck::{Arbitrary, Gen};
 
-use crate::{
-    Graph,
-    EdgeType,
-};
-use crate::graph::{
-    IndexType,
-    node_index,
-};
+use crate::graph::{node_index, IndexType};
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph::StableGraph;
+use crate::{EdgeType, Graph};
 
 #[cfg(feature = "graphmap")]
-use crate::graphmap::{
-    GraphMap,
-    NodeTrait,
-};
+use crate::graphmap::{GraphMap, NodeTrait};
 use crate::visit::NodeIndexable;
 
 /// Return a random float in the range [0, 1.)
@@ -38,10 +29,11 @@ fn random_01<G: Gen>(g: &mut G) -> f64 {
 ///
 /// Requires crate feature `"quickcheck"`
 impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
-    where N: Arbitrary,
-          E: Arbitrary,
-          Ty: EdgeType + Send + 'static,
-          Ix: IndexType + Send,
+where
+    N: Arbitrary,
+    E: Arbitrary,
+    Ty: EdgeType + Send + 'static,
+    Ix: IndexType + Send,
 {
     fn arbitrary<G: Gen>(g: &mut G) -> Self {
         let nodes = usize::arbitrary(g);
@@ -71,17 +63,18 @@ impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
 
     // shrink the graph by splitting it in two by a very
     // simple algorithm, just even and odd node indices
-    fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
         let self_ = self.clone();
         Box::new((0..2).filter_map(move |x| {
-            let gr = self_.filter_map(|i, w| {
-                if i.index() % 2 == x {
-                    Some(w.clone())
-                } else {
-                    None
-                }
-            },
-            |_, w| Some(w.clone())
+            let gr = self_.filter_map(
+                |i, w| {
+                    if i.index() % 2 == x {
+                        Some(w.clone())
+                    } else {
+                        None
+                    }
+                },
+                |_, w| Some(w.clone()),
             );
             // make sure we shrink
             if gr.node_count() < self_.node_count() {
@@ -104,10 +97,11 @@ impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
 ///
 /// Requires crate features `"quickcheck"` and `"stable_graph"`
 impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
-    where N: Arbitrary,
-          E: Arbitrary,
-          Ty: EdgeType + Send + 'static,
-          Ix: IndexType + Send,
+where
+    N: Arbitrary,
+    E: Arbitrary,
+    Ty: EdgeType + Send + 'static,
+    Ix: IndexType + Send,
 {
     fn arbitrary<G: Gen>(g: &mut G) -> Self {
         let nodes = usize::arbitrary(g);
@@ -149,17 +143,18 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
 
     // shrink the graph by splitting it in two by a very
     // simple algorithm, just even and odd node indices
-    fn shrink(&self) -> Box<dyn Iterator<Item=Self>> {
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
         let self_ = self.clone();
         Box::new((0..2).filter_map(move |x| {
-            let gr = self_.filter_map(|i, w| {
-                if i.index() % 2 == x {
-                    Some(w.clone())
-                } else {
-                    None
-                }
-            },
-            |_, w| Some(w.clone())
+            let gr = self_.filter_map(
+                |i, w| {
+                    if i.index() % 2 == x {
+                        Some(w.clone())
+                    } else {
+                        None
+                    }
+                },
+                |_, w| Some(w.clone()),
             );
             // make sure we shrink
             if gr.node_count() < self_.node_count() {
@@ -182,9 +177,10 @@ impl<N, E, Ty, Ix> Arbitrary for StableGraph<N, E, Ty, Ix>
 /// Requires crate features `"quickcheck"` and `"graphmap"`
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> Arbitrary for GraphMap<N, E, Ty>
-    where N: NodeTrait + Arbitrary,
-          E: Arbitrary,
-          Ty: EdgeType + Clone + Send + 'static,
+where
+    N: NodeTrait + Arbitrary,
+    E: Arbitrary,
+    Ty: EdgeType + Clone + Send + 'static,
 {
     fn arbitrary<G: Gen>(g: &mut G) -> Self {
         let nodes = usize::arbitrary(g);
@@ -203,7 +199,11 @@ impl<N, E, Ty> Arbitrary for GraphMap<N, E, Ty>
             gr.add_node(node);
         }
         for (index, &i) in nodes.iter().enumerate() {
-            let js = if Ty::is_directed() { &nodes[..] } else { &nodes[index..] };
+            let js = if Ty::is_directed() {
+                &nodes[..]
+            } else {
+                &nodes[index..]
+            };
             for &j in js {
                 let p: f64 = random_01(g);
                 if p <= edge_prob {

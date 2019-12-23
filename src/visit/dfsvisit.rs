@@ -1,5 +1,3 @@
-
-
 use crate::visit::IntoNeighbors;
 use crate::visit::{VisitMap, Visitable};
 
@@ -29,13 +27,15 @@ pub enum DfsEvent<N> {
 macro_rules! try_control {
     ($e:expr, $p:stmt) => {
         match $e {
-            x => if x.should_break() {
-                return x;
-            } else if x.should_prune() {
-                $p
+            x => {
+                if x.should_break() {
+                    return x;
+                } else if x.should_prune() {
+                    $p
+                }
             }
         }
-    }
+    };
 }
 
 /// Control flow for `depth_first_search` callbacks.
@@ -53,7 +53,9 @@ pub enum Control<B> {
 }
 
 impl<B> Control<B> {
-    pub fn breaking() -> Control<()> { Control::Break(()) }
+    pub fn breaking() -> Control<()> {
+        Control::Break(())
+    }
     /// Get the value in `Control::Break(_)`, if present.
     pub fn break_value(self) -> Option<B> {
         match self {
@@ -73,17 +75,27 @@ pub trait ControlFlow {
 }
 
 impl ControlFlow for () {
-    fn continuing() { }
+    fn continuing() {}
     #[inline]
-    fn should_break(&self) -> bool { false }
+    fn should_break(&self) -> bool {
+        false
+    }
     #[inline]
-    fn should_prune(&self) -> bool { false }
+    fn should_prune(&self) -> bool {
+        false
+    }
 }
 
 impl<B> ControlFlow for Control<B> {
-    fn continuing() -> Self { Control::Continue }
+    fn continuing() -> Self {
+        Control::Continue
+    }
     fn should_break(&self) -> bool {
-        if let Control::Break(_) = *self { true } else { false }
+        if let Control::Break(_) = *self {
+            true
+        } else {
+            false
+        }
     }
     fn should_prune(&self) -> bool {
         match *self {
@@ -94,18 +106,30 @@ impl<B> ControlFlow for Control<B> {
 }
 
 impl<C: ControlFlow, E> ControlFlow for Result<C, E> {
-    fn continuing() -> Self { Ok(C::continuing()) }
+    fn continuing() -> Self {
+        Ok(C::continuing())
+    }
     fn should_break(&self) -> bool {
-        if let Ok(ref c) = *self { c.should_break() } else { true }
+        if let Ok(ref c) = *self {
+            c.should_break()
+        } else {
+            true
+        }
     }
     fn should_prune(&self) -> bool {
-        if let Ok(ref c) = *self { c.should_prune() } else { false }
+        if let Ok(ref c) = *self {
+            c.should_prune()
+        } else {
+            false
+        }
     }
 }
 
 /// The default is `Continue`.
 impl<B> Default for Control<B> {
-    fn default() -> Self { Control::Continue }
+    fn default() -> Self {
+        Control::Continue
+    }
 }
 
 /// A recursive depth first search.
@@ -171,40 +195,54 @@ impl<B> Default for Control<B> {
 /// assert_eq!(&path, &[n(0), n(2), n(4), n(5)]);
 /// ```
 pub fn depth_first_search<G, I, F, C>(graph: G, starts: I, mut visitor: F) -> C
-    where G: IntoNeighbors + Visitable,
-          I: IntoIterator<Item=G::NodeId>,
-          F: FnMut(DfsEvent<G::NodeId>) -> C,
-          C: ControlFlow,
+where
+    G: IntoNeighbors + Visitable,
+    I: IntoIterator<Item = G::NodeId>,
+    F: FnMut(DfsEvent<G::NodeId>) -> C,
+    C: ControlFlow,
 {
     let time = &mut Time(0);
     let discovered = &mut graph.visit_map();
     let finished = &mut graph.visit_map();
 
     for start in starts {
-        try_control!(dfs_visitor(graph, start, &mut visitor, discovered, finished, time),
-                     unreachable!());
+        try_control!(
+            dfs_visitor(graph, start, &mut visitor, discovered, finished, time),
+            unreachable!()
+        );
     }
     C::continuing()
 }
 
-fn dfs_visitor<G, F, C>(graph: G, u: G::NodeId, visitor: &mut F,
-                     discovered: &mut G::Map, finished: &mut G::Map,
-                     time: &mut Time) -> C
-    where G: IntoNeighbors + Visitable,
-          F: FnMut(DfsEvent<G::NodeId>) -> C,
-          C: ControlFlow,
+fn dfs_visitor<G, F, C>(
+    graph: G,
+    u: G::NodeId,
+    visitor: &mut F,
+    discovered: &mut G::Map,
+    finished: &mut G::Map,
+    time: &mut Time,
+) -> C
+where
+    G: IntoNeighbors + Visitable,
+    F: FnMut(DfsEvent<G::NodeId>) -> C,
+    C: ControlFlow,
 {
     if !discovered.visit(u) {
         return C::continuing();
     }
 
     'prune: loop {
-        try_control!(visitor(DfsEvent::Discover(u, time_post_inc(time))), break 'prune);
+        try_control!(
+            visitor(DfsEvent::Discover(u, time_post_inc(time))),
+            break 'prune
+        );
         for v in graph.neighbors(u) {
             if !discovered.is_visited(&v) {
                 try_control!(visitor(DfsEvent::TreeEdge(u, v)), continue);
-                try_control!(dfs_visitor(graph, v, visitor, discovered, finished, time),
-                             unreachable!());
+                try_control!(
+                    dfs_visitor(graph, v, visitor, discovered, finished, time),
+                    unreachable!()
+                );
             } else if !finished.is_visited(&v) {
                 try_control!(visitor(DfsEvent::BackEdge(u, v)), continue);
             } else {
@@ -216,8 +254,10 @@ fn dfs_visitor<G, F, C>(graph: G, u: G::NodeId, visitor: &mut F,
     }
     let first_finish = finished.visit(u);
     debug_assert!(first_finish);
-    try_control!(visitor(DfsEvent::Finish(u, time_post_inc(time))),
-                 panic!("Pruning on the `DfsEvent::Finish` is not supported!"));
+    try_control!(
+        visitor(DfsEvent::Finish(u, time_post_inc(time))),
+        panic!("Pruning on the `DfsEvent::Finish` is not supported!")
+    );
     C::continuing()
 }
 

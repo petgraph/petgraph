@@ -1,7 +1,7 @@
 //! `UnionFind<K>` is a disjoint-set data structure.
 
-use std::cmp::Ordering;
 use super::graph::IndexType;
+use std::cmp::Ordering;
 
 /// `UnionFind<K>` is a disjoint-set data structure. It tracks set membership of *n* elements
 /// indexed from *0* to *n - 1*. The scalar type is `K` which must be an unsigned integer type.
@@ -13,8 +13,7 @@ use super::graph::IndexType;
 /// “The amortized time per operation is **O(α(n))** where **α(n)** is the
 /// inverse of **f(x) = A(x, x)** with **A** being the extremely fast-growing Ackermann function.”
 #[derive(Debug, Clone)]
-pub struct UnionFind<K>
-{
+pub struct UnionFind<K> {
     // For element at index *i*, store the index of its parent; the representative itself
     // stores its own index. This forms equivalence classes which are the disjoint sets, each
     // with a unique representative.
@@ -28,36 +27,33 @@ pub struct UnionFind<K>
 }
 
 #[inline]
-unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K
-{
+unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K {
     debug_assert!(index < xs.len());
     xs.get_unchecked(index)
 }
 
 #[inline]
-unsafe fn get_unchecked_mut<K>(xs: &mut [K], index: usize) -> &mut K
-{
+unsafe fn get_unchecked_mut<K>(xs: &mut [K], index: usize) -> &mut K {
     debug_assert!(index < xs.len());
     xs.get_unchecked_mut(index)
 }
 
 impl<K> UnionFind<K>
-    where K: IndexType
+where
+    K: IndexType,
 {
     /// Create a new `UnionFind` of `n` disjoint sets.
-    pub fn new(n: usize) -> Self
-    {
+    pub fn new(n: usize) -> Self {
         let rank = vec![0; n];
         let parent = (0..n).map(K::new).collect::<Vec<K>>();
 
-        UnionFind{parent, rank}
+        UnionFind { parent, rank }
     }
 
     /// Return the representative for `x`.
     ///
     /// **Panics** if `x` is out of bounds.
-    pub fn find(&self, x: K) -> K
-    {
+    pub fn find(&self, x: K) -> K {
         assert!(x.index() < self.parent.len());
         unsafe {
             let mut x = x;
@@ -65,7 +61,7 @@ impl<K> UnionFind<K>
                 // Use unchecked indexing because we can trust the internal set ids.
                 let xparent = *get_unchecked(&self.parent, x.index());
                 if xparent == x {
-                    break
+                    break;
                 }
                 x = xparent;
             }
@@ -79,16 +75,12 @@ impl<K> UnionFind<K>
     /// datastructure in the process and quicken future lookups.
     ///
     /// **Panics** if `x` is out of bounds.
-    pub fn find_mut(&mut self, x: K) -> K
-    {
+    pub fn find_mut(&mut self, x: K) -> K {
         assert!(x.index() < self.parent.len());
-        unsafe {
-            self.find_mut_recursive(x)
-        }
+        unsafe { self.find_mut_recursive(x) }
     }
 
-    unsafe fn find_mut_recursive(&mut self, mut x: K) -> K
-    {
+    unsafe fn find_mut_recursive(&mut self, mut x: K) -> K {
         let mut parent = *get_unchecked(&self.parent, x.index());
         while parent != x {
             let grandparent = *get_unchecked(&self.parent, parent.index());
@@ -105,14 +97,12 @@ impl<K> UnionFind<K>
         self.find(x) == self.find(y)
     }
 
-
     /// Unify the two sets containing `x` and `y`.
     ///
     /// Return `false` if the sets were already the same, `true` if they were unified.
     ///
     /// **Panics** if `x` or `y` is out of bounds.
-    pub fn union(&mut self, x: K, y: K) -> bool
-    {
+    pub fn union(&mut self, x: K, y: K) -> bool {
         if x == y {
             return false;
         }
@@ -142,8 +132,7 @@ impl<K> UnionFind<K>
     }
 
     /// Return a vector mapping each element to its representative.
-    pub fn into_labeling(mut self) -> Vec<K>
-    {
+    pub fn into_labeling(mut self) -> Vec<K> {
         // write in the labeling of each element
         unsafe {
             for ix in 0..self.parent.len() {

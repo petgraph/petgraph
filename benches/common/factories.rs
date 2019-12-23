@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 
+use petgraph::data::Build;
 use petgraph::prelude::*;
 use petgraph::visit::NodeIndexable;
-use petgraph::data::Build;
 
 use petgraph::EdgeType;
 
@@ -154,17 +154,15 @@ const BIGGER: &str = "
 
 /// Parse a text adjacency matrix format into a directed graph
 fn parse_graph<Ty, G>(s: &str) -> G
-    where Ty: EdgeType,
-          G: Default + Build<NodeWeight=(), EdgeWeight=()> + NodeIndexable,
+where
+    Ty: EdgeType,
+    G: Default + Build<NodeWeight = (), EdgeWeight = ()> + NodeIndexable,
 {
     let mut g: G = Default::default();
     let s = s.trim();
     let lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
-        for (col, word) in line.split(' ')
-                                .filter(|s| !s.is_empty())
-                                .enumerate()
-        {
+        for (col, word) in line.split(' ').filter(|s| !s.is_empty()).enumerate() {
             let has_edge = word.parse::<i32>().unwrap();
             assert!(has_edge == 0 || has_edge == 1);
             if has_edge == 0 {
@@ -187,8 +185,9 @@ pub struct GraphFactory<Ty, G = Graph<(), (), Ty>> {
 }
 
 impl<Ty, G> GraphFactory<Ty, G>
-    where Ty: EdgeType,
-          G: Default + Build<NodeWeight=(), EdgeWeight=()> + NodeIndexable,
+where
+    Ty: EdgeType,
+    G: Default + Build<NodeWeight = (), EdgeWeight = ()> + NodeIndexable,
 {
     fn new() -> Self {
         GraphFactory {
