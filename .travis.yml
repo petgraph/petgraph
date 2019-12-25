@@ -25,7 +25,7 @@ script:
       cargo build --verbose --no-default-features &&
       cargo test --verbose --no-default-features &&
       cargo build --verbose --features "$FEATURES" &&
-      cargo test ${ALL:---all} --verbose --features "$FEATURES"
+      cargo test ${ALL:---all} --verbose --features "$FEATURES" &&
       if [ "${CHECKFMT}" == "1"]; then
         cargo +stable fmt -- --check
       fi
