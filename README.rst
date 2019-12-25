@@ -35,7 +35,7 @@ Recent Changes
   - Update dependencies including modern quickcheck
   - Numerous bugfixes and refactorings
   - Added ``MatrixGraph`` implementation
-  - Added ``InfoEdges`` and ``InfoEdgesDirected``
+  - Added ``IntoEdges`` and ``IntoEdgesDirected``
 
 - 0.4.13
 
