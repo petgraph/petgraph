@@ -1,15 +1,15 @@
 use std::marker::PhantomData;
 
+use petgraph::data::Build;
 use petgraph::prelude::*;
 use petgraph::visit::NodeIndexable;
-use petgraph::data::Build;
 
 use petgraph::EdgeType;
 
 /// Petersen A and B are isomorphic
 ///
 /// http://www.dharwadker.org/tevet/isomorphism/
-const PETERSEN_A: &'static str = "
+const PETERSEN_A: &str = "
  0 1 0 0 1 0 1 0 0 0
  1 0 1 0 0 0 0 1 0 0
  0 1 0 1 0 0 0 0 1 0
@@ -22,7 +22,7 @@ const PETERSEN_A: &'static str = "
  0 0 0 1 0 0 1 1 0 0
 ";
 
-const PETERSEN_B: &'static str = "
+const PETERSEN_B: &str = "
  0 0 0 1 0 1 0 0 0 1
  0 0 0 1 1 0 1 0 0 0
  0 0 0 0 0 0 1 1 0 1
@@ -36,7 +36,7 @@ const PETERSEN_B: &'static str = "
 ";
 
 /// An almost full set, isomorphic
-const FULL_A: &'static str = "
+const FULL_A: &str = "
  1 1 1 1 1 1 1 1 1 1
  1 1 1 1 1 1 1 1 1 1
  1 1 1 1 1 1 1 1 1 1
@@ -49,7 +49,7 @@ const FULL_A: &'static str = "
  1 1 1 1 1 1 1 1 1 1
 ";
 
-const FULL_B: &'static str = "
+const FULL_B: &str = "
  1 1 1 1 1 1 1 1 1 1
  1 1 1 1 1 1 1 1 1 1
  1 1 0 1 1 1 0 1 1 1
@@ -63,7 +63,7 @@ const FULL_B: &'static str = "
 ";
 
 /// Praust A and B are not isomorphic
-const PRAUST_A: &'static str = "
+const PRAUST_A: &str = "
  0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0
  1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0
  1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0
@@ -86,7 +86,7 @@ const PRAUST_A: &'static str = "
  0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 1 1 0
 ";
 
-const PRAUST_B: &'static str = "
+const PRAUST_B: &str = "
  0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0
  1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0
  1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0
@@ -109,7 +109,7 @@ const PRAUST_B: &'static str = "
  0 0 0 0 0 1 0 0 0 0 0 0 1 0 1 0 0 1 1 0
 ";
 
-const BIGGER: &'static str = "
+const BIGGER: &str = "
  0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 1 1 0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0
  0 0 0 0 0 1 0 0 0 1 1 0 0 0 0 0 0 0 1 0 1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0
  0 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0
@@ -154,17 +154,15 @@ const BIGGER: &'static str = "
 
 /// Parse a text adjacency matrix format into a directed graph
 fn parse_graph<Ty, G>(s: &str) -> G
-    where Ty: EdgeType,
-          G: Default + Build<NodeWeight=(), EdgeWeight=()> + NodeIndexable,
+where
+    Ty: EdgeType,
+    G: Default + Build<NodeWeight = (), EdgeWeight = ()> + NodeIndexable,
 {
     let mut g: G = Default::default();
     let s = s.trim();
     let lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
-        for (col, word) in line.split(' ')
-                                .filter(|s| s.len() > 0)
-                                .enumerate()
-        {
+        for (col, word) in line.split(' ').filter(|s| !s.is_empty()).enumerate() {
             let has_edge = word.parse::<i32>().unwrap();
             assert!(has_edge == 0 || has_edge == 1);
             if has_edge == 0 {
@@ -187,8 +185,9 @@ pub struct GraphFactory<Ty, G = Graph<(), (), Ty>> {
 }
 
 impl<Ty, G> GraphFactory<Ty, G>
-    where Ty: EdgeType,
-          G: Default + Build<NodeWeight=(), EdgeWeight=()> + NodeIndexable,
+where
+    Ty: EdgeType,
+    G: Default + Build<NodeWeight = (), EdgeWeight = ()> + NodeIndexable,
 {
     fn new() -> Self {
         GraphFactory {

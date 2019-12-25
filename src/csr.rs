@@ -1,25 +1,21 @@
 //! Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
 
-use std::marker::PhantomData;
 use std::cmp::max;
-use std::ops::{Range, Index, IndexMut};
 use std::iter::{Enumerate, Zip};
+use std::marker::PhantomData;
+use std::ops::{Index, IndexMut, Range};
 use std::slice::Windows;
 
-use crate::visit::{EdgeRef, GraphBase, IntoNeighbors, NodeIndexable, IntoEdges};
-use crate::visit::{NodeCompactIndexable, IntoNodeIdentifiers, Visitable};
-use crate::visit::{Data, IntoEdgeReferences, NodeCount, GraphProp};
+use crate::visit::{Data, GraphProp, IntoEdgeReferences, NodeCount};
+use crate::visit::{EdgeRef, GraphBase, IntoEdges, IntoNeighbors, NodeIndexable};
+use crate::visit::{IntoNodeIdentifiers, NodeCompactIndexable, Visitable};
 
 use crate::util::zip;
 
 #[doc(no_inline)]
-pub use crate::graph::{IndexType, DefaultIx};
+pub use crate::graph::{DefaultIx, IndexType};
 
-use crate::{
-    EdgeType,
-    Directed,
-    IntoWeightedEdge,
-};
+use crate::{Directed, EdgeType, IntoWeightedEdge};
 
 /// Csr node index type, a plain integer.
 pub type NodeIndex<Ix = DefaultIx> = Ix;
@@ -60,8 +56,9 @@ pub struct Csr<N = (), E = (), Ty = Directed, Ix = DefaultIx> {
 }
 
 impl<N, E, Ty, Ix> Default for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn default() -> Self {
         Self::new()
@@ -82,8 +79,9 @@ impl<N: Clone, E: Clone, Ty, Ix: Clone> Clone for Csr<N, E, Ty, Ix> {
 }
 
 impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     /// Create an empty `Csr`.
     pub fn new() -> Self {
@@ -107,18 +105,16 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     /// use petgraph::csr::Csr;
     /// use petgraph::prelude::*;
     ///
-    /// # fn main() {
-    ///
     /// let graph = Csr::<u8,()>::with_nodes(5);
     /// assert_eq!(graph.node_count(),5);
     /// assert_eq!(graph.edge_count(),0);
     ///
     /// assert_eq!(graph[0],0);
     /// assert_eq!(graph[4],0);
-    /// # }
     /// ```
     pub fn with_nodes(n: usize) -> Self
-        where N: Default,
+    where
+        N: Default,
     {
         Csr {
             column: Vec::new(),
@@ -138,9 +134,9 @@ pub struct EdgesNotSorted {
 }
 
 impl<N, E, Ix> Csr<N, E, Directed, Ix>
-    where Ix: IndexType,
+where
+    Ix: IndexType,
 {
-
     /// Create a new `Csr` from a sorted sequence of edges
     ///
     /// Edges **must** be sorted and unique, where the sort order is the default
@@ -152,24 +148,25 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
     /// use petgraph::csr::Csr;
     /// use petgraph::prelude::*;
     ///
-    /// # fn main() {
-    ///
     /// let graph = Csr::<(),()>::from_sorted_edges(&[
     ///                     (0, 1), (0, 2),
     ///                     (1, 0), (1, 2), (1, 3),
     ///                     (2, 0),
     ///                     (3, 1),
     /// ]);
-    /// # }
     /// ```
     pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Result<Self, EdgesNotSorted>
-        where Edge: Clone + IntoWeightedEdge<E, NodeId=NodeIndex<Ix>>,
-              N: Default,
+    where
+        Edge: Clone + IntoWeightedEdge<E, NodeId = NodeIndex<Ix>>,
+        N: Default,
     {
-        let max_node_id = match edges.iter().map(|edge|
-            match edge.clone().into_weighted_edge() {
-                (x, y, _) => max(x.index(), y.index())
-            }).max() {
+        let max_node_id = match edges
+            .iter()
+            .map(|edge| match edge.clone().into_weighted_edge() {
+                (x, y, _) => max(x.index(), y.index()),
+            })
+            .max()
+        {
             None => return Ok(Self::with_nodes(0)),
             Some(x) => x,
         };
@@ -235,10 +232,10 @@ impl<N, E, Ix> Csr<N, E, Directed, Ix>
 }
 
 impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
-
     pub fn node_count(&self) -> usize {
         self.row.len() - 1
     }
@@ -282,7 +279,8 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
     ///
     /// **Panics** if `a` or `b` are out of bounds.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> bool
-        where E: Clone,
+    where
+        E: Clone,
     {
         let ret = self.add_edge_(a, b, weight.clone());
         if ret && !self.is_directed() {
@@ -342,7 +340,11 @@ impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
 
     fn neighbors_range(&self, a: NodeIndex<Ix>) -> Range<usize> {
         let index = self.row[a.index()];
-        let end = self.row.get(a.index() + 1).cloned().unwrap_or_else(|| self.column.len());
+        let end = self
+            .row
+            .get(a.index() + 1)
+            .cloned()
+            .unwrap_or_else(|| self.column.len());
         index..end
     }
 
@@ -414,35 +416,48 @@ impl<'a, E, Ty, Ix: Copy> Clone for EdgeReference<'a, E, Ty, Ix> {
     }
 }
 
-impl<'a, E, Ty, Ix: Copy> Copy for EdgeReference<'a, E, Ty, Ix> { }
+impl<'a, E, Ty, Ix: Copy> Copy for EdgeReference<'a, E, Ty, Ix> {}
 
 impl<'a, Ty, E, Ix> EdgeReference<'a, E, Ty, Ix>
-    where Ty: EdgeType,
+where
+    Ty: EdgeType,
 {
     /// Access the edge’s weight.
     ///
     /// **NOTE** that this method offers a longer lifetime
     /// than the trait (unfortunately they don't match yet).
-    pub fn weight(&self) -> &'a E { self.weight }
+    pub fn weight(&self) -> &'a E {
+        self.weight
+    }
 }
 
 impl<'a, E, Ty, Ix> EdgeRef for EdgeReference<'a, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex;
     type Weight = E;
 
-    fn source(&self) -> Self::NodeId { self.source }
-    fn target(&self) -> Self::NodeId { self.target }
-    fn weight(&self) -> &E { self.weight }
-    fn id(&self) -> Self::EdgeId { self.index }
+    fn source(&self) -> Self::NodeId {
+        self.source
+    }
+    fn target(&self) -> Self::NodeId {
+        self.target
+    }
+    fn weight(&self) -> &E {
+        self.weight
+    }
+    fn id(&self) -> Self::EdgeId {
+        self.index
+    }
 }
 
 impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Item = EdgeReference<'a, E, Ty, Ix>;
     fn next(&mut self) -> Option<Self::Item> {
@@ -450,7 +465,7 @@ impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
             let index = self.index;
             self.index += 1;
             EdgeReference {
-                index: index,
+                index,
                 source: self.source,
                 target: j,
                 weight: w,
@@ -461,16 +476,18 @@ impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
 }
 
 impl<N, E, Ty, Ix> Data for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type NodeWeight = N;
     type EdgeWeight = E;
 }
 
 impl<'a, N, E, Ty, Ix> IntoEdgeReferences for &'a Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type EdgeRef = EdgeReference<'a, E, Ty, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ty, Ix>;
@@ -498,8 +515,9 @@ pub struct EdgeReferences<'a, E: 'a, Ty, Ix: 'a> {
 }
 
 impl<'a, E, Ty, Ix> Iterator for EdgeReferences<'a, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Item = EdgeReference<'a, E, Ty, Ix>;
     fn next(&mut self) -> Option<Self::Item> {
@@ -508,12 +526,12 @@ impl<'a, E, Ty, Ix> Iterator for EdgeReferences<'a, E, Ty, Ix>
                 let index = self.index;
                 self.index += 1;
                 return Some(EdgeReference {
-                    index: index,
+                    index,
                     source: self.source_index,
                     target: j,
                     weight: w,
                     ty: PhantomData,
-                })
+                });
             }
             if let Some((i, w)) = self.edge_ranges.next() {
                 let a = w[0];
@@ -528,8 +546,9 @@ impl<'a, E, Ty, Ix> Iterator for EdgeReferences<'a, E, Ty, Ix>
 }
 
 impl<'a, N, E, Ty, Ix> IntoEdges for &'a Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Edges = Edges<'a, E, Ty, Ix>;
     fn edges(self, a: Self::NodeId) -> Self::Edges {
@@ -538,8 +557,9 @@ impl<'a, N, E, Ty, Ix> IntoEdges for &'a Csr<N, E, Ty, Ix>
 }
 
 impl<N, E, Ty, Ix> GraphBase for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex; // index into edges vector
@@ -548,8 +568,9 @@ impl<N, E, Ty, Ix> GraphBase for Csr<N, E, Ty, Ix>
 use fixedbitset::FixedBitSet;
 
 impl<N, E, Ty, Ix> Visitable for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Map = FixedBitSet;
     fn visit_map(&self) -> FixedBitSet {
@@ -569,7 +590,8 @@ pub struct Neighbors<'a, Ix: 'a = DefaultIx> {
 }
 
 impl<'a, Ix> Iterator for Neighbors<'a, Ix>
-    where Ix: IndexType,
+where
+    Ix: IndexType,
 {
     type Item = NodeIndex<Ix>;
 
@@ -583,8 +605,9 @@ impl<'a, Ix> Iterator for Neighbors<'a, Ix>
 }
 
 impl<'a, N, E, Ty, Ix> IntoNeighbors for &'a Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Neighbors = Neighbors<'a, Ix>;
 
@@ -603,23 +626,32 @@ impl<'a, N, E, Ty, Ix> IntoNeighbors for &'a Csr<N, E, Ty, Ix>
 }
 
 impl<N, E, Ty, Ix> NodeIndexable for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
-    fn node_bound(&self) -> usize { self.node_count() }
-    fn to_index(&self, a: Self::NodeId) -> usize { a.index() }
-    fn from_index(&self, ix: usize) -> Self::NodeId { Ix::new(ix) }
+    fn node_bound(&self) -> usize {
+        self.node_count()
+    }
+    fn to_index(&self, a: Self::NodeId) -> usize {
+        a.index()
+    }
+    fn from_index(&self, ix: usize) -> Self::NodeId {
+        Ix::new(ix)
+    }
 }
 
 impl<N, E, Ty, Ix> NodeCompactIndexable for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
 }
 
 impl<N, E, Ty, Ix> Index<NodeIndex<Ix>> for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Output = N;
 
@@ -629,8 +661,9 @@ impl<N, E, Ty, Ix> Index<NodeIndex<Ix>> for Csr<N, E, Ty, Ix>
 }
 
 impl<N, E, Ty, Ix> IndexMut<NodeIndex<Ix>> for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn index_mut(&mut self, ix: NodeIndex<Ix>) -> &mut N {
         &mut self.node_weights[ix.index()]
@@ -643,7 +676,8 @@ pub struct NodeIdentifiers<Ix = DefaultIx> {
 }
 
 impl<Ix> Iterator for NodeIdentifiers<Ix>
-    where Ix: IndexType,
+where
+    Ix: IndexType,
 {
     type Item = NodeIndex<Ix>;
 
@@ -657,8 +691,9 @@ impl<Ix> Iterator for NodeIdentifiers<Ix>
 }
 
 impl<'a, N, E, Ty, Ix> IntoNodeIdentifiers for &'a Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type NodeIdentifiers = NodeIdentifiers<Ix>;
     fn node_identifiers(self) -> Self::NodeIdentifiers {
@@ -670,8 +705,9 @@ impl<'a, N, E, Ty, Ix> IntoNodeIdentifiers for &'a Csr<N, E, Ty, Ix>
 }
 
 impl<N, E, Ty, Ix> NodeCount for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn node_count(&self) -> usize {
         (*self).node_count()
@@ -679,8 +715,9 @@ impl<N, E, Ty, Ix> NodeCount for Csr<N, E, Ty, Ix>
 }
 
 impl<N, E, Ty, Ix> GraphProp for Csr<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type EdgeType = Ty;
 }
@@ -702,11 +739,11 @@ Row   : [0, 2, 5]   <- value index of row start
 #[cfg(test)]
 mod tests {
     use super::Csr;
-    use crate::Undirected;
+    use crate::algo::bellman_ford;
+    use crate::algo::tarjan_scc;
     use crate::visit::Dfs;
     use crate::visit::VisitMap;
-    use crate::algo::tarjan_scc;
-    use crate::algo::bellman_ford;
+    use crate::Undirected;
 
     #[test]
     fn csr1() {
@@ -733,11 +770,11 @@ mod tests {
 
     #[test]
     fn csr_undirected() {
-    /*
-        [ 1 . 1
-          . . 1
-          1 1 1 ]
-     */
+        /*
+           [ 1 . 1
+             . . 1
+             1 1 1 ]
+        */
 
         let mut m: Csr<(), (), Undirected> = Csr::with_nodes(3);
         m.add_edge(0, 0, ());
@@ -755,11 +792,7 @@ mod tests {
     #[test]
     fn csr_from_error_1() {
         // not sorted in source
-        let m: Csr = Csr::from_sorted_edges(&[
-            (0, 1),
-            (1, 0),
-            (0, 2),
-        ]).unwrap();
+        let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (0, 2)]).unwrap();
         println!("{:?}", m);
     }
 
@@ -767,25 +800,14 @@ mod tests {
     #[test]
     fn csr_from_error_2() {
         // not sorted in target
-        let m: Csr = Csr::from_sorted_edges(&[
-            (0, 1),
-            (1, 0),
-            (1, 2),
-            (1, 1),
-        ]).unwrap();
+        let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (1, 2), (1, 1)]).unwrap();
         println!("{:?}", m);
     }
 
     #[test]
     fn csr_from() {
-        let m: Csr = Csr::from_sorted_edges(&[
-            (0, 1),
-            (0, 2),
-            (1, 0),
-            (1, 1),
-            (2, 2),
-            (2, 4),
-        ]).unwrap();
+        let m: Csr =
+            Csr::from_sorted_edges(&[(0, 1), (0, 2), (1, 0), (1, 1), (2, 2), (2, 4)]).unwrap();
         println!("{:?}", m);
         assert_eq!(m.neighbors_slice(0), &[1, 2]);
         assert_eq!(m.neighbors_slice(1), &[0, 1]);
@@ -803,15 +825,14 @@ mod tests {
             (1, 1),
             (1, 3),
             (2, 2),
-
             // disconnected subgraph
             (4, 4),
             (4, 5),
-        ]).unwrap();
+        ])
+        .unwrap();
         println!("{:?}", m);
         let mut dfs = Dfs::new(&m, 0);
-        while let Some(_) = dfs.next(&m) {
-        }
+        while let Some(_) = dfs.next(&m) {}
         for i in 0..m.node_count() - 2 {
             assert!(dfs.discovered.is_visited(&i), "visited {}", i)
         }
@@ -823,8 +844,7 @@ mod tests {
 
         dfs.reset(&m);
         dfs.move_to(0);
-        while let Some(_) = dfs.next(&m) {
-        }
+        while let Some(_) = dfs.next(&m) {}
 
         for i in 0..m.node_count() {
             assert!(dfs.discovered[i], "visited {}", i)
@@ -844,7 +864,8 @@ mod tests {
             (4, 4),
             (4, 5),
             (5, 2),
-        ]).unwrap();
+        ])
+        .unwrap();
         println!("{:?}", m);
         println!("{:?}", tarjan_scc(&m));
     }
@@ -859,12 +880,12 @@ mod tests {
             (1, 2, 1.),
             (1, 3, 1.),
             (2, 3, 3.),
-
             (4, 5, 1.),
             (5, 7, 2.),
             (6, 7, 1.),
             (7, 8, 3.),
-        ]).unwrap();
+        ])
+        .unwrap();
         println!("{:?}", m);
         let result = bellman_ford(&m, 0).unwrap();
         println!("{:?}", result);
@@ -883,7 +904,8 @@ mod tests {
             (1, 2, 1.),
             (1, 3, 1.),
             (2, 3, 3.),
-        ]).unwrap();
+        ])
+        .unwrap();
         let result = bellman_ford(&m, 0);
         assert!(result.is_err());
     }
@@ -900,12 +922,12 @@ mod tests {
             (1, 2, 1.),
             (1, 3, 1.),
             (2, 3, 3.),
-
             (4, 5, 1.),
             (5, 7, 2.),
             (6, 7, 1.),
             (7, 8, 3.),
-        ]).unwrap();
+        ])
+        .unwrap();
         let mut copy = Vec::new();
         for e in m.edge_references() {
             copy.push((e.source(), e.target(), *e.weight()));

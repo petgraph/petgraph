@@ -1,7 +1,7 @@
 #![feature(test)]
 
-extern crate test;
 extern crate petgraph;
+extern crate test;
 
 use test::Bencher;
 
