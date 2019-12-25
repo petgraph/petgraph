@@ -27,6 +27,15 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.5.0
+  - Upgrade to Rust 2018 edition
+  - Fix clippy warnings and unify code formatting
+  - Improved and enhanced documentation
+  - Update dependencies including modern quickcheck
+  - Numerous bugfixes and refactorings
+  - Added ``MatrixGraph`` implementation
+  - Added ``InfoEdges`` and ``InfoEdgesDirected``
+
 - 0.4.13
 
   - Fix clippy warnings by @jonasbb
