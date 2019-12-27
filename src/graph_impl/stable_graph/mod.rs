@@ -509,7 +509,7 @@ where
         }
     }
 
-    /// Return an iterator over the node indices of the graph
+    /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
         EdgeIndices {
             iter: enumerate(self.raw_edges()),
