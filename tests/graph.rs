@@ -1770,8 +1770,8 @@ fn dot() {
         dot_output,
         // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
         r#"digraph {
-    0 [label="Record { a: 1, b: \"abc\\\\\" }"]
-    0 -> 0 [label="(1, 2)"]
+    0 [ label = "Record { a: 1, b: \"abc\\\\\" }" ]
+    0 -> 0 [ label = "(1, 2)" ]
 }
 "#
     );
