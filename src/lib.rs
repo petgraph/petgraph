@@ -85,7 +85,7 @@
 //!
 //! Each graph type vends a few shorthand type definitions that name some specific
 //! generic choices. For example, [`DiGraph<_, _>`](./graph/type.DiGraph.html) is shorthand
-//! for [`Graph<_, _, Undirected>`](graph/struct.Graph.html).
+//! for [`Graph<_, _, Directed>`](graph/struct.Graph.html).
 //! [`UnMatrix<_, _>`](./matrix_graph/type.UnMatrix.html) is shorthand for
 //! [`MatrixGraph<_, _, Undirected>`](./matrix_graph/struct.MatrixGraph.html). Each graph type's
 //! module documentation lists the available shorthand types.
