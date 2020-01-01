@@ -402,26 +402,28 @@ impl<N> TarjanScc<N> {
             };
         }
 
-        if node![v].index.is_some() {
+        let node_v = &mut node![v];
+        if node_v.index.is_some() {
             // already visited
             return;
         }
 
         let v_index = self.index;
-        node![v].index = Some(v_index);
-        node![v].lowlink = v_index;
-        node![v].on_stack = true;
+        node_v.index = Some(v_index);
+        node_v.lowlink = v_index;
+        node_v.on_stack = true;
         self.stack.push(v);
         self.index += 1;
 
         for w in g.neighbors(v) {
-            match node![w].index {
+            let node_w = &mut node![w];
+            match node_w.index {
                 None => {
                     self.visit(w, g, f);
                     node![v].lowlink = min(node![v].lowlink, node![w].lowlink);
                 }
                 Some(w_index) => {
-                    if node![w].on_stack {
+                    if node_w.on_stack {
                         // Successor w is in stack S and hence in the current SCC
                         let v_lowlink = &mut node![v].lowlink;
                         *v_lowlink = min(*v_lowlink, w_index);
@@ -431,8 +433,9 @@ impl<N> TarjanScc<N> {
         }
 
         // If v is a root node, pop the stack and generate an SCC
-        if let Some(v_index) = node![v].index {
-            if node![v].lowlink == v_index {
+        let node_v = &mut node![v];
+        if let Some(v_index) = node_v.index {
+            if node_v.lowlink == v_index {
                 let mut iter = TarjanSccIter {
                     tarjan_scc: self,
                     v,
