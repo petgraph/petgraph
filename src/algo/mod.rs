@@ -323,47 +323,82 @@ where
     sccs
 }
 
-/// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+#[derive(Copy, Clone, Debug)]
+struct NodeData {
+    index: Option<usize>,
+    lowlink: usize,
+    on_stack: bool,
+}
+
+/// A reusable state for computing the *strongly connected components* using [Tarjan's algorithm][1].
 ///
 /// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
-///
-/// Return a vector where each element is a strongly connected component (scc).
-/// The order of node ids within each scc is arbitrary, but the order of
-/// the sccs is their postorder (reverse topological sort).
-///
-/// For an undirected graph, the sccs are simply the connected components.
-///
-/// This implementation is recursive and does one pass over the nodes.
-pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
-where
-    G: IntoNodeIdentifiers + IntoNeighbors + NodeIndexable,
-{
-    #[derive(Copy, Clone, Debug)]
-    struct NodeData {
-        index: Option<usize>,
-        lowlink: usize,
-        on_stack: bool,
+#[derive(Debug)]
+pub struct TarjanScc<N> {
+    index: usize,
+    nodes: Vec<NodeData>,
+    stack: Vec<N>,
+}
+
+impl<N> Default for TarjanScc<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<N> TarjanScc<N> {
+    /// Creates a new `TarjanScc`
+    pub fn new() -> Self {
+        TarjanScc {
+            index: 0,
+            nodes: Vec::new(),
+            stack: Vec::new(),
+        }
     }
 
-    #[derive(Debug)]
-    struct Data<'a, G>
+    /// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+    ///
+    /// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+    ///
+    /// Calls `f` for each strongly strongly connected component (scc).
+    /// The order of node ids within each scc is arbitrary, but the order of
+    /// the sccs is their postorder (reverse topological sort).
+    ///
+    /// For an undirected graph, the sccs are simply the connected components.
+    ///
+    /// This implementation is recursive and does one pass over the nodes.
+    pub fn run<G, F>(&mut self, g: G, mut f: F)
     where
-        G: NodeIndexable,
-        G::NodeId: 'a,
+        G: IntoNodeIdentifiers<NodeId = N> + IntoNeighbors<NodeId = N> + NodeIndexable<NodeId = N>,
+        F: FnMut(&mut TarjanSccIter<'_, G>),
+        N: Copy + PartialEq,
     {
-        index: usize,
-        nodes: Vec<NodeData>,
-        stack: Vec<G::NodeId>,
-        sccs: &'a mut Vec<Vec<G::NodeId>>,
+        self.nodes.clear();
+        self.nodes.resize(
+            g.node_bound(),
+            NodeData {
+                index: None,
+                lowlink: !0,
+                on_stack: false,
+            },
+        );
+
+        for n in g.node_identifiers() {
+            self.visit(n, g, &mut f);
+        }
+
+        debug_assert!(self.stack.is_empty());
     }
 
-    fn scc_visit<G>(v: G::NodeId, g: G, data: &mut Data<G>)
+    fn visit<G, F>(&mut self, v: G::NodeId, g: G, f: &mut F)
     where
-        G: IntoNeighbors + NodeIndexable,
+        G: IntoNeighbors<NodeId = N> + NodeIndexable<NodeId = N>,
+        F: FnMut(&mut TarjanSccIter<'_, G>),
+        N: Copy + PartialEq,
     {
         macro_rules! node {
             ($node:expr) => {
-                data.nodes[g.to_index($node)]
+                self.nodes[g.to_index($node)]
             };
         }
 
@@ -372,17 +407,17 @@ where
             return;
         }
 
-        let v_index = data.index;
+        let v_index = self.index;
         node![v].index = Some(v_index);
         node![v].lowlink = v_index;
         node![v].on_stack = true;
-        data.stack.push(v);
-        data.index += 1;
+        self.stack.push(v);
+        self.index += 1;
 
         for w in g.neighbors(v) {
             match node![w].index {
                 None => {
-                    scc_visit(w, g, data);
+                    self.visit(w, g, f);
                     node![v].lowlink = min(node![v].lowlink, node![w].lowlink);
                 }
                 Some(w_index) => {
@@ -398,41 +433,64 @@ where
         // If v is a root node, pop the stack and generate an SCC
         if let Some(v_index) = node![v].index {
             if node![v].lowlink == v_index {
-                let mut cur_scc = Vec::new();
-                loop {
-                    let w = data.stack.pop().unwrap();
-                    node![w].on_stack = false;
-                    cur_scc.push(w);
-                    if g.to_index(w) == g.to_index(v) {
-                        break;
-                    }
-                }
-                data.sccs.push(cur_scc);
+                let mut iter = TarjanSccIter {
+                    tarjan_scc: self,
+                    v,
+                    g,
+                    done: false,
+                };
+                f(&mut iter);
+                // Guard against `f` not consuming the entire iterator
+                for _ in iter {}
             }
         }
     }
+}
 
+/// Iterator over the nodes in a *strongly connected component* (scc).
+/// Passed to the closure that `TarjanScc::run` accepts.
+pub struct TarjanSccIter<'a, G: NodeIndexable> {
+    tarjan_scc: &'a mut TarjanScc<G::NodeId>,
+    v: G::NodeId,
+    g: G,
+    done: bool,
+}
+
+impl<G> Iterator for TarjanSccIter<'_, G>
+where
+    G: NodeIndexable,
+{
+    type Item = G::NodeId;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        let w = self.tarjan_scc.stack.pop().unwrap();
+        self.tarjan_scc.nodes[self.g.to_index(w)].on_stack = false;
+        self.done = self.g.to_index(w) == self.g.to_index(self.v);
+        Some(w)
+    }
+}
+
+/// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+///
+/// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+///
+/// Return a vector where each element is a strongly connected component (scc).
+/// The order of node ids within each scc is arbitrary, but the order of
+/// the sccs is their postorder (reverse topological sort).
+///
+/// For an undirected graph, the sccs are simply the connected components.
+///
+/// This implementation is recursive and does one pass over the nodes.
+pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
+where
+    G: IntoNodeIdentifiers + IntoNeighbors + NodeIndexable,
+{
     let mut sccs = Vec::new();
     {
-        let map = vec![
-            NodeData {
-                index: None,
-                lowlink: !0,
-                on_stack: false
-            };
-            g.node_bound()
-        ];
-
-        let mut data = Data {
-            index: 0,
-            nodes: map,
-            stack: Vec::new(),
-            sccs: &mut sccs,
-        };
-
-        for n in g.node_identifiers() {
-            scc_visit(n, g, &mut data);
-        }
+        let mut tarjan_scc = TarjanScc::new();
+        tarjan_scc.run(g, |scc| sccs.push(scc.collect()));
     }
     sccs
 }
