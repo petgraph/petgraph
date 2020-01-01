@@ -41,6 +41,18 @@ pub struct Dfs<N, VM> {
     pub discovered: VM,
 }
 
+impl<N, VM> Default for Dfs<N, VM>
+where
+    VM: Default,
+{
+    fn default() -> Self {
+        Dfs {
+            stack: Vec::new(),
+            discovered: VM::default(),
+        }
+    }
+}
+
 impl<N, VM> Dfs<N, VM>
 where
     N: Copy + PartialEq,
@@ -123,6 +135,19 @@ pub struct DfsPostOrder<N, VM> {
     pub discovered: VM,
     /// The map of finished nodes
     pub finished: VM,
+}
+
+impl<N, VM> Default for DfsPostOrder<N, VM>
+where
+    VM: Default,
+{
+    fn default() -> Self {
+        DfsPostOrder {
+            stack: Vec::new(),
+            discovered: VM::default(),
+            finished: VM::default(),
+        }
+    }
 }
 
 impl<N, VM> DfsPostOrder<N, VM>
@@ -232,6 +257,18 @@ pub struct Bfs<N, VM> {
     pub discovered: VM,
 }
 
+impl<N, VM> Default for Bfs<N, VM>
+where
+    VM: Default,
+{
+    fn default() -> Self {
+        Bfs {
+            stack: VecDeque::new(),
+            discovered: VM::default(),
+        }
+    }
+}
+
 impl<N, VM> Bfs<N, VM>
 where
     N: Copy + PartialEq,
@@ -277,6 +314,18 @@ where
 pub struct Topo<N, VM> {
     tovisit: Vec<N>,
     ordered: VM,
+}
+
+impl<N, VM> Default for Topo<N, VM>
+where
+    VM: Default,
+{
+    fn default() -> Self {
+        Topo {
+            tovisit: Vec::new(),
+            ordered: VM::default(),
+        }
+    }
 }
 
 impl<N, VM> Topo<N, VM>
