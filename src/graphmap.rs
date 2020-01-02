@@ -184,6 +184,8 @@ where
     }
 
     /// Return `true` if node `n` was removed.
+    ///
+    /// Computes in **O(V)** time, due to the removal of edges with other nodes.
     pub fn remove_node(&mut self, n: N) -> bool {
         let links = match self.nodes.swap_remove(&n) {
             None => return false,
