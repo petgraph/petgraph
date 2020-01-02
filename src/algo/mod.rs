@@ -370,7 +370,7 @@ impl<N> TarjanScc<N> {
     pub fn run<G, F>(&mut self, g: G, mut f: F)
     where
         G: IntoNodeIdentifiers<NodeId = N> + IntoNeighbors<NodeId = N> + NodeIndexable<NodeId = N>,
-        F: FnMut(&mut TarjanSccIter<'_, G>),
+        F: FnMut(&[N]),
         N: Copy + PartialEq,
     {
         self.nodes.clear();
@@ -393,7 +393,7 @@ impl<N> TarjanScc<N> {
     fn visit<G, F>(&mut self, v: G::NodeId, g: G, f: &mut F)
     where
         G: IntoNeighbors<NodeId = N> + NodeIndexable<NodeId = N>,
-        F: FnMut(&mut TarjanSccIter<'_, G>),
+        F: FnMut(&[N]),
         N: Copy + PartialEq,
     {
         macro_rules! node {
@@ -436,42 +436,19 @@ impl<N> TarjanScc<N> {
         let node_v = &mut node![v];
         if let Some(v_index) = node_v.index {
             if node_v.lowlink == v_index {
-                let mut iter = TarjanSccIter {
-                    tarjan_scc: self,
-                    v,
-                    g,
-                    done: false,
-                };
-                f(&mut iter);
-                // Guard against `f` not consuming the entire iterator
-                for _ in iter {}
+                let nodes = &mut self.nodes;
+                let start = self
+                    .stack
+                    .iter()
+                    .rposition(|&w| {
+                        nodes[g.to_index(w)].on_stack = false;
+                        g.to_index(w) == g.to_index(v)
+                    })
+                    .unwrap();
+                f(&self.stack[start..]);
+                self.stack.truncate(start);
             }
         }
-    }
-}
-
-/// Iterator over the nodes in a *strongly connected component* (scc).
-/// Passed to the closure that `TarjanScc::run` accepts.
-pub struct TarjanSccIter<'a, G: NodeIndexable> {
-    tarjan_scc: &'a mut TarjanScc<G::NodeId>,
-    v: G::NodeId,
-    g: G,
-    done: bool,
-}
-
-impl<G> Iterator for TarjanSccIter<'_, G>
-where
-    G: NodeIndexable,
-{
-    type Item = G::NodeId;
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.done {
-            return None;
-        }
-        let w = self.tarjan_scc.stack.pop().unwrap();
-        self.tarjan_scc.nodes[self.g.to_index(w)].on_stack = false;
-        self.done = self.g.to_index(w) == self.g.to_index(self.v);
-        Some(w)
     }
 }
 
@@ -493,7 +470,7 @@ where
     let mut sccs = Vec::new();
     {
         let mut tarjan_scc = TarjanScc::new();
-        tarjan_scc.run(g, |scc| sccs.push(scc.collect()));
+        tarjan_scc.run(g, |scc| sccs.push(scc.iter().cloned().rev().collect()));
     }
     sccs
 }

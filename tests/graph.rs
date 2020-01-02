@@ -828,7 +828,7 @@ fn tarjan_scc() {
     let mut tarjan_scc = petgraph::algo::TarjanScc::new();
 
     let mut result = Vec::new();
-    tarjan_scc.run(&gr, |scc| result.push(scc.collect()));
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
         result,
         vec![
@@ -847,7 +847,7 @@ fn tarjan_scc() {
     assert!(hr.remove_edge(ed).is_some());
 
     let mut result = Vec::new();
-    tarjan_scc.run(&hr, |scc| result.push(scc.collect()));
+    tarjan_scc.run(&hr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
         result,
         vec![
@@ -870,7 +870,7 @@ fn tarjan_scc() {
     gr.add_edge(n(1), n(0), ());
 
     let mut result = Vec::new();
-    tarjan_scc.run(&gr, |scc| result.push(scc.collect()));
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
         result,
         vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
@@ -883,7 +883,7 @@ fn tarjan_scc() {
     gr.add_node(());
     // no order for the disconnected one
     let mut result = Vec::new();
-    tarjan_scc.run(&gr, |scc| result.push(scc.collect()));
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
         result,
         vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
