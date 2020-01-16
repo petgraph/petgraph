@@ -50,4 +50,3 @@ impl<K: PartialOrd, T> Ord for MinScored<K, T> {
         }
     }
 }
-

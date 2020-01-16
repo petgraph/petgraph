@@ -1,23 +1,15 @@
 //! Graph traits for associated data and graph construction.
 
-
-use crate::Graph;
-#[cfg(feature = "stable_graph")]
-use crate::stable_graph::StableGraph;
-use crate::{
-    EdgeType,
-};
 use crate::graph::IndexType;
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{GraphMap, NodeTrait};
-use crate::visit::{
-    Data,
-    NodeCount,
-    NodeIndexable,
-    Reversed,
-};
+#[cfg(feature = "stable_graph")]
+use crate::stable_graph::StableGraph;
+use crate::visit::{Data, NodeCount, NodeIndexable, Reversed};
+use crate::EdgeType;
+use crate::Graph;
 
-trait_template!{
+trait_template! {
     /// Access node and edge weights (associated data).
 pub trait DataMap : Data {
     @section self
@@ -27,12 +19,14 @@ pub trait DataMap : Data {
 }
 
 macro_rules! access0 {
-    ($e:expr) => ($e.0);
+    ($e:expr) => {
+        $e.0
+    };
 }
 
-DataMap!{delegate_impl []}
-DataMap!{delegate_impl [['a, G], G, &'a mut G, deref_twice]}
-DataMap!{delegate_impl [[G], G, Reversed<G>, access0]}
+DataMap! {delegate_impl []}
+DataMap! {delegate_impl [['a, G], G, &'a mut G, deref_twice]}
+DataMap! {delegate_impl [[G], G, Reversed<G>, access0]}
 
 trait_template! {
     /// Access node and edge weights mutably.
@@ -43,43 +37,49 @@ pub trait DataMapMut : DataMap {
 }
 }
 
-DataMapMut!{delegate_impl [['a, G], G, &'a mut G, deref_twice]}
-DataMapMut!{delegate_impl [[G], G, Reversed<G>, access0]}
+DataMapMut! {delegate_impl [['a, G], G, &'a mut G, deref_twice]}
+DataMapMut! {delegate_impl [[G], G, Reversed<G>, access0]}
 
 /// A graph that can be extended with further nodes and edges
-pub trait Build : Data + NodeCount {
+pub trait Build: Data + NodeCount {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId;
     /// Add a new edge. If parallel edges (duplicate) are not allowed and
     /// the edge already exists, return `None`.
-    fn add_edge(&mut self,
-                a: Self::NodeId,
-                b: Self::NodeId,
-                weight: Self::EdgeWeight) -> Option<Self::EdgeId> {
+    fn add_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Option<Self::EdgeId> {
         Some(self.update_edge(a, b, weight))
     }
     /// Add or update the edge from `a` to `b`. Return the id of the affected
     /// edge.
-    fn update_edge(&mut self,
-                   a: Self::NodeId,
-                   b: Self::NodeId,
-                   weight: Self::EdgeWeight) -> Self::EdgeId;
+    fn update_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Self::EdgeId;
 }
 
 /// A graph that can be created
-pub trait Create : Build + Default {
+pub trait Create: Build + Default {
     fn with_capacity(nodes: usize, edges: usize) -> Self;
 }
 
 impl<N, E, Ty, Ix> Data for Graph<N, E, Ty, Ix>
-    where Ix: IndexType
+where
+    Ix: IndexType,
 {
     type NodeWeight = N;
     type EdgeWeight = E;
 }
 
 impl<N, E, Ty, Ix> DataMap for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
         self.node_weight(id)
@@ -90,8 +90,9 @@ impl<N, E, Ty, Ix> DataMap for Graph<N, E, Ty, Ix>
 }
 
 impl<N, E, Ty, Ix> DataMapMut for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn node_weight_mut(&mut self, id: Self::NodeId) -> Option<&mut Self::NodeWeight> {
         self.node_weight_mut(id)
@@ -103,8 +104,9 @@ impl<N, E, Ty, Ix> DataMapMut for Graph<N, E, Ty, Ix>
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> DataMap for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
         self.node_weight(id)
@@ -116,8 +118,9 @@ impl<N, E, Ty, Ix> DataMap for StableGraph<N, E, Ty, Ix>
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> DataMapMut for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn node_weight_mut(&mut self, id: Self::NodeId) -> Option<&mut Self::NodeWeight> {
         self.node_weight_mut(id)
@@ -128,65 +131,73 @@ impl<N, E, Ty, Ix> DataMapMut for StableGraph<N, E, Ty, Ix>
 }
 
 impl<N, E, Ty, Ix> Build for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         self.add_node(weight)
     }
-    fn add_edge(&mut self,
-                a: Self::NodeId,
-                b: Self::NodeId,
-                weight: Self::EdgeWeight) -> Option<Self::EdgeId>
-    {
+    fn add_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Option<Self::EdgeId> {
         Some(self.add_edge(a, b, weight))
     }
-    fn update_edge(&mut self,
-                   a: Self::NodeId,
-                   b: Self::NodeId,
-                   weight: Self::EdgeWeight) -> Self::EdgeId
-    {
+    fn update_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Self::EdgeId {
         self.update_edge(a, b, weight)
     }
 }
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> Build for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         self.add_node(weight)
     }
-    fn add_edge(&mut self,
-                a: Self::NodeId,
-                b: Self::NodeId,
-                weight: Self::EdgeWeight) -> Option<Self::EdgeId>
-    {
+    fn add_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Option<Self::EdgeId> {
         Some(self.add_edge(a, b, weight))
     }
-    fn update_edge(&mut self,
-                   a: Self::NodeId,
-                   b: Self::NodeId,
-                   weight: Self::EdgeWeight) -> Self::EdgeId
-    {
+    fn update_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Self::EdgeId {
         self.update_edge(a, b, weight)
     }
 }
 
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> Build for GraphMap<N, E, Ty>
-    where Ty: EdgeType,
-          N: NodeTrait,
+where
+    Ty: EdgeType,
+    N: NodeTrait,
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         self.add_node(weight)
     }
-    fn add_edge(&mut self,
-                a: Self::NodeId,
-                b: Self::NodeId,
-                weight: Self::EdgeWeight) -> Option<Self::EdgeId>
-    {
+    fn add_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Option<Self::EdgeId> {
         if self.contains_edge(a, b) {
             None
         } else {
@@ -195,20 +206,21 @@ impl<N, E, Ty> Build for GraphMap<N, E, Ty>
             Some((a, b))
         }
     }
-    fn update_edge(&mut self,
-                   a: Self::NodeId,
-                   b: Self::NodeId,
-                   weight: Self::EdgeWeight) -> Self::EdgeId
-    {
+    fn update_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Self::EdgeId {
         self.add_edge(a, b, weight);
         (a, b)
     }
 }
 
-
 impl<N, E, Ty, Ix> Create for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn with_capacity(nodes: usize, edges: usize) -> Self {
         Self::with_capacity(nodes, edges)
@@ -217,8 +229,9 @@ impl<N, E, Ty, Ix> Create for Graph<N, E, Ty, Ix>
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> Create for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn with_capacity(nodes: usize, edges: usize) -> Self {
         Self::with_capacity(nodes, edges)
@@ -227,8 +240,9 @@ impl<N, E, Ty, Ix> Create for StableGraph<N, E, Ty, Ix>
 
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> Create for GraphMap<N, E, Ty>
-    where Ty: EdgeType,
-          N: NodeTrait,
+where
+    Ty: EdgeType,
+    N: NodeTrait,
 {
     fn with_capacity(nodes: usize, edges: usize) -> Self {
         Self::with_capacity(nodes, edges)
@@ -243,22 +257,21 @@ impl<N, E, Ty> Create for GraphMap<N, E, Ty>
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Element<N, E> {
     /// A graph node.
-    Node {
-        weight: N,
-    },
+    Node { weight: N },
     /// A graph edge.
     Edge {
         source: usize,
         target: usize,
         weight: E,
-    }
+    },
 }
 
 /// Create a graph from an iterator of elements.
-pub trait FromElements : Create {
+pub trait FromElements: Create {
     fn from_elements<I>(iterable: I) -> Self
-        where Self: Sized,
-              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
+    where
+        Self: Sized,
+        I: IntoIterator<Item = Element<Self::NodeWeight, Self::EdgeWeight>>,
     {
         let mut gr = Self::with_capacity(0, 0);
         // usize -> NodeId map
@@ -268,19 +281,23 @@ pub trait FromElements : Create {
                 Element::Node { weight } => {
                     map.push(gr.add_node(weight));
                 }
-                Element::Edge { source, target, weight } => {
+                Element::Edge {
+                    source,
+                    target,
+                    weight,
+                } => {
                     gr.add_edge(map[source], map[target], weight);
                 }
             }
         }
         gr
     }
-        
 }
 
 fn from_elements_indexable<G, I>(iterable: I) -> G
-    where G: Create + NodeIndexable,
-          I: IntoIterator<Item=Element<G::NodeWeight, G::EdgeWeight>>,
+where
+    G: Create + NodeIndexable,
+    I: IntoIterator<Item = Element<G::NodeWeight, G::EdgeWeight>>,
 {
     let mut gr = G::with_capacity(0, 0);
     let map = |gr: &G, i| gr.from_index(i);
@@ -289,7 +306,11 @@ fn from_elements_indexable<G, I>(iterable: I) -> G
             Element::Node { weight } => {
                 gr.add_node(weight);
             }
-            Element::Edge { source, target, weight } => {
+            Element::Edge {
+                source,
+                target,
+                weight,
+            } => {
                 let from = map(&gr, source);
                 let to = map(&gr, target);
                 gr.add_edge(from, to, weight);
@@ -300,12 +321,14 @@ fn from_elements_indexable<G, I>(iterable: I) -> G
 }
 
 impl<N, E, Ty, Ix> FromElements for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn from_elements<I>(iterable: I) -> Self
-        where Self: Sized,
-              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
+    where
+        Self: Sized,
+        I: IntoIterator<Item = Element<Self::NodeWeight, Self::EdgeWeight>>,
     {
         from_elements_indexable(iterable)
     }
@@ -313,12 +336,14 @@ impl<N, E, Ty, Ix> FromElements for Graph<N, E, Ty, Ix>
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> FromElements for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn from_elements<I>(iterable: I) -> Self
-        where Self: Sized,
-              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
+    where
+        Self: Sized,
+        I: IntoIterator<Item = Element<Self::NodeWeight, Self::EdgeWeight>>,
     {
         from_elements_indexable(iterable)
     }
@@ -326,19 +351,21 @@ impl<N, E, Ty, Ix> FromElements for StableGraph<N, E, Ty, Ix>
 
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> FromElements for GraphMap<N, E, Ty>
-    where Ty: EdgeType,
-          N: NodeTrait,
+where
+    Ty: EdgeType,
+    N: NodeTrait,
 {
     fn from_elements<I>(iterable: I) -> Self
-        where Self: Sized,
-              I: IntoIterator<Item=Element<Self::NodeWeight, Self::EdgeWeight>>,
+    where
+        Self: Sized,
+        I: IntoIterator<Item = Element<Self::NodeWeight, Self::EdgeWeight>>,
     {
         from_elements_indexable(iterable)
     }
 }
 
 /// Iterator adaptors for iterators of `Element`.
-pub trait ElementIterator<N, E> : Iterator<Item=Element<N, E>> {
+pub trait ElementIterator<N, E>: Iterator<Item = Element<N, E>> {
     /// Create an iterator adaptor that filters graph elements.
     ///
     /// The function `f` is called with each element and if its return value
@@ -349,20 +376,20 @@ pub trait ElementIterator<N, E> : Iterator<Item=Element<N, E>> {
     /// This filter adapts the edge source and target indices in the
     /// stream so that they are correct after the removals.
     fn filter_elements<F>(self, f: F) -> FilterElements<Self, F>
-        where Self: Sized,
-              F: FnMut(Element<&mut N, &mut E>) -> bool,
+    where
+        Self: Sized,
+        F: FnMut(Element<&mut N, &mut E>) -> bool,
     {
         FilterElements {
             iter: self,
             node_index: 0,
             map: Vec::new(),
-            f: f,
+            f,
         }
     }
 }
 
-impl<N, E, I: ?Sized> ElementIterator<N, E> for I
-    where I: Iterator<Item=Element<N, E>> { }
+impl<N, E, I: ?Sized> ElementIterator<N, E> for I where I: Iterator<Item = Element<N, E>> {}
 
 /// An iterator that filters graph elements.
 ///
@@ -377,8 +404,9 @@ pub struct FilterElements<I, F> {
 }
 
 impl<I, F, N, E> Iterator for FilterElements<I, F>
-    where I: Iterator<Item=Element<N, E>>,
-          F: FnMut(Element<&mut N, &mut E>) -> bool,
+where
+    I: Iterator<Item = Element<N, E>>,
+    F: FnMut(Element<&mut N, &mut E>) -> bool,
 {
     type Item = Element<N, E>;
 
@@ -389,11 +417,22 @@ impl<I, F, N, E> Iterator for FilterElements<I, F>
                 Some(elt) => elt,
             };
             let keep = (self.f)(match elt {
-                Element::Node { ref mut weight } => Element::Node { weight: weight },
-                Element::Edge { source, target, ref mut weight }
-                    => Element::Edge { source: source, target: target, weight: weight },
+                Element::Node { ref mut weight } => Element::Node { weight },
+                Element::Edge {
+                    source,
+                    target,
+                    ref mut weight,
+                } => Element::Edge {
+                    source,
+                    target,
+                    weight,
+                },
             });
-            let is_node = if let Element::Node { .. } = elt { true } else { false };
+            let is_node = if let Element::Node { .. } = elt {
+                true
+            } else {
+                false
+            };
             if !keep && is_node {
                 self.map.push(self.node_index);
             }
@@ -427,7 +466,7 @@ impl<I, F, N, E> Iterator for FilterElements<I, F>
                         Err(i) => *target -= i,
                     }
                 }
-                Element::Node { .. } => { }
+                Element::Node { .. } => {}
             }
             return Some(elt);
         }

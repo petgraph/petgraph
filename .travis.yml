@@ -7,7 +7,8 @@ matrix:
       - ALL=' '
     - rust: stable
       env:
-      - FEATURES='unstable quickcheck'
+        - FEATURES='unstable quickcheck'
+        - CHECKFMT=1
     - rust: beta
     - rust: nightly
     - rust: nightly
@@ -17,9 +18,15 @@ matrix:
 branches:
   only:
     - master
+before_script:
+  - rustup component add rustfmt
 script:
   - |
       cargo build --verbose --no-default-features &&
       cargo test --verbose --no-default-features &&
       cargo build --verbose --features "$FEATURES" &&
-      cargo test ${ALL:---all} --verbose --features "$FEATURES"
+      cargo test ${ALL:---all} --verbose --features "$FEATURES" &&
+      if [ "${CHECKFMT}" == "1"]; then
+        cargo +stable fmt -- --check
+      fi
+

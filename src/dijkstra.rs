@@ -1,22 +1,11 @@
-use std::collections::{
-    HashMap,
-    BinaryHeap,
-};
-use std::collections::hash_map::Entry::{
-    Occupied,
-    Vacant,
-};
+use std::collections::hash_map::Entry::{Occupied, Vacant};
+use std::collections::{BinaryHeap, HashMap};
 
 use std::hash::Hash;
 
-use crate::scored::MinScored;
-use super::visit::{
-    Visitable,
-    VisitMap,
-    IntoEdges,
-    EdgeRef,
-};
+use super::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 use crate::algo::Measure;
+use crate::scored::MinScored;
 
 /// \[Generic\] Dijkstra's shortest path algorithm.
 ///
@@ -80,13 +69,17 @@ use crate::algo::Measure;
 /// assert_eq!(res, expected_res);
 /// // z is not inside res because there is not path from b to z.
 /// ```
-pub fn dijkstra<G, F, K>(graph: G, start: G::NodeId, goal: Option<G::NodeId>,
-                         mut edge_cost: F)
-    -> HashMap<G::NodeId, K>
-    where G: IntoEdges + Visitable,
-          G::NodeId: Eq + Hash,
-          F: FnMut(G::EdgeRef) -> K,
-          K: Measure + Copy,
+pub fn dijkstra<G, F, K>(
+    graph: G,
+    start: G::NodeId,
+    goal: Option<G::NodeId>,
+    mut edge_cost: F,
+) -> HashMap<G::NodeId, K>
+where
+    G: IntoEdges + Visitable,
+    G::NodeId: Eq + Hash,
+    F: FnMut(G::EdgeRef) -> K,
+    K: Measure + Copy,
 {
     let mut visited = graph.visit_map();
     let mut scores = HashMap::new();
@@ -97,24 +90,26 @@ pub fn dijkstra<G, F, K>(graph: G, start: G::NodeId, goal: Option<G::NodeId>,
     visit_next.push(MinScored(zero_score, start));
     while let Some(MinScored(node_score, node)) = visit_next.pop() {
         if visited.is_visited(&node) {
-            continue
+            continue;
         }
         if goal.as_ref() == Some(&node) {
-            break
+            break;
         }
         for edge in graph.edges(node) {
             let next = edge.target();
             if visited.is_visited(&next) {
-                continue
+                continue;
             }
             let mut next_score = node_score + edge_cost(edge);
             match scores.entry(next) {
-                Occupied(ent) => if next_score < *ent.get() {
-                    *ent.into_mut() = next_score;
+                Occupied(ent) => {
+                    if next_score < *ent.get() {
+                        *ent.into_mut() = next_score;
                     //predecessor.insert(next.clone(), node.clone());
-                } else {
-                    next_score = *ent.get();
-                },
+                    } else {
+                        next_score = *ent.get();
+                    }
+                }
                 Vacant(ent) => {
                     ent.insert(next_score);
                     //predecessor.insert(next.clone(), node.clone());

@@ -42,7 +42,8 @@
 pub use self::filter::*;
 pub use self::reversed::*;
 
-#[macro_use] mod macros;
+#[macro_use]
+mod macros;
 
 mod dfsvisit;
 mod traversal;
@@ -50,36 +51,26 @@ pub use self::dfsvisit::*;
 pub use self::traversal::*;
 
 use fixedbitset::FixedBitSet;
-use std::collections::{
-    HashSet,
-};
-use std::hash::{Hash, BuildHasher};
+use std::collections::HashSet;
+use std::hash::{BuildHasher, Hash};
 
-use crate::prelude::{Graph, Direction};
+use super::{graph, EdgeType};
+use crate::graph::NodeIndex;
 #[cfg(feature = "graphmap")]
 use crate::prelude::GraphMap;
 #[cfg(feature = "stable_graph")]
 use crate::prelude::StableGraph;
-use crate::graph::{NodeIndex};
-use super::{
-    graph,
-    EdgeType,
-};
+use crate::prelude::{Direction, Graph};
 
-use crate::graph::{
-    IndexType,
-};
+use crate::graph::Frozen;
+use crate::graph::IndexType;
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph;
-use crate::graph::Frozen;
 
 #[cfg(feature = "graphmap")]
-use crate::graphmap::{
-    self,
-    NodeTrait,
-};
+use crate::graphmap::{self, NodeTrait};
 
-trait_template!{
+trait_template! {
 /// Base graph trait: defines the associated node identifier and
 /// edge identifier types.
 pub trait GraphBase {
@@ -94,23 +85,27 @@ pub trait GraphBase {
 }
 }
 
-GraphBase!{delegate_impl []}
-GraphBase!{delegate_impl [['a, G], G, &'a mut G, deref]}
+GraphBase! {delegate_impl []}
+GraphBase! {delegate_impl [['a, G], G, &'a mut G, deref]}
 
 /// A copyable reference to a graph.
-pub trait GraphRef : Copy + GraphBase { }
+pub trait GraphRef: Copy + GraphBase {}
 
-impl<'a, G> GraphRef for &'a G where G: GraphBase { }
+impl<'a, G> GraphRef for &'a G where G: GraphBase {}
 
-impl<'a, G> GraphBase for Frozen<'a, G> where G: GraphBase {
+impl<'a, G> GraphBase for Frozen<'a, G>
+where
+    G: GraphBase,
+{
     type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
 }
 
 #[cfg(feature = "stable_graph")]
 impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Neighbors = stable_graph::Neighbors<'a, E, Ix>;
     fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
@@ -118,18 +113,17 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
     }
 }
 
-
 #[cfg(feature = "graphmap")]
 impl<'a, N: 'a, E, Ty> IntoNeighbors for &'a GraphMap<N, E, Ty>
-    where N: Copy + Ord + Hash,
-          Ty: EdgeType,
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
 {
     type Neighbors = graphmap::Neighbors<'a, N, Ty>;
     fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
         self.neighbors(n)
     }
 }
-
 
 trait_template! {
 /// Access to the neighbors of each node
@@ -147,7 +141,7 @@ pub trait IntoNeighbors : GraphRef {
 }
 }
 
-IntoNeighbors!{delegate_impl []}
+IntoNeighbors! {delegate_impl []}
 
 trait_template! {
 /// Access to the neighbors of each node, through incoming or outgoing edges.
@@ -168,51 +162,51 @@ pub trait IntoNeighborsDirected : IntoNeighbors {
 }
 
 impl<'a, N, E: 'a, Ty, Ix> IntoNeighbors for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Neighbors = graph::Neighbors<'a, E, Ix>;
-    fn neighbors(self, n: graph::NodeIndex<Ix>)
-        -> graph::Neighbors<'a, E, Ix>
-    {
+    fn neighbors(self, n: graph::NodeIndex<Ix>) -> graph::Neighbors<'a, E, Ix> {
         Graph::neighbors(self, n)
     }
 }
 
 impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type NeighborsDirected = graph::Neighbors<'a, E, Ix>;
-    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: Direction)
-        -> graph::Neighbors<'a, E, Ix>
-    {
+    fn neighbors_directed(
+        self,
+        n: graph::NodeIndex<Ix>,
+        d: Direction,
+    ) -> graph::Neighbors<'a, E, Ix> {
         Graph::neighbors_directed(self, n, d)
     }
 }
 
 #[cfg(feature = "stable_graph")]
 impl<'a, N, E: 'a, Ty, Ix> IntoNeighborsDirected for &'a StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type NeighborsDirected = stable_graph::Neighbors<'a, E, Ix>;
-    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: Direction)
-        -> Self::NeighborsDirected
-    {
+    fn neighbors_directed(self, n: graph::NodeIndex<Ix>, d: Direction) -> Self::NeighborsDirected {
         StableGraph::neighbors_directed(self, n, d)
     }
 }
 
 #[cfg(feature = "graphmap")]
 impl<'a, N: 'a, E, Ty> IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
-    where N: Copy + Ord + Hash,
-          Ty: EdgeType,
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
 {
     type NeighborsDirected = graphmap::NeighborsDirected<'a, N, Ty>;
-    fn neighbors_directed(self, n: N, dir: Direction)
-        -> Self::NeighborsDirected
-    {
+    fn neighbors_directed(self, n: N, dir: Direction) -> Self::NeighborsDirected {
         self.neighbors_directed(n, dir)
     }
 }
@@ -238,7 +232,7 @@ pub trait IntoEdges : IntoEdgeReferences + IntoNeighbors {
 }
 }
 
-IntoEdges!{delegate_impl []}
+IntoEdges! {delegate_impl []}
 
 trait_template! {
 /// Access to all edges of each node, in the specified direction.
@@ -248,7 +242,8 @@ trait_template! {
 ///
 /// - `Directed`, `Outgoing`: All edges from `a`.
 /// - `Directed`, `Incoming`: All edges to `a`.
-/// - `Undirected`: All edges connected to `a`.
+/// - `Undirected`, `Outgoing`: All edges connected to `a`, with `a` being the source of each edge.
+/// - `Undirected`, `Incoming`: All edges connected to `a`, with `a` being the target of each edge.
 ///
 /// This is an extended version of the trait `IntoNeighborsDirected`; the former
 /// only iterates over the target node identifiers, while this trait
@@ -263,7 +258,7 @@ pub trait IntoEdgesDirected : IntoEdges + IntoNeighborsDirected {
 }
 }
 
-IntoEdgesDirected!{delegate_impl []}
+IntoEdgesDirected! {delegate_impl []}
 
 trait_template! {
 /// Access to the sequence of the graph’s `NodeId`s.
@@ -275,11 +270,12 @@ pub trait IntoNodeIdentifiers : GraphRef {
 }
 }
 
-IntoNodeIdentifiers!{delegate_impl []}
+IntoNodeIdentifiers! {delegate_impl []}
 
 impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type NodeIdentifiers = graph::NodeIndices<Ix>;
     fn node_identifiers(self) -> graph::NodeIndices<Ix> {
@@ -288,8 +284,9 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a Graph<N, E, Ty, Ix>
 }
 
 impl<N, E, Ty, Ix> NodeCount for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn node_count(&self) -> usize {
         self.node_count()
@@ -298,8 +295,9 @@ impl<N, E, Ty, Ix> NodeCount for Graph<N, E, Ty, Ix>
 
 #[cfg(feature = "stable_graph")]
 impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type NodeIdentifiers = stable_graph::NodeIndices<'a, N, Ix>;
     fn node_identifiers(self) -> Self::NodeIdentifiers {
@@ -309,15 +307,16 @@ impl<'a, N, E: 'a, Ty, Ix> IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> NodeCount for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     fn node_count(&self) -> usize {
         self.node_count()
     }
 }
 
-IntoNeighborsDirected!{delegate_impl []}
+IntoNeighborsDirected! {delegate_impl []}
 
 trait_template! {
 /// Define associated data for nodes and edges
@@ -328,13 +327,13 @@ pub trait Data : GraphBase {
 }
 }
 
-Data!{delegate_impl []}
-Data!{delegate_impl [['a, G], G, &'a mut G, deref]}
+Data! {delegate_impl []}
+Data! {delegate_impl [['a, G], G, &'a mut G, deref]}
 
 /// An edge reference.
 ///
 /// Edge references are used by traits `IntoEdges` and `IntoEdgeReferences`.
-pub trait EdgeRef : Copy {
+pub trait EdgeRef: Copy {
     type NodeId;
     type EdgeId;
     type Weight;
@@ -349,20 +348,29 @@ pub trait EdgeRef : Copy {
 }
 
 impl<'a, N, E> EdgeRef for (N, N, &'a E)
-    where N: Copy
+where
+    N: Copy,
 {
     type NodeId = N;
     type EdgeId = (N, N);
     type Weight = E;
 
-    fn source(&self) -> N { self.0 }
-    fn target(&self) -> N { self.1 }
-    fn weight(&self) -> &E { self.2 }
-    fn id(&self) -> (N, N) { (self.0, self.1) }
+    fn source(&self) -> N {
+        self.0
+    }
+    fn target(&self) -> N {
+        self.1
+    }
+    fn weight(&self) -> &E {
+        self.2
+    }
+    fn id(&self) -> (N, N) {
+        (self.0, self.1)
+    }
 }
 
 /// A node reference.
-pub trait NodeRef : Copy {
+pub trait NodeRef: Copy {
     type NodeId;
     type Weight;
     fn id(&self) -> Self::NodeId;
@@ -380,14 +388,17 @@ pub trait IntoNodeReferences : Data + IntoNodeIdentifiers {
 }
 }
 
-IntoNodeReferences!{delegate_impl []}
+IntoNodeReferences! {delegate_impl []}
 
 impl<Id> NodeRef for (Id, ())
-    where Id: Copy,
+where
+    Id: Copy,
 {
     type NodeId = Id;
     type Weight = ();
-    fn id(&self) -> Self::NodeId { self.0 }
+    fn id(&self) -> Self::NodeId {
+        self.0
+    }
     fn weight(&self) -> &Self::Weight {
         static DUMMY: () = ();
         &DUMMY
@@ -395,14 +406,18 @@ impl<Id> NodeRef for (Id, ())
 }
 
 impl<'a, Id, W> NodeRef for (Id, &'a W)
-    where Id: Copy,
+where
+    Id: Copy,
 {
     type NodeId = Id;
     type Weight = W;
-    fn id(&self) -> Self::NodeId { self.0 }
-    fn weight(&self) -> &Self::Weight { self.1 }
+    fn id(&self) -> Self::NodeId {
+        self.0
+    }
+    fn weight(&self) -> &Self::Weight {
+        self.1
+    }
 }
-
 
 trait_template! {
 /// Access to the sequence of the graph’s edges
@@ -416,12 +431,13 @@ pub trait IntoEdgeReferences : Data + GraphRef {
 }
 }
 
-IntoEdgeReferences!{delegate_impl [] }
+IntoEdgeReferences! {delegate_impl [] }
 
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> Data for GraphMap<N, E, Ty>
-    where N: Copy + PartialEq,
-          Ty: EdgeType,
+where
+    N: Copy + PartialEq,
+    Ty: EdgeType,
 {
     type NodeWeight = N;
     type EdgeWeight = E;
@@ -441,35 +457,38 @@ pub trait GraphProp : GraphBase {
 }
 }
 
-GraphProp!{delegate_impl []}
+GraphProp! {delegate_impl []}
 
 impl<N, E, Ty, Ix> GraphProp for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type EdgeType = Ty;
 }
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> GraphProp for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type EdgeType = Ty;
 }
 
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> GraphProp for GraphMap<N, E, Ty>
-    where N: NodeTrait,
-          Ty: EdgeType,
+where
+    N: NodeTrait,
+    Ty: EdgeType,
 {
     type EdgeType = Ty;
 }
 
-
 impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type EdgeRef = graph::EdgeReference<'a, E, Ix>;
     type EdgeReferences = graph::EdgeReferences<'a, E, Ix>;
@@ -478,8 +497,7 @@ impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
     }
 }
 
-
-trait_template!{
+trait_template! {
     /// The graph’s `NodeId`s map to indices
     pub trait NodeIndexable : GraphBase {
         @section self
@@ -493,7 +511,7 @@ trait_template!{
     }
 }
 
-NodeIndexable!{delegate_impl []}
+NodeIndexable! {delegate_impl []}
 
 trait_template! {
 /// A graph with a known node count.
@@ -503,7 +521,7 @@ pub trait NodeCount : GraphBase {
 }
 }
 
-NodeCount!{delegate_impl []}
+NodeCount! {delegate_impl []}
 
 trait_template! {
 /// The graph’s `NodeId`s map to indices, in a range without holes.
@@ -513,21 +531,30 @@ trait_template! {
 pub trait NodeCompactIndexable : NodeIndexable + NodeCount { }
 }
 
-NodeCompactIndexable!{delegate_impl []}
+NodeCompactIndexable! {delegate_impl []}
 
 impl<N, E, Ty, Ix> NodeIndexable for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
-    fn node_bound(&self) -> usize { self.node_count() }
-    fn to_index(&self, ix: NodeIndex<Ix>) -> usize { ix.index() }
-    fn from_index(&self, ix: usize) -> Self::NodeId { NodeIndex::new(ix) }
+    fn node_bound(&self) -> usize {
+        self.node_count()
+    }
+    fn to_index(&self, ix: NodeIndex<Ix>) -> usize {
+        ix.index()
+    }
+    fn from_index(&self, ix: usize) -> Self::NodeId {
+        NodeIndex::new(ix)
+    }
 }
 
 impl<N, E, Ty, Ix> NodeCompactIndexable for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
-{ }
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+}
 
 /// A mapping for storing the visited status for NodeId `N`.
 pub trait VisitMap<N> {
@@ -541,7 +568,8 @@ pub trait VisitMap<N> {
 }
 
 impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet
-    where Ix: IndexType,
+where
+    Ix: IndexType,
 {
     fn visit(&mut self, x: graph::NodeIndex<Ix>) -> bool {
         !self.put(x.index())
@@ -552,7 +580,8 @@ impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet
 }
 
 impl<Ix> VisitMap<graph::EdgeIndex<Ix>> for FixedBitSet
-    where Ix: IndexType,
+where
+    Ix: IndexType,
 {
     fn visit(&mut self, x: graph::EdgeIndex<Ix>) -> bool {
         !self.put(x.index())
@@ -563,7 +592,8 @@ impl<Ix> VisitMap<graph::EdgeIndex<Ix>> for FixedBitSet
 }
 
 impl<Ix> VisitMap<Ix> for FixedBitSet
-    where Ix: IndexType,
+where
+    Ix: IndexType,
 {
     fn visit(&mut self, x: Ix) -> bool {
         !self.put(x.index())
@@ -574,8 +604,9 @@ impl<Ix> VisitMap<Ix> for FixedBitSet
 }
 
 impl<N, S> VisitMap<N> for HashSet<N, S>
-    where N: Hash + Eq,
-          S: BuildHasher,
+where
+    N: Hash + Eq,
+    S: BuildHasher,
 {
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
@@ -585,7 +616,7 @@ impl<N, S> VisitMap<N> for HashSet<N, S>
     }
 }
 
-trait_template!{
+trait_template! {
 /// A graph that can create a map that tracks the visited status of its nodes.
 pub trait Visitable : GraphBase {
     @section type
@@ -598,21 +629,25 @@ pub trait Visitable : GraphBase {
     fn reset_map(self: &Self, map: &mut Self::Map) -> ();
 }
 }
-Visitable!{delegate_impl []}
+Visitable! {delegate_impl []}
 
 impl<N, E, Ty, Ix> GraphBase for Graph<N, E, Ty, Ix>
-    where Ix: IndexType,
+where
+    Ix: IndexType,
 {
     type NodeId = graph::NodeIndex<Ix>;
     type EdgeId = graph::EdgeIndex<Ix>;
 }
 
 impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Map = FixedBitSet;
-    fn visit_map(&self) -> FixedBitSet { FixedBitSet::with_capacity(self.node_count()) }
+    fn visit_map(&self) -> FixedBitSet {
+        FixedBitSet::with_capacity(self.node_count())
+    }
 
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
@@ -622,7 +657,8 @@ impl<N, E, Ty, Ix> Visitable for Graph<N, E, Ty, Ix>
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> GraphBase for StableGraph<N, E, Ty, Ix>
-    where Ix: IndexType,
+where
+    Ix: IndexType,
 {
     type NodeId = graph::NodeIndex<Ix>;
     type EdgeId = graph::EdgeIndex<Ix>;
@@ -630,8 +666,9 @@ impl<N, E, Ty, Ix> GraphBase for StableGraph<N, E, Ty, Ix>
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type Map = FixedBitSet;
     fn visit_map(&self) -> FixedBitSet {
@@ -645,17 +682,18 @@ impl<N, E, Ty, Ix> Visitable for StableGraph<N, E, Ty, Ix>
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> Data for StableGraph<N, E, Ty, Ix>
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     type NodeWeight = N;
     type EdgeWeight = E;
 }
 
-
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> GraphBase for GraphMap<N, E, Ty>
-    where N: Copy + PartialEq,
+where
+    N: Copy + PartialEq,
 {
     type NodeId = N;
     type EdgeId = (N, N);
@@ -663,11 +701,14 @@ impl<N, E, Ty> GraphBase for GraphMap<N, E, Ty>
 
 #[cfg(feature = "graphmap")]
 impl<N, E, Ty> Visitable for GraphMap<N, E, Ty>
-    where N: Copy + Ord + Hash,
-          Ty: EdgeType,
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
 {
     type Map = HashSet<N>;
-    fn visit_map(&self) -> HashSet<N> { HashSet::with_capacity(self.node_count()) }
+    fn visit_map(&self) -> HashSet<N> {
+        HashSet::with_capacity(self.node_count())
+    }
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
     }
@@ -692,18 +733,18 @@ pub trait GetAdjacencyMatrix : GraphBase {
 }
 }
 
-
-GetAdjacencyMatrix!{delegate_impl []}
+GetAdjacencyMatrix! {delegate_impl []}
 
 #[cfg(feature = "graphmap")]
 /// The `GraphMap` keeps an adjacency matrix internally.
 impl<N, E, Ty> GetAdjacencyMatrix for GraphMap<N, E, Ty>
-    where N: Copy + Ord + Hash,
-          Ty: EdgeType,
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
 {
     type AdjMatrix = ();
     #[inline]
-    fn adjacency_matrix(&self) { }
+    fn adjacency_matrix(&self) {}
     #[inline]
     fn is_adjacent(&self, _: &(), a: N, b: N) -> bool {
         self.contains_edge(a, b)
