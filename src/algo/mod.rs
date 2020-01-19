@@ -797,9 +797,10 @@ where
 ///
 /// Always treats the input graph as if undirected.
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
-    where G: GraphRef + Visitable<NodeId=N, Map=VM> + IntoNeighbors<NodeId=N>,
-          N: Copy + PartialEq + std::fmt::Debug,
-          VM: VisitMap<N>
+where
+    G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
+    N: Copy + PartialEq + std::fmt::Debug,
+    VM: VisitMap<N>,
 {
     let mut red = g.visit_map();
     red.visit(start);
@@ -826,9 +827,15 @@ pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
                 //hasn't been visited yet
 
                 match (is_red, is_blue) {
-                    (true, false) => { blue.visit(neighbour); },
-                    (false, true) => { red.visit(neighbour); },
-                    (_, _) => { panic!("Invariant doesn't hold"); }
+                    (true, false) => {
+                        blue.visit(neighbour);
+                    }
+                    (false, true) => {
+                        red.visit(neighbour);
+                    }
+                    (_, _) => {
+                        panic!("Invariant doesn't hold");
+                    }
                 }
 
                 stack.push_back(neighbour);

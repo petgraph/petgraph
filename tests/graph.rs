@@ -9,8 +9,8 @@ use petgraph::EdgeType;
 use petgraph as pg;
 
 use petgraph::algo::{
-    dominators, has_path_connecting, is_cyclic_undirected, is_isomorphic_matching, is_bipartite_undirected,
-    min_spanning_tree,
+    dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
+    is_isomorphic_matching, min_spanning_tree,
 };
 
 use petgraph::graph::node_index as n;
