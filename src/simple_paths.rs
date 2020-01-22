@@ -10,16 +10,16 @@ use crate::{
     Direction::Outgoing,
 };
 
-/// Returns iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermidiate_nodes` nodes
-/// and at most `max_intermidiate_nodes`, if given, limited by graph's order otherwise
+/// Returns iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermediate_nodes` nodes
+/// and at most `max_intermediate_nodes`, if given, limited by graph's order otherwise
 /// Simple path is path without repetitions
 /// Algorithm is adopted from https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.simple_paths.all_simple_paths.html
 pub fn all_simple_paths<TargetColl, G>(
     graph: G,
     from: G::NodeId,
     to: G::NodeId,
-    min_intermidiate_nodes: usize,
-    max_intermidiate_nodes: Option<usize>,
+    min_intermediate_nodes: usize,
+    max_intermediate_nodes: Option<usize>,
 ) -> impl Iterator<Item = TargetColl>
 where
     G: NodeCount,
@@ -30,13 +30,13 @@ where
     // how many nodes are allowed in simple path up to target node
     // it is min/max allowed path length minus one, because it is more appropriate when implementing lookahead
     // than constantly add 1 to length of current path
-    let max_length = if let Some(l) = max_intermidiate_nodes {
+    let max_length = if let Some(l) = max_intermediate_nodes {
         l + 1
     } else {
         graph.node_count() - 1
     };
 
-    let min_length = min_intermidiate_nodes + 1;
+    let min_length = min_intermediate_nodes + 1;
 
     // list of visited nodes
     let mut visited: IndexSet<G::NodeId> = IndexSet::from_iter(Some(from));
