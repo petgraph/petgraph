@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 #[cfg(feature = "no_std")]
 use core::marker::PhantomData;
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::{collections::HashSet, marker::PhantomData};
 
 #[cfg(feature = "alloc")]
@@ -44,7 +44,7 @@ where
 }
 
 /// This filter includes the nodes that are contained in the set.
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 impl<N, S> FilterNode<N> for HashSet<N, S>
 where
     HashSet<N, S>: VisitMap<N>,

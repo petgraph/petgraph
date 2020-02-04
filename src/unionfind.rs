@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 
 use super::graph::IndexType;
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::cmp::Ordering;
 
 #[cfg(feature = "no_std")]

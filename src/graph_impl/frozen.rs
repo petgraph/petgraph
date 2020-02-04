@@ -1,4 +1,4 @@
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::ops::{Deref, Index, IndexMut};
 
 #[cfg(feature = "no_std")]

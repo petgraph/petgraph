@@ -1,10 +1,10 @@
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 use std::collections::{
     hash_map::Entry::{Occupied, Vacant},
     BinaryHeap, HashMap,
 };
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::hash::Hash;
 
 #[cfg(feature = "alloc")]
@@ -79,7 +79,7 @@ use crate::algo::Measure;
 ///
 /// Returns the total cost + the path of subsequent `NodeId` from start to finish, if one was
 /// found.
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 pub fn astar<G, F, H, K, IsGoal>(
     graph: G,
     start: G::NodeId,
@@ -234,7 +234,7 @@ where
 {
     came_from: HashMap<G::NodeId, G::NodeId>,
 }
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 impl<G> PathTracker<G>
 where
     G: GraphBase,

@@ -1,6 +1,6 @@
 //! `MatrixGraph<N, E, Ty, NullN, NullE, Ix>` is a graph datastructure backed by an adjacency matrix.
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::{
     cmp,
     marker::PhantomData,

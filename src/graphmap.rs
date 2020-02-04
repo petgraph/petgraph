@@ -1,7 +1,7 @@
 //! `GraphMap<N, E, Ty>` is a graph datastructure where node values are mapping
 //! keys.
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::{
     cmp::Ordering,
     fmt,

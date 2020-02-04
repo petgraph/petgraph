@@ -1,6 +1,6 @@
 //! Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::{
     cmp::{max, Ordering},
     iter::{Enumerate, Zip},
@@ -772,7 +772,7 @@ mod tests {
         m.add_edge(0, 2, ());
         m.add_edge(1, 0, ());
         m.add_edge(1, 1, ());
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         assert_eq!(&m.column, &[0, 2, 0, 1, 2, 2]);
         assert_eq!(&m.row, &[0, 2, 5, 6]);
@@ -800,7 +800,7 @@ mod tests {
         m.add_edge(0, 2, ());
         m.add_edge(1, 2, ());
         m.add_edge(2, 2, ());
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         assert_eq!(&m.column, &[0, 2, 2, 0, 1, 2]);
         assert_eq!(&m.row, &[0, 2, 3, 6]);
@@ -813,7 +813,7 @@ mod tests {
     fn csr_from_error_1() {
         // not sorted in source
         let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (0, 2)]).unwrap();
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", m);
     }
 
@@ -822,7 +822,7 @@ mod tests {
     fn csr_from_error_2() {
         // not sorted in target
         let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (1, 2), (1, 1)]).unwrap();
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", m);
     }
 
@@ -830,7 +830,7 @@ mod tests {
     fn csr_from() {
         let m: Csr =
             Csr::from_sorted_edges(&[(0, 1), (0, 2), (1, 0), (1, 1), (2, 2), (2, 4)]).unwrap();
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         assert_eq!(m.neighbors_slice(0), &[1, 2]);
         assert_eq!(m.neighbors_slice(1), &[0, 1]);
@@ -853,7 +853,7 @@ mod tests {
             (4, 5),
         ])
         .unwrap();
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         let mut dfs = Dfs::new(&m, 0);
         while let Some(_) = dfs.next(&m) {}
@@ -864,7 +864,7 @@ mod tests {
         assert!(!dfs.discovered[5]);
 
         m.add_edge(1, 4, ());
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", m);
 
         dfs.reset(&m);
@@ -891,10 +891,10 @@ mod tests {
             (5, 2),
         ])
         .unwrap();
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         let tarjan = tarjan_scc(&m);
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", tarjan);
     }
 
@@ -914,10 +914,10 @@ mod tests {
             (7, 8, 3.),
         ])
         .unwrap();
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         let result = bellman_ford(&m, 0).unwrap();
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", result);
         let answer = [0., 0.5, 1.5, 1.5];
         assert_eq!(&answer, &result.0[..4]);
@@ -961,7 +961,7 @@ mod tests {
         let mut copy = Vec::new();
         for e in m.edge_references() {
             copy.push((e.source(), e.target(), *e.weight()));
-            #[cfg(not(feature = "no_std"))]
+            #[cfg(feature = "std")]
             println!("{:?}", e);
         }
         let m2: Csr<(), _> = Csr::from_sorted_edges(&copy).unwrap();
@@ -981,7 +981,7 @@ mod tests {
         assert!(g.add_edge(b, c, ()));
         assert!(g.add_edge(c, a, ()));
 
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", g);
 
         assert_eq!(g.node_count(), 3);
@@ -1003,7 +1003,7 @@ mod tests {
 
         let c = g.add_node(());
 
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("{:?}", g);
 
         assert_eq!(g.node_count(), 3);

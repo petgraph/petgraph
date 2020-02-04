@@ -21,7 +21,7 @@ use alloc::{
 #[cfg(feature = "no_std")]
 use core::{cmp::Ordering, hash::Hash, usize, iter::Iterator};
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::{
     cmp::Ordering,
     collections::{HashMap, HashSet},
@@ -41,7 +41,7 @@ where
     dominators: HashMap<N, N>,
 }
 
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 impl<N> Dominators<N>
 where
     N: Copy + Eq + Hash,
@@ -166,7 +166,7 @@ where
     dominators: &'a Dominators<N>,
     node: Option<N>,
 }
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 impl<'a, N> Iterator for DominatorsIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
@@ -222,7 +222,7 @@ const UNDEFINED: usize = usize::MAX;
 /// to ~30,000 vertices.
 ///
 /// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
 where
     G: IntoNeighbors + Visitable,
@@ -394,7 +394,7 @@ fn intersect(dominators: &[usize], mut finger1: usize, mut finger2: usize) -> us
     }
 }
 
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 fn predecessor_sets_to_idx_vecs<N>(
     post_order: &[N],
     node_to_post_order_idx: &HashMap<N, usize>,
@@ -444,7 +444,7 @@ where
         .collect()
 }
 
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 fn simple_fast_post_order<G>(
     graph: G,
     root: G::NodeId,

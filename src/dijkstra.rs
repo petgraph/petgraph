@@ -1,4 +1,4 @@
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 use std::collections::{
     hash_map::Entry::{Occupied, Vacant},
     BinaryHeap, HashMap,
@@ -10,7 +10,7 @@ use alloc::collections::{
     BTreeMap as HashMap, BinaryHeap,
 };
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::hash::Hash;
 
 #[cfg(feature = "no_std")]
@@ -82,7 +82,7 @@ use crate::scored::MinScored;
 /// assert_eq!(res, expected_res);
 /// // z is not inside res because there is not path from b to z.
 /// ```
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 pub fn dijkstra<G, F, K>(
     graph: G,
     start: G::NodeId,

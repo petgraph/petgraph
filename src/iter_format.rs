@@ -1,5 +1,5 @@
 //! Formatting utils
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::{cell::RefCell, fmt};
 
 #[cfg(feature = "no_std")]

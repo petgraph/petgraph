@@ -2,7 +2,7 @@
 //!
 //! Depends on `feature = "stable_graph"`.
 //!
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::{
     cmp, fmt, iter,
     marker::PhantomData,
@@ -1750,31 +1750,31 @@ fn stable_graph() {
     let b = gr.add_node(1);
     let c = gr.add_node(2);
     let _ed = gr.add_edge(a, b, 1);
-    #[cfg(not(feature = "no_std"))]
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
     gr.remove_node(b);
-    #[cfg(not(feature = "no_std"))]
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
     let d = gr.add_node(3);
-    #[cfg(not(feature = "no_std"))]
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
     gr.check_free_lists();
     gr.remove_node(a);
     gr.check_free_lists();
     gr.remove_node(c);
     gr.check_free_lists();
-    #[cfg(not(feature = "no_std"))]
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
     gr.add_edge(d, d, 2);
-    #[cfg(not(feature = "no_std"))]
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
 
     let e = gr.add_node(4);
     gr.add_edge(d, e, 3);
-    #[cfg(not(feature = "no_std"))]
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
     for neigh in gr.neighbors(d) {
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("edge {:?} -> {:?}", d, neigh);
     }
     gr.check_free_lists();
@@ -1797,12 +1797,12 @@ fn dfs() {
     gr.add_edge(c, d, 5);
     gr.add_edge(d, b, 6);
     gr.add_edge(c, b, 7);
-    #[cfg(not(feature = "no_std"))]
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
 
     let mut dfs = Dfs::new(&gr, a);
     while let Some(next) = dfs.next(&gr) {
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         println!("dfs visit => {:?}, weight={:?}", next, &gr[next]);
     }
 }

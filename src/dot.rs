@@ -1,5 +1,5 @@
 //! Simple graphviz dot file format output.
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::fmt::{self, Display, Write};
 
 #[cfg(feature = "no_std")]

@@ -2,7 +2,7 @@ use super::{GraphRef, IntoNodeIdentifiers, Reversed};
 use super::{IntoNeighbors, IntoNeighborsDirected, VisitMap, Visitable};
 use crate::Incoming;
 
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 use std::collections::VecDeque;
 
 #[cfg(feature = "alloc")]

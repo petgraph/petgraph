@@ -6,7 +6,7 @@
 
 pub mod dominators;
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::{cmp::min, collections::{BinaryHeap, HashMap, VecDeque}, fmt::Debug, ops::Add};
 
 #[cfg(feature = "no_std")]

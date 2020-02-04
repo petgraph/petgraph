@@ -1,7 +1,7 @@
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::marker::PhantomData;
 
 #[cfg(feature = "no_std")]

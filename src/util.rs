@@ -1,4 +1,4 @@
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::iter;
 
 #[cfg(feature = "no_std")]

@@ -1,4 +1,4 @@
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 use std::{
     cmp::{self, max},
     fmt,
