@@ -100,22 +100,21 @@ where
             if visited.is_visited(&next) {
                 continue;
             }
-            let mut next_score = node_score + edge_cost(edge);
+            let next_score = node_score + edge_cost(edge);
             match scores.entry(next) {
                 Occupied(ent) => {
                     if next_score < *ent.get() {
                         *ent.into_mut() = next_score;
-                    //predecessor.insert(next.clone(), node.clone());
-                    } else {
-                        next_score = *ent.get();
+                        visit_next.push(MinScored(next_score, next));
+                        //predecessor.insert(next.clone(), node.clone());
                     }
                 }
                 Vacant(ent) => {
                     ent.insert(next_score);
+                    visit_next.push(MinScored(next_score, next));
                     //predecessor.insert(next.clone(), node.clone());
                 }
             }
-            visit_next.push(MinScored(next_score, next));
         }
         visited.visit(node);
     }
