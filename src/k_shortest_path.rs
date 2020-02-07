@@ -19,7 +19,7 @@ use crate::scored::MinScored;
 /// cost is calculated.
 ///
 /// Computes in **O(k * (|E| + |V|*log(|V|)))** time (average).
-/// 
+///
 /// Returns a `HashMap` that maps `NodeId` to path cost.
 /// # Example
 /// ```rust
@@ -83,7 +83,7 @@ where
     F: FnMut(G::EdgeRef) -> K,
     K: Measure + Copy,
 {
-    let mut counter: Vec<usize> = vec![0; graph.node_count()]; 
+    let mut counter: Vec<usize> = vec![0; graph.node_count()];
     let mut scores = HashMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score = K::default();
@@ -91,7 +91,7 @@ where
     visit_next.push(MinScored(zero_score, start));
 
     while let Some(MinScored(node_score, node)) = visit_next.pop() {
-        counter[graph.to_index(node)]+=1;
+        counter[graph.to_index(node)] += 1;
         let current_counter = counter[graph.to_index(node)];
 
         if current_counter > k {

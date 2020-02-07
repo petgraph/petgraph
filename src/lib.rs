@@ -137,7 +137,6 @@ pub mod algo;
 mod astar;
 pub mod csr;
 mod dijkstra;
-mod k_shortest_path;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
@@ -147,6 +146,7 @@ pub mod graphmap;
 mod isomorphism;
 mod iter_format;
 mod iter_utils;
+mod k_shortest_path;
 #[cfg(feature = "matrix_graph")]
 pub mod matrix_graph;
 #[cfg(feature = "quickcheck")]
