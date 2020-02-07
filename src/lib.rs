@@ -137,6 +137,7 @@ pub mod algo;
 mod astar;
 pub mod csr;
 mod dijkstra;
+mod k_shortest_path;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
