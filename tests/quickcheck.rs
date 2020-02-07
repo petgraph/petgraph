@@ -757,8 +757,8 @@ quickcheck! {
         if g.node_count() == 0 {
             return true;
         }
-
-        let second_best_distances = k_shortest_path(&g, v, None,2, |e| *e.weight());
+        let v = node_index(node % g.node_count());
+        let second_best_distances = k_shortest_path(&g, v, None, 2, |e| *e.weight());
         let dijkstra_distances = dijkstra(&g, v, None, |e| *e.weight());
         for v in second_best_distances.keys() {
             if second_best_distances[&v] < dijkstra_distances[&v] {
