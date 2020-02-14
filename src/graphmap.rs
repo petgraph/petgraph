@@ -50,7 +50,7 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed, RandomState>;
 /// - `E` can be of arbitrary type.
 /// - Edge type `Ty` that determines whether the graph edges are directed or
 /// undirected.
-/// - TODO Hasher type `S`
+/// - The hasher type `S` is used in the underlying hashtables of nodes & edges.
 ///
 /// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
 ///
