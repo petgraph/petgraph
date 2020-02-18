@@ -375,3 +375,35 @@ fn from_min_spanning_tree() {
     }
     let _ = StableGraph::<(), (), Undirected, usize>::from_elements(min_spanning_tree(&g));
 }
+
+#[test]
+fn weights_mut_iterator() {
+    let mut gr = StableGraph::new();
+    let a = gr.add_node(1);
+    let b = gr.add_node(2);
+    let c = gr.add_node(3);
+    let e1 = gr.add_edge(a, a, 10);
+    let e2 = gr.add_edge(a, b, 20);
+    let e3 = gr.add_edge(b, c, 30);
+    let e4 = gr.add_edge(a, c, 40);
+
+    for n in gr.node_weights_mut() {
+        *n += 1;
+    }
+    assert_eq!(gr[a], 2);
+    assert_eq!(gr[b], 3);
+    assert_eq!(gr[c], 4);
+
+    for e in gr.edge_weights_mut() {
+        *e -= 1;
+    }
+    assert_eq!(gr[e1], 9);
+    assert_eq!(gr[e2], 19);
+    assert_eq!(gr[e3], 29);
+    assert_eq!(gr[e4], 39);
+
+    // test on deletion
+    gr.remove_node(b);
+    assert_eq!(gr.node_weights_mut().count(), gr.node_count());
+    assert_eq!(gr.edge_weights_mut().count(), gr.edge_count());
+}
