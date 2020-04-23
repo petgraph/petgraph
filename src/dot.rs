@@ -2,7 +2,10 @@
 
 use std::fmt::{self, Display, Write};
 
-use crate::visit::{GraphBase, GraphRef, Data, GraphProp, NodeRef, EdgeRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
+use crate::visit::{
+    Data, EdgeRef, GraphBase, GraphProp, GraphRef, IntoEdgeReferences, IntoNodeReferences,
+    NodeIndexable, NodeRef,
+};
 
 /// `Dot` implements output to graphviz .dot format for a graph.
 ///
@@ -70,7 +73,9 @@ where
 
     /// Create a `Dot` formatting wrapper with custom configuration.
     pub fn with_config(graph: G, config: &'a [Config]) -> Self {
-        Self::with_attr_getters(graph, config, &|_, _| "".to_string(),  &|_, _| "".to_string())
+        Self::with_attr_getters(graph, config, &|_, _| "".to_string(), &|_, _| {
+            "".to_string()
+        })
     }
 
     pub fn with_attr_getters(
@@ -79,7 +84,12 @@ where
         get_edge_attributes: &'a dyn Fn(G, G::EdgeRef) -> String,
         get_node_attributes: &'a dyn Fn(G, G::NodeRef) -> String,
     ) -> Self {
-        Dot { graph, config, get_edge_attributes, get_node_attributes }
+        Dot {
+            graph,
+            config,
+            get_edge_attributes,
+            get_node_attributes,
+        }
     }
 }
 
@@ -101,7 +111,6 @@ pub enum Config {
     #[doc(hidden)]
     _Incomplete(()),
 }
-
 
 impl<'a, G> Dot<'a, G>
 where
@@ -127,12 +136,7 @@ where
 
         // output all labels
         for node in g.node_references() {
-            write!(
-                f,
-                "{}{} [ ",
-                INDENT,
-                g.to_index(node.id()),
-            )?;
+            write!(f, "{}{} [ ", INDENT, g.to_index(node.id()),)?;
             if !self.config.contains(&Config::NodeNoLabel) {
                 write!(f, "label = \"")?;
                 if self.config.contains(&Config::NodeIndexLabel) {
@@ -143,7 +147,6 @@ where
                 write!(f, "\" ")?;
             }
             writeln!(f, "{}]", (self.get_node_attributes)(g, node))?;
-
         }
         // output all edges
         for (i, edge) in g.edge_references().enumerate() {
@@ -256,11 +259,10 @@ where
 
 #[cfg(test)]
 mod test {
+    use super::{Config, Dot, Escaper};
     use crate::prelude::Graph;
     use crate::visit::NodeRef;
-    use super::{Dot, Config, Escaper};
     use std::fmt::Write;
-
 
     #[test]
     fn test_escape() {
@@ -272,7 +274,7 @@ mod test {
         assert_eq!(buff, "\\\" \\\\ \\l");
     }
 
-    fn simple_graph() -> Graph::<&'static str, &'static str> {
+    fn simple_graph() -> Graph<&'static str, &'static str> {
         let mut graph = Graph::<&str, &str>::new();
         let a = graph.add_node("A");
         let b = graph.add_node("B");
@@ -305,7 +307,10 @@ mod test {
     fn test_nodenolable_option() {
         let graph = simple_graph();
         let dot = format!("{:?}", Dot::with_config(&graph, &[Config::NodeNoLabel]));
-        assert_eq!(dot, "digraph {\n    0 [ ]\n    1 [ ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n");
+        assert_eq!(
+            dot,
+            "digraph {\n    0 [ ]\n    1 [ ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
     }
 
     #[test]
