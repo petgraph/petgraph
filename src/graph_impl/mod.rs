@@ -531,6 +531,15 @@ where
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N> {
         self.nodes.get_mut(a.index()).map(|n| &mut n.weight)
     }
+    /// Return an iterator yielding mutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// node indices.
+    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<N, Ix> {
+        NodeWeightsMut {
+            nodes: self.nodes.iter_mut(),
+        }
+    }
 
     /// Add an edge from `a` to `b` to the graph, with its associated
     /// data `weight`.
@@ -602,6 +611,16 @@ where
     /// Also available with indexing syntax: `&mut graph[e]`.
     pub fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E> {
         self.edges.get_mut(e.index()).map(|ed| &mut ed.weight)
+    }
+
+    /// Return an iterator yielding mutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// edge indices.
+    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<E, Ix> {
+        EdgeWeightsMut {
+            edges: self.edges.iter_mut(),
+        }
     }
 
     /// Access the source and target nodes for `e`.
@@ -979,16 +998,6 @@ where
         }
     }
 
-    /// Return an iterator yielding mutable access to all node weights.
-    ///
-    /// The order in which weights are yielded matches the order of their
-    /// node indices.
-    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<N, Ix> {
-        NodeWeightsMut {
-            nodes: self.nodes.iter_mut(),
-        }
-    }
-
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<Ix> {
         EdgeIndices {
@@ -1003,16 +1012,6 @@ where
     pub fn edge_references(&self) -> EdgeReferences<E, Ix> {
         EdgeReferences {
             iter: self.edges.iter().enumerate(),
-        }
-    }
-
-    /// Return an iterator yielding mutable access to all edge weights.
-    ///
-    /// The order in which weights are yielded matches the order of their
-    /// edge indices.
-    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<E, Ix> {
-        EdgeWeightsMut {
-            edges: self.edges.iter_mut(),
         }
     }
 

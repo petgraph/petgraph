@@ -198,33 +198,6 @@ where
         }
     }
 
-    /// Return the current node and edge capacity of the graph.
-    pub fn capacity(&self) -> (usize, usize) {
-        self.g.capacity()
-    }
-
-    /// Remove all nodes and edges
-    pub fn clear(&mut self) {
-        self.node_count = 0;
-        self.edge_count = 0;
-        self.free_node = NodeIndex::end();
-        self.free_edge = EdgeIndex::end();
-        self.g.clear();
-    }
-
-    /// Remove all edges
-    pub fn clear_edges(&mut self) {
-        self.edge_count = 0;
-        self.free_edge = EdgeIndex::end();
-        self.g.edges.clear();
-        // clear edges without touching the free list
-        for node in &mut self.g.nodes {
-            if node.weight.is_some() {
-                node.next = [EdgeIndex::end(), EdgeIndex::end()];
-            }
-        }
-    }
-
     /// Return the number of nodes (vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
@@ -268,7 +241,6 @@ where
         self.node_count += 1;
         index
     }
-
     /// free_node: Which free list to update for the vacancy
     fn add_vacant_node(&mut self, free_node: &mut NodeIndex<Ix>) {
         let node_idx = self.g.add_node(None);
@@ -278,53 +250,34 @@ where
         *free_node = node_idx;
     }
 
-    /// Remove `a` from the graph if it exists, and return its weight.
-    /// If it doesn't exist in the graph, return `None`.
+    /// Access the weight for node `a`.
     ///
-    /// The node index `a` is invalidated, but none other.
-    /// Edge indices are invalidated as they would be following the removal of
-    /// each edge with an endpoint in `a`.
-    ///
-    /// Computes in **O(e')** time, where **e'** is the number of affected
-    /// edges, including *n* calls to `.remove_edge()` where *n* is the number
-    /// of edges with an endpoint in `a`.
-    pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N> {
-        let node_weight = self.g.nodes.get_mut(a.index())?.weight.take()?;
-        for d in &DIRECTIONS {
-            let k = d.index();
-
-            // Remove all edges from and to this node.
-            loop {
-                let next = self.g.nodes[a.index()].next[k];
-                if next == EdgeIndex::end() {
-                    break;
-                }
-                let ret = self.remove_edge(next);
-                debug_assert!(ret.is_some());
-                let _ = ret;
-            }
+    /// Also available with indexing syntax: `&graph[a]`.
+    pub fn node_weight(&self, a: NodeIndex<Ix>) -> Option<&N> {
+        match self.g.nodes.get(a.index()) {
+            Some(no) => no.weight.as_ref(),
+            None => None,
         }
-
-        let node_slot = &mut self.g.nodes[a.index()];
-        //let node_weight = replace(&mut self.g.nodes[a.index()].weight, Entry::Empty(self.free_node));
-        //self.g.nodes[a.index()].next = [EdgeIndex::end(), EdgeIndex::end()];
-        node_slot.next = [self.free_node._into_edge(), EdgeIndex::end()];
-        self.free_node = a;
-        self.node_count -= 1;
-
-        Some(node_weight)
     }
 
-    pub fn contains_node(&self, a: NodeIndex<Ix>) -> bool {
-        self.get_node(a).is_some()
+    /// Access the weight for node `a`, mutably.
+    ///
+    /// Also available with indexing syntax: `&mut graph[a]`.
+    pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N> {
+        match self.g.nodes.get_mut(a.index()) {
+            Some(no) => no.weight.as_mut(),
+            None => None,
+        }
     }
 
-    // Return the Node if it is not vacant (non-None weight)
-    fn get_node(&self, a: NodeIndex<Ix>) -> Option<&Node<Option<N>, Ix>> {
+    /// Return an iterator yielding mutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their node
+    /// indices.
+    pub fn node_weights_mut(&mut self) -> impl Iterator<Item = &mut N> {
         self.g
-            .nodes
-            .get(a.index())
-            .and_then(|node| node.weight.as_ref().map(move |_| node))
+            .node_weights_mut()
+            .flat_map(|maybe_node| maybe_node.iter_mut())
     }
 
     /// Add an edge from `a` to `b` to the graph, with its associated
@@ -403,20 +356,6 @@ where
         edge_idx
     }
 
-    /// free_edge: Which free list to update for the vacancy
-    fn add_vacant_edge(&mut self, free_edge: &mut EdgeIndex<Ix>) {
-        let edge_idx = EdgeIndex::new(self.g.edges.len());
-        debug_assert!(edge_idx != EdgeIndex::end());
-        let mut edge = Edge {
-            weight: None,
-            node: [NodeIndex::end(); 2],
-            next: [EdgeIndex::end(); 2],
-        };
-        edge.next[0] = *free_edge;
-        *free_edge = edge_idx;
-        self.g.edges.push(edge);
-    }
-
     /// Add or update an edge from `a` to `b`.
     /// If the edge already exists, its weight is updated.
     ///
@@ -434,74 +373,19 @@ where
         self.add_edge(a, b, weight)
     }
 
-    /// Remove an edge and return its edge weight, or `None` if it didn't exist.
-    ///
-    /// Invalidates the edge index `e` but no other.
-    ///
-    /// Computes in **O(e')** time, where **e'** is the number of edges
-    /// connected to the same endpoints as `e`.
-    pub fn remove_edge(&mut self, e: EdgeIndex<Ix>) -> Option<E> {
-        // every edge is part of two lists,
-        // outgoing and incoming edges.
-        // Remove it from both
-        let (is_edge, edge_node, edge_next) = match self.g.edges.get(e.index()) {
-            None => return None,
-            Some(x) => (x.weight.is_some(), x.node, x.next),
+    /// free_edge: Which free list to update for the vacancy
+    fn add_vacant_edge(&mut self, free_edge: &mut EdgeIndex<Ix>) {
+        let edge_idx = EdgeIndex::new(self.g.edges.len());
+        debug_assert!(edge_idx != EdgeIndex::end());
+        let mut edge = Edge {
+            weight: None,
+            node: [NodeIndex::end(); 2],
+            next: [EdgeIndex::end(); 2],
         };
-        if !is_edge {
-            return None;
-        }
-
-        // Remove the edge from its in and out lists by replacing it with
-        // a link to the next in the list.
-        self.g.change_edge_links(edge_node, e, edge_next);
-
-        // Clear the edge and put it in the free list
-        let edge = &mut self.g.edges[e.index()];
-        edge.next = [self.free_edge, EdgeIndex::end()];
-        edge.node = [NodeIndex::end(), NodeIndex::end()];
-        self.free_edge = e;
-        self.edge_count -= 1;
-        edge.weight.take()
+        edge.next[0] = *free_edge;
+        *free_edge = edge_idx;
+        self.g.edges.push(edge);
     }
-
-    /// Access the weight for node `a`.
-    ///
-    /// Also available with indexing syntax: `&graph[a]`.
-    pub fn node_weight(&self, a: NodeIndex<Ix>) -> Option<&N> {
-        match self.g.nodes.get(a.index()) {
-            Some(no) => no.weight.as_ref(),
-            None => None,
-        }
-    }
-
-    /// Access the weight for node `a`, mutably.
-    ///
-    /// Also available with indexing syntax: `&mut graph[a]`.
-    pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N> {
-        match self.g.nodes.get_mut(a.index()) {
-            Some(no) => no.weight.as_mut(),
-            None => None,
-        }
-    }
-
-    /// Return an iterator yielding mutable access to all node weights.
-    ///
-    /// The order in which weights are yielded matches the order of their node
-    /// indices.
-    pub fn node_weights_mut(&mut self) -> impl Iterator<Item = &mut N> {
-        self.g
-            .node_weights_mut()
-            .flat_map(|maybe_node| maybe_node.iter_mut())
-    }
-
-    /// Return an iterator over the node indices of the graph
-    pub fn node_indices(&self) -> NodeIndices<N, Ix> {
-        NodeIndices {
-            iter: enumerate(self.raw_nodes()),
-        }
-    }
-
     /// Access the weight for edge `e`.
     ///
     /// Also available with indexing syntax: `&graph[e]`.
@@ -540,52 +424,72 @@ where
         }
     }
 
-    /// Return an iterator over the edge indices of the graph
-    pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
-        EdgeIndices {
-            iter: enumerate(self.raw_edges()),
-        }
-    }
-
-    /// Lookup if there is an edge from `a` to `b`.
+    /// Remove `a` from the graph if it exists, and return its weight.
+    /// If it doesn't exist in the graph, return `None`.
     ///
-    /// Computes in **O(e')** time, where **e'** is the number of edges
-    /// connected to `a` (and `b`, if the graph edges are undirected).
-    pub fn contains_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
-        self.find_edge(a, b).is_some()
-    }
-
-    /// Lookup an edge from `a` to `b`.
+    /// The node index `a` is invalidated, but none other.
+    /// Edge indices are invalidated as they would be following the removal of
+    /// each edge with an endpoint in `a`.
     ///
-    /// Computes in **O(e')** time, where **e'** is the number of edges
-    /// connected to `a` (and `b`, if the graph edges are undirected).
-    pub fn find_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<EdgeIndex<Ix>> {
-        if !self.is_directed() {
-            self.find_edge_undirected(a, b).map(|(ix, _)| ix)
-        } else {
-            match self.get_node(a) {
-                None => None,
-                Some(node) => self.g.find_edge_directed_from_node(node, b),
+    /// Computes in **O(e')** time, where **e'** is the number of affected
+    /// edges, including *n* calls to `.remove_edge()` where *n* is the number
+    /// of edges with an endpoint in `a`.
+    pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> Option<N> {
+        let node_weight = self.g.nodes.get_mut(a.index())?.weight.take()?;
+        for d in &DIRECTIONS {
+            let k = d.index();
+
+            // Remove all edges from and to this node.
+            loop {
+                let next = self.g.nodes[a.index()].next[k];
+                if next == EdgeIndex::end() {
+                    break;
+                }
+                let ret = self.remove_edge(next);
+                debug_assert!(ret.is_some());
+                let _ = ret;
             }
         }
+
+        let node_slot = &mut self.g.nodes[a.index()];
+        //let node_weight = replace(&mut self.g.nodes[a.index()].weight, Entry::Empty(self.free_node));
+        //self.g.nodes[a.index()].next = [EdgeIndex::end(), EdgeIndex::end()];
+        node_slot.next = [self.free_node._into_edge(), EdgeIndex::end()];
+        self.free_node = a;
+        self.node_count -= 1;
+
+        Some(node_weight)
     }
 
-    /// Lookup an edge between `a` and `b`, in either direction.
+    /// Remove an edge and return its edge weight, or `None` if it didn't exist.
     ///
-    /// If the graph is undirected, then this is equivalent to `.find_edge()`.
+    /// Invalidates the edge index `e` but no other.
     ///
-    /// Return the edge index and its directionality, with `Outgoing` meaning
-    /// from `a` to `b` and `Incoming` the reverse,
-    /// or `None` if the edge does not exist.
-    pub fn find_edge_undirected(
-        &self,
-        a: NodeIndex<Ix>,
-        b: NodeIndex<Ix>,
-    ) -> Option<(EdgeIndex<Ix>, Direction)> {
-        match self.get_node(a) {
-            None => None,
-            Some(node) => self.g.find_edge_undirected_from_node(node, b),
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to the same endpoints as `e`.
+    pub fn remove_edge(&mut self, e: EdgeIndex<Ix>) -> Option<E> {
+        // every edge is part of two lists,
+        // outgoing and incoming edges.
+        // Remove it from both
+        let (is_edge, edge_node, edge_next) = match self.g.edges.get(e.index()) {
+            None => return None,
+            Some(x) => (x.weight.is_some(), x.node, x.next),
+        };
+        if !is_edge {
+            return None;
         }
+
+        // Remove the edge from its in and out lists by replacing it with
+        // a link to the next in the list.
+        self.g.change_edge_links(edge_node, e, edge_next);
+
+        // Clear the edge and put it in the free list
+        let edge = &mut self.g.edges[e.index()];
+        edge.next = [self.free_edge, EdgeIndex::end()];
+        edge.node = [NodeIndex::end(), NodeIndex::end()];
+        self.free_edge = e;
+        self.edge_count -= 1;
+        edge.weight.take()
     }
 
     /// Return an iterator of all nodes with an edge starting from `a`.
@@ -687,6 +591,46 @@ where
             ty: PhantomData,
         }
     }
+    /// Lookup if there is an edge from `a` to `b`.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to `a` (and `b`, if the graph edges are undirected).
+    pub fn contains_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
+        self.find_edge(a, b).is_some()
+    }
+
+    /// Lookup an edge from `a` to `b`.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to `a` (and `b`, if the graph edges are undirected).
+    pub fn find_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<EdgeIndex<Ix>> {
+        if !self.is_directed() {
+            self.find_edge_undirected(a, b).map(|(ix, _)| ix)
+        } else {
+            match self.get_node(a) {
+                None => None,
+                Some(node) => self.g.find_edge_directed_from_node(node, b),
+            }
+        }
+    }
+
+    /// Lookup an edge between `a` and `b`, in either direction.
+    ///
+    /// If the graph is undirected, then this is equivalent to `.find_edge()`.
+    ///
+    /// Return the edge index and its directionality, with `Outgoing` meaning
+    /// from `a` to `b` and `Incoming` the reverse,
+    /// or `None` if the edge does not exist.
+    pub fn find_edge_undirected(
+        &self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+    ) -> Option<(EdgeIndex<Ix>, Direction)> {
+        match self.get_node(a) {
+            None => None,
+            Some(node) => self.g.find_edge_undirected_from_node(node, b),
+        }
+    }
 
     /// Return an iterator over either the nodes without edges to them
     /// (`Incoming`) or from them (`Outgoing`).
@@ -704,6 +648,20 @@ where
             iter: self.raw_nodes().iter().enumerate(),
             dir,
             ty: PhantomData,
+        }
+    }
+
+    /// Return an iterator over the node indices of the graph
+    pub fn node_indices(&self) -> NodeIndices<N, Ix> {
+        NodeIndices {
+            iter: enumerate(self.raw_nodes()),
+        }
+    }
+
+    /// Return an iterator over the edge indices of the graph
+    pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
+        EdgeIndices {
+            iter: enumerate(self.raw_edges()),
         }
     }
 
@@ -734,6 +692,36 @@ where
                 <Self as IndexMut<U>>::index_mut(&mut *self_mut, j),
             )
         }
+    }
+
+    /// Remove all nodes and edges
+    pub fn clear(&mut self) {
+        self.node_count = 0;
+        self.edge_count = 0;
+        self.free_node = NodeIndex::end();
+        self.free_edge = EdgeIndex::end();
+        self.g.clear();
+    }
+
+    /// Remove all edges
+    pub fn clear_edges(&mut self) {
+        self.edge_count = 0;
+        self.free_edge = EdgeIndex::end();
+        self.g.edges.clear();
+        // clear edges without touching the free list
+        for node in &mut self.g.nodes {
+            if node.weight.is_some() {
+                node.next = [EdgeIndex::end(), EdgeIndex::end()];
+            }
+        }
+    }
+    /// Return the current node and edge capacity of the graph.
+    pub fn capacity(&self) -> (usize, usize) {
+        self.g.capacity()
+    }
+
+    pub fn contains_node(&self, a: NodeIndex<Ix>) -> bool {
+        self.get_node(a).is_some()
     }
 
     /// Keep all nodes that return `true` from the `visit` closure,
@@ -816,6 +804,33 @@ where
         let mut g = Self::with_capacity(0, 0);
         g.extend_with_edges(iterable);
         g
+    }
+
+    /// Extend the graph from an iterable of edges.
+    ///
+    /// Node weights `N` are set to default values.
+    /// Edge weights `E` may either be specified in the list,
+    /// or they are filled with default values.
+    ///
+    /// Nodes are inserted automatically to match the edges.
+    pub fn extend_with_edges<I>(&mut self, iterable: I)
+    where
+        I: IntoIterator,
+        I::Item: IntoWeightedEdge<E>,
+        <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
+        N: Default,
+    {
+        let iter = iterable.into_iter();
+
+        for elt in iter {
+            let (source, target, weight) = elt.into_weighted_edge();
+            let (source, target) = (source.into(), target.into());
+            let nx = cmp::max(source, target);
+            while nx.index() >= self.node_count() {
+                self.add_node(N::default());
+            }
+            self.add_edge(source, target, weight);
+        }
     }
 
     /// Create a new `StableGraph` by mapping node and
@@ -908,32 +923,13 @@ where
         result_g.check_free_lists();
         result_g
     }
-
-    /// Extend the graph from an iterable of edges.
-    ///
-    /// Node weights `N` are set to default values.
-    /// Edge weights `E` may either be specified in the list,
-    /// or they are filled with default values.
-    ///
-    /// Nodes are inserted automatically to match the edges.
-    pub fn extend_with_edges<I>(&mut self, iterable: I)
-    where
-        I: IntoIterator,
-        I::Item: IntoWeightedEdge<E>,
-        <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
-        N: Default,
-    {
-        let iter = iterable.into_iter();
-
-        for elt in iter {
-            let (source, target, weight) = elt.into_weighted_edge();
-            let (source, target) = (source.into(), target.into());
-            let nx = cmp::max(source, target);
-            while nx.index() >= self.node_count() {
-                self.add_node(N::default());
-            }
-            self.add_edge(source, target, weight);
-        }
+    
+    // Return the Node if it is not vacant (non-None weight)
+    fn get_node(&self, a: NodeIndex<Ix>) -> Option<&Node<Option<N>, Ix>> {
+        self.g
+            .nodes
+            .get(a.index())
+            .and_then(|node| node.weight.as_ref().map(move |_| node))
     }
 
     //
