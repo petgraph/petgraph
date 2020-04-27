@@ -291,7 +291,8 @@ where
     /// **Panics** if the `StableGraph` is at the maximum number of edges for
     /// its index type.
     ///
-    /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
+    /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges. 
+    /// If you want to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         let edge_idx;
         let mut new_edge = None::<Edge<_, _>>;
@@ -923,7 +924,7 @@ where
         result_g.check_free_lists();
         result_g
     }
-    
+
     // Return the Node if it is not vacant (non-None weight)
     fn get_node(&self, a: NodeIndex<Ix>) -> Option<&Node<Option<N>, Ix>> {
         self.g
