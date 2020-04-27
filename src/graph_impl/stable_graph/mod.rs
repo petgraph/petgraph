@@ -171,6 +171,17 @@ impl<N, E> StableGraph<N, E, Directed> {
     }
 }
 
+impl<N, E> StableGraph<N, E, Undirected> {
+    /// Create a new `StableGraph` with undirected edges.
+    ///
+    /// This is a convenience method. See `StableGraph::with_capacity`
+    /// or `StableGraph::default` for a constructor that is generic in all the
+    /// type parameters of `StableGraph`.
+    pub fn new_undirected() -> Self {
+        Self::with_capacity(0, 0)
+    }
+}
+
 impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
 where
     Ty: EdgeType,
