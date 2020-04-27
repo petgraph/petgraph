@@ -346,6 +346,7 @@ where
     /// its index type.
     ///
     /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
+    /// If you want to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         let edge_idx;
         let mut new_edge = None::<Edge<_, _>>;
