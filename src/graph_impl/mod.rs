@@ -860,6 +860,9 @@ where
         Edges::Single(self.edges_directed_iter(a, dir))
     }
 
+    /// Returns an `EdgeIter` of all edges of `a`, in the specified direction.
+    /// 
+    /// Identical to `edges_directed` except for the return type.
     #[inline]
     fn edges_directed_iter(&self, a: NodeIndex<Ix>, dir: Direction) -> EdgeIter<E, Ty, Ix> {
         EdgeIter {
@@ -874,6 +877,13 @@ where
         }
     }
 
+    /// Return an iterator of all edges of `a`, in any direction.
+    /// 
+    /// If the `Graph` is undirected, all edges are returned with `a` as
+    /// the source.
+    /// 
+    /// Produces an empty iterator if the node `a` doesn't exist.<br>
+    /// Iterator element type is `EdgeReference<E, Ix>`.
     pub fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
         if Ty::is_directed() {
             Edges::Chain(
@@ -1598,6 +1608,7 @@ where
     }
 }
 
+/// Iterator over the edges from and/or to a node.
 #[derive(Clone)]
 pub enum Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
 where
