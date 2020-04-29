@@ -3,10 +3,16 @@
 extern crate petgraph;
 extern crate test;
 
+use petgraph::graph::IndexType;
+use petgraph::prelude::*;
+use petgraph::visit::{EdgeRef};
+use petgraph::EdgeType;
+
 use petgraph::graph::Graph;
+mod common;
 
 #[bench]
-fn bench_inser(b: &mut test::Bencher) {
+fn bench_insert(b: &mut test::Bencher) {
     let mut og = Graph::new();
     let fst = og.add_node(0i32);
     for x in 1..125 {
@@ -47,6 +53,81 @@ fn bench_remove(b: &mut test::Bencher) {
     b.iter(|| {
         for _ in 0..100 {
             og.remove_node(fst);
+        }
+    })
+}
+
+#[bench]
+fn bigger_edges_directed(b: &mut test::Bencher) {
+    let og: Graph<_, _, petgraph::Directed> = common::graph().bigger();
+    bench_edges_directed(b, og);
+}
+
+#[bench]
+fn bigger_edges_undirected(b: &mut test::Bencher) {
+    let og: Graph<_, _, petgraph::Directed> = common::graph().bigger();
+    bench_edges_undirected(b, og);
+}
+
+#[bench]
+fn full_edges_directed(b: &mut test::Bencher) {
+    let og: Graph<_, _, petgraph::Directed> = common::graph().full_a();
+    bench_edges_directed(b, og);
+}
+
+#[bench]
+fn full_edges_undirected(b: &mut test::Bencher) {
+    let og: Graph<_, _, petgraph::Directed> = common::graph().full_a();
+    bench_edges_undirected(b, og);
+}
+
+#[bench]
+fn praust_edges_directed(b: &mut test::Bencher) {
+    let og: Graph<_, _, petgraph::Directed> = common::graph().praust_a();
+    bench_edges_directed(b, og);
+}
+
+#[bench]
+fn praust_edges_undirected(b: &mut test::Bencher) {
+    let og: Graph<_, _, petgraph::Directed> = common::graph().praust_a();
+    bench_edges_undirected(b, og);
+}
+
+#[bench]
+fn petersen_edges_directed(b: &mut test::Bencher) {
+    let og: Graph<_, _, petgraph::Directed> = common::graph().petersen_a();
+    bench_edges_directed(b, og);
+}
+
+#[bench]
+fn petersen_edges_undirected(b: &mut test::Bencher) {
+    let og: Graph<_, _, petgraph::Directed> = common::graph().petersen_a();
+    bench_edges_undirected(b, og);
+}
+
+fn bench_edges_directed<N, E, Ty, Ix>(b: &mut test::Bencher, g: Graph<N, E, Ty, Ix>)
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    b.iter(|| {
+        for x in g.edges_directed(NodeIndex::new(0), Outgoing) {
+            let _y = x.target();
+        }
+        for x in g.edges_directed(NodeIndex::new(0), Incoming) {
+            let _y = x.target();
+        }
+    })
+}
+
+fn bench_edges_undirected<N, E, Ty, Ix>(b: &mut test::Bencher, g: Graph<N, E, Ty, Ix>)
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    b.iter(|| {
+        for x in g.edges_undirected(NodeIndex::new(0)) {
+            let _y = x.target();
         }
     })
 }
