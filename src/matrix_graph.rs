@@ -361,9 +361,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// **Panics** if no edge exists between `a` and `b`.
     pub fn remove_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> E {
         let p = self.to_edge_position(a, b);
-        let old_weight = mem::replace(&mut self.node_adjacencies[p], Default::default())
-            .into()
-            .unwrap();
+        let old_weight = mem::take(&mut self.node_adjacencies[p]).into().unwrap();
         let old_weight: Option<_> = old_weight.into();
         self.nb_edges -= 1;
         old_weight.unwrap()
