@@ -626,7 +626,7 @@ pub trait Visitable : GraphBase {
     /// Create a new visitor map
     fn visit_map(self: &Self) -> Self::Map;
     /// Reset the visitor map (and resize to new size of graph if needed)
-    fn reset_map(self: &Self, map: &mut Self::Map) -> ();
+    fn reset_map(self: &Self, map: &mut Self::Map);
 }
 }
 Visitable! {delegate_impl []}
