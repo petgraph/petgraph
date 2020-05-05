@@ -2,7 +2,7 @@
 petgraph
 ========
 
-Graph data structure library. Known to support Rust 1.37 and later.
+Graph data structure library. Known to support Rust 1.40 and later.
 
 Please read the `API documentation here`__
 
