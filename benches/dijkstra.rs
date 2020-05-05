@@ -4,7 +4,7 @@ extern crate petgraph;
 extern crate test;
 
 use petgraph::prelude::*;
-use std::cmp::{ max, min };
+use std::cmp::{max, min};
 use test::Bencher;
 
 use petgraph::algo::dijkstra;
@@ -20,7 +20,7 @@ fn dijkstra_bench(bench: &mut Bencher) {
         let j_from = max(0, i as i32 - neighbour_count as i32 / 2) as usize;
         let j_to = min(NODE_COUNT, j_from + neighbour_count);
         for j in j_from..j_to {
-            let n2  = nodes[j];
+            let n2 = nodes[j];
             let distance = (i + 3) % 10;
             g.add_edge(n1, n2, distance);
         }
@@ -30,4 +30,3 @@ fn dijkstra_bench(bench: &mut Bencher) {
         let _scores = dijkstra(&g, nodes[0], None, |e| *e.weight());
     });
 }
-
