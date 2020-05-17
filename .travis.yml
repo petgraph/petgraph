@@ -18,7 +18,7 @@ branches:
   only:
     - master
 before_script:
-  - rustup component add rustfmt --tolchain stable
+  - rustup component add rustfmt --toolchain stable
 script:
   - |
       cargo build --verbose --no-default-features &&
