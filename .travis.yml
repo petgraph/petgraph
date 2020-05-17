@@ -1,5 +1,5 @@
 language: rust
-matrix:
+jobs:
   include:
     - rust: 1.37.0
       env:
@@ -18,7 +18,7 @@ branches:
   only:
     - master
 before_script:
-  - rustup component add rustfmt
+  - rustup component add rustfmt --tolchain stable
 script:
   - |
       cargo build --verbose --no-default-features &&
