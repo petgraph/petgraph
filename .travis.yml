@@ -18,7 +18,10 @@ branches:
   only:
     - master
 before_script:
-  - rustup component add rustfmt --toolchain stable
+  - |
+      if [ "${CHECKFMT}" == "1"]; then
+        rustup component add rustfmt --toolchain stable
+      fi
 script:
   - |
       cargo build --verbose --no-default-features &&
