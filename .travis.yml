@@ -1,5 +1,4 @@
 language: rust
-sudo: false
 matrix:
   include:
     - rust: 1.37.0
