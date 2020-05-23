@@ -27,6 +27,15 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.5.1
+
+  - Implement ``Default`` for traversals.
+  - Export ``EdgesConnecting`` publicly.
+  - Implement ``is_bipartite_graph``.
+  - Add ``FilterNode`` implementation for ``FixedBitSet`` and ``HashSet``.
+  - Implement ``node_weights_mut`` and ``edge_weights_mut`` for ``StableGraph``.
+  - Add configurable functions for adding attributes to dotfile features.
+
 - 0.5.0
 
   - Breaking changes:
