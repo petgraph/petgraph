@@ -26,12 +26,17 @@ pub enum DfsEvent<N> {
 /// if it is a prune value.
 macro_rules! try_control {
     ($e:expr, $p:stmt) => {
+        try_control!($e, $p, ());
+    };
+    ($e:expr, $p:stmt, $q:stmt) => {
         match $e {
             x => {
                 if x.should_break() {
                     return x;
                 } else if x.should_prune() {
                     $p
+                } else {
+                    $q
                 }
             }
         }
@@ -276,11 +281,9 @@ where
         return C::continuing();
     }
 
-    'prune: loop {
-        try_control!(
-            visitor(DfsEvent::Discover(u, time_post_inc(time))),
-            break 'prune
-        );
+    try_control!(
+        visitor(DfsEvent::Discover(u, time_post_inc(time))),
+        {},
         for v in graph.neighbors(u) {
             if !discovered.is_visited(&v) {
                 try_control!(visitor(DfsEvent::TreeEdge(u, v)), continue);
@@ -294,9 +297,7 @@ where
                 try_control!(visitor(DfsEvent::CrossForwardEdge(u, v)), continue);
             }
         }
-
-        break;
-    }
+    );
     let first_finish = finished.visit(u);
     debug_assert!(first_finish);
     try_control!(
