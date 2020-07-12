@@ -329,7 +329,8 @@ impl fmt::Display for GraphError {
 /// The `Graph` is a regular Rust collection and is `Send` and `Sync` (as long
 /// as associated data `N` and `E` are).
 ///
-/// The graph uses **O(|V| + |E|)** space, and allows fast node and edge insert,
+/// The graph uses **O(|V| + |E|)** space where V is the set of nodes and E is the number 
+/// of edges, and allows fast node and edge insert,
 /// efficient graph search and graph algorithms.
 /// It implements **O(e')** edge lookup and edge and node removals, where **e'**
 /// is some local measure of edge count.
@@ -1085,7 +1086,7 @@ where
     /// For a graph with undirected edges, both the sinks and the sources are
     /// just the nodes without edges.
     ///
-    /// The whole iteration computes in **O(|V|)** time.
+    /// The whole iteration computes in **O(|V|)** time where V is the set of nodes.
     pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix> {
         Externals {
             iter: self.nodes.iter().enumerate(),
