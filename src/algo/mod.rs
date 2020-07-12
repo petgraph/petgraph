@@ -565,7 +565,7 @@ where
 /// component of the graph.
 ///
 /// The resulting graph has all the nodes of the input graph (with identical node indices),
-/// and **|V| - c** edges, where **c** is the number of connected components in `g`.
+/// and **|V| - c** edges, where V is the set of nodes and **c** is the number of connected components in `g`.
 ///
 /// Use `from_elements` to create a graph from the resulting iterator.
 pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>

@@ -34,7 +34,7 @@ const BINARY_SEARCH_CUTOFF: usize = 32;
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
 ///
-/// Using **O(|E| + |V|)** space.
+/// Using **O(|V| + |E|)** space where V is the set of nodes and E is the set of edges.
 ///
 /// Self loops are allowed, no parallel edges.
 ///
@@ -142,7 +142,7 @@ where
     /// Edges **must** be sorted and unique, where the sort order is the default
     /// order for the pair *(u, v)* in Rust (*u* has priority).
     ///
-    /// Computes in **O(|E| + |V|)** time.
+    /// Computes in **O(|V| + |E|)** time where V is the set of nodes and E is the set of edges.
     /// # Example
     /// ```rust
     /// use petgraph::csr::Csr;
@@ -331,7 +331,7 @@ where
         }
     }
 
-    /// Computes in **O(log |V|)** time.
+    /// Computes in **O(log |V|)** time where V is the set of nodes.
     ///
     /// **Panics** if the node `a` does not exist.
     pub fn contains_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
