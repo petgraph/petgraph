@@ -151,7 +151,6 @@ where
     estimate_cost: H,
 
     estimate_costs: HashMap<G::NodeId, K>,
-    path_tracker: PathTracker<G>,
 }
 
 impl<G, F, H, K, IsGoal> AstarInstance<G, F, H, K, IsGoal>
@@ -175,7 +174,6 @@ where
             edge_cost,
             estimate_cost,
             estimate_costs: HashMap::new(),
-            path_tracker: PathTracker::<G>::new(),
         }
     }
 
@@ -193,26 +191,11 @@ where
         }
     }
 
-    // Since the path_tracker has received the path in reverse order,
-    // we now need to undo the reversal for the API to match the
-    // single A* execution.
-    fn reconstruct_path_to(&self, node: G::NodeId) -> Vec<G::NodeId> {
-        let mut path = self.path_tracker.reconstruct_path_to(node);
-        path.reverse();
-        path
-    }
-
-    // Since we are tracking multiple paths at once, we need the path_tracker
-    // to track paths from the goal to the start. Therefore we enter the path in
-    // reverse order.
-    fn set_predecessor(&mut self, node: G::NodeId, prev: G::NodeId) {
-        self.path_tracker.set_predecessor(prev, node)
-    }
-
     pub fn run(&mut self, start: G::NodeId) -> Option<(K, Vec<G::NodeId>)> {
         let mut visited = self.graph.visit_map();
         let mut visit_next = BinaryHeap::new();
         let mut scores = HashMap::new(); // The scores cannot be cached because they depend on a specific sequence of edges
+        let mut path_tracker = PathTracker::<G>::new();
 
         let zero_score = K::default();
         scores.insert(start, zero_score);
@@ -220,7 +203,7 @@ where
 
         while let Some(MinScored(_, node)) = visit_next.pop() {
             if (self.is_goal)(node) {
-                let path = self.reconstruct_path_to(node);
+                let path = path_tracker.reconstruct_path_to(node);
                 let cost = scores[&node];
                 return Some((cost, path));
             }
@@ -239,14 +222,14 @@ where
                         let old_score = *ent.get();
                         if next_score < old_score {
                             *ent.into_mut() = next_score;
-                            self.set_predecessor(next, node);
+                            path_tracker.set_predecessor(next, node);
                         } else {
                             next_score = old_score;
                         }
                     }
                     Vacant(ent) => {
                         ent.insert(next_score);
-                        self.set_predecessor(next, node);
+                        path_tracker.set_predecessor(next, node);
                     }
                 }
                 let next_estimate_score = next_score + self.estimate_cost(next);
