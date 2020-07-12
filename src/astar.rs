@@ -136,6 +136,63 @@ where
     None
 }
 
+/// \[Generic\] A* shortest path algorithm instance for a given graph with a single target.
+/// 
+/// Creates a new A*-instance that may be used to calculate the shortest path 
+/// from any node in the graph to `finish`, including the total path cost.
+/// 
+/// `finish` is implicitly given via the `is_goal` callback, which should return `true`
+/// if, and only if, the given node is the finish node.
+/// 
+/// The function `edge_cost` should return the cost for a particular edge. Edge cost must
+/// be non-negative.
+/// 
+/// The function `estimate_cost` should return the estimated cost to the finish for a
+/// particular node. **For the algoirthm to find the actual shortest path**, it should be 
+/// admissible, meaning that **it should never overestimate** the actual cost to get
+/// to the nearest goal node. Estimated costs **must also be non-negative**.
+/// 
+/// The graph should be `Visitable` and implement `IntoEdges`.
+/// 
+/// # Example
+/// ```
+/// use petgraph::Graph;
+/// use petgraph::algo::{astar, AstarInstance};
+///
+/// let mut g = Graph::new();
+/// let a = g.add_node((0., 0.));
+/// let b = g.add_node((2., 0.));
+/// let c = g.add_node((1., 1.));
+/// let d = g.add_node((0., 2.));
+/// let e = g.add_node((3., 3.));
+/// let f = g.add_node((4., 2.));
+/// g.extend_with_edges(&[
+///     (a, b, 2),
+///     (a, d, 4),
+///     (b, c, 1),
+///     (b, f, 7),
+///     (c, e, 5),
+///     (e, f, 1),
+///     (d, e, 1),
+/// ]);
+///
+/// // Graph represented with the weight of each edge
+/// // Edges with '*' are part of the optimal path.
+/// //
+/// //     2       1
+/// // a ----- b ----- c
+/// // | 4*    | 7     |
+/// // d       f       | 5
+/// // | 1*    | 1*    |
+/// // \------ e ------/
+/// let mut instance = AstarInstance::new(&g, |finish| finish == f, |e| *e.weight(), |_| 0);
+///
+/// for start in g.node_indices() { 
+///     let path = astar(&g, start, |finish| finish == f, |e| *e.weight(), |_| 0);
+///     let instance_path = instance.run(start);
+///     assert_eq!(path, instance_path);
+/// }
+/// ```
 #[derive(Debug)]
 pub struct AstarInstance<G, F, H, K, IsGoal>
 where
@@ -192,10 +249,12 @@ where
         }
     }
 
+    /// Runs the A* algorithm from a given start point.
     pub fn run(&mut self, start: G::NodeId) -> Option<(K, Vec<G::NodeId>)> {
         let mut visited = self.graph.visit_map();
         let mut visit_next = BinaryHeap::new();
-        let mut scores = HashMap::new(); // The scores cannot be cached because they depend on a specific sequence of edges
+        // The scores cannot be cached because they depend on a specific sequence of edges
+        let mut scores = HashMap::new(); 
         let mut path_tracker = PathTracker::<G>::new();
 
         let zero_score = K::default();
