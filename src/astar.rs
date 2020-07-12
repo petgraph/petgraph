@@ -101,7 +101,7 @@ where
         }
 
         // This lookup can be unwrapped without fear of panic since the node was necessarily scored
-        // before adding him to `visit_next`.
+        // before adding it to `visit_next`.
         let node_score = scores[&node];
 
         for edge in graph.edges(node) {
@@ -134,6 +134,128 @@ where
     }
 
     None
+}
+
+pub struct AstarInstance<G, F, H, K, IsGoal>
+where
+    G: IntoEdges + Visitable,
+    IsGoal: FnMut(G::NodeId) -> bool,
+    G::NodeId: Eq + Hash,
+    F: FnMut(G::EdgeRef) -> K,
+    H: FnMut(G::NodeId) -> K,
+    K: Measure + Copy,
+{
+    graph: G,
+    is_goal: IsGoal,
+    edge_cost: F,
+    estimate_cost: H,
+
+    estimate_costs: HashMap<G::NodeId, K>,
+    path_tracker: PathTracker<G>,
+}
+
+impl<G, F, H, K, IsGoal> AstarInstance<G, F, H, K, IsGoal>
+where
+    G: IntoEdges + Visitable,
+    IsGoal: FnMut(G::NodeId) -> bool,
+    G::NodeId: Eq + Hash,
+    F: FnMut(G::EdgeRef) -> K,
+    H: FnMut(G::NodeId) -> K,
+    K: Measure + Copy,
+{
+    pub fn new(
+        graph: G,
+        is_goal: IsGoal,
+        edge_cost: F,
+        estimate_cost: H,
+    ) -> AstarInstance<G, F, H, K, IsGoal> {
+        AstarInstance {
+            graph,
+            is_goal,
+            edge_cost,
+            estimate_cost,
+            estimate_costs: HashMap::new(),
+            path_tracker: PathTracker::<G>::new(),
+        }
+    }
+
+    /// Retrieves the estimate cost of a specific node from the cache
+    /// (estimate_costs), or if the value has not yet been requested,
+    /// calculates it and saves it to the cache.
+    fn estimate_cost(&mut self, node: G::NodeId) -> K {
+        match self.estimate_costs.entry(node) {
+            Occupied(ent) => *ent.get(),
+            Vacant(ent) => {
+                let est = (self.estimate_cost)(node); // Differentiation between the field and the method self.estimate_cost
+                ent.insert(est);
+                est
+            }
+        }
+    }
+
+    // Since the path_tracker has received the path in reverse order,
+    // we now need to undo the reversal for the API to match the
+    // single A* execution.
+    fn reconstruct_path_to(&self, node: G::NodeId) -> Vec<G::NodeId> {
+        let mut path = self.path_tracker.reconstruct_path_to(node);
+        path.reverse();
+        path
+    }
+
+    // Since we are tracking multiple paths at once, we need the path_tracker
+    // to track paths from the goal to the start. Therefore we enter the path in
+    // reverse order.
+    fn set_predecessor(&mut self, node: G::NodeId, prev: G::NodeId) {
+        self.path_tracker.set_predecessor(prev, node)
+    }
+
+    pub fn run(&mut self, start: G::NodeId) -> Option<(K, Vec<G::NodeId>)> {
+        let mut visited = self.graph.visit_map();
+        let mut visit_next = BinaryHeap::new();
+        let mut scores = HashMap::new(); // The scores cannot be cached because they depend on a specific sequence of edges
+
+        let zero_score = K::default();
+        scores.insert(start, zero_score);
+        visit_next.push(MinScored(self.estimate_cost(start), start));
+
+        while let Some(MinScored(_, node)) = visit_next.pop() {
+            if (self.is_goal)(node) {
+                let path = self.reconstruct_path_to(node);
+                let cost = scores[&node];
+                return Some((cost, path));
+            }
+            if !visited.visit(node) {
+                continue;
+            }
+            let node_score = scores[&node];
+            for edge in self.graph.edges(node) {
+                let next = edge.target();
+                if visited.is_visited(&next) {
+                    continue;
+                }
+                let mut next_score = node_score + (self.edge_cost)(edge);
+                match scores.entry(next) {
+                    Occupied(ent) => {
+                        let old_score = *ent.get();
+                        if next_score < old_score {
+                            *ent.into_mut() = next_score;
+                            self.set_predecessor(next, node);
+                        } else {
+                            next_score = old_score;
+                        }
+                    }
+                    Vacant(ent) => {
+                        ent.insert(next_score);
+                        self.set_predecessor(next, node);
+                    }
+                }
+                let next_estimate_score = next_score + self.estimate_cost(next);
+                visit_next.push(MinScored(next_estimate_score, next));
+            }
+        }
+
+        None
+    }
 }
 
 struct PathTracker<G>
