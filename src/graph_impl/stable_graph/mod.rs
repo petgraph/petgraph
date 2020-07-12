@@ -231,7 +231,7 @@ where
         }
     }
 
-    /// Return the number of nodes (vertices) in the graph.
+    /// Return the number of nodes (also called vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
     pub fn node_count(&self) -> usize {

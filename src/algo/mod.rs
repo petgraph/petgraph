@@ -109,14 +109,15 @@ pub fn connected_components<G>(g: G) -> usize
 where
     G: NodeCompactIndexable + IntoEdgeReferences,
 {
-    let mut vertex_sets = UnionFind::new(g.node_bound());
+    let mut node_sets = UnionFind::new(g.node_bound());
     for edge in g.edge_references() {
         let (a, b) = (edge.source(), edge.target());
 
-        // union the two vertices of the edge
-        vertex_sets.union(g.to_index(a), g.to_index(b));
+        // union the two nodes of the edge
+        node_sets.union(g.to_index(a), g.to_index(b));
     }
-    let mut labels = vertex_sets.into_labeling();
+
+    let mut labels = node_sets.into_labeling();
     labels.sort_unstable();
     labels.dedup();
     labels.len()
@@ -133,7 +134,7 @@ where
     for edge in g.edge_references() {
         let (a, b) = (edge.source(), edge.target());
 
-        // union the two vertices of the edge
+        // union the two nodes of the edge
         //  -- if they were already the same, then we have a cycle
         if !edge_sets.union(g.to_index(a), g.to_index(b)) {
             return true;
