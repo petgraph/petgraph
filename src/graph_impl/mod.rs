@@ -478,7 +478,7 @@ where
         }
     }
 
-    /// Return the number of nodes (vertices) in the graph.
+    /// Return the number of nodes (also called vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
     pub fn node_count(&self) -> usize {
@@ -711,7 +711,7 @@ where
     /// (that edge will adopt the removed edge index).
     ///
     /// Computes in **O(e')** time, where **e'** is the size of four particular edge lists, for
-    /// the vertices of `e` and the vertices of another affected edge.
+    /// the nodes of `e` and the nodes of another affected edge.
     pub fn remove_edge(&mut self, e: EdgeIndex<Ix>) -> Option<E> {
         // every edge is part of two lists,
         // outgoing and incoming edges.

@@ -38,7 +38,7 @@ const BINARY_SEARCH_CUTOFF: usize = 32;
 ///
 /// Self loops are allowed, no parallel edges.
 ///
-/// Fast iteration of the outgoing edges of a vertex.
+/// Fast iteration of the outgoing edges of a node.
 ///
 /// [`CSR`]: https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
 #[derive(Debug)]

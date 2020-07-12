@@ -115,7 +115,7 @@ const UNDEFINED: usize = ::std::usize::MAX;
 /// This algorithm is **O(|V|²)**, and therefore has slower theoretical running time
 /// than the Lengauer-Tarjan algorithm (which is **O(|E| log |V|)**. However,
 /// Cooper et al found it to be faster in practice on control flow graphs of up
-/// to ~30,000 vertices.
+/// to ~30,000 nodes.
 ///
 /// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
