@@ -136,6 +136,7 @@ where
     None
 }
 
+#[derive(Debug)]
 pub struct AstarInstance<G, F, H, K, IsGoal>
 where
     G: IntoEdges + Visitable,
