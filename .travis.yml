@@ -1,6 +1,5 @@
 language: rust
-sudo: false
-matrix:
+jobs:
   include:
     - rust: 1.37.0
       env:
@@ -19,7 +18,10 @@ branches:
   only:
     - master
 before_script:
-  - rustup component add rustfmt
+  - |
+      if [ "${CHECKFMT}" == "1"]; then
+        rustup component add rustfmt --toolchain stable
+      fi
 script:
   - |
       cargo build --verbose --no-default-features &&

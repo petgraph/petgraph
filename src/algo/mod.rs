@@ -27,6 +27,8 @@ use crate::visit::{Data, IntoNodeReferences, NodeRef};
 pub use super::astar::astar;
 pub use super::astar::AstarInstance;
 pub use super::dijkstra::dijkstra;
+pub use super::k_shortest_path::k_shortest_path;
+
 pub use super::isomorphism::{is_isomorphic, is_isomorphic_matching};
 pub use super::simple_paths::all_simple_paths;
 

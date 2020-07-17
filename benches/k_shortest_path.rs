@@ -7,10 +7,10 @@ use petgraph::prelude::*;
 use std::cmp::{max, min};
 use test::Bencher;
 
-use petgraph::algo::dijkstra;
+use petgraph::algo::k_shortest_path;
 
 #[bench]
-fn dijkstra_bench(bench: &mut Bencher) {
+fn k_shortest_path_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 10_000;
     let mut g = Graph::new_undirected();
     let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).into_iter().map(|i| g.add_node(i)).collect();
@@ -26,7 +26,5 @@ fn dijkstra_bench(bench: &mut Bencher) {
         }
     }
 
-    bench.iter(|| {
-        let _scores = dijkstra(&g, nodes[0], None, |e| *e.weight());
-    });
+    bench.iter(|| k_shortest_path(&g, nodes[0], None, 2, |e| *e.weight()));
 }

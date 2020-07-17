@@ -146,6 +146,7 @@ pub mod graphmap;
 mod isomorphism;
 mod iter_format;
 mod iter_utils;
+mod k_shortest_path;
 #[cfg(feature = "matrix_graph")]
 pub mod matrix_graph;
 #[cfg(feature = "quickcheck")]
@@ -199,8 +200,8 @@ copyclone!(Direction);
 impl Direction {
     /// Return the opposite `Direction`.
     #[inline]
-    pub fn opposite(&self) -> Direction {
-        match *self {
+    pub fn opposite(self) -> Direction {
+        match self {
             Outgoing => Incoming,
             Incoming => Outgoing,
         }
@@ -208,8 +209,8 @@ impl Direction {
 
     /// Return `0` for `Outgoing` and `1` for `Incoming`.
     #[inline]
-    pub fn index(&self) -> usize {
-        (*self as usize) & 0x1
+    pub fn index(self) -> usize {
+        (self as usize) & 0x1
     }
 }
 
