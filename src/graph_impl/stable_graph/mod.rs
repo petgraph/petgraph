@@ -526,6 +526,15 @@ where
         }
     }
 
+    /// Return an iterator yielding immutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their edge
+    /// indices.
+    pub fn edge_weights(&self) -> impl Iterator<Item = &E> {
+        self.g
+            .edge_weights()
+            .flat_map(|maybe_edge| maybe_edge.iter())
+    }
     /// Return an iterator yielding mutable access to all edge weights.
     ///
     /// The order in which weights are yielded matches the order of their edge

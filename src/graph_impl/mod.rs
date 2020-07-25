@@ -1029,6 +1029,15 @@ where
         }
     }
 
+    /// Return an iterator yielding immutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// edge indices.
+    pub fn edge_weights(&self) -> EdgeWeights<E, Ix> {
+        EdgeWeights {
+            edges: self.edges.iter(),
+        }
+    }
     /// Return an iterator yielding mutable access to all edge weights.
     ///
     /// The order in which weights are yielded matches the order of their
@@ -1787,6 +1796,26 @@ where
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.nodes.size_hint()
+    }
+}
+
+/// Iterator yielding immutable access to all edge weights.
+pub struct EdgeWeights<'a, E: 'a, Ix: IndexType = DefaultIx> {
+    edges: ::std::slice::Iter<'a, Edge<E, Ix>>,
+}
+
+impl<'a, E, Ix> Iterator for EdgeWeights<'a, E, Ix>
+where
+    Ix: IndexType,
+{
+    type Item = &'a E;
+
+    fn next(&mut self) -> Option<&'a E> {
+        self.edges.next().map(|edge| &edge.weight)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.edges.size_hint()
     }
 }
 
