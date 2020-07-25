@@ -480,6 +480,15 @@ where
         }
     }
 
+    /// Return an iterator yielding immutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their node
+    /// indices.
+    pub fn node_weights(&self) -> impl Iterator<Item = &N> {
+        self.g
+            .node_weights()
+            .flat_map(|maybe_node| maybe_node.iter())
+    }
     /// Return an iterator yielding mutable access to all node weights.
     ///
     /// The order in which weights are yielded matches the order of their node

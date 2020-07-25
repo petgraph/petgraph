@@ -1002,6 +1002,16 @@ where
         }
     }
 
+    /// Return an iterator yielding immutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// node indices.
+    pub fn node_weights(&self) -> NodeWeights<N, Ix> {
+        NodeWeights {
+            nodes: self.nodes.iter(),
+        }
+    }
+
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<Ix> {
         EdgeIndices {
@@ -1741,6 +1751,24 @@ where
     }
 }
 
+/// Iterator yielding immutable access to all node weights.
+pub struct NodeWeights<'a, N: 'a, Ix: IndexType = DefaultIx> {
+    nodes: ::std::slice::Iter<'a, Node<N, Ix>>,
+}
+impl<'a, N, Ix> Iterator for NodeWeights<'a, N, Ix>
+where
+    Ix: IndexType,
+{
+    type Item = &'a N;
+
+    fn next(&mut self) -> Option<&'a N> {
+        self.nodes.next().map(|node| &node.weight)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.nodes.size_hint()
+    }
+}
 /// Iterator yielding mutable access to all node weights.
 #[derive(Debug)]
 pub struct NodeWeightsMut<'a, N: 'a, Ix: IndexType = DefaultIx> {
