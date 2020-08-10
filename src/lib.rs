@@ -4,7 +4,7 @@
 //! provides several [graph types](index.html#graph-types) (each differing in the
 //! tradeoffs taken in their internal representation),
 //! [algorithms](./algo/index.html#functions) on those graphs, and functionality to
-//! [output graphs](./doc/petgraph/dot/struct.Dot.html) in
+//! [output graphs](./dot/struct.Dot.html) in
 //! [`graphviz`](https://www.graphviz.org/) format. Both nodes and edges
 //! can have arbitrary associated data, and edges may be either directed or undirected.
 //!
@@ -85,7 +85,7 @@
 //!
 //! Each graph type vends a few shorthand type definitions that name some specific
 //! generic choices. For example, [`DiGraph<_, _>`](./graph/type.DiGraph.html) is shorthand
-//! for [`Graph<_, _, Undirected>`](graph/struct.Graph.html).
+//! for [`Graph<_, _, Directed>`](graph/struct.Graph.html).
 //! [`UnMatrix<_, _>`](./matrix_graph/type.UnMatrix.html) is shorthand for
 //! [`MatrixGraph<_, _, Undirected>`](./matrix_graph/struct.MatrixGraph.html). Each graph type's
 //! module documentation lists the available shorthand types.
@@ -146,6 +146,7 @@ pub mod graphmap;
 mod isomorphism;
 mod iter_format;
 mod iter_utils;
+mod k_shortest_path;
 #[cfg(feature = "matrix_graph")]
 pub mod matrix_graph;
 #[cfg(feature = "quickcheck")]
@@ -163,9 +164,9 @@ pub mod prelude;
 pub mod graph {
     pub use crate::graph_impl::{
         edge_index, node_index, DefaultIx, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference,
-        EdgeReferences, EdgeWeightsMut, Edges, Externals, Frozen, Graph, GraphIndex, IndexType,
-        Neighbors, Node, NodeIndex, NodeIndices, NodeReferences, NodeWeightsMut, UnGraph,
-        WalkNeighbors,
+        EdgeReferences, EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen, Graph,
+        GraphIndex, IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences,
+        NodeWeightsMut, UnGraph, WalkNeighbors,
     };
 }
 
@@ -199,8 +200,8 @@ copyclone!(Direction);
 impl Direction {
     /// Return the opposite `Direction`.
     #[inline]
-    pub fn opposite(&self) -> Direction {
-        match *self {
+    pub fn opposite(self) -> Direction {
+        match self {
             Outgoing => Incoming,
             Incoming => Outgoing,
         }
@@ -208,8 +209,8 @@ impl Direction {
 
     /// Return `0` for `Outgoing` and `1` for `Incoming`.
     #[inline]
-    pub fn index(&self) -> usize {
-        (*self as usize) & 0x1
+    pub fn index(self) -> usize {
+        (self as usize) & 0x1
     }
 }
 

@@ -13,7 +13,7 @@
 //! dominates **C** and **C** dominates **B**.
 
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, hash_map::Iter};
 use std::hash::Hash;
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker, depth_first_search, DfsEvent};
@@ -79,6 +79,15 @@ where
             None
         }
     }
+
+    /// Iterate over all nodes immediately dominated by the given node (not
+    /// including the given node itself).
+    pub fn immediately_dominated_by(&self, node: N) -> DominatedByIter<N> {
+        DominatedByIter {
+            iter: self.dominators.iter(),
+            node: node
+        }
+    }
 }
 
 /// Iterator for a node's dominators.
@@ -102,6 +111,31 @@ where
             self.node = self.dominators.immediate_dominator(next);
         }
         next
+    }
+}
+
+/// Iterator for nodes dominated by a given node.
+pub struct DominatedByIter<'a, N>
+where
+    N: 'a + Copy + Eq + Hash,
+{
+    iter: Iter<'a, N, N>,
+    node: N,
+}
+
+impl<'a, N> Iterator for DominatedByIter<'a, N>
+where
+    N: 'a + Copy + Eq + Hash,
+{
+    type Item = N;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(next) = self.iter.next() {
+            if next.1 == &self.node {
+                return Some(*next.0);
+            }
+        }
+        None
     }
 }
 
@@ -448,5 +482,9 @@ mod tests {
             None::<()>,
             doms.strict_dominators(99).map(|_| unreachable!())
         );
+
+        let dom_by: Vec<_> = doms.immediately_dominated_by(1).collect();
+        assert_eq!(vec![2], dom_by);
+        assert_eq!(None, doms.immediately_dominated_by(99).next());
     }
 }

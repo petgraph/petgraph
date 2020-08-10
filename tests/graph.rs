@@ -9,8 +9,8 @@ use petgraph::EdgeType;
 use petgraph as pg;
 
 use petgraph::algo::{
-    dominators, has_path_connecting, is_cyclic_undirected, is_isomorphic_matching,
-    min_spanning_tree,
+    dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
+    is_isomorphic_matching, min_spanning_tree,
 };
 
 use petgraph::graph::node_index as n;
@@ -277,6 +277,77 @@ fn cyclic() {
     gr.add_edge(c, e, 0.);
     assert!(is_cyclic_undirected(&gr));
     assert_graph_consistent(&gr);
+}
+
+#[test]
+fn bipartite() {
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+
+        let d = gr.add_node("D");
+        let e = gr.add_node("E");
+        let f = gr.add_node("F");
+
+        gr.add_edge(a, d, 7.);
+        gr.add_edge(b, d, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        let e_index = gr.add_edge(a, b, 6.);
+
+        assert!(!is_bipartite_undirected(&gr, a));
+
+        gr.remove_edge(e_index);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        gr.add_edge(b, e, 7.);
+        gr.add_edge(b, f, 6.);
+        gr.add_edge(c, e, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+    }
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+        let d = gr.add_node("D");
+        let e = gr.add_node("E");
+
+        let f = gr.add_node("F");
+        let g = gr.add_node("G");
+        let h = gr.add_node("H");
+
+        gr.add_edge(a, f, 7.);
+        gr.add_edge(a, g, 7.);
+        gr.add_edge(a, h, 7.);
+
+        gr.add_edge(b, f, 6.);
+        gr.add_edge(b, g, 6.);
+        gr.add_edge(b, h, 6.);
+
+        gr.add_edge(c, f, 6.);
+        gr.add_edge(c, g, 6.);
+        gr.add_edge(c, h, 6.);
+
+        gr.add_edge(d, f, 6.);
+        gr.add_edge(d, g, 6.);
+        gr.add_edge(d, h, 6.);
+
+        gr.add_edge(e, f, 6.);
+        gr.add_edge(e, g, 6.);
+        gr.add_edge(e, h, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        gr.add_edge(a, b, 6.);
+
+        assert!(!is_bipartite_undirected(&gr, a));
+    }
 }
 
 #[test]
@@ -825,8 +896,12 @@ fn tarjan_scc() {
         (4, 1),
     ]);
 
+    let mut tarjan_scc = petgraph::algo::TarjanScc::new();
+
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&gr),
+        result,
         vec![
             vec![n(0), n(3), n(6)],
             vec![n(2), n(5), n(8)],
@@ -842,8 +917,10 @@ fn tarjan_scc() {
     let ed = hr.find_edge(n(6), n(8)).unwrap();
     assert!(hr.remove_edge(ed).is_some());
 
+    let mut result = Vec::new();
+    tarjan_scc.run(&hr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&hr),
+        result,
         vec![
             vec![n(1), n(2), n(4), n(5), n(7), n(8)],
             vec![n(0), n(3), n(6)],
@@ -863,8 +940,10 @@ fn tarjan_scc() {
     gr.add_edge(n(2), n(0), ());
     gr.add_edge(n(1), n(0), ());
 
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&gr),
+        result,
         vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
         true,
     );
@@ -874,8 +953,10 @@ fn tarjan_scc() {
     gr.extend_with_edges(&[(0, 0), (1, 0), (2, 0), (2, 1), (2, 2)]);
     gr.add_node(());
     // no order for the disconnected one
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&gr),
+        result,
         vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
         false,
     );
@@ -1699,8 +1780,8 @@ fn dot() {
         dot_output,
         // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
         r#"digraph {
-    0 [label="Record { a: 1, b: \"abc\\\\\" }"]
-    0 -> 0 [label="(1, 2)"]
+    0 [ label = "Record { a: 1, b: \"abc\\\\\" }" ]
+    0 -> 0 [ label = "(1, 2)" ]
 }
 "#
     );

@@ -27,15 +27,37 @@ Crate feature flags:
 Recent Changes
 --------------
 
+- 0.5.1
+
+  - Implement ``Default`` for traversals.
+  - Export ``EdgesConnecting`` publicly.
+  - Implement ``is_bipartite_graph``.
+  - Add ``FilterNode`` implementation for ``FixedBitSet`` and ``HashSet``.
+  - Implement ``node_weights_mut`` and ``edge_weights_mut`` for ``StableGraph``.
+  - Add configurable functions for adding attributes to dotfile features.
+
 - 0.5.0
 
-  - Upgrade to Rust 2018 edition
-  - Fix clippy warnings and unify code formatting
-  - Improved and enhanced documentation
-  - Update dependencies including modern quickcheck
-  - Numerous bugfixes and refactorings
-  - Added ``MatrixGraph`` implementation
-  - Added ``InfoEdges`` and ``InfoEdgesDirected``
+  - Breaking changes:
+
+    - The iterative DFS implementation, ``Dfs``, now marks nodes visited when
+      they are pushed onto the stack, not when they're popped off. This may
+      require changes to callers that use ``Dfs::from_parts`` or manipulate
+      its internals.
+    - The ``IntoEdgesDirected`` trait now has a stricter contract for
+      undirected graphs. Custom implementations of this trait may have to be
+      updated. See the `trait documentation`__ for more.
+
+  - Other changes:
+
+    - Upgrade to Rust 2018 edition
+    - Fix clippy warnings and unify code formatting
+    - Improved and enhanced documentation
+    - Update dependencies including modern quickcheck
+    - Numerous bugfixes and refactorings
+    - Added ``MatrixGraph`` implementation
+
+__ https://docs.rs/petgraph/0.5/petgraph/visit/trait.IntoEdgesDirected.html
 
 - 0.4.13
 
