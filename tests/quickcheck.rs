@@ -22,8 +22,9 @@ use itertools::cloned;
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
-    is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
+    bellman_ford, condensation, dijkstra, dominators, is_cyclic_directed, is_cyclic_undirected,
+    is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc,
+    toposort,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -980,6 +981,23 @@ quickcheck! {
         }
         for i in edges {
             assert!(gr2.edge_weight(edge_index(i)).is_none());
+        }
+    }
+}
+
+quickcheck! {
+    fn slt_dominators(gr: Graph<(), ()>) -> bool {
+        if gr.node_count() == 0 {
+            return true;
+        }
+        let mut rng = rand::thread_rng();
+        let idx = rng.gen::<usize>() % gr.node_count();
+        if let Some(root) = gr.node_indices().nth(idx % gr.node_count()) {
+            let dom1 = dominators::simple_fast(&gr, root);
+            let dom2 = dominators::slt(&gr, root);
+            dom1.root() == dom2.root() && gr.node_indices().all(|idx| dom1.immediate_dominator(idx) == dom2.immediate_dominator(idx))
+        } else {
+            false
         }
     }
 }

@@ -16,7 +16,7 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, hash_map::Iter};
 use std::hash::Hash;
 
-use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
+use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker, depth_first_search, DfsEvent};
 
 /// The dominance relation for some graph and root.
 #[derive(Debug, Clone)]
@@ -289,6 +289,174 @@ where
     }
 
     (post_order, predecessor_sets)
+}
+
+/// This is an implementation of the ["Simple Lengauer-Tarjan
+/// Algorithm"][0] (discovered by Lengauer and Tarjan).
+///
+/// This algorithm is **O(|E| log |V|)**. ["Finding Dominators in Practice"][1]
+/// by Werneck et al found it to be roughly as fast as iterative methods on small
+/// graphs and significantly faster depending on graph structure for graphs with
+/// as few as 1000 edges, in addition to being less sensitive to pathological instances.
+///
+/// [0]: https://www.cs.princeton.edu/courses/archive/fall03/cs528/handouts/a%20fast%20algorithm%20for%20finding.pdf
+/// [1]: http://jgaa.info/accepted/2006/GeorgiadisTarjanWerneck2006.10.1.pdf
+pub fn slt<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
+    where G: IntoNeighbors + Visitable,
+          <G as GraphBase>::NodeId: Eq + Hash + std::fmt::Debug
+{
+    let (pre_order, predecessor_sets, parents) = slt_pre_order(graph, root);
+    let length = pre_order.len();
+    debug_assert!(length > 0);
+    debug_assert!(pre_order.first() == Some(&root));
+
+    let mut semi: Vec<usize> = (0..length).collect();
+    let mut label = semi.clone();
+    let mut ancestor = vec![UNDEFINED; length];
+
+    // From here on out we use indices into `pre_order` instead of actual
+    // `NodeId`s wherever possible. This greatly improves the performance of
+    // this implementation, but we have to pay a little bit of upfront cost to
+    // convert our data structures to play along first.
+
+    // Maps a node to its index into `pre_order`.
+    let node_to_pre_order_idx: HashMap<_, _> = pre_order.iter()
+        .enumerate()
+        .map(|(idx, &node)| (node, idx))
+        .collect();
+
+    // Parent `pre_order` idxs for each node in `pre_order`
+    let parent: Vec<usize> = pre_order.iter()
+        .map(|node| node_to_pre_order_idx[parents.get(node).unwrap_or(&root)])
+        .collect();
+
+    // Maps a node's `pre_order` index to its set of predecessors's indices
+    // into `pre_order` (as a vec).
+    let idx_to_predecessor_vec =
+        predecessor_sets_to_idx_vecs(&pre_order, &node_to_pre_order_idx, predecessor_sets);
+
+    let mut dominators = vec![UNDEFINED; length];
+    let mut buckets = vec![UNDEFINED; length];
+    for idx in (1..length).rev() {
+        debug_assert!(pre_order[idx] != root);
+
+        let mut to_process = buckets[idx];
+        while to_process != UNDEFINED {
+            let comparator = slt_eval(to_process, &mut ancestor, &mut label, &semi);
+            dominators[to_process] = if semi[comparator] < semi[to_process] {
+                comparator
+            } else {
+                idx
+            };
+            to_process = buckets[to_process];
+        }
+        buckets[idx] = UNDEFINED;
+
+        for &predecessor in idx_to_predecessor_vec[idx].iter() {
+            let comparator = slt_eval(predecessor, &mut ancestor, &mut label, &semi);
+            if semi[comparator] < semi[idx] {
+                semi[idx] = semi[comparator]
+            }
+        }
+        // If a node is semi-dominated by its parent, no further processing is needed
+        if parent[idx] == semi[idx] {
+            dominators[idx] = parent[idx];
+        } else {
+            bucket_insert(idx, semi[idx], &mut buckets);
+        }
+        ancestor[idx] = parent[idx];
+    }
+    for idx in 0..length {
+        // Any node without a dominator candidate is dominated by the root
+        if dominators[idx] == UNDEFINED {
+            dominators[idx] = 0;
+        } else if dominators[idx] != semi[idx] {
+            dominators[idx] = dominators[dominators[idx]];
+        }
+    }
+
+    // All done! Translate the indices back into proper `G::NodeId`s.
+
+    debug_assert!(!dominators.iter().any(|&dom| dom == UNDEFINED));
+
+    Dominators {
+        root: root,
+        dominators: dominators.into_iter()
+            .enumerate()
+            .map(|(idx, dom_idx)| (pre_order[idx], pre_order[dom_idx]))
+            .collect(),
+    }
+}
+
+fn bucket_insert(idx: usize, mut target: usize, buckets: &mut Vec<usize>) {
+    // The nodes semi-dominated by a given node are stored within a linked list
+    // contained in an array with size equal to the number of nodes
+    while buckets[target] != UNDEFINED {
+        target = buckets[target];
+    }
+    buckets[target] = idx;
+}
+
+fn slt_eval(idx: usize,
+            ancestor: &mut Vec<usize>,
+            label: &mut Vec<usize>,
+            semi: &Vec<usize>) -> usize {
+    // Returns the root of the tree containing idx, compressing if necessary
+    if ancestor[idx] == UNDEFINED {
+        idx
+    } else {
+        slt_compress(idx, ancestor, label, semi);
+        label[idx]
+    }
+}
+
+fn slt_compress(idx: usize,
+            ancestor: &mut Vec<usize>,
+            label: &mut Vec<usize>,
+            semi: &Vec<usize>) {
+    // Compresses the path from idx to the root of its tree
+    // Only called if ancestor[idx] is defined
+    let mut current = idx;
+    let mut to_process = Vec::new();
+    while ancestor[ancestor[current]] != UNDEFINED {
+        to_process.push(current);
+        current = ancestor[current];
+    }
+    while let Some(idx) = to_process.pop() {
+        if semi[label[ancestor[idx]]] < semi[label[idx]] {
+            label[idx] = label[ancestor[idx]];
+        }
+        ancestor[idx] = ancestor[ancestor[idx]]
+    }
+}
+
+fn slt_pre_order<G>(graph: G,
+                             root: G::NodeId)
+                             -> (Vec<G::NodeId>, HashMap<G::NodeId, HashSet<G::NodeId>>, HashMap<G::NodeId, G::NodeId>)
+    where G: IntoNeighbors + Visitable,
+          <G as GraphBase>::NodeId: Eq + Hash
+{
+    let mut pre_order = vec![root];
+    let mut predecessor_sets = HashMap::new();
+    let mut parents = HashMap::new();
+    for successor in graph.neighbors(root) {
+        predecessor_sets.entry(successor)
+            .or_insert_with(HashSet::new)
+            .insert(root);
+    }
+    depth_first_search(graph, Some(root), |event| {
+        if let DfsEvent::TreeEdge(u, v) = event {
+            pre_order.push(v);
+            for successor in graph.neighbors(v) {
+                predecessor_sets.entry(successor)
+                    .or_insert_with(HashSet::new)
+                    .insert(v);
+            }
+            parents.insert(v, u);
+        }
+    });
+
+    (pre_order, predecessor_sets, parents)
 }
 
 #[cfg(test)]
