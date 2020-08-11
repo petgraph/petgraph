@@ -148,7 +148,7 @@ iterator_wrap! {
 /// graph until it is dropped or [`clear`] is called.
 ///
 /// Space consumption: **O(|E|)**.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct List<E, Ix = DefaultIx>
 where
     Ix: IndexType,

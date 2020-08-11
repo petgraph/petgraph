@@ -76,7 +76,7 @@ where
         let new_ix: Ix = res.add_node_with_capacity(iter.size_hint().0);
         debug_assert_eq!(new_ix.index(), ix.index());
         for old_pre in iter {
-            let pre: Ix = revmap[old_pre.index()].clone();
+            let pre: Ix = revmap[old_pre.index()];
             res.add_edge(pre, ix, ());
         }
     }
