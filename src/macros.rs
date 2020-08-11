@@ -1,4 +1,3 @@
-
 macro_rules! clone_fields {
     ($name:ident, $($field:ident),+ $(,)*) => (
         fn clone(&self) -> Self {
@@ -105,4 +104,3 @@ impl (DoubleEndedIterator $($rest:tt)*)  for
             );
     );
 }
-

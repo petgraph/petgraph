@@ -1,9 +1,9 @@
-extern crate rand;
 extern crate petgraph;
+extern crate rand;
 
-use rand::{Rng, thread_rng, ChaChaRng, SeedableRng};
-use std::collections::HashSet;
 use petgraph::unionfind::UnionFind;
+use rand::{thread_rng, ChaChaRng, Rng, SeedableRng};
+use std::collections::HashSet;
 
 #[test]
 fn uf_test() {
@@ -27,6 +27,34 @@ fn uf_test() {
     u.union(5, 6);
     assert_eq!(u.find(6), u.find(5));
     assert!(u.find(6) != u.find(7));
+
+    // check that there are now 3 disjoint sets
+    let set = (0..n).map(|i| u.find(i)).collect::<HashSet<_>>();
+    assert_eq!(set.len(), 3);
+}
+
+#[test]
+fn uf_test_with_equiv() {
+    let n = 8;
+    let mut u = UnionFind::new(n);
+    for i in 0..n {
+        assert_eq!(u.find(i), i);
+        assert_eq!(u.find_mut(i), i);
+        assert!(u.equiv(i, i));
+    }
+
+    u.union(0, 1);
+    assert!(u.equiv(0, 1));
+    u.union(1, 3);
+    u.union(1, 4);
+    u.union(4, 7);
+    assert!(u.equiv(0, 7));
+    assert!(u.equiv(1, 3));
+    assert!(!u.equiv(0, 2));
+    assert!(u.equiv(7, 0));
+    u.union(5, 6);
+    assert!(u.equiv(6, 5));
+    assert!(!u.equiv(6, 7));
 
     // check that there are now 3 disjoint sets
     let set = (0..n).map(|i| u.find(i)).collect::<HashSet<_>>();
@@ -62,8 +90,7 @@ fn uf_u8() {
 }
 
 #[test]
-fn labeling()
-{
+fn labeling() {
     let mut u = UnionFind::<u32>::new(48);
     for i in 0..24 {
         u.union(i + 1, i);

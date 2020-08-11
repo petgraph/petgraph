@@ -39,7 +39,7 @@ where
 {
     let mut res = List::with_capacity(g.node_count());
     // map from old node index to rank in toposort
-    let mut revmap = vec![0; g.node_bound()];
+    let mut revmap = vec![Ix::default(); g.node_bound()];
     for (ix, &old_ix) in toposort.iter().enumerate() {
         let ix = Ix::new(ix);
         revmap[old_ix.index()] = ix;

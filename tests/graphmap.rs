@@ -5,11 +5,11 @@ use std::collections::HashSet;
 use std::fmt;
 
 use petgraph::prelude::*;
-use petgraph::visit::{ Walker, };
+use petgraph::visit::Walker;
 
-use petgraph::algo::{ dijkstra, };
+use petgraph::algo::dijkstra;
 
-use petgraph::dot::{Dot, Config};
+use petgraph::dot::{Config, Dot};
 
 #[test]
 fn simple() {
@@ -47,13 +47,21 @@ fn simple() {
     let scores = dijkstra(&gr, a, None, |e| *e.weight());
     let mut scores: Vec<_> = scores.into_iter().collect();
     scores.sort();
-    assert_eq!(scores,
-       vec![("A", 0), ("B", 7), ("C", 9), ("D", 11), ("E", 20), ("F", 20)]);
+    assert_eq!(
+        scores,
+        vec![
+            ("A", 0),
+            ("B", 7),
+            ("C", 9),
+            ("D", 11),
+            ("E", 20),
+            ("F", 20)
+        ]
+    );
 }
 
 #[test]
-fn remov()
-{
+fn remov() {
     let mut g = UnGraphMap::new();
     g.add_node(1);
     g.add_node(2);
@@ -75,8 +83,7 @@ fn remov()
 }
 
 #[test]
-fn remove_directed()
-{
+fn remove_directed() {
     let mut g = GraphMap::<_, _, Directed>::with_capacity(0, 0);
     g.add_edge(1, 2, -1);
     println!("{:?}", g);
@@ -118,13 +125,17 @@ fn dfs() {
     {
         let mut cnt = 0;
         let mut dfs = Dfs::new(&gr, h);
-        while let Some(_) = dfs.next(&gr) { cnt += 1; }
+        while let Some(_) = dfs.next(&gr) {
+            cnt += 1;
+        }
         assert_eq!(cnt, 4);
     }
     {
         let mut cnt = 0;
         let mut dfs = Dfs::new(&gr, z);
-        while let Some(_) = dfs.next(&gr) { cnt += 1; }
+        while let Some(_) = dfs.next(&gr) {
+            cnt += 1;
+        }
         assert_eq!(cnt, 1);
     }
 
@@ -146,30 +157,28 @@ fn edge_iterator() {
     gr.add_edge(i, k, 4);
 
     let real_edges: HashSet<_> = gr.all_edges().map(|(a, b, &w)| (a, b, w)).collect();
-    let expected_edges: HashSet<_> = vec![
-        ("H", "I", 1),
-        ("H", "J", 2),
-        ("I", "J", 3),
-        ("I", "K", 4)
-    ].into_iter().collect();
+    let expected_edges: HashSet<_> =
+        vec![("H", "I", 1), ("H", "J", 2), ("I", "J", 3), ("I", "K", 4)]
+            .into_iter()
+            .collect();
 
     assert_eq!(real_edges, expected_edges);
 }
 
 #[test]
 fn from_edges() {
-    let gr = GraphMap::<_, _, Undirected>::from_edges(&[
-        ("a", "b", 1),
-        ("a", "c", 2),
-        ("c", "d", 3),
-    ]);
+    let gr =
+        GraphMap::<_, _, Undirected>::from_edges(&[("a", "b", 1), ("a", "c", 2), ("c", "d", 3)]);
     assert_eq!(gr.node_count(), 4);
     assert_eq!(gr.edge_count(), 3);
     assert_eq!(gr[("a", "c")], 2);
 
     let gr = GraphMap::<_, (), Undirected>::from_edges(&[
-        (0, 1), (0, 2), (0, 3),
-        (1, 2), (1, 3),
+        (0, 1),
+        (0, 2),
+        (0, 3),
+        (1, 2),
+        (1, 3),
         (2, 3),
     ]);
     assert_eq!(gr.node_count(), 4);
@@ -182,7 +191,6 @@ fn from_edges() {
     println!("{:?}", Dot::with_config(&gr, &[Config::EdgeNoLabel]));
 }
 
-
 #[test]
 fn graphmap_directed() {
     //let root = TypedArena::<Node<_>>::new();
@@ -193,15 +201,7 @@ fn graphmap_directed() {
     let c = gr.add_node("C");
     let d = gr.add_node("D");
     let e = gr.add_node("E");
-    let edges = [
-        (a, b),
-        (a, c),
-        (a, d),
-        (b, c),
-        (c, d),
-        (d, e),
-        (b, b),
-    ];
+    let edges = [(a, b), (a, c), (a, d), (b, c), (c, d), (d, e), (b, b)];
     gr.extend(&edges);
 
     // Add reverse edges -- ok!
@@ -215,7 +215,8 @@ fn graphmap_directed() {
 }
 
 fn assert_sccs_eq<N>(mut res: Vec<Vec<N>>, mut answer: Vec<Vec<N>>)
-    where N: Ord + fmt::Debug,
+where
+    N: Ord + fmt::Debug,
 {
     // normalize the result and compare with the answer.
     for scc in &mut res {
@@ -242,13 +243,13 @@ fn scc() {
         (7, 5, 7),
         (1, 7, 8),
         (7, 4, 9),
-        (4, 1, 10)]);
-
-    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
-        vec![0, 3, 6],
-        vec![1, 4, 7],
-        vec![2, 5, 8],
+        (4, 1, 10),
     ]);
+
+    assert_sccs_eq(
+        petgraph::algo::kosaraju_scc(&gr),
+        vec![vec![0, 3, 6], vec![1, 4, 7], vec![2, 5, 8]],
+    );
 }
 
 #[test]
@@ -264,7 +265,8 @@ fn test_into_graph() {
         (7, 5, 7),
         (1, 7, 8),
         (7, 4, 9),
-        (4, 1, 10)]);
+        (4, 1, 10),
+    ]);
 
     let graph: Graph<_, _, _> = gr.clone().into_graph();
     println!("{}", Dot::new(&gr));
@@ -283,11 +285,8 @@ fn test_into_graph() {
 #[test]
 fn test_all_edges_mut() {
     // graph with edge weights equal to in+out
-    let mut graph: GraphMap<_, u32, Directed> = GraphMap::from_edges(&[
-        (0, 1, 1),
-        (1, 2, 3),
-        (2, 0, 2),
-    ]);
+    let mut graph: GraphMap<_, u32, Directed> =
+        GraphMap::from_edges(&[(0, 1, 1), (1, 2, 3), (2, 0, 2)]);
 
     // change it so edge weight is equal to 2 * (in+out)
     for (start, end, weight) in graph.all_edges_mut() {
@@ -298,4 +297,41 @@ fn test_all_edges_mut() {
     for (start, end, weight) in graph.all_edges() {
         assert_eq!((start + end) * 2, *weight);
     }
+}
+
+#[test]
+fn neighbors_incoming_includes_self_loops() {
+    let mut graph = DiGraphMap::new();
+
+    graph.add_node(());
+    graph.add_edge((), (), ());
+
+    let mut neighbors = graph.neighbors_directed((), Incoming);
+    assert_eq!(neighbors.next(), Some(()));
+    assert_eq!(neighbors.next(), None);
+}
+
+#[test]
+fn undirected_neighbors_includes_self_loops() {
+    let mut graph = UnGraphMap::new();
+
+    graph.add_node(());
+    graph.add_edge((), (), ());
+
+    let mut neighbors = graph.neighbors(());
+    assert_eq!(neighbors.next(), Some(()));
+    assert_eq!(neighbors.next(), None);
+}
+
+#[test]
+fn self_loops_can_be_removed() {
+    let mut graph = DiGraphMap::new();
+
+    graph.add_node(());
+    graph.add_edge((), (), ());
+
+    graph.remove_edge((), ());
+
+    assert_eq!(graph.neighbors_directed((), Outgoing).next(), None);
+    assert_eq!(graph.neighbors_directed((), Incoming).next(), None);
 }

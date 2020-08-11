@@ -39,10 +39,10 @@ impl<K: PartialOrd, T> Ord for MinScored<K, T> {
             Ordering::Greater
         } else if a > b {
             Ordering::Less
-        } else if a != a && b != b {
+        } else if a.ne(a) && b.ne(b) {
             // these are the NaN cases
             Ordering::Equal
-        } else if a != a {
+        } else if a.ne(a) {
             // Order NaN less, so that it is last in the MinScore order
             Ordering::Less
         } else {
@@ -50,4 +50,3 @@ impl<K: PartialOrd, T> Ord for MinScored<K, T> {
         }
     }
 }
-

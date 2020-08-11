@@ -3,24 +3,16 @@ extern crate petgraph;
 use std::fs::File;
 use std::io::prelude::*;
 
+use petgraph::graph::{edge_index, node_index};
 use petgraph::prelude::*;
-use petgraph::{
-    EdgeType,
-};
-use petgraph::graph::{
-    node_index,
-    edge_index,
-};
+use petgraph::EdgeType;
 
-use petgraph::algo::{
-    is_isomorphic,
-    is_isomorphic_matching,
-};
+use petgraph::algo::{is_isomorphic, is_isomorphic_matching};
 
 /// Petersen A and B are isomorphic
 ///
 /// http://www.dharwadker.org/tevet/isomorphism/
-const PETERSEN_A: &'static str = "
+const PETERSEN_A: &str = "
  0 1 0 0 1 0 1 0 0 0 
  1 0 1 0 0 0 0 1 0 0 
  0 1 0 1 0 0 0 0 1 0 
@@ -33,7 +25,7 @@ const PETERSEN_A: &'static str = "
  0 0 0 1 0 0 1 1 0 0
 ";
 
-const PETERSEN_B: &'static str = "
+const PETERSEN_B: &str = "
  0 0 0 1 0 1 0 0 0 1 
  0 0 0 1 1 0 1 0 0 0 
  0 0 0 0 0 0 1 1 0 1 
@@ -47,7 +39,7 @@ const PETERSEN_B: &'static str = "
 ";
 
 /// An almost full set, isomorphic
-const FULL_A: &'static str = "
+const FULL_A: &str = "
  1 1 1 1 1 1 1 1 1 1 
  1 1 1 1 1 1 1 1 1 1 
  1 1 1 1 1 1 1 1 1 1 
@@ -60,7 +52,7 @@ const FULL_A: &'static str = "
  1 1 1 1 1 1 1 1 1 1
 ";
 
-const FULL_B: &'static str = "
+const FULL_B: &str = "
  1 1 1 1 1 1 1 1 1 1 
  1 1 1 1 1 1 1 1 1 1 
  1 1 0 1 1 1 0 1 1 1 
@@ -74,7 +66,7 @@ const FULL_B: &'static str = "
 ";
 
 /// Praust A and B are not isomorphic
-const PRAUST_A: &'static str = "
+const PRAUST_A: &str = "
  0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 
  1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 
  1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 
@@ -97,7 +89,7 @@ const PRAUST_A: &'static str = "
  0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 1 1 0
 ";
 
-const PRAUST_B: &'static str = "
+const PRAUST_B: &str = "
  0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 
  1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 
  1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 
@@ -120,7 +112,7 @@ const PRAUST_B: &'static str = "
  0 0 0 0 0 1 0 0 0 0 0 0 1 0 1 0 0 1 1 0 
 ";
 
-const G1U: &'static str = "
+const G1U: &str = "
 0 1 1 0 1
 1 0 1 0 0
 1 1 0 0 0
@@ -128,7 +120,7 @@ const G1U: &'static str = "
 1 0 0 0 0
 ";
 
-const G2U: &'static str = "
+const G2U: &str = "
 0 1 0 1 0
 1 0 0 1 1
 0 0 0 0 0
@@ -136,7 +128,7 @@ const G2U: &'static str = "
 0 1 0 0 0
 ";
 
-const G4U: &'static str = "
+const G4U: &str = "
 0 1 1 0 1
 1 0 0 1 0
 1 0 0 0 0
@@ -144,7 +136,7 @@ const G4U: &'static str = "
 1 0 0 0 0
 ";
 
-const G1D: &'static str = "
+const G1D: &str = "
 0 1 1 0 1
 0 0 1 0 0
 0 0 0 0 0
@@ -152,7 +144,7 @@ const G1D: &'static str = "
 0 0 0 0 0
 ";
 
-const G4D: &'static str = "
+const G4D: &str = "
 0 1 1 0 1
 0 0 0 1 0
 0 0 0 0 0
@@ -161,7 +153,7 @@ const G4D: &'static str = "
 ";
 
 // G8 1,2 are not iso
-const G8_1: &'static str = "
+const G8_1: &str = "
 0 1 1 0 0 1 1 1
 1 0 1 0 1 0 1 1
 1 1 0 1 0 0 1 1
@@ -172,7 +164,7 @@ const G8_1: &'static str = "
 1 1 1 1 1 1 1 0
 ";
 
-const G8_2: &'static str = "
+const G8_2: &str = "
 0 1 0 1 0 1 1 1
 1 0 1 0 1 0 1 1
 0 1 0 1 0 1 1 1
@@ -184,40 +176,36 @@ const G8_2: &'static str = "
 ";
 
 // G3 1,2 are not iso
-const G3_1: &'static str = "
+const G3_1: &str = "
 0 1 0
 1 0 1
 0 1 0
 ";
-const G3_2: &'static str = "
+const G3_2: &str = "
 0 1 1
 1 0 1
 1 1 0
 ";
 
 // Non-isomorphic due to selfloop difference
-const S1: &'static str = "
+const S1: &str = "
 1 1 1
 1 0 1
 1 0 0
 ";
-const S2: &'static str = "
+const S2: &str = "
 1 1 1
 0 1 1
 1 0 0
 ";
 
 /// Parse a text adjacency matrix format into a directed graph
-fn parse_graph<Ty: EdgeType>(s: &str) -> Graph<(), (), Ty>
-{
+fn parse_graph<Ty: EdgeType>(s: &str) -> Graph<(), (), Ty> {
     let mut gr = Graph::with_capacity(0, 0);
     let s = s.trim();
     let lines = s.lines().filter(|l| !l.is_empty());
     for (row, line) in lines.enumerate() {
-        for (col, word) in line.split(' ')
-                                .filter(|s| s.len() > 0)
-                                .enumerate()
-        {
+        for (col, word) in line.split(' ').filter(|s| !s.is_empty()).enumerate() {
             let has_edge = word.parse::<i32>().unwrap();
             assert!(has_edge == 0 || has_edge == 1);
             if has_edge == 0 {
@@ -241,11 +229,11 @@ fn str_to_digraph(s: &str) -> Graph<(), (), Directed> {
 }
 
 /// Parse a file in adjacency matrix format into a directed graph
-fn graph_from_file(path: &str) -> Graph<(), (), Directed>
-{
+fn graph_from_file(path: &str) -> Graph<(), (), Directed> {
     let mut f = File::open(path).expect("file not found");
     let mut contents = String::new();
-    f.read_to_string(&mut contents).expect("failed to read from file");
+    f.read_to_string(&mut contents)
+        .expect("failed to read from file");
     parse_graph(&contents)
 }
 
@@ -269,8 +257,7 @@ fn graph_to_ad_matrix<N, E, Ty: EdgeType>(g: &Graph<N,E,Ty>)
 */
 
 #[test]
-fn petersen_iso()
-{
+fn petersen_iso() {
     // The correct isomorphism is
     // 0 => 0, 1 => 3, 2 => 1, 3 => 4, 5 => 2, 6 => 5, 7 => 7, 8 => 6, 9 => 8, 4 => 9
     let peta = str_to_digraph(PETERSEN_A);
@@ -286,8 +273,7 @@ fn petersen_iso()
 }
 
 #[test]
-fn petersen_undir_iso()
-{
+fn petersen_undir_iso() {
     // The correct isomorphism is
     // 0 => 0, 1 => 3, 2 => 1, 3 => 4, 5 => 2, 6 => 5, 7 => 7, 8 => 6, 9 => 8, 4 => 9
     let peta = str_to_digraph(PETERSEN_A);
@@ -297,8 +283,7 @@ fn petersen_undir_iso()
 }
 
 #[test]
-fn full_iso()
-{
+fn full_iso() {
     let a = str_to_graph(FULL_A);
     let b = str_to_graph(FULL_B);
 
@@ -306,8 +291,7 @@ fn full_iso()
 }
 
 #[test]
-fn praust_dir_no_iso()
-{
+fn praust_dir_no_iso() {
     let a = str_to_digraph(PRAUST_A);
     let b = str_to_digraph(PRAUST_B);
 
@@ -315,8 +299,7 @@ fn praust_dir_no_iso()
 }
 
 #[test]
-fn praust_undir_no_iso()
-{
+fn praust_undir_no_iso() {
     let a = str_to_graph(PRAUST_A);
     let b = str_to_graph(PRAUST_B);
 
@@ -324,8 +307,7 @@ fn praust_undir_no_iso()
 }
 
 #[test]
-fn coxeter_di_iso()
-{
+fn coxeter_di_iso() {
     // The correct isomorphism is
     let a = str_to_digraph(COXETER_A);
     let b = str_to_digraph(COXETER_B);
@@ -333,8 +315,7 @@ fn coxeter_di_iso()
 }
 
 #[test]
-fn coxeter_undi_iso()
-{
+fn coxeter_undi_iso() {
     // The correct isomorphism is
     let a = str_to_graph(COXETER_A);
     let b = str_to_graph(COXETER_B);
@@ -342,40 +323,35 @@ fn coxeter_undi_iso()
 }
 
 #[test]
-fn g14_dir_not_iso()
-{
+fn g14_dir_not_iso() {
     let a = str_to_digraph(G1D);
     let b = str_to_digraph(G4D);
     assert!(!petgraph::algo::is_isomorphic(&a, &b));
 }
 
 #[test]
-fn g14_undir_not_iso()
-{
+fn g14_undir_not_iso() {
     let a = str_to_digraph(G1U);
     let b = str_to_digraph(G4U);
     assert!(!petgraph::algo::is_isomorphic(&a, &b));
 }
 
 #[test]
-fn g12_undir_iso()
-{
+fn g12_undir_iso() {
     let a = str_to_digraph(G1U);
     let b = str_to_digraph(G2U);
     assert!(petgraph::algo::is_isomorphic(&a, &b));
 }
 
 #[test]
-fn g3_not_iso()
-{
+fn g3_not_iso() {
     let a = str_to_digraph(G3_1);
     let b = str_to_digraph(G3_2);
     assert!(!petgraph::algo::is_isomorphic(&a, &b));
 }
 
 #[test]
-fn g8_not_iso()
-{
+fn g8_not_iso() {
     let a = str_to_digraph(G8_1);
     let b = str_to_digraph(G8_2);
     assert_eq!(a.edge_count(), b.edge_count());
@@ -384,8 +360,7 @@ fn g8_not_iso()
 }
 
 #[test]
-fn s12_not_iso()
-{
+fn s12_not_iso() {
     let a = str_to_digraph(S1);
     let b = str_to_digraph(S2);
     assert_eq!(a.edge_count(), b.edge_count());
@@ -394,8 +369,7 @@ fn s12_not_iso()
 }
 
 #[test]
-fn iso1()
-{
+fn iso1() {
     let mut g0 = Graph::<_, ()>::new();
     let mut g1 = Graph::<_, ()>::new();
     assert!(petgraph::algo::is_isomorphic(&g0, &g1));
@@ -418,8 +392,7 @@ fn iso1()
 }
 
 #[test]
-fn iso2()
-{
+fn iso2() {
     let mut g0 = Graph::<_, ()>::new();
     let mut g1 = Graph::<_, ()>::new();
 
@@ -467,19 +440,24 @@ fn iso2()
 
 #[test]
 fn iso_matching() {
-    let g0 = Graph::<(), _>::from_edges(&[
-        (0, 0, 1),
-        (0, 1, 2),
-        (0, 2, 3),
-        (1, 2, 4),
-    ]);
+    let g0 = Graph::<(), _>::from_edges(&[(0, 0, 1), (0, 1, 2), (0, 2, 3), (1, 2, 4)]);
 
     let mut g1 = g0.clone();
     g1[edge_index(0)] = 0;
-    assert!(!is_isomorphic_matching(&g0, &g1, |x, y| x == y, |x, y| x == y));
+    assert!(!is_isomorphic_matching(
+        &g0,
+        &g1,
+        |x, y| x == y,
+        |x, y| x == y
+    ));
     let mut g2 = g0.clone();
     g2[edge_index(1)] = 0;
-    assert!(!is_isomorphic_matching(&g0, &g2, |x, y| x == y, |x, y| x == y));
+    assert!(!is_isomorphic_matching(
+        &g0,
+        &g2,
+        |x, y| x == y,
+        |x, y| x == y
+    ));
 }
 
 #[test]
@@ -501,29 +479,14 @@ fn iso_large() {
 #[should_panic]
 #[test]
 fn iso_multigraph_failure() {
-    let g0 = Graph::<(), ()>::from_edges(&[
-        (0, 0),
-        (0, 0),
-        (0, 1),
-        (1, 1),
-        (1, 1),
-        (1, 0),
-    ]);
+    let g0 = Graph::<(), ()>::from_edges(&[(0, 0), (0, 0), (0, 1), (1, 1), (1, 1), (1, 0)]);
 
-    let g1 = Graph::<(), ()>::from_edges(&[
-        (0, 0),
-        (0, 1),
-        (0, 1),
-        (1, 1),
-        (1, 0),
-        (1, 0),
-    ]);
+    let g1 = Graph::<(), ()>::from_edges(&[(0, 0), (0, 1), (0, 1), (1, 1), (1, 0), (1, 0)]);
     assert!(!is_isomorphic(&g0, &g1));
 }
 
-
 /// Isomorphic pair
-const COXETER_A: &'static str = "
+const COXETER_A: &str = "
  0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
  1 0 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
  0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 
@@ -556,7 +519,7 @@ const COXETER_A: &'static str = "
  1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 
 ";
 
-const COXETER_B: &'static str = "
+const COXETER_B: &str = "
  0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 
  0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 
  0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0 0 
@@ -588,4 +551,3 @@ const COXETER_B: &'static str = "
  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 1 
  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 1 0
 ";
-

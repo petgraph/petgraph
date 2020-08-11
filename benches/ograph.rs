@@ -13,9 +13,7 @@ fn bench_inser(b: &mut test::Bencher) {
         let n = og.add_node(x);
         og.add_edge(fst, n, ());
     }
-    b.iter(|| {
-        og.add_node(1)
-    })
+    b.iter(|| og.add_node(1))
 }
 
 #[bench]
@@ -47,7 +45,7 @@ fn bench_remove(b: &mut test::Bencher) {
     }
     //println!("{}", og);
     b.iter(|| {
-        for _ in 0 .. 100 {
+        for _ in 0..100 {
             og.remove_node(fst);
         }
     })

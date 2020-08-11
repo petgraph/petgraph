@@ -1,13 +1,13 @@
 language: rust
-sudo: false
-matrix:
+jobs:
   include:
     - rust: 1.37.0
       env:
       - ALL=' '
     - rust: stable
       env:
-      - FEATURES='unstable quickcheck'
+        - FEATURES='unstable quickcheck'
+        - CHECKFMT=1
     - rust: beta
     - rust: nightly
     - rust: nightly
@@ -17,9 +17,18 @@ matrix:
 branches:
   only:
     - master
+before_script:
+  - |
+      if [ "${CHECKFMT}" == "1"]; then
+        rustup component add rustfmt --toolchain stable
+      fi
 script:
   - |
       cargo build --verbose --no-default-features &&
       cargo test --verbose --no-default-features &&
       cargo build --verbose --features "$FEATURES" &&
-      cargo test ${ALL:---all} --verbose --features "$FEATURES"
+      cargo test ${ALL:---all} --verbose --features "$FEATURES" &&
+      if [ "${CHECKFMT}" == "1"]; then
+        cargo +stable fmt -- --check
+      fi
+

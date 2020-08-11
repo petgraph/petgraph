@@ -4,54 +4,36 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use petgraph::prelude::*;
-use petgraph::{
-    EdgeType,
-};
+use petgraph::EdgeType;
 
 use petgraph as pg;
 
 use petgraph::algo::{
-    dominators,
-    has_path_connecting,
-    is_cyclic_undirected,
-    min_spanning_tree,
-    is_isomorphic_matching,
+    dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
+    is_isomorphic_matching, min_spanning_tree,
 };
 
 use petgraph::graph::node_index as n;
-use petgraph::graph::{
-    IndexType,
-};
+use petgraph::graph::IndexType;
 
+use petgraph::algo::{astar, dijkstra, DfsSpace};
 use petgraph::visit::{
-    IntoNodeIdentifiers,
-    NodeFiltered,
-    Reversed,
-    Topo,
-    IntoNeighbors,
-    VisitMap,
-    Walker,
-};
-use petgraph::algo::{
-    DfsSpace,
-    dijkstra,
-    astar,
+    IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNodeIdentifiers, NodeFiltered, Reversed, Topo,
+    VisitMap, Walker,
 };
 
-use petgraph::dot::{
-    Dot,
-};
+use petgraph::dot::Dot;
 
 fn set<I>(iter: I) -> HashSet<I::Item>
-    where I: IntoIterator,
-          I::Item: Hash + Eq,
+where
+    I: IntoIterator,
+    I::Item: Hash + Eq,
 {
     iter.into_iter().collect()
 }
 
 #[test]
-fn undirected()
-{
+fn undirected() {
     let mut og = Graph::new_undirected();
     let a = og.add_node(0);
     let b = og.add_node(1);
@@ -87,7 +69,6 @@ fn undirected()
     assert!(og.find_edge(a, a).is_none());
     assert!(og.find_edge(b, c).is_some());
     assert_graph_consistent(&og);
-
 }
 
 #[test]
@@ -116,6 +97,34 @@ fn dfs() {
     assert_eq!(Dfs::new(&gr, i).iter(&gr).count(), 3);
 }
 
+#[test]
+fn dfs_order() {
+    let mut gr = Graph::new();
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
+    let k = gr.add_node("K");
+    gr.add_edge(h, i, ());
+    gr.add_edge(h, j, ());
+    gr.add_edge(h, k, ());
+    gr.add_edge(i, k, ());
+    gr.add_edge(k, i, ());
+
+    //      H
+    //    / | \
+    //   I  J  K
+    //    \___/
+    //
+    // J cannot be visited between I and K in a depth-first search from H
+
+    let mut seen_i = false;
+    let mut seen_k = false;
+    for node in Dfs::new(&gr, h).iter(&gr) {
+        seen_i |= i == node;
+        seen_k |= k == node;
+        assert!(!(j == node && (seen_i ^ seen_k)), "Invalid DFS order");
+    }
+}
 
 #[test]
 fn bfs() {
@@ -156,13 +165,11 @@ fn bfs() {
     assert_eq!(bfs.next(&gr), None);
 }
 
-
-
 #[test]
 fn mst() {
     use petgraph::data::FromElements;
 
-    let mut gr = Graph::<_,_>::new();
+    let mut gr = Graph::<_, _>::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
     let c = gr.add_node("C");
@@ -214,7 +221,6 @@ fn mst() {
 
     assert!(mst.find_edge(d, b).is_none());
     assert!(mst.find_edge(b, c).is_none());
-
 }
 
 #[test]
@@ -274,6 +280,77 @@ fn cyclic() {
 }
 
 #[test]
+fn bipartite() {
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+
+        let d = gr.add_node("D");
+        let e = gr.add_node("E");
+        let f = gr.add_node("F");
+
+        gr.add_edge(a, d, 7.);
+        gr.add_edge(b, d, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        let e_index = gr.add_edge(a, b, 6.);
+
+        assert!(!is_bipartite_undirected(&gr, a));
+
+        gr.remove_edge(e_index);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        gr.add_edge(b, e, 7.);
+        gr.add_edge(b, f, 6.);
+        gr.add_edge(c, e, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+    }
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+        let d = gr.add_node("D");
+        let e = gr.add_node("E");
+
+        let f = gr.add_node("F");
+        let g = gr.add_node("G");
+        let h = gr.add_node("H");
+
+        gr.add_edge(a, f, 7.);
+        gr.add_edge(a, g, 7.);
+        gr.add_edge(a, h, 7.);
+
+        gr.add_edge(b, f, 6.);
+        gr.add_edge(b, g, 6.);
+        gr.add_edge(b, h, 6.);
+
+        gr.add_edge(c, f, 6.);
+        gr.add_edge(c, g, 6.);
+        gr.add_edge(c, h, 6.);
+
+        gr.add_edge(d, f, 6.);
+        gr.add_edge(d, g, 6.);
+        gr.add_edge(d, h, 6.);
+
+        gr.add_edge(e, f, 6.);
+        gr.add_edge(e, g, 6.);
+        gr.add_edge(e, h, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        gr.add_edge(a, b, 6.);
+
+        assert!(!is_bipartite_undirected(&gr, a));
+    }
+}
+
+#[test]
 fn multi() {
     let mut gr = Graph::new();
     let a = gr.add_node("a");
@@ -281,11 +358,74 @@ fn multi() {
     gr.add_edge(a, b, ());
     gr.add_edge(a, b, ());
     assert_eq!(gr.edge_count(), 2);
-
 }
+
 #[test]
-fn update_edge()
-{
+fn iter_multi_edges() {
+    let mut gr = Graph::new();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+
+    let mut connecting_edges = HashSet::new();
+
+    gr.add_edge(a, a, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    gr.add_edge(a, c, ());
+    gr.add_edge(c, b, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    gr.add_edge(b, a, ());
+
+    let mut iter = gr.edges_connecting(a, b);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    assert_eq!(None, iter.next());
+    assert!(connecting_edges.is_empty());
+}
+
+#[test]
+fn iter_multi_undirected_edges() {
+    let mut gr = Graph::new_undirected();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+
+    let mut connecting_edges = HashSet::new();
+
+    gr.add_edge(a, a, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    gr.add_edge(a, c, ());
+    gr.add_edge(c, b, ());
+    connecting_edges.insert(gr.add_edge(a, b, ()));
+    connecting_edges.insert(gr.add_edge(b, a, ()));
+
+    let mut iter = gr.edges_connecting(a, b);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    let edge_id = iter.next().unwrap().id();
+    assert!(connecting_edges.contains(&edge_id));
+    connecting_edges.remove(&edge_id);
+
+    assert_eq!(None, iter.next());
+    assert!(connecting_edges.is_empty());
+}
+
+#[test]
+fn update_edge() {
     {
         let mut gr = Graph::new();
         let a = gr.add_node("a");
@@ -336,8 +476,17 @@ fn dijk() {
     let scores = dijkstra(&g, a, None, |e| *e.weight());
     let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();
     scores.sort();
-    assert_eq!(scores,
-       vec![("A", 0), ("B", 7), ("C", 9), ("D", 11), ("E", 20), ("F", 20)]);
+    assert_eq!(
+        scores,
+        vec![
+            ("A", 0),
+            ("B", 7),
+            ("C", 9),
+            ("D", 11),
+            ("E", 20),
+            ("F", 20)
+        ]
+    );
 
     let scores = dijkstra(&g, a, Some(c), |e| *e.weight());
     assert_eq!(scores[&c], 9);
@@ -400,7 +549,13 @@ fn test_astar_manhattan_heuristic() {
             (x2 - x1).abs() + (y2 - y1).abs()
         }
     };
-    let path = astar(&g, a, |finish| finish == f, |e| *e.weight(), heuristic_for(f));
+    let path = astar(
+        &g,
+        a,
+        |finish| finish == f,
+        |e| *e.weight(),
+        heuristic_for(f),
+    );
 
     assert_eq!(path, Some((6., vec![a, d, e, f])));
 
@@ -408,10 +563,14 @@ fn test_astar_manhattan_heuristic() {
     let dijkstra_run = dijkstra(&g, a, None, |e| *e.weight());
 
     for end in g.node_indices() {
-        let astar_path = astar(&g, a, |finish| finish == end, |e| *e.weight(),
-                               heuristic_for(end));
-        assert_eq!(dijkstra_run.get(&end).cloned(),
-                   astar_path.map(|t| t.0));
+        let astar_path = astar(
+            &g,
+            a,
+            |finish| finish == end,
+            |e| *e.weight(),
+            heuristic_for(end),
+        );
+        assert_eq!(dijkstra_run.get(&end).cloned(), astar_path.map(|t| t.0));
     }
 }
 
@@ -472,20 +631,25 @@ fn test_generate_dag() {
         assert_eq!(graphs.len(), 1 << nedges);
 
         // check that all generated graphs have unique adjacency matrices
-        let mut adjmats = graphs.iter().map(Graph::adjacency_matrix).collect::<Vec<_>>();
+        let mut adjmats = graphs
+            .iter()
+            .map(Graph::adjacency_matrix)
+            .collect::<Vec<_>>();
         adjmats.sort();
         adjmats.dedup();
         assert_eq!(adjmats.len(), graphs.len());
         for gr in &graphs {
-            assert!(!petgraph::algo::is_cyclic_directed(gr),
-                    "Assertion failed: {:?} acyclic", gr);
+            assert!(
+                !petgraph::algo::is_cyclic_directed(gr),
+                "Assertion failed: {:?} acyclic",
+                gr
+            );
         }
     }
 }
 
 #[test]
-fn without()
-{
+fn without() {
     let mut og = Graph::new_undirected();
     let a = og.add_node(0);
     let b = og.add_node(1);
@@ -509,8 +673,7 @@ fn without()
     assert_eq!(term, vec![b, c, d]);
 }
 
-fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex])
-{
+fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex]) {
     assert_eq!(gr.node_count(), order.len());
     // check all the edges of the graph
     for edge in gr.raw_edges() {
@@ -519,14 +682,18 @@ fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex])
         let ai = order.iter().position(|x| *x == a).unwrap();
         let bi = order.iter().position(|x| *x == b).unwrap();
         println!("Check that {:?} is before {:?}", a, b);
-        assert!(ai < bi, "Topo order: assertion that node {:?} is before {:?} failed",
-                a, b);
+        assert!(
+            ai < bi,
+            "Topo order: assertion that node {:?} is before {:?} failed",
+            a,
+            b
+        );
     }
 }
 
 #[test]
 fn test_toposort() {
-    let mut gr = Graph::<_,_>::new();
+    let mut gr = Graph::<_, _>::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
     let c = gr.add_node("C");
@@ -565,7 +732,7 @@ fn test_toposort() {
 
 #[test]
 fn test_toposort_eq() {
-    let mut g = Graph::<_,_>::new();
+    let mut g = Graph::<_, _>::new();
     let a = g.add_node("A");
     let b = g.add_node("B");
     g.add_edge(a, b, ());
@@ -575,7 +742,7 @@ fn test_toposort_eq() {
 
 #[test]
 fn is_cyclic_directed() {
-    let mut gr = Graph::<_,_>::new();
+    let mut gr = Graph::<_, _>::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
     let c = gr.add_node("C");
@@ -612,8 +779,11 @@ fn is_cyclic_directed() {
 
 /// Compare two scc sets. Inside each scc, the order does not matter,
 /// but the order of the sccs is significant.
-fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, mut answer: Vec<Vec<NodeIndex>>,
-                  scc_order_matters: bool) {
+fn assert_sccs_eq(
+    mut res: Vec<Vec<NodeIndex>>,
+    mut answer: Vec<Vec<NodeIndex>>,
+    scc_order_matters: bool,
+) {
     // normalize the result and compare with the answer.
     for scc in &mut res {
         scc.sort();
@@ -641,20 +811,28 @@ fn scc() {
         (7, 5),
         (1, 7),
         (7, 4),
-        (4, 1)]);
+        (4, 1),
+    ]);
 
-    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
-        vec![n(0), n(3), n(6)],
-        vec![n(2), n(5), n(8)],
-        vec![n(1), n(4), n(7)],
-    ], true);
+    assert_sccs_eq(
+        petgraph::algo::kosaraju_scc(&gr),
+        vec![
+            vec![n(0), n(3), n(6)],
+            vec![n(2), n(5), n(8)],
+            vec![n(1), n(4), n(7)],
+        ],
+        true,
+    );
     // Reversed edges gives the same sccs (when sorted)
-    assert_sccs_eq(petgraph::algo::kosaraju_scc(Reversed(&gr)), vec![
-        vec![n(1), n(4), n(7)],
-        vec![n(2), n(5), n(8)],
-        vec![n(0), n(3), n(6)],
-    ], true);
-
+    assert_sccs_eq(
+        petgraph::algo::kosaraju_scc(Reversed(&gr)),
+        vec![
+            vec![n(1), n(4), n(7)],
+            vec![n(2), n(5), n(8)],
+            vec![n(0), n(3), n(6)],
+        ],
+        true,
+    );
 
     // Test an undirected graph just for fun.
     // Sccs are just connected components.
@@ -663,11 +841,14 @@ fn scc() {
     let ed = hr.find_edge(n(6), n(8)).unwrap();
     assert!(hr.remove_edge(ed).is_some());
 
-    assert_sccs_eq(petgraph::algo::kosaraju_scc(&hr), vec![
-        vec![n(0), n(3), n(6)],
-        vec![n(1), n(2), n(4), n(5), n(7), n(8)],
-    ], false);
-
+    assert_sccs_eq(
+        petgraph::algo::kosaraju_scc(&hr),
+        vec![
+            vec![n(0), n(3), n(6)],
+            vec![n(1), n(2), n(4), n(5), n(7), n(8)],
+        ],
+        false,
+    );
 
     // acyclic non-tree, #14
     let n = NodeIndex::new;
@@ -681,26 +862,23 @@ fn scc() {
     gr.add_edge(n(2), n(0), ());
     gr.add_edge(n(1), n(0), ());
 
-    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
-        vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
-    ], true);
+    assert_sccs_eq(
+        petgraph::algo::kosaraju_scc(&gr),
+        vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
+        true,
+    );
 
     // Kosaraju bug from PR #60
     let mut gr = Graph::<(), ()>::new();
-    gr.extend_with_edges(&[
-        (0, 0),
-        (1, 0),
-        (2, 0),
-        (2, 1),
-        (2, 2),
-    ]);
+    gr.extend_with_edges(&[(0, 0), (1, 0), (2, 0), (2, 1), (2, 2)]);
     gr.add_node(());
     // no order for the disconnected one
-    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
-        vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
-    ], false);
+    assert_sccs_eq(
+        petgraph::algo::kosaraju_scc(&gr),
+        vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
+        false,
+    );
 }
-
 
 #[test]
 fn tarjan_scc() {
@@ -715,14 +893,22 @@ fn tarjan_scc() {
         (7, 5),
         (1, 7),
         (7, 4),
-        (4, 1)]);
+        (4, 1),
+    ]);
 
-    assert_sccs_eq(petgraph::algo::tarjan_scc(&gr), vec![
-        vec![n(0), n(3), n(6)],
-        vec![n(2), n(5), n(8)],
-        vec![n(1), n(4), n(7)],
-    ], true);
+    let mut tarjan_scc = petgraph::algo::TarjanScc::new();
 
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
+    assert_sccs_eq(
+        result,
+        vec![
+            vec![n(0), n(3), n(6)],
+            vec![n(2), n(5), n(8)],
+            vec![n(1), n(4), n(7)],
+        ],
+        true,
+    );
 
     // Test an undirected graph just for fun.
     // Sccs are just connected components.
@@ -731,11 +917,16 @@ fn tarjan_scc() {
     let ed = hr.find_edge(n(6), n(8)).unwrap();
     assert!(hr.remove_edge(ed).is_some());
 
-    assert_sccs_eq(petgraph::algo::tarjan_scc(&hr), vec![
-        vec![n(1), n(2), n(4), n(5), n(7), n(8)],
-        vec![n(0), n(3), n(6)],
-    ], false);
-
+    let mut result = Vec::new();
+    tarjan_scc.run(&hr, |scc| result.push(scc.iter().rev().cloned().collect()));
+    assert_sccs_eq(
+        result,
+        vec![
+            vec![n(1), n(2), n(4), n(5), n(7), n(8)],
+            vec![n(0), n(3), n(6)],
+        ],
+        false,
+    );
 
     // acyclic non-tree, #14
     let n = NodeIndex::new;
@@ -749,30 +940,30 @@ fn tarjan_scc() {
     gr.add_edge(n(2), n(0), ());
     gr.add_edge(n(1), n(0), ());
 
-    assert_sccs_eq(petgraph::algo::tarjan_scc(&gr), vec![
-        vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
-    ], true);
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
+    assert_sccs_eq(
+        result,
+        vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
+        true,
+    );
 
     // Kosaraju bug from PR #60
     let mut gr = Graph::<(), ()>::new();
-    gr.extend_with_edges(&[
-        (0, 0),
-        (1, 0),
-        (2, 0),
-        (2, 1),
-        (2, 2),
-    ]);
+    gr.extend_with_edges(&[(0, 0), (1, 0), (2, 0), (2, 1), (2, 2)]);
     gr.add_node(());
     // no order for the disconnected one
-    assert_sccs_eq(petgraph::algo::tarjan_scc(&gr), vec![
-        vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)],
-    ], false);
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
+    assert_sccs_eq(
+        result,
+        vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
+        false,
+    );
 }
 
-
 #[test]
-fn condensation()
-{
+fn condensation() {
     let gr: Graph<(), ()> = Graph::from_edges(&[
         (6, 0),
         (0, 3),
@@ -785,8 +976,8 @@ fn condensation()
         (7, 5),
         (1, 7),
         (7, 4),
-        (4, 1)]);
-
+        (4, 1),
+    ]);
 
     // make_acyclic = true
 
@@ -794,9 +985,11 @@ fn condensation()
 
     assert!(cond.node_count() == 3);
     assert!(cond.edge_count() == 2);
-    assert!(!petgraph::algo::is_cyclic_directed(&cond),
-            "Assertion failed: {:?} acyclic", cond);
-
+    assert!(
+        !petgraph::algo::is_cyclic_directed(&cond),
+        "Assertion failed: {:?} acyclic",
+        cond
+    );
 
     // make_acyclic = false
 
@@ -807,8 +1000,7 @@ fn condensation()
 }
 
 #[test]
-fn connected_comp()
-{
+fn connected_comp() {
     let n = NodeIndex::new;
     let mut gr = Graph::new();
     gr.add_node(0);
@@ -846,8 +1038,7 @@ fn connected_comp()
 
 #[should_panic]
 #[test]
-fn oob_index()
-{
+fn oob_index() {
     let mut gr = Graph::<_, ()>::new();
     let a = gr.add_node(0);
     let b = gr.add_node(1);
@@ -856,8 +1047,7 @@ fn oob_index()
 }
 
 #[test]
-fn usize_index()
-{
+fn usize_index() {
     let mut gr = Graph::<_, _, Directed, usize>::with_capacity(0, 0);
     let a = gr.add_node(0);
     let b = gr.add_node(1);
@@ -872,8 +1062,7 @@ fn usize_index()
 }
 
 #[test]
-fn u8_index()
-{
+fn u8_index() {
     let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
     for _ in 0..255 {
         gr.add_node(());
@@ -882,8 +1071,7 @@ fn u8_index()
 
 #[should_panic]
 #[test]
-fn u8_index_overflow()
-{
+fn u8_index_overflow() {
     let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
     for _ in 0..256 {
         gr.add_node(());
@@ -892,8 +1080,7 @@ fn u8_index_overflow()
 
 #[should_panic]
 #[test]
-fn u8_index_overflow_edges()
-{
+fn u8_index_overflow_edges() {
     let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
     let a = gr.add_node('a');
     let b = gr.add_node('b');
@@ -904,7 +1091,7 @@ fn u8_index_overflow_edges()
 
 #[test]
 fn test_weight_iterators() {
-    let mut gr = Graph::<_,_>::new();
+    let mut gr = Graph::<_, _>::new();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
     let c = gr.add_node("C");
@@ -948,7 +1135,7 @@ fn test_weight_iterators() {
     let old = gr.clone();
     for (index, ew) in gr.edge_weights_mut().enumerate() {
         assert_eq!(old[EdgeIndex::new(index)], *ew);
-        *ew = - *ew;
+        *ew = -*ew;
     }
     for (index, edge) in gr.raw_edges().iter().enumerate() {
         assert_eq!(edge.weight, -1. * old[EdgeIndex::new(index)]);
@@ -957,7 +1144,7 @@ fn test_weight_iterators() {
 
 #[test]
 fn walk_edges() {
-    let mut gr = Graph::<_,_>::new();
+    let mut gr = Graph::<_, _>::new();
     let a = gr.add_node(0.);
     let b = gr.add_node(1.);
     let c = gr.add_node(2.);
@@ -1000,7 +1187,7 @@ fn walk_edges() {
 
 #[test]
 fn index_twice_mut() {
-    let mut gr = Graph::<_,_>::new();
+    let mut gr = Graph::<_, _>::new();
     let a = gr.add_node(0.);
     let b = gr.add_node(0.);
     let c = gr.add_node(0.);
@@ -1021,7 +1208,9 @@ fn index_twice_mut() {
     gr.add_edge(e, g, 9.);
 
     for dir in &[Incoming, Outgoing] {
-        for nw in gr.node_weights_mut() { *nw = 0.; }
+        for nw in gr.node_weights_mut() {
+            *nw = 0.;
+        }
 
         // walk the graph and sum incoming edges
         let mut dfs = Dfs::new(&gr, a);
@@ -1036,17 +1225,172 @@ fn index_twice_mut() {
         // check the sums
         for i in 0..gr.node_count() {
             let ni = NodeIndex::new(i);
-            let s = gr.edges_directed(ni, *dir).map(|e| *e.weight()).fold(0., |a, b| a + b);
+            let s = gr
+                .edges_directed(ni, *dir)
+                .map(|e| *e.weight())
+                .fold(0., |a, b| a + b);
             assert_eq!(s, gr[ni]);
         }
         println!("Sum {:?}: {:?}", dir, gr);
     }
 }
 
+fn make_edge_iterator_graph<Ty: EdgeType>() -> Graph<f64, f64, Ty> {
+    let mut gr = Graph::default();
+    let a = gr.add_node(0.);
+    let b = gr.add_node(0.);
+    let c = gr.add_node(0.);
+    let d = gr.add_node(0.);
+    let e = gr.add_node(0.);
+    let f = gr.add_node(0.);
+    let g = gr.add_node(0.);
+    gr.add_edge(a, b, 7.0);
+    gr.add_edge(a, d, 5.);
+    gr.add_edge(d, b, 9.);
+    gr.add_edge(b, c, 8.);
+    gr.add_edge(b, e, 7.);
+    gr.add_edge(c, c, 8.);
+    gr.add_edge(c, e, 5.);
+    gr.add_edge(d, e, 15.);
+    gr.add_edge(d, f, 6.);
+    gr.add_edge(f, e, 8.);
+    gr.add_edge(f, g, 11.);
+    gr.add_edge(e, g, 9.);
+
+    gr
+}
+
+#[test]
+fn test_edge_iterators_directed() {
+    let gr = make_edge_iterator_graph::<Directed>();
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(gr.edges_directed(i, Outgoing), gr.edges(i));
+
+        // Reversed reverses edges, so target and source need to be reversed once more.
+        itertools::assert_equal(
+            gr.edges_directed(i, Outgoing)
+                .map(|edge| (edge.source(), edge.target())),
+            Reversed(&gr)
+                .edges_directed(i, Incoming)
+                .map(|edge| (edge.target(), edge.source())),
+        );
+
+        for edge in gr.edges_directed(i, Outgoing) {
+            assert_eq!(
+                edge.source(),
+                i,
+                "outgoing edges should have a fixed source"
+            );
+        }
+        for edge in Reversed(&gr).edges_directed(i, Incoming) {
+            assert_eq!(
+                edge.target(),
+                i,
+                "reversed incoming edges should have a fixed target"
+            );
+        }
+    }
+
+    let mut reversed_gr = gr.clone();
+    reversed_gr.reverse();
+
+    println!("{:#?}", gr);
+    for i in gr.node_indices() {
+        // Compare against reversed graphs two different ways: using .reverse() and Reversed.
+        itertools::assert_equal(gr.edges_directed(i, Incoming), reversed_gr.edges(i));
+
+        // Reversed reverses edges, so target and source need to be reversed once more.
+        itertools::assert_equal(
+            gr.edges_directed(i, Incoming)
+                .map(|edge| (edge.source(), edge.target())),
+            Reversed(&gr)
+                .edges(i)
+                .map(|edge| (edge.target(), edge.source())),
+        );
+
+        for edge in gr.edges_directed(i, Incoming) {
+            assert_eq!(
+                edge.target(),
+                i,
+                "incoming edges should have a fixed target"
+            );
+        }
+        for edge in Reversed(&gr).edges_directed(i, Outgoing) {
+            assert_eq!(
+                edge.source(),
+                i,
+                "reversed outgoing edges should have a fixed source"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_edge_iterators_undir() {
+    let gr = make_edge_iterator_graph::<Undirected>();
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(gr.edges_directed(i, Outgoing), gr.edges(i));
+
+        // Reversed reverses edges, so target and source need to be reversed once more.
+        itertools::assert_equal(
+            gr.edges_directed(i, Outgoing)
+                .map(|edge| (edge.source(), edge.target())),
+            Reversed(&gr)
+                .edges_directed(i, Incoming)
+                .map(|edge| (edge.target(), edge.source())),
+        );
+
+        for edge in gr.edges_directed(i, Outgoing) {
+            assert_eq!(
+                edge.source(),
+                i,
+                "outgoing edges should have a fixed source"
+            );
+        }
+        for edge in Reversed(&gr).edges_directed(i, Incoming) {
+            assert_eq!(
+                edge.target(),
+                i,
+                "reversed incoming edges should have a fixed target"
+            );
+        }
+    }
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(gr.edges_directed(i, Incoming), gr.edges(i));
+
+        // Reversed reverses edges, so target and source need to be reversed once more.
+        itertools::assert_equal(
+            gr.edges_directed(i, Incoming)
+                .map(|edge| (edge.source(), edge.target())),
+            Reversed(&gr)
+                .edges(i)
+                .map(|edge| (edge.target(), edge.source())),
+        );
+
+        for edge in gr.edges_directed(i, Incoming) {
+            assert_eq!(
+                edge.target(),
+                i,
+                "incoming edges should have a fixed target"
+            );
+        }
+        for edge in Reversed(&gr).edges_directed(i, Outgoing) {
+            assert_eq!(
+                edge.source(),
+                i,
+                "reversed outgoing edges should have a fixed source"
+            );
+        }
+    }
+}
+
 #[test]
 fn toposort_generic() {
     // This is a DAG, visit it in order
-    let mut gr = Graph::<_,_>::new();
+    let mut gr = Graph::<_, _>::new();
     let b = gr.add_node(("B", 0.));
     let a = gr.add_node(("A", 0.));
     let c = gr.add_node(("C", 0.));
@@ -1106,7 +1450,7 @@ fn toposort_generic() {
 #[test]
 fn test_has_path() {
     // This is a DAG, visit it in order
-    let mut gr = Graph::<_,_>::new();
+    let mut gr = Graph::<_, _>::new();
     let b = gr.add_node(("B", 0.));
     let a = gr.add_node(("A", 0.));
     let c = gr.add_node(("C", 0.));
@@ -1168,24 +1512,27 @@ fn map_filter_map() {
     g.add_edge(e, f, 6);
     println!("{:?}", g);
 
-    let g2 = g.filter_map(|_, name| Some(*name), |_, &weight| if weight >= 10 {
-        Some(weight)
-    } else { None });
+    let g2 = g.filter_map(
+        |_, name| Some(*name),
+        |_, &weight| if weight >= 10 { Some(weight) } else { None },
+    );
     assert_eq!(g2.edge_count(), 4);
     for edge in g2.raw_edges() {
         assert!(edge.weight >= 10);
     }
 
-    let g3 = g.filter_map(|i, &name| if i == a || i == e { None } else { Some(name) },
-                          |i, &weight| {
-                              let (source, target) = g.edge_endpoints(i).unwrap();
-                              // don't map edges from a removed node
-                              assert!(source != a);
-                              assert!(target != a);
-                              assert!(source != e);
-                              assert!(target != e);
-                              Some(weight)
-                          });
+    let g3 = g.filter_map(
+        |i, &name| if i == a || i == e { None } else { Some(name) },
+        |i, &weight| {
+            let (source, target) = g.edge_endpoints(i).unwrap();
+            // don't map edges from a removed node
+            assert!(source != a);
+            assert!(target != a);
+            assert!(source != e);
+            assert!(target != e);
+            Some(weight)
+        },
+    );
     assert_eq!(g3.node_count(), g.node_count() - 2);
     assert_eq!(g3.edge_count(), g.edge_count() - 5);
     assert_graph_consistent(&g3);
@@ -1202,11 +1549,8 @@ fn map_filter_map() {
 #[test]
 fn from_edges() {
     let n = NodeIndex::new;
-    let gr = Graph::<(), (), Undirected>::from_edges(&[
-        (0, 1), (0, 2), (0, 3),
-        (1, 2), (1, 3),
-        (2, 3),
-    ]);
+    let gr =
+        Graph::<(), (), Undirected>::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
     assert_eq!(gr.node_count(), 4);
     assert_eq!(gr.edge_count(), 6);
     assert_eq!(gr.neighbors(n(0)).count(), 3);
@@ -1226,8 +1570,9 @@ fn retain() {
         (2, 3, 3),
     ]);
     gr.retain_edges(|mut gr, i| {
-        if gr[i] <= 0 { false }
-        else {
+        if gr[i] <= 0 {
+            false
+        } else {
             gr[i] -= 1;
             let (s, t) = gr.edge_endpoints(i).unwrap();
             gr[s] += 1;
@@ -1248,30 +1593,30 @@ fn retain() {
 }
 
 fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
-    where Ty: EdgeType,
-          Ix: IndexType,
+where
+    Ty: EdgeType,
+    Ix: IndexType,
 {
     assert_eq!(g.node_count(), g.node_indices().count());
     assert_eq!(g.edge_count(), g.edge_indices().count());
     for edge in g.raw_edges() {
-        assert!(g.find_edge(edge.source(), edge.target()).is_some(),
-                "Edge not in graph! {:?} to {:?}", edge.source(), edge.target());
+        assert!(
+            g.find_edge(edge.source(), edge.target()).is_some(),
+            "Edge not in graph! {:?} to {:?}",
+            edge.source(),
+            edge.target()
+        );
     }
 }
 
 #[test]
 fn neighbors_selfloops() {
     // Directed graph
-    let mut gr = Graph::<_ ,()>::new();
+    let mut gr = Graph::<_, ()>::new();
     let a = gr.add_node("a");
     let b = gr.add_node("b");
     let c = gr.add_node("c");
-    gr.extend_with_edges(&[
-        (a, a),
-        (a, b),
-        (c, a),
-        (a, a),
-    ]);
+    gr.extend_with_edges(&[(a, a), (a, b), (c, a), (a, a)]);
 
     let out_edges = [a, a, b];
     let in_edges = [a, a, c];
@@ -1293,19 +1638,25 @@ fn neighbors_selfloops() {
 
     let mut seen_walk = Vec::new();
     let mut walk = gr.neighbors(a).detach();
-    while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
+    while let Some(n) = walk.next_node(&gr) {
+        seen_walk.push(n);
+    }
     seen_walk.sort();
     assert_eq!(&seen_walk, &out_edges);
 
     seen_walk.clear();
     let mut walk = gr.neighbors_directed(a, Incoming).detach();
-    while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
+    while let Some(n) = walk.next_node(&gr) {
+        seen_walk.push(n);
+    }
     seen_walk.sort();
     assert_eq!(&seen_walk, &in_edges);
 
     seen_walk.clear();
     let mut walk = gr.neighbors_undirected(a).detach();
-    while let Some(n) = walk.next_node(&gr) { seen_walk.push(n); }
+    while let Some(n) = walk.next_node(&gr) {
+        seen_walk.push(n);
+    }
     seen_walk.sort();
     assert_eq!(&seen_walk, &undir_edges);
 
@@ -1314,11 +1665,7 @@ fn neighbors_selfloops() {
     let a = gr.add_node("a");
     let b = gr.add_node("b");
     let c = gr.add_node("c");
-    gr.extend_with_edges(&[
-        (a, a),
-        (a, b),
-        (c, a),
-    ]);
+    gr.extend_with_edges(&[(a, a), (a, b), (c, a)]);
 
     let out_edges = [a, b, c];
     let in_edges = [a, b, c];
@@ -1340,10 +1687,10 @@ fn neighbors_selfloops() {
     assert_eq!(&seen_undir, &undir_edges);
 }
 
-
 fn degree<'a, G>(g: G, node: G::NodeId) -> usize
-    where G: IntoNeighbors,
-          G::NodeId: PartialEq,
+where
+    G: IntoNeighbors,
+    G::NodeId: PartialEq,
 {
     // self loops count twice
     let original_node = node.clone();
@@ -1359,30 +1706,35 @@ fn degree<'a, G>(g: G, node: G::NodeId) -> usize
 fn degree_sequence() {
     let mut gr = Graph::<usize, (), Undirected>::from_edges(&[
         (0, 1),
-        (1, 2), (1, 3),
-        (2, 4), (3, 4),
+        (1, 2),
+        (1, 3),
+        (2, 4),
+        (3, 4),
         (4, 4),
-        (4, 5), (3, 5),
+        (4, 5),
+        (3, 5),
     ]);
     gr.add_node(0); // add isolated node
-    let mut degree_sequence = gr.node_indices()
-                                .map(|i| degree(&gr, i))
-                                .collect::<Vec<_>>();
+    let mut degree_sequence = gr
+        .node_indices()
+        .map(|i| degree(&gr, i))
+        .collect::<Vec<_>>();
 
     degree_sequence.sort_by(|x, y| Ord::cmp(y, x));
     assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
 
     let mut gr = GraphMap::<_, (), Undirected>::from_edges(&[
         (0, 1),
-        (1, 2), (1, 3),
-        (2, 4), (3, 4),
+        (1, 2),
+        (1, 3),
+        (2, 4),
+        (3, 4),
         (4, 4),
-        (4, 5), (3, 5),
+        (4, 5),
+        (3, 5),
     ]);
     gr.add_node(6); // add isolated node
-    let mut degree_sequence = gr.nodes()
-                                .map(|i| degree(&gr, i))
-                                .collect::<Vec<_>>();
+    let mut degree_sequence = gr.nodes().map(|i| degree(&gr, i)).collect::<Vec<_>>();
 
     degree_sequence.sort_by(|x, y| Ord::cmp(y, x));
     assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
@@ -1405,10 +1757,11 @@ fn neighbor_order() {
     gr.add_edge(b, a, 5);
 
     // neighbors (edges) are in lifo order, if it's a directed graph
-    assert_eq!(gr.neighbors(a).collect::<Vec<_>>(),
-               vec![c, a, b]);
-    assert_eq!(gr.neighbors_directed(a, Incoming).collect::<Vec<_>>(),
-               vec![b, c, c, a]);
+    assert_eq!(gr.neighbors(a).collect::<Vec<_>>(), vec![c, a, b]);
+    assert_eq!(
+        gr.neighbors_directed(a, Incoming).collect::<Vec<_>>(),
+        vec![b, c, c, a]
+    );
 }
 
 #[test]
@@ -1423,13 +1776,15 @@ fn dot() {
     let a = gr.add_node(Record { a: 1, b: r"abc\" });
     gr.add_edge(a, a, (1, 2));
     let dot_output = format!("{:?}", Dot::new(&gr));
-    assert_eq!(dot_output,
-    // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
-r#"digraph {
-    0 [label="Record { a: 1, b: \"abc\\\\\" }"]
-    0 -> 0 [label="(1, 2)"]
+    assert_eq!(
+        dot_output,
+        // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
+        r#"digraph {
+    0 [ label = "Record { a: 1, b: \"abc\\\\\" }" ]
+    0 -> 0 [ label = "(1, 2)" ]
 }
-"#);
+"#
+    );
 }
 
 #[test]
@@ -1491,7 +1846,6 @@ fn filtered_edge_reverse() {
         po.push(next_n_ix);
     }
     assert_eq!(set(po), set(vec![a]));
-
 
     let mut g = Graph::new();
     let a = g.add_node("A");
@@ -1565,7 +1919,7 @@ fn filtered_edge_reverse() {
     assert_eq!(set(po), set(vec![c, d]));
 
     // Now let's test the same graph but undirected
-    
+
     let mut g = Graph::new_undirected();
     let a = g.add_node("A");
     let b = g.add_node("B");
@@ -1605,15 +1959,20 @@ fn filtered_edge_reverse() {
 
 #[test]
 fn dfs_visit() {
-    use petgraph::visit::{Visitable, VisitMap};
-    use petgraph::visit::DfsEvent::*;
-    use petgraph::visit::{Time, depth_first_search};
     use petgraph::visit::Control;
+    use petgraph::visit::DfsEvent::*;
+    use petgraph::visit::{depth_first_search, Time};
+    use petgraph::visit::{VisitMap, Visitable};
     let gr: Graph<(), ()> = Graph::from_edges(&[
-        (0, 5), (0, 2), (0, 3), (0, 1),
+        (0, 5),
+        (0, 2),
+        (0, 3),
+        (0, 1),
         (1, 3),
-        (2, 3), (2, 4),
-        (4, 0), (4, 5),
+        (2, 3),
+        (2, 4),
+        (4, 0),
+        (4, 5),
     ]);
 
     let invalid_time = Time(!0);
@@ -1648,7 +2007,10 @@ fn dfs_visit() {
     assert!(discover_time.iter().all(|x| *x != invalid_time));
     assert!(finish_time.iter().all(|x| *x != invalid_time));
     assert_eq!(edges.len(), gr.edge_count());
-    assert_eq!(edges, set(gr.edge_references().map(|e| (e.source(), e.target()))));
+    assert_eq!(
+        edges,
+        set(gr.edge_references().map(|e| (e.source(), e.target())))
+    );
     println!("{:?}", discover_time);
     println!("{:?}", finish_time);
 
@@ -1698,23 +2060,15 @@ fn dfs_visit() {
     assert!(ret.break_value().is_none());
 }
 
-
 #[test]
 fn filtered_post_order() {
     use petgraph::visit::NodeFiltered;
 
-    let mut gr: Graph<(), ()> = Graph::from_edges(&[
-        (0, 2),
-        (1, 2),
-        (0, 3),
-        (1, 4),
-        (2, 4),
-        (4, 5),
-        (3, 5),
-    ]);
+    let mut gr: Graph<(), ()> =
+        Graph::from_edges(&[(0, 2), (1, 2), (0, 3), (1, 4), (2, 4), (4, 5), (3, 5)]);
     // map reachable nodes
     let mut dfs = Dfs::new(&gr, n(0));
-    while let Some(_) = dfs.next(&gr) { }
+    while let Some(_) = dfs.next(&gr) {}
 
     let map = dfs.discovered;
     gr.add_edge(n(0), n(1), ());
@@ -1729,39 +2083,78 @@ fn filtered_post_order() {
 
 #[test]
 fn filter_elements() {
-    use petgraph::data::Element::{Node, Edge};
-    use petgraph::data::FromElements;
+    use petgraph::data::Element::{Edge, Node};
     use petgraph::data::ElementIterator;
+    use petgraph::data::FromElements;
     let elements = vec![
-        Node { weight: "A"},
-        Node { weight: "B"},
-        Node { weight: "C"},
-        Node { weight: "D"},
-        Node { weight: "E"},
-        Node { weight: "F"},
-
-        Edge { source: 0, target: 1, weight: 7 },
-        Edge { source: 2, target: 0, weight: 9 },
-        Edge { source: 0, target: 3, weight: 14 },
-        Edge { source: 1, target: 2, weight: 10 },
-        Edge { source: 3, target: 2, weight: 2 },
-        Edge { source: 3, target: 4, weight: 9 },
-        Edge { source: 1, target: 5, weight: 15 },
-        Edge { source: 2, target: 5, weight: 11 },
-        Edge { source: 4, target: 5, weight: 6 },
+        Node { weight: "A" },
+        Node { weight: "B" },
+        Node { weight: "C" },
+        Node { weight: "D" },
+        Node { weight: "E" },
+        Node { weight: "F" },
+        Edge {
+            source: 0,
+            target: 1,
+            weight: 7,
+        },
+        Edge {
+            source: 2,
+            target: 0,
+            weight: 9,
+        },
+        Edge {
+            source: 0,
+            target: 3,
+            weight: 14,
+        },
+        Edge {
+            source: 1,
+            target: 2,
+            weight: 10,
+        },
+        Edge {
+            source: 3,
+            target: 2,
+            weight: 2,
+        },
+        Edge {
+            source: 3,
+            target: 4,
+            weight: 9,
+        },
+        Edge {
+            source: 1,
+            target: 5,
+            weight: 15,
+        },
+        Edge {
+            source: 2,
+            target: 5,
+            weight: 11,
+        },
+        Edge {
+            source: 4,
+            target: 5,
+            weight: 6,
+        },
     ];
     let mut g = DiGraph::<_, _>::from_elements(elements.iter().cloned());
     println!("{:#?}", g);
     assert!(g.contains_edge(n(1), n(5)));
-    let g2 = DiGraph::<_, _>::from_elements(elements.iter().cloned().filter_elements(|elt| {
-        match elt {
+    let g2 =
+        DiGraph::<_, _>::from_elements(elements.iter().cloned().filter_elements(|elt| match elt {
             Node { ref weight } if **weight == "B" => false,
             _ => true,
-        }
-    }));
+        }));
     println!("{:#?}", g2);
     g.remove_node(n(1));
-    assert!(is_isomorphic_matching(&g, &g2, PartialEq::eq, PartialEq::eq));
+    assert!(is_isomorphic_matching(
+        &g,
+        &g2,
+        PartialEq::eq,
+        PartialEq::eq
+    ));
 }
 
 #[test]
@@ -1771,29 +2164,29 @@ fn test_edge_filtered() {
     use petgraph::visit::IntoEdgeReferences;
 
     let gr = UnGraph::<(), _>::from_edges(&[
-            // cycle
-            (0, 1, 7),
-            (1, 2, 9),
-            (2, 1, 14),
-
-            // cycle
-            (3, 4, 10),
-            (4, 5, 2),
-            (5, 3, 9),
-
-            // cross edges
-            (0, 3, -1),
-            (1, 4, -2),
-            (2, 5, -3),
+        // cycle
+        (0, 1, 7),
+        (1, 2, 9),
+        (2, 1, 14),
+        // cycle
+        (3, 4, 10),
+        (4, 5, 2),
+        (5, 3, 9),
+        // cross edges
+        (0, 3, -1),
+        (1, 4, -2),
+        (2, 5, -3),
     ]);
     assert_eq!(connected_components(&gr), 1);
     let positive_edges = EdgeFiltered::from_fn(&gr, |edge| *edge.weight() >= 0);
     assert_eq!(positive_edges.edge_references().count(), 6);
-    assert!(positive_edges.edge_references().all(|edge| *edge.weight() >= 0));
+    assert!(positive_edges
+        .edge_references()
+        .all(|edge| *edge.weight() >= 0));
     assert_eq!(connected_components(&positive_edges), 2);
 
     let mut dfs = DfsPostOrder::new(&positive_edges, n(0));
-    while let Some(_) = dfs.next(&positive_edges) { }
+    while let Some(_) = dfs.next(&positive_edges) {}
 
     let n = n::<u32>;
     for node in &[n(0), n(1), n(2)] {
@@ -1908,37 +2301,79 @@ fn test_dominators_simple_fast() {
     let doms = dominators::simple_fast(&graph, r);
 
     assert_eq!(doms.root(), r);
-    assert_eq!(doms.immediate_dominator(r), None,
-               "The root node has no idom");
+    assert_eq!(
+        doms.immediate_dominator(r),
+        None,
+        "The root node has no idom"
+    );
 
-    assert_eq!(doms.immediate_dominator(a), Some(r),
-               "r is the immediate dominator of a");
-    assert_eq!(doms.immediate_dominator(b), Some(r),
-               "r is the immediate dominator of b");
-    assert_eq!(doms.immediate_dominator(c), Some(r),
-               "r is the immediate dominator of c");
-    assert_eq!(doms.immediate_dominator(f), Some(c),
-               "c is the immediate dominator of f");
-    assert_eq!(doms.immediate_dominator(g), Some(c),
-               "c is the immediate dominator of g");
-    assert_eq!(doms.immediate_dominator(j), Some(g),
-               "g is the immediate dominator of j");
-    assert_eq!(doms.immediate_dominator(d), Some(r),
-               "r is the immediate dominator of d");
-    assert_eq!(doms.immediate_dominator(l), Some(d),
-               "d is the immediate dominator of l");
-    assert_eq!(doms.immediate_dominator(e), Some(r),
-               "r is the immediate dominator of e");
-    assert_eq!(doms.immediate_dominator(i), Some(r),
-               "r is the immediate dominator of i");
-    assert_eq!(doms.immediate_dominator(k), Some(r),
-               "r is the immediate dominator of k");
-    assert_eq!(doms.immediate_dominator(h), Some(r),
-               "r is the immediate dominator of h");
+    assert_eq!(
+        doms.immediate_dominator(a),
+        Some(r),
+        "r is the immediate dominator of a"
+    );
+    assert_eq!(
+        doms.immediate_dominator(b),
+        Some(r),
+        "r is the immediate dominator of b"
+    );
+    assert_eq!(
+        doms.immediate_dominator(c),
+        Some(r),
+        "r is the immediate dominator of c"
+    );
+    assert_eq!(
+        doms.immediate_dominator(f),
+        Some(c),
+        "c is the immediate dominator of f"
+    );
+    assert_eq!(
+        doms.immediate_dominator(g),
+        Some(c),
+        "c is the immediate dominator of g"
+    );
+    assert_eq!(
+        doms.immediate_dominator(j),
+        Some(g),
+        "g is the immediate dominator of j"
+    );
+    assert_eq!(
+        doms.immediate_dominator(d),
+        Some(r),
+        "r is the immediate dominator of d"
+    );
+    assert_eq!(
+        doms.immediate_dominator(l),
+        Some(d),
+        "d is the immediate dominator of l"
+    );
+    assert_eq!(
+        doms.immediate_dominator(e),
+        Some(r),
+        "r is the immediate dominator of e"
+    );
+    assert_eq!(
+        doms.immediate_dominator(i),
+        Some(r),
+        "r is the immediate dominator of i"
+    );
+    assert_eq!(
+        doms.immediate_dominator(k),
+        Some(r),
+        "r is the immediate dominator of k"
+    );
+    assert_eq!(
+        doms.immediate_dominator(h),
+        Some(r),
+        "r is the immediate dominator of h"
+    );
 
     let mut graph = graph.clone();
     let z = graph.add_node("z");
     let doms = dominators::simple_fast(&graph, r);
-    assert_eq!(doms.immediate_dominator(z), None,
-               "nodes that aren't reachable from the root do not have an idom");
+    assert_eq!(
+        doms.immediate_dominator(z),
+        None,
+        "nodes that aren't reachable from the root do not have an idom"
+    );
 }

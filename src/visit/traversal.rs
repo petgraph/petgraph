@@ -1,7 +1,6 @@
-
-use crate::{Incoming};
-use super::{IntoNeighbors, IntoNeighborsDirected, Visitable, VisitMap};
-use super::{GraphRef, Reversed, IntoNodeIdentifiers};
+use super::{GraphRef, IntoNodeIdentifiers, Reversed};
+use super::{IntoNeighbors, IntoNeighborsDirected, VisitMap, Visitable};
+use crate::Incoming;
 use std::collections::VecDeque;
 
 /// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in
@@ -42,14 +41,28 @@ pub struct Dfs<N, VM> {
     pub discovered: VM,
 }
 
+impl<N, VM> Default for Dfs<N, VM>
+where
+    VM: Default,
+{
+    fn default() -> Self {
+        Dfs {
+            stack: Vec::new(),
+            discovered: VM::default(),
+        }
+    }
+}
+
 impl<N, VM> Dfs<N, VM>
-    where N: Copy + PartialEq,
-          VM: VisitMap<N>,
+where
+    N: Copy + PartialEq,
+    VM: VisitMap<N>,
 {
     /// Create a new **Dfs**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
     pub fn new<G>(graph: G, start: N) -> Self
-        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
         let mut dfs = Dfs::empty(graph);
         dfs.move_to(start);
@@ -58,15 +71,13 @@ impl<N, VM> Dfs<N, VM>
 
     /// Create a `Dfs` from a vector and a visit map
     pub fn from_parts(stack: Vec<N>, discovered: VM) -> Self {
-        Dfs {
-            stack: stack,
-            discovered: discovered,
-        }
+        Dfs { stack, discovered }
     }
 
     /// Clear the visit state
     pub fn reset<G>(&mut self, graph: G)
-        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
         graph.reset_map(&mut self.discovered);
         self.stack.clear();
@@ -74,7 +85,8 @@ impl<N, VM> Dfs<N, VM>
 
     /// Create a new **Dfs** using the graph's visitor map, and no stack.
     pub fn empty<G>(graph: G) -> Self
-        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
         Dfs {
             stack: Vec::new(),
@@ -84,25 +96,25 @@ impl<N, VM> Dfs<N, VM>
 
     /// Keep the discovered map, but clear the visit stack and restart
     /// the dfs from a particular node.
-    pub fn move_to(&mut self, start: N)
-    {
-        self.discovered.visit(start);
+    pub fn move_to(&mut self, start: N) {
         self.stack.clear();
         self.stack.push(start);
     }
 
     /// Return the next node in the dfs, or **None** if the traversal is done.
     pub fn next<G>(&mut self, graph: G) -> Option<N>
-        where G: IntoNeighbors<NodeId=N>,
+    where
+        G: IntoNeighbors<NodeId = N>,
     {
-        if let Some(node) = self.stack.pop() {
-            for succ in graph.neighbors(node) {
-                if self.discovered.visit(succ) {
-                    self.stack.push(succ);
+        while let Some(node) = self.stack.pop() {
+            if self.discovered.visit(node) {
+                for succ in graph.neighbors(node) {
+                    if !self.discovered.is_visited(&succ) {
+                        self.stack.push(succ);
+                    }
                 }
+                return Some(node);
             }
-
-            return Some(node);
         }
         None
     }
@@ -125,14 +137,29 @@ pub struct DfsPostOrder<N, VM> {
     pub finished: VM,
 }
 
+impl<N, VM> Default for DfsPostOrder<N, VM>
+where
+    VM: Default,
+{
+    fn default() -> Self {
+        DfsPostOrder {
+            stack: Vec::new(),
+            discovered: VM::default(),
+            finished: VM::default(),
+        }
+    }
+}
+
 impl<N, VM> DfsPostOrder<N, VM>
-    where N: Copy + PartialEq,
-          VM: VisitMap<N>,
+where
+    N: Copy + PartialEq,
+    VM: VisitMap<N>,
 {
     /// Create a new `DfsPostOrder` using the graph's visitor map, and put
     /// `start` in the stack of nodes to visit.
     pub fn new<G>(graph: G, start: N) -> Self
-        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
         let mut dfs = Self::empty(graph);
         dfs.move_to(start);
@@ -141,7 +168,8 @@ impl<N, VM> DfsPostOrder<N, VM>
 
     /// Create a new `DfsPostOrder` using the graph's visitor map, and no stack.
     pub fn empty<G>(graph: G) -> Self
-        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
         DfsPostOrder {
             stack: Vec::new(),
@@ -152,7 +180,8 @@ impl<N, VM> DfsPostOrder<N, VM>
 
     /// Clear the visit state
     pub fn reset<G>(&mut self, graph: G)
-        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
         graph.reset_map(&mut self.discovered);
         graph.reset_map(&mut self.finished);
@@ -161,15 +190,15 @@ impl<N, VM> DfsPostOrder<N, VM>
 
     /// Keep the discovered and finished map, but clear the visit stack and restart
     /// the dfs from a particular node.
-    pub fn move_to(&mut self, start: N)
-    {
+    pub fn move_to(&mut self, start: N) {
         self.stack.clear();
         self.stack.push(start);
     }
 
     /// Return the next node in the traversal, or `None` if the traversal is done.
     pub fn next<G>(&mut self, graph: G) -> Option<N>
-        where G: IntoNeighbors<NodeId=N>,
+    where
+        G: IntoNeighbors<NodeId = N>,
     {
         while let Some(&nx) = self.stack.last() {
             if self.discovered.visit(nx) {
@@ -228,28 +257,40 @@ pub struct Bfs<N, VM> {
     pub discovered: VM,
 }
 
+impl<N, VM> Default for Bfs<N, VM>
+where
+    VM: Default,
+{
+    fn default() -> Self {
+        Bfs {
+            stack: VecDeque::new(),
+            discovered: VM::default(),
+        }
+    }
+}
+
 impl<N, VM> Bfs<N, VM>
-    where N: Copy + PartialEq,
-          VM: VisitMap<N>,
+where
+    N: Copy + PartialEq,
+    VM: VisitMap<N>,
 {
     /// Create a new **Bfs**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
     pub fn new<G>(graph: G, start: N) -> Self
-        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
         let mut discovered = graph.visit_map();
         discovered.visit(start);
         let mut stack = VecDeque::new();
         stack.push_front(start);
-        Bfs {
-            stack: stack,
-            discovered: discovered,
-        }
+        Bfs { stack, discovered }
     }
 
     /// Return the next node in the bfs, or **None** if the traversal is done.
     pub fn next<G>(&mut self, graph: G) -> Option<N>
-        where G: IntoNeighbors<NodeId=N>
+    where
+        G: IntoNeighbors<NodeId = N>,
     {
         if let Some(node) = self.stack.pop_front() {
             for succ in graph.neighbors(node) {
@@ -262,7 +303,6 @@ impl<N, VM> Bfs<N, VM>
         }
         None
     }
-
 }
 
 /// A topological order traversal for a graph.
@@ -276,14 +316,28 @@ pub struct Topo<N, VM> {
     ordered: VM,
 }
 
+impl<N, VM> Default for Topo<N, VM>
+where
+    VM: Default,
+{
+    fn default() -> Self {
+        Topo {
+            tovisit: Vec::new(),
+            ordered: VM::default(),
+        }
+    }
+}
+
 impl<N, VM> Topo<N, VM>
-    where N: Copy + PartialEq,
-          VM: VisitMap<N>,
+where
+    N: Copy + PartialEq,
+    VM: VisitMap<N>,
 {
     /// Create a new `Topo`, using the graph's visitor map, and put all
     /// initial nodes in the to visit list.
     pub fn new<G>(graph: G) -> Self
-        where G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable<NodeId=N, Map=VM>,
+    where
+        G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable<NodeId = N, Map = VM>,
     {
         let mut topo = Self::empty(graph);
         topo.extend_with_initials(graph);
@@ -291,18 +345,22 @@ impl<N, VM> Topo<N, VM>
     }
 
     fn extend_with_initials<G>(&mut self, g: G)
-        where G: IntoNodeIdentifiers + IntoNeighborsDirected<NodeId=N>,
+    where
+        G: IntoNodeIdentifiers + IntoNeighborsDirected<NodeId = N>,
     {
         // find all initial nodes (nodes without incoming edges)
-        self.tovisit.extend(g.node_identifiers()
-                             .filter(move |&a| g.neighbors_directed(a, Incoming).next().is_none()));
+        self.tovisit.extend(
+            g.node_identifiers()
+                .filter(move |&a| g.neighbors_directed(a, Incoming).next().is_none()),
+        );
     }
 
     /* Private until it has a use */
     /// Create a new `Topo`, using the graph's visitor map with *no* starting
     /// index specified.
     fn empty<G>(graph: G) -> Self
-        where G: GraphRef + Visitable<NodeId=N, Map=VM>
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
         Topo {
             ordered: graph.visit_map(),
@@ -312,7 +370,8 @@ impl<N, VM> Topo<N, VM>
 
     /// Clear visited state, and put all initial nodes in the to visit list.
     pub fn reset<G>(&mut self, graph: G)
-        where G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable<NodeId=N, Map=VM>,
+    where
+        G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable<NodeId = N, Map = VM>,
     {
         graph.reset_map(&mut self.ordered);
         self.tovisit.clear();
@@ -325,7 +384,8 @@ impl<N, VM> Topo<N, VM>
     /// *Note:* The graph may not have a complete topological order, and the only
     /// way to know is to run the whole traversal and make sure it visits every node.
     pub fn next<G>(&mut self, g: G) -> Option<N>
-        where G: IntoNeighborsDirected + Visitable<NodeId=N, Map=VM>,
+    where
+        G: IntoNeighborsDirected + Visitable<NodeId = N, Map = VM>,
     {
         // Take an unvisited element and find which of its neighbors are next
         while let Some(nix) = self.tovisit.pop() {
@@ -336,7 +396,10 @@ impl<N, VM> Topo<N, VM>
             for neigh in g.neighbors(nix) {
                 // Look at each neighbor, and those that only have incoming edges
                 // from the already ordered list, they are the next to visit.
-                if Reversed(g).neighbors(neigh).all(|b| self.ordered.is_visited(&b)) {
+                if Reversed(g)
+                    .neighbors(neigh)
+                    .all(|b| self.ordered.is_visited(&b))
+                {
                     self.tovisit.push(neigh);
                 }
             }
@@ -345,7 +408,6 @@ impl<N, VM> Topo<N, VM>
         None
     }
 }
-
 
 /// A walker is a traversal state, but where part of the traversal
 /// information is supplied manually to each next call.
@@ -359,12 +421,13 @@ pub trait Walker<Context> {
 
     /// Create an iterator out of the walker and given `context`.
     fn iter(self, context: Context) -> WalkerIter<Self, Context>
-        where Self: Sized,
-              Context: Clone,
+    where
+        Self: Sized,
+        Context: Clone,
     {
         WalkerIter {
             walker: self,
-            context: context,
+            context,
         }
     }
 }
@@ -377,8 +440,9 @@ pub struct WalkerIter<W, C> {
 }
 
 impl<W, C> WalkerIter<W, C>
-    where W: Walker<C>,
-          C: Clone,
+where
+    W: Walker<C>,
+    C: Clone,
 {
     pub fn context(&self) -> C {
         self.context.clone()
@@ -394,8 +458,9 @@ impl<W, C> WalkerIter<W, C>
 }
 
 impl<W, C> Iterator for WalkerIter<W, C>
-    where W: Walker<C>,
-          C: Clone,
+where
+    W: Walker<C>,
+    C: Clone,
 {
     type Item = W::Item;
     fn next(&mut self) -> Option<Self::Item> {
@@ -404,7 +469,8 @@ impl<W, C> Iterator for WalkerIter<W, C>
 }
 
 impl<'a, C, W: ?Sized> Walker<C> for &'a mut W
-    where W: Walker<C>,
+where
+    W: Walker<C>,
 {
     type Item = W::Item;
     fn walk_next(&mut self, context: C) -> Option<Self::Item> {
@@ -413,7 +479,8 @@ impl<'a, C, W: ?Sized> Walker<C> for &'a mut W
 }
 
 impl<G> Walker<G> for Dfs<G::NodeId, G::Map>
-    where G: IntoNeighbors + Visitable
+where
+    G: IntoNeighbors + Visitable,
 {
     type Item = G::NodeId;
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
@@ -422,7 +489,8 @@ impl<G> Walker<G> for Dfs<G::NodeId, G::Map>
 }
 
 impl<G> Walker<G> for DfsPostOrder<G::NodeId, G::Map>
-    where G: IntoNeighbors + Visitable
+where
+    G: IntoNeighbors + Visitable,
 {
     type Item = G::NodeId;
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
@@ -431,7 +499,8 @@ impl<G> Walker<G> for DfsPostOrder<G::NodeId, G::Map>
 }
 
 impl<G> Walker<G> for Bfs<G::NodeId, G::Map>
-    where G: IntoNeighbors + Visitable
+where
+    G: IntoNeighbors + Visitable,
 {
     type Item = G::NodeId;
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
@@ -440,7 +509,8 @@ impl<G> Walker<G> for Bfs<G::NodeId, G::Map>
 }
 
 impl<G> Walker<G> for Topo<G::NodeId, G::Map>
-    where G: IntoNeighborsDirected + Visitable,
+where
+    G: IntoNeighborsDirected + Visitable,
 {
     type Item = G::NodeId;
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
