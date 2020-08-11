@@ -24,7 +24,7 @@ pub type EdgeIndex = usize;
 
 const BINARY_SEARCH_CUTOFF: usize = 32;
 
-/// Compressed Sparse Row ([`CSR`] is a sparse adjacency matrix graph.
+/// Compressed Sparse Row ([`CSR`]) is a sparse adjacency matrix graph.
 ///
 /// `CSR` is parameterized over:
 ///
