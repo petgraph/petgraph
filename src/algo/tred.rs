@@ -8,11 +8,13 @@
 //! closure of **Gr** is the same as that of **G**.
 //! The transitive reduction is well-defined for acyclic graphs only.
 
-use crate::Direction;
 use crate::adj::{List, UnweightedList};
-use fixedbitset::FixedBitSet;
 use crate::graph::IndexType;
-use crate::visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount, NodeCompactIndexable};
+use crate::visit::{
+    GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount,
+};
+use crate::Direction;
+use fixedbitset::FixedBitSet;
 
 /// Creates a representation of the same graph respecting topological order for use in `tred::dag_transitive_reduction_closure`.
 ///
@@ -21,10 +23,37 @@ use crate::visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount, N
 ///
 /// [`toposort`]: ../fn.toposort.html
 ///
-/// The resulting graph is the same as `g` with the following differences:
+/// Returns a pair of a graph `res` and the reciprocal of the topological sort `revmap`.
+///
+/// `res` is the same graph as `g` with the following differences:
 /// * Node and edge weights are stripped,
 /// * Node indices are replaced by the corresponding rank in `toposort`,
 /// * Iterating on the neighbors of a node respects topological order.
+///
+/// `revmap` is handy to get back to map indices in `g` to indices in `res`.
+/// ```
+/// use petgraph::prelude::*;
+/// use petgraph::graph::DefaultIx;
+/// use petgraph::visit::IntoNeighbors;
+/// use petgraph::algo::tred::dag_to_toposorted_adjacency_list;
+///
+/// let mut g = Graph::<&str, (), Directed, DefaultIx>::new();
+/// let second = g.add_node("second child");
+/// let top = g.add_node("top");
+/// let first = g.add_node("first child");
+/// g.extend_with_edges(&[(top, second), (top, first), (first, second)]);
+///
+/// let toposort = vec![top, first, second];
+///
+/// let (res, revmap) = dag_to_toposorted_adjacency_list(&g, &toposort);
+///
+/// // let's compute the children of top in topological order
+/// let children: Vec<NodeIndex> = res
+///     .neighbors(revmap[top.index()])
+///     .map(|ix: NodeIndex| toposort[ix.index()])
+///     .collect();
+/// assert_eq!(children, vec![first, second])
+/// ```
 ///
 /// Runtime: **O(|V| + |E|)**.
 ///
@@ -32,10 +61,10 @@ use crate::visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount, N
 pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
     g: G,
     toposort: &[G::NodeId],
-) -> UnweightedList<Ix>
+) -> (UnweightedList<Ix>, Vec<Ix>)
 where
     G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
-    G::NodeId: IndexType
+    G::NodeId: IndexType,
 {
     let mut res = List::with_capacity(g.node_count());
     // map from old node index to rank in toposort
@@ -51,7 +80,7 @@ where
             res.add_edge(pre, ix, ());
         }
     }
-    res
+    (res, revmap)
 }
 
 /// Computes the transitive reduction and closure of a DAG.
