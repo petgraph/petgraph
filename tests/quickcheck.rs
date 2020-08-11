@@ -30,8 +30,10 @@ use petgraph::dot::{Config, Dot};
 use petgraph::graph::{edge_index, node_index, IndexType};
 use petgraph::graphmap::NodeTrait;
 use petgraph::prelude::*;
-use petgraph::visit::{EdgeRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
-use petgraph::visit::{Reversed, Topo};
+use petgraph::visit::{
+    EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
+    IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, Visitable,
+};
 use petgraph::EdgeType;
 
 fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
@@ -985,7 +987,9 @@ quickcheck! {
 }
 
 fn naive_closure_foreach<G, F>(g: G, mut f: F)
-where G: Visitable + IntoNeighbors + IntoNodeIdentifiers, F: FnMut(G::NodeId, G::NodeId)
+where
+    G: Visitable + IntoNeighbors + IntoNodeIdentifiers,
+    F: FnMut(G::NodeId, G::NodeId),
 {
     let mut dfs = Dfs::empty(&g);
     for i in g.node_identifiers() {
@@ -1000,7 +1004,8 @@ where G: Visitable + IntoNeighbors + IntoNodeIdentifiers, F: FnMut(G::NodeId, G:
 }
 
 fn naive_closure<G>(g: G) -> Vec<(G::NodeId, G::NodeId)>
-where G: Visitable + IntoNodeIdentifiers + IntoNeighbors
+where
+    G: Visitable + IntoNodeIdentifiers + IntoNeighbors,
 {
     let mut res = Vec::new();
     naive_closure_foreach(g, |a, b| res.push((a, b)));
@@ -1008,10 +1013,11 @@ where G: Visitable + IntoNodeIdentifiers + IntoNeighbors
 }
 
 fn naive_closure_edgecount<G>(g: G) -> usize
-where G: Visitable + IntoNodeIdentifiers + IntoNeighbors
+where
+    G: Visitable + IntoNodeIdentifiers + IntoNeighbors,
 {
     let mut res = 0;
-    naive_closure_foreach(g, |_, _| res+=1);
+    naive_closure_foreach(g, |_, _| res += 1);
     res
 }
 
@@ -1024,9 +1030,14 @@ quickcheck! {
         for (new, old) in toposort.iter().enumerate() {
             println!("{} -> {}", old.index(), new);
         }
-        let toposorted: petgraph::adj::List<(), u32> = tred::dag_to_toposorted_adjacency_list(&acyclic, &toposort);
+        let (toposorted, revtopo): (petgraph::adj::List<(), usize>, _) =
+            petgraph::algo::tred::dag_to_toposorted_adjacency_list(&acyclic, &toposort);
+        println!("checking revtopo");
+        for (i, ix) in toposort.iter().enumerate() {
+            assert_eq!(i, revtopo[ix.index()]);
+        }
         println!("toposorted adjacency list: {:#?}", &toposorted);
-        let (tred, tclos) = tred::dag_transitive_reduction_closure(&toposorted);
+        let (tred, tclos) = petgraph::algo::tred::dag_transitive_reduction_closure(&toposorted);
         println!("tred: {:#?}", &tred);
         println!("tclos: {:#?}", &tclos);
         if tred.node_count() != tclos.node_count() {
@@ -1053,7 +1064,7 @@ quickcheck! {
             });
             let new = naive_closure_edgecount(&filtered);
             if new >= clos_edges.len() {
-                println!("when removing ({} -> {}) the transitive closure does not shrink", 
+                println!("when removing ({} -> {}) the transitive closure does not shrink",
                          i.source().index(), i.target().index());
                 return false
             }
@@ -1069,4 +1080,3 @@ quickcheck! {
         true
     }
 }
-
