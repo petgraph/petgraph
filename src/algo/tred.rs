@@ -14,12 +14,12 @@ use fixedbitset::FixedBitSet;
 use crate::graph::IndexType;
 use crate::visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCount, NodeCompactIndexable};
 
-/// Creates a representation of the same graph respecting topological order for use in [`dag_transitive_reduction_closure`].
+/// Creates a representation of the same graph respecting topological order for use in `tred::dag_transitive_reduction_closure`.
 ///
 /// `toposort` must be a topological order on the node indices of `g` (for example obtained
 /// from [`toposort`]).
 ///
-/// [`toposort`]: crate::algo::toposort
+/// [`toposort`]: ../fn.toposort.html
 ///
 /// The resulting graph is the same as `g` with the following differences:
 /// * Node and edge weights are stripped,
@@ -66,6 +66,8 @@ where
 /// * Node indices are a toposort, and
 /// * The neighbors of all nodes are stored in topological order.
 /// To get such a representation, use the function [`dag_to_toposorted_adjacency_list`].
+///
+/// [`dag_to_toposorted_adjacency_list`]: ./fn.dag_to_toposorted_adjacency_list.html
 ///
 /// The output is the pair of the transitive reduction and the transitive closure.
 ///
