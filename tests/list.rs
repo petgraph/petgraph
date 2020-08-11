@@ -249,10 +249,10 @@ fn dot() {
     assert_eq!(
         dot_output,
         r#"digraph {
-    0 [label="()"]
-    1 [label="()"]
-    0 -> 0 [label="10"]
-    0 -> 1 [label="20"]
+    0 [ label = "()" ]
+    1 [ label = "()" ]
+    0 -> 0 [ label = "10" ]
+    0 -> 1 [ label = "20" ]
 }
 "#
     );
