@@ -23,7 +23,9 @@ macro_rules! iterator_wrap {
      item: $item: ty,
      iter: $iter: ty,
      ) => (
-         $(#[$derive])*
+        // having complex iterator types is kind of the point of this macro
+        #[allow(clippy::type_complexity)]
+        $(#[$derive])*
         pub struct $name <$($typarm),*> where $($bounds)* {
             iter: $iter,
         }
