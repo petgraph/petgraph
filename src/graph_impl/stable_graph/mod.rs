@@ -1216,6 +1216,7 @@ where
 }
 
 /// Iterator over all nodes of a graph.
+#[derive(Clone)]
 pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
@@ -1330,6 +1331,7 @@ where
 }
 
 /// Iterator over the edges of from or to a node
+#[derive(Clone)]
 pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
 where
     Ty: EdgeType,
@@ -1443,6 +1445,7 @@ where
 }
 
 /// Iterator over all edges of a graph.
+#[derive(Clone)]
 pub struct EdgeReferences<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
 }
@@ -1480,6 +1483,7 @@ where
 }
 
 /// An iterator over either the nodes without edges to them or from them.
+#[derive(Clone)]
 pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
     dir: Direction,
@@ -1515,6 +1519,7 @@ where
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is `NodeIndex`.
+#[derive(Clone)]
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> {
     /// starting node to skip over
     skip_start: NodeIndex<Ix>,
@@ -1646,6 +1651,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
 }
 
 /// Iterator over the node indices of a graph.
+#[derive(Clone)]
 pub struct NodeIndices<'a, N: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
@@ -1699,6 +1705,7 @@ where
 }
 
 /// Iterator over the edge indices of a graph.
+#[derive(Clone)]
 pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
 }

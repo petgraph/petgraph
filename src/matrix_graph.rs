@@ -544,6 +544,7 @@ impl<N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> MatrixGraph<N, E, Directe
 ///
 /// [1]: ../visit/trait.IntoNodeIdentifiers.html#tymethod.node_identifiers
 /// [2]: struct.MatrixGraph.html
+#[derive(Clone)]
 pub struct NodeIdentifiers<'a, Ix> {
     iter: IdIterator<'a>,
     ix: PhantomData<Ix>,
@@ -572,6 +573,7 @@ impl<'a, Ix: IndexType> Iterator for NodeIdentifiers<'a, Ix> {
 ///
 /// [1]: ../visit/trait.IntoNodeReferences.html#tymethod.node_references
 /// [2]: struct.MatrixGraph.html
+#[derive(Clone)]
 pub struct NodeReferences<'a, N: 'a, Ix> {
     nodes: &'a IdStorage<N>,
     iter: IdIterator<'a>,
@@ -669,6 +671,7 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator
 ///
 /// [1]: struct.MatrixGraph.html#method.neighbors
 /// [2]: struct.MatrixGraph.html#method.neighbors_directed
+#[derive(Clone)]
 pub struct Neighbors<'a, Ty: EdgeType, Null: 'a + Nullable, Ix>(Edges<'a, Ty, Null, Ix>);
 
 impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Neighbors<'a, Ty, Null, Ix> {
@@ -679,6 +682,7 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Neighbors<'a,
     }
 }
 
+#[derive(Clone)]
 enum NeighborIterDirection {
     Rows,
     Columns,
@@ -690,6 +694,7 @@ enum NeighborIterDirection {
 ///
 /// [1]: struct.MatrixGraph.html#method.edges
 /// [2]: struct.MatrixGraph.html#method.edges_directed
+#[derive(Clone)]
 pub struct Edges<'a, Ty: EdgeType, Null: 'a + Nullable, Ix> {
     iter_direction: NeighborIterDirection,
     node_adjacencies: &'a [Null],
@@ -920,6 +925,7 @@ impl<T> IndexMut<usize> for IdStorage<T> {
     }
 }
 
+#[derive(Clone)]
 struct IdIterator<'a> {
     upper_bound: usize,
     removed_ids: &'a IndexSet<usize>,

@@ -509,6 +509,7 @@ iterator_wrap! {
     iter: Cloned<Keys<'a, N, Vec<(N, CompactDirection)>>>,
 }
 
+#[derive(Clone)]
 pub struct Neighbors<'a, N, Ty = Undirected>
 where
     N: 'a,
@@ -535,6 +536,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct NeighborsDirected<'a, N, Ty>
 where
     N: 'a,
@@ -571,6 +573,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct Edges<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -614,6 +617,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct AllEdges<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,

@@ -1421,6 +1421,7 @@ where
 }
 
 /// An iterator over either the nodes without edges to them or from them.
+#[derive(Clone)]
 pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
     dir: Direction,
@@ -2046,6 +2047,7 @@ where
 }
 
 /// Iterator over all nodes of a graph.
+#[derive(Clone)]
 pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
 }
@@ -2116,6 +2118,7 @@ where
 }
 
 /// Iterator over all edges of a graph.
+#[derive(Clone)]
 pub struct EdgeReferences<'a, E: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<E, Ix>>>,
 }

@@ -82,6 +82,7 @@ where
 }
 
 /// Iterator for a node's dominators.
+#[derive(Clone)]
 pub struct DominatorsIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,

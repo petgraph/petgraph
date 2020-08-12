@@ -76,6 +76,7 @@ impl<G: Visitable> Visitable for Reversed<G> {
 }
 
 /// A reversed edges iterator.
+#[derive(Clone)]
 pub struct ReversedEdges<I> {
     iter: I,
 }
@@ -141,6 +142,7 @@ where
 }
 
 /// A reversed edge references iterator.
+#[derive(Clone)]
 pub struct ReversedEdgeReferences<I> {
     iter: I,
 }
