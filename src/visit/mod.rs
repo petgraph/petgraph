@@ -62,11 +62,13 @@ use crate::prelude::GraphMap;
 use crate::prelude::StableGraph;
 use crate::prelude::{Direction, Graph};
 
+use crate::csr::Csr;
 use crate::graph::Frozen;
 use crate::graph::IndexType;
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph;
-
+#[cfg(feature = "matrix_graph")]
+use crate::matrix_graph::MatrixGraph;
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{self, NodeTrait};
 
@@ -748,6 +750,71 @@ where
     #[inline]
     fn is_adjacent(&self, _: &(), a: N, b: N) -> bool {
         self.contains_edge(a, b)
+    }
+}
+
+trait_template! {
+/// A graph with a known edge count.
+pub trait EdgeCount : GraphBase {
+    @section self
+    /// Return the number of edges in the graph.
+    fn edge_count(self: &Self) -> usize;
+}
+}
+
+EdgeCount! {delegate_impl []}
+
+impl<N, E, Ty, Ix> EdgeCount for Graph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn edge_count(&self) -> usize {
+        self.edge_count()
+    }
+}
+
+#[cfg(feature = "stable_graph")]
+impl<N, E, Ty, Ix> EdgeCount for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn edge_count(&self) -> usize {
+        self.edge_count()
+    }
+}
+
+#[cfg(feature = "graphmap")]
+impl<N, E, Ty> EdgeCount for GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    fn edge_count(&self) -> usize {
+        self.edge_count()
+    }
+}
+
+#[cfg(feature = "matrix_graph")]
+impl<N, E, Ty> EdgeCount for MatrixGraph<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    fn edge_count(&self) -> usize {
+        self.edge_count()
+    }
+}
+
+#[cfg(feature = "stable_graph")]
+impl<N, E, Ty, Ix> EdgeCount for Csr<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn edge_count(&self) -> usize {
+        self.edge_count()
     }
 }
 
