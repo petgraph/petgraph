@@ -198,34 +198,34 @@ where
     try_match(&mut st, g0, g1, &mut node_match, &mut edge_match).unwrap_or(false)
 }
 
-trait SemanticMatcher<T> {
+trait SemanticMatcher<U, V> {
     fn enabled() -> bool;
-    fn eq(&mut self, _: &T, _: &T) -> bool;
+    fn eq(&mut self, _: &U, _: &V) -> bool;
 }
 
 struct NoSemanticMatch;
 
-impl<T> SemanticMatcher<T> for NoSemanticMatch {
+impl<U, V> SemanticMatcher<U, V> for NoSemanticMatch {
     #[inline]
     fn enabled() -> bool {
         false
     }
     #[inline]
-    fn eq(&mut self, _: &T, _: &T) -> bool {
+    fn eq(&mut self, _: &U, _: &V) -> bool {
         true
     }
 }
 
-impl<T, F> SemanticMatcher<T> for F
+impl<U, V, F> SemanticMatcher<U, V> for F
 where
-    F: FnMut(&T, &T) -> bool,
+    F: FnMut(&U, &V) -> bool,
 {
     #[inline]
     fn enabled() -> bool {
         true
     }
     #[inline]
-    fn eq(&mut self, a: &T, b: &T) -> bool {
+    fn eq(&mut self, a: &U, b: &V) -> bool {
         self(a, b)
     }
 }
@@ -241,8 +241,8 @@ fn try_match<N, E, Ty, Ix, F, G>(
 where
     Ty: EdgeType,
     Ix: IndexType,
-    F: SemanticMatcher<N>,
-    G: SemanticMatcher<E>,
+    F: SemanticMatcher<N, N>,
+    G: SemanticMatcher<E, E>,
 {
     if st[0].is_complete() {
         return Some(true);
