@@ -27,6 +27,12 @@ struct Vf2State<Ty, Ix> {
     _etype: marker::PhantomData<Ty>,
 }
 
+#[derive(Debug, PartialEq)]
+enum ProblemSelector {
+    SubgraphIso,
+    Isomorphism,
+}
+
 impl<Ty, Ix> Vf2State<Ty, Ix>
 where
     Ty: EdgeType,
@@ -67,8 +73,10 @@ where
         g: &Graph<N, E, Ty, Ix>,
     ) {
         self.generation += 1;
+        println!("incremented generation {}", self.generation);
         let s = self.generation;
         self.mapping[from.index()] = to;
+        println!("from {:?} to {:?}", from, to);
         // update T0 & T1 ins/outs
         // T0out: Node in G0 not in M0 but successor of a node in M0.
         // st.out[0]: Node either in M0 or successor of M0
@@ -92,6 +100,7 @@ where
     pub fn pop_mapping<N, E>(&mut self, from: NodeIndex<Ix>, g: &Graph<N, E, Ty, Ix>) {
         let s = self.generation;
         self.generation -= 1;
+        println!("decremented generation {}", self.generation);
 
         // undo (n, m) mapping
         self.mapping[from.index()] = NodeIndex::end();
@@ -169,7 +178,39 @@ where
     }
 
     let mut st = [Vf2State::new(g0), Vf2State::new(g1)];
-    try_match(&mut st, g0, g1, &mut NoSemanticMatch, &mut NoSemanticMatch).unwrap_or(false)
+    try_match(
+        &mut st,
+        g0,
+        g1,
+        &mut NoSemanticMatch,
+        &mut NoSemanticMatch,
+        ProblemSelector::Isomorphism,
+    )
+    .unwrap_or(false)
+}
+
+/// [Graph] Return `true` if graph `g0` is isomorphic to a subgraph of `g1`.
+///
+/// Uses the VF2 algorithm.
+pub fn is_subgraph_iso<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>, g1: &Graph<N, E, Ty, Ix>) -> bool
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
+        return false;
+    }
+
+    let mut st = [Vf2State::new(g0), Vf2State::new(g1)];
+    try_match(
+        &mut st,
+        g0,
+        g1,
+        &mut NoSemanticMatch,
+        &mut NoSemanticMatch,
+        ProblemSelector::SubgraphIso,
+    )
+    .unwrap_or(false)
 }
 
 /// [Graph] Return `true` if the graphs `g0` and `g1` are isomorphic.
@@ -195,7 +236,15 @@ where
     }
 
     let mut st = [Vf2State::new(g0), Vf2State::new(g1)];
-    try_match(&mut st, g0, g1, &mut node_match, &mut edge_match).unwrap_or(false)
+    try_match(
+        &mut st,
+        g0,
+        g1,
+        &mut node_match,
+        &mut edge_match,
+        ProblemSelector::Isomorphism,
+    )
+    .unwrap_or(false)
 }
 
 trait SemanticMatcher<T> {
@@ -237,6 +286,7 @@ fn try_match<N, E, Ty, Ix, F, G>(
     g1: &Graph<N, E, Ty, Ix>,
     node_match: &mut F,
     edge_match: &mut G,
+    problem_selector: ProblemSelector,
 ) -> Option<bool>
 where
     Ty: EdgeType,
@@ -318,13 +368,40 @@ where
         }
         .map(|c| c + start); // compensate for start offset.
         match cand0 {
-            None => None, // no more candidates
+            None => {
+                println!("nx: {:?}, open_list {:?}", nx, open_list);
+                None // no more candidates
+            }
             Some(ix) => {
                 debug_assert!(ix >= start);
                 Some(NodeIndex::new(ix))
             }
         }
     };
+
+    let next_from_ix_to = |st: &mut [Vf2State<Ty, Ix>; 2],
+                           nx: NodeIndex<Ix>,
+                           open_list: OpenList|
+     -> Option<NodeIndex<Ix>> {
+        // Find the next node index to try on the `from` side of the mapping
+        let start = nx.index() + 1;
+        let cand0 = match open_list {
+            OpenList::Out => st[1].next_in_index(start),
+            OpenList::In => st[1].next_out_index(start),
+            OpenList::Other => st[1].next_rest_index(start),
+        }
+        .map(|c| c + start); // compensate for start offset.
+        match cand0 {
+            None => {
+                None // no more candidates
+            }
+            Some(ix) => {
+                debug_assert!(ix >= start);
+                Some(NodeIndex::new(ix))
+            }
+        }
+    };
+
     //fn pop_state(nodes: [NodeIndex<Ix>; 2]) {
     let pop_state = |st: &mut [Vf2State<Ty, Ix>; 2], nodes: [NodeIndex<Ix>; 2]| {
         // Restore state.
@@ -337,6 +414,14 @@ where
         // Add mapping nx <-> mx to the state
         for j in graph_indices.clone() {
             st[j].push_mapping(nodes[j], nodes[1 - j], g[j]);
+        }
+    };
+    let valid = |st: &[Vf2State<Ty, Ix>; 2]| match problem_selector {
+        ProblemSelector::Isomorphism => {
+            st[0].out_size == st[1].out_size && st[0].ins_size == st[1].ins_size
+        }
+        ProblemSelector::SubgraphIso => {
+            st[0].out_size <= st[1].out_size && st[1].ins_size <= st[1].ins_size
         }
     };
     //fn is_feasible(nodes: [NodeIndex<Ix>; 2]) -> bool {
@@ -374,12 +459,23 @@ where
                 let has_edge =
                     g[1 - j].is_adjacent(&st[1 - j].adjacency_matrix, nodes[1 - j], m_neigh);
                 if !has_edge {
+                    println!("has_edge false");
                     return false;
                 }
             }
         }
-        if succ_count[0] != succ_count[1] {
-            return false;
+        match problem_selector {
+            ProblemSelector::Isomorphism => {
+                if succ_count[0] != succ_count[1] {
+                    return false;
+                }
+            }
+            ProblemSelector::SubgraphIso => {
+                if succ_count[0] > succ_count[1] {
+                    println!("succ_count[0] > succ_count[1]");
+                    return false;
+                }
+            }
         }
         // R_pred
         if g[0].is_directed() {
@@ -399,8 +495,17 @@ where
                     }
                 }
             }
-            if pred_count[0] != pred_count[1] {
-                return false;
+            match problem_selector {
+                ProblemSelector::Isomorphism => {
+                    if pred_count[0] != pred_count[1] {
+                        return false;
+                    }
+                }
+                ProblemSelector::SubgraphIso => {
+                    if pred_count[0] > pred_count[1] {
+                        return false;
+                    }
+                }
             }
         }
         // semantic feasibility: compare associated data for nodes
@@ -467,7 +572,22 @@ where
                 pop_state(&mut st, nodes);
 
                 match next_from_ix(&mut st, nodes[0], ol) {
-                    None => continue,
+                    None => {
+                        if problem_selector == ProblemSelector::SubgraphIso {
+                            match next_from_ix_to(&mut st, nodes[1], ol) {
+                                None => continue,
+                                Some(nx) => {
+                                    let f = Frame::Inner {
+                                        nodes: [nodes[0], nx],
+                                        open_list: ol,
+                                    };
+                                    stack.push(f);
+                                }
+                            }
+                        } else {
+                            continue;
+                        }
+                    }
                     Some(nx) => {
                         let f = Frame::Inner {
                             nodes: [nx, nodes[1]],
@@ -491,13 +611,14 @@ where
                 nodes,
                 open_list: ol,
             } => {
+                println!("Current nodes {:?}", nodes);
                 if is_feasible(&mut st, nodes) {
                     push_state(&mut st, nodes);
                     if st[0].is_complete() {
                         return Some(true);
                     }
                     // Check cardinalities of Tin, Tout sets
-                    if st[0].out_size == st[1].out_size && st[0].ins_size == st[1].ins_size {
+                    if valid(st) {
                         let f0 = Frame::Unwind {
                             nodes,
                             open_list: ol,
@@ -507,9 +628,26 @@ where
                         continue;
                     }
                     pop_state(&mut st, nodes);
+                } else {
+                    println!("not feasible");
                 }
                 match next_from_ix(&mut st, nodes[0], ol) {
-                    None => continue,
+                    None => {
+                        if problem_selector == ProblemSelector::SubgraphIso {
+                            match next_from_ix_to(&mut st, nodes[1], ol) {
+                                None => continue,
+                                Some(nx) => {
+                                    let f = Frame::Inner {
+                                        nodes: [nodes[0], nx],
+                                        open_list: ol,
+                                    };
+                                    stack.push(f);
+                                }
+                            }
+                        } else {
+                            continue;
+                        }
+                    }
                     Some(nx) => {
                         let f = Frame::Inner {
                             nodes: [nx, nodes[1]],
