@@ -772,6 +772,7 @@ where
     Ty: EdgeType,
     Ix: IndexType,
 {
+    #[inline]
     fn edge_count(&self) -> usize {
         self.edge_count()
     }
@@ -783,6 +784,7 @@ where
     Ty: EdgeType,
     Ix: IndexType,
 {
+    #[inline]
     fn edge_count(&self) -> usize {
         self.edge_count()
     }
@@ -794,6 +796,7 @@ where
     N: NodeTrait,
     Ty: EdgeType,
 {
+    #[inline]
     fn edge_count(&self) -> usize {
         self.edge_count()
     }
@@ -805,6 +808,7 @@ where
     N: NodeTrait,
     Ty: EdgeType,
 {
+    #[inline]
     fn edge_count(&self) -> usize {
         self.edge_count()
     }
@@ -816,6 +820,7 @@ where
     Ty: EdgeType,
     Ix: IndexType,
 {
+    #[inline]
     fn edge_count(&self) -> usize {
         self.edge_count()
     }
