@@ -82,7 +82,7 @@ quickcheck! {
     fn reverse_undirected(g: Small<UnGraph<(), ()>>) -> bool {
         let mut h = (*g).clone();
         h.reverse();
-        is_isomorphic(&g, &h)
+        is_isomorphic(&*g, &h)
     }
 }
 
@@ -274,10 +274,10 @@ fn isomorphism_1() {
                 ng.add_edge(map[s.index()], map[t.index()], g[i]);
             }
             if g.node_count() < 20 && g.edge_count() < 50 {
-                assert!(is_isomorphic(&g, &ng));
+                assert!(is_isomorphic(&*g, &ng));
             }
             assert!(is_isomorphic_matching(
-                &g,
+                &*g,
                 &ng,
                 PartialEq::eq,
                 PartialEq::eq
@@ -305,14 +305,14 @@ fn isomorphism_modify() {
         }
         if i.index() < g.node_count() || j.index() < g.edge_count() {
             assert!(!is_isomorphic_matching(
-                &g,
+                &*g,
                 &ng,
                 PartialEq::eq,
                 PartialEq::eq
             ));
         } else {
             assert!(is_isomorphic_matching(
-                &g,
+                &*g,
                 &ng,
                 PartialEq::eq,
                 PartialEq::eq

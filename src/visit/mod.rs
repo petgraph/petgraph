@@ -814,7 +814,6 @@ where
     }
 }
 
-#[cfg(feature = "stable_graph")]
 impl<N, E, Ty, Ix> EdgeCount for Csr<N, E, Ty, Ix>
 where
     Ty: EdgeType,
