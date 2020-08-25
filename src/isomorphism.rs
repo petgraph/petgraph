@@ -689,3 +689,39 @@ where
     let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
     self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch).unwrap_or(false)
 }
+
+/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+///
+/// Using the VF2 algorithm, examining both syntactic and semantic
+/// graph isomorphism (graph structure and matching node and edge weights).
+///
+/// The graphs should not be multigraphs.
+pub fn is_isomorphic_subgraph_matching<G0, G1, NM, EM>(
+    g0: G0,
+    g1: G1,
+    mut node_match: NM,
+    mut edge_match: EM,
+) -> bool
+where
+    G0: NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp
+        + IntoNeighborsDirected,
+    G1: NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp<EdgeType = G0::EdgeType> // make sure both graph are directed or undirected
+        + IntoNeighborsDirected,
+    NM: FnMut(&G0::NodeWeight, &G1::NodeWeight) -> bool,
+    EM: FnMut(&G0::EdgeWeight, &G1::EdgeWeight) -> bool,
+{
+    if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
+        return false;
+    }
+
+    let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
+    self::matching::try_match(&mut st, &mut node_match, &mut edge_match).unwrap_or(false)
+}
