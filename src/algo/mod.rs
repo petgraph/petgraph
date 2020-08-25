@@ -29,7 +29,9 @@ pub use super::astar::astar;
 pub use super::dijkstra::dijkstra;
 pub use super::k_shortest_path::k_shortest_path;
 
-pub use super::isomorphism::{is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph};
+pub use super::isomorphism::{
+    is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
+};
 pub use super::simple_paths::all_simple_paths;
 
 /// \[Generic\] Return the number of connected components of the graph.
