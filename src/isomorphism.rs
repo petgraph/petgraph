@@ -1,5 +1,6 @@
 use fixedbitset::FixedBitSet;
 use std::marker;
+use std::ops::Index;
 
 use super::graph::{Graph, IndexType, NodeIndex};
 use super::{EdgeType, Incoming, Outgoing};
@@ -296,12 +297,12 @@ mod matching {
         // R_new: Equal for G0, G1: Ñ n Pred(G, n); both Succ and Pred,
         //      Ñ is G0 - M - Tin - Tout
         // last attempt to add these did not speed up any of the testcases
-        if r_succ!(0) != r_succ!(1) {
+        if r_succ!(0) > r_succ!(1) {
             return false;
         }
         // R_pred
         if st.0.graph.is_directed() {
-            if r_pred!(0) != r_pred!(1) {
+            if r_pred!(0) > r_pred!(1) {
                 return false;
             }
         }
@@ -317,51 +318,58 @@ mod matching {
         }
         // semantic feasibility: compare associated data for edges
         if EM::enabled() {
-            todo!()
-            // // outgoing edges
-            // for j in graph_indices.clone() {
-            //     let mut edges = g[j].neighbors(nodes[j]).detach();
-            //     while let Some((n_edge, n_neigh)) = edges.next(g[j]) {
-            //         // handle the self loop case; it's not in the mapping (yet)
-            //         let m_neigh = if nodes[j] != n_neigh {
-            //             st[j].mapping[n_neigh.index()]
-            //         } else {
-            //             nodes[1 - j]
-            //         };
-            //         if m_neigh == end {
-            //             continue;
-            //         }
-            //         match g[1 - j].find_edge(nodes[1 - j], m_neigh) {
-            //             Some(m_edge) => {
-            //                 if !edge_match.eq(&g[j][n_edge], &g[1 - j][m_edge]) {
-            //                     return false;
-            //                 }
-            //             }
-            //             None => unreachable!(), // covered by syntactic check
-            //         }
-            //     }
-            // }
-            // // incoming edges
-            // if g[0].is_directed() {
-            //     for j in graph_indices.clone() {
-            //         let mut edges = g[j].neighbors_directed(nodes[j], Incoming).detach();
-            //         while let Some((n_edge, n_neigh)) = edges.next(g[j]) {
-            //             // the self loop case is handled in outgoing
-            //             let m_neigh = st[j].mapping[n_neigh.index()];
-            //             if m_neigh == end {
-            //                 continue;
-            //             }
-            //             match g[1 - j].find_edge(m_neigh, nodes[1 - j]) {
-            //                 Some(m_edge) => {
-            //                     if !edge_match.eq(&g[j][n_edge], &g[1 - j][m_edge]) {
-            //                         return false;
-            //                     }
-            //                 }
-            //                 None => unreachable!(), // covered by syntactic check
-            //             }
-            //         }
-            //     }
-            // }
+            macro_rules! edge_feasibility {
+                ($j:tt) => {{
+
+                    for n_neigh in field!(st, $j).graph.neighbors(field!(nodes, $j)) {
+                        let m_neigh = if field!(nodes, $j) != n_neigh {
+                            field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)]
+                        } else {
+                            field!(st, 1 - $j).graph.to_index(field!(nodes, 1 - $j))
+                        };
+
+                        if m_neigh == usize::MAX {
+                            continue;
+                        }
+
+
+                        // match g[1 - j].find_edge(nodes[1 - j], m_neigh) {
+                        //     Some(m_edge) => {
+                        //         if !edge_match.eq(&g[j][n_edge], &g[1 - j][m_edge]) {
+                        //             return false;
+                        //         }
+                        //     }
+                        //     None => unreachable!(), // covered by syntactic check
+                        // }
+
+                    }
+
+                    // if g[0].is_directed() {
+                    //     for j in graph_indices.clone() {
+                    //         let mut edges = g[j].neighbors_directed(nodes[j], Incoming).detach();
+                    //         while let Some((n_edge, n_neigh)) = edges.next(g[j]) {
+                    //             // the self loop case is handled in outgoing
+                    //             let m_neigh = st[j].mapping[n_neigh.index()];
+                    //             if m_neigh == end {
+                    //                 continue;
+                    //             }
+                    //             match g[1 - j].find_edge(m_neigh, nodes[1 - j]) {
+                    //                 Some(m_edge) => {
+                    //                     if !edge_match.eq(&g[j][n_edge], &g[1 - j][m_edge]) {
+                    //                         return false;
+                    //                     }
+                    //                 }
+                    //                 None => unreachable!(), // covered by syntactic check
+                    //             }
+                    //         }
+                    //     }
+                    // }
+                    //
+                }}
+            }
+
+            edge_feasibility!(0);
+            edge_feasibility!(1);
         }
         true
     }
@@ -554,7 +562,7 @@ mod matching {
     }
 }
 
-/// [Generic] Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, only matching graph syntactically (graph
 /// structure).
@@ -588,7 +596,7 @@ where
     self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch).unwrap_or(false)
 }
 
-/// [Generic] Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, examining both syntactic and semantic
 /// graph isomorphism (graph structure and matching node and edge weights).
@@ -622,4 +630,60 @@ where
 
     let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
     self::matching::try_match(&mut st, &mut node_match, &mut edge_match).unwrap_or(false)
+}
+
+/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+///
+/// Using the VF2 algorithm, only matching graph syntactically (graph
+/// structure).
+///
+/// The graphs should not be multigraphs.
+///
+/// # Subgraph isomorphism
+///
+/// (adapted from [`networkx` documentation](https://networkx.github.io/documentation/stable/reference/algorithms/isomorphism.vf2.html))
+///
+/// Graph theory literature can be ambiguous about the meaning of the above statement,
+/// and we seek to clarify it now.
+///
+/// In the VF2 literature, a mapping **M** is said to be a *graph-subgraph isomorphism*
+/// iff **M** is an isomorphism between **G2** and a subgraph of **G1**. Thus, to say
+/// that **G1** and **G2** are graph-subgraph isomorphic is to say that a subgraph of
+/// **G1** is isomorphic to **G2**.
+///
+/// Other literature uses the phrase ‘subgraph isomorphic’ as in
+/// ‘**G1** does not have a subgraph isomorphic to **G2**’. Another use is as an in adverb
+/// for isomorphic. Thus, to say that **G1** and **G2** are subgraph isomorphic is to say
+/// that a subgraph of **G1** is isomorphic to **G2**.
+///
+/// Finally, the term ‘subgraph’ can have multiple meanings. In this context,
+/// ‘subgraph’ always means a ‘node-induced subgraph’. Edge-induced subgraph
+/// isomorphisms are not directly supported. For subgraphs which are not
+/// induced, the term ‘monomorphism’ is preferred over ‘isomorphism’.
+///
+/// **Reference**
+///
+/// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento;
+///   *A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs*
+pub fn is_isomorphic_subgraph<G0, G1>(g0: G0, g1: G1) -> bool
+where
+    G0: NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp
+        + IntoNeighborsDirected,
+    G1: NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp
+        + IntoNeighborsDirected
+{
+    if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
+        return false;
+    }
+
+    let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
+    self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch).unwrap_or(false)
 }
