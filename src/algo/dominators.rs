@@ -95,6 +95,15 @@ where
             None
         }
     }
+
+    /// Iterate over all nodes immediately dominated by the given node (not
+    /// including the given node itself).
+    pub fn immediately_dominated_by(&self, node: N) -> DominatedByIter<N> {
+        DominatedByIter {
+            iter: self.dominators.iter(),
+            node: node
+        }
+    }
 }
 
 /// Iterator for a node's dominators.
@@ -121,7 +130,6 @@ where
     }
 }
 
-#[cfg(feature = "alloc")]
 /// Iterator for nodes dominated by a given node.
 pub struct DominatedByIter<'a, N>
 where
@@ -131,7 +139,6 @@ where
     node: N,
 }
 
-#[cfg(feature = "alloc")]
 impl<'a, N> Iterator for DominatedByIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
