@@ -189,7 +189,7 @@ mod semantic {
 
     pub trait EdgeMatcher<G0: GraphBase, G1: GraphBase> {
         fn enabled() -> bool;
-        fn eq(&mut self, _g0: &G0, _g1: &G1, _e0: G0::EdgeId, _e1: G1::EdgeId) -> bool;
+        fn eq(&mut self, _g0: &G0, _g1: &G1, e0: (G0::NodeId, G0::NodeId), e1: (G1::NodeId, G1::NodeId)) -> bool;
     }
 
     impl<G0: GraphBase, G1: GraphBase> EdgeMatcher<G0, G1> for NoSemanticMatch {
@@ -198,15 +198,15 @@ mod semantic {
             false
         }
         #[inline]
-        fn eq(&mut self, _g0: &G0, _g1: &G1, _e0: G0::EdgeId, _e1: G1::EdgeId) -> bool {
+        fn eq(&mut self, _g0: &G0, _g1: &G1, _e0: (G0::NodeId, G0::NodeId), _e1: (G1::NodeId, G1::NodeId)) -> bool {
             true
         }
     }
 
     impl<G0, G1, F> EdgeMatcher<G0, G1> for F
     where
-        G0: GraphBase + DataMap,
-        G1: GraphBase + DataMap,
+        G0: GraphBase + DataMap + IntoEdgesDirected,
+        G1: GraphBase + DataMap + IntoEdgesDirected,
         F: FnMut(&G0::EdgeWeight, &G1::EdgeWeight) -> bool,
     {
         #[inline]
@@ -214,8 +214,14 @@ mod semantic {
             true
         }
         #[inline]
-        fn eq(&mut self, g0: &G0, g1: &G1, e0: G0::EdgeId, e1: G1::EdgeId) -> bool {
-            if let (Some(x), Some(y)) = (g0.edge_weight(e0), g1.edge_weight(e1)) {
+        fn eq(&mut self, g0: &G0, g1: &G1, e0: (G0::NodeId, G0::NodeId), e1: (G1::NodeId, G1::NodeId)) -> bool {
+            let w0 = g0.edges_directed(e0.0, Outgoing)
+                .find(|edge| edge.target() == e0.1)
+                .and_then(|edge| g0.edge_weight(edge.id()));
+            let w1 = g1.edges_directed(e1.0, Outgoing)
+                .find(|edge| edge.target() == e1.1)
+                .and_then(|edge| g1.edge_weight(edge.id()));
+            if let (Some(x), Some(y)) = (w0, w1) {
                 self(x, y)
             } else {
                 false
@@ -259,8 +265,8 @@ mod matching {
         edge_match: &mut EM,
     ) -> bool
     where
-        G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoEdgesDirected,
-        G1: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoEdgesDirected,
+        G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
+        G1: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
         NM: NodeMatcher<G0, G1>,
         EM: EdgeMatcher<G0, G1>,
     {
@@ -369,43 +375,34 @@ mod matching {
         if EM::enabled() {
             macro_rules! edge_feasibility {
                 ($j:tt) => {{
-                    for n_edge in field!(st, $j).graph.edges_directed(field!(nodes, $j), Outgoing) {
-                        let n_neigh = n_edge.target();
+                    for n_neigh in field!(st, $j).graph.neighbors_directed(field!(nodes, $j), Outgoing) {
                         let m_neigh = if field!(nodes, $j) != n_neigh {
                             field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)]
                         } else {
                             field!(st, 1 - $j).graph.to_index(field!(nodes, 1 - $j))
                         };
-
                         if m_neigh == usize::MAX {
                             continue;
                         }
-                        let m_edge = field!(st, 1 - $j)
-                            .graph
-                            .edges_directed(field!(nodes, 1 - $j), Outgoing)
-                            .find(|edge| field!(st, 1 - $j).graph.to_index(edge.target()) == m_neigh)
-                            .expect("syntactic check already made sure an edge exists");
-                        let edges = (n_edge.id(), m_edge.id());
+
+                        let e0 = (field!(nodes, $j), n_neigh);
+                        let e1 = (field!(nodes, 1 - $j), field!(st, 1 - $j).graph.from_index(m_neigh));
+                        let edges = (e0, e1);
                         if !edge_match.eq(st.0.graph, st.1.graph, field!(edges, $j), field!(edges, 1 - $j)) {
                             return false;
                         }
                     }
-
                     if field!(st, $j).graph.is_directed() {
-
-                        for n_edge in field!(st, $j).graph.edges_directed(field!(nodes, $j), Incoming) {
-                            let n_neigh = n_edge.source();
+                        for n_neigh in field!(st, $j).graph.neighbors_directed(field!(nodes, $j), Incoming) {
                             // the self loop case is handled in outgoing
                             let m_neigh = field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)];
                             if m_neigh == usize::MAX {
                                 continue;
                             }
-                            let m_edge = field!(st, 1 - $j)
-                                .graph
-                                .edges_directed(field!(nodes, 1 - $j), Incoming)
-                                .find(|edge| field!(st, 1 - $j).graph.to_index(edge.source()) == m_neigh)
-                                .expect("syntactic check already made sure an edge exists");
-                            let edges = (n_edge.id(), m_edge.id());
+
+                            let e0 = (field!(nodes, $j), n_neigh);
+                            let e1 = (field!(nodes, 1 - $j), field!(st, 1 - $j).graph.from_index(m_neigh));
+                            let edges = (e0, e1);
                             if !edge_match.eq(st.0.graph, st.1.graph, field!(edges, $j), field!(edges, 1 - $j)) {
                                 return false;
                             }
@@ -523,12 +520,12 @@ mod matching {
             + EdgeCount
             + GetAdjacencyMatrix
             + GraphProp
-            + IntoEdgesDirected,
+            + IntoNeighborsDirected,
         G1: NodeCompactIndexable
             + EdgeCount
             + GetAdjacencyMatrix
             + GraphProp
-            + IntoEdgesDirected,
+            + IntoNeighborsDirected,
         NM: NodeMatcher<G0, G1>,
         EM: EdgeMatcher<G0, G1>,
     {
@@ -615,12 +612,12 @@ where
         + EdgeCount
         + GetAdjacencyMatrix
         + GraphProp
-        + IntoEdgesDirected,
+        + IntoNeighborsDirected,
     G1: NodeCompactIndexable
         + EdgeCount
         + GetAdjacencyMatrix
         + GraphProp<EdgeType = G0::EdgeType> // make sure both graph are directed or undirected
-        + IntoEdgesDirected,
+        + IntoNeighborsDirected,
 {
     if g0.node_count() != g1.node_count() || g0.edge_count() != g1.edge_count() {
         return false;
@@ -705,12 +702,12 @@ where
         + EdgeCount
         + GetAdjacencyMatrix
         + GraphProp
-        + IntoEdgesDirected,
+        + IntoNeighborsDirected,
     G1: NodeCompactIndexable
         + EdgeCount
         + GetAdjacencyMatrix
         + GraphProp<EdgeType = G0::EdgeType> // make sure both graph are directed or undirected
-        + IntoEdgesDirected,
+        + IntoNeighborsDirected,
 {
     if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
         return false;
