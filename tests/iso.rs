@@ -3,8 +3,9 @@ extern crate petgraph;
 use std::fs::File;
 use std::io::prelude::*;
 
-use petgraph::matrix_graph::MatrixGraph;
 use petgraph::graph::{edge_index, node_index};
+#[cfg(feature = "matrix_graph")]
+use petgraph::matrix_graph::MatrixGraph;
 use petgraph::prelude::*;
 use petgraph::EdgeType;
 
@@ -487,6 +488,7 @@ fn iso_multigraph_failure() {
 }
 
 #[test]
+#[cfg(feature = "matrix_graph")]
 fn iso_graph_matrixgraph() {
     let g0 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
     let g1 = MatrixGraph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
