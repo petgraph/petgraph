@@ -14,9 +14,12 @@
 
 #[cfg(feature = "alloc")]
 use alloc::{
-    collections::{BTreeMap as HashMap, BTreeSet as HashSet, btree_map::Iter},
+    collections::{BTreeSet as HashSet, btree_map::Iter},
     vec::Vec,
 };
+
+#[cfg(feature = "alloc")]
+use indexmap::IndexMap as HashMap;
 
 #[cfg(feature = "no_std")]
 use core::{cmp::Ordering, hash::Hash, usize, iter::Iterator};
@@ -41,7 +44,6 @@ where
     dominators: HashMap<N, N>,
 }
 
-#[cfg(feature = "std")]
 impl<N> Dominators<N>
 where
     N: Copy + Eq + Hash,
@@ -95,69 +97,6 @@ where
     }
 }
 
-#[cfg(feature = "alloc")]
-impl<N> Dominators<N>
-where
-    N: Copy + Eq + Hash + Ord,
-{
-    /// Get the root node used to construct these dominance relations.
-    pub fn root(&self) -> N {
-        self.root
-    }
-
-    /// Get the immediate dominator of the given node.
-    ///
-    /// Returns `None` for any node that is not reachable from the root, and for
-    /// the root itself.
-    pub fn immediate_dominator(&self, node: N) -> Option<N> {
-        if node == self.root {
-            None
-        } else {
-            self.dominators.get(&node).cloned()
-        }
-    }
-
-    /// Iterate over the given node's strict dominators.
-    ///
-    /// If the given node is not reachable from the root, then `None` is
-    /// returned.
-    pub fn strict_dominators(&self, node: N) -> Option<DominatorsIter<N>> {
-        if self.dominators.contains_key(&node) {
-            Some(DominatorsIter {
-                dominators: self,
-                node: self.immediate_dominator(node),
-            })
-        } else {
-            None
-        }
-    }
-
-    /// Iterate over all of the given node's dominators (including the given
-    /// node itself).
-    ///
-    /// If the given node is not reachable from the root, then `None` is
-    /// returned.
-    pub fn dominators(&self, node: N) -> Option<DominatorsIter<N>> {
-        if self.dominators.contains_key(&node) {
-            Some(DominatorsIter {
-                dominators: self,
-                node: Some(node),
-            })
-        } else {
-            None
-        }
-    }
-
-    /// Iterate over all nodes immediately dominated by the given node (not
-    /// including the given node itself).
-    pub fn immediately_dominated_by(&self, node: N) -> DominatedByIter<N> {
-        DominatedByIter {
-            iter: self.dominators.iter(),
-            node: node
-        }
-    }
-}
-
 /// Iterator for a node's dominators.
 pub struct DominatorsIter<'a, N>
 where
@@ -166,7 +105,7 @@ where
     dominators: &'a Dominators<N>,
     node: Option<N>,
 }
-#[cfg(feature = "std")]
+
 impl<'a, N> Iterator for DominatorsIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
@@ -222,88 +161,6 @@ const UNDEFINED: usize = usize::MAX;
 /// to ~30,000 vertices.
 ///
 /// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
-#[cfg(feature = "std")]
-pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
-where
-    G: IntoNeighbors + Visitable,
-    <G as GraphBase>::NodeId: Eq + Hash,
-{
-    let (post_order, predecessor_sets) = simple_fast_post_order(graph, root);
-    let length = post_order.len();
-    debug_assert!(length > 0);
-    debug_assert!(post_order.last() == Some(&root));
-
-    // From here on out we use indices into `post_order` instead of actual
-    // `NodeId`s wherever possible. This greatly improves the performance of
-    // this implementation, but we have to pay a little bit of upfront cost to
-    // convert our data structures to play along first.
-
-    // Maps a node to its index into `post_order`.
-    let node_to_post_order_idx: HashMap<_, _> = post_order
-        .iter()
-        .enumerate()
-        .map(|(idx, &node)| (node, idx))
-        .collect();
-
-    // Maps a node's `post_order` index to its set of predecessors's indices
-    // into `post_order` (as a vec).
-    let idx_to_predecessor_vec =
-        predecessor_sets_to_idx_vecs(&post_order, &node_to_post_order_idx, predecessor_sets);
-
-    let mut dominators = vec![UNDEFINED; length];
-    dominators[length - 1] = length - 1;
-
-    let mut changed = true;
-    while changed {
-        changed = false;
-
-        // Iterate in reverse post order, skipping the root.
-
-        for idx in (0..length - 1).rev() {
-            debug_assert!(post_order[idx] != root);
-
-            // Take the intersection of every predecessor's dominator set; that
-            // is the current best guess at the immediate dominator for this
-            // node.
-
-            let new_idom_idx = {
-                let mut predecessors = idx_to_predecessor_vec[idx]
-                    .iter()
-                    .filter(|&&p| dominators[p] != UNDEFINED);
-                let new_idom_idx = predecessors.next().expect(
-                    "Because the root is initialized to dominate itself, and is the \
-                     first node in every path, there must exist a predecessor to this \
-                     node that also has a dominator",
-                );
-                predecessors.fold(*new_idom_idx, |new_idom_idx, &predecessor_idx| {
-                    intersect(&dominators, new_idom_idx, predecessor_idx)
-                })
-            };
-
-            debug_assert!(new_idom_idx < length);
-
-            if new_idom_idx != dominators[idx] {
-                dominators[idx] = new_idom_idx;
-                changed = true;
-            }
-        }
-    }
-
-    // All done! Translate the indices back into proper `G::NodeId`s.
-
-    debug_assert!(!dominators.iter().any(|&dom| dom == UNDEFINED));
-
-    Dominators {
-        root: root,
-        dominators: dominators
-            .into_iter()
-            .enumerate()
-            .map(|(idx, dom_idx)| (post_order[idx], post_order[dom_idx]))
-            .collect(),
-    }
-}
-
-#[cfg(feature = "alloc")]
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
 where
     G: IntoNeighbors + Visitable,
@@ -375,7 +232,7 @@ where
     debug_assert!(!dominators.iter().any(|&dom| dom == UNDEFINED));
 
     Dominators {
-        root,
+        root: root,
         dominators: dominators
             .into_iter()
             .enumerate()

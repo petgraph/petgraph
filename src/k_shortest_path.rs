@@ -1,14 +1,16 @@
 #[cfg(feature = "alloc")]
 use alloc::{
-    collections::{BinaryHeap, BTreeMap as HashMap},
+    collections::BinaryHeap,
     vec::Vec,
 };
 
 #[cfg(feature = "std")]
 use std::{
-    hash::Hash,
-    collections::{BinaryHeap, HashMap}
+    collections::BinaryHeap,
+    hash::Hash
 };
+
+use indexmap::IndexMap;
 
 #[cfg(feature = "no_std")]
 use core::hash::Hash;
@@ -69,7 +71,7 @@ use crate::{
 /// // |       v       |       v
 /// // d <---- c       h <---- g
 ///
-/// let expected_res: HashMap<NodeIndex, usize> = [
+/// let expected_res: IndexMap<NodeIndex, usize> = [
 ///      (a, 7),
 ///      (b, 4),
 ///      (c, 5),
@@ -89,7 +91,7 @@ pub fn k_shortest_path<G, F, K>(
     goal: Option<G::NodeId>,
     k: usize,
     mut edge_cost: F,
-) -> HashMap<G::NodeId, K>
+) -> IndexMap<G::NodeId, K>
 where
     G: IntoEdges + Visitable + NodeCount + NodeIndexable,
     G::NodeId: Eq + Hash + Ord,
@@ -97,7 +99,7 @@ where
     K: Measure + Copy,
 {
     let mut counter: Vec<usize> = vec![0; graph.node_count()];
-    let mut scores = HashMap::new();
+    let mut scores = IndexMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score = K::default();
 
