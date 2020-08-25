@@ -203,8 +203,14 @@ mod matching {
         G1: GraphBase,
     {
         Outer,
-        Inner { nodes: (G0::NodeId, G1::NodeId), open_list: OpenList },
-        Unwind { nodes: (G0::NodeId, G1::NodeId), open_list: OpenList },
+        Inner {
+            nodes: (G0::NodeId, G1::NodeId),
+            open_list: OpenList,
+        },
+        Unwind {
+            nodes: (G0::NodeId, G1::NodeId),
+            open_list: OpenList,
+        },
     }
 
     fn is_feasible<G0, G1, NM, EM>(
@@ -220,10 +226,18 @@ mod matching {
         EM: SemanticMatcher<G0::EdgeWeight, G1::EdgeWeight>,
     {
         macro_rules! field {
-            ($x:ident,     0) => ($x.0);
-            ($x:ident,     1) => ($x.1);
-            ($x:ident, 1 - 0) => ($x.1);
-            ($x:ident, 1 - 1) => ($x.0);
+            ($x:ident,     0) => {
+                $x.0
+            };
+            ($x:ident,     1) => {
+                $x.1
+            };
+            ($x:ident, 1 - 0) => {
+                $x.1
+            };
+            ($x:ident, 1 - 1) => {
+                $x.0
+            };
         }
 
         macro_rules! r_succ {
@@ -233,51 +247,50 @@ mod matching {
                     succ_count += 1;
                     // handle the self loop case; it's not in the mapping (yet)
                     let m_neigh = if field!(nodes, $j) != n_neigh {
-                        field!(st, $j).mapping[ field!(st, $j).graph.to_index(n_neigh)]
+                        field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)]
                     } else {
                         field!(st, 1 - $j).graph.to_index(field!(nodes, 1 - $j))
                     };
                     if m_neigh == usize::MAX {
                         continue;
                     }
-                    let has_edge =
-                        field!(st, 1 - $j).graph.is_adjacent(
-                            &field!(st, 1 - $j).adjacency_matrix,
-                            field!(nodes, 1 - $j),
-                            field!(st, 1 - $j).graph.from_index(m_neigh)
-                        );
+                    let has_edge = field!(st, 1 - $j).graph.is_adjacent(
+                        &field!(st, 1 - $j).adjacency_matrix,
+                        field!(nodes, 1 - $j),
+                        field!(st, 1 - $j).graph.from_index(m_neigh),
+                    );
                     if !has_edge {
                         return false;
                     }
                 }
                 succ_count
-            }}
+            }};
         }
 
         macro_rules! r_pred {
             ($j:tt) => {{
                 let mut pred_count = 0;
-                for n_neigh in field!(st, $j).graph.neighbors_directed(field!(nodes, $j), Incoming) {
+                for n_neigh in field!(st, $j)
+                    .graph
+                    .neighbors_directed(field!(nodes, $j), Incoming)
+                {
                     pred_count += 1;
                     // the self loop case is handled in outgoing
                     let m_neigh = field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)];
                     if m_neigh == usize::MAX {
                         continue;
                     }
-                    let has_edge =
-                        field!(st, 1 - $j)
-                            .graph
-                            .is_adjacent(
-                                &field!(st, 1 - $j).adjacency_matrix,
-                                field!(st, 1 - $j).graph.from_index(m_neigh),
-                                field!(nodes, 1 - $j)
-                            );
+                    let has_edge = field!(st, 1 - $j).graph.is_adjacent(
+                        &field!(st, 1 - $j).adjacency_matrix,
+                        field!(st, 1 - $j).graph.from_index(m_neigh),
+                        field!(nodes, 1 - $j),
+                    );
                     if !has_edge {
                         return false;
                     }
                 }
                 pred_count
-            }}
+            }};
         }
 
         // Check syntactic feasibility of mapping by ensuring adjacencies
@@ -311,7 +324,7 @@ mod matching {
         if NM::enabled() {
             if !node_match.eq(
                 &st.0.graph.node_weight(nodes.0).unwrap(),
-                &st.1.graph.node_weight(nodes.1).unwrap()
+                &st.1.graph.node_weight(nodes.1).unwrap(),
             ) {
                 return false;
             }
@@ -320,7 +333,6 @@ mod matching {
         if EM::enabled() {
             macro_rules! edge_feasibility {
                 ($j:tt) => {{
-
                     for n_neigh in field!(st, $j).graph.neighbors(field!(nodes, $j)) {
                         let m_neigh = if field!(nodes, $j) != n_neigh {
                             field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)]
@@ -332,7 +344,6 @@ mod matching {
                             continue;
                         }
 
-
                         // match g[1 - j].find_edge(nodes[1 - j], m_neigh) {
                         //     Some(m_edge) => {
                         //         if !edge_match.eq(&g[j][n_edge], &g[1 - j][m_edge]) {
@@ -341,7 +352,6 @@ mod matching {
                         //     }
                         //     None => unreachable!(), // covered by syntactic check
                         // }
-
                     }
 
                     // if g[0].is_directed() {
@@ -365,7 +375,7 @@ mod matching {
                     //     }
                     // }
                     //
-                }}
+                }};
             }
 
             edge_feasibility!(0);
@@ -408,7 +418,11 @@ mod matching {
             }
         }
         match (from_index, to_index) {
-            (Some(n), Some(m)) => Some((st.0.graph.from_index(n), st.1.graph.from_index(m), open_list)),
+            (Some(n), Some(m)) => Some((
+                st.0.graph.from_index(n),
+                st.1.graph.from_index(m),
+                open_list,
+            )),
             // No more candidates
             _ => None,
         }
@@ -417,7 +431,7 @@ mod matching {
     fn next_from_ix<G0, G1>(
         st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
         nx: G0::NodeId,
-        open_list: OpenList
+        open_list: OpenList,
     ) -> Option<G0::NodeId>
     where
         G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
@@ -440,12 +454,10 @@ mod matching {
         }
     }
 
-    //fn pop_state(nodes: [NodeIndex<Ix>; 2]) {
     fn pop_state<G0, G1>(
         st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
         nodes: (G0::NodeId, G1::NodeId),
-    )
-    where
+    ) where
         G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
         G1: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
     {
@@ -456,8 +468,7 @@ mod matching {
     fn push_state<G0, G1>(
         st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
         nodes: (G0::NodeId, G1::NodeId),
-    )
-    where
+    ) where
         G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
         G1: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
     {
@@ -497,10 +508,7 @@ mod matching {
         let mut stack: Vec<Frame<G0, G1>> = vec![Frame::Outer];
         while let Some(frame) = stack.pop() {
             match frame {
-                Frame::Unwind {
-                    nodes,
-                    open_list,
-                } => {
+                Frame::Unwind { nodes, open_list } => {
                     pop_state(&mut st, nodes);
 
                     match next_from_ix(&mut st, nodes.0, open_list) {
@@ -524,10 +532,7 @@ mod matching {
                         stack.push(f);
                     }
                 },
-                Frame::Inner {
-                    nodes,
-                    open_list
-                } => {
+                Frame::Inner { nodes, open_list } => {
                     if is_feasible(&mut st, nodes, node_match, edge_match) {
                         push_state(&mut st, nodes);
                         if st.0.is_complete() {
@@ -535,10 +540,7 @@ mod matching {
                         }
                         // Check cardinalities of Tin, Tout sets
                         if st.0.out_size == st.1.out_size && st.0.ins_size == st.1.ins_size {
-                            let f0 = Frame::Unwind {
-                                nodes,
-                                open_list,
-                            };
+                            let f0 = Frame::Unwind { nodes, open_list };
                             stack.push(f0);
                             stack.push(Frame::Outer);
                             continue;
@@ -586,7 +588,7 @@ where
         + DataMap
         + GetAdjacencyMatrix
         + GraphProp
-        + IntoNeighborsDirected
+        + IntoNeighborsDirected,
 {
     if g0.node_count() != g1.node_count() || g0.edge_count() != g1.edge_count() {
         return false;
@@ -678,7 +680,7 @@ where
         + DataMap
         + GetAdjacencyMatrix
         + GraphProp
-        + IntoNeighborsDirected
+        + IntoNeighborsDirected,
 {
     if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
         return false;
