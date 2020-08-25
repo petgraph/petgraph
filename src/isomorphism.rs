@@ -219,10 +219,10 @@ mod matching {
         EM: SemanticMatcher<G0::EdgeWeight, G1::EdgeWeight>,
     {
         macro_rules! field {
-            ($x:ident,   0) => ($x.0);
-            ($x:ident,   1) => ($x.1);
-            ($x:ident, ! 0) => ($x.1);
-            ($x:ident, ! 1) => ($x.0);
+            ($x:ident,     0) => ($x.0);
+            ($x:ident,     1) => ($x.1);
+            ($x:ident, 1 - 0) => ($x.1);
+            ($x:ident, 1 - 1) => ($x.0);
         }
 
         macro_rules! r_succ {
@@ -234,16 +234,16 @@ mod matching {
                     let m_neigh = if field!(nodes, $j) != n_neigh {
                         field!(st, $j).mapping[ field!(st, $j).graph.to_index(n_neigh)]
                     } else {
-                        field!(st, !$j).graph.to_index(field!(nodes, !$j))
+                        field!(st, 1 - $j).graph.to_index(field!(nodes, 1 - $j))
                     };
                     if m_neigh == usize::MAX {
                         continue;
                     }
                     let has_edge =
-                        field!(st, !$j).graph.is_adjacent(
-                            &field!(st, !$j).adjacency_matrix,
-                            field!(nodes, !$j),
-                            field!(st, !$j).graph.from_index(m_neigh)
+                        field!(st, 1 - $j).graph.is_adjacent(
+                            &field!(st, 1 - $j).adjacency_matrix,
+                            field!(nodes, 1 - $j),
+                            field!(st, 1 - $j).graph.from_index(m_neigh)
                         );
                     if !has_edge {
                         return false;
@@ -264,12 +264,12 @@ mod matching {
                         continue;
                     }
                     let has_edge =
-                        field!(st, !$j)
+                        field!(st, 1 - $j)
                             .graph
                             .is_adjacent(
-                                &field!(st, !$j).adjacency_matrix,
-                                field!(st, !$j).graph.from_index(m_neigh),
-                                field!(nodes, !$j)
+                                &field!(st, 1 - $j).adjacency_matrix,
+                                field!(st, 1 - $j).graph.from_index(m_neigh),
+                                field!(nodes, 1 - $j)
                             );
                     if !has_edge {
                         return false;
