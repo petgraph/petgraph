@@ -437,10 +437,10 @@ mod matching {
                                 continue;
                             }
 
-                            let e0 = (field!(nodes, $j), n_neigh);
+                            let e0 = (n_neigh, field!(nodes, $j));
                             let e1 = (
-                                field!(nodes, 1 - $j),
                                 field!(st, 1 - $j).graph.from_index(m_neigh),
+                                field!(nodes, 1 - $j),
                             );
                             let edges = (e0, e1);
                             if !edge_match.eq(
