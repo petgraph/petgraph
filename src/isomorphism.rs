@@ -17,7 +17,8 @@ use super::visit::NodeCount;
 use super::visit::NodeRef;
 
 use self::semantic::NoSemanticMatch;
-use self::semantic::SemanticMatcher;
+use self::semantic::NodeMatcher;
+use self::semantic::EdgeMatcher;
 use self::state::Vf2State;
 
 mod state {
@@ -153,37 +154,82 @@ mod state {
 }
 
 mod semantic {
-    pub trait SemanticMatcher<U, V> {
-        fn enabled() -> bool;
-        fn eq(&mut self, _: &U, _: &V) -> bool;
-    }
+    use super::*;
 
     pub struct NoSemanticMatch;
 
-    impl<U, V> SemanticMatcher<U, V> for NoSemanticMatch {
+    pub trait NodeMatcher<G0: GraphBase, G1: GraphBase> {
+        fn enabled() -> bool;
+        fn eq(&mut self, _g0: &G0, _g1: &G1, _n0: G0::NodeId, _n1: G1::NodeId) -> bool;
+    }
+
+    impl<G0: GraphBase, G1: GraphBase> NodeMatcher<G0, G1> for NoSemanticMatch {
         #[inline]
         fn enabled() -> bool {
             false
         }
         #[inline]
-        fn eq(&mut self, _: &U, _: &V) -> bool {
+        fn eq(&mut self, _g0: &G0, _g1: &G1, _n0: G0::NodeId, _n1: G1::NodeId) -> bool {
             true
         }
     }
 
-    impl<U, V, F> SemanticMatcher<U, V> for F
+    impl<G0, G1, F> NodeMatcher<G0, G1> for F
     where
-        F: FnMut(&U, &V) -> bool,
+        G0: GraphBase + DataMap,
+        G1: GraphBase + DataMap,
+        F: FnMut(&G0::NodeWeight, &G1::NodeWeight) -> bool,
     {
         #[inline]
         fn enabled() -> bool {
             true
         }
         #[inline]
-        fn eq(&mut self, a: &U, b: &V) -> bool {
-            self(a, b)
+        fn eq(&mut self, g0: &G0, g1: &G1, n0: G0::NodeId, n1: G1::NodeId) -> bool {
+            if let (Some(x), Some(y)) = (g0.node_weight(n0), g1.node_weight(n1)) {
+                self(x, y)
+            } else {
+                false
+            }
         }
     }
+
+    pub trait EdgeMatcher<G0: GraphBase, G1: GraphBase> {
+        fn enabled() -> bool;
+        fn eq(&mut self, _g0: &G0, _g1: &G1, _e0: G0::EdgeId, _e1: G1::EdgeId) -> bool;
+    }
+
+    impl<G0: GraphBase, G1: GraphBase> EdgeMatcher<G0, G1> for NoSemanticMatch {
+        #[inline]
+        fn enabled() -> bool {
+            false
+        }
+        #[inline]
+        fn eq(&mut self, _g0: &G0, _g1: &G1, _e0: G0::EdgeId, _e1: G1::EdgeId) -> bool {
+            true
+        }
+    }
+
+    impl<G0, G1, F> EdgeMatcher<G0, G1> for F
+    where
+        G0: GraphBase + DataMap,
+        G1: GraphBase + DataMap,
+        F: FnMut(&G0::EdgeWeight, &G1::EdgeWeight) -> bool,
+    {
+        #[inline]
+        fn enabled() -> bool {
+            true
+        }
+        #[inline]
+        fn eq(&mut self, g0: &G0, g1: &G1, e0: G0::EdgeId, e1: G1::EdgeId) -> bool {
+            if let (Some(x), Some(y)) = (g0.edge_weight(e0), g1.edge_weight(e1)) {
+                self(x, y)
+            } else {
+                false
+            }
+        }
+    }
+
 }
 
 mod matching {
@@ -220,10 +266,10 @@ mod matching {
         edge_match: &mut EM,
     ) -> bool
     where
-        G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected + DataMap,
-        G1: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected + DataMap,
-        NM: SemanticMatcher<G0::NodeWeight, G1::NodeWeight>,
-        EM: SemanticMatcher<G0::EdgeWeight, G1::EdgeWeight>,
+        G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
+        G1: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
+        NM: NodeMatcher<G0, G1>,
+        EM: EdgeMatcher<G0, G1>,
     {
         macro_rules! field {
             ($x:ident,     0) => {
@@ -322,10 +368,7 @@ mod matching {
 
         // // semantic feasibility: compare associated data for nodes
         if NM::enabled() {
-            if !node_match.eq(
-                &st.0.graph.node_weight(nodes.0).unwrap(),
-                &st.1.graph.node_weight(nodes.1).unwrap(),
-            ) {
+            if !node_match.eq(st.0.graph, st.1.graph, nodes.0, nodes.1) {
                 return false;
             }
         }
@@ -485,18 +528,16 @@ mod matching {
     where
         G0: NodeCompactIndexable
             + EdgeCount
-            + DataMap
             + GetAdjacencyMatrix
             + GraphProp
             + IntoNeighborsDirected,
         G1: NodeCompactIndexable
             + EdgeCount
-            + DataMap
             + GetAdjacencyMatrix
             + GraphProp
             + IntoNeighborsDirected,
-        NM: SemanticMatcher<G0::NodeWeight, G1::NodeWeight>,
-        EM: SemanticMatcher<G0::EdgeWeight, G1::EdgeWeight>,
+        NM: NodeMatcher<G0, G1>,
+        EM: EdgeMatcher<G0, G1>,
     {
         if st.0.is_complete() {
             return Some(true);
@@ -579,13 +620,11 @@ pub fn is_isomorphic<G0, G1>(g0: G0, g1: G1) -> bool
 where
     G0: NodeCompactIndexable
         + EdgeCount
-        + DataMap
         + GetAdjacencyMatrix
         + GraphProp
         + IntoNeighborsDirected,
     G1: NodeCompactIndexable
         + EdgeCount
-        + DataMap
         + GetAdjacencyMatrix
         + GraphProp<EdgeType = G0::EdgeType> // make sure both graph are directed or undirected
         + IntoNeighborsDirected,
@@ -671,13 +710,11 @@ pub fn is_isomorphic_subgraph<G0, G1>(g0: G0, g1: G1) -> bool
 where
     G0: NodeCompactIndexable
         + EdgeCount
-        + DataMap
         + GetAdjacencyMatrix
         + GraphProp
         + IntoNeighborsDirected,
     G1: NodeCompactIndexable
         + EdgeCount
-        + DataMap
         + GetAdjacencyMatrix
         + GraphProp<EdgeType = G0::EdgeType> // make sure both graph are directed or undirected
         + IntoNeighborsDirected,
