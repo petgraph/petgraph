@@ -1,12 +1,5 @@
-use fixedbitset::FixedBitSet;
-use std::marker;
-use std::ops::Index;
-
-use super::graph::{Graph, IndexType, NodeIndex};
-use super::{EdgeType, Incoming, Outgoing};
-
+use super::{Incoming, Outgoing};
 use super::data::DataMap;
-use super::visit::Data;
 use super::visit::EdgeCount;
 use super::visit::GetAdjacencyMatrix;
 use super::visit::GraphBase;
@@ -14,8 +7,6 @@ use super::visit::GraphProp;
 use super::visit::IntoEdgesDirected;
 use super::visit::IntoNeighborsDirected;
 use super::visit::NodeCompactIndexable;
-use super::visit::NodeCount;
-use super::visit::NodeRef;
 use super::visit::EdgeRef;
 
 use self::semantic::NoSemanticMatch;
