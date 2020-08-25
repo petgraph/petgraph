@@ -587,7 +587,7 @@ where
         + EdgeCount
         + DataMap
         + GetAdjacencyMatrix
-        + GraphProp
+        + GraphProp<EdgeType = G0::EdgeType> // make sure both graph are directed or undirected
         + IntoNeighborsDirected,
 {
     if g0.node_count() != g1.node_count() || g0.edge_count() != g1.edge_count() {
@@ -621,7 +621,7 @@ where
         + EdgeCount
         + DataMap
         + GetAdjacencyMatrix
-        + GraphProp
+        + GraphProp<EdgeType = G0::EdgeType> // make sure both graph are directed or undirected
         + IntoNeighborsDirected,
     NM: FnMut(&G0::NodeWeight, &G1::NodeWeight) -> bool,
     EM: FnMut(&G0::EdgeWeight, &G1::EdgeWeight) -> bool,
@@ -679,7 +679,7 @@ where
         + EdgeCount
         + DataMap
         + GetAdjacencyMatrix
-        + GraphProp
+        + GraphProp<EdgeType = G0::EdgeType> // make sure both graph are directed or undirected
         + IntoNeighborsDirected,
 {
     if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
