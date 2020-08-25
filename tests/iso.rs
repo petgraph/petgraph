@@ -3,6 +3,7 @@ extern crate petgraph;
 use std::fs::File;
 use std::io::prelude::*;
 
+use petgraph::matrix_graph::MatrixGraph;
 use petgraph::graph::{edge_index, node_index};
 use petgraph::prelude::*;
 use petgraph::EdgeType;
@@ -483,6 +484,13 @@ fn iso_multigraph_failure() {
 
     let g1 = Graph::<(), ()>::from_edges(&[(0, 0), (0, 1), (0, 1), (1, 1), (1, 0), (1, 0)]);
     assert!(!is_isomorphic(&g0, &g1));
+}
+
+#[test]
+fn iso_graph_matrixgraph() {
+    let g0 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
+    let g1 = MatrixGraph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
+    assert!(is_isomorphic(&g0, &g1));
 }
 
 #[test]
