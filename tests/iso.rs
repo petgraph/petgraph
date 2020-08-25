@@ -486,12 +486,12 @@ fn iso_multigraph_failure() {
     assert!(!is_isomorphic(&g0, &g1));
 }
 
-#[test]
-fn iso_graph_matrixgraph() {
-    let g0 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
-    let g1 = MatrixGraph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
-    assert!(is_isomorphic(&g0, &g1));
-}
+// #[test]
+// fn iso_graph_matrixgraph() {
+//     let g0 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
+//     let g1 = MatrixGraph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
+//     assert!(is_isomorphic(&g0, &g1));
+// }
 
 #[test]
 fn iso_subgraph() {
