@@ -46,13 +46,14 @@ graphmap = []
 serde-1 = ["serde", "serde_derive"]
 stable_graph = []
 matrix_graph = []
+apply_quickcheck = ["quickcheck", "stable_graph", "graphmap"]
 
 # For unstable features
 generate = []
 unstable = ["generate"]
 
 # feature flags for testing use only
-all = ["unstable", "quickcheck", "matrix_graph", "stable_graph", "graphmap"]
+all = ["unstable", "apply_quickcheck", "matrix_graph", "stable_graph", "graphmap"]
 
 [workspace]
 members = ["serialization-tests"]
