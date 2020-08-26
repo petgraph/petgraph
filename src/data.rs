@@ -10,7 +10,7 @@ use crate::EdgeType;
 use crate::Graph;
 
 
-use crate::lib::*;
+use crate::lib::{Vec};
 
 
 trait_template! {

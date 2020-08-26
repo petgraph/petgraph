@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use crate::lib::*;
+use crate::lib::{Occupied, Vacant, BinaryHeap, HashMap};
 
 use super::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 use crate::algo::Measure;

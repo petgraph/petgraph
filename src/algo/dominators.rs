@@ -15,7 +15,9 @@
 use std::cmp::Ordering;
 use std::hash::Hash;
 
-use crate::lib::*;
+use crate::lib::{HashMap, HashSet, Iter, Vec};
+#[cfg(not(feature = "std"))]
+use crate::lib::vec;
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 

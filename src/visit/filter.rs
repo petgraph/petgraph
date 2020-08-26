@@ -3,7 +3,7 @@ use crate::prelude::*;
 use fixedbitset::FixedBitSet;
 use std::marker::PhantomData;
 
-use crate::lib::*;
+use crate::lib::{HashSet};
 
 use crate::data::DataMap;
 use crate::visit::{Data, NodeCompactIndexable, NodeCount};

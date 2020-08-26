@@ -2,7 +2,7 @@ use super::{GraphRef, IntoNodeIdentifiers, Reversed};
 use super::{IntoNeighbors, IntoNeighborsDirected, VisitMap, Visitable};
 use crate::Incoming;
 
-use crate::lib::*;
+use crate::lib::{VecDeque, Vec};
 
 /// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in
 /// preorder (when they are first discovered).

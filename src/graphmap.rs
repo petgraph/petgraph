@@ -13,7 +13,7 @@ use std::marker::PhantomData;
 use std::ops::{Deref, Index, IndexMut};
 use std::slice::Iter;
 
-use crate::lib::*;
+use crate::lib::{RandomState, Vec};
 
 use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
 use crate::graph::node_index;

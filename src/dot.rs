@@ -7,8 +7,7 @@ use crate::visit::{
     NodeIndexable, NodeRef,
 };
 
-
-use crate::lib::*;
+use crate::lib::{String, ToString};
 
 /// `Dot` implements output to graphviz .dot format for a graph.
 ///
@@ -266,6 +265,8 @@ mod test {
     use crate::prelude::Graph;
     use crate::visit::NodeRef;
     use std::fmt::Write;
+
+    use crate::lib::{String, format};
 
     #[test]
     fn test_escape() {

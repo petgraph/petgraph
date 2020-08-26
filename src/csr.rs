@@ -7,7 +7,9 @@ use std::ops::{Index, IndexMut, Range};
 use std::slice::Windows;
 
 
-use crate::lib::*;
+use crate::lib::{Vec};
+#[cfg(not(feature = "std"))]
+use crate::lib::vec;
 
 use crate::visit::{Data, GraphProp, IntoEdgeReferences, NodeCount};
 use crate::visit::{EdgeRef, GraphBase, IntoEdges, IntoNeighbors, NodeIndexable};
@@ -748,6 +750,7 @@ mod tests {
     use crate::visit::Dfs;
     use crate::visit::VisitMap;
     use crate::Undirected;
+    use crate::lib::{Vec};
 
     #[test]
     fn csr1() {
@@ -758,6 +761,7 @@ mod tests {
         m.add_edge(0, 2, ());
         m.add_edge(1, 0, ());
         m.add_edge(1, 1, ());
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         assert_eq!(&m.column, &[0, 2, 0, 1, 2, 2]);
         assert_eq!(&m.row, &[0, 2, 5, 6]);
@@ -785,6 +789,7 @@ mod tests {
         m.add_edge(0, 2, ());
         m.add_edge(1, 2, ());
         m.add_edge(2, 2, ());
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         assert_eq!(&m.column, &[0, 2, 2, 0, 1, 2]);
         assert_eq!(&m.row, &[0, 2, 3, 6]);
@@ -794,6 +799,7 @@ mod tests {
 
     #[should_panic]
     #[test]
+    #[cfg(feature = "std")]
     fn csr_from_error_1() {
         // not sorted in source
         let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (0, 2)]).unwrap();
@@ -802,6 +808,7 @@ mod tests {
 
     #[should_panic]
     #[test]
+    #[cfg(feature = "std")]
     fn csr_from_error_2() {
         // not sorted in target
         let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (1, 2), (1, 1)]).unwrap();
@@ -812,6 +819,7 @@ mod tests {
     fn csr_from() {
         let m: Csr =
             Csr::from_sorted_edges(&[(0, 1), (0, 2), (1, 0), (1, 1), (2, 2), (2, 4)]).unwrap();
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         assert_eq!(m.neighbors_slice(0), &[1, 2]);
         assert_eq!(m.neighbors_slice(1), &[0, 1]);
@@ -834,6 +842,7 @@ mod tests {
             (4, 5),
         ])
         .unwrap();
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         let mut dfs = Dfs::new(&m, 0);
         while let Some(_) = dfs.next(&m) {}
@@ -844,6 +853,7 @@ mod tests {
         assert!(!dfs.discovered[5]);
 
         m.add_edge(1, 4, ());
+        #[cfg(feature = "std")]
         println!("{:?}", m);
 
         dfs.reset(&m);
@@ -856,6 +866,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn csr_tarjan() {
         let m: Csr = Csr::from_sorted_edges(&[
             (0, 1),
@@ -890,8 +901,10 @@ mod tests {
             (7, 8, 3.),
         ])
         .unwrap();
+        #[cfg(feature = "std")]
         println!("{:?}", m);
         let result = bellman_ford(&m, 0).unwrap();
+        #[cfg(feature = "std")]
         println!("{:?}", result);
         let answer = [0., 0.5, 1.5, 1.5];
         assert_eq!(&answer, &result.0[..4]);
@@ -935,6 +948,7 @@ mod tests {
         let mut copy = Vec::new();
         for e in m.edge_references() {
             copy.push((e.source(), e.target(), *e.weight()));
+            #[cfg(feature = "std")]
             println!("{:?}", e);
         }
         let m2: Csr<(), _> = Csr::from_sorted_edges(&copy).unwrap();
@@ -954,6 +968,7 @@ mod tests {
         assert!(g.add_edge(b, c, ()));
         assert!(g.add_edge(c, a, ()));
 
+        #[cfg(feature = "std")]
         println!("{:?}", g);
 
         assert_eq!(g.node_count(), 3);
@@ -975,6 +990,7 @@ mod tests {
 
         let c = g.add_node(());
 
+        #[cfg(feature = "std")]
         println!("{:?}", g);
 
         assert_eq!(g.node_count(), 3);

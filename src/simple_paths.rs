@@ -3,7 +3,9 @@ use std::{
     iter::{from_fn, FromIterator},
 };
 
-use crate::lib::*;
+use crate::lib::{RandomState};
+#[cfg(not(feature = "std"))]
+use crate::lib::vec;
 
 use indexmap::IndexSet;
 
@@ -86,7 +88,8 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::lib::*;
+    use crate::lib::{HashSet, vec, Vec};
+    use std::iter::FromIterator;
 
     use itertools::assert_equal;
 

@@ -2,7 +2,9 @@ use fixedbitset::FixedBitSet;
 use std::marker;
 
 
-use crate::lib::*;
+use crate::lib::{Vec};
+#[cfg(not(feature = "std"))]
+use crate::lib::vec;
 
 use super::graph::{Graph, IndexType, NodeIndex};
 use super::{EdgeType, Incoming};

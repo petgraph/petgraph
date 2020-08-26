@@ -10,6 +10,8 @@ use crate::{EdgeType, Graph};
 use crate::graphmap::{GraphMap, NodeTrait};
 use crate::visit::NodeIndexable;
 
+use crate::lib::{Box, Vec};
+
 /// Return a random float in the range [0, 1.)
 fn random_01<G: Gen>(g: &mut G) -> f64 {
     // from rand

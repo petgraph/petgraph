@@ -1,7 +1,9 @@
 
 use std::hash::Hash;
 
-use crate::lib::*;
+use crate::lib::{Occupied, Vacant, BinaryHeap, HashMap, Vec};
+#[cfg(not(feature = "std"))]
+use crate::lib::vec;
 
 use super::visit::{EdgeRef, GraphBase, IntoEdges, VisitMap, Visitable};
 use crate::scored::MinScored;

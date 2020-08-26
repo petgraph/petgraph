@@ -10,7 +10,9 @@ use std::cmp::min;
 
 use crate::prelude::*;
 
-use crate::lib::*;
+use crate::lib::{VecDeque, BinaryHeap, HashMap, Vec};
+#[cfg(not(feature = "std"))]
+use crate::lib::vec;
 
 use super::graph::IndexType;
 use super::unionfind::UnionFind;

@@ -52,7 +52,7 @@ pub use self::traversal::*;
 
 use fixedbitset::FixedBitSet;
 
-use crate::lib::*;
+use crate::lib::{HashSet};
 
 use std::hash::{BuildHasher, Hash};
 
