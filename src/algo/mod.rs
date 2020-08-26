@@ -26,6 +26,8 @@ use crate::visit::{Data, IntoNodeReferences, NodeRef};
 
 pub use super::astar::astar;
 pub use super::dijkstra::dijkstra;
+pub use super::k_shortest_path::k_shortest_path;
+
 pub use super::isomorphism::{is_isomorphic, is_isomorphic_matching};
 pub use super::simple_paths::all_simple_paths;
 
@@ -323,6 +325,135 @@ where
     sccs
 }
 
+#[derive(Copy, Clone, Debug)]
+struct NodeData {
+    index: Option<usize>,
+    lowlink: usize,
+    on_stack: bool,
+}
+
+/// A reusable state for computing the *strongly connected components* using [Tarjan's algorithm][1].
+///
+/// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+#[derive(Debug)]
+pub struct TarjanScc<N> {
+    index: usize,
+    nodes: Vec<NodeData>,
+    stack: Vec<N>,
+}
+
+impl<N> Default for TarjanScc<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<N> TarjanScc<N> {
+    /// Creates a new `TarjanScc`
+    pub fn new() -> Self {
+        TarjanScc {
+            index: 0,
+            nodes: Vec::new(),
+            stack: Vec::new(),
+        }
+    }
+
+    /// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+    ///
+    /// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+    ///
+    /// Calls `f` for each strongly strongly connected component (scc).
+    /// The order of node ids within each scc is arbitrary, but the order of
+    /// the sccs is their postorder (reverse topological sort).
+    ///
+    /// For an undirected graph, the sccs are simply the connected components.
+    ///
+    /// This implementation is recursive and does one pass over the nodes.
+    pub fn run<G, F>(&mut self, g: G, mut f: F)
+    where
+        G: IntoNodeIdentifiers<NodeId = N> + IntoNeighbors<NodeId = N> + NodeIndexable<NodeId = N>,
+        F: FnMut(&[N]),
+        N: Copy + PartialEq,
+    {
+        self.nodes.clear();
+        self.nodes.resize(
+            g.node_bound(),
+            NodeData {
+                index: None,
+                lowlink: !0,
+                on_stack: false,
+            },
+        );
+
+        for n in g.node_identifiers() {
+            self.visit(n, g, &mut f);
+        }
+
+        debug_assert!(self.stack.is_empty());
+    }
+
+    fn visit<G, F>(&mut self, v: G::NodeId, g: G, f: &mut F)
+    where
+        G: IntoNeighbors<NodeId = N> + NodeIndexable<NodeId = N>,
+        F: FnMut(&[N]),
+        N: Copy + PartialEq,
+    {
+        macro_rules! node {
+            ($node:expr) => {
+                self.nodes[g.to_index($node)]
+            };
+        }
+
+        let node_v = &mut node![v];
+        if node_v.index.is_some() {
+            // already visited
+            return;
+        }
+
+        let v_index = self.index;
+        node_v.index = Some(v_index);
+        node_v.lowlink = v_index;
+        node_v.on_stack = true;
+        self.stack.push(v);
+        self.index += 1;
+
+        for w in g.neighbors(v) {
+            let node_w = &mut node![w];
+            match node_w.index {
+                None => {
+                    self.visit(w, g, f);
+                    node![v].lowlink = min(node![v].lowlink, node![w].lowlink);
+                }
+                Some(w_index) => {
+                    if node_w.on_stack {
+                        // Successor w is in stack S and hence in the current SCC
+                        let v_lowlink = &mut node![v].lowlink;
+                        *v_lowlink = min(*v_lowlink, w_index);
+                    }
+                }
+            }
+        }
+
+        // If v is a root node, pop the stack and generate an SCC
+        let node_v = &mut node![v];
+        if let Some(v_index) = node_v.index {
+            if node_v.lowlink == v_index {
+                let nodes = &mut self.nodes;
+                let start = self
+                    .stack
+                    .iter()
+                    .rposition(|&w| {
+                        nodes[g.to_index(w)].on_stack = false;
+                        g.to_index(w) == g.to_index(v)
+                    })
+                    .unwrap();
+                f(&self.stack[start..]);
+                self.stack.truncate(start);
+            }
+        }
+    }
+}
+
 /// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
 ///
 /// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
@@ -338,101 +469,10 @@ pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 where
     G: IntoNodeIdentifiers + IntoNeighbors + NodeIndexable,
 {
-    #[derive(Copy, Clone, Debug)]
-    struct NodeData {
-        index: Option<usize>,
-        lowlink: usize,
-        on_stack: bool,
-    }
-
-    #[derive(Debug)]
-    struct Data<'a, G>
-    where
-        G: NodeIndexable,
-        G::NodeId: 'a,
-    {
-        index: usize,
-        nodes: Vec<NodeData>,
-        stack: Vec<G::NodeId>,
-        sccs: &'a mut Vec<Vec<G::NodeId>>,
-    }
-
-    fn scc_visit<G>(v: G::NodeId, g: G, data: &mut Data<G>)
-    where
-        G: IntoNeighbors + NodeIndexable,
-    {
-        macro_rules! node {
-            ($node:expr) => {
-                data.nodes[g.to_index($node)]
-            };
-        }
-
-        if node![v].index.is_some() {
-            // already visited
-            return;
-        }
-
-        let v_index = data.index;
-        node![v].index = Some(v_index);
-        node![v].lowlink = v_index;
-        node![v].on_stack = true;
-        data.stack.push(v);
-        data.index += 1;
-
-        for w in g.neighbors(v) {
-            match node![w].index {
-                None => {
-                    scc_visit(w, g, data);
-                    node![v].lowlink = min(node![v].lowlink, node![w].lowlink);
-                }
-                Some(w_index) => {
-                    if node![w].on_stack {
-                        // Successor w is in stack S and hence in the current SCC
-                        let v_lowlink = &mut node![v].lowlink;
-                        *v_lowlink = min(*v_lowlink, w_index);
-                    }
-                }
-            }
-        }
-
-        // If v is a root node, pop the stack and generate an SCC
-        if let Some(v_index) = node![v].index {
-            if node![v].lowlink == v_index {
-                let mut cur_scc = Vec::new();
-                loop {
-                    let w = data.stack.pop().unwrap();
-                    node![w].on_stack = false;
-                    cur_scc.push(w);
-                    if g.to_index(w) == g.to_index(v) {
-                        break;
-                    }
-                }
-                data.sccs.push(cur_scc);
-            }
-        }
-    }
-
     let mut sccs = Vec::new();
     {
-        let map = vec![
-            NodeData {
-                index: None,
-                lowlink: !0,
-                on_stack: false
-            };
-            g.node_bound()
-        ];
-
-        let mut data = Data {
-            index: 0,
-            nodes: map,
-            stack: Vec::new(),
-            sccs: &mut sccs,
-        };
-
-        for n in g.node_identifiers() {
-            scc_visit(n, g, &mut data);
-        }
+        let mut tarjan_scc = TarjanScc::new();
+        tarjan_scc.run(g, |scc| sccs.push(scc.iter().cloned().rev().collect()));
     }
     sccs
 }
@@ -797,9 +837,10 @@ where
 ///
 /// Always treats the input graph as if undirected.
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
-    where G: GraphRef + Visitable<NodeId=N, Map=VM> + IntoNeighbors<NodeId=N>,
-          N: Copy + PartialEq + std::fmt::Debug,
-          VM: VisitMap<N>
+where
+    G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
+    N: Copy + PartialEq + std::fmt::Debug,
+    VM: VisitMap<N>,
 {
     let mut red = g.visit_map();
     red.visit(start);
@@ -826,9 +867,15 @@ pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
                 //hasn't been visited yet
 
                 match (is_red, is_blue) {
-                    (true, false) => { blue.visit(neighbour); },
-                    (false, true) => { red.visit(neighbour); },
-                    (_, _) => { panic!("Invariant doesn't hold"); }
+                    (true, false) => {
+                        blue.visit(neighbour);
+                    }
+                    (false, true) => {
+                        red.visit(neighbour);
+                    }
+                    (_, _) => {
+                        panic!("Invariant doesn't hold");
+                    }
                 }
 
                 stack.push_back(neighbour);

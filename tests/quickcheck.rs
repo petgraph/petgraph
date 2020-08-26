@@ -23,7 +23,7 @@ use rand::Rng;
 
 use petgraph::algo::{
     bellman_ford, condensation, dijkstra, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
-    is_isomorphic_matching, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
+    is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -745,6 +745,24 @@ quickcheck! {
                 if distances.contains_key(&u) && distances[&u] > dv2 + w {
                     return false;
                 }
+            }
+        }
+        true
+    }
+}
+
+quickcheck! {
+    // checks that the distances computed by k'th shortest path is always greater or equal compared to their dijkstra computation
+    fn k_shortest_path_(g: Graph<u32, u32>, node: usize) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+        let v = node_index(node % g.node_count());
+        let second_best_distances = k_shortest_path(&g, v, None, 2, |e| *e.weight());
+        let dijkstra_distances = dijkstra(&g, v, None, |e| *e.weight());
+        for v in second_best_distances.keys() {
+            if second_best_distances[&v] < dijkstra_distances[&v] {
+                return false;
             }
         }
         true

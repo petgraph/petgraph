@@ -105,7 +105,7 @@ macro_rules! delegate_impl {
         @section self
         $(
             $(#[$_method_attr:meta])*
-            fn $method_name:ident(self $(: $self_selftype:ty)* $(,$marg:ident : $marg_ty:ty)*) -> $mret:ty;
+            fn $method_name:ident(self $(: $self_selftype:ty)* $(,$marg:ident : $marg_ty:ty)*) $(-> $mret:ty)?;
         )+
         )*
         // Arbitrary tail that is ignored when forwarding.
@@ -125,7 +125,7 @@ macro_rules! delegate_impl {
             )*
             $(
             $(
-                fn $method_name(self $(: $self_selftype)* $(,$marg: $marg_ty)*) -> $mret {
+                fn $method_name(self $(: $self_selftype)* $(,$marg: $marg_ty)*) $(-> $mret)? {
                     $self_map!(self).$method_name($($marg),*)
                 }
             )*

@@ -26,12 +26,17 @@ pub enum DfsEvent<N> {
 /// if it is a prune value.
 macro_rules! try_control {
     ($e:expr, $p:stmt) => {
+        try_control!($e, $p, ());
+    };
+    ($e:expr, $p:stmt, $q:stmt) => {
         match $e {
             x => {
                 if x.should_break() {
                     return x;
                 } else if x.should_prune() {
                     $p
+                } else {
+                    $q
                 }
             }
         }
@@ -141,18 +146,23 @@ impl<B> Default for Control<B> {
 /// and edge classification of each reachable edge. `visitor` is called for each
 /// event, see [`DfsEvent`][de] for possible values.
 ///
-/// If the return value of the visitor is simply `()`, the visit runs until it
-/// is finished. If the return value is a `Control<B>`, it can be used to
-/// change the control flow of the search. `Control::Break` will stop
-/// the visit early, returning the contained value from the function.
+/// The return value should implement the trait `ControlFlow`, and can be used to change
+/// the control flow of the search.
+///
+/// `Control` Implements `ControlFlow` such that `Control::Continue` resumes the search.
+/// `Control::Break` will stop the visit early, returning the contained value.
 /// `Control::Prune` will stop traversing any additional edges from the current
 /// node and proceed immediately to the `Finish` event.
+///
+/// There are implementations of `ControlFlow` for `()`, and `Result<C, E>` where
+/// `C: ControlFlow`. The implementation for `()` will continue until finished.
+/// For `Result`, upon encountering an `E` it will break, otherwise acting the same as `C`.
 ///
 /// ***Panics** if you attempt to prune a node from its `Finish` event.
 ///
 /// [de]: enum.DfsEvent.html
 ///
-/// # Example
+/// # Example returning `Control`.
 ///
 /// Find a path from vertex 0 to 5, and exit the visit as soon as we reach
 /// the goal vertex.
@@ -194,6 +204,46 @@ impl<B> Default for Control<B> {
 /// path.reverse();
 /// assert_eq!(&path, &[n(0), n(2), n(4), n(5)]);
 /// ```
+///
+/// # Example returning a `Result`.
+/// ```
+/// use petgraph::graph::node_index as n;
+/// use petgraph::prelude::*;
+/// use petgraph::visit::depth_first_search;
+/// use petgraph::visit::{DfsEvent, Time};
+///
+/// let gr: Graph<(), ()> = Graph::from_edges(&[(0, 1), (1, 2), (1, 1), (2, 1)]);
+/// let start = n(0);
+/// let mut back_edges = 0;
+/// let mut discover_time = 0;
+/// // Stop the search, the first time a BackEdge is encountered.
+/// let result = depth_first_search(&gr, Some(start), |event| {
+///     match event {
+///         // In the cases where Ok(()) is returned,
+///         // Result falls back to the implementation of Control on the value ().
+///         // In the case of (), this is to always return Control::Continue.
+///         // continuing the search.
+///         DfsEvent::Discover(_, Time(t)) => {
+///             discover_time = t;
+///             Ok(())
+///         }
+///         DfsEvent::BackEdge(_, _) => {
+///             back_edges += 1;
+///             // the implementation of ControlFlow for Result,
+///             // treats this Err value as Continue::Break
+///             Err(event)
+///         }
+///         _ => Ok(()),
+///     }
+/// });
+///
+/// // Even though the graph has more than one cycle,
+/// // The number of back_edges visited by the search should always be 1.
+/// assert_eq!(back_edges, 1);
+/// println!("discover time:{:?}", discover_time);
+/// println!("number of backedges encountered: {}", back_edges);
+/// println!("back edge: {:?}", result);
+/// ```
 pub fn depth_first_search<G, I, F, C>(graph: G, starts: I, mut visitor: F) -> C
 where
     G: IntoNeighbors + Visitable,
@@ -231,11 +281,9 @@ where
         return C::continuing();
     }
 
-    'prune: loop {
-        try_control!(
-            visitor(DfsEvent::Discover(u, time_post_inc(time))),
-            break 'prune
-        );
+    try_control!(
+        visitor(DfsEvent::Discover(u, time_post_inc(time))),
+        {},
         for v in graph.neighbors(u) {
             if !discovered.is_visited(&v) {
                 try_control!(visitor(DfsEvent::TreeEdge(u, v)), continue);
@@ -249,9 +297,7 @@ where
                 try_control!(visitor(DfsEvent::CrossForwardEdge(u, v)), continue);
             }
         }
-
-        break;
-    }
+    );
     let first_finish = finished.visit(u);
     debug_assert!(first_finish);
     try_control!(

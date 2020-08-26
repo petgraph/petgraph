@@ -9,8 +9,8 @@ use petgraph::EdgeType;
 use petgraph as pg;
 
 use petgraph::algo::{
-    dominators, has_path_connecting, is_cyclic_undirected, is_isomorphic_matching, is_bipartite_undirected,
-    min_spanning_tree,
+    dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
+    is_isomorphic_matching, min_spanning_tree,
 };
 
 use petgraph::graph::node_index as n;
@@ -896,8 +896,12 @@ fn tarjan_scc() {
         (4, 1),
     ]);
 
+    let mut tarjan_scc = petgraph::algo::TarjanScc::new();
+
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&gr),
+        result,
         vec![
             vec![n(0), n(3), n(6)],
             vec![n(2), n(5), n(8)],
@@ -913,8 +917,10 @@ fn tarjan_scc() {
     let ed = hr.find_edge(n(6), n(8)).unwrap();
     assert!(hr.remove_edge(ed).is_some());
 
+    let mut result = Vec::new();
+    tarjan_scc.run(&hr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&hr),
+        result,
         vec![
             vec![n(1), n(2), n(4), n(5), n(7), n(8)],
             vec![n(0), n(3), n(6)],
@@ -934,8 +940,10 @@ fn tarjan_scc() {
     gr.add_edge(n(2), n(0), ());
     gr.add_edge(n(1), n(0), ());
 
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&gr),
+        result,
         vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
         true,
     );
@@ -945,8 +953,10 @@ fn tarjan_scc() {
     gr.extend_with_edges(&[(0, 0), (1, 0), (2, 0), (2, 1), (2, 2)]);
     gr.add_node(());
     // no order for the disconnected one
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&gr),
+        result,
         vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
         false,
     );
@@ -1770,8 +1780,8 @@ fn dot() {
         dot_output,
         // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
         r#"digraph {
-    0 [label="Record { a: 1, b: \"abc\\\\\" }"]
-    0 -> 0 [label="(1, 2)"]
+    0 [ label = "Record { a: 1, b: \"abc\\\\\" }" ]
+    0 -> 0 [ label = "(1, 2)" ]
 }
 "#
     );

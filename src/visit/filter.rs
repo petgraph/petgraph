@@ -47,6 +47,26 @@ where
     }
 }
 
+// Can't express these as a generic impl over all references since that would conflict with the
+// impl for Fn.
+impl<N> FilterNode<N> for &FixedBitSet
+where
+    FixedBitSet: VisitMap<N>,
+{
+    fn include_node(&self, n: N) -> bool {
+        self.is_visited(&n)
+    }
+}
+
+impl<N, S> FilterNode<N> for &HashSet<N, S>
+where
+    HashSet<N, S>: VisitMap<N>,
+{
+    fn include_node(&self, n: N) -> bool {
+        self.is_visited(&n)
+    }
+}
+
 /// A node-filtering graph adaptor.
 #[derive(Copy, Clone, Debug)]
 pub struct NodeFiltered<G, F>(pub G, pub F);

@@ -474,6 +474,16 @@ where
         }
     }
 
+    /// Return an iterator yielding mutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their node
+    /// indices.
+    pub fn node_weights_mut(&mut self) -> impl Iterator<Item = &mut N> {
+        self.g
+            .node_weights_mut()
+            .flat_map(|maybe_node| maybe_node.iter_mut())
+    }
+
     /// Return an iterator over the node indices of the graph
     pub fn node_indices(&self) -> NodeIndices<N, Ix> {
         NodeIndices {
@@ -499,6 +509,16 @@ where
             Some(ed) => ed.weight.as_mut(),
             None => None,
         }
+    }
+
+    /// Return an iterator yielding mutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their edge
+    /// indices.
+    pub fn edge_weights_mut(&mut self) -> impl Iterator<Item = &mut E> {
+        self.g
+            .edge_weights_mut()
+            .flat_map(|maybe_edge| maybe_edge.iter_mut())
     }
 
     /// Access the source and target nodes for `e`.
