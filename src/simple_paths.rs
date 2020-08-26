@@ -3,6 +3,8 @@ use std::{
     iter::{from_fn, FromIterator},
 };
 
+use crate::lib::*;
+
 use indexmap::IndexSet;
 
 use crate::{
@@ -39,7 +41,7 @@ where
     let min_length = min_intermediate_nodes + 1;
 
     // list of visited nodes
-    let mut visited: IndexSet<G::NodeId> = IndexSet::from_iter(Some(from));
+    let mut visited: IndexSet<G::NodeId, RandomState> = IndexSet::from_iter(Some(from));
     // list of childs of currently exploring path nodes,
     // last elem is list of childs of last visited node
     let mut stack = vec![graph.neighbors_directed(from, Outgoing)];
@@ -84,7 +86,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashSet, iter::FromIterator};
+    use crate::lib::*;
 
     use itertools::assert_equal;
 
@@ -121,6 +123,7 @@ mod test {
             vec![0, 3, 4, 5],
         ];
 
+        #[cfg(feature = "std")]
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_5: HashSet<Vec<_>> =
             all_simple_paths(&graph, 0u32.into(), 5u32.into(), 0, None)
@@ -138,6 +141,7 @@ mod test {
         let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
 
         let expexted_simple_paths_0_to_1 = &[vec![0usize, 1]];
+        #[cfg(feature = "std")]
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_1: Vec<Vec<_>> =
             all_simple_paths(&graph, 0u32.into(), 1u32.into(), 0, None)
@@ -152,6 +156,7 @@ mod test {
     fn test_no_simple_paths() {
         let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
 
+        #[cfg(feature = "std")]
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_2: Vec<Vec<_>> =
             all_simple_paths(&graph, 0u32.into(), 2u32.into(), 0, None)

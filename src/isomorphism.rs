@@ -1,6 +1,9 @@
 use fixedbitset::FixedBitSet;
 use std::marker;
 
+
+use crate::lib::*;
+
 use super::graph::{Graph, IndexType, NodeIndex};
 use super::{EdgeType, Incoming};
 

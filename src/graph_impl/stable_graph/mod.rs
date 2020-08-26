@@ -12,6 +12,9 @@ use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
 
+#[cfg(not(feature = "std"))]
+use crate::lib::*;
+
 use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};

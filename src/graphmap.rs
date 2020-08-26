@@ -13,8 +13,9 @@ use std::marker::PhantomData;
 use std::ops::{Deref, Index, IndexMut};
 use std::slice::Iter;
 
-use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
+use crate::lib::*;
 
+use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
 use crate::graph::node_index;
 use crate::graph::Graph;
 use crate::visit::{IntoEdgeReferences, IntoEdges, NodeCompactIndexable};
@@ -58,8 +59,8 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
-    nodes: IndexMap<N, Vec<(N, CompactDirection)>>,
-    edges: IndexMap<(N, N), E>,
+    nodes: IndexMap<N, Vec<(N, CompactDirection)>, RandomState>,
+    edges: IndexMap<(N, N), E, RandomState>,
     ty: PhantomData<Ty>,
 }
 
@@ -108,8 +109,8 @@ where
     /// Create a new `GraphMap` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         GraphMap {
-            nodes: IndexMap::with_capacity(nodes),
-            edges: IndexMap::with_capacity(edges),
+            nodes: IndexMap::with_capacity_and_hasher(nodes, RandomState::default()),
+            edges: IndexMap::with_capacity_and_hasher(edges, RandomState::default()),
             ty: PhantomData,
         }
     }
@@ -577,9 +578,10 @@ where
     Ty: EdgeType,
 {
     from: N,
-    edges: &'a IndexMap<(N, N), E>,
+    edges: &'a IndexMap<(N, N), E, RandomState>,
     iter: Neighbors<'a, N, Ty>,
 }
+
 
 impl<'a, N, E, Ty> Iterator for Edges<'a, N, E, Ty>
 where

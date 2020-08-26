@@ -6,6 +6,9 @@ use std::marker::PhantomData;
 use std::ops::{Index, IndexMut, Range};
 use std::slice::Windows;
 
+
+use crate::lib::*;
+
 use crate::visit::{Data, GraphProp, IntoEdgeReferences, NodeCount};
 use crate::visit::{EdgeRef, GraphBase, IntoEdges, IntoNeighbors, NodeIndexable};
 use crate::visit::{IntoNodeIdentifiers, NodeCompactIndexable, Visitable};

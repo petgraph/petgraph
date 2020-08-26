@@ -2,6 +2,7 @@
 
 use super::graph::IndexType;
 use std::cmp::Ordering;
+use crate::lib::*;
 
 /// `UnionFind<K>` is a disjoint-set data structure. It tracks set membership of *n* elements
 /// indexed from *0* to *n - 1*. The scalar type is `K` which must be an unsigned integer type.

@@ -13,8 +13,9 @@
 //! dominates **C** and **C** dominates **B**.
 
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet, hash_map::Iter};
 use std::hash::Hash;
+
+use crate::lib::*;
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 

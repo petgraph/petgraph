@@ -103,7 +103,14 @@
 //! * **matrix_graph** -
 //!   Defaults on. Enables [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html).
 //!
+#![cfg_attr(not(feature = "std"), no_std)]
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
+
+#[cfg(not(feature = "std"))]
+extern crate core as std;
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
 
 extern crate fixedbitset;
 #[cfg(feature = "graphmap")]
@@ -172,6 +179,60 @@ pub mod graph {
 
 #[cfg(feature = "stable_graph")]
 pub use crate::graph_impl::stable_graph;
+
+
+pub mod lib {
+    #[cfg(not(feature = "std"))]
+    pub use alloc::string::{String, ToString};
+    #[cfg(feature = "std")]
+    pub use std::string::{String, ToString};
+
+    #[cfg(not(feature = "std"))]
+    pub use alloc::vec::Vec;
+    #[cfg(not(feature = "std"))]
+    pub use alloc::{format, vec};
+    #[cfg(feature = "std")]
+    pub use std::vec::Vec;
+
+    #[cfg(not(feature = "std"))]
+    pub use alloc::boxed::Box;
+    #[cfg(feature = "std")]
+    pub use std::boxed::Box;
+
+    #[cfg(not(feature = "std"))]
+    pub use alloc::rc::Rc;
+    #[cfg(feature = "std")]
+    pub use std::rc::Rc;
+
+    #[cfg(not(feature = "std"))]
+    pub use alloc::sync::{Arc, Weak};
+    #[cfg(feature = "std")]
+    pub use std::sync::Arc;
+
+
+    #[cfg(feature = "std")]
+    pub use std::collections::hash_map::RandomState;
+    #[cfg(not(feature = "std"))]
+    pub use hashbrown::hash_map::DefaultHashBuilder as RandomState;
+
+
+    #[cfg(feature = "std")]
+    pub use std::collections::{hash_map::Entry::{Occupied, Vacant}, HashSet, hash_map::Iter};
+    #[cfg(not(feature = "std"))]
+    pub use hashbrown::{ HashSet, hash_map::{ HashMap, Entry::{Occupied, Vacant}, Iter}};
+
+    #[cfg(feature = "std")]
+    pub use std::collections::{BinaryHeap, HashMap,VecDeque};
+    #[cfg(not(feature = "std"))]
+    pub use alloc::collections::{BinaryHeap, VecDeque};
+
+    
+    
+    
+
+
+}
+
 
 macro_rules! copyclone {
     ($name:ident) => {

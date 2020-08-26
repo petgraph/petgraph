@@ -7,6 +7,9 @@ use crate::visit::{
     NodeIndexable, NodeRef,
 };
 
+
+use crate::lib::*;
+
 /// `Dot` implements output to graphviz .dot format for a graph.
 ///
 /// Formatting and options are rather simple, this is mostly intended
