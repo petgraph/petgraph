@@ -2,8 +2,9 @@ extern crate petgraph;
 extern crate rand;
 
 use petgraph::unionfind::UnionFind;
+#[cfg(feature = "std")]
 use rand::{thread_rng, ChaChaRng, Rng, SeedableRng};
-use std::collections::HashSet;
+use petgraph::lib::HashSet;
 
 #[test]
 fn uf_test() {
@@ -62,6 +63,7 @@ fn uf_test_with_equiv() {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn uf_rand() {
     let n = 1 << 14;
     let mut rng = ChaChaRng::from_rng(thread_rng()).unwrap();
@@ -76,6 +78,7 @@ fn uf_rand() {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn uf_u8() {
     let n = 256;
     let mut rng = ChaChaRng::from_rng(thread_rng()).unwrap();

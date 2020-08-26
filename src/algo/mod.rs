@@ -7,9 +7,12 @@
 pub mod dominators;
 
 use std::cmp::min;
-use std::collections::{BinaryHeap, HashMap};
 
 use crate::prelude::*;
+
+use crate::lib::{VecDeque, BinaryHeap, HashMap, Vec};
+#[cfg(not(feature = "std"))]
+use crate::lib::vec;
 
 use super::graph::IndexType;
 use super::unionfind::UnionFind;
@@ -846,7 +849,7 @@ where
     red.visit(start);
     let mut blue = g.visit_map();
 
-    let mut stack = ::std::collections::VecDeque::new();
+    let mut stack = VecDeque::new();
     stack.push_front(start);
 
     while let Some(node) = stack.pop_front() {

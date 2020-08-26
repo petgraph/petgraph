@@ -7,6 +7,10 @@ use std::mem::size_of;
 use std::ops::{Index, IndexMut, Range};
 use std::slice;
 
+use crate::lib::{Vec};
+#[cfg(not(feature = "std"))]
+use crate::lib::vec;
+
 use crate::{Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected};
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};

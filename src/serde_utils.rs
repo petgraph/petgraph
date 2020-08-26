@@ -3,6 +3,8 @@ use serde::ser::{Serialize, SerializeSeq, Serializer};
 use std::fmt;
 use std::marker::PhantomData;
 
+use crate::lib::{Vec};
+
 /// Map to serializeable representation
 pub trait IntoSerializable {
     type Output;

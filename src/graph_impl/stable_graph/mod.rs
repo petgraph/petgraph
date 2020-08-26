@@ -12,6 +12,9 @@ use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
 
+#[cfg(not(feature = "std"))]
+use crate::lib::vec;
+
 use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
@@ -1741,23 +1744,30 @@ fn stable_graph() {
     let b = gr.add_node(1);
     let c = gr.add_node(2);
     let _ed = gr.add_edge(a, b, 1);
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
     gr.remove_node(b);
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
     let d = gr.add_node(3);
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
     gr.check_free_lists();
     gr.remove_node(a);
     gr.check_free_lists();
     gr.remove_node(c);
     gr.check_free_lists();
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
     gr.add_edge(d, d, 2);
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
 
     let e = gr.add_node(4);
     gr.add_edge(d, e, 3);
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
+    #[cfg(feature = "std")]
     for neigh in gr.neighbors(d) {
         println!("edge {:?} -> {:?}", d, neigh);
     }
@@ -1766,6 +1776,7 @@ fn stable_graph() {
 
 #[test]
 fn dfs() {
+    #[cfg(feature = "std")]
     use crate::visit::Dfs;
 
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
@@ -1780,9 +1791,12 @@ fn dfs() {
     gr.add_edge(c, d, 5);
     gr.add_edge(d, b, 6);
     gr.add_edge(c, b, 7);
+    #[cfg(feature = "std")]
     println!("{:?}", gr);
 
+    #[cfg(feature = "std")]
     let mut dfs = Dfs::new(&gr, a);
+    #[cfg(feature = "std")]
     while let Some(next) = dfs.next(&gr) {
         println!("dfs visit => {:?}, weight={:?}", next, &gr[next]);
     }
