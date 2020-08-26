@@ -777,7 +777,7 @@ quickcheck! {
             return true;
         }
         for x in g.node_indices() {
-            if g.contains_edge(x, g) {
+            if g.contains_edge(x, x) {
                 return true;
             }
         }
