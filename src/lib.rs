@@ -158,6 +158,7 @@ mod traits_graph;
 pub mod unionfind;
 mod util;
 
+pub mod operator;
 pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
