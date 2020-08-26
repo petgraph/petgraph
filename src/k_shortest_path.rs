@@ -29,7 +29,7 @@ use crate::scored::MinScored;
 /// use petgraph::Graph;
 /// use petgraph::algo::k_shortest_path;
 /// use petgraph::prelude::*;
-/// use std::collections::HashMap;
+/// use petgraph::lib::HashMap;
 ///
 /// let mut graph : Graph<(),(),Directed>= Graph::new();
 /// let a = graph.add_node(()); // node with no weight

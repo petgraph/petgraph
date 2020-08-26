@@ -266,7 +266,9 @@ mod test {
     use crate::visit::NodeRef;
     use std::fmt::Write;
 
-    use crate::lib::{String, format};
+    use crate::lib::{String};
+    #[cfg(not(feature = "std"))]
+    use crate::lib::format;
 
     #[test]
     fn test_escape() {

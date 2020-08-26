@@ -746,6 +746,7 @@ Row   : [0, 2, 5]   <- value index of row start
 mod tests {
     use super::Csr;
     use crate::algo::bellman_ford;
+    #[cfg(feature = "std")]
     use crate::algo::tarjan_scc;
     use crate::visit::Dfs;
     use crate::visit::VisitMap;
@@ -799,20 +800,20 @@ mod tests {
 
     #[should_panic]
     #[test]
-    #[cfg(feature = "std")]
     fn csr_from_error_1() {
         // not sorted in source
-        let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (0, 2)]).unwrap();
-        println!("{:?}", m);
+        let _m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (0, 2)]).unwrap();
+        #[cfg(feature = "std")]
+        println!("{:?}", _m);
     }
 
     #[should_panic]
     #[test]
-    #[cfg(feature = "std")]
     fn csr_from_error_2() {
         // not sorted in target
-        let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (1, 2), (1, 1)]).unwrap();
-        println!("{:?}", m);
+        let _m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (1, 2), (1, 1)]).unwrap();
+        #[cfg(feature = "std")]
+        println!("{:?}", _m);
     }
 
     #[test]
@@ -866,9 +867,8 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "std")]
     fn csr_tarjan() {
-        let m: Csr = Csr::from_sorted_edges(&[
+        let _m: Csr = Csr::from_sorted_edges(&[
             (0, 1),
             (0, 2),
             (1, 0),
@@ -881,8 +881,10 @@ mod tests {
             (5, 2),
         ])
         .unwrap();
-        println!("{:?}", m);
-        println!("{:?}", tarjan_scc(&m));
+        #[cfg(feature = "std")]
+        println!("{:?}", _m);
+        #[cfg(feature = "std")]
+        println!("{:?}", tarjan_scc(&_m));
     }
 
     #[test]

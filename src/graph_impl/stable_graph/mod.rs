@@ -1776,6 +1776,7 @@ fn stable_graph() {
 
 #[test]
 fn dfs() {
+    #[cfg(feature = "std")]
     use crate::visit::Dfs;
 
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);

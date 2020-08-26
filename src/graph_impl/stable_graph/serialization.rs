@@ -267,7 +267,8 @@ fn test_from_deserialized_with_holes() {
     use crate::stable_graph::StableUnGraph;
     use itertools::assert_equal;
     use serde::de::value::Error as SerdeError;
-
+    
+    #[cfg(not(feature = "std"))]
     use crate::lib::vec;
 
     let input = DeserStableGraph::<_, (), u32> {

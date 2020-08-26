@@ -19,19 +19,24 @@ use std::hash::Hash;
 
 use itertools::assert_equal;
 use itertools::cloned;
+#[cfg(feature = "std")]
 use rand::Rng;
 
 use petgraph::algo::{
     bellman_ford, condensation, dijkstra, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
-    is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
+    is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc,
 };
+#[cfg(feature = "std")]
+use petgraph::algo::toposort;
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::{edge_index, node_index, IndexType};
 use petgraph::graphmap::NodeTrait;
 use petgraph::prelude::*;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
-use petgraph::visit::{Reversed, Topo};
+use petgraph::visit::Reversed;
+#[cfg(feature = "std")]
+use petgraph::visit::Topo;
 use petgraph::EdgeType;
 
 fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
@@ -249,8 +254,10 @@ fn stable_graph_retain_edges() {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn isomorphism_1() {
     // using small weights so that duplicates are likely
+    #[cfg(feature = "std")]
     fn prop<Ty: EdgeType>(g: Small<Graph<i8, i8, Ty>>) -> bool {
         let mut rng = rand::thread_rng();
         // several trials of different isomorphisms of the same graph
@@ -564,7 +571,9 @@ fn graph_condensation_acyclic() {
 #[derive(Debug, Clone)]
 struct DAG<N: Default + Clone + Send + 'static>(Graph<N, ()>);
 
+#[cfg(feature = "std")]
 impl<N: Default + Clone + Send + 'static> quickcheck::Arbitrary for DAG<N> {
+    #[cfg(feature = "std")]
     fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
         let nodes = usize::arbitrary(g);
         if nodes == 0 {
@@ -621,6 +630,7 @@ impl<N: Default + Clone + Send + 'static> quickcheck::Arbitrary for DAG<N> {
     }
 }
 
+#[cfg(feature = "std")]
 fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
     if gr.node_count() != order.len() {
         println!(
@@ -678,6 +688,7 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn full_topo() {
     fn prop(DAG(gr): DAG<()>) -> bool {
         let order = toposort(&gr, None).unwrap();
@@ -687,6 +698,7 @@ fn full_topo() {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn full_topo_generic() {
     fn prop_generic(DAG(mut gr): DAG<usize>) -> bool {
         assert!(!is_cyclic_directed(&gr));

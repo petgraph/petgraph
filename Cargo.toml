@@ -36,7 +36,7 @@ serde_derive = { version = "1.0", optional = true }
 hashbrown = { version = "0.8.2", features = ["ahash"]}
 
 [dev-dependencies]
-rand = { version = "0.7", default-features = false, features = ["alloc"] }
+rand = { version = "0.5.5"}
 odds = { version = "0.2.19" }
 defmac = "0.1"
 itertools = { version = "0.8", default-features = false }

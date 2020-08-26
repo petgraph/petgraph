@@ -88,12 +88,16 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::lib::{HashSet, vec, Vec};
+    use crate::lib::{HashSet, Vec};
+    #[cfg(not(feature = "std"))]
+    use crate::lib::vec;
     use std::iter::FromIterator;
 
     use itertools::assert_equal;
 
-    use crate::{dot::Dot, prelude::DiGraph};
+    use crate::prelude::DiGraph;
+    #[cfg(feature = "std")]
+    use crate::dot::Dot;
 
     use super::all_simple_paths;
 

@@ -1,7 +1,7 @@
 use petgraph::algo::k_shortest_path;
 use petgraph::prelude::*;
 use petgraph::Graph;
-use crate::lib::HashMap;
+use petgraph::lib::HashMap;
 
 #[test]
 fn second_shortest_path() {
