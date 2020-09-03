@@ -386,8 +386,8 @@ where
         // Find the next node index to try on the `from` side of the mapping
         let start = nx.index() + 1;
         let cand0 = match open_list {
-            OpenList::Out => st[1].next_in_index(start),
-            OpenList::In => st[1].next_out_index(start),
+            OpenList::Out => st[1].next_out_index(start),
+            OpenList::In => st[1].next_in_index(start),
             OpenList::Other => st[1].next_rest_index(start),
         }
         .map(|c| c + start); // compensate for start offset.
