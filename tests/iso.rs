@@ -187,6 +187,11 @@ const G3_2: &str = "
 1 1 0
 ";
 
+const G5: &str = "
+0 1
+1 0
+";
+
 // Non-isomorphic due to selfloop difference
 const S1: &str = "
 1 1 1
@@ -348,6 +353,13 @@ fn g3_not_iso() {
     let a = str_to_digraph(G3_1);
     let b = str_to_digraph(G3_2);
     assert!(!petgraph::algo::is_isomorphic(&a, &b));
+}
+
+#[test]
+fn g5_subgraph_iso_g3_2() {
+    let a = str_to_digraph(G5);
+    let b = str_to_digraph(G3_2);
+    assert!(petgraph::algo::is_subgraph_iso(&a, &b));
 }
 
 #[test]
