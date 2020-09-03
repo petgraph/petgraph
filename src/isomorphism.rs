@@ -73,10 +73,8 @@ where
         g: &Graph<N, E, Ty, Ix>,
     ) {
         self.generation += 1;
-        println!("incremented generation {}", self.generation);
         let s = self.generation;
         self.mapping[from.index()] = to;
-        println!("from {:?} to {:?}", from, to);
         // update T0 & T1 ins/outs
         // T0out: Node in G0 not in M0 but successor of a node in M0.
         // st.out[0]: Node either in M0 or successor of M0
@@ -100,7 +98,6 @@ where
     pub fn pop_mapping<N, E>(&mut self, from: NodeIndex<Ix>, g: &Graph<N, E, Ty, Ix>) {
         let s = self.generation;
         self.generation -= 1;
-        println!("decremented generation {}", self.generation);
 
         // undo (n, m) mapping
         self.mapping[from.index()] = NodeIndex::end();
@@ -369,7 +366,6 @@ where
         .map(|c| c + start); // compensate for start offset.
         match cand0 {
             None => {
-                println!("nx: {:?}, open_list {:?}", nx, open_list);
                 None // no more candidates
             }
             Some(ix) => {
@@ -459,7 +455,6 @@ where
                 let has_edge =
                     g[1 - j].is_adjacent(&st[1 - j].adjacency_matrix, nodes[1 - j], m_neigh);
                 if !has_edge {
-                    println!("has_edge false");
                     return false;
                 }
             }
@@ -472,7 +467,6 @@ where
             }
             ProblemSelector::SubgraphIso => {
                 if succ_count[0] > succ_count[1] {
-                    println!("succ_count[0] > succ_count[1]");
                     return false;
                 }
             }
@@ -611,7 +605,6 @@ where
                 nodes,
                 open_list: ol,
             } => {
-                println!("Current nodes {:?}", nodes);
                 if is_feasible(&mut st, nodes) {
                     push_state(&mut st, nodes);
                     if st[0].is_complete() {
@@ -628,8 +621,6 @@ where
                         continue;
                     }
                     pop_state(&mut st, nodes);
-                } else {
-                    println!("not feasible");
                 }
                 match next_from_ix(&mut st, nodes[0], ol) {
                     None => {
