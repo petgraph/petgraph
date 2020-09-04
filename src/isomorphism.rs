@@ -410,7 +410,7 @@ where
             st[0].out_size == st[1].out_size && st[0].ins_size == st[1].ins_size
         }
         ProblemSelector::SubgraphIso => {
-            st[0].out_size <= st[1].out_size && st[1].ins_size <= st[1].ins_size
+            st[0].out_size <= st[1].out_size && st[0].ins_size <= st[1].ins_size
         }
     };
     //fn is_feasible(nodes: [NodeIndex<Ix>; 2]) -> bool {
