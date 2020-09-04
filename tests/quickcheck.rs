@@ -324,6 +324,29 @@ fn isomorphism_modify() {
     quickcheck::quickcheck(prop::<Directed> as fn(_, _, _) -> bool);
 }
 
+// #[test]
+// fn subgraph_isomorphism() {
+//     fn prop<Ty: EdgeType>(g: Small<Graph<i8, i8, Ty>>) -> bool {
+//         let mut rng = rand::thread_rng();
+
+//         let mut ng = g.clone();
+//         let mut indices = ng.node_indices().collect::<Vec<_>>();
+//         rng.shuffle(&mut indices);
+
+//         let num_vertices_to_remove = rng.gen_range(0, indices.len());
+
+//         for _ in 0..num_vertices_to_remove {
+//             let nx = indices.pop().unwrap();
+//             ng.remove_node(nx);
+//         }
+
+//         assert!(petgraph::algo::is_subgraph_iso(&ng, &g));
+
+//         true
+//     }
+//     quickcheck::quickcheck(prop::<Undirected> as fn(_) -> bool);
+// }
+
 #[test]
 fn graph_remove_edge() {
     fn prop<Ty: EdgeType>(mut g: Graph<(), (), Ty>, a: u8, b: u8) -> bool {
