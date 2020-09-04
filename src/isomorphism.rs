@@ -188,7 +188,9 @@ where
 
 /// [Graph] Return `true` if graph `g0` is isomorphic to a subgraph of `g1`.
 ///
-/// Uses the VF2 algorithm.
+/// Uses the VF2 algorithm, only matching graph syntactically (graph structure).
+///
+/// The graphs should not be multigraphs.
 pub fn is_subgraph_iso<N, E, Ty, Ix>(g0: &Graph<N, E, Ty, Ix>, g1: &Graph<N, E, Ty, Ix>) -> bool
 where
     Ty: EdgeType,
@@ -205,6 +207,40 @@ where
         g1,
         &mut NoSemanticMatch,
         &mut NoSemanticMatch,
+        ProblemSelector::SubgraphIso,
+    )
+    .unwrap_or(false)
+}
+
+/// [Graph] Return `true` if graph `g0` is isomorphic to a subgraph of `g1`.
+///
+/// Using the VF2 algorithm, examining both syntactic and semantic
+/// graph isomorphism (graph structure and matching node and edge weights).
+///
+/// The graphs should not be multigraphs.
+pub fn is_subgraph_iso_matching<N, E, Ty, Ix, F, G>(
+    g0: &Graph<N, E, Ty, Ix>,
+    g1: &Graph<N, E, Ty, Ix>,
+    mut node_match: F,
+    mut edge_match: G,
+) -> bool
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+    F: FnMut(&N, &N) -> bool,
+    G: FnMut(&E, &E) -> bool,
+{
+    if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
+        return false;
+    }
+
+    let mut st = [Vf2State::new(g0), Vf2State::new(g1)];
+    try_match(
+        &mut st,
+        g0,
+        g1,
+        &mut node_match,
+        &mut edge_match,
         ProblemSelector::SubgraphIso,
     )
     .unwrap_or(false)
