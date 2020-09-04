@@ -253,7 +253,6 @@ fn stable_graph_retain_edges() {
 fn isomorphism_1() {
     // using small weights so that duplicates are likely
     fn prop<Ty: EdgeType>(g: Small<Graph<i8, i8, Ty>>) -> bool {
-        println!("graph {:#?}", g);
         let mut rng = rand::thread_rng();
         // several trials of different isomorphisms of the same graph
         // mapping of node indices
@@ -328,29 +327,26 @@ fn isomorphism_modify() {
 
 #[test]
 fn subgraph_isomorphism() {
+    // Given a graph with n nodes, randomly remove k < n nodes, and check is_subgraph_iso.
     fn prop<Ty: EdgeType>(g: Small<Graph<i8, i8, Ty>>) -> bool {
-        println!("graph {:#?}", g);
         let mut ng = g.clone();
-
-        if g.node_count() != 0 {
+        if g.node_count() > 1 {
             let mut rng = rand::thread_rng();
-
-            let mut indices = ng.node_indices().collect::<Vec<_>>();
-            rng.shuffle(&mut indices);
-
-            let num_vertices_to_remove = rng.gen_range(0, indices.len());
-
-            for _ in 0..num_vertices_to_remove {
-                let nx = indices.pop().unwrap();
+            // Remove at least 1 node, so we test subgraph isomorphism explicitly.
+            let num_nodes_to_remove = rng.gen_range(1, ng.node_count());
+            for _ in 0..num_nodes_to_remove {
+                // Removing node invalidates the last node index, so we need to select node index
+                // to delete iteratively.
+                let nx = NodeIndex::new(rng.gen_range(0, ng.node_count()));
                 ng.remove_node(nx);
             }
+            assert_eq!(g.node_count(), ng.node_count() + num_nodes_to_remove);
         }
-
         assert!(is_subgraph_iso(&ng, &g));
-
         true
     }
     quickcheck::quickcheck(prop::<Undirected> as fn(_) -> bool);
+    quickcheck::quickcheck(prop::<Directed> as fn(_) -> bool);
 }
 
 #[test]
