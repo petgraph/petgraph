@@ -377,33 +377,17 @@ where
 
     //fn pop_state(nodes: [NodeIndex<Ix>; 2]) {
     let pop_state = |st: &mut [Vf2State<Ty, Ix>; 2], nodes: [NodeIndex<Ix>; 2]| {
-        // println!("Pop {} <-> {}", nodes[0].index(), nodes[1].index());
         // Restore state.
         for j in graph_indices.clone() {
             st[j].pop_mapping(nodes[j], g[j]);
         }
-        // for (idx, to) in st[0].mapping.iter().enumerate() {
-        //     if *to != NodeIndex::end() {
-        //         print!("{} <-> {} ", idx, to.index());
-        //         if idx == st[0].mapping.len() - 1 {
-        //             println!();
-        //         }
-        //     }
-        // }
     };
     //fn push_state(nodes: [NodeIndex<Ix>; 2]) {
     let push_state = |st: &mut [Vf2State<Ty, Ix>; 2], nodes: [NodeIndex<Ix>; 2]| {
-        // println!("Push {} <-> {}", nodes[0].index(), nodes[1].index());
         // Add mapping nx <-> mx to the state
         for j in graph_indices.clone() {
             st[j].push_mapping(nodes[j], nodes[1 - j], g[j]);
         }
-        // for (idx, to) in st[0].mapping.iter().enumerate() {
-        //     if *to != NodeIndex::end() {
-        //         print!("{} <-> {} ", idx, to.index());
-        //     }
-        // }
-        // println!();
     };
     let valid = |st: &[Vf2State<Ty, Ix>; 2]| match problem_selector {
         ProblemSelector::Isomorphism => {
@@ -551,8 +535,6 @@ where
     let mut stack: Vec<Frame<NodeIndex<Ix>>> = vec![Frame::Outer];
 
     while let Some(frame) = stack.pop() {
-        // println!("Current frame: {:?}", frame);
-        // println!("Rest: {:?}", stack);
         match frame {
             Frame::Unwind {
                 nodes,
