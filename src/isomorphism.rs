@@ -357,19 +357,19 @@ where
                         open_list: OpenList|
      -> Option<NodeIndex<Ix>> {
         // Find the next node index to try on the `to` side of the mapping
-        let start0 = nx.index() + 1;
-        let cand0 = match open_list {
-            OpenList::Out => st[1].next_out_index(start0),
-            OpenList::In => st[1].next_in_index(start0),
-            OpenList::Other => st[1].next_rest_index(start0),
+        let start1 = nx.index() + 1;
+        let cand1 = match open_list {
+            OpenList::Out => st[1].next_out_index(start1),
+            OpenList::In => st[1].next_in_index(start1),
+            OpenList::Other => st[1].next_rest_index(start1),
         }
-        .map(|c| c + start0); // compensate for start offset.
-        match cand0 {
+        .map(|c| c + start1); // compensate for start offset.
+        match cand1 {
             None => {
                 None // no more candidates
             }
             Some(ix) => {
-                debug_assert!(ix >= start0);
+                debug_assert!(ix >= start1);
                 Some(NodeIndex::new(ix))
             }
         }
