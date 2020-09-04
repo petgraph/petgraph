@@ -375,42 +375,35 @@ where
         }
     };
 
-    let next_from_ix_to = |st: &mut [Vf2State<Ty, Ix>; 2],
-                           nx: NodeIndex<Ix>,
-                           open_list: OpenList|
-     -> Option<NodeIndex<Ix>> {
-        // Find the next node index to try on the `from` side of the mapping
-        let start = nx.index() + 1;
-        let cand0 = match open_list {
-            OpenList::Out => st[1].next_out_index(start),
-            OpenList::In => st[1].next_in_index(start),
-            OpenList::Other => st[1].next_rest_index(start),
-        }
-        .map(|c| c + start); // compensate for start offset.
-        match cand0 {
-            None => {
-                None // no more candidates
-            }
-            Some(ix) => {
-                debug_assert!(ix >= start);
-                Some(NodeIndex::new(ix))
-            }
-        }
-    };
-
     //fn pop_state(nodes: [NodeIndex<Ix>; 2]) {
     let pop_state = |st: &mut [Vf2State<Ty, Ix>; 2], nodes: [NodeIndex<Ix>; 2]| {
+        // println!("Pop {} <-> {}", nodes[0].index(), nodes[1].index());
         // Restore state.
         for j in graph_indices.clone() {
             st[j].pop_mapping(nodes[j], g[j]);
         }
+        // for (idx, to) in st[0].mapping.iter().enumerate() {
+        //     if *to != NodeIndex::end() {
+        //         print!("{} <-> {} ", idx, to.index());
+        //         if idx == st[0].mapping.len() - 1 {
+        //             println!();
+        //         }
+        //     }
+        // }
     };
     //fn push_state(nodes: [NodeIndex<Ix>; 2]) {
     let push_state = |st: &mut [Vf2State<Ty, Ix>; 2], nodes: [NodeIndex<Ix>; 2]| {
+        // println!("Push {} <-> {}", nodes[0].index(), nodes[1].index());
         // Add mapping nx <-> mx to the state
         for j in graph_indices.clone() {
             st[j].push_mapping(nodes[j], nodes[1 - j], g[j]);
         }
+        // for (idx, to) in st[0].mapping.iter().enumerate() {
+        //     if *to != NodeIndex::end() {
+        //         print!("{} <-> {} ", idx, to.index());
+        //     }
+        // }
+        // println!();
     };
     let valid = |st: &[Vf2State<Ty, Ix>; 2]| match problem_selector {
         ProblemSelector::Isomorphism => {
@@ -558,6 +551,8 @@ where
     let mut stack: Vec<Frame<NodeIndex<Ix>>> = vec![Frame::Outer];
 
     while let Some(frame) = stack.pop() {
+        // println!("Current frame: {:?}", frame);
+        // println!("Rest: {:?}", stack);
         match frame {
             Frame::Unwind {
                 nodes,
@@ -566,22 +561,7 @@ where
                 pop_state(&mut st, nodes);
 
                 match next_from_ix(&mut st, nodes[0], ol) {
-                    None => {
-                        if problem_selector == ProblemSelector::SubgraphIso {
-                            match next_from_ix_to(&mut st, nodes[1], ol) {
-                                None => continue,
-                                Some(nx) => {
-                                    let f = Frame::Inner {
-                                        nodes: [nodes[0], nx],
-                                        open_list: ol,
-                                    };
-                                    stack.push(f);
-                                }
-                            }
-                        } else {
-                            continue;
-                        }
-                    }
+                    None => continue,
                     Some(nx) => {
                         let f = Frame::Inner {
                             nodes: [nx, nodes[1]],
@@ -623,22 +603,7 @@ where
                     pop_state(&mut st, nodes);
                 }
                 match next_from_ix(&mut st, nodes[0], ol) {
-                    None => {
-                        if problem_selector == ProblemSelector::SubgraphIso {
-                            match next_from_ix_to(&mut st, nodes[1], ol) {
-                                None => continue,
-                                Some(nx) => {
-                                    let f = Frame::Inner {
-                                        nodes: [nodes[0], nx],
-                                        open_list: ol,
-                                    };
-                                    stack.push(f);
-                                }
-                            }
-                        } else {
-                            continue;
-                        }
-                    }
+                    None => continue,
                     Some(nx) => {
                         let f = Frame::Inner {
                             nodes: [nx, nodes[1]],
