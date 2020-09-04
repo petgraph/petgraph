@@ -353,24 +353,24 @@ where
             }
         };
     let next_from_ix = |st: &mut [Vf2State<Ty, Ix>; 2],
-                        nx: NodeIndex<Ix>,
+                        nodes: [NodeIndex<Ix>; 2],
                         open_list: OpenList|
-     -> Option<NodeIndex<Ix>> {
-        // Find the next node index to try on the `from` side of the mapping
-        let start = nx.index() + 1;
+     -> Option<[NodeIndex<Ix>; 2]> {
+        // Find the next node index to try on the `to` side of the mapping
+        let start0 = nodes[1].index() + 1;
         let cand0 = match open_list {
-            OpenList::Out => st[0].next_out_index(start),
-            OpenList::In => st[0].next_in_index(start),
-            OpenList::Other => st[0].next_rest_index(start),
+            OpenList::Out => st[1].next_out_index(start0),
+            OpenList::In => st[1].next_in_index(start0),
+            OpenList::Other => st[1].next_rest_index(start0),
         }
-        .map(|c| c + start); // compensate for start offset.
+        .map(|c| c + start0); // compensate for start offset.
         match cand0 {
             None => {
                 None // no more candidates
             }
             Some(ix) => {
-                debug_assert!(ix >= start);
-                Some(NodeIndex::new(ix))
+                debug_assert!(ix >= start0);
+                Some([nodes[0], NodeIndex::new(ix)])
             }
         }
     };
@@ -560,11 +560,11 @@ where
             } => {
                 pop_state(&mut st, nodes);
 
-                match next_from_ix(&mut st, nodes[0], ol) {
+                match next_from_ix(&mut st, nodes, ol) {
                     None => continue,
                     Some(nx) => {
                         let f = Frame::Inner {
-                            nodes: [nx, nodes[1]],
+                            nodes: nx,
                             open_list: ol,
                         };
                         stack.push(f);
@@ -602,11 +602,11 @@ where
                     }
                     pop_state(&mut st, nodes);
                 }
-                match next_from_ix(&mut st, nodes[0], ol) {
+                match next_from_ix(&mut st, nodes, ol) {
                     None => continue,
                     Some(nx) => {
                         let f = Frame::Inner {
-                            nodes: [nx, nodes[1]],
+                            nodes: nx,
                             open_list: ol,
                         };
                         stack.push(f);

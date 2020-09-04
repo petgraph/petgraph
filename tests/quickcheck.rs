@@ -252,6 +252,7 @@ fn stable_graph_retain_edges() {
 fn isomorphism_1() {
     // using small weights so that duplicates are likely
     fn prop<Ty: EdgeType>(g: Small<Graph<i8, i8, Ty>>) -> bool {
+        println!("graph {:#?}", g);
         let mut rng = rand::thread_rng();
         // several trials of different isomorphisms of the same graph
         // mapping of node indices
@@ -324,28 +325,32 @@ fn isomorphism_modify() {
     quickcheck::quickcheck(prop::<Directed> as fn(_, _, _) -> bool);
 }
 
-// #[test]
-// fn subgraph_isomorphism() {
-//     fn prop<Ty: EdgeType>(g: Small<Graph<i8, i8, Ty>>) -> bool {
-//         let mut rng = rand::thread_rng();
+#[test]
+fn subgraph_isomorphism() {
+    fn prop<Ty: EdgeType>(g: Small<Graph<i8, i8, Ty>>) -> bool {
+        println!("graph {:#?}", g);
+        let mut ng = g.clone();
 
-//         let mut ng = g.clone();
-//         let mut indices = ng.node_indices().collect::<Vec<_>>();
-//         rng.shuffle(&mut indices);
+        if g.node_count() != 0 {
+            let mut rng = rand::thread_rng();
 
-//         let num_vertices_to_remove = rng.gen_range(0, indices.len());
+            let mut indices = ng.node_indices().collect::<Vec<_>>();
+            rng.shuffle(&mut indices);
 
-//         for _ in 0..num_vertices_to_remove {
-//             let nx = indices.pop().unwrap();
-//             ng.remove_node(nx);
-//         }
+            let num_vertices_to_remove = rng.gen_range(0, indices.len());
 
-//         assert!(petgraph::algo::is_subgraph_iso(&ng, &g));
+            for _ in 0..num_vertices_to_remove {
+                let nx = indices.pop().unwrap();
+                ng.remove_node(nx);
+            }
+        }
 
-//         true
-//     }
-//     quickcheck::quickcheck(prop::<Undirected> as fn(_) -> bool);
-// }
+        assert!(petgraph::algo::is_subgraph_iso(&ng, &g));
+
+        true
+    }
+    quickcheck::quickcheck(prop::<Undirected> as fn(_) -> bool);
+}
 
 #[test]
 fn graph_remove_edge() {
