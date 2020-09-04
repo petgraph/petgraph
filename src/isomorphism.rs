@@ -353,11 +353,11 @@ where
             }
         };
     let next_from_ix = |st: &mut [Vf2State<Ty, Ix>; 2],
-                        nodes: [NodeIndex<Ix>; 2],
+                        nx: NodeIndex<Ix>,
                         open_list: OpenList|
-     -> Option<[NodeIndex<Ix>; 2]> {
+     -> Option<NodeIndex<Ix>> {
         // Find the next node index to try on the `to` side of the mapping
-        let start0 = nodes[1].index() + 1;
+        let start0 = nx.index() + 1;
         let cand0 = match open_list {
             OpenList::Out => st[1].next_out_index(start0),
             OpenList::In => st[1].next_in_index(start0),
@@ -370,7 +370,7 @@ where
             }
             Some(ix) => {
                 debug_assert!(ix >= start0);
-                Some([nodes[0], NodeIndex::new(ix)])
+                Some(NodeIndex::new(ix))
             }
         }
     };
@@ -542,11 +542,11 @@ where
             } => {
                 pop_state(&mut st, nodes);
 
-                match next_from_ix(&mut st, nodes, ol) {
+                match next_from_ix(&mut st, nodes[1], ol) {
                     None => continue,
                     Some(nx) => {
                         let f = Frame::Inner {
-                            nodes: nx,
+                            nodes: [nodes[0], nx],
                             open_list: ol,
                         };
                         stack.push(f);
@@ -584,11 +584,11 @@ where
                     }
                     pop_state(&mut st, nodes);
                 }
-                match next_from_ix(&mut st, nodes, ol) {
+                match next_from_ix(&mut st, nodes[1], ol) {
                     None => continue,
                     Some(nx) => {
                         let f = Frame::Inner {
-                            nodes: nx,
+                            nodes: [nodes[0], nx],
                             open_list: ol,
                         };
                         stack.push(f);
