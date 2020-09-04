@@ -1,5 +1,5 @@
 use quickcheck::{Arbitrary, Gen, StdGen};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Copy, Clone, Debug)]
 /// quickcheck Arbitrary adaptor - half the size of `T` on average
@@ -9,6 +9,12 @@ impl<T> Deref for Small<T> {
     type Target = T;
     fn deref(&self) -> &T {
         &self.0
+    }
+}
+
+impl<T> DerefMut for Small<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
     }
 }
 
