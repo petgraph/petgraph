@@ -455,8 +455,7 @@ fn subgraph_iso() {
     let mut g0 = Graph::<_, ()>::new();
     let mut g1 = Graph::<_, ()>::new();
 
-    // assert!(petgraph::algo::is_subgraph_iso(&g0, &g1));
-    // println!("Empty graphs are subgraph isomorphic");
+    assert!(petgraph::algo::is_subgraph_iso(&g0, &g1));
 
     let a0 = g0.add_node(0);
     let b0 = g0.add_node(1);
@@ -473,13 +472,11 @@ fn subgraph_iso() {
     g1.add_edge(a1, b1, ());
     g1.add_edge(b1, c1, ());
     g1.add_edge(a1, c1, ());
-    // assert!(!petgraph::algo::is_subgraph_iso(&g0, &g1));
-    // println!("Not subgraph isomorphic");
+    assert!(!petgraph::algo::is_subgraph_iso(&g0, &g1));
 
     let d1 = g1.add_node(3);
     g1.add_edge(b1, d1, ());
     g1.add_edge(d1, a1, ());
-    println!("Added a vertex with edges, to make subgraph isomorphic");
     assert!(petgraph::algo::is_subgraph_iso(&g0, &g1));
 }
 
