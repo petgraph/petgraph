@@ -29,6 +29,7 @@ use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::{edge_index, node_index, IndexType};
 use petgraph::graphmap::NodeTrait;
+use petgraph::operator::complement;
 use petgraph::prelude::*;
 use petgraph::visit::{
     EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
@@ -765,6 +766,33 @@ quickcheck! {
         for v in second_best_distances.keys() {
             if second_best_distances[&v] < dijkstra_distances[&v] {
                 return false;
+            }
+        }
+        true
+    }
+}
+
+quickcheck! {
+    // checks that the complement of the complement is the same as the input if the input does not contain self-loops
+    fn complement_(g: Graph<u32, u32>, _node: usize) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+        for x in g.node_indices() {
+            if g.contains_edge(x, x) {
+                return true;
+            }
+        }
+        let mut complement_graph: Graph<u32, u32>  = Graph::new();
+        let mut result: Graph<u32, u32> = Graph::new();
+        complement(&g, &mut complement_graph, 0);
+        complement(&complement_graph, &mut result, 0);
+
+        for x in g.node_indices() {
+            for y in g.node_indices() {
+                if g.contains_edge(x, y) != result.contains_edge(x, y){
+                    return false;
+                }
             }
         }
         true
