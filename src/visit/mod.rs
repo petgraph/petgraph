@@ -567,30 +567,6 @@ pub trait VisitMap<N> {
     fn is_visited(&self, a: &N) -> bool;
 }
 
-impl<Ix> VisitMap<graph::NodeIndex<Ix>> for FixedBitSet
-where
-    Ix: IndexType,
-{
-    fn visit(&mut self, x: graph::NodeIndex<Ix>) -> bool {
-        !self.put(x.index())
-    }
-    fn is_visited(&self, x: &graph::NodeIndex<Ix>) -> bool {
-        self.contains(x.index())
-    }
-}
-
-impl<Ix> VisitMap<graph::EdgeIndex<Ix>> for FixedBitSet
-where
-    Ix: IndexType,
-{
-    fn visit(&mut self, x: graph::EdgeIndex<Ix>) -> bool {
-        !self.put(x.index())
-    }
-    fn is_visited(&self, x: &graph::EdgeIndex<Ix>) -> bool {
-        self.contains(x.index())
-    }
-}
-
 impl<Ix> VisitMap<Ix> for FixedBitSet
 where
     Ix: IndexType,

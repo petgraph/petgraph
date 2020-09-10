@@ -30,8 +30,10 @@ use petgraph::dot::{Config, Dot};
 use petgraph::graph::{edge_index, node_index, IndexType};
 use petgraph::graphmap::NodeTrait;
 use petgraph::prelude::*;
-use petgraph::visit::{EdgeRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
-use petgraph::visit::{Reversed, Topo};
+use petgraph::visit::{
+    EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
+    IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, Visitable,
+};
 use petgraph::EdgeType;
 
 fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
@@ -981,5 +983,100 @@ quickcheck! {
         for i in edges {
             assert!(gr2.edge_weight(edge_index(i)).is_none());
         }
+    }
+}
+
+fn naive_closure_foreach<G, F>(g: G, mut f: F)
+where
+    G: Visitable + IntoNeighbors + IntoNodeIdentifiers,
+    F: FnMut(G::NodeId, G::NodeId),
+{
+    let mut dfs = Dfs::empty(&g);
+    for i in g.node_identifiers() {
+        dfs.reset(&g);
+        dfs.move_to(i);
+        while let Some(nx) = dfs.next(&g) {
+            if i != nx {
+                f(i, nx);
+            }
+        }
+    }
+}
+
+fn naive_closure<G>(g: G) -> Vec<(G::NodeId, G::NodeId)>
+where
+    G: Visitable + IntoNodeIdentifiers + IntoNeighbors,
+{
+    let mut res = Vec::new();
+    naive_closure_foreach(g, |a, b| res.push((a, b)));
+    res
+}
+
+fn naive_closure_edgecount<G>(g: G) -> usize
+where
+    G: Visitable + IntoNodeIdentifiers + IntoNeighbors,
+{
+    let mut res = 0;
+    naive_closure_foreach(g, |_, _| res += 1);
+    res
+}
+
+quickcheck! {
+    fn test_tred(g: DAG<()>) -> bool {
+        let acyclic = g.0;
+        println!("acyclic graph {:#?}", &acyclic);
+        let toposort = toposort(&acyclic, None).unwrap();
+        println!("Toposort:");
+        for (new, old) in toposort.iter().enumerate() {
+            println!("{} -> {}", old.index(), new);
+        }
+        let (toposorted, revtopo): (petgraph::adj::List<(), usize>, _) =
+            petgraph::algo::tred::dag_to_toposorted_adjacency_list(&acyclic, &toposort);
+        println!("checking revtopo");
+        for (i, ix) in toposort.iter().enumerate() {
+            assert_eq!(i, revtopo[ix.index()]);
+        }
+        println!("toposorted adjacency list: {:#?}", &toposorted);
+        let (tred, tclos) = petgraph::algo::tred::dag_transitive_reduction_closure(&toposorted);
+        println!("tred: {:#?}", &tred);
+        println!("tclos: {:#?}", &tclos);
+        if tred.node_count() != tclos.node_count() {
+            println!("Different node count");
+            return false;
+        }
+        if acyclic.node_count() != tclos.node_count() {
+            println!("Different node count from original graph");
+            return false;
+        }
+        // check the closure
+        let mut clos_edges: Vec<(_, _)> = tclos.edge_references().map(|i| (i.source(), i.target())).collect();
+        clos_edges.sort();
+        let mut tred_closure = naive_closure(&tred);
+        tred_closure.sort();
+        if tred_closure != clos_edges {
+            println!("tclos is not the transitive closure of tred");
+            return false
+        }
+        // check the transitive reduction is a transitive reduction
+        for i in tred.edge_references() {
+            let filtered = EdgeFiltered::from_fn(&tred, |edge| {
+                edge.source() !=i.source() || edge.target() != i.target()
+            });
+            let new = naive_closure_edgecount(&filtered);
+            if new >= clos_edges.len() {
+                println!("when removing ({} -> {}) the transitive closure does not shrink",
+                         i.source().index(), i.target().index());
+                return false
+            }
+        }
+        // check that the transitive reduction is included in the original graph
+        for i in tred.edge_references() {
+            if acyclic.find_edge(toposort[i.source().index()], toposort[i.target().index()]).is_none() {
+                println!("tred is not included in the original graph");
+                return false
+            }
+        }
+        println!("ok!");
+        true
     }
 }

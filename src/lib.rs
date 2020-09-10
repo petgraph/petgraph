@@ -133,6 +133,7 @@ pub mod visit;
 #[macro_use]
 pub mod data;
 
+pub mod adj;
 pub mod algo;
 mod astar;
 pub mod csr;

@@ -478,33 +478,9 @@ where
     }
 }
 
-macro_rules! iterator_wrap {
-    ($name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
-     item: $item: ty,
-     iter: $iter: ty,
-     ) => (
-        pub struct $name <$($typarm),*> where $($bounds)* {
-            iter: $iter,
-        }
-        impl<$($typarm),*> Iterator for $name <$($typarm),*>
-            where $($bounds)*
-        {
-            type Item = $item;
-            #[inline]
-            fn next(&mut self) -> Option<Self::Item> {
-                self.iter.next()
-            }
-
-            #[inline]
-            fn size_hint(&self) -> (usize, Option<usize>) {
-                self.iter.size_hint()
-            }
-        }
-    );
-}
-
 iterator_wrap! {
-    Nodes <'a, N> where { N: 'a + NodeTrait }
+    impl (Iterator DoubleEndedIterator ExactSizeIterator) for
+    struct Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
     iter: Cloned<Keys<'a, N, Vec<(N, CompactDirection)>>>,
 }
