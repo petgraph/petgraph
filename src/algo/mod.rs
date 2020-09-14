@@ -27,6 +27,7 @@ use crate::visit::{Data, IntoNodeReferences, NodeRef};
 
 pub use super::astar::astar;
 pub use super::dijkstra::dijkstra;
+pub use super::floyd_warshall::floyd_warshall;
 pub use super::k_shortest_path::k_shortest_path;
 
 pub use super::isomorphism::{
@@ -743,7 +744,7 @@ impl<N> Cycle<N> {
 }
 /// An algorithm error: a cycle of negative weights was found in the graph.
 #[derive(Clone, Debug, PartialEq)]
-pub struct NegativeCycle(());
+pub struct NegativeCycle(pub ());
 
 /// \[Generic\] Compute shortest paths from node `source` to all other.
 ///
@@ -945,3 +946,59 @@ impl FloatMeasure for f64 {
         1. / 0.
     }
 }
+
+pub trait BoundedMeasure: Measure + std::ops::Sub<Self, Output = Self> {
+    fn min() -> Self;
+    fn max() -> Self;
+    fn overflowing_add(self, rhs: Self) -> (Self, bool);
+}
+
+macro_rules! impl_bounded_measure_integer(
+    ( $( $t:ident ),* ) => {
+        $(
+            impl BoundedMeasure for $t {
+                fn min() -> Self {
+                    std::$t::MIN
+                }
+
+                fn max() -> Self {
+                    std::$t::MAX
+                }
+
+                fn overflowing_add(self, rhs: Self) -> (Self, bool) {
+                    self.overflowing_add(rhs)
+                }
+            }
+        )*
+    };
+);
+
+impl_bounded_measure_integer!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+
+macro_rules! impl_bounded_measure_float(
+    ( $( $t:ident ),* ) => {
+        $(
+            impl BoundedMeasure for $t {
+                fn min() -> Self {
+                    std::$t::MIN
+                }
+
+                fn max() -> Self {
+                    std::$t::MAX
+                }
+
+                fn overflowing_add(self, rhs: Self) -> (Self, bool) {
+                    // for an overflow: a + b > max: both values need to be positive and a > max - b must be satisfied
+                    let overflow = self > Self::default() && rhs > Self::default() && self > std::$t::MAX - rhs;
+
+                    // for an underflow: a + b < min: overflow can not happen and both values must be negative and a < min - b must be satisfied
+                    let underflow = !overflow && self < Self::default() && rhs < Self::default() && self < std::$t::MIN - rhs;
+
+                    (self + rhs, overflow || underflow)
+                }
+            }
+        )*
+    };
+);
+
+impl_bounded_measure_float!(f32, f64);
