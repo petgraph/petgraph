@@ -574,6 +574,30 @@ fn test_astar_manhattan_heuristic() {
     }
 }
 
+#[test]
+fn test_astar_admissible_inconsistent() {
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    g.add_edge(a, b, 3);
+    g.add_edge(b, c, 3);
+    g.add_edge(c, d, 3);
+    g.add_edge(a, c, 8);
+    g.add_edge(a, d, 10);
+
+    let admissible_inconsistent = |n: NodeIndex| match g[n] {
+        "A" => 9,
+        "B" => 6,
+        "C" => 0,
+        &_ => 0,
+    };
+
+    let optimal = astar(&g, a, |n| n == d, |e| *e.weight(), admissible_inconsistent);
+    assert_eq!(optimal, Some((9, vec![a, b, c, d])));
+}
+
 #[cfg(feature = "generate")]
 #[test]
 fn test_generate_undirected() {
