@@ -3,7 +3,7 @@ use std::collections::{BinaryHeap, HashMap};
 
 use std::hash::Hash;
 
-use super::visit::{EdgeRef, GraphBase, IntoEdges, VisitMap, Visitable};
+use super::visit::{EdgeRef, GraphBase, IntoEdges};
 use crate::scored::MinScored;
 
 use crate::algo::Measure;
@@ -71,14 +71,13 @@ pub fn astar<G, F, H, K, IsGoal>(
     mut estimate_cost: H,
 ) -> Option<(K, Vec<G::NodeId>)>
 where
-    G: IntoEdges + Visitable,
+    G: IntoEdges,
     IsGoal: FnMut(G::NodeId) -> bool,
     G::NodeId: Eq + Hash,
     F: FnMut(G::EdgeRef) -> K,
     H: FnMut(G::NodeId) -> K,
     K: Measure + Copy,
 {
-    let mut visited = graph.visit_map();
     let mut visit_next = BinaryHeap::new();
     let mut scores = HashMap::new();
     let mut path_tracker = PathTracker::<G>::new();
@@ -94,40 +93,30 @@ where
             return Some((cost, path));
         }
 
-        // Don't visit the same node several times, as the first time it was visited it was using
-        // the shortest available path.
-        if !visited.visit(node) {
-            continue;
-        }
-
         // This lookup can be unwrapped without fear of panic since the node was necessarily scored
-        // before adding him to `visit_next`.
+        // before adding it to `visit_next`.
         let node_score = scores[&node];
 
         for edge in graph.edges(node) {
             let next = edge.target();
-            if visited.is_visited(&next) {
-                continue;
-            }
-
-            let mut next_score = node_score + edge_cost(edge);
+            let next_score = node_score + edge_cost(edge);
 
             match scores.entry(next) {
-                Occupied(ent) => {
-                    let old_score = *ent.get();
-                    if next_score < old_score {
-                        *ent.into_mut() = next_score;
-                        path_tracker.set_predecessor(next, node);
+                Occupied(mut entry) => {
+                    // No need to add neighbors that we have already reached, unless the new path
+                    // is shorter.
+                    if &next_score < entry.get() {
+                        entry.insert(next_score);
                     } else {
-                        next_score = old_score;
+                        continue;
                     }
                 }
-                Vacant(ent) => {
-                    ent.insert(next_score);
-                    path_tracker.set_predecessor(next, node);
+                Vacant(entry) => {
+                    entry.insert(next_score);
                 }
             }
 
+            path_tracker.set_predecessor(next, node);
             let next_estimate_score = next_score + estimate_cost(next);
             visit_next.push(MinScored(next_estimate_score, next));
         }
