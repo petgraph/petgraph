@@ -575,6 +575,35 @@ fn test_astar_manhattan_heuristic() {
 }
 
 #[test]
+fn test_astar_runtime_optimal() {
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    g.add_edge(a, b, 2);
+    g.add_edge(a, c, 3);
+    g.add_edge(b, d, 3);
+    g.add_edge(c, d, 1);
+    g.add_edge(d, e, 1);
+
+    let mut times_called = 0;
+
+    let _ = astar(&g, a, |n| n == e, |edge| {
+        times_called += 1;
+        *edge.weight()
+    }, |_| 0);
+
+    // A* is runtime optimal in the sense it won't expand more nodes than needed, for the given
+    // heuristic. Here, A* should expand, in order: A, B, C, D, E. This should should ask for the
+    // costs of edges (A, B), (A, C), (B, D), (C, D), (D, E). Node D will be added to `visit_next`
+    // twice, but should only be expanded once. If it is erroneously expanded twice, it will call
+    // for (D, E) again and `times_called` will be 6.
+    assert_eq!(times_called, 5);
+}
+
+#[test]
 fn test_astar_admissible_inconsistent() {
     let mut g = Graph::new();
     let a = g.add_node("A");
