@@ -565,16 +565,13 @@ where
 {
     type Item = (N, N, &'a E);
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
-            None => None,
-            Some(b) => {
-                let a = self.from;
-                match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
-                    None => unreachable!(),
-                    Some(edge) => Some((a, b, edge)),
-                }
+        self.iter.next().map(|b| {
+            let a = self.from;
+            match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
+                None => unreachable!(),
+                Some(edge) => (a, b, edge),
             }
-        }
+        })
     }
 }
 
@@ -606,10 +603,7 @@ where
 {
     type Item = (N, N, &'a E);
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.next() {
-            None => None,
-            Some((&(a, b), v)) => Some((a, b, v)),
-        }
+        self.inner.next().map(|(&(a, b), v)| (a, b, v))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
