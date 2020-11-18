@@ -1558,6 +1558,10 @@ where
             }
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
+    }
 }
 
 /// Iterator over the neighbors of a node.
@@ -1712,10 +1716,9 @@ impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
             }
         })
     }
-
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (_, hi) = self.iter.size_hint();
-        (0, hi)
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
     }
 }
 
@@ -1786,10 +1789,9 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
             }
         })
     }
-
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (_, hi) = self.iter.size_hint();
-        (0, hi)
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
     }
 }
 

@@ -565,6 +565,9 @@ impl<'a, Ix: IndexType> Iterator for NodeIdentifiers<'a, Ix> {
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(NodeIndex::new)
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 /// Iterator over all nodes of a graph.
@@ -597,6 +600,9 @@ impl<'a, N: 'a, Ix: IndexType> Iterator for NodeReferences<'a, N, Ix> {
         self.iter
             .next()
             .map(|i| (NodeIndex::new(i), &self.nodes[i]))
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
@@ -680,6 +686,9 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Neighbors<'a,
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(_, b, _)| b)
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
     }
 }
 

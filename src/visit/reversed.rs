@@ -90,6 +90,9 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(ReversedEdgeReference)
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 /// A reversed edge reference
@@ -157,6 +160,9 @@ where
     type Item = ReversedEdgeReference<I::Item>;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(ReversedEdgeReference)
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
