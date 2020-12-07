@@ -22,8 +22,9 @@ use itertools::cloned;
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
-    is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
+    bellman_ford, condensation, dijkstra, floyd_warshall, is_cyclic_directed, is_cyclic_undirected,
+    is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree,
+    tarjan_scc, toposort,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -748,6 +749,24 @@ quickcheck! {
                 if distances.contains_key(&u) && distances[&u] > dv2 + w {
                     return false;
                 }
+            }
+        }
+        true
+    }
+}
+
+quickcheck! {
+    // checks that Floyd-Warshall
+    fn floyd_warshall_agree_dijkstra(g: Graph<u32, u32>, node: usize) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+        let v = node_index(node % g.node_count());
+        let distances = dijkstra(&g, v, None, |e| *e.weight());
+        let cost_matrix = floyd_warshall(&g);
+        for (v2, cost) in distances.into_iter() {
+            if cost != cost_matrix[(v, v2)] {
+                return false;
             }
         }
         true

@@ -5,7 +5,11 @@ use std::hash::Hash;
 
 /// Calculates the distance between any two nodes in the graph using the
 /// \[Generic\] The Floyd-Warshall shortest paths algorithm. Calculates the
-/// shortest path between each node in the graph.
+/// shortest path between each node in the graph in `O(V^3)` time, where `V` is
+/// the number of nodes in the graph. Floyd-Warshall takes up `O(V^2)` space.
+///
+/// Details can be found on
+/// [Wikipedia](https://en.wikipedia.org/wiki/Floyd–Warshall_algorithm).
 ///
 /// Returns a PathCostMatrix that maps `(NodeId, NodeId)` to the cost of
 /// traveling from the first node to the second.
