@@ -27,6 +27,7 @@ use crate::visit::{Data, IntoNodeReferences, NodeRef};
 
 pub use super::astar::astar;
 pub use super::dijkstra::dijkstra;
+pub use super::floyd_warshall::floyd_warshall;
 pub use super::k_shortest_path::k_shortest_path;
 
 pub use super::isomorphism::{
@@ -903,20 +904,56 @@ pub trait FloatMeasure: Measure + Copy {
     fn infinite() -> Self;
 }
 
-impl FloatMeasure for f32 {
-    fn zero() -> Self {
-        0.
-    }
-    fn infinite() -> Self {
-        1. / 0.
-    }
+/// A measure with bounds, i.e. a zero and an infinity.
+///
+/// This is effectivly a rename for `FloatMeasure` for types that are not
+/// floats, but require the same traits.
+pub trait BoundedMeasure: FloatMeasure {}
+
+impl<T: FloatMeasure> BoundedMeasure for T {}
+
+/// Implements `BoundMeasure(FloatMeasure)` for `$type` using the builtin `MIN` and `MAX`
+/// associated values.
+macro_rules! impl_bounded_measure {
+    ($type:ident) => {
+        impl FloatMeasure for $type {
+            fn zero() -> $type {
+                0
+            }
+            fn infinite() -> $type {
+                std::$type::MAX
+            }
+        }
+    };
 }
 
-impl FloatMeasure for f64 {
-    fn zero() -> Self {
-        0.
-    }
-    fn infinite() -> Self {
-        1. / 0.
-    }
+/// Implements `FloatMeasure` for `$type` using zero and `1./0.`.
+macro_rules! impl_float_measure {
+    ($type:ident) => {
+        impl FloatMeasure for $type {
+            fn zero() -> $type {
+                0.
+            }
+            fn infinite() -> $type {
+                1. / 0.
+            }
+        }
+    };
 }
+
+impl_float_measure!(f32);
+impl_float_measure!(f64);
+
+impl_bounded_measure!(u8);
+impl_bounded_measure!(u16);
+impl_bounded_measure!(u32);
+impl_bounded_measure!(u64);
+impl_bounded_measure!(u128);
+impl_bounded_measure!(usize);
+
+impl_bounded_measure!(i8);
+impl_bounded_measure!(i16);
+impl_bounded_measure!(i32);
+impl_bounded_measure!(i64);
+impl_bounded_measure!(i128);
+impl_bounded_measure!(isize);

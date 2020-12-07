@@ -9,7 +9,7 @@ use petgraph::EdgeType;
 use petgraph as pg;
 
 use petgraph::algo::{
-    dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
+    dominators, floyd_warshall, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
     is_isomorphic_matching, min_spanning_tree,
 };
 
@@ -490,6 +490,55 @@ fn dijk() {
 
     let scores = dijkstra(&g, a, Some(c), |e| *e.weight());
     assert_eq!(scores[&c], 9);
+}
+
+#[test]
+fn flyd_wrshll() {
+    let mut g: Graph<(), f32, Directed> = Graph::new();
+    let a = g.add_node(());
+    let b = g.add_node(());
+    let c = g.add_node(());
+    let d = g.add_node(());
+    g.extend_with_edges(&[
+        (a, b, 3.0),
+        (b, a, 2.0),
+        (a, d, 5.0),
+        (d, c, 2.0),
+        (c, b, 1.0),
+        (b, d, 4.0),
+    ]);
+    let res = floyd_warshall(&g);
+    assert_eq!(res[(a, a)], 0.0);
+    assert_eq!(res[(a, b)], 3.0);
+    assert_eq!(res[(a, c)], 7.0);
+    assert_eq!(res[(a, d)], 5.0);
+
+    assert_eq!(res[(b, a)], 2.0);
+    assert_eq!(res[(b, b)], 0.0);
+    assert_eq!(res[(b, c)], 6.0);
+    assert_eq!(res[(b, d)], 4.0);
+
+    assert_eq!(res[(c, a)], 3.0);
+    assert_eq!(res[(c, b)], 1.0);
+    assert_eq!(res[(c, c)], 0.0);
+    assert_eq!(res[(c, d)], 5.0);
+
+    assert_eq!(res[(d, a)], 5.0);
+    assert_eq!(res[(d, b)], 3.0);
+    assert_eq!(res[(d, c)], 2.0);
+    assert_eq!(res[(d, d)], 0.0);
+}
+
+#[test]
+fn flyd_small_directed() {
+    let mut get_graph = Graph::new();
+    let node1 = get_graph.add_node(1);
+    let node2 = get_graph.add_node(2);
+    get_graph.extend_with_edges(&[(node1, node2, 1)]);
+    let g = get_graph;
+    let cost_matrix = floyd_warshall(&g);
+
+    assert_eq!(cost_matrix[(node1, node2)], 1);
 }
 
 #[test]
