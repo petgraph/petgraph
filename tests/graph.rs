@@ -507,7 +507,7 @@ fn flyd_wrshll() {
         (c, b, 1.0),
         (b, d, 4.0),
     ]);
-    let res = floyd_warshall(&g);
+    let res = floyd_warshall(&g).unwrap(); // for negative cycles
     assert_eq!(res[(a, a)], 0.0);
     assert_eq!(res[(a, b)], 3.0);
     assert_eq!(res[(a, c)], 7.0);
@@ -536,7 +536,8 @@ fn flyd_small_directed() {
     let node2 = get_graph.add_node(2);
     get_graph.extend_with_edges(&[(node1, node2, 1)]);
     let g = get_graph;
-    let cost_matrix = floyd_warshall(&g);
+    // For negative cycles
+    let cost_matrix = floyd_warshall(&g).unwrap();
 
     assert_eq!(cost_matrix[(node1, node2)], 1);
 }

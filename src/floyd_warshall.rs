@@ -1,5 +1,6 @@
 use super::algo::{BoundedMeasure, FloatMeasure};
 use super::visit::{EdgeRef, IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable};
+use crate::algo::NegativeCycle;
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -46,7 +47,7 @@ use std::hash::Hash;
 /// // |       v       |       v
 /// // d <----- c       h <---- g
 ///
-/// let costs = floyd_warshall(&graph);
+/// let costs = floyd_warshall(&graph).unwrap(); // handle negative cycle
 /// assert_eq!(costs[(c,h)], 20);
 /// assert_eq!(costs[(b,b)], 0);
 /// assert_eq!(costs[(e,h)], 8);
@@ -54,7 +55,8 @@ use std::hash::Hash;
 /// // There is no valid path from e to b.
 /// assert_eq!(costs[(e,b)], i32::MAX);
 /// ```
-pub fn floyd_warshall<G>(graph: G) -> PathCostMatrix<G>
+
+pub fn floyd_warshall<G>(graph: G) -> Result<PathCostMatrix<G>, NegativeCycle>
 where
     G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
     G::EdgeWeight: BoundedMeasure + std::fmt::Debug,
@@ -80,7 +82,14 @@ where
             }
         }
     }
-    dist
+    // A negative cycle was found.
+    for k in graph.node_identifiers() {
+        if dist[(k, k)] < G::EdgeWeight::zero() {
+            return Err(NegativeCycle(()));
+        }
+    }
+
+    Ok(dist)
 }
 
 /// Made to be used with with `floyd_warshall` algorithm. the cost of going from
@@ -94,7 +103,7 @@ where
 /// # let node2 = get_graph.add_node(2);
 /// # get_graph.extend_with_edges(&[(node1, node2, 1)]);
 /// let g = get_graph;
-/// let cost_matrix = floyd_warshall(&g);
+/// let cost_matrix = floyd_warshall(&g).unwrap(); // Found negative cycle
 ///
 /// assert_eq!(cost_matrix[(node1, node2)], 1);
 ///

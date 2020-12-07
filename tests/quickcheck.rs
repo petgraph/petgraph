@@ -763,7 +763,7 @@ quickcheck! {
         }
         let v = node_index(node % g.node_count());
         let distances = dijkstra(&g, v, None, |e| *e.weight());
-        let cost_matrix = floyd_warshall(&g);
+        let cost_matrix = floyd_warshall(&g).unwrap();
         for (v2, cost) in distances.into_iter() {
             if cost != cost_matrix[(v, v2)] {
                 return false;
