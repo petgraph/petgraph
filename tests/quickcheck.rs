@@ -22,8 +22,9 @@ use itertools::cloned;
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
-    is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
+    bellman_ford, condensation, dijkstra, greedy_feedback_arc_set, is_cyclic_directed,
+    is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc,
+    min_spanning_tree, tarjan_scc, toposort,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1106,5 +1107,18 @@ quickcheck! {
         }
         println!("ok!");
         true
+    }
+}
+
+quickcheck! {
+    fn greedy_fas_remaining_graph_is_acyclic(g: StableDiGraph<(), ()>) -> bool {
+        let mut g = g;
+        let fas: Vec<EdgeIndex> = greedy_feedback_arc_set(&g).map(|e| e.id()).collect();
+
+        for edge_id in fas {
+            g.remove_edge(edge_id);
+        }
+
+        !is_cyclic_directed(&g)
     }
 }
