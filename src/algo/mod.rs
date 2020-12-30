@@ -27,6 +27,7 @@ use crate::visit::{Data, IntoNodeReferences, NodeRef};
 
 pub use super::astar::astar;
 pub use super::dijkstra::dijkstra;
+pub use super::feedback_arc_set::greedy_feedback_arc_set;
 pub use super::k_shortest_path::k_shortest_path;
 
 pub use super::isomorphism::{

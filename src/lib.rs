@@ -139,6 +139,7 @@ mod astar;
 pub mod csr;
 mod dijkstra;
 pub mod dot;
+mod feedback_arc_set;
 #[cfg(feature = "generate")]
 pub mod generate;
 mod graph_impl;
