@@ -12,13 +12,48 @@ use crate::{
 type SeqSourceGraph = StableDiGraph<(), (), SeqGraphIx>;
 type SeqGraphIx = usize;
 
-/// Finds a set of edges in a directed graph, which when removed, make the graph acyclic
-/// ([feedback arc set]). Uses a [greedy heuristic algorithm] to select a small number of edges in
-/// reasonable time, but does not necessarily find the minimum feedback arc set.
+/// \[Generic\] Finds a [feedback arc set]: a set of edges in the given directed graph, which when
+/// removed, make the graph acyclic.
 ///
-/// Does not consider edge weights when selecting edges for the feedback arc set.
+/// Uses a [greedy heuristic algorithm] to select a small number of edges in reasonable time, but
+/// does not necessarily find the minimum feedback arc set.
 ///
-/// Loops are included in the returned set.
+/// Does not consider edge/node weights when selecting edges for the feedback arc set.
+///
+/// Loops (edges to and from the same node) are always included in the returned set.
+///
+/// # Example
+///
+/// ```
+/// use petgraph::{
+///     algo::{greedy_feedback_arc_set, is_cyclic_directed},
+///     graph::EdgeIndex,
+///     stable_graph::StableGraph,
+///     visit::EdgeRef,
+/// };
+///
+/// let mut g: StableGraph<(), ()> = StableGraph::from_edges(&[
+///     (0, 1),
+///     (1, 2),
+///     (2, 3),
+///     (3, 4),
+///     (4, 5),
+///     (5, 0),
+///     (4, 1),
+///     (1, 3),
+/// ]);
+///
+/// assert!(is_cyclic_directed(&g));
+///
+/// let fas: Vec<EdgeIndex> = greedy_feedback_arc_set(&g).map(|e| e.id()).collect();
+///
+/// // Remove edges in feedback arc set from original graph
+/// for edge_id in fas {
+///     g.remove_edge(edge_id);
+/// }
+///
+/// assert!(!is_cyclic_directed(&g));
+/// ```
 ///
 /// [feedback arc set]: https://en.wikipedia.org/wiki/Feedback_arc_set
 /// [greedy heuristic algorithm]: https://doi.org/10.1016/0020-0190(93)90079-O
