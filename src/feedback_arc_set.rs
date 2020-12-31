@@ -1,16 +1,20 @@
 use std::collections::{HashMap, VecDeque};
-use std::hash::Hash;
 
 use crate::{
     graph::NodeIndex,
-    stable_graph::StableGraph,
-    visit::{EdgeRef, IntoEdgeReferences},
-    Direction,
+    stable_graph::StableDiGraph,
+    visit::{EdgeRef, GraphProp, IntoEdgeReferences},
+    Directed, Direction,
 };
 
-/// Finds a set of edges which can be removed to make the specified directe graph acyclic
+/// Isomorphic to input graph; used in the process of determining a good node sequence from which to
+/// extract a feedback arc set.
+type SeqSourceGraph = StableDiGraph<(), (), SeqGraphIx>;
+type SeqGraphIx = u32; // TODO: handle 64-bit node index size
+
+/// Finds a set of edges in a directed graph, which when removed, make the graph acyclic
 /// ([feedback arc set]). Uses a [greedy heuristic algorithm] to select a small number of edges in
-/// reasonable (linear) time, but does not necessarily find the minimum feedback arc set.
+/// reasonable time, but does not necessarily find the minimum feedback arc set.
 ///
 /// Does not consider edge weights when selecting edges for the feedback arc set.
 ///
@@ -18,23 +22,20 @@ use crate::{
 ///
 /// [feedback arc set]: https://en.wikipedia.org/wiki/Feedback_arc_set
 /// [greedy heuristic algorithm]: https://doi.org/10.1016/0020-0190(93)90079-O
-// TODO: docs about more efficient alternative for undirected graphs
-// And/or add trait requirement `GraphProp<EdgeType=Directed>`
 pub fn greedy_feedback_arc_set<G>(g: G) -> impl Iterator<Item = G::EdgeRef>
 where
-    G: IntoEdgeReferences,
-    G::NodeId: Eq + Hash + Into<NodeIndex>,
+    G: IntoEdgeReferences + GraphProp<EdgeType = Directed>,
+    G::NodeId: Into<NodeIndex<SeqGraphIx>>,
 {
     let stable_clone =
-        StableGraph::<(), ()>::from_edges(g.edge_references().map(|e| (e.source(), e.target())));
+        SeqSourceGraph::from_edges(g.edge_references().map(|e| (e.source(), e.target())));
     let node_seq = good_node_sequence(stable_clone);
 
     g.edge_references()
         .filter(move |e| node_seq[&e.source().into()] >= node_seq[&e.target().into()])
 }
 
-// TODO: handle 64-bit node index size
-fn good_node_sequence(mut g: StableGraph<(), ()>) -> HashMap<NodeIndex, u32> {
+fn good_node_sequence(mut g: SeqSourceGraph) -> HashMap<NodeIndex<SeqGraphIx>, SeqGraphIx> {
     let mut s_1 = VecDeque::new();
     let mut s_2 = VecDeque::new();
 
@@ -63,19 +64,19 @@ fn good_node_sequence(mut g: StableGraph<(), ()>) -> HashMap<NodeIndex, u32> {
     s_1.into_iter()
         .chain(s_2)
         .enumerate()
-        .map(|(seq_order, node_index)| (node_index, seq_order as u32))
+        .map(|(seq_order, node_index)| (node_index, seq_order as SeqGraphIx))
         .collect()
 }
 
-fn node_is_sink(n: NodeIndex, g: &StableGraph<(), ()>) -> bool {
+fn node_is_sink(n: NodeIndex<SeqGraphIx>, g: &SeqSourceGraph) -> bool {
     !g.edges_directed(n, Direction::Outgoing).any(|_| true)
 }
 
-fn node_is_source(n: NodeIndex, g: &StableGraph<(), ()>) -> bool {
+fn node_is_source(n: NodeIndex<SeqGraphIx>, g: &SeqSourceGraph) -> bool {
     !g.edges_directed(n, Direction::Incoming).any(|_| true)
 }
 
-fn delta_degree(n: NodeIndex, g: &StableGraph<(), ()>) -> isize {
+fn delta_degree(n: NodeIndex<SeqGraphIx>, g: &SeqSourceGraph) -> isize {
     g.edges_directed(n, Direction::Outgoing).count() as isize
         - g.edges_directed(n, Direction::Incoming).count() as isize
 }
