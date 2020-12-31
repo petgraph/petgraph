@@ -1,7 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
 use crate::{
-    graph::NodeIndex,
+    graph::{GraphIndex, NodeIndex},
     stable_graph::StableDiGraph,
     visit::{EdgeRef, GraphProp, IntoEdgeReferences},
     Directed, Direction,
@@ -10,7 +10,7 @@ use crate::{
 /// Isomorphic to input graph; used in the process of determining a good node sequence from which to
 /// extract a feedback arc set.
 type SeqSourceGraph = StableDiGraph<(), (), SeqGraphIx>;
-type SeqGraphIx = u32; // TODO: handle 64-bit node index size
+type SeqGraphIx = usize;
 
 /// Finds a set of edges in a directed graph, which when removed, make the graph acyclic
 /// ([feedback arc set]). Uses a [greedy heuristic algorithm] to select a small number of edges in
@@ -25,17 +25,19 @@ type SeqGraphIx = u32; // TODO: handle 64-bit node index size
 pub fn greedy_feedback_arc_set<G>(g: G) -> impl Iterator<Item = G::EdgeRef>
 where
     G: IntoEdgeReferences + GraphProp<EdgeType = Directed>,
-    G::NodeId: Into<NodeIndex<SeqGraphIx>>,
+    G::NodeId: GraphIndex,
 {
-    let stable_clone =
-        SeqSourceGraph::from_edges(g.edge_references().map(|e| (e.source(), e.target())));
+    let stable_clone = SeqSourceGraph::from_edges(
+        g.edge_references()
+            .map(|e| (e.source().index(), e.target().index())),
+    );
     let node_seq = good_node_sequence(stable_clone);
 
     g.edge_references()
-        .filter(move |e| node_seq[&e.source().into()] >= node_seq[&e.target().into()])
+        .filter(move |e| node_seq[&e.source().index()] >= node_seq[&e.target().index()])
 }
 
-fn good_node_sequence(mut g: SeqSourceGraph) -> HashMap<NodeIndex<SeqGraphIx>, SeqGraphIx> {
+fn good_node_sequence(mut g: SeqSourceGraph) -> HashMap<SeqGraphIx, SeqGraphIx> {
     let mut s_1 = VecDeque::new();
     let mut s_2 = VecDeque::new();
 
@@ -64,7 +66,7 @@ fn good_node_sequence(mut g: SeqSourceGraph) -> HashMap<NodeIndex<SeqGraphIx>, S
     s_1.into_iter()
         .chain(s_2)
         .enumerate()
-        .map(|(seq_order, node_index)| (node_index, seq_order as SeqGraphIx))
+        .map(|(seq_order, node_index)| (node_index.index(), seq_order))
         .collect()
 }
 
