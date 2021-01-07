@@ -150,7 +150,7 @@ mod iter_utils;
 mod k_shortest_path;
 #[cfg(feature = "matrix_graph")]
 pub mod matrix_graph;
-#[cfg(feature = "quickcheck")]
+#[cfg(feature = "apply_quickcheck")]
 mod quickcheck;
 #[cfg(feature = "serde-1")]
 mod serde_utils;

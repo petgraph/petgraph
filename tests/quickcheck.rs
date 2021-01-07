@@ -1,4 +1,4 @@
-#![cfg(feature = "quickcheck")]
+#![cfg(feature = "apply_quickcheck")]
 #[macro_use]
 extern crate quickcheck;
 extern crate petgraph;
