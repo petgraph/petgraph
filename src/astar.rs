@@ -3,7 +3,7 @@ use std::collections::{BinaryHeap, HashMap};
 
 use std::hash::Hash;
 
-use super::visit::{EdgeRef, GraphBase, IntoEdges};
+use super::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 use crate::scored::MinScored;
 
 use crate::algo::Measure;
@@ -71,7 +71,7 @@ pub fn astar<G, F, H, K, IsGoal>(
     mut estimate_cost: H,
 ) -> Option<(K, Vec<G::NodeId>)>
 where
-    G: IntoEdges,
+    G: IntoEdges + Visitable,
     IsGoal: FnMut(G::NodeId) -> bool,
     G::NodeId: Eq + Hash,
     F: FnMut(G::EdgeRef) -> K,
