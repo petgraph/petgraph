@@ -204,21 +204,26 @@ where
             Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
         }
 
-        // insert Nones for each hole
+        // append Nones
+        nodes.extend(std::iter::from_fn(|| {
+            Node {
+                weight: None,
+                next: [EdgeIndex::end(); 2],
+            }
+        }).take(node_holes.len()));
+
+        // swap Nones for each hole
         let mut offset = node_holes.len();
         let node_bound = node_holes.len() + nodes.len();
-        for hole_pos in rev(node_holes) {
+        for (i, hole_pos) in rev(node_holes).enumerate() {
             offset -= 1;
             if hole_pos.index() >= node_bound {
                 Err(invalid_node_err(hole_pos.index(), node_bound))?;
             }
             let insert_pos = hole_pos.index() - offset;
-            nodes.insert(
+            nodes.swap(
                 insert_pos,
-                Node {
-                    weight: None,
-                    next: [EdgeIndex::end(); 2],
-                },
+                offset
             );
         }
 
