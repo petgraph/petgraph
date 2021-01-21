@@ -150,9 +150,7 @@ where
     let mut g = StableGraph::default();
     let indices = (0 .. 1024).map(|i| g.add_node(format!("{}", i))).collect();
     for i in 1 .. 256 {
-        for j in 0 .. 1024 {
-            g.extend_with_edge(indices[j], indices[(j + i) % 1024], i);
-        }
+        g.extend_with_edge((0 .. 1024).map(|j| (indices[j], indices[(j + i) % 1024], i)));
     }
     // Remove nodes to make the structure a bit more interesting
     for i in (0 .. 1024).step_by(10) {
