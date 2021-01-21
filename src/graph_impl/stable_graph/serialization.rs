@@ -11,7 +11,6 @@ use crate::serde_utils::CollectSeqWithLength;
 use crate::serde_utils::MappedSequenceVisitor;
 use crate::serde_utils::{FromDeserialized, IntoSerializable};
 use crate::stable_graph::StableGraph;
-use crate::util::rev;
 use crate::visit::NodeIndexable;
 use crate::EdgeType;
 
