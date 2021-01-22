@@ -3,9 +3,9 @@
 extern crate petgraph;
 extern crate test;
 
-use test::Bencher;
 use petgraph::prelude::*;
-use rand::{Rng};
+use rand::Rng;
+use test::Bencher;
 
 const NUM_NODES: usize = 1_000_000;
 const NUM_EDGES: usize = 100_000;
@@ -33,13 +33,10 @@ fn make_stable_graph() -> StableGraph<u32, u32> {
     g
 }
 
-
 #[bench]
 fn serialize_bench(bench: &mut Bencher) {
     let graph = make_stable_graph();
-    bench.iter(|| {
-        bincode::serialize(&graph).unwrap()
-    });
+    bench.iter(|| bincode::serialize(&graph).unwrap());
 }
 
 #[bench]
