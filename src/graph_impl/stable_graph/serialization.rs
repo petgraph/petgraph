@@ -67,7 +67,7 @@ impl<'de, N, E, Ty, Ix> StableGraphVisitor<N, E, Ty, Ix>
         StableGraphVisitor { marker: PhantomData }
     }
     fn expand_nodes<Er, I>(node_holes: Vec<NodeIndex<Ix>>, mut compact_nodes: I, compact_nodes_len: Option<usize>)
-    -> Result<Vec<Node<Option<N>, Ix>>, Er>
+        -> Result<Vec<Node<Option<N>, Ix>>, Er>
         where I: Iterator<Item=Result<N, Er>>, Er: Error
     {
         let mut nodes = Vec::with_capacity(compact_nodes_len.unwrap_or(0) + node_holes.len());
@@ -99,19 +99,16 @@ impl<'de, N, E, Ty, Ix> StableGraphVisitor<N, E, Ty, Ix>
         Ok(nodes)
     }
 
-    fn visit_nodes_with_holes<A>(node_holes: Vec<NodeIndex<Ix>>, mut seq: A) -> Result<Vec<Node<Option<N>, Ix>>, A::Error>
-        where A: SeqAccess<'de>
+    fn merge_nodes_with_holes<Er: Error>(node_holes: Vec<NodeIndex<Ix>>, compact_nodes: Vec<N>)
+        -> Result<Vec<Node<Option<N>, Ix>>, Er>
     {
-        let size_hint = seq.size_hint();
-        Self::expand_nodes(node_holes, std::iter::from_fn(|| seq.next_element().transpose()), size_hint)
-    }
-
-    fn merge_nodes_with_holes<Er: Error>(node_holes: Vec<NodeIndex<Ix>>, compact_nodes: Vec<N>) -> Result<Vec<Node<Option<N>, Ix>>, Er> {
         let size_hint = Some(compact_nodes.len());
         Self::expand_nodes(node_holes, compact_nodes.into_iter().map(Ok), size_hint)
     }
 
-    fn build<Er: Error>(nodes: Vec<Node<Option<N>, Ix>>, edges: Vec<Edge<Option<E>, Ix>>, edge_property: EdgeProperty) -> Result<StableGraph<N, E, Ty, Ix>, Er> {
+    fn build<Er: Error>(nodes: Vec<Node<Option<N>, Ix>>, edges: Vec<Edge<Option<E>, Ix>>, edge_property: EdgeProperty)
+        -> Result<StableGraph<N, E, Ty, Ix>, Er>
+    {
         let ty = PhantomData::<Ty>::from_deserialized(edge_property)?;
         if edges.len() >= <Ix as IndexType>::max().index() {
             Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
@@ -364,7 +361,7 @@ struct StableGraphEdges<E, Ix>(Vec<Edge<Option<E>, Ix>>);
 impl<'de, E, Ix> Deserialize<'de> for StableGraphEdges<E, Ix>
     where E: Deserialize<'de>, Ix: IndexType + Deserialize<'de>,
 {
-    fn deserialize<D>(mut deserializer: D) -> Result<Self, D::Error> where
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where
         D: Deserializer<'de>,
     {
         let edges = deserializer.deserialize_seq(MappedSequenceVisitor::<
