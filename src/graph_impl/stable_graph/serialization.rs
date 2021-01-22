@@ -14,7 +14,7 @@ use crate::stable_graph::StableGraph;
 use crate::visit::NodeIndexable;
 use crate::EdgeType;
 
-use super::super::serialization::{invalid_length_err, invalid_node_err, EdgeProperty};
+use super::super::serialization::{invalid_length_err, invalid_node_err, invalid_hole_err, EdgeProperty};
 
 // Serialization representation for StableGraph
 // Keep in sync with deserialization and Graph
@@ -202,17 +202,22 @@ where
             Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
         }
         
-        let mut nodes = Vec::with_capacity(input.nodes.len() + node_holes.len());
+        let total_nodes = input.nodes.len() + node_holes.len();
+        let mut nodes = Vec::with_capacity(total_nodes);
 
         let mut compact_nodes = input.nodes.into_iter();
         let mut node_pos = 0;
         for hole_pos in node_holes.iter() {
-            nodes.extend(compact_nodes.by_ref().take(hole_pos.index() - node_pos));
+            let hole_pos = hole_pos.index();
+            if !(node_pos .. total_nodes).contains(&hole_pos) {
+                return Err(invalid_hole_err(hole_pos));
+            }
+            nodes.extend(compact_nodes.by_ref().take(hole_pos - node_pos));
             nodes.push(Node {
                 weight: None,
                 next: [EdgeIndex::end(); 2],
             });
-            node_pos = hole_pos.index() + 1;
+            node_pos = hole_pos + 1;
             debug_assert_eq!(nodes.len(), node_pos);
         }
         nodes.extend(compact_nodes);
