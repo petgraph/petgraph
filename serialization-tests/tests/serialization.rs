@@ -148,9 +148,9 @@ where
     Ix: IndexType,
 {
     let mut g = StableGraph::default();
-    let indices = (0 .. 1024).map(|i| g.add_node(format!("{}", i))).collect();
+    let indices: Vec<_> = (0 .. 1024).map(|i| g.add_node(format!("{}", i))).collect();
     for i in 1 .. 256 {
-        g.extend_with_edge((0 .. 1024).map(|j| (indices[j], indices[(j + i) % 1024], i)));
+        g.extend_with_edges((0 .. 1024).map(|j| (indices[j], indices[(j + i) % 1024], i as i32)));
     }
     // Remove nodes to make the structure a bit more interesting
     for i in (0 .. 1024).step_by(10) {
