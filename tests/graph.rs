@@ -1824,7 +1824,7 @@ fn dot() {
     struct Record {
         a: i32,
         b: &'static str,
-    };
+    }
     let mut gr = Graph::new();
     let a = gr.add_node(Record { a: 1, b: r"abc\" });
     gr.add_edge(a, a, (1, 2));
