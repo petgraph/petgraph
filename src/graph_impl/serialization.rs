@@ -295,6 +295,16 @@ where
     ))
 }
 
+pub fn invalid_hole_err<E>(node_index: usize) -> E
+where
+    E: Error,
+{
+    E::custom(format_args!(
+        "invalid value: node hole `{}` is not allowed.",
+        node_index
+    ))
+}
+
 impl<'a, N, E, Ty, Ix> FromDeserialized for Graph<N, E, Ty, Ix>
 where
     Ix: IndexType,

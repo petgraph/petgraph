@@ -15,7 +15,7 @@ use crate::stable_graph::StableGraph;
 use crate::visit::NodeIndexable;
 use crate::EdgeType;
 
-use super::super::serialization::{invalid_length_err, invalid_node_err, EdgeProperty};
+use super::super::serialization::{invalid_length_err, invalid_node_err, invalid_hole_err, EdgeProperty};
 
 // Serialization representation for StableGraph
 // Keep in sync with deserialization and Graph
@@ -252,7 +252,11 @@ impl<'de, N, Ix> CompactNodeVisitor<N, Ix>
         let mut full_nodes = 0;
 
         for hole_pos in self.node_holes.iter() {
-            for _ in 0 .. hole_pos.index() - node_pos {
+            let hole_pos = hole_pos.index();
+            if hole_pos < node_pos {
+                return Err(invalid_hole_err(hole_pos));
+            }
+            for _ in 0 .. hole_pos - node_pos {
                 match nodes_seq.next_element()? {
                     Some(n) => {
                         nodes.push(Node {
@@ -268,7 +272,7 @@ impl<'de, N, Ix> CompactNodeVisitor<N, Ix>
                 weight: None,
                 next: [EdgeIndex::end(); 2],
             });
-            node_pos = hole_pos.index() + 1;
+            node_pos = hole_pos + 1;
             debug_assert_eq!(nodes.len(), node_pos);
         }
         while let Some(n) = nodes_seq.next_element()? {
