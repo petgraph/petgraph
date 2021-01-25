@@ -1107,26 +1107,27 @@ quickcheck! {
         println!("ok!");
         true
     }
-    
-    quickcheck! {
-        // Checks shortest_distances against dijkstra results
-        fn shortest_distances_(g: Graph<(), ()>) -> bool {
-            if g.node_count() == 0 {
-                return true;
-            }
+}
 
-            for start in 0..g.node_bound() {
-                let sd_res = shortest_distances(&g, g.from_index(start));
-                let dj_res = dijkstra(&g, g.from_index(start), None, |_| 1.0);
 
-                for d in dj_res.keys() {
-                    if sd_res[g.to_index(*d)] != *dj_res.get(d).unwrap() {
-                        return false;
-                    }
+quickcheck! {
+    // Checks shortest_distances against dijkstra results
+    fn shortest_distances_(g: Graph<(), ()>) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+
+        for start in 0..g.node_bound() {
+            let sd_res = shortest_distances(&g, g.from_index(start));
+            let dj_res = dijkstra(&g, g.from_index(start), None, |_| 1.0);
+
+            for d in dj_res.keys() {
+                if sd_res[g.to_index(*d)] != *dj_res.get(d).unwrap() {
+                    return false;
                 }
             }
-
-            true
         }
+
+        true
     }
 }
