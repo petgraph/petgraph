@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use super::visit::{ Visitable, VisitMap, NodeIndexable, IntoEdges, IntoNeighbors };
 use std::f32;
+use core::num::dec2flt::rawfp::RawFloat;
 
 
 /// The lengths of the shortest paths from the start vertex to all the others.
