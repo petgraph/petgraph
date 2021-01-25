@@ -28,7 +28,7 @@ where
     let mut visit_map = graph.visit_map();
     visit_map.visit(start);
 
-    let mut dist = vec![f32::INFINITY; graph.node_bound()];
+    let mut dist = vec![std::f32::INFINITY; graph.node_bound()];
     dist[graph.to_index(start)] = 0.0;
 
     let mut queue: VecDeque<G::NodeId> = VecDeque::new();
@@ -51,11 +51,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use petgraph::graph::Graph;
+    use crate::graph::Graph;
 
     #[test]
     fn test_shortest_distances() {
-        let inf = f32::INFINITY;
+        let inf = std::f32::INFINITY;
         
         let mut graph = Graph::<u8, ()>::new();
         let n0 = graph.add_node(0); let n1 = graph.add_node(1);
