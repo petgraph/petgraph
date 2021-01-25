@@ -138,6 +138,7 @@ pub mod algo;
 mod astar;
 pub mod csr;
 mod dijkstra;
+mod shortest_distances;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
