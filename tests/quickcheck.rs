@@ -24,6 +24,7 @@ use rand::Rng;
 use petgraph::algo::{
     bellman_ford, condensation, dijkstra, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
     is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
+    shortest_distances,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
