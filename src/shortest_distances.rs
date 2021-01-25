@@ -1,13 +1,10 @@
 use std::collections::VecDeque;
 use super::visit::{ Visitable, VisitMap, NodeIndexable, IntoEdges, IntoNeighbors };
-use std::f32;
-use core::num::dec2flt::rawfp::RawFloat;
-
 
 /// The lengths of the shortest paths from the start vertex to all the others.
 /// 
 /// The algorithm is based on BFS, and the path length is equal to the number of edges in this path.
-/// If it is impossible to get from the vertex x to the vertex y, then the distance from x to y will be equal to f32::INFINITY.
+/// If it is impossible to get from the vertex x to the vertex y, then the distance from x to y will be equal to infinity = 1.0 / 0.0
 /// Time complexity: **O(|V| + |E|)**, where **|V|** is the number of vertices, and **|E|** is the number of edges in the graph.
 /// 
 /// # Examples
@@ -30,7 +27,7 @@ where
     let mut visit_map = graph.visit_map();
     visit_map.visit(start);
 
-    let mut dist = vec![std::f32::INFINITY; graph.node_bound()];
+    let mut dist = vec![1.0/0.0; graph.node_bound()];
     dist[graph.to_index(start)] = 0.0;
 
     let mut queue: VecDeque<G::NodeId> = VecDeque::new();
@@ -57,7 +54,7 @@ mod tests {
 
     #[test]
     fn test_shortest_distances() {
-        let inf = std::f32::INFINITY;
+        let inf = 1.0/0.0;
         
         let mut graph = Graph::<u8, ()>::new();
         let n0 = graph.add_node(0); let n1 = graph.add_node(1);
