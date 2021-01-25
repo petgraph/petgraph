@@ -13,7 +13,7 @@ use super::visit::{ Visitable, VisitMap, NodeIndexable, IntoEdges, IntoNeighbors
 /// use petgraph::algo::shortest_distances;
 /// use petgraph::Graph;
 /// 
-/// let inf = f32::INFINITY;
+/// let inf = 1.0 / 0.0;
 /// let graph = Graph::<u8, ()>::from_edges(&[(0, 1), (0, 2), (1, 2)]);
 /// 
 /// assert_eq!(shortest_distances(&graph, 0.into()), vec![0.0, 1.0, 1.0]);
