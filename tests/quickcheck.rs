@@ -1112,8 +1112,8 @@ quickcheck! {
 
 
 quickcheck! {
-    // Checks shortest_distances against dijkstra results
-    fn shortest_distances_(g: Graph<(), ()>) -> bool {
+    // checks shortest_distances against dijkstra results
+    fn test_shortest_distances(g: Graph<(), ()>) -> bool {
         if g.node_count() == 0 {
             return true;
         }
