@@ -11,7 +11,7 @@ use super::visit::{ Visitable, VisitMap, NodeIndexable, IntoEdges, IntoNeighbors
 /// # Examples
 /// 
 /// ```
-/// use graphalgs::algo::shortest_distances;
+/// use petgraph::algo::shortest_distances;
 /// use petgraph::Graph;
 /// 
 /// let inf = f32::INFINITY;
