@@ -487,7 +487,7 @@ where
     pub fn node_weights(&self) -> impl Iterator<Item = &N> {
         self.g
             .node_weights()
-            .flat_map(|maybe_node| maybe_node.iter())
+            .filter_map(|maybe_node| maybe_node.as_ref())
     }
     /// Return an iterator yielding mutable access to all node weights.
     ///
@@ -496,7 +496,7 @@ where
     pub fn node_weights_mut(&mut self) -> impl Iterator<Item = &mut N> {
         self.g
             .node_weights_mut()
-            .flat_map(|maybe_node| maybe_node.iter_mut())
+            .filter_map(|maybe_node| maybe_node.as_mut())
     }
 
     /// Return an iterator over the node indices of the graph
@@ -533,7 +533,7 @@ where
     pub fn edge_weights(&self) -> impl Iterator<Item = &E> {
         self.g
             .edge_weights()
-            .flat_map(|maybe_edge| maybe_edge.iter())
+            .filter_map(|maybe_edge| maybe_edge.as_ref())
     }
     /// Return an iterator yielding mutable access to all edge weights.
     ///
@@ -542,7 +542,7 @@ where
     pub fn edge_weights_mut(&mut self) -> impl Iterator<Item = &mut E> {
         self.g
             .edge_weights_mut()
-            .flat_map(|maybe_edge| maybe_edge.iter_mut())
+            .filter_map(|maybe_edge| maybe_edge.as_mut())
     }
 
     /// Access the source and target nodes for `e`.
