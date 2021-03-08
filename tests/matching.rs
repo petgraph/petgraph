@@ -19,6 +19,15 @@ macro_rules! set {
     () => {
         HashSet::new()
     };
+    ($(($source:expr, $target:expr)),+) => {
+        {
+            let mut set = HashSet::new();
+            $(
+                set.insert(($source.into(), $target.into()));
+            )*
+            set
+        }
+    };
     ($($elem:expr),+) => {
         {
             let mut set = HashSet::new();
@@ -47,7 +56,7 @@ fn greedy_empty() {
 fn greedy_disjoint() {
     let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (2, 3)]);
     let m = greedy_matching(&g);
-    assert_eq!(collect(m.edges()), set![0, 1]);
+    assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
     assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
 }
 
@@ -55,7 +64,7 @@ fn greedy_disjoint() {
 fn greedy_odd_path() {
     let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (1, 2), (2, 3)]);
     let m = greedy_matching(&g);
-    assert_one_of!(collect(m.edges()), [set![0, 2], set![1]]);
+    assert_one_of!(collect(m.edges()), [set![(0, 1), (2, 3)], set![(1, 2)]]);
     assert_one_of!(collect(m.nodes()), [set![0, 1, 2, 3], set![1, 2]]);
 }
 
@@ -63,7 +72,7 @@ fn greedy_odd_path() {
 fn greedy_star() {
     let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (0, 2), (0, 3)]);
     let m = greedy_matching(&g);
-    assert_one_of!(collect(m.edges()), [set![0], set![1], set![2]]);
+    assert_one_of!(collect(m.edges()), [set![(0, 1)], set![(0, 2)], set![(0, 3)]]);
     assert_one_of!(collect(m.nodes()), [set![0, 1], set![0, 2], set![0, 3]]);
 }
 
@@ -79,7 +88,7 @@ fn maximum_empty() {
 fn maximum_disjoint() {
     let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (2, 3)]);
     let m = maximum_matching(&g);
-    assert_eq!(collect(m.edges()), set![0, 1]);
+    assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
     assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
 }
 
@@ -87,6 +96,6 @@ fn maximum_disjoint() {
 fn maximum_odd_path() {
     let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (1, 2), (2, 3)]);
     let m = maximum_matching(&g);
-    assert_eq!(collect(m.edges()), set![0, 2]);
+    assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
     assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
 }

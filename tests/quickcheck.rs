@@ -1110,20 +1110,14 @@ quickcheck! {
     }
 }
 
-fn is_valid_matching(
-    g: &Graph<(), (), Undirected>,
-    m: &Matching<&Graph<(), (), Undirected>>,
-) -> bool {
+fn is_valid_matching(m: &Matching<&Graph<(), (), Undirected>>) -> bool {
     // A set of edges is a matching if no two edges from the matching share an
     // endpoint.
-    for e1 in m.edges() {
-        for e2 in m.edges() {
-            if e1 == e2 {
+    for (s1, t1) in m.edges() {
+        for (s2, t2) in m.edges() {
+            if s1 == s2 && t1 == t2 {
                 continue;
             }
-
-            let (s1, t1) = g.edge_endpoints(e1).unwrap();
-            let (s2, t2) = g.edge_endpoints(e2).unwrap();
 
             if s1 == s2 || s1 == t2 || t1 == s2 || t1 == t2 {
                 // Two edges share an endpoint.
@@ -1160,7 +1154,7 @@ fn is_maximum_matching(
                         continue;
                     }
 
-                    let is_matched = m.contains_edge(e.id());
+                    let is_matched = m.contains_edge(e.source(), e.target());
 
                     if do_matched_edges && is_matched || !do_matched_edges && !is_matched {
                         stack.push((e.target(), !do_matched_edges));
@@ -1192,8 +1186,8 @@ quickcheck! {
         let m1 = greedy_matching(&g);
         let m2 = maximum_matching(&g);
 
-        assert!(is_valid_matching(&g, &m1), "greedy_matching returned an invalid matching");
-        assert!(is_valid_matching(&g, &m2), "maximum_matching returned an invalid matching");
+        assert!(is_valid_matching(&m1), "greedy_matching returned an invalid matching");
+        assert!(is_valid_matching(&m2), "maximum_matching returned an invalid matching");
         assert!(is_maximum_matching(&g, &m2), "maximum_matching returned a matching that is not maximum");
         assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
         assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
