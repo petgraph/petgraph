@@ -22,8 +22,9 @@ use itertools::cloned;
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
-    is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
+    bellman_ford, condensation, dijkstra, greedy_matching, is_cyclic_directed,
+    is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc,
+    maximum_matching, min_spanning_tree, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -33,7 +34,7 @@ use petgraph::operator::complement;
 use petgraph::prelude::*;
 use petgraph::visit::{
     EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, Visitable,
+    IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, VisitMap, Visitable,
 };
 use petgraph::EdgeType;
 
@@ -1105,6 +1106,98 @@ quickcheck! {
             }
         }
         println!("ok!");
+        true
+    }
+}
+
+fn is_valid_matching(
+    g: &Graph<(), (), Undirected>,
+    m: &Matching<&Graph<(), (), Undirected>>,
+) -> bool {
+    // A set of edges is a matching if no two edges from the matching share an
+    // endpoint.
+    for e1 in m.edges() {
+        for e2 in m.edges() {
+            if e1 == e2 {
+                continue;
+            }
+
+            let (s1, t1) = g.edge_endpoints(e1).unwrap();
+            let (s2, t2) = g.edge_endpoints(e2).unwrap();
+
+            if s1 == s2 || s1 == t2 || t1 == s2 || t1 == t2 {
+                // Two edges share an endpoint.
+                return false;
+            }
+        }
+    }
+
+    true
+}
+
+fn is_maximum_matching(
+    g: &Graph<(), (), Undirected>,
+    m: &Matching<&Graph<(), (), Undirected>>,
+) -> bool {
+    // Berge's lemma: a matching is maximum iff there is no augmenting path (a
+    // path that starts and ends on an unmatched vertices, and alternates
+    // between matched and unmatched edges). Thus if we find an augmenting path,
+    // the matching is not maximum.
+    //
+    // Start with an unmatched node and traverse the graph alternating matched
+    // and unmatched edges. If an unmatched node is found, then an augmenting
+    // path was found.
+    for unmatched in g.node_indices().filter(|u| !m.contains_node(*u)) {
+        let visited = &mut g.visit_map();
+        let mut stack = Vec::new();
+
+        stack.push((unmatched, false));
+        while let Some((u, do_matched_edges)) = stack.pop() {
+            if visited.visit(u) {
+                for e in g.edges(u) {
+                    if e.source() == e.target() {
+                        // Ignore self-loops.
+                        continue;
+                    }
+
+                    let is_matched = m.contains_edge(e.id());
+
+                    if do_matched_edges && is_matched || !do_matched_edges && !is_matched {
+                        stack.push((e.target(), !do_matched_edges));
+
+                        // Found another free node (other than the starting one)
+                        // that is unmatched - an augmenting path.
+                        if !is_matched && !m.contains_node(e.target()) && e.target() != unmatched {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    true
+}
+
+fn is_perfect_matching(
+    g: &Graph<(), (), Undirected>,
+    m: &Matching<&Graph<(), (), Undirected>>,
+) -> bool {
+    // By definition.
+    g.node_count() % 2 == 0 && m.edges().count() == g.node_count() / 2
+}
+
+quickcheck! {
+    fn matching(g: Graph<(), (), Undirected>) -> bool {
+        let m1 = greedy_matching(&g);
+        let m2 = maximum_matching(&g);
+
+        assert!(is_valid_matching(&g, &m1), "greedy_matching returned an invalid matching");
+        assert!(is_valid_matching(&g, &m2), "maximum_matching returned an invalid matching");
+        assert!(is_maximum_matching(&g, &m2), "maximum_matching returned a matching that is not maximum");
+        assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
+        assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
+
         true
     }
 }

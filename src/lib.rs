@@ -158,6 +158,7 @@ mod simple_paths;
 mod traits_graph;
 pub mod unionfind;
 mod util;
+mod matching;
 
 pub mod operator;
 pub mod prelude;
