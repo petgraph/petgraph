@@ -3,8 +3,8 @@ use std::hash::Hash;
 use std::iter::Copied;
 
 use super::visit::{
-    EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeCompactIndexable,
-    NodeCount, NodeIndexable, VisitMap, Visitable,
+    EdgeRef, GraphBase, IntoEdges, IntoNodeIdentifiers, NodeCompactIndexable, NodeCount,
+    NodeIndexable, VisitMap, Visitable,
 };
 
 pub struct Matching<G: GraphBase> {
@@ -13,7 +13,11 @@ pub struct Matching<G: GraphBase> {
     is_perfect: bool,
 }
 
-impl<G: GraphBase> Matching<G> {
+impl<G: GraphBase> Matching<G>
+where
+    G::NodeId: Eq + Hash,
+    G::EdgeId: Eq + Hash,
+{
     fn empty() -> Self {
         Self {
             edges: HashSet::new(),
@@ -25,13 +29,7 @@ impl<G: GraphBase> Matching<G> {
     pub fn is_perfect(&self) -> bool {
         self.is_perfect
     }
-}
 
-impl<G: GraphBase> Matching<G>
-where
-    G::NodeId: Eq + Hash,
-    G::EdgeId: Eq + Hash,
-{
     pub fn edges(&self) -> Matched<G::EdgeId> {
         Matched {
             inner: self.edges.iter().copied(),
@@ -161,7 +159,11 @@ enum Label<G: GraphBase> {
 
 impl<G: GraphBase> Label<G> {
     fn is_outer(&self) -> bool {
-        self != &Label::None && !matches!(self, Label::Flag(_))
+        self != &Label::None
+            && !match self {
+                Label::Flag(_) => true,
+                _ => false,
+            }
     }
 
     fn is_inner(&self) -> bool {
@@ -176,7 +178,10 @@ impl<G: GraphBase> Label<G> {
     }
 
     fn is_flagged(&self, edge: G::EdgeId) -> bool {
-        matches!(self, Label::Flag(flag) if flag == &edge)
+        match self {
+            Label::Flag(flag) if flag == &edge => true,
+            _ => false,
+        }
     }
 }
 
@@ -228,7 +233,7 @@ where
 
     let mut mate = array!(graph.dummy_idx());
     let mut label: Vec<Label<G>> = array!(Label::None);
-    let mut first_inner = array!(usize::MAX);
+    let mut first_inner = array!(std::usize::MAX);
     let visited = &mut graph.visit_map();
 
     // Greedy algorithm should create a fairly good initial matching. The hope
@@ -335,7 +340,9 @@ where
         }
 
         // Reset the labels. All vertices are inner for the next search.
-        label.fill(Label::None);
+        for lbl in label.iter_mut() {
+            *lbl = Label::None;
+        }
     }
 
     // Transform the information from `mate` array to the output matching.
