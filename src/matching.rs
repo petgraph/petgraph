@@ -61,6 +61,7 @@ where
         MatchedNodes {
             graph: &self.graph,
             mate: self.mate.as_slice(),
+            current: 0,
         }
     }
 
@@ -127,6 +128,7 @@ impl<G: NodeIndexable> WithDummy for G {
 pub struct MatchedNodes<'a, G: GraphBase> {
     graph: &'a G,
     mate: &'a [G::NodeId],
+    current: usize,
 }
 
 impl<G> Iterator for MatchedNodes<'_, G>
@@ -136,12 +138,12 @@ where
     type Item = G::NodeId;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while !self.mate.is_empty() {
-            let (head, tail) = self.mate.split_at(1);
-            self.mate = tail;
+        while self.current != self.mate.len() {
+            let current = self.current;
+            self.current += 1;
 
-            if head[0] != self.graph.dummy() {
-                return Some(head[0]);
+            if self.mate[current] != self.graph.dummy() {
+                return Some(self.graph.from_index(current));
             }
         }
 
@@ -162,17 +164,18 @@ where
     type Item = (G::NodeId, G::NodeId);
 
     fn next(&mut self) -> Option<Self::Item> {
-        while !self.mate.is_empty() {
-            let (head, tail) = self.mate.split_at(1);
-            self.mate = tail;
+        while self.current != self.mate.len() {
+            let current = self.current;
             self.current += 1;
+
+            let mate = self.mate[current];
 
             // Check if the mate is a node after the current one. If not, then
             // do not report that edge since it has been already reported (the
             // graph is considered undirected).
-            if head[0] != self.graph.dummy() && self.graph.to_index(head[0]) >= self.current {
-                let source = self.graph.from_index(self.current - 1);
-                return Some((source, head[0]));
+            if mate != self.graph.dummy() && self.graph.to_index(mate) > current {
+                let this = self.graph.from_index(current);
+                return Some((this, mate));
             }
         }
 
