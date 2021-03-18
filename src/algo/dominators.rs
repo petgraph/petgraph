@@ -13,7 +13,7 @@
 //! dominates **C** and **C** dominates **B**.
 
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet, hash_map::Iter};
+use std::collections::{hash_map::Iter, HashMap, HashSet};
 use std::hash::Hash;
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
@@ -85,7 +85,7 @@ where
     pub fn immediately_dominated_by(&self, node: N) -> DominatedByIter<N> {
         DominatedByIter {
             iter: self.dominators.iter(),
-            node: node
+            node: node,
         }
     }
 }

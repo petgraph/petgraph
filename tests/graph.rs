@@ -590,10 +590,16 @@ fn test_astar_runtime_optimal() {
 
     let mut times_called = 0;
 
-    let _ = astar(&g, a, |n| n == e, |edge| {
-        times_called += 1;
-        *edge.weight()
-    }, |_| 0);
+    let _ = astar(
+        &g,
+        a,
+        |n| n == e,
+        |edge| {
+            times_called += 1;
+            *edge.weight()
+        },
+        |_| 0,
+    );
 
     // A* is runtime optimal in the sense it won't expand more nodes than needed, for the given
     // heuristic. Here, A* should expand, in order: A, B, C, D, E. This should should ask for the
@@ -1824,7 +1830,7 @@ fn dot() {
     struct Record {
         a: i32,
         b: &'static str,
-    };
+    }
     let mut gr = Graph::new();
     let a = gr.add_node(Record { a: 1, b: r"abc\" });
     gr.add_edge(a, a, (1, 2));
