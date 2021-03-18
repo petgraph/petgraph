@@ -97,7 +97,9 @@ pub struct ReversedEdgeReference<R>(R);
 
 impl<R> ReversedEdgeReference<R> {
     /// Return the original, unreversed edge reference.
-    pub fn as_unreversed(&self) -> &R { &self.0 }
+    pub fn as_unreversed(&self) -> &R {
+        &self.0
+    }
 
     /// Consume `self` and return the original, unreversed edge reference.
     pub fn into_unreversed(self) -> R {

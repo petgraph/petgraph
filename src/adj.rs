@@ -1,10 +1,10 @@
 //! Simple adjacency list.
-use fixedbitset::FixedBitSet;
+use crate::data::{Build, DataMap, DataMapMut};
 use crate::iter_format::NoPretty;
+use crate::visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors, NodeCount};
+use fixedbitset::FixedBitSet;
 use std::fmt;
 use std::ops::Range;
-use crate::visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors, NodeCount};
-use crate::data::{Build, DataMap, DataMapMut};
 
 #[doc(no_inline)]
 pub use crate::graph::{DefaultIx, IndexType};
@@ -222,7 +222,11 @@ impl<E, Ix: IndexType> List<E, Ix> {
     /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         if b.index() >= self.suc.len() {
-            panic!("{} is not a valid node index for a {} nodes adjacency list", b.index(), self.suc.len());
+            panic!(
+                "{} is not a valid node index for a {} nodes adjacency list",
+                b.index(),
+                self.suc.len()
+            );
         }
         let row = &mut self.suc[a.index()];
         let rank = row.len();
@@ -311,10 +315,8 @@ impl<E, Ix: IndexType> List<E, Ix> {
     }
 }
 
-
 /// A very simple adjacency list with no node or label weights.
 pub type UnweightedList<Ix> = List<(), Ix>;
-
 
 impl<E, Ix: IndexType> Build for List<E, Ix> {
     /// Adds a new node to the list. This allocates a new `Vec` and then should
@@ -365,8 +367,6 @@ impl<E, Ix: IndexType> Build for List<E, Ix> {
         }
     }
 }
-
-
 
 impl<'a, E, Ix> fmt::Debug for EdgeReferences<'a, E, Ix>
 where
@@ -550,10 +550,12 @@ impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
 
 impl<E, Ix: IndexType> visit::GraphProp for List<E, Ix> {
     type EdgeType = crate::Directed;
-    fn is_directed(&self) -> bool { true }
+    fn is_directed(&self) -> bool {
+        true
+    }
 }
 
-impl <E, Ix: IndexType> NodeCount for List<E, Ix> {
+impl<E, Ix: IndexType> NodeCount for List<E, Ix> {
     /// Returns the number of nodes in the list
     ///
     /// Computes in **O(1)** time.
@@ -613,4 +615,3 @@ impl<E, Ix: IndexType> DataMapMut for List<E, Ix> {
         self.get_edge_mut(e).map(|x| &mut x.weight)
     }
 }
-
