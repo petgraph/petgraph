@@ -1386,6 +1386,29 @@ fn test_edge_iterators_directed() {
 }
 
 #[test]
+fn test_edge_filtered_iterators_directed() {
+    use petgraph::{
+        graph::EdgeReference,
+        visit::{EdgeFiltered, IntoEdgesDirected},
+    };
+
+    let gr = make_edge_iterator_graph::<Directed>();
+    let filter = |edge: EdgeReference<f64>| -> bool { *edge.weight() > 8.0 };
+    let filtered = EdgeFiltered::from_fn(&gr, filter);
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            filtered.edges_directed(i, Outgoing),
+            gr.edges_directed(i, Outgoing).filter(|edge| filter(*edge)),
+        );
+        itertools::assert_equal(
+            filtered.edges_directed(i, Incoming),
+            gr.edges_directed(i, Incoming).filter(|edge| filter(*edge)),
+        );
+    }
+}
+
+#[test]
 fn test_edge_iterators_undir() {
     let gr = make_edge_iterator_graph::<Undirected>();
 

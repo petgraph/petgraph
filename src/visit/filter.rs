@@ -440,6 +440,22 @@ where
     }
 }
 
+impl<'a, G, F> IntoEdgesDirected for &'a EdgeFiltered<G, F>
+where
+    G: IntoEdgesDirected,
+    F: FilterEdge<G::EdgeRef>,
+{
+    type EdgesDirected = EdgeFilteredEdges<'a, G, G::EdgesDirected, F>;
+
+    fn edges_directed(self, n: G::NodeId, dir: Direction) -> Self::EdgesDirected {
+        EdgeFilteredEdges {
+            graph: PhantomData,
+            iter: self.0.edges_directed(n, dir),
+            f: &self.1,
+        }
+    }
+}
+
 /// A filtered edges iterator.
 pub struct EdgeFilteredEdges<'a, G, I, F: 'a> {
     graph: PhantomData<G>,
