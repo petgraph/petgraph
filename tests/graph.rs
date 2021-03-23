@@ -1409,6 +1409,31 @@ fn test_edge_filtered_iterators_directed() {
 }
 
 #[test]
+fn test_node_filtered_iterators_directed() {
+    use petgraph::{
+        graph::NodeIndex,
+        visit::{IntoEdgesDirected, NodeFiltered},
+    };
+
+    let gr = make_edge_iterator_graph::<Directed>();
+    let filter = |node: NodeIndex<u32>| node.index() < 4;
+    let filtered = NodeFiltered::from_fn(&gr, filter);
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            filtered.edges_directed(i, Outgoing),
+            gr.edges_directed(i, Outgoing)
+                .filter(|edge| filter(edge.source()) && filter(edge.target())),
+        );
+        itertools::assert_equal(
+            filtered.edges_directed(i, Incoming),
+            gr.edges_directed(i, Incoming)
+                .filter(|edge| filter(edge.source()) && filter(edge.target())),
+        );
+    }
+}
+
+#[test]
 fn test_edge_iterators_undir() {
     let gr = make_edge_iterator_graph::<Undirected>();
 
