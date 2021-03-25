@@ -2,6 +2,7 @@ use std::cmp;
 use std::fmt;
 use std::hash::Hash;
 use std::iter;
+use std::iter::Chain;
 use std::marker::PhantomData;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut, Range};
@@ -544,6 +545,15 @@ where
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N> {
         self.nodes.get_mut(a.index()).map(|n| &mut n.weight)
     }
+    /// Return an iterator yielding mutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// node indices.
+    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<N, Ix> {
+        NodeWeightsMut {
+            nodes: self.nodes.iter_mut(),
+        }
+    }
 
     /// Add an edge from `a` to `b` to the graph, with its associated
     /// data `weight`.
@@ -615,6 +625,16 @@ where
     /// Also available with indexing syntax: `&mut graph[e]`.
     pub fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E> {
         self.edges.get_mut(e.index()).map(|ed| &mut ed.weight)
+    }
+
+    /// Return an iterator yielding mutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// edge indices.
+    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<E, Ix> {
+        EdgeWeightsMut {
+            edges: self.edges.iter_mut(),
+        }
     }
 
     /// Access the source and target nodes for `e`.
@@ -850,7 +870,15 @@ where
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<E, Ty, Ix> {
-        Edges {
+        Edges::Single(self.edges_directed_iter(a, dir))
+    }
+
+    /// Returns an `EdgeIter` of all edges of `a`, in the specified direction.
+    /// 
+    /// Identical to `edges_directed` except for the return type.
+    #[inline]
+    fn edges_directed_iter(&self, a: NodeIndex<Ix>, dir: Direction) -> EdgeIter<E, Ty, Ix> {
+        EdgeIter {
             skip_start: a,
             edges: &self.edges,
             direction: dir,
@@ -859,6 +887,24 @@ where
                 Some(n) => n.next,
             },
             ty: PhantomData,
+        }
+    }
+
+    /// Return an iterator of all edges of `a`, in any direction.
+    /// 
+    /// If the `Graph` is undirected, all edges are returned with `a` as
+    /// the source.
+    /// 
+    /// Produces an empty iterator if the node `a` doesn't exist.<br>
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    pub fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
+        if Ty::is_directed() {
+            Edges::Chain(
+                self.edges_directed_iter(a, Outgoing)
+                    .chain(self.edges_directed_iter(a, Incoming)),
+            )
+        } else {
+            self.edges_directed(a, Outgoing)
         }
     }
 
@@ -992,16 +1038,6 @@ where
         }
     }
 
-    /// Return an iterator yielding mutable access to all node weights.
-    ///
-    /// The order in which weights are yielded matches the order of their
-    /// node indices.
-    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<N, Ix> {
-        NodeWeightsMut {
-            nodes: self.nodes.iter_mut(),
-        }
-    }
-
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<Ix> {
         EdgeIndices {
@@ -1016,16 +1052,6 @@ where
     pub fn edge_references(&self) -> EdgeReferences<E, Ix> {
         EdgeReferences {
             iter: self.edges.iter().enumerate(),
-        }
-    }
-
-    /// Return an iterator yielding mutable access to all edge weights.
-    ///
-    /// The order in which weights are yielded matches the order of their
-    /// edge indices.
-    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<E, Ix> {
-        EdgeWeightsMut {
-            edges: self.edges.iter_mut(),
         }
     }
 
@@ -1595,8 +1621,34 @@ where
     }
 }
 
+/// Iterator over the edges from and/or to a node.
+#[derive(Clone)]
+pub enum Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    Single(EdgeIter<'a, E, Ty, Ix>),
+    Chain(Chain<EdgeIter<'a, E, Ty, Ix>, EdgeIter<'a, E, Ty, Ix>>),
+}
+
+impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Edges::Single(iter) => iter.next(),
+            Edges::Chain(iter) => iter.next(),
+        }
+    }
+}
+
 /// Iterator over the edges of from or to a node
-pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+pub struct EdgeIter<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
 where
     Ty: EdgeType,
     Ix: IndexType,
@@ -1614,7 +1666,7 @@ where
     ty: PhantomData<Ty>,
 }
 
-impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
+impl<'a, E, Ty, Ix> Iterator for EdgeIter<'a, E, Ty, Ix>
 where
     Ty: EdgeType,
     Ix: IndexType,
@@ -1713,13 +1765,13 @@ fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
     x
 }
 
-impl<'a, E, Ty, Ix> Clone for Edges<'a, E, Ty, Ix>
+impl<'a, E, Ty, Ix> Clone for EdgeIter<'a, E, Ty, Ix>
 where
     Ix: IndexType,
     Ty: EdgeType,
 {
     fn clone(&self) -> Self {
-        Edges {
+        EdgeIter {
             skip_start: self.skip_start,
             edges: self.edges,
             next: self.next,
