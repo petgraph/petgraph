@@ -7,7 +7,6 @@
 pub mod dominators;
 pub mod tred;
 
-use std::cmp::min;
 use std::collections::{BinaryHeap, HashMap};
 
 use crate::prelude::*;
@@ -330,9 +329,7 @@ where
 
 #[derive(Copy, Clone, Debug)]
 struct NodeData {
-    index: Option<usize>,
-    lowlink: usize,
-    on_stack: bool,
+    rootindex: Option<usize>
 }
 
 /// A reusable state for computing the *strongly connected components* using [Tarjan's algorithm][1].
@@ -341,6 +338,7 @@ struct NodeData {
 #[derive(Debug)]
 pub struct TarjanScc<N> {
     index: usize,
+    componentcount: usize,
     nodes: Vec<NodeData>,
     stack: Vec<N>,
 }
@@ -351,11 +349,13 @@ impl<N> Default for TarjanScc<N> {
     }
 }
 
+
 impl<N> TarjanScc<N> {
     /// Creates a new `TarjanScc`
     pub fn new() -> Self {
         TarjanScc {
-            index: 0,
+            index: usize::MAX, // Invariant: index > componentcount at all times.
+            componentcount: 0, // Will hold if index is initialized to number of nodes - 1 or higher.
             nodes: Vec::new(),
             stack: Vec::new(),
         }
@@ -382,9 +382,7 @@ impl<N> TarjanScc<N> {
         self.nodes.resize(
             g.node_bound(),
             NodeData {
-                index: None,
-                lowlink: !0,
-                on_stack: false,
+                rootindex: None,
             },
         );
 
@@ -408,54 +406,55 @@ impl<N> TarjanScc<N> {
         }
 
         let node_v = &mut node![v];
-        if node_v.index.is_some() {
+        if node_v.rootindex.is_some() {
             // already visited
             return;
         }
 
+        let mut v_is_local_root = true;
         let v_index = self.index;
-        node_v.index = Some(v_index);
-        node_v.lowlink = v_index;
-        node_v.on_stack = true;
-        self.stack.push(v);
-        self.index += 1;
+        node_v.rootindex = Some(v_index);
+        self.index -= 1;
 
         for w in g.neighbors(v) {
-            let node_w = &mut node![w];
-            match node_w.index {
-                None => {
-                    self.visit(w, g, f);
-                    node![v].lowlink = min(node![v].lowlink, node![w].lowlink);
-                }
-                Some(w_index) => {
-                    if node_w.on_stack {
-                        // Successor w is in stack S and hence in the current SCC
-                        let v_lowlink = &mut node![v].lowlink;
-                        *v_lowlink = min(*v_lowlink, w_index);
-                    }
-                }
+            self.visit(w,g,f);
+            if node![w].rootindex > node![v].rootindex {
+                node![v].rootindex =  node![w].rootindex;
+                v_is_local_root = false
             }
         }
 
-        // If v is a root node, pop the stack and generate an SCC
-        let node_v = &mut node![v];
-        if let Some(v_index) = node_v.index {
-            if node_v.lowlink == v_index {
-                let nodes = &mut self.nodes;
-                let start = self
-                    .stack
-                    .iter()
-                    .rposition(|&w| {
-                        nodes[g.to_index(w)].on_stack = false;
-                        g.to_index(w) == g.to_index(v)
-                    })
-                    .unwrap();
-                f(&self.stack[start..]);
-                self.stack.truncate(start);
-            }
+        if v_is_local_root { // Pop the stack and generate an SCC.
+            let mut indexadjustment = 1;
+            let c = Some(self.componentcount);
+            let nodes = &mut self.nodes;
+            let start = self
+                .stack
+                .iter()
+                .rposition(
+                    |&w| {
+                        if nodes[g.to_index(v)].rootindex < nodes[g.to_index(w)].rootindex {
+                            true
+                        } else {
+                            nodes[g.to_index(w)].rootindex = c;
+                            indexadjustment += 1;
+                            false
+                        }
+                    }
+                ).map(|x| x + 1).unwrap_or_default();
+            nodes[g.to_index(v)].rootindex = c;
+            self.stack.push(v); // Pushing the component root to the back right before getting rid of it is somewhat ugly, but it lets it be included in f.
+            f(&self.stack[start..]);
+            self.stack.truncate(start);
+            self.index += indexadjustment; // Backtrack index back to where it was before we ever encountered the component.
+            self.componentcount += 1;
+        } else {
+            self.stack.push(v);  // Stack is filled up when backtracking, unlike in Tarjans original algorithm.
         }
     }
 }
+
+
 
 /// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
 ///
@@ -475,7 +474,7 @@ where
     let mut sccs = Vec::new();
     {
         let mut tarjan_scc = TarjanScc::new();
-        tarjan_scc.run(g, |scc| sccs.push(scc.iter().cloned().rev().collect()));
+        tarjan_scc.run(g, |scc| sccs.push(scc.iter().cloned().collect()));
     }
     sccs
 }
