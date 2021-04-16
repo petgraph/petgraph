@@ -354,7 +354,7 @@ impl<N> TarjanScc<N> {
     /// Creates a new `TarjanScc`
     pub fn new() -> Self {
         TarjanScc {
-            index: usize::MAX, // Invariant: index > componentcount at all times.
+            index: std::usize::MAX, // Invariant: index > componentcount at all times.
             componentcount: 0, // Will hold if index is initialized to number of nodes - 1 or higher.
             nodes: Vec::new(),
             stack: Vec::new(),
