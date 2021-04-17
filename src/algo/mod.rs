@@ -329,7 +329,7 @@ where
 
 #[derive(Copy, Clone, Debug)]
 struct NodeData {
-    rootindex: Option<usize>
+    rootindex: Option<usize>,
 }
 
 /// A reusable state for computing the *strongly connected components* using [Tarjan's algorithm][1].
@@ -349,12 +349,11 @@ impl<N> Default for TarjanScc<N> {
     }
 }
 
-
 impl<N> TarjanScc<N> {
     /// Creates a new `TarjanScc`
     pub fn new() -> Self {
         TarjanScc {
-            index: usize::MAX, // Invariant: index > componentcount at all times.
+            index: std::usize::MAX, // Invariant: index > componentcount at all times.
             componentcount: 0, // Will hold if index is initialized to number of nodes - 1 or higher.
             nodes: Vec::new(),
             stack: Vec::new(),
@@ -379,12 +378,8 @@ impl<N> TarjanScc<N> {
         N: Copy + PartialEq,
     {
         self.nodes.clear();
-        self.nodes.resize(
-            g.node_bound(),
-            NodeData {
-                rootindex: None,
-            },
-        );
+        self.nodes
+            .resize(g.node_bound(), NodeData { rootindex: None });
 
         for n in g.node_identifiers() {
             self.visit(n, g, &mut f);
@@ -417,31 +412,32 @@ impl<N> TarjanScc<N> {
         self.index -= 1;
 
         for w in g.neighbors(v) {
-            self.visit(w,g,f);
+            self.visit(w, g, f);
             if node![w].rootindex > node![v].rootindex {
-                node![v].rootindex =  node![w].rootindex;
+                node![v].rootindex = node![w].rootindex;
                 v_is_local_root = false
             }
         }
 
-        if v_is_local_root { // Pop the stack and generate an SCC.
+        if v_is_local_root {
+            // Pop the stack and generate an SCC.
             let mut indexadjustment = 1;
             let c = Some(self.componentcount);
             let nodes = &mut self.nodes;
             let start = self
                 .stack
                 .iter()
-                .rposition(
-                    |&w| {
-                        if nodes[g.to_index(v)].rootindex < nodes[g.to_index(w)].rootindex {
-                            true
-                        } else {
-                            nodes[g.to_index(w)].rootindex = c;
-                            indexadjustment += 1;
-                            false
-                        }
+                .rposition(|&w| {
+                    if nodes[g.to_index(v)].rootindex < nodes[g.to_index(w)].rootindex {
+                        true
+                    } else {
+                        nodes[g.to_index(w)].rootindex = c;
+                        indexadjustment += 1;
+                        false
                     }
-                ).map(|x| x + 1).unwrap_or_default();
+                })
+                .map(|x| x + 1)
+                .unwrap_or_default();
             nodes[g.to_index(v)].rootindex = c;
             self.stack.push(v); // Pushing the component root to the back right before getting rid of it is somewhat ugly, but it lets it be included in f.
             f(&self.stack[start..]);
@@ -449,12 +445,10 @@ impl<N> TarjanScc<N> {
             self.index += indexadjustment; // Backtrack index back to where it was before we ever encountered the component.
             self.componentcount += 1;
         } else {
-            self.stack.push(v);  // Stack is filled up when backtracking, unlike in Tarjans original algorithm.
+            self.stack.push(v); // Stack is filled up when backtracking, unlike in Tarjans original algorithm.
         }
     }
 }
-
-
 
 /// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
 ///
