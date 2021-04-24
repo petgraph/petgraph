@@ -1379,6 +1379,7 @@ where
 }
 
 /// Iterator over the edges of from or to a node
+#[derive(Debug, Clone)]
 pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
 where
     Ty: EdgeType,
@@ -1492,6 +1493,7 @@ where
 }
 
 /// Iterator over all edges of a graph.
+#[derive(Debug, Clone)]
 pub struct EdgeReferences<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
 }
@@ -1565,6 +1567,7 @@ where
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is `NodeIndex`.
+#[derive(Debug, Clone)]
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> {
     /// starting node to skip over
     skip_start: NodeIndex<Ix>,
@@ -1696,6 +1699,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
 }
 
 /// Iterator over the node indices of a graph.
+#[derive(Debug, Clone)]
 pub struct NodeIndices<'a, N: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
@@ -1749,6 +1753,7 @@ where
 }
 
 /// Iterator over the edge indices of a graph.
+#[derive(Debug, Clone)]
 pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
 }

@@ -480,11 +480,13 @@ where
 
 iterator_wrap! {
     impl (Iterator DoubleEndedIterator ExactSizeIterator) for
+    #[derive(Debug, Clone)]
     struct Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
     iter: Cloned<Keys<'a, N, Vec<(N, CompactDirection)>>>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Neighbors<'a, N, Ty = Undirected>
 where
     N: 'a,
@@ -511,6 +513,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NeighborsDirected<'a, N, Ty>
 where
     N: 'a,
@@ -547,6 +550,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Edges<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -587,6 +591,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct AllEdges<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -833,6 +838,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NodeIdentifiers<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -870,6 +876,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NodeReferences<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
