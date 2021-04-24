@@ -1265,6 +1265,7 @@ where
 }
 
 /// Iterator over all nodes of a graph.
+#[derive(Debug, Clone)]
 pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
