@@ -641,6 +641,7 @@ where
 }
 
 /// An iterator producing a minimum spanning forest of a graph.
+#[derive(Clone)]
 pub struct MinSpanningTree<G>
 where
     G: Data + IntoNodeReferences,

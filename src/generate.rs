@@ -19,6 +19,7 @@ use crate::{Directed, EdgeType, Graph};
 /// A graph generator of “all” graphs of a particular size.
 ///
 /// ***Unstable: API may change at any time.*** Depends on `feature = "generate"`.
+#[derive(Clone)]
 pub struct Generator<Ty> {
     acyclic: bool,
     selfloops: bool,
