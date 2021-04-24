@@ -106,6 +106,7 @@ where
 }
 
 /// A filtered neighbors iterator.
+#[derive(Debug, Clone)]
 pub struct NodeFilteredNeighbors<'a, I, F: 'a> {
     include_source: bool,
     iter: I,
@@ -176,6 +177,7 @@ where
 }
 
 /// A filtered node references iterator.
+#[derive(Debug, Clone)]
 pub struct NodeFilteredNodes<'a, I, F: 'a> {
     include_source: bool,
     iter: I,
@@ -216,6 +218,7 @@ where
 }
 
 /// A filtered edges iterator.
+#[derive(Debug, Clone)]
 pub struct NodeFilteredEdgeReferences<'a, G, I, F: 'a> {
     graph: PhantomData<G>,
     iter: I,
@@ -253,6 +256,7 @@ where
 }
 
 /// A filtered edges iterator.
+#[derive(Debug, Clone)]
 pub struct NodeFilteredEdges<'a, G, I, F: 'a> {
     graph: PhantomData<G>,
     include_source: bool,
@@ -381,6 +385,7 @@ where
 }
 
 /// A filtered neighbors iterator.
+#[derive(Debug, Clone)]
 pub struct EdgeFilteredNeighbors<'a, G, F: 'a>
 where
     G: IntoEdges,
@@ -441,6 +446,7 @@ where
 }
 
 /// A filtered edges iterator.
+#[derive(Debug, Clone)]
 pub struct EdgeFilteredEdges<'a, G, I, F: 'a> {
     graph: PhantomData<G>,
     iter: I,
@@ -461,6 +467,7 @@ where
 }
 
 /// A filtered neighbors-directed iterator.
+#[derive(Debug, Clone)]
 pub struct EdgeFilteredNeighborsDirected<'a, G, F: 'a>
 where
     G: IntoEdgesDirected,

@@ -91,6 +91,7 @@ where
 }
 
 /// Iterator for a node's dominators.
+#[derive(Debug, Clone)]
 pub struct DominatorsIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
@@ -115,6 +116,7 @@ where
 }
 
 /// Iterator for nodes dominated by a given node.
+#[derive(Debug, Clone)]
 pub struct DominatedByIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
