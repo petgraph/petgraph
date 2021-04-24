@@ -505,6 +505,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct EdgeReferences<'a, E: 'a, Ty, Ix: 'a> {
     source_index: NodeIndex<Ix>,
     index: usize,
@@ -671,6 +672,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NodeIdentifiers<Ix = DefaultIx> {
     r: Range<usize>,
     ty: PhantomData<Ix>,

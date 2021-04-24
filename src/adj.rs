@@ -29,6 +29,7 @@ impl (Iterator) for
 /// An Iterator over the indices of the outgoing edges from a node.
 ///
 /// It does not borrow the graph during iteration.
+#[derive(Debug, Clone)]
 struct OutgoingEdgeIndices <Ix> where { Ix: IndexType }
 item: EdgeIndex<Ix>,
 iter: std::iter::Map<std::iter::Zip<Range<usize>, std::iter::Repeat<NodeIndex<Ix>>>, fn((usize, NodeIndex<Ix>)) -> EdgeIndex<Ix>>,
@@ -50,6 +51,7 @@ type RowIter<'a, E, Ix> = std::slice::Iter<'a, WSuc<E, Ix>>;
 iterator_wrap! {
 impl (Iterator DoubleEndedIterator ExactSizeIterator) for
 /// An iterator over the indices of the neighbors of a node.
+#[derive(Debug, Clone)]
 struct Neighbors<'a, E, Ix> where { Ix: IndexType }
 item: NodeIndex<Ix>,
 iter: std::iter::Map<RowIter<'a, E, Ix>, fn(&WSuc<E, Ix>) -> NodeIndex<Ix>>,
@@ -127,6 +129,7 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
 iterator_wrap! {
     impl (Iterator DoubleEndedIterator ExactSizeIterator) for
     /// An iterator over all node indices in the graph.
+    #[derive(Debug, Clone)]
     struct NodeIndices <Ix> where {}
     item: Ix,
     iter: std::iter::Map<Range<usize>, fn(usize) -> Ix>,
@@ -531,6 +534,7 @@ impl<'a, Ix: IndexType, E> visit::IntoEdgeReferences for &'a List<E, Ix> {
 iterator_wrap! {
 impl (Iterator) for
 /// Iterator over the [`EdgeReference`] of the outgoing edges from a node.
+#[derive(Debug, Clone)]
 struct OutgoingEdgeReferences<'a, E, Ix> where { Ix: IndexType }
 item: EdgeReference<'a, E, Ix>,
 iter: SomeIter<'a, E, Ix>,
