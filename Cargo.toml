@@ -39,6 +39,7 @@ rand = "0.5.5"
 odds = { version = "0.2.19" }
 defmac = "0.1"
 itertools = { version = "0.8", default-features = false }
+bincode = "*"
 
 [features]
 default = ["graphmap", "stable_graph", "matrix_graph"]

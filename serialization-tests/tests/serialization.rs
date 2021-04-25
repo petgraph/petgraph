@@ -142,31 +142,20 @@ where
     g
 }
 
-fn make_stable_graph<Ty, Ix>() -> StableGraph<&'static str, i32, Ty, Ix>
+fn make_stable_graph<Ty, Ix>() -> StableGraph<String, i32, Ty, Ix>
 where
     Ty: EdgeType,
     Ix: IndexType,
 {
     let mut g = StableGraph::default();
-    let a = g.add_node("A");
-    let b = g.add_node("B");
-    let c = g.add_node("C");
-    let d = g.add_node("D");
-    let e = g.add_node("E");
-    let f = g.add_node("F");
-    g.extend_with_edges(&[
-        (a, b, 7),
-        (c, a, 9),
-        (a, d, 14),
-        (b, c, 10),
-        (d, c, 2),
-        (d, e, 9),
-        (b, f, 15),
-        (c, f, 11),
-        (e, f, 6),
-    ]);
-    // Remove a node to make the structure a bit more interesting
-    g.remove_node(d);
+    let indices: Vec<_> = (0..1024).map(|i| g.add_node(format!("{}", i))).collect();
+    for i in 1..256 {
+        g.extend_with_edges((0..1024).map(|j| (indices[j], indices[(j + i) % 1024], i as i32)));
+    }
+    // Remove nodes to make the structure a bit more interesting
+    for i in (0..1024).step_by(10) {
+        g.remove_node(indices[i]);
+    }
     g
 }
 

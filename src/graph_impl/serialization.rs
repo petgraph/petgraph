@@ -41,9 +41,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[serde(rename = "Graph")]
 #[serde(bound(serialize = "N: Serialize, E: Serialize, Ix: IndexType + Serialize"))]
 pub struct SerGraph<'a, N: 'a, E: 'a, Ix: 'a + IndexType> {
+    node_holes: &'a [NodeIndex<Ix>],
     #[serde(serialize_with = "ser_graph_nodes")]
     nodes: &'a [Node<N, Ix>],
-    node_holes: &'a [NodeIndex<Ix>],
     edge_property: EdgeProperty,
     #[serde(serialize_with = "ser_graph_edges")]
     edges: &'a [Edge<E, Ix>],
@@ -57,12 +57,12 @@ pub struct SerGraph<'a, N: 'a, E: 'a, Ix: 'a + IndexType> {
     deserialize = "N: Deserialize<'de>, E: Deserialize<'de>, Ix: IndexType + Deserialize<'de>"
 ))]
 pub struct DeserGraph<N, E, Ix> {
-    #[serde(deserialize_with = "deser_graph_nodes")]
-    nodes: Vec<Node<N, Ix>>,
     #[serde(deserialize_with = "deser_graph_node_holes")]
     #[allow(unused)]
     #[serde(default = "Vec::new")]
     node_holes: Vec<NodeIndex<Ix>>,
+    #[serde(deserialize_with = "deser_graph_nodes")]
+    nodes: Vec<Node<N, Ix>>,
     edge_property: EdgeProperty,
     #[serde(deserialize_with = "deser_graph_edges")]
     edges: Vec<Edge<E, Ix>>,
@@ -292,6 +292,16 @@ where
         node_or_edge,
         len,
         <Ix as IndexType>::max().index()
+    ))
+}
+
+pub fn invalid_hole_err<E>(node_index: usize) -> E
+where
+    E: Error,
+{
+    E::custom(format_args!(
+        "invalid value: node hole `{}` is not allowed.",
+        node_index
     ))
 }
 
