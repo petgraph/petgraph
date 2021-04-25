@@ -94,6 +94,7 @@ impl<'a, E, Ix: IndexType> visit::EdgeRef for EdgeReference<'a, E, Ix> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct EdgeIndices<'a, E, Ix: IndexType> {
     rows: std::iter::Enumerate<std::slice::Iter<'a, Row<E, Ix>>>,
     row_index: usize,
