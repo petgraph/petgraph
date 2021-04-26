@@ -361,9 +361,13 @@ impl<N> TarjanScc<N> {
         }
     }
 
-    /// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+    /// \[Generic\] Compute the *strongly connected components* using Algorithm 3 in
+    /// [A Space-Efficient Algorithm for Finding Strongly Connected Components][1] by David J. Pierce,
+    /// which is a memory-efficient variation of [Tarjan's algorithm][2].
     ///
-    /// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+    ///
+    /// [1]: https://homepages.ecs.vuw.ac.nz/~djp/files/P05.pdf
+    /// [2]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
     ///
     /// Calls `f` for each strongly strongly connected component (scc).
     /// The order of node ids within each scc is arbitrary, but the order of
@@ -475,6 +479,7 @@ impl<N> TarjanScc<N> {
 /// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
 ///
 /// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+/// [2]: https://homepages.ecs.vuw.ac.nz/~djp/files/P05.pdf
 ///
 /// Return a vector where each element is a strongly connected component (scc).
 /// The order of node ids within each scc is arbitrary, but the order of
@@ -482,7 +487,9 @@ impl<N> TarjanScc<N> {
 ///
 /// For an undirected graph, the sccs are simply the connected components.
 ///
-/// This implementation is recursive and does one pass over the nodes.
+/// This implementation is recursive and does one pass over the nodes. It is based on
+/// [A Space-Efficient Algorithm for Finding Strongly Connected Components][2] by David J. Pierce,
+/// to provide a memory-efficient implementation of [Tarjan's algorithm][1].
 pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 where
     G: IntoNodeIdentifiers + IntoNeighbors + NodeIndexable,
