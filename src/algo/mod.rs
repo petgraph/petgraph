@@ -458,8 +458,12 @@ impl<N> TarjanScc<N> {
     {
         let rindex: usize = self.nodes[g.to_index(v)]
             .rootindex
-            .expect("Tried to get the component index of an unvisited node.")
-            .into();
+            .map(NonZeroUsize::get)
+            .unwrap_or(0); // Compiles to no-op.
+        debug_assert!(
+            rindex != 0,
+            "Tried to get the component index of an unvisited node."
+        );
         debug_assert!(
             rindex > self.componentcount,
             "Given node has been visited but not yet assigned to a component."
