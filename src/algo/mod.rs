@@ -387,7 +387,10 @@ impl<N> TarjanScc<N> {
             .resize(g.node_bound(), NodeData { rootindex: None });
 
         for n in g.node_identifiers() {
-            self.visit(n, g, &mut f);
+            let visited = self.nodes[g.to_index(n)].rootindex.is_some();
+            if !visited {
+                self.visit(n, g, &mut f);
+            }
         }
 
         debug_assert!(self.stack.is_empty());
@@ -406,10 +409,7 @@ impl<N> TarjanScc<N> {
         }
 
         let node_v = &mut node![v];
-        if node_v.rootindex.is_some() {
-            // already visited
-            return;
-        }
+        debug_assert!(node_v.rootindex.is_none());
 
         let mut v_is_local_root = true;
         let v_index = self.index;
@@ -417,7 +417,9 @@ impl<N> TarjanScc<N> {
         self.index += 1;
 
         for w in g.neighbors(v) {
-            self.visit(w, g, f);
+            if node![w].rootindex.is_none() {
+                self.visit(w, g, f);
+            }
             if node![w].rootindex < node![v].rootindex {
                 node![v].rootindex = node![w].rootindex;
                 v_is_local_root = false
