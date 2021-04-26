@@ -19,7 +19,8 @@ use crate::iter_utils::IterUtilsExt;
 
 use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
 use crate::visit::{
-    EdgeRef, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNodeReferences, NodeIndexable,
+    EdgeIndexable, EdgeRef, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNodeReferences,
+    NodeIndexable,
 };
 use crate::IntoWeightedEdge;
 
@@ -939,12 +940,6 @@ where
         self.g.raw_edges()
     }
 
-    fn edge_bound(&self) -> usize {
-        self.edge_references()
-            .next_back()
-            .map_or(0, |edge| edge.id().index() + 1)
-    }
-
     /// Create a new node using a vacant position,
     /// updating the free nodes doubly linked list.
     fn occupy_vacant_node(&mut self, node_idx: NodeIndex<Ix>, weight: N) {
@@ -1750,6 +1745,26 @@ where
     }
     fn from_index(&self, ix: usize) -> Self::NodeId {
         NodeIndex::new(ix)
+    }
+}
+
+impl<N, E, Ty, Ix> EdgeIndexable for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn edge_bound(&self) -> usize {
+        self.edge_references()
+            .next_back()
+            .map_or(0, |edge| edge.id().index() + 1)
+    }
+
+    fn to_index(&self, ix: EdgeIndex<Ix>) -> usize {
+        ix.index()
+    }
+
+    fn from_index(&self, ix: usize) -> Self::EdgeId {
+        EdgeIndex::new(ix)
     }
 }
 

@@ -4,7 +4,9 @@ use super::Frozen;
 use crate::data::{DataMap, DataMapMut};
 use crate::graph::Graph;
 use crate::graph::{GraphIndex, IndexType};
-use crate::visit::{Data, GraphProp, IntoNeighborsDirected, IntoNodeIdentifiers, NodeIndexable};
+use crate::visit::{
+    Data, EdgeIndexable, GraphProp, IntoNeighborsDirected, IntoNodeIdentifiers, NodeIndexable,
+};
 use crate::visit::{
     GetAdjacencyMatrix, IntoEdges, IntoEdgesDirected, NodeCompactIndexable, NodeCount,
 };
@@ -92,5 +94,6 @@ IntoNodeReferences! {delegate_impl [['a, 'b, G], G, &'b Frozen<'a, G>, deref_twi
 NodeCompactIndexable! {delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 NodeCount! {delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 NodeIndexable! {delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
+EdgeIndexable! {delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 GraphProp! {delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
 Visitable! {delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
