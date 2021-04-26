@@ -8,6 +8,7 @@ pub mod dominators;
 pub mod tred;
 
 use std::collections::{BinaryHeap, HashMap};
+use std::num::NonZeroUsize;
 
 use crate::prelude::*;
 
@@ -329,7 +330,7 @@ where
 
 #[derive(Copy, Clone, Debug)]
 struct NodeData {
-    rootindex: Option<usize>,
+    rootindex: Option<NonZeroUsize>,
 }
 
 /// A reusable state for computing the *strongly connected components* using [Tarjan's algorithm][1].
@@ -353,8 +354,8 @@ impl<N> TarjanScc<N> {
     /// Creates a new `TarjanScc`
     pub fn new() -> Self {
         TarjanScc {
-            index: std::usize::MAX, // Invariant: index > componentcount at all times.
-            componentcount: 0, // Will hold if index is initialized to number of nodes - 1 or higher.
+            index: 1,                        // Invariant: index < componentcount at all times.
+            componentcount: std::usize::MAX, // Will hold if componentcount is initialized to number of nodes - 1 or higher.
             nodes: Vec::new(),
             stack: Vec::new(),
         }
@@ -408,12 +409,12 @@ impl<N> TarjanScc<N> {
 
         let mut v_is_local_root = true;
         let v_index = self.index;
-        node_v.rootindex = Some(v_index);
-        self.index -= 1;
+        node_v.rootindex = NonZeroUsize::new(v_index);
+        self.index += 1;
 
         for w in g.neighbors(v) {
             self.visit(w, g, f);
-            if node![w].rootindex > node![v].rootindex {
+            if node![w].rootindex < node![v].rootindex {
                 node![v].rootindex = node![w].rootindex;
                 v_is_local_root = false
             }
@@ -422,13 +423,13 @@ impl<N> TarjanScc<N> {
         if v_is_local_root {
             // Pop the stack and generate an SCC.
             let mut indexadjustment = 1;
-            let c = Some(self.componentcount);
+            let c = NonZeroUsize::new(self.componentcount);
             let nodes = &mut self.nodes;
             let start = self
                 .stack
                 .iter()
                 .rposition(|&w| {
-                    if nodes[g.to_index(v)].rootindex < nodes[g.to_index(w)].rootindex {
+                    if nodes[g.to_index(v)].rootindex > nodes[g.to_index(w)].rootindex {
                         true
                     } else {
                         nodes[g.to_index(w)].rootindex = c;
@@ -442,11 +443,28 @@ impl<N> TarjanScc<N> {
             self.stack.push(v); // Pushing the component root to the back right before getting rid of it is somewhat ugly, but it lets it be included in f.
             f(&self.stack[start..]);
             self.stack.truncate(start);
-            self.index += indexadjustment; // Backtrack index back to where it was before we ever encountered the component.
-            self.componentcount += 1;
+            self.index -= indexadjustment; // Backtrack index back to where it was before we ever encountered the component.
+            self.componentcount -= 1;
         } else {
             self.stack.push(v); // Stack is filled up when backtracking, unlike in Tarjans original algorithm.
         }
+    }
+
+    /// Returns the index of the component in which v has been assigned. Allows for using self as a lookup table for an scc decomposition produced by self.run().
+    pub fn node_component_index<G>(&self, g: G, v: N) -> usize
+    where
+        G: IntoNeighbors<NodeId = N> + NodeIndexable<NodeId = N>,
+        N: Copy + PartialEq,
+    {
+        let rindex: usize = self.nodes[g.to_index(v)]
+            .rootindex
+            .expect("Tried to get the component index of an unvisited node.")
+            .into();
+        debug_assert!(
+            rindex > self.componentcount,
+            "Given node has been visited but not yet assigned to a component."
+        );
+        std::usize::MAX - rindex
     }
 }
 
