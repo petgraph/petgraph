@@ -480,11 +480,13 @@ where
 
 iterator_wrap! {
     impl (Iterator DoubleEndedIterator ExactSizeIterator) for
+    #[derive(Debug, Clone)]
     struct Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
     iter: Cloned<Keys<'a, N, Vec<(N, CompactDirection)>>>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Neighbors<'a, N, Ty = Undirected>
 where
     N: 'a,
@@ -511,6 +513,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NeighborsDirected<'a, N, Ty>
 where
     N: 'a,
@@ -547,6 +550,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Edges<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -565,16 +569,13 @@ where
 {
     type Item = (N, N, &'a E);
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
-            None => None,
-            Some(b) => {
-                let a = self.from;
-                match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
-                    None => unreachable!(),
-                    Some(edge) => Some((a, b, edge)),
-                }
+        self.iter.next().map(|b| {
+            let a = self.from;
+            match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
+                None => unreachable!(),
+                Some(edge) => (a, b, edge),
             }
-        }
+        })
     }
 }
 
@@ -590,6 +591,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct AllEdges<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -606,10 +608,7 @@ where
 {
     type Item = (N, N, &'a E);
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.next() {
-            None => None,
-            Some((&(a, b), v)) => Some((a, b, v)),
-        }
+        self.inner.next().map(|(&(a, b), v)| (a, b, v))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -650,7 +649,7 @@ pub struct AllEdgesMut<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
 {
-    inner: IndexMapIterMut<'a, (N, N), E>,
+    inner: IndexMapIterMut<'a, (N, N), E>, // TODO: change to something that implements Debug + Clone?
     ty: PhantomData<Ty>,
 }
 
@@ -839,6 +838,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NodeIdentifiers<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -876,6 +876,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NodeReferences<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,

@@ -3,13 +3,13 @@ extern crate petgraph;
 #[macro_use]
 extern crate defmac;
 
-use petgraph::adj::{List, UnweightedList};
-use petgraph::prelude::*;
 use petgraph::adj::DefaultIx;
 use petgraph::adj::IndexType;
+use petgraph::adj::{List, UnweightedList};
 use petgraph::algo::tarjan_scc;
 use petgraph::data::{DataMap, DataMapMut};
 use petgraph::dot::Dot;
+use petgraph::prelude::*;
 use petgraph::visit::{
     IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeReferences, NodeCount, NodeIndexable,
 };

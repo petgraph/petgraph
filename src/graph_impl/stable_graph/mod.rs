@@ -79,10 +79,14 @@ pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx> {
     // node and edge free lists (both work the same way)
     //
     // free_node, if not NodeIndex::end(), points to a node index
-    // that is vacant (after a deletion).  The next item in the list is kept in
-    // that Node's Node.next[0] field. For Node, it's a node index stored
-    // in an EdgeIndex location, and the _into_edge()/_into_node() methods
-    // convert.
+    // that is vacant (after a deletion).
+    // The free nodes form a doubly linked list using the fields Node.next[0]
+    // for forward references and Node.next[1] for backwards ones.
+    // The nodes are stored as EdgeIndex, and the _into_edge()/_into_node()
+    // methods convert.
+    // free_edge, if not EdgeIndex::end(), points to a free edge.
+    // The edges only form a singly linked list using Edge.next[0] to store
+    // the forward reference.
     free_node: NodeIndex<Ix>,
     free_edge: EdgeIndex<Ix>,
 }
@@ -244,19 +248,14 @@ where
     /// **Panics** if the `StableGraph` is at the maximum number of nodes for
     /// its index type.
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
-        let index = if self.free_node != NodeIndex::end() {
+        if self.free_node != NodeIndex::end() {
             let node_idx = self.free_node;
-            let node_slot = &mut self.g.nodes[node_idx.index()];
-            let _old = replace(&mut node_slot.weight, Some(weight));
-            debug_assert!(_old.is_none());
-            self.free_node = node_slot.next[0]._into_node();
-            node_slot.next[0] = EdgeIndex::end();
+            self.occupy_vacant_node(node_idx, weight);
             node_idx
         } else {
+            self.node_count += 1;
             self.g.add_node(Some(weight))
-        };
-        self.node_count += 1;
-        index
+        }
     }
 
     /// free_node: Which free list to update for the vacancy
@@ -264,7 +263,10 @@ where
         let node_idx = self.g.add_node(None);
         // link the free list
         let node_slot = &mut self.g.nodes[node_idx.index()];
-        node_slot.next[0] = free_node._into_edge();
+        node_slot.next = [free_node._into_edge(), EdgeIndex::end()];
+        if *free_node != NodeIndex::end() {
+            self.g.nodes[free_node.index()].next[1] = node_idx._into_edge();
+        }
         *free_node = node_idx;
     }
 
@@ -299,6 +301,9 @@ where
         //let node_weight = replace(&mut self.g.nodes[a.index()].weight, Entry::Empty(self.free_node));
         //self.g.nodes[a.index()].next = [EdgeIndex::end(), EdgeIndex::end()];
         node_slot.next = [self.free_node._into_edge(), EdgeIndex::end()];
+        if self.free_node != NodeIndex::end() {
+            self.g.nodes[self.free_node.index()].next[1] = a._into_edge();
+        }
         self.free_node = a;
         self.node_count -= 1;
 
@@ -918,10 +923,8 @@ where
         for elt in iter {
             let (source, target, weight) = elt.into_weighted_edge();
             let (source, target) = (source.into(), target.into());
-            let nx = cmp::max(source, target);
-            while nx.index() >= self.node_count() {
-                self.add_node(N::default());
-            }
+            self.ensure_node_exists(source);
+            self.ensure_node_exists(target);
             self.add_edge(source, target, weight);
         }
     }
@@ -937,6 +940,44 @@ where
         self.g.raw_edges()
     }
 
+    /// Create a new node using a vacant position,
+    /// updating the free nodes doubly linked list.
+    fn occupy_vacant_node(&mut self, node_idx: NodeIndex<Ix>, weight: N) {
+        let node_slot = &mut self.g.nodes[node_idx.index()];
+        let _old = replace(&mut node_slot.weight, Some(weight));
+        debug_assert!(_old.is_none());
+        let previous_node = node_slot.next[1];
+        let next_node = node_slot.next[0];
+        node_slot.next = [EdgeIndex::end(), EdgeIndex::end()];
+        if previous_node != EdgeIndex::end() {
+            self.g.nodes[previous_node.index()].next[0] = next_node;
+        }
+        if next_node != EdgeIndex::end() {
+            self.g.nodes[next_node.index()].next[1] = previous_node;
+        }
+        if self.free_node == node_idx {
+            self.free_node = next_node._into_node();
+        }
+        self.node_count += 1;
+    }
+
+    /// Create the node if it does not exist,
+    /// adding vacant nodes for padding if needed.
+    fn ensure_node_exists(&mut self, node_ix: NodeIndex<Ix>)
+    where
+        N: Default,
+    {
+        if let Some(Some(_)) = self.g.node_weight(node_ix) {
+            return;
+        }
+        while node_ix.index() >= self.g.node_count() {
+            let mut free_node = self.free_node;
+            self.add_vacant_node(&mut free_node);
+            self.free_node = free_node;
+        }
+        self.occupy_vacant_node(node_ix, N::default());
+    }
+
     #[cfg(feature = "serde-1")]
     /// Fix up node and edge links after deserialization
     fn link_edges(&mut self) -> Result<(), NodeIndex<Ix>> {
@@ -944,12 +985,16 @@ where
         self.node_count = 0;
         self.edge_count = 0;
         let mut free_node = NodeIndex::end();
-        for (node_index, node) in enumerate(&mut self.g.nodes) {
+        for node_index in 0..self.g.node_count() {
+            let node = &mut self.g.nodes[node_index];
             if node.weight.is_some() {
                 self.node_count += 1;
             } else {
                 // free node
                 node.next = [free_node._into_edge(), EdgeIndex::end()];
+                if free_node != NodeIndex::end() {
+                    self.g.nodes[free_node.index()].next[1] = EdgeIndex::new(node_index);
+                }
                 free_node = NodeIndex::new(node_index);
             }
         }
@@ -990,12 +1035,16 @@ where
     fn check_free_lists(&self) {}
     #[cfg(debug_assertions)]
     // internal method to debug check the free lists (linked lists)
+    // For the nodes, also check the backpointers of the doubly linked list.
     fn check_free_lists(&self) {
         let mut free_node = self.free_node;
+        let mut prev_free_node = NodeIndex::end();
         let mut free_node_len = 0;
         while free_node != NodeIndex::end() {
             if let Some(n) = self.g.nodes.get(free_node.index()) {
                 if n.weight.is_none() {
+                    debug_assert_eq!(n.next[1]._into_node(), prev_free_node);
+                    prev_free_node = free_node;
                     free_node = n.next[0]._into_node();
                     free_node_len += 1;
                     continue;
@@ -1211,6 +1260,7 @@ where
 }
 
 /// Iterator over all nodes of a graph.
+#[derive(Debug, Clone)]
 pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
@@ -1325,6 +1375,7 @@ where
 }
 
 /// Iterator over the edges of from or to a node
+#[derive(Debug, Clone)]
 pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
 where
     Ty: EdgeType,
@@ -1438,6 +1489,7 @@ where
 }
 
 /// Iterator over all edges of a graph.
+#[derive(Debug, Clone)]
 pub struct EdgeReferences<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
 }
@@ -1475,6 +1527,7 @@ where
 }
 
 /// An iterator over either the nodes without edges to them or from them.
+#[derive(Debug, Clone)]
 pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
     dir: Direction,
@@ -1510,6 +1563,7 @@ where
 /// Iterator over the neighbors of a node.
 ///
 /// Iterator element type is `NodeIndex`.
+#[derive(Debug, Clone)]
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> {
     /// starting node to skip over
     skip_start: NodeIndex<Ix>,
@@ -1641,6 +1695,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
 }
 
 /// Iterator over the node indices of a graph.
+#[derive(Debug, Clone)]
 pub struct NodeIndices<'a, N: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
@@ -1714,6 +1769,7 @@ where
 }
 
 /// Iterator over the edge indices of a graph.
+#[derive(Debug, Clone)]
 pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
 }
@@ -1828,5 +1884,27 @@ fn test_retain_nodes() {
     assert_eq!(gr.node_count(), 3);
     assert_eq!(gr.edge_count(), 2);
 
+    gr.check_free_lists();
+}
+
+#[test]
+fn extend_with_edges() {
+    let mut gr = StableGraph::<_, _>::default();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+    let c = gr.add_node("c");
+    let _d = gr.add_node("d");
+    gr.remove_node(a);
+    gr.remove_node(b);
+    gr.remove_node(c);
+
+    gr.extend_with_edges(vec![(0, 1, ())]);
+    assert_eq!(gr.node_count(), 3);
+    assert_eq!(gr.edge_count(), 1);
+    gr.check_free_lists();
+
+    gr.extend_with_edges(vec![(5, 1, ())]);
+    assert_eq!(gr.node_count(), 4);
+    assert_eq!(gr.edge_count(), 2);
     gr.check_free_lists();
 }

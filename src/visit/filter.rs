@@ -106,6 +106,7 @@ where
 }
 
 /// A filtered neighbors iterator.
+#[derive(Debug, Clone)]
 pub struct NodeFilteredNeighbors<'a, I, F: 'a> {
     include_source: bool,
     iter: I,
@@ -176,6 +177,7 @@ where
 }
 
 /// A filtered node references iterator.
+#[derive(Debug, Clone)]
 pub struct NodeFilteredNodes<'a, I, F: 'a> {
     include_source: bool,
     iter: I,
@@ -216,6 +218,7 @@ where
 }
 
 /// A filtered edges iterator.
+#[derive(Debug, Clone)]
 pub struct NodeFilteredEdgeReferences<'a, G, I, F: 'a> {
     graph: PhantomData<G>,
     iter: I,
@@ -252,7 +255,24 @@ where
     }
 }
 
+impl<'a, G, F> IntoEdgesDirected for &'a NodeFiltered<G, F>
+where
+    G: IntoEdgesDirected,
+    F: FilterNode<G::NodeId>,
+{
+    type EdgesDirected = NodeFilteredEdges<'a, G, G::EdgesDirected, F>;
+    fn edges_directed(self, a: G::NodeId, dir: Direction) -> Self::EdgesDirected {
+        NodeFilteredEdges {
+            graph: PhantomData,
+            include_source: self.1.include_node(a),
+            iter: self.0.edges_directed(a, dir),
+            f: &self.1,
+        }
+    }
+}
+
 /// A filtered edges iterator.
+#[derive(Debug, Clone)]
 pub struct NodeFilteredEdges<'a, G, I, F: 'a> {
     graph: PhantomData<G>,
     include_source: bool,
@@ -381,6 +401,7 @@ where
 }
 
 /// A filtered neighbors iterator.
+#[derive(Debug, Clone)]
 pub struct EdgeFilteredNeighbors<'a, G, F: 'a>
 where
     G: IntoEdges,
@@ -440,7 +461,24 @@ where
     }
 }
 
+impl<'a, G, F> IntoEdgesDirected for &'a EdgeFiltered<G, F>
+where
+    G: IntoEdgesDirected,
+    F: FilterEdge<G::EdgeRef>,
+{
+    type EdgesDirected = EdgeFilteredEdges<'a, G, G::EdgesDirected, F>;
+
+    fn edges_directed(self, n: G::NodeId, dir: Direction) -> Self::EdgesDirected {
+        EdgeFilteredEdges {
+            graph: PhantomData,
+            iter: self.0.edges_directed(n, dir),
+            f: &self.1,
+        }
+    }
+}
+
 /// A filtered edges iterator.
+#[derive(Debug, Clone)]
 pub struct EdgeFilteredEdges<'a, G, I, F: 'a> {
     graph: PhantomData<G>,
     iter: I,
@@ -461,6 +499,7 @@ where
 }
 
 /// A filtered neighbors-directed iterator.
+#[derive(Debug, Clone)]
 pub struct EdgeFilteredNeighborsDirected<'a, G, F: 'a>
 where
     G: IntoEdgesDirected,

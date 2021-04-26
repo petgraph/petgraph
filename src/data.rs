@@ -396,6 +396,7 @@ impl<N, E, I: ?Sized> ElementIterator<N, E> for I where I: Iterator<Item = Eleme
 /// See [`.filter_elements()`][1] for more information.
 ///
 /// [1]: trait.ElementIterator.html#method.filter_elements
+#[derive(Debug, Clone)]
 pub struct FilterElements<I, F> {
     iter: I,
     node_index: usize,

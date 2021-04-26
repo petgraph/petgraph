@@ -65,12 +65,12 @@ use crate::prelude::{Direction, Graph};
 use crate::csr::Csr;
 use crate::graph::Frozen;
 use crate::graph::IndexType;
-#[cfg(feature = "stable_graph")]
-use crate::stable_graph;
-#[cfg(feature = "matrix_graph")]
-use crate::matrix_graph::MatrixGraph;
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{self, NodeTrait};
+#[cfg(feature = "matrix_graph")]
+use crate::matrix_graph::MatrixGraph;
+#[cfg(feature = "stable_graph")]
+use crate::stable_graph;
 
 trait_template! {
 /// Base graph trait: defines the associated node identifier and

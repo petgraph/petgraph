@@ -76,6 +76,7 @@ impl<G: Visitable> Visitable for Reversed<G> {
 }
 
 /// A reversed edges iterator.
+#[derive(Debug, Clone)]
 pub struct ReversedEdges<I> {
     iter: I,
 }
@@ -97,7 +98,9 @@ pub struct ReversedEdgeReference<R>(R);
 
 impl<R> ReversedEdgeReference<R> {
     /// Return the original, unreversed edge reference.
-    pub fn as_unreversed(&self) -> &R { &self.0 }
+    pub fn as_unreversed(&self) -> &R {
+        &self.0
+    }
 
     /// Consume `self` and return the original, unreversed edge reference.
     pub fn into_unreversed(self) -> R {
@@ -141,6 +144,7 @@ where
 }
 
 /// A reversed edge references iterator.
+#[derive(Debug, Clone)]
 pub struct ReversedEdgeReferences<I> {
     iter: I,
 }
