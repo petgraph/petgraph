@@ -2,8 +2,8 @@ use std::collections::VecDeque;
 use std::hash::Hash;
 
 use super::visit::{
-    EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeCompactIndexable,
-    NodeIndexable, VisitMap, Visitable,
+    EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable,
+    VisitMap, Visitable,
 };
 
 /// Computed
@@ -17,7 +17,7 @@ pub struct Matching<G: GraphBase> {
 
 impl<G> Matching<G>
 where
-    G: NodeCompactIndexable,
+    G: GraphBase,
 {
     fn new(graph: G, mate: Vec<G::NodeId>, n_edges: usize) -> Self {
         Self {
@@ -26,7 +26,12 @@ where
             n_edges,
         }
     }
+}
 
+impl<G> Matching<G>
+where
+    G: NodeIndexable,
+{
     /// Gets the matched counterpart of given node, if there is any.
     ///
     /// Returns `None` if the node is not matched.
@@ -84,14 +89,19 @@ where
     pub fn len(&self) -> usize {
         self.n_edges
     }
+}
 
+impl<G> Matching<G>
+where
+    G: NodeCount,
+{
     /// Returns `true` if the matching is perfect.
     ///
     /// A matching is
     /// [*perfect*](https://en.wikipedia.org/wiki/Matching_(graph_theory)#Definitions)
     /// if every node in the graph is incident to an edge from the matching.
     pub fn is_perfect(&self) -> bool {
-        let n_nodes = self.mate.len();
+        let n_nodes = self.graph.node_count();
         n_nodes % 2 == 0 && self.n_edges == n_nodes / 2
     }
 }
@@ -127,7 +137,7 @@ pub struct MatchedNodes<'a, G: GraphBase> {
 
 impl<G> Iterator for MatchedNodes<'_, G>
 where
-    G: NodeCompactIndexable,
+    G: NodeIndexable,
 {
     type Item = G::NodeId;
 
@@ -153,7 +163,7 @@ pub struct MatchedEdges<'a, G: GraphBase> {
 
 impl<G> Iterator for MatchedEdges<'_, G>
 where
-    G: NodeCompactIndexable,
+    G: NodeIndexable,
 {
     type Item = (G::NodeId, G::NodeId);
 
@@ -192,7 +202,7 @@ where
 /// [1]: fn.maximum_matching.html
 pub fn greedy_matching<G>(graph: G) -> Matching<G>
 where
-    G: Visitable + IntoNodeIdentifiers + NodeCompactIndexable + IntoNeighbors,
+    G: Visitable + IntoNodeIdentifiers + NodeIndexable + IntoNeighbors,
     G::NodeId: Eq + Hash,
     G::EdgeId: Eq + Hash,
 {
@@ -202,7 +212,7 @@ where
 
 fn greedy_matching_inner<G>(graph: &G) -> (Vec<G::NodeId>, usize)
 where
-    G: Visitable + IntoNodeIdentifiers + NodeCompactIndexable + IntoNeighbors,
+    G: Visitable + IntoNodeIdentifiers + NodeIndexable + IntoNeighbors,
 {
     let mut mate = vec![graph.dummy(); graph.node_bound()];
     let mut n_edges = 0;
@@ -352,7 +362,7 @@ impl<G: GraphBase> PartialEq for Label<G> {
 /// ```
 pub fn maximum_matching<G>(graph: G) -> Matching<G>
 where
-    G: Visitable + NodeCompactIndexable + IntoNodeIdentifiers + IntoEdges,
+    G: Visitable + NodeIndexable + IntoNodeIdentifiers + IntoEdges,
 {
     // Greedy algorithm should create a fairly good initial matching. The hope
     // is that it speeds up the computation by doing les work in the complex
@@ -550,7 +560,7 @@ fn augment_path<G>(
     mate: &mut Vec<G::NodeId>,
     label: &Vec<Label<G>>,
 ) where
-    G: NodeCompactIndexable,
+    G: NodeIndexable,
 {
     let outer_idx = graph.to_index(outer);
 

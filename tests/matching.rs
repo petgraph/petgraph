@@ -72,7 +72,10 @@ fn greedy_odd_path() {
 fn greedy_star() {
     let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (0, 2), (0, 3)]);
     let m = greedy_matching(&g);
-    assert_one_of!(collect(m.edges()), [set![(0, 1)], set![(0, 2)], set![(0, 3)]]);
+    assert_one_of!(
+        collect(m.edges()),
+        [set![(0, 1)], set![(0, 2)], set![(0, 3)]]
+    );
     assert_one_of!(collect(m.nodes()), [set![0, 1], set![0, 2], set![0, 3]]);
 }
 
@@ -98,4 +101,39 @@ fn maximum_odd_path() {
     let m = maximum_matching(&g);
     assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
     assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
+}
+
+#[test]
+fn maximum_in_stable_graph() {
+    let mut g: StableUnGraph<(), ()> =
+        StableUnGraph::from_edges(&[(0, 1), (0, 2), (1, 2), (1, 3), (2, 4), (3, 4), (3, 5)]);
+
+    // Create a hole by removing node that would otherwise belong to the maximum
+    // matching.
+    g.remove_node(NodeIndex::new(4));
+
+    let m = maximum_matching(&g);
+    assert_one_of!(
+        collect(m.edges()),
+        [
+            set![(0, 1), (3, 5)],
+            set![(0, 2), (1, 3)],
+            set![(0, 2), (3, 5)]
+        ]
+    );
+    assert_one_of!(
+        collect(m.nodes()),
+        [set![0, 1, 3, 5], set![0, 2, 1, 3], set![0, 2, 3, 5]]
+    );
+}
+
+#[test]
+fn is_perfect_in_stable_graph() {
+    let mut g: StableUnGraph<(), ()> = StableUnGraph::from_edges(&[(0, 1), (1, 2), (2, 3)]);
+    g.remove_node(NodeIndex::new(0));
+    g.remove_node(NodeIndex::new(1));
+
+    let m = maximum_matching(&g);
+    assert_eq!(m.len(), 1);
+    assert!(m.is_perfect());
 }
