@@ -103,6 +103,7 @@ fn maximum_odd_path() {
     assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
 }
 
+#[cfg(feature = "stable_graph")]
 #[test]
 fn maximum_in_stable_graph() {
     let mut g: StableUnGraph<(), ()> =
@@ -127,6 +128,7 @@ fn maximum_in_stable_graph() {
     );
 }
 
+#[cfg(feature = "stable_graph")]
 #[test]
 fn is_perfect_in_stable_graph() {
     let mut g: StableUnGraph<(), ()> = StableUnGraph::from_edges(&[(0, 1), (1, 2), (2, 3)]);
