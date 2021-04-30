@@ -34,17 +34,15 @@ where
 {
     /// Gets the matched counterpart of given node, if there is any.
     ///
-    /// Returns `None` if the node is not matched.
-    ///
-    /// **Panics** if the node does not exist.
+    /// Returns `None` if the node is not matched or does not exist.
     pub fn mate(&self, node: G::NodeId) -> Option<G::NodeId> {
-        let mate = self.mate[self.graph.to_index(node)];
-
-        if mate != self.graph.dummy() {
-            Some(mate)
-        } else {
-            None
-        }
+        self.mate.get(self.graph.to_index(node)).and_then(|&mate| {
+            if mate != self.graph.dummy() {
+                Some(mate)
+            } else {
+                None
+            }
+        })
     }
 
     /// Iterates over all edges from the matching.
@@ -68,9 +66,9 @@ where
         }
     }
 
-    /// Returns `true` if given edge is in the matching.
+    /// Returns `true` if given edge is in the matching, or `false` otherwise.
     ///
-    /// **Panics** if the nodes do not exist.
+    /// If any of the the nodes does not exist, `false` is returned.
     pub fn contains_edge(&self, a: G::NodeId, b: G::NodeId) -> bool {
         match self.mate(a) {
             Some(mate) => mate == b,
@@ -78,11 +76,11 @@ where
         }
     }
 
-    /// Returns `true` if given node is in the matching.
+    /// Returns `true` if given node is in the matching, or `false` otherwise.
     ///
-    /// **Panics** if the node does not exist.
+    /// If the node does not exist, `false` is returned.
     pub fn contains_node(&self, node: G::NodeId) -> bool {
-        self.mate[self.graph.to_index(node)] != self.graph.dummy()
+        self.mate(node).is_some()
     }
 
     /// Gets the number of matched **edges**.
