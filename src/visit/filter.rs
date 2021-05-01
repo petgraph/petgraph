@@ -128,6 +128,10 @@ where
             self.iter.find(move |&target| f.include_node(target))
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
+    }
 }
 
 impl<'a, G, F> IntoNeighborsDirected for &'a NodeFiltered<G, F>
@@ -199,6 +203,10 @@ where
             self.iter.find(move |&target| f.include_node(target.id()))
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
+    }
 }
 
 impl<'a, G, F> IntoEdgeReferences for &'a NodeFiltered<G, F>
@@ -236,6 +244,10 @@ where
         let f = self.f;
         self.iter
             .find(move |&edge| f.include_node(edge.source()) && f.include_node(edge.target()))
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
     }
 }
 
@@ -294,6 +306,10 @@ where
             let f = self.f;
             self.iter.find(move |&edge| f.include_node(edge.target()))
         }
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
     }
 }
 
@@ -428,6 +444,10 @@ where
             })
             .next()
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
+    }
 }
 
 impl<'a, G, F> IntoEdgeReferences for &'a EdgeFiltered<G, F>
@@ -496,6 +516,10 @@ where
         let f = self.f;
         self.iter.find(move |&edge| f.include_edge(edge))
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
+    }
 }
 
 /// A filtered neighbors-directed iterator.
@@ -531,6 +555,10 @@ where
                 }
             })
             .next()
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
     }
 }
 
