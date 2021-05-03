@@ -480,6 +480,15 @@ where
         }
     }
 
+    /// Return an iterator yielding immutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their node
+    /// indices.
+    pub fn node_weights(&self) -> impl Iterator<Item = &N> {
+        self.g
+            .node_weights()
+            .filter_map(|maybe_node| maybe_node.as_ref())
+    }
     /// Return an iterator yielding mutable access to all node weights.
     ///
     /// The order in which weights are yielded matches the order of their node
@@ -487,7 +496,7 @@ where
     pub fn node_weights_mut(&mut self) -> impl Iterator<Item = &mut N> {
         self.g
             .node_weights_mut()
-            .flat_map(|maybe_node| maybe_node.iter_mut())
+            .filter_map(|maybe_node| maybe_node.as_mut())
     }
 
     /// Return an iterator over the node indices of the graph
@@ -517,6 +526,15 @@ where
         }
     }
 
+    /// Return an iterator yielding immutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their edge
+    /// indices.
+    pub fn edge_weights(&self) -> impl Iterator<Item = &E> {
+        self.g
+            .edge_weights()
+            .filter_map(|maybe_edge| maybe_edge.as_ref())
+    }
     /// Return an iterator yielding mutable access to all edge weights.
     ///
     /// The order in which weights are yielded matches the order of their edge
@@ -524,7 +542,7 @@ where
     pub fn edge_weights_mut(&mut self) -> impl Iterator<Item = &mut E> {
         self.g
             .edge_weights_mut()
-            .flat_map(|maybe_edge| maybe_edge.iter_mut())
+            .filter_map(|maybe_edge| maybe_edge.as_mut())
     }
 
     /// Access the source and target nodes for `e`.
