@@ -15,8 +15,9 @@ type SeqGraphIx = usize;
 /// \[Generic\] Finds a [feedback arc set]: a set of edges in the given directed graph, which when
 /// removed, make the graph acyclic.
 ///
-/// Uses a [greedy heuristic algorithm] to select a small number of edges in reasonable time, but
-/// does not necessarily find the minimum feedback arc set.
+/// Uses a [greedy heuristic algorithm] to select a small number of edges, but does not necessarily
+/// find the minimum feedback arc set. Time complexity is **O(|V|² + |E|)**, for an input graph with
+/// nodes **V** and edges **E**.
 ///
 /// Does not consider edge/node weights when selecting edges for the feedback arc set.
 ///
@@ -72,7 +73,7 @@ where
         .filter(move |e| node_seq[&e.source().index()] >= node_seq[&e.target().index()])
 }
 
-fn good_node_sequence(mut g: SeqSourceGraph) -> HashMap<SeqGraphIx, SeqGraphIx> {
+fn good_node_sequence(mut g: SeqSourceGraph) -> HashMap<SeqGraphIx, usize> {
     let mut s_1 = VecDeque::new();
     let mut s_2 = VecDeque::new();
 

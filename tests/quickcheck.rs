@@ -1122,7 +1122,8 @@ quickcheck! {
         !is_cyclic_directed(&g)
     }
 
-    /// Assert that the size of the feedback arc set does not exceed `|E| / 2 - |V| / 6`
+    /// Assert that the size of the feedback arc set of a tournament does not exceed
+    /// **|E| / 2 - |V| / 6**
     fn greedy_fas_performance_within_bound(t: Tournament<(), ()>) -> bool {
         let Tournament(g) = t;
 
