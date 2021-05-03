@@ -65,12 +65,12 @@ use crate::prelude::{Direction, Graph};
 use crate::csr::Csr;
 use crate::graph::Frozen;
 use crate::graph::IndexType;
-#[cfg(feature = "stable_graph")]
-use crate::stable_graph;
-#[cfg(feature = "matrix_graph")]
-use crate::matrix_graph::MatrixGraph;
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{self, NodeTrait};
+#[cfg(feature = "matrix_graph")]
+use crate::matrix_graph::MatrixGraph;
+#[cfg(feature = "stable_graph")]
+use crate::stable_graph;
 
 trait_template! {
 /// Base graph trait: defines the associated node identifier and
@@ -514,6 +514,22 @@ trait_template! {
 }
 
 NodeIndexable! {delegate_impl []}
+
+trait_template! {
+    /// The graph’s `NodeId`s map to indices
+    pub trait EdgeIndexable : GraphBase {
+        @section self
+        /// Return an upper bound of the edge indices in the graph
+        /// (suitable for the size of a bitmap).
+        fn edge_bound(self: &Self) -> usize;
+        /// Convert `a` to an integer index.
+        fn to_index(self: &Self, a: Self::EdgeId) -> usize;
+        /// Convert `i` to a node index
+        fn from_index(self: &Self, i: usize) -> Self::EdgeId;
+    }
+}
+
+EdgeIndexable! {delegate_impl []}
 
 trait_template! {
 /// A graph with a known node count.

@@ -1,0 +1,62 @@
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+name: Continuous integration
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rust: 1.37.0  # MSRV
+          - rust: stable
+            features: unstable quickcheck
+            test_all: --all
+          - rust: beta
+            test_all: --all
+          - rust: nightly
+            features: unstable quickcheck
+            test_all: --all
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Tests
+        run: |
+          cargo build --verbose --no-default-features
+          cargo test --verbose --no-default-features
+          cargo build --verbose --features "${{ matrix.features }}"
+          cargo test ${{ matrix.test_all }} --verbose --features "${{ matrix.features }}"
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        include:
+          - rust: stable
+            rustfmt: rustfmt
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          components: ${{ matrix.rustfmt }}
+          override: true
+      - name: Rustfmt
+        if: matrix.rustfmt
+        run: cargo fmt -- --check

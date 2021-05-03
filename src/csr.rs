@@ -474,6 +474,9 @@ where
             }
         })
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 impl<N, E, Ty, Ix> Data for Csr<N, E, Ty, Ix>
@@ -505,6 +508,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct EdgeReferences<'a, E: 'a, Ty, Ix: 'a> {
     source_index: NodeIndex<Ix>,
     index: usize,
@@ -671,6 +675,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NodeIdentifiers<Ix = DefaultIx> {
     r: Range<usize>,
     ty: PhantomData<Ix>,

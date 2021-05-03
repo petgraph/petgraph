@@ -544,6 +544,7 @@ impl<N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> MatrixGraph<N, E, Directe
 ///
 /// [1]: ../visit/trait.IntoNodeIdentifiers.html#tymethod.node_identifiers
 /// [2]: struct.MatrixGraph.html
+#[derive(Debug, Clone)]
 pub struct NodeIdentifiers<'a, Ix> {
     iter: IdIterator<'a>,
     ix: PhantomData<Ix>,
@@ -564,6 +565,9 @@ impl<'a, Ix: IndexType> Iterator for NodeIdentifiers<'a, Ix> {
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(NodeIndex::new)
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 /// Iterator over all nodes of a graph.
@@ -572,6 +576,7 @@ impl<'a, Ix: IndexType> Iterator for NodeIdentifiers<'a, Ix> {
 ///
 /// [1]: ../visit/trait.IntoNodeReferences.html#tymethod.node_references
 /// [2]: struct.MatrixGraph.html
+#[derive(Debug, Clone)]
 pub struct NodeReferences<'a, N: 'a, Ix> {
     nodes: &'a IdStorage<N>,
     iter: IdIterator<'a>,
@@ -596,6 +601,9 @@ impl<'a, N: 'a, Ix: IndexType> Iterator for NodeReferences<'a, N, Ix> {
             .next()
             .map(|i| (NodeIndex::new(i), &self.nodes[i]))
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 /// Iterator over all edges of a graph.
@@ -604,6 +612,7 @@ impl<'a, N: 'a, Ix: IndexType> Iterator for NodeReferences<'a, N, Ix> {
 ///
 /// [1]: ../visit/trait.IntoEdgeReferences.html#tymethod.edge_references
 /// [2]: struct.MatrixGraph.html
+#[derive(Debug, Clone)]
 pub struct EdgeReferences<'a, Ty: EdgeType, Null: 'a + Nullable, Ix> {
     row: usize,
     column: usize,
@@ -669,6 +678,7 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator
 ///
 /// [1]: struct.MatrixGraph.html#method.neighbors
 /// [2]: struct.MatrixGraph.html#method.neighbors_directed
+#[derive(Debug, Clone)]
 pub struct Neighbors<'a, Ty: EdgeType, Null: 'a + Nullable, Ix>(Edges<'a, Ty, Null, Ix>);
 
 impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Neighbors<'a, Ty, Null, Ix> {
@@ -677,8 +687,12 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Neighbors<'a,
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(_, b, _)| b)
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum NeighborIterDirection {
     Rows,
     Columns,
@@ -690,6 +704,7 @@ enum NeighborIterDirection {
 ///
 /// [1]: struct.MatrixGraph.html#method.edges
 /// [2]: struct.MatrixGraph.html#method.edges_directed
+#[derive(Debug, Clone)]
 pub struct Edges<'a, Ty: EdgeType, Null: 'a + Nullable, Ix> {
     iter_direction: NeighborIterDirection,
     node_adjacencies: &'a [Null],
@@ -844,7 +859,7 @@ fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct IdStorage<T> {
     elements: Vec<Option<T>>,
     upper_bound: usize,
@@ -920,6 +935,7 @@ impl<T> IndexMut<usize> for IdStorage<T> {
     }
 }
 
+#[derive(Debug, Clone)]
 struct IdIterator<'a> {
     upper_bound: usize,
     removed_ids: &'a IndexSet<usize>,

@@ -14,6 +14,25 @@ use crate::{
 /// and at most `max_intermediate_nodes`, if given, limited by graph's order otherwise
 /// Simple path is path without repetitions
 /// Algorithm is adopted from https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.simple_paths.all_simple_paths.html
+///
+/// # Example
+/// ```
+/// use petgraph::{algo, prelude::*};
+///
+/// let mut graph = DiGraph::<&str, i32>::new();
+///
+/// let a = graph.add_node("a");
+/// let b = graph.add_node("b");
+/// let c = graph.add_node("c");
+/// let d = graph.add_node("d");
+///
+/// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
+///
+/// let ways = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+///   .collect::<Vec<_>>();
+///
+/// assert_eq!(4, ways.len());
+/// ```
 pub fn all_simple_paths<TargetColl, G>(
     graph: G,
     from: G::NodeId,

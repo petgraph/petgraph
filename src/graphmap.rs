@@ -480,11 +480,13 @@ where
 
 iterator_wrap! {
     impl (Iterator DoubleEndedIterator ExactSizeIterator) for
+    #[derive(Debug, Clone)]
     struct Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
     iter: Cloned<Keys<'a, N, Vec<(N, CompactDirection)>>>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Neighbors<'a, N, Ty = Undirected>
 where
     N: 'a,
@@ -509,8 +511,17 @@ where
             self.iter.next().map(|&(n, _)| n)
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (lower, upper) = self.iter.size_hint();
+        if Ty::is_directed() {
+            (0, upper)
+        } else {
+            (lower, upper)
+        }
+    }
 }
 
+#[derive(Debug, Clone)]
 pub struct NeighborsDirected<'a, N, Ty>
 where
     N: 'a,
@@ -545,8 +556,17 @@ where
             self.iter.next().map(|&(n, _)| n)
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (lower, upper) = self.iter.size_hint();
+        if Ty::is_directed() {
+            (0, upper)
+        } else {
+            (lower, upper)
+        }
+    }
 }
 
+#[derive(Debug, Clone)]
 pub struct Edges<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -565,16 +585,16 @@ where
 {
     type Item = (N, N, &'a E);
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
-            None => None,
-            Some(b) => {
-                let a = self.from;
-                match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
-                    None => unreachable!(),
-                    Some(edge) => Some((a, b, edge)),
-                }
+        self.iter.next().map(|b| {
+            let a = self.from;
+            match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
+                None => unreachable!(),
+                Some(edge) => (a, b, edge),
             }
-        }
+        })
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
@@ -590,6 +610,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct AllEdges<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -606,10 +627,7 @@ where
 {
     type Item = (N, N, &'a E);
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.next() {
-            None => None,
-            Some((&(a, b), v)) => Some((a, b, v)),
-        }
+        self.inner.next().map(|(&(a, b), v)| (a, b, v))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -650,7 +668,7 @@ pub struct AllEdgesMut<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
 {
-    inner: IndexMapIterMut<'a, (N, N), E>,
+    inner: IndexMapIterMut<'a, (N, N), E>, // TODO: change to something that implements Debug + Clone?
     ty: PhantomData<Ty>,
 }
 
@@ -839,6 +857,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NodeIdentifiers<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -858,6 +877,9 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(&n, _)| n)
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 impl<'a, N, E, Ty> IntoNodeReferences for &'a GraphMap<N, E, Ty>
@@ -876,6 +898,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NodeReferences<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
@@ -894,6 +917,9 @@ where
     type Item = (N, &'a N);
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(n, _)| (*n, n))
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
