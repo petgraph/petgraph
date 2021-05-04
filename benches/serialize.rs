@@ -34,13 +34,13 @@ fn make_stable_graph() -> StableGraph<u32, u32> {
 }
 
 #[bench]
-fn serialize_bench(bench: &mut Bencher) {
+fn serialize_stable_graph(bench: &mut Bencher) {
     let graph = make_stable_graph();
     bench.iter(|| bincode::serialize(&graph).unwrap());
 }
 
 #[bench]
-fn deserialize_bench(bench: &mut Bencher) {
+fn deserialize_stable_graph(bench: &mut Bencher) {
     let graph = make_stable_graph();
     let data = bincode::serialize(&graph).unwrap();
     bench.iter(|| {
