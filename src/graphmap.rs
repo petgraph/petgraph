@@ -511,6 +511,14 @@ where
             self.iter.next().map(|&(n, _)| n)
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (lower, upper) = self.iter.size_hint();
+        if Ty::is_directed() {
+            (0, upper)
+        } else {
+            (lower, upper)
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -548,6 +556,14 @@ where
             self.iter.next().map(|&(n, _)| n)
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (lower, upper) = self.iter.size_hint();
+        if Ty::is_directed() {
+            (0, upper)
+        } else {
+            (lower, upper)
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -576,6 +592,9 @@ where
                 Some(edge) => (a, b, edge),
             }
         })
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
@@ -858,6 +877,9 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(&n, _)| n)
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 impl<'a, N, E, Ty> IntoNodeReferences for &'a GraphMap<N, E, Ty>
@@ -895,6 +917,9 @@ where
     type Item = (N, &'a N);
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(n, _)| (*n, n))
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 

@@ -149,6 +149,7 @@ mod isomorphism;
 mod iter_format;
 mod iter_utils;
 mod k_shortest_path;
+mod matching;
 #[cfg(feature = "matrix_graph")]
 pub mod matrix_graph;
 #[cfg(feature = "quickcheck")]
