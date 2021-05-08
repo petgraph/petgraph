@@ -139,6 +139,7 @@ mod astar;
 pub mod csr;
 mod dijkstra;
 pub mod dot;
+mod floyd_warshall;
 #[cfg(feature = "generate")]
 pub mod generate;
 mod graph_impl;

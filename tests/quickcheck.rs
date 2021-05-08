@@ -22,7 +22,7 @@ use itertools::cloned;
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, greedy_matching, is_cyclic_directed,
+    bellman_ford, condensation, dijkstra, floyd_warshall, greedy_matching, is_cyclic_directed,
     is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc,
     maximum_matching, min_spanning_tree, tarjan_scc, toposort, Matching,
 };
@@ -769,6 +769,37 @@ quickcheck! {
                 return false;
             }
         }
+        true
+    }
+}
+
+quickcheck! {
+    // checks floyd_warshall against dijkstra results
+    fn floyd_warshall_(g: Graph<u32, u32>) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+
+        let fw_res = floyd_warshall(&g, |e| *e.weight()).unwrap();
+
+        for node1 in g.node_identifiers() {
+            let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
+
+            for node2 in g.node_identifiers() {
+                // if dijkstra found a path then the results must be same
+                if let Some(distance) = dijkstra_res.get(&node2) {
+                    let floyd_distance = fw_res.get(&(node1, node2)).unwrap();
+                    if distance != floyd_distance {
+                        return false;
+                    }
+                } else {
+                    // if there are no path between two nodes then floyd_warshall will return maximum value possible
+                    if *fw_res.get(&(node1, node2)).unwrap() != u32::MAX {
+                        return false;
+                    }
+                }
+            }
+         }
         true
     }
 }
