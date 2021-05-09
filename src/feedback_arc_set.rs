@@ -25,6 +25,7 @@ use self::linked_list::{LinkedList, LinkedListEntry};
 /// # Example
 ///
 /// ```
+/// # #[cfg(feature = "stable_graph")] {
 /// use petgraph::{
 ///     algo::{greedy_feedback_arc_set, is_cyclic_directed},
 ///     graph::EdgeIndex,
@@ -53,6 +54,7 @@ use self::linked_list::{LinkedList, LinkedListEntry};
 /// }
 ///
 /// assert!(!is_cyclic_directed(&g));
+/// # }
 /// ```
 ///
 /// [feedback arc set]: https://en.wikipedia.org/wiki/Feedback_arc_set
