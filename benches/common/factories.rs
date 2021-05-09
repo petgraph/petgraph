@@ -276,3 +276,59 @@ pub fn stable_ungraph() -> GraphFactory<Undirected, StableGraph<(), (), Undirect
 pub fn stable_digraph() -> GraphFactory<Directed, StableGraph<(), (), Directed>> {
     stable_graph()
 }
+
+pub fn tournament(node_count: usize) -> DiGraph<(), ()> {
+    let mut edge_forward = true;
+    let mut g = DiGraph::new();
+
+    for _ in 0..node_count {
+        g.add_node(());
+    }
+
+    for i in g.node_indices() {
+        for j in g.node_indices() {
+            if i >= j {
+                continue;
+            }
+            let (source, target) = if edge_forward { (i, j) } else { (j, i) };
+            g.add_edge(source, target, ());
+            edge_forward = !edge_forward;
+        }
+    }
+
+    g
+}
+
+/// An F_(1,n) graph (where **|E| == 2(|N|) - 1**) with pseudo-random edge directions.
+pub fn directed_fan(n: usize) -> DiGraph<(), ()> {
+    let mut g = DiGraph::new();
+
+    for _ in 0..(n + 1) {
+        g.add_node(());
+    }
+
+    let mut indices = g.node_indices();
+    let ix_0 = indices.next().unwrap();
+    let mut edge_forward = true;
+    let mut prev_ix = None;
+
+    for ix in indices {
+        let (source, target) = if edge_forward { (ix_0, ix) } else { (ix, ix_0) };
+
+        g.add_edge(source, target, ());
+
+        if let Some(prev_ix) = prev_ix {
+            let (source, target) = if edge_forward {
+                (prev_ix, ix)
+            } else {
+                (ix, prev_ix)
+            };
+            g.add_edge(source, target, ());
+        }
+
+        edge_forward = !edge_forward;
+        prev_ix = Some(ix);
+    }
+
+    g
+}
