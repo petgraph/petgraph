@@ -94,18 +94,22 @@ impl<T: Zero> Default for NotZero<T> {
 }
 
 impl<T: Zero> Nullable for NotZero<T> {
+    #[doc(hidden)]
     type Wrapped = T;
 
+    #[doc(hidden)]
     fn new(value: T) -> Self {
         assert!(!value.is_zero());
         NotZero(value)
     }
 
     // implemented here for optimization purposes
+    #[doc(hidden)]
     fn is_null(&self) -> bool {
         self.0.is_zero()
     }
 
+    #[doc(hidden)]
     fn as_ref(&self) -> Option<&Self::Wrapped> {
         if !self.is_null() {
             Some(&self.0)
@@ -114,6 +118,7 @@ impl<T: Zero> Nullable for NotZero<T> {
         }
     }
 
+    #[doc(hidden)]
     fn as_mut(&mut self) -> Option<&mut Self::Wrapped> {
         if !self.is_null() {
             Some(&mut self.0)
