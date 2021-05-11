@@ -41,15 +41,15 @@ fn greedy_fas_fan_10_bench(bench: &mut Bencher) {
 }
 
 #[bench]
-fn greedy_fas_fan_50_bench(bench: &mut Bencher) {
-    let g = directed_fan(50);
+fn greedy_fas_fan_200_bench(bench: &mut Bencher) {
+    let g = directed_fan(200);
 
     bench.iter(|| greedy_feedback_arc_set(&g).for_each(|_| ()))
 }
 
 #[bench]
-fn greedy_fas_fan_200_bench(bench: &mut Bencher) {
-    let g = directed_fan(200);
+fn greedy_fas_fan_1000_bench(bench: &mut Bencher) {
+    let g = directed_fan(1000);
 
     bench.iter(|| greedy_feedback_arc_set(&g).for_each(|_| ()))
 }
