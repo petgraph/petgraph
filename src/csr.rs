@@ -95,10 +95,9 @@ where
         }
     }
 
-    /// Create a new [`Csr`] with `n` nodes. `N` must implement [`Default`] for the weight of each node.
+    /// Create a new `Csr` with `n` nodes. `N` must implement [`Default`] for the weight of each node.
     ///
     /// [`Default`]: https://doc.rust-lang.org/nightly/core/default/trait.Default.html
-    /// [`Csr`]: #struct.Csr.html
     ///
     /// # Example
     /// ```rust

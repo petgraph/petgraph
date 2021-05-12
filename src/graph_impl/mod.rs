@@ -1905,7 +1905,7 @@ where
     }
 }
 
-/// A  `GraphIndex` is a node or edge index.
+/// A `GraphIndex` is a node or edge index.
 pub trait GraphIndex: Copy {
     #[doc(hidden)]
     fn index(&self) -> usize;
@@ -1915,10 +1915,12 @@ pub trait GraphIndex: Copy {
 
 impl<Ix: IndexType> GraphIndex for NodeIndex<Ix> {
     #[inline]
+    #[doc(hidden)]
     fn index(&self) -> usize {
         NodeIndex::index(*self)
     }
     #[inline]
+    #[doc(hidden)]
     fn is_node_index() -> bool {
         true
     }
@@ -1926,10 +1928,12 @@ impl<Ix: IndexType> GraphIndex for NodeIndex<Ix> {
 
 impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
     #[inline]
+    #[doc(hidden)]
     fn index(&self) -> usize {
         EdgeIndex::index(*self)
     }
     #[inline]
+    #[doc(hidden)]
     fn is_node_index() -> bool {
         false
     }

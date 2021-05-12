@@ -141,15 +141,15 @@ iterator_wrap! {
 /// Can be interpreted as a directed graph
 /// with unweighted nodes.
 ///
-/// This is the most simple adjacency list you can imagine. `Graph`, in contrast,
+/// This is the most simple adjacency list you can imagine. [`Graph`](../graph/struct.Graph.html), in contrast,
 /// maintains both the list of successors and predecessors for each node,
 /// which is a different trade-off.
 ///
 /// Allows parallel edges and self-loops.
 ///
-/// This data structure is append-only (except for [`clear`]), so indices
+/// This data structure is append-only (except for [`clear`](#method.clear)), so indices
 /// returned at some point for a given graph will stay valid with this same
-/// graph until it is dropped or [`clear`] is called.
+/// graph until it is dropped or [`clear`](#method.clear) is called.
 ///
 /// Space consumption: **O(|E|)**.
 #[derive(Clone, Default)]
