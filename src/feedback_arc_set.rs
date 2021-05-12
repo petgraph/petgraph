@@ -163,6 +163,9 @@ fn good_node_sequence(
             some_moved = true;
             buckets.update_neighbour_node_buckets(highest_dd_fas_ix, &mut nodes);
             s_1.push_back(nodes[highest_dd_fas_ix].data().graph_ix);
+
+            Buckets::trim_bucket_list(&mut buckets.bidirectional_pve_dd);
+            Buckets::trim_bucket_list(&mut buckets.bidirectional_nve_dd);
         }
 
         if !some_moved {
@@ -310,6 +313,18 @@ impl Buckets {
 
             self.suitable_bucket(in_ix, nodes).push_front(in_ix, nodes);
         }
+    }
+
+    fn trim_bucket_list(list: &mut Vec<NodeLinkedList>) {
+        let trunc_len = if let Some(highest_populated_index) =
+            (0..list.len()).rev().find(|i| list[*i].start.is_some())
+        {
+            highest_populated_index + 1
+        } else {
+            0
+        };
+
+        list.truncate(trunc_len);
     }
 }
 
