@@ -231,7 +231,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
 
         debug_assert!(node_capacity <= <Ix as IndexType>::max().index());
         if node_capacity > 0 {
-            m.extend_capacity_for_node(NodeIndex::new(node_capacity - 1));
+            m.extend_capacity_for_node(NodeIndex::new(node_capacity - 1), true);
         }
 
         m
@@ -315,11 +315,12 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     }
 
     #[inline]
-    fn extend_capacity_for_node(&mut self, min_node: NodeIndex<Ix>) {
+    fn extend_capacity_for_node(&mut self, min_node: NodeIndex<Ix>, exact: bool) {
         self.node_capacity = extend_linearized_matrix::<Ty, _>(
             &mut self.node_adjacencies,
             self.node_capacity,
             min_node.index() + 1,
+            exact,
         );
     }
 
@@ -327,7 +328,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     fn extend_capacity_for_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) {
         let min_node = cmp::max(a, b);
         if min_node.index() >= self.node_capacity {
-            self.extend_capacity_for_node(min_node);
+            self.extend_capacity_for_node(min_node, false);
         }
     }
 
@@ -809,12 +810,13 @@ fn extend_linearized_matrix<Ty: EdgeType, T: Default>(
     node_adjacencies: &mut Vec<T>,
     old_node_capacity: usize,
     new_capacity: usize,
+    exact: bool,
 ) -> usize {
     if old_node_capacity >= new_capacity {
         return old_node_capacity;
     }
     if Ty::is_directed() {
-        extend_flat_square_matrix(node_adjacencies, old_node_capacity, new_capacity)
+        extend_flat_square_matrix(node_adjacencies, old_node_capacity, new_capacity, exact)
     } else {
         extend_lower_triangular_matrix(node_adjacencies, new_capacity)
     }
@@ -830,8 +832,15 @@ fn extend_flat_square_matrix<T: Default>(
     node_adjacencies: &mut Vec<T>,
     old_node_capacity: usize,
     new_node_capacity: usize,
+    exact: bool,
 ) -> usize {
-    let new_node_capacity = new_node_capacity.next_power_of_two();
+    // Grow the capacity by exponential steps to avoid repeated allocations.
+    // Disabled for the with_capacity constructor.
+    let new_node_capacity = if exact {
+        new_node_capacity
+    } else {
+        new_node_capacity.next_power_of_two()
+    };
 
     // Optimization: when resizing the matrix this way we skip the first few grows to make
     // small matrices a bit faster to work with.
