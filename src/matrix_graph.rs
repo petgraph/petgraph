@@ -840,30 +840,29 @@ fn extend_flat_square_matrix<T: Default>(
     let new_node_capacity = if exact {
         new_node_capacity
     } else {
-        new_node_capacity.next_power_of_two()
+        const MIN_CAPACITY: usize = 4;
+        cmp::max(new_node_capacity.next_power_of_two(), MIN_CAPACITY)
     };
 
     // Optimization: when resizing the matrix this way we skip the first few grows to make
     // small matrices a bit faster to work with.
-    const MIN_CAPACITY: usize = 4;
-    let new_node_capacity = cmp::max(new_node_capacity, MIN_CAPACITY);
 
     ensure_len(node_adjacencies, new_node_capacity.pow(2));
-    for c in (0..old_node_capacity).rev() {
+    for c in (1..old_node_capacity).rev() {
         let pos = c * old_node_capacity;
         let new_pos = c * new_node_capacity;
 
-        // Move the slices directly if the directions are non overlapping
+        // Move the slices directly if they do not overlap with their new position
         if pos + old_node_capacity <= new_pos {
             let old = node_adjacencies[pos..pos + old_node_capacity].as_mut_ptr();
             let new = node_adjacencies[new_pos..new_pos + old_node_capacity].as_mut_ptr();
 
-            // SAFE: new starts at least `old_node_capacity` after old.
+            // SAFE: new starts at least `old_node_capacity` positions after old.
             unsafe {
                 std::ptr::swap_nonoverlapping(old, new, old_node_capacity);
             }
         } else {
-            for i in 0..old_node_capacity {
+            for i in (0..old_node_capacity).rev() {
                 node_adjacencies.as_mut_slice().swap(pos + i, new_pos + i);
             }
         }
@@ -1342,6 +1341,24 @@ mod tests {
         assert!(g.has_edge(n2, n1));
         assert!(g.has_edge(n2, n3));
         assert!(g.has_edge(n2, n4));
+    }
+
+    #[test]
+    fn test_matrix_resize() {
+        let mut g = DiMatrix::<u8, ()>::with_capacity(3);
+        let n0 = g.add_node(0);
+        let n1 = g.add_node(1);
+        let n2 = g.add_node(2);
+        let n3 = g.add_node(3);
+        g.add_edge(n1, n0, ());
+        g.add_edge(n1, n1, ());
+        // Triggers a resize from capacity 3 to 4
+        g.add_edge(n2, n3, ());
+        assert_eq!(g.node_count(), 4);
+        assert_eq!(g.edge_count(), 3);
+        assert!(g.has_edge(n1, n0));
+        assert!(g.has_edge(n1, n1));
+        assert!(g.has_edge(n2, n3));
     }
 
     #[test]
