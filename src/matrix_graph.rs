@@ -239,14 +239,15 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
 
     #[inline]
     fn to_edge_position(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<usize> {
-        if a.index() >= self.node_capacity || b.index() >= self.node_capacity {
+        if cmp::max(a.index(), b.index()) >= self.node_capacity {
             return None;
         }
-        Some(to_linearized_matrix_position::<Ty>(
-            a.index(),
-            b.index(),
-            self.node_capacity,
-        ))
+        Some(self.to_edge_position_unchecked(a, b))
+    }
+
+    #[inline]
+    fn to_edge_position_unchecked(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> usize {
+        to_linearized_matrix_position::<Ty>(a.index(), b.index(), self.node_capacity)
     }
 
     /// Remove all nodes and edges.
@@ -342,7 +343,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// **Panics** if any of the nodes don't exist.
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> Option<E> {
         self.extend_capacity_for_edge(a, b);
-        let p = self.to_edge_position(a, b).unwrap();
+        let p = self.to_edge_position_unchecked(a, b);
         let old_weight = mem::replace(&mut self.node_adjacencies[p], Null::new(weight));
         if old_weight.is_null() {
             self.nb_edges += 1;
