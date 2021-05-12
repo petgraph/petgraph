@@ -11,7 +11,7 @@ extern crate odds;
 
 mod utils;
 
-use utils::Small;
+use utils::{Small, Tournament};
 
 use odds::prelude::*;
 use std::collections::HashSet;
@@ -22,9 +22,10 @@ use itertools::cloned;
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, floyd_warshall, greedy_matching, is_cyclic_directed,
-    is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc,
-    maximum_matching, min_spanning_tree, tarjan_scc, toposort, Matching,
+    bellman_ford, condensation, dijkstra, floyd_warshall, greedy_feedback_arc_set, greedy_matching,
+    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
+    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, tarjan_scc, toposort,
+    Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1138,6 +1139,35 @@ quickcheck! {
         }
         println!("ok!");
         true
+    }
+}
+
+quickcheck! {
+    fn greedy_fas_remaining_graph_is_acyclic(g: StableDiGraph<(), ()>) -> bool {
+        let mut g = g;
+        let fas: Vec<EdgeIndex> = greedy_feedback_arc_set(&g).map(|e| e.id()).collect();
+
+        for edge_id in fas {
+            g.remove_edge(edge_id);
+        }
+
+        !is_cyclic_directed(&g)
+    }
+
+    /// Assert that the size of the feedback arc set of a tournament does not exceed
+    /// **|E| / 2 - |V| / 6**
+    fn greedy_fas_performance_within_bound(t: Tournament<(), ()>) -> bool {
+        let Tournament(g) = t;
+
+        let expected_bound = if g.node_count() < 2 {
+            0
+        } else {
+            ((g.edge_count() as f64) / 2.0 - (g.node_count() as f64) / 6.0) as usize
+        };
+
+        let fas_size = greedy_feedback_arc_set(&g).count();
+
+        fas_size <= expected_bound
     }
 }
 
