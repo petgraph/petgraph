@@ -249,15 +249,21 @@ impl Buckets {
 
             if delta_degree >= 0 {
                 let bucket_ix = delta_degree as usize;
-                while self.bidirectional_pve_dd.len() <= bucket_ix {
-                    self.bidirectional_pve_dd.push(NodeLinkedList::new());
+
+                if self.bidirectional_pve_dd.len() <= bucket_ix {
+                    self.bidirectional_pve_dd
+                        .resize_with(bucket_ix + 1, NodeLinkedList::new);
                 }
+
                 &mut self.bidirectional_pve_dd[bucket_ix]
             } else {
                 let bucket_ix = (-delta_degree - 1) as usize;
-                while self.bidirectional_nve_dd.len() <= bucket_ix {
-                    self.bidirectional_nve_dd.push(NodeLinkedList::new());
+
+                if self.bidirectional_nve_dd.len() <= bucket_ix {
+                    self.bidirectional_nve_dd
+                        .resize_with(bucket_ix + 1, NodeLinkedList::new);
                 }
+
                 &mut self.bidirectional_nve_dd[bucket_ix]
             }
         }
