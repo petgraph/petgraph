@@ -112,8 +112,7 @@ pub enum Config {
     /// Do not print the graph/digraph string.
     GraphContentOnly,
     #[doc(hidden)]
-    // can never be constructed
-    _Incomplete(std::convert::Infallible),
+    _Incomplete(()),
 }
 macro_rules! make_config_struct {
     ($($variant:ident,)*) => {
@@ -127,9 +126,9 @@ macro_rules! make_config_struct {
             fn extract(configs: &[Config]) -> Self {
                 let mut conf = Self::default();
                 for c in configs {
-                    match c {
+                    match *c {
                         $(Config::$variant => conf.$variant = true,)*
-                        Config::_Incomplete(x) => match *x {},
+                        Config::_Incomplete(()) => {}
                     }
                 }
                 conf
