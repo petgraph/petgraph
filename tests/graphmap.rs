@@ -61,6 +61,35 @@ fn simple() {
 }
 
 #[test]
+fn edges_directed() {
+    let mut gr = DiGraphMap::new();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
+    gr.add_edge(a, b, 7);
+    gr.add_edge(a, c, 9);
+    gr.add_edge(a, d, 14);
+    gr.add_edge(b, c, 10);
+    gr.add_edge(c, d, 2);
+    gr.add_edge(d, e, 9);
+    gr.add_edge(b, f, 15);
+    gr.add_edge(c, f, 11);
+
+    let mut edges_out = gr.edges_directed(c, Direction::Outgoing);
+    assert_eq!(edges_out.next(), Some((c, d, &2)));
+    assert_eq!(edges_out.next(), Some((c, f, &11)));
+    assert_eq!(edges_out.next(), None);
+
+    let mut edges_in = gr.edges_directed(c, Direction::Incoming);
+    assert_eq!(edges_in.next(), Some((a, c, &9)));
+    assert_eq!(edges_in.next(), Some((b, c, &10)));
+    assert_eq!(edges_in.next(), None);
+}
+
+#[test]
 fn remov() {
     let mut g = UnGraphMap::new();
     g.add_node(1);

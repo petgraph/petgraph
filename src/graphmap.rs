@@ -10,6 +10,7 @@ use std::hash::{self, Hash};
 use std::iter::FromIterator;
 use std::iter::{Cloned, DoubleEndedIterator};
 use std::marker::PhantomData;
+use std::mem;
 use std::ops::{Deref, Index, IndexMut};
 use std::slice::Iter;
 
@@ -17,8 +18,10 @@ use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
 
 use crate::graph::node_index;
 use crate::graph::Graph;
-use crate::visit::{IntoEdgeReferences, IntoEdges, NodeCompactIndexable};
-use crate::visit::{IntoNodeIdentifiers, IntoNodeReferences, NodeCount, NodeIndexable};
+use crate::visit::{
+    EdgeIndexable, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers,
+    IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
+};
 use crate::IntoWeightedEdge;
 
 /// A `GraphMap` with undirected edges.
@@ -373,6 +376,27 @@ where
         }
     }
 
+    /// Return an iterator of target nodes with an edge starting from `a`,
+    /// paired with their respective edge weights.
+    ///
+    /// - `Directed`, `Outgoing`: All edges from `a`.
+    /// - `Directed`, `Incoming`: All edges to `a`.
+    /// - `Undirected`, `Outgoing`: All edges connected to `a`, with `a` being the source of each
+    ///   edge.
+    /// - `Undirected`, `Incoming`: All edges connected to `a`, with `a` being the target of each
+    ///   edge.
+    ///
+    /// Produces an empty iterator if the node doesn't exist.<br>
+    /// Iterator element type is `(N, &E)`.
+    pub fn edges_directed(&self, from: N, dir: Direction) -> EdgesDirected<N, E, Ty> {
+        EdgesDirected {
+            from,
+            iter: self.neighbors_directed(from, dir),
+            dir,
+            edges: &self.edges,
+        }
+    }
+
     /// Return a reference to the edge weight connecting `a` with `b`, or
     /// `None` if the edge does not exist in the graph.
     pub fn edge_weight(&self, a: N, b: N) -> Option<&E> {
@@ -598,6 +622,42 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct EdgesDirected<'a, N, E: 'a, Ty>
+where
+    N: 'a + NodeTrait,
+    Ty: EdgeType,
+{
+    from: N,
+    dir: Direction,
+    edges: &'a IndexMap<(N, N), E>,
+    iter: NeighborsDirected<'a, N, Ty>,
+}
+
+impl<'a, N, E, Ty> Iterator for EdgesDirected<'a, N, E, Ty>
+where
+    N: 'a + NodeTrait,
+    E: 'a,
+    Ty: EdgeType,
+{
+    type Item = (N, N, &'a E);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|mut b| {
+            let mut a = self.from;
+            if self.dir == Direction::Incoming {
+                mem::swap(&mut a, &mut b);
+            }
+            match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
+                None => unreachable!(),
+                Some(edge) => (a, b, edge),
+            }
+        })
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
 impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
 where
     N: NodeTrait,
@@ -727,6 +787,17 @@ where
     type Edges = Edges<'a, N, E, Ty>;
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         self.edges(a)
+    }
+}
+
+impl<'a, N: 'a, E: 'a, Ty> IntoEdgesDirected for &'a GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    type EdgesDirected = EdgesDirected<'a, N, E, Ty>;
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
+        self.edges_directed(a, dir)
     }
 }
 
@@ -946,4 +1017,24 @@ where
     N: NodeTrait,
     Ty: EdgeType,
 {
+}
+
+impl<N, E, Ty> EdgeIndexable for GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    fn edge_bound(&self) -> usize {
+        self.edge_count()
+    }
+
+    fn to_index(&self, ix: Self::EdgeId) -> usize {
+        let (i, _, _) = self.edges.get_full(&ix).unwrap();
+        i
+    }
+
+    fn from_index(&self, ix: usize) -> Self::EdgeId {
+        let (&key, _) = self.edges.get_index(ix).unwrap();
+        key
+    }
 }

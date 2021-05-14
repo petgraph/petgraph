@@ -7,9 +7,9 @@ use std::marker::PhantomData;
 use crate::data::DataMap;
 use crate::visit::{Data, NodeCompactIndexable, NodeCount};
 use crate::visit::{
-    GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
-    IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeIndexable, NodeRef,
-    VisitMap, Visitable,
+    EdgeIndexable, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected,
+    IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeIndexable,
+    NodeRef, VisitMap, Visitable,
 };
 
 /// A graph filter for nodes.
@@ -339,6 +339,7 @@ macro_rules! access0 {
 
 Data! {delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 NodeIndexable! {delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
+EdgeIndexable! {delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 GraphProp! {delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 Visitable! {delegate_impl [[G, F], G, NodeFiltered<G, F>, access0]}
 
@@ -569,4 +570,5 @@ IntoNodeReferences! {delegate_impl [['a, G, F], G, &'a EdgeFiltered<G, F>, acces
 NodeCompactIndexable! {delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}
 NodeCount! {delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}
 NodeIndexable! {delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}
+EdgeIndexable! {delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}
 Visitable! {delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}

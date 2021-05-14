@@ -1,9 +1,10 @@
 use crate::{Direction, Incoming};
 
 use crate::visit::{
-    Data, EdgeRef, GraphBase, GraphProp, GraphRef, IntoEdgeReferences, IntoEdges,
-    IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, Visitable,
+    Data, EdgeCount, EdgeIndexable, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, GraphRef,
+    IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
+    IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
+    Visitable,
 };
 
 /// An edge-reversing graph adaptor.
@@ -178,3 +179,6 @@ IntoNodeIdentifiers! {delegate_impl [[G], G, Reversed<G>, access0]}
 IntoNodeReferences! {delegate_impl [[G], G, Reversed<G>, access0]}
 GraphProp! {delegate_impl [[G], G, Reversed<G>, access0]}
 NodeCount! {delegate_impl [[G], G, Reversed<G>, access0]}
+EdgeCount! {delegate_impl [[G], G, Reversed<G>, access0]}
+EdgeIndexable! {delegate_impl [[G], G, Reversed<G>, access0]}
+GetAdjacencyMatrix! {delegate_impl [[G], G, Reversed<G>, access0]}
