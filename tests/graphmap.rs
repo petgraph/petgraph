@@ -83,6 +83,20 @@ fn remov() {
 }
 
 #[test]
+fn remove_node() {
+    // From #431
+    let mut graph = petgraph::graphmap::DiGraphMap::<u32, ()>::new();
+    graph.add_edge(1, 2, ());
+    graph.remove_node(2);
+
+    let neighbors: Vec<u32> = graph.neighbors(1).collect();
+    assert_eq!(neighbors, []);
+
+    let edges: Vec<(u32, u32, _)> = graph.all_edges().collect();
+    assert_eq!(edges, []);
+}
+
+#[test]
 fn remove_directed() {
     let mut g = GraphMap::<_, _, Directed>::with_capacity(0, 0);
     g.add_edge(1, 2, -1);
