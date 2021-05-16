@@ -80,11 +80,31 @@ enum CompactDirection {
     Incoming,
 }
 
+impl CompactDirection {
+    /// Return the opposite `CompactDirection`.
+    #[inline]
+    pub fn opposite(self) -> CompactDirection {
+        match self {
+            CompactDirection::Outgoing => CompactDirection::Incoming,
+            CompactDirection::Incoming => CompactDirection::Outgoing,
+        }
+    }
+}
+
 impl From<Direction> for CompactDirection {
     fn from(d: Direction) -> Self {
         match d {
             Outgoing => CompactDirection::Outgoing,
             Incoming => CompactDirection::Incoming,
+        }
+    }
+}
+
+impl From<CompactDirection> for Direction {
+    fn from(d: CompactDirection) -> Self {
+        match d {
+            CompactDirection::Outgoing => Outgoing,
+            CompactDirection::Incoming => Incoming,
         }
     }
 }
@@ -191,11 +211,16 @@ where
             None => return false,
             Some(sus) => sus,
         };
-        for (succ, _) in links {
+        for (succ, dir) in links {
+            let edge = if dir == CompactDirection::Outgoing {
+                Self::edge_key(n, succ)
+            } else {
+                Self::edge_key(succ, n)
+            };
             // remove all successor links
-            self.remove_single_edge(&succ, &n, Incoming);
+            self.remove_single_edge(&succ, &n, dir.opposite());
             // Remove all edge values
-            self.edges.swap_remove(&Self::edge_key(n, succ));
+            self.edges.swap_remove(&edge);
         }
         true
     }
@@ -249,15 +274,12 @@ where
     /// Remove edge relation from a to b
     ///
     /// Return `true` if it did exist.
-    fn remove_single_edge(&mut self, a: &N, b: &N, dir: Direction) -> bool {
+    fn remove_single_edge(&mut self, a: &N, b: &N, dir: CompactDirection) -> bool {
         match self.nodes.get_mut(a) {
             None => false,
             Some(sus) => {
                 if Ty::is_directed() {
-                    match sus
-                        .iter()
-                        .position(|elt| elt == &(*b, CompactDirection::from(dir)))
-                    {
+                    match sus.iter().position(|elt| elt == &(*b, dir)) {
                         Some(index) => {
                             sus.swap_remove(index);
                             true
@@ -293,9 +315,9 @@ where
     /// assert_eq!(g.edge_count(), 0);
     /// ```
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E> {
-        let exist1 = self.remove_single_edge(&a, &b, Outgoing);
+        let exist1 = self.remove_single_edge(&a, &b, CompactDirection::Outgoing);
         let exist2 = if a != b {
-            self.remove_single_edge(&b, &a, Incoming)
+            self.remove_single_edge(&b, &a, CompactDirection::Incoming)
         } else {
             exist1
         };
