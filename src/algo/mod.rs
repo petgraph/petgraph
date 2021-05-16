@@ -832,7 +832,6 @@ where
         let mut did_update = false;
         for i in g.node_identifiers() {
             for edge in g.edges(i) {
-                let i = edge.source();
                 let j = edge.target();
                 let w = *edge.weight();
                 if distance[ix(i)] + w < distance[ix(j)] {
