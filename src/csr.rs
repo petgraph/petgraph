@@ -779,7 +779,7 @@ where
 
 impl<'a, N, Ix> ExactSizeIterator for NodeReferences<'a, N, Ix> where Ix: IndexType {}
 
-/// The adjacency matrix for **List** is a bitmap that's computed by
+/// The adjacency matrix for **Csr** is a bitmap that's computed by
 /// `.adjacency_matrix()`.
 impl<'a, N, E, Ty, Ix> GetAdjacencyMatrix for &'a Csr<N, E, Ty, Ix>
 where
