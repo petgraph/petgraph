@@ -13,7 +13,7 @@ use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 
 use crate::util::enumerate;
 use crate::visit::EdgeRef;
-use crate::visit::{IntoEdges, IntoEdgesDirected, IntoNodeReferences};
+use crate::visit::{EdgeIndexable, IntoEdges, IntoEdgesDirected, IntoNodeReferences};
 
 #[cfg(feature = "serde-1")]
 mod serialization;
@@ -2243,6 +2243,24 @@ where
 }
 
 impl<'a, E, Ix> ExactSizeIterator for EdgeReferences<'a, E, Ix> where Ix: IndexType {}
+
+impl<N, E, Ty, Ix> EdgeIndexable for Graph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn edge_bound(&self) -> usize {
+        self.edge_count()
+    }
+
+    fn to_index(&self, ix: EdgeIndex<Ix>) -> usize {
+        ix.index()
+    }
+
+    fn from_index(&self, ix: usize) -> Self::EdgeId {
+        EdgeIndex::new(ix)
+    }
+}
 
 mod frozen;
 #[cfg(feature = "stable_graph")]

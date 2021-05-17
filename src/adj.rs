@@ -1,7 +1,9 @@
 //! Simple adjacency list.
 use crate::data::{Build, DataMap, DataMapMut};
 use crate::iter_format::NoPretty;
-use crate::visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors, NodeCount};
+use crate::visit::{
+    self, EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount,
+};
 use fixedbitset::FixedBitSet;
 use std::fmt;
 use std::ops::Range;
@@ -569,6 +571,15 @@ impl<E, Ix: IndexType> NodeCount for List<E, Ix> {
     }
 }
 
+impl<E, Ix: IndexType> EdgeCount for List<E, Ix> {
+    /// Returns the number of edges in the list
+    ///
+    /// Computes in **O(|V|)** time.
+    fn edge_count(self: &Self) -> usize {
+        List::edge_count(self)
+    }
+}
+
 impl<E, Ix: IndexType> visit::NodeIndexable for List<E, Ix> {
     fn node_bound(&self) -> usize {
         self.node_count()
@@ -618,5 +629,33 @@ impl<E, Ix: IndexType> DataMapMut for List<E, Ix> {
     /// Computes in **O(1)**
     fn edge_weight_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut E> {
         self.get_edge_mut(e).map(|x| &mut x.weight)
+    }
+}
+
+/// The adjacency matrix for **List** is a bitmap that's computed by
+/// `.adjacency_matrix()`.
+impl<E, Ix> GetAdjacencyMatrix for List<E, Ix>
+where
+    Ix: IndexType,
+{
+    type AdjMatrix = FixedBitSet;
+
+    fn adjacency_matrix(&self) -> FixedBitSet {
+        let n = self.node_count();
+        let mut matrix = FixedBitSet::with_capacity(n * n);
+        for edge in self.edge_references() {
+            let i = edge.source().index() * n + edge.target().index();
+            matrix.put(i);
+
+            let j = edge.source().index() + n * edge.target().index();
+            matrix.put(j);
+        }
+        matrix
+    }
+
+    fn is_adjacent(&self, matrix: &FixedBitSet, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
+        let n = self.edge_count();
+        let index = n * a.index() + b.index();
+        matrix.contains(index)
     }
 }

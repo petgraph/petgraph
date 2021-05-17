@@ -15,9 +15,9 @@ use crate::{Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirecte
 use crate::graph::NodeIndex as GraphNodeIndex;
 
 use crate::visit::{
-    Data, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoNeighbors,
-    IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
-    NodeCount, NodeIndexable, Visitable,
+    Data, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
+    IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
+    IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
 };
 
 use crate::data::Build;
@@ -358,8 +358,6 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
 
     /// Add an edge from `a` to `b` to the graph, with its associated
     /// data `weight`.
-    ///
-    /// Return the index of the new edge.
     ///
     /// Computes in **O(1)** time, best case.
     /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
@@ -1214,6 +1212,16 @@ impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdg
     }
 }
 
+impl<'a, N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdgesDirected
+    for &'a MatrixGraph<N, E, Directed, Null, Ix>
+{
+    type EdgesDirected = Edges<'a, Directed, Null, Ix>;
+
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
+        MatrixGraph::edges_directed(self, a, dir)
+    }
+}
+
 impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeIndexable
     for MatrixGraph<N, E, Ty, Null, Ix>
 {
@@ -1228,11 +1236,6 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeIndexab
     fn from_index(&self, ix: usize) -> Self::NodeId {
         NodeIndex::new(ix)
     }
-}
-
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeCompactIndexable
-    for MatrixGraph<N, E, Ty, Null, Ix>
-{
 }
 
 impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Build
