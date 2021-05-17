@@ -219,7 +219,7 @@ trait_template! {
 /// The edges are, depending on the graph’s edge type:
 ///
 /// - `Directed`: All edges from `a`.
-/// - `Undirected`: All edges connected to `a`.
+/// - `Undirected`: All edges connected to `a`, with `a` being the source of each edge.
 ///
 /// This is an extended version of the trait `IntoNeighbors`; the former
 /// only iterates over the target node identifiers, while this trait
