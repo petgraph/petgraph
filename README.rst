@@ -8,13 +8,16 @@ Please read the `API documentation here`__
 
 __ https://docs.rs/petgraph/
 
-|build_status|_ |crates|_
+|build_status|_ |crates|_ |gitter|_
 
 .. |build_status| image:: https://github.com/petgraph/petgraph/workflows/Continuous%20integration/badge.svg?branch=master
 .. _build_status: https://github.com/petgraph/petgraph/actions
 
 .. |crates| image:: http://meritbadge.herokuapp.com/petgraph
 .. _crates: https://crates.io/crates/petgraph
+
+.. |gitter| image:: https://badges.gitter.im/petgraph-rs/community.svg
+.. _gitter: https://gitter.im/petgraph-rs/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
 
 Crate feature flags:
 

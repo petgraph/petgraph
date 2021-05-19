@@ -13,7 +13,7 @@
 //! dominates **C** and **C** dominates **B**.
 
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet, hash_map::Iter};
+use std::collections::{hash_map::Iter, HashMap, HashSet};
 use std::hash::Hash;
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
@@ -85,12 +85,13 @@ where
     pub fn immediately_dominated_by(&self, node: N) -> DominatedByIter<N> {
         DominatedByIter {
             iter: self.dominators.iter(),
-            node: node
+            node: node,
         }
     }
 }
 
 /// Iterator for a node's dominators.
+#[derive(Debug, Clone)]
 pub struct DominatorsIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
@@ -115,6 +116,7 @@ where
 }
 
 /// Iterator for nodes dominated by a given node.
+#[derive(Debug, Clone)]
 pub struct DominatedByIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
@@ -136,6 +138,10 @@ where
             }
         }
         None
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
     }
 }
 

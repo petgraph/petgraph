@@ -1,10 +1,12 @@
 //! Simple adjacency list.
-use fixedbitset::FixedBitSet;
+use crate::data::{Build, DataMap, DataMapMut};
 use crate::iter_format::NoPretty;
+use crate::visit::{
+    self, EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount,
+};
+use fixedbitset::FixedBitSet;
 use std::fmt;
 use std::ops::Range;
-use crate::visit::{self, EdgeRef, IntoEdgeReferences, IntoNeighbors, NodeCount};
-use crate::data::{Build, DataMap, DataMapMut};
 
 #[doc(no_inline)]
 pub use crate::graph::{DefaultIx, IndexType};
@@ -29,6 +31,7 @@ impl (Iterator) for
 /// An Iterator over the indices of the outgoing edges from a node.
 ///
 /// It does not borrow the graph during iteration.
+#[derive(Debug, Clone)]
 struct OutgoingEdgeIndices <Ix> where { Ix: IndexType }
 item: EdgeIndex<Ix>,
 iter: std::iter::Map<std::iter::Zip<Range<usize>, std::iter::Repeat<NodeIndex<Ix>>>, fn((usize, NodeIndex<Ix>)) -> EdgeIndex<Ix>>,
@@ -50,6 +53,7 @@ type RowIter<'a, E, Ix> = std::slice::Iter<'a, WSuc<E, Ix>>;
 iterator_wrap! {
 impl (Iterator DoubleEndedIterator ExactSizeIterator) for
 /// An iterator over the indices of the neighbors of a node.
+#[derive(Debug, Clone)]
 struct Neighbors<'a, E, Ix> where { Ix: IndexType }
 item: NodeIndex<Ix>,
 iter: std::iter::Map<RowIter<'a, E, Ix>, fn(&WSuc<E, Ix>) -> NodeIndex<Ix>>,
@@ -92,6 +96,7 @@ impl<'a, E, Ix: IndexType> visit::EdgeRef for EdgeReference<'a, E, Ix> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct EdgeIndices<'a, E, Ix: IndexType> {
     rows: std::iter::Enumerate<std::slice::Iter<'a, Row<E, Ix>>>,
     row_index: usize,
@@ -127,6 +132,7 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
 iterator_wrap! {
     impl (Iterator DoubleEndedIterator ExactSizeIterator) for
     /// An iterator over all node indices in the graph.
+    #[derive(Debug, Clone)]
     struct NodeIndices <Ix> where {}
     item: Ix,
     iter: std::iter::Map<Range<usize>, fn(usize) -> Ix>,
@@ -137,15 +143,15 @@ iterator_wrap! {
 /// Can be interpreted as a directed graph
 /// with unweighted nodes.
 ///
-/// This is the most simple adjacency list you can imagine. `Graph`, in contrast,
+/// This is the most simple adjacency list you can imagine. [`Graph`](../graph/struct.Graph.html), in contrast,
 /// maintains both the list of successors and predecessors for each node,
 /// which is a different trade-off.
 ///
 /// Allows parallel edges and self-loops.
 ///
-/// This data structure is append-only (except for [`clear`]), so indices
+/// This data structure is append-only (except for [`clear`](#method.clear)), so indices
 /// returned at some point for a given graph will stay valid with this same
-/// graph until it is dropped or [`clear`] is called.
+/// graph until it is dropped or [`clear`](#method.clear) is called.
 ///
 /// Space consumption: **O(|E|)**.
 #[derive(Clone, Default)]
@@ -222,7 +228,11 @@ impl<E, Ix: IndexType> List<E, Ix> {
     /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         if b.index() >= self.suc.len() {
-            panic!("{} is not a valid node index for a {} nodes adjacency list", b.index(), self.suc.len());
+            panic!(
+                "{} is not a valid node index for a {} nodes adjacency list",
+                b.index(),
+                self.suc.len()
+            );
         }
         let row = &mut self.suc[a.index()];
         let rank = row.len();
@@ -311,10 +321,8 @@ impl<E, Ix: IndexType> List<E, Ix> {
     }
 }
 
-
 /// A very simple adjacency list with no node or label weights.
 pub type UnweightedList<Ix> = List<(), Ix>;
-
 
 impl<E, Ix: IndexType> Build for List<E, Ix> {
     /// Adds a new node to the list. This allocates a new `Vec` and then should
@@ -365,8 +373,6 @@ impl<E, Ix: IndexType> Build for List<E, Ix> {
         }
     }
 }
-
-
 
 impl<'a, E, Ix> fmt::Debug for EdgeReferences<'a, E, Ix>
 where
@@ -531,6 +537,7 @@ impl<'a, Ix: IndexType, E> visit::IntoEdgeReferences for &'a List<E, Ix> {
 iterator_wrap! {
 impl (Iterator) for
 /// Iterator over the [`EdgeReference`] of the outgoing edges from a node.
+#[derive(Debug, Clone)]
 struct OutgoingEdgeReferences<'a, E, Ix> where { Ix: IndexType }
 item: EdgeReference<'a, E, Ix>,
 iter: SomeIter<'a, E, Ix>,
@@ -550,15 +557,26 @@ impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
 
 impl<E, Ix: IndexType> visit::GraphProp for List<E, Ix> {
     type EdgeType = crate::Directed;
-    fn is_directed(&self) -> bool { true }
+    fn is_directed(&self) -> bool {
+        true
+    }
 }
 
-impl <E, Ix: IndexType> NodeCount for List<E, Ix> {
+impl<E, Ix: IndexType> NodeCount for List<E, Ix> {
     /// Returns the number of nodes in the list
     ///
     /// Computes in **O(1)** time.
     fn node_count(&self) -> usize {
         self.suc.len()
+    }
+}
+
+impl<E, Ix: IndexType> EdgeCount for List<E, Ix> {
+    /// Returns the number of edges in the list
+    ///
+    /// Computes in **O(|V|)** time.
+    fn edge_count(self: &Self) -> usize {
+        List::edge_count(self)
     }
 }
 
@@ -614,3 +632,30 @@ impl<E, Ix: IndexType> DataMapMut for List<E, Ix> {
     }
 }
 
+/// The adjacency matrix for **List** is a bitmap that's computed by
+/// `.adjacency_matrix()`.
+impl<E, Ix> GetAdjacencyMatrix for List<E, Ix>
+where
+    Ix: IndexType,
+{
+    type AdjMatrix = FixedBitSet;
+
+    fn adjacency_matrix(&self) -> FixedBitSet {
+        let n = self.node_count();
+        let mut matrix = FixedBitSet::with_capacity(n * n);
+        for edge in self.edge_references() {
+            let i = edge.source().index() * n + edge.target().index();
+            matrix.put(i);
+
+            let j = edge.source().index() + n * edge.target().index();
+            matrix.put(j);
+        }
+        matrix
+    }
+
+    fn is_adjacent(&self, matrix: &FixedBitSet, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
+        let n = self.edge_count();
+        let index = n * a.index() + b.index();
+        matrix.contains(index)
+    }
+}

@@ -9,8 +9,9 @@ use itertools::assert_equal;
 use petgraph::algo::{kosaraju_scc, min_spanning_tree, tarjan_scc};
 use petgraph::dot::Dot;
 use petgraph::prelude::*;
+use petgraph::stable_graph::edge_index as e;
 use petgraph::stable_graph::node_index as n;
-use petgraph::visit::{IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
+use petgraph::visit::{EdgeIndexable, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
 use petgraph::EdgeType;
 
 #[test]
@@ -40,6 +41,25 @@ fn node_bound() {
     assert_eq!(g.node_bound(), full_count);
     g.clear();
     assert_eq!(g.node_bound(), 0);
+}
+
+#[test]
+fn edge_bound() {
+    let mut g = StableGraph::<_, _>::new();
+    assert_eq!(g.edge_bound(), g.edge_count());
+    for i in 0..10 {
+        g.add_node(i);
+    }
+    for i in 0..9 {
+        g.add_edge(n(i), n(i + 1), i);
+        assert_eq!(g.edge_bound(), g.edge_count());
+    }
+    let full_count = g.edge_count();
+    g.remove_edge(e(0));
+    g.remove_edge(e(2));
+    assert_eq!(g.edge_bound(), full_count);
+    g.clear();
+    assert_eq!(g.edge_bound(), 0);
 }
 
 #[test]

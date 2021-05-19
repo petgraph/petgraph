@@ -74,8 +74,8 @@
 //! [`GraphMap`](./graphmap/struct.GraphMap.html) requires node weights that can serve as hash
 //! map keys, since that graph type does not create standalone node indices.
 //!
-//! `Ty` controls whether edges are [`Directed`](./petgraph/enum.Directed.html) or
-//! [`Undirected`](./petgraph/enum.Unirected.html).
+//! `Ty` controls whether edges are [`Directed`](./enum.Directed.html) or
+//! [`Undirected`](./enum.Undirected.html).
 //!
 //! `Ix` appears on graph types that use indices. It is exposed so you can control
 //! the size of node and edge indices, and therefore the memory footprint of your graphs.
@@ -139,6 +139,8 @@ mod astar;
 pub mod csr;
 mod dijkstra;
 pub mod dot;
+mod feedback_arc_set;
+mod floyd_warshall;
 #[cfg(feature = "generate")]
 pub mod generate;
 mod graph_impl;
@@ -148,6 +150,7 @@ mod isomorphism;
 mod iter_format;
 mod iter_utils;
 mod k_shortest_path;
+mod matching;
 #[cfg(feature = "matrix_graph")]
 pub mod matrix_graph;
 #[cfg(feature = "quickcheck")]

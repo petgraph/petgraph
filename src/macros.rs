@@ -11,13 +11,13 @@ macro_rules! clone_fields {
 }
 
 macro_rules! iterator_wrap {
-    (impl () for 
+    (impl () for
     struct $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
      item: $item: ty,
      iter: $iter: ty,
      ) => ();
     (
-    impl (Iterator $($rest:tt)*)  for 
+    impl (Iterator $($rest:tt)*)  for
     $(#[$derive:meta])*
      struct $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
      item: $item: ty,
@@ -50,7 +50,7 @@ macro_rules! iterator_wrap {
             iter: $iter,
             );
         );
-    
+
     (
 impl (ExactSizeIterator $($rest:tt)*)  for
     $(#[$derive:meta])*
@@ -74,7 +74,7 @@ impl (ExactSizeIterator $($rest:tt)*)  for
             iter: $iter,
             );
     );
-    
+
     (
 impl (DoubleEndedIterator $($rest:tt)*)  for
     $(#[$derive:meta])*

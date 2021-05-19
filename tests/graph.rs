@@ -590,10 +590,16 @@ fn test_astar_runtime_optimal() {
 
     let mut times_called = 0;
 
-    let _ = astar(&g, a, |n| n == e, |edge| {
-        times_called += 1;
-        *edge.weight()
-    }, |_| 0);
+    let _ = astar(
+        &g,
+        a,
+        |n| n == e,
+        |edge| {
+            times_called += 1;
+            *edge.weight()
+        },
+        |_| 0,
+    );
 
     // A* is runtime optimal in the sense it won't expand more nodes than needed, for the given
     // heuristic. Here, A* should expand, in order: A, B, C, D, E. This should should ask for the
@@ -1380,6 +1386,54 @@ fn test_edge_iterators_directed() {
 }
 
 #[test]
+fn test_edge_filtered_iterators_directed() {
+    use petgraph::{
+        graph::EdgeReference,
+        visit::{EdgeFiltered, IntoEdgesDirected},
+    };
+
+    let gr = make_edge_iterator_graph::<Directed>();
+    let filter = |edge: EdgeReference<f64>| -> bool { *edge.weight() > 8.0 };
+    let filtered = EdgeFiltered::from_fn(&gr, filter);
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            filtered.edges_directed(i, Outgoing),
+            gr.edges_directed(i, Outgoing).filter(|edge| filter(*edge)),
+        );
+        itertools::assert_equal(
+            filtered.edges_directed(i, Incoming),
+            gr.edges_directed(i, Incoming).filter(|edge| filter(*edge)),
+        );
+    }
+}
+
+#[test]
+fn test_node_filtered_iterators_directed() {
+    use petgraph::{
+        graph::NodeIndex,
+        visit::{IntoEdgesDirected, NodeFiltered},
+    };
+
+    let gr = make_edge_iterator_graph::<Directed>();
+    let filter = |node: NodeIndex<u32>| node.index() < 4;
+    let filtered = NodeFiltered::from_fn(&gr, filter);
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            filtered.edges_directed(i, Outgoing),
+            gr.edges_directed(i, Outgoing)
+                .filter(|edge| filter(edge.source()) && filter(edge.target())),
+        );
+        itertools::assert_equal(
+            filtered.edges_directed(i, Incoming),
+            gr.edges_directed(i, Incoming)
+                .filter(|edge| filter(edge.source()) && filter(edge.target())),
+        );
+    }
+}
+
+#[test]
 fn test_edge_iterators_undir() {
     let gr = make_edge_iterator_graph::<Undirected>();
 
@@ -1824,7 +1878,7 @@ fn dot() {
     struct Record {
         a: i32,
         b: &'static str,
-    };
+    }
     let mut gr = Graph::new();
     let a = gr.add_node(Record { a: 1, b: r"abc\" });
     gr.add_edge(a, a, (1, 2));

@@ -13,7 +13,7 @@ use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 
 use crate::util::enumerate;
 use crate::visit::EdgeRef;
-use crate::visit::{IntoEdges, IntoEdgesDirected, IntoNodeReferences};
+use crate::visit::{EdgeIndexable, IntoEdges, IntoEdgesDirected, IntoNodeReferences};
 
 #[cfg(feature = "serde-1")]
 mod serialization;
@@ -441,8 +441,9 @@ fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T> {
     } else {
         // safe because a, b are in bounds and distinct
         unsafe {
-            let ar = &mut *(slc.get_unchecked_mut(a) as *mut _);
-            let br = &mut *(slc.get_unchecked_mut(b) as *mut _);
+            let ptr = slc.as_mut_ptr();
+            let ar = &mut *ptr.offset(a as isize);
+            let br = &mut *ptr.offset(b as isize);
             Pair::Both(ar, br)
         }
     }
@@ -1001,6 +1002,16 @@ where
         }
     }
 
+    /// Return an iterator yielding immutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// node indices.
+    pub fn node_weights(&self) -> NodeWeights<N, Ix> {
+        NodeWeights {
+            nodes: self.nodes.iter(),
+        }
+    }
+
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<Ix> {
         EdgeIndices {
@@ -1018,6 +1029,15 @@ where
         }
     }
 
+    /// Return an iterator yielding immutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// edge indices.
+    pub fn edge_weights(&self) -> EdgeWeights<E, Ix> {
+        EdgeWeights {
+            edges: self.edges.iter(),
+        }
+    }
     /// Return an iterator yielding mutable access to all edge weights.
     ///
     /// The order in which weights are yielded matches the order of their
@@ -1433,6 +1453,7 @@ where
 }
 
 /// An iterator over either the nodes without edges to them or from them.
+#[derive(Debug, Clone)]
 pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
     dir: Direction,
@@ -1462,6 +1483,10 @@ where
             }
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
+    }
 }
 
 /// Iterator over the neighbors of a node.
@@ -1474,6 +1499,7 @@ where
 /// [1]: struct.Graph.html#method.neighbors
 /// [2]: struct.Graph.html#method.neighbors_directed
 /// [3]: struct.Graph.html#method.neighbors_undirected
+#[derive(Debug)]
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> {
     /// starting node to skip over
     skip_start: NodeIndex<Ix>,
@@ -1595,6 +1621,7 @@ where
 }
 
 /// Iterator over the edges of from or to a node
+#[derive(Debug)]
 pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
 where
     Ty: EdgeType,
@@ -1679,6 +1706,7 @@ where
 }
 
 /// Iterator over the multiple directed edges connecting a source node to a target node
+#[derive(Debug, Clone)]
 pub struct EdgesConnecting<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
 where
     Ty: EdgeType,
@@ -1705,6 +1733,10 @@ where
 
         None
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.edges.size_hint();
+        (0, upper)
+    }
 }
 
 fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
@@ -1728,9 +1760,28 @@ where
     }
 }
 
+/// Iterator yielding immutable access to all node weights.
+pub struct NodeWeights<'a, N: 'a, Ix: IndexType = DefaultIx> {
+    nodes: ::std::slice::Iter<'a, Node<N, Ix>>,
+}
+impl<'a, N, Ix> Iterator for NodeWeights<'a, N, Ix>
+where
+    Ix: IndexType,
+{
+    type Item = &'a N;
+
+    fn next(&mut self) -> Option<&'a N> {
+        self.nodes.next().map(|node| &node.weight)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.nodes.size_hint()
+    }
+}
 /// Iterator yielding mutable access to all node weights.
+#[derive(Debug)]
 pub struct NodeWeightsMut<'a, N: 'a, Ix: IndexType = DefaultIx> {
-    nodes: ::std::slice::IterMut<'a, Node<N, Ix>>,
+    nodes: ::std::slice::IterMut<'a, Node<N, Ix>>, // TODO: change type to something that implements Clone?
 }
 
 impl<'a, N, Ix> Iterator for NodeWeightsMut<'a, N, Ix>
@@ -1748,9 +1799,30 @@ where
     }
 }
 
+/// Iterator yielding immutable access to all edge weights.
+pub struct EdgeWeights<'a, E: 'a, Ix: IndexType = DefaultIx> {
+    edges: ::std::slice::Iter<'a, Edge<E, Ix>>,
+}
+
+impl<'a, E, Ix> Iterator for EdgeWeights<'a, E, Ix>
+where
+    Ix: IndexType,
+{
+    type Item = &'a E;
+
+    fn next(&mut self) -> Option<&'a E> {
+        self.edges.next().map(|edge| &edge.weight)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.edges.size_hint()
+    }
+}
+
 /// Iterator yielding mutable access to all edge weights.
+#[derive(Debug)]
 pub struct EdgeWeightsMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
-    edges: ::std::slice::IterMut<'a, Edge<E, Ix>>,
+    edges: ::std::slice::IterMut<'a, Edge<E, Ix>>, // TODO: change type to something that implements Clone?
 }
 
 impl<'a, E, Ix> Iterator for EdgeWeightsMut<'a, E, Ix>
@@ -1833,7 +1905,7 @@ where
     }
 }
 
-/// A  `GraphIndex` is a node or edge index.
+/// A `GraphIndex` is a node or edge index.
 pub trait GraphIndex: Copy {
     #[doc(hidden)]
     fn index(&self) -> usize;
@@ -1843,10 +1915,12 @@ pub trait GraphIndex: Copy {
 
 impl<Ix: IndexType> GraphIndex for NodeIndex<Ix> {
     #[inline]
+    #[doc(hidden)]
     fn index(&self) -> usize {
         NodeIndex::index(*self)
     }
     #[inline]
+    #[doc(hidden)]
     fn is_node_index() -> bool {
         true
     }
@@ -1854,10 +1928,12 @@ impl<Ix: IndexType> GraphIndex for NodeIndex<Ix> {
 
 impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
     #[inline]
+    #[doc(hidden)]
     fn index(&self) -> usize {
         EdgeIndex::index(*self)
     }
     #[inline]
+    #[doc(hidden)]
     fn is_node_index() -> bool {
         false
     }
@@ -2058,6 +2134,7 @@ where
 }
 
 /// Iterator over all nodes of a graph.
+#[derive(Debug, Clone)]
 pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
 }
@@ -2128,6 +2205,7 @@ where
 }
 
 /// Iterator over all edges of a graph.
+#[derive(Debug, Clone)]
 pub struct EdgeReferences<'a, E: 'a, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<E, Ix>>>,
 }
@@ -2165,6 +2243,24 @@ where
 }
 
 impl<'a, E, Ix> ExactSizeIterator for EdgeReferences<'a, E, Ix> where Ix: IndexType {}
+
+impl<N, E, Ty, Ix> EdgeIndexable for Graph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn edge_bound(&self) -> usize {
+        self.edge_count()
+    }
+
+    fn to_index(&self, ix: EdgeIndex<Ix>) -> usize {
+        ix.index()
+    }
+
+    fn from_index(&self, ix: usize) -> Self::EdgeId {
+        EdgeIndex::new(ix)
+    }
+}
 
 mod frozen;
 #[cfg(feature = "stable_graph")]

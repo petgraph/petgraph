@@ -11,7 +11,7 @@ extern crate odds;
 
 mod utils;
 
-use utils::Small;
+use utils::{Small, Tournament};
 
 use odds::prelude::*;
 use std::collections::HashSet;
@@ -22,8 +22,10 @@ use itertools::cloned;
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
-    is_isomorphic_matching, k_shortest_path, kosaraju_scc, min_spanning_tree, tarjan_scc, toposort,
+    bellman_ford, condensation, dijkstra, floyd_warshall, greedy_feedback_arc_set, greedy_matching,
+    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
+    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, tarjan_scc, toposort,
+    Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -32,8 +34,8 @@ use petgraph::graphmap::NodeTrait;
 use petgraph::operator::complement;
 use petgraph::prelude::*;
 use petgraph::visit::{
-    EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, Visitable,
+    EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
+    IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, VisitMap, Visitable,
 };
 use petgraph::EdgeType;
 
@@ -773,6 +775,37 @@ quickcheck! {
 }
 
 quickcheck! {
+    // checks floyd_warshall against dijkstra results
+    fn floyd_warshall_(g: Graph<u32, u32>) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+
+        let fw_res = floyd_warshall(&g, |e| *e.weight()).unwrap();
+
+        for node1 in g.node_identifiers() {
+            let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
+
+            for node2 in g.node_identifiers() {
+                // if dijkstra found a path then the results must be same
+                if let Some(distance) = dijkstra_res.get(&node2) {
+                    let floyd_distance = fw_res.get(&(node1, node2)).unwrap();
+                    if distance != floyd_distance {
+                        return false;
+                    }
+                } else {
+                    // if there are no path between two nodes then floyd_warshall will return maximum value possible
+                    if *fw_res.get(&(node1, node2)).unwrap() != u32::MAX {
+                        return false;
+                    }
+                }
+            }
+         }
+        true
+    }
+}
+
+quickcheck! {
     // checks that the complement of the complement is the same as the input if the input does not contain self-loops
     fn complement_(g: Graph<u32, u32>, _node: usize) -> bool {
         if g.node_count() == 0 {
@@ -1105,6 +1138,131 @@ quickcheck! {
             }
         }
         println!("ok!");
+        true
+    }
+}
+
+quickcheck! {
+    fn greedy_fas_remaining_graph_is_acyclic(g: StableDiGraph<(), ()>) -> bool {
+        let mut g = g;
+        let fas: Vec<EdgeIndex> = greedy_feedback_arc_set(&g).map(|e| e.id()).collect();
+
+        for edge_id in fas {
+            g.remove_edge(edge_id);
+        }
+
+        !is_cyclic_directed(&g)
+    }
+
+    /// Assert that the size of the feedback arc set of a tournament does not exceed
+    /// **|E| / 2 - |V| / 6**
+    fn greedy_fas_performance_within_bound(t: Tournament<(), ()>) -> bool {
+        let Tournament(g) = t;
+
+        let expected_bound = if g.node_count() < 2 {
+            0
+        } else {
+            ((g.edge_count() as f64) / 2.0 - (g.node_count() as f64) / 6.0) as usize
+        };
+
+        let fas_size = greedy_feedback_arc_set(&g).count();
+
+        fas_size <= expected_bound
+    }
+}
+
+fn is_valid_matching<G: NodeIndexable>(m: &Matching<G>) -> bool {
+    // A set of edges is a matching if no two edges from the matching share an
+    // endpoint.
+    for (s1, t1) in m.edges() {
+        for (s2, t2) in m.edges() {
+            if s1 == s2 && t1 == t2 {
+                continue;
+            }
+
+            if s1 == s2 || s1 == t2 || t1 == s2 || t1 == t2 {
+                // Two edges share an endpoint.
+                return false;
+            }
+        }
+    }
+
+    true
+}
+
+fn is_maximum_matching<G: NodeIndexable + IntoEdges + IntoNodeIdentifiers + Visitable>(
+    g: G,
+    m: &Matching<G>,
+) -> bool {
+    // Berge's lemma: a matching is maximum iff there is no augmenting path (a
+    // path that starts and ends in unmatched vertices, and alternates between
+    // matched and unmatched edges). Thus if we find an augmenting path, the
+    // matching is not maximum.
+    //
+    // Start with an unmatched node and traverse the graph alternating matched
+    // and unmatched edges. If an unmatched node is found, then an augmenting
+    // path was found.
+    for unmatched in g.node_identifiers().filter(|u| !m.contains_node(*u)) {
+        let visited = &mut g.visit_map();
+        let mut stack = Vec::new();
+
+        stack.push((unmatched, false));
+        while let Some((u, do_matched_edges)) = stack.pop() {
+            if visited.visit(u) {
+                for e in g.edges(u) {
+                    if e.source() == e.target() {
+                        // Ignore self-loops.
+                        continue;
+                    }
+
+                    let is_matched = m.contains_edge(e.source(), e.target());
+
+                    if do_matched_edges && is_matched || !do_matched_edges && !is_matched {
+                        stack.push((e.target(), !do_matched_edges));
+
+                        // Found another free node (other than the starting one)
+                        // that is unmatched - an augmenting path.
+                        if !is_matched && !m.contains_node(e.target()) && e.target() != unmatched {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    true
+}
+
+fn is_perfect_matching<G: NodeCount + NodeIndexable>(g: G, m: &Matching<G>) -> bool {
+    // By definition.
+    g.node_count() % 2 == 0 && m.edges().count() == g.node_count() / 2
+}
+
+quickcheck! {
+    fn matching(g: Graph<(), (), Undirected>) -> bool {
+        let m1 = greedy_matching(&g);
+        let m2 = maximum_matching(&g);
+
+        assert!(is_valid_matching(&m1), "greedy_matching returned an invalid matching");
+        assert!(is_valid_matching(&m2), "maximum_matching returned an invalid matching");
+        assert!(is_maximum_matching(&g, &m2), "maximum_matching returned a matching that is not maximum");
+        assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
+        assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
+
+        true
+    }
+
+    fn matching_in_stable_graph(g: StableGraph<(), (), Undirected>) -> bool {
+        let m1 = greedy_matching(&g);
+        let m2 = maximum_matching(&g);
+
+        assert!(is_valid_matching(&m1), "greedy_matching returned an invalid matching");
+        assert!(is_valid_matching(&m2), "maximum_matching returned an invalid matching");
+        assert!(is_maximum_matching(&g, &m2), "maximum_matching returned a matching that is not maximum");
+        assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
+        assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
+
         true
     }
 }

@@ -6,9 +6,11 @@ use std::marker::PhantomData;
 use std::ops::{Index, IndexMut, Range};
 use std::slice::Windows;
 
-use crate::visit::{Data, GraphProp, IntoEdgeReferences, NodeCount};
-use crate::visit::{EdgeRef, GraphBase, IntoEdges, IntoNeighbors, NodeIndexable};
-use crate::visit::{IntoNodeIdentifiers, NodeCompactIndexable, Visitable};
+use crate::visit::{
+    Data, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
+    IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount,
+    NodeIndexable, Visitable,
+};
 
 use crate::util::zip;
 
@@ -95,10 +97,9 @@ where
         }
     }
 
-    /// Create a new [`Csr`] with `n` nodes. `N` must implement [`Default`] for the weight of each node.
+    /// Create a new `Csr` with `n` nodes. `N` must implement [`Default`] for the weight of each node.
     ///
     /// [`Default`]: https://doc.rust-lang.org/nightly/core/default/trait.Default.html
-    /// [`Csr`]: #struct.Csr.html
     ///
     /// # Example
     /// ```rust
@@ -474,6 +475,9 @@ where
             }
         })
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 impl<N, E, Ty, Ix> Data for Csr<N, E, Ty, Ix>
@@ -505,6 +509,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct EdgeReferences<'a, E: 'a, Ty, Ix: 'a> {
     source_index: NodeIndex<Ix>,
     index: usize,
@@ -671,6 +676,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NodeIdentifiers<Ix = DefaultIx> {
     r: Range<usize>,
     ty: PhantomData<Ix>,
@@ -721,6 +727,85 @@ where
     Ix: IndexType,
 {
     type EdgeType = Ty;
+}
+
+impl<'a, N, E, Ty, Ix> IntoNodeReferences for &'a Csr<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type NodeRef = (NodeIndex<Ix>, &'a N);
+    type NodeReferences = NodeReferences<'a, N, Ix>;
+    fn node_references(self) -> Self::NodeReferences {
+        NodeReferences {
+            iter: self.node_weights.iter().enumerate(),
+            ty: PhantomData,
+        }
+    }
+}
+
+/// Iterator over all nodes of a graph.
+#[derive(Debug, Clone)]
+pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
+    iter: Enumerate<SliceIter<'a, N>>,
+    ty: PhantomData<Ix>,
+}
+
+impl<'a, N, Ix> Iterator for NodeReferences<'a, N, Ix>
+where
+    Ix: IndexType,
+{
+    type Item = (NodeIndex<Ix>, &'a N);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|(i, weight)| (Ix::new(i), weight))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+impl<'a, N, Ix> DoubleEndedIterator for NodeReferences<'a, N, Ix>
+where
+    Ix: IndexType,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter
+            .next_back()
+            .map(|(i, weight)| (Ix::new(i), weight))
+    }
+}
+
+impl<'a, N, Ix> ExactSizeIterator for NodeReferences<'a, N, Ix> where Ix: IndexType {}
+
+/// The adjacency matrix for **Csr** is a bitmap that's computed by
+/// `.adjacency_matrix()`.
+impl<'a, N, E, Ty, Ix> GetAdjacencyMatrix for &'a Csr<N, E, Ty, Ix>
+where
+    Ix: IndexType,
+    Ty: EdgeType,
+{
+    type AdjMatrix = FixedBitSet;
+
+    fn adjacency_matrix(&self) -> FixedBitSet {
+        let n = self.node_count();
+        let mut matrix = FixedBitSet::with_capacity(n * n);
+        for edge in self.edge_references() {
+            let i = edge.source().index() * n + edge.target().index();
+            matrix.put(i);
+
+            let j = edge.source().index() + n * edge.target().index();
+            matrix.put(j);
+        }
+        matrix
+    }
+
+    fn is_adjacent(&self, matrix: &FixedBitSet, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
+        let n = self.edge_count();
+        let index = n * a.index() + b.index();
+        matrix.contains(index)
+    }
 }
 
 /*
@@ -981,5 +1066,20 @@ mod tests {
         assert_eq!(g.neighbors_slice(c), &[]);
 
         assert_eq!(g.edge_count(), 1);
+    }
+
+    #[test]
+    fn test_node_references() {
+        use crate::visit::IntoNodeReferences;
+        let mut g: Csr<u32> = Csr::new();
+        g.add_node(42);
+        g.add_node(3);
+        g.add_node(44);
+
+        let mut refs = g.node_references();
+        assert_eq!(refs.next(), Some((0, &42)));
+        assert_eq!(refs.next(), Some((1, &3)));
+        assert_eq!(refs.next(), Some((2, &44)));
+        assert_eq!(refs.next(), None);
     }
 }
