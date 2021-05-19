@@ -222,27 +222,6 @@ where
         }
         nodes.extend(compact_nodes);
 
-        /*
-        // smart implementation using swap.
-        // is actually slower in the benchmark.
-        
-        let mut nodes = input.nodes;
-        nodes.extend(std::iter::repeat_with(|| Node {
-            weight: None,
-            next: [EdgeIndex::end(); 2],
-        }).take(node_holes.len()));
-
-        let mut node_pos = nodes.len();
-
-        for (hole_count, hole_pos) in node_holes.iter().enumerate().rev() {
-            node_pos -= 1;
-            while node_pos > hole_pos.index() {
-                nodes.swap(node_pos - hole_count - 1, node_pos);
-                node_pos -= 1;
-            }
-        }
-        */
-
         if nodes.len() >= <Ix as IndexType>::max().index() {
             Err(invalid_length_err::<Ix, _>("node", nodes.len()))?
         }
