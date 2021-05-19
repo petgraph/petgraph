@@ -13,10 +13,12 @@ const NUM_HOLES: usize = 1_000_000;
 
 fn make_stable_graph() -> StableGraph<u32, u32> {
     let mut g = StableGraph::with_capacity(NUM_NODES + NUM_HOLES, NUM_EDGES);
-    let indices: Vec<_> = (0 .. NUM_NODES + NUM_HOLES).map(|i| g.add_node(i as u32)).collect();
+    let indices: Vec<_> = (0..NUM_NODES + NUM_HOLES)
+        .map(|i| g.add_node(i as u32))
+        .collect();
 
     let mut rng = rand::thread_rng();
-    g.extend_with_edges((0 .. NUM_EDGES).map(|_| {
+    g.extend_with_edges((0..NUM_EDGES).map(|_| {
         let first = rng.gen_range(0, NUM_NODES + NUM_HOLES);
         let second = rng.gen_range(0, NUM_NODES + NUM_HOLES - 1);
         let second = second + (second >= first) as usize;
