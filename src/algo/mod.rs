@@ -901,7 +901,7 @@ where
                         Some(predecessor_node) => predecessor_node,
                         None => node, // no predecessor, self cycle
                     };
-                    // We have only 2 ways to find the cycle and break the loop
+                    // We have only 2 ways to find the cycle and break the loop:
                     // 1. start is reached
                     if ansestor == start {
                         // Insert the ancestor at the beginning and at the end of the path
@@ -933,7 +933,7 @@ where
     }
     if path.len() > 0 {
         // Users will probably need to follow the path of the negative cycle
-        // so it should be in the reverse other than it was found by the algorithm.
+        // so it should be in the reverse order than it was found by the algorithm.
         path.reverse();
         Some(path)
     } else {
@@ -941,7 +941,7 @@ where
     }
 }
 
-// Perform Step 1 and Step 2 of the Bellman–Ford_algorithm.
+// Perform Step 1 and Step 2 of the Bellman-Ford algorithm.
 fn bellman_ford_initialize_relax<G>(
     g: G,
     source: G::NodeId,
