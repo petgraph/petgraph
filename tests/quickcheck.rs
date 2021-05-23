@@ -22,10 +22,10 @@ use itertools::cloned;
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, floyd_warshall, greedy_feedback_arc_set, greedy_matching,
-    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
-    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, tarjan_scc, toposort,
-    Matching,
+    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
+    greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
+    is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
+    min_spanning_tree, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -899,6 +899,22 @@ quickcheck! {
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
             bellman_ford(&gr, start).unwrap();
+        }
+        true
+    }
+}
+
+quickcheck! {
+    fn test_find_negative_cycle(gr: Graph<(), f32>) -> bool {
+        let gr = gr;
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            if let Some(path) = find_negative_cycle(&gr, start) {
+                assert!(path.len() >= 2);
+            }
         }
         true
     }

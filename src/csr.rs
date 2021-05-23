@@ -826,6 +826,7 @@ Row   : [0, 2, 5]   <- value index of row start
 mod tests {
     use super::Csr;
     use crate::algo::bellman_ford;
+    use crate::algo::find_negative_cycle;
     use crate::algo::tarjan_scc;
     use crate::visit::Dfs;
     use crate::visit::VisitMap;
@@ -994,6 +995,59 @@ mod tests {
         .unwrap();
         let result = bellman_ford(&m, 0);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_find_neg_cycle1() {
+        let m: Csr<(), _> = Csr::from_sorted_edges(&[
+            (0, 1, 0.5),
+            (0, 2, 2.),
+            (1, 0, 1.),
+            (1, 1, -1.),
+            (1, 2, 1.),
+            (1, 3, 1.),
+            (2, 3, 3.),
+        ])
+        .unwrap();
+        let result = find_negative_cycle(&m, 0);
+        assert_eq!(result, Some([1, 1].to_vec()));
+    }
+
+    #[test]
+    fn test_find_neg_cycle2() {
+        let m: Csr<(), _> = Csr::from_sorted_edges(&[
+            (0, 1, 0.5),
+            (0, 2, 2.),
+            (1, 0, 1.),
+            (1, 2, 1.),
+            (1, 3, 1.),
+            (2, 3, 3.),
+        ])
+        .unwrap();
+        let result = find_negative_cycle(&m, 0);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_find_neg_cycle3() {
+        let m: Csr<(), _> = Csr::from_sorted_edges(&[
+            (0, 1, 1.),
+            (0, 2, 1.),
+            (0, 3, 1.),
+            (1, 3, 1.),
+            (2, 1, 1.),
+            (3, 2, -3.),
+        ])
+        .unwrap();
+        let result = find_negative_cycle(&m, 0);
+        assert_eq!(result, Some([1, 3, 2, 1].to_vec()));
+    }
+
+    #[test]
+    fn test_find_neg_cycle4() {
+        let m: Csr<(), _> = Csr::from_sorted_edges(&[(0, 0, -1.)]).unwrap();
+        let result = find_negative_cycle(&m, 0);
+        assert_eq!(result, Some([0, 0].to_vec()));
     }
 
     #[test]
