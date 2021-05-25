@@ -1040,14 +1040,14 @@ mod tests {
         ])
         .unwrap();
         let result = find_negative_cycle(&m, 0);
-        assert_eq!(result, Some([1, 3, 2, 1].to_vec()));
+        assert_eq!(result, Some([1, 3, 2].to_vec()));
     }
 
     #[test]
     fn test_find_neg_cycle4() {
         let m: Csr<(), _> = Csr::from_sorted_edges(&[(0, 0, -1.)]).unwrap();
         let result = find_negative_cycle(&m, 0);
-        assert_eq!(result, Some([0, 0].to_vec()));
+        assert_eq!(result, Some([0].to_vec()));
     }
 
     #[test]

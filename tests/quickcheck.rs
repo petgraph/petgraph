@@ -913,7 +913,7 @@ quickcheck! {
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
             if let Some(path) = find_negative_cycle(&gr, start) {
-                assert!(path.len() >= 2);
+                assert!(path.len() >= 1);
             }
         }
         true

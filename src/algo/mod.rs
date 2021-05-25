@@ -872,7 +872,7 @@ where
 /// let path = find_negative_cycle(&graph_with_neg_cycle, NodeIndex::new(0));
 /// assert_eq!(
 ///     path,
-///     Some([NodeIndex::new(1), NodeIndex::new(3), NodeIndex::new(2), NodeIndex::new(1)].to_vec())
+///     Some([NodeIndex::new(1), NodeIndex::new(3), NodeIndex::new(2)].to_vec())
 /// );
 /// ```
 pub fn find_negative_cycle<G>(g: G, source: G::NodeId) -> Option<Vec<G::NodeId>>
@@ -904,8 +904,6 @@ where
                     // We have only 2 ways to find the cycle and break the loop:
                     // 1. start is reached
                     if ancestor == start {
-                        // Insert the ancestor at the beginning and at the end of the path
-                        path.insert(0, ancestor);
                         path.push(ancestor);
                         break;
                     }
