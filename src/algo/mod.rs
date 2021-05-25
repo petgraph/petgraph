@@ -897,34 +897,34 @@ where
                 let mut node = start;
                 // Go backward in the predecessor chain
                 loop {
-                    let ansestor = match predecessor[ix(node)] {
+                    let ancestor = match predecessor[ix(node)] {
                         Some(predecessor_node) => predecessor_node,
                         None => node, // no predecessor, self cycle
                     };
                     // We have only 2 ways to find the cycle and break the loop:
                     // 1. start is reached
-                    if ansestor == start {
+                    if ancestor == start {
                         // Insert the ancestor at the beginning and at the end of the path
-                        path.insert(0, ansestor);
-                        path.push(ansestor);
+                        path.insert(0, ancestor);
+                        path.push(ancestor);
                         break;
                     }
                     // 2. some node was reached twice
-                    else if path.iter().any(|&p| p == ansestor) {
-                        // Drop any node in path that is before the first ansestor
+                    else if path.iter().any(|&p| p == ancestor) {
+                        // Drop any node in path that is before the first ancestor
                         let pos = path
                             .iter()
-                            .position(|&p| p == ansestor)
+                            .position(|&p| p == ancestor)
                             .expect("we should always have a position");
                         path = path[pos..path.len()].to_vec();
 
-                        path.push(ansestor);
+                        path.push(ancestor);
                         break;
                     }
 
                     // None of the above, some middle path node
-                    path.push(ansestor);
-                    node = ansestor;
+                    path.push(ancestor);
+                    node = ancestor;
                 }
                 // We are done here
                 break 'outer;
