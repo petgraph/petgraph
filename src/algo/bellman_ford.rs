@@ -90,7 +90,6 @@ where
             let j = edge.target();
             let w = *edge.weight();
             if distance[ix(i)] + w < distance[ix(j)] {
-                //println!("neg cycle, detected from {} to {}, weight={}", i, j, w);
                 return Err(NegativeCycle(()));
             }
         }
