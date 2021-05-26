@@ -98,7 +98,7 @@ where
     Ok((distance, predecessor))
 }
 
-/// \[Generic\] find the path of a negative cycle from node `source` to all other.
+/// \[Generic\] Find the path of a negative cycle reachable from node `source`.
 ///
 /// Using the [find_negative_cycle][nc]; will search the Graph for negative cycles using
 /// [Bellman–Ford algorithm][bf]. If no negative cycle is found the function will return `None`.
