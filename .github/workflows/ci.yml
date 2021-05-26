@@ -25,6 +25,7 @@ jobs:
           - rust: nightly
             features: unstable quickcheck
             test_all: --all
+            bench: true
 
     steps:
       - uses: actions/checkout@v2
@@ -33,12 +34,19 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - name: Tests
+      - name: Build
         run: |
           cargo build --verbose --no-default-features
-          cargo test --verbose --no-default-features
           cargo build --verbose --features "${{ matrix.features }}"
+      - name: Tests
+        run: |
+          cargo test --verbose --no-default-features
           cargo test ${{ matrix.test_all }} --verbose --features "${{ matrix.features }}"
+      - name: Build benchmarks
+        if: ${{ matrix.bench }}
+        run: |
+          cargo bench --verbose --no-run
+          cargo bench --verbose --no-run --all-features
 
   rustfmt:
     runs-on: ubuntu-latest
