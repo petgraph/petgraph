@@ -11,7 +11,7 @@ use petgraph::algo::{bellman_ford, find_negative_cycle};
 
 #[bench]
 fn bellman_ford_bench(bench: &mut Bencher) {
-    static NODE_COUNT: usize = 1_000;
+    static NODE_COUNT: usize = 100;
     let mut g = Graph::new();
     let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).into_iter().map(|i| g.add_node(i)).collect();
     for i in 0..NODE_COUNT {
@@ -21,7 +21,10 @@ fn bellman_ford_bench(bench: &mut Bencher) {
         let j_to = min(NODE_COUNT, j_from + neighbour_count);
         for j in j_from..j_to {
             let n2 = nodes[j];
-            let distance = (i + 3) % 10;
+            let mut distance: f64 = ((i + 3) % 10) as f64;
+            if n1 != n2 {
+                distance -= 1.0
+            }
             g.add_edge(n1, n2, distance as f64);
         }
     }
@@ -33,7 +36,7 @@ fn bellman_ford_bench(bench: &mut Bencher) {
 
 #[bench]
 fn find_negative_cycle_bench(bench: &mut Bencher) {
-    static NODE_COUNT: usize = 1_000;
+    static NODE_COUNT: usize = 100;
     let mut g = Graph::new();
     let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).into_iter().map(|i| g.add_node(i)).collect();
     for i in 0..NODE_COUNT {
@@ -43,8 +46,11 @@ fn find_negative_cycle_bench(bench: &mut Bencher) {
         let j_to = min(NODE_COUNT, j_from + neighbour_count);
         for j in j_from..j_to {
             let n2 = nodes[j];
-            let distance = (i + 3) % 10;
-            g.add_edge(n1, n2, distance as f64);
+            let mut distance: f64 = ((i + 3) % 10) as f64;
+            if n1 != n2 {
+                distance -= 1.0
+            }
+            g.add_edge(n1, n2, distance);
         }
     }
 
