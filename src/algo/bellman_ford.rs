@@ -196,6 +196,7 @@ where
 }
 
 // Perform Step 1 and Step 2 of the Bellman-Ford algorithm.
+#[inline(always)]
 fn bellman_ford_initialize_relax<G>(
     g: G,
     source: G::NodeId,
