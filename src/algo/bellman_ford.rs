@@ -2,7 +2,7 @@
 
 use crate::prelude::*;
 
-use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable};
+use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, Visitable, VisitMap};
 
 use super::{FloatMeasure, NegativeCycle};
 
@@ -133,7 +133,7 @@ where
 /// ```
 pub fn find_negative_cycle<G>(g: G, source: G::NodeId) -> Option<Vec<G::NodeId>>
 where
-    G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
+    G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable + Visitable,
     G::EdgeWeight: FloatMeasure,
 {
     let ix = |i| g.to_index(i);
@@ -151,6 +151,7 @@ where
                 // Step 3: negative cycle found
                 let start = j;
                 let mut node = start;
+                let mut visited = g.visit_map();
                 // Go backward in the predecessor chain
                 loop {
                     let ancestor = match predecessor[ix(node)] {
@@ -164,7 +165,7 @@ where
                         break;
                     }
                     // 2. some node was reached twice
-                    else if path.iter().any(|&p| p == ancestor) {
+                    else if visited.is_visited(&ancestor) {
                         // Drop any node in path that is before the first ancestor
                         let pos = path
                             .iter()
@@ -178,6 +179,7 @@ where
 
                     // None of the above, some middle path node
                     path.push(ancestor);
+                    visited.visit(ancestor);
                     node = ancestor;
                 }
                 // We are done here
