@@ -2,7 +2,7 @@
 
 use crate::prelude::*;
 
-use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, Visitable, VisitMap};
+use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, VisitMap, Visitable};
 
 use super::{FloatMeasure, NegativeCycle};
 
