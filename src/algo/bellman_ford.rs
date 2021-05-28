@@ -173,7 +173,6 @@ where
                             .expect("we should always have a position");
                         path = path[pos..path.len()].to_vec();
 
-                        path.push(ancestor);
                         break;
                     }
 

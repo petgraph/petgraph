@@ -1010,7 +1010,7 @@ mod tests {
         ])
         .unwrap();
         let result = find_negative_cycle(&m, 0);
-        assert_eq!(result, Some([1, 1].to_vec()));
+        assert_eq!(result, Some([1].to_vec()));
     }
 
     #[test]
