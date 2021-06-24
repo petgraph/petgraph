@@ -2,6 +2,7 @@
 
 name = "petgraph"
 version = "0.5.1"
+readme = "README.rst"
 license = "MIT/Apache-2.0"
 authors = [
 "bluss",
