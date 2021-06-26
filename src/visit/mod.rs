@@ -508,7 +508,7 @@ trait_template! {
         fn node_bound(self: &Self) -> usize;
         /// Convert `a` to an integer index.
         fn to_index(self: &Self, a: Self::NodeId) -> usize;
-        /// Convert `i` to a node index
+        /// Convert `i` to a node index. `i` must be a valid value in the graph.
         fn from_index(self: &Self, i: usize) -> Self::NodeId;
     }
 }
@@ -524,7 +524,7 @@ trait_template! {
         fn edge_bound(self: &Self) -> usize;
         /// Convert `a` to an integer index.
         fn to_index(self: &Self, a: Self::EdgeId) -> usize;
-        /// Convert `i` to a node index
+        /// Convert `i` to an edge index. `i` must be a valid value in the graph.
         fn from_index(self: &Self, i: usize) -> Self::EdgeId;
     }
 }
