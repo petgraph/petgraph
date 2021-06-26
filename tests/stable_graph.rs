@@ -177,9 +177,9 @@ defmac!(edges ref gr, x => gr.edges(x).map(|r| (r.target(), *r.weight())));
 fn test_edges_directed() {
     let gr = make_graph::<Directed>();
     let x = n(9);
-    assert_equal(edges!(gr, x), vec![(x, 16), (x, 14), (n(1), 13)]);
-    assert_equal(edges!(gr, n(0)), vec![(n(3), 1)]);
-    assert_equal(edges!(gr, n(4)), vec![]);
+    assert_equal(edges!(&gr, x), vec![(x, 16), (x, 14), (n(1), 13)]);
+    assert_equal(edges!(&gr, n(0)), vec![(n(3), 1)]);
+    assert_equal(edges!(&gr, n(4)), vec![]);
 }
 
 #[test]
@@ -193,11 +193,11 @@ fn test_edges_undirected() {
     let gr = make_graph::<Undirected>();
     let x = n(9);
     assert_equal(
-        edges!(gr, x),
+        edges!(&gr, x),
         vec![(x, 16), (x, 14), (n(1), 13), (n(7), 12)],
     );
-    assert_equal(edges!(gr, n(0)), vec![(n(3), 1)]);
-    assert_equal(edges!(gr, n(4)), vec![]);
+    assert_equal(edges!(&gr, n(0)), vec![(n(3), 1)]);
+    assert_equal(edges!(&gr, n(4)), vec![]);
 }
 
 #[test]
@@ -353,9 +353,9 @@ fn from() {
 
     let gr2 = Graph::from(gr1.clone());
     let gr3 = StableGraph::from(gr2);
-    assert!(nodes_eq!(gr1, gr3));
-    assert!(edgew_eq!(gr1, gr3));
-    assert!(edges_eq!(gr1, gr3));
+    assert!(nodes_eq!(&gr1, &gr3));
+    assert!(edgew_eq!(&gr1, &gr3));
+    assert!(edges_eq!(&gr1, &gr3));
 
     gr1.remove_node(b);
 
@@ -368,12 +368,12 @@ fn from() {
     ans.add_edge(a, a, 10);
     ans.add_edge(a, c, 40);
 
-    assert!(nodes_eq!(gr4, ans));
-    assert!(edges_eq!(gr4, ans));
+    assert!(nodes_eq!(&gr4, &ans));
+    assert!(edges_eq!(&gr4, &ans));
 
-    assert!(nodes_eq!(gr5, ans));
-    assert!(edgew_eq!(gr5, ans));
-    assert!(edges_eq!(gr5, ans));
+    assert!(nodes_eq!(&gr5, &ans));
+    assert!(edgew_eq!(&gr5, &ans));
+    assert!(edges_eq!(&gr5, &ans));
 }
 
 use petgraph::data::FromElements;

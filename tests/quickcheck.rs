@@ -19,6 +19,7 @@ use std::hash::Hash;
 
 use itertools::assert_equal;
 use itertools::cloned;
+use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
@@ -507,7 +508,7 @@ quickcheck! {
 quickcheck! {
     fn kosaraju_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
         let tsccs = kosaraju_scc(&g);
-        let firsts = vec(tsccs.iter().rev().map(|v| v[0]));
+        let firsts = tsccs.iter().rev().map(|v| v[0]).collect::<Vec<_>>();
         subset_is_topo_order(&g, &firsts)
     }
 }
@@ -515,7 +516,7 @@ quickcheck! {
 quickcheck! {
     fn tarjan_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
         let tsccs = tarjan_scc(&g);
-        let firsts = vec(tsccs.iter().rev().map(|v| v[0]));
+        let firsts = tsccs.iter().rev().map(|v| v[0]).collect::<Vec<_>>();
         subset_is_topo_order(&g, &firsts)
     }
 }
@@ -569,8 +570,8 @@ fn graph_condensation_acyclic() {
 #[derive(Debug, Clone)]
 struct DAG<N: Default + Clone + Send + 'static>(Graph<N, ()>);
 
-impl<N: Default + Clone + Send + 'static> quickcheck::Arbitrary for DAG<N> {
-    fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
+impl<N: Default + Clone + Send + 'static> Arbitrary for DAG<N> {
+    fn arbitrary<G: Gen>(g: &mut G) -> Self {
         let nodes = usize::arbitrary(g);
         if nodes == 0 {
             return DAG(Graph::with_capacity(0, 0));
@@ -950,17 +951,17 @@ quickcheck! {
         let sgr = StableGraph::from(gr1.clone());
         let gr2 = Graph::from(sgr);
 
-        assert!(nodes_eq!(gr1, gr2));
-        assert!(edgew_eq!(gr1, gr2));
-        assert!(edges_eq!(gr1, gr2));
+        assert!(nodes_eq!(&gr1, &gr2));
+        assert!(edgew_eq!(&gr1, &gr2));
+        assert!(edges_eq!(&gr1, &gr2));
     }
     fn test_un_from(gr1: UnGraph<i32, i32>) -> () {
         let sgr = StableGraph::from(gr1.clone());
         let gr2 = Graph::from(sgr);
 
-        assert!(nodes_eq!(gr1, gr2));
-        assert!(edgew_eq!(gr1, gr2));
-        assert!(edges_eq!(gr1, gr2));
+        assert!(nodes_eq!(&gr1, &gr2));
+        assert!(edgew_eq!(&gr1, &gr2));
+        assert!(edges_eq!(&gr1, &gr2));
     }
 
     fn test_graph_from_stable_graph(gr1: StableDiGraph<usize, usize>) -> () {
@@ -999,30 +1000,30 @@ quickcheck! {
 
     fn stable_di_graph_map_id(gr1: StableDiGraph<usize, usize>) -> () {
         let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
-        assert!(nodes_eq!(gr1, gr2));
-        assert!(edgew_eq!(gr1, gr2));
-        assert!(edges_eq!(gr1, gr2));
+        assert!(nodes_eq!(&gr1, &gr2));
+        assert!(edgew_eq!(&gr1, &gr2));
+        assert!(edges_eq!(&gr1, &gr2));
     }
 
     fn stable_un_graph_map_id(gr1: StableUnGraph<usize, usize>) -> () {
         let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
-        assert!(nodes_eq!(gr1, gr2));
-        assert!(edgew_eq!(gr1, gr2));
-        assert!(edges_eq!(gr1, gr2));
+        assert!(nodes_eq!(&gr1, &gr2));
+        assert!(edgew_eq!(&gr1, &gr2));
+        assert!(edges_eq!(&gr1, &gr2));
     }
 
     fn stable_di_graph_filter_map_id(gr1: StableDiGraph<usize, usize>) -> () {
         let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
-        assert!(nodes_eq!(gr1, gr2));
-        assert!(edgew_eq!(gr1, gr2));
-        assert!(edges_eq!(gr1, gr2));
+        assert!(nodes_eq!(&gr1, &gr2));
+        assert!(edgew_eq!(&gr1, &gr2));
+        assert!(edges_eq!(&gr1, &gr2));
     }
 
     fn test_stable_un_graph_filter_map_id(gr1: StableUnGraph<usize, usize>) -> () {
         let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
-        assert!(nodes_eq!(gr1, gr2));
-        assert!(edgew_eq!(gr1, gr2));
-        assert!(edges_eq!(gr1, gr2));
+        assert!(nodes_eq!(&gr1, &gr2));
+        assert!(edgew_eq!(&gr1, &gr2));
+        assert!(edges_eq!(&gr1, &gr2));
     }
 
     fn stable_di_graph_filter_map_remove(gr1: Small<StableDiGraph<i32, i32>>,

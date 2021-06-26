@@ -140,9 +140,9 @@ fn test_edges_directed() {
     let gr = make_graph();
     dbg!(&gr);
     let x = n(9);
-    assert_equal(edges!(gr, x), vec![(1, 11), (x, 12), (x, 13)]);
-    assert_equal(edges!(gr, n(0)), vec![(n(3), 1)]);
-    //assert_equal(edges!(gr, n(4)), vec![]);
+    assert_equal(edges!(&gr, x), vec![(1, 11), (x, 12), (x, 13)]);
+    assert_equal(edges!(&gr, n(0)), vec![(n(3), 1)]);
+    //assert_equal(edges!(&gr, n(4)), vec![]);
 }
 
 #[test]
