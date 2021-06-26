@@ -11,7 +11,7 @@ use super::visit::{
 /// of the graph.
 pub struct Matching<G: GraphBase> {
     graph: G,
-    mate: Vec<G::NodeId>,
+    mate: Vec<Option<G::NodeId>>,
     n_edges: usize,
 }
 
@@ -19,7 +19,7 @@ impl<G> Matching<G>
 where
     G: GraphBase,
 {
-    fn new(graph: G, mate: Vec<G::NodeId>, n_edges: usize) -> Self {
+    fn new(graph: G, mate: Vec<Option<G::NodeId>>, n_edges: usize) -> Self {
         Self {
             graph,
             mate,
@@ -36,13 +36,7 @@ where
     ///
     /// Returns `None` if the node is not matched or does not exist.
     pub fn mate(&self, node: G::NodeId) -> Option<G::NodeId> {
-        self.mate.get(self.graph.to_index(node)).and_then(|&mate| {
-            if mate != self.graph.dummy() {
-                Some(mate)
-            } else {
-                None
-            }
-        })
+        self.mate.get(self.graph.to_index(node)).and_then(|&id| id)
     }
 
     /// Iterates over all edges from the matching.
@@ -105,16 +99,13 @@ where
 }
 
 trait WithDummy: NodeIndexable {
-    fn dummy(&self) -> Self::NodeId;
     fn dummy_idx(&self) -> usize;
     fn node_bound_with_dummy(&self) -> usize;
+    /// Convert `i` to a node index, returns None for the dummy node
+    fn try_from_index(self: &Self, i: usize) -> Option<Self::NodeId>;
 }
 
 impl<G: NodeIndexable> WithDummy for G {
-    fn dummy(&self) -> Self::NodeId {
-        self.from_index(self.dummy_idx())
-    }
-
     fn dummy_idx(&self) -> usize {
         // Gabow numbers the vertices from 1 to n, and uses 0 as the dummy
         // vertex. Our vertex indices are zero-based and so we use the node
@@ -125,11 +116,19 @@ impl<G: NodeIndexable> WithDummy for G {
     fn node_bound_with_dummy(&self) -> usize {
         self.node_bound() + 1
     }
+
+    fn try_from_index(self: &Self, i: usize) -> Option<Self::NodeId> {
+        if i != self.dummy_idx() {
+            Some(self.from_index(i))
+        } else {
+            None
+        }
+    }
 }
 
 pub struct MatchedNodes<'a, G: GraphBase> {
     graph: &'a G,
-    mate: &'a [G::NodeId],
+    mate: &'a [Option<G::NodeId>],
     current: usize,
 }
 
@@ -144,7 +143,7 @@ where
             let current = self.current;
             self.current += 1;
 
-            if self.mate[current] != self.graph.dummy() {
+            if self.mate[current].is_some() {
                 return Some(self.graph.from_index(current));
             }
         }
@@ -155,7 +154,7 @@ where
 
 pub struct MatchedEdges<'a, G: GraphBase> {
     graph: &'a G,
-    mate: &'a [G::NodeId],
+    mate: &'a [Option<G::NodeId>],
     current: usize,
 }
 
@@ -170,14 +169,14 @@ where
             let current = self.current;
             self.current += 1;
 
-            let mate = self.mate[current];
-
-            // Check if the mate is a node after the current one. If not, then
-            // do not report that edge since it has been already reported (the
-            // graph is considered undirected).
-            if mate != self.graph.dummy() && self.graph.to_index(mate) > current {
-                let this = self.graph.from_index(current);
-                return Some((this, mate));
+            if let Some(mate) = self.mate[current] {
+                // Check if the mate is a node after the current one. If not, then
+                // do not report that edge since it has been already reported (the
+                // graph is considered undirected).
+                if self.graph.to_index(mate) > current {
+                    let this = self.graph.from_index(current);
+                    return Some((this, mate));
+                }
             }
         }
 
@@ -204,15 +203,16 @@ where
     G::NodeId: Eq + Hash,
     G::EdgeId: Eq + Hash,
 {
-    let (mate, n_edges) = greedy_matching_inner(&graph);
-    Matching::new(graph, mate, n_edges)
+    let (mates, n_edges) = greedy_matching_inner(&graph);
+    Matching::new(graph, mates, n_edges)
 }
 
-fn greedy_matching_inner<G>(graph: &G) -> (Vec<G::NodeId>, usize)
+#[inline]
+fn greedy_matching_inner<G>(graph: &G) -> (Vec<Option<G::NodeId>>, usize)
 where
     G: Visitable + IntoNodeIdentifiers + NodeIndexable + IntoNeighbors,
 {
-    let mut mate = vec![graph.dummy(); graph.node_bound()];
+    let mut mate = vec![None; graph.node_bound()];
     let mut n_edges = 0;
     let visited = &mut graph.visit_map();
 
@@ -224,8 +224,8 @@ where
         non_backtracking_dfs(graph, start, visited, |next| {
             // Alternate matched and unmatched edges.
             if let Some(pred) = last.take() {
-                mate[graph.to_index(pred)] = next;
-                mate[graph.to_index(next)] = pred;
+                mate[graph.to_index(pred)] = Some(next);
+                mate[graph.to_index(next)] = Some(pred);
                 n_edges += 1;
             } else {
                 last = Some(next);
@@ -327,6 +327,8 @@ impl<G: GraphBase> PartialEq for Label<G> {
 /// *O(|V|³)*. An algorithm with a better time complexity might be used in the
 /// future.
 ///
+/// **Panics** if `g.node_bound()` is `std::usize::MAX`.
+///
 /// # Examples
 ///
 /// ```
@@ -362,22 +364,29 @@ pub fn maximum_matching<G>(graph: G) -> Matching<G>
 where
     G: Visitable + NodeIndexable + IntoNodeIdentifiers + IntoEdges,
 {
+    // The dummy identifier needs an unused index
+    assert_ne!(
+        graph.node_bound(),
+        std::usize::MAX,
+        "The input graph capacity should be strictly less than std::usize::MAX."
+    );
+
     // Greedy algorithm should create a fairly good initial matching. The hope
     // is that it speeds up the computation by doing les work in the complex
     // algorithm.
     let (mut mate, mut n_edges) = greedy_matching_inner(&graph);
 
     // Gabow's algorithm uses a dummy node in the mate array.
-    mate.push(graph.dummy());
-
-    let len = graph.node_bound_with_dummy();
+    mate.push(None);
+    let len = graph.node_bound() + 1;
     debug_assert_eq!(mate.len(), len);
+
     let mut label: Vec<Label<G>> = vec![Label::None; len];
     let mut first_inner = vec![std::usize::MAX; len];
     let visited = &mut graph.visit_map();
 
     for start in 0..graph.node_bound() {
-        if mate[start] != graph.dummy() {
+        if mate[start].is_some() {
             // The vertex is already matched. A start must be a free vertex.
             continue;
         }
@@ -387,6 +396,7 @@ where
         first_inner[start] = graph.dummy_idx();
         graph.reset_map(visited);
 
+        // start is never a dummy index
         let start = graph.from_index(start);
 
         // Queue will contain outer vertices that should be processed next. The
@@ -406,13 +416,13 @@ where
                 let other_vertex = edge.target();
                 let other_idx = graph.to_index(other_vertex);
 
-                if mate[other_idx] == graph.dummy() && other_vertex != start {
+                if mate[other_idx].is_none() && other_vertex != start {
                     // An augmenting path was found. Augment the matching. If
                     // `other` is actually the start node, then the augmentation
                     // must not be performed, because the start vertex would be
                     // incident to two edges, which violates the matching
                     // property.
-                    mate[other_idx] = outer_vertex;
+                    mate[other_idx] = Some(outer_vertex);
                     augment_path(&graph, outer_vertex, other_vertex, &mut mate, &label);
                     n_edges += 1;
 
@@ -438,7 +448,7 @@ where
                     );
                 } else {
                     let mate_vertex = mate[other_idx];
-                    let mate_idx = graph.to_index(mate_vertex);
+                    let mate_idx = mate_vertex.map_or(graph.dummy_idx(), |id| graph.to_index(id));
 
                     if label[mate_idx].is_inner() {
                         // Mate of `other` vertex is inner (no label has been
@@ -452,10 +462,12 @@ where
                         first_inner[mate_idx] = other_idx;
                     }
 
-                    if visited.visit(mate_vertex) {
-                        // Add the vertex to the queue only if this is its first
-                        // discovery.
-                        queue.push_back(mate_vertex);
+                    // Add the vertex to the queue only if it's not the dummy and this is its first
+                    // discovery.
+                    if let Some(mate_vertex) = mate_vertex {
+                        if visited.visit(mate_vertex) {
+                            queue.push_back(mate_vertex);
+                        }
                     }
                 }
             }
@@ -476,7 +488,7 @@ where
 fn find_join<G, F>(
     graph: &G,
     edge: G::EdgeRef,
-    mate: &Vec<G::NodeId>,
+    mate: &Vec<Option<G::NodeId>>,
     label: &mut Vec<Label<G>>,
     first_inner: &mut Vec<usize>,
     mut visitor: F,
@@ -513,7 +525,10 @@ fn find_join<G, F>(
         }
 
         // Set left to the next inner vertex in P(source) or P(target).
-        left = first_inner[graph.to_index(label[graph.to_index(mate[left])].to_vertex().unwrap())];
+        // The unwraps are safe because left is not the dummy node.
+        let left_mate = graph.to_index(mate[left].unwrap());
+        let next_inner = label[left_mate].to_vertex().unwrap();
+        left = first_inner[graph.to_index(next_inner)];
 
         if !label[left].is_flagged(edge.id()) {
             // The inner vertex is not flagged yet, so flag it.
@@ -530,12 +545,15 @@ fn find_join<G, F>(
         let mut inner = first_inner[endpoint];
         while inner != join {
             // Notify the caller about labeling a vertex.
-            visitor(graph.from_index(inner));
+            if let Some(ix) = graph.try_from_index(inner) {
+                visitor(ix);
+            }
 
             label[inner] = Label::Edge(edge.id(), [edge.source(), edge.target()]);
             first_inner[inner] = join;
-            inner = first_inner
-                [graph.to_index(label[graph.to_index(mate[inner])].to_vertex().unwrap())];
+            let inner_mate = graph.to_index(mate[inner].unwrap());
+            let next_inner = label[inner_mate].to_vertex().unwrap();
+            inner = first_inner[graph.to_index(next_inner)];
         }
     }
 
@@ -555,7 +573,7 @@ fn augment_path<G>(
     graph: &G,
     outer: G::NodeId,
     other: G::NodeId,
-    mate: &mut Vec<G::NodeId>,
+    mate: &mut Vec<Option<G::NodeId>>,
     label: &Vec<Label<G>>,
 ) where
     G: NodeIndexable,
@@ -563,10 +581,10 @@ fn augment_path<G>(
     let outer_idx = graph.to_index(outer);
 
     let temp = mate[outer_idx];
-    let temp_idx = graph.to_index(temp);
-    mate[outer_idx] = other;
+    let temp_idx = temp.map_or(graph.dummy_idx(), |id| graph.to_index(id));
+    mate[outer_idx] = Some(other);
 
-    if mate[temp_idx] != outer {
+    if mate[temp_idx] != Some(outer) {
         // We are at the end of the path and so the entire path is completely
         // rematched/augmented.
         return;
@@ -574,8 +592,10 @@ fn augment_path<G>(
         // The outer vertex has a vertex label which refers to another outer
         // vertex on the path. So we set this another outer node as the mate for
         // the previous mate of the outer node.
-        mate[temp_idx] = vertex;
-        augment_path(graph, vertex, temp, mate, label);
+        mate[temp_idx] = Some(vertex);
+        if let Some(temp) = temp {
+            augment_path(graph, vertex, temp, mate, label);
+        }
     } else if let Label::Edge(_, [source, target]) = label[outer_idx] {
         // The outer vertex has an edge label which refers to an edge in a
         // blossom. We need to augment both directions along the blossom.
