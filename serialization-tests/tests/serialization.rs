@@ -167,7 +167,7 @@ defmac!(rejson ref g => fromjson!(tojson!(g)));
 #[test]
 fn json_graph_str_i32() {
     let g1: DiGraph<_, _> = make_graph();
-    let g2: Graph<String, i32> = rejson!(g1);
+    let g2: Graph<String, i32> = rejson!(&g1);
     assert_graph_eq(&g1, &g2);
     assert_graph_eq(&g2, &g1);
 }
@@ -176,7 +176,7 @@ fn json_graph_str_i32() {
 fn json_graph_nils() {
     let g1 = make_graph().map(|_, _| (), |_, _| ());
 
-    let g2: Graph<(), ()> = rejson!(g1);
+    let g2: Graph<(), ()> = rejson!(&g1);
     assert_graph_eq(&g1, &g2);
     assert_graph_eq(&g2, &g1);
 }
@@ -212,42 +212,42 @@ type DiGraphStrI32 = DiGraph<String, i32>;
 
 #[test]
 fn from_json_digraph_nils() {
-    let _: DiGraphNils = fromjson!(DIGRAPH_NILS);
+    let _: DiGraphNils = fromjson!(&DIGRAPH_NILS);
 }
 
 #[test]
 #[should_panic(expected = "edge property mismatch")]
 fn from_json_graph_nils_edge_property_mismatch() {
-    let _: UnGraphNils = fromjson!(DIGRAPH_NILS);
+    let _: UnGraphNils = fromjson!(&DIGRAPH_NILS);
 }
 
 #[test]
 #[should_panic(expected = "does not exist")]
 fn from_json_graph_nils_index_oob() {
-    let _: DiGraphNils = fromjson!(DIGRAPH_NILS_INDEX_OOB);
+    let _: DiGraphNils = fromjson!(&DIGRAPH_NILS_INDEX_OOB);
 }
 
 #[test]
 #[should_panic(expected = "expected u8")]
 fn from_json_graph_nils_index_too_large() {
-    let _: DiGraphNilsU8 = fromjson!(DIGRAPH_NILS_INDEX_OUTSIDE_U8);
+    let _: DiGraphNilsU8 = fromjson!(&DIGRAPH_NILS_INDEX_OUTSIDE_U8);
 }
 
 #[test]
 fn from_json_graph_directed_str_i32() {
-    let _: DiGraphStrI32 = fromjson!(DIGRAPH_STRI32);
+    let _: DiGraphStrI32 = fromjson!(&DIGRAPH_STRI32);
 }
 
 #[test]
 #[should_panic(expected = "expected unit")]
 fn from_json_graph_from_edge_type_1() {
-    let _: DiGraphNils = fromjson!(DIGRAPH_STRI32);
+    let _: DiGraphNils = fromjson!(&DIGRAPH_STRI32);
 }
 
 #[test]
 #[should_panic(expected = "expected a string")]
 fn from_json_graph_from_edge_type_2() {
-    let _: DiGraphStrI32 = fromjson!(DIGRAPH_NILS);
+    let _: DiGraphStrI32 = fromjson!(&DIGRAPH_NILS);
 }
 
 #[test]
@@ -268,7 +268,7 @@ fn from_json_digraph_str_i32() {
     type GSI = DiGraph<String, i32>;
     type GSISmall = DiGraph<String, i32, u8>;
 
-    let g4: GSI = fromjson!(DIGRAPH_STRI32);
+    let g4: GSI = fromjson!(&DIGRAPH_STRI32);
 
     for ni in g4.node_indices() {
         assert_eq!(&g4nodes[ni.index()], &g4[ni]);
@@ -283,7 +283,7 @@ fn from_json_digraph_str_i32() {
         assert_eq!(edge_data[2], g4[e.id()]);
     }
 
-    let _g4small: GSISmall = fromjson!(DIGRAPH_STRI32);
+    let _g4small: GSISmall = fromjson!(&DIGRAPH_STRI32);
 }
 
 #[test]
@@ -313,12 +313,12 @@ fn from_json_nodes_too_big() {
     type H1 = DiGraph<i32, i32>;
 
     assert!(from_str::<G8>(j1_big).is_err());
-    let _: G16 = fromjson!(j1_big); // assert
-    let _: G32 = fromjson!(j1_big); // assert
-    let _: G64 = fromjson!(j1_big); // assert
+    let _: G16 = fromjson!(&j1_big); // assert
+    let _: G32 = fromjson!(&j1_big); // assert
+    let _: G64 = fromjson!(&j1_big); // assert
 
     // other edge weight is also ok -- because it has no edges
-    let _: H1 = fromjson!(j1_big); // assert
+    let _: H1 = fromjson!(&j1_big); // assert
 }
 
 #[test]
@@ -343,15 +343,15 @@ fn from_json_edges_too_big() {
 
     assert!(from_str::<G8>(&j1_big).is_err());
     assert!(from_str::<G16>(&j1_big).is_err());
-    let _: G32 = fromjson!(j1_big); // assert
-    let _: G64 = fromjson!(j1_big); // assert
+    let _: G32 = fromjson!(&j1_big); // assert
+    let _: G64 = fromjson!(&j1_big); // assert
 }
 
 #[test]
 fn json_stable_graph_str() {
     let g1 = make_stable_graph();
 
-    let g2: StableGraph<String, i32> = rejson!(g1);
+    let g2: StableGraph<String, i32> = rejson!(&g1);
 
     // map &str -> String
     let g1 = g1.map(|_, s| s.to_string(), |_, &w| w);
@@ -361,7 +361,7 @@ fn json_stable_graph_str() {
 #[test]
 fn json_stable_graph_nils() {
     let g1 = make_stable_graph().map(|_, _| (), |_, _| ());
-    let g2 = rejson!(g1);
+    let g2 = rejson!(&g1);
     assert_stable_graph_eq(&g1, &g2);
 }
 
@@ -373,14 +373,14 @@ defmac!(recode ref g => decode!(encode!(g)));
 #[test]
 fn bincode_stablegraph_to_graph_i32_0() {
     let g1 = StableGraph::<i32, i32>::new();
-    let g2: Graph<i32, i32> = recode!(g1);
+    let g2: Graph<i32, i32> = recode!(&g1);
     assert_graph_eq(&g2, &Graph::<i32, i32>::default());
 }
 
 #[test]
 fn bincode_graph_to_stablegraph_i32_0() {
     let g1 = Graph::<i32, i32>::new();
-    let g2: StableGraph<i32, i32> = recode!(g1);
+    let g2: StableGraph<i32, i32> = recode!(&g1);
     assert_stable_graph_eq(&g2, &StableGraph::<i32, i32>::default());
 }
 
@@ -389,7 +389,7 @@ fn bincode_graph_to_graph_i32_1() {
     let mut g1 = Graph::<i32, i32>::new();
     let x = 1729;
     g1.add_node(x);
-    let g2: Graph<i32, i32> = recode!(g1);
+    let g2: Graph<i32, i32> = recode!(&g1);
 
     assert_graph_eq(&g1, &g2);
 }
@@ -406,7 +406,7 @@ fn bincode_stablegraph_added2_removed2() {
     let b = g1.add_node(x + 1);
     g1.remove_node(a);
     g1.remove_node(b);
-    let g2: StableGraph<i32, i32> = recode!(g1);
+    let g2: StableGraph<i32, i32> = recode!(&g1);
 
     assert_stable_graph_eq(&g1, &g2);
 }
@@ -424,7 +424,7 @@ fn bincode_stablegraph_added3_removed2() {
     let _c = g1.add_node(x + 2);
     g1.remove_node(a);
     g1.remove_node(b);
-    let g2: StableGraph<i32, i32> = recode!(g1);
+    let g2: StableGraph<i32, i32> = recode!(&g1);
 
     assert_stable_graph_eq(&g1, &g2);
 }
@@ -434,7 +434,7 @@ fn bincode_stablegraph_to_graph_i32_1() {
     let mut g1 = StableGraph::<i32, i32>::new();
     let x = 1729;
     g1.add_node(x);
-    let g2: Graph<i32, i32> = recode!(g1);
+    let g2: Graph<i32, i32> = recode!(&g1);
 
     assert_eq!(g2.node_count(), 1);
     assert_eq!(g2.edge_count(), 0);
@@ -443,47 +443,47 @@ fn bincode_stablegraph_to_graph_i32_1() {
 
 quickcheck! {
     fn json_graph_to_stablegraph_to_graph(g1: Graph<i32, i32>) -> () {
-        let sg: StableGraph<i32, i32> = rejson!(g1);
-        let g2: Graph<i32, i32> = rejson!(sg);
+        let sg: StableGraph<i32, i32> = rejson!(&g1);
+        let g2: Graph<i32, i32> = rejson!(&sg);
         assert_graph_eq(&g1, &g2);
     }
 
     fn json_stablegraph_to_stablegraph(g1: StableGraph<i32, i32>) -> () {
-        let sg: StableGraph<i32, i32> = rejson!(g1);
+        let sg: StableGraph<i32, i32> = rejson!(&g1);
         assert_stable_graph_eq(&g1, &sg);
     }
 
     fn json_graph_to_bigger_graph(g1: DiGraph<i32, i32, u16>) -> () {
-        let g2: DiGraph<i32, i32, usize> = rejson!(g1);
-        let g3: DiGraph<i32, i32, u16> = rejson!(g2);
+        let g2: DiGraph<i32, i32, usize> = rejson!(&g1);
+        let g3: DiGraph<i32, i32, u16> = rejson!(&g2);
         assert_graph_eq(&g1, &g3);
     }
 
     fn bincode_graph_to_graph_nils(g1: Graph<(), ()>) -> () {
-        let g2: Graph<(), ()> = recode!(g1);
+        let g2: Graph<(), ()> = recode!(&g1);
         assert_graph_eq(&g1, &g2);
     }
 
     fn bincode_graph_to_stablegraph_to_graph_nils(g1: Graph<(), ()>) -> () {
-        let data = encode!(g1);
-        let sg: StableGraph<(), ()> = decode!(data);
-        let data2 = encode!(sg);
-        let g2: Graph<(), ()> = decode!(data2);
+        let data = encode!(&g1);
+        let sg: StableGraph<(), ()> = decode!(&data);
+        let data2 = encode!(&sg);
+        let g2: Graph<(), ()> = decode!(&data2);
         assert_eq!(data, data2);
         assert_graph_eq(&g1, &g2);
     }
 
     fn bincode_graph_to_stablegraph_to_graph_u16(g1: DiGraph<i32, i32, u16>) -> () {
-        let data = encode!(g1);
-        let sg: StableDiGraph<i32, i32, u16> = decode!(data);
-        let data2 = encode!(sg);
-        let g2: DiGraph<i32, i32, u16> = decode!(data2);
+        let data = encode!(&g1);
+        let sg: StableDiGraph<i32, i32, u16> = decode!(&data);
+        let data2 = encode!(&sg);
+        let g2: DiGraph<i32, i32, u16> = decode!(&data2);
         assert_eq!(data, data2);
         assert_graph_eq(&g1, &g2);
     }
 
     fn bincode_stablegraph_to_stablegraph(g1: StableGraph<i32, i32>) -> () {
-        let g2: StableGraph<i32, i32> = recode!(g1);
+        let g2: StableGraph<i32, i32> = recode!(&g1);
         assert_stable_graph_eq(&g1, &g2);
     }
 }
