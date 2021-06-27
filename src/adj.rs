@@ -507,18 +507,16 @@ impl<'a, E, Ix: IndexType> Clone for EdgeReferences<'a, E, Ix> {
     }
 }
 
-fn proj1<'a, E, Ix: IndexType>(
-    ((successor_index, edge), from): ((usize, &'a WSuc<E, Ix>), Ix),
-) -> EdgeReference<'a, E, Ix> {
+fn proj1<E, Ix: IndexType>(
+    ((successor_index, edge), from): ((usize, &WSuc<E, Ix>), Ix),
+) -> EdgeReference<E, Ix> {
     let id = EdgeIndex {
         from,
         successor_index,
     };
     EdgeReference { id, edge }
 }
-fn proj2<'a, E, Ix: IndexType>(
-    (row_index, row): (usize, &'a Vec<WSuc<E, Ix>>),
-) -> SomeIter<'a, E, Ix> {
+fn proj2<E, Ix: IndexType>((row_index, row): (usize, &Vec<WSuc<E, Ix>>)) -> SomeIter<E, Ix> {
     row.iter()
         .enumerate()
         .zip(std::iter::repeat(Ix::new(row_index)))

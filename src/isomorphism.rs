@@ -381,17 +381,13 @@ mod matching {
             return false;
         }
         // R_pred
-        if st.0.graph.is_directed() {
-            if r_pred!(0) > r_pred!(1) {
-                return false;
-            }
+        if st.0.graph.is_directed() && r_pred!(0) > r_pred!(1) {
+            return false;
         }
 
         // // semantic feasibility: compare associated data for nodes
-        if NM::enabled() {
-            if !node_match.eq(st.0.graph, st.1.graph, nodes.0, nodes.1) {
-                return false;
-            }
+        if NM::enabled() && !node_match.eq(st.0.graph, st.1.graph, nodes.0, nodes.1) {
+            return false;
         }
         // semantic feasibility: compare associated data for edges
         if EM::enabled() {

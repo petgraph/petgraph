@@ -442,8 +442,8 @@ fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T> {
         // safe because a, b are in bounds and distinct
         unsafe {
             let ptr = slc.as_mut_ptr();
-            let ar = &mut *ptr.offset(a as isize);
-            let br = &mut *ptr.offset(b as isize);
+            let ar = &mut *ptr.add(a);
+            let br = &mut *ptr.add(b);
             Pair::Both(ar, br)
         }
     }

@@ -81,6 +81,11 @@ where
     pub fn len(&self) -> usize {
         self.n_edges
     }
+
+    /// Returns `true` if the number of matched **edges** is 0.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl<G> Matching<G>
@@ -283,8 +288,8 @@ impl<G: GraphBase> Label<G> {
         !self.is_outer()
     }
 
-    fn to_vertex(self) -> Option<G::NodeId> {
-        match self {
+    fn to_vertex(&self) -> Option<G::NodeId> {
+        match *self {
             Label::Vertex(v) => Some(v),
             _ => None,
         }
@@ -488,7 +493,7 @@ where
 fn find_join<G, F>(
     graph: &G,
     edge: G::EdgeRef,
-    mate: &Vec<Option<G::NodeId>>,
+    mate: &[Option<G::NodeId>],
     label: &mut Vec<Label<G>>,
     first_inner: &mut Vec<usize>,
     mut visitor: F,
@@ -573,8 +578,8 @@ fn augment_path<G>(
     graph: &G,
     outer: G::NodeId,
     other: G::NodeId,
-    mate: &mut Vec<Option<G::NodeId>>,
-    label: &Vec<Label<G>>,
+    mate: &mut [Option<G::NodeId>],
+    label: &[Label<G>],
 ) where
     G: NodeIndexable,
 {

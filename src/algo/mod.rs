@@ -89,7 +89,7 @@ where
         vertex_sets.union(g.to_index(a), g.to_index(b));
     }
     let mut labels = vertex_sets.into_labeling();
-    labels.sort();
+    labels.sort_unstable();
     labels.dedup();
     labels.len()
 }
@@ -504,7 +504,7 @@ where
     let mut sccs = Vec::new();
     {
         let mut tarjan_scc = TarjanScc::new();
-        tarjan_scc.run(g, |scc| sccs.push(scc.iter().cloned().collect()));
+        tarjan_scc.run(g, |scc| sccs.push(scc.to_vec()));
     }
     sccs
 }
