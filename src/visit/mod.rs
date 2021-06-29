@@ -139,7 +139,7 @@ pub trait IntoNeighbors : GraphRef {
     type Neighbors: Iterator<Item=Self::NodeId>;
     @section self
     /// Return an iterator of the neighbors of node `a`.
-    fn neighbors(self: Self, a: Self::NodeId) -> Self::Neighbors;
+    fn neighbors(self, a: Self::NodeId) -> Self::Neighbors;
 }
 }
 

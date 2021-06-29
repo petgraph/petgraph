@@ -127,5 +127,5 @@ where
         }
     }
 
-    return Ok(distance_map);
+    Ok(distance_map)
 }

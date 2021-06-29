@@ -186,7 +186,7 @@ where
             }
         }
     }
-    if path.len() > 0 {
+    if !path.is_empty() {
         // Users will probably need to follow the path of the negative cycle
         // so it should be in the reverse order than it was found by the algorithm.
         path.reverse();

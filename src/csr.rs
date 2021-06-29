@@ -177,10 +177,9 @@ where
         {
             let mut rows = self_.row.iter_mut();
 
-            let mut node = 0;
             let mut rstart = 0;
             let mut last_target;
-            'outer: for r in &mut rows {
+            'outer: for (node, r) in (&mut rows).enumerate() {
                 *r = rstart;
                 last_target = None;
                 'inner: loop {
@@ -222,7 +221,6 @@ where
                     }
                     iter.next();
                 }
-                node += 1;
             }
             for r in rows {
                 *r = rstart;

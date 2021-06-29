@@ -128,10 +128,10 @@ impl<T: Zero> Nullable for NotZero<T> {
     }
 }
 
-impl<T: Zero> Into<Option<T>> for NotZero<T> {
-    fn into(self) -> Option<T> {
-        if !self.is_null() {
-            Some(self.0)
+impl<T: Zero> From<NotZero<T>> for Option<T> {
+    fn from(not_zero: NotZero<T>) -> Self {
+        if !not_zero.is_null() {
+            Some(not_zero.0)
         } else {
             None
         }
@@ -380,9 +380,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
         let p = self
             .to_edge_position(a, b)
             .expect("No edge found between the nodes.");
-        let old_weight = mem::replace(&mut self.node_adjacencies[p], Default::default())
-            .into()
-            .unwrap();
+        let old_weight = mem::take(&mut self.node_adjacencies[p]).into().unwrap();
         let old_weight: Option<_> = old_weight.into();
         self.nb_edges -= 1;
         old_weight.unwrap()
