@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use std::hash::Hash;
 
-use super::visit::{EdgeRef, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable};
 use crate::algo::{BoundedMeasure, NegativeCycle};
+use crate::visit::{EdgeRef, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable};
 
 /// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
 ///
