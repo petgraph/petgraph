@@ -3,8 +3,8 @@ use std::collections::{BinaryHeap, HashMap};
 
 use std::hash::Hash;
 
-use super::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 use crate::scored::MinScored;
+use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 
 use crate::algo::Measure;
 

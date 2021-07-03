@@ -4,8 +4,16 @@
 //! so that they are generally applicable. For now, some of these still require
 //! the `Graph` type.
 
+pub mod astar;
 pub mod bellman_ford;
+pub mod dijkstra;
 pub mod dominators;
+pub mod feedback_arc_set;
+pub mod floyd_warshall;
+pub mod isomorphism;
+pub mod k_shortest_path;
+pub mod matching;
+pub mod simple_paths;
 pub mod tred;
 
 use std::collections::{BinaryHeap, HashMap};
@@ -25,19 +33,17 @@ use crate::scored::MinScored;
 use crate::visit::Walker;
 use crate::visit::{Data, IntoNodeReferences, NodeRef};
 
-pub use super::astar::astar;
-pub use super::dijkstra::dijkstra;
-pub use super::feedback_arc_set::greedy_feedback_arc_set;
-pub use super::floyd_warshall::floyd_warshall;
-pub use super::k_shortest_path::k_shortest_path;
-
-pub use super::isomorphism::{
+pub use astar::astar;
+pub use bellman_ford::{bellman_ford, find_negative_cycle};
+pub use dijkstra::dijkstra;
+pub use feedback_arc_set::greedy_feedback_arc_set;
+pub use floyd_warshall::floyd_warshall;
+pub use isomorphism::{
     is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
 };
-pub use super::matching::{greedy_matching, maximum_matching, Matching};
-pub use super::simple_paths::all_simple_paths;
-
-pub use bellman_ford::{bellman_ford, find_negative_cycle};
+pub use k_shortest_path::k_shortest_path;
+pub use matching::{greedy_matching, maximum_matching, Matching};
+pub use simple_paths::all_simple_paths;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///

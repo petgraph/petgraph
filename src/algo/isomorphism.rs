@@ -1,13 +1,13 @@
-use super::data::DataMap;
-use super::visit::EdgeCount;
-use super::visit::EdgeRef;
-use super::visit::GetAdjacencyMatrix;
-use super::visit::GraphBase;
-use super::visit::GraphProp;
-use super::visit::IntoEdgesDirected;
-use super::visit::IntoNeighborsDirected;
-use super::visit::NodeCompactIndexable;
-use super::{Incoming, Outgoing};
+use crate::data::DataMap;
+use crate::visit::EdgeCount;
+use crate::visit::EdgeRef;
+use crate::visit::GetAdjacencyMatrix;
+use crate::visit::GraphBase;
+use crate::visit::GraphProp;
+use crate::visit::IntoEdgesDirected;
+use crate::visit::IntoNeighborsDirected;
+use crate::visit::NodeCompactIndexable;
+use crate::{Incoming, Outgoing};
 
 use self::semantic::EdgeMatcher;
 use self::semantic::NoSemanticMatch;

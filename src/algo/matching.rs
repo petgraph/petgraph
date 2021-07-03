@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::hash::Hash;
 
-use super::visit::{
+use crate::visit::{
     EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable,
     VisitMap, Visitable,
 };

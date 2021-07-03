@@ -135,29 +135,21 @@ pub mod data;
 
 pub mod adj;
 pub mod algo;
-mod astar;
 pub mod csr;
-mod dijkstra;
 pub mod dot;
-mod feedback_arc_set;
-mod floyd_warshall;
 #[cfg(feature = "generate")]
 pub mod generate;
 mod graph_impl;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
-mod isomorphism;
 mod iter_format;
 mod iter_utils;
-mod k_shortest_path;
-mod matching;
 #[cfg(feature = "matrix_graph")]
 pub mod matrix_graph;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
 #[cfg(feature = "serde-1")]
 mod serde_utils;
-mod simple_paths;
 mod traits_graph;
 pub mod unionfind;
 mod util;
