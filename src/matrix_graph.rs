@@ -159,6 +159,7 @@ macro_rules! not_zero_impl {
                 $z as $t
             }
 
+            #[allow(clippy::float_cmp)]
             fn is_zero(&self) -> bool {
                 self == &Self::zero()
             }
