@@ -573,7 +573,7 @@ impl<E, Ix: IndexType> EdgeCount for List<E, Ix> {
     /// Returns the number of edges in the list
     ///
     /// Computes in **O(|V|)** time.
-    fn edge_count(self: &Self) -> usize {
+    fn edge_count(&self) -> usize {
         List::edge_count(self)
     }
 }
