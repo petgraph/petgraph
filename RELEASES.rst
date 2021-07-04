@@ -1,4 +1,4 @@
-Version 0.6.0 (2021-07-XX)
+Version 0.6.0 (2021-07-04)
 ==========================
 
 Breaking changes
@@ -91,6 +91,7 @@ Other changes
 .. _`#437`: https://github.com/petgraph/petgraph/issues/437
 .. _`#440`: https://github.com/petgraph/petgraph/issues/440
 .. _`#443`: https://github.com/petgraph/petgraph/issues/443
+.. _`#444`: https://github.com/petgraph/petgraph/issues/444
 .. _`#449`: https://github.com/petgraph/petgraph/issues/449
 .. _`#450`: https://github.com/petgraph/petgraph/issues/450
 
