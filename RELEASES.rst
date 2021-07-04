@@ -1,3 +1,100 @@
+Version 0.6.0 (2021-07-XX)
+==========================
+
+Breaking changes
+----------------
+
+- MSRV is now 1.14 (`#444`_).
+- Removed the ``NodeCompactIndexable`` trait impl for ``MatrixGraph`` (`#429`_).
+- The ``IntoEdges::edges`` implementations are now required return edges with the passed node as source (`#433`_).
+
+New features
+------------
+
+- Multiple documentation improvements (`#360`_, `#383`_, `#426`_, `#433`_, `#437`_, `#443`_, `#450`_).
+- Added an ``immediately_dominated_by`` method to the dominators result (`#337`_).
+- Added ``adj::List``, a new append-only graph type using a simple adjacency list with no node-weights (`#263`_).
+- Added ``dag_to_toposorted_adjacency_list`` and ``dag_transitive_reduction_closure`` algorithms to transitively reduce an acyclic graph (`#263`_).
+- Made the ``is_isomorphic`` algorithm generic on both graph types (`#369`_).
+- Implement Debug and Clone for all the iterators (`#418`_).
+- Implement multiple mising traits on graph implementations and adapters (`#405`_, `#429`_).
+- Add an EdgeIndexable public trait (`#402`_).
+- Added immutable ``node_weights`` and ``edge_weights`` methods for ``Graph`` and ``StableGraph`` (`#363`_).
+
+New algorithms
+--------------
+
+- Added a k-shortest-path implementation (`#328`_).
+- Added a generic graph complement implementation (`#371`_).
+- Added a maximum matching implementation (`#400`_).
+- Added a Floyd-Warshall shortest path algorithm (`#377`_).
+- Added a greedy feedback arc set algorithm (`#386`_).
+- Added a `find_negative_cycle` algorithm (`#434`_).
+
+Performance
+-----------
+
+- Reuse the internal state in ``tarjan_scc`` (`#313`_)
+- Reduce memory usage in ``tarjan_scc`` (`#413`_).
+- Added tighter size hints to all iterators (`#380`_).
+- Optimized ``petgraph::dot`` a bit (`#424`_).
+- Optimized StableGraph de-serialization with holes (`#395`_).
+
+Bug fixes
+---------
+
+- Fixed A* not producing optimal solutions with inconsistent heuristics (`#379`_).
+- Fixed a stacked borrow violation (`#404`_).
+- Fixed a panic in ``StableGraph::extend_with_edges`` (`#415`_).
+- Fixed multiple bugs in the matrix graph implementation (`#427`_).
+- Fixed ``GraphMap::remove_node`` not removing some edges (`#432`_).
+- Fixed all clippy warnings (`#440`_, `#449`_).
+
+Other changes
+-------------
+
+- Now using github actions as CI (`#391`_).
+- Replace matchs on `Option<T>` with `map` (`#381`_).
+- Added benchmarks for ``tarjan_scc`` (`#421`_).
+
+.. _`#263`: https://github.com/petgraph/petgraph/issues/263
+.. _`#313`: https://github.com/petgraph/petgraph/issues/313
+.. _`#328`: https://github.com/petgraph/petgraph/issues/328
+.. _`#337`: https://github.com/petgraph/petgraph/issues/337
+.. _`#360`: https://github.com/petgraph/petgraph/issues/360
+.. _`#363`: https://github.com/petgraph/petgraph/issues/363
+.. _`#369`: https://github.com/petgraph/petgraph/issues/369
+.. _`#371`: https://github.com/petgraph/petgraph/issues/371
+.. _`#377`: https://github.com/petgraph/petgraph/issues/377
+.. _`#379`: https://github.com/petgraph/petgraph/issues/378
+.. _`#380`: https://github.com/petgraph/petgraph/issues/380
+.. _`#381`: https://github.com/petgraph/petgraph/issues/381
+.. _`#383`: https://github.com/petgraph/petgraph/issues/383
+.. _`#386`: https://github.com/petgraph/petgraph/issues/386
+.. _`#391`: https://github.com/petgraph/petgraph/issues/391
+.. _`#395`: https://github.com/petgraph/petgraph/issues/395
+.. _`#400`: https://github.com/petgraph/petgraph/issues/400
+.. _`#402`: https://github.com/petgraph/petgraph/issues/402
+.. _`#404`: https://github.com/petgraph/petgraph/issues/404
+.. _`#405`: https://github.com/petgraph/petgraph/issues/405
+.. _`#413`: https://github.com/petgraph/petgraph/issues/413
+.. _`#415`: https://github.com/petgraph/petgraph/issues/415
+.. _`#418`: https://github.com/petgraph/petgraph/issues/418
+.. _`#421`: https://github.com/petgraph/petgraph/issues/421
+.. _`#424`: https://github.com/petgraph/petgraph/issues/424
+.. _`#426`: https://github.com/petgraph/petgraph/issues/426
+.. _`#427`: https://github.com/petgraph/petgraph/issues/427
+.. _`#429`: https://github.com/petgraph/petgraph/issues/429
+.. _`#432`: https://github.com/petgraph/petgraph/issues/432
+.. _`#433`: https://github.com/petgraph/petgraph/issues/433
+.. _`#434`: https://github.com/petgraph/petgraph/issues/434
+.. _`#437`: https://github.com/petgraph/petgraph/issues/437
+.. _`#440`: https://github.com/petgraph/petgraph/issues/440
+.. _`#443`: https://github.com/petgraph/petgraph/issues/443
+.. _`#449`: https://github.com/petgraph/petgraph/issues/449
+.. _`#450`: https://github.com/petgraph/petgraph/issues/450
+
+
 Version 0.5.1 (2020-05-23)
 ==========================
 
