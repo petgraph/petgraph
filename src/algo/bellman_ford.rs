@@ -102,7 +102,10 @@ where
         }
     }
 
-    Ok(Paths{distances, predecessors})
+    Ok(Paths {
+        distances,
+        predecessors,
+    })
 }
 
 /// \[Generic\] Find the path of a negative cycle reachable from node `source`.

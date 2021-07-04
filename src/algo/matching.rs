@@ -592,7 +592,6 @@ fn augment_path<G>(
     if mate[temp_idx] != Some(outer) {
         // We are at the end of the path and so the entire path is completely
         // rematched/augmented.
-        return;
     } else if let Label::Vertex(vertex) = label[outer_idx] {
         // The outer vertex has a vertex label which refers to another outer
         // vertex on the path. So we set this another outer node as the mate for

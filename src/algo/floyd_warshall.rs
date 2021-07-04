@@ -5,7 +5,7 @@ use std::hash::Hash;
 use crate::algo::{BoundedMeasure, NegativeCycle};
 use crate::visit::{EdgeRef, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable};
 
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::needless_range_loop)]
 /// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
 ///
 /// Compute shortest paths in a weighted graph with positive or negative edge weights (but with no negative cycles)
