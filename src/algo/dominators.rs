@@ -272,10 +272,9 @@ where
         .collect()
 }
 
-fn simple_fast_post_order<G>(
-    graph: G,
-    root: G::NodeId,
-) -> (Vec<G::NodeId>, HashMap<G::NodeId, HashSet<G::NodeId>>)
+type PredecessorSets<NodeId> = HashMap<NodeId, HashSet<NodeId>>;
+
+fn simple_fast_post_order<G>(graph: G, root: G::NodeId) -> (Vec<G::NodeId>, PredecessorSets<G::NodeId>)
 where
     G: IntoNeighbors + Visitable,
     <G as GraphBase>::NodeId: Eq + Hash,

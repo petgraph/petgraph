@@ -52,6 +52,7 @@ where
     Ty: EdgeType,
     Ix: IndexType,
 {
+    #[allow(clippy::type_complexity)]
     /// Index the `Graph` by two indices, any combination of
     /// node or edge indices is fine.
     ///
