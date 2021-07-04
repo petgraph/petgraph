@@ -986,8 +986,8 @@ mod tests {
         let result = bellman_ford(&m, 0).unwrap();
         println!("{:?}", result);
         let answer = [0., 0.5, 1.5, 1.5];
-        assert_eq!(&answer, &result.0[..4]);
-        assert!(answer[4..].iter().all(|&x| f64::is_infinite(x)));
+        assert_eq!(&answer, &result.distances[..4]);
+        assert!(result.distances[4..].iter().all(|&x| f64::is_infinite(x)));
     }
 
     #[test]

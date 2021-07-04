@@ -1062,6 +1062,7 @@ where
         &self.edges
     }
 
+    #[allow(clippy::type_complexity)]
     /// Convert the graph into a vector of Nodes and a vector of Edges
     pub fn into_nodes_edges(self) -> (Vec<Node<N, Ix>>, Vec<Edge<E, Ix>>) {
         (self.nodes, self.edges)

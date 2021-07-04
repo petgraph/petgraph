@@ -107,7 +107,7 @@ trait WithDummy: NodeIndexable {
     fn dummy_idx(&self) -> usize;
     fn node_bound_with_dummy(&self) -> usize;
     /// Convert `i` to a node index, returns None for the dummy node
-    fn try_from_index(self: &Self, i: usize) -> Option<Self::NodeId>;
+    fn try_from_index(&self, i: usize) -> Option<Self::NodeId>;
 }
 
 impl<G: NodeIndexable> WithDummy for G {
@@ -122,7 +122,7 @@ impl<G: NodeIndexable> WithDummy for G {
         self.node_bound() + 1
     }
 
-    fn try_from_index(self: &Self, i: usize) -> Option<Self::NodeId> {
+    fn try_from_index(&self, i: usize) -> Option<Self::NodeId> {
         if i != self.dummy_idx() {
             Some(self.from_index(i))
         } else {
@@ -592,7 +592,6 @@ fn augment_path<G>(
     if mate[temp_idx] != Some(outer) {
         // We are at the end of the path and so the entire path is completely
         // rematched/augmented.
-        return;
     } else if let Label::Vertex(vertex) = label[outer_idx] {
         // The outer vertex has a vertex label which refers to another outer
         // vertex on the path. So we set this another outer node as the mate for

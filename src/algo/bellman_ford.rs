@@ -6,6 +6,12 @@ use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, Vis
 
 use super::{FloatMeasure, NegativeCycle};
 
+#[derive(Debug, Clone)]
+pub struct Paths<NodeId, EdgeWeight> {
+    pub distances: Vec<EdgeWeight>,
+    pub predecessors: Vec<Option<NodeId>>,
+}
+
 /// \[Generic\] Compute shortest paths from node `source` to all other.
 ///
 /// Using the [Bellman–Ford algorithm][bf]; negative edge costs are
@@ -51,10 +57,11 @@ use super::{FloatMeasure, NegativeCycle};
 /// // \------ e ------/
 ///
 /// let path = bellman_ford(&g, a);
-/// assert_eq!(path, Ok((vec![0.0 ,     2.0,    3.0,    4.0,     5.0,     6.0],
-///                      vec![None, Some(a),Some(b),Some(a), Some(d), Some(e)]
-///                    ))
-///           );
+/// assert!(path.is_ok());
+/// let path = path.unwrap();
+/// assert_eq!(path.distances, vec![    0.0,     2.0,    3.0,    4.0,     5.0,     6.0]);
+/// assert_eq!(path.predecessors, vec![None, Some(a),Some(b),Some(a), Some(d), Some(e)]);
+///
 /// // Node f (indice 5) can be reach from a with a path costing 6.
 /// // Predecessor of f is Some(e) which predecessor is Some(d) which predecessor is Some(a).
 /// // Thus the path from a to f is a <-> d <-> e <-> f
@@ -74,7 +81,7 @@ use super::{FloatMeasure, NegativeCycle};
 pub fn bellman_ford<G>(
     g: G,
     source: G::NodeId,
-) -> Result<(Vec<G::EdgeWeight>, Vec<Option<G::NodeId>>), NegativeCycle>
+) -> Result<Paths<G::NodeId, G::EdgeWeight>, NegativeCycle>
 where
     G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
     G::EdgeWeight: FloatMeasure,
@@ -82,20 +89,23 @@ where
     let ix = |i| g.to_index(i);
 
     // Step 1 and Step 2: initialize and relax
-    let (distance, predecessor) = bellman_ford_initialize_relax(g, source);
+    let (distances, predecessors) = bellman_ford_initialize_relax(g, source);
 
     // Step 3: check for negative weight cycle
     for i in g.node_identifiers() {
         for edge in g.edges(i) {
             let j = edge.target();
             let w = *edge.weight();
-            if distance[ix(i)] + w < distance[ix(j)] {
+            if distances[ix(i)] + w < distances[ix(j)] {
                 return Err(NegativeCycle(()));
             }
         }
     }
 
-    Ok((distance, predecessor))
+    Ok(Paths {
+        distances,
+        predecessors,
+    })
 }
 
 /// \[Generic\] Find the path of a negative cycle reachable from node `source`.

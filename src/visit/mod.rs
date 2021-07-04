@@ -336,6 +336,7 @@ GraphProp! {delegate_impl []}
 
 trait_template! {
     /// The graph’s `NodeId`s map to indices
+    #[allow(clippy::needless_arbitrary_self_type)]
     pub trait NodeIndexable : GraphBase {
         @section self
         /// Return an upper bound of the node indices in the graph
@@ -352,6 +353,7 @@ NodeIndexable! {delegate_impl []}
 
 trait_template! {
     /// The graph’s `NodeId`s map to indices
+    #[allow(clippy::needless_arbitrary_self_type)]
     pub trait EdgeIndexable : GraphBase {
         @section self
         /// Return an upper bound of the edge indices in the graph
@@ -368,6 +370,7 @@ EdgeIndexable! {delegate_impl []}
 
 trait_template! {
 /// A graph with a known node count.
+#[allow(clippy::needless_arbitrary_self_type)]
 pub trait NodeCount : GraphBase {
     @section self
     fn node_count(self: &Self) -> usize;
@@ -424,6 +427,7 @@ where
 
 trait_template! {
 /// A graph that can create a map that tracks the visited status of its nodes.
+#[allow(clippy::needless_arbitrary_self_type)]
 pub trait Visitable : GraphBase {
     @section type
     /// The associated map type
@@ -442,6 +446,7 @@ trait_template! {
 ///
 /// The implementor can either create an adjacency matrix, or it can return
 /// a placeholder if it has the needed representation internally.
+#[allow(clippy::needless_arbitrary_self_type)]
 pub trait GetAdjacencyMatrix : GraphBase {
     @section type
     /// The associated adjacency matrix type
@@ -460,6 +465,7 @@ GetAdjacencyMatrix! {delegate_impl []}
 
 trait_template! {
 /// A graph with a known edge count.
+#[allow(clippy::needless_arbitrary_self_type)]
 pub trait EdgeCount : GraphBase {
     @section self
     /// Return the number of edges in the graph.

@@ -11,6 +11,7 @@ use crate::Graph;
 
 trait_template! {
     /// Access node and edge weights (associated data).
+#[allow(clippy::needless_arbitrary_self_type)]
 pub trait DataMap : Data {
     @section self
     fn node_weight(self: &Self, id: Self::NodeId) -> Option<&Self::NodeWeight>;
@@ -30,6 +31,7 @@ DataMap! {delegate_impl [[G], G, Reversed<G>, access0]}
 
 trait_template! {
     /// Access node and edge weights mutably.
+#[allow(clippy::needless_arbitrary_self_type)]
 pub trait DataMapMut : DataMap {
     @section self
     fn node_weight_mut(self: &mut Self, id: Self::NodeId) -> Option<&mut Self::NodeWeight>;

@@ -684,6 +684,7 @@ where
     graph: G,
     node_ids: Option<G::NodeReferences>,
     subgraphs: UnionFind<usize>,
+    #[allow(clippy::type_complexity)]
     sort_edges: BinaryHeap<MinScored<G::EdgeWeight, (G::NodeId, G::NodeId)>>,
     node_map: HashMap<usize, usize>,
     node_count: usize,
