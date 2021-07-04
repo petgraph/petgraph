@@ -12,16 +12,16 @@ use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
 
+use fixedbitset::FixedBitSet;
+
 use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 use crate::iter_utils::IterUtilsExt;
 
 use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
-use crate::visit::{
-    EdgeIndexable, EdgeRef, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNodeReferences,
-    NodeIndexable,
-};
+use crate::visit;
+use crate::visit::{EdgeIndexable, EdgeRef, IntoEdgeReferences, NodeIndexable};
 use crate::IntoWeightedEdge;
 
 // reexport those things that are shared with Graph
@@ -1263,20 +1263,6 @@ where
     }
 }
 
-impl<'a, N, E, Ty, Ix> IntoNodeReferences for &'a StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    type NodeRef = (NodeIndex<Ix>, &'a N);
-    type NodeReferences = NodeReferences<'a, N, Ix>;
-    fn node_references(self) -> Self::NodeReferences {
-        NodeReferences {
-            iter: enumerate(self.raw_nodes()),
-        }
-    }
-}
-
 /// Iterator over all nodes of a graph.
 #[derive(Debug, Clone)]
 pub struct NodeReferences<'a, N: 'a, Ix: IndexType = DefaultIx> {
@@ -1345,50 +1331,6 @@ where
     /// than the trait (unfortunately they don't match yet).
     pub fn weight(&self) -> &'a E {
         self.weight
-    }
-}
-
-impl<'a, Ix, E> EdgeRef for EdgeReference<'a, E, Ix>
-where
-    Ix: IndexType,
-{
-    type NodeId = NodeIndex<Ix>;
-    type EdgeId = EdgeIndex<Ix>;
-    type Weight = E;
-
-    fn source(&self) -> Self::NodeId {
-        self.node[0]
-    }
-    fn target(&self) -> Self::NodeId {
-        self.node[1]
-    }
-    fn weight(&self) -> &E {
-        self.weight
-    }
-    fn id(&self) -> Self::EdgeId {
-        self.index
-    }
-}
-
-impl<'a, N, E, Ty, Ix> IntoEdges for &'a StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    type Edges = Edges<'a, E, Ty, Ix>;
-    fn edges(self, a: Self::NodeId) -> Self::Edges {
-        self.edges(a)
-    }
-}
-
-impl<'a, N, E, Ty, Ix> IntoEdgesDirected for &'a StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    type EdgesDirected = Edges<'a, E, Ty, Ix>;
-    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
-        self.edges_directed(a, dir)
     }
 }
 
@@ -1486,24 +1428,6 @@ where
 fn swap_pair<T>(mut x: [T; 2]) -> [T; 2] {
     x.swap(0, 1);
     x
-}
-
-impl<'a, N: 'a, E: 'a, Ty, Ix> IntoEdgeReferences for &'a StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    type EdgeRef = EdgeReference<'a, E, Ix>;
-    type EdgeReferences = EdgeReferences<'a, E, Ix>;
-
-    /// Create an iterator over all edges in the graph, in indexed order.
-    ///
-    /// Iterator element type is `EdgeReference<E, Ix>`.
-    fn edge_references(self) -> Self::EdgeReferences {
-        EdgeReferences {
-            iter: self.g.edges.iter().enumerate(),
-        }
-    }
 }
 
 /// Iterator over all edges of a graph.
@@ -1752,43 +1676,6 @@ impl<'a, N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'a, N, Ix> {
     }
 }
 
-impl<N, E, Ty, Ix> NodeIndexable for StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    /// Return an upper bound of the node indices in the graph
-    fn node_bound(&self) -> usize {
-        self.node_indices().next_back().map_or(0, |i| i.index() + 1)
-    }
-    fn to_index(&self, ix: NodeIndex<Ix>) -> usize {
-        ix.index()
-    }
-    fn from_index(&self, ix: usize) -> Self::NodeId {
-        NodeIndex::new(ix)
-    }
-}
-
-impl<N, E, Ty, Ix> EdgeIndexable for StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    fn edge_bound(&self) -> usize {
-        self.edge_references()
-            .next_back()
-            .map_or(0, |edge| edge.id().index() + 1)
-    }
-
-    fn to_index(&self, ix: EdgeIndex<Ix>) -> usize {
-        ix.index()
-    }
-
-    fn from_index(&self, ix: usize) -> Self::EdgeId {
-        EdgeIndex::new(ix)
-    }
-}
-
 /// Iterator over the edge indices of a graph.
 #[derive(Debug, Clone)]
 pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
@@ -1822,6 +1709,213 @@ impl<'a, E, Ix: IndexType> DoubleEndedIterator for EdgeIndices<'a, E, Ix> {
                 None
             }
         })
+    }
+}
+
+impl<N, E, Ty, Ix> visit::GraphBase for StableGraph<N, E, Ty, Ix>
+where
+    Ix: IndexType,
+{
+    type NodeId = NodeIndex<Ix>;
+    type EdgeId = EdgeIndex<Ix>;
+}
+
+impl<N, E, Ty, Ix> visit::Visitable for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Map = FixedBitSet;
+    fn visit_map(&self) -> FixedBitSet {
+        FixedBitSet::with_capacity(self.node_bound())
+    }
+    fn reset_map(&self, map: &mut Self::Map) {
+        map.clear();
+        map.grow(self.node_bound());
+    }
+}
+
+impl<N, E, Ty, Ix> visit::Data for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type NodeWeight = N;
+    type EdgeWeight = E;
+}
+
+impl<N, E, Ty, Ix> visit::GraphProp for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type EdgeType = Ty;
+}
+
+impl<'a, N, E: 'a, Ty, Ix> visit::IntoNodeIdentifiers for &'a StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type NodeIdentifiers = NodeIndices<'a, N, Ix>;
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
+        StableGraph::node_indices(self)
+    }
+}
+
+impl<N, E, Ty, Ix> visit::NodeCount for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn node_count(&self) -> usize {
+        self.node_count()
+    }
+}
+
+impl<'a, N, E, Ty, Ix> visit::IntoNodeReferences for &'a StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type NodeRef = (NodeIndex<Ix>, &'a N);
+    type NodeReferences = NodeReferences<'a, N, Ix>;
+    fn node_references(self) -> Self::NodeReferences {
+        NodeReferences {
+            iter: enumerate(self.raw_nodes()),
+        }
+    }
+}
+
+impl<N, E, Ty, Ix> visit::NodeIndexable for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    /// Return an upper bound of the node indices in the graph
+    fn node_bound(&self) -> usize {
+        self.node_indices().next_back().map_or(0, |i| i.index() + 1)
+    }
+    fn to_index(&self, ix: NodeIndex<Ix>) -> usize {
+        ix.index()
+    }
+    fn from_index(&self, ix: usize) -> Self::NodeId {
+        NodeIndex::new(ix)
+    }
+}
+
+impl<'a, N, E: 'a, Ty, Ix> visit::IntoNeighbors for &'a StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Neighbors = Neighbors<'a, E, Ix>;
+    fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
+        (*self).neighbors(n)
+    }
+}
+
+impl<'a, N, E: 'a, Ty, Ix> visit::IntoNeighborsDirected for &'a StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type NeighborsDirected = Neighbors<'a, E, Ix>;
+    fn neighbors_directed(self, n: NodeIndex<Ix>, d: Direction) -> Self::NeighborsDirected {
+        StableGraph::neighbors_directed(self, n, d)
+    }
+}
+
+impl<'a, N, E, Ty, Ix> visit::IntoEdges for &'a StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Edges = Edges<'a, E, Ty, Ix>;
+    fn edges(self, a: Self::NodeId) -> Self::Edges {
+        self.edges(a)
+    }
+}
+
+impl<'a, Ix, E> visit::EdgeRef for EdgeReference<'a, E, Ix>
+where
+    Ix: IndexType,
+{
+    type NodeId = NodeIndex<Ix>;
+    type EdgeId = EdgeIndex<Ix>;
+    type Weight = E;
+
+    fn source(&self) -> Self::NodeId {
+        self.node[0]
+    }
+    fn target(&self) -> Self::NodeId {
+        self.node[1]
+    }
+    fn weight(&self) -> &E {
+        self.weight
+    }
+    fn id(&self) -> Self::EdgeId {
+        self.index
+    }
+}
+
+impl<N, E, Ty, Ix> visit::EdgeIndexable for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn edge_bound(&self) -> usize {
+        self.edge_references()
+            .next_back()
+            .map_or(0, |edge| edge.id().index() + 1)
+    }
+
+    fn to_index(&self, ix: EdgeIndex<Ix>) -> usize {
+        ix.index()
+    }
+
+    fn from_index(&self, ix: usize) -> Self::EdgeId {
+        EdgeIndex::new(ix)
+    }
+}
+
+impl<'a, N, E, Ty, Ix> visit::IntoEdgesDirected for &'a StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type EdgesDirected = Edges<'a, E, Ty, Ix>;
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
+        self.edges_directed(a, dir)
+    }
+}
+
+impl<'a, N: 'a, E: 'a, Ty, Ix> visit::IntoEdgeReferences for &'a StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type EdgeRef = EdgeReference<'a, E, Ix>;
+    type EdgeReferences = EdgeReferences<'a, E, Ix>;
+
+    /// Create an iterator over all edges in the graph, in indexed order.
+    ///
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    fn edge_references(self) -> Self::EdgeReferences {
+        EdgeReferences {
+            iter: self.g.edges.iter().enumerate(),
+        }
+    }
+}
+
+impl<N, E, Ty, Ix> visit::EdgeCount for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    #[inline]
+    fn edge_count(&self) -> usize {
+        self.edge_count()
     }
 }
 

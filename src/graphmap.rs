@@ -5,6 +5,7 @@ use indexmap::map::Keys;
 use indexmap::map::{Iter as IndexMapIter, IterMut as IndexMapIterMut};
 use indexmap::IndexMap;
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::fmt;
 use std::hash::{self, Hash};
 use std::iter::FromIterator;
@@ -18,10 +19,7 @@ use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
 
 use crate::graph::node_index;
 use crate::graph::Graph;
-use crate::visit::{
-    EdgeIndexable, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
-};
+use crate::visit;
 use crate::IntoWeightedEdge;
 
 /// A `GraphMap` with undirected edges.
@@ -680,18 +678,6 @@ where
     }
 }
 
-impl<'a, N: 'a, E: 'a, Ty> IntoEdgeReferences for &'a GraphMap<N, E, Ty>
-where
-    N: NodeTrait,
-    Ty: EdgeType,
-{
-    type EdgeRef = (N, N, &'a E);
-    type EdgeReferences = AllEdges<'a, N, E, Ty>;
-    fn edge_references(self) -> Self::EdgeReferences {
-        self.all_edges()
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct AllEdges<'a, N, E: 'a, Ty>
 where
@@ -801,28 +787,6 @@ where
     }
 }
 
-impl<'a, N: 'a, E: 'a, Ty> IntoEdges for &'a GraphMap<N, E, Ty>
-where
-    N: NodeTrait,
-    Ty: EdgeType,
-{
-    type Edges = Edges<'a, N, E, Ty>;
-    fn edges(self, a: Self::NodeId) -> Self::Edges {
-        self.edges(a)
-    }
-}
-
-impl<'a, N: 'a, E: 'a, Ty> IntoEdgesDirected for &'a GraphMap<N, E, Ty>
-where
-    N: NodeTrait,
-    Ty: EdgeType,
-{
-    type EdgesDirected = EdgesDirected<'a, N, E, Ty>;
-    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
-        self.edges_directed(a, dir)
-    }
-}
-
 /// Index `GraphMap` by node pairs to access edge weights.
 impl<N, E, Ty> Index<(N, N)> for GraphMap<N, E, Ty>
 where
@@ -924,32 +888,6 @@ impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
     }
 }
 
-impl<'a, N, E: 'a, Ty> IntoNodeIdentifiers for &'a GraphMap<N, E, Ty>
-where
-    N: NodeTrait,
-    Ty: EdgeType,
-{
-    type NodeIdentifiers = NodeIdentifiers<'a, N, E, Ty>;
-
-    fn node_identifiers(self) -> Self::NodeIdentifiers {
-        NodeIdentifiers {
-            iter: self.nodes.iter(),
-            ty: self.ty,
-            edge_ty: PhantomData,
-        }
-    }
-}
-
-impl<N, E, Ty> NodeCount for GraphMap<N, E, Ty>
-where
-    N: NodeTrait,
-    Ty: EdgeType,
-{
-    fn node_count(&self) -> usize {
-        (*self).node_count()
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct NodeIdentifiers<'a, N, E: 'a, Ty>
 where
@@ -972,22 +910,6 @@ where
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
-    }
-}
-
-impl<'a, N, E, Ty> IntoNodeReferences for &'a GraphMap<N, E, Ty>
-where
-    N: NodeTrait,
-    Ty: EdgeType,
-{
-    type NodeRef = (N, &'a N);
-    type NodeReferences = NodeReferences<'a, N, E, Ty>;
-    fn node_references(self) -> Self::NodeReferences {
-        NodeReferences {
-            iter: self.nodes.iter(),
-            ty: self.ty,
-            edge_ty: PhantomData,
-        }
     }
 }
 
@@ -1016,7 +938,88 @@ where
     }
 }
 
-impl<N, E, Ty> NodeIndexable for GraphMap<N, E, Ty>
+impl<N, E, Ty> visit::GraphBase for GraphMap<N, E, Ty>
+where
+    N: Copy + PartialEq,
+{
+    type NodeId = N;
+    type EdgeId = (N, N);
+}
+
+impl<N, E, Ty> visit::Data for GraphMap<N, E, Ty>
+where
+    N: Copy + PartialEq,
+    Ty: EdgeType,
+{
+    type NodeWeight = N;
+    type EdgeWeight = E;
+}
+
+impl<N, E, Ty> visit::Visitable for GraphMap<N, E, Ty>
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
+{
+    type Map = HashSet<N>;
+    fn visit_map(&self) -> HashSet<N> {
+        HashSet::with_capacity(self.node_count())
+    }
+    fn reset_map(&self, map: &mut Self::Map) {
+        map.clear();
+    }
+}
+
+impl<N, E, Ty> visit::GraphProp for GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    type EdgeType = Ty;
+}
+
+impl<'a, N, E, Ty> visit::IntoNodeReferences for &'a GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    type NodeRef = (N, &'a N);
+    type NodeReferences = NodeReferences<'a, N, E, Ty>;
+    fn node_references(self) -> Self::NodeReferences {
+        NodeReferences {
+            iter: self.nodes.iter(),
+            ty: self.ty,
+            edge_ty: PhantomData,
+        }
+    }
+}
+
+impl<'a, N, E: 'a, Ty> visit::IntoNodeIdentifiers for &'a GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    type NodeIdentifiers = NodeIdentifiers<'a, N, E, Ty>;
+
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
+        NodeIdentifiers {
+            iter: self.nodes.iter(),
+            ty: self.ty,
+            edge_ty: PhantomData,
+        }
+    }
+}
+
+impl<N, E, Ty> visit::NodeCount for GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    fn node_count(&self) -> usize {
+        (*self).node_count()
+    }
+}
+
+impl<N, E, Ty> visit::NodeIndexable for GraphMap<N, E, Ty>
 where
     N: NodeTrait,
     Ty: EdgeType,
@@ -1039,14 +1042,36 @@ where
     }
 }
 
-impl<N, E, Ty> NodeCompactIndexable for GraphMap<N, E, Ty>
+impl<N, E, Ty> visit::NodeCompactIndexable for GraphMap<N, E, Ty>
 where
     N: NodeTrait,
     Ty: EdgeType,
 {
 }
 
-impl<N, E, Ty> EdgeIndexable for GraphMap<N, E, Ty>
+impl<'a, N: 'a, E, Ty> visit::IntoNeighbors for &'a GraphMap<N, E, Ty>
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
+{
+    type Neighbors = Neighbors<'a, N, Ty>;
+    fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
+        self.neighbors(n)
+    }
+}
+
+impl<'a, N: 'a, E, Ty> visit::IntoNeighborsDirected for &'a GraphMap<N, E, Ty>
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
+{
+    type NeighborsDirected = NeighborsDirected<'a, N, Ty>;
+    fn neighbors_directed(self, n: N, dir: Direction) -> Self::NeighborsDirected {
+        self.neighbors_directed(n, dir)
+    }
+}
+
+impl<N, E, Ty> visit::EdgeIndexable for GraphMap<N, E, Ty>
 where
     N: NodeTrait,
     Ty: EdgeType,
@@ -1068,5 +1093,65 @@ where
         );
         let (&key, _) = self.edges.get_index(ix).unwrap();
         key
+    }
+}
+
+impl<'a, N: 'a, E: 'a, Ty> visit::IntoEdges for &'a GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    type Edges = Edges<'a, N, E, Ty>;
+    fn edges(self, a: Self::NodeId) -> Self::Edges {
+        self.edges(a)
+    }
+}
+
+impl<'a, N: 'a, E: 'a, Ty> visit::IntoEdgesDirected for &'a GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    type EdgesDirected = EdgesDirected<'a, N, E, Ty>;
+    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
+        self.edges_directed(a, dir)
+    }
+}
+
+impl<'a, N: 'a, E: 'a, Ty> visit::IntoEdgeReferences for &'a GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    type EdgeRef = (N, N, &'a E);
+    type EdgeReferences = AllEdges<'a, N, E, Ty>;
+    fn edge_references(self) -> Self::EdgeReferences {
+        self.all_edges()
+    }
+}
+
+impl<N, E, Ty> visit::EdgeCount for GraphMap<N, E, Ty>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+{
+    #[inline]
+    fn edge_count(&self) -> usize {
+        self.edge_count()
+    }
+}
+
+/// The `GraphMap` keeps an adjacency matrix internally.
+impl<N, E, Ty> visit::GetAdjacencyMatrix for GraphMap<N, E, Ty>
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
+{
+    type AdjMatrix = ();
+    #[inline]
+    fn adjacency_matrix(&self) {}
+    #[inline]
+    fn is_adjacent(&self, _: &(), a: N, b: N) -> bool {
+        self.contains_edge(a, b)
     }
 }

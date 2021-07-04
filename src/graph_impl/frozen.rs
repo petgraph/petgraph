@@ -5,8 +5,9 @@ use crate::data::{DataMap, DataMapMut};
 use crate::graph::Graph;
 use crate::graph::{GraphIndex, IndexType};
 use crate::visit::{
-    Data, EdgeCount, EdgeIndexable, GetAdjacencyMatrix, GraphProp, IntoEdges, IntoEdgesDirected,
-    IntoNeighborsDirected, IntoNodeIdentifiers, NodeCompactIndexable, NodeCount, NodeIndexable,
+    Data, EdgeCount, EdgeIndexable, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdges,
+    IntoEdgesDirected, IntoNeighborsDirected, IntoNodeIdentifiers, NodeCompactIndexable, NodeCount,
+    NodeIndexable,
 };
 use crate::visit::{IntoEdgeReferences, IntoNeighbors, IntoNodeReferences, Visitable};
 use crate::{Direction, EdgeType};
@@ -76,6 +77,14 @@ macro_rules! access0 {
     ($e:expr) => {
         $e.0
     };
+}
+
+impl<'a, G> GraphBase for Frozen<'a, G>
+where
+    G: GraphBase,
+{
+    type NodeId = G::NodeId;
+    type EdgeId = G::EdgeId;
 }
 
 Data! {delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}
