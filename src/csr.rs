@@ -7,9 +7,9 @@ use std::ops::{Index, IndexMut, Range};
 use std::slice::Windows;
 
 use crate::visit::{
-    Data, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
-    IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount,
-    NodeIndexable, Visitable,
+    Data, EdgeCount, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences,
+    IntoEdges, IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
+    NodeCount, NodeIndexable, Visitable,
 };
 
 use crate::util::zip;
@@ -716,6 +716,17 @@ where
 {
     fn node_count(&self) -> usize {
         (*self).node_count()
+    }
+}
+
+impl<N, E, Ty, Ix> EdgeCount for Csr<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    #[inline]
+    fn edge_count(&self) -> usize {
+        self.edge_count()
     }
 }
 

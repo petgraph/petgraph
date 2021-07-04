@@ -15,7 +15,7 @@ use crate::{Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirecte
 use crate::graph::NodeIndex as GraphNodeIndex;
 
 use crate::visit::{
-    Data, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
+    Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
     IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
     IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
 };
@@ -1073,6 +1073,15 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeCount
 {
     fn node_count(&self) -> usize {
         MatrixGraph::node_count(self)
+    }
+}
+
+impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> EdgeCount
+    for MatrixGraph<N, E, Ty, Null, Ix>
+{
+    #[inline]
+    fn edge_count(&self) -> usize {
+        self.edge_count()
     }
 }
 
