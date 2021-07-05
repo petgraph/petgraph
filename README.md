@@ -30,6 +30,6 @@ be copied, modified, or distributed except according to those terms.
 
   [API documentation here]: https://docs.rs/petgraph/
   [build_status]: https://github.com/petgraph/petgraph/workflows/Continuous%20integration/badge.svg?branch=master
-  [crates]: http://meritbadge.herokuapp.com/petgraph
+  [crates]: https://img.shields.io/crates/v/petgraph
   [gitter]: https://badges.gitter.im/petgraph-rs/community.svg
   [RELEASES]: RELEASES.rst
