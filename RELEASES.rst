@@ -4,7 +4,7 @@ Version 0.6.0 (2021-07-04)
 Breaking changes
 ----------------
 
-- MSRV is now 1.14 (`#444`_).
+- MSRV is now 1.41 (`#444`_).
 - Removed the ``NodeCompactIndexable`` trait impl for ``MatrixGraph`` (`#429`_).
 - The ``IntoEdges::edges`` implementations are now required return edges with the passed node as source (`#433`_).
 
