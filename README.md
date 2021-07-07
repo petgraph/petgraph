@@ -4,7 +4,7 @@ Graph data structure library. Supports Rust 1.41 and later.
 
 Please read the [API documentation here][]
 
-![build_status][]\_ ![crates][]\_ ![gitter][]\_
+[![build_status][]](https://github.com/petgraph/petgraph/actions) [![crates][]](https://crates.io/crates/petgraph) [![gitter][]](https://gitter.im/petgraph-rs/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 Crate feature flags:
 
