@@ -1154,6 +1154,20 @@ where
         }
     }
 
+    /// Return an iterator over the node indices and weights of the graph.
+    ///
+    /// Iterator element type is `(NodeIndex<Ix>, &N)`.
+    pub fn nodes<'a>(&'a self) -> impl Iterator<Item = (NodeIndex<Ix>, &'a N)> {
+        self.node_indices().zip(self.node_weights())
+    }
+
+    /// Return an iterator over the node indices and weights of the graph.
+    ///
+    /// Iterator element type is `(NodeIndex<Ix>, &mut N)`.
+    pub fn nodes_mut<'a>(&'a mut self) -> impl Iterator<Item = (NodeIndex<Ix>, &'a mut N)> {
+        self.node_indices().zip(self.node_weights_mut())
+    }
+
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<Ix> {
         EdgeIndices {
