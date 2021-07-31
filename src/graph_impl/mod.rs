@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut, Range};
 use std::slice;
+use std::path::PathBuf;
 
 use fixedbitset::FixedBitSet;
 
@@ -15,6 +16,7 @@ use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 
 use crate::util::enumerate;
 use crate::visit;
+use crate::dot::Dot;
 
 #[cfg(feature = "serde-1")]
 mod serialization;
@@ -475,6 +477,21 @@ impl<N, E> Graph<N, E, Undirected> {
             edges: Vec::new(),
             ty: PhantomData,
         }
+    }
+}
+
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
+where
+    E: std::fmt::Display,
+    N: std::fmt::Display,
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    /// Write Graph to file in dot format.
+    pub fn write_to_file<S: Into<PathBuf>>(&self, path: S) -> std::io::Result<()> {
+        let path: PathBuf = path.into();
+        path.parent().map(|p| std::fs::create_dir_all(p.clone()));
+        std::fs::write(path, format!("{}", Dot::new(self)))
     }
 }
 
