@@ -5,8 +5,8 @@ use std::iter;
 use std::marker::PhantomData;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut, Range};
-use std::slice;
 use std::path::PathBuf;
+use std::slice;
 
 use fixedbitset::FixedBitSet;
 
@@ -14,9 +14,9 @@ use crate::{Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing,
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 
+use crate::dot::Dot;
 use crate::util::enumerate;
 use crate::visit;
-use crate::dot::Dot;
 
 #[cfg(feature = "serde-1")]
 mod serialization;
