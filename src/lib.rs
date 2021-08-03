@@ -161,9 +161,9 @@ pub mod prelude;
 pub mod graph {
     pub use crate::graph_impl::{
         edge_index, node_index, DefaultIx, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference,
-        EdgeReferences, EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen, Graph,
-        GraphIndex, IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences,
-        NodeWeightsMut, UnGraph, WalkNeighbors,
+        EdgeReferences, EdgeWeights, EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen,
+        Graph, GraphIndex, IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences,
+        NodeWeights, NodeWeightsMut, UnGraph, WalkNeighbors,
     };
 }
 
