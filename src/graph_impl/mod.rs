@@ -593,7 +593,7 @@ where
     /// Computes in **O(e')** time, where **e'** is the number of edges
     /// connected to `a` (and `b`, if the graph edges are undirected).
     ///
-    /// **Panics** if any of the nodes don't exist.
+    /// **Panics** if any of the nodes doesn't exist.
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         if let Some(ix) = self.find_edge(a, b) {
             if let Some(ed) = self.edge_weight_mut(ix) {
