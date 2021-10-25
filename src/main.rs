@@ -70,7 +70,6 @@ where
 
         for node in path.into_iter().rev().skip(1) {
             let first = node;
-            // Expect or something
             let edge = graph.find_edge(first, second).expect("Edge should be in graph");
             let weight = &mut graph[edge];
             *weight = *weight - path_flow;
@@ -277,5 +276,23 @@ mod tests {
         ]);
         let max_flow = edmond_karp(graph.clone(), a1, d1);
         assert_eq!(7, max_flow);
+
+        let mut graph = Graph::<_, u32>::new();
+        let a1 = graph.add_node(0);
+        let b1 = graph.add_node(0);
+        let b2 = graph.add_node(0);
+        let b3 = graph.add_node(0);
+        let c1 = graph.add_node(0);
+        let c2 = graph.add_node(0);
+        let d1 = graph.add_node(0);
+        graph.extend_with_edges(&[
+            (a1, b1, 20), (a1, b2, 40), (a1, b3, 5),
+            (b1, b2, 5), (b2, b3, 5),
+            (b1, c1, 20), (b2, c1, 25), (b2, c2, 15), (b3, c2, 10),
+            (c1, c2, 5),
+            (c1, d1, 40), (c2, d1, 30),
+        ]);
+        let max_flow = edmond_karp(graph.clone(), a1, d1);
+        assert_eq!(65, max_flow);
     }
 }
