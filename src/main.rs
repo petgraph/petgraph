@@ -3,13 +3,10 @@ use std::fmt::Debug;
 use std::collections::VecDeque;
 use std::cmp;
 use petgraph::graph::{NodeIndex};
-use petgraph::dot::{Dot, Config};
+use petgraph::dot::{Dot};
 use petgraph::Graph;
-use petgraph::visit::depth_first_search;
-use petgraph::visit::{DfsEvent, Control, Bfs, VisitMap, GraphRef, Visitable, IntoNeighbors};
+use petgraph::visit::{VisitMap, GraphRef, Visitable, IntoNeighbors};
 use petgraph::visit::{NodeCount, NodeIndexable};
-use petgraph::graph::DefaultIx;
-
 
 fn main() {
     let mut graph = Graph::<_, u32>::new();
@@ -17,36 +14,37 @@ fn main() {
     let v1 = graph.add_node(1);
     let v2 = graph.add_node(2);
     let v3 = graph.add_node(3);
-    // 1 ---> 2
-    // |   /  |
-    // v L    v
-    // 3 ---> 0
+    let v4 = graph.add_node(4);
 
     graph.extend_with_edges(&[
-        (v1, v2, 1), (v1, v3, 1), (v2, v3, 1),
-        (v2, v0, 1), (v3, v0, 1)
+        (v0, v1, 1), (v0, v2, 1),
+        (v2, v3, 1), (v3, v4, 1), (v2, v4, 1),
     ]);
+    // 0 ---> 1
+    // |      
+    // v
+    // 2 ---> 4
+    // |     7
+    // v   /
+    // 3
 
     println!("{:?}", Dot::with_config(&graph, &[]));
-
-    let path = BfsPath::shortest_path(&graph, v1, v0);
-
-    println!("Path {:?}", path);
-    let max_flow = ford_fulkerson(graph.clone(), v1, v0);
+    let max_flow = ford_fulkerson(graph.clone(), v0, v4);
     println!("First try {}", max_flow);
 }
 
-fn min_weight<V>(mut graph: &Graph<V, u32>, path: Vec<NodeIndex>) -> u32 {
+// Finds the minimum edge weight along the path.
+fn min_weight<V>(graph: &Graph<V, u32>, path: Vec<NodeIndex>) -> u32 {
     let mut iter = path.into_iter();
-    if let Some(second) = iter.next() {
-        if let Some(first) = iter.next() {
+    if let Some(first) = iter.next() {
+        if let Some(second) = iter.next() {
             if let Some(edge) = graph.find_edge(first, second) {
                 let mut weight = graph.edge_weight(edge).expect("Edge should be in graph.");
-                let mut second = first;
-                for first in iter {
+                let mut first = second;
+                for second in iter {
                     if let Some(edge) = graph.find_edge(first, second) {
                         weight = cmp::min(weight, graph.edge_weight(edge).expect("Edge should be in graph."));
-                        second = first;
+                        first = second;
                     } else {
                         return 0;
                     }
@@ -67,29 +65,42 @@ fn ford_fulkerson<V>(mut graph: Graph<V, u32>, start: NodeIndex, end: NodeIndex)
 where
     V: Clone + Debug,
 {
+    println!("Run FF {:?} -> {:?}", start, end);
     let mut max_flow = 0;
-    let mut second = end;
-    let mut first;
-    let mut path;
+    
+    loop {
+        let mut second = end;
+        let path = BfsPath::shortest_path(&graph, start, end);
+        if path.len() == 1 {
+            break;
+        }
 
-    // Runs BfsPath::shortest_path and assigned the output to path. 
-    // Checks path isn't length 1.
-    while (path = BfsPath::shortest_path(&graph, start, end)) == () && path.len() != 1 {
-        max_flow += 1;
-        for node in path.into_iter().skip(1) {
-            first = node;
-            if let Some(edge) = graph.find_edge(first, second) {
+        let path_flow = min_weight(&graph, path.clone());
+        println!("path {:?} flow {:?}", path, path_flow);
+        max_flow += path_flow;
+
+        for node in path.into_iter().rev().skip(1) {
+            let first = node;
+            // Expect or something
+            let edge = graph.find_edge(first, second).expect("Edge should be in graph");
+            let mut weight = graph[edge];
+            weight = weight - path_flow;
+            if weight == 0 {
                 graph.remove_edge(edge);
-            } else {
-                panic!("Error in search.");
             }
+
             // Add reverse edge to make the residual graph.
-            graph.add_edge(second, first, 1);
+            match graph.find_edge(second, first) {
+                None => {
+                    graph.add_edge(second, first, path_flow);
+                }
+                Some(edge) => {
+                    graph.update_edge(second, first, path_flow + graph[edge]);
+                }
+            }
             second = first;
         }
-        second = end;
     }
-
     max_flow
 }
 
@@ -149,7 +160,7 @@ where
         None
     }
 
-    // Path is in reverse order.
+    // Finds a path from start to end with Bfs. Edge weights are ignored.
     pub fn shortest_path<G>(graph: G, start: N, end: N) -> Vec<N> 
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM> + NodeCount,
@@ -171,12 +182,15 @@ where
                 predecessor[graph.to_index(succ)] = Some(node);
             }
         } 
-        println!("pred {:?}", predecessor);
         let mut next = end;
         while let Some(node) = predecessor[graph.to_index(next)] {
             path.push(node);
+            if node == start {
+                break;
+            }
             next = node;
         }
+        path.reverse();
         path
     }
 }
@@ -186,7 +200,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn max_flow_unweighted() {
+    fn test_max_flow_unweighted() {
         let mut graph = Graph::<_, u32>::new();
         let v0 = graph.add_node(0);
         let v1 = graph.add_node(1);
@@ -219,5 +233,37 @@ mod tests {
             (v2, v3, 1), (v4, v3, 1), (v2, v4, 1),
         ]);
         assert_eq!(2, ford_fulkerson(graph.clone(), v0, v4));
+    }
+
+    #[test]
+    fn test_min_weight() {
+        let mut graph = Graph::<i32, u32>::new();
+        let v0 = graph.add_node(0);
+        let v1 = graph.add_node(0);
+        let v2 = graph.add_node(0);
+        let v3 = graph.add_node(0);
+        graph.extend_with_edges(&[
+            (v0, v1, 3), (v1, v2, 3),
+            (v2, v3, 4)
+        ]);
+        let path = vec![v0, v1, v2, v3];
+        assert_eq!(3, min_weight(&graph, path));
+        let path = vec![v0, v2, v1, v3];
+        assert_eq!(0, min_weight(&graph, path));
+    }
+
+    #[test]
+    fn test_max_flow_weighted() {
+        let mut graph = Graph::<_, u32>::new();
+        let v0 = graph.add_node(0);
+        let v1 = graph.add_node(1);
+        let v2 = graph.add_node(2);
+        let v3 = graph.add_node(3);
+        graph.extend_with_edges(&[
+            (v1, v2, 3), (v1, v3, 1), (v2, v3, 3),
+            (v2, v0, 1), (v3, v0, 3)
+        ]);
+        let max_flow = ford_fulkerson(graph.clone(), v1, v0);
+        assert_eq!(4, max_flow);
     }
 }
