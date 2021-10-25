@@ -1,6 +1,7 @@
 // Playing around with the library
 use std::fmt::Debug;
 use std::collections::VecDeque;
+use std::cmp;
 use petgraph::graph::{NodeIndex};
 use petgraph::dot::{Dot, Config};
 use petgraph::Graph;
@@ -35,12 +36,24 @@ fn main() {
     println!("First try {}", max_flow);
 }
 
-fn min_weight<V>(mut graph: Graph<V, u32>, path: Vec<NodeIndex>) -> u32 {
-    let mut weight = 0;
+fn min_weight<V>(mut graph: &Graph<V, u32>, path: Vec<NodeIndex>) -> u32 {
     let mut iter = path.into_iter();
-    let mut second = iter.next();
-    for first in iter {
-        ();
+    if let Some(second) = iter.next() {
+        if let Some(first) = iter.next() {
+            if let Some(edge) = graph.find_edge(first, second) {
+                let mut weight = graph.edge_weight(edge).expect("Edge should be in graph.");
+                let mut second = first;
+                for first in iter {
+                    if let Some(edge) = graph.find_edge(first, second) {
+                        weight = cmp::min(weight, graph.edge_weight(edge).expect("Edge should be in graph."));
+                        second = first;
+                    } else {
+                        return 0;
+                    }
+                }
+                return *weight;
+            }
+        }
     }
     0
 }
@@ -151,7 +164,6 @@ where
             if node == end {
                 break;
             }
-            let mut neighbors = graph.neighbors(node);
             for succ in graph.neighbors(node) {
                 if bfs.discovered.visit(succ) {
                     bfs.stack.push_back(succ);
