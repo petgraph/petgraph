@@ -14,22 +14,13 @@ fn main() {
     let v1 = graph.add_node(1);
     let v2 = graph.add_node(2);
     let v3 = graph.add_node(3);
-    let v4 = graph.add_node(4);
-
     graph.extend_with_edges(&[
-        (v0, v1, 1), (v0, v2, 1),
-        (v2, v3, 1), (v3, v4, 1), (v2, v4, 1),
+        (v1, v2, 3), (v1, v3, 1), (v2, v3, 3),
+        (v2, v0, 1), (v3, v0, 3)
     ]);
-    // 0 ---> 1
-    // |      
-    // v
-    // 2 ---> 4
-    // |     7
-    // v   /
-    // 3
 
     println!("{:?}", Dot::with_config(&graph, &[]));
-    let max_flow = ford_fulkerson(graph.clone(), v0, v4);
+    let max_flow = edmond_karp(graph.clone(), v1, v0);
     println!("First try {}", max_flow);
 }
 
@@ -56,16 +47,14 @@ fn min_weight<V>(graph: &Graph<V, u32>, path: Vec<NodeIndex>) -> u32 {
     0
 }
 
-/// TODO: Allow edge weights
-/// 
 /// Computes the max flow in the graph.
 /// WARNING: The algorithm will change a input graph. 
 /// Input a copy of the graph if you still need it.
-fn ford_fulkerson<V>(mut graph: Graph<V, u32>, start: NodeIndex, end: NodeIndex) -> u32
+fn edmond_karp<V>(mut graph: Graph<V, u32>, start: NodeIndex, end: NodeIndex) -> u32
 where
     V: Clone + Debug,
 {
-    println!("Run FF {:?} -> {:?}", start, end);
+    println!("Run Edmond-Karp {:?} -> {:?}", start, end);
     let mut max_flow = 0;
     
     loop {
@@ -83,10 +72,12 @@ where
             let first = node;
             // Expect or something
             let edge = graph.find_edge(first, second).expect("Edge should be in graph");
-            let mut weight = graph[edge];
-            weight = weight - path_flow;
-            if weight == 0 {
+            let weight = &mut graph[edge];
+            *weight = *weight - path_flow;
+            if *weight == 0 {
                 graph.remove_edge(edge);
+            } else {
+
             }
 
             // Add reverse edge to make the residual graph.
@@ -178,10 +169,12 @@ where
             for succ in graph.neighbors(node) {
                 if bfs.discovered.visit(succ) {
                     bfs.stack.push_back(succ);
+                    predecessor[graph.to_index(succ)] = Some(node);
                 }
-                predecessor[graph.to_index(succ)] = Some(node);
             }
         } 
+        println!("Predecessor {:?}", predecessor);
+
         let mut next = end;
         while let Some(node) = predecessor[graph.to_index(next)] {
             path.push(node);
@@ -219,20 +212,20 @@ mod tests {
         // |     7
         // v   /
         // 3
-        assert_eq!(1, ford_fulkerson(graph.clone(), v0, v4));
+        assert_eq!(1, edmond_karp(graph.clone(), v0, v4));
 
         graph.add_edge(v1, v4, 1);
-        assert_eq!(2, ford_fulkerson(graph.clone(), v0, v4));
+        assert_eq!(2, edmond_karp(graph.clone(), v0, v4));
 
         graph.add_edge(v0, v3, 1);
-        assert_eq!(3, ford_fulkerson(graph.clone(), v0, v4));
+        assert_eq!(3, edmond_karp(graph.clone(), v0, v4));
 
         graph.clear();
         graph.extend_with_edges(&[
             (v0, v1, 1), (v0, v2, 1), (v1, v4, 1),
             (v2, v3, 1), (v4, v3, 1), (v2, v4, 1),
         ]);
-        assert_eq!(2, ford_fulkerson(graph.clone(), v0, v4));
+        assert_eq!(2, edmond_karp(graph.clone(), v0, v4));
     }
 
     #[test]
@@ -263,7 +256,26 @@ mod tests {
             (v1, v2, 3), (v1, v3, 1), (v2, v3, 3),
             (v2, v0, 1), (v3, v0, 3)
         ]);
-        let max_flow = ford_fulkerson(graph.clone(), v1, v0);
+        let max_flow = edmond_karp(graph.clone(), v1, v0);
         assert_eq!(4, max_flow);
+
+        let mut graph = Graph::<_, u32>::new();
+        let a1 = graph.add_node(0);
+        let b1 = graph.add_node(0);
+        let b2 = graph.add_node(0);
+        let b3 = graph.add_node(0);
+        let c1 = graph.add_node(0);
+        let c2 = graph.add_node(0);
+        let c3 = graph.add_node(0);
+        let d1 = graph.add_node(0);
+        graph.extend_with_edges(&[
+            (a1, b1, 6), (a1, b2, 1), (a1, b3, 1),
+            (b1, c1, 6), (b1, c2, 6),
+            (b2, c1, 1), (b2, c3, 1),
+            (b3, c2, 1), (b3, c3, 1),
+            (c1, d1, 1), (c2, d1, 4), (c3, d1, 3)
+        ]);
+        let max_flow = edmond_karp(graph.clone(), a1, d1);
+        assert_eq!(7, max_flow);
     }
 }
