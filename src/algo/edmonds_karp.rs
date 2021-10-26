@@ -1,15 +1,31 @@
-// Playing around with the library
 use std::fmt::Debug;
 use std::collections::VecDeque;
 use std::cmp;
 use crate::graph::NodeIndex;
-use crate::dot::Dot;
 use crate::Graph;
 use crate::visit::{VisitMap, GraphRef, Visitable, IntoNeighbors};
 use crate::visit::{NodeCount, NodeIndexable};
 
+/// \[Generic\] [Edmonds-Karp algorithm](https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm)
+///
 /// Computes the max flow in the graph.
-pub fn edmonds_karp<V>(original_graph: &Graph<V, u32>, start: NodeIndex, end: NodeIndex) -> u32
+/// Edge weights are assumed to be nonnegative.
+/// 
+/// # Arguments
+/// * `graph`: graph with nonnegative edge weights.
+/// * `start`: graph node where the flow starts.
+/// * `end`: graph node where the flow ends.
+///
+/// # Returns
+/// * Max flow from `start` to `end`.
+/// 
+/// Running time is O(|V||E|^2), where |V| is the number of vertices and |E| is the number of edges.
+/// Dinic's algorithm solves this problem in O(|V|^2|E|).
+pub fn edmonds_karp<V>(
+    original_graph: &Graph<V, u32>, 
+    start: NodeIndex, 
+    end: NodeIndex
+) -> u32
 where
     V: Clone + Debug,
 {
@@ -53,7 +69,6 @@ where
     max_flow
 }
 
-
 // Finds the minimum edge weight along the path.
 fn min_weight<V>(graph: &Graph<V, u32>, path: Vec<NodeIndex>) -> u32 {
     let mut iter = path.into_iter();
@@ -77,7 +92,7 @@ fn min_weight<V>(graph: &Graph<V, u32>, path: Vec<NodeIndex>) -> u32 {
     0
 }
 
-// Same as Bfs but can return the path
+/// Same as crate::visit::Bfs but uses Bfs to compute the shortest path in an unweighted graph.
 #[derive(Clone)]
 pub struct BfsPath<N, VM> {
     /// The queue of nodes to visit
@@ -105,7 +120,7 @@ where
 {
     /// Create a new **Bfs**, using the graph's visitor map, and put **start**
     /// in the stack of nodes to visit.
-    pub fn new<G>(graph: G, start: N) -> Self
+    fn new<G>(graph: G, start: N) -> Self
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
@@ -116,24 +131,7 @@ where
         BfsPath { stack, discovered }
     }
 
-    /// Return the next node in the bfs, or **None** if the traversal is done.
-    pub fn next<G>(&mut self, graph: G) -> Option<N>
-    where
-        G: IntoNeighbors<NodeId = N>,
-    {
-        if let Some(node) = self.stack.pop_front() {
-            for succ in graph.neighbors(node) {
-                if self.discovered.visit(succ) {
-                    self.stack.push_back(succ);
-                }
-            }
-
-            return Some(node);
-        }
-        None
-    }
-
-    // Finds a path from start to end with Bfs. Edge weights are ignored.
+    /// Finds a path from start to end with Bfs. Edge weights are ignored.
     pub fn shortest_path<G>(graph: G, start: N, end: N) -> Vec<N> 
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM> + NodeCount,
@@ -155,7 +153,6 @@ where
                 }
             }
         } 
-        println!("Predecessor {:?}", predecessor);
 
         let mut next = end;
         while let Some(node) = predecessor[graph.to_index(next)] {
