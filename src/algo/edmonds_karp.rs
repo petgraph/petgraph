@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use std::collections::VecDeque;
 use std::cmp;
 use std::cmp::Ord;
+use std::ops::{Sub, Add};
 use num::Zero;
 use crate::graph::NodeIndex;
 use crate::Graph;
@@ -23,16 +24,17 @@ use crate::visit::{NodeCount, NodeIndexable};
 /// 
 /// Running time is O(|V||E|^2), where |V| is the number of vertices and |E| is the number of edges.
 /// Dinic's algorithm solves this problem in O(|V|^2|E|).
-pub fn edmonds_karp<V>(
-    original_graph: &Graph<V, u32>, 
+pub fn edmonds_karp<V, E>(
+    original_graph: &Graph<V, E>, 
     start: NodeIndex, 
     end: NodeIndex
-) -> u32
+) -> E
 where
     V: Clone + Debug,
+    E: Zero + Ord + Copy + Sub<Output = E> + Add<Output = E> + Debug,
 {
     let mut graph = (*original_graph).clone();
-    let mut max_flow = 0;
+    let mut max_flow = E::zero();
     
     loop {
         let mut second = end;
@@ -43,7 +45,7 @@ where
 
         let path_flow = min_weight(&graph, path.clone());
         println!("path {:?} flow {:?}", path, path_flow);
-        max_flow += path_flow;
+        max_flow = max_flow + path_flow;
 
         for node in path.into_iter().rev().skip(1) {
             let first = node;
