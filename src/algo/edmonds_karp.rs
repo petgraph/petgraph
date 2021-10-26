@@ -47,11 +47,10 @@ where
             let first = node;
             let edge = graph.find_edge(first, second).expect("Edge should be in graph");
             let weight = &mut graph[edge];
-            *weight = *weight - path_flow;
-            if *weight == 0 {
+            if *weight == path_flow {
                 graph.remove_edge(edge);
             } else {
-
+                *weight = *weight - path_flow;
             }
 
             // Add reverse edge to make the residual graph.
