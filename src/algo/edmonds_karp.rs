@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 use std::collections::VecDeque;
 use std::cmp;
+use std::cmp::Ord;
+use num::Zero;
 use crate::graph::NodeIndex;
 use crate::Graph;
 use crate::visit::{VisitMap, GraphRef, Visitable, IntoNeighbors};
@@ -69,7 +71,10 @@ where
 }
 
 // Finds the minimum edge weight along the path.
-fn min_weight<V>(graph: &Graph<V, u32>, path: Vec<NodeIndex>) -> u32 {
+fn min_weight<V, E>(graph: &Graph<V, E>, path: Vec<NodeIndex>) -> E 
+where
+    E: Zero + Ord + Copy,
+{
     let mut iter = path.into_iter();
     if let Some(first) = iter.next() {
         if let Some(second) = iter.next() {
@@ -81,14 +86,14 @@ fn min_weight<V>(graph: &Graph<V, u32>, path: Vec<NodeIndex>) -> u32 {
                         weight = cmp::min(weight, graph.edge_weight(edge).expect("Edge should be in graph."));
                         first = second;
                     } else {
-                        return 0;
+                        return E::zero();
                     }
                 }
                 return *weight;
             }
         }
     }
-    0
+    E::zero()
 }
 
 /// Same as crate::visit::Bfs but uses Bfs to compute the shortest path in an unweighted graph.
