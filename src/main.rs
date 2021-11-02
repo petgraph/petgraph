@@ -1,4 +1,4 @@
-use petgraph::algo::{edmonds_karp};
+use petgraph::algo::{edmonds_karp, copy_graph_directed};
 
 use petgraph::dot::Dot;
 use petgraph::Graph;
@@ -20,10 +20,10 @@ fn main() {
     //     (1, 4)]);
 
     // println!("{:?}", Dot::with_config(&graph, &[]));
-
-    // let graph2 = copy_graph_directed(&graph);
-
+    // let graph2 = copy_graph_directed(&graph).unwrap();
     // println!("{:?}", Dot::with_config(&graph2, &[]));
+
+
     let max_flow = edmonds_karp(&graph, v1, v0);
     println!("First try {}", max_flow);
     println!("Correct answer: 4");
