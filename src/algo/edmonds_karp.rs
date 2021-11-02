@@ -1,11 +1,11 @@
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::collections::{VecDeque, HashMap};
+use std::collections::{VecDeque, HashMap, HashSet};
 use std::cmp;
 use std::cmp::Ord;
 use std::ops::{Sub, Add};
 use num::Zero;
-use crate::graph::{NodeIndex, DiGraph, IndexType};
+use crate::graph::{NodeIndex, DiGraph, IndexType, EdgeIndex};
 use crate::Graph;
 use crate::visit::{VisitMap, GraphRef, Visitable, IntoNeighbors, IntoNodeReferences};
 use crate::visit::{NodeCount, NodeIndexable, NodeRef, GraphBase, IntoEdges, EdgeRef};
@@ -38,7 +38,7 @@ where
 {
     // Start by making a directed version of the original graph using BFS.
     // The graph must be copied as an adjacency list in order to run BFS in O(|E|) time.
-    let mut graph = copy_graph_directed(original_graph);
+    let mut graph = copy_graph_directed(original_graph).unwrap();
     let mut max_flow = E::zero();
     
     // This loop will run O(|V||E|) times. Each iteration takes O(|E|) time.
@@ -79,39 +79,36 @@ where
 }
 
 // Finds the minimum edge weight along the path.
-fn min_weight<V, E>(graph: &Graph<V, E>, path: Vec<NodeIndex>) -> E 
+fn min_weight<V, E>(graph: &Graph<V, E>, path: Vec<EdgeIndex>) -> E 
 where
     E: Zero + Ord + Copy,
 {
     let mut iter = path.into_iter();
-    if let Some(first) = iter.next() {
-        if let Some(second) = iter.next() {
+    if let Some(edge) = iter.next() {
+        let mut weight = graph.edge_weight(edge).expect("Edge should be in graph.");
+        let mut first = second;
+        for second in iter {
             if let Some(edge) = graph.find_edge(first, second) {
-                let mut weight = graph.edge_weight(edge).expect("Edge should be in graph.");
-                let mut first = second;
-                for second in iter {
-                    if let Some(edge) = graph.find_edge(first, second) {
-                        weight = cmp::min(weight, graph.edge_weight(edge).expect("Edge should be in graph."));
-                        first = second;
-                    } else {
-                        return E::zero();
-                    }
-                }
-                return *weight;
+                weight = cmp::min(weight, graph.edge_weight(edge).expect("Edge should be in graph."));
+                first = second;
+            } else {
+                return E::zero();
             }
         }
+        return *weight;
     }
     E::zero()
 }
 
 /// Creates a copy of original_graph and stores it as a directed adjacency list.
-pub fn copy_graph_directed<G, V, E, N, I, ER>(original_graph: G) -> DiGraph<V, E> 
+/// If n -> n' is an edge, it also adds the edge n' -> n but with weight 0.
+pub fn copy_graph_directed<G, V, E, N, I, ER>(original_graph: G) -> Result<DiGraph<V, E>, String>
 where
     G: GraphBase<NodeId = I> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = N>,
     N: NodeRef<NodeId = I, Weight = V>,
-    I: Hash + Eq,
     ER: EdgeRef<NodeId = I, Weight = E>,
-    E: Clone,
+    I: Hash + Eq,
+    E: Clone + Zero + PartialOrd,
     V: Clone,
 {
     let mut graph_copy: DiGraph<V, E> = Graph::default();
@@ -133,15 +130,34 @@ where
         .map(|(index, node)| (node.id(), index))
         .collect();
     
+    // Extra edges to add to graph_copy
+    let mut extra_edges = HashSet::new();
+    
     for start_ref in node_references {
         let edges = original_graph.edges(start_ref.id());
         for edge_ref in edges {
-            let start = new_node_ids[index_map[&start_ref.id()]];
-            let end = new_node_ids[index_map[&edge_ref.target()]];
-            graph_copy.add_edge(start, end, edge_ref.weight().clone());
+            let start_index = index_map[&start_ref.id()];
+            let end_index = index_map[&edge_ref.target()];
+            
+            // We don't need to add the reversed edge
+            if start_index > end_index {
+                extra_edges.remove(&(end_index, start_index));
+            // We need to add the reversed edge
+            } else {
+                extra_edges.insert((end_index, start_index));
+            }
+            let weight = edge_ref.weight().clone();
+            if weight < E::zero() {
+                return Err("Nonnegative edgeweights expected for Edmonds-Karp.".to_owned());
+            }
+            graph_copy.add_edge(new_node_ids[start_index], new_node_ids[end_index], weight);
         }
     }
-    graph_copy
+
+    for (index1, index2) in extra_edges {
+        graph_copy.add_edge(new_node_ids[index1], new_node_ids[index2], E::zero());
+    }
+    Ok(graph_copy)
 }
 
 /// Same as crate::visit::Bfs but uses Bfs to compute the shortest path in an unweighted graph.
