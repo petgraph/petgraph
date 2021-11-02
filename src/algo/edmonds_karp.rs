@@ -5,9 +5,9 @@ use std::cmp;
 use std::cmp::Ord;
 use std::ops::{Sub, Add};
 use num::Zero;
-use crate::graph::{NodeIndex, DiGraph, IndexType, EdgeIndex};
+use crate::graph::{NodeIndex, DiGraph, EdgeIndex};
 use crate::Graph;
-use crate::visit::{VisitMap, GraphRef, Visitable, IntoNeighbors, IntoNodeReferences};
+use crate::visit::{VisitMap, GraphRef, Visitable, IntoNodeReferences};
 use crate::visit::{NodeCount, NodeIndexable, NodeRef, GraphBase, IntoEdges, EdgeRef};
 
 /// \[Generic\] [Edmonds-Karp algorithm](https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm)
