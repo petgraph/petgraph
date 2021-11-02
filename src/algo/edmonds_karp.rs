@@ -36,10 +36,12 @@ where
     V: Clone + Debug,
     E: Zero + Ord + Copy + Sub<Output = E> + Add<Output = E> + Debug,
 {
-    // Start by making a directed version of the original graph using BFS
+    // Start by making a directed version of the original graph using BFS.
+    // The graph must be copied as an adjacency list in order to run BFS in O(|E|) time.
     let mut graph = copy_graph_directed(original_graph);
     let mut max_flow = E::zero();
     
+    // This loop will run O(|V||E|) times. Each iteration takes O(|E|) time.
     loop {
         let mut second = end;
         let path = BfsPath::shortest_path(&graph, start, end);
@@ -102,7 +104,7 @@ where
     E::zero()
 }
 
-/// Creates a directed copy of the graph G.
+/// Creates a copy of original_graph and stores it as a directed adjacency list.
 pub fn copy_graph_directed<G, V, E, N, I, ER>(original_graph: G) -> DiGraph<V, E> 
 where
     G: GraphBase<NodeId = I> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = N>,
