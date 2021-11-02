@@ -24,6 +24,8 @@ use crate::visit::{NodeCount, NodeIndexable, NodeRef, GraphBase, IntoEdges, Edge
 /// * Max flow from `start` to `end`.
 /// 
 /// Running time is O(|V||E|^2), where |V| is the number of vertices and |E| is the number of edges.
+/// Uses O(|E|) space.
+/// 
 /// Dinic's algorithm solves this problem in O(|V|^2|E|).
 /// TODO: Do not remove edges from the graph
 
@@ -37,67 +39,58 @@ where
     E: Zero + Ord + Copy + Sub<Output = E> + Add<Output = E> + Debug,
 {
     // Start by making a directed version of the original graph using BFS.
-    // The graph must be copied as an adjacency list in order to run BFS in O(|E|) time.
+    // The graph must be an adjacency list in order to run BFS in O(|E|) time.
     let mut graph = copy_graph_directed(original_graph).unwrap();
+
+    // For every edge, store the index of its reversed edge.
+    // This part could be made more efficient.
+    let edges = graph.edge_references();
+    let mut reversed_edge = HashMap::new();
+    for edge in edges {
+        if !reversed_edge.contains_key(&edge.id()) {
+            let reverse = graph.find_edge(edge.target(), edge.source()).expect("Edge should be in graph");
+            reversed_edge.insert(edge.id(), reverse);
+            reversed_edge.insert(reverse, edge.id());
+        }
+    }
+
     let mut max_flow = E::zero();
     
     // This loop will run O(|V||E|) times. Each iteration takes O(|E|) time.
     loop {
-        let mut second = end;
         let path = BfsPath::shortest_path(&graph, start, end);
-        if path.len() == 1 {
+        if path.is_empty() {
             break;
         }
-
-        let path_flow = min_weight(&graph, path.clone());
+        let path_flow = min_weight(&graph, &path);
         println!("path {:?} flow {:?}", path, path_flow);
         max_flow = max_flow + path_flow;
 
-        for node in path.into_iter().rev().skip(1) {
-            let first = node;
-            let edge = graph.find_edge(first, second).expect("Edge should be in graph");
+        for edge in path.into_iter() {
             let weight = &mut graph[edge];
-            if *weight == path_flow {
-                graph.remove_edge(edge);
-            } else {
-                *weight = *weight - path_flow;
-            }
-
-            // Add reverse edge to make the residual graph.
-            match graph.find_edge(second, first) {
-                None => {
-                    graph.add_edge(second, first, path_flow);
-                }
-                Some(edge) => {
-                    graph.update_edge(second, first, path_flow + graph[edge]);
-                }
-            }
-            second = first;
+            *weight = *weight - path_flow;
+            let reverse_id = reversed_edge[&edge];
+            let reversed_weight = &mut graph[reverse_id];
+            *reversed_weight = *reversed_weight + path_flow;
         }
     }
     max_flow
 }
 
 // Finds the minimum edge weight along the path.
-fn min_weight<V, E>(graph: &Graph<V, E>, path: Vec<EdgeIndex>) -> E 
+// TODO: use PartialOrd so edges with float weights can be compared.
+fn min_weight<V, E>(graph: &Graph<V, E>, path: &Vec<EdgeIndex>) -> E 
 where
     E: Zero + Ord + Copy,
 {
-    let mut iter = path.into_iter();
-    if let Some(edge) = iter.next() {
-        let mut weight = graph.edge_weight(edge).expect("Edge should be in graph.");
-        let mut first = second;
-        for second in iter {
-            if let Some(edge) = graph.find_edge(first, second) {
-                weight = cmp::min(weight, graph.edge_weight(edge).expect("Edge should be in graph."));
-                first = second;
-            } else {
-                return E::zero();
-            }
-        }
-        return *weight;
+    if path.is_empty() {
+        return E::zero();
     }
-    E::zero()
+    let mut weight = graph[path[0]];
+    for edge in path.iter().skip(1) {
+        weight = cmp::min(weight, graph[*edge]);
+    }
+    return weight;
 }
 
 /// Creates a copy of original_graph and stores it as a directed adjacency list.
@@ -201,16 +194,21 @@ where
 
     /// Returns a shortest path from start to end ignoring edge weights.
     /// The path is a vector of EdgeRef.
-    pub fn shortest_path<G, ER>(graph: G, start: N, end: N) -> Vec<<ER as EdgeRef>::EdgeId>
+    /// Returns an empty vector is no path exists.
+    /// Ignore edges with zero weight.
+    /// TODO: implement with partial equals.
+    pub fn shortest_path<G, E, I, ER>(graph: G, start: N, end: N) -> Vec<I>
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM> + NodeCount,
         G: IntoEdges<EdgeRef = ER> + NodeIndexable,
-        ER: EdgeRef<NodeId = N>,
+        ER: EdgeRef<NodeId = N, EdgeId = I, Weight = E>,
+        E: Zero + Eq,
         N: Debug,
+        I: Copy,
     {
         // For every Node N in G, stores the EdgeRef that first goes to N
         let mut predecessor: Vec<Option<_>> = vec![None; graph.node_count()];
-        let mut path: Vec<<ER as EdgeRef>::EdgeId> = Vec::new();
+        let mut path = Vec::new();
         let mut bfs = BfsPath::new(graph, start);
 
         while let Some(node) = bfs.stack.pop_front() {
@@ -218,10 +216,12 @@ where
                 break;
             }
             for edge in graph.edges(node) {
-                let succ = edge.target();
-                if bfs.discovered.visit(succ) {
-                    bfs.stack.push_back(succ);
-                    predecessor[graph.to_index(succ)] = Some(edge);
+                if *edge.weight() != E::zero() {
+                    let succ = edge.target();
+                    if bfs.discovered.visit(succ) {
+                        bfs.stack.push_back(succ);
+                        predecessor[graph.to_index(succ)] = Some(edge);
+                    }
                 }
             }
         } 
@@ -278,23 +278,6 @@ mod tests {
             (v2, v3, 1), (v4, v3, 1), (v2, v4, 1),
         ]);
         assert_eq!(2, edmonds_karp(&graph, v0, v4));
-    }
-
-    #[test]
-    fn test_min_weight() {
-        let mut graph = Graph::<i32, u32>::new();
-        let v0 = graph.add_node(0);
-        let v1 = graph.add_node(0);
-        let v2 = graph.add_node(0);
-        let v3 = graph.add_node(0);
-        graph.extend_with_edges(&[
-            (v0, v1, 3), (v1, v2, 3),
-            (v2, v3, 4)
-        ]);
-        let path = vec![v0, v1, v2, v3];
-        assert_eq!(3, min_weight(&graph, path));
-        let path = vec![v0, v2, v1, v3];
-        assert_eq!(0, min_weight(&graph, path));
     }
 
     #[test]

@@ -1,4 +1,4 @@
-use petgraph::algo::{edmonds_karp, copy_graph_directed};
+use petgraph::algo::{edmonds_karp};
 
 use petgraph::dot::Dot;
 use petgraph::Graph;
