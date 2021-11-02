@@ -1,6 +1,8 @@
-use petgraph::algo::edmonds_karp;
+use petgraph::algo::{edmonds_karp, copy_graph_directed};
+
 use petgraph::dot::Dot;
 use petgraph::Graph;
+use petgraph::graph::UnGraph;
 
 fn main() {
     let mut graph = Graph::<_, u32>::new();
@@ -13,7 +15,16 @@ fn main() {
         (v2, v0, 1), (v3, v0, 3)
     ]);
 
-    println!("{:?}", Dot::with_config(&graph, &[]));
+    // let graph = UnGraph::<i32, ()>::from_edges(&[
+    //     (1, 2), (2, 3), (3, 4),
+    //     (1, 4)]);
+
+    // println!("{:?}", Dot::with_config(&graph, &[]));
+
+    // let graph2 = copy_graph_directed(&graph);
+
+    // println!("{:?}", Dot::with_config(&graph2, &[]));
     let max_flow = edmonds_karp(&graph, v1, v0);
     println!("First try {}", max_flow);
+    println!("Correct answer: 4");
 }
