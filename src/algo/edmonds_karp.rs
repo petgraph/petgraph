@@ -69,7 +69,6 @@ where
             break;
         }
         let path_flow = min_weight(&graph, &path);
-        println!("path {:?} flow {:?}", path, path_flow);
         max_flow = max_flow + path_flow;
 
         for edge in path.into_iter() {
@@ -152,12 +151,10 @@ where
     let mut extra_edges = HashSet::new();
     
     for start_ref in node_references {
-        println!("Start ref {:?}", start_ref.id());
         let edges = original_graph.edges(start_ref.id());
         for edge_ref in edges {
             let start_index = index_map[&start_ref.id()];
             let end_index = index_map[&edge_ref.target()];
-            println!("End index {:?}", end_index);
             
             // We need to add the reversed edge if its not already there.
             let option = extra_edges.remove(&(end_index, start_index));
