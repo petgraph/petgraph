@@ -29,18 +29,24 @@ use crate::visit::{NodeCount, NodeIndexable, NodeRef, GraphBase, IntoEdges, Edge
 /// Dinic's algorithm solves this problem in O(|V|^2|E|).
 /// TODO: Do not remove edges from the graph
 
-pub fn edmonds_karp<V, E>(
-    original_graph: &Graph<V, E>, 
-    start: NodeIndex, 
-    end: NodeIndex
+pub fn edmonds_karp<G, V, E, N, NR, ER>(
+    original_graph: G, 
+    start: N,
+    end: N,
 ) -> E
 where
     V: Clone + Debug,
     E: Zero + Ord + Copy + Sub<Output = E> + Add<Output = E> + Debug,
+    G: GraphBase<NodeId = N> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
+    NR: NodeRef<NodeId = N, Weight = V>,
+    ER: EdgeRef<NodeId = N, Weight = E>,
+    N: Hash + Eq + Debug,
+    E: Clone + Zero + PartialOrd,
+    V: Clone,
 {
     // Start by making a directed version of the original graph using BFS.
     // The graph must be an adjacency list in order to run BFS in O(|E|) time.
-    let mut graph = copy_graph_directed(original_graph).unwrap();
+    let (mut graph, new_start, new_end) = copy_graph_directed(original_graph, start, end).unwrap();
 
     // For every edge, store the index of its reversed edge.
     // This part could be made more efficient.
@@ -58,7 +64,7 @@ where
     
     // This loop will run O(|V||E|) times. Each iteration takes O(|E|) time.
     loop {
-        let path = BfsPath::shortest_path(&graph, start, end);
+        let path = BfsPath::shortest_path(&graph, new_start, new_end);
         if path.is_empty() {
             break;
         }
@@ -95,12 +101,17 @@ where
 
 /// Creates a copy of original_graph and stores it as a directed adjacency list.
 /// If n -> n' is an edge, it also adds the edge n' -> n but with weight 0.
-pub fn copy_graph_directed<G, V, E, N, I, ER>(original_graph: G) -> Result<DiGraph<V, E>, String>
+/// Also takes start and end and gives corresponding nodes in the new graph.
+pub fn copy_graph_directed<G, V, E, N, NR, ER>(
+    original_graph: G,
+    start: N,
+    end: N
+) -> Result<(DiGraph<V, E>, NodeIndex, NodeIndex), String>
 where
-    G: GraphBase<NodeId = I> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = N>,
-    N: NodeRef<NodeId = I, Weight = V>,
-    ER: EdgeRef<NodeId = I, Weight = E>,
-    I: Hash + Eq + Debug,
+    G: GraphBase<NodeId = N> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
+    NR: NodeRef<NodeId = N, Weight = V>,
+    ER: EdgeRef<NodeId = N, Weight = E>,
+    N: Hash + Eq + Debug,
     E: Clone + Zero + PartialOrd,
     V: Clone,
 {
@@ -110,11 +121,25 @@ where
     // All nodes in the graph
     let node_references: Vec<_> = original_graph.node_references().collect();
 
+    let mut start_opt = None;
+    let mut end_opt = None;
     // Add all nodes into graph_copy and keep track of their new index
     for node in node_references.iter() {
         let id = graph_copy.add_node(node.weight().clone());
         new_node_ids.push(id);
+        if node.id() == start {
+            start_opt = Some(id);
+        }
+        if node.id() == end {
+            end_opt = Some(id);
+        }
     }
+
+    if start_opt == None || end_opt == None {
+        return Err("Start or end not found".to_owned());
+    }
+    let new_start = start_opt.unwrap();
+    let new_end = end_opt.unwrap();
 
     // Store the index of a node in the vector node_references
     let index_map: HashMap<_, _> = node_references
@@ -151,7 +176,7 @@ where
     for (index1, index2) in extra_edges {
         graph_copy.add_edge(new_node_ids[index1], new_node_ids[index2], E::zero());
     }
-    Ok(graph_copy)
+    Ok((graph_copy, new_start, new_end))
 }
 
 /// Same as crate::visit::Bfs but uses Bfs to compute the shortest path in an unweighted graph.
