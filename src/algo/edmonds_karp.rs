@@ -100,7 +100,7 @@ where
     G: GraphBase<NodeId = I> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = N>,
     N: NodeRef<NodeId = I, Weight = V>,
     ER: EdgeRef<NodeId = I, Weight = E>,
-    I: Hash + Eq,
+    I: Hash + Eq + Debug,
     E: Clone + Zero + PartialOrd,
     V: Clone,
 {
@@ -127,18 +127,24 @@ where
     let mut extra_edges = HashSet::new();
     
     for start_ref in node_references {
+        println!("Start ref {:?}", start_ref.id());
         let edges = original_graph.edges(start_ref.id());
         for edge_ref in edges {
             let start_index = index_map[&start_ref.id()];
             let end_index = index_map[&edge_ref.target()];
+            println!("End index {:?}", end_index);
             
             // We don't need to add the reversed edge
             if start_index > end_index {
-                extra_edges.remove(&(end_index, start_index));
+                let option = extra_edges.remove(&(end_index, start_index));
+                if !option {
+                    extra_edges.insert((end_index, start_index));
+                }
             // We need to add the reversed edge
             } else {
                 extra_edges.insert((end_index, start_index));
             }
+
             let weight = edge_ref.weight().clone();
             if weight < E::zero() {
                 return Err("Nonnegative edgeweights expected for Edmonds-Karp.".to_owned());
