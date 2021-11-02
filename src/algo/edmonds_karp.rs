@@ -1,13 +1,14 @@
 use std::fmt::Debug;
-use std::collections::VecDeque;
+use std::hash::Hash;
+use std::collections::{VecDeque, HashMap};
 use std::cmp;
 use std::cmp::Ord;
 use std::ops::{Sub, Add};
 use num::Zero;
-use crate::graph::NodeIndex;
+use crate::graph::{NodeIndex, DiGraph, IndexType};
 use crate::Graph;
-use crate::visit::{VisitMap, GraphRef, Visitable, IntoNeighbors};
-use crate::visit::{NodeCount, NodeIndexable};
+use crate::visit::{VisitMap, GraphRef, Visitable, IntoNeighbors, IntoNodeReferences};
+use crate::visit::{NodeCount, NodeIndexable, NodeRef, GraphBase, IntoEdges, EdgeRef};
 
 /// \[Generic\] [Edmonds-Karp algorithm](https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm)
 ///
@@ -24,6 +25,8 @@ use crate::visit::{NodeCount, NodeIndexable};
 /// 
 /// Running time is O(|V||E|^2), where |V| is the number of vertices and |E| is the number of edges.
 /// Dinic's algorithm solves this problem in O(|V|^2|E|).
+/// TODO: Do not remove edges from the graph
+
 pub fn edmonds_karp<V, E>(
     original_graph: &Graph<V, E>, 
     start: NodeIndex, 
@@ -33,7 +36,8 @@ where
     V: Clone + Debug,
     E: Zero + Ord + Copy + Sub<Output = E> + Add<Output = E> + Debug,
 {
-    let mut graph = (*original_graph).clone();
+    // Start by making a directed version of the original graph using BFS
+    let mut graph = copy_graph_directed(original_graph);
     let mut max_flow = E::zero();
     
     loop {
@@ -98,6 +102,46 @@ where
     E::zero()
 }
 
+/// Creates a directed copy of the graph G.
+pub fn copy_graph_directed<G, V, E, N, I, ER>(original_graph: G) -> DiGraph<V, E> 
+where
+    G: GraphBase<NodeId = I> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = N>,
+    N: NodeRef<NodeId = I, Weight = V>,
+    I: Hash + Eq,
+    ER: EdgeRef<NodeId = I, Weight = E>,
+    E: Clone,
+    V: Clone,
+{
+    let mut graph_copy: DiGraph<V, E> = Graph::default();
+    // Ids of new nodes
+    let mut new_node_ids = Vec::new();
+    // All nodes in the graph
+    let node_references: Vec<_> = original_graph.node_references().collect();
+
+    // Add all nodes into graph_copy and keep track of their new index
+    for node in node_references.iter() {
+        let id = graph_copy.add_node(node.weight().clone());
+        new_node_ids.push(id);
+    }
+
+    // Store the index of a node in the vector node_references
+    let index_map: HashMap<_, _> = node_references
+        .iter()
+        .enumerate()
+        .map(|(index, node)| (node.id(), index))
+        .collect();
+    
+    for start_ref in node_references {
+        let edges = original_graph.edges(start_ref.id());
+        for edge_ref in edges {
+            let start = new_node_ids[index_map[&start_ref.id()]];
+            let end = new_node_ids[index_map[&edge_ref.target()]];
+            graph_copy.add_edge(start, end, edge_ref.weight().clone());
+        }
+    }
+    graph_copy
+}
+
 /// Same as crate::visit::Bfs but uses Bfs to compute the shortest path in an unweighted graph.
 #[derive(Clone)]
 pub struct BfsPath<N, VM> {
@@ -137,32 +181,37 @@ where
         BfsPath { stack, discovered }
     }
 
-    /// Finds a path from start to end with Bfs. Edge weights are ignored.
-    pub fn shortest_path<G>(graph: G, start: N, end: N) -> Vec<N> 
+    /// Returns a shortest path from start to end ignoring edge weights.
+    /// The path is a vector of EdgeRef.
+    pub fn shortest_path<G, ER>(graph: G, start: N, end: N) -> Vec<<ER as EdgeRef>::EdgeId>
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM> + NodeCount,
-        G: IntoNeighbors<NodeId = N> + NodeIndexable,
+        G: IntoEdges<EdgeRef = ER> + NodeIndexable,
+        ER: EdgeRef<NodeId = N>,
         N: Debug,
     {
-        let mut predecessor: Vec<Option<N>> = vec![None; graph.node_count()];
-        let mut path = vec![end];
+        // For every Node N in G, stores the EdgeRef that first goes to N
+        let mut predecessor: Vec<Option<_>> = vec![None; graph.node_count()];
+        let mut path: Vec<<ER as EdgeRef>::EdgeId> = Vec::new();
         let mut bfs = BfsPath::new(graph, start);
 
         while let Some(node) = bfs.stack.pop_front() {
             if node == end {
                 break;
             }
-            for succ in graph.neighbors(node) {
+            for edge in graph.edges(node) {
+                let succ = edge.target();
                 if bfs.discovered.visit(succ) {
                     bfs.stack.push_back(succ);
-                    predecessor[graph.to_index(succ)] = Some(node);
+                    predecessor[graph.to_index(succ)] = Some(edge);
                 }
             }
         } 
 
         let mut next = end;
-        while let Some(node) = predecessor[graph.to_index(next)] {
-            path.push(node);
+        while let Some(edge) = predecessor[graph.to_index(next)] {
+            path.push(edge.id());
+            let node = edge.source();
             if node == start {
                 break;
             }
