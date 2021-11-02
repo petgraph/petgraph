@@ -134,14 +134,9 @@ where
             let end_index = index_map[&edge_ref.target()];
             println!("End index {:?}", end_index);
             
-            // We don't need to add the reversed edge
-            if start_index > end_index {
-                let option = extra_edges.remove(&(end_index, start_index));
-                if !option {
-                    extra_edges.insert((end_index, start_index));
-                }
-            // We need to add the reversed edge
-            } else {
+            // We need to add the reversed edge if its not already there.
+            let option = extra_edges.remove(&(end_index, start_index));
+            if !option {
                 extra_edges.insert((end_index, start_index));
             }
 
