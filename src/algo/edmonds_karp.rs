@@ -101,7 +101,7 @@ where
 /// Creates a copy of original_graph and stores it as a directed adjacency list.
 /// If n -> n' is an edge, it also adds the edge n' -> n but with weight 0.
 /// Also takes start and end and gives corresponding nodes in the new graph.
-pub fn copy_graph_directed<G, V, E, N, NR, ER>(
+fn copy_graph_directed<G, V, E, N, NR, ER>(
     original_graph: G,
     start: N,
     end: N
@@ -176,25 +176,14 @@ where
     Ok((graph_copy, new_start, new_end))
 }
 
-/// Same as crate::visit::Bfs but uses Bfs to compute the shortest path in an unweighted graph.
+/// Some code copied from crate::visit::Bfs 
+/// but uses Bfs to compute the shortest path in an unweighted graph.
 #[derive(Clone)]
 pub struct BfsPath<N, VM> {
     /// The queue of nodes to visit
     pub stack: VecDeque<N>,
     /// The map of discovered nodes
     pub discovered: VM, 
-}
-
-impl<N, VM> Default for BfsPath<N, VM>
-where
-    VM: Default,
-{
-    fn default() -> Self {
-        BfsPath {
-            stack: VecDeque::new(),
-            discovered: VM::default(),
-        }
-    }
 }
 
 impl<N, VM> BfsPath<N, VM>
