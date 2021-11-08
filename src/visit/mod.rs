@@ -352,7 +352,7 @@ trait_template! {
 NodeIndexable! {delegate_impl []}
 
 trait_template! {
-    /// The graph’s `NodeId`s map to indices
+    /// The graph’s `EdgeId`s map to indices
     #[allow(clippy::needless_arbitrary_self_type)]
     pub trait EdgeIndexable : GraphBase {
         @section self
