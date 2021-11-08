@@ -28,6 +28,6 @@ fn edmonds_karp_bench(bench: &mut Bencher) {
     let start = nodes[0];
     let end = nodes[NODE_COUNT - 1];
     bench.iter(|| {
-        let _scores = edmonds_karp(&g, start, end);
+        let _scores = edmonds_karp(&g, start, end, |e| *e.weight());
     });
 }
