@@ -1,7 +1,9 @@
 use super::{GraphRef, IntoNodeIdentifiers, Reversed};
 use super::{IntoNeighbors, IntoNeighborsDirected, VisitMap, Visitable};
+use super::{NodeCount, NodeIndexable, IntoEdges, EdgeRef};
 use crate::Incoming;
 use std::collections::VecDeque;
+use num::Zero;
 
 /// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in
 /// preorder (when they are first discovered).
@@ -302,6 +304,51 @@ where
             return Some(node);
         }
         None
+    }
+
+    /// Returns a shortest path from start to end ignoring edge weights.
+    /// The path is a vector of EdgeRef.
+    /// Returns an empty vector is no path exists.
+    /// Ignore edges with zero weight.
+    pub fn shortest_path<G, E, I, ER>(graph: G, start: N, end: N) -> Vec<I>
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM> + NodeCount,
+        G: IntoEdges<EdgeRef = ER> + NodeIndexable,
+        ER: EdgeRef<NodeId = N, EdgeId = I, Weight = E>,
+        E: Zero + PartialEq,
+        I: Copy,
+    {
+        // For every Node N in G, stores the EdgeRef that first goes to N
+        let mut predecessor: Vec<Option<_>> = vec![None; graph.node_count()];
+        let mut path = Vec::new();
+        let mut bfs = Bfs::new(graph, start);
+
+        while let Some(node) = bfs.stack.pop_front() {
+            if node == end {
+                break;
+            }
+            for edge in graph.edges(node) {
+                if *edge.weight() != E::zero() {
+                    let succ = edge.target();
+                    if bfs.discovered.visit(succ) {
+                        bfs.stack.push_back(succ);
+                        predecessor[graph.to_index(succ)] = Some(edge);
+                    }
+                }
+            }
+        } 
+
+        let mut next = end;
+        while let Some(edge) = predecessor[graph.to_index(next)] {
+            path.push(edge.id());
+            let node = edge.source();
+            if node == start {
+                break;
+            }
+            next = node;
+        }
+        path.reverse();
+        path
     }
 }
 

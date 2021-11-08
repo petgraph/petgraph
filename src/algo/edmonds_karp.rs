@@ -1,14 +1,14 @@
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::collections::{VecDeque, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::cmp;
 use std::cmp::Ord;
 use std::ops::{Sub, Add};
 use num::Zero;
-use crate::graph::{NodeIndex, DiGraph, EdgeIndex, EdgeReference};
+use crate::graph::{NodeIndex, DiGraph, EdgeIndex};
 use crate::Graph;
-use crate::visit::{VisitMap, GraphRef, Visitable, IntoNodeReferences};
-use crate::visit::{NodeCount, NodeIndexable, NodeRef, GraphBase, IntoEdges, EdgeRef};
+use crate::visit::{IntoNodeReferences, Bfs};
+use crate::visit::{NodeRef, GraphBase, IntoEdges, EdgeRef};
 
 /// \[Generic\] [Edmonds-Karp algorithm](https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm)
 ///
@@ -27,7 +27,7 @@ use crate::visit::{NodeCount, NodeIndexable, NodeRef, GraphBase, IntoEdges, Edge
 /// Uses O(|E|) space.
 /// 
 /// Dinic's algorithm solves this problem in O(|V|^2|E|).
-/// TODO: Do not remove edges from the graph
+/// TODO: PartialOrd versus Ord
 
 pub fn edmonds_karp<G, V, E, N, NR, ER, F>(
     original_graph: G, 
@@ -36,13 +36,11 @@ pub fn edmonds_karp<G, V, E, N, NR, ER, F>(
     edge_cost: F,
 ) -> E
 where
-    V: Clone + Debug,
-    E: Zero + Ord + Copy + Sub<Output = E> + Add<Output = E> + Debug,
+    E: Zero + Copy + Ord + Sub<Output = E> + Add<Output = E> + Debug,
     G: GraphBase<NodeId = N> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
     NR: NodeRef<NodeId = N, Weight = V>,
     ER: EdgeRef<NodeId = N, Weight = E>,
     N: Hash + Eq + Debug,
-    E: Clone + Zero + PartialOrd,
     F: Fn(G::EdgeRef) -> E,
 {
     // Start by making a directed version of the original graph using BFS.
@@ -70,7 +68,7 @@ where
     
     // This loop will run O(|V||E|) times. Each iteration takes O(|E|) time.
     loop {
-        let path = BfsPath::shortest_path(&graph, new_start, new_end);
+        let path = Bfs::shortest_path(&graph, new_start, new_end);
         if path.is_empty() {
             break;
         }
@@ -89,7 +87,6 @@ where
 }
 
 // Finds the minimum edge weight along the path.
-// TODO: use PartialOrd so edges with float weights can be compared.
 fn min_weight<V, E>(graph: &Graph<V, E>, path: &Vec<EdgeIndex>) -> E 
 where
     E: Zero + Ord + Copy,
@@ -118,7 +115,7 @@ where
     NR: NodeRef<NodeId = N, Weight = V>,
     ER: EdgeRef<NodeId = N, Weight = E>,
     N: Hash + Eq + Debug,
-    E: Clone + Zero + PartialOrd,
+    E: Copy + Zero + Ord,
     F: Fn(G::EdgeRef) -> E,
 {
     let mut graph_copy: DiGraph<_, E> = Graph::default();
@@ -169,7 +166,7 @@ where
                 extra_edges.insert((end_index, start_index));
             }
 
-            let weight = edge_cost(edge_ref).clone();
+            let weight = edge_cost(edge_ref);
             if weight < E::zero() {
                 return Err("Nonnegative edgeweights expected for Edmonds-Karp.".to_owned());
             }
@@ -181,177 +178,4 @@ where
         graph_copy.add_edge(new_node_ids[index1], new_node_ids[index2], E::zero());
     }
     Ok((graph_copy, new_start, new_end))
-}
-
-/// Some code copied from crate::visit::Bfs 
-/// but uses Bfs to compute the shortest path in an unweighted graph.
-#[derive(Clone)]
-pub struct BfsPath<N, VM> {
-    /// The queue of nodes to visit
-    pub stack: VecDeque<N>,
-    /// The map of discovered nodes
-    pub discovered: VM, 
-}
-
-impl<N, VM> BfsPath<N, VM>
-where
-    N: Copy + PartialEq,
-    VM: VisitMap<N>,
-{
-    /// Create a new **Bfs**, using the graph's visitor map, and put **start**
-    /// in the stack of nodes to visit.
-    fn new<G>(graph: G, start: N) -> Self
-    where
-        G: GraphRef + Visitable<NodeId = N, Map = VM>,
-    {
-        let mut discovered = graph.visit_map();
-        discovered.visit(start);
-        let mut stack = VecDeque::new();
-        stack.push_front(start);
-        BfsPath { stack, discovered }
-    }
-
-    /// Returns a shortest path from start to end ignoring edge weights.
-    /// The path is a vector of EdgeRef.
-    /// Returns an empty vector is no path exists.
-    /// Ignore edges with zero weight.
-    /// TODO: implement with partial equals.
-    pub fn shortest_path<G, E, I, ER>(graph: G, start: N, end: N) -> Vec<I>
-    where
-        G: GraphRef + Visitable<NodeId = N, Map = VM> + NodeCount,
-        G: IntoEdges<EdgeRef = ER> + NodeIndexable,
-        ER: EdgeRef<NodeId = N, EdgeId = I, Weight = E>,
-        E: Zero + Eq,
-        N: Debug,
-        I: Copy,
-    {
-        // For every Node N in G, stores the EdgeRef that first goes to N
-        let mut predecessor: Vec<Option<_>> = vec![None; graph.node_count()];
-        let mut path = Vec::new();
-        let mut bfs = BfsPath::new(graph, start);
-
-        while let Some(node) = bfs.stack.pop_front() {
-            if node == end {
-                break;
-            }
-            for edge in graph.edges(node) {
-                if *edge.weight() != E::zero() {
-                    let succ = edge.target();
-                    if bfs.discovered.visit(succ) {
-                        bfs.stack.push_back(succ);
-                        predecessor[graph.to_index(succ)] = Some(edge);
-                    }
-                }
-            }
-        } 
-
-        let mut next = end;
-        while let Some(edge) = predecessor[graph.to_index(next)] {
-            path.push(edge.id());
-            let node = edge.source();
-            if node == start {
-                break;
-            }
-            next = node;
-        }
-        path.reverse();
-        path
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn edmonds_karp_unweighted() {
-
-        let mut graph = Graph::<_, u32>::new();
-        let v0 = graph.add_node(0);
-        let v1 = graph.add_node(1);
-        let v2 = graph.add_node(2);
-        let v3 = graph.add_node(3);
-        let v4 = graph.add_node(4);
-
-        graph.extend_with_edges(&[
-            (v0, v1, 1), (v0, v2, 1),
-            (v2, v3, 1), (v3, v4, 1), (v2, v4, 1),
-        ]);
-        // 0 ---> 1
-        // |      
-        // v
-        // 2 ---> 4
-        // |     7
-        // v   /
-        // 3
-
-        assert_eq!(1, edmonds_karp(&graph, v0, v4, |_| 1));
-
-        graph.add_edge(v1, v4, 1);
-        assert_eq!(2, edmonds_karp(&graph, v0, v4, |_| 1));
-
-        graph.add_edge(v0, v3, 1);
-        assert_eq!(3, edmonds_karp(&graph, v0, v4, |_| 1));
-
-        graph.clear();
-        graph.extend_with_edges(&[
-            (v0, v1, 1), (v0, v2, 1), (v1, v4, 1),
-            (v2, v3, 1), (v4, v3, 1), (v2, v4, 1),
-        ]);
-        assert_eq!(2, edmonds_karp(&graph, v0, v4, |_| 1));
-    }
-
-    #[test]
-    fn edmonds_karp_weighted() {
-        let edge_weights = |e: EdgeReference<u32>| *e.weight();
-
-        let mut graph = Graph::<_, u32>::new();
-        let v0 = graph.add_node(0);
-        let v1 = graph.add_node(1);
-        let v2 = graph.add_node(2);
-        let v3 = graph.add_node(3);
-        graph.extend_with_edges(&[
-            (v1, v2, 3), (v1, v3, 1), (v2, v3, 3),
-            (v2, v0, 1), (v3, v0, 3)
-        ]);
-        let max_flow = edmonds_karp(&graph, v1, v0, edge_weights);
-        assert_eq!(4, max_flow);
-
-        let mut graph = Graph::<_, u32>::new();
-        let a1 = graph.add_node(0);
-        let b1 = graph.add_node(0);
-        let b2 = graph.add_node(0);
-        let b3 = graph.add_node(0);
-        let c1 = graph.add_node(0);
-        let c2 = graph.add_node(0);
-        let c3 = graph.add_node(0);
-        let d1 = graph.add_node(0);
-        graph.extend_with_edges(&[
-            (a1, b1, 6), (a1, b2, 1), (a1, b3, 1),
-            (b1, c1, 6), (b1, c2, 6),
-            (b2, c1, 1), (b2, c3, 1),
-            (b3, c2, 1), (b3, c3, 1),
-            (c1, d1, 1), (c2, d1, 4), (c3, d1, 3)
-        ]);
-        let max_flow = edmonds_karp(&graph, a1, d1, edge_weights);
-        assert_eq!(7, max_flow);
-
-        let mut graph = Graph::<_, u32>::new();
-        let a1 = graph.add_node(0);
-        let b1 = graph.add_node(0);
-        let b2 = graph.add_node(0);
-        let b3 = graph.add_node(0);
-        let c1 = graph.add_node(0);
-        let c2 = graph.add_node(0);
-        let d1 = graph.add_node(0);
-        graph.extend_with_edges(&[
-            (a1, b1, 20), (a1, b2, 40), (a1, b3, 5),
-            (b1, b2, 5), (b2, b3, 5),
-            (b1, c1, 20), (b2, c1, 25), (b2, c2, 15), (b3, c2, 10),
-            (c1, c2, 5),
-            (c1, d1, 40), (c2, d1, 30),
-        ]);
-        let max_flow = edmonds_karp(&graph, a1, d1, edge_weights);
-        assert_eq!(65, max_flow);
-    }
 }
