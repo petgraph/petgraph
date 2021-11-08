@@ -23,7 +23,7 @@ fn main() {
     // println!("{:?}", Dot::with_config(&graph2, &[]));
 
 
-    let max_flow = edmonds_karp(&graph, v1, v0);
+    let max_flow = edmonds_karp(&graph, v1, v0, |e| *e.weight());
     println!("First try {}", max_flow);
     println!("Correct answer: 4");
 }

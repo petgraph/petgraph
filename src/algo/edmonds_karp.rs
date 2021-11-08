@@ -5,7 +5,7 @@ use std::cmp;
 use std::cmp::Ord;
 use std::ops::{Sub, Add};
 use num::Zero;
-use crate::graph::{NodeIndex, DiGraph, EdgeIndex};
+use crate::graph::{NodeIndex, DiGraph, EdgeIndex, EdgeReference};
 use crate::Graph;
 use crate::visit::{VisitMap, GraphRef, Visitable, IntoNodeReferences};
 use crate::visit::{NodeCount, NodeIndexable, NodeRef, GraphBase, IntoEdges, EdgeRef};
@@ -29,10 +29,11 @@ use crate::visit::{NodeCount, NodeIndexable, NodeRef, GraphBase, IntoEdges, Edge
 /// Dinic's algorithm solves this problem in O(|V|^2|E|).
 /// TODO: Do not remove edges from the graph
 
-pub fn edmonds_karp<G, V, E, N, NR, ER>(
+pub fn edmonds_karp<G, V, E, N, NR, ER, F>(
     original_graph: G, 
     start: N,
     end: N,
+    edge_cost: F,
 ) -> E
 where
     V: Clone + Debug,
@@ -42,11 +43,16 @@ where
     ER: EdgeRef<NodeId = N, Weight = E>,
     N: Hash + Eq + Debug,
     E: Clone + Zero + PartialOrd,
-    V: Clone,
+    F: Fn(G::EdgeRef) -> E,
 {
     // Start by making a directed version of the original graph using BFS.
     // The graph must be an adjacency list in order to run BFS in O(|E|) time.
-    let (mut graph, new_start, new_end) = copy_graph_directed(original_graph, start, end).unwrap();
+    let (mut graph, new_start, new_end) = copy_graph_directed(
+        original_graph,
+        start,
+        end,
+        edge_cost
+    ).unwrap();
 
     // For every edge, store the index of its reversed edge.
     // This part could be made more efficient.
@@ -101,20 +107,21 @@ where
 /// Creates a copy of original_graph and stores it as a directed adjacency list.
 /// If n -> n' is an edge, it also adds the edge n' -> n but with weight 0.
 /// Also takes start and end and gives corresponding nodes in the new graph.
-fn copy_graph_directed<G, V, E, N, NR, ER>(
+fn copy_graph_directed<G, V, E, N, NR, ER, F>(
     original_graph: G,
     start: N,
-    end: N
-) -> Result<(DiGraph<V, E>, NodeIndex, NodeIndex), String>
+    end: N,
+    edge_cost: F
+) -> Result<(DiGraph<u8, E>, NodeIndex, NodeIndex), String>
 where
     G: GraphBase<NodeId = N> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
     NR: NodeRef<NodeId = N, Weight = V>,
     ER: EdgeRef<NodeId = N, Weight = E>,
     N: Hash + Eq + Debug,
     E: Clone + Zero + PartialOrd,
-    V: Clone,
+    F: Fn(G::EdgeRef) -> E,
 {
-    let mut graph_copy: DiGraph<V, E> = Graph::default();
+    let mut graph_copy: DiGraph<_, E> = Graph::default();
     // Ids of new nodes
     let mut new_node_ids = Vec::new();
     // All nodes in the graph
@@ -124,7 +131,7 @@ where
     let mut end_opt = None;
     // Add all nodes into graph_copy and keep track of their new index
     for node in node_references.iter() {
-        let id = graph_copy.add_node(node.weight().clone());
+        let id = graph_copy.add_node(0);
         new_node_ids.push(id);
         if node.id() == start {
             start_opt = Some(id);
@@ -162,7 +169,7 @@ where
                 extra_edges.insert((end_index, start_index));
             }
 
-            let weight = edge_ref.weight().clone();
+            let weight = edge_cost(edge_ref).clone();
             if weight < E::zero() {
                 return Err("Nonnegative edgeweights expected for Edmonds-Karp.".to_owned());
             }
@@ -257,7 +264,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_max_flow_unweighted() {
+    fn edmonds_karp_unweighted() {
+
         let mut graph = Graph::<_, u32>::new();
         let v0 = graph.add_node(0);
         let v1 = graph.add_node(1);
@@ -276,24 +284,27 @@ mod tests {
         // |     7
         // v   /
         // 3
-        assert_eq!(1, edmonds_karp(&graph, v0, v4));
+
+        assert_eq!(1, edmonds_karp(&graph, v0, v4, |_| 1));
 
         graph.add_edge(v1, v4, 1);
-        assert_eq!(2, edmonds_karp(&graph, v0, v4));
+        assert_eq!(2, edmonds_karp(&graph, v0, v4, |_| 1));
 
         graph.add_edge(v0, v3, 1);
-        assert_eq!(3, edmonds_karp(&graph, v0, v4));
+        assert_eq!(3, edmonds_karp(&graph, v0, v4, |_| 1));
 
         graph.clear();
         graph.extend_with_edges(&[
             (v0, v1, 1), (v0, v2, 1), (v1, v4, 1),
             (v2, v3, 1), (v4, v3, 1), (v2, v4, 1),
         ]);
-        assert_eq!(2, edmonds_karp(&graph, v0, v4));
+        assert_eq!(2, edmonds_karp(&graph, v0, v4, |_| 1));
     }
 
     #[test]
-    fn test_max_flow_weighted() {
+    fn edmonds_karp_weighted() {
+        let edge_weights = |e: EdgeReference<u32>| *e.weight();
+
         let mut graph = Graph::<_, u32>::new();
         let v0 = graph.add_node(0);
         let v1 = graph.add_node(1);
@@ -303,7 +314,7 @@ mod tests {
             (v1, v2, 3), (v1, v3, 1), (v2, v3, 3),
             (v2, v0, 1), (v3, v0, 3)
         ]);
-        let max_flow = edmonds_karp(&graph, v1, v0);
+        let max_flow = edmonds_karp(&graph, v1, v0, edge_weights);
         assert_eq!(4, max_flow);
 
         let mut graph = Graph::<_, u32>::new();
@@ -322,7 +333,7 @@ mod tests {
             (b3, c2, 1), (b3, c3, 1),
             (c1, d1, 1), (c2, d1, 4), (c3, d1, 3)
         ]);
-        let max_flow = edmonds_karp(&graph, a1, d1);
+        let max_flow = edmonds_karp(&graph, a1, d1, edge_weights);
         assert_eq!(7, max_flow);
 
         let mut graph = Graph::<_, u32>::new();
@@ -340,7 +351,7 @@ mod tests {
             (c1, c2, 5),
             (c1, d1, 40), (c2, d1, 30),
         ]);
-        let max_flow = edmonds_karp(&graph, a1, d1);
+        let max_flow = edmonds_karp(&graph, a1, d1, edge_weights);
         assert_eq!(65, max_flow);
     }
 }
