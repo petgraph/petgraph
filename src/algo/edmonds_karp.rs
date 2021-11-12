@@ -10,23 +10,55 @@ use crate::Graph;
 use crate::visit::{IntoNodeReferences, Bfs};
 use crate::visit::{NodeRef, GraphBase, IntoEdges, EdgeRef};
 
-/// \[Generic\] [Edmonds-Karp algorithm](https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm)
-///
+/// \[Generic\] [Edmonds-Karp algorithm][link]
+/// 
 /// Computes the max flow in the graph.
 /// Edge weights are assumed to be nonnegative.
 /// 
 /// # Arguments
-/// * `graph`: graph with nonnegative edge weights.
+/// * `graph`
 /// * `start`: graph node where the flow starts.
 /// * `end`: graph node where the flow ends.
+/// * `edge_cost`: nonnegative edge weights for the graph.
 ///
 /// # Returns
 /// * Max flow from `start` to `end`.
 /// 
-/// Running time is O(|V||E|^2), where |V| is the number of vertices and |E| is the number of edges.
+/// Running time is O(|V||E|^2), where |V| is the number of vertices and |E| is
+/// the number of edges.
 /// Uses O(|E|) space.
 /// 
 /// Dinic's algorithm solves this problem in O(|V|^2|E|).
+/// 
+/// [link]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
+/// 
+/// # Example
+/// ```rust
+/// use petgraph::algo::edmonds_karp;
+/// use petgraph::Graph;
+/// let mut graph = Graph::new();
+/// let v0 = graph.add_node(0);
+/// let v1 = graph.add_node(1);
+/// let v2 = graph.add_node(2);
+/// let v3 = graph.add_node(3);
+/// graph.extend_with_edges(&[
+///     (v1, v2, 3), (v1, v3, 1), (v2, v3, 3),
+///     (v2, v0, 1), (v3, v0, 3)
+/// ]);
+/// 
+/// // Graph represented with edge weights
+/// //
+/// //       3
+/// //   v1 --> v2
+/// //   |    / |
+/// // 1 |  3/  | 1 
+/// //   v  L   V
+/// //   v3 --> v0
+/// //       3
+/// 
+/// let max_flow = edmonds_karp(&graph, v1, v0, |e| *e.weight());
+/// assert_eq!(max_flow, 4);
+/// ```
 /// TODO: PartialOrd versus Ord
 
 pub fn edmonds_karp<G, V, E, N, NR, ER, F>(
@@ -37,7 +69,8 @@ pub fn edmonds_karp<G, V, E, N, NR, ER, F>(
 ) -> E
 where
     E: Zero + Copy + Ord + Sub<Output = E> + Add<Output = E> + Debug,
-    G: GraphBase<NodeId = N> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
+    G: GraphBase<NodeId = N>,
+    G: IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
     NR: NodeRef<NodeId = N, Weight = V>,
     ER: EdgeRef<NodeId = N, Weight = E>,
     N: Hash + Eq + Debug,
@@ -58,7 +91,8 @@ where
     let mut reversed_edge = HashMap::new();
     for edge in edges {
         if !reversed_edge.contains_key(&edge.id()) {
-            let reverse = graph.find_edge(edge.target(), edge.source()).expect("Edge should be in graph");
+            let reverse = graph.find_edge(edge.target(), edge.source())
+                .expect("Edge should be in graph");
             reversed_edge.insert(edge.id(), reverse);
             reversed_edge.insert(reverse, edge.id());
         }
@@ -86,7 +120,7 @@ where
     max_flow
 }
 
-// Finds the minimum edge weight along the path.
+/// Finds the minimum edge weight along the path.
 fn min_weight<V, E>(graph: &Graph<V, E>, path: &Vec<EdgeIndex>) -> E 
 where
     E: Zero + Ord + Copy,
@@ -102,6 +136,7 @@ where
 }
 
 /// Creates a copy of original_graph and stores it as a directed adjacency list.
+/// 
 /// If n -> n' is an edge, it also adds the edge n' -> n but with weight 0.
 /// Also takes start and end and gives corresponding nodes in the new graph.
 fn copy_graph_directed<G, V, E, N, NR, ER, F>(
@@ -111,7 +146,8 @@ fn copy_graph_directed<G, V, E, N, NR, ER, F>(
     edge_cost: F
 ) -> Result<(DiGraph<u8, E>, NodeIndex, NodeIndex), String>
 where
-    G: GraphBase<NodeId = N> + IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
+    G: GraphBase<NodeId = N>,
+    G: IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
     NR: NodeRef<NodeId = N, Weight = V>,
     ER: EdgeRef<NodeId = N, Weight = E>,
     N: Hash + Eq + Debug,
