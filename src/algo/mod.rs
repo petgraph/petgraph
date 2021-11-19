@@ -15,6 +15,7 @@ pub mod k_shortest_path;
 pub mod matching;
 pub mod simple_paths;
 pub mod tred;
+pub mod spfa;
 
 use std::collections::{BinaryHeap, HashMap};
 use std::num::NonZeroUsize;
@@ -44,6 +45,7 @@ pub use isomorphism::{
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use simple_paths::all_simple_paths;
+pub use spfa::spfa;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///

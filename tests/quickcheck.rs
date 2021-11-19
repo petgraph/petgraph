@@ -26,7 +26,7 @@ use petgraph::algo::{
     bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, tarjan_scc, toposort, Matching,
+    min_spanning_tree, tarjan_scc, toposort, Matching, spfa,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1279,6 +1279,35 @@ quickcheck! {
         assert!(is_maximum_matching(&g, &m2), "maximum_matching returned a matching that is not maximum");
         assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
         assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
+
+        true
+    }
+}
+
+quickcheck! {
+    // Checks spfa against bellman_ford results
+    fn test_spfa(g: Graph<(), f32>) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+
+        for (i, node) in g.node_identifiers().enumerate() {
+            if i >= 10 {
+                break;  // testing all is too slow
+            }
+
+            let spfa_res = spfa(&g, node);
+            let bf_res = bellman_ford(&g, node);
+
+            if bf_res.is_err() {
+                assert!(spfa_res.is_err());
+            } else {
+                let spfa_res = spfa_res.unwrap();
+                let bf_res = bf_res.unwrap();
+                assert_eq!(spfa_res.distances, bf_res.distances);
+                assert_eq!(spfa_res.predecessors, bf_res.predecessors);
+            }
+        }
 
         true
     }
