@@ -816,7 +816,7 @@ where
 }
 
 use std::fmt::Debug;
-use std::ops::Add;
+use std::ops::{Add, Sub};
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Clone {}
@@ -847,7 +847,7 @@ impl FloatMeasure for f64 {
     }
 }
 
-pub trait BoundedMeasure: Measure + std::ops::Sub<Self, Output = Self> {
+pub trait BoundedMeasure: Measure + Sub<Self, Output = Self> {
     fn min() -> Self;
     fn max() -> Self;
     fn overflowing_add(self, rhs: Self) -> (Self, bool);
@@ -902,3 +902,46 @@ macro_rules! impl_bounded_measure_float(
 );
 
 impl_bounded_measure_float!(f32, f64);
+
+
+use std::cmp::Ordering;
+
+pub trait OrderableMeasure: Measure + Sub<Self, Output = Self> {
+    fn min<'a>(&'a self, other: &'a Self) -> &'a Self {
+        if self <= other {
+            self
+        } else if self > other {
+            other
+        
+        // If other is NaN, return self.
+        } else if other.ne(other) {
+            self
+        
+        // Else if self is NaN, return other.
+        } else {
+            other
+        }
+    }
+}
+
+impl<M> OrderableMeasure for M where M: Measure + Sub<Self, Output = Self> {}
+
+// impl<M> Ord for M where M: OrderableMeasure {
+//     fn cmp(&self, other: &M) -> Ordering {
+//         if self == other {
+//             Ordering::Equal
+//         } else if self < other {
+//             Ordering::Greater
+//         } else if self > other {
+//             Ordering::Less
+//         } else if self.ne(self) && other.ne(other) {
+//             // these are the NaN cases
+//             Ordering::Equal
+//         } else if self.ne(self) {
+//             // Order NaN less, so that it is last in the MinScore order
+//             Ordering::Less
+//         } else {
+//             Ordering::Greater
+//         }
+//     }
+// }

@@ -1,14 +1,11 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::collections::{HashMap, HashSet};
-use std::cmp;
-use std::cmp::Ord;
-use std::ops::{Sub, Add};
-use num::Zero;
 use crate::graph::{NodeIndex, DiGraph, EdgeIndex};
 use crate::Graph;
 use crate::visit::{IntoNodeReferences, Bfs};
 use crate::visit::{NodeRef, GraphBase, IntoEdges, EdgeRef};
+use crate::algo::OrderableMeasure;
 
 /// \[Generic\] [Edmonds-Karp algorithm][link]
 /// 
@@ -19,7 +16,8 @@ use crate::visit::{NodeRef, GraphBase, IntoEdges, EdgeRef};
 /// * `graph`
 /// * `start`: graph node where the flow starts.
 /// * `end`: graph node where the flow ends.
-/// * `edge_cost`: nonnegative edge weights for the graph.
+/// * `edge_cost`: nonnegative edge weights for the graph. 
+/// (Note if an edge_cost has value NaN, it allows arbitrarily large flow.)
 ///
 /// # Returns
 /// * Max flow from `start` to `end`.
@@ -68,7 +66,7 @@ pub fn edmonds_karp<G, V, E, N, NR, ER, F>(
     edge_cost: F,
 ) -> E
 where
-    E: Zero + Copy + Ord + Sub<Output = E> + Add<Output = E> + Debug,
+    E: OrderableMeasure,
     G: GraphBase<NodeId = N>,
     G: IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
     NR: NodeRef<NodeId = N, Weight = V>,
@@ -98,7 +96,8 @@ where
         }
     }
 
-    let mut max_flow = E::zero();
+    // Default is the value 0.
+    let mut max_flow = E::default(); 
     
     // This loop will run O(|V||E|) times. Each iteration takes O(|E|) time.
     loop {
@@ -107,14 +106,14 @@ where
             break;
         }
         let path_flow = min_weight(&graph, &path);
-        max_flow = max_flow + path_flow;
+        max_flow = max_flow + path_flow.clone();
 
         for edge in path.into_iter() {
             let weight = &mut graph[edge];
-            *weight = *weight - path_flow;
+            *weight = weight.clone() - path_flow.clone();
             let reverse_id = reversed_edge[&edge];
             let reversed_weight = &mut graph[reverse_id];
-            *reversed_weight = *reversed_weight + path_flow;
+            *reversed_weight = reversed_weight.clone() + path_flow.clone();
         }
     }
     max_flow
@@ -123,16 +122,16 @@ where
 /// Finds the minimum edge weight along the path.
 fn min_weight<V, E>(graph: &Graph<V, E>, path: &Vec<EdgeIndex>) -> E 
 where
-    E: Zero + Ord + Copy,
+    E: OrderableMeasure,
 {
     if path.is_empty() {
-        return E::zero();
+        return E::default();
     }
-    let mut weight = graph[path[0]];
+    let mut weight = &graph[path[0]];
     for edge in path.iter().skip(1) {
-        weight = cmp::min(weight, graph[*edge]);
+        weight = weight.min(&graph[*edge]);
     }
-    return weight;
+    return weight.clone();
 }
 
 /// Creates a copy of original_graph and stores it as a directed adjacency list.
@@ -151,7 +150,7 @@ where
     NR: NodeRef<NodeId = N, Weight = V>,
     ER: EdgeRef<NodeId = N, Weight = E>,
     N: Hash + Eq + Debug,
-    E: Copy + Zero + Ord,
+    E: OrderableMeasure,
     F: Fn(G::EdgeRef) -> E,
 {
     let mut graph_copy: DiGraph<_, E> = Graph::default();
@@ -203,7 +202,7 @@ where
             }
 
             let weight = edge_cost(edge_ref);
-            if weight < E::zero() {
+            if weight < E::default() {
                 return Err("Nonnegative edgeweights expected for Edmonds-Karp.".to_owned());
             }
             graph_copy.add_edge(new_node_ids[start_index], new_node_ids[end_index], weight);
@@ -211,7 +210,7 @@ where
     }
 
     for (index1, index2) in extra_edges {
-        graph_copy.add_edge(new_node_ids[index1], new_node_ids[index2], E::zero());
+        graph_copy.add_edge(new_node_ids[index1], new_node_ids[index2], E::default());
     }
     Ok((graph_copy, new_start, new_end))
 }

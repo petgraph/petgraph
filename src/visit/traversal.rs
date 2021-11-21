@@ -3,7 +3,6 @@ use super::{IntoNeighbors, IntoNeighborsDirected, VisitMap, Visitable};
 use super::{NodeCount, NodeIndexable, IntoEdges, EdgeRef};
 use crate::Incoming;
 use std::collections::VecDeque;
-use num::Zero;
 
 /// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in
 /// preorder (when they are first discovered).
@@ -315,7 +314,7 @@ where
         G: GraphRef + Visitable<NodeId = N, Map = VM> + NodeCount,
         G: IntoEdges<EdgeRef = ER> + NodeIndexable,
         ER: EdgeRef<NodeId = N, EdgeId = I, Weight = E>,
-        E: Zero + PartialEq,
+        E: Default + PartialEq,
         I: Copy,
     {
         // For every Node N in G, stores the EdgeRef that first goes to N
@@ -328,7 +327,7 @@ where
                 break;
             }
             for edge in graph.edges(node) {
-                if *edge.weight() != E::zero() {
+                if *edge.weight() != E::default() {
                     let succ = edge.target();
                     if bfs.discovered.visit(succ) {
                         bfs.stack.push_back(succ);
