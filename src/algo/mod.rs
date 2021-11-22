@@ -14,8 +14,8 @@ pub mod isomorphism;
 pub mod k_shortest_path;
 pub mod matching;
 pub mod simple_paths;
-pub mod tred;
 pub mod spfa;
+pub mod tred;
 
 use std::collections::{BinaryHeap, HashMap};
 use std::num::NonZeroUsize;
