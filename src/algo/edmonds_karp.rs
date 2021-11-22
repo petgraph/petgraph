@@ -1,10 +1,9 @@
 use crate::algo::OrderableMeasure;
 use crate::graph::{DiGraph, EdgeIndex, NodeIndex};
-use crate::visit::{Bfs, IntoNodeReferences};
+use crate::visit::{Bfs, Data, IntoNodeReferences};
 use crate::visit::{EdgeRef, GraphBase, IntoEdges, NodeRef};
 use crate::Graph;
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
 use std::hash::Hash;
 
 /// \[Generic\] [Edmonds-Karp algorithm][link]
@@ -62,11 +61,13 @@ use std::hash::Hash;
 pub fn edmonds_karp<G, V, E, N, NR, ER, F>(original_graph: G, start: N, end: N, edge_cost: F) -> E
 where
     E: OrderableMeasure,
-    G: GraphBase<NodeId = N>,
+    G: GraphBase<NodeId = N, EdgeId = ER::EdgeId>,
     G: IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
+    G: Data<NodeWeight = V, EdgeWeight = E>,
     NR: NodeRef<NodeId = N, Weight = V>,
     ER: EdgeRef<NodeId = N, Weight = E>,
-    N: Hash + Eq + Debug,
+    ER::EdgeId: PartialEq + Copy,
+    N: Hash + Eq + Copy,
     F: Fn(G::EdgeRef) -> E,
 {
     // Start by making a directed version of the original graph using BFS.
@@ -137,11 +138,13 @@ fn copy_graph_directed<G, V, E, N, NR, ER, F>(
     edge_cost: F,
 ) -> Result<(DiGraph<u8, E>, NodeIndex, NodeIndex), String>
 where
-    G: GraphBase<NodeId = N>,
+    G: GraphBase<NodeId = N, EdgeId = ER::EdgeId>,
     G: IntoEdges<EdgeRef = ER> + IntoNodeReferences<NodeRef = NR>,
+    G: Data<NodeWeight = V, EdgeWeight = E>,
     NR: NodeRef<NodeId = N, Weight = V>,
     ER: EdgeRef<NodeId = N, Weight = E>,
-    N: Hash + Eq + Debug,
+    ER::EdgeId: PartialEq + Copy,
+    N: Hash + Eq + Copy,
     E: OrderableMeasure,
     F: Fn(G::EdgeRef) -> E,
 {

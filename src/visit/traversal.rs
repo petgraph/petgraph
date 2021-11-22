@@ -1,5 +1,5 @@
-use super::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
-use super::{GraphRef, IntoNodeIdentifiers, Reversed};
+use super::{Data, EdgeRef, IntoEdges, NodeCount, NodeIndexable};
+use super::{GraphBase, GraphRef, IntoNodeIdentifiers, Reversed};
 use super::{IntoNeighbors, IntoNeighborsDirected, VisitMap, Visitable};
 use crate::Incoming;
 use std::collections::VecDeque;
@@ -313,9 +313,10 @@ where
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM> + NodeCount,
         G: IntoEdges<EdgeRef = ER> + NodeIndexable,
+        G: Data<EdgeWeight = E> + GraphBase<EdgeId = I>,
         ER: EdgeRef<NodeId = N, EdgeId = I, Weight = E>,
         E: Default + PartialEq,
-        I: Copy,
+        I: Copy + PartialEq,
     {
         // For every Node N in G, stores the EdgeRef that first goes to N
         let mut predecessor: Vec<Option<_>> = vec![None; graph.node_count()];
