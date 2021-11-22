@@ -1,6 +1,6 @@
+use super::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 use super::{GraphRef, IntoNodeIdentifiers, Reversed};
 use super::{IntoNeighbors, IntoNeighborsDirected, VisitMap, Visitable};
-use super::{NodeCount, NodeIndexable, IntoEdges, EdgeRef};
 use crate::Incoming;
 use std::collections::VecDeque;
 
@@ -335,7 +335,7 @@ where
                     }
                 }
             }
-        } 
+        }
 
         let mut next = end;
         while let Some(edge) = predecessor[graph.to_index(next)] {

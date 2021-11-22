@@ -903,18 +903,17 @@ macro_rules! impl_bounded_measure_float(
 
 impl_bounded_measure_float!(f32, f64);
 
-
 pub trait OrderableMeasure: Measure + Sub<Self, Output = Self> {
     fn min<'a>(&'a self, other: &'a Self) -> &'a Self {
         if self <= other {
             self
         } else if self > other {
             other
-        
+
         // If other is NaN, return self.
         } else if other.ne(other) {
             self
-        
+
         // Else if self is NaN, return other.
         } else {
             other
