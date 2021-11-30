@@ -488,7 +488,7 @@ fn iso_multigraph_failure() {
 #[test]
 fn iso_subgraph() {
     let g0 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
-    let g1 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0), (2, 3)]);
+    let g1 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0), (2, 3), (0, 4)]);
     assert!(!is_isomorphic(&g0, &g1));
     assert!(is_isomorphic_subgraph(&g0, &g1));
 }
