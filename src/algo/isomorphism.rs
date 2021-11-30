@@ -612,8 +612,13 @@ mod matching {
                             return Some(true);
                         }
                         // Check cardinalities of Tin, Tout sets
-                        if (st.0.out_size == st.1.out_size && st.0.ins_size == st.1.ins_size)
-                            || (match_subgraph && st.0.out_size <= st.1.out_size && st.0.ins_size <= st.1.ins_size) {
+                        if (!match_subgraph
+                            && st.0.out_size == st.1.out_size
+                            && st.0.ins_size == st.1.ins_size)
+                            || (match_subgraph
+                                && st.0.out_size <= st.1.out_size
+                                && st.0.ins_size <= st.1.ins_size)
+                        {
                             let f0 = Frame::Unwind { nodes, open_list };
                             stack.push(f0);
                             stack.push(Frame::Outer);
@@ -663,7 +668,8 @@ where
     }
 
     let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, false).unwrap_or(false)
+    self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, false)
+        .unwrap_or(false)
 }
 
 /// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
@@ -749,7 +755,8 @@ where
     }
 
     let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, true).unwrap_or(false)
+    self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, true)
+        .unwrap_or(false)
 }
 
 /// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
