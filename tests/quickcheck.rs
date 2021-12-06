@@ -22,6 +22,7 @@ use itertools::cloned;
 use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
+use petgraph::algo::{articulation_points, bridges, connected_components};
 use petgraph::algo::{
     bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
@@ -1307,6 +1308,34 @@ quickcheck! {
                 assert_eq!(spfa_res.distances, bf_res.distances);
                 assert_eq!(spfa_res.predecessors, bf_res.predecessors);
             }
+        }
+
+        true
+    }
+}
+
+quickcheck! {
+    fn test_bridges(g: Graph<(), (), Undirected>) -> bool {
+        let num = connected_components(&g);
+        let br = bridges(&g);
+
+        for edge in br.iter() {
+            let mut graph = g.clone();
+            graph.remove_edge(graph.find_edge_undirected(edge.0, edge.1).unwrap().0);
+            assert!(connected_components(&graph) > num);
+        }
+
+        true
+    }
+
+    fn test_articulation_points(g: Graph<(), (), Undirected>) -> bool {
+        let num = connected_components(&g);
+        let art_points = articulation_points(&g);
+
+        for node in art_points.iter() {
+            let mut graph = g.clone();
+            graph.remove_node(*node);
+            assert!(connected_components(&graph) > num);
         }
 
         true
