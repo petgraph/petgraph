@@ -6,6 +6,7 @@
 
 pub mod astar;
 pub mod bellman_ford;
+mod bridges_and_ap;
 pub mod dijkstra;
 pub mod dominators;
 pub mod feedback_arc_set;
@@ -15,6 +16,8 @@ pub mod k_shortest_path;
 pub mod matching;
 pub mod simple_paths;
 pub mod tred;
+
+pub use bridges_and_ap::{articulation_points, bridges};
 
 use std::collections::{BinaryHeap, HashMap};
 use std::num::NonZeroUsize;
