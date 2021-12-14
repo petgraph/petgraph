@@ -1416,7 +1416,7 @@ fn test_node_filtered_iterators_directed() {
     };
 
     let gr = make_edge_iterator_graph::<Directed>();
-    let filter = |node: NodeIndex<u32>| node.index() < 4;
+    let filter = |node: NodeIndex<u32>| node.index() < 5; // < 5 makes sure there are edges going both ways between included and excluded nodes (e -> g, f -> e)
     let filtered = NodeFiltered::from_fn(&gr, filter);
 
     for i in gr.node_indices() {
