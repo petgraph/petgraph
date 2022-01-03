@@ -97,8 +97,8 @@ where
 /// `Dot` configuration.
 ///
 /// This enum does not have an exhaustive definition (will be expanded)
-// TODO: #[non_exhaustive] once MSRV >= 1.40,
-// and/or for a breaking change make this something like an EnumSet: https://docs.rs/enumset
+// Maybe, using a breaking change, make this an [EnumSet](https://docs.rs/enumset) if needed.
+#[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
 pub enum Config {
     /// Use indices for node labels.
@@ -111,8 +111,6 @@ pub enum Config {
     NodeNoLabel,
     /// Do not print the graph/digraph string.
     GraphContentOnly,
-    #[doc(hidden)]
-    _Incomplete(()),
 }
 macro_rules! make_config_struct {
     ($($variant:ident,)*) => {
@@ -128,7 +126,6 @@ macro_rules! make_config_struct {
                 for c in configs {
                     match *c {
                         $(Config::$variant => conf.$variant = true,)*
-                        Config::_Incomplete(()) => {}
                     }
                 }
                 conf
