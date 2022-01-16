@@ -348,6 +348,35 @@ fn bipartite() {
 
         assert!(!is_bipartite_undirected(&gr, a));
     }
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+        let d = gr.add_node("D");
+        
+        let e = gr.add_node("E");
+        let f = gr.add_node("F");
+        let g = gr.add_node("G");
+        let h = gr.add_node("H");
+
+        gr.add_edge(a, f, 6.);
+
+        gr.add_edge(b, g, 6.);
+        gr.add_edge(b, h, 6.);
+
+        gr.add_edge(c, f, 6.);
+
+        gr.add_edge(d, e, 6.);
+        gr.add_edge(d, f, 6.);
+
+        assert!(is_bipartite_undirected(&gr, a));
+
+        // b -> g -> h -> b is a disconnected cycle
+        gr.add_edge(g, h, 6.);
+
+        assert!(!is_bipartite_undirected(&gr, a));
+    }
 }
 
 #[test]

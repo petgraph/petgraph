@@ -21,7 +21,7 @@ use std::num::NonZeroUsize;
 
 use crate::prelude::*;
 
-use super::graph::IndexType;
+use super::graph::{IndexType, NodeIndex};
 use super::unionfind::UnionFind;
 use super::visit::{
     GraphBase, GraphRef, IntoEdgeReferences, IntoNeighbors, IntoNeighborsDirected,
@@ -765,18 +765,24 @@ pub struct NegativeCycle(pub ());
 /// Always treats the input graph as if undirected.
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
 where
-    G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
+    G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N> + IntoNodeIdentifiers<NodeId = N>,
     N: Copy + PartialEq + std::fmt::Debug,
-    VM: VisitMap<N>,
+    VM: VisitMap<N>, 
 {
+    let mut node_ids: Vec<N> = g.node_identifiers().map(|id| id).collect();
+    let mut n_blue_nodes = 0;
+    let mut n_red_nodes = 0;
+
     let mut red = g.visit_map();
     red.visit(start);
+    n_red_nodes += 1;
     let mut blue = g.visit_map();
 
     let mut stack = ::std::collections::VecDeque::new();
     stack.push_front(start);
 
     while let Some(node) = stack.pop_front() {
+        node_ids.retain(|&x| x != node);
         let is_red = red.is_visited(&node);
         let is_blue = blue.is_visited(&node);
 
@@ -796,9 +802,11 @@ where
                 match (is_red, is_blue) {
                     (true, false) => {
                         blue.visit(neighbour);
+                        n_blue_nodes += 1;
                     }
                     (false, true) => {
                         red.visit(neighbour);
+                        n_red_nodes += 1;
                     }
                     (_, _) => {
                         panic!("Invariant doesn't hold");
@@ -806,6 +814,19 @@ where
                 }
 
                 stack.push_back(neighbour);
+            }
+        }
+
+        if stack.len() == 0 {
+            if let Some(unvisited_node) = node_ids.pop() {
+                if n_blue_nodes < n_red_nodes {
+                    blue.visit(unvisited_node);
+                } else if n_red_nodes < n_blue_nodes {
+                    red.visit(unvisited_node);
+                } else {
+                    blue.visit(unvisited_node);
+                }
+                stack.push_back(unvisited_node);
             }
         }
     }
