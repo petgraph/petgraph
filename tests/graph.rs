@@ -354,7 +354,7 @@ fn bipartite() {
         let b = gr.add_node("B");
         let c = gr.add_node("C");
         let d = gr.add_node("D");
-        
+
         let e = gr.add_node("E");
         let f = gr.add_node("F");
         let g = gr.add_node("G");

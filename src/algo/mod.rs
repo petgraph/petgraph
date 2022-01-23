@@ -765,9 +765,12 @@ pub struct NegativeCycle(pub ());
 /// Always treats the input graph as if undirected.
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
 where
-    G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N> + IntoNodeIdentifiers<NodeId = N>,
+    G: GraphRef
+        + Visitable<NodeId = N, Map = VM>
+        + IntoNeighbors<NodeId = N>
+        + IntoNodeIdentifiers<NodeId = N>,
     N: Copy + PartialEq + std::fmt::Debug,
-    VM: VisitMap<N>, 
+    VM: VisitMap<N>,
 {
     let mut node_ids: Vec<N> = g.node_identifiers().map(|id| id).collect();
     let mut n_blue_nodes = 0;
