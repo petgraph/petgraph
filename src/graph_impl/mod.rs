@@ -1386,14 +1386,15 @@ where
     /// If no nodes are removed, the resulting graph has compatible node
     /// indices; if neither nodes nor edges are removed, the result has
     /// the same graph indices as `self`.
-    pub fn filter_map<'a, F, G, N2, E2>(
+    pub fn filter_map<'a, F, G, N2, E2, Ix2>(
         &'a self,
         mut node_map: F,
         mut edge_map: G,
-    ) -> Graph<N2, E2, Ty, Ix>
+    ) -> Graph<N2, E2, Ty, Ix2>
     where
         F: FnMut(NodeIndex<Ix>, &'a N) -> Option<N2>,
         G: FnMut(EdgeIndex<Ix>, &'a E) -> Option<E2>,
+        Ix2: IndexType,
     {
         let mut g = Graph::with_capacity(0, 0);
         // mapping from old node index to new node index, end represents removed.
