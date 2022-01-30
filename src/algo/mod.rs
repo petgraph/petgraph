@@ -763,54 +763,55 @@ pub struct NegativeCycle(pub ());
 /// algorithm implements 2-coloring algorithm based on the BFS algorithm.
 ///
 /// Always treats the input graph as if undirected.
-pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
+pub fn is_bipartite_undirected<G, N, VM>(g: G) -> bool
 where
-    G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
-    N: Copy + PartialEq + std::fmt::Debug,
-    VM: VisitMap<N>,
+        G: GraphRef
+                + Visitable<NodeId = N, Map = VM>
+                + IntoNeighbors<NodeId = N>
+                + IntoNodeIdentifiers<NodeId = N>,
+        N: Copy + PartialEq + std::fmt::Debug,
+        VM: VisitMap<N>,
 {
-    let mut red = g.visit_map();
-    red.visit(start);
-    let mut blue = g.visit_map();
+        let node_ids: Vec<N> = g.node_identifiers().map(|id| id).collect();
 
-    let mut stack = ::std::collections::VecDeque::new();
-    stack.push_front(start);
+        let mut red = g.visit_map();
+        let mut blue = g.visit_map();
 
-    while let Some(node) = stack.pop_front() {
-        let is_red = red.is_visited(&node);
-        let is_blue = blue.is_visited(&node);
+        for node in node_ids {
+                for neighbor in g.neighbors(node) {
+                        let is_blue = blue.is_visited(&node);
+                        let is_red = red.is_visited(&node);
+                        let is_neighbor_blue = blue.is_visited(&neighbor);
+                        let is_neighbor_red = red.is_visited(&neighbor);
 
-        assert!(is_red ^ is_blue);
-
-        for neighbour in g.neighbors(node) {
-            let is_neigbour_red = red.is_visited(&neighbour);
-            let is_neigbour_blue = blue.is_visited(&neighbour);
-
-            if (is_red && is_neigbour_red) || (is_blue && is_neigbour_blue) {
-                return false;
-            }
-
-            if !is_neigbour_red && !is_neigbour_blue {
-                //hasn't been visited yet
-
-                match (is_red, is_blue) {
-                    (true, false) => {
-                        blue.visit(neighbour);
-                    }
-                    (false, true) => {
-                        red.visit(neighbour);
-                    }
-                    (_, _) => {
-                        panic!("Invariant doesn't hold");
-                    }
+                        match (is_blue, is_red, is_neighbor_blue, is_neighbor_red) {
+                                (false, false, false, false) => {
+                                        blue.visit(node);
+                                        red.visit(neighbor);
+                                }
+                                (false, false, false, true) => {
+                                        blue.visit(node);
+                                }
+                                (false, false, true, false) => {
+                                        red.visit(node);
+                                }
+                                (true, false, false, false) => {
+                                        red.visit(neighbor);
+                                }
+                                (true, false, false, true) => {
+                                        continue;
+                                }
+                                (false, true, true, false) => {
+                                        continue;
+                                }
+                                (_, _, _, _) => {
+                                        return false
+                                }
+                        }
                 }
-
-                stack.push_back(neighbour);
-            }
         }
-    }
 
-    true
+        true
 }
 
 use std::fmt::Debug;

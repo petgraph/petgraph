@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - rust: 1.41.0  # MSRV
+          - rust: 1.46.0  # MSRV
           - rust: stable
             features: unstable quickcheck
             test_all: --all
