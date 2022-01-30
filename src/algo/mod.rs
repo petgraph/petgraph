@@ -765,53 +765,51 @@ pub struct NegativeCycle(pub ());
 /// Always treats the input graph as if undirected.
 pub fn is_bipartite_undirected<G, N, VM>(g: G) -> bool
 where
-        G: GraphRef
-                + Visitable<NodeId = N, Map = VM>
-                + IntoNeighbors<NodeId = N>
-                + IntoNodeIdentifiers<NodeId = N>,
-        N: Copy + PartialEq + std::fmt::Debug,
-        VM: VisitMap<N>,
+    G: GraphRef
+        + Visitable<NodeId = N, Map = VM>
+        + IntoNeighbors<NodeId = N>
+        + IntoNodeIdentifiers<NodeId = N>,
+    N: Copy + PartialEq + std::fmt::Debug,
+    VM: VisitMap<N>,
 {
-        let node_ids: Vec<N> = g.node_identifiers().map(|id| id).collect();
+    let node_ids: Vec<N> = g.node_identifiers().map(|id| id).collect();
 
-        let mut red = g.visit_map();
-        let mut blue = g.visit_map();
+    let mut red = g.visit_map();
+    let mut blue = g.visit_map();
 
-        for node in node_ids {
-                for neighbor in g.neighbors(node) {
-                        let is_blue = blue.is_visited(&node);
-                        let is_red = red.is_visited(&node);
-                        let is_neighbor_blue = blue.is_visited(&neighbor);
-                        let is_neighbor_red = red.is_visited(&neighbor);
+    for node in node_ids {
+        for neighbor in g.neighbors(node) {
+            let is_blue = blue.is_visited(&node);
+            let is_red = red.is_visited(&node);
+            let is_neighbor_blue = blue.is_visited(&neighbor);
+            let is_neighbor_red = red.is_visited(&neighbor);
 
-                        match (is_blue, is_red, is_neighbor_blue, is_neighbor_red) {
-                                (false, false, false, false) => {
-                                        blue.visit(node);
-                                        red.visit(neighbor);
-                                }
-                                (false, false, false, true) => {
-                                        blue.visit(node);
-                                }
-                                (false, false, true, false) => {
-                                        red.visit(node);
-                                }
-                                (true, false, false, false) => {
-                                        red.visit(neighbor);
-                                }
-                                (true, false, false, true) => {
-                                        continue;
-                                }
-                                (false, true, true, false) => {
-                                        continue;
-                                }
-                                (_, _, _, _) => {
-                                        return false
-                                }
-                        }
+            match (is_blue, is_red, is_neighbor_blue, is_neighbor_red) {
+                (false, false, false, false) => {
+                    blue.visit(node);
+                    red.visit(neighbor);
                 }
+                (false, false, false, true) => {
+                    blue.visit(node);
+                }
+                (false, false, true, false) => {
+                    red.visit(node);
+                }
+                (true, false, false, false) => {
+                    red.visit(neighbor);
+                }
+                (true, false, false, true) => {
+                    continue;
+                }
+                (false, true, true, false) => {
+                    continue;
+                }
+                (_, _, _, _) => return false,
+            }
         }
+    }
 
-        true
+    true
 }
 
 use std::fmt::Debug;
