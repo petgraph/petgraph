@@ -634,6 +634,91 @@ where
     condensed
 }
 
+
+/// [Graph] Condense every strongly connected component into a single node and return the result.
+///
+/// The nodes in the condensed version of the graph are labelled with
+/// the indices of the nodes they stand for.  The edges of the
+/// condensed graph are unlabelled.  If `make_acyclic` is true,
+/// self-loops and multi edges are ignored, guaranteeing that the
+/// output is acyclic.
+///
+/// # Example
+/// ```rust
+/// use petgraph::Graph;
+/// use petgraph::algo::condensation_indices;
+/// use petgraph::prelude::*;
+///
+/// let mut graph : Graph<(),(),Directed> = Graph::new();
+/// let a = graph.add_node(()); // node with no weight
+/// let b = graph.add_node(());
+/// let c = graph.add_node(());
+/// let d = graph.add_node(());
+/// let e = graph.add_node(());
+/// let f = graph.add_node(());
+/// let g = graph.add_node(());
+/// let h = graph.add_node(());
+///
+/// graph.extend_with_edges(&[
+///     (a, b),
+///     (b, c),
+///     (c, d),
+///     (d, a),
+///     (b, e),
+///     (e, f),
+///     (f, g),
+///     (g, h),
+///     (h, e)
+/// ]);
+///
+/// // a ----> b ----> e ----> f
+/// // ^       |       ^       |
+/// // |       v       |       v
+/// // d <---- c       h <---- g
+///
+/// use std::collections::HashSet;
+/// let condensed_graph = condensation_indices(&graph,false);
+/// let A = NodeIndex::new(0);
+/// let B = NodeIndex::new(1);
+/// assert_eq!(condensed_graph.node_count(), 2);
+/// assert_eq!(condensed_graph.edge_count(), 9);
+/// assert_eq!(condensed_graph.neighbors(A).collect::<Vec<_>>(), vec![A, A, A, A]);
+/// assert_eq!(condensed_graph.neighbors(B).collect::<Vec<_>>(), vec![A, B, B, B, B]);
+/// let scc_B = vec![&a, &b, &c, &d].into_iter().collect::<HashSet<_>>();
+/// assert_eq!(condensed_graph.node_weight(B).expect("").into_iter().collect::<HashSet<_>>(), scc_B);
+/// ```
+pub fn condensation_indices<N, E, Ty, Ix>(
+    g: &Graph<N, E, Ty, Ix>,
+    make_acyclic: bool) -> Graph<Vec<NodeIndex<Ix>>, (), Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType {
+    let sccs = kosaraju_scc(&g);
+    let mut condensed = Graph::with_capacity(sccs.len(), g.edge_count());
+
+    let mut node_map = vec![NodeIndex::end(); g.node_count()];
+    for comp in sccs {
+        let new_nix = condensed.add_node(Vec::new());
+        for nix in comp {
+            node_map[nix.index()] = new_nix;
+	    condensed[new_nix].push(nix);
+        }
+    }
+    for edge in g.edge_references() {
+	let source = node_map[edge.source().index()];
+	let target = node_map[edge.target().index()];
+	if make_acyclic {
+            if source != target {
+                condensed.update_edge(source, target, ());
+            }
+        } else {
+            condensed.add_edge(source, target, ());
+        }
+    }
+    condensed
+}
+
+
 /// \[Generic\] Compute a *minimum spanning tree* of a graph.
 ///
 /// The input graph is treated as if undirected.
