@@ -23,7 +23,7 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
+    bellman_ford, condensation, condensation_indices, dijkstra, find_negative_cycle, floyd_warshall,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
     min_spanning_tree, tarjan_scc, toposort, Matching,
@@ -566,6 +566,26 @@ fn graph_condensation_acyclic() {
     }
     quickcheck::quickcheck(prop as fn(_) -> bool);
 }
+
+
+#[test]
+fn graph_iso_condensation_condensation_indices() {
+    // condensation and condensation_indices yield the same result, module weights.
+    fn prop(g: Graph<(), ()>) -> bool {
+	let mut res = true;
+	for make_acyclic in [true, false] {
+	    let cond = condensation(g.clone(), make_acyclic);
+	    let cond_ind = condensation_indices(&g, make_acyclic);
+	    let cond_shape = cond.map(|_, _| (), |_, _| ()).edge_references().map(|e| (e.source(), e.target())).collect::<Vec<_>>();
+	    let cond_ind_shape = cond_ind.map(|_, _| (), |_, _| ()).edge_references().map(|e| (e.source(), e.target())).collect::<Vec<_>>();
+	    res = res && cond_shape == cond_ind_shape;
+	}
+	res
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
+}
+
+
 
 #[derive(Debug, Clone)]
 struct DAG<N: Default + Clone + Send + 'static>(Graph<N, ()>);

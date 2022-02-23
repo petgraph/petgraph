@@ -1021,6 +1021,7 @@ fn tarjan_scc() {
     );
 }
 
+
 #[test]
 fn condensation() {
     let gr: Graph<(), ()> = Graph::from_edges(&[
@@ -1053,6 +1054,44 @@ fn condensation() {
     // make_acyclic = false
 
     let cond = petgraph::algo::condensation(gr.clone(), false);
+
+    assert!(cond.node_count() == 3);
+    assert!(cond.edge_count() == gr.edge_count());
+}
+
+
+#[test]
+fn condensation_indices() {
+    let gr: Graph<(), ()> = Graph::from_edges(&[
+        (6, 0),
+        (0, 3),
+        (3, 6),
+        (8, 6),
+        (8, 2),
+        (2, 3),
+        (2, 5),
+        (5, 8),
+        (7, 5),
+        (1, 7),
+        (7, 4),
+        (4, 1),
+    ]);
+
+    // make_acyclic = true
+
+    let cond = petgraph::algo::condensation_indices(&gr, true);
+
+    assert!(cond.node_count() == 3);
+    assert!(cond.edge_count() == 2);
+    assert!(
+        !petgraph::algo::is_cyclic_directed(&cond),
+        "Assertion failed: {:?} acyclic",
+        cond
+    );
+
+    // make_acyclic = false
+
+    let cond = petgraph::algo::condensation_indices(&gr, false);
 
     assert!(cond.node_count() == 3);
     assert!(cond.edge_count() == gr.edge_count());
