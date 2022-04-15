@@ -506,6 +506,42 @@ where
         }
     }
 
+    /// Convert this graph into a new graph with nodes' weight converted with a
+    /// function `FnMut(N) -> NewN`
+    pub fn convert_node_weight<NewN, F>(self, mut f: F) -> StableGraph<NewN, E, Ty, Ix>
+    where
+        F: FnMut(N) -> NewN
+    {
+        StableGraph {
+            g: self.g.convert_node_weight(|opt_node| match opt_node {
+                Some(node) => Some(f(node)),
+                None => None
+            }),
+            node_count: self.node_count,
+            edge_count: self.node_count,
+            free_node: self.free_node,
+            free_edge: self.free_edge
+        }
+    }
+
+    /// Convert this graph into a new graph with edges' weight converted with a
+    /// function `FnMut(E) -> NewE`
+    pub fn convert_edge_weight<NewE, F>(self, mut f: F) -> StableGraph<N, NewE, Ty, Ix>
+    where
+        F: FnMut(E) -> NewE
+    {
+        StableGraph {
+            g: self.g.convert_edge_weight(|opt_edge| match opt_edge {
+                Some(edge) => Some(f(edge)),
+                None => None
+            }),
+            node_count: self.node_count,
+            edge_count: self.node_count,
+            free_node: self.free_node,
+            free_edge: self.free_edge
+        }
+    }
+
     /// Access the weight for edge `e`.
     ///
     /// Also available with indexing syntax: `&graph[e]`.

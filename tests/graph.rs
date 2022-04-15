@@ -1202,6 +1202,38 @@ fn test_weight_iterators() {
 }
 
 #[test]
+fn test_weight_converter() {
+    let mut gr = Graph::<_, _>::new();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
+    let g = gr.add_node("G");
+    gr.add_edge(a, b, 7.0);
+    gr.add_edge(a, d, 5.);
+    gr.add_edge(d, b, 9.);
+    gr.add_edge(b, c, 8.);
+    gr.add_edge(b, e, 7.);
+    let c_e = gr.add_edge(c, e, 5.);
+    gr.add_edge(d, e, 15.);
+    gr.add_edge(d, f, 6.);
+    gr.add_edge(f, e, 8.);
+    gr.add_edge(f, g, 11.);
+    gr.add_edge(e, g, 9.);
+
+    let gr = gr.convert_edge_weight(|s| -s);
+    assert_eq!(*(gr.edge_weight(c_e).unwrap()), -5.);
+
+    let gr = gr.convert_edge_weight(|s| format!("{}", s));
+    assert_eq!(*(gr.edge_weight(c_e).unwrap()), "-5");
+
+    let gr = gr.convert_node_weight(|n| n.to_ascii_lowercase());
+    assert_eq!(*(gr.node_weight(a).unwrap()), "a".to_string());
+}
+
+#[test]
 fn walk_edges() {
     let mut gr = Graph::<_, _>::new();
     let a = gr.add_node(0.);

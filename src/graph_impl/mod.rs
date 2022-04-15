@@ -1013,6 +1013,24 @@ where
         }
     }
 
+    /// Convert this graph into a new graph with nodes' weight converted with a
+    /// function `FnMut(N) -> NewN`
+    pub fn convert_node_weight<NewN, F>(self, mut f: F) -> Graph<NewN, E, Ty, Ix>
+    where
+        F: FnMut(N) -> NewN
+    {
+        Graph { 
+            nodes: self.nodes.into_iter().map(|n| {
+                Node { 
+                    weight: f(n.weight),
+                    next: n.next
+                }
+            }).collect(), 
+            edges: self.edges, 
+            ty: self.ty
+        }
+    }
+
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<Ix> {
         EdgeIndices {
@@ -1046,6 +1064,25 @@ where
     pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<E, Ix> {
         EdgeWeightsMut {
             edges: self.edges.iter_mut(),
+        }
+    }
+
+    /// Convert this graph into a new graph with edges' weight converted with a
+    /// function `FnMut(E) -> NewE`
+    pub fn convert_edge_weight<NewE, F>(self, mut f: F) -> Graph<N, NewE, Ty, Ix>
+    where
+        F: FnMut(E) -> NewE
+    {
+        Graph {
+            nodes: self.nodes,
+            edges: self.edges.into_iter().map(|e| {
+                Edge { 
+                    weight: f(e.weight),
+                    next: e.next,
+                    node: e.node
+                }
+            }).collect(),
+            ty: self.ty
         }
     }
 
