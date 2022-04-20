@@ -49,7 +49,7 @@ where
     type Edges = ReversedEdges<G::EdgesDirected>;
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         ReversedEdges {
-            iter: self.0.edges_directed(a, Incoming),
+            inner: self.0.edges_directed(a, Incoming),
         }
     }
 }
@@ -61,7 +61,7 @@ where
     type EdgesDirected = ReversedEdges<G::EdgesDirected>;
     fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::Edges {
         ReversedEdges {
-            iter: self.0.edges_directed(a, dir.opposite()),
+            inner: self.0.edges_directed(a, dir.opposite()),
         }
     }
 }
@@ -79,7 +79,7 @@ impl<G: Visitable> Visitable for Reversed<G> {
 /// A reversed edges iterator.
 #[derive(Debug, Clone)]
 pub struct ReversedEdges<I> {
-    iter: I,
+    pub inner: I,
 }
 
 impl<I> Iterator for ReversedEdges<I>
@@ -89,16 +89,16 @@ where
 {
     type Item = ReversedEdgeReference<I::Item>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(ReversedEdgeReference)
+        self.inner.next().map(ReversedEdgeReference)
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+        self.inner.size_hint()
     }
 }
 
 /// A reversed edge reference
 #[derive(Copy, Clone, Debug)]
-pub struct ReversedEdgeReference<R>(R);
+pub struct ReversedEdgeReference<R>(pub R);
 
 impl<R> ReversedEdgeReference<R> {
     /// Return the original, unreversed edge reference.
@@ -142,7 +142,7 @@ where
     type EdgeReferences = ReversedEdgeReferences<G::EdgeReferences>;
     fn edge_references(self) -> Self::EdgeReferences {
         ReversedEdgeReferences {
-            iter: self.0.edge_references(),
+            inner: self.0.edge_references(),
         }
     }
 }
@@ -150,7 +150,7 @@ where
 /// A reversed edge references iterator.
 #[derive(Debug, Clone)]
 pub struct ReversedEdgeReferences<I> {
-    iter: I,
+    pub inner: I,
 }
 
 impl<I> Iterator for ReversedEdgeReferences<I>
@@ -160,10 +160,10 @@ where
 {
     type Item = ReversedEdgeReference<I::Item>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(ReversedEdgeReference)
+        self.inner.next().map(ReversedEdgeReference)
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+        self.inner.size_hint()
     }
 }
 
