@@ -1,3 +1,12 @@
+Version 0.6.1 (2022-05-22)
+==========================
+
+- Added clarifications on Graph docs (`491`_).
+- Fix build errors on rust 1.41 (`493`_)
+
+.. _`#491`: https://github.com/petgraph/petgraph/issues/491
+.. _`#493`: https://github.com/petgraph/petgraph/issues/493
+
 Version 0.6.0 (2021-07-04)
 ==========================
 
