@@ -294,21 +294,21 @@ fn bipartite() {
         gr.add_edge(a, d, 7.);
         gr.add_edge(b, d, 6.);
 
-        assert!(is_bipartite_undirected(&gr, a));
+        assert!(is_bipartite_undirected(&gr));
 
         let e_index = gr.add_edge(a, b, 6.);
 
-        assert!(!is_bipartite_undirected(&gr, a));
+        assert!(!is_bipartite_undirected(&gr));
 
         gr.remove_edge(e_index);
 
-        assert!(is_bipartite_undirected(&gr, a));
+        assert!(is_bipartite_undirected(&gr));
 
         gr.add_edge(b, e, 7.);
         gr.add_edge(b, f, 6.);
         gr.add_edge(c, e, 6.);
 
-        assert!(is_bipartite_undirected(&gr, a));
+        assert!(is_bipartite_undirected(&gr));
     }
     {
         let mut gr = Graph::new_undirected();
@@ -342,11 +342,95 @@ fn bipartite() {
         gr.add_edge(e, g, 6.);
         gr.add_edge(e, h, 6.);
 
-        assert!(is_bipartite_undirected(&gr, a));
+        assert!(is_bipartite_undirected(&gr));
 
         gr.add_edge(a, b, 6.);
 
-        assert!(!is_bipartite_undirected(&gr, a));
+        assert!(!is_bipartite_undirected(&gr));
+    }
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+        let d = gr.add_node("D");
+
+        let e = gr.add_node("E");
+        let f = gr.add_node("F");
+        let g = gr.add_node("G");
+        let h = gr.add_node("H");
+
+        gr.add_edge(a, f, 6.);
+
+        gr.add_edge(b, g, 6.);
+        gr.add_edge(b, h, 6.);
+
+        gr.add_edge(c, f, 6.);
+
+        gr.add_edge(d, e, 6.);
+        gr.add_edge(d, f, 6.);
+
+        assert!(is_bipartite_undirected(&gr));
+
+        // b -> g -> h -> b is a disconnected cycle
+        gr.add_edge(g, h, 6.);
+
+        assert!(!is_bipartite_undirected(&gr));
+    }
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+        let d = gr.add_node("D");
+        let e = gr.add_node("E");
+        let f = gr.add_node("F");
+
+        gr.add_edge(a, b, 6.);
+        gr.add_edge(a, c, 6.);
+        gr.add_edge(a, d, 6.);
+        gr.add_edge(a, e, 6.);
+        gr.add_edge(a, f, 6.);
+
+        assert!(is_bipartite_undirected(&gr));
+
+        gr.add_edge(e, f, 6.);
+
+        assert!(!is_bipartite_undirected(&gr));
+    }
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("A");
+        let b = gr.add_node("B");
+        let c = gr.add_node("C");
+        let d = gr.add_node("D");
+        let e = gr.add_node("E");
+
+        let f = gr.add_node("F");
+        let g = gr.add_node("B");
+        let h = gr.add_node("C");
+        let i = gr.add_node("D");
+        let j = gr.add_node("E");
+
+        gr.add_edge(a, g, 6.);
+        gr.add_edge(a, h, 6.);
+        gr.add_edge(b, f, 6.);
+        gr.add_edge(b, g, 6.);
+        gr.add_edge(b, i, 6.);
+        gr.add_edge(b, j, 6.);
+        gr.add_edge(c, g, 6.);
+        gr.add_edge(c, h, 6.);
+        gr.add_edge(d, g, 6.);
+        gr.add_edge(d, h, 6.);
+        gr.add_edge(e, i, 6.);
+        gr.add_edge(e, j, 6.);
+
+        assert!(is_bipartite_undirected(&gr));
+
+        gr.add_edge(f, j, 6.);
+
+        assert!(!is_bipartite_undirected(&gr));
     }
 }
 
