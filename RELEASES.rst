@@ -1,8 +1,15 @@
+Version 0.6.2 (2022-05-28)
+==========================
+
+- Loosed the strict version dependency set in `493`_, to allow users to use newer versions of indexmap  (`495`_).
+
+.. _`#495`: https://github.com/petgraph/petgraph/issues/493
+
 Version 0.6.1 (2022-05-22)
 ==========================
 
 - Added clarifications on Graph docs (`491`_).
-- Fix build errors on rust 1.41 (`493`_)
+- Fix build errors on rust 1.41 (`493`_).
 
 .. _`#491`: https://github.com/petgraph/petgraph/issues/491
 .. _`#493`: https://github.com/petgraph/petgraph/issues/493
