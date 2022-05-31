@@ -11,6 +11,7 @@ extern crate odds;
 
 mod utils;
 
+use petgraph::graph::DefaultIx;
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
@@ -55,7 +56,7 @@ use std::fmt;
 quickcheck! {
     fn mst_directed(g: Small<Graph<(), u32>>) -> bool {
         // filter out isolated nodes
-        let no_singles = g.filter_map(
+        let no_singles: Graph<_, _, _, DefaultIx> = g.filter_map(
             |nx, w| g.neighbors_undirected(nx).next().map(|_| w),
             |_, w| Some(w));
         for i in no_singles.node_indices() {
@@ -71,7 +72,7 @@ quickcheck! {
 quickcheck! {
     fn mst_undirected(g: Graph<(), u32, Undirected>) -> bool {
         // filter out isolated nodes
-        let no_singles = g.filter_map(
+        let no_singles: Graph<_, _, _, DefaultIx> = g.filter_map(
             |nx, w| g.neighbors_undirected(nx).next().map(|_| w),
             |_, w| Some(w));
         for i in no_singles.node_indices() {
@@ -161,7 +162,7 @@ fn graph_retain_nodes() {
         assert_eq!(num_pos_post, g.node_count());
 
         // check against filter_map
-        let filtered = og.filter_map(
+        let filtered: Graph<_, _, _, DefaultIx> = og.filter_map(
             |_, w| if *w >= 0 { Some(*w) } else { None },
             |_, w| Some(*w),
         );
@@ -206,7 +207,7 @@ fn graph_retain_edges() {
         assert_eq!(num_pos_post, g.edge_count());
         if og.edge_count() < 30 {
             // check against filter_map
-            let filtered = og.filter_map(
+            let filtered: Graph<_, _, _, DefaultIx> = og.filter_map(
                 |_, w| Some(*w),
                 |_, w| if *w >= 0 { Some(*w) } else { None },
             );
