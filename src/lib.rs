@@ -93,7 +93,7 @@
 //! # Crate features
 //!
 //! * **serde-1** -
-//!   Defaults off. Enables serialization for ``Graph, StableGraph`` using
+//!   Defaults off. Enables serialization for ``Graph, StableGraph, GraphMap`` using
 //!   [`serde 1.0`](https://crates.io/crates/serde). May require a more recent version
 //!   of Rust than petgraph alone.
 //! * **graphmap** -

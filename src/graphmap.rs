@@ -116,6 +116,51 @@ impl PartialEq<Direction> for CompactDirection {
     }
 }
 
+#[cfg(feature = "serde-1")]
+impl<N, E, Ty> serde::Serialize for GraphMap<N, E, Ty>
+where
+    Ty: EdgeType,
+    N: NodeTrait + serde::Serialize,
+    E: serde::Serialize,
+    GraphMap<N, E, Ty>: Clone,
+{
+    /// Serializes the given `GraphMap` into the same format as the standard
+    /// `Graph`. Needs feature `serde-1`.
+    ///
+    /// Note: the graph has to be `Clone` for this to work.
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let cloned_graph: GraphMap<N, E, Ty> = GraphMap::clone(self);
+        let equivalent_graph: Graph<N, E, Ty, u32> = cloned_graph.into_graph();
+        equivalent_graph.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde-1")]
+impl<'de, N, E, Ty> serde::Deserialize<'de> for GraphMap<N, E, Ty>
+where
+    Ty: EdgeType,
+    N: NodeTrait + serde::Deserialize<'de>,
+    E: Clone + serde::Deserialize<'de>,
+{
+    /// Deserializes into a new `GraphMap` from the same format as the standard
+    /// `Graph`. Needs feature `serde-1`.
+    ///
+    /// **Warning**: When deseralizing a graph that was not originally a `GraphMap`,
+    /// the restrictions from [`from_graph`](#method.from_graph) apply.
+    ///
+    /// Note: The edge weights have to be `Clone` for this to work.
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let equivalent_graph: Graph<N, E, Ty, u32> = Graph::deserialize(deserializer)?;
+        Ok(GraphMap::from_graph(equivalent_graph))
+    }
+}
+
 impl<N, E, Ty> GraphMap<N, E, Ty>
 where
     N: NodeTrait,
