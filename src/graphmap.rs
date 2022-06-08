@@ -477,6 +477,37 @@ where
         }
         gr
     }
+
+    /// Creates a `GraphMap` that corresponds to the given `Graph`.
+    ///
+    /// **Warning**: Nodes with the same weight are merged and only the last parallel edge
+    /// is kept. Node and edge indices of the `Graph` are lost. Only use this function
+    /// if the node weights are distinct and there are no parallel edges.
+    ///
+    /// Computes in **O(|V| + |E|)** time (average).
+    pub fn from_graph<Ix>(graph: Graph<N, E, Ty, Ix>) -> Self
+    where
+        Ix: crate::graph::IndexType,
+        E: Clone,
+    {
+        let mut new_graph: GraphMap<N, E, Ty> =
+            GraphMap::with_capacity(graph.node_count(), graph.edge_count());
+
+        for node in graph.raw_nodes() {
+            new_graph.add_node(node.weight);
+        }
+
+        for edge in graph.edge_indices() {
+            let (a, b) = graph.edge_endpoints(edge).unwrap();
+            new_graph.add_edge(
+                *graph.node_weight(a).unwrap(),
+                *graph.node_weight(b).unwrap(),
+                graph.edge_weight(edge).unwrap().clone(),
+            );
+        }
+
+        new_graph
+    }
 }
 
 /// Create a new `GraphMap` from an iterable of edges.
