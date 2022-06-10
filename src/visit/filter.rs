@@ -263,6 +263,7 @@ where
             include_source: self.1.include_node(a),
             iter: self.0.edges(a),
             f: &self.1,
+            dir: Direction::Outgoing,
         }
     }
 }
@@ -279,6 +280,7 @@ where
             include_source: self.1.include_node(a),
             iter: self.0.edges_directed(a, dir),
             f: &self.1,
+            dir,
         }
     }
 }
@@ -290,6 +292,7 @@ pub struct NodeFilteredEdges<'a, G, I, F: 'a> {
     include_source: bool,
     iter: I,
     f: &'a F,
+    dir: Direction,
 }
 
 impl<'a, G, I, F> Iterator for NodeFilteredEdges<'a, G, I, F>
@@ -303,8 +306,14 @@ where
         if !self.include_source {
             None
         } else {
+            let dir = self.dir;
             let f = self.f;
-            self.iter.find(move |&edge| f.include_node(edge.target()))
+            self.iter.find(move |&edge| {
+                f.include_node(match dir {
+                    Direction::Outgoing => edge.target(),
+                    Direction::Incoming => edge.source(),
+                })
+            })
         }
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
