@@ -1,5 +1,5 @@
 use petgraph::algo::floyd_warshall;
-use petgraph::{prelude::*, Directed, Graph};
+use petgraph::{prelude::*, Directed, Graph, Undirected};
 use std::collections::HashMap;
 
 #[test]
@@ -154,6 +154,74 @@ fn floyd_warshall_weighted() {
         ((b, b), 0),
         ((b, c), 2),
         ((b, d), 2),
+        ((c, c), 0),
+        ((c, d), 2),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    let res = floyd_warshall(&graph, |edge| {
+        if let Some(weight) = weight_map.get(&(edge.source(), edge.target())) {
+            *weight
+        } else {
+            inf
+        }
+    })
+    .unwrap();
+
+    let nodes = [a, b, c, d];
+    for node1 in &nodes {
+        for node2 in &nodes {
+            assert_eq!(
+                res.get(&(*node1, *node2)).unwrap(),
+                expected_res.get(&(*node1, *node2)).unwrap()
+            );
+        }
+    }
+}
+
+#[test]
+fn floyd_warshall_weighted_undirected() {
+    let mut graph: Graph<(), (), Undirected> = Graph::new_undirected();
+    let a = graph.add_node(());
+    let b = graph.add_node(());
+    let c = graph.add_node(());
+    let d = graph.add_node(());
+
+    graph.extend_with_edges(&[(a, b), (a, c), (a, d), (b, d), (c, b), (c, d)]);
+
+    let inf = std::i32::MAX;
+    let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
+        ((a, a), 0),
+        ((a, b), 1),
+        ((a, c), 3),
+        ((a, d), 3),
+        ((b, a), 1),
+        ((b, b), 0),
+        ((b, c), 2),
+        ((b, d), 2),
+        ((c, a), 3),
+        ((c, b), 2),
+        ((c, c), 0),
+        ((c, d), 2),
+        ((d, a), 3),
+        ((d, b), 2),
+        ((d, c), 2),
+        ((d, d), 0),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    let weight_map: HashMap<(NodeIndex, NodeIndex), i32> = [
+        ((a, a), 0),
+        ((a, b), 1),
+        ((a, c), 4),
+        ((a, d), 10),
+        ((b, b), 0),
+        ((b, d), 2),
+        ((c, b), 2),
         ((c, c), 0),
         ((c, d), 2),
     ]
