@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use crate::algo::{BoundedMeasure, NegativeCycle};
-use crate::visit::{EdgeRef, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable};
+use crate::visit::{
+    EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable,
+};
 
 #[allow(clippy::type_complexity, clippy::needless_range_loop)]
 /// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
@@ -81,7 +83,7 @@ pub fn floyd_warshall<G, F, K>(
     mut edge_cost: F,
 ) -> Result<HashMap<(G::NodeId, G::NodeId), K>, NegativeCycle>
 where
-    G: NodeCompactIndexable + IntoEdgeReferences + IntoNodeIdentifiers,
+    G: NodeCompactIndexable + IntoEdgeReferences + IntoNodeIdentifiers + GraphProp,
     G::NodeId: Eq + Hash,
     F: FnMut(G::EdgeRef) -> K,
     K: BoundedMeasure + Copy,
@@ -94,6 +96,9 @@ where
     // init distances of paths with no intermediate nodes
     for edge in graph.edge_references() {
         dist[graph.to_index(edge.source())][graph.to_index(edge.target())] = edge_cost(edge);
+        if !graph.is_directed() {
+            dist[graph.to_index(edge.target())][graph.to_index(edge.source())] = edge_cost(edge);
+        }
     }
 
     // distance of each node to itself is 0(default value)
