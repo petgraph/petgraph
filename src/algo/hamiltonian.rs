@@ -98,6 +98,7 @@ where
                 // Special case for graphs of 1 or 2 nodes - they have
                 // no circuits by convention.
                 partial_paths.skip_latest_node();
+                partial_paths.skip_latest_node();
             }
             _ => (),
         };
@@ -784,6 +785,7 @@ where
 {
     graph: G,
     stack: PathsStack<G>,
+    prev_last_node_index: Option<<G as GraphBase>::NodeId>,
 }
 
 impl<G> PartialPaths<G>
@@ -792,16 +794,21 @@ where
 {
     fn new(graph: G) -> Self {
         let stack = PathsStack::new(graph);
-        Self { graph, stack }
+        Self {
+            graph,
+            stack,
+            prev_last_node_index: None,
+        }
     }
 
     fn next(&mut self) -> Option<PartialPath<G>> {
         if self.stack.is_empty() {
             None
         } else {
-            let ret = Some(self.partial_path());
+            let ret = self.partial_path();
+            self.prev_last_node_index = ret.nodes.last().map(|i| *i);
             self.move_next();
-            ret
+            Some(ret)
         }
     }
 
@@ -811,7 +818,8 @@ where
         if let Some(last_node) = last_node {
             while let Some(next_neighbor) = last_node.neighbors.next() {
                 if !path_so_far.contains(&next_neighbor) {
-                    return self.stack.push(StackItem::new(self.graph, next_neighbor));
+                    self.stack.push(StackItem::new(self.graph, next_neighbor));
+                    return;
                 }
             }
             self.stack.pop();
@@ -820,9 +828,14 @@ where
     }
 
     fn skip_latest_node(&mut self) -> Option<PartialPath<G>> {
-        self.stack.pop();
-        self.stack.pop();
-        self.move_next();
+        let mut popped = false;
+        while self.stack.contains(self.prev_last_node_index) {
+            self.stack.pop();
+            popped = true;
+        }
+        if popped {
+            self.move_next();
+        }
         self.next()
     }
 
@@ -877,6 +890,14 @@ where
 
     fn node_indexes(&self) -> Vec<<G as GraphBase>::NodeId> {
         self.0.iter().map(|item| item.node_index).collect()
+    }
+
+    fn contains(&self, node_index: Option<<G as GraphBase>::NodeId>) -> bool {
+        if let Some(node_index) = node_index {
+            self.0.iter().any(|item| item.node_index == node_index)
+        } else {
+            false
+        }
     }
 }
 
