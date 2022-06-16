@@ -665,8 +665,12 @@ impl Classification {
         self.delete_all(to_delete)
     }
 
-    fn forms_a_circuit_with_required(&self, edge: EdgeReference<EdgeRequired, usize>) -> bool {
+    fn forms_a_short_circuit_with_required(
+        &self,
+        edge: EdgeReference<EdgeRequired, usize>,
+    ) -> bool {
         let mut visited = Vec::<NodeIndex<usize>>::new();
+        visited.push(edge.target());
         // Follow a path of required edges.
         let mut next_edge = self.outgoing_required_edge(edge.target());
         while let Some(ne) = next_edge {
@@ -676,7 +680,13 @@ impl Classification {
             visited.push(ne.target());
             if ne.target() == edge.source() {
                 // If we got back to the beginning, we made a circuit
-                return true;
+                if visited.len() == self.classes.node_count() {
+                    // We made a Hamiltonian circuit!
+                    return false;
+                } else {
+                    // We made a smaller circuit
+                    return true;
+                }
             }
             next_edge = self.outgoing_required_edge(ne.target());
         }
@@ -686,13 +696,12 @@ impl Classification {
 
     fn delete_invalid_circuit_forming_edges(&mut self) -> bool {
         let mut to_delete = Vec::<(NodeIndex<usize>, NodeIndex<usize>)>::new();
-        let first_node = node_index(0);
         for edge in self
             .classes
             .edge_references()
             .filter(|e| *e.weight() == EdgeRequired::Undecided)
         {
-            if edge.target() != first_node && self.forms_a_circuit_with_required(edge) {
+            if self.forms_a_short_circuit_with_required(edge) {
                 to_delete.push((edge.source(), edge.target()));
             }
         }
@@ -1156,6 +1165,96 @@ mod test {
         assert!(partial_paths.next().is_none());
     }
 
+    #[test]
+    fn graph_with_one_required_edge_can_be_walked() {
+        // Create a 1 node graph
+        let g = Graph::<(), ()>::from_edges(&[
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (1, 0), // The only edge from 1 is to 0.
+            (2, 0), // Everything else is connected.
+            (2, 1),
+            (2, 3),
+            (3, 0),
+            (3, 1),
+            (3, 2),
+        ]);
+
+        let mut partial_paths = PartialPaths::new(&g);
+
+        assert_eq!(vec![0], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 3], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 3, 2], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 3, 2, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 3, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2, 3], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2, 3, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 1], as_vec(partial_paths.next()));
+        assert!(partial_paths.next().is_none());
+    }
+
+    #[test]
+    fn graph_with_one_required_edge_can_be_walked_with_meaningless_skip() {
+        // Create a 1 node graph
+        let g = Graph::<(), ()>::from_edges(&[
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (1, 0), // The only edge from 1 is to 0.
+            (2, 0), // Everything else is connected.
+            (2, 1),
+            (2, 3),
+            (3, 0),
+            (3, 1),
+            (3, 2),
+        ]);
+
+        let mut partial_paths = PartialPaths::new(&g);
+
+        assert_eq!(vec![0], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 3], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 3, 2], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 3, 2, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 3, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2], as_vec(partial_paths.skip_latest_node())); // Skipping 0,3,1 should jump to 0,2
+        assert_eq!(vec![0, 2, 3], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2, 3, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 1], as_vec(partial_paths.next()));
+        assert!(partial_paths.next().is_none());
+    }
+
+    #[test]
+    fn graph_with_one_required_edge_can_be_walked_with_meaningful_skip() {
+        // Create a 1 node graph
+        let g = Graph::<(), ()>::from_edges(&[
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (1, 0), // The only edge from 1 is to 0.
+            (2, 0), // Everything else is connected.
+            (2, 1),
+            (2, 3),
+            (3, 0),
+            (3, 1),
+            (3, 2),
+        ]);
+
+        let mut partial_paths = PartialPaths::new(&g);
+
+        assert_eq!(vec![0], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 3], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2], as_vec(partial_paths.skip_latest_node())); // Skipping 0,3 should jump to 0,2
+        assert_eq!(vec![0, 2, 3], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2, 3, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 2, 1], as_vec(partial_paths.next()));
+        assert_eq!(vec![0, 1], as_vec(partial_paths.next()));
+        assert!(partial_paths.next().is_none());
+    }
+
     // --- Tests for Classification ---
 
     fn path(g: &Graph<(), ()>, raw: Vec<usize>) -> PartialPath<&Graph<(), ()>> {
@@ -1266,6 +1365,64 @@ mod test {
 
         // Now when we do it again, it is not updated
         assert!(!c.unique_edges_are_required());
+    }
+
+    #[test]
+    fn we_make_unique_edges_required_and_delete_edges_next_to_required() {
+        let g = Graph::<(), ()>::from_edges(&[
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (1, 0), // The only edge from 1 is to 0.
+            (2, 0), // Everything else is connected.
+            (2, 1),
+            (2, 3),
+            (3, 0),
+            (3, 1),
+            (3, 2),
+        ]);
+
+        // Given 0->3 is already required
+        let mut c = Classification::new(&g);
+        c.partial_path_is_required(&g, &path(&g, vec![0, 3]));
+
+        assert_eq!(
+            "\
+            0 -> R3 _2 _1\n\
+            1 -> _0\n\
+            2 -> _3 _1 _0\n\
+            3 -> _2 _1\n\
+            ",
+            format!("{:?}", c)
+        );
+
+        // When we make unique edges required
+        c.unique_edges_are_required();
+
+        // Then 0->1 becomes required
+        assert_eq!(
+            "\
+            0 -> R3 _2\n\
+            1 -> R0\n\
+            2 -> _3 _1 _0\n\
+            3 -> _2 _1\n\
+            ",
+            format!("{:?}", c)
+        );
+
+        // And when we force edges next to required ones to be in the opposite direction
+        c.one_direction_required_forces_other_direction_for_other_edges();
+
+        // Then everything else out of 0 or 1, or into 3 or 0, is gone
+        assert_eq!(
+            "\
+            0 -> R3\n\
+            1 -> R0\n\
+            2 -> _1\n\
+            3 -> _2 _1\n\
+            ",
+            format!("{:?}", c)
+        );
     }
 
     #[test]
@@ -2521,6 +2678,26 @@ mod test {
         let circuits: Vec<_> = hamiltonian_circuits_directed(&g).collect();
 
         assert_eq!(circuits, Vec::<Vec::<_>>::new());
+    }
+
+    #[test]
+    fn one_edge_required_circuit_is_found() {
+        let g = Graph::<(), ()>::from_edges(&[
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (1, 0), // The only edge from 1 is to 0.
+            (2, 0), // Everything else is connected.
+            (2, 1),
+            (2, 3),
+            (3, 0),
+            (3, 1),
+            (3, 2),
+        ]);
+
+        let circuits: Vec<_> = hamiltonian_circuits_directed(&g).collect();
+
+        assert_eq!(circuits, paths(vec![vec![0, 3, 2, 1], vec![0, 2, 3, 1],]));
     }
 
     // --- Complexity tests ---
