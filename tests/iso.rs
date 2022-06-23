@@ -1,5 +1,6 @@
 extern crate petgraph;
 
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -7,7 +8,9 @@ use petgraph::graph::{edge_index, node_index};
 use petgraph::prelude::*;
 use petgraph::EdgeType;
 
-use petgraph::algo::{is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph};
+use petgraph::algo::{
+    is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, subgraph_isomorphisms_iter,
+};
 
 /// Petersen A and B are isomorphic
 ///
@@ -491,6 +494,51 @@ fn iso_subgraph() {
     let g1 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0), (2, 3), (0, 4)]);
     assert!(!is_isomorphic(&g0, &g1));
     assert!(is_isomorphic_subgraph(&g0, &g1));
+}
+
+#[test]
+fn iter_subgraph() {
+    let a = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
+    let b = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0), (2, 3), (0, 4)]);
+    let a_ref = &a;
+    let b_ref = &b;
+    let mut node_match = { |x: &(), y: &()| x == y };
+    let mut edge_match = { |x: &(), y: &()| x == y };
+
+    let mappings =
+        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match).unwrap();
+
+    // Verify the iterator returns the expected mappings
+    let expected_mappings: Vec<Vec<usize>> = vec![vec![0, 1, 2], vec![1, 2, 0], vec![2, 0, 1]];
+    for mapping in mappings {
+        assert!(expected_mappings.contains(&mapping))
+    }
+
+    // Verify all the mappings from the iterator are different
+    let a = str_to_digraph(COXETER_A);
+    let b = str_to_digraph(COXETER_B);
+    let a_ref = &a;
+    let b_ref = &b;
+
+    let mut unique = HashSet::new();
+    assert!(
+        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+            .unwrap()
+            .all(|x| unique.insert(x))
+    );
+
+    // The iterator should return None for graphs that are not isomorphic
+    let a = str_to_digraph(G8_1);
+    let b = str_to_digraph(G8_2);
+    let a_ref = &a;
+    let b_ref = &b;
+
+    assert!(
+        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+            .unwrap()
+            .next()
+            .is_none()
+    );
 }
 
 /// Isomorphic pair
