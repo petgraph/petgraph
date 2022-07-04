@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use crate::data::DataMap;
 use crate::visit::EdgeCount;
 use crate::visit::EdgeRef;
@@ -754,6 +756,49 @@ mod matching {
                 self.match_subgraph,
                 &mut self.stack,
             )
+        }
+
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            // To calculate the upper bound of results we use n! where n is the
+            // number of nodes in graph 1. n! values fit into a 64-bit usize up
+            // to n = 20, so we don't estimate an upper limit for n > 20.
+            let n = self.st.0.graph.node_count();
+            const MAX_N: usize = 20;
+
+            if n > MAX_N {
+                return (0, None);
+            }
+
+            // We hardcode n! values into an array that accounts for architectures
+            // with smaller usizes to get our upper bound.
+            let upper_bounds: Vec<Option<usize>> = vec![
+                1u64,
+                1,
+                2,
+                6,
+                24,
+                120,
+                720,
+                5040,
+                40320,
+                362880,
+                3628800,
+                39916800,
+                479001600,
+                6227020800,
+                87178291200,
+                1307674368000,
+                20922789888000,
+                355687428096000,
+                6402373705728000,
+                121645100408832000,
+                2432902008176640000,
+            ]
+            .iter()
+            .map(|n| usize::try_from(*n).ok())
+            .collect();
+
+            (0, upper_bounds[n])
         }
     }
 }
