@@ -554,7 +554,7 @@ mod matching {
 
     /// Return Some(bool) if isomorphism is decided, else None.
     pub fn try_match<G0, G1, NM, EM>(
-        mut st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
+        st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
         node_match: &mut NM,
         edge_match: &mut EM,
         match_subgraph: bool,
@@ -582,7 +582,7 @@ mod matching {
     }
 
     fn isomorphisms<G0, G1, NM, EM>(
-        mut st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
+        st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
         node_match: &mut NM,
         edge_match: &mut EM,
         match_subgraph: bool,
@@ -613,9 +613,9 @@ mod matching {
         while let Some(frame) = stack.pop() {
             match frame {
                 Frame::Unwind { nodes, open_list } => {
-                    pop_state(&mut st, nodes);
+                    pop_state(st, nodes);
 
-                    match next_from_ix(&mut st, nodes.0, open_list) {
+                    match next_from_ix(st, nodes.0, open_list) {
                         None => continue,
                         Some(nx) => {
                             let f = Frame::Inner {
@@ -626,7 +626,7 @@ mod matching {
                         }
                     }
                 }
-                Frame::Outer => match next_candidate(&mut st) {
+                Frame::Outer => match next_candidate(st) {
                     None => continue,
                     Some((nx, mx, open_list)) => {
                         let f = Frame::Inner {
@@ -637,8 +637,8 @@ mod matching {
                     }
                 },
                 Frame::Inner { nodes, open_list } => {
-                    if is_feasible(&mut st, nodes, node_match, edge_match) {
-                        push_state(&mut st, nodes);
+                    if is_feasible(st, nodes, node_match, edge_match) {
+                        push_state(st, nodes);
                         if st.0.is_complete() {
                             result = Some(st.0.mapping.clone());
                         }
@@ -655,9 +655,9 @@ mod matching {
                             stack.push(Frame::Outer);
                             continue;
                         }
-                        pop_state(&mut st, nodes);
+                        pop_state(st, nodes);
                     }
-                    match next_from_ix(&mut st, nodes.0, open_list) {
+                    match next_from_ix(st, nodes.0, open_list) {
                         None => continue,
                         Some(nx) => {
                             let f = Frame::Inner {
