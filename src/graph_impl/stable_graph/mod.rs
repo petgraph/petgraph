@@ -1525,7 +1525,8 @@ where
     /// neighbors and edges from the origin node.
     ///
     /// Note: The walker does not borrow from the graph, this is to allow mixing
-    /// edge walking with mutating the graph's weights.
+    /// edge walking with mutating the graph's weights. This means that any
+    /// subsequent modification of the graph's structure invalidates the walker.
     pub fn detach(&self) -> WalkNeighbors<Ix> {
         WalkNeighbors {
             inner: super::WalkNeighbors {

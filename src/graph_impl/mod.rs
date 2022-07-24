@@ -1559,7 +1559,8 @@ where
     /// neighbors and edges from the origin node.
     ///
     /// Note: The walker does not borrow from the graph, this is to allow mixing
-    /// edge walking with mutating the graph's weights.
+    /// edge walking with mutating the graph's weights. This means that any
+    /// subsequent modification of the graph's structure invalidates the walker.
     pub fn detach(&self) -> WalkNeighbors<Ix> {
         WalkNeighbors {
             skip_start: self.skip_start,
@@ -2010,20 +2011,21 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
         &mut self,
         g: &Graph<N, E, Ty, Ix>,
     ) -> Option<(EdgeIndex<Ix>, NodeIndex<Ix>)> {
+        let edge_present: for<'r> fn(&'r &Edge<E, Ix>) -> bool =
+            |e| e.node != [NodeIndex::end(), NodeIndex::end()];
+
         // First any outgoing edges
-        match g.edges.get(self.next[0].index()) {
-            None => {}
-            Some(edge) => {
-                let ed = self.next[0];
-                self.next[0] = edge.next[0];
-                return Some((ed, edge.node[1]));
-            }
-        }
+        if let Some(edge) = g.edges.get(self.next[0].index()).filter(edge_present) {
+            let ed = self.next[0];
+            self.next[0] = edge.next[0];
+            return Some((ed, edge.node[1]));
+        };
+
         // Then incoming edges
         // For an "undirected" iterator (traverse both incoming
         // and outgoing edge lists), make sure we don't double
         // count selfloops by skipping them in the incoming list.
-        while let Some(edge) = g.edges.get(self.next[1].index()) {
+        while let Some(edge) = g.edges.get(self.next[1].index()).filter(edge_present) {
             let ed = self.next[1];
             self.next[1] = edge.next[1];
             if edge.node[0] != self.skip_start {
