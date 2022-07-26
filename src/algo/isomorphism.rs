@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use crate::data::DataMap;
 use crate::visit::EdgeCount;
 use crate::visit::EdgeRef;
@@ -552,7 +554,7 @@ mod matching {
 
     /// Return Some(bool) if isomorphism is decided, else None.
     pub fn try_match<G0, G1, NM, EM>(
-        mut st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
+        st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
         node_match: &mut NM,
         edge_match: &mut EM,
         match_subgraph: bool,
@@ -571,20 +573,49 @@ mod matching {
         NM: NodeMatcher<G0, G1>,
         EM: EdgeMatcher<G0, G1>,
     {
+        let mut stack = vec![Frame::Outer];
+        if isomorphisms(st, node_match, edge_match, match_subgraph, &mut stack).is_some() {
+            Some(true)
+        } else {
+            None
+        }
+    }
+
+    fn isomorphisms<G0, G1, NM, EM>(
+        st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
+        node_match: &mut NM,
+        edge_match: &mut EM,
+        match_subgraph: bool,
+        stack: &mut Vec<Frame<G0, G1>>,
+    ) -> Option<Vec<usize>>
+    where
+        G0: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        G1: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        NM: NodeMatcher<G0, G1>,
+        EM: EdgeMatcher<G0, G1>,
+    {
         if st.0.is_complete() {
-            return Some(true);
+            return Some(st.0.mapping.clone());
         }
 
         // A "depth first" search of a valid mapping from graph 1 to graph 2
         // F(s, n, m) -- evaluate state s and add mapping n <-> m
         // Find least T1out node (in st.out[1] but not in M[1])
-        let mut stack: Vec<Frame<G0, G1>> = vec![Frame::Outer];
+        let mut result = None;
         while let Some(frame) = stack.pop() {
             match frame {
                 Frame::Unwind { nodes, open_list } => {
-                    pop_state(&mut st, nodes);
+                    pop_state(st, nodes);
 
-                    match next_from_ix(&mut st, nodes.0, open_list) {
+                    match next_from_ix(st, nodes.0, open_list) {
                         None => continue,
                         Some(nx) => {
                             let f = Frame::Inner {
@@ -595,7 +626,7 @@ mod matching {
                         }
                     }
                 }
-                Frame::Outer => match next_candidate(&mut st) {
+                Frame::Outer => match next_candidate(st) {
                     None => continue,
                     Some((nx, mx, open_list)) => {
                         let f = Frame::Inner {
@@ -606,10 +637,10 @@ mod matching {
                     }
                 },
                 Frame::Inner { nodes, open_list } => {
-                    if is_feasible(&mut st, nodes, node_match, edge_match) {
-                        push_state(&mut st, nodes);
+                    if is_feasible(st, nodes, node_match, edge_match) {
+                        push_state(st, nodes);
                         if st.0.is_complete() {
-                            return Some(true);
+                            result = Some(st.0.mapping.clone());
                         }
                         // Check cardinalities of Tin, Tout sets
                         if (!match_subgraph
@@ -624,9 +655,9 @@ mod matching {
                             stack.push(Frame::Outer);
                             continue;
                         }
-                        pop_state(&mut st, nodes);
+                        pop_state(st, nodes);
                     }
-                    match next_from_ix(&mut st, nodes.0, open_list) {
+                    match next_from_ix(st, nodes.0, open_list) {
                         None => continue,
                         Some(nx) => {
                             let f = Frame::Inner {
@@ -638,8 +669,136 @@ mod matching {
                     }
                 }
             }
+            if result.is_some() {
+                return result;
+            }
         }
-        None
+        result
+    }
+
+    pub struct GraphMatcher<'a, 'b, 'c, G0, G1, NM, EM>
+    where
+        G0: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        G1: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        NM: NodeMatcher<G0, G1>,
+        EM: EdgeMatcher<G0, G1>,
+    {
+        st: (Vf2State<'a, G0>, Vf2State<'b, G1>),
+        node_match: &'c mut NM,
+        edge_match: &'c mut EM,
+        match_subgraph: bool,
+        stack: Vec<Frame<G0, G1>>,
+    }
+
+    impl<'a, 'b, 'c, G0, G1, NM, EM> GraphMatcher<'a, 'b, 'c, G0, G1, NM, EM>
+    where
+        G0: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        G1: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        NM: NodeMatcher<G0, G1>,
+        EM: EdgeMatcher<G0, G1>,
+    {
+        pub fn new(
+            g0: &'a G0,
+            g1: &'b G1,
+            node_match: &'c mut NM,
+            edge_match: &'c mut EM,
+            match_subgraph: bool,
+        ) -> Self {
+            let stack = vec![Frame::Outer];
+            Self {
+                st: (Vf2State::new(g0), Vf2State::new(g1)),
+                node_match,
+                edge_match,
+                match_subgraph,
+                stack,
+            }
+        }
+    }
+
+    impl<'a, 'b, 'c, G0, G1, NM, EM> Iterator for GraphMatcher<'a, 'b, 'c, G0, G1, NM, EM>
+    where
+        G0: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        G1: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        NM: NodeMatcher<G0, G1>,
+        EM: EdgeMatcher<G0, G1>,
+    {
+        type Item = Vec<usize>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            isomorphisms(
+                &mut self.st,
+                self.node_match,
+                self.edge_match,
+                self.match_subgraph,
+                &mut self.stack,
+            )
+        }
+
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            // To calculate the upper bound of results we use n! where n is the
+            // number of nodes in graph 1. n! values fit into a 64-bit usize up
+            // to n = 20, so we don't estimate an upper limit for n > 20.
+            let n = self.st.0.graph.node_count();
+
+            // We hardcode n! values into an array that accounts for architectures
+            // with smaller usizes to get our upper bound.
+            let upper_bounds: Vec<Option<usize>> = vec![
+                1u64,
+                1,
+                2,
+                6,
+                24,
+                120,
+                720,
+                5040,
+                40320,
+                362880,
+                3628800,
+                39916800,
+                479001600,
+                6227020800,
+                87178291200,
+                1307674368000,
+                20922789888000,
+                355687428096000,
+                6402373705728000,
+                121645100408832000,
+                2432902008176640000,
+            ]
+            .iter()
+            .map(|n| usize::try_from(*n).ok())
+            .collect();
+
+            if n > upper_bounds.len() {
+                return (0, None);
+            }
+
+            (0, upper_bounds[n])
+        }
     }
 }
 
@@ -793,4 +952,43 @@ where
 
     let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
     self::matching::try_match(&mut st, &mut node_match, &mut edge_match, true).unwrap_or(false)
+}
+
+/// Using the VF2 algorithm, examine both syntactic and semantic graph
+/// isomorphism (graph structure and matching node and edge weights) and,
+/// if `g0` is isomorphic to a subgraph of `g1`, return the mappings between
+/// them.
+///
+/// The graphs should not be multigraphs.
+pub fn subgraph_isomorphisms_iter<'a, G0, G1, NM, EM>(
+    g0: &'a G0,
+    g1: &'a G1,
+    node_match: &'a mut NM,
+    edge_match: &'a mut EM,
+) -> Option<impl Iterator<Item = Vec<usize>> + 'a>
+where
+    G0: 'a
+        + NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp
+        + IntoEdgesDirected,
+    G1: 'a
+        + NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp<EdgeType = G0::EdgeType>
+        + IntoEdgesDirected,
+    NM: 'a + FnMut(&G0::NodeWeight, &G1::NodeWeight) -> bool,
+    EM: 'a + FnMut(&G0::EdgeWeight, &G1::EdgeWeight) -> bool,
+{
+    if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
+        return None;
+    }
+
+    Some(self::matching::GraphMatcher::new(
+        g0, g1, node_match, edge_match, true,
+    ))
 }
