@@ -763,11 +763,6 @@ mod matching {
             // number of nodes in graph 1. n! values fit into a 64-bit usize up
             // to n = 20, so we don't estimate an upper limit for n > 20.
             let n = self.st.0.graph.node_count();
-            const MAX_N: usize = 20;
-
-            if n > MAX_N {
-                return (0, None);
-            }
 
             // We hardcode n! values into an array that accounts for architectures
             // with smaller usizes to get our upper bound.
@@ -797,6 +792,10 @@ mod matching {
             .iter()
             .map(|n| usize::try_from(*n).ok())
             .collect();
+
+            if n > upper_bounds.len() {
+                return (0, None);
+            }
 
             (0, upper_bounds[n])
         }
