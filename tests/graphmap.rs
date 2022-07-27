@@ -326,6 +326,26 @@ fn test_into_graph() {
 }
 
 #[test]
+fn test_from_graph() {
+    let mut gr: Graph<u32, u32, Directed> = Graph::new();
+    let node_a = gr.add_node(12);
+    let node_b = gr.add_node(13);
+    let node_c = gr.add_node(14);
+    gr.add_edge(node_a, node_b, 1000);
+    gr.add_edge(node_b, node_c, 999);
+    gr.add_edge(node_c, node_a, 1111);
+    gr.add_node(42);
+    let gr = gr;
+
+    let graph: GraphMap<u32, u32, Directed> = GraphMap::from_graph(gr.clone());
+    println!("{}", Dot::new(&gr));
+    println!("{}", Dot::new(&graph));
+
+    assert!(petgraph::algo::is_isomorphic(&gr, &graph));
+    assert_eq!(graph[(12, 13)], 1000);
+}
+
+#[test]
 fn test_all_edges_mut() {
     // graph with edge weights equal to in+out
     let mut graph: GraphMap<_, u32, Directed> =

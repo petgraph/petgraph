@@ -3,6 +3,7 @@ extern crate petgraph;
 extern crate quickcheck;
 extern crate bincode;
 extern crate itertools;
+extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate defmac;
@@ -486,4 +487,80 @@ quickcheck! {
         let g2: StableGraph<i32, i32> = recode!(&g1);
         assert_stable_graph_eq(&g1, &g2);
     }
+
+    fn json_graphmap_to_graphmap(g1: DiGraphMap<i32, i32>) -> () {
+        let g2: DiGraphMap<i32, i32> = rejson!(&g1);
+        assert!(petgraph::algo::is_isomorphic(&g1, &g2));
+    }
+
+    fn bincode_graphmap_to_graphmap(g1: DiGraphMap<i8, ()>) -> () {
+        let g2: DiGraphMap<i8, ()> = recode!(&g1);
+        assert!(petgraph::algo::is_isomorphic(&g1, &g2));
+    }
+
+    fn bincode_graphmap_to_graph(g1: DiGraphMap<i8, i8>) -> () {
+        let g2: DiGraph<i8, i8> = recode!(&g1);
+        assert!(petgraph::algo::is_isomorphic(&g1, &g2));
+    }
+
+    // graph to graphmap is not always possible because of parallel edges
+}
+
+#[test]
+fn json_graphmap_integer() {
+    let mut gr: GraphMap<i32, u32, Directed> = GraphMap::from_edges(&[
+        (6, 0, 0),
+        (0, 3, 1),
+        (3, 6, 2),
+        (8, 6, 3),
+        (8, 2, 4),
+        (2, 5, 5),
+        (5, 8, 6),
+        (7, 5, 7),
+        (1, 7, 8),
+        (7, 4, 9),
+        (4, 1, 10),
+    ]);
+    // unconnected node
+    gr.add_node(42);
+
+    let gr_deser: GraphMap<i32, u32, Directed> = rejson!(&gr);
+    assert!(petgraph::algo::is_isomorphic(&gr, &gr_deser));
+    assert_eq!(gr_deser[(4, 1)], 10);
+}
+
+#[test]
+fn json_graphmap_struct() {
+    use serde_derive::{Deserialize, Serialize};
+
+    #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    struct TestingNode {
+        pub a: u32,
+        pub b: i32,
+    }
+    let mut gr: GraphMap<TestingNode, (u8, f32), Undirected> = GraphMap::from_edges(&[
+        (
+            TestingNode { a: 42, b: -1 },
+            TestingNode { a: 12, b: -2 },
+            (1, 2.),
+        ),
+        (
+            TestingNode { a: 12, b: -2 },
+            TestingNode { a: 13, b: -3 },
+            (99, 99.),
+        ),
+        (
+            TestingNode { a: 13, b: -3 },
+            TestingNode { a: 42, b: -1 },
+            (99, 98.),
+        ),
+    ]);
+    gr.add_node(TestingNode { a: 0, b: 0 });
+
+    let gr_deser: GraphMap<TestingNode, (u8, f32), Undirected> = rejson!(&gr);
+    assert!(petgraph::algo::is_isomorphic(&gr, &gr_deser));
+    assert_eq!(
+        gr_deser[(TestingNode { a: 42, b: -1 }, TestingNode { a: 12, b: -2 })],
+        (1, 2.)
+    );
 }
