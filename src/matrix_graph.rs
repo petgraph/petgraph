@@ -853,6 +853,7 @@ fn extend_flat_square_matrix<T: Default>(
     for c in (1..old_node_capacity).rev() {
         let pos = c * old_node_capacity;
         let new_pos = c * new_node_capacity;
+        // Move the slices directly if they do not overlap with their new position
         if pos + old_node_capacity <= new_pos {
             // first_chunk = node_adjacencies[pos..]
             let (_, first_chunk) = node_adjacencies.split_at_mut(pos);
