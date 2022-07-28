@@ -864,15 +864,8 @@ fn extend_flat_square_matrix<T: Default>(
             let (_, second_chunk) = second_chunk.split_at_mut(new_pos - (pos + old_node_capacity));
             // second_chunk = node_adjacencies[new_pos..new_pos + old_node_capacity]
             let (second_chunk, _) = second_chunk.split_at_mut(old_node_capacity);
-            // SAFETY: Slices cannot overlap as they were created by splitting a slice
-            // The length is equal and valid as they were both created with the same `split_at_mut` argument
-            unsafe {
-                std::ptr::swap_nonoverlapping(
-                    first_chunk.as_mut_ptr(),
-                    second_chunk.as_mut_ptr(),
-                    old_node_capacity,
-                );
-            }
+            // This will not panic as the chunks were both created with the same length (old_node_capacity)
+            first_chunk.swap_with_slice(second_chunk);
         } else {
             for i in (0..old_node_capacity).rev() {
                 node_adjacencies.as_mut_slice().swap(pos + i, new_pos + i);

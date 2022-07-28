@@ -466,18 +466,17 @@ fn iso_matching() {
 }
 
 #[test]
-#[cfg_attr(miri, ignore = "Can't open files with isolation")]
 fn iso_100n_100e() {
-    let g0 = graph_from_file("tests/res/graph_100n_100e.txt");
-    let g1 = graph_from_file("tests/res/graph_100n_100e_iso.txt");
+    let g0 = str_to_digraph(include_str!("res/graph_100n_100e.txt"));
+    let g1 = str_to_digraph(include_str!("res/graph_100n_100e_iso.txt"));
     assert!(petgraph::algo::is_isomorphic(&g0, &g1));
 }
 
 #[test]
-#[cfg_attr(miri, ignore = "Can't open files with isolation")]
+#[cfg_attr(miri, ignore = "Too large for Miri")]
 fn iso_large() {
     let g0 = graph_from_file("tests/res/graph_1000n_1000e.txt");
-    let g1 = graph_from_file("tests/res/graph_1000n_1000e_iso.txt");
+    let g1 = graph_from_file("tests/res/graph_1000n_1000e.txt");
     assert!(petgraph::algo::is_isomorphic(&g0, &g1));
 }
 
