@@ -853,15 +853,24 @@ fn extend_flat_square_matrix<T: Default>(
     for c in (1..old_node_capacity).rev() {
         let pos = c * old_node_capacity;
         let new_pos = c * new_node_capacity;
-
-        // Move the slices directly if they do not overlap with their new position
         if pos + old_node_capacity <= new_pos {
-            let old = node_adjacencies[pos..pos + old_node_capacity].as_mut_ptr();
-            let new = node_adjacencies[new_pos..new_pos + old_node_capacity].as_mut_ptr();
-
-            // SAFE: new starts at least `old_node_capacity` positions after old.
+            // first_chunk = node_adjacencies[pos..]
+            let (_, first_chunk) = node_adjacencies.split_at_mut(pos);
+            // first_chunk = node_adjacencies[pos..pos + old_node_capacity]
+            // second_chunk = node_adjacencies[old_node_capacity..]
+            let (first_chunk, second_chunk) = first_chunk.split_at_mut(old_node_capacity);
+            // second_chunk = node_adjacencies[new_pos..]
+            let (_, second_chunk) = second_chunk.split_at_mut(new_pos - (pos + old_node_capacity));
+            // second_chunk = node_adjacencies[new_pos..new_pos + old_node_capacity]
+            let (second_chunk, _) = second_chunk.split_at_mut(old_node_capacity);
+            // SAFETY: Slices cannot overlap as they were created by splitting a slice
+            // The length is equal and valid as they were both created with the same `split_at_mut` argument
             unsafe {
-                std::ptr::swap_nonoverlapping(old, new, old_node_capacity);
+                std::ptr::swap_nonoverlapping(
+                    first_chunk.as_mut_ptr(),
+                    second_chunk.as_mut_ptr(),
+                    old_node_capacity,
+                );
             }
         } else {
             for i in (0..old_node_capacity).rev() {
