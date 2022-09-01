@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 
+use petgraph::algo::isomorphism::subgraph_isomorphisms_indexs;
 use petgraph::graph::{edge_index, node_index};
 use petgraph::prelude::*;
 use petgraph::EdgeType;
@@ -508,9 +509,15 @@ fn iter_subgraph() {
     let mappings =
         subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match).unwrap();
 
+    let mappings_idxs = subgraph_isomorphisms_indexs(&a_ref, &b_ref, |x: &(), y: &()| x == y, |x: &(), y: &()| x == y);
+
     // Verify the iterator returns the expected mappings
     let expected_mappings: Vec<Vec<usize>> = vec![vec![0, 1, 2], vec![1, 2, 0], vec![2, 0, 1]];
     for mapping in mappings {
+        assert!(expected_mappings.contains(&mapping))
+    }
+
+    for mapping in mappings_idxs {
         assert!(expected_mappings.contains(&mapping))
     }
 

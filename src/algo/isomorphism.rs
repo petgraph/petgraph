@@ -581,6 +581,34 @@ mod matching {
         }
     }
 
+    pub fn try_match_indexs<G0, G1, NM, EM>(
+        st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
+        node_match: &mut NM,
+        edge_match: &mut EM,
+        match_subgraph: bool,
+    ) -> Vec<Vec<usize>>
+    where
+        G0: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        G1: NodeCompactIndexable
+            + EdgeCount
+            + GetAdjacencyMatrix
+            + GraphProp
+            + IntoNeighborsDirected,
+        NM: NodeMatcher<G0, G1>,
+        EM: EdgeMatcher<G0, G1>,
+    {
+        let mut stack = vec![Frame::Outer];
+        let mut result = vec![];
+        while let Some(idxs) = isomorphisms(st, node_match, edge_match, match_subgraph, &mut stack) {
+            result.push(idxs);
+        }
+        result
+    }
+
     fn isomorphisms<G0, G1, NM, EM>(
         st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
         node_match: &mut NM,
@@ -991,4 +1019,33 @@ where
     Some(self::matching::GraphMatcher::new(
         g0, g1, node_match, edge_match, true,
     ))
+}
+
+pub fn subgraph_isomorphisms_indexs<G0, G1, NM, EM>(
+    g0: G0,
+    g1: G1,
+    mut node_match: NM,
+    mut edge_match: EM,
+) -> Vec<Vec<usize>>
+where
+    G0: NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp
+        + IntoEdgesDirected,
+    G1: NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp<EdgeType = G0::EdgeType>
+        + IntoEdgesDirected,
+    NM: FnMut(&G0::NodeWeight, &G1::NodeWeight) -> bool,
+    EM: FnMut(&G0::EdgeWeight, &G1::EdgeWeight) -> bool,
+{
+    if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
+        return vec![];
+    }
+    let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
+    self::matching::try_match_indexs(&mut st, &mut node_match, &mut edge_match, true)
 }
