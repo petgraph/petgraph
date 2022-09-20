@@ -1211,7 +1211,7 @@ fn is_maximum_matching<G: NodeIndexable + IntoEdges + IntoNodeIdentifiers + Visi
     g: G,
     m: &Matching<G>,
 ) -> bool {
-    // Berge's lemma: a matching is maximum iff there is no augmenting path (a
+    // Berge's lemma: a matching is maximum if there is no augmenting path (a
     // path that starts and ends in unmatched vertices, and alternates between
     // matched and unmatched edges). Thus if we find an augmenting path, the
     // matching is not maximum.
