@@ -27,7 +27,7 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 /// use petgraph::prelude::*;
 /// use std::collections::HashMap;
 ///
-/// let mut graph : Graph<(),(),Directed>= Graph::new();
+/// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
 /// let b = graph.add_node(());
 /// let c = graph.add_node(());
@@ -48,7 +48,7 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 ///     (b, e),
 ///     (f, g),
 ///     (g, h),
-///     (h, e)
+///     (h, e),
 /// ]);
 /// // a ----> b ----> e ----> f
 /// // ^       |       ^       |
@@ -56,15 +56,15 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 /// // d <---- c       h <---- g
 ///
 /// let expected_res: HashMap<NodeIndex, usize> = [
-///      (a, 3),
-///      (b, 0),
-///      (c, 1),
-///      (d, 2),
-///      (e, 1),
-///      (f, 2),
-///      (g, 3),
-///      (h, 4)
-///     ].iter().cloned().collect();
+///     (a, 3),
+///     (b, 0),
+///     (c, 1),
+///     (d, 2),
+///     (e, 1),
+///     (f, 2),
+///     (g, 3),
+///     (h, 4),
+/// ].iter().cloned().collect();
 /// let res = dijkstra(&graph, b, None, |_| 1);
 /// assert_eq!(res, expected_res);
 /// // z is not inside res because there is not path from b to z.
