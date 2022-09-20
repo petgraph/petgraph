@@ -65,7 +65,7 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 ///      (g, 3),
 ///      (h, 4)
 ///     ].iter().cloned().collect();
-/// let res = dijkstra(&graph,b,None, |_| 1);
+/// let res = dijkstra(&graph, b, None, |_| 1);
 /// assert_eq!(res, expected_res);
 /// // z is not inside res because there is not path from b to z.
 /// ```
