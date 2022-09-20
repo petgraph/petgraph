@@ -882,7 +882,7 @@ where
 /// and we seek to clarify it now.
 ///
 /// In the VF2 literature, a mapping **M** is said to be a *graph-subgraph isomorphism*
-/// iff **M** is an isomorphism between **G2** and a subgraph of **G1**. Thus, to say
+/// if **M** is an isomorphism between **G2** and a subgraph of **G1**. Thus, to say
 /// that **G1** and **G2** are graph-subgraph isomorphic is to say that a subgraph of
 /// **G1** is isomorphic to **G2**.
 ///
