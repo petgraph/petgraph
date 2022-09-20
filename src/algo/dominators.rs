@@ -3,12 +3,12 @@
 //! # The Dominance Relation
 //!
 //! In a directed graph with a root node **R**, a node **A** is said to *dominate* a
-//! node **B** iff every path from **R** to **B** contains **A**.
+//! node **B** if every path from **R** to **B** contains **A**.
 //!
-//! The node **A** is said to *strictly dominate* the node **B** iff **A** dominates
+//! The node **A** is said to *strictly dominate* the node **B** if **A** dominates
 //! **B** and **A ≠ B**.
 //!
-//! The node **A** is said to be the *immediate dominator* of a node **B** iff it
+//! The node **A** is said to be the *immediate dominator* of a node **B** if it
 //! strictly dominates **B** and there does not exist any node **C** where **A**
 //! dominates **C** and **C** dominates **B**.
 
