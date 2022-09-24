@@ -62,7 +62,7 @@ where
 
     /// Returns `true` if given edge is in the matching, or `false` otherwise.
     ///
-    /// If any of the the nodes does not exist, `false` is returned.
+    /// If any of the nodes does not exist, `false` is returned.
     pub fn contains_edge(&self, a: G::NodeId, b: G::NodeId) -> bool {
         match self.mate(a) {
             Some(mate) => mate == b,
