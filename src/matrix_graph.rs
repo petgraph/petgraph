@@ -855,17 +855,15 @@ fn extend_flat_square_matrix<T: Default>(
         let new_pos = c * new_node_capacity;
         // Move the slices directly if they do not overlap with their new position
         if pos + old_node_capacity <= new_pos {
-            // first_chunk = node_adjacencies[pos..]
-            let (_, first_chunk) = node_adjacencies.split_at_mut(pos);
-            // first_chunk = node_adjacencies[pos..pos + old_node_capacity]
-            // second_chunk = node_adjacencies[old_node_capacity..]
-            let (first_chunk, second_chunk) = first_chunk.split_at_mut(old_node_capacity);
-            // second_chunk = node_adjacencies[new_pos..]
-            let (_, second_chunk) = second_chunk.split_at_mut(new_pos - (pos + old_node_capacity));
-            // second_chunk = node_adjacencies[new_pos..new_pos + old_node_capacity]
-            let (second_chunk, _) = second_chunk.split_at_mut(old_node_capacity);
-            // This will not panic as the chunks were both created with the same length (old_node_capacity)
-            first_chunk.swap_with_slice(second_chunk);
+            debug_assert!(pos + old_node_capacity < node_adjacencies.len());
+            debug_assert!(new_pos + old_node_capacity < node_adjacencies.len());
+            let ptr = node_adjacencies.as_mut_ptr();
+            // SAFETY: pos + old_node_capacity <= new_pos, so this won't overlap
+            unsafe {
+                let old = ptr.add(pos);
+                let new = ptr.add(new_pos);
+                core::ptr::swap_nonoverlapping(old, new, old_node_capacity);
+            }
         } else {
             for i in (0..old_node_capacity).rev() {
                 node_adjacencies.as_mut_slice().swap(pos + i, new_pos + i);
