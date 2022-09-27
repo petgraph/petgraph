@@ -294,6 +294,7 @@ fn full_iso() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore = "Takes too long to run in Miri")]
 fn praust_dir_no_iso() {
     let a = str_to_digraph(PRAUST_A);
     let b = str_to_digraph(PRAUST_B);
@@ -302,6 +303,7 @@ fn praust_dir_no_iso() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore = "Takes too long to run in Miri")]
 fn praust_undir_no_iso() {
     let a = str_to_graph(PRAUST_A);
     let b = str_to_graph(PRAUST_B);
@@ -465,15 +467,16 @@ fn iso_matching() {
 
 #[test]
 fn iso_100n_100e() {
-    let g0 = graph_from_file("tests/res/graph_100n_100e.txt");
-    let g1 = graph_from_file("tests/res/graph_100n_100e_iso.txt");
+    let g0 = str_to_digraph(include_str!("res/graph_100n_100e.txt"));
+    let g1 = str_to_digraph(include_str!("res/graph_100n_100e_iso.txt"));
     assert!(petgraph::algo::is_isomorphic(&g0, &g1));
 }
 
 #[test]
+#[cfg_attr(miri, ignore = "Too large for Miri")]
 fn iso_large() {
     let g0 = graph_from_file("tests/res/graph_1000n_1000e.txt");
-    let g1 = graph_from_file("tests/res/graph_1000n_1000e_iso.txt");
+    let g1 = graph_from_file("tests/res/graph_1000n_1000e.txt");
     assert!(petgraph::algo::is_isomorphic(&g0, &g1));
 }
 
@@ -489,6 +492,7 @@ fn iso_multigraph_failure() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore = "Takes too long to run in Miri")]
 fn iso_subgraph() {
     let g0 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
     let g1 = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0), (2, 3), (0, 4)]);
@@ -497,6 +501,7 @@ fn iso_subgraph() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore = "Takes too long to run in Miri")]
 fn iter_subgraph() {
     let a = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0)]);
     let b = Graph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 0), (2, 3), (0, 4)]);

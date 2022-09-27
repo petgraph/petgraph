@@ -72,3 +72,12 @@ jobs:
       - name: Rustfmt
         if: matrix.rustfmt
         run: cargo fmt -- --check
+
+  miri:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - run: cargo miri test

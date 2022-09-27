@@ -853,15 +853,16 @@ fn extend_flat_square_matrix<T: Default>(
     for c in (1..old_node_capacity).rev() {
         let pos = c * old_node_capacity;
         let new_pos = c * new_node_capacity;
-
         // Move the slices directly if they do not overlap with their new position
         if pos + old_node_capacity <= new_pos {
-            let old = node_adjacencies[pos..pos + old_node_capacity].as_mut_ptr();
-            let new = node_adjacencies[new_pos..new_pos + old_node_capacity].as_mut_ptr();
-
-            // SAFE: new starts at least `old_node_capacity` positions after old.
+            debug_assert!(pos + old_node_capacity < node_adjacencies.len());
+            debug_assert!(new_pos + old_node_capacity < node_adjacencies.len());
+            let ptr = node_adjacencies.as_mut_ptr();
+            // SAFETY: pos + old_node_capacity <= new_pos, so this won't overlap
             unsafe {
-                std::ptr::swap_nonoverlapping(old, new, old_node_capacity);
+                let old = ptr.add(pos);
+                let new = ptr.add(new_pos);
+                core::ptr::swap_nonoverlapping(old, new, old_node_capacity);
             }
         } else {
             for i in (0..old_node_capacity).rev() {
