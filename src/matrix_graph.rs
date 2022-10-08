@@ -897,12 +897,7 @@ fn extend_lower_triangular_matrix<T: Default>(
 
 /// Grow a Vec by appending the type's default value until the `size` is reached.
 fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
-    if let Some(n) = size.checked_sub(v.len()) {
-        v.reserve(n);
-        for _ in 0..n {
-            v.push(T::default());
-        }
-    }
+    v.resize_with(size, T::default);
 }
 
 #[derive(Debug, Clone)]
