@@ -574,6 +574,24 @@ where
         }
     }
 
+    /// Return an iterator over all the edges connecting `a` and `b`.
+    ///
+    /// - `Directed`: Outgoing edges from `a`.
+    /// - `Undirected`: All edges connected to `a`.
+    ///
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    pub fn edges_connecting(
+        &self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+    ) -> EdgesConnecting<E, Ty, Ix> {
+        EdgesConnecting {
+            target_node: b,
+            edges: self.edges_directed(a, Direction::Outgoing),
+            ty: PhantomData,
+        }
+    }
+
     /// Lookup if there is an edge from `a` to `b`.
     ///
     /// Computes in **O(e')** time, where **e'** is the number of edges
@@ -1436,6 +1454,37 @@ where
         }
 
         None
+    }
+}
+
+/// Iterator over the multiple directed edges connecting a source node to a target node
+#[derive(Debug, Clone)]
+pub struct EdgesConnecting<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    target_node: NodeIndex<Ix>,
+    edges: Edges<'a, E, Ty, Ix>,
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, E, Ty, Ix> Iterator for EdgesConnecting<'a, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<EdgeReference<'a, E, Ix>> {
+        let target_node = self.target_node;
+        self.edges
+            .by_ref()
+            .find(|&edge| edge.node[1] == target_node)
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.edges.size_hint();
+        (0, upper)
     }
 }
 
