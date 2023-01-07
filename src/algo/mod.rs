@@ -759,7 +759,7 @@ impl<N> Cycle<N> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct NegativeCycle(pub ());
 
-/// Return `true` if the graph is bipartite. A graph is bipartite if it's nodes can be divided into
+/// Return `true` if the graph is bipartite. A graph is bipartite if its nodes can be divided into
 /// two disjoint and indepedent sets U and V such that every edge connects U to one in V. This
 /// algorithm implements 2-coloring algorithm based on the BFS algorithm.
 ///
