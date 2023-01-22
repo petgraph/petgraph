@@ -197,6 +197,20 @@ where
         self.g.capacity()
     }
 
+    /// Reverse the direction of all edges
+    pub fn reverse(&mut self) {
+        // swap edge endpoints,
+        // edge incoming / outgoing lists,
+        // node incoming / outgoing lists
+        for edge in &mut self.g.edges {
+            edge.node.swap(0, 1);
+            edge.next.swap(0, 1);
+        }
+        for node in &mut self.g.nodes {
+            node.next.swap(0, 1);
+        }
+    }
+
     /// Remove all nodes and edges
     pub fn clear(&mut self) {
         self.node_count = 0;
@@ -2021,4 +2035,20 @@ fn extend_with_edges() {
     assert_eq!(gr.node_count(), 4);
     assert_eq!(gr.edge_count(), 2);
     gr.check_free_lists();
+}
+
+#[test]
+fn test_reverse() {
+    let mut gr = StableGraph::<_, _>::default();
+    let a = gr.add_node("a");
+    let b = gr.add_node("b");
+
+    gr.add_edge(a, b, 0);
+
+    let mut reversed_gr = gr.clone();
+    reversed_gr.reverse();
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(gr.edges_directed(i, Incoming), reversed_gr.edges(i));
+    }
 }
