@@ -432,7 +432,7 @@ where
     /// - `Undirected`: All edges from or to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
-    /// Iterator element type is `(N, &E)`.
+    /// Iterator element type is `(N, N, &E)`.
     pub fn edges(&self, from: N) -> Edges<N, E, Ty> {
         Edges {
             from,
@@ -452,7 +452,7 @@ where
     ///   edge.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
-    /// Iterator element type is `(N, &E)`.
+    /// Iterator element type is `(N, N, &E)`.
     pub fn edges_directed(&self, from: N, dir: Direction) -> EdgesDirected<N, E, Ty> {
         EdgesDirected {
             from,
