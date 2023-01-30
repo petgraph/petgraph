@@ -435,7 +435,7 @@ where
     /// Iterator element type is `(N, N, &E)`.
     pub fn edges(&self, a: N) -> Edges<N, E, Ty> {
         Edges {
-            a,
+            from: a,
             iter: self.neighbors(a),
             edges: &self.edges,
         }
@@ -455,7 +455,7 @@ where
     /// Iterator element type is `(N, N, &E)`.
     pub fn edges_directed(&self, a: N, dir: Direction) -> EdgesDirected<N, E, Ty> {
         EdgesDirected {
-            a,
+            from: a,
             iter: self.neighbors_directed(a, dir),
             dir,
             edges: &self.edges,
