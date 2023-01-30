@@ -433,10 +433,10 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `(N, N, &E)`.
-    pub fn edges(&self, from: N) -> Edges<N, E, Ty> {
+    pub fn edges(&self, a: N) -> Edges<N, E, Ty> {
         Edges {
-            from,
-            iter: self.neighbors(from),
+            a,
+            iter: self.neighbors(a),
             edges: &self.edges,
         }
     }
@@ -453,10 +453,10 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `(N, N, &E)`.
-    pub fn edges_directed(&self, from: N, dir: Direction) -> EdgesDirected<N, E, Ty> {
+    pub fn edges_directed(&self, a: N, dir: Direction) -> EdgesDirected<N, E, Ty> {
         EdgesDirected {
-            from,
-            iter: self.neighbors_directed(from, dir),
+            a,
+            iter: self.neighbors_directed(a, dir),
             dir,
             edges: &self.edges,
         }
