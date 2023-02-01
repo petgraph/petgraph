@@ -464,7 +464,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// - `Undirected`: All edges connected to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
-    /// Iterator element type is [`Edges<E, Ix>`](../graph/struct.Edges.html).
+    /// Iterator element type is (NodeIndex<Ix>, NodeIndex<Ix>, &E).
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<Ty, Null, Ix> {
         Edges::on_columns(a.index(), &self.node_adjacencies, self.node_capacity)
     }
@@ -556,7 +556,7 @@ impl<N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> MatrixGraph<N, E, Directe
     /// - `Incoming`: All edges to `a`.
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
-    /// Iterator element type is [`EdgeReference<E, Ix>`](../graph/struct.EdgeReference.html).
+    /// Iterator element type is (NodeIndex<Ix>, NodeIndex<Ix>, &E).
     pub fn edges_directed(&self, a: NodeIndex<Ix>, d: Direction) -> Edges<Directed, Null, Ix> {
         if d == Outgoing {
             self.edges(a)
