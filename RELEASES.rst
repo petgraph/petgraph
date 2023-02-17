@@ -1,3 +1,24 @@
+Version 0.6.3 (2023-02-07)
+==========================
+
+- Added an iterator over subgraph isomorphisms (`#500`_)
+- Added serde support on ``GraphMap`` (`#496`_)
+- Added ``reverse`` method for ``StableGraph`` (`#533`_)
+- Added ``edges_connecting`` iterator for ``StableGraph`` (`#521`_)
+- Fix Floyd-Warshall algorithm behaviour on undirected graphs (`487`_)
+- Fix IntoEdgesDirected implementation for NodeFiltered when direction is Incoming (`476`_)
+- Fix cardinality check in subgraph isomorphism (`472`_)
+- Fix UB in ``MatrixGraph`` (`#505`_)
+
+.. _`#472`: https://github.com/petgraph/petgraph/issues/472
+.. _`#476`: https://github.com/petgraph/petgraph/issues/476
+.. _`#487`: https://github.com/petgraph/petgraph/issues/487
+.. _`#496`: https://github.com/petgraph/petgraph/issues/496
+.. _`#500`: https://github.com/petgraph/petgraph/issues/500
+.. _`#505`: https://github.com/petgraph/petgraph/issues/505
+.. _`#521`: https://github.com/petgraph/petgraph/issues/521
+.. _`#533`: https://github.com/petgraph/petgraph/issues/533
+
 Version 0.6.2 (2022-05-28)
 ==========================
 
