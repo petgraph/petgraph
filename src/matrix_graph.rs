@@ -1783,6 +1783,7 @@ mod tests {
         assert!(!g.has_edge(a, b));
         assert_eq!(g.edge_count(), 0);
     }
+
     #[test]
     // From https://github.com/petgraph/petgraph/issues/523
     fn test_tarjan_scc_with_removed_node() {
