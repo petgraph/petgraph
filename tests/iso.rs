@@ -544,6 +544,30 @@ fn iter_subgraph() {
             .next()
             .is_none()
     );
+
+    // https://github.com/petgraph/petgraph/issues/534
+    let mut g = Graph::<String, ()>::new();
+    let e1 = g.add_node("l1".to_string());
+    let e2 = g.add_node("l2".to_string());
+    g.add_edge(e1, e2, ());
+    let e3 = g.add_node("l3".to_string());
+    g.add_edge(e2, e3, ());
+    let e4 = g.add_node("l4".to_string());
+    g.add_edge(e3, e4, ());
+
+    let mut sub = Graph::<String, ()>::new();
+    let e3 = sub.add_node("l3".to_string());
+    let e4 = sub.add_node("l4".to_string());
+    sub.add_edge(e3, e4, ());
+
+    let mut node_match = { |x: &String, y: &String| x == y };
+    let mut edge_match = { |x: &(), y: &()| x == y };
+    assert_eq!(
+        subgraph_isomorphisms_iter(&&sub, &&g, &mut node_match, &mut edge_match)
+            .unwrap()
+            .collect::<Vec<_>>(),
+        vec![vec![2, 3]]
+    );
 }
 
 /// Isomorphic pair
