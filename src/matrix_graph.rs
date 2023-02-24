@@ -1783,41 +1783,4 @@ mod tests {
         assert!(!g.has_edge(a, b));
         assert_eq!(g.edge_count(), 0);
     }
-<<<<<<< HEAD
-
-    #[test]
-    // From https://github.com/petgraph/petgraph/issues/523
-    fn test_tarjan_scc_with_removed_node() {
-        let mut g: MatrixGraph<(), ()> = MatrixGraph::new();
-
-        g.add_node(());
-        let b = g.add_node(());
-        g.add_node(());
-
-        g.remove_node(b);
-
-        assert_eq!(
-            crate::algo::tarjan_scc(&g),
-            [[node_index(0)], [node_index(2)]]
-        );
-    }
-
-    #[test]
-    // From https://github.com/petgraph/petgraph/issues/523
-    fn test_kosaraju_scc_with_removed_node() {
-        let mut g: MatrixGraph<(), ()> = MatrixGraph::new();
-
-        g.add_node(());
-        let b = g.add_node(());
-        g.add_node(());
-
-        g.remove_node(b);
-
-        assert_eq!(
-            crate::algo::kosaraju_scc(&g),
-            [[node_index(2)], [node_index(0)]]
-        );
-    }
-=======
->>>>>>> parent of 53e3042 (Update matrix_graph.rs)
 }
