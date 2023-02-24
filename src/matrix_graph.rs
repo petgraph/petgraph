@@ -1133,12 +1133,12 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Visitable
     type Map = FixedBitSet;
 
     fn visit_map(&self) -> FixedBitSet {
-        FixedBitSet::with_capacity(self.node_bound())
+        FixedBitSet::with_capacity(self.node_count())
     }
 
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
-        map.grow(self.node_bound());
+        map.grow(self.node_count());
     }
 }
 
@@ -1235,7 +1235,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeIndexab
     for MatrixGraph<N, E, Ty, Null, Ix>
 {
     fn node_bound(&self) -> usize {
-        self.nodes.upper_bound
+        self.node_count()
     }
 
     fn to_index(&self, ix: NodeIndex<Ix>) -> usize {
@@ -1783,6 +1783,7 @@ mod tests {
         assert!(!g.has_edge(a, b));
         assert_eq!(g.edge_count(), 0);
     }
+<<<<<<< HEAD
 
     #[test]
     // From https://github.com/petgraph/petgraph/issues/523
@@ -1817,4 +1818,6 @@ mod tests {
             [[node_index(2)], [node_index(0)]]
         );
     }
+=======
+>>>>>>> parent of 53e3042 (Update matrix_graph.rs)
 }
