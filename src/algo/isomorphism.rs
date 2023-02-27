@@ -506,26 +506,26 @@ mod matching {
 
     fn next_from_ix<G0, G1>(
         st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
-        nx: G0::NodeId,
+        nx: G1::NodeId,
         open_list: OpenList,
-    ) -> Option<G0::NodeId>
+    ) -> Option<G1::NodeId>
     where
         G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
         G1: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
     {
-        // Find the next node index to try on the `from` side of the mapping
-        let start = st.0.graph.to_index(nx) + 1;
-        let cand0 = match open_list {
-            OpenList::Out => st.0.next_out_index(start),
-            OpenList::In => st.0.next_in_index(start),
-            OpenList::Other => st.0.next_rest_index(start),
+        // Find the next node index to try on the `to` side of the mapping
+        let start = st.1.graph.to_index(nx) + 1;
+        let cand1 = match open_list {
+            OpenList::Out => st.1.next_out_index(start),
+            OpenList::In => st.1.next_in_index(start),
+            OpenList::Other => st.1.next_rest_index(start),
         }
         .map(|c| c + start); // compensate for start offset.
-        match cand0 {
+        match cand1 {
             None => None, // no more candidates
             Some(ix) => {
                 debug_assert!(ix >= start);
-                Some(st.0.graph.from_index(ix))
+                Some(st.1.graph.from_index(ix))
             }
         }
     }
@@ -615,11 +615,11 @@ mod matching {
                 Frame::Unwind { nodes, open_list } => {
                     pop_state(st, nodes);
 
-                    match next_from_ix(st, nodes.0, open_list) {
+                    match next_from_ix(st, nodes.1, open_list) {
                         None => continue,
                         Some(nx) => {
                             let f = Frame::Inner {
-                                nodes: (nx, nodes.1),
+                                nodes: (nodes.0, nx),
                                 open_list,
                             };
                             stack.push(f);
@@ -657,11 +657,11 @@ mod matching {
                         }
                         pop_state(st, nodes);
                     }
-                    match next_from_ix(st, nodes.0, open_list) {
+                    match next_from_ix(st, nodes.1, open_list) {
                         None => continue,
                         Some(nx) => {
                             let f = Frame::Inner {
-                                nodes: (nx, nodes.1),
+                                nodes: (nodes.0, nx),
                                 open_list,
                             };
                             stack.push(f);
