@@ -154,6 +154,7 @@ mod traits_graph;
 pub mod unionfind;
 mod util;
 
+pub mod generators;
 pub mod operator;
 pub mod prelude;
 
