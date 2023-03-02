@@ -1287,7 +1287,7 @@ quickcheck! {
 quickcheck! {
     // Checks that various properties of a complete directed graph hold true
     fn complete_directed_graph(nodes: usize) -> bool {
-        let complete = petgraph::generators::complete_graph::<DiGraph<_, _>>(0..nodes, |_, _| ());
+        let complete = petgraph::generators::complete_graph::<DiGraph<_, _>, _, _>(0..nodes, |_, _| ());
         assert_eq!(complete.node_count(), nodes);
         // A complete directed graph with n nodes has n * (n - 1) edges
         assert_eq!(complete.edge_count(), nodes * (nodes.saturating_sub(1)));
@@ -1307,7 +1307,7 @@ quickcheck! {
 quickcheck! {
     // Checks that various properties of a complete undirected graph hold true
     fn complete_undirected_graph(nodes: usize) -> bool {
-        let complete = petgraph::generators::complete_graph::<UnGraph<_, _>>(0..nodes, |_, _| ());
+        let complete = petgraph::generators::complete_graph::<UnGraph<_, _>, _, _>(0..nodes, |_, _| ());
         assert_eq!(complete.node_count(), nodes);
         // A complete undirected graph with n nodes has n * (n - 1) / 2 edges
         assert_eq!(complete.edge_count(), nodes * (nodes.saturating_sub(1)) / 2);

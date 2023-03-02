@@ -493,3 +493,22 @@ fn weights_mut_iterator() {
     assert_eq!(gr.node_weights_mut().count(), gr.node_count());
     assert_eq!(gr.edge_weights_mut().count(), gr.edge_count());
 }
+
+#[test]
+fn test_complete_graph_stable_un_graph() {
+    use petgraph::generators::complete_graph;
+    let edge_map = [((0, 1), "1"), ((0, 2), "x"), ((1, 2), "y")]
+        .iter()
+        .copied()
+        .collect::<std::collections::HashMap<_, _>>();
+    let complete = complete_graph::<StableUnGraph<_, _>, _, _>(&["1", "x", "y"], |a, b| {
+        edge_map[&(a.index(), b.index())]
+    });
+
+    let mut expected = StableUnGraph::<_, _>::from_edges(&[(0, 1, "1"), (0, 2, "x"), (1, 2, "y")]);
+    *&mut expected[n(0)] = "1";
+    *&mut expected[n(1)] = "x";
+    *&mut expected[n(2)] = "y";
+
+    assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
+}

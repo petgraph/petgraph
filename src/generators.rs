@@ -38,37 +38,19 @@ impl CompleteEdgeCount for Undirected {
 /// generate the [complete graph](https://en.wikipedia.org/wiki/Complete_graph).
 /// # Example
 /// ```rust
-/// use petgraph::{generators::complete_graph, graphmap::DiGraphMap};
-/// let mut count = 0;
-/// let complete = complete_graph::<DiGraphMap<_, _>>(1..=4, |_, _| {
-///     count += 1;
-///     count
-/// });
+/// use petgraph::{generators::complete_graph, graph::UnGraph};
+/// let complete = complete_graph::<UnGraph<_, _>, _, _>(core::iter::repeat(()).take(4), |_, _| ());
 ///
-/// let expected = DiGraphMap::<_, _>::from_edges([
-///     (1, 2, 1),
-///     (1, 3, 2),
-///     (1, 4, 3),
-///     (2, 1, 4),
-///     (2, 3, 5),
-///     (2, 4, 6),
-///     (3, 1, 7),
-///     (3, 2, 8),
-///     (3, 4, 9),
-///     (4, 1, 10),
-///     (4, 2, 11),
-///     (4, 3, 12),
-/// ]);
+/// let expected = UnGraph::<(), ()>::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
 ///
 /// assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
 /// ```
-pub fn complete_graph<G>(
-    nodes: impl IntoIterator<Item = G::NodeWeight>,
-    mut edges: impl FnMut(G::NodeId, G::NodeId) -> G::EdgeWeight,
-) -> G
+pub fn complete_graph<G, I, F>(nodes: I, mut edges: F) -> G
 where
     G: Create + GraphProp,
     G::EdgeType: CompleteEdgeCount,
+    I: IntoIterator<Item = G::NodeWeight>,
+    F: FnMut(G::NodeId, G::NodeId) -> G::EdgeWeight,
 {
     let nodes = nodes.into_iter();
     let node_count = nodes.size_hint().1.unwrap_or_default();
