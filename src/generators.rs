@@ -39,9 +39,10 @@ impl CompleteEdgeCount for Undirected {
 /// # Example
 /// ```rust
 /// use petgraph::{generators::complete_graph, graph::UnGraph};
-/// let complete = complete_graph::<UnGraph<_, _>, _, _>(core::iter::repeat(()).take(4), |_, _| ());
+/// type G = UnGraph<(), ()>;
+/// let complete: G = complete_graph(core::iter::repeat(()).take(4), |_, _| ());
 ///
-/// let expected = UnGraph::<(), ()>::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
+/// let expected = G::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
 ///
 /// assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
 /// ```

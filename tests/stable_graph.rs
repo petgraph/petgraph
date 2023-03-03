@@ -496,16 +496,20 @@ fn weights_mut_iterator() {
 
 #[test]
 fn test_complete_graph_stable_un_graph() {
-    use petgraph::generators::complete_graph;
+    use petgraph::{generators::complete_graph, visit::GraphBase};
+    type G = StableUnGraph<&'static str, &'static str>;
     let edge_map = [((0, 1), "1"), ((0, 2), "x"), ((1, 2), "y")]
         .iter()
         .copied()
         .collect::<std::collections::HashMap<_, _>>();
-    let complete = complete_graph::<StableUnGraph<_, _>, _, _>(&["1", "x", "y"], |a, b| {
-        edge_map[&(a.index(), b.index())]
-    });
+    let complete: G = complete_graph(
+        ["1", "x", "y"].iter().copied(),
+        |a: <G as GraphBase>::NodeId, b: <G as GraphBase>::NodeId| {
+            edge_map[&(a.index(), b.index())]
+        },
+    );
 
-    let mut expected = StableUnGraph::<_, _>::from_edges(&[(0, 1, "1"), (0, 2, "x"), (1, 2, "y")]);
+    let mut expected = G::from_edges(&[(0, 1, "1"), (0, 2, "x"), (1, 2, "y")]);
     *&mut expected[n(0)] = "1";
     *&mut expected[n(1)] = "x";
     *&mut expected[n(2)] = "y";

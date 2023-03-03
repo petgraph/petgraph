@@ -402,13 +402,14 @@ fn self_loops_can_be_removed() {
 #[test]
 fn test_complete_graph_di_graph_map() {
     use petgraph::generators::complete_graph;
+    type G = DiGraphMap<i32, i32>;
     let mut count = 0;
-    let complete = complete_graph::<DiGraphMap<_, _>, _, _>(1..=4, |_, _| {
+    let complete: G = complete_graph(1..=4, |_, _| {
         count += 1;
         count
     });
 
-    let expected = DiGraphMap::<_, _>::from_edges(&[
+    let expected = G::from_edges(&[
         (1, 2, 1),
         (1, 3, 2),
         (1, 4, 3),
