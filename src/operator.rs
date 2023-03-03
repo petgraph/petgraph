@@ -1,3 +1,4 @@
+//! Operators for creating new graphs from existings ones.
 use super::graph::{Graph, IndexType};
 use super::EdgeType;
 use crate::visit::IntoNodeReferences;
@@ -32,7 +33,6 @@ use crate::visit::IntoNodeReferences;
 /// ]);
 /// // a ----> b ----> c ----> d
 ///
-/// graph.extend_with_edges(&[(a, b), (b, c), (c, d)]);
 /// let mut output: Graph<(), (), Directed> = Graph::new();
 ///
 /// complement(&graph, &mut output, ());
