@@ -322,7 +322,7 @@ trait_template! {
     /// Edge kind property (directed or undirected edges)
 pub trait GraphProp : GraphBase {
     @section type
-    /// The kind edges in the graph.
+    /// The kind of edges in the graph.
     type EdgeType: EdgeType;
 
     @section nodelegate
