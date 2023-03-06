@@ -58,7 +58,7 @@ where
     let (node_weights, node_ids) = (node_weights.into_iter(), node_ids.as_mut());
     let mut graph = G::with_capacity(
         node_ids.len(),
-        <G as GraphProp>::EdgeType::complete_edge_count(node_ids.len()),
+        G::EdgeType::complete_edge_count(node_ids.len()),
     );
     for (node_id, node_weight) in node_ids.iter_mut().zip(node_weights) {
         *node_id = graph.add_node(node_weight);
