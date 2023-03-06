@@ -63,7 +63,7 @@ where
     for (node_id, node_weight) in node_ids.iter_mut().zip(node_weights) {
         *node_id = graph.add_node(node_weight);
     }
-    let is_directed = graph.is_directed();
+    let (node_ids, is_directed) = (&node_ids[..graph.node_count()], graph.is_directed());
     for (i, &from) in node_ids.iter().enumerate() {
         for &to in node_ids[..if is_directed { i } else { 0 }]
             .iter()
