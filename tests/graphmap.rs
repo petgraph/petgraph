@@ -404,7 +404,7 @@ fn test_complete_graph_di_graph_map() {
     use petgraph::generators::complete_graph;
     type G = DiGraphMap<i32, i32>;
     let mut count = 0..;
-    let complete: G = complete_graph(1.., &mut [Default::default(); 4], |_, _| {
+    let complete: G = complete_graph(&mut [Default::default(); 4], 1.., |_, _| {
         count.next().unwrap()
     });
 

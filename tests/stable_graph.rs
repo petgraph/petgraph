@@ -504,8 +504,8 @@ fn test_complete_graph_stable_un_graph() {
         .map(|&((a, b), weight)| ((n(a), n(b)), weight))
         .collect::<std::collections::HashMap<_, _>>();
     let complete: G = complete_graph(
-        node_weights.iter().copied(),
         &mut [Default::default(); 3],
+        node_weights.iter().copied(),
         |a, b| edge_map[&(a, b)],
     );
 

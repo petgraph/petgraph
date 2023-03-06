@@ -33,24 +33,24 @@ impl CompleteEdgeCount for Undirected {
     }
 }
 
-/// Given a collection of [`NodeWeight`s](../visit/trait.Data.html#associatedtype.NodeWeight),
-/// an output buffer for storing the new graph's [`NodeId`s](../visit/trait.GraphBase.html#associatedtype.NodeId),
+/// Given an output buffer for storing the new graph's [`NodeId`s](../visit/trait.GraphBase.html#associatedtype.NodeId),
+/// a collection of [`NodeWeight`s](../visit/trait.Data.html#associatedtype.NodeWeight),
 /// and a function for determining [`EdgeWeight`s](../visit/trait.Data.html#associatedtype.EdgeWeight),
 /// generate the [complete graph](https://en.wikipedia.org/wiki/Complete_graph).
 /// # Example
 /// ```rust
 /// use petgraph::{generators::complete_graph, graph::UnGraph};
 /// type G = UnGraph<(), ()>;
-/// let complete: G = complete_graph(core::iter::repeat(()), &mut [Default::default(); 4], |_, _| ());
+/// let complete: G = complete_graph(&mut [Default::default(); 4], core::iter::repeat(()), |_, _| ());
 ///
 /// let expected = G::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
 ///
 /// assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
 /// ```
-pub fn complete_graph<I, N, E, G>(node_weights: I, mut node_ids: N, mut edge_weights: E) -> G
+pub fn complete_graph<N, I, E, G>(mut node_ids: N, node_weights: I, mut edge_weights: E) -> G
 where
-    I: IntoIterator<Item = G::NodeWeight>,
     N: AsMut<[G::NodeId]>,
+    I: IntoIterator<Item = G::NodeWeight>,
     E: FnMut(G::NodeId, G::NodeId) -> G::EdgeWeight,
     G: Create + GraphProp,
     G::EdgeType: CompleteEdgeCount,
