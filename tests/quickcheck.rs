@@ -1288,8 +1288,7 @@ quickcheck! {
     // Checks that various properties of a complete directed graph hold true
     fn complete_directed_graph(nodes: usize) -> bool {
         type G = DiGraph<usize, ()>;
-        let mut node_ids = vec![Default::default(); nodes];
-        let complete: G = petgraph::generators::complete_graph(0..nodes, &mut node_ids, |_, _| ());
+        let complete: G = petgraph::generators::complete_graph(0..nodes, &mut vec![Default::default(); nodes], |_, _| ());
         assert_eq!(complete.node_count(), nodes);
         // A complete directed graph with n nodes has n * (n - 1) edges
         assert_eq!(complete.edge_count(), nodes * (nodes.saturating_sub(1)));
@@ -1310,8 +1309,7 @@ quickcheck! {
     // Checks that various properties of a complete undirected graph hold true
     fn complete_undirected_graph(nodes: usize) -> bool {
         type G = UnGraph<usize, ()>;
-        let mut node_ids = vec![Default::default(); nodes];
-        let complete: G = petgraph::generators::complete_graph(0..nodes, &mut node_ids, |_, _| ());
+        let complete: G = petgraph::generators::complete_graph(0..nodes, &mut vec![Default::default(); nodes], |_, _| ());
         assert_eq!(complete.node_count(), nodes);
         // A complete undirected graph with n nodes has n * (n - 1) / 2 edges
         assert_eq!(complete.edge_count(), nodes * (nodes.saturating_sub(1)) / 2);

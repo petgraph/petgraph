@@ -499,14 +499,15 @@ fn test_complete_graph_stable_un_graph() {
     use petgraph::generators::complete_graph;
     type G = StableUnGraph<&'static str, &'static str>;
     let node_weights = ["1", "x", "y"];
-    let mut node_ids = [Default::default(); 3];
     let edge_map = [((0, 1), "1"), ((0, 2), "x"), ((1, 2), "y")]
         .iter()
         .map(|&((a, b), weight)| ((n(a), n(b)), weight))
         .collect::<std::collections::HashMap<_, _>>();
-    let complete: G = complete_graph(node_weights.iter().copied(), &mut node_ids, |a, b| {
-        edge_map[&(a, b)]
-    });
+    let complete: G = complete_graph(
+        node_weights.iter().copied(),
+        &mut [Default::default(); 3],
+        |a, b| edge_map[&(a, b)],
+    );
 
     let mut expected = G::from_edges(&[(0, 1, "1"), (0, 2, "x"), (1, 2, "y")]);
     *&mut expected[n(0)] = "1";

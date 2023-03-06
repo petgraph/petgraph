@@ -41,8 +41,7 @@ impl CompleteEdgeCount for Undirected {
 /// ```rust
 /// use petgraph::{generators::complete_graph, graph::UnGraph};
 /// type G = UnGraph<(), ()>;
-/// let mut nodes = [Default::default(); 4];
-/// let complete: G = complete_graph(core::iter::repeat(()), &mut nodes, |_, _| ());
+/// let complete: G = complete_graph(core::iter::repeat(()), &mut [Default::default(); 4], |_, _| ());
 ///
 /// let expected = G::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
 ///
