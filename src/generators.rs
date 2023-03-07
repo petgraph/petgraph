@@ -47,29 +47,26 @@ impl CompleteEdgeCount for Undirected {
 ///
 /// assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
 /// ```
-pub fn complete_graph<N, I, E, G>(mut node_ids: N, node_weights: I, mut edge_weights: E) -> G
+pub fn complete_graph<N, I, E, G>(node_ids: &mut N, node_weights: I, mut edge_weights: E) -> G
 where
-    N: AsMut<[G::NodeId]>,
+    for<'a> &'a mut N: IntoIterator<Item = &'a mut G::NodeId>,
+    for<'a> &'a N: IntoIterator<Item = &'a G::NodeId>,
     I: IntoIterator<Item = G::NodeWeight>,
     E: FnMut(G::NodeId, G::NodeId) -> G::EdgeWeight,
     G: Create + GraphProp,
     G::EdgeType: CompleteEdgeCount,
 {
-    let (node_ids, node_weights) = (node_ids.as_mut(), node_weights.into_iter());
-    let nodes = node_ids.iter_mut().zip(node_weights);
+    let nodes = node_ids.into_iter().zip(node_weights.into_iter());
     let node_count = nodes.size_hint().1.unwrap_or(core::usize::MAX);
-    let mut graph = G::with_capacity(
-        node_count,
-        G::EdgeType::complete_edge_count(node_count),
-    );
-    for (node_id, node_weight) in nodes {
-        *node_id = graph.add_node(node_weight);
-    }
-    let (node_ids, is_directed) = (&node_ids[..graph.node_count()], graph.is_directed());
-    for (i, &from) in node_ids.iter().enumerate() {
-        for &to in node_ids[..if is_directed { i } else { 0 }]
-            .iter()
-            .chain(&node_ids[i + 1..])
+    let mut graph = G::with_capacity(node_count, G::EdgeType::complete_edge_count(node_count));
+    nodes.for_each(|(node_id, node_weight)| *node_id = graph.add_node(node_weight));
+    let (node_ids, node_count, is_directed): (&N, _, _) =
+        (node_ids, graph.node_count(), graph.is_directed());
+    let node_ids = || node_ids.into_iter().take(node_count);
+    for (i, &from) in node_ids().enumerate() {
+        for &to in node_ids()
+            .take(if is_directed { i } else { 0 })
+            .chain(node_ids().skip(i + 1))
         {
             graph.add_edge(from, to, edge_weights(from, to));
         }
