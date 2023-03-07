@@ -796,7 +796,7 @@ quickcheck! {
                     }
                 } else {
                     // if there are no path between two nodes then floyd_warshall will return maximum value possible
-                    if *fw_res.get(&(node1, node2)).unwrap() != u32::MAX {
+                    if *fw_res.get(&(node1, node2)).unwrap() != core::u32::MAX {
                         return false;
                     }
                 }
