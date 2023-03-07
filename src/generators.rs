@@ -55,12 +55,14 @@ where
     G: Create + GraphProp,
     G::EdgeType: CompleteEdgeCount,
 {
-    let (node_weights, node_ids) = (node_weights.into_iter(), node_ids.as_mut());
+    let (node_ids, node_weights) = (node_ids.as_mut(), node_weights.into_iter());
+    let nodes = node_ids.iter_mut().zip(node_weights);
+    let node_count = nodes.size_hint().1.unwrap_or(core::usize::MAX);
     let mut graph = G::with_capacity(
-        node_ids.len(),
-        G::EdgeType::complete_edge_count(node_ids.len()),
+        node_count,
+        G::EdgeType::complete_edge_count(node_count),
     );
-    for (node_id, node_weight) in node_ids.iter_mut().zip(node_weights) {
+    for (node_id, node_weight) in nodes {
         *node_id = graph.add_node(node_weight);
     }
     let (node_ids, is_directed) = (&node_ids[..graph.node_count()], graph.is_directed());
