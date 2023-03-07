@@ -423,6 +423,12 @@ fn test_complete_graph_di_graph_map() {
         (4, 3, 12),
     ]);
 
-    assert_eq!(complete.nodes().collect::<Vec<_>>(), expected.nodes().collect::<Vec<_>>());
-    assert_eq!(complete.all_edges().collect::<Vec<_>>(), expected.all_edges().collect::<Vec<_>>());
+    assert_eq!(
+        complete.nodes().collect::<Vec<_>>(),
+        expected.nodes().collect::<Vec<_>>()
+    );
+    assert_eq!(
+        complete.all_edges().collect::<Vec<_>>(),
+        expected.all_edges().collect::<Vec<_>>()
+    );
 }
