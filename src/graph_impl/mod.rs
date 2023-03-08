@@ -9,6 +9,7 @@ use std::slice;
 
 use fixedbitset::FixedBitSet;
 
+use crate::generators::CompleteGraph;
 use crate::{Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected};
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
@@ -2391,6 +2392,36 @@ where
 
     fn from_index(&self, ix: usize) -> Self::EdgeId {
         EdgeIndex::new(ix)
+    }
+}
+
+impl<N, E, Ty, Ix> CompleteGraph for Graph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn complete_graph<I, F>(node_weights: I, mut edge_weights: F) -> Self
+    where
+        I: IntoIterator<Item = Self::NodeWeight>,
+        F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
+        Self::EdgeType: crate::generators::CompleteEdgeCount,
+    {
+        let node_weights = node_weights.into_iter();
+        let node_count = node_weights.size_hint().1.unwrap_or(core::usize::MAX);
+        let mut graph =
+            Self::with_capacity(node_count, Self::EdgeType::complete_edge_count(node_count));
+        for node_weight in node_weights {
+            graph.add_node(node_weight);
+        }
+        for from in 0..graph.node_count() {
+            for to in
+                (0..if graph.is_directed() { from } else { 0 }).chain(from + 1..graph.node_count())
+            {
+                let (from, to) = (node_index(from), node_index(to));
+                graph.add_edge(from, to, edge_weights(from, to));
+            }
+        }
+        graph
     }
 }
 

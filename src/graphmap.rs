@@ -15,6 +15,7 @@ use std::mem;
 use std::ops::{Deref, Index, IndexMut};
 use std::slice::Iter;
 
+use crate::generators::CompleteGraph;
 use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
 
 use crate::graph::node_index;
@@ -1229,5 +1230,40 @@ where
     #[inline]
     fn is_adjacent(&self, _: &(), a: N, b: N) -> bool {
         self.contains_edge(a, b)
+    }
+}
+
+impl<N, E, Ty> CompleteGraph for GraphMap<N, E, Ty>
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
+{
+    fn complete_graph<I, F>(node_weights: I, mut edge_weights: F) -> Self
+    where
+        I: IntoIterator<Item = Self::NodeWeight>,
+        F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
+        Self::EdgeType: crate::generators::CompleteEdgeCount,
+    {
+        let node_weights = node_weights.into_iter();
+        let node_count = node_weights.size_hint().1.unwrap_or(core::usize::MAX);
+        let mut graph =
+            Self::with_capacity(node_count, Self::EdgeType::complete_edge_count(node_count));
+        for node_weight in node_weights {
+            graph.add_node(node_weight);
+        }
+        for (i, from) in graph.nodes.keys().cloned().enumerate() {
+            for to in graph
+                .nodes
+                .keys()
+                .cloned()
+                .take(if graph.is_directed() { i } else { 0 })
+                .chain(graph.nodes.keys().cloned().skip(i + 1))
+            {
+                graph
+                    .edges
+                    .insert(Self::edge_key(from, to), edge_weights(from, to));
+            }
+        }
+        graph
     }
 }

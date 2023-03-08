@@ -33,43 +33,42 @@ impl CompleteEdgeCount for Undirected {
     }
 }
 
-/// Given an output buffer for storing the new graph's [`NodeId`s](../visit/trait.GraphBase.html#associatedtype.NodeId),
-/// a collection of [`NodeWeight`s](../visit/trait.Data.html#associatedtype.NodeWeight),
+/// Given a collection of [`NodeWeight`s](../visit/trait.Data.html#associatedtype.NodeWeight),
 /// and a function for determining [`EdgeWeight`s](../visit/trait.Data.html#associatedtype.EdgeWeight),
 /// generate the [complete graph](https://en.wikipedia.org/wiki/Complete_graph).
 /// # Example
 /// ```rust
-/// use petgraph::{generators::complete_graph, graph::UnGraph};
+/// use petgraph::{generators::CompleteGraph, graph::UnGraph};
 /// type G = UnGraph<(), ()>;
-/// let complete: G = complete_graph(&mut [Default::default(); 4], core::iter::repeat(()), |_, _| ());
+/// let complete = G::complete_graph(core::iter::repeat(()).take(4), |_, _| ());
 ///
 /// let expected = G::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
 ///
 /// assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
 /// ```
-pub fn complete_graph<N, I, E, G>(node_ids: &mut N, node_weights: I, mut edge_weights: E) -> G
-where
-    for<'a> &'a mut N: IntoIterator<Item = &'a mut G::NodeId>,
-    for<'a> &'a N: IntoIterator<Item = &'a G::NodeId>,
-    I: IntoIterator<Item = G::NodeWeight>,
-    E: FnMut(G::NodeId, G::NodeId) -> G::EdgeWeight,
-    G: Create + GraphProp,
-    G::EdgeType: CompleteEdgeCount,
-{
-    let nodes = node_ids.into_iter().zip(node_weights.into_iter());
-    let node_count = nodes.size_hint().1.unwrap_or(core::usize::MAX);
-    let mut graph = G::with_capacity(node_count, G::EdgeType::complete_edge_count(node_count));
-    nodes.for_each(|(node_id, node_weight)| *node_id = graph.add_node(node_weight));
-    let (node_ids, node_count, is_directed): (&N, _, _) =
-        (node_ids, graph.node_count(), graph.is_directed());
-    let node_ids = || node_ids.into_iter().take(node_count);
-    for (i, &from) in node_ids().enumerate() {
-        for &to in node_ids()
-            .take(if is_directed { i } else { 0 })
-            .chain(node_ids().skip(i + 1))
-        {
-            graph.add_edge(from, to, edge_weights(from, to));
+pub trait CompleteGraph: Create + GraphProp {
+    fn complete_graph<I, E>(node_weights: I, mut edge_weights: E) -> Self
+    where
+        I: IntoIterator<Item = Self::NodeWeight>,
+        E: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
+        Self::EdgeType: CompleteEdgeCount,
+    {
+        let node_weights = node_weights.into_iter();
+        let node_count = node_weights.size_hint().1.unwrap_or(core::usize::MAX);
+        let mut graph =
+            Self::with_capacity(node_count, Self::EdgeType::complete_edge_count(node_count));
+        let node_ids = node_weights
+            .map(|node_weight| graph.add_node(node_weight))
+            .collect::<Vec<_>>();
+        let is_directed = graph.is_directed();
+        for (i, &from) in node_ids.iter().enumerate() {
+            for &to in node_ids[..if is_directed { i } else { 0 }]
+                .iter()
+                .chain(&node_ids[i + 1..])
+            {
+                graph.add_edge(from, to, edge_weights(from, to));
+            }
         }
+        graph
     }
-    graph
 }
