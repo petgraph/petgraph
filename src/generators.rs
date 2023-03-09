@@ -1,5 +1,9 @@
 //! Functions for generating graphs of various kinds.
-use crate::{data::Create, visit::GraphProp, Directed, Undirected};
+use crate::{
+    data::Create,
+    visit::{GraphProp, NodeIndexable},
+    Directed, Undirected,
+};
 
 /// A trait for determining the number of edges in a
 /// [complete graph](https://en.wikipedia.org/wiki/Complete_graph).
@@ -47,11 +51,11 @@ impl CompleteEdgeCount for Undirected {
 /// assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
 /// ```
 pub trait CompleteGraph: Create + GraphProp {
-    fn complete_graph<I, E>(node_weights: I, mut edge_weights: E) -> Self
+    fn complete_graph<I, F>(node_weights: I, mut edge_weights: F) -> Self
     where
-        I: IntoIterator<Item = Self::NodeWeight>,
-        E: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
         Self::EdgeType: CompleteEdgeCount,
+        I: IntoIterator<Item = Self::NodeWeight>,
+        F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
     {
         let node_weights = node_weights.into_iter();
         let node_count = node_weights.size_hint().1.unwrap_or(core::usize::MAX);
@@ -71,4 +75,28 @@ pub trait CompleteGraph: Create + GraphProp {
         }
         graph
     }
+}
+
+pub(crate) fn complete_graph_indexable<G, I, F>(node_weights: I, mut edge_weights: F) -> G
+where
+    G: Create + GraphProp + NodeIndexable,
+    G::EdgeType: CompleteEdgeCount,
+    I: IntoIterator<Item = G::NodeWeight>,
+    F: FnMut(G::NodeId, G::NodeId) -> G::EdgeWeight,
+{
+    let node_weights = node_weights.into_iter();
+    let node_count = node_weights.size_hint().1.unwrap_or(core::usize::MAX);
+    let mut graph = G::with_capacity(node_count, G::EdgeType::complete_edge_count(node_count));
+    for node_weight in node_weights {
+        graph.add_node(node_weight);
+    }
+    for from in 0..graph.node_count() {
+        for to in
+            (0..if graph.is_directed() { from } else { 0 }).chain(from + 1..graph.node_count())
+        {
+            let (from, to) = (graph.from_index(from), graph.from_index(to));
+            graph.add_edge(from, to, edge_weights(from, to));
+        }
+    }
+    graph
 }

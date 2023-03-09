@@ -20,7 +20,7 @@ use crate::visit::{
     IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
 };
 
-use crate::data::Build;
+use crate::data::{Build, Create};
 
 pub use crate::graph::IndexType;
 
@@ -1279,6 +1279,28 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Build
     }
 }
 
+impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Create
+    for MatrixGraph<N, E, Ty, Null, Ix>
+{
+    fn with_capacity(nodes: usize, _edges: usize) -> Self {
+        Self::with_capacity(nodes)
+    }
+}
+
+use crate::generators::{complete_graph_indexable, CompleteEdgeCount, CompleteGraph};
+impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> CompleteGraph
+    for MatrixGraph<N, E, Ty, Null, Ix>
+{
+    fn complete_graph<I, F>(node_weights: I, edge_weights: F) -> Self
+    where
+        I: IntoIterator<Item = Self::NodeWeight>,
+        F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
+        Self::EdgeType: CompleteEdgeCount,
+    {
+        complete_graph_indexable(node_weights, edge_weights)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1814,6 +1836,33 @@ mod tests {
         assert_eq!(
             crate::algo::kosaraju_scc(&g),
             [[node_index(2)], [node_index(0)]]
+        );
+    }
+
+    #[test]
+    fn test_create_with_capacity() {
+        let g = <MatrixGraph<(), ()> as Create>::with_capacity(42, 0);
+        assert_eq!(g.node_count(), 0);
+        assert_eq!(g.edge_count(), 0);
+    }
+
+    #[test]
+    fn test_complete_graph_matrix_graph() {
+        use crate::generators::CompleteGraph;
+        type G = MatrixGraph<(), ()>;
+        let complete = G::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
+
+        let expected = G::from_edges(&[(0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 1)]);
+
+        assert_eq!(
+            complete
+                .node_identifiers()
+                .flat_map(|node_id| complete.edges(node_id))
+                .collect::<Vec<_>>(),
+            expected
+                .node_identifiers()
+                .flat_map(|node_id| expected.edges(node_id))
+                .collect::<Vec<_>>(),
         );
     }
 }

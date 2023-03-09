@@ -7,7 +7,7 @@ use petgraph::adj::DefaultIx;
 use petgraph::adj::IndexType;
 use petgraph::adj::{List, UnweightedList};
 use petgraph::algo::tarjan_scc;
-use petgraph::data::{DataMap, DataMapMut};
+use petgraph::data::{Create, DataMap, DataMapMut};
 use petgraph::dot::Dot;
 use petgraph::prelude::*;
 use petgraph::visit::{
@@ -256,4 +256,25 @@ fn dot() {
 }
 "#
     );
+}
+
+#[test]
+fn test_create_with_capacity() {
+    let g = <List<()> as Create>::with_capacity(42, 0);
+    assert_eq!(g.node_count(), 0);
+    assert_eq!(g.edge_count(), 0);
+}
+
+#[test]
+fn test_complete_graph_list() {
+    use petgraph::generators::CompleteGraph;
+    type G = List<()>;
+    let complete = G::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
+
+    let mut expected = G::with_capacity(3);
+    expected.add_node_from_edges([(n(1), ()), (n(2), ())].iter().copied());
+    expected.add_node_from_edges([(n(0), ()), (n(2), ())].iter().copied());
+    expected.add_node_from_edges([(n(0), ()), (n(1), ())].iter().copied());
+
+    assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
 }

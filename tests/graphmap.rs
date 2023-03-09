@@ -430,3 +430,27 @@ fn test_complete_graph_di_graph_map() {
         expected.all_edges().collect::<Vec<_>>()
     );
 }
+
+#[test]
+fn test_complete_graph_un_graph_map() {
+    use petgraph::generators::CompleteGraph;
+    type G = UnGraphMap<&'static str, &'static str>;
+    let node_weights = ["1", "x", "y"];
+    let edge_weights = [("1", "x", "1"), ("1", "y", "x"), ("x", "y", "y")];
+    let edge_map = edge_weights
+        .iter()
+        .map(|&(from, to, weight)| ((from, to), weight))
+        .collect::<std::collections::HashMap<_, _>>();
+    let complete = G::complete_graph(node_weights.iter().copied(), |a, b| edge_map[&(a, b)]);
+
+    let mut expected = G::from_edges(&edge_weights);
+
+    assert_eq!(
+        complete.nodes().collect::<Vec<_>>(),
+        expected.nodes().collect::<Vec<_>>()
+    );
+    assert_eq!(
+        complete.all_edges().collect::<Vec<_>>(),
+        expected.all_edges().collect::<Vec<_>>()
+    );
+}

@@ -15,7 +15,6 @@ use std::mem;
 use std::ops::{Deref, Index, IndexMut};
 use std::slice::Iter;
 
-use crate::generators::CompleteGraph;
 use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
 
 use crate::graph::node_index;
@@ -1233,6 +1232,7 @@ where
     }
 }
 
+use crate::generators::{CompleteEdgeCount, CompleteGraph};
 impl<N, E, Ty> CompleteGraph for GraphMap<N, E, Ty>
 where
     N: Copy + Ord + Hash,
@@ -1242,7 +1242,7 @@ where
     where
         I: IntoIterator<Item = Self::NodeWeight>,
         F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
-        Self::EdgeType: crate::generators::CompleteEdgeCount,
+        Self::EdgeType: CompleteEdgeCount,
     {
         let node_weights = node_weights.into_iter();
         let node_count = node_weights.size_hint().1.unwrap_or(core::usize::MAX);
