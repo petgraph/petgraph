@@ -796,7 +796,7 @@ quickcheck! {
                     }
                 } else {
                     // if there are no path between two nodes then floyd_warshall will return maximum value possible
-                    if *fw_res.get(&(node1, node2)).unwrap() != u32::MAX {
+                    if *fw_res.get(&(node1, node2)).unwrap() != core::u32::MAX {
                         return false;
                     }
                 }
@@ -1288,7 +1288,7 @@ quickcheck! {
     // Checks that various properties of a complete directed graph hold true
     fn complete_directed_graph(nodes: usize) -> bool {
         type G = DiGraph<usize, ()>;
-        let complete = <G as petgraph::generators::CompleteGraph>::complete_graph(0..nodes, |_, _| ());
+        let complete: G = petgraph::generators::complete_graph(0..nodes, |_, _| ());
         assert_eq!(complete.node_count(), nodes);
         // A complete directed graph with n nodes has n * (n - 1) edges
         assert_eq!(complete.edge_count(), nodes * (nodes.saturating_sub(1)));
@@ -1309,7 +1309,7 @@ quickcheck! {
     // Checks that various properties of a complete undirected graph hold true
     fn complete_undirected_graph(nodes: usize) -> bool {
         type G = UnGraph<usize, ()>;
-        let complete = <G as petgraph::generators::CompleteGraph>::complete_graph(0..nodes, |_, _| ());
+        let complete: G = petgraph::generators::complete_graph(0..nodes, |_, _| ());
         assert_eq!(complete.node_count(), nodes);
         // A complete undirected graph with n nodes has n * (n - 1) / 2 edges
         assert_eq!(complete.edge_count(), nodes * (nodes.saturating_sub(1)) / 2);

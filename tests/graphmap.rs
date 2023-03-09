@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::fmt;
 
 use petgraph::prelude::*;
-use petgraph::visit::Walker;
+use petgraph::visit::{IntoEdgeReferences, IntoNodeReferences, Walker};
 
 use petgraph::algo::dijkstra;
 
@@ -401,31 +401,35 @@ fn self_loops_can_be_removed() {
 
 #[test]
 fn test_complete_graph_di_graph_map() {
-    type G = DiGraphMap<i32, i32>;
     let mut count = 1..;
-    let complete: G = petgraph::generators::complete_graph(1..=4, |_, _| count.next().unwrap());
-
-    let expected = G::from_edges(&[
-        (1, 2, 1),
-        (1, 3, 2),
-        (1, 4, 3),
-        (2, 1, 4),
-        (2, 3, 5),
-        (2, 4, 6),
-        (3, 1, 7),
-        (3, 2, 8),
-        (3, 4, 9),
-        (4, 1, 10),
-        (4, 2, 11),
-        (4, 3, 12),
-    ]);
+    let complete: DiGraphMap<_, _> =
+        petgraph::generators::complete_graph(1..=4, |_, _| count.next().unwrap());
 
     assert_eq!(
-        complete.nodes().collect::<Vec<_>>(),
-        expected.nodes().collect::<Vec<_>>()
+        complete
+            .node_references()
+            .map(|(node_index, &weight)| (node_index, weight))
+            .collect::<Vec<_>>(),
+        [(1, 1), (2, 2), (3, 3), (4, 4)]
     );
     assert_eq!(
-        complete.all_edges().collect::<Vec<_>>(),
-        expected.all_edges().collect::<Vec<_>>()
+        complete
+            .edge_references()
+            .map(|(from, to, &weight)| (from, to, weight))
+            .collect::<Vec<_>>(),
+        [
+            (1, 2, 1),
+            (1, 3, 2),
+            (1, 4, 3),
+            (2, 1, 4),
+            (2, 3, 5),
+            (2, 4, 6),
+            (3, 1, 7),
+            (3, 2, 8),
+            (3, 4, 9),
+            (4, 1, 10),
+            (4, 2, 11),
+            (4, 3, 12),
+        ]
     );
 }

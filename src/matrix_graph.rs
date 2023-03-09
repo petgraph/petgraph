@@ -1834,21 +1834,29 @@ mod tests {
 
     #[test]
     fn test_complete_graph_matrix_graph() {
-        type G = MatrixGraph<(), ()>;
-        let complete: G =
+        let complete: MatrixGraph<_, _> =
             crate::generators::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
-
-        let expected = G::from_edges(&[(0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 1)]);
 
         assert_eq!(
             complete
-                .node_identifiers()
-                .flat_map(|node_id| complete.edges(node_id))
+                .node_references()
+                .map(|(node_index, &weight)| (node_index.index(), weight))
                 .collect::<Vec<_>>(),
-            expected
-                .node_identifiers()
-                .flat_map(|node_id| expected.edges(node_id))
+            [(0, ()), (1, ()), (2, ())]
+        );
+        assert_eq!(
+            complete
+                .edge_references()
+                .map(|(from, to, &weight)| (from.index(), to.index(), weight))
                 .collect::<Vec<_>>(),
+            [
+                (0, 1, ()),
+                (0, 2, ()),
+                (1, 0, ()),
+                (1, 2, ()),
+                (2, 0, ()),
+                (2, 1, ())
+            ],
         );
     }
 }

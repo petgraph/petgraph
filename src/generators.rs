@@ -42,13 +42,27 @@ impl CompleteEdgeCount for Undirected {
 /// generate the [complete graph](https://en.wikipedia.org/wiki/Complete_graph).
 /// # Example
 /// ```rust
-/// use petgraph::{generators::complete_graph, graph::UnGraph};
-/// type G = UnGraph<(), ()>;
-/// let complete: G = complete_graph(core::iter::repeat(()).take(4), |_, _| ());
+/// use petgraph::{
+///     generators::complete_graph,
+///     graph::UnGraph,
+///     visit::{EdgeRef, IntoNodeReferences},
+/// };
+/// let complete: UnGraph<_, _> = complete_graph(core::iter::repeat(()).take(4), |_, _| ());
 ///
-/// let expected = G::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
-///
-/// assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
+/// assert_eq!(
+///     complete
+///         .node_references()
+///         .map(|(node_index, &weight)| (node_index.index(), weight))
+///         .collect::<Vec<_>>(),
+///     [(0, ()), (1, ()), (2, ()), (3, ())]
+/// );
+/// assert_eq!(
+///     complete
+///         .edge_references()
+///         .map(|edge| (edge.source().index(), edge.target().index(), *edge.weight()))
+///         .collect::<Vec<_>>(),
+///     [(0, 1, ()), (0, 2, ()), (0, 3, ()), (1, 2, ()), (1, 3, ()), (2, 3, ())]
+/// )
 /// ```
 pub fn complete_graph<G, I, F>(node_weights: I, mut edge_weights: F) -> G
 where

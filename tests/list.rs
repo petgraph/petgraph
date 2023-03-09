@@ -267,14 +267,28 @@ fn test_create_with_capacity() {
 
 #[test]
 fn test_complete_graph_list() {
-    type G = List<()>;
-    let complete: G =
+    let complete: List<_> =
         petgraph::generators::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
 
-    let mut expected = G::with_capacity(3);
-    expected.add_node_from_edges([(n(1), ()), (n(2), ())].iter().copied());
-    expected.add_node_from_edges([(n(0), ()), (n(2), ())].iter().copied());
-    expected.add_node_from_edges([(n(0), ()), (n(1), ())].iter().copied());
-
-    assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
+    assert_eq!(
+        complete
+            .node_references()
+            .map(|node_index| node_index.index())
+            .collect::<Vec<_>>(),
+        [0, 1, 2]
+    );
+    assert_eq!(
+        complete
+            .edge_references()
+            .map(|edge| { (edge.source().index(), edge.target().index(), *edge.weight(),) })
+            .collect::<Vec<_>>(),
+        [
+            (0, 1, ()),
+            (0, 2, ()),
+            (1, 0, ()),
+            (1, 2, ()),
+            (2, 0, ()),
+            (2, 1, ())
+        ]
+    );
 }

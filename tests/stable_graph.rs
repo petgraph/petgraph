@@ -496,19 +496,29 @@ fn weights_mut_iterator() {
 
 #[test]
 fn test_complete_graph_stable_un_graph() {
-    type G = StableUnGraph<&'static str, &'static str, usize>;
     let node_weights = ["1", "x", "y"];
     let edge_weights = [(0, 1, "1"), (0, 2, "x"), (1, 2, "y")];
     let edge_map = edge_weights
         .iter()
         .map(|&(a, b, weight)| ((n(a), n(b)), weight))
         .collect::<std::collections::HashMap<_, _>>();
-    let complete: G = petgraph::generators::complete_graph(node_weights.iter().copied(), |a, b| edge_map[&(a, b)]);
+    let complete: StableUnGraph<_, _> =
+        petgraph::generators::complete_graph(node_weights.iter().copied(), |a, b| {
+            edge_map[&(a, b)]
+        });
 
-    let mut expected = G::from_edges(&edge_weights);
-    *&mut expected[n(0)] = "1";
-    *&mut expected[n(1)] = "x";
-    *&mut expected[n(2)] = "y";
-
-    assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
+    assert_eq!(
+        complete
+            .node_references()
+            .map(|(node_index, &weight)| (node_index.index(), weight))
+            .collect::<Vec<_>>(),
+        [(0, "1"), (1, "x"), (2, "y")]
+    );
+    assert_eq!(
+        complete
+            .edge_references()
+            .map(|edge| (edge.source().index(), edge.target().index(), *edge.weight()))
+            .collect::<Vec<_>>(),
+        [(0, 1, "1"), (0, 2, "x"), (1, 2, "y"),],
+    );
 }
