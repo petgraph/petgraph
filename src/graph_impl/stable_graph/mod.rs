@@ -1982,22 +1982,6 @@ where
     }
 }
 
-use crate::generators::{complete_graph_indexable, CompleteGraph};
-impl<N, E, Ty, Ix> CompleteGraph for StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    fn complete_graph<I, F>(node_weights: I, edge_weights: F) -> Self
-    where
-        I: IntoIterator<Item = Self::NodeWeight>,
-        F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
-        Self::EdgeType: crate::generators::CompleteEdgeCount,
-    {
-        complete_graph_indexable(node_weights, edge_weights)
-    }
-}
-
 #[test]
 fn stable_graph() {
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);

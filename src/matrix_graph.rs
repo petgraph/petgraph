@@ -1287,20 +1287,6 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Create
     }
 }
 
-use crate::generators::{complete_graph_indexable, CompleteEdgeCount, CompleteGraph};
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> CompleteGraph
-    for MatrixGraph<N, E, Ty, Null, Ix>
-{
-    fn complete_graph<I, F>(node_weights: I, edge_weights: F) -> Self
-    where
-        I: IntoIterator<Item = Self::NodeWeight>,
-        F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
-        Self::EdgeType: CompleteEdgeCount,
-    {
-        complete_graph_indexable(node_weights, edge_weights)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

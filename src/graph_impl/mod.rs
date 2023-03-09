@@ -2394,22 +2394,6 @@ where
     }
 }
 
-use crate::generators::{complete_graph_indexable, CompleteGraph};
-impl<N, E, Ty, Ix> CompleteGraph for Graph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    fn complete_graph<I, F>(node_weights: I, edge_weights: F) -> Self
-    where
-        I: IntoIterator<Item = Self::NodeWeight>,
-        F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
-        Self::EdgeType: crate::generators::CompleteEdgeCount,
-    {
-        complete_graph_indexable(node_weights, edge_weights)
-    }
-}
-
 mod frozen;
 #[cfg(feature = "stable_graph")]
 pub mod stable_graph;

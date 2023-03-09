@@ -443,7 +443,7 @@ fn test_complete_graph_un_graph_map() {
         .collect::<std::collections::HashMap<_, _>>();
     let complete = G::complete_graph(node_weights.iter().copied(), |a, b| edge_map[&(a, b)]);
 
-    let mut expected = G::from_edges(&edge_weights);
+    let expected = G::from_edges(&edge_weights);
 
     assert_eq!(
         complete.nodes().collect::<Vec<_>>(),

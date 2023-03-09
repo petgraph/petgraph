@@ -380,18 +380,6 @@ impl<E: Default, Ix: IndexType> Create for List<E, Ix> {
     }
 }
 
-use crate::generators::{complete_graph_indexable, CompleteEdgeCount, CompleteGraph};
-impl<E: Default, Ix: IndexType> CompleteGraph for List<E, Ix> {
-    fn complete_graph<I, F>(node_weights: I, edge_weights: F) -> Self
-    where
-        I: IntoIterator<Item = Self::NodeWeight>,
-        F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
-        Self::EdgeType: CompleteEdgeCount,
-    {
-        complete_graph_indexable(node_weights, edge_weights)
-    }
-}
-
 impl<'a, E, Ix> fmt::Debug for EdgeReferences<'a, E, Ix>
 where
     E: fmt::Debug,
