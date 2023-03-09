@@ -42,37 +42,34 @@ impl CompleteEdgeCount for Undirected {
 /// generate the [complete graph](https://en.wikipedia.org/wiki/Complete_graph).
 /// # Example
 /// ```rust
-/// use petgraph::{generators::CompleteGraph, graph::UnGraph};
+/// use petgraph::{generators::complete_graph, graph::UnGraph};
 /// type G = UnGraph<(), ()>;
-/// let complete = G::complete_graph(core::iter::repeat(()).take(4), |_, _| ());
+/// let complete: G = complete_graph(core::iter::repeat(()).take(4), |_, _| ());
 ///
 /// let expected = G::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
 ///
 /// assert_eq!(format!("{:?}", complete), format!("{:?}", expected));
 /// ```
-pub trait CompleteGraph: Create + GraphProp + NodeIndexable {
-    fn complete_graph<I, F>(node_weights: I, mut edge_weights: F) -> Self
-    where
-        Self::EdgeType: CompleteEdgeCount,
-        I: IntoIterator<Item = Self::NodeWeight>,
-        F: FnMut(Self::NodeId, Self::NodeId) -> Self::EdgeWeight,
-    {
-        let node_weights = node_weights.into_iter();
-        let node_count = node_weights.size_hint().1.unwrap_or(core::usize::MAX);
-        let mut graph = Self::with_capacity(node_count, Self::EdgeType::complete_edge_count(node_count));
-        for node_weight in node_weights {
-            graph.add_node(node_weight);
-        }
-        for from in 0..graph.node_count() {
-            for to in
-                (0..if graph.is_directed() { from } else { 0 }).chain(from + 1..graph.node_count())
-            {
-                let (from, to) = (graph.from_index(from), graph.from_index(to));
-                graph.add_edge(from, to, edge_weights(from, to));
-            }
-        }
-        graph
+pub fn complete_graph<G, I, F>(node_weights: I, mut edge_weights: F) -> G
+where
+    G: Create + GraphProp + NodeIndexable,
+    G::EdgeType: CompleteEdgeCount,
+    I: IntoIterator<Item = G::NodeWeight>,
+    F: FnMut(G::NodeId, G::NodeId) -> G::EdgeWeight,
+{
+    let node_weights = node_weights.into_iter();
+    let node_count = node_weights.size_hint().1.unwrap_or(core::usize::MAX);
+    let mut graph = G::with_capacity(node_count, G::EdgeType::complete_edge_count(node_count));
+    for node_weight in node_weights {
+        graph.add_node(node_weight);
     }
+    for from in 0..graph.node_count() {
+        for to in
+            (0..if graph.is_directed() { from } else { 0 }).chain(from + 1..graph.node_count())
+        {
+            let (from, to) = (graph.from_index(from), graph.from_index(to));
+            graph.add_edge(from, to, edge_weights(from, to));
+        }
+    }
+    graph
 }
-
-impl<G> CompleteGraph for G where G: Create + GraphProp + NodeIndexable {}

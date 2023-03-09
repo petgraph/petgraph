@@ -267,9 +267,9 @@ fn test_create_with_capacity() {
 
 #[test]
 fn test_complete_graph_list() {
-    use petgraph::generators::CompleteGraph;
     type G = List<()>;
-    let complete = G::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
+    let complete: G =
+        petgraph::generators::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
 
     let mut expected = G::with_capacity(3);
     expected.add_node_from_edges([(n(1), ()), (n(2), ())].iter().copied());

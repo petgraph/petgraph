@@ -1834,9 +1834,9 @@ mod tests {
 
     #[test]
     fn test_complete_graph_matrix_graph() {
-        use crate::generators::CompleteGraph;
         type G = MatrixGraph<(), ()>;
-        let complete = G::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
+        let complete: G =
+            crate::generators::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
 
         let expected = G::from_edges(&[(0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 1)]);
 

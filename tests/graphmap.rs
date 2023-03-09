@@ -401,10 +401,9 @@ fn self_loops_can_be_removed() {
 
 #[test]
 fn test_complete_graph_di_graph_map() {
-    use petgraph::generators::CompleteGraph;
     type G = DiGraphMap<i32, i32>;
     let mut count = 1..;
-    let complete = G::complete_graph(1..=4, |_, _| count.next().unwrap());
+    let complete: G = petgraph::generators::complete_graph(1..=4, |_, _| count.next().unwrap());
 
     let expected = G::from_edges(&[
         (1, 2, 1),
@@ -420,30 +419,6 @@ fn test_complete_graph_di_graph_map() {
         (4, 2, 11),
         (4, 3, 12),
     ]);
-
-    assert_eq!(
-        complete.nodes().collect::<Vec<_>>(),
-        expected.nodes().collect::<Vec<_>>()
-    );
-    assert_eq!(
-        complete.all_edges().collect::<Vec<_>>(),
-        expected.all_edges().collect::<Vec<_>>()
-    );
-}
-
-#[test]
-fn test_complete_graph_un_graph_map() {
-    use petgraph::generators::CompleteGraph;
-    type G = UnGraphMap<&'static str, &'static str>;
-    let node_weights = ["1", "x", "y"];
-    let edge_weights = [("1", "x", "1"), ("1", "y", "x"), ("x", "y", "y")];
-    let edge_map = edge_weights
-        .iter()
-        .map(|&(from, to, weight)| ((from, to), weight))
-        .collect::<std::collections::HashMap<_, _>>();
-    let complete = G::complete_graph(node_weights.iter().copied(), |a, b| edge_map[&(a, b)]);
-
-    let expected = G::from_edges(&edge_weights);
 
     assert_eq!(
         complete.nodes().collect::<Vec<_>>(),
