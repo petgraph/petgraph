@@ -272,35 +272,35 @@ where
         Ix::new(i)
     }
 
-    /// Return `true` if the edge was added
+    /// Return `Some(EdgeIndex)` if the edge was added
     ///
     /// If you add all edges in row-major order, the time complexity
     /// is **O(|V|·|E|)** for the whole operation.
     ///
     /// **Panics** if `a` or `b` are out of bounds.
-    pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> bool
+    pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> Option<EdgeIndex>
     where
         E: Clone,
     {
-        let ret = self.add_edge_(a, b, weight.clone());
-        if ret && !self.is_directed() {
+        let pos = self.add_edge_(a, b, weight.clone())?;
+        if !self.is_directed() {
             self.edge_count += 1;
+            if a != b {
+                let _ret2 = self.add_edge_(b, a, weight);
+                debug_assert!(_ret2.is_some());
+            }
         }
-        if ret && !self.is_directed() && a != b {
-            let _ret2 = self.add_edge_(b, a, weight);
-            debug_assert_eq!(ret, _ret2);
-        }
-        ret
+        Some(pos)
     }
 
-    // Return false if the edge already exists
-    fn add_edge_(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> bool {
+    // Return `None` if the edge already exists
+    fn add_edge_(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> Option<EdgeIndex> {
         assert!(a.index() < self.node_count() && b.index() < self.node_count());
         // a x b is at (a, b) in the matrix
 
         // find current range of edges from a
         let pos = match self.find_edge_pos(a, b) {
-            Ok(_) => return false, /* already exists */
+            Ok(_) => return None, /* already exists */
             Err(i) => i,
         };
         self.column.insert(pos, b);
@@ -309,7 +309,7 @@ where
         for r in &mut self.row[a.index() + 1..] {
             *r += 1;
         }
-        true
+        Some(pos)
     }
 
     fn find_edge_pos(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Result<usize, usize> {
@@ -331,6 +331,13 @@ where
         }
     }
 
+    /// Add or update the edge from `a` to `b`. Return the id of the affected
+    /// edge.
+    ///
+    /// If you add all edges in row-major order, the time complexity
+    /// is **O(|V|·|E|)** for the whole operation.
+    ///
+    /// **Panics** if `a` or `b` are out of bounds.
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex
     where
         E: Clone,
@@ -891,7 +898,7 @@ mod tests {
         assert_eq!(&m.column, &[0, 2, 0, 1, 2, 2]);
         assert_eq!(&m.row, &[0, 2, 5, 6]);
 
-        let added = m.add_edge(1, 2, ());
+        let added = m.add_edge(1, 2, ()).is_some();
         assert!(!added);
         assert_eq!(&m.column, &[0, 2, 0, 1, 2, 2]);
         assert_eq!(&m.row, &[0, 2, 5, 6]);
@@ -1132,9 +1139,9 @@ mod tests {
         let b = g.add_node(());
         let c = g.add_node(());
 
-        assert!(g.add_edge(a, b, ()));
-        assert!(g.add_edge(b, c, ()));
-        assert!(g.add_edge(c, a, ()));
+        assert!(g.add_edge(a, b, ()).is_some());
+        assert!(g.add_edge(b, c, ()).is_some());
+        assert!(g.add_edge(c, a, ()).is_some());
 
         println!("{:?}", g);
 
@@ -1153,7 +1160,7 @@ mod tests {
         let a = g.add_node(());
         let b = g.add_node(());
 
-        assert!(g.add_edge(a, b, ()));
+        assert!(g.add_edge(a, b, ()).is_some());
 
         let c = g.add_node(());
 
@@ -1181,6 +1188,58 @@ mod tests {
         assert_eq!(refs.next(), Some((1, &3)));
         assert_eq!(refs.next(), Some((2, &44)));
         assert_eq!(refs.next(), None);
+    }
+
+    #[test]
+    fn test_update_edge_csr() {
+        use crate::visit::{EdgeRef, IntoEdgeReferences};
+        let mut m = Csr::<(), i32>::from_sorted_edges(&[
+            (0, 0, 0),
+            (0, 2, 1),
+            (1, 0, 2),
+            (1, 1, 3),
+            (2, 2, 4),
+        ])
+        .unwrap();
+        assert_eq!(
+            m.edge_references()
+                .map(|edge| (edge.source(), edge.target(), *edge.weight()))
+                .collect::<Vec<_>>(),
+            [
+                (0, 0, 0),
+                (0, 2, 1),
+                (1, 0, 2),
+                (1, 1, 3),
+                (2, 2, 4),
+            ],
+        );
+        m.update_edge(1, 0, 5); // Update an existing edge
+        assert_eq!(
+            m.edge_references()
+                .map(|edge| (edge.source(), edge.target(), *edge.weight()))
+                .collect::<Vec<_>>(),
+            [
+                (0, 0, 0),
+                (0, 2, 1),
+                (1, 0, 5),
+                (1, 1, 3),
+                (2, 2, 4),
+            ],
+        );
+        m.update_edge(0, 1, 6); // Add a new edge
+        assert_eq!(
+            m.edge_references()
+                .map(|edge| (edge.source(), edge.target(), *edge.weight()))
+                .collect::<Vec<_>>(),
+            [
+                (0, 0, 0),
+                (0, 1, 6),
+                (0, 2, 1),
+                (1, 0, 5),
+                (1, 1, 3),
+                (2, 2, 4),
+            ],
+        );
     }
 
     #[test]

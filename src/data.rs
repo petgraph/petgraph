@@ -209,6 +209,7 @@ where
             Some((a, b))
         }
     }
+    /// Add or update the edge from `a` to `b`. Return the `EdgeId` of the affected edge.
     fn update_edge(
         &mut self,
         a: Self::NodeId,
@@ -236,6 +237,14 @@ where
         weight: Self::EdgeWeight,
     ) -> Self::EdgeId {
         self.update_edge(a, b, weight)
+    }
+    fn add_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Option<Self::EdgeId> {
+        self.add_edge(a, b, weight)
     }
 }
 
