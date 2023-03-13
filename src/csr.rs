@@ -331,6 +331,43 @@ where
         }
     }
 
+    pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex
+    where
+        E: Clone,
+    {
+        let (ret, pos) = self.update_edge_(a, b, weight.clone());
+        if ret && !self.is_directed() {
+            self.edge_count += 1;
+        }
+        if !self.is_directed() && a != b {
+            let _ret2 = self.update_edge_(b, a, weight).0;
+            debug_assert_eq!(ret, _ret2);
+        }
+        pos
+    }
+
+    // Return false if the edge already exists
+    fn update_edge_(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> (bool, EdgeIndex) {
+        assert!(a.index() < self.node_count() && b.index() < self.node_count());
+        // a x b is at (a, b) in the matrix
+
+        // find current range of edges from a
+        let pos = match self.find_edge_pos(a, b) {
+            Ok(i) => {
+                self.edges[i] = weight;
+                return (false, i);
+            } /* already exists */
+            Err(i) => i,
+        };
+        self.column.insert(pos, b);
+        self.edges.insert(pos, weight);
+        // update row vector
+        for r in &mut self.row[a.index() + 1..] {
+            *r += 1;
+        }
+        (true, pos)
+    }
+
     /// Computes in **O(log |V|)** time.
     ///
     /// **Panics** if the node `a` does not exist.
@@ -1144,5 +1181,37 @@ mod tests {
         assert_eq!(refs.next(), Some((1, &3)));
         assert_eq!(refs.next(), Some((2, &44)));
         assert_eq!(refs.next(), None);
+    }
+
+    #[test]
+    fn test_complete_graph_csr() {
+        use crate::{
+            graph_impl::IndexType,
+            visit::{EdgeRef, IntoEdgeReferences, IntoNodeReferences},
+        };
+        let complete: Csr =
+            crate::generators::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
+
+        assert_eq!(
+            complete
+                .node_references()
+                .map(|(node_index, &weight)| (node_index.index(), weight))
+                .collect::<Vec<_>>(),
+            [(0, ()), (1, ()), (2, ())]
+        );
+        assert_eq!(
+            complete
+                .edge_references()
+                .map(|edge| (edge.source().index(), edge.target().index(), *edge.weight()))
+                .collect::<Vec<_>>(),
+            [
+                (0, 1, ()),
+                (0, 2, ()),
+                (1, 0, ()),
+                (1, 2, ()),
+                (2, 0, ()),
+                (2, 1, ())
+            ],
+        );
     }
 }
