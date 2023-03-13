@@ -1205,26 +1205,14 @@ mod tests {
             m.edge_references()
                 .map(|edge| (edge.source(), edge.target(), *edge.weight()))
                 .collect::<Vec<_>>(),
-            [
-                (0, 0, 0),
-                (0, 2, 1),
-                (1, 0, 2),
-                (1, 1, 3),
-                (2, 2, 4),
-            ],
+            [(0, 0, 0), (0, 2, 1), (1, 0, 2), (1, 1, 3), (2, 2, 4),],
         );
         m.update_edge(1, 0, 5); // Update an existing edge
         assert_eq!(
             m.edge_references()
                 .map(|edge| (edge.source(), edge.target(), *edge.weight()))
                 .collect::<Vec<_>>(),
-            [
-                (0, 0, 0),
-                (0, 2, 1),
-                (1, 0, 5),
-                (1, 1, 3),
-                (2, 2, 4),
-            ],
+            [(0, 0, 0), (0, 2, 1), (1, 0, 5), (1, 1, 3), (2, 2, 4),],
         );
         m.update_edge(0, 1, 6); // Add a new edge
         assert_eq!(
