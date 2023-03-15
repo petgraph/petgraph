@@ -3,8 +3,8 @@
 extern crate petgraph;
 extern crate test;
 
-use test::Bencher;
 use petgraph::csr::Csr;
+use test::Bencher;
 
 #[allow(dead_code)]
 mod common;
@@ -23,7 +23,6 @@ fn add_100_nodes(b: &mut test::Bencher) {
     });
 }
 
-
 #[bench]
 fn add_100_edges_to_self(b: &mut test::Bencher) {
     let mut g = Csr::<(), ()>::new();
@@ -38,7 +37,6 @@ fn add_100_edges_to_self(b: &mut test::Bencher) {
         }
     });
 }
-
 
 #[bench]
 fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
@@ -82,7 +80,6 @@ fn add_edges_from_root(bench: &mut test::Bencher) {
     });
 }
 
-
 #[bench]
 fn add_adjacent_edges(bench: &mut test::Bencher) {
     bench.iter(|| {
@@ -105,7 +102,6 @@ fn full_edges(bench: &mut Bencher) {
     let a = csr_graph().full().graph();
     bench.iter(|| a.edges(1))
 }
-
 
 #[bench]
 fn full_edges_count(bench: &mut Bencher) {

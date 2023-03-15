@@ -1,12 +1,12 @@
-use std::marker::PhantomData;
 use petgraph::csr::{Csr, DefaultIx};
+use std::marker::PhantomData;
 
 use petgraph::data::Build;
 use petgraph::prelude::*;
 use petgraph::visit::NodeIndexable;
 
-use petgraph::EdgeType;
 use petgraph::matrix_graph::MatrixGraph;
+use petgraph::EdgeType;
 
 /// Petersen A and B are isomorphic
 ///
@@ -220,7 +220,7 @@ where
 }
 
 /// Parse a text adjacency matrix format into a CSR graph
-fn parse_csr_graph(s: &str) -> Csr::<(), ()> {
+fn parse_csr_graph(s: &str) -> Csr<(), ()> {
     let mut gr = Csr::<(), ()>::new();
     let s = s.trim();
     let lines = s.lines().filter(|l| !l.is_empty());
@@ -245,28 +245,25 @@ fn parse_csr_graph(s: &str) -> Csr::<(), ()> {
 // there is no simple way around without refactoring CSR. To keep things simple, we add a second,
 // non-generic CsrFactory until Csr implements Build.
 pub struct CsrFactory {
-    g: Csr<(),()>,
+    g: Csr<(), ()>,
 }
 
-impl CsrFactory
-{
+impl CsrFactory {
     fn new() -> Self {
-        CsrFactory {
-            g: Csr::new(),
-        }
+        CsrFactory { g: Csr::new() }
     }
 
-    pub fn full(self) ->Self {
+    pub fn full(self) -> Self {
         let g = parse_csr_graph(FULL);
-        Self{g}
+        Self { g }
     }
 
-    pub fn bigger(self) ->Self {
+    pub fn bigger(self) -> Self {
         let g = parse_csr_graph(BIGGER);
-        Self{g}
+        Self { g }
     }
 
-    pub fn graph(self) ->Csr<(), ()> {
+    pub fn graph(self) -> Csr<(), ()> {
         self.g
     }
 }
@@ -337,7 +334,7 @@ pub fn digraph() -> GraphFactory<Directed, Graph<(), (), Directed>> {
     graph()
 }
 
-pub fn csr_graph() -> CsrFactory{
+pub fn csr_graph() -> CsrFactory {
     CsrFactory::new()
 }
 pub fn matrix_graph<Ty: EdgeType>() -> GraphFactory<Ty, MatrixGraph<(), (), Ty>> {
