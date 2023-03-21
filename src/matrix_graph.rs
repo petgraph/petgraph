@@ -27,7 +27,7 @@ pub use crate::graph::IndexType;
 // The following types are used to control the max size of the adjacency matrix. Since the maximum
 // size of the matrix vector's is the square of the maximum number of nodes, the number of nodes
 // should be reasonably picked.
-type DefaultIx = u16;
+type DefaultIx = u32;
 
 /// Node identifier.
 pub type NodeIndex<Ix = DefaultIx> = GraphNodeIndex<Ix>;
