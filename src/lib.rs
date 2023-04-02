@@ -215,7 +215,7 @@ impl Direction {
 pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
-#[derive(Copy, Debug)]
+#[derive(Copy, Debug, PartialEq)]
 pub enum Directed {}
 copyclone!(Directed);
 
