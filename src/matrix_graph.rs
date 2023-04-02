@@ -204,7 +204,7 @@ pub fn node_index(ax: usize) -> NodeIndex {
 /// This graph is backed by a flattened 2D array. For undirected graphs, only the lower triangular
 /// matrix is stored. Since the backing array stores edge weights, it is recommended to box large
 /// edge weights.
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MatrixGraph<N, E, Ty = Directed, Null: Nullable<Wrapped = E> = Option<E>, Ix = DefaultIx>
 {
     node_adjacencies: Vec<Null>,
@@ -905,7 +905,7 @@ fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct IdStorage<T> {
     elements: Vec<Option<T>>,
     upper_bound: usize,
