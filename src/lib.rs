@@ -185,6 +185,7 @@ macro_rules! copyclone {
 /// Edge direction.
 #[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
 #[repr(usize)]
+#[cfg_attr(feature = "serde-1", derive(serde::Serialize, serde::Deserialize))]
 pub enum Direction {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
@@ -216,11 +217,13 @@ pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Copy, Debug)]
+#[cfg_attr(feature = "serde-1", derive(serde::Serialize, serde::Deserialize))]
 pub enum Directed {}
 copyclone!(Directed);
 
 /// Marker type for an undirected graph.
 #[derive(Copy, Debug)]
+#[cfg_attr(feature = "serde-1", derive(serde::Serialize, serde::Deserialize))]
 pub enum Undirected {}
 copyclone!(Undirected);
 
