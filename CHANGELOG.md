@@ -516,6 +516,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add back DfsIter, BfsIter
 
 [unreleased]: https://github.com/petgraph/petgraph/compare/v1.1.1...HEAD
+[0.6.3]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
 [0.6.2]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
 [0.6.1]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
 [0.6.0]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
