@@ -68,6 +68,11 @@ install-llvm-cov:
 ## Predefined commands
 ######################################################################
 
+[private]
+compile-svg:
+  dot -Tsvg < "{{repo}}/doc/graph-example.dot" > "{{repo}}/doc/graph-example.svg"
+  svgo "{{repo}}/doc/graph-example.svg"
+
 # Runs all linting commands and fails if the CI would fail
 lint:
   @just format --check
@@ -76,39 +81,36 @@ lint:
   @RUSTDOCFLAGS='-Z unstable-options --check' just doc --document-private-items
 
 # Format the code using `rustfmt`
-format *arguments:
+format *arguments: compile-svg
   cargo fmt --all {{arguments}}
 
 # Lint the code using `clippy`
-clippy *arguments: install-cargo-hack
+clippy *arguments: install-cargo-hack compile-svg
   cargo hack --workspace --optional-deps --feature-powerset clippy --profile {{profile}} --all-targets --no-deps {{arguments}}
 
 # Creates the documentation for the crate
-doc *arguments:
-  dot -Tsvg < "{{repo}}/doc/graph-example.dot" > "{{repo}}/doc/graph-example.svg"
-  svgo "{{repo}}/doc/graph-example.svg"
-
+doc *arguments: compile-svg
   RUSTDOCFLAGS="--extend-css {{repo}}/doc/custom.css" cargo doc --workspace --all-features --no-deps -Zunstable-options -Zrustdoc-scrape-examples {{arguments}}
 
 
 # Builds the crate
-build *arguments:
+build *arguments: compile-svg
   cargo build --profile {{profile}} {{arguments}}
 
 # Run the test suite
-test *arguments: install-cargo-nextest install-cargo-hack
+test *arguments: install-cargo-nextest install-cargo-hack compile-svg
   cargo hack --workspace --optional-deps --feature-powerset nextest run --cargo-profile {{profile}} {{arguments}}
 
   @just in-dev cargo test --profile {{profile}} --workspace --all-features --doc
 
 # Run the test suite with `miri`
-miri *arguments:
+miri *arguments: compile-svg
   cargo miri test --workspace --all-features --all-targets {{arguments}}
 
 # Runs the benchmarks
-bench *arguments:
+bench *arguments: compile-svg
   cargo bench --workspace --all-features --all-targets {{arguments}}
 
 # Run the test suite and generate a coverage report
-coverage *arguments: install-llvm-cov
+coverage *arguments: install-llvm-cov compile-svg
   cargo llvm-cov nextest --workspace --all-features --all-targets {{arguments}}
