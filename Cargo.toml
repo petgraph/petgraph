@@ -1,13 +1,16 @@
 [package]
-
 name = "petgraph"
 version = "0.6.3"
-readme = "README.md"
-license = "MIT OR Apache-2.0"
+
 authors = [
-"bluss",
-"mitchmindtree",
+    "bluss",
+    "mitchmindtree",
 ]
+
+edition = "2021"
+rust-version = "1.65.0"
+
+license = "MIT OR Apache-2.0"
 
 description = "Graph data structure library. Provides graph types and graph algorithms."
 documentation = "https://docs.rs/petgraph/"
@@ -16,23 +19,11 @@ repository = "https://github.com/petgraph/petgraph"
 keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
 categories = ["data-structures"]
 
-edition = "2018"
-
 [package.metadata.docs.rs]
 features = ["serde-1", "quickcheck"]
 
 [package.metadata.release]
 no-dev-version = true
-
-[lib]
-bench = false
-
-name = "petgraph"
-
-[profile.release]
-
-[profile.bench]
-debug = true
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }
@@ -64,3 +55,14 @@ unstable = ["generate"]
 
 [workspace]
 members = ["serialization-tests"]
+
+
+[lib]
+bench = false
+
+name = "petgraph"
+
+[profile.release]
+
+[profile.bench]
+debug = true
