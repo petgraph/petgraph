@@ -68,8 +68,7 @@ install-llvm-cov:
 ## Predefined commands
 ######################################################################
 
-[private]
-compile-svg:
+generate-svg:
   dot -Tsvg < "{{repo}}/doc/graph-example.dot" > "{{repo}}/doc/graph-example.svg"
   svgo "{{repo}}/doc/graph-example.svg"
 
@@ -81,36 +80,36 @@ lint:
   @RUSTDOCFLAGS='-Z unstable-options --check' just doc --document-private-items
 
 # Format the code using `rustfmt`
-format *arguments: compile-svg
+format *arguments:
   cargo fmt --all {{arguments}}
 
 # Lint the code using `clippy`
-clippy *arguments: install-cargo-hack compile-svg
+clippy *arguments: install-cargo-hack
   cargo hack --workspace --optional-deps --feature-powerset clippy --profile {{profile}} --all-targets --no-deps {{arguments}}
 
 # Creates the documentation for the crate
-doc *arguments: compile-svg
+doc *arguments:
   RUSTDOCFLAGS="--extend-css {{repo}}/doc/custom.css" cargo doc --workspace --all-features --no-deps -Zunstable-options -Zrustdoc-scrape-examples {{arguments}}
 
 
 # Builds the crate
-build *arguments: compile-svg
+build *arguments:
   cargo build --profile {{profile}} {{arguments}}
 
 # Run the test suite
-test *arguments: install-cargo-nextest install-cargo-hack compile-svg
+test *arguments: install-cargo-nextest install-cargo-hack
   cargo hack --workspace --optional-deps --feature-powerset nextest run --cargo-profile {{profile}} {{arguments}}
 
   @just in-dev cargo test --profile {{profile}} --workspace --all-features --doc
 
 # Run the test suite with `miri`
-miri *arguments: compile-svg
+miri *arguments:
   cargo miri test --workspace --all-features --all-targets {{arguments}}
 
 # Runs the benchmarks
-bench *arguments: compile-svg
+bench *arguments:
   cargo bench --workspace --all-features --all-targets {{arguments}}
 
 # Run the test suite and generate a coverage report
-coverage *arguments: install-llvm-cov compile-svg
+coverage *arguments: install-llvm-cov
   cargo llvm-cov nextest --workspace --all-features --all-targets {{arguments}}

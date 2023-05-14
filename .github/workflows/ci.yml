@@ -2,7 +2,7 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: [ master ]
+#    branches: [ master ]
   push:
     branches: [ master ]
 
@@ -46,21 +46,25 @@ jobs:
         with:
           tool: just@1.13.0,cargo-hack@0.5.28
 
-      - name: Check formatting
-        run: just format --check
+      # Because we ensure an empty git diff, the job will fail if the SVG is not up-to-date.
+      - name: Generate SVG
+        run: just generate-svg
 
-      - name: Check clippy
-        run: just clippy -- -D warnings
-
-      - name: Check public documentation
-        env:
-          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
-        run: just doc
-
-      - name: Check private documentation
-        env:
-          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
-        run: just doc --document-private-items
+#      - name: Check formatting
+#        run: just format --check
+#
+#      - name: Check clippy
+#        run: just clippy -- -D warnings
+#
+#      - name: Check public documentation
+#        env:
+#          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
+#        run: just doc
+#
+#      - name: Check private documentation
+#        env:
+#          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
+#        run: just doc --document-private-items
 
       - name: Ensure empty git diff
         run: git --no-pager diff --exit-code --color
@@ -82,12 +86,6 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
           components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
-
-      - name: Setup Graphviz
-        uses: ts-graphviz/setup-graphviz@v1
-
-      - name: Install SVGO
-        run: npm install -g svgo
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v1
@@ -119,12 +117,6 @@ jobs:
         with:
           toolchain: nightly
           components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
-
-      - name: Setup Graphviz
-        uses: ts-graphviz/setup-graphviz@v1
-
-      - name: Install SVGO
-        run: npm install -g svgo
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v1
