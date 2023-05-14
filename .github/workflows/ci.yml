@@ -25,11 +25,8 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v3
 
-      - name: Install Graphviz
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: graphviz
-          version: 1.0
+      - name: Setup Graphviz
+        uses: ts-graphviz/setup-graphviz@v1
 
       - name: Install SVGO
         run: npm install -g svgo
@@ -85,11 +82,8 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
 
-      - name: Install Graphviz
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: graphviz
-          version: 1.0
+      - name: Setup Graphviz
+        uses: ts-graphviz/setup-graphviz@v1
 
       - name: Install SVGO
         run: npm install -g svgo
@@ -125,11 +119,8 @@ jobs:
           toolchain: nightly
           components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
 
-      - name: Install Graphviz
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: graphviz
-          version: 1.0
+      - name: Setup Graphviz
+        uses: ts-graphviz/setup-graphviz@v1
 
       - name: Install SVGO
         run: npm install -g svgo
