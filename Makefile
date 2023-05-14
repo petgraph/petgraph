@@ -30,7 +30,7 @@ $(RMDOCS): mkdocs
 	rm -r ./doc/$@
 	sed -i "/searchIndex\['$@'\]/d" doc/search-index.js
 
-mksvgs: mkdocs graph-example.dot
+mksvgs: mkdocs doc/graph-example.dot
 	dot -Tsvg < ./graph-example.dot > graph-example.svg
 	mv graph-example.svg ./doc/petgraph/graph/
 
