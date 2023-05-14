@@ -4,7 +4,9 @@ version = "0.6.3"
 
 authors = [
     "bluss",
-    "mitchmindtree",
+    "Agustín Borgna <agustinborgna@gmail.com>",
+    "Anton Kochkov <xvilka@gmail.com>",
+    "Bilal Mahmoud <mahmoud@fastmail.com>"
 ]
 
 edition = "2021"
