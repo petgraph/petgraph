@@ -25,6 +25,15 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v3
 
+      - name: Install Graphviz
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: graphviz
+          version: 1.0
+
+      - name: Install SVGO
+        run: npm install -g svgo
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -76,6 +85,15 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
 
+      - name: Install Graphviz
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: graphviz
+          version: 1.0
+
+      - name: Install SVGO
+        run: npm install -g svgo
+
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v1
 
@@ -106,6 +124,15 @@ jobs:
         with:
           toolchain: nightly
           components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
+
+      - name: Install Graphviz
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: graphviz
+          version: 1.0
+
+      - name: Install SVGO
+        run: npm install -g svgo
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v1
