@@ -309,7 +309,7 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
 /// ]);
 /// ```
 ///
-/// ![graph-example](https://bluss.github.io/ndarray/images/graph-example.svg)
+#[doc = include_str!("../../doc/graph-example.svg")]
 ///
 /// ### Graph Indices
 ///
