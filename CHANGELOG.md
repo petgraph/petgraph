@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Version 0.6.3 (2023-02-07)
+## [0.6.3] - 2023-02-07
 
 - Added an iterator over subgraph isomorphisms
   ([#500](https://github.com/petgraph/petgraph/issues/500))
@@ -23,19 +23,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fix UB in `MatrixGraph`
   ([#505](https://github.com/petgraph/petgraph/issues/505))
 
-# Version 0.6.2 (2022-05-28)
+## [0.6.2] - 2022-05-28
 
 - Loosed the strict version dependency set in [#493](https://github.com/petgraph/petgraph/issues/493), to allow users
   to use newer versions of indexmap ([#495](https://github.com/petgraph/petgraph/issues/493)).
 
-# Version 0.6.1 (2022-05-22)
+## [0.6.1] - 2022-05-22
 
 - Added clarifications on Graph docs ([#491](https://github.com/petgraph/petgraph/issues/491)).
 - Fix build errors on rust 1.41 ([#493](https://github.com/petgraph/petgraph/issues/493)).
 
-# Version 0.6.0 (2021-07-04)
+## [0.6.0] - 2021-07-04
 
-## Breaking changes
+### Breaking changes
 
 - MSRV is now 1.41
   ([#444](https://github.com/petgraph/petgraph/issues/444)).
@@ -45,7 +45,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   with the passed node as source
   ([#433](https://github.com/petgraph/petgraph/issues/433)).
 
-## New features
+### New features
 
 - Multiple documentation improvements
   ([#360](https://github.com/petgraph/petgraph/issues/360),
@@ -77,7 +77,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `Graph` and `StableGraph`
   ([#363](https://github.com/petgraph/petgraph/issues/363)).
 
-## New algorithms
+### New algorithms
 
 - Added a k-shortest-path implementation
   ([#328](https://github.com/petgraph/petgraph/issues/328)).
@@ -92,7 +92,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added a [find_negative_cycle]{.title-ref} algorithm
   ([#434](https://github.com/petgraph/petgraph/issues/434)).
 
-## Performance
+### Performance
 
 - Reuse the internal state in `tarjan_scc`
   ([#313](https://github.com/petgraph/petgraph/issues/313))
@@ -105,7 +105,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Optimized StableGraph de-serialization with holes
   ([#395](https://github.com/petgraph/petgraph/issues/395)).
 
-## Bug fixes
+### Bug fixes
 
 - Fixed A\* not producing optimal solutions with inconsistent
   heuristics
@@ -122,7 +122,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ([#440](https://github.com/petgraph/petgraph/issues/440),
   [#449](https://github.com/petgraph/petgraph/issues/449)).
 
-## Other changes
+### Other changes
 
 - Now using github actions as CI
   ([#391](https://github.com/petgraph/petgraph/issues/391)).
@@ -131,7 +131,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added benchmarks for `tarjan_scc`
   ([#421](https://github.com/petgraph/petgraph/issues/421)).
 
-# Version 0.5.1 (2020-05-23)
+## [0.5.1] - 2020-05-23
 
 - Implement `Default` for traversals.
 - Export `EdgesConnecting` publicly.
@@ -142,9 +142,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add configurable functions for adding attributes to dotfile
   features.
 
-# Version 0.5.0 (2019-12-25)
+## [0.5.0] - 2019-12-25
 
-## Breaking changes
+### Breaking changes
 
 - The iterative DFS implementation, `Dfs`, now marks nodes visited
   when they are pushed onto the stack, not when they\'re popped off.
@@ -156,7 +156,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   documentation](https://docs.rs/petgraph/0.5/petgraph/visit/trait.IntoEdgesDirected.html)
   for more.
 
-## Other changes
+### Other changes
 
 - Upgrade to Rust 2018 edition
 - Fix clippy warnings and unify code formatting
@@ -165,36 +165,36 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Numerous bugfixes and refactorings
 - Added `MatrixGraph` implementation
 
-# Version 0.4.13 (2018-08-26)
+## [0.4.13] - 2018-08-26
 
 - Fix clippy warnings by \@jonasbb
 - Add docs for `Csr` by \@ksadorf
 - Fix conflict with new stable method `find_map` in new Rust
 
-# Version 0.4.12 (2018-03-26)
+## [0.4.12] - 2018-03-26
 
 - Newtype `Time` now also implements `Hash`
 - Documentation updates for `Frozen`.
 
-# Version 0.4.11 (2018-01-07)
+## [0.4.11] - 2018-01-07
 
 - Fix `petgraph::graph::NodeReferences` to be publicly visible
 - Small doc typo and code style files by \@shepmaster and
   \@waywardmonkeys
 - Fix a future compat warning with pointer casts
 
-# Version 0.4.10 (2017-08-15)
+## [0.4.10] - 2017-08-15
 
 - Add graph trait `IntoEdgesDirected`
 - Update dependencies
 
-# Version 0.4.9 (2017-10-02)
+## [0.4.9] - 2017-10-02
 
 - Fix `bellman_ford` to work correctly with undirected graphs (#152)
   by \@carrutstick
 - Performance improvements for `Graph, Stablegraph`\'s `.map()`.
 
-# Version 0.4.8 (2017-09-20)
+## [0.4.8] - 2017-09-20
 
 - `StableGraph` learned new methods nearing parity with `Graph`. Note
   that the `StableGraph` methods preserve index stability even in the
@@ -208,7 +208,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     - `.edge_references()` is now `ExactSizeIterator`.
 - Implemented `From<StableGraph>` for `Graph`.
 
-# Version 0.4.7 (2017-09-16)
+## [0.4.7] - 2017-09-16
 
 - New algorithm by \@jmcomets: A\* search algorithm in
   `petgraph::algo::astar`
@@ -217,7 +217,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     - `add_edge(m, n, _)` now properly always panics if nodes m or n
       don\'t exist in the graph.
 
-# Version 0.4.6 (2017-09-12)
+## [0.4.6] - 2017-09-12
 
 - New optional crate feature: `"serde-1"`, which enables serialization
   for `Graph` and `StableGraph` using serde.
@@ -246,40 +246,40 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Arbitrary` implementation for `StableGraph` now can produce graphs
   with vacancies (used by quickcheck)
 
-# Version 0.4.5 (2017-06-16)
+## [0.4.5] - 2017-06-16
 
 - Fix `max` ambiguity error with current rust nightly by \@daboross
   (#153)
 
-# Version 0.4.4 (2017-03-14)
+## [0.4.4] - 2017-03-14
 
 - Add `GraphMap::all_edges_mut()` iterator by \@Binero
 - Add `StableGraph::retain_nodes` by \@Rupsbant
 - Add `StableGraph::index_twice_mut` by \@christolliday
 
-# Version 0.4.3 (2017-01-21)
+## [0.4.3] - 2017-01-21
 
 - Add crate categories
 
-# Version 0.4.2 (2017-01-06)
+## [0.4.2] - 2017-01-06
 
 - Move the `visit.rs` file due to changed rules for a module's
   directory ownership in Rust, resolving a future compat warning.
 - The error types `Cycle, NegativeCycle` now implement `PartialEq`.
 
-# Version 0.4.1 (2016-10-26)
+## [0.4.1] - 2016-10-26
 
 - Add new algorithm `simple_fast` for computing dominators in a
   control-flow graph.
 
-# Version 0.4.0 (2016-10-17)
+## [0.4.0] - 2016-10-17
 
-## Breaking changes in `Graph`
+### Breaking changes in `Graph`
 
 - `Graph::edges` and the other edges methods now return an iterator of
   edge references
 
-## Other breaking changes
+### Other breaking changes
 
 - `toposort` now returns an error if the graph had a cycle.
 - `is_cyclic_directed` no longer takes a dfs space argument. It is now
@@ -294,7 +294,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `DfsIter, BfsIter` were removed in favour of a more general approach
   with the `Walker` trait and its iterator conversion.
 
-## New features
+### New features
 
 - New graph traits, for example `IntoEdges` which returns an iterator
   of edge references. Everything implements the graph traits much more
@@ -308,14 +308,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `GraphMap` implements `NodeIndexable`.
 - `Dot` was generalized
 
-# Version 0.3.2 (2016-10-11)
+## [0.3.2] - 2016-10-11
 
 > - Add `depth_first_search`, a recursive dfs visitor that emits
     > discovery, finishing and edge classification events.
 > - Add graph adaptor `Filtered`.
 > - impl `Debug, NodeIndexable` for `Reversed`.
 
-# Version 0.3.1 (2016-10-05)
+## [0.3.1] - 2016-10-05
 
 - Add `.edges(), .edges_directed()` to `StableGraph`. Note that these
   differ from `Graph`, because this is the signature they will all use
@@ -326,7 +326,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Minor performance improvements to graph iteration
 - Improved docs for `visit` module.
 
-# Version 0.3.0 (2016-10-03)
+## [0.3.0] - 2016-10-03
 
 - Overhaul all graph visitor traits so that they use the
   `IntoIterator` style. This makes them composable.
@@ -360,48 +360,48 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Remove `SubTopo`.
 - Require Rust 1.12 or later
 
-# Version 0.2.10 (2016-07-27)
+## [0.2.10] - 2016-07-27
 
 - Fix compilation with rust nightly
 
-# Version 0.2.9 (2016-10-01)
+## [0.2.9] - 2016-10-01
 
 - Fix a bug in SubTopo (#81)
 
-# Version 0.2.8 (2016-09-12)
+## [0.2.8] - 2016-09-12
 
 - Add Graph methods reserve_nodes, reserve_edges, reserve_exact_nodes,
   reserve_exact_edges, shrink_to_fit_edges, shrink_to_fit_nodes,
   shrink_to_fit
 
-# Version 0.2.7 (2016-04-22)
+## [0.2.7] - 2016-04-22
 
 - Update URLs
 
-# Version 0.2.6 (2016-04-20)
+## [0.2.6] - 2016-04-20
 
 - Fix warning about type parameter defaults (no functional change)
 
-# Version 0.2.5 (2016-04-10)
+## [0.2.5] - 2016-04-10
 
 - Add SubTopo, a topo walker for the subgraph reachable from a
   starting point.
 - Add condensation, which forms the graph of a graph's strongly
   connected components.
 
-# Version 0.2.4 (2016-04-05)
+## [0.2.4] - 2016-04-05
 
 - Fix an algorithm error in scc (#61). This time we have a test that
   crosschecks the result of the algorithm vs another implementation,
   for greater confidence in its correctness.
 
-# Version 0.2.3 (2016-02-22)
+## [0.2.3] - 2016-02-22
 
 - Require Rust 1.6: Due to changes in how rust uses type parameter
   defaults.
 - Implement <Graph::clone_from>.
 
-# Version 0.2.2 (2015-12-14)
+## [0.2.2] - 2015-12-14
 
 - Require Rust 1.5
 - `Dot` passes on the alternate flag to node and edge label formatting
@@ -410,13 +410,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add *experimental feature* `StableGraph`, using feature flag
   `stable_graph`
 
-# Version 0.2.1 (2015-12-06)
+## [0.2.1] - 2015-12-06
 
 - Add algorithm `is_isomorphic_matching`
 
-# Version 0.2.0 (2015-12-03)
+## [0.2.0] - 2015-12-03
 
-## New Features
+### New Features
 
 - Add <Graph::neighbors>().detach() to step edges without borrowing.
   This is more general than, and replaces now deprecated
@@ -424,7 +424,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Implement Default for Graph, GraphMap
 - Add method EdgeDirection::opposite()
 
-## Breaking changes
+### Breaking changes
 
 - <Graph::neighbors>() for undirected graphs and
   <Graph::neighbors_undirected> for any graph now visit self loop
@@ -435,7 +435,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Element type of `GraphMap<N, E>::all_edges()` changed to
   `(N, N, &E)`
 
-## Minor breaking changes
+### Minor breaking changes
 
 - IntoWeightedEdge changed a type parameter to associated type
 - IndexType is now an unsafe trait
@@ -445,18 +445,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Directed, Undirected are now void enums.
 - Fields of graphmap::Edges are now private (#19)
 
-# Version 0.1.18 (2015-11-30)
+## [0.1.18] - 2015-11-30
 
 - Fix bug on calling GraphMap::add_edge with existing edge (#35)
 
-# Version 0.1.17 (2015-11-25)
+## [0.1.17] - 2015-11-25
 
 - Add <Graph::capacity>(), GraphMap::capacity()
 - Fix bug in <Graph::reverse>()
 - Graph and GraphMap have [quickcheck::Arbitrary]{.title-ref}
   implementations, if optional feature [check]{.title-ref} is enabled.
 
-# Version 0.1.16 (2015-11-25)
+## [0.1.16] - 2015-11-25
 
 - Add <Graph::node_indices>(), <Graph::edge_indices>()
 - Add <Graph::retain_nodes>(), <Graph::retain_edges>()
@@ -465,52 +465,100 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add GraphMap::extend(), GraphMap::from_edges()
 - Add petgraph::dot::Dot for simple graphviz dot output
 
-# Version 0.1.15 (2015-11-20)
+## [0.1.15] - 2015-11-20
 
 - Add <Graph::clear_edges>()
 - Add <Graph::edge_endpoints>()
 - Add <Graph::map>() and <Graph::filter_map>()
 
-# Version 0.1.14 (2015-11-19)
+## [0.1.14] - 2015-11-19
 
 - Add new topological order visitor Topo
 - New graph traits NeighborsDirected, Externals, Revisitable
 
-# Version 0.1.13 (2015-11-11)
+## [0.1.13] - 2015-11-11
 
 - Add iterator GraphMap::all_edges
 
-# Version 0.1.12 (2015-11-07)
+## [0.1.12] - 2015-11-07
 
 - Fix an algorithm error in scc (#14)
 
-# Version 0.1.11 (2015-08-16)
+## [0.1.11] - 2015-08-16
 
 - Update for well-formedness warnings (Rust RFC 1214), adding new
   lifetime bounds on NeighborIter and Dfs, impact should be minimal.
 
-# Version 0.1.10 (2015-06-22)
+## [0.1.10] - 2015-06-22
 
 - Fix bug in WalkEdges::next_neighbor()
 
-# Version 0.1.9 (2015-06-17)
+## [0.1.9] - 2015-06-17
 
 - Fix Dfs/Bfs for a rustc bugfix that disallowed them
 - Add method next_neighbor() to WalkEdges
 
-# Version 0.1.8 (2015-06-08)
+## [0.1.8] - 2015-06-08
 
 - Add <Graph::walk_edges_directed>()
 - Add <Graph::index_twice_mut>()
 
-# Version 0.1.7 (2015-06-08)
+## [0.1.7] - 2015-06-08
 
 - Add <Graph::edges_directed>()
 
-# Version 0.1.6 (2015-06-04)
+## [0.1.6] - 2015-06-04
 
 - Add <Graph::node_weights_mut> and <Graph::edge_weights_mut>
 
-# Version 0.1.4 (2015-05-20)
+## [0.1.4] - 2015-05-20
 
 - Add back DfsIter, BfsIter
+
+[unreleased]: https://github.com/petgraph/petgraph/compare/v1.1.1...HEAD
+[0.6.2]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.6.1]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.6.0]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.5.1]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.5.0]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.13]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.12]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.11]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.10]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.9]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.8]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.6]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.5]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.4]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.3]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.2]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.1]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.4.0]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.3.2]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.3.1]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.3.0]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.10]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.9]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.8]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.7]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.6]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.5]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.4]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.3]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.2]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.1]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.2.0]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.1.18]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.1.17]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.1.16]: https://github.com/petgraph/petgraph/compare/v0.3.0...v1.0.0
+[0.1.15]: https://github.com/petgraph/petgraph/compare/v0.2.0...v0.3.0
+[0.1.14]: https://github.com/petgraph/petgraph/compare/v0.1.0...v0.2.0
+[0.1.13]: https://github.com/petgraph/petgraph/compare/v0.0.8...v0.1.0
+[0.1.12]: https://github.com/petgraph/petgraph/compare/v0.0.7...v0.0.8
+[0.1.11]: https://github.com/petgraph/petgraph/compare/v0.0.6...v0.0.7
+[0.1.10]: https://github.com/petgraph/petgraph/compare/v0.0.5...v0.0.6
+[0.1.9]: https://github.com/petgraph/petgraph/compare/v0.0.4...v0.0.5
+[0.1.8]: https://github.com/petgraph/petgraph/compare/v0.0.3...v0.0.4
+[0.1.7]: https://github.com/petgraph/petgraph/compare/v0.0.2...v0.0.3
+[0.1.6]: https://github.com/petgraph/petgraph/compare/v0.1.4...v0.1.6
+[0.1.4]: https://github.com/petgraph/petgraph/releases/tag/v0.1.4
