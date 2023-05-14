@@ -52,7 +52,7 @@ jobs:
         run: just format --check
 
       - name: Check clippy
-        run: just clippy
+        run: just clippy -- -D warnings
 
       - name: Check public documentation
         env:

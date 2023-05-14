@@ -53,15 +53,15 @@ install-cargo-tool tool install version:
 
 [private]
 install-cargo-hack:
-  @just install-cargo-tool 'cargo hack' cargo-hack 0.5.26
+  @just install-cargo-tool 'cargo hack' cargo-hack 0.5.28
 
 [private]
 install-cargo-nextest:
-  @just install-cargo-tool 'cargo nextest' cargo-nextest 0.9.37
+  @just install-cargo-tool 'cargo nextest' cargo-nextest 0.9.52
 
 [private]
 install-llvm-cov:
-  @just install-cargo-tool 'cargo llvm-cov' cargo-llvm-cov 0.5.9
+  @just install-cargo-tool 'cargo llvm-cov' cargo-llvm-cov 0.5.19
 
 
 ######################################################################
