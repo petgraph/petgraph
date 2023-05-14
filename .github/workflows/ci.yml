@@ -2,7 +2,7 @@ name: Continuous Integration
 
 on:
   pull_request:
-#    branches: [ master ]
+    branches: [ master ]
   push:
     branches: [ master ]
 
@@ -50,21 +50,21 @@ jobs:
       - name: Generate SVG
         run: just generate-svg
 
-#      - name: Check formatting
-#        run: just format --check
-#
-#      - name: Check clippy
-#        run: just clippy -- -D warnings
-#
-#      - name: Check public documentation
-#        env:
-#          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
-#        run: just doc
-#
-#      - name: Check private documentation
-#        env:
-#          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
-#        run: just doc --document-private-items
+      - name: Check formatting
+        run: just format --check
+
+      - name: Check clippy
+        run: just clippy -- -D warnings
+
+      - name: Check public documentation
+        env:
+          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
+        run: just doc
+
+      - name: Check private documentation
+        env:
+          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
+        run: just doc --document-private-items
 
       - name: Ensure empty git diff
         run: git --no-pager diff --exit-code --color
