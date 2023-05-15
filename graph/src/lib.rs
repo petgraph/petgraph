@@ -54,20 +54,6 @@ impl<Ix: IndexType> NodeIndex<Ix> {
     }
 }
 
-unsafe impl<Ix: IndexType> IndexType for NodeIndex<Ix> {
-    fn index(&self) -> usize {
-        self.0.index()
-    }
-
-    fn new(x: usize) -> Self {
-        NodeIndex::new(x)
-    }
-
-    fn max() -> Self {
-        NodeIndex(<Ix as IndexType>::max())
-    }
-}
-
 impl<Ix: IndexType> From<Ix> for NodeIndex<Ix> {
     fn from(ix: Ix) -> Self {
         NodeIndex(ix)
@@ -343,8 +329,6 @@ enum Pair<T> {
     One(T),
     None,
 }
-
-use std::cmp::max;
 
 /// Get mutable references at index `a` and `b`.
 fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T> {
