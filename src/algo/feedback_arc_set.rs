@@ -3,13 +3,12 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+use self::linked_list::{LinkedList, LinkedListEntry};
 use crate::{
     graph::{GraphIndex, NodeIndex},
     visit::{EdgeRef, GraphProp, IntoEdgeReferences},
     Directed,
 };
-
-use self::linked_list::{LinkedList, LinkedListEntry};
 
 /// \[Generic\] Finds a [feedback arc set]: a set of edges in the given directed graph, which when
 /// removed, make the graph acyclic.
@@ -30,8 +29,7 @@ use self::linked_list::{LinkedList, LinkedListEntry};
 ///     algo::{greedy_feedback_arc_set, is_cyclic_directed},
 ///     graph::EdgeIndex,
 ///     stable_graph::StableGraph,
-///     visit::EdgeRef,
-/// };
+///     /// };
 ///
 /// let mut g: StableGraph<(), ()> = StableGraph::from_edges(&[
 ///     (0, 1),

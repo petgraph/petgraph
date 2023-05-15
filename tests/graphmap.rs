@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::fmt;
 
 use petgraph::prelude::*;
-use petgraph::visit::Walker;
+use petgraph_core::::Walker;
 
 use petgraph::algo::dijkstra;
 

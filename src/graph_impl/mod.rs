@@ -1,20 +1,20 @@
-use std::cmp;
-use std::fmt;
-use std::hash::Hash;
-use std::iter;
-use std::marker::PhantomData;
-use std::mem::size_of;
-use std::ops::{Index, IndexMut, Range};
-use std::slice;
+use std::{
+    cmp, fmt,
+    hash::Hash,
+    iter,
+    marker::PhantomData,
+    mem::size_of,
+    ops::{Index, IndexMut, Range},
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
 
-use crate::{Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected};
-
-use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
-
-use crate::util::enumerate;
-use crate::visit;
+use crate::{
+    iter_format::{DebugMap, IterFormatExt, NoPretty},
+    util::enumerate,
+    visit, Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected,
+};
 
 #[cfg(feature = "serde-1")]
 mod serialization;
@@ -42,10 +42,12 @@ unsafe impl IndexType for usize {
     fn new(x: usize) -> Self {
         x
     }
+
     #[inline(always)]
     fn index(&self) -> Self {
         *self
     }
+
     #[inline(always)]
     fn max() -> Self {
         ::std::usize::MAX
@@ -57,10 +59,12 @@ unsafe impl IndexType for u32 {
     fn new(x: usize) -> Self {
         x as u32
     }
+
     #[inline(always)]
     fn index(&self) -> usize {
         *self as usize
     }
+
     #[inline(always)]
     fn max() -> Self {
         ::std::u32::MAX
@@ -72,10 +76,12 @@ unsafe impl IndexType for u16 {
     fn new(x: usize) -> Self {
         x as u16
     }
+
     #[inline(always)]
     fn index(&self) -> usize {
         *self as usize
     }
+
     #[inline(always)]
     fn max() -> Self {
         ::std::u16::MAX
@@ -87,10 +93,12 @@ unsafe impl IndexType for u8 {
     fn new(x: usize) -> Self {
         x as u8
     }
+
     #[inline(always)]
     fn index(&self) -> usize {
         *self as usize
     }
+
     #[inline(always)]
     fn max() -> Self {
         ::std::u8::MAX
@@ -126,9 +134,11 @@ unsafe impl<Ix: IndexType> IndexType for NodeIndex<Ix> {
     fn index(&self) -> usize {
         self.0.index()
     }
+
     fn new(x: usize) -> Self {
         NodeIndex::new(x)
     }
+
     fn max() -> Self {
         NodeIndex(<Ix as IndexType>::max())
     }
@@ -276,8 +286,8 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
 ///
 /// `Graph` is parameterized over:
 ///
-/// - Associated data `N` for nodes and `E` for edges, called *weights*.
-///   The associated data can be of arbitrary type.
+/// - Associated data `N` for nodes and `E` for edges, called *weights*. The associated data can be
+///   of arbitrary type.
 /// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
@@ -303,12 +313,8 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
 /// let qc = deps.add_node("quickcheck");
 /// let rand = deps.add_node("rand");
 /// let libc = deps.add_node("libc");
-/// deps.extend_with_edges(&[
-///     (pg, fb), (pg, qc),
-///     (qc, rand), (rand, libc), (qc, libc),
-/// ]);
+/// deps.extend_with_edges(&[(pg, fb), (pg, qc), (qc, rand), (rand, libc), (qc, libc)]);
 /// ```
-///
 #[doc = include_str!("../../doc/graph-example.svg")]
 ///
 /// ### Graph Indices
@@ -341,7 +347,6 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
 /// differing weights or differing edges.
 ///
 /// * Indices don't allow as much compile time checking as references.
-///
 pub struct Graph<N, E, Ty = Directed, Ix = DefaultIx> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,
@@ -711,7 +716,8 @@ where
             };
             let fst = node.next[k];
             if fst == e {
-                //println!("Updating first edge 0 for node {}, set to {}", edge_node[0], edge_next[0]);
+                //println!("Updating first edge 0 for node {}, set to {}", edge_node[0],
+                // edge_next[0]);
                 node.next[k] = edge_next[k];
             } else {
                 let mut edges = edges_walker_mut(&mut self.edges, fst, d);
@@ -822,7 +828,6 @@ where
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    ///
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
         Neighbors {
             skip_start: a,
@@ -1045,6 +1050,7 @@ where
             edges: self.edges.iter(),
         }
     }
+
     /// Return an iterator yielding mutable access to all edge weights.
     ///
     /// The order in which weights are yielded matches the order of their
@@ -1111,7 +1117,7 @@ where
     ///
     /// ```
     /// use petgraph::{Graph, Incoming};
-    /// use petgraph::visit::Dfs;
+    /// use petgraph_core::::Dfs;
     ///
     /// let mut gr = Graph::new();
     /// let a = gr.add_node(0.);
@@ -1300,11 +1306,7 @@ where
     /// ```
     /// use petgraph::Graph;
     ///
-    /// let gr = Graph::<(), i32>::from_edges(&[
-    ///     (0, 1), (0, 2), (0, 3),
-    ///     (1, 2), (1, 3),
-    ///     (2, 3),
-    /// ]);
+    /// let gr = Graph::<(), i32>::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
     /// ```
     pub fn from_edges<I>(iterable: I) -> Self
     where
@@ -1474,6 +1476,7 @@ where
     Ix: IndexType,
 {
     type Item = NodeIndex<Ix>;
+
     fn next(&mut self) -> Option<NodeIndex<Ix>> {
         let k = self.dir.index();
         loop {
@@ -1491,6 +1494,7 @@ where
             }
         }
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
@@ -1612,6 +1616,7 @@ where
     Ix: IndexType,
 {
     type Edges = Edges<'a, E, Ty, Ix>;
+
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         self.edges(a)
     }
@@ -1623,6 +1628,7 @@ where
     Ix: IndexType,
 {
     type EdgesDirected = Edges<'a, E, Ty, Ix>;
+
     fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
         self.edges_directed(a, dir)
     }
@@ -1741,6 +1747,7 @@ where
 
         None
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.edges.size_hint();
         (0, upper)
@@ -1789,7 +1796,8 @@ where
 /// Iterator yielding mutable access to all node weights.
 #[derive(Debug)]
 pub struct NodeWeightsMut<'a, N: 'a, Ix: IndexType = DefaultIx> {
-    nodes: ::std::slice::IterMut<'a, Node<N, Ix>>, // TODO: change type to something that implements Clone?
+    nodes: ::std::slice::IterMut<'a, Node<N, Ix>>, /* TODO: change type to something that
+                                                    * implements Clone? */
 }
 
 impl<'a, N, Ix> Iterator for NodeWeightsMut<'a, N, Ix>
@@ -1830,7 +1838,8 @@ where
 /// Iterator yielding mutable access to all edge weights.
 #[derive(Debug)]
 pub struct EdgeWeightsMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
-    edges: ::std::slice::IterMut<'a, Edge<E, Ix>>, // TODO: change type to something that implements Clone?
+    edges: ::std::slice::IterMut<'a, Edge<E, Ix>>, /* TODO: change type to something that
+                                                    * implements Clone? */
 }
 
 impl<'a, E, Ix> Iterator for EdgeWeightsMut<'a, E, Ix>
@@ -1857,6 +1866,7 @@ where
     Ix: IndexType,
 {
     type Output = N;
+
     fn index(&self, index: NodeIndex<Ix>) -> &N {
         &self.nodes[index.index()].weight
     }
@@ -1884,6 +1894,7 @@ where
     Ix: IndexType,
 {
     type Output = E;
+
     fn index(&self, index: EdgeIndex<Ix>) -> &E {
         &self.edges[index.index()].weight
     }
@@ -1927,6 +1938,7 @@ impl<Ix: IndexType> GraphIndex for NodeIndex<Ix> {
     fn index(&self) -> usize {
         NodeIndex::index(*self)
     }
+
     #[inline]
     #[doc(hidden)]
     fn is_node_index() -> bool {
@@ -1940,6 +1952,7 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
     fn index(&self) -> usize {
         EdgeIndex::index(*self)
     }
+
     #[inline]
     #[doc(hidden)]
     fn is_node_index() -> bool {
@@ -1957,7 +1970,7 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 ///
 /// ```
 /// use petgraph::{Graph, Incoming};
-/// use petgraph::visit::Dfs;
+/// use petgraph_core::::Dfs;
 ///
 /// let mut gr = Graph::new();
 /// let a = gr.add_node(0.);
@@ -2131,8 +2144,8 @@ impl<N, E, Ty, Ix> visit::GraphBase for Graph<N, E, Ty, Ix>
 where
     Ix: IndexType,
 {
-    type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex<Ix>;
+    type NodeId = NodeIndex<Ix>;
 }
 
 impl<N, E, Ty, Ix> visit::Visitable for Graph<N, E, Ty, Ix>
@@ -2141,6 +2154,7 @@ where
     Ix: IndexType,
 {
     type Map = FixedBitSet;
+
     fn visit_map(&self) -> FixedBitSet {
         FixedBitSet::with_capacity(self.node_count())
     }
@@ -2165,6 +2179,7 @@ where
     Ix: IndexType,
 {
     type NodeIdentifiers = NodeIndices<Ix>;
+
     fn node_identifiers(self) -> NodeIndices<Ix> {
         Graph::node_indices(self)
     }
@@ -2189,10 +2204,12 @@ where
     fn node_bound(&self) -> usize {
         self.node_count()
     }
+
     #[inline]
     fn to_index(&self, ix: NodeIndex<Ix>) -> usize {
         ix.index()
     }
+
     #[inline]
     fn from_index(&self, ix: usize) -> Self::NodeId {
         NodeIndex::new(ix)
@@ -2212,6 +2229,7 @@ where
     Ix: IndexType,
 {
     type Neighbors = Neighbors<'a, E, Ix>;
+
     fn neighbors(self, n: NodeIndex<Ix>) -> Neighbors<'a, E, Ix> {
         Graph::neighbors(self, n)
     }
@@ -2223,6 +2241,7 @@ where
     Ix: IndexType,
 {
     type NeighborsDirected = Neighbors<'a, E, Ix>;
+
     fn neighbors_directed(self, n: NodeIndex<Ix>, d: Direction) -> Neighbors<'a, E, Ix> {
         Graph::neighbors_directed(self, n, d)
     }
@@ -2235,6 +2254,7 @@ where
 {
     type EdgeRef = EdgeReference<'a, E, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ix>;
+
     fn edge_references(self) -> Self::EdgeReferences {
         (*self).edge_references()
     }
@@ -2258,6 +2278,7 @@ where
 {
     type NodeRef = (NodeIndex<Ix>, &'a N);
     type NodeReferences = NodeReferences<'a, N, Ix>;
+
     fn node_references(self) -> Self::NodeReferences {
         NodeReferences {
             iter: self.nodes.iter().enumerate(),
@@ -2318,19 +2339,22 @@ impl<'a, Ix, E> visit::EdgeRef for EdgeReference<'a, E, Ix>
 where
     Ix: IndexType,
 {
-    type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex<Ix>;
+    type NodeId = NodeIndex<Ix>;
     type Weight = E;
 
     fn source(&self) -> Self::NodeId {
         self.node[0]
     }
+
     fn target(&self) -> Self::NodeId {
         self.node[1]
     }
+
     fn weight(&self) -> &E {
         self.weight
     }
+
     fn id(&self) -> Self::EdgeId {
         self.index
     }

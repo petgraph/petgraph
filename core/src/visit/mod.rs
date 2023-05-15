@@ -62,25 +62,22 @@
 
 // filter, reversed have their `mod` lines at the end,
 // so that they can use the trait template macros
-pub use self::filter::*;
-pub use self::reversed::*;
+pub use self::{filter::*, reversed::*};
 
 #[macro_use]
 mod macros;
 
 mod dfsvisit;
 mod traversal;
-pub use self::dfsvisit::*;
-pub use self::traversal::*;
+use std::{
+    collections::HashSet,
+    hash::{BuildHasher, Hash},
+};
 
 use fixedbitset::FixedBitSet;
-use std::collections::HashSet;
-use std::hash::{BuildHasher, Hash};
+use petgraph::{graph_impl::IndexType, Direction, EdgeType};
 
-use super::EdgeType;
-use crate::prelude::Direction;
-
-use crate::graph::IndexType;
+pub use self::{dfsvisit::*, traversal::*};
 
 trait_template! {
 /// Base graph trait: defines the associated node identifier and
@@ -236,19 +233,22 @@ impl<'a, N, E> EdgeRef for (N, N, &'a E)
 where
     N: Copy,
 {
-    type NodeId = N;
     type EdgeId = (N, N);
+    type NodeId = N;
     type Weight = E;
 
     fn source(&self) -> N {
         self.0
     }
+
     fn target(&self) -> N {
         self.1
     }
+
     fn weight(&self) -> &E {
         self.2
     }
+
     fn id(&self) -> (N, N) {
         (self.0, self.1)
     }
@@ -281,9 +281,11 @@ where
 {
     type NodeId = Id;
     type Weight = ();
+
     fn id(&self) -> Self::NodeId {
         self.0
     }
+
     fn weight(&self) -> &Self::Weight {
         static DUMMY: () = ();
         &DUMMY
@@ -296,9 +298,11 @@ where
 {
     type NodeId = Id;
     type Weight = W;
+
     fn id(&self) -> Self::NodeId {
         self.0
     }
+
     fn weight(&self) -> &Self::Weight {
         self.1
     }
@@ -407,6 +411,7 @@ where
     fn visit(&mut self, x: Ix) -> bool {
         !self.put(x.index())
     }
+
     fn is_visited(&self, x: &Ix) -> bool {
         self.contains(x.index())
     }
@@ -420,6 +425,7 @@ where
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
     }
+
     fn is_visited(&self, x: &N) -> bool {
         self.contains(x)
     }

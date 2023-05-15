@@ -1,0 +1,30 @@
+# General
+edition = "2021" # Default: "2015"
+unstable_features = true # Default: false
+version = "Two" # Default: "One"
+
+# Settings
+condense_wildcard_suffixes = true # Default: false
+overflow_delimited_expr = true # Default: false
+reorder_impl_items = true # Default: false
+use_field_init_shorthand = true # Default: false
+use_try_shorthand = true # Default: false
+wrap_comments = true # Default: false
+
+# Parameters
+comment_width = 100 # Default: 80
+hex_literal_case = "Upper" # Default: "Preserve"
+
+# Areas
+format_code_in_doc_comments = true # Default: false
+format_generated_files = true # Default: false
+format_macro_matchers = true # Default: false
+format_macro_bodies = true # Default: false
+format_strings = true # Default: false
+
+# Imports
+imports_granularity = "Crate" # Default: "Preserve"
+group_imports = "StdExternalCrate" # Default: "Preserve"
+
+# Diagnostics
+error_on_unformatted = true # Default: false

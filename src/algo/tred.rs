@@ -8,15 +8,17 @@
 //! closure of **Gr** is the same as that of **G**.
 //! The transitive reduction is well-defined for acyclic graphs only.
 
-use crate::adj::{List, UnweightedList};
-use crate::graph::IndexType;
-use crate::visit::{
-    GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount,
-};
-use crate::Direction;
 use fixedbitset::FixedBitSet;
 
-/// Creates a representation of the same graph respecting topological order for use in `tred::dag_transitive_reduction_closure`.
+use crate::{
+    adj::{List, UnweightedList},
+    graph::IndexType,
+    visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount},
+    Direction,
+};
+
+/// Creates a representation of the same graph respecting topological order for use in
+/// `tred::dag_transitive_reduction_closure`.
 ///
 /// `toposort` must be a topological order on the node indices of `g` (for example obtained
 /// from [`toposort`]).
@@ -34,7 +36,7 @@ use fixedbitset::FixedBitSet;
 /// ```
 /// use petgraph::prelude::*;
 /// use petgraph::graph::DefaultIx;
-/// use petgraph::visit::IntoNeighbors;
+/// use petgraph_core::::IntoNeighbors;
 /// use petgraph::algo::tred::dag_to_toposorted_adjacency_list;
 ///
 /// let mut g = Graph::<&str, (), Directed, DefaultIx>::new();

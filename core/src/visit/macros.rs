@@ -5,6 +5,7 @@
 /// @section type for associated types
 /// @section self for methods
 /// @section nodelegate for arbitrary tail that is not forwarded.
+#[macro_export]
 macro_rules! trait_template {
     ($(#[$doc:meta])* pub trait $name:ident $($methods:tt)*) => {
         macro_rules! $name {
@@ -33,43 +34,48 @@ macro_rules! trait_template {
     }
 }
 
+#[macro_export]
 macro_rules! remove_sections_inner {
     ([$($stack:tt)*]) => {
         $($stack)*
     };
     // escape the following tt
     ([$($stack:tt)*] @escape $_x:tt $($t:tt)*) => {
-        remove_sections_inner!([$($stack)*] $($t)*);
+        $crate::remove_sections_inner!([$($stack)*] $($t)*);
     };
     ([$($stack:tt)*] @section $x:ident $($t:tt)*) => {
-        remove_sections_inner!([$($stack)*] $($t)*);
+        $crate::remove_sections_inner!([$($stack)*] $($t)*);
     };
     ([$($stack:tt)*] $t:tt $($tail:tt)*) => {
-        remove_sections_inner!([$($stack)* $t] $($tail)*);
+        $crate::remove_sections_inner!([$($stack)* $t] $($tail)*);
     };
 }
 
 // This is the outer layer, just find the { } of the actual trait definition
 // recurse once into { }, but not more.
+#[macro_export]
 macro_rules! remove_sections {
     ([$($stack:tt)*]) => {
         $($stack)*
     };
     ([$($stack:tt)*] { $($tail:tt)* }) => {
         $($stack)* {
-            remove_sections_inner!([] $($tail)*);
+            $crate::remove_sections_inner!([] $($tail)*);
         }
     };
     ([$($stack:tt)*] $t:tt $($tail:tt)*) => {
-        remove_sections!([$($stack)* $t] $($tail)*);
+        $crate::remove_sections!([$($stack)* $t] $($tail)*);
     };
 }
 
+#[macro_export]
 macro_rules! deref {
     ($e:expr) => {
         *$e
     };
 }
+
+#[macro_export]
 macro_rules! deref_twice {
     ($e:expr) => {
         **$e
@@ -78,9 +84,10 @@ macro_rules! deref_twice {
 
 /// Implement a trait by delegation. By default as if we are delegating
 /// from &G to G.
+#[macro_export]
 macro_rules! delegate_impl {
     ([] $($rest:tt)*) => {
-        delegate_impl! { [['a, G], G, &'a G, deref] $($rest)* }
+        $crate::delegate_impl! { [['a, G], G, &'a G, deref] $($rest)* }
     };
     ([[$($param:tt)*], $self_type:ident, $self_wrap:ty, $self_map:ident]
      pub trait $name:ident $(: $sup:ident)* $(+ $more_sup:ident)* {

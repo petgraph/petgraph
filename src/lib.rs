@@ -11,15 +11,15 @@
 //! # Example
 //!
 //! ```rust
-//! use petgraph::graph::{NodeIndex, UnGraph};
-//! use petgraph::algo::{dijkstra, min_spanning_tree};
-//! use petgraph::data::FromElements;
-//! use petgraph::dot::{Dot, Config};
+//! use petgraph::{
+//!     algo::{dijkstra, min_spanning_tree},
+//!     data::FromElements,
+//!     dot::{Config, Dot},
+//!     graph::{NodeIndex, UnGraph},
+//! };
 //!
 //! // Create an undirected graph with `i32` nodes and edges with `()` associated data.
-//! let g = UnGraph::<i32, ()>::from_edges(&[
-//!     (1, 2), (2, 3), (3, 4),
-//!     (1, 4)]);
+//! let g = UnGraph::<i32, ()>::from_edges(&[(1, 2), (2, 3), (3, 4), (1, 4)]);
 //!
 //! // Find the shortest path from `1` to `4` using `1` as the cost for every edge.
 //! let node_map = dijkstra(&g, 1.into(), Some(4.into()), |_| 1);
@@ -45,17 +45,14 @@
 //!
 //! # Graph types
 //!
-//! * [`Graph`](./graph/struct.Graph.html) -
-//!   An adjacency list graph with arbitrary associated data.
-//! * [`StableGraph`](./stable_graph/struct.StableGraph.html) -
-//!   Similar to `Graph`, but it keeps indices stable across removals.
-//! * [`GraphMap`](./graphmap/struct.GraphMap.html) -
-//!   An adjacency list graph backed by a hash table. The node identifiers are the keys
-//!   into the table.
-//! * [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html) -
-//!   An adjacency matrix graph.
-//! * [`CSR`](./csr/struct.Csr.html) -
-//!   A sparse adjacency matrix graph with arbitrary associated data.
+//! * [`Graph`](./graph/struct.Graph.html) - An adjacency list graph with arbitrary associated data.
+//! * [`StableGraph`](./stable_graph/struct.StableGraph.html) - Similar to `Graph`, but it keeps
+//!   indices stable across removals.
+//! * [`GraphMap`](./graphmap/struct.GraphMap.html) - An adjacency list graph backed by a hash
+//!   table. The node identifiers are the keys into the table.
+//! * [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html) - An adjacency matrix graph.
+//! * [`CSR`](./csr/struct.Csr.html) - A sparse adjacency matrix graph with arbitrary associated
+//!   data.
 //!
 //! ### Generic parameters
 //!
@@ -96,13 +93,11 @@
 //!   Defaults off. Enables serialization for ``Graph, StableGraph, GraphMap`` using
 //!   [`serde 1.0`](https://crates.io/crates/serde). May require a more recent version
 //!   of Rust than petgraph alone.
-//! * **graphmap** -
-//!   Defaults on. Enables [`GraphMap`](./graphmap/struct.GraphMap.html).
-//! * **stable_graph** -
-//!   Defaults on. Enables [`StableGraph`](./stable_graph/struct.StableGraph.html).
-//! * **matrix_graph** -
-//!   Defaults on. Enables [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html).
-//!
+//! * **graphmap** - Defaults on. Enables [`GraphMap`](./graphmap/struct.GraphMap.html).
+//! * **stable_graph** - Defaults on. Enables
+//!   [`StableGraph`](./stable_graph/struct.StableGraph.html).
+//! * **matrix_graph** - Defaults on. Enables
+//!   [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html).
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
 
 extern crate fixedbitset;
@@ -120,16 +115,12 @@ extern crate itertools;
 
 #[doc(no_inline)]
 pub use crate::graph::Graph;
-
 pub use crate::Direction::{Incoming, Outgoing};
 
 #[macro_use]
 mod macros;
 mod scored;
 
-// these modules define trait-implementing macros
-#[macro_use]
-pub mod visit;
 #[macro_use]
 pub mod data;
 
@@ -266,6 +257,7 @@ where
 
 impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, E) {
     type NodeId = Ix;
+
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         self
     }
@@ -276,6 +268,7 @@ where
     E: Clone,
 {
     type NodeId = Ix;
+
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (a, b, c) = self;
         (a, b, c.clone())
@@ -288,6 +281,7 @@ where
     E: Default,
 {
     type NodeId = Ix;
+
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (s, t) = *self;
         (s, t, E::default())
@@ -300,6 +294,7 @@ where
     E: Clone,
 {
     type NodeId = Ix;
+
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         self.clone()
     }

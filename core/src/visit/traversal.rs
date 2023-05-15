@@ -1,7 +1,11 @@
-use super::{GraphRef, IntoNodeIdentifiers, Reversed};
-use super::{IntoNeighbors, IntoNeighborsDirected, VisitMap, Visitable};
-use crate::Incoming;
 use std::collections::VecDeque;
+
+use petgraph::Direction::Incoming;
+
+use super::{
+    GraphRef, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap,
+    Visitable,
+};
 
 /// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in
 /// preorder (when they are first discovered).
@@ -17,7 +21,7 @@ use std::collections::VecDeque;
 ///
 /// ```
 /// use petgraph::Graph;
-/// use petgraph::visit::Dfs;
+/// use petgraph_core::::Dfs;
 ///
 /// let mut graph = Graph::<_,()>::new();
 /// let a = graph.add_node(0);
@@ -233,7 +237,7 @@ where
 ///
 /// ```
 /// use petgraph::Graph;
-/// use petgraph::visit::Bfs;
+/// use petgraph_core::::Bfs;
 ///
 /// let mut graph = Graph::<_,()>::new();
 /// let a = graph.add_node(0);
@@ -463,6 +467,7 @@ where
     C: Clone,
 {
     type Item = W::Item;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.walker.walk_next(self.context.clone())
     }
@@ -473,6 +478,7 @@ where
     W: Walker<C>,
 {
     type Item = W::Item;
+
     fn walk_next(&mut self, context: C) -> Option<Self::Item> {
         (**self).walk_next(context)
     }
@@ -483,6 +489,7 @@ where
     G: IntoNeighbors + Visitable,
 {
     type Item = G::NodeId;
+
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
         self.next(context)
     }
@@ -493,6 +500,7 @@ where
     G: IntoNeighbors + Visitable,
 {
     type Item = G::NodeId;
+
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
         self.next(context)
     }
@@ -503,6 +511,7 @@ where
     G: IntoNeighbors + Visitable,
 {
     type Item = G::NodeId;
+
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
         self.next(context)
     }
@@ -513,6 +522,7 @@ where
     G: IntoNeighborsDirected + Visitable,
 {
     type Item = G::NodeId;
+
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
         self.next(context)
     }
