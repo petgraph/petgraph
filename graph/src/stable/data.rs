@@ -1,5 +1,5 @@
 use petgraph_core::{
-    data::{Build, Create, DataMap, DataMapMut, Element, FromElements},
+    data::{from_elements_indexable, Build, Create, DataMap, DataMapMut, Element, FromElements},
     edge::EdgeType,
     index::IndexType,
     visit::Data,

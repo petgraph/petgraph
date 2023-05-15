@@ -12,4 +12,6 @@ pub mod index;
 #[macro_use]
 #[deprecated(since = "0.1.0")]
 pub mod data;
+#[deprecated(since = "0.1.0")]
+pub mod deprecated;
 mod utils;

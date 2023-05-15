@@ -6,8 +6,11 @@
 /// @section self for methods
 /// @section nodelegate for arbitrary tail that is not forwarded.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! trait_template {
     ($(#[$doc:meta])* pub trait $name:ident $($methods:tt)*) => {
+        #[macro_export]
+        #[doc(hidden)]
         macro_rules! $name {
             ($m:ident $extra:tt) => {
                 $m! {
@@ -17,7 +20,7 @@ macro_rules! trait_template {
             }
         }
 
-        remove_sections! { []
+        $crate::remove_sections! { []
             $(#[$doc])*
             pub trait $name $($methods)*
 
@@ -69,6 +72,7 @@ macro_rules! remove_sections {
 }
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! deref {
     ($e:expr) => {
         *$e
@@ -76,6 +80,7 @@ macro_rules! deref {
 }
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! deref_twice {
     ($e:expr) => {
         **$e
@@ -85,6 +90,7 @@ macro_rules! deref_twice {
 /// Implement a trait by delegation. By default as if we are delegating
 /// from &G to G.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! delegate_impl {
     ([] $($rest:tt)*) => {
         $crate::delegate_impl! { [['a, G], G, &'a G, deref] $($rest)* }

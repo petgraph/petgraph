@@ -41,6 +41,7 @@ pub unsafe trait IndexType: Unsigned + AtMostUsize {
     #[deprecated(since = "0.1.0", note = "Use `Self::from_usize(x)` instead")]
     fn new(x: usize) -> Self;
 
+    #[must_use]
     fn from_usize(value: usize) -> Self {
         Self::new(value)
     }
@@ -62,12 +63,12 @@ where
 
     fn from_usize(value: usize) -> Self {
         // This will runtime panic if the contract has been violated.
-        match value.try_into() {
-            Ok(value) => value,
-            Err(_) => {
+        value.try_into().map_or_else(
+            |_| {
                 panic!("index out of range");
-            }
-        }
+            },
+            |value| value,
+        )
     }
 
     fn index(&self) -> usize {

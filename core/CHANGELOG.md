@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The underlying `IndexType` must now implement `Unsigned` and `AtMostUsize` from the `funty` crate.
   This is a breaking change for any user-defined `IndexType` implementations.
 
+## Changed
+
+- The implementation of `VisitMap` for `FixedBitSet` has been relaxed. Instead of restricting to `IndexType` it now only
+  requires `TryInto<usize> + Copy`.
+
 ## Added
 
 - Moved `petgraph::visit` to `petgraph-core`
@@ -24,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved `petgraph::Outgoing` to `petgraph-core`
 - Moved `petgraph::EdgeDirection` to `petgraph-core`
 - Moved `petgraph::graph::IndexType` to `petgraph-core`
+- Moved `petgraph::IntoWeightedEdge` to `petgraph-core`
 
 ## Deprecations
 

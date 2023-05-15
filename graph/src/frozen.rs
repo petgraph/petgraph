@@ -1,16 +1,25 @@
-use std::ops::{Deref, Index, IndexMut};
+use core::ops::{Deref, Index, IndexMut};
+
+use petgraph_core::{
+    data::{DataMap, DataMapMut},
+    delegate_impl, deref_twice,
+    index::IndexType,
+    Data, DataMap, DataMapMut, EdgeCount, EdgeIndexable, GetAdjacencyMatrix, GraphProp,
+    IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
+    IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
+    Visitable,
+};
 
 use super::Frozen;
-use crate::data::{DataMap, DataMapMut};
-use crate::graph::Graph;
-use crate::graph::{GraphIndex, IndexType};
-use crate::visit::{
-    Data, EdgeCount, EdgeIndexable, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdges,
-    IntoEdgesDirected, IntoNeighborsDirected, IntoNodeIdentifiers, NodeCompactIndexable, NodeCount,
-    NodeIndexable,
+use crate::{
+    visit::{
+        Data, EdgeCount, EdgeIndexable, GetAdjacencyMatrix, GraphBase, GraphProp,
+        IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
+        IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
+        Visitable,
+    },
+    Direction, EdgeType, Graph, GraphIndex,
 };
-use crate::visit::{IntoEdgeReferences, IntoNeighbors, IntoNodeReferences, Visitable};
-use crate::{Direction, EdgeType};
 
 impl<'a, G> Frozen<'a, G> {
     /// Create a new `Frozen` from a mutable reference to a graph.
@@ -23,6 +32,7 @@ impl<'a, G> Frozen<'a, G> {
 /// functionality in the underlying graph.
 impl<'a, G> Deref for Frozen<'a, G> {
     type Target = G;
+
     fn deref(&self) -> &G {
         self.0
     }
@@ -33,6 +43,7 @@ where
     G: Index<I>,
 {
     type Output = G::Output;
+
     fn index(&self, i: I) -> &G::Output {
         self.0.index(i)
     }
@@ -84,8 +95,8 @@ impl<'a, G> GraphBase for Frozen<'a, G>
 where
     G: GraphBase,
 {
-    type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
+    type NodeId = G::NodeId;
 }
 
 Data! {delegate_impl [['a, G], G, Frozen<'a, G>, deref_twice]}

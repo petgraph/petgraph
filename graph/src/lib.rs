@@ -9,12 +9,11 @@ use core::{
     fmt, iter,
     marker::PhantomData,
     mem::size_of,
-    ops::{Index, IndexMut},
+    ops::{Index, IndexMut, Range},
     slice,
 };
 
 use fixedbitset::FixedBitSet;
-use petgraph::IntoWeightedEdge;
 
 mod frozen;
 #[cfg(feature = "stable")]
@@ -26,10 +25,13 @@ mod serialization;
 mod utils;
 
 use petgraph_core::{
+    deprecated::IntoWeightedEdge,
     edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
     index::{DefaultIx, IndexType},
     visit,
 };
+
+use crate::utils::DebugFn;
 
 /// Node identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
@@ -59,6 +61,12 @@ impl<Ix: IndexType> NodeIndex<Ix> {
 impl<Ix: IndexType> From<Ix> for NodeIndex<Ix> {
     fn from(ix: Ix) -> Self {
         NodeIndex(ix)
+    }
+}
+
+impl<Ix: IndexType> Into<usize> for NodeIndex<Ix> {
+    fn into(self) -> usize {
+        self.0.as_usize()
     }
 }
 
@@ -302,24 +310,39 @@ where
         if self.edge_count() > 0 {
             fmt_struct.field(
                 "edges",
-                &self
-                    .edges
-                    .iter()
-                    .map(|e| NoPretty((e.source().index(), e.target().index())))
-                    .format(", "),
+                &DebugFn(|f| {
+                    f.debug_list()
+                        .entries(self.edges.iter().map(|e| {
+                            DebugFn(|f| {
+                                f.write_fmt(format_args!(
+                                    "{:?}",
+                                    (e.source().index(), e.target().index())
+                                ))
+                            })
+                        }))
+                        .finish()
+                }),
             );
         }
         // skip weights if they are ZST!
         if size_of::<N>() != 0 {
             fmt_struct.field(
                 "node weights",
-                &DebugMap(|| self.nodes.iter().map(|n| &n.weight).enumerate()),
+                &DebugFn(|f| {
+                    f.debug_map()
+                        .entries(self.nodes.iter().map(|n| &n.weight).enumerate())
+                        .finish()
+                }),
             );
         }
         if size_of::<E>() != 0 {
             fmt_struct.field(
                 "edge weights",
-                &DebugMap(|| self.edges.iter().map(|n| &n.weight).enumerate()),
+                &DebugFn(|f| {
+                    f.debug_map()
+                        .entries(self.edges.iter().map(|n| &n.weight).enumerate())
+                        .finish()
+                }),
             );
         }
         fmt_struct.finish()
@@ -1259,15 +1282,17 @@ where
         G: FnMut(EdgeIndex<Ix>, &'a E) -> E2,
     {
         let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
-        g.nodes.extend(enumerate(&self.nodes).map(|(i, node)| Node {
-            weight: node_map(NodeIndex::new(i), &node.weight),
-            next: node.next,
-        }));
-        g.edges.extend(enumerate(&self.edges).map(|(i, edge)| Edge {
-            weight: edge_map(EdgeIndex::new(i), &edge.weight),
-            next: edge.next,
-            node: edge.node,
-        }));
+        g.nodes
+            .extend(self.nodes.iter().enumerate().map(|(i, node)| Node {
+                weight: node_map(NodeIndex::new(i), &node.weight),
+                next: node.next,
+            }));
+        g.edges
+            .extend(self.edges.iter().enumerate().map(|(i, edge)| Edge {
+                weight: edge_map(EdgeIndex::new(i), &edge.weight),
+                next: edge.next,
+                node: edge.node,
+            }));
         g
     }
 
@@ -1295,12 +1320,12 @@ where
         let mut g = Graph::with_capacity(0, 0);
         // mapping from old node index to new node index, end represents removed.
         let mut node_index_map = vec![NodeIndex::end(); self.node_count()];
-        for (i, node) in enumerate(&self.nodes) {
+        for (i, node) in self.nodes.iter().enumerate() {
             if let Some(nw) = node_map(NodeIndex::new(i), &node.weight) {
                 node_index_map[i] = g.add_node(nw);
             }
         }
-        for (i, edge) in enumerate(&self.edges) {
+        for (i, edge) in self.edges.iter().enumerate() {
             // skip edge if any endpoint was removed
             let source = node_index_map[edge.source().index()];
             let target = node_index_map[edge.target().index()];
@@ -1334,7 +1359,7 @@ where
     #[cfg(feature = "serde")]
     /// Fix up node and edge links after deserialization
     fn link_edges(&mut self) -> Result<(), NodeIndex<Ix>> {
-        for (edge_index, edge) in enumerate(&mut self.edges) {
+        for (edge_index, edge) in self.edges.iter_mut().enumerate() {
             let a = edge.source();
             let b = edge.target();
             let edge_idx = EdgeIndex::new(edge_index);
@@ -1665,7 +1690,7 @@ where
 
 /// Iterator yielding immutable access to all node weights.
 pub struct NodeWeights<'a, N: 'a, Ix: IndexType = DefaultIx> {
-    nodes: ::std::slice::Iter<'a, Node<N, Ix>>,
+    nodes: slice::Iter<'a, Node<N, Ix>>,
 }
 impl<'a, N, Ix> Iterator for NodeWeights<'a, N, Ix>
 where
@@ -1684,8 +1709,8 @@ where
 /// Iterator yielding mutable access to all node weights.
 #[derive(Debug)]
 pub struct NodeWeightsMut<'a, N: 'a, Ix: IndexType = DefaultIx> {
-    nodes: ::std::slice::IterMut<'a, Node<N, Ix>>, /* TODO: change type to something that
-                                                    * implements Clone? */
+    nodes: slice::IterMut<'a, Node<N, Ix>>, /* TODO: change type to something that
+                                             * implements Clone? */
 }
 
 impl<'a, N, Ix> Iterator for NodeWeightsMut<'a, N, Ix>
@@ -1705,7 +1730,7 @@ where
 
 /// Iterator yielding immutable access to all edge weights.
 pub struct EdgeWeights<'a, E: 'a, Ix: IndexType = DefaultIx> {
-    edges: ::std::slice::Iter<'a, Edge<E, Ix>>,
+    edges: slice::Iter<'a, Edge<E, Ix>>,
 }
 
 impl<'a, E, Ix> Iterator for EdgeWeights<'a, E, Ix>
@@ -1726,8 +1751,8 @@ where
 /// Iterator yielding mutable access to all edge weights.
 #[derive(Debug)]
 pub struct EdgeWeightsMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
-    edges: ::std::slice::IterMut<'a, Edge<E, Ix>>, /* TODO: change type to something that
-                                                    * implements Clone? */
+    edges: slice::IterMut<'a, Edge<E, Ix>>, /* TODO: change type to something that
+                                             * implements Clone? */
 }
 
 impl<'a, E, Ix> Iterator for EdgeWeightsMut<'a, E, Ix>
@@ -1858,7 +1883,7 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 ///
 /// ```
 /// use petgraph::{Graph, Incoming};
-/// use petgraph_core::::Dfs;
+/// use petgraph_core::visit::Dfs;
 ///
 /// let mut gr = Graph::new();
 /// let a = gr.add_node(0.);

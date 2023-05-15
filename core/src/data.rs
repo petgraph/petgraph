@@ -161,7 +161,8 @@ pub trait FromElements: Create {
     }
 }
 
-fn from_elements_indexable<G, I>(iterable: I) -> G
+#[doc(hidden)]
+pub fn from_elements_indexable<G, I>(iterable: I) -> G
 where
     G: Create + NodeIndexable,
     I: IntoIterator<Item = Element<G::NodeWeight, G::EdgeWeight>>,

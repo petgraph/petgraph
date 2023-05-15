@@ -412,14 +412,14 @@ pub trait VisitMap<N> {
 #[cfg(feature = "fixedbitset")]
 impl<Ix> VisitMap<Ix> for FixedBitSet
 where
-    Ix: IndexType,
+    Ix: TryInto<usize> + Copy,
 {
     fn visit(&mut self, x: Ix) -> bool {
-        !self.put(x.index())
+        x.try_into().map_or(false, |value| !self.put(value))
     }
 
     fn is_visited(&self, x: &Ix) -> bool {
-        self.contains(x.index())
+        (*x).try_into().map_or(false, |value| self.contains(value))
     }
 }
 
