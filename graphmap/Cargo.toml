@@ -8,11 +8,17 @@ edition = "2021"
 [dependencies]
 funty.workspace = true
 fixedbitset.workspace = true
+indexmap.workspace = true
 
-petgraph-core = { workspace = true, features = ['alloc', 'fixedbitset'] }
+serde = { workspace = true, optional = true, default-features = false, features = ['alloc'] }
+
+petgraph-core = { workspace = true, features = ['alloc', 'indexmap'] }
+petgraph-graph = { workspace = true, optional = true }
 
 [dev-dependencies]
 
 [features]
 default = ["std"]
-std = ["petgraph-core/std"]
+std = ["petgraph-core/std", "indexmap/std", "serde?/std"]
+serde = ["dep:serde", "convert", "petgraph-graph/serde"]
+convert = ["petgraph-graph"]

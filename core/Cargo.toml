@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 funty.workspace = true
 fixedbitset = { workspace = true, optional = true }
+indexmap = { workspace = true, optional = true }
 
 [dev-dependencies]
 # Used for documentation examples
@@ -15,5 +16,5 @@ petgraph.workspace = true
 
 [features]
 default = ["std"]
-std = ["fixedbitset?/std", "alloc"]
+std = ["fixedbitset?/std", "indexmap?/std", "alloc"]
 alloc = []

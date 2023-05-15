@@ -70,19 +70,20 @@ mod macros;
 mod dfsvisit;
 #[cfg(feature = "alloc")]
 mod traversal;
+#[cfg(any(feature = "std", feature = "indexmap"))]
+use core::hash::{BuildHasher, Hash};
 #[cfg(feature = "std")]
-use std::{
-    collections::HashSet,
-    hash::{BuildHasher, Hash},
-};
+use std::collections::HashSet;
 
 #[cfg(feature = "fixedbitset")]
 use fixedbitset::FixedBitSet;
+#[cfg(feature = "indexmap")]
+use indexmap::IndexSet;
 
 pub use crate::visit::{dfsvisit::*, traversal::*};
 use crate::{
     edge::{Direction, EdgeType},
-    index::IndexType,
+    index::{IndexType, SafeCast},
 };
 
 trait_template! {
@@ -413,14 +414,29 @@ pub trait VisitMap<N> {
 #[cfg(feature = "fixedbitset")]
 impl<Ix> VisitMap<Ix> for FixedBitSet
 where
-    Ix: TryInto<usize> + Copy,
+    Ix: SafeCast<usize>,
 {
     fn visit(&mut self, x: Ix) -> bool {
-        x.try_into().map_or(false, |value| !self.put(value))
+        !self.put(x.cast())
     }
 
     fn is_visited(&self, x: &Ix) -> bool {
-        (*x).try_into().map_or(false, |value| self.contains(value))
+        self.contains(x.cast())
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<N, S> VisitMap<N> for IndexSet<N, S>
+where
+    N: Hash + Eq,
+    S: BuildHasher,
+{
+    fn visit(&mut self, x: N) -> bool {
+        self.insert(x)
+    }
+
+    fn is_visited(&self, x: &N) -> bool {
+        self.contains(x)
     }
 }
 

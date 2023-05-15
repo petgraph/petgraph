@@ -120,7 +120,6 @@ pub use petgraph_graph::Graph;
 mod macros;
 mod scored;
 
-pub use petgraph_adjacency_list as adj;
 pub mod algo;
 pub mod csr;
 pub mod dot;
@@ -151,6 +150,14 @@ pub mod graph {
         GraphIndex, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences, NodeWeightsMut,
         UnGraph, WalkNeighbors,
     };
+}
+
+pub mod adj {
+    pub use petgraph_adjacency_list::{
+        EdgeIndex, EdgeIndices, EdgeReference, EdgeReferences, List, Neighbors, NodeIndex,
+        NodeIndices, OutgoingEdgeIndices, OutgoingEdgeReferences, UnweightedList,
+    };
+    pub use petgraph_core::index::{DefaultIx, IndexType};
 }
 
 pub use petgraph_core::{

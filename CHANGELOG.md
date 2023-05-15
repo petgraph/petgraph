@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## Breaking Changes
+
+// TODO: move to petgraph-algo
+- `dag_to_toposorted_ajcaceny_list` now required `SafeCastInto<usize>`
+
 ### Changed
 
 - Raised MSRV to 1.65 ([#560](https://github.com/petgraph/petgraph/pull/560))

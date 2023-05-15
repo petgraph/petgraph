@@ -10,6 +10,7 @@
 
 use fixedbitset::FixedBitSet;
 use petgraph_adjacency_list::NodeIndex;
+use petgraph_core::index::SafeCast;
 
 use crate::{
     adj::{List, UnweightedList},
@@ -36,7 +37,7 @@ use crate::{
 /// `revmap` is handy to get back to map indices in `g` to indices in `res`.
 /// ```
 /// use petgraph::{algo::tred::dag_to_toposorted_adjacency_list, graph::DefaultIx, prelude::*};
-/// use petgraph_core::visit::IntoNeighbors;
+/// use petgraph_core::{index::SafeCast, visit::IntoNeighbors};
 ///
 /// let mut g = Graph::<&str, (), Directed, DefaultIx>::new();
 /// let second = g.add_node("second child");
@@ -46,12 +47,12 @@ use crate::{
 ///
 /// let toposort = vec![top, first, second];
 ///
-/// let (res, revmap) = dag_to_toposorted_adjacency_list(&g, &toposort);
+/// let (res, revmap) = dag_to_toposorted_adjacency_list::<_, DefaultIx>(&g, &toposort);
 ///
 /// // let's compute the children of top in topological order
 /// let children: Vec<NodeIndex> = res
 ///     .neighbors(revmap[top.index()])
-///     .map(|ix: NodeIndex| toposort[ix.index()])
+///     .map(|ix| toposort[ix.cast()])
 ///     .collect();
 /// assert_eq!(children, vec![first, second])
 /// ```
@@ -65,19 +66,19 @@ pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
 ) -> (UnweightedList<Ix>, Vec<NodeIndex<Ix>>)
 where
     G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
-    G::NodeId: IndexType,
+    G::NodeId: SafeCast<usize>,
 {
     let mut res = List::with_capacity(g.node_count());
     // map from old node index to rank in toposort
     let mut revmap = vec![0usize.into(); g.node_bound()];
     for (ix, &old_ix) in toposort.iter().enumerate() {
         let ix: NodeIndex<Ix> = ix.into();
-        revmap[old_ix.index()] = ix;
+        revmap[old_ix.cast()] = ix;
         let iter = g.neighbors_directed(old_ix, Direction::Incoming);
         let new_ix = res.add_node_with_capacity(iter.size_hint().0);
         debug_assert_eq!(new_ix, ix);
         for old_pre in iter {
-            let pre = revmap[old_pre.index()];
+            let pre = revmap[old_pre.cast()];
             res.add_edge(pre, ix, ());
         }
     }

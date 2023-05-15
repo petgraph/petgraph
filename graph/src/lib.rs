@@ -27,7 +27,7 @@ mod utils;
 use petgraph_core::{
     deprecated::IntoWeightedEdge,
     edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
-    index::{DefaultIx, IndexType},
+    index::{DefaultIx, IndexType, SafeCast},
     visit,
     visit::{EdgeRef, GetAdjacencyMatrix},
 };
@@ -71,6 +71,16 @@ impl<Ix: IndexType> Into<usize> for NodeIndex<Ix> {
     }
 }
 
+// SAFETY: we simply call the inner type, which already implements `SafeCast`.
+unsafe impl<Ix> SafeCast<usize> for NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    fn cast(self) -> usize {
+        self.0.cast()
+    }
+}
+
 impl<Ix: fmt::Debug> fmt::Debug for NodeIndex<Ix> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "NodeIndex({:?})", self.0)
@@ -78,11 +88,13 @@ impl<Ix: fmt::Debug> fmt::Debug for NodeIndex<Ix> {
 }
 
 /// Short version of `NodeIndex::new`
+#[deprecated(since = "0.1.0", note = "Use `NodeIndex::new` instead")]
 pub fn node_index<Ix: IndexType>(index: usize) -> NodeIndex<Ix> {
     NodeIndex::new(index)
 }
 
 /// Short version of `EdgeIndex::new`
+#[deprecated(since = "0.1.0", note = "Use `EdgeIndex::new` instead")]
 pub fn edge_index<Ix: IndexType>(index: usize) -> EdgeIndex<Ix> {
     EdgeIndex::new(index)
 }

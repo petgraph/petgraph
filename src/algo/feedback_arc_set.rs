@@ -29,7 +29,7 @@ use crate::{
 ///     algo::{greedy_feedback_arc_set, is_cyclic_directed},
 ///     graph::EdgeIndex,
 ///     stable_graph::StableGraph,
-///     /// };
+/// };
 ///
 /// let mut g: StableGraph<(), ()> = StableGraph::from_edges(&[
 ///     (0, 1),

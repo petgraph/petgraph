@@ -1,15 +1,14 @@
 #![cfg(feature = "graphmap")]
 extern crate petgraph;
 
-use std::collections::HashSet;
-use std::fmt;
+use std::{collections::HashSet, fmt};
 
-use petgraph::prelude::*;
-use petgraph_core::::Walker;
-
-use petgraph::algo::dijkstra;
-
-use petgraph::dot::{Config, Dot};
+use petgraph::{
+    algo::dijkstra,
+    dot::{Config, Dot},
+    prelude::*,
+};
+use petgraph_core::visit::Walker;
 
 #[test]
 fn simple() {
@@ -47,17 +46,14 @@ fn simple() {
     let scores = dijkstra(&gr, a, None, |e| *e.weight());
     let mut scores: Vec<_> = scores.into_iter().collect();
     scores.sort();
-    assert_eq!(
-        scores,
-        vec![
-            ("A", 0),
-            ("B", 7),
-            ("C", 9),
-            ("D", 11),
-            ("E", 20),
-            ("F", 20)
-        ]
-    );
+    assert_eq!(scores, vec![
+        ("A", 0),
+        ("B", 7),
+        ("C", 9),
+        ("D", 11),
+        ("E", 20),
+        ("F", 20)
+    ]);
 }
 
 #[test]
@@ -289,10 +285,11 @@ fn scc() {
         (4, 1, 10),
     ]);
 
-    assert_sccs_eq(
-        petgraph::algo::kosaraju_scc(&gr),
-        vec![vec![0, 3, 6], vec![1, 4, 7], vec![2, 5, 8]],
-    );
+    assert_sccs_eq(petgraph::algo::kosaraju_scc(&gr), vec![
+        vec![0, 3, 6],
+        vec![1, 4, 7],
+        vec![2, 5, 8],
+    ]);
 }
 
 #[test]

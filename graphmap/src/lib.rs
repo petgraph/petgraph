@@ -2,33 +2,39 @@
 //! `GraphMap<N, E, Ty>` is a graph datastructure where node values are mapping
 //! keys.
 
-use std::{
+extern crate alloc;
+
+use alloc::vec::Vec;
+use core::{
     cmp::Ordering,
-    collections::HashSet,
-    fmt,
-    hash::{self, Hash},
-    iter::{Cloned, DoubleEndedIterator, FromIterator},
+    fmt, hash,
+    hash::Hash,
+    iter,
     marker::PhantomData,
     mem,
     ops::{Deref, Index, IndexMut},
-    slice::Iter,
+    slice,
 };
 
 use indexmap::{
     map::{Iter as IndexMapIter, IterMut as IndexMapIterMut, Keys},
-    IndexMap,
+    IndexMap, IndexSet,
 };
-
-use crate::{
-    graph::{node_index, Graph},
-    visit, Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected,
+use petgraph_core::{
+    deprecated::IntoWeightedEdge,
+    edge::{Directed, Direction, EdgeType, Undirected},
+    index::IndexType,
+    iterator_wrap, visit,
 };
+#[cfg(feature = "convert")]
+use petgraph_graph::{node_index, Graph};
 
 /// A `GraphMap` with undirected edges.
 ///
 /// For example, an edge between *1* and *2* is equivalent to an edge between
 /// *2* and *1*.
 pub type UnGraphMap<N, E> = GraphMap<N, E, Undirected>;
+
 /// A `GraphMap` with directed edges.
 ///
 /// For example, an edge from *1* to *2* is distinct from an edge from *2* to
@@ -61,7 +67,7 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
-    nodes: IndexMap<N, Vec<(N, CompactDirection)>>,
+    nodes: IndexMap<N, Vec<(N, Direction)>>,
     edges: IndexMap<(N, N), E>,
     ty: PhantomData<Ty>,
 }
@@ -76,49 +82,7 @@ impl<N: Eq + Hash + fmt::Debug, E: fmt::Debug, Ty: EdgeType> fmt::Debug for Grap
 pub trait NodeTrait: Copy + Ord + Hash {}
 impl<N> NodeTrait for N where N: Copy + Ord + Hash {}
 
-// non-repr(usize) version of Direction
-#[derive(Copy, Clone, Debug, PartialEq)]
-enum CompactDirection {
-    Outgoing,
-    Incoming,
-}
-
-impl CompactDirection {
-    /// Return the opposite `CompactDirection`.
-    #[inline]
-    pub fn opposite(self) -> CompactDirection {
-        match self {
-            CompactDirection::Outgoing => CompactDirection::Incoming,
-            CompactDirection::Incoming => CompactDirection::Outgoing,
-        }
-    }
-}
-
-impl From<Direction> for CompactDirection {
-    fn from(d: Direction) -> Self {
-        match d {
-            Outgoing => CompactDirection::Outgoing,
-            Incoming => CompactDirection::Incoming,
-        }
-    }
-}
-
-impl From<CompactDirection> for Direction {
-    fn from(d: CompactDirection) -> Self {
-        match d {
-            CompactDirection::Outgoing => Outgoing,
-            CompactDirection::Incoming => Incoming,
-        }
-    }
-}
-
-impl PartialEq<Direction> for CompactDirection {
-    fn eq(&self, rhs: &Direction) -> bool {
-        (*self as usize) == (*rhs as usize)
-    }
-}
-
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "serde")]
 impl<N, E, Ty> serde::Serialize for GraphMap<N, E, Ty>
 where
     Ty: EdgeType,
@@ -140,7 +104,7 @@ where
     }
 }
 
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "serde")]
 impl<'de, N, E, Ty> serde::Deserialize<'de> for GraphMap<N, E, Ty>
 where
     Ty: EdgeType,
@@ -211,7 +175,7 @@ where
     /// Nodes are inserted automatically to match the edges.
     ///
     /// ```
-    /// use petgraph::graphmap::UnGraphMap;
+    /// use petgraph_graphmap::UnGraphMap;
     ///
     /// // Create a new undirected GraphMap.
     /// // Use a type hint to have `()` be the edge weight type.
@@ -256,7 +220,7 @@ where
             Some(sus) => sus,
         };
         for (succ, dir) in links {
-            let edge = if dir == CompactDirection::Outgoing {
+            let edge = if dir == Direction::Outgoing {
                 Self::edge_key(n, succ)
             } else {
                 Self::edge_key(succ, n)
@@ -286,7 +250,7 @@ where
     ///
     /// ```
     /// // Create a GraphMap with directed edges, and add one edge to it
-    /// use petgraph::graphmap::DiGraphMap;
+    /// use petgraph_graphmap::DiGraphMap;
     ///
     /// let mut g = DiGraphMap::new();
     /// g.add_edge("x", "y", -1);
@@ -303,13 +267,13 @@ where
             self.nodes
                 .entry(a)
                 .or_insert_with(|| Vec::with_capacity(1))
-                .push((b, CompactDirection::Outgoing));
+                .push((b, Direction::Outgoing));
             if a != b {
                 // self loops don't have the Incoming entry
                 self.nodes
                     .entry(b)
                     .or_insert_with(|| Vec::with_capacity(1))
-                    .push((a, CompactDirection::Incoming));
+                    .push((a, Direction::Incoming));
             }
             None
         }
@@ -318,7 +282,7 @@ where
     /// Remove edge relation from a to b
     ///
     /// Return `true` if it did exist.
-    fn remove_single_edge(&mut self, a: &N, b: &N, dir: CompactDirection) -> bool {
+    fn remove_single_edge(&mut self, a: &N, b: &N, dir: Direction) -> bool {
         match self.nodes.get_mut(a) {
             None => false,
             Some(sus) => {
@@ -349,7 +313,7 @@ where
     ///
     /// ```
     /// // Create a GraphMap with undirected edges, and add and remove an edge.
-    /// use petgraph::graphmap::UnGraphMap;
+    /// use petgraph_graphmap::UnGraphMap;
     ///
     /// let mut g = UnGraphMap::new();
     /// g.add_edge("x", "y", -1);
@@ -359,9 +323,9 @@ where
     /// assert_eq!(g.edge_count(), 0);
     /// ```
     pub fn remove_edge(&mut self, a: N, b: N) -> Option<E> {
-        let exist1 = self.remove_single_edge(&a, &b, CompactDirection::Outgoing);
+        let exist1 = self.remove_single_edge(&a, &b, Direction::Outgoing);
         let exist2 = if a != b {
-            self.remove_single_edge(&b, &a, CompactDirection::Incoming)
+            self.remove_single_edge(&b, &a, Direction::Incoming)
         } else {
             exist1
         };
@@ -504,9 +468,10 @@ where
     ///
     /// **Panics** if the number of nodes or edges does not fit with
     /// the resulting graph's index type.
+    #[cfg(feature = "convert")]
     pub fn into_graph<Ix>(self) -> Graph<N, E, Ty, Ix>
     where
-        Ix: crate::graph::IndexType,
+        Ix: IndexType,
     {
         // assuming two successive iterations of the same hashmap produce the same order
         let mut gr = Graph::with_capacity(self.node_count(), self.edge_count());
@@ -528,9 +493,10 @@ where
     /// if the node weights are distinct and there are no parallel edges.
     ///
     /// Computes in **O(|V| + |E|)** time (average).
+    #[cfg(feature = "convert")]
     pub fn from_graph<Ix>(graph: Graph<N, E, Ty, Ix>) -> Self
     where
-        Ix: crate::graph::IndexType,
+        Ix: IndexType,
         E: Clone,
     {
         let mut new_graph: GraphMap<N, E, Ty> =
@@ -601,7 +567,7 @@ iterator_wrap! {
     #[derive(Debug, Clone)]
     struct Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
-    iter: Cloned<Keys<'a, N, Vec<(N, CompactDirection)>>>,
+    iter: iter::Cloned<Keys<'a, N, Vec<(N, Direction)>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -610,7 +576,7 @@ where
     N: 'a,
     Ty: EdgeType,
 {
-    iter: Iter<'a, (N, CompactDirection)>,
+    iter: slice::Iter<'a, (N, Direction)>,
     ty: PhantomData<Ty>,
 }
 
@@ -624,7 +590,13 @@ where
     fn next(&mut self) -> Option<N> {
         if Ty::is_directed() {
             (&mut self.iter)
-                .filter_map(|&(n, dir)| if dir == Outgoing { Some(n) } else { None })
+                .filter_map(|&(n, dir)| {
+                    if dir == Direction::Outgoing {
+                        Some(n)
+                    } else {
+                        None
+                    }
+                })
                 .next()
         } else {
             self.iter.next().map(|&(n, _)| n)
@@ -647,7 +619,7 @@ where
     N: 'a,
     Ty: EdgeType,
 {
-    iter: Iter<'a, (N, CompactDirection)>,
+    iter: slice::Iter<'a, (N, Direction)>,
     start_node: N,
     dir: Direction,
     ty: PhantomData<Ty>,
@@ -980,7 +952,7 @@ pub struct NodeIdentifiers<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
 {
-    iter: IndexMapIter<'a, N, Vec<(N, CompactDirection)>>,
+    iter: IndexMapIter<'a, N, Vec<(N, Direction)>>,
     ty: PhantomData<Ty>,
     edge_ty: PhantomData<E>,
 }
@@ -1007,7 +979,7 @@ pub struct NodeReferences<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
 {
-    iter: IndexMapIter<'a, N, Vec<(N, CompactDirection)>>,
+    iter: IndexMapIter<'a, N, Vec<(N, Direction)>>,
     ty: PhantomData<Ty>,
     edge_ty: PhantomData<E>,
 }
@@ -1051,10 +1023,10 @@ where
     N: Copy + Ord + Hash,
     Ty: EdgeType,
 {
-    type Map = HashSet<N>;
+    type Map = IndexSet<N>;
 
-    fn visit_map(&self) -> HashSet<N> {
-        HashSet::with_capacity(self.node_count())
+    fn visit_map(&self) -> IndexSet<N> {
+        IndexSet::with_capacity(self.node_count())
     }
 
     fn reset_map(&self, map: &mut Self::Map) {

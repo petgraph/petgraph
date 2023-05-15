@@ -12,7 +12,7 @@ use fixedbitset::FixedBitSet;
 use petgraph_core::{
     data::{Build, DataMap, DataMapMut},
     edge::Directed,
-    index::{DefaultIx, IndexType},
+    index::{DefaultIx, IndexType, SafeCast},
     iterator_wrap, visit,
     visit::{EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount},
 };
@@ -51,6 +51,16 @@ where
 {
     fn from(value: usize) -> Self {
         Self::from_usize(value)
+    }
+}
+
+// SAFETY: we simply call the inner type, which already implements `SafeCast`.
+unsafe impl<Ix> SafeCast<usize> for NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    fn cast(self) -> usize {
+        self.0.cast()
     }
 }
 

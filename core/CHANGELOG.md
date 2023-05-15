@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Changed
 
 - The implementation of `VisitMap` for `FixedBitSet` has been relaxed. Instead of restricting to `IndexType` it now only
-  requires `TryInto<usize> + Copy`.
+  requires `SafeCast<usize>`.
 
 ## Added
 
@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved `petgraph::graph::IndexType` to `petgraph-core`
 - Moved `petgraph::IntoWeightedEdge` to `petgraph-core`
 - Moved `petgraph::macros` to `petgraph-core`
+- `IndexMap` now implements `VisitMap`
+- New transitional trait `SafeCast` for casting between `usize` and `IndexType`
 
 ## Deprecations
 

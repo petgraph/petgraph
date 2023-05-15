@@ -6,7 +6,7 @@ use funty::AtMost16 as AtMostUsize;
 use funty::AtMost32 as AtMostUsize;
 #[cfg(target_pointer_width = "64")]
 use funty::AtMost64 as AtMostUsize;
-use funty::Unsigned;
+use funty::{Fundamental, Unsigned};
 
 /// The default integer type for graph indices.
 /// `u32` is the default to reduce the size of the graph's data and improve
@@ -27,9 +27,18 @@ pub type DefaultIx = u32;
 #[cfg(target_pointer_width = "16")]
 pub type DefaultIx = u16;
 
+/// A type that can be safely cast into another type.
+///
+/// # Safety
+///
+/// The implementation must guarantee that the cast is lossless with no implicit wrapping.
+pub unsafe trait SafeCast<T>: Copy {
+    fn cast(self) -> T;
+}
+
 /// Trait for the unsigned integer type used for node and edge indices.
 ///
-/// ## Safety
+/// # Safety
 ///
 /// There is a contractual obligation that [`from_usize`] is only called with values of the correct
 /// size. Should this contract be violated, the implementation must panic.
@@ -37,7 +46,7 @@ pub type DefaultIx = u16;
 /// [`from_usize`] must be the inverse of [`to_usize`].
 ///
 /// The conversion from and to `usize` must be lossless with no implicit wrapping.
-pub unsafe trait IndexType: Unsigned + AtMostUsize {
+pub unsafe trait IndexType: Unsigned + AtMostUsize + SafeCast<usize> {
     #[deprecated(since = "0.1.0", note = "Use `Self::from_usize(x)` instead")]
     fn new(x: usize) -> Self;
 
@@ -53,6 +62,19 @@ pub unsafe trait IndexType: Unsigned + AtMostUsize {
     fn max() -> Self;
 }
 
+// SAFETY: We know that the cast will always be lossless because `T` is `Unsigned` and
+// `AtMostUsize`.
+unsafe impl<T> SafeCast<usize> for T
+where
+    T: Unsigned + AtMostUsize,
+{
+    fn cast(self) -> usize {
+        self.as_usize()
+    }
+}
+
+// SAFETY: We know that the cast will always be lossless because `T` is `Unsigned` and
+// `AtMostUsize`.
 unsafe impl<T> IndexType for T
 where
     T: Unsigned + AtMostUsize,

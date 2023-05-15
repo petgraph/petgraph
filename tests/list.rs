@@ -3,21 +3,20 @@ extern crate petgraph;
 #[macro_use]
 extern crate defmac;
 
-use petgraph::adj::DefaultIx;
-use petgraph::adj::IndexType;
-use petgraph::adj::{List, UnweightedList};
-use petgraph::algo::tarjan_scc;
-use petgraph::data::{DataMap, DataMapMut};
-use petgraph::dot::Dot;
-use petgraph::prelude::*;
-use petgraph::visit::{
-    IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeReferences, NodeCount, NodeIndexable,
+use itertools::assert_equal;
+use petgraph::{
+    adj::{DefaultIx, IndexType, List, NodeIndex, UnweightedList},
+    algo::tarjan_scc,
+    data::{DataMap, DataMapMut},
+    dot::Dot,
+    prelude::*,
+    visit::{
+        IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeReferences, NodeCount, NodeIndexable,
+    },
 };
 
-use itertools::assert_equal;
-
-fn n(x: u32) -> DefaultIx {
-    DefaultIx::new(x as _)
+fn n(x: u32) -> NodeIndex {
+    NodeIndex::from(x as usize)
 }
 
 #[test]
@@ -54,7 +53,10 @@ fn node_bound() {
     test_node_count(&g, 0);
 }
 
-fn assert_sccs_eq<Ix: IndexType>(mut res: Vec<Vec<Ix>>, normalized: Vec<Vec<Ix>>) {
+fn assert_sccs_eq<Ix: IndexType>(
+    mut res: Vec<Vec<NodeIndex<Ix>>>,
+    normalized: Vec<Vec<NodeIndex<Ix>>>,
+) {
     // normalize the result and compare with the answer.
     for scc in &mut res {
         scc.sort();
@@ -94,15 +96,12 @@ fn test_tarjan_scc() {
     let gr = scc_graph();
 
     let x = n(gr.node_bound() as u32 - 1);
-    assert_sccs_eq(
-        tarjan_scc(&gr),
-        vec![
-            vec![n(0), n(3), n(6)],
-            vec![n(1), n(7), x],
-            vec![n(2), n(5), n(8)],
-            vec![n(4)],
-        ],
-    );
+    assert_sccs_eq(tarjan_scc(&gr), vec![
+        vec![n(0), n(3), n(6)],
+        vec![n(1), n(7), x],
+        vec![n(2), n(5), n(8)],
+        vec![n(4)],
+    ]);
 }
 
 fn make_graph() -> List<i32> {
@@ -140,7 +139,11 @@ fn test_edges_directed() {
     let gr = make_graph();
     dbg!(&gr);
     let x = n(9);
-    assert_equal(edges!(&gr, x), vec![(1, 11), (x, 12), (x, 13)]);
+    assert_equal(edges!(&gr, x), vec![
+        (NodeIndex::from(1), 11),
+        (x, 12),
+        (x, 13),
+    ]);
     assert_equal(edges!(&gr, n(0)), vec![(n(3), 1)]);
     //assert_equal(edges!(&gr, n(4)), vec![]);
 }
@@ -173,9 +176,9 @@ fn test_edge_iterators() {
     let gr = make_graph();
     for i in gr.node_indices() {
         itertools::assert_equal(
-            gr.neighbors(n(i)),
-            gr.edges(n(i)).map(|r| {
-                assert_eq!(r.source(), n(i));
+            gr.neighbors(i),
+            gr.edges(i).map(|r| {
+                assert_eq!(r.source(), i);
                 r.target()
             }),
         );
@@ -186,7 +189,7 @@ fn test_edge_iterators() {
 #[should_panic(expected = "is not a valid node")]
 fn add_edge_vacant() {
     let mut g = List::new();
-    let a: DefaultIx = g.add_node();
+    let a: NodeIndex = g.add_node();
     let b = g.add_node();
     let _ = g.add_node();
     g.clear();
@@ -223,12 +226,12 @@ fn test_node_references() {
 #[test]
 fn iterators_undir() {
     let mut g = List::with_capacity(2);
-    let a = g.add_node();
+    let a: NodeIndex = g.add_node();
     let b = g.add_node();
     let c = g.add_node();
     let d = g.add_node();
     for &(from, to, w) in &[(a, b, 1), (a, c, 2), (b, c, 3), (c, c, 4), (a, d, 5)] {
-        g.add_edge(n(from), n(to), w);
+        g.add_edge(from, to, w);
     }
 
     itertools::assert_equal(g.neighbors(a), vec![b, c, d]);
@@ -241,7 +244,7 @@ fn iterators_undir() {
 #[test]
 fn dot() {
     let mut gr = List::new();
-    let a: DefaultIx = gr.add_node();
+    let a: NodeIndex = gr.add_node();
     let b = gr.add_node();
     gr.add_edge(a, a, 10u8);
     gr.add_edge(a, b, 20);
