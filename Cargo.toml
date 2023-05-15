@@ -28,7 +28,7 @@ features = ["serde-1", "quickcheck"]
 no-dev-version = true
 
 [workspace]
-members = ["serialization-tests", "core", "graph"]
+members = ["serialization-tests", "core", "graph", "adjacency-list", "graphmap"]
 
 [workspace.dependencies]
 fixedbitset = { version = "0.4", default-features = false }
@@ -38,7 +38,8 @@ funty = { version = "2.0", default-features = false }
 petgraph = { path = "." }
 petgraph-core = { path = "./core", default-features = false }
 petgraph-graph = { path = "./graph", default-features = false }
-petgraph-adjacency-list = {path = "./adjacency-list", default-features = false }
+petgraph-adjacency-list = { path = "./adjacency-list", default-features = false }
+petgraph-graphmap = { path = "./graphmap", default-features = false }
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }
@@ -49,6 +50,7 @@ serde_derive = { version = "1.0", optional = true }
 petgraph-core = { workspace = true }
 petgraph-graph = { workspace = true }
 petgraph-adjacency-list = { workspace = true }
+petgraph-graphmap = { workspace = true }
 
 [dev-dependencies]
 bincode = "1.3.3"

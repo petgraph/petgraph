@@ -127,7 +127,7 @@ pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
 #[cfg(feature = "graphmap")]
-pub mod graphmap;
+pub use petgraph_graphmap as graphmap;
 mod iter_format;
 mod iter_utils;
 #[cfg(feature = "matrix_graph")]
