@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+* Raised MSRV to 1.65 ([#560](https://github.com/petgraph/petgraph/pull/560))
+
 ## [0.6.3] - 2023-02-07
 
 - Added an iterator over subgraph isomorphisms
