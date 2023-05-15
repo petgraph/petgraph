@@ -69,15 +69,18 @@ mod macros;
 
 mod dfsvisit;
 mod traversal;
+#[cfg(feature = "std")]
 use std::{
     collections::HashSet,
     hash::{BuildHasher, Hash},
 };
 
+#[cfg(feature = "fixedbitset")]
 use fixedbitset::FixedBitSet;
-use petgraph::{graph_impl::IndexType, Direction, EdgeType};
+use petgraph::{Direction, EdgeType};
 
 pub use self::{dfsvisit::*, traversal::*};
+use crate::index::IndexType;
 
 trait_template! {
 /// Base graph trait: defines the associated node identifier and
@@ -404,6 +407,7 @@ pub trait VisitMap<N> {
     fn is_visited(&self, a: &N) -> bool;
 }
 
+#[cfg(feature = "fixedbitset")]
 impl<Ix> VisitMap<Ix> for FixedBitSet
 where
     Ix: IndexType,
@@ -417,6 +421,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<N, S> VisitMap<N> for HashSet<N, S>
 where
     N: Hash + Eq,

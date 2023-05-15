@@ -158,81 +158,10 @@ pub mod graph {
     };
 }
 
+pub use petgraph_core::edge::{Directed, EdgeType, Incoming, Outgoing, Undirected};
+
 #[cfg(feature = "stable_graph")]
 pub use crate::graph_impl::stable_graph;
-
-macro_rules! copyclone {
-    ($name:ident) => {
-        impl Clone for $name {
-            #[inline]
-            fn clone(&self) -> Self {
-                *self
-            }
-        }
-    };
-}
-
-// Index into the NodeIndex and EdgeIndex arrays
-/// Edge direction.
-#[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
-#[repr(usize)]
-pub enum Direction {
-    /// An `Outgoing` edge is an outward edge *from* the current node.
-    Outgoing = 0,
-    /// An `Incoming` edge is an inbound edge *to* the current node.
-    Incoming = 1,
-}
-
-copyclone!(Direction);
-
-impl Direction {
-    /// Return the opposite `Direction`.
-    #[inline]
-    pub fn opposite(self) -> Direction {
-        match self {
-            Outgoing => Incoming,
-            Incoming => Outgoing,
-        }
-    }
-
-    /// Return `0` for `Outgoing` and `1` for `Incoming`.
-    #[inline]
-    pub fn index(self) -> usize {
-        (self as usize) & 0x1
-    }
-}
-
-#[doc(hidden)]
-pub use crate::Direction as EdgeDirection;
-
-/// Marker type for a directed graph.
-#[derive(Copy, Debug)]
-pub enum Directed {}
-copyclone!(Directed);
-
-/// Marker type for an undirected graph.
-#[derive(Copy, Debug)]
-pub enum Undirected {}
-copyclone!(Undirected);
-
-/// A graph's edge type determines whether it has directed edges or not.
-pub trait EdgeType {
-    fn is_directed() -> bool;
-}
-
-impl EdgeType for Directed {
-    #[inline]
-    fn is_directed() -> bool {
-        true
-    }
-}
-
-impl EdgeType for Undirected {
-    #[inline]
-    fn is_directed() -> bool {
-        false
-    }
-}
 
 /// Convert an element like `(i, j)` or `(i, j, w)` into
 /// a triple of source, target, edge weight.
