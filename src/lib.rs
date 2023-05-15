@@ -145,17 +145,20 @@ pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
+    pub use petgraph_core::index::{DefaultIx, IndexType};
     pub use petgraph_graph::{
-        edge_index, node_index, DefaultIx, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference,
+        edge_index, node_index, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference,
         EdgeReferences, EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen, Graph,
-        GraphIndex, IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences,
-        NodeWeightsMut, UnGraph, WalkNeighbors,
+        GraphIndex, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences, NodeWeightsMut,
+        UnGraph, WalkNeighbors,
     };
 }
 
 pub use petgraph_core::{
+    data,
     deprecated::IntoWeightedEdge,
-    edge::{Directed, EdgeType, Incoming, Outgoing, Undirected},
+    edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
+    visit,
 };
 #[cfg(feature = "stable_graph")]
 pub use petgraph_graph::stable;
