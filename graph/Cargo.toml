@@ -17,5 +17,6 @@ petgraph-core = { workspace = true, features = ['alloc'] }
 petgraph.workspace = true
 
 [features]
-default = ["std"]
+default = ["std", "stable"]
 std = ["fixedbitset?/std", "petgraph-core/std", "serde/std"]
+stable = []

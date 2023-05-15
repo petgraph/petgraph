@@ -2,29 +2,27 @@
 //!
 //! Depends on `feature = "stable_graph"`.
 
-use core::{fmt, mem::size_of};
+use alloc::vec;
+use core::{
+    cmp::max,
+    fmt, iter,
+    marker::PhantomData,
+    mem::{replace, size_of},
+    ops::{Index, IndexMut},
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
+use petgraph::IntoWeightedEdge;
 use petgraph_core::{
-    edge::{Directed, EdgeType, Undirected},
+    edge::{Directed, Direction, EdgeType, Undirected},
     index::{DefaultIx, IndexType},
+    visit,
+    visit::{EdgeIndexable, EdgeRef, IntoEdgeReferences, NodeIndexable},
 };
 
 use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
-// reexport those things that are shared with Graph
-#[doc(no_inline)]
-pub use crate::graph::{
-    edge_index, node_index, DefaultIx, EdgeIndex, GraphIndex, IndexType, NodeIndex,
-};
-use crate::{
-    graph_impl::{EdgeIndex, NodeIndex},
-    iter_format::{DebugMap, IterFormatExt, NoPretty},
-    iter_utils::IterUtilsExt,
-    util::enumerate,
-    visit,
-    visit::{EdgeIndexable, EdgeRef, IntoEdgeReferences, NodeIndexable},
-    Directed, Direction, EdgeType, Graph, Incoming, IntoWeightedEdge, Outgoing, Undirected,
-};
+use crate::{edge_index, node_index, EdgeIndex, Graph, GraphIndex, NodeIndex};
 
 #[cfg(feature = "serde")]
 mod serialization;
@@ -371,7 +369,7 @@ where
             }
 
             let wrong_index = match index_twice(&mut self.g.nodes, a.index(), b.index()) {
-                Pair::None => Some(cmp::max(a.index(), b.index())),
+                Pair::None => Some(max(a.index(), b.index())),
                 Pair::One(an) => {
                     if an.weight.is_none() {
                         Some(a.index())
@@ -646,7 +644,7 @@ where
     ///
     /// [1]: struct.Neighbors.html#method.detach
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
-        self.neighbors_directed(a, Outgoing)
+        self.neighbors_directed(a, Direction::Outgoing)
     }
 
     /// Return an iterator of all neighbors that have an edge between them and `a`,
@@ -706,7 +704,7 @@ where
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
-        self.edges_directed(a, Outgoing)
+        self.edges_directed(a, Direction::Outgoing)
     }
 
     /// Return an iterator of all edges of `a`, in the specified direction.
@@ -843,7 +841,7 @@ where
     /// Nodes are inserted automatically to match the edges.
     ///
     /// ```
-    /// use petgraph::stable_graph::StableGraph;
+    /// use petgraph_graph::stable::StableGraph;
     ///
     /// let gr = StableGraph::<(), i32>::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
     /// ```
@@ -1408,7 +1406,7 @@ where
             (None, Some(self.direction.opposite()))
         };
 
-        if iterate_over.unwrap_or(Outgoing) == Outgoing {
+        if iterate_over.unwrap_or(Direction::Outgoing) == Direction::Outgoing {
             let i = self.next[0].index();
             if let Some(Edge {
                 node,
@@ -1419,7 +1417,7 @@ where
                 self.next[0] = next[0];
                 return Some(EdgeReference {
                     index: edge_index(i),
-                    node: if reverse == Some(Outgoing) {
+                    node: if reverse == Some(Direction::Outgoing) {
                         swap_pair(*node)
                     } else {
                         *node
@@ -1429,7 +1427,7 @@ where
             }
         }
 
-        if iterate_over.unwrap_or(Incoming) == Incoming {
+        if iterate_over.unwrap_or(Direction::Incoming) == Direction::Incoming {
             while let Some(Edge { node, weight, next }) = self.edges.get(self.next[1].index()) {
                 debug_assert!(weight.is_some());
                 let edge_index = self.next[1];
@@ -1442,7 +1440,7 @@ where
 
                 return Some(EdgeReference {
                     index: edge_index,
-                    node: if reverse == Some(Incoming) {
+                    node: if reverse == Some(Direction::Incoming) {
                         swap_pair(*node)
                     } else {
                         *node
@@ -1641,9 +1639,8 @@ where
 /// in the following example:
 ///
 /// ```
-/// use petgraph_core::::Dfs;
-/// use petgraph::Incoming;
-/// use petgraph::stable_graph::StableGraph;
+/// use petgraph_core::{edge::Direction, visit::Dfs};
+/// use petgraph_graph::stable::StableGraph;
 ///
 /// let mut gr = StableGraph::new();
 /// let a = gr.add_node(0.);
@@ -1657,7 +1654,7 @@ where
 /// let mut dfs = Dfs::new(&gr, a);
 /// while let Some(node) = dfs.next(&gr) {
 ///     // use a detached neighbors walker
-///     let mut edges = gr.neighbors_directed(node, Incoming).detach();
+///     let mut edges = gr.neighbors_directed(node, Direction::Incoming).detach();
 ///     while let Some(edge) = edges.next_edge(&gr) {
 ///         gr[node] += gr[edge];
 ///     }
@@ -2115,6 +2112,9 @@ fn test_reverse() {
     reversed_gr.reverse();
 
     for i in gr.node_indices() {
-        itertools::assert_equal(gr.edges_directed(i, Incoming), reversed_gr.edges(i));
+        itertools::assert_equal(
+            gr.edges_directed(i, Direction::Incoming),
+            reversed_gr.edges(i),
+        );
     }
 }

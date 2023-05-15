@@ -114,8 +114,7 @@ extern crate serde_derive;
 extern crate itertools;
 
 #[doc(no_inline)]
-pub use crate::graph::Graph;
-pub use crate::Direction::{Incoming, Outgoing};
+pub use petgraph_graph::Graph;
 
 #[macro_use]
 mod macros;
@@ -127,7 +126,6 @@ pub mod csr;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
-mod graph_impl;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
 mod iter_format;
@@ -147,7 +145,7 @@ pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
-    pub use crate::graph_impl::{
+    pub use petgraph_graph::{
         edge_index, node_index, DefaultIx, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference,
         EdgeReferences, EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen, Graph,
         GraphIndex, IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences,
@@ -156,9 +154,8 @@ pub mod graph {
 }
 
 pub use petgraph_core::edge::{Directed, EdgeType, Incoming, Outgoing, Undirected};
-
 #[cfg(feature = "stable_graph")]
-pub use crate::graph_impl::stable_graph;
+pub use petgraph_graph::stable;
 
 /// Convert an element like `(i, j)` or `(i, j, w)` into
 /// a triple of source, target, edge weight.
