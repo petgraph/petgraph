@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 //! Simple adjacency list.
 use crate::data::{Build, DataMap, DataMapMut};
 use crate::iter_format::NoPretty;

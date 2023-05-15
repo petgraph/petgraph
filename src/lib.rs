@@ -120,7 +120,7 @@ pub use petgraph_graph::Graph;
 mod macros;
 mod scored;
 
-pub mod adj;
+pub use petgraph_adjacency_list as adj;
 pub mod algo;
 pub mod csr;
 pub mod dot;
@@ -136,7 +136,6 @@ pub mod matrix_graph;
 mod quickcheck;
 #[cfg(feature = "serde-1")]
 mod serde_utils;
-mod traits_graph;
 pub mod unionfind;
 mod util;
 
