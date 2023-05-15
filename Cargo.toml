@@ -35,6 +35,7 @@ fixedbitset = { version = "0.4", default-features = false }
 petgraph = { path = "." }
 petgraph-core = { path = "./core", default-features = false }
 petgraph-graph = { path = "./graph", default-features = false }
+serde = { version = "1.0", default-features = false }
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }

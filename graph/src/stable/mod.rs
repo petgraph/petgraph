@@ -2,15 +2,13 @@
 //!
 //! Depends on `feature = "stable_graph"`.
 
-use std::{
-    cmp, fmt, iter,
-    marker::PhantomData,
-    mem::{replace, size_of},
-    ops::{Index, IndexMut},
-    slice,
-};
+use core::{fmt, mem::size_of};
 
 use fixedbitset::FixedBitSet;
+use petgraph_core::{
+    edge::{Directed, EdgeType, Undirected},
+    index::{DefaultIx, IndexType},
+};
 
 use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
 // reexport those things that are shared with Graph
@@ -19,6 +17,7 @@ pub use crate::graph::{
     edge_index, node_index, DefaultIx, EdgeIndex, GraphIndex, IndexType, NodeIndex,
 };
 use crate::{
+    graph_impl::{EdgeIndex, NodeIndex},
     iter_format::{DebugMap, IterFormatExt, NoPretty},
     iter_utils::IterUtilsExt,
     util::enumerate,
@@ -27,7 +26,7 @@ use crate::{
     Directed, Direction, EdgeType, Graph, Incoming, IntoWeightedEdge, Outgoing, Undirected,
 };
 
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "serde")]
 mod serialization;
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
@@ -141,6 +140,7 @@ where
                 }),
             );
         }
+
         if size_of::<E>() != 0 {
             fmt_struct.field(
                 "edge weights",
@@ -154,8 +154,10 @@ where
                 }),
             );
         }
+
         fmt_struct.field("free_node", &self.free_node);
         fmt_struct.field("free_edge", &self.free_edge);
+
         fmt_struct.finish()
     }
 }

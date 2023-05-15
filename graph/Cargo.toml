@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 funty = { version = "2.0.0", default-features = false }
 fixedbitset = { workspace = true, optional = true }
+serde = { workspace = true, optional = true, features = ['alloc'] }
+
 petgraph-core = { workspace = true, features = ['alloc'] }
 
 [dev-dependencies]
@@ -16,4 +18,4 @@ petgraph.workspace = true
 
 [features]
 default = ["std"]
-std = ["fixedbitset?/std", "petgraph-core/std"]
+std = ["fixedbitset?/std", "petgraph-core/std", "serde/std"]
