@@ -28,7 +28,7 @@ features = ["serde-1", "quickcheck"]
 no-dev-version = true
 
 [workspace]
-members = ["serialization-tests", "core"]
+members = ["serialization-tests", "core", "graph"]
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }
