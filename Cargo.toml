@@ -71,7 +71,7 @@ generate = [] # For unstable features
 graphmap = []
 matrix_graph = []
 serde-1 = ["serde", "serde_derive"]
-stable-graph = []
+stable-graph = ["petgraph-graph/stable"]
 unstable = ["generate"]
 
 

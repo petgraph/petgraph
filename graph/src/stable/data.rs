@@ -59,11 +59,14 @@ where
     }
 }
 
-impl<N, E, Ty, Ix> Data for StableGraph<N, E, Ty, Ix> {
+impl<N, E, Ty, Ix> Data for StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
     type EdgeWeight = E;
     type NodeWeight = N;
 }
-
 impl<N, E, Ty, Ix> DataMap for StableGraph<N, E, Ty, Ix>
 where
     Ty: EdgeType,

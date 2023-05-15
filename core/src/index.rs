@@ -62,6 +62,18 @@ pub unsafe trait IndexType: Unsigned + AtMostUsize + SafeCast<usize> {
     fn max() -> Self;
 }
 
+pub trait IntoIndexType {
+    type Index: IndexType;
+
+    fn into_index(self) -> Self::Index;
+}
+
+pub trait FromIndexType {
+    type Index: IndexType;
+
+    fn from_index(index: Self::Index) -> Self;
+}
+
 // SAFETY: We know that the cast will always be lossless because `T` is `Unsigned` and
 // `AtMostUsize`.
 unsafe impl<T> SafeCast<usize> for T

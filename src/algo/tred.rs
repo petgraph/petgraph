@@ -10,7 +10,7 @@
 
 use fixedbitset::FixedBitSet;
 use petgraph_adjacency_list::NodeIndex;
-use petgraph_core::index::SafeCast;
+use petgraph_core::index::{FromIndexType, IntoIndexType, SafeCast};
 
 use crate::{
     adj::{List, UnweightedList},
@@ -47,7 +47,7 @@ use crate::{
 ///
 /// let toposort = vec![top, first, second];
 ///
-/// let (res, revmap) = dag_to_toposorted_adjacency_list::<_, DefaultIx>(&g, &toposort);
+/// let (res, revmap) = dag_to_toposorted_adjacency_list(&g, &toposort);
 ///
 /// // let's compute the children of top in topological order
 /// let children: Vec<NodeIndex> = res
@@ -66,19 +66,19 @@ pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
 ) -> (UnweightedList<Ix>, Vec<NodeIndex<Ix>>)
 where
     G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
-    G::NodeId: SafeCast<usize>,
+    G::NodeId: IntoIndexType<Index = Ix> + Copy,
 {
     let mut res = List::with_capacity(g.node_count());
     // map from old node index to rank in toposort
-    let mut revmap = vec![0usize.into(); g.node_bound()];
+    let mut revmap = vec![NodeIndex::new(Ix::ZERO); g.node_bound()];
     for (ix, &old_ix) in toposort.iter().enumerate() {
-        let ix: NodeIndex<Ix> = ix.into();
-        revmap[old_ix.cast()] = ix;
+        let ix: NodeIndex<Ix> = NodeIndex::from_usize(ix);
+        revmap[old_ix.into_index().cast()] = ix;
         let iter = g.neighbors_directed(old_ix, Direction::Incoming);
         let new_ix = res.add_node_with_capacity(iter.size_hint().0);
         debug_assert_eq!(new_ix, ix);
         for old_pre in iter {
-            let pre = revmap[old_pre.cast()];
+            let pre = revmap[old_pre.into_index().cast()];
             res.add_edge(pre, ix, ());
         }
     }
@@ -122,20 +122,20 @@ pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
     for i in g.node_indices().rev() {
         // the algorighm relies on this iterator being toposorted
         for x in g.neighbors(i) {
-            if !mark[x.into()] {
+            if !mark[x.cast()] {
                 tred.add_edge(i, x, ());
                 tclos.add_edge(i, x, ());
                 for e in tclos.edge_indices_from(x) {
                     let y = tclos.edge_endpoints(e).unwrap().1;
-                    if !mark[y.into()] {
-                        mark.insert(y.into());
+                    if !mark[y.cast()] {
+                        mark.insert(y.cast());
                         tclos.add_edge(i, y, ());
                     }
                 }
             }
         }
         for y in tclos.neighbors(i) {
-            mark.set(y.into(), false);
+            mark.set(y.cast(), false);
         }
     }
     (tred, tclos)
@@ -145,7 +145,7 @@ pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
 #[test]
 fn test_easy_tred() {
     let mut input = List::new();
-    let a: petgraph_adjacency_list::NodeIndex<u8> = input.add_node();
+    let a: NodeIndex<u8> = input.add_node();
     let b = input.add_node();
     let c = input.add_node();
     input.add_edge(a, b, ());

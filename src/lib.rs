@@ -152,6 +152,20 @@ pub mod graph {
     };
 }
 
+#[cfg(feature = "stable-graph")]
+pub mod stable_graph {
+    pub use petgraph_core::index::{DefaultIx, IndexType};
+    pub use petgraph_graph::{
+        edge_index, node_index,
+        stable::{
+            EdgeIndices, EdgeReference, EdgeReferences, Edges, EdgesConnecting, Externals,
+            Neighbors, NodeIndices, NodeReferences, StableDiGraph, StableGraph, StableUnGraph,
+            WalkNeighbors,
+        },
+        GraphIndex, NodeIndex,
+    };
+}
+
 pub mod adj {
     pub use petgraph_adjacency_list::{
         EdgeIndex, EdgeIndices, EdgeReference, EdgeReferences, List, Neighbors, NodeIndex,

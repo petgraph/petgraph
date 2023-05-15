@@ -27,7 +27,7 @@ mod utils;
 use petgraph_core::{
     deprecated::IntoWeightedEdge,
     edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
-    index::{DefaultIx, IndexType, SafeCast},
+    index::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
     visit,
     visit::{EdgeRef, GetAdjacencyMatrix},
 };
@@ -65,9 +65,25 @@ impl<Ix: IndexType> From<Ix> for NodeIndex<Ix> {
     }
 }
 
-impl<Ix: IndexType> Into<usize> for NodeIndex<Ix> {
-    fn into(self) -> usize {
-        self.0.as_usize()
+impl<Ix> FromIndexType for NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    type Index = Ix;
+
+    fn from_index(index: Self::Index) -> Self {
+        Self(index)
+    }
+}
+
+impl<Ix> IntoIndexType for NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    type Index = Ix;
+
+    fn into_index(self) -> Self::Index {
+        self.0
     }
 }
 
@@ -1921,21 +1937,10 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 /// assert_eq!(gr[b], 4.);
 /// assert_eq!(gr[c], 2.);
 /// ```
+#[derive(Clone)]
 pub struct WalkNeighbors<Ix> {
     skip_start: NodeIndex<Ix>,
     next: [EdgeIndex<Ix>; 2],
-}
-
-impl<Ix> Clone for WalkNeighbors<Ix>
-where
-    Ix: IndexType,
-{
-    fn clone(&self) -> Self {
-        WalkNeighbors {
-            skip_start: self.skip_start,
-            next: self.next,
-        }
-    }
 }
 
 impl<Ix: IndexType> WalkNeighbors<Ix> {

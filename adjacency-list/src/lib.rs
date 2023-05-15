@@ -12,7 +12,7 @@ use fixedbitset::FixedBitSet;
 use petgraph_core::{
     data::{Build, DataMap, DataMapMut},
     edge::Directed,
-    index::{DefaultIx, IndexType, SafeCast},
+    index::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
     iterator_wrap, visit,
     visit::{EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount},
 };
@@ -27,7 +27,13 @@ impl<Ix> NodeIndex<Ix>
 where
     Ix: IndexType,
 {
-    fn from_usize(value: usize) -> Self {
+    #[must_use]
+    pub const fn new(value: Ix) -> Self {
+        Self(value)
+    }
+
+    #[must_use]
+    pub fn from_usize(value: usize) -> Self {
         Self(Ix::from_usize(value))
     }
 
@@ -36,21 +42,25 @@ where
     }
 }
 
-impl<Ix> From<NodeIndex<Ix>> for usize
+impl<Ix> FromIndexType for NodeIndex<Ix>
 where
     Ix: IndexType,
 {
-    fn from(value: NodeIndex<Ix>) -> Self {
-        value.into_usize()
+    type Index = Ix;
+
+    fn from_index(index: Self::Index) -> Self {
+        Self(index)
     }
 }
 
-impl<Ix> From<usize> for NodeIndex<Ix>
+impl<Ix> IntoIndexType for NodeIndex<Ix>
 where
     Ix: IndexType,
 {
-    fn from(value: usize) -> Self {
-        Self::from_usize(value)
+    type Index = Ix;
+
+    fn into_index(self) -> Self::Index {
+        self.0
     }
 }
 

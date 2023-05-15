@@ -121,7 +121,12 @@ where
                 &DebugFn(|f| {
                     f.debug_list()
                         .entries(self.g.edges.iter().filter(|e| e.weight.is_some()).map(|e| {
-                            format_args!("{:?}", (e.source().index(), e.target().index()))
+                            DebugFn(|f| {
+                                f.write_fmt(format_args!(
+                                    "{:?}",
+                                    (e.source().index(), e.target().index())
+                                ))
+                            })
                         }))
                         .finish()
                 }),
@@ -525,7 +530,7 @@ where
     /// Return an iterator over the node indices of the graph
     pub fn node_indices(&self) -> NodeIndices<N, Ix> {
         NodeIndices {
-            iter: enumerate(self.raw_nodes()),
+            iter: self.raw_nodes().iter().enumerate(),
         }
     }
 
@@ -580,7 +585,7 @@ where
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
         EdgeIndices {
-            iter: enumerate(self.raw_edges()),
+            iter: self.raw_edges().iter().enumerate(),
         }
     }
 
@@ -926,7 +931,7 @@ where
 
         // the stable graph keeps the node map itself
 
-        for (i, node) in enumerate(self.raw_nodes()) {
+        for (i, node) in self.raw_nodes().iter().enumerate() {
             if i >= node_bound {
                 break;
             }
@@ -938,7 +943,7 @@ where
             }
             result_g.add_vacant_node(&mut free_node);
         }
-        for (i, edge) in enumerate(self.raw_edges()) {
+        for (i, edge) in self.raw_edges().iter().enumerate() {
             if i >= edge_bound {
                 break;
             }
@@ -1284,7 +1289,7 @@ where
         // mapping from old node index to new node index
         let mut node_index_map = vec![NodeIndex::end(); graph.node_bound()];
 
-        for (i, node) in enumerate(graph.g.nodes) {
+        for (i, node) in graph.g.nodes.into_iter().enumerate() {
             if let Some(nw) = node.weight {
                 node_index_map[i] = result_g.add_node(nw);
             }
@@ -1318,7 +1323,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
-            .ex_find_map(|(i, node)| node.weight.as_ref().map(move |w| (node_index(i), w)))
+            .find_map(|(i, node)| node.weight.as_ref().map(move |w| (node_index(i), w)))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1332,8 +1337,13 @@ where
     Ix: IndexType,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter
-            .ex_rfind_map(|(i, node)| node.weight.as_ref().map(move |w| (node_index(i), w)))
+        while let Some((index, node)) = self.iter.next_back() {
+            if let Some(weight) = node.weight.as_ref() {
+                return Some((node_index(index), weight));
+            }
+        }
+
+        None
     }
 }
 
@@ -1516,7 +1526,7 @@ where
     type Item = EdgeReference<'a, E, Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.ex_find_map(|(i, edge)| {
+        self.iter.find_map(|(i, edge)| {
             edge.weight.as_ref().map(move |weight| EdgeReference {
                 index: edge_index(i),
                 node: edge.node,
@@ -1531,13 +1541,17 @@ where
     Ix: IndexType,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.ex_rfind_map(|(i, edge)| {
-            edge.weight.as_ref().map(move |weight| EdgeReference {
-                index: edge_index(i),
-                node: edge.node,
-                weight,
-            })
-        })
+        while let Some((i, edge)) = self.iter.next_back() {
+            if let Some(weight) = edge.weight.as_ref() {
+                return Some(EdgeReference {
+                    index: edge_index(i),
+                    node: edge.node,
+                    weight,
+                });
+            }
+        }
+
+        None
     }
 }
 
@@ -1721,7 +1735,7 @@ impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.ex_find_map(|(i, node)| {
+        self.iter.find_map(|(i, node)| {
             if node.weight.is_some() {
                 Some(node_index(i))
             } else {
@@ -1738,13 +1752,9 @@ impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
 
 impl<'a, N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'a, N, Ix> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.ex_rfind_map(|(i, node)| {
-            if node.weight.is_some() {
-                Some(node_index(i))
-            } else {
-                None
-            }
-        })
+        self.iter
+            .rfind(|(i, node)| node.weight.is_some())
+            .map(|(index, _)| node_index(index))
     }
 }
 
@@ -1758,7 +1768,7 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
     type Item = EdgeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.ex_find_map(|(i, node)| {
+        self.iter.find_map(|(i, node)| {
             if node.weight.is_some() {
                 Some(edge_index(i))
             } else {
@@ -1775,13 +1785,9 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
 
 impl<'a, E, Ix: IndexType> DoubleEndedIterator for EdgeIndices<'a, E, Ix> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.ex_rfind_map(|(i, node)| {
-            if node.weight.is_some() {
-                Some(edge_index(i))
-            } else {
-                None
-            }
-        })
+        self.iter
+            .rfind(|(i, node)| node.weight.is_some())
+            .map(|(i, _)| edge_index(i))
     }
 }
 
@@ -1808,15 +1814,6 @@ where
         map.clear();
         map.grow(self.node_bound());
     }
-}
-
-impl<N, E, Ty, Ix> visit::Data for StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    type EdgeWeight = E;
-    type NodeWeight = N;
 }
 
 impl<N, E, Ty, Ix> visit::GraphProp for StableGraph<N, E, Ty, Ix>
@@ -1859,7 +1856,7 @@ where
 
     fn node_references(self) -> Self::NodeReferences {
         NodeReferences {
-            iter: enumerate(self.raw_nodes()),
+            iter: self.raw_nodes().iter().enumerate(),
         }
     }
 }

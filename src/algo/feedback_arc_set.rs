@@ -24,10 +24,11 @@ use crate::{
 /// # Example
 ///
 /// ```
-/// # #[cfg(feature = "stable_graph")] {
+/// # #[cfg(feature = "stable-graph")] {
 /// use petgraph::{
 ///     algo::{greedy_feedback_arc_set, is_cyclic_directed},
 ///     graph::EdgeIndex,
+///     prelude::EdgeRef,
 ///     stable_graph::StableGraph,
 /// };
 ///

@@ -16,7 +16,7 @@ use petgraph::{
 };
 
 fn n(x: u32) -> NodeIndex {
-    NodeIndex::from(x as usize)
+    NodeIndex::new(x)
 }
 
 #[test]
@@ -140,7 +140,7 @@ fn test_edges_directed() {
     dbg!(&gr);
     let x = n(9);
     assert_equal(edges!(&gr, x), vec![
-        (NodeIndex::from(1), 11),
+        (NodeIndex::from_usize(1), 11),
         (x, 12),
         (x, 13),
     ]);
