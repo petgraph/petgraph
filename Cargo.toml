@@ -30,6 +30,12 @@ no-dev-version = true
 [workspace]
 members = ["serialization-tests", "core", "graph"]
 
+[workspace.dependencies]
+fixedbitset = { version = "0.4", default-features = false }
+petgraph = { path = "." }
+petgraph-core = { path = "./core", default-features = false }
+petgraph-graph = { path = "./graph", default-features = false }
+
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }
 indexmap = { version = "1.7", features = ["std"] }
