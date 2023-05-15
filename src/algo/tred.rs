@@ -9,6 +9,7 @@
 //! The transitive reduction is well-defined for acyclic graphs only.
 
 use fixedbitset::FixedBitSet;
+use petgraph_adjacency_list::NodeIndex;
 
 use crate::{
     adj::{List, UnweightedList},
@@ -34,10 +35,8 @@ use crate::{
 ///
 /// `revmap` is handy to get back to map indices in `g` to indices in `res`.
 /// ```
-/// use petgraph::prelude::*;
-/// use petgraph::graph::DefaultIx;
-/// use petgraph_core::::IntoNeighbors;
-/// use petgraph::algo::tred::dag_to_toposorted_adjacency_list;
+/// use petgraph::{algo::tred::dag_to_toposorted_adjacency_list, graph::DefaultIx, prelude::*};
+/// use petgraph_core::visit::IntoNeighbors;
 ///
 /// let mut g = Graph::<&str, (), Directed, DefaultIx>::new();
 /// let second = g.add_node("second child");
@@ -63,22 +62,22 @@ use crate::{
 pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
     g: G,
     toposort: &[G::NodeId],
-) -> (UnweightedList<Ix>, Vec<Ix>)
+) -> (UnweightedList<Ix>, Vec<NodeIndex<Ix>>)
 where
     G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
     G::NodeId: IndexType,
 {
     let mut res = List::with_capacity(g.node_count());
     // map from old node index to rank in toposort
-    let mut revmap = vec![Ix::default(); g.node_bound()];
+    let mut revmap = vec![0usize.into(); g.node_bound()];
     for (ix, &old_ix) in toposort.iter().enumerate() {
-        let ix = Ix::new(ix);
+        let ix: NodeIndex<Ix> = ix.into();
         revmap[old_ix.index()] = ix;
         let iter = g.neighbors_directed(old_ix, Direction::Incoming);
-        let new_ix: Ix = res.add_node_with_capacity(iter.size_hint().0);
-        debug_assert_eq!(new_ix.index(), ix.index());
+        let new_ix = res.add_node_with_capacity(iter.size_hint().0);
+        debug_assert_eq!(new_ix, ix);
         for old_pre in iter {
-            let pre: Ix = revmap[old_pre.index()];
+            let pre = revmap[old_pre.index()];
             res.add_edge(pre, ix, ());
         }
     }
@@ -122,20 +121,20 @@ pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
     for i in g.node_indices().rev() {
         // the algorighm relies on this iterator being toposorted
         for x in g.neighbors(i) {
-            if !mark[x.index()] {
+            if !mark[x.into()] {
                 tred.add_edge(i, x, ());
                 tclos.add_edge(i, x, ());
                 for e in tclos.edge_indices_from(x) {
                     let y = tclos.edge_endpoints(e).unwrap().1;
-                    if !mark[y.index()] {
-                        mark.insert(y.index());
+                    if !mark[y.into()] {
+                        mark.insert(y.into());
                         tclos.add_edge(i, y, ());
                     }
                 }
             }
         }
         for y in tclos.neighbors(i) {
-            mark.set(y.index(), false);
+            mark.set(y.into(), false);
         }
     }
     (tred, tclos)
@@ -145,7 +144,7 @@ pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
 #[test]
 fn test_easy_tred() {
     let mut input = List::new();
-    let a: u8 = input.add_node();
+    let a: petgraph_adjacency_list::NodeIndex<u8> = input.add_node();
     let b = input.add_node();
     let c = input.add_node();
     input.add_edge(a, b, ());

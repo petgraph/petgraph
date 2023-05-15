@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use alloc::{collections::VecDeque, vec::Vec};
 
 use crate::{
     edge::Direction::Incoming,

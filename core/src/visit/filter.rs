@@ -1,4 +1,6 @@
-use std::{collections::HashSet, marker::PhantomData};
+use core::marker::PhantomData;
+#[cfg(feature = "std")]
+use std::collections::HashSet;
 
 #[cfg(feature = "fixedbitset")]
 use fixedbitset::FixedBitSet;
@@ -41,6 +43,7 @@ where
 }
 
 /// This filter includes the nodes that are contained in the set.
+#[cfg(feature = "std")]
 impl<N, S> FilterNode<N> for HashSet<N, S>
 where
     HashSet<N, S>: VisitMap<N>,
@@ -62,6 +65,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<N, S> FilterNode<N> for &HashSet<N, S>
 where
     HashSet<N, S>: VisitMap<N>,

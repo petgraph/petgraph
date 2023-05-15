@@ -11,7 +11,11 @@ pub mod edge;
 pub mod index;
 #[macro_use]
 #[deprecated(since = "0.1.0")]
+#[cfg(feature = "alloc")]
 pub mod data;
 #[deprecated(since = "0.1.0")]
 pub mod deprecated;
+#[doc(hidden)]
+#[deprecated(since = "0.1.0")]
+mod macros;
 mod utils;

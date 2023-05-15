@@ -1,20 +1,58 @@
+//! Simple adjacency list.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-//! Simple adjacency list.
-use crate::data::{Build, DataMap, DataMapMut};
-use crate::iter_format::NoPretty;
-use crate::visit::{
-    self, EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount,
-};
-use fixedbitset::FixedBitSet;
-use std::fmt;
-use std::ops::Range;
+mod utils;
 
-#[doc(no_inline)]
-pub use crate::graph::{DefaultIx, IndexType};
+extern crate alloc;
+
+use alloc::{boxed::Box, vec::Vec};
+use core::{fmt, iter, mem, ops::Range, slice};
+
+use fixedbitset::FixedBitSet;
+use petgraph_core::{
+    data::{Build, DataMap, DataMapMut},
+    edge::Directed,
+    index::{DefaultIx, IndexType},
+    iterator_wrap, visit,
+    visit::{EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount},
+};
+
+use crate::utils::DebugFn;
 
 /// Adjacency list node index type, a plain integer.
-pub type NodeIndex<Ix = DefaultIx> = Ix;
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct NodeIndex<Ix = DefaultIx>(pub(crate) Ix);
+
+impl<Ix> NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    fn from_usize(value: usize) -> Self {
+        Self(Ix::from_usize(value))
+    }
+
+    fn into_usize(self) -> usize {
+        self.0.as_usize()
+    }
+}
+
+impl<Ix> From<NodeIndex<Ix>> for usize
+where
+    Ix: IndexType,
+{
+    fn from(value: NodeIndex<Ix>) -> Self {
+        value.into_usize()
+    }
+}
+
+impl<Ix> From<usize> for NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    fn from(value: usize) -> Self {
+        Self::from_usize(value)
+    }
+}
 
 /// Adjacency list edge index type, a pair of integers.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -36,21 +74,21 @@ impl (Iterator) for
 #[derive(Debug, Clone)]
 struct OutgoingEdgeIndices <Ix> where { Ix: IndexType }
 item: EdgeIndex<Ix>,
-iter: std::iter::Map<std::iter::Zip<Range<usize>, std::iter::Repeat<NodeIndex<Ix>>>, fn((usize, NodeIndex<Ix>)) -> EdgeIndex<Ix>>,
+iter: iter::Map<iter::Zip<Range<usize>, iter::Repeat<NodeIndex<Ix>>>, fn((usize, NodeIndex<Ix>)) -> EdgeIndex<Ix>>,
 }
 
 /// Weighted sucessor
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 struct WSuc<E, Ix: IndexType> {
     /// Index of the sucessor.
-    suc: Ix,
+    suc: NodeIndex<Ix>,
     /// Weight of the edge to `suc`.
     weight: E,
 }
 
 /// One row of the adjacency list.
 type Row<E, Ix> = Vec<WSuc<E, Ix>>;
-type RowIter<'a, E, Ix> = std::slice::Iter<'a, WSuc<E, Ix>>;
+type RowIter<'a, E, Ix> = slice::Iter<'a, WSuc<E, Ix>>;
 
 iterator_wrap! {
 impl (Iterator DoubleEndedIterator ExactSizeIterator) for
@@ -58,7 +96,7 @@ impl (Iterator DoubleEndedIterator ExactSizeIterator) for
 #[derive(Debug, Clone)]
 struct Neighbors<'a, E, Ix> where { Ix: IndexType }
 item: NodeIndex<Ix>,
-iter: std::iter::Map<RowIter<'a, E, Ix>, fn(&WSuc<E, Ix>) -> NodeIndex<Ix>>,
+iter: iter::Map<RowIter<'a, E, Ix>, fn(&WSuc<E, Ix>) -> NodeIndex<Ix>>,
 }
 
 /// A reference to an edge of the graph.
@@ -81,18 +119,22 @@ impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
 }
 
 impl<'a, E, Ix: IndexType> visit::EdgeRef for EdgeReference<'a, E, Ix> {
-    type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex<Ix>;
+    type NodeId = NodeIndex<Ix>;
     type Weight = E;
+
     fn source(&self) -> Self::NodeId {
         self.id.from
     }
+
     fn target(&self) -> Self::NodeId {
         self.edge.suc
     }
+
     fn id(&self) -> Self::EdgeId {
         self.id
     }
+
     fn weight(&self) -> &Self::Weight {
         &self.edge.weight
     }
@@ -100,7 +142,7 @@ impl<'a, E, Ix: IndexType> visit::EdgeRef for EdgeReference<'a, E, Ix> {
 
 #[derive(Debug, Clone)]
 pub struct EdgeIndices<'a, E, Ix: IndexType> {
-    rows: std::iter::Enumerate<std::slice::Iter<'a, Row<E, Ix>>>,
+    rows: iter::Enumerate<slice::Iter<'a, Row<E, Ix>>>,
     row_index: usize,
     row_len: usize,
     cur: usize,
@@ -108,13 +150,14 @@ pub struct EdgeIndices<'a, E, Ix: IndexType> {
 
 impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
     type Item = EdgeIndex<Ix>;
+
     fn next(&mut self) -> Option<EdgeIndex<Ix>> {
         loop {
             if self.cur < self.row_len {
                 let res = self.cur;
                 self.cur += 1;
                 return Some(EdgeIndex {
-                    from: Ix::new(self.row_index),
+                    from: NodeIndex(Ix::from_usize(self.row_index)),
                     successor_index: res,
                 });
             } else {
@@ -136,8 +179,8 @@ iterator_wrap! {
     /// An iterator over all node indices in the graph.
     #[derive(Debug, Clone)]
     struct NodeIndices <Ix> where {}
-    item: Ix,
-    iter: std::iter::Map<Range<usize>, fn(usize) -> Ix>,
+    item: NodeIndex<Ix>,
+    iter: iter::Map<Range<usize>, fn(usize) -> NodeIndex<Ix>>,
 }
 
 /// An adjacency list with labeled edges.
@@ -145,8 +188,8 @@ iterator_wrap! {
 /// Can be interpreted as a directed graph
 /// with unweighted nodes.
 ///
-/// This is the most simple adjacency list you can imagine. [`Graph`](../graph/struct.Graph.html), in contrast,
-/// maintains both the list of successors and predecessors for each node,
+/// This is the most simple adjacency list you can imagine. [`Graph`](../graph/struct.Graph.html),
+/// in contrast, maintains both the list of successors and predecessors for each node,
 /// which is a different trade-off.
 ///
 /// Allows parallel edges and self-loops.
@@ -194,7 +237,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
     pub fn add_node(&mut self) -> NodeIndex<Ix> {
         let i = self.suc.len();
         self.suc.push(Vec::new());
-        Ix::new(i)
+        NodeIndex(Ix::from_usize(i))
     }
 
     /// Adds a new node to the list. This allocates a new `Vec` and then should
@@ -202,7 +245,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
     pub fn add_node_with_capacity(&mut self, successors: usize) -> NodeIndex<Ix> {
         let i = self.suc.len();
         self.suc.push(Vec::with_capacity(successors));
-        Ix::new(i)
+        NodeIndex(Ix::from_usize(i))
     }
 
     /// Adds a new node to the list by giving its list of successors and the corresponding
@@ -214,7 +257,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
         let i = self.suc.len();
         self.suc
             .push(edges.map(|(suc, weight)| WSuc { suc, weight }).collect());
-        Ix::new(i)
+        NodeIndex(Ix::from_usize(i))
     }
 
     /// Add an edge from `a` to `b` to the graph, with its associated
@@ -229,14 +272,14 @@ impl<E, Ix: IndexType> List<E, Ix> {
     /// **Note:** `List` allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
-        if b.index() >= self.suc.len() {
+        if b.into_usize() >= self.suc.len() {
             panic!(
                 "{} is not a valid node index for a {} nodes adjacency list",
-                b.index(),
+                b.into_usize(),
                 self.suc.len()
             );
         }
-        let row = &mut self.suc[a.index()];
+        let row = &mut self.suc[a.into_usize()];
         let rank = row.len();
         row.push(WSuc { suc: b, weight });
         EdgeIndex {
@@ -247,13 +290,13 @@ impl<E, Ix: IndexType> List<E, Ix> {
 
     fn get_edge(&self, e: EdgeIndex<Ix>) -> Option<&WSuc<E, Ix>> {
         self.suc
-            .get(e.from.index())
+            .get(e.from.into_usize())
             .and_then(|row| row.get(e.successor_index))
     }
 
     fn get_edge_mut(&mut self, e: EdgeIndex<Ix>) -> Option<&mut WSuc<E, Ix>> {
         self.suc
-            .get_mut(e.from.index())
+            .get_mut(e.from.into_usize())
             .and_then(|row| row.get_mut(e.successor_index))
     }
 
@@ -270,8 +313,8 @@ impl<E, Ix: IndexType> List<E, Ix> {
                 from,
                 successor_index,
             };
-        let iter = (0..(self.suc[a.index()].len()))
-            .zip(std::iter::repeat(a))
+        let iter = (0..(self.suc[a.into_usize()].len()))
+            .zip(iter::repeat(a))
             .map(proj);
         OutgoingEdgeIndices { iter }
     }
@@ -280,7 +323,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
     ///
     /// Computes in **O(e')** time, where **e'** is the number of successors of `a`.
     pub fn contains_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
-        match self.suc.get(a.index()) {
+        match self.suc.get(a.into_usize()) {
             None => false,
             Some(row) => row.iter().any(|x| x.suc == b),
         }
@@ -290,7 +333,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
     ///
     /// Computes in **O(e')** time, where **e'** is the number of successors of `a`.
     pub fn find_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<EdgeIndex<Ix>> {
-        self.suc.get(a.index()).and_then(|row| {
+        self.suc.get(a.into_usize()).and_then(|row| {
             row.iter()
                 .enumerate()
                 .find(|(_, x)| x.suc == b)
@@ -306,7 +349,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
     /// Consuming the whole iterator take **O(|V|)**.
     pub fn node_indices(&self) -> NodeIndices<Ix> {
         NodeIndices {
-            iter: (0..self.suc.len()).map(Ix::new),
+            iter: (0..self.suc.len()).map(NodeIndex::from_usize),
         }
     }
 
@@ -357,7 +400,7 @@ impl<E, Ix: IndexType> Build for List<E, Ix> {
     ///
     /// **Panics** if the source node does not exist.<br>
     fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
-        let row = &mut self.suc[a.index()];
+        let row = &mut self.suc[a.into_usize()];
         for (i, info) in row.iter_mut().enumerate() {
             if info.suc == b {
                 info.weight = weight;
@@ -385,13 +428,23 @@ where
         let mut edge_list = f.debug_list();
         let iter: Self = self.clone();
         for e in iter {
-            if std::mem::size_of::<E>() != 0 {
+            if mem::size_of::<E>() != 0 {
                 edge_list.entry(&(
-                    NoPretty((e.source().index(), e.target().index())),
+                    DebugFn(|f| {
+                        f.write_fmt(format_args!(
+                            "{:?}",
+                            (e.source().into_usize(), e.target().into_usize())
+                        ))
+                    }),
                     e.weight(),
                 ));
             } else {
-                edge_list.entry(&NoPretty((e.source().index(), e.target().index())));
+                edge_list.entry(&DebugFn(|f| {
+                    f.write_fmt(format_args!(
+                        "{:?}",
+                        (e.source().into_usize(), e.target().into_usize())
+                    ))
+                }));
             }
         }
         edge_list.finish()
@@ -418,8 +471,8 @@ impl<E, Ix> visit::GraphBase for List<E, Ix>
 where
     Ix: IndexType,
 {
-    type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex<Ix>;
+    type NodeId = NodeIndex<Ix>;
 }
 
 impl<E, Ix> visit::Visitable for List<E, Ix>
@@ -427,9 +480,11 @@ where
     Ix: IndexType,
 {
     type Map = FixedBitSet;
+
     fn visit_map(&self) -> FixedBitSet {
         FixedBitSet::with_capacity(self.node_count())
     }
+
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
         map.grow(self.node_count());
@@ -438,6 +493,7 @@ where
 
 impl<'a, E, Ix: IndexType> visit::IntoNodeIdentifiers for &'a List<E, Ix> {
     type NodeIdentifiers = NodeIndices<Ix>;
+
     fn node_identifiers(self) -> NodeIndices<Ix> {
         self.node_indices()
     }
@@ -446,9 +502,11 @@ impl<'a, E, Ix: IndexType> visit::IntoNodeIdentifiers for &'a List<E, Ix> {
 impl<Ix: IndexType> visit::NodeRef for NodeIndex<Ix> {
     type NodeId = NodeIndex<Ix>;
     type Weight = ();
+
     fn id(&self) -> Self::NodeId {
         *self
     }
+
     fn weight(&self) -> &Self::Weight {
         &()
     }
@@ -457,32 +515,34 @@ impl<Ix: IndexType> visit::NodeRef for NodeIndex<Ix> {
 impl<'a, Ix: IndexType, E> visit::IntoNodeReferences for &'a List<E, Ix> {
     type NodeRef = NodeIndex<Ix>;
     type NodeReferences = NodeIndices<Ix>;
+
     fn node_references(self) -> Self::NodeReferences {
         self.node_indices()
     }
 }
 
 impl<E, Ix: IndexType> visit::Data for List<E, Ix> {
-    type NodeWeight = ();
     type EdgeWeight = E;
+    type NodeWeight = ();
 }
 
 impl<'a, E, Ix: IndexType> IntoNeighbors for &'a List<E, Ix> {
     type Neighbors = Neighbors<'a, E, Ix>;
+
     /// Returns an iterator of all nodes with an edge starting from `a`.
     /// Panics if `a` is out of bounds.
-    /// Use [`List::edge_indices_from`] instead if you do not want to borrow the adjacency list while
-    /// iterating.
+    /// Use [`List::edge_indices_from`] instead if you do not want to borrow the adjacency list
+    /// while iterating.
     fn neighbors(self, a: NodeIndex<Ix>) -> Self::Neighbors {
         let proj: fn(&WSuc<E, Ix>) -> NodeIndex<Ix> = |x| x.suc;
-        let iter = self.suc[a.index()].iter().map(proj);
+        let iter = self.suc[a.into_usize()].iter().map(proj);
         Neighbors { iter }
     }
 }
 
-type SomeIter<'a, E, Ix> = std::iter::Map<
-    std::iter::Zip<std::iter::Enumerate<RowIter<'a, E, Ix>>, std::iter::Repeat<Ix>>,
-    fn(((usize, &'a WSuc<E, Ix>), Ix)) -> EdgeReference<'a, E, Ix>,
+type SomeIter<'a, E, Ix> = iter::Map<
+    iter::Zip<iter::Enumerate<RowIter<'a, E, Ix>>, iter::Repeat<NodeIndex<Ix>>>,
+    fn(((usize, &'a WSuc<E, Ix>), NodeIndex<Ix>)) -> EdgeReference<'a, E, Ix>,
 >;
 
 iterator_wrap! {
@@ -490,9 +550,9 @@ impl (Iterator) for
 /// An iterator over the [`EdgeReference`] of all the edges of the graph.
 struct EdgeReferences<'a, E, Ix> where { Ix: IndexType }
 item: EdgeReference<'a, E, Ix>,
-iter: std::iter::FlatMap<
-    std::iter::Enumerate<
-        std::slice::Iter<'a, Row<E, Ix>>
+iter: iter::FlatMap<
+    iter::Enumerate<
+        slice::Iter<'a, Row<E, Ix>>
     >,
     SomeIter<'a, E, Ix>,
     fn(
@@ -510,7 +570,7 @@ impl<'a, E, Ix: IndexType> Clone for EdgeReferences<'a, E, Ix> {
 }
 
 fn proj1<E, Ix: IndexType>(
-    ((successor_index, edge), from): ((usize, &WSuc<E, Ix>), Ix),
+    ((successor_index, edge), from): ((usize, &WSuc<E, Ix>), NodeIndex<Ix>),
 ) -> EdgeReference<E, Ix> {
     let id = EdgeIndex {
         from,
@@ -521,13 +581,14 @@ fn proj1<E, Ix: IndexType>(
 fn proj2<E, Ix: IndexType>((row_index, row): (usize, &Vec<WSuc<E, Ix>>)) -> SomeIter<E, Ix> {
     row.iter()
         .enumerate()
-        .zip(std::iter::repeat(Ix::new(row_index)))
+        .zip(iter::repeat(NodeIndex::from_usize(row_index)))
         .map(proj1 as _)
 }
 
 impl<'a, Ix: IndexType, E> visit::IntoEdgeReferences for &'a List<E, Ix> {
     type EdgeRef = EdgeReference<'a, E, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ix>;
+
     fn edge_references(self) -> Self::EdgeReferences {
         let iter = self.suc.iter().enumerate().flat_map(proj2 as _);
         EdgeReferences { iter }
@@ -545,18 +606,20 @@ iter: SomeIter<'a, E, Ix>,
 
 impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
     type Edges = OutgoingEdgeReferences<'a, E, Ix>;
+
     fn edges(self, a: Self::NodeId) -> Self::Edges {
-        let iter = self.suc[a.index()]
+        let iter = self.suc[a.into_usize()]
             .iter()
             .enumerate()
-            .zip(std::iter::repeat(a))
+            .zip(iter::repeat(a))
             .map(proj1 as _);
         OutgoingEdgeReferences { iter }
     }
 }
 
 impl<E, Ix: IndexType> visit::GraphProp for List<E, Ix> {
-    type EdgeType = crate::Directed;
+    type EdgeType = Directed;
+
     fn is_directed(&self) -> bool {
         true
     }
@@ -584,13 +647,15 @@ impl<E, Ix: IndexType> visit::NodeIndexable for List<E, Ix> {
     fn node_bound(&self) -> usize {
         self.node_count()
     }
+
     #[inline]
     fn to_index(&self, a: Self::NodeId) -> usize {
-        a.index()
+        a.into_usize()
     }
+
     #[inline]
     fn from_index(&self, i: usize) -> Self::NodeId {
-        Ix::new(i)
+        NodeIndex::from_usize(i)
     }
 }
 
@@ -598,7 +663,7 @@ impl<E, Ix: IndexType> visit::NodeCompactIndexable for List<E, Ix> {}
 
 impl<E, Ix: IndexType> DataMap for List<E, Ix> {
     fn node_weight(&self, n: Self::NodeId) -> Option<&()> {
-        if n.index() < self.suc.len() {
+        if n.into_usize() < self.suc.len() {
             Some(&())
         } else {
             None
@@ -615,7 +680,7 @@ impl<E, Ix: IndexType> DataMap for List<E, Ix> {
 
 impl<E, Ix: IndexType> DataMapMut for List<E, Ix> {
     fn node_weight_mut(&mut self, n: Self::NodeId) -> Option<&mut ()> {
-        if n.index() < self.suc.len() {
+        if n.into_usize() < self.suc.len() {
             // A hack to produce a &'static mut ()
             // It does not actually allocate according to godbolt
             let b = Box::new(());
@@ -624,6 +689,7 @@ impl<E, Ix: IndexType> DataMapMut for List<E, Ix> {
             None
         }
     }
+
     /// Accesses the weight of edge `e`
     ///
     /// Computes in **O(1)**
@@ -644,10 +710,10 @@ where
         let n = self.node_count();
         let mut matrix = FixedBitSet::with_capacity(n * n);
         for edge in self.edge_references() {
-            let i = edge.source().index() * n + edge.target().index();
+            let i = edge.source().into_usize() * n + edge.target().into_usize();
             matrix.put(i);
 
-            let j = edge.source().index() + n * edge.target().index();
+            let j = edge.source().into_usize() + n * edge.target().into_usize();
             matrix.put(j);
         }
         matrix
@@ -655,7 +721,7 @@ where
 
     fn is_adjacent(&self, matrix: &FixedBitSet, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
         let n = self.edge_count();
-        let index = n * a.index() + b.index();
+        let index = n * a.into_usize() + b.into_usize();
         matrix.contains(index)
     }
 }

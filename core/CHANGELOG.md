@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved `petgraph::EdgeDirection` to `petgraph-core`
 - Moved `petgraph::graph::IndexType` to `petgraph-core`
 - Moved `petgraph::IntoWeightedEdge` to `petgraph-core`
+- Moved `petgraph::macros` to `petgraph-core`
 
 ## Deprecations
 

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Breaking Changes
+
+- `NodeIndex` is no longer just `Ix`, but a newtype wrapper around `Ix`. This is a breaking change for any code that
+  relied on `NodeIndex` not being an opaque type.
+
 ## Added
 
 - Moved `petgraph::adj` to `petgraph-adjacency-list``

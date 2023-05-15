@@ -68,6 +68,7 @@ pub use crate::visit::{filter::*, reversed::*};
 mod macros;
 
 mod dfsvisit;
+#[cfg(feature = "alloc")]
 mod traversal;
 #[cfg(feature = "std")]
 use std::{

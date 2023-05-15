@@ -1,5 +1,7 @@
 //! Graph traits for associated data and graph construction.
 
+use alloc::vec::Vec;
+
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{GraphMap, NodeTrait};
 use crate::{
