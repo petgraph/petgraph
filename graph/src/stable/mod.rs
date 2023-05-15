@@ -5,7 +5,9 @@
 use alloc::vec;
 use core::{
     cmp::max,
-    fmt, iter,
+    fmt,
+    fmt::DebugMap,
+    iter,
     marker::PhantomData,
     mem::{replace, size_of},
     ops::{Index, IndexMut},
@@ -22,7 +24,7 @@ use petgraph_core::{
 };
 
 use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
-use crate::{edge_index, node_index, EdgeIndex, Graph, GraphIndex, NodeIndex};
+use crate::{edge_index, node_index, utils::DebugFn, EdgeIndex, Graph, GraphIndex, NodeIndex};
 
 #[cfg(feature = "serde")]
 mod serialization;
@@ -108,33 +110,40 @@ where
         } else {
             "Undirected"
         };
+
         let mut fmt_struct = f.debug_struct("StableGraph");
         fmt_struct.field("Ty", &etype);
         fmt_struct.field("node_count", &self.node_count);
         fmt_struct.field("edge_count", &self.edge_count);
+
         if self.g.edges.iter().any(|e| e.weight.is_some()) {
             fmt_struct.field(
                 "edges",
-                &self
-                    .g
-                    .edges
-                    .iter()
-                    .filter(|e| e.weight.is_some())
-                    .map(|e| NoPretty((e.source().index(), e.target().index())))
-                    .format(", "),
+                &DebugFn(|f| {
+                    f.debug_list()
+                        .entries(self.g.edges.iter().filter(|e| e.weight.is_some()).map(|e| {
+                            format_args!("{:?}", (e.source().index(), e.target().index()))
+                        }))
+                        .finish()
+                }),
             );
         }
+
         // skip weights if they are ZST!
         if size_of::<N>() != 0 {
             fmt_struct.field(
                 "node weights",
-                &DebugMap(|| {
-                    self.g
-                        .nodes
-                        .iter()
-                        .map(|n| n.weight.as_ref())
-                        .enumerate()
-                        .filter_map(|(i, wo)| wo.map(move |w| (i, w)))
+                &DebugFn(|f| {
+                    f.debug_map()
+                        .entries(
+                            self.g
+                                .nodes
+                                .iter()
+                                .map(|n| n.weight.as_ref())
+                                .enumerate()
+                                .filter_map(|(i, wo)| wo.map(move |w| (i, w))),
+                        )
+                        .finish()
                 }),
             );
         }
@@ -142,13 +151,17 @@ where
         if size_of::<E>() != 0 {
             fmt_struct.field(
                 "edge weights",
-                &DebugMap(|| {
-                    self.g
-                        .edges
-                        .iter()
-                        .map(|n| n.weight.as_ref())
-                        .enumerate()
-                        .filter_map(|(i, wo)| wo.map(move |w| (i, w)))
+                &DebugFn(|f| {
+                    f.debug_map()
+                        .entries(
+                            self.g
+                                .edges
+                                .iter()
+                                .map(|n| n.weight.as_ref())
+                                .enumerate()
+                                .filter_map(|(i, wo)| wo.map(move |w| (i, w))),
+                        )
+                        .finish()
                 }),
             );
         }
@@ -1665,12 +1678,9 @@ where
 /// assert_eq!(gr[b], 4.);
 /// assert_eq!(gr[c], 2.);
 /// ```
+#[derive(Clone)]
 pub struct WalkNeighbors<Ix> {
     inner: super::WalkNeighbors<Ix>,
-}
-
-impl<Ix: IndexType> Clone for WalkNeighbors<Ix> {
-    clone_fields!(WalkNeighbors, inner);
 }
 
 impl<Ix: IndexType> WalkNeighbors<Ix> {

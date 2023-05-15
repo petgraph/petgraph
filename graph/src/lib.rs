@@ -22,6 +22,7 @@ pub mod stable;
 
 #[cfg(feature = "serde")]
 mod serialization;
+mod utils;
 
 use petgraph_core::{
     edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
