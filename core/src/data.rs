@@ -1,13 +1,15 @@
 //! Graph traits for associated data and graph construction.
 
-use crate::graph::IndexType;
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{GraphMap, NodeTrait};
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph::StableGraph;
-use crate::visit::{Data, NodeCount, NodeIndexable, Reversed};
-use crate::EdgeType;
-use crate::Graph;
+use crate::{
+    edge::EdgeType,
+    index::IndexType,
+    visit::{Data, NodeCount, NodeIndexable, Reversed},
+    Graph,
+};
 
 trait_template! {
     /// Access node and edge weights (associated data).
@@ -74,8 +76,8 @@ impl<N, E, Ty, Ix> Data for Graph<N, E, Ty, Ix>
 where
     Ix: IndexType,
 {
-    type NodeWeight = N;
     type EdgeWeight = E;
+    type NodeWeight = N;
 }
 
 impl<N, E, Ty, Ix> DataMap for Graph<N, E, Ty, Ix>
@@ -86,6 +88,7 @@ where
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
         self.node_weight(id)
     }
+
     fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
         self.edge_weight(id)
     }
@@ -99,6 +102,7 @@ where
     fn node_weight_mut(&mut self, id: Self::NodeId) -> Option<&mut Self::NodeWeight> {
         self.node_weight_mut(id)
     }
+
     fn edge_weight_mut(&mut self, id: Self::EdgeId) -> Option<&mut Self::EdgeWeight> {
         self.edge_weight_mut(id)
     }
@@ -113,6 +117,7 @@ where
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
         self.node_weight(id)
     }
+
     fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
         self.edge_weight(id)
     }
@@ -127,6 +132,7 @@ where
     fn node_weight_mut(&mut self, id: Self::NodeId) -> Option<&mut Self::NodeWeight> {
         self.node_weight_mut(id)
     }
+
     fn edge_weight_mut(&mut self, id: Self::EdgeId) -> Option<&mut Self::EdgeWeight> {
         self.edge_weight_mut(id)
     }
@@ -140,6 +146,7 @@ where
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         self.add_node(weight)
     }
+
     fn add_edge(
         &mut self,
         a: Self::NodeId,
@@ -148,6 +155,7 @@ where
     ) -> Option<Self::EdgeId> {
         Some(self.add_edge(a, b, weight))
     }
+
     fn update_edge(
         &mut self,
         a: Self::NodeId,
@@ -167,6 +175,7 @@ where
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         self.add_node(weight)
     }
+
     fn add_edge(
         &mut self,
         a: Self::NodeId,
@@ -175,6 +184,7 @@ where
     ) -> Option<Self::EdgeId> {
         Some(self.add_edge(a, b, weight))
     }
+
     fn update_edge(
         &mut self,
         a: Self::NodeId,
@@ -194,6 +204,7 @@ where
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         self.add_node(weight)
     }
+
     fn add_edge(
         &mut self,
         a: Self::NodeId,
@@ -208,6 +219,7 @@ where
             Some((a, b))
         }
     }
+
     fn update_edge(
         &mut self,
         a: Self::NodeId,
@@ -474,6 +486,7 @@ where
             return Some(elt);
         }
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)

@@ -121,9 +121,6 @@ pub use crate::Direction::{Incoming, Outgoing};
 mod macros;
 mod scored;
 
-#[macro_use]
-pub mod data;
-
 pub mod adj;
 pub mod algo;
 pub mod csr;

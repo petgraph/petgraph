@@ -8,5 +8,7 @@ extern crate alloc;
 #[deprecated(since = "0.1.0")]
 pub mod visit;
 pub mod edge;
-#[deprecated(since = "0.1.0")]
 pub mod index;
+#[macro_use]
+#[deprecated(since = "0.1.0")]
+pub mod data;

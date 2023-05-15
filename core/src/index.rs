@@ -12,7 +12,7 @@ pub type DefaultIx = u32;
 ///
 /// Marked `unsafe` because: the trait must faithfully preserve
 /// and convert index values.
-#[deprecated(note = "Use `funty::Unsigned` instead", since = "0.0.0")]
+#[deprecated(note = "Use `funty::Unsigned` instead", since = "0.1.0")]
 pub unsafe trait IndexType: Copy + Default + Hash + Ord + fmt::Debug + 'static {
     fn new(x: usize) -> Self;
     fn index(&self) -> usize;
