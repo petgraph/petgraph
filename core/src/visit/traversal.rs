@@ -1,10 +1,11 @@
 use std::collections::VecDeque;
 
-use petgraph::Direction::Incoming;
-
-use super::{
-    GraphRef, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap,
-    Visitable,
+use crate::{
+    edge::Direction::Incoming,
+    visit::{
+        GraphRef, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap,
+        Visitable,
+    },
 };
 
 /// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in
@@ -21,9 +22,9 @@ use super::{
 ///
 /// ```
 /// use petgraph::Graph;
-/// use petgraph_core::::Dfs;
+/// use petgraph_core::visit::Dfs;
 ///
-/// let mut graph = Graph::<_,()>::new();
+/// let mut graph = Graph::<_, ()>::new();
 /// let a = graph.add_node(0);
 ///
 /// let mut dfs = Dfs::new(&graph, a);
@@ -237,9 +238,9 @@ where
 ///
 /// ```
 /// use petgraph::Graph;
-/// use petgraph_core::::Bfs;
+/// use petgraph_core::visit::Bfs;
 ///
-/// let mut graph = Graph::<_,()>::new();
+/// let mut graph = Graph::<_, ()>::new();
 /// let a = graph.add_node(0);
 ///
 /// let mut bfs = Bfs::new(&graph, a);

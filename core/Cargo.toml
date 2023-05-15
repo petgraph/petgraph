@@ -8,6 +8,10 @@ edition = "2021"
 [dependencies]
 fixedbitset = { version = "0.4.2", default-features = false, optional = true }
 
+[dev-dependencies]
+# Used for documentation examples
+petgraph = { path = ".." }
+
 [features]
 default = ["std"]
 std = ["fixedbitset?/std", "alloc"]

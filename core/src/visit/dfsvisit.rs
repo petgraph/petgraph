@@ -1,3 +1,4 @@
+// TODO: deprecate, move to algorithms instead
 use crate::visit::{IntoNeighbors, VisitMap, Visitable};
 
 /// Strictly monotonically increasing event time for a depth first search.
@@ -174,16 +175,18 @@ impl<B> Default for Control<B> {
 /// the goal vertex.
 ///
 /// ```
-/// use petgraph::prelude::*;
-/// use petgraph::graph::node_index as n;
-/// use petgraph_core::::depth_first_search;
-/// use petgraph_core::::{DfsEvent, Control};
+/// use petgraph::{graph::node_index as n, prelude::*};
+/// use petgraph_core::visit::{depth_first_search, Control, DfsEvent};
 ///
 /// let gr: Graph<(), ()> = Graph::from_edges(&[
-///     (0, 1), (0, 2), (0, 3),
+///     (0, 1),
+///     (0, 2),
+///     (0, 3),
 ///     (1, 3),
-///     (2, 3), (2, 4),
-///     (4, 0), (4, 5),
+///     (2, 3),
+///     (2, 4),
+///     (4, 0),
+///     (4, 5),
 /// ]);
 ///
 /// // record each predecessor, mapping node → node
@@ -213,10 +216,8 @@ impl<B> Default for Control<B> {
 ///
 /// # Example returning a `Result`.
 /// ```
-/// use petgraph::graph::node_index as n;
-/// use petgraph::prelude::*;
-/// use petgraph_core::::depth_first_search;
-/// use petgraph_core::::{DfsEvent, Time};
+/// use petgraph::{graph::node_index as n, prelude::*};
+/// use petgraph_core::visit::{depth_first_search, DfsEvent, Time};
 ///
 /// let gr: Graph<(), ()> = Graph::from_edges(&[(0, 1), (1, 2), (1, 1), (2, 1)]);
 /// let start = n(0);
@@ -233,7 +234,7 @@ impl<B> Default for Control<B> {
 ///             discover_time = t;
 ///             Ok(())
 ///         }
-///         DfsEvent::BackEdge(_, _) => {
+///         DfsEvent::BackEdge(..) => {
 ///             back_edges += 1;
 ///             // the implementation of ControlFlow for Result,
 ///             // treats this Err value as Continue::Break

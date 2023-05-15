@@ -1,12 +1,16 @@
 use std::{collections::HashSet, marker::PhantomData};
 
 use fixedbitset::FixedBitSet;
-use petgraph::{data::DataMap, prelude::*};
 
-use crate::visit::{
-    Data, EdgeIndexable, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected,
-    IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences,
-    NodeCompactIndexable, NodeCount, NodeIndexable, NodeRef, VisitMap, Visitable,
+use crate::{
+    data::DataMap,
+    edge::Direction,
+    visit::{
+        Data, EdgeIndexable, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
+        IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
+        IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, NodeRef, VisitMap,
+        Visitable,
+    },
 };
 
 /// A graph filter for nodes.

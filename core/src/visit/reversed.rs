@@ -1,8 +1,11 @@
-use crate::visit::{
-    Data, EdgeCount, EdgeIndexable, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, GraphRef,
-    IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
-    IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
-    Visitable,
+use crate::{
+    edge::{Direction, Incoming},
+    visit::{
+        Data, EdgeCount, EdgeIndexable, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp,
+        GraphRef, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
+        IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
+        NodeCount, NodeIndexable, Visitable,
+    },
 };
 
 /// An edge-reversing graph adaptor.

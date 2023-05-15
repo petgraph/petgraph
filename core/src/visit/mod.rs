@@ -62,7 +62,7 @@
 
 // filter, reversed have their `mod` lines at the end,
 // so that they can use the trait template macros
-pub use self::{filter::*, reversed::*};
+pub use crate::visit::{filter::*, reversed::*};
 
 #[macro_use]
 mod macros;
@@ -77,10 +77,12 @@ use std::{
 
 #[cfg(feature = "fixedbitset")]
 use fixedbitset::FixedBitSet;
-use petgraph::{Direction, EdgeType};
 
-pub use self::{dfsvisit::*, traversal::*};
-use crate::index::IndexType;
+pub use crate::visit::{dfsvisit::*, traversal::*};
+use crate::{
+    edge::{Direction, EdgeType},
+    index::IndexType,
+};
 
 trait_template! {
 /// Base graph trait: defines the associated node identifier and
