@@ -26,6 +26,7 @@ use petgraph_core::{
 use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
 use crate::{edge_index, node_index, utils::DebugFn, EdgeIndex, Graph, GraphIndex, NodeIndex};
 
+mod data;
 #[cfg(feature = "serde")]
 mod serialization;
 

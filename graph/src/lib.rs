@@ -20,6 +20,7 @@ mod frozen;
 #[cfg(feature = "stable")]
 pub mod stable;
 
+mod data;
 #[cfg(feature = "serde")]
 mod serialization;
 mod utils;

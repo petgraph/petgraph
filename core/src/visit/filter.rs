@@ -1,5 +1,6 @@
 use std::{collections::HashSet, marker::PhantomData};
 
+#[cfg(feature = "fixedbitset")]
 use fixedbitset::FixedBitSet;
 
 use crate::{
@@ -28,6 +29,7 @@ where
     }
 }
 
+#[cfg(feature = "fixedbitset")]
 /// This filter includes the nodes that are contained in the set.
 impl<N> FilterNode<N> for FixedBitSet
 where
@@ -48,6 +50,7 @@ where
     }
 }
 
+#[cfg(feature = "fixedbitset")]
 // Can't express these as a generic impl over all references since that would conflict with the
 // impl for Fn.
 impl<N> FilterNode<N> for &FixedBitSet
