@@ -1,23 +1,17 @@
-use std::{
-    hash::Hash,
-    iter::{from_fn, FromIterator},
-};
+use alloc::vec;
+use core::hash::Hash;
 
-use indexmap::IndexSet;
+use petgraph_core::visit::{IntoNeighborsDirected, NodeCount};
 
-use crate::{
-    visit::{IntoNeighborsDirected, NodeCount},
-    Direction::Outgoing,
-};
-
-/// Returns an iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermediate_nodes` nodes
-/// and at most `max_intermediate_nodes`, if given, or limited by the graph's order otherwise. The simple path is a path without repetitions.
+/// Returns an iterator that produces all simple paths from `from` node to `to`, which contains at
+/// least `min_intermediate_nodes` nodes and at most `max_intermediate_nodes`, if given, or limited
+/// by the graph's order otherwise. The simple path is a path without repetitions.
 ///
 /// This algorithm is adapted from <https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.simple_paths.all_simple_paths.html>.
 ///
 /// # Example
 /// ```
-/// use petgraph::{algo, prelude::*};
+/// use petgraph_graph::DiGraph;
 ///
 /// let mut graph = DiGraph::<&str, i32>::new();
 ///
@@ -28,8 +22,7 @@ use crate::{
 ///
 /// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
 ///
-/// let ways = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
-///   .collect::<Vec<_>>();
+/// let ways = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None).collect::<Vec<_>>();
 ///
 /// assert_eq!(4, ways.len());
 /// ```
@@ -47,8 +40,8 @@ where
     TargetColl: FromIterator<G::NodeId>,
 {
     // how many nodes are allowed in simple path up to target node
-    // it is min/max allowed path length minus one, because it is more appropriate when implementing lookahead
-    // than constantly add 1 to length of current path
+    // it is min/max allowed path length minus one, because it is more appropriate when implementing
+    // lookahead than constantly add 1 to length of current path
     let max_length = if let Some(l) = max_intermediate_nodes {
         l + 1
     } else {
@@ -107,9 +100,8 @@ mod test {
 
     use itertools::assert_equal;
 
-    use crate::{dot::Dot, prelude::DiGraph};
-
     use super::all_simple_paths;
+    use crate::{dot::Dot, prelude::DiGraph};
 
     #[test]
     fn test_all_simple_paths() {

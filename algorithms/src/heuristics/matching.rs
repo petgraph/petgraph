@@ -1,7 +1,7 @@
-use std::collections::VecDeque;
-use std::hash::Hash;
+use alloc::{collections::VecDeque, vec, vec::Vec};
+use core::hash::Hash;
 
-use crate::visit::{
+use petgraph_core::visit::{
     EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable,
     VisitMap, Visitable,
 };
@@ -337,8 +337,8 @@ impl<G: GraphBase> PartialEq for Label<G> {
 /// # Examples
 ///
 /// ```
-/// use petgraph::prelude::*;
-/// use petgraph::algo::maximum_matching;
+/// use petgraph_algorithms::heuristics::maximum_matching;
+/// use petgraph_graph::UnGraph;
 ///
 /// // The example graph:
 /// //

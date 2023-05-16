@@ -13,7 +13,7 @@ use petgraph_adjacency_list::NodeIndex;
 use petgraph_core::index::{FromIndexType, IntoIndexType, SafeCast};
 
 use crate::{
-    adj::{AdjacencyMatrix, UnweightedList},
+    adj::{AdjacencyMatrix, UnweightedAdjacencyMatrix},
     graph::IndexType,
     visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount},
     Direction,
@@ -63,7 +63,7 @@ use crate::{
 pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
     g: G,
     toposort: &[G::NodeId],
-) -> (UnweightedList<Ix>, Vec<NodeIndex<Ix>>)
+) -> (UnweightedAdjacencyMatrix<Ix>, Vec<NodeIndex<Ix>>)
 where
     G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
     G::NodeId: IntoIndexType<Index = Ix> + Copy,
@@ -110,7 +110,7 @@ where
 /// Space complexity: **O(|E|)**.
 pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
     g: &AdjacencyMatrix<E, Ix>,
-) -> (UnweightedList<Ix>, UnweightedList<Ix>) {
+) -> (UnweightedAdjacencyMatrix<Ix>, UnweightedAdjacencyMatrix<Ix>) {
     let mut tred = AdjacencyMatrix::with_capacity(g.node_count());
     let mut tclos = AdjacencyMatrix::with_capacity(g.node_count());
     let mut mark = FixedBitSet::with_capacity(g.node_count());

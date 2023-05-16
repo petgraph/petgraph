@@ -5,7 +5,7 @@ extern crate defmac;
 
 use itertools::assert_equal;
 use petgraph::{
-    adj::{AdjacencyMatrix, DefaultIx, IndexType, NodeIndex, UnweightedList},
+    adj::{AdjacencyMatrix, DefaultIx, IndexType, NodeIndex, UnweightedAdjacencyMatrix},
     algo::tarjan_scc,
     data::{DataMap, DataMapMut},
     dot::Dot,
@@ -66,7 +66,7 @@ fn assert_sccs_eq<Ix: IndexType>(
     assert_eq!(res, normalized);
 }
 
-fn scc_graph() -> UnweightedList<DefaultIx> {
+fn scc_graph() -> UnweightedAdjacencyMatrix<DefaultIx> {
     let mut gr = AdjacencyMatrix::new();
     for _ in 0..9 {
         gr.add_node();

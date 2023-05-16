@@ -8,27 +8,17 @@
 
 extern crate alloc;
 
-mod cycles;
+pub mod cycles;
+pub mod dag;
 pub mod dominance;
 pub mod error;
+pub mod heuristics;
 pub mod isomorphism;
-pub mod matching;
 pub mod shortest_paths;
 pub mod simple_paths;
-pub mod tred;
-
-use core::{fmt::Debug, ops::Add};
+pub mod traversal;
 
 // TODO: correctly expose them in petgraph (deprecated)
-pub use feedback_arc_set::greedy_feedback_arc_set;
-pub use floyd_warshall::floyd_warshall;
-pub use isomorphism::{
-    is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
-    subgraph_isomorphisms_iter,
-};
-pub use k_shortest_path::k_shortest_path;
-pub use matching::{greedy_matching, maximum_matching, Matching};
-pub use simple_paths::all_simple_paths;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///
@@ -81,162 +71,6 @@ where
     labels.sort_unstable();
     labels.dedup();
     labels.len()
-}
-
-/// \[Generic\] Return `true` if the input graph contains a cycle.
-///
-/// Always treats the input graph as if undirected.
-pub fn is_cyclic_undirected<G>(g: G) -> bool
-where
-    G: NodeIndexable + IntoEdgeReferences,
-{
-    let mut edge_sets = UnionFind::new(g.node_bound());
-    for edge in g.edge_references() {
-        let (a, b) = (edge.source(), edge.target());
-
-        // union the two vertices of the edge
-        //  -- if they were already the same, then we have a cycle
-        if !edge_sets.union(g.to_index(a), g.to_index(b)) {
-            return true;
-        }
-    }
-    false
-}
-
-/// \[Generic\] Perform a topological sort of a directed graph.
-///
-/// If the graph was acyclic, return a vector of nodes in topological order:
-/// each node is ordered before its successors.
-/// Otherwise, it will return a `Cycle` error. Self loops are also cycles.
-///
-/// To handle graphs with cycles, use the scc algorithms or `DfsPostOrder`
-/// instead of this function.
-///
-/// If `space` is not `None`, it is used instead of creating a new workspace for
-/// graph traversal. The implementation is iterative.
-pub fn toposort<G>(
-    g: G,
-    space: Option<&mut DfsSpace<G::NodeId, G::Map>>,
-) -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
-where
-    G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
-{
-    // based on kosaraju scc
-    with_dfs(g, space, |dfs| {
-        dfs.reset(g);
-        let mut finished = g.visit_map();
-
-        let mut finish_stack = Vec::new();
-        for i in g.node_identifiers() {
-            if dfs.discovered.is_visited(&i) {
-                continue;
-            }
-            dfs.stack.push(i);
-            while let Some(&nx) = dfs.stack.last() {
-                if dfs.discovered.visit(nx) {
-                    // First time visiting `nx`: Push neighbors, don't pop `nx`
-                    for succ in g.neighbors(nx) {
-                        if succ == nx {
-                            // self cycle
-                            return Err(Cycle(nx));
-                        }
-                        if !dfs.discovered.is_visited(&succ) {
-                            dfs.stack.push(succ);
-                        }
-                    }
-                } else {
-                    dfs.stack.pop();
-                    if finished.visit(nx) {
-                        // Second time: All reachable nodes must have been finished
-                        finish_stack.push(nx);
-                    }
-                }
-            }
-        }
-        finish_stack.reverse();
-
-        dfs.reset(g);
-        for &i in &finish_stack {
-            dfs.move_to(i);
-            let mut cycle = false;
-            while let Some(j) = dfs.next(Reversed(g)) {
-                if cycle {
-                    return Err(Cycle(j));
-                }
-                cycle = true;
-            }
-        }
-
-        Ok(finish_stack)
-    })
-}
-
-/// \[Generic\] Return `true` if the input directed graph contains a cycle.
-///
-/// This implementation is recursive; use `toposort` if an alternative is
-/// needed.
-pub fn is_cyclic_directed<G>(g: G) -> bool
-where
-    G: IntoNodeIdentifiers + IntoNeighbors + Visitable,
-{
-    use crate::visit::{depth_first_search, DfsEvent};
-
-    depth_first_search(g, g.node_identifiers(), |event| match event {
-        DfsEvent::BackEdge(..) => Err(()),
-        _ => Ok(()),
-    })
-    .is_err()
-}
-
-type DfsSpaceType<G> = DfsSpace<<G as GraphBase>::NodeId, <G as Visitable>::Map>;
-
-/// Workspace for a graph traversal.
-#[derive(Clone, Debug)]
-pub struct DfsSpace<N, VM> {
-    dfs: Dfs<N, VM>,
-}
-
-impl<N, VM> DfsSpace<N, VM>
-where
-    N: Copy + PartialEq,
-    VM: VisitMap<N>,
-{
-    pub fn new<G>(g: G) -> Self
-    where
-        G: GraphRef + Visitable<NodeId = N, Map = VM>,
-    {
-        DfsSpace { dfs: Dfs::empty(g) }
-    }
-}
-
-impl<N, VM> Default for DfsSpace<N, VM>
-where
-    VM: VisitMap<N> + Default,
-{
-    fn default() -> Self {
-        DfsSpace {
-            dfs: Dfs {
-                stack: <_>::default(),
-                discovered: <_>::default(),
-            },
-        }
-    }
-}
-
-/// Create a Dfs if it's needed
-fn with_dfs<G, F, R>(g: G, space: Option<&mut DfsSpaceType<G>>, f: F) -> R
-where
-    G: GraphRef + Visitable,
-    F: FnOnce(&mut Dfs<G::NodeId, G::Map>) -> R,
-{
-    let mut local_visitor;
-    let dfs = if let Some(v) = space {
-        &mut v.dfs
-    } else {
-        local_visitor = Dfs::empty(g);
-        &mut local_visitor
-    };
-    f(dfs)
 }
 
 /// \[Generic\] Check if there exists a path starting at `from` and reaching `to`.

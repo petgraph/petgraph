@@ -387,7 +387,7 @@ impl<E, Ix: IndexType> AdjacencyMatrix<E, Ix> {
 }
 
 /// A very simple adjacency list with no node or label weights.
-pub type UnweightedList<Ix> = AdjacencyMatrix<(), Ix>;
+pub type UnweightedAdjacencyMatrix<Ix> = AdjacencyMatrix<(), Ix>;
 
 impl<E, Ix: IndexType> Build for AdjacencyMatrix<E, Ix> {
     /// Adds a new node to the list. This allocates a new `Vec` and then should

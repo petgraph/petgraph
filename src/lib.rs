@@ -162,9 +162,12 @@ pub mod stable_graph {
 pub mod adj {
     #[deprecated(since = "0.7.0", note = "use `AdjacencyMatrix` instead")]
     pub use petgraph_adjacency_matrix::AdjacencyMatrix as List;
+    #[deprecated(since = "0.7.0", note = "use `UnweightedAdjacencyMatrix` instead")]
+    pub use petgraph_adjacency_matrix::UnweightedAdjacencyMatrix as UnweightedList;
     pub use petgraph_adjacency_matrix::{
         AdjacencyMatrix, EdgeIndex, EdgeIndices, EdgeReference, EdgeReferences, Neighbors,
-        NodeIndex, NodeIndices, OutgoingEdgeIndices, OutgoingEdgeReferences, UnweightedList,
+        NodeIndex, NodeIndices, OutgoingEdgeIndices, OutgoingEdgeReferences,
+        UnweightedAdjacencyMatrix,
     };
     pub use petgraph_core::index::{DefaultIx, IndexType};
 }

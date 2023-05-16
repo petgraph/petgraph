@@ -8,24 +8,23 @@
 //! closure of **Gr** is the same as that of **G**.
 //! The transitive reduction is well-defined for acyclic graphs only.
 
-use fixedbitset::FixedBitSet;
-use petgraph_adjacency_list::NodeIndex;
-use petgraph_core::index::{FromIndexType, IntoIndexType, SafeCast};
+use alloc::{vec, vec::Vec};
 
-use crate::{
-    adj::{AdjacencyMatrix, UnweightedList},
-    graph::IndexType,
+use fixedbitset::FixedBitSet;
+use petgraph_adjacency_matrix::{AdjacencyMatrix, NodeIndex, UnweightedAdjacencyMatrix};
+use petgraph_core::{
+    edge::Direction,
+    index::{FromIndexType, IndexType, IntoIndexType, SafeCast},
     visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount},
-    Direction,
 };
 
+// TODO: does this need access to the AdjaencyMatrix? Or could we model this with the builder
+//  methods instead? I don't think so.
 /// Creates a representation of the same graph respecting topological order for use in
 /// `tred::dag_transitive_reduction_closure`.
 ///
 /// `toposort` must be a topological order on the node indices of `g` (for example obtained
 /// from [`toposort`]).
-///
-/// [`toposort`]: ../fn.toposort.html
 ///
 /// Returns a pair of a graph `res` and the reciprocal of the topological sort `revmap`.
 ///
@@ -36,8 +35,13 @@ use crate::{
 ///
 /// `revmap` is handy to get back to map indices in `g` to indices in `res`.
 /// ```
-/// use petgraph::{algo::tred::dag_to_toposorted_adjacency_list, graph::DefaultIx, prelude::*};
-/// use petgraph_core::{index::SafeCast, visit::IntoNeighbors};
+/// use petgraph_algorithms::dag::dag_to_toposorted_adjacency_list;
+/// use petgraph_core::{
+///     edge::Directed,
+///     index::{DefaultIx, SafeCast},
+///     visit::IntoNeighbors,
+/// };
+/// use petgraph_graph::{Graph, NodeIndex};
 ///
 /// let mut g = Graph::<&str, (), Directed, DefaultIx>::new();
 /// let second = g.add_node("second child");
@@ -63,7 +67,7 @@ use crate::{
 pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
     g: G,
     toposort: &[G::NodeId],
-) -> (UnweightedList<Ix>, Vec<NodeIndex<Ix>>)
+) -> (UnweightedAdjacencyMatrix<Ix>, Vec<NodeIndex<Ix>>)
 where
     G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
     G::NodeId: IntoIndexType<Index = Ix> + Copy,
@@ -110,10 +114,11 @@ where
 /// Space complexity: **O(|E|)**.
 pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
     g: &AdjacencyMatrix<E, Ix>,
-) -> (UnweightedList<Ix>, UnweightedList<Ix>) {
+) -> (UnweightedAdjacencyMatrix<Ix>, UnweightedAdjacencyMatrix<Ix>) {
     let mut tred = AdjacencyMatrix::with_capacity(g.node_count());
     let mut tclos = AdjacencyMatrix::with_capacity(g.node_count());
     let mut mark = FixedBitSet::with_capacity(g.node_count());
+
     for i in g.node_indices() {
         tred.add_node();
         tclos.add_node_with_capacity(g.neighbors(i).len());

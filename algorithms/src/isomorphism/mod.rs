@@ -37,8 +37,7 @@ where
     }
 
     let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, false)
-        .unwrap_or(false)
+    matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, false).unwrap_or(false)
 }
 
 /// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
@@ -74,7 +73,7 @@ where
     }
 
     let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut node_match, &mut edge_match, false).unwrap_or(false)
+    matching::try_match(&mut st, &mut node_match, &mut edge_match, false).unwrap_or(false)
 }
 
 /// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
@@ -124,8 +123,7 @@ where
     }
 
     let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, true)
-        .unwrap_or(false)
+    matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, true).unwrap_or(false)
 }
 
 /// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
@@ -161,7 +159,7 @@ where
     }
 
     let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut node_match, &mut edge_match, true).unwrap_or(false)
+    matching::try_match(&mut st, &mut node_match, &mut edge_match, true).unwrap_or(false)
 }
 
 /// Using the VF2 algorithm, examine both syntactic and semantic graph
@@ -198,7 +196,7 @@ where
         return None;
     }
 
-    Some(self::matching::GraphMatcher::new(
+    Some(matching::GraphMatcher::new(
         g0, g1, node_match, edge_match, true,
     ))
 }

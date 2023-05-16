@@ -1,5 +1,7 @@
 mod astar;
-mod bellman_ford;
+// TODO: this is currently pub because of `Paths`, I'd like to rename it and put it into this module
+//  instead.
+pub mod bellman_ford;
 mod dijkstra;
 mod floyd_warshall;
 mod k_shortest_paths;
