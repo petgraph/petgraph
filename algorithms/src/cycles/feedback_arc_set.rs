@@ -1,14 +1,18 @@
-use std::{
-    collections::{HashMap, VecDeque},
+use alloc::{collections::VecDeque, vec::Vec};
+use core::{
+    error::Error,
     ops::{Index, IndexMut},
 };
 
-use self::linked_list::{LinkedList, LinkedListEntry};
-use crate::{
-    graph::{GraphIndex, NodeIndex},
-    visit::{EdgeRef, GraphProp, IntoEdgeReferences},
-    Directed,
+use hashbrown::HashMap;
+use petgraph_core::{
+    edge::Directed,
+    index::IndexType,
+    visit::{GraphProp, IntoEdgeReferences, NodeCount},
 };
+use petgraph_graph::{GraphIndex, NodeIndex};
+
+use crate::cycles::feedback_arc_set::linked_list::{LinkedList, LinkedListEntry};
 
 /// \[Generic\] Finds a [feedback arc set]: a set of edges in the given directed graph, which when
 /// removed, make the graph acyclic.
@@ -62,7 +66,7 @@ pub fn greedy_feedback_arc_set<G>(g: G) -> impl Iterator<Item = G::EdgeRef>
 where
     G: IntoEdgeReferences + GraphProp<EdgeType = Directed>,
     G::NodeId: GraphIndex,
-    G: crate::visit::NodeCount,
+    G: NodeCount,
 {
     let node_seq = good_node_sequence(g.edge_references().map(|e| {
         (
@@ -328,7 +332,8 @@ impl Buckets {
 }
 
 mod linked_list {
-    use std::{marker::PhantomData, ops::IndexMut};
+    use alloc::vec::Vec;
+    use core::{marker::PhantomData, ops::IndexMut};
 
     #[derive(PartialEq, Debug)]
     pub struct LinkedList<Data, Container, Ix> {

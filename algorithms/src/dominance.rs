@@ -12,11 +12,11 @@
 //! strictly dominates **B** and there does not exist any node **C** where **A**
 //! dominates **C** and **C** dominates **B**.
 
-use std::cmp::Ordering;
-use std::collections::{hash_map::Iter, HashMap, HashSet};
-use std::hash::Hash;
+use alloc::{vec, vec::Vec};
+use core::{cmp::Ordering, hash::Hash};
 
-use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
+use hashbrown::{HashMap, HashSet};
+use petgraph_core::visit::{GraphBase, IntoNeighbors, Visitable};
 
 /// The dominance relation for some graph and root.
 #[derive(Debug, Clone)]
@@ -139,6 +139,7 @@ where
         }
         None
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
@@ -206,9 +207,9 @@ where
                     .iter()
                     .filter(|&&p| dominators[p] != UNDEFINED);
                 let new_idom_idx = predecessors.next().expect(
-                    "Because the root is initialized to dominate itself, and is the \
-                     first node in every path, there must exist a predecessor to this \
-                     node that also has a dominator",
+                    "Because the root is initialized to dominate itself, and is the first node in \
+                     every path, there must exist a predecessor to this node that also has a \
+                     dominator",
                 );
                 predecessors.fold(*new_idom_idx, |new_idom_idx, &predecessor_idx| {
                     intersect(&dominators, new_idom_idx, predecessor_idx)

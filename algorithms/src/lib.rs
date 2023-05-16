@@ -8,9 +8,9 @@
 
 extern crate alloc;
 
-pub mod dominators;
+mod cycles;
+pub mod dominance;
 pub mod error;
-pub mod feedback_arc_set;
 pub mod isomorphism;
 pub mod matching;
 pub mod shortest_paths;
