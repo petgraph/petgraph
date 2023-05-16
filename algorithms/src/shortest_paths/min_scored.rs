@@ -1,29 +1,6 @@
 use core::cmp::Ordering;
 
-pub trait TotalOrd {
-    fn total_cmp(&self, other: &Self) -> Ordering;
-}
-
-impl<T> TotalOrd for T
-where
-    T: Ord,
-{
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        self.cmp(other)
-    }
-}
-
-impl TotalOrd for f32 {
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        self.total_cmp(other)
-    }
-}
-
-impl TotalOrd for f64 {
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        self.total_cmp(other)
-    }
-}
+use crate::shortest_paths::total::TotalOrd;
 
 /// `MinScored<K, T>` holds a score `K` and a scored object `T` in
 /// a pair for use with a `BinaryHeap`.
