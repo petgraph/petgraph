@@ -28,7 +28,7 @@ features = ["serde-1", "quickcheck"]
 no-dev-version = true
 
 [workspace]
-members = ["serialization-tests", "core", "graph", "adjacency-matrix", "graphmap"]
+members = ["serialization-tests", "core", "graph", "adjacency-matrix", "graphmap", "csr"]
 
 [workspace.dependencies]
 fixedbitset = { version = "0.4", default-features = false }
@@ -41,6 +41,7 @@ petgraph-core = { path = "./core", default-features = false }
 petgraph-graph = { path = "./graph", default-features = false }
 petgraph-adjacency-matrix = { path = "./adjacency-matrix", default-features = false }
 petgraph-graphmap = { path = "./graphmap", default-features = false }
+petgraph-csr = { path = "./csr", default-features = false }
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }
@@ -52,6 +53,7 @@ petgraph-core = { workspace = true }
 petgraph-graph = { workspace = true }
 petgraph-adjacency-matrix = { workspace = true }
 petgraph-graphmap = { workspace = true, features = ['convert'] }
+petgraph-csr = { workspace = true }
 
 [dev-dependencies]
 bincode = "1.3.3"
