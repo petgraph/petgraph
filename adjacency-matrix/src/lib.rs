@@ -220,22 +220,22 @@ iterator_wrap! {
 ///
 /// Space consumption: **O(|E|)**.
 #[derive(Clone, Default)]
-pub struct List<E, Ix = DefaultIx>
+pub struct AdjacencyMatrix<E, Ix = DefaultIx>
 where
     Ix: IndexType,
 {
     suc: Vec<Row<E, Ix>>,
 }
 
-impl<E, Ix: IndexType> List<E, Ix> {
+impl<E, Ix: IndexType> AdjacencyMatrix<E, Ix> {
     /// Creates a new, empty adjacency list.
-    pub fn new() -> List<E, Ix> {
-        List { suc: Vec::new() }
+    pub fn new() -> AdjacencyMatrix<E, Ix> {
+        AdjacencyMatrix { suc: Vec::new() }
     }
 
     /// Creates a new, empty adjacency list tailored for `nodes` nodes.
-    pub fn with_capacity(nodes: usize) -> List<E, Ix> {
-        List {
+    pub fn with_capacity(nodes: usize) -> AdjacencyMatrix<E, Ix> {
+        AdjacencyMatrix {
             suc: Vec::with_capacity(nodes),
         }
     }
@@ -387,9 +387,9 @@ impl<E, Ix: IndexType> List<E, Ix> {
 }
 
 /// A very simple adjacency list with no node or label weights.
-pub type UnweightedList<Ix> = List<(), Ix>;
+pub type UnweightedList<Ix> = AdjacencyMatrix<(), Ix>;
 
-impl<E, Ix: IndexType> Build for List<E, Ix> {
+impl<E, Ix: IndexType> Build for AdjacencyMatrix<E, Ix> {
     /// Adds a new node to the list. This allocates a new `Vec` and then should
     /// run in amortized **O(1)** time.
     fn add_node(&mut self, _weight: ()) -> NodeIndex<Ix> {
@@ -471,7 +471,7 @@ where
     }
 }
 
-impl<E, Ix> fmt::Debug for List<E, Ix>
+impl<E, Ix> fmt::Debug for AdjacencyMatrix<E, Ix>
 where
     E: fmt::Debug,
     Ix: IndexType,
@@ -487,7 +487,7 @@ where
     }
 }
 
-impl<E, Ix> visit::GraphBase for List<E, Ix>
+impl<E, Ix> visit::GraphBase for AdjacencyMatrix<E, Ix>
 where
     Ix: IndexType,
 {
@@ -495,7 +495,7 @@ where
     type NodeId = NodeIndex<Ix>;
 }
 
-impl<E, Ix> visit::Visitable for List<E, Ix>
+impl<E, Ix> visit::Visitable for AdjacencyMatrix<E, Ix>
 where
     Ix: IndexType,
 {
@@ -511,7 +511,7 @@ where
     }
 }
 
-impl<'a, E, Ix: IndexType> visit::IntoNodeIdentifiers for &'a List<E, Ix> {
+impl<'a, E, Ix: IndexType> visit::IntoNodeIdentifiers for &'a AdjacencyMatrix<E, Ix> {
     type NodeIdentifiers = NodeIndices<Ix>;
 
     fn node_identifiers(self) -> NodeIndices<Ix> {
@@ -532,7 +532,7 @@ impl<Ix: IndexType> visit::NodeRef for NodeIndex<Ix> {
     }
 }
 
-impl<'a, Ix: IndexType, E> visit::IntoNodeReferences for &'a List<E, Ix> {
+impl<'a, Ix: IndexType, E> visit::IntoNodeReferences for &'a AdjacencyMatrix<E, Ix> {
     type NodeRef = NodeIndex<Ix>;
     type NodeReferences = NodeIndices<Ix>;
 
@@ -541,18 +541,18 @@ impl<'a, Ix: IndexType, E> visit::IntoNodeReferences for &'a List<E, Ix> {
     }
 }
 
-impl<E, Ix: IndexType> visit::Data for List<E, Ix> {
+impl<E, Ix: IndexType> visit::Data for AdjacencyMatrix<E, Ix> {
     type EdgeWeight = E;
     type NodeWeight = ();
 }
 
-impl<'a, E, Ix: IndexType> IntoNeighbors for &'a List<E, Ix> {
+impl<'a, E, Ix: IndexType> IntoNeighbors for &'a AdjacencyMatrix<E, Ix> {
     type Neighbors = Neighbors<'a, E, Ix>;
 
     /// Returns an iterator of all nodes with an edge starting from `a`.
     /// Panics if `a` is out of bounds.
-    /// Use [`List::edge_indices_from`] instead if you do not want to borrow the adjacency list
-    /// while iterating.
+    /// Use [`AdjacencyMatrix::edge_indices_from`] instead if you do not want to borrow the
+    /// adjacency list while iterating.
     fn neighbors(self, a: NodeIndex<Ix>) -> Self::Neighbors {
         let proj: fn(&WSuc<E, Ix>) -> NodeIndex<Ix> = |x| x.suc;
         let iter = self.suc[a.into_usize()].iter().map(proj);
@@ -605,7 +605,7 @@ fn proj2<E, Ix: IndexType>((row_index, row): (usize, &Vec<WSuc<E, Ix>>)) -> Some
         .map(proj1 as _)
 }
 
-impl<'a, Ix: IndexType, E> visit::IntoEdgeReferences for &'a List<E, Ix> {
+impl<'a, Ix: IndexType, E> visit::IntoEdgeReferences for &'a AdjacencyMatrix<E, Ix> {
     type EdgeRef = EdgeReference<'a, E, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ix>;
 
@@ -624,7 +624,7 @@ item: EdgeReference<'a, E, Ix>,
 iter: SomeIter<'a, E, Ix>,
 }
 
-impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
+impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a AdjacencyMatrix<E, Ix> {
     type Edges = OutgoingEdgeReferences<'a, E, Ix>;
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {
@@ -637,7 +637,7 @@ impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
     }
 }
 
-impl<E, Ix: IndexType> visit::GraphProp for List<E, Ix> {
+impl<E, Ix: IndexType> visit::GraphProp for AdjacencyMatrix<E, Ix> {
     type EdgeType = Directed;
 
     fn is_directed(&self) -> bool {
@@ -645,7 +645,7 @@ impl<E, Ix: IndexType> visit::GraphProp for List<E, Ix> {
     }
 }
 
-impl<E, Ix: IndexType> NodeCount for List<E, Ix> {
+impl<E, Ix: IndexType> NodeCount for AdjacencyMatrix<E, Ix> {
     /// Returns the number of nodes in the list
     ///
     /// Computes in **O(1)** time.
@@ -654,16 +654,16 @@ impl<E, Ix: IndexType> NodeCount for List<E, Ix> {
     }
 }
 
-impl<E, Ix: IndexType> EdgeCount for List<E, Ix> {
+impl<E, Ix: IndexType> EdgeCount for AdjacencyMatrix<E, Ix> {
     /// Returns the number of edges in the list
     ///
     /// Computes in **O(|V|)** time.
     fn edge_count(&self) -> usize {
-        List::edge_count(self)
+        AdjacencyMatrix::edge_count(self)
     }
 }
 
-impl<E, Ix: IndexType> visit::NodeIndexable for List<E, Ix> {
+impl<E, Ix: IndexType> visit::NodeIndexable for AdjacencyMatrix<E, Ix> {
     fn node_bound(&self) -> usize {
         self.node_count()
     }
@@ -679,9 +679,9 @@ impl<E, Ix: IndexType> visit::NodeIndexable for List<E, Ix> {
     }
 }
 
-impl<E, Ix: IndexType> visit::NodeCompactIndexable for List<E, Ix> {}
+impl<E, Ix: IndexType> visit::NodeCompactIndexable for AdjacencyMatrix<E, Ix> {}
 
-impl<E, Ix: IndexType> DataMap for List<E, Ix> {
+impl<E, Ix: IndexType> DataMap for AdjacencyMatrix<E, Ix> {
     fn node_weight(&self, n: Self::NodeId) -> Option<&()> {
         if n.into_usize() < self.suc.len() {
             Some(&())
@@ -698,7 +698,7 @@ impl<E, Ix: IndexType> DataMap for List<E, Ix> {
     }
 }
 
-impl<E, Ix: IndexType> DataMapMut for List<E, Ix> {
+impl<E, Ix: IndexType> DataMapMut for AdjacencyMatrix<E, Ix> {
     fn node_weight_mut(&mut self, n: Self::NodeId) -> Option<&mut ()> {
         if n.into_usize() < self.suc.len() {
             // A hack to produce a &'static mut ()
@@ -720,7 +720,7 @@ impl<E, Ix: IndexType> DataMapMut for List<E, Ix> {
 
 /// The adjacency matrix for **List** is a bitmap that's computed by
 /// `.adjacency_matrix()`.
-impl<E, Ix> GetAdjacencyMatrix for List<E, Ix>
+impl<E, Ix> GetAdjacencyMatrix for AdjacencyMatrix<E, Ix>
 where
     Ix: IndexType,
 {

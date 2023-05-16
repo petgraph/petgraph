@@ -11,34 +11,32 @@ extern crate odds;
 
 mod utils;
 
-use utils::{Small, Tournament};
+use std::{collections::HashSet, hash::Hash};
 
+use itertools::{assert_equal, cloned};
 use odds::prelude::*;
-use std::collections::HashSet;
-use std::hash::Hash;
-
-use itertools::assert_equal;
-use itertools::cloned;
+use petgraph::{
+    algo::{
+        bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
+        greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
+        is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
+        min_spanning_tree, tarjan_scc, toposort, Matching,
+    },
+    data::FromElements,
+    dot::{Config, Dot},
+    graph::{edge_index, node_index, IndexType},
+    graphmap::NodeTrait,
+    operator::complement,
+    prelude::*,
+    visit::{
+        EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
+        IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, VisitMap, Visitable,
+    },
+    EdgeType,
+};
 use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
-
-use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
-    greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
-    is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, tarjan_scc, toposort, Matching,
-};
-use petgraph::data::FromElements;
-use petgraph::dot::{Config, Dot};
-use petgraph::graph::{edge_index, node_index, IndexType};
-use petgraph::graphmap::NodeTrait;
-use petgraph::operator::complement;
-use petgraph::prelude::*;
-use petgraph::visit::{
-    EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, VisitMap, Visitable,
-};
-use petgraph::EdgeType;
+use utils::{Small, Tournament};
 
 fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
 where
@@ -1108,7 +1106,7 @@ quickcheck! {
         for (new, old) in toposort.iter().enumerate() {
             println!("{} -> {}", old.index(), new);
         }
-        let (toposorted, revtopo): (petgraph::adj::List<(), usize>, _) =
+        let (toposorted, revtopo): (petgraph::adj::AdjacencyMatrix<(), usize>, _) =
             petgraph::algo::tred::dag_to_toposorted_adjacency_list(&acyclic, &toposort);
         println!("checking revtopo");
         for (i, ix) in toposort.iter().enumerate() {

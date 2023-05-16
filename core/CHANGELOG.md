@@ -35,12 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New transitional trait `SafeCast` for casting between `usize` and `IndexType`
 - New transitional trait `FromIndexType` for casting from `IndexType` to `NodeIndex`/`EdgeIndex`
     - This trait is not covered by `From`, because it allows for generic functions that switch between
-      different `NodeIndex` types
-      easily, without needing to specify the `IndexType` explicitly.
+      different `NodeIndex` types easily, without needing to specify the `IndexType` explicitly.
 - New transitional trait `IntoIndexType` for casting from `NodeIndex`/`EdgeIndex` to `IndexType`
     - This trait is not covered by `Into`, because it allows for generic functions that switch between
-      different `NodeIndex` types
-      easily, without needing to specify the `IndexType` explicitly.
+      different `NodeIndex` types easily, without needing to specify the `IndexType` explicitly.
 
 ## Deprecations
 

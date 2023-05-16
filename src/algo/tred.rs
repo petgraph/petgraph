@@ -13,7 +13,7 @@ use petgraph_adjacency_list::NodeIndex;
 use petgraph_core::index::{FromIndexType, IntoIndexType, SafeCast};
 
 use crate::{
-    adj::{List, UnweightedList},
+    adj::{AdjacencyMatrix, UnweightedList},
     graph::IndexType,
     visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount},
     Direction,
@@ -68,7 +68,7 @@ where
     G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
     G::NodeId: IntoIndexType<Index = Ix> + Copy,
 {
-    let mut res = List::with_capacity(g.node_count());
+    let mut res = AdjacencyMatrix::with_capacity(g.node_count());
     // map from old node index to rank in toposort
     let mut revmap = vec![NodeIndex::new(Ix::ZERO); g.node_bound()];
     for (ix, &old_ix) in toposort.iter().enumerate() {
@@ -109,10 +109,10 @@ where
 ///
 /// Space complexity: **O(|E|)**.
 pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
-    g: &List<E, Ix>,
+    g: &AdjacencyMatrix<E, Ix>,
 ) -> (UnweightedList<Ix>, UnweightedList<Ix>) {
-    let mut tred = List::with_capacity(g.node_count());
-    let mut tclos = List::with_capacity(g.node_count());
+    let mut tred = AdjacencyMatrix::with_capacity(g.node_count());
+    let mut tclos = AdjacencyMatrix::with_capacity(g.node_count());
     let mut mark = FixedBitSet::with_capacity(g.node_count());
     for i in g.node_indices() {
         tred.add_node();
@@ -144,7 +144,7 @@ pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
 #[cfg(test)]
 #[test]
 fn test_easy_tred() {
-    let mut input = List::new();
+    let mut input = AdjacencyMatrix::new();
     let a: NodeIndex<u8> = input.add_node();
     let b = input.add_node();
     let c = input.add_node();

@@ -5,7 +5,7 @@ extern crate defmac;
 
 use itertools::assert_equal;
 use petgraph::{
-    adj::{DefaultIx, IndexType, List, NodeIndex, UnweightedList},
+    adj::{AdjacencyMatrix, DefaultIx, IndexType, NodeIndex, UnweightedList},
     algo::tarjan_scc,
     data::{DataMap, DataMapMut},
     dot::Dot,
@@ -21,7 +21,7 @@ fn n(x: u32) -> NodeIndex {
 
 #[test]
 fn node_indices() {
-    let mut g = List::<()>::new();
+    let mut g = AdjacencyMatrix::<()>::new();
     let a = g.add_node();
     let b = g.add_node();
     let c = g.add_node();
@@ -32,7 +32,7 @@ fn node_indices() {
     assert_eq!(iter.next(), None);
 }
 
-fn test_node_count<E>(g: &List<E>, n: usize) {
+fn test_node_count<E>(g: &AdjacencyMatrix<E>, n: usize) {
     assert_eq!(n, g.node_count());
     assert_eq!(g.node_bound(), n);
     assert_eq!(g.node_indices().count(), n);
@@ -43,7 +43,7 @@ fn test_node_count<E>(g: &List<E>, n: usize) {
 
 #[test]
 fn node_bound() {
-    let mut g = List::<()>::new();
+    let mut g = AdjacencyMatrix::<()>::new();
     test_node_count(&g, 0);
     for i in 0..10 {
         g.add_node();
@@ -67,7 +67,7 @@ fn assert_sccs_eq<Ix: IndexType>(
 }
 
 fn scc_graph() -> UnweightedList<DefaultIx> {
-    let mut gr = List::new();
+    let mut gr = AdjacencyMatrix::new();
     for _ in 0..9 {
         gr.add_node();
     }
@@ -104,8 +104,8 @@ fn test_tarjan_scc() {
     ]);
 }
 
-fn make_graph() -> List<i32> {
-    let mut gr = List::new();
+fn make_graph() -> AdjacencyMatrix<i32> {
+    let mut gr = AdjacencyMatrix::new();
     let mut c = 0..;
     let mut e = || -> i32 { c.next().unwrap() };
     for _ in 0..=9 {
@@ -188,7 +188,7 @@ fn test_edge_iterators() {
 #[test]
 #[should_panic(expected = "is not a valid node")]
 fn add_edge_vacant() {
-    let mut g = List::new();
+    let mut g = AdjacencyMatrix::new();
     let a: NodeIndex = g.add_node();
     let b = g.add_node();
     let _ = g.add_node();
@@ -199,7 +199,7 @@ fn add_edge_vacant() {
 #[test]
 #[should_panic(expected = "is not a valid node")]
 fn add_edge_oob() {
-    let mut g = List::new();
+    let mut g = AdjacencyMatrix::new();
     let a = g.add_node();
     let _ = g.add_node();
     let _ = g.add_node();
@@ -209,7 +209,7 @@ fn add_edge_oob() {
 #[test]
 #[should_panic(expected = "index out of bounds")]
 fn add_edge_oob_2() {
-    let mut g = List::new();
+    let mut g = AdjacencyMatrix::new();
     let a = g.add_node();
     let _ = g.add_node();
     let _ = g.add_node();
@@ -225,7 +225,7 @@ fn test_node_references() {
 
 #[test]
 fn iterators_undir() {
-    let mut g = List::with_capacity(2);
+    let mut g = AdjacencyMatrix::with_capacity(2);
     let a: NodeIndex = g.add_node();
     let b = g.add_node();
     let c = g.add_node();
@@ -243,7 +243,7 @@ fn iterators_undir() {
 
 #[test]
 fn dot() {
-    let mut gr = List::new();
+    let mut gr = AdjacencyMatrix::new();
     let a: NodeIndex = gr.add_node();
     let b = gr.add_node();
     gr.add_edge(a, a, 10u8);
