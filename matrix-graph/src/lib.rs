@@ -2,7 +2,10 @@
 //! matrix.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use std::{
+extern crate alloc;
+
+use alloc::{vec, vec::Vec};
+use core::{
     cmp,
     marker::PhantomData,
     mem,
@@ -10,18 +13,18 @@ use std::{
 };
 
 use fixedbitset::FixedBitSet;
+use funty::Integral;
 use indexmap::IndexSet;
-
-pub use crate::graph::IndexType;
-use crate::{
+use petgraph_core::{
     data::Build,
-    graph::NodeIndex as GraphNodeIndex,
+    deprecated::IntoWeightedEdge,
+    edge::{Directed, Direction, EdgeType, Undirected},
+    index::{FromIndexType, IndexType, IntoIndexType, SafeCast},
     visit::{
         Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
         IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
         IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
     },
-    Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirected,
 };
 
 // The following types are used to control the max size of the adjacency matrix. Since the maximum
@@ -30,8 +33,61 @@ use crate::{
 type DefaultIx = u16;
 
 /// Node identifier.
-pub type NodeIndex<Ix = DefaultIx> = GraphNodeIndex<Ix>;
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct NodeIndex<Ix = DefaultIx>(pub(crate) Ix);
 
+impl<Ix> NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    #[must_use]
+    pub const fn new(value: Ix) -> Self {
+        Self(value)
+    }
+
+    #[must_use]
+    pub fn from_usize(value: usize) -> Self {
+        Self(Ix::from_usize(value))
+    }
+
+    fn into_usize(self) -> usize {
+        self.0.as_usize()
+    }
+}
+
+impl<Ix> FromIndexType for NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    type Index = Ix;
+
+    fn from_index(index: Self::Index) -> Self {
+        Self(index)
+    }
+}
+
+impl<Ix> IntoIndexType for NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    type Index = Ix;
+
+    fn into_index(self) -> Self::Index {
+        self.0
+    }
+}
+
+// SAFETY: we simply call the inner type, which already implements `SafeCast`.
+unsafe impl<Ix> SafeCast<usize> for NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    fn cast(self) -> usize {
+        self.0.cast()
+    }
+}
+
+// TODO: Rework
 mod private {
     pub trait Sealed {}
 
@@ -177,8 +233,9 @@ not_zero_impls!(f32, f64);
 
 /// Short version of `NodeIndex::new` (with Ix = `DefaultIx`)
 #[inline]
+#[deprecated(since = "0.1.0", note = "use `NodeIndex::new` instead")]
 pub fn node_index(ax: usize) -> NodeIndex {
-    NodeIndex::new(ax)
+    NodeIndex::new(u16::from_usize(ax))
 }
 
 /// `MatrixGraph<N, E, Ty, Null>` is a graph datastructure using an adjacency matrix
@@ -231,7 +288,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
             ix: PhantomData,
         };
 
-        debug_assert!(node_capacity <= <Ix as IndexType>::max().index());
+        debug_assert!(node_capacity <= <Ix as Integral>::MAX.cast());
         if node_capacity > 0 {
             m.extend_capacity_for_node(NodeIndex::new(node_capacity - 1), true);
         }
@@ -241,7 +298,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
 
     #[inline]
     fn to_edge_position(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<usize> {
-        if cmp::max(a.index(), b.index()) >= self.node_capacity {
+        if cmp::max(a.cast(), b.cast()) >= self.node_capacity {
             return None;
         }
         Some(self.to_edge_position_unchecked(a, b))
@@ -249,7 +306,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
 
     #[inline]
     fn to_edge_position_unchecked(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> usize {
-        to_linearized_matrix_position::<Ty>(a.index(), b.index(), self.node_capacity)
+        to_linearized_matrix_position::<Ty>(a.into_usize(), b.into_usize(), self.node_capacity)
     }
 
     /// Remove all nodes and edges.
@@ -314,7 +371,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
             }
         }
 
-        self.nodes.remove(a.index())
+        self.nodes.remove(a.into_usize())
     }
 
     #[inline]
@@ -322,7 +379,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
         self.node_capacity = extend_linearized_matrix::<Ty, _>(
             &mut self.node_adjacencies,
             self.node_capacity,
-            min_node.index() + 1,
+            min_node.into_usize() + 1,
             exact,
         );
     }
@@ -330,7 +387,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     #[inline]
     fn extend_capacity_for_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) {
         let min_node = cmp::max(a, b);
-        if min_node.index() >= self.node_capacity {
+        if min_node.into_usize() >= self.node_capacity {
             self.extend_capacity_for_node(min_node, false);
         }
     }
@@ -399,7 +456,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     ///
     /// **Panics** if the node doesn't exist.
     pub fn node_weight(&self, a: NodeIndex<Ix>) -> &N {
-        &self.nodes[a.index()]
+        &self.nodes[a.into_usize()]
     }
 
     /// Access the weight for node `a`, mutably.
@@ -408,7 +465,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     ///
     /// **Panics** if the node doesn't exist.
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> &mut N {
-        &mut self.nodes[a.index()]
+        &mut self.nodes[a.into_usize()]
     }
 
     /// Access the weight for edge `e`.
@@ -448,7 +505,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Iterator element type is [`NodeIndex<Ix>`](../graph/struct.NodeIndex.html).
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<Ty, Null, Ix> {
         Neighbors(Edges::on_columns(
-            a.index(),
+            a.into_usize(),
             &self.node_adjacencies,
             self.node_capacity,
         ))
@@ -462,7 +519,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `(NodeIndex<Ix>, NodeIndex<Ix>, &E)`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<Ty, Null, Ix> {
-        Edges::on_columns(a.index(), &self.node_adjacencies, self.node_capacity)
+        Edges::on_columns(a.into_usize(), &self.node_adjacencies, self.node_capacity)
     }
 
     /// Create a new `MatrixGraph` from an iterable of edges.
@@ -474,7 +531,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Nodes are inserted automatically to match the edges.
     ///
     /// ```
-    /// use petgraph::matrix_graph::MatrixGraph;
+    /// use petgraph_matrix_graph::MatrixGraph;
     ///
     /// let gr = MatrixGraph::<(), i32>::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
     /// ```
@@ -508,7 +565,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
             let (source, target, weight) = elt.into_weighted_edge();
             let (source, target) = (source.into(), target.into());
             let nx = cmp::max(source, target);
-            while nx.index() >= self.node_count() {
+            while nx.into_usize() >= self.node_count() {
                 self.add_node(N::default());
             }
             self.add_edge(source, target, weight);
@@ -531,11 +588,11 @@ impl<N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> MatrixGraph<N, E, Directe
         a: NodeIndex<Ix>,
         d: Direction,
     ) -> Neighbors<Directed, Null, Ix> {
-        if d == Outgoing {
+        if d == Direction::Outgoing {
             self.neighbors(a)
         } else {
             Neighbors(Edges::on_rows(
-                a.index(),
+                a.into_usize(),
                 &self.node_adjacencies,
                 self.node_capacity,
             ))
@@ -550,10 +607,10 @@ impl<N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> MatrixGraph<N, E, Directe
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `(NodeIndex<Ix>, NodeIndex<Ix>, &E)`.
     pub fn edges_directed(&self, a: NodeIndex<Ix>, d: Direction) -> Edges<Directed, Null, Ix> {
-        if d == Outgoing {
+        if d == Direction::Outgoing {
             self.edges(a)
         } else {
-            Edges::on_rows(a.index(), &self.node_adjacencies, self.node_capacity)
+            Edges::on_rows(a.into_usize(), &self.node_adjacencies, self.node_capacity)
         }
     }
 }
@@ -1233,7 +1290,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeIndexab
     }
 
     fn to_index(&self, ix: NodeIndex<Ix>) -> usize {
-        ix.index()
+        ix.into_usize()
     }
 
     fn from_index(&self, ix: usize) -> Self::NodeId {
@@ -1276,7 +1333,6 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Build
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Incoming, Outgoing};
 
     #[test]
     fn test_new() {
@@ -1437,13 +1493,31 @@ mod tests {
         assert_eq!(g.node_count(), 3);
         assert_eq!(g.edge_count(), 0);
 
-        assert_eq!(g.neighbors_directed(a, Incoming).into_vec(), vec![]);
-        assert_eq!(g.neighbors_directed(b, Incoming).into_vec(), vec![]);
-        assert_eq!(g.neighbors_directed(c, Incoming).into_vec(), vec![]);
+        assert_eq!(
+            g.neighbors_directed(a, Direction::Incoming).into_vec(),
+            vec![]
+        );
+        assert_eq!(
+            g.neighbors_directed(b, Direction::Incoming).into_vec(),
+            vec![]
+        );
+        assert_eq!(
+            g.neighbors_directed(c, Direction::Incoming).into_vec(),
+            vec![]
+        );
 
-        assert_eq!(g.neighbors_directed(a, Outgoing).into_vec(), vec![]);
-        assert_eq!(g.neighbors_directed(b, Outgoing).into_vec(), vec![]);
-        assert_eq!(g.neighbors_directed(c, Outgoing).into_vec(), vec![]);
+        assert_eq!(
+            g.neighbors_directed(a, Direction::Outgoing).into_vec(),
+            vec![]
+        );
+        assert_eq!(
+            g.neighbors_directed(b, Direction::Outgoing).into_vec(),
+            vec![]
+        );
+        assert_eq!(
+            g.neighbors_directed(c, Direction::Outgoing).into_vec(),
+            vec![]
+        );
     }
 
     #[test]
@@ -1602,46 +1676,88 @@ mod tests {
     #[test]
     fn test_edges_directed() {
         let g: MatrixGraph<char, bool> = MatrixGraph::from_edges(&[
-            (0, 5),
-            (0, 2),
-            (0, 3),
-            (0, 1),
-            (1, 3),
-            (2, 3),
-            (2, 4),
-            (4, 0),
-            (6, 6),
+            (NodeIndex::new(0), NodeIndex::new(5)),
+            (NodeIndex::new(0), NodeIndex::new(2)),
+            (NodeIndex::new(0), NodeIndex::new(3)),
+            (NodeIndex::new(0), NodeIndex::new(1)),
+            (NodeIndex::new(1), NodeIndex::new(3)),
+            (NodeIndex::new(2), NodeIndex::new(3)),
+            (NodeIndex::new(2), NodeIndex::new(4)),
+            (NodeIndex::new(4), NodeIndex::new(0)),
+            (NodeIndex::new(6), NodeIndex::new(6)),
         ]);
 
-        assert_eq!(g.edges_directed(node_index(0), Outgoing).count(), 4);
-        assert_eq!(g.edges_directed(node_index(1), Outgoing).count(), 1);
-        assert_eq!(g.edges_directed(node_index(2), Outgoing).count(), 2);
-        assert_eq!(g.edges_directed(node_index(3), Outgoing).count(), 0);
-        assert_eq!(g.edges_directed(node_index(4), Outgoing).count(), 1);
-        assert_eq!(g.edges_directed(node_index(5), Outgoing).count(), 0);
-        assert_eq!(g.edges_directed(node_index(6), Outgoing).count(), 1);
+        assert_eq!(
+            g.edges_directed(node_index(0), Direction::Outgoing).count(),
+            4
+        );
+        assert_eq!(
+            g.edges_directed(node_index(1), Direction::Outgoing).count(),
+            1
+        );
+        assert_eq!(
+            g.edges_directed(node_index(2), Direction::Outgoing).count(),
+            2
+        );
+        assert_eq!(
+            g.edges_directed(node_index(3), Direction::Outgoing).count(),
+            0
+        );
+        assert_eq!(
+            g.edges_directed(node_index(4), Direction::Outgoing).count(),
+            1
+        );
+        assert_eq!(
+            g.edges_directed(node_index(5), Direction::Outgoing).count(),
+            0
+        );
+        assert_eq!(
+            g.edges_directed(node_index(6), Direction::Outgoing).count(),
+            1
+        );
 
-        assert_eq!(g.edges_directed(node_index(0), Incoming).count(), 1);
-        assert_eq!(g.edges_directed(node_index(1), Incoming).count(), 1);
-        assert_eq!(g.edges_directed(node_index(2), Incoming).count(), 1);
-        assert_eq!(g.edges_directed(node_index(3), Incoming).count(), 3);
-        assert_eq!(g.edges_directed(node_index(4), Incoming).count(), 1);
-        assert_eq!(g.edges_directed(node_index(5), Incoming).count(), 1);
-        assert_eq!(g.edges_directed(node_index(6), Incoming).count(), 1);
+        assert_eq!(
+            g.edges_directed(node_index(0), Direction::Incoming).count(),
+            1
+        );
+        assert_eq!(
+            g.edges_directed(node_index(1), Direction::Incoming).count(),
+            1
+        );
+        assert_eq!(
+            g.edges_directed(node_index(2), Direction::Incoming).count(),
+            1
+        );
+        assert_eq!(
+            g.edges_directed(node_index(3), Direction::Incoming).count(),
+            3
+        );
+        assert_eq!(
+            g.edges_directed(node_index(4), Direction::Incoming).count(),
+            1
+        );
+        assert_eq!(
+            g.edges_directed(node_index(5), Direction::Incoming).count(),
+            1
+        );
+        assert_eq!(
+            g.edges_directed(node_index(6), Direction::Incoming).count(),
+            1
+        );
     }
 
     #[test]
     fn test_edges_undirected() {
         let g: UnMatrix<char, bool> = UnMatrix::from_edges(&[
-            (0, 5),
-            (0, 2),
-            (0, 3),
-            (0, 1),
-            (1, 3),
-            (2, 3),
-            (2, 4),
-            (4, 0),
-            (6, 6),
+            (NodeIndex::new(0), NodeIndex::new(5)),
+            (NodeIndex::new(0), NodeIndex::new(2)),
+            (NodeIndex::new(0), NodeIndex::new(3)),
+            (NodeIndex::new(0), NodeIndex::new(1)),
+            (NodeIndex::new(1), NodeIndex::new(3)),
+            (NodeIndex::new(2), NodeIndex::new(3)),
+            (NodeIndex::new(2), NodeIndex::new(4)),
+            (NodeIndex::new(4), NodeIndex::new(0)),
+            (NodeIndex::new(6), NodeIndex::new(6)),
         ]);
 
         assert_eq!(g.edges(node_index(0)).count(), 5);
@@ -1668,15 +1784,15 @@ mod tests {
     #[test]
     fn test_edge_references() {
         let g: MatrixGraph<char, bool> = MatrixGraph::from_edges(&[
-            (0, 5),
-            (0, 2),
-            (0, 3),
-            (0, 1),
-            (1, 3),
-            (2, 3),
-            (2, 4),
-            (4, 0),
-            (6, 6),
+            (NodeIndex::new(0), NodeIndex::new(5)),
+            (NodeIndex::new(0), NodeIndex::new(2)),
+            (NodeIndex::new(0), NodeIndex::new(3)),
+            (NodeIndex::new(0), NodeIndex::new(1)),
+            (NodeIndex::new(1), NodeIndex::new(3)),
+            (NodeIndex::new(2), NodeIndex::new(3)),
+            (NodeIndex::new(2), NodeIndex::new(4)),
+            (NodeIndex::new(4), NodeIndex::new(0)),
+            (NodeIndex::new(6), NodeIndex::new(6)),
         ]);
 
         assert_eq!(g.edge_references().count(), 9);
@@ -1685,15 +1801,15 @@ mod tests {
     #[test]
     fn test_edge_references_undirected() {
         let g: UnMatrix<char, bool> = UnMatrix::from_edges(&[
-            (0, 5),
-            (0, 2),
-            (0, 3),
-            (0, 1),
-            (1, 3),
-            (2, 3),
-            (2, 4),
-            (4, 0),
-            (6, 6),
+            (NodeIndex::new(0), NodeIndex::new(5)),
+            (NodeIndex::new(0), NodeIndex::new(2)),
+            (NodeIndex::new(0), NodeIndex::new(3)),
+            (NodeIndex::new(0), NodeIndex::new(1)),
+            (NodeIndex::new(1), NodeIndex::new(3)),
+            (NodeIndex::new(2), NodeIndex::new(3)),
+            (NodeIndex::new(2), NodeIndex::new(4)),
+            (NodeIndex::new(4), NodeIndex::new(0)),
+            (NodeIndex::new(6), NodeIndex::new(6)),
         ]);
 
         assert_eq!(g.edge_references().count(), 9);
