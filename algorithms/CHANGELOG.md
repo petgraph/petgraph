@@ -10,7 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Breaking Changes
 
 - Categorized all algorithms, algorithms are no longer top-level modules.
-  - `petgraph::algo::astar` is now `petgraph-algorithms::shortest_path::astar`
+    - `petgraph::algo::astar` is now `petgraph-algorithms::shortest_path::astar`
+- `Measure` now requires `TotalOrd` instead of `PartialOrd`. The previous implementation was incorrect and could
+  unintended results. `TotalOrd` is implemented for `Ord`, `f32` and `f64`.
+- `k_shortest_path` has been renamed to `k_shortest_paths`.
 
 ## Added
 

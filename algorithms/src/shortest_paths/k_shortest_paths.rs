@@ -1,10 +1,13 @@
-use std::collections::{BinaryHeap, HashMap};
+use std::{
+    collections::{BinaryHeap, HashMap},
+    hash::Hash,
+};
 
-use std::hash::Hash;
-
-use crate::algo::Measure;
-use crate::scored::MinScored;
-use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
+use crate::{
+    algo::Measure,
+    scored::MinScored,
+    visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable},
+};
 
 /// \[Generic\] k'th shortest path algorithm.
 ///
@@ -23,12 +26,11 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 /// Returns a `HashMap` that maps `NodeId` to path cost.
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::k_shortest_path;
-/// use petgraph::prelude::*;
 /// use std::collections::HashMap;
 ///
-/// let mut graph : Graph<(),(),Directed>= Graph::new();
+/// use petgraph::{algo::k_shortest_path, prelude::*, Graph};
+///
+/// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
 /// let b = graph.add_node(());
 /// let c = graph.add_node(());
@@ -49,7 +51,7 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 ///     (b, e),
 ///     (f, g),
 ///     (g, h),
-///     (h, e)
+///     (h, e),
 /// ]);
 /// // a ----> b ----> e ----> f
 /// // ^       |       ^       |
@@ -57,20 +59,23 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 /// // d <---- c       h <---- g
 ///
 /// let expected_res: HashMap<NodeIndex, usize> = [
-///      (a, 7),
-///      (b, 4),
-///      (c, 5),
-///      (d, 6),
-///      (e, 5),
-///      (f, 6),
-///      (g, 7),
-///      (h, 8)
-///     ].iter().cloned().collect();
-/// let res = k_shortest_path(&graph,b,None,2, |_| 1);
+///     (a, 7),
+///     (b, 4),
+///     (c, 5),
+///     (d, 6),
+///     (e, 5),
+///     (f, 6),
+///     (g, 7),
+///     (h, 8),
+/// ]
+/// .iter()
+/// .cloned()
+/// .collect();
+/// let res = k_shortest_path(&graph, b, None, 2, |_| 1);
 /// assert_eq!(res, expected_res);
 /// // z is not inside res because there is not path from b to z.
 /// ```
-pub fn k_shortest_path<G, F, K>(
+pub fn k_shortest_paths<G, F, K>(
     graph: G,
     start: G::NodeId,
     goal: Option<G::NodeId>,

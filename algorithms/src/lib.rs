@@ -5,21 +5,20 @@
 //! the `Graph` type.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod bellman_ford;
-pub mod dijkstra;
+extern crate alloc;
+
 pub mod dominators;
 pub mod feedback_arc_set;
 pub mod floyd_warshall;
 pub mod isomorphism;
-pub mod k_shortest_path;
 pub mod matching;
 pub mod shortest_paths;
 pub mod simple_paths;
 pub mod tred;
 
-// TODO: correctly expose them in the frontend
-pub use bellman_ford::{bellman_ford, find_negative_cycle};
-pub use dijkstra::dijkstra;
+use core::{fmt::Debug, ops::Add};
+
+// TODO: correctly expose them in petgraph (deprecated)
 pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
 pub use isomorphism::{
@@ -803,94 +802,3 @@ where
 
     true
 }
-
-use std::{fmt::Debug, ops::Add};
-
-/// Associated data that can be used for measures (such as length).
-pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Clone {}
-
-impl<M> Measure for M where M: Debug + PartialOrd + Add<M, Output = M> + Default + Clone {}
-
-/// A floating-point measure.
-pub trait FloatMeasure: Measure + Copy {
-    fn zero() -> Self;
-    fn infinite() -> Self;
-}
-
-impl FloatMeasure for f32 {
-    fn zero() -> Self {
-        0.
-    }
-
-    fn infinite() -> Self {
-        1. / 0.
-    }
-}
-
-impl FloatMeasure for f64 {
-    fn zero() -> Self {
-        0.
-    }
-
-    fn infinite() -> Self {
-        1. / 0.
-    }
-}
-
-pub trait BoundedMeasure: Measure + std::ops::Sub<Self, Output = Self> {
-    fn min() -> Self;
-    fn max() -> Self;
-    fn overflowing_add(self, rhs: Self) -> (Self, bool);
-}
-
-macro_rules! impl_bounded_measure_integer(
-    ( $( $t:ident ),* ) => {
-        $(
-            impl BoundedMeasure for $t {
-                fn min() -> Self {
-                    std::$t::MIN
-                }
-
-                fn max() -> Self {
-                    std::$t::MAX
-                }
-
-                fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-                    self.overflowing_add(rhs)
-                }
-            }
-        )*
-    };
-);
-
-impl_bounded_measure_integer!(
-    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
-);
-
-macro_rules! impl_bounded_measure_float(
-    ( $( $t:ident ),* ) => {
-        $(
-            impl BoundedMeasure for $t {
-                fn min() -> Self {
-                    std::$t::MIN
-                }
-
-                fn max() -> Self {
-                    std::$t::MAX
-                }
-
-                fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-                    // for an overflow: a + b > max: both values need to be positive and a > max - b must be satisfied
-                    let overflow = self > Self::default() && rhs > Self::default() && self > std::$t::MAX - rhs;
-
-                    // for an underflow: a + b < min: overflow can not happen and both values must be negative and a < min - b must be satisfied
-                    let underflow = !overflow && self < Self::default() && rhs < Self::default() && self < std::$t::MIN - rhs;
-
-                    (self + rhs, overflow || underflow)
-                }
-            }
-        )*
-    };
-);
-
-impl_bounded_measure_float!(f32, f64);

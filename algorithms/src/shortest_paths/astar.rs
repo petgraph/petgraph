@@ -1,12 +1,9 @@
-use std::collections::hash_map::Entry::{Occupied, Vacant};
-use std::collections::{BinaryHeap, HashMap};
+use alloc::collections::BinaryHeap;
+use alloc::vec::Vec;
+use core::hash::Hash;
+use petgraph_core::visit::{GraphBase, IntoEdges, Visitable};
 
-use std::hash::Hash;
-
-use crate::scored::MinScored;
-use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
-
-use crate::algo::Measure;
+use crate::Measure;
 
 /// \[Generic\] A* shortest path algorithm.
 ///
@@ -27,8 +24,8 @@ use crate::algo::Measure;
 ///
 /// # Example
 /// ```
-/// use petgraph::Graph;
-/// use petgraph::algo::astar;
+/// use petgraph_algorithms::shortest_paths::astar;
+/// use petgraph_graph::Graph;
 ///
 /// let mut g = Graph::new();
 /// let a = g.add_node((0., 0.));
