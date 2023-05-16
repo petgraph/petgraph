@@ -6,7 +6,6 @@ mod dijkstra;
 mod floyd_warshall;
 mod k_shortest_paths;
 mod measure;
-mod min_scored;
 mod total_ord;
 
 pub use astar::astar;

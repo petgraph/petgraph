@@ -4,7 +4,7 @@ use core::hash::Hash;
 use hashbrown::HashMap;
 use petgraph_core::visit::{IntoEdges, NodeCount, NodeIndexable, Visitable};
 
-use crate::shortest_paths::{min_scored::MinScored, Measure};
+use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
 
 /// \[Generic\] k'th shortest path algorithm.
 ///

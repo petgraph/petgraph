@@ -1,6 +1,6 @@
 use core::cmp::Ordering;
 
-use crate::shortest_paths::total_ord::TotalOrd;
+use crate::shortest_paths::TotalOrd;
 
 /// `MinScored<K, T>` holds a score `K` and a scored object `T` in
 /// a pair for use with a `BinaryHeap`.

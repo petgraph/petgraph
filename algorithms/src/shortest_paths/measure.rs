@@ -4,7 +4,7 @@ use core::{
     ops::{Add, Sub},
 };
 
-use crate::shortest_paths::min_scored::TotalOrd;
+use crate::utilities::min_scored::TotalOrd;
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Debug + TotalOrd + Add<Self, Output = Self> + Default + Clone {}

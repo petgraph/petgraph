@@ -3,7 +3,7 @@ use petgraph_core::visit::{
     Visitable,
 };
 
-use crate::cycles::union_find::UnionFind;
+use crate::utilities::union_find::UnionFind;
 
 /// \[Generic\] Return `true` if the input graph contains a cycle.
 ///

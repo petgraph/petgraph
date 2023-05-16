@@ -373,7 +373,7 @@ where
 pub fn depth_first_search<G>(
     graph: G,
     starts: impl IntoIterator<Item = G::NodeId>,
-) -> impl Iterator<Item = DfsEvent<G::NodeId>>
+) -> DepthFirstSearchIter<G>
 where
     G: IntoNeighbors + Visitable,
 {
@@ -432,3 +432,5 @@ fn time_post_inc(x: &mut Time) -> Time {
     x.0 += 1;
     v
 }
+
+// TODO: split and rework

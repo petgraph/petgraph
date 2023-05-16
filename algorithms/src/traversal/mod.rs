@@ -1,3 +1,3 @@
 mod dfs;
 
-pub use dfs::{Dfs, DfsSpace};
+pub use dfs::{depth_first_search, DepthFirstSearchIter, Dfs, DfsEvent, DfsSpace};
