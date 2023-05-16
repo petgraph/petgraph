@@ -100,17 +100,13 @@
 //!   [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html).
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
 
-extern crate fixedbitset;
-#[cfg(feature = "graphmap")]
-extern crate indexmap;
-
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "serde")]
 extern crate serde;
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_derive;
 
-#[cfg(all(feature = "serde-1", test))]
+#[cfg(all(feature = "serde", test))]
 extern crate itertools;
 
 #[doc(no_inline)]
@@ -121,24 +117,22 @@ mod macros;
 mod scored;
 
 pub mod algo;
-pub mod csr;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
-#[cfg(feature = "graphmap")]
-pub use petgraph_graphmap as graphmap;
 mod iter_format;
 mod iter_utils;
-#[cfg(feature = "matrix_graph")]
+#[cfg(feature = "matrix-graph")]
 pub mod matrix_graph;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "serde")]
 mod serde_utils;
 pub mod unionfind;
 mod util;
 
 pub mod operator;
+#[deprecated(since = "0.7.0", note = "use explicit imports instead of the prelude")]
 pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
@@ -166,6 +160,7 @@ pub mod stable_graph {
     };
 }
 
+#[cfg(feature = "adjacency-matrix")]
 pub mod adj {
     #[deprecated(since = "0.7.0", note = "use `AdjacencyMatrix` instead")]
     pub use petgraph_adjacency_matrix::AdjacencyMatrix as List;
@@ -176,11 +171,26 @@ pub mod adj {
     pub use petgraph_core::index::{DefaultIx, IndexType};
 }
 
+#[cfg(feature = "csr")]
+pub mod csr {
+    pub use petgraph_core::index::{DefaultIx, IndexType};
+    pub use petgraph_csr::{
+        Csr, EdgeIndex, EdgeReference, EdgeReferences, Edges, EdgesNotSorted, Neighbors,
+        NodeIdentifiers, NodeIndex, NodeReferences,
+    };
+}
+
+#[cfg(feature = "graphmap")]
+pub mod graphmap {
+    pub use petgraph_graphmap::{
+        AllEdges, AllEdgesMut, DiGraphMap, Edges, EdgesDirected, GraphMap, Neighbors,
+        NeighborsDirected, NodeIdentifiers, NodeReferences, NodeTrait, Nodes, Ptr, UnGraphMap,
+    };
+}
+
 pub use petgraph_core::{
     data,
     deprecated::IntoWeightedEdge,
     edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
     visit,
 };
-#[cfg(feature = "stable_graph")]
-pub use petgraph_graph::stable;

@@ -88,6 +88,7 @@ where
 }
 
 /// Csr edge index type, a plain integer.
+// TODO: move to newtype?
 pub type EdgeIndex = usize;
 
 const BINARY_SEARCH_CUTOFF: usize = 32;
