@@ -30,7 +30,8 @@ members = [
     "adjacency-matrix",
     "graphmap",
     "csr",
-    "matrix-graph"
+    "matrix-graph",
+    "algorithms"
 ]
 
 [workspace.dependencies]
@@ -45,6 +46,7 @@ petgraph-adjacency-matrix = { path = "./adjacency-matrix", default-features = fa
 petgraph-graphmap = { path = "./graphmap", default-features = false }
 petgraph-csr = { path = "./csr", default-features = false }
 petgraph-matrix-graph = { path = "./matrix-graph", default-features = false }
+petgraph-algorithms = { path = "./algorithms", default-features = false }
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }
@@ -54,6 +56,7 @@ petgraph-core = { workspace = true, default-features = false }
 petgraph-csr = { workspace = true, optional = true, default-features = false }
 petgraph-graph = { workspace = true, default-features = false }
 petgraph-matrix-graph = { workspace = true, optional = true, default-features = false }
+petgraph-algorithms = { workspace = true, default-features = false }
 quickcheck = { optional = true, version = "0.8", default-features = false }
 serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }

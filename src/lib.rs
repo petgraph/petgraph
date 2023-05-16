@@ -122,8 +122,6 @@ pub mod dot;
 pub mod generate;
 mod iter_format;
 mod iter_utils;
-#[cfg(feature = "matrix-graph")]
-pub mod matrix_graph;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
 #[cfg(feature = "serde")]
@@ -185,6 +183,15 @@ pub mod graphmap {
     pub use petgraph_graphmap::{
         AllEdges, AllEdgesMut, DiGraphMap, Edges, EdgesDirected, GraphMap, Neighbors,
         NeighborsDirected, NodeIdentifiers, NodeReferences, NodeTrait, Nodes, Ptr, UnGraphMap,
+    };
+}
+
+#[cfg(feature = "matrix-graph")]
+pub mod matrix_graph {
+    pub use petgraph_core::index::IndexType;
+    pub use petgraph_matrix_graph::{
+        node_index, DiMatrix, EdgeReferences, Edges, MatrixGraph, Neighbors, NodeIdentifiers,
+        NodeIndex, NodeReferences, NotZero, Nullable, UnMatrix, Zero,
     };
 }
 
