@@ -1,5 +1,6 @@
 //! `MatrixGraph<N, E, Ty, NullN, NullE, Ix>` is a graph datastructure backed by an adjacency
 //! matrix.
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use std::{
     cmp,

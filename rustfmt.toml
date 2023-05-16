@@ -28,3 +28,6 @@ group_imports = "StdExternalCrate" # Default: "Preserve"
 
 # Diagnostics
 error_on_unformatted = true # Default: false
+
+# Cargo.toml (PR #5240)
+format_cargo_toml = true # Default: false

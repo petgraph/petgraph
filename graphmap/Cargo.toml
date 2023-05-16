@@ -20,5 +20,5 @@ petgraph-graph = { workspace = true, optional = true }
 [features]
 default = ["std"]
 std = ["petgraph-core/std", "indexmap/std", "serde?/std"]
-serde = ["dep:serde", "convert", "petgraph-graph/serde"]
+serde = ["dep:serde", "convert", "petgraph-graph?/serde"]
 convert = ["petgraph-graph"]
