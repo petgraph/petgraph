@@ -4,13 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-funty = { version = "2.0.0", default-features = false }
 fixedbitset = { workspace = true }
-serde = { workspace = true, optional = true, features = ['alloc'] }
-
-petgraph-core = { workspace = true, features = ['alloc', 'fixedbitset'] }
+funty = { version = "2.0.0", default-features = false }
+petgraph-core = { workspace = true, features = ["alloc", "fixedbitset"] }
+serde = { workspace = true, optional = true, features = ["alloc"] }
 
 [dev-dependencies]
 # Used for documentation examples
@@ -18,5 +16,5 @@ petgraph.workspace = true
 
 [features]
 default = ["std", "stable"]
-std = ["fixedbitset/std", "petgraph-core/std", "serde/std"]
 stable = []
+std = ["fixedbitset/std", "petgraph-core/std", "serde/std"]

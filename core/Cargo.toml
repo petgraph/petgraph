@@ -4,10 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-funty.workspace = true
 fixedbitset = { workspace = true, optional = true }
+funty.workspace = true
 indexmap = { workspace = true, optional = true }
 
 [dev-dependencies]
@@ -15,6 +14,6 @@ indexmap = { workspace = true, optional = true }
 petgraph.workspace = true
 
 [features]
+alloc = []
 default = ["std"]
 std = ["fixedbitset?/std", "indexmap?/std", "alloc"]
-alloc = []
