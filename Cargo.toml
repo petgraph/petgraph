@@ -39,6 +39,7 @@ fixedbitset = { version = "0.4", default-features = false }
 serde = { version = "1.0", default-features = false }
 funty = { version = "2.0", default-features = false }
 indexmap = { version = "1.9.3", default-features = false }
+hashbrown = { version = "0.13.2", default-features = false, features = ['ahash', 'inline-more'] }
 petgraph = { path = "." }
 petgraph-core = { path = "./core", default-features = false }
 petgraph-graph = { path = "./graph", default-features = false }

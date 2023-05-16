@@ -4,12 +4,13 @@
 //! so that they are generally applicable. For now, some of these still require
 //! the `Graph` type.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(nightly, feature(error_in_core))]
 
 extern crate alloc;
 
 pub mod dominators;
+pub mod error;
 pub mod feedback_arc_set;
-pub mod floyd_warshall;
 pub mod isomorphism;
 pub mod matching;
 pub mod shortest_paths;
@@ -729,24 +730,6 @@ where
         None
     }
 }
-
-/// An algorithm error: a cycle was found in the graph.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Cycle<N>(N);
-
-impl<N> Cycle<N> {
-    /// Return a node id that participates in the cycle
-    pub fn node_id(&self) -> N
-    where
-        N: Copy,
-    {
-        self.0
-    }
-}
-
-/// An algorithm error: a cycle of negative weights was found in the graph.
-#[derive(Clone, Debug, PartialEq)]
-pub struct NegativeCycle(pub ());
 
 /// Return `true` if the graph is bipartite. A graph is bipartite if its nodes can be divided into
 /// two disjoint and indepedent sets U and V such that every edge connects U to one in V. This

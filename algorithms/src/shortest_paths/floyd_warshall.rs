@@ -1,16 +1,17 @@
-use std::collections::HashMap;
+use alloc::vec;
+use core::hash::Hash;
 
-use std::hash::Hash;
-
-use crate::algo::{BoundedMeasure, NegativeCycle};
-use crate::visit::{
-    EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable,
+use hashbrown::HashMap;
+use petgraph_core::visit::{
+    GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable,
 };
 
-#[allow(clippy::type_complexity, clippy::needless_range_loop)]
+use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
+
 /// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
 ///
-/// Compute shortest paths in a weighted graph with positive or negative edge weights (but with no negative cycles)
+/// Compute shortest paths in a weighted graph with positive or negative edge weights (but with no
+/// negative cycles)
 ///
 /// # Arguments
 /// * `graph`: graph with no negative cycle
@@ -22,9 +23,11 @@ use crate::visit::{
 ///
 /// # Examples
 /// ```rust
-/// use petgraph::{prelude::*, Graph, Directed};
-/// use petgraph::algo::floyd_warshall;
 /// use std::collections::HashMap;
+///
+/// use petgraph_algorithms::shortest_paths::floyd_warshall::floyd_warshall;
+/// use petgraph_core::edge::Directed;
+/// use petgraph_graph::{Graph, NodeIndex};
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(());
@@ -32,20 +35,22 @@ use crate::visit::{
 /// let c = graph.add_node(());
 /// let d = graph.add_node(());
 ///
-/// graph.extend_with_edges(&[
-///    (a, b),
-///    (a, c),
-///    (a, d),
-///    (b, c),
-///    (b, d),
-///    (c, d)
-/// ]);
+/// graph.extend_with_edges(&[(a, b), (a, c), (a, d), (b, c), (b, d), (c, d)]);
 ///
 /// let weight_map: HashMap<(NodeIndex, NodeIndex), i32> = [
-///    ((a, a), 0), ((a, b), 1), ((a, c), 4), ((a, d), 10),
-///    ((b, b), 0), ((b, c), 2), ((b, d), 2),
-///    ((c, c), 0), ((c, d), 2)
-/// ].iter().cloned().collect();
+///     ((a, a), 0),
+///     ((a, b), 1),
+///     ((a, c), 4),
+///     ((a, d), 10),
+///     ((b, b), 0),
+///     ((b, c), 2),
+///     ((b, d), 2),
+///     ((c, c), 0),
+///     ((c, d), 2),
+/// ]
+/// .iter()
+/// .cloned()
+/// .collect();
 /// //     ----- b --------
 /// //    |      ^         | 2
 /// //    |    1 |    4    v
@@ -54,14 +59,29 @@ use crate::visit::{
 /// //    |      v         v
 /// //     --->  d <-------
 ///
-/// let inf = std::i32::MAX;
-/// let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
-///    ((a, a), 0), ((a, b), 1), ((a, c), 3), ((a, d), 3),
-///    ((b, a), inf), ((b, b), 0), ((b, c), 2), ((b, d), 2),
-///    ((c, a), inf), ((c, b), inf), ((c, c), 0), ((c, d), 2),
-///    ((d, a), inf), ((d, b), inf), ((d, c), inf), ((d, d), 0),
-/// ].iter().cloned().collect();
+/// let inf = i32::MAX;
 ///
+/// let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
+///     ((a, a), 0),
+///     ((a, b), 1),
+///     ((a, c), 3),
+///     ((a, d), 3),
+///     ((b, a), inf),
+///     ((b, b), 0),
+///     ((b, c), 2),
+///     ((b, d), 2),
+///     ((c, a), inf),
+///     ((c, b), inf),
+///     ((c, c), 0),
+///     ((c, d), 2),
+///     ((d, a), inf),
+///     ((d, b), inf),
+///     ((d, c), inf),
+///     ((d, d), 0),
+/// ]
+/// .iter()
+/// .cloned()
+/// .collect();
 ///
 /// let res = floyd_warshall(&graph, |edge| {
 ///     if let Some(weight) = weight_map.get(&(edge.source(), edge.target())) {
@@ -69,19 +89,23 @@ use crate::visit::{
 ///     } else {
 ///         inf
 ///     }
-/// }).unwrap();
+/// })
+/// .unwrap();
 ///
 /// let nodes = [a, b, c, d];
 /// for node1 in &nodes {
 ///     for node2 in &nodes {
-///         assert_eq!(res.get(&(*node1, *node2)).unwrap(), expected_res.get(&(*node1, *node2)).unwrap());
+///         assert_eq!(
+///             res.get(&(*node1, *node2)).unwrap(),
+///             expected_res.get(&(*node1, *node2)).unwrap()
+///         );
 ///     }
 /// }
 /// ```
 pub fn floyd_warshall<G, F, K>(
     graph: G,
     mut edge_cost: F,
-) -> Result<HashMap<(G::NodeId, G::NodeId), K>, NegativeCycle>
+) -> Result<HashMap<(G::NodeId, G::NodeId), K>, NegativeCycleError>
 where
     G: NodeCompactIndexable + IntoEdgeReferences + IntoNodeIdentifiers + GraphProp,
     G::NodeId: Eq + Hash,
@@ -120,7 +144,7 @@ where
     // value less than 0(default value) indicates a negative cycle
     for i in 0..num_of_nodes {
         if dist[i][i] < K::default() {
-            return Err(NegativeCycle(()));
+            return Err(NegativeCycleError);
         }
     }
 

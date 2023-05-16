@@ -7,6 +7,10 @@ edition = "2021"
 
 [dependencies]
 petgraph-core = { workspace = true, features = ["alloc", "fixedbitset"] }
+hashbrown.workspace = true
+
+[build-dependencies]
+rustc_version = "0.4.0"
 
 [dev-dependencies]
 petgraph-graph.workspace = true

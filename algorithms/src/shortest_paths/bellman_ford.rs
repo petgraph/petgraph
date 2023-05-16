@@ -1,10 +1,12 @@
 //! Bellman-Ford algorithms.
 
-use crate::prelude::*;
+use alloc::{vec, vec::Vec};
 
-use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, VisitMap, Visitable};
+use petgraph_core::visit::{
+    IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, VisitMap, Visitable,
+};
 
-use super::{FloatMeasure, NegativeCycle};
+use crate::{error::NegativeCycleError, shortest_paths::FloatMeasure};
 
 #[derive(Debug, Clone)]
 pub struct Paths<NodeId, EdgeWeight> {
@@ -26,9 +28,9 @@ pub struct Paths<NodeId, EdgeWeight> {
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::bellman_ford;
-/// use petgraph::prelude::*;
+/// use petgraph_algorithms::shortest_paths::bellman_ford;
+/// use petgraph_core::edge::Undirected;
+/// use petgraph_graph::{Graph, NodeIndex};
 ///
 /// let mut g = Graph::new();
 /// let a = g.add_node(()); // node with no weight
@@ -59,21 +61,28 @@ pub struct Paths<NodeId, EdgeWeight> {
 /// let path = bellman_ford(&g, a);
 /// assert!(path.is_ok());
 /// let path = path.unwrap();
-/// assert_eq!(path.distances, vec![    0.0,     2.0,    3.0,    4.0,     5.0,     6.0]);
-/// assert_eq!(path.predecessors, vec![None, Some(a),Some(b),Some(a), Some(d), Some(e)]);
+/// assert_eq!(path.distances, vec![0.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+/// assert_eq!(path.predecessors, vec![
+///     None,
+///     Some(a),
+///     Some(b),
+///     Some(a),
+///     Some(d),
+///     Some(e)
+/// ]);
 ///
 /// // Node f (indice 5) can be reach from a with a path costing 6.
 /// // Predecessor of f is Some(e) which predecessor is Some(d) which predecessor is Some(a).
 /// // Thus the path from a to f is a <-> d <-> e <-> f
 ///
 /// let graph_with_neg_cycle = Graph::<(), f32, Undirected>::from_edges(&[
-///         (0, 1, -2.0),
-///         (0, 3, -4.0),
-///         (1, 2, -1.0),
-///         (1, 5, -25.0),
-///         (2, 4, -5.0),
-///         (4, 5, -25.0),
-///         (3, 4, -1.0),
+///     (0, 1, -2.0),
+///     (0, 3, -4.0),
+///     (1, 2, -1.0),
+///     (1, 5, -25.0),
+///     (2, 4, -5.0),
+///     (4, 5, -25.0),
+///     (3, 4, -1.0),
 /// ]);
 ///
 /// assert!(bellman_ford(&graph_with_neg_cycle, NodeIndex::new(0)).is_err());
@@ -81,7 +90,7 @@ pub struct Paths<NodeId, EdgeWeight> {
 pub fn bellman_ford<G>(
     g: G,
     source: G::NodeId,
-) -> Result<Paths<G::NodeId, G::EdgeWeight>, NegativeCycle>
+) -> Result<Paths<G::NodeId, G::EdgeWeight>, NegativeCycleError>
 where
     G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
     G::EdgeWeight: FloatMeasure,
@@ -97,7 +106,7 @@ where
             let j = edge.target();
             let w = *edge.weight();
             if distances[ix(i)] + w < distances[ix(j)] {
-                return Err(NegativeCycle(()));
+                return Err(NegativeCycleError);
             }
         }
     }
@@ -122,17 +131,17 @@ where
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::find_negative_cycle;
-/// use petgraph::prelude::*;
+/// use petgraph_algorithms::shortest_paths::find_negative_cycle;
+/// use petgraph_core::edge::Directed;
+/// use petgraph_graph::{Graph, NodeIndex};
 ///
 /// let graph_with_neg_cycle = Graph::<(), f32, Directed>::from_edges(&[
-///         (0, 1, 1.),
-///         (0, 2, 1.),
-///         (0, 3, 1.),
-///         (1, 3, 1.),
-///         (2, 1, 1.),
-///         (3, 2, -3.),
+///     (0, 1, 1.),
+///     (0, 2, 1.),
+///     (0, 3, 1.),
+///     (1, 3, 1.),
+///     (2, 1, 1.),
+///     (3, 2, -3.),
 /// ]);
 ///
 /// let path = find_negative_cycle(&graph_with_neg_cycle, NodeIndex::new(0));

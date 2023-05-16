@@ -1,9 +1,10 @@
-use alloc::collections::BinaryHeap;
-use alloc::vec::Vec;
+use alloc::{collections::BinaryHeap, vec, vec::Vec};
 use core::hash::Hash;
+
+use hashbrown::{hash_map::Entry, HashMap};
 use petgraph_core::visit::{GraphBase, IntoEdges, Visitable};
 
-use crate::Measure;
+use crate::shortest_paths::{min_scored::MinScored, Measure};
 
 /// \[Generic\] A* shortest path algorithm.
 ///
@@ -96,7 +97,7 @@ where
         let node_score = scores[&node];
 
         match estimate_scores.entry(node) {
-            Occupied(mut entry) => {
+            Entry::Occupied(mut entry) => {
                 // If the node has already been visited with an equal or lower score than now, then
                 // we do not need to re-visit it.
                 if *entry.get() <= estimate_score {
@@ -104,7 +105,7 @@ where
                 }
                 entry.insert(estimate_score);
             }
-            Vacant(entry) => {
+            Entry::Vacant(entry) => {
                 entry.insert(estimate_score);
             }
         }
@@ -114,7 +115,7 @@ where
             let next_score = node_score + edge_cost(edge);
 
             match scores.entry(next) {
-                Occupied(mut entry) => {
+                Entry::Occupied(mut entry) => {
                     // No need to add neighbors that we have already reached through a shorter path
                     // than now.
                     if *entry.get() <= next_score {
@@ -122,7 +123,7 @@ where
                     }
                     entry.insert(next_score);
                 }
-                Vacant(entry) => {
+                Entry::Vacant(entry) => {
                     entry.insert(next_score);
                 }
             }

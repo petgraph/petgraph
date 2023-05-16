@@ -1,13 +1,10 @@
-use std::{
-    collections::{BinaryHeap, HashMap},
-    hash::Hash,
-};
+use alloc::{collections::BinaryHeap, vec, vec::Vec};
+use core::hash::Hash;
 
-use crate::{
-    algo::Measure,
-    scored::MinScored,
-    visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable},
-};
+use hashbrown::HashMap;
+use petgraph_core::visit::{IntoEdges, NodeCount, NodeIndexable, Visitable};
+
+use crate::shortest_paths::{min_scored::MinScored, Measure};
 
 /// \[Generic\] k'th shortest path algorithm.
 ///
@@ -28,7 +25,8 @@ use crate::{
 /// ```rust
 /// use std::collections::HashMap;
 ///
-/// use petgraph::{algo::k_shortest_path, prelude::*, Graph};
+/// use petgraph_core::edge::Directed;
+/// use petgraph_graph::{Graph, NodeIndex};
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight

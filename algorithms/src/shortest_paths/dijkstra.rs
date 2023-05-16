@@ -1,11 +1,10 @@
-use std::collections::hash_map::Entry::{Occupied, Vacant};
-use std::collections::{BinaryHeap, HashMap};
+use alloc::collections::BinaryHeap;
+use core::hash::Hash;
 
-use std::hash::Hash;
+use hashbrown::{hash_map::Entry, HashMap};
+use petgraph_core::visit::{IntoEdges, VisitMap, Visitable};
 
-use crate::algo::Measure;
-use crate::scored::MinScored;
-use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
+use crate::shortest_paths::{min_scored::MinScored, Measure};
 
 /// \[Generic\] Dijkstra's shortest path algorithm.
 ///
@@ -22,10 +21,11 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 /// Returns a `HashMap` that maps `NodeId` to path cost.
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::dijkstra;
-/// use petgraph::prelude::*;
 /// use std::collections::HashMap;
+///
+/// use petgraph_algorithms::shortest_paths::dijkstra;
+/// use petgraph_core::edge::Directed;
+/// use petgraph_graph::{Graph, NodeIndex};
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
@@ -64,7 +64,10 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 ///     (f, 2),
 ///     (g, 3),
 ///     (h, 4),
-/// ].iter().cloned().collect();
+/// ]
+/// .iter()
+/// .cloned()
+/// .collect();
 /// let res = dijkstra(&graph, b, None, |_| 1);
 /// assert_eq!(res, expected_res);
 /// // z is not inside res because there is not path from b to z.
@@ -102,14 +105,14 @@ where
             }
             let next_score = node_score + edge_cost(edge);
             match scores.entry(next) {
-                Occupied(ent) => {
+                Entry::Occupied(ent) => {
                     if next_score < *ent.get() {
                         *ent.into_mut() = next_score;
                         visit_next.push(MinScored(next_score, next));
                         //predecessor.insert(next.clone(), node.clone());
                     }
                 }
-                Vacant(ent) => {
+                Entry::Vacant(ent) => {
                     ent.insert(next_score);
                     visit_next.push(MinScored(next_score, next));
                     //predecessor.insert(next.clone(), node.clone());
