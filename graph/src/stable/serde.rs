@@ -113,7 +113,6 @@ struct RemoteStableGraph<N, E, Ix: IndexType> {
     #[serde(default)]
     node_holes: Vec<NodeIndex<Ix>>,
     edge_property: EdgeProperty,
-    // TODO: is incorrect, must be Vec<Option<Edge<E, Ix>>>
     edges: Vec<Option<Edge<E, Ix>>>,
 }
 

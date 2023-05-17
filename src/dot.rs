@@ -1,6 +1,9 @@
 //! Simple graphviz dot file format output.
+// TODO: potentially move this into petgraph-io or petgraph-dot (io for different formats)
 
-use std::fmt::{self, Display, Write};
+use std::fmt::{self, Debug, Display, Formatter, Write};
+
+use dot::{Edges, Id, LabelText, Nodes, RenderOption};
 
 use crate::visit::{
     EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeReferences, NodeIndexable, NodeRef,
@@ -14,19 +17,17 @@ use crate::visit::{
 /// # Examples
 ///
 /// ```
-/// use petgraph::Graph;
-/// use petgraph::dot::{Dot, Config};
+/// use petgraph::{
+///     dot::{Config, Dot},
+///     Graph,
+/// };
 ///
 /// let mut graph = Graph::<_, ()>::new();
 /// graph.add_node("A");
 /// graph.add_node("B");
 /// graph.add_node("C");
 /// graph.add_node("D");
-/// graph.extend_with_edges(&[
-///     (0, 1), (0, 2), (0, 3),
-///     (1, 2), (1, 3),
-///     (2, 3),
-/// ]);
+/// graph.extend_with_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
 ///
 /// println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
 ///
@@ -54,7 +55,7 @@ where
     graph: G,
     get_edge_attributes: &'a dyn Fn(G, G::EdgeRef) -> String,
     get_node_attributes: &'a dyn Fn(G, G::NodeRef) -> String,
-    config: Configs,
+    options: &'a [RenderOption],
 }
 
 static TYPE: [&str; 2] = ["graph", "digraph"];
@@ -68,230 +69,107 @@ where
     /// Create a `Dot` formatting wrapper with default configuration.
     #[inline]
     pub fn new(graph: G) -> Self {
-        Self::with_config(graph, &[])
+        Self::with_config(graph)
     }
 
     /// Create a `Dot` formatting wrapper with custom configuration.
     #[inline]
-    pub fn with_config(graph: G, config: &'a [Config]) -> Self {
-        Self::with_attr_getters(graph, config, &|_, _| String::new(), &|_, _| String::new())
+    pub fn with_config(graph: G, options: &'a [RenderOption]) -> Self {
+        Self::with_attr_getters(graph, &|_, _| String::new(), &|_, _| String::new())
     }
 
     #[inline]
     pub fn with_attr_getters(
         graph: G,
-        config: &'a [Config],
+        options: &'a [RenderOption],
+
         get_edge_attributes: &'a dyn Fn(G, G::EdgeRef) -> String,
         get_node_attributes: &'a dyn Fn(G, G::NodeRef) -> String,
     ) -> Self {
-        let config = Configs::extract(config);
-        Dot {
+        Self {
             graph,
+            options,
+
             get_edge_attributes,
             get_node_attributes,
-            config,
         }
     }
 }
 
-/// `Dot` configuration.
-///
-/// This enum does not have an exhaustive definition (will be expanded)
-// TODO: #[non_exhaustive] once MSRV >= 1.40,
-// and/or for a breaking change make this something like an EnumSet: https://docs.rs/enumset
-#[derive(Debug, PartialEq, Eq)]
-pub enum Config {
-    /// Use indices for node labels.
-    NodeIndexLabel,
-    /// Use indices for edge labels.
-    EdgeIndexLabel,
-    /// Use no edge labels.
-    EdgeNoLabel,
-    /// Use no node labels.
-    NodeNoLabel,
-    /// Do not print the graph/digraph string.
-    GraphContentOnly,
-    #[doc(hidden)]
-    _Incomplete(()),
-}
-macro_rules! make_config_struct {
-    ($($variant:ident,)*) => {
-        #[allow(non_snake_case)]
-        #[derive(Default)]
-        struct Configs {
-            $($variant: bool,)*
-        }
-        impl Configs {
-            #[inline]
-            fn extract(configs: &[Config]) -> Self {
-                let mut conf = Self::default();
-                for c in configs {
-                    match *c {
-                        $(Config::$variant => conf.$variant = true,)*
-                        Config::_Incomplete(()) => {}
-                    }
-                }
-                conf
-            }
-        }
-    }
-}
-make_config_struct!(
-    NodeIndexLabel,
-    EdgeIndexLabel,
-    EdgeNoLabel,
-    NodeNoLabel,
-    GraphContentOnly,
-);
-
-impl<'a, G> Dot<'a, G>
+impl<'a, G> dot::Labeller<'a, G::NodeId, G::EdgeRef> for Dot<'a, G>
 where
-    G: IntoNodeReferences + IntoEdgeReferences + NodeIndexable + GraphProp,
+    G: IntoNodeReferences + IntoEdgeReferences,
 {
-    fn graph_fmt<NF, EF>(&self, f: &mut fmt::Formatter, node_fmt: NF, edge_fmt: EF) -> fmt::Result
-    where
-        NF: Fn(&G::NodeWeight, &mut fmt::Formatter) -> fmt::Result,
-        EF: Fn(&G::EdgeWeight, &mut fmt::Formatter) -> fmt::Result,
-    {
-        let g = self.graph;
-        if !self.config.GraphContentOnly {
-            writeln!(f, "{} {{", TYPE[g.is_directed() as usize])?;
-        }
+    fn graph_id(&'a self) -> Id<'a> {
+        // TODO: make configurable
+        Id::new("petgraph").expect("infallible")
+    }
 
-        // output all labels
-        for node in g.node_references() {
-            write!(f, "{}{} [ ", INDENT, g.to_index(node.id()),)?;
-            if !self.config.NodeNoLabel {
-                write!(f, "label = \"")?;
-                if self.config.NodeIndexLabel {
-                    write!(f, "{}", g.to_index(node.id()))?;
-                } else {
-                    Escaped(FnFmt(node.weight(), &node_fmt)).fmt(f)?;
-                }
-                write!(f, "\" ")?;
-            }
-            writeln!(f, "{}]", (self.get_node_attributes)(g, node))?;
-        }
-        // output all edges
-        for (i, edge) in g.edge_references().enumerate() {
-            write!(
-                f,
-                "{}{} {} {} [ ",
-                INDENT,
-                g.to_index(edge.source()),
-                EDGE[g.is_directed() as usize],
-                g.to_index(edge.target()),
-            )?;
-            if !self.config.EdgeNoLabel {
-                write!(f, "label = \"")?;
-                if self.config.EdgeIndexLabel {
-                    write!(f, "{}", i)?;
-                } else {
-                    Escaped(FnFmt(edge.weight(), &edge_fmt)).fmt(f)?;
-                }
-                write!(f, "\" ")?;
-            }
-            writeln!(f, "{}]", (self.get_edge_attributes)(g, edge))?;
-        }
+    fn node_id(&'a self, n: &G::NodeId) -> Id<'a> {
+        Id::new(format!("N{}", n.as_usize())).expect("infallible")
+    }
 
-        if !self.config.GraphContentOnly {
-            writeln!(f, "}}")?;
-        }
-        Ok(())
+    fn node_label(&'a self, n: &G::NodeId) -> LabelText<'a> {
+        // TODO: this needs improvement, as it is incomplete!
+        let label = (self.get_node_attributes)(self.graph, self.graph.node_reference(*n));
+
+        LabelText::LabelStr(label.into())
+    }
+
+    fn edge_label(&'a self, e: &G::EdgeRef) -> LabelText<'a> {
+        let label = (self.get_edge_attributes)(self.graph, self.graph.edge_reference(e.id()));
+
+        LabelText::LabelStr(label.into())
     }
 }
 
-impl<'a, G> fmt::Display for Dot<'a, G>
+impl<'a, G> dot::GraphWalk<'a, G::NodeRef, G::EdgeRef> for Dot<'a, G>
 where
-    G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
-    G::EdgeWeight: fmt::Display,
-    G::NodeWeight: fmt::Display,
+    G: IntoNodeReferences + IntoEdgeReferences,
 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.graph_fmt(f, fmt::Display::fmt, fmt::Display::fmt)
+    fn nodes(&'a self) -> Nodes<'a, G::NodeRef> {
+        Nodes::Owned(self.graph.node_references().collect())
+    }
+
+    fn edges(&'a self) -> Edges<'a, G::EdgeRef> {
+        Edges::Owned(self.graph.edge_references().collect())
+    }
+
+    fn source(&'a self, edge: &G::EdgeRef) -> G::NodeRef {
+        edge.source()
+    }
+
+    fn target(&'a self, edge: &G::EdgeRef) -> G::NodeRef {
+        edge.target()
     }
 }
 
-impl<'a, G> fmt::Debug for Dot<'a, G>
+impl<'a, G> Display for Dot<'a, G>
 where
-    G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
-    G::EdgeWeight: fmt::Debug,
-    G::NodeWeight: fmt::Debug,
+    G: IntoNodeReferences + IntoEdgeReferences,
 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.graph_fmt(f, fmt::Debug::fmt, fmt::Debug::fmt)
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        dot::render_opts(self, f, self.options).map_err(|_| fmt::Error)
     }
 }
 
-/// Escape for Graphviz
-struct Escaper<W>(W);
-
-impl<W> fmt::Write for Escaper<W>
+impl<'a, G> Debug for Dot<'a, G>
 where
-    W: fmt::Write,
+    G: IntoNodeReferences + IntoEdgeReferences,
 {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        for c in s.chars() {
-            self.write_char(c)?;
-        }
-        Ok(())
-    }
-
-    fn write_char(&mut self, c: char) -> fmt::Result {
-        match c {
-            '"' | '\\' => self.0.write_char('\\')?,
-            // \l is for left justified linebreak
-            '\n' => return self.0.write_str("\\l"),
-            _ => {}
-        }
-        self.0.write_char(c)
-    }
-}
-
-/// Pass Display formatting through a simple escaping filter
-struct Escaped<T>(T);
-
-impl<T> fmt::Display for Escaped<T>
-where
-    T: fmt::Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if f.alternate() {
-            writeln!(&mut Escaper(f), "{:#}", &self.0)
-        } else {
-            write!(&mut Escaper(f), "{}", &self.0)
-        }
-    }
-}
-
-/// Format data using a specific format function
-struct FnFmt<'a, T, F>(&'a T, F);
-
-impl<'a, T, F> fmt::Display for FnFmt<'a, T, F>
-where
-    F: Fn(&'a T, &mut fmt::Formatter<'_>) -> fmt::Result,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.1(self.0, f)
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        dot::render_opts(self, f, self.options).map_err(|_| fmt::Error)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Config, Dot, Escaper};
-    use crate::prelude::Graph;
-    use crate::visit::NodeRef;
     use std::fmt::Write;
 
-    #[test]
-    fn test_escape() {
-        let mut buff = String::new();
-        {
-            let mut e = Escaper(&mut buff);
-            let _ = e.write_str("\" \\ \n");
-        }
-        assert_eq!(buff, "\\\" \\\\ \\l");
-    }
+    use dot::RenderOption;
+
+    use super::{Config, Dot, Escaper};
+    use crate::{prelude::Graph, visit::NodeRef};
 
     fn simple_graph() -> Graph<&'static str, &'static str> {
         let mut graph = Graph::<&str, &str>::new();
@@ -304,28 +182,46 @@ mod test {
     #[test]
     fn test_nodeindexlable_option() {
         let graph = simple_graph();
-        let dot = format!("{:?}", Dot::with_config(&graph, &[Config::NodeIndexLabel]));
-        assert_eq!(dot, "digraph {\n    0 [ label = \"0\" ]\n    1 [ label = \"1\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n");
+        let dot = format!("{:?}", Dot::with_config(&graph, &[]));
+        assert_eq!(
+            dot,
+            "digraph {\n    0 [ label = \"0\" ]\n    1 [ label = \"1\" ]\n    0 -> 1 [ label = \
+             \"\\\"edge_label\\\"\" ]\n}\n"
+        );
     }
 
     #[test]
     fn test_edgeindexlable_option() {
         let graph = simple_graph();
-        let dot = format!("{:?}", Dot::with_config(&graph, &[Config::EdgeIndexLabel]));
-        assert_eq!(dot, "digraph {\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"0\" ]\n}\n");
+        let dot = format!("{:?}", Dot::with_config(&graph, &[]));
+        assert_eq!(
+            dot,
+            "digraph {\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \"\\\"B\\\"\" ]\n    0 \
+             -> 1 [ label = \"0\" ]\n}\n"
+        );
     }
 
     #[test]
     fn test_edgenolable_option() {
         let graph = simple_graph();
-        let dot = format!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
-        assert_eq!(dot, "digraph {\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ ]\n}\n");
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[RenderOption::NoEdgeLabels])
+        );
+        assert_eq!(
+            dot,
+            "digraph {\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \"\\\"B\\\"\" ]\n    0 \
+             -> 1 [ ]\n}\n"
+        );
     }
 
     #[test]
     fn test_nodenolable_option() {
         let graph = simple_graph();
-        let dot = format!("{:?}", Dot::with_config(&graph, &[Config::NodeNoLabel]));
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[RenderOption::NoNodeLabels])
+        );
         assert_eq!(
             dot,
             "digraph {\n    0 [ ]\n    1 [ ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
@@ -339,11 +235,15 @@ mod test {
             "{:?}",
             Dot::with_attr_getters(
                 &graph,
-                &[Config::NodeNoLabel, Config::EdgeNoLabel],
+                &[RenderOption::NoNodeLabels, RenderOption::NoEdgeLabels],
                 &|_, er| format!("label = \"{}\"", er.weight().to_uppercase()),
                 &|_, nr| format!("label = \"{}\"", nr.weight().to_lowercase()),
             ),
         );
-        assert_eq!(dot, "digraph {\n    0 [ label = \"a\"]\n    1 [ label = \"b\"]\n    0 -> 1 [ label = \"EDGE_LABEL\"]\n}\n");
+        assert_eq!(
+            dot,
+            "digraph {\n    0 [ label = \"a\"]\n    1 [ label = \"b\"]\n    0 -> 1 [ label = \
+             \"EDGE_LABEL\"]\n}\n"
+        );
     }
 }

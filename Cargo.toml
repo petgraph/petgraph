@@ -61,6 +61,7 @@ petgraph-algorithms = { workspace = true, default-features = false, features = [
 quickcheck = { optional = true, version = "0.8", default-features = false }
 serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }
+dot = { version = "0.1.4", optional = true }
 
 [dependencies.petgraph-graphmap]
 workspace = true
@@ -84,6 +85,7 @@ graphmap = ["dep:petgraph-graphmap"]
 matrix-graph = ["dep:petgraph-matrix-graph"]
 serde = ["dep:serde", "serde_derive"]
 stable-graph = ["petgraph-graph/stable"]
+dot = ["dep:dot"]
 #unstable = ["generate"]
 std = [
     "petgraph-core/std",

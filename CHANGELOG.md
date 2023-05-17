@@ -13,6 +13,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Renamed feature `stable_graph` to `stable-graph`
 - `CSR` is now gated behind the `csr` feature
 - `AdjacencyMatrix` is now gated behind the `adjacency-matrix` feature
+- `dot` format is now gated behind the `dot` feature
+- Replaced rendering of `dot` graphs with `dot` crate, instead of internal
+  implementation. Previous configuration options are no longer available.
 
 ### Changed
 
