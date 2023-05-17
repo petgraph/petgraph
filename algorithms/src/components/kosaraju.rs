@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 
-use petgraph_core::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, Visitable};
-
-use crate::traversal::Dfs;
+use petgraph_core::visit::{
+    Dfs, DfsPostOrder, IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap, Visitable,
+};
 
 /// \[Generic\] Compute the *strongly connected components* using [Kosaraju's algorithm][1].
 ///

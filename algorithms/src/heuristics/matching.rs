@@ -372,7 +372,7 @@ where
     // The dummy identifier needs an unused index
     assert_ne!(
         graph.node_bound(),
-        std::usize::MAX,
+        usize::MAX,
         "The input graph capacity should be strictly less than std::usize::MAX."
     );
 

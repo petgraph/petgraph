@@ -1,4 +1,7 @@
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
+
+use petgraph_core::{edge::EdgeType, index::IndexType};
+use petgraph_graph::{Graph, NodeIndex};
 
 use crate::components::kosaraju_scc;
 
@@ -8,7 +11,10 @@ use crate::components::kosaraju_scc;
 /// the output is acyclic.
 /// # Example
 /// ```rust
-/// use petgraph::{algo::condensation, prelude::*, Graph};
+/// use petgraph_adjacency_matrix::NodeIndex;
+/// use petgraph_algorithms::components::condensation;
+/// use petgraph_core::edge::Directed;
+/// use petgraph_graph::Graph;
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
@@ -52,11 +58,11 @@ use crate::components::kosaraju_scc;
 /// If `make_acyclic` is true, self-loops and multi edges are ignored:
 ///
 /// ```rust
-/// # use petgraph::Graph;
-/// # use petgraph::algo::condensation;
-/// # use petgraph::prelude::*;
+/// # use petgraph_algorithms::components::condensation;
+/// # use petgraph_core::edge::Directed;
+/// # use petgraph_graph::Graph;
 /// #
-/// # let mut graph : Graph<(),(),Directed> = Graph::new();
+/// # let mut graph : Graph<(),(), Directed> = Graph::new();
 /// # let a = graph.add_node(()); // node with no weight
 /// # let b = graph.add_node(());
 /// # let c = graph.add_node(());

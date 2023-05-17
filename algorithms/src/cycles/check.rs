@@ -1,6 +1,6 @@
 use petgraph_core::visit::{
-    depth_first_search, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers, NodeIndexable,
-    Visitable,
+    depth_first_search, DfsEvent, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
+    NodeIndexable, Visitable,
 };
 
 use crate::utilities::union_find::UnionFind;

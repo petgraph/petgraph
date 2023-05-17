@@ -1,7 +1,14 @@
 use alloc::vec::Vec;
 use core::iter::Cycle;
 
-use petgraph_core::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, Visitable};
+use petgraph_core::visit::{
+    IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap, Visitable,
+};
+
+use crate::{
+    error::CycleError,
+    traversal::{with_dfs, DfsSpace},
+};
 
 /// \[Generic\] Perform a topological sort of a directed graph.
 ///
@@ -17,7 +24,7 @@ use petgraph_core::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, Visitable
 pub fn toposort<G>(
     g: G,
     space: Option<&mut DfsSpace<G::NodeId, G::Map>>,
-) -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
+) -> Result<Vec<G::NodeId>, CycleError<G::NodeId>>
 where
     G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
 {
@@ -38,7 +45,7 @@ where
                     for succ in g.neighbors(nx) {
                         if succ == nx {
                             // self cycle
-                            return Err(Cycle(nx));
+                            return Err(CycleError { node: nx });
                         }
                         if !dfs.discovered.is_visited(&succ) {
                             dfs.stack.push(succ);
@@ -61,7 +68,7 @@ where
             let mut cycle = false;
             while let Some(j) = dfs.next(Reversed(g)) {
                 if cycle {
-                    return Err(Cycle(j));
+                    return Err(CycleError { node: j });
                 }
                 cycle = true;
             }

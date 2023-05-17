@@ -1,7 +1,10 @@
 use alloc::collections::BinaryHeap;
 
 use indexmap::IndexMap;
-use petgraph_core::visit::{Data, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
+use petgraph_core::{
+    data::Element,
+    visit::{Data, IntoEdgeReferences, IntoNodeReferences, NodeIndexable},
+};
 
 use crate::utilities::{min_scored::MinScored, union_find::UnionFind};
 

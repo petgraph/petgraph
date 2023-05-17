@@ -1,6 +1,6 @@
-use petgraph_core::visit::{IntoNeighbors, Visitable};
+use petgraph_core::visit::{IntoNeighbors, Visitable, Walker};
 
-use crate::traversal::DfsSpace;
+use crate::traversal::{with_dfs, DfsSpace};
 
 /// \[Generic\] Check if there exists a path starting at `from` and reaching `to`.
 ///

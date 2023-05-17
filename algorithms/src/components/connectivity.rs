@@ -7,6 +7,7 @@ use crate::utilities::union_find::UnionFind;
 /// For a directed graph, this is the *weakly* connected components.
 /// # Example
 /// ```rust
+/// use petgraph_algorithms::components::connected_components;
 /// use petgraph_core::edge::Directed;
 /// use petgraph_graph::Graph;
 ///

@@ -10,6 +10,7 @@
 
 use fixedbitset::FixedBitSet;
 use petgraph_adjacency_list::NodeIndex;
+use petgraph_adjacency_matrix::NodeIndex;
 use petgraph_core::index::{FromIndexType, IntoIndexType, SafeCast};
 
 use crate::{

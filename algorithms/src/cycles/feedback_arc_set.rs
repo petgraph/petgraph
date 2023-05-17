@@ -4,7 +4,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use hashbrown::HashMap;
+use indexmap::IndexMap;
 use petgraph_core::{
     edge::Directed,
     index::IndexType,
@@ -81,7 +81,7 @@ where
 
 fn good_node_sequence(
     edge_refs: impl Iterator<Item = (NodeIndex<usize>, NodeIndex<usize>)>,
-) -> HashMap<usize, usize> {
+) -> IndexMap<usize, usize> {
     let mut nodes = FasNodeContainer { nodes: Vec::new() };
     let mut buckets = Buckets {
         sinks_or_isolated: NodeLinkedList::new(),
@@ -90,7 +90,7 @@ fn good_node_sequence(
         bidirectional_nve_dd: Vec::new(),
     };
     // Lookup of node indices from input graph to indices into `nodes`
-    let mut graph_ix_lookup = HashMap::new();
+    let mut graph_ix_lookup = IndexMap::new();
 
     // Build node entries
     for (from_g_ix, to_g_ix) in edge_refs {

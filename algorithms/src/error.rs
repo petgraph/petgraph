@@ -23,7 +23,7 @@ impl core::error::Error for NegativeCycleError {}
 /// A cycle was found in the graph.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct CycleError<N> {
-    node: N,
+    pub(crate) node: N,
 }
 
 impl<N> CycleError<N> {

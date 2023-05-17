@@ -1,14 +1,7 @@
-use core::{
-    fmt::Debug,
-    num::FpCategory,
-    ops::{Add, Sub},
-};
-
 use funty::{Floating, Integral, Numeric};
 
 use crate::shortest_paths::total_ord::TotalOrd;
 
-// TODO: Measure should be Numeric
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Numeric + TotalOrd {}
 

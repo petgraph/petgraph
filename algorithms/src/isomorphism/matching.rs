@@ -1,8 +1,11 @@
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 
-use petgraph_core::visit::{
-    EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoNeighborsDirected,
-    NodeCompactIndexable,
+use petgraph_core::{
+    edge::Direction,
+    visit::{
+        EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoNeighborsDirected,
+        NodeCompactIndexable,
+    },
 };
 
 use crate::isomorphism::{
@@ -66,7 +69,7 @@ where
             let mut succ_count = 0;
             for n_neigh in field!(st, $j)
                 .graph
-                .neighbors_directed(field!(nodes, $j), Outgoing)
+                .neighbors_directed(field!(nodes, $j), Direction::Outgoing)
             {
                 succ_count += 1;
                 // handle the self loop case; it's not in the mapping (yet)
@@ -75,7 +78,7 @@ where
                 } else {
                     field!(st, 1 - $j).graph.to_index(field!(nodes, 1 - $j))
                 };
-                if m_neigh == std::usize::MAX {
+                if m_neigh == usize::MAX {
                     continue;
                 }
                 let has_edge = field!(st, 1 - $j).graph.is_adjacent(
@@ -96,12 +99,12 @@ where
             let mut pred_count = 0;
             for n_neigh in field!(st, $j)
                 .graph
-                .neighbors_directed(field!(nodes, $j), Incoming)
+                .neighbors_directed(field!(nodes, $j), Direction::Incoming)
             {
                 pred_count += 1;
                 // the self loop case is handled in outgoing
                 let m_neigh = field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)];
-                if m_neigh == std::usize::MAX {
+                if m_neigh == usize::MAX {
                     continue;
                 }
                 let has_edge = field!(st, 1 - $j).graph.is_adjacent(
@@ -152,14 +155,14 @@ where
             ($j:tt) => {{
                 for n_neigh in field!(st, $j)
                     .graph
-                    .neighbors_directed(field!(nodes, $j), Outgoing)
+                    .neighbors_directed(field!(nodes, $j), Direction::Outgoing)
                 {
                     let m_neigh = if field!(nodes, $j) != n_neigh {
                         field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)]
                     } else {
                         field!(st, 1 - $j).graph.to_index(field!(nodes, 1 - $j))
                     };
-                    if m_neigh == std::usize::MAX {
+                    if m_neigh == usize::MAX {
                         continue;
                     }
 
@@ -181,12 +184,12 @@ where
                 if field!(st, $j).graph.is_directed() {
                     for n_neigh in field!(st, $j)
                         .graph
-                        .neighbors_directed(field!(nodes, $j), Incoming)
+                        .neighbors_directed(field!(nodes, $j), Direction::Incoming)
                     {
                         // the self loop case is handled in outgoing
                         let m_neigh =
                             field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)];
-                        if m_neigh == std::usize::MAX {
+                        if m_neigh == usize::MAX {
                             continue;
                         }
 
