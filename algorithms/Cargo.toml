@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 petgraph-core = { workspace = true, features = ["alloc", "fixedbitset"] }
 petgraph-adjacency-matrix.workspace = true
+funty.workspace = true
 # Like `std::collection::HashMap`, `IndexMap` is built on top of `hashbrown`, but because
 # we're already using `IndexMap` in a lot of crates I do not want to pull in `hashbrown`
 # separately as it would be another version to maintain. This way we only have one version.

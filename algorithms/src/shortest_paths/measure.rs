@@ -4,80 +4,70 @@ use core::{
     ops::{Add, Sub},
 };
 
-use crate::utilities::min_scored::TotalOrd;
+use funty::{Floating, Integral, Numeric};
 
+use crate::shortest_paths::total_ord::TotalOrd;
+
+// TODO: Measure should be Numeric
 /// Associated data that can be used for measures (such as length).
-pub trait Measure: Debug + TotalOrd + Add<Self, Output = Self> + Default + Clone {}
+pub trait Measure: Numeric + TotalOrd {}
 
-impl<M> Measure for M where M: Debug + TotalOrd + Add<M, Output = M> + Default + Clone {}
+impl<M> Measure for M where M: Numeric + TotalOrd {}
 
 /// A floating-point measure.
-pub trait FloatMeasure: Measure + Copy {
-    fn classify(self) -> FpCategory;
+pub trait FloatMeasure: Measure + Floating {
+    const NEG_ZERO: Self;
+    const POS_ZERO: Self;
 }
 
 impl FloatMeasure for f32 {
-    fn classify(self) -> FpCategory {
-        self.classify()
-    }
+    const NEG_ZERO: Self = -0.0;
+    const POS_ZERO: Self = 0.0;
 }
 
 impl FloatMeasure for f64 {
-    fn classify(self) -> FpCategory {
-        self.classify()
+    const NEG_ZERO: Self = -0.0;
+    const POS_ZERO: Self = 0.0;
+}
+
+pub trait BoundedMeasure: Measure {
+    const MAX: Self;
+    const MIN: Self;
+
+    fn checked_add(self, rhs: Self) -> Option<Self>;
+}
+
+impl<T> BoundedMeasure for T
+where
+    T: Measure + Integral,
+{
+    const MAX: Self = T::MAX;
+    const MIN: Self = T::MIN;
+
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        <T as Integral>::checked_add(self, rhs)
     }
 }
 
-pub trait BoundedMeasure: Measure + Sub<Self, Output = Self> {
-    fn min() -> Self;
-    fn max() -> Self;
+// We cannot blanket impl on `Floating` because we already have a blanket impl on `Integral`.
+impl BoundedMeasure for f32 {
+    const MAX: Self = f32::MAX;
+    const MIN: Self = f32::MIN;
 
-    fn overflowing_add(self, rhs: Self) -> (Self, bool);
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        let value = self + rhs;
+
+        value.is_finite().then_some(value)
+    }
 }
 
-macro_rules! impl_bounded_measure_integer(
-    ( $( $t:ident ),* ) => {
-        $(
-            impl BoundedMeasure for $t {
-                fn min() -> Self {
-                    $t::MIN
-                }
+impl BoundedMeasure for f64 {
+    const MAX: Self = f64::MAX;
+    const MIN: Self = f64::MIN;
 
-                fn max() -> Self {
-                    $t::MAX
-                }
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        let value = self + rhs;
 
-                fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-                    self.overflowing_add(rhs)
-                }
-            }
-        )*
-    };
-);
-
-impl_bounded_measure_integer!(
-    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
-);
-
-macro_rules! impl_bounded_measure_float(
-    ( $( $t:ident ),* ) => {
-        $(
-            impl BoundedMeasure for $t {
-                fn min() -> Self {
-                    $t::MIN
-                }
-
-                fn max() -> Self {
-                    $t::MAX
-                }
-
-                fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-                    let value = self + rhs;
-                    (value, !value.is_finite())
-                }
-            }
-        )*
-    };
-);
-
-impl_bounded_measure_float!(f32, f64);
+        value.is_finite().then_some(value)
+    }
+}

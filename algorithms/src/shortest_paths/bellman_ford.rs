@@ -2,6 +2,7 @@
 
 use alloc::{vec, vec::Vec};
 
+use funty::Floating;
 use petgraph_core::visit::{
     IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, VisitMap, Visitable,
 };
@@ -227,9 +228,9 @@ where
 {
     // Step 1: initialize graph
     let mut predecessor = vec![None; g.node_bound()];
-    let mut distance = vec![<_>::infinite(); g.node_bound()];
+    let mut distance = vec![G::EdgeWeight::INFINITY; g.node_bound()];
     let ix = |i| g.to_index(i);
-    distance[ix(source)] = <_>::zero();
+    distance[ix(source)] = G::EdgeWeight::POS_ZERO;
 
     // Step 2: relax edges repeatedly
     for _ in 1..g.node_count() {

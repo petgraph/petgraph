@@ -1,7 +1,7 @@
 use alloc::vec;
 use core::hash::Hash;
 
-use hashbrown::HashMap;
+use indexmap::IndexMap;
 use petgraph_core::visit::{
     GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable,
 };
@@ -105,7 +105,7 @@ use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
 pub fn floyd_warshall<G, F, K>(
     graph: G,
     mut edge_cost: F,
-) -> Result<HashMap<(G::NodeId, G::NodeId), K>, NegativeCycleError>
+) -> Result<IndexMap<(G::NodeId, G::NodeId), K>, NegativeCycleError>
 where
     G: NodeCompactIndexable + IntoEdgeReferences + IntoNodeIdentifiers + GraphProp,
     G::NodeId: Eq + Hash,
@@ -133,8 +133,7 @@ where
     for k in 0..num_of_nodes {
         for i in 0..num_of_nodes {
             for j in 0..num_of_nodes {
-                let (result, overflow) = dist[i][k].overflowing_add(dist[k][j]);
-                if !overflow && dist[i][j] > result {
+                if let Some(result) = dist[i][k].checked_add(dist[k][j]) {
                     dist[i][j] = result;
                 }
             }
@@ -148,8 +147,8 @@ where
         }
     }
 
-    let mut distance_map: HashMap<(G::NodeId, G::NodeId), K> =
-        HashMap::with_capacity(num_of_nodes * num_of_nodes);
+    let mut distance_map: IndexMap<(G::NodeId, G::NodeId), K> =
+        IndexMap::with_capacity(num_of_nodes * num_of_nodes);
 
     for i in 0..num_of_nodes {
         for j in 0..num_of_nodes {

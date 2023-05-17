@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unintended results. `TotalOrd` is implemented for `Ord`, `f32` and `f64`.
 - `k_shortest_path` has been renamed to `k_shortest_paths`.
 - `dominators` has been renamed to `dominance`
+- `Measure` now requires stricter bounds, types must now satisfy `funty::Numeric`, doing so enables a lot more
+  flexibility in future additions. This change is unlikely to affect any users.
+- `FloatMeasure` now requires stricter bounds, types must now satisfy `Measure + funty::Floating`, the same
+  reasoning as above applies. This change is unlikely to affect any users.
+- `BoundedMeasure` now requires `Measure` as bound and has a blanket implementation on `Measure + funty::Integral`. This
+  change is unlikely to affect any users.
+- `BoundedMeasure` now requires `checked_add` instead of `overflowing_add`. This change is unlikely to affect any users.
 
 ## Added
 
