@@ -17,6 +17,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Replaced rendering of `dot` graphs with `dot` crate, instead of internal
   implementation. Previous configuration options are no longer available.
 
+[//]: # (TODO: comtemplate moving to GraphViz-Rust crate)
+
 ### Changed
 
 - Raised MSRV to 1.65 ([#560](https://github.com/petgraph/petgraph/pull/560))
