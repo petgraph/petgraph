@@ -2,7 +2,7 @@ use alloc::collections::BinaryHeap;
 use core::hash::Hash;
 
 use indexmap::{map::Entry, IndexMap};
-use petgraph_core::visit::{IntoEdges, VisitMap, Visitable};
+use petgraph_core::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 
 use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
 

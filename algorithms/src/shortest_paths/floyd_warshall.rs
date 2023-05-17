@@ -3,7 +3,7 @@ use core::hash::Hash;
 
 use indexmap::IndexMap;
 use petgraph_core::visit::{
-    GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable,
+    EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable,
 };
 
 use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
@@ -25,7 +25,7 @@ use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
 /// ```rust
 /// use std::collections::HashMap;
 ///
-/// use petgraph_algorithms::shortest_paths::floyd_warshall::floyd_warshall;
+/// use petgraph_algorithms::shortest_paths::floyd_warshall;
 /// use petgraph_core::edge::Directed;
 /// use petgraph_graph::{Graph, NodeIndex};
 ///
@@ -115,7 +115,7 @@ where
     let num_of_nodes = graph.node_count();
 
     // |V|x|V| matrix
-    let mut dist = vec![vec![K::max(); num_of_nodes]; num_of_nodes];
+    let mut dist = vec![vec![K::MAX; num_of_nodes]; num_of_nodes];
 
     // init distances of paths with no intermediate nodes
     for edge in graph.edge_references() {

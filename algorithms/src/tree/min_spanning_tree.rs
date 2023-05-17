@@ -3,10 +3,13 @@ use alloc::collections::BinaryHeap;
 use indexmap::IndexMap;
 use petgraph_core::{
     data::Element,
-    visit::{Data, IntoEdgeReferences, IntoNodeReferences, NodeIndexable},
+    visit::{Data, EdgeRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable, NodeRef},
 };
 
-use crate::utilities::{min_scored::MinScored, union_find::UnionFind};
+use crate::{
+    shortest_paths::TotalOrd,
+    utilities::{min_scored::MinScored, union_find::UnionFind},
+};
 
 /// An iterator producing a minimum spanning forest of a graph.
 #[derive(Debug, Clone)]
@@ -27,7 +30,7 @@ impl<G> Iterator for MinSpanningTree<G>
 where
     G: IntoNodeReferences + NodeIndexable,
     G::NodeWeight: Clone,
-    G::EdgeWeight: PartialOrd,
+    G::EdgeWeight: TotalOrd,
 {
     type Item = Element<G::NodeWeight, G::EdgeWeight>;
 
@@ -88,7 +91,7 @@ where
 pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
 where
     G::NodeWeight: Clone,
-    G::EdgeWeight: Clone + PartialOrd,
+    G::EdgeWeight: Clone + TotalOrd,
     G: IntoNodeReferences + IntoEdgeReferences + NodeIndexable,
 {
     // Initially each vertex is its own disjoint subgraph, track the connectedness

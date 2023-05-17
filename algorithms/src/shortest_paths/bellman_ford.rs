@@ -4,7 +4,7 @@ use alloc::{vec, vec::Vec};
 
 use funty::Floating;
 use petgraph_core::visit::{
-    IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, VisitMap, Visitable,
+    EdgeRef, IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, VisitMap, Visitable,
 };
 
 use crate::{error::NegativeCycleError, shortest_paths::FloatMeasure};

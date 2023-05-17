@@ -1,4 +1,4 @@
-use petgraph_core::visit::{IntoEdgeReferences, NodeCompactIndexable};
+use petgraph_core::visit::{EdgeRef, IntoEdgeReferences, NodeCompactIndexable, NodeRef};
 
 use crate::utilities::union_find::UnionFind;
 

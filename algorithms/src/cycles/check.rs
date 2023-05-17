@@ -1,5 +1,5 @@
 use petgraph_core::visit::{
-    depth_first_search, DfsEvent, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
+    depth_first_search, DfsEvent, EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
     NodeIndexable, Visitable,
 };
 

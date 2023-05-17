@@ -13,6 +13,7 @@ pub trait FloatMeasure: Measure + Floating {
     const POS_ZERO: Self;
 }
 
+// for blanket implementation `From` needs to be const
 impl FloatMeasure for f32 {
     const NEG_ZERO: Self = -0.0;
     const POS_ZERO: Self = 0.0;
@@ -23,6 +24,8 @@ impl FloatMeasure for f64 {
     const POS_ZERO: Self = 0.0;
 }
 
+// We cannot blanket impl here because of the trait system, f32/f64 could in theory
+// implement `Measure + Integral`, in that case the blanket impl would conflict with the impls.
 pub trait BoundedMeasure: Measure {
     const MAX: Self;
     const MIN: Self;
@@ -30,19 +33,26 @@ pub trait BoundedMeasure: Measure {
     fn checked_add(self, rhs: Self) -> Option<Self>;
 }
 
-impl<T> BoundedMeasure for T
-where
-    T: Measure + Integral,
-{
-    const MAX: Self = T::MAX;
-    const MIN: Self = T::MIN;
+macro_rules! impl_bounded_measure {
+    ($($t:ty),*) => {
+        $(
+            impl BoundedMeasure for $t {
+                const MAX: Self = <$t>::MAX;
+                const MIN: Self = <$t>::MIN;
 
-    fn checked_add(self, rhs: Self) -> Option<Self> {
-        <T as Integral>::checked_add(self, rhs)
-    }
+                fn checked_add(self, rhs: Self) -> Option<Self> {
+                    <$t>::checked_add(self, rhs)
+                }
+            }
+        )*
+    };
 }
 
-// We cannot blanket impl on `Floating` because we already have a blanket impl on `Integral`.
+impl_bounded_measure!(
+    u8, u16, u32, u64, u128, usize, //
+    i8, i16, i32, i64, i128, isize
+);
+
 impl BoundedMeasure for f32 {
     const MAX: Self = f32::MAX;
     const MIN: Self = f32::MIN;
