@@ -13,6 +13,7 @@ serde = { workspace = true, optional = true, features = ["alloc", "derive"] }
 [dev-dependencies]
 # Used for documentation examples
 petgraph.workspace = true
+serde-value = "0.7.0"
 
 [features]
 default = ["std", "stable"]

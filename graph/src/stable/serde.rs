@@ -1,215 +1,186 @@
-use alloc::{vec, vec::Vec};
-use core::marker::PhantomData;
+use alloc::vec::Vec;
+use core::{cell::Cell, marker::PhantomData};
 
+use funty::Integral;
 use petgraph_core::index::IndexType;
-use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{
+    de::Error as _,
+    ser::{SerializeSeq, SerializeStruct},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 
-use super::super::serde::{invalid_hole_err, invalid_length_err, invalid_node_err, EdgeProperty};
 use crate::{
-    node_index,
-    stable::{StableGraph, StableUnGraph},
-    visit::{EdgeIndexable, NodeIndexable},
+    serde::{EdgeProperty, Error},
+    stable::StableGraph,
     Edge, EdgeIndex, EdgeType, Graph, Node, NodeIndex,
 };
 
-// Serialization representation for StableGraph
-// Keep in sync with deserialization and Graph
-#[derive(Serialize)]
-#[serde(rename = "Graph")]
-#[serde(bound(serialize = "N: Serialize, E: Serialize, Ix: IndexType + Serialize"))]
-pub struct SerStableGraph<'a, N: 'a, E: 'a, Ix: 'a + IndexType> {
-    nodes: Somes<&'a [Node<Option<N>, Ix>]>,
-    node_holes: Holes<&'a [Node<Option<N>, Ix>]>,
-    edge_property: EdgeProperty,
-    #[serde(serialize_with = "ser_stable_graph_edges")]
-    edges: &'a [Edge<Option<E>, Ix>],
+struct SerializeIter<T> {
+    len: usize,
+    iter: Cell<Option<T>>,
 }
 
-// Deserialization representation for StableGraph
-// Keep in sync with serialization and Graph
-#[derive(Deserialize)]
-#[serde(rename = "Graph")]
-#[serde(bound(
-    deserialize = "N: Deserialize<'de>, E: Deserialize<'de>, Ix: IndexType + Deserialize<'de>"
-))]
-pub struct DeserStableGraph<N, E, Ix> {
-    #[serde(deserialize_with = "deser_stable_graph_nodes")]
-    nodes: Vec<Node<Option<N>, Ix>>,
-    #[serde(default = "Vec::new")]
-    node_holes: Vec<NodeIndex<Ix>>,
-    edge_property: EdgeProperty,
-    #[serde(deserialize_with = "deser_stable_graph_edges")]
-    edges: Vec<Edge<Option<E>, Ix>>,
+impl<T> SerializeIter<T> {
+    pub fn new(len: usize, iter: T) -> Self {
+        Self {
+            len,
+            iter: Cell::new(Some(iter)),
+        }
+    }
 }
 
-/// `Somes` are the present node weights N, with known length.
-struct Somes<T>(usize, T);
+impl<T> Serialize for SerializeIter<T>
+where
+    T: Iterator,
+    T::Item: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let iter = self.iter.take().expect("SerializeIter already serialized");
 
-impl<'a, N, Ix> Serialize for Somes<&'a [Node<Option<N>, Ix>]>
+        let mut seq = serializer.serialize_seq(Some(self.len))?;
+        let mut count = 0;
+        for item in iter {
+            seq.serialize_element(&item)?;
+            count += 1;
+        }
+
+        debug_assert_eq!(count, self.len, "SerializeIter length mismatch");
+        seq.end()
+    }
+}
+
+impl<N, E, Ty, Ix> Serialize for StableGraph<N, E, Ty, Ix>
 where
     N: Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.collect_seq_with_length(
-            self.0,
-            self.1.iter().filter_map(|node| node.weight.as_ref()),
-        )
-    }
-}
-
-/// Holes are the node indices of vacancies, with known length
-struct Holes<T>(usize, T);
-
-impl<'a, N, Ix> Serialize for Holes<&'a [Node<Option<N>, Ix>]>
-where
-    Ix: Serialize + IndexType,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.collect_seq_with_length(
-            self.0,
-            self.1.iter().enumerate().filter_map(|(i, node)| {
-                if node.weight.is_none() {
-                    Some(NodeIndex::<Ix>::new(i))
-                } else {
-                    None
-                }
-            }),
-        )
-    }
-}
-
-fn ser_stable_graph_edges<S, E, Ix>(
-    edges: &&[Edge<Option<E>, Ix>],
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
     E: Serialize,
+    Ty: EdgeType,
     Ix: Serialize + IndexType,
 {
-    serializer.collect_seq_exact(edges.iter().map(|edge| {
-        edge.weight
-            .as_ref()
-            .map(|w| (edge.source(), edge.target(), w))
-    }))
-}
-
-fn deser_stable_graph_nodes<'de, D, N, Ix>(
-    deserializer: D,
-) -> Result<Vec<Node<Option<N>, Ix>>, D::Error>
-where
-    D: Deserializer<'de>,
-    N: Deserialize<'de>,
-    Ix: IndexType + Deserialize<'de>,
-{
-    deserializer.deserialize_seq(MappedSequenceVisitor::new(|n| {
-        Ok(Node {
-            weight: Some(n),
-            next: [EdgeIndex::end(); 2],
-        })
-    }))
-}
-
-fn deser_stable_graph_edges<'de, D, N, Ix>(
-    deserializer: D,
-) -> Result<Vec<Edge<Option<N>, Ix>>, D::Error>
-where
-    D: Deserializer<'de>,
-    N: Deserialize<'de>,
-    Ix: IndexType + Deserialize<'de>,
-{
-    deserializer.deserialize_seq(MappedSequenceVisitor::<
-        Option<(NodeIndex<Ix>, NodeIndex<Ix>, N)>,
-        _,
-        _,
-    >::new(|x| {
-        if let Some((i, j, w)) = x {
-            Ok(Edge {
-                weight: Some(w),
-                node: [i, j],
-                next: [EdgeIndex::end(); 2],
-            })
-        } else {
-            Ok(Edge {
-                weight: None,
-                node: [NodeIndex::end(); 2],
-                next: [EdgeIndex::end(); 2],
-            })
-        }
-    }))
-}
-
-impl<'a, N, E, Ty, Ix> IntoSerializable for &'a StableGraph<N, E, Ty, Ix>
-where
-    Ix: IndexType,
-    Ty: EdgeType,
-{
-    type Output = SerStableGraph<'a, N, E, Ix>;
-
-    fn into_serializable(self) -> Self::Output {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         let nodes = &self.raw_nodes()[..self.node_bound()];
         let node_count = self.node_count();
         let hole_count = nodes.len() - node_count;
         let edges = &self.raw_edges()[..self.edge_bound()];
 
-        SerStableGraph {
-            nodes: Somes(node_count, nodes),
-            node_holes: Holes(hole_count, nodes),
+        let mut struct_ = serializer.serialize_struct("StableGraph", 4)?;
+
+        struct_.serialize_field(
+            "nodes",
+            &SerializeIter::new(
+                node_count,
+                nodes.iter().filter_map(|node| node.weight.as_ref()),
+            ),
+        )?;
+        struct_.serialize_field(
+            "node_holes",
+            &SerializeIter::new(
+                hole_count,
+                nodes.iter().enumerate().filter_map(|(index, node)| {
+                    node.weight.is_none().then(|| NodeIndex::<Ix>::new(index))
+                }),
+            ),
+        )?;
+        struct_.serialize_field("edge_property", &EdgeProperty::from_type::<Ty>())?;
+
+        // convert from `Edge<Option<E>, Ix>` to `Option<Edge<E, Ix>>`
+        // in practice is simply wraps it in `Some` if `weight` is `Some`, this makes serialization
+        // easier and will result in the same payload.
+        let edges_len = edges.len();
+        struct_.serialize_field(
+            "edges",
+            &SerializeIter::new(
+                edges_len,
+                edges
+                    .iter()
+                    .filter_map(|edge| edge.weight.is_some().then(|| edge)),
+            ),
+        )?;
+
+        struct_.end()
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename = "Graph")]
+struct RemoteStableGraph<N, E, Ix: IndexType> {
+    nodes: Vec<Node<Option<N>, Ix>>,
+    #[serde(default)]
+    node_holes: Vec<NodeIndex<Ix>>,
+    edge_property: EdgeProperty,
+    // TODO: is incorrect, must be Vec<Option<Edge<E, Ix>>>
+    edges: Vec<Option<Edge<E, Ix>>>,
+}
+
+impl<'de, N, E, Ty, Ix> Deserialize<'de> for StableGraph<N, E, Ty, Ix>
+where
+    N: Deserialize<'de>,
+    E: Deserialize<'de>,
+    Ty: EdgeType,
+    Ix: Deserialize<'de> + IndexType,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let RemoteStableGraph {
+            nodes,
+            node_holes,
+            edge_property,
             edges,
-            edge_property: EdgeProperty::from(PhantomData::<Ty>),
-        }
-    }
-}
+        } = RemoteStableGraph::<N, E, Ix>::deserialize(deserializer)?;
 
-/// Requires crate feature `"serde"`
-impl<N, E, Ty, Ix> Serialize for StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType + Serialize,
-    N: Serialize,
-    E: Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.into_serializable().serialize(serializer)
-    }
-}
+        // convert from `Option<Edge<E, Ix>>` to `Edge<Option<E>, Ix>`
+        let edges = edges
+            .into_iter()
+            .map(|edge| match edge {
+                Some(Edge { weight, next, node }) => Edge {
+                    weight: Some(weight),
+                    next,
+                    node,
+                },
+                None => Edge {
+                    weight: None,
+                    next: [EdgeIndex::end(); 2],
+                    node: [NodeIndex::end(); 2],
+                },
+            })
+            .collect::<Vec<_>>();
 
-impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
-where
-    Ix: IndexType,
-    Ty: EdgeType,
-{
-    type Input = DeserStableGraph<N, E, Ix>;
-
-    fn from_deserialized<E2>(input: Self::Input) -> Result<Self, E2>
-    where
-        E2: Error,
-    {
-        let ty = PhantomData::<Ty>::from_deserialized(input.edge_property)?;
-        let node_holes = input.node_holes;
-        let edges = input.edges;
-        if edges.len() >= <Ix as IndexType>::max().index() {
-            Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
+        if edges.len() >= <Ix as Integral>::MAX.as_usize() {
+            return Err(Error::InvalidLength {
+                type_: "edge",
+                length: edges.len(),
+                max: Ix::MAX.as_usize(),
+            })
+            .map_err(D::Error::custom);
         }
 
-        let total_nodes = input.nodes.len() + node_holes.len();
+        let expected = EdgeProperty::from_type::<Ty>();
+        if edge_property != expected {
+            return Err(Error::InvalidDirection {
+                expected,
+                received: edge_property,
+            })
+            .map_err(D::Error::custom);
+        }
+
+        let total_nodes = nodes.len() + node_holes.len();
         let mut nodes = Vec::with_capacity(total_nodes);
 
-        let mut compact_nodes = input.nodes.into_iter();
+        let mut compact_nodes = nodes.into_iter();
+
         let mut node_pos = 0;
+
         for hole_pos in node_holes.iter() {
             let hole_pos = hole_pos.index();
             if !(node_pos..total_nodes).contains(&hole_pos) {
-                return Err(invalid_hole_err(hole_pos));
+                return Err(Error::InvalidHole { index: hole_pos }).map_err(D::Error::custom);
             }
             nodes.extend(compact_nodes.by_ref().take(hole_pos - node_pos));
             nodes.push(Node {
@@ -219,73 +190,81 @@ where
             node_pos = hole_pos + 1;
             debug_assert_eq!(nodes.len(), node_pos);
         }
+
         nodes.extend(compact_nodes);
 
-        if nodes.len() >= <Ix as IndexType>::max().index() {
-            Err(invalid_length_err::<Ix, _>("node", nodes.len()))?
+        if nodes.len() >= <Ix as Integral>::MAX.as_usize() {
+            return Err(Error::InvalidLength {
+                type_: "node",
+                length: nodes.len(),
+                max: Ix::MAX.as_usize(),
+            })
+            .map_err(D::Error::custom);
         }
 
         let node_bound = nodes.len();
-        let mut sgr = StableGraph {
-            g: Graph { nodes, edges, ty },
+        let mut stable_graph = Self {
+            g: Graph {
+                nodes,
+                edges,
+                ty: PhantomData,
+            },
             node_count: 0,
             edge_count: 0,
             free_edge: EdgeIndex::end(),
             free_node: NodeIndex::end(),
         };
-        sgr.link_edges()
-            .map_err(|i| invalid_node_err(i.index(), node_bound))?;
-        Ok(sgr)
+
+        stable_graph
+            .link_edges()
+            .map_err(|i| Error::InvalidNode {
+                index: i.index(),
+                length: node_bound,
+            })
+            .map_err(D::Error::custom)?;
+
+        Ok(stable_graph)
     }
 }
 
-/// Requires crate feature `"serde-1"`
-impl<'de, N, E, Ty, Ix> Deserialize<'de> for StableGraph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType + Deserialize<'de>,
-    N: Deserialize<'de>,
-    E: Deserialize<'de>,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        Self::from_deserialized(DeserStableGraph::deserialize(deserializer)?)
-    }
-}
-
-#[test]
-fn test_from_deserialized_with_holes() {
-    use itertools::assert_equal;
-    use serde::de::value::Error as SerdeError;
-
-    use crate::{graph::node_index, stable_graph::StableUnGraph};
-
-    let input = DeserStableGraph::<_, (), u32> {
-        nodes: vec![
-            Node {
-                weight: Some(1),
-                next: [EdgeIndex::end(); 2],
-            },
-            Node {
-                weight: Some(4),
-                next: [EdgeIndex::end(); 2],
-            },
-            Node {
-                weight: Some(5),
-                next: [EdgeIndex::end(); 2],
-            },
-        ],
-        node_holes: vec![node_index(0), node_index(2), node_index(3), node_index(6)],
-        edges: vec![],
-        edge_property: EdgeProperty::Undirected,
+#[cfg(test)]
+mod tests {
+    use crate::{
+        node_index,
+        serde::EdgeProperty,
+        stable::{serde::RemoteStableGraph, StableUnGraph},
+        EdgeIndex, Node,
     };
-    let graph = StableUnGraph::from_deserialized::<SerdeError>(input).unwrap();
 
-    assert_eq!(graph.node_count(), 3);
-    assert_eq!(
-        graph.raw_nodes().iter().map(|n| n.weight.as_ref().cloned()),
-        vec![None, Some(1), None, None, Some(4), Some(5), None],
-    );
+    #[test]
+    fn deserialization_with_holes() {
+        let input = RemoteStableGraph::<_, (), u32> {
+            nodes: vec![
+                Node {
+                    weight: Some(1),
+                    next: [EdgeIndex::end(); 2],
+                },
+                Node {
+                    weight: Some(4),
+                    next: [EdgeIndex::end(); 2],
+                },
+                Node {
+                    weight: Some(5),
+                    next: [EdgeIndex::end(); 2],
+                },
+            ],
+            node_holes: vec![node_index(0), node_index(2), node_index(3), node_index(6)],
+            edges: vec![],
+            edge_property: EdgeProperty::Undirected,
+        };
+
+        let value = serde_value::to_value(&input).unwrap();
+        let graph = StableUnGraph::deserialize(value).unwrap();
+
+        assert_eq!(graph.node_count(), 3);
+        assert_eq!(
+            graph.raw_nodes().iter().map(|n| n.weight.as_ref().cloned()),
+            vec![None, Some(1), None, None, Some(4), Some(5), None],
+        );
+    }
 }

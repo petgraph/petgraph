@@ -1039,7 +1039,7 @@ where
         self.occupy_vacant_node(node_ix, N::default());
     }
 
-    #[cfg(feature = "serde-1")]
+    #[cfg(feature = "serde")]
     /// Fix up node and edge links after deserialization
     fn link_edges(&mut self) -> Result<(), NodeIndex<Ix>> {
         // set up free node list

@@ -41,7 +41,7 @@ use super::{EdgeIndex, NodeIndex};
 use crate::{Edge, Graph, Node};
 
 #[derive(Debug)]
-enum Error {
+pub(crate) enum Error {
     InvalidNode {
         index: usize,
         length: usize,
@@ -80,15 +80,6 @@ impl Display for Error {
     }
 }
 
-impl<T> From<Error> for T
-where
-    T: serde::de::Error,
-{
-    fn from(value: Error) -> Self {
-        T::custom(value.to_string())
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,7 +98,7 @@ impl Display for EdgeProperty {
 }
 
 impl EdgeProperty {
-    fn from_type<T>() -> Self
+    pub(crate) fn from_type<T>() -> Self
     where
         T: EdgeType,
     {
@@ -146,6 +137,7 @@ where
 impl<E, Ix> Serialize for Edge<E, Ix>
 where
     E: Serialize,
+    Ix: IndexType + Serialize,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -187,11 +179,35 @@ where
         let mut struct_ = serializer.serialize_struct("Graph", 4)?;
 
         struct_.serialize_field("nodes", &self.nodes)?;
-        struct_.serialize_field("node_holes", &[])?;
+        struct_.serialize_field("node_holes", &[(); 0])?;
         struct_.serialize_field("edge_property", &EdgeProperty::from_type::<Ty>())?;
         struct_.serialize_field("edges", &self.edges)?;
 
         struct_.end()
+    }
+}
+
+impl<'de, Ix> Deserialize<'de> for NodeIndex<Ix>
+where
+    Ix: Deserialize<'de> + IndexType,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ix::deserialize(deserializer).map(NodeIndex)
+    }
+}
+
+impl<'de, Ix> Deserialize<'de> for EdgeIndex<Ix>
+where
+    Ix: Deserialize<'de> + IndexType,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ix::deserialize(deserializer).map(EdgeIndex)
     }
 }
 
@@ -242,7 +258,7 @@ where
 
 #[derive(Deserialize)]
 #[serde(rename = "Graph")]
-struct GraphRemote<N, E, Ix: IndexType> {
+struct RemoteGraph<N, E, Ix: IndexType> {
     nodes: Vec<Node<N, Ix>>,
     // always empty per serialization format
     #[serde(default)]
@@ -262,29 +278,29 @@ where
     where
         D: Deserializer<'de>,
     {
-        let GraphRemote {
+        let RemoteGraph {
             nodes,
-            node_holes,
             edge_property,
             edges,
-        } = GraphRemote::deserialize(deserializer)?;
+            ..
+        } = RemoteGraph::deserialize(deserializer)?;
 
-        if nodes.len() >= <Ix as Integral>::MAX.to_usize() {
+        if nodes.len() >= <Ix as Integral>::MAX.as_usize() {
             return Err(Error::InvalidLength {
                 type_: "node",
                 length: nodes.len(),
-                max: Ix::MAX.to_usize(),
-            }
-            .into());
+                max: Ix::MAX.as_usize(),
+            })
+            .map_err(D::Error::custom);
         }
 
-        if edges.len() >= <Ix as Integral>::MAX.to_usize() {
+        if edges.len() >= <Ix as Integral>::MAX.as_usize() {
             return Err(Error::InvalidLength {
                 type_: "edge",
                 length: edges.len(),
-                max: Ix::MAX.to_usize(),
-            }
-            .into());
+                max: Ix::MAX.as_usize(),
+            })
+            .map_err(D::Error::custom);
         }
 
         let expected = EdgeProperty::from_type::<Ty>();
@@ -292,20 +308,23 @@ where
             return Err(Error::InvalidDirection {
                 expected,
                 received: edge_property,
-            });
+            })
+            .map_err(D::Error::custom);
         }
 
-        let mut this = Graph {
+        let mut this = Self {
             nodes,
             edges,
             ty: PhantomData,
         };
 
         let node_count = this.node_count();
-        this.link_edges().map_err(|i| Error::InvalidNode {
-            index: i.index(),
-            length: node_count,
-        })?;
+        this.link_edges()
+            .map_err(|i| Error::InvalidNode {
+                index: i.index(),
+                length: node_count,
+            })
+            .map_err(D::Error::custom)?;
 
         Ok(this)
     }

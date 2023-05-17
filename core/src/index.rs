@@ -43,7 +43,7 @@ pub unsafe trait SafeCast<T>: Copy {
 /// There is a contractual obligation that [`from_usize`] is only called with values of the correct
 /// size. Should this contract be violated, the implementation must panic.
 ///
-/// [`from_usize`] must be the inverse of [`to_usize`].
+/// [`from_usize`] must be the inverse of [`as_usize`].
 ///
 /// The conversion from and to `usize` must be lossless with no implicit wrapping.
 pub unsafe trait IndexType: Unsigned + AtMostUsize + SafeCast<usize> {
@@ -55,7 +55,7 @@ pub unsafe trait IndexType: Unsigned + AtMostUsize + SafeCast<usize> {
         Self::new(value)
     }
 
-    #[deprecated(since = "0.1.0", note = "Use `Fundamental::to_usize` instead")]
+    #[deprecated(since = "0.1.0", note = "Use `Fundamental::as_usize` instead")]
     fn index(&self) -> usize;
 
     #[deprecated(since = "0.1.0", note = "Use `Integral::MAX` instead")]
