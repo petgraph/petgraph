@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Breaking Changes
 
+- `dag_to_toposorted_adjacency_list` now requires `IntoIndexType<Ix>`
 - Categorized all algorithms, algorithms are no longer top-level modules.
     - `petgraph::algo::astar` is now `petgraph-algorithms::shortest_path::astar`, etc.
 - `Measure` now requires `TotalOrd` instead of `PartialOrd`. The previous implementation relied on quirks

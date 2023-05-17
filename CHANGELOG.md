@@ -9,8 +9,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Breaking Changes
 
-// TODO: move to petgraph-algo
-- `dag_to_toposorted_adjacency_list` now requires `IntoIndexType<Ix>`
 - Renamed feature `matrix_graph` to `matrix-graph`
 - Renamed feature `stable_graph` to `stable-graph`
 - `CSR` is now gated behind the `csr` feature

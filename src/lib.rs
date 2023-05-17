@@ -168,14 +168,21 @@ pub mod matrix_graph {
 #[deprecated(since = "0.7.0", note = "use `algorithms` instead of `algo`")]
 pub mod algo {
     pub use petgraph_algorithms::{
-        cycles::{greedy_feedback_arc_set, is_cyclic_undirected},
+        components::{condensation, kosaraju_scc, tarjan_scc},
+        connectivity::has_path_connecting,
+        cycles::{greedy_feedback_arc_set, is_cyclic_directed, is_cyclic_undirected},
+        dag::toposort,
         heuristics::{greedy_matching, maximum_matching, Matching},
         isomorphism::{
             is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph,
             is_isomorphic_subgraph_matching,
         },
-        shortest_paths::{astar, bellman_ford, dijkstra, find_negative_cycle, k_shortest_paths},
+        shortest_paths::{
+            astar, bellman_ford, dijkstra, find_negative_cycle, floyd_warshall,
+            k_shortest_paths as k_shortest_path,
+        },
         simple_paths::all_simple_paths,
+        tree::min_spanning_tree,
     };
 }
 

@@ -14,6 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 
-- Moved `petgraph::adj` to `petgraph-adjacency-list``
+- Moved `petgraph::graphmap` to `petgraph-graphmap`
 
 [unreleased]: https://github.com/olivierlacan/keep-a-changelog/compare/petgraph@v0.6.3...HEAD
