@@ -1,5 +1,4 @@
 use alloc::vec::Vec;
-use core::iter::Cycle;
 
 use petgraph_core::visit::{
     IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap, Visitable,

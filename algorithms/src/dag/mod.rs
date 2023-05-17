@@ -1,5 +1,5 @@
-#[cfg(feature = "remove-me-only-intended-for-move-adjacency-matrix")]
 mod toposort;
+#[cfg(feature = "remove-me-only-intended-for-move-adjacency-matrix")]
 mod transitive_reduction;
 
 pub use toposort::toposort;

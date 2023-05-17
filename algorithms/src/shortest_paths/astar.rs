@@ -1,7 +1,7 @@
 use alloc::{collections::BinaryHeap, vec, vec::Vec};
 use core::hash::Hash;
 
-use hashbrown::{hash_map::Entry, HashMap};
+use indexmap::{map::Entry, IndexMap};
 use petgraph_core::visit::{GraphBase, IntoEdges, Visitable};
 
 use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
@@ -77,8 +77,8 @@ where
     K: Measure + Copy,
 {
     let mut visit_next = BinaryHeap::new();
-    let mut scores = HashMap::new(); // g-values, cost to reach the node
-    let mut estimate_scores = HashMap::new(); // f-values, cost to reach + estimate cost to goal
+    let mut scores = IndexMap::new(); // g-values, cost to reach the node
+    let mut estimate_scores = IndexMap::new(); // f-values, cost to reach + estimate cost to goal
     let mut path_tracker = PathTracker::<G>::new();
 
     let zero_score = K::default();
@@ -142,7 +142,7 @@ where
     G: GraphBase,
     G::NodeId: Eq + Hash,
 {
-    came_from: HashMap<G::NodeId, G::NodeId>,
+    came_from: IndexMap<G::NodeId, G::NodeId>,
 }
 
 impl<G> PathTracker<G>
@@ -152,7 +152,7 @@ where
 {
     fn new() -> PathTracker<G> {
         PathTracker {
-            came_from: HashMap::new(),
+            came_from: IndexMap::new(),
         }
     }
 

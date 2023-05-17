@@ -15,8 +15,8 @@
 use alloc::{vec, vec::Vec};
 use core::{cmp::Ordering, hash::Hash};
 
-use hashbrown::{HashMap, HashSet};
-use petgraph_core::visit::{GraphBase, IntoNeighbors, Visitable};
+use indexmap::{IndexMap, IndexSet};
+use petgraph_core::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 
 /// The dominance relation for some graph and root.
 #[derive(Debug, Clone)]
@@ -25,7 +25,7 @@ where
     N: Copy + Eq + Hash,
 {
     root: N,
-    dominators: HashMap<N, N>,
+    dominators: IndexMap<N, N>,
 }
 
 impl<N> Dominators<N>
@@ -121,7 +121,7 @@ pub struct DominatedByIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
 {
-    iter: Iter<'a, N, N>,
+    iter: indexmap::map::Iter<'a, N, N>,
     node: N,
 }
 
@@ -148,7 +148,7 @@ where
 
 /// The undefined dominator sentinel, for when we have not yet discovered a
 /// node's dominator.
-const UNDEFINED: usize = ::std::usize::MAX;
+const UNDEFINED: usize = usize::MAX;
 
 /// This is an implementation of the engineered ["Simple, Fast Dominance
 /// Algorithm"][0] discovered by Cooper et al.
@@ -175,7 +175,7 @@ where
     // convert our data structures to play along first.
 
     // Maps a node to its index into `post_order`.
-    let node_to_post_order_idx: HashMap<_, _> = post_order
+    let node_to_post_order_idx: IndexMap<_, _> = post_order
         .iter()
         .enumerate()
         .map(|(idx, &node)| (node, idx))
@@ -251,8 +251,8 @@ fn intersect(dominators: &[usize], mut finger1: usize, mut finger2: usize) -> us
 
 fn predecessor_sets_to_idx_vecs<N>(
     post_order: &[N],
-    node_to_post_order_idx: &HashMap<N, usize>,
-    mut predecessor_sets: HashMap<N, HashSet<N>>,
+    node_to_post_order_idx: &IndexMap<N, usize>,
+    mut predecessor_sets: IndexMap<N, IndexSet<N>>,
 ) -> Vec<Vec<usize>>
 where
     N: Copy + Eq + Hash,
@@ -273,7 +273,7 @@ where
         .collect()
 }
 
-type PredecessorSets<NodeId> = HashMap<NodeId, HashSet<NodeId>>;
+type PredecessorSets<NodeId> = IndexMap<NodeId, IndexSet<NodeId>>;
 
 fn simple_fast_post_order<G>(
     graph: G,
@@ -284,7 +284,7 @@ where
     <G as GraphBase>::NodeId: Eq + Hash,
 {
     let mut post_order = vec![];
-    let mut predecessor_sets = HashMap::new();
+    let mut predecessor_sets = IndexMap::new();
 
     for node in DfsPostOrder::new(graph, root).iter(graph) {
         post_order.push(node);
@@ -292,7 +292,7 @@ where
         for successor in graph.neighbors(node) {
             predecessor_sets
                 .entry(successor)
-                .or_insert_with(HashSet::new)
+                .or_insert_with(IndexSet::new)
                 .insert(node);
         }
     }

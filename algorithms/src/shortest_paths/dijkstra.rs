@@ -1,7 +1,7 @@
 use alloc::collections::BinaryHeap;
 use core::hash::Hash;
 
-use hashbrown::{hash_map::Entry, HashMap};
+use indexmap::{map::Entry, IndexMap};
 use petgraph_core::visit::{IntoEdges, VisitMap, Visitable};
 
 use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
@@ -77,7 +77,7 @@ pub fn dijkstra<G, F, K>(
     start: G::NodeId,
     goal: Option<G::NodeId>,
     mut edge_cost: F,
-) -> HashMap<G::NodeId, K>
+) -> IndexMap<G::NodeId, K>
 where
     G: IntoEdges + Visitable,
     G::NodeId: Eq + Hash,
@@ -85,7 +85,7 @@ where
     K: Measure + Copy,
 {
     let mut visited = graph.visit_map();
-    let mut scores = HashMap::new();
+    let mut scores = IndexMap::new();
     //let mut predecessor = HashMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score = K::default();

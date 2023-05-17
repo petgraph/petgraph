@@ -1,7 +1,7 @@
 use alloc::{collections::BinaryHeap, vec, vec::Vec};
 use core::hash::Hash;
 
-use hashbrown::HashMap;
+use indexmap::IndexMap;
 use petgraph_core::visit::{IntoEdges, NodeCount, NodeIndexable, Visitable};
 
 use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
@@ -79,7 +79,7 @@ pub fn k_shortest_paths<G, F, K>(
     goal: Option<G::NodeId>,
     k: usize,
     mut edge_cost: F,
-) -> HashMap<G::NodeId, K>
+) -> IndexMap<G::NodeId, K>
 where
     G: IntoEdges + Visitable + NodeCount + NodeIndexable,
     G::NodeId: Eq + Hash,
@@ -87,7 +87,7 @@ where
     K: Measure + Copy,
 {
     let mut counter: Vec<usize> = vec![0; graph.node_count()];
-    let mut scores = HashMap::new();
+    let mut scores = IndexMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score = K::default();
 
