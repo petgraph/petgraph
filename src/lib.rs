@@ -12,7 +12,7 @@
 //!
 //! ```rust
 //! use petgraph::{
-//!     algo::{dijkstra, min_spanning_tree},
+//!     algorithms::{shortest_paths::dijkstra, tree::min_spanning_tree},
 //!     data::FromElements,
 //!     dot::{Config, Dot},
 //!     graph::{NodeIndex, UnGraph},
@@ -88,7 +88,7 @@
 //! module documentation lists the available shorthand types.
 //!
 //! # Crate features
-//! TODO: rework
+// TODO: rework
 //!
 //! * **serde-1** -
 //!   Defaults off. Enables serialization for ``Graph, StableGraph, GraphMap`` using
