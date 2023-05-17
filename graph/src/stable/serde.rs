@@ -4,9 +4,7 @@ use core::marker::PhantomData;
 use petgraph_core::index::IndexType;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
-use super::super::serialization::{
-    invalid_hole_err, invalid_length_err, invalid_node_err, EdgeProperty,
-};
+use super::super::serde::{invalid_hole_err, invalid_length_err, invalid_node_err, EdgeProperty};
 use crate::{
     node_index,
     stable::{StableGraph, StableUnGraph},

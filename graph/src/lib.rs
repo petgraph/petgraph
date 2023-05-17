@@ -21,7 +21,7 @@ pub mod stable;
 
 mod data;
 #[cfg(feature = "serde")]
-mod serialization;
+mod serde;
 mod utils;
 
 use petgraph_core::{

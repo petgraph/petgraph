@@ -26,7 +26,7 @@ use crate::{edge_index, node_index, utils::DebugFn, EdgeIndex, Graph, GraphIndex
 
 mod data;
 #[cfg(feature = "serde")]
-mod serialization;
+mod serde;
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
