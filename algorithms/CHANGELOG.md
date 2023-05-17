@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reasoning as above applies. This change is unlikely to affect any users.
 - `BoundedMeasure` now requires `Measure`. This change is unlikely to affect any users.
 - `BoundedMeasure` now requires `checked_add` instead of `overflowing_add`. This change is unlikely to affect any users.
+- `UnionFind` is no longer publicly exported, if you find yourself needing it, please open an issue.
 
 ## Added
 

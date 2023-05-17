@@ -88,6 +88,7 @@
 //! module documentation lists the available shorthand types.
 //!
 //! # Crate features
+//! TODO: rework
 //!
 //! * **serde-1** -
 //!   Defaults off. Enables serialization for ``Graph, StableGraph, GraphMap`` using
@@ -98,53 +99,32 @@
 //!   [`StableGraph`](./stable_graph/struct.StableGraph.html).
 //! * **matrix_graph** - Defaults on. Enables
 //!   [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html).
-#![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
-
-#[cfg(feature = "serde")]
-extern crate serde;
-#[cfg(feature = "serde")]
-#[macro_use]
-extern crate serde_derive;
-
-#[cfg(all(feature = "serde", test))]
-extern crate itertools;
 
 #[doc(no_inline)]
 pub use petgraph_graph::Graph;
 
-#[macro_use]
-mod macros;
-mod scored;
-
-pub mod algo;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
-mod iter_format;
-mod iter_utils;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
 #[cfg(feature = "serde")]
 mod serde_utils;
-pub mod unionfind;
-mod util;
 
-pub mod operator;
 #[deprecated(since = "0.7.0", note = "use explicit imports instead of the prelude")]
 pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
     pub use petgraph_core::index::{DefaultIx, IndexType};
-    pub use petgraph_graph::{
-        edge_index, node_index, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference,
-        EdgeReferences, EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen, Graph,
-        GraphIndex, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences, NodeWeightsMut,
-        UnGraph, WalkNeighbors,
-    };
+    pub use petgraph_graph::*;
 }
 
 #[cfg(feature = "stable-graph")]
+#[deprecated(
+    since = "0.7.0",
+    note = "use `graph::stable` instead of `stable_graph`"
+)]
 pub mod stable_graph {
     pub use petgraph_core::index::{DefaultIx, IndexType};
     pub use petgraph_graph::{
@@ -164,38 +144,51 @@ pub mod adj {
     pub use petgraph_adjacency_matrix::AdjacencyMatrix as List;
     #[deprecated(since = "0.7.0", note = "use `UnweightedAdjacencyMatrix` instead")]
     pub use petgraph_adjacency_matrix::UnweightedAdjacencyMatrix as UnweightedList;
-    pub use petgraph_adjacency_matrix::{
-        AdjacencyMatrix, EdgeIndex, EdgeIndices, EdgeReference, EdgeReferences, Neighbors,
-        NodeIndex, NodeIndices, OutgoingEdgeIndices, OutgoingEdgeReferences,
-        UnweightedAdjacencyMatrix,
-    };
+    pub use petgraph_adjacency_matrix::*;
     pub use petgraph_core::index::{DefaultIx, IndexType};
 }
 
 #[cfg(feature = "csr")]
 pub mod csr {
     pub use petgraph_core::index::{DefaultIx, IndexType};
-    pub use petgraph_csr::{
-        Csr, EdgeIndex, EdgeReference, EdgeReferences, Edges, EdgesNotSorted, Neighbors,
-        NodeIdentifiers, NodeIndex, NodeReferences,
-    };
+    pub use petgraph_csr::*;
 }
 
 #[cfg(feature = "graphmap")]
 pub mod graphmap {
-    pub use petgraph_graphmap::{
-        AllEdges, AllEdgesMut, DiGraphMap, Edges, EdgesDirected, GraphMap, Neighbors,
-        NeighborsDirected, NodeIdentifiers, NodeReferences, NodeTrait, Nodes, Ptr, UnGraphMap,
-    };
+    pub use petgraph_graphmap::*;
 }
 
 #[cfg(feature = "matrix-graph")]
 pub mod matrix_graph {
     pub use petgraph_core::index::IndexType;
-    pub use petgraph_matrix_graph::{
-        node_index, DiMatrix, EdgeReferences, Edges, MatrixGraph, Neighbors, NodeIdentifiers,
-        NodeIndex, NodeReferences, NotZero, Nullable, UnMatrix, Zero,
+    pub use petgraph_matrix_graph::*;
+}
+
+#[deprecated(since = "0.7.0", note = "use `algorithms` instead of `algo`")]
+pub mod algo {
+    pub use petgraph_algorithms::{
+        cycles::{greedy_feedback_arc_set, is_cyclic_undirected},
+        heuristics::{greedy_matching, maximum_matching, Matching},
+        isomorphism::{
+            is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph,
+            is_isomorphic_subgraph_matching,
+        },
+        shortest_paths::{astar, bellman_ford, dijkstra, find_negative_cycle, k_shortest_paths},
+        simple_paths::all_simple_paths,
     };
+}
+
+pub mod algorithms {
+    pub use petgraph_algorithms::*;
+}
+
+#[deprecated(
+    since = "0.7.0",
+    note = "use `algorithms::operators` instead of `operator`"
+)]
+pub mod operator {
+    pub use petgraph_algorithms::operators::*;
 }
 
 pub use petgraph_core::{
