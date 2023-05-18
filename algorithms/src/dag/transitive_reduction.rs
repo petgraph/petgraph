@@ -11,7 +11,7 @@
 use alloc::{vec, vec::Vec};
 
 use fixedbitset::FixedBitSet;
-use petgraph_adjacency_matrix::{AdjacencyMatrix, NodeIndex, UnweightedAdjacencyMatrix};
+use petgraph_adjacency_matrix::{AdjacencyList, NodeIndex, UnweightedAdjacencyList};
 use petgraph_core::{
     edge::Direction,
     index::{FromIndexType, IndexType, IntoIndexType, SafeCast},
@@ -67,12 +67,12 @@ use petgraph_core::{
 pub fn dag_to_toposorted_adjacency_list<G, Ix: IndexType>(
     g: G,
     toposort: &[G::NodeId],
-) -> (UnweightedAdjacencyMatrix<Ix>, Vec<NodeIndex<Ix>>)
+) -> (UnweightedAdjacencyList<Ix>, Vec<NodeIndex<Ix>>)
 where
     G: GraphBase + IntoNeighborsDirected + NodeCompactIndexable + NodeCount,
     G::NodeId: IntoIndexType<Index = Ix> + Copy,
 {
-    let mut res = AdjacencyMatrix::with_capacity(g.node_count());
+    let mut res = AdjacencyList::with_capacity(g.node_count());
     // map from old node index to rank in toposort
     let mut revmap = vec![NodeIndex::new(Ix::ZERO); g.node_bound()];
     for (ix, &old_ix) in toposort.iter().enumerate() {
@@ -113,10 +113,10 @@ where
 ///
 /// Space complexity: **O(|E|)**.
 pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
-    g: &AdjacencyMatrix<E, Ix>,
-) -> (UnweightedAdjacencyMatrix<Ix>, UnweightedAdjacencyMatrix<Ix>) {
-    let mut tred = AdjacencyMatrix::with_capacity(g.node_count());
-    let mut tclos = AdjacencyMatrix::with_capacity(g.node_count());
+    g: &AdjacencyList<E, Ix>,
+) -> (UnweightedAdjacencyList<Ix>, UnweightedAdjacencyList<Ix>) {
+    let mut tred = AdjacencyList::with_capacity(g.node_count());
+    let mut tclos = AdjacencyList::with_capacity(g.node_count());
     let mut mark = FixedBitSet::with_capacity(g.node_count());
 
     for i in g.node_indices() {
@@ -149,7 +149,7 @@ pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
 #[cfg(test)]
 #[test]
 fn test_easy_tred() {
-    let mut input = AdjacencyMatrix::new();
+    let mut input = AdjacencyList::new();
     let a: NodeIndex<u8> = input.add_node();
     let b = input.add_node();
     let c = input.add_node();

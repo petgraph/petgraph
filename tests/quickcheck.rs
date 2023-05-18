@@ -1106,7 +1106,7 @@ quickcheck! {
         for (new, old) in toposort.iter().enumerate() {
             println!("{} -> {}", old.index(), new);
         }
-        let (toposorted, revtopo): (petgraph::adj::AdjacencyMatrix<(), usize>, _) =
+        let (toposorted, revtopo): (petgraph::adj::AdjacencyList<(), usize>, _) =
             petgraph::algo::tred::dag_to_toposorted_adjacency_list(&acyclic, &toposort);
         println!("checking revtopo");
         for (i, ix) in toposort.iter().enumerate() {

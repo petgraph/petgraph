@@ -139,13 +139,18 @@ pub mod stable_graph {
 }
 
 #[cfg(feature = "adjacency-matrix")]
+#[deprecated(since = "0.7.0", note = "use `adjacency_matrix` instead of `adj`")]
 pub mod adj {
     #[deprecated(since = "0.7.0", note = "use `AdjacencyMatrix` instead")]
-    pub use petgraph_adjacency_matrix::AdjacencyMatrix as List;
+    pub use petgraph_adjacency_matrix::AdjacencyList as List;
     #[deprecated(since = "0.7.0", note = "use `UnweightedAdjacencyMatrix` instead")]
-    pub use petgraph_adjacency_matrix::UnweightedAdjacencyMatrix as UnweightedList;
+    pub use petgraph_adjacency_matrix::UnweightedAdjacencyList as UnweightedList;
     pub use petgraph_adjacency_matrix::*;
     pub use petgraph_core::index::{DefaultIx, IndexType};
+}
+
+pub mod adjacency_matrix {
+    pub use petgraph_adjacency_matrix::*;
 }
 
 #[cfg(feature = "csr")]
