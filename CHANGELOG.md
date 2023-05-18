@@ -18,7 +18,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   implementation. Previous configuration options are no longer available.
 
 [//]: # (TODO: comtemplate moving to GraphViz-Rust crate)
-[//]: # (TODO: should `AdjacencyList` and `AdjacencyMatrix` be in one crate, how to call that crate? `petgraph-adjacency`, I mean you could think of it as a sparse matrix, so it's fine?)
+[//]: # (TODO: should `AdjacencyList` and `AdjacencyMatrix` be in one crate, how to call that crate? `petgraph-adjacency-matrix`, I mean you could think of it as a sparse matrix, so it's fine?)
 
 ### Changed
 
