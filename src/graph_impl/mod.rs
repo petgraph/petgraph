@@ -1374,6 +1374,30 @@ where
         g
     }
 
+    pub fn map_owned<F, G, N2, E2>(
+        self,
+        mut node_map: F,
+        mut edge_map: G,
+    ) -> Graph<N2, E2, Ty, Ix>
+        where
+            F: FnMut(NodeIndex<Ix>, & N) -> N2,
+            G: FnMut(EdgeIndex<Ix>, & E) -> E2,
+    {
+        let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
+        g.nodes.extend(enumerate(self.nodes).map(|(i, node)| Node {
+            weight: node_map(NodeIndex::new(i), &node.weight),
+            next: node.next,
+        }));
+        g.edges.extend(enumerate(self.edges).map(|(i, edge)| Edge {
+            weight: edge_map(EdgeIndex::new(i), &edge.weight),
+            next: edge.next,
+            node: edge.node,
+        }));
+        g
+    }
+    
+
+
     /// Create a new `Graph` by mapping nodes and edges.
     /// A node or edge may be mapped to `None` to exclude it from
     /// the resulting graph.

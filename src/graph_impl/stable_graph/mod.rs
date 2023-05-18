@@ -889,7 +889,28 @@ where
             free_edge: self.free_edge,
         }
     }
-
+    
+    pub fn map_owned<F, G, N2, E2>(
+        self,
+        mut node_map: F,
+        mut edge_map: G
+    ) -> StableGraph<N2, E2, Ty, Ix>
+        where
+            F: FnMut(NodeIndex<Ix>, & N) -> N2,
+            G: FnMut(EdgeIndex<Ix>, &  E) -> E2,
+    {
+        let g = self.g.map_owned(
+            move |i, w| w.as_ref().map(|w| node_map(i, w)),
+            move |i, w| w.as_ref().map(|w| edge_map(i, w)),
+        );
+        StableGraph {
+            g,
+            node_count: self.node_count,
+            edge_count: self.edge_count,
+            free_node: self.free_node,
+            free_edge: self.free_edge,
+        }
+    }
     /// Create a new `StableGraph` by mapping nodes and edges.
     /// A node or edge may be mapped to `None` to exclude it from
     /// the resulting graph.
