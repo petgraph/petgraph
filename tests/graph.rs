@@ -1,28 +1,25 @@
 extern crate petgraph;
 
+use std::arch::x86_64::__cpuid;
 use std::collections::HashSet;
 use std::hash::Hash;
 
-use petgraph::prelude::*;
-use petgraph::EdgeType;
-
 use petgraph as pg;
-
 use petgraph::algo::{
     dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
     is_isomorphic_matching, min_spanning_tree,
 };
-
-use petgraph::graph::node_index as n;
+use petgraph::algo::{astar, DfsSpace, dijkstra};
+use petgraph::data::Element::Node;
+use petgraph::dot::Dot;
+use petgraph::EdgeType;
 use petgraph::graph::IndexType;
-
-use petgraph::algo::{astar, dijkstra, DfsSpace};
+use petgraph::graph::node_index as n;
+use petgraph::prelude::*;
 use petgraph::visit::{
     IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNodeIdentifiers, NodeFiltered, Reversed, Topo,
     VisitMap, Walker,
 };
-
-use petgraph::dot::Dot;
 
 fn set<I>(iter: I) -> HashSet<I::Item>
 where
@@ -1600,6 +1597,48 @@ fn test_has_path() {
 }
 
 #[test]
+fn  test_map() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(b, c, 10);
+  
+    let g2 = g.map(|_, node| node.to_lowercase(), |_, weight| weight * 2);
+    
+    let g_nodes: Vec<String> = g.raw_nodes().to_vec().into_iter().map(| node | node.weight.to_lowercase()).collect();
+    let g_edges: Vec<i32> = g.raw_edges().to_vec().into_iter().map(| edge | edge.weight * 2).collect();
+    let g2_nodes: Vec<String> = g2.raw_nodes().to_vec().into_iter().map(| node | node.weight).collect();
+    let g2_edges: Vec<i32> = g2.raw_edges().to_vec().into_iter().map(| edge | edge.weight).collect();
+
+    assert_eq!(g_nodes, g2_nodes);
+    assert_eq!(g_edges, g2_edges);
+}
+
+#[test]
+fn  test_map_owned() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(b, c, 10);
+
+    let g_nodes: Vec<String> = g.raw_nodes().to_vec().into_iter().map(| node | node.weight.to_lowercase()).collect();
+    let g_edges: Vec<i32> = g.raw_edges().to_vec().into_iter().map(| edge | edge.weight * 2).collect();
+
+    let g2 = g.map_owned(|_, node| node.to_lowercase(), |_, weight| weight * 2);
+    let g2_nodes: Vec<String> = g2.raw_nodes().to_vec().into_iter().map(| node | node.weight).collect();
+    let g2_edges: Vec<i32> = g2.raw_edges().to_vec().into_iter().map(| edge | edge.weight).collect();
+
+    assert_eq!(g_nodes, g2_nodes);
+    assert_eq!(g_edges, g2_edges);
+}
+
+#[test]
 fn map_filter_map() {
     let mut g = Graph::new_undirected();
     let a = g.add_node("A");
@@ -2069,7 +2108,7 @@ fn dfs_visit() {
     use petgraph::visit::Control;
     use petgraph::visit::DfsEvent::*;
     use petgraph::visit::{depth_first_search, Time};
-    use petgraph::visit::{VisitMap, Visitable};
+    use petgraph::visit::{Visitable, VisitMap};
     let gr: Graph<(), ()> = Graph::from_edges(&[
         (0, 5),
         (0, 2),
