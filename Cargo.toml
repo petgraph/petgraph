@@ -46,6 +46,7 @@ petgraph-csr = { path = "crates/csr", default-features = false }
 petgraph-matrix-graph = { path = "crates/matrix-graph", default-features = false }
 petgraph-algorithms = { path = "crates/algorithms", default-features = false }
 petgraph-generators = { path = "crates/generators", default-features = false }
+petgraph-proptest = { path = "crates/proptest", default-features = false }
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }

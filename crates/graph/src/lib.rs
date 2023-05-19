@@ -20,7 +20,8 @@ mod frozen;
 pub mod stable;
 
 mod data;
-// mod proptest;
+#[cfg(feature = "proptest")]
+mod proptest;
 #[cfg(feature = "serde")]
 mod serde;
 mod utils;

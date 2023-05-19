@@ -74,6 +74,7 @@ where
     })
 }
 
+// TODO: test, parameters
 pub fn graph_strategy<G>(self_loops: bool, parallel_edges: bool) -> impl Strategy<Value = G>
 where
     G: Create + Build + Data + Debug,
@@ -118,17 +119,4 @@ where
 
             graph
         })
-}
-
-#[cfg(test)]
-mod tests {
-    use petgraph::Graph;
-    use proptest::strategy::check_strategy_sanity;
-
-    use crate::default::graph_strategy;
-
-    #[test]
-    fn sanity() {
-        check_strategy_sanity(graph_strategy::<Graph<(), ()>>(false, false), None);
-    }
 }

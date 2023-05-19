@@ -9,8 +9,8 @@ fixedbitset = { workspace = true }
 funty = { version = "2.0.0", default-features = false }
 petgraph-core = { workspace = true, features = ["alloc", "fixedbitset"] }
 serde = { workspace = true, optional = true, features = ["alloc", "derive"] }
-quickcheck = { workspace = true, optional = true }
 proptest = { workspace = true, optional = true }
+petgraph-proptest = { workspace = true, optional = true }
 
 [dev-dependencies]
 # Used for documentation examples
@@ -22,4 +22,4 @@ default = ["std", "stable"]
 stable = []
 std = ["fixedbitset/std", "petgraph-core/std", "serde/std"]
 serde = ["dep:serde"]
-proptest = ["dep:proptest"]
+proptest = ["dep:proptest", "dep:petgraph-proptest"]

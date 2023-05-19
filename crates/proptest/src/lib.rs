@@ -8,4 +8,4 @@
 
 extern crate alloc;
 
-mod default;
+pub mod default;
