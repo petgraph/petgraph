@@ -2,6 +2,8 @@ mod matching;
 mod semantic;
 mod state;
 
+use alloc::vec::Vec;
+
 use petgraph_core::{
     data::DataMap,
     visit::{

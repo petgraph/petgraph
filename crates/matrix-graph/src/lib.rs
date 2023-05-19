@@ -290,7 +290,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
 
         debug_assert!(node_capacity <= <Ix as Integral>::MAX.cast());
         if node_capacity > 0 {
-            m.extend_capacity_for_node(NodeIndex::new(node_capacity - 1), true);
+            m.extend_capacity_for_node(NodeIndex::new(Ix::from_usize(node_capacity - 1)), true);
         }
 
         m
@@ -348,7 +348,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     ///
     /// **Panics** if the MatrixGraph is at the maximum number of nodes for its index type.
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
-        NodeIndex::new(self.nodes.add(weight))
+        NodeIndex::new(Ix::from_usize(self.nodes.add(weight)))
     }
 
     /// Remove `a` from the graph.
@@ -358,13 +358,13 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// **Panics** if the node `a` does not exist.
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> N {
         for id in self.nodes.iter_ids() {
-            let position = self.to_edge_position(a, NodeIndex::new(id));
+            let position = self.to_edge_position(a, NodeIndex::new(Ix::from_usize(id)));
             if let Some(pos) = position {
                 self.node_adjacencies[pos] = Default::default();
             }
 
             if Ty::is_directed() {
-                let position = self.to_edge_position(NodeIndex::new(id), a);
+                let position = self.to_edge_position(NodeIndex::new(Ix::from_usize(id)), a);
                 if let Some(pos) = position {
                     self.node_adjacencies[pos] = Default::default();
                 }
@@ -640,7 +640,7 @@ impl<'a, Ix: IndexType> Iterator for NodeIdentifiers<'a, Ix> {
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(NodeIndex::new)
+        self.iter.next().map(Ix::from_usize).map(NodeIndex::new)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -677,7 +677,7 @@ impl<'a, N: 'a, Ix: IndexType> Iterator for NodeReferences<'a, N, Ix> {
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|i| (NodeIndex::new(i), &self.nodes[i]))
+            .map(|i| (NodeIndex::new(Ix::from_usize(i)), &self.nodes[i]))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -743,7 +743,11 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator
 
             let p = to_linearized_matrix_position::<Ty>(row, column, self.node_capacity);
             if let Some(e) = self.node_adjacencies[p].as_ref() {
-                return Some((NodeIndex::new(row), NodeIndex::new(column), e));
+                return Some((
+                    NodeIndex::new(Ix::from_usize(row)),
+                    NodeIndex::new(Ix::from_usize(column)),
+                    e,
+                ));
             }
         }
     }
@@ -845,7 +849,11 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Edges<'a, Ty,
                     Columns => (row, column),
                 };
 
-                return Some((NodeIndex::new(a), NodeIndex::new(b), e));
+                return Some((
+                    NodeIndex::new(Ix::from_usize(a)),
+                    NodeIndex::new(Ix::from_usize(b)),
+                    e,
+                ));
             }
         }
     }
@@ -1294,7 +1302,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeIndexab
     }
 
     fn from_index(&self, ix: usize) -> Self::NodeId {
-        NodeIndex::new(ix)
+        NodeIndex::new(Ix::from_usize(ix))
     }
 }
 

@@ -103,6 +103,7 @@
 #[doc(no_inline)]
 pub use petgraph_graph::Graph;
 
+#[cfg(feature = "dot")]
 pub mod dot;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;

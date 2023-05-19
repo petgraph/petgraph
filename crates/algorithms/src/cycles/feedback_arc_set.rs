@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 use petgraph_core::{
     edge::Directed,
     index::IndexType,
-    visit::{GraphProp, IntoEdgeReferences, NodeCount},
+    visit::{EdgeRef, GraphProp, IntoEdgeReferences, NodeCount},
 };
 use petgraph_graph::{GraphIndex, NodeIndex};
 

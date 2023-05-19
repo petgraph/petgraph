@@ -227,7 +227,7 @@ where
             .iter()
             .map(|edge| {
                 let (x, y, _) = edge.clone().into_weighted_edge();
-                max(x.index(), y.index())
+                max(x.cast(), y.cast())
             })
             .max()
         {
@@ -248,9 +248,9 @@ where
                     if let Some(edge) = iter.peek() {
                         let (n, m, weight) = edge.clone().into_weighted_edge();
                         // check that the edges are in increasing sequence
-                        if node > n.index() {
+                        if node > n.cast() {
                             return Err(EdgesNotSorted {
-                                first_error: (n.index(), m.index()),
+                                first_error: (n.cast(), m.cast()),
                             });
                         }
                         /*
@@ -260,7 +260,7 @@ where
                                               "for edge {:?}"),
                                       node, n, (n, m));
                                       */
-                        if n.index() != node {
+                        if n.cast() != node {
                             break 'inner;
                         }
                         // check that the edges are in increasing sequence
@@ -271,7 +271,7 @@ where
                                       */
                         if !last_target.map_or(true, |x| m > x) {
                             return Err(EdgesNotSorted {
-                                first_error: (n.index(), m.index()),
+                                first_error: (n.cast(), m.cast()),
                             });
                         }
                         last_target = Some(m);
@@ -331,7 +331,7 @@ where
         let i = self.row.len() - 1;
         self.row.insert(i, self.column.len());
         self.node_weights.insert(i, weight);
-        Ix::new(i)
+        NodeIndex::new(Ix::from_usize(i))
     }
 
     /// Return `true` if the edge was added
@@ -351,6 +351,9 @@ where
     where
         E: Clone,
     {
+        let a = a.into();
+        let b = b.into();
+
         let ret = self.add_edge_(a, b, weight.clone());
         if ret && !self.is_directed() {
             self.edge_count += 1;
@@ -417,7 +420,7 @@ where
         index..end
     }
 
-    fn neighbors_of(&self, a: NodeIndex<Ix>) -> (usize, &[Ix]) {
+    fn neighbors_of(&self, a: NodeIndex<Ix>) -> (usize, &[NodeIndex<Ix>]) {
         let r = self.neighbors_range(a);
         (r.start, &self.column[r])
     }
@@ -572,7 +575,7 @@ where
     fn edge_references(self) -> Self::EdgeReferences {
         EdgeReferences {
             index: 0,
-            source_index: Ix::new(0),
+            source_index: NodeIndex::new(Ix::from_usize(0)),
             edge_ranges: self.row.windows(2).enumerate(),
             column: &self.column,
             edges: &self.edges,
@@ -617,7 +620,7 @@ where
                 let a = w[0];
                 let b = w[1];
                 self.iter = iter::zip(&self.column[a..b], &self.edges[a..b]);
-                self.source_index = Ix::new(i);
+                self.source_index = NodeIndex::new(Ix::from_usize(i));
             } else {
                 return None;
             }
@@ -764,7 +767,7 @@ where
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.r.next().map(Ix::new)
+        self.r.next().map(Ix::from_usize).map(NodeIndex::new)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -846,7 +849,9 @@ where
     type Item = (NodeIndex<Ix>, &'a N);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(i, weight)| (Ix::new(i), weight))
+        self.iter
+            .next()
+            .map(|(i, weight)| (NodeIndex::new(Ix::from_usize(i)), weight))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

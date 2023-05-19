@@ -2,7 +2,10 @@ use alloc::vec::Vec;
 use core::{cell::Cell, marker::PhantomData};
 
 use funty::Integral;
-use petgraph_core::index::IndexType;
+use petgraph_core::{
+    index::IndexType,
+    visit::{EdgeIndexable, NodeIndexable},
+};
 use serde::{
     de::Error as _,
     ser::{SerializeSeq, SerializeStruct},
@@ -170,9 +173,9 @@ where
         }
 
         let total_nodes = nodes.len() + node_holes.len();
-        let mut nodes = Vec::with_capacity(total_nodes);
-
         let mut compact_nodes = nodes.into_iter();
+
+        let mut nodes = Vec::with_capacity(total_nodes);
 
         let mut node_pos = 0;
 

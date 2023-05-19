@@ -1,3 +1,4 @@
+use alloc::collections::VecDeque;
 use core::fmt;
 
 use petgraph_core::visit::{GraphRef, IntoNeighbors, VisitMap, Visitable};
@@ -17,7 +18,7 @@ where
     red.visit(start);
     let mut blue = g.visit_map();
 
-    let mut stack = ::std::collections::VecDeque::new();
+    let mut stack = VecDeque::new();
     stack.push_front(start);
 
     while let Some(node) = stack.pop_front() {

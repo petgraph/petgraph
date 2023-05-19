@@ -1062,7 +1062,7 @@ where
         self.free_node = free_node;
 
         let mut free_edge = EdgeIndex::end();
-        for (edge_index, edge) in enumerate(&mut self.g.edges) {
+        for (edge_index, edge) in self.g.edges.iter_mut().enumerate() {
             if edge.weight.is_none() {
                 // free edge
                 edge.next = [free_edge, EdgeIndex::end()];

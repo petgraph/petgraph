@@ -6,4 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-proptest = { workspace = true }
+petgraph-core = { workspace = true, features = ['alloc'] }
+proptest = { workspace = true, features = ['alloc'] }
+
+[dev-dependencies]
+petgraph = { workspace = true }

@@ -20,7 +20,7 @@ mod frozen;
 pub mod stable;
 
 mod data;
-mod proptest;
+// mod proptest;
 #[cfg(feature = "serde")]
 mod serde;
 mod utils;
@@ -249,7 +249,7 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
 /// let libc = deps.add_node("libc");
 /// deps.extend_with_edges(&[(pg, fb), (pg, qc), (qc, rand), (rand, libc), (qc, libc)]);
 /// ```
-#[doc = include_str!("../../doc/graph-example.svg")]
+#[doc = include_str!("../../../doc/graph-example.svg")]
 ///
 /// ### Graph Indices
 ///
