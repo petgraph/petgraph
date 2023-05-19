@@ -1,4 +1,4 @@
-use alloc::{collections::btree_map::Entry, sync::Arc, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
 use core::{
     cmp::Ordering,
     fmt::Debug,
@@ -7,15 +7,12 @@ use core::{
 
 use petgraph_core::{
     data::{Build, Create},
-    edge::EdgeType,
     visit::Data,
 };
 use proptest::{
-    arbitrary::{any, arbitrary, Arbitrary, StrategyFor},
+    arbitrary::{any, Arbitrary},
     collection::{btree_set, vec},
-    prop_compose, prop_oneof,
-    strategy::{Just, NewTree, Strategy, TupleUnion},
-    test_runner::TestRunner,
+    strategy::{Just, Strategy, TupleUnion},
 };
 
 #[derive(Debug)]
