@@ -7,6 +7,7 @@ use core::{
 
 use petgraph_core::{
     data::{Build, Create},
+    edge::EdgeType,
     visit::Data,
 };
 use proptest::{
@@ -74,7 +75,7 @@ where
     })
 }
 
-// TODO: test, parameters
+// TODO: test
 pub fn graph_strategy<G>(self_loops: bool, parallel_edges: bool) -> impl Strategy<Value = G>
 where
     G: Create + Build + Data + Debug,
@@ -82,27 +83,43 @@ where
     G::EdgeWeight: Arbitrary + Debug,
 {
     vec(any::<G::NodeWeight>(), 0..usize::MAX)
-        .prop_flat_map(|nodes: Vec<G::NodeWeight>| {
+        .prop_flat_map(move |nodes: Vec<G::NodeWeight>| {
             let nodes_len = nodes.len();
 
-            // TODO: make configurable
             // generate an edge where no self edges are allowed, this allows the use in
             // a lot more graphs
-            let edge_endpoints = (0..nodes_len).prop_flat_map(move |start| {
-                (0..start)
-                    .prop_union(start..nodes_len)
-                    .prop_map(move |end| (start, end))
-            });
+            let edge_endpoints = Arc::new((0..nodes_len).prop_flat_map(move |start| {
+                // if we allow self loops we simply include the start in the range for end
+                let range_start = if self_loops { start } else { start + 1 };
 
-            // TODO: make configurable
+                // start < end, this has the benefit that an undirected graph won't have any
+                // parallel edges
+                (range_start..nodes_len).prop_map(move |end| (start, end))
+            }));
+
             // using btree_set here, as while it is slower, it is usable in no-std
-            (
-                Just(nodes),
+            let edge_endpoints_no_parallel_edges = Arc::new(
                 btree_set(
-                    edge_strategy(edge_endpoints, Arc::new(any::<G::EdgeWeight>())),
+                    edge_strategy(
+                        Arc::clone(&edge_endpoints),
+                        Arc::new(any::<G::EdgeWeight>()),
+                    ),
                     0..nodes_len.pow(2),
-                ),
-            )
+                )
+                .prop_map(|values| values.into_iter().collect::<Vec<_>>()),
+            );
+
+            let edge_endpoints_parallel_edges = Arc::new(vec(
+                edge_strategy(edge_endpoints, Arc::new(any::<G::EdgeWeight>())),
+                0..nodes_len.pow(2),
+            ));
+
+            let edge_endpoints = TupleUnion::new((
+                (parallel_edges.into(), edge_endpoints_parallel_edges),
+                ((!parallel_edges).into(), edge_endpoints_no_parallel_edges),
+            ));
+
+            (Just(nodes), edge_endpoints)
         })
         .prop_map(move |(nodes, edges)| {
             let mut graph = G::with_capacity(nodes.len(), edges.len());
