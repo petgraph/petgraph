@@ -12,6 +12,7 @@ use petgraph_core::{
 use proptest::{
     arbitrary::{any, Arbitrary},
     collection::{btree_set, vec},
+    sample::SizeRange,
     strategy::{Just, Strategy, TupleUnion},
 };
 
@@ -62,24 +63,31 @@ where
 
 fn edge_strategy<T, U, S1, S2>(endpoints: S1, weight: Arc<S2>) -> impl Strategy<Value = Edge<T, U>>
 where
-    T: PartialOrd + Hash + Debug,
+    T: PartialOrd + Hash + Clone + Debug,
     U: Debug,
     S1: Strategy<Value = (T, T)>,
     S2: Strategy<Value = U>,
 {
-    endpoints.prop_flat_map(move |(start, end)| {
-        Arc::clone(&weight).prop_map(move |weight| Edge { start, end, weight })
-    })
+    endpoints
+        .prop_flat_map(move |(start, end)| (Just(start), Just(end), Arc::clone(&weight)))
+        .prop_map(move |(start, end, weight)| Edge { start, end, weight })
 }
 
 // TODO: test
-pub fn graph_strategy<G>(self_loops: bool, parallel_edges: bool) -> impl Strategy<Value = G>
+pub fn graph_strategy<G>(
+    self_loops: bool,
+    parallel_edges: bool,
+    node_range: impl Into<SizeRange>,
+    edge_range: Option<Arc<dyn Fn(usize) -> SizeRange>>,
+) -> impl Strategy<Value = G>
 where
     G: Create + Build + Data + Debug,
     G::NodeWeight: Arbitrary + Clone + Debug,
-    G::EdgeWeight: Arbitrary + Debug,
+    G::EdgeWeight: Arbitrary + Clone + Debug,
 {
-    vec(any::<G::NodeWeight>(), 0..usize::MAX)
+    let edge_range = edge_range.unwrap_or_else(|| Arc::new(|max| SizeRange::from(0..max.pow(2))));
+
+    vec(any::<G::NodeWeight>(), node_range.into())
         .prop_flat_map(move |nodes: Vec<G::NodeWeight>| {
             let nodes_len = nodes.len();
 
@@ -99,13 +107,15 @@ where
                 Arc::new(any::<G::EdgeWeight>()),
             ));
 
+            let edges_range = (edge_range)(nodes_len);
+
             // using btree_set here, as while it is slower, it is usable in no-std
             let edge_endpoints_no_parallel_edges = Arc::new(
-                btree_set(Arc::clone(&edge_endpoint), 0..nodes_len.pow(2))
+                btree_set(Arc::clone(&edge_endpoint), edges_range.clone())
                     .prop_map(|values| values.into_iter().collect::<Vec<_>>()),
             );
 
-            let edge_endpoints_parallel_edges = Arc::new(vec(edge_endpoint, 0..nodes_len.pow(2)));
+            let edge_endpoints_parallel_edges = Arc::new(vec(edge_endpoint, edges_range));
 
             let edge_endpoints = TupleUnion::new((
                 (parallel_edges.into(), edge_endpoints_parallel_edges),

@@ -3,7 +3,7 @@ use core::fmt::Debug;
 
 use petgraph_core::{edge::EdgeType, index::IndexType};
 use petgraph_proptest::default::graph_strategy;
-use proptest::{arbitrary::Arbitrary, strategy::Strategy};
+use proptest::{arbitrary::Arbitrary, prelude::BoxedStrategy, strategy::Strategy};
 
 use crate::Graph;
 
@@ -17,15 +17,15 @@ use crate::Graph;
 /// Requires crate feature `"proptest"`
 impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
 where
-    N: Arbitrary + Debug + Clone,
-    E: Arbitrary,
+    N: Arbitrary + Debug + Clone + 'static,
+    E: Arbitrary + Debug + Clone + 'static,
     Ty: EdgeType + Send + 'static,
     Ix: IndexType + Send,
 {
     type Parameters = ();
-    type Strategy = Arc<impl Strategy<Value = Self>>;
+    type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
-        Arc::new(graph_strategy(true, false))
+        graph_strategy(true, false, 0..Ix::MAX.as_usize(), None).boxed()
     }
 }

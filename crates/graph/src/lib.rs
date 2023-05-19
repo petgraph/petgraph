@@ -43,7 +43,7 @@ pub struct NodeIndex<Ix = DefaultIx>(Ix);
 impl<Ix: IndexType> NodeIndex<Ix> {
     #[inline]
     pub fn new(x: usize) -> Self {
-        NodeIndex(IndexType::new(x))
+        NodeIndex(IndexType::from_usize(x))
     }
 
     #[inline]
