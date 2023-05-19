@@ -13,7 +13,7 @@ use proptest::{
     arbitrary::{any, Arbitrary},
     collection::{btree_set, vec},
     sample::SizeRange,
-    strategy::{Just, Strategy, TupleUnion},
+    strategy::{Just, LazyJust, Strategy, TupleUnion},
 };
 
 #[derive(Debug)]
@@ -83,7 +83,7 @@ pub fn graph_strategy<G>(
 where
     G: Create + Build + Data + Debug,
     G::NodeWeight: Arbitrary + Clone + Debug,
-    G::EdgeWeight: Arbitrary + Clone + Debug,
+    G::EdgeWeight: Arbitrary + Debug,
 {
     let edge_range = edge_range.unwrap_or_else(|| Arc::new(|max| SizeRange::from(0..max.pow(2))));
 

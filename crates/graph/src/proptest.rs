@@ -18,7 +18,7 @@ use crate::Graph;
 impl<N, E, Ty, Ix> Arbitrary for Graph<N, E, Ty, Ix>
 where
     N: Arbitrary + Debug + Clone + 'static,
-    E: Arbitrary + Debug + Clone + 'static,
+    E: Arbitrary + Debug + 'static,
     Ty: EdgeType + Send + 'static,
     Ix: IndexType + Send,
 {
