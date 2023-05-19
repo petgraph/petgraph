@@ -1,5 +1,5 @@
 #![allow(clippy::unwrap_used)]
-use rustc_version::{version_meta, Channel, Version};
+use rustc_version::{version_meta, Channel};
 
 fn main() {
     let version_meta = version_meta().unwrap();

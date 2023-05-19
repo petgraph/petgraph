@@ -26,14 +26,7 @@ no-dev-version = true
 members = [
     ".",
     "serialization-tests",
-    "crates/core",
-    "crates/graph",
-    "crates/adjacency-matrix",
-    "crates/graphmap",
-    "crates/csr",
-    "crates/matrix-graph",
-    "crates/algorithms",
-    "crates/generators"
+    "crates/*",
 ]
 
 [workspace.dependencies]
@@ -42,6 +35,8 @@ serde = { version = "1.0", default-features = false }
 funty = { version = "2.0", default-features = false }
 indexmap = { version = "1.9.3", default-features = false }
 hashbrown = { version = "0.13.2", default-features = false, features = ['ahash', 'inline-more'] }
+quickcheck = { version = "1.0", default-features = false }
+proptest = { version = "1.1.0", default-features = false }
 petgraph = { path = "." }
 petgraph-core = { path = "crates/core", default-features = false }
 petgraph-graph = { path = "crates/graph", default-features = false }
@@ -89,8 +84,7 @@ matrix-graph = ["dep:petgraph-matrix-graph"]
 serde = ["dep:serde", "serde_derive"]
 stable-graph = ["petgraph-graph/stable"]
 dot = ["dep:dot"]
-unstable-generate = ["petgraph-generators"]
-#unstable = ["generate"]
+unstable-generators = ["petgraph-generators"]
 std = [
     "petgraph-core/std",
     "petgraph-graph/std",
