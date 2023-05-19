@@ -94,22 +94,18 @@ where
                 (range_start..nodes_len).prop_map(move |end| (start, end))
             }));
 
+            let edge_endpoint = Arc::new(edge_strategy(
+                Arc::clone(&edge_endpoints),
+                Arc::new(any::<G::EdgeWeight>()),
+            ));
+
             // using btree_set here, as while it is slower, it is usable in no-std
             let edge_endpoints_no_parallel_edges = Arc::new(
-                btree_set(
-                    edge_strategy(
-                        Arc::clone(&edge_endpoints),
-                        Arc::new(any::<G::EdgeWeight>()),
-                    ),
-                    0..nodes_len.pow(2),
-                )
-                .prop_map(|values| values.into_iter().collect::<Vec<_>>()),
+                btree_set(Arc::clone(&edge_endpoint), 0..nodes_len.pow(2))
+                    .prop_map(|values| values.into_iter().collect::<Vec<_>>()),
             );
 
-            let edge_endpoints_parallel_edges = Arc::new(vec(
-                edge_strategy(edge_endpoints, Arc::new(any::<G::EdgeWeight>())),
-                0..nodes_len.pow(2),
-            ));
+            let edge_endpoints_parallel_edges = Arc::new(vec(edge_endpoint, 0..nodes_len.pow(2)));
 
             let edge_endpoints = TupleUnion::new((
                 (parallel_edges.into(), edge_endpoints_parallel_edges),
