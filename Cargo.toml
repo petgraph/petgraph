@@ -31,7 +31,8 @@ members = [
     "graphmap",
     "csr",
     "matrix-graph",
-    "algorithms"
+    "algorithms",
+    "generators"
 ]
 
 [workspace.dependencies]
@@ -48,6 +49,7 @@ petgraph-graphmap = { path = "./graphmap", default-features = false }
 petgraph-csr = { path = "./csr", default-features = false }
 petgraph-matrix-graph = { path = "./matrix-graph", default-features = false }
 petgraph-algorithms = { path = "./algorithms", default-features = false }
+petgraph-generators = { path = "./generators", default-features = false }
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }
@@ -58,6 +60,7 @@ petgraph-csr = { workspace = true, optional = true, default-features = false }
 petgraph-graph = { workspace = true, default-features = false }
 petgraph-matrix-graph = { workspace = true, optional = true, default-features = false }
 petgraph-algorithms = { workspace = true, default-features = false, features = ["remove-me-only-intended-for-move-graph"] }
+petgraph-generators = { workspace = true, default-features = false, optional = true }
 quickcheck = { optional = true, version = "0.8", default-features = false }
 serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }
@@ -80,12 +83,12 @@ rand = "0.5.5"
 adjacency-matrix = ["dep:petgraph-adjacency-matrix", "petgraph-algorithms/remove-me-only-intended-for-move-adjacency-matrix"]
 csr = ["dep:petgraph-csr"]
 default = ["std", "graphmap", "stable-graph", "matrix-graph", "csr", "adjacency-matrix"]
-#generate = [] # For unstable features
 graphmap = ["dep:petgraph-graphmap"]
 matrix-graph = ["dep:petgraph-matrix-graph"]
 serde = ["dep:serde", "serde_derive"]
 stable-graph = ["petgraph-graph/stable"]
 dot = ["dep:dot"]
+unstable-generate = ["petgraph-generators"]
 #unstable = ["generate"]
 std = [
     "petgraph-core/std",

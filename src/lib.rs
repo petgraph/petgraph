@@ -104,12 +104,8 @@
 pub use petgraph_graph::Graph;
 
 pub mod dot;
-#[cfg(feature = "generate")]
-pub mod generate;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
-#[cfg(feature = "serde")]
-mod serde_utils;
 
 #[deprecated(since = "0.7.0", note = "use explicit imports instead of the prelude")]
 pub mod prelude;
@@ -149,6 +145,7 @@ pub mod adj {
     pub use petgraph_core::index::{DefaultIx, IndexType};
 }
 
+#[cfg(feature = "adjacency-matrix")]
 pub mod adjacency_matrix {
     pub use petgraph_adjacency_matrix::*;
 }
@@ -201,6 +198,17 @@ pub mod algorithms {
 )]
 pub mod operator {
     pub use petgraph_algorithms::operators::*;
+}
+
+#[cfg(feature = "unstable-generate")]
+#[deprecated(since = "0.7.0", note = "use `generator` instead of `generate`")]
+pub mod generate {
+    pub use petgraph_generate::*;
+}
+
+#[cfg(feature = "unstable-generate")]
+pub mod generator {
+    pub use petgraph_generate::*;
 }
 
 pub use petgraph_core::{

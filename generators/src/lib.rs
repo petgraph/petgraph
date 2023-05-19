@@ -1,10 +1,11 @@
 //! ***Unstable.*** Graph generation.
 //!
-//! ***Unstable: API may change at any time.*** Depends on `feature = "generate"`.
-//!
+//! This module is to be considered in alpha, expect breaking changes in the future.
+//! Only recommended to those that feel especially adventurous.
+#![no_std]
 
-use crate::graph::NodeIndex;
-use crate::{Directed, EdgeType, Graph};
+use petgraph_core::edge::{Directed, EdgeType};
+use petgraph_graph::{Graph, NodeIndex};
 
 // A DAG has the property that the adjacency matrix is lower triangular,
 // diagonal zero.
@@ -18,7 +19,7 @@ use crate::{Directed, EdgeType, Graph};
 
 /// A graph generator of “all” graphs of a particular size.
 ///
-/// ***Unstable: API may change at any time.*** Depends on `feature = "generate"`.
+/// ***Unstable: API may change at any time.*** Depends on `feature = "unstable-generate"`.
 pub struct Generator<Ty> {
     acyclic: bool,
     selfloops: bool,
@@ -45,8 +46,8 @@ impl Generator<Directed> {
         Generator {
             acyclic: true,
             selfloops: false,
-            nodes: nodes,
-            nedges: nedges,
+            nodes,
+            nedges,
             bits: !0,
             g: Graph::with_capacity(nodes, nedges),
         }
@@ -71,8 +72,8 @@ impl<Ty: EdgeType> Generator<Ty> {
         Generator {
             acyclic: false,
             selfloops: allow_selfloops,
-            nodes: nodes,
-            nedges: nedges,
+            nodes,
+            nedges,
             bits: !0,
             g: Graph::with_capacity(nodes, nedges),
         }
