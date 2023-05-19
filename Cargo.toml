@@ -24,15 +24,16 @@ no-dev-version = true
 
 [workspace]
 members = [
+    ".",
     "serialization-tests",
-    "core",
-    "graph",
-    "adjacency-matrix",
-    "graphmap",
-    "csr",
-    "matrix-graph",
-    "algorithms",
-    "generators"
+    "crates/core",
+    "crates/graph",
+    "crates/adjacency-matrix",
+    "crates/graphmap",
+    "crates/csr",
+    "crates/matrix-graph",
+    "crates/algorithms",
+    "crates/generators"
 ]
 
 [workspace.dependencies]
@@ -42,14 +43,14 @@ funty = { version = "2.0", default-features = false }
 indexmap = { version = "1.9.3", default-features = false }
 hashbrown = { version = "0.13.2", default-features = false, features = ['ahash', 'inline-more'] }
 petgraph = { path = "." }
-petgraph-core = { path = "./core", default-features = false }
-petgraph-graph = { path = "./graph", default-features = false }
-petgraph-adjacency-matrix = { path = "./adjacency-matrix", default-features = false }
-petgraph-graphmap = { path = "./graphmap", default-features = false }
-petgraph-csr = { path = "./csr", default-features = false }
-petgraph-matrix-graph = { path = "./matrix-graph", default-features = false }
-petgraph-algorithms = { path = "./algorithms", default-features = false }
-petgraph-generators = { path = "./generators", default-features = false }
+petgraph-core = { path = "crates/core", default-features = false }
+petgraph-graph = { path = "crates/graph", default-features = false }
+petgraph-adjacency-matrix = { path = "crates/adjacency-matrix", default-features = false }
+petgraph-graphmap = { path = "crates/graphmap", default-features = false }
+petgraph-csr = { path = "crates/csr", default-features = false }
+petgraph-matrix-graph = { path = "crates/matrix-graph", default-features = false }
+petgraph-algorithms = { path = "crates/algorithms", default-features = false }
+petgraph-generators = { path = "crates/generators", default-features = false }
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }
