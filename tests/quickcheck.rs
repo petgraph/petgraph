@@ -803,7 +803,7 @@ defmac!(edges_eq ref a, ref b =>
             b.edge_references().map(|e| (e.source(), e.target()))));
 
 quickcheck! {
-    // TODO: does not need to be an integration test
+    // TODO: does not need to be an integration test?
     fn test_di_from(gr1: DiGraph<i32, i32>) -> () {
         let sgr = StableGraph::from(gr1.clone());
         let gr2 = Graph::from(sgr);
@@ -813,7 +813,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
-    // TODO: does not need to be an integration test
+    // TODO: does not need to be an integration test?
     fn test_un_from(gr1: UnGraph<i32, i32>) -> () {
         let sgr = StableGraph::from(gr1.clone());
         let gr2 = Graph::from(sgr);
@@ -823,7 +823,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
-    // TODO: does not need to be an integration test
+    // TODO: does not need to be an integration test?
     fn test_graph_from_stable_graph(gr1: StableDiGraph<usize, usize>) -> () {
         let mut gr1 = gr1;
         let gr2 = Graph::from(gr1.clone());
@@ -858,7 +858,7 @@ quickcheck! {
         );
     }
 
-    // TODO: does not need to be an integration test
+    // TODO: does not need to be an integration test?
     fn stable_di_graph_map_id(gr1: StableDiGraph<usize, usize>) -> () {
         let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
         assert!(nodes_eq!(&gr1, &gr2));
@@ -866,7 +866,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
-    // TODO: does not need to be an integration test
+    // TODO: does not need to be an integration test?
     fn stable_un_graph_map_id(gr1: StableUnGraph<usize, usize>) -> () {
         let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
         assert!(nodes_eq!(&gr1, &gr2));
@@ -874,7 +874,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
-    // TODO: does not need to be an integration test
+    // TODO: does not need to be an integration test?
     fn stable_di_graph_filter_map_id(gr1: StableDiGraph<usize, usize>) -> () {
         let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
         assert!(nodes_eq!(&gr1, &gr2));
@@ -882,7 +882,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
-    // TODO: does not need to be an integration test
+    // TODO: does not need to be an integration test?
     fn test_stable_un_graph_filter_map_id(gr1: StableUnGraph<usize, usize>) -> () {
         let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
         assert!(nodes_eq!(&gr1, &gr2));
@@ -890,7 +890,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
-    // TODO: does not need to be an integration test
+    // TODO: does not need to be an integration test?
     fn stable_di_graph_filter_map_remove(gr1: Small<StableDiGraph<i32, i32>>,
                                          nodes: Vec<usize>,
                                          edges: Vec<usize>) -> ()
