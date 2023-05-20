@@ -21,6 +21,7 @@ rustc_version = "0.4.0"
 
 [dev-dependencies]
 petgraph-graph.workspace = true
+paste = "1.0.12"
 
 [features]
 default = ["std"]
