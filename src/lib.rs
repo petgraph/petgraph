@@ -105,8 +105,6 @@ pub use petgraph_graph::Graph;
 
 #[cfg(feature = "dot")]
 pub mod dot;
-#[cfg(feature = "quickcheck")]
-mod quickcheck;
 
 #[deprecated(since = "0.7.0", note = "use explicit imports instead of the prelude")]
 pub mod prelude;

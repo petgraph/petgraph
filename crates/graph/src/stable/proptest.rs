@@ -26,6 +26,8 @@ where
     Ix: IndexType + Send,
 {
     type Parameters = ();
+    // impl Strategy<Value = Self> is nightly, and therefore not usable here.
+    // TODO: revisit once impl_trait_in_assoc_type is stable. (https://github.com/rust-lang/rust/issues/63063)
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
