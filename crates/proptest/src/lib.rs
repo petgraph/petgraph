@@ -9,4 +9,4 @@
 extern crate alloc;
 
 pub mod default;
-mod vtable;
+pub mod vtable;
