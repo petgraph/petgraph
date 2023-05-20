@@ -1,28 +1,22 @@
 extern crate petgraph;
 
-use std::collections::HashSet;
-use std::hash::Hash;
-
-use petgraph::prelude::*;
-use petgraph::EdgeType;
+use std::{collections::HashSet, hash::Hash};
 
 use petgraph as pg;
-
-use petgraph::algo::{
-    dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
-    is_isomorphic_matching, min_spanning_tree,
+use petgraph::{
+    algo::{
+        astar, dijkstra, dominators, has_path_connecting, is_bipartite_undirected,
+        is_cyclic_undirected, is_isomorphic_matching, min_spanning_tree, DfsSpace,
+    },
+    dot::Dot,
+    graph::{node_index as n, IndexType},
+    prelude::*,
+    visit::{
+        IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNodeIdentifiers, NodeFiltered, Reversed,
+        Topo, VisitMap, Walker,
+    },
+    EdgeType,
 };
-
-use petgraph::graph::node_index as n;
-use petgraph::graph::IndexType;
-
-use petgraph::algo::{astar, dijkstra, DfsSpace};
-use petgraph::visit::{
-    IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNodeIdentifiers, NodeFiltered, Reversed, Topo,
-    VisitMap, Walker,
-};
-
-use petgraph::dot::Dot;
 
 fn set<I>(iter: I) -> HashSet<I::Item>
 where
@@ -71,6 +65,7 @@ fn undirected() {
     assert_graph_consistent(&og);
 }
 
+// TODO: move to core?
 #[test]
 fn dfs() {
     let mut gr = Graph::new();
@@ -97,6 +92,7 @@ fn dfs() {
     assert_eq!(Dfs::new(&gr, i).iter(&gr).count(), 3);
 }
 
+// TODO: move to core?
 #[test]
 fn dfs_order() {
     let mut gr = Graph::new();
@@ -126,6 +122,7 @@ fn dfs_order() {
     }
 }
 
+// TODO: move to core?
 #[test]
 fn bfs() {
     let mut gr = Graph::new();
@@ -165,6 +162,7 @@ fn bfs() {
     assert_eq!(bfs.next(&gr), None);
 }
 
+// TODO: move to algorithms
 #[test]
 fn mst() {
     use petgraph::data::FromElements;
@@ -223,6 +221,7 @@ fn mst() {
     assert!(mst.find_edge(b, c).is_none());
 }
 
+// DONE
 #[test]
 fn selfloop() {
     let mut gr = Graph::new();
@@ -244,6 +243,7 @@ fn selfloop() {
     println!("{:?}", gr);
 }
 
+// TODO: move to algo
 #[test]
 fn cyclic() {
     let mut gr = Graph::new();
@@ -279,6 +279,7 @@ fn cyclic() {
     assert_graph_consistent(&gr);
 }
 
+// TODO: move to algo
 #[test]
 fn bipartite() {
     {
@@ -350,6 +351,7 @@ fn bipartite() {
     }
 }
 
+// TODO: move to graph
 #[test]
 fn multi() {
     let mut gr = Graph::new();
@@ -424,6 +426,7 @@ fn iter_multi_undirected_edges() {
     assert!(connecting_edges.is_empty());
 }
 
+// TODO: directed
 #[test]
 fn update_edge() {
     {
@@ -450,6 +453,7 @@ fn update_edge() {
     }
 }
 
+// TODO: move to algo
 #[test]
 fn dijk() {
     let mut g = Graph::new_undirected();
@@ -476,22 +480,20 @@ fn dijk() {
     let scores = dijkstra(&g, a, None, |e| *e.weight());
     let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();
     scores.sort();
-    assert_eq!(
-        scores,
-        vec![
-            ("A", 0),
-            ("B", 7),
-            ("C", 9),
-            ("D", 11),
-            ("E", 20),
-            ("F", 20)
-        ]
-    );
+    assert_eq!(scores, vec![
+        ("A", 0),
+        ("B", 7),
+        ("C", 9),
+        ("D", 11),
+        ("E", 20),
+        ("F", 20)
+    ]);
 
     let scores = dijkstra(&g, a, Some(c), |e| *e.weight());
     assert_eq!(scores[&c], 9);
 }
 
+// TODO: move to algo
 #[test]
 fn test_astar_null_heuristic() {
     let mut g = Graph::new();
@@ -522,6 +524,7 @@ fn test_astar_null_heuristic() {
     assert_eq!(path, None);
 }
 
+// TODO: move to algo
 #[test]
 fn test_astar_manhattan_heuristic() {
     let mut g = Graph::new();
@@ -574,6 +577,7 @@ fn test_astar_manhattan_heuristic() {
     }
 }
 
+// TODO: move to algo
 #[test]
 fn test_astar_runtime_optimal() {
     let mut g = Graph::new();
@@ -609,6 +613,7 @@ fn test_astar_runtime_optimal() {
     assert_eq!(times_called, 5);
 }
 
+// TODO: move to algo
 #[test]
 fn test_astar_admissible_inconsistent() {
     let mut g = Graph::new();
@@ -633,6 +638,7 @@ fn test_astar_admissible_inconsistent() {
     assert_eq!(optimal, Some((9, vec![a, b, c, d])));
 }
 
+// TODO: move to generator
 #[cfg(feature = "generate")]
 #[test]
 fn test_generate_undirected() {
@@ -649,6 +655,7 @@ fn test_generate_undirected() {
     }
 }
 
+// TODO: move to generator
 #[cfg(feature = "generate")]
 #[test]
 fn test_generate_directed() {
@@ -678,6 +685,7 @@ fn test_generate_directed() {
     }
 }
 
+// TODO: move to generator
 #[cfg(feature = "generate")]
 #[test]
 fn test_generate_dag() {
@@ -707,6 +715,7 @@ fn test_generate_dag() {
     }
 }
 
+// TODO: directed
 #[test]
 fn without() {
     let mut og = Graph::new_undirected();
@@ -750,6 +759,7 @@ fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex]) {
     }
 }
 
+// TODO: move to algo
 #[test]
 fn test_toposort() {
     let mut gr = Graph::<_, _>::new();
@@ -799,6 +809,7 @@ fn test_toposort_eq() {
     assert_eq!(petgraph::algo::toposort(&g, None), Ok(vec![a, b]));
 }
 
+// TODO: move to algo
 #[test]
 fn is_cyclic_directed() {
     let mut gr = Graph::<_, _>::new();
@@ -857,6 +868,7 @@ fn assert_sccs_eq(
     assert_eq!(res, answer);
 }
 
+// TODO: move to algo
 #[test]
 fn scc() {
     let gr: Graph<(), ()> = Graph::from_edges(&[
@@ -875,21 +887,21 @@ fn scc() {
 
     assert_sccs_eq(
         petgraph::algo::kosaraju_scc(&gr),
-        vec![
-            vec![n(0), n(3), n(6)],
-            vec![n(2), n(5), n(8)],
-            vec![n(1), n(4), n(7)],
-        ],
+        vec![vec![n(0), n(3), n(6)], vec![n(2), n(5), n(8)], vec![
+            n(1),
+            n(4),
+            n(7),
+        ]],
         true,
     );
     // Reversed edges gives the same sccs (when sorted)
     assert_sccs_eq(
         petgraph::algo::kosaraju_scc(Reversed(&gr)),
-        vec![
-            vec![n(1), n(4), n(7)],
-            vec![n(2), n(5), n(8)],
-            vec![n(0), n(3), n(6)],
-        ],
+        vec![vec![n(1), n(4), n(7)], vec![n(2), n(5), n(8)], vec![
+            n(0),
+            n(3),
+            n(6),
+        ]],
         true,
     );
 
@@ -902,10 +914,14 @@ fn scc() {
 
     assert_sccs_eq(
         petgraph::algo::kosaraju_scc(&hr),
-        vec![
-            vec![n(0), n(3), n(6)],
-            vec![n(1), n(2), n(4), n(5), n(7), n(8)],
-        ],
+        vec![vec![n(0), n(3), n(6)], vec![
+            n(1),
+            n(2),
+            n(4),
+            n(5),
+            n(7),
+            n(8),
+        ]],
         false,
     );
 
@@ -939,6 +955,7 @@ fn scc() {
     );
 }
 
+// TODO: move to algo
 #[test]
 fn tarjan_scc() {
     let gr: Graph<(), ()> = Graph::from_edges(&[
@@ -961,11 +978,11 @@ fn tarjan_scc() {
     tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
         result,
-        vec![
-            vec![n(0), n(3), n(6)],
-            vec![n(2), n(5), n(8)],
-            vec![n(1), n(4), n(7)],
-        ],
+        vec![vec![n(0), n(3), n(6)], vec![n(2), n(5), n(8)], vec![
+            n(1),
+            n(4),
+            n(7),
+        ]],
         true,
     );
 
@@ -980,10 +997,11 @@ fn tarjan_scc() {
     tarjan_scc.run(&hr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
         result,
-        vec![
-            vec![n(1), n(2), n(4), n(5), n(7), n(8)],
-            vec![n(0), n(3), n(6)],
-        ],
+        vec![vec![n(1), n(2), n(4), n(5), n(7), n(8)], vec![
+            n(0),
+            n(3),
+            n(6),
+        ]],
         false,
     );
 
@@ -1021,6 +1039,7 @@ fn tarjan_scc() {
     );
 }
 
+// TODO: move to algo
 #[test]
 fn condensation() {
     let gr: Graph<(), ()> = Graph::from_edges(&[
@@ -1058,6 +1077,7 @@ fn condensation() {
     assert!(cond.edge_count() == gr.edge_count());
 }
 
+// TODO: move to algo
 #[test]
 fn connected_comp() {
     let n = NodeIndex::new;
@@ -1095,6 +1115,7 @@ fn connected_comp() {
     assert_eq!(petgraph::algo::connected_components(&gr), 2);
 }
 
+// DONE
 #[should_panic]
 #[test]
 fn oob_index() {
@@ -1105,6 +1126,7 @@ fn oob_index() {
     gr[b];
 }
 
+// TODO: move to directed
 #[test]
 fn usize_index() {
     let mut gr = Graph::<_, _, Directed, usize>::with_capacity(0, 0);
@@ -1120,6 +1142,7 @@ fn usize_index() {
     assert_eq!(gr[e], 1.2);
 }
 
+// DONE
 #[test]
 fn u8_index() {
     let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
@@ -1128,6 +1151,7 @@ fn u8_index() {
     }
 }
 
+// DONE
 #[should_panic]
 #[test]
 fn u8_index_overflow() {
@@ -1137,6 +1161,7 @@ fn u8_index_overflow() {
     }
 }
 
+// DONE
 #[should_panic]
 #[test]
 fn u8_index_overflow_edges() {
@@ -1385,6 +1410,7 @@ fn test_edge_iterators_directed() {
     }
 }
 
+// TODO: move to core
 #[test]
 fn test_edge_filtered_iterators_directed() {
     use petgraph::{
@@ -1408,6 +1434,7 @@ fn test_edge_filtered_iterators_directed() {
     }
 }
 
+// TODO: move to core
 #[test]
 fn test_node_filtered_iterators_directed() {
     use petgraph::{
@@ -1494,6 +1521,7 @@ fn test_edge_iterators_undir() {
     }
 }
 
+// TODO: move to algo
 #[test]
 fn toposort_generic() {
     // This is a DAG, visit it in order
@@ -1554,6 +1582,7 @@ fn toposort_generic() {
     assert!(pg::algo::toposort(&gr2, None).is_err());
 }
 
+// TODO: move to algo
 #[test]
 fn test_has_path() {
     // This is a DAG, visit it in order
@@ -1871,6 +1900,7 @@ fn neighbor_order() {
     );
 }
 
+// TODO: move to different module
 #[test]
 fn dot() {
     // test alternate formatting
@@ -1885,7 +1915,8 @@ fn dot() {
     let dot_output = format!("{:?}", Dot::new(&gr));
     assert_eq!(
         dot_output,
-        // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
+        // The single \ turns into four \\\\ because of Debug which turns it to \\ and then
+        // escaping each \ to \\.
         r#"digraph {
     0 [ label = "Record { a: 1, b: \"abc\\\\\" }" ]
     0 -> 0 [ label = "(1, 2)" ]
@@ -1894,6 +1925,7 @@ fn dot() {
     );
 }
 
+// TODO: move to core
 #[test]
 fn filtered() {
     let mut g = Graph::new();
@@ -1925,6 +1957,7 @@ fn filtered() {
     assert_eq!(set(po), set(g.node_identifiers().filter(|n| (filt.1)(*n))));
 }
 
+// TODO: move to core
 #[test]
 fn filtered_edge_reverse() {
     use petgraph::visit::EdgeFiltered;
@@ -2064,12 +2097,10 @@ fn filtered_edge_reverse() {
     assert_eq!(set(po), set(vec![d, e, f, h, i, j]));
 }
 
+// TODO: move to core
 #[test]
 fn dfs_visit() {
-    use petgraph::visit::Control;
-    use petgraph::visit::DfsEvent::*;
-    use petgraph::visit::{depth_first_search, Time};
-    use petgraph::visit::{VisitMap, Visitable};
+    use petgraph::visit::{depth_first_search, Control, DfsEvent::*, Time, VisitMap, Visitable};
     let gr: Graph<(), ()> = Graph::from_edges(&[
         (0, 5),
         (0, 2),
@@ -2167,6 +2198,7 @@ fn dfs_visit() {
     assert!(ret.break_value().is_none());
 }
 
+// TODO: move to core
 #[test]
 fn filtered_post_order() {
     use petgraph::visit::NodeFiltered;
@@ -2188,11 +2220,13 @@ fn filtered_post_order() {
     assert!(!po.contains(&n(1)));
 }
 
+// TODO: move to core
 #[test]
 fn filter_elements() {
-    use petgraph::data::Element::{Edge, Node};
-    use petgraph::data::ElementIterator;
-    use petgraph::data::FromElements;
+    use petgraph::data::{
+        Element::{Edge, Node},
+        ElementIterator, FromElements,
+    };
     let elements = vec![
         Node { weight: "A" },
         Node { weight: "B" },
@@ -2264,11 +2298,13 @@ fn filter_elements() {
     ));
 }
 
+// TODO: move to algo
 #[test]
 fn test_edge_filtered() {
-    use petgraph::algo::connected_components;
-    use petgraph::visit::EdgeFiltered;
-    use petgraph::visit::IntoEdgeReferences;
+    use petgraph::{
+        algo::connected_components,
+        visit::{EdgeFiltered, IntoEdgeReferences},
+    };
 
     let gr = UnGraph::<(), _>::from_edges(&[
         // cycle
@@ -2287,9 +2323,11 @@ fn test_edge_filtered() {
     assert_eq!(connected_components(&gr), 1);
     let positive_edges = EdgeFiltered::from_fn(&gr, |edge| *edge.weight() >= 0);
     assert_eq!(positive_edges.edge_references().count(), 6);
-    assert!(positive_edges
-        .edge_references()
-        .all(|edge| *edge.weight() >= 0));
+    assert!(
+        positive_edges
+            .edge_references()
+            .all(|edge| *edge.weight() >= 0)
+    );
     assert_eq!(connected_components(&positive_edges), 2);
 
     let mut dfs = DfsPostOrder::new(&positive_edges, n(0));
@@ -2304,6 +2342,7 @@ fn test_edge_filtered() {
     }
 }
 
+// TODO: move to algo
 #[test]
 fn test_dominators_simple_fast() {
     // Construct the following graph:
