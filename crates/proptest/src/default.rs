@@ -75,6 +75,11 @@ where
         .prop_map(move |(start, end, weight)| Edge { start, end, weight })
 }
 
+/// ***Internal API***.
+///
+/// Creates a strategy for a graph type from a vtable.
+///
+/// This API is not stable and may change at any time.
 pub fn graph_strategy_from_vtable<G, NodeWeight, NodeIndex, EdgeWeight>(
     vtable: VTable<G, NodeWeight, NodeIndex, EdgeWeight>,
     self_loops: bool,

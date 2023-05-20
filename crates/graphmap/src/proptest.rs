@@ -14,6 +14,7 @@ where
     graph.add_edge(a, b, weight);
 }
 
+// GraphMap does not implement `Create` or `Build`, so we need to use the vtable.
 fn create_vtable<N, E, Ty>() -> VTable<GraphMap<N, E, Ty>, N, N, E>
 where
     N: NodeTrait,

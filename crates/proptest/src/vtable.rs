@@ -1,3 +1,10 @@
+//! ***Internal API***.
+//!
+//! This is the vtable for a graph type used during generation, some types cannot use the generics
+//! `Create` + `Build` (or `Data`) and have their own equivalent, the VTable is an escape hatch.
+//! With it they are still able to use the same strategy.
+//!
+//! Therefore this should be considered an internal API and may change at any time.
 use petgraph_core::{
     data::{Build, Create},
     visit::Data,
