@@ -1,14 +1,14 @@
 use core::fmt::Debug;
 
 use petgraph_core::edge::EdgeType;
-use proptest::{arbitrary::Arbitrary, prelude::BoxedStrategy};
 use petgraph_proptest::default::graph_strategy;
+use proptest::{arbitrary::Arbitrary, prelude::BoxedStrategy, strategy::Strategy};
 
-use crate::GraphMap;
+use crate::{GraphMap, NodeTrait};
 
 impl<N, E, Ty> Arbitrary for GraphMap<N, E, Ty>
 where
-    N: Arbitrary + Clone + Debug,
+    N: NodeTrait + Arbitrary + Clone + Debug,
     E: Arbitrary + Debug,
     Ty: EdgeType,
 {
@@ -16,6 +16,6 @@ where
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
-        graph_strategy(true, false, 0..=usize::MAX).boxed()
+        graph_strategy(true, false, 0..=usize::MAX, None).boxed()
     }
 }

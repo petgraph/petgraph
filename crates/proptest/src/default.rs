@@ -16,6 +16,8 @@ use proptest::{
     strategy::{Just, LazyJust, Strategy, TupleUnion},
 };
 
+use crate::{vtable, vtable::VTable};
+
 #[derive(Debug, Clone)]
 struct Edge<T, U> {
     start: T,
@@ -73,23 +75,24 @@ where
         .prop_map(move |(start, end, weight)| Edge { start, end, weight })
 }
 
-// TODO: test
-pub fn graph_strategy<G>(
+pub fn graph_strategy_from_vtable<G, NodeWeight, NodeIndex, EdgeWeight>(
+    vtable: VTable<G, NodeWeight, NodeIndex, EdgeWeight>,
     self_loops: bool,
     parallel_edges: bool,
     node_range: impl Into<SizeRange>,
     edge_range: Option<Arc<dyn Fn(usize) -> SizeRange>>,
 ) -> impl Strategy<Value = G>
 where
-    G: Create + Build + Data + Debug,
-    G::NodeWeight: Arbitrary + Clone + Debug,
-    G::EdgeWeight: Arbitrary + Debug,
+    G: Debug,
+    NodeIndex: Copy,
+    NodeWeight: Arbitrary + Clone + Debug,
+    EdgeWeight: Arbitrary + Debug,
 {
     let node_range = node_range.into();
     let edge_range = edge_range.unwrap_or_else(|| Arc::new(|max| SizeRange::from(0..=max.pow(2))));
 
-    vec(any::<G::NodeWeight>(), node_range)
-        .prop_flat_map(move |nodes: Vec<G::NodeWeight>| {
+    vec(any::<NodeWeight>(), node_range)
+        .prop_flat_map(move |nodes: Vec<NodeWeight>| {
             // There are essentially 3 cases:
             // 1) no nodes (empty), meaning we cannot generate any edges
             // 2) IF self_loops
@@ -132,7 +135,7 @@ where
 
             let edge_endpoint = Arc::new(edge_strategy(
                 Arc::new(edge_endpoints),
-                Arc::new(any::<G::EdgeWeight>()),
+                Arc::new(any::<EdgeWeight>()),
             ));
 
             let edges_range = (edge_range)(nodes_len);
@@ -164,18 +167,41 @@ where
             (Just(nodes), edge_endpoints)
         })
         .prop_map(move |(nodes, edges)| {
-            let mut graph = G::with_capacity(nodes.len(), edges.len());
+            let VTable {
+                with_capacity,
+                add_node,
+                add_edge,
+            } = vtable;
+
+            let mut graph = with_capacity(nodes.len(), edges.len());
 
             // reference table for edges
             let nodes: Vec<_> = nodes
                 .into_iter()
-                .map(|weight| graph.add_node(weight))
+                .map(|weight| add_node(&mut graph, weight))
                 .collect();
 
             for Edge { start, end, weight } in edges {
-                graph.add_edge(nodes[start], nodes[end], weight);
+                add_edge(&mut graph, nodes[start], nodes[end], weight);
             }
 
             graph
         })
+}
+
+// TODO: test
+pub fn graph_strategy<G>(
+    self_loops: bool,
+    parallel_edges: bool,
+    node_range: impl Into<SizeRange>,
+    edge_range: Option<Arc<dyn Fn(usize) -> SizeRange>>,
+) -> impl Strategy<Value = G>
+where
+    G: Create + Build + Data + Debug,
+    G::NodeWeight: Arbitrary + Clone + Debug,
+    G::EdgeWeight: Arbitrary + Debug,
+{
+    let vtable = vtable::create::<G>();
+
+    graph_strategy_from_vtable(vtable, self_loops, parallel_edges, node_range, edge_range)
 }
