@@ -3,7 +3,9 @@ use core::fmt::Debug;
 
 use petgraph_core::{edge::EdgeType, index::IndexType};
 use petgraph_proptest::default::graph_strategy;
-use proptest::{arbitrary::Arbitrary, prelude::BoxedStrategy, strategy::Strategy};
+use proptest::{
+    arbitrary::Arbitrary, collection::SizeRange, prelude::BoxedStrategy, strategy::Strategy,
+};
 
 use crate::Graph;
 
@@ -28,6 +30,14 @@ where
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
-        graph_strategy(true, false, 0..=Ix::MAX.as_usize(), None).boxed()
+        graph_strategy(
+            true,
+            false,
+            0..=Ix::MAX.as_usize(),
+            Some(Arc::new(|max| {
+                SizeRange::new(0..=usize::min(max.pow(2), Ix::MAX.as_usize()))
+            })),
+        )
+        .boxed()
     }
 }

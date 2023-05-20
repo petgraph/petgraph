@@ -26,45 +26,6 @@ where
     iter.into_iter().collect()
 }
 
-#[test]
-fn undirected() {
-    let mut og = Graph::new_undirected();
-    let a = og.add_node(0);
-    let b = og.add_node(1);
-    let c = og.add_node(2);
-    let d = og.add_node(3);
-    let _ = og.add_edge(a, b, 0);
-    let _ = og.add_edge(a, c, 1);
-    og.add_edge(c, a, 2);
-    og.add_edge(a, a, 3);
-    og.add_edge(b, c, 4);
-    og.add_edge(b, a, 5);
-    og.add_edge(a, d, 6);
-    assert_eq!(og.node_count(), 4);
-    assert_eq!(og.edge_count(), 7);
-
-    assert!(og.find_edge(a, b).is_some());
-    assert!(og.find_edge(d, a).is_some());
-    assert!(og.find_edge(a, a).is_some());
-
-    for edge in og.raw_edges() {
-        assert!(og.find_edge(edge.source(), edge.target()).is_some());
-        assert!(og.find_edge(edge.target(), edge.source()).is_some());
-    }
-
-    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![a, c, a]);
-
-    og.remove_node(a);
-    assert_eq!(og.neighbors(b).collect::<Vec<_>>(), vec![c]);
-    assert_eq!(og.node_count(), 3);
-    assert_eq!(og.edge_count(), 1);
-    assert!(og.find_edge(a, b).is_none());
-    assert!(og.find_edge(d, a).is_none());
-    assert!(og.find_edge(a, a).is_none());
-    assert!(og.find_edge(b, c).is_some());
-    assert_graph_consistent(&og);
-}
-
 // TODO: move to core?
 #[test]
 fn dfs() {
@@ -221,7 +182,7 @@ fn mst() {
     assert!(mst.find_edge(b, c).is_none());
 }
 
-// DONE
+// TODO: directed
 #[test]
 fn selfloop() {
     let mut gr = Graph::new();
@@ -362,6 +323,7 @@ fn multi() {
     assert_eq!(gr.edge_count(), 2);
 }
 
+// TODO: move to graph
 #[test]
 fn iter_multi_edges() {
     let mut gr = Graph::new();
@@ -379,40 +341,6 @@ fn iter_multi_edges() {
     gr.add_edge(b, a, ());
 
     let mut iter = gr.edges_connecting(a, b);
-
-    let edge_id = iter.next().unwrap().id();
-    assert!(connecting_edges.contains(&edge_id));
-    connecting_edges.remove(&edge_id);
-
-    let edge_id = iter.next().unwrap().id();
-    assert!(connecting_edges.contains(&edge_id));
-    connecting_edges.remove(&edge_id);
-
-    assert_eq!(None, iter.next());
-    assert!(connecting_edges.is_empty());
-}
-
-#[test]
-fn iter_multi_undirected_edges() {
-    let mut gr = Graph::new_undirected();
-    let a = gr.add_node("a");
-    let b = gr.add_node("b");
-    let c = gr.add_node("c");
-
-    let mut connecting_edges = HashSet::new();
-
-    gr.add_edge(a, a, ());
-    connecting_edges.insert(gr.add_edge(a, b, ()));
-    gr.add_edge(a, c, ());
-    gr.add_edge(c, b, ());
-    connecting_edges.insert(gr.add_edge(a, b, ()));
-    connecting_edges.insert(gr.add_edge(b, a, ()));
-
-    let mut iter = gr.edges_connecting(a, b);
-
-    let edge_id = iter.next().unwrap().id();
-    assert!(connecting_edges.contains(&edge_id));
-    connecting_edges.remove(&edge_id);
 
     let edge_id = iter.next().unwrap().id();
     assert!(connecting_edges.contains(&edge_id));
@@ -799,6 +727,7 @@ fn test_toposort() {
     assert_is_topo_order(&gr, &order);
 }
 
+// TODO: move to algo
 #[test]
 fn test_toposort_eq() {
     let mut g = Graph::<_, _>::new();
@@ -1115,7 +1044,7 @@ fn connected_comp() {
     assert_eq!(petgraph::algo::connected_components(&gr), 2);
 }
 
-// DONE
+// TODO: move to graph
 #[should_panic]
 #[test]
 fn oob_index() {
@@ -1142,37 +1071,7 @@ fn usize_index() {
     assert_eq!(gr[e], 1.2);
 }
 
-// DONE
-#[test]
-fn u8_index() {
-    let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
-    for _ in 0..255 {
-        gr.add_node(());
-    }
-}
-
-// DONE
-#[should_panic]
-#[test]
-fn u8_index_overflow() {
-    let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
-    for _ in 0..256 {
-        gr.add_node(());
-    }
-}
-
-// DONE
-#[should_panic]
-#[test]
-fn u8_index_overflow_edges() {
-    let mut gr = Graph::<_, (), Undirected, u8>::with_capacity(0, 0);
-    let a = gr.add_node('a');
-    let b = gr.add_node('b');
-    for _ in 0..256 {
-        gr.add_edge(a, b, ());
-    }
-}
-
+// TODO: move to graph
 #[test]
 fn test_weight_iterators() {
     let mut gr = Graph::<_, _>::new();
@@ -1226,6 +1125,7 @@ fn test_weight_iterators() {
     }
 }
 
+// TODO: move to graph
 #[test]
 fn walk_edges() {
     let mut gr = Graph::<_, _>::new();
@@ -1269,6 +1169,7 @@ fn walk_edges() {
     assert_eq!(nedges, 8);
 }
 
+// TODO: move to graph
 #[test]
 fn index_twice_mut() {
     let mut gr = Graph::<_, _>::new();
@@ -1344,6 +1245,7 @@ fn make_edge_iterator_graph<Ty: EdgeType>() -> Graph<f64, f64, Ty> {
     gr
 }
 
+// TODO: move to graph
 #[test]
 fn test_edge_iterators_directed() {
     let gr = make_edge_iterator_graph::<Directed>();
@@ -1460,6 +1362,7 @@ fn test_node_filtered_iterators_directed() {
     }
 }
 
+// TODO: move to graph
 #[test]
 fn test_edge_iterators_undir() {
     let gr = make_edge_iterator_graph::<Undirected>();
@@ -1628,6 +1531,7 @@ fn test_has_path() {
     assert!(!has_path_connecting(&gr, h, a, Some(&mut state)));
 }
 
+// TODO: move to graph
 #[test]
 fn map_filter_map() {
     let mut g = Graph::new_undirected();
@@ -1682,6 +1586,7 @@ fn map_filter_map() {
     assert_graph_consistent(&g4);
 }
 
+// TODO: move to graph
 #[test]
 fn from_edges() {
     let n = NodeIndex::new;
@@ -1696,6 +1601,7 @@ fn from_edges() {
     assert_graph_consistent(&gr);
 }
 
+// TODO: move to graph
 #[test]
 fn retain() {
     let mut gr = Graph::<i32, i32, Undirected>::from_edges(&[
@@ -1745,6 +1651,7 @@ where
     }
 }
 
+// TODO: move to graph
 #[test]
 fn neighbors_selfloops() {
     // Directed graph
@@ -1837,6 +1744,7 @@ where
     degree
 }
 
+// TODO: move to graph/graphmap
 #[cfg(feature = "graphmap")]
 #[test]
 fn degree_sequence() {
@@ -1876,6 +1784,7 @@ fn degree_sequence() {
     assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
 }
 
+// TODO: move to graph
 #[test]
 fn neighbor_order() {
     let mut gr = Graph::new();

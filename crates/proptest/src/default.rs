@@ -111,8 +111,9 @@ where
             // generate an edge where no self edges are allowed, this allows the use in
             // a lot more graphs
             // exlude the last node, since in that case we would have no matching end node.
-            let edge_endpoints_always =
-                Arc::new((0..(nodes_len - 1)).prop_flat_map(move |start| {
+            // `saturating_sub` here, as `0..(0 - 1)` will happen, but will never be selected.
+            let edge_endpoints_always = Arc::new((0..nodes_len.saturating_sub(1)).prop_flat_map(
+                move |start| {
                     // if we allow self loops we simply include the start in the range for end
                     // if the length is 1 and we do not want to generate self loops, this
                     // potentially generates an empty range,
@@ -123,7 +124,8 @@ where
                     // start < end, this has the benefit that an undirected graph won't have any
                     // parallel edges
                     (range_start..nodes_len).prop_map(move |end| (start, end))
-                }));
+                },
+            ));
 
             // on length 1 the method above generates `0..0`, which is an empty range, this will
             // fail, in that case, if self_loops are allowed we just generate a single

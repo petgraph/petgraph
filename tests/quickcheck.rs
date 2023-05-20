@@ -82,14 +82,6 @@ quickcheck! {
     }
 }
 
-quickcheck! {
-    fn reverse_undirected(g: Small<UnGraph<(), ()>>) -> bool {
-        let mut h = (*g).clone();
-        h.reverse();
-        is_isomorphic(&*g, &h)
-    }
-}
-
 fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
 where
     Ty: EdgeType,
@@ -105,116 +97,6 @@ where
             edge.target()
         );
     }
-}
-
-#[test]
-fn reverse_directed() {
-    fn prop<Ty: EdgeType>(mut g: Graph<(), (), Ty>) -> bool {
-        let node_outdegrees = g
-            .node_indices()
-            .map(|i| g.neighbors_directed(i, Outgoing).count())
-            .collect::<Vec<_>>();
-        let node_indegrees = g
-            .node_indices()
-            .map(|i| g.neighbors_directed(i, Incoming).count())
-            .collect::<Vec<_>>();
-
-        g.reverse();
-        let new_outdegrees = g
-            .node_indices()
-            .map(|i| g.neighbors_directed(i, Outgoing).count())
-            .collect::<Vec<_>>();
-        let new_indegrees = g
-            .node_indices()
-            .map(|i| g.neighbors_directed(i, Incoming).count())
-            .collect::<Vec<_>>();
-        assert_eq!(node_outdegrees, new_indegrees);
-        assert_eq!(node_indegrees, new_outdegrees);
-        assert_graph_consistent(&g);
-        true
-    }
-    quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
-}
-
-#[test]
-fn graph_retain_nodes() {
-    fn prop<Ty: EdgeType>(mut g: Graph<i32, i32, Ty>) -> bool {
-        // Remove all negative nodes, these should be randomly spread
-        let og = g.clone();
-        let nodes = g.node_count();
-        let num_negs = g.raw_nodes().iter().filter(|n| n.weight < 0).count();
-        let mut removed = 0;
-        g.retain_nodes(|g, i| {
-            let keep = g[i] >= 0;
-            if !keep {
-                removed += 1;
-            }
-            keep
-        });
-        let num_negs_post = g.raw_nodes().iter().filter(|n| n.weight < 0).count();
-        let num_pos_post = g.raw_nodes().iter().filter(|n| n.weight >= 0).count();
-        assert_eq!(num_negs_post, 0);
-        assert_eq!(removed, num_negs);
-        assert_eq!(num_negs + g.node_count(), nodes);
-        assert_eq!(num_pos_post, g.node_count());
-
-        // check against filter_map
-        let filtered = og.filter_map(
-            |_, w| if *w >= 0 { Some(*w) } else { None },
-            |_, w| Some(*w),
-        );
-        assert_eq!(g.node_count(), filtered.node_count());
-        /*
-        println!("Iso of graph with nodes={}, edges={}",
-                 g.node_count(), g.edge_count());
-                 */
-        assert!(is_isomorphic_matching(
-            &filtered,
-            &g,
-            PartialEq::eq,
-            PartialEq::eq
-        ));
-
-        true
-    }
-    quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
-    quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
-}
-
-#[test]
-fn graph_retain_edges() {
-    fn prop<Ty: EdgeType>(mut g: Graph<(), i32, Ty>) -> bool {
-        // Remove all negative edges, these should be randomly spread
-        let og = g.clone();
-        let edges = g.edge_count();
-        let num_negs = g.raw_edges().iter().filter(|n| n.weight < 0).count();
-        let mut removed = 0;
-        g.retain_edges(|g, i| {
-            let keep = g[i] >= 0;
-            if !keep {
-                removed += 1;
-            }
-            keep
-        });
-        let num_negs_post = g.raw_edges().iter().filter(|n| n.weight < 0).count();
-        let num_pos_post = g.raw_edges().iter().filter(|n| n.weight >= 0).count();
-        assert_eq!(num_negs_post, 0);
-        assert_eq!(removed, num_negs);
-        assert_eq!(num_negs + g.edge_count(), edges);
-        assert_eq!(num_pos_post, g.edge_count());
-        if og.edge_count() < 30 {
-            // check against filter_map
-            let filtered = og.filter_map(
-                |_, w| Some(*w),
-                |_, w| if *w >= 0 { Some(*w) } else { None },
-            );
-            assert_eq!(g.node_count(), filtered.node_count());
-            assert!(is_isomorphic(&filtered, &g));
-        }
-        true
-    }
-    quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
-    quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
 }
 
 #[test]
@@ -326,30 +208,6 @@ fn isomorphism_modify() {
     }
     quickcheck::quickcheck(prop::<Undirected> as fn(_, _, _) -> bool);
     quickcheck::quickcheck(prop::<Directed> as fn(_, _, _) -> bool);
-}
-
-#[test]
-fn graph_remove_edge() {
-    fn prop<Ty: EdgeType>(mut g: Graph<(), (), Ty>, a: u8, b: u8) -> bool {
-        let a = node_index(a as usize);
-        let b = node_index(b as usize);
-        let edge = g.find_edge(a, b);
-        if !g.is_directed() {
-            assert_eq!(edge.is_some(), g.find_edge(b, a).is_some());
-        }
-        if let Some(ex) = edge {
-            assert!(g.remove_edge(ex).is_some());
-        }
-        assert_graph_consistent(&g);
-        assert!(g.find_edge(a, b).is_none());
-        assert!(g.neighbors(a).find(|x| *x == b).is_none());
-        if !g.is_directed() {
-            assert!(g.neighbors(b).find(|x| *x == a).is_none());
-        }
-        true
-    }
-    quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>, _, _) -> bool);
-    quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>, _, _) -> bool);
 }
 
 #[cfg(feature = "stable_graph")]
@@ -945,6 +803,7 @@ defmac!(edges_eq ref a, ref b =>
             b.edge_references().map(|e| (e.source(), e.target()))));
 
 quickcheck! {
+    // TODO: does not need to be an integration test
     fn test_di_from(gr1: DiGraph<i32, i32>) -> () {
         let sgr = StableGraph::from(gr1.clone());
         let gr2 = Graph::from(sgr);
@@ -953,6 +812,8 @@ quickcheck! {
         assert!(edgew_eq!(&gr1, &gr2));
         assert!(edges_eq!(&gr1, &gr2));
     }
+
+    // TODO: does not need to be an integration test
     fn test_un_from(gr1: UnGraph<i32, i32>) -> () {
         let sgr = StableGraph::from(gr1.clone());
         let gr2 = Graph::from(sgr);
@@ -962,6 +823,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
+    // TODO: does not need to be an integration test
     fn test_graph_from_stable_graph(gr1: StableDiGraph<usize, usize>) -> () {
         let mut gr1 = gr1;
         let gr2 = Graph::from(gr1.clone());
@@ -996,6 +858,7 @@ quickcheck! {
         );
     }
 
+    // TODO: does not need to be an integration test
     fn stable_di_graph_map_id(gr1: StableDiGraph<usize, usize>) -> () {
         let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
         assert!(nodes_eq!(&gr1, &gr2));
@@ -1003,6 +866,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
+    // TODO: does not need to be an integration test
     fn stable_un_graph_map_id(gr1: StableUnGraph<usize, usize>) -> () {
         let gr2 = gr1.map(|_, &nw| nw, |_, &ew| ew);
         assert!(nodes_eq!(&gr1, &gr2));
@@ -1010,6 +874,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
+    // TODO: does not need to be an integration test
     fn stable_di_graph_filter_map_id(gr1: StableDiGraph<usize, usize>) -> () {
         let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
         assert!(nodes_eq!(&gr1, &gr2));
@@ -1017,6 +882,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
+    // TODO: does not need to be an integration test
     fn test_stable_un_graph_filter_map_id(gr1: StableUnGraph<usize, usize>) -> () {
         let gr2 = gr1.filter_map(|_, &nw| Some(nw), |_, &ew| Some(ew));
         assert!(nodes_eq!(&gr1, &gr2));
@@ -1024,6 +890,7 @@ quickcheck! {
         assert!(edges_eq!(&gr1, &gr2));
     }
 
+    // TODO: does not need to be an integration test
     fn stable_di_graph_filter_map_remove(gr1: Small<StableDiGraph<i32, i32>>,
                                          nodes: Vec<usize>,
                                          edges: Vec<usize>) -> ()
