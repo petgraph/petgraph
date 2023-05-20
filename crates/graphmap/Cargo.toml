@@ -11,6 +11,8 @@ indexmap.workspace = true
 petgraph-core = { workspace = true, features = ["alloc", "indexmap"] }
 petgraph-graph = { workspace = true, optional = true }
 serde = { workspace = true, optional = true, default-features = false, features = ["alloc"] }
+petgraph-proptest = { workspace = true, default-features = false, optional = true }
+proptest = { workspace = true, default-features = false, optional = true }
 
 [dev-dependencies]
 
@@ -19,3 +21,4 @@ convert = ["petgraph-graph"]
 default = ["std"]
 serde = ["dep:serde", "convert", "petgraph-graph?/serde"]
 std = ["petgraph-core/std", "indexmap/std", "serde?/std"]
+proptest = ["dep:proptest", "dep:petgraph-proptest"]

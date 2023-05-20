@@ -29,7 +29,7 @@ where
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
-        graph_strategy(true, false, 0..Ix::MAX.as_usize(), None)
+        graph_strategy(true, false, 0..=Ix::MAX.as_usize(), None)
             .prop_flat_map(|graph: Self| {
                 let nodes = graph.node_count();
 

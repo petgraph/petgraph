@@ -2,7 +2,11 @@
 //! `GraphMap<N, E, Ty>` is a graph datastructure where node values are mapping
 //! keys.
 
+#[cfg(feature = "proptest")]
+mod proptest;
+
 extern crate alloc;
+extern crate core;
 
 use alloc::vec::Vec;
 use core::{
@@ -72,9 +76,9 @@ pub struct GraphMap<N, E, Ty> {
     ty: PhantomData<Ty>,
 }
 
-impl<N: Eq + Hash + fmt::Debug, E: fmt::Debug, Ty: EdgeType> fmt::Debug for GraphMap<N, E, Ty> {
+impl<N: fmt::Debug, E: fmt::Debug, Ty: EdgeType> fmt::Debug for GraphMap<N, E, Ty> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.nodes.fmt(f)
+        fmt::Debug::fmt(&self.nodes, f)
     }
 }
 

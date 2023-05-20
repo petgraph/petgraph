@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `NodeIndex` is no longer just `Ix`, but a newtype wrapper around `Ix`. This is a breaking change for any code that
   relied on `NodeIndex` not being an opaque type.
+- removed old (`0.8`) quicktest support, replaced with proptest support through `petgraph-proptest` crate
 
 ## Added
 

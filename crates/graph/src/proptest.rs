@@ -26,6 +26,6 @@ where
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
-        graph_strategy(true, false, 0..Ix::MAX.as_usize(), None).boxed()
+        graph_strategy(true, false, 0..=Ix::MAX.as_usize(), None).boxed()
     }
 }
