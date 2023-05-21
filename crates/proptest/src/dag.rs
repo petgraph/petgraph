@@ -8,7 +8,7 @@ use petgraph_core::{
 use proptest::{
     arbitrary::{any, Arbitrary},
     collection::vec,
-    prelude::{BoxedStrategy, Just, Strategy},
+    prelude::{BoxedStrategy, Strategy},
 };
 
 use crate::{vtable, vtable::VTable};
@@ -75,7 +75,7 @@ where
             |element: BoxedStrategy<TreeNode<G::NodeWeight, G::EdgeWeight>>| {
                 (
                     any::<G::NodeWeight>(),
-                    vec((any::<G::EdgeWeight>(), element), 0..8),
+                    vec((any::<G::EdgeWeight>(), element), 0..16),
                 )
                     .prop_map(|(weight, edges)| {
                         if edges.is_empty() {
