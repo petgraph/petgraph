@@ -101,16 +101,26 @@ where
 #[cfg(test)]
 mod test {
     use alloc::{vec, vec::Vec};
+    use core::iter::once;
 
     use indexmap::{IndexMap, IndexSet};
     use petgraph_core::index::IndexType;
-    use petgraph_graph::DiGraph;
+    use petgraph_graph::{DiGraph, NodeIndex};
 
     use super::all_simple_paths;
 
+    /// Graph:
+    ///
+    /// ```text
+    /// 0 → 1
+    /// ↓ ⤩ ↓
+    /// 2 ⇄ 3
+    /// ⇅ ⤪ ↑
+    /// 4 → 5
+    /// ```
     #[test]
-    fn test_all_simple_paths() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[
+    fn all_paths() {
+        let graph = DiGraph::<i32, i32, _>::from_edges([
             (0, 1),
             (0, 2),
             (0, 3),
@@ -126,8 +136,8 @@ mod test {
             (5, 3),
         ]);
 
-        let expexted_simple_paths_0_to_5 = vec![
-            vec![0usize, 1, 2, 3, 4, 5],
+        let expected: IndexSet<Vec<usize>> = [
+            vec![0, 1, 2, 3, 4, 5],
             vec![0, 1, 2, 4, 5],
             vec![0, 1, 3, 2, 4, 5],
             vec![0, 1, 3, 4, 5],
@@ -135,45 +145,55 @@ mod test {
             vec![0, 2, 4, 5],
             vec![0, 3, 2, 4, 5],
             vec![0, 3, 4, 5],
-        ];
+        ]
+        .into_iter()
+        .collect();
 
-        println!("{}", Dot::new(&graph));
-        let actual_simple_paths_0_to_5: IndexSet<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 5u32.into(), 0, None)
-                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
-                .collect();
-        assert_eq!(actual_simple_paths_0_to_5.len(), 8);
-        assert_eq!(
-            IndexMap::from_iter(expexted_simple_paths_0_to_5),
-            actual_simple_paths_0_to_5
-        );
+        let result: IndexSet<Vec<_>> = all_simple_paths(&graph, 0u32.into(), 5u32.into(), 0, None)
+            .map(|v: Vec<_>| v.into_iter().map(NodeIndex::index).collect())
+            .collect();
+
+        assert_eq!(result.len(), 8);
+        assert_eq!(result, expected);
     }
 
+    /// Graph:
+    ///
+    /// ```text
+    /// 0 → 1 ← 2
+    /// ```
     #[test]
-    fn test_one_simple_path() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
+    fn single_path() {
+        let graph = DiGraph::<i32, i32, _>::from_edges([
+            (0, 1), //
+            (2, 1),
+        ]);
 
-        let expexted_simple_paths_0_to_1 = &[vec![0usize, 1]];
-        println!("{}", Dot::new(&graph));
-        let actual_simple_paths_0_to_1: Vec<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 1u32.into(), 0, None)
-                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
-                .collect();
+        let expected: IndexSet<_> = once(vec![0usize, 1]).collect();
 
-        assert_eq!(actual_simple_paths_0_to_1.len(), 1);
-        assert_eq!(expexted_simple_paths_0_to_1, &actual_simple_paths_0_to_1);
+        let result: IndexSet<Vec<_>> = all_simple_paths(&graph, 0u32.into(), 1u32.into(), 0, None)
+            .map(|v: Vec<_>| v.into_iter().map(NodeIndex::index).collect())
+            .collect();
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result, expected);
     }
 
+    /// Graph:
+    ///
+    /// ```text
+    /// 0 → 1 ← 2
+    /// ```
     #[test]
-    fn test_no_simple_paths() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
+    fn no_path() {
+        let graph = DiGraph::<i32, i32, _>::from_edges([
+            (0, 1), //
+            (2, 1),
+        ]);
 
-        println!("{}", Dot::new(&graph));
-        let actual_simple_paths_0_to_2: Vec<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 2u32.into(), 0, None)
-                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
-                .collect();
+        let paths =
+            all_simple_paths::<Vec<_>, _>(&graph, 0u32.into(), 2u32.into(), 0, None).count();
 
-        assert_eq!(actual_simple_paths_0_to_2.len(), 0);
+        assert_eq!(paths, 0);
     }
 }

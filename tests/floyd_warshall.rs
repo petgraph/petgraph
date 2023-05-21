@@ -1,6 +1,6 @@
-use petgraph::algo::floyd_warshall;
-use petgraph::{prelude::*, Directed, Graph, Undirected};
 use std::collections::HashMap;
+
+use petgraph::{algo::floyd_warshall, prelude::*, Directed, Graph, Undirected};
 
 #[test]
 fn floyd_warshall_uniform_weight() {
@@ -100,6 +100,7 @@ fn floyd_warshall_uniform_weight() {
     .iter()
     .cloned()
     .collect();
+
     let res = floyd_warshall(&graph, |_| 1 as i32).unwrap();
 
     let nodes = [a, b, c, d, e, f, g, h];

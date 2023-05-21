@@ -54,8 +54,8 @@ impl_bounded_measure!(
 );
 
 impl BoundedMeasure for f32 {
-    const MAX: Self = f32::MAX;
-    const MIN: Self = f32::MIN;
+    const MAX: Self = Self::MAX;
+    const MIN: Self = Self::MIN;
 
     fn checked_add(self, rhs: Self) -> Option<Self> {
         let value = self + rhs;
@@ -65,8 +65,8 @@ impl BoundedMeasure for f32 {
 }
 
 impl BoundedMeasure for f64 {
-    const MAX: Self = f64::MAX;
-    const MIN: Self = f64::MIN;
+    const MAX: Self = Self::MAX;
+    const MIN: Self = Self::MIN;
 
     fn checked_add(self, rhs: Self) -> Option<Self> {
         let value = self + rhs;

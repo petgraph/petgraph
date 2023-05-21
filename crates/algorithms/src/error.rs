@@ -3,7 +3,7 @@ use core::fmt::{Debug, Display, Formatter};
 /// An algorithm error
 ///
 /// A cycle of negative weights was found in the graph.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct NegativeCycleError;
 
 impl Display for NegativeCycleError {
