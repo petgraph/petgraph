@@ -8,5 +8,6 @@
 
 extern crate alloc;
 
+pub mod dag;
 pub mod default;
 pub mod vtable;
