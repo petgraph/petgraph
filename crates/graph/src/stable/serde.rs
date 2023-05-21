@@ -244,28 +244,23 @@ mod tests {
 
     #[test]
     fn deserialization_with_holes() {
-        let input = RemoteStableGraph::<_, (), u32> {
-            nodes: vec![
-                Node {
-                    weight: Some(1),
-                    next: [EdgeIndex::end(); 2],
-                },
-                Node {
-                    weight: Some(4),
-                    next: [EdgeIndex::end(); 2],
-                },
-                Node {
-                    weight: Some(5),
-                    next: [EdgeIndex::end(); 2],
-                },
-            ],
-            node_holes: vec![node_index(0), node_index(2), node_index(3), node_index(6)],
-            edges: vec![],
-            edge_property: EdgeProperty::Undirected,
-        };
+        let mut graph = StableUnGraph::<i32, ()>::with_capacity(0, 0);
 
-        let value = serde_value::to_value(&input).unwrap();
-        let graph = StableUnGraph::deserialize(value).unwrap();
+        let a = graph.add_node(0);
+        let b = graph.add_node(1);
+        let c = graph.add_node(2);
+        let d = graph.add_node(3);
+        let e = graph.add_node(4);
+        let f = graph.add_node(5);
+        let g = graph.add_node(6);
+
+        graph.remove_node(a);
+        graph.remove_node(c);
+        graph.remove_node(d);
+        graph.remove_node(g);
+
+        let value = serde_value::to_value(&graph).unwrap();
+        let graph = StableUnGraph::<i32, ()>::deserialize(value).unwrap();
 
         assert_eq!(graph.node_count(), 3);
         assert_eq!(
