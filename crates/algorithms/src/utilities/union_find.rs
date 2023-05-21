@@ -146,3 +146,144 @@ where
         self.parent
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use indexmap::IndexSet;
+    use proptest::{collection::vec, prelude::*};
+
+    use crate::utilities::union_find::UnionFind;
+
+    #[test]
+    fn union() {
+        let n = 8;
+        let mut u = UnionFind::new(n);
+
+        // [{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}]
+        for i in 0..n {
+            assert_eq!(u.find(i), i);
+            assert_eq!(u.find_mut(i), i);
+            assert!(!u.union(i, i));
+        }
+
+        // [{0, 1}, {2}, {3}, {4}, {5}, {6}, {7}]
+        u.union(0, 1);
+        assert_eq!(u.find(0), u.find(1));
+
+        // [{0, 1, 3}, {2}, {4}, {5}, {6}, {7}]
+        u.union(1, 3);
+        assert_eq!(u.find(0), u.find(3));
+        assert_eq!(u.find(1), u.find(3));
+
+        // [{0, 1, 3, 4}, {2}, {5}, {6}, {7}]
+        u.union(1, 4);
+        // [{0, 1, 3, 4, 7}, {2}, {5}, {6}]
+        u.union(4, 7);
+        assert_ne!(u.find(0), u.find(2));
+        assert_eq!(u.find(7), u.find(0));
+
+        // [{0, 1, 3, 4, 7}, {2}, {5, 6}]
+        u.union(5, 6);
+        assert_eq!(u.find(6), u.find(5));
+        assert_ne!(u.find(6), u.find(7));
+
+        // check that there are now 3 disjoint sets
+        let set = (0..n).map(|i| u.find(i)).collect::<IndexSet<_>>();
+        assert_eq!(set.len(), 3);
+    }
+
+    #[test]
+    fn equivalence() {
+        let n = 8;
+        let mut u = UnionFind::new(n);
+
+        // [{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}]
+        for i in 0..n {
+            assert_eq!(u.find(i), i);
+            assert_eq!(u.find_mut(i), i);
+            assert!(u.equiv(i, i));
+        }
+
+        // [{0, 1}, {2}, {3}, {4}, {5}, {6}, {7}]
+        u.union(0, 1);
+        assert!(u.equiv(0, 1));
+
+        // [{0, 1, 3}, {2}, {4}, {5}, {6}, {7}]
+        u.union(1, 3);
+        assert!(u.equiv(1, 3));
+
+        // [{0, 1, 3, 4}, {2}, {5}, {6}, {7}]
+        u.union(1, 4);
+        // [{0, 1, 3, 4, 7}, {2}, {5}, {6}]
+        u.union(4, 7);
+        assert!(u.equiv(0, 7));
+        assert!(u.equiv(7, 0));
+
+        assert!(!u.equiv(0, 2));
+
+        // [{0, 1, 3, 4, 7}, {2}, {5, 6}]
+        u.union(5, 6);
+        assert!(u.equiv(6, 5));
+        assert!(!u.equiv(6, 7));
+
+        // check that there are now 3 disjoint sets
+        let set = (0..n).map(|i| u.find(i)).collect::<IndexSet<_>>();
+        assert_eq!(set.len(), 3);
+    }
+
+    const N_U16: usize = u16::MAX as usize;
+    const N_U8: usize = u8::MAX as usize;
+
+    // This code is not ideal, but it's the best I can do for now. This is mostly 1:1 ported from
+    // petgraph 0.6.3.
+    #[cfg(not(miri))]
+    proptest! {
+        #[test]
+        fn integration(elements in vec((0..N_U16, 0..N_U16), 1..128)) {
+            let mut u = UnionFind::new(N_U16);
+
+            for (a, b) in elements {
+                let ar = u.find(a);
+                let br = u.find(b);
+
+                assert_eq!(ar != br, u.union(a, b));
+            }
+        }
+
+        #[test]
+        fn integration_u8(elements in vec((0..u8::MAX, 0..u8::MAX), 1..(N_U8*8))) {
+            let mut u = UnionFind::<u8>::new(N_U8);
+
+            for (a, b) in elements {
+                let ar = u.find(a);
+                let br = u.find(b);
+
+                assert_eq!(ar != br, u.union(a, b));
+            }
+        }
+    }
+
+    #[test]
+    fn labeling() {
+        // [{0}, {1}, ..., {47}]
+        let mut u = UnionFind::<u32>::new(48);
+
+        // [{0, ..., 24}, {25}, ..., {47}]
+        for i in 0..24 {
+            u.union(i + 1, i);
+        }
+
+        // [{0, ..., 24}, {25, ..., 47}]
+        for i in 25..47 {
+            u.union(i, i + 1);
+        }
+
+        // [{0, ..., 24, 25, ..., 47}]
+        assert!(u.union(23, 25));
+        // we already joined them
+        assert!(!u.union(24, 23));
+
+        let v = u.into_labeling();
+        assert!(v.iter().all(|x| *x == v[0]));
+    }
+}

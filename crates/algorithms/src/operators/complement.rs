@@ -54,6 +54,7 @@ use petgraph_graph::Graph;
 ///     }
 /// }
 /// ```
+// TODO: rework, make generic, weight over fn
 pub fn complement<N, E, Ty, Ix>(
     input: &Graph<N, E, Ty, Ix>,
     output: &mut Graph<N, E, Ty, Ix>,
@@ -73,5 +74,57 @@ pub fn complement<N, E, Ty, Ix>(
                 output.add_edge(x, y, weight.clone());
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+
+    use petgraph_core::{edge::Directed, visit::EdgeRef};
+    use petgraph_graph::Graph;
+
+    use crate::operators::complement;
+
+    /// Graph:
+    ///
+    /// ```text
+    /// a → b → c → d
+    /// ```
+    #[test]
+    fn simple() {
+        let mut graph: Graph<(), (), Directed> = Graph::new();
+        let a = graph.add_node(());
+        let b = graph.add_node(());
+        let c = graph.add_node(());
+        let d = graph.add_node(());
+
+        graph.extend_with_edges([
+            (a, b), //
+            (b, c),
+            (c, d),
+        ]);
+
+        let mut output: Graph<(), (), Directed> = Graph::new();
+        complement(&graph, &mut output, ());
+
+        let expected = [
+            (a, c), //
+            (a, d),
+            (b, a),
+            (b, d),
+            (c, a),
+            (c, b),
+            (d, a),
+            (d, b),
+            (d, c),
+        ];
+
+        let result = output
+            .edge_references()
+            .map(|e| (e.source(), e.target()))
+            .collect::<Vec<_>>();
+
+        assert_eq!(result, expected);
     }
 }
