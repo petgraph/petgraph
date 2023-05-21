@@ -180,7 +180,7 @@ pub mod algo {
         },
         shortest_paths::{
             astar, bellman_ford, dijkstra, find_negative_cycle, floyd_warshall,
-            k_shortest_paths as k_shortest_path,
+            k_shortest_path_length,
         },
         simple_paths::all_simple_paths,
         tree::min_spanning_tree,

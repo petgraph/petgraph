@@ -73,7 +73,7 @@ use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
 /// assert_eq!(res, expected_res);
 /// // z is not inside res because there is not path from b to z.
 /// ```
-pub fn k_shortest_paths<G, F, K>(
+pub fn k_shortest_path_length<G, F, K>(
     graph: G,
     start: G::NodeId,
     goal: Option<G::NodeId>,

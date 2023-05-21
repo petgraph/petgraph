@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of `PartialOrd` to produce an `Ord` for floating point numbers and would not produce the desired results for
   non-numeric types. `TotalOrd` is implemented for all primitive numeric types. Users that implemented `Measure` before
   now also need to implement `TotalOrd`.
-- `k_shortest_path` has been renamed to `k_shortest_paths`.
+- `k_shortest_path` has been renamed to `k_shortest_path_length`.
 - `dominators` has been renamed to `dominance`
 - `Measure` now requires stricter bounds, types must now satisfy `funty::Numeric`, doing so enables a lot more
   flexibility in future additions. This change is unlikely to affect any users.

@@ -3,11 +3,10 @@
 extern crate petgraph;
 extern crate test;
 
-use petgraph::prelude::*;
 use std::cmp::{max, min};
-use test::Bencher;
 
-use petgraph::algo::k_shortest_path;
+use petgraph::{algo::k_shortest_path_length, prelude::*};
+use test::Bencher;
 
 #[bench]
 fn k_shortest_path_bench(bench: &mut Bencher) {
@@ -26,5 +25,5 @@ fn k_shortest_path_bench(bench: &mut Bencher) {
         }
     }
 
-    bench.iter(|| k_shortest_path(&g, nodes[0], None, 2, |e| *e.weight()));
+    bench.iter(|| k_shortest_path_length(&g, nodes[0], None, 2, |e| *e.weight()));
 }
