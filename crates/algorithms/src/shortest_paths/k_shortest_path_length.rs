@@ -116,3 +116,82 @@ where
     }
     scores
 }
+
+#[cfg(test)]
+mod tests {
+    use indexmap::IndexMap;
+    use petgraph_core::edge::Directed;
+    use petgraph_graph::{Graph, NodeIndex};
+
+    use crate::shortest_paths::k_shortest_path_length;
+
+    /// Graph:
+    ///
+    /// ```text
+    /// A → B → C → D → E
+    ///     ↓   ↓     ↙   ↖
+    ///     F → G → H → I → M
+    ///           ↙ ↓ ↘   ↗
+    ///         L → K ← J
+    ///          ↘ ↙
+    ///           M
+    /// ```
+    #[test]
+    fn integration_second_shortest_path() {
+        let mut graph: Graph<(), (), Directed> = Graph::new();
+
+        let a = graph.add_node(());
+        let b = graph.add_node(());
+        let c = graph.add_node(());
+        let d = graph.add_node(());
+        let e = graph.add_node(());
+        let f = graph.add_node(());
+        let g = graph.add_node(());
+        let h = graph.add_node(());
+        let i = graph.add_node(());
+        let j = graph.add_node(());
+        let k = graph.add_node(());
+        let l = graph.add_node(());
+        let m = graph.add_node(());
+
+        graph.extend_with_edges(&[
+            (a, b),
+            (b, c),
+            (c, d),
+            (b, f),
+            (f, g),
+            (c, g),
+            (g, h),
+            (d, e),
+            (e, h),
+            (h, i),
+            (h, j),
+            (h, k),
+            (h, l),
+            (i, m),
+            (l, k),
+            (j, k),
+            (j, m),
+            (k, m),
+            (l, m),
+            (m, e),
+        ]);
+
+        let result = k_shortest_path_length(&graph, a, None, 2, |_| 1);
+
+        let expected: IndexMap<NodeIndex, usize> = [
+            (e, 7),
+            (g, 3),
+            (h, 4),
+            (i, 5),
+            (j, 5),
+            (k, 5),
+            (l, 5),
+            (m, 6),
+        ]
+        .into_iter()
+        .collect();
+
+        assert_eq!(result, expected);
+    }
+}
