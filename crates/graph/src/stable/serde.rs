@@ -231,6 +231,10 @@ where
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
+    use serde::Deserialize;
+
     use crate::{
         node_index,
         serde::EdgeProperty,
@@ -265,7 +269,11 @@ mod tests {
 
         assert_eq!(graph.node_count(), 3);
         assert_eq!(
-            graph.raw_nodes().iter().map(|n| n.weight.as_ref().cloned()),
+            graph
+                .raw_nodes()
+                .iter()
+                .map(|n| n.weight.as_ref().cloned())
+                .collect::<Vec<_>>(),
             vec![None, Some(1), None, None, Some(4), Some(5), None],
         );
     }
