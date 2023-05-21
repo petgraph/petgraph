@@ -1,12 +1,12 @@
-use alloc::{vec, vec::Vec};
-use core::{any, fmt::Debug};
+use alloc::vec::Vec;
+use core::fmt::Debug;
 
 use petgraph_core::{
     data::{Build, Create},
     visit::Data,
 };
 use proptest::{
-    arbitrary::{any, arbitrary, Arbitrary},
+    arbitrary::{any, Arbitrary},
     collection::vec,
     prelude::{BoxedStrategy, Just, Strategy},
 };
@@ -26,7 +26,7 @@ impl<N, E> TreeNode<N, E> {
         NodeIndex: Copy,
     {
         match self {
-            TreeNode::Node(Node { weight, children }) => {
+            Self::Node(Node { weight, children }) => {
                 let node = (vtable.add_node)(graph, weight);
 
                 for Edge { weight, target } in children {
@@ -37,7 +37,7 @@ impl<N, E> TreeNode<N, E> {
 
                 node
             }
-            TreeNode::Leaf(Leaf { weight }) => (vtable.add_node)(graph, weight),
+            Self::Leaf(Leaf { weight }) => (vtable.add_node)(graph, weight),
         }
     }
 }
