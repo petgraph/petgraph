@@ -5,30 +5,16 @@
 //! * G3: a = b - c
 //! * G4: a = b
 //! * G5: a - b   c
+
+mod common;
+
+use common::assert_graph_consistency;
 use petgraph_core::{
     edge::{Direction, EdgeType, Undirected},
     index::IndexType,
     visit::{EdgeRef, IntoNeighborsDirected},
 };
 use petgraph_graph::{EdgeIndex, Graph, NodeIndex};
-
-fn assert_graph_consistency<N, E, Ty, Ix>(graph: &Graph<N, E, Ty, Ix>)
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    assert_eq!(graph.node_count(), graph.node_indices().count());
-    assert_eq!(graph.edge_count(), graph.edge_indices().count());
-
-    for edge in graph.raw_edges() {
-        assert!(
-            graph.find_edge(edge.source(), edge.target()).is_some(),
-            "Edge not in graph! {:?} to {:?}",
-            edge.source(),
-            edge.target()
-        );
-    }
-}
 
 /// Graph: a ⤸
 struct GraphSelfLoop {
@@ -335,9 +321,10 @@ fn iter_multiple() {
     } = GraphDoubleLink::new();
 
     let expected = vec![ab, ba];
-    graph.edges_connecting(a, b).for_each(|edge| {
+
+    for edge in graph.edges_connecting(a, b) {
         assert!(expected.contains(&edge.id()));
-    });
+    }
 
     assert_graph_consistency(&graph);
 }
@@ -353,9 +340,13 @@ fn iter_multiple_same_direction() {
     } = GraphDoubleSameDirection::new();
 
     let expected = vec![ab1, ab2];
-    graph.edges_connecting(a, b).for_each(|edge| {
+
+    for edge in graph.edges_connecting(a, b) {
         assert!(expected.contains(&edge.id()));
-    });
+    }
+    for edge in graph.edges_connecting(b, a) {
+        assert!(expected.contains(&edge.id()));
+    }
 
     assert_graph_consistency(&graph);
 }

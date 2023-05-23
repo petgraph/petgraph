@@ -182,28 +182,6 @@ fn mst() {
     assert!(mst.find_edge(b, c).is_none());
 }
 
-// TODO: directed
-#[test]
-fn selfloop() {
-    let mut gr = Graph::new();
-    let a = gr.add_node("A");
-    let b = gr.add_node("B");
-    let c = gr.add_node("C");
-    gr.add_edge(a, b, 7.);
-    gr.add_edge(c, a, 6.);
-    let sed = gr.add_edge(a, a, 2.);
-
-    assert!(gr.find_edge(a, b).is_some());
-    assert!(gr.find_edge(b, a).is_none());
-    assert!(gr.find_edge_undirected(b, a).is_some());
-    assert!(gr.find_edge(a, a).is_some());
-    println!("{:?}", gr);
-
-    gr.remove_edge(sed);
-    assert!(gr.find_edge(a, a).is_none());
-    println!("{:?}", gr);
-}
-
 // TODO: move to algo
 #[test]
 fn cyclic() {
@@ -309,75 +287,6 @@ fn bipartite() {
         gr.add_edge(a, b, 6.);
 
         assert!(!is_bipartite_undirected(&gr, a));
-    }
-}
-
-// TODO: move to graph
-#[test]
-fn multi() {
-    let mut gr = Graph::new();
-    let a = gr.add_node("a");
-    let b = gr.add_node("b");
-    gr.add_edge(a, b, ());
-    gr.add_edge(a, b, ());
-    assert_eq!(gr.edge_count(), 2);
-}
-
-// TODO: move to graph
-#[test]
-fn iter_multi_edges() {
-    let mut gr = Graph::new();
-    let a = gr.add_node("a");
-    let b = gr.add_node("b");
-    let c = gr.add_node("c");
-
-    let mut connecting_edges = HashSet::new();
-
-    gr.add_edge(a, a, ());
-    connecting_edges.insert(gr.add_edge(a, b, ()));
-    gr.add_edge(a, c, ());
-    gr.add_edge(c, b, ());
-    connecting_edges.insert(gr.add_edge(a, b, ()));
-    gr.add_edge(b, a, ());
-
-    let mut iter = gr.edges_connecting(a, b);
-
-    let edge_id = iter.next().unwrap().id();
-    assert!(connecting_edges.contains(&edge_id));
-    connecting_edges.remove(&edge_id);
-
-    let edge_id = iter.next().unwrap().id();
-    assert!(connecting_edges.contains(&edge_id));
-    connecting_edges.remove(&edge_id);
-
-    assert_eq!(None, iter.next());
-    assert!(connecting_edges.is_empty());
-}
-
-// TODO: directed
-#[test]
-fn update_edge() {
-    {
-        let mut gr = Graph::new();
-        let a = gr.add_node("a");
-        let b = gr.add_node("b");
-        let e = gr.update_edge(a, b, 1);
-        let f = gr.update_edge(a, b, 2);
-        let _ = gr.update_edge(b, a, 3);
-        assert_eq!(gr.edge_count(), 2);
-        assert_eq!(e, f);
-        assert_eq!(*gr.edge_weight(f).unwrap(), 2);
-    }
-
-    {
-        let mut gr = Graph::new_undirected();
-        let a = gr.add_node("a");
-        let b = gr.add_node("b");
-        let e = gr.update_edge(a, b, 1);
-        let f = gr.update_edge(b, a, 2);
-        assert_eq!(gr.edge_count(), 1);
-        assert_eq!(e, f);
-        assert_eq!(*gr.edge_weight(f).unwrap(), 2);
     }
 }
 
