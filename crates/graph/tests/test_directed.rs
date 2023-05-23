@@ -8,7 +8,10 @@
 mod common;
 
 use common::assert_graph_consistency;
-use petgraph_core::edge::{Directed, Direction};
+use petgraph_core::{
+    edge::{Directed, Direction},
+    visit::EdgeRef,
+};
 use petgraph_graph::{EdgeIndex, Graph, NodeIndex};
 
 /// Graph: a ⤸
@@ -20,7 +23,7 @@ struct GraphSelfLoop {
 
 impl GraphSelfLoop {
     fn new() -> Self {
-        let mut graph = Graph::new_undirected();
+        let mut graph = Graph::new();
 
         let a = graph.add_node(());
         let aa = graph.add_edge(a, a, ());
@@ -50,7 +53,7 @@ where
     E: Default,
 {
     fn from_default() -> Self {
-        let mut graph = Graph::new_undirected();
+        let mut graph = Graph::new();
 
         let a = graph.add_node(N::default());
         let b = graph.add_node(N::default());
@@ -73,7 +76,7 @@ struct GraphDoubleLink {
 
 impl GraphDoubleLink {
     fn new() -> Self {
-        let mut graph = Graph::new_undirected();
+        let mut graph = Graph::new();
 
         let a = graph.add_node(());
         let b = graph.add_node(());
@@ -107,7 +110,7 @@ struct GraphDoubleSameDirection {
 
 impl GraphDoubleSameDirection {
     fn new() -> Self {
-        let mut graph = Graph::new_undirected();
+        let mut graph = Graph::new();
 
         let a = graph.add_node(());
         let b = graph.add_node(());
@@ -216,7 +219,7 @@ fn neighbours() {
     let GraphDoubleLink { graph, a, b, c, .. } = GraphDoubleLink::new();
 
     assert_eq!(graph.neighbors(a).collect::<Vec<_>>(), vec![b]);
-    assert_eq!(graph.neighbors(b).collect::<Vec<_>>(), vec![a, c]);
+    assert_eq!(graph.neighbors(b).collect::<Vec<_>>(), vec![c, a]);
     assert_eq!(graph.neighbors(c).collect::<Vec<_>>(), vec![]);
 
     assert_graph_consistency(&graph);
@@ -272,7 +275,7 @@ fn iter_multiple() {
     let expected = vec![ab1, ab2];
 
     for edge in graph.edges_connecting(a, b) {
-        assert!(expected.contains(&edge));
+        assert!(expected.contains(&edge.id()));
     }
     assert_eq!(graph.edges_connecting(b, a).count(), 0);
 
