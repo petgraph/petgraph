@@ -1,5 +1,5 @@
 use petgraph_core::{edge::EdgeType, index::IndexType};
-use petgraph_graph::Graph;
+use petgraph_graph::{Graph, NodeIndex, WalkNeighbors};
 
 /// # Panics
 ///
@@ -20,4 +20,21 @@ where
             edge.target()
         );
     }
+}
+
+pub fn walk_collect<N, E, Ty, Ix>(
+    mut walk: WalkNeighbors<Ix>,
+    graph: &Graph<N, E, Ty, Ix>,
+) -> Vec<NodeIndex<Ix>>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    let mut result = Vec::new();
+
+    while let Some(node) = walk.next_node(graph) {
+        result.push(node);
+    }
+
+    result
 }

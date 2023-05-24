@@ -16,6 +16,8 @@ use petgraph_core::{
 };
 use petgraph_graph::{EdgeIndex, Graph, NodeIndex};
 
+use crate::common::walk_collect;
+
 /// Graph: a ⤸
 struct GraphSelfLoop {
     graph: Graph<(), (), Undirected>,
@@ -219,6 +221,20 @@ fn neighbours() {
     assert_eq!(graph.neighbors(c).collect::<Vec<_>>(), vec![b]);
 }
 
+#[test]
+fn neighbours_detach() {
+    let GraphDoubleLink { graph, a, b, c, .. } = GraphDoubleLink::<u32, ()>::new_from_default();
+
+    let walk = graph.neighbors(a).detach();
+    assert_eq!(walk_collect(walk, &graph), vec![b, b]);
+
+    let walk = graph.neighbors(b).detach();
+    assert_eq!(walk_collect(walk, &graph), vec![c, a, a]);
+
+    let walk = graph.neighbors(c).detach();
+    assert_eq!(walk_collect(walk, &graph), vec![b]);
+}
+
 // Graph: a = b - c
 #[test]
 fn neighbours_after_removal() {
@@ -403,10 +419,7 @@ fn externals_empty() {
 #[test]
 fn access_removed_node() {
     let GraphLink {
-        mut graph,
-        a,
-        b,
-        ab,
+        mut graph, a, b, ..
     } = GraphLink::<u32, ()>::new();
 
     // mark b with a weight of 1
@@ -468,19 +481,3 @@ fn add_edge_out_of_bounds() {
 
     result.expect_err("Creating more than Ix::MAX edges should panic");
 }
-
-// #[test]
-// fn find_directed() {
-//     let mut graph = Graph::new();
-//
-//     let a = graph.add_node(());
-//     let b = graph.add_node(());
-//
-//     let edge = graph.add_edge(a, b, ());
-//
-//     assert_eq!(graph.neighbors(a).count(), 1);
-//     assert_eq!(graph.neighbors(b).count(), 0);
-//
-//     assert_eq!(graph.find_edge(a, b), Some(edge));
-//     assert_eq!(graph.find_edge(b, a), None);
-// }
