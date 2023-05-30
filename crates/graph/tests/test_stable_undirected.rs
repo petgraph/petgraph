@@ -29,7 +29,7 @@ impl GraphDoubleSameDirection<(), ()> {
 
 #[test]
 fn node_indices() {
-    let mut graph = StableGraph::<(), ()>::with_capacity(0, 0);
+    let mut graph = StableGraph::<(), (), Undirected>::with_capacity(0, 0);
 
     let a = graph.add_node(());
     let b = graph.add_node(());
@@ -42,7 +42,7 @@ fn node_indices() {
 
 #[test]
 fn node_indices_stable() {
-    let mut graph = StableGraph::<i32, ()>::with_capacity(0, 0);
+    let mut graph = StableGraph::<i32, (), Undirected>::with_capacity(0, 0);
 
     let a = graph.add_node(0);
     let b = graph.add_node(1);
@@ -60,7 +60,7 @@ fn node_indices_stable() {
 
 #[test]
 fn node_indices_reclaim() {
-    let mut graph = StableGraph::<(), ()>::with_capacity(0, 0);
+    let mut graph = StableGraph::<(), (), Undirected>::with_capacity(0, 0);
 
     let a = graph.add_node(());
     let b = graph.add_node(());
@@ -78,7 +78,7 @@ fn node_indices_reclaim() {
 
 #[test]
 fn node_bound() {
-    let mut graph = StableGraph::<(), ()>::with_capacity(0, 0);
+    let mut graph = StableGraph::<(), (), Undirected>::with_capacity(0, 0);
 
     assert_eq!(graph.node_bound(), 0);
 
@@ -96,7 +96,7 @@ fn node_bound() {
 
 #[test]
 fn edge_indices() {
-    let mut graph = StableGraph::<(), ()>::with_capacity(0, 0);
+    let mut graph = StableGraph::<(), (), Undirected>::with_capacity(0, 0);
 
     let a = graph.add_node(());
     let b = graph.add_node(());
@@ -111,7 +111,7 @@ fn edge_indices() {
 
 #[test]
 fn edge_indices_stable() {
-    let mut graph = StableGraph::<(), i32>::with_capacity(0, 0);
+    let mut graph = StableGraph::<(), i32, Undirected>::with_capacity(0, 0);
 
     let a = graph.add_node(());
     let b = graph.add_node(());
@@ -128,7 +128,7 @@ fn edge_indices_stable() {
 
 #[test]
 fn edge_indices_reclaim() {
-    let mut graph = StableGraph::<(), ()>::with_capacity(0, 0);
+    let mut graph = StableGraph::<(), (), Undirected>::with_capacity(0, 0);
 
     let a = graph.add_node(());
     let b = graph.add_node(());
@@ -145,7 +145,7 @@ fn edge_indices_reclaim() {
 
 #[test]
 fn edge_bound() {
-    let mut graph = StableGraph::<(), ()>::with_capacity(0, 0);
+    let mut graph = StableGraph::<(), (), Undirected>::with_capacity(0, 0);
 
     assert_eq!(graph.edge_bound(), 0);
 
@@ -166,7 +166,7 @@ fn edge_bound() {
 
 #[test]
 fn clear_edges() {
-    let mut graph = StableGraph::<(), ()>::with_capacity(0, 0);
+    let mut graph = StableGraph::<(), (), Undirected>::with_capacity(0, 0);
 
     let a = graph.add_node(());
     let b = graph.add_node(());
