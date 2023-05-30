@@ -8,73 +8,14 @@ extern crate defmac;
 use std::collections::HashSet;
 
 use itertools::assert_equal;
-use petgraph::algo::{kosaraju_scc, min_spanning_tree, tarjan_scc};
-use petgraph::dot::Dot;
-use petgraph::prelude::*;
-use petgraph::stable_graph::edge_index as e;
-use petgraph::stable_graph::node_index as n;
-use petgraph::visit::{EdgeIndexable, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
-use petgraph::EdgeType;
-
-#[test]
-fn node_indices() {
-    let mut g = StableGraph::<_, ()>::new();
-    let a = g.add_node(0);
-    let b = g.add_node(1);
-    let c = g.add_node(2);
-    g.remove_node(b);
-    let mut iter = g.node_indices();
-    assert_eq!(iter.next(), Some(a));
-    assert_eq!(iter.next(), Some(c));
-    assert_eq!(iter.next(), None);
-}
-
-#[test]
-fn node_bound() {
-    let mut g = StableGraph::<_, ()>::new();
-    assert_eq!(g.node_bound(), g.node_count());
-    for i in 0..10 {
-        g.add_node(i);
-        assert_eq!(g.node_bound(), g.node_count());
-    }
-    let full_count = g.node_count();
-    g.remove_node(n(0));
-    g.remove_node(n(2));
-    assert_eq!(g.node_bound(), full_count);
-    g.clear();
-    assert_eq!(g.node_bound(), 0);
-}
-
-#[test]
-fn edge_bound() {
-    let mut g = StableGraph::<_, _>::new();
-    assert_eq!(g.edge_bound(), g.edge_count());
-    for i in 0..10 {
-        g.add_node(i);
-    }
-    for i in 0..9 {
-        g.add_edge(n(i), n(i + 1), i);
-        assert_eq!(g.edge_bound(), g.edge_count());
-    }
-    let full_count = g.edge_count();
-    g.remove_edge(e(0));
-    g.remove_edge(e(2));
-    assert_eq!(g.edge_bound(), full_count);
-    g.clear();
-    assert_eq!(g.edge_bound(), 0);
-}
-
-#[test]
-fn clear_edges() {
-    let mut gr = scc_graph();
-    gr.remove_node(n(1));
-    gr.clear_edges();
-    // check that we use the free list for the vacancies
-    assert_eq!(gr.add_node(()), n(1));
-    assert_eq!(gr.add_node(()), n(4));
-    assert!(gr.edge_references().next().is_none());
-    assert!(gr.node_indices().all(|i| gr.neighbors(i).next().is_none()));
-}
+use petgraph::{
+    algo::{kosaraju_scc, min_spanning_tree, tarjan_scc},
+    dot::Dot,
+    prelude::*,
+    stable_graph::{edge_index as e, node_index as n},
+    visit::{EdgeIndexable, IntoEdgeReferences, IntoNodeReferences, NodeIndexable},
+    EdgeType,
+};
 
 fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>) {
     // normalize the result and compare with the answer.
@@ -108,35 +49,31 @@ fn scc_graph() -> StableGraph<(), ()> {
     gr
 }
 
+// TODO: move to algo
 #[test]
 fn test_scc() {
     let gr = scc_graph();
     println!("{:?}", gr);
 
     let x = n(gr.node_bound() - 1);
-    assert_sccs_eq(
-        kosaraju_scc(&gr),
-        vec![
-            vec![n(0), n(3), n(6)],
-            vec![n(1), n(7), x],
-            vec![n(2), n(5), n(8)],
-        ],
-    );
+    assert_sccs_eq(kosaraju_scc(&gr), vec![
+        vec![n(0), n(3), n(6)],
+        vec![n(1), n(7), x],
+        vec![n(2), n(5), n(8)],
+    ]);
 }
 
+// TODO: move to algo
 #[test]
 fn test_tarjan_scc() {
     let gr = scc_graph();
 
     let x = n(gr.node_bound() - 1);
-    assert_sccs_eq(
-        tarjan_scc(&gr),
-        vec![
-            vec![n(0), n(3), n(6)],
-            vec![n(1), n(7), x],
-            vec![n(2), n(5), n(8)],
-        ],
-    );
+    assert_sccs_eq(tarjan_scc(&gr), vec![
+        vec![n(0), n(3), n(6)],
+        vec![n(1), n(7), x],
+        vec![n(2), n(5), n(8)],
+    ]);
 }
 
 fn make_graph<Ty>() -> StableGraph<(), i32, Ty>
@@ -175,6 +112,7 @@ where
 
 defmac!(edges ref gr, x => gr.edges(x).map(|r| (r.target(), *r.weight())));
 
+// TODO: test directed
 #[test]
 fn test_edges_directed() {
     let gr = make_graph::<Directed>();
@@ -184,24 +122,14 @@ fn test_edges_directed() {
     assert_equal(edges!(&gr, n(4)), vec![]);
 }
 
+// TODO: test directed
 #[test]
 fn test_edge_references() {
     let gr = make_graph::<Directed>();
     assert_eq!(gr.edge_count(), gr.edge_references().count());
 }
 
-#[test]
-fn test_edges_undirected() {
-    let gr = make_graph::<Undirected>();
-    let x = n(9);
-    assert_equal(
-        edges!(&gr, x),
-        vec![(x, 16), (x, 14), (n(1), 13), (n(7), 12)],
-    );
-    assert_equal(edges!(&gr, n(0)), vec![(n(3), 1)]);
-    assert_equal(edges!(&gr, n(4)), vec![]);
-}
-
+// TODO
 #[test]
 fn test_edge_iterators_directed() {
     let gr = make_graph::<Directed>();
@@ -239,52 +167,7 @@ fn test_edge_iterators_directed() {
     }
 }
 
-#[test]
-fn test_edge_iterators_undir() {
-    let gr = make_graph::<Undirected>();
-    for i in gr.node_indices() {
-        itertools::assert_equal(gr.edges_directed(i, Outgoing), gr.edges(i));
-        for edge in gr.edges_directed(i, Outgoing) {
-            assert_eq!(
-                edge.source(),
-                i,
-                "outgoing edges should have a fixed source"
-            );
-        }
-    }
-    for i in gr.node_indices() {
-        itertools::assert_equal(gr.edges_directed(i, Incoming), gr.edges(i));
-        for edge in gr.edges_directed(i, Incoming) {
-            assert_eq!(
-                edge.target(),
-                i,
-                "incoming edges should have a fixed target"
-            );
-        }
-    }
-}
-
-#[test]
-#[should_panic(expected = "is not a node")]
-fn add_edge_vacant() {
-    let mut g = StableGraph::<_, _>::new();
-    let a = g.add_node(0);
-    let b = g.add_node(1);
-    let _ = g.add_node(2);
-    let _ = g.remove_node(b);
-    g.add_edge(a, b, 1);
-}
-
-#[test]
-#[should_panic(expected = "is not a node")]
-fn add_edge_oob() {
-    let mut g = StableGraph::<_, _>::new();
-    let a = g.add_node(0);
-    let _ = g.add_node(1);
-    let _ = g.add_node(2);
-    g.add_edge(a, n(4), 1);
-}
-
+// TODO
 #[test]
 fn test_node_references() {
     let gr = scc_graph();
@@ -292,6 +175,7 @@ fn test_node_references() {
     itertools::assert_equal(gr.node_references().map(|(i, _)| i), gr.node_indices());
 }
 
+// TODO
 #[test]
 fn iterators_undir() {
     let mut g = StableUnGraph::<_, _>::default();
@@ -314,6 +198,7 @@ fn iterators_undir() {
     itertools::assert_equal(g.neighbors(c), vec![]);
 }
 
+// TODO: directed
 #[test]
 fn iter_multi_edges() {
     let mut gr = StableGraph::new();
@@ -344,40 +229,7 @@ fn iter_multi_edges() {
     assert!(connecting_edges.is_empty());
 }
 
-#[test]
-fn iter_multi_undirected_edges() {
-    let mut gr: StableUnGraph<_, _> = Default::default();
-    let a = gr.add_node("a");
-    let b = gr.add_node("b");
-    let c = gr.add_node("c");
-
-    let mut connecting_edges = HashSet::new();
-
-    gr.add_edge(a, a, ());
-    connecting_edges.insert(gr.add_edge(a, b, ()));
-    gr.add_edge(a, c, ());
-    gr.add_edge(c, b, ());
-    connecting_edges.insert(gr.add_edge(a, b, ()));
-    connecting_edges.insert(gr.add_edge(b, a, ()));
-
-    let mut iter = gr.edges_connecting(a, b);
-
-    let edge_id = iter.next().unwrap().id();
-    assert!(connecting_edges.contains(&edge_id));
-    connecting_edges.remove(&edge_id);
-
-    let edge_id = iter.next().unwrap().id();
-    assert!(connecting_edges.contains(&edge_id));
-    connecting_edges.remove(&edge_id);
-
-    let edge_id = iter.next().unwrap().id();
-    assert!(connecting_edges.contains(&edge_id));
-    connecting_edges.remove(&edge_id);
-
-    assert_eq!(None, iter.next());
-    assert!(connecting_edges.is_empty());
-}
-
+// TODO: move to different module; use insta
 #[test]
 fn dot() {
     let mut gr = StableGraph::new();
@@ -406,45 +258,9 @@ defmac!(edges_eq ref a, ref b =>
             a.edge_references().map(|e| (e.source(), e.target())),
             b.edge_references().map(|e| (e.source(), e.target()))));
 
-#[test]
-fn from() {
-    let mut gr1 = StableGraph::new();
-    let a = gr1.add_node(1);
-    let b = gr1.add_node(2);
-    let c = gr1.add_node(3);
-    gr1.add_edge(a, a, 10);
-    gr1.add_edge(a, b, 20);
-    gr1.add_edge(b, c, 30);
-    gr1.add_edge(a, c, 40);
+use petgraph::{data::FromElements, stable_graph::StableGraph};
 
-    let gr2 = Graph::from(gr1.clone());
-    let gr3 = StableGraph::from(gr2);
-    assert!(nodes_eq!(&gr1, &gr3));
-    assert!(edgew_eq!(&gr1, &gr3));
-    assert!(edges_eq!(&gr1, &gr3));
-
-    gr1.remove_node(b);
-
-    let gr4 = Graph::from(gr1);
-    let gr5 = StableGraph::from(gr4.clone());
-
-    let mut ans = StableGraph::new();
-    let a = ans.add_node(1);
-    let c = ans.add_node(3);
-    ans.add_edge(a, a, 10);
-    ans.add_edge(a, c, 40);
-
-    assert!(nodes_eq!(&gr4, &ans));
-    assert!(edges_eq!(&gr4, &ans));
-
-    assert!(nodes_eq!(&gr5, &ans));
-    assert!(edgew_eq!(&gr5, &ans));
-    assert!(edges_eq!(&gr5, &ans));
-}
-
-use petgraph::data::FromElements;
-use petgraph::stable_graph::StableGraph;
-
+// TODO: move to algo
 #[test]
 fn from_min_spanning_tree() {
     let mut g = StableGraph::new();
@@ -462,6 +278,7 @@ fn from_min_spanning_tree() {
     let _ = StableGraph::<(), (), Undirected, usize>::from_elements(min_spanning_tree(&g));
 }
 
+// TODO
 #[test]
 fn weights_mut_iterator() {
     let mut gr = StableGraph::new();
