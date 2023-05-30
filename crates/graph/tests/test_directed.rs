@@ -9,135 +9,47 @@ mod common;
 
 use common::assert_graph_consistency;
 use petgraph_core::{
-    edge::{Directed, Direction, EdgeType},
-    index::IndexType,
+    edge::{Directed, Direction},
+    index::{DefaultIx, IndexType},
     visit::EdgeRef,
 };
-use petgraph_graph::{EdgeIndex, Graph, NodeIndex, WalkNeighbors};
+use petgraph_graph::{EdgeIndex, Graph, NodeIndex};
 
-use crate::common::walk_collect;
+use crate::common::{graphs::FromDefault, walk_collect};
 
-/// Graph: a ⤸
-struct GraphSelfLoop {
-    graph: Graph<(), (), Directed>,
-    a: NodeIndex,
-    aa: EdgeIndex,
-}
+type GraphSelfLoop<N, E> = common::graphs::GraphSelfLoop<Graph<N, E>>;
 
-impl GraphSelfLoop {
-    fn new() -> Self {
-        let mut graph = Graph::new();
-
-        let a = graph.add_node(());
-        let aa = graph.add_edge(a, a, ());
-
-        Self { graph, a, aa }
-    }
-}
-
-/// Graph: a → b
-struct GraphLink<N = (), E = ()> {
-    graph: Graph<N, E, Directed>,
-
-    a: NodeIndex,
-    b: NodeIndex,
-    ab: EdgeIndex,
-}
-
-impl GraphLink {
+// IntelliJ: false-positive
+impl GraphSelfLoop<(), ()> {
     fn new() -> Self {
         Self::from_default()
     }
 }
 
-impl<N, E> GraphLink<N, E>
-where
-    N: Default,
-    E: Default,
-{
-    fn from_default() -> Self {
-        let mut graph = Graph::new();
+type GraphLink<N, E> = common::graphs::GraphLink<Graph<N, E>>;
 
-        let a = graph.add_node(N::default());
-        let b = graph.add_node(N::default());
-        let ab = graph.add_edge(a, b, E::default());
-
-        Self { graph, a, b, ab }
-    }
-}
-
-struct GraphDoubleLink<N = (), E = ()> {
-    graph: Graph<N, E, Directed>,
-
-    a: NodeIndex,
-    b: NodeIndex,
-    c: NodeIndex,
-    ab: EdgeIndex,
-    ba: EdgeIndex,
-    bc: EdgeIndex,
-}
-
-impl GraphDoubleLink {
+// IntelliJ: false-positive
+impl GraphLink<(), ()> {
     fn new() -> Self {
         Self::from_default()
     }
 }
 
-impl<N, E> GraphDoubleLink<N, E>
-where
-    N: Default,
-    E: Default,
-{
-    fn from_default() -> Self {
-        let mut graph = Graph::new();
+type GraphDoubleLink<N, E> = common::graphs::GraphDoubleLink<Graph<N, E>>;
 
-        let a = graph.add_node(N::default());
-        let b = graph.add_node(N::default());
-        let c = graph.add_node(N::default());
-
-        let ab = graph.add_edge(a, b, E::default());
-        let ba = graph.add_edge(b, a, E::default());
-        let bc = graph.add_edge(b, c, E::default());
-
-        Self {
-            graph,
-            a,
-            b,
-            c,
-            ab,
-            ba,
-            bc,
-        }
+// IntelliJ: false-positive
+impl GraphDoubleLink<(), ()> {
+    fn new() -> Self {
+        Self::from_default()
     }
 }
 
-struct GraphDoubleSameDirection {
-    graph: Graph<(), (), Directed>,
+type GraphDoubleSameDirection<N, E> = common::graphs::GraphDoubleSameDirection<Graph<N, E>>;
 
-    a: NodeIndex,
-    b: NodeIndex,
-
-    ab1: EdgeIndex,
-    ab2: EdgeIndex,
-}
-
-impl GraphDoubleSameDirection {
+// IntelliJ: false-positive
+impl GraphDoubleSameDirection<(), ()> {
     fn new() -> Self {
-        let mut graph = Graph::new();
-
-        let a = graph.add_node(());
-        let b = graph.add_node(());
-
-        let ab1 = graph.add_edge(a, b, ());
-        let ab2 = graph.add_edge(a, b, ());
-
-        Self {
-            graph,
-            a,
-            b,
-            ab1,
-            ab2,
-        }
+        Self::from_default()
     }
 }
 
@@ -737,7 +649,7 @@ fn filter_map() {
     // only edges to nodes that passed the filter are passed to the `edge_map` function.
     // The node filter removes `a` and `c`, only leaving `b` and `d` behind (which is why we added d
     // in the first place)
-    // This means that the only edge that passes through the edge_map is `bd` and `db`, from those
+    // This means that the only edge that pass through the edge_map is `bd` and `db`, from those
     // we only select `bd`.
     // During the filtering the edge index is not updated, so the edge index of `bd` is still 3 even
     // though `ab`, `ba` and `cd` were removed in the node filter.

@@ -16,34 +16,17 @@ use petgraph_core::{
 };
 use petgraph_graph::{EdgeIndex, Graph, NodeIndex};
 
-use crate::common::walk_collect;
+use crate::common::{graphs::FromDefault, walk_collect};
 
-/// Graph: a ⤸
-struct GraphSelfLoop {
-    graph: Graph<(), (), Undirected>,
-    a: NodeIndex,
-    aa: EdgeIndex,
-}
+type GraphSelfLoop<N, E> = common::graphs::GraphSelfLoop<Graph<N, E, Undirected>>;
 
-impl GraphSelfLoop {
+impl GraphSelfLoop<(), ()> {
     fn new() -> Self {
-        let mut graph = Graph::new_undirected();
-
-        let a = graph.add_node(());
-        let aa = graph.add_edge(a, a, ());
-
-        Self { graph, a, aa }
+        Self::from_default()
     }
 }
 
-/// Graph: a - b
-struct GraphLink<N = (), E = ()> {
-    graph: Graph<N, E, Undirected>,
-    a: NodeIndex,
-    b: NodeIndex,
-
-    ab: EdgeIndex,
-}
+type GraphLink<N, E> = common::graphs::GraphLink<Graph<N, E, Undirected>>;
 
 impl<N, E> GraphLink<N, E>
 where
@@ -51,113 +34,32 @@ where
     E: Default,
 {
     fn new() -> Self {
-        let mut graph = Graph::new_undirected();
-
-        let a = graph.add_node(N::default());
-        let b = graph.add_node(N::default());
-
-        let ab = graph.add_edge(a, b, E::default());
-
-        Self { graph, a, b, ab }
+        Self::from_default()
     }
 }
 
-/// Graph: a = b - c
-struct GraphDoubleLink<N = (), E = ()> {
-    graph: Graph<N, E, Undirected>,
-    a: NodeIndex,
-    b: NodeIndex,
-    c: NodeIndex,
+type GraphDoubleLink<N, E> = common::graphs::GraphDoubleLink<Graph<N, E, Undirected>>;
 
-    ab: EdgeIndex,
-    ba: EdgeIndex,
-    bc: EdgeIndex,
-}
-
-impl<N, E> GraphDoubleLink<N, E>
-where
-    N: Default,
-    E: Default,
-{
-    fn new_from_default() -> Self {
-        let mut graph = Graph::new_undirected();
-
-        let a = graph.add_node(N::default());
-        let b = graph.add_node(N::default());
-        let c = graph.add_node(N::default());
-
-        let ab = graph.add_edge(a, b, E::default());
-        let ba = graph.add_edge(b, a, E::default());
-        let bc = graph.add_edge(b, c, E::default());
-
-        Self {
-            graph,
-            a,
-            b,
-            c,
-            ab,
-            ba,
-            bc,
-        }
-    }
-}
-
-impl GraphDoubleLink {
+impl GraphDoubleLink<(), ()> {
     fn new() -> Self {
-        Self::new_from_default()
+        Self::from_default()
     }
 }
 
-/// Graph: a = b
-struct GraphDoubleSameDirection {
-    graph: Graph<(), (), Undirected>,
-    a: NodeIndex,
-    b: NodeIndex,
+type GraphDoubleSameDirection<N, E> =
+    common::graphs::GraphDoubleSameDirection<Graph<N, E, Undirected>>;
 
-    ab1: EdgeIndex,
-    ab2: EdgeIndex,
-}
-
-impl GraphDoubleSameDirection {
+impl GraphDoubleSameDirection<(), ()> {
     fn new() -> Self {
-        let mut graph = Graph::new_undirected();
-
-        let a = graph.add_node(());
-        let b = graph.add_node(());
-
-        let ab1 = graph.add_edge(a, b, ());
-        let ab2 = graph.add_edge(a, b, ());
-
-        Self {
-            graph,
-            a,
-            b,
-            ab1,
-            ab2,
-        }
+        Self::from_default()
     }
 }
 
-struct GraphLoner {
-    graph: Graph<(), (), Undirected>,
-    a: NodeIndex,
-    b: NodeIndex,
-    c: NodeIndex,
+type GraphLoner<N, E> = common::graphs::GraphLoner<Graph<N, E, Undirected>>;
 
-    ab: EdgeIndex,
-}
-
-impl GraphLoner {
+impl GraphLoner<(), ()> {
     fn new() -> Self {
-        let mut graph = Graph::new_undirected();
-
-        let a = graph.add_node(());
-        let b = graph.add_node(());
-        let c = graph.add_node(());
-
-        let ab = graph.add_edge(a, b, ());
-
-        Self { graph, a, b, c, ab }
+        Self::from_default()
     }
 }
 
@@ -223,7 +125,7 @@ fn neighbours() {
 
 #[test]
 fn neighbours_detach() {
-    let GraphDoubleLink { graph, a, b, c, .. } = GraphDoubleLink::<u32, ()>::new_from_default();
+    let GraphDoubleLink { graph, a, b, c, .. } = GraphDoubleLink::<u32, ()>::from_default();
 
     let walk = graph.neighbors(a).detach();
     assert_eq!(walk_collect(walk, &graph), vec![b, b]);
@@ -240,7 +142,7 @@ fn neighbours_detach() {
 fn neighbours_after_removal() {
     let GraphDoubleLink {
         mut graph, a, b, c, ..
-    } = GraphDoubleLink::<u32, ()>::new_from_default();
+    } = GraphDoubleLink::<u32, ()>::from_default();
 
     // mark note c, we need this later when we remove, to ensure the swap was correct
     graph[c] = 2;

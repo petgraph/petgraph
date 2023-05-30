@@ -1,3 +1,5 @@
+pub mod graphs;
+
 use petgraph_core::{edge::EdgeType, index::IndexType};
 use petgraph_graph::{Graph, NodeIndex, WalkNeighbors};
 
