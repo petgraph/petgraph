@@ -3,14 +3,13 @@
 
 use std::{
     borrow::Cow,
-    collections::HashMap,
-    fmt::{self, Debug, Display, Formatter, Write},
+    fmt::{self, Debug, Display, Formatter},
     sync::{Arc, RwLock},
 };
 
 pub use dot::RenderOption;
 use dot::{Arrow, Edges, Id, Kind, LabelText, Nodes, Style};
-use petgraph_core::{edge::EdgeType, visit::IntoNodeIdentifiers};
+use petgraph_core::visit::IntoNodeIdentifiers;
 
 use crate::visit::{
     EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeReferences, NodeIndexable, NodeRef,
@@ -204,7 +203,7 @@ where
             graph, //
             options,
             &|_, _| EdgeAttributes::new(""),
-            &|_, _| NodeAttributes::new(""),
+            &|_, node| NodeAttributes::new(node.id().to_string()),
         )
     }
 
