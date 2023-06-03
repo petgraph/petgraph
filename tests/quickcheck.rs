@@ -539,6 +539,7 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
     true
 }
 
+// TODO: move to algo ?!?!?
 #[test]
 fn full_topo() {
     fn prop(DAG(gr): DAG<()>) -> bool {
@@ -548,6 +549,7 @@ fn full_topo() {
     quickcheck::quickcheck(prop as fn(_) -> bool);
 }
 
+// TODO: move to algo ?!?!?
 #[test]
 fn full_topo_generic() {
     fn prop_generic(DAG(mut gr): DAG<usize>) -> bool {
@@ -588,6 +590,7 @@ fn full_topo_generic() {
     quickcheck::quickcheck(prop_generic as fn(_) -> bool);
 }
 
+// TODO: move to algo ?!?!?
 quickcheck! {
     // checks that the distances computed by dijkstra satisfy the triangle
     // inequality.
@@ -613,6 +616,7 @@ quickcheck! {
     }
 }
 
+// TODO: move to algo ?!?!?
 quickcheck! {
     // checks that the distances computed by k'th shortest path is always greater or equal compared to their dijkstra computation
     fn k_shortest_path_(g: Graph<u32, u32>, node: usize) -> bool {
@@ -631,6 +635,7 @@ quickcheck! {
     }
 }
 
+// TODO: move to algo ?!?!?
 quickcheck! {
     // checks floyd_warshall against dijkstra results
     fn floyd_warshall_(g: Graph<u32, u32>) -> bool {
@@ -662,6 +667,7 @@ quickcheck! {
     }
 }
 
+// TODO: move to algo
 quickcheck! {
     // checks that the complement of the complement is the same as the input if the input does not contain self-loops
     fn complement_(g: Graph<u32, u32>, _node: usize) -> bool {
@@ -697,6 +703,7 @@ where
     iter.into_iter().collect()
 }
 
+// TODO: move to algo
 quickcheck! {
     fn dfs_visit(gr: Graph<(), ()>, node: usize) -> bool {
         use petgraph::visit::{Visitable, VisitMap};
@@ -744,6 +751,7 @@ quickcheck! {
     }
 }
 
+// TODO: move to algo
 quickcheck! {
     fn test_bellman_ford(gr: Graph<(), f32>) -> bool {
         let mut gr = gr;
@@ -761,6 +769,7 @@ quickcheck! {
     }
 }
 
+// TODO: move to algo
 quickcheck! {
     fn test_find_negative_cycle(gr: Graph<(), f32>) -> bool {
         let gr = gr;
@@ -777,6 +786,7 @@ quickcheck! {
     }
 }
 
+// TODO: move to algo
 quickcheck! {
     fn test_bellman_ford_undir(gr: Graph<(), f32, Undirected>) -> bool {
         let mut gr = gr;
