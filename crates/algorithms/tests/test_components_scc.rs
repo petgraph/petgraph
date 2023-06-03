@@ -33,6 +33,7 @@ use petgraph_core::{
     index::{DefaultIx, SafeCast},
     visit::GraphBase,
 };
+use petgraph_graph::Graph;
 
 const EDGES: &[(DefaultIx, DefaultIx)] = &[
     (6, 0),
@@ -140,4 +141,29 @@ fn graph_map_tarjan() {
 #[test]
 fn graph_map_kosaraju() {
     graph_map(|graph| kosaraju_scc(&graph));
+}
+
+fn graph(
+    scc: impl FnOnce(Graph<(), (), Directed, DefaultIx>) -> Vec<Vec<petgraph::graph::NodeIndex>>,
+) {
+    let graph = Graph::from_edges(EDGES);
+
+    let scc = scc(graph);
+
+    assert_scc(scc, &[
+        vec![0, 3, 6], //
+        vec![1, 7, 9],
+        vec![2, 5, 8],
+        vec![4],
+    ]);
+}
+
+#[test]
+fn graph_tarjan() {
+    graph(|graph| tarjan_scc(&graph));
+}
+
+#[test]
+fn graph_kosaraju() {
+    graph(|graph| kosaraju_scc(&graph));
 }

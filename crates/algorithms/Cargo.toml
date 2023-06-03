@@ -21,6 +21,7 @@ rustc_version = "0.4.0"
 
 [dev-dependencies]
 petgraph = { workspace = true, default-features = true }
+# petgraph is only available in integration tests, while we use petgraph-graph in unit tests
 petgraph-graph = { workspace = true, features = ['stable'] }
 paste = "1.0.12"
 proptest = "1.1.0"

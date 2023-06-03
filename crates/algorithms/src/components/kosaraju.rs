@@ -55,3 +55,158 @@ where
     }
     sccs
 }
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+
+    use petgraph_core::{edge::Directed, visit::Reversed};
+    use petgraph_graph::{Graph, NodeIndex};
+
+    use super::kosaraju_scc;
+
+    /// Test that the algorithm works on a graph with a single component.
+    ///
+    /// ```text
+    /// 0 → 1
+    ///   ↖ ↓
+    ///     2
+    /// ```
+    #[test]
+    fn single_component() {
+        let graph: Graph<(), (), Directed, _> = Graph::from_edges([
+            (0u32, 1), //
+            (1, 2),
+            (2, 0),
+        ]);
+
+        let scc = kosaraju_scc(&graph);
+
+        assert_eq!(scc.len(), 1);
+
+        assert_eq!(scc, [vec![
+            NodeIndex::new(0),
+            NodeIndex::new(1),
+            NodeIndex::new(2)
+        ]]);
+    }
+
+    /// Test that the algorithm works on a graph with multiple components.
+    ///
+    /// ```text
+    /// 0 → 1   3
+    ///   ↖ ↓ ↗ ↓ ↖
+    ///     2   4 → 5
+    /// ```
+    #[test]
+    fn multiple_components() {
+        let graph: Graph<(), (), Directed, _> = Graph::from_edges([
+            (0u32, 1), //
+            (1, 2),
+            (2, 0),
+            (3, 4),
+            (4, 5),
+            (5, 3),
+        ]);
+
+        let scc = kosaraju_scc(&graph);
+
+        assert_eq!(scc.len(), 2);
+
+        assert_eq!(scc, [
+            vec![NodeIndex::new(3), NodeIndex::new(4), NodeIndex::new(5)],
+            vec![NodeIndex::new(0), NodeIndex::new(1), NodeIndex::new(2)],
+        ]);
+    }
+
+    /// Test that even if we reverse the graph, the algorithm still works.
+    ///
+    ///
+    /// Uses the same graph as `single_components`.
+    #[test]
+    fn reversed_single_components() {
+        let graph: Graph<(), (), Directed, _> = Graph::from_edges([
+            (0u32, 1), //
+            (1, 2),
+            (2, 0),
+        ]);
+
+        let graph = Reversed(&graph);
+
+        let scc = kosaraju_scc(graph);
+
+        assert_eq!(scc.len(), 1);
+
+        assert_eq!(scc, [vec![
+            NodeIndex::new(0),
+            NodeIndex::new(2),
+            NodeIndex::new(1),
+        ]]);
+    }
+
+    /// Test that even if we have a disconnected graph, the algorithm still works.
+    ///
+    /// ```text
+    /// 0 → 1   3
+    ///   ↖ ↓   ↓ ↖
+    ///     2   4 → 5
+    /// ```
+    #[test]
+    fn disconnected() {
+        let graph: Graph<(), (), Directed, _> = Graph::from_edges([
+            (0u32, 1), //
+            (1, 2),
+            (2, 0),
+            (3, 4),
+            (4, 5),
+            (5, 3),
+        ]);
+
+        let scc = kosaraju_scc(&graph);
+
+        assert_eq!(scc.len(), 2);
+
+        assert_eq!(scc, [
+            vec![NodeIndex::new(3), NodeIndex::new(4), NodeIndex::new(5)],
+            vec![NodeIndex::new(0), NodeIndex::new(1), NodeIndex::new(2)],
+        ]);
+    }
+
+    /// Test against the regression discovered in [issue #14].
+    ///
+    /// [issue #14]: https://github.com/petgraph/petgraph/issues/14
+    #[test]
+    fn regression_issue_14() {
+        let mut graph: Graph<_, ()> = Graph::new();
+        let a = graph.add_node(0);
+        let b = graph.add_node(1);
+        let c = graph.add_node(2);
+        let d = graph.add_node(3);
+
+        graph.extend_with_edges([(d, c), (d, b), (c, a), (b, a)]);
+
+        let scc = kosaraju_scc(&graph);
+
+        assert_eq!(scc, [vec![a], vec![b], vec![c], vec![d]]);
+    }
+
+    /// Test against the regression discovered in [issue #60].
+    ///
+    /// [issue #60]: https://github.com/petgraph/petgraph/issues/60
+    #[test]
+    fn regression_issue_60() {
+        let mut graph = Graph::<(), ()>::new();
+        graph.extend_with_edges([(0, 0), (1, 0), (2, 0), (2, 1), (2, 2)]);
+        graph.add_node(());
+
+        let scc = kosaraju_scc(&graph);
+
+        // even if we extend with edges and add a node, the algorithm should still work.
+        assert_eq!(scc, [
+            vec![NodeIndex::new(3)],
+            vec![NodeIndex::new(0)],
+            vec![NodeIndex::new(1)],
+            vec![NodeIndex::new(2)],
+        ]);
+    }
+}
