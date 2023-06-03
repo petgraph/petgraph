@@ -46,7 +46,6 @@ petgraph-matrix-graph = { path = "crates/matrix-graph", default-features = false
 petgraph-algorithms = { path = "crates/algorithms", default-features = false }
 petgraph-generators = { path = "crates/generators", default-features = false }
 petgraph-proptest = { path = "crates/proptest", default-features = false }
-petgraph-assert = { path = "crates/assert", default-features = false }
 
 [dependencies]
 petgraph-adjacency-matrix = { workspace = true, optional = true, default-features = false }
