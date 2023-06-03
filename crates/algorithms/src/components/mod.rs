@@ -8,4 +8,4 @@ mod tarjan;
 pub use condensation::condensation;
 pub use connectivity::connected_components;
 pub use kosaraju::kosaraju_scc;
-pub use tarjan::tarjan_scc;
+pub use tarjan::{tarjan_scc, TarjanScc};
