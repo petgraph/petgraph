@@ -69,13 +69,18 @@ where
     /// Create a `Dot` formatting wrapper with default configuration.
     #[inline]
     pub fn new(graph: G) -> Self {
-        Self::with_config(graph)
+        Self::with_config(graph, &[])
     }
 
     /// Create a `Dot` formatting wrapper with custom configuration.
     #[inline]
     pub fn with_config(graph: G, options: &'a [RenderOption]) -> Self {
-        Self::with_attr_getters(graph, &|_, _| String::new(), &|_, _| String::new())
+        Self::with_attr_getters(
+            graph, //
+            &options,
+            &|_, _| String::new(),
+            &|_, _| String::new(),
+        )
     }
 
     #[inline]
@@ -123,23 +128,23 @@ where
     }
 }
 
-impl<'a, G> dot::GraphWalk<'a, G::NodeRef, G::EdgeRef> for Dot<'a, G>
+impl<'a, G> dot::GraphWalk<'a, G::NodeId, G::EdgeRef> for Dot<'a, G>
 where
     G: IntoNodeReferences + IntoEdgeReferences,
 {
-    fn nodes(&'a self) -> Nodes<'a, G::NodeRef> {
-        Nodes::Owned(self.graph.node_references().collect())
+    fn nodes(&'a self) -> Nodes<'a, G::NodeId> {
+        Nodes::Owned(self.graph.node_identifiers().collect())
     }
 
     fn edges(&'a self) -> Edges<'a, G::EdgeRef> {
         Edges::Owned(self.graph.edge_references().collect())
     }
 
-    fn source(&'a self, edge: &G::EdgeRef) -> G::NodeRef {
+    fn source(&'a self, edge: &G::EdgeRef) -> G::NodeId {
         edge.source()
     }
 
-    fn target(&'a self, edge: &G::EdgeRef) -> G::NodeRef {
+    fn target(&'a self, edge: &G::EdgeRef) -> G::NodeId {
         edge.target()
     }
 }

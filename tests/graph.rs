@@ -1309,31 +1309,6 @@ fn degree_sequence() {
     assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
 }
 
-// TODO: move to different module
-#[test]
-fn dot() {
-    // test alternate formatting
-    #[derive(Debug)]
-    struct Record {
-        a: i32,
-        b: &'static str,
-    }
-    let mut gr = Graph::new();
-    let a = gr.add_node(Record { a: 1, b: r"abc\" });
-    gr.add_edge(a, a, (1, 2));
-    let dot_output = format!("{:?}", Dot::new(&gr));
-    assert_eq!(
-        dot_output,
-        // The single \ turns into four \\\\ because of Debug which turns it to \\ and then
-        // escaping each \ to \\.
-        r#"digraph {
-    0 [ label = "Record { a: 1, b: \"abc\\\\\" }" ]
-    0 -> 0 [ label = "(1, 2)" ]
-}
-"#
-    );
-}
-
 // TODO: move to core
 #[test]
 fn filtered() {

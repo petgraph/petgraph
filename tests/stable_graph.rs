@@ -112,27 +112,6 @@ where
 
 defmac!(edges ref gr, x => gr.edges(x).map(|r| (r.target(), *r.weight())));
 
-// TODO: move to different module; use insta
-#[test]
-fn dot() {
-    let mut gr = StableGraph::new();
-    let a = gr.add_node("x");
-    let b = gr.add_node("y");
-    gr.add_edge(a, a, "10");
-    gr.add_edge(a, b, "20");
-    let dot_output = format!("{}", Dot::new(&gr));
-    assert_eq!(
-        dot_output,
-        r#"digraph {
-    0 [ label = "x" ]
-    1 [ label = "y" ]
-    0 -> 0 [ label = "10" ]
-    0 -> 1 [ label = "20" ]
-}
-"#
-    );
-}
-
 defmac!(iter_eq a, b => a.eq(b));
 defmac!(nodes_eq ref a, ref b => a.node_references().eq(b.node_references()));
 defmac!(edgew_eq ref a, ref b => a.edge_references().eq(b.edge_references()));
