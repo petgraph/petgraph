@@ -6,9 +6,16 @@ mod utils;
 extern crate alloc;
 
 use alloc::{boxed::Box, vec::Vec};
-use core::{fmt, iter, mem, ops::Range, slice};
+use core::{
+    fmt,
+    fmt::{Display, Formatter},
+    iter, mem,
+    ops::Range,
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
+use funty::Fundamental;
 use petgraph_core::{
     data::{Build, DataMap, DataMapMut},
     edge::Directed,
@@ -71,6 +78,12 @@ where
 {
     fn cast(self) -> usize {
         self.0.cast()
+    }
+}
+
+impl Display for NodeIndex {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.0.as_usize(), f)
     }
 }
 

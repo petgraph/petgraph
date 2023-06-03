@@ -1,0 +1,10 @@
+---
+source: src/dot.rs
+expression: dot
+---
+digraph petgraph {
+    N0[label=""];
+    N1[label=""];
+    N0 -> N1[arrowhead="normal" dir="both" arrowtail="none"];
+}
+

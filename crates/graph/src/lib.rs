@@ -1,12 +1,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+extern crate core;
 
 use alloc::{vec, vec::Vec};
 use core::{
     cmp,
     cmp::max,
-    fmt, iter,
+    fmt,
+    fmt::Display,
+    iter,
     marker::PhantomData,
     mem::size_of,
     ops::{Index, IndexMut, Range},
@@ -102,6 +105,15 @@ where
 impl<Ix: fmt::Debug> fmt::Debug for NodeIndex<Ix> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "NodeIndex({:?})", self.0)
+    }
+}
+
+impl<Ix> fmt::Display for NodeIndex<Ix>
+where
+    Ix: IndexType,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Display::fmt(&self.0.as_usize(), f)
     }
 }
 
