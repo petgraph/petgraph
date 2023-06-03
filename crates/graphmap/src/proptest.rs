@@ -1,8 +1,11 @@
 use core::fmt::Debug;
+use std::sync::Arc;
 
 use petgraph_core::edge::EdgeType;
 use petgraph_proptest::{default::graph_strategy_from_vtable, vtable::VTable};
-use proptest::{arbitrary::Arbitrary, prelude::BoxedStrategy, strategy::Strategy};
+use proptest::{
+    arbitrary::Arbitrary, collection::SizeRange, prelude::BoxedStrategy, strategy::Strategy,
+};
 
 use crate::{GraphMap, NodeTrait};
 
@@ -39,12 +42,15 @@ where
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
+        // creating a graphmap with usize::MAX is a bit excessive, so we use u8::MAX instead.
         graph_strategy_from_vtable(
             create_vtable::<N, E, Ty>(),
             true,
             false,
-            0..=usize::MAX,
-            None,
+            0..=(u8::MAX as usize),
+            Some(Arc::new(|max| {
+                SizeRange::new(0..=usize::min(max.pow(2), u8::MAX as usize))
+            })),
         )
         .boxed()
     }

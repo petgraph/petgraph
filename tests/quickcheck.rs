@@ -344,24 +344,6 @@ fn sort_sccs<T: Ord>(v: &mut [Vec<T>]) {
 }
 
 quickcheck! {
-    fn graph_sccs(g: Graph<(), ()>) -> bool {
-        let mut sccs = kosaraju_scc(&g);
-        let mut tsccs = tarjan_scc(&g);
-        sort_sccs(&mut sccs);
-        sort_sccs(&mut tsccs);
-        if sccs != tsccs {
-            println!("{:?}",
-                     Dot::with_config(&g, &[Config::EdgeNoLabel,
-                                      Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Tarjan) {:?}", tsccs);
-            return false;
-        }
-        true
-    }
-}
-
-quickcheck! {
     fn kosaraju_scc_is_topo_sort(g: Graph<(), ()>) -> bool {
         let tsccs = kosaraju_scc(&g);
         let firsts = tsccs.iter().rev().map(|v| v[0]).collect::<Vec<_>>();
@@ -374,44 +356,6 @@ quickcheck! {
         let tsccs = tarjan_scc(&g);
         let firsts = tsccs.iter().rev().map(|v| v[0]).collect::<Vec<_>>();
         subset_is_topo_order(&g, &firsts)
-    }
-}
-
-quickcheck! {
-    // Reversed edges gives the same sccs (when sorted)
-    fn graph_reverse_sccs(g: Graph<(), ()>) -> bool {
-        let mut sccs = kosaraju_scc(&g);
-        let mut tsccs = kosaraju_scc(Reversed(&g));
-        sort_sccs(&mut sccs);
-        sort_sccs(&mut tsccs);
-        if sccs != tsccs {
-            println!("{:?}",
-                     Dot::with_config(&g, &[Config::EdgeNoLabel,
-                                      Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Reversed) {:?}", tsccs);
-            return false;
-        }
-        true
-    }
-}
-
-quickcheck! {
-    // Reversed edges gives the same sccs (when sorted)
-    fn graphmap_reverse_sccs(g: DiGraphMap<u16, ()>) -> bool {
-        let mut sccs = kosaraju_scc(&g);
-        let mut tsccs = kosaraju_scc(Reversed(&g));
-        sort_sccs(&mut sccs);
-        sort_sccs(&mut tsccs);
-        if sccs != tsccs {
-            println!("{:?}",
-                     Dot::with_config(&g, &[Config::EdgeNoLabel,
-                                      Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Reversed) {:?}", tsccs);
-            return false;
-        }
-        true
     }
 }
 

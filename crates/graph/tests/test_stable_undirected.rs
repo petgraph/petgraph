@@ -1,3 +1,5 @@
+#![cfg(feature = "stable")]
+
 mod common;
 
 use common::graphs::FromDefault;

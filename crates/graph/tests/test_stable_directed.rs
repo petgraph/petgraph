@@ -1,3 +1,5 @@
+#![cfg(feature = "stable")]
+
 use common::graphs::FromDefault;
 use petgraph_core::{
     edge::{Directed, Direction},
