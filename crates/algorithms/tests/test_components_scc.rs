@@ -1,4 +1,6 @@
-//! Integration tests for Tarjan's algorithm.
+//! Integration tests for Tarjan's and Kosaraju's strongly connected components algorithms.
+//!
+//! As both algorithms are very similar, we test them together.
 //!
 //! Uses the various graph representations that are consolidated in the `petgraph` crate to test
 //! against.
@@ -23,9 +25,14 @@
 //! * `2, 5, 8`
 //! * `4`
 
+use petgraph::graphmap::GraphMap;
 use petgraph_adjacency_matrix::{AdjacencyList, UnweightedAdjacencyList};
-use petgraph_algorithms::components::tarjan_scc;
-use petgraph_core::index::{DefaultIx, SafeCast};
+use petgraph_algorithms::components::{kosaraju_scc, tarjan_scc};
+use petgraph_core::{
+    edge::Directed,
+    index::{DefaultIx, SafeCast},
+    visit::GraphBase,
+};
 
 const EDGES: &[(DefaultIx, DefaultIx)] = &[
     (6, 0),
@@ -70,8 +77,11 @@ fn assert_scc<T: SafeCast<usize>>(received: Vec<Vec<T>>, expected: &[Vec<usize>]
     assert_eq!(received, expected);
 }
 
-#[test]
-fn adjacency_list() {
+fn adjacency_list(
+    scc: impl FnOnce(
+        AdjacencyList<(), DefaultIx>,
+    ) -> Vec<Vec<petgraph::adjacency_matrix::NodeIndex<DefaultIx>>>,
+) {
     let mut graph = UnweightedAdjacencyList::<DefaultIx>::new();
 
     for _ in 0..10 {
@@ -80,13 +90,13 @@ fn adjacency_list() {
 
     for &(from, to) in EDGES {
         graph.add_edge(
-            petgraph_adjacency_matrix::NodeIndex::new(from),
-            petgraph_adjacency_matrix::NodeIndex::new(to),
+            petgraph::adjacency_matrix::NodeIndex::new(from),
+            petgraph::adjacency_matrix::NodeIndex::new(to),
             (),
         );
     }
 
-    let scc = tarjan_scc(&graph);
+    let scc = scc(graph);
 
     assert_scc(scc, &[
         vec![0, 3, 6], //
@@ -94,4 +104,40 @@ fn adjacency_list() {
         vec![2, 5, 8],
         vec![4],
     ]);
+}
+
+#[test]
+fn adjacency_list_tarjan() {
+    adjacency_list(|graph| tarjan_scc(&graph));
+}
+
+fn graph_map(scc: impl FnOnce(GraphMap<DefaultIx, (), Directed>) -> Vec<Vec<DefaultIx>>) {
+    let mut graph = GraphMap::<DefaultIx, (), Directed>::new();
+
+    for index in 0..10 {
+        graph.add_node(index);
+    }
+
+    for &(from, to) in EDGES {
+        graph.add_edge(from, to, ());
+    }
+
+    let scc = scc(graph);
+
+    assert_scc(scc, &[
+        vec![0, 3, 6], //
+        vec![1, 7, 9],
+        vec![2, 5, 8],
+        vec![4],
+    ]);
+}
+
+#[test]
+fn graph_map_tarjan() {
+    graph_map(|graph| tarjan_scc(&graph));
+}
+
+#[test]
+fn graph_map_kosaraju() {
+    graph_map(|graph| kosaraju_scc(&graph));
 }
