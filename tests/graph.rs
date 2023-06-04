@@ -28,63 +28,6 @@ where
 
 // TODO: move to core?
 #[test]
-fn dfs() {
-    let mut gr = Graph::new();
-    let h = gr.add_node("H");
-    let i = gr.add_node("I");
-    let j = gr.add_node("J");
-    let k = gr.add_node("K");
-    // Z is disconnected.
-    let _ = gr.add_node("Z");
-    gr.add_edge(h, i, 1.);
-    gr.add_edge(h, j, 3.);
-    gr.add_edge(i, j, 1.);
-    gr.add_edge(i, k, 2.);
-
-    println!("{}", Dot::new(&gr));
-
-    assert_eq!(Dfs::new(&gr, h).iter(&gr).count(), 4);
-    assert_eq!(Dfs::new(&gr, h).iter(&gr).clone().count(), 4);
-
-    assert_eq!(Dfs::new(&gr, h).iter(Reversed(&gr)).count(), 1);
-
-    assert_eq!(Dfs::new(&gr, k).iter(Reversed(&gr)).count(), 3);
-
-    assert_eq!(Dfs::new(&gr, i).iter(&gr).count(), 3);
-}
-
-// TODO: move to core?
-#[test]
-fn dfs_order() {
-    let mut gr = Graph::new();
-    let h = gr.add_node("H");
-    let i = gr.add_node("I");
-    let j = gr.add_node("J");
-    let k = gr.add_node("K");
-    gr.add_edge(h, i, ());
-    gr.add_edge(h, j, ());
-    gr.add_edge(h, k, ());
-    gr.add_edge(i, k, ());
-    gr.add_edge(k, i, ());
-
-    //      H
-    //    / | \
-    //   I  J  K
-    //    \___/
-    //
-    // J cannot be visited between I and K in a depth-first search from H
-
-    let mut seen_i = false;
-    let mut seen_k = false;
-    for node in Dfs::new(&gr, h).iter(&gr) {
-        seen_i |= i == node;
-        seen_k |= k == node;
-        assert!(!(j == node && (seen_i ^ seen_k)), "Invalid DFS order");
-    }
-}
-
-// TODO: move to core?
-#[test]
 fn bfs() {
     let mut gr = Graph::new();
     let h = gr.add_node("H");
