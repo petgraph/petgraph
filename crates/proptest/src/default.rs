@@ -75,6 +75,10 @@ where
         .prop_map(move |(start, end, weight)| Edge { start, end, weight })
 }
 
+// TODO: experiment if we're faster if we Arc<> the strategy and use the constants for different
+//  sub-strategies, e.g.
+//  self_loops_parallel_edges, self_loops_no_parallel_edges,
+//  no_self_loops_parallel_edges, no_self_loops_no_parallel_edges.
 /// ***Internal API***.
 ///
 /// Creates a strategy for a graph type from a vtable.

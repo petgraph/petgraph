@@ -9,7 +9,6 @@ use proptest::{
     arbitrary::{any, Arbitrary},
     collection::vec,
     prelude::{BoxedStrategy, Strategy},
-    sample::SizeRange,
 };
 
 use crate::{vtable, vtable::VTable};
