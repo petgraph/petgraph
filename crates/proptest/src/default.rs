@@ -79,6 +79,8 @@ where
 //  sub-strategies, e.g.
 //  self_loops_parallel_edges, self_loops_no_parallel_edges,
 //  no_self_loops_parallel_edges, no_self_loops_no_parallel_edges.
+//  The difference in code is marginal and leads to a lot of code duplication, but it might be worth
+//  it. Another thing to investigate would be state machine based strategies.
 /// ***Internal API***.
 ///
 /// Creates a strategy for a graph type from a vtable.
