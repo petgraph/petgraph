@@ -20,6 +20,11 @@ use crate::{
 ///
 /// If `space` is not `None`, it is used instead of creating a new workspace for
 /// graph traversal. The implementation is iterative.
+///
+/// # Errors
+///
+/// If the graph contains a cycle, returns a `CycleError` containing the node where the cycle was
+/// detected.
 pub fn toposort<G>(
     g: G,
     space: Option<&mut DfsSpace<G::NodeId, G::Map>>,
@@ -79,12 +84,21 @@ where
 
 #[cfg(test)]
 mod tests {
-    use petgraph_core::edge::Directed;
+    use alloc::vec;
+
+    use petgraph_core::{edge::Directed, index::IndexType};
     use petgraph_graph::{Graph, NodeIndex};
+    use petgraph_proptest::dag::graph_dag_strategy;
+    use proptest::prelude::*;
 
     // A graph is topologically sorted if for every edge `(u, v)`, `u` comes before `v` in the
     // ordering.
-    fn assert_topologically_sorted<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex]) {
+    fn assert_topologically_sorted<N, E, Ix>(
+        gr: &Graph<N, E, Directed, Ix>,
+        order: &[NodeIndex<Ix>],
+    ) where
+        Ix: IndexType,
+    {
         assert_eq!(gr.node_count(), order.len());
         // check all the edges of the graph
         for edge in gr.raw_edges() {
@@ -198,5 +212,14 @@ mod tests {
 
         let order = super::toposort(&graph, None);
         assert!(order.is_err());
+    }
+
+    proptest! {
+        #[test]
+        fn toposort_is_topologically_sorted(graph in graph_dag_strategy::<Graph<(), (), Directed, u8>>(None, None, None)) {
+            let order = super::toposort(&graph, None).expect("graph should be acyclic");
+
+            assert_topologically_sorted(&graph, &order);
+        }
     }
 }

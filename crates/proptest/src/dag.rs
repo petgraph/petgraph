@@ -1,5 +1,5 @@
 use alloc::vec::Vec;
-use core::fmt::Debug;
+use core::{fmt::Debug, ops::Range};
 
 use petgraph_core::{
     data::{Build, Create},
@@ -9,6 +9,7 @@ use proptest::{
     arbitrary::{any, Arbitrary},
     collection::vec,
     prelude::{BoxedStrategy, Strategy},
+    sample::SizeRange,
 };
 
 use crate::{vtable, vtable::VTable};
@@ -60,22 +61,37 @@ struct Leaf<T> {
     weight: T,
 }
 
-pub fn graph_dag_strategy<G>() -> impl Strategy<Value = G>
+/// Create a new acyclic graph.
+///
+/// If `max_depth` is `None`, the graph will be created with a depth of 8.
+/// If `max_nodes` is `None`, the graph will be created with a maximum of 256 nodes.
+/// If `width` is `None`, the graph will be created with a maximum of 16 children per node.
+pub fn graph_dag_strategy<G>(
+    max_depth: Option<u32>,
+    max_nodes: Option<u32>,
+    width: Option<Range<u32>>,
+) -> impl Strategy<Value = G>
 where
     G: Create + Build + Data + Debug,
     G::NodeWeight: Arbitrary + Clone + Debug + 'static,
     G::EdgeWeight: Arbitrary + Debug + 'static,
 {
+    let depth = max_depth.unwrap_or(8);
+    let nodes = max_nodes.unwrap_or(256);
+    let width = width.unwrap_or(0..16);
+
     any::<G::NodeWeight>()
         .prop_map(|weight| TreeNode::<G::NodeWeight, G::EdgeWeight>::Leaf(Leaf { weight }))
         .prop_recursive(
-            8,   // no more than 8 levels deep
-            256, // target around 256 nodes
-            16,  // each collection is up to 16 element long
-            |element: BoxedStrategy<TreeNode<G::NodeWeight, G::EdgeWeight>>| {
+            depth,     // no more than 8 levels deep (default)
+            nodes,     // target around 256 nodes (default)
+            width.end, // each collection is up to 16 element long (default)
+            move |element: BoxedStrategy<TreeNode<G::NodeWeight, G::EdgeWeight>>| {
+                let width = (width.start as usize)..(width.end as usize);
+
                 (
                     any::<G::NodeWeight>(),
-                    vec((any::<G::EdgeWeight>(), element), 0..16),
+                    vec((any::<G::EdgeWeight>(), element), width),
                 )
                     .prop_map(|(weight, edges)| {
                         if edges.is_empty() {

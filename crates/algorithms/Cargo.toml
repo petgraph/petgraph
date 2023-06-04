@@ -23,6 +23,7 @@ rustc_version = "0.4.0"
 petgraph = { workspace = true, default-features = true, features = ['proptest'] }
 # petgraph is only available in integration tests, while we use petgraph-graph in unit tests
 petgraph-graph = { workspace = true, features = ['stable'] }
+petgraph-proptest = { workspace = true }
 paste = "1.0.12"
 proptest = "1.1.0"
 approx = "0.5.1"

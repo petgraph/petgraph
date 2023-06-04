@@ -441,16 +441,6 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
 
 // TODO: move to algo ?!?!?
 #[test]
-fn full_topo() {
-    fn prop(DAG(gr): DAG<()>) -> bool {
-        let order = toposort(&gr, None).unwrap();
-        is_topo_order(&gr, &order)
-    }
-    quickcheck::quickcheck(prop as fn(_) -> bool);
-}
-
-// TODO: move to algo ?!?!?
-#[test]
 fn full_topo_generic() {
     fn prop_generic(DAG(mut gr): DAG<usize>) -> bool {
         assert!(!is_cyclic_directed(&gr));
