@@ -76,3 +76,127 @@ where
         Ok(finish_stack)
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use petgraph_core::edge::Directed;
+    use petgraph_graph::{Graph, NodeIndex};
+
+    // A graph is topologically sorted if for every edge `(u, v)`, `u` comes before `v` in the
+    // ordering.
+    fn assert_topologically_sorted<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex]) {
+        assert_eq!(gr.node_count(), order.len());
+        // check all the edges of the graph
+        for edge in gr.raw_edges() {
+            let source = edge.source();
+            let target = edge.target();
+
+            let source_index = order
+                .iter()
+                .position(|x| *x == source)
+                .expect("Source node not found");
+
+            let target_index = order
+                .iter()
+                .position(|x| *x == target)
+                .expect("Target node not found");
+
+            assert!(
+                source_index < target_index,
+                "Graph is not topologically sorted ({target} comes before {source})",
+            );
+        }
+    }
+
+    /// This uses the example from the Wikipedia page on topological sorting:
+    /// <https://en.wikipedia.org/wiki/Topological_sorting#Examples>
+    ///
+    /// Node to name mapping:
+    /// * 2: "A"
+    /// * 3: "B"
+    /// * 5: "C"
+    /// * 7: "D"
+    /// * 8: "E"
+    /// * 9: "F"
+    /// * 10: "G"
+    /// * 11: "H"
+    fn setup() -> Graph<&'static str, &'static str> {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+        let e = graph.add_node("E");
+        let f = graph.add_node("F");
+        let g = graph.add_node("G");
+        let h = graph.add_node("H");
+
+        graph.extend_with_edges([
+            (b, e, "B → E"), //
+            (b, g, "B → G"),
+            (c, h, "C → H"),
+            (d, e, "D → E"),
+            (d, h, "D → H"),
+            (e, f, "E → F"),
+            (h, a, "H → A"),
+            (h, f, "H → F"),
+            (h, g, "H → G"),
+        ]);
+
+        graph
+    }
+
+    #[test]
+    fn example() {
+        let graph = setup();
+
+        let order = super::toposort(&graph, None).expect("graph should be acyclic");
+        assert_topologically_sorted(&graph, &order);
+    }
+
+    #[test]
+    fn disjoint() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+
+        graph.add_edge(a, b, "A → B");
+        graph.add_edge(c, d, "C → D");
+
+        let order = super::toposort(&graph, None).expect("graph should be acyclic");
+
+        assert_topologically_sorted(&graph, &order);
+    }
+
+    #[test]
+    fn path() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+
+        graph.add_edge(a, b, "A → B");
+
+        let order = super::toposort(&graph, None).expect("graph should be acyclic");
+
+        assert_eq!(order, vec![a, b]);
+    }
+
+    #[test]
+    fn error_on_cycle() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+
+        graph.add_edge(a, b, "A → B");
+        graph.add_edge(b, a, "B → A");
+
+        let order = super::toposort(&graph, None);
+        assert!(order.is_err());
+    }
+}

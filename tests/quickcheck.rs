@@ -11,7 +11,7 @@ extern crate odds;
 
 mod utils;
 
-use std::{collections::HashSet, hash::Hash};
+use std::{collections::HashSet, fmt, hash::Hash};
 
 use itertools::{assert_equal, cloned};
 use odds::prelude::*;
@@ -37,18 +37,6 @@ use petgraph::{
 use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 use utils::{Small, Tournament};
-
-fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-    N: Clone,
-    E: Clone + PartialOrd,
-{
-    Graph::from_elements(min_spanning_tree(&g))
-}
-
-use std::fmt;
 
 fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
 where

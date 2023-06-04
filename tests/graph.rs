@@ -121,57 +121,6 @@ fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex]) {
     }
 }
 
-// TODO: move to algo
-#[test]
-fn test_toposort() {
-    let mut gr = Graph::<_, _>::new();
-    let a = gr.add_node("A");
-    let b = gr.add_node("B");
-    let c = gr.add_node("C");
-    let d = gr.add_node("D");
-    let e = gr.add_node("E");
-    let f = gr.add_node("F");
-    let g = gr.add_node("G");
-    gr.extend_with_edges(&[
-        (a, b, 7.),
-        (a, d, 5.),
-        (d, b, 9.),
-        (b, c, 8.),
-        (b, e, 7.),
-        (c, e, 5.),
-        (d, e, 15.),
-        (d, f, 6.),
-        (f, e, 8.),
-        (f, g, 11.),
-        (e, g, 9.),
-    ]);
-
-    // add a disjoint part
-    let h = gr.add_node("H");
-    let i = gr.add_node("I");
-    let j = gr.add_node("J");
-    gr.add_edge(h, i, 1.);
-    gr.add_edge(h, j, 3.);
-    gr.add_edge(i, j, 1.);
-
-    let order = petgraph::algo::toposort(&gr, None).unwrap();
-    println!("{:?}", order);
-    assert_eq!(order.len(), gr.node_count());
-
-    assert_is_topo_order(&gr, &order);
-}
-
-// TODO: move to algo
-#[test]
-fn test_toposort_eq() {
-    let mut g = Graph::<_, _>::new();
-    let a = g.add_node("A");
-    let b = g.add_node("B");
-    g.add_edge(a, b, ());
-
-    assert_eq!(petgraph::algo::toposort(&g, None), Ok(vec![a, b]));
-}
-
 /// Compare two scc sets. Inside each scc, the order does not matter,
 /// but the order of the sccs is significant.
 fn assert_sccs_eq(
@@ -294,7 +243,7 @@ fn make_edge_iterator_graph<Ty: EdgeType>() -> Graph<f64, f64, Ty> {
     gr
 }
 
-// TODO: move to algo
+// TODO: move to core
 #[test]
 fn toposort_generic() {
     // This is a DAG, visit it in order
