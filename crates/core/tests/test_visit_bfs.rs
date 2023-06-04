@@ -1,12 +1,13 @@
-//! Tests for the DFS iterator.
+//! Tests for the BFS iterator.
 //!
 //! Even though this is a unit test, it is an integration tests, as I didn't want to muck around the
 //! already deprecated visit code.
 //!
 //! This is basically a 1:1 port of the tests from the `petgraph` crate (which already used
 //! integration tests)
+
 use petgraph::Graph;
-use petgraph_core::visit::{Dfs, Walker};
+use petgraph_core::visit::{Bfs, Walker};
 
 /// Graph:
 ///
@@ -16,7 +17,7 @@ use petgraph_core::visit::{Dfs, Walker};
 ///         D
 /// ```
 ///
-/// DFS from A should yield A, B, C, D
+/// BFS from A should yield A, B, C, D
 #[test]
 fn simple() {
     let mut graph = Graph::new();
@@ -30,10 +31,10 @@ fn simple() {
     graph.add_edge(b, c, "B → C");
     graph.add_edge(b, d, "B → D");
 
-    let dfs = Dfs::new(&graph, a);
+    let dfs = Bfs::new(&graph, a);
 
     let received = dfs.iter(&graph).collect::<Vec<_>>();
-    let expected = vec![a, b, c, d];
+    let expected = vec![a, b, d, c];
     assert_eq!(received, expected);
 }
 
@@ -43,7 +44,7 @@ fn simple() {
 /// A → B → C
 /// ```
 ///
-/// DFS from B should yield B, C
+/// BFS from B should yield B, C
 ///
 /// A is connected via a directed edge, but it is not reachable from B.
 #[test]
@@ -57,7 +58,7 @@ fn unreachable() {
     graph.add_edge(a, b, "A → B");
     graph.add_edge(b, c, "B → C");
 
-    let dfs = Dfs::new(&graph, b);
+    let dfs = Bfs::new(&graph, b);
 
     let received = dfs.iter(&graph).collect::<Vec<_>>();
     let expected = vec![b, c];
@@ -73,7 +74,7 @@ fn unreachable() {
 /// C
 /// ```
 ///
-/// DFS from A should yield A, B
+/// BFS from A should yield A, B
 /// C is completely disconnected from A
 #[test]
 fn disconnected() {
@@ -85,7 +86,7 @@ fn disconnected() {
 
     graph.add_edge(a, b, "A → B");
 
-    let dfs = Dfs::new(&graph, a);
+    let dfs = Bfs::new(&graph, a);
 
     let received = dfs.iter(&graph).collect::<Vec<_>>();
     let expected = vec![a, b];
@@ -94,7 +95,7 @@ fn disconnected() {
 
     // if we have a disconnected node, we should be able to start a DFS from it as well and get only
     // that node
-    let dfs = Dfs::new(&graph, c);
+    let dfs = Bfs::new(&graph, c);
 
     let received = dfs.iter(&graph).collect::<Vec<_>>();
     let expected = vec![c];
@@ -104,7 +105,8 @@ fn disconnected() {
 
 /// Verify that the order of the nodes returned is consistent with the order of edges inserted.
 ///
-/// Meaning that if `B → C` is inserted before `B → D`, then `C` should be visited before `D`.
+/// In contrast to DFS the order is different, we start with the newest edge first instead of the
+/// oldest.
 ///
 /// Graph:
 ///
@@ -124,10 +126,10 @@ fn order() {
     graph.add_edge(b, c, "B → C");
     graph.add_edge(b, d, "B → D");
 
-    let dfs = Dfs::new(&graph, b);
+    let dfs = Bfs::new(&graph, b);
 
     let received = dfs.iter(&graph).collect::<Vec<_>>();
-    let expected = vec![b, c, d];
+    let expected = vec![b, d, c];
 
     assert_eq!(received, expected);
 }
@@ -162,10 +164,10 @@ fn order_deep() {
     graph.add_edge(d, e, "H → E");
     graph.add_edge(d, f, "D → F");
 
-    let dfs = Dfs::new(&graph, b);
+    let dfs = Bfs::new(&graph, b);
 
     let received = dfs.iter(&graph).collect::<Vec<_>>();
-    let expected = vec![b, c, g, h, d, e, f];
+    let expected = vec![b, d, c, f, e, h, g];
 
     assert_eq!(received, expected);
 }
