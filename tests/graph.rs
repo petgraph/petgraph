@@ -87,42 +87,6 @@ fn mst() {
 
 // TODO: move to algo
 #[test]
-fn cyclic() {
-    let mut gr = Graph::new();
-    let a = gr.add_node("A");
-    let b = gr.add_node("B");
-    let c = gr.add_node("C");
-
-    assert!(!is_cyclic_undirected(&gr));
-    gr.add_edge(a, b, 7.);
-    gr.add_edge(c, a, 6.);
-    assert!(!is_cyclic_undirected(&gr));
-    {
-        let e = gr.add_edge(a, a, 0.);
-        assert!(is_cyclic_undirected(&gr));
-        gr.remove_edge(e);
-        assert!(!is_cyclic_undirected(&gr));
-    }
-
-    {
-        let e = gr.add_edge(b, c, 0.);
-        assert!(is_cyclic_undirected(&gr));
-        gr.remove_edge(e);
-        assert!(!is_cyclic_undirected(&gr));
-    }
-
-    let d = gr.add_node("D");
-    let e = gr.add_node("E");
-    gr.add_edge(b, d, 0.);
-    gr.add_edge(d, e, 0.);
-    assert!(!is_cyclic_undirected(&gr));
-    gr.add_edge(c, e, 0.);
-    assert!(is_cyclic_undirected(&gr));
-    assert_graph_consistent(&gr);
-}
-
-// TODO: move to algo
-#[test]
 fn bipartite() {
     {
         let mut gr = Graph::new_undirected();

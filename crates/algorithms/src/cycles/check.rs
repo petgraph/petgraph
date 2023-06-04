@@ -39,3 +39,126 @@ where
     })
     .is_err()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{is_cyclic_directed, is_cyclic_undirected};
+
+    #[test]
+    fn self_loop_cyclic_directed() {
+        let mut graph = petgraph_graph::Graph::new();
+
+        let a = graph.add_node("A");
+        graph.add_edge(a, a, "A → A");
+
+        assert!(is_cyclic_directed(&graph));
+    }
+
+    #[test]
+    fn self_loop_cyclic_undirected() {
+        let mut graph = petgraph_graph::Graph::new_undirected();
+
+        let a = graph.add_node("A");
+        graph.add_edge(a, a, "A - A");
+
+        assert!(is_cyclic_undirected(&graph));
+    }
+
+    #[test]
+    fn minimal_loop_cyclic_directed() {
+        let mut graph = petgraph_graph::Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        graph.add_edge(a, b, "A → B");
+        graph.add_edge(b, a, "B → A");
+
+        assert!(is_cyclic_directed(&graph));
+    }
+
+    #[test]
+    fn minimal_loop_cyclic_undirected() {
+        let mut graph = petgraph_graph::Graph::new_undirected();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+
+        graph.add_edge(a, b, "A - B");
+        graph.add_edge(b, a, "B - A");
+
+        assert!(is_cyclic_undirected(&graph));
+    }
+
+    #[test]
+    fn simple_cyclic_directed() {
+        let mut graph = petgraph_graph::Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+
+        graph.add_edge(a, b, "A → B");
+        graph.add_edge(b, c, "B → C");
+        graph.add_edge(c, a, "C → A");
+
+        assert!(is_cyclic_directed(&graph));
+    }
+
+    #[test]
+    fn simple_cyclic_undirected() {
+        let mut graph = petgraph_graph::Graph::new_undirected();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+
+        graph.add_edge(a, b, "A - B");
+        graph.add_edge(b, c, "B - C");
+        graph.add_edge(c, a, "C - A");
+
+        assert!(is_cyclic_undirected(&graph));
+    }
+
+    #[test]
+    fn simple_acyclic_directed() {
+        let mut graph = petgraph_graph::Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+
+        graph.add_edge(a, b, "A → B");
+        graph.add_edge(b, c, "B → C");
+
+        assert!(!is_cyclic_directed(&graph));
+    }
+
+    #[test]
+    fn simple_acyclic_directed_blocked_by_direction() {
+        let mut graph = petgraph_graph::Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+
+        graph.add_edge(a, b, "A → B");
+        graph.add_edge(b, c, "B → C");
+        graph.add_edge(a, c, "A → C");
+
+        assert!(!is_cyclic_directed(&graph));
+    }
+
+    #[test]
+    fn simple_acyclic_undirected() {
+        let mut graph = petgraph_graph::Graph::new_undirected();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+
+        graph.add_edge(a, b, "A - B");
+        graph.add_edge(b, c, "B - C");
+
+        assert!(!is_cyclic_undirected(&graph));
+    }
+}
