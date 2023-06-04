@@ -301,6 +301,112 @@ fn multiple() {
 }
 
 #[test]
+fn edges_directed() {
+    let GraphDoubleSameDirection {
+        graph,
+        a,
+        b,
+        ab1,
+        ab2,
+    } = GraphDoubleSameDirection::new();
+
+    assert_eq!(
+        graph
+            .edges_directed(a, Direction::Outgoing)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![ab2, ab1]
+    );
+    assert_eq!(
+        graph
+            .edges_directed(b, Direction::Outgoing)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![]
+    );
+    assert_eq!(
+        graph
+            .edges_directed(a, Direction::Incoming)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![]
+    );
+    assert_eq!(
+        graph
+            .edges_directed(b, Direction::Incoming)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![ab2, ab1]
+    );
+}
+
+#[test]
+fn reverse() {
+    let GraphDoubleLink {
+        mut graph,
+        a,
+        b,
+        c,
+        ab,
+        ba,
+        bc,
+    } = GraphDoubleLink::new();
+
+    // if we would be in a unit test we would be able to use `raw_nodes` here, which would make this
+    // test a whole lot more concise.
+    assert_graph_consistency(&graph);
+    graph.reverse();
+    assert_graph_consistency(&graph);
+
+    assert_eq!(
+        graph
+            .edges_directed(a, Direction::Outgoing)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![ba]
+    );
+    assert_eq!(
+        graph
+            .edges_directed(a, Direction::Incoming)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![ab]
+    );
+
+    assert_eq!(
+        graph
+            .edges_directed(b, Direction::Outgoing)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![ab]
+    );
+    assert_eq!(
+        graph
+            .edges_directed(b, Direction::Incoming)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![bc, ba]
+    );
+
+    assert_eq!(
+        graph
+            .edges_directed(c, Direction::Outgoing)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![bc]
+    );
+    assert_eq!(
+        graph
+            .edges_directed(c, Direction::Incoming)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![]
+    );
+}
+
+// TODO: reverse
+
+#[test]
 fn iter_multiple() {
     let GraphDoubleSameDirection {
         graph,

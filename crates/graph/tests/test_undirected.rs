@@ -270,6 +270,57 @@ fn iter_multiple_same_direction() {
 }
 
 #[test]
+fn edges_directed() {
+    let GraphDoubleSameDirection {
+        graph,
+        a,
+        b,
+        ab1,
+        ab2,
+    } = GraphDoubleSameDirection::new();
+
+    assert_eq!(
+        graph
+            .edges_directed(a, Direction::Outgoing)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![ab2, ab1]
+    );
+    assert_eq!(
+        graph
+            .edges_directed(b, Direction::Outgoing)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![ab2, ab1]
+    );
+    assert_eq!(
+        graph
+            .edges_directed(a, Direction::Incoming)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![ab2, ab1]
+    );
+    assert_eq!(
+        graph
+            .edges_directed(b, Direction::Incoming)
+            .map(|edge| edge.id())
+            .collect::<Vec<_>>(),
+        vec![ab2, ab1]
+    );
+}
+
+#[test]
+fn reverse() {
+    let GraphDoubleLink { mut graph, .. } = GraphDoubleLink::new();
+
+    // the direction is still unchanged (it's an undirected graph), therefore we just check for
+    // graph consistency
+    assert_graph_consistency(&graph);
+    graph.reverse();
+    assert_graph_consistency(&graph);
+}
+
+#[test]
 fn update_edge() {
     let GraphLink {
         mut graph,
