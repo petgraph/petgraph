@@ -4,7 +4,7 @@
 //! all `Arbitrary` impls.
 //!
 //! In the future more strategies will be added.
-#![no_std]
+// #![no_std]
 
 extern crate alloc;
 

@@ -442,7 +442,7 @@ mod tests {
         // we allow selecting the same node as start and end, because it's a valid use case.
         // we also expand the value space from the initial `u8` to `u64` to avoid overflows.
         fn graph_with_two_nodes()
-           (graph in any::<DiGraph::<(), u8, u8>>())
+           (graph in any::<DiGraph::<(), u8, u8>>().prop_filter("graph must have at least one node", |graph| graph.node_count() >= 1))
            (start in 0..graph.node_count(), end in 0..graph.node_count(), graph in Just(graph))
             -> (DiGraph<(), u64, u8>, NodeIndex<u8>, NodeIndex<u8>) {
             (expand_graph_value_space(&graph), NodeIndex::new(start), NodeIndex::new(end))
