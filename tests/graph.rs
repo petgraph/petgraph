@@ -28,46 +28,6 @@ where
 
 // TODO: move to algo
 #[test]
-fn dijk() {
-    let mut g = Graph::new_undirected();
-    let a = g.add_node("A");
-    let b = g.add_node("B");
-    let c = g.add_node("C");
-    let d = g.add_node("D");
-    let e = g.add_node("E");
-    let f = g.add_node("F");
-    g.add_edge(a, b, 7);
-    g.add_edge(c, a, 9);
-    g.add_edge(a, d, 14);
-    g.add_edge(b, c, 10);
-    g.add_edge(d, c, 2);
-    g.add_edge(d, e, 9);
-    g.add_edge(b, f, 15);
-    g.add_edge(c, f, 11);
-    g.add_edge(e, f, 6);
-    println!("{:?}", g);
-    for no in Bfs::new(&g, a).iter(&g) {
-        println!("Visit {:?} = {:?}", no, g.node_weight(no));
-    }
-
-    let scores = dijkstra(&g, a, None, |e| *e.weight());
-    let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();
-    scores.sort();
-    assert_eq!(scores, vec![
-        ("A", 0),
-        ("B", 7),
-        ("C", 9),
-        ("D", 11),
-        ("E", 20),
-        ("F", 20)
-    ]);
-
-    let scores = dijkstra(&g, a, Some(c), |e| *e.weight());
-    assert_eq!(scores[&c], 9);
-}
-
-// TODO: move to algo
-#[test]
 fn test_astar_null_heuristic() {
     let mut g = Graph::new();
     let a = g.add_node("A");

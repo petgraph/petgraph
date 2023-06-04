@@ -123,3 +123,133 @@ where
     }
     scores
 }
+
+#[cfg(test)]
+mod tests {
+    use petgraph_core::{edge::Undirected, visit::IntoNodeReferences};
+    use petgraph_graph::{Graph, NodeIndex};
+
+    use super::dijkstra;
+
+    /// Uses the graph from networkx
+    ///
+    /// <https://github.com/networkx/networkx/blob/main/networkx/algorithms/shortest_paths/tests/test_weighted.py>
+    fn setup() -> Graph<&'static str, i32> {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+        let e = graph.add_node("E");
+
+        graph.extend_with_edges([
+            (a, b, 10),
+            (a, c, 5),
+            (b, d, 1),
+            (b, c, 2),
+            (d, e, 1),
+            (c, b, 3),
+            (c, d, 5),
+            (c, e, 2),
+            (e, a, 7),
+            (e, d, 6),
+        ]);
+
+        graph
+    }
+
+    #[test]
+    fn no_goal_directed() {
+        let graph = setup();
+
+        let node = |weight: &'static str| {
+            graph
+                .node_references()
+                .find(|(_, &node_weight)| node_weight == weight)
+                .unwrap()
+                .0
+        };
+
+        let result = dijkstra(&graph, node("A"), None, |edge| *edge.weight());
+
+        let expected = [
+            (node("A"), 0),
+            (node("B"), 8),
+            (node("C"), 5),
+            (node("D"), 9),
+            (node("E"), 7),
+        ];
+
+        assert_eq!(result.len(), expected.len());
+
+        for (node, weight) in expected {
+            assert_eq!(result[&node], weight);
+        }
+    }
+
+    #[test]
+    fn no_goal_undirected() {
+        let graph = setup().into_edge_type::<Undirected>();
+
+        let node = |weight: &'static str| {
+            graph
+                .node_references()
+                .find(|(_, &node_weight)| node_weight == weight)
+                .unwrap()
+                .0
+        };
+
+        let result = dijkstra(&graph, node("A"), None, |edge| *edge.weight());
+
+        let expected = [
+            (node("A"), 0),
+            (node("B"), 7),
+            (node("C"), 5),
+            (node("D"), 8),
+            (node("E"), 7),
+        ];
+
+        assert_eq!(result.len(), expected.len());
+
+        for (node, weight) in expected {
+            assert_eq!(result[&node], weight);
+        }
+    }
+
+    #[test]
+    fn goal_directed() {
+        let graph = setup();
+
+        let node = |weight: &'static str| {
+            graph
+                .node_references()
+                .find(|(_, &node_weight)| node_weight == weight)
+                .unwrap()
+                .0
+        };
+
+        let result = dijkstra(&graph, node("A"), Some(node("D")), |edge| *edge.weight());
+
+        // we only guarantee that A - D exists in the result
+        assert_eq!(result[&node("D")], 9);
+    }
+
+    #[test]
+    fn goal_undirected() {
+        let graph = setup().into_edge_type::<Undirected>();
+
+        let node = |weight: &'static str| {
+            graph
+                .node_references()
+                .find(|(_, &node_weight)| node_weight == weight)
+                .unwrap()
+                .0
+        };
+
+        let result = dijkstra(&graph, node("A"), Some(node("D")), |edge| *edge.weight());
+
+        // we only guarantee that A - D exists in the result
+        assert_eq!(result[&node("D")], 8);
+    }
+}
