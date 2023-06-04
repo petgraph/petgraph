@@ -8,6 +8,10 @@ use petgraph_core::visit::{GraphRef, IntoNeighbors, VisitMap, Visitable};
 /// algorithm implements 2-coloring algorithm based on the BFS algorithm.
 ///
 /// Always treats the input graph as if undirected.
+// TODO: this algorithm is incomplete, if there are multiple connected components, it will only
+//  check the one of the start node.
+// TODO: The documentation is also ambitious, it doesn't treat the graph as undirected, it assumes
+//  that the input graph is undirected.
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
 where
     G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,

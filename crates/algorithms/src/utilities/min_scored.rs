@@ -16,7 +16,7 @@ pub struct MinScored<K, T>(pub K, pub T);
 
 impl<K: TotalOrd, T> PartialEq for MinScored<K, T> {
     #[inline]
-    fn eq(&self, other: &MinScored<K, T>) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.cmp(other) == Ordering::Equal
     }
 }
@@ -25,14 +25,14 @@ impl<K: TotalOrd, T> Eq for MinScored<K, T> {}
 
 impl<K: TotalOrd, T> PartialOrd for MinScored<K, T> {
     #[inline]
-    fn partial_cmp(&self, other: &MinScored<K, T>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl<K: TotalOrd, T> Ord for MinScored<K, T> {
     #[inline]
-    fn cmp(&self, other: &MinScored<K, T>) -> Ordering {
-        self.0.total_cmp(&other.0)
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.total_cmp(&other.0).reverse()
     }
 }

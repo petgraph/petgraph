@@ -116,3 +116,72 @@ where
         node_count: 0,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+
+    use petgraph_core::data::FromElements;
+    use petgraph_graph::{Graph, UnGraph};
+
+    use super::*;
+
+    /// Setup the graph used in several tests.
+    ///
+    /// The graph is taken from the Wikipedia article on Kruskal's algorithm.
+    /// <https://en.wikipedia.org/wiki/Kruskal%27s_algorithm>
+    fn setup_wikipedia() -> Graph<&'static str, u32> {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+        let e = graph.add_node("E");
+        let f = graph.add_node("F");
+        let g = graph.add_node("G");
+
+        graph.extend_with_edges([
+            (a, b, 7),
+            (a, d, 5),
+            (b, c, 8),
+            (b, d, 9),
+            (b, e, 7),
+            (c, e, 5),
+            (d, e, 15),
+            (d, f, 6),
+            (e, f, 8),
+            (e, g, 9),
+            (f, g, 11),
+        ]);
+
+        graph
+    }
+
+    /// Test that the minimum spanning tree of a graph is correct.
+    #[test]
+    fn example() {
+        let graph = setup_wikipedia();
+
+        let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+
+        // convert between node indices and node weights
+        let node = |index| *mst.node_weight(index).unwrap();
+
+        let mut edges = mst
+            .edge_references()
+            .map(|e| (node(e.source()), node(e.target()), e.weight()))
+            .collect::<Vec<_>>();
+
+        edges.sort_by_key(|e| (e.0, e.1));
+
+        assert_eq!(edges, [
+            ("A", "B", &7),
+            ("A", "D", &5),
+            ("B", "E", &7),
+            ("C", "E", &5),
+            ("D", "F", &6),
+            ("E", "G", &9),
+        ]);
+    }
+}
