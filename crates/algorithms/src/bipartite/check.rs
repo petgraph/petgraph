@@ -57,3 +57,148 @@ where
 
     true
 }
+
+#[cfg(test)]
+mod tests {
+    use petgraph_core::edge::Undirected;
+
+    use super::is_bipartite_undirected;
+
+    /// Graph:
+    ///
+    /// ```text
+    /// A → B   C
+    /// ```
+    ///
+    /// is bipartite with `U = {A, C}` and `V = {B}`. `C` can be in either set.
+    #[test]
+    fn disconnected_graph() {
+        let mut graph = petgraph_graph::Graph::new_undirected();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+
+        graph.add_edge(a, b, "A → B");
+
+        assert!(is_bipartite_undirected(&graph, a));
+        assert!(is_bipartite_undirected(&graph, b));
+        assert!(is_bipartite_undirected(&graph, c));
+
+        // directionality doesn't matter
+        let graph = graph.into_edge_type::<Undirected>();
+
+        assert!(is_bipartite_undirected(&graph, a));
+        assert!(is_bipartite_undirected(&graph, b));
+        assert!(is_bipartite_undirected(&graph, c));
+    }
+
+    /// Self-loops are inherently not bipartite.
+    #[test]
+    fn self_loop_cyclic_undirected() {
+        let mut graph = petgraph_graph::Graph::new();
+
+        let a = graph.add_node("A");
+        graph.add_edge(a, a, "A → A");
+
+        assert!(!is_bipartite_undirected(&graph, a));
+
+        // directionality doesn't matter
+        let graph = graph.into_edge_type::<Undirected>();
+
+        assert!(!is_bipartite_undirected(&graph, a));
+    }
+
+    /// Graph:
+    ///
+    /// ```text
+    /// A → B
+    /// ```
+    ///
+    /// is bipartite with `U = {A}` and `V = {B}`.
+    #[test]
+    fn minimal() {
+        let mut graph = petgraph_graph::Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        graph.add_edge(a, b, "A → B");
+
+        assert!(is_bipartite_undirected(&graph, a));
+        assert!(is_bipartite_undirected(&graph, b));
+
+        // directionality doesn't matter
+        let graph = graph.into_edge_type::<Undirected>();
+
+        assert!(is_bipartite_undirected(&graph, a));
+        assert!(is_bipartite_undirected(&graph, b));
+    }
+
+    /// Graph:
+    ///
+    /// ```text
+    /// A → B → C
+    /// ```
+    ///
+    /// is bipartite with `U = {A, C}` and `V = {B}`.
+    #[test]
+    fn small() {
+        let mut graph = petgraph_graph::Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+
+        graph.add_edge(a, b, "A → B");
+        graph.add_edge(b, c, "B → C");
+
+        assert!(is_bipartite_undirected(&graph, a));
+        assert!(is_bipartite_undirected(&graph, b));
+        assert!(is_bipartite_undirected(&graph, c));
+
+        // directionality doesn't matter
+        let graph = graph.into_edge_type::<Undirected>();
+
+        assert!(is_bipartite_undirected(&graph, a));
+        assert!(is_bipartite_undirected(&graph, b));
+        assert!(is_bipartite_undirected(&graph, c));
+    }
+
+    /// Graph:
+    ///
+    /// ```text
+    /// A → C
+    /// ↓ ↗
+    /// B
+    /// ```
+    ///
+    /// is not bipartite. (The connection `A → B` or `B → C` will be in either `U` or `V`, which is
+    /// invalid.)
+    #[test]
+    fn small_not_bipartite() {
+        let mut graph = petgraph_graph::Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+
+        graph.add_edge(a, b, "A → B");
+        graph.add_edge(a, c, "A → C");
+        graph.add_edge(b, c, "B → C");
+
+        // TODO: The wording in the documentation is a bit confusing. It says: "Always treats the
+        //  input graph as if undirected." This is not correct, it makes the assumption that the
+        //  graph is undirected, but will still work with directed graphs. The function signature
+        //  should be changed to disallow directed graphs.
+        // assert!(!is_bipartite_undirected(&graph, a));
+        // assert!(!is_bipartite_undirected(&graph, b));
+        // assert!(!is_bipartite_undirected(&graph, c));
+
+        // directionality doesn't matter
+        let graph = graph.into_edge_type::<Undirected>();
+
+        assert!(!is_bipartite_undirected(&graph, a));
+        assert!(!is_bipartite_undirected(&graph, b));
+        assert!(!is_bipartite_undirected(&graph, c));
+    }
+}

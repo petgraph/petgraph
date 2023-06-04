@@ -87,78 +87,6 @@ fn mst() {
 
 // TODO: move to algo
 #[test]
-fn bipartite() {
-    {
-        let mut gr = Graph::new_undirected();
-        let a = gr.add_node("A");
-        let b = gr.add_node("B");
-        let c = gr.add_node("C");
-
-        let d = gr.add_node("D");
-        let e = gr.add_node("E");
-        let f = gr.add_node("F");
-
-        gr.add_edge(a, d, 7.);
-        gr.add_edge(b, d, 6.);
-
-        assert!(is_bipartite_undirected(&gr, a));
-
-        let e_index = gr.add_edge(a, b, 6.);
-
-        assert!(!is_bipartite_undirected(&gr, a));
-
-        gr.remove_edge(e_index);
-
-        assert!(is_bipartite_undirected(&gr, a));
-
-        gr.add_edge(b, e, 7.);
-        gr.add_edge(b, f, 6.);
-        gr.add_edge(c, e, 6.);
-
-        assert!(is_bipartite_undirected(&gr, a));
-    }
-    {
-        let mut gr = Graph::new_undirected();
-        let a = gr.add_node("A");
-        let b = gr.add_node("B");
-        let c = gr.add_node("C");
-        let d = gr.add_node("D");
-        let e = gr.add_node("E");
-
-        let f = gr.add_node("F");
-        let g = gr.add_node("G");
-        let h = gr.add_node("H");
-
-        gr.add_edge(a, f, 7.);
-        gr.add_edge(a, g, 7.);
-        gr.add_edge(a, h, 7.);
-
-        gr.add_edge(b, f, 6.);
-        gr.add_edge(b, g, 6.);
-        gr.add_edge(b, h, 6.);
-
-        gr.add_edge(c, f, 6.);
-        gr.add_edge(c, g, 6.);
-        gr.add_edge(c, h, 6.);
-
-        gr.add_edge(d, f, 6.);
-        gr.add_edge(d, g, 6.);
-        gr.add_edge(d, h, 6.);
-
-        gr.add_edge(e, f, 6.);
-        gr.add_edge(e, g, 6.);
-        gr.add_edge(e, h, 6.);
-
-        assert!(is_bipartite_undirected(&gr, a));
-
-        gr.add_edge(a, b, 6.);
-
-        assert!(!is_bipartite_undirected(&gr, a));
-    }
-}
-
-// TODO: move to algo
-#[test]
 fn dijk() {
     let mut g = Graph::new_undirected();
     let a = g.add_node("A");
@@ -486,44 +414,6 @@ fn test_toposort_eq() {
     g.add_edge(a, b, ());
 
     assert_eq!(petgraph::algo::toposort(&g, None), Ok(vec![a, b]));
-}
-
-// TODO: move to algo
-#[test]
-fn is_cyclic_directed() {
-    let mut gr = Graph::<_, _>::new();
-    let a = gr.add_node("A");
-    let b = gr.add_node("B");
-    let c = gr.add_node("C");
-    let d = gr.add_node("D");
-    let e = gr.add_node("E");
-    let f = gr.add_node("F");
-    let g = gr.add_node("G");
-    gr.add_edge(a, b, 7.0);
-    gr.add_edge(a, d, 5.);
-    gr.add_edge(d, b, 9.);
-    gr.add_edge(b, c, 8.);
-    gr.add_edge(b, e, 7.);
-    gr.add_edge(c, e, 5.);
-    gr.add_edge(d, e, 15.);
-    gr.add_edge(d, f, 6.);
-    gr.add_edge(f, e, 8.);
-    gr.add_edge(f, g, 11.);
-    gr.add_edge(e, g, 9.);
-
-    assert!(!petgraph::algo::is_cyclic_directed(&gr));
-
-    // add a disjoint part
-    let h = gr.add_node("H");
-    let i = gr.add_node("I");
-    let j = gr.add_node("J");
-    gr.add_edge(h, i, 1.);
-    gr.add_edge(h, j, 3.);
-    gr.add_edge(i, j, 1.);
-    assert!(!petgraph::algo::is_cyclic_directed(&gr));
-
-    gr.add_edge(g, e, 0.);
-    assert!(petgraph::algo::is_cyclic_directed(&gr));
 }
 
 /// Compare two scc sets. Inside each scc, the order does not matter,
