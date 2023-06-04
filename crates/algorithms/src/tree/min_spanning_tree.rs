@@ -122,9 +122,11 @@ mod tests {
     use alloc::vec::Vec;
 
     use petgraph_core::data::FromElements;
-    use petgraph_graph::{Graph, UnGraph};
+    use petgraph_graph::{DiGraph, Graph, UnGraph};
+    use proptest::prelude::*;
 
     use super::*;
+    use crate::cycles::is_cyclic_undirected;
 
     /// Setup the graph used in several tests.
     ///
@@ -183,5 +185,94 @@ mod tests {
             ("D", "F", &6),
             ("E", "G", &9),
         ]);
+    }
+
+    /// Test that the minimum spanning tree of a disjoint graph is correct.
+    ///
+    /// ```text
+    /// A → B
+    ///   ↘ ↓
+    ///     C
+    ///
+    /// D → E
+    /// ```
+    ///
+    /// Where the edges are weighted as follows:
+    /// * A → B: 1
+    /// * A → C: 2
+    /// * B → C: 3
+    /// * D → E: 4
+    #[test]
+    fn disjoint() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+        let e = graph.add_node("E");
+
+        graph.extend_with_edges([
+            (a, b, 1), //
+            (a, c, 2),
+            (b, c, 3),
+            (d, e, 4),
+        ]);
+
+        let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+
+        // convert between node indices and node weights
+        let node = |index| *mst.node_weight(index).unwrap();
+
+        let mut edges = mst
+            .edge_references()
+            .map(|e| (node(e.source()), node(e.target()), e.weight()))
+            .collect::<Vec<_>>();
+
+        edges.sort_by_key(|e| (e.0, e.1));
+
+        assert_eq!(edges, [
+            ("A", "B", &1), //
+            ("A", "C", &2),
+            ("D", "E", &4),
+        ]);
+    }
+
+    proptest! {
+        /// Verify the assumption that every minimum spanning tree must not be cyclic.
+        #[test]
+        fn no_cycles_directed(graph in any::<DiGraph<(), u8, u8>>()) {
+            let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+
+            assert!(!is_cyclic_undirected(&mst));
+        }
+
+        /// Verify the assumption that the nodes of a minimum spanning tree always include all nodes.
+        #[test]
+        fn consistent_node_count_directed(graph in any::<DiGraph<(), u8, u8>>()) {
+            let nodes = graph.node_count();
+
+            let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+
+            assert_eq!(mst.node_count(), nodes);
+        }
+
+        /// Verify the assumption that every minimum spanning tree must not be cyclic.
+        #[test]
+        fn no_cycles_undirected(graph in any::<UnGraph<(), u8, u8>>()) {
+            let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+
+            assert!(!is_cyclic_undirected(&mst));
+        }
+
+        /// Verify the assumption that the nodes of a minimum spanning tree always include all nodes.
+        #[test]
+        fn consistent_node_count_undirected(graph in any::<UnGraph<(), u8, u8>>()) {
+            let nodes = graph.node_count();
+
+            let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+
+            assert_eq!(mst.node_count(), nodes);
+        }
     }
 }
