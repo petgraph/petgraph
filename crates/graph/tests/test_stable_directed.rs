@@ -2,10 +2,11 @@
 
 use common::graphs::FromDefault;
 use petgraph_core::{
+    data::{Element, FromElements},
     edge::{Directed, Direction},
     visit::{EdgeRef, IntoEdgeReferences, IntoNodeReferences},
 };
-use petgraph_graph::stable::StableGraph;
+use petgraph_graph::{stable::StableGraph, EdgeIndex, NodeIndex};
 
 mod common;
 
@@ -255,4 +256,27 @@ fn edges_mut() {
     }
 
     assert_eq!(graph.edge_weight(ab), Some(&1));
+}
+
+#[test]
+fn from_elements() {
+    let elements = vec![
+        Element::Node { weight: 1 },
+        Element::Node { weight: 2 },
+        Element::Edge {
+            source: 0,
+            target: 1,
+            weight: 3,
+        },
+    ];
+
+    let graph = StableGraph::<_, _, Directed>::from_elements(elements);
+
+    assert_eq!(graph.node_count(), 2);
+    assert_eq!(graph.edge_count(), 1);
+
+    assert_eq!(graph.node_weight(NodeIndex::new(0)), Some(&1));
+    assert_eq!(graph.node_weight(NodeIndex::new(1)), Some(&2));
+
+    assert_eq!(graph.edge_weight(EdgeIndex::new(0)), Some(&3));
 }
