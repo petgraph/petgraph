@@ -174,3 +174,298 @@ where
         path
     }
 }
+
+#[cfg(test)]
+mod tests {
+    //! This uses the same graph as the dijkstra test.
+
+    use alloc::vec;
+
+    use approx::assert_relative_eq;
+    use petgraph_core::{
+        edge::{Directed, Undirected},
+        visit::IntoNodeReferences,
+    };
+    use petgraph_graph::{DiGraph, Graph, NodeIndex};
+    use proptest::prelude::*;
+
+    use super::{super::dijkstra::tests::setup, astar};
+    use crate::shortest_paths::dijkstra;
+
+    /// A* is a generalization of Dijkstra's algorithm that uses a heuristic to guide the search,
+    /// therefore if the `cost_estimate` is always 0, A* should behave exactly like Dijkstra's
+    /// algorithm.
+    #[test]
+    fn null_heuristic_directed() {
+        let graph = setup();
+
+        let node = |weight: &str| {
+            graph
+                .node_references()
+                .find(|(_, &node_weight)| node_weight == weight)
+                .unwrap()
+                .0
+        };
+
+        let d = node("D");
+
+        let path = astar(
+            &graph,
+            node("A"),
+            |node| node == d,
+            |edge| *edge.weight(),
+            |_| 0,
+        );
+
+        assert_eq!(
+            path,
+            Some((9, vec![
+                node("A"), //
+                node("C"),
+                node("B"),
+                node("D")
+            ]))
+        );
+    }
+
+    #[test]
+    fn null_heuristic_directed_no_path() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+
+        graph.add_edge(a, b, 1);
+
+        let path = astar(&graph, b, |node| node == a, |edge| *edge.weight(), |_| 0);
+
+        assert_eq!(path, None);
+    }
+
+    #[test]
+    fn null_heuristic_undirected() {
+        let graph = setup().into_edge_type::<Undirected>();
+
+        let node = |weight: &str| {
+            graph
+                .node_references()
+                .find(|(_, &node_weight)| node_weight == weight)
+                .unwrap()
+                .0
+        };
+
+        let d = node("D");
+
+        let path = astar(
+            &graph,
+            node("A"),
+            |node| node == d,
+            |edge| *edge.weight(),
+            |_| 0,
+        );
+
+        assert_eq!(
+            path,
+            Some((8, vec![
+                node("A"), //
+                node("E"),
+                node("D")
+            ]))
+        );
+    }
+
+    #[test]
+    fn null_heuristic_undirected_no_path() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+
+        let path = astar(&graph, b, |node| node == a, |edge| *edge.weight(), |_| 0);
+
+        assert_eq!(path, None);
+    }
+
+    #[derive(Debug, Copy, Clone, PartialEq)]
+    struct Point {
+        x: f32,
+        y: f32,
+    }
+
+    impl Point {
+        fn distance(self, other: Self) -> f32 {
+            ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+        }
+
+        fn manhattan_distance(self, other: Self) -> f32 {
+            (self.x - other.x).abs() + (self.y - other.y).abs()
+        }
+    }
+
+    #[test]
+    fn manhattan_heuristic() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node(Point { x: 0.0, y: 0.0 });
+        let b = graph.add_node(Point { x: 2.0, y: 0.0 });
+        let c = graph.add_node(Point { x: 1.0, y: 1.0 });
+        let d = graph.add_node(Point { x: 0.0, y: 2.0 });
+        let e = graph.add_node(Point { x: 3.0, y: 3.0 });
+        let f = graph.add_node(Point { x: 4.0, y: 2.0 });
+        let _ = graph.add_node(Point { x: 5.0, y: 5.0 });
+
+        let distance = |a: NodeIndex, b: NodeIndex| {
+            let a = graph[a];
+            let b = graph[b];
+            a.distance(b)
+        };
+
+        let expected_distance = distance(a, b) + distance(b, f);
+
+        let edges = [
+            (a, b, distance(a, b)),
+            (a, d, distance(a, d)),
+            (b, c, distance(b, c)),
+            (b, f, distance(b, f)),
+            (c, e, distance(c, e)),
+            (e, f, distance(e, f)),
+            (d, e, distance(d, e)),
+        ];
+
+        for (start, end, weight) in edges {
+            graph.add_edge(start, end, weight);
+        }
+
+        let path = astar(
+            &graph,
+            a,
+            |node| node == f,
+            |edge| *edge.weight(),
+            |node| {
+                let node = graph[node];
+                let end = graph[f];
+
+                node.manhattan_distance(end)
+            },
+        );
+
+        let (distance, path) = path.expect("path not found");
+
+        assert_relative_eq!(distance, expected_distance);
+        assert_eq!(path, vec![a, b, f]);
+    }
+
+    #[test]
+    fn optimal_runtime() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+        let e = graph.add_node("E");
+
+        graph.add_edge(a, b, 2);
+        graph.add_edge(a, c, 3);
+        graph.add_edge(b, d, 3);
+        graph.add_edge(c, d, 1);
+        graph.add_edge(d, e, 1);
+
+        let mut calls = 0;
+
+        astar(
+            &graph,
+            a,
+            |node| node == e,
+            |edge| {
+                calls += 1;
+                *edge.weight()
+            },
+            |_| 0,
+        );
+
+        // A* is runtime optimal in the sense it won't expand more nodes than needed, for the given
+        // heuristic. Here, A* should expand, in order: A, B, C, D, E. This should should ask for
+        // the costs of edges (A, B), (A, C), (B, D), (C, D), (D, E). Node D will be added
+        // to `visit_next` twice, but should only be expanded once. If it is erroneously
+        // expanded twice, it will call for (D, E) again and `times_called` will be 6.
+        assert_eq!(calls, 5);
+    }
+
+    /// Excerpt from https://en.wikipedia.org/wiki/A*_search_algorithm#Admissibility_and_optimality
+    ///
+    /// > If the heuristic function is admissible – meaning that it never overestimates the actual
+    /// > cost to get to the goal – A* is guaranteed to return a least-cost path from start to goal.
+    ///
+    /// If a heuristic is admissible, but inconsistent, A* will still find the optimal path, but it
+    /// may expand more nodes than needed.
+    ///
+    /// Papers:
+    /// * <https://www.sciencedirect.com/science/article/pii/S0004370211000221>
+    /// * <https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=1f81b34c3729709e5d81e4d2dc33fa609b335473>
+    #[test]
+    fn admissible_inconsistent() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+
+        graph.add_edge(a, b, 3);
+        graph.add_edge(b, c, 3);
+        graph.add_edge(c, d, 3);
+        graph.add_edge(a, c, 8);
+        graph.add_edge(a, d, 10);
+
+        let admissible_inconsistent = |n: NodeIndex| match graph[n] {
+            "A" => 9,
+            "B" => 6,
+            _ => 0,
+        };
+
+        let optimal = astar(
+            &graph,
+            a,
+            |n| n == d,
+            |e| *e.weight(),
+            admissible_inconsistent,
+        );
+        assert_eq!(optimal, Some((9, vec![a, b, c, d])));
+    }
+
+    fn expand_graph_value_space(graph: &DiGraph<(), u8, u8>) -> Graph<(), u64, Directed, u8> {
+        graph.map(|_, _| (), |_, weight| u64::from(*weight))
+    }
+
+    prop_compose! {
+        // we allow selecting the same node as start and end, because it's a valid use case.
+        // we also expand the value space from the initial `u8` to `u64` to avoid overflows.
+        fn graph_with_two_nodes()
+           (graph in any::<DiGraph::<(), u8, u8>>())
+           (start in 0..graph.node_count(), end in 0..graph.node_count(), graph in Just(graph))
+            -> (DiGraph<(), u64, u8>, NodeIndex<u8>, NodeIndex<u8>) {
+            (expand_graph_value_space(&graph), NodeIndex::new(start), NodeIndex::new(end))
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn null_heuristic_is_dijkstra(
+            (graph, start, end) in graph_with_two_nodes()
+        ) {
+            let astar_path = astar(&graph, start, |node| node == end, |edge| *edge.weight(), |_| 0);
+            let dijkstra_path = dijkstra(&graph, start, Some(end), |edge| *edge.weight());
+
+
+            match astar_path {
+                None => {
+                    assert_eq!(dijkstra_path.get(&end), None);
+                }
+                Some((distance, _)) => {
+                    assert_eq!(dijkstra_path.get(&end), Some(&distance));
+                }
+            }
+        }
+    }
+}

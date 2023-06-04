@@ -125,7 +125,7 @@ where
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use petgraph_core::{edge::Undirected, visit::IntoNodeReferences};
     use petgraph_graph::{Graph, NodeIndex};
 
@@ -134,7 +134,7 @@ mod tests {
     /// Uses the graph from networkx
     ///
     /// <https://github.com/networkx/networkx/blob/main/networkx/algorithms/shortest_paths/tests/test_weighted.py>
-    fn setup() -> Graph<&'static str, i32> {
+    pub fn setup() -> Graph<&'static str, i32> {
         let mut graph = Graph::new();
 
         let a = graph.add_node("A");
