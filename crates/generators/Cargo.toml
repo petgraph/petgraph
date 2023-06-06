@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 petgraph-core = { workspace = true, default-features = false, features = ['alloc'] }
 petgraph-graph = { workspace = true, default-features = false }
+
+[dev-dependencies]
+petgraph.workspace = true
