@@ -131,3 +131,121 @@ where
     }
     condensed
 }
+
+#[cfg(test)]
+mod tests {
+    use petgraph_core::visit::EdgeRef;
+    use petgraph_graph::{Graph, NodeIndex};
+
+    /// Sets up the example graph
+    ///
+    /// Uses the graph from: <https://en.wikipedia.org/wiki/Strongly_connected_component>
+    fn setup() -> Graph<&'static str, &'static str> {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+        let e = graph.add_node("E");
+        let f = graph.add_node("F");
+        let g = graph.add_node("G");
+        let h = graph.add_node("H");
+
+        graph.extend_with_edges([
+            (a, b, "A → B"), //
+            (b, c, "B → C"),
+            (b, e, "B → E"),
+            (b, f, "B → F"),
+            (c, d, "C → D"),
+            (c, g, "C → G"),
+            (d, c, "D → C"),
+            (d, h, "D → H"),
+            (e, a, "E → A"),
+            (e, f, "E → F"),
+            (f, g, "F → G"),
+            (g, f, "G → F"),
+            (h, d, "H → D"),
+            (h, g, "H → G"),
+        ]);
+
+        graph
+    }
+
+    #[test]
+    fn acyclic() {
+        let graph = setup();
+
+        let condensed = super::condensation(graph, true);
+
+        assert_eq!(condensed.node_count(), 3);
+        assert_eq!(condensed.edge_count(), 3);
+
+        // The graph should look like this:
+        // A → B
+        //   ↘ ↓
+        //     C
+        let a = condensed
+            .node_weight(NodeIndex::new(0))
+            .expect("first strongly connected component");
+        let b = condensed
+            .node_weight(NodeIndex::new(1))
+            .expect("second strongly connected component");
+        let c = condensed
+            .node_weight(NodeIndex::new(2))
+            .expect("third strongly connected component");
+
+        assert_eq!(a, &["F", "G"]);
+        assert_eq!(b, &["C", "D", "H"]);
+        assert_eq!(c, &["A", "B", "E"]);
+
+        let a = NodeIndex::new(0);
+        let b = NodeIndex::new(1);
+        let c = NodeIndex::new(2);
+
+        assert!(condensed.find_edge(c, a).is_some());
+        assert!(condensed.find_edge(c, b).is_some());
+        assert!(condensed.find_edge(b, a).is_some());
+    }
+
+    #[test]
+    fn not_acyclic() {
+        let graph = setup();
+
+        let condensed = super::condensation(graph, false);
+
+        assert_eq!(condensed.node_count(), 3);
+        assert_eq!(condensed.edge_count(), 14);
+
+        // The graph should look like this:
+        // A → B
+        //   ↘ ↓
+        //     C
+        // but here we do not condense any edges
+        let a = condensed
+            .node_weight(NodeIndex::new(0))
+            .expect("first strongly connected component");
+        let b = condensed
+            .node_weight(NodeIndex::new(1))
+            .expect("second strongly connected component");
+        let c = condensed
+            .node_weight(NodeIndex::new(2))
+            .expect("third strongly connected component");
+
+        assert_eq!(a, &["F", "G"]);
+        assert_eq!(b, &["C", "D", "H"]);
+        assert_eq!(c, &["A", "B", "E"]);
+
+        let a = NodeIndex::new(0);
+        let b = NodeIndex::new(1);
+        let c = NodeIndex::new(2);
+
+        assert_eq!(condensed.edges(c).filter(|e| e.target() == a).count(), 2);
+        assert_eq!(condensed.edges(c).filter(|e| e.target() == b).count(), 1);
+        assert_eq!(condensed.edges(b).filter(|e| e.target() == a).count(), 2);
+
+        assert_eq!(condensed.edges(a).filter(|e| e.target() == a).count(), 2);
+        assert_eq!(condensed.edges(b).filter(|e| e.target() == b).count(), 4);
+        assert_eq!(condensed.edges(c).filter(|e| e.target() == c).count(), 3);
+    }
+}
