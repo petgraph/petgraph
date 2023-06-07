@@ -302,30 +302,172 @@ where
 
 #[cfg(test)]
 mod tests {
+    use petgraph_graph::{Graph, NodeIndex};
+
     use super::*;
 
-    #[test]
-    fn test_iter_dominators() {
-        let doms: Dominators<u32> = Dominators {
+    fn setup() -> Dominators<i32> {
+        Dominators {
             root: 0,
-            dominators: [(2, 1), (1, 0), (0, 0)].iter().cloned().collect(),
-        };
+            dominators: [(2, 1), (1, 0), (0, 0)].into_iter().collect(),
+        }
+    }
 
-        let all_doms: Vec<_> = doms.dominators(2).unwrap().collect();
-        assert_eq!(vec![2, 1, 0], all_doms);
+    #[test]
+    fn iterator_dominators() {
+        let dominators = setup();
+        let all_dominators: Vec<_> = dominators.dominators(2).unwrap().collect();
+        assert_eq!(all_dominators, [2, 1, 0]);
+    }
 
-        assert_eq!(None::<()>, doms.dominators(99).map(|_| unreachable!()));
+    #[test]
+    fn iterator_dominators_does_not_exist() {
+        let dominators = setup();
 
-        let strict_doms: Vec<_> = doms.strict_dominators(2).unwrap().collect();
-        assert_eq!(vec![1, 0], strict_doms);
+        assert!(dominators.dominators(i32::MAX).is_none());
+    }
 
-        assert_eq!(
-            None::<()>,
-            doms.strict_dominators(99).map(|_| unreachable!())
-        );
+    #[test]
+    fn iterator_strict_dominators() {
+        let dominators = setup();
 
-        let dom_by: Vec<_> = doms.immediately_dominated_by(1).collect();
-        assert_eq!(vec![2], dom_by);
-        assert_eq!(None, doms.immediately_dominated_by(99).next());
+        let strict_dominators: Vec<_> = dominators.strict_dominators(2).unwrap().collect();
+        assert_eq!(strict_dominators, [1, 0]);
+    }
+
+    #[test]
+    fn iterator_immediately_dominated_by() {
+        let dominators = setup();
+
+        let dominated_by: Vec<_> = dominators.immediately_dominated_by(1).collect();
+        assert_eq!(dominated_by, [2]);
+    }
+
+    /// Example from <https://en.wikipedia.org/wiki/Dominator_(graph_theory)>
+    #[test]
+    fn simple_fast_wikipedia() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+        let e = graph.add_node("E");
+        let f = graph.add_node("F");
+
+        graph.extend_with_edges([
+            (a, b, "A → B"), //
+            (b, c, "B → C"),
+            (b, d, "B → D"),
+            (b, f, "B → F"),
+            (c, e, "C → E"),
+            (d, b, "D → B"),
+            (d, e, "D → E"),
+        ]);
+
+        let dominators = simple_fast(&graph, a);
+
+        assert_eq!(dominators.root(), a);
+        assert_eq!(dominators.immediate_dominator(a), None);
+        assert_eq!(dominators.immediate_dominator(b), Some(a));
+        assert_eq!(dominators.immediate_dominator(c), Some(b));
+        assert_eq!(dominators.immediate_dominator(d), Some(b));
+        assert_eq!(dominators.immediate_dominator(e), Some(b));
+        assert_eq!(dominators.immediate_dominator(f), Some(b));
+    }
+
+    /// Example extracted from the research paper
+    /// <http://www.cs.princeton.edu/courses/archive/spr03/cs423/download/dominators.pdf>
+    #[test]
+    fn simple_fast_princeton() {
+        // Fig 1 of the paper
+        let mut graph = Graph::new();
+
+        let r = graph.add_node("R");
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+        let d = graph.add_node("D");
+        let e = graph.add_node("E");
+        let f = graph.add_node("F");
+        let g = graph.add_node("G");
+        let h = graph.add_node("H");
+        let i = graph.add_node("I");
+        let j = graph.add_node("J");
+        let k = graph.add_node("K");
+        let l = graph.add_node("L");
+
+        graph.extend_with_edges([
+            (r, a, "R → A"), //
+            (r, b, "R → B"),
+            (r, c, "R → C"),
+            (a, d, "A → D"),
+            (b, a, "B → A"),
+            (b, d, "B → D"),
+            (b, e, "B → E"),
+            (c, f, "C → F"),
+            (c, g, "C → G"),
+            (d, l, "D → L"),
+            (e, h, "E → H"),
+            (f, i, "F → I"),
+            (g, i, "G → I"),
+            (g, j, "G → J"),
+            (h, e, "H → E"),
+            (h, k, "H → K"),
+            (i, k, "I → K"),
+            (j, i, "J → I"),
+            (k, r, "K → R"),
+            (k, i, "K → I"),
+            (l, h, "L → H"),
+        ]);
+
+        let dominators = simple_fast(&graph, NodeIndex::new(0));
+
+        // Fig. 2 of the paper
+        assert_eq!(dominators.root(), r);
+        assert_eq!(dominators.immediate_dominator(r), None);
+        assert_eq!(dominators.immediate_dominator(a), Some(r));
+        assert_eq!(dominators.immediate_dominator(b), Some(r));
+        assert_eq!(dominators.immediate_dominator(c), Some(r));
+        assert_eq!(dominators.immediate_dominator(d), Some(r));
+        assert_eq!(dominators.immediate_dominator(e), Some(r));
+        assert_eq!(dominators.immediate_dominator(f), Some(c));
+        assert_eq!(dominators.immediate_dominator(g), Some(c));
+        assert_eq!(dominators.immediate_dominator(h), Some(r));
+        assert_eq!(dominators.immediate_dominator(i), Some(r));
+        assert_eq!(dominators.immediate_dominator(j), Some(g));
+        assert_eq!(dominators.immediate_dominator(k), Some(r));
+        assert_eq!(dominators.immediate_dominator(l), Some(d));
+    }
+
+    #[test]
+    fn simple_fast_disconnected() {
+        let mut graph = Graph::<_, ()>::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+
+        let dominators = simple_fast(&graph, a);
+
+        assert_eq!(dominators.root(), a);
+        assert_eq!(dominators.immediate_dominator(a), None);
+        // nodes that aren't reachable from the root have no dominator
+        assert_eq!(dominators.immediate_dominator(b), None);
+    }
+
+    #[test]
+    fn simple_fast_unreachable() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+
+        graph.add_edge(b, a, "B → A");
+
+        let dominators = simple_fast(&graph, a);
+
+        assert_eq!(dominators.root(), a);
+        assert_eq!(dominators.immediate_dominator(a), None);
+        assert_eq!(dominators.immediate_dominator(b), None);
     }
 }

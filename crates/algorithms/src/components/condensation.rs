@@ -140,6 +140,8 @@ mod tests {
     /// Sets up the example graph
     ///
     /// Uses the graph from: <https://en.wikipedia.org/wiki/Strongly_connected_component>
+    ///
+    /// Reference: <https://en.wikipedia.org/wiki/Strongly_connected_component#/media/File:Scc-1.svg>
     fn setup() -> Graph<&'static str, &'static str> {
         let mut graph = Graph::new();
 
