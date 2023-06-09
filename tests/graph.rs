@@ -44,52 +44,6 @@ fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex]) {
     }
 }
 
-/// Compare two scc sets. Inside each scc, the order does not matter,
-/// but the order of the sccs is significant.
-fn assert_sccs_eq(
-    mut res: Vec<Vec<NodeIndex>>,
-    mut answer: Vec<Vec<NodeIndex>>,
-    scc_order_matters: bool,
-) {
-    // normalize the result and compare with the answer.
-    for scc in &mut res {
-        scc.sort();
-    }
-    for scc in &mut answer {
-        scc.sort();
-    }
-    if !scc_order_matters {
-        res.sort();
-        answer.sort();
-    }
-    assert_eq!(res, answer);
-}
-
-fn make_edge_iterator_graph<Ty: EdgeType>() -> Graph<f64, f64, Ty> {
-    let mut gr = Graph::default();
-    let a = gr.add_node(0.);
-    let b = gr.add_node(0.);
-    let c = gr.add_node(0.);
-    let d = gr.add_node(0.);
-    let e = gr.add_node(0.);
-    let f = gr.add_node(0.);
-    let g = gr.add_node(0.);
-    gr.add_edge(a, b, 7.0);
-    gr.add_edge(a, d, 5.);
-    gr.add_edge(d, b, 9.);
-    gr.add_edge(b, c, 8.);
-    gr.add_edge(b, e, 7.);
-    gr.add_edge(c, c, 8.);
-    gr.add_edge(c, e, 5.);
-    gr.add_edge(d, e, 15.);
-    gr.add_edge(d, f, 6.);
-    gr.add_edge(f, e, 8.);
-    gr.add_edge(f, g, 11.);
-    gr.add_edge(e, g, 9.);
-
-    gr
-}
-
 // TODO: move to core
 #[test]
 fn toposort_generic() {
@@ -149,83 +103,6 @@ fn toposort_generic() {
     gr2.add_edge(d, d, 0.);
     assert!(pg::algo::is_cyclic_directed(&gr2));
     assert!(pg::algo::toposort(&gr2, None).is_err());
-}
-
-// TODO: move to algo
-#[test]
-fn test_has_path() {
-    // This is a DAG, visit it in order
-    let mut gr = Graph::<_, _>::new();
-    let b = gr.add_node(("B", 0.));
-    let a = gr.add_node(("A", 0.));
-    let c = gr.add_node(("C", 0.));
-    let d = gr.add_node(("D", 0.));
-    let e = gr.add_node(("E", 0.));
-    let f = gr.add_node(("F", 0.));
-    let g = gr.add_node(("G", 0.));
-    gr.add_edge(a, b, 7.0);
-    gr.add_edge(a, d, 5.);
-    gr.add_edge(d, b, 9.);
-    gr.add_edge(b, c, 8.);
-    gr.add_edge(b, e, 7.);
-    gr.add_edge(c, e, 5.);
-    gr.add_edge(d, e, 15.);
-    gr.add_edge(d, f, 6.);
-    gr.add_edge(f, e, 8.);
-    gr.add_edge(f, g, 11.);
-    gr.add_edge(e, g, 9.);
-    // disconnected island
-
-    let h = gr.add_node(("H", 0.));
-    let i = gr.add_node(("I", 0.));
-    gr.add_edge(h, i, 2.);
-    gr.add_edge(i, h, -2.);
-
-    let mut state = DfsSpace::default();
-
-    gr.add_edge(b, a, 99.);
-
-    assert!(has_path_connecting(&gr, c, c, None));
-
-    for edge in gr.edge_references() {
-        assert!(has_path_connecting(&gr, edge.source(), edge.target(), None));
-    }
-    assert!(has_path_connecting(&gr, a, g, Some(&mut state)));
-    assert!(!has_path_connecting(&gr, a, h, Some(&mut state)));
-    assert!(has_path_connecting(&gr, a, c, None));
-    assert!(has_path_connecting(&gr, a, c, Some(&mut state)));
-    assert!(!has_path_connecting(&gr, h, a, Some(&mut state)));
-}
-
-fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    assert_eq!(g.node_count(), g.node_indices().count());
-    assert_eq!(g.edge_count(), g.edge_indices().count());
-    for edge in g.raw_edges() {
-        assert!(
-            g.find_edge(edge.source(), edge.target()).is_some(),
-            "Edge not in graph! {:?} to {:?}",
-            edge.source(),
-            edge.target()
-        );
-    }
-}
-
-fn degree<'a, G>(g: G, node: G::NodeId) -> usize
-where
-    G: IntoNeighbors,
-    G::NodeId: PartialEq,
-{
-    // self loops count twice
-    let original_node = node.clone();
-    let mut degree = 0;
-    for v in g.neighbors(node) {
-        degree += if v == original_node { 2 } else { 1 };
-    }
-    degree
 }
 
 // TODO: move to core
