@@ -65,44 +65,6 @@ fn assert_sccs_eq(
     assert_eq!(res, answer);
 }
 
-// TODO: move to algo
-#[test]
-fn connected_comp() {
-    let n = NodeIndex::new;
-    let mut gr = Graph::new();
-    gr.add_node(0);
-    gr.add_node(1);
-    gr.add_node(2);
-    gr.add_node(3);
-    gr.add_node(4);
-    gr.add_node(5);
-    gr.add_node(6);
-    gr.add_node(7);
-    gr.add_node(8);
-    gr.add_edge(n(6), n(0), ());
-    gr.add_edge(n(0), n(3), ());
-    gr.add_edge(n(3), n(6), ());
-    gr.add_edge(n(8), n(6), ());
-    gr.add_edge(n(8), n(2), ());
-    gr.add_edge(n(2), n(5), ());
-    gr.add_edge(n(5), n(8), ());
-    gr.add_edge(n(7), n(5), ());
-    gr.add_edge(n(1), n(7), ());
-    gr.add_edge(n(7), n(4), ());
-    gr.add_edge(n(4), n(1), ());
-    assert_eq!(petgraph::algo::connected_components(&gr), 1);
-
-    gr.add_node(9);
-    gr.add_node(10);
-    assert_eq!(petgraph::algo::connected_components(&gr), 3);
-
-    gr.add_edge(n(9), n(10), ());
-    assert_eq!(petgraph::algo::connected_components(&gr), 2);
-
-    let gr = gr.into_edge_type::<Undirected>();
-    assert_eq!(petgraph::algo::connected_components(&gr), 2);
-}
-
 fn make_edge_iterator_graph<Ty: EdgeType>() -> Graph<f64, f64, Ty> {
     let mut gr = Graph::default();
     let a = gr.add_node(0.);
