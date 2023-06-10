@@ -41,39 +41,39 @@ use super::{EdgeIndex, NodeIndex};
 use crate::{Edge, Graph, Node};
 
 #[derive(Debug)]
-pub(crate) enum Error {
-    InvalidNode {
+pub enum InvalidError {
+    Node {
         index: usize,
         length: usize,
     },
-    InvalidHole {
+    Hole {
         index: usize,
     },
-    InvalidLength {
+    Length {
         type_: &'static str,
         length: usize,
         max: usize,
     },
-    InvalidDirection {
+    Direction {
         expected: EdgeProperty,
         received: EdgeProperty,
     },
 }
 
-impl Display for Error {
+impl Display for InvalidError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::InvalidNode { index, length } => f.write_fmt(format_args!(
-                "invalid value: node index `{index}` does not exist in graph with node bound \
-                 {length}",
+            Self::Node { index, length } => f.write_fmt(format_args!(
+                "invalid value: node index `{index}` does not exist in graph with length \
+                 `{length}`",
             )),
-            Self::InvalidHole { index } => f.write_fmt(format_args!(
+            Self::Hole { index } => f.write_fmt(format_args!(
                 "invalid value: node hole `{index}` is not allowed.",
             )),
-            Self::InvalidLength { type_, length, max } => f.write_fmt(format_args!(
+            Self::Length { type_, length, max } => f.write_fmt(format_args!(
                 "invalid value: {type_} length `{length}` exceeds maximum of `{max}`",
             )),
-            Self::InvalidDirection { expected, received } => f.write_fmt(format_args!(
+            Self::Direction { expected, received } => f.write_fmt(format_args!(
                 "invalid value: expected {expected} graph, but received {received} graph",
             )),
         }
@@ -91,8 +91,8 @@ pub enum EdgeProperty {
 impl Display for EdgeProperty {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            EdgeProperty::Undirected => f.write_str("undirected"),
-            EdgeProperty::Directed => f.write_str("directed"),
+            Self::Undirected => f.write_str("undirected"),
+            Self::Directed => f.write_str("directed"),
         }
     }
 }
@@ -286,7 +286,7 @@ where
         } = RemoteGraph::deserialize(deserializer)?;
 
         if nodes.len() >= <Ix as Integral>::MAX.as_usize() {
-            return Err(Error::InvalidLength {
+            return Err(InvalidError::Length {
                 type_: "node",
                 length: nodes.len(),
                 max: Ix::MAX.as_usize(),
@@ -295,7 +295,7 @@ where
         }
 
         if edges.len() >= <Ix as Integral>::MAX.as_usize() {
-            return Err(Error::InvalidLength {
+            return Err(InvalidError::Length {
                 type_: "edge",
                 length: edges.len(),
                 max: Ix::MAX.as_usize(),
@@ -305,7 +305,7 @@ where
 
         let expected = EdgeProperty::from_type::<Ty>();
         if edge_property != expected {
-            return Err(Error::InvalidDirection {
+            return Err(InvalidError::Direction {
                 expected,
                 received: edge_property,
             })
@@ -320,7 +320,7 @@ where
 
         let node_count = this.node_count();
         this.link_edges()
-            .map_err(|i| Error::InvalidNode {
+            .map_err(|i| InvalidError::Node {
                 index: i.index(),
                 length: node_count,
             })

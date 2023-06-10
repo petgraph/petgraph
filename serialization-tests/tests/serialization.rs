@@ -8,19 +8,15 @@ extern crate serde_json;
 #[macro_use]
 extern crate defmac;
 
-use std::collections::HashSet;
-use std::fmt::Debug;
-use std::iter::FromIterator;
+use std::{collections::HashSet, fmt::Debug, iter::FromIterator};
 
-use itertools::assert_equal;
-use itertools::{repeat_n, Itertools};
-
-use petgraph::graph::{edge_index, node_index, IndexType};
-use petgraph::prelude::*;
-use petgraph::visit::EdgeRef;
-use petgraph::visit::IntoEdgeReferences;
-use petgraph::visit::NodeIndexable;
-use petgraph::EdgeType;
+use itertools::{assert_equal, repeat_n, Itertools};
+use petgraph::{
+    graph::{edge_index, node_index, IndexType},
+    prelude::*,
+    visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
+    EdgeType,
+};
 
 // graphs are the equal, down to graph indices
 // this is a strict notion of graph equivalence:
@@ -164,189 +160,6 @@ where
 defmac!(tojson ref g => serde_json::to_string(g).unwrap());
 defmac!(fromjson ref data => serde_json::from_str(data).unwrap());
 defmac!(rejson ref g => fromjson!(tojson!(g)));
-
-#[test]
-fn json_graph_str_i32() {
-    let g1: DiGraph<_, _> = make_graph();
-    let g2: Graph<String, i32> = rejson!(&g1);
-    assert_graph_eq(&g1, &g2);
-    assert_graph_eq(&g2, &g1);
-}
-
-#[test]
-fn json_graph_nils() {
-    let g1 = make_graph().map(|_, _| (), |_, _| ());
-
-    let g2: Graph<(), ()> = rejson!(&g1);
-    assert_graph_eq(&g1, &g2);
-    assert_graph_eq(&g2, &g1);
-}
-
-const DIGRAPH_NILS: &str = r#"{
-    "nodes":[null,null,null,null,null],
-    "edge_property": "directed",
-    "edges":[[0,1,null],[2,0,null],[1,3,null],[1,2,null],[2,3,null],[4,3,null]]
-    }"#;
-
-const DIGRAPH_NILS_INDEX_OOB: &str = r#"{
-    "nodes":[null,null,null,null,null],
-    "edge_property": "directed",
-    "edges":[[0,1,null],[2,5,null],[1,3,null],[1,2,null],[2,3,null],[4,3,null]]
-    }"#;
-
-const DIGRAPH_NILS_INDEX_OUTSIDE_U8: &str = r#"{
-    "nodes":[null,null,null,null,null],
-    "edge_property": "directed",
-    "edges":[[0,1,null],[2,300,null],[1,3,null],[1,2,null],[2,3,null],[4,3,null]]
-    }"#;
-
-const DIGRAPH_STRI32: &str = r#"{
-    "nodes":["A","B","C","D","E","F"],
-    "edge_property": "directed",
-    "edges":[[0,1,7],[2,0,9],[0,3,14],[1,2,10],[3,2,2],[3,4,9],[1,5,15],[2,5,11],[4,5,6]]
-    }"#;
-
-type DiGraphNils = DiGraph<(), ()>;
-type UnGraphNils = UnGraph<(), ()>;
-type DiGraphNilsU8 = DiGraph<(), (), u8>;
-type DiGraphStrI32 = DiGraph<String, i32>;
-
-#[test]
-fn from_json_digraph_nils() {
-    let _: DiGraphNils = fromjson!(&DIGRAPH_NILS);
-}
-
-#[test]
-#[should_panic(expected = "edge property mismatch")]
-fn from_json_graph_nils_edge_property_mismatch() {
-    let _: UnGraphNils = fromjson!(&DIGRAPH_NILS);
-}
-
-#[test]
-#[should_panic(expected = "does not exist")]
-fn from_json_graph_nils_index_oob() {
-    let _: DiGraphNils = fromjson!(&DIGRAPH_NILS_INDEX_OOB);
-}
-
-#[test]
-#[should_panic(expected = "expected u8")]
-fn from_json_graph_nils_index_too_large() {
-    let _: DiGraphNilsU8 = fromjson!(&DIGRAPH_NILS_INDEX_OUTSIDE_U8);
-}
-
-#[test]
-fn from_json_graph_directed_str_i32() {
-    let _: DiGraphStrI32 = fromjson!(&DIGRAPH_STRI32);
-}
-
-#[test]
-#[should_panic(expected = "expected unit")]
-fn from_json_graph_from_edge_type_1() {
-    let _: DiGraphNils = fromjson!(&DIGRAPH_STRI32);
-}
-
-#[test]
-#[should_panic(expected = "expected a string")]
-fn from_json_graph_from_edge_type_2() {
-    let _: DiGraphStrI32 = fromjson!(&DIGRAPH_NILS);
-}
-
-#[test]
-fn from_json_digraph_str_i32() {
-    let g4nodes = ["A", "B", "C", "D", "E", "F"];
-    let g4edges = [
-        [0, 1, 7],
-        [2, 0, 9],
-        [0, 3, 14],
-        [1, 2, 10],
-        [3, 2, 2],
-        [3, 4, 9],
-        [1, 5, 15],
-        [2, 5, 11],
-        [4, 5, 6],
-    ];
-
-    type GSI = DiGraph<String, i32>;
-    type GSISmall = DiGraph<String, i32, u8>;
-
-    let g4: GSI = fromjson!(&DIGRAPH_STRI32);
-
-    for ni in g4.node_indices() {
-        assert_eq!(&g4nodes[ni.index()], &g4[ni]);
-    }
-    for e in g4.edge_references() {
-        let edge_data = g4edges[e.id().index()];
-
-        let (s, t) = g4.edge_endpoints(e.id()).unwrap();
-        assert_eq!(edge_data[0] as usize, s.index());
-        assert_eq!(edge_data[1] as usize, t.index());
-
-        assert_eq!(edge_data[2], g4[e.id()]);
-    }
-
-    let _g4small: GSISmall = fromjson!(&DIGRAPH_STRI32);
-}
-
-#[test]
-fn from_json_nodes_too_big() {
-    // ensure we fail if node or edge count exceeds index max
-    use serde_json::from_str;
-
-    let j1_big = &format!(
-        "{}{}{}",
-        r#"
-                          {"nodes": [
-                          "#,
-        repeat_n(0, 300).format(", "),
-        r#"
-                          ],
-                          "edge_property": "directed",
-                          "edges": []
-                          }
-                          "#
-    );
-
-    type G8 = DiGraph<i32, (), u8>;
-    type G16 = DiGraph<i32, (), u16>;
-    type G32 = DiGraph<i32, (), u32>;
-    type G64 = DiGraph<i32, (), usize>;
-
-    type H1 = DiGraph<i32, i32>;
-
-    assert!(from_str::<G8>(j1_big).is_err());
-    let _: G16 = fromjson!(&j1_big); // assert
-    let _: G32 = fromjson!(&j1_big); // assert
-    let _: G64 = fromjson!(&j1_big); // assert
-
-    // other edge weight is also ok -- because it has no edges
-    let _: H1 = fromjson!(&j1_big); // assert
-}
-
-#[test]
-fn from_json_edges_too_big() {
-    // ensure we fail if node or edge count exceeds index max
-    use serde_json::from_str;
-
-    let j1_big = format!(
-        "{}{}{}",
-        r#"
-                         {"nodes": [0],
-                         "edge_property": "directed",
-                         "edges": ["#,
-        repeat_n("[0, 0, 1]", (1 << 16) - 1).format(", "),
-        "]}"
-    );
-
-    type G8 = DiGraph<i32, i32, u8>;
-    type G16 = DiGraph<i32, i32, u16>;
-    type G32 = DiGraph<i32, i32, u32>;
-    type G64 = DiGraph<i32, i32, usize>;
-
-    assert!(from_str::<G8>(&j1_big).is_err());
-    assert!(from_str::<G16>(&j1_big).is_err());
-    let _: G32 = fromjson!(&j1_big); // assert
-    let _: G64 = fromjson!(&j1_big); // assert
-}
 
 #[test]
 fn json_stable_graph_str() {

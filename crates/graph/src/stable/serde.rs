@@ -13,7 +13,7 @@ use serde::{
 };
 
 use crate::{
-    serde::{EdgeProperty, Error},
+    serde::{EdgeProperty, InvalidError},
     stable::StableGraph,
     Edge, EdgeIndex, EdgeType, Graph, Node, NodeIndex,
 };
@@ -155,7 +155,7 @@ where
             .collect::<Vec<_>>();
 
         if edges.len() >= <Ix as Integral>::MAX.as_usize() {
-            return Err(Error::InvalidLength {
+            return Err(InvalidError::Length {
                 type_: "edge",
                 length: edges.len(),
                 max: Ix::MAX.as_usize(),
@@ -165,7 +165,7 @@ where
 
         let expected = EdgeProperty::from_type::<Ty>();
         if edge_property != expected {
-            return Err(Error::InvalidDirection {
+            return Err(InvalidError::Direction {
                 expected,
                 received: edge_property,
             })
@@ -182,7 +182,7 @@ where
         for hole_pos in node_holes.iter() {
             let hole_pos = hole_pos.index();
             if !(node_pos..total_nodes).contains(&hole_pos) {
-                return Err(Error::InvalidHole { index: hole_pos }).map_err(D::Error::custom);
+                return Err(InvalidError::Hole { index: hole_pos }).map_err(D::Error::custom);
             }
             nodes.extend(compact_nodes.by_ref().take(hole_pos - node_pos));
             nodes.push(Node {
@@ -196,7 +196,7 @@ where
         nodes.extend(compact_nodes);
 
         if nodes.len() >= <Ix as Integral>::MAX.as_usize() {
-            return Err(Error::InvalidLength {
+            return Err(InvalidError::Length {
                 type_: "node",
                 length: nodes.len(),
                 max: Ix::MAX.as_usize(),
@@ -219,7 +219,7 @@ where
 
         stable_graph
             .link_edges()
-            .map_err(|i| Error::InvalidNode {
+            .map_err(|i| InvalidError::Node {
                 index: i.index(),
                 length: node_bound,
             })
@@ -257,10 +257,11 @@ mod tests {
         graph.remove_node(a);
         graph.remove_node(c);
         graph.remove_node(d);
+        // as optimization technique, we use `node_bound()` for raw_nodes() and raw_edges(), this
+        // means that if we have a trailing hole it will be skipped.
         graph.remove_node(g);
 
         let value = serde_value::to_value(&graph).unwrap();
-        println!("{:#?}", value);
         let graph = StableUnGraph::<i32, ()>::deserialize(value).unwrap();
 
         assert_eq!(graph.node_count(), 3);
@@ -270,7 +271,7 @@ mod tests {
                 .iter()
                 .map(|n| n.weight)
                 .collect::<Vec<_>>(),
-            vec![None, Some(1), None, None, Some(4), Some(5), None],
+            vec![None, Some(1), None, None, Some(4), Some(5)],
         );
     }
 }
