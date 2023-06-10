@@ -498,15 +498,9 @@ proptest! {
         assert_stable_graph_eq(&graph, &deserialized);
     }
 
-    // TODO: this is an implementation detail that only works for JSON
-    #[test]
-    fn roundtrip_graph_to_stable_to_graph(graph in any::<Graph<i8, u8, Directed, u8>>()) {
-        let value = serde_value::to_value(graph.clone()).expect("failed to serialize");
-        let deserialized = StableGraph::<i8, u8, Directed, u8>::deserialize(value).expect("failed to deserialize");
-
-        let value = serde_value::to_value(deserialized).expect("failed to serialize");
-        let reserialized = Graph::<i8, u8, Directed, u8>::deserialize(value).expect("failed to serialize");
-
-        assert_graph_eq(&graph, &reserialized);
-    }
+    // We cannot do graph -> stable-graph -> graph, as it is format dependent.
+    // Some formats encode `Option<T>` differently to `T`/`null`. (Example: serde-value).
+    // While possible for `serde-json` (as `T` / `null` is equivalent to `Option<T>`),
+    // it is not for e.g. `bincode`.
+    // Due to the fact that this a quirk of the data-format no property-based test is used.
 }
