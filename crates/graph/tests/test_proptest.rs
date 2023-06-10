@@ -8,6 +8,9 @@
 //! These do not substitute unit tests, but rather complement them.
 #![cfg(feature = "proptest")]
 
+mod common;
+
+use common::assert_graph_consistency;
 use petgraph_core::{
     edge::{Directed, Direction, EdgeType, Undirected},
     index::IndexType,
@@ -15,24 +18,6 @@ use petgraph_core::{
 };
 use petgraph_graph::{EdgeIndex, Graph};
 use proptest::prelude::*;
-
-fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    assert_eq!(g.node_count(), g.node_indices().count());
-    assert_eq!(g.edge_count(), g.edge_indices().count());
-
-    for edge in g.raw_edges() {
-        assert!(
-            g.find_edge(edge.source(), edge.target()).is_some(),
-            "Edge not in graph! {:?} to {:?}",
-            edge.source(),
-            edge.target()
-        );
-    }
-}
 
 fn retain_nodes<Ty>(graph: Graph<i32, (), Ty, u8>)
 where
@@ -230,15 +215,17 @@ where
     // we don't generate any parallel edges, therefore if we remove an edge, `find_node` should
     // return `None`
     let (a, b) = graph.edge_endpoints(edge).expect("edge should exist");
-    assert_eq!(graph.find_edge(a, b), Some(edge));
+    // we cannot check if `.is_some()` because there might be parallel edges
+    assert!(graph.find_edge(a, b).is_some());
 
     graph.remove_edge(edge);
 
-    assert_graph_consistent(graph);
+    assert_graph_consistency(graph);
 
     // we cannot test for the weight, as another edge has likely taken its place
-    assert_eq!(graph.find_edge(a, b), None);
     assert!(!graph.neighbors(a).any(|node| node == b));
+    // we cannot assert that the edge does not exist, as there might be parallel edges
+    // (via `find_edge()`)
 }
 
 proptest! {

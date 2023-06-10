@@ -38,58 +38,6 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 use utils::{Small, Tournament};
 
-fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    assert_eq!(g.node_count(), g.node_indices().count());
-    assert_eq!(g.edge_count(), g.edge_indices().count());
-    for edge in g.raw_edges() {
-        assert!(
-            g.find_edge(edge.source(), edge.target()).is_some(),
-            "Edge not in graph! {:?} to {:?}",
-            edge.source(),
-            edge.target()
-        );
-    }
-}
-
-#[test]
-fn stable_graph_retain_edges() {
-    fn prop<Ty: EdgeType>(mut g: StableGraph<(), i32, Ty>) -> bool {
-        // Remove all negative edges, these should be randomly spread
-        let og = g.clone();
-        let edges = g.edge_count();
-        let num_negs = g.edge_references().filter(|n| *n.weight() < 0).count();
-        let mut removed = 0;
-        g.retain_edges(|g, i| {
-            let keep = g[i] >= 0;
-            if !keep {
-                removed += 1;
-            }
-            keep
-        });
-        let num_negs_post = g.edge_references().filter(|n| *n.weight() < 0).count();
-        let num_pos_post = g.edge_references().filter(|n| *n.weight() >= 0).count();
-        assert_eq!(num_negs_post, 0);
-        assert_eq!(removed, num_negs);
-        assert_eq!(num_negs + g.edge_count(), edges);
-        assert_eq!(num_pos_post, g.edge_count());
-        if og.edge_count() < 30 {
-            // check against filter_map
-            let filtered = og.filter_map(
-                |_, w| Some(*w),
-                |_, w| if *w >= 0 { Some(*w) } else { None },
-            );
-            assert_eq!(g.node_count(), filtered.node_count());
-        }
-        true
-    }
-    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>) -> bool);
-    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Undirected>) -> bool);
-}
-
 #[test]
 fn isomorphism_1() {
     // using small weights so that duplicates are likely
@@ -164,71 +112,6 @@ fn isomorphism_modify() {
     }
     quickcheck::quickcheck(prop::<Undirected> as fn(_, _, _) -> bool);
     quickcheck::quickcheck(prop::<Directed> as fn(_, _, _) -> bool);
-}
-
-#[cfg(feature = "stable_graph")]
-#[test]
-fn stable_graph_remove_edge() {
-    fn prop<Ty: EdgeType>(mut g: StableGraph<(), (), Ty>, a: u8, b: u8) -> bool {
-        let a = node_index(a as usize);
-        let b = node_index(b as usize);
-        let edge = g.find_edge(a, b);
-        if !g.is_directed() {
-            assert_eq!(edge.is_some(), g.find_edge(b, a).is_some());
-        }
-        if let Some(ex) = edge {
-            assert!(g.remove_edge(ex).is_some());
-        }
-        //assert_graph_consistent(&g);
-        assert!(g.find_edge(a, b).is_none());
-        assert!(g.neighbors(a).find(|x| *x == b).is_none());
-        if !g.is_directed() {
-            assert!(g.find_edge(b, a).is_none());
-            assert!(g.neighbors(b).find(|x| *x == a).is_none());
-        }
-        true
-    }
-    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Undirected>, _, _) -> bool);
-    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>, _, _) -> bool);
-}
-
-#[cfg(feature = "stable_graph")]
-#[test]
-fn stable_graph_add_remove_edges() {
-    fn prop<Ty: EdgeType>(mut g: StableGraph<(), (), Ty>, edges: Vec<(u8, u8)>) -> bool {
-        for &(a, b) in &edges {
-            let a = node_index(a as usize);
-            let b = node_index(b as usize);
-            let edge = g.find_edge(a, b);
-
-            if edge.is_none() && g.contains_node(a) && g.contains_node(b) {
-                let _index = g.add_edge(a, b, ());
-                continue;
-            }
-
-            if !g.is_directed() {
-                assert_eq!(edge.is_some(), g.find_edge(b, a).is_some());
-            }
-            if let Some(ex) = edge {
-                assert!(g.remove_edge(ex).is_some());
-            }
-            //assert_graph_consistent(&g);
-            assert!(
-                g.find_edge(a, b).is_none(),
-                "failed to remove edge {:?} from graph {:?}",
-                (a, b),
-                g
-            );
-            assert!(g.neighbors(a).find(|x| *x == b).is_none());
-            if !g.is_directed() {
-                assert!(g.find_edge(b, a).is_none());
-                assert!(g.neighbors(b).find(|x| *x == a).is_none());
-            }
-        }
-        true
-    }
-    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Undirected>, _) -> bool);
-    quickcheck::quickcheck(prop as fn(StableGraph<_, _, Directed>, _) -> bool);
 }
 
 fn assert_graphmap_consistent<N, E, Ty>(g: &GraphMap<N, E, Ty>)
