@@ -6,12 +6,35 @@ use insta::assert_json_snapshot;
 use petgraph_core::{
     edge::{Directed, Direction, EdgeType, Undirected},
     index::{DefaultIx, IndexType},
-    visit::EdgeRef,
+    visit::{EdgeRef, IntoEdgeReferences, IntoNeighborsDirected, NodeIndexable},
 };
-use petgraph_graph::{DiGraph, Graph};
+use petgraph_graph::{
+    stable::{StableDiGraph, StableGraph},
+    DiGraph, EdgeIndex, Graph, NodeIndex,
+};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::json;
 
+fn assert_iter_eq<I, J>(iter1: I, iter2: J)
+where
+    I: IntoIterator,
+    J: IntoIterator,
+    I::Item: PartialEq<J::Item> + Debug,
+    J::Item: Debug,
+{
+    let mut iter1 = iter1.into_iter();
+    let mut iter2 = iter2.into_iter();
+
+    for (item1, item2) in iter1.zip(iter2) {
+        assert_eq!(item1, item2);
+    }
+}
+
+/// graphs are the equal, down to graph indices
+/// this is a strict notion of graph equivalence:
+///
+/// * Requires equal node and edge indices, equal weights
+/// * Does not require: edge for node order
 fn assert_graph_eq<N, N2, E, Ty, Ix>(graph1: &Graph<N, E, Ty, Ix>, graph2: &Graph<N2, E, Ty, Ix>)
 where
     N: PartialEq<N2> + Debug,
@@ -24,18 +47,16 @@ where
     assert_eq!(graph1.edge_count(), graph2.edge_count());
 
     // same node weights
-    graph1
-        .raw_nodes()
-        .iter()
-        .zip(graph2.raw_nodes().iter())
-        .for_each(|(n1, n2)| assert_eq!(n1.weight, n2.weight));
+    assert_iter_eq(
+        graph1.raw_nodes().iter().map(|node| &node.weight),
+        graph2.raw_nodes().iter().map(|node| &node.weight),
+    );
 
     // same edge weights
-    graph1
-        .raw_edges()
-        .iter()
-        .zip(graph2.raw_edges().iter())
-        .for_each(|(n1, n2)| assert_eq!(n1.weight, n2.weight));
+    assert_iter_eq(
+        graph1.raw_edges().iter().map(|edge| &edge.weight),
+        graph2.raw_edges().iter().map(|edge| &edge.weight),
+    );
 
     for edge in graph1.edge_references() {
         let (source, target) = graph2.edge_endpoints(edge.id()).expect("edge not found");
@@ -65,12 +86,106 @@ where
     }
 }
 
+/// graphs are the equal, down to graph indices
+/// this is a strict notion of graph equivalence:
+//
+/// * Requires equal node and edge indices, equal weights
+/// * Does not require: edge for node order
+pub fn assert_stable_graph_eq<N, E>(graph1: &StableGraph<N, E>, graph2: &StableGraph<N, E>)
+where
+    N: PartialEq + Debug,
+    E: PartialEq + Debug,
+{
+    assert_eq!(graph1.node_count(), graph2.node_count());
+    assert_eq!(graph1.edge_count(), graph2.edge_count());
+
+    // same node weights
+    assert_iter_eq(
+        (0..graph1.node_bound()).map(|i| graph1.node_weight(NodeIndex::new(i))),
+        (0..graph2.node_bound()).map(|i| graph2.node_weight(NodeIndex::new(i))),
+    );
+
+    let last_edge_g = graph1.edge_references().next_back();
+    let last_edge_h = graph2.edge_references().next_back();
+
+    assert_eq!(last_edge_g.is_some(), last_edge_h.is_some());
+
+    if let (Some(lg), Some(lh)) = (last_edge_g, last_edge_h) {
+        let lgi = lg.id().index();
+        let lhi = lh.id().index();
+
+        // same edge weigths
+        assert_iter_eq(
+            (0..lgi).map(|i| graph1.edge_weight(EdgeIndex::new(i))),
+            (0..lhi).map(|i| graph2.edge_weight(EdgeIndex::new(i))),
+        );
+    }
+
+    for e1 in graph1.edge_references() {
+        let (a2, b2) = graph2.edge_endpoints(e1.id()).unwrap();
+        assert_eq!(e1.source(), a2);
+        assert_eq!(e1.target(), b2);
+    }
+
+    for index in graph1.node_indices() {
+        let outgoing1: BTreeSet<_> = graph1
+            .neighbors_directed(index, Direction::Outgoing)
+            .collect();
+        let outgoing2: BTreeSet<_> = graph2
+            .neighbors_directed(index, Direction::Outgoing)
+            .collect();
+        assert_eq!(outgoing1, outgoing2);
+
+        let incoming1: BTreeSet<_> = graph1
+            .neighbors_directed(index, Direction::Outgoing)
+            .collect();
+        let incoming2: BTreeSet<_> = graph2
+            .neighbors_directed(index, Direction::Outgoing)
+            .collect();
+        assert_eq!(incoming1, incoming2);
+    }
+}
+
+#[allow(clippy::many_single_char_names)]
 fn example<Ty, Ix>() -> Graph<&'static str, i32, Ty, Ix>
 where
     Ty: EdgeType,
     Ix: IndexType,
 {
     let mut graph = Graph::default();
+
+    let a = graph.add_node("A");
+    let b = graph.add_node("B");
+    let c = graph.add_node("C");
+    let d = graph.add_node("D");
+    let e = graph.add_node("E");
+    let f = graph.add_node("F");
+
+    graph.extend_with_edges([
+        (a, b, 7),
+        (c, a, 9),
+        (a, d, 14),
+        (b, c, 10),
+        (d, c, 2),
+        (d, e, 9),
+        (b, f, 15),
+        (c, f, 11),
+        (e, f, 6),
+    ]);
+
+    // we remove `d` to ensure that holes are handled correctly
+    graph.remove_node(d);
+
+    graph
+}
+
+#[allow(clippy::many_single_char_names)]
+fn example_stable<Ty, Ix>() -> StableGraph<&'static str, i32, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    let mut graph = StableGraph::default();
 
     let a = graph.add_node("A");
     let b = graph.add_node("B");
@@ -130,6 +245,45 @@ fn node_null_edges_null_deserialize() {
     let graph2: DiGraph<(), ()> = DiGraph::deserialize(value).expect("failed to deserialize");
 
     assert_graph_eq(&graph, &graph2);
+}
+
+#[test]
+fn stable_node_str_edges_i32_serialize() {
+    let graph: StableDiGraph<_, _> = example_stable();
+
+    assert_json_snapshot!(&graph);
+}
+
+#[test]
+fn stable_node_str_edges_i32_deserialize() {
+    let graph: StableDiGraph<_, _> =
+        example_stable().map(|_, weight| (*weight).to_owned(), |_, weight| *weight);
+
+    let value = serde_value::to_value(graph.clone()).expect("failed to serialize");
+
+    let graph2: StableDiGraph<String, i32> =
+        StableDiGraph::deserialize(value).expect("failed to deserialize");
+
+    assert_stable_graph_eq(&graph, &graph2);
+}
+
+#[test]
+fn stable_node_null_edges_null_serialize() {
+    let graph: StableDiGraph<(), ()> = example_stable().map(|_, _| (), |_, _| ());
+
+    assert_json_snapshot!(&graph);
+}
+
+#[test]
+fn stable_node_null_edges_null_deserialize() {
+    let graph: StableDiGraph<(), ()> = example_stable().map(|_, _| (), |_, _| ());
+    let value = serde_value::to_value(graph.clone()).expect("failed to serialize");
+    println!("{:#?}", value);
+
+    let graph2: StableDiGraph<(), ()> =
+        StableDiGraph::deserialize(value).expect("failed to deserialize");
+
+    assert_stable_graph_eq(&graph, &graph2);
 }
 
 #[derive(Debug, Copy, Clone)]

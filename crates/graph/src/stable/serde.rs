@@ -91,17 +91,19 @@ where
         )?;
         struct_.serialize_field("edge_property", &EdgeProperty::from_type::<Ty>())?;
 
-        // convert from `Edge<Option<E>, Ix>` to `Option<Edge<E, Ix>>`
-        // in practice is simply wraps it in `Some` if `weight` is `Some`, this makes serialization
-        // easier and will result in the same payload.
+        // Convert from `Edge<Option<E, Ix>>` to `Option<Edge<E, Ix>>`
         let edges_len = edges.len();
         struct_.serialize_field(
             "edges",
             &SerializeIter::new(
                 edges_len,
-                edges
-                    .iter()
-                    .filter_map(|edge| edge.weight.is_some().then_some(edge)),
+                edges.iter().map(|edge| {
+                    edge.weight.as_ref().map(|weight| Edge {
+                        weight,
+                        next: edge.next,
+                        node: edge.node,
+                    })
+                }),
             ),
         )?;
 
@@ -112,7 +114,7 @@ where
 #[derive(Deserialize)]
 #[serde(rename = "Graph")]
 struct RemoteStableGraph<N, E, Ix: IndexType> {
-    nodes: Vec<Node<Option<N>, Ix>>,
+    nodes: Vec<Node<N, Ix>>,
     #[serde(default)]
     node_holes: Vec<NodeIndex<Ix>>,
     edge_property: EdgeProperty,
@@ -173,23 +175,28 @@ where
         }
 
         let total_nodes = nodes.len() + node_holes.len();
-        let mut compact_nodes = nodes.into_iter();
+        let mut compact_nodes = nodes.into_iter().map(|node| Node {
+            weight: Some(node.weight),
+            next: node.next,
+        });
 
         let mut nodes = Vec::with_capacity(total_nodes);
 
         let mut node_pos = 0;
+        for position in &node_holes {
+            let position = position.index();
 
-        for hole_pos in node_holes.iter() {
-            let hole_pos = hole_pos.index();
-            if !(node_pos..total_nodes).contains(&hole_pos) {
-                return Err(InvalidError::Hole { index: hole_pos }).map_err(D::Error::custom);
+            if !(node_pos..total_nodes).contains(&position) {
+                return Err(InvalidError::Hole { index: position }).map_err(D::Error::custom);
             }
-            nodes.extend(compact_nodes.by_ref().take(hole_pos - node_pos));
+
+            nodes.extend(compact_nodes.by_ref().take(position - node_pos));
             nodes.push(Node {
                 weight: None,
                 next: [EdgeIndex::end(); 2],
             });
-            node_pos = hole_pos + 1;
+
+            node_pos = position + 1;
             debug_assert_eq!(nodes.len(), node_pos);
         }
 
