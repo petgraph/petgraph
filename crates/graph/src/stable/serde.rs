@@ -24,7 +24,7 @@ struct SerializeIter<T> {
 }
 
 impl<T> SerializeIter<T> {
-    pub fn new(len: usize, iter: T) -> Self {
+    const fn new(len: usize, iter: T) -> Self {
         Self {
             len,
             iter: Cell::new(Some(iter)),
@@ -101,7 +101,7 @@ where
                 edges_len,
                 edges
                     .iter()
-                    .filter_map(|edge| edge.weight.is_some().then(|| edge)),
+                    .filter_map(|edge| edge.weight.is_some().then_some(edge)),
             ),
         )?;
 
@@ -260,6 +260,7 @@ mod tests {
         graph.remove_node(g);
 
         let value = serde_value::to_value(&graph).unwrap();
+        println!("{:#?}", value);
         let graph = StableUnGraph::<i32, ()>::deserialize(value).unwrap();
 
         assert_eq!(graph.node_count(), 3);
@@ -267,7 +268,7 @@ mod tests {
             graph
                 .raw_nodes()
                 .iter()
-                .map(|n| n.weight.as_ref().cloned())
+                .map(|n| n.weight)
                 .collect::<Vec<_>>(),
             vec![None, Some(1), None, None, Some(4), Some(5), None],
         );

@@ -2034,125 +2034,143 @@ where
     }
 }
 
-#[test]
-fn stable_graph() {
-    let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
-    let a = gr.add_node(0);
-    let b = gr.add_node(1);
-    let c = gr.add_node(2);
-    let _ed = gr.add_edge(a, b, 1);
-    println!("{:?}", gr);
-    gr.remove_node(b);
-    println!("{:?}", gr);
-    let d = gr.add_node(3);
-    println!("{:?}", gr);
-    gr.check_free_lists();
-    gr.remove_node(a);
-    gr.check_free_lists();
-    gr.remove_node(c);
-    gr.check_free_lists();
-    println!("{:?}", gr);
-    gr.add_edge(d, d, 2);
-    println!("{:?}", gr);
+#[cfg(test)]
+mod tests {
+    use petgraph_core::{edge::Direction, visit::Dfs};
 
-    let e = gr.add_node(4);
-    gr.add_edge(d, e, 3);
-    println!("{:?}", gr);
-    for neigh in gr.neighbors(d) {
-        println!("edge {:?} -> {:?}", d, neigh);
+    use crate::stable::StableGraph;
+
+    #[test]
+    fn integration() {
+        let mut graph = StableGraph::<_, _>::with_capacity(0, 0);
+        let a = graph.add_node(0);
+        let b = graph.add_node(1);
+        let c = graph.add_node(2);
+
+        graph.add_edge(a, b, 1);
+        graph.remove_node(b);
+
+        let d = graph.add_node(3);
+        graph.check_free_lists();
+
+        graph.remove_node(a);
+        graph.check_free_lists();
+
+        graph.remove_node(c);
+        graph.check_free_lists();
+
+        graph.add_edge(d, d, 2);
+        graph.check_free_lists();
+
+        let e = graph.add_node(4);
+        graph.add_edge(d, e, 3);
+        graph.check_free_lists();
     }
-    gr.check_free_lists();
-}
 
-#[test]
-fn dfs() {
-    use crate::visit::Dfs;
+    #[test]
+    fn dfs() {
+        let mut graph = StableGraph::<_, _>::with_capacity(0, 0);
+        let a = graph.add_node("a");
+        let b = graph.add_node("b");
+        let c = graph.add_node("c");
+        let d = graph.add_node("d");
 
-    let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
-    let a = gr.add_node("a");
-    let b = gr.add_node("b");
-    let c = gr.add_node("c");
-    let d = gr.add_node("d");
-    gr.add_edge(a, b, 1);
-    gr.add_edge(a, c, 2);
-    gr.add_edge(b, c, 3);
-    gr.add_edge(b, d, 4);
-    gr.add_edge(c, d, 5);
-    gr.add_edge(d, b, 6);
-    gr.add_edge(c, b, 7);
-    println!("{:?}", gr);
+        graph.add_edge(a, b, 1);
+        graph.add_edge(a, c, 2);
+        graph.add_edge(b, c, 3);
+        graph.add_edge(b, d, 4);
+        graph.add_edge(c, d, 5);
+        graph.add_edge(d, b, 6);
+        graph.add_edge(c, b, 7);
 
-    let mut dfs = Dfs::new(&gr, a);
-    while let Some(next) = dfs.next(&gr) {
-        println!("dfs visit => {:?}, weight={:?}", next, &gr[next]);
+        let mut dfs = Dfs::new(&graph, a);
+
+        let expected = vec![a, b, c, d];
+        let mut received = vec![];
+
+        while let Some(next) = dfs.next(&graph) {
+            received.push(next);
+        }
+
+        assert_eq!(received, expected);
     }
-}
 
-#[test]
-fn test_retain_nodes() {
-    let mut gr = StableGraph::<_, _>::with_capacity(6, 6);
-    let a = gr.add_node("a");
-    let f = gr.add_node("f");
-    let b = gr.add_node("b");
-    let c = gr.add_node("c");
-    let d = gr.add_node("d");
-    let e = gr.add_node("e");
-    gr.add_edge(a, b, 1);
-    gr.add_edge(a, c, 2);
-    gr.add_edge(b, c, 3);
-    gr.add_edge(b, d, 4);
-    gr.add_edge(c, d, 5);
-    gr.add_edge(d, b, 6);
-    gr.add_edge(c, b, 7);
-    gr.add_edge(d, e, 8);
-    gr.remove_node(f);
+    #[test]
+    fn retain_nodes() {
+        let mut graph = StableGraph::<_, _>::with_capacity(6, 6);
+        let a = graph.add_node("a");
+        let f = graph.add_node("f");
+        let b = graph.add_node("b");
+        let c = graph.add_node("c");
+        let d = graph.add_node("d");
+        let e = graph.add_node("e");
 
-    assert_eq!(gr.node_count(), 5);
-    assert_eq!(gr.edge_count(), 8);
-    gr.retain_nodes(|frozen_gr, ix| frozen_gr[ix] >= "c");
-    assert_eq!(gr.node_count(), 3);
-    assert_eq!(gr.edge_count(), 2);
+        graph.add_edge(a, b, 1);
+        graph.add_edge(a, c, 2);
+        graph.add_edge(b, c, 3);
+        graph.add_edge(b, d, 4);
+        graph.add_edge(c, d, 5);
+        graph.add_edge(d, b, 6);
+        graph.add_edge(c, b, 7);
+        graph.add_edge(d, e, 8);
 
-    gr.check_free_lists();
-}
+        graph.remove_node(f);
+        graph.check_free_lists();
 
-#[test]
-fn extend_with_edges() {
-    let mut gr = StableGraph::<_, _>::default();
-    let a = gr.add_node("a");
-    let b = gr.add_node("b");
-    let c = gr.add_node("c");
-    let _d = gr.add_node("d");
-    gr.remove_node(a);
-    gr.remove_node(b);
-    gr.remove_node(c);
+        assert_eq!(graph.node_count(), 5);
+        assert_eq!(graph.edge_count(), 8);
 
-    gr.extend_with_edges(vec![(0, 1, ())]);
-    assert_eq!(gr.node_count(), 3);
-    assert_eq!(gr.edge_count(), 1);
-    gr.check_free_lists();
+        graph.retain_nodes(|frozen, ix| frozen[ix] >= "c");
 
-    gr.extend_with_edges(vec![(5, 1, ())]);
-    assert_eq!(gr.node_count(), 4);
-    assert_eq!(gr.edge_count(), 2);
-    gr.check_free_lists();
-}
+        assert_eq!(graph.node_count(), 3);
+        assert_eq!(graph.edge_count(), 2);
 
-#[test]
-fn test_reverse() {
-    let mut gr = StableGraph::<_, _>::default();
-    let a = gr.add_node("a");
-    let b = gr.add_node("b");
+        graph.check_free_lists();
+    }
 
-    gr.add_edge(a, b, 0);
+    #[test]
+    fn extend_with_edges() {
+        let mut graph = StableGraph::<_, _>::default();
+        let a = graph.add_node("a");
+        let b = graph.add_node("b");
+        let c = graph.add_node("c");
+        graph.add_node("d");
 
-    let mut reversed_gr = gr.clone();
-    reversed_gr.reverse();
+        graph.remove_node(a);
+        graph.remove_node(b);
+        graph.remove_node(c);
 
-    for i in gr.node_indices() {
-        itertools::assert_equal(
-            gr.edges_directed(i, Direction::Incoming),
-            reversed_gr.edges(i),
-        );
+        graph.extend_with_edges(vec![(0, 1, ())]);
+        assert_eq!(graph.node_count(), 3);
+        assert_eq!(graph.edge_count(), 1);
+        graph.check_free_lists();
+
+        graph.extend_with_edges(vec![(5, 1, ())]);
+        assert_eq!(graph.node_count(), 4);
+        assert_eq!(graph.edge_count(), 2);
+        graph.check_free_lists();
+    }
+
+    #[test]
+    fn reverse() {
+        let mut graph = StableGraph::<_, _>::default();
+        let a = graph.add_node("a");
+        let b = graph.add_node("b");
+
+        graph.add_edge(a, b, 0);
+
+        let mut reverse = graph.clone();
+        reverse.reverse();
+
+        for i in graph.node_indices() {
+            assert_eq!(
+                graph
+                    .edges_directed(i, Direction::Incoming)
+                    .collect::<Vec<_>>(),
+                reverse
+                    .edges_directed(i, Direction::Outgoing)
+                    .collect::<Vec<_>>()
+            );
+        }
     }
 }

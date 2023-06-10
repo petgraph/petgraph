@@ -16,6 +16,7 @@ petgraph-proptest = { workspace = true, optional = true }
 # Used for documentation examples
 petgraph.workspace = true
 serde-value = "0.7.0"
+insta = { version = "1.29.0", features = ['serde', 'json'] }
 
 [features]
 default = ["std", "stable"]
