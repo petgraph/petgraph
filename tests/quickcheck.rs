@@ -198,14 +198,6 @@ quickcheck! {
     }
 }
 
-#[test]
-fn graph_condensation_acyclic() {
-    fn prop(g: Graph<(), ()>) -> bool {
-        !is_cyclic_directed(&condensation(g, /* make_acyclic */ true))
-    }
-    quickcheck::quickcheck(prop as fn(_) -> bool);
-}
-
 #[derive(Debug, Clone)]
 struct DAG<N: Default + Clone + Send + 'static>(Graph<N, ()>);
 

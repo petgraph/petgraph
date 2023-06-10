@@ -134,8 +134,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use petgraph_core::visit::EdgeRef;
+    use petgraph_core::{edge::Directed, visit::EdgeRef};
     use petgraph_graph::{Graph, NodeIndex};
+    use proptest::prelude::*;
+
+    use crate::cycles::is_cyclic_directed;
 
     /// Sets up the example graph
     ///
@@ -249,5 +252,15 @@ mod tests {
         assert_eq!(condensed.edges(a).filter(|e| e.target() == a).count(), 2);
         assert_eq!(condensed.edges(b).filter(|e| e.target() == b).count(), 4);
         assert_eq!(condensed.edges(c).filter(|e| e.target() == c).count(), 3);
+    }
+
+    proptest! {
+        #[test]
+        fn condensation_is_acyclic(graph in any::<Graph<(), (), Directed, u8>>()) {
+            let condensed = super::condensation(graph, true);
+
+            let is_cylic = is_cyclic_directed(&condensed);
+            assert!(!is_cylic);
+        }
     }
 }
