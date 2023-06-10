@@ -5,8 +5,11 @@
 //!
 //! This is basically a 1:1 port of the tests from the `petgraph` crate (which already used
 //! integration tests)
-use petgraph::Graph;
-use petgraph_core::visit::{Dfs, Walker};
+use petgraph::{graphmap::GraphMap, Graph};
+use petgraph_core::{
+    edge::Directed,
+    visit::{Dfs, Walker},
+};
 
 /// Graph:
 ///
@@ -168,4 +171,54 @@ fn order_deep() {
     let expected = vec![b, c, g, h, d, e, f];
 
     assert_eq!(received, expected);
+}
+
+/// Test against `GraphMap`, which (unlike any other built-in graph) does not use `NodeIndex` as
+/// node identifiers.
+#[test]
+fn graphmap() {
+    let mut graph = GraphMap::<_, _, Directed>::new();
+
+    let a = graph.add_node("A");
+    let b = graph.add_node("B");
+    let c = graph.add_node("C");
+    let d = graph.add_node("D");
+
+    // disconnected node shouldn't be included in the DFS
+    graph.add_node("E");
+
+    graph.add_edge(a, b, "A → B");
+    graph.add_edge(a, c, "A → C");
+    graph.add_edge(b, c, "B → C");
+    graph.add_edge(b, d, "B → D");
+
+    let mut dfs = Dfs::new(&graph, a);
+    let mut order = vec![];
+
+    while let Some(node) = dfs.next(&graph) {
+        order.push(node);
+    }
+
+    assert_eq!(order, vec![a, c, b, d]);
+}
+
+#[test]
+fn graphmap_disconnected() {
+    let mut graph = GraphMap::<_, _, Directed>::new();
+
+    let a = graph.add_node("A");
+    let b = graph.add_node("B");
+
+    let c = graph.add_node("C");
+
+    graph.add_edge(a, b, "A → B");
+
+    let mut dfs = Dfs::new(&graph, c);
+    let mut order = vec![];
+
+    while let Some(node) = dfs.next(&graph) {
+        order.push(node);
+    }
+
+    assert_eq!(order, vec![c]);
 }
