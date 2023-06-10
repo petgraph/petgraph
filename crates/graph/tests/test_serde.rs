@@ -97,6 +97,7 @@ where
 /// # Panics
 ///
 /// Panics if the graphs are not equal.
+#[cfg(feature = "stable")]
 pub fn assert_stable_graph_eq<N, E, Ix>(
     graph1: &StableGraph<N, E, Directed, Ix>,
     graph2: &StableGraph<N, E, Directed, Ix>,
@@ -189,6 +190,7 @@ where
 }
 
 #[allow(clippy::many_single_char_names)]
+#[cfg(feature = "stable")]
 fn example_stable<Ty, Ix>() -> StableGraph<&'static str, i32, Ty, Ix>
 where
     Ty: EdgeType,
@@ -257,6 +259,7 @@ fn node_null_edges_null_deserialize() {
 }
 
 #[test]
+#[cfg(feature = "stable")]
 fn stable_node_str_edges_i32_serialize() {
     let graph: StableDiGraph<_, _> = example_stable();
 
@@ -264,6 +267,7 @@ fn stable_node_str_edges_i32_serialize() {
 }
 
 #[test]
+#[cfg(feature = "stable")]
 fn stable_node_str_edges_i32_deserialize() {
     let graph: StableDiGraph<_, _> =
         example_stable().map(|_, weight| (*weight).to_owned(), |_, weight| *weight);
@@ -277,6 +281,7 @@ fn stable_node_str_edges_i32_deserialize() {
 }
 
 #[test]
+#[cfg(feature = "stable")]
 fn stable_node_null_edges_null_serialize() {
     let graph: StableDiGraph<(), ()> = example_stable().map(|_, _| (), |_, _| ());
 
@@ -284,10 +289,10 @@ fn stable_node_null_edges_null_serialize() {
 }
 
 #[test]
+#[cfg(feature = "stable")]
 fn stable_node_null_edges_null_deserialize() {
     let graph: StableDiGraph<(), ()> = example_stable().map(|_, _| (), |_, _| ());
     let value = serde_value::to_value(graph.clone()).expect("failed to serialize");
-    println!("{:#?}", value);
 
     let graph2: StableDiGraph<(), ()> =
         StableDiGraph::deserialize(value).expect("failed to deserialize");
@@ -491,6 +496,7 @@ proptest! {
     }
 
     #[test]
+    #[cfg(feature = "stable")]
     fn roundtrip_stable_graph(graph in any::<StableGraph<i8, i8, Directed, u8>>()) {
         let value = serde_value::to_value(graph.clone()).expect("failed to serialize");
         let deserialized = StableGraph::<i8, i8, Directed, u8>::deserialize(value).expect("failed to deserialize");
@@ -498,9 +504,20 @@ proptest! {
         assert_stable_graph_eq(&graph, &deserialized);
     }
 
+    #[test]
+    fn roundtrip_enlarge(graph in any::<Graph<i8, i8, Directed, u8>>()) {
+        let value = serde_value::to_value(graph.clone()).expect("failed to serialize");
+        let deserialized = Graph::<i8, i8, Directed, u16>::deserialize(value).expect("failed to deserialize");
+
+        let value = serde_value::to_value(deserialized).expect("failed to serialize");
+        let reserialized = Graph::<i8, i8, Directed, u8>::deserialize(value).expect("failed to deserialize");
+
+        assert_graph_eq(&graph, &reserialized);
+    }
+
     // We cannot do graph -> stable-graph -> graph, as it is format dependent.
     // Some formats encode `Option<T>` differently to `T`/`null`. (Example: serde-value).
-    // While possible for `serde-json` (as `T` / `null` is equivalent to `Option<T>`),
+    // While possible for `serde-json` (as `T` / `null` are equivalent to `Option<T>`),
     // it is not for e.g. `bincode`.
-    // Due to the fact that this a quirk of the data-format no property-based test is used.
+    // Due to this fact no property-based test is used.
 }
