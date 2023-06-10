@@ -3,7 +3,7 @@ use petgraph_core::{
     edge::Direction,
     visit::{
         EdgeFiltered, EdgeRef, IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered,
-        Reversed,
+        Reversed, VisitMap, Visitable,
     },
 };
 
@@ -168,4 +168,21 @@ fn node_filtered_node_identifiers() {
     let expected = vec![a, c, d];
 
     assert_eq!(received, expected);
+}
+
+#[test]
+fn node_filtered_by_fixed_bit_set() {
+    let mut graph = Graph::<_, ()>::new();
+
+    let a = graph.add_node("A");
+    let b = graph.add_node("B");
+    let c = graph.add_node("C");
+
+    let mut map = graph.visit_map();
+    map.visit(a);
+    map.visit(c);
+
+    let filtered = NodeFiltered(&graph, map);
+
+    assert_eq!(filtered.node_identifiers().collect::<Vec<_>>(), vec![a, c]);
 }
