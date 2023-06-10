@@ -32,7 +32,7 @@ pub(crate) mod tests {
 
     // A graph is topologically sorted if for every edge `(u, v)`, `u` comes before `v` in the
     // ordering.
-    pub(crate) fn assert_topologically_sorted<N, E, Ix>(
+    pub fn assert_topologically_sorted<N, E, Ix>(
         gr: &Graph<N, E, Directed, Ix>,
         order: &[NodeIndex<Ix>],
     ) where

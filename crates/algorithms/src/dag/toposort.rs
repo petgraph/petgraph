@@ -154,6 +154,7 @@ mod tests {
 
         let order = super::toposort(&graph, None).expect("graph should be acyclic");
 
+        assert_eq!(order.len(), 4);
         assert_topologically_sorted(&graph, &order);
     }
 
