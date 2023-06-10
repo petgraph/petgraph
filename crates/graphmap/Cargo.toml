@@ -15,6 +15,9 @@ petgraph-proptest = { workspace = true, default-features = false, optional = tru
 proptest = { workspace = true, default-features = false, optional = true }
 
 [dev-dependencies]
+serde = { version = "1.0.130", features = ["derive"] }
+serde-value = "0.7.0"
+insta = { version = "1.29.0", features = ['serde', 'json'] }
 
 [features]
 convert = ["petgraph-graph"]
