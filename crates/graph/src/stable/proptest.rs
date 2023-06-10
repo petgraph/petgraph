@@ -1,11 +1,14 @@
 use core::fmt::Debug;
+use std::{collections::BTreeSet, sync::Arc};
 
 use petgraph_core::{edge::EdgeType, index::IndexType};
 use petgraph_proptest::default::graph_strategy;
 use proptest::{
     arbitrary::Arbitrary,
-    collection::btree_set,
+    bits::BitSetLike,
+    collection::{btree_set, SizeRange},
     prelude::{BoxedStrategy, Just, Strategy},
+    strategy::{LazyJust, TupleUnion},
 };
 
 use crate::{stable::StableGraph, NodeIndex};
@@ -31,20 +34,37 @@ where
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
-        graph_strategy(true, false, 0..=Ix::MAX.as_usize(), None)
-            .prop_flat_map(|graph: Self| {
-                let nodes = graph.node_count();
+        // `MAX` is not a valid node index.
+        graph_strategy(
+            true,
+            false,
+            0..Ix::MAX.as_usize(),
+            Some(Arc::new(|max| {
+                SizeRange::new(0..=usize::min(max.pow(2), Ix::MAX.as_usize() - 1))
+            })),
+        )
+        .prop_flat_map(|graph: Self| {
+            let nodes = graph.node_count();
+            let is_empty = nodes == 0;
 
-                // select a batch of random indices to remove (unique)
-                (Just(graph), btree_set(0..nodes, 0..nodes))
-            })
-            .prop_map(|(mut graph, remove)| {
-                for index in remove {
-                    graph.remove_node(NodeIndex(Ix::from_usize(index)));
-                }
+            let removed_nodes = TupleUnion::new((
+                (u32::from(is_empty), Arc::new(LazyJust::new(BTreeSet::new))),
+                (
+                    u32::from(!is_empty),
+                    Arc::new(btree_set(0..nodes.len(), 0..nodes.len())),
+                ),
+            ));
 
-                graph
-            })
-            .boxed()
+            // select a batch of random indices to remove (unique)
+            (Just(graph), removed_nodes)
+        })
+        .prop_map(|(mut graph, remove)| {
+            for index in remove {
+                graph.remove_node(NodeIndex(Ix::from_usize(index)));
+            }
+
+            graph
+        })
+        .boxed()
     }
 }

@@ -12,6 +12,8 @@ use petgraph_graph::{
     stable::{StableDiGraph, StableGraph},
     DiGraph, EdgeIndex, Graph, NodeIndex,
 };
+#[cfg(feature = "proptest")]
+use proptest::prelude::*;
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::json;
 
@@ -22,8 +24,8 @@ where
     I::Item: PartialEq<J::Item> + Debug,
     J::Item: Debug,
 {
-    let mut iter1 = iter1.into_iter();
-    let mut iter2 = iter2.into_iter();
+    let iter1 = iter1.into_iter();
+    let iter2 = iter2.into_iter();
 
     for (item1, item2) in iter1.zip(iter2) {
         assert_eq!(item1, item2);
@@ -91,10 +93,17 @@ where
 //
 /// * Requires equal node and edge indices, equal weights
 /// * Does not require: edge for node order
-pub fn assert_stable_graph_eq<N, E>(graph1: &StableGraph<N, E>, graph2: &StableGraph<N, E>)
-where
+///
+/// # Panics
+///
+/// Panics if the graphs are not equal.
+pub fn assert_stable_graph_eq<N, E, Ix>(
+    graph1: &StableGraph<N, E, Directed, Ix>,
+    graph2: &StableGraph<N, E, Directed, Ix>,
+) where
     N: PartialEq + Debug,
     E: PartialEq + Debug,
+    Ix: IndexType,
 {
     assert_eq!(graph1.node_count(), graph2.node_count());
     assert_eq!(graph1.edge_count(), graph2.edge_count());
@@ -110,21 +119,21 @@ where
 
     assert_eq!(last_edge_g.is_some(), last_edge_h.is_some());
 
-    if let (Some(lg), Some(lh)) = (last_edge_g, last_edge_h) {
-        let lgi = lg.id().index();
-        let lhi = lh.id().index();
+    if let (Some(edge_graph1), Some(edge_graph2)) = (last_edge_g, last_edge_h) {
+        let last_edge_graph1_index = edge_graph1.id().index();
+        let last_edge_graph2_index = edge_graph2.id().index();
 
         // same edge weigths
         assert_iter_eq(
-            (0..lgi).map(|i| graph1.edge_weight(EdgeIndex::new(i))),
-            (0..lhi).map(|i| graph2.edge_weight(EdgeIndex::new(i))),
+            (0..last_edge_graph1_index).map(|i| graph1.edge_weight(EdgeIndex::new(i))),
+            (0..last_edge_graph2_index).map(|i| graph2.edge_weight(EdgeIndex::new(i))),
         );
     }
 
-    for e1 in graph1.edge_references() {
-        let (a2, b2) = graph2.edge_endpoints(e1.id()).unwrap();
-        assert_eq!(e1.source(), a2);
-        assert_eq!(e1.target(), b2);
+    for edge_graph1 in graph1.edge_references() {
+        let (source, target) = graph2.edge_endpoints(edge_graph1.id()).unwrap();
+        assert_eq!(edge_graph1.source(), source);
+        assert_eq!(edge_graph1.target(), target);
     }
 
     for index in graph1.node_indices() {
@@ -469,4 +478,35 @@ fn error_on_too_many_edges() {
         error.to_string(),
         "invalid value: edge length `256` exceeds maximum of `255`"
     );
+}
+
+#[cfg(feature = "proptest")]
+proptest! {
+    #[test]
+    fn roundtrip(graph in any::<Graph<i8, i8, Directed, u8>>()) {
+        let value = serde_value::to_value(graph.clone()).expect("failed to serialize");
+        let deserialized = Graph::<i8, i8, Directed, u8>::deserialize(value).expect("failed to deserialize");
+
+        assert_graph_eq(&graph, &deserialized);
+    }
+
+    #[test]
+    fn roundtrip_stable_graph(graph in any::<StableGraph<i8, i8, Directed, u8>>()) {
+        let value = serde_value::to_value(graph.clone()).expect("failed to serialize");
+        let deserialized = StableGraph::<i8, i8, Directed, u8>::deserialize(value).expect("failed to deserialize");
+
+        assert_stable_graph_eq(&graph, &deserialized);
+    }
+
+    // TODO: this is an implementation detail that only works for JSON
+    #[test]
+    fn roundtrip_graph_to_stable_to_graph(graph in any::<Graph<i8, u8, Directed, u8>>()) {
+        let value = serde_value::to_value(graph.clone()).expect("failed to serialize");
+        let deserialized = StableGraph::<i8, u8, Directed, u8>::deserialize(value).expect("failed to deserialize");
+
+        let value = serde_value::to_value(deserialized).expect("failed to serialize");
+        let reserialized = Graph::<i8, u8, Directed, u8>::deserialize(value).expect("failed to serialize");
+
+        assert_graph_eq(&graph, &reserialized);
+    }
 }

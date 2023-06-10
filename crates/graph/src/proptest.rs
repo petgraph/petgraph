@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, sync::Arc};
+use alloc::sync::Arc;
 use core::fmt::Debug;
 
 use petgraph_core::{edge::EdgeType, index::IndexType};
@@ -29,13 +29,14 @@ where
     // TODO: revisit once impl_trait_in_assoc_type is stable. (https://github.com/rust-lang/rust/issues/63063)
     type Strategy = BoxedStrategy<Self>;
 
+    // `Graph` has a restriction, that the last node index cannot be used.
     fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
         graph_strategy(
             true,
             false,
-            0..=Ix::MAX.as_usize(),
+            0..Ix::MAX.as_usize(),
             Some(Arc::new(|max| {
-                SizeRange::new(0..=usize::min(max.pow(2), Ix::MAX.as_usize()))
+                SizeRange::new(0..=usize::min(max.pow(2), Ix::MAX.as_usize() - 1))
             })),
         )
         .boxed()
