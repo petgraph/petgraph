@@ -756,10 +756,6 @@ fn isomorphism_graph_shuffled_nodes()
         })
 }
 
-// pre 0.7.0 there were also `isomorphism_1` and `isomorphism_modify`. These tests were excluded as
-// they are incomplete and didn't serve a concrete purpose that justifies property-based testing.
-// `isomorphism_1` would take a random (small) graph and shuffle the nodes (but not the edges) and
-// then run the isomorphism check.
 proptest! {
     #[test]
     fn self_isomorphic(graph in graph_without_parallel_edges()) {
