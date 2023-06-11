@@ -2,6 +2,9 @@
 //! graph.
 #![cfg(feature = "proptest")]
 
+mod common;
+
+use common::proptest::{assert_edges_eq, assert_edges_without_weight_eq, assert_nodes_eq};
 use petgraph_core::{
     edge::{Directed, EdgeType, Undirected},
     visit::{EdgeRef, IntoEdgeReferences, IntoNodeReferences, NodeRef},
@@ -293,5 +296,56 @@ proptest! {
     #[test]
     fn remove_edge_add_edge_undirected((mut graph, edge, create) in graph_and_edge_and_nodes::<Undirected>()) {
         remove_edge_add_edge(&mut graph, edge, create);
+    }
+}
+
+proptest! {
+    #[test]
+    fn map_identity_directed(graph in any::<StableGraph<u8, u8, Directed, u8>>()) {
+        let graph2 = graph.map(
+            |_, &weight| weight,
+            |_, &weight| weight,
+        );
+
+        assert_nodes_eq(&graph, &graph2)?;
+        assert_edges_eq(&graph, &graph2)?;
+        assert_edges_without_weight_eq(&graph, &graph2)?;
+    }
+
+
+    #[test]
+    fn map_identity_undirected(graph in any::<StableGraph<u8, u8, Undirected, u8>>()) {
+        let graph2 = graph.map(
+            |_, &weight| weight,
+            |_, &weight| weight,
+        );
+
+        assert_nodes_eq(&graph, &graph2)?;
+        assert_edges_eq(&graph, &graph2)?;
+        assert_edges_without_weight_eq(&graph, &graph2)?;
+    }
+
+    #[test]
+    fn filter_map_identity_directed(graph in any::<StableGraph<u8, u8, Directed, u8>>()) {
+        let graph2 = graph.filter_map(
+            |_, &weight| Some(weight),
+            |_, &weight| Some(weight),
+        );
+
+        assert_nodes_eq(&graph, &graph2)?;
+        assert_edges_eq(&graph, &graph2)?;
+        assert_edges_without_weight_eq(&graph, &graph2)?;
+    }
+
+    #[test]
+    fn filter_map_identity_undirected(graph in any::<StableGraph<u8, u8, Undirected, u8>>()) {
+        let graph2 = graph.filter_map(
+            |_, &weight| Some(weight),
+            |_, &weight| Some(weight),
+        );
+
+        assert_nodes_eq(&graph, &graph2)?;
+        assert_edges_eq(&graph, &graph2)?;
+        assert_edges_without_weight_eq(&graph, &graph2)?;
     }
 }
