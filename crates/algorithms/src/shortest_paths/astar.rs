@@ -460,10 +460,10 @@ mod tests {
 
             match astar_path {
                 None => {
-                    assert_eq!(dijkstra_path.get(&end), None);
+                    prop_assert_eq!(dijkstra_path.get(&end), None);
                 }
                 Some((distance, _)) => {
-                    assert_eq!(dijkstra_path.get(&end), Some(&distance));
+                    prop_assert_eq!(dijkstra_path.get(&end), Some(&distance));
                 }
             }
         }

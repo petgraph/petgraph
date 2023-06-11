@@ -327,11 +327,11 @@ proptest! {
     #[test]
     fn remove_edge_undirected((mut graph, edge) in graph_and_edge::<Undirected>()) {
         let (a, b) = graph.edge_endpoints(edge).expect("edge should exist");
-        assert_eq!(graph.find_edge(b, a), Some(edge));
+        prop_assert_eq!(graph.find_edge(b, a), Some(edge));
 
         remove_edge(&mut graph, edge);
 
-        assert_eq!(graph.find_edge(b, a), None);
-        assert!(!graph.neighbors(b).any(|node| node == a));
+        prop_assert_eq!(graph.find_edge(b, a), None);
+        prop_assert!(!graph.neighbors(b).any(|node| node == a));
     }
 }

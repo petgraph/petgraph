@@ -246,7 +246,7 @@ mod tests {
                 let ar = u.find(a);
                 let br = u.find(b);
 
-                assert_eq!(ar != br, u.union(a, b));
+                prop_assert_eq!(ar != br, u.union(a, b));
             }
         }
 
@@ -258,7 +258,7 @@ mod tests {
                 let ar = u.find(a);
                 let br = u.find(b);
 
-                assert_eq!(ar != br, u.union(a, b));
+                prop_assert_eq!(ar != br, u.union(a, b));
             }
         }
     }

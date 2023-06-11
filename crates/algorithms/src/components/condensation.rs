@@ -260,7 +260,7 @@ mod tests {
             let condensed = super::condensation(graph, true);
 
             let is_cylic = is_cyclic_directed(&condensed);
-            assert!(!is_cylic);
+            prop_assert!(!is_cylic);
         }
     }
 }

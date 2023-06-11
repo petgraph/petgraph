@@ -759,21 +759,21 @@ fn isomorphism_graph_shuffled_nodes()
 proptest! {
     #[test]
     fn self_isomorphic(graph in graph_without_parallel_edges()) {
-        assert!(is_isomorphic(&graph, &graph));
+        prop_assert!(is_isomorphic(&graph, &graph));
     }
 
     #[test]
     fn change_single_node((graph, other) in isomorphism_graph_changed_node()) {
-        assert!(!is_isomorphic_matching(&graph, &other, PartialEq::eq, PartialEq::eq));
+        prop_assert!(!is_isomorphic_matching(&graph, &other, PartialEq::eq, PartialEq::eq));
     }
 
     #[test]
     fn change_single_edge((graph, other) in isomorphism_graph_changed_edge()) {
-        assert!(!is_isomorphic_matching(&graph, &other, PartialEq::eq, PartialEq::eq));
+        prop_assert!(!is_isomorphic_matching(&graph, &other, PartialEq::eq, PartialEq::eq));
     }
 
     #[test]
     fn shuffle_nodes((graph, other) in isomorphism_graph_shuffled_nodes()) {
-        assert!(is_isomorphic_matching(&graph, &other, PartialEq::eq, PartialEq::eq));
+        prop_assert!(is_isomorphic_matching(&graph, &other, PartialEq::eq, PartialEq::eq));
     }
 }

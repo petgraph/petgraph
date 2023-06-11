@@ -244,7 +244,7 @@ mod tests {
         fn no_cycles_directed(graph in any::<DiGraph<(), u8, u8>>()) {
             let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
 
-            assert!(!is_cyclic_undirected(&mst));
+            prop_assert!(!is_cyclic_undirected(&mst));
         }
 
         /// Verify the assumption that the nodes of a minimum spanning tree always include all nodes.
@@ -254,7 +254,7 @@ mod tests {
 
             let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
 
-            assert_eq!(mst.node_count(), nodes);
+            prop_assert_eq!(mst.node_count(), nodes);
         }
 
         /// Verify the assumption that every minimum spanning tree must not be cyclic.
@@ -262,7 +262,7 @@ mod tests {
         fn no_cycles_undirected(graph in any::<UnGraph<(), u8, u8>>()) {
             let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
 
-            assert!(!is_cyclic_undirected(&mst));
+            prop_assert!(!is_cyclic_undirected(&mst));
         }
 
         /// Verify the assumption that the nodes of a minimum spanning tree always include all nodes.
@@ -272,7 +272,7 @@ mod tests {
 
             let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
 
-            assert_eq!(mst.node_count(), nodes);
+            prop_assert_eq!(mst.node_count(), nodes);
         }
     }
 }

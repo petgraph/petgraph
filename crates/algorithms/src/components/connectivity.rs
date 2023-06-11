@@ -158,7 +158,7 @@ mod tests {
         fn invariant_over_direction(directed in any::<Graph<(), (), Directed, u8>>()) {
             let undirected = directed.clone().into_edge_type::<petgraph_core::edge::Undirected>();
 
-            assert_eq!(
+            prop_assert_eq!(
                 super::connected_components(&directed),
                 super::connected_components(&undirected)
             );
