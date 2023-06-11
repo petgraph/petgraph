@@ -210,9 +210,14 @@ pub mod generator {
     pub use petgraph_generate::*;
 }
 
+#[deprecated(since = "0.7.0", note = "use `core` instead of direct imports")]
 pub use petgraph_core::{
     data,
     deprecated::IntoWeightedEdge,
     edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
     visit,
 };
+
+pub mod core {
+    pub use petgraph_core::*;
+}

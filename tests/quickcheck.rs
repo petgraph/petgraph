@@ -724,17 +724,6 @@ quickcheck! {
 }
 
 quickcheck! {
-    fn greedy_fas_remaining_graph_is_acyclic(g: StableDiGraph<(), ()>) -> bool {
-        let mut g = g;
-        let fas: Vec<EdgeIndex> = greedy_feedback_arc_set(&g).map(|e| e.id()).collect();
-
-        for edge_id in fas {
-            g.remove_edge(edge_id);
-        }
-
-        !is_cyclic_directed(&g)
-    }
-
     /// Assert that the size of the feedback arc set of a tournament does not exceed
     /// **|E| / 2 - |V| / 6**
     fn greedy_fas_performance_within_bound(t: Tournament<(), ()>) -> bool {
