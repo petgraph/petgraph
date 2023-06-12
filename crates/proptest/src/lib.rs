@@ -8,7 +8,7 @@
 
 extern crate alloc;
 
+pub mod binary;
 pub mod dag;
 pub mod default;
-pub mod tournament;
 pub mod vtable;

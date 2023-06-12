@@ -1,5 +1,5 @@
 use alloc::{boxed::Box, sync::Arc};
-use core::{fmt::Debug, ops::Range};
+use core::fmt::Debug;
 
 use petgraph_core::{
     data::{Build, Create},
@@ -7,7 +7,6 @@ use petgraph_core::{
 };
 use proptest::{
     arbitrary::{any, Arbitrary},
-    prelude::Just,
     strategy::{BoxedStrategy, LazyJust, Strategy, TupleUnion, Union},
 };
 
@@ -70,7 +69,7 @@ impl<N, E> TreeNode<N, E> {
     }
 }
 
-pub fn graph_tournament_strategy<G>(
+pub fn graph_binary_strategy<G>(
     max_depth: Option<u32>,
     max_nodes: Option<u32>,
 ) -> impl Strategy<Value = G>
@@ -79,7 +78,7 @@ where
     G::NodeWeight: Arbitrary + Clone + Debug + 'static,
     G::EdgeWeight: Arbitrary + Debug + 'static,
 {
-    let depth = max_depth.unwrap_or(8);
+    let depth = max_depth.unwrap_or(32);
     let nodes = max_nodes.unwrap_or(256);
 
     any::<G::NodeWeight>()
