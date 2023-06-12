@@ -30,20 +30,23 @@ where
 {
     vec(any::<NodeWeight>(), node_range.into())
         .prop_flat_map(|nodes| {
-            // generate a vec of all possible mappings between two nodes
-            let endpoints: Vec<_> = (0..nodes.len())
-                .permutations(2)
-                .filter(|endpoints| endpoints[0] < endpoints[1])
-                .collect();
+            // generate a vec of all possible mappings between two nodes and filter out any
+            // potential parallel and self-loop edges
+            // `.combinators()` generates all possible pairs of nodes, regardless of order, this is
+            // exactly what we need, it also omits the diagonal (self-loops).
+            let endpoints: Vec<_> = (0..nodes.len()).combinations(2).collect();
 
             // generate the direction of all edges (boolean)
             let direction = vec(any::<bool>(), endpoints.len());
+            // generate the weight of all edges
             let weights = vec(any::<EdgeWeight>(), endpoints.len());
 
             (
                 Just(nodes),
                 (Just(endpoints), direction, weights).prop_map(
                     move |(endpoints, direction, weight)| {
+                        // zip together all 3 separate values, which are all guaranteed to have the
+                        // same length
                         let edges = endpoints
                             .into_iter()
                             .zip(direction.into_iter())
