@@ -4,11 +4,12 @@
 //! all `Arbitrary` impls.
 //!
 //! In the future more strategies will be added.
-#![no_std]
+// #![no_std]
 
 extern crate alloc;
 
 pub mod binary;
 pub mod dag;
 pub mod default;
+pub mod tournament;
 pub mod vtable;

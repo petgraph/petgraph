@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 petgraph-core = { workspace = true, features = ['alloc'] }
 proptest = { workspace = true, features = ['alloc'] }
+itertools = "0.10.5" # remove if possible
 
 [dev-dependencies]
 petgraph-graph = { workspace = true, features = ['proptest'] }
