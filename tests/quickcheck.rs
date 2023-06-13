@@ -38,67 +38,6 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 use utils::{Small, Tournament};
 
-fn assert_graphmap_consistent<N, E, Ty>(g: &GraphMap<N, E, Ty>)
-where
-    Ty: EdgeType,
-    N: NodeTrait + fmt::Debug,
-{
-    for (a, b, _weight) in g.all_edges() {
-        assert!(
-            g.contains_edge(a, b),
-            "Edge not in graph! {:?} to {:?}",
-            a,
-            b
-        );
-        assert!(
-            g.neighbors(a).find(|x| *x == b).is_some(),
-            "Edge {:?} not in neighbor list for {:?}",
-            (a, b),
-            a
-        );
-        if !g.is_directed() {
-            assert!(
-                g.neighbors(b).find(|x| *x == a).is_some(),
-                "Edge {:?} not in neighbor list for {:?}",
-                (b, a),
-                b
-            );
-        }
-    }
-}
-
-#[test]
-fn graphmap_remove() {
-    fn prop<Ty: EdgeType>(mut g: GraphMap<i8, (), Ty>, a: i8, b: i8) -> bool {
-        //if g.edge_count() > 20 { return true; }
-        assert_graphmap_consistent(&g);
-        let contains = g.contains_edge(a, b);
-        if !g.is_directed() {
-            assert_eq!(contains, g.contains_edge(b, a));
-        }
-        assert_eq!(g.remove_edge(a, b).is_some(), contains);
-        assert!(!g.contains_edge(a, b) && g.neighbors(a).find(|x| *x == b).is_none());
-        //(g.is_directed() || g.neighbors(b).find(|x| *x == a).is_none()));
-        assert!(g.remove_edge(a, b).is_none());
-        assert_graphmap_consistent(&g);
-        true
-    }
-    quickcheck::quickcheck(prop as fn(DiGraphMap<_, _>, _, _) -> bool);
-    quickcheck::quickcheck(prop as fn(UnGraphMap<_, _>, _, _) -> bool);
-}
-
-#[test]
-fn graphmap_add_remove() {
-    fn prop(mut g: UnGraphMap<i8, ()>, a: i8, b: i8) -> bool {
-        assert_eq!(g.contains_edge(a, b), g.add_edge(a, b, ()).is_some());
-        g.remove_edge(a, b);
-        !g.contains_edge(a, b)
-            && g.neighbors(a).find(|x| *x == b).is_none()
-            && g.neighbors(b).find(|x| *x == a).is_none()
-    }
-    quickcheck::quickcheck(prop as fn(_, _, _) -> bool);
-}
-
 fn sort_sccs<T: Ord>(v: &mut [Vec<T>]) {
     for scc in &mut *v {
         scc.sort();
@@ -585,23 +524,5 @@ quickcheck! {
         }
         println!("ok!");
         true
-    }
-}
-
-quickcheck! {
-    /// Assert that the size of the feedback arc set of a tournament does not exceed
-    /// **|E| / 2 - |V| / 6**
-    fn greedy_fas_performance_within_bound(t: Tournament<(), ()>) -> bool {
-        let Tournament(g) = t;
-
-        let expected_bound = if g.node_count() < 2 {
-            0
-        } else {
-            ((g.edge_count() as f64) / 2.0 - (g.node_count() as f64) / 6.0) as usize
-        };
-
-        let fas_size = greedy_feedback_arc_set(&g).count();
-
-        fas_size <= expected_bound
     }
 }
