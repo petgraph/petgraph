@@ -3,14 +3,16 @@
 
 use petgraph::{graph::NodeIndex, Graph};
 use petgraph_core::{edge::Directed, index::IndexType, visit::Topo};
+use petgraph_proptest::dag::graph_dag_strategy;
+use proptest::prelude::*;
 
-fn assert_topologically_sorted<N, E, Ix>(gr: &Graph<N, E, Directed, Ix>, order: &[NodeIndex<Ix>])
+fn assert_topologically_sorted<N, E, Ix>(graph: &Graph<N, E, Directed, Ix>, order: &[NodeIndex<Ix>])
 where
     Ix: IndexType,
 {
-    assert_eq!(gr.node_count(), order.len());
+    assert_eq!(graph.node_count(), order.len());
     // check all the edges of the graph
-    for edge in gr.raw_edges() {
+    for edge in graph.raw_edges() {
         let source = edge.source();
         let target = edge.target();
 
@@ -141,4 +143,26 @@ fn error_on_cycle() {
     // result.
     let order = topo.next(&graph);
     assert!(order.is_none());
+}
+
+fn topo_sort(graph: &Graph<(), (), Directed, u8>) -> Vec<NodeIndex<u8>> {
+    let mut topo = Topo::new(graph);
+    let mut order = vec![];
+
+    while let Some(node) = topo.next(graph) {
+        order.push(node);
+    }
+
+    assert_topologically_sorted(graph, &order);
+    order
+}
+
+proptest! {
+    #[test]
+    fn consistent_ordering(graph in graph_dag_strategy::<Graph<(), (), Directed, u8>>(None, None, None)) {
+        let order_a = topo_sort(&graph);
+        let order_b = topo_sort(&graph);
+
+        assert_eq!(order_a, order_b);
+    }
 }

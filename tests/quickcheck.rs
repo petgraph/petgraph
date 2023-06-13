@@ -121,29 +121,6 @@ impl<N: Default + Clone + Send + 'static> Arbitrary for DAG<N> {
     }
 }
 
-fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
-    if gr.node_count() != order.len() {
-        println!(
-            "Graph ({}) and count ({}) had different amount of nodes.",
-            gr.node_count(),
-            order.len()
-        );
-        return false;
-    }
-    // check all the edges of the graph
-    for edge in gr.raw_edges() {
-        let a = edge.source();
-        let b = edge.target();
-        let ai = order.find(&a).unwrap();
-        let bi = order.find(&b).unwrap();
-        if ai >= bi {
-            println!("{:?} > {:?} ", a, b);
-            return false;
-        }
-    }
-    true
-}
-
 fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
     if gr.node_count() < order.len() {
         println!(
@@ -175,47 +152,6 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
         }
     }
     true
-}
-
-// TODO: move to algo ?!?!?
-#[test]
-fn full_topo_generic() {
-    fn prop_generic(DAG(mut gr): DAG<usize>) -> bool {
-        assert!(!is_cyclic_directed(&gr));
-        let mut index = 0;
-        let mut topo = Topo::new(&gr);
-        while let Some(nx) = topo.next(&gr) {
-            gr[nx] = index;
-            index += 1;
-        }
-
-        let mut order = Vec::new();
-        index = 0;
-        let mut topo = Topo::new(&gr);
-        while let Some(nx) = topo.next(&gr) {
-            order.push(nx);
-            assert_eq!(gr[nx], index);
-            index += 1;
-        }
-        if !is_topo_order(&gr, &order) {
-            println!("{:?}", gr);
-            return false;
-        }
-
-        {
-            order.clear();
-            let mut topo = Topo::new(&gr);
-            while let Some(nx) = topo.next(&gr) {
-                order.push(nx);
-            }
-            if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
-                return false;
-            }
-        }
-        true
-    }
-    quickcheck::quickcheck(prop_generic as fn(_) -> bool);
 }
 
 // TODO: move to algo ?!?!?
