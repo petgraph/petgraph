@@ -103,7 +103,7 @@ where
 
         b += 1;
 
-        if b >= graph.node_count() as i8 {
+        if b >= i8::try_from(graph.node_count()).expect("overflow") {
             a = a.checked_add(1).expect("overflow");
             b = 0;
         }

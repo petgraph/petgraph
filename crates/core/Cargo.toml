@@ -10,8 +10,9 @@ funty.workspace = true
 indexmap = { workspace = true, optional = true }
 
 [dev-dependencies]
-# Used for documentation examples
-petgraph.workspace = true
+petgraph = { workspace = true, features = ['proptest'] }
+petgraph-proptest.workspace = true
+proptest = "1.2.0"
 
 [features]
 alloc = []

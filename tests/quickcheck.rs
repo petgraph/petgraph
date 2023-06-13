@@ -323,62 +323,6 @@ quickcheck! {
     }
 }
 
-fn set<I>(iter: I) -> HashSet<I::Item>
-where
-    I: IntoIterator,
-    I::Item: Hash + Eq,
-{
-    iter.into_iter().collect()
-}
-
-// TODO: move to algo
-quickcheck! {
-    fn dfs_visit(gr: Graph<(), ()>, node: usize) -> bool {
-        use petgraph::visit::{Visitable, VisitMap};
-        use petgraph::visit::DfsEvent::*;
-        use petgraph::visit::{Time, depth_first_search};
-        if gr.node_count() == 0 {
-            return true;
-        }
-        let start_node = node_index(node % gr.node_count());
-
-        let invalid_time = Time(!0);
-        let mut discover_time = vec![invalid_time; gr.node_count()];
-        let mut finish_time = vec![invalid_time; gr.node_count()];
-        let mut has_tree_edge = gr.visit_map();
-        let mut edges = HashSet::new();
-        depth_first_search(&gr, Some(start_node).into_iter().chain(gr.node_indices()),
-                           |evt| {
-            match evt {
-                Discover(n, t) => discover_time[n.index()] = t,
-                Finish(n, t) => finish_time[n.index()] = t,
-                TreeEdge(u, v) => {
-                    // v is an ancestor of u
-                    assert!(has_tree_edge.visit(v), "Two tree edges to {:?}!", v);
-                    assert!(discover_time[v.index()] == invalid_time);
-                    assert!(discover_time[u.index()] != invalid_time);
-                    assert!(finish_time[u.index()] == invalid_time);
-                    edges.insert((u, v));
-                }
-                BackEdge(u, v) => {
-                    // u is an ancestor of v
-                    assert!(discover_time[v.index()] != invalid_time);
-                    assert!(finish_time[v.index()] == invalid_time);
-                    edges.insert((u, v));
-                }
-                CrossForwardEdge(u, v) => {
-                    edges.insert((u, v));
-                }
-            }
-        });
-        assert!(discover_time.iter().all(|x| *x != invalid_time));
-        assert!(finish_time.iter().all(|x| *x != invalid_time));
-        assert_eq!(edges.len(), gr.edge_count());
-        assert_eq!(edges, set(gr.edge_references().map(|e| (e.source(), e.target()))));
-        true
-    }
-}
-
 // TODO: move to algo
 quickcheck! {
     fn test_bellman_ford(gr: Graph<(), f32>) -> bool {

@@ -1,5 +1,11 @@
-use petgraph::Graph;
-use petgraph_core::visit::{depth_first_search, Control, DfsEvent, Time};
+use std::{collections::HashSet, iter::once};
+
+use petgraph::{prelude::EdgeRef, Graph};
+use petgraph_core::{
+    edge::{Directed, Undirected},
+    visit::{depth_first_search, Control, DfsEvent, Time},
+};
+use proptest::prelude::*;
 
 #[test]
 fn simple() {
@@ -61,7 +67,7 @@ fn terminate_early() {
     graph.add_edge(c, a, "C → A");
 
     let mut predecessor = vec![None; graph.node_count()];
-    let control = depth_first_search(&graph, Some(a), |event| {
+    let control = depth_first_search(&graph, once(a), |event| {
         if let DfsEvent::TreeEdge(start, end) = event {
             predecessor[end.index()] = Some(start);
             if end == b {
@@ -88,7 +94,7 @@ fn cross_forward_edge() {
     graph.add_edge(b, c, "B → C");
     graph.add_edge(a, c, "A → C");
 
-    depth_first_search(&graph, Some(a), |event| {
+    depth_first_search(&graph, once(a), |event| {
         if let DfsEvent::CrossForwardEdge(start, end) = event {
             match (start, end) {
                 (start, end) if start == b && end == c => {}
@@ -109,7 +115,7 @@ fn prune() {
     graph.add_edge(a, b, "A → B");
     graph.add_edge(b, c, "B → C");
 
-    depth_first_search(&graph, Some(a), |event| {
+    depth_first_search(&graph, once(a), |event| {
         if let DfsEvent::Discover(node, _) = event {
             if node == b {
                 return Control::<()>::Prune;
@@ -122,4 +128,157 @@ fn prune() {
 
         Control::Continue
     });
+}
+
+proptest! {
+    #[test]
+    fn discover_all_directed(graph in any::<Graph<(), (), Directed, u8>>()) {
+        let mut discovered = vec![false; graph.node_count()];
+
+        depth_first_search(&graph, graph.node_indices(), |event| {
+            if let DfsEvent::Discover(node, _) = event {
+                discovered[node.index()] = true;
+            }
+        });
+
+        assert!(discovered.iter().all(|&discovered| discovered));
+    }
+
+    #[test]
+    fn discover_all_undirected(graph in any::<Graph<(), (), Undirected, u8>>()) {
+        let mut discovered = vec![false; graph.node_count()];
+
+        depth_first_search(&graph, graph.node_indices(), |event| {
+            if let DfsEvent::Discover(node, _) = event {
+                discovered[node.index()] = true;
+            }
+        });
+
+        assert!(discovered.iter().all(|&discovered| discovered));
+    }
+
+    #[test]
+    fn finish_all_directed(graph in any::<Graph<(), (), Directed, u8>>()) {
+        let mut finished = vec![false; graph.node_count()];
+
+        depth_first_search(&graph, graph.node_indices(), |event| {
+            if let DfsEvent::Finish(node, _) = event {
+                finished[node.index()] = true;
+            }
+        });
+
+        assert!(finished.iter().all(|&finished| finished));
+    }
+
+    #[test]
+    fn finish_all_undirected(graph in any::<Graph<(), (), Undirected, u8>>()) {
+        let mut finished = vec![false; graph.node_count()];
+
+        depth_first_search(&graph, graph.node_indices(), |event| {
+            if let DfsEvent::Finish(node, _) = event {
+                finished[node.index()] = true;
+            }
+        });
+
+        assert!(finished.iter().all(|&finished| finished));
+    }
+
+    #[test]
+    fn tree_edges_directed(graph in any::<Graph<(), (), Directed, u8>>()) {
+        let mut discovered = vec![false; graph.node_count()];
+        let mut finished = vec![false; graph.node_count()];
+
+        depth_first_search(&graph, graph.node_indices(), |event| {
+            if let DfsEvent::Discover(node, _) = event {
+                discovered[node.index()] = true;
+            }
+
+            if let DfsEvent::Finish(node, _) = event {
+                finished[node.index()] = true;
+            }
+
+            // end is the ancestor of start, we have already discovered start,
+            // but haven't discovered end
+            if let DfsEvent::TreeEdge(start, end) = event {
+                assert!(graph.find_edge(start, end).is_some());
+
+                assert!(discovered[start.index()]);
+                assert!(!discovered[end.index()]);
+
+                assert!(!finished[start.index()]);
+            }
+        });
+    }
+
+    #[test]
+    fn tree_edges_undirected(graph in any::<Graph<(), (), Undirected, u8>>()) {
+        let mut discovered = vec![false; graph.node_count()];
+        let mut finished = vec![false; graph.node_count()];
+
+        depth_first_search(&graph, graph.node_indices(), |event| {
+            if let DfsEvent::Discover(node, _) = event {
+                discovered[node.index()] = true;
+            }
+
+            if let DfsEvent::Finish(node, _) = event {
+                finished[node.index()] = true;
+            }
+
+            // end is the ancestor of start, we have already discovered start,
+            // but haven't discovered end
+            if let DfsEvent::TreeEdge(start, end) = event {
+                assert!(graph.find_edge(start, end).is_some());
+
+                assert!(discovered[start.index()]);
+                assert!(!discovered[end.index()]);
+
+                assert!(!finished[start.index()]);
+            }
+        });
+    }
+
+    #[test]
+    fn edges_directed(graph in any::<Graph<(), (), Directed, u8>>()) {
+        let mut edges = HashSet::new();
+
+        depth_first_search(&graph, graph.node_indices(), |event| {
+            if let DfsEvent::TreeEdge(start, end) = event {
+                edges.insert((start, end));
+            }
+
+            if let DfsEvent::BackEdge(start, end) = event {
+                edges.insert((start, end));
+            }
+
+            if let DfsEvent::CrossForwardEdge(start, end) = event {
+                edges.insert((start, end));
+            }
+        });
+
+        let expected: HashSet<_> = graph.edge_references().map(|e| (e.source(), e.target())).collect();
+        assert_eq!(edges, expected);
+    }
+
+    #[test]
+    fn edges_undirected(graph in any::<Graph<(), (), Undirected, u8>>()) {
+        let mut edges = HashSet::new();
+
+        depth_first_search(&graph, graph.node_indices(), |event| {
+            if let DfsEvent::TreeEdge(start, end) = event {
+                edges.insert((start, end));
+            }
+
+            if let DfsEvent::BackEdge(start, end) = event {
+                edges.insert((start, end));
+            }
+
+            if let DfsEvent::CrossForwardEdge(start, end) = event {
+                edges.insert((start, end));
+            }
+        });
+
+        for edge in edges {
+            assert!(graph.find_edge(edge.0, edge.1).is_some() || graph.find_edge(edge.1, edge.0).is_some());
+        }
+    }
 }
