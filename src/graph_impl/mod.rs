@@ -903,10 +903,9 @@ where
         if !self.is_directed() {
             self.find_edge_undirected(a, b).map(|(ix, _)| ix)
         } else {
-            match self.nodes.get(a.index()) {
-                None => None,
-                Some(node) => self.find_edge_directed_from_node(node, b),
-            }
+            self.nodes
+                .get(a.index())
+                .and_then(|node| self.find_edge_directed_from_node(node, b))
         }
     }
 
@@ -937,10 +936,9 @@ where
         a: NodeIndex<Ix>,
         b: NodeIndex<Ix>,
     ) -> Option<(EdgeIndex<Ix>, Direction)> {
-        match self.nodes.get(a.index()) {
-            None => None,
-            Some(node) => self.find_edge_undirected_from_node(node, b),
-        }
+        self.nodes
+            .get(a.index())
+            .and_then(|node| self.find_edge_undirected_from_node(node, b))
     }
 
     fn find_edge_undirected_from_node(
@@ -1076,32 +1074,26 @@ where
 
     /// Accessor for data structure internals: the first edge in the given direction.
     pub fn first_edge(&self, a: NodeIndex<Ix>, dir: Direction) -> Option<EdgeIndex<Ix>> {
-        match self.nodes.get(a.index()) {
-            None => None,
-            Some(node) => {
-                let edix = node.next[dir.index()];
-                if edix == EdgeIndex::end() {
-                    None
-                } else {
-                    Some(edix)
-                }
+        self.nodes.get(a.index()).and_then(|node| {
+            let edix = node.next[dir.index()];
+            if edix == EdgeIndex::end() {
+                None
+            } else {
+                Some(edix)
             }
-        }
+        })
     }
 
     /// Accessor for data structure internals: the next edge for the given direction.
     pub fn next_edge(&self, e: EdgeIndex<Ix>, dir: Direction) -> Option<EdgeIndex<Ix>> {
-        match self.edges.get(e.index()) {
-            None => None,
-            Some(node) => {
-                let edix = node.next[dir.index()];
-                if edix == EdgeIndex::end() {
-                    None
-                } else {
-                    Some(edix)
-                }
+        self.edges.get(e.index()).and_then(|node| {
+            let edix = node.next[dir.index()];
+            if edix == EdgeIndex::end() {
+                None
+            } else {
+                Some(edix)
             }
-        }
+        })
     }
 
     /// Index the `Graph` by two indices, any combination of
