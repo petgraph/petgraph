@@ -54,7 +54,7 @@ use petgraph_graph::Graph;
 ///     }
 /// }
 /// ```
-// TODO: rework, make generic, weight over fn
+// TODO: rework, make generic, weight over fn, doesn't support parallel edges
 pub fn complement<N, E, Ty, Ix>(
     input: &Graph<N, E, Ty, Ix>,
     output: &mut Graph<N, E, Ty, Ix>,
@@ -79,10 +79,12 @@ pub fn complement<N, E, Ty, Ix>(
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec::Vec;
+    use alloc::{format, sync::Arc, vec::Vec};
 
     use petgraph_core::{edge::Directed, visit::EdgeRef};
     use petgraph_graph::Graph;
+    use petgraph_proptest::default::graph_strategy;
+    use proptest::{collection::SizeRange, prelude::*};
 
     use crate::operators::complement;
 
@@ -126,5 +128,31 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert_eq!(result, expected);
+    }
+
+    proptest! {
+        #[test]
+        fn complement_of_complement_is_original(
+            graph in graph_strategy::<Graph::<(), (), Directed, u32>>(
+                false,
+                false,
+                0..u8::MAX as usize,
+                Some(Arc::new(|max| {
+                    SizeRange::new(0..=usize::min(max.pow(2), (u8::MAX as usize) - 1))
+                }))
+            ),
+        ) {
+            let mut output = Graph::default();
+            let mut output2 = Graph::default();
+            complement(&graph, &mut output, ());
+            complement(&output, &mut output2, ());
+
+            for x in graph.node_indices() {
+                let received = output2.edges(x).map(|edge| edge.target()).collect::<Vec<_>>();
+                let expected = graph.edges(x).map(|edge| edge.target()).collect::<Vec<_>>();
+
+                prop_assert_eq!(received, expected);
+            }
+        }
     }
 }

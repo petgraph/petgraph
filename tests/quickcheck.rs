@@ -199,66 +199,6 @@ quickcheck! {
     }
 }
 
-// TODO: move to algo ?!?!?
-quickcheck! {
-    // checks floyd_warshall against dijkstra results
-    fn floyd_warshall_(g: Graph<u32, u32>) -> bool {
-        if g.node_count() == 0 {
-            return true;
-        }
-
-        let fw_res = floyd_warshall(&g, |e| *e.weight()).unwrap();
-
-        for node1 in g.node_identifiers() {
-            let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
-
-            for node2 in g.node_identifiers() {
-                // if dijkstra found a path then the results must be same
-                if let Some(distance) = dijkstra_res.get(&node2) {
-                    let floyd_distance = fw_res.get(&(node1, node2)).unwrap();
-                    if distance != floyd_distance {
-                        return false;
-                    }
-                } else {
-                    // if there are no path between two nodes then floyd_warshall will return maximum value possible
-                    if *fw_res.get(&(node1, node2)).unwrap() != u32::MAX {
-                        return false;
-                    }
-                }
-            }
-         }
-        true
-    }
-}
-
-// TODO: move to algo
-quickcheck! {
-    // checks that the complement of the complement is the same as the input if the input does not contain self-loops
-    fn complement_(g: Graph<u32, u32>, _node: usize) -> bool {
-        if g.node_count() == 0 {
-            return true;
-        }
-        for x in g.node_indices() {
-            if g.contains_edge(x, x) {
-                return true;
-            }
-        }
-        let mut complement_graph: Graph<u32, u32>  = Graph::new();
-        let mut result: Graph<u32, u32> = Graph::new();
-        complement(&g, &mut complement_graph, 0);
-        complement(&complement_graph, &mut result, 0);
-
-        for x in g.node_indices() {
-            for y in g.node_indices() {
-                if g.contains_edge(x, y) != result.contains_edge(x, y){
-                    return false;
-                }
-            }
-        }
-        true
-    }
-}
-
 fn naive_closure_foreach<G, F>(g: G, mut f: F)
 where
     G: Visitable + IntoNeighbors + IntoNodeIdentifiers,

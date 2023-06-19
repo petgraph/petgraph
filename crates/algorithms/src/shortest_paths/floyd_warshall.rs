@@ -163,11 +163,21 @@ where
 
 #[cfg(test)]
 mod tests {
-    use indexmap::IndexMap;
-    use petgraph_core::edge::{Directed, Undirected};
-    use petgraph_graph::Graph;
+    use alloc::{format, sync::Arc};
 
-    use crate::{error::NegativeCycleError, shortest_paths::floyd_warshall};
+    use indexmap::IndexMap;
+    use petgraph_core::{
+        edge::{Directed, Undirected},
+        visit::IntoNodeIdentifiers,
+    };
+    use petgraph_graph::Graph;
+    use petgraph_proptest::default::graph_strategy;
+    use proptest::{prelude::*, sample::SizeRange};
+
+    use crate::{
+        error::NegativeCycleError,
+        shortest_paths::{dijkstra, floyd_warshall},
+    };
 
     /// Helper Macro to create a map of expected results
     ///
@@ -424,5 +434,39 @@ mod tests {
         let error = result.expect_err("expected negative cycle");
 
         assert_eq!(error, NegativeCycleError);
+    }
+
+    proptest! {
+        // because floyd-warshall is O(n^3) we limit the size of the graph to 32 nodes and 32 edges
+        #[test]
+        fn verify_dijkstra(
+            graph in graph_strategy::<Graph::<(), u8, Directed, u8>>(
+                false,
+                false,
+                0..32,
+                Some(Arc::new(|max| {
+                    SizeRange::new(0..=32)
+                }))
+            ),
+        ) {
+            let received = floyd_warshall(&graph, |edge| *edge.weight() as u32)
+                .expect("expected floyd-warshall to succeed");
+
+            for node in graph.node_identifiers() {
+                let expected = dijkstra(&graph, node, None, |edge| *edge.weight() as u32);
+
+                for target in graph.node_identifiers() {
+                    if let Some(expected) = expected.get(&target) {
+                        let received = received.get(&(node, target)).unwrap();
+
+                        prop_assert_eq!(received, expected);
+                    } else {
+                        // if there are no path between two nodes then floyd_warshall will return maximum value possible
+                        // TODO: no that's just bad design
+                        prop_assert_eq!(received.get(&(node, target)), Some(&u32::MAX));
+                    }
+                }
+            }
+        }
     }
 }
