@@ -126,8 +126,12 @@ where
 
 #[cfg(test)]
 pub(super) mod tests {
-    use petgraph_core::{edge::Undirected, visit::IntoNodeReferences};
+    use petgraph_core::{
+        edge::{Directed, Undirected},
+        visit::{EdgeRef, IntoNodeReferences},
+    };
     use petgraph_graph::{Graph, NodeIndex};
+    use proptest::{prelude::*, sample::Index};
 
     use super::dijkstra;
 
@@ -251,5 +255,34 @@ pub(super) mod tests {
 
         // we only guarantee that A - D exists in the result
         assert_eq!(result[&node("D")], 8);
+    }
+
+    fn non_empty_graph() -> impl Strategy<Value = Graph<(), u8, Directed, u8>> {
+        any::<Graph<(), u8, Directed, u8>>()
+            .prop_filter("graph is empty", |graph| graph.node_count() > 0)
+    }
+
+    proptest! {
+        #[test]
+        fn triangle_inequality(
+            graph in non_empty_graph(),
+            node in any::<Index>()
+        ) {
+            let node = NodeIndex::new(node.index(graph.node_count()));
+            let result = dijkstra(&graph, node, None, |edge| *edge.weight() as u32);
+
+            // triangle inequality:
+            // d(v,u) <= d(v,v2) + d(v2,u)
+            for (node, weight) in &result {
+                for edge in graph.edges(*node) {
+                    let next = edge.target();
+                    let next_weight = *edge.weight() as u32;
+
+                    if result.contains_key(&next) {
+                        assert!(result[&next] <= *weight + next_weight);
+                    }
+                }
+            }
+        }
     }
 }

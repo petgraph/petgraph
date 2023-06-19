@@ -185,12 +185,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec;
+    use alloc::{vec, vec::Vec};
 
     use petgraph_core::{edge::Directed, visit::Reversed};
     use petgraph_graph::{Graph, NodeIndex};
+    use proptest::prelude::*;
 
     use super::tarjan_scc;
+    use crate::tests::assert_subset_topologically_sorted;
 
     /// Test that the algorithm works on a graph with a single component.
     ///
@@ -335,5 +337,15 @@ mod tests {
             vec![NodeIndex::new(2)],
             vec![NodeIndex::new(3)],
         ]);
+    }
+
+    proptest! {
+        #[test]
+        fn topologically_sorted(graph in any::<Graph<(), (), Directed, u8>>()) {
+            let order = tarjan_scc(&graph);
+            let firsts = order.iter().rev().map(|v| v[0]).collect::<Vec<_>>();
+
+            assert_subset_topologically_sorted(&graph, &firsts);
+        }
     }
 }

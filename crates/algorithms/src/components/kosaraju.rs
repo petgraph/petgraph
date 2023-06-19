@@ -58,12 +58,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec;
+    use alloc::{format, vec, vec::Vec};
 
-    use petgraph_core::{edge::Directed, visit::Reversed};
+    use petgraph_core::{edge::Directed, index::IndexType, visit::Reversed};
     use petgraph_graph::{Graph, NodeIndex};
+    use proptest::prelude::*;
 
     use super::kosaraju_scc;
+    use crate::tests::assert_subset_topologically_sorted;
 
     /// Test that the algorithm works on a graph with a single component.
     ///
@@ -208,5 +210,15 @@ mod tests {
             vec![NodeIndex::new(1)],
             vec![NodeIndex::new(2)],
         ]);
+    }
+
+    proptest! {
+        #[test]
+        fn topologically_sorted(graph in any::<Graph<(), (), Directed, u8>>()) {
+            let order = kosaraju_scc(&graph);
+            let firsts = order.iter().rev().map(|v| v[0]).collect::<Vec<_>>();
+
+            assert_subset_topologically_sorted(&graph, &firsts);
+        }
     }
 }

@@ -32,17 +32,20 @@ pub(crate) mod tests {
 
     // A graph is topologically sorted if for every edge `(u, v)`, `u` comes before `v` in the
     // ordering.
-    pub fn assert_topologically_sorted<N, E, Ix>(
-        gr: &Graph<N, E, Directed, Ix>,
+    fn assert_topologically_sorted_edges<N, E, Ix>(
+        graph: &Graph<N, E, Directed, Ix>,
         order: &[NodeIndex<Ix>],
     ) where
         Ix: IndexType,
     {
-        assert_eq!(gr.node_count(), order.len());
         // check all the edges of the graph
-        for edge in gr.raw_edges() {
+        for edge in graph.raw_edges() {
             let source = edge.source();
             let target = edge.target();
+
+            if source == target {
+                continue;
+            }
 
             let source_index = order
                 .iter()
@@ -59,5 +62,30 @@ pub(crate) mod tests {
                 "Graph is not topologically sorted ({target} comes before {source})",
             );
         }
+    }
+
+    // A graph is topologically sorted if for every edge `(u, v)`, `u` comes before `v` in the
+    // ordering.
+    pub fn assert_topologically_sorted<N, E, Ix>(
+        graph: &Graph<N, E, Directed, Ix>,
+        order: &[NodeIndex<Ix>],
+    ) where
+        Ix: IndexType,
+    {
+        assert_eq!(graph.node_count(), order.len());
+
+        assert_topologically_sorted_edges(graph, order);
+    }
+
+    pub fn assert_subset_topologically_sorted<N, Ix>(
+        graph: &Graph<N, (), Directed, Ix>,
+        order: &[NodeIndex<Ix>],
+    ) where
+        Ix: IndexType,
+    {
+        // To be a subset it must smaller or equal to the graph
+        assert!(graph.node_count() >= order.len());
+
+        assert_topologically_sorted_edges(graph, order);
     }
 }
