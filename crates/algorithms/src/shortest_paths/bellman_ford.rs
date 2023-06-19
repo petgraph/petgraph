@@ -206,6 +206,7 @@ where
             }
         }
     }
+
     if !path.is_empty() {
         // Users will probably need to follow the path of the negative cycle
         // so it should be in the reverse order than it was found by the algorithm.
@@ -251,4 +252,48 @@ where
         }
     }
     (distance, predecessor)
+}
+
+#[cfg(test)]
+mod tests {
+    use petgraph_core::edge::{Directed, Undirected};
+    use petgraph_graph::Graph;
+    use proptest::prelude::*;
+
+    use crate::shortest_paths::bellman_ford;
+
+    proptest! {
+        #[test]
+        fn positive_weights_undirected_always_ok(mut graph in any::<Graph<(), f32, Undirected, u8>>()) {
+            for weight in graph.edge_weights_mut() {
+                *weight = weight.abs();
+            }
+
+            for node in graph.node_indices() {
+                bellman_ford(&graph, node).expect("should be possible");
+            }
+        }
+
+        #[test]
+        fn positive_weights_directed_always_ok(mut graph in any::<Graph<(), f32, Directed, u8>>()) {
+            for weight in graph.edge_weights_mut() {
+                *weight = weight.abs();
+            }
+
+            for node in graph.node_indices() {
+                bellman_ford(&graph, node).expect("should be possible");
+            }
+        }
+
+        #[test]
+        fn negative_path_never_empty(graph in any::<Graph<(), f32, Directed, u8>>()) {
+            for node in graph.node_indices() {
+                let path = super::find_negative_cycle(&graph, node);
+
+                if let Some(path) = path {
+                    prop_assert!(!path.is_empty());
+                }
+            }
+        }
+    }
 }

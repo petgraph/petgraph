@@ -259,59 +259,6 @@ quickcheck! {
     }
 }
 
-// TODO: move to algo
-quickcheck! {
-    fn test_bellman_ford(gr: Graph<(), f32>) -> bool {
-        let mut gr = gr;
-        for elt in gr.edge_weights_mut() {
-            *elt = elt.abs();
-        }
-        if gr.node_count() == 0 {
-            return true;
-        }
-        for (i, start) in gr.node_indices().enumerate() {
-            if i >= 10 { break; } // testing all is too slow
-            bellman_ford(&gr, start).unwrap();
-        }
-        true
-    }
-}
-
-// TODO: move to algo
-quickcheck! {
-    fn test_find_negative_cycle(gr: Graph<(), f32>) -> bool {
-        let gr = gr;
-        if gr.node_count() == 0 {
-            return true;
-        }
-        for (i, start) in gr.node_indices().enumerate() {
-            if i >= 10 { break; } // testing all is too slow
-            if let Some(path) = find_negative_cycle(&gr, start) {
-                assert!(path.len() >= 1);
-            }
-        }
-        true
-    }
-}
-
-// TODO: move to algo
-quickcheck! {
-    fn test_bellman_ford_undir(gr: Graph<(), f32, Undirected>) -> bool {
-        let mut gr = gr;
-        for elt in gr.edge_weights_mut() {
-            *elt = elt.abs();
-        }
-        if gr.node_count() == 0 {
-            return true;
-        }
-        for (i, start) in gr.node_indices().enumerate() {
-            if i >= 10 { break; } // testing all is too slow
-            bellman_ford(&gr, start).unwrap();
-        }
-        true
-    }
-}
-
 fn naive_closure_foreach<G, F>(g: G, mut f: F)
 where
     G: Visitable + IntoNeighbors + IntoNodeIdentifiers,
