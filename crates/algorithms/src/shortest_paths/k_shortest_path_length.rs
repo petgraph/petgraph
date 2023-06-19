@@ -119,11 +119,14 @@ where
 
 #[cfg(test)]
 mod tests {
+    use alloc::{format, vec::Vec};
+
     use indexmap::IndexMap;
     use petgraph_core::edge::Directed;
     use petgraph_graph::{Graph, NodeIndex};
+    use proptest::{prelude::*, sample::Index};
 
-    use crate::shortest_paths::k_shortest_path_length;
+    use crate::shortest_paths::{dijkstra, k_shortest_path_length};
 
     /// Graph:
     ///
@@ -193,5 +196,26 @@ mod tests {
         .collect();
 
         assert_eq!(result, expected);
+    }
+
+    fn non_empty_graph() -> impl Strategy<Value = Graph<(), u8, Directed, u8>> {
+        any::<Graph<(), u8, Directed, u8>>()
+            .prop_filter("graph must not be empty", |graph| graph.node_count() > 0)
+    }
+
+    proptest! {
+        // checks that the distances computed by k'th shortest path is always greater
+        // or equal compared to their dijkstra computation
+        #[test]
+        fn kth_shortest_path_longer_than_dijkstra(graph in non_empty_graph(), index in any::<Index>()) {
+            let node = graph.node_indices().nth(index.index(graph.node_count())).unwrap();
+
+            let second_shortest_path = k_shortest_path_length(&graph, node, None, 2, |edge| *edge.weight() as u32);
+            let dijkstra = dijkstra(&graph, node, None, |edge| *edge.weight() as u32);
+
+            for (node, distance) in second_shortest_path {
+                prop_assert!(dijkstra.get(&node).unwrap() <= &distance);
+            }
+        }
     }
 }
