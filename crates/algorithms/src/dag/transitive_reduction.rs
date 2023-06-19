@@ -147,22 +147,134 @@ pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(
 }
 
 #[cfg(test)]
-#[test]
-fn test_easy_tred() {
-    let mut input = AdjacencyList::new();
-    let a: NodeIndex<u8> = input.add_node();
-    let b = input.add_node();
-    let c = input.add_node();
-    input.add_edge(a, b, ());
-    input.add_edge(a, c, ());
-    input.add_edge(b, c, ());
-    let (tred, tclos) = dag_transitive_reduction_closure(&input);
-    assert_eq!(tred.node_count(), 3);
-    assert_eq!(tclos.node_count(), 3);
-    assert!(tred.find_edge(a, b).is_some());
-    assert!(tred.find_edge(b, c).is_some());
-    assert!(tred.find_edge(a, c).is_none());
-    assert!(tclos.find_edge(a, b).is_some());
-    assert!(tclos.find_edge(b, c).is_some());
-    assert!(tclos.find_edge(a, c).is_some());
+mod tests {
+    use alloc::vec::Vec;
+
+    use petgraph_adjacency_matrix::{AdjacencyList, NodeIndex};
+    use petgraph_core::{
+        edge::Directed,
+        index::{IndexType, SafeCast},
+        visit::{
+            Dfs, EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
+            NodeCount, Visitable,
+        },
+    };
+    use petgraph_graph::Graph;
+    use petgraph_proptest::dag::graph_dag_strategy;
+    use proptest::prelude::*;
+
+    use crate::dag::{dag_transitive_reduction_closure, toposort};
+
+    #[test]
+    fn simple() {
+        let mut input = AdjacencyList::new();
+
+        let a: NodeIndex<u8> = input.add_node();
+        let b = input.add_node();
+        let c = input.add_node();
+
+        input.add_edge(a, b, ());
+        input.add_edge(a, c, ());
+        input.add_edge(b, c, ());
+
+        let (reduction, closure) = dag_transitive_reduction_closure(&input);
+
+        assert_eq!(reduction.node_count(), 3);
+        assert_eq!(closure.node_count(), 3);
+
+        assert!(reduction.find_edge(a, b).is_some());
+        assert!(reduction.find_edge(b, c).is_some());
+        assert!(reduction.find_edge(a, c).is_none());
+
+        assert!(closure.find_edge(a, b).is_some());
+        assert!(closure.find_edge(b, c).is_some());
+        assert!(closure.find_edge(a, c).is_some());
+    }
+
+    fn naive_closure_foreach<G, F>(graph: G, mut closure: F)
+    where
+        G: Visitable + IntoNodeIdentifiers + IntoNeighbors,
+        F: FnMut(G::NodeId, G::NodeId),
+    {
+        let mut dfs = Dfs::empty(&graph);
+
+        for index in graph.node_identifiers() {
+            dfs.reset(&graph);
+            dfs.move_to(index);
+
+            while let Some(nx) = dfs.next(&graph) {
+                if index != nx {
+                    closure(index, nx);
+                }
+            }
+        }
+    }
+
+    fn naive_closure<G>(graph: G) -> Vec<(G::NodeId, G::NodeId)>
+    where
+        G: Visitable + IntoNodeIdentifiers + IntoNeighbors,
+    {
+        let mut result = Vec::new();
+
+        naive_closure_foreach(graph, |a, b| result.push((a, b)));
+
+        result
+    }
+
+    fn naive_closure_edgecount<G>(graph: G) -> usize
+    where
+        G: Visitable + IntoNodeIdentifiers + IntoNeighbors,
+    {
+        let mut count = 0;
+
+        naive_closure_foreach(graph, |_, _| count += 1);
+
+        count
+    }
+
+    proptest! {
+        // a bit convoluted, as all functions build on top of each other
+        #[test]
+        fn integration(graph in graph_dag_strategy::<Graph<(), (), Directed, u8>>(None, None, None)) {
+            let toposort = toposort(&graph, None).unwrap();
+
+            let (toposorted, reverse_toposort) = super::dag_to_toposorted_adjacency_list(&graph, &toposort);
+
+            for (index, node) in toposort.iter().enumerate() {
+                assert_eq!(index, reverse_toposort[node.index()].cast());
+            }
+
+            let (reduction, closure) = dag_transitive_reduction_closure(&toposorted);
+
+            assert_eq!(reduction.node_count(), graph.node_count());
+            assert_eq!(closure.node_count(), graph.node_count());
+
+            // Check the closure
+            let mut closure_edges: Vec<(_, _)> = closure.edge_references().map(|e| (e.source(), e.target())).collect();
+            closure_edges.sort();
+
+            let mut reduction_closure = naive_closure(&reduction);
+            reduction_closure.sort();
+
+            assert_eq!(closure_edges, reduction_closure);
+
+            // Check that the transitive reduction is a reduction
+            for index in reduction.edge_references() {
+                let filtered = EdgeFiltered::from_fn(&reduction, |edge| {
+                    edge.source() != index.source() || edge.target() != index.target()
+                });
+
+                let received = naive_closure_edgecount(&filtered);
+                assert!(received < closure_edges.len());
+            }
+
+            // check that the transitive reduction is included in the original graph
+            for index in reduction.edge_references() {
+                let source = toposort[index.source().cast()];
+                let target = toposort[index.target().cast()];
+
+                assert!(graph.find_edge(source, target).is_some());
+            }
+        }
+    }
 }
