@@ -58,9 +58,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use alloc::{format, vec, vec::Vec};
+    use alloc::{vec, vec::Vec};
 
-    use petgraph_core::{edge::Directed, index::IndexType, visit::Reversed};
+    use petgraph_core::{edge::Directed, visit::Reversed};
     use petgraph_graph::{Graph, NodeIndex};
     use proptest::prelude::*;
 
