@@ -9,10 +9,9 @@ use std::{
 
 pub use dot::RenderOption;
 use dot::{Arrow, Edges, Id, Kind, LabelText, Nodes, Style};
-use petgraph_core::visit::IntoNodeIdentifiers;
-
-use crate::visit::{
-    EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeReferences, NodeIndexable, NodeRef,
+use petgraph_core::visit::{
+    EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, IntoNodeReferences, NodeIndexable,
+    NodeRef,
 };
 
 pub struct NodeAttributes {
@@ -117,8 +116,7 @@ impl EdgeAttributes {
 /// ```
 /// use dot::RenderOption;
 /// use petgraph::{
-///     dot::{Config, Dot},
-///     Graph,
+/// ///     Graph,
 /// };
 ///
 /// let mut graph = Graph::<_, ()>::new();
@@ -375,12 +373,6 @@ mod test {
     use insta::assert_debug_snapshot;
     use petgraph_core::visit::EdgeRef;
 
-    use crate::{
-        dot::{Dot, EdgeAttributes, NodeAttributes},
-        prelude::Graph,
-        visit::NodeRef,
-    };
-
     fn simple_graph() -> Graph<&'static str, &'static str> {
         let mut graph = Graph::<&str, &str>::new();
         let a = graph.add_node("A");
@@ -433,5 +425,61 @@ mod test {
             .with_edge_attributes(&|_, edge| EdgeAttributes::new(edge.weight().to_uppercase()));
 
         assert_debug_snapshot!(dot);
+    }
+
+    #[test]
+    fn adjacency_list() {
+        let mut graph = AdjacencyList::new();
+
+        let a = graph.add_node();
+        let b = graph.add_node();
+
+        graph.add_edge(a, a, "A -> A");
+        graph.add_edge(a, b, "A -> B");
+        graph.add_edge(b, a, "B -> A");
+
+        assert_debug_snapshot!(Dot::new(&graph));
+    }
+
+    #[test]
+    fn graph() {
+        let mut graph = Graph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+
+        graph.add_edge(a, a, "A -> A");
+        graph.add_edge(a, b, "A -> B");
+        graph.add_edge(b, a, "B -> A");
+
+        assert_debug_snapshot!(Dot::new(&graph));
+    }
+
+    #[test]
+    fn debug_formatting() {
+        // test alternate formatting
+        #[derive(Debug)]
+        struct Record {
+            a: i32,
+            b: &'static str,
+        }
+        let mut graph = Graph::new();
+        let a = graph.add_node(Record { a: 1, b: r"abc\" });
+        graph.add_edge(a, a, (1, 2));
+
+        assert_debug_snapshot!(Dot::new(&graph));
+    }
+
+    #[test]
+    fn stable_graph() {
+        let mut graph = StableGraph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+
+        graph.add_edge(a, a, "A -> A");
+        graph.add_edge(a, b, "A -> B");
+
+        assert_debug_snapshot!(Dot::new(&graph));
     }
 }

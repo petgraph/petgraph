@@ -103,9 +103,6 @@
 #[doc(no_inline)]
 pub use petgraph_graph::Graph;
 
-#[cfg(feature = "dot")]
-pub mod dot;
-
 #[deprecated(since = "0.7.0", note = "use explicit imports instead of the prelude")]
 pub mod prelude;
 
@@ -220,4 +217,8 @@ pub use petgraph_core::{
 
 pub mod core {
     pub use petgraph_core::*;
+}
+
+pub mod dot {
+    pub use petgraph_io::dot::*;
 }
