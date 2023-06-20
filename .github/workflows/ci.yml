@@ -1,83 +1,132 @@
+name: Continuous Integration
+
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
+  push:
+    branches: [ master ]
 
-name: Continuous integration
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
-  CARGO_INCREMENTAL: 0
 
 jobs:
-  tests:
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - rust: 1.41.0  # MSRV
-            # Fix an old minor version of some dependencies to ensure they
-            # compile with the MSRV
-            fixed_deps: -p indexmap --precise 1.7.0
-          - rust: stable
-            features: unstable quickcheck
-            test_all: --all
-          - rust: beta
-            test_all: --all
-          - rust: nightly
-            features: unstable quickcheck
-            test_all: --all
-            bench: true
+        toolchain: [ 1.65, stable, nightly ]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
-      - name: Build
-        run: |
-          cargo update ${{ matrix.fixed_deps }}
-          cargo build --verbose --no-default-features
-          cargo build --verbose --features "${{ matrix.features }}"
-      - name: Tests
-        run: |
-          cargo test --verbose --no-default-features
-          cargo test ${{ matrix.test_all }} --verbose --features "${{ matrix.features }}"
-      - name: Build benchmarks
-        if: ${{ matrix.bench }}
-        run: |
-          cargo bench --verbose --no-run
-          cargo bench --verbose --no-run --all-features
+      - name: Checkout source code
+        uses: actions/checkout@v3
 
-  rustfmt:
+      - name: Setup Graphviz
+        uses: ts-graphviz/setup-graphviz@v1
+
+      - name: Install SVGO
+        run: npm install -g svgo
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Install tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just@1.13.0,cargo-hack@0.5.28
+
+      # Because we ensure an empty git diff, the job will fail if the SVG is not up-to-date.
+      - name: Generate SVG
+        run: just generate-svg
+
+      - name: Check formatting
+        run: just format --check
+
+      - name: Check clippy
+        run: just clippy -- -D warnings
+
+      - name: Check public documentation
+        env:
+          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
+        run: just doc
+
+      - name: Check private documentation
+        env:
+          RUSTDOCFLAGS: "--check -Z unstable-options -D warnings"
+        run: just doc --document-private-items
+
+      - name: Ensure empty git diff
+        run: git --no-pager diff --exit-code --color
+
+  test:
+    name: test
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - rust: stable
-            rustfmt: rustfmt
+        toolchain: [ 1.65, stable, nightly ]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          components: ${{ matrix.rustfmt }}
-          override: true
-      - name: Rustfmt
-        if: matrix.rustfmt
-        run: cargo fmt -- --check
+      - name: Checkout source code
+        uses: actions/checkout@v3
 
-  miri:
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Install tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just@1.13.0,cargo-hack@0.5.28,cargo-nextest@0.9.52
+
+      - name: Run tests
+        run: just test --no-fail-fast
+
+      - name: Run miri
+        if: ${{ startsWith(matrix.toolchain, 'nightly') }}
+        run: just miri --no-fail-fast
+
+      - name: Ensure empty git diff
+        run: git --no-pager diff --exit-code --color
+
+  coverage:
+    name: coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@nightly
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          components: miri
-      - run: cargo miri test
+          toolchain: nightly
+          components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Install tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just@1.13.0,cargo-nextest@0.9.52,cargo-llvm-cov@0.5.19
+
+      - name: Run tests
+        run: just coverage --lcov --output-path lcov.info
+
+# TODO: use a tool like codecov to upload the coverage report

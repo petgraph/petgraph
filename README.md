@@ -2,7 +2,7 @@
 
 Graph data structure library. Please read the [API documentation here][].
 
-Supports Rust 1.41 and later (some older versions may require picking the dependency versions [by hand][dependency_hack]).
+Supports Rust 1.65 and later (some older versions may require picking the dependency versions [by hand][dependency_hack]).
 
 [![build_status][]](https://github.com/petgraph/petgraph/actions) [![crates][]](https://crates.io/crates/petgraph) [![gitter][]](https://gitter.im/petgraph-rs/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
@@ -16,7 +16,7 @@ Crate feature flags:
 
 ## Recent Changes
 
-See [RELEASES][] for a list of changes. The minimum supported rust
+See [CHANGELOG] for a list of changes. The minimum supported rust
 version will only change on major releases.
 
 ## License
@@ -28,9 +28,9 @@ Licensed under the Apache License, Version 2.0
 <http://opensource.org/licenses/MIT>, at your option. This file may not
 be copied, modified, or distributed except according to those terms.
 
-  [API documentation here]: https://docs.rs/petgraph/
-  [build_status]: https://github.com/petgraph/petgraph/workflows/Continuous%20integration/badge.svg?branch=master
-  [crates]: https://img.shields.io/crates/v/petgraph
-  [gitter]: https://badges.gitter.im/petgraph-rs/community.svg
-  [RELEASES]: RELEASES.rst
-  [dependency_hack]: https://github.com/petgraph/petgraph/pull/493#issuecomment-1134970689
+[API documentation here]: https://docs.rs/petgraph/
+[build_status]: https://github.com/petgraph/petgraph/workflows/Continuous%20integration/badge.svg?branch=master
+[crates]: https://img.shields.io/crates/v/petgraph
+[gitter]: https://badges.gitter.im/petgraph-rs/community.svg
+[CHANGELOG]: CHANGELOG.md 
+[dependency_hack]: https://github.com/petgraph/petgraph/pull/493#issuecomment-1134970689
