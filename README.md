@@ -2,7 +2,7 @@
 
 Graph data structure library. Please read the [API documentation here][].
 
-Supports Rust 1.41 and later (some older versions may require picking the dependency versions [by hand][dependency_hack]).
+Supports Rust 1.64 and later.
 
 [![build_status][]](https://github.com/petgraph/petgraph/actions) [![crates][]](https://crates.io/crates/petgraph) [![gitter][]](https://gitter.im/petgraph-rs/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
@@ -33,4 +33,3 @@ be copied, modified, or distributed except according to those terms.
   [crates]: https://img.shields.io/crates/v/petgraph
   [gitter]: https://badges.gitter.im/petgraph-rs/community.svg
   [RELEASES]: RELEASES.rst
-  [dependency_hack]: https://github.com/petgraph/petgraph/pull/493#issuecomment-1134970689

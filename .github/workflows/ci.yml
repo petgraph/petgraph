@@ -16,10 +16,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - rust: 1.41.0  # MSRV
-            # Fix an old minor version of some dependencies to ensure they
-            # compile with the MSRV
-            fixed_deps: -p indexmap --precise 1.7.0
+          - rust: 1.64.0  # MSRV
           - rust: stable
             features: unstable quickcheck
             test_all: --all
@@ -39,7 +36,6 @@ jobs:
           override: true
       - name: Build
         run: |
-          cargo update ${{ matrix.fixed_deps }}
           cargo build --verbose --no-default-features
           cargo build --verbose --features "${{ matrix.features }}"
       - name: Tests
