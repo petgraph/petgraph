@@ -23,6 +23,7 @@ features = ["serde-1", "quickcheck"]
 no-dev-version = true
 
 [workspace]
+resolver = "2"
 members = [
     ".",
     #    "serialization-tests",
