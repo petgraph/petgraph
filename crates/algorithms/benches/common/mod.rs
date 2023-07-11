@@ -41,12 +41,12 @@ pub fn newman_watts_strogatz_graph(
     n: usize,
     k: usize,
     p: f64,
-    seed: Option<usize>,
+    seed: Option<u64>,
 ) -> Graph<(), (), Undirected> {
     assert!(k <= n, "Neighbours must be less than nodes");
 
     let mut rng = match seed {
-        Some(seed) => StdRng::seed_from_u64(seed as u64),
+        Some(seed) => StdRng::seed_from_u64(seed),
         None => StdRng::from_entropy(),
     };
 
