@@ -29,6 +29,7 @@ proptest = "1.1.0"
 approx = "0.5.1"
 criterion = "0.5.1"
 rand = "0.8.5"
+itertools = "0.10.5"
 
 [features]
 default = ["std"]
@@ -38,5 +39,5 @@ remove-me-only-intended-for-move-graph = ["dep:petgraph-graph"]
 remove-me-only-intended-for-move-adjacency-matrix = ["dep:petgraph-adjacency-matrix"]
 
 [[bench]]
-name = "bench"
+name = "dijkstra"
 harness = false

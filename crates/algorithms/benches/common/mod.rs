@@ -2,6 +2,24 @@ use petgraph_core::{edge::Undirected, visit::EdgeRef};
 use petgraph_graph::{Graph, NodeIndex};
 use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
 
+/// Returns a complete graph with $n$ nodes.
+///
+/// # Arguments
+///
+/// * `n` - The number of nodes
+pub fn complete_graph(n: usize) -> Graph<(), (), Undirected> {
+    let mut graph = Graph::new_undirected();
+    let nodes: Vec<NodeIndex<_>> = (0..n).into_iter().map(|_| graph.add_node(())).collect();
+
+    for i in 0..n {
+        for j in i + 1..n {
+            graph.add_edge(nodes[i], nodes[j], ());
+        }
+    }
+
+    graph
+}
+
 /// Returns a Newman-Watts-Strogatz small-world graph.
 ///
 /// First create a ring over $n$ nodes, then each node in the ring is joined to its $k$ nearest
@@ -9,18 +27,17 @@ use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
 /// as follows: for each $(u, v)$ in the underlying "$n$-ring with $k$ nearest neighbors" with
 /// probability $p$ add a new edge $(u, w)$ with $w$ chosen uniformly at random from the $n$ nodes.
 ///
-/// To make this suitable for tests, a random seed can be provided.
-///
 /// # Arguments
 ///
 /// * `n` - The number of nodes
 /// * `k` - Each node is joined with its `k` nearest neighbors in a ring topology.
 /// * `p` - The probability of adding a new edge for each edge.
+/// * `seed` - Seed to use for the random generator, helpful to make output reproducible
 ///
 /// # Panics
 ///
 /// Panics if `k > n`.
-fn newman_watts_strogatz_graph(
+pub fn newman_watts_strogatz_graph(
     n: usize,
     k: usize,
     p: f64,
@@ -34,7 +51,7 @@ fn newman_watts_strogatz_graph(
     };
 
     if k == n {
-        todo!("complete graph")
+        return complete_graph(n);
     }
 
     let mut graph = Graph::new_undirected();
