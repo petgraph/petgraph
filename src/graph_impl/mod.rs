@@ -194,39 +194,16 @@ impl<Ix: fmt::Debug> fmt::Debug for EdgeIndex<Ix> {
         write!(f, "EdgeIndex({:?})", self.0)
     }
 }
-/*
- * FIXME: Use this impl again, when we don't need to add so many bounds
-impl<Ix: IndexType> fmt::Debug for EdgeIndex<Ix>
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "EdgeIndex("));
-        if *self == EdgeIndex::end() {
-            try!(write!(f, "End"));
-        } else {
-            try!(write!(f, "{}", self.index()));
-        }
-        write!(f, ")")
-    }
-}
-*/
 
 const DIRECTIONS: [Direction; 2] = [Outgoing, Incoming];
 
 /// The graph's node type.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node<N, Ix = DefaultIx> {
     /// Associated node data.
     pub weight: N,
     /// Next edge in outgoing and incoming edge lists.
     next: [EdgeIndex<Ix>; 2],
-}
-
-impl<E, Ix> Clone for Node<E, Ix>
-where
-    E: Clone,
-    Ix: Copy,
-{
-    clone_fields!(Node, weight, next,);
 }
 
 impl<N, Ix: IndexType> Node<N, Ix> {
@@ -237,7 +214,7 @@ impl<N, Ix: IndexType> Node<N, Ix> {
 }
 
 /// The graph's edge type.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Edge<E, Ix = DefaultIx> {
     /// Associated edge data.
     pub weight: E,
@@ -245,14 +222,6 @@ pub struct Edge<E, Ix = DefaultIx> {
     next: [EdgeIndex<Ix>; 2],
     /// Start and End node index
     node: [NodeIndex<Ix>; 2],
-}
-
-impl<E, Ix> Clone for Edge<E, Ix>
-where
-    E: Clone,
-    Ix: Copy,
-{
-    clone_fields!(Edge, weight, next, node,);
 }
 
 impl<E, Ix: IndexType> Edge<E, Ix> {
@@ -438,7 +407,7 @@ fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T> {
     if max(a, b) >= slc.len() {
         Pair::None
     } else if a == b {
-        Pair::One(&mut slc[max(a, b)])
+        Pair::One(&mut slc[a])
     } else {
         // safe because a, b are in bounds and distinct
         unsafe {
@@ -656,7 +625,6 @@ where
                 }
                 let ret = self.remove_edge(next);
                 debug_assert!(ret.is_some());
-                let _ = ret;
             }
         }
 
@@ -1507,7 +1475,7 @@ where
 /// [1]: struct.Graph.html#method.neighbors
 /// [2]: struct.Graph.html#method.neighbors_directed
 /// [3]: struct.Graph.html#method.neighbors_undirected
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> {
     /// starting node to skip over
     skip_start: NodeIndex<Ix>,
@@ -1542,13 +1510,6 @@ where
         }
         None
     }
-}
-
-impl<'a, E, Ix> Clone for Neighbors<'a, E, Ix>
-where
-    Ix: IndexType,
-{
-    clone_fields!(Neighbors, skip_start, edges, next,);
 }
 
 impl<'a, E, Ix> Neighbors<'a, E, Ix>

@@ -1,15 +1,3 @@
-macro_rules! clone_fields {
-    ($name:ident, $($field:ident),+ $(,)*) => (
-        fn clone(&self) -> Self {
-            $name {
-                $(
-                    $field : self . $field .clone()
-                ),*
-            }
-        }
-    );
-}
-
 macro_rules! iterator_wrap {
     (impl () for
     struct $name: ident <$($typarm:tt),*> where { $($bounds: tt)* }
