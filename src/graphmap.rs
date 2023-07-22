@@ -516,8 +516,8 @@ where
             gr.add_node(node);
         }
         for ((a, b), edge_weight) in self.edges {
-            let (ai, _, _) = self.nodes.get_full(&a).unwrap();
-            let (bi, _, _) = self.nodes.get_full(&b).unwrap();
+            let ai = self.nodes.get_index_of(&a).unwrap();
+            let bi = self.nodes.get_index_of(&b).unwrap();
             gr.add_edge(node_index(ai), node_index(bi), edge_weight);
         }
         gr
@@ -1104,8 +1104,7 @@ where
         self.node_count()
     }
     fn to_index(&self, ix: Self::NodeId) -> usize {
-        let (i, _, _) = self.nodes.get_full(&ix).unwrap();
-        i
+        self.nodes.get_index_of(&ix).unwrap()
     }
     fn from_index(&self, ix: usize) -> Self::NodeId {
         assert!(
@@ -1157,8 +1156,7 @@ where
     }
 
     fn to_index(&self, ix: Self::EdgeId) -> usize {
-        let (i, _, _) = self.edges.get_full(&ix).unwrap();
-        i
+        self.edges.get_index_of(&ix).unwrap()
     }
 
     fn from_index(&self, ix: usize) -> Self::EdgeId {
