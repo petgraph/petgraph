@@ -400,8 +400,8 @@ fn self_loops_can_be_removed() {
 }
 
 #[test]
+#[cfg(feature = "rayon")]
 fn test_parallel_iterator() {
-    use petgraph::rayon::*;
     use rayon::prelude::*;
     let mut gr: DiGraphMap<u32, u32> = DiGraphMap::new();
 

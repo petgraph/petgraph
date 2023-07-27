@@ -24,20 +24,12 @@ where
     }
 }
 
-/// Adds parallel iterators where possible, i.e. where nodes are [Send] + [Sync].
-pub trait NodesParIter<'a, N>
+impl<'a, N, E, Ty> GraphMap<N, E, Ty>
 where
     N: Send + Sync,
 {
     /// Returns a parallel iterator over this graph's nodes.
-    fn par_nodes(&'a self) -> ParNodes<'a, N>;
-}
-
-impl<'a, N, E, Ty> NodesParIter<'a, N> for GraphMap<N, E, Ty>
-where
-    N: Send + Sync,
-{
-    fn par_nodes(&'a self) -> ParNodes<'a, N> {
+    pub fn par_nodes(&'a self) -> ParNodes<'a, N> {
         ParNodes {
             iter: self.nodes.par_keys(),
         }
