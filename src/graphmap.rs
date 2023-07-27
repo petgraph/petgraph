@@ -59,7 +59,7 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
-    nodes: IndexMap<N, Vec<(N, CompactDirection)>>,
+    pub(crate) nodes: IndexMap<N, Vec<(N, CompactDirection)>>,
     edges: IndexMap<(N, N), E>,
     ty: PhantomData<Ty>,
 }
@@ -76,7 +76,7 @@ impl<N> NodeTrait for N where N: Copy + Ord + Hash {}
 
 // non-repr(usize) version of Direction
 #[derive(Copy, Clone, Debug, PartialEq)]
-enum CompactDirection {
+pub(crate) enum CompactDirection {
     Outgoing,
     Incoming,
 }
