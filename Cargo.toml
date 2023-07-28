@@ -37,6 +37,7 @@ name = "petgraph"
 debug = true
 
 [dependencies]
+ahash = { version = "0.8", optional = true}
 fixedbitset = { version = "0.4.0", default-features = false }
 indexmap = "2.0"
 quickcheck = { optional = true, version = "0.8", default-features = false }
@@ -60,6 +61,7 @@ default = ["graphmap", "stable_graph", "matrix_graph"]
 
 generate = [] # For unstable features
 
+ahash = ["dep:ahash"]
 graphmap = []
 matrix_graph = []
 serde-1 = ["serde", "serde_derive"]
