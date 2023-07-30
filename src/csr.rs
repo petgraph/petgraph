@@ -351,6 +351,19 @@ where
         &self.edges[p]
     }
 
+    /// Access the weight for edge `e`, mutably.
+    ///
+    /// Also available with indexing syntax: `&mut graph[e]`.
+    /// (NOTE TO MAINTAINERS - NOT SURE ABOUT THIS, NOT ENTIRELY SURE WHAT THIS MEANS)
+    ///
+    /// **Panics** if no edge exists between `a` and `b`.
+    pub fn edge_weight_mut(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> &mut E {
+        let p = self
+            .find_edge_pos(a, b)
+            .expect("No edge found between the nodes.");
+        &mut self.edges[p]
+    }
+
     /// Safely accesses the weight for edge `e`.
     ///
     /// Also available with indexing syntax: `&graph[e]`?
