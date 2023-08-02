@@ -45,3 +45,11 @@ harness = false
 [[bench]]
 name = "bellman_ford"
 harness = false
+
+[[bench]]
+name = "floyd_warshall"
+harness = false
+
+[[bench]]
+name = "k_shortest_path_length"
+harness = false
