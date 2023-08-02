@@ -41,3 +41,7 @@ remove-me-only-intended-for-move-adjacency-matrix = ["dep:petgraph-adjacency-mat
 [[bench]]
 name = "dijkstra"
 harness = false
+
+[[bench]]
+name = "bellman_ford"
+harness = false

@@ -2,6 +2,8 @@ use petgraph_core::{edge::Undirected, visit::EdgeRef};
 use petgraph_graph::{Graph, NodeIndex};
 use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
 
+pub const NODE_COUNTS: &[usize] = &[8, 16, 32, 64, 128, 256, 1024, 2048, 4096, 8192, 16384];
+
 /// Returns a complete graph with $n$ nodes.
 ///
 /// # Arguments
