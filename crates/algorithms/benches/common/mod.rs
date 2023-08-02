@@ -1,21 +1,59 @@
 use petgraph_core::{edge::Undirected, visit::EdgeRef};
 use petgraph_graph::{Graph, NodeIndex};
-use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
+use rand::{
+    distributions::{Distribution, Standard},
+    prelude::SliceRandom,
+    rngs::StdRng,
+    Rng, SeedableRng,
+};
 
-pub const NODE_COUNTS: &[usize] = &[8, 16, 32, 64, 128, 256, 1024, 2048, 4096, 8192, 16384];
+const NODE_COUNTS: &[usize] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384];
+
+pub fn nodes(max: Option<usize>) -> &'static [usize] {
+    let Some(max) = max else {
+        return NODE_COUNTS;
+    };
+
+    let mut index = 0;
+
+    for &count in NODE_COUNTS {
+        if count > max {
+            break;
+        }
+
+        index += 1;
+    }
+
+    &NODE_COUNTS[..index]
+}
+
+fn rng(seed: Option<u64>) -> StdRng {
+    seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64)
+}
 
 /// Returns a complete graph with $n$ nodes.
 ///
 /// # Arguments
 ///
 /// * `n` - The number of nodes
-pub fn complete_graph(n: usize) -> Graph<(), (), Undirected> {
+/// * `seed` - The seed for the random number generator
+pub fn complete_graph<N, E>(n: usize, seed: Option<u64>) -> Graph<N, E, Undirected>
+where
+    Standard: Distribution<N> + Distribution<E>,
+{
+    complete_graph_rng(n, &mut rng(seed))
+}
+
+fn complete_graph_rng<N, E>(n: usize, rng: &mut impl Rng) -> Graph<N, E, Undirected>
+where
+    Standard: Distribution<N> + Distribution<E>,
+{
     let mut graph = Graph::new_undirected();
-    let nodes: Vec<NodeIndex<_>> = (0..n).into_iter().map(|_| graph.add_node(())).collect();
+    let nodes: Vec<NodeIndex<_>> = (0..n).map(|_| graph.add_node(rng.gen())).collect();
 
     for i in 0..n {
         for j in i + 1..n {
-            graph.add_edge(nodes[i], nodes[j], ());
+            graph.add_edge(nodes[i], nodes[j], rng.gen());
         }
     }
 
@@ -39,41 +77,42 @@ pub fn complete_graph(n: usize) -> Graph<(), (), Undirected> {
 /// # Panics
 ///
 /// Panics if `k > n`.
-pub fn newman_watts_strogatz_graph(
+pub fn newman_watts_strogatz_graph<N, E>(
     n: usize,
     k: usize,
     p: f64,
     seed: Option<u64>,
-) -> Graph<(), (), Undirected> {
+) -> Graph<N, E, Undirected>
+where
+    Standard: Distribution<N> + Distribution<E>,
+{
     assert!(k <= n, "Neighbours must be less than nodes");
 
-    let mut rng = match seed {
-        Some(seed) => StdRng::seed_from_u64(seed),
-        None => StdRng::from_entropy(),
-    };
+    let mut rng = rng(seed);
 
     if k == n {
-        return complete_graph(n);
+        return complete_graph_rng(n, &mut rng);
     }
 
     let mut graph = Graph::new_undirected();
-    let nodes: Vec<NodeIndex<_>> = (0..n).into_iter().map(|_| graph.add_node(())).collect();
+
+    let nodes: Vec<NodeIndex<_>> = (0..n).map(|_| graph.add_node(rng.gen())).collect();
 
     let from_nodes = &nodes;
 
     // connect the k/2 neighbours
-    for j in 1..(k / 2 + 1) {
+    for j in 1..=(k / 2) {
         // rotate the from_nodes by j
         let mut to_nodes = from_nodes.clone();
         to_nodes.rotate_left(j);
 
         for (from, to) in from_nodes.iter().zip(to_nodes.iter()) {
-            graph.add_edge(*from, *to, ());
+            graph.add_edge(*from, *to, rng.gen());
         }
     }
 
     // for each edge (u, v), with probability p, randomly select a node w and add the edge (u, w)
-    let mut edges: Vec<_> = graph
+    let edges: Vec<_> = graph
         .edge_references()
         .map(|e| (e.source(), e.target()))
         .collect();
@@ -97,7 +136,7 @@ pub fn newman_watts_strogatz_graph(
         }
 
         if create_edge {
-            graph.add_edge(u, w, ());
+            graph.add_edge(u, w, rng.gen());
         }
     }
 
