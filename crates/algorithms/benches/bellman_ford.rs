@@ -12,7 +12,7 @@ fn sparse(criterion: &mut Criterion) {
 
     for nodes in nodes(None) {
         group.bench_with_input(
-            BenchmarkId::new("bellman_ford", *nodes),
+            BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
                 let graph =
@@ -32,7 +32,7 @@ fn dense(criterion: &mut Criterion) {
 
     for nodes in nodes(Some(128)) {
         group.bench_with_input(
-            BenchmarkId::new("bellman_ford", *nodes),
+            BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
                 let connectivity = nodes / 2;

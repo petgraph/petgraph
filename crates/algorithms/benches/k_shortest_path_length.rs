@@ -12,7 +12,7 @@ fn sparse(criterion: &mut Criterion) {
 
     for nodes in nodes(None) {
         group.bench_with_input(
-            BenchmarkId::new("k_shortest_path_length", *nodes),
+            BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
                 let graph =
@@ -33,7 +33,7 @@ fn dense(criterion: &mut Criterion) {
 
     for nodes in nodes(Some(512)) {
         group.bench_with_input(
-            BenchmarkId::new("k_shortest_path_length", *nodes),
+            BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
                 let connectivity = nodes / 2;
