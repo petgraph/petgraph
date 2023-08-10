@@ -2484,3 +2484,72 @@ fn test_dominators_simple_fast() {
         "nodes that aren't reachable from the root do not have an idom"
     );
 }
+#[test]
+fn test_element_filtered_iterators_directed() {
+    use petgraph::{
+        graph::{EdgeReference, NodeIndex},
+        visit::{ElementFiltered, IntoEdgesDirected, NestedFilter},
+    };
+
+    let gr = make_edge_iterator_graph::<Directed>();
+    // < 5 makes sure there are edges going both ways between included and excluded nodes (e -> g, f -> e)
+    let node_filter = |node: NodeIndex<u32>| node.index() < 5;
+    let edge_filter = |edge: EdgeReference<f64>| -> bool { *edge.weight() > 8.0 };
+    let filter = NestedFilter(node_filter, edge_filter);
+    let filtered = ElementFiltered(&gr, filter);
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            filtered.edges_directed(i, Outgoing),
+            gr.edges_directed(i, Outgoing).filter(|edge| {
+                node_filter(edge.source()) && node_filter(edge.target()) && edge_filter(*edge)
+            }),
+        );
+        itertools::assert_equal(
+            filtered.edges_directed(i, Incoming),
+            gr.edges_directed(i, Incoming).filter(|edge| {
+                node_filter(edge.source()) && node_filter(edge.target()) && edge_filter(*edge)
+            }),
+        );
+    }
+}
+
+#[test]
+fn element_filtered() {
+    use petgraph::graph::EdgeReference;
+    use petgraph::stable_graph::DefaultIx;
+    use petgraph::visit::{ElementFiltered, IntoEdgeReferences, IntoNodeReferences, NestedFilter};
+
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    g.add_edge(a, b, 7i64);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
+    println!("{:?}", g);
+
+    // Remove nodes C and E
+    let node_filter = |n: NodeIndex| n != c && n != e;
+    // Remove any edge coming from node a
+    let edge_filter = |e: EdgeReference<i64, DefaultIx>| e.source() != a;
+    let filt = ElementFiltered(&g, NestedFilter(node_filter, edge_filter));
+
+    assert_eq!(
+        set(filt.node_references().map(|(_, w)| *w)),
+        set(vec!["A", "B", "D", "F"])
+    );
+    assert_eq!(
+        set(filt.edge_references().map(|e| (e.source(), e.target()))),
+        set(vec![(b, f)])
+    )
+}

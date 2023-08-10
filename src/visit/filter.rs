@@ -581,3 +581,173 @@ NodeCount! {delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}
 NodeIndexable! {delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}
 EdgeIndexable! {delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}
 Visitable! {delegate_impl [[G, F], G, EdgeFiltered<G, F>, access0]}
+
+/// Combines a node filter and an edge filter.
+///
+/// Whenever an edge is checked by this filter, it first checks if the
+/// source and target nodes should be included, and then it checks if
+/// the edge should be included.
+pub struct NestedFilter<NodeF, EdgeF>(pub NodeF, pub EdgeF);
+
+impl<NF, EF> NestedFilter<NF, EF> {
+    pub fn from_filters(node_filter: NF, edge_filter: EF) -> Self {
+        NestedFilter(node_filter, edge_filter)
+    }
+}
+
+impl<NF, EF> From<(NF, EF)> for NestedFilter<NF, EF> {
+    fn from((nf, ef): (NF, EF)) -> Self {
+        NestedFilter(nf, ef)
+    }
+}
+
+impl<NF, EF, Node> FilterNode<Node> for NestedFilter<NF, EF>
+where
+    NF: FilterNode<Node>,
+{
+    fn include_node(&self, node: Node) -> bool {
+        self.0.include_node(node)
+    }
+}
+
+impl<NF, EF, Node, Edge> FilterEdge<Edge> for NestedFilter<NF, EF>
+where
+    NF: FilterNode<Node>,
+    EF: FilterEdge<Edge>,
+    Edge: EdgeRef<NodeId = Node>,
+{
+    fn include_edge(&self, edge: Edge) -> bool {
+        self.0.include_node(edge.source())
+            && self.0.include_node(edge.target())
+            && self.1.include_edge(edge)
+    }
+}
+
+/// A graph adaptor that filters both edges and nodes.
+///
+/// [`EdgeFiltered`] and [`NodeFiltered`] can't be nested due to lifetime
+/// constraints.
+pub struct ElementFiltered<G, F>(pub G, pub F);
+
+impl<G, F> GraphBase for ElementFiltered<G, F>
+where
+    G: GraphBase,
+{
+    type EdgeId = G::EdgeId;
+    type NodeId = G::NodeId;
+}
+
+impl<'a, G, F> IntoNodeIdentifiers for &'a ElementFiltered<G, F>
+where
+    G: IntoNodeIdentifiers,
+    F: FilterNode<G::NodeId>,
+{
+    type NodeIdentifiers = NodeFilteredNeighbors<'a, G::NodeIdentifiers, F>;
+
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
+        NodeFilteredNeighbors {
+            include_source: true,
+            iter: self.0.node_identifiers(),
+            f: &self.1,
+        }
+    }
+}
+
+impl<'a, G, F> IntoNodeReferences for &'a ElementFiltered<G, F>
+where
+    G: IntoNodeReferences,
+    F: FilterNode<G::NodeId>,
+{
+    type NodeRef = G::NodeRef;
+    type NodeReferences = NodeFilteredNodes<'a, G::NodeReferences, F>;
+
+    fn node_references(self) -> Self::NodeReferences {
+        NodeFilteredNodes {
+            include_source: true,
+            f: &self.1,
+            iter: self.0.node_references(),
+        }
+    }
+}
+
+impl<'a, G, F> IntoNeighbors for &'a ElementFiltered<G, F>
+where
+    G: IntoEdges,
+    F: FilterEdge<G::EdgeRef>,
+{
+    type Neighbors = EdgeFilteredNeighbors<'a, G, F>;
+    fn neighbors(self, a: Self::NodeId) -> Self::Neighbors {
+        EdgeFilteredNeighbors {
+            iter: self.0.edges(a),
+            f: &self.1,
+        }
+    }
+}
+
+impl<'a, G, F> IntoNeighborsDirected for &'a ElementFiltered<G, F>
+where
+    G: IntoEdgesDirected,
+    F: FilterEdge<G::EdgeRef>,
+{
+    type NeighborsDirected = EdgeFilteredNeighborsDirected<'a, G, F>;
+    fn neighbors_directed(self, n: Self::NodeId, d: Direction) -> Self::NeighborsDirected {
+        EdgeFilteredNeighborsDirected {
+            iter: self.0.edges_directed(n, d),
+            f: &self.1,
+            from: n,
+        }
+    }
+}
+
+impl<'a, G, F> IntoEdgeReferences for &'a ElementFiltered<G, F>
+where
+    G: IntoEdgeReferences,
+    F: FilterEdge<G::EdgeRef>,
+{
+    type EdgeRef = G::EdgeRef;
+    type EdgeReferences = EdgeFilteredEdges<'a, G, G::EdgeReferences, F>;
+    fn edge_references(self) -> Self::EdgeReferences {
+        EdgeFilteredEdges {
+            graph: PhantomData,
+            iter: self.0.edge_references(),
+            f: &self.1,
+        }
+    }
+}
+
+impl<'a, G, F> IntoEdges for &'a ElementFiltered<G, F>
+where
+    G: IntoEdges,
+    F: FilterEdge<G::EdgeRef>,
+{
+    type Edges = EdgeFilteredEdges<'a, G, G::Edges, F>;
+    fn edges(self, n: G::NodeId) -> Self::Edges {
+        EdgeFilteredEdges {
+            graph: PhantomData,
+            iter: self.0.edges(n),
+            f: &self.1,
+        }
+    }
+}
+
+impl<'a, G, F> IntoEdgesDirected for &'a ElementFiltered<G, F>
+where
+    G: IntoEdgesDirected,
+    F: FilterEdge<G::EdgeRef>,
+{
+    type EdgesDirected = EdgeFilteredEdges<'a, G, G::EdgesDirected, F>;
+
+    fn edges_directed(self, n: G::NodeId, dir: Direction) -> Self::EdgesDirected {
+        EdgeFilteredEdges {
+            graph: PhantomData,
+            iter: self.0.edges_directed(n, dir),
+            f: &self.1,
+        }
+    }
+}
+
+Data! {delegate_impl [[G, F], G, ElementFiltered<G, F>, access0]}
+GraphProp! {delegate_impl [[G, F], G, ElementFiltered<G, F>, access0]}
+NodeIndexable! {delegate_impl [[G, F], G, ElementFiltered<G, F>, access0]}
+EdgeIndexable! {delegate_impl [[G, F], G, ElementFiltered<G, F>, access0]}
+Visitable! {delegate_impl [[G, F], G, ElementFiltered<G, F>, access0]}
