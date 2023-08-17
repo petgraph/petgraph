@@ -157,7 +157,7 @@ const UNDEFINED: usize = ::std::usize::MAX;
 /// Cooper et al found it to be faster in practice on control flow graphs of up
 /// to ~30,000 vertices.
 ///
-/// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
+/// [0]: http://www.hipersoft.rice.edu/grads/publications/dom14.pdf
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
 where
     G: IntoNeighbors + Visitable,
