@@ -53,3 +53,7 @@ harness = false
 [[bench]]
 name = "k_shortest_path_length"
 harness = false
+
+[[bench]]
+name = "feedback_arc_set"
+harness = false
