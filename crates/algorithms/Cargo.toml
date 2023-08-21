@@ -61,3 +61,7 @@ harness = false
 [[bench]]
 name = "matching"
 harness = false
+
+[[bench]]
+name = "isomorphism"
+harness = false
