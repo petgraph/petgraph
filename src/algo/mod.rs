@@ -8,6 +8,7 @@ pub mod astar;
 pub mod bellman_ford;
 pub mod dijkstra;
 pub mod dominators;
+pub mod edmonds_karp;
 pub mod feedback_arc_set;
 pub mod floyd_warshall;
 pub mod isomorphism;
@@ -36,6 +37,7 @@ use crate::visit::{Data, IntoNodeReferences, NodeRef};
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
 pub use dijkstra::dijkstra;
+pub use edmonds_karp::edmonds_karp;
 pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
 pub use isomorphism::{
@@ -815,7 +817,7 @@ where
 }
 
 use std::fmt::Debug;
-use std::ops::Add;
+use std::ops::{Add, Sub};
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Clone {}
@@ -846,7 +848,7 @@ impl FloatMeasure for f64 {
     }
 }
 
-pub trait BoundedMeasure: Measure + std::ops::Sub<Self, Output = Self> {
+pub trait BoundedMeasure: Measure + Sub<Self, Output = Self> {
     fn min() -> Self;
     fn max() -> Self;
     fn overflowing_add(self, rhs: Self) -> (Self, bool);
@@ -901,3 +903,23 @@ macro_rules! impl_bounded_measure_float(
 );
 
 impl_bounded_measure_float!(f32, f64);
+
+pub trait OrderableMeasure: Measure + Sub<Self, Output = Self> {
+    fn min<'a>(&'a self, other: &'a Self) -> &'a Self {
+        if self <= other {
+            self
+        } else if self > other {
+            other
+
+        // If other is NaN, return self.
+        } else if other.ne(other) {
+            self
+
+        // Else if self is NaN, return other.
+        } else {
+            other
+        }
+    }
+}
+
+impl<M> OrderableMeasure for M where M: Measure + Sub<Self, Output = Self> {}

@@ -73,12 +73,12 @@ pub fn dijkstra<G, F, K>(
     graph: G,
     start: G::NodeId,
     goal: Option<G::NodeId>,
-    mut edge_cost: F,
+    edge_cost: F,
 ) -> HashMap<G::NodeId, K>
 where
     G: IntoEdges + Visitable,
     G::NodeId: Eq + Hash,
-    F: FnMut(G::EdgeRef) -> K,
+    F: Fn(G::EdgeRef) -> K,
     K: Measure + Copy,
 {
     let mut visited = graph.visit_map();
