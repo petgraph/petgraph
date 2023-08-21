@@ -1,6 +1,9 @@
 pub mod factories;
 
-use petgraph_core::{edge::Undirected, visit::EdgeRef};
+use petgraph_core::{
+    edge::{Directed, Undirected},
+    visit::EdgeRef,
+};
 use petgraph_graph::{DiGraph, Graph, NodeIndex};
 use rand::{
     distributions::{Distribution, Standard},
@@ -57,6 +60,37 @@ where
         for j in i + 1..n {
             graph.add_edge(nodes[i], nodes[j], rng.gen());
         }
+    }
+
+    graph
+}
+
+/// Returns an adapted version of the Newman-Watts-Strogatz small-world graph.
+///
+/// This will randomly assign a direction to each edge.
+pub fn newman_watts_strogatz_directed_graph<N, E>(
+    n: usize,
+    k: usize,
+    p: f64,
+    seed: Option<u64>,
+) -> Graph<N, E, Directed>
+where
+    Standard: Distribution<N> + Distribution<E>,
+{
+    let mut graph = newman_watts_strogatz_graph(n, k, p, seed).into_edge_type();
+
+    let mut rng = rng(seed);
+
+    let edges: Vec<_> = graph.edge_indices().collect();
+    let length = edges.len();
+
+    // when we remove and add we move indices around, so we need to randomly select instead
+    for _ in 0..length {
+        let edge = edges.choose(&mut rng).expect("No edges");
+        let (source, target) = graph.edge_endpoints(*edge).expect("No endpoints");
+
+        graph.remove_edge(*edge);
+        graph.add_edge(target, source, rng.gen());
     }
 
     graph
@@ -143,6 +177,41 @@ where
     }
 
     graph
+}
+
+pub enum Profile {
+    Sparse,
+    Dense,
+}
+
+impl Profile {
+    pub fn newman_watts_strogatz<N, E>(self, n: usize) -> Graph<N, E, Undirected>
+    where
+        Standard: Distribution<N> + Distribution<E>,
+    {
+        match self {
+            Self::Sparse => newman_watts_strogatz_graph(n, 4, 0.1, None),
+            Self::Dense => {
+                let connectivity = n / 2;
+
+                newman_watts_strogatz_graph(n, connectivity, 0.2, None)
+            }
+        }
+    }
+
+    pub fn newman_watts_strogatz_directed<N, E>(self, n: usize) -> Graph<N, E, Directed>
+    where
+        Standard: Distribution<N> + Distribution<E>,
+    {
+        match self {
+            Self::Sparse => newman_watts_strogatz_directed_graph(n, 4, 0.1, None),
+            Self::Dense => {
+                let connectivity = n / 2;
+
+                newman_watts_strogatz_directed_graph(n, connectivity, 0.2, None)
+            }
+        }
+    }
 }
 
 pub fn tournament<N, E>(n: usize, seed: Option<u64>) -> DiGraph<N, E>

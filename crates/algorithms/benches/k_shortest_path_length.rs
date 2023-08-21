@@ -3,7 +3,7 @@ mod common;
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use petgraph_algorithms::shortest_paths::k_shortest_path_length;
 
-use crate::common::nodes;
+use crate::common::{nodes, Profile};
 
 fn sparse(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("k_shortest_path_length/sparse");
@@ -15,8 +15,7 @@ fn sparse(criterion: &mut Criterion) {
             |bench, &nodes| {
                 bench.iter_batched(
                     || {
-                        let graph =
-                            common::newman_watts_strogatz_graph::<(), u8>(nodes, 4, 0.1, None);
+                        let graph = Profile::Sparse.newman_watts_strogatz::<(), u8>(nodes);
                         let nodes = graph.node_indices().collect::<Vec<_>>();
 
                         (graph, nodes)
@@ -43,14 +42,7 @@ fn dense(criterion: &mut Criterion) {
             |bench, &nodes| {
                 bench.iter_batched(
                     || {
-                        let connectivity = nodes / 2;
-
-                        let graph = common::newman_watts_strogatz_graph::<(), u8>(
-                            nodes,
-                            connectivity,
-                            0.2,
-                            None,
-                        );
+                        let graph = Profile::Dense.newman_watts_strogatz::<(), u8>(nodes);
                         let nodes = graph.node_indices().collect::<Vec<_>>();
 
                         (graph, nodes)

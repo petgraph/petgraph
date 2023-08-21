@@ -114,10 +114,10 @@ where
                 graph.add_node(());
             }
 
-            let start = graph.from_index(row);
+            let source = graph.from_index(row);
             let target = graph.from_index(column);
 
-            graph.update_edge(start, target, ());
+            graph.update_edge(source, target, ());
         }
     }
 

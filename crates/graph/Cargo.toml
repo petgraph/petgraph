@@ -19,9 +19,20 @@ serde-value = "0.7.0"
 insta = { version = "1.29.0", features = ['serde', 'json', 'glob'] }
 serde_json = "1.0.96"
 
+criterion = "0.5.1"
+rand = "0.8.5"
+
 [features]
 default = ["std", "stable"]
 stable = []
 std = ["fixedbitset/std", "petgraph-core/std", "serde/std"]
 serde = ["dep:serde"]
 proptest = ["dep:proptest", "dep:petgraph-proptest"]
+
+[[bench]]
+name = "ordered"
+harness = false
+
+[[bench]]
+name = "stable"
+harness = false
