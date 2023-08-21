@@ -5,8 +5,6 @@ use petgraph_algorithms::shortest_paths::floyd_warshall;
 
 use crate::common::nodes;
 
-const SEED: u64 = 0xD44F_C962_9610_EC54;
-
 fn sparse(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("floyd_warshall/sparse");
 
@@ -43,7 +41,7 @@ fn dense(criterion: &mut Criterion) {
                             nodes,
                             connectivity,
                             0.2,
-                            Some(SEED),
+                            None,
                         )
                     },
                     |graph| {
