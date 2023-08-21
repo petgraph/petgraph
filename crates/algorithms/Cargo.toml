@@ -65,3 +65,15 @@ harness = false
 [[bench]]
 name = "isomorphism"
 harness = false
+
+[[bench]]
+name = "components"
+harness = false
+
+[[bench]]
+name = "cycle"
+harness = false
+
+[[bench]]
+name = "tree"
+harness = false
