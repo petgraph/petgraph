@@ -1,3 +1,5 @@
+pub mod factories;
+
 use petgraph_core::{edge::Undirected, visit::EdgeRef};
 use petgraph_graph::{DiGraph, Graph, NodeIndex};
 use rand::{

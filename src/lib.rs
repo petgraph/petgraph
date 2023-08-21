@@ -166,7 +166,7 @@ pub mod matrix_graph {
 #[deprecated(since = "0.7.0", note = "use `algorithms` instead of `algo`")]
 pub mod algo {
     pub use petgraph_algorithms::{
-        components::{condensation, kosaraju_scc, tarjan_scc},
+        components::{condensation, connected_components, kosaraju_scc, tarjan_scc},
         connectivity::has_path_connecting,
         cycles::{greedy_feedback_arc_set, is_cyclic_directed, is_cyclic_undirected},
         dag::toposort,
