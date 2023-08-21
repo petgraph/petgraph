@@ -1,5 +1,3 @@
-mod common;
-
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use petgraph_algorithms::shortest_paths::floyd_warshall;
 
@@ -46,4 +44,3 @@ fn dense(criterion: &mut Criterion) {
 }
 
 criterion_group!(benches, sparse, dense);
-criterion_main!(benches);

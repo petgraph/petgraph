@@ -1,7 +1,7 @@
 mod common;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use petgraph_algorithms::tree::min_spanning_tree;
+use petgraph_algorithms::tree::minimum_spanning_tree;
 
 use crate::common::factories::directed_graph;
 
@@ -17,7 +17,7 @@ fn min_spanning_tree_directed(criterion: &mut Criterion) {
         ("petersen B", directed_graph().petersen_b()),
     ] {
         group.bench_with_input(id, &graph, |bench, graph| {
-            bench.iter(|| min_spanning_tree(graph));
+            bench.iter(|| minimum_spanning_tree(graph));
         });
     }
 }
@@ -34,7 +34,7 @@ fn min_spanning_tree_undirected(criterion: &mut Criterion) {
         ("petersen B", directed_graph().petersen_b()),
     ] {
         group.bench_with_input(id, &graph, |bench, graph| {
-            bench.iter(|| min_spanning_tree(graph));
+            bench.iter(|| minimum_spanning_tree(graph));
         });
     }
 }

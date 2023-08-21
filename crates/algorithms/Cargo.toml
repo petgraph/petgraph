@@ -39,23 +39,7 @@ remove-me-only-intended-for-move-graph = ["dep:petgraph-graph"]
 remove-me-only-intended-for-move-adjacency-matrix = ["dep:petgraph-adjacency-matrix"]
 
 [[bench]]
-name = "dijkstra"
-harness = false
-
-[[bench]]
-name = "bellman_ford"
-harness = false
-
-[[bench]]
-name = "floyd_warshall"
-harness = false
-
-[[bench]]
-name = "k_shortest_path_length"
-harness = false
-
-[[bench]]
-name = "feedback_arc_set"
+name = "shortest_paths"
 harness = false
 
 [[bench]]
@@ -71,7 +55,7 @@ name = "components"
 harness = false
 
 [[bench]]
-name = "cycle"
+name = "cycles"
 harness = false
 
 [[bench]]

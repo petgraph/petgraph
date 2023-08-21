@@ -12,7 +12,7 @@
 //!
 //! ```rust
 //! use petgraph::{
-//!     algorithms::{shortest_paths::dijkstra, tree::min_spanning_tree},
+//!     algorithms::{shortest_paths::dijkstra, tree::minimum_spanning_tree},
 //!     data::FromElements,
 //!     dot::{Config, Dot},
 //!     graph::{NodeIndex, UnGraph},
@@ -27,7 +27,7 @@
 //!
 //! // Get the minimum spanning tree of the graph as a new graph, and check that
 //! // one edge was trimmed.
-//! let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&g));
+//! let mst = UnGraph::<_, _>::from_elements(minimum_spanning_tree(&g));
 //! assert_eq!(g.raw_edges().len() - 1, mst.raw_edges().len());
 //!
 //! // Output the tree to `graphviz` `DOT` format
@@ -180,7 +180,7 @@ pub mod algo {
             k_shortest_path_length,
         },
         simple_paths::all_simple_paths,
-        tree::min_spanning_tree,
+        tree::minimum_spanning_tree,
     };
 }
 

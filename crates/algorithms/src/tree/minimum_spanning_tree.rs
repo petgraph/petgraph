@@ -88,7 +88,7 @@ where
 /// and **|V| - c** edges, where **c** is the number of connected components in `g`.
 ///
 /// Use `from_elements` to create a graph from the resulting iterator.
-pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
+pub fn minimum_spanning_tree<G>(g: G) -> MinSpanningTree<G>
 where
     G::NodeWeight: Clone,
     G::EdgeWeight: Clone + TotalOrd,
@@ -165,7 +165,7 @@ mod tests {
     fn example() {
         let graph = setup_wikipedia();
 
-        let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+        let mst = UnGraph::<_, _>::from_elements(minimum_spanning_tree(&graph));
 
         // convert between node indices and node weights
         let node = |index| *mst.node_weight(index).unwrap();
@@ -219,7 +219,7 @@ mod tests {
             (d, e, 4),
         ]);
 
-        let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+        let mst = UnGraph::<_, _>::from_elements(minimum_spanning_tree(&graph));
 
         // convert between node indices and node weights
         let node = |index| *mst.node_weight(index).unwrap();
@@ -242,7 +242,7 @@ mod tests {
         /// Verify the assumption that every minimum spanning tree must not be cyclic.
         #[test]
         fn no_cycles_directed(graph in any::<DiGraph<(), u8, u8>>()) {
-            let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+            let mst = UnGraph::<_, _>::from_elements(minimum_spanning_tree(&graph));
 
             prop_assert!(!is_cyclic_undirected(&mst));
         }
@@ -252,7 +252,7 @@ mod tests {
         fn consistent_node_count_directed(graph in any::<DiGraph<(), u8, u8>>()) {
             let nodes = graph.node_count();
 
-            let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+            let mst = UnGraph::<_, _>::from_elements(minimum_spanning_tree(&graph));
 
             prop_assert_eq!(mst.node_count(), nodes);
         }
@@ -260,7 +260,7 @@ mod tests {
         /// Verify the assumption that every minimum spanning tree must not be cyclic.
         #[test]
         fn no_cycles_undirected(graph in any::<UnGraph<(), u8, u8>>()) {
-            let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+            let mst = UnGraph::<_, _>::from_elements(minimum_spanning_tree(&graph));
 
             prop_assert!(!is_cyclic_undirected(&mst));
         }
@@ -270,7 +270,7 @@ mod tests {
         fn consistent_node_count_undirected(graph in any::<UnGraph<(), u8, u8>>()) {
             let nodes = graph.node_count();
 
-            let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&graph));
+            let mst = UnGraph::<_, _>::from_elements(minimum_spanning_tree(&graph));
 
             prop_assert_eq!(mst.node_count(), nodes);
         }

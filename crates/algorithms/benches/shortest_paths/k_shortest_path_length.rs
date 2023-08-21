@@ -1,12 +1,10 @@
-mod common;
-
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
-use petgraph_algorithms::shortest_paths::dijkstra;
+use petgraph_algorithms::shortest_paths::k_shortest_path_length;
 
 use crate::common::{nodes, Profile};
 
 fn sparse(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("dijkstra/sparse");
+    let mut group = criterion.benchmark_group("k_shortest_path_length/sparse");
 
     for nodes in nodes(None) {
         group.bench_with_input(
@@ -21,7 +19,9 @@ fn sparse(criterion: &mut Criterion) {
                         (graph, nodes)
                     },
                     |(graph, nodes)| {
-                        let _scores = dijkstra(&graph, nodes[0], None, |e| *e.weight());
+                        let _scores = k_shortest_path_length(&graph, nodes[0], None, 2, |edge| {
+                            *edge.weight()
+                        });
                     },
                     BatchSize::SmallInput,
                 );
@@ -31,9 +31,9 @@ fn sparse(criterion: &mut Criterion) {
 }
 
 fn dense(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("dijkstra/dense");
+    let mut group = criterion.benchmark_group("k_shortest_path_length/dense");
 
-    for nodes in nodes(Some(1024)) {
+    for nodes in nodes(Some(512)) {
         group.bench_with_input(
             BenchmarkId::from_parameter(*nodes),
             nodes,
@@ -46,7 +46,9 @@ fn dense(criterion: &mut Criterion) {
                         (graph, nodes)
                     },
                     |(graph, nodes)| {
-                        let _scores = dijkstra(&graph, nodes[0], None, |e| *e.weight());
+                        let _scores = k_shortest_path_length(&graph, nodes[0], None, 2, |edge| {
+                            *edge.weight()
+                        });
                     },
                     BatchSize::SmallInput,
                 );
@@ -56,4 +58,3 @@ fn dense(criterion: &mut Criterion) {
 }
 
 criterion_group!(benches, sparse, dense);
-criterion_main!(benches);
