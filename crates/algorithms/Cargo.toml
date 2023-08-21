@@ -29,6 +29,7 @@ proptest = "1.1.0"
 approx = "0.5.1"
 criterion = "0.5.1"
 rand = "0.8.5"
+petgraph-test-utils.workspace = true
 itertools = "0.10.5"
 
 [features]

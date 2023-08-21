@@ -1,34 +1,9 @@
 use petgraph_graph::{stable::StableGraph, DiGraph, EdgeIndex, Graph, NodeIndex};
+pub use petgraph_test_utils::*;
 use rand::{
     distributions::{Distribution, Standard},
-    rngs::StdRng,
-    Rng, SeedableRng,
+    Rng,
 };
-
-// TODO: potentially move this to a separate crate (test-utils?)
-const NODE_COUNTS: &[usize] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384];
-
-pub fn nodes(max: Option<usize>) -> &'static [usize] {
-    let Some(max) = max else {
-        return NODE_COUNTS;
-    };
-
-    let mut index = 0;
-
-    for &count in NODE_COUNTS {
-        if count > max {
-            break;
-        }
-
-        index += 1;
-    }
-
-    &NODE_COUNTS[..index]
-}
-
-fn rng(seed: Option<u64>) -> StdRng {
-    seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64)
-}
 
 pub fn cycle_graph<N, E>(
     n: usize,

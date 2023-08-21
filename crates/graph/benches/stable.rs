@@ -23,10 +23,10 @@ fn edges_count(criterion: &mut Criterion) {
 }
 
 fn edges_directed_count(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("edges_directed/outgoing/count");
+    let mut group = criterion.benchmark_group("edges_directed/count");
 
     for size in nodes(None) {
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |bench, &size| {
+        group.bench_with_input(BenchmarkId::new("Outgoing", size), size, |bench, &size| {
             bench.iter_batched(
                 || cycle_stable_graph::<(), ()>(size, None),
                 |(graph, ..)| {
@@ -37,17 +37,13 @@ fn edges_directed_count(criterion: &mut Criterion) {
                 BatchSize::SmallInput,
             );
         });
-    }
 
-    let mut group = criterion.benchmark_group("edges_directed/incoming/count");
-
-    for size in nodes(None) {
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |bench, &size| {
+        group.bench_with_input(BenchmarkId::new("Incoming", size), size, |bench, &size| {
             bench.iter_batched(
                 || cycle_stable_graph::<(), ()>(size, None),
                 |(graph, ..)| {
                     let _count = graph
-                        .edges_directed(NodeIndex::new(0), Direction::Incoming)
+                        .edges_directed(NodeIndex::new(0), Direction::Outgoing)
                         .count();
                 },
                 BatchSize::SmallInput,
