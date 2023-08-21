@@ -122,7 +122,7 @@ fn kosaraju_sparse(criterion: &mut Criterion) {
 fn kosaraju_dense(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("kosaraju_scc/dense");
 
-    for size in nodes(Some(1024)) {
+    for size in nodes(Some(64)) {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |bench, &size| {
             bench.iter_batched(
                 || Profile::Dense.newman_watts_strogatz_directed::<(), ()>(size),
@@ -165,7 +165,7 @@ fn tarjan_sparse(criterion: &mut Criterion) {
 fn tarjan_dense(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("tarjan_scc/dense");
 
-    for size in nodes(Some(1024)) {
+    for size in nodes(Some(64)) {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |bench, &size| {
             bench.iter_batched(
                 || Profile::Dense.newman_watts_strogatz_directed::<(), ()>(size),
