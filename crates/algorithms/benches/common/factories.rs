@@ -128,6 +128,7 @@ pub struct GraphFactory<G = Graph<(), (), Directed>> {
     _marker: PhantomData<fn() -> *const G>,
 }
 
+#[allow(clippy::unused_self)]
 impl<G> GraphFactory<G>
 where
     G: Default + Build<NodeWeight = (), EdgeWeight = ()> + NodeIndexable + GraphProp,
@@ -138,35 +139,35 @@ where
         }
     }
 
-    pub fn petersen_a() -> G {
+    pub fn petersen_a(self) -> G {
         parse_graph(PETERSEN_A)
     }
 
-    pub fn petersen_b() -> G {
+    pub fn petersen_b(self) -> G {
         parse_graph(PETERSEN_B)
     }
 
-    pub fn full_a() -> G {
+    pub fn full_a(self) -> G {
         parse_graph(FULL_A)
     }
 
-    pub fn full_b() -> G {
+    pub fn full_b(self) -> G {
         parse_graph(FULL_B)
     }
 
-    pub fn praust_a() -> G {
+    pub fn praust_a(self) -> G {
         parse_graph(PRAUST_A)
     }
 
-    pub fn praust_b() -> G {
+    pub fn praust_b(self) -> G {
         parse_graph(PRAUST_B)
     }
 
-    pub fn bigger() -> G {
+    pub fn bigger(self) -> G {
         parse_graph(BIGGER)
     }
 
-    pub fn bipartite() -> G {
+    pub fn bipartite(self) -> G {
         parse_graph(BIPARTITE)
     }
 }

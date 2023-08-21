@@ -57,3 +57,7 @@ harness = false
 [[bench]]
 name = "feedback_arc_set"
 harness = false
+
+[[bench]]
+name = "matching"
+harness = false
