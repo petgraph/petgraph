@@ -1,5 +1,5 @@
 use petgraph_core::{edge::Undirected, visit::EdgeRef};
-use petgraph_graph::{Graph, NodeIndex};
+use petgraph_graph::{DiGraph, Graph, NodeIndex};
 use rand::{
     distributions::{Distribution, Standard},
     prelude::SliceRandom,
@@ -138,6 +138,75 @@ where
         if create_edge {
             graph.add_edge(u, w, rng.gen());
         }
+    }
+
+    graph
+}
+
+pub fn tournament<N, E>(n: usize, seed: Option<u64>) -> DiGraph<N, E>
+where
+    Standard: Distribution<N> + Distribution<E>,
+{
+    let mut rng = rng(seed);
+
+    let mut edge_forward = true;
+    let mut graph = DiGraph::new();
+
+    let nodes: Vec<_> = (0..n).map(|_| graph.add_node(rng.gen())).collect();
+
+    for (index, start) in graph.node_indices().enumerate() {
+        // This is the same as like `start < end`, because `NodeIndex` is monotonically increasing.
+        for target in &nodes[..index] {
+            let (source, target) = if edge_forward {
+                (start, *target)
+            } else {
+                (*target, start)
+            };
+
+            graph.add_edge(source, target, rng.gen());
+            edge_forward = !edge_forward;
+        }
+    }
+
+    graph
+}
+
+/// An `F_(1, n)` graph (where `|E| == 2(|N|) - 1`) with pseudo-random edge directions.
+pub fn directed_fan<N, E>(n: usize, seed: Option<u64>) -> DiGraph<N, E>
+where
+    Standard: Distribution<N> + Distribution<E>,
+{
+    let mut rng = rng(seed);
+
+    let mut graph = DiGraph::new();
+
+    let nodes: Vec<_> = (0..n).map(|_| graph.add_node(rng.gen())).collect();
+
+    let first = nodes[0];
+    let mut previous = None;
+
+    for index in nodes {
+        let edge_forward = rng.gen_bool(0.5);
+
+        let (source, target) = if edge_forward {
+            (first, index)
+        } else {
+            (index, first)
+        };
+
+        graph.add_edge(source, target, rng.gen());
+
+        if let Some(previous) = previous {
+            let (source, target) = if edge_forward {
+                (previous, index)
+            } else {
+                (index, previous)
+            };
+
+            graph.add_edge(source, target, rng.gen());
+        }
+
+        previous = Some(index);
     }
 
     graph
