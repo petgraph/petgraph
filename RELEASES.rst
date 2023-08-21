@@ -1,8 +1,10 @@
 Version 0.6.4 (2023-08-21)
 ==========================
 
-- Update `indexmap` to 2.0.0 (`#568`_)
+- Update ``indexmap`` to 2.0.0 (`#568`_)
+- Fix typos (`#544`_)
 
+.. _`#544`: https://github.com/petgraph/petgraph/pull/544
 .. _`#568`: https://github.com/petgraph/petgraph/pull/568
 
 Version 0.6.3 (2023-02-07)
