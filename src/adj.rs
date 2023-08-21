@@ -1,5 +1,5 @@
 //! Simple adjacency list.
-use crate::data::{Build, DataMap, DataMapMut};
+use crate::data::{Build, Create, DataMap, DataMapMut};
 use crate::iter_format::NoPretty;
 use crate::visit::{
     self, EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount,
@@ -204,7 +204,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
     }
 
     /// Adds a new node to the list by giving its list of successors and the corresponding
-    /// weigths.
+    /// weights.
     pub fn add_node_from_edges<I: Iterator<Item = (NodeIndex<Ix>, E)>>(
         &mut self,
         edges: I,
@@ -371,6 +371,12 @@ impl<E, Ix: IndexType> Build for List<E, Ix> {
             from: a,
             successor_index: rank,
         }
+    }
+}
+
+impl<E: Default, Ix: IndexType> Create for List<E, Ix> {
+    fn with_capacity(nodes: usize, _edges: usize) -> Self {
+        Self::with_capacity(nodes)
     }
 }
 

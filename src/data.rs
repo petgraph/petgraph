@@ -1,5 +1,6 @@
 //! Graph traits for associated data and graph construction.
 
+use crate::csr::Csr;
 use crate::graph::IndexType;
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{GraphMap, NodeTrait};
@@ -208,6 +209,7 @@ where
             Some((a, b))
         }
     }
+    /// Add or update the edge from `a` to `b`. Return the `EdgeId` of the affected edge.
     fn update_edge(
         &mut self,
         a: Self::NodeId,
@@ -216,6 +218,33 @@ where
     ) -> Self::EdgeId {
         self.add_edge(a, b, weight);
         (a, b)
+    }
+}
+
+impl<N, E, Ty, Ix> Build for Csr<N, E, Ty, Ix>
+where
+    E: Clone,
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
+        self.add_node(weight)
+    }
+    fn update_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Self::EdgeId {
+        self.update_edge(a, b, weight)
+    }
+    fn add_edge(
+        &mut self,
+        a: Self::NodeId,
+        b: Self::NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Option<Self::EdgeId> {
+        self.add_edge(a, b, weight)
     }
 }
 
@@ -248,6 +277,17 @@ where
 {
     fn with_capacity(nodes: usize, edges: usize) -> Self {
         Self::with_capacity(nodes, edges)
+    }
+}
+
+impl<N, E, Ty, Ix> Create for Csr<N, E, Ty, Ix>
+where
+    E: Clone,
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn with_capacity(_nodes: usize, _edges: usize) -> Self {
+        Self::new()
     }
 }
 

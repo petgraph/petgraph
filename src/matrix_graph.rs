@@ -20,7 +20,7 @@ use crate::visit::{
     IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
 };
 
-use crate::data::Build;
+use crate::data::{Build, Create};
 
 pub use crate::graph::IndexType;
 
@@ -1274,6 +1274,14 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Build
     }
 }
 
+impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Create
+    for MatrixGraph<N, E, Ty, Null, Ix>
+{
+    fn with_capacity(nodes: usize, _edges: usize) -> Self {
+        Self::with_capacity(nodes)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1809,6 +1817,41 @@ mod tests {
         assert_eq!(
             crate::algo::kosaraju_scc(&g),
             [[node_index(2)], [node_index(0)]]
+        );
+    }
+
+    #[test]
+    fn test_create_with_capacity() {
+        let g = <MatrixGraph<(), ()> as Create>::with_capacity(42, 0);
+        assert_eq!(g.node_count(), 0);
+        assert_eq!(g.edge_count(), 0);
+    }
+
+    #[test]
+    fn test_complete_graph_matrix_graph() {
+        let complete: MatrixGraph<_, _> =
+            crate::generators::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
+
+        assert_eq!(
+            complete
+                .node_references()
+                .map(|(node_index, &weight)| (node_index.index(), weight))
+                .collect::<Vec<_>>(),
+            [(0, ()), (1, ()), (2, ())]
+        );
+        assert_eq!(
+            complete
+                .edge_references()
+                .map(|(from, to, &weight)| (from.index(), to.index(), weight))
+                .collect::<Vec<_>>(),
+            [
+                (0, 1, ()),
+                (0, 2, ()),
+                (1, 0, ()),
+                (1, 2, ()),
+                (2, 0, ()),
+                (2, 1, ())
+            ],
         );
     }
 }

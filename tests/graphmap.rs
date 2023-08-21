@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::fmt;
 
 use petgraph::prelude::*;
-use petgraph::visit::Walker;
+use petgraph::visit::{IntoEdgeReferences, IntoNodeReferences, Walker};
 
 use petgraph::algo::dijkstra;
 
@@ -397,4 +397,39 @@ fn self_loops_can_be_removed() {
 
     assert_eq!(graph.neighbors_directed((), Outgoing).next(), None);
     assert_eq!(graph.neighbors_directed((), Incoming).next(), None);
+}
+
+#[test]
+fn test_complete_graph_di_graph_map() {
+    let mut count = 1..;
+    let complete: DiGraphMap<_, _> =
+        petgraph::generators::complete_graph(1..=4, |_, _| count.next().unwrap());
+
+    assert_eq!(
+        complete
+            .node_references()
+            .map(|(node_index, &weight)| (node_index, weight))
+            .collect::<Vec<_>>(),
+        [(1, 1), (2, 2), (3, 3), (4, 4)]
+    );
+    assert_eq!(
+        complete
+            .edge_references()
+            .map(|(from, to, &weight)| (from, to, weight))
+            .collect::<Vec<_>>(),
+        [
+            (1, 2, 1),
+            (1, 3, 2),
+            (1, 4, 3),
+            (2, 1, 4),
+            (2, 3, 5),
+            (2, 4, 6),
+            (3, 1, 7),
+            (3, 2, 8),
+            (3, 4, 9),
+            (4, 1, 10),
+            (4, 2, 11),
+            (4, 3, 12),
+        ]
+    );
 }

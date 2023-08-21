@@ -7,7 +7,7 @@ use petgraph::adj::DefaultIx;
 use petgraph::adj::IndexType;
 use petgraph::adj::{List, UnweightedList};
 use petgraph::algo::tarjan_scc;
-use petgraph::data::{DataMap, DataMapMut};
+use petgraph::data::{Create, DataMap, DataMapMut};
 use petgraph::dot::Dot;
 use petgraph::prelude::*;
 use petgraph::visit::{
@@ -255,5 +255,40 @@ fn dot() {
     0 -> 1 [ label = "20" ]
 }
 "#
+    );
+}
+
+#[test]
+fn test_create_with_capacity() {
+    let g = <List<()> as Create>::with_capacity(42, 0);
+    assert_eq!(g.node_count(), 0);
+    assert_eq!(g.edge_count(), 0);
+}
+
+#[test]
+fn test_complete_graph_list() {
+    let complete: List<_> =
+        petgraph::generators::complete_graph(core::iter::repeat(()).take(3), |_, _| ());
+
+    assert_eq!(
+        complete
+            .node_references()
+            .map(|node_index| node_index.index())
+            .collect::<Vec<_>>(),
+        [0, 1, 2]
+    );
+    assert_eq!(
+        complete
+            .edge_references()
+            .map(|edge| { (edge.source().index(), edge.target().index(), *edge.weight(),) })
+            .collect::<Vec<_>>(),
+        [
+            (0, 1, ()),
+            (0, 2, ()),
+            (1, 0, ()),
+            (1, 2, ()),
+            (2, 0, ()),
+            (2, 1, ())
+        ]
     );
 }
