@@ -1,5 +1,11 @@
-use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
-use petgraph_matrix_graph::MatrixGraph;
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
+use petgraph_core::{
+    edge::Direction,
+    index::{FromIndexType, IntoIndexType},
+    visit::EdgeRef,
+};
+use petgraph_matrix_graph::{MatrixGraph, NodeIndex};
+use petgraph_test_utils::factories::directed_graph;
 
 use crate::common::nodes;
 
@@ -10,7 +16,7 @@ fn add_nodes(criterion: &mut Criterion) {
 
     for nodes in nodes(None) {
         group.bench_with_input(
-            criterion::BenchmarkId::from_parameter(*nodes),
+            BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
                 bench.iter_batched(
@@ -32,7 +38,7 @@ fn add_edges(criterion: &mut Criterion) {
 
     for nodes in nodes(None) {
         group.bench_with_input(
-            criterion::BenchmarkId::from_parameter(*nodes),
+            BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
                 bench.iter_batched(
@@ -61,7 +67,7 @@ fn add_edges_self(criterion: &mut Criterion) {
 
     for nodes in nodes(None) {
         group.bench_with_input(
-            criterion::BenchmarkId::from_parameter(*nodes),
+            BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
                 bench.iter_batched(
@@ -88,7 +94,7 @@ fn add_edges_flower(criterion: &mut Criterion) {
 
     for nodes in nodes(None) {
         group.bench_with_input(
-            criterion::BenchmarkId::from_parameter(*nodes),
+            BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
                 bench.iter_batched(
@@ -112,5 +118,186 @@ fn add_edges_flower(criterion: &mut Criterion) {
     }
 }
 
+fn edges_count(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("edges/count");
+
+    let graph = directed_graph().full_a();
+    let graph: MatrixGraph<(), ()> = MatrixGraph::from_edges(graph.edge_references().map(|e| {
+        (
+            NodeIndex::from_index(e.source().into_index() as u16),
+            NodeIndex::from_index(e.target().into_index() as u16),
+            (),
+        )
+    }));
+
+    group.bench_with_input("Full", &graph, |bench, graph| {
+        bench.iter(|| {
+            let _count = graph.edges(NodeIndex::new(0)).count();
+        });
+    });
+}
+
+fn edges_directed_count(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("edges_directed/count");
+
+    let graph = directed_graph().full_a();
+    let graph: MatrixGraph<(), ()> = MatrixGraph::from_edges(graph.edge_references().map(|e| {
+        (
+            NodeIndex::from_index(e.source().into_index() as u16),
+            NodeIndex::from_index(e.target().into_index() as u16),
+            (),
+        )
+    }));
+
+    group.bench_with_input(
+        BenchmarkId::new("Outgoing", "Full"),
+        &graph,
+        |bench, graph| {
+            bench.iter(|| {
+                let _count = graph
+                    .edges_directed(NodeIndex::new(0), Direction::Outgoing)
+                    .count();
+            });
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("Incoming", "Full"),
+        &graph,
+        |bench, graph| {
+            bench.iter(|| {
+                let _count = graph
+                    .edges_directed(NodeIndex::new(0), Direction::Incoming)
+                    .count();
+            });
+        },
+    );
+
+    let graph = directed_graph().bigger();
+    let graph: MatrixGraph<(), ()> = MatrixGraph::from_edges(graph.edge_references().map(|e| {
+        (
+            NodeIndex::from_index(e.source().into_index() as u16),
+            NodeIndex::from_index(e.target().into_index() as u16),
+            (),
+        )
+    }));
+
+    group.bench_with_input(
+        BenchmarkId::new("Outgoing", "Bigger"),
+        &graph,
+        |bench, graph| {
+            bench.iter(|| {
+                let _count = graph
+                    .edges_directed(NodeIndex::new(0), Direction::Outgoing)
+                    .count();
+            });
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("Incoming", "Bigger"),
+        &graph,
+        |bench, graph| {
+            bench.iter(|| {
+                let _count = graph
+                    .edges_directed(NodeIndex::new(0), Direction::Incoming)
+                    .count();
+            });
+        },
+    );
+}
+
+fn neighbours_count(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("neighbours/count");
+
+    let graph = directed_graph().full_a();
+    let graph: MatrixGraph<(), ()> = MatrixGraph::from_edges(graph.edge_references().map(|e| {
+        (
+            NodeIndex::from_index(e.source().into_index() as u16),
+            NodeIndex::from_index(e.target().into_index() as u16),
+            (),
+        )
+    }));
+
+    group.bench_with_input("Full", &graph, |bench, graph| {
+        bench.iter(|| {
+            let _count = graph.neighbors(NodeIndex::new(0)).count();
+        });
+    });
+}
+
+fn neighbours_directed_count(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("neighbours/count");
+
+    let graph = directed_graph().full_a();
+    let graph: MatrixGraph<(), ()> = MatrixGraph::from_edges(graph.edge_references().map(|e| {
+        (
+            NodeIndex::from_index(e.source().into_index() as u16),
+            NodeIndex::from_index(e.target().into_index() as u16),
+            (),
+        )
+    }));
+
+    group.bench_with_input(
+        BenchmarkId::new("Outgoing", "Full"),
+        &graph,
+        |bench, graph| {
+            bench.iter(|| {
+                let _count = graph
+                    .neighbors_directed(NodeIndex::new(0), Direction::Outgoing)
+                    .count();
+            });
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("Incoming", "Full"),
+        &graph,
+        |bench, graph| {
+            bench.iter(|| {
+                let _count = graph
+                    .neighbors_directed(NodeIndex::new(0), Direction::Incoming)
+                    .count();
+            });
+        },
+    );
+
+    let graph = directed_graph().bigger();
+    let graph: MatrixGraph<(), ()> = MatrixGraph::from_edges(graph.edge_references().map(|e| {
+        (
+            NodeIndex::from_index(e.source().into_index() as u16),
+            NodeIndex::from_index(e.target().into_index() as u16),
+            (),
+        )
+    }));
+
+    group.bench_with_input(
+        BenchmarkId::new("Outgoing", "Bigger"),
+        &graph,
+        |bench, graph| {
+            bench.iter(|| {
+                let _count = graph
+                    .neighbors_directed(NodeIndex::new(0), Direction::Outgoing)
+                    .count();
+            });
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("Incoming", "Bigger"),
+        &graph,
+        |bench, graph| {
+            bench.iter(|| {
+                let _count = graph
+                    .neighbors_directed(NodeIndex::new(0), Direction::Incoming)
+                    .count();
+            });
+        },
+    );
+}
+
 criterion_group!(add, add_nodes, add_edges, add_edges_self, add_edges_flower);
-criterion_main!(add);
+criterion_group!(edges, edges_count, edges_directed_count);
+criterion_group!(neighbours, neighbours_count, neighbours_directed_count);
+
+criterion_main!(add, edges, neighbours);
