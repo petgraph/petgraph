@@ -1,6 +1,6 @@
 mod common;
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use petgraph_algorithms::shortest_paths::floyd_warshall;
 
 use crate::common::nodes;
@@ -15,12 +15,13 @@ fn sparse(criterion: &mut Criterion) {
             BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
-                let graph =
-                    common::newman_watts_strogatz_graph::<(), u8>(nodes, 4, 0.1, Some(SEED));
-
-                bench.iter(|| {
-                    let _scores = floyd_warshall(&graph, |edge| *edge.weight());
-                });
+                bench.iter_batched(
+                    || common::newman_watts_strogatz_graph::<(), u8>(nodes, 4, 0.1, None),
+                    |graph| {
+                        let _scores = floyd_warshall(&graph, |edge| *edge.weight());
+                    },
+                    BatchSize::SmallInput,
+                );
             },
         );
     }
@@ -34,18 +35,22 @@ fn dense(criterion: &mut Criterion) {
             BenchmarkId::from_parameter(*nodes),
             nodes,
             |bench, &nodes| {
-                let connectivity = nodes / 2;
+                bench.iter_batched(
+                    || {
+                        let connectivity = nodes / 2;
 
-                let graph = common::newman_watts_strogatz_graph::<(), u8>(
-                    nodes,
-                    connectivity,
-                    0.2,
-                    Some(SEED),
+                        common::newman_watts_strogatz_graph::<(), u8>(
+                            nodes,
+                            connectivity,
+                            0.2,
+                            Some(SEED),
+                        )
+                    },
+                    |graph| {
+                        let _scores = floyd_warshall(&graph, |edge| *edge.weight());
+                    },
+                    BatchSize::SmallInput,
                 );
-
-                bench.iter(|| {
-                    let _scores = floyd_warshall(&graph, |edge| *edge.weight());
-                });
             },
         );
     }
