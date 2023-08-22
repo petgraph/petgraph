@@ -52,7 +52,7 @@ odds = { version = "0.4.0" }
 rand = "0.5.5"
 
 [features]
-rayon = ["graphmap", "dep:rayon", "indexmap/rayon"]
+rayon = ["dep:rayon", "indexmap/rayon"]
 
 # feature flags for testing use only
 all = ["unstable", "quickcheck", "matrix_graph", "stable_graph", "graphmap", "rayon"]
