@@ -10,6 +10,7 @@ funty.workspace = true
 petgraph-core = { workspace = true, features = ["alloc", "fixedbitset"] }
 
 [dev-dependencies]
+petgraph.workspace = true
 
 [features]
 default = ["std"]

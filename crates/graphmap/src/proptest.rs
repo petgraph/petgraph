@@ -1,5 +1,5 @@
+use alloc::sync::Arc;
 use core::fmt::Debug;
-use std::sync::Arc;
 
 use petgraph_core::edge::EdgeType;
 use petgraph_proptest::{default::graph_strategy_from_vtable, vtable::VTable};

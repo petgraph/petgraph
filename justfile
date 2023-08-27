@@ -57,7 +57,7 @@ install-cargo-hack:
 
 [private]
 install-cargo-nextest:
-  @just install-cargo-tool 'cargo nextest' cargo-nextest 0.9.52
+  @just install-cargo-tool 'cargo nextest' cargo-nextest 0.9.57
 
 [private]
 install-llvm-cov:
@@ -98,9 +98,17 @@ build *arguments:
 
 # Run the test suite
 test *arguments: install-cargo-nextest install-cargo-hack
-  cargo hack --workspace --optional-deps --feature-powerset nextest run --cargo-profile {{profile}} {{arguments}}
+  #!/usr/bin/env bash
 
-  @just in-dev cargo test --profile {{profile}} --workspace --all-features --doc
+  # Credit to: https://stackoverflow.com/a/61299548/9077988
+  members=($(cargo metadata --format-version 1 | jq -r '.workspace_members | .[] | split(" ") | select(.[0] != "petgraph") | .[2] | sub("^\\(path\\+file://"; "") | sub("\\)$"; "") | @sh' | tr -d \'))
+
+  for member in "${members[@]}"; do
+    echo "Running tests for $member"
+    cargo hack --manifest-path "$member/Cargo.toml" --optional-deps --feature-powerset nextest run --cargo-profile {{profile}} {{arguments}}
+  done
+
+  just in-dev cargo test --profile {{profile}} --workspace --all-features --doc
 
 # Run the test suite with `miri`
 miri *arguments:
