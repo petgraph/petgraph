@@ -1,0 +1,10 @@
+---
+source: crates/io/tests/test_dot.rs
+expression: dot
+---
+digraph petgraph {
+    N0;
+    N1;
+    N0 -> N1[label=""][arrowhead="normal" dir="both" arrowtail="none"];
+}
+

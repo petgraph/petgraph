@@ -1,14 +1,9 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
-extern crate alloc;
-
-use alloc::{
+use std::{
     collections::BTreeSet,
     string::{String, ToString},
-    vec,
+    sync::Arc,
     vec::Vec,
 };
-use std::sync::Arc;
 
 use petgraph_algorithms::isomorphism::{
     is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, subgraph_isomorphisms_iter,
@@ -154,7 +149,6 @@ test_snapshot!(g4u =!=);
 test_snapshot!(g2u <=>);
 test_snapshot!(g2u ===);
 
-#[cfg(feature = "std")]
 /// Parse a file in adjacency matrix format into a directed graph
 fn graph_from_file(path: &str) -> Graph<(), (), Directed> {
     let mut f = std::fs::File::open(path).expect("file not found");

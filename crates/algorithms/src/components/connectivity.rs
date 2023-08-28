@@ -59,6 +59,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use alloc::format;
+
     use petgraph_core::edge::Directed;
     use petgraph_graph::Graph;
     use proptest::prelude::*;
@@ -153,6 +155,7 @@ mod tests {
         assert_eq!(kosaraju_scc(&graph).len(), 4);
     }
 
+    #[cfg(not(miri))]
     proptest! {
         #[test]
         fn invariant_over_direction(directed in any::<Graph<(), (), Directed, u8>>()) {

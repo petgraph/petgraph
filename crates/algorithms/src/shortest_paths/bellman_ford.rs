@@ -256,12 +256,15 @@ where
 
 #[cfg(test)]
 mod tests {
+    use alloc::format;
+
     use petgraph_core::edge::{Directed, Undirected};
     use petgraph_graph::Graph;
     use proptest::prelude::*;
 
     use crate::shortest_paths::bellman_ford;
 
+    #[cfg(not(miri))]
     proptest! {
         #[test]
         fn positive_weights_undirected_always_ok(mut graph in any::<Graph<(), f32, Undirected, u8>>()) {

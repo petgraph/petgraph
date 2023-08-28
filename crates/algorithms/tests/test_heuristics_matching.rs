@@ -1,8 +1,5 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
-extern crate alloc;
-use alloc::{format, vec::Vec};
 use core::hash::Hash;
+use std::vec::Vec;
 
 use indexmap::IndexSet;
 use petgraph_algorithms::heuristics::{greedy_matching, maximum_matching, Matching};

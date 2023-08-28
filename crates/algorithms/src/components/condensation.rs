@@ -134,6 +134,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use alloc::format;
+
     use petgraph_core::{edge::Directed, visit::EdgeRef};
     use petgraph_graph::{Graph, NodeIndex};
     use proptest::prelude::*;
@@ -254,6 +256,7 @@ mod tests {
         assert_eq!(condensed.edges(c).filter(|e| e.target() == c).count(), 3);
     }
 
+    #[cfg(not(miri))]
     proptest! {
         #[test]
         fn condensation_is_acyclic(graph in any::<Graph<(), (), Directed, u8>>()) {

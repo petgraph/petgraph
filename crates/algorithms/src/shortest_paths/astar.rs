@@ -179,7 +179,7 @@ where
 mod tests {
     //! This uses the same graph as the dijkstra test.
 
-    use alloc::vec;
+    use alloc::{format, vec};
 
     use approx::assert_relative_eq;
     use petgraph_core::{
@@ -449,6 +449,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(miri))]
     proptest! {
         #[test]
         fn null_heuristic_is_dijkstra(

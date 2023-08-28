@@ -237,6 +237,7 @@ mod tests {
     // This code is not ideal, but it's the best I can do for now. This is mostly 1:1 ported from
     // petgraph 0.6.3.
     #[cfg(not(miri))]
+    #[cfg(feature = "std")]
     proptest! {
         #[test]
         fn integration(elements in vec((0..N_U16, 0..N_U16), 1..128)) {

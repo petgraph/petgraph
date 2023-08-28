@@ -219,7 +219,7 @@ pub mod core {
     pub use petgraph_core::*;
 }
 
-#[cfg(feature = "dot")]
+#[cfg(feature = "io")]
 #[deprecated(since = "0.7.0", note = "use `io` instead of `dot`")]
 pub mod dot {
     pub use petgraph_io::dot::*;

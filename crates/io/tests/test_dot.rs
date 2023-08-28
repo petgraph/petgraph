@@ -1,8 +1,64 @@
 #![cfg(feature = "dot")]
 
+use dot::RenderOption;
 use insta::assert_debug_snapshot;
 use petgraph::{adjacency_matrix::AdjacencyList, graph::stable::StableGraph, Graph};
-use petgraph_io::dot::Dot;
+use petgraph_core::visit::EdgeRef;
+use petgraph_io::dot::{Dot, EdgeAttributes, NodeAttributes};
+
+fn simple_graph() -> Graph<&'static str, &'static str> {
+    let mut graph = Graph::<&str, &str>::new();
+    let a = graph.add_node("A");
+    let b = graph.add_node("B");
+    graph.add_edge(a, b, "edge_label");
+    graph
+}
+
+#[test]
+fn node_index_label() {
+    let graph = simple_graph();
+
+    let dot = Dot::with_config(&graph, &[])
+        .with_node_attributes(&|_, (index, _)| NodeAttributes::new(index.to_string()));
+
+    assert_debug_snapshot!(dot);
+}
+
+#[test]
+fn edge_index_label() {
+    let graph = simple_graph();
+
+    let dot = Dot::with_config(&graph, &[])
+        .with_edge_attributes(&|_, edge| EdgeAttributes::new(edge.id().index().to_string()));
+
+    assert_debug_snapshot!(dot);
+}
+
+#[test]
+fn edge_no_label() {
+    let graph = simple_graph();
+    let dot = Dot::with_config(&graph, &[RenderOption::NoEdgeLabels]);
+
+    assert_debug_snapshot!(dot);
+}
+
+#[test]
+fn node_no_label() {
+    let graph = simple_graph();
+    let dot = Dot::with_config(&graph, &[RenderOption::NoNodeLabels]);
+
+    assert_debug_snapshot!(dot);
+}
+
+#[test]
+fn label_map_to_weight() {
+    let graph = simple_graph();
+    let dot = Dot::with_config(&graph, &[])
+        .with_node_attributes(&|_, (_, weight)| NodeAttributes::new(weight.to_uppercase()))
+        .with_edge_attributes(&|_, edge| EdgeAttributes::new(edge.weight().to_uppercase()));
+
+    assert_debug_snapshot!(dot);
+}
 
 #[test]
 fn adjacency_list() {

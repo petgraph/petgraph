@@ -119,7 +119,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec::Vec;
+    use alloc::{format, vec::Vec};
 
     use petgraph_core::data::FromElements;
     use petgraph_graph::{DiGraph, Graph, UnGraph};
@@ -238,6 +238,7 @@ mod tests {
         ]);
     }
 
+    #[cfg(not(miri))]
     proptest! {
         /// Verify the assumption that every minimum spanning tree must not be cyclic.
         #[test]

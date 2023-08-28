@@ -71,7 +71,7 @@ fn error_not_sorted() {
     let error = result.unwrap_err();
 
     assert_eq!(error, EdgesNotSorted {
-        first_error: (0, 0)
+        first_error: (0, 2)
     });
 }
 

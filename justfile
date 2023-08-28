@@ -99,8 +99,11 @@ build *arguments:
 # Run the test suite
 test *arguments: install-cargo-nextest install-cargo-hack
   #!/usr/bin/env bash
+  set -euo pipefail
 
   # Credit to: https://stackoverflow.com/a/61299548/9077988
+  # we cannot use --workspace because we want to exclude the `petgraph` crate, it has a tonne of features which means ~2.4k permutations.
+  # instead we use `cargo metadata` to get the list of workspace members and run the tests for each of them (excluding `petgraph`).
   members=($(cargo metadata --format-version 1 | jq -r '.workspace_members | .[] | split(" ") | select(.[0] != "petgraph") | .[2] | sub("^\\(path\\+file://"; "") | sub("\\)$"; "") | @sh' | tr -d \'))
 
   for member in "${members[@]}"; do
