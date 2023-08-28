@@ -116,7 +116,7 @@ where
 {
     any::<GraphMap<i8, (), Ty>>()
         .prop_filter("graph must have nodes", |graph| {
-            graph.node_count() > 0 && graph.node_count() < (i8::MAX as usize)
+            graph.node_count() > 0 && i8::try_from(graph.node_count()).is_ok()
         })
         .prop_flat_map(|graph| {
             let nodes = graph.node_count();
