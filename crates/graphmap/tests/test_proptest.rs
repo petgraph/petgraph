@@ -115,7 +115,9 @@ where
     Ty: EdgeType + Clone + 'static,
 {
     any::<GraphMap<i8, (), Ty>>()
-        .prop_filter("graph must have nodes", |graph| graph.node_count() > 0)
+        .prop_filter("graph must have nodes", |graph| {
+            graph.node_count() > 0 && graph.node_count() < (i8::MAX as usize)
+        })
         .prop_flat_map(|graph| {
             let nodes = graph.node_count();
 
