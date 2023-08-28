@@ -232,6 +232,7 @@ mod tests {
         count
     }
 
+    #[cfg(not(miri))]
     proptest! {
         // a bit convoluted, as all functions build on top of each other
         #[test]

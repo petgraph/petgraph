@@ -106,6 +106,7 @@ fn deserialize_struct() {
 }
 
 #[cfg(feature = "proptest")]
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn roundtrip(graph in any::<GraphMap<i32, u32, Directed>>()) {

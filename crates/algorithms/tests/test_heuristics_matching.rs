@@ -272,6 +272,7 @@ where
     g.node_count() % 2 == 0 && m.edges().count() == g.node_count() / 2
 }
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn greedy_matching_is_valid(graph: StableUnGraph<(), (), u8>) {

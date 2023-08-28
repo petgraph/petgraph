@@ -228,6 +228,7 @@ where
     // (via `find_edge()`)
 }
 
+#[cfg(not(miri))]
 proptest! {
     /// Integration test, which tests the `retain_nodes` method.
     ///
@@ -317,6 +318,7 @@ where
         .prop_map(|(graph, edge)| (graph, EdgeIndex::new(edge)))
 }
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn remove_edge_directed((mut graph, edge) in graph_and_edge::<Directed>()) {

@@ -486,6 +486,7 @@ fn error_on_too_many_edges() {
 }
 
 #[cfg(feature = "proptest")]
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn roundtrip(graph in any::<Graph<i8, i8, Directed, u8>>()) {

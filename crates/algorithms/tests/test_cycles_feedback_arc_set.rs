@@ -4,6 +4,7 @@ use petgraph_graph::DiGraph;
 use petgraph_proptest::tournament::graph_tournament_strategy;
 use proptest::prelude::*;
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn remaining_graph_is_acyclic(mut graph in any::<StableDiGraph<(), (), u8>>()) {

@@ -130,6 +130,7 @@ fn prune() {
     });
 }
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn discover_all_directed(graph in any::<Graph<(), (), Directed, u8>>()) {

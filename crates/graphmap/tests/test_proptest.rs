@@ -157,6 +157,7 @@ where
     })
 }
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn remove_node_directed((mut graph, node) in graph_and_node::<Directed>()) {

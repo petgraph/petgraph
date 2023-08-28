@@ -212,6 +212,7 @@ mod tests {
         ]);
     }
 
+    #[cfg(not(miri))]
     proptest! {
         #[test]
         fn topologically_sorted(graph in any::<Graph<(), (), Directed, u8>>()) {

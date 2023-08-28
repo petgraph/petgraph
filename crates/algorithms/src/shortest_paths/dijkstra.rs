@@ -263,6 +263,7 @@ pub(super) mod tests {
             .prop_filter("graph is empty", |graph| graph.node_count() > 0)
     }
 
+    #[cfg(not(miri))]
     proptest! {
         #[test]
         fn triangle_inequality(

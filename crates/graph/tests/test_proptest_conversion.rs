@@ -10,6 +10,7 @@ use petgraph_graph::{
 };
 use proptest::prelude::*;
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn graph_to_stable_to_graph_directed(graph in any::<DiGraph<i32, i32, u8>>()) {

@@ -115,7 +115,7 @@ test *arguments: install-cargo-nextest install-cargo-hack
 
 # Run the test suite with `miri`
 miri *arguments:
-  cargo miri test --workspace --all-features --all-targets {{arguments}}
+  cargo miri test --workspace --all-features --bins --examples --tests {{arguments}}
 
 # Runs the benchmarks
 bench *arguments:

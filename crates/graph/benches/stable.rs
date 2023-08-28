@@ -69,10 +69,10 @@ fn neighbours_count(criterion: &mut Criterion) {
 }
 
 fn neighbours_directed_count(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("neighbors_directed/outgoing/count");
+    let mut group = criterion.benchmark_group("neighbors_directed/count");
 
     for size in nodes(None) {
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |bench, &size| {
+        group.bench_with_input(BenchmarkId::new("Outgoing", size), size, |bench, &size| {
             bench.iter_batched(
                 || cycle_stable_graph::<(), ()>(size, None),
                 |(graph, ..)| {
@@ -83,12 +83,8 @@ fn neighbours_directed_count(criterion: &mut Criterion) {
                 BatchSize::SmallInput,
             );
         });
-    }
 
-    let mut group = criterion.benchmark_group("neighbors_directed/incoming/count");
-
-    for size in nodes(None) {
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |bench, &size| {
+        group.bench_with_input(BenchmarkId::new("Incoming", size), size, |bench, &size| {
             bench.iter_batched(
                 || cycle_stable_graph::<(), ()>(size, None),
                 |(graph, ..)| {

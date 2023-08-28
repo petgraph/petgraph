@@ -157,6 +157,7 @@ fn topo_sort(graph: &Graph<(), (), Directed, u8>) -> Vec<NodeIndex<u8>> {
     order
 }
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn consistent_ordering(graph in graph_dag_strategy::<Graph<(), (), Directed, u8>>(None, None, None)) {

@@ -186,6 +186,7 @@ mod tests {
         assert!(order.is_err());
     }
 
+    #[cfg(not(miri))]
     proptest! {
         #[test]
         fn toposort_is_topologically_sorted(graph in graph_dag_strategy::<Graph<(), (), Directed, u8>>(None, None, None)) {

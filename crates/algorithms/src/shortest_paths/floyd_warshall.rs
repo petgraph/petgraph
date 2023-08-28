@@ -435,6 +435,7 @@ mod tests {
         assert_eq!(error, NegativeCycleError);
     }
 
+    #[cfg(not(miri))]
     proptest! {
         // because floyd-warshall is O(n^3) we limit the size of the graph to 32 nodes and 32 edges
         #[test]

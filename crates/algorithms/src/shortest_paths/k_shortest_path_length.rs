@@ -205,6 +205,7 @@ mod tests {
             .prop_filter("graph must not be empty", |graph| graph.node_count() > 0)
     }
 
+    #[cfg(not(miri))]
     proptest! {
         // checks that the distances computed by k'th shortest path is always greater
         // or equal compared to their dijkstra computation

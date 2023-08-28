@@ -130,6 +130,7 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    #[cfg(not(miri))]
     proptest! {
         #[test]
         fn complement_of_complement_is_original(

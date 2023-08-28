@@ -164,6 +164,7 @@ fn remove_edge_add_edge<Ty>(
     assert_eq!(add, remove);
 }
 
+#[cfg(not(miri))]
 proptest! {
     /// Integration test, which tests the `retain_nodes` method.
     ///
@@ -270,6 +271,7 @@ where
         })
 }
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn remove_edge_directed((mut graph, edge) in graph_and_edge::<Directed>()) {
@@ -299,6 +301,7 @@ proptest! {
     }
 }
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn map_identity_directed(graph in any::<StableGraph<u8, u8, Directed, u8>>()) {

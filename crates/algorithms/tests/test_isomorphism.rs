@@ -150,6 +150,7 @@ test_snapshot!(g2u <=>);
 test_snapshot!(g2u ===);
 
 /// Parse a file in adjacency matrix format into a directed graph
+#[cfg(not(miri))]
 fn graph_from_file(path: &str) -> Graph<(), (), Directed> {
     let mut f = std::fs::File::open(path).expect("file not found");
     let mut contents = String::new();
@@ -471,8 +472,8 @@ fn integration_test_large() {
     assert!(is_isomorphic(&graph_a, &graph_b));
 }
 
-// TODO: potentially too slow (exclude from hack)
 #[test]
+#[cfg(not(miri))]
 fn integration_test_huge() {
     let graph_a = graph_from_file("tests/snapshots/isomorphism/huge_a.txt");
     let graph_b = graph_from_file("tests/snapshots/isomorphism/huge_b.txt");
@@ -750,6 +751,7 @@ fn isomorphism_graph_shuffled_nodes()
         })
 }
 
+#[cfg(not(miri))]
 proptest! {
     #[test]
     fn self_isomorphic(graph in graph_without_parallel_edges()) {

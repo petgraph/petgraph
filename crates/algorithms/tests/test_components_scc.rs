@@ -213,6 +213,7 @@ fn stable_graph_kosaraju() {
     stable_graph(|graph| kosaraju_scc(&graph));
 }
 
+#[cfg(not(miri))]
 proptest! {
     /// Ensure that when reversing the graph, the SCCs are still the same.
     #[test]
