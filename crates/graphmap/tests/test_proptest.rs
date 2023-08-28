@@ -143,15 +143,21 @@ where
         })
 }
 
-// The maximum amount of edges we can have is u8::MAX * u8::MAX, if we have more than that, we
-// cannot find a free edge (the `find_free_edge` function will panic).
 fn at_least_one_free_edge<Ty>() -> impl Strategy<Value = GraphMap<i8, (), Ty>>
 where
     Ty: EdgeType + 'static,
 {
-    any::<GraphMap<i8, (), Ty>>().prop_filter("graph must have at least one free edge", |graph| {
-        graph.edge_count() < u8::MAX as usize * u8::MAX as usize
-    })
+    any::<GraphMap<i8, (), Ty>>()
+        .prop_filter("graph must have at least one node", |graph| {
+            graph.node_count() > 0
+        })
+        .prop_filter("graph must have at least one free edge", |graph| {
+            // generate the maximum amount of edges possible
+            let edges = graph.node_count() * graph.node_count();
+
+            // if we have the same amount of edges as possible combinations, we have no free edges
+            graph.edge_count() < edges
+        })
 }
 
 #[cfg(not(miri))]
