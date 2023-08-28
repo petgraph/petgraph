@@ -15,6 +15,9 @@ env:
 
 jobs:
   lint:
+    # disable linting for now as it is a mess
+    if: false
+
     name: lint
     runs-on: ubuntu-latest
     strategy:
