@@ -113,22 +113,26 @@ macro_rules! test_snapshot {
     };
 }
 
-/// Petersen A and B are isomorphic
-///
-/// http://www.dharwadker.org/tevet/isomorphism/
+// Petersen A and B are isomorphic
+//
+// http://www.dharwadker.org/tevet/isomorphism/
 test_snapshot!(petersen <=>);
 test_snapshot!(petersen ===);
 
-/// An almost full set, isomorphic
+// An almost full set, isomorphic
 test_snapshot!(full <=>);
 test_snapshot!(full ===);
 
-/// Praust A and B are not isomorphic
+// Praust A and B are not isomorphic
+#[cfg(not(miri))]
 test_snapshot!(praust<!>);
+#[cfg(not(miri))]
 test_snapshot!(praust =!=);
 
-/// Isomorphic pair
+// Isomorphic pair
+#[cfg(not(miri))]
 test_snapshot!(coxeter <=>);
+#[cfg(not(miri))]
 test_snapshot!(coxeter ===);
 
 // G8 is not iso
@@ -465,6 +469,7 @@ fn isomorphic_matching() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn integration_test_large() {
     let graph_a = str_to_digraph(include_str!("snapshots/isomorphism/large_a.txt"));
     let graph_b = str_to_digraph(include_str!("snapshots/isomorphism/large_b.txt"));
@@ -554,8 +559,8 @@ fn subgraph_iter() {
     }
 }
 
-// TODO: potentially too slow (exclude from hack)
 #[test]
+#[cfg(not(miri))]
 fn subgraph_iter_coxeter() {
     // Verify all the mappings from the iterator are different
     let graph_a = str_to_digraph(include_str!("snapshots/isomorphism/coxeter_a.txt"));
@@ -580,6 +585,7 @@ fn subgraph_iter_coxeter() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn subgraph_iter_non_isomorphic() {
     // The iterator should return None for graphs that are not isomorphic
     let graph_a = str_to_digraph(include_str!("snapshots/isomorphism/g8_a.txt"));
