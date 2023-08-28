@@ -115,9 +115,7 @@ where
     Ty: EdgeType + Clone + 'static,
 {
     any::<GraphMap<i8, (), Ty>>()
-        .prop_filter("graph must have nodes", |graph| {
-            graph.node_count() > 0 && i8::try_from(graph.node_count()).is_ok()
-        })
+        .prop_filter("graph must have nodes", |graph| graph.node_count() > 0)
         .prop_flat_map(|graph| {
             let nodes = graph.node_count();
 
@@ -155,7 +153,7 @@ where
     Ty: EdgeType + 'static,
 {
     any::<GraphMap<i8, (), Ty>>().prop_filter("graph must have at least one free edge", |graph| {
-        graph.edge_count() < u8::MAX as usize * u8::MAX as usize
+        graph.edge_count() < i8::MAX as usize * i8::MAX as usize
     })
 }
 
