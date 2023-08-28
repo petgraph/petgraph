@@ -13,7 +13,10 @@ fn sparse(criterion: &mut Criterion) {
             |bench, &nodes| {
                 bench.iter_batched(
                     || {
-                        let graph = Profile::Sparse.newman_watts_strogatz::<(), u8>(nodes);
+                        let graph = Profile::Sparse
+                            .newman_watts_strogatz::<(), u8>(nodes)
+                            .map(|_, _| (), |_, &weight| u64::from(weight));
+
                         let nodes = graph.node_indices().collect::<Vec<_>>();
 
                         (graph, nodes)
@@ -38,7 +41,10 @@ fn dense(criterion: &mut Criterion) {
             |bench, &nodes| {
                 bench.iter_batched(
                     || {
-                        let graph = Profile::Dense.newman_watts_strogatz::<(), u8>(nodes);
+                        let graph = Profile::Dense
+                            .newman_watts_strogatz::<(), u8>(nodes)
+                            .map(|_, _| (), |_, &weight| u64::from(weight));
+
                         let nodes = graph.node_indices().collect::<Vec<_>>();
 
                         (graph, nodes)
