@@ -7,6 +7,10 @@
 #![cfg_attr(all(doc, nightly), feature(doc_auto_cfg))]
 #![cfg_attr(nightly, feature(error_in_core))]
 
+// TODO: instead of returning `IndexMap` we should return a container that is specific to the
+// algorithm with common methods (and traits?).
+// That way we can ensure immutability and are independent of the underlying container.
+
 extern crate alloc;
 
 pub mod bipartite;

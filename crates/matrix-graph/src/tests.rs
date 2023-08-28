@@ -1,3 +1,5 @@
+use alloc::{vec, vec::Vec};
+
 use petgraph_core::{
     edge::{Directed, Direction},
     visit::{IntoEdgeReferences, IntoNodeIdentifiers},

@@ -15,7 +15,7 @@ use petgraph_core::{
 ///
 /// # Example
 /// ```
-/// use petgraph_graph::DiGraph;
+/// use petgraph::{algorithms::simple_paths::all_simple_paths, graph::DiGraph};
 ///
 /// let mut graph = DiGraph::<&str, i32>::new();
 ///
@@ -26,7 +26,7 @@ use petgraph_core::{
 ///
 /// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
 ///
-/// let ways = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None).collect::<Vec<_>>();
+/// let ways = all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None).collect::<Vec<_>>();
 ///
 /// assert_eq!(4, ways.len());
 /// ```

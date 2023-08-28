@@ -174,14 +174,14 @@ where
     ///
     /// # Example
     /// ```rust
-    /// use petgraph_csr::Csr;
+    /// use petgraph_csr::{Csr, NodeIndex};
     ///
     /// let graph = Csr::<u8, ()>::with_nodes(5);
     /// assert_eq!(graph.node_count(), 5);
     /// assert_eq!(graph.edge_count(), 0);
     ///
-    /// assert_eq!(graph[0], 0);
-    /// assert_eq!(graph[4], 0);
+    /// assert_eq!(graph[NodeIndex::from_usize(0)], 0);
+    /// assert_eq!(graph[NodeIndex::from_usize(4)], 0);
     /// ```
     pub fn with_nodes(n: usize) -> Self
     where
@@ -216,10 +216,17 @@ where
     /// Computes in **O(|E| + |V|)** time.
     /// # Example
     /// ```rust
-    /// use petgraph_csr::Csr;
+    /// use petgraph_csr::{Csr, NodeIndex};
     ///
-    /// let graph =
-    ///     Csr::<(), ()>::from_sorted_edges(&[(0, 1), (0, 2), (1, 0), (1, 2), (1, 3), (2, 0), (3, 1)]);
+    /// let graph = Csr::<(), ()>::from_sorted_edges(&[
+    ///     (NodeIndex::from_usize(0), NodeIndex::from_usize(1)), //
+    ///     (NodeIndex::from_usize(0), NodeIndex::from_usize(2)),
+    ///     (NodeIndex::from_usize(1), NodeIndex::from_usize(0)),
+    ///     (NodeIndex::from_usize(1), NodeIndex::from_usize(2)),
+    ///     (NodeIndex::from_usize(1), NodeIndex::from_usize(3)),
+    ///     (NodeIndex::from_usize(2), NodeIndex::from_usize(0)),
+    ///     (NodeIndex::from_usize(3), NodeIndex::from_usize(1)),
+    /// ]);
     /// ```
     pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Result<Self, EdgesNotSorted>
     where

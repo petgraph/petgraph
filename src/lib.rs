@@ -14,7 +14,7 @@
 //! use petgraph::{
 //!     algorithms::{shortest_paths::dijkstra, tree::minimum_spanning_tree},
 //!     data::FromElements,
-//!     dot::{Config, Dot},
+//!     dot::{Dot, RenderOption},
 //!     graph::{NodeIndex, UnGraph},
 //! };
 //!
@@ -31,7 +31,10 @@
 //! assert_eq!(g.raw_edges().len() - 1, mst.raw_edges().len());
 //!
 //! // Output the tree to `graphviz` `DOT` format
-//! println!("{:?}", Dot::with_config(&mst, &[Config::EdgeNoLabel]));
+//! println!(
+//!     "{:?}",
+//!     Dot::with_config(&mst, &[RenderOption::NoEdgeLabels])
+//! );
 //! // graph {
 //! //     0 [label="\"0\""]
 //! //     1 [label="\"0\""]

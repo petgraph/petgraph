@@ -23,11 +23,12 @@ use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
 ///
 /// # Examples
 /// ```rust
-/// use std::collections::HashMap;
-///
-/// use petgraph_algorithms::shortest_paths::floyd_warshall;
-/// use petgraph_core::edge::Directed;
-/// use petgraph_graph::{Graph, NodeIndex};
+/// use indexmap::IndexMap;
+/// use petgraph::{
+///     algorithms::shortest_paths::floyd_warshall,
+///     core::{edge::Directed, visit::EdgeRef},
+///     graph::{Graph, NodeIndex},
+/// };
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(());
@@ -37,7 +38,7 @@ use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
 ///
 /// graph.extend_with_edges(&[(a, b), (a, c), (a, d), (b, c), (b, d), (c, d)]);
 ///
-/// let weight_map: HashMap<(NodeIndex, NodeIndex), i32> = [
+/// let weight_map: IndexMap<(NodeIndex, NodeIndex), i32> = [
 ///     ((a, a), 0),
 ///     ((a, b), 1),
 ///     ((a, c), 4),
@@ -48,8 +49,7 @@ use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
 ///     ((c, c), 0),
 ///     ((c, d), 2),
 /// ]
-/// .iter()
-/// .cloned()
+/// .into_iter()
 /// .collect();
 /// //     ----- b --------
 /// //    |      ^         | 2
@@ -61,7 +61,7 @@ use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
 ///
 /// let inf = i32::MAX;
 ///
-/// let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
+/// let expected: IndexMap<(NodeIndex, NodeIndex), i32> = [
 ///     ((a, a), 0),
 ///     ((a, b), 1),
 ///     ((a, c), 3),
@@ -79,11 +79,10 @@ use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
 ///     ((d, c), inf),
 ///     ((d, d), 0),
 /// ]
-/// .iter()
-/// .cloned()
+/// .into_iter()
 /// .collect();
 ///
-/// let res = floyd_warshall(&graph, |edge| {
+/// let result = floyd_warshall(&graph, |edge| {
 ///     if let Some(weight) = weight_map.get(&(edge.source(), edge.target())) {
 ///         *weight
 ///     } else {
@@ -96,8 +95,8 @@ use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
 /// for node1 in &nodes {
 ///     for node2 in &nodes {
 ///         assert_eq!(
-///             res.get(&(*node1, *node2)).unwrap(),
-///             expected_res.get(&(*node1, *node2)).unwrap()
+///             result.get(&(*node1, *node2)).unwrap(),
+///             expected.get(&(*node1, *node2)).unwrap()
 ///         );
 ///     }
 /// }

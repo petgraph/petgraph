@@ -4,7 +4,6 @@
 use std::{
     borrow::Cow,
     fmt::{self, Debug, Display, Formatter},
-    sync::{Arc, RwLock},
 };
 
 pub use dot::RenderOption;
@@ -115,9 +114,7 @@ impl EdgeAttributes {
 ///
 /// ```
 /// use dot::RenderOption;
-/// use petgraph::{
-/// ///     Graph,
-/// };
+/// use petgraph::{graph::Graph, io::dot::Dot};
 ///
 /// let mut graph = Graph::<_, ()>::new();
 /// graph.add_node("A");

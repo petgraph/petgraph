@@ -23,10 +23,12 @@ use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
 /// Returns a `HashMap` that maps `NodeId` to path cost.
 /// # Example
 /// ```rust
-/// use std::collections::HashMap;
-///
-/// use petgraph_core::edge::Directed;
-/// use petgraph_graph::{Graph, NodeIndex};
+/// use indexmap::IndexMap;
+/// use petgraph::{
+///     algorithms::shortest_paths::k_shortest_path_length,
+///     core::edge::Directed,
+///     graph::{Graph, NodeIndex},
+/// };
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
@@ -56,7 +58,7 @@ use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
 /// // |       v       |       v
 /// // d <---- c       h <---- g
 ///
-/// let expected_res: HashMap<NodeIndex, usize> = [
+/// let expected_res: IndexMap<NodeIndex, usize> = [
 ///     (a, 7),
 ///     (b, 4),
 ///     (c, 5),
@@ -69,7 +71,7 @@ use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
 /// .iter()
 /// .cloned()
 /// .collect();
-/// let res = k_shortest_path(&graph, b, None, 2, |_| 1);
+/// let res = k_shortest_path_length(&graph, b, None, 2, |_| 1);
 /// assert_eq!(res, expected_res);
 /// // z is not inside res because there is not path from b to z.
 /// ```

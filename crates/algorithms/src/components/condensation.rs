@@ -11,10 +11,11 @@ use crate::components::kosaraju_scc;
 /// the output is acyclic.
 /// # Example
 /// ```rust
-/// use petgraph_adjacency_matrix::NodeIndex;
-/// use petgraph_algorithms::components::condensation;
-/// use petgraph_core::edge::Directed;
-/// use petgraph_graph::Graph;
+/// use petgraph::{
+///     algorithms::components::condensation,
+///     core::edge::Directed,
+///     graph::{Graph, NodeIndex},
+/// };
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
@@ -58,9 +59,9 @@ use crate::components::kosaraju_scc;
 /// If `make_acyclic` is true, self-loops and multi edges are ignored:
 ///
 /// ```rust
-/// # use petgraph_algorithms::components::condensation;
-/// # use petgraph_core::edge::Directed;
-/// # use petgraph_graph::Graph;
+/// # use petgraph::algorithms::components::condensation;
+/// # use petgraph::core::edge::Directed;
+/// # use petgraph::graph::{Graph, NodeIndex};
 /// #
 /// # let mut graph : Graph<(),(), Directed> = Graph::new();
 /// # let a = graph.add_node(()); // node with no weight

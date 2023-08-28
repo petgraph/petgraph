@@ -534,9 +534,16 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Nodes are inserted automatically to match the edges.
     ///
     /// ```
-    /// use petgraph_matrix_graph::MatrixGraph;
+    /// use petgraph_matrix_graph::{MatrixGraph, NodeIndex};
     ///
-    /// let gr = MatrixGraph::<(), i32>::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
+    /// let graph = MatrixGraph::<(), i32>::from_edges(&[
+    ///     (NodeIndex::from_usize(0), NodeIndex::from_usize(1)),
+    ///     (NodeIndex::from_usize(0), NodeIndex::from_usize(2)),
+    ///     (NodeIndex::from_usize(0), NodeIndex::from_usize(3)),
+    ///     (NodeIndex::from_usize(1), NodeIndex::from_usize(2)),
+    ///     (NodeIndex::from_usize(1), NodeIndex::from_usize(3)),
+    ///     (NodeIndex::from_usize(2), NodeIndex::from_usize(3)),
+    /// ]);
     /// ```
     pub fn from_edges<I>(iterable: I) -> Self
     where
