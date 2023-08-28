@@ -1122,6 +1122,7 @@ where
         // Allow two mutable indexes here -- they are nonoverlapping
         unsafe {
             let self_mut = self as *mut _;
+
             (
                 <Self as IndexMut<T>>::index_mut(&mut *self_mut, i),
                 <Self as IndexMut<U>>::index_mut(&mut *self_mut, j),

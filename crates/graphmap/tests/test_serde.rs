@@ -49,6 +49,7 @@ where
 }
 
 #[test]
+#[cfg(not(miri))]
 fn serialize() {
     let graph = example();
 
@@ -89,6 +90,7 @@ fn example_struct() -> GraphMap<Point, i32, Directed> {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn serialize_struct() {
     let graph = example_struct();
 

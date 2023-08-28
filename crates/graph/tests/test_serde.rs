@@ -224,6 +224,7 @@ where
 }
 
 #[test]
+#[cfg(not(miri))]
 fn node_str_edges_i32_serialize() {
     let graph: DiGraph<_, _> = example();
 
@@ -242,6 +243,7 @@ fn node_str_edges_i32_deserialize() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn node_null_edges_null_serialize() {
     let graph: DiGraph<(), ()> = example().map(|_, _| (), |_, _| ());
 
@@ -260,6 +262,7 @@ fn node_null_edges_null_deserialize() {
 
 #[test]
 #[cfg(feature = "stable")]
+#[cfg(not(miri))]
 fn stable_node_str_edges_i32_serialize() {
     let graph: StableDiGraph<_, _> = example_stable();
 
@@ -282,6 +285,7 @@ fn stable_node_str_edges_i32_deserialize() {
 
 #[test]
 #[cfg(feature = "stable")]
+#[cfg(not(miri))]
 fn stable_node_null_edges_null_serialize() {
     let graph: StableDiGraph<(), ()> = example_stable().map(|_, _| (), |_, _| ());
 
@@ -344,6 +348,7 @@ where
 }
 
 #[test]
+#[cfg(not(miri))]
 fn snapshot_deserialize_default_null() {
     assert_inputs::<(), (), Directed, DefaultIx>(&[
         Expected::Ok,
@@ -360,6 +365,7 @@ fn snapshot_deserialize_default_null() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn snapshot_deserialize_default_null_undirected() {
     assert_inputs::<(), (), Undirected, DefaultIx>(&[
         Expected::Error {
@@ -378,6 +384,7 @@ fn snapshot_deserialize_default_null_undirected() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn snapshot_deserialize_u8_null() {
     assert_inputs::<(), (), Directed, u8>(&[
         Expected::Ok,
@@ -394,6 +401,7 @@ fn snapshot_deserialize_u8_null() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn snapshot_deserialize_default_str_i32() {
     assert_inputs::<String, i32, Directed, DefaultIx>(&[
         Expected::Error {
@@ -410,6 +418,7 @@ fn snapshot_deserialize_default_str_i32() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn snapshot_deserialize_default_str_i32_undirected() {
     assert_inputs::<String, i32, Undirected, DefaultIx>(&[
         Expected::Error {
@@ -428,6 +437,7 @@ fn snapshot_deserialize_default_str_i32_undirected() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn snapshot_deserialize_u8_str_i32() {
     assert_inputs::<String, u8, Directed, DefaultIx>(&[
         Expected::Error {

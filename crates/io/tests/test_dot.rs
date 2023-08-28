@@ -1,3 +1,4 @@
+#![cfg(not(miri))]
 #![cfg(feature = "dot")]
 
 use dot::RenderOption;

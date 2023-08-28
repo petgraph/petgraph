@@ -546,6 +546,10 @@ fn edge_weight_iterator() {
 }
 
 #[test]
+// miri is disabled, as the implementation of `index_twice_mut` is not compatible with miri
+// it will be removed in the future (probably) anyway, but for now needs to be disabled
+// See: https://github.com/rust-lang/miri/issues/2906
+#[cfg(not(miri))]
 fn index_twice_mut() {
     let GraphLink {
         mut graph, a, b, ..
@@ -563,6 +567,7 @@ fn index_twice_mut() {
 }
 
 #[cfg(feature = "std")]
+#[cfg(not(miri))]
 #[test]
 fn index_twice_mut_same_index() {
     let GraphLink { mut graph, a, .. } = GraphLink::<i32, ()>::from_default();
@@ -575,6 +580,7 @@ fn index_twice_mut_same_index() {
 }
 
 #[cfg(feature = "std")]
+#[cfg(not(miri))]
 #[test]
 fn index_twice_mut_out_of_range() {
     let GraphLink {
@@ -590,6 +596,7 @@ fn index_twice_mut_out_of_range() {
 }
 
 #[cfg(feature = "std")]
+#[cfg(not(miri))]
 #[test]
 fn index_twice_mut_out_of_range_same_index() {
     let GraphLink { mut graph, a, .. } = GraphLink::<i32, ()>::from_default();
@@ -603,6 +610,7 @@ fn index_twice_mut_out_of_range_same_index() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn index_twice_mut_node_and_edge() {
     let GraphLink {
         mut graph, a, ab, ..
