@@ -3,7 +3,10 @@ extern crate core;
 
 use core::fmt;
 
-use petgraph_core::edge::{Directed, EdgeType, Undirected};
+use petgraph_core::{
+    edge::{Directed, EdgeType, Undirected},
+    visit::IntoNodeIdentifiers,
+};
 use petgraph_graphmap::{GraphMap, NodeTrait};
 use proptest::prelude::*;
 
@@ -93,21 +96,15 @@ where
 {
     assert_graphmap_consistent(graph);
 
-    let mut a = i8::MIN;
-    let mut b = i8::MIN;
-
-    loop {
-        if !graph.contains_edge(a, b) {
-            break (a, b);
-        }
-
-        b += 1;
-
-        if b >= i8::try_from(graph.node_count()).expect("overflow") {
-            a = a.checked_add(1).expect("overflow");
-            b = 0;
+    for a in graph.node_identifiers() {
+        for b in graph.node_identifiers() {
+            if !graph.contains_edge(a, b) {
+                return (a, b);
+            }
         }
     }
+
+    panic!("no free edge found");
 }
 
 fn graph_and_node<Ty>() -> impl Strategy<Value = (GraphMap<i8, (), Ty>, i8)>
