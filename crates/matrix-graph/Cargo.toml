@@ -13,6 +13,7 @@ petgraph-core = { workspace = true, features = ["alloc", "fixedbitset"] }
 [dev-dependencies]
 criterion = "0.5.1"
 petgraph-test-utils.workspace = true
+petgraph.workspace = true
 
 [features]
 default = ["std"]
