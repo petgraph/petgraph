@@ -12,7 +12,11 @@ fn sparse(criterion: &mut Criterion) {
             nodes,
             |bench, &nodes| {
                 bench.iter_batched(
-                    || Profile::Sparse.newman_watts_strogatz::<(), u8>(nodes),
+                    || {
+                        Profile::Sparse
+                            .newman_watts_strogatz::<(), u8>(nodes)
+                            .map(|_, _| (), |_, &weight| u64::from(weight))
+                    },
                     |graph| {
                         let _scores = floyd_warshall(&graph, |edge| *edge.weight());
                     },
@@ -32,7 +36,11 @@ fn dense(criterion: &mut Criterion) {
             nodes,
             |bench, &nodes| {
                 bench.iter_batched(
-                    || Profile::Dense.newman_watts_strogatz::<(), u8>(nodes),
+                    || {
+                        Profile::Dense
+                            .newman_watts_strogatz::<(), u8>(nodes)
+                            .map(|_, _| (), |_, &weight| u64::from(weight))
+                    },
                     |graph| {
                         let _scores = floyd_warshall(&graph, |edge| *edge.weight());
                     },
