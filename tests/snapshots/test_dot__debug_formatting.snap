@@ -1,9 +1,0 @@
----
-source: tests/test_dot.rs
-expression: "Dot::new(&graph)"
----
-digraph petgraph {
-    N0[label=""];
-    N0 -> N0[label=""];
-}
-

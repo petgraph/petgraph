@@ -1,0 +1,12 @@
+---
+source: crates/io/tests/test_dot.rs
+expression: "Dot::new(&graph)"
+---
+digraph petgraph {
+    N0[label="0"];
+    N1[label="1"];
+    N0 -> N0[label=""][arrowhead="normal" dir="both" arrowtail="none"];
+    N0 -> N1[label=""][arrowhead="normal" dir="both" arrowtail="none"];
+    N1 -> N0[label=""][arrowhead="normal" dir="both" arrowtail="none"];
+}
+

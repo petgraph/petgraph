@@ -1,14 +1,10 @@
 #![cfg(feature = "dot")]
 
-use insta::{assert_debug_snapshot, assert_display_snapshot};
-#[cfg(feature = "stable-graph")]
-use petgraph::graph::stable::StableGraph;
-use petgraph::{dot::Dot, Graph};
-#[cfg(feature = "adjacency-matrix")]
-use petgraph_adjacency_matrix::AdjacencyList;
+use insta::assert_debug_snapshot;
+use petgraph::{adjacency_matrix::AdjacencyList, graph::stable::StableGraph, Graph};
+use petgraph_io::dot::Dot;
 
 #[test]
-#[cfg(feature = "adjacency-matrix")]
 fn adjacency_list() {
     let mut graph = AdjacencyList::new();
 
@@ -52,7 +48,6 @@ fn debug_formatting() {
 }
 
 #[test]
-#[cfg(feature = "stable-graph")]
 fn stable_graph() {
     let mut graph = StableGraph::new();
 

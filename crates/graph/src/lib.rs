@@ -108,7 +108,7 @@ impl<Ix: fmt::Debug> fmt::Debug for NodeIndex<Ix> {
     }
 }
 
-impl<Ix> fmt::Display for NodeIndex<Ix>
+impl<Ix> Display for NodeIndex<Ix>
 where
     Ix: IndexType,
 {
