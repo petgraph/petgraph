@@ -93,8 +93,8 @@ where
 {
     assert_graphmap_consistent(graph);
 
-    let mut a = 0;
-    let mut b = 0;
+    let mut a = i8::MIN;
+    let mut b = i8::MIN;
 
     loop {
         if !graph.contains_edge(a, b) {
@@ -153,7 +153,7 @@ where
     Ty: EdgeType + 'static,
 {
     any::<GraphMap<i8, (), Ty>>().prop_filter("graph must have at least one free edge", |graph| {
-        graph.edge_count() < i8::MAX as usize * i8::MAX as usize
+        graph.edge_count() < u8::MAX as usize * u8::MAX as usize
     })
 }
 
