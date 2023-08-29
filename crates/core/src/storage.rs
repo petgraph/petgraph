@@ -141,7 +141,7 @@ pub trait GraphStorage {
     }
 
     fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
-        let mut matrix = AdjacencyMatrix::new(self.num_nodes());
+        let mut matrix = AdjacencyMatrix::new_undirected(self.num_nodes());
 
         for edge in self.edges() {
             matrix.mark_undirected_edge(edge);
@@ -166,7 +166,7 @@ pub trait GraphStorage {
 
 pub trait DirectedGraphStorage: GraphStorage {
     fn directed_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
-        let mut matrix = AdjacencyMatrix::new(self.num_nodes());
+        let mut matrix = AdjacencyMatrix::new_directed(self.num_nodes());
 
         for edge in self.edges() {
             matrix.mark_directed_edge(edge);
