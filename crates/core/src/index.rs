@@ -116,13 +116,22 @@ where
     }
 }
 
-pub trait GraphIndex {
-    type Storage: GraphStorage;
+pub trait GraphIndex<S>
+where
+    S: GraphStorage,
+{
 }
 
 // TODO: how tf does that work across crate boundaries with different storages?
-pub trait ArbitraryGraphIndex: GraphIndex {}
+pub trait ArbitraryGraphIndex<S>: GraphIndex<S>
+where
+    S: GraphStorage,
+{
+}
 
-pub trait ManagedGraphIndex: GraphIndex {
-    fn next(storage: &Self::Storage) -> Self;
+pub trait ManagedGraphIndex<S>: GraphIndex<S>
+where
+    S: GraphStorage,
+{
+    fn next(storage: &S) -> Self;
 }
