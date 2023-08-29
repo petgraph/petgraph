@@ -68,7 +68,7 @@ impl EdgeType for Undirected {
 
 // TODO: include graph
 
-pub struct Edge<'a, E, N, W> {
+pub struct Edge<'a, E: ?Sized, N: ?Sized, W: ?Sized> {
     id: &'a E,
 
     source: &'a N,
@@ -77,7 +77,12 @@ pub struct Edge<'a, E, N, W> {
     weight: &'a W,
 }
 
-impl<'a, E, N, W> Edge<'a, E, N, W> {
+impl<'a, E, N, W> Edge<'a, E, N, W>
+where
+    E: ?Sized,
+    N: ?Sized,
+    W: ?Sized,
+{
     pub fn id(&self) -> &'a E {
         self.id
     }

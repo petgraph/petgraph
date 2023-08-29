@@ -1,12 +1,16 @@
 // TODO: include graph
 
-pub struct Node<'a, N, W> {
+pub struct Node<'a, N: ?Sized, W: ?Sized> {
     id: &'a N,
 
     weight: &'a W,
 }
 
-impl<'a, N, W> Node<'a, N, W> {
+impl<'a, N, W> Node<'a, N, W>
+where
+    N: ?Sized,
+    W: ?Sized,
+{
     pub fn new(id: &'a N, weight: &'a W) -> Self {
         Self { id, weight }
     }
@@ -20,13 +24,17 @@ impl<'a, N, W> Node<'a, N, W> {
     }
 }
 
-pub struct NodeMut<'a, N, W> {
+pub struct NodeMut<'a, N: ?Sized, W: ?Sized> {
     id: &'a N,
 
     weight: &'a mut W,
 }
 
-impl<'a, N, W> NodeMut<'a, N, W> {
+impl<'a, N, W> NodeMut<'a, N, W>
+where
+    N: ?Sized,
+    W: ?Sized,
+{
     pub fn id(&self) -> &'a N {
         self.id
     }

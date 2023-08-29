@@ -8,6 +8,8 @@ use funty::AtMost32 as AtMostUsize;
 use funty::AtMost64 as AtMostUsize;
 use funty::{Fundamental, Unsigned};
 
+use crate::storage::GraphStorage;
+
 /// The default integer type for graph indices.
 /// `u32` is the default to reduce the size of the graph's data and improve
 /// performance in the common case.
@@ -112,4 +114,15 @@ where
     fn max() -> Self {
         Self::MAX
     }
+}
+
+pub trait GraphIndex {
+    type Storage: GraphStorage;
+}
+
+// TODO: how tf does that work across crate boundaries with different storages?
+pub trait ArbitraryGraphIndex: GraphIndex {}
+
+pub trait ManagedGraphIndex: GraphIndex {
+    fn next(storage: &Self::Storage) -> Self;
 }
