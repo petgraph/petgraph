@@ -2,10 +2,9 @@ use error_stack::{Context, Result};
 
 use crate::{
     edge::{DetachedEdge, Direction, Edge, EdgeMut},
+    matrix::AdjacencyMatrix,
     node::{DetachedNode, Node, NodeMut},
 };
-
-pub struct AdjacencyMatrix {}
 
 pub trait GraphStorage {
     type Error: Context;
@@ -141,8 +140,14 @@ pub trait GraphStorage {
             .filter_map(|id| self.node(id))
     }
 
-    fn node_adjacency_matrix(&self) -> AdjacencyMatrix {
-        todo!("Implement node_adjacency_list")
+    fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
+        let mut matrix = AdjacencyMatrix::new(self.num_nodes());
+
+        for edge in self.edges() {
+            matrix.mark_undirected_edge(edge);
+        }
+
+        matrix
     }
 
     type NodeIter<'a>: Iterator<Item = Node<'a, Self::NodeIndex, Self::NodeWeight>> + 'a
@@ -160,6 +165,16 @@ pub trait GraphStorage {
 }
 
 pub trait DirectedGraphStorage: GraphStorage {
+    fn directed_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
+        let mut matrix = AdjacencyMatrix::new(self.num_nodes());
+
+        for edge in self.edges() {
+            matrix.mark_directed_edge(edge);
+        }
+
+        matrix
+    }
+
     type NodeDirectedConnectionIter<'a>: Iterator<Item = Edge<'a, Self::NodeIndex, Self::EdgeIndex, Self::EdgeWeight>>
         + 'a
     where
