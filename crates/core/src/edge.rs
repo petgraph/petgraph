@@ -120,7 +120,7 @@ where
         self.source_id
     }
 
-    pub fn source(&self) -> Node<'a, S> {
+    pub fn source(&self) -> Option<Node<'a, S>> {
         // self.graph.node(self.source_id)
         todo!()
     }
@@ -129,7 +129,7 @@ where
         self.target_id
     }
 
-    pub fn target(&self) -> Node<'a, S> {
+    pub fn target(&self) -> Option<Node<'a, S>> {
         todo!()
     }
 
@@ -186,11 +186,11 @@ where
         self.source_id
     }
 
-    pub fn source_mut(&mut self) -> NodeMut<'a, S> {
+    pub fn source_mut(&mut self) -> Option<NodeMut<'a, S>> {
         todo!()
     }
 
-    pub fn source(&self) -> Node<'a, S> {
+    pub fn source(&self) -> Option<Node<'a, S>> {
         todo!()
     }
 
@@ -198,11 +198,11 @@ where
         self.target_id
     }
 
-    pub fn target_mut(&mut self) -> NodeMut<'a, S> {
+    pub fn target_mut(&mut self) -> Option<NodeMut<'a, S>> {
         todo!()
     }
 
-    pub fn target(&self) -> Node<'a, S> {
+    pub fn target(&self) -> Option<Node<'a, S>> {
         todo!()
     }
 

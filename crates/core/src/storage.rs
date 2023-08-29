@@ -16,10 +16,7 @@ pub trait GraphStorage {
     type EdgeIndex: GraphIndex<Self>;
     type EdgeWeight;
 
-    fn with_capacity(
-        node_capacity: Option<usize>,
-        edge_capacity: Option<usize>,
-    ) -> Result<Self, Self::Error>
+    fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self
     where
         Self: Sized;
 
@@ -35,7 +32,7 @@ pub trait GraphStorage {
         let (_, nodes_max) = nodes.size_hint();
         let (_, edges_max) = edges.size_hint();
 
-        let mut graph = Self::with_capacity(nodes_max, edges_max)?;
+        let mut graph = Self::with_capacity(nodes_max, edges_max);
 
         // by default we try to fail slow, this way we can get as much data about potential errors
         // as possible.
@@ -79,12 +76,23 @@ pub trait GraphStorage {
         self.edges().count()
     }
 
+    /// Inserts a new node into the graph.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the node index is already in use.
     fn insert_node(
         &mut self,
         id: Self::NodeIndex,
         weight: Self::NodeWeight,
     ) -> Result<(), Self::Error>;
 
+    /// Inserts a new edge into the graph.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parallel edges are not allowed and an edge between the given source and
+    /// target already exists.
     fn insert_edge(
         &mut self,
         id: Self::EdgeIndex,
@@ -93,10 +101,24 @@ pub trait GraphStorage {
         weight: Self::EdgeWeight,
     ) -> Result<(), Self::Error>;
 
-    fn remove_node(&mut self, id: Self::NodeIndex)
-    -> Result<Option<Self::NodeWeight>, Self::Error>;
-    fn remove_edge(&mut self, id: Self::EdgeIndex)
-    -> Result<Option<Self::EdgeWeight>, Self::Error>;
+    fn remove_node(
+        &mut self,
+        id: Self::NodeIndex,
+    ) -> Option<DetachedNode<Self::NodeIndex, Self::NodeWeight>>;
+    fn remove_edge(
+        &mut self,
+        id: Self::EdgeIndex,
+    ) -> Option<DetachedEdge<Self::EdgeIndex, Self::NodeIndex, Self::EdgeWeight>>;
+
+    fn clear(&mut self) {
+        for node in self.nodes() {
+            self.remove_node(node.id());
+        }
+
+        for edge in self.edges() {
+            self.remove_edge(edge.id());
+        }
+    }
 
     fn node(&self, id: &Self::NodeIndex) -> Option<Node<Self>>;
     fn node_mut(&mut self, id: &Self::NodeIndex) -> Option<NodeMut<Self>>;
@@ -110,25 +132,49 @@ pub trait GraphStorage {
 
     fn node_connections<'a>(&self, id: &'a Self::NodeIndex) -> Self::NodeConnectionIter<'a>;
 
+    type NodeConnectionMutIter<'a>: Iterator<Item = EdgeMut<'a, Self>> + 'a
+    where
+        Self: 'a;
+
+    fn node_connections_mut<'a>(
+        &mut self,
+        id: &'a Self::NodeIndex,
+    ) -> Self::NodeConnectionMutIter<'a>;
+
     type NodeNeighbourIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
     where
         Self: 'a;
 
     fn node_neighbours<'a>(&self, id: &'a Self::NodeIndex) -> Self::NodeNeighbourIter<'a> {
-        self.node_connections(id)
-            .filter_map(|edge| {
-                let source = edge.source();
-                let target = edge.target();
+        self.node_connections(id).filter_map(|edge: Edge<Self>| {
+            // doing it this way allows us to also get ourselves as a neighbour if we have a
+            // self-loop
+            if edge.source_id() == id {
+                edge.target()
+            } else {
+                edge.source()
+            }
+        })
+    }
 
+    type NodeNeighbourMutIter<'a>: Iterator<Item = NodeMut<'a, Self>> + 'a
+    where
+        Self: 'a;
+
+    fn node_neighbours_mut<'a>(
+        &mut self,
+        id: &'a Self::NodeIndex,
+    ) -> Self::NodeNeighbourMutIter<'a> {
+        self.node_connections_mut(id)
+            .filter_map(|mut edge: EdgeMut<Self>| {
                 // doing it this way allows us to also get ourselves as a neighbour if we have a
                 // self-loop
-                if source == id {
-                    Some(target)
+                if edge.source_id() == id {
+                    edge.target_mut()
                 } else {
-                    Some(source)
+                    edge.source_mut()
                 }
             })
-            .filter_map(|id| self.node(id))
     }
 
     fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
@@ -187,6 +233,16 @@ pub trait DirectedGraphStorage: GraphStorage {
         direction: Direction,
     ) -> Self::NodeDirectedConnectionIter<'a>;
 
+    type NodeDirectedConnectionMutIter<'a>: Iterator<Item = EdgeMut<'a, Self>> + 'a
+    where
+        Self: 'a;
+
+    fn node_directed_connections_mut<'a>(
+        &mut self,
+        id: &'a Self::NodeIndex,
+        direction: Direction,
+    ) -> Self::NodeDirectedConnectionMutIter<'a>;
+
     type NodeDirectedNeighbourIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
     where
         Self: 'a;
@@ -201,6 +257,21 @@ pub trait DirectedGraphStorage: GraphStorage {
                 Direction::Outgoing => edge.target(),
                 Direction::Incoming => edge.source(),
             })
-            .filter_map(|id| self.node(id))
+    }
+
+    type NodeDirectedNeighbourMutIter<'a>: Iterator<Item = NodeMut<'a, Self>> + 'a
+    where
+        Self: 'a;
+
+    fn node_directed_neighbours_mut<'a>(
+        &mut self,
+        id: &'a Self::NodeIndex,
+        direction: Direction,
+    ) -> Self::NodeDirectedNeighbourMutIter<'a> {
+        self.node_directed_connections_mut(id, direction)
+            .map(|mut edge| match direction {
+                Direction::Outgoing => edge.target_mut(),
+                Direction::Incoming => edge.source_mut(),
+            })
     }
 }
