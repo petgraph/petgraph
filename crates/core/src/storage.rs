@@ -2,6 +2,7 @@ use error_stack::{Context, Result};
 
 use crate::{
     edge::{DetachedEdge, Direction, Edge, EdgeMut},
+    index::GraphIndex,
     matrix::AdjacencyMatrix,
     node::{DetachedNode, Node, NodeMut},
 };
@@ -9,10 +10,10 @@ use crate::{
 pub trait GraphStorage {
     type Error: Context;
 
-    type NodeIndex;
+    type NodeIndex: GraphIndex<Self>;
     type NodeWeight;
 
-    type EdgeIndex;
+    type EdgeIndex: GraphIndex<Self>;
     type EdgeWeight;
 
     fn with_capacity(
@@ -97,29 +98,19 @@ pub trait GraphStorage {
     fn remove_edge(&mut self, id: Self::EdgeIndex)
     -> Result<Option<Self::EdgeWeight>, Self::Error>;
 
-    fn node(&self, id: &Self::NodeIndex) -> Option<Node<Self::NodeIndex, Self::NodeWeight>>;
-    fn node_mut(
-        &mut self,
-        id: &Self::NodeIndex,
-    ) -> Option<NodeMut<Self::NodeIndex, Self::NodeWeight>>;
+    fn node(&self, id: &Self::NodeIndex) -> Option<Node<Self>>;
+    fn node_mut(&mut self, id: &Self::NodeIndex) -> Option<NodeMut<Self>>;
 
-    fn edge(
-        &self,
-        id: &Self::EdgeIndex,
-    ) -> Option<Edge<Self::NodeIndex, Self::EdgeIndex, Self::EdgeWeight>>;
-    fn edge_mut(
-        &mut self,
-        id: &Self::EdgeIndex,
-    ) -> Option<EdgeMut<Self::NodeIndex, Self::EdgeIndex, Self::EdgeWeight>>;
+    fn edge(&self, id: &Self::EdgeIndex) -> Option<Edge<Self>>;
+    fn edge_mut(&mut self, id: &Self::EdgeIndex) -> Option<EdgeMut<Self>>;
 
-    type NodeConnectionIter<'a>: Iterator<Item = Edge<'a, Self::NodeIndex, Self::EdgeIndex, Self::EdgeWeight>>
-        + 'a
+    type NodeConnectionIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
     where
         Self: 'a;
 
     fn node_connections<'a>(&self, id: &'a Self::NodeIndex) -> Self::NodeConnectionIter<'a>;
 
-    type NodeNeighbourIter<'a>: Iterator<Item = Node<'a, Self::NodeIndex, Self::NodeWeight>> + 'a
+    type NodeNeighbourIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
     where
         Self: 'a;
 
@@ -150,18 +141,29 @@ pub trait GraphStorage {
         matrix
     }
 
-    type NodeIter<'a>: Iterator<Item = Node<'a, Self::NodeIndex, Self::NodeWeight>> + 'a
+    type NodeIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
     where
         Self: 'a;
 
     fn nodes(&self) -> Self::NodeIter<'_>;
 
-    type EdgeIter<'a>: Iterator<Item = Edge<'a, Self::NodeIndex, Self::EdgeIndex, Self::EdgeWeight>>
-        + 'a
+    type NodeMutIter<'a>: Iterator<Item = NodeMut<'a, Self>> + 'a
+    where
+        Self: 'a;
+
+    fn nodes_mut(&mut self) -> Self::NodeMutIter<'_>;
+
+    type EdgeIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
     where
         Self: 'a;
 
     fn edges(&self) -> Self::EdgeIter<'_>;
+
+    type EdgeMutIter<'a>: Iterator<Item = EdgeMut<'a, Self>> + 'a
+    where
+        Self: 'a;
+
+    fn edges_mut(&mut self) -> Self::EdgeMutIter<'_>;
 }
 
 pub trait DirectedGraphStorage: GraphStorage {
@@ -175,8 +177,7 @@ pub trait DirectedGraphStorage: GraphStorage {
         matrix
     }
 
-    type NodeDirectedConnectionIter<'a>: Iterator<Item = Edge<'a, Self::NodeIndex, Self::EdgeIndex, Self::EdgeWeight>>
-        + 'a
+    type NodeDirectedConnectionIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
     where
         Self: 'a;
 
@@ -186,8 +187,7 @@ pub trait DirectedGraphStorage: GraphStorage {
         direction: Direction,
     ) -> Self::NodeDirectedConnectionIter<'a>;
 
-    type NodeDirectedNeighbourIter<'a>: Iterator<Item = Node<'a, Self::NodeIndex, Self::NodeWeight>>
-        + 'a
+    type NodeDirectedNeighbourIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
     where
         Self: 'a;
 

@@ -15,6 +15,7 @@ pub mod index;
 pub mod data;
 #[deprecated(since = "0.1.0")]
 pub mod deprecated;
+mod graph;
 #[doc(hidden)]
 #[deprecated(since = "0.1.0")]
 mod macros;

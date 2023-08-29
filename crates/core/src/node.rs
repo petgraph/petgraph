@@ -1,54 +1,69 @@
-// TODO: include graph
+use crate::{graph::Graph, storage::GraphStorage};
 
-pub struct Node<'a, N: ?Sized, W: ?Sized> {
-    id: &'a N,
+pub struct Node<'a, S>
+where
+    S: GraphStorage,
+{
+    graph: &'a Graph<S>,
 
-    weight: &'a W,
+    id: &'a S::NodeIndex,
+
+    weight: &'a S::NodeWeight,
 }
 
-impl<'a, N, W> Node<'a, N, W>
+impl<'a, S> Node<'a, S>
 where
-    N: ?Sized,
-    W: ?Sized,
+    S: GraphStorage,
 {
-    pub fn new(id: &'a N, weight: &'a W) -> Self {
-        Self { id, weight }
+    pub fn new(graph: &'a Graph<S>, id: &'a S::NodeIndex, weight: &'a S::NodeWeight) -> Self {
+        Self { graph, id, weight }
     }
 
-    pub fn id(&self) -> &'a N {
+    pub fn id(&self) -> &'a S::NodeIndex {
         self.id
     }
 
-    pub fn weight(&self) -> &'a W {
+    pub fn weight(&self) -> &'a S::NodeWeight {
         self.weight
     }
 }
 
-pub struct NodeMut<'a, N: ?Sized, W: ?Sized> {
-    id: &'a N,
+pub struct NodeMut<'a, S>
+where
+    S: GraphStorage,
+{
+    graph: &'a mut Graph<S>,
 
-    weight: &'a mut W,
+    id: &'a S::NodeIndex,
+
+    weight: &'a mut S::NodeWeight,
 }
 
-impl<'a, N, W> NodeMut<'a, N, W>
+impl<'a, S> NodeMut<'a, S>
 where
-    N: ?Sized,
-    W: ?Sized,
+    S: GraphStorage,
 {
-    pub fn id(&self) -> &'a N {
+    pub fn new(
+        graph: &'a mut Graph<S>,
+        id: &'a S::NodeIndex,
+        weight: &'a mut S::NodeWeight,
+    ) -> Self {
+        Self { graph, id, weight }
+    }
+
+    pub fn id(&self) -> &'a S::NodeIndex {
         self.id
     }
 
-    pub fn weight(&self) -> &'a W {
+    pub fn weight(&self) -> &'a S::NodeWeight {
         self.weight
     }
 
-    pub fn weight_mut(&mut self) -> &'a mut W {
+    pub fn weight_mut(&mut self) -> &'a mut S::NodeWeight {
         self.weight
     }
 }
 
-// TODO: consider naming this `FreeNode`
 pub struct DetachedNode<N, W> {
     pub id: N,
 

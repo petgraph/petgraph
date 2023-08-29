@@ -39,6 +39,12 @@ impl Direction {
 )]
 pub use Direction::{Incoming, Outgoing};
 
+use crate::{
+    graph::Graph,
+    node::{Node, NodeMut},
+    storage::GraphStorage,
+};
+
 /// Marker type for a directed graph.
 #[derive(Copy, Clone, Debug)]
 pub struct Directed;
@@ -66,67 +72,145 @@ impl EdgeType for Undirected {
     }
 }
 
-// TODO: include graph
-
-pub struct Edge<'a, E: ?Sized, N: ?Sized, W: ?Sized> {
-    id: &'a E,
-
-    source: &'a N,
-    target: &'a N,
-
-    weight: &'a W,
-}
-
-impl<'a, E, N, W> Edge<'a, E, N, W>
+pub struct Edge<'a, S>
 where
-    E: ?Sized,
-    N: ?Sized,
-    W: ?Sized,
+    S: GraphStorage,
 {
-    pub fn id(&self) -> &'a E {
+    graph: &'a Graph<S>,
+
+    id: &'a S::EdgeIndex,
+
+    source_id: &'a S::NodeIndex,
+    target_id: &'a S::NodeIndex,
+
+    weight: &'a S::EdgeWeight,
+}
+
+impl<'a, S> Edge<'a, S>
+where
+    S: GraphStorage,
+{
+    pub fn new(
+        graph: &'a Graph<S>,
+
+        id: &'a S::EdgeIndex,
+
+        source_id: &'a S::NodeIndex,
+        target_id: &'a S::NodeIndex,
+
+        weight: &'a S::EdgeWeight,
+    ) -> Self {
+        Self {
+            graph,
+
+            id,
+
+            source_id,
+            target_id,
+
+            weight,
+        }
+    }
+
+    pub fn id(&self) -> &'a S::EdgeIndex {
         self.id
     }
 
-    pub fn source(&self) -> &'a N {
-        self.source
+    pub fn source_id(&self) -> &'a S::NodeIndex {
+        self.source_id
     }
 
-    pub fn target(&self) -> &'a N {
-        self.target
+    pub fn source(&self) -> Node<'a, S> {
+        // self.graph.node(self.source_id)
+        todo!()
     }
 
-    pub fn weight(&self) -> &'a W {
+    pub fn target_id(&self) -> &'a S::NodeIndex {
+        self.target_id
+    }
+
+    pub fn target(&self) -> Node<'a, S> {
+        todo!()
+    }
+
+    pub fn weight(&self) -> &'a S::NodeWeight {
         self.weight
     }
 }
 
-pub struct EdgeMut<'a, E, N, W> {
-    id: &'a E,
+pub struct EdgeMut<'a, S>
+where
+    S: GraphStorage,
+{
+    graph: &'a mut Graph<S>,
 
-    source: &'a N,
-    target: &'a N,
+    id: &'a S::EdgeIndex,
 
-    weight: &'a mut W,
+    source_id: &'a S::NodeIndex,
+    target_id: &'a S::NodeIndex,
+
+    weight: &'a mut S::EdgeWeight,
 }
 
-impl<'a, E, N, W> EdgeMut<'a, E, N, W> {
-    pub fn id(&self) -> &'a E {
+impl<'a, S> EdgeMut<'a, S>
+where
+    S: GraphStorage,
+{
+    pub fn new(
+        graph: &'a mut Graph<S>,
+
+        id: &'a S::EdgeIndex,
+
+        source_id: &'a S::NodeIndex,
+        target_id: &'a S::NodeIndex,
+
+        weight: &'a mut S::EdgeWeight,
+    ) -> Self {
+        Self {
+            graph,
+
+            id,
+
+            source_id,
+            target_id,
+
+            weight,
+        }
+    }
+
+    pub fn id(&self) -> &'a S::EdgeIndex {
         self.id
     }
 
-    pub fn source(&self) -> &'a N {
-        self.source
+    pub fn source_id(&self) -> &'a S::NodeIndex {
+        self.source_id
     }
 
-    pub fn target(&self) -> &'a N {
-        self.target
+    pub fn source_mut(&mut self) -> NodeMut<'a, S> {
+        todo!()
     }
 
-    pub fn weight(&self) -> &'a W {
+    pub fn source(&self) -> Node<'a, S> {
+        todo!()
+    }
+
+    pub fn target_id(&self) -> &'a S::NodeIndex {
+        self.target_id
+    }
+
+    pub fn target_mut(&mut self) -> NodeMut<'a, S> {
+        todo!()
+    }
+
+    pub fn target(&self) -> Node<'a, S> {
+        todo!()
+    }
+
+    pub fn weight(&self) -> &'a S::EdgeWeight {
         self.weight
     }
 
-    pub fn weight_mut(&mut self) -> &'a mut W {
+    pub fn weight_mut(&mut self) -> &'a mut S::EdgeWeight {
         self.weight
     }
 }
