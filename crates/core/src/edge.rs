@@ -65,3 +65,83 @@ impl EdgeType for Undirected {
         false
     }
 }
+
+// TODO: include graph
+
+pub struct Edge<'a, E, N, W> {
+    id: &'a E,
+
+    source: &'a N,
+    target: &'a N,
+
+    weight: &'a W,
+}
+
+impl<'a, E, N, W> Edge<'a, E, N, W> {
+    pub fn id(&self) -> &'a E {
+        self.id
+    }
+
+    pub fn source(&self) -> &'a N {
+        self.source
+    }
+
+    pub fn target(&self) -> &'a N {
+        self.target
+    }
+
+    pub fn weight(&self) -> &'a W {
+        self.weight
+    }
+}
+
+pub struct EdgeMut<'a, E, N, W> {
+    id: &'a E,
+
+    source: &'a N,
+    target: &'a N,
+
+    weight: &'a mut W,
+}
+
+impl<'a, E, N, W> EdgeMut<'a, E, N, W> {
+    pub fn id(&self) -> &'a E {
+        self.id
+    }
+
+    pub fn source(&self) -> &'a N {
+        self.source
+    }
+
+    pub fn target(&self) -> &'a N {
+        self.target
+    }
+
+    pub fn weight(&self) -> &'a W {
+        self.weight
+    }
+
+    pub fn weight_mut(&mut self) -> &'a mut W {
+        self.weight
+    }
+}
+
+pub struct DetachedEdge<E, N, W> {
+    pub id: E,
+
+    pub source: N,
+    pub target: N,
+
+    pub weight: W,
+}
+
+impl<E, N, W> DetachedEdge<E, N, W> {
+    pub fn new(id: E, source: N, target: N, weight: W) -> Self {
+        Self {
+            id,
+            source,
+            target,
+            weight,
+        }
+    }
+}

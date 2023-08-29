@@ -8,6 +8,7 @@ edition = "2021"
 fixedbitset = { workspace = true, optional = true }
 funty.workspace = true
 indexmap = { workspace = true, optional = true }
+error-stack = { workspace = true }
 
 [dev-dependencies]
 petgraph = { workspace = true, features = ['proptest'] }

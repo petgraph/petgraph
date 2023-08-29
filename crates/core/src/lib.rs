@@ -18,4 +18,7 @@ pub mod deprecated;
 #[doc(hidden)]
 #[deprecated(since = "0.1.0")]
 mod macros;
+mod matrix;
+mod node;
+mod storage;
 mod utils;
