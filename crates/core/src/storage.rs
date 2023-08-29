@@ -15,6 +15,13 @@ pub trait GraphStorage {
     type EdgeIndex;
     type EdgeWeight;
 
+    fn with_capacity(
+        node_capacity: Option<usize>,
+        edge_capacity: Option<usize>,
+    ) -> Result<Self, Self::Error>
+    where
+        Self: Sized;
+
     fn from_parts(
         nodes: impl IntoIterator<Item = DetachedNode<Self::NodeIndex, Self::NodeWeight>>,
         edges: impl IntoIterator<
@@ -59,13 +66,6 @@ pub trait GraphStorage {
 
         result.map(|()| graph)
     }
-
-    fn with_capacity(
-        node_capacity: Option<usize>,
-        edge_capacity: Option<usize>,
-    ) -> Result<Self, Self::Error>
-    where
-        Self: Sized;
 
     fn reserve_nodes(&mut self, additional: usize) -> Result<(), Self::Error>;
     fn reserve_edges(&mut self, additional: usize) -> Result<(), Self::Error>;
@@ -144,7 +144,7 @@ pub trait GraphStorage {
         let mut matrix = AdjacencyMatrix::new_undirected(self.num_nodes());
 
         for edge in self.edges() {
-            matrix.mark_undirected_edge(edge);
+            matrix.mark(edge);
         }
 
         matrix
@@ -169,7 +169,7 @@ pub trait DirectedGraphStorage: GraphStorage {
         let mut matrix = AdjacencyMatrix::new_directed(self.num_nodes());
 
         for edge in self.edges() {
-            matrix.mark_directed_edge(edge);
+            matrix.mark(edge);
         }
 
         matrix
