@@ -1,7 +1,9 @@
+use alloc::borrow::Cow;
+
 use error_stack::{Context, Result};
 
 use crate::{
-    edge::{DetachedEdge, Direction, Edge, EdgeMut},
+    edge::{DetachedEdge, Edge, EdgeMut},
     index::GraphIndex,
     matrix::AdjacencyMatrix,
     node::{DetachedNode, Node, NodeMut},
@@ -23,10 +25,11 @@ pub trait GraphStorage {
 
     type Error: Context;
 
-    type NodeIndex: GraphIndex<Self>;
+    type NodeIndex: GraphIndex;
+
     type NodeWeight;
 
-    type EdgeIndex: GraphIndex<Self>;
+    type EdgeIndex: GraphIndex;
     type EdgeWeight;
 
     fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self

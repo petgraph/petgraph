@@ -1,10 +1,10 @@
-use alloc::vec::Vec;
+use alloc::{borrow::Cow, vec::Vec};
 
 use error_stack::Result;
 
 use crate::{
     edge::{DetachedEdge, Direction, Edge, EdgeMut},
-    index::{ArbitraryGraphIndex, ManagedGraphIndex},
+    index::{Arbitrary, GraphIndex, Managed, ManagedGraphIndex},
     node::{DetachedNode, Node, NodeMut},
     storage::{DirectedGraphStorage, GraphStorage, RetainGraphStorage},
 };
@@ -228,25 +228,30 @@ where
     // into_undirected, into_directed, from_edges, extend_with_edges
 }
 
-impl<S> Graph<S>
+impl<S, T> Graph<S>
 where
-    S: GraphStorage,
-    S::NodeIndex: ManagedGraphIndex<S>,
+    S: GraphStorage<NodeIndex = Managed<T>>,
+    T: ManagedGraphIndex<Storage = S>,
 {
-    pub fn insert_node(&mut self, weight: S::NodeWeight) -> Result<S::NodeIndex, S::Error> {
+    pub fn insert_node(&mut self, weight: S::NodeWeight) -> Result<(), S::Error> {
+        todo!();
         let id = S::NodeIndex::next(&self.storage);
 
         self.storage.insert_node(id, weight)
     }
 }
 
-impl<S> Graph<S>
+impl<S, T> Graph<S>
 where
-    S: GraphStorage,
-    S::NodeIndex: ArbitraryGraphIndex<S>,
+    S: GraphStorage<NodeIndex = Arbitrary<T>>,
 {
     pub fn insert_node(&mut self, id: S::NodeIndex, weight: S::NodeWeight) -> Result<(), S::Error> {
-        self.storage.insert_node(id, weight)
+        todo!();
+        // self.storage.insert_node(id, weight)
+        // ~> we could just add a `DetachedNode` instead here, which then is a struct, where the
+        // `S::NodeIndex` is optional?! -> same problem though, well kinda.
+        // `insert_node(id, weight)` is better than `insert_node(DetachedNode {})` or
+        // `DetachedNode::new()` (or `FreeNode::new()`). It is just more convenient.
     }
 
     pub fn upsert_node(&mut self, id: S::NodeIndex, weight: S::NodeWeight) -> Result<(), S::Error> {
@@ -259,10 +264,10 @@ where
     }
 }
 
-impl<S> Graph<S>
+impl<S, T> Graph<S>
 where
-    S: GraphStorage,
-    S::EdgeIndex: ManagedGraphIndex<S>,
+    S: GraphStorage<EdgeIndex = Managed<T>>,
+    T: ManagedGraphIndex<Storage = S>,
 {
     pub fn insert_edge(
         &mut self,
@@ -270,24 +275,29 @@ where
         target: S::NodeIndex,
         weight: S::EdgeWeight,
     ) -> Result<S::EdgeIndex, S::Error> {
+        todo!();
+
         let id = S::EdgeIndex::next(&self.storage);
 
         self.storage.insert_edge(id, source, target, weight)
     }
 }
 
-impl<S> Graph<S>
+impl<S, T> Graph<S>
 where
-    S: GraphStorage,
-    S::EdgeIndex: ArbitraryGraphIndex<S>,
+    S: GraphStorage<EdgeIndex = Arbitrary<T>>,
 {
     pub fn insert_edge(
         &mut self,
-        id: S::EdgeIndex,
+        id: <S::EdgeIndex as GraphIndex>::Value,
         source: S::NodeIndex,
         target: S::NodeIndex,
         weight: S::EdgeWeight,
     ) -> Result<(), S::Error> {
+        todo!();
+
+        let id = Arbitrary(id);
+
         self.storage.insert_edge(id, source, target, weight)
     }
 

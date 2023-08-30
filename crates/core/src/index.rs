@@ -1,21 +1,47 @@
 use crate::storage::GraphStorage;
 
-pub trait GraphIndex<S>
-where
-    S: GraphStorage,
-{
+pub trait GraphIndex {
+    type Value;
 }
 
-// TODO: how tf does that work across crate boundaries with different storages?
-pub trait ArbitraryGraphIndex<S>: GraphIndex<S>
-where
-    S: GraphStorage,
-{
+pub struct Arbitrary<T>(pub T);
+
+impl<T> GraphIndex for Arbitrary<T> {
+    type Value = T;
 }
 
-pub trait ManagedGraphIndex<S>: GraphIndex<S>
+pub struct Managed<T>(T);
+
+impl<T> Managed<T>
 where
-    S: GraphStorage,
+    T: ManagedGraphIndex,
 {
-    fn next(storage: &S) -> Self;
+    pub fn value(&self) -> &T {
+        &self.0
+    }
+
+    pub fn into_value(self) -> T {
+        self.0
+    }
+
+    pub fn unchecked_from_value(value: T) -> Self {
+        Self(value)
+    }
+
+    pub fn next(storage: &T::Storage) -> Self {
+        Self(T::next(storage))
+    }
+}
+
+pub trait ManagedGraphIndex {
+    type Storage: GraphStorage;
+
+    fn next(storage: &Self::Storage) -> Self;
+}
+
+impl<T> GraphIndex for Managed<T>
+where
+    T: ManagedGraphIndex,
+{
+    type Value = T;
 }
