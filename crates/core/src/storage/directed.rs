@@ -19,7 +19,8 @@ pub trait DirectedGraphStorage: GraphStorage {
             .filter(move |edge| edge.target_id() == target)
     }
 
-    fn directed_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
+    // TODO: move out
+    fn directed_adjacency_matrix(&self) -> AdjacencyMatrix<Self> {
         let mut matrix = AdjacencyMatrix::new_directed(self.num_nodes());
 
         for edge in self.edges() {

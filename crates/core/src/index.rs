@@ -1,6 +1,6 @@
 use crate::{attributes::Never, storage::GraphStorage};
 
-pub trait GraphIndex {
+pub trait GraphIndex: PartialEq {
     type Storage: GraphStorage;
 
     type InsertValue;

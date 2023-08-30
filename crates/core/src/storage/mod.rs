@@ -44,7 +44,7 @@ pub trait GraphStorage: Sized {
 
         // by default we try to fail slow, this way we can get as much data about potential errors
         // as possible.
-        let mut result = Ok(());
+        let mut result: Result<(), Self::Error> = Ok(());
 
         for node in nodes {
             if let Err(error) = graph.insert_node(node.id, node.weight) {
@@ -59,7 +59,7 @@ pub trait GraphStorage: Sized {
 
         // we need to ensure that all nodes are inserted before we insert edges, otherwise we might
         // end up with invalid data (or redundant errors).
-        let mut result = Ok(());
+        let mut result: Result<(), Self::Error> = Ok(());
 
         for edge in edges {
             if let Err(error) = graph.insert_edge(edge.id, edge.source, edge.target, edge.weight) {
@@ -117,11 +117,11 @@ pub trait GraphStorage: Sized {
 
     fn remove_node(
         &mut self,
-        id: Self::NodeIndex,
+        id: &Self::NodeIndex,
     ) -> Option<DetachedNode<Self::NodeIndex, Self::NodeWeight>>;
     fn remove_edge(
         &mut self,
-        id: Self::EdgeIndex,
+        id: &Self::EdgeIndex,
     ) -> Option<DetachedEdge<Self::EdgeIndex, Self::NodeIndex, Self::EdgeWeight>>;
 
     fn clear(&mut self) {
@@ -140,7 +140,7 @@ pub trait GraphStorage: Sized {
     fn edge(&self, id: &Self::EdgeIndex) -> Option<Edge<Self>>;
     fn edge_mut(&mut self, id: &Self::EdgeIndex) -> Option<EdgeMut<Self>>;
 
-    type FindUndirectedEdgeIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
+    type FindUndirectedEdgeIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a = impl Iterator<Item = Edge<'a, Self>> + 'a
     where
         Self: 'a;
 
@@ -231,7 +231,7 @@ pub trait GraphStorage: Sized {
     }
 
     // TODO: into a specific trait
-    fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
+    fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self> {
         let mut matrix = AdjacencyMatrix::new_undirected(self.num_nodes());
 
         for edge in self.edges() {
