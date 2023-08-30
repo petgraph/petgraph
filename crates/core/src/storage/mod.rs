@@ -15,7 +15,12 @@ pub use directed::DirectedGraphStorage;
 pub use resize::ResizableGraphStorage;
 pub use retain::RetainGraphStorage;
 
+use crate::edge::marker::GraphDirection;
+
 pub trait GraphStorage {
+    // TODO: we likely don't even need this
+    type Direction: GraphDirection;
+
     type Error: Context;
 
     type NodeIndex: GraphIndex<Self>;
@@ -230,6 +235,7 @@ pub trait GraphStorage {
             .filter(|node| self.node_neighbours(node.id()).next().is_none())
     }
 
+    // TODO: into a specific trait
     fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
         let mut matrix = AdjacencyMatrix::new_undirected(self.num_nodes());
 

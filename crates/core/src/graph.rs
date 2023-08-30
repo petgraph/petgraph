@@ -243,23 +243,6 @@ where
 impl<S> Graph<S>
 where
     S: GraphStorage,
-    S::EdgeIndex: ManagedGraphIndex<S>,
-{
-    pub fn insert_edge(
-        &mut self,
-        source: S::NodeIndex,
-        target: S::NodeIndex,
-        weight: S::EdgeWeight,
-    ) -> Result<S::EdgeIndex, S::Error> {
-        let id = S::EdgeIndex::next(&self.storage);
-
-        self.storage.insert_edge(id, source, target, weight)
-    }
-}
-
-impl<S> Graph<S>
-where
-    S: GraphStorage,
     S::NodeIndex: ArbitraryGraphIndex<S>,
 {
     pub fn insert_node(&mut self, id: S::NodeIndex, weight: S::NodeWeight) -> Result<(), S::Error> {
@@ -273,6 +256,23 @@ where
         } else {
             self.storage.insert_node(id, weight)
         }
+    }
+}
+
+impl<S> Graph<S>
+where
+    S: GraphStorage,
+    S::EdgeIndex: ManagedGraphIndex<S>,
+{
+    pub fn insert_edge(
+        &mut self,
+        source: S::NodeIndex,
+        target: S::NodeIndex,
+        weight: S::EdgeWeight,
+    ) -> Result<S::EdgeIndex, S::Error> {
+        let id = S::EdgeIndex::next(&self.storage);
+
+        self.storage.insert_edge(id, source, target, weight)
     }
 }
 

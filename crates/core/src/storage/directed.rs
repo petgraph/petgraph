@@ -1,13 +1,11 @@
-use error_stack::Result;
-
 use crate::{
-    edge::{Direction, Edge, EdgeMut},
+    edge::{Directed, Direction, Edge, EdgeMut},
     matrix::AdjacencyMatrix,
     node::{Node, NodeMut},
     storage::GraphStorage,
 };
 
-pub trait DirectedGraphStorage: GraphStorage {
+pub trait DirectedGraphStorage: GraphStorage<Direction = Directed> {
     type FindDirectedEdgeIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
     where
         Self: 'a;

@@ -84,8 +84,11 @@ pub use self::dfsvisit::*;
 #[cfg(feature = "alloc")]
 pub use self::traversal::*;
 use crate::{
-    deprecated::index::{IndexType, SafeCast},
-    edge::{Direction, EdgeType},
+    deprecated::{
+        edge::EdgeType,
+        index::{IndexType, SafeCast},
+    },
+    edge::Direction,
 };
 
 trait_template! {

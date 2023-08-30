@@ -6,10 +6,10 @@ use alloc::vec::Vec;
 use crate::graphmap::{GraphMap, NodeTrait};
 use crate::{
     deprecated::{
+        edge::EdgeType,
         index::IndexType,
         visit::{Data, NodeCount, NodeIndexable, Reversed},
     },
-    edge::EdgeType,
     trait_template,
 };
 

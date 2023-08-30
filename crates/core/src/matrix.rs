@@ -29,7 +29,7 @@ pub struct AdjacencyMatrix<N> {
     _marker: PhantomData<N>,
 }
 
-impl<N> AdjacencyMatrix<N> {
+impl<S> AdjacencyMatrix<S> {
     pub fn new_directed(nodes: usize) -> Self {
         Self {
             nodes,
@@ -63,7 +63,7 @@ impl<N> AdjacencyMatrix<N> {
     // TODO: we only need the upper triangle of the matrix, so we can save some space by only saving
     // that.
     // To be able to do that we need to know though with which graph we're working with!
-    pub fn mark<E, W>(&mut self, edge: Edge<'_, E, N, W>) {
+    pub fn mark(&mut self, edge: Edge<'_, S>) {
         let source = edge.source();
         let target = edge.target();
 
