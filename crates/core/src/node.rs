@@ -51,6 +51,10 @@ where
         Self { graph, id, weight }
     }
 
+    pub fn as_ref(&self) -> Node<'_, S> {
+        Node::new(self.graph, self.id, self.weight)
+    }
+
     pub fn id(&self) -> &'a S::NodeIndex {
         self.id
     }

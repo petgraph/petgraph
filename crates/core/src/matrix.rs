@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use fixedbitset::FixedBitSet;
 
-use crate::edge::Edge;
+use crate::{edge::Edge, storage::GraphStorage};
 
 // Thanks to: https://stackoverflow.com/a/27088560/9077988
 // and: https://math.stackexchange.com/a/2134297
@@ -29,7 +29,10 @@ pub struct AdjacencyMatrix<N> {
     _marker: PhantomData<N>,
 }
 
-impl<S> AdjacencyMatrix<S> {
+impl<S> AdjacencyMatrix<S>
+where
+    S: GraphStorage,
+{
     pub fn new_directed(nodes: usize) -> Self {
         Self {
             nodes,

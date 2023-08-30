@@ -1,8 +1,6 @@
 mod direction;
-pub(crate) mod marker;
 
 pub use direction::Direction;
-pub use marker::{Directed, Undirected};
 
 use crate::{
     graph::Graph,
@@ -71,7 +69,7 @@ where
         todo!()
     }
 
-    pub fn weight(&self) -> &'a S::NodeWeight {
+    pub fn weight(&self) -> &'a S::EdgeWeight {
         self.weight
     }
 }
@@ -114,6 +112,16 @@ where
 
             weight,
         }
+    }
+
+    pub fn as_ref(&self) -> Edge<'_, S> {
+        Edge::new(
+            self.graph,
+            self.id,
+            self.source_id,
+            self.target_id,
+            self.weight,
+        )
     }
 
     pub fn id(&self) -> &'a S::EdgeIndex {

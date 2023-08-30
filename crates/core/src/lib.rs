@@ -11,3 +11,4 @@ pub mod index;
 pub mod matrix;
 pub mod node;
 pub mod storage;
+mod attributes;

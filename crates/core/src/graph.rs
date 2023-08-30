@@ -1,10 +1,9 @@
-use alloc::{borrow::Cow, vec::Vec};
-
 use error_stack::Result;
 
 use crate::{
+    attributes::Attributes,
     edge::{DetachedEdge, Direction, Edge, EdgeMut},
-    index::{Arbitrary, GraphIndex, Managed, ManagedGraphIndex},
+    index::{ArbitraryGraphIndex, GraphIndex},
     node::{DetachedNode, Node, NodeMut},
     storage::{DirectedGraphStorage, GraphStorage, RetainGraphStorage},
 };
@@ -203,7 +202,7 @@ where
         &self,
         source: &S::NodeIndex,
         target: &S::NodeIndex,
-    ) -> impl Iterator<Item = Edge<S>> {
+    ) -> impl Iterator<Item = Edge<S>> + '_ {
         self.storage.find_directed_edges(source, target)
     }
 
@@ -228,89 +227,74 @@ where
     // into_undirected, into_directed, from_edges, extend_with_edges
 }
 
-impl<S, T> Graph<S>
+impl<S> Graph<S>
 where
-    S: GraphStorage<NodeIndex = Managed<T>>,
-    T: ManagedGraphIndex<Storage = S>,
+    S: GraphStorage,
 {
-    pub fn insert_node(&mut self, weight: S::NodeWeight) -> Result<(), S::Error> {
-        todo!();
-        let id = S::NodeIndex::next(&self.storage);
+    pub fn insert_node(
+        &mut self,
+        attributes: Attributes<<S::NodeIndex as GraphIndex>::InsertValue, S::NodeWeight>,
+    ) -> Result<Node<S>, S::Error> {
+        let Attributes { id, weight } = attributes;
+
+        let id = <S::NodeIndex as GraphIndex>::convert(&self.storage, id);
 
         self.storage.insert_node(id, weight)
     }
 }
 
-impl<S, T> Graph<S>
+impl<S> Graph<S>
 where
-    S: GraphStorage<NodeIndex = Arbitrary<T>>,
+    S: GraphStorage,
+    S::NodeIndex: ArbitraryGraphIndex,
 {
-    pub fn insert_node(&mut self, id: S::NodeIndex, weight: S::NodeWeight) -> Result<(), S::Error> {
-        todo!();
-        // self.storage.insert_node(id, weight)
-        // ~> we could just add a `DetachedNode` instead here, which then is a struct, where the
-        // `S::NodeIndex` is optional?! -> same problem though, well kinda.
-        // `insert_node(id, weight)` is better than `insert_node(DetachedNode {})` or
-        // `DetachedNode::new()` (or `FreeNode::new()`). It is just more convenient.
-    }
-
-    pub fn upsert_node(&mut self, id: S::NodeIndex, weight: S::NodeWeight) -> Result<(), S::Error> {
+    pub fn upsert_node(
+        &mut self,
+        id: S::NodeIndex,
+        weight: S::NodeWeight,
+    ) -> Result<Node<S>, S::Error> {
         if let Some(mut node) = self.storage.node_mut(&id) {
             *node.weight_mut() = weight;
-            Ok(())
+            Ok(node.as_ref())
         } else {
             self.storage.insert_node(id, weight)
         }
     }
 }
 
-impl<S, T> Graph<S>
+impl<S> Graph<S>
 where
-    S: GraphStorage<EdgeIndex = Managed<T>>,
-    T: ManagedGraphIndex<Storage = S>,
+    S: GraphStorage,
 {
     pub fn insert_edge(
         &mut self,
+        attributes: Attributes<<S::EdgeIndex as GraphIndex>::InsertValue, S::EdgeWeight>,
         source: S::NodeIndex,
         target: S::NodeIndex,
-        weight: S::EdgeWeight,
-    ) -> Result<S::EdgeIndex, S::Error> {
-        todo!();
+    ) -> Result<Edge<S>, S::Error> {
+        let Attributes { id, weight } = attributes;
 
-        let id = S::EdgeIndex::next(&self.storage);
+        let id = <S::EdgeIndex as GraphIndex>::convert(&self.storage, id);
 
         self.storage.insert_edge(id, source, target, weight)
     }
 }
 
-impl<S, T> Graph<S>
+impl<S> Graph<S>
 where
-    S: GraphStorage<EdgeIndex = Arbitrary<T>>,
+    S: GraphStorage,
+    S::EdgeIndex: ArbitraryGraphIndex<Storage = S>,
 {
-    pub fn insert_edge(
-        &mut self,
-        id: <S::EdgeIndex as GraphIndex>::Value,
-        source: S::NodeIndex,
-        target: S::NodeIndex,
-        weight: S::EdgeWeight,
-    ) -> Result<(), S::Error> {
-        todo!();
-
-        let id = Arbitrary(id);
-
-        self.storage.insert_edge(id, source, target, weight)
-    }
-
     pub fn upsert_edge(
         &mut self,
         id: S::EdgeIndex,
         source: S::NodeIndex,
         target: S::NodeIndex,
         weight: S::EdgeWeight,
-    ) -> Result<(), S::Error> {
+    ) -> Result<Edge<S>, S::Error> {
         if let Some(mut edge) = self.storage.edge_mut(&id) {
             *edge.weight_mut() = weight;
-            Ok(())
+            Ok(edge.as_ref())
         } else {
             self.storage.insert_edge(id, source, target, weight)
         }
@@ -323,17 +307,17 @@ where
 {
     pub fn retain(
         &mut self,
-        nodes: impl FnMut(NodeMut<'_, Self>) -> bool,
-        edges: impl FnMut(EdgeMut<'_, Self>) -> bool,
+        nodes: impl FnMut(NodeMut<'_, S>) -> bool,
+        edges: impl FnMut(EdgeMut<'_, S>) -> bool,
     ) {
         self.storage.retain(nodes, edges);
     }
 
-    pub fn retain_nodes(&mut self, f: impl FnMut(NodeMut<'_, Self>) -> bool) {
+    pub fn retain_nodes(&mut self, f: impl FnMut(NodeMut<'_, S>) -> bool) {
         self.storage.retain_nodes(f);
     }
 
-    pub fn retain_edges(&mut self, f: impl FnMut(EdgeMut<'_, Self>) -> bool) {
+    pub fn retain_edges(&mut self, f: impl FnMut(EdgeMut<'_, S>) -> bool) {
         self.storage.retain_edges(f);
     }
 }

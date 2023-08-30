@@ -1,7 +1,12 @@
-use alloc::borrow::Cow;
+mod directed;
+mod resize;
+mod retain;
 
 use error_stack::{Context, Result};
 
+pub use self::{
+    directed::DirectedGraphStorage, resize::ResizableGraphStorage, retain::RetainGraphStorage,
+};
 use crate::{
     edge::{DetachedEdge, Edge, EdgeMut},
     index::GraphIndex,
@@ -9,27 +14,14 @@ use crate::{
     node::{DetachedNode, Node, NodeMut},
 };
 
-mod directed;
-mod resize;
-mod retain;
-
-pub use directed::DirectedGraphStorage;
-pub use resize::ResizableGraphStorage;
-pub use retain::RetainGraphStorage;
-
-use crate::edge::marker::GraphDirection;
-
-pub trait GraphStorage {
-    // TODO: we likely don't even need this
-    type Direction: GraphDirection;
-
+pub trait GraphStorage: Sized {
     type Error: Context;
 
-    type NodeIndex: GraphIndex;
+    type NodeIndex: GraphIndex<Storage = Self>;
 
     type NodeWeight;
 
-    type EdgeIndex: GraphIndex;
+    type EdgeIndex: GraphIndex<Storage = Self>;
     type EdgeWeight;
 
     fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self
@@ -105,7 +97,7 @@ pub trait GraphStorage {
         &mut self,
         id: Self::NodeIndex,
         weight: Self::NodeWeight,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<Node<Self>, Self::Error>;
 
     /// Inserts a new edge into the graph.
     ///
@@ -121,7 +113,7 @@ pub trait GraphStorage {
         target: Self::NodeIndex,
 
         weight: Self::EdgeWeight,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<Edge<Self>, Self::Error>;
 
     fn remove_node(
         &mut self,
