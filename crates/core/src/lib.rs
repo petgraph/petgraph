@@ -21,5 +21,6 @@ mod graph;
 mod macros;
 mod matrix;
 mod node;
+mod resize;
 mod storage;
 mod utils;

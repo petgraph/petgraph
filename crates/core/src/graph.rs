@@ -1,8 +1,12 @@
+use alloc::vec::Vec;
+
+use error_stack::Result;
+
 use crate::{
     edge::{DetachedEdge, Direction, Edge, EdgeMut},
     index::{ArbitraryGraphIndex, ManagedGraphIndex},
     node::{DetachedNode, Node, NodeMut},
-    storage::{DirectedGraphStorage, GraphStorage},
+    storage::{DirectedGraphStorage, GraphStorage, RetainGraphStorage},
 };
 
 pub struct Graph<S> {
@@ -17,6 +21,15 @@ where
         Self {
             storage: S::with_capacity(None, None),
         }
+    }
+
+    pub fn from_parts(
+        nodes: impl IntoIterator<Item = DetachedNode<S::NodeIndex, S::NodeWeight>>,
+        edges: impl IntoIterator<Item = DetachedEdge<S::EdgeIndex, S::NodeIndex, S::EdgeWeight>>,
+    ) -> Result<Self, S::Error> {
+        Ok(Self {
+            storage: S::from_parts(nodes, edges)?,
+        })
     }
 
     pub fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self {
@@ -96,6 +109,40 @@ where
     pub fn connections_mut(&mut self, id: &S::NodeIndex) -> impl Iterator<Item = EdgeMut<S>> {
         self.storage.node_connections_mut(id)
     }
+
+    // TODO: `map`, `filter`, `filter_map`, `find`, `reverse`, `any`, `all`, etc.
+
+    pub fn find_undirected_edges(
+        &self,
+        source: &S::NodeIndex,
+        target: &S::NodeIndex,
+    ) -> impl Iterator<Item = Edge<S>> {
+        self.storage.find_undirected_edges(source, target)
+    }
+
+    pub fn externals(&self) -> impl Iterator<Item = Node<S>> {
+        self.storage.external_nodes()
+    }
+
+    pub fn externals_mut(&mut self) -> impl Iterator<Item = NodeMut<S>> {
+        self.storage.external_nodes_mut()
+    }
+
+    pub fn nodes(&self) -> impl Iterator<Item = Node<S>> {
+        self.storage.nodes()
+    }
+
+    pub fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<S>> {
+        self.storage.nodes_mut()
+    }
+
+    pub fn edges(&self) -> impl Iterator<Item = Edge<S>> {
+        self.storage.edges()
+    }
+
+    pub fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<S>> {
+        self.storage.edges_mut()
+    }
 }
 
 impl<S> Graph<S>
@@ -152,17 +199,33 @@ where
         self.storage.node_directed_connections_mut(id, direction)
     }
 
-    // TODO: find_edge, find_edge_undirected, externals, externals_mut, edges, nodes, edge_mut,
-    // nodes_mut, reverse, retain, map, filter_map, filter, into_undirected, into_directed,
-    // from_parts
+    pub fn find_directed_edges(
+        &self,
+        source: &S::NodeIndex,
+        target: &S::NodeIndex,
+    ) -> impl Iterator<Item = Edge<S>> {
+        self.storage.find_directed_edges(source, target)
+    }
 
-    // TODO: (storage):
-    //  * find_edge (default impl)
-    //  * find_edge_undirected (default impl),
-    //  * externals (default impl),
-    //  * externals_mut (default impl)
-    //  * retain (no default impl) ~> only if marker trait!
-    // GraphResize as trait instead!
+    // TODO: should this be part of `GraphIterator`?
+    pub fn reverse(self) -> Result<Self, S::Error> {
+        let (nodes, edges) = self.storage.into_parts();
+
+        let edges = edges.map(|edge| {
+            let source = edge.source;
+            let target = edge.target;
+
+            edge.source = target;
+            edge.target = source;
+
+            edge
+        });
+
+        Self::from_parts(nodes, edges)
+    }
+
+    // These should go into extensions:
+    // into_undirected, into_directed, from_edges, extend_with_edges
 }
 
 impl<S> Graph<S>
@@ -241,5 +304,26 @@ where
         } else {
             self.storage.insert_edge(id, source, target, weight)
         }
+    }
+}
+
+impl<S> Graph<S>
+where
+    S: RetainGraphStorage,
+{
+    pub fn retain(
+        &mut self,
+        nodes: impl FnMut(NodeMut<'_, Self>) -> bool,
+        edges: impl FnMut(EdgeMut<'_, Self>) -> bool,
+    ) {
+        self.storage.retain(nodes, edges);
+    }
+
+    pub fn retain_nodes(&mut self, f: impl FnMut(NodeMut<'_, Self>) -> bool) {
+        self.storage.retain_nodes(f);
+    }
+
+    pub fn retain_edges(&mut self, f: impl FnMut(EdgeMut<'_, Self>) -> bool) {
+        self.storage.retain_edges(f);
     }
 }

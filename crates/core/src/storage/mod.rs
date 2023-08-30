@@ -7,6 +7,14 @@ use crate::{
     node::{DetachedNode, Node, NodeMut},
 };
 
+mod directed;
+mod resize;
+mod retain;
+
+pub use directed::DirectedGraphStorage;
+pub use resize::ResizableGraphStorage;
+pub use retain::RetainGraphStorage;
+
 pub trait GraphStorage {
     type Error: Context;
 
@@ -65,8 +73,12 @@ pub trait GraphStorage {
         result.map(|()| graph)
     }
 
-    fn reserve_nodes(&mut self, additional: usize) -> Result<(), Self::Error>;
-    fn reserve_edges(&mut self, additional: usize) -> Result<(), Self::Error>;
+    type IntoPartsNodesIter: Iterator<Item = DetachedNode<Self::NodeIndex, Self::NodeWeight>>;
+    type IntoPartsEdgesIter: Iterator<
+        Item = DetachedEdge<Self::EdgeIndex, Self::NodeIndex, Self::EdgeWeight>,
+    >;
+
+    fn into_parts(self) -> (Self::IntoPartsNodesIter, Self::IntoPartsEdgesIter);
 
     fn num_nodes(&self) -> usize {
         self.nodes().count()
@@ -96,8 +108,10 @@ pub trait GraphStorage {
     fn insert_edge(
         &mut self,
         id: Self::EdgeIndex,
+
         source: Self::NodeIndex,
         target: Self::NodeIndex,
+
         weight: Self::EdgeWeight,
     ) -> Result<(), Self::Error>;
 
@@ -125,6 +139,27 @@ pub trait GraphStorage {
 
     fn edge(&self, id: &Self::EdgeIndex) -> Option<Edge<Self>>;
     fn edge_mut(&mut self, id: &Self::EdgeIndex) -> Option<EdgeMut<Self>>;
+
+    type FindUndirectedEdgeIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
+    where
+        Self: 'a;
+
+    fn find_undirected_edges(
+        &self,
+        source: &Self::NodeIndex,
+        target: &Self::NodeIndex,
+    ) -> Self::FindUndirectedEdgeIter<'_> {
+        // How does this work with a default implementation?
+        let from_source = self
+            .node_connections(source)
+            .filter(|edge| edge.target_id() == target);
+
+        let from_target = self
+            .node_connections(target)
+            .filter(|edge| edge.source_id() == source);
+
+        from_source.chain(from_target)
+    }
 
     type NodeConnectionIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
     where
@@ -177,6 +212,24 @@ pub trait GraphStorage {
             })
     }
 
+    type ExternalNodeIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
+    where
+        Self: 'a;
+
+    fn external_nodes(&self) -> Self::ExternalNodeIter<'_> {
+        self.nodes()
+            .filter(|node| self.node_neighbours(node.id()).next().is_none())
+    }
+
+    type ExternalNodeMutIter<'a>: Iterator<Item = NodeMut<'a, Self>> + 'a
+    where
+        Self: 'a;
+
+    fn external_nodes_mut(&mut self) -> Self::ExternalNodeMutIter<'_> {
+        self.nodes_mut()
+            .filter(|node| self.node_neighbours(node.id()).next().is_none())
+    }
+
     fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
         let mut matrix = AdjacencyMatrix::new_undirected(self.num_nodes());
 
@@ -210,68 +263,4 @@ pub trait GraphStorage {
         Self: 'a;
 
     fn edges_mut(&mut self) -> Self::EdgeMutIter<'_>;
-}
-
-pub trait DirectedGraphStorage: GraphStorage {
-    fn directed_adjacency_matrix(&self) -> AdjacencyMatrix<Self::NodeIndex> {
-        let mut matrix = AdjacencyMatrix::new_directed(self.num_nodes());
-
-        for edge in self.edges() {
-            matrix.mark(edge);
-        }
-
-        matrix
-    }
-
-    type NodeDirectedConnectionIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_directed_connections<'a>(
-        &self,
-        id: &'a Self::NodeIndex,
-        direction: Direction,
-    ) -> Self::NodeDirectedConnectionIter<'a>;
-
-    type NodeDirectedConnectionMutIter<'a>: Iterator<Item = EdgeMut<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_directed_connections_mut<'a>(
-        &mut self,
-        id: &'a Self::NodeIndex,
-        direction: Direction,
-    ) -> Self::NodeDirectedConnectionMutIter<'a>;
-
-    type NodeDirectedNeighbourIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_directed_neighbours<'a>(
-        &self,
-        id: &'a Self::NodeIndex,
-        direction: Direction,
-    ) -> Self::NodeDirectedNeighbourIter<'a> {
-        self.node_directed_connections(id, direction)
-            .map(|edge| match direction {
-                Direction::Outgoing => edge.target(),
-                Direction::Incoming => edge.source(),
-            })
-    }
-
-    type NodeDirectedNeighbourMutIter<'a>: Iterator<Item = NodeMut<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_directed_neighbours_mut<'a>(
-        &mut self,
-        id: &'a Self::NodeIndex,
-        direction: Direction,
-    ) -> Self::NodeDirectedNeighbourMutIter<'a> {
-        self.node_directed_connections_mut(id, direction)
-            .map(|mut edge| match direction {
-                Direction::Outgoing => edge.target_mut(),
-                Direction::Incoming => edge.source_mut(),
-            })
-    }
 }
