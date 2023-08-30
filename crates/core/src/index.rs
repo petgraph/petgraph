@@ -8,6 +8,10 @@ pub trait GraphIndex: PartialEq {
     fn convert(storage: &Self::Storage, value: Self::InsertValue) -> Self;
 }
 
+pub trait LinearGraphIndex: GraphIndex {
+    fn as_linear(&self, storage: &Self::Storage) -> usize;
+}
+
 pub trait ManagedGraphIndex: GraphIndex<InsertValue = Never> {
     fn next(storage: &Self::Storage) -> Self;
 }

@@ -37,6 +37,10 @@ where
         }
     }
 
+    pub(crate) fn storage(&self) -> &S {
+        &self.storage
+    }
+
     pub fn num_nodes(&self) -> usize {
         self.storage.num_nodes()
     }

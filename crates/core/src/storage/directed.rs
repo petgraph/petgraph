@@ -1,6 +1,5 @@
 use crate::{
     edge::{Direction, Edge, EdgeMut},
-    matrix::AdjacencyMatrix,
     node::{Node, NodeMut},
     storage::GraphStorage,
 };
@@ -17,17 +16,6 @@ pub trait DirectedGraphStorage: GraphStorage {
     ) -> Self::FindDirectedEdgeIter<'a> {
         self.node_directed_connections(source, Direction::Outgoing)
             .filter(move |edge| edge.target_id() == target)
-    }
-
-    // TODO: move out
-    fn directed_adjacency_matrix(&self) -> AdjacencyMatrix<Self> {
-        let mut matrix = AdjacencyMatrix::new_directed(self.num_nodes());
-
-        for edge in self.edges() {
-            matrix.mark(edge);
-        }
-
-        matrix
     }
 
     type NodeDirectedConnectionIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a

@@ -8,7 +8,7 @@ pub mod deprecated;
 pub mod edge;
 pub mod graph;
 pub mod index;
-pub mod matrix;
+pub mod adjacency_matrix;
 pub mod node;
 pub mod storage;
 mod attributes;

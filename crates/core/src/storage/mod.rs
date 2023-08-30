@@ -1,3 +1,4 @@
+mod adjacency_matrix;
 mod directed;
 mod resize;
 mod retain;
@@ -5,12 +6,14 @@ mod retain;
 use error_stack::{Context, Result};
 
 pub use self::{
-    directed::DirectedGraphStorage, resize::ResizableGraphStorage, retain::RetainGraphStorage,
+    adjacency_matrix::{DirectedGraphStorageAdjacencyMatrix, GraphStorageAdjacencyMatrix},
+    directed::DirectedGraphStorage,
+    resize::ResizableGraphStorage,
+    retain::RetainGraphStorage,
 };
 use crate::{
     edge::{DetachedEdge, Edge, EdgeMut},
     index::GraphIndex,
-    matrix::AdjacencyMatrix,
     node::{DetachedNode, Node, NodeMut},
 };
 
@@ -228,17 +231,6 @@ pub trait GraphStorage: Sized {
     fn external_nodes_mut(&mut self) -> Self::ExternalNodeMutIter<'_> {
         self.nodes_mut()
             .filter(|node| self.node_neighbours(node.id()).next().is_none())
-    }
-
-    // TODO: into a specific trait
-    fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self> {
-        let mut matrix = AdjacencyMatrix::new_undirected(self.num_nodes());
-
-        for edge in self.edges() {
-            matrix.mark(edge);
-        }
-
-        matrix
     }
 
     type NodeIter<'a>: Iterator<Item = Node<'a, Self>> + 'a

@@ -48,6 +48,10 @@ where
         }
     }
 
+    pub fn graph(&self) -> &'a Graph<S> {
+        self.graph
+    }
+
     pub fn id(&self) -> &'a S::EdgeIndex {
         self.id
     }
