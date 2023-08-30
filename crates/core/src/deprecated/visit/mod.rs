@@ -62,7 +62,7 @@
 
 // filter, reversed have their `mod` lines at the end,
 // so that they can use the trait template macros
-pub use crate::visit::{filter::*, reversed::*};
+pub use self::{filter::*, reversed::*};
 
 #[macro_use]
 mod macros;
@@ -80,10 +80,12 @@ use fixedbitset::FixedBitSet;
 #[cfg(feature = "indexmap")]
 use indexmap::IndexSet;
 
-pub use crate::visit::{dfsvisit::*, traversal::*};
+pub use self::dfsvisit::*;
+#[cfg(feature = "alloc")]
+pub use self::traversal::*;
 use crate::{
+    deprecated::index::{IndexType, SafeCast},
     edge::{Direction, EdgeType},
-    index::{IndexType, SafeCast},
 };
 
 trait_template! {

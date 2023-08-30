@@ -5,15 +5,16 @@ use std::collections::HashSet;
 #[cfg(feature = "fixedbitset")]
 use fixedbitset::FixedBitSet;
 
+#[cfg(feature = "alloc")]
+use crate::deprecated::data::DataMap;
 use crate::{
-    data::DataMap,
-    edge::Direction,
-    visit::{
+    deprecated::visit::{
         Data, EdgeIndexable, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
         IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
         IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, NodeRef, VisitMap,
         Visitable,
     },
+    edge::Direction,
 };
 
 /// A graph filter for nodes.
@@ -345,6 +346,7 @@ where
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<G, F> DataMap for NodeFiltered<G, F>
 where
     G: DataMap,

@@ -1427,7 +1427,7 @@ where
         let (iterate_over, reverse) = if Ty::is_directed() {
             (Some(self.direction), None)
         } else {
-            (None, Some(self.direction.opposite()))
+            (None, Some(self.direction.reverse()))
         };
 
         if iterate_over.unwrap_or(Direction::Outgoing) == Direction::Outgoing {

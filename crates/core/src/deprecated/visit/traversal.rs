@@ -3,11 +3,11 @@
 use alloc::{collections::VecDeque, vec::Vec};
 
 use crate::{
-    edge::Direction::Incoming,
-    visit::{
+    deprecated::visit::{
         GraphRef, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap,
         Visitable,
     },
+    edge::Direction::Incoming,
 };
 
 /// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in

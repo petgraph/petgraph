@@ -230,7 +230,7 @@ where
                 Self::edge_key(succ, n)
             };
             // remove all successor links
-            self.remove_single_edge(&succ, &n, dir.opposite());
+            self.remove_single_edge(&succ, &n, dir.reverse());
             // Remove all edge values
             self.edges.swap_remove(&edge);
         }
@@ -463,9 +463,9 @@ where
 
     /// Return a `Graph` that corresponds to this `GraphMap`.
     ///
-    /// 1. Note that node and edge indices in the `Graph` have nothing in common
-    ///    with the `GraphMap`s node weights `N`. The node weights `N` are used as
-    ///    node weights in the resulting `Graph`, too.
+    /// 1. Note that node and edge indices in the `Graph` have nothing in common with the
+    ///    `GraphMap`s node weights `N`. The node weights `N` are used as node weights in the
+    ///    resulting `Graph`, too.
     /// 2. Note that the index type is user-chosen.
     ///
     /// Computes in **O(|V| + |E|)** time (average).

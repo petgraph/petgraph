@@ -5,9 +5,12 @@ use alloc::vec::Vec;
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{GraphMap, NodeTrait};
 use crate::{
+    deprecated::{
+        index::IndexType,
+        visit::{Data, NodeCount, NodeIndexable, Reversed},
+    },
     edge::EdgeType,
-    index::IndexType,
-    visit::{Data, NodeCount, NodeIndexable, Reversed},
+    trait_template,
 };
 
 trait_template! {

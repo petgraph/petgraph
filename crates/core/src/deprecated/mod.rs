@@ -1,3 +1,16 @@
+#[macro_use]
+pub mod visit;
+
+pub mod macros;
+
+pub mod index;
+#[macro_use]
+#[deprecated(since = "0.1.0")]
+#[cfg(feature = "alloc")]
+pub mod data;
+pub mod edge;
+pub mod utils;
+
 /// Convert an element like `(i, j)` or `(i, j, w)` into
 /// a triple of source, target, edge weight.
 ///

@@ -1,5 +1,5 @@
 // TODO: deprecate, move to algorithms instead
-use crate::visit::{IntoNeighbors, VisitMap, Visitable};
+use crate::deprecated::visit::{IntoNeighbors, VisitMap, Visitable};
 
 /// Strictly monotonically increasing event time for a depth first search.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Default, Hash)]

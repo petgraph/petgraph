@@ -1,11 +1,11 @@
 use crate::{
-    edge::{Direction, Incoming},
-    visit::{
+    deprecated::visit::{
         Data, EdgeCount, EdgeIndexable, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp,
         GraphRef, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
         IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
         NodeCount, NodeIndexable, Visitable,
     },
+    edge::{Direction, Direction::Incoming},
 };
 
 /// An edge-reversing graph adaptor.
@@ -41,7 +41,7 @@ where
     type NeighborsDirected = G::NeighborsDirected;
 
     fn neighbors_directed(self, n: G::NodeId, d: Direction) -> G::NeighborsDirected {
-        self.0.neighbors_directed(n, d.opposite())
+        self.0.neighbors_directed(n, d.reverse())
     }
 }
 
@@ -66,7 +66,7 @@ where
 
     fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::Edges {
         ReversedEdges {
-            iter: self.0.edges_directed(a, dir.opposite()),
+            iter: self.0.edges_directed(a, dir.reverse()),
         }
     }
 }
