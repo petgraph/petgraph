@@ -1,5 +1,7 @@
 use alloc::vec::Vec;
 
+// The closure tables have quite a bit of allocations (due to the nested nature of the data
+// structure). Question is can we avoid them?
 use hashbrown::{HashMap, HashSet};
 
 use crate::{DinosaurStorage, EdgeId, NodeId};
@@ -183,12 +185,16 @@ impl NodeClosures {
         self.nodes.entry(id).or_insert_with(NodeClosure::new)
     }
 
-    pub(crate) fn update<N, E>(&mut self, id: NodeId, closure: &EdgeClosures) {
+    fn update<N, E>(&mut self, id: NodeId, closure: &EdgeClosures) {
         self.get_or_insert(id).refresh(id, closure);
     }
 
-    pub(crate) fn remove(&mut self, id: NodeId) {
+    fn remove(&mut self, id: NodeId) {
         self.nodes.remove(&id);
+    }
+
+    fn clear(&mut self) {
+        self.nodes.clear();
     }
 
     fn refresh<N, E>(&mut self, storage: &DinosaurStorage<N, E>, closure: &EdgeClosures) {
@@ -252,5 +258,10 @@ impl Closures {
     pub(crate) fn refresh<N, E>(&mut self, storage: &DinosaurStorage<N, E>) {
         self.edges.refresh(storage);
         self.nodes.refresh(storage, &self.edges);
+    }
+
+    pub(crate) fn clear(&mut self) {
+        self.nodes.clear();
+        self.edges.clear();
     }
 }
