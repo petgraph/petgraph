@@ -82,7 +82,8 @@ pub struct EdgeMut<'a, S>
 where
     S: GraphStorage,
 {
-    graph: &'a mut Graph<S>,
+    // TODO: can this be mut?
+    graph: &'a Graph<S>,
 
     id: &'a S::EdgeIndex,
 
@@ -97,7 +98,7 @@ where
     S: GraphStorage,
 {
     pub fn new(
-        graph: &'a mut Graph<S>,
+        graph: &'a Graph<S>,
 
         id: &'a S::EdgeIndex,
 

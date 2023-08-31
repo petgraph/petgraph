@@ -32,7 +32,8 @@ pub struct NodeMut<'a, S>
 where
     S: GraphStorage,
 {
-    graph: &'a mut Graph<S>,
+    // TODO: can this be mut?
+    graph: &'a Graph<S>,
 
     id: &'a S::NodeIndex,
 
@@ -43,11 +44,7 @@ impl<'a, S> NodeMut<'a, S>
 where
     S: GraphStorage,
 {
-    pub fn new(
-        graph: &'a mut Graph<S>,
-        id: &'a S::NodeIndex,
-        weight: &'a mut S::NodeWeight,
-    ) -> Self {
+    pub fn new(graph: &'a Graph<S>, id: &'a S::NodeIndex, weight: &'a mut S::NodeWeight) -> Self {
         Self { graph, id, weight }
     }
 

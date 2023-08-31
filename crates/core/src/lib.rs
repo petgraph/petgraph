@@ -1,3 +1,4 @@
+#![feature(return_position_impl_trait_in_trait)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "alloc")]

@@ -76,12 +76,12 @@ pub trait GraphStorage: Sized {
         result.map(|()| graph)
     }
 
-    type IntoPartsNodesIter: Iterator<Item = DetachedNode<Self::NodeIndex, Self::NodeWeight>>;
-    type IntoPartsEdgesIter: Iterator<
-        Item = DetachedEdge<Self::EdgeIndex, Self::NodeIndex, Self::EdgeWeight>,
-    >;
-
-    fn into_parts(self) -> (Self::IntoPartsNodesIter, Self::IntoPartsEdgesIter);
+    fn into_parts(
+        self,
+    ) -> (
+        impl Iterator<Item = DetachedNode<Self::NodeIndex, Self::NodeWeight>>,
+        impl Iterator<Item = DetachedEdge<Self::EdgeIndex, Self::NodeIndex, Self::EdgeWeight>>,
+    );
 
     fn num_nodes(&self) -> usize {
         self.nodes().count()
@@ -143,68 +143,55 @@ pub trait GraphStorage: Sized {
     fn edge(&self, id: &Self::EdgeIndex) -> Option<Edge<Self>>;
     fn edge_mut(&mut self, id: &Self::EdgeIndex) -> Option<EdgeMut<Self>>;
 
-    type FindUndirectedEdgeIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a = impl Iterator<Item = Edge<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn find_undirected_edges(
-        &self,
-        source: &Self::NodeIndex,
-        target: &Self::NodeIndex,
-    ) -> Self::FindUndirectedEdgeIter<'_> {
+    fn find_undirected_edges<'a: 'b, 'b>(
+        &'a self,
+        source: &'b Self::NodeIndex,
+        target: &'b Self::NodeIndex,
+    ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
         // How does this work with a default implementation?
         let from_source = self
             .node_connections(source)
-            .filter(|edge| edge.target_id() == target);
+            .filter(move |edge| edge.target_id() == target);
 
         let from_target = self
             .node_connections(target)
-            .filter(|edge| edge.source_id() == source);
+            .filter(move |edge| edge.source_id() == source);
 
         from_source.chain(from_target)
     }
 
-    type NodeConnectionIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
-    where
-        Self: 'a;
+    fn node_connections<'a: 'b, 'b>(
+        &'a self,
+        id: &'b Self::NodeIndex,
+    ) -> impl Iterator<Item = Edge<'a, Self>> + 'b;
 
-    fn node_connections<'a>(&self, id: &'a Self::NodeIndex) -> Self::NodeConnectionIter<'a>;
+    fn node_connections_mut<'a: 'b, 'b>(
+        &'a mut self,
+        id: &'b Self::NodeIndex,
+    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
-    type NodeConnectionMutIter<'a>: Iterator<Item = EdgeMut<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_connections_mut<'a>(
-        &mut self,
-        id: &'a Self::NodeIndex,
-    ) -> Self::NodeConnectionMutIter<'a>;
-
-    type NodeNeighbourIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_neighbours<'a>(&'a self, id: &'a Self::NodeIndex) -> Self::NodeNeighbourIter<'a> {
-        self.node_connections(id).filter_map(|edge: Edge<Self>| {
-            // doing it this way allows us to also get ourselves as a neighbour if we have a
-            // self-loop
-            if edge.source_id() == id {
-                edge.target()
-            } else {
-                edge.source()
-            }
-        })
+    fn node_neighbours<'a: 'b, 'b>(
+        &'a self,
+        id: &'b Self::NodeIndex,
+    ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
+        self.node_connections(id)
+            .filter_map(move |edge: Edge<Self>| {
+                // doing it this way allows us to also get ourselves as a neighbour if we have a
+                // self-loop
+                if edge.source_id() == id {
+                    edge.target()
+                } else {
+                    edge.source()
+                }
+            })
     }
 
-    type NodeNeighbourMutIter<'a>: Iterator<Item = NodeMut<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_neighbours_mut<'a>(
-        &mut self,
-        id: &'a Self::NodeIndex,
-    ) -> Self::NodeNeighbourMutIter<'a> {
+    fn node_neighbours_mut<'a: 'b, 'b>(
+        &'a mut self,
+        id: &'b Self::NodeIndex,
+    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b {
         self.node_connections_mut(id)
-            .filter_map(|mut edge: EdgeMut<Self>| {
+            .filter_map(move |mut edge: EdgeMut<Self>| {
                 // doing it this way allows us to also get ourselves as a neighbour if we have a
                 // self-loop
                 if edge.source_id() == id {
@@ -215,45 +202,21 @@ pub trait GraphStorage: Sized {
             })
     }
 
-    type ExternalNodeIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn external_nodes(&self) -> Self::ExternalNodeIter<'_> {
+    fn external_nodes(&self) -> impl Iterator<Item = Node<Self>> {
         self.nodes()
             .filter(|node| self.node_neighbours(node.id()).next().is_none())
     }
 
-    type ExternalNodeMutIter<'a>: Iterator<Item = NodeMut<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn external_nodes_mut(&mut self) -> Self::ExternalNodeMutIter<'_> {
+    fn external_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
         self.nodes_mut()
             .filter(|node| self.node_neighbours(node.id()).next().is_none())
     }
 
-    type NodeIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
-    where
-        Self: 'a;
+    fn nodes(&self) -> impl Iterator<Item = Node<Self>>;
 
-    fn nodes(&self) -> Self::NodeIter<'_>;
+    fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>>;
 
-    type NodeMutIter<'a>: Iterator<Item = NodeMut<'a, Self>> + 'a
-    where
-        Self: 'a;
+    fn edges(&self) -> impl Iterator<Item = Edge<Self>>;
 
-    fn nodes_mut(&mut self) -> Self::NodeMutIter<'_>;
-
-    type EdgeIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn edges(&self) -> Self::EdgeIter<'_>;
-
-    type EdgeMutIter<'a>: Iterator<Item = EdgeMut<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn edges_mut(&mut self) -> Self::EdgeMutIter<'_>;
+    fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<Self>>;
 }
