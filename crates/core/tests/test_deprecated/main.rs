@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 #[cfg(feature = "alloc")]
 mod data;
 mod visit_filter;
