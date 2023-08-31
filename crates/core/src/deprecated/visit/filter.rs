@@ -36,7 +36,7 @@ where
 /// This filter includes the nodes that are contained in the set.
 impl<N> FilterNode<N> for FixedBitSet
 where
-    FixedBitSet: VisitMap<N>,
+    Self: VisitMap<N>,
 {
     fn include_node(&self, n: N) -> bool {
         self.is_visited(&n)
@@ -47,7 +47,7 @@ where
 #[cfg(feature = "std")]
 impl<N, S> FilterNode<N> for HashSet<N, S>
 where
-    HashSet<N, S>: VisitMap<N>,
+    Self: VisitMap<N>,
 {
     fn include_node(&self, n: N) -> bool {
         self.is_visited(&n)
@@ -87,7 +87,7 @@ where
 {
     /// Create an `NodeFiltered` adaptor from the closure `filter`.
     pub fn from_fn(graph: G, filter: F) -> Self {
-        NodeFiltered(graph, filter)
+        Self(graph, filter)
     }
 }
 
@@ -410,7 +410,7 @@ where
 {
     /// Create an `EdgeFiltered` adaptor from the closure `filter`.
     pub fn from_fn(graph: G, filter: F) -> Self {
-        EdgeFiltered(graph, filter)
+        Self(graph, filter)
     }
 }
 

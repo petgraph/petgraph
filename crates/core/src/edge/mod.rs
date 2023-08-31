@@ -4,7 +4,7 @@ pub use direction::Direction;
 
 use crate::{
     graph::Graph,
-    node::{DetachedNode, Node, NodeMut},
+    node::{Node, NodeMut},
     storage::GraphStorage,
 };
 
@@ -26,7 +26,7 @@ impl<'a, S> Edge<'a, S>
 where
     S: GraphStorage,
 {
-    pub fn new(
+    pub const fn new(
         graph: &'a Graph<S>,
 
         id: &'a S::EdgeId,
@@ -48,31 +48,38 @@ where
         }
     }
 
+    #[must_use]
     pub fn graph(&self) -> &'a Graph<S> {
         self.graph
     }
 
+    #[must_use]
     pub fn id(&self) -> &'a S::EdgeId {
         self.id
     }
 
+    #[must_use]
     pub fn source_id(&self) -> &'a S::NodeId {
         self.source_id
     }
 
+    #[must_use]
     pub fn source(&self) -> Option<Node<'a, S>> {
         // self.graph.node(self.source_id)
         todo!()
     }
 
+    #[must_use]
     pub fn target_id(&self) -> &'a S::NodeId {
         self.target_id
     }
 
+    #[must_use]
     pub fn target(&self) -> Option<Node<'a, S>> {
         todo!()
     }
 
+    #[must_use]
     pub fn weight(&self) -> &'a S::EdgeWeight {
         self.weight
     }
@@ -85,6 +92,7 @@ where
     S::EdgeId: Clone,
     S::EdgeWeight: Clone,
 {
+    #[must_use]
     pub fn detach(self) -> DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight> {
         DetachedEdge::new(
             self.id.clone(),
@@ -136,6 +144,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn into_ref(self) -> Edge<'a, S> {
         Edge::new(
             self.graph,
@@ -146,10 +155,12 @@ where
         )
     }
 
+    #[must_use]
     pub fn id(&self) -> &'a S::EdgeId {
         self.id
     }
 
+    #[must_use]
     pub fn source_id(&self) -> &'a S::NodeId {
         self.source_id
     }
@@ -158,10 +169,12 @@ where
         todo!()
     }
 
+    #[must_use]
     pub fn source(&self) -> Option<Node<'a, S>> {
         todo!()
     }
 
+    #[must_use]
     pub fn target_id(&self) -> &'a S::NodeId {
         self.target_id
     }
@@ -170,10 +183,12 @@ where
         todo!()
     }
 
+    #[must_use]
     pub fn target(&self) -> Option<Node<'a, S>> {
         todo!()
     }
 
+    #[must_use]
     pub fn weight(&self) -> &S::EdgeWeight {
         self.weight
     }
@@ -194,6 +209,7 @@ where
     S::EdgeId: Clone,
     S::EdgeWeight: Clone,
 {
+    #[must_use]
     pub fn detach(self) -> DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight> {
         DetachedEdge::new(
             self.id.clone(),

@@ -11,9 +11,9 @@ use crate::{edge::Edge, id::LinearGraphId, storage::GraphStorageAdjacencyMatrix}
 fn matrix_index_into_linear_index(x: usize, y: usize, n: usize) -> usize {
     let (x, y) = if x > y { (y, x) } else { (x, y) };
 
-    let index = ((n * (n - 1)) / 2) - (((n - x) * (n - x - 1)) / 2) + y;
+    
 
-    index
+    ((n * (n - 1)) / 2) - (((n - x) * (n - x - 1)) / 2) + y
 }
 
 fn length_of_linear_index(n: usize) -> usize {
@@ -102,7 +102,7 @@ where
         self.set(source, target, true);
     }
 
-    pub fn freeze(self) -> AdjacencyMatrix<'a, S, Frozen> {
+    #[must_use] pub fn freeze(self) -> AdjacencyMatrix<'a, S, Frozen> {
         AdjacencyMatrix {
             storage: self.storage,
             directed: self.directed,

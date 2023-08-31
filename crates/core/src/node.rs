@@ -25,11 +25,11 @@ where
         Self { graph, id, weight }
     }
 
-    pub fn id(&self) -> &'a S::NodeId {
+    #[must_use] pub fn id(&self) -> &'a S::NodeId {
         self.id
     }
 
-    pub fn weight(&self) -> &'a S::NodeWeight {
+    #[must_use] pub fn weight(&self) -> &'a S::NodeWeight {
         self.weight
     }
 }
@@ -40,7 +40,7 @@ where
     S::NodeId: Clone,
     S::NodeWeight: Clone,
 {
-    pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+    #[must_use] pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
         DetachedNode::new(self.id.clone(), self.weight.clone())
     }
 }
@@ -65,15 +65,15 @@ where
         Self { graph, id, weight }
     }
 
-    pub fn into_ref(self) -> Node<'a, S> {
+    #[must_use] pub fn into_ref(self) -> Node<'a, S> {
         Node::new(self.graph, self.id, self.weight)
     }
 
-    pub fn id(&self) -> &'a S::NodeId {
+    #[must_use] pub fn id(&self) -> &'a S::NodeId {
         self.id
     }
 
-    pub fn weight(&self) -> &S::NodeWeight {
+    #[must_use] pub fn weight(&self) -> &S::NodeWeight {
         self.weight
     }
 
@@ -112,7 +112,7 @@ where
     S::NodeId: Clone,
     S::NodeWeight: Clone,
 {
-    pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+    #[must_use] pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
         DetachedNode::new(self.id.clone(), self.weight.clone())
     }
 }

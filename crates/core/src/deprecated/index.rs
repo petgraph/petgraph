@@ -8,7 +8,7 @@ use funty::AtMost32 as AtMostUsize;
 use funty::AtMost64 as AtMostUsize;
 use funty::{Fundamental, Unsigned};
 
-use crate::storage::GraphStorage;
+
 
 /// The default integer type for graph indices.
 /// `u32` is the default to reduce the size of the graph's data and improve

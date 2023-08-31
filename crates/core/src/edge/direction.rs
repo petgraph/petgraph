@@ -19,7 +19,7 @@ impl Direction {
 
     /// Return the opposite `Direction`.
     #[inline]
-    pub fn reverse(self) -> Direction {
+    #[must_use] pub fn reverse(self) -> Self {
         match self {
             Self::Outgoing => Self::Incoming,
             Self::Incoming => Self::Outgoing,
@@ -29,7 +29,7 @@ impl Direction {
     /// Return `0` for `Outgoing` and `1` for `Incoming`.
     #[deprecated(since = "0.1.0")]
     #[inline]
-    pub fn index(self) -> usize {
+    #[must_use] pub fn index(self) -> usize {
         self.to_usize() & 0x1
     }
 }

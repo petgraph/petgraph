@@ -40,25 +40,25 @@
 //!
 //! The following table lists the traits that are implemented for each graph type:
 //!
-//! |                       | Graph | StableGraph | GraphMap | MatrixGraph | Csr   | List  |
+//! |                       | Graph | `StableGraph` | `GraphMap` | `MatrixGraph` | Csr   | List  |
 //! | --------------------- | :---: | :---------: | :------: | :---------: | :---: | :---: |
-//! | GraphBase             | x     |  x          |    x     | x           | x     |  x    |
-//! | GraphProp             | x     |  x          |    x     | x           | x     |  x    |
-//! | NodeCount             | x     |  x          |    x     | x           | x     |  x    |
-//! | NodeIndexable         | x     |  x          |    x     | x           | x     |  x    |
-//! | NodeCompactIndexable  | x     |             |    x     |             | x     |  x    |
-//! | EdgeCount             | x     |  x          |    x     | x           | x     |  x    |
-//! | EdgeIndexable         | x     |  x          |    x     |             |       |       |
+//! | `GraphBase`             | x     |  x          |    x     | x           | x     |  x    |
+//! | `GraphProp`             | x     |  x          |    x     | x           | x     |  x    |
+//! | `NodeCount`             | x     |  x          |    x     | x           | x     |  x    |
+//! | `NodeIndexable`         | x     |  x          |    x     | x           | x     |  x    |
+//! | `NodeCompactIndexable`  | x     |             |    x     |             | x     |  x    |
+//! | `EdgeCount`             | x     |  x          |    x     | x           | x     |  x    |
+//! | `EdgeIndexable`         | x     |  x          |    x     |             |       |       |
 //! | Data                  | x     |  x          |    x     | x           | x     |  x    |
-//! | IntoNodeIdentifiers   | x     |  x          |    x     | x           | x     |  x    |
-//! | IntoNodeReferences    | x     |  x          |    x     | x           | x     |  x    |
-//! | IntoEdgeReferences    | x     |  x          |    x     | x           | x     |  x    |
-//! | IntoNeighbors         | x     |  x          |    x     | x           | x     |  x    |
-//! | IntoNeighborsDirected | x     |  x          |    x     | x           |       |       |
-//! | IntoEdges             | x     |  x          |    x     | x           | x     |  x    |
-//! | IntoEdgesDirected     | x     |  x          |    x     | x           |       |       |
+//! | `IntoNodeIdentifiers`   | x     |  x          |    x     | x           | x     |  x    |
+//! | `IntoNodeReferences`    | x     |  x          |    x     | x           | x     |  x    |
+//! | `IntoEdgeReferences`    | x     |  x          |    x     | x           | x     |  x    |
+//! | `IntoNeighbors`         | x     |  x          |    x     | x           | x     |  x    |
+//! | `IntoNeighborsDirected` | x     |  x          |    x     | x           |       |       |
+//! | `IntoEdges`             | x     |  x          |    x     | x           | x     |  x    |
+//! | `IntoEdgesDirected`     | x     |  x          |    x     | x           |       |       |
 //! | Visitable             | x     |  x          |    x     | x           | x     |  x    |
-//! | GetAdjacencyMatrix    | x     |  x          |    x     | x           | x     |  x    |
+//! | `GetAdjacencyMatrix`    | x     |  x          |    x     | x           | x     |  x    |
 
 // filter, reversed have their `mod` lines at the end,
 // so that they can use the trait template macros
@@ -86,7 +86,7 @@ pub use self::traversal::*;
 use crate::{
     deprecated::{
         edge::EdgeType,
-        index::{IndexType, SafeCast},
+        index::{SafeCast},
     },
     edge::Direction,
 };
@@ -405,7 +405,7 @@ pub trait NodeCompactIndexable : NodeIndexable + NodeCount { }
 
 NodeCompactIndexable! {delegate_impl []}
 
-/// A mapping for storing the visited status for NodeId `N`.
+/// A mapping for storing the visited status for `NodeId` `N`.
 pub trait VisitMap<N> {
     /// Mark `a` as visited.
     ///

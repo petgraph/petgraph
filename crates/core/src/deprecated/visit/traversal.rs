@@ -53,7 +53,7 @@ where
     VM: Default,
 {
     fn default() -> Self {
-        Dfs {
+        Self {
             stack: Vec::new(),
             discovered: VM::default(),
         }
@@ -71,14 +71,14 @@ where
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
-        let mut dfs = Dfs::empty(graph);
+        let mut dfs = Self::empty(graph);
         dfs.move_to(start);
         dfs
     }
 
     /// Create a `Dfs` from a vector and a visit map
     pub fn from_parts(stack: Vec<N>, discovered: VM) -> Self {
-        Dfs { stack, discovered }
+        Self { stack, discovered }
     }
 
     /// Clear the visit state
@@ -95,7 +95,7 @@ where
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
-        Dfs {
+        Self {
             stack: Vec::new(),
             discovered: graph.visit_map(),
         }
@@ -149,7 +149,7 @@ where
     VM: Default,
 {
     fn default() -> Self {
-        DfsPostOrder {
+        Self {
             stack: Vec::new(),
             discovered: VM::default(),
             finished: VM::default(),
@@ -178,7 +178,7 @@ where
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
-        DfsPostOrder {
+        Self {
             stack: Vec::new(),
             discovered: graph.visit_map(),
             finished: graph.visit_map(),
@@ -269,7 +269,7 @@ where
     VM: Default,
 {
     fn default() -> Self {
-        Bfs {
+        Self {
             stack: VecDeque::new(),
             discovered: VM::default(),
         }
@@ -291,7 +291,7 @@ where
         discovered.visit(start);
         let mut stack = VecDeque::new();
         stack.push_front(start);
-        Bfs { stack, discovered }
+        Self { stack, discovered }
     }
 
     /// Return the next node in the bfs, or **None** if the traversal is done.
@@ -316,7 +316,7 @@ where
 ///
 /// **Note** that `Topo` only visits nodes that are not part of cycles,
 /// i.e. nodes in a true DAG. Use other visitors like `DfsPostOrder` or
-/// algorithms like kosaraju_scc to handle graphs with possible cycles.
+/// algorithms like `kosaraju_scc` to handle graphs with possible cycles.
 #[derive(Clone)]
 pub struct Topo<N, VM> {
     tovisit: Vec<N>,
@@ -328,7 +328,7 @@ where
     VM: Default,
 {
     fn default() -> Self {
-        Topo {
+        Self {
             tovisit: Vec::new(),
             ordered: VM::default(),
         }
@@ -369,7 +369,7 @@ where
     where
         G: GraphRef + Visitable<NodeId = N, Map = VM>,
     {
-        Topo {
+        Self {
             ordered: graph.visit_map(),
             tovisit: Vec::new(),
         }
