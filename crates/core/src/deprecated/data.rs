@@ -5,10 +5,7 @@ use alloc::vec::Vec;
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{GraphMap, NodeTrait};
 use crate::{
-    deprecated::{
-        index::IndexType,
-        visit::{Data, NodeCount, NodeIndexable, Reversed},
-    },
+    deprecated::visit::{Data, NodeCount, NodeIndexable, Reversed},
     trait_template,
 };
 
@@ -232,7 +229,7 @@ pub trait ElementIterator<N, E>: Iterator<Item = Element<N, E>> {
     }
 }
 
-impl<N, E, I: ?Sized> ElementIterator<N, E> for I where I: Iterator<Item = Element<N, E>> {}
+impl<N, E, I> ElementIterator<N, E> for I where I: Iterator<Item = Element<N, E>> + ?Sized {}
 
 /// An iterator that filters graph elements.
 ///
@@ -272,11 +269,7 @@ where
                     weight,
                 },
             });
-            let is_node = if let Element::Node { .. } = elt {
-                true
-            } else {
-                false
-            };
+            let is_node = matches!(elt, Element::Node { .. });
             if !keep && is_node {
                 self.map.push(self.node_index);
             }

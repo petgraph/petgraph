@@ -7,7 +7,7 @@ pub struct Attributes<I, W> {
 }
 
 impl<W> Attributes<Never, W> {
-    pub fn new(weight: W) -> Self {
+    pub const fn new(weight: W) -> Self {
         Self {
             id: Never(()),
             weight,

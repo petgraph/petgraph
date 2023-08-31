@@ -6,9 +6,7 @@ use funty::AtMost16 as AtMostUsize;
 use funty::AtMost32 as AtMostUsize;
 #[cfg(target_pointer_width = "64")]
 use funty::AtMost64 as AtMostUsize;
-use funty::{Fundamental, Unsigned};
-
-
+use funty::Unsigned;
 
 /// The default integer type for graph indices.
 /// `u32` is the default to reduce the size of the graph's data and improve

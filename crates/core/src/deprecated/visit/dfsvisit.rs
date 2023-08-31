@@ -58,7 +58,8 @@ pub enum Control<B> {
 }
 
 impl<B> Control<B> {
-    #[must_use] pub fn breaking() -> Control<()> {
+    #[must_use]
+    pub const fn breaking() -> Control<()> {
         Control::Break(())
     }
 
@@ -100,11 +101,7 @@ impl<B> ControlFlow for Control<B> {
     }
 
     fn should_break(&self) -> bool {
-        if let Self::Break(_) = *self {
-            true
-        } else {
-            false
-        }
+        matches!(*self, Self::Break(_))
     }
 
     fn should_prune(&self) -> bool {
@@ -121,19 +118,11 @@ impl<C: ControlFlow, E> ControlFlow for Result<C, E> {
     }
 
     fn should_break(&self) -> bool {
-        if let Ok(ref c) = *self {
-            c.should_break()
-        } else {
-            true
-        }
+        self.as_ref().map_or(true, ControlFlow::should_break)
     }
 
     fn should_prune(&self) -> bool {
-        if let Ok(ref c) = *self {
-            c.should_prune()
-        } else {
-            false
-        }
+        self.as_ref().map_or(false, ControlFlow::should_prune)
     }
 }
 
@@ -271,6 +260,7 @@ where
     C::continuing()
 }
 
+#[allow(clippy::redundant_else)]
 fn dfs_visitor<G, F, C>(
     graph: G,
     u: G::NodeId,

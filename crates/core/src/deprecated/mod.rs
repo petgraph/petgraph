@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 #[macro_use]
 pub mod visit;
 

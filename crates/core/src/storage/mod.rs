@@ -27,9 +27,7 @@ pub trait GraphStorage: Sized {
     type EdgeId: GraphId<Storage = Self>;
     type EdgeWeight;
 
-    fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self
-    where
-        Self: Sized;
+    fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self;
 
     fn from_parts(
         nodes: impl IntoIterator<Item = DetachedNode<Self::NodeId, Self::NodeWeight>>,

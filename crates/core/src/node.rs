@@ -21,15 +21,17 @@ impl<'a, S> Node<'a, S>
 where
     S: GraphStorage,
 {
-    pub fn new(graph: &'a Graph<S>, id: &'a S::NodeId, weight: &'a S::NodeWeight) -> Self {
+    pub const fn new(graph: &'a Graph<S>, id: &'a S::NodeId, weight: &'a S::NodeWeight) -> Self {
         Self { graph, id, weight }
     }
 
-    #[must_use] pub fn id(&self) -> &'a S::NodeId {
+    #[must_use]
+    pub const fn id(&self) -> &'a S::NodeId {
         self.id
     }
 
-    #[must_use] pub fn weight(&self) -> &'a S::NodeWeight {
+    #[must_use]
+    pub const fn weight(&self) -> &'a S::NodeWeight {
         self.weight
     }
 }
@@ -40,7 +42,8 @@ where
     S::NodeId: Clone,
     S::NodeWeight: Clone,
 {
-    #[must_use] pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+    #[must_use]
+    pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
         DetachedNode::new(self.id.clone(), self.weight.clone())
     }
 }
@@ -65,15 +68,18 @@ where
         Self { graph, id, weight }
     }
 
-    #[must_use] pub fn into_ref(self) -> Node<'a, S> {
+    #[must_use]
+    pub fn into_ref(self) -> Node<'a, S> {
         Node::new(self.graph, self.id, self.weight)
     }
 
-    #[must_use] pub fn id(&self) -> &'a S::NodeId {
+    #[must_use]
+    pub const fn id(&self) -> &'a S::NodeId {
         self.id
     }
 
-    #[must_use] pub fn weight(&self) -> &S::NodeWeight {
+    #[must_use]
+    pub fn weight(&self) -> &S::NodeWeight {
         self.weight
     }
 
@@ -112,7 +118,8 @@ where
     S::NodeId: Clone,
     S::NodeWeight: Clone,
 {
-    #[must_use] pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+    #[must_use]
+    pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
         DetachedNode::new(self.id.clone(), self.weight.clone())
     }
 }
@@ -126,7 +133,7 @@ pub struct DetachedNode<N, W> {
 }
 
 impl<N, W> DetachedNode<N, W> {
-    pub fn new(id: N, weight: W) -> Self {
+    pub const fn new(id: N, weight: W) -> Self {
         Self { id, weight }
     }
 }

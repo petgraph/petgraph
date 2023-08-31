@@ -4,6 +4,7 @@ use crate::{
     storage::{DirectedGraphStorage, GraphStorage},
 };
 
+// TODO: in graph
 pub trait GraphStorageAdjacencyMatrix: GraphStorage
 where
     Self::NodeId: LinearGraphId,
@@ -12,7 +13,7 @@ where
         let mut matrix = AdjacencyMatrix::new_undirected(self);
 
         for edge in self.edges() {
-            matrix.mark(edge);
+            matrix.mark(&edge);
         }
 
         matrix.freeze()
@@ -28,7 +29,7 @@ where
         let mut matrix = AdjacencyMatrix::new_directed(self);
 
         for edge in self.edges() {
-            matrix.mark(edge);
+            matrix.mark(&edge);
         }
 
         matrix.freeze()

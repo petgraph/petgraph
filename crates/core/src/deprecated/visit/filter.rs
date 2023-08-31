@@ -86,7 +86,7 @@ where
     F: Fn(G::NodeId) -> bool,
 {
     /// Create an `NodeFiltered` adaptor from the closure `filter`.
-    pub fn from_fn(graph: G, filter: F) -> Self {
+    pub const fn from_fn(graph: G, filter: F) -> Self {
         Self(graph, filter)
     }
 }
@@ -133,10 +133,10 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
-        if !self.include_source {
-            None
-        } else {
+        if self.include_source {
             self.iter.find(move |&target| f.include_node(target))
+        } else {
+            None
         }
     }
 
@@ -213,10 +213,10 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
-        if !self.include_source {
-            None
-        } else {
+        if self.include_source {
             self.iter.find(move |&target| f.include_node(target.id()))
+        } else {
+            None
         }
     }
 
@@ -326,9 +326,7 @@ where
     type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if !self.include_source {
-            None
-        } else {
+        if self.include_source {
             let dir = self.dir;
             let f = self.f;
             self.iter.find(move |&edge| {
@@ -337,6 +335,8 @@ where
                     Direction::Incoming => edge.source(),
                 })
             })
+        } else {
+            None
         }
     }
 
@@ -409,7 +409,7 @@ where
     F: Fn(G::EdgeRef) -> bool,
 {
     /// Create an `EdgeFiltered` adaptor from the closure `filter`.
-    pub fn from_fn(graph: G, filter: F) -> Self {
+    pub const fn from_fn(graph: G, filter: F) -> Self {
         Self(graph, filter)
     }
 }
@@ -472,15 +472,9 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
-        (&mut self.iter)
-            .filter_map(move |edge| {
-                if f.include_edge(edge) {
-                    Some(edge.target())
-                } else {
-                    None
-                }
-            })
-            .next()
+
+        self.iter
+            .find_map(move |edge| f.include_edge(edge).then(|| edge.target()))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -586,19 +580,18 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         let from = self.from;
-        (&mut self.iter)
-            .filter_map(move |edge| {
-                if f.include_edge(edge) {
-                    if edge.source() != from {
-                        Some(edge.source())
-                    } else {
-                        Some(edge.target()) // includes case where from == source == target
-                    }
+
+        self.iter.find_map(move |edge| {
+            if f.include_edge(edge) {
+                if edge.source() == from {
+                    Some(edge.target()) // includes case where from == source == target
                 } else {
-                    None
+                    Some(edge.source())
                 }
-            })
-            .next()
+            } else {
+                None
+            }
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

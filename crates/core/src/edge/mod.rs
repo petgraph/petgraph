@@ -8,6 +8,12 @@ use crate::{
     storage::GraphStorage,
 };
 
+type DetachedStorageEdge<S> = DetachedEdge<
+    <S as GraphStorage>::EdgeId,
+    <S as GraphStorage>::NodeId,
+    <S as GraphStorage>::EdgeWeight,
+>;
+
 pub struct Edge<'a, S>
 where
     S: GraphStorage,
@@ -49,17 +55,17 @@ where
     }
 
     #[must_use]
-    pub fn graph(&self) -> &'a Graph<S> {
+    pub const fn graph(&self) -> &'a Graph<S> {
         self.graph
     }
 
     #[must_use]
-    pub fn id(&self) -> &'a S::EdgeId {
+    pub const fn id(&self) -> &'a S::EdgeId {
         self.id
     }
 
     #[must_use]
-    pub fn source_id(&self) -> &'a S::NodeId {
+    pub const fn source_id(&self) -> &'a S::NodeId {
         self.source_id
     }
 
@@ -70,7 +76,7 @@ where
     }
 
     #[must_use]
-    pub fn target_id(&self) -> &'a S::NodeId {
+    pub const fn target_id(&self) -> &'a S::NodeId {
         self.target_id
     }
 
@@ -80,7 +86,7 @@ where
     }
 
     #[must_use]
-    pub fn weight(&self) -> &'a S::EdgeWeight {
+    pub const fn weight(&self) -> &'a S::EdgeWeight {
         self.weight
     }
 }
@@ -93,7 +99,7 @@ where
     S::EdgeWeight: Clone,
 {
     #[must_use]
-    pub fn detach(self) -> DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight> {
+    pub fn detach(self) -> DetachedStorageEdge<S> {
         DetachedEdge::new(
             self.id.clone(),
             self.source_id.clone(),
@@ -156,12 +162,12 @@ where
     }
 
     #[must_use]
-    pub fn id(&self) -> &'a S::EdgeId {
+    pub const fn id(&self) -> &'a S::EdgeId {
         self.id
     }
 
     #[must_use]
-    pub fn source_id(&self) -> &'a S::NodeId {
+    pub const fn source_id(&self) -> &'a S::NodeId {
         self.source_id
     }
 
@@ -175,7 +181,7 @@ where
     }
 
     #[must_use]
-    pub fn target_id(&self) -> &'a S::NodeId {
+    pub const fn target_id(&self) -> &'a S::NodeId {
         self.target_id
     }
 
@@ -197,7 +203,13 @@ where
         self.weight
     }
 
-    pub fn remove(self) -> Result<DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight>, S::Error> {
+    /// Removes the edge from the graph.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the edge does not exist.
+    // TODO: example
+    pub fn remove(self) -> Result<DetachedStorageEdge<S>, S::Error> {
         todo!("remove edge")
     }
 }
@@ -210,7 +222,7 @@ where
     S::EdgeWeight: Clone,
 {
     #[must_use]
-    pub fn detach(self) -> DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight> {
+    pub fn detach(self) -> DetachedStorageEdge<S> {
         DetachedEdge::new(
             self.id.clone(),
             self.source_id.clone(),
@@ -230,7 +242,7 @@ pub struct DetachedEdge<E, N, W> {
 }
 
 impl<E, N, W> DetachedEdge<E, N, W> {
-    pub fn new(id: E, source: N, target: N, weight: W) -> Self {
+    pub const fn new(id: E, source: N, target: N, weight: W) -> Self {
         Self {
             id,
             source,

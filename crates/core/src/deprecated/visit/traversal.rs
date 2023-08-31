@@ -455,7 +455,7 @@ where
         self.context.clone()
     }
 
-    pub fn inner_ref(&self) -> &W {
+    pub const fn inner_ref(&self) -> &W {
         &self.walker
     }
 
@@ -476,9 +476,9 @@ where
     }
 }
 
-impl<'a, C, W: ?Sized> Walker<C> for &'a mut W
+impl<'a, C, W> Walker<C> for &'a mut W
 where
-    W: Walker<C>,
+    W: Walker<C> + ?Sized,
 {
     type Item = W::Item;
 

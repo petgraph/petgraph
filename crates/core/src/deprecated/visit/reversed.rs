@@ -111,7 +111,7 @@ pub struct ReversedEdgeReference<R>(R);
 
 impl<R> ReversedEdgeReference<R> {
     /// Return the original, unreversed edge reference.
-    pub fn as_unreversed(&self) -> &R {
+    pub const fn as_unreversed(&self) -> &R {
         &self.0
     }
 

@@ -10,7 +10,7 @@ pub enum Direction {
 impl Direction {
     #[deprecated(since = "0.1.0")]
     #[inline]
-    fn to_usize(self) -> usize {
+    const fn to_usize(self) -> usize {
         match self {
             Self::Outgoing => 0,
             Self::Incoming => 1,
@@ -19,7 +19,8 @@ impl Direction {
 
     /// Return the opposite `Direction`.
     #[inline]
-    #[must_use] pub fn reverse(self) -> Self {
+    #[must_use]
+    pub const fn reverse(self) -> Self {
         match self {
             Self::Outgoing => Self::Incoming,
             Self::Incoming => Self::Outgoing,
@@ -29,7 +30,9 @@ impl Direction {
     /// Return `0` for `Outgoing` and `1` for `Incoming`.
     #[deprecated(since = "0.1.0")]
     #[inline]
-    #[must_use] pub fn index(self) -> usize {
+    #[must_use]
+    #[allow(deprecated)]
+    pub const fn index(self) -> usize {
         self.to_usize() & 0x1
     }
 }

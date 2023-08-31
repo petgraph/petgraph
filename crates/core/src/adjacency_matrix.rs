@@ -8,15 +8,13 @@ use crate::{edge::Edge, id::LinearGraphId, storage::GraphStorageAdjacencyMatrix}
 
 // Thanks to: https://stackoverflow.com/a/27088560/9077988
 // and: https://math.stackexchange.com/a/2134297
-fn matrix_index_into_linear_index(x: usize, y: usize, n: usize) -> usize {
+const fn matrix_index_into_linear_index(x: usize, y: usize, n: usize) -> usize {
     let (x, y) = if x > y { (y, x) } else { (x, y) };
-
-    
 
     ((n * (n - 1)) / 2) - (((n - x) * (n - x - 1)) / 2) + y
 }
 
-fn length_of_linear_index(n: usize) -> usize {
+const fn length_of_linear_index(n: usize) -> usize {
     // The length of the upper triangle of a matrix (with the diagonal) is:
     // n * (n + 1) / 2
     (n * (n + 1)) / 2
@@ -37,7 +35,7 @@ pub struct AdjacencyMatrix<'a, S, T = Frozen> {
 }
 
 impl<'a, S, T> AdjacencyMatrix<'a, S, T> {
-    fn index(&self, source: usize, target: usize) -> usize {
+    const fn index(&self, source: usize, target: usize) -> usize {
         if self.directed {
             source * self.num_nodes + target
         } else {
@@ -87,7 +85,7 @@ where
     // TODO: we only need the upper triangle of the matrix, so we can save some space by only saving
     // that.
     // To be able to do that we need to know though with which graph we're working with!
-    pub fn mark(&mut self, edge: Edge<'_, S>) {
+    pub fn mark(&mut self, edge: &Edge<'_, S>) {
         let Some(source) = edge.source() else {
             return;
         };
@@ -102,7 +100,8 @@ where
         self.set(source, target, true);
     }
 
-    #[must_use] pub fn freeze(self) -> AdjacencyMatrix<'a, S, Frozen> {
+    #[must_use]
+    pub fn freeze(self) -> AdjacencyMatrix<'a, S, Frozen> {
         AdjacencyMatrix {
             storage: self.storage,
             directed: self.directed,
@@ -121,7 +120,7 @@ where
     S: GraphStorageAdjacencyMatrix,
     S::NodeId: LinearGraphId,
 {
-    pub fn is_adjacent(&self, source: S::NodeId, target: S::NodeId) -> bool {
+    pub fn is_adjacent(&self, source: &S::NodeId, target: &S::NodeId) -> bool {
         let source = source.as_linear(self.storage);
         let target = target.as_linear(self.storage);
 
