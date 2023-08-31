@@ -1,10 +1,11 @@
 use alloc::{collections::BinaryHeap, vec, vec::Vec};
 use core::hash::Hash;
 
-use indexmap::{map::Entry, IndexMap};
-use petgraph_core::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
+use fxhash::FxBuildHasher;
+use indexmap::map::Entry;
+use petgraph_core::deprecated::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 
-use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
+use crate::{common::IndexMap, shortest_paths::Measure, utilities::min_scored::MinScored};
 
 /// \[Generic\] A* shortest path algorithm.
 ///
@@ -77,8 +78,8 @@ where
     K: Measure + Copy,
 {
     let mut visit_next = BinaryHeap::new();
-    let mut scores = IndexMap::new(); // g-values, cost to reach the node
-    let mut estimate_scores = IndexMap::new(); // f-values, cost to reach + estimate cost to goal
+    let mut scores = IndexMap::with_hasher(FxBuildHasher::default()); // g-values, cost to reach the node
+    let mut estimate_scores = IndexMap::with_hasher(FxBuildHasher::default()); // f-values, cost to reach + estimate cost to goal
     let mut path_tracker = PathTracker::<G>::new();
 
     let zero_score = K::default();
@@ -152,7 +153,7 @@ where
 {
     fn new() -> PathTracker<G> {
         PathTracker {
-            came_from: IndexMap::new(),
+            came_from: IndexMap::with_hasher(FxBuildHasher::default()),
         }
     }
 

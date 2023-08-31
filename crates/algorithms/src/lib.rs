@@ -14,6 +14,7 @@
 extern crate alloc;
 
 pub mod bipartite;
+mod common;
 pub mod components;
 pub mod connectivity;
 pub mod cycles;

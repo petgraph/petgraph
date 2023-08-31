@@ -5,11 +5,15 @@
 //! ```
 
 #[doc(no_inline)]
-pub use petgraph_core::edge::{Directed, Direction, Incoming, Outgoing, Undirected};
+pub use petgraph_core::deprecated::edge::{Directed, Undirected};
 #[doc(no_inline)]
-pub use petgraph_core::visit::EdgeRef;
+pub use petgraph_core::deprecated::visit::EdgeRef;
 #[doc(no_inline)]
-pub use petgraph_core::visit::{Bfs, Dfs, DfsPostOrder};
+pub use petgraph_core::deprecated::visit::{Bfs, Dfs, DfsPostOrder};
+pub use petgraph_core::edge::{
+    Direction,
+    Direction::{Incoming, Outgoing},
+};
 #[doc(no_inline)]
 #[cfg(feature = "stable_graph")]
 pub use petgraph_graph::stable::{StableDiGraph, StableGraph, StableUnGraph};

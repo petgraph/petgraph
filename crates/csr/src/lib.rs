@@ -16,15 +16,15 @@ use core::{
 };
 
 use fixedbitset::FixedBitSet;
-use petgraph_core::{
-    deprecated::IntoWeightedEdge,
+use petgraph_core::deprecated::{
     edge::{Directed, EdgeType},
-    id::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
+    index::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
     visit::{
         Data, EdgeCount, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences,
         IntoEdges, IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
         NodeCount, NodeIndexable, Visitable,
     },
+    IntoWeightedEdge,
 };
 
 /// Csr node index type, a plain integer.

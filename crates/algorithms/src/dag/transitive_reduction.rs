@@ -13,9 +13,11 @@ use alloc::{vec, vec::Vec};
 use fixedbitset::FixedBitSet;
 use petgraph_adjacency_matrix::{AdjacencyList, NodeIndex, UnweightedAdjacencyList};
 use petgraph_core::{
+    deprecated::{
+        index::{FromIndexType, IndexType, IntoIndexType, SafeCast},
+        visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount},
+    },
     edge::Direction,
-    id::{FromIndexType, IndexType, IntoIndexType, SafeCast},
-    visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount},
 };
 
 // TODO: does this need access to the AdjaencyMatrix? Or could we model this with the builder

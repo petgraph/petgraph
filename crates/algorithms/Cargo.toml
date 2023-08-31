@@ -14,6 +14,7 @@ funty.workspace = true
 # we're already using `IndexMap` in a lot of crates I do not want to pull in `hashbrown`
 # separately as it would be another version to maintain. This way we only have one version.
 indexmap.workspace = true
+fxhash = "0.2.1"
 fixedbitset.workspace = true
 
 [build-dependencies]

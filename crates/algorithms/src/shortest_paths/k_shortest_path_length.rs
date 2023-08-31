@@ -1,10 +1,10 @@
 use alloc::{collections::BinaryHeap, vec, vec::Vec};
 use core::hash::Hash;
 
-use indexmap::IndexMap;
-use petgraph_core::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
+use fxhash::FxBuildHasher;
+use petgraph_core::deprecated::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 
-use crate::{shortest_paths::Measure, utilities::min_scored::MinScored};
+use crate::{common::IndexMap, shortest_paths::Measure, utilities::min_scored::MinScored};
 
 /// \[Generic\] k'th shortest path algorithm.
 ///
@@ -89,7 +89,7 @@ where
     K: Measure + Copy,
 {
     let mut counter: Vec<usize> = vec![0; graph.node_count()];
-    let mut scores = IndexMap::new();
+    let mut scores = IndexMap::with_hasher(FxBuildHasher::default());
     let mut visit_next = BinaryHeap::new();
     let zero_score = K::default();
 

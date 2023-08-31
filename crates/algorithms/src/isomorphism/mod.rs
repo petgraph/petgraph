@@ -4,7 +4,7 @@ mod state;
 
 use alloc::vec::Vec;
 
-use petgraph_core::{
+use petgraph_core::deprecated::{
     data::DataMap,
     visit::{
         EdgeCount, GetAdjacencyMatrix, GraphProp, IntoEdgesDirected, IntoNeighborsDirected,

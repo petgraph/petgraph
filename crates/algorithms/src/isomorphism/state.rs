@@ -1,8 +1,10 @@
 use alloc::{vec, vec::Vec};
 
 use petgraph_core::{
+    deprecated::visit::{
+        GetAdjacencyMatrix, GraphProp, IntoNeighborsDirected, NodeCompactIndexable,
+    },
     edge::Direction,
-    visit::{GetAdjacencyMatrix, GraphProp, IntoNeighborsDirected, NodeCompactIndexable},
 };
 
 #[derive(Debug)]

@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use core::fmt::Debug;
 
 use itertools::Itertools;
-use petgraph_core::{
+use petgraph_core::deprecated::{
     data::{Build, Create},
     visit::Data,
 };

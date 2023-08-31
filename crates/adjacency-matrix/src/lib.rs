@@ -17,11 +17,16 @@ use core::{
 use fixedbitset::FixedBitSet;
 use funty::Fundamental;
 use petgraph_core::{
-    data::{Build, DataMap, DataMapMut},
-    edge::Directed,
-    id::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
-    iterator_wrap, visit,
-    visit::{EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount},
+    deprecated::{
+        data::{Build, DataMap, DataMapMut},
+        edge::Directed,
+        index::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
+        visit,
+        visit::{
+            EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount,
+        },
+    },
+    iterator_wrap,
 };
 
 use crate::utils::DebugFn;

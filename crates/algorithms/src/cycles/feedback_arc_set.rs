@@ -4,15 +4,18 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use indexmap::IndexMap;
-use petgraph_core::{
+use fxhash::FxBuildHasher;
+use petgraph_core::deprecated::{
     edge::Directed,
-    id::IndexType,
+    index::IndexType,
     visit::{EdgeRef, GraphProp, IntoEdgeReferences, NodeCount},
 };
 use petgraph_graph::{GraphIndex, NodeIndex};
 
-use crate::cycles::feedback_arc_set::linked_list::{LinkedList, LinkedListEntry};
+use crate::{
+    common::IndexMap,
+    cycles::feedback_arc_set::linked_list::{LinkedList, LinkedListEntry},
+};
 
 /// \[Generic\] Finds a [feedback arc set]: a set of edges in the given directed graph, which when
 /// removed, make the graph acyclic.
@@ -90,7 +93,7 @@ fn good_node_sequence(
         bidirectional_nve_dd: Vec::new(),
     };
     // Lookup of node indices from input graph to indices into `nodes`
-    let mut graph_ix_lookup = IndexMap::new();
+    let mut graph_ix_lookup = IndexMap::with_hasher(FxBuildHasher::default());
 
     // Build node entries
     for (from_g_ix, to_g_ix) in edge_refs {

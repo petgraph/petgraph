@@ -1,7 +1,7 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::{hash::Hash, mem};
 
-use petgraph_core::visit::{
+use petgraph_core::deprecated::visit::{
     EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable,
     VisitMap, Visitable,
 };

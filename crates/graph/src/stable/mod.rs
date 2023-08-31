@@ -14,11 +14,14 @@ use core::{
 
 use fixedbitset::FixedBitSet;
 use petgraph_core::{
-    deprecated::IntoWeightedEdge,
-    edge::{Directed, Direction, EdgeType, Undirected},
-    id::{DefaultIx, IndexType},
-    visit,
-    visit::{EdgeIndexable, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, NodeIndexable},
+    deprecated::{
+        edge::{Directed, EdgeType, Undirected},
+        index::{DefaultIx, IndexType},
+        visit,
+        visit::{EdgeIndexable, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, NodeIndexable},
+        IntoWeightedEdge,
+    },
+    edge::Direction,
 };
 
 use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};

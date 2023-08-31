@@ -5,7 +5,7 @@
 //! With it they are still able to use the same strategy.
 //!
 //! Therefore this should be considered an internal API and may change at any time.
-use petgraph_core::{
+use petgraph_core::deprecated::{
     data::{Build, Create},
     visit::Data,
 };

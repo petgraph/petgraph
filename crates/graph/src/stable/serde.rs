@@ -2,8 +2,8 @@ use alloc::vec::Vec;
 use core::{cell::Cell, marker::PhantomData};
 
 use funty::Integral;
-use petgraph_core::{
-    id::IndexType,
+use petgraph_core::deprecated::{
+    index::IndexType,
     visit::{EdgeIndexable, NodeIndexable},
 };
 use serde::{

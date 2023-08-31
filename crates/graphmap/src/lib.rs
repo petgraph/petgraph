@@ -20,16 +20,21 @@ use core::{
     slice,
 };
 
-use indexmap::{
-    map::{Iter as IndexMapIter, IterMut as IndexMapIterMut, Keys},
-    IndexMap, IndexSet,
-};
+use fxhash::FxBuildHasher;
+use indexmap::map::{Iter as IndexMapIter, IterMut as IndexMapIterMut, Keys};
 use petgraph_core::{
-    deprecated::IntoWeightedEdge,
-    edge::{Directed, Direction, EdgeType, Undirected},
-    id::IndexType,
-    iterator_wrap, visit,
+    deprecated::{
+        edge::{Directed, EdgeType, Undirected},
+        index::IndexType,
+        visit, IntoWeightedEdge,
+    },
+    edge::Direction,
+    iterator_wrap,
 };
+
+type IndexMap<K, V> = indexmap::IndexMap<K, V, FxBuildHasher>;
+type IndexSet<K> = indexmap::IndexSet<K, FxBuildHasher>;
+
 #[cfg(feature = "convert")]
 use petgraph_graph::{node_index, Graph};
 
@@ -144,8 +149,8 @@ where
     /// Create a new `GraphMap` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         GraphMap {
-            nodes: IndexMap::with_capacity(nodes),
-            edges: IndexMap::with_capacity(edges),
+            nodes: IndexMap::with_capacity_and_hasher(nodes, FxBuildHasher::default()),
+            edges: IndexMap::with_capacity_and_hasher(edges, FxBuildHasher::default()),
             ty: PhantomData,
         }
     }
@@ -1030,7 +1035,7 @@ where
     type Map = IndexSet<N>;
 
     fn visit_map(&self) -> IndexSet<N> {
-        IndexSet::with_capacity(self.node_count())
+        IndexSet::with_capacity_and_hasher(self.node_count(), FxBuildHasher::default())
     }
 
     fn reset_map(&self, map: &mut Self::Map) {

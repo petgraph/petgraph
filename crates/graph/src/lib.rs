@@ -17,6 +17,21 @@ use core::{
 };
 
 use fixedbitset::FixedBitSet;
+use petgraph_core::{
+    deprecated::{
+        edge::{Directed, EdgeType, Undirected},
+        index::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
+        visit,
+        visit::{EdgeRef, GetAdjacencyMatrix},
+        IntoWeightedEdge,
+    },
+    edge::{
+        Direction,
+        Direction::{Incoming, Outgoing},
+    },
+};
+
+use crate::utils::DebugFn;
 
 mod frozen;
 #[cfg(feature = "stable")]
@@ -28,16 +43,6 @@ mod proptest;
 #[cfg(feature = "serde")]
 mod serde;
 mod utils;
-
-use petgraph_core::{
-    deprecated::IntoWeightedEdge,
-    edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
-    id::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
-    visit,
-    visit::{EdgeRef, GetAdjacencyMatrix},
-};
-
-use crate::utils::DebugFn;
 
 /// Node identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]

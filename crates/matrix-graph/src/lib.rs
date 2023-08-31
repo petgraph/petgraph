@@ -19,15 +19,18 @@ use fixedbitset::FixedBitSet;
 use funty::Integral;
 use indexmap::IndexSet;
 use petgraph_core::{
-    data::Build,
-    deprecated::IntoWeightedEdge,
-    edge::{Directed, Direction, EdgeType, Undirected},
-    id::{FromIndexType, IndexType, IntoIndexType, SafeCast},
-    visit::{
-        Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
-        IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-        IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
+    deprecated::{
+        data::Build,
+        edge::{Directed, EdgeType, Undirected},
+        index::{FromIndexType, IndexType, IntoIndexType, SafeCast},
+        visit::{
+            Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences,
+            IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
+            IntoNodeIdentifiers, IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
+        },
+        IntoWeightedEdge,
     },
+    edge::Direction,
 };
 
 // The following types are used to control the max size of the adjacency matrix. Since the maximum

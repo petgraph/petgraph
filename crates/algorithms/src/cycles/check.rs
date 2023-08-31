@@ -1,4 +1,4 @@
-use petgraph_core::visit::{
+use petgraph_core::deprecated::visit::{
     depth_first_search, DfsEvent, EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
     NodeIndexable, Visitable,
 };

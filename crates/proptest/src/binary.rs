@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, sync::Arc};
 use core::fmt::Debug;
 
-use petgraph_core::{
+use petgraph_core::deprecated::{
     data::{Build, Create},
     visit::Data,
 };
