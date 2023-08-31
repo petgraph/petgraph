@@ -1,3 +1,4 @@
+#![cfg(feature = "alloc")]
 //! Tests for the BFS iterator.
 //!
 //! Even though this is a unit test, it is an integration tests, as I didn't want to muck around the
@@ -7,7 +8,7 @@
 //! integration tests)
 
 use petgraph::Graph;
-use petgraph_core::visit::{Bfs, Walker};
+use petgraph_core::deprecated::visit::{Bfs, Walker};
 
 /// Graph:
 ///

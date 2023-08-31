@@ -1,9 +1,9 @@
 use std::{collections::HashSet, iter::once};
 
-use petgraph::{prelude::EdgeRef, Graph};
-use petgraph_core::{
+use petgraph::Graph;
+use petgraph_core::deprecated::{
     edge::{Directed, Undirected},
-    visit::{depth_first_search, Control, DfsEvent, Time},
+    visit::{depth_first_search, Control, DfsEvent, EdgeRef, Time},
 };
 use proptest::prelude::*;
 

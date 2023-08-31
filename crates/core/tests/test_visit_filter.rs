@@ -1,10 +1,10 @@
 use petgraph::{graph::UnGraph, Graph};
 use petgraph_core::{
-    edge::Direction,
-    visit::{
+    deprecated::visit::{
         EdgeFiltered, EdgeRef, IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered,
         Reversed, VisitMap, Visitable,
     },
+    edge::Direction,
 };
 
 /// Given a graph with 3 nodes and 3 edges, test that the filtered edges iterator returns the

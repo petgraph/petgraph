@@ -1,8 +1,9 @@
+#![cfg(feature = "alloc")]
 //! This is the same test code from `algorithm::toposort`, but adapted for the visit trait.
 // TODO: unify both, traversal shouldn't be in core
 
 use petgraph::{graph::NodeIndex, Graph};
-use petgraph_core::{edge::Directed, id::IndexType, visit::Topo};
+use petgraph_core::deprecated::{edge::Directed, index::IndexType, visit::Topo};
 use petgraph_proptest::dag::graph_dag_strategy;
 use proptest::prelude::*;
 

@@ -1,4 +1,6 @@
-use petgraph_core::data::{Element, ElementIterator};
+#![cfg(feature = "alloc")]
+
+use petgraph_core::deprecated::data::{Element, ElementIterator};
 
 #[test]
 fn filter_elements_node() {

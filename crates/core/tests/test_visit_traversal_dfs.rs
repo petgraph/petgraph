@@ -1,3 +1,4 @@
+#![cfg(feature = "alloc")]
 //! Tests for the DFS iterator.
 //!
 //! Even though this is a unit test, it is an integration tests, as I didn't want to muck around the
@@ -6,7 +7,7 @@
 //! This is basically a 1:1 port of the tests from the `petgraph` crate (which already used
 //! integration tests)
 use petgraph::{graphmap::GraphMap, Graph};
-use petgraph_core::{
+use petgraph_core::deprecated::{
     edge::Directed,
     visit::{Dfs, Walker},
 };
