@@ -9,5 +9,6 @@ publish = false
 
 [dependencies]
 petgraph-core.workspace = true
+error-stack.workspace = true
 
 hashbrown = {workspace = true, features = ['ahash'] }

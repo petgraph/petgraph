@@ -4,9 +4,20 @@ use crate::node::NodeId;
 pub struct EdgeId(usize);
 
 pub(crate) struct Edge<T> {
-    id: EdgeId,
-    weight: T,
+    pub(crate) id: EdgeId,
+    pub(crate) weight: T,
 
     pub(crate) source: NodeId,
     pub(crate) target: NodeId,
+}
+
+impl<T> Edge<T> {
+    pub(crate) fn new(id: EdgeId, weight: T, source: NodeId, target: NodeId) -> Self {
+        Self {
+            id,
+            weight,
+            source,
+            target,
+        }
+    }
 }
