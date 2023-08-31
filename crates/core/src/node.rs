@@ -1,4 +1,10 @@
-use crate::{graph::Graph, storage::GraphStorage};
+use core::iter::empty;
+
+use crate::{
+    edge::{Direction, Edge},
+    graph::Graph,
+    storage::{DirectedGraphStorage, GraphStorage},
+};
 
 pub struct Node<'a, S>
 where
@@ -63,7 +69,29 @@ where
     pub fn weight_mut(&mut self) -> &'a mut S::NodeWeight {
         self.weight
     }
+
+    pub fn neighbours(&self) -> impl Iterator<Item = Node<'_, S>> {
+        self.graph.neighbours(self.id)
+    }
 }
+
+impl<'a, S> NodeMut<'a, S>
+where
+    S: DirectedGraphStorage,
+{
+    // TODO: rename?! think about if they are actually possible in a mutable context?!
+    pub fn outgoing(&self) -> impl Iterator<Item = Edge<'_, S>> {
+        self.graph
+            .connections_directed(self.id, Direction::Outgoing)
+    }
+
+    pub fn incoming(&self) -> impl Iterator<Item = Edge<'_, S>> {
+        self.graph
+            .connections_directed(self.id, Direction::Incoming)
+    }
+}
+
+// TODO: methods to get the neighbour, outgoing and incoming connections, etc.
 
 pub struct DetachedNode<N, W> {
     pub id: N,

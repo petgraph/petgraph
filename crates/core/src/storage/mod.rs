@@ -209,7 +209,7 @@ pub trait GraphStorage: Sized {
 
     fn external_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
         self.nodes_mut()
-            .filter(|node| self.node_neighbours(node.id()).next().is_none())
+            .filter(|node| node.neighbours().next().is_none())
     }
 
     fn nodes(&self) -> impl Iterator<Item = Node<Self>>;

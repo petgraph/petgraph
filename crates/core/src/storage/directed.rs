@@ -5,66 +5,46 @@ use crate::{
 };
 
 pub trait DirectedGraphStorage: GraphStorage {
-    type FindDirectedEdgeIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn find_directed_edges<'a>(
+    fn find_directed_edges<'a: 'b, 'b>(
         &'a self,
-        source: &'a Self::NodeIndex,
-        target: &'a Self::NodeIndex,
-    ) -> Self::FindDirectedEdgeIter<'a> {
+        source: &'b Self::NodeIndex,
+        target: &'b Self::NodeIndex,
+    ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
         self.node_directed_connections(source, Direction::Outgoing)
             .filter(move |edge| edge.target_id() == target)
     }
 
-    type NodeDirectedConnectionIter<'a>: Iterator<Item = Edge<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_directed_connections<'a>(
-        &self,
-        id: &'a Self::NodeIndex,
+    fn node_directed_connections<'a, 'b>(
+        &'a self,
+        id: &'b Self::NodeIndex,
         direction: Direction,
-    ) -> Self::NodeDirectedConnectionIter<'a>;
+    ) -> impl Iterator<Item = Edge<'a, Self>> + 'b;
 
-    type NodeDirectedConnectionMutIter<'a>: Iterator<Item = EdgeMut<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_directed_connections_mut<'a>(
-        &mut self,
-        id: &'a Self::NodeIndex,
+    fn node_directed_connections_mut<'a: 'b, 'b>(
+        &'a mut self,
+        id: &'b Self::NodeIndex,
         direction: Direction,
-    ) -> Self::NodeDirectedConnectionMutIter<'a>;
+    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
-    type NodeDirectedNeighbourIter<'a>: Iterator<Item = Node<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_directed_neighbours<'a>(
-        &self,
-        id: &'a Self::NodeIndex,
+    fn node_directed_neighbours<'a: 'b, 'b>(
+        &'a self,
+        id: &'b Self::NodeIndex,
         direction: Direction,
-    ) -> Self::NodeDirectedNeighbourIter<'a> {
+    ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
         self.node_directed_connections(id, direction)
-            .map(|edge| match direction {
+            .filter_map(move |edge| match direction {
                 Direction::Outgoing => edge.target(),
                 Direction::Incoming => edge.source(),
             })
     }
 
-    type NodeDirectedNeighbourMutIter<'a>: Iterator<Item = NodeMut<'a, Self>> + 'a
-    where
-        Self: 'a;
-
-    fn node_directed_neighbours_mut<'a>(
-        &mut self,
-        id: &'a Self::NodeIndex,
+    fn node_directed_neighbours_mut<'a: 'b, 'b>(
+        &'a mut self,
+        id: &'b Self::NodeIndex,
         direction: Direction,
-    ) -> Self::NodeDirectedNeighbourMutIter<'a> {
+    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b {
         self.node_directed_connections_mut(id, direction)
-            .map(|mut edge| match direction {
+            .filter_map(move |mut edge| match direction {
                 Direction::Outgoing => edge.target_mut(),
                 Direction::Incoming => edge.source_mut(),
             })
