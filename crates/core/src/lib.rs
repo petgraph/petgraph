@@ -3,12 +3,12 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+mod adjacency_matrix;
+mod attributes;
 #[deprecated(since = "0.1.0")]
 pub mod deprecated;
-pub mod edge;
-pub mod graph;
-pub mod index;
-pub mod adjacency_matrix;
-pub mod node;
-pub mod storage;
-mod attributes;
+mod edge;
+mod graph;
+mod index;
+mod node;
+mod storage;

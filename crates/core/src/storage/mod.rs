@@ -183,7 +183,7 @@ pub trait GraphStorage: Sized {
     where
         Self: 'a;
 
-    fn node_neighbours<'a>(&self, id: &'a Self::NodeIndex) -> Self::NodeNeighbourIter<'a> {
+    fn node_neighbours<'a>(&'a self, id: &'a Self::NodeIndex) -> Self::NodeNeighbourIter<'a> {
         self.node_connections(id).filter_map(|edge: Edge<Self>| {
             // doing it this way allows us to also get ourselves as a neighbour if we have a
             // self-loop
