@@ -20,11 +20,11 @@ use crate::{
 pub trait GraphStorage: Sized {
     type Error: Context;
 
-    type NodeId: GraphId<Storage = Self>;
+    type NodeId: GraphId;
 
     type NodeWeight;
 
-    type EdgeId: GraphId<Storage = Self>;
+    type EdgeId: GraphId;
     type EdgeWeight;
 
     fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self;
@@ -87,6 +87,8 @@ pub trait GraphStorage: Sized {
         self.edges().count()
     }
 
+    fn next_node_id(&self, attribute: <Self::NodeId as GraphId>::AttributeIndex) -> Self::NodeId;
+
     /// Inserts a new node into the graph.
     ///
     /// # Errors
@@ -97,6 +99,8 @@ pub trait GraphStorage: Sized {
         id: Self::NodeId,
         weight: Self::NodeWeight,
     ) -> Result<Node<Self>, Self::Error>;
+
+    fn next_edge_id(&self, attribute: <Self::EdgeId as GraphId>::AttributeIndex) -> Self::EdgeId;
 
     /// Inserts a new edge into the graph.
     ///
@@ -123,17 +127,7 @@ pub trait GraphStorage: Sized {
         id: &Self::EdgeId,
     ) -> Option<DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>;
 
-    fn clear(&mut self) -> Result<(), Self::Error> {
-        for node in self.nodes_mut() {
-            node.remove()?;
-        }
-
-        for edge in self.edges_mut() {
-            edge.remove()?;
-        }
-
-        Ok(())
-    }
+    fn clear(&mut self) -> Result<(), Self::Error>;
 
     fn node(&self, id: &Self::NodeId) -> Option<Node<Self>>;
     fn node_mut(&mut self, id: &Self::NodeId) -> Option<NodeMut<Self>>;
@@ -192,31 +186,19 @@ pub trait GraphStorage: Sized {
             })
     }
 
+    // I'd love to provide a default implementation for this, but I just can't get it to work.
     fn node_neighbours_mut<'a: 'b, 'b>(
         &'a mut self,
         id: &'b Self::NodeId,
-    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b {
-        self.node_connections_mut(id)
-            .filter_map(move |mut edge: EdgeMut<Self>| {
-                // doing it this way allows us to also get ourselves as a neighbour if we have a
-                // self-loop
-                if edge.source_id() == id {
-                    edge.target_mut()
-                } else {
-                    edge.source_mut()
-                }
-            })
-    }
+    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b;
 
     fn external_nodes(&self) -> impl Iterator<Item = Node<Self>> {
         self.nodes()
             .filter(|node| self.node_neighbours(node.id()).next().is_none())
     }
 
-    fn external_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
-        self.nodes_mut()
-            .filter(|node| node.neighbours().next().is_none())
-    }
+    // I'd love to provide a default implementation for this, but I just can't get it to work.
+    fn external_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>>;
 
     fn nodes(&self) -> impl Iterator<Item = Node<Self>>;
 

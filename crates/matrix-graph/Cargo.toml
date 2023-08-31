@@ -8,7 +8,7 @@ edition = "2021"
 funty.workspace = true
 indexmap.workspace = true
 fixedbitset.workspace = true
-petgraph-core = { workspace = true, features = ["alloc", "fixedbitset"] }
+petgraph-core = { workspace = true, features = ["alloc"] }
 
 [dev-dependencies]
 criterion = "0.5.1"

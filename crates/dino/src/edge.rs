@@ -1,7 +1,28 @@
-use crate::node::NodeId;
+use petgraph_core::{
+    attributes::Never,
+    id::{GraphId, ManagedGraphId},
+};
+
+use crate::{node::NodeId, DinosaurStorage};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct EdgeId(usize);
+
+impl EdgeId {
+    pub(crate) fn new(id: usize) -> Self {
+        Self(id)
+    }
+
+    pub(crate) fn increment(self) -> Self {
+        Self(self.0 + 1)
+    }
+}
+
+impl GraphId for EdgeId {
+    type AttributeIndex = Never;
+}
+
+impl ManagedGraphId for EdgeId {}
 
 pub(crate) struct Edge<T> {
     pub(crate) id: EdgeId,

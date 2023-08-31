@@ -94,8 +94,8 @@ where
             return;
         };
 
-        let source = source.id().as_linear(self.storage);
-        let target = target.id().as_linear(self.storage);
+        let source = self.storage.linearize_node_id(source.id());
+        let target = self.storage.linearize_node_id(target.id());
 
         self.set(source, target, true);
     }
@@ -121,8 +121,8 @@ where
     S::NodeId: LinearGraphId,
 {
     pub fn is_adjacent(&self, source: &S::NodeId, target: &S::NodeId) -> bool {
-        let source = source.as_linear(self.storage);
-        let target = target.as_linear(self.storage);
+        let source = self.storage.linearize_node_id(source);
+        let target = self.storage.linearize_node_id(target);
 
         let index = self.index(source, target);
         self.matrix[index]

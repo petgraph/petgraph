@@ -3,7 +3,6 @@ mod direction;
 pub use direction::Direction;
 
 use crate::{
-    graph::Graph,
     node::{Node, NodeMut},
     storage::GraphStorage,
 };
@@ -18,14 +17,15 @@ pub struct Edge<'a, S>
 where
     S: GraphStorage,
 {
-    graph: &'a Graph<S>,
+    // TODO: should this be `graph` instead of `storage`?
+    storage: &'a S,
 
-    id: &'a S::EdgeId,
+    pub id: &'a S::EdgeId,
 
     source_id: &'a S::NodeId,
     target_id: &'a S::NodeId,
 
-    weight: &'a S::EdgeWeight,
+    pub weight: &'a S::EdgeWeight,
 }
 
 impl<'a, S> Edge<'a, S>
@@ -33,7 +33,7 @@ where
     S: GraphStorage,
 {
     pub const fn new(
-        graph: &'a Graph<S>,
+        storage: &'a S,
 
         id: &'a S::EdgeId,
 
@@ -43,7 +43,7 @@ where
         weight: &'a S::EdgeWeight,
     ) -> Self {
         Self {
-            graph,
+            storage,
 
             id,
 
@@ -52,11 +52,6 @@ where
 
             weight,
         }
-    }
-
-    #[must_use]
-    pub const fn graph(&self) -> &'a Graph<S> {
-        self.graph
     }
 
     #[must_use]
@@ -71,8 +66,7 @@ where
 
     #[must_use]
     pub fn source(&self) -> Option<Node<'a, S>> {
-        // self.graph.node(self.source_id)
-        todo!()
+        self.storage.node(self.source_id)
     }
 
     #[must_use]
@@ -82,7 +76,7 @@ where
 
     #[must_use]
     pub fn target(&self) -> Option<Node<'a, S>> {
-        todo!()
+        self.storage.node(self.target_id)
     }
 
     #[must_use]
@@ -109,13 +103,56 @@ where
     }
 }
 
+pub struct UnboundEdge<'a, S>
+where
+    S: GraphStorage,
+{
+    id: &'a S::EdgeId,
+
+    source_id: &'a S::NodeId,
+    target_id: &'a S::NodeId,
+
+    weight: &'a S::EdgeWeight,
+}
+
+impl<'a, S> UnboundEdge<'a, S>
+where
+    S: GraphStorage,
+{
+    fn new(
+        id: &'a S::EdgeId,
+
+        source_id: &'a S::NodeId,
+        target_id: &'a S::NodeId,
+
+        weight: &'a S::EdgeWeight,
+    ) -> Self {
+        Self {
+            id,
+
+            source_id,
+            target_id,
+
+            weight,
+        }
+    }
+
+    pub fn bind(self, storage: &'a S) -> Edge<'a, S> {
+        Edge::new(
+            storage,
+            self.id,
+            self.source_id,
+            self.target_id,
+            self.weight,
+        )
+    }
+}
+
 pub struct EdgeMut<'a, S>
 where
     S: GraphStorage,
 {
-    // TODO: can this be mut?
-    graph: &'a Graph<S>,
-
+    // TODO: can we include the graph here?
     id: &'a S::EdgeId,
 
     source_id: &'a S::NodeId,
@@ -129,8 +166,6 @@ where
     S: GraphStorage,
 {
     pub fn new(
-        graph: &'a Graph<S>,
-
         id: &'a S::EdgeId,
 
         source_id: &'a S::NodeId,
@@ -139,8 +174,6 @@ where
         weight: &'a mut S::EdgeWeight,
     ) -> Self {
         Self {
-            graph,
-
             id,
 
             source_id,
@@ -151,14 +184,8 @@ where
     }
 
     #[must_use]
-    pub fn into_ref(self) -> Edge<'a, S> {
-        Edge::new(
-            self.graph,
-            self.id,
-            self.source_id,
-            self.target_id,
-            self.weight,
-        )
+    pub fn downgrade(self) -> UnboundEdge<'a, S> {
+        UnboundEdge::new(self.id, self.source_id, self.target_id, &*self.weight)
     }
 
     #[must_use]
@@ -171,27 +198,9 @@ where
         self.source_id
     }
 
-    pub fn source_mut(&mut self) -> Option<NodeMut<'a, S>> {
-        todo!()
-    }
-
-    #[must_use]
-    pub fn source(&self) -> Option<Node<'a, S>> {
-        todo!()
-    }
-
     #[must_use]
     pub const fn target_id(&self) -> &'a S::NodeId {
         self.target_id
-    }
-
-    pub fn target_mut(&mut self) -> Option<NodeMut<'a, S>> {
-        todo!()
-    }
-
-    #[must_use]
-    pub fn target(&self) -> Option<Node<'a, S>> {
-        todo!()
     }
 
     #[must_use]
@@ -201,16 +210,6 @@ where
 
     pub fn weight_mut(&mut self) -> &mut S::EdgeWeight {
         self.weight
-    }
-
-    /// Removes the edge from the graph.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the edge does not exist.
-    // TODO: example
-    pub fn remove(self) -> Result<DetachedStorageEdge<S>, S::Error> {
-        todo!("remove edge")
     }
 }
 

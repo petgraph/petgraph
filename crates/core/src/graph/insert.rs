@@ -19,8 +19,7 @@ where
     ) -> Result<Node<S>, S::Error> {
         let Attributes { id, weight } = attributes;
 
-        let id = <S::NodeId as GraphId>::convert(&self.storage, id);
-
+        let id = self.storage.next_node_id(id);
         self.storage.insert_node(id, weight)
     }
 }
@@ -44,7 +43,12 @@ where
 
             *node.weight_mut() = weight;
 
-            Ok(node.into_ref())
+            let node = self
+                .storage
+                .node(&id)
+                .expect("inconsistent storage, node must exist");
+
+            Ok(node)
         } else {
             self.storage.insert_node(id, weight)
         }
@@ -63,8 +67,7 @@ where
     ) -> Result<Edge<S>, S::Error> {
         let Attributes { id, weight } = attributes;
 
-        let id = <S::EdgeId as GraphId>::convert(&self.storage, id);
-
+        let id = self.storage.next_edge_id(id);
         self.storage.insert_edge(id, source, target, weight)
     }
 }
@@ -72,7 +75,7 @@ where
 impl<S> Graph<S>
 where
     S: GraphStorage,
-    S::EdgeId: ArbitraryGraphId<Storage = S>,
+    S::EdgeId: ArbitraryGraphId,
 {
     pub fn upsert_edge(
         &mut self,
@@ -89,7 +92,15 @@ where
 
             *edge.weight_mut() = weight;
 
-            Ok(edge.into_ref())
+            // TODO: do not use expect!
+            // TODO: I'd like to use `downgrade()` + `bind()` here, but the lifetime is still
+            // tracked for the mutable borrow that happened. Therefore not really possible :/
+            let edge = self
+                .storage
+                .edge(&id)
+                .expect("inconsistent storage, edge must exist");
+
+            Ok(edge)
         } else {
             self.storage.insert_edge(id, source, target, weight)
         }

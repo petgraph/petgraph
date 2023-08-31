@@ -5,7 +5,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-fixedbitset = { workspace = true, optional = true }
+fixedbitset = { workspace = true }
 funty.workspace = true
 indexmap = { workspace = true, optional = true }
 error-stack = { workspace = true }
@@ -18,4 +18,4 @@ proptest = "1.2.0"
 [features]
 alloc = []
 default = ["std"]
-std = ["fixedbitset?/std", "indexmap?/std", "alloc"]
+std = ["fixedbitset/std", "indexmap?/std", "alloc"]

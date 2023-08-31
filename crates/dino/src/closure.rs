@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 // structure). Question is can we avoid them?
 use hashbrown::{HashMap, HashSet};
 
-use crate::{DinosaurStorage, EdgeId, NodeId};
+use crate::{edge::Edge, node::Node, DinosaurStorage, EdgeId, NodeId};
 
 pub(crate) struct NodeClosure {
     outgoing_neighbours: HashSet<NodeId>,
@@ -33,7 +33,31 @@ impl NodeClosure {
         }
     }
 
-    fn refresh<N, E>(&mut self, id: NodeId, closure: &EdgeClosures) {
+    pub(crate) fn outgoing_neighbours(&self) -> &HashSet<NodeId> {
+        &self.outgoing_neighbours
+    }
+
+    pub(crate) fn incoming_neighbours(&self) -> &HashSet<NodeId> {
+        &self.incoming_neighbours
+    }
+
+    pub(crate) fn neighbours(&self) -> &HashSet<NodeId> {
+        &self.neighbours
+    }
+
+    pub(crate) fn outgoing_edges(&self) -> &[EdgeId] {
+        &self.outgoing_edges
+    }
+
+    pub(crate) fn incoming_edges(&self) -> &[EdgeId] {
+        &self.incoming_edges
+    }
+
+    pub(crate) fn edges(&self) -> &[EdgeId] {
+        &self.edges
+    }
+
+    fn refresh(&mut self, id: NodeId, closure: &EdgeClosures) {
         self.outgoing_neighbours.clear();
         self.incoming_neighbours.clear();
         self.neighbours.clear();
@@ -59,9 +83,9 @@ impl NodeClosure {
             self.edges.extend(source_to_edges.iter().copied());
         }
 
-        if let Some(target_to_edges) = closure.target_to_edges.get(&id) {
-            self.incoming_edges.extend(target_to_edges.iter().copied());
-            self.edges.extend(target_to_edges.iter().copied());
+        if let Some(targets_to_edges) = closure.targets_to_edges.get(&id) {
+            self.incoming_edges.extend(targets_to_edges.iter().copied());
+            self.edges.extend(targets_to_edges.iter().copied());
         }
     }
 }
@@ -85,11 +109,23 @@ impl EdgeClosures {
         }
     }
 
-    fn update<N, E>(&mut self, id: EdgeId, storage: &DinosaurStorage<N, E>) {
-        let Some(edge) = storage.get_edge(id) else {
-            return;
-        };
+    pub(crate) fn source_to_targets(&self) -> &HashMap<NodeId, HashSet<NodeId>> {
+        &self.source_to_targets
+    }
 
+    pub(crate) fn target_to_sources(&self) -> &HashMap<NodeId, HashSet<NodeId>> {
+        &self.target_to_sources
+    }
+
+    pub(crate) fn source_to_edges(&self) -> &HashMap<NodeId, HashSet<EdgeId>> {
+        &self.source_to_edges
+    }
+
+    pub(crate) fn targets_to_edges(&self) -> &HashMap<NodeId, HashSet<EdgeId>> {
+        &self.targets_to_edges
+    }
+
+    fn update<E>(&mut self, edge: &Edge<E>) {
         self.source_to_targets
             .entry(edge.source)
             .or_insert_with(HashSet::new)
@@ -103,33 +139,28 @@ impl EdgeClosures {
         self.source_to_edges
             .entry(edge.source)
             .or_insert_with(HashSet::new)
-            .insert(id);
+            .insert(edge.id);
 
         self.targets_to_edges
             .entry(edge.target)
             .or_insert_with(HashSet::new)
-            .insert(id);
+            .insert(edge.id);
     }
 
-    fn remove<N, E>(&mut self, id: EdgeId, storage: &DinosaurStorage<N, E>) {
-        let Some(edge) = storage.get_edge(id) else {
-            return;
-        };
-
+    fn remove<E>(&mut self, edge: &Edge<E>) {
         // lookup in the current closure if there are multiple edges with the same source and target
         let multi = 'multi: {
             let matching_source = self.source_to_edges.get(&edge.source);
             let matching_target = self.targets_to_edges.get(&edge.target);
 
-            let (source, target) = match (matching_source, matching_target) {
-                (Some(source), Some(target)) => (source, target),
-                _ => break 'multi false,
+            let (Some(source), Some(target)) = (matching_source, matching_target) else {
+                break 'multi false;
             };
 
             // This avoids an additional allocation
             let same_source_and_target = source
                 .iter()
-                .any(|&edge_id| id != edge_id && target.contains(&edge_id));
+                .any(|&id| edge.id != id && target.contains(&id));
 
             same_source_and_target
         };
@@ -145,11 +176,11 @@ impl EdgeClosures {
         }
 
         if let Some(edges) = self.source_to_edges.get_mut(&edge.source) {
-            edges.remove(&id);
+            edges.remove(&edge.id);
         }
 
         if let Some(edges) = self.targets_to_edges.get_mut(&edge.target) {
-            edges.remove(&id);
+            edges.remove(&edge.id);
         }
     }
 
@@ -161,11 +192,11 @@ impl EdgeClosures {
         self.targets_to_edges.clear();
     }
 
-    fn refresh<N, E>(&mut self, storage: &DinosaurStorage<N, E>) {
+    fn refresh<E>(&mut self, edges: &HashMap<EdgeId, Edge<E>>) {
         self.clear();
 
-        for &id in storage.edges.keys() {
-            self.update(id, storage);
+        for edge in edges.values() {
+            self.update(edge);
         }
     }
 }
@@ -181,11 +212,15 @@ impl NodeClosures {
         }
     }
 
+    pub(crate) fn get(&self, id: NodeId) -> Option<&NodeClosure> {
+        self.nodes.get(&id)
+    }
+
     fn get_or_insert(&mut self, id: NodeId) -> &mut NodeClosure {
         self.nodes.entry(id).or_insert_with(NodeClosure::new)
     }
 
-    fn update<N, E>(&mut self, id: NodeId, closure: &EdgeClosures) {
+    fn update(&mut self, id: NodeId, closure: &EdgeClosures) {
         self.get_or_insert(id).refresh(id, closure);
     }
 
@@ -197,24 +232,24 @@ impl NodeClosures {
         self.nodes.clear();
     }
 
-    fn refresh<N, E>(&mut self, storage: &DinosaurStorage<N, E>, closure: &EdgeClosures) {
-        for id in storage.nodes.keys() {
+    fn refresh<N>(&mut self, nodes: &HashMap<NodeId, Node<N>>, closure: &EdgeClosures) {
+        for id in nodes.keys() {
             self.update(*id, closure);
         }
 
-        self.gc(storage);
+        self.gc(nodes);
     }
 
-    fn gc<N, E>(&mut self, storage: &DinosaurStorage<N, E>) {
-        let existing_nodes: HashSet<NodeId> = storage.nodes.keys().copied().collect();
+    fn gc<N>(&mut self, nodes: &HashMap<NodeId, Node<N>>) {
+        let existing_nodes: HashSet<NodeId> = nodes.keys().copied().collect();
 
         self.nodes.retain(|id, _| existing_nodes.contains(id));
     }
 }
 
 pub(crate) struct Closures {
-    nodes: NodeClosures,
-    edges: EdgeClosures,
+    pub(crate) nodes: NodeClosures,
+    pub(crate) edges: EdgeClosures,
 }
 
 impl Closures {
@@ -225,16 +260,12 @@ impl Closures {
         }
     }
 
-    pub(crate) fn update_node<N, E>(&mut self, id: NodeId) {
+    pub(crate) fn update_node(&mut self, id: NodeId) {
         self.nodes.update(id, &self.edges);
     }
 
-    pub(crate) fn update_edge<N, E>(&mut self, id: EdgeId, storage: &DinosaurStorage<N, E>) {
-        self.edges.update(id, storage);
-
-        let Some(edge) = storage.get_edge(id) else {
-            return;
-        };
+    pub(crate) fn update_edge<E>(&mut self, edge: &Edge<E>) {
+        self.edges.update(edge);
 
         self.nodes.update(edge.source, &self.edges);
         self.nodes.update(edge.target, &self.edges);
@@ -244,20 +275,20 @@ impl Closures {
         self.nodes.remove(id);
     }
 
-    pub(crate) fn remove_edge<N, E>(&mut self, id: EdgeId, storage: &DinosaurStorage<N, E>) {
-        self.edges.remove(id, storage);
-
-        let Some(edge) = storage.get_edge(id) else {
-            return;
-        };
+    pub(crate) fn remove_edge<E>(&mut self, edge: &Edge<E>) {
+        self.edges.remove(edge);
 
         self.nodes.update(edge.source, &self.edges);
         self.nodes.update(edge.target, &self.edges);
     }
 
-    pub(crate) fn refresh<N, E>(&mut self, storage: &DinosaurStorage<N, E>) {
-        self.edges.refresh(storage);
-        self.nodes.refresh(storage, &self.edges);
+    pub(crate) fn refresh<N, E>(
+        &mut self,
+        nodes: &HashMap<NodeId, Node<N>>,
+        edges: &HashMap<EdgeId, Edge<E>>,
+    ) {
+        self.edges.refresh(edges);
+        self.nodes.refresh(nodes, &self.edges);
     }
 
     pub(crate) fn clear(&mut self) {

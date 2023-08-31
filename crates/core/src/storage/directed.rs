@@ -38,15 +38,10 @@ pub trait DirectedGraphStorage: GraphStorage {
             })
     }
 
+    // I'd love to provide a default implementation for this, but I just can't get it to work.
     fn node_directed_neighbours_mut<'a: 'b, 'b>(
         &'a mut self,
         id: &'b Self::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b {
-        self.node_directed_connections_mut(id, direction)
-            .filter_map(move |mut edge| match direction {
-                Direction::Outgoing => edge.target_mut(),
-                Direction::Incoming => edge.source_mut(),
-            })
-    }
+    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b;
 }

@@ -9,6 +9,8 @@ pub trait GraphStorageAdjacencyMatrix: GraphStorage
 where
     Self::NodeId: LinearGraphId,
 {
+    fn linearize_node_id(&self, id: &Self::NodeId) -> usize;
+
     fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self> {
         let mut matrix = AdjacencyMatrix::new_undirected(self);
 
