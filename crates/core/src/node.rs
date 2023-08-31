@@ -32,6 +32,17 @@ where
     }
 }
 
+impl<S> Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Clone,
+    S::NodeWeight: Clone,
+{
+    pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+        DetachedNode::new(self.id.clone(), self.weight.clone())
+    }
+}
+
 pub struct NodeMut<'a, S>
 where
     S: GraphStorage,
@@ -86,6 +97,17 @@ where
     pub fn incoming(&self) -> impl Iterator<Item = Edge<'_, S>> {
         self.graph
             .connections_directed(self.id, Direction::Incoming)
+    }
+}
+
+impl<S> NodeMut<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Clone,
+    S::NodeWeight: Clone,
+{
+    pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+        DetachedNode::new(self.id.clone(), self.weight.clone())
     }
 }
 

@@ -78,6 +78,23 @@ where
     }
 }
 
+impl<S> Edge<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Clone,
+    S::EdgeId: Clone,
+    S::EdgeWeight: Clone,
+{
+    pub fn detach(self) -> DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight> {
+        DetachedEdge::new(
+            self.id.clone(),
+            self.source_id.clone(),
+            self.target_id.clone(),
+            self.weight.clone(),
+        )
+    }
+}
+
 pub struct EdgeMut<'a, S>
 where
     S: GraphStorage,
@@ -163,6 +180,23 @@ where
 
     pub fn weight_mut(&mut self) -> &'a mut S::EdgeWeight {
         self.weight
+    }
+}
+
+impl<S> EdgeMut<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Clone,
+    S::EdgeId: Clone,
+    S::EdgeWeight: Clone,
+{
+    pub fn detach(self) -> DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight> {
+        DetachedEdge::new(
+            self.id.clone(),
+            self.source_id.clone(),
+            self.target_id.clone(),
+            self.weight.clone(),
+        )
     }
 }
 

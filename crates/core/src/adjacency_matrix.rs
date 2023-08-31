@@ -4,6 +4,8 @@ use fixedbitset::FixedBitSet;
 
 use crate::{edge::Edge, index::LinearGraphId, storage::GraphStorageAdjacencyMatrix};
 
+// TODO: variable storage backend
+
 // Thanks to: https://stackoverflow.com/a/27088560/9077988
 // and: https://math.stackexchange.com/a/2134297
 fn matrix_index_into_linear_index(x: usize, y: usize, n: usize) -> usize {
