@@ -1,12 +1,12 @@
 use crate::{
     adjacency_matrix::AdjacencyMatrix,
-    index::LinearGraphIndex,
+    index::LinearGraphId,
     storage::{DirectedGraphStorage, GraphStorage},
 };
 
 pub trait GraphStorageAdjacencyMatrix: GraphStorage
 where
-    Self::NodeIndex: LinearGraphIndex,
+    Self::NodeId: LinearGraphId,
 {
     fn undirected_adjacency_matrix(&self) -> AdjacencyMatrix<Self> {
         let mut matrix = AdjacencyMatrix::new_undirected(self);
@@ -22,7 +22,7 @@ where
 pub trait DirectedGraphStorageAdjacencyMatrix:
     DirectedGraphStorage + GraphStorageAdjacencyMatrix
 where
-    Self::NodeIndex: LinearGraphIndex,
+    Self::NodeId: LinearGraphId,
 {
     fn directed_adjacency_matrix(&self) -> AdjacencyMatrix<Self> {
         let mut matrix = AdjacencyMatrix::new_directed(self);

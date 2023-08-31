@@ -7,8 +7,8 @@ use crate::{
 pub trait DirectedGraphStorage: GraphStorage {
     fn find_directed_edges<'a: 'b, 'b>(
         &'a self,
-        source: &'b Self::NodeIndex,
-        target: &'b Self::NodeIndex,
+        source: &'b Self::NodeId,
+        target: &'b Self::NodeId,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
         self.node_directed_connections(source, Direction::Outgoing)
             .filter(move |edge| edge.target_id() == target)
@@ -16,19 +16,19 @@ pub trait DirectedGraphStorage: GraphStorage {
 
     fn node_directed_connections<'a, 'b>(
         &'a self,
-        id: &'b Self::NodeIndex,
+        id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b;
 
     fn node_directed_connections_mut<'a: 'b, 'b>(
         &'a mut self,
-        id: &'b Self::NodeIndex,
+        id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
     fn node_directed_neighbours<'a: 'b, 'b>(
         &'a self,
-        id: &'b Self::NodeIndex,
+        id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
         self.node_directed_connections(id, direction)
@@ -40,7 +40,7 @@ pub trait DirectedGraphStorage: GraphStorage {
 
     fn node_directed_neighbours_mut<'a: 'b, 'b>(
         &'a mut self,
-        id: &'b Self::NodeIndex,
+        id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b {
         self.node_directed_connections_mut(id, direction)

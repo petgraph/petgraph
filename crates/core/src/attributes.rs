@@ -1,4 +1,4 @@
-use crate::index::ArbitraryGraphIndex;
+use crate::index::ArbitraryGraphId;
 
 pub struct Never(());
 pub struct Attributes<I, W> {
@@ -17,9 +17,12 @@ impl<W> Attributes<Never, W> {
 
 impl<I, W> Attributes<I, W>
 where
-    I: ArbitraryGraphIndex,
+    I: ArbitraryGraphId,
 {
     pub fn new(id: impl Into<I>, weight: W) -> Self {
-        Self { id, weight }
+        Self {
+            id: id.into(),
+            weight,
+        }
     }
 }

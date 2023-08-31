@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use fixedbitset::FixedBitSet;
 
-use crate::{edge::Edge, index::LinearGraphIndex, storage::GraphStorageAdjacencyMatrix};
+use crate::{edge::Edge, index::LinearGraphId, storage::GraphStorageAdjacencyMatrix};
 
 // Thanks to: https://stackoverflow.com/a/27088560/9077988
 // and: https://math.stackexchange.com/a/2134297
@@ -47,7 +47,7 @@ impl<'a, S, T> AdjacencyMatrix<'a, S, T> {
 impl<'a, S> AdjacencyMatrix<'a, S, Mutable>
 where
     S: GraphStorageAdjacencyMatrix,
-    S::NodeIndex: LinearGraphIndex,
+    S::NodeId: LinearGraphId,
 {
     pub fn new_directed(storage: &'a S) -> Self {
         let num_nodes = storage.num_nodes();
@@ -117,9 +117,9 @@ where
 impl<'a, S> AdjacencyMatrix<'a, S, Frozen>
 where
     S: GraphStorageAdjacencyMatrix,
-    S::NodeIndex: LinearGraphIndex,
+    S::NodeId: LinearGraphId,
 {
-    pub fn is_adjacent(&self, source: S::NodeIndex, target: S::NodeIndex) -> bool {
+    pub fn is_adjacent(&self, source: S::NodeId, target: S::NodeId) -> bool {
         let source = source.as_linear(self.storage);
         let target = target.as_linear(self.storage);
 

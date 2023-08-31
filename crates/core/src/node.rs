@@ -1,5 +1,3 @@
-use core::iter::empty;
-
 use crate::{
     edge::{Direction, Edge},
     graph::Graph,
@@ -12,7 +10,7 @@ where
 {
     graph: &'a Graph<S>,
 
-    id: &'a S::NodeIndex,
+    id: &'a S::NodeId,
 
     weight: &'a S::NodeWeight,
 }
@@ -21,11 +19,11 @@ impl<'a, S> Node<'a, S>
 where
     S: GraphStorage,
 {
-    pub fn new(graph: &'a Graph<S>, id: &'a S::NodeIndex, weight: &'a S::NodeWeight) -> Self {
+    pub fn new(graph: &'a Graph<S>, id: &'a S::NodeId, weight: &'a S::NodeWeight) -> Self {
         Self { graph, id, weight }
     }
 
-    pub fn id(&self) -> &'a S::NodeIndex {
+    pub fn id(&self) -> &'a S::NodeId {
         self.id
     }
 
@@ -41,7 +39,7 @@ where
     // TODO: can this be mut?
     graph: &'a Graph<S>,
 
-    id: &'a S::NodeIndex,
+    id: &'a S::NodeId,
 
     weight: &'a mut S::NodeWeight,
 }
@@ -50,7 +48,7 @@ impl<'a, S> NodeMut<'a, S>
 where
     S: GraphStorage,
 {
-    pub fn new(graph: &'a Graph<S>, id: &'a S::NodeIndex, weight: &'a mut S::NodeWeight) -> Self {
+    pub fn new(graph: &'a Graph<S>, id: &'a S::NodeId, weight: &'a mut S::NodeWeight) -> Self {
         Self { graph, id, weight }
     }
 
@@ -58,7 +56,7 @@ where
         Node::new(self.graph, self.id, self.weight)
     }
 
-    pub fn id(&self) -> &'a S::NodeIndex {
+    pub fn id(&self) -> &'a S::NodeId {
         self.id
     }
 

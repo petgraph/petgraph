@@ -13,18 +13,18 @@ pub use self::{
 };
 use crate::{
     edge::{DetachedEdge, Edge, EdgeMut},
-    index::GraphIndex,
+    index::GraphId,
     node::{DetachedNode, Node, NodeMut},
 };
 
 pub trait GraphStorage: Sized {
     type Error: Context;
 
-    type NodeIndex: GraphIndex<Storage = Self>;
+    type NodeId: GraphId<Storage = Self>;
 
     type NodeWeight;
 
-    type EdgeIndex: GraphIndex<Storage = Self>;
+    type EdgeId: GraphId<Storage = Self>;
     type EdgeWeight;
 
     fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self
@@ -32,10 +32,8 @@ pub trait GraphStorage: Sized {
         Self: Sized;
 
     fn from_parts(
-        nodes: impl IntoIterator<Item = DetachedNode<Self::NodeIndex, Self::NodeWeight>>,
-        edges: impl IntoIterator<
-            Item = DetachedEdge<Self::EdgeIndex, Self::NodeIndex, Self::EdgeWeight>,
-        >,
+        nodes: impl IntoIterator<Item = DetachedNode<Self::NodeId, Self::NodeWeight>>,
+        edges: impl IntoIterator<Item = DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>,
     ) -> Result<Self, Self::Error> {
         let nodes = nodes.into_iter();
         let edges = edges.into_iter();
@@ -79,8 +77,8 @@ pub trait GraphStorage: Sized {
     fn into_parts(
         self,
     ) -> (
-        impl Iterator<Item = DetachedNode<Self::NodeIndex, Self::NodeWeight>>,
-        impl Iterator<Item = DetachedEdge<Self::EdgeIndex, Self::NodeIndex, Self::EdgeWeight>>,
+        impl Iterator<Item = DetachedNode<Self::NodeId, Self::NodeWeight>>,
+        impl Iterator<Item = DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>,
     );
 
     fn num_nodes(&self) -> usize {
@@ -98,7 +96,7 @@ pub trait GraphStorage: Sized {
     /// Returns an error if the node index is already in use.
     fn insert_node(
         &mut self,
-        id: Self::NodeIndex,
+        id: Self::NodeId,
         weight: Self::NodeWeight,
     ) -> Result<Node<Self>, Self::Error>;
 
@@ -110,22 +108,22 @@ pub trait GraphStorage: Sized {
     /// target already exists.
     fn insert_edge(
         &mut self,
-        id: Self::EdgeIndex,
+        id: Self::EdgeId,
 
-        source: Self::NodeIndex,
-        target: Self::NodeIndex,
+        source: Self::NodeId,
+        target: Self::NodeId,
 
         weight: Self::EdgeWeight,
     ) -> Result<Edge<Self>, Self::Error>;
 
     fn remove_node(
         &mut self,
-        id: &Self::NodeIndex,
-    ) -> Option<DetachedNode<Self::NodeIndex, Self::NodeWeight>>;
+        id: &Self::NodeId,
+    ) -> Option<DetachedNode<Self::NodeId, Self::NodeWeight>>;
     fn remove_edge(
         &mut self,
-        id: &Self::EdgeIndex,
-    ) -> Option<DetachedEdge<Self::EdgeIndex, Self::NodeIndex, Self::EdgeWeight>>;
+        id: &Self::EdgeId,
+    ) -> Option<DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>;
 
     fn clear(&mut self) {
         for node in self.nodes() {
@@ -137,16 +135,16 @@ pub trait GraphStorage: Sized {
         }
     }
 
-    fn node(&self, id: &Self::NodeIndex) -> Option<Node<Self>>;
-    fn node_mut(&mut self, id: &Self::NodeIndex) -> Option<NodeMut<Self>>;
+    fn node(&self, id: &Self::NodeId) -> Option<Node<Self>>;
+    fn node_mut(&mut self, id: &Self::NodeId) -> Option<NodeMut<Self>>;
 
-    fn edge(&self, id: &Self::EdgeIndex) -> Option<Edge<Self>>;
-    fn edge_mut(&mut self, id: &Self::EdgeIndex) -> Option<EdgeMut<Self>>;
+    fn edge(&self, id: &Self::EdgeId) -> Option<Edge<Self>>;
+    fn edge_mut(&mut self, id: &Self::EdgeId) -> Option<EdgeMut<Self>>;
 
     fn find_undirected_edges<'a: 'b, 'b>(
         &'a self,
-        source: &'b Self::NodeIndex,
-        target: &'b Self::NodeIndex,
+        source: &'b Self::NodeId,
+        target: &'b Self::NodeId,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
         // How does this work with a default implementation?
         let from_source = self
@@ -162,17 +160,17 @@ pub trait GraphStorage: Sized {
 
     fn node_connections<'a: 'b, 'b>(
         &'a self,
-        id: &'b Self::NodeIndex,
+        id: &'b Self::NodeId,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b;
 
     fn node_connections_mut<'a: 'b, 'b>(
         &'a mut self,
-        id: &'b Self::NodeIndex,
+        id: &'b Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
     fn node_neighbours<'a: 'b, 'b>(
         &'a self,
-        id: &'b Self::NodeIndex,
+        id: &'b Self::NodeId,
     ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
         self.node_connections(id)
             .filter_map(move |edge: Edge<Self>| {
@@ -188,7 +186,7 @@ pub trait GraphStorage: Sized {
 
     fn node_neighbours_mut<'a: 'b, 'b>(
         &'a mut self,
-        id: &'b Self::NodeIndex,
+        id: &'b Self::NodeId,
     ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b {
         self.node_connections_mut(id)
             .filter_map(move |mut edge: EdgeMut<Self>| {

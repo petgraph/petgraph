@@ -14,10 +14,10 @@ where
 {
     graph: &'a Graph<S>,
 
-    id: &'a S::EdgeIndex,
+    id: &'a S::EdgeId,
 
-    source_id: &'a S::NodeIndex,
-    target_id: &'a S::NodeIndex,
+    source_id: &'a S::NodeId,
+    target_id: &'a S::NodeId,
 
     weight: &'a S::EdgeWeight,
 }
@@ -29,10 +29,10 @@ where
     pub fn new(
         graph: &'a Graph<S>,
 
-        id: &'a S::EdgeIndex,
+        id: &'a S::EdgeId,
 
-        source_id: &'a S::NodeIndex,
-        target_id: &'a S::NodeIndex,
+        source_id: &'a S::NodeId,
+        target_id: &'a S::NodeId,
 
         weight: &'a S::EdgeWeight,
     ) -> Self {
@@ -52,11 +52,11 @@ where
         self.graph
     }
 
-    pub fn id(&self) -> &'a S::EdgeIndex {
+    pub fn id(&self) -> &'a S::EdgeId {
         self.id
     }
 
-    pub fn source_id(&self) -> &'a S::NodeIndex {
+    pub fn source_id(&self) -> &'a S::NodeId {
         self.source_id
     }
 
@@ -65,7 +65,7 @@ where
         todo!()
     }
 
-    pub fn target_id(&self) -> &'a S::NodeIndex {
+    pub fn target_id(&self) -> &'a S::NodeId {
         self.target_id
     }
 
@@ -85,10 +85,10 @@ where
     // TODO: can this be mut?
     graph: &'a Graph<S>,
 
-    id: &'a S::EdgeIndex,
+    id: &'a S::EdgeId,
 
-    source_id: &'a S::NodeIndex,
-    target_id: &'a S::NodeIndex,
+    source_id: &'a S::NodeId,
+    target_id: &'a S::NodeId,
 
     weight: &'a mut S::EdgeWeight,
 }
@@ -100,10 +100,10 @@ where
     pub fn new(
         graph: &'a Graph<S>,
 
-        id: &'a S::EdgeIndex,
+        id: &'a S::EdgeId,
 
-        source_id: &'a S::NodeIndex,
-        target_id: &'a S::NodeIndex,
+        source_id: &'a S::NodeId,
+        target_id: &'a S::NodeId,
 
         weight: &'a mut S::EdgeWeight,
     ) -> Self {
@@ -129,11 +129,11 @@ where
         )
     }
 
-    pub fn id(&self) -> &'a S::EdgeIndex {
+    pub fn id(&self) -> &'a S::EdgeId {
         self.id
     }
 
-    pub fn source_id(&self) -> &'a S::NodeIndex {
+    pub fn source_id(&self) -> &'a S::NodeId {
         self.source_id
     }
 
@@ -145,7 +145,7 @@ where
         todo!()
     }
 
-    pub fn target_id(&self) -> &'a S::NodeIndex {
+    pub fn target_id(&self) -> &'a S::NodeId {
         self.target_id
     }
 

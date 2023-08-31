@@ -1,19 +1,19 @@
 use crate::{attributes::Never, storage::GraphStorage};
 
-pub trait GraphIndex: PartialEq {
+pub trait GraphId: PartialEq {
     type Storage: GraphStorage;
 
-    type InsertValue;
+    type AttributeIndex;
 
-    fn convert(storage: &Self::Storage, value: Self::InsertValue) -> Self;
+    fn convert(storage: &Self::Storage, value: Self::AttributeIndex) -> Self;
 }
 
-pub trait LinearGraphIndex: GraphIndex {
+pub trait LinearGraphId: GraphId {
     fn as_linear(&self, storage: &Self::Storage) -> usize;
 }
 
-pub trait ManagedGraphIndex: GraphIndex<InsertValue = Never> {
+pub trait ManagedGraphId: GraphId<AttributeIndex = Never> {
     fn next(storage: &Self::Storage) -> Self;
 }
 
-pub trait ArbitraryGraphIndex: GraphIndex<InsertValue = Self> {}
+pub trait ArbitraryGraphId: GraphId<AttributeIndex = Self> {}
