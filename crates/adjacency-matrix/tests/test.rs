@@ -12,7 +12,7 @@ use core::fmt;
 use petgraph_adjacency_matrix::{AdjacencyList, NodeIndex};
 use petgraph_core::{
     data::DataMap,
-    index::DefaultIx,
+    id::DefaultIx,
     visit::{
         EdgeRef, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeReferences, NodeCount,
         NodeIndexable,

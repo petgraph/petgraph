@@ -54,10 +54,6 @@ where
         }
     }
 
-    pub(crate) fn storage(&self) -> &S {
-        &self.storage
-    }
-
     pub fn num_nodes(&self) -> usize {
         self.storage.num_nodes()
     }
@@ -70,8 +66,8 @@ where
         self.num_nodes() == 0 && self.num_edges() == 0
     }
 
-    pub fn clear(&mut self) {
-        self.storage.clear();
+    pub fn clear(&mut self) -> Result<(), S::Error> {
+        self.storage.clear()
     }
 
     pub fn node(&self, id: &S::NodeId) -> Option<Node<S>> {

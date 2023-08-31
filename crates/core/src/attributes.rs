@@ -1,4 +1,4 @@
-use crate::index::ArbitraryGraphId;
+use crate::id::ArbitraryGraphId;
 
 pub struct Never(());
 pub struct Attributes<I, W> {

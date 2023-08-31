@@ -1,6 +1,6 @@
 use crate::{
     adjacency_matrix::AdjacencyMatrix,
-    index::LinearGraphId,
+    id::LinearGraphId,
     storage::{DirectedGraphStorage, GraphStorage},
 };
 

@@ -11,7 +11,7 @@ mod common;
 use common::assert_graph_consistency;
 use petgraph_core::{
     edge::{Direction, EdgeType, Undirected},
-    index::IndexType,
+    id::IndexType,
     visit::{EdgeRef, IntoNeighborsDirected},
 };
 use petgraph_graph::{EdgeIndex, Graph, NodeIndex};

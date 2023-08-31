@@ -32,7 +32,7 @@ mod utils;
 use petgraph_core::{
     deprecated::IntoWeightedEdge,
     edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
-    index::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
+    id::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
     visit,
     visit::{EdgeRef, GetAdjacencyMatrix},
 };

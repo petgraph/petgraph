@@ -3,7 +3,7 @@ use core::{cell::Cell, marker::PhantomData};
 
 use funty::Integral;
 use petgraph_core::{
-    index::IndexType,
+    id::IndexType,
     visit::{EdgeIndexable, NodeIndexable},
 };
 use serde::{

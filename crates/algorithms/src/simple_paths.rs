@@ -104,7 +104,7 @@ mod test {
     use core::iter::once;
 
     use indexmap::{IndexMap, IndexSet};
-    use petgraph_core::index::IndexType;
+    use petgraph_core::id::IndexType;
     use petgraph_graph::{DiGraph, NodeIndex};
 
     use super::all_simple_paths;

@@ -30,7 +30,7 @@ use core::{
 };
 
 use funty::Integral;
-use petgraph_core::{edge::EdgeType, index::IndexType};
+use petgraph_core::{edge::EdgeType, id::IndexType};
 use serde::{
     de::Error as _,
     ser::{SerializeStruct, SerializeTuple},

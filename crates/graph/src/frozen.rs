@@ -3,7 +3,7 @@ use core::ops::{Deref, Index, IndexMut};
 use petgraph_core::{
     data::{DataMap, DataMapMut},
     delegate_impl, deref_twice,
-    index::IndexType,
+    id::IndexType,
     Data, DataMap, DataMapMut, EdgeCount, EdgeIndexable, GetAdjacencyMatrix, GraphProp,
     IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
     IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,

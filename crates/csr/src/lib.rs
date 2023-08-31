@@ -19,7 +19,7 @@ use fixedbitset::FixedBitSet;
 use petgraph_core::{
     deprecated::IntoWeightedEdge,
     edge::{Directed, EdgeType},
-    index::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
+    id::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
     visit::{
         Data, EdgeCount, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences,
         IntoEdges, IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,

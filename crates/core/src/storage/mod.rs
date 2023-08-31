@@ -13,7 +13,7 @@ pub use self::{
 };
 use crate::{
     edge::{DetachedEdge, Edge, EdgeMut},
-    index::GraphId,
+    id::GraphId,
     node::{DetachedNode, Node, NodeMut},
 };
 

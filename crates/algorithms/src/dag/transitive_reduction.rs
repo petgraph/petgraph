@@ -14,7 +14,7 @@ use fixedbitset::FixedBitSet;
 use petgraph_adjacency_matrix::{AdjacencyList, NodeIndex, UnweightedAdjacencyList};
 use petgraph_core::{
     edge::Direction,
-    index::{FromIndexType, IndexType, IntoIndexType, SafeCast},
+    id::{FromIndexType, IndexType, IntoIndexType, SafeCast},
     visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount},
 };
 
@@ -38,7 +38,7 @@ use petgraph_core::{
 /// use petgraph_algorithms::dag::dag_to_toposorted_adjacency_list;
 /// use petgraph_core::{
 ///     edge::Directed,
-///     index::{DefaultIx, SafeCast},
+///     id::{DefaultIx, SafeCast},
 ///     visit::IntoNeighbors,
 /// };
 /// use petgraph_graph::{Graph, NodeIndex};
@@ -153,7 +153,7 @@ mod tests {
     use petgraph_adjacency_matrix::{AdjacencyList, NodeIndex};
     use petgraph_core::{
         edge::Directed,
-        index::{IndexType, SafeCast},
+        id::{IndexType, SafeCast},
         visit::{
             Dfs, EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers,
             NodeCount, Visitable,

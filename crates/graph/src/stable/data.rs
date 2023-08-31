@@ -1,7 +1,7 @@
 use petgraph_core::{
     data::{from_elements_indexable, Build, Create, DataMap, DataMapMut, Element, FromElements},
     edge::EdgeType,
-    index::IndexType,
+    id::IndexType,
     visit::Data,
 };
 

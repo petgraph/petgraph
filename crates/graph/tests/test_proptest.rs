@@ -13,7 +13,7 @@ mod common;
 use common::assert_graph_consistency;
 use petgraph_core::{
     edge::{Directed, Direction, EdgeType, Undirected},
-    index::IndexType,
+    id::IndexType,
     visit::EdgeCount,
 };
 use petgraph_graph::{EdgeIndex, Graph};

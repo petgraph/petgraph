@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 use std::{collections::BTreeSet, sync::Arc};
 
-use petgraph_core::{edge::EdgeType, index::IndexType};
+use petgraph_core::{edge::EdgeType, id::IndexType};
 use petgraph_proptest::default::graph_strategy;
 use proptest::{
     arbitrary::Arbitrary,

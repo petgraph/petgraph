@@ -8,7 +8,7 @@ use petgraph::{
 use petgraph_algorithms::components::{connected_components, kosaraju_scc, tarjan_scc};
 use petgraph_core::{
     edge::Directed,
-    index::{FromIndexType, IntoIndexType},
+    id::{FromIndexType, IntoIndexType},
 };
 
 use crate::common::{factories::undirected_graph, nodes, Profile};

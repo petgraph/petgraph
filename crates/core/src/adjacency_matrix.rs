@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use fixedbitset::FixedBitSet;
 
-use crate::{edge::Edge, index::LinearGraphId, storage::GraphStorageAdjacencyMatrix};
+use crate::{edge::Edge, id::LinearGraphId, storage::GraphStorageAdjacencyMatrix};
 
 // TODO: variable storage backend
 

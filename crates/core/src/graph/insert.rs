@@ -4,7 +4,7 @@ use crate::{
     attributes::Attributes,
     edge::Edge,
     graph::Graph,
-    index::{ArbitraryGraphId, GraphId},
+    id::{ArbitraryGraphId, GraphId},
     node::Node,
     storage::GraphStorage,
 };

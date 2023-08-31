@@ -27,7 +27,7 @@ use indexmap::{
 use petgraph_core::{
     deprecated::IntoWeightedEdge,
     edge::{Directed, Direction, EdgeType, Undirected},
-    index::IndexType,
+    id::IndexType,
     iterator_wrap, visit,
 };
 #[cfg(feature = "convert")]

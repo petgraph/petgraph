@@ -19,7 +19,7 @@ use funty::Fundamental;
 use petgraph_core::{
     data::{Build, DataMap, DataMapMut},
     edge::Directed,
-    index::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
+    id::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
     iterator_wrap, visit,
     visit::{EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount},
 };

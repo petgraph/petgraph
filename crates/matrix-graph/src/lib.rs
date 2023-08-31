@@ -22,7 +22,7 @@ use petgraph_core::{
     data::Build,
     deprecated::IntoWeightedEdge,
     edge::{Directed, Direction, EdgeType, Undirected},
-    index::{FromIndexType, IndexType, IntoIndexType, SafeCast},
+    id::{FromIndexType, IndexType, IntoIndexType, SafeCast},
     visit::{
         Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
         IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
