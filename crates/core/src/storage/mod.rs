@@ -125,21 +125,31 @@ pub trait GraphStorage: Sized {
         id: &Self::EdgeId,
     ) -> Option<DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>;
 
-    fn clear(&mut self) {
-        for node in self.nodes() {
-            self.remove_node(node.id());
+    fn clear(&mut self) -> Result<(), Self::Error> {
+        for node in self.nodes_mut() {
+            node.remove()?;
         }
 
-        for edge in self.edges() {
-            self.remove_edge(edge.id());
+        for edge in self.edges_mut() {
+            edge.remove()?;
         }
+
+        Ok(())
     }
 
     fn node(&self, id: &Self::NodeId) -> Option<Node<Self>>;
     fn node_mut(&mut self, id: &Self::NodeId) -> Option<NodeMut<Self>>;
 
+    fn contains_node(&self, id: &Self::NodeId) -> bool {
+        self.node(id).is_some()
+    }
+
     fn edge(&self, id: &Self::EdgeId) -> Option<Edge<Self>>;
     fn edge_mut(&mut self, id: &Self::EdgeId) -> Option<EdgeMut<Self>>;
+
+    fn contains_edge(&self, id: &Self::EdgeId) -> bool {
+        self.edge(id).is_some()
+    }
 
     fn find_undirected_edges<'a: 'b, 'b>(
         &'a self,

@@ -104,7 +104,7 @@ where
         self.storage.remove_edge(id)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn neighbors<'a: 'b, 'b>(
         &'a self,
         id: &'b S::NodeId,
@@ -119,7 +119,7 @@ where
         self.storage.node_neighbours(id)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn neighbors_mut<'a: 'b, 'b>(
         &'a mut self,
         id: &'b S::NodeId,

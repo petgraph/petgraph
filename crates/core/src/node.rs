@@ -1,3 +1,5 @@
+use error_stack::Result;
+
 use crate::{
     edge::{Direction, Edge},
     graph::Graph,
@@ -63,7 +65,7 @@ where
         Self { graph, id, weight }
     }
 
-    pub fn as_ref(&self) -> Node<'_, S> {
+    pub fn into_ref(self) -> Node<'a, S> {
         Node::new(self.graph, self.id, self.weight)
     }
 
@@ -71,16 +73,20 @@ where
         self.id
     }
 
-    pub fn weight(&self) -> &'a S::NodeWeight {
+    pub fn weight(&self) -> &S::NodeWeight {
         self.weight
     }
 
-    pub fn weight_mut(&mut self) -> &'a mut S::NodeWeight {
+    pub fn weight_mut(&mut self) -> &mut S::NodeWeight {
         self.weight
     }
 
     pub fn neighbours(&self) -> impl Iterator<Item = Node<'_, S>> {
         self.graph.neighbours(self.id)
+    }
+
+    pub fn remove(self) -> Result<DetachedNode<S::NodeId, S::NodeWeight>, S::Error> {
+        todo!("remove node")
     }
 }
 

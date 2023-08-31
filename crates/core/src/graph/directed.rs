@@ -11,7 +11,7 @@ impl<S> Graph<S>
 where
     S: DirectedGraphStorage,
 {
-    #[inline(always)]
+    #[inline]
     pub fn neighbors_directed<'a: 'b, 'b>(
         &'a self,
         id: &'b S::NodeId,
@@ -28,7 +28,7 @@ where
         self.storage.node_directed_neighbours(id, direction)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn neighbors_directed_mut<'a: 'b, 'b>(
         &'a mut self,
         id: &'b S::NodeId,

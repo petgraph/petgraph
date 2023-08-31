@@ -35,9 +35,16 @@ where
         id: S::NodeId,
         weight: S::NodeWeight,
     ) -> Result<Node<S>, S::Error> {
-        if let Some(mut node) = self.storage.node_mut(&id) {
+        // we cannot use `if let` here due to limitations of the borrow checker
+        if self.storage.contains_node(&id) {
+            let mut node = self
+                .storage
+                .node_mut(&id)
+                .expect("inconsistent storage, node must exist");
+
             *node.weight_mut() = weight;
-            Ok(node.as_ref())
+
+            Ok(node.into_ref())
         } else {
             self.storage.insert_node(id, weight)
         }
@@ -74,9 +81,15 @@ where
         target: S::NodeId,
         weight: S::EdgeWeight,
     ) -> Result<Edge<S>, S::Error> {
-        if let Some(mut edge) = self.storage.edge_mut(&id) {
+        if self.storage.contains_edge(&id) {
+            let mut edge = self
+                .storage
+                .edge_mut(&id)
+                .expect("inconsistent storage, edge must exist");
+
             *edge.weight_mut() = weight;
-            Ok(edge.as_ref())
+
+            Ok(edge.into_ref())
         } else {
             self.storage.insert_edge(id, source, target, weight)
         }

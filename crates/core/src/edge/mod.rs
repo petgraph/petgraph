@@ -4,7 +4,7 @@ pub use direction::Direction;
 
 use crate::{
     graph::Graph,
-    node::{Node, NodeMut},
+    node::{DetachedNode, Node, NodeMut},
     storage::GraphStorage,
 };
 
@@ -136,7 +136,7 @@ where
         }
     }
 
-    pub fn as_ref(&self) -> Edge<'_, S> {
+    pub fn into_ref(self) -> Edge<'a, S> {
         Edge::new(
             self.graph,
             self.id,
@@ -174,12 +174,16 @@ where
         todo!()
     }
 
-    pub fn weight(&self) -> &'a S::EdgeWeight {
+    pub fn weight(&self) -> &S::EdgeWeight {
         self.weight
     }
 
-    pub fn weight_mut(&mut self) -> &'a mut S::EdgeWeight {
+    pub fn weight_mut(&mut self) -> &mut S::EdgeWeight {
         self.weight
+    }
+
+    pub fn remove(self) -> Result<DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight>, S::Error> {
+        todo!("remove edge")
     }
 }
 
