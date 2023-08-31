@@ -212,29 +212,45 @@ pub(crate) struct Closures {
 }
 
 impl Closures {
-    fn get_or_insert(&mut self, id: NodeId) -> &mut NodeClosure {
-        self.nodes.entry(id).or_insert_with(NodeClosure::new)
-    }
-
-    fn update<N, E>(&mut self, id: NodeId, storage: &DinosaurStorage<N, E>) {
-        self.get_or_insert(id).refresh(id, storage);
-    }
-
-    fn remove(&mut self, id: NodeId) {
-        self.nodes.remove(&id);
-    }
-
-    fn refresh<N, E>(&mut self, storage: &DinosaurStorage<N, E>) {
-        for id in storage.nodes.keys() {
-            self.update(*id, storage);
+    pub(crate) fn new() -> Self {
+        Self {
+            nodes: NodeClosures::new(),
+            edges: EdgeClosures::new(),
         }
-
-        self.gc(storage);
     }
 
-    fn gc<N, E>(&mut self, storage: &DinosaurStorage<N, E>) {
-        let existing_nodes: HashSet<NodeId> = storage.nodes.keys().copied().collect();
+    pub(crate) fn update_node<N, E>(&mut self, id: NodeId) {
+        self.nodes.update(id, &self.edges);
+    }
 
-        self.nodes.retain(|id, _| existing_nodes.contains(id));
+    pub(crate) fn update_edge<N, E>(&mut self, id: EdgeId, storage: &DinosaurStorage<N, E>) {
+        self.edges.update(id, storage);
+
+        let Some(edge) = storage.get_edge(id) else {
+            return;
+        };
+
+        self.nodes.update(edge.source, &self.edges);
+        self.nodes.update(edge.target, &self.edges);
+    }
+
+    pub(crate) fn remove_node(&mut self, id: NodeId) {
+        self.nodes.remove(id);
+    }
+
+    pub(crate) fn remove_edge<N, E>(&mut self, id: EdgeId, storage: &DinosaurStorage<N, E>) {
+        self.edges.remove(id, storage);
+
+        let Some(edge) = storage.get_edge(id) else {
+            return;
+        };
+
+        self.nodes.update(edge.source, &self.edges);
+        self.nodes.update(edge.target, &self.edges);
+    }
+
+    pub(crate) fn refresh<N, E>(&mut self, storage: &DinosaurStorage<N, E>) {
+        self.edges.refresh(storage);
+        self.nodes.refresh(storage, &self.edges);
     }
 }
