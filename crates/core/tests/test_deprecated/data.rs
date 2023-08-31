@@ -1,5 +1,3 @@
-#![cfg(feature = "alloc")]
-
 use petgraph_core::deprecated::data::{Element, ElementIterator};
 
 #[test]

@@ -1,4 +1,3 @@
-#![cfg(feature = "alloc")]
 //! This is the same test code from `algorithm::toposort`, but adapted for the visit trait.
 // TODO: unify both, traversal shouldn't be in core
 
