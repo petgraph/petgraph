@@ -7,6 +7,7 @@ mod edge;
 mod node;
 mod resize;
 mod retain;
+mod slab;
 
 extern crate alloc;
 
