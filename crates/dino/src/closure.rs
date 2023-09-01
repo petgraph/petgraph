@@ -111,6 +111,26 @@ impl EdgeClosures {
         }
     }
 
+    pub(crate) fn reserve(&mut self, additional: usize) {
+        self.source_to_targets.reserve(additional);
+        self.target_to_sources.reserve(additional);
+
+        self.source_to_edges.reserve(additional);
+        self.targets_to_edges.reserve(additional);
+
+        self.endpoints_to_edges.reserve(additional);
+    }
+
+    pub(crate) fn shrink_to_fit(&mut self) {
+        self.source_to_targets.shrink_to_fit();
+        self.target_to_sources.shrink_to_fit();
+
+        self.source_to_edges.shrink_to_fit();
+        self.targets_to_edges.shrink_to_fit();
+
+        self.endpoints_to_edges.shrink_to_fit();
+    }
+
     pub(crate) fn source_to_targets(&self) -> &HashMap<NodeId, HashSet<NodeId>> {
         &self.source_to_targets
     }
@@ -229,6 +249,16 @@ impl NodeClosures {
             nodes: HashMap::new(),
             externals: HashSet::new(),
         }
+    }
+
+    pub(crate) fn reserve(&mut self, additional: usize) {
+        self.nodes.reserve(additional);
+        self.externals.reserve(additional);
+    }
+
+    pub(crate) fn shrink_to_fit(&mut self) {
+        self.nodes.shrink_to_fit();
+        self.externals.shrink_to_fit();
     }
 
     pub(crate) fn get(&self, id: NodeId) -> Option<&NodeClosure> {

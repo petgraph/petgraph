@@ -14,8 +14,12 @@ pub trait ResizableGraphStorage: GraphStorage {
         self.reserve_exact_edges(additional_edges);
     }
 
-    fn reserve_exact_nodes(&mut self, additional: usize);
-    fn reserve_exact_edges(&mut self, additional: usize);
+    fn reserve_exact_nodes(&mut self, additional: usize) {
+        self.reserve_nodes(additional);
+    }
+    fn reserve_exact_edges(&mut self, additional: usize) {
+        self.reserve_edges(additional);
+    }
 
     fn shrink_to_fit(&mut self) {
         self.shrink_to_fit_nodes();

@@ -2,10 +2,11 @@
 #![no_std]
 
 mod closure;
-mod common;
 mod directed;
 mod edge;
 mod node;
+mod resize;
+mod retain;
 
 extern crate alloc;
 
@@ -17,7 +18,7 @@ use core::{
 pub use edge::EdgeId;
 use either::Either;
 use error_stack::{Context, Report, Result};
-use hashbrown::{HashMap, HashSet};
+use hashbrown::HashMap;
 pub use node::NodeId;
 use petgraph_core::{
     edge::{DetachedEdge, EdgeMut},
@@ -44,8 +45,15 @@ pub struct DinosaurStorage<N, E, D = Directed> {
 }
 
 impl<N, E, D> DinosaurStorage<N, E, D> {
-    fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self::with_capacity(None, None)
+    }
+}
+
+impl<N, E, D> Default for DinosaurStorage<N, E, D> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -111,8 +119,17 @@ impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D> {
             )
             .collect();
 
-        let last_node_id = nodes.keys().max().copied().unwrap_or(NodeId::new(0));
-        let last_edge_id = edges.keys().max().copied().unwrap_or(EdgeId::new(0));
+        let last_node_id = nodes
+            .keys()
+            .max()
+            .copied()
+            .unwrap_or_else(|| NodeId::new(0));
+
+        let last_edge_id = edges
+            .keys()
+            .max()
+            .copied()
+            .unwrap_or_else(|| EdgeId::new(0));
 
         let mut closures = Closures::new();
         closures.refresh(&nodes, &edges);

@@ -11,5 +11,6 @@ publish = false
 petgraph-core.workspace = true
 error-stack.workspace = true
 either = "1.9.0"
+slab = "0.4.9"
 
 hashbrown = {workspace = true, features = ['ahash'] }
