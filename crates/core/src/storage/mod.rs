@@ -18,14 +18,14 @@ use crate::{
 };
 
 pub trait GraphStorage: Sized {
+    type EdgeId: GraphId;
+    type EdgeWeight;
+
     type Error: Context;
 
     type NodeId: GraphId;
 
     type NodeWeight;
-
-    type EdgeId: GraphId;
-    type EdgeWeight;
 
     fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self;
 

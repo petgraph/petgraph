@@ -3,7 +3,7 @@ use petgraph_core::{
     id::{GraphId, ManagedGraphId},
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeId(usize);
 
 impl NodeId {

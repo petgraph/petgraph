@@ -2,14 +2,20 @@
 #![no_std]
 
 mod closure;
+mod common;
+mod directed;
 mod edge;
 mod node;
 
 extern crate alloc;
 
-use core::fmt::{Debug, Display};
+use core::{
+    fmt::{Debug, Display},
+    iter::empty,
+};
 
 pub use edge::EdgeId;
+use either::Either;
 use error_stack::{Context, Report, Result};
 use hashbrown::{HashMap, HashSet};
 pub use node::NodeId;
@@ -82,6 +88,47 @@ impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D> {
         }
     }
 
+    fn from_parts(
+        nodes: impl IntoIterator<Item = DetachedNode<Self::NodeId, Self::NodeWeight>>,
+        edges: impl IntoIterator<Item = DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>,
+    ) -> Result<Self, Self::Error> {
+        let nodes: HashMap<_, _> = nodes
+            .into_iter()
+            .map(|node: DetachedNode<Self::NodeId, Self::NodeWeight>| {
+                (node.id, Node::new(node.id, node.weight))
+            })
+            .collect();
+
+        let edges: HashMap<_, _> = edges
+            .into_iter()
+            .map(
+                |edge: DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>| {
+                    (
+                        edge.id,
+                        Edge::new(edge.id, edge.weight, edge.source, edge.target),
+                    )
+                },
+            )
+            .collect();
+
+        let last_node_id = nodes.keys().max().copied().unwrap_or(NodeId::new(0));
+        let last_edge_id = edges.keys().max().copied().unwrap_or(EdgeId::new(0));
+
+        let mut closures = Closures::new();
+        closures.refresh(&nodes, &edges);
+
+        Ok(Self {
+            nodes,
+            edges,
+            closures,
+
+            last_node_id,
+            last_edge_id,
+
+            _marker: core::marker::PhantomData,
+        })
+    }
+
     fn into_parts(
         self,
     ) -> (
@@ -101,6 +148,14 @@ impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D> {
         });
 
         (nodes, edges)
+    }
+
+    fn num_nodes(&self) -> usize {
+        self.nodes.len()
+    }
+
+    fn num_edges(&self) -> usize {
+        self.edges.len()
     }
 
     fn next_node_id(&self, _: <Self::NodeId as GraphId>::AttributeIndex) -> Self::NodeId {
@@ -185,6 +240,14 @@ impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D> {
         ))
     }
 
+    fn clear(&mut self) -> Result<(), Self::Error> {
+        self.nodes.clear();
+        self.edges.clear();
+        self.closures.clear();
+
+        Ok(())
+    }
+
     fn node(&self, id: &Self::NodeId) -> Option<petgraph_core::node::Node<Self>> {
         self.nodes
             .get(id)
@@ -197,6 +260,10 @@ impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D> {
             .map(|node| NodeMut::new(&node.id, &mut node.weight))
     }
 
+    fn contains_node(&self, id: &Self::NodeId) -> bool {
+        self.nodes.contains_key(id)
+    }
+
     fn edge(&self, id: &Self::EdgeId) -> Option<petgraph_core::edge::Edge<Self>> {
         self.edges.get(id).map(|edge| {
             petgraph_core::edge::Edge::new(self, &edge.id, &edge.source, &edge.target, &edge.weight)
@@ -207,6 +274,33 @@ impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D> {
         self.edges
             .get_mut(id)
             .map(|edge| EdgeMut::new(&edge.id, &edge.source, &edge.target, &mut edge.weight))
+    }
+
+    fn contains_edge(&self, id: &Self::EdgeId) -> bool {
+        self.edges.contains_key(id)
+    }
+
+    fn find_undirected_edges<'a: 'b, 'b>(
+        &'a self,
+        source: &'b Self::NodeId,
+        target: &'b Self::NodeId,
+    ) -> impl Iterator<Item = petgraph_core::edge::Edge<'a, Self>> + 'b {
+        let source_to_target = self
+            .closures
+            .edges
+            .endpoints_to_edges()
+            .get(&(*source, *target));
+        let target_to_source = self
+            .closures
+            .edges
+            .endpoints_to_edges()
+            .get(&(*target, *source));
+
+        source_to_target
+            .into_iter()
+            .flatten()
+            .chain(target_to_source.into_iter().flatten())
+            .filter_map(move |edge| self.edge(edge))
     }
 
     fn node_connections<'a: 'b, 'b>(
@@ -229,18 +323,88 @@ impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D> {
             closures, edges, ..
         } = self;
 
-        let available: HashSet<_> = closures
+        let Some(closure) = closures.nodes.get(*id) else {
+            return Either::Left(empty());
+        };
+
+        let available = closure.edges();
+
+        if available.is_empty() {
+            return Either::Left(empty());
+        }
+
+        Either::Right(
+            edges
+                .values_mut()
+                .filter(move |edge| available.contains(&edge.id))
+                .map(move |edge| {
+                    EdgeMut::new(&edge.id, &edge.source, &edge.target, &mut edge.weight)
+                }),
+        )
+    }
+
+    fn node_neighbours<'a: 'b, 'b>(
+        &'a self,
+        id: &'b Self::NodeId,
+    ) -> impl Iterator<Item = petgraph_core::node::Node<'a, Self>> + 'b {
+        self.closures
             .nodes
             .get(*id)
             .into_iter()
-            .flat_map(closure::NodeClosure::edges)
-            .copied()
-            .collect();
+            .flat_map(closure::NodeClosure::neighbours)
+            .filter_map(move |node| self.node(node))
+    }
 
-        edges
-            .values_mut()
-            .filter(move |edge| available.contains(&edge.id))
-            .map(move |edge| EdgeMut::new(&edge.id, &edge.source, &edge.target, &mut edge.weight))
+    fn node_neighbours_mut<'a: 'b, 'b>(
+        &'a mut self,
+        id: &'b Self::NodeId,
+    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b {
+        let Self {
+            closures, nodes, ..
+        } = self;
+
+        let Some(closure) = closures.nodes.get(*id) else {
+            return Either::Left(empty());
+        };
+
+        let available = closure.neighbours();
+
+        if available.is_empty() {
+            return Either::Left(empty());
+        }
+
+        Either::Right(
+            nodes
+                .values_mut()
+                .filter(move |node| available.contains(&node.id))
+                .map(move |node| NodeMut::new(&node.id, &mut node.weight)),
+        )
+    }
+
+    fn external_nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
+        self.closures
+            .nodes
+            .externals()
+            .iter()
+            .filter_map(move |node| self.node(&node))
+    }
+
+    fn external_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
+        let Self {
+            nodes, closures, ..
+        } = self;
+
+        let externals = closures.nodes.externals();
+
+        if externals.is_empty() {
+            return Either::Left(empty());
+        }
+
+        Either::Right(nodes.iter_mut().filter_map(move |(id, node)| {
+            let is_external = externals.contains(id);
+
+            is_external.then(|| NodeMut::new(id, &mut node.weight))
+        }))
     }
 
     fn nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
@@ -265,20 +429,5 @@ impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D> {
         self.edges
             .iter_mut()
             .map(move |(id, edge)| EdgeMut::new(id, &edge.source, &edge.target, &mut edge.weight))
-    }
-
-    fn external_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
-        let Self {
-            nodes, closures, ..
-        } = self;
-
-        nodes.iter_mut().filter_map(move |(id, node)| {
-            let is_external = closures
-                .nodes
-                .get(*id)
-                .map_or(false, |closure| closure.edges().is_empty());
-
-            is_external.then(|| NodeMut::new(id, &mut node.weight))
-        })
     }
 }

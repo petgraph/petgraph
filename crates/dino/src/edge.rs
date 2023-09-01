@@ -5,7 +5,7 @@ use petgraph_core::{
 
 use crate::{node::NodeId, DinosaurStorage};
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeId(usize);
 
 impl EdgeId {

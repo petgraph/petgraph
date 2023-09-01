@@ -14,7 +14,7 @@ pub trait DirectedGraphStorage: GraphStorage {
             .filter(move |edge| edge.target_id() == target)
     }
 
-    fn node_directed_connections<'a, 'b>(
+    fn node_directed_connections<'a: 'b, 'b>(
         &'a self,
         id: &'b Self::NodeId,
         direction: Direction,

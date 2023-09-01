@@ -1,10 +1,8 @@
-use alloc::vec::Vec;
-
 // The closure tables have quite a bit of allocations (due to the nested nature of the data
 // structure). Question is can we avoid them?
 use hashbrown::{HashMap, HashSet};
 
-use crate::{edge::Edge, node::Node, DinosaurStorage, EdgeId, NodeId};
+use crate::{edge::Edge, node::Node, EdgeId, NodeId};
 
 pub(crate) struct NodeClosure {
     outgoing_neighbours: HashSet<NodeId>,
@@ -12,10 +10,10 @@ pub(crate) struct NodeClosure {
 
     neighbours: HashSet<NodeId>,
 
-    outgoing_edges: Vec<EdgeId>,
-    incoming_edges: Vec<EdgeId>,
+    outgoing_edges: HashSet<EdgeId>,
+    incoming_edges: HashSet<EdgeId>,
 
-    edges: Vec<EdgeId>,
+    edges: HashSet<EdgeId>,
 }
 
 impl NodeClosure {
@@ -26,10 +24,10 @@ impl NodeClosure {
 
             neighbours: HashSet::new(),
 
-            outgoing_edges: Vec::new(),
-            incoming_edges: Vec::new(),
+            outgoing_edges: HashSet::new(),
+            incoming_edges: HashSet::new(),
 
-            edges: Vec::new(),
+            edges: HashSet::new(),
         }
     }
 
@@ -45,15 +43,15 @@ impl NodeClosure {
         &self.neighbours
     }
 
-    pub(crate) fn outgoing_edges(&self) -> &[EdgeId] {
+    pub(crate) fn outgoing_edges(&self) -> &HashSet<EdgeId> {
         &self.outgoing_edges
     }
 
-    pub(crate) fn incoming_edges(&self) -> &[EdgeId] {
+    pub(crate) fn incoming_edges(&self) -> &HashSet<EdgeId> {
         &self.incoming_edges
     }
 
-    pub(crate) fn edges(&self) -> &[EdgeId] {
+    pub(crate) fn edges(&self) -> &HashSet<EdgeId> {
         &self.edges
     }
 
@@ -96,6 +94,8 @@ pub(crate) struct EdgeClosures {
 
     source_to_edges: HashMap<NodeId, HashSet<EdgeId>>,
     targets_to_edges: HashMap<NodeId, HashSet<EdgeId>>,
+
+    endpoints_to_edges: HashMap<(NodeId, NodeId), HashSet<EdgeId>>,
 }
 
 impl EdgeClosures {
@@ -106,6 +106,8 @@ impl EdgeClosures {
 
             source_to_edges: HashMap::new(),
             targets_to_edges: HashMap::new(),
+
+            endpoints_to_edges: HashMap::new(),
         }
     }
 
@@ -123,6 +125,10 @@ impl EdgeClosures {
 
     pub(crate) fn targets_to_edges(&self) -> &HashMap<NodeId, HashSet<EdgeId>> {
         &self.targets_to_edges
+    }
+
+    pub(crate) fn endpoints_to_edges(&self) -> &HashMap<(NodeId, NodeId), HashSet<EdgeId>> {
+        &self.endpoints_to_edges
     }
 
     fn update<E>(&mut self, edge: &Edge<E>) {
@@ -143,6 +149,11 @@ impl EdgeClosures {
 
         self.targets_to_edges
             .entry(edge.target)
+            .or_insert_with(HashSet::new)
+            .insert(edge.id);
+
+        self.endpoints_to_edges
+            .entry((edge.source, edge.target))
             .or_insert_with(HashSet::new)
             .insert(edge.id);
     }
@@ -182,6 +193,10 @@ impl EdgeClosures {
         if let Some(edges) = self.targets_to_edges.get_mut(&edge.target) {
             edges.remove(&edge.id);
         }
+
+        if let Some(edges) = self.endpoints_to_edges.get_mut(&(edge.source, edge.target)) {
+            edges.remove(&edge.id);
+        }
     }
 
     fn clear(&mut self) {
@@ -190,6 +205,8 @@ impl EdgeClosures {
 
         self.source_to_edges.clear();
         self.targets_to_edges.clear();
+
+        self.endpoints_to_edges.clear();
     }
 
     fn refresh<E>(&mut self, edges: &HashMap<EdgeId, Edge<E>>) {
@@ -203,12 +220,14 @@ impl EdgeClosures {
 
 pub(crate) struct NodeClosures {
     nodes: HashMap<NodeId, NodeClosure>,
+    externals: HashSet<NodeId>,
 }
 
 impl NodeClosures {
     fn new() -> Self {
         Self {
             nodes: HashMap::new(),
+            externals: HashSet::new(),
         }
     }
 
@@ -216,16 +235,28 @@ impl NodeClosures {
         self.nodes.get(&id)
     }
 
+    pub(crate) fn externals(&self) -> &HashSet<NodeId> {
+        &self.externals
+    }
+
     fn get_or_insert(&mut self, id: NodeId) -> &mut NodeClosure {
         self.nodes.entry(id).or_insert_with(NodeClosure::new)
     }
 
     fn update(&mut self, id: NodeId, closure: &EdgeClosures) {
-        self.get_or_insert(id).refresh(id, closure);
+        let node = self.get_or_insert(id);
+        node.refresh(id, closure);
+
+        if node.neighbours().is_empty() {
+            self.externals.insert(id);
+        } else {
+            self.externals.remove(&id);
+        }
     }
 
     fn remove(&mut self, id: NodeId) {
         self.nodes.remove(&id);
+        self.externals.remove(&id);
     }
 
     fn clear(&mut self) {
@@ -244,6 +275,7 @@ impl NodeClosures {
         let existing_nodes: HashSet<NodeId> = nodes.keys().copied().collect();
 
         self.nodes.retain(|id, _| existing_nodes.contains(id));
+        self.externals.retain(|id| existing_nodes.contains(id));
     }
 }
 
