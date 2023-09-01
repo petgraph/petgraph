@@ -5,12 +5,15 @@ use core::{
     mem,
     num::{NonZeroU16, NonZeroUsize},
 };
+use std::hash::Hash;
 
 const MAXIMUM_INDEX: usize = usize::MAX << 16 >> 16;
 
-pub(crate) trait Key {
+pub(crate) trait Key:
+    Copy + Clone + PartialEq + Eq + PartialOrd + Ord + Hash + Debug
+{
     fn from_id(id: EntryId) -> Self;
-    fn as_id(&self) -> EntryId;
+    fn into_id(self) -> EntryId;
 }
 
 /// A `EntryId` is a single `usize`, encoding generation information in the top
@@ -76,6 +79,16 @@ impl EntryId {
     }
 }
 
+impl Key for EntryId {
+    fn from_id(id: EntryId) -> Self {
+        id
+    }
+
+    fn into_id(self) -> EntryId {
+        self
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Generation(NonZeroU16);
 
@@ -100,6 +113,7 @@ impl Generation {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Entry<V> {
     Occupied { value: V, generation: Generation },
     Vacant { generation: Generation },
@@ -137,7 +151,8 @@ impl<V> Entry<V> {
     }
 
     fn insert(&mut self, value: V) {
-        let generation = self.generation().next();
+        // we increment the generation on remove!
+        let generation = self.generation();
 
         *self = Self::Occupied { value, generation };
     }
@@ -164,9 +179,10 @@ impl<V> Entry<V> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct FreeIndex(usize);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Slab<K, V>
 where
     K: Key,
@@ -252,8 +268,8 @@ where
         K::from_id(EntryId::new(generation, index).expect("invalid entry id"))
     }
 
-    pub(crate) fn remove(&mut self, key: &K) -> Option<V> {
-        let id = key.as_id();
+    pub(crate) fn remove(&mut self, key: K) -> Option<V> {
+        let id = key.into_id();
 
         let generation = id.generation();
         let index = id.index();
@@ -269,8 +285,8 @@ where
         value
     }
 
-    pub(crate) fn get(&self, key: &K) -> Option<&V> {
-        let id = key.as_id();
+    pub(crate) fn get(&self, key: K) -> Option<&V> {
+        let id = key.into_id();
 
         let generation = id.generation();
         let index = id.index();
@@ -284,8 +300,8 @@ where
         entry.get()
     }
 
-    pub(crate) fn get_mut(&mut self, key: &K) -> Option<&mut V> {
-        let id = key.as_id();
+    pub(crate) fn get_mut(&mut self, key: K) -> Option<&mut V> {
+        let id = key.into_id();
 
         let generation = id.generation();
         let index = id.index();
@@ -342,9 +358,20 @@ where
             })
     }
 
-    pub(crate) fn drain(&mut self) -> impl Iterator<Item = V> + '_ {
-        self.entries.drain(..).filter_map(Entry::into_inner)
+    pub(crate) fn into_entries(self) -> impl Iterator<Item = (K, V)> {
+        self.entries
+            .into_iter()
+            .enumerate()
+            .filter_map(move |(index, entry)| {
+                let id = EntryId::new(entry.generation(), index)?;
+                let key = K::from_id(id);
+                let value = entry.into_inner()?;
+
+                Some((key, value))
+            })
     }
+
+    // TODO: drain
 
     pub(crate) fn len(&self) -> usize {
         self.entries.len() - self.free.len()
@@ -361,14 +388,132 @@ where
         let mut slab = Self::with_capacity(Some(iter.size_hint().0));
 
         for (key, value) in iter {
-            let id = key.as_id();
+            let id = key.into_id();
             let index = id.index();
             let generation = id.generation();
 
-            slab.grow_up_to(index);
+            slab.grow_up_to(index + 1);
             slab.insert_with_generation(value, generation);
         }
 
         slab
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::EntryId;
+    use crate::slab::Slab;
+
+    #[test]
+    fn size_of_entry_id() {
+        assert_eq!(
+            core::mem::size_of::<EntryId>(),
+            core::mem::size_of::<usize>()
+        );
+    }
+
+    #[test]
+    fn size_of_entry() {
+        assert_eq!(
+            core::mem::size_of::<crate::slab::Entry<u16>>(),
+            core::mem::size_of::<u16>() + core::mem::size_of::<u16>()
+        );
+    }
+
+    #[test]
+    fn insert() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+        assert_eq!(slab.get(a), Some(&42));
+
+        assert_eq!(slab.len(), 1);
+
+        let b = slab.insert(43);
+        assert_eq!(slab.get(b), Some(&43));
+
+        assert_eq!(slab.len(), 2);
+    }
+
+    #[test]
+    fn remove() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+        assert_eq!(slab.get(a), Some(&42));
+
+        assert_eq!(slab.len(), 1);
+
+        let b = slab.insert(43);
+        assert_eq!(slab.get(b), Some(&43));
+
+        assert_eq!(slab.len(), 2);
+
+        assert_eq!(slab.remove(a), Some(42));
+        assert_eq!(slab.get(a), None);
+
+        assert_eq!(slab.entries.len(), 2);
+        assert_eq!(slab.free.len(), 1);
+
+        assert_eq!(slab.free[0].0, 0);
+        assert!(!slab.entries[0].is_occupied());
+    }
+
+    #[test]
+    fn reuse() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+        assert_eq!(slab.get(a), Some(&42));
+
+        assert_eq!(slab.len(), 1);
+
+        let b = slab.insert(43);
+        assert_eq!(slab.get(b), Some(&43));
+
+        assert_eq!(slab.len(), 2);
+
+        assert_eq!(slab.remove(a), Some(42));
+
+        assert_eq!(slab.entries.len(), 2);
+        assert_eq!(slab.free.len(), 1);
+
+        let c = slab.insert(44);
+        assert_eq!(slab.get(c), Some(&44));
+
+        assert_eq!(slab.len(), 2);
+        assert_eq!(slab.entries.len(), 2);
+        assert_eq!(slab.free.len(), 0);
+
+        assert_eq!(slab.get(a), None);
+    }
+
+    #[test]
+    fn from_iter() {
+        let mut slab = Slab::<EntryId, u16>::new();
+        slab.insert(42);
+        let b = slab.insert(43);
+        slab.insert(44);
+
+        let mut d = slab.insert(45);
+        for _ in 0..16 {
+            slab.remove(d);
+            d = slab.insert(45);
+        }
+
+        let e = slab.insert(46);
+
+        slab.remove(b);
+        slab.remove(e);
+
+        let entries = slab
+            .entries()
+            .map(|(key, value)| (key, *value))
+            .collect::<Vec<_>>();
+
+        let copy = Slab::from_iter(entries);
+
+        assert_eq!(slab, copy);
     }
 }
