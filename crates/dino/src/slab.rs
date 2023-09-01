@@ -303,6 +303,52 @@ where
         self.entries.clear();
         self.free.clear();
     }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &V> {
+        self.entries.iter().filter_map(Entry::get)
+    }
+
+    pub(crate) fn iter_mut(&mut self) -> impl Iterator<Item = &mut V> {
+        self.entries.iter_mut().filter_map(Entry::get_mut)
+    }
+
+    pub(crate) fn into_iter(self) -> impl Iterator<Item = V> {
+        self.entries.into_iter().filter_map(Entry::into_inner)
+    }
+
+    pub(crate) fn entries(&self) -> impl Iterator<Item = (K, &V)> + '_ {
+        self.entries
+            .iter()
+            .enumerate()
+            .filter_map(move |(index, entry)| {
+                let id = EntryId::new(entry.generation(), index)?;
+                let key = K::from_id(id);
+                let value = entry.get()?;
+
+                Some((key, value))
+            })
+    }
+
+    pub(crate) fn entries_mut(&mut self) -> impl Iterator<Item = (K, &mut V)> + '_ {
+        self.entries
+            .iter_mut()
+            .enumerate()
+            .filter_map(move |(index, entry)| {
+                let id = EntryId::new(entry.generation(), index)?;
+                let key = K::from_id(id);
+                let value = entry.get_mut()?;
+
+                Some((key, value))
+            })
+    }
+
+    pub(crate) fn drain(&mut self) -> impl Iterator<Item = V> + '_ {
+        self.entries.drain(..).filter_map(Entry::into_inner)
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        self.entries.len() - self.free.len()
+    }
 }
 
 impl<K, V> FromIterator<(K, V)> for Slab<K, V>
