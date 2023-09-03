@@ -2,10 +2,10 @@
 use alloc::vec::Vec;
 use core::{
     fmt::{Debug, Formatter},
+    hash::Hash,
     mem,
     num::{NonZeroU16, NonZeroUsize},
 };
-use std::hash::Hash;
 
 const MAXIMUM_INDEX: usize = usize::MAX << 16 >> 16;
 
@@ -119,10 +119,10 @@ impl Key for EntryId {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Generation(NonZeroU16);
+pub(crate) struct Generation(NonZeroU16);
 
 impl Generation {
-    pub const fn first() -> Self {
+    pub(crate) const fn first() -> Self {
         Self(match NonZeroU16::new(1) {
             Some(n) => n,
             None => unreachable!(),
@@ -226,6 +226,7 @@ impl<K, V> Slab<K, V>
 where
     K: Key,
 {
+    #[cfg(test)]
     pub(crate) fn new() -> Self {
         Self::with_capacity(None)
     }
@@ -507,6 +508,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use alloc::{vec, vec::Vec};
+
     use super::EntryId;
     use crate::slab::{FreeIndex, Slab};
 

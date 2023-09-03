@@ -31,27 +31,27 @@ impl NodeClosure {
         }
     }
 
-    pub(crate) fn outgoing_neighbours(&self) -> &HashSet<NodeId> {
+    pub(crate) const fn outgoing_neighbours(&self) -> &HashSet<NodeId> {
         &self.outgoing_neighbours
     }
 
-    pub(crate) fn incoming_neighbours(&self) -> &HashSet<NodeId> {
+    pub(crate) const fn incoming_neighbours(&self) -> &HashSet<NodeId> {
         &self.incoming_neighbours
     }
 
-    pub(crate) fn neighbours(&self) -> &HashSet<NodeId> {
+    pub(crate) const fn neighbours(&self) -> &HashSet<NodeId> {
         &self.neighbours
     }
 
-    pub(crate) fn outgoing_edges(&self) -> &HashSet<EdgeId> {
+    pub(crate) const fn outgoing_edges(&self) -> &HashSet<EdgeId> {
         &self.outgoing_edges
     }
 
-    pub(crate) fn incoming_edges(&self) -> &HashSet<EdgeId> {
+    pub(crate) const fn incoming_edges(&self) -> &HashSet<EdgeId> {
         &self.incoming_edges
     }
 
-    pub(crate) fn edges(&self) -> &HashSet<EdgeId> {
+    pub(crate) const fn edges(&self) -> &HashSet<EdgeId> {
         &self.edges
     }
 
@@ -131,50 +131,50 @@ impl EdgeClosures {
         self.endpoints_to_edges.shrink_to_fit();
     }
 
-    pub(crate) fn source_to_targets(&self) -> &HashMap<NodeId, HashSet<NodeId>> {
+    pub(crate) const fn source_to_targets(&self) -> &HashMap<NodeId, HashSet<NodeId>> {
         &self.source_to_targets
     }
 
-    pub(crate) fn target_to_sources(&self) -> &HashMap<NodeId, HashSet<NodeId>> {
+    pub(crate) const fn target_to_sources(&self) -> &HashMap<NodeId, HashSet<NodeId>> {
         &self.target_to_sources
     }
 
-    pub(crate) fn source_to_edges(&self) -> &HashMap<NodeId, HashSet<EdgeId>> {
+    pub(crate) const fn source_to_edges(&self) -> &HashMap<NodeId, HashSet<EdgeId>> {
         &self.source_to_edges
     }
 
-    pub(crate) fn targets_to_edges(&self) -> &HashMap<NodeId, HashSet<EdgeId>> {
+    pub(crate) const fn targets_to_edges(&self) -> &HashMap<NodeId, HashSet<EdgeId>> {
         &self.targets_to_edges
     }
 
-    pub(crate) fn endpoints_to_edges(&self) -> &HashMap<(NodeId, NodeId), HashSet<EdgeId>> {
+    pub(crate) const fn endpoints_to_edges(&self) -> &HashMap<(NodeId, NodeId), HashSet<EdgeId>> {
         &self.endpoints_to_edges
     }
 
     fn update<E>(&mut self, edge: &Edge<E>) {
         self.source_to_targets
             .entry(edge.source)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(edge.target);
 
         self.target_to_sources
             .entry(edge.target)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(edge.source);
 
         self.source_to_edges
             .entry(edge.source)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(edge.id);
 
         self.targets_to_edges
             .entry(edge.target)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(edge.id);
 
         self.endpoints_to_edges
             .entry((edge.source, edge.target))
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(edge.id);
     }
 
@@ -265,7 +265,7 @@ impl NodeClosures {
         self.nodes.get(&id)
     }
 
-    pub(crate) fn externals(&self) -> &HashSet<NodeId> {
+    pub(crate) const fn externals(&self) -> &HashSet<NodeId> {
         &self.externals
     }
 

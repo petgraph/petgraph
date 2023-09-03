@@ -1,13 +1,13 @@
 #![feature(return_position_impl_trait_in_trait)]
-// #![no_std]
+#![no_std]
 
-mod closure;
+pub(crate) mod closure;
 mod directed;
 mod edge;
 mod node;
 mod resize;
 mod retain;
-mod slab;
+pub(crate) mod slab;
 
 extern crate alloc;
 
