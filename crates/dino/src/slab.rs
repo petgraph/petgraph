@@ -20,19 +20,25 @@ pub(crate) trait Key:
 /// 1/4 of the bits, and index information in the remaining bits. This table
 /// shows the breakdown for supported target platforms:
 ///
-/// | `target_pointer_width` | generation bits | index bits |
-/// |------------------------|-----------------|------------|
-/// | 16                     | 4               | 12         |
-/// | 32                     | 8               | 24         |
-/// | 64                     | 16              | 48         |
+/// | `target_pointer_width` | generation bits | index bits | unused bits |
+/// |------------------------|-----------------|------------|-------------|
+/// | 16                     | 4               | 12         | 0           |
+/// | 32                     | 8               | 24         | 0           |
+/// | 64                     | 16              | 32         | 16          |
 ///
 /// Each time a lot is allocated, its generation is incremented. When retrieving
 /// values using a `EntryId`, the generation is validated as a safe guard against
 /// returning a value. Because the generation isn't significantly wide, the
 /// generation can wrap and is not a perfect protection against stale data,
 /// although the likelihood of improper access is greatly reduced.
+///
+/// These values are used as indices into a roaring bitmap, which has a limit of [`u32::MAX`]
+/// entries. Therefore, even though the index bits are 48, the maximum bits available for the index
+/// is 32.
+///
+/// `EntryId` has the following layout: `<generation> <unused> <index>`
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct EntryId(NonZeroUsize);
+pub(crate) struct EntryId(NonZeroUsize);
 
 impl Debug for EntryId {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -46,9 +52,23 @@ impl Debug for EntryId {
 impl EntryId {
     #[allow(clippy::cast_possible_truncation)]
 
-    const GENERATION_MAX: u16 = (usize::MAX >> Self::INDEX_BITS) as u16;
-    const INDEX_BITS: u32 = usize::BITS / 4 * 3;
-    const INDEX_MASK: usize = usize::MAX << Self::INDEX_BITS >> Self::INDEX_BITS;
+    const GENERATION_MAX: u16 = (usize::MAX >> Self::UNCLAMPED_INDEX_BITS) as u16;
+    const GENERATION_OFFSET: u32 = Self::UNCLAMPED_INDEX_BITS;
+    const INDEX_BITS: u32 = if Self::UNCLAMPED_INDEX_BITS > 32 {
+        32
+    } else {
+        Self::UNCLAMPED_INDEX_BITS
+    };
+    /// # Explanation
+    ///
+    /// How does this magic work? Easy! (Let's assume 32-bit)
+    /// We first take the maximum value of a usize (`0xFFFF_FFFF`)
+    /// We then shift it right by 24 bits (`0x0000_00FF`)
+    /// We then shift it left by 24 bits (`0xFF00_0000`)
+    /// We now have the correct mask, but inverse.
+    /// We then invert it (`0x00FF_FFFF`)
+    const INDEX_MASK: usize = !(usize::MAX >> Self::INDEX_BITS << Self::INDEX_BITS);
+    const UNCLAMPED_INDEX_BITS: u32 = usize::BITS / 4 * 3;
 
     #[inline]
     #[cfg_attr(target_pointer_width = "64", allow(clippy::absurd_extreme_comparisons))]
@@ -57,7 +77,7 @@ impl EntryId {
 
         is_valid.then(|| {
             Self(
-                NonZeroUsize::new((generation.get() as usize) << Self::INDEX_BITS | index)
+                NonZeroUsize::new((generation.get() as usize) << Self::GENERATION_OFFSET | index)
                     .expect("generation is non-zero"),
             )
         })
@@ -72,9 +92,18 @@ impl EntryId {
     #[inline]
     #[must_use]
     #[allow(clippy::cast_possible_truncation)]
+    pub(crate) const fn index_u32(self) -> u32 {
+        // we know that the index will never be larger than 32 bits
+        self.index() as u32
+    }
+
+    #[inline]
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation)]
     fn generation(self) -> Generation {
         Generation(
-            NonZeroU16::new((self.0.get() >> Self::INDEX_BITS) as u16).expect("invalid generation"),
+            NonZeroU16::new((self.0.get() >> Self::GENERATION_OFFSET) as u16)
+                .expect("invalid generation"),
         )
     }
 }
@@ -223,15 +252,19 @@ where
         }
     }
 
-    pub(crate) fn insert(&mut self, value: V) -> K {
-        let index = if let Some(free_index) = self.free.pop() {
+    fn insert_index(&mut self) -> usize {
+        if let Some(free_index) = self.free.pop() {
             free_index.0
         } else {
             assert_ne!(self.entries.len(), MAXIMUM_INDEX, "slab is full");
 
             self.entries.push(Entry::new());
             self.entries.len() - 1
-        };
+        }
+    }
+
+    pub(crate) fn insert(&mut self, value: V) -> K {
+        let index = self.insert_index();
 
         let generation = self.entries[index].generation();
         self.entries[index].insert(value);
@@ -240,14 +273,7 @@ where
     }
 
     fn insert_with_generation(&mut self, value: V, generation: Generation) -> K {
-        let index = if let Some(free_index) = self.free.pop() {
-            free_index.0
-        } else {
-            assert_ne!(self.entries.len(), MAXIMUM_INDEX, "slab is full");
-
-            self.entries.push(Entry::new());
-            self.entries.len() - 1
-        };
+        let index = self.insert_index();
 
         self.entries[index] = Entry::Occupied { value, generation };
 
@@ -514,6 +540,37 @@ mod tests {
 
         let copy = Slab::from_iter(entries);
 
-        assert_eq!(slab, copy);
+        for (left, right) in copy.entries.iter().zip(slab.entries.iter()) {
+            assert_eq!(left.is_occupied(), right.is_occupied());
+
+            if left.is_occupied() {
+                assert_eq!(left.generation(), right.generation());
+                assert_eq!(left.get(), right.get());
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn layout() {
+        assert_eq!(EntryId::INDEX_MASK, 0x0000_0000_FFFF_FFFF);
+        assert_eq!(EntryId::INDEX_BITS, 32);
+        assert_eq!(EntryId::UNCLAMPED_INDEX_BITS, 48);
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "32")]
+    fn layout() {
+        assert_eq!(EntryId::INDEX_MASK, 0x00FF_FFFF);
+        assert_eq!(EntryId::INDEX_BITS, 24);
+        assert_eq!(EntryId::UNCLAMPED_INDEX_BITS, 24);
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "16")]
+    fn layout() {
+        assert_eq!(EntryId::INDEX_MASK, 0x0FFF);
+        assert_eq!(EntryId::INDEX_BITS, 12);
+        assert_eq!(EntryId::UNCLAMPED_INDEX_BITS, 12);
     }
 }
