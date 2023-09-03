@@ -1,0 +1,16 @@
+[package]
+name = "petgraph-adjacency-matrix"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+fixedbitset.workspace = true
+funty.workspace = true
+petgraph-core = { workspace = true, features = ["alloc", "fixedbitset"] }
+
+[dev-dependencies]
+
+[features]
+default = ["std"]
+std = ["petgraph-core/std"]

@@ -1,0 +1,52 @@
+---
+source: crates/graph/tests/test_serde.rs
+expression: "&graph"
+---
+{
+  "nodes": [
+    "A",
+    "B",
+    "C",
+    "E",
+    "F"
+  ],
+  "node_holes": [
+    3
+  ],
+  "edge_property": "directed",
+  "edges": [
+    [
+      0,
+      1,
+      7
+    ],
+    [
+      2,
+      0,
+      9
+    ],
+    null,
+    [
+      1,
+      2,
+      10
+    ],
+    null,
+    null,
+    [
+      1,
+      5,
+      15
+    ],
+    [
+      2,
+      5,
+      11
+    ],
+    [
+      4,
+      5,
+      6
+    ]
+  ]
+}

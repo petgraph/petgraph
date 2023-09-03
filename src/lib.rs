@@ -11,15 +11,15 @@
 //! # Example
 //!
 //! ```rust
-//! use petgraph::graph::{NodeIndex, UnGraph};
-//! use petgraph::algo::{dijkstra, min_spanning_tree};
-//! use petgraph::data::FromElements;
-//! use petgraph::dot::{Dot, Config};
+//! use petgraph::{
+//!     algorithms::{shortest_paths::dijkstra, tree::minimum_spanning_tree},
+//!     data::FromElements,
+//!     dot::{Dot, RenderOption},
+//!     graph::{NodeIndex, UnGraph},
+//! };
 //!
 //! // Create an undirected graph with `i32` nodes and edges with `()` associated data.
-//! let g = UnGraph::<i32, ()>::from_edges(&[
-//!     (1, 2), (2, 3), (3, 4),
-//!     (1, 4)]);
+//! let g = UnGraph::<i32, ()>::from_edges(&[(1, 2), (2, 3), (3, 4), (1, 4)]);
 //!
 //! // Find the shortest path from `1` to `4` using `1` as the cost for every edge.
 //! let node_map = dijkstra(&g, 1.into(), Some(4.into()), |_| 1);
@@ -27,11 +27,14 @@
 //!
 //! // Get the minimum spanning tree of the graph as a new graph, and check that
 //! // one edge was trimmed.
-//! let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&g));
+//! let mst = UnGraph::<_, _>::from_elements(minimum_spanning_tree(&g));
 //! assert_eq!(g.raw_edges().len() - 1, mst.raw_edges().len());
 //!
 //! // Output the tree to `graphviz` `DOT` format
-//! println!("{:?}", Dot::with_config(&mst, &[Config::EdgeNoLabel]));
+//! println!(
+//!     "{:?}",
+//!     Dot::with_config(&mst, &[RenderOption::NoEdgeLabels])
+//! );
 //! // graph {
 //! //     0 [label="\"0\""]
 //! //     1 [label="\"0\""]
@@ -45,17 +48,14 @@
 //!
 //! # Graph types
 //!
-//! * [`Graph`](./graph/struct.Graph.html) -
-//!   An adjacency list graph with arbitrary associated data.
-//! * [`StableGraph`](./stable_graph/struct.StableGraph.html) -
-//!   Similar to `Graph`, but it keeps indices stable across removals.
-//! * [`GraphMap`](./graphmap/struct.GraphMap.html) -
-//!   An adjacency list graph backed by a hash table. The node identifiers are the keys
-//!   into the table.
-//! * [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html) -
-//!   An adjacency matrix graph.
-//! * [`CSR`](./csr/struct.Csr.html) -
-//!   A sparse adjacency matrix graph with arbitrary associated data.
+//! * [`Graph`](./graph/struct.Graph.html) - An adjacency list graph with arbitrary associated data.
+//! * [`StableGraph`](./stable_graph/struct.StableGraph.html) - Similar to `Graph`, but it keeps
+//!   indices stable across removals.
+//! * [`GraphMap`](./graphmap/struct.GraphMap.html) - An adjacency list graph backed by a hash
+//!   table. The node identifiers are the keys into the table.
+//! * [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html) - An adjacency matrix graph.
+//! * [`CSR`](./csr/struct.Csr.html) - A sparse adjacency matrix graph with arbitrary associated
+//!   data.
 //!
 //! ### Generic parameters
 //!
@@ -91,216 +91,144 @@
 //! module documentation lists the available shorthand types.
 //!
 //! # Crate features
+// TODO: rework
 //!
 //! * **serde-1** -
 //!   Defaults off. Enables serialization for ``Graph, StableGraph, GraphMap`` using
 //!   [`serde 1.0`](https://crates.io/crates/serde). May require a more recent version
 //!   of Rust than petgraph alone.
-//! * **graphmap** -
-//!   Defaults on. Enables [`GraphMap`](./graphmap/struct.GraphMap.html).
-//! * **stable_graph** -
-//!   Defaults on. Enables [`StableGraph`](./stable_graph/struct.StableGraph.html).
-//! * **matrix_graph** -
-//!   Defaults on. Enables [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html).
-//!
-#![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
-
-extern crate fixedbitset;
-#[cfg(feature = "graphmap")]
-extern crate indexmap;
-
-#[cfg(feature = "serde-1")]
-extern crate serde;
-#[cfg(feature = "serde-1")]
-#[macro_use]
-extern crate serde_derive;
-
-#[cfg(all(feature = "serde-1", test))]
-extern crate itertools;
+//! * **graphmap** - Defaults on. Enables [`GraphMap`](./graphmap/struct.GraphMap.html).
+//! * **stable_graph** - Defaults on. Enables
+//!   [`StableGraph`](./stable_graph/struct.StableGraph.html).
+//! * **matrix_graph** - Defaults on. Enables
+//!   [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html).
 
 #[doc(no_inline)]
-pub use crate::graph::Graph;
+pub use petgraph_graph::Graph;
 
-pub use crate::Direction::{Incoming, Outgoing};
-
-#[macro_use]
-mod macros;
-mod scored;
-
-// these modules define trait-implementing macros
-#[macro_use]
-pub mod visit;
-#[macro_use]
-pub mod data;
-
-pub mod adj;
-pub mod algo;
-pub mod csr;
-pub mod dot;
-#[cfg(feature = "generate")]
-pub mod generate;
-mod graph_impl;
-#[cfg(feature = "graphmap")]
-pub mod graphmap;
-mod iter_format;
-mod iter_utils;
-#[cfg(feature = "matrix_graph")]
-pub mod matrix_graph;
-#[cfg(feature = "quickcheck")]
-mod quickcheck;
-#[cfg(feature = "serde-1")]
-mod serde_utils;
-mod traits_graph;
-pub mod unionfind;
-mod util;
-
-pub mod operator;
+#[deprecated(since = "0.7.0", note = "use explicit imports instead of the prelude")]
 pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
-    pub use crate::graph_impl::{
-        edge_index, node_index, DefaultIx, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference,
-        EdgeReferences, EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen, Graph,
-        GraphIndex, IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences,
-        NodeWeightsMut, UnGraph, WalkNeighbors,
+    pub use petgraph_core::index::{DefaultIx, IndexType};
+    pub use petgraph_graph::*;
+}
+
+#[cfg(feature = "stable-graph")]
+#[deprecated(
+    since = "0.7.0",
+    note = "use `graph::stable` instead of `stable_graph`"
+)]
+pub mod stable_graph {
+    pub use petgraph_core::index::{DefaultIx, IndexType};
+    pub use petgraph_graph::{
+        edge_index, node_index,
+        stable::{
+            EdgeIndices, EdgeReference, EdgeReferences, Edges, EdgesConnecting, Externals,
+            Neighbors, NodeIndices, NodeReferences, StableDiGraph, StableGraph, StableUnGraph,
+            WalkNeighbors,
+        },
+        GraphIndex, NodeIndex,
     };
 }
 
-#[cfg(feature = "stable_graph")]
-pub use crate::graph_impl::stable_graph;
+#[cfg(feature = "adjacency-matrix")]
+#[deprecated(since = "0.7.0", note = "use `adjacency_matrix` instead of `adj`")]
+pub mod adj {
+    #[deprecated(since = "0.7.0", note = "use `AdjacencyMatrix` instead")]
+    pub use petgraph_adjacency_matrix::AdjacencyList as List;
+    #[deprecated(since = "0.7.0", note = "use `UnweightedAdjacencyMatrix` instead")]
+    pub use petgraph_adjacency_matrix::UnweightedAdjacencyList as UnweightedList;
+    pub use petgraph_adjacency_matrix::*;
+    pub use petgraph_core::index::{DefaultIx, IndexType};
+}
 
-macro_rules! copyclone {
-    ($name:ident) => {
-        impl Clone for $name {
-            #[inline]
-            fn clone(&self) -> Self {
-                *self
-            }
-        }
+#[cfg(feature = "adjacency-matrix")]
+pub mod adjacency_matrix {
+    pub use petgraph_adjacency_matrix::*;
+}
+
+#[cfg(feature = "csr")]
+pub mod csr {
+    pub use petgraph_core::index::{DefaultIx, IndexType};
+    pub use petgraph_csr::*;
+}
+
+#[cfg(feature = "graphmap")]
+pub mod graphmap {
+    pub use petgraph_graphmap::*;
+}
+
+#[cfg(feature = "matrix-graph")]
+pub mod matrix_graph {
+    pub use petgraph_core::index::IndexType;
+    pub use petgraph_matrix_graph::*;
+}
+
+#[deprecated(since = "0.7.0", note = "use `algorithms` instead of `algo`")]
+pub mod algo {
+    pub use petgraph_algorithms::{
+        components::{condensation, connected_components, kosaraju_scc, tarjan_scc},
+        connectivity::has_path_connecting,
+        cycles::{greedy_feedback_arc_set, is_cyclic_directed, is_cyclic_undirected},
+        dag::toposort,
+        heuristics::{greedy_matching, maximum_matching, Matching},
+        isomorphism::{
+            is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph,
+            is_isomorphic_subgraph_matching,
+        },
+        shortest_paths::{
+            astar, bellman_ford, dijkstra, find_negative_cycle, floyd_warshall,
+            k_shortest_path_length,
+        },
+        simple_paths::all_simple_paths,
+        tree::minimum_spanning_tree,
     };
 }
 
-// Index into the NodeIndex and EdgeIndex arrays
-/// Edge direction.
-#[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
-#[repr(usize)]
-pub enum Direction {
-    /// An `Outgoing` edge is an outward edge *from* the current node.
-    Outgoing = 0,
-    /// An `Incoming` edge is an inbound edge *to* the current node.
-    Incoming = 1,
+pub mod algorithms {
+    pub use petgraph_algorithms::*;
 }
 
-copyclone!(Direction);
-
-impl Direction {
-    /// Return the opposite `Direction`.
-    #[inline]
-    pub fn opposite(self) -> Direction {
-        match self {
-            Outgoing => Incoming,
-            Incoming => Outgoing,
-        }
-    }
-
-    /// Return `0` for `Outgoing` and `1` for `Incoming`.
-    #[inline]
-    pub fn index(self) -> usize {
-        (self as usize) & 0x1
-    }
+#[deprecated(
+    since = "0.7.0",
+    note = "use `algorithms::operators` instead of `operator`"
+)]
+pub mod operator {
+    pub use petgraph_algorithms::operators::*;
 }
 
-#[doc(hidden)]
-pub use crate::Direction as EdgeDirection;
-
-/// Marker type for a directed graph.
-#[derive(Copy, Debug)]
-pub enum Directed {}
-copyclone!(Directed);
-
-/// Marker type for an undirected graph.
-#[derive(Copy, Debug)]
-pub enum Undirected {}
-copyclone!(Undirected);
-
-/// A graph's edge type determines whether it has directed edges or not.
-pub trait EdgeType {
-    fn is_directed() -> bool;
+#[cfg(feature = "unstable-generate")]
+#[deprecated(since = "0.7.0", note = "use `generator` instead of `generate`")]
+pub mod generate {
+    pub use petgraph_generate::*;
 }
 
-impl EdgeType for Directed {
-    #[inline]
-    fn is_directed() -> bool {
-        true
-    }
+#[cfg(feature = "unstable-generate")]
+pub mod generator {
+    pub use petgraph_generate::*;
 }
 
-impl EdgeType for Undirected {
-    #[inline]
-    fn is_directed() -> bool {
-        false
-    }
+#[deprecated(since = "0.7.0", note = "use `core` instead of direct imports")]
+pub use petgraph_core::{
+    data,
+    deprecated::IntoWeightedEdge,
+    edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
+    visit,
+};
+
+pub mod core {
+    pub use petgraph_core::*;
 }
 
-/// Convert an element like `(i, j)` or `(i, j, w)` into
-/// a triple of source, target, edge weight.
-///
-/// For `Graph::from_edges` and `GraphMap::from_edges`.
-pub trait IntoWeightedEdge<E> {
-    type NodeId;
-    fn into_weighted_edge(self) -> (Self::NodeId, Self::NodeId, E);
+#[cfg(feature = "io")]
+#[deprecated(since = "0.7.0", note = "use `io` instead of `dot`")]
+pub mod dot {
+    pub use petgraph_io::dot::*;
 }
 
-impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix)
-where
-    E: Default,
-{
-    type NodeId = Ix;
-
-    fn into_weighted_edge(self) -> (Ix, Ix, E) {
-        let (s, t) = self;
-        (s, t, E::default())
-    }
-}
-
-impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, E) {
-    type NodeId = Ix;
-    fn into_weighted_edge(self) -> (Ix, Ix, E) {
-        self
-    }
-}
-
-impl<'a, Ix, E> IntoWeightedEdge<E> for (Ix, Ix, &'a E)
-where
-    E: Clone,
-{
-    type NodeId = Ix;
-    fn into_weighted_edge(self) -> (Ix, Ix, E) {
-        let (a, b, c) = self;
-        (a, b, c.clone())
-    }
-}
-
-impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix)
-where
-    Ix: Copy,
-    E: Default,
-{
-    type NodeId = Ix;
-    fn into_weighted_edge(self) -> (Ix, Ix, E) {
-        let (s, t) = *self;
-        (s, t, E::default())
-    }
-}
-
-impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix, E)
-where
-    Ix: Copy,
-    E: Clone,
-{
-    type NodeId = Ix;
-    fn into_weighted_edge(self) -> (Ix, Ix, E) {
-        self.clone()
-    }
+#[cfg(feature = "io")]
+pub mod io {
+    pub use petgraph_io::*;
 }

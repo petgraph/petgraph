@@ -7,6 +7,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## Breaking Changes
+
+- Renamed feature `matrix_graph` to `matrix-graph`
+- Renamed feature `stable_graph` to `stable-graph`
+- `CSR` is now gated behind the `csr` feature
+- `AdjacencyList` is now gated behind the `adjacency-matrix` feature
+- `dot` format is now gated behind the `dot` feature
+- Replaced rendering of `dot` graphs with `dot` crate, instead of internal
+  implementation. Previous configuration options are no longer available.
+- `unstable` feature has been removed, `generate` has been renamed to `unstable-generators`
+
+[//]: # (TODO: comtemplate moving to GraphViz-Rust crate)
+[//]: # (TODO: should `AdjacencyList` and `AdjacencyMatrix` be in one crate, how to call that crate? `petgraph-adjacency-matrix`, I mean you could think of it as a sparse matrix, so it's fine?)
+
 ### Changed
 
 - Raised MSRV to 1.65 ([#560](https://github.com/petgraph/petgraph/pull/560))
