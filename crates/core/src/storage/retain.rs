@@ -1,6 +1,6 @@
 use crate::{edge::EdgeMut, node::NodeMut, storage::GraphStorage};
 
-pub trait RetainGraphStorage: GraphStorage {
+pub trait RetainableGraphStorage: GraphStorage {
     fn retain(
         &mut self,
         mut nodes: impl FnMut(NodeMut<'_, Self>) -> bool,

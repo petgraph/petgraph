@@ -9,7 +9,7 @@ pub use self::{
     adjacency_matrix::{DirectedGraphStorageAdjacencyMatrix, GraphStorageAdjacencyMatrix},
     directed::DirectedGraphStorage,
     resize::ResizableGraphStorage,
-    retain::RetainGraphStorage,
+    retain::RetainableGraphStorage,
 };
 use crate::{
     edge::{DetachedEdge, Edge, EdgeMut},

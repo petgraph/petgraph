@@ -1,8 +1,8 @@
-use crate::{edge::EdgeMut, graph::Graph, node::NodeMut, storage::RetainGraphStorage};
+use crate::{edge::EdgeMut, graph::Graph, node::NodeMut, storage::RetainableGraphStorage};
 
 impl<S> Graph<S>
 where
-    S: RetainGraphStorage,
+    S: RetainableGraphStorage,
 {
     pub fn retain(
         &mut self,
