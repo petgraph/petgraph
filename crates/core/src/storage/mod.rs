@@ -98,7 +98,7 @@ pub trait GraphStorage: Sized {
         &mut self,
         id: Self::NodeId,
         weight: Self::NodeWeight,
-    ) -> Result<Node<Self>, Self::Error>;
+    ) -> Result<NodeMut<Self>, Self::Error>;
 
     fn next_edge_id(&self, attribute: <Self::EdgeId as GraphId>::AttributeIndex) -> Self::EdgeId;
 
@@ -116,7 +116,7 @@ pub trait GraphStorage: Sized {
         target: Self::NodeId,
 
         weight: Self::EdgeWeight,
-    ) -> Result<Edge<Self>, Self::Error>;
+    ) -> Result<EdgeMut<Self>, Self::Error>;
 
     fn remove_node(
         &mut self,

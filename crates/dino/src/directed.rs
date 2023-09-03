@@ -63,7 +63,7 @@ impl<N, E> DirectedGraphStorage for DinosaurStorage<N, E, Directed> {
 
         Either::Right(
             edges
-                .values_mut()
+                .iter_mut()
                 .filter(move |edge| available.contains(&edge.id))
                 .map(|edge| EdgeMut::new(&edge.id, &edge.source, &edge.target, &mut edge.weight)),
         )
@@ -108,7 +108,7 @@ impl<N, E> DirectedGraphStorage for DinosaurStorage<N, E, Directed> {
 
         Either::Right(
             nodes
-                .values_mut()
+                .iter_mut()
                 .filter(move |node| available.contains(&node.id))
                 .map(|node| NodeMut::new(&node.id, &mut node.weight)),
         )

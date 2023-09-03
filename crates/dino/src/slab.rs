@@ -311,6 +311,19 @@ where
         value
     }
 
+    pub(crate) fn contains_key(&self, key: K) -> bool {
+        let id = key.into_id();
+
+        let generation = id.generation();
+        let index = id.index();
+
+        let Some(entry) = self.entries.get(index) else {
+            return false;
+        };
+
+        entry.generation() == generation
+    }
+
     pub(crate) fn get(&self, key: K) -> Option<&V> {
         let id = key.into_id();
 
@@ -341,6 +354,42 @@ where
         entry.get_mut()
     }
 
+    pub(crate) fn reserve(&mut self, additional: usize) {
+        self.entries.reserve(additional);
+    }
+
+    pub(crate) fn shrink_to_fit(&mut self) {
+        // this is a bit more complicated, then just calling `shrink_to_fit` on the entries
+        // we need, to remove all entries that are free from the back until we find an occupied
+        // entry.
+
+        while let Some(Entry::Vacant { .. }) = self.entries.last() {
+            let index = self.entries.len() - 1;
+
+            // the chance that we have a free index at the end is very high
+            if let Some(FreeIndex(free_index)) = self.free.last() {
+                if *free_index == index {
+                    self.free.pop();
+                } else {
+                    // we have a free index, but it's not at the end, find it and remove it
+                    let free_index = self
+                        .free
+                        .iter()
+                        .position(|FreeIndex(free_index)| *free_index == index);
+
+                    if let Some(free_index) = free_index {
+                        self.free.remove(free_index);
+                    }
+                }
+            }
+
+            self.entries.pop();
+        }
+
+        self.entries.shrink_to_fit();
+        self.free.shrink_to_fit();
+    }
+
     pub(crate) fn clear(&mut self) {
         self.entries.clear();
         self.free.clear();
@@ -356,6 +405,22 @@ where
 
     pub(crate) fn into_iter(self) -> impl Iterator<Item = V> {
         self.entries.into_iter().filter_map(Entry::into_inner)
+    }
+
+    pub(crate) fn keys(&self) -> impl Iterator<Item = K> + '_ {
+        self.entries
+            .iter()
+            .enumerate()
+            .filter_map(move |(index, entry)| {
+                if !entry.is_occupied() {
+                    return None;
+                }
+
+                let id = EntryId::new(entry.generation(), index)?;
+                let key = K::from_id(id);
+
+                Some(key)
+            })
     }
 
     pub(crate) fn entries(&self) -> impl Iterator<Item = (K, &V)> + '_ {
@@ -397,7 +462,21 @@ where
             })
     }
 
-    // TODO: drain
+    pub(crate) fn retain(&mut self, mut f: impl FnMut(K, &mut V) -> bool) {
+        for (index, entry) in self.entries.iter_mut().enumerate() {
+            let key =
+                K::from_id(EntryId::new(entry.generation(), index).expect("invalid entry id"));
+
+            if let Entry::Occupied { value, .. } = entry {
+                let keep = f(key, value);
+
+                if !keep {
+                    entry.remove();
+                    self.free.push(FreeIndex(index));
+                }
+            }
+        }
+    }
 
     pub(crate) fn len(&self) -> usize {
         self.entries.len() - self.free.len()
@@ -429,7 +508,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::EntryId;
-    use crate::slab::Slab;
+    use crate::slab::{FreeIndex, Slab};
 
     #[test]
     fn size_of_entry_id() {
@@ -548,6 +627,61 @@ mod tests {
                 assert_eq!(left.get(), right.get());
             }
         }
+    }
+
+    #[test]
+    fn shrink_to_fit() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+        let b = slab.insert(43);
+        let c = slab.insert(44);
+        let d = slab.insert(45);
+
+        slab.remove(d);
+        slab.remove(b);
+
+        assert_eq!(slab.free, vec![FreeIndex(3), FreeIndex(1)]);
+
+        assert_eq!(slab.entries.len(), 4);
+
+        slab.shrink_to_fit();
+
+        assert_eq!(slab.entries.len(), 3);
+        assert_eq!(slab.free, vec![FreeIndex(1)]);
+    }
+
+    #[test]
+    fn retain() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+        let b = slab.insert(43);
+        let c = slab.insert(44);
+        let d = slab.insert(45);
+
+        slab.retain(|_, value| *value % 2 == 0);
+
+        assert_eq!(slab.entries.len(), 4);
+        assert_eq!(slab.free.len(), 2);
+
+        assert_eq!(slab.get(a), Some(&42));
+        assert_eq!(slab.get(b), None);
+        assert_eq!(slab.get(c), Some(&44));
+        assert_eq!(slab.get(d), None);
+
+        // should be the same as:
+        let mut equivalent = Slab::<EntryId, u16>::new();
+
+        let a = equivalent.insert(42);
+        let b = equivalent.insert(43);
+        let c = equivalent.insert(44);
+        let d = equivalent.insert(45);
+
+        equivalent.remove(b);
+        equivalent.remove(d);
+
+        assert_eq!(slab, equivalent);
     }
 
     #[test]

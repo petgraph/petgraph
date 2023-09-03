@@ -2,10 +2,10 @@ use error_stack::Result;
 
 use crate::{
     attributes::Attributes,
-    edge::Edge,
+    edge::{Edge, EdgeMut},
     graph::Graph,
     id::{ArbitraryGraphId, GraphId},
-    node::Node,
+    node::{Node, NodeMut},
     storage::GraphStorage,
 };
 
@@ -16,7 +16,7 @@ where
     pub fn insert_node(
         &mut self,
         attributes: Attributes<<S::NodeId as GraphId>::AttributeIndex, S::NodeWeight>,
-    ) -> Result<Node<S>, S::Error> {
+    ) -> Result<NodeMut<S>, S::Error> {
         let Attributes { id, weight } = attributes;
 
         let id = self.storage.next_node_id(id);
@@ -33,7 +33,7 @@ where
         &mut self,
         id: S::NodeId,
         weight: S::NodeWeight,
-    ) -> Result<Node<S>, S::Error> {
+    ) -> Result<NodeMut<S>, S::Error> {
         // we cannot use `if let` here due to limitations of the borrow checker
         if self.storage.contains_node(&id) {
             let mut node = self
@@ -42,11 +42,6 @@ where
                 .expect("inconsistent storage, node must exist");
 
             *node.weight_mut() = weight;
-
-            let node = self
-                .storage
-                .node(&id)
-                .expect("inconsistent storage, node must exist");
 
             Ok(node)
         } else {
@@ -64,7 +59,7 @@ where
         attributes: Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>,
         source: S::NodeId,
         target: S::NodeId,
-    ) -> Result<Edge<S>, S::Error> {
+    ) -> Result<EdgeMut<S>, S::Error> {
         let Attributes { id, weight } = attributes;
 
         let id = self.storage.next_edge_id(id);
@@ -83,7 +78,7 @@ where
         source: S::NodeId,
         target: S::NodeId,
         weight: S::EdgeWeight,
-    ) -> Result<Edge<S>, S::Error> {
+    ) -> Result<EdgeMut<S>, S::Error> {
         if self.storage.contains_edge(&id) {
             let mut edge = self
                 .storage
@@ -91,14 +86,6 @@ where
                 .expect("inconsistent storage, edge must exist");
 
             *edge.weight_mut() = weight;
-
-            // TODO: do not use expect!
-            // TODO: I'd like to use `downgrade()` + `bind()` here, but the lifetime is still
-            // tracked for the mutable borrow that happened. Therefore not really possible :/
-            let edge = self
-                .storage
-                .edge(&id)
-                .expect("inconsistent storage, edge must exist");
 
             Ok(edge)
         } else {

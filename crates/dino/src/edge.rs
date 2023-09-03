@@ -3,18 +3,21 @@ use petgraph_core::{
     id::{GraphId, ManagedGraphId},
 };
 
-use crate::node::NodeId;
+use crate::{
+    node::NodeId,
+    slab::{EntryId, Key},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct EdgeId(usize);
+pub struct EdgeId(EntryId);
 
-impl EdgeId {
-    pub(crate) fn new(id: usize) -> Self {
+impl Key for EdgeId {
+    fn from_id(id: EntryId) -> Self {
         Self(id)
     }
 
-    pub(crate) fn increment(self) -> Self {
-        Self(self.0 + 1)
+    fn into_id(self) -> EntryId {
+        self.0
     }
 }
 

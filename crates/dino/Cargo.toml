@@ -13,5 +13,6 @@ error-stack.workspace = true
 either = "1.9.0"
 slab = "0.4.9"
 roaring = "0.10.2"
+tracing = { version = "0.1.37", optional = true }
 
 hashbrown = {workspace = true, features = ['ahash'] }

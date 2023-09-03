@@ -2,7 +2,7 @@
 // structure). Question is can we avoid them?
 use hashbrown::{HashMap, HashSet};
 
-use crate::{edge::Edge, node::Node, EdgeId, NodeId};
+use crate::{edge::Edge, node::Node, slab::Slab, EdgeId, NodeId};
 
 pub(crate) struct NodeClosure {
     outgoing_neighbours: HashSet<NodeId>,
@@ -229,10 +229,10 @@ impl EdgeClosures {
         self.endpoints_to_edges.clear();
     }
 
-    fn refresh<E>(&mut self, edges: &HashMap<EdgeId, Edge<E>>) {
+    fn refresh<E>(&mut self, edges: &Slab<EdgeId, Edge<E>>) {
         self.clear();
 
-        for edge in edges.values() {
+        for edge in edges.iter() {
             self.update(edge);
         }
     }
@@ -293,16 +293,16 @@ impl NodeClosures {
         self.nodes.clear();
     }
 
-    fn refresh<N>(&mut self, nodes: &HashMap<NodeId, Node<N>>, closure: &EdgeClosures) {
+    fn refresh<N>(&mut self, nodes: &Slab<NodeId, Node<N>>, closure: &EdgeClosures) {
         for id in nodes.keys() {
-            self.update(*id, closure);
+            self.update(id, closure);
         }
 
         self.gc(nodes);
     }
 
-    fn gc<N>(&mut self, nodes: &HashMap<NodeId, Node<N>>) {
-        let existing_nodes: HashSet<NodeId> = nodes.keys().copied().collect();
+    fn gc<N>(&mut self, nodes: &Slab<NodeId, Node<N>>) {
+        let existing_nodes: HashSet<NodeId> = nodes.keys().collect();
 
         self.nodes.retain(|id, _| existing_nodes.contains(id));
         self.externals.retain(|id| existing_nodes.contains(id));
@@ -346,8 +346,8 @@ impl Closures {
 
     pub(crate) fn refresh<N, E>(
         &mut self,
-        nodes: &HashMap<NodeId, Node<N>>,
-        edges: &HashMap<EdgeId, Edge<E>>,
+        nodes: &Slab<NodeId, Node<N>>,
+        edges: &Slab<EdgeId, Edge<E>>,
     ) {
         self.edges.refresh(edges);
         self.nodes.refresh(nodes, &self.edges);
