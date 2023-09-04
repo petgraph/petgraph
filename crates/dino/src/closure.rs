@@ -131,22 +131,6 @@ impl EdgeClosures {
         self.endpoints_to_edges.shrink_to_fit();
     }
 
-    pub(crate) const fn source_to_targets(&self) -> &HashMap<NodeId, HashSet<NodeId>> {
-        &self.source_to_targets
-    }
-
-    pub(crate) const fn target_to_sources(&self) -> &HashMap<NodeId, HashSet<NodeId>> {
-        &self.target_to_sources
-    }
-
-    pub(crate) const fn source_to_edges(&self) -> &HashMap<NodeId, HashSet<EdgeId>> {
-        &self.source_to_edges
-    }
-
-    pub(crate) const fn targets_to_edges(&self) -> &HashMap<NodeId, HashSet<EdgeId>> {
-        &self.targets_to_edges
-    }
-
     pub(crate) const fn endpoints_to_edges(&self) -> &HashMap<(NodeId, NodeId), HashSet<EdgeId>> {
         &self.endpoints_to_edges
     }
