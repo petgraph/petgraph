@@ -2,12 +2,13 @@ use core::marker::PhantomData;
 
 use fixedbitset::FixedBitSet;
 use petgraph_core::{
-    edge::Edge,
+    edge::{
+        marker::{Directed, GraphDirection, Undirected},
+        Edge,
+    },
     id::{LinearGraphId, LinearGraphIdMapper},
     storage::{DirectedGraphStorage, GraphStorage},
 };
-
-// TODO: variable storage backend
 
 // Thanks to: https://stackoverflow.com/a/27088560/9077988
 // and: https://math.stackexchange.com/a/2134297
@@ -23,59 +24,38 @@ const fn length_of_linear_index(n: usize) -> usize {
     (n * (n + 1)) / 2
 }
 
+// TODO: implement `GraphStorage`?
+
 pub struct Frozen;
 pub struct Mutable;
 
-pub struct AdjacencyMatrix<'a, S, T = Frozen>
+pub struct AdjacencyMatrix<'a, S, D = Directed, T = Frozen>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<Storage = S>,
+    D: GraphDirection,
 {
     storage: &'a S,
     mapper: <S::NodeId as LinearGraphId>::Mapper<'a>,
-
-    directed: bool,
 
     num_nodes: usize,
 
     matrix: FixedBitSet,
 
-    _marker: PhantomData<T>,
+    _marker: PhantomData<(D, T)>,
 }
 
-impl<'a, S, T> AdjacencyMatrix<'a, S, T>
+impl<'a, S, D, T> AdjacencyMatrix<'a, S, D, T>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<Storage = S>,
+    D: GraphDirection,
 {
     const fn index(&self, source: usize, target: usize) -> usize {
-        if self.directed {
+        if D::is_directed() {
             source * self.num_nodes + target
         } else {
             matrix_index_into_linear_index(source, target, self.num_nodes)
-        }
-    }
-}
-
-impl<'a, S> AdjacencyMatrix<'a, S, Mutable>
-where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<Storage = S>,
-{
-    pub fn new_undirected(storage: &'a S) -> Self {
-        let num_nodes = storage.num_nodes();
-        let mapper = S::NodeId::mapper(storage);
-
-        Self {
-            storage,
-            mapper,
-
-            directed: false,
-
-            num_nodes,
-            matrix: FixedBitSet::with_capacity(length_of_linear_index(num_nodes)),
-
-            _marker: PhantomData,
         }
     }
 
@@ -97,14 +77,19 @@ where
 
         self.set(source, target, true);
     }
+}
 
+impl<'a, S, D> AdjacencyMatrix<'a, S, D, Mutable>
+where
+    S: GraphStorage,
+    S::NodeId: LinearGraphId<Storage = S>,
+    D: GraphDirection,
+{
     #[must_use]
-    pub fn freeze(self) -> AdjacencyMatrix<'a, S, Frozen> {
+    pub fn freeze(self) -> AdjacencyMatrix<'a, S, D, Frozen> {
         AdjacencyMatrix {
             storage: self.storage,
             mapper: self.mapper,
-
-            directed: self.directed,
 
             num_nodes: self.num_nodes,
 
@@ -115,7 +100,28 @@ where
     }
 }
 
-impl<'a, S> AdjacencyMatrix<'a, S, Mutable>
+impl<'a, S> AdjacencyMatrix<'a, S, Undirected, Mutable>
+where
+    S: GraphStorage,
+    S::NodeId: LinearGraphId<Storage = S>,
+{
+    pub fn new_undirected(storage: &'a S) -> Self {
+        let num_nodes = storage.num_nodes();
+        let mapper = S::NodeId::mapper(storage);
+
+        Self {
+            storage,
+            mapper,
+
+            num_nodes,
+            matrix: FixedBitSet::with_capacity(length_of_linear_index(num_nodes)),
+
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, S> AdjacencyMatrix<'a, S, Directed, Mutable>
 where
     S: DirectedGraphStorage,
     S::NodeId: LinearGraphId<Storage = S>,
@@ -128,8 +134,6 @@ where
             storage,
             mapper,
 
-            directed: true,
-
             num_nodes,
 
             matrix: FixedBitSet::with_capacity(num_nodes * num_nodes),
@@ -139,10 +143,11 @@ where
     }
 }
 
-impl<'a, S> AdjacencyMatrix<'a, S, Frozen>
+impl<'a, S, D> AdjacencyMatrix<'a, S, D, Frozen>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<Storage = S>,
+    D: GraphDirection,
 {
     pub fn is_adjacent(&self, source: &S::NodeId, target: &S::NodeId) -> bool {
         let source = self.mapper.map(source);

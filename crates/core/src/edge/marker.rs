@@ -8,7 +8,17 @@ mod sealed {
     impl Sealed for super::Directed {}
 }
 
-pub trait EdgeDirection: sealed::Sealed {}
+pub trait GraphDirection: sealed::Sealed {
+    fn is_directed() -> bool;
+}
 
-impl EdgeDirection for Undirected {}
-impl EdgeDirection for Directed {}
+impl GraphDirection for Undirected {
+    fn is_directed() -> bool {
+        false
+    }
+}
+impl GraphDirection for Directed {
+    fn is_directed() -> bool {
+        true
+    }
+}

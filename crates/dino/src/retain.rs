@@ -1,5 +1,5 @@
 use petgraph_core::{
-    edge::{marker::EdgeDirection, EdgeMut},
+    edge::{marker::GraphDirection, EdgeMut},
     node::NodeMut,
     storage::RetainableGraphStorage,
 };
@@ -8,7 +8,7 @@ use crate::DinosaurStorage;
 
 impl<N, E, D> RetainableGraphStorage for DinosaurStorage<N, E, D>
 where
-    D: EdgeDirection,
+    D: GraphDirection,
 {
     fn retain(
         &mut self,

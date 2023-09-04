@@ -22,7 +22,7 @@ use error_stack::{Context, Report, Result};
 pub use node::NodeId;
 use petgraph_core::{
     edge::{
-        marker::{Directed, EdgeDirection},
+        marker::{Directed, GraphDirection},
         DetachedEdge, EdgeMut,
     },
     id::GraphId,
@@ -34,7 +34,7 @@ use crate::{closure::Closures, edge::Edge, node::Node, slab::Slab};
 
 pub struct DinosaurStorage<N, E, D = Directed>
 where
-    D: EdgeDirection,
+    D: GraphDirection,
 {
     nodes: Slab<NodeId, Node<N>>,
     edges: Slab<EdgeId, Edge<E>>,
@@ -46,7 +46,7 @@ where
 
 impl<N, E, D> DinosaurStorage<N, E, D>
 where
-    D: EdgeDirection,
+    D: GraphDirection,
 {
     #[must_use]
     pub fn new() -> Self {
@@ -56,7 +56,7 @@ where
 
 impl<N, E, D> Default for DinosaurStorage<N, E, D>
 where
-    D: EdgeDirection,
+    D: GraphDirection,
 {
     fn default() -> Self {
         Self::new()
@@ -83,7 +83,7 @@ impl Context for ExtinctionEvent {}
 // TODO: optional functions (+ directed) + linear
 impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D>
 where
-    D: EdgeDirection,
+    D: GraphDirection,
 {
     type EdgeId = EdgeId;
     type EdgeWeight = E;
