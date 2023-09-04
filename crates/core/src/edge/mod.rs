@@ -1,11 +1,9 @@
 mod direction;
+pub mod marker;
 
 pub use direction::Direction;
 
-use crate::{
-    node::{Node, NodeMut},
-    storage::GraphStorage,
-};
+use crate::{node::Node, storage::GraphStorage};
 
 type DetachedStorageEdge<S> = DetachedEdge<
     <S as GraphStorage>::EdgeId,

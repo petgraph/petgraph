@@ -19,10 +19,12 @@ use core::{
 pub use edge::EdgeId;
 use either::Either;
 use error_stack::{Context, Report, Result};
-use hashbrown::HashMap;
 pub use node::NodeId;
 use petgraph_core::{
-    edge::{DetachedEdge, EdgeMut},
+    edge::{
+        marker::{Directed, EdgeDirection},
+        DetachedEdge, EdgeMut,
+    },
     id::GraphId,
     node::{DetachedNode, NodeMut},
     storage::GraphStorage,
@@ -30,10 +32,10 @@ use petgraph_core::{
 
 use crate::{closure::Closures, edge::Edge, node::Node, slab::Slab};
 
-pub struct Undirected;
-pub struct Directed;
-
-pub struct DinosaurStorage<N, E, D = Directed> {
+pub struct DinosaurStorage<N, E, D = Directed>
+where
+    D: EdgeDirection,
+{
     nodes: Slab<NodeId, Node<N>>,
     edges: Slab<EdgeId, Edge<E>>,
 
@@ -42,14 +44,20 @@ pub struct DinosaurStorage<N, E, D = Directed> {
     _marker: core::marker::PhantomData<fn() -> *const D>,
 }
 
-impl<N, E, D> DinosaurStorage<N, E, D> {
+impl<N, E, D> DinosaurStorage<N, E, D>
+where
+    D: EdgeDirection,
+{
     #[must_use]
     pub fn new() -> Self {
         Self::with_capacity(None, None)
     }
 }
 
-impl<N, E, D> Default for DinosaurStorage<N, E, D> {
+impl<N, E, D> Default for DinosaurStorage<N, E, D>
+where
+    D: EdgeDirection,
+{
     fn default() -> Self {
         Self::new()
     }
@@ -73,7 +81,10 @@ impl Display for ExtinctionEvent {
 impl Context for ExtinctionEvent {}
 
 // TODO: optional functions (+ directed) + linear
-impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D> {
+impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D>
+where
+    D: EdgeDirection,
+{
     type EdgeId = EdgeId;
     type EdgeWeight = E;
     type Error = ExtinctionEvent;

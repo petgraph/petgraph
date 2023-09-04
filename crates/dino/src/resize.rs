@@ -1,8 +1,11 @@
-use petgraph_core::storage::ResizableGraphStorage;
+use petgraph_core::{edge::marker::EdgeDirection, storage::ResizableGraphStorage};
 
 use crate::DinosaurStorage;
 
-impl<N, E, D> ResizableGraphStorage for DinosaurStorage<N, E, D> {
+impl<N, E, D> ResizableGraphStorage for DinosaurStorage<N, E, D>
+where
+    D: EdgeDirection,
+{
     fn reserve_nodes(&mut self, additional: usize) {
         self.nodes.reserve(additional);
         self.closures.nodes.reserve(additional);
