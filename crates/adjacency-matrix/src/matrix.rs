@@ -1,8 +1,11 @@
 use core::marker::PhantomData;
 
 use fixedbitset::FixedBitSet;
-
-use crate::{edge::Edge, id::LinearGraphId, storage::GraphStorageAdjacencyMatrix};
+use petgraph_core::{
+    edge::Edge,
+    id::{LinearGraphId, LinearGraphIdMapper},
+    storage::{DirectedGraphStorage, GraphStorage},
+};
 
 // TODO: variable storage backend
 
@@ -23,8 +26,14 @@ const fn length_of_linear_index(n: usize) -> usize {
 pub struct Frozen;
 pub struct Mutable;
 
-pub struct AdjacencyMatrix<'a, S, T = Frozen> {
+pub struct AdjacencyMatrix<'a, S, T = Frozen>
+where
+    S: GraphStorage,
+    S::NodeId: LinearGraphId<Storage = S>,
+{
     storage: &'a S,
+    mapper: <S::NodeId as LinearGraphId>::Mapper<'a>,
+
     directed: bool,
 
     num_nodes: usize,
@@ -34,7 +43,11 @@ pub struct AdjacencyMatrix<'a, S, T = Frozen> {
     _marker: PhantomData<T>,
 }
 
-impl<'a, S, T> AdjacencyMatrix<'a, S, T> {
+impl<'a, S, T> AdjacencyMatrix<'a, S, T>
+where
+    S: GraphStorage,
+    S::NodeId: LinearGraphId<Storage = S>,
+{
     const fn index(&self, source: usize, target: usize) -> usize {
         if self.directed {
             source * self.num_nodes + target
@@ -46,29 +59,17 @@ impl<'a, S, T> AdjacencyMatrix<'a, S, T> {
 
 impl<'a, S> AdjacencyMatrix<'a, S, Mutable>
 where
-    S: GraphStorageAdjacencyMatrix,
-    S::NodeId: LinearGraphId,
+    S: GraphStorage,
+    S::NodeId: LinearGraphId<Storage = S>,
 {
-    pub fn new_directed(storage: &'a S) -> Self {
-        let num_nodes = storage.num_nodes();
-
-        Self {
-            storage,
-            directed: true,
-
-            num_nodes,
-
-            matrix: FixedBitSet::with_capacity(num_nodes * num_nodes),
-
-            _marker: PhantomData,
-        }
-    }
-
     pub fn new_undirected(storage: &'a S) -> Self {
         let num_nodes = storage.num_nodes();
+        let mapper = S::NodeId::mapper(storage);
 
         Self {
             storage,
+            mapper,
+
             directed: false,
 
             num_nodes,
@@ -82,9 +83,6 @@ where
         self.matrix.set(self.index(source, target), value);
     }
 
-    // TODO: we only need the upper triangle of the matrix, so we can save some space by only saving
-    // that.
-    // To be able to do that we need to know though with which graph we're working with!
     pub fn mark(&mut self, edge: &Edge<'_, S>) {
         let Some(source) = edge.source() else {
             return;
@@ -94,8 +92,8 @@ where
             return;
         };
 
-        let source = self.storage.linearize_node_id(source.id());
-        let target = self.storage.linearize_node_id(target.id());
+        let source = self.mapper.map(source.id());
+        let target = self.mapper.map(target.id());
 
         self.set(source, target, true);
     }
@@ -104,6 +102,8 @@ where
     pub fn freeze(self) -> AdjacencyMatrix<'a, S, Frozen> {
         AdjacencyMatrix {
             storage: self.storage,
+            mapper: self.mapper,
+
             directed: self.directed,
 
             num_nodes: self.num_nodes,
@@ -115,14 +115,38 @@ where
     }
 }
 
+impl<'a, S> AdjacencyMatrix<'a, S, Mutable>
+where
+    S: DirectedGraphStorage,
+    S::NodeId: LinearGraphId<Storage = S>,
+{
+    pub fn new_directed(storage: &'a S) -> Self {
+        let num_nodes = storage.num_nodes();
+        let mapper = S::NodeId::mapper(storage);
+
+        Self {
+            storage,
+            mapper,
+
+            directed: true,
+
+            num_nodes,
+
+            matrix: FixedBitSet::with_capacity(num_nodes * num_nodes),
+
+            _marker: PhantomData,
+        }
+    }
+}
+
 impl<'a, S> AdjacencyMatrix<'a, S, Frozen>
 where
-    S: GraphStorageAdjacencyMatrix,
-    S::NodeId: LinearGraphId,
+    S: GraphStorage,
+    S::NodeId: LinearGraphId<Storage = S>,
 {
     pub fn is_adjacent(&self, source: &S::NodeId, target: &S::NodeId) -> bool {
-        let source = self.storage.linearize_node_id(source);
-        let target = self.storage.linearize_node_id(target);
+        let source = self.mapper.map(source);
+        let target = self.mapper.map(target);
 
         let index = self.index(source, target);
         self.matrix[index]

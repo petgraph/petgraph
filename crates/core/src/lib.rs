@@ -4,7 +4,6 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-pub mod adjacency_matrix;
 pub mod attributes;
 #[deprecated(since = "0.1.0")]
 pub mod deprecated;

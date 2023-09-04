@@ -1,4 +1,3 @@
-mod adjacency_matrix;
 mod directed;
 mod resize;
 mod retain;
@@ -6,10 +5,7 @@ mod retain;
 use error_stack::{Context, Result};
 
 pub use self::{
-    adjacency_matrix::{DirectedGraphStorageAdjacencyMatrix, GraphStorageAdjacencyMatrix},
-    directed::DirectedGraphStorage,
-    resize::ResizableGraphStorage,
-    retain::RetainableGraphStorage,
+    directed::DirectedGraphStorage, resize::ResizableGraphStorage, retain::RetainableGraphStorage,
 };
 use crate::{
     edge::{DetachedEdge, Edge, EdgeMut},
