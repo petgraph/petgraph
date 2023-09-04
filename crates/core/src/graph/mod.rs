@@ -18,7 +18,7 @@ pub struct Graph<S> {
 impl<S> Default for Graph<S>
 where
     S: GraphStorage,
- {
+{
     fn default() -> Self {
         Self::new()
     }
@@ -28,10 +28,20 @@ impl<S> Graph<S>
 where
     S: GraphStorage,
 {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             storage: S::with_capacity(None, None),
         }
+    }
+
+    #[must_use]
+    pub const fn new_in(storage: S) -> Self {
+        Self { storage }
+    }
+
+    pub const fn storage(&self) -> &S {
+        &self.storage
     }
 
     pub fn from_parts(
@@ -57,7 +67,8 @@ where
         Graph::from_parts(nodes, edges)
     }
 
-    #[must_use] pub fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self {
+    #[must_use]
+    pub fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self {
         Self {
             storage: S::with_capacity(node_capacity, edge_capacity),
         }

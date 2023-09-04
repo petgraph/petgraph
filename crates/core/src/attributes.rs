@@ -15,13 +15,43 @@ impl<W> Attributes<Never, W> {
     }
 }
 
-impl<I, W> Attributes<I, W>
+impl<W> Attributes<Never, W> {
+    pub fn with_id<I>(self, id: impl Into<I>) -> Attributes<I, W>
+    where
+        I: ArbitraryGraphId,
+    {
+        Attributes {
+            id: id.into(),
+            weight: self.weight,
+        }
+    }
+}
+
+impl<I, W> From<(I, W)> for Attributes<I, W>
 where
     I: ArbitraryGraphId,
 {
-    pub fn new(id: impl Into<I>, weight: W) -> Self {
+    fn from(value: (I, W)) -> Self {
         Self {
-            id: id.into(),
+            id: value.0,
+            weight: value.1,
+        }
+    }
+}
+
+impl<W> From<(W,)> for Attributes<Never, W> {
+    fn from((weight,): (W,)) -> Self {
+        Self {
+            id: Never(()),
+            weight,
+        }
+    }
+}
+
+impl<W> From<W> for Attributes<Never, W> {
+    fn from(weight: W) -> Self {
+        Self {
+            id: Never(()),
             weight,
         }
     }

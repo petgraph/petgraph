@@ -15,9 +15,9 @@ where
 {
     pub fn insert_node(
         &mut self,
-        attributes: Attributes<<S::NodeId as GraphId>::AttributeIndex, S::NodeWeight>,
+        attributes: impl Into<Attributes<<S::NodeId as GraphId>::AttributeIndex, S::NodeWeight>>,
     ) -> Result<NodeMut<S>, S::Error> {
-        let Attributes { id, weight } = attributes;
+        let Attributes { id, weight } = attributes.into();
 
         let id = self.storage.next_node_id(id);
         self.storage.insert_node(id, weight)
@@ -56,11 +56,11 @@ where
 {
     pub fn insert_edge(
         &mut self,
-        attributes: Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>,
+        attributes: impl Into<Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>>,
         source: S::NodeId,
         target: S::NodeId,
     ) -> Result<EdgeMut<S>, S::Error> {
-        let Attributes { id, weight } = attributes;
+        let Attributes { id, weight } = attributes.into();
 
         let id = self.storage.next_edge_id(id);
         self.storage.insert_edge(id, source, target, weight)

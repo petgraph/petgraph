@@ -25,12 +25,15 @@ use petgraph_core::{
         marker::{Directed, GraphDirection},
         DetachedEdge, EdgeMut,
     },
+    graph::Graph,
     id::GraphId,
     node::{DetachedNode, NodeMut},
     storage::GraphStorage,
 };
 
 use crate::{closure::Closures, edge::Edge, node::Node, slab::Slab};
+
+pub type DinoGraph<N, E, D> = Graph<DinosaurStorage<N, E, D>>;
 
 pub struct DinosaurStorage<N, E, D = Directed>
 where

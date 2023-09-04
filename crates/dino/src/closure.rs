@@ -342,3 +342,125 @@ impl Closures {
         self.edges.clear();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use core::iter::once;
+
+    use hashbrown::HashSet;
+    use petgraph_core::{attributes::Attributes, edge::marker::Directed};
+
+    use crate::DinoGraph;
+
+    #[test]
+    fn single_node() {
+        let mut graph = DinoGraph::<u8, u8, Directed>::new();
+
+        let node = graph.insert_node(Attributes::new(1)).unwrap();
+        let id = *node.id();
+
+        let closures = &graph.storage().closures;
+
+        assert_eq!(closures.nodes.nodes.len(), 1);
+        assert_eq!(closures.nodes.externals, once(id).collect());
+    }
+
+    #[test]
+    fn multiple_nodes() {
+        let mut graph = DinoGraph::<u8, u8, Directed>::new();
+
+        let a = graph.insert_node(Attributes::new(1)).unwrap();
+        let a = *a.id();
+
+        let b = graph.insert_node(Attributes::new(2)).unwrap();
+        let b = *b.id();
+
+        let closures = &graph.storage().closures;
+
+        assert_eq!(closures.nodes.nodes.len(), 2);
+        assert_eq!(closures.nodes.externals, [a, b].into_iter().collect());
+    }
+
+    #[test]
+    fn connection() {
+        let mut graph = DinoGraph::<u8, u8, Directed>::new();
+
+        let a = graph.insert_node(1u8).unwrap();
+        let a = *a.id();
+
+        let b = graph.insert_node(1u8).unwrap();
+        let b = *b.id();
+
+        let edge = graph.insert_edge(1u8, a, b).unwrap();
+        let edge = *edge.id();
+
+        let closures = &graph.storage().closures;
+
+        assert_eq!(closures.nodes.nodes.len(), 2);
+        assert!(closures.nodes.externals.is_empty());
+
+        assert_eq!(
+            closures.nodes.nodes[&a].outgoing_neighbours,
+            once(b).collect()
+        );
+        assert_eq!(closures.nodes.nodes[&a].incoming_neighbours, HashSet::new());
+        assert_eq!(closures.nodes.nodes[&a].neighbours, once(b).collect());
+
+        assert_eq!(closures.nodes.nodes[&b].outgoing_neighbours, HashSet::new());
+        assert_eq!(
+            closures.nodes.nodes[&b].incoming_neighbours,
+            once(a).collect()
+        );
+        assert_eq!(closures.nodes.nodes[&b].neighbours, once(a).collect());
+
+        assert_eq!(
+            closures.nodes.nodes[&a].outgoing_edges,
+            once(edge).collect()
+        );
+        assert_eq!(closures.nodes.nodes[&a].incoming_edges, HashSet::new());
+        assert_eq!(closures.nodes.nodes[&a].edges, once(edge).collect());
+
+        assert_eq!(closures.nodes.nodes[&b].outgoing_edges, HashSet::new());
+        assert_eq!(
+            closures.nodes.nodes[&b].incoming_edges,
+            once(edge).collect()
+        );
+        assert_eq!(closures.nodes.nodes[&b].edges, once(edge).collect());
+
+        assert_eq!(closures.edges.source_to_targets[&a], once(b).collect());
+        assert_eq!(closures.edges.target_to_sources[&b], once(a).collect());
+
+        assert_eq!(closures.edges.source_to_edges[&a], once(edge).collect());
+        assert_eq!(closures.edges.targets_to_edges[&b], once(edge).collect());
+
+        assert_eq!(
+            closures.edges.endpoints_to_edges[&(a, b)],
+            once(edge).collect()
+        );
+    }
+
+    #[test]
+    fn self_loop() {
+        todo!()
+    }
+
+    #[test]
+    fn multiple_connections() {
+        todo!()
+    }
+
+    #[test]
+    fn multi_graph() {
+        todo!()
+    }
+
+    #[test]
+    fn remove_node() {
+        todo!()
+    }
+
+    #[test]
+    fn remove_edge() {
+        todo!()
+    }
+}
