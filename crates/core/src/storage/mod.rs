@@ -1,11 +1,15 @@
 mod directed;
+mod linear;
 mod resize;
 mod retain;
 
 use error_stack::{Context, Result};
 
 pub use self::{
-    directed::DirectedGraphStorage, resize::ResizableGraphStorage, retain::RetainableGraphStorage,
+    directed::DirectedGraphStorage,
+    linear::{LinearGraphStorage, LinearIndexLookup},
+    resize::ResizableGraphStorage,
+    retain::RetainableGraphStorage,
 };
 use crate::{
     edge::{DetachedEdge, Edge, EdgeMut},

@@ -3,9 +3,13 @@ use alloc::vec::Vec;
 use core::{
     fmt::{Debug, Formatter},
     hash::Hash,
+    marker::PhantomData,
     mem,
     num::{NonZeroU16, NonZeroUsize},
 };
+
+use hashbrown::HashMap;
+use petgraph_core::{id::LinearGraphId, storage::LinearIndexLookup};
 
 const MAXIMUM_INDEX: usize = usize::MAX << 16 >> 16;
 
@@ -137,7 +141,7 @@ impl Generation {
         }
     }
 
-    pub const fn get(self) -> u16 {
+    const fn get(self) -> u16 {
         self.0.get()
     }
 }
@@ -503,6 +507,46 @@ where
         }
 
         slab
+    }
+}
+
+pub(crate) struct SlabLinearIndexLookup<'a, K>
+where
+    K: Key,
+{
+    lookup: HashMap<K, usize>,
+
+    // we only have the lifetime here to ensure that the slab is not modified while we are mapping,
+    // as that will invalidate indices.
+    _lifetime: PhantomData<&'a ()>,
+}
+
+impl<'a, K> SlabLinearIndexLookup<'a, K>
+where
+    K: Key,
+{
+    pub(crate) fn new<V>(slab: &'a Slab<K, V>) -> Self {
+        let map = slab
+            .keys()
+            .enumerate()
+            .map(|(index, key)| (key, index))
+            .collect();
+
+        Self {
+            lookup: map,
+            _lifetime: PhantomData,
+        }
+    }
+}
+
+impl<K> LinearIndexLookup for SlabLinearIndexLookup<'_, K>
+where
+    K: Key + LinearGraphId,
+{
+    type GraphId = K;
+
+    fn get(&self, id: &Self::GraphId) -> Option<usize> {
+        self.lookup.get(id).copied()
     }
 }
 

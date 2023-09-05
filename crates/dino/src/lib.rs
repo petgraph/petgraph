@@ -4,6 +4,7 @@
 pub(crate) mod closure;
 mod directed;
 mod edge;
+mod linear;
 mod node;
 mod resize;
 mod retain;

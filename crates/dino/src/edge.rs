@@ -1,11 +1,11 @@
 use petgraph_core::{
     attributes::Never,
-    id::{GraphId, ManagedGraphId},
+    id::{GraphId, LinearGraphId, ManagedGraphId},
 };
 
 use crate::{
     node::NodeId,
-    slab::{EntryId, Key},
+    slab::{EntryId, Key, SlabLinearIndexLookup},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -25,6 +25,8 @@ impl GraphId for EdgeId {
     type AttributeIndex = Never;
 }
 
+impl LinearGraphId for EdgeId {}
+
 impl ManagedGraphId for EdgeId {}
 
 pub(crate) struct Edge<T> {
@@ -36,7 +38,7 @@ pub(crate) struct Edge<T> {
 }
 
 impl<T> Edge<T> {
-    pub(crate) fn new(id: EdgeId, weight: T, source: NodeId, target: NodeId) -> Self {
+    pub(crate) const fn new(id: EdgeId, weight: T, source: NodeId, target: NodeId) -> Self {
         Self {
             id,
             weight,

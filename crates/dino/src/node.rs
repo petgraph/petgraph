@@ -1,6 +1,6 @@
 use petgraph_core::{
     attributes::Never,
-    id::{GraphId, ManagedGraphId},
+    id::{GraphId, LinearGraphId, ManagedGraphId},
 };
 
 use crate::slab::{EntryId, Key};
@@ -22,15 +22,17 @@ impl GraphId for NodeId {
     type AttributeIndex = Never;
 }
 
+impl LinearGraphId for NodeId {}
+
 impl ManagedGraphId for NodeId {}
 
-pub struct Node<T> {
+pub(crate) struct Node<T> {
     pub(crate) id: NodeId,
     pub(crate) weight: T,
 }
 
 impl<T> Node<T> {
-    pub fn new(id: NodeId, weight: T) -> Self {
+    pub(crate) const fn new(id: NodeId, weight: T) -> Self {
         Self { id, weight }
     }
 }
