@@ -12,6 +12,7 @@ pub(crate) mod slab;
 
 extern crate alloc;
 
+use alloc::vec;
 use core::{
     fmt::{Debug, Display},
     iter::empty,
@@ -249,6 +250,12 @@ where
         &mut self,
         id: &Self::NodeId,
     ) -> Option<DetachedNode<Self::NodeId, Self::NodeWeight>> {
+        if let Some(node) = self.closures.nodes.get(*id) {
+            for edge in node.edges() {
+                self.edges.remove(*edge);
+            }
+        }
+
         let node = self.nodes.remove(*id)?;
         self.closures.remove_node(*id);
 
