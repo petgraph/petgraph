@@ -89,7 +89,6 @@ impl Display for ExtinctionEvent {
 
 impl Context for ExtinctionEvent {}
 
-// TODO: optional functions (+ directed) + linear
 impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D>
 where
     D: GraphDirection,

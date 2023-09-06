@@ -1,4 +1,3 @@
-use alloc::{vec, vec::Vec};
 use core::iter::once;
 
 use hashbrown::HashSet;
@@ -9,7 +8,7 @@ use petgraph_core::{
     storage::GraphStorage,
 };
 
-use crate::{edge::Edge, DinoGraph, DinosaurStorage, EdgeId, NodeId};
+use crate::{DinoGraph, DinosaurStorage, EdgeId, NodeId};
 
 #[test]
 fn empty() {

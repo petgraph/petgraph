@@ -177,9 +177,12 @@ impl<V> Entry<V> {
             return None;
         }
 
-        mem::replace(self, Self::Vacant {
-            generation: self.generation().next(),
-        })
+        mem::replace(
+            self,
+            Self::Vacant {
+                generation: self.generation().next(),
+            },
+        )
         .into_inner()
     }
 
@@ -223,7 +226,7 @@ where
     entries: Vec<Entry<V>>,
     free: Vec<FreeIndex>,
 
-    _marker: core::marker::PhantomData<K>,
+    _marker: PhantomData<K>,
 }
 
 impl<K, V> Slab<K, V>
@@ -239,7 +242,7 @@ where
         Self {
             entries: Vec::with_capacity(capacity.unwrap_or(0)),
             free: Vec::new(),
-            _marker: core::marker::PhantomData,
+            _marker: PhantomData,
         }
     }
 

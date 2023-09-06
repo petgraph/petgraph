@@ -160,6 +160,8 @@ pub trait GraphStorage: Sized {
         from_source.chain(from_target)
     }
 
+    // TODO: do we want to provide a `find_undirected_edges_mut`?
+
     fn node_connections<'a: 'b, 'b>(
         &'a self,
         id: &'b Self::NodeId,
