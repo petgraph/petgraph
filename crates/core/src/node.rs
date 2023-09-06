@@ -1,11 +1,11 @@
-use error_stack::Result;
+use core::fmt::{Debug, Formatter};
 
 use crate::{
     edge::{Direction, Edge},
-    graph::Graph,
     storage::{DirectedGraphStorage, GraphStorage},
 };
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Node<'a, S>
 where
     S: GraphStorage,
@@ -15,6 +15,20 @@ where
     id: &'a S::NodeId,
 
     weight: &'a S::NodeWeight,
+}
+
+impl<S> Debug for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Debug,
+    S::NodeWeight: Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Node")
+            .field("id", &self.id)
+            .field("weight", &self.weight)
+            .finish()
+    }
 }
 
 impl<'a, S> Node<'a, S>
@@ -75,12 +89,12 @@ where
     S::NodeId: Clone,
     S::NodeWeight: Clone,
 {
-    #[must_use]
-    pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+    pub fn detach(self) -> DetachedNode<S::NodeId, S::NodeWeight> {
         DetachedNode::new(self.id.clone(), self.weight.clone())
     }
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeMut<'a, S>
 where
     S: GraphStorage,
@@ -133,6 +147,7 @@ where
 
 // TODO: methods to get the neighbour, outgoing and incoming connections, etc.
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DetachedNode<N, W> {
     pub id: N,
 

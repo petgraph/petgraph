@@ -1,5 +1,5 @@
 use petgraph_core::{
-    attributes::Never,
+    attributes::NoValue,
     id::{GraphId, LinearGraphId, ManagedGraphId},
 };
 
@@ -19,13 +19,14 @@ impl Key for NodeId {
 }
 
 impl GraphId for NodeId {
-    type AttributeIndex = Never;
+    type AttributeIndex = NoValue;
 }
 
 impl LinearGraphId for NodeId {}
 
 impl ManagedGraphId for NodeId {}
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Node<T> {
     pub(crate) id: NodeId,
     pub(crate) weight: T,

@@ -11,6 +11,7 @@ use crate::{
     storage::GraphStorage,
 };
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Graph<S> {
     storage: S,
 }
@@ -42,6 +43,10 @@ where
 
     pub const fn storage(&self) -> &S {
         &self.storage
+    }
+
+    pub fn into_storage(self) -> S {
+        self.storage
     }
 
     pub fn from_parts(
@@ -98,6 +103,10 @@ where
         self.storage.node_mut(id)
     }
 
+    pub fn contains_node(&self, id: &S::NodeId) -> bool {
+        self.storage.contains_node(id)
+    }
+
     pub fn remove_node(
         &mut self,
         id: &S::NodeId,
@@ -111,6 +120,10 @@ where
 
     pub fn edge_mut(&mut self, id: &S::EdgeId) -> Option<EdgeMut<S>> {
         self.storage.edge_mut(id)
+    }
+
+    pub fn contains_edge(&self, id: &S::EdgeId) -> bool {
+        self.storage.contains_edge(id)
     }
 
     pub fn remove_edge(

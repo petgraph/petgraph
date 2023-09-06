@@ -1,6 +1,8 @@
 mod direction;
 pub mod marker;
 
+use core::fmt::{Debug, Formatter};
+
 pub use direction::Direction;
 
 use crate::{node::Node, storage::GraphStorage};
@@ -11,6 +13,7 @@ type DetachedStorageEdge<S> = DetachedEdge<
     <S as GraphStorage>::EdgeWeight,
 >;
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Edge<'a, S>
 where
     S: GraphStorage,
@@ -26,6 +29,23 @@ where
     pub weight: &'a S::EdgeWeight,
 }
 
+impl<S> Debug for Edge<'_, S>
+where
+    S: GraphStorage,
+    S::EdgeId: Debug,
+    S::NodeId: Debug,
+    S::EdgeWeight: Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Edge")
+            .field("id", &self.id)
+            .field("source_id", &self.source_id)
+            .field("target_id", &self.target_id)
+            .field("weight", &self.weight)
+            .finish()
+    }
+}
+
 impl<'a, S> Edge<'a, S>
 where
     S: GraphStorage,
@@ -34,11 +54,10 @@ where
         storage: &'a S,
 
         id: &'a S::EdgeId,
+        weight: &'a S::EdgeWeight,
 
         source_id: &'a S::NodeId,
         target_id: &'a S::NodeId,
-
-        weight: &'a S::EdgeWeight,
     ) -> Self {
         Self {
             storage,
@@ -94,58 +113,14 @@ where
     pub fn detach(self) -> DetachedStorageEdge<S> {
         DetachedEdge::new(
             self.id.clone(),
+            self.weight.clone(),
             self.source_id.clone(),
             self.target_id.clone(),
-            self.weight.clone(),
         )
     }
 }
 
-pub struct UnboundEdge<'a, S>
-where
-    S: GraphStorage,
-{
-    id: &'a S::EdgeId,
-
-    source_id: &'a S::NodeId,
-    target_id: &'a S::NodeId,
-
-    weight: &'a S::EdgeWeight,
-}
-
-impl<'a, S> UnboundEdge<'a, S>
-where
-    S: GraphStorage,
-{
-    fn new(
-        id: &'a S::EdgeId,
-
-        source_id: &'a S::NodeId,
-        target_id: &'a S::NodeId,
-
-        weight: &'a S::EdgeWeight,
-    ) -> Self {
-        Self {
-            id,
-
-            source_id,
-            target_id,
-
-            weight,
-        }
-    }
-
-    pub fn bind(self, storage: &'a S) -> Edge<'a, S> {
-        Edge::new(
-            storage,
-            self.id,
-            self.source_id,
-            self.target_id,
-            self.weight,
-        )
-    }
-}
-
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeMut<'a, S>
 where
     S: GraphStorage,
@@ -165,11 +140,10 @@ where
 {
     pub fn new(
         id: &'a S::EdgeId,
+        weight: &'a mut S::EdgeWeight,
 
         source_id: &'a S::NodeId,
         target_id: &'a S::NodeId,
-
-        weight: &'a mut S::EdgeWeight,
     ) -> Self {
         Self {
             id,
@@ -179,11 +153,6 @@ where
 
             weight,
         }
-    }
-
-    #[must_use]
-    pub fn downgrade(self) -> UnboundEdge<'a, S> {
-        UnboundEdge::new(self.id, self.source_id, self.target_id, &*self.weight)
     }
 
     #[must_use]
@@ -222,13 +191,14 @@ where
     pub fn detach(self) -> DetachedStorageEdge<S> {
         DetachedEdge::new(
             self.id.clone(),
+            self.weight.clone(),
             self.source_id.clone(),
             self.target_id.clone(),
-            self.weight.clone(),
         )
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DetachedEdge<E, N, W> {
     pub id: E,
 
@@ -239,7 +209,7 @@ pub struct DetachedEdge<E, N, W> {
 }
 
 impl<E, N, W> DetachedEdge<E, N, W> {
-    pub const fn new(id: E, source: N, target: N, weight: W) -> Self {
+    pub const fn new(id: E, weight: W, source: N, target: N) -> Self {
         Self {
             id,
             source,

@@ -61,7 +61,8 @@ pub trait GraphStorage: Sized {
         let mut result: Result<(), Self::Error> = Ok(());
 
         for edge in edges {
-            if let Err(error) = graph.insert_edge(edge.id, edge.source, edge.target, edge.weight) {
+            if let Err(error) = graph.insert_edge(edge.id, edge.weight, &edge.source, &edge.target)
+            {
                 match &mut result {
                     Err(errors) => errors.extend_one(error),
                     result => *result = Err(error),
@@ -111,11 +112,10 @@ pub trait GraphStorage: Sized {
     fn insert_edge(
         &mut self,
         id: Self::EdgeId,
-
-        source: Self::NodeId,
-        target: Self::NodeId,
-
         weight: Self::EdgeWeight,
+
+        source: &Self::NodeId,
+        target: &Self::NodeId,
     ) -> Result<EdgeMut<Self>, Self::Error>;
 
     fn remove_node(

@@ -65,7 +65,7 @@ impl<N, E> DirectedGraphStorage for DinosaurStorage<N, E, Directed> {
             edges
                 .iter_mut()
                 .filter(move |edge| available.contains(&edge.id))
-                .map(|edge| EdgeMut::new(&edge.id, &edge.source, &edge.target, &mut edge.weight)),
+                .map(|edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target)),
         )
     }
 

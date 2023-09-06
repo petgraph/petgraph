@@ -9,10 +9,11 @@ mod node;
 mod resize;
 mod retain;
 pub(crate) mod slab;
+#[cfg(test)]
+mod tests;
 
 extern crate alloc;
 
-use alloc::vec;
 use core::{
     fmt::{Debug, Display},
     iter::empty,
@@ -24,7 +25,7 @@ use error_stack::{Context, Report, Result};
 pub use node::NodeId;
 use petgraph_core::{
     edge::{
-        marker::{Directed, GraphDirection},
+        marker::{Directed, GraphDirection, Undirected},
         DetachedEdge, EdgeMut,
     },
     graph::Graph,
@@ -36,7 +37,10 @@ use petgraph_core::{
 use crate::{closure::Closures, edge::Edge, node::Node, slab::Slab};
 
 pub type DinoGraph<N, E, D> = Graph<DinosaurStorage<N, E, D>>;
+pub type DiDinoGraph<N, E> = DinoGraph<N, E, Directed>;
+pub type UnDinoGraph<N, E> = DinoGraph<N, E, Undirected>;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DinosaurStorage<N, E, D = Directed>
 where
     D: GraphDirection,
@@ -211,14 +215,15 @@ where
     fn insert_edge(
         &mut self,
         id: Self::EdgeId,
-        source: Self::NodeId,
-        target: Self::NodeId,
         weight: Self::EdgeWeight,
+
+        source: &Self::NodeId,
+        target: &Self::NodeId,
     ) -> Result<EdgeMut<Self>, Self::Error> {
         let expected = id;
         let id = self
             .edges
-            .insert(Edge::new(expected, weight, source, target));
+            .insert(Edge::new(expected, weight, *source, *target));
 
         // TODO: we might want to make this `debug_assert_eq` or a warning.
         assert_eq!(
@@ -240,9 +245,9 @@ where
 
         Ok(EdgeMut::new(
             &edge.id,
+            &mut edge.weight,
             &edge.source,
             &edge.target,
-            &mut edge.weight,
         ))
     }
 
@@ -271,9 +276,9 @@ where
 
         Some(DetachedEdge::new(
             edge.id,
+            edge.weight,
             edge.source,
             edge.target,
-            edge.weight,
         ))
     }
 
@@ -303,14 +308,14 @@ where
 
     fn edge(&self, id: &Self::EdgeId) -> Option<petgraph_core::edge::Edge<Self>> {
         self.edges.get(*id).map(|edge| {
-            petgraph_core::edge::Edge::new(self, &edge.id, &edge.source, &edge.target, &edge.weight)
+            petgraph_core::edge::Edge::new(self, &edge.id, &edge.weight, &edge.source, &edge.target)
         })
     }
 
     fn edge_mut(&mut self, id: &Self::EdgeId) -> Option<EdgeMut<Self>> {
         self.edges
             .get_mut(*id)
-            .map(|edge| EdgeMut::new(&edge.id, &edge.source, &edge.target, &mut edge.weight))
+            .map(|edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
     }
 
     fn contains_edge(&self, id: &Self::EdgeId) -> bool {
@@ -375,7 +380,7 @@ where
                 .iter_mut()
                 .filter(move |edge| available.contains(&edge.id))
                 .map(move |edge| {
-                    EdgeMut::new(&edge.id, &edge.source, &edge.target, &mut edge.weight)
+                    EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target)
                 }),
         )
     }
@@ -458,13 +463,13 @@ where
 
     fn edges(&self) -> impl Iterator<Item = petgraph_core::edge::Edge<Self>> {
         self.edges.iter().map(move |edge| {
-            petgraph_core::edge::Edge::new(self, &edge.id, &edge.source, &edge.target, &edge.weight)
+            petgraph_core::edge::Edge::new(self, &edge.id, &edge.weight, &edge.source, &edge.target)
         })
     }
 
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<Self>> {
         self.edges
             .iter_mut()
-            .map(move |edge| EdgeMut::new(&edge.id, &edge.source, &edge.target, &mut edge.weight))
+            .map(move |edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
     }
 }

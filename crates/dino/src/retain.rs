@@ -22,7 +22,7 @@ where
         });
 
         self.edges.retain(|_, value| {
-            let edge = EdgeMut::new(&value.id, &value.source, &value.target, &mut value.weight);
+            let edge = EdgeMut::new(&value.id, &mut value.weight, &value.source, &value.target);
 
             edges(edge)
         });
@@ -42,7 +42,7 @@ where
 
     fn retain_edges(&mut self, mut f: impl FnMut(EdgeMut<'_, Self>) -> bool) {
         self.edges.retain(|_, value| {
-            let edge = EdgeMut::new(&value.id, &value.source, &value.target, &mut value.weight);
+            let edge = EdgeMut::new(&value.id, &mut value.weight, &value.source, &value.target);
 
             f(edge)
         });

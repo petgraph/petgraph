@@ -57,13 +57,13 @@ where
     pub fn insert_edge(
         &mut self,
         attributes: impl Into<Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: &S::NodeId,
+        target: &S::NodeId,
     ) -> Result<EdgeMut<S>, S::Error> {
         let Attributes { id, weight } = attributes.into();
 
         let id = self.storage.next_edge_id(id);
-        self.storage.insert_edge(id, source, target, weight)
+        self.storage.insert_edge(id, weight, source, target)
     }
 }
 
@@ -75,9 +75,10 @@ where
     pub fn upsert_edge(
         &mut self,
         id: S::EdgeId,
-        source: S::NodeId,
-        target: S::NodeId,
         weight: S::EdgeWeight,
+
+        source: &S::NodeId,
+        target: &S::NodeId,
     ) -> Result<EdgeMut<S>, S::Error> {
         if self.storage.contains_edge(&id) {
             let mut edge = self
@@ -89,7 +90,7 @@ where
 
             Ok(edge)
         } else {
-            self.storage.insert_edge(id, source, target, weight)
+            self.storage.insert_edge(id, weight, source, target)
         }
     }
 }

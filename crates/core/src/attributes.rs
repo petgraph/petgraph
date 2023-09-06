@@ -1,21 +1,29 @@
 use crate::id::ArbitraryGraphId;
 
-pub struct Never(());
+pub struct NoValue(());
+
+impl NoValue {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self(())
+    }
+}
+
 pub struct Attributes<I, W> {
     pub(crate) id: I,
     pub(crate) weight: W,
 }
 
-impl<W> Attributes<Never, W> {
+impl<W> Attributes<NoValue, W> {
     pub const fn new(weight: W) -> Self {
         Self {
-            id: Never(()),
+            id: NoValue(()),
             weight,
         }
     }
 }
 
-impl<W> Attributes<Never, W> {
+impl<W> Attributes<NoValue, W> {
     pub fn with_id<I>(self, id: impl Into<I>) -> Attributes<I, W>
     where
         I: ArbitraryGraphId,
@@ -39,19 +47,19 @@ where
     }
 }
 
-impl<W> From<(W,)> for Attributes<Never, W> {
+impl<W> From<(W,)> for Attributes<NoValue, W> {
     fn from((weight,): (W,)) -> Self {
         Self {
-            id: Never(()),
+            id: NoValue(()),
             weight,
         }
     }
 }
 
-impl<W> From<W> for Attributes<Never, W> {
+impl<W> From<W> for Attributes<NoValue, W> {
     fn from(weight: W) -> Self {
         Self {
-            id: Never(()),
+            id: NoValue(()),
             weight,
         }
     }
