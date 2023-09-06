@@ -1,10 +1,10 @@
 use error_stack::Result;
 
 use crate::{
-    attributes::Attributes,
+    attributes::{Attributes, NoValue},
     edge::{Edge, EdgeMut},
     graph::Graph,
-    id::{ArbitraryGraphId, GraphId},
+    id::{ArbitraryGraphId, GraphId, ManagedGraphId},
     node::{Node, NodeMut},
     storage::GraphStorage,
 };
@@ -20,6 +20,22 @@ where
         let Attributes { id, weight } = attributes.into();
 
         let id = self.storage.next_node_id(id);
+        self.storage.insert_node(id, weight)
+    }
+}
+
+impl<S> Graph<S>
+where
+    S: GraphStorage,
+    S::NodeId: ManagedGraphId,
+{
+    pub fn insert_node_with(
+        &mut self,
+        weight: impl FnOnce(&S::NodeId) -> S::NodeWeight,
+    ) -> Result<NodeMut<S>, S::Error> {
+        let id = self.storage.next_node_id(NoValue::new());
+        let weight = weight(&id);
+
         self.storage.insert_node(id, weight)
     }
 }
@@ -63,6 +79,24 @@ where
         let Attributes { id, weight } = attributes.into();
 
         let id = self.storage.next_edge_id(id);
+        self.storage.insert_edge(id, weight, source, target)
+    }
+}
+
+impl<S> Graph<S>
+where
+    S: GraphStorage,
+    S::EdgeId: ManagedGraphId,
+{
+    pub fn insert_edge_with(
+        &mut self,
+        weight: impl FnOnce(&S::EdgeId) -> S::EdgeWeight,
+        source: &S::NodeId,
+        target: &S::NodeId,
+    ) -> Result<EdgeMut<S>, S::Error> {
+        let id = self.storage.next_edge_id(NoValue::new());
+        let weight = weight(&id);
+
         self.storage.insert_edge(id, weight, source, target)
     }
 }
