@@ -1,8 +1,104 @@
+use core::iter::Peekable;
+
 // The closure tables have quite a bit of allocations (due to the nested nature of the data
 // structure). Question is can we avoid them?
 use hashbrown::{HashMap, HashSet};
+use roaring::RoaringBitmap;
 
 use crate::{edge::Edge, node::Node, slab::Slab, EdgeId, NodeId};
+
+struct UnionIterator<'a> {
+    left: roaring::bitmap::Iter<'a>,
+    left_next: Option<u32>,
+
+    right: roaring::bitmap::Iter<'a>,
+    right_next: Option<u32>,
+
+    last: Option<u32>,
+}
+
+impl<'a> UnionIterator<'a> {
+    fn new(left: &'a RoaringBitmap, right: &'a RoaringBitmap) -> Self {
+        let left = left.iter();
+        let right = right.iter();
+
+        Self {
+            left,
+            left_next: None,
+            right,
+            right_next: None,
+            last: None,
+        }
+    }
+}
+
+impl Iterator for UnionIterator<'_> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // a and b originate from `RoaringBitmap::iter`, which is guaranteed to be sorted, this
+        // simplifies the logic needed here a lot.
+        // We only want to return all unique elements from both iterators.
+
+        // The algorithm is pretty simple.
+        // 1) get the last element from each iterator, but only if it is larger than the last
+        //    element we returned
+        // 2) return the smaller of the two elements
+        // 3) set the last element to the element we just returned
+        const fn is_less_than_or_equal(left: Option<u32>, right: Option<u32>) -> bool {
+            match (left, right) {
+                (Some(last), Some(next)) => last >= next,
+                // `None` can occur if the last iteration chose the value of the right side,
+                // therefore we continue.
+                // `None` on the left side means, meaning we
+                // can stop and take the value.
+                (_, None) => true,
+                (None, _) => false,
+            }
+        }
+
+        let last = self.last.take();
+
+        let mut left_next = self.left_next.take();
+        let mut right_next = self.right_next.take();
+
+        while is_less_than_or_equal(last, left_next) {
+            let Some(next) = self.left.next() else {
+                left_next = None;
+                break;
+            };
+
+            left_next = Some(next);
+        }
+
+        while is_less_than_or_equal(last, right_next) {
+            let Some(next) = self.right.next() else {
+                right_next = None;
+                break;
+            };
+
+            right_next = Some(next);
+        }
+
+        let next = match (left_next, right_next) {
+            (Some(a), Some(b)) => {
+                if a < b {
+                    self.right_next = Some(b);
+                    Some(a)
+                } else {
+                    self.left_next = Some(a);
+                    Some(b)
+                }
+            }
+            (Some(a), None) => Some(a),
+            (None, Some(b)) => Some(b),
+            (None, None) => None,
+        };
+
+        self.last = next;
+        next
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct NodeClosure {
@@ -401,13 +497,15 @@ impl Closures {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
     use core::iter::once;
 
     use hashbrown::{HashMap, HashSet};
     use petgraph_core::{attributes::Attributes, edge::marker::Directed};
+    use roaring::RoaringBitmap;
 
     use crate::{
-        closure::{EdgeClosures, NodeClosure},
+        closure::{EdgeClosures, NodeClosure, UnionIterator},
         DinoGraph, EdgeId, NodeId,
     };
 
@@ -991,5 +1089,48 @@ mod tests {
                 },
             }
         );
+    }
+
+    #[test]
+    fn union_iterator_empty() {
+        let a = RoaringBitmap::new();
+        let b = RoaringBitmap::new();
+
+        let iterator = UnionIterator::new(&a, &b);
+        assert_eq!(iterator.count(), 0);
+    }
+
+    #[test]
+    fn union_iterator_non_overlapping() {
+        let a = RoaringBitmap::from_sorted_iter(0..10).unwrap();
+        let b = RoaringBitmap::from_sorted_iter(10..20).unwrap();
+
+        let iterator = UnionIterator::new(&a, &b);
+        assert_eq!(iterator.collect::<Vec<_>>(), (0..20).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn union_iterator_overlapping() {
+        let a = RoaringBitmap::from_sorted_iter(0..10).unwrap();
+        let b = RoaringBitmap::from_sorted_iter(5..15).unwrap();
+
+        let iterator = UnionIterator::new(&a, &b);
+        assert_eq!(iterator.collect::<Vec<_>>(), (0..15).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn union_iterator_multiple_overlapping_regions() {
+        let mut a = RoaringBitmap::from_sorted_iter(0..10).unwrap();
+        let mut b = RoaringBitmap::from_sorted_iter(5..15).unwrap();
+
+        a.insert_range(20..30);
+        b.insert_range(25..35);
+
+        a.insert_range(40..50);
+        b.insert_range(15..21);
+        b.insert_range(29..42);
+
+        let iterator = UnionIterator::new(&a, &b);
+        assert_eq!(iterator.collect::<Vec<_>>(), (0..50).collect::<Vec<_>>());
     }
 }
