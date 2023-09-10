@@ -344,6 +344,18 @@ where
         topo
     }
 
+    /// Create a new `Topo` with initial nodes
+    pub fn with_initials<G, I>(graph: G, i: I) -> Self
+    where
+        G: Visitable<NodeId = N, Map = VM>,
+        I: IntoIterator<Item = N>,
+    {
+        Topo {
+            tovisit: i.into_iter().collect(),
+            ordered: graph.visit_map(),
+        }
+    }
+
     fn extend_with_initials<G>(&mut self, g: G)
     where
         G: IntoNodeIdentifiers + IntoNeighborsDirected<NodeId = N>,
