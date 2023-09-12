@@ -22,6 +22,7 @@ use core::{
 use ::either::Either;
 pub use edge::EdgeId;
 use error_stack::{Context, Report, Result};
+use hashbrown::HashSet;
 pub use node::NodeId;
 use petgraph_core::{
     edge::{
@@ -40,7 +41,7 @@ pub type DinoGraph<N, E, D> = Graph<DinosaurStorage<N, E, D>>;
 pub type DiDinoGraph<N, E> = DinoGraph<N, E, Directed>;
 pub type UnDinoGraph<N, E> = DinoGraph<N, E, Undirected>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DinosaurStorage<N, E, D = Directed>
 where
     D: GraphDirection,
@@ -195,14 +196,14 @@ where
              library, please report it."
         );
 
-        self.closures.update_node(id);
-
         let node = self
             .nodes
             .get_mut(id)
             .ok_or_else(|| Report::new(ExtinctionEvent::NodeNotFound))?;
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
+
+        self.closures.create_node(node);
 
         Ok(NodeMut::new(&node.id, &mut node.weight))
     }
@@ -240,7 +241,7 @@ where
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
 
-        self.closures.update_edge(edge);
+        self.closures.create_edge(edge);
 
         Ok(EdgeMut::new(
             &edge.id,
@@ -254,14 +255,12 @@ where
         &mut self,
         id: &Self::NodeId,
     ) -> Option<DetachedNode<Self::NodeId, Self::NodeWeight>> {
-        if let Some(node) = self.closures.nodes.get(*id) {
-            for edge in node.edges() {
-                self.edges.remove(*edge);
-            }
+        for edge in self.closures.nodes().edges(*id) {
+            self.edges.remove(edge);
         }
 
         let node = self.nodes.remove(*id)?;
-        self.closures.remove_node(*id);
+        self.closures.remove_node(&node);
 
         Some(DetachedNode::new(node.id, node.weight))
     }
@@ -326,22 +325,13 @@ where
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,
     ) -> impl Iterator<Item = petgraph_core::edge::Edge<'a, Self>> + 'b {
-        let source_to_target = self
-            .closures
-            .edges
-            .endpoints_to_edges()
-            .get(&(*source, *target));
-        let target_to_source = self
-            .closures
-            .edges
-            .endpoints_to_edges()
-            .get(&(*target, *source));
+        let source_to_target = self.closures.edges().endpoints_to_edges(*source, *target);
+        let target_to_source = self.closures.edges().endpoints_to_edges(*target, *source);
 
         source_to_target
             .into_iter()
-            .flatten()
-            .chain(target_to_source.into_iter().flatten())
-            .filter_map(move |edge| self.edge(edge))
+            .chain(target_to_source.into_iter())
+            .filter_map(move |edge| self.edge(&edge))
     }
 
     fn node_connections<'a: 'b, 'b>(
@@ -349,11 +339,9 @@ where
         id: &'b Self::NodeId,
     ) -> impl Iterator<Item = petgraph_core::edge::Edge<'a, Self>> + 'b {
         self.closures
-            .nodes
-            .get(*id)
-            .into_iter()
-            .flat_map(closure::NodeClosure::edges)
-            .filter_map(|edge| self.edge(edge))
+            .nodes()
+            .edges(*id)
+            .filter_map(|edge| self.edge(&edge))
     }
 
     fn node_connections_mut<'a: 'b, 'b>(
@@ -364,11 +352,8 @@ where
             closures, edges, ..
         } = self;
 
-        let Some(closure) = closures.nodes.get(*id) else {
-            return Either::Left(empty());
-        };
-
-        let available = closure.edges();
+        // TODO: we can remove this allocation, and nodes are ordered!
+        let available: HashSet<_> = closures.nodes().edges(*id).collect();
 
         if available.is_empty() {
             return Either::Left(empty());
@@ -389,11 +374,9 @@ where
         id: &'b Self::NodeId,
     ) -> impl Iterator<Item = petgraph_core::node::Node<'a, Self>> + 'b {
         self.closures
-            .nodes
-            .get(*id)
-            .into_iter()
-            .flat_map(closure::NodeClosure::neighbours)
-            .filter_map(move |node| self.node(node))
+            .nodes()
+            .neighbours(*id)
+            .filter_map(move |node| self.node(&node))
     }
 
     fn node_neighbours_mut<'a: 'b, 'b>(
@@ -404,11 +387,8 @@ where
             closures, nodes, ..
         } = self;
 
-        let Some(closure) = closures.nodes.get(*id) else {
-            return Either::Left(empty());
-        };
-
-        let available = closure.neighbours();
+        // TODO: we can remove this allocation, and nodes are ordered!
+        let available: HashSet<_> = closures.nodes().neighbours(*id).collect();
 
         if available.is_empty() {
             return Either::Left(empty());
@@ -424,9 +404,8 @@ where
 
     fn external_nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
         self.closures
-            .nodes
+            .nodes()
             .externals()
-            .iter()
             .filter_map(move |node| self.node(&node))
     }
 
@@ -435,7 +414,8 @@ where
             nodes, closures, ..
         } = self;
 
-        let externals = closures.nodes.externals();
+        // TODO: we can remove this allocation, as we know it's all ordered! (soon™)
+        let externals: HashSet<_> = closures.nodes().externals().collect();
 
         if externals.is_empty() {
             return Either::Left(empty());

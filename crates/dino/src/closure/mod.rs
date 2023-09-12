@@ -26,11 +26,50 @@ enum Key {
     EndpointsToEdges(NodeId, NodeId),
 }
 
+#[derive(Debug, Clone, PartialEq)]
 struct ClosureStorage {
     inner: HashMap<Key, RoaringBitmap, FnvBuildHasher>,
 }
 
 impl ClosureStorage {
+    fn new() -> Self {
+        Self {
+            inner: HashMap::with_hasher(FnvBuildHasher::default()),
+        }
+    }
+
+    fn create_edge<T>(&mut self, edge: &Edge<T>) {
+        let raw_index = edge.id.into_id().index_u32();
+
+        let source = edge.source;
+        let target = edge.target;
+
+        self.inner
+            .entry(Key::SourceToTargets(source))
+            .or_default()
+            .insert(target.into_id().index_u32());
+
+        self.inner
+            .entry(Key::TargetToSources(target))
+            .or_default()
+            .insert(source.into_id().index_u32());
+
+        self.inner
+            .entry(Key::SourceToEdges(source))
+            .or_default()
+            .insert(raw_index);
+
+        self.inner
+            .entry(Key::TargetsToEdges(target))
+            .or_default()
+            .insert(raw_index);
+
+        self.inner
+            .entry(Key::EndpointsToEdges(source, target))
+            .or_default()
+            .insert(raw_index);
+    }
+
     fn remove_edge<T>(&mut self, edge: &Edge<T>) {
         let raw_index = edge.id.into_id().index_u32();
 
@@ -65,6 +104,18 @@ impl ClosureStorage {
         }
     }
 
+    fn create_node<T>(&mut self, node: &Node<T>) {
+        self.inner
+            .insert(Key::SourceToTargets(node.id), RoaringBitmap::new());
+        self.inner
+            .insert(Key::TargetToSources(node.id), RoaringBitmap::new());
+
+        self.inner
+            .insert(Key::SourceToEdges(node.id), RoaringBitmap::new());
+        self.inner
+            .insert(Key::TargetsToEdges(node.id), RoaringBitmap::new());
+    }
+
     fn remove_node<T>(&mut self, node: &Node<T>) {
         let raw_index = node.id.into_id().index_u32();
 
@@ -97,18 +148,42 @@ impl ClosureStorage {
         self.inner.remove(&Key::SourceToEdges(node.id));
         self.inner.remove(&Key::TargetsToEdges(node.id));
     }
+
+    fn clear(&mut self) {
+        self.inner.clear();
+    }
+
+    fn refresh<N, E>(&mut self, nodes: &Slab<NodeId, Node<N>>, edges: &Slab<EdgeId, Edge<E>>) {
+        self.clear();
+
+        for node in nodes.iter() {
+            self.create_node(node);
+        }
+
+        for edge in edges.iter() {
+            self.create_edge(edge);
+        }
+    }
+
+    fn reserve(&mut self, additional: usize) {
+        self.inner.reserve(additional);
+    }
+
+    fn shrink_to_fit(&mut self) {
+        self.inner.shrink_to_fit();
+    }
 }
 
-struct NodeClosureLookup<'a> {
+pub(crate) struct NodeClosure<'a> {
     storage: &'a ClosureStorage,
 }
 
-impl<'a> NodeClosureLookup<'a> {
+impl<'a> NodeClosure<'a> {
     const fn new(storage: &'a ClosureStorage) -> Self {
         Self { storage }
     }
 
-    fn outgoing_neighbours(&self, id: NodeId) -> impl Iterator<Item = NodeId> + 'a {
+    pub(crate) fn outgoing_neighbours(&self, id: NodeId) -> impl Iterator<Item = NodeId> + 'a {
         let Some(bitmap) = self.storage.inner.get(&Key::SourceToTargets(id)) else {
             return Either::Left(core::iter::empty());
         };
@@ -120,7 +195,7 @@ impl<'a> NodeClosureLookup<'a> {
         )
     }
 
-    fn incoming_neighbours(&self, id: NodeId) -> impl Iterator<Item = NodeId> + 'a {
+    pub(crate) fn incoming_neighbours(&self, id: NodeId) -> impl Iterator<Item = NodeId> + 'a {
         let Some(bitmap) = self.storage.inner.get(&Key::TargetToSources(id)) else {
             return Either::Left(core::iter::empty());
         };
@@ -132,7 +207,7 @@ impl<'a> NodeClosureLookup<'a> {
         )
     }
 
-    fn neighbours(&self, id: NodeId) -> impl Iterator<Item = NodeId> + 'a {
+    pub(crate) fn neighbours(&self, id: NodeId) -> impl Iterator<Item = NodeId> + 'a {
         let Some(left) = self.storage.inner.get(&Key::SourceToTargets(id)) else {
             return Either::Left(core::iter::empty());
         };
@@ -147,7 +222,7 @@ impl<'a> NodeClosureLookup<'a> {
         )
     }
 
-    fn outgoing_edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
+    pub(crate) fn outgoing_edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
         let Some(bitmap) = self.storage.inner.get(&Key::SourceToEdges(id)) else {
             return Either::Left(core::iter::empty());
         };
@@ -159,7 +234,7 @@ impl<'a> NodeClosureLookup<'a> {
         )
     }
 
-    fn incoming_edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
+    pub(crate) fn incoming_edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
         let Some(bitmap) = self.storage.inner.get(&Key::TargetsToEdges(id)) else {
             return Either::Left(core::iter::empty());
         };
@@ -171,7 +246,7 @@ impl<'a> NodeClosureLookup<'a> {
         )
     }
 
-    fn edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
+    pub(crate) fn edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
         let Some(left) = self.storage.inner.get(&Key::SourceToEdges(id)) else {
             return Either::Left(core::iter::empty());
         };
@@ -185,98 +260,30 @@ impl<'a> NodeClosureLookup<'a> {
                 .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
         )
     }
-}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct NodeClosure {
-    outgoing_neighbours: HashSet<NodeId>,
-    incoming_neighbours: HashSet<NodeId>,
-
-    neighbours: HashSet<NodeId>,
-
-    outgoing_edges: HashSet<EdgeId>,
-    incoming_edges: HashSet<EdgeId>,
-
-    edges: HashSet<EdgeId>,
-}
-
-impl NodeClosure {
-    fn new() -> Self {
-        Self {
-            outgoing_neighbours: HashSet::new(),
-            incoming_neighbours: HashSet::new(),
-
-            neighbours: HashSet::new(),
-
-            outgoing_edges: HashSet::new(),
-            incoming_edges: HashSet::new(),
-
-            edges: HashSet::new(),
-        }
-    }
-
-    pub(crate) const fn outgoing_neighbours(&self) -> &HashSet<NodeId> {
-        &self.outgoing_neighbours
-    }
-
-    pub(crate) const fn incoming_neighbours(&self) -> &HashSet<NodeId> {
-        &self.incoming_neighbours
-    }
-
-    pub(crate) const fn neighbours(&self) -> &HashSet<NodeId> {
-        &self.neighbours
-    }
-
-    pub(crate) const fn outgoing_edges(&self) -> &HashSet<EdgeId> {
-        &self.outgoing_edges
-    }
-
-    pub(crate) const fn incoming_edges(&self) -> &HashSet<EdgeId> {
-        &self.incoming_edges
-    }
-
-    pub(crate) const fn edges(&self) -> &HashSet<EdgeId> {
-        &self.edges
-    }
-
-    fn refresh(&mut self, id: NodeId, closure: &EdgeClosures) {
-        self.outgoing_neighbours.clear();
-        self.incoming_neighbours.clear();
-        self.neighbours.clear();
-
-        self.outgoing_edges.clear();
-        self.incoming_edges.clear();
-        self.edges.clear();
-
-        if let Some(source_to_targets) = closure.source_to_targets.get(&id) {
-            self.outgoing_neighbours
-                .extend(source_to_targets.iter().copied());
-            self.neighbours.extend(source_to_targets.iter().copied());
-        }
-
-        if let Some(target_to_sources) = closure.target_to_sources.get(&id) {
-            self.incoming_neighbours
-                .extend(target_to_sources.iter().copied());
-            self.neighbours.extend(target_to_sources.iter().copied());
-        }
-
-        if let Some(source_to_edges) = closure.source_to_edges.get(&id) {
-            self.outgoing_edges.extend(source_to_edges.iter().copied());
-            self.edges.extend(source_to_edges.iter().copied());
-        }
-
-        if let Some(targets_to_edges) = closure.targets_to_edges.get(&id) {
-            self.incoming_edges.extend(targets_to_edges.iter().copied());
-            self.edges.extend(targets_to_edges.iter().copied());
-        }
+    pub(crate) fn externals(&self) -> impl Iterator<Item = NodeId> + 'a {
+        self.storage
+            .inner
+            .iter()
+            .filter_map(|(key, bitmap)| match key {
+                // TODO: can we query directly by key here? <- Prefix HashMap?
+                Key::SourceToTargets(id) => {
+                    if bitmap.is_empty() {
+                        Some(*id)
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            })
     }
 }
 
-struct EdgeClosureLookup<'a> {
+pub(crate) struct EdgeClosure<'a> {
     storage: &'a ClosureStorage,
 }
 
-impl<'a> EdgeClosureLookup<'a> {
+impl<'a> EdgeClosure<'a> {
     const fn new(storage: &'a ClosureStorage) -> Self {
         Self { storage }
     }
@@ -302,299 +309,48 @@ impl<'a> EdgeClosureLookup<'a> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct EdgeClosures {
-    source_to_targets: HashMap<NodeId, HashSet<NodeId>>,
-    target_to_sources: HashMap<NodeId, HashSet<NodeId>>,
-
-    source_to_edges: HashMap<NodeId, HashSet<EdgeId>>,
-    targets_to_edges: HashMap<NodeId, HashSet<EdgeId>>,
-
-    endpoints_to_edges: HashMap<(NodeId, NodeId), HashSet<EdgeId>>,
-}
-
-impl EdgeClosures {
-    fn new() -> Self {
-        Self {
-            source_to_targets: HashMap::new(),
-            target_to_sources: HashMap::new(),
-
-            source_to_edges: HashMap::new(),
-            targets_to_edges: HashMap::new(),
-
-            endpoints_to_edges: HashMap::new(),
-        }
-    }
-
-    pub(crate) fn reserve(&mut self, additional: usize) {
-        self.source_to_targets.reserve(additional);
-        self.target_to_sources.reserve(additional);
-
-        self.source_to_edges.reserve(additional);
-        self.targets_to_edges.reserve(additional);
-
-        self.endpoints_to_edges.reserve(additional);
-    }
-
-    pub(crate) fn shrink_to_fit(&mut self) {
-        self.source_to_targets.shrink_to_fit();
-        self.target_to_sources.shrink_to_fit();
-
-        self.source_to_edges.shrink_to_fit();
-        self.targets_to_edges.shrink_to_fit();
-
-        self.endpoints_to_edges.shrink_to_fit();
-    }
-
-    pub(crate) const fn endpoints_to_edges(&self) -> &HashMap<(NodeId, NodeId), HashSet<EdgeId>> {
-        &self.endpoints_to_edges
-    }
-
-    fn update<E>(&mut self, edge: &Edge<E>) {
-        self.source_to_targets
-            .entry(edge.source)
-            .or_default()
-            .insert(edge.target);
-
-        self.target_to_sources
-            .entry(edge.target)
-            .or_default()
-            .insert(edge.source);
-
-        self.source_to_edges
-            .entry(edge.source)
-            .or_default()
-            .insert(edge.id);
-
-        self.targets_to_edges
-            .entry(edge.target)
-            .or_default()
-            .insert(edge.id);
-
-        self.endpoints_to_edges
-            .entry((edge.source, edge.target))
-            .or_default()
-            .insert(edge.id);
-    }
-
-    fn remove<E>(&mut self, edge: &Edge<E>) {
-        // lookup in the current closure if there are multiple edges with the same source and target
-        let multi = 'multi: {
-            let matching_source = self.source_to_edges.get(&edge.source);
-            let matching_target = self.targets_to_edges.get(&edge.target);
-
-            let (Some(source), Some(target)) = (matching_source, matching_target) else {
-                break 'multi false;
-            };
-
-            // This avoids an additional allocation
-            let same_source_and_target = source
-                .iter()
-                .any(|&id| edge.id != id && target.contains(&id));
-
-            same_source_and_target
-        };
-
-        if !multi {
-            if let Some(targets) = self.source_to_targets.get_mut(&edge.source) {
-                targets.remove(&edge.target);
-            }
-
-            if let Some(sources) = self.target_to_sources.get_mut(&edge.target) {
-                sources.remove(&edge.source);
-            }
-        }
-
-        if let Some(edges) = self.source_to_edges.get_mut(&edge.source) {
-            edges.remove(&edge.id);
-        }
-
-        if let Some(edges) = self.targets_to_edges.get_mut(&edge.target) {
-            edges.remove(&edge.id);
-        }
-
-        if let Some(edges) = self.endpoints_to_edges.get_mut(&(edge.source, edge.target)) {
-            edges.remove(&edge.id);
-        }
-    }
-
-    pub(crate) fn remove_node(&mut self, id: NodeId) -> HashSet<EdgeId> {
-        self.source_to_targets.remove(&id);
-
-        for nodes in self.source_to_targets.values_mut() {
-            nodes.remove(&id);
-        }
-
-        self.target_to_sources.remove(&id);
-
-        for nodes in self.target_to_sources.values_mut() {
-            nodes.remove(&id);
-        }
-
-        let to_remove = self.source_to_edges.remove(&id).into_iter().flatten();
-        let to_remove = to_remove.chain(self.targets_to_edges.remove(&id).into_iter().flatten());
-        let to_remove: HashSet<_> = to_remove.collect();
-
-        for edges in self.source_to_edges.values_mut() {
-            edges.retain(|&id| !to_remove.contains(&id));
-        }
-
-        for edges in self.targets_to_edges.values_mut() {
-            edges.retain(|&id| !to_remove.contains(&id));
-        }
-
-        for edges in self.endpoints_to_edges.values_mut() {
-            edges.retain(|&id| !to_remove.contains(&id));
-        }
-
-        self.endpoints_to_edges
-            .retain(|&(source, target), _| source != id && target != id);
-
-        to_remove
-    }
-
-    fn clear(&mut self) {
-        self.source_to_targets.clear();
-        self.target_to_sources.clear();
-
-        self.source_to_edges.clear();
-        self.targets_to_edges.clear();
-
-        self.endpoints_to_edges.clear();
-    }
-
-    fn refresh<E>(&mut self, edges: &Slab<EdgeId, Edge<E>>) {
-        self.clear();
-
-        for edge in edges.iter() {
-            self.update(edge);
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct NodeClosures {
-    nodes: HashMap<NodeId, NodeClosure>,
-    externals: HashSet<NodeId>,
-}
-
-impl NodeClosures {
-    fn new() -> Self {
-        Self {
-            nodes: HashMap::new(),
-            externals: HashSet::new(),
-        }
-    }
-
-    pub(crate) fn reserve(&mut self, additional: usize) {
-        self.nodes.reserve(additional);
-        self.externals.reserve(additional);
-    }
-
-    pub(crate) fn shrink_to_fit(&mut self) {
-        self.nodes.shrink_to_fit();
-        self.externals.shrink_to_fit();
-    }
-
-    pub(crate) fn get(&self, id: NodeId) -> Option<&NodeClosure> {
-        self.nodes.get(&id)
-    }
-
-    pub(crate) const fn externals(&self) -> &HashSet<NodeId> {
-        &self.externals
-    }
-
-    fn get_or_insert(&mut self, id: NodeId) -> &mut NodeClosure {
-        self.nodes.entry(id).or_insert_with(NodeClosure::new)
-    }
-
-    fn update(&mut self, id: NodeId, closure: &EdgeClosures) {
-        let node = self.get_or_insert(id);
-        node.refresh(id, closure);
-
-        if node.neighbours().is_empty() {
-            self.externals.insert(id);
-        } else {
-            self.externals.remove(&id);
-        }
-    }
-
-    pub(crate) fn remove(&mut self, id: NodeId, edges: &HashSet<EdgeId>) {
-        self.nodes.remove(&id);
-        self.externals.remove(&id);
-
-        for node in &mut self.nodes.values_mut() {
-            node.outgoing_neighbours.remove(&id);
-            node.incoming_neighbours.remove(&id);
-            node.neighbours.remove(&id);
-
-            node.outgoing_edges.retain(|&edge| !edges.contains(&edge));
-            node.incoming_edges.retain(|&edge| !edges.contains(&edge));
-            node.edges.retain(|&edge| !edges.contains(&edge));
-        }
-    }
-
-    fn clear(&mut self) {
-        self.nodes.clear();
-    }
-
-    fn refresh<N>(&mut self, nodes: &Slab<NodeId, Node<N>>, closure: &EdgeClosures) {
-        for id in nodes.keys() {
-            self.update(id, closure);
-        }
-
-        self.gc(nodes);
-    }
-
-    fn gc<N>(&mut self, nodes: &Slab<NodeId, Node<N>>) {
-        let existing_nodes: HashSet<NodeId> = nodes.keys().collect();
-
-        self.nodes.retain(|id, _| existing_nodes.contains(id));
-        self.externals.retain(|id| existing_nodes.contains(id));
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Closures {
-    pub(crate) nodes: NodeClosures,
-    pub(crate) edges: EdgeClosures,
+    storage: ClosureStorage,
 }
 
 impl Closures {
     pub(crate) fn new() -> Self {
         Self {
-            nodes: NodeClosures::new(),
-            edges: EdgeClosures::new(),
+            storage: ClosureStorage::new(),
         }
     }
 
-    pub(crate) fn update_node(&mut self, id: NodeId) {
-        self.nodes.update(id, &self.edges);
+    pub(crate) const fn nodes(&self) -> NodeClosure<'_> {
+        NodeClosure::new(&self.storage)
     }
 
-    pub(crate) fn update_edge<E>(&mut self, edge: &Edge<E>) {
-        self.edges.update(edge);
-
-        self.nodes.update(edge.source, &self.edges);
-        self.nodes.update(edge.target, &self.edges);
+    pub(crate) fn create_node<T>(&mut self, node: &Node<T>) {
+        self.storage.create_node(node);
     }
 
-    /// Removes the node and all edges connected to it from the closure tables.
-    ///
-    /// Be aware that this does not remove the node from the graph itself.
-    ///
-    /// Only call this once you have removed the node (and all edges connected to it) from the
-    /// graph.
-    pub(crate) fn remove_node(&mut self, id: NodeId) {
-        let edges = self.edges.remove_node(id);
-        self.nodes.remove(id, &edges);
+    pub(crate) fn remove_node<T>(&mut self, node: &Node<T>) {
+        self.storage.remove_node(node);
     }
 
-    pub(crate) fn remove_edge<E>(&mut self, edge: &Edge<E>) {
-        self.edges.remove(edge);
+    pub(crate) const fn edges(&self) -> EdgeClosure<'_> {
+        EdgeClosure::new(&self.storage)
+    }
 
-        self.nodes.update(edge.source, &self.edges);
-        self.nodes.update(edge.target, &self.edges);
+    pub(crate) fn create_edge<T>(&mut self, edge: &Edge<T>) {
+        self.storage.create_edge(edge);
+    }
+
+    pub(crate) fn remove_edge<T>(&mut self, edge: &Edge<T>) {
+        self.storage.remove_edge(edge);
+    }
+
+    pub(crate) fn reserve(&mut self, additional: usize) {
+        self.storage.reserve(additional);
+    }
+
+    pub(crate) fn shrink_to_fit(&mut self) {
+        self.storage.shrink_to_fit();
     }
 
     pub(crate) fn refresh<N, E>(
@@ -602,13 +358,11 @@ impl Closures {
         nodes: &Slab<NodeId, Node<N>>,
         edges: &Slab<EdgeId, Edge<E>>,
     ) {
-        self.edges.refresh(edges);
-        self.nodes.refresh(nodes, &self.edges);
+        self.storage.refresh(nodes, edges);
     }
 
     pub(crate) fn clear(&mut self) {
-        self.nodes.clear();
-        self.edges.clear();
+        self.storage.clear();
     }
 }
 
@@ -622,9 +376,136 @@ mod tests {
     use roaring::RoaringBitmap;
 
     use crate::{
-        closure::{EdgeClosures, NodeClosure, UnionIterator},
+        closure::{Closures, Key, NodeClosure, UnionIterator},
+        slab::{EntryId, Key as _},
         DinoGraph, EdgeId, NodeId,
     };
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub(crate) struct EvaluatedNodeClosure {
+        outgoing_neighbours: HashSet<NodeId>,
+        incoming_neighbours: HashSet<NodeId>,
+
+        neighbours: HashSet<NodeId>,
+
+        outgoing_edges: HashSet<EdgeId>,
+        incoming_edges: HashSet<EdgeId>,
+
+        edges: HashSet<EdgeId>,
+    }
+
+    impl EvaluatedNodeClosure {
+        fn new(closures: &Closures, id: NodeId) -> Self {
+            let lookup = closures.nodes();
+
+            Self {
+                outgoing_neighbours: lookup.outgoing_neighbours(id).collect(),
+                incoming_neighbours: lookup.incoming_neighbours(id).collect(),
+
+                neighbours: lookup.neighbours(id).collect(),
+
+                outgoing_edges: lookup.outgoing_edges(id).collect(),
+                incoming_edges: lookup.incoming_edges(id).collect(),
+
+                edges: lookup.edges(id).collect(),
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub(crate) struct EvaluatedEdgeClosures {
+        source_to_targets: HashMap<NodeId, HashSet<NodeId>>,
+        target_to_sources: HashMap<NodeId, HashSet<NodeId>>,
+
+        source_to_edges: HashMap<NodeId, HashSet<EdgeId>>,
+        targets_to_edges: HashMap<NodeId, HashSet<EdgeId>>,
+
+        endpoints_to_edges: HashMap<(NodeId, NodeId), HashSet<EdgeId>>,
+    }
+
+    impl EvaluatedEdgeClosures {
+        fn new(closures: &Closures) -> Self {
+            Self {
+                source_to_targets: closures
+                    .storage
+                    .inner
+                    .iter()
+                    .filter_map(|(key, bitmap)| match key {
+                        Key::SourceToTargets(id) => Some((
+                            *id,
+                            bitmap
+                                .iter()
+                                .map(|id| NodeId::from_id(EntryId::new_unchecked(id)))
+                                .collect::<HashSet<_>>(),
+                        )),
+                        _ => None,
+                    })
+                    .collect(),
+                target_to_sources: closures
+                    .storage
+                    .inner
+                    .iter()
+                    .filter_map(|(key, bitmap)| match key {
+                        Key::TargetToSources(id) => Some((
+                            *id,
+                            bitmap
+                                .iter()
+                                .map(|id| NodeId::from_id(EntryId::new_unchecked(id)))
+                                .collect::<HashSet<_>>(),
+                        )),
+                        _ => None,
+                    })
+                    .collect(),
+
+                source_to_edges: closures
+                    .storage
+                    .inner
+                    .iter()
+                    .filter_map(|(key, bitmap)| match key {
+                        Key::SourceToEdges(id) => Some((
+                            *id,
+                            bitmap
+                                .iter()
+                                .map(|id| EdgeId::from_id(EntryId::new_unchecked(id)))
+                                .collect::<HashSet<_>>(),
+                        )),
+                        _ => None,
+                    })
+                    .collect(),
+                targets_to_edges: closures
+                    .storage
+                    .inner
+                    .iter()
+                    .filter_map(|(key, bitmap)| match key {
+                        Key::TargetsToEdges(id) => Some((
+                            *id,
+                            bitmap
+                                .iter()
+                                .map(|id| EdgeId::from_id(EntryId::new_unchecked(id)))
+                                .collect::<HashSet<_>>(),
+                        )),
+                        _ => None,
+                    })
+                    .collect(),
+
+                endpoints_to_edges: closures
+                    .storage
+                    .inner
+                    .iter()
+                    .filter_map(|(key, bitmap)| match key {
+                        Key::EndpointsToEdges(source, target) => Some((
+                            (*source, *target),
+                            bitmap
+                                .iter()
+                                .map(|id| EdgeId::from_id(EntryId::new_unchecked(id)))
+                                .collect::<HashSet<_>>(),
+                        )),
+                        _ => None,
+                    })
+                    .collect(),
+            }
+        }
+    }
 
     macro_rules! map {
         (
@@ -650,12 +531,15 @@ mod tests {
 
         let closures = &graph.storage().closures;
 
-        assert_eq!(closures.nodes.nodes.len(), 1);
-        assert_eq!(closures.nodes.externals, once(id).collect());
+        assert_eq!(closures.storage.inner.len(), 4);
+        assert_eq!(
+            closures.nodes().externals().collect::<HashSet<_>>(),
+            once(id).collect()
+        );
 
         assert_eq!(
-            closures.nodes.nodes[&id],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, id),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: HashSet::new(),
                 neighbours: HashSet::new(),
@@ -666,8 +550,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.edges,
-            EdgeClosures {
+            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures {
                 source_to_targets: HashMap::new(),
                 target_to_sources: HashMap::new(),
                 source_to_edges: HashMap::new(),
@@ -689,12 +573,15 @@ mod tests {
 
         let closures = &graph.storage().closures;
 
-        assert_eq!(closures.nodes.nodes.len(), 2);
-        assert_eq!(closures.nodes.externals, [a, b].into_iter().collect());
+        assert_eq!(closures.storage.inner.len(), 4);
+        assert_eq!(
+            closures.nodes().externals().collect::<HashSet<_>>(),
+            [a, b].into_iter().collect()
+        );
 
         assert_eq!(
-            closures.nodes.nodes[&a],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: HashSet::new(),
                 neighbours: HashSet::new(),
@@ -705,8 +592,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.nodes.nodes[&b],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, b),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: HashSet::new(),
                 neighbours: HashSet::new(),
@@ -717,8 +604,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.edges,
-            EdgeClosures {
+            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures {
                 source_to_targets: HashMap::new(),
                 target_to_sources: HashMap::new(),
                 source_to_edges: HashMap::new(),
@@ -743,12 +630,12 @@ mod tests {
 
         let closures = &graph.storage().closures;
 
-        assert_eq!(closures.nodes.nodes.len(), 2);
-        assert!(closures.nodes.externals.is_empty());
+        assert_eq!(closures.storage.inner.len(), 8);
+        assert_eq!(closures.nodes().externals().count(), 0);
 
         assert_eq!(
-            closures.nodes.nodes[&a],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: once(b).collect(),
                 incoming_neighbours: HashSet::new(),
                 neighbours: once(b).collect(),
@@ -759,8 +646,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.nodes.nodes[&b],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, b),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: once(a).collect(),
                 neighbours: once(a).collect(),
@@ -771,8 +658,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.edges,
-            EdgeClosures {
+            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => once(b).collect(),
                 },
@@ -804,12 +691,12 @@ mod tests {
 
         let closures = &graph.storage().closures;
 
-        assert_eq!(closures.nodes.nodes.len(), 1);
-        assert!(closures.nodes.externals.is_empty());
+        assert_eq!(closures.storage.inner.len(), 4);
+        assert_eq!(closures.nodes().externals().count(), 0);
 
         assert_eq!(
-            closures.nodes.nodes[&a],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: once(a).collect(),
                 incoming_neighbours: once(a).collect(),
                 neighbours: once(a).collect(),
@@ -820,8 +707,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.edges,
-            EdgeClosures {
+            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => once(a).collect(),
                 },
@@ -901,12 +788,12 @@ mod tests {
 
             let closures = &graph.storage().closures;
 
-            assert_eq!(closures.nodes.nodes.len(), 3);
-            assert!(closures.nodes.externals.is_empty());
+            assert_eq!(closures.storage.inner.len(), 8);
+            assert_eq!(closures.nodes().externals().count(), 0);
 
             assert_eq!(
-                closures.nodes.nodes[&a],
-                NodeClosure {
+                EvaluatedNodeClosure::new(closures, a),
+                EvaluatedNodeClosure {
                     outgoing_neighbours: once(b).collect(),
                     incoming_neighbours: once(c).collect(),
                     neighbours: [b, c].into_iter().collect(),
@@ -917,8 +804,8 @@ mod tests {
             );
 
             assert_eq!(
-                closures.nodes.nodes[&b],
-                NodeClosure {
+                EvaluatedNodeClosure::new(closures, b),
+                EvaluatedNodeClosure {
                     outgoing_neighbours: once(c).collect(),
                     incoming_neighbours: once(a).collect(),
                     neighbours: [c, a].into_iter().collect(),
@@ -929,8 +816,8 @@ mod tests {
             );
 
             assert_eq!(
-                closures.nodes.nodes[&c],
-                NodeClosure {
+                EvaluatedNodeClosure::new(closures, c),
+                EvaluatedNodeClosure {
                     outgoing_neighbours: once(a).collect(),
                     incoming_neighbours: once(b).collect(),
                     neighbours: [a, b].into_iter().collect(),
@@ -941,8 +828,8 @@ mod tests {
             );
 
             assert_eq!(
-                closures.edges,
-                EdgeClosures {
+                EvaluatedEdgeClosures::new(closures),
+                EvaluatedEdgeClosures {
                     source_to_targets: map! {
                         a => once(b).collect(),
                         b => once(c).collect(),
@@ -997,12 +884,12 @@ mod tests {
 
         let closures = &graph.storage().closures;
 
-        assert_eq!(closures.nodes.nodes.len(), 2);
-        assert!(closures.nodes.externals.is_empty());
+        assert_eq!(closures.storage.inner.len(), 8);
+        assert_eq!(closures.nodes().externals().count(), 0);
 
         assert_eq!(
-            closures.nodes.nodes[&a],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: once(b).collect(),
                 incoming_neighbours: HashSet::new(),
                 neighbours: once(b).collect(),
@@ -1013,8 +900,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.nodes.nodes[&b],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, b),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: once(a).collect(),
                 neighbours: once(a).collect(),
@@ -1025,8 +912,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.edges,
-            EdgeClosures {
+            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => once(b).collect(),
                 },
@@ -1065,12 +952,12 @@ mod tests {
 
         let closures = &graph.storage().closures;
 
-        assert_eq!(closures.nodes.nodes.len(), 2);
-        assert!(closures.nodes.externals.is_empty());
+        assert_eq!(closures.storage.inner.len(), 8);
+        assert_eq!(closures.nodes().externals().count(), 0);
 
         assert_eq!(
-            closures.nodes.nodes[&a],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: once(c).collect(),
                 neighbours: once(c).collect(),
@@ -1081,8 +968,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.nodes.nodes[&c],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, c),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: once(a).collect(),
                 incoming_neighbours: HashSet::new(),
                 neighbours: once(a).collect(),
@@ -1093,8 +980,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.edges,
-            EdgeClosures {
+            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => HashSet::new(),
                     c => once(a).collect(),
@@ -1137,12 +1024,12 @@ mod tests {
 
         let closures = &graph.storage().closures;
 
-        assert_eq!(closures.nodes.nodes.len(), 3);
-        assert!(closures.nodes.externals.is_empty());
+        assert_eq!(closures.storage.inner.len(), 8);
+        assert_eq!(closures.nodes().externals().count(), 0);
 
         assert_eq!(
-            closures.nodes.nodes[&a],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: once(b).collect(),
                 incoming_neighbours: once(c).collect(),
                 neighbours: [b, c].into_iter().collect(),
@@ -1153,8 +1040,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.nodes.nodes[&b],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, b),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: once(a).collect(),
                 neighbours: once(a).collect(),
@@ -1165,8 +1052,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.nodes.nodes[&c],
-            NodeClosure {
+            EvaluatedNodeClosure::new(closures, c),
+            EvaluatedNodeClosure {
                 outgoing_neighbours: once(a).collect(),
                 incoming_neighbours: HashSet::new(),
                 neighbours: once(a).collect(),
@@ -1177,8 +1064,8 @@ mod tests {
         );
 
         assert_eq!(
-            closures.edges,
-            EdgeClosures {
+            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => once(b).collect(),
                     b => HashSet::new(),

@@ -89,7 +89,7 @@ impl EntryId {
 
     // TODO: make it easier to create indices!
     pub(crate) fn new_unchecked(raw: u32) -> Self {
-        Self(NonZeroUsize::new(raw as usize).expect("raw is non-zero"))
+        Self(NonZeroUsize::new(raw as usize).expect("raw is zero"))
     }
 
     #[inline]
