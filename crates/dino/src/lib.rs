@@ -19,8 +19,8 @@ use core::{
     iter::empty,
 };
 
+use ::either::Either;
 pub use edge::EdgeId;
-use either::Either;
 use error_stack::{Context, Report, Result};
 pub use node::NodeId;
 use petgraph_core::{

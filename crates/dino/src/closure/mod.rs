@@ -1,102 +1,189 @@
-use core::iter::Peekable;
+mod union;
 
+use either::Either;
+use fnv::FnvBuildHasher;
 // The closure tables have quite a bit of allocations (due to the nested nature of the data
 // structure). Question is can we avoid them?
 use hashbrown::{HashMap, HashSet};
 use roaring::RoaringBitmap;
 
-use crate::{edge::Edge, node::Node, slab::Slab, EdgeId, NodeId};
+use self::union::UnionIterator;
+use crate::{
+    edge::Edge,
+    node::Node,
+    slab::{EntryId, Key as _, Slab},
+    EdgeId, NodeId,
+};
 
-struct UnionIterator<'a> {
-    left: roaring::bitmap::Iter<'a>,
-    left_next: Option<u32>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum Key {
+    SourceToTargets(NodeId),
+    TargetToSources(NodeId),
 
-    right: roaring::bitmap::Iter<'a>,
-    right_next: Option<u32>,
+    SourceToEdges(NodeId),
+    TargetsToEdges(NodeId),
 
-    last: Option<u32>,
+    EndpointsToEdges(NodeId, NodeId),
 }
 
-impl<'a> UnionIterator<'a> {
-    fn new(left: &'a RoaringBitmap, right: &'a RoaringBitmap) -> Self {
-        let left = left.iter();
-        let right = right.iter();
+struct ClosureStorage {
+    inner: HashMap<Key, RoaringBitmap, FnvBuildHasher>,
+}
 
-        Self {
-            left,
-            left_next: None,
-            right,
-            right_next: None,
-            last: None,
+impl ClosureStorage {
+    fn remove_edge<T>(&mut self, edge: &Edge<T>) {
+        let raw_index = edge.id.into_id().index_u32();
+
+        let source = edge.source;
+        let target = edge.target;
+
+        let is_multi = self
+            .inner
+            .get(&Key::EndpointsToEdges(edge.source, edge.target))
+            .map_or(false, |bitmap| bitmap.len() > 1);
+
+        if !is_multi {
+            if let Some(targets) = self.inner.get_mut(&Key::SourceToTargets(source)) {
+                targets.remove(raw_index);
+            }
+
+            if let Some(sources) = self.inner.get_mut(&Key::TargetToSources(target)) {
+                sources.remove(raw_index);
+            }
         }
+
+        if let Some(edges) = self.inner.get_mut(&Key::SourceToEdges(source)) {
+            edges.remove(raw_index);
+        }
+
+        if let Some(edges) = self.inner.get_mut(&Key::TargetsToEdges(target)) {
+            edges.remove(raw_index);
+        }
+
+        if let Some(edges) = self.inner.get_mut(&Key::EndpointsToEdges(source, target)) {
+            edges.remove(raw_index);
+        }
+    }
+
+    fn remove_node<T>(&mut self, node: &Node<T>) {
+        let raw_index = node.id.into_id().index_u32();
+
+        let targets = self.inner.remove(&Key::SourceToTargets(node.id));
+
+        if let Some(targets) = targets {
+            for target in targets {
+                let target = NodeId::from_id(EntryId::new_unchecked(target));
+                if let Some(sources) = self.inner.get_mut(&Key::TargetToSources(target)) {
+                    sources.remove(raw_index);
+                }
+
+                self.inner.remove(&Key::EndpointsToEdges(node.id, target));
+            }
+        }
+
+        let sources = self.inner.remove(&Key::TargetToSources(node.id));
+
+        if let Some(sources) = sources {
+            for source in sources {
+                let source = NodeId::from_id(EntryId::new_unchecked(source));
+                if let Some(targets) = self.inner.get_mut(&Key::SourceToTargets(source)) {
+                    targets.remove(raw_index);
+                }
+
+                self.inner.remove(&Key::EndpointsToEdges(source, node.id));
+            }
+        }
+
+        self.inner.remove(&Key::SourceToEdges(node.id));
+        self.inner.remove(&Key::TargetsToEdges(node.id));
     }
 }
 
-impl Iterator for UnionIterator<'_> {
-    type Item = u32;
+struct NodeClosureLookup<'a> {
+    storage: &'a ClosureStorage,
+}
 
-    fn next(&mut self) -> Option<Self::Item> {
-        // a and b originate from `RoaringBitmap::iter`, which is guaranteed to be sorted, this
-        // simplifies the logic needed here a lot.
-        // We only want to return all unique elements from both iterators.
+impl<'a> NodeClosureLookup<'a> {
+    const fn new(storage: &'a ClosureStorage) -> Self {
+        Self { storage }
+    }
 
-        // The algorithm is pretty simple.
-        // 1) get the last element from each iterator, but only if it is larger than the last
-        //    element we returned
-        // 2) return the smaller of the two elements
-        // 3) set the last element to the element we just returned
-        const fn is_less_than_or_equal(left: Option<u32>, right: Option<u32>) -> bool {
-            match (left, right) {
-                (Some(last), Some(next)) => last >= next,
-                // `None` can occur if the last iteration chose the value of the right side,
-                // therefore we continue.
-                // `None` on the left side means, meaning we
-                // can stop and take the value.
-                (_, None) => true,
-                (None, _) => false,
-            }
-        }
-
-        let last = self.last.take();
-
-        let mut left_next = self.left_next.take();
-        let mut right_next = self.right_next.take();
-
-        while is_less_than_or_equal(last, left_next) {
-            let Some(next) = self.left.next() else {
-                left_next = None;
-                break;
-            };
-
-            left_next = Some(next);
-        }
-
-        while is_less_than_or_equal(last, right_next) {
-            let Some(next) = self.right.next() else {
-                right_next = None;
-                break;
-            };
-
-            right_next = Some(next);
-        }
-
-        let next = match (left_next, right_next) {
-            (Some(a), Some(b)) => {
-                if a < b {
-                    self.right_next = Some(b);
-                    Some(a)
-                } else {
-                    self.left_next = Some(a);
-                    Some(b)
-                }
-            }
-            (Some(a), None) => Some(a),
-            (None, Some(b)) => Some(b),
-            (None, None) => None,
+    fn outgoing_neighbours(&self, id: NodeId) -> impl Iterator<Item = NodeId> + 'a {
+        let Some(bitmap) = self.storage.inner.get(&Key::SourceToTargets(id)) else {
+            return Either::Left(core::iter::empty());
         };
 
-        self.last = next;
-        next
+        Either::Right(
+            bitmap
+                .iter()
+                .map(|value| NodeId::from_id(EntryId::new_unchecked(value))),
+        )
+    }
+
+    fn incoming_neighbours(&self, id: NodeId) -> impl Iterator<Item = NodeId> + 'a {
+        let Some(bitmap) = self.storage.inner.get(&Key::TargetToSources(id)) else {
+            return Either::Left(core::iter::empty());
+        };
+
+        Either::Right(
+            bitmap
+                .iter()
+                .map(|value| NodeId::from_id(EntryId::new_unchecked(value))),
+        )
+    }
+
+    fn neighbours(&self, id: NodeId) -> impl Iterator<Item = NodeId> + 'a {
+        let Some(left) = self.storage.inner.get(&Key::SourceToTargets(id)) else {
+            return Either::Left(core::iter::empty());
+        };
+
+        let Some(right) = self.storage.inner.get(&Key::TargetToSources(id)) else {
+            return Either::Left(core::iter::empty());
+        };
+
+        Either::Right(
+            UnionIterator::new(left, right)
+                .map(|value| NodeId::from_id(EntryId::new_unchecked(value))),
+        )
+    }
+
+    fn outgoing_edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
+        let Some(bitmap) = self.storage.inner.get(&Key::SourceToEdges(id)) else {
+            return Either::Left(core::iter::empty());
+        };
+
+        Either::Right(
+            bitmap
+                .iter()
+                .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
+        )
+    }
+
+    fn incoming_edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
+        let Some(bitmap) = self.storage.inner.get(&Key::TargetsToEdges(id)) else {
+            return Either::Left(core::iter::empty());
+        };
+
+        Either::Right(
+            bitmap
+                .iter()
+                .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
+        )
+    }
+
+    fn edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
+        let Some(left) = self.storage.inner.get(&Key::SourceToEdges(id)) else {
+            return Either::Left(core::iter::empty());
+        };
+
+        let Some(right) = self.storage.inner.get(&Key::TargetsToEdges(id)) else {
+            return Either::Left(core::iter::empty());
+        };
+
+        Either::Right(
+            UnionIterator::new(left, right)
+                .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
+        )
     }
 }
 
@@ -182,6 +269,36 @@ impl NodeClosure {
             self.incoming_edges.extend(targets_to_edges.iter().copied());
             self.edges.extend(targets_to_edges.iter().copied());
         }
+    }
+}
+
+struct EdgeClosureLookup<'a> {
+    storage: &'a ClosureStorage,
+}
+
+impl<'a> EdgeClosureLookup<'a> {
+    const fn new(storage: &'a ClosureStorage) -> Self {
+        Self { storage }
+    }
+
+    pub(crate) fn endpoints_to_edges(
+        &self,
+        source: NodeId,
+        target: NodeId,
+    ) -> impl Iterator<Item = EdgeId> + 'a {
+        let Some(bitmap) = self
+            .storage
+            .inner
+            .get(&Key::EndpointsToEdges(source, target))
+        else {
+            return Either::Left(core::iter::empty());
+        };
+
+        Either::Right(
+            bitmap
+                .iter()
+                .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
+        )
     }
 }
 

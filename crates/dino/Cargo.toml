@@ -10,7 +10,9 @@ publish = false
 [dependencies]
 petgraph-core.workspace = true
 error-stack.workspace = true
+# TODO: potentially remove
 either = "1.9.0"
 roaring = "0.10.2"
+fnv = { version = "1.0.7", default-features = false }
 
 hashbrown = {workspace = true, features = ['ahash'] }
