@@ -294,8 +294,7 @@ pub trait GraphStorage: Sized {
     /// but must contain all nodes and edges.
     ///
     /// It must always hold true that using the iterables returned by this function to create a new
-    /// graph storage using [`Self::from_parts`] will result in a graph storage
-    /// that is equal to the current graph storage.
+    /// graph storage using [`Self::from_parts`] will result in a structurally identical graph.
     ///
     /// # Example
     ///
