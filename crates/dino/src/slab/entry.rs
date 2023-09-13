@@ -135,6 +135,13 @@ impl<V> Entry<V> {
     }
 
     pub(crate) fn insert(&mut self, value: V) {
+        if self.is_occupied() {
+            // SAFETY: we know that the entry is occupied
+            unsafe {
+                ManuallyDrop::drop(&mut self.state.occupied);
+            }
+        }
+
         // we increment the generation on remove!
         self.state = PackedState {
             occupied: ManuallyDrop::new(value),
@@ -251,5 +258,208 @@ where
         self.generation
             .cmp(&other.generation)
             .then_with(|| self.state().cmp(&other.state()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::sync::atomic::{AtomicUsize, Ordering};
+
+    use crate::slab::{
+        entry::{Entry, State},
+        Generation,
+    };
+
+    #[test]
+    fn create() {
+        let mut entry = Entry::<i32>::new();
+
+        assert!(entry.is_vacant());
+        assert!(!entry.is_occupied());
+
+        assert!(entry.get().is_none());
+        assert!(entry.get_mut().is_none());
+
+        assert!(entry.into_inner().is_none());
+    }
+
+    #[test]
+    fn insert() {
+        let mut entry = Entry::<i32>::new();
+        entry.insert(42);
+
+        assert!(!entry.is_vacant());
+        assert!(entry.is_occupied());
+
+        assert_eq!(entry.get(), Some(&42));
+        assert_eq!(entry.get_mut(), Some(&mut 42));
+
+        let value = entry.get_mut().unwrap();
+        *value = 43;
+
+        assert_eq!(entry.get(), Some(&43));
+        assert_eq!(entry.get_mut(), Some(&mut 43));
+
+        assert_eq!(entry.into_inner(), Some(43));
+    }
+
+    #[test]
+    fn remove() {
+        let mut entry = Entry::<i32>::new();
+        entry.insert(42);
+
+        entry.remove();
+
+        assert!(entry.is_vacant());
+        assert!(!entry.is_occupied());
+
+        assert!(entry.get().is_none());
+        assert!(entry.get_mut().is_none());
+
+        assert!(entry.into_inner().is_none());
+    }
+
+    #[test]
+    fn get() {
+        let mut entry = Entry::<i32>::new();
+        entry.insert(42);
+
+        assert_eq!(entry.get(), Some(&42));
+    }
+
+    #[test]
+    fn get_mut() {
+        let mut entry = Entry::<i32>::new();
+        entry.insert(42);
+
+        assert_eq!(entry.get_mut(), Some(&mut 42));
+
+        let value = entry.get_mut().unwrap();
+        *value = 43;
+
+        assert_eq!(entry.get(), Some(&43));
+    }
+
+    #[test]
+    fn into_inner() {
+        let mut entry = Entry::<i32>::new();
+        entry.insert(42);
+
+        assert_eq!(entry.into_inner(), Some(42));
+    }
+
+    #[test]
+    fn is_occupied() {
+        let mut entry = Entry::<i32>::new();
+
+        assert!(!entry.is_occupied());
+
+        entry.insert(42);
+
+        assert!(entry.is_occupied());
+    }
+
+    #[test]
+    fn is_vacant() {
+        let mut entry = Entry::<i32>::new();
+
+        assert!(entry.is_vacant());
+
+        entry.insert(42);
+
+        assert!(!entry.is_vacant());
+    }
+
+    #[test]
+    fn from_parts() {
+        let entry = Entry::<i32>::from_parts(Generation::first().next(), State::Occupied(42));
+
+        assert!(entry.is_occupied());
+        assert_eq!(entry.get(), Some(&42));
+        assert_eq!(entry.generation, Generation::first().next());
+
+        let entry = Entry::<i32>::from_parts(Generation::first().next(), State::Vacant);
+
+        assert!(entry.is_vacant());
+        assert_eq!(entry.get(), None);
+        assert_eq!(entry.generation, Generation::first().next());
+    }
+
+    macro_rules! setup_drop {
+        () => {
+            static DROP_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+            struct DropCounter;
+
+            impl Drop for DropCounter {
+                fn drop(&mut self) {
+                    DROP_COUNT.fetch_add(1, Ordering::SeqCst);
+                }
+            }
+        };
+    }
+
+    #[test]
+    fn runs_drop_on_remove() {
+        setup_drop!();
+
+        let mut entry = Entry::<DropCounter>::new();
+        entry.insert(DropCounter);
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 0);
+
+        let value = entry.remove();
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 0);
+
+        drop(value);
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn runs_drop_on_drop() {
+        setup_drop!();
+
+        let mut entry = Entry::<DropCounter>::new();
+        entry.insert(DropCounter);
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 0);
+
+        drop(entry);
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn runs_drop_on_insert_replace() {
+        setup_drop!();
+
+        let mut entry = Entry::<DropCounter>::new();
+        entry.insert(DropCounter);
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 0);
+
+        entry.insert(DropCounter);
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn runs_drop_on_into_inner() {
+        setup_drop!();
+
+        let mut entry = Entry::<DropCounter>::new();
+        entry.insert(DropCounter);
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 0);
+
+        let value = entry.into_inner();
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 0);
+
+        drop(value);
+
+        assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 1);
     }
 }
