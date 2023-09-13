@@ -1,34 +1,19 @@
 use roaring::RoaringBitmap;
 
-pub(crate) struct UnionIterator<'a> {
-    left: roaring::bitmap::Iter<'a>,
+#[derive(Default)]
+struct IteratorState {
     left_next: Option<u32>,
-
-    right: roaring::bitmap::Iter<'a>,
     right_next: Option<u32>,
 
     last: Option<u32>,
 }
 
-impl<'a> UnionIterator<'a> {
-    pub(crate) fn new(left: &'a RoaringBitmap, right: &'a RoaringBitmap) -> Self {
-        let left = left.iter();
-        let right = right.iter();
-
-        Self {
-            left,
-            left_next: None,
-            right,
-            right_next: None,
-            last: None,
-        }
-    }
-}
-
-impl Iterator for UnionIterator<'_> {
-    type Item = u32;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl IteratorState {
+    fn next(
+        &mut self,
+        left: &mut impl Iterator<Item = u32>,
+        right: &mut impl Iterator<Item = u32>,
+    ) -> Option<u32> {
         // a and b originate from `RoaringBitmap::iter`, which is guaranteed to be sorted, this
         // simplifies the logic needed here a lot.
         // We only want to return all unique elements from both iterators.
@@ -58,7 +43,7 @@ impl Iterator for UnionIterator<'_> {
         // Find a value that is larger than the last value we returned.
         // `last >= left_next`
         while is_greater_than_or_equal(last, left_next) {
-            let Some(next) = self.left.next() else {
+            let Some(next) = left.next() else {
                 left_next = None;
                 break;
             };
@@ -69,7 +54,7 @@ impl Iterator for UnionIterator<'_> {
         // Find a value that is larger than the last value we returned.
         // `last >= right_next`
         while is_greater_than_or_equal(last, right_next) {
-            let Some(next) = self.right.next() else {
+            let Some(next) = right.next() else {
                 right_next = None;
                 break;
             };
@@ -93,6 +78,126 @@ impl Iterator for UnionIterator<'_> {
         };
 
         self.last = next;
+
         next
+    }
+}
+
+pub(crate) struct UnionIntoIterator {
+    left: roaring::bitmap::IntoIter,
+    right: roaring::bitmap::IntoIter,
+
+    state: IteratorState,
+}
+
+impl UnionIntoIterator {
+    pub(crate) fn new(left: RoaringBitmap, right: RoaringBitmap) -> Self {
+        Self {
+            left: left.into_iter(),
+            right: right.into_iter(),
+
+            state: IteratorState::default(),
+        }
+    }
+}
+
+impl Iterator for UnionIntoIterator {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.state.next(&mut self.left, &mut self.right)
+    }
+}
+
+pub(crate) struct UnionIterator<'a> {
+    left: roaring::bitmap::Iter<'a>,
+    right: roaring::bitmap::Iter<'a>,
+
+    state: IteratorState,
+}
+
+impl<'a> UnionIterator<'a> {
+    pub(crate) fn new(left: &'a RoaringBitmap, right: &'a RoaringBitmap) -> Self {
+        let left = left.iter();
+        let right = right.iter();
+
+        Self {
+            left,
+            right,
+
+            state: IteratorState::default(),
+        }
+    }
+}
+
+impl Iterator for UnionIterator<'_> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.state.next(&mut self.left, &mut self.right)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+
+    use roaring::RoaringBitmap;
+
+    use crate::closure::union::{UnionIntoIterator, UnionIterator};
+
+    #[test]
+    fn empty() {
+        let a = RoaringBitmap::new();
+        let b = RoaringBitmap::new();
+
+        let iterator = UnionIterator::new(&a, &b);
+        assert_eq!(iterator.count(), 0);
+
+        let iterator = UnionIntoIterator::new(a, b);
+        assert_eq!(iterator.count(), 0);
+    }
+
+    #[test]
+    fn non_overlapping() {
+        let a = RoaringBitmap::from_sorted_iter(0..10).unwrap();
+        let b = RoaringBitmap::from_sorted_iter(10..20).unwrap();
+
+        let iterator = UnionIterator::new(&a, &b);
+        assert_eq!(iterator.collect::<Vec<_>>(), (0..20).collect::<Vec<_>>());
+
+        let iterator = UnionIntoIterator::new(a, b);
+        assert_eq!(iterator.collect::<Vec<_>>(), (0..20).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn overlapping() {
+        let a = RoaringBitmap::from_sorted_iter(0..10).unwrap();
+        let b = RoaringBitmap::from_sorted_iter(5..15).unwrap();
+
+        let iterator = UnionIterator::new(&a, &b);
+        assert_eq!(iterator.collect::<Vec<_>>(), (0..15).collect::<Vec<_>>());
+
+        let iterator = UnionIntoIterator::new(a, b);
+        assert_eq!(iterator.collect::<Vec<_>>(), (0..15).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn multiple_overlapping_regions() {
+        let mut a = RoaringBitmap::from_sorted_iter(0..10).unwrap();
+        let mut b = RoaringBitmap::from_sorted_iter(5..15).unwrap();
+
+        a.insert_range(20..30);
+        b.insert_range(25..35);
+
+        a.insert_range(40..50);
+        b.insert_range(15..21);
+        b.insert_range(29..42);
+
+        let iterator = UnionIterator::new(&a, &b);
+        assert_eq!(iterator.collect::<Vec<_>>(), (0..50).collect::<Vec<_>>());
+
+        let iterator = UnionIntoIterator::new(a, b);
+        assert_eq!(iterator.collect::<Vec<_>>(), (0..50).collect::<Vec<_>>());
     }
 }

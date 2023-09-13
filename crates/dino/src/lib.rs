@@ -1,5 +1,5 @@
 #![feature(return_position_impl_trait_in_trait)]
-#![no_std]
+// #![no_std]
 
 pub(crate) mod closure;
 mod directed;
@@ -255,8 +255,10 @@ where
         &mut self,
         id: &Self::NodeId,
     ) -> Option<DetachedNode<Self::NodeId, Self::NodeWeight>> {
-        for edge in self.closures.nodes().edges(*id) {
-            self.edges.remove(edge);
+        for edge in self.closures.drain_edges(*id) {
+            if let Some(edge) = self.edges.remove(edge) {
+                self.closures.remove_edge(&edge);
+            }
         }
 
         let node = self.nodes.remove(*id)?;

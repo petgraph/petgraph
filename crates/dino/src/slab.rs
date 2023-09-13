@@ -5,7 +5,7 @@ use core::{
     hash::Hash,
     marker::PhantomData,
     mem,
-    num::{NonZeroU16, NonZeroUsize},
+    num::{NonZeroU16, NonZeroU8, NonZeroUsize},
 };
 
 use hashbrown::HashMap;
@@ -28,7 +28,7 @@ pub(crate) trait Key:
 /// |------------------------|-----------------|------------|-------------|
 /// | 16                     | 4               | 12         | 0           |
 /// | 32                     | 8               | 24         | 0           |
-/// | 64                     | 16              | 32         | 16          |
+/// | 32                     | 8               | 24         | 32          |
 ///
 /// Each time a lot is allocated, its generation is incremented. When retrieving
 /// values using a `EntryId`, the generation is validated as a safe guard against
@@ -37,10 +37,9 @@ pub(crate) trait Key:
 /// although the likelihood of improper access is greatly reduced.
 ///
 /// These values are used as indices into a roaring bitmap, which has a limit of [`u32::MAX`]
-/// entries. Therefore, even though the index bits are 48, the maximum bits available for the index
-/// is 32.
+/// entries. This means that the `EntryId` is limited to 32 bits as well.
 ///
-/// `EntryId` has the following layout: `<generation> <unused> <index>`
+/// `EntryId` has the following layout: ` <unused> <generation> <index>`
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct EntryId(NonZeroUsize);
 
@@ -53,26 +52,17 @@ impl Debug for EntryId {
     }
 }
 
+#[cfg(target_pointer_width = "16")]
+type RawIndex = u16;
+
+#[cfg(any(target_pointer_width = "32", target_pointer_width = "64"))]
+type RawIndex = u32;
+
 impl EntryId {
     #[allow(clippy::cast_possible_truncation)]
-
-    const GENERATION_MAX: u16 = (usize::MAX >> Self::UNCLAMPED_INDEX_BITS) as u16;
-    const GENERATION_OFFSET: u32 = Self::UNCLAMPED_INDEX_BITS;
-    const INDEX_BITS: u32 = if Self::UNCLAMPED_INDEX_BITS > 32 {
-        32
-    } else {
-        Self::UNCLAMPED_INDEX_BITS
-    };
-    /// # Explanation
-    ///
-    /// How does this magic work? Easy! (Let's assume 32-bit)
-    /// We first take the maximum value of a usize (`0xFFFF_FFFF`)
-    /// We then shift it right by 24 bits (`0x0000_00FF`)
-    /// We then shift it left by 24 bits (`0xFF00_0000`)
-    /// We now have the correct mask, but inverse.
-    /// We then invert it (`0x00FF_FFFF`)
-    const INDEX_MASK: usize = !(usize::MAX >> Self::INDEX_BITS << Self::INDEX_BITS);
-    const UNCLAMPED_INDEX_BITS: u32 = usize::BITS / 4 * 3;
+    const GENERATION_MAX: u8 = (RawIndex::MAX >> Self::INDEX_BITS) as u8;
+    const INDEX_BITS: u32 = RawIndex::BITS / 4 * 3;
+    const INDEX_MASK: usize = 2_usize.pow(Self::INDEX_BITS) - 1;
 
     #[inline]
     #[cfg_attr(target_pointer_width = "64", allow(clippy::absurd_extreme_comparisons))]
@@ -81,13 +71,12 @@ impl EntryId {
 
         is_valid.then(|| {
             Self(
-                NonZeroUsize::new((generation.get() as usize) << Self::GENERATION_OFFSET | index)
+                NonZeroUsize::new((generation.get() as usize) << Self::INDEX_BITS | index)
                     .expect("generation is non-zero"),
             )
         })
     }
 
-    // TODO: make it easier to create indices!
     pub(crate) fn new_unchecked(raw: u32) -> Self {
         Self(NonZeroUsize::new(raw as usize).expect("raw is zero"))
     }
@@ -109,10 +98,17 @@ impl EntryId {
     #[inline]
     #[must_use]
     #[allow(clippy::cast_possible_truncation)]
+    pub(crate) const fn raw(self) -> u32 {
+        // we know that the index will never be larger than 32 bits
+        self.0.get() as u32
+    }
+
+    #[inline]
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation)]
     fn generation(self) -> Generation {
         Generation(
-            NonZeroU16::new((self.0.get() >> Self::GENERATION_OFFSET) as u16)
-                .expect("invalid generation"),
+            NonZeroU8::new((self.0.get() >> Self::INDEX_BITS) as u8).expect("invalid generation"),
         )
     }
 }
@@ -128,11 +124,11 @@ impl Key for EntryId {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct Generation(NonZeroU16);
+pub(crate) struct Generation(NonZeroU8);
 
 impl Generation {
     pub(crate) const fn first() -> Self {
-        Self(match NonZeroU16::new(1) {
+        Self(match NonZeroU8::new(1) {
             Some(n) => n,
             None => unreachable!(),
         })
@@ -146,7 +142,7 @@ impl Generation {
         }
     }
 
-    const fn get(self) -> u16 {
+    const fn get(self) -> u8 {
         self.0.get()
     }
 }
@@ -742,9 +738,9 @@ mod tests {
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn layout() {
-        assert_eq!(EntryId::INDEX_MASK, 0x0000_0000_FFFF_FFFF);
-        assert_eq!(EntryId::INDEX_BITS, 32);
-        assert_eq!(EntryId::UNCLAMPED_INDEX_BITS, 48);
+        assert_eq!(EntryId::INDEX_MASK, 0x0000_0000_00FF_FFFF);
+        assert_eq!(EntryId::INDEX_BITS, 24);
+        assert_eq!(EntryId::GENERATION_MAX, 0xFF);
     }
 
     #[test]
@@ -752,7 +748,7 @@ mod tests {
     fn layout() {
         assert_eq!(EntryId::INDEX_MASK, 0x00FF_FFFF);
         assert_eq!(EntryId::INDEX_BITS, 24);
-        assert_eq!(EntryId::UNCLAMPED_INDEX_BITS, 24);
+        assert_eq!(EntryId::GENERATION_MAX, 0xFF);
     }
 
     #[test]
@@ -760,6 +756,6 @@ mod tests {
     fn layout() {
         assert_eq!(EntryId::INDEX_MASK, 0x0FFF);
         assert_eq!(EntryId::INDEX_BITS, 12);
-        assert_eq!(EntryId::UNCLAMPED_INDEX_BITS, 12);
+        assert_eq!(EntryId::GENERATION_MAX, 0xF);
     }
 }
