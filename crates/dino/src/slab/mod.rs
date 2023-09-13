@@ -17,7 +17,8 @@ use core::{
 use hashbrown::HashMap;
 use petgraph_core::{id::LinearGraphId, storage::LinearIndexLookup};
 
-use crate::slab::{entry::Entry, generation::Generation, id::EntryId, key::Key};
+use crate::slab::entry::{Entry, State};
+pub(crate) use crate::slab::{generation::Generation, id::EntryId, key::Key};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct FreeIndex(usize);
@@ -91,10 +92,7 @@ where
     fn insert_with_generation(&mut self, value: V, generation: Generation) -> K {
         let index = self.insert_index();
 
-        self.entries[index] = Entry {
-            generation,
-            state: State::Occupied(value),
-        };
+        self.entries[index] = Entry::from_parts(generation, State::Occupied(value));
 
         K::from_id(EntryId::new(generation, index).expect("invalid entry id"))
     }
@@ -182,11 +180,7 @@ where
         // we need, to remove all entries that are free from the back until we find an occupied
         // entry.
 
-        while let Some(Entry {
-            state: State::Vacant,
-            ..
-        }) = self.entries.last()
-        {
+        while self.entries.last().map_or(false, |entry| entry.is_vacant()) {
             let index = self.entries.len() - 1;
 
             // the chance that we have a free index at the end is very high
@@ -271,13 +265,16 @@ where
                 return None;
             }
 
+            let entry_info = unsafe { &*ptr::addr_of!((*entry).info) };
+
             // SAFETY: We need to access both the generation and the state separately.
             let entry_state = unsafe { &mut *ptr::addr_of_mut!((*entry).state) };
 
-            match entry_state {
-                State::Occupied(value) => Some(value),
-                State::Vacant => None,
+            if entry_info.is_vacant() {
+                return None;
             }
+
+            Some(unsafe { &mut *entry_state.occupied })
         })
     }
 
@@ -344,7 +341,7 @@ where
         for (index, entry) in self.entries.iter_mut().enumerate() {
             let key = K::from_id(EntryId::new(entry.generation, index).expect("invalid entry id"));
 
-            if let State::Occupied(value) = &mut entry.state {
+            if let State::Occupied(value) = entry.state_mut() {
                 let keep = f(key, value);
 
                 if !keep {
@@ -456,7 +453,7 @@ mod tests {
         // later on, but for now it's not worth it.
         assert_eq!(
             core::mem::size_of::<crate::slab::Entry<u16>>(),
-            core::mem::size_of::<u16>() + core::mem::size_of::<u16>() + core::mem::size_of::<u16>()
+            core::mem::size_of::<u16>() + core::mem::size_of::<u16>()
         );
     }
 

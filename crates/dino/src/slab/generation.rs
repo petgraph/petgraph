@@ -1,5 +1,7 @@
 use core::num::NonZeroU8;
 
+use crate::slab::EntryId;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct Generation(pub(super) NonZeroU8);
 

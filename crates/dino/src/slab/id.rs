@@ -46,8 +46,8 @@ type RawIndex = u32;
 impl EntryId {
     #[allow(clippy::cast_possible_truncation)]
     pub(crate) const GENERATION_MAX: u8 = (RawIndex::MAX >> Self::INDEX_BITS) as u8;
-    const INDEX_BITS: u32 = RawIndex::BITS / 4 * 3;
-    const INDEX_MASK: usize = 2_usize.pow(Self::INDEX_BITS) - 1;
+    pub(crate) const INDEX_BITS: u32 = RawIndex::BITS / 4 * 3;
+    pub(crate) const INDEX_MASK: usize = 2_usize.pow(Self::INDEX_BITS) - 1;
 
     #[inline]
     #[cfg_attr(target_pointer_width = "64", allow(clippy::absurd_extreme_comparisons))]
@@ -68,7 +68,7 @@ impl EntryId {
 
     #[inline]
     #[must_use]
-    const fn index(self) -> usize {
+    pub(crate) const fn index(self) -> usize {
         self.0.get() & Self::INDEX_MASK
     }
 
@@ -91,7 +91,7 @@ impl EntryId {
     #[inline]
     #[must_use]
     #[allow(clippy::cast_possible_truncation)]
-    fn generation(self) -> Generation {
+    pub(crate) fn generation(self) -> Generation {
         Generation(
             NonZeroU8::new((self.0.get() >> Self::INDEX_BITS) as u8).expect("invalid generation"),
         )
