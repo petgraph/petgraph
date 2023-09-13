@@ -14,15 +14,10 @@ mod tests;
 
 extern crate alloc;
 
-use core::{
-    fmt::{Debug, Display},
-    iter::empty,
-};
+use core::fmt::{Debug, Display};
 
-use ::either::Either;
 pub use edge::EdgeId;
 use error_stack::{Context, Report, Result};
-use hashbrown::HashSet;
 pub use node::NodeId;
 use petgraph_core::{
     edge::{
@@ -332,7 +327,7 @@ where
 
         source_to_target
             .into_iter()
-            .chain(target_to_source.into_iter())
+            .chain(target_to_source)
             .filter_map(move |edge| self.edge(&edge))
     }
 
@@ -354,21 +349,9 @@ where
             closures, edges, ..
         } = self;
 
-        // TODO: we can remove this allocation, and nodes are ordered!
-        let available: HashSet<_> = closures.nodes().edges(*id).collect();
-
-        if available.is_empty() {
-            return Either::Left(empty());
-        }
-
-        Either::Right(
-            edges
-                .iter_mut()
-                .filter(move |edge| available.contains(&edge.id))
-                .map(move |edge| {
-                    EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target)
-                }),
-        )
+        edges
+            .filter_mut(closures.nodes().edges(*id))
+            .map(move |edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
     }
 
     fn node_neighbours<'a: 'b, 'b>(
@@ -389,19 +372,9 @@ where
             closures, nodes, ..
         } = self;
 
-        // TODO: we can remove this allocation, and nodes are ordered!
-        let available: HashSet<_> = closures.nodes().neighbours(*id).collect();
-
-        if available.is_empty() {
-            return Either::Left(empty());
-        }
-
-        Either::Right(
-            nodes
-                .iter_mut()
-                .filter(move |node| available.contains(&node.id))
-                .map(move |node| NodeMut::new(&node.id, &mut node.weight)),
-        )
+        nodes
+            .filter_mut(closures.nodes().neighbours(*id))
+            .map(move |node| NodeMut::new(&node.id, &mut node.weight))
     }
 
     fn external_nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
@@ -416,18 +389,9 @@ where
             nodes, closures, ..
         } = self;
 
-        // TODO: we can remove this allocation, as we know it's all ordered! (soon™)
-        let externals: HashSet<_> = closures.nodes().externals().collect();
-
-        if externals.is_empty() {
-            return Either::Left(empty());
-        }
-
-        Either::Right(nodes.entries_mut().filter_map(move |(id, node)| {
-            let is_external = externals.contains(&id);
-
-            is_external.then(|| NodeMut::new(&node.id, &mut node.weight))
-        }))
+        nodes
+            .filter_mut(closures.nodes().externals())
+            .map(move |node| NodeMut::new(&node.id, &mut node.weight))
     }
 
     fn nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {

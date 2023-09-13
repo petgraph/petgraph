@@ -1,7 +1,4 @@
-use core::iter::empty;
-
 use either::Either;
-use hashbrown::HashSet;
 use petgraph_core::{
     edge::{Direction, Edge, EdgeMut},
     node::{Node, NodeMut},
@@ -52,20 +49,9 @@ impl<N, E> DirectedGraphStorage for DinosaurStorage<N, E, Directed> {
             Direction::Outgoing => Either::Right(closure.outgoing_edges(*id)),
         };
 
-        // TODO: we can do this without allocation, as both edges and available are sorted! (except
-        // for generation, mhh)
-        let available: HashSet<_> = available.collect();
-
-        if available.is_empty() {
-            return Either::Left(empty());
-        }
-
-        Either::Right(
-            edges
-                .iter_mut()
-                .filter(move |edge| available.contains(&edge.id))
-                .map(|edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target)),
-        )
+        edges
+            .filter_mut(available)
+            .map(|edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
     }
 
     fn node_directed_neighbours<'a: 'b, 'b>(
@@ -98,19 +84,8 @@ impl<N, E> DirectedGraphStorage for DinosaurStorage<N, E, Directed> {
             Direction::Outgoing => Either::Right(closure.outgoing_neighbours(*id)),
         };
 
-        // TODO: we can do this without allocation, as both nodes and available are sorted!
-        // (except for generation)
-        let available: HashSet<_> = available.collect();
-
-        if available.is_empty() {
-            return Either::Left(empty());
-        }
-
-        Either::Right(
-            nodes
-                .iter_mut()
-                .filter(move |node| available.contains(&node.id))
-                .map(|node| NodeMut::new(&node.id, &mut node.weight)),
-        )
+        nodes
+            .filter_mut(available)
+            .map(|node| NodeMut::new(&node.id, &mut node.weight))
     }
 }

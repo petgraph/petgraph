@@ -1,4 +1,9 @@
 //! Adapted implementation of the excellent `alot` crate
+mod entry;
+mod generation;
+mod id;
+mod key;
+
 use alloc::vec::Vec;
 use core::{
     fmt::{Debug, Formatter},
@@ -12,207 +17,7 @@ use core::{
 use hashbrown::HashMap;
 use petgraph_core::{id::LinearGraphId, storage::LinearIndexLookup};
 
-const MAXIMUM_INDEX: usize = usize::MAX << 16 >> 16;
-
-pub(crate) trait Key:
-    Copy + Clone + PartialEq + Eq + PartialOrd + Ord + Hash + Debug
-{
-    fn from_id(id: EntryId) -> Self;
-    fn into_id(self) -> EntryId;
-}
-
-/// A `EntryId` is a single `usize`, encoding generation information in the top
-/// 1/4 of the bits, and index information in the remaining bits. This table
-/// shows the breakdown for supported target platforms:
-///
-/// | `target_pointer_width` | generation bits | index bits | unused bits |
-/// |------------------------|-----------------|------------|-------------|
-/// | 16                     | 4               | 12         | 0           |
-/// | 32                     | 8               | 24         | 0           |
-/// | 32                     | 8               | 24         | 32          |
-///
-/// Each time a lot is allocated, its generation is incremented. When retrieving
-/// values using a `EntryId`, the generation is validated as a safe guard against
-/// returning a value. Because the generation isn't significantly wide, the
-/// generation can wrap and is not a perfect protection against stale data,
-/// although the likelihood of improper access is greatly reduced.
-///
-/// These values are used as indices into a roaring bitmap, which has a limit of [`u32::MAX`]
-/// entries. This means that the `EntryId` is limited to 32 bits as well.
-///
-/// `EntryId` has the following layout: `<unused> <generation> <index>`
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct EntryId(NonZeroUsize);
-
-impl Debug for EntryId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("EntryId")
-            .field("index", &self.index())
-            .field("generation", &self.generation())
-            .finish()
-    }
-}
-
-#[cfg(target_pointer_width = "16")]
-type RawIndex = u16;
-
-#[cfg(any(target_pointer_width = "32", target_pointer_width = "64"))]
-type RawIndex = u32;
-
-impl EntryId {
-    #[allow(clippy::cast_possible_truncation)]
-    const GENERATION_MAX: u8 = (RawIndex::MAX >> Self::INDEX_BITS) as u8;
-    const INDEX_BITS: u32 = RawIndex::BITS / 4 * 3;
-    const INDEX_MASK: usize = 2_usize.pow(Self::INDEX_BITS) - 1;
-
-    #[inline]
-    #[cfg_attr(target_pointer_width = "64", allow(clippy::absurd_extreme_comparisons))]
-    fn new(generation: Generation, index: usize) -> Option<Self> {
-        let is_valid = generation.get() <= Self::GENERATION_MAX && index <= Self::INDEX_MASK;
-
-        is_valid.then(|| {
-            Self(
-                NonZeroUsize::new((generation.get() as usize) << Self::INDEX_BITS | index)
-                    .expect("generation is non-zero"),
-            )
-        })
-    }
-
-    pub(crate) fn new_unchecked(raw: u32) -> Self {
-        Self(NonZeroUsize::new(raw as usize).expect("raw is zero"))
-    }
-
-    #[inline]
-    #[must_use]
-    const fn index(self) -> usize {
-        self.0.get() & Self::INDEX_MASK
-    }
-
-    #[inline]
-    #[must_use]
-    #[allow(clippy::cast_possible_truncation)]
-    pub(crate) const fn index_u32(self) -> u32 {
-        // we know that the index will never be larger than 32 bits
-        self.index() as u32
-    }
-
-    #[inline]
-    #[must_use]
-    #[allow(clippy::cast_possible_truncation)]
-    pub(crate) const fn raw(self) -> u32 {
-        // we know that the index will never be larger than 32 bits
-        self.0.get() as u32
-    }
-
-    #[inline]
-    #[must_use]
-    #[allow(clippy::cast_possible_truncation)]
-    fn generation(self) -> Generation {
-        Generation(
-            NonZeroU8::new((self.0.get() >> Self::INDEX_BITS) as u8).expect("invalid generation"),
-        )
-    }
-}
-
-impl Key for EntryId {
-    fn from_id(id: EntryId) -> Self {
-        id
-    }
-
-    fn into_id(self) -> EntryId {
-        self
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct Generation(NonZeroU8);
-
-impl Generation {
-    pub(crate) const fn first() -> Self {
-        Self(match NonZeroU8::new(1) {
-            Some(n) => n,
-            None => unreachable!(),
-        })
-    }
-
-    #[cfg_attr(target_pointer_width = "64", allow(clippy::absurd_extreme_comparisons))]
-    const fn next(self) -> Self {
-        match self.0.checked_add(1) {
-            Some(next) if next.get() <= EntryId::GENERATION_MAX => Self(next),
-            _ => Self::first(),
-        }
-    }
-
-    const fn get(self) -> u8 {
-        self.0.get()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-enum State<V> {
-    Vacant,
-    Occupied(V),
-}
-
-impl<V> State<V> {
-    fn into(self) -> Option<V> {
-        match self {
-            Self::Occupied(value) => Some(value),
-            Self::Vacant => None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct Entry<V> {
-    generation: Generation,
-    state: State<V>,
-}
-
-impl<V> Entry<V> {
-    const fn new() -> Self {
-        Self {
-            generation: Generation::first(),
-            state: State::Vacant,
-        }
-    }
-
-    const fn is_occupied(&self) -> bool {
-        matches!(self.state, State::Occupied(_))
-    }
-
-    fn remove(&mut self) -> Option<V> {
-        if !self.is_occupied() {
-            return None;
-        }
-
-        self.generation = self.generation.next();
-        mem::replace(&mut self.state, State::Vacant).into()
-    }
-
-    fn insert(&mut self, value: V) {
-        // we increment the generation on remove!
-        self.state = State::Occupied(value);
-    }
-
-    const fn get(&self) -> Option<&V> {
-        match &self.state {
-            State::Occupied(value) => Some(value),
-            State::Vacant => None,
-        }
-    }
-
-    fn get_mut(&mut self) -> Option<&mut V> {
-        match &mut self.state {
-            State::Occupied(value) => Some(value),
-            State::Vacant => None,
-        }
-    }
-
-    fn into_inner(self) -> Option<V> {
-        self.state.into()
-    }
-}
+use crate::slab::{entry::Entry, generation::Generation, id::EntryId, key::Key};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct FreeIndex(usize);
@@ -263,7 +68,11 @@ where
         if let Some(free_index) = self.free.pop() {
             free_index.0
         } else {
-            assert_ne!(self.entries.len(), MAXIMUM_INDEX, "slab is full");
+            assert_ne!(
+                self.entries.len(),
+                (EntryId::GENERATION_MAX as usize) + 1,
+                "slab is full"
+            );
 
             self.entries.push(Entry::new());
             self.entries.len() - 1
@@ -420,62 +229,56 @@ where
     pub(crate) fn filter_mut(
         &mut self,
         indices: impl Iterator<Item = K>,
-    ) -> impl Iterator<Item = Result<&mut V, ()>> {
+    ) -> impl Iterator<Item = &mut V> {
         let mut last = None;
 
-        let indices = indices.map(move |index| {
+        let indices = indices.filter(move |index| {
             if index.into_id().raw() <= last.unwrap_or(0) {
-                return Err(());
+                return false;
             }
 
             last = Some(index.into_id().raw());
 
-            Ok(index)
+            true
         });
 
-        let slice = indices.filter_map(|index| {
-            index
-                .map(|index| {
-                    let id = index.into_id();
-                    let generation = id.generation();
-                    let index = id.index();
+        indices.filter_map(|index| {
+            let id = index.into_id();
+            let generation = id.generation();
+            let index = id.index();
 
-                    if index >= self.entries.len() {
-                        return None;
-                    }
+            if index >= self.entries.len() {
+                return None;
+            }
 
-                    // SAFETY: `indices` is ordered. This is checked by the `indices` iterator.
-                    // This means that we can never access the same index twice.
-                    // The only other way we could try to access the same index twice, would be if
-                    // the index is the same, but the generation is different.
-                    // To ensure that we only access the same index once, we check (via a shared
-                    // reference) if the generation is the same.
-                    // We can access the generation and the value simultaneously, because they are
-                    // non-overlapping.
-                    let entry = unsafe { self.entries.as_mut_ptr().add(index) };
+            // SAFETY: `indices` is ordered. This is checked by the `indices` iterator.
+            // This means that we can never access the same index twice.
+            // The only other way we could try to access the same index twice, would be if
+            // the index is the same, but the generation is different.
+            // To ensure that we only access the same index once, we check (via a shared
+            // reference) if the generation is the same.
+            // We can access the generation and the value simultaneously, because they are
+            // non-overlapping.
+            let entry = unsafe { self.entries.as_mut_ptr().add(index) };
 
-                    // SAFETY: We need to access both the generation and the state separately.
-                    // The generation is accessed via a shared reference, while the state is
-                    // accessed via a mutable.
-                    // This is because we need to ensure that the generation is not the same.
-                    let entry_generation = unsafe { *ptr::addr_of!((*entry).generation) };
+            // SAFETY: We need to access both the generation and the state separately.
+            // The generation is accessed via a shared reference, while the state is
+            // accessed via a mutable.
+            // This is because we need to ensure that the generation is not the same.
+            let entry_generation = unsafe { *ptr::addr_of!((*entry).generation) };
 
-                    if entry_generation != generation {
-                        return None;
-                    }
+            if entry_generation != generation {
+                return None;
+            }
 
-                    // SAFETY: We need to access both the generation and the state separately.
-                    let entry_state = unsafe { &mut *ptr::addr_of_mut!((*entry).state) };
+            // SAFETY: We need to access both the generation and the state separately.
+            let entry_state = unsafe { &mut *ptr::addr_of_mut!((*entry).state) };
 
-                    match entry_state {
-                        State::Occupied(value) => Some(value),
-                        State::Vacant => None,
-                    }
-                })
-                .transpose()
-        });
-
-        slice
+            match entry_state {
+                State::Occupied(value) => Some(value),
+                State::Vacant => None,
+            }
+        })
     }
 
     pub(crate) fn into_iter(self) -> impl Iterator<Item = V> {
@@ -850,7 +653,7 @@ mod tests {
         let iter = slab.filter_mut(vec![a, b, c].into_iter());
         let output: Vec<_> = iter.collect();
 
-        assert_eq!(output, vec![Ok(&mut 42), Ok(&mut 43), Ok(&mut 44)]);
+        assert_eq!(output, vec![&mut 42, &mut 43, &mut 44]);
     }
 
     #[test]
@@ -863,7 +666,7 @@ mod tests {
         let iter = slab.filter_mut(vec![a, a2].into_iter());
         let output: Vec<_> = iter.collect();
 
-        assert_eq!(output, vec![Ok(&mut 42)]);
+        assert_eq!(output, vec![&mut 42]);
     }
 
     #[test]
@@ -877,7 +680,7 @@ mod tests {
         let iter = slab.filter_mut(vec![a, a2].into_iter());
         let output: Vec<_> = iter.collect();
 
-        assert_eq!(output, vec![Ok(&mut 42)]);
+        assert_eq!(output, vec![&mut 42]);
     }
 
     #[test]
@@ -891,7 +694,7 @@ mod tests {
         let iter = slab.filter_mut(vec![b, a, c].into_iter());
         let output: Vec<_> = iter.collect();
 
-        assert_eq!(output, vec![Ok(&mut 43), Err(()), Ok(&mut 44)]);
+        assert_eq!(output, vec![&mut 43, &mut 44]);
     }
 
     #[test]
@@ -903,6 +706,6 @@ mod tests {
         let iter = slab.filter_mut(vec![a, a].into_iter());
         let output: Vec<_> = iter.collect();
 
-        assert_eq!(output, vec![Ok(&mut 42), Err(()),]);
+        assert_eq!(output, vec![&mut 42]);
     }
 }
