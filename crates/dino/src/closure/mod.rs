@@ -226,13 +226,16 @@ impl<'a> NodeClosure<'a> {
         };
 
         let Some(right) = self.storage.inner.get(&Key::TargetToSources(id)) else {
-            return Either::Left(core::iter::empty());
+            return Either::Right(Either::Left(
+                left.iter()
+                    .map(|value| NodeId::from_id(EntryId::new_unchecked(value))),
+            ));
         };
 
-        Either::Right(
+        Either::Right(Either::Right(
             UnionIterator::new(left, right)
                 .map(|value| NodeId::from_id(EntryId::new_unchecked(value))),
-        )
+        ))
     }
 
     pub(crate) fn outgoing_edges(&self, id: NodeId) -> impl Iterator<Item = EdgeId> + 'a {
@@ -265,13 +268,16 @@ impl<'a> NodeClosure<'a> {
         };
 
         let Some(right) = self.storage.inner.get(&Key::TargetsToEdges(id)) else {
-            return Either::Left(core::iter::empty());
+            return Either::Right(Either::Left(
+                left.iter()
+                    .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
+            ));
         };
 
-        Either::Right(
+        Either::Right(Either::Right(
             UnionIterator::new(left, right)
                 .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
-        )
+        ))
     }
 
     pub(crate) fn externals(&self) -> impl Iterator<Item = NodeId> + 'a {
