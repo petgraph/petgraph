@@ -1,3 +1,32 @@
+//! Graph storage implementations.
+//!
+//! This module contains the various graph storage implementations that are used by the [`Graph`]
+//! type.
+//!
+//! # Overview
+//!
+//! The [`GraphStorage`] type is split into multiple sub-traits, while trying to keep the number of
+//! sub-traits to a minimum.
+//!
+//! These include:
+//! - [`GraphStorage`]: The core trait that all graph storage implementations must implement, maps
+//!   to an undirected graph.
+//! - [`DirectedGraphStorage`]: A trait for directed graph storage implementations.
+//! - [`LinearGraphStorage`]: A trait for linear graph storage implementations. A linear graph
+//!   storage is one where the node indices and edge indices can be mapped to a continuous integer
+//!   using a [`LinearIndexLookup`].
+//! - [`ResizableGraphStorage`]: A trait for resizable graph storage implementations.
+//! - [`RetainableGraphStorage`]: A trait for retainable graph storage implementations.
+//!
+//! [`GraphStorage`] proposes that [`DirectedGraphStorage`] is simply a specialization of an
+//! undirected graph, meaning that the supertrait of [`DirectedGraphStorage`] is also
+//! [`GraphStorage`] and that all implementations of [`DirectedGraphStorage`] must also support
+//! undirected graph operations.
+//!
+//! # Implementation Notes
+//!
+//! [`LinearGraphStorage`], [`ResizableGraphStorage`] and [`RetainableGraphStorage`] are subject to
+//! removal during the alpha period.
 mod directed;
 mod linear;
 mod resize;
@@ -17,6 +46,32 @@ use crate::{
     node::{DetachedNode, Node, NodeMut},
 };
 
+/// A trait for graph storage implementations.
+///
+/// This trait is the core of the graph storage system, and is used to define the interface that all
+/// graph storage implementations must implement.
+///
+/// A [`GraphStorage`] is never used alone, but instead is used in conjunction with a [`Graph`],
+/// which is a thin abstraction layer over the [`GraphStorage`].
+///
+/// This allows us to have multiple different graph storage implementations, while still having a
+/// convenient interface with a minimal amount of boilerplate and functions to implement.
+///
+/// You can instantiate a graph storage implementation directly, but it is recommended to use the
+/// functions [`Graph::new`], [`Graph::new_in`], or [`Graph::with_capacity`] instead.
+///
+/// # Example
+///
+/// ```
+/// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+/// use petgraph_dino::DinosaurStorage;
+///
+/// let mut storage = DinosaurStorage::<(), (), Directed>::new();
+/// # assert_eq!(storage.num_nodes(), 0);
+/// # assert_eq!(storage.num_edges(), 0);
+/// ```
+///
+/// [`Graph`]: crate::graph::Graph
 pub trait GraphStorage: Sized {
     /// The unique identifier for an edge.
     ///
@@ -40,6 +95,10 @@ pub trait GraphStorage: Sized {
     /// will allow users to specify the identifier and weight of the edge, while if the
     /// implementation manages the identifiers, [`Attributes`] will only allow users to specify the
     /// weight of the edge.
+    ///
+    /// [`Attributes`]: crate::attributes::Attributes
+    /// [`ManagedGraphId`]: crate::id::ManagedGraphId
+    /// [`ArbitraryGraphId`]: crate::id::ArbitraryGraphId
     type EdgeId: GraphId;
 
     /// The weight of an edge.
@@ -65,6 +124,8 @@ pub trait GraphStorage: Sized {
     /// for a single error type.
     /// This is very intentional, as error-stack allows us to layer errors on top of each other,
     /// meaning that a more specific error may be wrapped in this more general error type.
+    ///
+    /// [`Report`]: error_stack::Report
     type Error: Context;
 
     /// The unique identifier for a node.
@@ -89,6 +150,10 @@ pub trait GraphStorage: Sized {
     /// will allow users to specify the identifier and weight of the node, while if the
     /// implementation manages the identifiers, [`Attributes`] will only allow users to specify the
     /// weight of the node.
+    ///
+    /// [`Attributes`]: crate::attributes::Attributes
+    /// [`ManagedGraphId`]: crate::id::ManagedGraphId
+    /// [`ArbitraryGraphId`]: crate::id::ArbitraryGraphId
     type NodeId: GraphId;
 
     /// The weight of a node.
@@ -110,7 +175,21 @@ pub trait GraphStorage: Sized {
     /// The semantics are the same as [`Vec::with_capacity`] or [`Vec::new`], where a capacity of
     /// `None` should correspond to `Vec::new`, and a capacity of `Some(n)` should correspond to
     /// `Vec::with_capacity(n)`.
-    // TODO: example
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::{DiDinoGraph, DinosaurStorage};
+    ///
+    /// let storage = DinosaurStorage::<(), (), Directed>::new();
+    /// # assert_eq!(storage.num_nodes(), 0);
+    /// # assert_eq!(storage.num_edges(), 0);
+    ///
+    /// let storage = DiDinoGraph::<(), ()>::with_capacity(Some(10), Some(10));
+    /// # assert_eq!(storage.num_nodes(), 0);
+    /// # assert_eq!(storage.num_edges(), 0);
+    /// ```
     fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self;
 
     /// Create a new graph storage from the given nodes and edges.
@@ -118,6 +197,35 @@ pub trait GraphStorage: Sized {
     /// This takes a list of nodes and edges, and tries to create a graph from them. This is the
     /// reverse operation of [`Self::into_parts`], which converts the current graph storage into an
     /// iterable of nodes and edges.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// # let id = storage.next_node_id(NoValue::new());
+    /// let a = *storage.insert_node(id, 1).unwrap().id();
+    ///
+    /// # let id = storage.next_node_id(NoValue::new());
+    /// let b = *storage.insert_node(id, 2).unwrap().id();
+    ///
+    /// # let id = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(id, 3, &a, &b).unwrap();
+    ///
+    /// assert_eq!(storage.num_nodes(), 2);
+    /// assert_eq!(storage.num_edges(), 1);
+    ///
+    /// let (nodes, edges) = storage.into_parts();
+    ///
+    /// let storage = DinosaurStorage::from_parts(nodes, edges).unwrap();
+    ///
+    /// assert_eq!(storage.num_nodes(), 2);
+    /// assert_eq!(storage.num_edges(), 1);
+    /// ```
     ///
     /// # Errors
     ///
@@ -133,7 +241,6 @@ pub trait GraphStorage: Sized {
     ///
     /// Implementations may choose to override this default implementation, but should try to also
     /// be fail-slow.
-    // TODO: example
     fn from_parts(
         nodes: impl IntoIterator<Item = DetachedNode<Self::NodeId, Self::NodeWeight>>,
         edges: impl IntoIterator<Item = DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>,
@@ -189,7 +296,38 @@ pub trait GraphStorage: Sized {
     /// It must always hold true that using the iterables returned by this function to create a new
     /// graph storage using [`Self::from_parts`] will result in a graph storage
     /// that is equal to the current graph storage.
-    // TODO: example
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::{collections::HashSet, iter::once};
+    ///
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// # let id = storage.next_node_id(NoValue::new());
+    /// let a = *storage.insert_node(id, 1).unwrap().id();
+    ///
+    /// # let id = storage.next_node_id(NoValue::new());
+    /// let b = *storage.insert_node(id, 2).unwrap().id();
+    ///
+    /// # let id = storage.next_edge_id(NoValue::new());
+    /// let ab = *storage.insert_edge(id, 3, &a, &b).unwrap().id();
+    ///
+    /// assert_eq!(storage.num_nodes(), 2);
+    /// assert_eq!(storage.num_edges(), 1);
+    ///
+    /// let (nodes, edges) = storage.into_parts();
+    ///
+    /// let node_ids: HashSet<_> = nodes.map(|detached_node| detached_node.id).collect();
+    /// let edge_ids: HashSet<_> = edges.map(|detached_edge| detached_edge.id).collect();
+    ///
+    /// assert_eq!(node_ids, [a, b].into_iter().collect());
+    /// assert_eq!(edge_ids, once(ab).collect());
+    /// ```
     fn into_parts(
         self,
     ) -> (
@@ -201,11 +339,30 @@ pub trait GraphStorage: Sized {
     ///
     /// This is equivalent to [`Self::nodes`].`count()`.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<(), (), Directed>::new();
+    ///
+    /// # let id = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(id, ()).unwrap();
+    ///
+    /// assert_eq!(storage.num_nodes(), 1);
+    ///
+    /// # let id = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(id, ()).unwrap();
+    ///
+    /// assert_eq!(storage.num_nodes(), 2);
+    /// ```
+    ///
     /// # Implementation Notes
     ///
     /// This is a default implementation, which uses [`Self::nodes`].`count()`, custom
     /// implementations, should if possible, override this.
-    // TODO: example
     fn num_nodes(&self) -> usize {
         self.nodes().count()
     }
@@ -214,11 +371,35 @@ pub trait GraphStorage: Sized {
     ///
     /// This is equivalent to [`Self::edges`].`count()`.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<(), (), Directed>::new();
+    ///
+    /// # let id = storage.next_node_id(NoValue::new());
+    /// # let a = *storage.insert_node(id, ()).unwrap().id();
+    /// #
+    /// # let id = storage.next_node_id(NoValue::new());
+    /// # let b = *storage.insert_node(id, ()).unwrap().id();
+    /// #
+    /// # let id = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(id, (), &a, &b).unwrap();
+    /// assert_eq!(storage.num_edges(), 1);
+    /// #
+    /// # let id = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(id, (), &a, &b).unwrap();
+    /// #
+    /// assert_eq!(storage.num_edges(), 2);
+    /// ```
+    ///
     /// # Implementation Notes
     ///
     /// This is a default implementation, which uses [`Self::edges`].`count()`, custom
     /// implementations, should if possible, override this.
-    // TODO: example
     fn num_edges(&self) -> usize {
         self.edges().count()
     }
@@ -231,6 +412,28 @@ pub trait GraphStorage: Sized {
     ///
     /// This function is only of interest for implementations that manage the identifiers of nodes
     /// (using the [`ManagedGraphId`] marker trait).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<(), (), Directed>::new();
+    ///
+    /// // `DinosaurStorage` uses `ManagedGraphId` for both node and edge identifiers,
+    /// // so we must use `NoValue` here.
+    /// let a = storage.next_node_id(NoValue::new());
+    /// let b = storage.next_node_id(NoValue::new());
+    ///
+    /// assert_eq!(a, b);
+    ///
+    /// storage.insert_node(a, ()).unwrap();
+    ///
+    /// let c = storage.next_node_id(NoValue::new());
+    ///
+    /// assert_ne!(a, c);
+    /// ```
     ///
     /// # Implementation Notes
     ///
@@ -247,16 +450,30 @@ pub trait GraphStorage: Sized {
     /// return [`Self::NodeId`] and must not take `attribute` into account (in fact it can't, as the
     /// value is always [`NoValue`]). Should the [`ArbitraryGraphId`] marker trait be implemented,
     /// this function should effectively be a no-op and given `attribute`.
-    // TODO: example
     fn next_node_id(&self, attribute: <Self::NodeId as GraphId>::AttributeIndex) -> Self::NodeId;
 
     /// Inserts a new node into the graph.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, (), Directed>::new();
+    ///
+    /// // `DinosaurStorage` uses `ManagedGraphId` for both node and edge identifiers,
+    /// // so we must use `NoValue` here.
+    /// let id = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(id, 1).unwrap();
+    /// #
+    /// # assert_eq!(storage.node(&id).unwrap().weight(), &1);
+    /// ```
     ///
     /// # Errors
     ///
     /// Returns an error if a node with the given identifier already exists, or if any of the
     /// invariants (depending on the implementation) are violated.
-    // TODO: example
     fn insert_node(
         &mut self,
         id: Self::NodeId,
@@ -273,13 +490,50 @@ pub trait GraphStorage: Sized {
     /// This function is only of interest for implementations that manage the identifiers of edges
     /// (using the [`ManagedGraphId`] marker trait).
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, (), Directed>::new();
+    ///
+    /// // `DinosaurStorage` uses `ManagedGraphId` for both node and edge identifiers,
+    /// // so we must use `NoValue` here.
+    /// let id = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(id, 1).unwrap();
+    /// #
+    /// # assert_eq!(storage.node(&id).unwrap().weight(), &1);
+    /// ```
+    ///
     /// # Implementation Notes
     ///
     /// All the same notes as [`Self::next_node_id`] apply here as well.
-    // TODO: example
     fn next_edge_id(&self, attribute: <Self::EdgeId as GraphId>::AttributeIndex) -> Self::EdgeId;
 
     /// Inserts a new edge into the graph.
+    ///
+    /// # Example
+    ///
+    ///```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// # storage.insert_node(a, 1).unwrap();
+    /// #
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// # storage.insert_node(b, 2).unwrap();
+    ///
+    /// // `DinosaurStorage` uses `ManagedGraphId` for both node and edge identifiers,
+    /// // so we must use `NoValue` here.
+    /// let id = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(id, 3, &a, &b).unwrap();
+    /// #
+    /// # assert_eq!(storage.edge(&id).unwrap().weight(), &3);
+    /// ```
     ///
     /// # Errors
     ///
@@ -287,7 +541,6 @@ pub trait GraphStorage: Sized {
     /// the implementation) are violated.
     /// These invariants _may_ include that an edge between the source and target already exist, but
     /// some implementations may choose to allow parallel edges.
-    // TODO: example
     fn insert_edge(
         &mut self,
         id: Self::EdgeId,
@@ -299,8 +552,65 @@ pub trait GraphStorage: Sized {
 
     /// Removes the node with the given identifier from the graph.
     ///
-    /// Returns the removed node if it existed.
-    // TODO: example
+    /// This will return [`None`] if the node does not exist, and will return the detached node if
+    /// it does.
+    ///
+    /// Calling this function will also remove all edges that are connected to the node, but will
+    /// not return those detached edges.
+    ///
+    /// To also return the detached edges that were removed, use a combination of
+    /// [`Self::node_connections`], [`Self::remove_edge`] and [`Self::remove_node`] instead.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    ///
+    /// let removed = storage.remove_node(&a).unwrap();
+    /// assert_eq!(removed.id, a);
+    /// assert_eq!(removed.weight, 1);
+    /// #
+    /// # assert_eq!(storage.num_nodes(), 0);
+    /// ```
+    ///
+    /// ## Return Node with Edges
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// #
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// #
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 3, &a, &b).unwrap();
+    ///
+    /// let connections: Vec<_> = storage
+    ///     .node_connections(&a)
+    ///     .map(|edge| *edge.id())
+    ///     .collect();
+    /// #
+    /// # assert_eq!(connections, [ab]);
+    ///
+    /// for edge in connections {
+    ///     // do something with the detached edge
+    ///     storage.remove_edge(&edge).unwrap();
+    /// }
+    ///
+    /// storage.remove_node(&a).unwrap();
+    /// ```
     fn remove_node(
         &mut self,
         id: &Self::NodeId,
@@ -308,14 +618,62 @@ pub trait GraphStorage: Sized {
 
     /// Removes the edge with the given identifier from the graph.
     ///
-    /// Returns the removed edge if it existed.
-    // TODO: example
+    /// This will return [`None`] if the edge does not exist, and will return the detached edge if
+    /// it existed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// #
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// #
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 3, &a, &b).unwrap();
+    ///
+    /// let removed = storage.remove_edge(&ab).unwrap();
+    /// assert_eq!(removed.id, ab);
+    /// assert_eq!(removed.weight, 3);
+    /// #
+    /// # assert_eq!(storage.num_edges(), 0);
+    /// ```
     fn remove_edge(
         &mut self,
         id: &Self::EdgeId,
     ) -> Option<DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>;
 
-    fn clear(&mut self) -> Result<(), Self::Error>;
+    /// Clears the graph, removing all nodes and edges.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// #
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// #
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 3, &a, &b).unwrap();
+    ///
+    /// storage.clear().unwrap();
+    /// #
+    /// # assert_eq!(storage.num_nodes(), 0);
+    /// # assert_eq!(storage.num_edges(), 0);
+    /// ```
+    fn clear(&mut self);
 
     fn node(&self, id: &Self::NodeId) -> Option<Node<Self>>;
     fn node_mut(&mut self, id: &Self::NodeId) -> Option<NodeMut<Self>>;
@@ -331,7 +689,7 @@ pub trait GraphStorage: Sized {
         self.edge(id).is_some()
     }
 
-    fn find_undirected_edges<'a: 'b, 'b>(
+    fn edges_between<'a: 'b, 'b>(
         &'a self,
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,
@@ -348,7 +706,12 @@ pub trait GraphStorage: Sized {
         from_source.chain(from_target)
     }
 
-    // TODO: do we want to provide a `find_undirected_edges_mut`?
+    // I'd love to provide a default implementation for this, but I just can't get it to work.
+    fn edges_between_mut<'a: 'b, 'b>(
+        &'a mut self,
+        source: &'b Self::NodeId,
+        target: &'b Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
     fn node_connections<'a: 'b, 'b>(
         &'a self,

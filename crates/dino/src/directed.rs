@@ -8,7 +8,7 @@ use petgraph_core::{
 use crate::{DinosaurStorage, Directed};
 
 impl<N, E> DirectedGraphStorage for DinosaurStorage<N, E, Directed> {
-    fn find_directed_edges<'a: 'b, 'b>(
+    fn directed_edges_between<'a: 'b, 'b>(
         &'a self,
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,

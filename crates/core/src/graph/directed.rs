@@ -11,6 +11,22 @@ impl<S> Graph<S>
 where
     S: DirectedGraphStorage,
 {
+    pub fn find_directed_edges_between<'a: 'b, 'b>(
+        &'a self,
+        source: &'b S::NodeId,
+        target: &'b S::NodeId,
+    ) -> impl Iterator<Item = Edge<'a, S>> + 'b {
+        self.storage.directed_edges_between(source, target)
+    }
+
+    pub fn find_directed_edges_between_mut<'a: 'b, 'b>(
+        &'a mut self,
+        source: &'b S::NodeId,
+        target: &'b S::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'a, S>> + 'b {
+        self.storage.directed_edges_between_mut(source, target)
+    }
+
     #[inline]
     pub fn neighbors_directed<'a: 'b, 'b>(
         &'a self,
@@ -59,14 +75,6 @@ where
         direction: Direction,
     ) -> impl Iterator<Item = EdgeMut<'a, S>> + 'b {
         self.storage.node_directed_connections_mut(id, direction)
-    }
-
-    pub fn find_directed_edges<'a: 'b, 'b>(
-        &'a self,
-        source: &'b S::NodeId,
-        target: &'b S::NodeId,
-    ) -> impl Iterator<Item = Edge<'a, S>> + 'b {
-        self.storage.find_directed_edges(source, target)
     }
 
     // TODO: should this be part of `GraphIterator`?

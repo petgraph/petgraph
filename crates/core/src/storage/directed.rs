@@ -5,12 +5,21 @@ use crate::{
 };
 
 pub trait DirectedGraphStorage: GraphStorage {
-    fn find_directed_edges<'a: 'b, 'b>(
+    fn directed_edges_between<'a: 'b, 'b>(
         &'a self,
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
         self.node_directed_connections(source, Direction::Outgoing)
+            .filter(move |edge| edge.target_id() == target)
+    }
+
+    fn directed_edges_between_mut<'a: 'b, 'b>(
+        &'a mut self,
+        source: &'b Self::NodeId,
+        target: &'b Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
+        self.node_directed_connections_mut(source, Direction::Outgoing)
             .filter(move |edge| edge.target_id() == target)
     }
 

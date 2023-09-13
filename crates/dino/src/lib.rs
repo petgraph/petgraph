@@ -277,12 +277,10 @@ where
         ))
     }
 
-    fn clear(&mut self) -> Result<(), Self::Error> {
+    fn clear(&mut self) {
         self.nodes.clear();
         self.edges.clear();
         self.closures.clear();
-
-        Ok(())
     }
 
     fn node(&self, id: &Self::NodeId) -> Option<petgraph_core::node::Node<Self>> {
@@ -317,7 +315,7 @@ where
         self.edges.contains_key(*id)
     }
 
-    fn find_undirected_edges<'a: 'b, 'b>(
+    fn edges_between<'a: 'b, 'b>(
         &'a self,
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,

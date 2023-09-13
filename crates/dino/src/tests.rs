@@ -25,7 +25,7 @@ fn empty() {
 fn insert_node() {
     let mut graph = DinoGraph::<u8, (), Directed>::new();
 
-    let node = graph.insert_node(2u8).unwrap();
+    let node = graph.try_insert_node(2u8).unwrap();
 
     assert_eq!(node.weight(), &2u8);
 
@@ -40,10 +40,10 @@ fn insert_node() {
 fn insert_edge() {
     let mut graph = DinoGraph::<(), u8, Directed>::new();
 
-    let node = graph.insert_node(()).unwrap();
+    let node = graph.try_insert_node(()).unwrap();
     let node = *node.id();
 
-    let edge = graph.insert_edge(2u8, &node, &node).unwrap();
+    let edge = graph.try_insert_edge(2u8, &node, &node).unwrap();
 
     assert_eq!(edge.weight(), &2u8);
 
@@ -101,7 +101,7 @@ fn next_edge_id_pure() {
 fn remove_node() {
     let mut graph = DinoGraph::<u8, (), Directed>::new();
 
-    let node = graph.insert_node(2u8).unwrap();
+    let node = graph.try_insert_node(2u8).unwrap();
     let node = *node.id();
 
     assert_eq!(graph.remove_node(&node), Some(DetachedNode::new(node, 2u8)));
@@ -117,10 +117,10 @@ fn remove_node() {
 fn remove_edge() {
     let mut graph = DinoGraph::<(), u8, Directed>::new();
 
-    let node = graph.insert_node(()).unwrap();
+    let node = graph.try_insert_node(()).unwrap();
     let node = *node.id();
 
-    let edge = graph.insert_edge(2u8, &node, &node).unwrap();
+    let edge = graph.try_insert_edge(2u8, &node, &node).unwrap();
     let edge = *edge.id();
 
     assert_eq!(
@@ -168,10 +168,10 @@ fn remove_edge() {
 fn clear() {
     let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
-    let node = graph.insert_node(2u8).unwrap();
+    let node = graph.try_insert_node(2u8).unwrap();
     let node = *node.id();
 
-    graph.insert_edge(2u8, &node, &node).unwrap();
+    graph.try_insert_edge(2u8, &node, &node).unwrap();
 
     graph.clear().unwrap();
 
@@ -186,7 +186,7 @@ fn clear() {
 fn node() {
     let mut graph = DinoGraph::<u8, (), Directed>::new();
 
-    let node = graph.insert_node(2u8).unwrap();
+    let node = graph.try_insert_node(2u8).unwrap();
     let node = *node.id();
 
     assert_eq!(
@@ -199,7 +199,7 @@ fn node() {
 fn node_mut() {
     let mut graph = DinoGraph::<u8, (), Directed>::new();
 
-    let node = graph.insert_node(2u8).unwrap();
+    let node = graph.try_insert_node(2u8).unwrap();
     let node = *node.id();
 
     assert_eq!(graph.node_mut(&node), Some(NodeMut::new(&node, &mut 2u8)));
@@ -218,7 +218,7 @@ fn node_mut() {
 fn contains_node() {
     let mut graph = DinoGraph::<u8, (), Directed>::new();
 
-    let node = graph.insert_node(2u8).unwrap();
+    let node = graph.try_insert_node(2u8).unwrap();
     let node = *node.id();
 
     assert!(graph.storage().contains_node(&node));
@@ -228,10 +228,10 @@ fn contains_node() {
 fn edge() {
     let mut graph = DinoGraph::<(), u8, Directed>::new();
 
-    let node = graph.insert_node(()).unwrap();
+    let node = graph.try_insert_node(()).unwrap();
     let node = *node.id();
 
-    let edge = graph.insert_edge(2u8, &node, &node).unwrap();
+    let edge = graph.try_insert_edge(2u8, &node, &node).unwrap();
     let edge = *edge.id();
 
     assert_eq!(
@@ -250,10 +250,10 @@ fn edge() {
 fn edge_mut() {
     let mut graph = DinoGraph::<(), u8, Directed>::new();
 
-    let node = graph.insert_node(()).unwrap();
+    let node = graph.try_insert_node(()).unwrap();
     let node = *node.id();
 
-    let edge = graph.insert_edge(2u8, &node, &node).unwrap();
+    let edge = graph.try_insert_edge(2u8, &node, &node).unwrap();
     let edge = *edge.id();
 
     assert_eq!(
@@ -283,10 +283,10 @@ fn edge_mut() {
 fn contains_edge() {
     let mut graph = DinoGraph::<(), u8, Directed>::new();
 
-    let node = graph.insert_node(()).unwrap();
+    let node = graph.try_insert_node(()).unwrap();
     let node = *node.id();
 
-    let edge = graph.insert_edge(2u8, &node, &node).unwrap();
+    let edge = graph.try_insert_edge(2u8, &node, &node).unwrap();
     let edge = *edge.id();
 
     assert!(graph.storage().contains_edge(&edge));
@@ -311,31 +311,31 @@ impl SimpleGraph {
     fn create() -> Self {
         let mut graph = DinoGraph::new();
 
-        let a = graph.insert_node(1u8).unwrap();
+        let a = graph.try_insert_node(1u8).unwrap();
         let a = *a.id();
 
-        let b = graph.insert_node(2u8).unwrap();
+        let b = graph.try_insert_node(2u8).unwrap();
         let b = *b.id();
 
-        let c = graph.insert_node(3u8).unwrap();
+        let c = graph.try_insert_node(3u8).unwrap();
         let c = *c.id();
 
-        let d = graph.insert_node(8u8).unwrap();
+        let d = graph.try_insert_node(8u8).unwrap();
         let d = *d.id();
 
-        let ab = graph.insert_edge(4u8, &a, &b).unwrap();
+        let ab = graph.try_insert_edge(4u8, &a, &b).unwrap();
         let ab = *ab.id();
 
-        let ba = graph.insert_edge(5u8, &b, &a).unwrap();
+        let ba = graph.try_insert_edge(5u8, &b, &a).unwrap();
         let ba = *ba.id();
 
-        let bc = graph.insert_edge(6u8, &b, &c).unwrap();
+        let bc = graph.try_insert_edge(6u8, &b, &c).unwrap();
         let bc = *bc.id();
 
-        let ac = graph.insert_edge(7u8, &a, &c).unwrap();
+        let ac = graph.try_insert_edge(7u8, &a, &c).unwrap();
         let ac = *ac.id();
 
-        let ca = graph.insert_edge(8u8, &c, &a).unwrap();
+        let ca = graph.try_insert_edge(8u8, &c, &a).unwrap();
         let ca = *ca.id();
 
         Self {
@@ -366,7 +366,7 @@ fn find_undirected_edges() {
 
     assert_eq!(
         graph
-            .find_undirected_edges(&a, &b)
+            .edges_between(&a, &b)
             .map(petgraph_core::edge::Edge::detach)
             .collect::<HashSet<_>>(),
         [

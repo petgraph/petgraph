@@ -13,7 +13,7 @@ impl<S> Graph<S>
 where
     S: GraphStorage,
 {
-    pub fn insert_node(
+    pub fn try_insert_node(
         &mut self,
         attributes: impl Into<Attributes<<S::NodeId as GraphId>::AttributeIndex, S::NodeWeight>>,
     ) -> Result<NodeMut<S>, S::Error> {
@@ -21,6 +21,14 @@ where
 
         let id = self.storage.next_node_id(id);
         self.storage.insert_node(id, weight)
+    }
+
+    pub fn insert_node(
+        &mut self,
+        attributes: impl Into<Attributes<<S::NodeId as GraphId>::AttributeIndex, S::NodeWeight>>,
+    ) -> NodeMut<S> {
+        self.try_insert_node(attributes)
+            .expect("unable to insert node")
     }
 }
 
@@ -70,7 +78,7 @@ impl<S> Graph<S>
 where
     S: GraphStorage,
 {
-    pub fn insert_edge(
+    pub fn try_insert_edge(
         &mut self,
         attributes: impl Into<Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>>,
         source: &S::NodeId,
@@ -80,6 +88,16 @@ where
 
         let id = self.storage.next_edge_id(id);
         self.storage.insert_edge(id, weight, source, target)
+    }
+
+    pub fn insert_edge(
+        &mut self,
+        attributes: impl Into<Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>>,
+        source: &S::NodeId,
+        target: &S::NodeId,
+    ) -> EdgeMut<S> {
+        self.try_insert_edge(attributes, source, target)
+            .expect("unable to insert edge")
     }
 }
 

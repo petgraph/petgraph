@@ -14,6 +14,7 @@ error-stack = { workspace = true }
 petgraph = { workspace = true, features = ['proptest'] }
 petgraph-proptest.workspace = true
 proptest = "1.2.0"
+petgraph-dino.workspace = true
 
 [features]
 alloc = []

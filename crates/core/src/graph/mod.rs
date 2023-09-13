@@ -91,8 +91,8 @@ where
         self.num_nodes() == 0 && self.num_edges() == 0
     }
 
-    pub fn clear(&mut self) -> Result<(), S::Error> {
-        self.storage.clear()
+    pub fn clear(&mut self) {
+        self.storage.clear();
     }
 
     pub fn node(&self, id: &S::NodeId) -> Option<Node<S>> {
@@ -179,12 +179,20 @@ where
 
     // TODO: `map`, `filter`, `filter_map`, `find`, `reverse`, `any`, `all`, etc.
 
-    pub fn find_undirected_edges<'a: 'b, 'b>(
+    pub fn edges_between<'a: 'b, 'b>(
         &'a self,
         source: &'b S::NodeId,
         target: &'b S::NodeId,
     ) -> impl Iterator<Item = Edge<'a, S>> + 'b {
-        self.storage.find_undirected_edges(source, target)
+        self.storage.edges_between(source, target)
+    }
+
+    pub fn edges_between_mut<'a: 'b, 'b>(
+        &'a mut self,
+        source: &'b S::NodeId,
+        target: &'b S::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'a, S>> + 'b {
+        self.storage.edges_between_mut(source, target)
     }
 
     pub fn externals(&self) -> impl Iterator<Item = Node<S>> {

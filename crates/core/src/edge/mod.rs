@@ -21,12 +21,12 @@ where
     // TODO: should this be `graph` instead of `storage`?
     storage: &'a S,
 
-    pub id: &'a S::EdgeId,
+    id: &'a S::EdgeId,
 
     source_id: &'a S::NodeId,
     target_id: &'a S::NodeId,
 
-    pub weight: &'a S::EdgeWeight,
+    weight: &'a S::EdgeWeight,
 }
 
 impl<S> Debug for Edge<'_, S>

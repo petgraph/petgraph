@@ -584,7 +584,7 @@ mod tests {
     fn single_node() {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
-        let node = graph.insert_node(1).unwrap();
+        let node = graph.try_insert_node(1).unwrap();
         let id = *node.id();
 
         let closures = &graph.storage().closures;
@@ -631,10 +631,10 @@ mod tests {
     fn multiple_nodes() {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
-        let a = graph.insert_node(Attributes::new(1)).unwrap();
+        let a = graph.try_insert_node(Attributes::new(1)).unwrap();
         let a = *a.id();
 
-        let b = graph.insert_node(Attributes::new(2)).unwrap();
+        let b = graph.try_insert_node(Attributes::new(2)).unwrap();
         let b = *b.id();
 
         let closures = &graph.storage().closures;
@@ -697,13 +697,13 @@ mod tests {
     fn connection() {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
-        let a = graph.insert_node(1u8).unwrap();
+        let a = graph.try_insert_node(1u8).unwrap();
         let a = *a.id();
 
-        let b = graph.insert_node(1u8).unwrap();
+        let b = graph.try_insert_node(1u8).unwrap();
         let b = *b.id();
 
-        let edge = graph.insert_edge(1u8, &a, &b).unwrap();
+        let edge = graph.try_insert_edge(1u8, &a, &b).unwrap();
         let edge = *edge.id();
 
         let closures = &graph.storage().closures;
@@ -765,10 +765,10 @@ mod tests {
     fn self_loop() {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
-        let a = graph.insert_node(1u8).unwrap();
+        let a = graph.try_insert_node(1u8).unwrap();
         let a = *a.id();
 
-        let edge = graph.insert_edge(1u8, &a, &a).unwrap();
+        let edge = graph.try_insert_edge(1u8, &a, &a).unwrap();
         let edge = *edge.id();
 
         let closures = &graph.storage().closures;
@@ -826,22 +826,22 @@ mod tests {
         fn create() -> Self {
             let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
-            let a = graph.insert_node(1u8).unwrap();
+            let a = graph.try_insert_node(1u8).unwrap();
             let a = *a.id();
 
-            let b = graph.insert_node(1u8).unwrap();
+            let b = graph.try_insert_node(1u8).unwrap();
             let b = *b.id();
 
-            let c = graph.insert_node(1u8).unwrap();
+            let c = graph.try_insert_node(1u8).unwrap();
             let c = *c.id();
 
-            let ab = graph.insert_edge(1u8, &a, &b).unwrap();
+            let ab = graph.try_insert_edge(1u8, &a, &b).unwrap();
             let ab = *ab.id();
 
-            let bc = graph.insert_edge(1u8, &b, &c).unwrap();
+            let bc = graph.try_insert_edge(1u8, &b, &c).unwrap();
             let bc = *bc.id();
 
-            let ca = graph.insert_edge(1u8, &c, &a).unwrap();
+            let ca = graph.try_insert_edge(1u8, &c, &a).unwrap();
             let ca = *ca.id();
 
             Self {
@@ -952,16 +952,16 @@ mod tests {
     fn multi_graph() {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
-        let a = graph.insert_node(1u8).unwrap();
+        let a = graph.try_insert_node(1u8).unwrap();
         let a = *a.id();
 
-        let b = graph.insert_node(1u8).unwrap();
+        let b = graph.try_insert_node(1u8).unwrap();
         let b = *b.id();
 
-        let ab1 = graph.insert_edge(1u8, &a, &b).unwrap();
+        let ab1 = graph.try_insert_edge(1u8, &a, &b).unwrap();
         let ab1 = *ab1.id();
 
-        let ab2 = graph.insert_edge(1u8, &a, &b).unwrap();
+        let ab2 = graph.try_insert_edge(1u8, &a, &b).unwrap();
         let ab2 = *ab2.id();
 
         let closures = &graph.storage().closures;
