@@ -1,5 +1,5 @@
 #![feature(return_position_impl_trait_in_trait)]
-// #![no_std]
+#![no_std]
 
 pub(crate) mod closure;
 mod directed;

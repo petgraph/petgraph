@@ -5,7 +5,8 @@ use core::{
     hash::Hash,
     marker::PhantomData,
     mem,
-    num::{NonZeroU16, NonZeroU8, NonZeroUsize},
+    num::{NonZeroU8, NonZeroUsize},
+    ptr,
 };
 
 use hashbrown::HashMap;
@@ -39,7 +40,7 @@ pub(crate) trait Key:
 /// These values are used as indices into a roaring bitmap, which has a limit of [`u32::MAX`]
 /// entries. This means that the `EntryId` is limited to 32 bits as well.
 ///
-/// `EntryId` has the following layout: ` <unused> <generation> <index>`
+/// `EntryId` has the following layout: `<unused> <generation> <index>`
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct EntryId(NonZeroUsize);
 
@@ -148,29 +149,36 @@ impl Generation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-enum Entry<V> {
-    Occupied { value: V, generation: Generation },
-    Vacant { generation: Generation },
+enum State<V> {
+    Vacant,
+    Occupied(V),
+}
+
+impl<V> State<V> {
+    fn into(self) -> Option<V> {
+        match self {
+            Self::Occupied(value) => Some(value),
+            Self::Vacant => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct Entry<V> {
+    generation: Generation,
+    state: State<V>,
 }
 
 impl<V> Entry<V> {
     const fn new() -> Self {
-        Self::Vacant {
+        Self {
             generation: Generation::first(),
-        }
-    }
-
-    const fn generation(&self) -> Generation {
-        match self {
-            Self::Vacant { generation } | Self::Occupied { generation, .. } => *generation,
+            state: State::Vacant,
         }
     }
 
     const fn is_occupied(&self) -> bool {
-        match self {
-            Self::Occupied { .. } => true,
-            Self::Vacant { .. } => false,
-        }
+        matches!(self.state, State::Occupied(_))
     }
 
     fn remove(&mut self) -> Option<V> {
@@ -178,41 +186,31 @@ impl<V> Entry<V> {
             return None;
         }
 
-        mem::replace(
-            self,
-            Self::Vacant {
-                generation: self.generation().next(),
-            },
-        )
-        .into_inner()
+        self.generation = self.generation.next();
+        mem::replace(&mut self.state, State::Vacant).into()
     }
 
     fn insert(&mut self, value: V) {
         // we increment the generation on remove!
-        let generation = self.generation();
-
-        *self = Self::Occupied { value, generation };
+        self.state = State::Occupied(value);
     }
 
     const fn get(&self) -> Option<&V> {
-        match self {
-            Self::Occupied { value, .. } => Some(value),
-            Self::Vacant { .. } => None,
+        match &self.state {
+            State::Occupied(value) => Some(value),
+            State::Vacant => None,
         }
     }
 
     fn get_mut(&mut self) -> Option<&mut V> {
-        match self {
-            Self::Occupied { value, .. } => Some(value),
-            Self::Vacant { .. } => None,
+        match &mut self.state {
+            State::Occupied(value) => Some(value),
+            State::Vacant => None,
         }
     }
 
     fn into_inner(self) -> Option<V> {
-        match self {
-            Self::Occupied { value, .. } => Some(value),
-            Self::Vacant { .. } => None,
-        }
+        self.state.into()
     }
 }
 
@@ -275,7 +273,7 @@ where
     pub(crate) fn insert(&mut self, value: V) -> K {
         let index = self.insert_index();
 
-        let generation = self.entries[index].generation();
+        let generation = self.entries[index].generation;
         self.entries[index].insert(value);
 
         K::from_id(EntryId::new(generation, index).expect("invalid entry id"))
@@ -284,7 +282,10 @@ where
     fn insert_with_generation(&mut self, value: V, generation: Generation) -> K {
         let index = self.insert_index();
 
-        self.entries[index] = Entry::Occupied { value, generation };
+        self.entries[index] = Entry {
+            generation,
+            state: State::Occupied(value),
+        };
 
         K::from_id(EntryId::new(generation, index).expect("invalid entry id"))
     }
@@ -298,7 +299,7 @@ where
         let generation = self
             .entries
             .get(index)
-            .map_or(Generation::first(), Entry::generation);
+            .map_or(Generation::first(), |entry| entry.generation);
 
         K::from_id(EntryId::new(generation, index).expect("invalid entry id"))
     }
@@ -311,7 +312,7 @@ where
 
         let entry = self.entries.get_mut(index)?;
 
-        if entry.generation() != generation {
+        if entry.generation != generation {
             return None;
         }
 
@@ -330,7 +331,7 @@ where
             return false;
         };
 
-        entry.generation() == generation
+        entry.generation == generation
     }
 
     pub(crate) fn get(&self, key: K) -> Option<&V> {
@@ -341,7 +342,7 @@ where
 
         let entry = self.entries.get(index)?;
 
-        if entry.generation() != generation {
+        if entry.generation != generation {
             return None;
         }
 
@@ -356,7 +357,7 @@ where
 
         let entry = self.entries.get_mut(index)?;
 
-        if entry.generation() != generation {
+        if entry.generation != generation {
             return None;
         }
 
@@ -372,7 +373,11 @@ where
         // we need, to remove all entries that are free from the back until we find an occupied
         // entry.
 
-        while let Some(Entry::Vacant { .. }) = self.entries.last() {
+        while let Some(Entry {
+            state: State::Vacant,
+            ..
+        }) = self.entries.last()
+        {
             let index = self.entries.len() - 1;
 
             // the chance that we have a free index at the end is very high
@@ -412,6 +417,67 @@ where
         self.entries.iter_mut().filter_map(Entry::get_mut)
     }
 
+    pub(crate) fn filter_mut(
+        &mut self,
+        indices: impl Iterator<Item = K>,
+    ) -> impl Iterator<Item = Result<&mut V, ()>> {
+        let mut last = None;
+
+        let indices = indices.map(move |index| {
+            if index.into_id().raw() <= last.unwrap_or(0) {
+                return Err(());
+            }
+
+            last = Some(index.into_id().raw());
+
+            Ok(index)
+        });
+
+        let slice = indices.filter_map(|index| {
+            index
+                .map(|index| {
+                    let id = index.into_id();
+                    let generation = id.generation();
+                    let index = id.index();
+
+                    if index >= self.entries.len() {
+                        return None;
+                    }
+
+                    // SAFETY: `indices` is ordered. This is checked by the `indices` iterator.
+                    // This means that we can never access the same index twice.
+                    // The only other way we could try to access the same index twice, would be if
+                    // the index is the same, but the generation is different.
+                    // To ensure that we only access the same index once, we check (via a shared
+                    // reference) if the generation is the same.
+                    // We can access the generation and the value simultaneously, because they are
+                    // non-overlapping.
+                    let entry = unsafe { self.entries.as_mut_ptr().add(index) };
+
+                    // SAFETY: We need to access both the generation and the state separately.
+                    // The generation is accessed via a shared reference, while the state is
+                    // accessed via a mutable.
+                    // This is because we need to ensure that the generation is not the same.
+                    let entry_generation = unsafe { *ptr::addr_of!((*entry).generation) };
+
+                    if entry_generation != generation {
+                        return None;
+                    }
+
+                    // SAFETY: We need to access both the generation and the state separately.
+                    let entry_state = unsafe { &mut *ptr::addr_of_mut!((*entry).state) };
+
+                    match entry_state {
+                        State::Occupied(value) => Some(value),
+                        State::Vacant => None,
+                    }
+                })
+                .transpose()
+        });
+
+        slice
+    }
+
     pub(crate) fn into_iter(self) -> impl Iterator<Item = V> {
         self.entries.into_iter().filter_map(Entry::into_inner)
     }
@@ -425,7 +491,7 @@ where
                     return None;
                 }
 
-                let id = EntryId::new(entry.generation(), index)?;
+                let id = EntryId::new(entry.generation, index)?;
                 let key = K::from_id(id);
 
                 Some(key)
@@ -437,7 +503,7 @@ where
             .iter()
             .enumerate()
             .filter_map(move |(index, entry)| {
-                let id = EntryId::new(entry.generation(), index)?;
+                let id = EntryId::new(entry.generation, index)?;
                 let key = K::from_id(id);
                 let value = entry.get()?;
 
@@ -450,7 +516,7 @@ where
             .iter_mut()
             .enumerate()
             .filter_map(move |(index, entry)| {
-                let id = EntryId::new(entry.generation(), index)?;
+                let id = EntryId::new(entry.generation, index)?;
                 let key = K::from_id(id);
                 let value = entry.get_mut()?;
 
@@ -463,7 +529,7 @@ where
             .into_iter()
             .enumerate()
             .filter_map(move |(index, entry)| {
-                let id = EntryId::new(entry.generation(), index)?;
+                let id = EntryId::new(entry.generation, index)?;
                 let key = K::from_id(id);
                 let value = entry.into_inner()?;
 
@@ -473,10 +539,9 @@ where
 
     pub(crate) fn retain(&mut self, mut f: impl FnMut(K, &mut V) -> bool) {
         for (index, entry) in self.entries.iter_mut().enumerate() {
-            let key =
-                K::from_id(EntryId::new(entry.generation(), index).expect("invalid entry id"));
+            let key = K::from_id(EntryId::new(entry.generation, index).expect("invalid entry id"));
 
-            if let Entry::Occupied { value, .. } = entry {
+            if let State::Occupied(value) = &mut entry.state {
                 let keep = f(key, value);
 
                 if !keep {
@@ -571,9 +636,24 @@ mod tests {
 
     #[test]
     fn size_of_entry() {
+        // In theory we could make it smaller, but _shrug_
+        // 1 byte: generation
+        // 1 byte: padding
+        // State:
+        //  1 byte: variant
+        //  1 byte: padding
+        //  2 bytes: state
+        // We could in theory remove 3 bytes by doing the following:
+        //  1 byte: variant
+        //  1 byte: generation
+        // State: (union)
+        //  2 bytes: state
+        // We would essentially lift up the state, but that would mean that we would have to use
+        // unsafe _everywhere_ for access, for only 3 bytes of saving. Those may be significant
+        // later on, but for now it's not worth it.
         assert_eq!(
             core::mem::size_of::<crate::slab::Entry<u16>>(),
-            core::mem::size_of::<u16>() + core::mem::size_of::<u16>()
+            core::mem::size_of::<u16>() + core::mem::size_of::<u16>() + core::mem::size_of::<u16>()
         );
     }
 
@@ -674,7 +754,7 @@ mod tests {
             assert_eq!(left.is_occupied(), right.is_occupied());
 
             if left.is_occupied() {
-                assert_eq!(left.generation(), right.generation());
+                assert_eq!(left.generation, right.generation);
                 assert_eq!(left.get(), right.get());
             }
         }
@@ -757,5 +837,72 @@ mod tests {
         assert_eq!(EntryId::INDEX_MASK, 0x0FFF);
         assert_eq!(EntryId::INDEX_BITS, 12);
         assert_eq!(EntryId::GENERATION_MAX, 0xF);
+    }
+
+    #[test]
+    fn filter_mut() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+        let b = slab.insert(43);
+        let c = slab.insert(44);
+
+        let iter = slab.filter_mut(vec![a, b, c].into_iter());
+        let output: Vec<_> = iter.collect();
+
+        assert_eq!(output, vec![Ok(&mut 42), Ok(&mut 43), Ok(&mut 44)]);
+    }
+
+    #[test]
+    fn filter_mut_same_index_last_invalid() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+        let a2 = EntryId::new(a.generation().next(), a.index()).unwrap();
+
+        let iter = slab.filter_mut(vec![a, a2].into_iter());
+        let output: Vec<_> = iter.collect();
+
+        assert_eq!(output, vec![Ok(&mut 42)]);
+    }
+
+    #[test]
+    fn filter_mut_same_index_first_invalid() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+        slab.remove(a);
+        let a2 = slab.insert(42);
+
+        let iter = slab.filter_mut(vec![a, a2].into_iter());
+        let output: Vec<_> = iter.collect();
+
+        assert_eq!(output, vec![Ok(&mut 42)]);
+    }
+
+    #[test]
+    fn filter_mut_not_sorted() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+        let b = slab.insert(43);
+        let c = slab.insert(44);
+
+        let iter = slab.filter_mut(vec![b, a, c].into_iter());
+        let output: Vec<_> = iter.collect();
+
+        assert_eq!(output, vec![Ok(&mut 43), Err(()), Ok(&mut 44)]);
+    }
+
+    #[test]
+    fn filter_mut_duplicate() {
+        let mut slab = Slab::<EntryId, u16>::new();
+
+        let a = slab.insert(42);
+
+        let iter = slab.filter_mut(vec![a, a].into_iter());
+        let output: Vec<_> = iter.collect();
+
+        assert_eq!(output, vec![Ok(&mut 42), Err(()),]);
     }
 }

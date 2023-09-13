@@ -95,12 +95,10 @@ impl ClosureStorage {
         }
 
         if let Some(edges) = self.inner.get_mut(&Key::SourceToEdges(source)) {
-            println!("removing edge from source to edges");
             edges.remove(raw_index);
         }
 
         if let Some(edges) = self.inner.get_mut(&Key::TargetsToEdges(target)) {
-            println!("removing edge from targets to edges");
             edges.remove(raw_index);
         }
 
