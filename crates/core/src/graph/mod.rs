@@ -1,3 +1,4 @@
+mod compat;
 mod directed;
 mod insert;
 mod resize;

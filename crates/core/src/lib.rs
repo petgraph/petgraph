@@ -1,4 +1,5 @@
 #![feature(return_position_impl_trait_in_trait)]
+#![feature(impl_trait_in_assoc_type)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "alloc")]

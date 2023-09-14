@@ -1,3 +1,4 @@
+mod compat;
 mod direction;
 pub mod marker;
 
@@ -13,7 +14,7 @@ type DetachedStorageEdge<S> = DetachedEdge<
     <S as GraphStorage>::EdgeWeight,
 >;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Edge<'a, S>
 where
     S: GraphStorage,
@@ -28,6 +29,17 @@ where
 
     weight: &'a S::EdgeWeight,
 }
+
+impl<S> Clone for Edge<'_, S>
+where
+    S: GraphStorage,
+{
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for Edge<'_, S> where S: GraphStorage {}
 
 impl<S> Debug for Edge<'_, S>
 where
