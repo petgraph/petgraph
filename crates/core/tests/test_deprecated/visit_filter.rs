@@ -1,4 +1,3 @@
-use petgraph::{graph::UnGraph, Graph};
 use petgraph_core::{
     deprecated::visit::{
         EdgeFiltered, EdgeRef, IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered,
@@ -6,6 +5,7 @@ use petgraph_core::{
     },
     edge::Direction,
 };
+use petgraph_dino::UnDinoGraph;
 
 /// Given a graph with 3 nodes and 3 edges, test that the filtered edges iterator returns the
 /// correct edges.
@@ -20,16 +20,16 @@ use petgraph_core::{
 /// returns the edges `B → C` and `B → D`.
 #[test]
 fn edge_filtered_edges_directed() {
-    let mut graph = Graph::new();
+    let mut graph = UnDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
-    let d = graph.add_node("D");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
+    let d = *graph.insert_node("D").id();
 
-    let ab = graph.add_edge(a, b, "A → B");
-    let ac = graph.add_edge(a, c, "A → C");
-    let ad = graph.add_edge(a, d, "A → D");
+    let ab = *graph.insert_edge("A → B", &a, &b).id();
+    let ac = *graph.insert_edge("A → C", &a, &c).id();
+    let ad = *graph.insert_edge("A → D", &a, &d).id();
 
     let filtered = EdgeFiltered::from_fn(&graph, |edge| edge.id() != ab);
 
@@ -52,12 +52,12 @@ fn edge_filtered_edges_directed() {
 
 #[test]
 fn edge_filtered_edges_directed_reverse() {
-    let mut graph = Graph::new();
+    let mut graph = UnDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
 
-    let ab = graph.add_edge(a, b, "A → B");
+    let ab = *graph.insert_edge("A → B", &a, &b).id();
 
     // do not filter anything, we just want to test the reverse direction
     let filtered = EdgeFiltered::from_fn(&graph, |_| true);
@@ -96,11 +96,11 @@ fn edge_filtered_edges_directed_reverse() {
 
 #[test]
 fn edge_filtered_undirected_filter_by_weight() {
-    let mut graph = UnGraph::new_undirected();
+    let mut graph = UnDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
 
     graph.extend_with_edges([
         (a, b, 0), //
@@ -123,16 +123,16 @@ fn edge_filtered_undirected_filter_by_weight() {
 /// `A → B`.
 #[test]
 fn node_filtered_edges_directed() {
-    let mut graph = Graph::new();
+    let mut graph = UnDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
-    let d = graph.add_node("D");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
+    let d = *graph.insert_node("D").id();
 
-    let ab = graph.add_edge(a, b, "A → B");
-    let ac = graph.add_edge(a, c, "A → C");
-    let ad = graph.add_edge(a, d, "A → D");
+    let ab = *graph.insert_edge("A → B", &a, &b).id();
+    let ac = *graph.insert_edge("A → C", &a, &c).id();
+    let ad = *graph.insert_edge("A → D", &a, &d).id();
 
     let filtered = NodeFiltered::from_fn(&graph, |node| node != b);
 
@@ -155,12 +155,12 @@ fn node_filtered_edges_directed() {
 
 #[test]
 fn node_filtered_node_identifiers() {
-    let mut graph = Graph::<_, ()>::new();
+    let mut graph = UnDinoGraph::<_, ()>::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
-    let d = graph.add_node("D");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
+    let d = *graph.insert_node("D").id();
 
     let filtered = NodeFiltered::from_fn(&graph, |node| node != b);
 
@@ -172,11 +172,11 @@ fn node_filtered_node_identifiers() {
 
 #[test]
 fn node_filtered_by_fixed_bit_set() {
-    let mut graph = Graph::<_, ()>::new();
+    let mut graph = UnDinoGraph::<_, ()>::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
 
     let mut map = graph.visit_map();
     map.visit(a);
