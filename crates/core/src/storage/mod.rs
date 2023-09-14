@@ -671,9 +671,76 @@ pub trait GraphStorage: Sized {
     /// ```
     fn clear(&mut self);
 
+    /// Returns the node with the given identifier.
+    ///
+    /// This will return [`None`] if the node does not exist, and will return the node if it does.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    ///
+    /// let node = storage.node(&a).unwrap();
+    ///
+    /// assert_eq!(node.id(), &a);
+    /// assert_eq!(node.weight(), &1);
+    /// ```
     fn node(&self, id: &Self::NodeId) -> Option<Node<Self>>;
+
+    /// Returns the node, with a mutable weight, with the given identifier.
+    ///
+    /// This will return [`None`] if the node does not exist, and will return the node if it does.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    ///
+    /// let node = storage.node_mut(&a).unwrap();
+    ///
+    /// assert_eq!(node.id(), &a);
+    /// assert_eq!(node.weight(), &mut 1);
+    /// ```
     fn node_mut(&mut self, id: &Self::NodeId) -> Option<NodeMut<Self>>;
 
+    /// Checks if the node with the given identifier exists.
+    ///
+    /// This is equivalent to [`Self::node`].`is_some()`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    ///
+    /// assert!(storage.contains_node(&a));
+    /// assert!(!storage.contains_node(&b));
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation simply checks if [`Self::node`] returns [`Some`], but if
+    /// possible, custom implementations that are able to do this more efficiently should override
+    /// this.
     fn contains_node(&self, id: &Self::NodeId) -> bool {
         self.node(id).is_some()
     }
