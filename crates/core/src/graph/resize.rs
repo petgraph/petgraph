@@ -1,8 +1,8 @@
-use crate::{graph::Graph, storage::ResizableGraphStorage};
+use crate::{graph::Graph, storage::GraphStorage};
 
 impl<S> Graph<S>
 where
-    S: ResizableGraphStorage,
+    S: GraphStorage,
 {
     pub fn reserve(&mut self, additional_nodes: usize, additional_edges: usize) {
         self.storage.reserve(additional_nodes, additional_edges);

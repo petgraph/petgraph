@@ -15,7 +15,6 @@
 //! - [`LinearGraphStorage`]: A trait for linear graph storage implementations. A linear graph
 //!   storage is one where the node indices and edge indices can be mapped to a continuous integer
 //!   using a [`LinearIndexLookup`].
-//! - [`ResizableGraphStorage`]: A trait for resizable graph storage implementations.
 //! - [`RetainableGraphStorage`]: A trait for retainable graph storage implementations.
 //!
 //! [`GraphStorage`] proposes that [`DirectedGraphStorage`] is simply a specialization of an
@@ -25,11 +24,10 @@
 //!
 //! # Implementation Notes
 //!
-//! [`LinearGraphStorage`], [`ResizableGraphStorage`] and [`RetainableGraphStorage`] are subject to
+//! [`LinearGraphStorage`] and [`RetainableGraphStorage`] are subject to
 //! removal during the alpha period.
 mod directed;
 mod linear;
-mod resize;
 mod retain;
 
 use error_stack::{Context, Result};
@@ -37,7 +35,6 @@ use error_stack::{Context, Result};
 pub use self::{
     directed::DirectedGraphStorage,
     linear::{LinearGraphStorage, LinearIndexLookup},
-    resize::ResizableGraphStorage,
     retain::RetainableGraphStorage,
 };
 use crate::{
@@ -759,4 +756,34 @@ pub trait GraphStorage: Sized {
     fn edges(&self) -> impl Iterator<Item = Edge<Self>>;
 
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<Self>>;
+
+    fn reserve(&mut self, additional_nodes: usize, additional_edges: usize) {
+        self.reserve_nodes(additional_nodes);
+        self.reserve_edges(additional_edges);
+    }
+
+    #[allow(unused_variables)]
+    fn reserve_nodes(&mut self, additional: usize) {}
+    #[allow(unused_variables)]
+    fn reserve_edges(&mut self, additional: usize) {}
+
+    fn reserve_exact(&mut self, additional_nodes: usize, additional_edges: usize) {
+        self.reserve_exact_nodes(additional_nodes);
+        self.reserve_exact_edges(additional_edges);
+    }
+
+    fn reserve_exact_nodes(&mut self, additional: usize) {
+        self.reserve_nodes(additional);
+    }
+    fn reserve_exact_edges(&mut self, additional: usize) {
+        self.reserve_edges(additional);
+    }
+
+    fn shrink_to_fit(&mut self) {
+        self.shrink_to_fit_nodes();
+        self.shrink_to_fit_edges();
+    }
+
+    fn shrink_to_fit_nodes(&mut self) {}
+    fn shrink_to_fit_edges(&mut self) {}
 }
