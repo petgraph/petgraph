@@ -1,3 +1,4 @@
+#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
 use crate::{id::GraphId, storage::GraphStorage};
@@ -27,11 +28,13 @@ where
 ///
 /// Wrapping an already continuous `IndexMapper` will simply return the value from the inner mapper
 /// without any additional lookup or allocation.
+#[cfg(feature = "alloc")]
 pub struct ContinuousIndexMapper<I, T> {
     inner: I,
     lookup: Vec<T>,
 }
 
+#[cfg(feature = "alloc")]
 impl<I, T> ContinuousIndexMapper<I, T> {
     pub fn new(inner: I) -> Self {
         Self {
@@ -41,6 +44,7 @@ impl<I, T> ContinuousIndexMapper<I, T> {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<I, T> IndexMapper<T, usize> for ContinuousIndexMapper<I, T>
 where
     I: IndexMapper<T, usize>,

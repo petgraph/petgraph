@@ -1,6 +1,8 @@
 mod linear;
 
-pub use self::linear::{ContinuousIndexMapper, IndexMapper, LinearGraphId};
+#[cfg(feature = "alloc")]
+pub use self::linear::ContinuousIndexMapper;
+pub use self::linear::{IndexMapper, LinearGraphId};
 use crate::attributes::NoValue;
 
 // TODO: can we remove the `PartialEq` bound?

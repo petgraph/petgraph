@@ -15,7 +15,7 @@ use core::{
 };
 
 use hashbrown::HashMap;
-use petgraph_core::{id::LinearGraphId, storage::LinearIndexLookup};
+use petgraph_core::id::{IndexMapper, LinearGraphId};
 
 use crate::slab::entry::{Entry, State};
 pub(crate) use crate::slab::{generation::Generation, id::EntryId, key::Key};
@@ -379,7 +379,7 @@ where
     }
 }
 
-pub(crate) struct SlabLinearIndexLookup<'a, K>
+pub(crate) struct SlabIndexMapper<'a, K>
 where
     K: Key,
 {
@@ -390,7 +390,7 @@ where
     _lifetime: PhantomData<&'a ()>,
 }
 
-impl<'a, K> SlabLinearIndexLookup<'a, K>
+impl<'a, K> SlabIndexMapper<'a, K>
 where
     K: Key,
 {
@@ -408,14 +408,22 @@ where
     }
 }
 
-impl<K> LinearIndexLookup for SlabLinearIndexLookup<'_, K>
+impl<K> IndexMapper<K, usize> for SlabIndexMapper<'_, K>
 where
-    K: Key + LinearGraphId,
+    K: Key,
 {
-    type GraphId = K;
+    const CONTINUOUS: bool = true;
 
-    fn get(&self, id: &Self::GraphId) -> Option<usize> {
-        self.lookup.get(id).copied()
+    fn map(&mut self, from: &K) -> usize {
+        *self.lookup.get(from).expect("invalid key")
+    }
+
+    fn reverse(&mut self, to: &usize) -> Option<K> {
+        self.lookup.iter().find_map(|(key, index)| {
+            let is_element = *index == *to;
+
+            is_element.then_some(*key)
+        })
     }
 }
 

@@ -378,7 +378,34 @@ fn edges_between() {
     );
 }
 
-// TODO: find_undirected_edges_mut?
+#[test]
+fn edges_between_mut() {
+    let SimpleGraph {
+        mut graph,
+        a,
+        b,
+        ab,
+        ba,
+        ..
+    } = SimpleGraph::create();
+
+    for mut edge in graph.edges_between_mut(&a, &b) {
+        *edge.weight_mut() += 1;
+    }
+
+    assert_eq!(
+        graph
+            .edges_between(&a, &b)
+            .map(petgraph_core::edge::Edge::detach)
+            .collect::<HashSet<_>>(),
+        [
+            DetachedEdge::new(ab, 5u8, a, b),
+            DetachedEdge::new(ba, 6u8, b, a),
+        ]
+        .into_iter()
+        .collect::<HashSet<_>>()
+    );
+}
 
 #[test]
 fn node_connections() {

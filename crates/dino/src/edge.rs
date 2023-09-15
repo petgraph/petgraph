@@ -6,7 +6,7 @@ use petgraph_core::{
 
 use crate::{
     node::NodeId,
-    slab::{EntryId, Key, SlabLinearIndexLookup},
+    slab::{EntryId, Key, SlabIndexMapper},
     DinosaurStorage,
 };
 
@@ -32,7 +32,7 @@ where
     D: GraphDirection,
 {
     fn index_mapper(storage: &DinosaurStorage<N, E, D>) -> impl IndexMapper<Self, usize> {
-        todo!()
+        SlabIndexMapper::new(&storage.edges)
     }
 }
 
