@@ -27,16 +27,12 @@
 //! [`LinearGraphStorage`] and [`RetainableGraphStorage`] are subject to
 //! removal during the alpha period.
 mod directed;
-mod linear;
+
 mod retain;
 
 use error_stack::{Context, Result};
 
-pub use self::{
-    directed::DirectedGraphStorage,
-    linear::{LinearGraphStorage, LinearIndexLookup},
-    retain::RetainableGraphStorage,
-};
+pub use self::{directed::DirectedGraphStorage, retain::RetainableGraphStorage};
 use crate::{
     edge::{DetachedEdge, Edge, EdgeMut},
     id::GraphId,

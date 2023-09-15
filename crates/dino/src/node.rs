@@ -1,9 +1,13 @@
 use petgraph_core::{
     attributes::NoValue,
-    id::{GraphId, LinearGraphId, ManagedGraphId},
+    edge::marker::GraphDirection,
+    id::{GraphId, IndexMapper, LinearGraphId, ManagedGraphId},
 };
 
-use crate::slab::{EntryId, Key};
+use crate::{
+    slab::{EntryId, Key},
+    DinosaurStorage,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeId(EntryId);
@@ -22,7 +26,14 @@ impl GraphId for NodeId {
     type AttributeIndex = NoValue;
 }
 
-impl LinearGraphId for NodeId {}
+impl<N, E, D> LinearGraphId<DinosaurStorage<N, E, D>> for NodeId
+where
+    D: GraphDirection,
+{
+    fn index_mapper(storage: &DinosaurStorage<N, E, D>) -> impl IndexMapper<Self, usize> {
+        todo!()
+    }
+}
 
 impl ManagedGraphId for NodeId {}
 

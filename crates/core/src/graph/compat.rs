@@ -4,6 +4,7 @@
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
+#[cfg(feature = "fixedbitset")]
 use fixedbitset::FixedBitSet;
 
 #[cfg(feature = "alloc")]

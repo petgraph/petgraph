@@ -329,6 +329,37 @@ impl<'a> EdgeClosure<'a> {
                 .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
         )
     }
+
+    pub(crate) fn undirected_endpoints_to_edges(
+        &self,
+        source: NodeId,
+        target: NodeId,
+    ) -> impl Iterator<Item = EdgeId> + 'a {
+        let Some(source_to_targets) = self
+            .storage
+            .inner
+            .get(&Key::EndpointsToEdges(source, target))
+        else {
+            return Either::Left(core::iter::empty());
+        };
+
+        let Some(target_to_sources) = self
+            .storage
+            .inner
+            .get(&Key::EndpointsToEdges(target, source))
+        else {
+            return Either::Right(Either::Right(
+                source_to_targets
+                    .iter()
+                    .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
+            ));
+        };
+
+        Either::Right(Either::Left(
+            UnionIterator::new(source_to_targets, target_to_sources)
+                .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
+        ))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

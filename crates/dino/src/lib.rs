@@ -4,9 +4,8 @@
 pub(crate) mod closure;
 mod directed;
 mod edge;
-mod linear;
 mod node;
-mod resize;
+
 mod retain;
 pub(crate) mod slab;
 #[cfg(test)]
@@ -320,13 +319,27 @@ where
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,
     ) -> impl Iterator<Item = petgraph_core::edge::Edge<'a, Self>> + 'b {
-        let source_to_target = self.closures.edges().endpoints_to_edges(*source, *target);
-        let target_to_source = self.closures.edges().endpoints_to_edges(*target, *source);
+        let edges = self
+            .closures
+            .edges()
+            .undirected_endpoints_to_edges(*source, *target);
 
-        source_to_target
-            .into_iter()
-            .chain(target_to_source)
-            .filter_map(move |edge| self.edge(&edge))
+        edges.filter_map(move |edge| self.edge(&edge))
+    }
+
+    fn edges_between_mut<'a: 'b, 'b>(
+        &'a mut self,
+        source: &'b Self::NodeId,
+        target: &'b Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
+        let edges = self
+            .closures
+            .edges()
+            .undirected_endpoints_to_edges(*source, *target);
+
+        self.edges
+            .filter_mut(edges)
+            .map(move |edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
     }
 
     fn node_connections<'a: 'b, 'b>(
@@ -414,5 +427,25 @@ where
         self.edges
             .iter_mut()
             .map(move |edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
+    }
+
+    fn reserve_nodes(&mut self, additional: usize) {
+        self.nodes.reserve(additional);
+        self.closures.reserve(additional);
+    }
+
+    fn reserve_edges(&mut self, additional: usize) {
+        self.edges.reserve(additional);
+        self.closures.reserve(additional);
+    }
+
+    fn shrink_to_fit_nodes(&mut self) {
+        self.nodes.shrink_to_fit();
+        self.closures.shrink_to_fit();
+    }
+
+    fn shrink_to_fit_edges(&mut self) {
+        self.edges.shrink_to_fit();
+        self.closures.shrink_to_fit();
     }
 }

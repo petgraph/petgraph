@@ -173,7 +173,7 @@ fn clear() {
 
     graph.try_insert_edge(2u8, &node, &node).unwrap();
 
-    graph.clear().unwrap();
+    graph.clear();
 
     assert_eq!(graph.num_nodes(), 0);
     assert_eq!(graph.num_edges(), 0);
@@ -354,7 +354,7 @@ impl SimpleGraph {
 }
 
 #[test]
-fn find_undirected_edges() {
+fn edges_between() {
     let SimpleGraph {
         graph,
         a,

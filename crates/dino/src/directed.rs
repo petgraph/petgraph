@@ -19,6 +19,22 @@ impl<N, E> DirectedGraphStorage for DinosaurStorage<N, E, Directed> {
             .filter_map(|id| self.edge(&id))
     }
 
+    fn directed_edges_between_mut<'a: 'b, 'b>(
+        &'a mut self,
+        source: &'b Self::NodeId,
+        target: &'b Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
+        let Self {
+            closures, edges, ..
+        } = self;
+
+        let available = closures.edges().endpoints_to_edges(*source, *target);
+
+        edges
+            .filter_mut(available)
+            .map(|edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
+    }
+
     fn node_directed_connections<'a: 'b, 'b>(
         &'a self,
         id: &'b Self::NodeId,
