@@ -6,8 +6,8 @@
 //! This is basically a 1:1 port of the tests from the `petgraph` crate (which already used
 //! integration tests)
 
-use petgraph::Graph;
 use petgraph_core::deprecated::visit::{Bfs, Walker};
+use petgraph_dino::DiDinoGraph;
 
 /// Graph:
 ///
@@ -20,16 +20,16 @@ use petgraph_core::deprecated::visit::{Bfs, Walker};
 /// BFS from A should yield A, B, C, D
 #[test]
 fn simple() {
-    let mut graph = Graph::new();
+    let mut graph = DiDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
-    let d = graph.add_node("D");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
+    let d = *graph.insert_node("D").id();
 
-    graph.add_edge(a, b, "A → B");
-    graph.add_edge(b, c, "B → C");
-    graph.add_edge(b, d, "B → D");
+    graph.insert_edge("A → B", &a, &b);
+    graph.insert_edge("B → C", &b, &c);
+    graph.insert_edge("B → D", &b, &d);
 
     let dfs = Bfs::new(&graph, a);
 
@@ -49,14 +49,14 @@ fn simple() {
 /// A is connected via a directed edge, but it is not reachable from B.
 #[test]
 fn unreachable() {
-    let mut graph = Graph::new();
+    let mut graph = DiDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
 
-    graph.add_edge(a, b, "A → B");
-    graph.add_edge(b, c, "B → C");
+    graph.insert_edge("A → B", &a, &b);
+    graph.insert_edge("B → C", &b, &c);
 
     let dfs = Bfs::new(&graph, b);
 
@@ -78,13 +78,13 @@ fn unreachable() {
 /// C is completely disconnected from A
 #[test]
 fn disconnected() {
-    let mut graph = Graph::new();
+    let mut graph = DiDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
 
-    graph.add_edge(a, b, "A → B");
+    graph.insert_edge("A → B", &a, &b);
 
     let dfs = Bfs::new(&graph, a);
 
@@ -117,14 +117,14 @@ fn disconnected() {
 /// ```
 #[test]
 fn order() {
-    let mut graph = Graph::new();
+    let mut graph = DiDinoGraph::new();
 
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
-    let d = graph.add_node("D");
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
+    let d = *graph.insert_node("D").id();
 
-    graph.add_edge(b, c, "B → C");
-    graph.add_edge(b, d, "B → D");
+    graph.insert_edge("B → C", &b, &c);
+    graph.insert_edge("B → D", &b, &d);
 
     let dfs = Bfs::new(&graph, b);
 
@@ -147,22 +147,22 @@ fn order() {
 /// ```
 #[test]
 fn order_deep() {
-    let mut graph = Graph::new();
+    let mut graph = DiDinoGraph::new();
 
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
-    let d = graph.add_node("D");
-    let e = graph.add_node("E");
-    let f = graph.add_node("F");
-    let g = graph.add_node("G");
-    let h = graph.add_node("H");
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
+    let d = *graph.insert_node("D").id();
+    let e = *graph.insert_node("E").id();
+    let f = *graph.insert_node("F").id();
+    let g = *graph.insert_node("G").id();
+    let h = *graph.insert_node("H").id();
 
-    graph.add_edge(b, c, "B → C");
-    graph.add_edge(b, d, "B → D");
-    graph.add_edge(c, g, "C → G");
-    graph.add_edge(c, h, "C → H");
-    graph.add_edge(d, e, "H → E");
-    graph.add_edge(d, f, "D → F");
+    graph.insert_edge("B → C", &b, &c);
+    graph.insert_edge("B → D", &b, &d);
+    graph.insert_edge("C → G", &c, &g);
+    graph.insert_edge("C → H", &c, &h);
+    graph.insert_edge("H → E", &d, &e);
+    graph.insert_edge("D → F", &d, &f);
 
     let dfs = Bfs::new(&graph, b);
 

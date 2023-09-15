@@ -5,7 +5,7 @@ use petgraph_core::{
     },
     edge::Direction,
 };
-use petgraph_dino::UnDinoGraph;
+use petgraph_dino::{DiDinoGraph, UnDinoGraph};
 
 /// Given a graph with 3 nodes and 3 edges, test that the filtered edges iterator returns the
 /// correct edges.
@@ -20,7 +20,7 @@ use petgraph_dino::UnDinoGraph;
 /// returns the edges `B → C` and `B → D`.
 #[test]
 fn edge_filtered_edges_directed() {
-    let mut graph = UnDinoGraph::new();
+    let mut graph = DiDinoGraph::new();
 
     let a = *graph.insert_node("A").id();
     let b = *graph.insert_node("B").id();
@@ -52,7 +52,7 @@ fn edge_filtered_edges_directed() {
 
 #[test]
 fn edge_filtered_edges_directed_reverse() {
-    let mut graph = UnDinoGraph::new();
+    let mut graph = DiDinoGraph::new();
 
     let a = *graph.insert_node("A").id();
     let b = *graph.insert_node("B").id();
@@ -123,7 +123,7 @@ fn edge_filtered_undirected_filter_by_weight() {
 /// `A → B`.
 #[test]
 fn node_filtered_edges_directed() {
-    let mut graph = UnDinoGraph::new();
+    let mut graph = DiDinoGraph::new();
 
     let a = *graph.insert_node("A").id();
     let b = *graph.insert_node("B").id();
@@ -155,7 +155,7 @@ fn node_filtered_edges_directed() {
 
 #[test]
 fn node_filtered_node_identifiers() {
-    let mut graph = UnDinoGraph::<_, ()>::new();
+    let mut graph = DiDinoGraph::<_, ()>::new();
 
     let a = *graph.insert_node("A").id();
     let b = *graph.insert_node("B").id();
@@ -172,7 +172,7 @@ fn node_filtered_node_identifiers() {
 
 #[test]
 fn node_filtered_by_fixed_bit_set() {
-    let mut graph = UnDinoGraph::<_, ()>::new();
+    let mut graph = DiDinoGraph::<_, ()>::new();
 
     let a = *graph.insert_node("A").id();
     let b = *graph.insert_node("B").id();
