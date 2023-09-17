@@ -65,15 +65,19 @@ fn graphmap_parallel_bench(bench: &mut Bencher) {
     let data = test_nodes();
     let gr = test_graph(&data);
     bench.iter(|| {
-        let sources: Vec<MyStruct> = gr.par_nodes().map(|n| {
-            let mut sources = vec![];
-            for (src, _, e) in gr.edges_directed(n, Direction::Outgoing) {
-                if *e == 500 {
-                    sources.push(src.clone());
+        let sources: Vec<MyStruct> = gr
+            .par_nodes()
+            .map(|n| {
+                let mut sources = vec![];
+                for (src, _, e) in gr.edges_directed(n, Direction::Outgoing) {
+                    if *e == 500 {
+                        sources.push(src.clone());
+                    }
                 }
-            }
 
-            sources
-        }).flatten().collect();
+                sources
+            })
+            .flatten()
+            .collect();
     });
 }

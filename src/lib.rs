@@ -118,9 +118,6 @@ extern crate serde_derive;
 #[cfg(all(feature = "serde-1", test))]
 extern crate itertools;
 
-#[cfg(feature = "rayon")]
-pub mod rayon;
-
 #[doc(no_inline)]
 pub use crate::graph::Graph;
 
