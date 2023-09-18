@@ -13,6 +13,7 @@ Crate feature flags:
 -   `matrix_graph` (default) enable `MatrixGraph`.
 -   `serde-1` (optional) enable serialization for `Graph, StableGraph, GraphMap`
     using serde 1.0. Requires Rust version as required by serde.
+-   `rayon` (optional) enable parallel iterators for the underlying data in `GraphMap`. Requires Rust version as required by Rayon.
 
 ## Recent Changes
 

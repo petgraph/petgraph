@@ -398,3 +398,18 @@ fn self_loops_can_be_removed() {
     assert_eq!(graph.neighbors_directed((), Outgoing).next(), None);
     assert_eq!(graph.neighbors_directed((), Incoming).next(), None);
 }
+
+#[test]
+#[cfg(feature = "rayon")]
+fn test_parallel_iterator() {
+    use rayon::prelude::*;
+    let mut gr: DiGraphMap<u32, u32> = DiGraphMap::new();
+
+    for i in 0..1000 {
+        gr.add_node(i);
+    }
+
+    let serial_sum: u32 = gr.nodes().sum();
+    let parallel_sum: u32 = gr.par_nodes().sum();
+    assert_eq!(serial_sum, parallel_sum);
+}

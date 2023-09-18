@@ -22,6 +22,11 @@ use crate::graph::Graph;
 use crate::visit;
 use crate::IntoWeightedEdge;
 
+#[cfg(feature = "rayon")]
+use indexmap::map::rayon::ParKeys;
+#[cfg(feature = "rayon")]
+use rayon::{iter::plumbing::UnindexedConsumer, prelude::*};
+
 /// A `GraphMap` with undirected edges.
 ///
 /// For example, an edge between *1* and *2* is equivalent to an edge between
@@ -383,6 +388,16 @@ where
     pub fn nodes(&self) -> Nodes<N> {
         Nodes {
             iter: self.nodes.keys().cloned(),
+        }
+    }
+
+    #[cfg(feature = "rayon")]
+    pub fn par_nodes(&self) -> ParNodes<'_, N>
+    where
+        N: Send + Sync,
+    {
+        ParNodes {
+            iter: self.nodes.par_keys(),
         }
     }
 
@@ -1229,5 +1244,29 @@ where
     #[inline]
     fn is_adjacent(&self, _: &(), a: N, b: N) -> bool {
         self.contains_edge(a, b)
+    }
+}
+
+/// A [ParallelIterator] over this graph's nodes.
+#[cfg(feature = "rayon")]
+pub struct ParNodes<'a, N>
+where
+    N: Send + Sync,
+{
+    iter: ParKeys<'a, N, Vec<(N, CompactDirection)>>,
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, N> ParallelIterator for ParNodes<'a, N>
+where
+    N: Send + Sync,
+{
+    type Item = &'a N;
+
+    fn drive_unindexed<C>(self, c: C) -> C::Result
+    where
+        C: UnindexedConsumer<Self::Item>,
+    {
+        self.iter.drive_unindexed(c)
     }
 }
