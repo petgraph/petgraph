@@ -1538,6 +1538,30 @@ fn toposort_generic() {
 
     {
         order.clear();
+        let init_nodes = gr.node_identifiers().filter(|n| {
+            gr.neighbors_directed(n.clone(), Direction::Incoming)
+                .next()
+                .is_none()
+        });
+        let mut topo = Topo::with_initials(&gr, init_nodes);
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+        }
+        assert_is_topo_order(&gr, &order);
+    }
+
+    {
+        // test `with_initials` API using nodes with incoming edges
+        order.clear();
+        let mut topo = Topo::with_initials(&gr, gr.node_identifiers());
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+        }
+        assert_is_topo_order(&gr, &order);
+    }
+
+    {
+        order.clear();
         let mut topo = Topo::new(&gr);
         while let Some(nx) = topo.next(&gr) {
             order.push(nx);

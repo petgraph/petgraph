@@ -344,6 +344,23 @@ where
         topo
     }
 
+    /// Create a new `Topo` with initial nodes.
+    ///
+    /// Nodes with incoming edges are ignored.
+    pub fn with_initials<G, I>(graph: G, initials: I) -> Self
+    where
+        G: IntoNeighborsDirected + Visitable<NodeId = N, Map = VM>,
+        I: IntoIterator<Item = N>,
+    {
+        Topo {
+            tovisit: initials
+                .into_iter()
+                .filter(|&n| graph.neighbors_directed(n, Incoming).next().is_none())
+                .collect(),
+            ordered: graph.visit_map(),
+        }
+    }
+
     fn extend_with_initials<G>(&mut self, g: G)
     where
         G: IntoNodeIdentifiers + IntoNeighborsDirected<NodeId = N>,
