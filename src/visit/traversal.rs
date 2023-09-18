@@ -344,14 +344,19 @@ where
         topo
     }
 
-    /// Create a new `Topo` with initial nodes
+    /// Create a new `Topo` with initial nodes.
+    ///
+    /// If any incoming edges to the initial nodes will be ignored.
     pub fn with_initials<G, I>(graph: G, i: I) -> Self
     where
-        G: Visitable<NodeId = N, Map = VM>,
+        G: IntoNeighborsDirected + Visitable<NodeId = N, Map = VM>,
         I: IntoIterator<Item = N>,
     {
         Topo {
-            tovisit: i.into_iter().collect(),
+            tovisit: i
+                .into_iter()
+                .filter(|&n| graph.neighbors_directed(n, Incoming).next().is_none())
+                .collect(),
             ordered: graph.visit_map(),
         }
     }

@@ -1551,6 +1551,16 @@ fn toposort_generic() {
     }
 
     {
+        // test `with_initials` API using nodes with incoming edges
+        order.clear();
+        let mut topo = Topo::with_initials(&gr, gr.node_identifiers());
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+        }
+        assert_is_topo_order(&gr, &order);
+    }
+
+    {
         order.clear();
         let mut topo = Topo::new(&gr);
         while let Some(nx) = topo.next(&gr) {

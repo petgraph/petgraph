@@ -744,6 +744,18 @@ fn full_topo_generic() {
                 return false;
             }
         }
+
+        {
+            order.clear();
+            let mut topo = Topo::with_initials(&gr, gr.node_identifiers());
+            while let Some(nx) = topo.next(&gr) {
+                order.push(nx);
+            }
+            if !is_topo_order(&gr, &order) {
+                println!("{:?}", gr);
+                return false;
+            }
+        }
         true
     }
     quickcheck::quickcheck(prop_generic as fn(_) -> bool);
