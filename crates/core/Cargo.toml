@@ -11,8 +11,6 @@ indexmap = { workspace = true, optional = true }
 error-stack = { workspace = true }
 
 [dev-dependencies]
-petgraph = { workspace = true, features = ['proptest'] }
-petgraph-proptest.workspace = true
 proptest = "1.2.0"
 petgraph-dino.workspace = true
 

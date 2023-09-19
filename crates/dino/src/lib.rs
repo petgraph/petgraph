@@ -6,6 +6,7 @@ mod directed;
 mod edge;
 mod node;
 
+mod compat;
 mod retain;
 pub(crate) mod slab;
 #[cfg(test)]

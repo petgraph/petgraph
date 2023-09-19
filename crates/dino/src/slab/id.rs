@@ -1,5 +1,5 @@
 use core::{
-    fmt::{Debug, Formatter},
+    fmt::{Debug, Display, Formatter},
     num::{NonZeroU8, NonZeroUsize},
 };
 
@@ -34,6 +34,12 @@ impl Debug for EntryId {
             .field("index", &self.index())
             .field("generation", &self.generation())
             .finish()
+    }
+}
+
+impl Display for EntryId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_fmt(format_args!("{}g{}", self.index(), self.generation().get()))
     }
 }
 

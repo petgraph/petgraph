@@ -1,3 +1,5 @@
+use core::fmt::{Display, Formatter};
+
 use petgraph_core::{
     attributes::NoValue,
     edge::marker::GraphDirection,
@@ -11,6 +13,12 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeId(EntryId);
+
+impl Display for NodeId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
 
 impl Key for NodeId {
     fn from_id(id: EntryId) -> Self {

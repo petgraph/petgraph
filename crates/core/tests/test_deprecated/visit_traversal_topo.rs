@@ -1,29 +1,27 @@
 //! This is the same test code from `algorithm::toposort`, but adapted for the visit trait.
 // TODO: unify both, traversal shouldn't be in core
 
-use petgraph::{graph::NodeIndex, Graph};
 use petgraph_core::deprecated::{edge::Directed, index::IndexType, visit::Topo};
+use petgraph_dino::{DiDinoGraph, NodeId};
 use petgraph_proptest::dag::graph_dag_strategy;
 use proptest::prelude::*;
 
-fn assert_topologically_sorted<N, E, Ix>(graph: &Graph<N, E, Directed, Ix>, order: &[NodeIndex<Ix>])
-where
-    Ix: IndexType,
-{
-    assert_eq!(graph.node_count(), order.len());
+fn assert_topologically_sorted<N, E>(graph: &DiDinoGraph<N, E>, order: &[NodeId]) {
+    assert_eq!(graph.num_nodes(), order.len());
+
     // check all the edges of the graph
-    for edge in graph.raw_edges() {
-        let source = edge.source();
-        let target = edge.target();
+    for edge in graph.edges() {
+        let source = edge.source_id();
+        let target = edge.target_id();
 
         let source_index = order
             .iter()
-            .position(|x| *x == source)
+            .position(|x| x == source)
             .expect("Source node not found");
 
         let target_index = order
             .iter()
-            .position(|x| *x == target)
+            .position(|x| x == target)
             .expect("Target node not found");
 
         assert!(
@@ -45,19 +43,19 @@ where
 /// * 9: "F"
 /// * 10: "G"
 /// * 11: "H"
-fn setup() -> Graph<&'static str, &'static str> {
-    let mut graph = Graph::new();
+fn setup() -> DiDinoGraph<&'static str, &'static str> {
+    let mut graph = DiDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
-    let d = graph.add_node("D");
-    let e = graph.add_node("E");
-    let f = graph.add_node("F");
-    let g = graph.add_node("G");
-    let h = graph.add_node("H");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
+    let d = *graph.insert_node("D").id();
+    let e = *graph.insert_node("E").id();
+    let f = *graph.insert_node("F").id();
+    let g = *graph.insert_node("G").id();
+    let h = *graph.insert_node("H").id();
 
-    graph.extend_with_edges([
+    for (source, target, weight) in [
         (b, e, "B → E"), //
         (b, g, "B → G"),
         (c, h, "C → H"),
@@ -67,7 +65,9 @@ fn setup() -> Graph<&'static str, &'static str> {
         (h, a, "H → A"),
         (h, f, "H → F"),
         (h, g, "H → G"),
-    ]);
+    ] {
+        graph.insert_edge(weight, &source, &target);
+    }
 
     graph
 }
@@ -88,15 +88,15 @@ fn example() {
 
 #[test]
 fn disjoint() {
-    let mut graph = Graph::new();
+    let mut graph = DiDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
-    let d = graph.add_node("D");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
+    let c = *graph.insert_node("C").id();
+    let d = *graph.insert_node("D").id();
 
-    graph.add_edge(a, b, "A → B");
-    graph.add_edge(c, d, "C → D");
+    graph.insert_edge("A → B", &a, &b);
+    graph.insert_edge("C → D", &c, &d);
 
     let mut topo = Topo::new(&graph);
     let mut order = vec![];
@@ -111,12 +111,12 @@ fn disjoint() {
 
 #[test]
 fn path() {
-    let mut graph = Graph::new();
+    let mut graph = DiDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
 
-    graph.add_edge(a, b, "A → B");
+    graph.insert_edge("A → B", &a, &b);
 
     let mut topo = Topo::new(&graph);
     let mut order = vec![];
@@ -130,13 +130,13 @@ fn path() {
 
 #[test]
 fn error_on_cycle() {
-    let mut graph = Graph::new();
+    let mut graph = DiDinoGraph::new();
 
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
+    let a = *graph.insert_node("A").id();
+    let b = *graph.insert_node("B").id();
 
-    graph.add_edge(a, b, "A → B");
-    graph.add_edge(b, a, "B → A");
+    graph.insert_edge("A → B", &a, &b);
+    graph.insert_edge("B → A", &b, &a);
 
     let mut topo = Topo::new(&graph);
     // toposort silently ignores cycles, therefore `Topo` will output `None`, instead of returning a
@@ -145,7 +145,7 @@ fn error_on_cycle() {
     assert!(order.is_none());
 }
 
-fn topo_sort(graph: &Graph<(), (), Directed, u8>) -> Vec<NodeIndex<u8>> {
+fn topo_sort(graph: &DiDinoGraph<(), ()>) -> Vec<NodeId> {
     let mut topo = Topo::new(graph);
     let mut order = vec![];
 
@@ -157,13 +157,14 @@ fn topo_sort(graph: &Graph<(), (), Directed, u8>) -> Vec<NodeIndex<u8>> {
     order
 }
 
-#[cfg(not(miri))]
-proptest! {
-    #[test]
-    fn consistent_ordering(graph in graph_dag_strategy::<Graph<(), (), Directed, u8>>(None, None, None)) {
-        let order_a = topo_sort(&graph);
-        let order_b = topo_sort(&graph);
-
-        assert_eq!(order_a, order_b);
-    }
-}
+// TODO: proptest isn't converted yet
+// #[cfg(not(miri))]
+// proptest! {
+//     #[test]
+//     fn consistent_ordering(graph in graph_dag_strategy::<Graph<(), (), Directed, u8>>(None, None,
+// None)) {         let order_a = topo_sort(&graph);
+//         let order_b = topo_sort(&graph);
+//
+//         assert_eq!(order_a, order_b);
+//     }
+// }
