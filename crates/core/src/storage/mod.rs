@@ -12,9 +12,6 @@
 //! - [`GraphStorage`]: The core trait that all graph storage implementations must implement, maps
 //!   to an undirected graph.
 //! - [`DirectedGraphStorage`]: A trait for directed graph storage implementations.
-//! - [`LinearGraphStorage`]: A trait for linear graph storage implementations. A linear graph
-//!   storage is one where the node indices and edge indices can be mapped to a continuous integer
-//!   using a [`LinearIndexLookup`].
 //! - [`RetainableGraphStorage`]: A trait for retainable graph storage implementations.
 //!
 //! [`GraphStorage`] proposes that [`DirectedGraphStorage`] is simply a specialization of an
@@ -24,8 +21,9 @@
 //!
 //! # Implementation Notes
 //!
-//! [`LinearGraphStorage`] and [`RetainableGraphStorage`] are subject to
-//! removal during the alpha period.
+//! [`RetainableGraphStorage`] is subject to removal during the alpha period.
+//!
+//! [`Graph`]: crate::graph::Graph
 mod directed;
 
 mod retain;
@@ -65,6 +63,9 @@ use crate::{
 /// ```
 ///
 /// [`Graph`]: crate::graph::Graph
+/// [`Graph::new`]: crate::graph::Graph::new
+/// [`Graph::new_in`]: crate::graph::Graph::new_in
+/// [`Graph::with_capacity`]: crate::graph::Graph::with_capacity
 pub trait GraphStorage: Sized {
     /// The unique identifier for an edge.
     ///
@@ -400,7 +401,7 @@ pub trait GraphStorage: Sized {
     ///
     /// This is used to generate new node identifiers and should not be called by a user directly
     /// and is instead used by the [`Graph`] type to generate a new identifier that is then used
-    /// during [`insert_node`].
+    /// during [`Graph::insert_node`].
     ///
     /// This function is only of interest for implementations that manage the identifiers of nodes
     /// (using the [`ManagedGraphId`] marker trait).
@@ -442,6 +443,12 @@ pub trait GraphStorage: Sized {
     /// return [`Self::NodeId`] and must not take `attribute` into account (in fact it can't, as the
     /// value is always [`NoValue`]). Should the [`ArbitraryGraphId`] marker trait be implemented,
     /// this function should effectively be a no-op and given `attribute`.
+    ///
+    /// [`Graph`]: crate::graph::Graph
+    /// [`Graph::insert_node`]: crate::graph::Graph::insert_node
+    /// [`ManagedGraphId`]: crate::id::ManagedGraphId
+    /// [`ArbitraryGraphId`]: crate::id::ArbitraryGraphId
+    /// [`NoValue`]: crate::attributes::NoValue
     fn next_node_id(&self, attribute: <Self::NodeId as GraphId>::AttributeIndex) -> Self::NodeId;
 
     /// Inserts a new node into the graph.
@@ -477,7 +484,7 @@ pub trait GraphStorage: Sized {
     ///
     /// This is used to generate new edge identifiers and should not be called by a user directly
     /// and is instead used by the [`Graph`] type to generate a new identifier that is then used
-    /// during [`insert_edge`].
+    /// during [`Graph::insert_edge`].
     ///
     /// This function is only of interest for implementations that manage the identifiers of edges
     /// (using the [`ManagedGraphId`] marker trait).
@@ -501,6 +508,10 @@ pub trait GraphStorage: Sized {
     /// # Implementation Notes
     ///
     /// All the same notes as [`Self::next_node_id`] apply here as well.
+    ///
+    /// [`Graph`]: crate::graph::Graph
+    /// [`Graph::insert_edge`]: crate::graph::Graph::insert_edge
+    /// [`ManagedGraphId`]: crate::id::ManagedGraphId
     fn next_edge_id(&self, attribute: <Self::EdgeId as GraphId>::AttributeIndex) -> Self::EdgeId;
 
     /// Inserts a new edge into the graph.
