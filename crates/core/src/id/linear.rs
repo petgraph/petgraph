@@ -13,6 +13,7 @@ mod sealed {
 pub trait Continuity: sealed::Sealed {
     const CONTINUOUS: bool;
 
+    #[must_use]
     fn is_continuous() -> bool {
         Self::CONTINUOUS
     }
