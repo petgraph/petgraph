@@ -1,10 +1,8 @@
 //! This is the same test code from `algorithm::toposort`, but adapted for the visit trait.
 // TODO: unify both, traversal shouldn't be in core
 
-use petgraph_core::deprecated::{edge::Directed, index::IndexType, visit::Topo};
+use petgraph_core::deprecated::visit::Topo;
 use petgraph_dino::{DiDinoGraph, NodeId};
-use petgraph_proptest::dag::graph_dag_strategy;
-use proptest::prelude::*;
 
 fn assert_topologically_sorted<N, E>(graph: &DiDinoGraph<N, E>, order: &[NodeId]) {
     assert_eq!(graph.num_nodes(), order.len());

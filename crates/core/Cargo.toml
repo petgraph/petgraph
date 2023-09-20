@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 fixedbitset = { workspace = true, optional = true }
+bitvec = "1.0.1"
 funty.workspace = true
 indexmap = { workspace = true, optional = true }
 error-stack = { workspace = true }

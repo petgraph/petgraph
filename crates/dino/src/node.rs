@@ -38,7 +38,9 @@ impl<N, E, D> LinearGraphId<DinosaurStorage<N, E, D>> for NodeId
 where
     D: GraphDirection,
 {
-    fn index_mapper(storage: &DinosaurStorage<N, E, D>) -> impl IndexMapper<Self, usize> {
+    type Mapper<'a> = SlabIndexMapper<'a, NodeId> where Self: 'a;
+
+    fn index_mapper(storage: &DinosaurStorage<N, E, D>) -> Self::Mapper<'_> {
         SlabIndexMapper::new(&storage.nodes)
     }
 }

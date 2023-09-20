@@ -418,6 +418,10 @@ where
         *self.lookup.get(from).expect("invalid key")
     }
 
+    fn lookup(&self, from: &K) -> Option<usize> {
+        self.lookup.get(from).copied()
+    }
+
     fn reverse(&mut self, to: &usize) -> Option<K> {
         self.lookup.iter().find_map(|(key, index)| {
             let is_element = *index == *to;

@@ -3,9 +3,12 @@
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+use core::marker::PhantomData;
 
+use bitvec::{boxed::BitBox, vec::BitVec};
 #[cfg(feature = "fixedbitset")]
 use fixedbitset::FixedBitSet;
+use funty::Fundamental;
 
 #[cfg(feature = "alloc")]
 use crate::deprecated::data::{Build, Create, DataMap, FromElements};
@@ -15,12 +18,12 @@ use crate::{
         visit::{
             Data, EdgeCount, GetAdjacencyMatrix, GraphBase, IntoEdgeReferences, IntoEdges,
             IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-            IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
+            IntoNodeReferences, NodeCount, NodeIndexable, VisitMap, Visitable,
         },
     },
     edge::{Direction, Edge},
     graph::Graph,
-    id::ManagedGraphId,
+    id::{ContinuousIndexMapper, IndexMapper, LinearGraphId, ManagedGraphId},
     node::Node,
     storage::{DirectedGraphStorage, GraphStorage},
 };
@@ -188,21 +191,65 @@ where
     }
 }
 
-#[cfg(feature = "fixedbitset")]
+pub struct VisitationMap<S, M, I> {
+    inner: BitBox,
+    mapper: ContinuousIndexMapper<M, I>,
+    _marker: PhantomData<fn() -> *const S>,
+}
+
+impl<S, M, I> VisitationMap<S, M, I>
+where
+    I: LinearGraphId<S> + Clone,
+    M: IndexMapper<I, usize>,
+    S: GraphStorage,
+{
+    fn new(size: usize, mapper: M) -> Self {
+        let mut bits = BitVec::with_capacity(size);
+        bits.fill(false);
+
+        Self {
+            inner: bits.into_boxed_bitslice(),
+            mapper: ContinuousIndexMapper::new(mapper),
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<I, M, S> VisitMap<I> for VisitationMap<S, M, I>
+where
+    I: LinearGraphId<S> + Clone,
+    M: IndexMapper<I, usize>,
+    S: GraphStorage,
+{
+    fn visit(&mut self, a: I) -> bool {
+        let index = self.mapper.map(&a);
+
+        !self.inner.replace(index, true)
+    }
+
+    fn is_visited(&self, a: &I) -> bool {
+        let Some(index) = self.mapper.lookup(a) else {
+            return false;
+        };
+
+        self.inner.get(index).map_or(false, |value| value.as_bool())
+    }
+}
+
 impl<S> Visitable for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy + SafeCast<usize>,
+    S::NodeId: LinearGraphId<S> + Copy,
     S::EdgeId: Copy,
 {
-    type Map = FixedBitSet;
+    type Map = VisitationMap<S, <S::NodeId as LinearGraphId<S>>::Mapper<'a>, S::NodeId>;
 
     fn visit_map(&self) -> Self::Map {
-        FixedBitSet::with_capacity(self.num_nodes())
+        VisitationMap::new(self.num_nodes(), S::NodeId::index_mapper(&self.storage))
     }
 
     fn reset_map(&self, map: &mut Self::Map) {
-        map.clear();
+        map.inner.fill(false);
     }
 }
 

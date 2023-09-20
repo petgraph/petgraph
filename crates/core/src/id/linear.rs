@@ -8,6 +8,8 @@ pub trait IndexMapper<From, To> {
 
     fn map(&mut self, from: &From) -> To;
 
+    fn lookup(&self, from: &From) -> Option<To>;
+
     // TODO: contemplate this returning `Cow` (or something similar) to avoid cloning.
     fn reverse(&mut self, to: &To) -> Option<From>;
 }
@@ -16,7 +18,11 @@ pub trait LinearGraphId<S>: GraphId + Sized
 where
     S: GraphStorage,
 {
-    fn index_mapper(storage: &S) -> impl IndexMapper<Self, usize>;
+    type Mapper<'a>: IndexMapper<Self, usize>
+    where
+        Self: 'a;
+
+    fn index_mapper(storage: &S) -> Self::Mapper<'_>;
 }
 
 /// Continuous index mapper.
@@ -60,6 +66,14 @@ where
         } else {
             self.lookup.push(from.clone());
             self.lookup.len() - 1
+        }
+    }
+
+    fn lookup(&self, from: &T) -> Option<usize> {
+        if I::CONTINUOUS {
+            self.inner.lookup(from)
+        } else {
+            self.lookup.iter().position(|v| v == from)
         }
     }
 
