@@ -17,9 +17,7 @@ use crate::{
     },
     edge::{Direction, Edge},
     graph::Graph,
-    id::{
-        Continuity, Continuous, ContinuousIndexMapper, IndexMapper, LinearGraphId, ManagedGraphId,
-    },
+    id::{Continuous, ContinuousIndexMapper, IndexMapper, LinearGraphId, ManagedGraphId},
     node::Node,
     storage::{DirectedGraphStorage, GraphStorage},
 };

@@ -575,7 +575,8 @@ pub trait GraphStorage: Sized {
     /// ## Return Node with Edges
     ///
     /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
     /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
@@ -616,7 +617,8 @@ pub trait GraphStorage: Sized {
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
     /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
@@ -646,7 +648,8 @@ pub trait GraphStorage: Sized {
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
     /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
@@ -677,7 +680,8 @@ pub trait GraphStorage: Sized {
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
     /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
@@ -703,7 +707,8 @@ pub trait GraphStorage: Sized {
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
     /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
@@ -725,7 +730,8 @@ pub trait GraphStorage: Sized {
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
     /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
@@ -757,7 +763,8 @@ pub trait GraphStorage: Sized {
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
     /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
@@ -798,7 +805,8 @@ pub trait GraphStorage: Sized {
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
     /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
@@ -830,7 +838,8 @@ pub trait GraphStorage: Sized {
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
     /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
@@ -857,6 +866,45 @@ pub trait GraphStorage: Sized {
         self.edge(id).is_some()
     }
 
+    /// Returns an iterator over all edges between the two given nodes.
+    ///
+    /// This will return an iterator over all edges between the two given nodes. The output will
+    /// include all undirected edges between the two nodes, this means that for a directed graph
+    /// both the forward and reverse edges will be included.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 3, &a, &b).unwrap();
+    /// # let ba = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ba, 4, &b, &a).unwrap();
+    ///
+    /// assert_eq!(
+    ///     storage
+    ///         .edges_between(&a, &b)
+    ///         .map(|edge| *edge.id())
+    ///         .collect::<Vec<_>>(),
+    ///     [ab, ba]
+    /// );
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation simply calls [`Self::node_connections`] on both nodes and then
+    /// chains those, after filtering for the respective end. Most implementations should be able to
+    /// provide a more efficient implementation.
     fn edges_between<'a: 'b, 'b>(
         &'a self,
         source: &'b Self::NodeId,
@@ -867,13 +915,58 @@ pub trait GraphStorage: Sized {
             .node_connections(source)
             .filter(move |edge| edge.target_id() == target);
 
-        let from_target = self
-            .node_connections(target)
-            .filter(move |edge| edge.source_id() == source);
+        let from_target = self.node_connections(target).filter(move |edge| {
+            // we exclude self-loops here as they are already included in `from_source`
+            edge.source_id() == source && edge.target_id() != edge.source_id()
+        });
 
         from_source.chain(from_target)
     }
 
+    /// Returns an iterator over all edges between the two given nodes, with mutable weights.
+    ///
+    /// This will return an iterator over all edges between the two given nodes. The output will
+    /// include all undirected edges between the two nodes, this means that for a directed graph
+    /// both the forward and reverse edges will be included.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 3, &a, &b).unwrap();
+    /// # let ba = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ba, 4, &b, &a).unwrap();
+    ///
+    /// for mut edge in storage.edges_between_mut(&a, &b) {
+    ///     *edge.weight_mut() += 1;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     storage
+    ///         .edges_between(&a, &b)
+    ///         .map(|mut edge| *edge.weight())
+    ///         .collect::<Vec<_>>(),
+    ///     [4, 5]
+    /// );
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// Due to the fact that this function returns mutable references to the edges, it is not
+    /// possible to easily provide a default implementation for this function, as a call to
+    /// [`Self::node_connections_mut`] for `source` and `target` would lead to a double mutable
+    /// borrow.
     // I'd love to provide a default implementation for this, but I just can't get it to work.
     fn edges_between_mut<'a: 'b, 'b>(
         &'a mut self,
@@ -881,16 +974,148 @@ pub trait GraphStorage: Sized {
         target: &'b Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
+    /// Returns an iterator over all edges that are connected to the given node.
+    ///
+    /// This will return an iterator over all edges that are connected to the given node.
+    /// This includes all edges, meaning that for a directed graph both the incoming and outgoing
+    /// edges will be included.
+    ///
+    /// There may be multiple edges between two nodes, if the implementation allows for parallel
+    /// edges.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    /// # let ca = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ca, 5, &c, &a).unwrap();
+    ///
+    /// assert_eq!(
+    ///     storage
+    ///         .node_connections(&a)
+    ///         .map(|mut edge| *edge.id())
+    ///         .collect::<Vec<_>>(),
+    ///     [ab, ca]
+    /// );
+    /// ```
     fn node_connections<'a: 'b, 'b>(
         &'a self,
         id: &'b Self::NodeId,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b;
 
+    /// Returns an iterator over all edges that are connected to the given node, with mutable
+    /// weights.
+    ///
+    /// This will return an iterator over all edges that are connected to the given node.
+    /// This includes all edges, meaning that for a directed graph both the incoming and outgoing
+    /// edges will be included.
+    ///
+    /// There may be multiple edges between two nodes, if the implementation allows for parallel
+    /// edges.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    /// # let ca = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ca, 5, &c, &a).unwrap();
+    ///
+    /// for mut edge in storage.node_connections_mut(&a) {
+    ///     *edge.weight_mut() += 1;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     storage
+    ///         .node_connections(&a)
+    ///         .map(|mut edge| *edge.weight())
+    ///         .collect::<Vec<_>>(),
+    ///     [5, 6]
+    /// );
+    /// ```
     fn node_connections_mut<'a: 'b, 'b>(
         &'a mut self,
         id: &'b Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
+    /// Returns an iterator over all nodes that are connected to the given node.
+    ///
+    /// This will return an iterator over all nodes that are connected to the given node.
+    /// This includes all nodes, meaning that for a directed graph both the incoming and outgoing
+    /// edges are taken into account.
+    ///
+    /// If the graph allows for parallel edges, the same node **SHOULD NOT** be returned multiple
+    /// times, if an implementation allows for self-loops, the given node may also be returned.
+    ///
+    /// > **Note**: For more information of **SHOULD NOT** visit [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    /// # let ca = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ca, 5, &c, &a).unwrap();
+    ///
+    /// assert_eq!(
+    ///     storage
+    ///         .node_neighbours(&a)
+    ///         .map(|node| *node.id())
+    ///         .collect::<Vec<_>>(),
+    ///     [b, c]
+    /// );
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// Implementations should try to provide a more efficient implementation than the default one,
+    /// and must uphold the contract that the returned iterator does not contain duplicates.
+    ///
+    /// Due to it's allocation free nature, the default implementation currently returns an iterator
+    /// that may contain duplicates and is based on [`Self::node_connections`].
+    ///
+    /// Changing the requirement from **SHOULD NOT** to **MUST NOT** may occur in the future, and is
+    /// to be considered a breaking change.
     fn node_neighbours<'a: 'b, 'b>(
         &'a self,
         id: &'b Self::NodeId,
@@ -907,55 +1132,520 @@ pub trait GraphStorage: Sized {
             })
     }
 
-    // I'd love to provide a default implementation for this, but I just can't get it to work.
+    /// Returns an iterator over all nodes that are connected to the given node, with mutable
+    /// weights.
+    ///
+    /// This will return an iterator over all nodes that are connected to the given node.
+    /// This includes all nodes, meaning that for a directed graph both the incoming and outgoing
+    /// edges are taken into account.
+    ///
+    /// If the graph allows for parallel edges, the same node **MUST NOT** be returned multiple
+    /// times.
+    ///
+    /// > **Note**: For more information of **MUST NOT** visit [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    /// # let ca = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ca, 5, &c, &a).unwrap();
+    ///
+    /// for mut node in storage.node_neighbours_mut(&a) {
+    ///     *node.weight_mut() += 1;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     storage
+    ///         .node_neighbours(&a)
+    ///         .map(|node| *node.weight())
+    ///         .collect::<Vec<_>>(),
+    ///     [3, 4]
+    /// );
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// No default implementation is provided, as a mutable iterator based on
+    /// [`Self::node_connections_mut`] could potentially lead to a double mutable borrow.
     fn node_neighbours_mut<'a: 'b, 'b>(
         &'a mut self,
         id: &'b Self::NodeId,
     ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b;
 
+    /// Returns an iterator over all nodes that do not have any edges connected to them.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    ///
+    /// let external_nodes: Vec<_> = storage.external_nodes().map(|node| *node.id()).collect();
+    ///
+    /// assert_eq!(external_nodes, [c]);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation is based on [`Self::nodes`], and filters out all nodes that have
+    /// no edges via [`Self::node_neighbours`].
+    /// This is quite inefficient, and implementations should try to provide a more efficient
+    /// implementation if possible.
     fn external_nodes(&self) -> impl Iterator<Item = Node<Self>> {
         self.nodes()
             .filter(|node| self.node_neighbours(node.id()).next().is_none())
     }
 
-    // I'd love to provide a default implementation for this, but I just can't get it to work.
+    /// Returns an iterator over all nodes that do not have any edges connected to them, with
+    /// mutable weights.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    ///
+    /// for mut external in storage.external_nodes_mut() {
+    ///     *external.weight_mut() += 1;
+    /// }
+    ///
+    /// assert_eq!(storage.node(&c).unwrap().weight(), &4);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// No default implementation is provided, as a mutable iterator based on [`Self::nodes_mut`]
+    /// and [`Self::node_neighbours`] would lead to a mutable borrow of the storage implementation
+    /// followed by a shared borrow, which is not allowed.
     fn external_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>>;
 
+    /// Returns an iterator over all nodes in the graph.
+    ///
+    /// This **MUST** return all nodes in the graph, and **MUST NOT** return the same node multiple
+    /// times.
+    ///
+    /// > **Note**: For more information of **MUST** and **MUST NOT** visit [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// assert_eq!(
+    ///     storage.nodes().map(|node| *node.id()).collect::<Vec<_>>(),
+    ///     [a, b, c]
+    /// );
+    /// ```
     fn nodes(&self) -> impl Iterator<Item = Node<Self>>;
 
+    /// Returns an iterator over all nodes in the graph, with mutable weights.
+    ///
+    /// This **MUST** return all nodes in the graph, and **MUST NOT** return the same node multiple
+    /// times.
+    ///
+    /// > **Note**: For more information of **MUST** and **MUST NOT** visit [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// for mut node in storage.nodes_mut() {
+    ///     *node.weight_mut() += 1;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     storage
+    ///         .nodes()
+    ///         .map(|node| *node.weight())
+    ///         .collect::<Vec<_>>(),
+    ///     [2, 3, 4]
+    /// );
+    /// ```
     fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>>;
 
+    /// Returns an iterator over all edges in the graph.
+    ///
+    /// This **MUST** return all edges in the graph, and **MUST NOT** return the same edge multiple
+    /// times.
+    ///
+    /// > **Note**: For more information of **MUST** and **MUST NOT** visit [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    /// # let ca = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ca, 5, &c, &a).unwrap();
+    ///
+    /// assert_eq!(
+    ///     storage.edges().map(|edge| *edge.id()).collect::<Vec<_>>(),
+    ///     [ab, ca]
+    /// );
+    /// ```
     fn edges(&self) -> impl Iterator<Item = Edge<Self>>;
 
+    /// Returns an iterator over all edges in the graph, with mutable weights.
+    ///
+    /// This **MUST** return all edges in the graph, and **MUST NOT** return the same edge multiple
+    /// times.
+    ///
+    /// > **Note**: For more information of **MUST** and **MUST NOT** visit [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    /// # let ca = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ca, 5, &c, &a).unwrap();
+    ///
+    /// for mut edge in storage.edges_mut() {
+    ///     *edge.weight_mut() += 1;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     storage
+    ///         .edges()
+    ///         .map(|edge| *edge.weight())
+    ///         .collect::<Vec<_>>(),
+    ///     [5, 6]
+    /// );
+    /// ```
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<Self>>;
 
+    /// Reserves capacity for at least `additional_nodes` nodes and `additional_edges` edges.
+    ///
+    /// This will reserve capacity for at least `additional_nodes` nodes and `additional_edges`, but
+    /// may reserve more.
+    /// This function **MUST NOT** change the number of nodes or edges in the graph.
+    /// A storage implementation **MAY** decide to not reserve any additional capacity.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// storage.reserve(16, 16);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation calls [`Self::reserve_nodes`] and [`Self::reserve_edges`].
     fn reserve(&mut self, additional_nodes: usize, additional_edges: usize) {
         self.reserve_nodes(additional_nodes);
         self.reserve_edges(additional_edges);
     }
 
+    /// Reserves capacity for at least `additional_nodes` nodes.
+    ///
+    /// This will reserve capacity for at least `additional_nodes` nodes, but may reserve more.
+    /// This function **MUST NOT** change the number of nodes in the graph.
+    /// A storage implementation **MAY** decide to not reserve any additional capacity.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// storage.reserve_nodes(16);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation does not reserve any additional capacity, and is simply empty.
+    /// Implementations that wish to support resizing should override this.
     #[allow(unused_variables)]
     fn reserve_nodes(&mut self, additional: usize) {}
+
+    /// Reserves capacity for at least `additional_edges` edges.
+    ///
+    /// This will reserve capacity for at least `additional_edges` edges, but may reserve more.
+    /// This function **MUST NOT** change the number of edges in the graph.
+    /// A storage implementation **MAY** decide to not reserve any additional capacity.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// storage.reserve_edges(16);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation does not reserve any additional capacity, and is simply empty.
+    /// Implementations that wish to support resizing should override this.
     #[allow(unused_variables)]
     fn reserve_edges(&mut self, additional: usize) {}
 
+    /// Reserves the minimum capacity for exactly `additional_nodes` nodes and `additional_edges`
+    ///
+    /// This will reserve the minimum capacity for exactly `additional_nodes` nodes and
+    /// `additional_edges` edges.
+    ///
+    /// This function **MUST NOT** change the number of nodes or edges in the graph.
+    /// A storage implementation **MAY** decide to not reserve any additional capacity.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// storage.reserve_exact(16, 16);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation calls [`Self::reserve_exact_nodes`] and
+    /// [`Self::reserve_exact_edges`].
     fn reserve_exact(&mut self, additional_nodes: usize, additional_edges: usize) {
         self.reserve_exact_nodes(additional_nodes);
         self.reserve_exact_edges(additional_edges);
     }
 
+    /// Reserves the minimum capacity for exactly `additional_nodes` nodes.
+    ///
+    /// This will reserve the minimum capacity for exactly `additional_nodes` nodes.
+    ///
+    /// This function **MUST NOT** change the number of nodes in the graph.
+    /// A storage implementation **MAY** decide to not reserve any additional capacity.
+    ///
+    /// The implementation may try to not deliberately over-allocate, but this is not required,
+    /// should frequent insertions be expected prefer [`Self::reserve_nodes`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// storage.reserve_exact_nodes(16);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation forwards to [`Self::reserve_nodes`].
     fn reserve_exact_nodes(&mut self, additional: usize) {
         self.reserve_nodes(additional);
     }
+
+    /// Reserves the minimum capacity for exactly `additional_edges` edges.
+    ///
+    /// This will reserve the minimum capacity for exactly `additional_edges` edges.
+    ///
+    /// This function **MUST NOT** change the number of edges in the graph.
+    /// A storage implementation **MAY** decide to not reserve any additional capacity.
+    ///
+    /// The implementation may try to not deliberately over-allocate, but this is not required,
+    /// should frequent insertions be expected prefer [`Self::reserve_edges`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// storage.reserve_exact_edges(16);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation forwards to [`Self::reserve_edges`].
     fn reserve_exact_edges(&mut self, additional: usize) {
         self.reserve_edges(additional);
     }
 
+    /// Shrinks the capacity of the storage as much as possible.
+    ///
+    /// This will shrink the capacity of the storage as much as possible.
+    ///
+    /// This function **MUST NOT** change the number of nodes or edges in the graph.
+    /// A storage implementation **MAY** decide to not shrink the capacity at all.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// storage.reserve(16, 16);
+    /// storage.shrink_to_fit();
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation calls [`Self::shrink_to_fit_nodes`] and
+    /// [`Self::shrink_to_fit_edges`].
     fn shrink_to_fit(&mut self) {
         self.shrink_to_fit_nodes();
         self.shrink_to_fit_edges();
     }
 
+    /// Shrinks the capacity of the node storage as much as possible.
+    ///
+    /// This will shrink the capacity of the node storage as much as possible.
+    ///
+    /// This function **MUST NOT** change the number of nodes in the graph.
+    /// A storage implementation **MAY** decide to not shrink the capacity at all.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// storage.reserve_nodes(16);
+    /// storage.shrink_to_fit_nodes();
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation does not shrink the capacity at all and is effectively a no-op.
+    /// Implementations that wish to support resizing should override this.
     fn shrink_to_fit_nodes(&mut self) {}
+
+    /// Shrinks the capacity of the edge storage as much as possible.
+    ///
+    /// This will shrink the capacity of the edge storage as much as possible.
+    ///
+    /// This function **MUST NOT** change the number of edges in the graph.
+    /// A storage implementation **MAY** decide to not shrink the capacity at all.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    ///
+    /// storage.reserve_edges(16);
+    /// storage.shrink_to_fit_edges();
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation does not shrink the capacity at all and is effectively a no-op.
+    /// Implementations that wish to support resizing should override this.
     fn shrink_to_fit_edges(&mut self) {}
 }
