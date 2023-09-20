@@ -15,7 +15,10 @@ use core::{
 };
 
 use hashbrown::HashMap;
-use petgraph_core::id::{IndexMapper, LinearGraphId};
+use petgraph_core::{
+    id::{Continuous, IndexMapper, LinearGraphId},
+    owned::MaybeOwned,
+};
 
 use crate::slab::entry::{Entry, State};
 pub(crate) use crate::slab::{generation::Generation, id::EntryId, key::Key};
@@ -412,7 +415,7 @@ impl<K> IndexMapper<K, usize> for SlabIndexMapper<'_, K>
 where
     K: Key,
 {
-    const CONTINUOUS: bool = true;
+    type Continuity = Continuous;
 
     fn map(&mut self, from: &K) -> usize {
         *self.lookup.get(from).expect("invalid key")
@@ -422,11 +425,11 @@ where
         self.lookup.get(from).copied()
     }
 
-    fn reverse(&mut self, to: &usize) -> Option<K> {
+    fn reverse(&mut self, to: &usize) -> Option<MaybeOwned<K>> {
         self.lookup.iter().find_map(|(key, index)| {
             let is_element = *index == *to;
 
-            is_element.then_some(*key)
+            is_element.then_some(MaybeOwned::Owned(*key))
         })
     }
 }

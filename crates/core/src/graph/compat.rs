@@ -3,27 +3,23 @@
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-use core::marker::PhantomData;
 
-use bitvec::{bitarr, bitvec, boxed::BitBox, order::Lsb0, vec::BitVec};
-#[cfg(feature = "fixedbitset")]
-use fixedbitset::FixedBitSet;
-use funty::Fundamental;
+use bitvec::{boxed::BitBox, vec::BitVec};
 
 #[cfg(feature = "alloc")]
 use crate::deprecated::data::{Build, Create, DataMap, FromElements};
 use crate::{
-    deprecated::{
-        index::SafeCast,
-        visit::{
-            Data, EdgeCount, FilterEdge, FilterNode, GetAdjacencyMatrix, GraphBase,
-            IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
-            IntoNodeIdentifiers, IntoNodeReferences, NodeCount, NodeIndexable, VisitMap, Visitable,
-        },
+    deprecated::visit::{
+        Data, EdgeCount, EdgeIndexable, FilterEdge, FilterNode, GetAdjacencyMatrix, GraphBase,
+        IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
+        IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
+        VisitMap, Visitable,
     },
     edge::{Direction, Edge},
     graph::Graph,
-    id::{ContinuousIndexMapper, IndexMapper, LinearGraphId, ManagedGraphId},
+    id::{
+        Continuity, Continuous, ContinuousIndexMapper, IndexMapper, LinearGraphId, ManagedGraphId,
+    },
     node::Node,
     storage::{DirectedGraphStorage, GraphStorage},
 };
@@ -51,8 +47,37 @@ where
     }
 }
 
-// TODO: NodeIndexable?!
-// TODO: NodeCompactIndexable?!
+impl<S> NodeIndexable for Graph<S>
+where
+    S: GraphStorage,
+    S::NodeId: LinearGraphId<S> + Copy,
+    S::EdgeId: Copy,
+{
+    fn node_bound(&self) -> usize {
+        self.num_nodes()
+    }
+
+    fn to_index(&self, a: Self::NodeId) -> usize {
+        S::NodeId::index_mapper(&self.storage).map(&a)
+    }
+
+    fn from_index(&self, i: usize) -> Self::NodeId {
+        S::NodeId::index_mapper(&self.storage)
+            .reverse(&i)
+            .expect("unable to determine index")
+            .into_owned()
+    }
+}
+
+impl<S> NodeCompactIndexable for Graph<S>
+where
+    S: GraphStorage,
+    S::NodeId: LinearGraphId<S> + Copy,
+    for<'a> <S::NodeId as LinearGraphId<S>>::Mapper<'a>:
+        IndexMapper<S::NodeId, usize, Continuity = Continuous>,
+    S::EdgeId: Copy,
+{
+}
 
 impl<S> EdgeCount for Graph<S>
 where
@@ -65,7 +90,29 @@ where
     }
 }
 
-// TODO: EdgeIndexable?!
+impl<S> EdgeIndexable for Graph<S>
+where
+    S: GraphStorage,
+    S::NodeId: Copy,
+    S::EdgeId: LinearGraphId<S> + Copy,
+    for<'a> <S::EdgeId as LinearGraphId<S>>::Mapper<'a>:
+        IndexMapper<S::EdgeId, usize, Continuity = Continuous>,
+{
+    fn edge_bound(&self) -> usize {
+        self.num_edges()
+    }
+
+    fn to_index(&self, a: Self::EdgeId) -> usize {
+        S::EdgeId::index_mapper(&self.storage).map(&a)
+    }
+
+    fn from_index(&self, i: usize) -> Self::EdgeId {
+        S::EdgeId::index_mapper(&self.storage)
+            .reverse(&i)
+            .expect("unable to determine index")
+            .into_owned()
+    }
+}
 
 impl<S> Data for Graph<S>
 where

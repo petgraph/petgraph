@@ -1,17 +1,46 @@
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use crate::{id::GraphId, storage::GraphStorage};
+use crate::{id::GraphId, owned::MaybeOwned, storage::GraphStorage};
+
+mod sealed {
+    pub trait Sealed: Copy {}
+
+    impl Sealed for super::Continuous {}
+    impl Sealed for super::Discrete {}
+}
+
+pub trait Continuity: sealed::Sealed {
+    const CONTINUOUS: bool;
+
+    fn is_continuous() -> bool {
+        Self::CONTINUOUS
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Continuous;
+
+impl Continuity for Continuous {
+    const CONTINUOUS: bool = true;
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Discrete;
+
+impl Continuity for Discrete {
+    const CONTINUOUS: bool = false;
+}
 
 pub trait IndexMapper<From, To> {
-    const CONTINUOUS: bool;
+    // we cannot use `const` in trait bounds (yet), so we need to use marker traits and types
+    type Continuity: Continuity;
 
     fn map(&mut self, from: &From) -> To;
 
     fn lookup(&self, from: &From) -> Option<To>;
 
-    // TODO: contemplate this returning `Cow` (or something similar) to avoid cloning.
-    fn reverse(&mut self, to: &To) -> Option<From>;
+    fn reverse(&mut self, to: &To) -> Option<MaybeOwned<From>>;
 }
 
 pub trait LinearGraphId<S>: GraphId + Sized
@@ -57,10 +86,10 @@ where
     I: IndexMapper<T, usize>,
     T: PartialEq + Clone,
 {
-    const CONTINUOUS: bool = true;
+    type Continuity = Continuous;
 
     fn map(&mut self, from: &T) -> usize {
-        if I::CONTINUOUS {
+        if I::Continuity::CONTINUOUS {
             self.inner.map(from)
         } else if let Some(index) = self.lookup.iter().position(|v| v == from) {
             index
@@ -71,18 +100,18 @@ where
     }
 
     fn lookup(&self, from: &T) -> Option<usize> {
-        if I::CONTINUOUS {
+        if I::Continuity::CONTINUOUS {
             self.inner.lookup(from)
         } else {
             self.lookup.iter().position(|v| v == from)
         }
     }
 
-    fn reverse(&mut self, to: &usize) -> Option<T> {
-        if I::CONTINUOUS {
+    fn reverse(&mut self, to: &usize) -> Option<MaybeOwned<T>> {
+        if I::Continuity::CONTINUOUS {
             self.inner.reverse(to)
         } else {
-            self.lookup.get(*to).cloned()
+            self.lookup.get(*to).map(|v| MaybeOwned::Borrowed(v))
         }
     }
 }

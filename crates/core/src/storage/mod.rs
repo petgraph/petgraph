@@ -847,6 +847,12 @@ pub trait GraphStorage: Sized {
     /// assert!(storage.contains_edge(&ab));
     /// assert!(!storage.contains_edge(&ba));
     /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation simply checks if [`Self::edge`] returns [`Some`], but if
+    /// possible, custom implementations that are able to do this more efficiently should override
+    /// this.
     fn contains_edge(&self, id: &Self::EdgeId) -> bool {
         self.edge(id).is_some()
     }
