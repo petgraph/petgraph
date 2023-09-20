@@ -214,7 +214,7 @@ pub trait GraphStorage: Sized {
     ///
     /// let (nodes, edges) = storage.into_parts();
     ///
-    /// let storage = DinosaurStorage::from_parts(nodes, edges).unwrap();
+    /// let storage = DinosaurStorage::<_, _, Directed>::from_parts(nodes, edges).unwrap();
     ///
     /// assert_eq!(storage.num_nodes(), 2);
     /// assert_eq!(storage.num_edges(), 1);
@@ -660,7 +660,7 @@ pub trait GraphStorage: Sized {
     /// # let ab = storage.next_edge_id(NoValue::new());
     /// storage.insert_edge(ab, 3, &a, &b).unwrap();
     ///
-    /// storage.clear().unwrap();
+    /// storage.clear();
     /// #
     /// # assert_eq!(storage.num_nodes(), 0);
     /// # assert_eq!(storage.num_edges(), 0);

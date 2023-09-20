@@ -5,7 +5,7 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use bitvec::{boxed::BitBox, vec::BitVec};
+use bitvec::{bitarr, bitvec, boxed::BitBox, order::Lsb0, vec::BitVec};
 #[cfg(feature = "fixedbitset")]
 use fixedbitset::FixedBitSet;
 use funty::Fundamental;
@@ -206,11 +206,8 @@ where
     S::NodeId: LinearGraphId<S> + Clone,
 {
     fn new_node(size: usize, mapper: <S::NodeId as LinearGraphId<S>>::Mapper<'a>) -> Self {
-        let mut bits = BitVec::with_capacity(size);
-        bits.fill(false);
-
         Self {
-            inner: bits.into_boxed_bitslice(),
+            inner: BitVec::repeat(false, size).into_boxed_bitslice(),
             mapper: ContinuousIndexMapper::new(mapper),
         }
     }
@@ -222,11 +219,8 @@ where
     S::EdgeId: LinearGraphId<S> + Clone,
 {
     fn new_edge(size: usize, mapper: <S::EdgeId as LinearGraphId<S>>::Mapper<'a>) -> Self {
-        let mut bits = BitVec::with_capacity(size);
-        bits.fill(false);
-
         Self {
-            inner: bits.into_boxed_bitslice(),
+            inner: BitVec::repeat(false, size).into_boxed_bitslice(),
             mapper: ContinuousIndexMapper::new(mapper),
         }
     }

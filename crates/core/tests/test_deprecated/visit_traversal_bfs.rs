@@ -34,7 +34,7 @@ fn simple() {
     let dfs = Bfs::new(&graph, a);
 
     let received = dfs.iter(&graph).collect::<Vec<_>>();
-    let expected = vec![a, b, d, c];
+    let expected = vec![a, b, c, d];
     assert_eq!(received, expected);
 }
 
@@ -129,7 +129,7 @@ fn order() {
     let dfs = Bfs::new(&graph, b);
 
     let received = dfs.iter(&graph).collect::<Vec<_>>();
-    let expected = vec![b, d, c];
+    let expected = vec![b, c, d];
 
     assert_eq!(received, expected);
 }
@@ -161,13 +161,13 @@ fn order_deep() {
     graph.insert_edge("B → D", &b, &d);
     graph.insert_edge("C → G", &c, &g);
     graph.insert_edge("C → H", &c, &h);
-    graph.insert_edge("H → E", &d, &e);
+    graph.insert_edge("D → E", &d, &e);
     graph.insert_edge("D → F", &d, &f);
 
     let dfs = Bfs::new(&graph, b);
 
     let received = dfs.iter(&graph).collect::<Vec<_>>();
-    let expected = vec![b, d, c, f, e, h, g];
+    let expected = vec![b, c, d, g, h, e, f];
 
     assert_eq!(received, expected);
 }

@@ -37,7 +37,7 @@ fn edge_filtered_edges_directed() {
         .edges_directed(a, Direction::Outgoing)
         .map(|edge| *edge.id())
         .collect::<Vec<_>>();
-    let expected = vec![ad, ac];
+    let expected = vec![ac, ad];
 
     assert_eq!(received, expected);
 
@@ -113,7 +113,7 @@ fn edge_filtered_undirected_filter_by_weight() {
             .edges(a)
             .map(|edge| *edge.weight())
             .collect::<Vec<_>>(),
-        [1, 0]
+        [0, 1]
     );
 }
 
@@ -138,7 +138,7 @@ fn node_filtered_edges_directed() {
         .edges_directed(a, Direction::Outgoing)
         .map(|edge| *edge.id())
         .collect::<Vec<_>>();
-    let expected = vec![ad, ac];
+    let expected = vec![ac, ad];
 
     assert_eq!(received, expected);
 
@@ -180,7 +180,7 @@ fn node_filtered_by_fixed_bit_set() {
     map.visit(a);
     map.visit(c);
 
-    let filtered = NodeFiltered(graph, map);
+    let filtered = NodeFiltered(&graph, map);
 
     assert_eq!(filtered.node_identifiers().collect::<Vec<_>>(), vec![a, c]);
 }

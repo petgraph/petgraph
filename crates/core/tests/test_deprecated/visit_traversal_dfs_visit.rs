@@ -1,10 +1,13 @@
 use std::{collections::HashSet, iter::once};
 
-use petgraph_core::deprecated::{
-    edge::{Directed, Undirected},
-    visit::{depth_first_search, Control, DfsEvent, EdgeRef, Time},
+use petgraph_core::{
+    deprecated::{
+        edge::{Directed, Undirected},
+        visit::{depth_first_search, Control, DfsEvent, EdgeRef, Time},
+    },
+    id::{IndexMapper, LinearGraphId},
 };
-use petgraph_dino::DiDinoGraph;
+use petgraph_dino::{DiDinoGraph, NodeId};
 use proptest::prelude::*;
 
 #[test]
@@ -66,10 +69,12 @@ fn terminate_early() {
     graph.insert_edge("B → C", &b, &c);
     graph.insert_edge("C → A", &c, &a);
 
+    let mut mapper = NodeId::index_mapper(graph.storage());
+
     let mut predecessor = vec![None; graph.num_nodes()];
     let control = depth_first_search(&graph, once(a), |event| {
         if let DfsEvent::TreeEdge(start, end) = event {
-            predecessor[end.index()] = Some(start);
+            predecessor[mapper.map(&end)] = Some(start);
             if end == b {
                 return Control::Break(start);
             }
