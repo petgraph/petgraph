@@ -671,6 +671,9 @@ pub trait GraphStorage: Sized {
     ///
     /// This will return [`None`] if the node does not exist, and will return the node if it does.
     ///
+    /// The [`Node`] type returned by this function contains a reference to the current graph,
+    /// meaning you are able to query for e.g. the neighours of the node.
+    ///
     /// # Example
     ///
     /// ```
@@ -686,6 +689,9 @@ pub trait GraphStorage: Sized {
     ///
     /// assert_eq!(node.id(), &a);
     /// assert_eq!(node.weight(), &1);
+    ///
+    /// // This will access the underlying storage, and is equivalent to `storage.neighbours(&a)`.
+    /// assert_eq!(node.neighbours().count(), 0);
     /// ```
     fn node(&self, id: &Self::NodeId) -> Option<Node<Self>>;
 
@@ -741,9 +747,106 @@ pub trait GraphStorage: Sized {
         self.node(id).is_some()
     }
 
+    /// Returns the edge with the given identifier, if it exists.
+    ///
+    /// This will return [`None`] if the edge does not exist, and will return the edge if it does.
+    ///
+    /// The [`Edge`] type returned by this function contains a reference to the current graph,
+    /// meaning that continued exploration of the graph is possible.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 3, &a, &b).unwrap();
+    ///
+    /// let edge = storage.edge(&ab).unwrap();
+    /// assert_eq!(edge.weight(), &3);
+    ///
+    /// assert_eq!(edge.source_id(), &a);
+    /// // This will request the target from underlying storage,
+    /// // meaning if one only wants to retrieve the id it is faster
+    /// // to just use `edge.source_id()`.
+    /// // Because `self.node()` returns an `Option`, so will `edge.source()`.
+    /// assert_eq!(edge.source().unwrap().id(), &a);
+    /// assert_eq!(edge.source().unwrap().weight(), &1);
+    ///
+    /// assert_eq!(edge.target_id(), &b);
+    /// // This will request the target from underlying storage,
+    /// // meaning if one only wants to retrieve the id it is faster
+    /// // to just use `edge.target_id()`.
+    /// // Because `self.node()` returns an `Option`, so will `edge.target()`.
+    /// assert_eq!(edge.target().unwrap().id(), &b);
+    /// assert_eq!(edge.target().unwrap().weight(), &2);
+    /// ```
     fn edge(&self, id: &Self::EdgeId) -> Option<Edge<Self>>;
+
+    /// Returns the edge, with a mutable weight, with the given identifier, if it exists.
+    ///
+    /// This will return [`None`] if the edge does not exist, and will return the edge if it does.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 3, &a, &b).unwrap();
+    ///
+    /// let mut edge = storage.edge_mut(&ab).unwrap();
+    ///
+    /// assert_eq!(edge.weight(), &mut 3);
+    /// assert_eq!(edge.source_id(), &a);
+    /// assert_eq!(edge.target_id(), &b);
+    ///
+    /// *edge.weight_mut() = 4;
+    ///
+    /// assert_eq!(storage.edge(&ab).unwrap().weight(), &4);
+    /// ```
     fn edge_mut(&mut self, id: &Self::EdgeId) -> Option<EdgeMut<Self>>;
 
+    /// Checks if the edge with the given identifier exists.
+    ///
+    /// This is equivalent to [`Self::edge`].`is_some()`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 3, &a, &b).unwrap();
+    /// # let ba = storage.next_edge_id(NoValue::new());
+    ///
+    /// assert!(storage.contains_edge(&ab));
+    /// assert!(!storage.contains_edge(&ba));
+    /// ```
     fn contains_edge(&self, id: &Self::EdgeId) -> bool {
         self.edge(id).is_some()
     }
