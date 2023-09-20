@@ -20,7 +20,8 @@ where
 {
     type Mapper<'a>: IndexMapper<Self, usize>
     where
-        Self: 'a;
+        Self: 'a,
+        S: 'a;
 
     fn index_mapper(storage: &S) -> Self::Mapper<'_>;
 }

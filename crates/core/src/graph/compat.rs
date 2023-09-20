@@ -16,9 +16,9 @@ use crate::{
     deprecated::{
         index::SafeCast,
         visit::{
-            Data, EdgeCount, GetAdjacencyMatrix, GraphBase, IntoEdgeReferences, IntoEdges,
-            IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-            IntoNodeReferences, NodeCount, NodeIndexable, VisitMap, Visitable,
+            Data, EdgeCount, FilterNode, GetAdjacencyMatrix, GraphBase, IntoEdgeReferences,
+            IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
+            IntoNodeIdentifiers, IntoNodeReferences, NodeCount, NodeIndexable, VisitMap, Visitable,
         },
     },
     edge::{Direction, Edge},
@@ -191,43 +191,43 @@ where
     }
 }
 
-pub struct VisitationMap<S, M, I> {
+pub struct VisitationMap<'a, S>
+where
+    S: GraphStorage + 'a,
+    S::NodeId: LinearGraphId<S> + Clone,
+{
     inner: BitBox,
-    mapper: ContinuousIndexMapper<M, I>,
-    _marker: PhantomData<fn() -> *const S>,
+    mapper: ContinuousIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'a>, S::NodeId>,
 }
 
-impl<S, M, I> VisitationMap<S, M, I>
+impl<'a, S> VisitationMap<'a, S>
 where
-    I: LinearGraphId<S> + Clone,
-    M: IndexMapper<I, usize>,
-    S: GraphStorage,
+    S: GraphStorage + 'a,
+    S::NodeId: LinearGraphId<S> + Clone,
 {
-    fn new(size: usize, mapper: M) -> Self {
+    fn new(size: usize, mapper: <S::NodeId as LinearGraphId<S>>::Mapper<'a>) -> Self {
         let mut bits = BitVec::with_capacity(size);
         bits.fill(false);
 
         Self {
             inner: bits.into_boxed_bitslice(),
             mapper: ContinuousIndexMapper::new(mapper),
-            _marker: PhantomData,
         }
     }
 }
 
-impl<I, M, S> VisitMap<I> for VisitationMap<S, M, I>
+impl<'a, S> VisitMap<S::NodeId> for VisitationMap<'a, S>
 where
-    I: LinearGraphId<S> + Clone,
-    M: IndexMapper<I, usize>,
-    S: GraphStorage,
+    S: GraphStorage + 'a,
+    S::NodeId: LinearGraphId<S> + Clone,
 {
-    fn visit(&mut self, a: I) -> bool {
+    fn visit(&mut self, a: S::NodeId) -> bool {
         let index = self.mapper.map(&a);
 
         !self.inner.replace(index, true)
     }
 
-    fn is_visited(&self, a: &I) -> bool {
+    fn is_visited(&self, a: &S::NodeId) -> bool {
         let Some(index) = self.mapper.lookup(a) else {
             return false;
         };
@@ -236,13 +236,23 @@ where
     }
 }
 
-impl<S> Visitable for Graph<S>
+impl<'a, S> FilterNode<S::NodeId> for VisitationMap<'a, S>
+where
+    S: GraphStorage + 'a,
+    S::NodeId: LinearGraphId<S> + Clone,
+{
+    fn include_node(&self, node: S::NodeId) -> bool {
+        self.is_visited(&node)
+    }
+}
+
+impl<'a, S> Visitable for &'a Graph<S>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Copy,
     S::EdgeId: Copy,
 {
-    type Map = VisitationMap<S, <S::NodeId as LinearGraphId<S>>::Mapper<'a>, S::NodeId>;
+    type Map = VisitationMap<'a, S>;
 
     fn visit_map(&self) -> Self::Map {
         VisitationMap::new(self.num_nodes(), S::NodeId::index_mapper(&self.storage))

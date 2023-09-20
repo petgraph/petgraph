@@ -379,7 +379,7 @@ where
     }
 }
 
-pub(crate) struct SlabIndexMapper<'a, K>
+pub struct SlabIndexMapper<'a, K>
 where
     K: Key,
 {

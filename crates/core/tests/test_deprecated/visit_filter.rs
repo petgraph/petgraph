@@ -31,11 +31,11 @@ fn edge_filtered_edges_directed() {
     let ac = *graph.insert_edge("A → C", &a, &c).id();
     let ad = *graph.insert_edge("A → D", &a, &d).id();
 
-    let filtered = EdgeFiltered::from_fn(&graph, |edge| edge.id() != ab);
+    let filtered = EdgeFiltered::from_fn(&graph, |edge| *edge.id() != ab);
 
     let received = filtered
         .edges_directed(a, Direction::Outgoing)
-        .map(|edge| edge.id())
+        .map(|edge| *edge.id())
         .collect::<Vec<_>>();
     let expected = vec![ad, ac];
 
@@ -43,7 +43,7 @@ fn edge_filtered_edges_directed() {
 
     let received = filtered
         .edges_directed(b, Direction::Incoming)
-        .map(|edge| edge.id())
+        .map(|edge| *edge.id())
         .collect::<Vec<_>>();
     let expected = vec![];
 
@@ -66,7 +66,7 @@ fn edge_filtered_edges_directed_reverse() {
     assert_eq!(
         graph
             .edges_directed(a, Direction::Outgoing)
-            .map(|edge| edge.id())
+            .map(|edge| *edge.id())
             .collect::<Vec<_>>(),
         [ab]
     );
@@ -81,7 +81,7 @@ fn edge_filtered_edges_directed_reverse() {
     assert_eq!(
         graph
             .edges_directed(a, Direction::Incoming)
-            .map(|edge| edge.id())
+            .map(|edge| *edge.id())
             .collect::<Vec<_>>(),
         []
     );
@@ -102,11 +102,9 @@ fn edge_filtered_undirected_filter_by_weight() {
     let b = *graph.insert_node("B").id();
     let c = *graph.insert_node("C").id();
 
-    graph.extend_with_edges([
-        (a, b, 0), //
-        (a, c, 1),
-        (b, c, -1),
-    ]);
+    for (source, target, weight) in [(a, b, 0), (a, c, 1), (b, c, -1)] {
+        graph.insert_edge(weight, &source, &target);
+    }
 
     let filtered = EdgeFiltered::from_fn(&graph, |edge| *edge.weight() >= 0);
 
@@ -138,7 +136,7 @@ fn node_filtered_edges_directed() {
 
     let received = filtered
         .edges_directed(a, Direction::Outgoing)
-        .map(|edge| edge.id())
+        .map(|edge| *edge.id())
         .collect::<Vec<_>>();
     let expected = vec![ad, ac];
 
@@ -146,7 +144,7 @@ fn node_filtered_edges_directed() {
 
     let received = filtered
         .edges_directed(b, Direction::Incoming)
-        .map(|edge| edge.id())
+        .map(|edge| *edge.id())
         .collect::<Vec<_>>();
     let expected = vec![];
 
@@ -178,11 +176,11 @@ fn node_filtered_by_fixed_bit_set() {
     let b = *graph.insert_node("B").id();
     let c = *graph.insert_node("C").id();
 
-    let mut map = graph.visit_map();
+    let mut map = (&graph).visit_map();
     map.visit(a);
     map.visit(c);
 
-    let filtered = NodeFiltered(&graph, map);
+    let filtered = NodeFiltered(graph, map);
 
     assert_eq!(filtered.node_identifiers().collect::<Vec<_>>(), vec![a, c]);
 }

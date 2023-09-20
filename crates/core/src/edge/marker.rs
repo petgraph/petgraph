@@ -5,7 +5,7 @@ pub struct Undirected;
 pub struct Directed;
 
 mod sealed {
-    pub trait Sealed {}
+    pub trait Sealed: Copy + 'static {}
 
     impl Sealed for super::Undirected {}
     impl Sealed for super::Directed {}

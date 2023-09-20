@@ -26,7 +26,7 @@ use crate::slab::{generation::Generation, key::Key};
 ///
 /// `EntryId` has the following layout: `<unused> <generation> <index>`
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct EntryId(NonZeroUsize);
+pub struct EntryId(NonZeroUsize);
 
 impl Debug for EntryId {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {

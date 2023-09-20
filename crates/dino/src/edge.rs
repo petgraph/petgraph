@@ -31,7 +31,7 @@ impl<N, E, D> LinearGraphId<DinosaurStorage<N, E, D>> for EdgeId
 where
     D: GraphDirection,
 {
-    type Mapper<'a> = SlabIndexMapper<'a, EdgeId> where Self: 'a;
+    type Mapper<'a> = SlabIndexMapper<'a, EdgeId> where Self: 'a, N: 'a, E: 'a;
 
     fn index_mapper(storage: &DinosaurStorage<N, E, D>) -> Self::Mapper<'_> {
         SlabIndexMapper::new(&storage.edges)

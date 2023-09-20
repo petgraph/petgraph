@@ -178,51 +178,51 @@ fn order_deep() {
 #[test]
 #[ignore = "GraphMap hasn't been ported yet"]
 fn graphmap() {
-    use petgraph::graphmap::GraphMap;
-    let mut graph = GraphMap::<_, _, Directed>::new();
-
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-    let c = graph.add_node("C");
-    let d = graph.add_node("D");
-
-    // disconnected node shouldn't be included in the DFS
-    graph.add_node("E");
-
-    graph.add_edge(a, b, "A → B");
-    graph.add_edge(a, c, "A → C");
-    graph.add_edge(b, c, "B → C");
-    graph.add_edge(b, d, "B → D");
-
-    let mut dfs = Dfs::new(&graph, a);
-    let mut order = vec![];
-
-    while let Some(node) = dfs.next(&graph) {
-        order.push(node);
-    }
-
-    assert_eq!(order, vec![a, c, b, d]);
+    // use petgraph::graphmap::GraphMap;
+    // let mut graph = GraphMap::<_, _, Directed>::new();
+    //
+    // let a = graph.add_node("A");
+    // let b = graph.add_node("B");
+    // let c = graph.add_node("C");
+    // let d = graph.add_node("D");
+    //
+    // // disconnected node shouldn't be included in the DFS
+    // graph.add_node("E");
+    //
+    // graph.add_edge(a, b, "A → B");
+    // graph.add_edge(a, c, "A → C");
+    // graph.add_edge(b, c, "B → C");
+    // graph.add_edge(b, d, "B → D");
+    //
+    // let mut dfs = Dfs::new(&graph, a);
+    // let mut order = vec![];
+    //
+    // while let Some(node) = dfs.next(&graph) {
+    //     order.push(node);
+    // }
+    //
+    // assert_eq!(order, vec![a, c, b, d]);
 }
 
 #[test]
 #[ignore = "GraphMap hasn't been ported yet"]
 fn graphmap_disconnected() {
-    use petgraph::graphmap::GraphMap;
-    let mut graph = GraphMap::<_, _, Directed>::new();
-
-    let a = graph.add_node("A");
-    let b = graph.add_node("B");
-
-    let c = graph.add_node("C");
-
-    graph.add_edge(a, b, "A → B");
-
-    let mut dfs = Dfs::new(&graph, c);
-    let mut order = vec![];
-
-    while let Some(node) = dfs.next(&graph) {
-        order.push(node);
-    }
-
-    assert_eq!(order, vec![c]);
+    // use petgraph::graphmap::GraphMap;
+    // let mut graph = GraphMap::<_, _, Directed>::new();
+    //
+    // let a = graph.add_node("A");
+    // let b = graph.add_node("B");
+    //
+    // let c = graph.add_node("C");
+    //
+    // graph.add_edge(a, b, "A → B");
+    //
+    // let mut dfs = Dfs::new(&graph, c);
+    // let mut order = vec![];
+    //
+    // while let Some(node) = dfs.next(&graph) {
+    //     order.push(node);
+    // }
+    //
+    // assert_eq!(order, vec![c]);
 }
