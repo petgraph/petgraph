@@ -242,7 +242,11 @@ where
             return false;
         };
 
-        self.inner.get(index).map_or(false, |value| value.as_bool())
+        let Some(bit) = self.inner.get(index) else {
+            return false;
+        };
+
+        *bit
     }
 }
 
