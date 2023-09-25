@@ -14,8 +14,9 @@ where
 {
     storage: &'a S,
 
+    // TODO: MaybeOwned?
     id: &'a S::NodeId,
-
+    // TODO: MaybeOwned?
     weight: &'a S::NodeWeight,
 }
 
