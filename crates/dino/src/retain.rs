@@ -1,10 +1,14 @@
+use alloc::vec;
+
+use hashbrown::HashSet;
 use petgraph_core::{
     edge::{marker::GraphDirection, EdgeMut},
     node::NodeMut,
     storage::RetainableGraphStorage,
 };
+use roaring::RoaringBitmap;
 
-use crate::DinosaurStorage;
+use crate::{slab::Key, DinosaurStorage, NodeId};
 
 impl<N, E, D> RetainableGraphStorage for DinosaurStorage<N, E, D>
 where
@@ -15,13 +19,27 @@ where
         mut nodes: impl FnMut(NodeMut<'_, Self>) -> bool,
         mut edges: impl FnMut(EdgeMut<'_, Self>) -> bool,
     ) {
+        let mut removed = RoaringBitmap::new();
+
         self.nodes.retain(|_, value| {
             let node = NodeMut::new(&value.id, &mut value.weight);
 
-            nodes(node)
+            let retain = nodes(node);
+
+            if !retain {
+                removed.insert(value.id.into_id().raw());
+            }
+
+            retain
         });
 
         self.edges.retain(|_, value| {
+            if removed.contains(value.source.into_id().raw())
+                || removed.contains(value.target.into_id().raw())
+            {
+                return false;
+            }
+
             let edge = EdgeMut::new(&value.id, &mut value.weight, &value.source, &value.target);
 
             edges(edge)
@@ -31,10 +49,23 @@ where
     }
 
     fn retain_nodes(&mut self, mut f: impl FnMut(NodeMut<'_, Self>) -> bool) {
+        let mut removed = RoaringBitmap::new();
+
         self.nodes.retain(|_, value| {
             let node = NodeMut::new(&value.id, &mut value.weight);
 
-            f(node)
+            let retain = f(node);
+
+            if !retain {
+                removed.insert(value.id.into_id().raw());
+            }
+
+            retain
+        });
+
+        self.edges.retain(|_, value| {
+            !removed.contains(value.source.into_id().raw())
+                && !removed.contains(value.target.into_id().raw())
         });
 
         self.closures.refresh(&self.nodes, &self.edges);
