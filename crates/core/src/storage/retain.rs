@@ -53,7 +53,7 @@ pub trait RetainableGraphStorage: GraphStorage {
 
     /// Retains all nodes for which the predicate returns `true`.
     ///
-    /// If you are going to retain edges as well, it is more efficient to use [`retain`].
+    /// If you are going to retain edges as well, it is more efficient to use [`Self::retain`].
     ///
     /// # Example
     ///
@@ -97,7 +97,7 @@ pub trait RetainableGraphStorage: GraphStorage {
 
     /// Retains all edges for which the predicate returns `true`.
     ///
-    /// If you are going to retain nodes as well, it is more efficient to use [`retain`].
+    /// If you are going to retain nodes as well, it is more efficient to use [`Self::retain`].
     ///
     /// # Example
     ///
