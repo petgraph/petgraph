@@ -1,3 +1,19 @@
+//! # Nodes
+//!
+//! This module contains the three central node types used throughout the petgraph ecosystem:
+//! * [`Node`]: Active node in a graph.
+//! * [`NodeMut`]: Active (mutable) node in a graph.
+//! * [`DetachedNode`]: Detached node from a graph.
+//!
+//! In application code [`DetachedNode`]s can easily be interchanged with [`Node`]s and vice-versa,
+//! as long as all components are [`Clone`]able.
+//!
+//! You should prefer to use [`Node`]s whenever possible, as they are simply three references into
+//! the underlying graph storage and provide convenient access to the node's neighbours and
+//! connecting edges.
+//!
+//! [`NodeMut`]s are only needed when you need mutable access to the node's weight, and should be
+//! used sparingly.
 mod compat;
 
 use core::fmt::{Debug, Formatter};
@@ -91,6 +107,8 @@ where
     /// let copy = Node::new(graph.storage(), node.id(), node.weight());
     /// // ^ exact same as `let copy = *node;`
     /// ```
+    ///
+    /// [`Graph::node`]: crate::graph::Graph::node
     pub const fn new(storage: &'a S, id: &'a S::NodeId, weight: &'a S::NodeWeight) -> Self {
         Self {
             storage,
@@ -325,6 +343,8 @@ where
     /// assert_eq!(node.id, a);
     /// assert_eq!(node.weight, "A");
     /// ```
+    ///
+    /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
     pub fn detach(self) -> DetachedNode<S::NodeId, S::NodeWeight> {
         DetachedNode::new(self.id.clone(), self.weight.clone())
@@ -373,6 +393,9 @@ where
     /// [`Graph::insert_node`].
     ///
     /// This is only for implementors of [`GraphStorage`].
+    ///
+    /// [`Graph::node_mut`]: crate::graph::Graph::node_mut
+    /// [`Graph::insert_node`]: crate::graph::Graph::insert_node
     pub fn new(id: &'a S::NodeId, weight: &'a mut S::NodeWeight) -> Self {
         Self { id, weight }
     }
@@ -457,7 +480,7 @@ where
     /// This will return a [`DetachedNode`], which can be reattached to the graph using
     /// [`Graph::from_parts`].
     ///
-    /// This is especially useful in usecases where you want direct (mutable access) to both the
+    /// This is especially useful in use-cases where you want direct (mutable access) to both the
     /// weight and id or do not want to bother with the graph's lifetime.
     ///
     /// # Example
@@ -476,22 +499,14 @@ where
     /// assert_eq!(node.id, a);
     /// assert_eq!(node.weight, "A");
     /// ```
+    ///
+    /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
     pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
         DetachedNode::new(self.id.clone(), self.weight.clone())
     }
 }
 
-/// Detached node from a graph.
-///
-/// This is a node that has been detached from a graph, it can be reattached using
-/// [`Graph::from_parts`].
-///
-/// This is especially useful in usecases where you want direct (mutable access) to both the weight
-/// and the id or do not want to bother with the graph's lifetime.
-///
-/// # Example
-///
 /// Detaches the node from the graph.
 ///
 /// This will return a [`DetachedNode`], which can be reattached to the graph using
@@ -516,6 +531,8 @@ where
 /// assert_eq!(node.id, a);
 /// assert_eq!(node.weight, "A");
 /// ```
+///
+/// [`Graph::from_parts`]: crate::graph::Graph::from_parts
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DetachedNode<N, W> {
     pub id: N,

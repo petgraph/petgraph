@@ -19,7 +19,6 @@ pub struct Edge<'a, S>
 where
     S: GraphStorage,
 {
-    // TODO: should this be `graph` instead of `storage`?
     storage: &'a S,
 
     id: &'a S::EdgeId,
@@ -137,7 +136,6 @@ pub struct EdgeMut<'a, S>
 where
     S: GraphStorage,
 {
-    // TODO: can we include the graph here?
     id: &'a S::EdgeId,
 
     source_id: &'a S::NodeId,
