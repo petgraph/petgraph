@@ -1,3 +1,4 @@
+#![feature(linked_list_cursors)]
 //! `petgraph` is a graph data structure library.
 //!
 //! Graphs are collections of nodes, and edges between nodes. `petgraph`

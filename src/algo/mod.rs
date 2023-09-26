@@ -13,6 +13,7 @@ pub mod floyd_warshall;
 pub mod isomorphism;
 pub mod k_shortest_path;
 pub mod matching;
+pub mod peo;
 pub mod simple_paths;
 pub mod tred;
 
