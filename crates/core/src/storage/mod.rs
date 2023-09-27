@@ -796,16 +796,16 @@ pub trait GraphStorage: Sized {
     /// // meaning if one only wants to retrieve the id it is faster
     /// // to just use `edge.source_id()`.
     /// // Because `self.node()` returns an `Option`, so will `edge.source()`.
-    /// assert_eq!(edge.source().unwrap().id(), &a);
-    /// assert_eq!(edge.source().unwrap().weight(), &1);
+    /// assert_eq!(edge.source().id(), &a);
+    /// assert_eq!(edge.source().weight(), &1);
     ///
     /// assert_eq!(edge.target_id(), &b);
     /// // This will request the target from underlying storage,
     /// // meaning if one only wants to retrieve the id it is faster
     /// // to just use `edge.target_id()`.
     /// // Because `self.node()` returns an `Option`, so will `edge.target()`.
-    /// assert_eq!(edge.target().unwrap().id(), &b);
-    /// assert_eq!(edge.target().unwrap().weight(), &2);
+    /// assert_eq!(edge.target().id(), &b);
+    /// assert_eq!(edge.target().weight(), &2);
     /// ```
     fn edge(&self, id: &Self::EdgeId) -> Option<Edge<Self>>;
 
@@ -1131,16 +1131,15 @@ pub trait GraphStorage: Sized {
         &'a self,
         id: &'b Self::NodeId,
     ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
-        self.node_connections(id)
-            .filter_map(move |edge: Edge<Self>| {
-                // doing it this way allows us to also get ourselves as a neighbour if we have a
-                // self-loop
-                if edge.source_id() == id {
-                    edge.target()
-                } else {
-                    edge.source()
-                }
-            })
+        self.node_connections(id).map(move |edge: Edge<Self>| {
+            // doing it this way allows us to also get ourselves as a neighbour if we have a
+            // self-loop
+            if edge.source_id() == id {
+                edge.target()
+            } else {
+                edge.source()
+            }
+        })
     }
 
     /// Returns an iterator over all nodes that are connected to the given node, with mutable

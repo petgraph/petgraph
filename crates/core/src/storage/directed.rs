@@ -314,7 +314,7 @@ pub trait DirectedGraphStorage: GraphStorage {
         direction: Direction,
     ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
         self.node_directed_connections(id, direction)
-            .filter_map(move |edge| match direction {
+            .map(move |edge| match direction {
                 Direction::Outgoing => edge.target(),
                 Direction::Incoming => edge.source(),
             })

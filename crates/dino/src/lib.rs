@@ -215,10 +215,22 @@ where
         source: &Self::NodeId,
         target: &Self::NodeId,
     ) -> Result<EdgeMut<Self>, Self::Error> {
+        // undirected edges in the graph are stored in a canonical form, where the source node id is
+        // always smaller than the target node id
+        let (source, target) = if D::is_directed() {
+            (*source, *target)
+        } else {
+            if source > target {
+                (*target, *source)
+            } else {
+                (*source, *target)
+            }
+        };
+
         let expected = id;
         let id = self
             .edges
-            .insert(Edge::new(expected, weight, *source, *target));
+            .insert(Edge::new(expected, weight, source, target));
 
         // TODO: we might want to make this `debug_assert_eq` or a warning.
         assert_eq!(

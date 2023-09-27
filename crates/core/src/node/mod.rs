@@ -92,6 +92,14 @@ where
     ///
     /// This is only for implementors of [`GraphStorage`].
     ///
+    /// # Contract
+    ///
+    /// The `id` must be valid for the given `storage` and the `weight` must be valid for the given
+    /// `id`.
+    ///
+    /// The contract is not enforced, due to concerns of recursive calls on [`GraphStorage::node`]
+    /// and [`GraphStorage::contains_node`].
+    ///
     /// # Example
     ///
     /// ```
@@ -393,6 +401,12 @@ where
     /// [`Graph::insert_node`].
     ///
     /// This is only for implementors of [`GraphStorage`].
+    ///
+    /// # Contract
+    ///
+    /// The `id` must be valid for the given `storage` and the `weight` must be valid for the given
+    /// `id`.
+    ///
     ///
     /// [`Graph::node_mut`]: crate::graph::Graph::node_mut
     /// [`Graph::insert_node`]: crate::graph::Graph::insert_node
