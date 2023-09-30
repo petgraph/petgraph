@@ -11,6 +11,8 @@ extern crate odds;
 
 mod utils;
 
+use petgraph::algo::bridges;
+use petgraph::algo::connected_components;
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
@@ -1308,6 +1310,29 @@ quickcheck! {
         assert!(is_maximum_matching(&g, &m2), "maximum_matching returned a matching that is not maximum");
         assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
         assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
+
+        true
+    }
+}
+
+quickcheck! {
+    fn test_bridges(g: Graph<(), (), Undirected>) -> bool {
+        let num = connected_components(&g);
+        let br = bridges(&g).map(|edge| edge.id()).collect::<HashSet<_>>();
+
+        for &edge in &br {
+            let mut graph = g.clone();
+            graph.remove_edge(edge);
+            assert_eq!(connected_components(&graph), num+1);
+        }
+
+        for e in g.edge_references() {
+            if !br.contains(&e.id()) {
+               let mut graph = g.clone();
+               graph.remove_edge(e.id());
+               assert_eq!(connected_components(&graph), num);
+           }
+        }
 
         true
     }
