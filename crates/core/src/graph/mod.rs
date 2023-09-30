@@ -59,6 +59,15 @@ where
         })
     }
 
+    pub fn into_parts(
+        self,
+    ) -> (
+        impl IntoIterator<Item = DetachedNode<S::NodeId, S::NodeWeight>>,
+        impl IntoIterator<Item = DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight>>,
+    ) {
+        self.storage.into_parts()
+    }
+
     pub fn convert<S2>(self) -> Result<Graph<S2>, S2::Error>
     where
         S2: GraphStorage<

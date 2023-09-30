@@ -215,6 +215,8 @@ where
         source: &Self::NodeId,
         target: &Self::NodeId,
     ) -> Result<EdgeMut<Self>, Self::Error> {
+        // TODO: option to disallow self-loops and parallel edges
+
         // undirected edges in the graph are stored in a canonical form, where the source node id is
         // always smaller than the target node id
         let (source, target) = if D::is_directed() {

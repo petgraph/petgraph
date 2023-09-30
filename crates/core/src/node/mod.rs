@@ -329,10 +329,13 @@ where
 {
     /// Detaches the node from the graph.
     ///
+    /// > **Note:** This will _not_ remove the node from the graph, it will only detach the this
+    /// > instance of the node removing the lifetime dependency on the graph.
+    ///
     /// This will return a [`DetachedNode`], which can be reattached to the graph using
     /// [`Graph::from_parts`].
     ///
-    /// This is especially useful in usecases where you want direct (mutable access) to both the
+    /// This is especially useful in use-cases where you want direct (mutable access) to both the
     /// weight and id or do not want to bother with the graph's lifetime.
     ///
     /// # Example
@@ -364,7 +367,7 @@ where
 /// Node that is part of a graph and has exclusive mutable access to the weight of the node.
 ///
 /// To prevent multiple borrows of the same node, while still allowing for multiple borrows into the
-/// same storage, this type does not carry a reference to the storage.
+/// same storage, this type does not carry a reference to the storage itself.
 ///
 /// # Example
 ///
@@ -491,6 +494,10 @@ where
 {
     /// Detaches the node from the graph.
     ///
+    /// > **Note:** This will _not_ remove the node from the graph, it will only detach the this
+    /// > instance of the node removing the lifetime dependency on the graph.
+    ///
+    ///
     /// This will return a [`DetachedNode`], which can be reattached to the graph using
     /// [`Graph::from_parts`].
     ///
@@ -521,13 +528,13 @@ where
     }
 }
 
-/// Detaches the node from the graph.
+/// Detached node from a graph.
 ///
-/// This will return a [`DetachedNode`], which can be reattached to the graph using
+/// This node is no longer considered to be part of a graph, but can be reattached using
 /// [`Graph::from_parts`].
 ///
-/// This is especially useful in use-cases where you want direct (mutable access) to both the
-/// weight and id or do not want to bother with the graph's lifetime.
+/// Especially useful in cases of decomposition ([`Graph::into_parts`]) or if one does not want to
+/// deal with the graph's lifetime or needs a node to outlive the graph.
 ///
 /// # Example
 ///
@@ -546,6 +553,7 @@ where
 /// assert_eq!(node.weight, "A");
 /// ```
 ///
+/// [`Graph::into_parts`]: crate::graph::Graph::into_parts
 /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DetachedNode<N, W> {
