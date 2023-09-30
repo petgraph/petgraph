@@ -1,6 +1,6 @@
 use petgraph_core::{
     attributes::NoValue,
-    edge::marker::GraphDirection,
+    edge::marker::GraphDirectionality,
     id::{GraphId, IndexMapper, LinearGraphId, ManagedGraphId},
 };
 
@@ -29,7 +29,7 @@ impl GraphId for EdgeId {
 
 impl<N, E, D> LinearGraphId<DinosaurStorage<N, E, D>> for EdgeId
 where
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     type Mapper<'a> = SlabIndexMapper<'a, EdgeId> where Self: 'a, N: 'a, E: 'a;
 

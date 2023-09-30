@@ -1,3 +1,9 @@
+use core::{
+    cmp::Ordering,
+    hash::{Hash, Hasher},
+};
+
+#[derive(Debug, Copy, Clone)]
 pub enum MaybeOwned<'a, T> {
     Borrowed(&'a T),
     Owned(T),
@@ -40,5 +46,61 @@ impl<T> AsRef<T> for MaybeOwned<'_, T> {
             Self::Borrowed(value) => value,
             Self::Owned(value) => value,
         }
+    }
+}
+
+impl<T> PartialEq<T> for MaybeOwned<'_, T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &T) -> bool {
+        self.as_ref().eq(other)
+    }
+}
+
+impl<T> PartialEq for MaybeOwned<'_, T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.as_ref().eq(other.as_ref())
+    }
+}
+
+impl<T> Eq for MaybeOwned<'_, T> where T: Eq {}
+
+impl<T> PartialOrd<T> for MaybeOwned<'_, T>
+where
+    T: PartialOrd,
+{
+    fn partial_cmp(&self, other: &T) -> Option<Ordering> {
+        self.as_ref().partial_cmp(other)
+    }
+}
+
+impl<T> PartialOrd for MaybeOwned<'_, T>
+where
+    T: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.as_ref().partial_cmp(other.as_ref())
+    }
+}
+
+impl<T> Ord for MaybeOwned<'_, T>
+where
+    T: Ord,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.as_ref().cmp(other.as_ref())
+    }
+}
+
+impl<T> Hash for MaybeOwned<'_, T>
+where
+    T: Hash,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.as_ref().hash(state)
     }
 }

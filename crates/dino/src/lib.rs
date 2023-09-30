@@ -21,7 +21,7 @@ use error_stack::{Context, Report, Result};
 pub use node::NodeId;
 use petgraph_core::{
     edge::{
-        marker::{Directed, GraphDirection, Undirected},
+        marker::{Directed, GraphDirectionality, Undirected},
         DetachedEdge, EdgeMut,
     },
     graph::Graph,
@@ -39,7 +39,7 @@ pub type UnDinoGraph<N, E> = DinoGraph<N, E, Undirected>;
 #[derive(Debug, Clone, PartialEq)]
 pub struct DinosaurStorage<N, E, D = Directed>
 where
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     nodes: Slab<NodeId, Node<N>>,
     edges: Slab<EdgeId, Edge<E>>,
@@ -51,7 +51,7 @@ where
 
 impl<N, E, D> DinosaurStorage<N, E, D>
 where
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     #[must_use]
     pub fn new() -> Self {
@@ -61,7 +61,7 @@ where
 
 impl<N, E, D> Default for DinosaurStorage<N, E, D>
 where
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     fn default() -> Self {
         Self::new()
@@ -87,7 +87,7 @@ impl Context for ExtinctionEvent {}
 
 impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D>
 where
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     type EdgeId = EdgeId;
     type EdgeWeight = E;

@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use fixedbitset::FixedBitSet;
 use petgraph_core::{
     edge::{
-        marker::{Directed, GraphDirection, Undirected},
+        marker::{Directed, GraphDirectionality, Undirected},
         Edge,
     },
     id::{LinearGraphId, LinearGraphIdMapper},
@@ -33,7 +33,7 @@ pub struct AdjacencyMatrix<'a, S, D = Directed, T = Frozen>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<Storage = S>,
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     storage: &'a S,
     mapper: <S::NodeId as LinearGraphId>::Mapper<'a>,
@@ -49,7 +49,7 @@ impl<'a, S, D, T> AdjacencyMatrix<'a, S, D, T>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<Storage = S>,
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     const fn index(&self, source: usize, target: usize) -> usize {
         if D::is_directed() {
@@ -83,7 +83,7 @@ impl<'a, S, D> AdjacencyMatrix<'a, S, D, Mutable>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<Storage = S>,
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     #[must_use]
     pub fn freeze(self) -> AdjacencyMatrix<'a, S, D, Frozen> {
@@ -147,7 +147,7 @@ impl<'a, S, D> AdjacencyMatrix<'a, S, D, Frozen>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<Storage = S>,
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     pub fn is_adjacent(&self, source: &S::NodeId, target: &S::NodeId) -> bool {
         let source = self.mapper.map(source);

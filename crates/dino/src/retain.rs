@@ -2,7 +2,7 @@ use alloc::vec;
 
 use hashbrown::HashSet;
 use petgraph_core::{
-    edge::{marker::GraphDirection, EdgeMut},
+    edge::{marker::GraphDirectionality, EdgeMut},
     node::NodeMut,
     storage::RetainableGraphStorage,
 };
@@ -12,7 +12,7 @@ use crate::{slab::Key, DinosaurStorage, NodeId};
 
 impl<N, E, D> RetainableGraphStorage for DinosaurStorage<N, E, D>
 where
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     fn retain(
         &mut self,

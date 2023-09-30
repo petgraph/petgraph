@@ -2,7 +2,7 @@ use core::fmt::{Display, Formatter};
 
 use petgraph_core::{
     attributes::NoValue,
-    edge::marker::GraphDirection,
+    edge::marker::GraphDirectionality,
     id::{GraphId, IndexMapper, LinearGraphId, ManagedGraphId},
 };
 
@@ -36,7 +36,7 @@ impl GraphId for NodeId {
 
 impl<N, E, D> LinearGraphId<DinosaurStorage<N, E, D>> for NodeId
 where
-    D: GraphDirection,
+    D: GraphDirectionality,
 {
     type Mapper<'a> = SlabIndexMapper<'a, NodeId> where Self: 'a, N: 'a, E: 'a;
 

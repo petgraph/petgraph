@@ -10,10 +10,33 @@ use crate::attributes::NoValue;
 // Another possibility would've been to use `Hash` for `GraphId`, but `ArbitaryGraphId` needs to be
 // a wrapper type anyway, so it could just require `Hash` for the inner type, and then implement
 // `PartialEq` based on that.
+/// A unique identifier for a node or edge.
+///
+/// This trait is implemented for all types that are used as node or edge identifiers in the graph.
+/// A type should never only implement this trait, but also [`ManagedGraphId`] or
+/// [`ArbitraryGraphId`].
 pub trait GraphId: PartialEq {
+    /// The type of value used to index attributes.
+    ///
+    /// Used to differentiate between [`ManagedGraphId`] and [`ArbitraryGraphId`] and to allow for
+    /// inference on weights via the [`Attributes`] type.
+    ///
+    /// There are essentially two valid values for this type: [`NoValue`] and `Self`.
     type AttributeIndex;
 }
 
+/// A unique identifier for a node or edge that is managed by the graph.
+///
+/// Marker trait to indicate that the graph manages the identifier of the node or edge, and cannot
+/// be specified by the user itself.
+///
+/// This is analogous to an index in a `Vec`.
 pub trait ManagedGraphId: GraphId<AttributeIndex = NoValue> {}
 
+/// A unique identifier for a node or edge that is not managed by the graph.
+///
+/// Marker trait to indicate that the graph does not manage the identifier of the node or edge, and
+/// must be specified by the user itself.
+///
+/// This is analogous to a key in a `HashMap`.
 pub trait ArbitraryGraphId: GraphId<AttributeIndex = Self> {}
