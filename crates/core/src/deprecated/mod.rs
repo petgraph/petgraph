@@ -1,4 +1,5 @@
 #![allow(deprecated)]
+#![allow(missing_docs)]
 #[macro_use]
 pub mod visit;
 

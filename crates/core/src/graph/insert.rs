@@ -2,7 +2,6 @@ use error_stack::Result;
 
 use crate::{
     attributes::{Attributes, NoValue},
-    edge::{Edge, EdgeMut},
     graph::Graph,
     id::{ArbitraryGraphId, GraphId, ManagedGraphId},
     node::{Node, NodeMut},

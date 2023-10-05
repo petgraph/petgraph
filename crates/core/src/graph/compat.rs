@@ -258,19 +258,6 @@ where
     }
 }
 
-impl<'a, S> VisitationMap<'a, S, S::EdgeId>
-where
-    S: GraphStorage + 'a,
-    S::EdgeId: LinearGraphId<S> + Clone,
-{
-    fn new_edge(size: usize, mapper: <S::EdgeId as LinearGraphId<S>>::Mapper<'a>) -> Self {
-        Self {
-            inner: BitVec::repeat(false, size).into_boxed_bitslice(),
-            mapper: ContinuousIndexMapper::new(mapper),
-        }
-    }
-}
-
 impl<'a, S, T> VisitMap<T> for VisitationMap<'a, S, T>
 where
     S: GraphStorage + 'a,
