@@ -1,11 +1,18 @@
+//! Collection of utility types and traits for working with values that may be owned or borrowed.
 use core::{
     cmp::Ordering,
     hash::{Hash, Hasher},
 };
 
+/// A type that may be owned or borrowed.
+///
+/// This is analogous to [`Cow`], but without the `ToOwned` trait requirement (and therefore without
+/// the `alloc` requirement).
 #[derive(Debug, Copy, Clone)]
 pub enum MaybeOwned<'a, T> {
+    /// A borrowed value.
     Borrowed(&'a T),
+    /// An owned value.
     Owned(T),
 }
 
@@ -22,6 +29,19 @@ impl<'a, T> From<&'a T> for MaybeOwned<'a, T> {
 }
 
 impl<'a, T> MaybeOwned<'a, T> {
+    /// Returns a mutable reference to the owned value, if any.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::base::MaybeOwned;
+    ///
+    /// let mut value = MaybeOwned::Owned(42);
+    /// assert_eq!(value.as_mut(), Some(&mut 42));
+    ///
+    /// let mut value = MaybeOwned::Borrowed(&42);
+    /// assert_eq!(value.as_mut(), None);
+    /// ```
     pub fn as_mut(&mut self) -> Option<&mut T> {
         match self {
             Self::Borrowed(_) => None,
@@ -29,6 +49,21 @@ impl<'a, T> MaybeOwned<'a, T> {
         }
     }
 
+    /// Converts the `MaybeOwned` into an owned value.
+    ///
+    /// This is a no-op if the value is already owned, and requires cloning if it is borrowed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::base::MaybeOwned;
+    ///
+    /// let value = MaybeOwned::Owned(42);
+    /// assert_eq!(value.into_owned(), 42);
+    ///
+    /// let value = MaybeOwned::Borrowed(&42);
+    /// assert_eq!(value.into_owned(), 42);
+    /// ```
     pub fn into_owned(self) -> T
     where
         T: Clone,

@@ -7,11 +7,19 @@
 extern crate alloc;
 
 pub mod attributes;
+pub mod base;
 #[deprecated(since = "0.1.0")]
 pub mod deprecated;
 pub mod edge;
-pub mod graph;
+pub(crate) mod graph;
 pub mod id;
 pub mod node;
-pub mod owned;
 pub mod storage;
+
+pub use crate::{
+    edge::{DetachedEdge, Edge, EdgeMut, GraphDirectionality},
+    graph::Graph,
+    id::{ArbitraryGraphId, GraphId, ManagedGraphId},
+    node::{DetachedNode, Node, NodeMut},
+    storage::{DirectedGraphStorage, GraphStorage},
+};

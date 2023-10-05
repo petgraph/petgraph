@@ -24,10 +24,10 @@ use petgraph_core::{
         marker::{Directed, GraphDirectionality, Undirected},
         DetachedEdge, EdgeMut,
     },
-    graph::Graph,
     id::GraphId,
     node::{DetachedNode, NodeMut},
     storage::GraphStorage,
+    Graph,
 };
 
 use crate::{closure::Closures, edge::Edge, node::Node, slab::Slab};

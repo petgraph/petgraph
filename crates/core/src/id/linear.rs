@@ -1,7 +1,7 @@
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use crate::{id::GraphId, owned::MaybeOwned, storage::GraphStorage};
+use crate::{base::owned::MaybeOwned, id::GraphId, storage::GraphStorage};
 
 mod sealed {
     pub trait Sealed: Copy {}
@@ -128,8 +128,8 @@ pub trait IndexMapper<From, To> {
     ///
     /// ```
     /// use petgraph_core::{
+    ///     base::MaybeOwned,
     ///     id::{IndexMapper, LinearGraphId},
-    ///     owned::MaybeOwned,
     /// };
     /// use petgraph_dino::{DiDinoGraph, NodeId};
     ///

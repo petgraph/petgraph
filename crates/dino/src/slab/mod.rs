@@ -16,8 +16,8 @@ use core::{
 
 use hashbrown::HashMap;
 use petgraph_core::{
+    base::MaybeOwned,
     id::{Continuous, IndexMapper, LinearGraphId},
-    owned::MaybeOwned,
 };
 
 use crate::slab::entry::{Entry, State};

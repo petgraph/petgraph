@@ -23,8 +23,7 @@ pub mod marker;
 
 use core::fmt::{Debug, Formatter};
 
-pub use direction::Direction;
-
+pub use self::{direction::Direction, marker::GraphDirectionality};
 use crate::{node::Node, storage::GraphStorage};
 
 type DetachedStorageEdge<S> = DetachedEdge<
