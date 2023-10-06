@@ -12,6 +12,62 @@ use crate::{
     storage::GraphStorage,
 };
 
+/// A graph, which is generic over its storage.
+///
+/// This is the central point of interaction with `petgraph`, allowing for consistent access to a
+/// graph, without worrying about the underlying storage implementations.
+///
+/// Limitations of the underlying storage implementation apply, meaning that some operations may be
+/// more expensive than others, or certain capabilities such as parallel edges may not be available.
+///
+/// Each graph storage implementation has a section with more information about its capabilities.
+///
+/// For convenience each graph storage implementation has a type alias for the graph type, which
+/// uses the implementation, such as [`DinoGraph`], [`DiDinoGraph`], and [`UnDinoGraph`] in
+/// `petgraph-dino`.
+///
+/// Instead of relying on a single storage implementation, this design encourages (and recommands)
+/// the use of `S` as a generic parameter for functions receiving a graph.
+///
+/// `petgraph` assumes that a directed graph is simply a specialization of an undirected graph where
+/// edges have an additional property marking the directionality of the edge. This means that any
+/// directed graph also necessarily implements the undirected graph interface, known simply as
+/// [`GraphStorage`]. This is similar to other graph libraries such as `networkx` and `igraph`.
+///
+/// # Storage Implementations
+// TODO
+///
+/// # Example
+///
+/// ```
+/// use petgraph_core::{
+///     edge::marker::{Directed, Undirected},
+///     Graph, GraphStorage,
+/// };
+/// use petgraph_dino::{DiDinoGraph, DinoGraph, DinosaurStorage, UnDinoGraph};
+///
+/// let digraph = Graph::<DinosaurStorage<u8, u8, Directed>>::new();
+/// // ^ same as:
+/// let digraph = DinoGraph::<u8, u8, Directed>::new();
+/// // ^ same as:
+/// let digraph = DiDinoGraph::<u8, u8>::new();
+///
+/// let ungraph = Graph::<DinosaurStorage<u8, u8, Undirected>>::new();
+/// // ^ same as:
+/// let ungraph = DinoGraph::<u8, u8, Undirected>::new();
+/// // ^ same as:
+/// let ungraph = UnDinoGraph::<u8, u8>::new();
+///
+/// fn sum_node_weights<S>(graph: &Graph<S>) -> u8
+/// where
+///     S: GraphStorage,
+/// {
+///     graph.nodes().map(|node| *node.weight()).sum()
+/// }
+///
+/// assert_eq!(sum_node_weights(&digraph), 0);
+/// assert_eq!(sum_node_weights(&ungraph), 0);
+/// ```
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Graph<S> {
     storage: S,

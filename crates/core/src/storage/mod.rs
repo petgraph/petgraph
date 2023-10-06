@@ -51,6 +51,55 @@ use crate::{
 /// You can instantiate a graph storage implementation directly, but it is recommended to use the
 /// functions [`Graph::new`], [`Graph::new_in`], or [`Graph::with_capacity`] instead.
 ///
+/// # Capabilities
+///
+/// > This is a template, which you should use to describe the capabilities of your graph storage
+/// > implementation.
+///
+/// | Capability       | Note              |
+/// |------------------|-------------------|
+/// | Node Identifiers | Arbitrary/Managed |
+/// | Edge Identifiers | Arbitrary/Managed |
+/// | Node Weights     | ✓/✗               |
+/// | Edge Weights     | ✓/✗               |
+/// | Parallel Edges   | ✓/✗               |
+/// | Self Loops       | ✓/✗               |
+///
+/// ## Space/Time Complexity
+///
+/// > Optional, but recommended.
+///
+/// | Operation        | Time Complexity | Space Complexity |
+/// |------------------|-----------------|------------------|
+/// | Node By Id       |                 |                  |
+/// | Edge By Id       |                 |                  |
+/// | Edge Between     |                 |                  |
+/// | Contains Node    |                 |                  |
+/// | Contains Edge    |                 |                  |
+/// | Insert Node      |                 |                  |
+/// | Insert Edge      |                 |                  |
+/// | Remove Node      |                 |                  |
+/// | Remove Edge      |                 |                  |
+/// | Node Count       |                 |                  |
+/// | Edge Count       |                 |                  |
+/// | Node Iter        |                 |                  |
+/// | Edge Iter        |                 |                  |
+/// | Node Neighbours  |                 |                  |
+/// | Node Connections |                 |                  |
+/// | External Nodes   |                 |                  |
+///
+/// ### Directed Graphs
+///
+/// > Optional, but recommended.
+///
+/// | Operation                     | Time Complexity | Space Complexity |
+/// |-------------------------------|-----------------|------------------|
+/// | Edge Between                  |                 |                  |
+/// | Directed Edge Neighbours      |                 |                  |
+/// | Undirected Edge Neighbours    |                 |                  |
+/// | Directed Edge Connections     |                 |                  |
+/// | Undirected Edge Connections   |                 |                  |
+///
 /// # Example
 ///
 /// ```
