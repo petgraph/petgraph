@@ -34,6 +34,12 @@ use crate::{
 /// directed graph also necessarily implements the undirected graph interface, known simply as
 /// [`GraphStorage`]. This is similar to other graph libraries such as `networkx` and `igraph`.
 ///
+/// Note that edges have a `source` and a `target`, these are always correct if one queries any
+/// directional interface, but may be incorrect if one queries an undirectional interface. This is
+/// because the undirectional interface does not know about the directionality of the edge, and
+/// therefore cannot know which node is the source and which is the target.
+// TODO: maybe rename into `left` and `right` in that case?!
+///
 /// # Storage Implementations
 // TODO
 ///
