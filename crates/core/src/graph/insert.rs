@@ -23,6 +23,10 @@ where
         self.storage.insert_node(id, weight)
     }
 
+    // TODO: I don't like how we return `NodeMut`, we should just return the id here?, but then
+    // there would be a problem with lifetimes as we cannot give out a value, as we don't know if
+    // the key is clone.
+    // I think this is for the better, but may need to be revisited.
     pub fn insert_node(
         &mut self,
         attributes: impl Into<Attributes<<S::NodeId as GraphId>::AttributeIndex, S::NodeWeight>>,

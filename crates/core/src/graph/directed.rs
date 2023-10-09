@@ -82,11 +82,11 @@ where
         let (nodes, edges) = self.storage.into_parts();
 
         let edges = edges.map(|mut edge| {
-            let source = edge.source;
-            let target = edge.target;
+            let source = edge.u;
+            let target = edge.v;
 
-            edge.source = target;
-            edge.target = source;
+            edge.u = target;
+            edge.v = source;
 
             edge
         });

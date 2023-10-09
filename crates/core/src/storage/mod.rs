@@ -237,9 +237,17 @@ pub trait GraphStorage: Sized {
 
     /// Create a new graph storage from the given nodes and edges.
     ///
-    /// This takes a list of nodes and edges, and tries to create a graph from them. This is the
-    /// reverse operation of [`Self::into_parts`], which converts the current graph storage into an
-    /// iterable of nodes and edges.
+    /// This takes an iterator of nodes and edges, and tries to create a graph from them.
+    /// This is the reverse operation of [`Self::into_parts`], which converts the current graph
+    /// storage into an iterable of nodes and edges.
+    ///
+    /// The ordering of the nodes and edges in the resulting graph storage is not preserved, if that
+    /// is the case in a storage implementation it should be considered an implementation
+    /// detail and not be relied upon.
+    /// The same applies to identifiers of nodes and edges, which may be changed during
+    /// construction.
+    /// The only properties that can be relied upon is that all nodes and edges will be present,
+    /// their weights will be the same, and that the graph will be structurally identical.
     ///
     /// # Example
     ///
@@ -316,8 +324,7 @@ pub trait GraphStorage: Sized {
         let mut result: Result<(), Self::Error> = Ok(());
 
         for edge in edges {
-            if let Err(error) = graph.insert_edge(edge.id, edge.weight, &edge.source, &edge.target)
-            {
+            if let Err(error) = graph.insert_edge(edge.id, edge.weight, &edge.u, &edge.v) {
                 match &mut result {
                     Err(errors) => errors.extend_one(error),
                     result => *result = Err(error),
@@ -335,9 +342,13 @@ pub trait GraphStorage: Sized {
     ///
     /// The iterables returned by this function are not guaranteed to be in any particular order,
     /// but must contain all nodes and edges.
+    /// The ids of said nodes and edges may also be changed during this operation, but the weights
+    /// of the nodes and edges must be the same.
     ///
     /// It must always hold true that using the iterables returned by this function to create a new
-    /// graph storage using [`Self::from_parts`] will result in a structurally identical graph.
+    /// graph storage using [`Self::from_parts`] will result in a structurally identical graph and
+    /// that calling [`Self::from_parts`] on the same implementation that invoked
+    /// [`Self::into_parts`] must not error out.
     ///
     /// # Example
     ///
@@ -565,9 +576,12 @@ pub trait GraphStorage: Sized {
 
     /// Inserts a new edge into the graph.
     ///
+    /// If the storage implementation is undirected `u` and `v` are interchangeable, but if the
+    /// storage implementation is directed `u` is the source and `v` is the target.
+    ///
     /// # Example
     ///
-    ///```
+    /// ```
     /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
     /// use petgraph_dino::DinosaurStorage;
     ///
@@ -598,8 +612,8 @@ pub trait GraphStorage: Sized {
         id: Self::EdgeId,
         weight: Self::EdgeWeight,
 
-        source: &Self::NodeId,
-        target: &Self::NodeId,
+        u: &Self::NodeId,
+        v: &Self::NodeId,
     ) -> Result<EdgeMut<Self>, Self::Error>;
 
     /// Removes the node with the given identifier from the graph.
@@ -967,17 +981,23 @@ pub trait GraphStorage: Sized {
     /// provide a more efficient implementation.
     fn edges_between<'a: 'b, 'b>(
         &'a self,
-        source: &'b Self::NodeId,
-        target: &'b Self::NodeId,
+        u: &'b Self::NodeId,
+        v: &'b Self::NodeId,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
         // How does this work with a default implementation?
-        let from_source = self
-            .node_connections(source)
-            .filter(move |edge| edge.target_id() == target);
+        let from_source = self.node_connections(u).filter(move |edge| {
+            let (edge_u, edge_v) = edge.endpoint_ids();
 
-        let from_target = self.node_connections(target).filter(move |edge| {
+            let other = if edge_u == u { edge_v } else { edge_u };
+            other == v
+        });
+
+        let from_target = self.node_connections(v).filter(move |edge| {
+            let (edge_u, edge_v) = edge.endpoint_ids();
+
             // we exclude self-loops here as they are already included in `from_source`
-            edge.source_id() == source && edge.target_id() != edge.source_id()
+            let other = if edge_u == v { edge_v } else { edge_u };
+            other == u && edge_u != edge_v
         });
 
         from_source.chain(from_target)
@@ -1030,8 +1050,8 @@ pub trait GraphStorage: Sized {
     // I'd love to provide a default implementation for this, but I just can't get it to work.
     fn edges_between_mut<'a: 'b, 'b>(
         &'a mut self,
-        source: &'b Self::NodeId,
-        target: &'b Self::NodeId,
+        u: &'b Self::NodeId,
+        v: &'b Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
     /// Returns an iterator over all edges that are connected to the given node.
@@ -1180,15 +1200,14 @@ pub trait GraphStorage: Sized {
         &'a self,
         id: &'b Self::NodeId,
     ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
-        self.node_connections(id).map(move |edge: Edge<Self>| {
-            // doing it this way allows us to also get ourselves as a neighbour if we have a
-            // self-loop
-            if edge.source_id() == id {
-                edge.target()
-            } else {
-                edge.source()
-            }
-        })
+        self.node_connections(id)
+            .filter_map(move |edge: Edge<Self>| {
+                let (u, v) = edge.endpoint_ids();
+
+                // doing it this way allows us to also get ourselves as a neighbour if we have a
+                // self-loop
+                if u == id { self.node(v) } else { self.node(u) }
+            })
     }
 
     /// Returns an iterator over all nodes that are connected to the given node, with mutable

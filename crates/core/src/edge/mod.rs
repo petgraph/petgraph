@@ -24,7 +24,7 @@ pub mod marker;
 use core::fmt::{Debug, Formatter};
 
 pub use self::{direction::Direction, marker::GraphDirectionality};
-use crate::{node::Node, storage::GraphStorage};
+use crate::{node::Node, storage::GraphStorage, DirectedGraphStorage};
 
 type DetachedStorageEdge<S> = DetachedEdge<
     <S as GraphStorage>::EdgeId,
@@ -34,8 +34,13 @@ type DetachedStorageEdge<S> = DetachedEdge<
 
 /// Active edge in the graph.
 ///
-/// Edge that is part of the graph, it borrows the graph and can be used to access the source and
-/// target nodes.
+/// Edge that is part of the graph, it borrows the graph and can be used to access the endpoints.
+///
+/// Undirected graph implementations have no notion of a source and target, therefore endpoints can
+/// only be accessed through [`Self::endpoint_ids`] and [`Self::endpoints`].
+/// If the storage implementation is directed (implements [`DirectedGraphStorage`]), one can access
+/// the source and target through [`Self::source_id`], [`Self::source`], [`Self::target_id`] and
+/// [`Self::target`].
 ///
 /// # Example
 ///
@@ -61,8 +66,8 @@ where
 
     id: &'a S::EdgeId,
 
-    source_id: &'a S::NodeId,
-    target_id: &'a S::NodeId,
+    u: &'a S::NodeId,
+    v: &'a S::NodeId,
 
     weight: &'a S::EdgeWeight,
 }
@@ -88,8 +93,8 @@ where
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Edge")
             .field("id", &self.id)
-            .field("source_id", &self.source_id)
-            .field("target_id", &self.target_id)
+            .field("u", &self.u)
+            .field("v", &self.v)
             .field("weight", &self.weight)
             .finish()
     }
@@ -104,6 +109,9 @@ where
     /// You should not need to use this directly, instead use [`Graph::edge`].
     ///
     /// This is only for implementors of [`GraphStorage`].
+    ///
+    /// In an undirected graph `u` and `v` are interchangeable, but in a directed graph (implements
+    /// [`DirectedGraphStorage`]) `u` is the source and `v` is the target.
     ///
     /// # Example
     ///
@@ -148,19 +156,19 @@ where
         id: &'a S::EdgeId,
         weight: &'a S::EdgeWeight,
 
-        source_id: &'a S::NodeId,
-        target_id: &'a S::NodeId,
+        u: &'a S::NodeId,
+        v: &'a S::NodeId,
     ) -> Self {
-        debug_assert!(storage.contains_node(source_id));
-        debug_assert!(storage.contains_node(target_id));
+        debug_assert!(storage.contains_node(u));
+        debug_assert!(storage.contains_node(v));
 
         Self {
             storage,
 
             id,
 
-            source_id,
-            target_id,
+            u,
+            v,
 
             weight,
         }
@@ -193,6 +201,53 @@ where
         self.id
     }
 
+    pub const fn endpoint_ids(&self) -> (&'a S::NodeId, &'a S::NodeId) {
+        (self.u, self.v)
+    }
+
+    pub fn endpoints(&self) -> (Node<'a, S>, Node<'a, S>) {
+        (
+            self.storage.node(self.u).expect(
+                "corrupted storage or violated contract upon creation of this edge; the endpoint \
+                 node must be active in the same storage as this edge",
+            ),
+            self.storage.node(self.v).expect(
+                "corrupted storage or violated contract upon creation of this edge; the endpoint \
+                 node must be active in the same storage as this edge",
+            ),
+        )
+    }
+
+    /// Get the weight of this edge.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{
+    ///     edge::{Direction, Edge},
+    ///     node::Node,
+    /// };
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    ///
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    /// let ab = *graph.insert_edge("A → B", &a, &b).id();
+    ///
+    /// let edge = graph.edge(&ab).unwrap();
+    /// assert_eq!(edge.weight(), &"A → B");
+    /// ```
+    #[must_use]
+    pub const fn weight(&self) -> &'a S::EdgeWeight {
+        self.weight
+    }
+}
+
+impl<'a, S> Edge<'a, S>
+where
+    S: DirectedGraphStorage,
+{
     /// Get the source node id of this edge.
     ///
     /// # Example
@@ -215,7 +270,7 @@ where
     /// ```
     #[must_use]
     pub const fn source_id(&self) -> &'a S::NodeId {
-        self.source_id
+        self.u
     }
 
     /// Get the source node of this edge.
@@ -252,7 +307,7 @@ where
     /// [`Edge::new`] is violated.
     #[must_use]
     pub fn source(&self) -> Node<'a, S> {
-        self.storage.node(self.source_id).expect(
+        self.storage.node(self.u).expect(
             "corrupted storage or violated contract upon creation of this edge; the source node \
              must be active in the same storage as this edge",
         )
@@ -280,7 +335,7 @@ where
     /// assert_eq!(edge.target_id(), &b);
     /// ```
     pub const fn target_id(&self) -> &'a S::NodeId {
-        self.target_id
+        self.v
     }
 
     /// Get the target node of this edge.
@@ -317,35 +372,10 @@ where
     /// [`Edge::new`] is violated.
     #[must_use]
     pub fn target(&self) -> Node<'a, S> {
-        self.storage.node(self.target_id).expect(
+        self.storage.node(self.v).expect(
             "corrupted storage or violated contract upon creation of this edge; the target node \
              must be active in the same storage as this edge",
         )
-    }
-
-    /// Get the weight of this edge.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use petgraph_core::{
-    ///     edge::{Direction, Edge},
-    ///     node::Node,
-    /// };
-    /// use petgraph_dino::DiDinoGraph;
-    ///
-    /// let mut graph = DiDinoGraph::new();
-    ///
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
-    /// let ab = *graph.insert_edge("A → B", &a, &b).id();
-    ///
-    /// let edge = graph.edge(&ab).unwrap();
-    /// assert_eq!(edge.weight(), &"A → B");
-    /// ```
-    #[must_use]
-    pub const fn weight(&self) -> &'a S::EdgeWeight {
-        self.weight
     }
 }
 
@@ -394,8 +424,8 @@ where
         DetachedEdge::new(
             self.id.clone(),
             self.weight.clone(),
-            self.source_id.clone(),
-            self.target_id.clone(),
+            self.u.clone(),
+            self.v.clone(),
         )
     }
 }
@@ -430,10 +460,10 @@ where
 {
     id: &'a S::EdgeId,
 
-    source_id: &'a S::NodeId,
-    target_id: &'a S::NodeId,
-
     weight: &'a mut S::EdgeWeight,
+
+    u: &'a S::NodeId,
+    v: &'a S::NodeId,
 }
 
 impl<'a, S> EdgeMut<'a, S>
@@ -447,6 +477,9 @@ where
     ///
     /// This is only for implementors of [`GraphStorage`].
     ///
+    /// In an undirected graph `u` and `v` are interchangeable, but in a directed graph (implements
+    /// [`DirectedGraphStorage`]) `u` is the source and `v` is the target.
+    ///
     /// # Contract
     ///
     /// The `id`, `source_id` and `target_id` must be valid in the given `storage`, and the `weight`
@@ -458,17 +491,10 @@ where
         id: &'a S::EdgeId,
         weight: &'a mut S::EdgeWeight,
 
-        source_id: &'a S::NodeId,
-        target_id: &'a S::NodeId,
+        u: &'a S::NodeId,
+        v: &'a S::NodeId,
     ) -> Self {
-        Self {
-            id,
-
-            source_id,
-            target_id,
-
-            weight,
-        }
+        Self { id, weight, u, v }
     }
 
     /// The unique id of the edge.
@@ -496,48 +522,8 @@ where
         self.id
     }
 
-    /// The source node id of the edge.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use petgraph_dino::DiDinoGraph;
-    ///
-    /// let mut graph = DiDinoGraph::new();
-    ///
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
-    /// let ab = *graph.insert_edge("A → B", &a, &b).id();
-    ///
-    /// let edge = graph.edge_mut(&ab).unwrap();
-    ///
-    /// assert_eq!(edge.source_id(), &a);
-    /// ```
-    #[must_use]
-    pub const fn source_id(&self) -> &'a S::NodeId {
-        self.source_id
-    }
-
-    /// The target node id of the edge.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use petgraph_dino::DiDinoGraph;
-    ///
-    /// let mut graph = DiDinoGraph::new();
-    ///
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
-    /// let ab = *graph.insert_edge("A → B", &a, &b).id();
-    ///
-    /// let edge = graph.edge_mut(&ab).unwrap();
-    ///
-    /// assert_eq!(edge.target_id(), &b);
-    /// ```
-    #[must_use]
-    pub const fn target_id(&self) -> &'a S::NodeId {
-        self.target_id
+    pub const fn endpoint_ids(&self) -> (&'a S::NodeId, &'a S::NodeId) {
+        (self.u, self.v)
     }
 
     /// The weight of the edge.
@@ -584,6 +570,55 @@ where
     }
 }
 
+impl<'a, S> EdgeMut<'a, S>
+where
+    S: DirectedGraphStorage,
+{
+    /// The source node id of the edge.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    ///
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    /// let ab = *graph.insert_edge("A → B", &a, &b).id();
+    ///
+    /// let edge = graph.edge_mut(&ab).unwrap();
+    ///
+    /// assert_eq!(edge.source_id(), &a);
+    /// ```
+    #[must_use]
+    pub const fn source_id(&self) -> &'a S::NodeId {
+        self.u
+    }
+
+    /// The target node id of the edge.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    ///
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    /// let ab = *graph.insert_edge("A → B", &a, &b).id();
+    ///
+    /// let edge = graph.edge_mut(&ab).unwrap();
+    ///
+    /// assert_eq!(edge.target_id(), &b);
+    /// ```
+    #[must_use]
+    pub const fn target_id(&self) -> &'a S::NodeId {
+        self.v
+    }
+}
+
 impl<S> EdgeMut<'_, S>
 where
     S: GraphStorage,
@@ -624,8 +659,8 @@ where
         DetachedEdge::new(
             self.id.clone(),
             self.weight.clone(),
-            self.source_id.clone(),
-            self.target_id.clone(),
+            self.u.clone(),
+            self.v.clone(),
         )
     }
 }
@@ -661,14 +696,17 @@ where
 pub struct DetachedEdge<E, N, W> {
     pub id: E,
 
-    pub source: N,
-    pub target: N,
+    pub u: N,
+    pub v: N,
 
     pub weight: W,
 }
 
 impl<E, N, W> DetachedEdge<E, N, W> {
     /// Create a new detached edge.
+    ///
+    /// In an undirected graph `u` and `v` are interchangeable, but in a directed graph (implements
+    /// [`DirectedGraphStorage`]) `u` is the source and `v` is the target.
     ///
     /// # Example
     ///
@@ -677,12 +715,7 @@ impl<E, N, W> DetachedEdge<E, N, W> {
     ///
     /// let edge = DetachedEdge::new(0, "A → B", 1, 2);
     /// ```
-    pub const fn new(id: E, weight: W, source: N, target: N) -> Self {
-        Self {
-            id,
-            source,
-            target,
-            weight,
-        }
+    pub const fn new(id: E, weight: W, u: N, v: N) -> Self {
+        Self { id, u, v, weight }
     }
 }

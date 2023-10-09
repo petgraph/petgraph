@@ -121,10 +121,7 @@ where
             .into_iter()
             .map(
                 |edge: DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>| {
-                    (
-                        edge.id,
-                        Edge::new(edge.id, edge.weight, edge.source, edge.target),
-                    )
+                    (edge.id, Edge::new(edge.id, edge.weight, edge.u, edge.v))
                 },
             )
             .collect();
@@ -154,8 +151,8 @@ where
 
         let edges = self.edges.into_iter().map(|edge| DetachedEdge {
             id: edge.id,
-            source: edge.source,
-            target: edge.target,
+            u: edge.source,
+            v: edge.target,
             weight: edge.weight,
         });
 

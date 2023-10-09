@@ -14,11 +14,11 @@ where
     type Weight = S::EdgeWeight;
 
     fn source(&self) -> Self::NodeId {
-        self.source_id.clone()
+        self.u.clone()
     }
 
     fn target(&self) -> Self::NodeId {
-        self.target_id.clone()
+        self.v.clone()
     }
 
     fn weight(&self) -> &Self::Weight {

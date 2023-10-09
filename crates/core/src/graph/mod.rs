@@ -26,7 +26,7 @@ use crate::{
 /// uses the implementation, such as [`DinoGraph`], [`DiDinoGraph`], and [`UnDinoGraph`] in
 /// `petgraph-dino`.
 ///
-/// Instead of relying on a single storage implementation, this design encourages (and recommands)
+/// Instead of relying on a single storage implementation, this design encourages (and recommends)
 /// the use of `S` as a generic parameter for functions receiving a graph.
 ///
 /// `petgraph` assumes that a directed graph is simply a specialization of an undirected graph where
@@ -34,11 +34,9 @@ use crate::{
 /// directed graph also necessarily implements the undirected graph interface, known simply as
 /// [`GraphStorage`]. This is similar to other graph libraries such as `networkx` and `igraph`.
 ///
-/// Note that edges have a `source` and a `target`, these are always correct if one queries any
-/// directional interface, but may be incorrect if one queries an undirectional interface. This is
-/// because the undirectional interface does not know about the directionality of the edge, and
-/// therefore cannot know which node is the source and which is the target.
-// TODO: maybe rename into `left` and `right` in that case?!
+/// Endpoints of an edge are known as `u` and `v` in `petgraph`, where `u` and `v` are
+/// interchangeable in an undirected graph, and `u` is the source and `v` is the target in a
+/// directed graph.
 ///
 /// # Storage Implementations
 // TODO
@@ -66,7 +64,7 @@ use crate::{
 ///
 /// fn sum_node_weights<S>(graph: &Graph<S>) -> u8
 /// where
-///     S: GraphStorage,
+///     S: GraphStorage<NodeWeight = u8>,
 /// {
 ///     graph.nodes().map(|node| *node.weight()).sum()
 /// }
@@ -92,26 +90,150 @@ impl<S> Graph<S>
 where
     S: GraphStorage,
 {
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            storage: S::with_capacity(None, None),
-        }
-    }
-
+    /// Create a new graph on-top of the given storage.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{edge::marker::Undirected, Graph, GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let storage = DinosaurStorage::with_capacity(None, None);
+    /// let graph = Graph::<_>::new_in(storage);
+    /// // ^ this is the same as `Graph::new()`
+    /// # assert_eq!(graph.num_nodes(), 0);
+    /// # assert_eq!(graph.num_edges(), 0);
+    /// ```
     #[must_use]
     pub const fn new_in(storage: S) -> Self {
         Self { storage }
     }
 
+    /// Creates a new graph with the default capacity.
+    ///
+    /// The default capacity is `None` for both nodes and edges.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{edge::marker::Undirected, Graph};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let graph = Graph::<DinosaurStorage<u8, u8, Undirected>>::new();
+    /// # assert_eq!(graph.num_nodes(), 0);
+    /// # assert_eq!(graph.num_edges(), 0);
+    /// ```
+    #[must_use]
+    pub fn new() -> Self {
+        Self::new_in(S::with_capacity(None, None))
+    }
+
+    /// Creates a new graph with the given capacity.
+    ///
+    /// Helpful in cases where the number of nodes and edges is known in advance, and one wants to
+    /// avoid reallocations.
+    /// Be aware that some storage implementations may not support this and may not be able to
+    /// provide the requested capacity in advance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{edge::marker::Undirected, Graph};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let graph = Graph::<DinosaurStorage<u8, u8, Undirected>>::with_capacity(Some(16), Some(16));
+    /// # assert_eq!(graph.num_nodes(), 0);
+    /// # assert_eq!(graph.num_edges(), 0);
+    /// ```
+    #[must_use]
+    pub fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self {
+        Self::new_in(S::with_capacity(node_capacity, edge_capacity))
+    }
+
+    /// Returns a reference to the underlying storage.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{edge::marker::Undirected, Graph, GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let storage = DinosaurStorage::with_capacity(None, None);
+    /// let graph = Graph::<_>::new_in(storage);
+    ///
+    /// assert_eq!(graph.storage().num_nodes(), 0);
+    /// assert_eq!(graph.storage().num_edges(), 0);
+    /// ```
     pub const fn storage(&self) -> &S {
         &self.storage
     }
 
+    /// Returns the underlying storage.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::{edge::marker::Undirected, Graph, GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let storage = DinosaurStorage::with_capacity(None, None);
+    /// let graph = Graph::<_>::new_in(storage);
+    ///
+    /// assert_eq!(graph.into_storage().num_nodes(), 0);
+    /// assert_eq!(graph.into_storage().num_edges(), 0);
+    /// ```
     pub fn into_storage(self) -> S {
         self.storage
     }
 
+    /// Create a new graph from the given nodes and edges.
+    ///
+    /// Takes two iterators, one for nodes and one for edges, and returns a new graph with the given
+    /// nodes and edges, if the iterator is well-formed.
+    /// This is the reverse operation to [`Self::into_parts`], which converts a graph into its
+    /// parts.
+    ///
+    /// The resulting graph may change the order of the nodes and edges and reassign their IDs.
+    /// The only properties that stay consistent are the weights and the structural equivalence of
+    /// the graph.
+    /// For more information see [`GraphStorage::from_parts`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashSet;
+    ///
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut other = DiDinoGraph::<u8, u8>::new();
+    /// let a = *other.insert_node(0).id();
+    /// let b = *other.insert_node(1).id();
+    /// let c = *other.insert_node(2).id();
+    ///
+    /// other.insert_edge(u8::MAX, &a, &b);
+    /// other.insert_edge(u8::MAX - 1, &b, &c);
+    ///
+    /// let other = other.into_parts();
+    ///
+    /// let graph = DiDinoGraph::from_parts(other.0, other.1).unwrap();
+    /// assert_eq!(graph.num_nodes(), 3);
+    /// assert_eq!(graph.num_edges(), 2);
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .nodes()
+    ///         .map(|node| *node.weight())
+    ///         .collect::<HashSet<_>>(),
+    ///     [0, 1, 2].into_iter().collect::<HashSet<_>>(),
+    /// );
+    /// assert_eq!(
+    ///     graph
+    ///         .edges()
+    ///         .map(|edge| *edge.weight())
+    ///         .collect::<HashSet<_>>(),
+    ///     [u8::MAX, u8::MAX - 1].into_iter().collect::<HashSet<_>>(),
+    /// );
+    /// ```
     pub fn from_parts(
         nodes: impl IntoIterator<Item = DetachedNode<S::NodeId, S::NodeWeight>>,
         edges: impl IntoIterator<Item = DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight>>,
@@ -121,6 +243,52 @@ where
         })
     }
 
+    /// Converts the graph into its parts.
+    ///
+    /// This is the reverse operation to [`Self::from_parts`], which creates a graph from its parts.
+    ///
+    /// The iterables returned by this function are not guaranteed to be in any particular order,
+    /// but must contain all nodes and edges.
+    ///
+    /// For more information see [`GraphStorage::into_parts`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashSet;
+    ///
+    /// use petgraph_core::{DetachedEdge, DetachedNode};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 1, &b, &c).id();
+    ///
+    /// let (nodes, edges) = graph.into_parts();
+    /// let (nodes, edges) = (
+    ///     nodes
+    ///         .into_iter()
+    ///         .map(|node| node.weight)
+    ///         .collect::<HashSet<_>>(),
+    ///     edges
+    ///         .into_iter()
+    ///         .map(|edge| edge.weight)
+    ///         .collect::<HashSet<_>>(),
+    /// );
+    ///
+    /// assert_eq!(nodes.len(), 3);
+    /// assert_eq!(edges.len(), 2);
+    ///
+    /// assert_eq!(nodes, [0, 1, 2].into_iter().collect::<HashSet<_>>());
+    /// assert_eq!(
+    ///     edges,
+    ///     [u8::MAX, u8::MAX - 1].into_iter().collect::<HashSet<_>>()
+    /// );
+    /// ```
     pub fn into_parts(
         self,
     ) -> (
@@ -130,9 +298,14 @@ where
         self.storage.into_parts()
     }
 
-    pub fn convert<S2>(self) -> Result<Graph<S2>, S2::Error>
+    /// Converts the graph into a graph with a different storage implementation.
+    ///
+    /// Internally this simply calls [`GraphStorage::into_parts`] on `S` and then calls
+    /// [`Graph::from_parts`] on `T`.
+    // TODO: example
+    pub fn convert<T>(self) -> Result<Graph<T>, T::Error>
     where
-        S2: GraphStorage<
+        T: GraphStorage<
                 NodeId = S::NodeId,
                 NodeWeight = S::NodeWeight,
                 EdgeId = S::EdgeId,
@@ -144,25 +317,95 @@ where
         Graph::from_parts(nodes, edges)
     }
 
-    #[must_use]
-    pub fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self {
-        Self {
-            storage: S::with_capacity(node_capacity, edge_capacity),
-        }
-    }
-
+    /// Returns the number of nodes in the graph.
+    ///
+    /// This is generally faster than iterating over all nodes and counting them via
+    /// `self.nodes().count()`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 1, &b, &c).id();
+    ///
+    /// assert_eq!(graph.num_nodes(), 3);
+    /// ```
     pub fn num_nodes(&self) -> usize {
         self.storage.num_nodes()
     }
 
+    /// Returns the number of edges in the graph.
+    ///
+    /// This is generally faster than iterating over all edges and counting them via
+    /// `self.edges().count()`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 1, &b, &c).id();
+    ///
+    /// assert_eq!(graph.num_edges(), 2);
+    /// ```
     pub fn num_edges(&self) -> usize {
         self.storage.num_edges()
     }
 
+    /// Returns `true` if the graph has no nodes or edges.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// assert!(graph.is_empty());
+    ///
+    /// let a = *graph.insert_node(0).id();
+    /// assert!(!graph.is_empty());
+    ///
+    /// graph.remove_node(&a);
+    /// assert!(graph.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.num_nodes() == 0 && self.num_edges() == 0
     }
 
+    /// Clears the graph, removing all nodes and edges.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 1, &b, &c).id();
+    ///
+    /// assert!(!graph.is_empty());
+    ///
+    /// graph.clear();
+    ///
+    /// assert!(graph.is_empty());
+    /// ```
     pub fn clear(&mut self) {
         self.storage.clear();
     }
@@ -253,18 +496,18 @@ where
 
     pub fn edges_between<'a: 'b, 'b>(
         &'a self,
-        source: &'b S::NodeId,
-        target: &'b S::NodeId,
+        u: &'b S::NodeId,
+        v: &'b S::NodeId,
     ) -> impl Iterator<Item = Edge<'a, S>> + 'b {
-        self.storage.edges_between(source, target)
+        self.storage.edges_between(u, v)
     }
 
     pub fn edges_between_mut<'a: 'b, 'b>(
         &'a mut self,
-        source: &'b S::NodeId,
-        target: &'b S::NodeId,
+        u: &'b S::NodeId,
+        v: &'b S::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'a, S>> + 'b {
-        self.storage.edges_between_mut(source, target)
+        self.storage.edges_between_mut(u, v)
     }
 
     pub fn externals(&self) -> impl Iterator<Item = Node<S>> {
