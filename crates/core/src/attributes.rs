@@ -13,6 +13,7 @@ impl NoValue {
     /// Construct a new `NoValue`.
     ///
     /// This is only available for testing purposes.
+    #[doc(hidden)]
     #[must_use]
     pub const fn new() -> Self {
         Self(())

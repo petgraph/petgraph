@@ -410,18 +410,108 @@ where
         self.storage.clear();
     }
 
+    /// Returns the node with the given identifier, if it exists.
+    ///
+    /// The returned [`Node`] has a reference to the current graph, meaning that you're able to
+    /// query for neighbours and [`Edge`]s on the returned value directly.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// # use petgraph_core::{GraphStorage, Node};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// # let b = graph.storage().next_node_id(NoValue::new());
+    ///
+    /// assert_eq!(
+    ///     graph.node(&a).map(|node| (*node.id(), *node.weight())),
+    ///     Some((a, 0))
+    /// );
+    /// assert_eq!(
+    ///     graph.node(&b).map(|node| (*node.id(), *node.weight())),
+    ///     None
+    /// );
+    /// ```
     pub fn node(&self, id: &S::NodeId) -> Option<Node<S>> {
         self.storage.node(id)
     }
 
+    /// Returns the node, with a mutable weight, with the given identifier, if it exists.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// # use petgraph_core::{GraphStorage, Node};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// # let b = graph.storage().next_node_id(NoValue::new());
+    ///
+    /// if let Some(mut node) = graph.node_mut(&a) {
+    ///     *node.weight_mut() = 1;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     graph.node(&a).map(|node| (*node.id(), *node.weight())),
+    ///     Some((a, 1))
+    /// );
+    ///
+    /// assert!(graph.node_mut(&b).is_none());
+    /// ```
     pub fn node_mut(&mut self, id: &S::NodeId) -> Option<NodeMut<S>> {
         self.storage.node_mut(id)
     }
 
+    /// Returns `true` if the graph contains a node with the given identifier.
+    ///
+    /// This is generally faster than calling `self.node(id).is_some()`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// # use petgraph_core::{GraphStorage, Node};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// # let b = graph.storage().next_node_id(NoValue::new());
+    ///
+    /// assert!(graph.contains_node(&a));
+    /// assert!(!graph.contains_node(&b));
+    /// ```
     pub fn contains_node(&self, id: &S::NodeId) -> bool {
         self.storage.contains_node(id)
     }
 
+    /// Removes the node with the given identifier, if it exists.
+    ///
+    /// This will return the detached representation of the node, which can be used to reinsert the
+    /// node into a new graph _or_ used to access any of the properties independently of the graph.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// # use petgraph_core::{DetachedNode, GraphStorage, Node};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// # let b = graph.storage().next_node_id(NoValue::new());
+    ///
+    /// assert_eq!(
+    ///     graph.remove_node(&a),
+    ///     Some(DetachedNode { id: a, weight: 0 })
+    /// );
+    /// assert_eq!(graph.remove_node(&a), None);
+    /// assert_eq!(graph.remove_node(&b), None);
+    /// ```
     pub fn remove_node(
         &mut self,
         id: &S::NodeId,
@@ -429,18 +519,125 @@ where
         self.storage.remove_node(id)
     }
 
+    /// Returns the edge with the given identifier, if it exists.
+    ///
+    /// The returned [`Edge`] has a reference to the current graph, meaning that you're able to
+    /// query the [`Node`] endpoints directly on the edge.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// # use petgraph_core::{DetachedNode, GraphStorage, Node};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// # let bc = graph.storage().next_edge_id(NoValue::new());
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .edge(&ab)
+    ///         .map(|edge| (*edge.id(), *edge.weight(), edge.endpoint_ids())),
+    ///     Some((ab, u8::MAX, (&a, &b)))
+    /// );
+    /// assert!(graph.edge(&bc).is_none());
+    /// ```
     pub fn edge(&self, id: &S::EdgeId) -> Option<Edge<S>> {
         self.storage.edge(id)
     }
 
+    /// Returns the edge, with a mutable weight, with the given identifier, if it exists.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// # use petgraph_core::{DetachedNode, GraphStorage, Node};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// # let bc = graph.storage().next_edge_id(NoValue::new());
+    ///
+    /// if let Some(mut edge) = graph.edge_mut(&ab) {
+    ///     *edge.weight_mut() = u8::MAX - 1;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .edge(&ab)
+    ///         .map(|edge| (*edge.id(), *edge.weight(), edge.endpoint_ids())),
+    ///     Some((ab, u8::MAX - 1, (&a, &b)))
+    /// );
+    /// assert!(graph.edge_mut(&bc).is_none());
+    /// ```
     pub fn edge_mut(&mut self, id: &S::EdgeId) -> Option<EdgeMut<S>> {
         self.storage.edge_mut(id)
     }
 
+    /// Returns `true` if the graph contains an edge with the given identifier.
+    ///
+    /// This is generally faster than calling `self.edge(id).is_some()`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// # use petgraph_core::{DetachedNode, GraphStorage, Node};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// # let bc = graph.storage().next_edge_id(NoValue::new());
+    ///
+    /// assert!(graph.contains_edge(&ab));
+    /// assert!(!graph.contains_edge(&bc));
+    /// ```
     pub fn contains_edge(&self, id: &S::EdgeId) -> bool {
         self.storage.contains_edge(id)
     }
 
+    /// Removes the edge with the given identifier, if it exists.
+    ///
+    /// This will return the detached representation of the edge, which can be used to reinsert the
+    /// edge into a new graph _or_ used to access any of the properties independently of the graph.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// # use petgraph_core::{DetachedEdge, DetachedNode, GraphStorage, Node};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// # let bc = graph.storage().next_edge_id(NoValue::new());
+    ///
+    /// assert_eq!(
+    ///     graph.remove_edge(&ab),
+    ///     Some(DetachedEdge {
+    ///         id: ab,
+    ///         weight: u8::MAX,
+    ///         u: a,
+    ///         v: b,
+    ///     })
+    /// );
+    /// assert_eq!(graph.remove_edge(&ab), None);
+    /// assert_eq!(graph.remove_edge(&bc), None);
+    /// ```
     pub fn remove_edge(
         &mut self,
         id: &S::EdgeId,
@@ -448,6 +645,10 @@ where
         self.storage.remove_edge(id)
     }
 
+    /// Returns the neighbours of the node with the given identifier.
+    ///
+    /// This is an alias for [`Self::neighbours`], as there's a spelling difference between the
+    /// American and British English.
     #[inline]
     pub fn neighbors<'a: 'b, 'b>(
         &'a self,
@@ -456,6 +657,50 @@ where
         self.neighbours(id)
     }
 
+    /// Returns the neighbours of the node with the given identifier.
+    ///
+    /// Returns an iterator over all nodes that are connected to the given node.
+    /// In the case of a directed graph all edges (both incoming and outgoing) are taken into
+    /// account.
+    ///
+    /// If the graph allows self-loops, and a self-loop exists, then the node will be returned
+    /// as its own neighbour.
+    ///
+    /// The results won't be in any particular order.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_core::attributes::NoValue;
+    /// # use petgraph_core::{DetachedEdge, DetachedNode, GraphStorage, Node};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 1, &b, &c).id();
+    /// let ca = *graph.insert_edge(u8::MAX - 2, &c, &a).id();
+    /// let aa = *graph.insert_edge(u8::MAX - 3, &a, &a).id();
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .neighbours(&a)
+    ///         .map(|node| *node.id())
+    ///         .collect::<HashSet<_>>(),
+    ///     [a, b, c].into_iter().collect::<HashSet<_>>()
+    /// );
+    /// assert_eq!(
+    ///     graph
+    ///         .neighbours(&b)
+    ///         .map(|node| *node.id())
+    ///         .collect::<HashSet<_>>(),
+    ///     [a, c].into_iter().collect::<HashSet<_>>()
+    /// );
+    /// ```
     pub fn neighbours<'a: 'b, 'b>(
         &'a self,
         id: &'b S::NodeId,
@@ -463,6 +708,10 @@ where
         self.storage.node_neighbours(id)
     }
 
+    /// Returns the neighbours of the node with the given identifier, with mutable weights.
+    ///
+    /// This is an alias for [`Self::neighbours_mut`], as there's a spelling difference between
+    /// American and British English.
     #[inline]
     pub fn neighbors_mut<'a: 'b, 'b>(
         &'a mut self,

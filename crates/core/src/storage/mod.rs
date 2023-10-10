@@ -1154,6 +1154,9 @@ pub trait GraphStorage: Sized {
     /// If the graph allows for parallel edges, the same node **SHOULD NOT** be returned multiple
     /// times, if an implementation allows for self-loops, the given node may also be returned.
     ///
+    /// The results won't be in any particular order, any order should be considered an
+    /// implementation detail of the storage implementation.
+    ///
     /// > **Note**: For more information of **SHOULD NOT** visit [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
     ///
     /// # Example
