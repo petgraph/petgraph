@@ -1,3 +1,19 @@
+//! Attributes for graph elements.
+//!
+//! This module is used for types that are used to describe the attributes of a graph element on
+//! insertion.
+//!
+//! A consumer is not expected to use this module directly, but instead use the [`From`]
+//! implementations for [`Attributes`].
+//!
+//! This module is exposed to allow for people who like to use a more explicit style to do so and
+//! for the [`NoValue`] type, which cannot be created[^1] and is used to signal that an identifier
+//! is managed by the storage implementation.
+//!
+//! [^1]: See source code for [`NoValue`] if you _really really really_ need to construct it.
+//!
+//! [`GraphStorage::next_node_id`]: crate::storage::GraphStorage::next_node_id
+//! [`GraphStorage::next_edge_id`]: crate::storage::GraphStorage::next_edge_id
 use crate::id::ArbitraryGraphId;
 
 /// Marker type for `GraphId` which are managed by the graph.
@@ -6,7 +22,11 @@ use crate::id::ArbitraryGraphId;
 /// You normally do not need to construct this value directly, as [`Graph::insert_node`] and
 /// [`Graph::insert_edge`] use `Attributes`.
 ///
-/// This type is only publicly available (and constructable) for testing purposes.
+/// # Implementation Details
+///
+/// The existence of this type is under stability guarantee, meaning that it will only be removed or
+/// renamed according to `SemVer`, but the internals, such as layout or size, are not.
+/// This includes the construction method.
 pub struct NoValue(());
 
 impl NoValue {

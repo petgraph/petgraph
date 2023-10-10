@@ -5,7 +5,7 @@ use crate::{
     edge::EdgeMut,
     graph::Graph,
     id::{ArbitraryGraphId, GraphId, ManagedGraphId},
-    node::{Node, NodeMut},
+    node::NodeMut,
     storage::GraphStorage,
 };
 

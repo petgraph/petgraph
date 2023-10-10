@@ -1,3 +1,7 @@
+//! Deprecated types and functions.
+//!
+//! These are functions and traits that have been used in petgraph prior to 0.7.0, are are scheduled
+//! for removal in 0.8.0.
 #![allow(deprecated)]
 #![allow(missing_docs)]
 #[macro_use]
