@@ -672,8 +672,6 @@ where
     ///
     /// ```
     /// # use std::collections::HashSet;
-    /// use petgraph_core::attributes::NoValue;
-    /// # use petgraph_core::{DetachedEdge, DetachedNode, GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
     /// let mut graph = DiDinoGraph::<u8, u8>::new();
@@ -720,6 +718,50 @@ where
         self.neighbours_mut(id)
     }
 
+    /// Returns the neighbours of the node with the given identifier, with mutable weights.
+    ///
+    /// Returns an iterator over all nodes that are connected to the given node.
+    /// In the case of a directed graph all edges (both incoming and outgoing) are taken into
+    /// account.
+    ///
+    /// If the graph allows self-loops, and a self-loop exists, then the node will be returned as
+    /// well.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    /// let d = *graph.insert_node(3).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 1, &b, &c).id();
+    /// let ca = *graph.insert_edge(u8::MAX - 2, &c, &a).id();
+    /// let aa = *graph.insert_edge(u8::MAX - 3, &a, &a).id();
+    ///
+    /// for mut node in graph.neighbours_mut(&a) {
+    ///     *node.weight_mut() += 16;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .neighbours(&a)
+    ///         .map(|node| (*node.id(), *node.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(a, 16), (b, 17), (c, 18)]
+    ///         .into_iter()
+    ///         .collect::<HashSet<_>>()
+    /// );
+    /// assert_eq!(
+    ///     graph.node(&d).map(|node| (*node.id(), *node.weight())),
+    ///     Some((d, 3))
+    /// );
+    /// ```
     pub fn neighbours_mut<'a: 'b, 'b>(
         &'a mut self,
         id: &'b S::NodeId,
@@ -727,6 +769,37 @@ where
         self.storage.node_neighbours_mut(id)
     }
 
+    /// Returns the edges that are connected to the node with the given identifier.
+    ///
+    /// Returns an iterator over all edges that are connected to the given node.
+    /// In the case of a directed graph this will return an iterator over all incoming and outgoing
+    /// edges.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    /// let d = *graph.insert_node(3).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 1, &b, &c).id();
+    /// let ca = *graph.insert_edge(u8::MAX - 2, &c, &a).id();
+    /// let aa = *graph.insert_edge(u8::MAX - 3, &a, &a).id();
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .connections(&a)
+    ///         .map(|edge| *edge.id())
+    ///         .collect::<HashSet<_>>(),
+    ///     [ab, ca, aa].into_iter().collect::<HashSet<_>>()
+    /// );
+    /// ```
     pub fn connections<'a: 'b, 'b>(
         &'a self,
         id: &'b S::NodeId,
@@ -734,6 +807,48 @@ where
         self.storage.node_connections(id)
     }
 
+    /// Returns the edges that are connected to the node with the given identifier, with mutable
+    /// weights.
+    ///
+    /// Returns an iterator over all edges that are connected to the given node.
+    /// In the case of a directed graph this will return an iterator over all incoming and outgoing
+    /// edges.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    /// let d = *graph.insert_node(3).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 1, &b, &c).id();
+    /// let ca = *graph.insert_edge(u8::MAX - 2, &c, &a).id();
+    /// let aa = *graph.insert_edge(u8::MAX - 3, &a, &a).id();
+    ///
+    /// for mut edge in graph.connections_mut(&a) {
+    ///     *edge.weight_mut() -= 16;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .connections(&a)
+    ///         .map(|edge| (*edge.id(), *edge.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(ab, u8::MAX - 16), (ca, u8::MAX - 18), (aa, u8::MAX - 19)]
+    ///         .into_iter()
+    ///         .collect::<HashSet<_>>()
+    /// );
+    /// assert_eq!(
+    ///     graph.edge(&bc).map(|edge| (*edge.id(), *edge.weight())),
+    ///     Some((bc, u8::MAX - 1))
+    /// );
+    /// ```
     pub fn connections_mut<'a: 'b, 'b>(
         &'a mut self,
         id: &'b S::NodeId,

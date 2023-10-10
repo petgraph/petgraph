@@ -77,7 +77,7 @@ where
         self.storage.node_directed_connections_mut(id, direction)
     }
 
-    // TODO: should this be part of `GraphIterator`?
+    // TODO: move into operators and then extension trait via `GraphOperators`
     pub fn reverse(self) -> Result<Self, S::Error> {
         let (nodes, edges) = self.storage.into_parts();
 

@@ -1,5 +1,6 @@
 use crate::{edge::EdgeMut, graph::Graph, node::NodeMut, storage::RetainableGraphStorage};
 
+// TODO: we can remove this, no? Well it might be more efficient?
 impl<S> Graph<S>
 where
     S: RetainableGraphStorage,
