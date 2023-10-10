@@ -485,9 +485,27 @@ fn iso_large() {
 #[should_panic]
 #[test]
 fn iso_multigraph_failure() {
-    let g0 = Graph::<(), ()>::from_edges(&[(0, 0), (0, 0), (0, 1), (1, 1), (1, 1), (1, 0)]);
+    let g0 = Graph::<(), ()>::from_edges(&[
+        (0, 1),
+        (1, 2),
+        (0, 2),
+        (0, 2),
+        (0, 2),
+        (0, 3),
+        (1, 3),
+        (1, 3),
+    ]);
+    let g1 = Graph::<(), ()>::from_edges(&[
+        (0, 1),
+        (1, 2),
+        (1, 2),
+        (0, 2),
+        (0, 2),
+        (0, 3),
+        (0, 3),
+        (1, 3),
+    ]);
 
-    let g1 = Graph::<(), ()>::from_edges(&[(0, 0), (0, 1), (0, 1), (1, 1), (1, 0), (1, 0)]);
     assert!(!is_isomorphic(&g0, &g1));
 }
 
