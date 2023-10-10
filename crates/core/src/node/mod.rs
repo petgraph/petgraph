@@ -51,9 +51,9 @@ where
 {
     storage: &'a S,
 
-    // TODO: MaybeOwned?
+    // TODO: we might want to consider making these `MaybeOwned`, to allow for `Node` that cannot
+    //  borrow data.
     id: &'a S::NodeId,
-    // TODO: MaybeOwned?
     weight: &'a S::NodeWeight,
 }
 
@@ -237,6 +237,35 @@ where
     /// ```
     pub fn connections(&self) -> impl Iterator<Item = Edge<'_, S>> {
         self.storage.node_connections(self.id)
+    }
+
+    // TODO: implement degree in petgraph-dino and test
+    /// Returns the number of edges connected to the node.
+    ///
+    /// This is also known as the node's degree or valency.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    ///
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    /// let c = *graph.insert_node("C").id();
+    ///
+    /// let ab = *graph.insert_edge("A → B", &a, &b).id();
+    /// let bc = *graph.insert_edge("B → C", &b, &c).id();
+    /// let ca = *graph.insert_edge("C → A", &c, &a).id();
+    ///
+    /// let node = graph.node(&a).unwrap();
+    ///
+    /// assert_eq!(node.degree(), 2);
+    /// ```
+    #[must_use]
+    pub fn degree(&self) -> usize {
+        self.storage.node_degree(self.id)
     }
 }
 

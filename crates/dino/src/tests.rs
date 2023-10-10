@@ -586,7 +586,10 @@ fn external_nodes() {
     let SimpleGraph { graph, d, .. } = SimpleGraph::create();
 
     assert_eq!(
-        graph.externals().map(Node::detach).collect::<HashSet<_>>(),
+        graph
+            .isolated_nodes()
+            .map(Node::detach)
+            .collect::<HashSet<_>>(),
         once(DetachedNode::new(d, 8u8)).collect::<HashSet<_>>()
     );
 }
@@ -602,12 +605,15 @@ fn external_nodes_mut() {
         ..
     } = SimpleGraph::create();
 
-    for mut external in graph.externals_mut() {
+    for mut external in graph.isolated_nodes_mut() {
         *external.weight_mut() += 1;
     }
 
     assert_eq!(
-        graph.externals().map(Node::detach).collect::<HashSet<_>>(),
+        graph
+            .isolated_nodes()
+            .map(Node::detach)
+            .collect::<HashSet<_>>(),
         once(DetachedNode::new(d, 9u8)).collect::<HashSet<_>>()
     );
 

@@ -86,6 +86,10 @@ where
     }
 }
 
+// TODO: Currently the functionality exposed through the `Node` and `Edge` type is double with that
+// exposed here, it might make sense to instead only expose them on the `Node` and `Edge` type,
+// although that could be confusing because they do not allow mutable access and those methods would
+// need to be exposed here.
 impl<S> Graph<S>
 where
     S: GraphStorage,
@@ -886,8 +890,67 @@ where
         self.storage.node_connections_mut(id)
     }
 
+    /// Returns the degree of the node with the given identifier.
+    ///
+    /// This is the number of edges that are connected to the given node, sometimes referred to as
+    /// valency.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    /// let d = *graph.insert_node(3).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 1, &b, &c).id();
+    /// let ca = *graph.insert_edge(u8::MAX - 2, &c, &a).id();
+    /// let aa = *graph.insert_edge(u8::MAX - 3, &a, &a).id();
+    ///
+    /// assert_eq!(graph.degree(&a), 3);
+    /// assert_eq!(graph.degree(&b), 2);
+    /// assert_eq!(graph.degree(&c), 2);
+    /// assert_eq!(graph.degree(&d), 0);
+    /// ```
+    pub fn degree(&self, id: &S::NodeId) -> usize {
+        self.storage.node_degree(id)
+    }
+
     // TODO: `map`, `filter`, `filter_map`, `find`, `reverse`, `any`, `all`, etc.
 
+    /// Returns all edges that are between the given
+    ///
+    /// Returns an iterator over all edges that are between the given nodes.
+    /// In the case of a directed graph this will return an iterator over both `u → v` and `v → u`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 2, &b, &c).id();
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .edges_between(&a, &b)
+    ///         .map(|edge| *edge.id())
+    ///         .collect::<HashSet<_>>(),
+    ///     [ab, ba].into_iter().collect::<HashSet<_>>()
+    /// );
+    /// ```
     pub fn edges_between<'a: 'b, 'b>(
         &'a self,
         u: &'b S::NodeId,
@@ -896,6 +959,40 @@ where
         self.storage.edges_between(u, v)
     }
 
+    /// Returns all edges that are between the given nodes, with mutable weights.
+    ///
+    /// Returns an iterator over all edges that are between the given nodes.
+    /// In the case of a directed graph this will return an iterator over both `u → v` and `v → u`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 2, &b, &c).id();
+    ///
+    /// for mut edge in graph.edges_between_mut(&a, &b) {
+    ///     *edge.weight_mut() -= 16;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .edges()
+    ///         .map(|edge| (*edge.id(), *edge.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(ab, u8::MAX - 16), (ba, u8::MAX - 17), (bc, u8::MAX - 2),]
+    ///         .into_iter()
+    ///         .collect::<HashSet<_>>()
+    /// );
+    /// ```
     pub fn edges_between_mut<'a: 'b, 'b>(
         &'a mut self,
         u: &'b S::NodeId,
@@ -904,26 +1001,190 @@ where
         self.storage.edges_between_mut(u, v)
     }
 
-    pub fn externals(&self) -> impl Iterator<Item = Node<S>> {
-        self.storage.external_nodes()
+    /// Returns all nodes that have no edges connected to them.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .isolated_nodes()
+    ///         .map(|node| *node.id())
+    ///         .collect::<HashSet<_>>(),
+    ///     [c].into_iter().collect::<HashSet<_>>()
+    /// );
+    /// ```
+    pub fn isolated_nodes(&self) -> impl Iterator<Item = Node<S>> {
+        self.storage.isolated_nodes()
     }
 
-    pub fn externals_mut(&mut self) -> impl Iterator<Item = NodeMut<S>> {
-        self.storage.external_nodes_mut()
+    /// Returns all nodes that have no edges connected to them, with mutable weights.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    ///
+    /// for mut node in graph.isolated_nodes_mut() {
+    ///     *node.weight_mut() += 16;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .nodes()
+    ///         .map(|node| (*node.id(), *node.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(a, 0), (b, 1), (c, 18)]
+    ///         .into_iter()
+    ///         .collect::<HashSet<_>>()
+    /// );
+    /// ```
+    pub fn isolated_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<S>> {
+        self.storage.isolated_nodes_mut()
     }
 
+    /// Returns an iterator over all nodes in the graph.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .nodes()
+    ///         .map(|node| (*node.id(), *node.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(a, 0), (b, 1), (c, 2)].into_iter().collect::<HashSet<_>>()
+    /// );
+    /// ```
     pub fn nodes(&self) -> impl Iterator<Item = Node<S>> {
         self.storage.nodes()
     }
 
+    /// Returns an iterator over all nodes in the graph, with mutable weights.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    ///
+    /// for mut node in graph.nodes_mut() {
+    ///     *node.weight_mut() += 16;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .nodes()
+    ///         .map(|node| (*node.id(), *node.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(a, 16), (b, 17), (c, 18)]
+    ///         .into_iter()
+    ///         .collect::<HashSet<_>>()
+    /// );
+    /// ```
     pub fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<S>> {
         self.storage.nodes_mut()
     }
 
+    /// Returns an iterator over all edges in the graph.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .edges()
+    ///         .map(|node| (*node.id(), *node.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(ab, u8::MAX), (ba, u8::MAX - 1)]
+    ///         .into_iter()
+    ///         .collect::<HashSet<_>>()
+    /// );
+    /// ```
     pub fn edges(&self) -> impl Iterator<Item = Edge<S>> {
         self.storage.edges()
     }
 
+    /// Returns an iterator over all edges in the graph, with mutable weights.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    ///
+    /// for mut edge in graph.edges_mut() {
+    ///     *edge.weight_mut() -= 16;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .edges()
+    ///         .map(|node| (*node.id(), *node.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(ab, u8::MAX - 16), (ba, u8::MAX - 17)]
+    ///         .into_iter()
+    ///         .collect::<HashSet<_>>()
+    /// );
+    /// ```
     pub fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<S>> {
         self.storage.edges_mut()
     }

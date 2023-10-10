@@ -249,6 +249,41 @@ pub trait DirectedGraphStorage: GraphStorage {
         direction: Direction,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
+    /// Returns the number of directed edges that are connected to the given node, by the given
+    /// direction.
+    ///
+    /// This is also known as the either outdegree (if `direction` is [`Direction::Outgoing`]) 𝛿+(v)
+    /// or indegree (if `direction` is [`Direction::Incoming`]) 𝛿-(v) of a node.
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{
+    ///     edge::{marker::Directed, Direction},
+    ///     storage::{DirectedGraphStorage, GraphStorage},
+    /// };
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    /// # let ca = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ca, 5, &c, &a).unwrap();
+    ///
+    /// assert_eq!(storage.node_directed_degree(&a, Direction::Outgoing), 1);
+    /// assert_eq!(storage.node_directed_degree(&a, Direction::Incoming), 1);
+    /// ```
+    fn node_directed_degree(&self, id: &Self::NodeId, direction: Direction) -> usize {
+        self.node_directed_connections(id, direction).count()
+    }
+
     /// Returns an iterator over all nodes that are connected to the given node, by the given
     /// direction.
     ///

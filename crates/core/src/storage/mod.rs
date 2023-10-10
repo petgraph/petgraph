@@ -1145,6 +1145,44 @@ pub trait GraphStorage: Sized {
         id: &'b Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
 
+    /// Returns the number of edges that are connected to the given node.
+    ///
+    /// This is also commonly known as the degree or valency of the node.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use petgraph_core::attributes::NoValue;
+    /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// #
+    /// # let a = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(a, 1).unwrap();
+    /// # let b = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(b, 2).unwrap();
+    /// # let c = storage.next_node_id(NoValue::new());
+    /// storage.insert_node(c, 3).unwrap();
+    ///
+    /// # let ab = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ab, 4, &a, &b).unwrap();
+    /// # let ca = storage.next_edge_id(NoValue::new());
+    /// storage.insert_edge(ca, 5, &c, &a).unwrap();
+    ///
+    /// assert_eq!(storage.node_degree(&a), 2);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// The default implementation simply calls [`Self::node_connections`] and counts the number of
+    /// edges.
+    /// This is unlikely to be the most efficient implementation, so custom implementations should
+    /// override this.
+    fn node_degree(&self, id: &Self::NodeId) -> usize {
+        self.node_connections(id).count()
+    }
+
     /// Returns an iterator over all nodes that are connected to the given node.
     ///
     /// This will return an iterator over all nodes that are connected to the given node.
@@ -1289,9 +1327,9 @@ pub trait GraphStorage: Sized {
     /// # let ab = storage.next_edge_id(NoValue::new());
     /// storage.insert_edge(ab, 4, &a, &b).unwrap();
     ///
-    /// let external_nodes: Vec<_> = storage.external_nodes().map(|node| *node.id()).collect();
+    /// let isolated_nodes: Vec<_> = storage.isolated_nodes().map(|node| *node.id()).collect();
     ///
-    /// assert_eq!(external_nodes, [c]);
+    /// assert_eq!(isolated_nodes, [c]);
     /// ```
     ///
     /// # Implementation Notes
@@ -1300,9 +1338,8 @@ pub trait GraphStorage: Sized {
     /// no edges via [`Self::node_neighbours`].
     /// This is quite inefficient, and implementations should try to provide a more efficient
     /// implementation if possible.
-    fn external_nodes(&self) -> impl Iterator<Item = Node<Self>> {
-        self.nodes()
-            .filter(|node| self.node_neighbours(node.id()).next().is_none())
+    fn isolated_nodes(&self) -> impl Iterator<Item = Node<Self>> {
+        self.nodes().filter(|node| self.node_degree(node.id()) == 0)
     }
 
     /// Returns an iterator over all nodes that do not have any edges connected to them, with
@@ -1327,7 +1364,7 @@ pub trait GraphStorage: Sized {
     /// # let ab = storage.next_edge_id(NoValue::new());
     /// storage.insert_edge(ab, 4, &a, &b).unwrap();
     ///
-    /// for mut external in storage.external_nodes_mut() {
+    /// for mut external in storage.isolated_nodes_mut() {
     ///     *external.weight_mut() += 1;
     /// }
     ///
@@ -1339,7 +1376,7 @@ pub trait GraphStorage: Sized {
     /// No default implementation is provided, as a mutable iterator based on [`Self::nodes_mut`]
     /// and [`Self::node_neighbours`] would lead to a mutable borrow of the storage implementation
     /// followed by a shared borrow, which is not allowed.
-    fn external_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>>;
+    fn isolated_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>>;
 
     /// Returns an iterator over all nodes in the graph.
     ///

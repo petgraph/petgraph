@@ -400,14 +400,14 @@ where
             .map(move |node| NodeMut::new(&node.id, &mut node.weight))
     }
 
-    fn external_nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
+    fn isolated_nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
         self.closures
             .nodes()
             .externals()
             .filter_map(move |node| self.node(&node))
     }
 
-    fn external_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
+    fn isolated_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
         let Self {
             nodes, closures, ..
         } = self;
