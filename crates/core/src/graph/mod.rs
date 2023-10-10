@@ -251,6 +251,11 @@ where
     ///         .collect::<HashSet<_>>(),
     /// );
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// If any of the nodes or edges are invalid, or any of the invariant checks of the underlying
+    /// implementation fail, an error is returned.
     pub fn from_parts(
         nodes: impl IntoIterator<Item = DetachedNode<S::NodeId, S::NodeWeight>>,
         edges: impl IntoIterator<Item = DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight>>,
@@ -319,6 +324,14 @@ where
     ///
     /// Internally this simply calls [`GraphStorage::into_parts`] on `S` and then calls
     /// [`Graph::from_parts`] on `T`.
+    ///
+    /// # Errors
+    ///
+    /// If any of the nodes or edges are invalid, or any of the invariant checks of the new storage
+    /// implementation fail, an error is returned.
+    ///
+    /// An example would be switching between a storage implementation that supports parallel edges
+    /// to one that does not.
     // TODO: example
     pub fn convert<T>(self) -> Result<Graph<T>, T::Error>
     where
