@@ -95,11 +95,14 @@ where
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{edge::marker::Undirected, Graph, GraphStorage};
+    /// use petgraph_core::{
+    ///     edge::marker::{Directed, Undirected},
+    ///     Graph, GraphStorage,
+    /// };
     /// use petgraph_dino::DinosaurStorage;
     ///
-    /// let storage = DinosaurStorage::with_capacity(None, None);
-    /// let graph = Graph::<_>::new_in(storage);
+    /// let storage = DinosaurStorage::<u8, u8, Directed>::with_capacity(None, None);
+    /// let graph = Graph::new_in(storage);
     /// // ^ this is the same as `Graph::new()`
     /// # assert_eq!(graph.num_nodes(), 0);
     /// # assert_eq!(graph.num_edges(), 0);
@@ -155,11 +158,14 @@ where
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{edge::marker::Undirected, Graph, GraphStorage};
+    /// use petgraph_core::{
+    ///     edge::marker::{Directed, Undirected},
+    ///     Graph, GraphStorage,
+    /// };
     /// use petgraph_dino::DinosaurStorage;
     ///
-    /// let storage = DinosaurStorage::with_capacity(None, None);
-    /// let graph = Graph::<_>::new_in(storage);
+    /// let storage = DinosaurStorage::<u8, u8, Directed>::with_capacity(None, None);
+    /// let graph = Graph::new_in(storage);
     ///
     /// assert_eq!(graph.storage().num_nodes(), 0);
     /// assert_eq!(graph.storage().num_edges(), 0);
@@ -173,14 +179,18 @@ where
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{edge::marker::Undirected, Graph, GraphStorage};
+    /// use petgraph_core::{
+    ///     edge::marker::{Directed, Undirected},
+    ///     Graph, GraphStorage,
+    /// };
     /// use petgraph_dino::DinosaurStorage;
     ///
-    /// let storage = DinosaurStorage::with_capacity(None, None);
-    /// let graph = Graph::<_>::new_in(storage);
+    /// let storage = DinosaurStorage::<u8, u8, Directed>::with_capacity(None, None);
+    /// let graph = Graph::new_in(storage);
     ///
-    /// assert_eq!(graph.into_storage().num_nodes(), 0);
-    /// assert_eq!(graph.into_storage().num_edges(), 0);
+    /// let storage = graph.into_storage();
+    /// assert_eq!(storage.num_nodes(), 0);
+    /// assert_eq!(storage.num_edges(), 0);
     /// ```
     pub fn into_storage(self) -> S {
         self.storage
@@ -205,7 +215,7 @@ where
     ///
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut other = DiDinoGraph::<u8, u8>::new();
+    /// let mut other = DiDinoGraph::new();
     /// let a = *other.insert_node(0).id();
     /// let b = *other.insert_node(1).id();
     /// let c = *other.insert_node(2).id();
@@ -226,12 +236,19 @@ where
     ///         .collect::<HashSet<_>>(),
     ///     [0, 1, 2].into_iter().collect::<HashSet<_>>(),
     /// );
+    ///
+    /// let a = *graph.nodes().find(|node| *node.weight() == 0).unwrap().id();
+    /// let b = *graph.nodes().find(|node| *node.weight() == 1).unwrap().id();
+    /// let c = *graph.nodes().find(|node| *node.weight() == 2).unwrap().id();
+    ///
     /// assert_eq!(
     ///     graph
     ///         .edges()
-    ///         .map(|edge| *edge.weight())
+    ///         .map(|edge| (*edge.weight(), edge.endpoint_ids()))
     ///         .collect::<HashSet<_>>(),
-    ///     [u8::MAX, u8::MAX - 1].into_iter().collect::<HashSet<_>>(),
+    ///     [(u8::MAX, (&a, &b)), (u8::MAX - 1, (&b, &c))]
+    ///         .into_iter()
+    ///         .collect::<HashSet<_>>(),
     /// );
     /// ```
     pub fn from_parts(
@@ -260,7 +277,7 @@ where
     /// use petgraph_core::{DetachedEdge, DetachedNode};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     /// let c = *graph.insert_node(2).id();
@@ -327,7 +344,7 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     /// let c = *graph.insert_node(2).id();
@@ -351,7 +368,7 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     /// let c = *graph.insert_node(2).id();
@@ -372,7 +389,7 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// assert!(graph.is_empty());
     ///
     /// let a = *graph.insert_node(0).id();
@@ -392,7 +409,7 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     /// let c = *graph.insert_node(2).id();
@@ -422,7 +439,7 @@ where
     /// # use petgraph_core::{GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// let a = *graph.insert_node(0).id();
     /// # let b = graph.storage().next_node_id(NoValue::new());
     ///
@@ -448,7 +465,7 @@ where
     /// # use petgraph_core::{GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// let a = *graph.insert_node(0).id();
     /// # let b = graph.storage().next_node_id(NoValue::new());
     ///
@@ -478,7 +495,7 @@ where
     /// # use petgraph_core::{GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// let a = *graph.insert_node(0).id();
     /// # let b = graph.storage().next_node_id(NoValue::new());
     ///
@@ -501,7 +518,7 @@ where
     /// # use petgraph_core::{DetachedNode, GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// let a = *graph.insert_node(0).id();
     /// # let b = graph.storage().next_node_id(NoValue::new());
     ///
@@ -531,7 +548,7 @@ where
     /// # use petgraph_core::{DetachedNode, GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     ///
@@ -559,7 +576,7 @@ where
     /// # use petgraph_core::{DetachedNode, GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     ///
@@ -593,7 +610,7 @@ where
     /// # use petgraph_core::{DetachedNode, GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     ///
@@ -619,7 +636,7 @@ where
     /// # use petgraph_core::{DetachedEdge, DetachedNode, GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     ///
@@ -674,7 +691,7 @@ where
     /// # use std::collections::HashSet;
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     /// let c = *graph.insert_node(2).id();
@@ -733,7 +750,7 @@ where
     /// # use std::collections::HashSet;
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     /// let c = *graph.insert_node(2).id();
@@ -781,7 +798,7 @@ where
     /// # use std::collections::HashSet;
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     /// let c = *graph.insert_node(2).id();
@@ -820,7 +837,7 @@ where
     /// # use std::collections::HashSet;
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
+    /// let mut graph = DiDinoGraph::new();
     /// let a = *graph.insert_node(0).id();
     /// let b = *graph.insert_node(1).id();
     /// let c = *graph.insert_node(2).id();
