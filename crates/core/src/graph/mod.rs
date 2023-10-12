@@ -1144,7 +1144,7 @@ where
     /// assert_eq!(
     ///     graph
     ///         .edges()
-    ///         .map(|node| (*node.id(), *node.weight()))
+    ///         .map(|edge| (*edge.id(), *edge.weight()))
     ///         .collect::<HashSet<_>>(),
     ///     [(ab, u8::MAX), (ba, u8::MAX - 1)]
     ///         .into_iter()
@@ -1178,7 +1178,7 @@ where
     /// assert_eq!(
     ///     graph
     ///         .edges()
-    ///         .map(|node| (*node.id(), *node.weight()))
+    ///         .map(|edge| (*edge.id(), *edge.weight()))
     ///         .collect::<HashSet<_>>(),
     ///     [(ab, u8::MAX - 16), (ba, u8::MAX - 17)]
     ///         .into_iter()

@@ -11,7 +11,42 @@ impl<S> Graph<S>
 where
     S: DirectedGraphStorage,
 {
-    pub fn find_directed_edges_between<'a: 'b, 'b>(
+    /// Returns an iterator over all edges between the source and target node.
+    ///
+    /// The direction of the edges is always `source → target`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 2, &b, &c).id();
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .directed_edges_between(&a, &b)
+    ///         .map(|edge| (*edge.id(), *edge.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(ab, u8::MAX)].into_iter().collect::<HashSet<_>>()
+    /// );
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .directed_edges_between(&b, &a)
+    ///         .map(|edge| (*edge.id(), *edge.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(ba, u8::MAX - 1)].into_iter().collect::<HashSet<_>>()
+    /// );
+    /// ```
+    pub fn directed_edges_between<'a: 'b, 'b>(
         &'a self,
         source: &'b S::NodeId,
         target: &'b S::NodeId,
@@ -19,7 +54,41 @@ where
         self.storage.directed_edges_between(source, target)
     }
 
-    pub fn find_directed_edges_between_mut<'a: 'b, 'b>(
+    /// Returns an iterator over all edges, with mutable weights, between the source and target
+    /// node.
+    ///
+    /// The direction of the edges is always `source → target`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::collections::HashSet;
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node(0).id();
+    /// let b = *graph.insert_node(1).id();
+    /// let c = *graph.insert_node(2).id();
+    ///
+    /// let ab = *graph.insert_edge(u8::MAX, &a, &b).id();
+    /// let ba = *graph.insert_edge(u8::MAX - 1, &b, &a).id();
+    /// let bc = *graph.insert_edge(u8::MAX - 2, &b, &c).id();
+    ///
+    /// for mut edge in graph.directed_edges_between_mut(&a, &b) {
+    ///     *edge.weight_mut() -= 16;
+    /// }
+    ///
+    /// assert_eq!(
+    ///     graph
+    ///         .edges()
+    ///         .map(|node| (*node.id(), *node.weight()))
+    ///         .collect::<HashSet<_>>(),
+    ///     [(ab, u8::MAX - 16), (ba, u8::MAX - 1), (bc, u8::MAX - 2)]
+    ///         .into_iter()
+    ///         .collect::<HashSet<_>>()
+    /// );
+    /// ```
+    pub fn directed_edges_between_mut<'a: 'b, 'b>(
         &'a mut self,
         source: &'b S::NodeId,
         target: &'b S::NodeId,
