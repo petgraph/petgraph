@@ -9,6 +9,8 @@ use crate::{
     storage::GraphStorage,
 };
 
+// TODO: own error
+
 impl<S> Graph<S>
 where
     S: GraphStorage,
@@ -16,6 +18,15 @@ where
     /// Try to insert a node with the given attributes.
     ///
     /// This is the fallible version of [`insert_node`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let node = graph.try_insert_node(()).expect("unable to insert node");
+    /// ```
     ///
     /// # Errors
     ///
@@ -33,14 +44,19 @@ where
         self.storage.insert_node(id, weight)
     }
 
-    // TODO: I don't like how we return `NodeMut`, we should just return the id here?, but then
-    // there would be a problem with lifetimes as we cannot give out a value, as we don't know if
-    // the key is clone.
-    // I think this is for the better, but may need to be revisited.
     /// Insert a node with the given attributes.
     ///
     /// Depending on the storage type, or if your code is generic over the storage type, you might
     /// want to consider using [`Self::try_insert_node`] instead.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let node = graph.insert_node(());
+    /// ```
     ///
     /// # Rationale
     ///
@@ -88,6 +104,26 @@ where
     ///
     /// This is the fallible version of [`Self::insert_node_with`].
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::{DiDinoGraph, NodeId};
+    ///
+    /// struct Node {
+    ///     id: NodeId,
+    /// }
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let node_id = *graph
+    ///     .try_insert_node_with(|id| Node { id: *id })
+    ///     .expect("unable to insert node")
+    ///     .id();
+    ///
+    /// let node = graph.node(&node_id).expect("node must exist");
+    ///
+    /// assert_eq!(node.weight().id, node_id);
+    /// ```
+    ///
     /// # Errors
     ///
     /// If any of the constraints that are required for the graph storage to be valid are violated.
@@ -111,6 +147,23 @@ where
     ///
     /// This is the infallible version of [`Self::try_insert_node_with`], which will panic instead.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::{DiDinoGraph, NodeId};
+    ///
+    /// struct Node {
+    ///     id: NodeId,
+    /// }
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let node_id = *graph.insert_node_with(|id| Node { id: *id }).id();
+    ///
+    /// let node = graph.node(&node_id).expect("node must exist");
+    ///
+    /// assert_eq!(node.weight().id, node_id);
+    /// ```
+    ///
     /// # Panics
     ///
     /// If any of the constraints that are required for the graph storage to be valid are violated.
@@ -131,7 +184,22 @@ where
     S: GraphStorage,
     S::NodeId: ArbitraryGraphId,
 {
-    pub fn upsert_node(
+    /// Insert a node, or update the weight of an existing node.
+    ///
+    /// This is the fallible version of [`Self::upsert_node`].
+    // TODO: Example
+    /// # Errors
+    ///
+    /// The same errors as [`Self::try_insert_node`] may occur.
+    ///
+    /// # Panics
+    ///
+    /// If the storage is inconsistent.
+    /// This should never happen, as this is an implementation error of the underlying
+    /// [`GraphStorage`], which must guarantee that if one calls [`GraphStorage::contains_node`]
+    /// with the id of the node to check if a node exists, and then calls
+    /// [`GraphStorage::node_mut`] with the same id, it must return a node.
+    pub fn try_upsert_node(
         &mut self,
         id: S::NodeId,
         weight: S::NodeWeight,
@@ -149,6 +217,19 @@ where
         } else {
             self.storage.insert_node(id, weight)
         }
+    }
+
+    /// Insert a node, or update the weight of an existing node.
+    ///
+    /// This is the infallible version of [`Self::try_upsert_node`], which will panic instead.
+    ///
+    /// # Panics
+    ///
+    /// The same panics as [`Self::try_upsert_node`] may occur, as well as the ones from
+    /// [`Self::insert_node`].
+    pub fn upsert_node(&mut self, id: S::NodeId, weight: S::NodeWeight) -> NodeMut<S> {
+        self.try_upsert_node(id, weight)
+            .expect("unable to insert node. Try using `try_upsert_node` instead.")
     }
 }
 
@@ -184,7 +265,7 @@ where
     S: GraphStorage,
     S::EdgeId: ManagedGraphId,
 {
-    pub fn insert_edge_with(
+    pub fn try_insert_edge_with(
         &mut self,
         weight: impl FnOnce(&S::EdgeId) -> S::EdgeWeight,
         source: &S::NodeId,
@@ -194,6 +275,16 @@ where
         let weight = weight(&id);
 
         self.storage.insert_edge(id, weight, source, target)
+    }
+
+    pub fn insert_edge_with(
+        &mut self,
+        weight: impl FnOnce(&S::EdgeId) -> S::EdgeWeight,
+        source: &S::NodeId,
+        target: &S::NodeId,
+    ) -> EdgeMut<S> {
+        self.try_insert_edge_with(weight, source, target)
+            .expect("unable to insert edge")
     }
 }
 
