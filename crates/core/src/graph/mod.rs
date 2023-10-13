@@ -258,7 +258,7 @@ where
     ///
     /// # Errors
     ///
-    /// If any of the nodes or edges are invalid, or any of the invariant checks of the underlying
+    /// If any of the nodes or edges are invalid, or any of the constraint checks of the underlying
     /// implementation fail, an error is returned.
     pub fn from_parts(
         nodes: impl IntoIterator<Item = DetachedNode<S::NodeId, S::NodeWeight>>,
@@ -331,7 +331,7 @@ where
     ///
     /// # Errors
     ///
-    /// If any of the nodes or edges are invalid, or any of the invariant checks of the new storage
+    /// If any of the nodes or edges are invalid, or any of the constraint checks of the new storage
     /// implementation fail, an error is returned.
     ///
     /// An example would be switching between a storage implementation that supports parallel edges

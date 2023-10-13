@@ -430,11 +430,11 @@ where
     }
 }
 
-/// Acrive (mutable) edge in the graph.
+/// Active (mutable) edge in the graph.
 ///
 /// Edge that is part of the graph, it borrows the graph and can be used to mutably access the
 /// weight of an edge. The source and node are not available mutably, as changing those might
-/// violate some internal invariants of the [`GraphStorage`] they are part of.
+/// violate some internal constraints of the [`GraphStorage`] they are part of.
 ///
 /// To prevent multiple borrows of the same edge, while still allowing for multiple borrows into the
 /// same storage, this type does not carry a reference to the storage itself.

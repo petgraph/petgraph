@@ -280,7 +280,7 @@ pub trait GraphStorage: Sized {
     ///
     /// # Errors
     ///
-    /// If any of the nodes or edges are invalid, or any of the invariant checks of the underlying
+    /// If any of the nodes or edges are invalid, or any of the constraint checks of the underlying
     /// implementation fail, an error is returned.
     ///
     /// The default implementation uses [`Self::insert_node`] and [`Self::insert_edge`] to insert
@@ -532,7 +532,7 @@ pub trait GraphStorage: Sized {
     /// # Errors
     ///
     /// Returns an error if a node with the given identifier already exists, or if any of the
-    /// invariants (depending on the implementation) are violated.
+    /// constraints (depending on the implementation) are violated.
     fn insert_node(
         &mut self,
         id: Self::NodeId,
@@ -603,10 +603,10 @@ pub trait GraphStorage: Sized {
     ///
     /// # Errors
     ///
-    /// Returns an error if parallel edges are not allowed, or any of the invariants (depending on
+    /// Returns an error if parallel edges are not allowed, or any of the constraints (depending on
     /// the implementation) are violated.
-    /// These invariants _may_ include that an edge between the source and target already exist, but
-    /// some implementations may choose to allow parallel edges.
+    /// These constraints _may_ include that an edge between the source and target already exist,
+    /// but some implementations may choose to allow parallel edges.
     fn insert_edge(
         &mut self,
         id: Self::EdgeId,

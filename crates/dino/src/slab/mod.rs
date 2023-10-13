@@ -223,6 +223,7 @@ where
         self.entries.iter_mut().filter_map(Entry::get_mut)
     }
 
+    // TODO: we might want to consider moving to `Option<&mut V>` if we need it.
     pub(crate) fn filter_mut(
         &mut self,
         indices: impl Iterator<Item = K>,
