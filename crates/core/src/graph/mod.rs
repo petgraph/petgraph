@@ -50,6 +50,9 @@ use crate::{
 /// };
 /// use petgraph_dino::{DiDinoGraph, DinoGraph, DinosaurStorage, UnDinoGraph};
 ///
+/// // we're using explicit generics here to illustrate the difference more clearly, but also
+/// // because we do not insert/remove any nodes or edges, which means we cannot infer those types.
+///
 /// let digraph = Graph::<DinosaurStorage<u8, u8, Directed>>::new();
 /// // ^ same as:
 /// let digraph = DinoGraph::<u8, u8, Directed>::new();
@@ -86,10 +89,6 @@ where
     }
 }
 
-// TODO: Currently the functionality exposed through the `Node` and `Edge` type is double with that
-// exposed here, it might make sense to instead only expose them on the `Node` and `Edge` type,
-// although that could be confusing because they do not allow mutable access and those methods would
-// need to be exposed here.
 impl<S> Graph<S>
 where
     S: GraphStorage,
@@ -406,6 +405,8 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
+    /// // we need to explicitly state the type of the edge weights, as we do insert any edges and
+    /// // therefore cannot infer them.
     /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// assert!(graph.is_empty());
     ///
@@ -456,6 +457,8 @@ where
     /// # use petgraph_core::{GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
+    /// // we need to explicitly state the type of the edge weights, as we do insert
+    /// // any edges and therefore cannot infer them.
     /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// let a = *graph.insert_node(0).id();
     /// # let b = graph.storage().next_node_id(NoValue::new());
@@ -482,6 +485,8 @@ where
     /// # use petgraph_core::{GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
+    /// // we need to explicitly state the type of the edge weights, as we do insert
+    /// // any edges and therefore cannot infer them.
     /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// let a = *graph.insert_node(0).id();
     /// # let b = graph.storage().next_node_id(NoValue::new());
@@ -512,6 +517,8 @@ where
     /// # use petgraph_core::{GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
+    /// // we need to explicitly state the type of the edge weights, as we do insert
+    /// // any edges and therefore cannot infer them.
     /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// let a = *graph.insert_node(0).id();
     /// # let b = graph.storage().next_node_id(NoValue::new());
@@ -535,6 +542,8 @@ where
     /// # use petgraph_core::{DetachedNode, GraphStorage, Node};
     /// use petgraph_dino::DiDinoGraph;
     ///
+    /// // we need to explicitly state the type of the edge weights, as we do insert
+    /// // any edges and therefore cannot infer them.
     /// let mut graph = DiDinoGraph::<_, u8>::new();
     /// let a = *graph.insert_node(0).id();
     /// # let b = graph.storage().next_node_id(NoValue::new());

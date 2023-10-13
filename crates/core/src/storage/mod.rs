@@ -229,6 +229,8 @@ pub trait GraphStorage: Sized {
     /// # assert_eq!(storage.num_nodes(), 0);
     /// # assert_eq!(storage.num_edges(), 0);
     ///
+    /// // we need to explicitly state the type of the node and edge weights, as we do insert
+    /// // any nodes/edges and therefore cannot infer them.
     /// let storage = DiDinoGraph::<(), ()>::with_capacity(Some(10), Some(10));
     /// # assert_eq!(storage.num_nodes(), 0);
     /// # assert_eq!(storage.num_edges(), 0);

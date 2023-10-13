@@ -4,6 +4,15 @@ use crate::{edge::EdgeMut, node::NodeMut, storage::GraphStorage};
 pub trait RetainableGraphStorage: GraphStorage {
     /// Retains all nodes and edges for which the predicate returns `true`.
     ///
+    /// There are no guarantees about the order in which the predicate is called.
+    /// This also means that calls to the two different closures could be interspersed with each
+    /// other.
+    ///
+    /// Edges connected to a node which wasn't retained, all edges connected to it will be returned
+    /// as well.
+    /// The `edges` function may still (but doesn't need to be!) be called on those edges, even
+    /// though they will be removed anyway, ignoring their return value.
+    ///
     /// # Example
     ///
     /// ```
@@ -54,6 +63,9 @@ pub trait RetainableGraphStorage: GraphStorage {
     /// Retains all nodes for which the predicate returns `true`.
     ///
     /// If you are going to retain edges as well, it is more efficient to use [`Self::retain`].
+    ///
+    /// For every node the predicate is called, if the predicate returns `true`, the node is
+    /// retained, otherwise the node and all connected edges will be removed.
     ///
     /// # Example
     ///

@@ -24,7 +24,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the edge weights, as we do insert any edges and
+    /// // therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<_, ()>::new();
     /// let node = graph.try_insert_node(()).expect("unable to insert node");
     /// ```
     ///
@@ -54,7 +56,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the edge weights, as we do insert any edges and
+    /// // therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<_, ()>::new();
     /// let node = graph.insert_node(());
     /// ```
     ///
@@ -113,7 +117,9 @@ where
     ///     id: NodeId,
     /// }
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the edge weights, as we do insert
+    /// // any edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<_, ()>::new();
     /// let node_id = *graph
     ///     .try_insert_node_with(|id| Node { id: *id })
     ///     .expect("unable to insert node")
@@ -156,7 +162,9 @@ where
     ///     id: NodeId,
     /// }
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the edge weights, as we do insert any edges and
+    /// // therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<_, ()>::new();
     /// let node_id = *graph.insert_node_with(|id| Node { id: *id }).id();
     ///
     /// let node = graph.node(&node_id).expect("node must exist");
@@ -338,7 +346,8 @@ where
     ///
     /// let edge_id = *graph
     ///     .try_insert_edge_with(|id| Edge { id: *id }, &a, &b)
-    ///     .expect("unable to insert edge");
+    ///     .expect("unable to insert edge")
+    ///     .id();
     ///
     /// let edge = graph.edge(&edge_id).expect("edge must exist");
     ///
@@ -381,7 +390,7 @@ where
     /// let a = *graph.insert_node(()).id();
     /// let b = *graph.insert_node(()).id();
     ///
-    /// let edge_id = *graph.insert_edge_with(|id| Edge { id: *id }, &a, &b);
+    /// let edge_id = *graph.insert_edge_with(|id| Edge { id: *id }, &a, &b).id();
     ///
     /// let edge = graph.edge(&edge_id).expect("edge must exist");
     ///

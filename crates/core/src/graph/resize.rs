@@ -15,7 +15,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the node and edge weights,
+    /// // as we do insert any nodes/edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<(), ()>::new();
     ///
     /// graph.reserve(16, 16);
     /// ```
@@ -33,7 +35,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the node and edge weights, as we do insert
+    /// // any nodes/edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<(), ()>::new();
     ///
     /// graph.reserve_nodes(16);
     /// ```
@@ -51,7 +55,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the node and edge weights, as we do insert
+    /// // any nodes/edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<(), ()>::new();
     ///
     /// graph.reserve_edges(16);
     /// ```
@@ -70,7 +76,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the node and edge weights, as we do insert
+    /// // any nodes/edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<(), ()>::new();
     ///
     /// graph.reserve_exact(16, 16);
     /// ```
@@ -89,7 +97,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the node and edge weights, as we do insert
+    /// // any nodes/edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<(), ()>::new();
     ///
     /// graph.reserve_exact_nodes(16);
     /// ```
@@ -107,7 +117,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the node and edge weights, as we do insert
+    /// // any nodes/edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<(), ()>::new();
     ///
     /// graph.reserve_exact_edges(16);
     /// ```
@@ -126,7 +138,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the node and edge weights, as we do insert
+    /// // any nodes/edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<(), ()>::new();
     ///
     /// graph.shrink_to_fit();
     /// ```
@@ -145,7 +159,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the node and edge weights, as we do insert
+    /// // any nodes/edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<(), ()>::new();
     ///
     /// graph.shrink_to_fit_nodes();
     /// ```
@@ -164,7 +180,9 @@ where
     /// ```
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// let mut graph = DiDinoGraph::new();
+    /// // we need to explicitly state the type of the node and edge weights, as we do insert
+    /// // any nodes/edges and therefore cannot infer them.
+    /// let mut graph = DiDinoGraph::<(), ()>::new();
     ///
     /// graph.shrink_to_fit_edges();
     /// ```
