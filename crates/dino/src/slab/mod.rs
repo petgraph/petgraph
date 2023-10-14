@@ -276,8 +276,8 @@ where
                 return None;
             }
 
-            /// SAFETY: The previous check ensures that we're no vacant, and therefore can access
-            /// the inner value safely (which is a union).
+            // SAFETY: The previous check ensures that we're no vacant, and therefore can access
+            // the inner value safely (which is a union).
             Some(unsafe { &mut *entry_state.occupied })
         })
     }

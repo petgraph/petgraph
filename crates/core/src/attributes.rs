@@ -91,13 +91,13 @@ impl<W> Attributes<NoValue, W> {
     }
 }
 
-impl<I, W> From<(I, W)> for Attributes<I, W>
+impl<I, J, W> From<(J, W)> for Attributes<I, W>
 where
-    I: ArbitraryGraphId,
+    I: From<J> + ArbitraryGraphId,
 {
-    fn from(value: (I, W)) -> Self {
+    fn from(value: (J, W)) -> Self {
         Self {
-            id: value.0,
+            id: I::from(value.0),
             weight: value.1,
         }
     }
@@ -118,5 +118,62 @@ impl<W> From<W> for Attributes<NoValue, W> {
             id: NoValue(()),
             weight,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::marker::PhantomData;
+
+    use crate::{
+        attributes::{Attributes, NoValue},
+        ArbitraryGraphId, GraphId, ManagedGraphId,
+    };
+
+    #[derive(PartialEq)]
+    struct Managed(usize);
+
+    impl GraphId for Managed {
+        type AttributeIndex = NoValue;
+    }
+
+    impl ManagedGraphId for Managed {}
+
+    #[derive(PartialEq)]
+    struct Arbitrary<V>(V);
+
+    impl<V> GraphId for Arbitrary<V>
+    where
+        V: PartialEq,
+    {
+        type AttributeIndex = Self;
+    }
+
+    impl<V> ArbitraryGraphId for Arbitrary<V> where V: PartialEq {}
+
+    impl<T> From<T> for Arbitrary<T> {
+        fn from(value: T) -> Self {
+            Self(value)
+        }
+    }
+
+    struct Fake<T> {
+        _marker: PhantomData<T>,
+    }
+
+    impl<T> Fake<T>
+    where
+        T: GraphId,
+    {
+        fn invoke(attributes: impl Into<Attributes<T::AttributeIndex, usize>>) {
+            let _attr = attributes.into();
+        }
+    }
+
+    #[test]
+    fn from() {
+        Fake::<Managed>::invoke(2usize);
+
+        Fake::<Arbitrary<usize>>::invoke((2usize, 2usize));
     }
 }

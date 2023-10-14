@@ -1,3 +1,12 @@
+//! Module for identifiers.
+//!
+//! Identifiers are used to _identify_ edges and nodes.
+//!
+//! Primarily this module defines one type: [`GraphId`], which should not be implemented alone, but
+//! instead be implemented alongside [`ManagedGraphId`] and [`ArbitraryGraphId`], which are mutually
+//! exclusive and define if a node or edge id will be automatically assigned by the graph (are
+//! managed) and a user has no control over their value or are arbitrary, allowing the user to use
+//! _any_ value.
 mod linear;
 
 #[cfg(feature = "alloc")]
