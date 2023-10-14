@@ -5,19 +5,12 @@ mod id;
 mod key;
 
 use alloc::vec::Vec;
-use core::{
-    fmt::{Debug, Formatter},
-    hash::Hash,
-    marker::PhantomData,
-    mem,
-    num::{NonZeroU8, NonZeroUsize},
-    ptr,
-};
+use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
 
 use hashbrown::HashMap;
 use petgraph_core::{
     base::MaybeOwned,
-    id::{Continuous, IndexMapper, LinearGraphId},
+    id::{Continuous, IndexMapper},
 };
 
 use crate::slab::entry::{Entry, State};
@@ -183,7 +176,7 @@ where
         // we need, to remove all entries that are free from the back until we find an occupied
         // entry.
 
-        while self.entries.last().map_or(false, |entry| entry.is_vacant()) {
+        while self.entries.last().map_or(false, Entry::is_vacant) {
             let index = self.entries.len() - 1;
 
             // the chance that we have a free index at the end is very high
@@ -269,15 +262,22 @@ where
                 return None;
             }
 
+            // SAFETY: Access the entry information via a shared reference. We never mutate the
+            // entry information so we take a shared reference, instead of a mutable reference (like
+            // we do with the state).
             let entry_info = unsafe { &*ptr::addr_of!((*entry).info) };
 
             // SAFETY: We need to access both the generation and the state separately.
+            // The previous check ensures that the generation is the same, so we can safely access
+            // the state via a mutable reference.
             let entry_state = unsafe { &mut *ptr::addr_of_mut!((*entry).state) };
 
             if entry_info.is_vacant() {
                 return None;
             }
 
+            /// SAFETY: The previous check ensures that we're no vacant, and therefore can access
+            /// the inner value safely (which is a union).
             Some(unsafe { &mut *entry_state.occupied })
         })
     }

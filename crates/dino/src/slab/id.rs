@@ -81,14 +81,6 @@ impl EntryId {
     #[inline]
     #[must_use]
     #[allow(clippy::cast_possible_truncation)]
-    pub(crate) const fn index_u32(self) -> u32 {
-        // we know that the index will never be larger than 32 bits
-        self.index() as u32
-    }
-
-    #[inline]
-    #[must_use]
-    #[allow(clippy::cast_possible_truncation)]
     pub(crate) const fn raw(self) -> u32 {
         // we know that the index will never be larger than 32 bits
         self.0.get() as u32

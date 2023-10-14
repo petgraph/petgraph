@@ -1,3 +1,14 @@
+//! Marker traits for the directional property of a graph.
+//!
+//! This module defines the marker trait [`GraphDirectionality`] and two marker structs [`Directed`]
+//! and [`Undirected`].
+//!
+//! You are unable to implement the trait [`GraphDirectionality`] for your own types, as it is
+//! sealed.
+//!
+//! The core [`Graph`] makes no use of these types, but these types are provided to ease development
+//! (and unify the API surface) of implementations, that might need to indicate the directionality
+//! of their implementation.
 mod sealed {
     pub trait Sealed: Copy + 'static {}
 

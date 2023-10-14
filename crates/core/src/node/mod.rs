@@ -586,8 +586,10 @@ where
 /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DetachedNode<N, W> {
+    /// The unique id of the node.
     pub id: N,
 
+    /// The weight of the node.
     pub weight: W,
 }
 

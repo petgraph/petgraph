@@ -6,7 +6,6 @@ mod directed;
 mod edge;
 mod node;
 
-mod compat;
 mod retain;
 pub(crate) mod slab;
 #[cfg(test)]
@@ -218,12 +217,10 @@ where
         // always smaller than the target node id
         let (source, target) = if D::is_directed() {
             (*source, *target)
+        } else if source > target {
+            (*target, *source)
         } else {
-            if source > target {
-                (*target, *source)
-            } else {
-                (*source, *target)
-            }
+            (*source, *target)
         };
 
         let expected = id;

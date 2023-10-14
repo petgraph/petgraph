@@ -447,15 +447,13 @@ impl Closures {
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec::Vec;
     use core::iter::once;
 
     use hashbrown::{HashMap, HashSet};
     use petgraph_core::{attributes::Attributes, edge::marker::Directed};
-    use roaring::RoaringBitmap;
 
     use crate::{
-        closure::{Closures, Key, NodeClosure, UnionIterator},
+        closure::{Closures, Key},
         slab::{EntryId, Key as _},
         DinoGraph, EdgeId, NodeId,
     };
@@ -1060,9 +1058,8 @@ mod tests {
             a,
             b,
             c,
-            ab,
-            bc,
             ca,
+            ..
         } = graph;
 
         graph.remove_node(&b).unwrap();

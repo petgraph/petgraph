@@ -196,6 +196,19 @@ pub struct ContinuousIndexMapper<I, T> {
 
 #[cfg(feature = "alloc")]
 impl<I, T> ContinuousIndexMapper<I, T> {
+    /// Create a new `ContinuousIndexMapper` from an existing `IndexMapper`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::id::{ContinuousIndexMapper, IndexMapper, LinearGraphId};
+    /// use petgraph_dino::{DiDinoGraph, NodeId};
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    ///
+    /// let index_mapper = NodeId::index_mapper(graph.storage());
+    /// let mut continuous_index_mapper = ContinuousIndexMapper::new(index_mapper);
+    /// ```
     pub fn new(inner: I) -> Self {
         Self {
             inner,

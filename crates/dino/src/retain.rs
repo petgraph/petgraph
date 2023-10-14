@@ -1,6 +1,3 @@
-use alloc::vec;
-
-use hashbrown::HashSet;
 use petgraph_core::{
     edge::{marker::GraphDirectionality, EdgeMut},
     node::NodeMut,
@@ -8,7 +5,7 @@ use petgraph_core::{
 };
 use roaring::RoaringBitmap;
 
-use crate::{slab::Key, DinosaurStorage, NodeId};
+use crate::{slab::Key, DinosaurStorage};
 
 impl<N, E, D> RetainableGraphStorage for DinosaurStorage<N, E, D>
 where

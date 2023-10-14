@@ -201,10 +201,79 @@ where
         self.id
     }
 
+    /// Get the ids of the endpoints of this edge.
+    ///
+    /// While [`Self::source_id`] and [`Self::target_id`] are only available for directed graphs,
+    /// this method is available for both directed and undirected graphs.
+    ///
+    /// The order of the ids is not guaranteed for undirected graphs, but corresponds to `(source,
+    /// target)` for directed graph, this should be considered an implementation detail and one
+    /// **should not** rely on the order.
+    ///
+    /// You should use [`Self::source_id`] and [`Self::target_id`] directly if you need the source
+    /// and target.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    ///
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    ///
+    /// let ab = *graph.insert_edge("A → B", &a, &b).id();
+    ///
+    /// let edge = graph.edge(&ab).unwrap();
+    ///
+    /// let (u, v) = edge.endpoint_ids(); // <- the order is not guaranteed for undirected graphs
+    ///
+    /// assert!((u, v) == (&a, &b) || (u, v) == (&b, &a));
+    /// ```
+    #[must_use]
     pub const fn endpoint_ids(&self) -> (&'a S::NodeId, &'a S::NodeId) {
         (self.u, self.v)
     }
 
+    /// Get the endpoints of this edge.
+    ///
+    /// While [`Self::source`] and [`Self::target`] are only available for directed graphs, this
+    /// method is available for both directed and undirected graphs
+    ///
+    /// The order of the endpoints is not guaranteed for undirected graphs, but corresponds to
+    /// `(source, target)` for directed graph, this should be considered an implementation
+    /// detail and one **should not** rely on the order.
+    ///
+    /// You should use [`Self::source`] and [`Self::target`] directly if you need the source and
+    /// target.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    ///
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    ///
+    /// let ab = *graph.insert_edge("A → B", &a, &b).id();
+    ///
+    /// let edge = graph.edge(&ab).unwrap();
+    ///
+    /// let (u, v) = edge.endpoints(); // <- the order is not guaranteed for undirected graphs
+    ///
+    /// assert!((u.id(), v.id()) == (&a, &b) || (u.id(), v.id()) == (&b, &a));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the endpoints are not active in the same storage as this edge.
+    ///
+    /// This error will only occur if the storage has been corrupted or if the contract on
+    /// [`Edge::new`] is violated.
+    #[must_use]
     pub fn endpoints(&self) -> (Node<'a, S>, Node<'a, S>) {
         (
             self.storage.node(self.u).expect(
@@ -522,6 +591,35 @@ where
         self.id
     }
 
+    /// The ids of the endpoints of the edge.
+    ///
+    /// While [`Self::source_id`] and [`Self::target_id`] are only available for directed graphs,
+    /// this method is available for both directed and undirected graphs.
+    ///
+    /// The order of the ids is not guaranteed for undirected graphs, but corresponds to `(source,
+    /// target)` for directed graph, this should be considered an implementation detail and one
+    /// **should not** rely on the order.
+    ///
+    /// You should use [`Self::source_id`] and [`Self::target_id`] directly if you need the source
+    /// and target.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    ///
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    ///
+    /// let ab = graph.insert_edge("A → B", &a, &b);
+    ///
+    /// let (u, v) = ab.endpoint_ids(); // <- the order is not guaranteed for undirected graphs
+    ///
+    /// assert!((u, v) == (&a, &b) || (u, v) == (&b, &a));
+    /// ```
+    #[must_use]
     pub const fn endpoint_ids(&self) -> (&'a S::NodeId, &'a S::NodeId) {
         (self.u, self.v)
     }
