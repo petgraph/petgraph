@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use petgraph::{
-    core::{
+    core::deprecated::{
         edge::{Directed, Undirected},
         visit::GraphProp,
     },
