@@ -1,3 +1,5 @@
+use core::fmt::{Display, Formatter};
+
 use petgraph_core::{
     attributes::NoValue,
     edge::marker::GraphDirectionality,
@@ -35,6 +37,12 @@ use crate::{
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeId(EntryId);
+
+impl Display for EdgeId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
 
 impl Key for EdgeId {
     fn from_id(id: EntryId) -> Self {

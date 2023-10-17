@@ -567,6 +567,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(unused_variables)]
     fn shrink_to_fit() {
         let mut slab = Slab::<EntryId, u16>::new();
 
@@ -589,6 +590,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(unused_variables)]
     fn retain() {
         let mut slab = Slab::<EntryId, u16>::new();
 
