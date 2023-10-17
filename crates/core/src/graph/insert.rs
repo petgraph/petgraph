@@ -1,4 +1,4 @@
-use error_stack::Result;
+use error_stack::{Result, ResultExt};
 
 use crate::{
     attributes::{Attributes, NoValue},
@@ -7,9 +7,8 @@ use crate::{
     id::{ArbitraryGraphId, GraphId, ManagedGraphId},
     node::NodeMut,
     storage::GraphStorage,
+    Error,
 };
-
-// TODO: own error
 
 impl<S> Graph<S>
 where
@@ -39,11 +38,11 @@ where
     pub fn try_insert_node(
         &mut self,
         attributes: impl Into<Attributes<<S::NodeId as GraphId>::AttributeIndex, S::NodeWeight>>,
-    ) -> Result<NodeMut<S>, S::Error> {
+    ) -> Result<NodeMut<S>, Error> {
         let Attributes { id, weight } = attributes.into();
 
         let id = self.storage.next_node_id(id);
-        self.storage.insert_node(id, weight)
+        self.storage.insert_node(id, weight).change_context(Error)
     }
 
     /// Insert a node with the given attributes.
@@ -140,11 +139,11 @@ where
     pub fn try_insert_node_with(
         &mut self,
         weight: impl FnOnce(&S::NodeId) -> S::NodeWeight,
-    ) -> Result<NodeMut<S>, S::Error> {
+    ) -> Result<NodeMut<S>, Error> {
         let id = self.storage.next_node_id(NoValue::new());
         let weight = weight(&id);
 
-        self.storage.insert_node(id, weight)
+        self.storage.insert_node(id, weight).change_context(Error)
     }
 
     /// Insert a node, where the weight is dependent on the id.
@@ -212,7 +211,7 @@ where
         &mut self,
         id: S::NodeId,
         weight: S::NodeWeight,
-    ) -> Result<NodeMut<S>, S::Error> {
+    ) -> Result<NodeMut<S>, Error> {
         // we cannot use `if let` here due to limitations of the borrow checker
         if self.storage.contains_node(&id) {
             let mut node = self
@@ -224,7 +223,7 @@ where
 
             Ok(node)
         } else {
-            self.storage.insert_node(id, weight)
+            self.storage.insert_node(id, weight).change_context(Error)
         }
     }
 
@@ -275,11 +274,13 @@ where
         attributes: impl Into<Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>>,
         source: &S::NodeId,
         target: &S::NodeId,
-    ) -> Result<EdgeMut<S>, S::Error> {
+    ) -> Result<EdgeMut<S>, Error> {
         let Attributes { id, weight } = attributes.into();
 
         let id = self.storage.next_edge_id(id);
-        self.storage.insert_edge(id, weight, source, target)
+        self.storage
+            .insert_edge(id, weight, source, target)
+            .change_context(Error)
     }
 
     /// Insert an edge with the given attributes.
@@ -363,11 +364,13 @@ where
         weight: impl FnOnce(&S::EdgeId) -> S::EdgeWeight,
         source: &S::NodeId,
         target: &S::NodeId,
-    ) -> Result<EdgeMut<S>, S::Error> {
+    ) -> Result<EdgeMut<S>, Error> {
         let id = self.storage.next_edge_id(NoValue::new());
         let weight = weight(&id);
 
-        self.storage.insert_edge(id, weight, source, target)
+        self.storage
+            .insert_edge(id, weight, source, target)
+            .change_context(Error)
     }
 
     /// Insert an edge, where the weight is dependent on the id.
@@ -440,7 +443,7 @@ where
 
         source: &S::NodeId,
         target: &S::NodeId,
-    ) -> Result<EdgeMut<S>, S::Error> {
+    ) -> Result<EdgeMut<S>, Error> {
         if self.storage.contains_edge(&id) {
             let mut edge = self
                 .storage
@@ -451,7 +454,9 @@ where
 
             Ok(edge)
         } else {
-            self.storage.insert_edge(id, weight, source, target)
+            self.storage
+                .insert_edge(id, weight, source, target)
+                .change_context(Error)
         }
     }
 

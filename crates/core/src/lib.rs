@@ -126,6 +126,7 @@ pub mod base;
 #[deprecated(since = "0.1.0")]
 pub mod deprecated;
 pub mod edge;
+mod error;
 pub(crate) mod graph;
 pub mod id;
 pub mod node;
@@ -133,6 +134,7 @@ pub mod storage;
 
 pub use crate::{
     edge::{DetachedEdge, Edge, EdgeMut, GraphDirectionality},
+    error::Error,
     graph::Graph,
     id::{ArbitraryGraphId, GraphId, ManagedGraphId},
     node::{DetachedNode, Node, NodeMut},
