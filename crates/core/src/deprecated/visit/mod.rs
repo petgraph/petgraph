@@ -49,7 +49,7 @@
 //! | `NodeCompactIndexable`  | x     |             |    x     |             | x     |  x    |
 //! | `EdgeCount`             | x     |  x          |    x     | x           | x     |  x    |
 //! | `EdgeIndexable`         | x     |  x          |    x     |             |       |       |
-//! | Data                  | x     |  x          |    x     | x           | x     |  x    |
+//! | `Data`                  | x     |  x          |    x     | x           | x     |  x    |
 //! | `IntoNodeIdentifiers`   | x     |  x          |    x     | x           | x     |  x    |
 //! | `IntoNodeReferences`    | x     |  x          |    x     | x           | x     |  x    |
 //! | `IntoEdgeReferences`    | x     |  x          |    x     | x           | x     |  x    |
@@ -57,7 +57,7 @@
 //! | `IntoNeighborsDirected` | x     |  x          |    x     | x           |       |       |
 //! | `IntoEdges`             | x     |  x          |    x     | x           | x     |  x    |
 //! | `IntoEdgesDirected`     | x     |  x          |    x     | x           |       |       |
-//! | Visitable             | x     |  x          |    x     | x           | x     |  x    |
+//! | `Visitable`             | x     |  x          |    x     | x           | x     |  x    |
 //! | `GetAdjacencyMatrix`    | x     |  x          |    x     | x           | x     |  x    |
 
 // filter, reversed have their `mod` lines at the end,
@@ -83,10 +83,9 @@ use indexmap::IndexSet;
 pub use self::dfsvisit::*;
 #[cfg(feature = "alloc")]
 pub use self::traversal::*;
-use crate::{
-    deprecated::{edge::EdgeType, index::SafeCast},
-    edge::Direction,
-};
+#[cfg(feature = "fixedbitset")]
+use crate::deprecated::index::SafeCast;
+use crate::{deprecated::edge::EdgeType, edge::Direction};
 
 trait_template! {
 /// Base graph trait: defines the associated node identifier and

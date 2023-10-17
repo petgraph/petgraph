@@ -7,12 +7,13 @@ use fixedbitset::FixedBitSet;
 
 #[cfg(feature = "alloc")]
 use crate::deprecated::data::DataMap;
+#[cfg(any(feature = "fixedbitset", feature = "std"))]
+use crate::deprecated::visit::VisitMap;
 use crate::{
     deprecated::visit::{
         Data, EdgeIndexable, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
         IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-        IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, NodeRef, VisitMap,
-        Visitable,
+        IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, NodeRef, Visitable,
     },
     edge::Direction,
 };

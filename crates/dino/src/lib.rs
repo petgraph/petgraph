@@ -1,4 +1,108 @@
+//! # `petgraph-dino`: **D**irected and undirected **in**dex-**o**ptimized graphs.
+//!
+//! A general-purpose, powerful and efficient [`GraphStorage`] implementation that is designed to
+//! handle graphs with parallel edges and self-loops.
+//!
+//! ## Overview
+//!
+//! Graphs are a fundamental data structure in various domains, including, but not limited to,
+//! network analysis, computational biology, and social network analysis.
+//! This library is centered around the [`DinosaurStorage`] type, an implementation of the
+//! [`GraphStorage`] trait from [`petgraph-core`](petgraph_core),
+//! which offers powerful capabilities to manage both directed and undirected graphs with parallel
+//! edges and self-loops.
+//! Indices into the graph are stable and are managed by the graph itself, meaning that they cannot
+//! be freely chosen by the user.
+//! Convenient aliases are provided for directed and undirected graphs, namely [`DinoGraph`],
+//! [`DiDinoGraph`] for directed graphs, and [`UnDinoGraph`] for undirected graphs.
+//!
+//! [`DiDinoGraph`], and by extension [`DinosaurStorage`], are general purpose implementations,
+//! designed to cater to a wide range of graph-related applications and use cases.
+//!
+//! ## Features
+//!
+//! - **General-purpose**: [`DinosaurStorage`] is designed to cater to a wide range of graph-related
+//!   applications and use cases.
+//! - **Parallel edges**: [`DinosaurStorage`] supports parallel edges, i.e., multiple edges between
+//!   the same pair of nodes.
+//! - **Self-loops**: [`DinosaurStorage`] supports self-loops, i.e., edges that connect a node to
+//!   itself.
+//! - **Managed indices**: Indices into the graph are stable and are managed by the graph itself, so
+//!   they cannot be freely chosen by the user.
+//! - **Directed and undirected graphs**: [`DinosaurStorage`] supports both directed and undirected
+//!   graphs.
+//! - **Generational Arena**: Edges and nodes are stored in an generational arena modelled after the
+//!   excellent [`alot`] crate, which offers stable indices for a minimal overhead of two bytes per
+//!   entry.
+//! - **Compressed Bitmaps**: Using roaring bitmaps, `petgraph-dino` is able to efficiently store a
+//!   lookup of relationships and is able to query them in constant time, while using a minimal
+//!   amount of memory.
+//!
+//! ## Usage
+//!
+//! Add this to your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! petgraph-dino = "0.1.0"
+//! ```
+//!
+//! ## Examples
+//!
+//! ### Creating a graph
+//!
+//! ```rust
+//! use petgraph_core::{
+//!     edge::marker::{Directed, Undirected},
+//!     Graph,
+//! };
+//! use petgraph_dino::{DiDinoGraph, DinoGraph, DinosaurStorage, UnDinoGraph};
+//!
+//! // when inserting nodes and edges the weights can be inferred, in this case we're not doing that
+//! // so need to specify the types explicitly.
+//!
+//! let mut digraph = DiDinoGraph::<(), ()>::new();
+//! // or:
+//! let mut digraph = DinoGraph::<(), (), Directed>::new();
+//! // or:
+//! let mut digraph = Graph::<DinosaurStorage<(), (), Directed>>::new();
+//!
+//! let mut ungraph = UnDinoGraph::<(), ()>::new();
+//! // or:
+//! let mut ungraph = DinoGraph::<(), (), Undirected>::new();
+//! // or:
+//! let mut ungraph = Graph::<DinosaurStorage<(), (), Undirected>>::new();
+//! ```
+//!
+//! ### Inserting and removing nodes and edges
+//!
+//! ```
+//! use petgraph_dino::DiDinoGraph;
+//!
+//! let mut graph = DiDinoGraph::new();
+//!
+//! let a = *graph.insert_node("A").id();
+//! let b = *graph.insert_node("B").id();
+//! let c = *graph.insert_node("C").id();
+//!
+//! let ab = *graph.insert_edge("A → B", &a, &b).id();
+//! let bc = *graph.insert_edge("B → C", &b, &c).id();
+//! let ca = *graph.insert_edge("C → A", &c, &a).id();
+//!
+//! assert_eq!(graph.num_nodes(), 3);
+//! assert_eq!(graph.num_edges(), 3);
+//!
+//! assert_eq!(graph.remove_node(&a).unwrap().weight, "A");
+//!
+//! assert_eq!(graph.num_nodes(), 2);
+//! assert_eq!(graph.num_edges(), 1);
+//! ```
+//!
+//! ### Iterating over nodes and edges
+// TODO
+//!
 #![feature(return_position_impl_trait_in_trait)]
+#![warn(missing_docs)]
 #![no_std]
 
 pub(crate) mod closure;
@@ -31,10 +135,195 @@ use petgraph_core::{
 
 use crate::{closure::Closures, edge::Edge, node::Node, slab::Slab};
 
+/// Alias for a [`Graph`] that uses [`DinosaurStorage`] as its backing storage.
+///
+/// [`DinoGraph`] is a convenient alias for [`Graph`] that uses [`DinosaurStorage`] as its backing
+/// storage.
+///
+/// It allows you to work with graphs supporting parallel edges and self-loops, and both directed
+/// and undirected graphs.
+///
+/// # Type Parameters
+///
+/// - `N`: The type of the node weight.
+/// - `E`: The type of the edge weight.
+/// - `D`: The directionality of the graph, either [`Directed`] or [`Undirected`].
+///
+/// # Example
+///
+/// ```
+/// use petgraph_core::edge::marker::Directed;
+/// use petgraph_dino::DinoGraph;
+///
+/// #[derive(Debug)]
+/// struct Node;
+///
+/// #[derive(Debug)]
+/// struct Edge;
+///
+/// type Graph = DinoGraph<Node, Edge, Directed>;
+///
+/// let mut graph = Graph::new();
+///
+/// let a = *graph.insert_node(Node).id();
+/// let b = *graph.insert_node(Node).id();
+///
+/// let ab = *graph.insert_edge(Edge, &a, &b).id();
+/// ```
 pub type DinoGraph<N, E, D> = Graph<DinosaurStorage<N, E, D>>;
+
+/// Alias for a directed [`Graph`] that uses [`DinosaurStorage`] as its backing storage.
+///
+/// [`DiDinoGraph`] is a convenient alias for a directed [`Graph`] that uses [`DinosaurStorage`] as
+/// its backing storage.
+///
+/// It allows you to work with graphs supporting parallel edges and self-loops and directed edges
+/// only.
+///
+/// # Type Parameters
+///
+/// - `N`: The type of the node weight.
+/// - `E`: The type of the edge weight.
+///
+/// # Example
+///
+/// ```
+/// use petgraph_core::edge::marker::Directed;
+/// use petgraph_dino::DiDinoGraph;
+///
+/// #[derive(Debug)]
+/// struct Node;
+///
+/// #[derive(Debug)]
+/// struct Edge;
+///
+/// type Graph = DiDinoGraph<Node, Edge>;
+///
+/// let mut graph = Graph::new();
+///
+/// let a = *graph.insert_node(Node).id();
+/// let b = *graph.insert_node(Node).id();
+///
+/// let ab = *graph.insert_edge(Edge, &a, &b).id();
+/// ```
 pub type DiDinoGraph<N, E> = DinoGraph<N, E, Directed>;
+
+/// Alias for an undirected [`Graph`] that uses [`DinosaurStorage`] as its backing storage.
+///
+/// [`UnDinoGraph`] is a convenient alias for an undirected [`Graph`] that uses [`DinosaurStorage`]
+/// as its backing storage.
+///
+/// It allows you to work with graphs supporting parallel edges and self-loops and undirected edges
+/// only.
+///
+/// # Type Parameters
+///
+/// - `N`: The type of the node weight.
+/// - `E`: The type of the edge weight.
+///
+/// # Example
+///
+/// ```
+/// use petgraph_core::edge::marker::Directed;
+/// use petgraph_dino::UnDinoGraph;
+///
+/// #[derive(Debug)]
+/// struct Node;
+///
+/// #[derive(Debug)]
+/// struct Edge;
+///
+/// type Graph = UnDinoGraph<Node, Edge>;
+///
+/// let mut graph = Graph::new();
+///
+/// let a = *graph.insert_node(Node).id();
+/// let b = *graph.insert_node(Node).id();
+///
+/// let ab = *graph.insert_edge(Edge, &a, &b).id();
+/// ```
 pub type UnDinoGraph<N, E> = DinoGraph<N, E, Undirected>;
 
+/// [`GraphStorage`] implementation that supports parallel edges and self-loops.
+///
+/// It uses roaring bitmaps to efficiently store a lookup of relationships and is able to query them
+/// in constant time, while using a minimal amount of memory.
+/// Nodes and edges are stored in a generational arena modelled after the excellent [`alot`] crate,
+/// which offers stable indices for a minimal overhead of two bytes per entry.
+///
+/// # Type Parameters
+///
+/// - `N`: The type of the node weight.
+/// - `E`: The type of the edge weight.
+/// - `D`: The directionality of the graph, either [`Directed`] or [`Undirected`].
+///
+/// # Capabilities
+///
+/// > This is a template, which you should use to describe the capabilities of your graph storage
+/// > implementation.
+///
+/// | Capability       | Note              |
+/// |------------------|-------------------|
+/// | Node Identifiers | Managed           |
+/// | Edge Identifiers | Managed           |
+/// | Node Weights     | ✓                 |
+/// | Edge Weights     | ✓                 |
+/// | Parallel Edges   | ✓                 |
+/// | Self Loops       | ✓                 |
+///
+/// ## Space/Time Complexity
+///
+/// | Operation        | Time Complexity | Space Complexity |
+/// |------------------|-----------------|------------------|
+/// | Node By Id       | N/A             | N/A              |
+/// | Edge By Id       | N/A             | N/A              |
+/// | Edge Between     | N/A             | N/A              |
+/// | Contains Node    | N/A             | N/A              |
+/// | Contains Edge    | N/A             | N/A              |
+/// | Insert Node      | N/A             | N/A              |
+/// | Insert Edge      | N/A             | N/A              |
+/// | Remove Node      | N/A             | N/A              |
+/// | Remove Edge      | N/A             | N/A              |
+/// | Node Count       | N/A             | N/A              |
+/// | Edge Count       | N/A             | N/A              |
+/// | Node Iter        | N/A             | N/A              |
+/// | Edge Iter        | N/A             | N/A              |
+/// | Node Neighbours  | N/A             | N/A              |
+/// | Node Connections | N/A             | N/A              |
+/// | External Nodes   | N/A             | N/A              |
+///
+/// ### Directed Graphs
+///
+/// | Operation                     | Time Complexity | Space Complexity |
+/// |-------------------------------|-----------------|------------------|
+/// | Edge Between                  | N/A             | N/A              |
+/// | Directed Edge Neighbours      | N/A             | N/A              |
+/// | Undirected Edge Neighbours    | N/A             | N/A              |
+/// | Directed Edge Connections     | N/A             | N/A              |
+/// | Undirected Edge Connections   | N/A             | N/A              |
+///
+///
+/// # Example
+///
+/// ```
+/// use petgraph_core::edge::marker::Directed;
+/// use petgraph_dino::DinosaurStorage;
+///
+/// #[derive(Debug)]
+/// struct Node;
+///
+/// #[derive(Debug)]
+/// struct Edge;
+///
+/// type Graph = petgraph_core::Graph<DinosaurStorage<Node, Edge, Directed>>;
+///
+/// let mut graph = Graph::new();
+///
+/// let a = *graph.insert_node(Node).id();
+/// let b = *graph.insert_node(Node).id();
+///
+/// let ab = *graph.insert_edge(Edge, &a, &b).id();
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct DinosaurStorage<N, E, D = Directed>
 where
@@ -52,6 +341,16 @@ impl<N, E, D> DinosaurStorage<N, E, D>
 where
     D: GraphDirectionality,
 {
+    /// Creates a new, empty `DinosaurStorage`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::edge::marker::Directed;
+    /// use petgraph_dino::DinosaurStorage;
+    ///
+    /// let storage = DinosaurStorage::<(), (), Directed>::new();
+    /// ```
     #[must_use]
     pub fn new() -> Self {
         Self::with_capacity(None, None)
@@ -67,22 +366,48 @@ where
     }
 }
 
+/// Error type for [`DinosaurStorage`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum ExtinctionEvent {
+pub enum Error {
+    /// The requested node was not found.
     NodeNotFound,
+    /// The requested edge was not found.
     EdgeNotFound,
+    /// The given node id does not match the id of the just inserted node.
+    /// If this error occurs while using [`Graph`] this is most likely an internal error and
+    /// should've never happened.
+    /// Please report it.
+    InconsistentNodeId,
+    /// The given edge id does not match the id of the just inserted edge.
+    ///
+    /// If this error occurs while using [`Graph`] this is most likely an internal error and
+    /// should've never happened.
+    /// Please report it.
+    InconsistentEdgeId,
 }
 
-impl Display for ExtinctionEvent {
+impl Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::NodeNotFound => f.write_str("node not found"),
             Self::EdgeNotFound => f.write_str("edge not found"),
+            Self::InconsistentNodeId => f.write_str(
+                "The id of the inserted node is not the same as one returned by the insertion \
+                 operation, if you retrieved the id from `next_node_id`, and in between the two \
+                 functions calls you have not mutated the graph, then this is likely a bug in the \
+                 library, please report it.",
+            ),
+            Self::InconsistentEdgeId => f.write_str(
+                "The id of the inserted edge is not the same as one returned by the insertion \
+                 operation, if you retrieved the id from `next_edge_id`, and in between the two \
+                 functions calls you have not mutated the graph, then this is likely a bug in the \
+                 library, please report it.",
+            ),
         }
     }
 }
 
-impl Context for ExtinctionEvent {}
+impl Context for Error {}
 
 impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D>
 where
@@ -90,7 +415,7 @@ where
 {
     type EdgeId = EdgeId;
     type EdgeWeight = E;
-    type Error = ExtinctionEvent;
+    type Error = Error;
     type NodeId = NodeId;
     type NodeWeight = N;
 
@@ -178,19 +503,18 @@ where
         let expected = id;
         let id = self.nodes.insert(Node::new(expected, weight));
 
-        // TODO: we might want to make this `debug_assert_eq` or a warning.
-        assert_eq!(
-            id, expected,
-            "The id of the inserted node is not the same as one returned by the insertion \
-             operation, if you retrieved the id from `next_node_id`, and in between the two \
-             functions calls you have not mutated the graph, then this is likely a bug in the \
-             library, please report it."
-        );
+        if id != expected {
+            // delete the node we just inserted
+            // we don't need to update the closures, since we haven't added the node to them yet
+            self.nodes.remove(id);
+
+            return Err(Report::new(Error::InconsistentNodeId));
+        }
 
         let node = self
             .nodes
             .get_mut(id)
-            .ok_or_else(|| Report::new(ExtinctionEvent::NodeNotFound))?;
+            .ok_or_else(|| Report::new(Error::NodeNotFound))?;
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
 
@@ -228,19 +552,18 @@ where
             .edges
             .insert(Edge::new(expected, weight, source, target));
 
-        // TODO: we might want to make this `debug_assert_eq` or a warning.
-        assert_eq!(
-            id, expected,
-            "The id of the inserted edge is not the same as one returned by the insertion \
-             operation, if you retrieved the id from `next_edge_id`, and in between the two \
-             functions calls you have not mutated the graph, then this is likely a bug in the \
-             library, please report it."
-        );
+        if id != expected {
+            // delete the edge we just inserted
+            // we don't need to update the closures, since we haven't added the edge to them yet
+            self.edges.remove(id);
+
+            return Err(Report::new(Error::InconsistentEdgeId));
+        }
 
         let edge = self
             .edges
             .get_mut(id)
-            .ok_or_else(|| Report::new(ExtinctionEvent::EdgeNotFound))?;
+            .ok_or_else(|| Report::new(Error::EdgeNotFound))?;
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
 

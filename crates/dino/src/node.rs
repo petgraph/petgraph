@@ -11,6 +11,26 @@ use crate::{
     DinosaurStorage,
 };
 
+/// Identifier for a node in [`DinosaurStorage`].
+///
+/// [`NodeId`] is a unique identifier for a node in a [`DinosaurStorage`].
+/// It is used to reference nodes within the graph.
+///
+/// A [`NodeId`] is managed, meaning that it is chosen by the graph itself and not by the user.
+///
+/// [`NodeId`] implements [`GraphId`], [`ManagedGraphId`] and [`LinearGraphId`].
+///
+/// # Example
+///
+/// ```
+/// use petgraph_dino::DiDinoGraph;
+///
+/// let mut graph = DiDinoGraph::<_, u8>::new();
+///
+/// let a = *graph.insert_node("A").id();
+///
+/// println!("Node A: {a}");
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeId(EntryId);
 

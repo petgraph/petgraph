@@ -8,12 +8,13 @@ use bitvec::{boxed::BitBox, vec::BitVec};
 
 #[cfg(feature = "alloc")]
 use crate::deprecated::data::{Build, Create, DataMap, FromElements};
+#[cfg(feature = "fixedbitset")]
+use crate::deprecated::visit::GetAdjacencyMatrix;
 use crate::{
     deprecated::visit::{
-        Data, EdgeCount, EdgeIndexable, FilterEdge, FilterNode, GetAdjacencyMatrix, GraphBase,
-        IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
-        IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
-        VisitMap, Visitable,
+        Data, EdgeCount, EdgeIndexable, FilterEdge, FilterNode, GraphBase, IntoEdgeReferences,
+        IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
+        IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, VisitMap, Visitable,
     },
     edge::{Direction, Edge},
     graph::Graph,

@@ -452,21 +452,11 @@ mod tests {
 
     #[test]
     fn size_of_entry() {
-        // In theory we could make it smaller, but _shrug_
-        // 1 byte: generation
-        // 1 byte: padding
-        // State:
-        //  1 byte: variant
-        //  1 byte: padding
-        //  2 bytes: state
         // We could in theory remove 3 bytes by doing the following:
         //  1 byte: variant
         //  1 byte: generation
         // State: (union)
         //  2 bytes: state
-        // We would essentially lift up the state, but that would mean that we would have to use
-        // unsafe _everywhere_ for access, for only 3 bytes of saving. Those may be significant
-        // later on, but for now it's not worth it.
         assert_eq!(
             core::mem::size_of::<crate::slab::Entry<u16>>(),
             core::mem::size_of::<u16>() + core::mem::size_of::<u16>()

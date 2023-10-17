@@ -2,18 +2,16 @@
 name = "petgraph-dino"
 version = "0.1.0"
 edition = "2021"
-# INTERNAL CRATE ONLY - DO NOT PUBLISH
-publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-petgraph-core.workspace = true
+petgraph-core = { workspace = true, features = ['alloc'] }
 error-stack.workspace = true
-# TODO: potentially remove
-either = "1.9.0"
+
+either = "1.9.0" # TODO: potentially remove
+
+# Closures
 roaring = "0.10.2"
 fnv = { version = "1.0.7", default-features = false }
-bitvec = "1.0.1"
-
-hashbrown = {workspace = true, features = ['ahash'] }
+hashbrown = { workspace = true, features = ['ahash'] }

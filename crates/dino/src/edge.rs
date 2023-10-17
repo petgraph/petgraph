@@ -10,6 +10,29 @@ use crate::{
     DinosaurStorage,
 };
 
+/// Identifier for an edge in [`DinosaurStorage`].
+///
+/// [`EdgeId`] is a unique identifier for an edge in a [`DinosaurStorage`].
+/// It is used to reference edges within the graph.
+///
+/// An [`EdgeId`] is managed, meaning that it is chosen by the graph itself and not by the user.
+///
+/// [`EdgeId`] implements [`GraphId`], [`ManagedGraphId`] and [`LinearGraphId`].
+///
+/// # Example
+///
+/// ```
+/// use petgraph_dino::DiDinoGraph;
+///
+/// let mut graph = DiDinoGraph::new();
+///
+/// let a = *graph.insert_node("A").id();
+/// let b = *graph.insert_node("B").id();
+///
+/// let ab = *graph.insert_edge("A → B", &a, &b).id();
+///
+/// println!("Edge A → B: {ab}");
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeId(EntryId);
 
