@@ -8,7 +8,7 @@ use petgraph_core::{
     storage::GraphStorage,
 };
 
-use crate::{DinoGraph, DinosaurStorage, EdgeId, NodeId};
+use crate::{DinoGraph, DinoStorage, EdgeId, NodeId};
 
 #[test]
 fn empty() {
@@ -56,7 +56,7 @@ fn insert_edge() {
 
 #[test]
 fn next_node_id_pure() {
-    let mut storage = DinosaurStorage::<(), (), Directed>::new();
+    let mut storage = DinoStorage::<(), (), Directed>::new();
 
     let a = storage.next_node_id(NoValue::new());
     let b = storage.next_node_id(NoValue::new());
@@ -75,7 +75,7 @@ fn next_node_id_pure() {
 
 #[test]
 fn next_edge_id_pure() {
-    let mut storage = DinosaurStorage::<(), (), Directed>::new();
+    let mut storage = DinoStorage::<(), (), Directed>::new();
 
     let node = storage
         .insert_node(storage.next_node_id(NoValue::new()), ())

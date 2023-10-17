@@ -48,18 +48,18 @@ use crate::{
 ///     edge::marker::{Directed, Undirected},
 ///     Graph, GraphStorage,
 /// };
-/// use petgraph_dino::{DiDinoGraph, DinoGraph, DinosaurStorage, UnDinoGraph};
+/// use petgraph_dino::{DiDinoGraph, DinoGraph, DinoStorage, UnDinoGraph};
 ///
 /// // we're using explicit generics here to illustrate the difference more clearly, but also
 /// // because we do not insert/remove any nodes or edges, which means we cannot infer those types.
 ///
-/// let digraph = Graph::<DinosaurStorage<u8, u8, Directed>>::new();
+/// let digraph = Graph::<DinoStorage<u8, u8, Directed>>::new();
 /// // ^ same as:
 /// let digraph = DinoGraph::<u8, u8, Directed>::new();
 /// // ^ same as:
 /// let digraph = DiDinoGraph::<u8, u8>::new();
 ///
-/// let ungraph = Graph::<DinosaurStorage<u8, u8, Undirected>>::new();
+/// let ungraph = Graph::<DinoStorage<u8, u8, Undirected>>::new();
 /// // ^ same as:
 /// let ungraph = DinoGraph::<u8, u8, Undirected>::new();
 /// // ^ same as:
@@ -102,9 +102,9 @@ where
     ///     edge::marker::{Directed, Undirected},
     ///     Graph, GraphStorage,
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let storage = DinosaurStorage::<u8, u8, Directed>::with_capacity(None, None);
+    /// let storage = DinoStorage::<u8, u8, Directed>::with_capacity(None, None);
     /// let graph = Graph::new_in(storage);
     /// // ^ this is the same as `Graph::new()`
     /// # assert_eq!(graph.num_nodes(), 0);
@@ -123,9 +123,9 @@ where
     ///
     /// ```
     /// use petgraph_core::{edge::marker::Undirected, Graph};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let graph = Graph::<DinosaurStorage<u8, u8, Undirected>>::new();
+    /// let graph = Graph::<DinoStorage<u8, u8, Undirected>>::new();
     /// # assert_eq!(graph.num_nodes(), 0);
     /// # assert_eq!(graph.num_edges(), 0);
     /// ```
@@ -145,9 +145,9 @@ where
     ///
     /// ```
     /// use petgraph_core::{edge::marker::Undirected, Graph};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let graph = Graph::<DinosaurStorage<u8, u8, Undirected>>::with_capacity(Some(16), Some(16));
+    /// let graph = Graph::<DinoStorage<u8, u8, Undirected>>::with_capacity(Some(16), Some(16));
     /// # assert_eq!(graph.num_nodes(), 0);
     /// # assert_eq!(graph.num_edges(), 0);
     /// ```
@@ -165,9 +165,9 @@ where
     ///     edge::marker::{Directed, Undirected},
     ///     Graph, GraphStorage,
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let storage = DinosaurStorage::<u8, u8, Directed>::with_capacity(None, None);
+    /// let storage = DinoStorage::<u8, u8, Directed>::with_capacity(None, None);
     /// let graph = Graph::new_in(storage);
     ///
     /// assert_eq!(graph.storage().num_nodes(), 0);
@@ -186,9 +186,9 @@ where
     ///     edge::marker::{Directed, Undirected},
     ///     Graph, GraphStorage,
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let storage = DinosaurStorage::<u8, u8, Directed>::with_capacity(None, None);
+    /// let storage = DinoStorage::<u8, u8, Directed>::with_capacity(None, None);
     /// let graph = Graph::new_in(storage);
     ///
     /// let storage = graph.into_storage();

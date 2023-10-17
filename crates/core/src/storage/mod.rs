@@ -104,9 +104,9 @@ use crate::{
 ///
 /// ```
 /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-/// use petgraph_dino::DinosaurStorage;
+/// use petgraph_dino::DinoStorage;
 ///
-/// let mut storage = DinosaurStorage::<(), (), Directed>::new();
+/// let mut storage = DinoStorage::<(), (), Directed>::new();
 /// # assert_eq!(storage.num_nodes(), 0);
 /// # assert_eq!(storage.num_edges(), 0);
 /// ```
@@ -223,9 +223,9 @@ pub trait GraphStorage: Sized {
     ///
     /// ```
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::{DiDinoGraph, DinosaurStorage};
+    /// use petgraph_dino::{DiDinoGraph, DinoStorage};
     ///
-    /// let storage = DinosaurStorage::<(), (), Directed>::new();
+    /// let storage = DinoStorage::<(), (), Directed>::new();
     /// # assert_eq!(storage.num_nodes(), 0);
     /// # assert_eq!(storage.num_edges(), 0);
     ///
@@ -256,9 +256,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// # let id = storage.next_node_id(NoValue::new());
     /// let a = *storage.insert_node(id, 1).unwrap().id();
@@ -274,7 +274,7 @@ pub trait GraphStorage: Sized {
     ///
     /// let (nodes, edges) = storage.into_parts();
     ///
-    /// let storage = DinosaurStorage::<_, _, Directed>::from_parts(nodes, edges).unwrap();
+    /// let storage = DinoStorage::<_, _, Directed>::from_parts(nodes, edges).unwrap();
     ///
     /// assert_eq!(storage.num_nodes(), 2);
     /// assert_eq!(storage.num_edges(), 1);
@@ -359,9 +359,9 @@ pub trait GraphStorage: Sized {
     ///
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// # let id = storage.next_node_id(NoValue::new());
     /// let a = *storage.insert_node(id, 1).unwrap().id();
@@ -399,9 +399,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// # use petgraph_core::attributes::NoValue;
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<(), (), Directed>::new();
+    /// let mut storage = DinoStorage::<(), (), Directed>::new();
     ///
     /// # let id = storage.next_node_id(NoValue::new());
     /// storage.insert_node(id, ()).unwrap();
@@ -431,9 +431,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
     /// # use petgraph_core::attributes::NoValue;
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<(), (), Directed>::new();
+    /// let mut storage = DinoStorage::<(), (), Directed>::new();
     ///
     /// # let id = storage.next_node_id(NoValue::new());
     /// # let a = *storage.insert_node(id, ()).unwrap().id();
@@ -472,11 +472,11 @@ pub trait GraphStorage: Sized {
     ///
     /// ```
     /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<(), (), Directed>::new();
+    /// let mut storage = DinoStorage::<(), (), Directed>::new();
     ///
-    /// // `DinosaurStorage` uses `ManagedGraphId` for both node and edge identifiers,
+    /// // `DinoStorage` uses `ManagedGraphId` for both node and edge identifiers,
     /// // so we must use `NoValue` here.
     /// let a = storage.next_node_id(NoValue::new());
     /// let b = storage.next_node_id(NoValue::new());
@@ -519,11 +519,11 @@ pub trait GraphStorage: Sized {
     ///
     /// ```
     /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, (), Directed>::new();
+    /// let mut storage = DinoStorage::<u8, (), Directed>::new();
     ///
-    /// // `DinosaurStorage` uses `ManagedGraphId` for both node and edge identifiers,
+    /// // `DinoStorage` uses `ManagedGraphId` for both node and edge identifiers,
     /// // so we must use `NoValue` here.
     /// let id = storage.next_node_id(NoValue::new());
     /// storage.insert_node(id, 1).unwrap();
@@ -555,11 +555,11 @@ pub trait GraphStorage: Sized {
     ///
     /// ```
     /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, (), Directed>::new();
+    /// let mut storage = DinoStorage::<u8, (), Directed>::new();
     ///
-    /// // `DinosaurStorage` uses `ManagedGraphId` for both node and edge identifiers,
+    /// // `DinoStorage` uses `ManagedGraphId` for both node and edge identifiers,
     /// // so we must use `NoValue` here.
     /// let id = storage.next_node_id(NoValue::new());
     /// storage.insert_node(id, 1).unwrap();
@@ -585,9 +585,9 @@ pub trait GraphStorage: Sized {
     ///
     /// ```
     /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// # storage.insert_node(a, 1).unwrap();
@@ -595,7 +595,7 @@ pub trait GraphStorage: Sized {
     /// # let b = storage.next_node_id(NoValue::new());
     /// # storage.insert_node(b, 2).unwrap();
     ///
-    /// // `DinosaurStorage` uses `ManagedGraphId` for both node and edge identifiers,
+    /// // `DinoStorage` uses `ManagedGraphId` for both node and edge identifiers,
     /// // so we must use `NoValue` here.
     /// let id = storage.next_edge_id(NoValue::new());
     /// storage.insert_edge(id, 3, &a, &b).unwrap();
@@ -634,9 +634,9 @@ pub trait GraphStorage: Sized {
     ///
     /// ```
     /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -653,9 +653,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -695,9 +695,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -726,9 +726,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -758,9 +758,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -785,9 +785,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -808,9 +808,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -841,9 +841,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -883,9 +883,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -916,9 +916,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -953,9 +953,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1016,9 +1016,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1070,9 +1070,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1114,9 +1114,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1156,9 +1156,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1204,9 +1204,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1270,9 +1270,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1315,9 +1315,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1352,9 +1352,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1392,9 +1392,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1422,9 +1422,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1459,9 +1459,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1494,9 +1494,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -1536,9 +1536,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// storage.reserve(16, 16);
     /// ```
@@ -1562,9 +1562,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// storage.reserve_nodes(16);
     /// ```
@@ -1587,9 +1587,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// storage.reserve_edges(16);
     /// ```
@@ -1614,9 +1614,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// storage.reserve_exact(16, 16);
     /// ```
@@ -1645,9 +1645,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// storage.reserve_exact_nodes(16);
     /// ```
@@ -1674,9 +1674,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// storage.reserve_exact_edges(16);
     /// ```
@@ -1700,9 +1700,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// storage.reserve(16, 16);
     /// storage.shrink_to_fit();
@@ -1729,9 +1729,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// storage.reserve_nodes(16);
     /// storage.shrink_to_fit_nodes();
@@ -1755,9 +1755,9 @@ pub trait GraphStorage: Sized {
     /// ```
     /// # use petgraph_core::attributes::NoValue;
     /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     ///
     /// storage.reserve_edges(16);
     /// storage.shrink_to_fit_edges();

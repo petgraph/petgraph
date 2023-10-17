@@ -5,9 +5,9 @@ use petgraph_core::{
     storage::{DirectedGraphStorage, GraphStorage},
 };
 
-use crate::{DinosaurStorage, Directed};
+use crate::{DinoStorage, Directed};
 
-impl<N, E> DirectedGraphStorage for DinosaurStorage<N, E, Directed> {
+impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
     fn directed_edges_between<'a: 'b, 'b>(
         &'a self,
         source: &'b Self::NodeId,

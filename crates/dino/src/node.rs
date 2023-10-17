@@ -8,12 +8,12 @@ use petgraph_core::{
 
 use crate::{
     slab::{EntryId, Key, SlabIndexMapper},
-    DinosaurStorage,
+    DinoStorage,
 };
 
-/// Identifier for a node in [`DinosaurStorage`].
+/// Identifier for a node in [`DinoStorage`].
 ///
-/// [`NodeId`] is a unique identifier for a node in a [`DinosaurStorage`].
+/// [`NodeId`] is a unique identifier for a node in a [`DinoStorage`].
 /// It is used to reference nodes within the graph.
 ///
 /// A [`NodeId`] is managed, meaning that it is chosen by the graph itself and not by the user.
@@ -54,13 +54,13 @@ impl GraphId for NodeId {
     type AttributeIndex = NoValue;
 }
 
-impl<N, E, D> LinearGraphId<DinosaurStorage<N, E, D>> for NodeId
+impl<N, E, D> LinearGraphId<DinoStorage<N, E, D>> for NodeId
 where
     D: GraphDirectionality,
 {
     type Mapper<'a> = SlabIndexMapper<'a, Self> where Self: 'a, N: 'a, E: 'a;
 
-    fn index_mapper(storage: &DinosaurStorage<N, E, D>) -> Self::Mapper<'_> {
+    fn index_mapper(storage: &DinoStorage<N, E, D>) -> Self::Mapper<'_> {
         SlabIndexMapper::new(&storage.nodes)
     }
 }

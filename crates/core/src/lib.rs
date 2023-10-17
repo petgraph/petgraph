@@ -58,9 +58,9 @@
 //!
 //! ```rust
 //! use petgraph_core::{edge::marker::Directed, Graph};
-//! use petgraph_dino::DinosaurStorage;
+//! use petgraph_dino::DinoStorage;
 //!
-//! let mut graph = Graph::<DinosaurStorage<_, _, Directed>>::new();
+//! let mut graph = Graph::<DinoStorage<_, _, Directed>>::new();
 //! // ^ a more convenient alias `DiDinoGraph` exists.
 //!
 //! // Add some nodes to the graph.

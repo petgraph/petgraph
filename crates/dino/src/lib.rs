@@ -7,7 +7,7 @@
 //!
 //! Graphs are a fundamental data structure in various domains, including, but not limited to,
 //! network analysis, computational biology, and social network analysis.
-//! This library is centered around the [`DinosaurStorage`] type, an implementation of the
+//! This library is centered around the [`DinoStorage`] type, an implementation of the
 //! [`GraphStorage`] trait from [`petgraph-core`](petgraph_core),
 //! which offers powerful capabilities to manage both directed and undirected graphs with parallel
 //! edges and self-loops.
@@ -16,20 +16,20 @@
 //! Convenient aliases are provided for directed and undirected graphs, namely [`DinoGraph`],
 //! [`DiDinoGraph`] for directed graphs, and [`UnDinoGraph`] for undirected graphs.
 //!
-//! [`DiDinoGraph`], and by extension [`DinosaurStorage`], are general purpose implementations,
+//! [`DiDinoGraph`], and by extension [`DinoStorage`], are general purpose implementations,
 //! designed to cater to a wide range of graph-related applications and use cases.
 //!
 //! ## Features
 //!
-//! - **General-purpose**: [`DinosaurStorage`] is designed to cater to a wide range of graph-related
+//! - **General-purpose**: [`DinoStorage`] is designed to cater to a wide range of graph-related
 //!   applications and use cases.
-//! - **Parallel edges**: [`DinosaurStorage`] supports parallel edges, i.e., multiple edges between
-//!   the same pair of nodes.
-//! - **Self-loops**: [`DinosaurStorage`] supports self-loops, i.e., edges that connect a node to
+//! - **Parallel edges**: [`DinoStorage`] supports parallel edges, i.e., multiple edges between the
+//!   same pair of nodes.
+//! - **Self-loops**: [`DinoStorage`] supports self-loops, i.e., edges that connect a node to
 //!   itself.
 //! - **Managed indices**: Indices into the graph are stable and are managed by the graph itself, so
 //!   they cannot be freely chosen by the user.
-//! - **Directed and undirected graphs**: [`DinosaurStorage`] supports both directed and undirected
+//! - **Directed and undirected graphs**: [`DinoStorage`] supports both directed and undirected
 //!   graphs.
 //! - **Generational Arena**: Edges and nodes are stored in an generational arena modelled after the
 //!   excellent [`alot`] crate, which offers stable indices for a minimal overhead of two bytes per
@@ -56,7 +56,7 @@
 //!     edge::marker::{Directed, Undirected},
 //!     Graph,
 //! };
-//! use petgraph_dino::{DiDinoGraph, DinoGraph, DinosaurStorage, UnDinoGraph};
+//! use petgraph_dino::{DiDinoGraph, DinoGraph, DinoStorage, UnDinoGraph};
 //!
 //! // when inserting nodes and edges the weights can be inferred, in this case we're not doing that
 //! // so need to specify the types explicitly.
@@ -65,13 +65,13 @@
 //! // or:
 //! let mut digraph = DinoGraph::<(), (), Directed>::new();
 //! // or:
-//! let mut digraph = Graph::<DinosaurStorage<(), (), Directed>>::new();
+//! let mut digraph = Graph::<DinoStorage<(), (), Directed>>::new();
 //!
 //! let mut ungraph = UnDinoGraph::<(), ()>::new();
 //! // or:
 //! let mut ungraph = DinoGraph::<(), (), Undirected>::new();
 //! // or:
-//! let mut ungraph = Graph::<DinosaurStorage<(), (), Undirected>>::new();
+//! let mut ungraph = Graph::<DinoStorage<(), (), Undirected>>::new();
 //! ```
 //!
 //! ### Inserting and removing nodes and edges
@@ -135,9 +135,9 @@ use petgraph_core::{
 
 use crate::{closure::Closures, edge::Edge, node::Node, slab::Slab};
 
-/// Alias for a [`Graph`] that uses [`DinosaurStorage`] as its backing storage.
+/// Alias for a [`Graph`] that uses [`DinoStorage`] as its backing storage.
 ///
-/// [`DinoGraph`] is a convenient alias for [`Graph`] that uses [`DinosaurStorage`] as its backing
+/// [`DinoGraph`] is a convenient alias for [`Graph`] that uses [`DinoStorage`] as its backing
 /// storage.
 ///
 /// It allows you to work with graphs supporting parallel edges and self-loops, and both directed
@@ -170,11 +170,11 @@ use crate::{closure::Closures, edge::Edge, node::Node, slab::Slab};
 ///
 /// let ab = *graph.insert_edge(Edge, &a, &b).id();
 /// ```
-pub type DinoGraph<N, E, D> = Graph<DinosaurStorage<N, E, D>>;
+pub type DinoGraph<N, E, D> = Graph<DinoStorage<N, E, D>>;
 
-/// Alias for a directed [`Graph`] that uses [`DinosaurStorage`] as its backing storage.
+/// Alias for a directed [`Graph`] that uses [`DinoStorage`] as its backing storage.
 ///
-/// [`DiDinoGraph`] is a convenient alias for a directed [`Graph`] that uses [`DinosaurStorage`] as
+/// [`DiDinoGraph`] is a convenient alias for a directed [`Graph`] that uses [`DinoStorage`] as
 /// its backing storage.
 ///
 /// It allows you to work with graphs supporting parallel edges and self-loops and directed edges
@@ -208,9 +208,9 @@ pub type DinoGraph<N, E, D> = Graph<DinosaurStorage<N, E, D>>;
 /// ```
 pub type DiDinoGraph<N, E> = DinoGraph<N, E, Directed>;
 
-/// Alias for an undirected [`Graph`] that uses [`DinosaurStorage`] as its backing storage.
+/// Alias for an undirected [`Graph`] that uses [`DinoStorage`] as its backing storage.
 ///
-/// [`UnDinoGraph`] is a convenient alias for an undirected [`Graph`] that uses [`DinosaurStorage`]
+/// [`UnDinoGraph`] is a convenient alias for an undirected [`Graph`] that uses [`DinoStorage`]
 /// as its backing storage.
 ///
 /// It allows you to work with graphs supporting parallel edges and self-loops and undirected edges
@@ -307,7 +307,7 @@ pub type UnDinoGraph<N, E> = DinoGraph<N, E, Undirected>;
 ///
 /// ```
 /// use petgraph_core::edge::marker::Directed;
-/// use petgraph_dino::DinosaurStorage;
+/// use petgraph_dino::DinoStorage;
 ///
 /// #[derive(Debug)]
 /// struct Node;
@@ -315,7 +315,7 @@ pub type UnDinoGraph<N, E> = DinoGraph<N, E, Undirected>;
 /// #[derive(Debug)]
 /// struct Edge;
 ///
-/// type Graph = petgraph_core::Graph<DinosaurStorage<Node, Edge, Directed>>;
+/// type Graph = petgraph_core::Graph<DinoStorage<Node, Edge, Directed>>;
 ///
 /// let mut graph = Graph::new();
 ///
@@ -325,7 +325,7 @@ pub type UnDinoGraph<N, E> = DinoGraph<N, E, Undirected>;
 /// let ab = *graph.insert_edge(Edge, &a, &b).id();
 /// ```
 #[derive(Debug, Clone, PartialEq)]
-pub struct DinosaurStorage<N, E, D = Directed>
+pub struct DinoStorage<N, E, D = Directed>
 where
     D: GraphDirectionality,
 {
@@ -337,19 +337,19 @@ where
     _marker: core::marker::PhantomData<fn() -> *const D>,
 }
 
-impl<N, E, D> DinosaurStorage<N, E, D>
+impl<N, E, D> DinoStorage<N, E, D>
 where
     D: GraphDirectionality,
 {
-    /// Creates a new, empty `DinosaurStorage`.
+    /// Creates a new, empty [`DinoStorage`].
     ///
     /// # Example
     ///
     /// ```
     /// use petgraph_core::edge::marker::Directed;
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let storage = DinosaurStorage::<(), (), Directed>::new();
+    /// let storage = DinoStorage::<(), (), Directed>::new();
     /// ```
     #[must_use]
     pub fn new() -> Self {
@@ -357,7 +357,7 @@ where
     }
 }
 
-impl<N, E, D> Default for DinosaurStorage<N, E, D>
+impl<N, E, D> Default for DinoStorage<N, E, D>
 where
     D: GraphDirectionality,
 {
@@ -366,7 +366,7 @@ where
     }
 }
 
-/// Error type for [`DinosaurStorage`].
+/// Error type for [`DinoStorage`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Error {
     /// The requested node was not found.
@@ -409,7 +409,7 @@ impl Display for Error {
 
 impl Context for Error {}
 
-impl<N, E, D> GraphStorage for DinosaurStorage<N, E, D>
+impl<N, E, D> GraphStorage for DinoStorage<N, E, D>
 where
     D: GraphDirectionality,
 {

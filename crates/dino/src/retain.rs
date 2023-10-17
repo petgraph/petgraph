@@ -5,9 +5,9 @@ use petgraph_core::{
 };
 use roaring::RoaringBitmap;
 
-use crate::{slab::Key, DinosaurStorage};
+use crate::{slab::Key, DinoStorage};
 
-impl<N, E, D> RetainableGraphStorage for DinosaurStorage<N, E, D>
+impl<N, E, D> RetainableGraphStorage for DinoStorage<N, E, D>
 where
     D: GraphDirectionality,
 {

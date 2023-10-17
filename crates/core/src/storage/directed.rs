@@ -23,9 +23,9 @@ use crate::{
 ///
 /// ```
 /// use petgraph_core::{edge::marker::Directed, storage::GraphStorage};
-/// use petgraph_dino::DinosaurStorage;
+/// use petgraph_dino::DinoStorage;
 ///
-/// let mut storage = DinosaurStorage::<(), Directed>::new();
+/// let mut storage = DinoStorage::<(), Directed>::new();
 /// # assert_eq!(storage.num_nodes(), 0);
 /// # assert_eq!(storage.num_edges(), 0);
 /// ```
@@ -45,9 +45,9 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///     edge::marker::Directed,
     ///     storage::{DirectedGraphStorage, GraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -96,9 +96,9 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///     edge::marker::Directed,
     ///     storage::{DirectedGraphStorage, GraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -157,9 +157,9 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///     edge::{marker::Directed, Direction},
     ///     storage::{DirectedGraphStorage, GraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -215,9 +215,9 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///     edge::{marker::Directed, Direction},
     ///     storage::{DirectedGraphStorage, GraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -261,9 +261,9 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///     edge::{marker::Directed, Direction},
     ///     storage::{DirectedGraphStorage, GraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -306,9 +306,9 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///     edge::{marker::Directed, Direction},
     ///     storage::{DirectedGraphStorage, GraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();
@@ -378,9 +378,9 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///     edge::{marker::Directed, Direction},
     ///     storage::{DirectedGraphStorage, GraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<u8, u8, Directed>::new();
+    /// let mut storage = DinoStorage::<u8, u8, Directed>::new();
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
     /// storage.insert_node(a, 1).unwrap();

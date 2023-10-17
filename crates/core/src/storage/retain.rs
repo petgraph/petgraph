@@ -21,9 +21,9 @@ pub trait RetainableGraphStorage: GraphStorage {
     ///     edge::marker::Directed,
     ///     storage::{GraphStorage, RetainableGraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<_, _, Directed>::new();
+    /// let mut storage = DinoStorage::<_, _, Directed>::new();
     ///
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
@@ -75,9 +75,9 @@ pub trait RetainableGraphStorage: GraphStorage {
     ///     edge::marker::Directed,
     ///     storage::{GraphStorage, RetainableGraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<_, _, Directed>::new();
+    /// let mut storage = DinoStorage::<_, _, Directed>::new();
     ///
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
@@ -119,9 +119,9 @@ pub trait RetainableGraphStorage: GraphStorage {
     ///     edge::marker::Directed,
     ///     storage::{GraphStorage, RetainableGraphStorage},
     /// };
-    /// use petgraph_dino::DinosaurStorage;
+    /// use petgraph_dino::DinoStorage;
     ///
-    /// let mut storage = DinosaurStorage::<_, _, Directed>::new();
+    /// let mut storage = DinoStorage::<_, _, Directed>::new();
     ///
     /// #
     /// # let a = storage.next_node_id(NoValue::new());
