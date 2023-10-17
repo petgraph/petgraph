@@ -27,6 +27,9 @@ use crate::id::ArbitraryGraphId;
 /// The existence of this type is under stability guarantee, meaning that it will only be removed or
 /// renamed according to `SemVer`, but the internals, such as layout or size, are not.
 /// This includes the construction method.
+///
+/// [`Graph::insert_node`]: crate::graph::Graph::insert_node
+/// [`Graph::insert_edge`]: crate::graph::Graph::insert_edge
 pub struct NoValue(());
 
 impl NoValue {
@@ -52,6 +55,9 @@ impl NoValue {
 /// implementation via `graph.insert_node(<weight>)` or `graph.insert_node((<weight>,))` for a
 /// [`ManagedGraphId`] or `graph.insert_node((<id>, <weight>))` for an [`ArbitraryGraphId`].
 /// This also applies for `insert_edge`.
+///
+/// [`Graph`]: crate::graph::Graph
+/// [`ManagedGraphId`]: crate::id::ManagedGraphId
 pub struct Attributes<I, W> {
     pub(crate) id: I,
     pub(crate) weight: W,

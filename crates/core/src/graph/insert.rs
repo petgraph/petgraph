@@ -17,7 +17,7 @@ where
 {
     /// Try to insert a node with the given attributes.
     ///
-    /// This is the fallible version of [`insert_node`].
+    /// This is the fallible version of [`Self::insert_node`].
     ///
     /// # Example
     ///
@@ -72,7 +72,8 @@ where
     /// The reason is that some storage types might not be able to guarantee that the node can be
     /// inserted, but we still want to provide a convenient way to insert a node.
     /// Another reason is that this mirrors the API of other libraries and the std, such as the
-    /// standard library (through [`alloc::Vec::push`], or [`std::collections::HashMap::insert`]).
+    /// standard library (through [`alloc::vec::Vec::push`], or
+    /// [`std::collections::HashMap::insert`]).
     /// These may also panic and do not return a result.
     /// But(!) it is important to note that the constraints and reason why they may panic are quite
     /// different from the ones of a Graph, as the ones of a Graph can be considered a superset.

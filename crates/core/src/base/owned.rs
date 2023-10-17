@@ -8,6 +8,8 @@ use core::{
 ///
 /// This is analogous to [`Cow`], but without the `ToOwned` trait requirement (and therefore without
 /// the `alloc` requirement).
+///
+/// [`Cow`]: alloc::borrow::Cow
 #[derive(Debug, Copy, Clone)]
 pub enum MaybeOwned<'a, T> {
     /// A borrowed value.

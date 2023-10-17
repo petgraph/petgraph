@@ -72,7 +72,7 @@ pub trait IndexMapper<From, To> {
     ///
     /// This **must** be pure and **must** return a valid value for any `From` value.
     /// This might mutate the internal state of the mapper.
-    ///
+    // TODO: bad example! (misleading)
     /// # Example
     ///
     /// ```
@@ -98,7 +98,7 @@ pub trait IndexMapper<From, To> {
     ///
     /// This **must** be pure, but **may** return `None` if the value has not been [`Self::map`]ped
     /// previously.
-    ///
+    // TODO: bad example! (misleading)
     /// # Example
     ///
     /// ```
@@ -125,6 +125,7 @@ pub trait IndexMapper<From, To> {
     /// exist, or is a hole in the `To` value range).
     ///
     /// # Example
+    // TODO: bad example! (misleading)
     ///
     /// ```
     /// use petgraph_core::{

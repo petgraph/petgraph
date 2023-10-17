@@ -555,7 +555,7 @@ where
     /// must be valid in the given `storage` for the specified `id`.
     ///
     /// [`Graph::edge_mut`]: crate::graph::Graph::edge_mut
-    /// [`Graph::insert_node`]: crate::graph::Graph::insert_node
+    /// [`Graph::insert_edge`]: crate::graph::Graph::insert_edge
     pub fn new(
         id: &'a S::EdgeId,
         weight: &'a mut S::EdgeWeight,
@@ -752,6 +752,8 @@ where
     /// assert_eq!(edge.id, ab);
     /// assert_eq!(edge.weight, "A → B");
     /// ```
+    ///
+    /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
     pub fn detach(self) -> DetachedStorageEdge<S> {
         DetachedEdge::new(
@@ -792,11 +794,15 @@ where
 /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DetachedEdge<E, N, W> {
+    /// The unique id of the edge.
     pub id: E,
 
+    /// The `u` endpoint of the `(u, v)` pair of endpoints.
     pub u: N,
+    /// The `v` endpoint of the `(u, v)` pair of endpoints.
     pub v: N,
 
+    /// The weight of the edge.
     pub weight: W,
 }
 

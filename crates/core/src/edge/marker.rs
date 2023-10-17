@@ -9,6 +9,8 @@
 //! The core [`Graph`] makes no use of these types, but these types are provided to ease development
 //! (and unify the API surface) of implementations, that might need to indicate the directionality
 //! of their implementation.
+//!
+//! [`Graph`]: crate::graph::Graph
 mod sealed {
     pub trait Sealed: Copy + 'static {}
 

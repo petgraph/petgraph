@@ -31,6 +31,8 @@ pub trait GraphId: PartialEq {
     /// inference on weights via the [`Attributes`] type.
     ///
     /// There are essentially two valid values for this type: [`NoValue`] and `Self`.
+    ///
+    /// [`Attributes`]: crate::attributes::Attributes
     type AttributeIndex;
 }
 
