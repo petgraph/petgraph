@@ -72,7 +72,7 @@ pub trait IndexMapper<From, To> {
     ///
     /// This **must** be pure and **must** return a valid value for any `From` value.
     /// This might mutate the internal state of the mapper.
-    // TODO: bad example! (misleading)
+    ///
     /// # Example
     ///
     /// ```
@@ -89,8 +89,7 @@ pub trait IndexMapper<From, To> {
     ///
     /// // The mapping is highly dependent on the implementation, but should be consistent.
     /// // The order for which node maps to which value is not guaranteed.
-    /// assert_eq!(mapper.map(&a), 0);
-    /// assert_eq!(mapper.map(&b), 1);
+    /// assert_ne!(mapper.map(&a), mapper.map(&b));
     /// ```
     fn map(&mut self, from: &From) -> To;
 
@@ -98,7 +97,7 @@ pub trait IndexMapper<From, To> {
     ///
     /// This **must** be pure, but **may** return `None` if the value has not been [`Self::map`]ped
     /// previously.
-    // TODO: bad example! (misleading)
+    ///
     /// # Example
     ///
     /// ```
@@ -113,8 +112,8 @@ pub trait IndexMapper<From, To> {
     ///
     /// let mut mapper = NodeId::index_mapper(graph.storage());
     ///
-    /// assert_eq!(mapper.map(&a), 0);
-    /// assert_eq!(mapper.lookup(&a), Some(0));
+    /// let mapped = mapper.map(&a);
+    /// assert_eq!(mapper.lookup(&a), Some(mapped));
     /// ```
     fn lookup(&self, from: &From) -> Option<To>;
 
@@ -125,7 +124,6 @@ pub trait IndexMapper<From, To> {
     /// exist, or is a hole in the `To` value range).
     ///
     /// # Example
-    // TODO: bad example! (misleading)
     ///
     /// ```
     /// use petgraph_core::{
@@ -142,7 +140,8 @@ pub trait IndexMapper<From, To> {
     ///
     /// let mut mapper = NodeId::index_mapper(graph.storage());
     ///
-    /// assert_eq!(mapper.reverse(&0), Some(MaybeOwned::Borrowed(&a)));
+    /// let mapped = mapper.map(&a);
+    /// assert_eq!(mapper.reverse(&mapped), Some(MaybeOwned::Borrowed(&a)));
     /// ```
     fn reverse(&mut self, to: &To) -> Option<MaybeOwned<From>>;
 }
