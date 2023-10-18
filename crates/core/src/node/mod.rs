@@ -44,6 +44,7 @@ use crate::{
 /// assert_eq!(node.id(), &a);
 /// assert_eq!(node.weight(), &"A");
 /// ```
+// TODO: lol the implementation is totally wrong(?) why are we PartialEq on the storage?
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Node<'a, S>
 where

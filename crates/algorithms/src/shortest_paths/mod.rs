@@ -16,73 +16,95 @@ pub use dijkstra::dijkstra;
 pub use floyd_warshall::floyd_warshall;
 pub use k_shortest_path_length::k_shortest_path_length;
 pub use measure::{BoundedMeasure, FloatMeasure, Measure};
-use petgraph_core::{Graph, GraphStorage};
+use petgraph_core::{Graph, GraphStorage, Node};
 pub use total_ord::TotalOrd;
 
-struct Distance<S>
-where
-    S: GraphStorage,
-{
-    value: S::EdgeWeight,
+struct Distance<T> {
+    value: T,
 }
 
 struct Path<'a, S>
 where
     S: GraphStorage,
 {
-    source: &'a S::NodeId,
-    target: &'a S::NodeId,
+    source: Node<'a, S>,
+    target: Node<'a, S>,
 
-    intermediates: Vec<&'a S::NodeId>,
+    intermediates: Vec<Node<'a, S>>,
 }
 
-struct Route<'a, S>
+struct Route<'a, S, T>
 where
     S: GraphStorage,
 {
     path: Path<'a, S>,
 
-    distance: Distance<S>,
+    distance: Distance<T>,
 }
 
-struct DirectRoute<'a, S>
+struct DirectRoute<'a, S, T>
 where
     S: GraphStorage,
 {
-    source: &'a S::NodeId,
-    target: &'a S::NodeId,
+    source: Node<'a, S>,
+    target: Node<'a, S>,
 
-    distance: Distance<S>,
+    distance: Distance<T>,
 }
 
 pub trait ShortestPath<S>
 where
     S: GraphStorage,
 {
-    fn to(self, graph: &Graph<S>, target: &S::NodeId) -> impl Iterator<Item = Route<S>> {
+    type Cost;
+
+    fn to(
+        self,
+        graph: &Graph<S>,
+        target: &S::NodeId,
+    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
         self.every(graph)
             .filter(move |route| route.path.target == target)
     }
-    fn from(self, graph: &Graph<S>, source: &S::NodeId) -> impl Iterator<Item = Route<S>> {
+    fn from(
+        self,
+        graph: &Graph<S>,
+        source: &S::NodeId,
+    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
         self.every(graph)
             .filter(move |route| route.path.source == source)
     }
-    fn between(self, graph: &Graph<S>, source: &S::NodeId, target: &S::NodeId) -> Option<Route<S>> {
+    fn between(
+        self,
+        graph: &Graph<S>,
+        source: &S::NodeId,
+        target: &S::NodeId,
+    ) -> Option<Route<S, Self::Cost>> {
         self.every(graph)
             .find(move |route| route.path.source == source && route.path.target == target)
     }
-    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = Route<S>>;
+    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = Route<S, Self::Cost>>;
 }
 
 pub trait ShortestDistance<S>
 where
     S: GraphStorage,
 {
-    fn to(self, graph: &Graph<S>, target: &S::NodeId) -> impl Iterator<Item = DirectRoute<S>> {
+    type Cost;
+
+    fn to(
+        self,
+        graph: &Graph<S>,
+        target: &S::NodeId,
+    ) -> impl Iterator<Item = DirectRoute<S, Self::Cost>> {
         self.every(graph)
             .filter(move |route| route.target == target)
     }
-    fn from(self, graph: &Graph<S>, source: &S::NodeId) -> impl Iterator<Item = DirectRoute<S>> {
+    fn from(
+        self,
+        graph: &Graph<S>,
+        source: &S::NodeId,
+    ) -> impl Iterator<Item = DirectRoute<S, Self::Cost>> {
         self.every(graph)
             .filter(move |route| route.source == source)
     }
@@ -91,10 +113,10 @@ where
         graph: &Graph<S>,
         source: &S::NodeId,
         target: &S::NodeId,
-    ) -> Option<Distance<S>> {
+    ) -> Option<Distance<Self::Cost>> {
         self.every(graph)
             .find(move |route| route.source == source && route.target == target)
             .map(|route| route.distance)
     }
-    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = DirectRoute<S>>;
+    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = DirectRoute<S, Self::Cost>>;
 }

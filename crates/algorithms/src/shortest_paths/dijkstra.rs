@@ -1,11 +1,302 @@
-use alloc::collections::BinaryHeap;
-use core::hash::Hash;
+use alloc::{collections::BinaryHeap, vec, vec::Vec};
+use core::{
+    cell::Cell,
+    cmp::{Ordering, Reverse},
+    hash::Hash,
+    mem,
+    ops::Add,
+};
 
 use fxhash::FxBuildHasher;
+use hashbrown::HashMap;
 use indexmap::map::Entry;
-use petgraph_core::deprecated::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
+use num_traits::Zero;
+use petgraph_core::{
+    deprecated::visit::{EdgeRef, IntoEdges, VisitMap, Visitable},
+    edge::marker::Undirected,
+    Edge, Graph, GraphDirectionality, GraphStorage, Node,
+};
 
-use crate::{common::IndexMap, shortest_paths::Measure, utilities::min_scored::MinScored};
+use crate::{
+    common::IndexMap,
+    shortest_paths::{DirectRoute, Measure, Path, Route, ShortestDistance, ShortestPath},
+    utilities::min_scored::MinScored,
+};
+
+struct QueueItem<'a, S, T> {
+    node: Node<'a, S>,
+
+    priority: T,
+
+    skip: Cell<bool>,
+}
+
+impl<S, T> PartialEq for QueueItem<S, T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.priority.eq(&other.priority)
+    }
+}
+
+impl<S, T> Eq for QueueItem<S, T> where T: Eq {}
+
+impl<S, T> PartialOrd for QueueItem<S, T>
+where
+    T: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.priority.partial_cmp(&other.priority)
+    }
+}
+
+impl<S, T> Ord for QueueItem<S, T>
+where
+    T: Ord,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.priority.cmp(&other.priority)
+    }
+}
+
+struct Queue<'a, S, T> {
+    heap: BinaryHeap<Reverse<QueueItem<'a, S, T>>>,
+}
+
+impl<'a, S, T> Queue<'a, S, T> {
+    fn new() -> Self {
+        Self {
+            heap: BinaryHeap::new(),
+        }
+    }
+
+    fn push(&mut self, node: Node<'a, S>, priority: T) {
+        self.heap.push(Reverse(QueueItem {
+            node,
+            priority,
+
+            skip: Cell::new(false),
+        }));
+    }
+
+    fn contains(&self, node: &Node<'a, S>) -> bool {
+        self.heap.iter().any(|Reverse(item)| &item.node == node)
+    }
+
+    fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
+        for Reverse(item) in &self.heap {
+            if &item.node == &node {
+                item.skip.set(true);
+                break;
+            }
+        }
+
+        self.heap.push(Reverse(QueueItem {
+            node,
+            priority,
+
+            skip: Cell::new(false),
+        }));
+    }
+
+    fn pop_min(&mut self) -> Option<Node<'a, S>> {
+        while let Some(Reverse(item)) = self.heap.pop() {
+            if !item.skip.get() {
+                return Some(item.node);
+            }
+        }
+
+        None
+    }
+}
+
+fn reconstruct_intermediates<'a, S>(
+    previous: &HashMap<&'a S::NodeId, Option<Node<'a, S>>>,
+    target: &'a S::NodeId,
+) -> Vec<Node<'a, S>>
+where
+    S: GraphStorage,
+{
+    let mut current = target;
+
+    let mut path = Vec::new();
+
+    while let Some(node) = previous[current] {
+        path.push(node);
+        current = node.id();
+    }
+
+    // remove the source node (last one)
+    path.pop();
+    path.reverse();
+
+    path
+}
+
+struct DijkstraIter<'a, S, T, F>
+where
+    S: GraphStorage,
+{
+    queue: Queue<'a, S, T>,
+    edge_cost: F,
+
+    source: &'a S::NodeId,
+
+    discard_intermediates: bool,
+
+    distances: HashMap<&'a S::NodeId, T, FxBuildHasher>,
+    previous: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
+}
+
+impl<'a, S, T, F> DijkstraIter<'a, S, T, F>
+where
+    S: GraphStorage,
+    F: FnMut(Edge<S>) -> T,
+    T: Zero + Clone,
+    &T: Add<Output = T>,
+{
+    pub fn new(
+        graph: &'a Graph<S>,
+        edge_cost: F,
+        source: &'a S::NodeId,
+        discard_intermediates: bool,
+    ) -> Self {
+        let source_node = graph.node(source).expect("TODO");
+
+        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
+        let mut previous = HashMap::with_hasher(FxBuildHasher::default());
+
+        let mut queue = Queue::new();
+
+        distances.insert(source, T::zero());
+        previous.insert(source, None);
+
+        queue.push(source_node, T::zero());
+
+        Self {
+            queue,
+            edge_cost,
+            source,
+            discard_intermediates,
+            distances,
+            previous,
+        }
+    }
+}
+
+impl<'a, S, T, F> Iterator for DijkstraIter<'a, S, T, F>
+where
+    S: GraphStorage,
+    F: FnMut(Edge<S>) -> T,
+    T: Clone + PartialOrd<&T>,
+    &T: Add<Output = T>,
+{
+    type Item = Route<'a, S, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(node) = self.queue.pop_min() {
+            // TODO: directed and undirected(!)
+            for edge in node.connections() {
+                let (u, v) = edge.endpoints();
+                let target = if v.id() == node.id() { u } else { v };
+
+                let alternative = &self.distances[node.id()] + self.edge_cost(edge.weight());
+
+                let mut insert = false;
+                if let Some(distance) = self.distances.get(target.id()) {
+                    if alternative < distance {
+                        insert = true;
+                    }
+                } else {
+                    insert = true;
+                }
+
+                if insert {
+                    self.distances.insert(edge.id(), alternative.clone());
+                    self.previous.insert(edge.id(), Some(target));
+                    self.queue.decrease_priority(target, alternative);
+                }
+            }
+
+            // we're currently visiting the node that has the shortest distance, therefore we know
+            // that the distance is the shortest possible
+            let distance = self.distances[node.id()].clone();
+            let intermediates = if self.discard_intermediates {
+                vec![]
+            } else {
+                reconstruct_intermediates(&self.previous, node.id());
+            };
+
+            let path = Path {
+                source: self.source,
+                target: node,
+                intermediates,
+            };
+
+            return Some(Route { path, distance });
+        }
+
+        None
+    }
+}
+
+struct Dijkstra<D, F>
+where
+    D: GraphDirectionality,
+{
+    direction: D,
+
+    edge_cost: F,
+}
+
+impl<S> ShortestPath<S> for Dijkstra<Undirected, ()>
+where
+    S: GraphStorage,
+    S::NodeId: Hash,
+    S::EdgeWeight: Zero + Clone,
+    &S::EdgeWeight: Add<Output = S::EdgeWeight>,
+{
+    type Cost = S::EdgeWeight;
+
+    fn from(
+        self,
+        graph: &Graph<S>,
+        source: &S::NodeId,
+    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
+        DijkstraIter::new(graph, |edge| edge.weight(), source, false)
+    }
+
+    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = Route<S, Self::Cost>> {
+        graph
+            .nodes()
+            .flat_map(move |node| self.from(graph, node.id()))
+    }
+}
+
+impl<S, F, T> ShortestPath<S> for Dijkstra<Undirected, F>
+where
+    S: GraphStorage,
+    F: FnMut(Edge<S>) -> T,
+    T: Zero + Clone,
+    &T: Add<Output = T>,
+{
+    type Cost = T;
+
+    fn from(
+        self,
+        graph: &Graph<S>,
+        source: &S::NodeId,
+    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
+        DijkstraIter::new(graph, self.edge_cost, source, false)
+    }
+
+    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = Route<S, Self::Cost>> {
+        graph
+            .nodes()
+            .flat_map(move |node| self.from(graph, node.id()))
+    }
+}
 
 /// \[Generic\] Dijkstra's shortest path algorithm.
 ///

@@ -32,6 +32,8 @@ criterion = "0.5.1"
 rand = "0.8.5"
 petgraph-test-utils.workspace = true
 itertools = "0.10.5"
+num-traits = "0.2.17"
+hashbrown = {workspace = true, features = ['ahash']}
 
 [features]
 default = ["std"]
