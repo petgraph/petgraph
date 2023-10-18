@@ -1,7 +1,5 @@
-use petgraph_core::{Graph, GraphStorage};
-
-pub struct GraphCollection<S, N, E> {
-    pub graph: Graph<S>,
+pub struct GraphCollection<T, N, E> {
+    pub graph: T,
     pub nodes: N,
     pub edges: E,
 }
@@ -68,6 +66,29 @@ macro_rules! graph {
         let $output = $name {
             $($id: *$graph.insert_edge($attr, &$nodes.$source, &$nodes.$target).id(),)*
         };
+    };
+
+    ($(#[$meta:meta])* $vis:vis factory($name:ident) => $graph:ty; [$($nodes:tt)*] as $nty:ty, [$($edges:tt)*] as $ety:ty) => {
+        $(#[$meta])*
+        $vis mod $name {
+            use super::*;
+
+            $crate::graph!(@collection: node NodeCollection[$($nodes)*]);
+            $crate::graph!(@collection: edge EdgeCollection[$($edges)*]);
+
+            pub fn create() -> $crate::GraphCollection<$graph, NodeCollection<$nty>, EdgeCollection<$ety>> {
+                let mut graph = <$graph>::new();
+
+                $crate::graph!(@insert: node graph; nodes; NodeCollection[$($nodes)*]);
+                $crate::graph!(@insert: edge graph; nodes; edges; EdgeCollection[$($edges)*]);
+
+                $crate::GraphCollection {
+                    graph,
+                    nodes,
+                    edges,
+                }
+            }
+        }
     };
 
     ($graph:ident; [$($nodes:tt)*],[$($edges:tt)*]) => {{

@@ -204,7 +204,7 @@ where
     ///     vec![b, c]
     /// );
     /// ```
-    pub fn neighbours(&self) -> impl Iterator<Item = Node<'_, S>> {
+    pub fn neighbours(&self) -> impl Iterator<Item = Node<'a, S>> + 'a {
         self.storage.node_neighbours(self.id)
     }
 
@@ -236,7 +236,7 @@ where
     ///     vec![ab, ca]
     /// );
     /// ```
-    pub fn connections(&self) -> impl Iterator<Item = Edge<'_, S>> {
+    pub fn connections(&self) -> impl Iterator<Item = Edge<'a, S>> + 'a {
         self.storage.node_connections(self.id)
     }
 
@@ -308,7 +308,10 @@ where
     ///     vec![ca]
     /// );
     /// ```
-    pub fn directed_connections(&self, direction: Direction) -> impl Iterator<Item = Edge<'_, S>> {
+    pub fn directed_connections(
+        &self,
+        direction: Direction,
+    ) -> impl Iterator<Item = Edge<'a, S>> + 'a {
         self.storage.node_directed_connections(self.id, direction)
     }
 
@@ -346,7 +349,10 @@ where
     ///     vec![c]
     /// );
     /// ```
-    pub fn directed_neighbours(&self, direction: Direction) -> impl Iterator<Item = Node<'_, S>> {
+    pub fn directed_neighbours(
+        &self,
+        direction: Direction,
+    ) -> impl Iterator<Item = Node<'a, S>> + 'a {
         self.storage.node_directed_neighbours(self.id, direction)
     }
 }

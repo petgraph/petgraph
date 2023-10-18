@@ -3,7 +3,8 @@ use core::{
     cell::Cell,
     cmp::{Ordering, Reverse},
     fmt::{Display, Formatter},
-    hash::Hash,
+    hash::{BuildHasher, Hash},
+    marker::PhantomData,
     mem,
     ops::Add,
 };
@@ -11,24 +12,41 @@ use core::{
 use error_stack::{Context, Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
-use indexmap::map::Entry;
 use num_traits::Zero;
 use petgraph_core::{
+    base::MaybeOwned,
     deprecated::visit::{EdgeRef, IntoEdges, VisitMap, Visitable},
     edge::{
         marker::{Directed, Undirected},
         Direction,
     },
-    Edge, Graph, GraphDirectionality, GraphStorage, Node,
+    DirectedGraphStorage, Edge, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
-use crate::{
-    common::IndexMap,
-    shortest_paths::{DirectRoute, Measure, Path, Route, ShortestDistance, ShortestPath},
-    utilities::min_scored::MinScored,
-};
+use crate::shortest_paths::{DirectRoute, Distance, Path, Route, ShortestDistance, ShortestPath};
 
-struct QueueItem<'a, S, T> {
+macro_rules! fold {
+    ($iter:expr => flatten) => {
+        $iter
+            .fold(Ok(vec![]), |acc, value| match (acc, value) {
+                (Ok(mut acc), Ok(value)) => {
+                    acc.extend(value);
+                    Ok(acc)
+                }
+                (Err(mut acc), Err(error)) => {
+                    acc.extend_one(error);
+                    Err(acc)
+                }
+                (Err(err), _) | (_, Err(err)) => Err(err),
+            })
+            .map(|value| value.into_iter())
+    };
+}
+
+struct QueueItem<'a, S, T>
+where
+    S: GraphStorage,
+{
     node: Node<'a, S>,
 
     priority: T,
@@ -36,8 +54,9 @@ struct QueueItem<'a, S, T> {
     skip: Cell<bool>,
 }
 
-impl<S, T> PartialEq for QueueItem<S, T>
+impl<S, T> PartialEq for QueueItem<'_, S, T>
 where
+    S: GraphStorage,
     T: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -45,10 +64,16 @@ where
     }
 }
 
-impl<S, T> Eq for QueueItem<S, T> where T: Eq {}
-
-impl<S, T> PartialOrd for QueueItem<S, T>
+impl<S, T> Eq for QueueItem<'_, S, T>
 where
+    S: GraphStorage,
+    T: Eq,
+{
+}
+
+impl<S, T> PartialOrd for QueueItem<'_, S, T>
+where
+    S: GraphStorage,
     T: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -56,8 +81,9 @@ where
     }
 }
 
-impl<S, T> Ord for QueueItem<S, T>
+impl<S, T> Ord for QueueItem<'_, S, T>
 where
+    S: GraphStorage,
     T: Ord,
 {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -65,11 +91,19 @@ where
     }
 }
 
-struct Queue<'a, S, T> {
+struct Queue<'a, S, T>
+where
+    S: GraphStorage,
+    T: Ord,
+{
     heap: BinaryHeap<Reverse<QueueItem<'a, S, T>>>,
 }
 
-impl<'a, S, T> Queue<'a, S, T> {
+impl<'a, S, T> Queue<'a, S, T>
+where
+    S: GraphStorage,
+    T: Ord,
+{
     fn new() -> Self {
         Self {
             heap: BinaryHeap::new(),
@@ -85,13 +119,9 @@ impl<'a, S, T> Queue<'a, S, T> {
         }));
     }
 
-    fn contains(&self, node: &Node<'a, S>) -> bool {
-        self.heap.iter().any(|Reverse(item)| &item.node == node)
-    }
-
     fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
         for Reverse(item) in &self.heap {
-            if &item.node == &node {
+            if &item.node.id() == &node.id() {
                 item.skip.set(true);
                 break;
             }
@@ -116,12 +146,14 @@ impl<'a, S, T> Queue<'a, S, T> {
     }
 }
 
-fn reconstruct_intermediates<'a, S>(
-    previous: &HashMap<&'a S::NodeId, Option<Node<'a, S>>>,
+fn reconstruct_intermediates<'a, S, H>(
+    previous: &HashMap<&'a S::NodeId, Option<Node<'a, S>>, H>,
     target: &'a S::NodeId,
 ) -> Vec<Node<'a, S>>
 where
     S: GraphStorage,
+    S::NodeId: Eq + Hash,
+    H: BuildHasher,
 {
     let mut current = target;
 
@@ -140,7 +172,7 @@ where
 }
 
 #[derive(Debug)]
-enum DijkstraError {
+pub enum DijkstraError {
     NodeNotFound,
 }
 
@@ -154,16 +186,41 @@ impl Display for DijkstraError {
 
 impl Context for DijkstraError {}
 
+fn outgoing_connections<'a, S>(node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a
+where
+    S: DirectedGraphStorage,
+{
+    node.directed_connections(Direction::Outgoing)
+}
+
+trait ConnectionFn<'a, S>
+where
+    S: GraphStorage,
+{
+    fn connections(&self, node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a;
+}
+
+impl<'a, S, I> ConnectionFn<'a, S> for fn(&Node<'a, S>) -> I
+where
+    S: GraphStorage,
+    I: Iterator<Item = Edge<'a, S>> + 'a,
+{
+    fn connections(&self, node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a {
+        (*self)(node)
+    }
+}
+
 struct DijkstraIter<'a, S, T, F, G>
 where
     S: GraphStorage,
+    T: Ord,
 {
     queue: Queue<'a, S, T>,
 
     edge_cost: F,
     connections: G,
 
-    source: &'a S::NodeId,
+    source: Node<'a, S>,
 
     discard_intermediates: bool,
 
@@ -171,20 +228,23 @@ where
     previous: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
 }
 
-impl<'a, S, T, U, F, G> DijkstraIter<'a, S, T, F, G>
+impl<'a, S, T, F, G> DijkstraIter<'a, S, T, F, G>
 where
     S: GraphStorage,
-    F: FnMut(Edge<S>) -> T,
-    T: PartialOrd<&T> + Zero + Clone,
-    &T: Add<Output = T>,
-    G: FnMut(Node<'a, S>) -> U,
-    U: Iterator<Item = Edge<S>>,
+    S::NodeId: Eq + Hash,
+    F: Fn(Edge<'a, S>) -> MaybeOwned<'a, T>,
+    T: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'b> &'b T: Add<Output = T>,
+    G: ConnectionFn<'a, S>,
 {
-    pub fn new(
+    fn new(
         graph: &'a Graph<S>,
+
         edge_cost: F,
         connections: G,
+
         source: &'a S::NodeId,
+
         discard_intermediates: bool,
     ) -> Result<Self, DijkstraError> {
         let source_node = graph
@@ -205,7 +265,7 @@ where
             queue,
             edge_cost,
             connections,
-            source,
+            source: source_node,
             discard_intermediates,
             distances,
             previous,
@@ -213,67 +273,67 @@ where
     }
 }
 
-impl<'a, S, T, U, F, G> Iterator for DijkstraIter<'a, S, T, F, G>
+impl<'a, S, T, F, G> Iterator for DijkstraIter<'a, S, T, F, G>
 where
     S: GraphStorage,
-    F: FnMut(Edge<S>) -> T,
-    T: PartialOrd<&T> + Clone,
-    &T: Add<Output = T>,
-    G: FnMut(Node<'a, S>) -> U,
-    U: Iterator<Item = Edge<S>>,
+    S::NodeId: Eq + Hash,
+    F: Fn(Edge<'a, S>) -> MaybeOwned<'a, T>,
+    T: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'b> &'b T: Add<Output = T>,
+    G: ConnectionFn<'a, S>,
 {
     type Item = Route<'a, S, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(node) = self.queue.pop_min() {
-            let connections = (self.connections)(node);
+        let node = self.queue.pop_min()?;
 
-            for edge in connections {
-                let (u, v) = edge.endpoints();
-                let target = if v.id() == node.id() { u } else { v };
+        let connections = self.connections.connections(&node);
 
-                let alternative = &self.distances[node.id()] + self.edge_cost(edge.weight());
+        for edge in connections {
+            let (u, v) = edge.endpoints();
+            let target = if v.id() == node.id() { u } else { v };
 
-                let mut insert = false;
-                if let Some(distance) = self.distances.get(target.id()) {
-                    if alternative < distance {
-                        insert = true;
-                    }
-                } else {
+            let alternative = &self.distances[node.id()] + (self.edge_cost)(edge).as_ref();
+
+            let mut insert = false;
+            if let Some(distance) = self.distances.get(target.id()) {
+                if alternative < *distance {
                     insert = true;
                 }
-
-                if insert {
-                    self.distances.insert(edge.id(), alternative.clone());
-                    self.previous.insert(edge.id(), Some(target));
-                    self.queue.decrease_priority(target, alternative);
-                }
+            } else {
+                insert = true;
             }
 
-            // we're currently visiting the node that has the shortest distance, therefore we know
-            // that the distance is the shortest possible
-            let distance = self.distances[node.id()].clone();
-            let intermediates = if self.discard_intermediates {
-                vec![]
-            } else {
-                reconstruct_intermediates(&self.previous, node.id());
-            };
-
-            let path = Path {
-                source: self.source,
-                target: node,
-                intermediates,
-            };
-
-            return Some(Route { path, distance });
+            if insert {
+                self.distances.insert(target.id(), alternative.clone());
+                self.previous.insert(target.id(), Some(node));
+                self.queue.decrease_priority(target, alternative);
+            }
         }
 
-        None
+        // we're currently visiting the node that has the shortest distance, therefore we know
+        // that the distance is the shortest possible
+        let distance = self.distances[node.id()].clone();
+        let intermediates = if self.discard_intermediates {
+            vec![]
+        } else {
+            reconstruct_intermediates(&self.previous, node.id())
+        };
+
+        let path = Path {
+            source: self.source,
+            target: node,
+            intermediates,
+        };
+
+        Some(Route {
+            path,
+            distance: Distance { value: distance },
+        })
     }
 }
 
-#[non_exhaustive]
-struct Dijkstra<D, F>
+pub struct Dijkstra<D, F>
 where
     D: GraphDirectionality,
 {
@@ -282,186 +342,334 @@ where
     edge_cost: F,
 }
 
+impl Dijkstra<Directed, ()> {
+    pub fn directed() -> Self {
+        Self {
+            direction: Directed,
+            edge_cost: (),
+        }
+    }
+}
+
+impl Dijkstra<Undirected, ()> {
+    pub fn undirected() -> Self {
+        Self {
+            direction: Undirected,
+            edge_cost: (),
+        }
+    }
+}
+
+impl<D, F> Dijkstra<D, F>
+where
+    D: GraphDirectionality,
+{
+    pub fn with_edge_cost<S, F2, T>(self, edge_cost: F2) -> Dijkstra<D, F2>
+    where
+        F2: Fn(Edge<S>) -> MaybeOwned<T>,
+    {
+        Dijkstra {
+            direction: self.direction,
+            edge_cost,
+        }
+    }
+
+    pub fn without_edge_cost(self) -> Dijkstra<D, ()> {
+        Dijkstra {
+            direction: self.direction,
+            edge_cost: (),
+        }
+    }
+}
+
 impl<S> ShortestPath<S> for Dijkstra<Undirected, ()>
 where
     S: GraphStorage,
-    S::NodeId: Hash,
-    S::EdgeWeight: Zero + Clone,
-    &S::EdgeWeight: Add<Output = S::EdgeWeight>,
+    S::NodeId: Eq + Hash,
+    S::EdgeWeight: PartialOrd + Ord + Zero + Clone,
+    for<'a> &'a S::EdgeWeight: Add<Output = S::EdgeWeight>,
 {
     type Cost = S::EdgeWeight;
+    type Error = DijkstraError;
 
-    fn from(
-        self,
-        graph: &Graph<S>,
-        source: &S::NodeId,
-    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
+    fn from<'a>(
+        &self,
+        graph: &'a Graph<S>,
+        source: &'a S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
         DijkstraIter::new(
             graph,
-            |edge| edge.weight(),
-            |node| node.connections(),
+            |edge| MaybeOwned::Borrowed(edge.weight()),
+            Node::<'a, S>::connections as fn(&Node<'a, S>) -> _,
             source,
             false,
         )
     }
 
-    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = Route<S, Self::Cost>> {
-        graph
-            .nodes()
-            .flat_map(move |node| self.from(graph, node.id()))
+    fn every<'a>(
+        &self,
+        graph: &'a Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+        let iter = graph.nodes().map(move |node| self.from(graph, node.id()));
+
+        fold!(iter => flatten)
     }
 }
 
 impl<S> ShortestPath<S> for Dijkstra<Directed, ()>
 where
-    S: GraphStorage,
-    S::NodeId: Hash,
-    S::EdgeWeight: Zero + Clone,
-    &S::EdgeWeight: Add<Output = S::EdgeWeight>,
+    S: DirectedGraphStorage,
+    S::NodeId: Eq + Hash,
+    S::EdgeWeight: PartialOrd + Ord + Zero + Clone,
+    for<'a> &'a S::EdgeWeight: Add<Output = S::EdgeWeight>,
 {
     type Cost = S::EdgeWeight;
+    type Error = DijkstraError;
 
-    fn from(
-        self,
-        graph: &Graph<S>,
-        source: &S::NodeId,
-    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
+    fn from<'a>(
+        &self,
+        graph: &'a Graph<S>,
+        source: &'a S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
         DijkstraIter::new(
             graph,
-            |edge| edge.weight(),
-            |node| node.directed_connections(Direction::Outgoing),
+            |edge| MaybeOwned::Borrowed(edge.weight()),
+            outgoing_connections as fn(&Node<'a, S>) -> _,
             source,
             false,
         )
     }
 
-    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = Route<S, Self::Cost>> {
-        graph
-            .nodes()
-            .flat_map(move |node| self.from(graph, node.id()))
+    fn every<'a>(
+        &self,
+        graph: &'a Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+        let iter = graph.nodes().map(move |node| self.from(graph, node.id()));
+
+        fold!(iter => flatten)
     }
 }
 
 impl<S, F, T> ShortestPath<S> for Dijkstra<Undirected, F>
 where
     S: GraphStorage,
-    F: FnMut(Edge<S>) -> T,
-    T: Zero + Clone,
-    &T: Add<Output = T>,
+    S::NodeId: Eq + Hash,
+    F: Fn(Edge<S>) -> MaybeOwned<T>,
+    for<'a> T: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> &'a T: Add<Output = T>,
 {
     type Cost = T;
+    type Error = DijkstraError;
 
-    fn from(
-        self,
-        graph: &Graph<S>,
-        source: &S::NodeId,
-    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
+    fn from<'a>(
+        &self,
+        graph: &'a Graph<S>,
+        source: &'a S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
         DijkstraIter::new(
             graph,
-            self.edge_cost,
-            |node| node.connections(),
+            &self.edge_cost,
+            Node::<'a, S>::connections as fn(&Node<'a, S>) -> _,
             source,
             false,
         )
     }
 
-    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = Route<S, Self::Cost>> {
-        graph
-            .nodes()
-            .flat_map(move |node| self.from(graph, node.id()))
+    fn every<'a>(
+        &self,
+        graph: &'a Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+        let iter = graph.nodes().map(move |node| self.from(graph, node.id()));
+
+        fold!(iter => flatten)
     }
 }
 
 impl<S, F, T> ShortestPath<S> for Dijkstra<Directed, F>
 where
-    S: GraphStorage,
-    F: FnMut(Edge<S>) -> T,
-    T: Zero + Clone,
-    &T: Add<Output = T>,
+    S: DirectedGraphStorage,
+    S::NodeId: Eq + Hash,
+    F: Fn(Edge<S>) -> MaybeOwned<T>,
+    for<'a> T: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> &'a T: Add<Output = T>,
 {
     type Cost = T;
+    type Error = DijkstraError;
 
-    fn from(
-        self,
-        graph: &Graph<S>,
-        source: &S::NodeId,
-    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
+    fn from<'a>(
+        &self,
+        graph: &'a Graph<S>,
+        source: &'a S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
         DijkstraIter::new(
             graph,
-            self.edge_cost,
-            |node| node.directed_connections(Direction::Outgoing),
+            &self.edge_cost,
+            outgoing_connections as fn(&Node<'a, S>) -> _,
             source,
             false,
         )
     }
 
-    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = Route<S, Self::Cost>> {
-        graph
-            .nodes()
-            .flat_map(move |node| self.from(graph, node.id()))
+    fn every<'a>(
+        &self,
+        graph: &'a Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+        let iter = graph.nodes().map(move |node| self.from(graph, node.id()));
+
+        fold!(iter => flatten)
     }
 }
 
 #[cfg(test)]
 pub(super) mod tests {
-    use petgraph_core::{
-        edge::{Directed, Undirected},
-        visit::{EdgeRef, IntoNodeReferences},
-    };
-    use petgraph_graph::{Graph, NodeIndex};
-    use proptest::{prelude::*, sample::Index};
+    use hashbrown::HashMap;
+    use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge};
+    use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
+    use petgraph_utils::{graph, GraphCollection};
 
-    use super::dijkstra;
+    use crate::shortest_paths::{dijkstra::Dijkstra, ShortestPath};
 
-    /// Uses the graph from networkx
-    ///
-    /// <https://github.com/networkx/networkx/blob/main/networkx/algorithms/shortest_paths/tests/test_weighted.py>
-    pub fn setup() -> Graph<&'static str, i32> {
-        let mut graph = Graph::new();
+    graph!(
+        /// Uses the graph from networkx
+        ///
+        /// <https://github.com/networkx/networkx/blob/main/networkx/algorithms/shortest_paths/tests/test_weighted.py>
+        factory(networkx) => DiDinoGraph<&'static str, i32>;
+        [
+            a: "A",
+            b: "B",
+            c: "C",
+            d: "D",
+            e: "E",
+        ] as NodeId, [
+            ab: a -> b: 10,
+            ac: a -> c: 5,
+            bd: b -> d: 1,
+            bc: b -> c: 2,
+            de: d -> e: 1,
+            cb: c -> b: 3,
+            cd: c -> d: 5,
+            ce: c -> e: 2,
+            ea: e -> a: 7,
+            ed: e -> d: 6,
+        ] as EdgeId
+    );
 
-        let a = graph.add_node("A");
-        let b = graph.add_node("B");
-        let c = graph.add_node("C");
-        let d = graph.add_node("D");
-        let e = graph.add_node("E");
+    graph!(
+        /// Uses a randomly generated graph
+        factory(random) => DiDinoGraph<&'static str, &'static str>;
+        [
+            a: "A",
+            b: "B",
+            c: "C",
+            d: "D",
+            e: "E",
+            f: "F",
+        ] as NodeId, [
+            ab: a -> b: "apple",
+            bc: b -> c: "cat",
+            cd: c -> d: "giraffe",
+            de: d -> e: "is",
+            ef: e -> f: "banana",
+            fa: f -> a: "bear",
+            ad: a -> d: "elephant",
+        ] as EdgeId
+    );
 
-        graph.extend_with_edges([
-            (a, b, 10),
-            (a, c, 5),
-            (b, d, 1),
-            (b, c, 2),
-            (d, e, 1),
-            (c, b, 3),
-            (c, d, 5),
-            (c, e, 2),
-            (e, a, 7),
-            (e, d, 6),
-        ]);
+    #[test]
+    fn every_directed_default_edge_cost() {
+        let GraphCollection {
+            graph,
+            nodes,
+            edges,
+        } = networkx::create();
 
-        graph
+        let dijkstra = Dijkstra::directed();
+
+        let routes: HashMap<_, _> = dijkstra
+            .from(&graph, &nodes.a)
+            .unwrap()
+            .map(|route| (*route.path.target.id(), route.distance.value))
+            .collect();
+
+        let expected = [
+            (nodes.a, 0),
+            (nodes.b, 8),
+            (nodes.c, 5),
+            (nodes.d, 9),
+            (nodes.e, 7),
+        ];
+
+        // TODO: path
+
+        assert_eq!(routes.len(), expected.len());
+
+        for (node, weight) in expected {
+            assert_eq!(routes[&node], weight);
+        }
     }
 
     #[test]
-    fn no_goal_directed() {
-        let graph = setup();
+    fn every_directed_custom_edge_cost() {
+        let GraphCollection {
+            graph,
+            nodes,
+            edges,
+        } = random::create();
 
-        let node = |weight: &'static str| {
-            graph
-                .node_references()
-                .find(|(_, &node_weight)| node_weight == weight)
-                .unwrap()
-                .0
-        };
+        let dijkstra = Dijkstra::directed().with_edge_cost(
+            |edge: Edge<DinoStorage<&'static str, &'static str, Directed>>| {
+                MaybeOwned::Owned(edge.weight().len())
+            },
+        );
 
-        let result = dijkstra(&graph, node("A"), None, |edge| *edge.weight());
+        let routes: HashMap<_, _> = dijkstra
+            .from(&graph, &nodes.a)
+            .unwrap()
+            .map(|route| (*route.path.target.id(), route.distance.value))
+            .collect();
 
         let expected = [
-            (node("A"), 0),
-            (node("B"), 8),
-            (node("C"), 5),
-            (node("D"), 9),
-            (node("E"), 7),
+            (nodes.a, 0),
+            (nodes.b, 5),
+            (nodes.c, 8),
+            (nodes.d, 8),
+            (nodes.e, 10),
+            (nodes.f, 16),
         ];
+
+        // TODO: path
+
+        assert_eq!(routes.len(), expected.len());
+
+        for (node, weight) in expected {
+            assert_eq!(routes[&node], weight);
+        }
+    }
+
+    #[test]
+    fn every_undirected_default_edge_cost() {
+        let GraphCollection {
+            graph,
+            nodes,
+            edges,
+        } = networkx::create();
+
+        let dijkstra = Dijkstra::undirected();
+        let result: HashMap<_, _> = dijkstra
+            .from(&graph, &nodes.a)
+            .unwrap()
+            .map(|route| (*route.path.target.id(), route.distance.value))
+            .collect();
+
+        let expected = [
+            (nodes.a, 0),
+            (nodes.b, 7),
+            (nodes.c, 5),
+            (nodes.d, 8),
+            (nodes.e, 7),
+        ];
+
+        // TODO: path
 
         assert_eq!(result.len(), expected.len());
 
@@ -470,75 +678,11 @@ pub(super) mod tests {
         }
     }
 
-    #[test]
-    fn no_goal_undirected() {
-        let graph = setup().into_edge_type::<Undirected>();
-
-        let node = |weight: &'static str| {
-            graph
-                .node_references()
-                .find(|(_, &node_weight)| node_weight == weight)
-                .unwrap()
-                .0
-        };
-
-        let result = dijkstra(&graph, node("A"), None, |edge| *edge.weight());
-
-        let expected = [
-            (node("A"), 0),
-            (node("B"), 7),
-            (node("C"), 5),
-            (node("D"), 8),
-            (node("E"), 7),
-        ];
-
-        assert_eq!(result.len(), expected.len());
-
-        for (node, weight) in expected {
-            assert_eq!(result[&node], weight);
-        }
-    }
-
-    #[test]
-    fn goal_directed() {
-        let graph = setup();
-
-        let node = |weight: &'static str| {
-            graph
-                .node_references()
-                .find(|(_, &node_weight)| node_weight == weight)
-                .unwrap()
-                .0
-        };
-
-        let result = dijkstra(&graph, node("A"), Some(node("D")), |edge| *edge.weight());
-
-        // we only guarantee that A - D exists in the result
-        assert_eq!(result[&node("D")], 9);
-    }
-
-    #[test]
-    fn goal_undirected() {
-        let graph = setup().into_edge_type::<Undirected>();
-
-        let node = |weight: &'static str| {
-            graph
-                .node_references()
-                .find(|(_, &node_weight)| node_weight == weight)
-                .unwrap()
-                .0
-        };
-
-        let result = dijkstra(&graph, node("A"), Some(node("D")), |edge| *edge.weight());
-
-        // we only guarantee that A - D exists in the result
-        assert_eq!(result[&node("D")], 8);
-    }
-
-    fn non_empty_graph() -> impl Strategy<Value = Graph<(), u8, Directed, u8>> {
-        any::<Graph<(), u8, Directed, u8>>()
-            .prop_filter("graph is empty", |graph| graph.node_count() > 0)
-    }
+    //
+    // fn non_empty_graph() -> impl Strategy<Value = Graph<(), u8, Directed, u8>> {
+    //     any::<Graph<(), u8, Directed, u8>>()
+    //         .prop_filter("graph is empty", |graph| graph.node_count() > 0)
+    // }
 
     // #[cfg(not(miri))]
     // proptest! {
