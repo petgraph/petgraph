@@ -255,7 +255,9 @@ where
         let mut queue = Queue::new();
 
         distances.insert(source, T::zero());
-        previous.insert(source, None);
+        if !discard_intermediates {
+            previous.insert(source, None);
+        }
 
         queue.push(source_node, T::zero());
 
@@ -304,7 +306,11 @@ where
 
             if insert {
                 self.distances.insert(target.id(), alternative.clone());
-                self.previous.insert(target.id(), Some(node));
+
+                if !self.discard_intermediates {
+                    self.previous.insert(target.id(), Some(node));
+                }
+
                 self.queue.decrease_priority(target, alternative);
             }
         }
