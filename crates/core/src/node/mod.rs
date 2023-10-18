@@ -16,7 +16,10 @@
 //! used sparingly.
 mod compat;
 
-use core::fmt::{Debug, Formatter};
+use core::{
+    fmt::{Debug, Formatter},
+    hash::Hash,
+};
 
 use crate::{
     edge::{Direction, Edge},
@@ -44,8 +47,6 @@ use crate::{
 /// assert_eq!(node.id(), &a);
 /// assert_eq!(node.weight(), &"A");
 /// ```
-// TODO: lol the implementation is totally wrong(?) why are we PartialEq on the storage?
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Node<'a, S>
 where
     S: GraphStorage,
@@ -56,6 +57,58 @@ where
     //  borrow data.
     id: &'a S::NodeId,
     weight: &'a S::NodeWeight,
+}
+
+impl<S> PartialEq for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: PartialEq,
+    S::NodeWeight: PartialEq,
+{
+    fn eq(&self, other: &Node<'_, S>) -> bool {
+        (self.id, self.weight).eq(&(other.id, other.weight))
+    }
+}
+
+impl<S> Eq for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Eq,
+    S::NodeWeight: Eq,
+{
+}
+
+impl<S> PartialOrd for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: PartialOrd,
+    S::NodeWeight: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Node<'_, S>) -> Option<core::cmp::Ordering> {
+        (self.id, self.weight).partial_cmp(&(other.id, other.weight))
+    }
+}
+
+impl<S> Ord for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Ord,
+    S::NodeWeight: Ord,
+{
+    fn cmp(&self, other: &Node<'_, S>) -> core::cmp::Ordering {
+        (self.id, self.weight).cmp(&(other.id, other.weight))
+    }
+}
+
+impl<S> Hash for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Hash,
+    S::NodeWeight: Hash,
+{
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        (self.id, self.weight).hash(state);
+    }
 }
 
 impl<S> Clone for Node<'_, S>

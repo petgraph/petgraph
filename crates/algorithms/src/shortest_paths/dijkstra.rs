@@ -4,7 +4,6 @@ use core::{
     cmp::{Ordering, Reverse},
     fmt::{Display, Formatter},
     hash::{BuildHasher, Hash},
-    marker::PhantomData,
     mem,
     ops::Add,
 };
@@ -15,7 +14,6 @@ use hashbrown::HashMap;
 use num_traits::Zero;
 use petgraph_core::{
     base::MaybeOwned,
-    deprecated::visit::{EdgeRef, IntoEdges, VisitMap, Visitable},
     edge::{
         marker::{Directed, Undirected},
         Direction,
@@ -121,7 +119,7 @@ where
 
     fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
         for Reverse(item) in &self.heap {
-            if &item.node.id() == &node.id() {
+            if item.node.id() == node.id() {
                 item.skip.set(true);
                 break;
             }
@@ -523,7 +521,7 @@ where
 #[cfg(test)]
 pub(super) mod tests {
     use hashbrown::HashMap;
-    use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge};
+    use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge, GraphStorage};
     use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
     use petgraph_utils::{graph, GraphCollection};
 
@@ -608,6 +606,14 @@ pub(super) mod tests {
         }
     }
 
+    fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<'_, usize>
+    where
+        S: GraphStorage,
+        S::EdgeWeight: AsRef<[u8]>,
+    {
+        MaybeOwned::Owned(edge.weight().as_ref().len())
+    }
+
     #[test]
     fn every_directed_custom_edge_cost() {
         let GraphCollection {
@@ -616,11 +622,7 @@ pub(super) mod tests {
             edges,
         } = random::create();
 
-        let dijkstra = Dijkstra::directed().with_edge_cost(
-            |edge: Edge<DinoStorage<&'static str, &'static str, Directed>>| {
-                MaybeOwned::Owned(edge.weight().len())
-            },
-        );
+        let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
 
         let routes: HashMap<_, _> = dijkstra
             .from(&graph, &nodes.a)
