@@ -13,6 +13,7 @@ use alloc::vec::Vec;
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle, Paths};
 pub use dijkstra::dijkstra;
+use error_stack::Context;
 pub use floyd_warshall::floyd_warshall;
 pub use k_shortest_path_length::k_shortest_path_length;
 pub use measure::{BoundedMeasure, FloatMeasure, Measure};
@@ -57,22 +58,25 @@ where
     S: GraphStorage,
 {
     type Cost;
+    type Error: Context;
 
     fn to(
         self,
         graph: &Graph<S>,
         target: &S::NodeId,
-    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
-        self.every(graph)
-            .filter(move |route| route.path.target == target)
+    ) -> Result<impl Iterator<Item = Route<S, Self::Cost>>, Self::Error> {
+        let iter = self.every(graph)?;
+
+        Ok(iter.filter(move |route| route.path.target == target))
     }
     fn from(
         self,
         graph: &Graph<S>,
         source: &S::NodeId,
-    ) -> impl Iterator<Item = Route<S, Self::Cost>> {
-        self.every(graph)
-            .filter(move |route| route.path.source == source)
+    ) -> Result<impl Iterator<Item = Route<S, Self::Cost>>, Self::Error> {
+        let iter = self.every(graph)?;
+
+        Ok(iter.filter(move |route| route.path.source == source))
     }
     fn between(
         self,
@@ -81,9 +85,13 @@ where
         target: &S::NodeId,
     ) -> Option<Route<S, Self::Cost>> {
         self.every(graph)
+            .ok()?
             .find(move |route| route.path.source == source && route.path.target == target)
     }
-    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = Route<S, Self::Cost>>;
+    fn every(
+        self,
+        graph: &Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<S, Self::Cost>>, Self::Error>;
 }
 
 pub trait ShortestDistance<S>
@@ -91,22 +99,25 @@ where
     S: GraphStorage,
 {
     type Cost;
+    type Error: Context;
 
     fn to(
         self,
         graph: &Graph<S>,
         target: &S::NodeId,
-    ) -> impl Iterator<Item = DirectRoute<S, Self::Cost>> {
-        self.every(graph)
-            .filter(move |route| route.target == target)
+    ) -> Result<impl Iterator<Item = DirectRoute<S, Self::Cost>>, Self::Error> {
+        let iter = self.every(graph)?;
+
+        Ok(iter.filter(move |route| route.target == target))
     }
     fn from(
         self,
         graph: &Graph<S>,
         source: &S::NodeId,
     ) -> impl Iterator<Item = DirectRoute<S, Self::Cost>> {
-        self.every(graph)
-            .filter(move |route| route.source == source)
+        let iter = self.every(graph)?;
+
+        Ok(iter.filter(move |route| route.source == source))
     }
     fn between(
         self,
@@ -115,8 +126,12 @@ where
         target: &S::NodeId,
     ) -> Option<Distance<Self::Cost>> {
         self.every(graph)
+            .ok()?
             .find(move |route| route.source == source && route.target == target)
             .map(|route| route.distance)
     }
-    fn every(self, graph: &Graph<S>) -> impl Iterator<Item = DirectRoute<S, Self::Cost>>;
+    fn every(
+        self,
+        graph: &Graph<S>,
+    ) -> Result<impl Iterator<Item = DirectRoute<S, Self::Cost>>, Self::Error>;
 }
