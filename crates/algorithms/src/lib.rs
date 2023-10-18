@@ -1,3 +1,4 @@
+#![feature(return_position_impl_trait_in_trait)]
 //! Graph algorithms.
 //!
 //! It is a goal to gradually migrate the algorithms to be based on graph traits
