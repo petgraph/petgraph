@@ -6,7 +6,7 @@ mod dijkstra;
 // mod measure;
 // mod total_ord;
 
-use alloc::vec::Vec;
+use alloc::vec::{IntoIter, Vec};
 
 use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage, Node};
@@ -23,6 +23,41 @@ where
     target: Node<'a, S>,
 
     intermediates: Vec<Node<'a, S>>,
+}
+
+impl<'a, S> Path<'a, S>
+where
+    S: GraphStorage,
+{
+    fn to_vec(self) -> Vec<Node<'a, S>> {
+        let mut vec = Vec::with_capacity(self.intermediates.len() + 2);
+
+        vec.push(self.source);
+        vec.extend(self.intermediates);
+        vec.push(self.target);
+
+        vec
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &Node<'a, S>> {
+        let mut iter = self.intermediates.iter();
+
+        iter.next_back();
+
+        iter
+    }
+}
+
+impl<'a, S> IntoIterator for Path<'a, S>
+where
+    S: GraphStorage,
+{
+    type IntoIter = IntoIter<Node<'a, S>>;
+    type Item = Node<'a, S>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.to_vec().into_iter()
+    }
 }
 
 struct Route<'a, S, T>

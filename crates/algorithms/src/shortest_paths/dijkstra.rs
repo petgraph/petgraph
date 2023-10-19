@@ -422,6 +422,48 @@ where
     }
 }
 
+impl<S> ShortestDistance<S> for Dijkstra<Undirected, ()>
+where
+    S: GraphStorage,
+    S::NodeId: Eq + Hash,
+    S::EdgeWeight: PartialOrd + Ord + Zero + Clone,
+    for<'a> &'a S::EdgeWeight: Add<Output = S::EdgeWeight>,
+{
+    type Cost = S::EdgeWeight;
+    type Error = DijkstraError;
+
+    fn distance_from<'a>(
+        &self,
+        graph: &'a Graph<S>,
+        source: &'a <S as GraphStorage>::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+        let iter = DijkstraIter::new(
+            graph,
+            |edge| MaybeOwned::Borrowed(edge.weight()),
+            Node::<'a, S>::connections as fn(&Node<'a, S>) -> _,
+            source,
+            true,
+        )?;
+
+        Ok(iter.map(|route| DirectRoute {
+            source: route.path.source,
+            target: route.path.target,
+            distance: route.distance,
+        }))
+    }
+
+    fn every_distance<'a>(
+        &self,
+        graph: &'a Graph<S>,
+    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+        let iter = graph
+            .nodes()
+            .map(move |node| self.distance_from(graph, node.id()));
+
+        fold!(iter => flatten)
+    }
+}
+
 impl<S> ShortestPath<S> for Dijkstra<Directed, ()>
 where
     S: DirectedGraphStorage,
@@ -453,6 +495,48 @@ where
         let iter = graph
             .nodes()
             .map(move |node| self.path_from(graph, node.id()));
+
+        fold!(iter => flatten)
+    }
+}
+
+impl<S> ShortestDistance<S> for Dijkstra<Directed, ()>
+where
+    S: DirectedGraphStorage,
+    S::NodeId: Eq + Hash,
+    S::EdgeWeight: PartialOrd + Ord + Zero + Clone,
+    for<'a> &'a S::EdgeWeight: Add<Output = S::EdgeWeight>,
+{
+    type Cost = S::EdgeWeight;
+    type Error = DijkstraError;
+
+    fn distance_from<'a>(
+        &self,
+        graph: &'a Graph<S>,
+        source: &'a <S as GraphStorage>::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+        let iter = DijkstraIter::new(
+            graph,
+            |edge| MaybeOwned::Borrowed(edge.weight()),
+            outgoing_connections as fn(&Node<'a, S>) -> _,
+            source,
+            true,
+        )?;
+
+        Ok(iter.map(|route| DirectRoute {
+            source: route.path.source,
+            target: route.path.target,
+            distance: route.distance,
+        }))
+    }
+
+    fn every_distance<'a>(
+        &self,
+        graph: &'a Graph<S>,
+    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+        let iter = graph
+            .nodes()
+            .map(move |node| self.distance_from(graph, node.id()));
 
         fold!(iter => flatten)
     }
@@ -495,6 +579,49 @@ where
     }
 }
 
+impl<S, F, T> ShortestDistance<S> for Dijkstra<Undirected, F>
+where
+    S: GraphStorage,
+    S::NodeId: Eq + Hash,
+    F: Fn(Edge<S>) -> MaybeOwned<T>,
+    for<'a> T: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> &'a T: Add<Output = T>,
+{
+    type Cost = T;
+    type Error = DijkstraError;
+
+    fn distance_from<'a>(
+        &self,
+        graph: &'a Graph<S>,
+        source: &'a <S as GraphStorage>::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+        let iter = DijkstraIter::new(
+            graph,
+            &self.edge_cost,
+            Node::<'a, S>::connections as fn(&Node<'a, S>) -> _,
+            source,
+            true,
+        )?;
+
+        Ok(iter.map(|route| DirectRoute {
+            source: route.path.source,
+            target: route.path.target,
+            distance: route.distance,
+        }))
+    }
+
+    fn every_distance<'a>(
+        &self,
+        graph: &'a Graph<S>,
+    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+        let iter = graph
+            .nodes()
+            .map(move |node| self.distance_from(graph, node.id()));
+
+        fold!(iter => flatten)
+    }
+}
+
 impl<S, F, T> ShortestPath<S> for Dijkstra<Directed, F>
 where
     S: DirectedGraphStorage,
@@ -532,14 +659,60 @@ where
     }
 }
 
+impl<S, F, T> ShortestDistance<S> for Dijkstra<Directed, F>
+where
+    S: DirectedGraphStorage,
+    S::NodeId: Eq + Hash,
+    F: Fn(Edge<S>) -> MaybeOwned<T>,
+    for<'a> T: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> &'a T: Add<Output = T>,
+{
+    type Cost = T;
+    type Error = DijkstraError;
+
+    fn distance_from<'a>(
+        &self,
+        graph: &'a Graph<S>,
+        source: &'a <S as GraphStorage>::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+        let iter = DijkstraIter::new(
+            graph,
+            &self.edge_cost,
+            outgoing_connections as fn(&Node<'a, S>) -> _,
+            source,
+            true,
+        )?;
+
+        Ok(iter.map(|route| DirectRoute {
+            source: route.path.source,
+            target: route.path.target,
+            distance: route.distance,
+        }))
+    }
+
+    fn every_distance<'a>(
+        &self,
+        graph: &'a Graph<S>,
+    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+        let iter = graph
+            .nodes()
+            .map(move |node| self.distance_from(graph, node.id()));
+
+        fold!(iter => flatten)
+    }
+}
+
 #[cfg(test)]
 pub(super) mod tests {
+    use alloc::vec::Vec;
+    use core::{fmt::Debug, hash::Hash};
+
     use hashbrown::HashMap;
-    use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge, GraphStorage};
+    use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
     use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
     use petgraph_utils::{graph, GraphCollection};
 
-    use crate::shortest_paths::{dijkstra::Dijkstra, ShortestPath};
+    use crate::shortest_paths::{dijkstra::Dijkstra, ShortestDistance, ShortestPath};
 
     graph!(
         /// Uses the graph from networkx
@@ -587,8 +760,78 @@ pub(super) mod tests {
         ] as EdgeId
     );
 
+    fn assert_path<S, T>(
+        mut received: HashMap<NodeId, (T, Vec<Node<S>>)>,
+        expected: &[(NodeId, T, &[NodeId])],
+    ) where
+        S: GraphStorage<NodeId = NodeId>,
+        T: PartialEq + Debug,
+    {
+        assert_eq!(received.len(), expected.len());
+
+        for (node, expected_distance, expected_route) in expected {
+            let (distance, route) = received.remove(node).unwrap();
+            let route: Vec<_> = route.into_iter().map(|node| *node.id()).collect();
+
+            assert_eq!(distance, *expected_distance);
+            assert_eq!(&route, expected_route);
+        }
+    }
+
+    fn assert_distance<T>(mut received: HashMap<NodeId, T>, expected: &[(NodeId, T)])
+    where
+        T: PartialEq + Debug,
+    {
+        assert_eq!(received.len(), expected.len());
+
+        for (node, expected_distance) in expected {
+            let distance = received.remove(node).unwrap();
+
+            assert_eq!(distance, *expected_distance);
+        }
+    }
+
+    fn path_from<'a, S, P>(
+        graph: &'a Graph<S>,
+        source: &'a S::NodeId,
+        algorithm: &P,
+    ) -> HashMap<S::NodeId, (P::Cost, Vec<Node<'a, S>>)>
+    where
+        P: ShortestPath<S>,
+        S: GraphStorage,
+        S::NodeId: Copy + Eq + Hash,
+    {
+        algorithm
+            .path_from(graph, source)
+            .unwrap()
+            .map(|route| {
+                (
+                    *route.path.target.id(),
+                    (route.distance.value, route.path.to_vec()),
+                )
+            })
+            .collect()
+    }
+
+    fn distance_from<'a, S, P>(
+        graph: &'a Graph<S>,
+        source: &'a S::NodeId,
+        algorithm: &P,
+    ) -> HashMap<S::NodeId, P::Cost>
+    where
+        P: ShortestDistance<S>,
+        S: GraphStorage,
+        S::NodeId: Copy + Eq + Hash,
+    {
+        algorithm
+            .distance_from(graph, source)
+            .unwrap()
+            .map(|route| (*route.target.id(), route.distance.value))
+            .collect()
+    }
+
     #[test]
-    fn every_directed_default_edge_cost() {
+    fn path_from_directed_default_edge_cost() {
         let GraphCollection {
             graph,
             nodes,
@@ -597,11 +840,30 @@ pub(super) mod tests {
 
         let dijkstra = Dijkstra::directed();
 
-        let routes: HashMap<_, _> = dijkstra
-            .path_from(&graph, &nodes.a)
-            .unwrap()
-            .map(|route| (*route.path.target.id(), route.distance.value))
-            .collect();
+        let received = path_from(&graph, &nodes.a, &dijkstra);
+
+        let expected = [
+            (nodes.a, 0, &[nodes.a, nodes.a] as &[_]),
+            (nodes.b, 8, &[nodes.a, nodes.c, nodes.b]),
+            (nodes.c, 5, &[nodes.a, nodes.c]),
+            (nodes.d, 9, &[nodes.a, nodes.c, nodes.b, nodes.d]),
+            (nodes.e, 7, &[nodes.a, nodes.c, nodes.e]),
+        ];
+
+        assert_path(received, &expected);
+    }
+
+    #[test]
+    fn distance_from_directed_default_edge_cost() {
+        let GraphCollection {
+            graph,
+            nodes,
+            edges,
+        } = networkx::create();
+
+        let dijkstra = Dijkstra::directed();
+
+        let received = distance_from(&graph, &nodes.a, &dijkstra);
 
         let expected = [
             (nodes.a, 0),
@@ -611,13 +873,7 @@ pub(super) mod tests {
             (nodes.e, 7),
         ];
 
-        // TODO: path
-
-        assert_eq!(routes.len(), expected.len());
-
-        for (node, weight) in expected {
-            assert_eq!(routes[&node], weight);
-        }
+        assert_distance(received, &expected)
     }
 
     fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<'_, usize>
@@ -629,7 +885,7 @@ pub(super) mod tests {
     }
 
     #[test]
-    fn every_directed_custom_edge_cost() {
+    fn path_from_directed_custom_edge_cost() {
         let GraphCollection {
             graph,
             nodes,
@@ -638,11 +894,31 @@ pub(super) mod tests {
 
         let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
 
-        let routes: HashMap<_, _> = dijkstra
-            .path_from(&graph, &nodes.a)
-            .unwrap()
-            .map(|route| (*route.path.target.id(), route.distance.value))
-            .collect();
+        let received = path_from(&graph, &nodes.a, &dijkstra);
+
+        let expected = [
+            (nodes.a, 0, &[nodes.a, nodes.a] as &[_]),
+            (nodes.b, 5, &[nodes.a, nodes.b]),
+            (nodes.c, 8, &[nodes.a, nodes.b, nodes.c]),
+            (nodes.d, 8, &[nodes.a, nodes.d]),
+            (nodes.e, 10, &[nodes.a, nodes.d, nodes.e]),
+            (nodes.f, 16, &[nodes.a, nodes.d, nodes.e, nodes.f]),
+        ];
+
+        assert_path(received, &expected);
+    }
+
+    #[test]
+    fn distance_from_directed_custom_edge_cost() {
+        let GraphCollection {
+            graph,
+            nodes,
+            edges,
+        } = random::create();
+
+        let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
+
+        let received = distance_from(&graph, &nodes.a, &dijkstra);
 
         let expected = [
             (nodes.a, 0),
@@ -653,17 +929,11 @@ pub(super) mod tests {
             (nodes.f, 16),
         ];
 
-        // TODO: path
-
-        assert_eq!(routes.len(), expected.len());
-
-        for (node, weight) in expected {
-            assert_eq!(routes[&node], weight);
-        }
+        assert_distance(received, &expected)
     }
 
     #[test]
-    fn every_undirected_default_edge_cost() {
+    fn path_from_undirected_default_edge_cost() {
         let GraphCollection {
             graph,
             nodes,
@@ -671,11 +941,31 @@ pub(super) mod tests {
         } = networkx::create();
 
         let dijkstra = Dijkstra::undirected();
-        let result: HashMap<_, _> = dijkstra
-            .path_from(&graph, &nodes.a)
-            .unwrap()
-            .map(|route| (*route.path.target.id(), route.distance.value))
-            .collect();
+
+        let received = path_from(&graph, &nodes.a, &dijkstra);
+
+        let expected = [
+            (nodes.a, 0, &[nodes.a, nodes.a] as &[_]),
+            (nodes.b, 7, &[nodes.a, nodes.c, nodes.b]),
+            (nodes.c, 5, &[nodes.a, nodes.c]),
+            (nodes.d, 8, &[nodes.a, nodes.e, nodes.d]),
+            (nodes.e, 7, &[nodes.a, nodes.e]),
+        ];
+
+        assert_path(received, &expected)
+    }
+
+    #[test]
+    fn distance_from_undirected_default_edge_cost() {
+        let GraphCollection {
+            graph,
+            nodes,
+            edges,
+        } = networkx::create();
+
+        let dijkstra = Dijkstra::undirected();
+
+        let received = distance_from(&graph, &nodes.a, &dijkstra);
 
         let expected = [
             (nodes.a, 0),
@@ -685,16 +975,57 @@ pub(super) mod tests {
             (nodes.e, 7),
         ];
 
-        // TODO: path
-
-        assert_eq!(result.len(), expected.len());
-
-        for (node, weight) in expected {
-            assert_eq!(result[&node], weight);
-        }
+        assert_distance(received, &expected)
     }
 
-    //
+    #[test]
+    fn path_from_undirected_custom_edge_cost() {
+        let GraphCollection {
+            graph,
+            nodes,
+            edges,
+        } = random::create();
+
+        let dijkstra = Dijkstra::undirected().with_edge_cost(edge_cost);
+
+        let received = path_from(&graph, &nodes.a, &dijkstra);
+
+        let expected = [
+            (nodes.a, 0, &[nodes.a, nodes.a] as &[_]),
+            (nodes.b, 5, &[nodes.a, nodes.b]),
+            (nodes.c, 8, &[nodes.a, nodes.b, nodes.c]),
+            (nodes.d, 8, &[nodes.a, nodes.d]),
+            (nodes.e, 10, &[nodes.a, nodes.f, nodes.e]),
+            (nodes.f, 4, &[nodes.a, nodes.f]),
+        ];
+
+        assert_path(received, &expected);
+    }
+
+    #[test]
+    fn distance_from_undirected_custom_edge_cost() {
+        let GraphCollection {
+            graph,
+            nodes,
+            edges,
+        } = random::create();
+
+        let dijkstra = Dijkstra::undirected().with_edge_cost(edge_cost);
+
+        let received = distance_from(&graph, &nodes.a, &dijkstra);
+
+        let expected = [
+            (nodes.a, 0),
+            (nodes.b, 5),
+            (nodes.c, 8),
+            (nodes.d, 8),
+            (nodes.e, 10),
+            (nodes.f, 4),
+        ];
+
+        assert_distance(received, &expected)
+    }
+
     // fn non_empty_graph() -> impl Strategy<Value = Graph<(), u8, Directed, u8>> {
     //     any::<Graph<(), u8, Directed, u8>>()
     //         .prop_filter("graph is empty", |graph| graph.node_count() > 0)
