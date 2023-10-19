@@ -396,7 +396,7 @@ where
     type Cost = S::EdgeWeight;
     type Error = DijkstraError;
 
-    fn from<'a>(
+    fn path_from<'a>(
         &self,
         graph: &'a Graph<S>,
         source: &'a S::NodeId,
@@ -410,11 +410,13 @@ where
         )
     }
 
-    fn every<'a>(
+    fn every_path<'a>(
         &self,
         graph: &'a Graph<S>,
     ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
-        let iter = graph.nodes().map(move |node| self.from(graph, node.id()));
+        let iter = graph
+            .nodes()
+            .map(move |node| self.path_from(graph, node.id()));
 
         fold!(iter => flatten)
     }
@@ -430,7 +432,7 @@ where
     type Cost = S::EdgeWeight;
     type Error = DijkstraError;
 
-    fn from<'a>(
+    fn path_from<'a>(
         &self,
         graph: &'a Graph<S>,
         source: &'a S::NodeId,
@@ -444,11 +446,13 @@ where
         )
     }
 
-    fn every<'a>(
+    fn every_path<'a>(
         &self,
         graph: &'a Graph<S>,
     ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
-        let iter = graph.nodes().map(move |node| self.from(graph, node.id()));
+        let iter = graph
+            .nodes()
+            .map(move |node| self.path_from(graph, node.id()));
 
         fold!(iter => flatten)
     }
@@ -465,7 +469,7 @@ where
     type Cost = T;
     type Error = DijkstraError;
 
-    fn from<'a>(
+    fn path_from<'a>(
         &self,
         graph: &'a Graph<S>,
         source: &'a S::NodeId,
@@ -479,11 +483,13 @@ where
         )
     }
 
-    fn every<'a>(
+    fn every_path<'a>(
         &self,
         graph: &'a Graph<S>,
     ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
-        let iter = graph.nodes().map(move |node| self.from(graph, node.id()));
+        let iter = graph
+            .nodes()
+            .map(move |node| self.path_from(graph, node.id()));
 
         fold!(iter => flatten)
     }
@@ -500,7 +506,7 @@ where
     type Cost = T;
     type Error = DijkstraError;
 
-    fn from<'a>(
+    fn path_from<'a>(
         &self,
         graph: &'a Graph<S>,
         source: &'a S::NodeId,
@@ -514,11 +520,13 @@ where
         )
     }
 
-    fn every<'a>(
+    fn every_path<'a>(
         &self,
         graph: &'a Graph<S>,
     ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
-        let iter = graph.nodes().map(move |node| self.from(graph, node.id()));
+        let iter = graph
+            .nodes()
+            .map(move |node| self.path_from(graph, node.id()));
 
         fold!(iter => flatten)
     }
@@ -590,7 +598,7 @@ pub(super) mod tests {
         let dijkstra = Dijkstra::directed();
 
         let routes: HashMap<_, _> = dijkstra
-            .from(&graph, &nodes.a)
+            .path_from(&graph, &nodes.a)
             .unwrap()
             .map(|route| (*route.path.target.id(), route.distance.value))
             .collect();
@@ -631,7 +639,7 @@ pub(super) mod tests {
         let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
 
         let routes: HashMap<_, _> = dijkstra
-            .from(&graph, &nodes.a)
+            .path_from(&graph, &nodes.a)
             .unwrap()
             .map(|route| (*route.path.target.id(), route.distance.value))
             .collect();
@@ -664,7 +672,7 @@ pub(super) mod tests {
 
         let dijkstra = Dijkstra::undirected();
         let result: HashMap<_, _> = dijkstra
-            .from(&graph, &nodes.a)
+            .path_from(&graph, &nodes.a)
             .unwrap()
             .map(|route| (*route.path.target.id(), route.distance.value))
             .collect();
