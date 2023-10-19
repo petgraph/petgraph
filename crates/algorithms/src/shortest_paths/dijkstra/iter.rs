@@ -15,6 +15,12 @@ use crate::shortest_paths::{
     Distance, Path, Route,
 };
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub(super) enum Intermediates {
+    Discard,
+    Record,
+}
+
 fn reconstruct_intermediates<'a, S, H>(
     previous: &HashMap<&'a S::NodeId, Option<Node<'a, S>>, H>,
     target: &'a S::NodeId,
@@ -69,7 +75,7 @@ where
 
     source: Node<'a, S>,
 
-    discard_intermediates: bool,
+    intermediates: Intermediates,
 
     distances: HashMap<&'a S::NodeId, T, FxBuildHasher>,
     previous: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
@@ -92,7 +98,7 @@ where
 
         source: &'a S::NodeId,
 
-        discard_intermediates: bool,
+        intermediates: Intermediates,
     ) -> Result<Self, DijkstraError> {
         let source_node = graph
             .node(source)
@@ -104,7 +110,7 @@ where
         let mut queue = Queue::new();
 
         distances.insert(source, T::zero());
-        if !discard_intermediates {
+        if intermediates == Intermediates::Record {
             previous.insert(source, None);
         }
 
@@ -115,7 +121,7 @@ where
             edge_cost,
             connections,
             source: source_node,
-            discard_intermediates,
+            intermediates,
             distances,
             previous,
         })
@@ -156,7 +162,7 @@ where
             if insert {
                 self.distances.insert(target.id(), alternative.clone());
 
-                if !self.discard_intermediates {
+                if self.intermediates == Intermediates::Record {
                     self.previous.insert(target.id(), Some(node));
                 }
 
@@ -167,7 +173,7 @@ where
         // we're currently visiting the node that has the shortest distance, therefore we know
         // that the distance is the shortest possible
         let distance = self.distances[node.id()].clone();
-        let intermediates = if self.discard_intermediates {
+        let intermediates = if self.intermediates == Intermediates::Discard {
             vec![]
         } else {
             reconstruct_intermediates(&self.previous, node.id())

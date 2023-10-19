@@ -20,7 +20,9 @@ use petgraph_core::{
 
 pub use self::error::DijkstraError;
 use self::iter::DijkstraIter;
-use crate::shortest_paths::{DirectRoute, Route, ShortestDistance, ShortestPath};
+use crate::shortest_paths::{
+    dijkstra::iter::Intermediates, DirectRoute, Route, ShortestDistance, ShortestPath,
+};
 
 macro_rules! fold {
     ($iter:expr => flatten) => {
@@ -116,7 +118,7 @@ where
             |edge| MaybeOwned::Borrowed(edge.weight()),
             Node::<'a, S>::connections as fn(&Node<'a, S>) -> _,
             source,
-            false,
+            Intermediates::Record,
         )
     }
 
@@ -152,7 +154,7 @@ where
             |edge| MaybeOwned::Borrowed(edge.weight()),
             Node::<'a, S>::connections as fn(&Node<'a, S>) -> _,
             source,
-            true,
+            Intermediates::Discard,
         )?;
 
         Ok(iter.map(|route| DirectRoute {
@@ -194,7 +196,7 @@ where
             |edge| MaybeOwned::Borrowed(edge.weight()),
             outgoing_connections as fn(&Node<'a, S>) -> _,
             source,
-            false,
+            Intermediates::Record,
         )
     }
 
@@ -230,7 +232,7 @@ where
             |edge| MaybeOwned::Borrowed(edge.weight()),
             outgoing_connections as fn(&Node<'a, S>) -> _,
             source,
-            true,
+            Intermediates::Discard,
         )?;
 
         Ok(iter.map(|route| DirectRoute {
@@ -273,7 +275,7 @@ where
             &self.edge_cost,
             Node::<'a, S>::connections as fn(&Node<'a, S>) -> _,
             source,
-            false,
+            Intermediates::Record,
         )
     }
 
@@ -310,7 +312,7 @@ where
             &self.edge_cost,
             Node::<'a, S>::connections as fn(&Node<'a, S>) -> _,
             source,
-            true,
+            Intermediates::Discard,
         )?;
 
         Ok(iter.map(|route| DirectRoute {
@@ -353,7 +355,7 @@ where
             &self.edge_cost,
             outgoing_connections as fn(&Node<'a, S>) -> _,
             source,
-            false,
+            Intermediates::Record,
         )
     }
 
@@ -390,7 +392,7 @@ where
             &self.edge_cost,
             outgoing_connections as fn(&Node<'a, S>) -> _,
             source,
-            true,
+            Intermediates::Discard,
         )?;
 
         Ok(iter.map(|route| DirectRoute {
