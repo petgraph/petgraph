@@ -75,6 +75,9 @@ where
 
     source: Node<'a, S>,
 
+    init: bool,
+    next: Option<Node<'a, S>>,
+
     intermediates: Intermediates,
 
     distances: HashMap<&'a S::NodeId, T, FxBuildHasher>,
@@ -121,6 +124,8 @@ where
             edge_cost,
             connections,
             source: source_node,
+            init: true,
+            next: None,
             intermediates,
             distances,
             previous,
@@ -140,8 +145,25 @@ where
     type Item = Route<'a, S, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let node = self.queue.pop_min()?;
+        // the first iteration is special, as we immediately return the source node
+        // and then begin with the actual iteration loop.
+        if self.init {
+            self.init = false;
+            self.next = Some(self.source);
 
+            return Some(Route {
+                path: Path {
+                    source: self.source,
+                    target: self.source,
+                    intermediates: Vec::new(),
+                },
+                distance: Distance { value: T::zero() },
+            });
+        }
+
+        // Process the neighbours from the node we determined in the last iteration.
+        // Reasoning behind this see below.
+        let node = self.next?;
         let connections = self.connections.connections(&node);
 
         for edge in connections {
@@ -150,31 +172,50 @@ where
 
             let alternative = &self.distances[node.id()] + (self.edge_cost)(edge).as_ref();
 
-            let mut insert = false;
             if let Some(distance) = self.distances.get(target.id()) {
-                if alternative < *distance {
-                    insert = true;
+                // do not insert the updated distance if it is not strictly better than the current
+                // one
+                if alternative >= *distance {
+                    continue;
                 }
-            } else {
-                insert = true;
             }
 
-            if insert {
-                self.distances.insert(target.id(), alternative.clone());
+            self.distances.insert(target.id(), alternative.clone());
 
-                if self.intermediates == Intermediates::Record {
-                    self.previous.insert(target.id(), Some(node));
-                }
-
-                self.queue.decrease_priority(target, alternative);
+            if self.intermediates == Intermediates::Record {
+                self.previous.insert(target.id(), Some(node));
             }
+
+            self.queue.decrease_priority(target, alternative);
         }
+
+        // this is what makes this special: instead of getting the next node as the start of next
+        // (which would make sense, right?) we get the next node at the end of the last iteration.
+        // The reason behind this is simple: imagine we want to know the shortest path
+        // between A -> B. If we would get the next node at the beginning of the iteration
+        // (instead of at the end of the last iteration, like we do here), even though we
+        // only need `A -> B`, we would still explore all edges from `B` to any other node and only
+        // then return the path (and distance) between A and B. While the difference in
+        // performance is minimal for small graphs, time savings are substantial for dense graphs.
+        // You can kind of imagine it like this:
+        // ```
+        // let node = get_next();
+        // yield node;
+        // for neighbour in get_neighbours() { ... }
+        // ```
+        // Only difference is that we do not have generators in stable Rust (yet).
+        let Some(node) = self.queue.pop_min() else {
+            self.next = None;
+            return None;
+        };
+
+        self.next = Some(node);
 
         // we're currently visiting the node that has the shortest distance, therefore we know
         // that the distance is the shortest possible
         let distance = self.distances[node.id()].clone();
         let intermediates = if self.intermediates == Intermediates::Discard {
-            vec![]
+            Vec::new()
         } else {
             reconstruct_intermediates(&self.previous, node.id())
         };

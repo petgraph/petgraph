@@ -19,10 +19,8 @@ use petgraph_core::{
 };
 
 pub use self::error::DijkstraError;
-use self::iter::DijkstraIter;
-use crate::shortest_paths::{
-    dijkstra::iter::Intermediates, DirectRoute, Route, ShortestDistance, ShortestPath,
-};
+use self::iter::{DijkstraIter, Intermediates};
+use crate::shortest_paths::{DirectRoute, Route, ShortestDistance, ShortestPath};
 
 macro_rules! fold {
     ($iter:expr => flatten) => {

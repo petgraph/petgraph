@@ -3,7 +3,7 @@ use core::{fmt::Debug, hash::Hash};
 
 use hashbrown::HashMap;
 use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
-use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
+use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{dijkstra::Dijkstra, ShortestDistance, ShortestPath};
