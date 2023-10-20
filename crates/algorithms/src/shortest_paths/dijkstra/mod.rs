@@ -1,6 +1,5 @@
 mod error;
 mod iter;
-mod queue;
 #[cfg(test)]
 mod tests;
 
@@ -18,7 +17,7 @@ use petgraph_core::{
     DirectedGraphStorage, Edge, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
-pub use self::error::DijkstraError;
+pub(crate) use self::error::DijkstraError;
 use self::iter::{DijkstraIter, Intermediates};
 use crate::shortest_paths::{DirectRoute, Route, ShortestDistance, ShortestPath};
 

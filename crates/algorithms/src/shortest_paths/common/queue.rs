@@ -54,7 +54,7 @@ where
     }
 }
 
-pub(super) struct Queue<'a, S, T>
+pub(in crate::shortest_paths) struct Queue<'a, S, T>
 where
     S: GraphStorage,
     T: Ord,
@@ -67,13 +67,13 @@ where
     S: GraphStorage,
     T: Ord,
 {
-    pub(super) fn new() -> Self {
+    pub(in crate::shortest_paths) fn new() -> Self {
         Self {
             heap: BinaryHeap::new(),
         }
     }
 
-    pub(super) fn push(&mut self, node: Node<'a, S>, priority: T) {
+    pub(in crate::shortest_paths) fn push(&mut self, node: Node<'a, S>, priority: T) {
         self.heap.push(Reverse(QueueItem {
             node,
             priority,
@@ -82,7 +82,7 @@ where
         }));
     }
 
-    pub(super) fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
+    pub(in crate::shortest_paths) fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
         for Reverse(item) in &self.heap {
             if item.node.id() == node.id() {
                 item.skip.set(true);
@@ -98,7 +98,7 @@ where
         }));
     }
 
-    pub(super) fn pop_min(&mut self) -> Option<Node<'a, S>> {
+    pub(in crate::shortest_paths) fn pop_min(&mut self) -> Option<Node<'a, S>> {
         while let Some(Reverse(item)) = self.heap.pop() {
             if !item.skip.get() {
                 return Some(item.node);

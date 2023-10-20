@@ -179,7 +179,7 @@ pub mod algo {
             is_isomorphic_subgraph_matching,
         },
         shortest_paths::{
-            astar, bellman_ford, dijkstra, find_negative_cycle, floyd_warshall,
+            astar_old, bellman_ford, dijkstra, find_negative_cycle, floyd_warshall,
             k_shortest_path_length,
         },
         simple_paths::all_simple_paths,

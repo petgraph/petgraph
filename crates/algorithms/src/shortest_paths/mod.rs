@@ -1,5 +1,7 @@
 // mod astar;
 // mod bellman_ford;
+mod astar;
+mod common;
 mod dijkstra;
 // mod floyd_warshall;
 // mod k_shortest_path_length;

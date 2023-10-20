@@ -10,10 +10,7 @@ use hashbrown::HashMap;
 use num_traits::Zero;
 use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 
-use crate::shortest_paths::{
-    dijkstra::{queue::Queue, DijkstraError},
-    Distance, Path, Route,
-};
+use crate::shortest_paths::{common::queue::Queue, dijkstra::DijkstraError, Distance, Path, Route};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(super) enum Intermediates {
