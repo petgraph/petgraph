@@ -10,7 +10,11 @@ use hashbrown::HashMap;
 use num_traits::Zero;
 use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 
-use crate::shortest_paths::{common::queue::Queue, dijkstra::DijkstraError, Distance, Path, Route};
+use crate::shortest_paths::{
+    common::{queue::Queue, traits::ConnectionFn},
+    dijkstra::DijkstraError,
+    Distance, Path, Route,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(super) enum Intermediates {
@@ -51,23 +55,6 @@ where
     path.reverse();
 
     path
-}
-
-pub(super) trait ConnectionFn<'a, S>
-where
-    S: GraphStorage,
-{
-    fn connections(&self, node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a;
-}
-
-impl<'a, S, I> ConnectionFn<'a, S> for fn(&Node<'a, S>) -> I
-where
-    S: GraphStorage,
-    I: Iterator<Item = Edge<'a, S>> + 'a,
-{
-    fn connections(&self, node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a {
-        (*self)(node)
-    }
 }
 
 pub(super) struct DijkstraIter<'a, S, T, F, G>

@@ -1,1 +1,2 @@
-pub mod queue;
+pub(super) mod queue;
+pub(super) mod traits;
