@@ -85,6 +85,8 @@ where
 
     source: Node<'a, S>,
 
+    num_nodes: usize,
+
     init: bool,
     next: Option<Node<'a, S>>,
 
@@ -134,6 +136,7 @@ where
             edge_cost,
             connections,
             source: source_node,
+            num_nodes: graph.num_nodes(),
             init: true,
             next: None,
             intermediates,
@@ -240,5 +243,9 @@ where
             path,
             distance: Distance { value: distance },
         })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(self.num_nodes))
     }
 }
