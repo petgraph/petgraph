@@ -1,6 +1,6 @@
 // mod astar;
-// mod bellman_ford;
 mod astar;
+mod bellman_ford;
 mod common;
 mod dijkstra;
 // mod floyd_warshall;
