@@ -21,6 +21,7 @@ extern crate alloc;
 // pub mod heuristics;
 // pub mod isomorphism;
 // pub mod operators;
+mod polyfill;
 pub mod shortest_paths;
 // pub mod simple_paths;
 // pub mod traversal;

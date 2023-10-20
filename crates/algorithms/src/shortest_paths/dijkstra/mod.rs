@@ -3,7 +3,6 @@ mod iter;
 #[cfg(test)]
 mod tests;
 
-use alloc::vec;
 use core::{hash::Hash, ops::Add};
 
 use error_stack::Result;
@@ -18,26 +17,12 @@ use petgraph_core::{
 };
 
 pub(crate) use self::error::DijkstraError;
-use self::iter::{DijkstraIter, Intermediates};
-use crate::shortest_paths::{DirectRoute, Route, ShortestDistance, ShortestPath};
-
-macro_rules! fold {
-    ($iter:expr => flatten) => {
-        $iter
-            .fold(Ok(vec![]), |acc, value| match (acc, value) {
-                (Ok(mut acc), Ok(value)) => {
-                    acc.extend(value);
-                    Ok(acc)
-                }
-                (Err(mut acc), Err(error)) => {
-                    acc.extend_one(error);
-                    Err(acc)
-                }
-                (Err(err), _) | (_, Err(err)) => Err(err),
-            })
-            .map(|value| value.into_iter())
-    };
-}
+use self::iter::DijkstraIter;
+use super::common::intermediates::Intermediates;
+use crate::{
+    polyfill::IteratorExt,
+    shortest_paths::{DirectRoute, Route, ShortestDistance, ShortestPath},
+};
 
 fn outgoing_connections<'a, S>(node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a
 where
@@ -125,9 +110,10 @@ where
     ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
         let iter = graph
             .nodes()
-            .map(move |node| self.path_from(graph, node.id()));
+            .map(move |node| self.path_from(graph, node.id()))
+            .collect_reports::<Vec<_>>()?;
 
-        fold!(iter => flatten)
+        Ok(iter.into_iter().flatten())
     }
 }
 
@@ -157,7 +143,7 @@ where
         Ok(iter.map(|route| DirectRoute {
             source: route.path.source,
             target: route.path.target,
-            distance: route.distance,
+            cost: route.cost,
         }))
     }
 
@@ -167,9 +153,10 @@ where
     ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
         let iter = graph
             .nodes()
-            .map(move |node| self.distance_from(graph, node.id()));
+            .map(move |node| self.distance_from(graph, node.id()))
+            .collect_reports::<Vec<_>>()?;
 
-        fold!(iter => flatten)
+        Ok(iter.into_iter().flatten())
     }
 }
 
@@ -203,9 +190,10 @@ where
     ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
         let iter = graph
             .nodes()
-            .map(move |node| self.path_from(graph, node.id()));
+            .map(move |node| self.path_from(graph, node.id()))
+            .collect_reports::<Vec<_>>()?;
 
-        fold!(iter => flatten)
+        Ok(iter.into_iter().flatten())
     }
 }
 
@@ -235,7 +223,7 @@ where
         Ok(iter.map(|route| DirectRoute {
             source: route.path.source,
             target: route.path.target,
-            distance: route.distance,
+            cost: route.cost,
         }))
     }
 
@@ -245,9 +233,10 @@ where
     ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
         let iter = graph
             .nodes()
-            .map(move |node| self.distance_from(graph, node.id()));
+            .map(move |node| self.distance_from(graph, node.id()))
+            .collect_reports::<Vec<_>>()?;
 
-        fold!(iter => flatten)
+        Ok(iter.into_iter().flatten())
     }
 }
 
@@ -282,9 +271,10 @@ where
     ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
         let iter = graph
             .nodes()
-            .map(move |node| self.path_from(graph, node.id()));
+            .map(move |node| self.path_from(graph, node.id()))
+            .collect_reports::<Vec<_>>()?;
 
-        fold!(iter => flatten)
+        Ok(iter.into_iter().flatten())
     }
 }
 
@@ -315,7 +305,7 @@ where
         Ok(iter.map(|route| DirectRoute {
             source: route.path.source,
             target: route.path.target,
-            distance: route.distance,
+            cost: route.cost,
         }))
     }
 
@@ -325,9 +315,10 @@ where
     ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
         let iter = graph
             .nodes()
-            .map(move |node| self.distance_from(graph, node.id()));
+            .map(move |node| self.distance_from(graph, node.id()))
+            .collect_reports::<Vec<_>>()?;
 
-        fold!(iter => flatten)
+        Ok(iter.into_iter().flatten())
     }
 }
 
@@ -362,9 +353,10 @@ where
     ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
         let iter = graph
             .nodes()
-            .map(move |node| self.path_from(graph, node.id()));
+            .map(move |node| self.path_from(graph, node.id()))
+            .collect_reports::<Vec<_>>()?;
 
-        fold!(iter => flatten)
+        Ok(iter.into_iter().flatten())
     }
 }
 
@@ -395,7 +387,7 @@ where
         Ok(iter.map(|route| DirectRoute {
             source: route.path.source,
             target: route.path.target,
-            distance: route.distance,
+            cost: route.cost,
         }))
     }
 
@@ -405,8 +397,9 @@ where
     ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
         let iter = graph
             .nodes()
-            .map(move |node| self.distance_from(graph, node.id()));
+            .map(move |node| self.distance_from(graph, node.id()))
+            .collect_reports::<Vec<_>>()?;
 
-        fold!(iter => flatten)
+        Ok(iter.into_iter().flatten())
     }
 }

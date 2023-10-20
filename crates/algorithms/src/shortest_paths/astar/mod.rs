@@ -1,5 +1,5 @@
 mod error;
-mod iter;
+mod r#impl;
 
 use petgraph_core::{
     edge::marker::{Directed, Undirected},

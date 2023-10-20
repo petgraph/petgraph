@@ -98,12 +98,7 @@ where
     algorithm
         .path_from(graph, source)
         .unwrap()
-        .map(|route| {
-            (
-                *route.path.target.id(),
-                (route.distance.value, route.path.to_vec()),
-            )
-        })
+        .map(|route| (*route.path.target.id(), (route.cost.0, route.path.to_vec())))
         .collect()
 }
 
@@ -120,7 +115,7 @@ where
     algorithm
         .distance_from(graph, source)
         .unwrap()
-        .map(|route| (*route.target.id(), route.distance.value))
+        .map(|route| (*route.target.id(), route.cost.0))
         .collect()
 }
 

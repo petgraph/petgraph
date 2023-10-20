@@ -13,8 +13,16 @@ use alloc::vec::{IntoIter, Vec};
 use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage, Node};
 
-struct Distance<T> {
-    value: T,
+struct Cost<T>(T);
+
+impl<T> Cost<T> {
+    fn value(&self) -> &T {
+        &self.0
+    }
+
+    fn into_value(self) -> T {
+        self.0
+    }
 }
 
 struct Path<'a, S>
@@ -68,7 +76,7 @@ where
 {
     path: Path<'a, S>,
 
-    distance: Distance<T>,
+    cost: Cost<T>,
 }
 
 struct DirectRoute<'a, S, T>
@@ -78,7 +86,7 @@ where
     source: Node<'a, S>,
     target: Node<'a, S>,
 
-    distance: Distance<T>,
+    cost: Cost<T>,
 }
 
 pub trait ShortestPath<S>
@@ -152,11 +160,11 @@ where
         graph: &Graph<S>,
         source: &S::NodeId,
         target: &S::NodeId,
-    ) -> Option<Distance<Self::Cost>> {
+    ) -> Option<Cost<Self::Cost>> {
         self.every_distance(graph)
             .ok()?
             .find(move |route| route.source.id() == source && route.target.id() == target)
-            .map(|route| route.distance)
+            .map(|route| route.cost)
     }
     fn every_distance<'a>(
         &self,
