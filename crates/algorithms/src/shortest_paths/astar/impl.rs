@@ -98,7 +98,7 @@ where
         })
     }
 
-    fn find(mut self) -> Option<Route<'a, S, T>> {
+    pub(super) fn find(mut self) -> Option<Route<'a, S, T>> {
         while let Some(node) = self.queue.pop_min() {
             if node.id() == self.target.id() {
                 let intermediates = if self.intermediates == Intermediates::Record {

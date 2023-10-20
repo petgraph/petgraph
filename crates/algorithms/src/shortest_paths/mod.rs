@@ -13,7 +13,9 @@ use alloc::vec::{IntoIter, Vec};
 use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage, Node};
 
-struct Cost<T>(T);
+pub use self::{astar::AStar, dijkstra::Dijkstra};
+
+pub struct Cost<T>(T);
 
 impl<T> Cost<T> {
     fn value(&self) -> &T {
@@ -25,7 +27,7 @@ impl<T> Cost<T> {
     }
 }
 
-struct Path<'a, S>
+pub struct Path<'a, S>
 where
     S: GraphStorage,
 {
@@ -39,7 +41,8 @@ impl<'a, S> Path<'a, S>
 where
     S: GraphStorage,
 {
-    fn to_vec(self) -> Vec<Node<'a, S>> {
+    #[must_use]
+    pub fn to_vec(self) -> Vec<Node<'a, S>> {
         let mut vec = Vec::with_capacity(self.intermediates.len() + 2);
 
         vec.push(self.source);
@@ -49,7 +52,7 @@ where
         vec
     }
 
-    fn iter(&self) -> impl Iterator<Item = &Node<'a, S>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Node<'a, S>> {
         let mut iter = self.intermediates.iter();
 
         iter.next_back();
@@ -70,7 +73,7 @@ where
     }
 }
 
-struct Route<'a, S, T>
+pub struct Route<'a, S, T>
 where
     S: GraphStorage,
 {
@@ -79,7 +82,7 @@ where
     cost: Cost<T>,
 }
 
-struct DirectRoute<'a, S, T>
+pub struct DirectRoute<'a, S, T>
 where
     S: GraphStorage,
 {
