@@ -1,6 +1,6 @@
 use alloc::{vec, vec::Vec};
 
-use petgraph_core::{edge::EdgeType, index::IndexType};
+use petgraph_core::deprecated::{edge::EdgeType, index::IndexType};
 use petgraph_graph::{Graph, NodeIndex};
 
 use crate::components::kosaraju_scc;

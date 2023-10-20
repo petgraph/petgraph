@@ -3,7 +3,7 @@
 use alloc::{vec, vec::Vec};
 
 use funty::Floating;
-use petgraph_core::visit::{
+use petgraph_core::deprecated::visit::{
     EdgeRef, IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable, VisitMap, Visitable,
 };
 

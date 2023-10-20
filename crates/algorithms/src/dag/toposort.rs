@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use petgraph_core::visit::{
+use petgraph_core::deprecated::visit::{
     IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap, Visitable,
 };
 

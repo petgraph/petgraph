@@ -14,6 +14,7 @@
 extern crate alloc;
 
 pub mod bipartite;
+mod common;
 pub mod components;
 pub mod connectivity;
 pub mod cycles;
@@ -31,7 +32,7 @@ mod utilities;
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use petgraph_core::{edge::Directed, index::IndexType};
+    use petgraph_core::{edge::Directed, id::IndexType};
     use petgraph_graph::{Graph, NodeIndex};
 
     // A graph is topologically sorted if for every edge `(u, v)`, `u` comes before `v` in the

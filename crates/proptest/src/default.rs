@@ -5,7 +5,7 @@ use core::{
     hash::{Hash, Hasher},
 };
 
-use petgraph_core::{
+use petgraph_core::deprecated::{
     data::{Build, Create},
     visit::Data,
 };
@@ -106,12 +106,10 @@ where
         .prop_flat_map(move |nodes: Vec<NodeWeight>| {
             // There are essentially 3 cases:
             // 1) no nodes (empty), meaning we cannot generate any edges
-            // 2) IF self_loops
-            //      a) 1 node, meaning we can only generate self loops
-            //      b) 2+ nodes, meaning we can generate always generate
-            // 3) IF !self_loops
-            //      a) 1 node, meaning we cannot generate any edges (empty)
-            //      b) 2+ nodes, meaning we can generate edges
+            // 2) IF self_loops a) 1 node, meaning we can only generate self loops b) 2+ nodes,
+            //    meaning we can generate always generate
+            // 3) IF !self_loops a) 1 node, meaning we cannot generate any edges (empty) b) 2+
+            //    nodes, meaning we can generate edges
             let nodes_len = nodes.len();
 
             // generate an edge where no self edges are allowed, this allows the use in

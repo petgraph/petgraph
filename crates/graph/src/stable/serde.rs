@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use core::{cell::Cell, marker::PhantomData};
 
 use funty::Integral;
-use petgraph_core::{
+use petgraph_core::deprecated::{
     index::IndexType,
     visit::{EdgeIndexable, NodeIndexable},
 };

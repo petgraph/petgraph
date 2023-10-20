@@ -1,4 +1,4 @@
-use petgraph_core::visit::{Dfs, GraphBase, GraphRef, VisitMap, Visitable};
+use petgraph_core::deprecated::visit::{Dfs, GraphBase, GraphRef, VisitMap, Visitable};
 
 type DfsSpaceType<G> = DfsSpace<<G as GraphBase>::NodeId, <G as Visitable>::Map>;
 

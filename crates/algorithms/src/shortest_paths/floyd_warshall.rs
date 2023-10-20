@@ -1,12 +1,12 @@
 use alloc::vec;
 use core::hash::Hash;
 
-use indexmap::IndexMap;
-use petgraph_core::visit::{
+use fxhash::FxBuildHasher;
+use petgraph_core::deprecated::visit::{
     EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable,
 };
 
-use crate::{error::NegativeCycleError, shortest_paths::BoundedMeasure};
+use crate::{common::IndexMap, error::NegativeCycleError, shortest_paths::BoundedMeasure};
 
 /// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
 ///
@@ -149,7 +149,7 @@ where
     }
 
     let mut distance_map: IndexMap<(G::NodeId, G::NodeId), K> =
-        IndexMap::with_capacity(num_of_nodes * num_of_nodes);
+        IndexMap::with_capacity_and_hasher(num_of_nodes * num_of_nodes, FxBuildHasher::default());
 
     for i in 0..num_of_nodes {
         for j in 0..num_of_nodes {

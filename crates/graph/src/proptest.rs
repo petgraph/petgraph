@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 use core::fmt::Debug;
 
-use petgraph_core::{edge::EdgeType, index::IndexType};
+use petgraph_core::deprecated::{edge::EdgeType, index::IndexType};
 use petgraph_proptest::default::graph_strategy;
 use proptest::{
     arbitrary::Arbitrary, collection::SizeRange, prelude::BoxedStrategy, strategy::Strategy,

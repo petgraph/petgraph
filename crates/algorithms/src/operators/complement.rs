@@ -1,4 +1,4 @@
-use petgraph_core::{edge::EdgeType, index::IndexType, visit::IntoNodeReferences};
+use petgraph_core::deprecated::{edge::EdgeType, index::IndexType, visit::IntoNodeReferences};
 use petgraph_graph::Graph;
 
 /// \[Generic\] complement of the graph

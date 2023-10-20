@@ -1,4 +1,4 @@
-use petgraph_core::visit::{IntoNeighbors, Visitable, Walker};
+use petgraph_core::deprecated::visit::{IntoNeighbors, Visitable, Walker};
 
 use crate::traversal::{with_dfs, DfsSpace};
 

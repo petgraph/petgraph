@@ -3,8 +3,8 @@ use core::{hash::Hash, iter::from_fn};
 
 use indexmap::IndexSet;
 use petgraph_core::{
+    deprecated::visit::{IntoNeighborsDirected, NodeCount},
     edge::Direction,
-    visit::{IntoNeighborsDirected, NodeCount},
 };
 
 /// Returns an iterator that produces all simple paths from `from` node to `to`, which contains at
@@ -103,11 +103,11 @@ mod test {
     use alloc::{vec, vec::Vec};
     use core::iter::once;
 
-    use indexmap::{IndexMap, IndexSet};
-    use petgraph_core::index::IndexType;
+    use petgraph_core::id::IndexType;
     use petgraph_graph::{DiGraph, NodeIndex};
 
     use super::all_simple_paths;
+    use crate::common::{IndexMap, IndexSet};
 
     /// Graph:
     ///

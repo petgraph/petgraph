@@ -1,11 +1,11 @@
 use alloc::{vec, vec::Vec};
 
 use petgraph_core::{
-    edge::Direction,
-    visit::{
+    deprecated::visit::{
         EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoNeighborsDirected,
         NodeCompactIndexable,
     },
+    edge::Direction,
 };
 
 use crate::isomorphism::{

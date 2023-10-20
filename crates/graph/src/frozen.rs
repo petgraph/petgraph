@@ -1,13 +1,15 @@
 use core::ops::{Deref, Index, IndexMut};
 
 use petgraph_core::{
-    data::{DataMap, DataMapMut},
-    delegate_impl, deref_twice,
-    index::IndexType,
-    Data, DataMap, DataMapMut, EdgeCount, EdgeIndexable, GetAdjacencyMatrix, GraphProp,
-    IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
-    IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
-    Visitable,
+    delegate_impl,
+    deprecated::{
+        data::{DataMap, DataMapMut},
+        index::IndexType,
+    },
+    deref_twice, Data, DataMap, DataMapMut, EdgeCount, EdgeIndexable, GetAdjacencyMatrix,
+    GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
+    IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
+    NodeCount, NodeIndexable, Visitable,
 };
 
 use super::Frozen;

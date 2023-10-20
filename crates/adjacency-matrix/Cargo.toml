@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 fixedbitset.workspace = true
 funty.workspace = true
-petgraph-core = { workspace = true, features = ["alloc", "fixedbitset"] }
+petgraph-core = { workspace = true, features = ["alloc"] }
 
 [dev-dependencies]
 

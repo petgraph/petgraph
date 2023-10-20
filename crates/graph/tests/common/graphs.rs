@@ -1,6 +1,6 @@
 use petgraph_core::{
     edge::{Directed, EdgeType},
-    index::{DefaultIx, IndexType},
+    id::{DefaultIx, IndexType},
 };
 use petgraph_graph::{stable::StableGraph, EdgeIndex, Graph, NodeIndex};
 

@@ -16,8 +16,7 @@ use core::{
 };
 
 use fixedbitset::FixedBitSet;
-use petgraph_core::{
-    deprecated::IntoWeightedEdge,
+use petgraph_core::deprecated::{
     edge::{Directed, EdgeType},
     index::{DefaultIx, FromIndexType, IndexType, IntoIndexType, SafeCast},
     visit::{
@@ -25,6 +24,7 @@ use petgraph_core::{
         IntoEdges, IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
         NodeCount, NodeIndexable, Visitable,
     },
+    IntoWeightedEdge,
 };
 
 /// Csr node index type, a plain integer.

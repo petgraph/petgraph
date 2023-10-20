@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use core::num::NonZeroUsize;
 
-use petgraph_core::visit::{IntoNeighbors, IntoNodeIdentifiers, NodeIndexable};
+use petgraph_core::deprecated::visit::{IntoNeighbors, IntoNodeIdentifiers, NodeIndexable};
 
 #[derive(Copy, Clone, Debug)]
 struct NodeData {

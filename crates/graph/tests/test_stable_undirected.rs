@@ -5,7 +5,7 @@ mod common;
 use common::graphs::FromDefault;
 use petgraph_core::{
     edge::{Direction, Undirected},
-    index::DefaultIx,
+    id::DefaultIx,
     visit::{EdgeIndexable, EdgeRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable},
 };
 use petgraph_graph::{stable::StableGraph, Graph, NodeIndex};

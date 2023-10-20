@@ -3,7 +3,7 @@
 //! Why are these specific tests property based tests? Why are these not just unit tests?
 //!
 //! These specific functions manipulate the graph directly and are quite complex in nature. We use
-//! property based tests to ensure that the functions are correct and do not break any invariants.
+//! property based tests to ensure that the functions are correct and do not break any constraints.
 //!
 //! These do not substitute unit tests, but rather complement them.
 #![cfg(feature = "proptest")]
@@ -13,7 +13,7 @@ mod common;
 use common::assert_graph_consistency;
 use petgraph_core::{
     edge::{Directed, Direction, EdgeType, Undirected},
-    index::IndexType,
+    id::IndexType,
     visit::EdgeCount,
 };
 use petgraph_graph::{EdgeIndex, Graph};

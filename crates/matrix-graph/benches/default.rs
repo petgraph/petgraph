@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use petgraph_core::{
     edge::Direction,
-    index::{FromIndexType, IntoIndexType},
+    id::{FromIndexType, IntoIndexType},
     visit::EdgeRef,
 };
 use petgraph_matrix_graph::{MatrixGraph, NodeIndex};

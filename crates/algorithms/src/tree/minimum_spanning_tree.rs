@@ -1,12 +1,13 @@
 use alloc::collections::BinaryHeap;
 
-use indexmap::IndexMap;
-use petgraph_core::{
+use fxhash::FxBuildHasher;
+use petgraph_core::deprecated::{
     data::Element,
     visit::{Data, EdgeRef, IntoEdgeReferences, IntoNodeReferences, NodeIndexable, NodeRef},
 };
 
 use crate::{
+    common::IndexMap,
     shortest_paths::TotalOrd,
     utilities::{min_scored::MinScored, union_find::UnionFind},
 };
@@ -112,7 +113,7 @@ where
         node_ids: Some(g.node_references()),
         subgraphs,
         sort_edges,
-        node_map: IndexMap::new(),
+        node_map: IndexMap::with_hasher(FxBuildHasher::default()),
         node_count: 0,
     }
 }

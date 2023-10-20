@@ -1,6 +1,6 @@
 use petgraph_core::{
     edge::{Directed, Direction},
-    index::DefaultIx,
+    id::DefaultIx,
     visit::{EdgeRef, IntoEdgeReferences, IntoNodeReferences},
 };
 #[cfg(feature = "convert")]

@@ -1,7 +1,7 @@
 use alloc::collections::VecDeque;
 use core::fmt;
 
-use petgraph_core::visit::{GraphRef, IntoNeighbors, VisitMap, Visitable};
+use petgraph_core::deprecated::visit::{GraphRef, IntoNeighbors, VisitMap, Visitable};
 
 /// Return `true` if the graph is bipartite. A graph is bipartite if its nodes can be divided into
 /// two disjoint and indepedent sets U and V such that every edge connects U to one in V. This

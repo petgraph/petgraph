@@ -111,7 +111,7 @@ pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
-    pub use petgraph_core::index::{DefaultIx, IndexType};
+    pub use petgraph_core::deprecated::index::{DefaultIx, IndexType};
     pub use petgraph_graph::*;
 }
 
@@ -121,7 +121,7 @@ pub mod graph {
     note = "use `graph::stable` instead of `stable_graph`"
 )]
 pub mod stable_graph {
-    pub use petgraph_core::index::{DefaultIx, IndexType};
+    pub use petgraph_core::deprecated::index::{DefaultIx, IndexType};
     pub use petgraph_graph::{
         edge_index, node_index,
         stable::{
@@ -141,7 +141,7 @@ pub mod adj {
     #[deprecated(since = "0.7.0", note = "use `UnweightedAdjacencyMatrix` instead")]
     pub use petgraph_adjacency_matrix::UnweightedAdjacencyList as UnweightedList;
     pub use petgraph_adjacency_matrix::*;
-    pub use petgraph_core::index::{DefaultIx, IndexType};
+    pub use petgraph_core::deprecated::index::{DefaultIx, IndexType};
 }
 
 #[cfg(feature = "adjacency-matrix")]
@@ -151,7 +151,7 @@ pub mod adjacency_matrix {
 
 #[cfg(feature = "csr")]
 pub mod csr {
-    pub use petgraph_core::index::{DefaultIx, IndexType};
+    pub use petgraph_core::deprecated::index::{DefaultIx, IndexType};
     pub use petgraph_csr::*;
 }
 
@@ -162,7 +162,7 @@ pub mod graphmap {
 
 #[cfg(feature = "matrix-graph")]
 pub mod matrix_graph {
-    pub use petgraph_core::index::IndexType;
+    pub use petgraph_core::deprecated::index::IndexType;
     pub use petgraph_matrix_graph::*;
 }
 
@@ -212,10 +212,12 @@ pub mod generator {
 
 #[deprecated(since = "0.7.0", note = "use `core` instead of direct imports")]
 pub use petgraph_core::{
-    data,
-    deprecated::IntoWeightedEdge,
-    edge::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected},
-    visit,
+    deprecated::{
+        data,
+        edge::{Directed, EdgeType, Undirected},
+        visit, IntoWeightedEdge,
+    },
+    edge::{Direction, Direction::Incoming, Direction::Outgoing},
 };
 
 pub mod core {

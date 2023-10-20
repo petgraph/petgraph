@@ -1,7 +1,9 @@
 use petgraph_core::{
-    data::DataMap,
+    deprecated::{
+        data::DataMap,
+        visit::{EdgeRef, GraphBase, IntoEdgesDirected},
+    },
     edge::Direction,
-    visit::{EdgeRef, GraphBase, IntoEdgesDirected},
 };
 
 use super::*;

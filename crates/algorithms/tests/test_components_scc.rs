@@ -30,7 +30,7 @@ use petgraph_adjacency_matrix::{AdjacencyList, UnweightedAdjacencyList};
 use petgraph_algorithms::components::{kosaraju_scc, tarjan_scc};
 use petgraph_core::{
     edge::Directed,
-    index::{DefaultIx, SafeCast},
+    id::{DefaultIx, SafeCast},
     visit::{GraphBase, Reversed},
 };
 use petgraph_graph::{stable::StableGraph, Graph};

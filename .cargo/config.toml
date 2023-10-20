@@ -92,6 +92,8 @@ rustflags = [
     "-Wclippy::verbose_file_reads",
     "-Wclippy::zero_sized_map_values",
     "-Wfuture_incompatible",
+    "-Wunreachable_pub",
     "-Wnonstandard_style",
     "-Aclippy::module_name_repetitions",
+    "-Aclippy::redundant_pub_crate",
 ]

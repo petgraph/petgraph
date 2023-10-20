@@ -1,7 +1,8 @@
+// TODO: potentially move to private ?
 pub mod factories;
 
 use petgraph::{
-    core::{
+    core::deprecated::{
         edge::{Directed, Undirected},
         visit::EdgeRef,
     },

@@ -2,7 +2,7 @@ pub mod graphs;
 #[cfg(feature = "proptest")]
 pub mod proptest;
 
-use petgraph_core::{edge::EdgeType, index::IndexType};
+use petgraph_core::{edge::EdgeType, id::IndexType};
 use petgraph_graph::{Graph, NodeIndex, WalkNeighbors};
 
 /// # Panics

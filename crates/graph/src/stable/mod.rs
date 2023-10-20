@@ -14,11 +14,14 @@ use core::{
 
 use fixedbitset::FixedBitSet;
 use petgraph_core::{
-    deprecated::IntoWeightedEdge,
-    edge::{Directed, Direction, EdgeType, Undirected},
-    index::{DefaultIx, IndexType},
-    visit,
-    visit::{EdgeIndexable, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, NodeIndexable},
+    deprecated::{
+        edge::{Directed, EdgeType, Undirected},
+        index::{DefaultIx, IndexType},
+        visit,
+        visit::{EdgeIndexable, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, NodeIndexable},
+        IntoWeightedEdge,
+    },
+    edge::Direction,
 };
 
 use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
@@ -1427,7 +1430,7 @@ where
         let (iterate_over, reverse) = if Ty::is_directed() {
             (Some(self.direction), None)
         } else {
-            (None, Some(self.direction.opposite()))
+            (None, Some(self.direction.reverse()))
         };
 
         if iterate_over.unwrap_or(Direction::Outgoing) == Direction::Outgoing {

@@ -5,7 +5,7 @@ use std::{collections::BTreeSet, fmt::Debug};
 use insta::assert_json_snapshot;
 use petgraph_core::{
     edge::{Directed, Direction, EdgeType, Undirected},
-    index::{DefaultIx, IndexType},
+    id::{DefaultIx, IndexType},
     visit::{EdgeRef, IntoEdgeReferences, IntoNeighborsDirected, NodeIndexable},
 };
 use petgraph_graph::{

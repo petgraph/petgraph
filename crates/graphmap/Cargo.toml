@@ -13,6 +13,7 @@ petgraph-graph = { workspace = true, optional = true }
 serde = { workspace = true, optional = true, default-features = false, features = ["alloc"] }
 petgraph-proptest = { workspace = true, default-features = false, optional = true }
 proptest = { workspace = true, default-features = false, optional = true }
+fxhash = "0.2.1"
 
 [dev-dependencies]
 serde = { version = "1.0.130", features = ["derive"] }

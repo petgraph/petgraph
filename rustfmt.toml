@@ -5,7 +5,7 @@ version = "Two" # Default: "One"
 
 # Settings
 condense_wildcard_suffixes = true # Default: false
-overflow_delimited_expr = true # Default: false
+overflow_delimited_expr = false # Default: false
 reorder_impl_items = true # Default: false
 use_field_init_shorthand = true # Default: false
 use_try_shorthand = true # Default: false

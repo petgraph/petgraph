@@ -1,4 +1,4 @@
-use petgraph_core::{
+use petgraph_core::deprecated::{
     data::{from_elements_indexable, Build, Create, DataMap, DataMapMut, Element, FromElements},
     edge::EdgeType,
     index::IndexType,

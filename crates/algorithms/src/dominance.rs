@@ -15,8 +15,10 @@
 use alloc::{vec, vec::Vec};
 use core::{cmp::Ordering, hash::Hash};
 
-use indexmap::{IndexMap, IndexSet};
-use petgraph_core::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
+use fxhash::FxBuildHasher;
+use petgraph_core::deprecated::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
+
+use crate::common::{IndexMap, IndexSet};
 
 /// The dominance relation for some graph and root.
 #[derive(Debug, Clone)]
@@ -284,7 +286,7 @@ where
     <G as GraphBase>::NodeId: Eq + Hash,
 {
     let mut post_order = vec![];
-    let mut predecessor_sets = IndexMap::new();
+    let mut predecessor_sets = IndexMap::with_hasher(FxBuildHasher::default());
 
     for node in DfsPostOrder::new(graph, root).iter(graph) {
         post_order.push(node);
@@ -292,7 +294,7 @@ where
         for successor in graph.neighbors(node) {
             predecessor_sets
                 .entry(successor)
-                .or_insert_with(IndexSet::new)
+                .or_insert_with(|| IndexSet::with_hasher(FxBuildHasher::default()))
                 .insert(node);
         }
     }
