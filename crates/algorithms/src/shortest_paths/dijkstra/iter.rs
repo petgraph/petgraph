@@ -34,19 +34,29 @@ where
 
     let mut path = Vec::new();
 
-    while let Some(node) = previous[current] {
+    loop {
+        let Some(node) = previous[current] else {
+            // this case should in theory _never_ happen, as the next statement
+            // terminates if the next node is `None` (we're at a source node)
+            // we do it this way, so that we don't need to push and then pop immediately.
+            break;
+        };
+
+        if previous[node.id()].is_none() {
+            // we have reached the source node
+            break;
+        }
+
         path.push(node);
         current = node.id();
     }
 
-    // remove the source node (last one)
-    path.pop();
     path.reverse();
 
     path
 }
 
-trait ConnectionFn<'a, S>
+pub(super) trait ConnectionFn<'a, S>
 where
     S: GraphStorage,
 {
