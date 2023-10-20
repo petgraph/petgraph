@@ -173,3 +173,7 @@ where
         Ok(iter.into_iter().filter_map(|route| route))
     }
 }
+
+// TODO: all others... (quite a lot...) Do we want to delegate this to macros? Probably a good idea?
+//  We could also merge all of them into one, but that would _very_ messy and unreadable in
+//  documentation.
