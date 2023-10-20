@@ -103,17 +103,16 @@ where
             .node(source)
             .ok_or_else(|| Report::new(DijkstraError::NodeNotFound))?;
 
-        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
-        let mut previous = HashMap::with_hasher(FxBuildHasher::default());
-
         let mut queue = Queue::new();
+        queue.push(source_node, T::zero());
 
+        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, T::zero());
+
+        let mut previous = HashMap::with_hasher(FxBuildHasher::default());
         if intermediates == Intermediates::Record {
             previous.insert(source, None);
         }
-
-        queue.push(source_node, T::zero());
 
         Ok(Self {
             queue,

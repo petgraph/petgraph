@@ -1,3 +1,4 @@
+mod error;
 mod iter;
 
 use petgraph_core::{
