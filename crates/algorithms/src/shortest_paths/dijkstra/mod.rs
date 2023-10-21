@@ -103,6 +103,20 @@ macro_rules! methods {
             Intermediates::$record,
         )
     };
+    (@impl $variant:ident to(edge: $edge:ident, direction: directed)) => {
+        // TODO: make use of graph views
+    };
+    (@impl path to(edge: $edge:ident, direction: undirected)) => {
+        fn path_to<'a>(
+            &self,
+            graph: &'a Graph<S>,
+            target: &'a <S as GraphStorage>::NodeId,
+        ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+            let iter = self.path_from(graph, target)?;
+
+            Ok(iter.map(Route::reverse))
+        }
+    };
     (@impl path from(edge: $edge:ident, direction: $direction:ident)) => {
         fn path_from<'a>(
             &self,
@@ -110,6 +124,17 @@ macro_rules! methods {
             source: &'a S::NodeId,
         ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
             methods!(@impl any from(edge: $edge, direction: $direction, record: Record, 'a, self, graph, source) body)
+        }
+    };
+    (@impl distance to(edge: $edge:ident, direction: undirected)) => {
+        fn distance_to<'a>(
+            &self,
+            graph: &'a Graph<S>,
+            target: &'a <S as GraphStorage>::NodeId,
+        ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+            let iter = self.distance_from(graph, target)?;
+
+            Ok(iter.map(DirectRoute::reverse))
         }
     };
     (@impl distance from(edge: $edge:ident, direction: $direction:ident)) => {
@@ -158,6 +183,7 @@ macro_rules! methods {
         direction: $direction:ident
     }) => {
         methods!(@impl $variant from(edge: $edge, direction: $direction));
+        methods!(@impl $variant to(edge: $edge, direction: $direction));
         methods!(@impl $variant every);
     };
 }

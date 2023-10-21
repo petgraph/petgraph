@@ -59,6 +59,18 @@ where
 
         iter
     }
+
+    fn reverse(self) -> Self {
+        let mut intermediates = self.intermediates;
+
+        intermediates.reverse();
+
+        Self {
+            source: self.target,
+            target: self.source,
+            intermediates,
+        }
+    }
 }
 
 impl<'a, S> IntoIterator for Path<'a, S>
@@ -82,6 +94,18 @@ where
     cost: Cost<T>,
 }
 
+impl<'a, S, T> Route<'a, S, T>
+where
+    S: GraphStorage,
+{
+    fn reverse(self) -> Self {
+        Self {
+            path: self.path.reverse(),
+            cost: self.cost,
+        }
+    }
+}
+
 pub struct DirectRoute<'a, S, T>
 where
     S: GraphStorage,
@@ -90,6 +114,19 @@ where
     target: Node<'a, S>,
 
     cost: Cost<T>,
+}
+
+impl<'a, S, T> DirectRoute<'a, S, T>
+where
+    S: GraphStorage,
+{
+    fn reverse(self) -> Self {
+        Self {
+            source: self.target,
+            target: self.source,
+            cost: self.cost,
+        }
+    }
 }
 
 pub trait ShortestPath<S>
@@ -108,6 +145,7 @@ where
 
         Ok(iter.filter(move |route| route.path.target.id() == target))
     }
+
     fn path_from<'a>(
         &self,
         graph: &'a Graph<S>,
@@ -117,16 +155,18 @@ where
 
         Ok(iter.filter(move |route| route.path.source.id() == source))
     }
+
     fn path_between<'a>(
         &self,
         graph: &'a Graph<S>,
         source: &'a S::NodeId,
         target: &'a S::NodeId,
     ) -> Option<Route<'a, S, Self::Cost>> {
-        self.every_path(graph)
+        self.path_from(graph, source)
             .ok()?
-            .find(move |route| route.path.source.id() == source && route.path.target.id() == target)
+            .find(|route| route.path.target.id() == target)
     }
+
     fn every_path<'a>(
         &self,
         graph: &'a Graph<S>,
