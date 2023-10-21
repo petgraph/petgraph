@@ -198,11 +198,11 @@ where
 
         Ok(iter.filter(move |route| route.source.id() == source))
     }
-    fn distance_between(
+    fn distance_between<'a>(
         &self,
-        graph: &Graph<S>,
-        source: &S::NodeId,
-        target: &S::NodeId,
+        graph: &'a Graph<S>,
+        source: &'a S::NodeId,
+        target: &'a S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         self.every_distance(graph)
             .ok()?

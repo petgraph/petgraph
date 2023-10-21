@@ -110,7 +110,7 @@ macro_rules! methods {
         fn path_to<'a>(
             &self,
             graph: &'a Graph<S>,
-            target: &'a <S as GraphStorage>::NodeId,
+            target: &'a S::NodeId,
         ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
             let iter = self.path_from(graph, target)?;
 
@@ -130,7 +130,7 @@ macro_rules! methods {
         fn distance_to<'a>(
             &self,
             graph: &'a Graph<S>,
-            target: &'a <S as GraphStorage>::NodeId,
+            target: &'a S::NodeId,
         ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
             let iter = self.distance_from(graph, target)?;
 

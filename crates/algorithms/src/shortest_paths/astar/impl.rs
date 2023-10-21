@@ -14,7 +14,7 @@ use crate::shortest_paths::{
         queue::Queue,
         traits::ConnectionFn,
     },
-    Cost, Path, Route,
+    Cost, DirectRoute, Path, Route,
 };
 
 pub(super) struct AStarImpl<'a, S, T, E, H, C>
@@ -146,5 +146,19 @@ where
         }
 
         None
+    }
+
+    #[inline]
+    pub(super) fn find_all(items: Vec<Self>) -> impl Iterator<Item = Route<'a, S, T>> {
+        items.into_iter().filter_map(|item| item.find())
+    }
+
+    #[inline]
+    pub(super) fn find_all_direct(items: Vec<Self>) -> impl Iterator<Item = DirectRoute<'a, S, T>> {
+        Self::find_all(items).map(|route| DirectRoute {
+            source: route.path.source,
+            target: route.path.target,
+            cost: route.cost,
+        })
     }
 }

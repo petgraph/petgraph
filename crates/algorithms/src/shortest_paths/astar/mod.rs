@@ -97,7 +97,7 @@ macro_rules! call {
         &$self.edge_cost
     };
     (@impl direction($a:lifetime)undirected) => {
-        Node::<$a, S>::connections as fn(&Node<$a, S>) -> _,
+        Node::<$a, S>::connections as fn(&Node<$a, S>) -> _
     };
     (@impl direction($self:ident)directed) => {
         outgoing_connections as fn(&Node<$a, S>) -> _
@@ -120,6 +120,94 @@ macro_rules! call {
             Intermediates::$intermediates,
         )
     }};
+}
+
+macro_rules! methods {
+    (@impl any to(name=$name:ident, edge=$edge:ident, direction=$direction:ident, intermediates=$intermediates:ident, route=$route:ident, find=$find:ident)) => {
+        fn $name<'a>(
+            &self,
+            graph: &'a Graph<S>,
+            target: &'a S::NodeId,
+        ) -> Result<impl Iterator<Item = $route<'a, S, Self::Cost>>, Self::Error> {
+            let sources = graph.nodes().map(|node| node.id());
+
+            let iter = sources
+                .map(move |source| {
+                    call!(
+                        'a,
+                        self,
+                        graph,
+                        source,
+                        target,
+                        edge = $edge,
+                        direction = $direction,
+                        intermediates = $intermediates
+                    )
+                })
+                .collect_reports::<Vec<_>>()?;
+
+            Ok(AStarImpl::$find(iter))
+        }
+    };
+    (@impl path to(edge=$edge:ident, direction=$direction:ident)) => {
+        methods!(@impl any to(name=path_to, edge=$edge, direction=$direction, intermediates=Discard, route=Route, find=find_all))
+    };
+    (@impl distance to(edge=$edge:ident, direction=$direction:ident)) => {
+        methods!(@impl any to(name=distance_to, edge=$edge, direction=$direction, intermediates=Discard, route=DirectRoute, find=find_all_direct))
+    };
+    (@impl any from(name=$name:ident, edge=$edge:ident, direction=$direction:ident, intermediates=$intermediates:ident, route=$route:ident, find=$find:ident)) => {
+        fn $name<'a>(
+            &self,
+            graph: &'a Graph<S>,
+            source: &'a S::NodeId,
+        ) -> Result<impl Iterator<Item = $route<'a, S, Self::Cost>>, Self::Error> {
+            let targets = graph.nodes().map(|node| node.id());
+
+            let iter = targets
+                .map(move |target| {
+                    call!(
+                        'a,
+                        self,
+                        graph,
+                        source,
+                        target,
+                        edge = $edge,
+                        direction = $direction,
+                        intermediates = $intermediates
+                    )
+                })
+                .collect_reports::<Vec<_>>()?;
+
+            Ok(AStarImpl::$find(iter))
+        }
+    };
+    (@impl path from(edge=$edge:ident, direction=$direction:ident)) => {
+        methods!(@impl any from(name=path_from, edge=$edge, direction=$direction, intermediates=Record, route=Route, find=find_all))
+    };
+    (@impl distance from(edge=$edge:ident, direction=$direction:ident)) => {
+        methods!(@impl any from(name=distance_from, edge=$edge, direction=$direction, intermediates=Discard, route=DirectRoute, find=find_all_direct))
+    };
+    (@impl any between(edge=$edge:ident, direction=$direction:ident)) => {
+        fn path_between<'a>(
+            &self,
+            graph: &'a Graph<S>,
+            source: &'a S::NodeId,
+            target: &'a S::NodeId,
+        ) -> Option<Route<'a, S, Self::Cost>> {
+            call!(
+                'a,
+                self,
+                graph,
+                source,
+                target,
+                edge = default,
+                direction = undirected,
+                intermediates = Discard
+            )
+            .ok()?
+            .find()
+        }
+    }
 }
 
 impl<S, H> ShortestPath<S> for AStar<Undirected, (), H>
@@ -155,7 +243,7 @@ where
             })
             .collect_reports::<Vec<_>>()?;
 
-        Ok(iter.into_iter().filter_map(|r#impl| r#impl.find()))
+        Ok(AStarImpl::find_all(iter))
     }
 
     fn path_from<'a>(
@@ -180,7 +268,7 @@ where
             })
             .collect_reports::<Vec<_>>()?;
 
-        Ok(iter.into_iter().filter_map(|r#impl| r#impl.find()))
+        Ok(AStarImpl::find_all(iter))
     }
 
     fn path_between<'a>(
@@ -198,7 +286,8 @@ where
             edge = default,
             direction = undirected,
             intermediates = Discard
-        )?
+        )
+        .ok()?
         .find()
     }
 
@@ -225,7 +314,7 @@ where
             })
             .collect_reports::<Vec<_>>()?;
 
-        Ok(iter.into_iter().filter_map(|r#impl| r#impl.find()))
+        Ok(AStarImpl::find_all(iter))
     }
 }
 
@@ -257,19 +346,12 @@ where
                     target,
                     edge = default,
                     direction = undirected,
-                    intermediates = Record
+                    intermediates = Discard
                 )
             })
             .collect_reports::<Vec<_>>()?;
 
-        Ok(iter
-            .into_iter()
-            .filter_map(|r#impl| r#impl.find())
-            .map(|route| DirectRoute {
-                source: route.path.source,
-                target: route.path.target,
-                cost: route.cost,
-            }))
+        Ok(AStarImpl::find_all_direct(iter))
     }
 
     fn distance_from<'a>(
@@ -289,26 +371,19 @@ where
                     target,
                     edge = default,
                     direction = undirected,
-                    intermediates = Record
+                    intermediates = Discard
                 )
             })
             .collect_reports::<Vec<_>>()?;
 
-        Ok(iter
-            .into_iter()
-            .filter_map(|r#impl| r#impl.find())
-            .map(|route| DirectRoute {
-                source: route.path.source,
-                target: route.path.target,
-                cost: route.cost,
-            }))
+        Ok(AStarImpl::find_all_direct(iter))
     }
 
-    fn distance_between(
+    fn distance_between<'a>(
         &self,
-        graph: &Graph<S>,
-        source: &S::NodeId,
-        target: &S::NodeId,
+        graph: &'a Graph<S>,
+        source: &'a S::NodeId,
+        target: &'a S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         call!(
             'a,
@@ -319,7 +394,8 @@ where
             edge = default,
             direction = undirected,
             intermediates = Discard
-        )?
+        )
+        .ok()?
         .find()
         .map(|route| route.cost)
     }
@@ -347,13 +423,6 @@ where
             })
             .collect_reports::<Vec<_>>()?;
 
-        Ok(iter
-            .into_iter()
-            .filter_map(|r#impl| r#impl.find())
-            .map(|route| DirectRoute {
-                source: route.path.source,
-                target: route.path.target,
-                cost: route.cost,
-            }))
+        Ok(AStarImpl::find_all_direct(iter))
     }
 }
