@@ -1,8 +1,9 @@
 use alloc::{vec, vec::Vec};
+use core::sync::atomic::{AtomicUsize, Ordering};
 
-use ordered_float::OrderedFloat;
-use petgraph_core::{base::MaybeOwned, Edge, GraphStorage, Node};
-use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
+use ordered_float::{NotNan, OrderedFloat};
+use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge, GraphStorage, Node};
+use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{AStar, ShortestDistance, ShortestPath};
@@ -212,23 +213,26 @@ fn undirected_no_distance_between() {
 fn manhattan_distance<'a, S>(
     source: Node<'a, S>,
     target: Node<'a, S>,
-) -> MaybeOwned<'a, OrderedFloat<f32>>
+) -> MaybeOwned<'a, NotNan<f32>>
 where
-    S: GraphStorage,
-    S::NodeWeight: AsRef<Point>,
+    S: GraphStorage<NodeWeight = Point>,
 {
-    let source = source.weight().as_ref();
-    let target = target.weight().as_ref();
+    let source = source.weight();
+    let target = target.weight();
 
-    MaybeOwned::Owned(OrderedFloat(source.manhattan_distance(*target)))
+    let distance =
+        NotNan::new(source.manhattan_distance(*target)).expect("distance should be a number");
+
+    MaybeOwned::Owned(distance)
 }
 
-fn into_ordered_float<S>(edge: Edge<S>) -> MaybeOwned<'_, OrderedFloat<f32>>
+fn ensure_not_nan<S>(edge: Edge<S>) -> MaybeOwned<'_, NotNan<f32>>
 where
-    S: GraphStorage,
-    S::EdgeWeight: AsRef<f32>,
+    S: GraphStorage<EdgeWeight = f32>,
 {
-    MaybeOwned::Owned(OrderedFloat(*edge.weight().as_ref()))
+    let weight = NotNan::new(*edge.weight()).expect("weight should be a number");
+
+    MaybeOwned::Owned(weight)
 }
 
 #[test]
@@ -240,7 +244,7 @@ fn directed_path_between_manhattan() {
     } = planar::create();
 
     let astar = AStar::directed()
-        .with_edge_cost(into_ordered_float)
+        .with_edge_cost(ensure_not_nan)
         .with_heuristic(manhattan_distance);
     let route = astar.path_between(&graph, &nodes.a, &nodes.f).unwrap();
 
@@ -252,7 +256,182 @@ fn directed_path_between_manhattan() {
         .collect();
 
     assert_eq!(path, [nodes.a, nodes.b, nodes.f]);
-    // TODO: distance
+
+    let a = graph.node(&nodes.a).unwrap();
+    let b = graph.node(&nodes.b).unwrap();
+    let f = graph.node(&nodes.f).unwrap();
+
+    assert_eq!(
+        route.cost.into_value(),
+        a.weight().distance(*b.weight()) + b.weight().distance(*f.weight())
+    );
 }
 
-// TODO: admissible
+#[test]
+fn directed_distance_between_manhattan() {
+    let GraphCollection {
+        graph,
+        nodes,
+        edges,
+    } = planar::create();
+
+    let astar = AStar::directed()
+        .with_edge_cost(ensure_not_nan)
+        .with_heuristic(manhattan_distance);
+    let cost = astar.distance_between(&graph, &nodes.a, &nodes.f).unwrap();
+
+    let a = graph.node(&nodes.a).unwrap();
+    let b = graph.node(&nodes.b).unwrap();
+    let f = graph.node(&nodes.f).unwrap();
+
+    assert_eq!(
+        cost.into_value(),
+        a.weight().distance(*b.weight()) + b.weight().distance(*f.weight())
+    );
+}
+
+graph!(factory(inconsistent) => DiDinoGraph<&'static str, usize>;
+    [
+        a: "A",
+        b: "B",
+        c: "C",
+        d: "D",
+    ] as NodeId,
+    [
+        ab: a -> b: 3,
+        bc: b -> c: 3,
+        cd: c -> d: 3,
+        ac: a -> c: 8,
+        ad: a -> d: 10,
+    ] as EdgeId
+);
+
+fn admissible_inconsistent<'a, S>(source: Node<'a, S>, target: Node<'a, S>) -> MaybeOwned<'a, usize>
+where
+    S: GraphStorage,
+    S::NodeWeight: AsRef<str>,
+{
+    match source.weight().as_ref() {
+        "A" => MaybeOwned::Owned(9),
+        "B" => MaybeOwned::Owned(6),
+        _ => MaybeOwned::Owned(0),
+    }
+}
+
+/// Excerpt from https://en.wikipedia.org/wiki/A*_search_algorithm#Admissibility_and_optimality
+///
+/// > If the heuristic function is admissible – meaning that it never overestimates the actual
+/// > cost to get to the goal – A* is guaranteed to return a least-cost path from start to goal.
+///
+/// If a heuristic is admissible, but inconsistent, A* will still find the optimal path, but it
+/// may expand more nodes than needed.
+///
+/// Papers:
+/// * <https://www.sciencedirect.com/science/article/pii/S0004370211000221>
+/// * <https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=1f81b34c3729709e5d81e4d2dc33fa609b335473>
+// TODO: move to algorithm docs
+#[test]
+fn directed_path_between_admissible_inconsistent() {
+    let GraphCollection {
+        graph,
+        nodes,
+        edges,
+    } = inconsistent::create();
+
+    let astar = AStar::directed().with_heuristic(admissible_inconsistent);
+    let route = astar.path_between(&graph, &nodes.a, &nodes.d).unwrap();
+
+    let path: Vec<_> = route
+        .path
+        .to_vec()
+        .into_iter()
+        .map(|node| *node.id())
+        .collect();
+
+    assert_eq!(path, [nodes.a, nodes.b, nodes.c, nodes.d]);
+    assert_eq!(route.cost.into_value(), 9);
+}
+
+graph!(factory(runtime) => DiDinoGraph<char, usize>;
+    [
+        a: 'A',
+        b: 'B',
+        c: 'C',
+        d: 'D',
+        e: 'E',
+    ] as NodeId,
+    [
+        ab: a -> b: 2,
+        ac: a -> c: 3,
+        bd: b -> d: 3,
+        cd: c -> d: 1,
+        de: d -> e: 1,
+    ] as EdgeId
+);
+
+#[test]
+fn optimal_runtime() {
+    static CALLS: AtomicUsize = AtomicUsize::new(0);
+
+    let GraphCollection {
+        graph,
+        nodes,
+        edges,
+    } = runtime::create();
+
+    fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<usize>
+    where
+        S: GraphStorage<EdgeWeight = usize>,
+    {
+        CALLS.fetch_add(1, Ordering::SeqCst);
+        MaybeOwned::Borrowed(edge.weight())
+    }
+
+    let astar = AStar::directed()
+        .with_edge_cost(edge_cost)
+        .with_heuristic(no_heuristic);
+
+    astar.path_between(&graph, &nodes.a, &nodes.e).unwrap();
+
+    // A* is runtime optimal in the sense it won't expand more nodes than needed, for the given
+    // heuristic. Here, A* should expand, in order: A, B, C, D, E. This should should ask for
+    // the costs of edges (A, B), (A, C), (B, D), (C, D), (D, E). Node D will be added
+    // to `visit_next` twice, but should only be expanded once. If it is erroneously
+    // expanded twice, it will call for (D, E) again and `times_called` will be 6.
+    assert_eq!(CALLS.load(Ordering::SeqCst), 5);
+}
+
+// fn expand_graph_value_space(graph: &DiGraph<(), u8, u8>) -> Graph<(), u64, Directed, u8> {
+//     graph.map(|_, _| (), |_, weight| u64::from(*weight))
+// }
+//
+// prop_compose! {
+//     // we allow selecting the same node as start and end, because it's a valid use case.
+//     // we also expand the value space from the initial `u8` to `u64` to avoid overflows.
+//     fn graph_with_two_nodes()
+//        (graph in any::<DiGraph::<(), u8, u8>>().prop_filter("graph must have at least one node",
+// |graph| graph.node_count() >= 1))        (start in 0..graph.node_count(), end in
+// 0..graph.node_count(), graph in Just(graph))         -> (DiGraph<(), u64, u8>, NodeIndex<u8>,
+// NodeIndex<u8>) {         (expand_graph_value_space(&graph), NodeIndex::new(start),
+// NodeIndex::new(end))     }
+// }
+//
+// #[cfg(not(miri))]
+// proptest! {
+//     #[test]
+//     fn null_heuristic_is_dijkstra(
+//         (graph, start, end) in graph_with_two_nodes()
+//     ) { let astar_path = astar(&graph, start, |node| node == end, |edge| *edge.weight(), |_| 0);
+//       let dijkstra_path = dijkstra(&graph, start, Some(end), |edge| *edge.weight());
+//
+//
+//         match astar_path {
+//             None => {
+//                 prop_assert_eq!(dijkstra_path.get(&end), None);
+//             }
+//             Some((distance, _)) => {
+//                 prop_assert_eq!(dijkstra_path.get(&end), Some(&distance));
+//             }
+//         }
+//     }
+// }
