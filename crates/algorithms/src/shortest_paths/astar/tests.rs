@@ -379,16 +379,20 @@ fn optimal_runtime() {
         edges,
     } = runtime::create();
 
-    fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<usize>
+    fn bind<S, T>(
+        closure: impl Fn(Edge<S>) -> MaybeOwned<T>,
+    ) -> impl for<'a> Fn(Edge<'a, S>) -> MaybeOwned<'a, T>
     where
-        S: GraphStorage<EdgeWeight = usize>,
+        S: GraphStorage,
     {
-        CALLS.fetch_add(1, Ordering::SeqCst);
-        MaybeOwned::Borrowed(edge.weight())
+        closure
     }
 
     let astar = AStar::directed()
-        .with_edge_cost(edge_cost)
+        .with_edge_cost(bind(|edge: Edge<DinoStorage<char, usize, Directed>>| {
+            CALLS.fetch_add(1, Ordering::SeqCst);
+            MaybeOwned::Borrowed(edge.weight())
+        }))
         .with_heuristic(no_heuristic);
 
     astar.path_between(&graph, &nodes.a, &nodes.e).unwrap();
