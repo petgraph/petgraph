@@ -725,19 +725,12 @@ where
         }
     }
 
-    /// Remove an edge and return its edge weight, or `None` if it didn't exist.
-    ///
-    /// Apart from `e`, this invalidates the last edge index in the graph
-    /// (that edge will adopt the removed edge index).
-    ///
-    /// Computes in **O(e')** time, where **e'** is the size of four particular edge lists, for
-    /// the vertices of `e` and the vertices of another affected edge.
-    pub fn remove_edge(&mut self, e: EdgeIndex<Ix>) -> Option<E> {
+    fn remove_edge_with_swaped(&mut self, e: EdgeIndex<Ix>) -> (Option<EdgeIndex<Ix>>, Option<E>) {
         // every edge is part of two lists,
         // outgoing and incoming edges.
         // Remove it from both
         let (edge_node, edge_next) = match self.edges.get(e.index()) {
-            None => return None,
+            None => return (None, None),
             Some(x) => (x.node, x.next),
         };
         // Remove the edge from its in and out lists by replacing it with
@@ -746,14 +739,25 @@ where
         self.remove_edge_adjust_indices(e)
     }
 
-    fn remove_edge_adjust_indices(&mut self, e: EdgeIndex<Ix>) -> Option<E> {
+    /// Remove an edge and return its edge weight, or `None` if it didn't exist.
+    ///
+    /// Apart from `e`, this invalidates the last edge index in the graph
+    /// (that edge will adopt the removed edge index).
+    ///
+    /// Computes in **O(e')** time, where **e'** is the size of four particular edge lists, for
+    /// the vertices of `e` and the vertices of another affected edge.
+    pub fn remove_edge(&mut self, e: EdgeIndex<Ix>) -> Option<E> {
+        self.remove_edge_with_swaped(e).1
+    }
+
+    fn remove_edge_adjust_indices(&mut self, e: EdgeIndex<Ix>) -> (Option<EdgeIndex<Ix>>, Option<E>) {
         // swap_remove the edge -- only the removed edge
         // and the edge swapped into place are affected and need updating
         // indices.
         let edge = self.edges.swap_remove(e.index());
         let swap = match self.edges.get(e.index()) {
             // no elment needed to be swapped.
-            None => return Some(edge.weight),
+            None => return (None, Some(edge.weight)),
             Some(ed) => ed.node,
         };
         let swapped_e = EdgeIndex::new(self.edges.len());
@@ -761,7 +765,7 @@ where
         // Update the edge lists by replacing links to the old index by references to the new
         // edge index.
         self.change_edge_links(swap, swapped_e, [e, e]);
-        Some(edge.weight)
+        (Some(swapped_e), Some(edge.weight))
     }
 
     /// Return an iterator of all nodes with an edge starting from `a`.
@@ -2045,6 +2049,23 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
         g: &Graph<N, E, Ty, Ix>,
     ) -> Option<EdgeIndex<Ix>> {
         self.next(g).map(|t| t.0)
+    }
+
+    /// Remove the edge from the graph, while keeping the walker valid.
+    pub fn remove_edge<N, E, Ty: EdgeType>(
+        &mut self,
+        g: &mut Graph<N, E, Ty, Ix>,
+        edge: EdgeIndex<Ix>,
+    ) -> Option<E> {
+        let (swapped, result) =  g.remove_edge_with_swaped(edge);
+        if let Some(swapped) = swapped {
+            if swapped == self.next[0] {
+                self.next[0] = edge;
+            } else if swapped == self.next[1] {
+                self.next[1] = edge;
+            }
+        }
+        result
     }
 }
 

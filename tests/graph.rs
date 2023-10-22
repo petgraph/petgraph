@@ -2508,3 +2508,21 @@ fn test_dominators_simple_fast() {
         "nodes that aren't reachable from the root do not have an idom"
     );
 }
+
+#[test]
+fn test_detach_and_remove_edge() {
+    let mut graph = Graph::new();
+    let nodes: Vec<_> = (0..2u32).map(|_| graph.add_node(())).collect();
+    let src_node = graph.add_node(());
+    let edge_to_remove = graph.add_edge(nodes[0], nodes[1], ());
+    graph.add_edge(src_node, nodes[0], ());
+    graph.add_edge(src_node, nodes[1], ());
+    graph.remove_edge(edge_to_remove);
+
+    let mut walker = graph.neighbors_directed(src_node, petgraph::Direction::Outgoing).detach();
+    while let Some(edge) = walker.next_edge(&graph) {
+        walker.remove_edge(&mut graph, edge);
+    }
+    assert_eq!(graph.neighbors(src_node).count(), 0);
+}
+
