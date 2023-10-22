@@ -180,37 +180,37 @@ where
     type Cost;
     type Error: Context;
 
-    fn distance_to<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        target: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+    fn distance_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
         Ok(iter.filter(move |route| route.target.id() == target))
     }
-    fn distance_from<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+    fn distance_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
         Ok(iter.filter(move |route| route.source.id() == source))
     }
-    fn distance_between<'a>(
+    fn distance_between<'graph>(
         &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-        target: &'a S::NodeId,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         self.every_distance(graph)
             .ok()?
             .find(move |route| route.source.id() == source && route.target.id() == target)
             .map(|route| route.cost)
     }
-    fn every_distance<'a>(
-        &self,
-        graph: &'a Graph<S>,
-    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error>;
+    fn every_distance<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error>;
 }

@@ -48,7 +48,7 @@ where
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-    for<'c> &'c E::Value: Add<Output = E::Value>,
+    for<'a> &'a E::Value: Add<Output = E::Value>,
     H: GraphHeuristic<S, Value = E::Value>,
     C: ConnectionFn<'graph, S> + 'parent,
 {

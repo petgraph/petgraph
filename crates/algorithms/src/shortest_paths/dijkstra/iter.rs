@@ -12,6 +12,7 @@ use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{
+        cost::GraphCost,
         intermediates::{reconstruct_intermediates, Intermediates},
         queue::Queue,
         traits::ConnectionFn,
@@ -20,45 +21,46 @@ use crate::shortest_paths::{
     Cost, Path, Route,
 };
 
-pub(super) struct DijkstraIter<'a, S, T, F, G>
+pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
-    T: Ord,
+    E: GraphCost<S>,
+    E::Value: Ord,
 {
-    queue: Queue<'a, S, T>,
+    queue: Queue<'graph, S, E::Value>,
 
-    edge_cost: F,
+    edge_cost: &'parent E,
     connections: G,
 
-    source: Node<'a, S>,
+    source: Node<'graph, S>,
 
     num_nodes: usize,
 
     init: bool,
-    next: Option<Node<'a, S>>,
+    next: Option<Node<'graph, S>>,
 
     intermediates: Intermediates,
 
-    distances: HashMap<&'a S::NodeId, T, FxBuildHasher>,
-    previous: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
+    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
+    previous: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
 }
 
-impl<'a, S, T, F, G> DijkstraIter<'a, S, T, F, G>
+impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    F: Fn(Edge<'a, S>) -> MaybeOwned<'a, T>,
-    T: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'b> &'b T: Add<Output = T>,
-    G: ConnectionFn<'a, S>,
+    E: GraphCost<S>,
+    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
+    for<'a> &'a E::Value: Add<Output = E::Value>,
+    G: ConnectionFn<'graph, S>,
 {
     pub(super) fn new(
-        graph: &'a Graph<S>,
+        graph: &'graph Graph<S>,
 
-        edge_cost: F,
+        edge_cost: &'parent E,
         connections: G,
 
-        source: &'a S::NodeId,
+        source: &'graph S::NodeId,
 
         intermediates: Intermediates,
     ) -> Result<Self, DijkstraError> {
@@ -69,7 +71,7 @@ where
         let mut queue = Queue::new();
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
-        distances.insert(source, T::zero());
+        distances.insert(source, E::Value::zero());
 
         let mut previous = HashMap::with_hasher(FxBuildHasher::default());
         if intermediates == Intermediates::Record {
@@ -91,16 +93,16 @@ where
     }
 }
 
-impl<'a, S, T, F, G> Iterator for DijkstraIter<'a, S, T, F, G>
+impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    F: Fn(Edge<'a, S>) -> MaybeOwned<'a, T>,
-    T: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'b> &'b T: Add<Output = T>,
-    G: ConnectionFn<'a, S>,
+    E: GraphCost<S>,
+    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
+    for<'a> &'a E::Value: Add<Output = E::Value>,
+    G: ConnectionFn<'graph, S>,
 {
-    type Item = Route<'a, S, T>;
+    type Item = Route<'graph, S, E::Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // the first iteration is special, as we immediately return the source node
@@ -115,7 +117,7 @@ where
                     target: self.source,
                     intermediates: Vec::new(),
                 },
-                cost: Cost(T::zero()),
+                cost: Cost(E::Value::zero()),
             });
         }
 
@@ -128,7 +130,7 @@ where
             let (u, v) = edge.endpoints();
             let target = if v.id() == node.id() { u } else { v };
 
-            let alternative = &self.distances[node.id()] + (self.edge_cost)(edge).as_ref();
+            let alternative = &self.distances[node.id()] + self.edge_cost.cost(edge).as_ref();
 
             if let Some(distance) = self.distances.get(target.id()) {
                 // do not insert the updated distance if it is not strictly better than the current

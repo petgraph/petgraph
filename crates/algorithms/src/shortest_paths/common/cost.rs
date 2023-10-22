@@ -1,12 +1,6 @@
 use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
 
-pub struct EdgeWeight(());
-
-impl EdgeWeight {
-    pub(super) fn new() -> Self {
-        Self(())
-    }
-}
+pub struct DefaultCost;
 
 pub trait GraphCost<S>
 where
@@ -29,7 +23,7 @@ where
     }
 }
 
-impl<S> GraphCost<S> for EdgeWeight
+impl<S> GraphCost<S> for DefaultCost
 where
     S: GraphStorage,
 {
@@ -45,7 +39,7 @@ mod tests {
     use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge, GraphStorage};
     use petgraph_dino::{DiDinoGraph, DinoStorage};
 
-    use crate::shortest_paths::common::cost::{EdgeWeight, GraphCost};
+    use crate::shortest_paths::common::cost::{DefaultCost, GraphCost};
 
     fn needs_cost_fn<S, F, T>(_: F)
     where
@@ -68,6 +62,6 @@ mod tests {
         type UsizeStorage = DinoStorage<usize, usize, Directed>;
 
         needs_cost_fn::<StrStorage, _, usize>(maybe_edge_cost);
-        needs_cost_fn::<UsizeStorage, _, usize>(EdgeWeight::new());
+        needs_cost_fn::<UsizeStorage, _, usize>(DefaultCost);
     }
 }
