@@ -10,16 +10,14 @@ use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 use crate::shortest_paths::{
     astar::{error::AStarError, heuristic::GraphHeuristic},
     common::{
+        connections::Connections,
         cost::GraphCost,
         intermediates::{self, reconstruct_intermediates, Intermediates},
         queue::Queue,
-        traits::ConnectionFn,
     },
     Cost, DirectRoute, Path, Route,
 };
 
-// 'a: lifetime of the graph
-// 'b: lifetime of the A* instance
 // The graph must outlive the A* instance
 pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
@@ -50,7 +48,7 @@ where
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
     H: GraphHeuristic<S, Value = E::Value>,
-    C: ConnectionFn<'graph, S> + 'parent,
+    C: Connections<'graph, S> + 'parent,
 {
     pub(super) fn new(
         graph: &'graph Graph<S>,

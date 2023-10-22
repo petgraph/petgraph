@@ -12,10 +12,10 @@ use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{
+        connections::Connections,
         cost::GraphCost,
         intermediates::{reconstruct_intermediates, Intermediates},
         queue::Queue,
-        traits::ConnectionFn,
     },
     dijkstra::DijkstraError,
     Cost, Path, Route,
@@ -52,7 +52,7 @@ where
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
-    G: ConnectionFn<'graph, S>,
+    G: Connections<'graph, S>,
 {
     pub(super) fn new(
         graph: &'graph Graph<S>,
@@ -100,7 +100,7 @@ where
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
-    G: ConnectionFn<'graph, S>,
+    G: Connections<'graph, S>,
 {
     type Item = Route<'graph, S, E::Value>;
 
