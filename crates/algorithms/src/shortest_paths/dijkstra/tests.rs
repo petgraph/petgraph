@@ -58,6 +58,9 @@ graph!(
     ] as EdgeId
 );
 
+// TODO: multigraph
+// TODO: more test cases
+
 #[test]
 fn path_from_directed_default_edge_cost() {
     let GraphCollection {

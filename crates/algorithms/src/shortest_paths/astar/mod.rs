@@ -26,7 +26,10 @@ use crate::{
     polyfill::IteratorExt,
     shortest_paths::{
         astar::heuristic::GraphHeuristic,
-        common::{connections::Connections, cost::GraphCost},
+        common::{
+            connections::Connections,
+            cost::{DefaultCost, GraphCost},
+        },
     },
 };
 
@@ -47,10 +50,10 @@ where
     direction: PhantomData<fn() -> *const D>,
 }
 
-impl AStar<Directed, (), ()> {
+impl AStar<Directed, DefaultCost, ()> {
     pub fn directed() -> Self {
         Self {
-            edge_cost: (),
+            edge_cost: DefaultCost,
             heuristic: (),
 
             direction: PhantomData,
@@ -58,10 +61,10 @@ impl AStar<Directed, (), ()> {
     }
 }
 
-impl AStar<Undirected, (), ()> {
+impl AStar<Undirected, DefaultCost, ()> {
     pub fn undirected() -> Self {
         Self {
-            edge_cost: (),
+            edge_cost: DefaultCost,
             heuristic: (),
 
             direction: PhantomData,

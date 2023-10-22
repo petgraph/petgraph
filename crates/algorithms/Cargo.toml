@@ -38,6 +38,7 @@ criterion = "0.5.1"
 rand = "0.8.5"
 #petgraph-test-utils.workspace = true
 itertools = "0.10.5"
+ordered-float = "4.1.1"
 
 [features]
 default = ["std"]
