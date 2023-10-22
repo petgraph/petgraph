@@ -1,4 +1,5 @@
 mod error;
+mod heuristic;
 mod r#impl;
 #[cfg(test)]
 mod tests;
@@ -21,7 +22,10 @@ use self::{error::AStarError, r#impl::AStarImpl};
 use super::{
     common::intermediates::Intermediates, Cost, DirectRoute, Route, ShortestDistance, ShortestPath,
 };
-use crate::{polyfill::IteratorExt, shortest_paths::common::cost::CostFn};
+use crate::{
+    polyfill::IteratorExt,
+    shortest_paths::{astar::heuristic::GraphHeuristic, common::cost::GraphCost},
+};
 
 fn outgoing_connections<'a, S>(node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a
 where
@@ -90,12 +94,6 @@ where
 }
 
 macro_rules! call {
-    (@impl edge($self:ident)default) => {
-        |edge| MaybeOwned::Borrowed(edge.weight())
-    };
-    (@impl edge($self:ident)fn) => {
-        &$self.edge_cost
-    };
     (@impl direction($a:lifetime)undirected) => {
         Node::<$a, S>::connections as fn(&Node<$a, S>) -> _
     };
@@ -214,12 +212,12 @@ impl<S, E, H> ShortestPath<S> for AStar<Undirected, E, H>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    E: CostFn<S>,
-    for<'a> E::Cost: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'a> &'a E::Cost: Add<Output = E::Cost>,
-    H: for<'a> Fn(Node<'a, S>, Node<'a, S>) -> MaybeOwned<'a, E::Cost>,
+    E: GraphCost<S>,
+    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> &'a E::Value: Add<Output = E::Value>,
+    H: GraphHeuristic<S, Value = E::Value>,
 {
-    type Cost = E::Cost;
+    type Cost = E::Value;
     type Error = AStarError;
 
     fn path_to<'graph: 'this, 'this>(

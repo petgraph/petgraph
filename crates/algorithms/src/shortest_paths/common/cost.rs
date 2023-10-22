@@ -8,32 +8,32 @@ impl EdgeWeight {
     }
 }
 
-pub trait CostFn<S>
+pub trait GraphCost<S>
 where
     S: GraphStorage,
 {
-    type Cost;
+    type Value;
 
-    fn cost<'a>(&self, edge: Edge<'a, S>) -> MaybeOwned<'a, Self::Cost>;
+    fn cost<'a>(&self, edge: Edge<'a, S>) -> MaybeOwned<'a, Self::Value>;
 }
 
-impl<S, F, T> CostFn<S> for F
+impl<S, F, T> GraphCost<S> for F
 where
     S: GraphStorage,
     F: Fn(Edge<S>) -> MaybeOwned<T>,
 {
-    type Cost = T;
+    type Value = T;
 
     fn cost<'a>(&self, edge: Edge<'a, S>) -> MaybeOwned<'a, T> {
         self(edge)
     }
 }
 
-impl<S> CostFn<S> for EdgeWeight
+impl<S> GraphCost<S> for EdgeWeight
 where
     S: GraphStorage,
 {
-    type Cost = S::EdgeWeight;
+    type Value = S::EdgeWeight;
 
     fn cost<'a>(&self, edge: Edge<'a, S>) -> MaybeOwned<'a, S::EdgeWeight> {
         MaybeOwned::Borrowed(edge.weight())
@@ -45,12 +45,12 @@ mod tests {
     use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge, GraphStorage};
     use petgraph_dino::{DiDinoGraph, DinoStorage};
 
-    use crate::shortest_paths::common::cost::{CostFn, EdgeWeight};
+    use crate::shortest_paths::common::cost::{EdgeWeight, GraphCost};
 
     fn needs_cost_fn<S, F, T>(_: F)
     where
         S: GraphStorage,
-        F: CostFn<S, Cost = T>,
+        F: GraphCost<S, Value = T>,
     {
     }
 

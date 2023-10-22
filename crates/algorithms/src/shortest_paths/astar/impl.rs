@@ -8,9 +8,9 @@ use num_traits::Zero;
 use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
-    astar::error::AStarError,
+    astar::{error::AStarError, heuristic::GraphHeuristic},
     common::{
-        cost::CostFn,
+        cost::GraphCost,
         intermediates::{self, reconstruct_intermediates, Intermediates},
         queue::Queue,
         traits::ConnectionFn,
@@ -21,46 +21,46 @@ use crate::shortest_paths::{
 // 'a: lifetime of the graph
 // 'b: lifetime of the A* instance
 // The graph must outlive the A* instance
-pub(super) struct AStarImpl<'a: 'b, 'b, S, E, H, C>
+pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
     S: GraphStorage,
-    E: CostFn<S>,
-    E::Cost: Ord,
+    E: GraphCost<S>,
+    E::Value: Ord,
 {
-    queue: Queue<'a, S, E::Cost>,
+    queue: Queue<'graph, S, E::Value>,
 
-    edge_cost: &'b E,
-    heuristic: H,
+    edge_cost: &'parent E,
+    heuristic: &'parent H,
     connections: C,
 
-    source: Node<'a, S>,
-    target: Node<'a, S>,
+    source: Node<'graph, S>,
+    target: Node<'graph, S>,
 
     intermediates: Intermediates,
 
-    distances: HashMap<&'a S::NodeId, E::Cost, FxBuildHasher>,
-    previous: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
+    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
+    previous: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
 }
 
-impl<'a: 'b, 'b, S, E, H, C> AStarImpl<'a, 'b, S, E, H, C>
+impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    E: CostFn<S>,
-    E::Cost: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'c> &'c E::Cost: Add<Output = E::Cost>,
-    H: Fn(Node<'a, S>, Node<'a, S>) -> MaybeOwned<'a, E::Cost> + 'b,
-    C: ConnectionFn<'a, S> + 'b,
+    E: GraphCost<S>,
+    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
+    for<'c> &'c E::Value: Add<Output = E::Value>,
+    H: GraphHeuristic<S, Value = E::Value>,
+    C: ConnectionFn<'graph, S> + 'parent,
 {
     pub(super) fn new(
-        graph: &'a Graph<S>,
+        graph: &'graph Graph<S>,
 
-        edge_cost: &'b E,
-        heuristic: H,
+        edge_cost: &'parent E,
+        heuristic: &'parent H,
         connections: C,
 
-        source: &'a S::NodeId,
-        target: &'a S::NodeId,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
 
         intermediates: Intermediates,
     ) -> Result<Self, AStarError> {
@@ -75,11 +75,11 @@ where
         let mut queue = Queue::new();
         queue.push(
             source_node,
-            heuristic(source_node, target_node).into_owned(),
+            heuristic.estimate(source_node, target_node).into_owned(),
         );
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
-        distances.insert(source, E::Cost::zero());
+        distances.insert(source, E::Value::zero());
 
         let mut previous = HashMap::with_hasher(FxBuildHasher::default());
         if intermediates == Intermediates::Record {
@@ -103,7 +103,7 @@ where
         })
     }
 
-    pub(super) fn find(mut self) -> Option<Route<'a, S, E::Cost>> {
+    pub(super) fn find(mut self) -> Option<Route<'graph, S, E::Value>> {
         while let Some(node) = self.queue.pop_min() {
             if node.id() == self.target.id() {
                 let intermediates = if self.intermediates == Intermediates::Record {
@@ -139,7 +139,7 @@ where
                     }
                 }
 
-                let guess = &alternative + (self.heuristic)(neighbour, self.target).as_ref();
+                let guess = &alternative + self.heuristic.estimate(neighbour, self.target).as_ref();
                 self.distances.insert(neighbour.id(), alternative);
 
                 if self.intermediates == Intermediates::Record {
@@ -154,14 +154,16 @@ where
     }
 
     #[inline]
-    pub(super) fn find_all(items: Vec<Self>) -> impl Iterator<Item = Route<'a, S, E::Cost>> + 'b {
+    pub(super) fn find_all(
+        items: Vec<Self>,
+    ) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
         items.into_iter().filter_map(|item| item.find())
     }
 
     #[inline]
     pub(super) fn find_all_direct(
         items: Vec<Self>,
-    ) -> impl Iterator<Item = DirectRoute<'a, S, E::Cost>> + 'b {
+    ) -> impl Iterator<Item = DirectRoute<'graph, S, E::Value>> + 'parent {
         Self::find_all(items).map(|route| DirectRoute {
             source: route.path.source,
             target: route.path.target,
