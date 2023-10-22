@@ -254,6 +254,32 @@ fn distance_from_undirected_custom_edge_cost() {
     assert_distance(received, &expected)
 }
 
+#[test]
+fn lifetime() {
+    let GraphCollection {
+        graph,
+        nodes,
+        edges,
+    } = networkx::create();
+
+    let dijkstra = Dijkstra::directed();
+
+    let top3: Vec<_> = dijkstra
+        .path_from(&graph, &nodes.a)
+        .unwrap()
+        .take(3)
+        .collect();
+
+    drop(dijkstra);
+
+    let top3: Vec<_> = top3
+        .into_iter()
+        .map(|route| route.cost.into_value())
+        .collect();
+
+    assert_eq!(top3, [0, 5, 7]);
+}
+
 // fn non_empty_graph() -> impl Strategy<Value = Graph<(), u8, Directed, u8>> {
 //     any::<Graph<(), u8, Directed, u8>>()
 //         .prop_filter("graph is empty", |graph| graph.node_count() > 0)

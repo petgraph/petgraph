@@ -67,7 +67,6 @@ where
             .ok_or_else(|| Report::new(DijkstraError::NodeNotFound))?;
 
         let mut queue = Queue::new();
-        queue.push(source_node, T::zero());
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, T::zero());

@@ -1,4 +1,4 @@
-mod cost;
+pub(super) mod cost;
 pub(super) mod intermediates;
 pub(super) mod queue;
 #[cfg(test)]

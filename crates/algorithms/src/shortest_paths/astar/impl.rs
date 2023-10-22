@@ -10,6 +10,7 @@ use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 use crate::shortest_paths::{
     astar::error::AStarError,
     common::{
+        cost::CostFn,
         intermediates::{self, reconstruct_intermediates, Intermediates},
         queue::Queue,
         traits::ConnectionFn,
@@ -17,14 +18,18 @@ use crate::shortest_paths::{
     Cost, DirectRoute, Path, Route,
 };
 
-pub(super) struct AStarImpl<'a, S, T, E, H, C>
+// 'a: lifetime of the graph
+// 'b: lifetime of the A* instance
+// The graph must outlive the A* instance
+pub(super) struct AStarImpl<'a: 'b, 'b, S, E, H, C>
 where
     S: GraphStorage,
-    T: Ord,
+    E: CostFn<S>,
+    E::Cost: Ord,
 {
-    queue: Queue<'a, S, T>,
+    queue: Queue<'a, S, E::Cost>,
 
-    edge_cost: E,
+    edge_cost: &'b E,
     heuristic: H,
     connections: C,
 
@@ -33,24 +38,24 @@ where
 
     intermediates: Intermediates,
 
-    distances: HashMap<&'a S::NodeId, T, FxBuildHasher>,
+    distances: HashMap<&'a S::NodeId, E::Cost, FxBuildHasher>,
     previous: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
 }
 
-impl<'a, S, T, E, H, C> AStarImpl<'a, S, T, E, H, C>
+impl<'a: 'b, 'b, S, E, H, C> AStarImpl<'a, 'b, S, E, H, C>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    T: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'b> &'b T: Add<Output = T>,
-    E: Fn(Edge<'a, S>) -> MaybeOwned<'a, T>,
-    H: Fn(Node<'a, S>, Node<'a, S>) -> MaybeOwned<'a, T>,
-    C: ConnectionFn<'a, S>,
+    E: CostFn<S>,
+    E::Cost: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'c> &'c E::Cost: Add<Output = E::Cost>,
+    H: Fn(Node<'a, S>, Node<'a, S>) -> MaybeOwned<'a, E::Cost> + 'b,
+    C: ConnectionFn<'a, S> + 'b,
 {
     pub(super) fn new(
         graph: &'a Graph<S>,
 
-        edge_cost: E,
+        edge_cost: &'b E,
         heuristic: H,
         connections: C,
 
@@ -74,7 +79,7 @@ where
         );
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
-        distances.insert(source, T::zero());
+        distances.insert(source, E::Cost::zero());
 
         let mut previous = HashMap::with_hasher(FxBuildHasher::default());
         if intermediates == Intermediates::Record {
@@ -98,7 +103,7 @@ where
         })
     }
 
-    pub(super) fn find(mut self) -> Option<Route<'a, S, T>> {
+    pub(super) fn find(mut self) -> Option<Route<'a, S, E::Cost>> {
         while let Some(node) = self.queue.pop_min() {
             if node.id() == self.target.id() {
                 let intermediates = if self.intermediates == Intermediates::Record {
@@ -123,7 +128,7 @@ where
 
             let connections = self.connections.connections(&node);
             for edge in connections {
-                let alternative = &self.distances[node.id()] + (self.edge_cost)(edge).as_ref();
+                let alternative = &self.distances[node.id()] + self.edge_cost.cost(edge).as_ref();
 
                 let (u, v) = edge.endpoints();
                 let neighbour = if u.id() == node.id() { v } else { u };
@@ -149,12 +154,14 @@ where
     }
 
     #[inline]
-    pub(super) fn find_all(items: Vec<Self>) -> impl Iterator<Item = Route<'a, S, T>> {
+    pub(super) fn find_all(items: Vec<Self>) -> impl Iterator<Item = Route<'a, S, E::Cost>> + 'b {
         items.into_iter().filter_map(|item| item.find())
     }
 
     #[inline]
-    pub(super) fn find_all_direct(items: Vec<Self>) -> impl Iterator<Item = DirectRoute<'a, S, T>> {
+    pub(super) fn find_all_direct(
+        items: Vec<Self>,
+    ) -> impl Iterator<Item = DirectRoute<'a, S, E::Cost>> + 'b {
         Self::find_all(items).map(|route| DirectRoute {
             source: route.path.source,
             target: route.path.target,

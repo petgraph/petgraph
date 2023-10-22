@@ -107,8 +107,8 @@ macro_rules! methods {
         // TODO: make use of graph views
     };
     (@impl path to(edge: $edge:ident, direction: undirected)) => {
-        fn path_to<'a>(
-            &self,
+        fn path_to<'a: 'b, 'b>(
+            &'b self,
             graph: &'a Graph<S>,
             target: &'a S::NodeId,
         ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
@@ -118,11 +118,11 @@ macro_rules! methods {
         }
     };
     (@impl path from(edge: $edge:ident, direction: $direction:ident)) => {
-        fn path_from<'a>(
-            &self,
+        fn path_from<'a: 'b, 'b>(
+            &'b self,
             graph: &'a Graph<S>,
             source: &'a S::NodeId,
-        ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+        ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>> + 'b, Self::Error> {
             methods!(@impl any from(edge: $edge, direction: $direction, record: Record, 'a, self, graph, source) body)
         }
     };
@@ -153,10 +153,10 @@ macro_rules! methods {
         }
     };
     (@impl path every) => {
-        fn every_path<'a>(
-            &self,
+        fn every_path<'a: 'b, 'b>(
+            &'b self,
             graph: &'a Graph<S>,
-        ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+        ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>> + 'b, Self::Error> {
             let iter = graph
                 .nodes()
                 .map(move |node| self.path_from(graph, node.id()))

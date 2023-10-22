@@ -21,7 +21,7 @@ use self::{error::AStarError, r#impl::AStarImpl};
 use super::{
     common::intermediates::Intermediates, Cost, DirectRoute, Route, ShortestDistance, ShortestPath,
 };
-use crate::polyfill::IteratorExt;
+use crate::{polyfill::IteratorExt, shortest_paths::common::cost::CostFn};
 
 fn outgoing_connections<'a, S>(node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a
 where
@@ -112,7 +112,7 @@ macro_rules! call {
     ) => {{
         AStarImpl::new(
             $graph,
-            call!(@impl edge($self) $edge),
+            &$self.edge_cost,
             &$self.heuristic,
             call!(@impl direction($a) $direction),
             $source,
@@ -210,28 +210,29 @@ macro_rules! methods {
     }
 }
 
-impl<S, H> ShortestPath<S> for AStar<Undirected, (), H>
+impl<S, E, H> ShortestPath<S> for AStar<Undirected, E, H>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    S::EdgeWeight: PartialOrd + Ord + Zero + Clone,
-    for<'a> &'a S::EdgeWeight: Add<Output = S::EdgeWeight>,
-    H: for<'a> Fn(Node<'a, S>, Node<'a, S>) -> MaybeOwned<'a, S::EdgeWeight>,
+    E: CostFn<S>,
+    for<'a> E::Cost: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> &'a E::Cost: Add<Output = E::Cost>,
+    H: for<'a> Fn(Node<'a, S>, Node<'a, S>) -> MaybeOwned<'a, E::Cost>,
 {
-    type Cost = S::EdgeWeight;
+    type Cost = E::Cost;
     type Error = AStarError;
 
-    fn path_to<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        target: &'a <S as GraphStorage>::NodeId,
-    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+    fn path_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph <S as GraphStorage>::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let sources = graph.nodes().map(|node| node.id());
 
         let iter = sources
             .map(move |source| {
                 call!(
-                    'a,
+                    'graph,
                     self,
                     graph,
                     source,
@@ -246,17 +247,17 @@ where
         Ok(AStarImpl::find_all(iter))
     }
 
-    fn path_from<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        source: &'a <S as GraphStorage>::NodeId,
-    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+    fn path_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        source: &'graph <S as GraphStorage>::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let targets = graph.nodes().map(|node| node.id());
 
         let iter = targets
             .map(move |target| {
                 call!(
-                    'a,
+                    'graph,
                     self,
                     graph,
                     source,
@@ -271,14 +272,14 @@ where
         Ok(AStarImpl::find_all(iter))
     }
 
-    fn path_between<'a>(
+    fn path_between<'graph>(
         &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-        target: &'a S::NodeId,
-    ) -> Option<Route<'a, S, Self::Cost>> {
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Route<'graph, S, Self::Cost>> {
         call!(
-            'a,
+            'graph,
             self,
             graph,
             source,
@@ -291,17 +292,17 @@ where
         .find()
     }
 
-    fn every_path<'a>(
-        &self,
-        graph: &'a Graph<S>,
-    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+    fn every_path<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let sources = graph.nodes().map(|node| node.id());
 
         let iter = sources
             .flat_map(move |source| {
                 graph.nodes().map(|node| node.id()).map(move |target| {
                     call!(
-                        'a,
+                        'graph,
                         self,
                         graph,
                         source,
@@ -314,115 +315,103 @@ where
             })
             .collect_reports::<Vec<_>>()?;
 
-        Ok(AStarImpl::find_all(iter))
+        Ok(iter.into_iter().filter_map(|iter| iter.find()))
     }
 }
 
-impl<S, H> ShortestDistance<S> for AStar<Undirected, (), H>
-where
-    S: GraphStorage,
-    S::NodeId: Eq + Hash,
-    S::EdgeWeight: PartialOrd + Ord + Zero + Clone,
-    for<'a> &'a S::EdgeWeight: Add<Output = S::EdgeWeight>,
-    H: for<'a> Fn(Node<'a, S>, Node<'a, S>) -> MaybeOwned<'a, S::EdgeWeight>,
-{
-    type Cost = S::EdgeWeight;
-    type Error = AStarError;
-
-    fn distance_to<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        target: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
-        let sources = graph.nodes().map(|node| node.id());
-
-        let iter = sources
-            .map(move |source| {
-                call!(
-                    'a,
-                    self,
-                    graph,
-                    source,
-                    target,
-                    edge = default,
-                    direction = undirected,
-                    intermediates = Discard
-                )
-            })
-            .collect_reports::<Vec<_>>()?;
-
-        Ok(AStarImpl::find_all_direct(iter))
-    }
-
-    fn distance_from<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
-        let targets = graph.nodes().map(|node| node.id());
-
-        let iter = targets
-            .map(move |target| {
-                call!(
-                    'a,
-                    self,
-                    graph,
-                    source,
-                    target,
-                    edge = default,
-                    direction = undirected,
-                    intermediates = Discard
-                )
-            })
-            .collect_reports::<Vec<_>>()?;
-
-        Ok(AStarImpl::find_all_direct(iter))
-    }
-
-    fn distance_between<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-        target: &'a S::NodeId,
-    ) -> Option<Cost<Self::Cost>> {
-        call!(
-            'a,
-            self,
-            graph,
-            source,
-            target,
-            edge = default,
-            direction = undirected,
-            intermediates = Discard
-        )
-        .ok()?
-        .find()
-        .map(|route| route.cost)
-    }
-
-    fn every_distance<'a>(
-        &self,
-        graph: &'a Graph<S>,
-    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
-        let sources = graph.nodes().map(|node| node.id());
-
-        let iter = sources
-            .flat_map(move |source| {
-                graph.nodes().map(|node| node.id()).map(move |target| {
-                    call!(
-                        'a,
-                        self,
-                        graph,
-                        source,
-                        target,
-                        edge = default,
-                        direction = undirected,
-                        intermediates = Discard
-                    )
-                })
-            })
-            .collect_reports::<Vec<_>>()?;
-
-        Ok(AStarImpl::find_all_direct(iter))
-    }
-}
+// impl<S, H> ShortestDistance<S> for AStar<Undirected, (), H>
+// where
+//     S: GraphStorage,
+//     S::NodeId: Eq + Hash,
+//     S::EdgeWeight: PartialOrd + Ord + Zero + Clone,
+//     for<'a> &'a S::EdgeWeight: Add<Output = S::EdgeWeight>,
+//     H: for<'a> Fn(Node<'a, S>, Node<'a, S>) -> MaybeOwned<'a, S::EdgeWeight>,
+// {
+//     type Cost = S::EdgeWeight;
+//     type Error = AStarError;
+//
+//     fn distance_to<'a>(
+//         &self,
+//         graph: &'a Graph<S>,
+//         target: &'a S::NodeId,
+//     ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> { let sources
+//       = graph.nodes().map(|node| node.id());
+//
+//         let iter = sources
+//             .map(move |source| {
+//                 call!(
+//                     'a,
+//                     self,
+//                     graph,
+//                     source,
+//                     target,
+//                     edge = default,
+//                     direction = undirected,
+//                     intermediates = Discard
+//                 )
+//             })
+//             .collect_reports::<Vec<_>>()?;
+//
+//         Ok(AStarImpl::find_all_direct(iter))
+//     }
+//
+//     fn distance_from<'a>(
+//         &self,
+//         graph: &'a Graph<S>,
+//         source: &'a S::NodeId,
+//     ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> { let targets
+//       = graph.nodes().map(|node| node.id());
+//
+//         let iter = targets
+//             .map(move |target| {
+//                 call!(
+//                     'a,
+//                     self,
+//                     graph,
+//                     source,
+//                     target,
+//                     edge = default,
+//                     direction = undirected,
+//                     intermediates = Discard
+//                 )
+//             })
+//             .collect_reports::<Vec<_>>()?;
+//
+//         Ok(AStarImpl::find_all_direct(iter))
+//     }
+//
+//     fn distance_between<'a>(
+//         &self,
+//         graph: &'a Graph<S>,
+//         source: &'a S::NodeId,
+//         target: &'a S::NodeId,
+//     ) -> Option<Cost<Self::Cost>> { call!( 'a, self, graph, source, target, edge = default,
+//       direction = undirected, intermediates = Discard ) .ok()? .find() .map(|route| route.cost)
+//     }
+//
+//     fn every_distance<'a>(
+//         &self,
+//         graph: &'a Graph<S>,
+//     ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> { let sources
+//       = graph.nodes().map(|node| node.id());
+//
+//         let iter = sources
+//             .flat_map(move |source| {
+//                 graph.nodes().map(|node| node.id()).map(move |target| {
+//                     call!(
+//                         'a,
+//                         self,
+//                         graph,
+//                         source,
+//                         target,
+//                         edge = default,
+//                         direction = undirected,
+//                         intermediates = Discard
+//                     )
+//                 })
+//             })
+//             .collect_reports::<Vec<_>>()?;
+//
+//         Ok(AStarImpl::find_all_direct(iter))
+//     }
+// }

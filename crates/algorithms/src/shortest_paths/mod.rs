@@ -136,41 +136,41 @@ where
     type Cost;
     type Error: Context;
 
-    fn path_to<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        target: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+    fn path_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
         Ok(iter.filter(move |route| route.path.target.id() == target))
     }
 
-    fn path_from<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+    fn path_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
         Ok(iter.filter(move |route| route.path.source.id() == source))
     }
 
-    fn path_between<'a>(
+    fn path_between<'graph>(
         &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-        target: &'a S::NodeId,
-    ) -> Option<Route<'a, S, Self::Cost>> {
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Route<'graph, S, Self::Cost>> {
         self.path_from(graph, source)
             .ok()?
             .find(|route| route.path.target.id() == target)
     }
 
-    fn every_path<'a>(
-        &self,
-        graph: &'a Graph<S>,
-    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error>;
+    fn every_path<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error>;
 }
 
 pub trait ShortestDistance<S>
