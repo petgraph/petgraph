@@ -2228,6 +2228,17 @@ where
     }
 }
 
+impl<'a, N, E: 'a, Ty, Ix> visit::IntoNeighborsUnirected for &'a Graph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type NeighborsUndirected = Neighbors<'a, E, Ix>;
+    fn neighbors_undirected(self, n: Self::NodeId) -> Self::NeighborsUndirected {
+        Graph::neighbors_undirected(self, n)
+    }
+}
+
 impl<'a, N: 'a, E: 'a, Ty, Ix> visit::IntoEdgeReferences for &'a Graph<N, E, Ty, Ix>
 where
     Ty: EdgeType,

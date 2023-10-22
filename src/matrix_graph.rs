@@ -16,8 +16,8 @@ use crate::graph::NodeIndex as GraphNodeIndex;
 
 use crate::visit::{
     Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
-    IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
+    IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNeighborsUnirected,
+    IntoNodeIdentifiers, IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
 };
 
 use crate::data::Build;
@@ -451,11 +451,32 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is [`NodeIndex<Ix>`](../graph/struct.NodeIndex.html).
     pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<Ty, Null, Ix> {
-        Neighbors(Edges::on_columns(
-            a.index(),
-            &self.node_adjacencies,
-            self.node_capacity,
-        ))
+        Neighbors(
+            Edges::on_columns(a.index(), &self.node_adjacencies, self.node_capacity),
+            None,
+        )
+    }
+
+    /// Return an iterator of all nodes with an edge starting from `a` or ending to `a`.
+    ///
+    /// - `Directed`: All edges from or to `a`.
+    /// - `Undirected`: All edges from or to `a`.
+    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<Ty, Null, Ix> {
+        if Ty::is_directed() {
+            Neighbors(
+                Edges::on_columns(a.index(), &self.node_adjacencies, self.node_capacity),
+                Some(Edges::on_rows(
+                    a.index(),
+                    &self.node_adjacencies,
+                    self.node_capacity,
+                )),
+            )
+        } else {
+            Neighbors(
+                Edges::on_columns(a.index(), &self.node_adjacencies, self.node_capacity),
+                None,
+            )
+        }
     }
 
     /// Return an iterator of all edges of `a`.
@@ -542,11 +563,10 @@ impl<N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> MatrixGraph<N, E, Directe
         if d == Outgoing {
             self.neighbors(a)
         } else {
-            Neighbors(Edges::on_rows(
-                a.index(),
-                &self.node_adjacencies,
-                self.node_capacity,
-            ))
+            Neighbors(
+                Edges::on_rows(a.index(), &self.node_adjacencies, self.node_capacity),
+                None,
+            )
         }
     }
 
@@ -707,13 +727,24 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator
 /// [1]: struct.MatrixGraph.html#method.neighbors
 /// [2]: struct.MatrixGraph.html#method.neighbors_directed
 #[derive(Debug, Clone)]
-pub struct Neighbors<'a, Ty: EdgeType, Null: 'a + Nullable, Ix>(Edges<'a, Ty, Null, Ix>);
+pub struct Neighbors<'a, Ty: EdgeType, Null: 'a + Nullable, Ix>(
+    Edges<'a, Ty, Null, Ix>,
+    Option<Edges<'a, Ty, Null, Ix>>,
+);
 
 impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Neighbors<'a, Ty, Null, Ix> {
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(_, b, _)| b)
+        let result = self.0.next().map(|(_, b, _)| b);
+        result.map_or_else(
+            || {
+                self.1
+                    .as_mut()
+                    .map_or(None, |edges| edges.next().map(|(_, b, _)| b))
+            },
+            |v| Some(v),
+        )
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
@@ -1184,6 +1215,16 @@ impl<'a, N, E: 'a, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoNeighborsDire
 
     fn neighbors_directed(self, a: NodeIndex<Ix>, d: Direction) -> Self::NeighborsDirected {
         MatrixGraph::neighbors_directed(self, a, d)
+    }
+}
+
+impl<'a, N, E: 'a, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoNeighborsUnirected
+    for &'a MatrixGraph<N, E, Ty, Null, Ix>
+{
+    type NeighborsUndirected = Neighbors<'a, Ty, Null, Ix>;
+
+    fn neighbors_undirected(self, a: NodeIndex<Ix>) -> Self::NeighborsUndirected {
+        MatrixGraph::neighbors_undirected(self, a)
     }
 }
 

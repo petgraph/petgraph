@@ -142,6 +142,21 @@ pub trait IntoNeighborsDirected : IntoNeighbors {
 }
 
 trait_template! {
+/// Access to all the neighbors, through all edges from or to node n.
+///
+/// - `Directed`, All other endpoints of edges connected to `a`.
+/// - `Undirected`: All other endpoints of edges connected to `a`.
+pub trait IntoNeighborsUnirected: IntoNeighbors {
+    @section type
+    type NeighborsUndirected: Iterator<Item=Self::NodeId>;
+    @section self
+    fn neighbors_undirected(self, n: Self::NodeId) -> Self::NeighborsUndirected;
+}
+}
+
+IntoNeighborsUnirected! {delegate_impl []}
+
+trait_template! {
 /// Access to the edges of each node.
 ///
 /// The edges are, depending on the graph’s edge type:

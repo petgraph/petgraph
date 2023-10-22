@@ -1,8 +1,9 @@
-use std::marker::PhantomData;
-
 use petgraph::data::Build;
 use petgraph::prelude::*;
 use petgraph::visit::NodeIndexable;
+use std::fs::File;
+use std::io::Read;
+use std::marker::PhantomData;
 
 use petgraph::EdgeType;
 
@@ -201,6 +202,15 @@ where
         }
     }
     g
+}
+
+/// Parse a file in adjacency matrix format into a directed graph
+pub fn graph_from_file(path: &str) -> Graph<(), (), Directed> {
+    let mut f = File::open(path).expect("file not found");
+    let mut contents = String::new();
+    f.read_to_string(&mut contents)
+        .expect("failed to read from file");
+    parse_graph::<Directed, _>(&contents)
 }
 
 pub struct GraphFactory<Ty, G = Graph<(), (), Ty>> {
