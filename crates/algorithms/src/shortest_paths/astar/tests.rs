@@ -379,12 +379,8 @@ fn optimal_runtime() {
         edges,
     } = runtime::create();
 
-    fn bind<S, T>(
-        closure: impl Fn(Edge<S>) -> MaybeOwned<T>,
-    ) -> impl for<'a> Fn(Edge<'a, S>) -> MaybeOwned<'a, T>
-    where
-        S: GraphStorage,
-    {
+    // Needed to bind the lifetime of the closure, does some compiler magic.
+    fn bind<S, T>(closure: impl Fn(Edge<S>) -> MaybeOwned<T>) -> impl Fn(Edge<S>) -> MaybeOwned<T> {
         closure
     }
 
