@@ -3,6 +3,7 @@
 mod astar;
 mod common;
 mod dijkstra;
+mod floyd_warshall;
 // mod floyd_warshall;
 // mod k_shortest_path_length;
 // mod measure;
