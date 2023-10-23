@@ -17,6 +17,8 @@ where
     let mut distance = Matrix::new_from_option(graph);
     let mut previous = Matrix::new_from_default(graph);
 
+    // TODO: GraphCost
+
     for edge in graph.edges() {
         let (u, v) = edge.endpoints();
         // in a directed graph we would need to assign to both
@@ -44,6 +46,7 @@ where
 
                 // TODO: do we need to check the other direction, no, right?
                 // https://cs.stackexchange.com/questions/26344/floyd-warshall-algorithm-on-undirected-graph
+                // We don't need to cross check, just cross set.
 
                 let Some(ik) = distance.get(i, k) else {
                     continue;
@@ -62,7 +65,9 @@ where
                 }
 
                 distance.set(i, j, Some(alternative));
+                // distance.set(j, i, Some(alternative));
                 previous.set(i, j, *previous.get(k, j));
+                // previous.set(j, i, *previous.get(k, i));
             }
         }
     }
