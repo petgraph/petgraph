@@ -261,25 +261,36 @@ where
         let mut matching_order = vec![usize::MAX; node_count];
         let mut added = vec![false; node_count];
         let mut order_idx = 0usize;
+        // Mark all of nodes which have no edge, reduce the number to iterate all nodes when using no label
+        let mut orphan_nodes: Vec<usize> = vec![];
+        if max_label == 0 {
+            for node_idx in 0..node_count {
+                if node_con_num[node_idx] == 0 {
+                    roots[node_idx] = true;
+                    added[node_idx] = true;
+                    orphan_nodes.push(node_idx);
+                }
+            }
+        }
         // We need to choose all possible root nodes, then do BFS search using the choosen node as root node
-        while order_idx < node_count {
+        while order_idx < (node_count - orphan_nodes.len()) {
             // select a root node for bfs search ordering
-            let mut root_node_id = usize::MAX;
+            let mut root_node_idx = usize::MAX;
             for node in g.node_identifiers() {
-                let node_id = g.to_index(node);
-                if !added[node_id] {
-                    if root_node_id == usize::MAX {
-                        root_node_id = node_id;
+                let node_idx = g.to_index(node);
+                if !added[node_idx] {
+                    if root_node_idx == usize::MAX {
+                        root_node_idx = node_idx;
                     } else {
-                        match node_label_num[node_labels[node_id]]
-                            .cmp(&node_label_num[node_labels[root_node_id]])
+                        match node_label_num[node_labels[node_idx]]
+                            .cmp(&node_label_num[node_labels[root_node_idx]])
                         {
                             Ordering::Less => {
-                                root_node_id = node_id;
+                                root_node_idx = node_idx;
                             }
                             Ordering::Equal => {
-                                if node_con_num[node_id] > node_con_num[root_node_id] {
-                                    root_node_id = node_id;
+                                if node_con_num[node_idx] > node_con_num[root_node_idx] {
+                                    root_node_idx = node_idx;
                                 }
                             }
                             _ => {}
@@ -288,10 +299,10 @@ where
                 }
             }
 
-            roots[root_node_id] = true;
+            roots[root_node_idx] = true;
             bfs_search_ordering(
                 g,
-                root_node_id,
+                root_node_idx,
                 &mut order_idx,
                 &mut added,
                 &mut matching_order,
@@ -299,6 +310,11 @@ where
                 node_labels,
                 &mut node_label_num,
             );
+        }
+        // add orphan nodes to the macthing order
+        for node_idx in orphan_nodes.into_iter() {
+            matching_order[order_idx] = node_idx;
+            order_idx += 1;
         }
 
         debug_assert!(!matching_order.iter().any(|&v| v == usize::MAX));
