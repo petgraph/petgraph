@@ -125,7 +125,7 @@ where
         // TODO: predecessors should not allocate if intermediates is Discard
         let predecessors = SlotMatrix::new(graph);
 
-        Self {
+        let mut this = Self {
             graph,
             edge_cost,
 
@@ -136,7 +136,11 @@ where
 
             distances,
             predecessors,
-        }
+        };
+
+        this.eval();
+
+        this
     }
 
     fn eval(&mut self) {
@@ -150,7 +154,10 @@ where
                 v.id(),
                 Some(self.edge_cost.cost(edge)),
             );
-            (self.set_predecessor)(&mut self.predecessors, u.id(), v.id(), Some(u.id()))
+
+            if self.intermediates == Intermediates::Record {
+                (self.set_predecessor)(&mut self.predecessors, u.id(), v.id(), Some(u.id()));
+            }
         }
 
         for node in self.graph.nodes() {
@@ -160,12 +167,15 @@ where
                 node.id(),
                 Some(MaybeOwned::Owned(E::Value::zero())),
             );
-            (self.set_predecessor)(
-                &mut self.predecessors,
-                node.id(),
-                node.id(),
-                Some(node.id()),
-            );
+
+            if self.intermediates == Intermediates::Record {
+                (self.set_predecessor)(
+                    &mut self.predecessors,
+                    node.id(),
+                    node.id(),
+                    Some(node.id()),
+                );
+            }
         }
 
         for k in self.graph.nodes() {
@@ -205,8 +215,10 @@ where
                         j,
                         Some(MaybeOwned::Owned(alternative)),
                     );
-                    let predecessor = self.predecessors.get(k, j).copied();
-                    (self.set_predecessor)(&mut self.predecessors, i, j, predecessor);
+                    if self.intermediates == Intermediates::Record {
+                        let predecessor = self.predecessors.get(k, j).copied();
+                        (self.set_predecessor)(&mut self.predecessors, i, j, predecessor);
+                    }
                 }
             }
         }
