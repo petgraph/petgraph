@@ -1,17 +1,61 @@
+mod r#impl;
 mod matrix;
 
-use core::ops::Add;
+use core::{marker::PhantomData, ops::Add};
 
-use num_traits::Zero;
-use petgraph_core::{id::LinearGraphId, Graph, GraphStorage};
+use num_traits::{CheckedAdd, Zero};
+use petgraph_core::{
+    edge::marker::{Directed, Undirected},
+    id::LinearGraphId,
+    Graph, GraphStorage,
+};
 
-use crate::shortest_paths::floyd_warshall::matrix::Matrix;
+use crate::shortest_paths::{
+    common::cost::{DefaultCost, GraphCost},
+    floyd_warshall::matrix::Matrix,
+};
+
+struct FloydWarshall<D, E> {
+    edge_cost: E,
+
+    direction: PhantomData<fn() -> *const D>,
+}
+
+impl FloydWarshall<Directed, DefaultCost> {
+    fn directed() -> Self {
+        Self {
+            edge_cost: DefaultCost,
+            direction: PhantomData,
+        }
+    }
+}
+
+impl FloydWarshall<Undirected, DefaultCost> {
+    fn undirected() -> Self {
+        Self {
+            edge_cost: DefaultCost,
+            direction: PhantomData,
+        }
+    }
+}
+
+impl<D, E> FloydWarshall<D, E> {
+    fn with_edge_cost<S, F>(self, edge_cost: F) -> FloydWarshall<D, F>
+    where
+        F: GraphCost<S>,
+    {
+        FloydWarshall {
+            edge_cost,
+            direction: self.direction,
+        }
+    }
+}
 
 fn eval<S>(graph: &Graph<S>)
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S>,
-    S::EdgeWeight: Zero,
+    S::EdgeWeight: CheckedAdd + Zero,
     for<'a> &'a S::EdgeWeight: Add<Output = S::EdgeWeight>,
 {
     let mut distance = Matrix::new_from_option(graph);
@@ -44,10 +88,6 @@ where
             for j in graph.nodes() {
                 let j = j.id();
 
-                // TODO: do we need to check the other direction, no, right?
-                // https://cs.stackexchange.com/questions/26344/floyd-warshall-algorithm-on-undirected-graph
-                // We don't need to cross check, just cross set.
-
                 let Some(ik) = distance.get(i, k) else {
                     continue;
                 };
@@ -56,7 +96,13 @@ where
                     continue;
                 };
 
-                let alternative = *ik + *kj;
+                // Floyd-Warshall has a tendency to overflow on negative cycles, as large as
+                // `Ω(⋅6^{n-1} w_max)`.
+                // Where `w_max` is the largest absolute value of a negative edge weight.
+                // see: https://doi.org/10.1016/j.ipl.2010.02.001
+                let Some(alternative) = ik.checked_add(*kj) else {
+                    continue;
+                };
 
                 if let Some(Some(current)) = distance.get(i, j) {
                     if alternative >= *current {
@@ -70,5 +116,9 @@ where
                 // previous.set(j, i, *previous.get(k, i));
             }
         }
+    }
+
+    if distance.diagonal().any(|d| d < S::EdgeWeight::zero()) {
+        todo!("negative cycle")
     }
 }
