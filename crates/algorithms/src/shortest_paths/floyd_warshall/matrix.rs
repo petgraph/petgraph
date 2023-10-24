@@ -70,7 +70,7 @@ where
     S: GraphStorage + 'a,
     S::NodeId: LinearGraphId<S>,
 {
-    mapper: MatrixIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'a>, S::NodeId>,
+    pub(crate) mapper: MatrixIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'a>, S::NodeId>,
     matrix: Vec<Option<T>>,
     length: usize,
 }

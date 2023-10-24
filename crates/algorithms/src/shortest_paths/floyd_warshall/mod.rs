@@ -1,3 +1,4 @@
+mod error;
 mod r#impl;
 mod matrix;
 

@@ -1,9 +1,17 @@
+use alloc::vec::Vec;
+use core::fmt::{Debug, Display};
+
+use error_stack::{Report, Result};
 use num_traits::{CheckedAdd, Zero};
-use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage};
+use petgraph_core::{
+    base::MaybeOwned,
+    id::{IndexMapper, LinearGraphId},
+    Graph, GraphStorage,
+};
 
 use crate::shortest_paths::{
     common::{cost::GraphCost, intermediates::Intermediates},
-    floyd_warshall::matrix::SlotMatrix,
+    floyd_warshall::{error::FloydWarshallError, matrix::SlotMatrix},
 };
 
 fn set_directed_distance<'graph, S, E>(
@@ -66,6 +74,37 @@ fn set_undirected_predecessor<'graph, S>(
     }
 }
 
+fn reconstruct_path<S>(
+    matrix: &SlotMatrix<'_, S, &'_ S::NodeId>,
+    source: &S::NodeId,
+    target: &S::NodeId,
+) -> Vec<&'_ S::NodeId>
+where
+    S: GraphStorage,
+    S::NodeId: LinearGraphId<S> + Clone,
+{
+    let mut path = Vec::new();
+
+    if matrix.get(source, target).is_none() {
+        return path;
+    }
+
+    let mut current = target;
+    path.push(target);
+
+    while source != current {
+        let Some(node) = matrix.get(source, current).copied() else {
+            return Vec::new();
+        };
+
+        current = node;
+        path.push(current);
+    }
+
+    path.reverse();
+    path
+}
+
 struct FloydWarshallImpl<'graph: 'parent, 'parent, S, E>
 where
     S: GraphStorage,
@@ -120,7 +159,7 @@ where
             &S::NodeId,
             Option<&'graph S::NodeId>,
         ),
-    ) -> Self {
+    ) -> Result<Self, FloydWarshallError<S>> {
         let distances = SlotMatrix::new(graph);
 
         let predecessors = match intermediates {
@@ -141,12 +180,12 @@ where
             predecessors,
         };
 
-        this.eval();
+        this.eval()?;
 
-        this
+        Ok(this)
     }
 
-    fn eval(&mut self) {
+    fn eval(&mut self) -> Result<(), FloydWarshallError<S>> {
         for edge in self.graph.edges() {
             let (u, v) = edge.endpoints();
             // in a directed graph we would need to assign to both
@@ -226,14 +265,28 @@ where
             }
         }
 
-        if self
+        let negative_cycles = self
             .distances
             .diagonal()
-            .filter_map(|value| value)
-            .any(|d| *d.as_ref() < E::Value::zero())
-        {
-            todo!("negative cycle")
+            .enumerate()
+            .filter_map(|(index, value)| value.map(|value| (index, value)))
+            .filter(|(_, value)| *value.as_ref() < E::Value::zero())
+            .map(|(index, _)| index);
+
+        let mut result: Result<(), FloydWarshallError<S>> = Ok(());
+
+        for index in negative_cycles {
+            let node = self.distances.mapper.reverse(&index);
+
+            let error = Report::new(FloydWarshallError::NegativeCycle { including: node });
+
+            match &mut result {
+                result @ Ok(()) => *result = Err(error),
+                Err(report) => report.extend_one(error),
+            }
         }
+
+        result
     }
 }
 

@@ -9,6 +9,8 @@
 //! _any_ value.
 mod linear;
 
+use core::fmt::{Debug, Display};
+
 #[cfg(feature = "alloc")]
 pub use self::linear::ContinuousIndexMapper;
 pub use self::linear::{Continuity, Continuous, Discrete, IndexMapper, LinearGraphId};
