@@ -37,7 +37,7 @@ where
     intermediates: Intermediates,
 
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
-    previous: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
+    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
@@ -79,9 +79,9 @@ where
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, E::Value::zero());
 
-        let mut previous = HashMap::with_hasher(FxBuildHasher::default());
+        let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
         if intermediates == Intermediates::Record {
-            previous.insert(source, None);
+            predecessors.insert(source, None);
         }
 
         Ok(Self {
@@ -97,7 +97,7 @@ where
             intermediates,
 
             distances,
-            previous,
+            predecessors,
         })
     }
 
@@ -105,7 +105,7 @@ where
         while let Some(node) = self.queue.pop_min() {
             if node.id() == self.target.id() {
                 let intermediates = if self.intermediates == Intermediates::Record {
-                    reconstruct_intermediates(&self.previous, node.id())
+                    reconstruct_intermediates(&self.predecessors, node.id())
                 } else {
                     Vec::new()
                 };
@@ -141,7 +141,7 @@ where
                 self.distances.insert(neighbour.id(), alternative);
 
                 if self.intermediates == Intermediates::Record {
-                    self.previous.insert(neighbour.id(), Some(node));
+                    self.predecessors.insert(neighbour.id(), Some(node));
                 }
 
                 self.queue.decrease_priority(neighbour, guess);

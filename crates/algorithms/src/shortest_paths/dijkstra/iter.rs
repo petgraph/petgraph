@@ -42,7 +42,7 @@ where
     intermediates: Intermediates,
 
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
-    previous: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
+    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
@@ -73,9 +73,9 @@ where
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, E::Value::zero());
 
-        let mut previous = HashMap::with_hasher(FxBuildHasher::default());
+        let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
         if intermediates == Intermediates::Record {
-            previous.insert(source, None);
+            predecessors.insert(source, None);
         }
 
         Ok(Self {
@@ -88,7 +88,7 @@ where
             next: None,
             intermediates,
             distances,
-            previous,
+            predecessors,
         })
     }
 }
@@ -143,7 +143,7 @@ where
             self.distances.insert(target.id(), alternative.clone());
 
             if self.intermediates == Intermediates::Record {
-                self.previous.insert(target.id(), Some(node));
+                self.predecessors.insert(target.id(), Some(node));
             }
 
             self.queue.decrease_priority(target, alternative);
@@ -177,7 +177,7 @@ where
         let intermediates = if self.intermediates == Intermediates::Discard {
             Vec::new()
         } else {
-            reconstruct_intermediates(&self.previous, node.id())
+            reconstruct_intermediates(&self.predecessors, node.id())
         };
 
         let path = Path {
