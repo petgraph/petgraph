@@ -2,16 +2,75 @@ use alloc::{vec, vec::Vec};
 use core::{iter, iter::repeat_with};
 
 use petgraph_core::{
-    id::{ContinuousIndexMapper, IndexMapper, LinearGraphId},
+    base::MaybeOwned,
+    id::{Continuous, ContinuousIndexMapper, IndexMapper, LinearGraphId},
     Graph, GraphStorage,
 };
+
+/// `IndexMapper` that is non-functional and always returns `None` for `lookup` and `reverse`.
+///
+/// # Panics
+///
+/// Panics if `map` is called.
+/// The caller must ensure, that `map` is never called.
+struct DiscardingIndexMapper;
+
+impl<T, U> IndexMapper<T, U> for DiscardingIndexMapper {
+    type Continuity = Continuous;
+
+    fn map(&mut self, _: &T) -> U {
+        panic!("DiscardingIndexMapper cannot map")
+    }
+
+    fn lookup(&self, _: &T) -> Option<U> {
+        None
+    }
+
+    fn reverse(&mut self, _: &U) -> Option<MaybeOwned<T>> {
+        None
+    }
+}
+
+enum MatrixIndexMapper<I, T> {
+    Store(ContinuousIndexMapper<I, T>),
+    Discard(DiscardingIndexMapper),
+}
+
+impl<I, T> IndexMapper<T, usize> for MatrixIndexMapper<I, T>
+where
+    I: IndexMapper<T, usize>,
+    T: PartialEq + Clone,
+{
+    type Continuity = Continuous;
+
+    fn map(&mut self, from: &T) -> usize {
+        match self {
+            Self::Store(mapper) => mapper.map(from),
+            Self::Discard(mapper) => mapper.map(from),
+        }
+    }
+
+    fn lookup(&self, from: &T) -> Option<usize> {
+        match self {
+            Self::Store(mapper) => mapper.lookup(from),
+            Self::Discard(mapper) => mapper.lookup(from),
+        }
+    }
+
+    fn reverse(&mut self, to: &usize) -> Option<MaybeOwned<T>> {
+        match self {
+            Self::Store(mapper) => mapper.reverse(to),
+            Self::Discard(mapper) => mapper.reverse(to),
+        }
+    }
+}
 
 pub(super) struct SlotMatrix<'a, S, T>
 where
     S: GraphStorage + 'a,
     S::NodeId: LinearGraphId<S>,
 {
-    mapper: ContinuousIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'a>, S::NodeId>,
+    mapper: MatrixIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'a>, S::NodeId>,
     matrix: Vec<Option<T>>,
     length: usize,
 }
@@ -23,9 +82,12 @@ where
 {
     pub(crate) fn new(graph: &'a Graph<S>) -> Self {
         let length = graph.num_nodes();
-        let mapper = ContinuousIndexMapper::new(<S::NodeId as LinearGraphId<S>>::index_mapper(
-            graph.storage(),
-        ));
+        let mapper =
+            MatrixIndexMapper::Store(ContinuousIndexMapper::new(<S::NodeId as LinearGraphId<
+                S,
+            >>::index_mapper(
+                graph.storage()
+            )));
 
         let mut matrix = Vec::with_capacity(length * length);
         matrix.extend(repeat_with(|| None).take(length * length));
@@ -37,7 +99,25 @@ where
         }
     }
 
+    pub(crate) fn empty() -> Self {
+        let mapper = MatrixIndexMapper::Discard(DiscardingIndexMapper);
+        let matrix = Vec::new();
+        let length = 0;
+
+        Self {
+            mapper,
+            matrix,
+            length,
+        }
+    }
+
     pub(crate) fn set(&mut self, source: &S::NodeId, target: &S::NodeId, value: Option<T>) {
+        if matches!(self.mapper, MatrixIndexMapper::Discard(_)) {
+            // this should never happen, even if it does, we don't want to panic here (map call)
+            // so we simply return.
+            return;
+        }
+
         let source = self.mapper.map(source);
         let target = self.mapper.map(target);
 

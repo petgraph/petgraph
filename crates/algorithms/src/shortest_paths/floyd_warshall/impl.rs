@@ -122,8 +122,11 @@ where
         ),
     ) -> Self {
         let distances = SlotMatrix::new(graph);
-        // TODO: predecessors should not allocate if intermediates is Discard
-        let predecessors = SlotMatrix::new(graph);
+
+        let predecessors = match intermediates {
+            Intermediates::Discard => SlotMatrix::empty(),
+            Intermediates::Record => SlotMatrix::new(graph),
+        };
 
         let mut this = Self {
             graph,
