@@ -257,11 +257,7 @@ fn distance_from_undirected_custom_edge_cost() {
 
 #[test]
 fn lifetime() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let dijkstra = Dijkstra::directed();
 

@@ -5,7 +5,7 @@ use core::{
 
 use error_stack::Context;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum FloydWarshallError {
     NegativeCycle,
 }

@@ -10,7 +10,7 @@ use crate::shortest_paths::{
     Cost, Path, Route,
 };
 
-fn set_directed_distance<'graph, S, E>(
+pub(super) fn init_directed_edge_distance<'graph, S, E>(
     matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
     u: &S::NodeId,
     v: &S::NodeId,
@@ -24,7 +24,7 @@ fn set_directed_distance<'graph, S, E>(
     matrix.set(u, v, value);
 }
 
-fn set_undirected_distance<'graph, S, E>(
+pub(super) fn init_undirected_edge_distance<'graph, S, E>(
     matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
     u: &S::NodeId,
     v: &S::NodeId,
@@ -37,43 +37,38 @@ fn set_undirected_distance<'graph, S, E>(
 {
     matrix.set(u, v, value.clone());
 
-    if v != u {
+    if u != v {
         matrix.set(v, u, value);
     }
 }
 
-fn set_directed_predecessor<'graph, S>(
+pub(super) fn init_directed_edge_predecessor<'graph, S>(
     matrix: &mut SlotMatrix<'graph, S, &'graph S::NodeId>,
-    u: &S::NodeId,
-    v: &S::NodeId,
-    value: Option<&'graph S::NodeId>,
+    u: &'graph S::NodeId,
+    v: &'graph S::NodeId,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
 {
-    matrix.set(u, v, value);
+    matrix.set(u, v, Some(u));
 }
 
-fn set_undirected_predecessor<'graph, S>(
+pub(super) fn init_undirected_edge_predecessor<'graph, S>(
     matrix: &mut SlotMatrix<'graph, S, &'graph S::NodeId>,
-    u: &S::NodeId,
-    v: &S::NodeId,
-    value: Option<&'graph S::NodeId>,
+    u: &'graph S::NodeId,
+    v: &'graph S::NodeId,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
 {
-    matrix.set(u, v, value);
-
-    if v != u {
-        matrix.set(v, u, value);
-    }
+    matrix.set(u, v, Some(u));
+    matrix.set(v, u, Some(v));
 }
 
 fn reconstruct_path<'a, S>(
     matrix: &SlotMatrix<'_, S, &'a S::NodeId>,
     source: &S::NodeId,
-    target: &S::NodeId,
+    target: &'a S::NodeId,
 ) -> Vec<&'a S::NodeId>
 where
     S: GraphStorage,
@@ -81,17 +76,27 @@ where
 {
     let mut path = Vec::new();
 
+    if source == target {
+        return Vec::new();
+    }
+
     if matrix.get(source, target).is_none() {
-        return path;
+        return Vec::new();
     }
 
     let mut current = target;
-    // we do not need the target node in the path, therefore don't initially push here
+    path.push(current);
 
-    while source != current {
+    // eager loop termination here, so that we don't need to push and then pop the last element
+    // again.
+    loop {
         let Some(node) = matrix.get(source, current).copied() else {
             return Vec::new();
         };
+
+        if node == source {
+            break;
+        }
 
         current = node;
         path.push(node);
@@ -101,7 +106,7 @@ where
     path
 }
 
-struct FloydWarshallImpl<'graph: 'parent, 'parent, S, E>
+pub(super) struct FloydWarshallImpl<'graph: 'parent, 'parent, S, E>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S>,
@@ -112,18 +117,14 @@ where
 
     intermediates: Intermediates,
 
-    set_distance: fn(
+    init_edge_distance: fn(
         &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
         &S::NodeId,
         &S::NodeId,
         Option<MaybeOwned<'graph, E::Value>>,
     ),
-    set_predecessor: fn(
-        &mut SlotMatrix<'graph, S, &'graph S::NodeId>,
-        &S::NodeId,
-        &S::NodeId,
-        Option<&'graph S::NodeId>,
-    ),
+    init_edge_predecessor:
+        fn(&mut SlotMatrix<'graph, S, &'graph S::NodeId>, &'graph S::NodeId, &'graph S::NodeId),
 
     distances: SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
     predecessors: SlotMatrix<'graph, S, &'graph S::NodeId>,
@@ -131,29 +132,28 @@ where
 
 impl<'graph: 'parent, 'parent, S, E> FloydWarshallImpl<'graph, 'parent, S, E>
 where
-    S: GraphStorage + 'static,
+    S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
     E: GraphCost<S>,
-    E::Value: PartialOrd + CheckedAdd + Zero + Clone,
+    E::Value: PartialOrd + CheckedAdd + Zero + Clone + 'graph,
 {
-    fn new(
+    pub(super) fn new(
         graph: &'graph Graph<S>,
 
         edge_cost: &'parent E,
 
         intermediates: Intermediates,
 
-        set_distance: fn(
+        init_edge_distance: fn(
             &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
             &S::NodeId,
             &S::NodeId,
             Option<MaybeOwned<'graph, E::Value>>,
         ),
-        set_predecessor: fn(
+        init_edge_predecessor: fn(
             &mut SlotMatrix<'graph, S, &'graph S::NodeId>,
-            &S::NodeId,
-            &S::NodeId,
-            Option<&'graph S::NodeId>,
+            &'graph S::NodeId,
+            &'graph S::NodeId,
         ),
     ) -> Result<Self, FloydWarshallError> {
         let distances = SlotMatrix::new(graph);
@@ -169,8 +169,8 @@ where
 
             intermediates,
 
-            set_distance,
-            set_predecessor,
+            init_edge_distance,
+            init_edge_predecessor,
 
             distances,
             predecessors,
@@ -186,7 +186,7 @@ where
             let (u, v) = edge.endpoints();
             // in a directed graph we would need to assign to both
             // distance[(u, v)] and distance[(v, u)]
-            (self.set_distance)(
+            (self.init_edge_distance)(
                 &mut self.distances,
                 u.id(),
                 v.id(),
@@ -194,25 +194,19 @@ where
             );
 
             if self.intermediates == Intermediates::Record {
-                (self.set_predecessor)(&mut self.predecessors, u.id(), v.id(), Some(u.id()));
+                (self.init_edge_predecessor)(&mut self.predecessors, u.id(), v.id());
             }
         }
 
         for node in self.graph.nodes() {
-            (self.set_distance)(
-                &mut self.distances,
+            self.distances.set(
                 node.id(),
                 node.id(),
                 Some(MaybeOwned::Owned(E::Value::zero())),
             );
 
             if self.intermediates == Intermediates::Record {
-                (self.set_predecessor)(
-                    &mut self.predecessors,
-                    node.id(),
-                    node.id(),
-                    Some(node.id()),
-                );
+                self.predecessors.set(node.id(), node.id(), Some(node.id()));
             }
         }
 
@@ -247,15 +241,12 @@ where
                         }
                     }
 
-                    (self.set_distance)(
-                        &mut self.distances,
-                        i,
-                        j,
-                        Some(MaybeOwned::Owned(alternative)),
-                    );
+                    self.distances
+                        .set(i, j, Some(MaybeOwned::Owned(alternative)));
+
                     if self.intermediates == Intermediates::Record {
                         let predecessor = self.predecessors.get(k, j).copied();
-                        (self.set_predecessor)(&mut self.predecessors, i, j, predecessor);
+                        self.predecessors.set(i, j, predecessor);
                     }
                 }
             }
@@ -285,7 +276,7 @@ where
         result
     }
 
-    fn iter(self) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
+    pub(super) fn iter(self) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
         let Self {
             graph,
 
