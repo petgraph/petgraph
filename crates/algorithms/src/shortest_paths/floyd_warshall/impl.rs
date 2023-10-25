@@ -296,39 +296,6 @@ where
         result
     }
 
-    fn route(
-        &self,
-        source: Node<'graph, S>,
-        target: Node<'graph, S>,
-    ) -> Option<Route<'graph, S, E::Value>> {
-        let path = match self.intermediates {
-            Intermediates::Discard => Path {
-                source,
-                target,
-                intermediates: Vec::new(),
-            },
-            Intermediates::Record => Path {
-                source,
-                target,
-                intermediates: reconstruct_path(&self.predecessors, source.id(), target.id())
-                    .into_iter()
-                    .filter_map(|id| self.graph.node(id))
-                    .collect(),
-            },
-        };
-
-        let cost = self
-            .distances
-            .get(source.id(), target.id())
-            .cloned()
-            .map(MaybeOwned::into_owned)?;
-
-        Some(Route {
-            path,
-            cost: Cost(cost),
-        })
-    }
-
     fn iter(self) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
         let Self {
             graph,
