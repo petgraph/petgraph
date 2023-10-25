@@ -91,7 +91,7 @@ where
     }
 
     let mut current = target;
-    path.push(target);
+    // we do not need the target node in the path, therefore don't initially push here
 
     while source != current {
         let Some(node) = matrix.get(source, current).copied() else {
@@ -99,7 +99,7 @@ where
         };
 
         current = node;
-        path.push(current);
+        path.push(node);
     }
 
     path.reverse();
@@ -277,6 +277,7 @@ where
         let mut result: Result<(), FloydWarshallError> = Ok(());
 
         for index in negative_cycles {
+            // TODO: mapper mutable borrow :/
             let Some(node) = self
                 .distances
                 .mapper
