@@ -61,11 +61,7 @@ graph!(
 
 #[test]
 fn path_from_directed_default_edge_cost() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let dijkstra = Dijkstra::directed();
 
@@ -84,11 +80,7 @@ fn path_from_directed_default_edge_cost() {
 
 #[test]
 fn distance_from_directed_default_edge_cost() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let dijkstra = Dijkstra::directed();
 
@@ -115,11 +107,7 @@ where
 
 #[test]
 fn path_from_directed_custom_edge_cost() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = random::create();
+    let GraphCollection { graph, nodes, .. } = random::create();
 
     let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
 
@@ -139,11 +127,7 @@ fn path_from_directed_custom_edge_cost() {
 
 #[test]
 fn distance_from_directed_custom_edge_cost() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = random::create();
+    let GraphCollection { graph, nodes, .. } = random::create();
 
     let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
 
@@ -163,11 +147,7 @@ fn distance_from_directed_custom_edge_cost() {
 
 #[test]
 fn path_from_undirected_default_edge_cost() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let dijkstra = Dijkstra::undirected();
 
@@ -186,11 +166,7 @@ fn path_from_undirected_default_edge_cost() {
 
 #[test]
 fn distance_from_undirected_default_edge_cost() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let dijkstra = Dijkstra::undirected();
 
@@ -209,11 +185,7 @@ fn distance_from_undirected_default_edge_cost() {
 
 #[test]
 fn path_from_undirected_custom_edge_cost() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = random::create();
+    let GraphCollection { graph, nodes, .. } = random::create();
 
     let dijkstra = Dijkstra::undirected().with_edge_cost(edge_cost);
 
@@ -233,11 +205,7 @@ fn path_from_undirected_custom_edge_cost() {
 
 #[test]
 fn distance_from_undirected_custom_edge_cost() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = random::create();
+    let GraphCollection { graph, nodes, .. } = random::create();
 
     let dijkstra = Dijkstra::undirected().with_edge_cost(edge_cost);
 
