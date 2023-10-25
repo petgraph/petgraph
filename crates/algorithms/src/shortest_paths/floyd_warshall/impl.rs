@@ -6,12 +6,13 @@ use num_traits::{CheckedAdd, Zero};
 use petgraph_core::{
     base::MaybeOwned,
     id::{IndexMapper, LinearGraphId},
-    Graph, GraphStorage,
+    Graph, GraphStorage, Node,
 };
 
 use crate::shortest_paths::{
     common::{cost::GraphCost, intermediates::Intermediates},
     floyd_warshall::{error::FloydWarshallError, matrix::SlotMatrix},
+    Cost, Path, Route,
 };
 
 fn set_directed_distance<'graph, S, E>(
@@ -74,11 +75,11 @@ fn set_undirected_predecessor<'graph, S>(
     }
 }
 
-fn reconstruct_path<S>(
-    matrix: &SlotMatrix<'_, S, &'_ S::NodeId>,
+fn reconstruct_path<'a, S>(
+    matrix: &SlotMatrix<'_, S, &'a S::NodeId>,
     source: &S::NodeId,
     target: &S::NodeId,
-) -> Vec<&'_ S::NodeId>
+) -> Vec<&'a S::NodeId>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -135,8 +136,8 @@ where
 
 impl<'graph: 'parent, 'parent, S, E> FloydWarshallImpl<'graph, 'parent, S, E>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone,
+    S: GraphStorage + 'static,
+    S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
     E: GraphCost<S>,
     E::Value: PartialOrd + CheckedAdd + Zero + Clone,
 {
@@ -159,7 +160,7 @@ where
             &S::NodeId,
             Option<&'graph S::NodeId>,
         ),
-    ) -> Result<Self, FloydWarshallError<S>> {
+    ) -> Result<Self, FloydWarshallError> {
         let distances = SlotMatrix::new(graph);
 
         let predecessors = match intermediates {
@@ -185,7 +186,7 @@ where
         Ok(this)
     }
 
-    fn eval(&mut self) -> Result<(), FloydWarshallError<S>> {
+    fn eval(&mut self) -> Result<(), FloydWarshallError> {
         for edge in self.graph.edges() {
             let (u, v) = edge.endpoints();
             // in a directed graph we would need to assign to both
@@ -273,20 +274,101 @@ where
             .filter(|(_, value)| *value.as_ref() < E::Value::zero())
             .map(|(index, _)| index);
 
-        let mut result: Result<(), FloydWarshallError<S>> = Ok(());
+        let mut result: Result<(), FloydWarshallError> = Ok(());
 
         for index in negative_cycles {
-            let node = self.distances.mapper.reverse(&index);
+            let Some(node) = self
+                .distances
+                .mapper
+                .reverse(&index)
+                .map(MaybeOwned::into_owned)
+            else {
+                continue;
+            };
 
-            let error = Report::new(FloydWarshallError::NegativeCycle { including: node });
-
-            match &mut result {
-                result @ Ok(()) => *result = Err(error),
-                Err(report) => report.extend_one(error),
-            }
+            result = match result {
+                Ok(()) => Err(Report::new(FloydWarshallError::NegativeCycle).attach(node)),
+                Err(report) => Err(report.attach(node)),
+            };
         }
 
         result
+    }
+
+    fn route(
+        &self,
+        source: Node<'graph, S>,
+        target: Node<'graph, S>,
+    ) -> Option<Route<'graph, S, E::Value>> {
+        let path = match self.intermediates {
+            Intermediates::Discard => Path {
+                source,
+                target,
+                intermediates: Vec::new(),
+            },
+            Intermediates::Record => Path {
+                source,
+                target,
+                intermediates: reconstruct_path(&self.predecessors, source.id(), target.id())
+                    .into_iter()
+                    .filter_map(|id| self.graph.node(id))
+                    .collect(),
+            },
+        };
+
+        let cost = self
+            .distances
+            .get(source.id(), target.id())
+            .cloned()
+            .map(MaybeOwned::into_owned)?;
+
+        Some(Route {
+            path,
+            cost: Cost(cost),
+        })
+    }
+
+    fn iter(self) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
+        let Self {
+            graph,
+
+            intermediates,
+
+            distances,
+            predecessors,
+            ..
+        } = self;
+
+        graph
+            .nodes()
+            .flat_map(move |source| graph.nodes().map(move |target| (source, target)))
+            .filter_map(move |(source, target)| {
+                let path = match intermediates {
+                    Intermediates::Discard => Path {
+                        source,
+                        target,
+                        intermediates: Vec::new(),
+                    },
+                    Intermediates::Record => Path {
+                        source,
+                        target,
+                        intermediates: reconstruct_path(&predecessors, source.id(), target.id())
+                            .into_iter()
+                            .filter_map(|id| graph.node(id))
+                            .collect(),
+                    },
+                };
+
+                let cost = distances
+                    .get(source.id(), target.id())
+                    .cloned()
+                    .map(MaybeOwned::into_owned)?;
+
+                Some(Route {
+                    path,
+                    cost: Cost(cost),
+                })
+            })
     }
 }
 

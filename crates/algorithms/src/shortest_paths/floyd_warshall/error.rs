@@ -6,40 +6,17 @@ use core::{
 use error_stack::Context;
 use petgraph_core::{base::MaybeOwned, GraphStorage};
 
-pub enum FloydWarshallError<'graph, S>
-where
-    S: GraphStorage,
-{
-    NegativeCycle {
-        including: Option<MaybeOwned<'graph, S::NodeId>>,
-    },
+#[derive(Debug, Copy, Clone)]
+pub enum FloydWarshallError {
+    NegativeCycle,
 }
 
-impl<S> Debug for FloydWarshallError<S>
-where
-    S: GraphStorage,
-{
+impl Display for FloydWarshallError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NegativeCycle { including } => f
-                .debug_struct("NegativeCycle")
-                .field("including", including)
-                .finish(),
+            Self::NegativeCycle => f.write_str("graph contains a negative cycle"),
         }
     }
 }
 
-impl<S> Display for FloydWarshallError<S>
-where
-    S: GraphStorage,
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::NegativeCycle { including } => {
-                write!(f, "negative cycle detected, including node {including}")
-            }
-        }
-    }
-}
-
-impl<S> Context for FloydWarshallError<S> where S: GraphStorage {}
+impl Context for FloydWarshallError {}
