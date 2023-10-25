@@ -3,7 +3,7 @@ use core::{iter, iter::repeat_with};
 
 use petgraph_core::{
     base::MaybeOwned,
-    id::{Continuous, ContinuousIndexMapper, IndexMapper, LinearGraphId},
+    id::{IndexMapper, LinearGraphId},
     Graph, GraphStorage,
 };
 
@@ -18,7 +18,7 @@ struct DiscardingIndexMapper;
 impl<T, U> IndexMapper<T, U> for DiscardingIndexMapper {
     type Continuity = Continuous;
 
-    fn map(&mut self, _: &T) -> U {
+    fn get(&mut self, _: &T) -> U {
         panic!("DiscardingIndexMapper cannot map")
     }
 
@@ -43,10 +43,10 @@ where
 {
     type Continuity = Continuous;
 
-    fn map(&mut self, from: &T) -> usize {
+    fn get(&mut self, from: &T) -> usize {
         match self {
             Self::Store(mapper) => mapper.map(from),
-            Self::Discard(mapper) => mapper.map(from),
+            Self::Discard(mapper) => mapper.get(from),
         }
     }
 
@@ -118,8 +118,8 @@ where
             return;
         }
 
-        let source = self.mapper.map(source);
-        let target = self.mapper.map(target);
+        let source = self.mapper.get(source);
+        let target = self.mapper.get(target);
 
         self.matrix[source * self.length + target] = value;
     }

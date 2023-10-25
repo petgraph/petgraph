@@ -339,5 +339,3 @@ where
             })
     }
 }
-
-// TODO: eager eval, then collect in iterator

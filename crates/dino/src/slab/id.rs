@@ -13,7 +13,7 @@ use crate::slab::{generation::Generation, key::Key};
 /// |------------------------|-----------------|------------|-------------|
 /// | 16                     | 4               | 12         | 0           |
 /// | 32                     | 8               | 24         | 0           |
-/// | 32                     | 8               | 24         | 32          |
+/// | 64                     | 8               | 24         | 32          |
 ///
 /// Each time a lot is allocated, its generation is incremented. When retrieving
 /// values using a `EntryId`, the generation is validated as a safe guard against
@@ -76,6 +76,12 @@ impl EntryId {
     #[must_use]
     pub(crate) const fn index(self) -> usize {
         self.0.get() & Self::INDEX_MASK
+    }
+
+    #[inline]
+    #[must_use]
+    pub(crate) const fn index_u32(self) -> u32 {
+        (self.0.get() & Self::INDEX_MASK) as u32
     }
 
     #[inline]

@@ -70,7 +70,7 @@ fn terminate_early() {
     let mut predecessor = vec![None; graph.num_nodes()];
     let control = depth_first_search(&graph, once(a), |event| {
         if let DfsEvent::TreeEdge(start, end) = event {
-            predecessor[mapper.map(&end)] = Some(start);
+            predecessor[mapper.get(&end)] = Some(start);
             if end == b {
                 return Control::Break(start);
             }

@@ -57,7 +57,7 @@ where
     }
 
     fn to_index(&self, a: Self::NodeId) -> usize {
-        S::NodeId::index_mapper(&self.storage).map(&a)
+        S::NodeId::index_mapper(&self.storage).get(&a)
     }
 
     fn from_index(&self, i: usize) -> Self::NodeId {
@@ -102,7 +102,7 @@ where
     }
 
     fn to_index(&self, a: Self::EdgeId) -> usize {
-        S::EdgeId::index_mapper(&self.storage).map(&a)
+        S::EdgeId::index_mapper(&self.storage).get(&a)
     }
 
     fn from_index(&self, i: usize) -> Self::EdgeId {

@@ -4,12 +4,13 @@ mod generation;
 mod id;
 mod key;
 
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
 
 use hashbrown::HashMap;
 use petgraph_core::{
     base::MaybeOwned,
+    deprecated::index::IndexType,
     id::{Continuous, IndexMapper},
 };
 
@@ -383,11 +384,13 @@ where
     }
 }
 
+// TODO: test
 pub struct SlabIndexMapper<'a, K>
 where
     K: Key,
 {
-    lookup: HashMap<K, usize>,
+    lookup: Vec<Option<usize>>,
+    reverse: Vec<Option<K>>,
 
     // we only have the lifetime here to ensure that the slab is not modified while we are mapping,
     // as that will invalidate indices.
@@ -399,39 +402,47 @@ where
     K: Key,
 {
     pub(crate) fn new<V>(slab: &'a Slab<K, V>) -> Self {
-        let map = slab
-            .keys()
-            .enumerate()
-            .map(|(index, key)| (key, index))
-            .collect();
+        // TODO: for more than 1024 elements (8 byte * 512 = 4096 bytes) we should use runtime
+        //  length encoding instead.
+
+        let mut lookup = vec![None; slab.entries.len()];
+        let mut reverse = vec![None; slab.len()];
+
+        for (index, key) in slab.keys().enumerate() {
+            lookup[key.into_id().index()] = Some(index);
+            reverse[index] = Some(key);
+        }
 
         Self {
-            lookup: map,
+            lookup,
+            reverse,
             _lifetime: PhantomData,
         }
     }
 }
 
-impl<K> IndexMapper<K, usize> for SlabIndexMapper<'_, K>
+impl<K> IndexMapper<K> for SlabIndexMapper<'_, K>
 where
     K: Key,
 {
-    type Continuity = Continuous;
-
-    fn map(&mut self, from: &K) -> usize {
-        *self.lookup.get(from).expect("invalid key")
+    fn max(&self) -> usize {
+        self.reverse.len()
     }
 
-    fn lookup(&self, from: &K) -> Option<usize> {
-        self.lookup.get(from).copied()
+    fn get(&self, from: &K) -> Option<usize> {
+        self.lookup.get(from.into_id().index()).copied().flatten()
     }
 
-    fn reverse(&mut self, to: &usize) -> Option<MaybeOwned<K>> {
-        self.lookup.iter().find_map(|(key, index)| {
-            let is_element = *index == *to;
+    fn index(&self, from: &K) -> usize {
+        self.lookup[from.into_id().index()].expect("tried to access vacant entry")
+    }
 
-            is_element.then_some(MaybeOwned::Owned(*key))
-        })
+    fn reverse(&self, to: usize) -> Option<MaybeOwned<K>> {
+        self.reverse
+            .get(to)
+            .copied()
+            .flatten()
+            .map(MaybeOwned::from)
     }
 }
 
