@@ -5,14 +5,14 @@ use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
 use num_traits::Zero;
-use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
+use petgraph_core::{Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     astar::{error::AStarError, heuristic::GraphHeuristic},
     common::{
         connections::Connections,
         cost::GraphCost,
-        intermediates::{self, reconstruct_intermediates, Intermediates},
+        intermediates::{reconstruct_intermediates, Intermediates},
         queue::Queue,
     },
     Cost, DirectRoute, Path, Route,

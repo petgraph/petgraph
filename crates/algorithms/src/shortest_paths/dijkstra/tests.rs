@@ -1,15 +1,13 @@
 use alloc::vec::Vec;
-use core::{fmt::Debug, hash::Hash};
 
-use hashbrown::HashMap;
-use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
+use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
 use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{
     common::tests::{assert_distance, assert_path, distance_from, path_from},
     dijkstra::Dijkstra,
-    ShortestDistance, ShortestPath,
+    ShortestPath,
 };
 
 graph!(

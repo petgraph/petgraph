@@ -1,6 +1,4 @@
-use core::marker::PhantomData;
-
-use petgraph_core::{Edge, GraphDirectionality, GraphStorage, Node};
+use petgraph_core::{Edge, GraphStorage, Node};
 
 pub(in crate::shortest_paths) trait Connections<'a, S>
 where

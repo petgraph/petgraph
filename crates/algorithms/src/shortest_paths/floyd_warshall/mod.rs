@@ -2,19 +2,14 @@ mod error;
 mod r#impl;
 mod matrix;
 
-use core::{marker::PhantomData, ops::Add};
+use core::marker::PhantomData;
 
-use num_traits::{CheckedAdd, Zero};
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
-    id::LinearGraphId,
-    Graph, GraphStorage,
+    GraphStorage,
 };
 
-use crate::shortest_paths::{
-    common::cost::{DefaultCost, GraphCost},
-    floyd_warshall::matrix::SlotMatrix,
-};
+use crate::shortest_paths::common::cost::{DefaultCost, GraphCost};
 
 struct FloydWarshall<D, E> {
     edge_cost: E,

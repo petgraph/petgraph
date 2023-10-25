@@ -7,12 +7,7 @@ mod key;
 use alloc::{vec, vec::Vec};
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
 
-use hashbrown::HashMap;
-use petgraph_core::{
-    base::MaybeOwned,
-    deprecated::index::IndexType,
-    id::{Continuous, IndexMapper},
-};
+use petgraph_core::{base::MaybeOwned, id::IndexMapper};
 
 use crate::slab::entry::{Entry, State};
 pub(crate) use crate::slab::{generation::Generation, id::EntryId, key::Key};

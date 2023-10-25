@@ -1,7 +1,7 @@
 use alloc::{vec, vec::Vec};
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use ordered_float::{NotNan, OrderedFloat};
+use ordered_float::NotNan;
 use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge, GraphStorage, Node};
 use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
@@ -84,11 +84,7 @@ where
 
 #[test]
 fn directed_path_between() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::directed().with_heuristic(no_heuristic);
     let route = astar.path_between(&graph, &nodes.s, &nodes.v).unwrap();
@@ -106,11 +102,7 @@ fn directed_path_between() {
 
 #[test]
 fn directed_no_path_between() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::directed().with_heuristic(no_heuristic);
     let route = astar.path_between(&graph, &nodes.s, &nodes.z);
@@ -120,11 +112,7 @@ fn directed_no_path_between() {
 
 #[test]
 fn undirected_path_between() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::undirected().with_heuristic(no_heuristic);
     let route = astar.path_between(&graph, &nodes.s, &nodes.v).unwrap();
@@ -142,11 +130,7 @@ fn undirected_path_between() {
 
 #[test]
 fn undirected_no_path_between() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::undirected().with_heuristic(no_heuristic);
     let route = astar.path_between(&graph, &nodes.s, &nodes.z);
@@ -156,11 +140,7 @@ fn undirected_no_path_between() {
 
 #[test]
 fn directed_distance_between() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::directed().with_heuristic(no_heuristic);
     let cost = astar.distance_between(&graph, &nodes.s, &nodes.v).unwrap();
@@ -170,11 +150,7 @@ fn directed_distance_between() {
 
 #[test]
 fn directed_no_distance_between() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::directed().with_heuristic(no_heuristic);
     let cost = astar.distance_between(&graph, &nodes.s, &nodes.z);
@@ -184,11 +160,7 @@ fn directed_no_distance_between() {
 
 #[test]
 fn undirected_distance_between() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::undirected().with_heuristic(no_heuristic);
     let cost = astar.distance_between(&graph, &nodes.s, &nodes.v).unwrap();
@@ -198,11 +170,7 @@ fn undirected_distance_between() {
 
 #[test]
 fn undirected_no_distance_between() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = networkx::create();
+    let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::undirected().with_heuristic(no_heuristic);
     let cost = astar.distance_between(&graph, &nodes.s, &nodes.z);
@@ -237,11 +205,7 @@ where
 
 #[test]
 fn directed_path_between_manhattan() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = planar::create();
+    let GraphCollection { graph, nodes, .. } = planar::create();
 
     let astar = AStar::directed()
         .with_edge_cost(ensure_not_nan)
@@ -269,11 +233,7 @@ fn directed_path_between_manhattan() {
 
 #[test]
 fn directed_distance_between_manhattan() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = planar::create();
+    let GraphCollection { graph, nodes, .. } = planar::create();
 
     let astar = AStar::directed()
         .with_edge_cost(ensure_not_nan)
@@ -332,11 +292,7 @@ where
 // TODO: move to algorithm docs
 #[test]
 fn directed_path_between_admissible_inconsistent() {
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = inconsistent::create();
+    let GraphCollection { graph, nodes, .. } = inconsistent::create();
 
     let astar = AStar::directed().with_heuristic(admissible_inconsistent);
     let route = astar.path_between(&graph, &nodes.a, &nodes.d).unwrap();
@@ -373,11 +329,7 @@ graph!(factory(runtime) => DiDinoGraph<char, usize>;
 fn optimal_runtime() {
     static CALLS: AtomicUsize = AtomicUsize::new(0);
 
-    let GraphCollection {
-        graph,
-        nodes,
-        edges,
-    } = runtime::create();
+    let GraphCollection { graph, nodes, .. } = runtime::create();
 
     // Needed to bind the lifetime of the closure, does some compiler magic.
     fn bind<S, T>(closure: impl Fn(Edge<S>) -> MaybeOwned<T>) -> impl Fn(Edge<S>) -> MaybeOwned<T> {

@@ -9,8 +9,6 @@
 //! _any_ value.
 mod linear;
 
-use core::fmt::{Debug, Display};
-
 pub use self::linear::{IndexMapper, LinearGraphId};
 use crate::attributes::NoValue;
 

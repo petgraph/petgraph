@@ -1,13 +1,8 @@
 use alloc::vec::Vec;
-use core::fmt::{Debug, Display};
 
 use error_stack::{Report, Result};
 use num_traits::{CheckedAdd, Zero};
-use petgraph_core::{
-    base::MaybeOwned,
-    id::{IndexMapper, LinearGraphId},
-    Graph, GraphStorage, Node,
-};
+use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{cost::GraphCost, intermediates::Intermediates},
@@ -277,13 +272,7 @@ where
         let mut result: Result<(), FloydWarshallError> = Ok(());
 
         for index in negative_cycles {
-            // TODO: mapper mutable borrow :/
-            let Some(node) = self
-                .distances
-                .mapper
-                .reverse(&index)
-                .map(MaybeOwned::into_owned)
-            else {
+            let Some(node) = self.distances.resolve(index).map(MaybeOwned::into_owned) else {
                 continue;
             };
 

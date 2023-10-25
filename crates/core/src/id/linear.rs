@@ -119,7 +119,7 @@ pub trait IndexMapper<Id> {
     /// let mapped = mapper.index(&a);
     /// assert_eq!(mapper.reverse(mapped), Some(MaybeOwned::Borrowed(&a)));
     /// ```
-    fn reverse(&mut self, to: usize) -> Option<MaybeOwned<Id>>;
+    fn reverse(&self, to: usize) -> Option<MaybeOwned<Id>>;
 }
 
 /// Linear graph identifier.

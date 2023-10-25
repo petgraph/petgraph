@@ -1,5 +1,5 @@
-use alloc::{vec, vec::Vec};
-use core::{iter, iter::repeat_with};
+use alloc::vec::Vec;
+use core::iter::repeat_with;
 
 use petgraph_core::{
     base::MaybeOwned,
@@ -7,60 +7,34 @@ use petgraph_core::{
     Graph, GraphStorage,
 };
 
-/// `IndexMapper` that is non-functional and always returns `None` for `lookup` and `reverse`.
-///
-/// # Panics
-///
-/// Panics if `map` is called.
-/// The caller must ensure, that `map` is never called.
-struct DiscardingIndexMapper;
-
-impl<T, U> IndexMapper<T, U> for DiscardingIndexMapper {
-    type Continuity = Continuous;
-
-    fn get(&mut self, _: &T) -> U {
-        panic!("DiscardingIndexMapper cannot map")
-    }
-
-    fn lookup(&self, _: &T) -> Option<U> {
-        None
-    }
-
-    fn reverse(&mut self, _: &U) -> Option<MaybeOwned<T>> {
-        None
-    }
+enum MatrixIndexMapper<I> {
+    Store(I),
+    Discard,
 }
 
-enum MatrixIndexMapper<I, T> {
-    Store(ContinuousIndexMapper<I, T>),
-    Discard(DiscardingIndexMapper),
-}
-
-impl<I, T> IndexMapper<T, usize> for MatrixIndexMapper<I, T>
+impl<I, T> IndexMapper<T> for MatrixIndexMapper<I>
 where
-    I: IndexMapper<T, usize>,
+    I: IndexMapper<T>,
     T: PartialEq + Clone,
 {
-    type Continuity = Continuous;
-
-    fn get(&mut self, from: &T) -> usize {
+    fn max(&self) -> usize {
         match self {
-            Self::Store(mapper) => mapper.map(from),
-            Self::Discard(mapper) => mapper.get(from),
+            Self::Store(mapper) => mapper.max(),
+            Self::Discard => 0,
         }
     }
 
-    fn lookup(&self, from: &T) -> Option<usize> {
+    fn get(&self, from: &T) -> Option<usize> {
         match self {
-            Self::Store(mapper) => mapper.lookup(from),
-            Self::Discard(mapper) => mapper.lookup(from),
+            Self::Store(mapper) => mapper.get(from),
+            Self::Discard => None,
         }
     }
 
-    fn reverse(&mut self, to: &usize) -> Option<MaybeOwned<T>> {
+    fn reverse(&self, to: usize) -> Option<MaybeOwned<T>> {
         match self {
             Self::Store(mapper) => mapper.reverse(to),
-            Self::Discard(mapper) => mapper.reverse(to),
+            Self::Discard => None,
         }
     }
 }
@@ -70,7 +44,7 @@ where
     S: GraphStorage + 'a,
     S::NodeId: LinearGraphId<S>,
 {
-    pub(crate) mapper: MatrixIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'a>, S::NodeId>,
+    mapper: MatrixIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'a>>,
     matrix: Vec<Option<T>>,
     length: usize,
 }
@@ -82,12 +56,9 @@ where
 {
     pub(crate) fn new(graph: &'a Graph<S>) -> Self {
         let length = graph.num_nodes();
-        let mapper =
-            MatrixIndexMapper::Store(ContinuousIndexMapper::new(<S::NodeId as LinearGraphId<
-                S,
-            >>::index_mapper(
-                graph.storage()
-            )));
+        let mapper = MatrixIndexMapper::Store(<S::NodeId as LinearGraphId<S>>::index_mapper(
+            graph.storage(),
+        ));
 
         let mut matrix = Vec::with_capacity(length * length);
         matrix.extend(repeat_with(|| None).take(length * length));
@@ -100,7 +71,7 @@ where
     }
 
     pub(crate) fn empty() -> Self {
-        let mapper = MatrixIndexMapper::Discard(DiscardingIndexMapper);
+        let mapper = MatrixIndexMapper::Discard;
         let matrix = Vec::new();
         let length = 0;
 
@@ -112,14 +83,19 @@ where
     }
 
     pub(crate) fn set(&mut self, source: &S::NodeId, target: &S::NodeId, value: Option<T>) {
-        if matches!(self.mapper, MatrixIndexMapper::Discard(_)) {
+        if matches!(self.mapper, MatrixIndexMapper::Discard) {
             // this should never happen, even if it does, we don't want to panic here (map call)
             // so we simply return.
             return;
         }
 
-        let source = self.mapper.get(source);
-        let target = self.mapper.get(target);
+        let Some(source) = self.mapper.get(source) else {
+            return;
+        };
+
+        let Some(target) = self.mapper.get(target) else {
+            return;
+        };
 
         self.matrix[source * self.length + target] = value;
     }
@@ -132,10 +108,14 @@ where
     /// See the contract described on the [`IndexMapper`] for more information about the
     /// `map/lookup` contract.
     pub(crate) fn get(&self, source: &S::NodeId, target: &S::NodeId) -> Option<&T> {
-        let source = self.mapper.lookup(source)?;
-        let target = self.mapper.lookup(target)?;
+        let source = self.mapper.get(source)?;
+        let target = self.mapper.get(target)?;
 
         self.matrix[source * self.length + target].as_ref()
+    }
+
+    pub(crate) fn resolve(&self, index: usize) -> Option<MaybeOwned<S::NodeId>> {
+        self.mapper.reverse(index)
     }
 }
 

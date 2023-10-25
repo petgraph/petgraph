@@ -59,7 +59,7 @@ where
                 (Err(state), Err(error)) => {
                     state.extend_one(error);
                 }
-                (Err(state), Ok(_)) => {}
+                (Err(_), Ok(_)) => {}
                 (state @ Ok(_), Err(error)) => {
                     *state = Err(error);
                 }

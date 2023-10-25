@@ -37,7 +37,7 @@ where
 #[cfg(test)]
 mod tests {
     use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge, GraphStorage};
-    use petgraph_dino::{DiDinoGraph, DinoStorage};
+    use petgraph_dino::DinoStorage;
 
     use crate::shortest_paths::common::cost::{DefaultCost, GraphCost};
 

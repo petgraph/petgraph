@@ -1,14 +1,11 @@
 use alloc::vec::Vec;
-use core::{
-    hash::{BuildHasher, Hash},
-    ops::Add,
-};
+use core::{hash::Hash, ops::Add};
 
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
 use num_traits::Zero;
-use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
+use petgraph_core::{Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{
