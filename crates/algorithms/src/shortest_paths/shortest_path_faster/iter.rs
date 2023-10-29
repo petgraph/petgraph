@@ -33,6 +33,7 @@ where
     num_nodes: usize,
 
     iteration: usize,
+    init: bool,
     next: Option<&'graph S::NodeId>,
 
     // candidate_order: SPFACandidateOrder,
@@ -79,6 +80,7 @@ where
             source: source_node,
             num_nodes: graph.num_nodes(),
             iteration: 0,
+            init: true,
             next: None,
             // candidate_order,
             distances,
@@ -139,8 +141,8 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         // the first iteration is special, as we immediately return the source node
         // and then begin with the actual iteration loop.
-        if self.iteration == 0 {
-            self.iteration += 1;
+        if self.init {
+            self.init = false;
             self.next = Some(self.source.id());
 
             return Some(Route {
@@ -163,27 +165,30 @@ where
 
             let next_distance_cost = &self.distances[&node_id] + self.edge_cost.cost(edge).as_ref();
 
-            if next_distance_cost < self.distances[&target] {
-                self.distances.insert(target, next_distance_cost);
+            if let Some(distance) = self.distances.get(target) {
+                if next_distance_cost < *distance {
+                    self.distances.insert(target, next_distance_cost);
 
-                self.iteration += 1;
+                    self.iteration += 1;
 
-                if self.iteration == self.num_nodes {
-                    self.iteration = 0;
-                    if self.detect_cycle() {
-                        // We've reached the maximum number of iterations, which means that we've
-                        // detected a negative cycle. We terminate early.
-                        return None;
+                    if self.iteration == self.num_nodes {
+                        self.iteration = 0;
+                        if self.detect_cycle() {
+                            // We've reached the maximum number of iterations, which means that
+                            // we've detected a negative cycle. We
+                            // terminate early.
+                            return None;
+                        }
                     }
-                }
 
-                self.predecessors.insert(
-                    target,
-                    Some(self.graph.node(node_id).expect("node to exist")),
-                );
+                    self.predecessors.insert(
+                        target,
+                        Some(self.graph.node(node_id).expect("node to exist")),
+                    );
 
-                if !self.queue.contains(&target) {
-                    self.queue.push_back(target);
+                    if !self.queue.contains(&target) {
+                        self.queue.push_back(target);
+                    }
                 }
             }
         }

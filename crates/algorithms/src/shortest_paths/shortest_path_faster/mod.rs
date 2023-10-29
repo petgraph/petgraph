@@ -1,5 +1,7 @@
 mod error;
 mod iter;
+#[cfg(test)]
+mod tests;
 
 use core::{hash::Hash, ops::Add};
 
@@ -12,7 +14,10 @@ use petgraph_core::{
 
 use self::{error::ShortestPathFasterError, iter::ShortestPathFasterIter};
 use super::{
-    common::{connections::outgoing_connections, cost::GraphCost},
+    common::{
+        connections::outgoing_connections,
+        cost::{DefaultCost, GraphCost},
+    },
     DirectRoute, Route, ShortestDistance, ShortestPath,
 };
 use crate::polyfill::IteratorExt;
@@ -30,21 +35,21 @@ pub struct ShortestPathFaster<D, E> {
     candidate_order: SPFACandidateOrder,
 }
 
-impl ShortestPathFaster<Directed, ()> {
+impl ShortestPathFaster<Directed, DefaultCost> {
     pub fn directed() -> Self {
         Self {
             direction: Directed,
-            edge_cost: (),
+            edge_cost: DefaultCost,
             candidate_order: Default::default(),
         }
     }
 }
 
-impl ShortestPathFaster<Undirected, ()> {
-    pub fn directed() -> Self {
+impl ShortestPathFaster<Undirected, DefaultCost> {
+    pub fn undirected() -> Self {
         Self {
             direction: Undirected,
-            edge_cost: (),
+            edge_cost: DefaultCost,
             candidate_order: Default::default(),
         }
     }
