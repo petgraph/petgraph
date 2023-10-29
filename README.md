@@ -6,7 +6,11 @@ Graph data structure library. Please read the [API documentation here][].
 
 Supports Rust 1.64 and later.
 
-[![build_status][]](https://github.com/petgraph/petgraph/actions) [![crates][]](https://crates.io/crates/petgraph) [![gitter][]](https://gitter.im/petgraph-rs/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Crates.io][crates-badge]][crates-url]
+[![docs.rs][docsrs-badge]][docsrs-url]
+![MSRV][msrv-badge]
+[![Discord chat][discord-badge]][discord-url]
+[![build_status][]](https://github.com/petgraph/petgraph/actions)
 
 Crate feature flags:
 
@@ -36,8 +40,13 @@ Licensed under the Apache License, Version 2.0
 <http://opensource.org/licenses/MIT>, at your option. This file may not
 be copied, modified, or distributed except according to those terms.
 
-  [API documentation here]: https://docs.rs/petgraph/
-  [build_status]: https://github.com/petgraph/petgraph/workflows/Continuous%20integration/badge.svg?branch=master
-  [crates]: https://img.shields.io/crates/v/petgraph
-  [gitter]: https://badges.gitter.im/petgraph-rs/community.svg
-  [RELEASES]: RELEASES.rst
+[API documentation here]: https://docs.rs/petgraph/
+[build_status]: https://github.com/petgraph/petgraph/workflows/Continuous%20integration/badge.svg?branch=master
+[docsrs-badge]: https://img.shields.io/docsrs/petgraph
+[docsrs-url]: https://docs.rs/petgraph/latest/petgraph/
+[crates-badge]: https://img.shields.io/crates/v/petgraph.svg
+[crates-url]: https://crates.io/crates/petgraph
+[discord-badge]:  https://img.shields.io/discord/1166289348384280616?logo=discord&style=flat
+[discord-url]: https://discord.gg/n2tc79tJ4e
+[msrv-badge]: https://img.shields.io/badge/rustc-1.64+-blue.svg
+[RELEASES]: RELEASES.rst
