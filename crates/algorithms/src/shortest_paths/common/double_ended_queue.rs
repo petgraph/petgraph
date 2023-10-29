@@ -3,7 +3,10 @@ use alloc::collections::VecDeque;
 // Newtype for VecDeque<T> to avoid exposing the VecDeque type as we may decide to reimplement this.
 pub(in crate::shortest_paths) struct DoubleEndedQueue<T>(VecDeque<T>);
 
-impl<T> DoubleEndedQueue<T> {
+impl<T> DoubleEndedQueue<T>
+where
+    T: PartialEq,
+{
     pub(in crate::shortest_paths) fn new() -> Self {
         Self(VecDeque::new())
     }
@@ -38,5 +41,9 @@ impl<T> DoubleEndedQueue<T> {
 
     pub(in crate::shortest_paths) fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    pub(in crate::shortest_paths) fn contains(&self, item: &T) -> bool {
+        self.0.contains(item)
     }
 }

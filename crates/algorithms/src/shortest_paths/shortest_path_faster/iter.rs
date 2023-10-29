@@ -4,15 +4,13 @@ use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::{HashMap, HashSet};
 use num_traits::Zero;
-use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
+use petgraph_core::{Graph, GraphStorage, Node};
 
 use super::error::ShortestPathFasterError;
 use crate::shortest_paths::{
     common::{
-        connections::Connections,
-        cost::GraphCost,
-        double_ended_queue::DoubleEndedQueue,
-        intermediates::{reconstruct_intermediates, Intermediates},
+        connections::Connections, cost::GraphCost, double_ended_queue::DoubleEndedQueue,
+        intermediates::reconstruct_intermediates,
     },
     Cost, Path, Route,
 };
@@ -23,7 +21,9 @@ where
     E: GraphCost<S>,
     E::Value: Ord,
 {
-    queue: DoubleEndedQueue<Node<'graph, S>>,
+    graph: &'graph Graph<S>,
+
+    queue: DoubleEndedQueue<&'graph S::NodeId>,
 
     edge_cost: &'parent E,
     connections: G,
@@ -33,7 +33,7 @@ where
     num_nodes: usize,
 
     iteration: usize,
-    next: Option<Node<'graph, S>>,
+    next: Option<&'graph S::NodeId>,
 
     // candidate_order: SPFACandidateOrder,
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
@@ -43,7 +43,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: PartialEq + Eq + Hash,
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -63,7 +63,7 @@ where
             .ok_or_else(|| Report::new(ShortestPathFasterError::NodeNotFound))?;
 
         let mut queue = DoubleEndedQueue::new();
-        queue.push_back(source_node);
+        queue.push_back(source);
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, E::Value::zero());
@@ -72,6 +72,7 @@ where
         predecessors.insert(source, None);
 
         Ok(Self {
+            graph,
             queue,
             edge_cost,
             connections,
@@ -121,7 +122,7 @@ impl<'graph: 'parent, 'parent, S, E, G> Iterator
     for ShortestPathFasterIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: PartialEq + Eq + Hash,
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -140,7 +141,7 @@ where
         // and then begin with the actual iteration loop.
         if self.iteration == 0 {
             self.iteration += 1;
-            self.next = Some(self.source);
+            self.next = Some(self.source.id());
 
             return Some(Route {
                 path: Path {
@@ -152,18 +153,18 @@ where
             });
         }
 
-        let node = self.next?;
+        let node_id = self.next?;
+        let node = self.graph.node(&node_id).expect("node to be present");
         let connections = self.connections.connections(&node);
 
         for edge in connections {
             let (u, v) = edge.endpoints();
-            let target = if v.id() == node.id() { u } else { v };
+            let target = if v.id() == node_id { u.id() } else { v.id() };
 
-            let next_distance_cost =
-                &self.distances[&node.id()] + self.edge_cost.cost(edge).as_ref();
+            let next_distance_cost = &self.distances[&node_id] + self.edge_cost.cost(edge).as_ref();
 
-            if next_distance_cost < self.distances[&target.id()] {
-                self.distances.insert(target.id(), next_distance_cost);
+            if next_distance_cost < self.distances[&target] {
+                self.distances.insert(target, next_distance_cost);
 
                 self.iteration += 1;
 
@@ -176,9 +177,14 @@ where
                     }
                 }
 
-                self.predecessors.insert(target.id(), Some(node));
+                self.predecessors.insert(
+                    target,
+                    Some(self.graph.node(node_id).expect("node to exist")),
+                );
 
-                self.queue.push_back(target);
+                if !self.queue.contains(&target) {
+                    self.queue.push_back(target);
+                }
             }
         }
 
@@ -192,12 +198,12 @@ where
 
         // we're currently visiting the node that has the shortest distance, therefore we know
         // that the distance is the shortest possible
-        let distance = self.distances[node.id()].clone();
-        let intermediates = reconstruct_intermediates(&self.predecessors, node.id());
+        let distance = self.distances[node_id].clone();
+        let intermediates = reconstruct_intermediates(&self.predecessors, node);
 
         let path = Path {
             source: self.source,
-            target: node,
+            target: self.graph.node(node).expect("node to exist"),
             intermediates,
         };
 

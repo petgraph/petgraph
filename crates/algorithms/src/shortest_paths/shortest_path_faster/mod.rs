@@ -86,7 +86,7 @@ where
 impl<S, E> ShortestPath<S> for ShortestPathFaster<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: PartialEq + Eq + Hash,
     E: GraphCost<S>,
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
