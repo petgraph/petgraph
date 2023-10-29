@@ -7,18 +7,22 @@ use num_traits::Zero;
 use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 
 use super::error::BellmanFordError;
-use crate::shortest_paths::{common::traits::ConnectionFn, Route};
+use crate::shortest_paths::{
+    common::{intermediates::Intermediates, traits::ConnectionFn},
+    Route,
+};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(super) enum Intermediates {
-    Discard,
-    Record,
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum BellManFordCandidateOrder {
+    SmallFirst,
+    LargeLast,
 }
 
-pub(super) struct BellmanFordIter<'a, S, T, F, G>
+pub(super) struct BellmanFordIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
-    T: Ord,
+    E: GraphCost<S>,
+    E::Value: Ord,
 {
     queue: Queue<'graph, S, E::Value>,
 
@@ -33,19 +37,20 @@ where
     next: Option<Node<'a, S>>,
 
     intermediates: Intermediates,
+    candidate_order: BellManFordCandidateOrder,
 
     distances: HashMap<&'a S::NodeId, T, FxBuildHasher>,
     predecessors: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
 }
 
-impl<'a, S, T, F, G> BellmanFordIter<'a, S, T, F, G>
+impl<'graph: 'parent, 'parent, S, E, G> BellmanFordIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    F: Fn(Edge<'a, S>) -> MaybeOwned<'a, T>,
-    T: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'b> &'b T: Add<Output = T>,
-    G: ConnectionFn<'a, S>,
+    E: GraphCost<S>,
+    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
+    for<'a> &'a E::Value: Add<Output = E::Value>,
+    G: Connections<'graph, S>,
 {
     pub(super) fn new(
         graph: &'a Graph<S>,
@@ -56,6 +61,7 @@ where
         source: &'a S::NodeId,
 
         intermediates: Intermediates,
+        candidate_order: BellManFordCandidateOrder,
     ) -> Result<Self, BellmanFordError> {
         let source_node = graph
             .node(source)
@@ -81,22 +87,23 @@ where
             init: true,
             next: None,
             intermediates,
+            candidate_order,
             distances,
             predecessors,
         })
     }
 }
 
-impl<'a, S, T, F, G> Iterator for BellmanFordIter<'a, S, T, F, G>
+impl<'graph: 'parent, 'parent, S, E, G> Iterator for BellmanFordIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    F: Fn(Edge<'a, S>) -> MaybeOwned<'a, T>,
-    T: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'b> &'b T: Add<Output = T>,
-    G: ConnectionFn<'a, S>,
+    E: GraphCost<S>,
+    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
+    for<'a> &'a E::Value: Add<Output = E::Value>,
+    G: Connections<'graph, S>,
 {
-    type Item = Route<'a, S, T>;
+    type Item = Route<'graph, S, E::Value>;
 
     // The concrete implementation is the SPFA (Shortest Path Faster Algorithm) algorithm, which is
     // a variant of Bellman-Ford that uses a queue to avoid unnecessary relaxation.
@@ -134,8 +141,7 @@ where
                     self.predecessors.insert(target.id(), Some(node));
                 }
 
-                self.queue
-                    .decrease_priority(target, self.distances[&target.id()]);
+                self.queue.decrease_priority(target, next_distance_cost);
             }
         }
 
@@ -166,5 +172,9 @@ where
             path,
             cost: Cost(distance),
         })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(self.num_nodes))
     }
 }
