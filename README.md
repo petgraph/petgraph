@@ -1,3 +1,5 @@
+![](assets/graphosaurus-512.png)
+
 # petgraph
 
 Graph data structure library. Please read the [API documentation here][].
@@ -19,6 +21,11 @@ Crate feature flags:
 
 See [RELEASES][] for a list of changes. The minimum supported rust
 version will only change on major releases.
+
+## Logo
+
+The mascot is named "Sir Paul Rustory Graphosaurus" (close friends call him Paul).
+The logo has been created by the talented Aren.
 
 ## License
 
