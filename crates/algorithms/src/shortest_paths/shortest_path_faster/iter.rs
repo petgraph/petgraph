@@ -6,19 +6,19 @@ use hashbrown::HashMap;
 use num_traits::Zero;
 use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 
-use super::error::BellmanFordError;
+use super::error::ShortestPathFasterError;
 use crate::shortest_paths::{
     common::{intermediates::Intermediates, traits::ConnectionFn},
     Route,
 };
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum BellManFordCandidateOrder {
+pub enum SPFACandidateOrder {
     SmallFirst,
     LargeLast,
 }
 
-pub(super) struct BellmanFordIter<'graph: 'parent, 'parent, S, E, G>
+pub(super) struct ShortestPathFasterIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
     E: GraphCost<S>,
@@ -37,13 +37,13 @@ where
     next: Option<Node<'a, S>>,
 
     intermediates: Intermediates,
-    candidate_order: BellManFordCandidateOrder,
+    candidate_order: SPFACandidateOrder,
 
     distances: HashMap<&'a S::NodeId, T, FxBuildHasher>,
     predecessors: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
 }
 
-impl<'graph: 'parent, 'parent, S, E, G> BellmanFordIter<'graph, 'parent, S, E, G>
+impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
@@ -61,11 +61,11 @@ where
         source: &'a S::NodeId,
 
         intermediates: Intermediates,
-        candidate_order: BellManFordCandidateOrder,
-    ) -> Result<Self, BellmanFordError> {
+        candidate_order: SPFACandidateOrder,
+    ) -> Result<Self, ShortestPathFasterError> {
         let source_node = graph
             .node(source)
-            .ok_or_else(|| Report::new(BellmanFordError::NodeNotFound))?;
+            .ok_or_else(|| Report::new(ShortestPathFasterError::NodeNotFound))?;
 
         let mut queue: Queue<'_, S, <E as GraphCost<S>>::Value> = Queue::new();
         queue.push(source_node, T::zero());
@@ -94,7 +94,8 @@ where
     }
 }
 
-impl<'graph: 'parent, 'parent, S, E, G> Iterator for BellmanFordIter<'graph, 'parent, S, E, G>
+impl<'graph: 'parent, 'parent, S, E, G> Iterator
+    for ShortestPathFasterIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
@@ -108,6 +109,9 @@ where
     // The concrete implementation is the SPFA (Shortest Path Faster Algorithm) algorithm, which is
     // a variant of Bellman-Ford that uses a queue to avoid unnecessary relaxation.
     // https://en.wikipedia.org/wiki/Shortest_path_faster_algorithm
+    // We've made use of optimization techniques for candidate order
+    // as well as a variation to terminate on negative cycles.
+    // https://konaeakira.github.io/posts/using-the-shortest-path-faster-algorithm-to-find-negative-cycles.html
     fn next(&mut self) -> Option<Self::Item> {
         // the first iteration is special, as we immediately return the source node
         // and then begin with the actual iteration loop.

@@ -12,18 +12,18 @@ use petgraph_core::{
 };
 
 use self::{
-    error::BellmanFordError,
-    iter::{BellManFordCandidateOrder, BellmanFordIter, Intermediates},
+    error::ShortestPathFasterError,
+    iter::{Intermediates, SPFACandidateOrder, ShortestPathFasterIter},
 };
 use super::{ShortestDistance, ShortestPath};
 
-pub struct BellmanFord<D, F> {
+pub struct ShortestPathFaster<D, F> {
     direction: D,
     edge_cost: F,
-    candidate_order: BellManFordCandidateOrder,
+    candidate_order: SPFACandidateOrder,
 }
 
-impl BellmanFord<Directed, ()> {
+impl ShortestPathFaster<Directed, ()> {
     pub fn directed() -> Self {
         Self {
             direction: Directed,
@@ -33,7 +33,7 @@ impl BellmanFord<Directed, ()> {
     }
 }
 
-impl BellmanFord<Undirected, ()> {
+impl ShortestPathFaster<Undirected, ()> {
     pub fn directed() -> Self {
         Self {
             direction: Undirected,
@@ -43,40 +43,40 @@ impl BellmanFord<Undirected, ()> {
     }
 }
 
-impl<D, F> BellmanFord<D, F>
+impl<D, F> ShortestPathFaster<D, F>
 where
     D: GraphDirectionality,
 {
-    pub fn with_edge_cost<S, F>(self, edge_cost: F) -> BellmanFord<D, F>
+    pub fn with_edge_cost<S, F>(self, edge_cost: F) -> ShortestPathFaster<D, F>
     where
         S: GraphStorage,
         F: GraphCost<S>,
     {
-        BellmanFord {
+        ShortestPathFaster {
             direction: self.direction,
             edge_cost,
             candidate_order: Default::default(),
         }
     }
 
-    pub fn without_edge_cost(self) -> BellmanFord<D, ()> {
-        BellmanFord {
+    pub fn without_edge_cost(self) -> ShortestPathFaster<D, ()> {
+        ShortestPathFaster {
             direction: self.direction,
             edge_cost: (),
             candidate_order: Default::default(),
         }
     }
 
-    pub fn with_candidate_order(self, label_order: BellManFordCandidateOrder) -> Self {
+    pub fn with_candidate_order(self, candidate_order: SPFACandidateOrder) -> Self {
         Self {
             direction: self.direction,
             edge_cost: self.edge_cost,
-            candidate_order: label_order,
+            candidate_order,
         }
     }
 }
 
-impl<S> ShortestPath<S> for BellmanFord<Undirected, ()>
+impl<S> ShortestPath<S> for ShortestPathFaster<Undirected, ()>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
@@ -85,14 +85,14 @@ where
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = S::EdgeWeight;
-    type Error = BellmanFordError;
+    type Error = ShortestPathFasterError;
 
     fn path_from<'a>(
         &self,
         graph: &'a petgraph_core::Graph<S>,
         source: &'a <S as GraphStorage>::NodeId,
     ) -> Result<impl Iterator<Item = super::Route<'a, S, Self::Cost>>, Self::Error> {
-        BellmanFordIter::new(
+        ShortestPathFasterIter::new(
             graph,
             &self.edge_cost,
             Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
@@ -126,7 +126,7 @@ where
     }
 }
 
-impl<S> ShortestDistance<S> for BellmanFord<Undirected, ()>
+impl<S> ShortestDistance<S> for ShortestPathFaster<Undirected, ()>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
@@ -135,7 +135,7 @@ where
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
-    type Error = BellmanFordError;
+    type Error = ShortestPathFasterError;
 
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
@@ -143,7 +143,7 @@ where
         source: &'graph <S as GraphStorage>::NodeId,
     ) -> Result<impl Iterator<Item = super::DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error>
     {
-        let iter = BellmanFordIter::new(
+        let iter = ShortestPathFasterIter::new(
             graph,
             &self.edge_cost,
             Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
@@ -183,7 +183,7 @@ where
     }
 }
 
-impl<S, E> ShortestPath<S> for BellmanFord<Directed, E>
+impl<S, E> ShortestPath<S> for ShortestPathFaster<Directed, E>
 where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
@@ -192,14 +192,14 @@ where
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
-    type Error = BellmanFordError;
+    type Error = ShortestPathFasterError;
 
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
         source: &'graph S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
-        BellmanFordIter::new(
+        ShortestPathFasterIter::new(
             graph,
             &self.edge_cost,
             outgoing_connections as fn(&Node<'graph, S>) -> _,
@@ -222,7 +222,7 @@ where
     }
 }
 
-impl<S, E> ShortestDistance<S> for BellmanFord<Directed, E>
+impl<S, E> ShortestDistance<S> for ShortestPathFaster<Directed, E>
 where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
@@ -231,14 +231,14 @@ where
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
-    type Error = BellmanFordError;
+    type Error = ShortestPathFasterError;
 
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
         source: &'graph <S as GraphStorage>::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
-        let iter = BellmanFordIter::new(
+        let iter = ShortestPathFasterIter::new(
             graph,
             &self.edge_cost,
             outgoing_connections as fn(&Node<'graph, S>) -> _,

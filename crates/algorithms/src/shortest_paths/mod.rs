@@ -1,9 +1,9 @@
 // mod astar;
 mod astar;
-mod bellman_ford;
 mod common;
 mod dijkstra;
 mod floyd_warshall;
+mod shortest_path_faster;
 // mod floyd_warshall;
 // mod k_shortest_path_length;
 // mod measure;
