@@ -1,6 +1,7 @@
 //! Collection of utility types and traits for working with values that may be owned or borrowed.
 use core::{
     cmp::Ordering,
+    fmt::{Display, Formatter},
     hash::{Hash, Hasher},
 };
 
@@ -16,6 +17,15 @@ pub enum MaybeOwned<'a, T> {
     Borrowed(&'a T),
     /// An owned value.
     Owned(T),
+}
+
+impl<T> Display for MaybeOwned<'_, T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        Display::fmt(self.as_ref(), f)
+    }
 }
 
 impl<'a, T> From<T> for MaybeOwned<'a, T> {

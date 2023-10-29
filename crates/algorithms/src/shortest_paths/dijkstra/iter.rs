@@ -1,101 +1,63 @@
 use alloc::vec::Vec;
-use core::{
-    hash::{BuildHasher, Hash},
-    ops::Add,
-};
+use core::{hash::Hash, ops::Add};
 
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
 use num_traits::Zero;
-use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
+use petgraph_core::{Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
-    common::{queue::Queue, traits::ConnectionFn},
+    common::{
+        connections::Connections,
+        cost::GraphCost,
+        intermediates::{reconstruct_intermediates, Intermediates},
+        queue::Queue,
+    },
     dijkstra::DijkstraError,
-    Distance, Path, Route,
+    Cost, Path, Route,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(super) enum Intermediates {
-    Discard,
-    Record,
-}
-
-fn reconstruct_intermediates<'a, S, H>(
-    previous: &HashMap<&'a S::NodeId, Option<Node<'a, S>>, H>,
-    target: &'a S::NodeId,
-) -> Vec<Node<'a, S>>
+pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
-    H: BuildHasher,
+    E: GraphCost<S>,
+    E::Value: Ord,
 {
-    let mut current = target;
+    queue: Queue<'graph, S, E::Value>,
 
-    let mut path = Vec::new();
-
-    loop {
-        let Some(node) = previous[current] else {
-            // this case should in theory _never_ happen, as the next statement
-            // terminates if the next node is `None` (we're at a source node)
-            // we do it this way, so that we don't need to push and then pop immediately.
-            break;
-        };
-
-        if previous[node.id()].is_none() {
-            // we have reached the source node
-            break;
-        }
-
-        path.push(node);
-        current = node.id();
-    }
-
-    path.reverse();
-
-    path
-}
-
-pub(super) struct DijkstraIter<'a, S, T, F, G>
-where
-    S: GraphStorage,
-    T: Ord,
-{
-    queue: Queue<'a, S, T>,
-
-    edge_cost: F,
+    edge_cost: &'parent E,
     connections: G,
 
-    source: Node<'a, S>,
+    source: Node<'graph, S>,
 
     num_nodes: usize,
 
     init: bool,
-    next: Option<Node<'a, S>>,
+    next: Option<Node<'graph, S>>,
 
     intermediates: Intermediates,
 
-    distances: HashMap<&'a S::NodeId, T, FxBuildHasher>,
-    previous: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
+    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
+    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
 }
 
-impl<'a, S, T, F, G> DijkstraIter<'a, S, T, F, G>
+impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    F: Fn(Edge<'a, S>) -> MaybeOwned<'a, T>,
-    T: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'b> &'b T: Add<Output = T>,
-    G: ConnectionFn<'a, S>,
+    E: GraphCost<S>,
+    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
+    for<'a> &'a E::Value: Add<Output = E::Value>,
+    G: Connections<'graph, S>,
 {
     pub(super) fn new(
-        graph: &'a Graph<S>,
+        graph: &'graph Graph<S>,
 
-        edge_cost: F,
+        edge_cost: &'parent E,
         connections: G,
 
-        source: &'a S::NodeId,
+        source: &'graph S::NodeId,
 
         intermediates: Intermediates,
     ) -> Result<Self, DijkstraError> {
@@ -103,17 +65,15 @@ where
             .node(source)
             .ok_or_else(|| Report::new(DijkstraError::NodeNotFound))?;
 
-        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
-        let mut previous = HashMap::with_hasher(FxBuildHasher::default());
-
         let mut queue = Queue::new();
 
-        distances.insert(source, T::zero());
-        if intermediates == Intermediates::Record {
-            previous.insert(source, None);
-        }
+        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
+        distances.insert(source, E::Value::zero());
 
-        queue.push(source_node, T::zero());
+        let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
+        if intermediates == Intermediates::Record {
+            predecessors.insert(source, None);
+        }
 
         Ok(Self {
             queue,
@@ -125,21 +85,21 @@ where
             next: None,
             intermediates,
             distances,
-            previous,
+            predecessors,
         })
     }
 }
 
-impl<'a, S, T, F, G> Iterator for DijkstraIter<'a, S, T, F, G>
+impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
-    F: Fn(Edge<'a, S>) -> MaybeOwned<'a, T>,
-    T: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'b> &'b T: Add<Output = T>,
-    G: ConnectionFn<'a, S>,
+    E: GraphCost<S>,
+    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
+    for<'a> &'a E::Value: Add<Output = E::Value>,
+    G: Connections<'graph, S>,
 {
-    type Item = Route<'a, S, T>;
+    type Item = Route<'graph, S, E::Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // the first iteration is special, as we immediately return the source node
@@ -154,7 +114,7 @@ where
                     target: self.source,
                     intermediates: Vec::new(),
                 },
-                distance: Distance { value: T::zero() },
+                cost: Cost(E::Value::zero()),
             });
         }
 
@@ -167,7 +127,7 @@ where
             let (u, v) = edge.endpoints();
             let target = if v.id() == node.id() { u } else { v };
 
-            let alternative = &self.distances[node.id()] + (self.edge_cost)(edge).as_ref();
+            let alternative = &self.distances[node.id()] + self.edge_cost.cost(edge).as_ref();
 
             if let Some(distance) = self.distances.get(target.id()) {
                 // do not insert the updated distance if it is not strictly better than the current
@@ -180,7 +140,7 @@ where
             self.distances.insert(target.id(), alternative.clone());
 
             if self.intermediates == Intermediates::Record {
-                self.previous.insert(target.id(), Some(node));
+                self.predecessors.insert(target.id(), Some(node));
             }
 
             self.queue.decrease_priority(target, alternative);
@@ -214,7 +174,7 @@ where
         let intermediates = if self.intermediates == Intermediates::Discard {
             Vec::new()
         } else {
-            reconstruct_intermediates(&self.previous, node.id())
+            reconstruct_intermediates(&self.predecessors, node.id())
         };
 
         let path = Path {
@@ -225,7 +185,7 @@ where
 
         Some(Route {
             path,
-            distance: Distance { value: distance },
+            cost: Cost(distance),
         })
     }
 

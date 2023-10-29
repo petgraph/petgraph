@@ -3,6 +3,7 @@ mod astar;
 mod bellman_ford;
 mod common;
 mod dijkstra;
+mod floyd_warshall;
 // mod floyd_warshall;
 // mod k_shortest_path_length;
 // mod measure;
@@ -13,11 +14,21 @@ use alloc::vec::{IntoIter, Vec};
 use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage, Node};
 
-struct Distance<T> {
-    value: T,
+pub use self::{astar::AStar, dijkstra::Dijkstra};
+
+pub struct Cost<T>(T);
+
+impl<T> Cost<T> {
+    fn value(&self) -> &T {
+        &self.0
+    }
+
+    fn into_value(self) -> T {
+        self.0
+    }
 }
 
-struct Path<'a, S>
+pub struct Path<'a, S>
 where
     S: GraphStorage,
 {
@@ -31,7 +42,8 @@ impl<'a, S> Path<'a, S>
 where
     S: GraphStorage,
 {
-    fn to_vec(self) -> Vec<Node<'a, S>> {
+    #[must_use]
+    pub fn to_vec(self) -> Vec<Node<'a, S>> {
         let mut vec = Vec::with_capacity(self.intermediates.len() + 2);
 
         vec.push(self.source);
@@ -41,12 +53,24 @@ where
         vec
     }
 
-    fn iter(&self) -> impl Iterator<Item = &Node<'a, S>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Node<'a, S>> {
         let mut iter = self.intermediates.iter();
 
         iter.next_back();
 
         iter
+    }
+
+    fn reverse(self) -> Self {
+        let mut intermediates = self.intermediates;
+
+        intermediates.reverse();
+
+        Self {
+            source: self.target,
+            target: self.source,
+            intermediates,
+        }
     }
 }
 
@@ -62,23 +86,48 @@ where
     }
 }
 
-struct Route<'a, S, T>
+pub struct Route<'a, S, T>
 where
     S: GraphStorage,
 {
     path: Path<'a, S>,
 
-    distance: Distance<T>,
+    cost: Cost<T>,
 }
 
-struct DirectRoute<'a, S, T>
+impl<'a, S, T> Route<'a, S, T>
+where
+    S: GraphStorage,
+{
+    fn reverse(self) -> Self {
+        Self {
+            path: self.path.reverse(),
+            cost: self.cost,
+        }
+    }
+}
+
+pub struct DirectRoute<'a, S, T>
 where
     S: GraphStorage,
 {
     source: Node<'a, S>,
     target: Node<'a, S>,
 
-    distance: Distance<T>,
+    cost: Cost<T>,
+}
+
+impl<'a, S, T> DirectRoute<'a, S, T>
+where
+    S: GraphStorage,
+{
+    fn reverse(self) -> Self {
+        Self {
+            source: self.target,
+            target: self.source,
+            cost: self.cost,
+        }
+    }
 }
 
 pub trait ShortestPath<S>
@@ -88,38 +137,41 @@ where
     type Cost;
     type Error: Context;
 
-    fn path_to<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        target: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+    fn path_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
         Ok(iter.filter(move |route| route.path.target.id() == target))
     }
-    fn path_from<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error> {
+
+    fn path_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
         Ok(iter.filter(move |route| route.path.source.id() == source))
     }
-    fn path_between<'a>(
+
+    fn path_between<'graph>(
         &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-        target: &'a S::NodeId,
-    ) -> Option<Route<'a, S, Self::Cost>> {
-        self.every_path(graph)
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Route<'graph, S, Self::Cost>> {
+        self.path_from(graph, source)
             .ok()?
-            .find(move |route| route.path.source.id() == source && route.path.target.id() == target)
+            .find(|route| route.path.target.id() == target)
     }
-    fn every_path<'a>(
-        &self,
-        graph: &'a Graph<S>,
-    ) -> Result<impl Iterator<Item = Route<'a, S, Self::Cost>>, Self::Error>;
+
+    fn every_path<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error>;
 }
 
 pub trait ShortestDistance<S>
@@ -129,37 +181,37 @@ where
     type Cost;
     type Error: Context;
 
-    fn distance_to<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        target: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+    fn distance_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
         Ok(iter.filter(move |route| route.target.id() == target))
     }
-    fn distance_from<'a>(
-        &self,
-        graph: &'a Graph<S>,
-        source: &'a S::NodeId,
-    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error> {
+    fn distance_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
         Ok(iter.filter(move |route| route.source.id() == source))
     }
-    fn distance_between(
+    fn distance_between<'graph>(
         &self,
-        graph: &Graph<S>,
-        source: &S::NodeId,
-        target: &S::NodeId,
-    ) -> Option<Distance<Self::Cost>> {
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Cost<Self::Cost>> {
         self.every_distance(graph)
             .ok()?
             .find(move |route| route.source.id() == source && route.target.id() == target)
-            .map(|route| route.distance)
+            .map(|route| route.cost)
     }
-    fn every_distance<'a>(
-        &self,
-        graph: &'a Graph<S>,
-    ) -> Result<impl Iterator<Item = DirectRoute<'a, S, Self::Cost>>, Self::Error>;
+    fn every_distance<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error>;
 }

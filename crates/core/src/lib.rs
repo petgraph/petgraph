@@ -113,7 +113,6 @@
 //! [`FixedBitSet`]: fixedbitset::FixedBitSet
 //! [`IndexMap`]: indexmap::IndexMap
 //! [`HashSet`]: std::collections::HashSet
-#![feature(return_position_impl_trait_in_trait)]
 #![feature(impl_trait_in_assoc_type)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]

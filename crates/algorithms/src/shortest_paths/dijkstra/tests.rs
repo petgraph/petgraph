@@ -1,12 +1,14 @@
 use alloc::vec::Vec;
-use core::{fmt::Debug, hash::Hash};
 
-use hashbrown::HashMap;
-use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
+use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
 use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
-use crate::shortest_paths::{dijkstra::Dijkstra, ShortestDistance, ShortestPath};
+use crate::shortest_paths::{
+    common::tests::{assert_distance, assert_path, distance_from, path_from},
+    dijkstra::Dijkstra,
+    ShortestPath,
+};
 
 graph!(
     /// Uses the graph from networkx
@@ -54,75 +56,8 @@ graph!(
     ] as EdgeId
 );
 
-fn assert_path<S, T>(
-    mut received: HashMap<NodeId, (T, Vec<Node<S>>)>,
-    expected: &[(NodeId, T, &[NodeId])],
-) where
-    S: GraphStorage<NodeId = NodeId>,
-    T: PartialEq + Debug,
-{
-    assert_eq!(received.len(), expected.len());
-
-    for (node, expected_distance, expected_route) in expected {
-        let (distance, route) = received.remove(node).unwrap();
-        let route: Vec<_> = route.into_iter().map(|node| *node.id()).collect();
-
-        assert_eq!(distance, *expected_distance);
-        assert_eq!(&route, expected_route);
-    }
-}
-
-fn assert_distance<T>(mut received: HashMap<NodeId, T>, expected: &[(NodeId, T)])
-where
-    T: PartialEq + Debug,
-{
-    assert_eq!(received.len(), expected.len());
-
-    for (node, expected_distance) in expected {
-        let distance = received.remove(node).unwrap();
-
-        assert_eq!(distance, *expected_distance);
-    }
-}
-
-fn path_from<'a, S, P>(
-    graph: &'a Graph<S>,
-    source: &'a S::NodeId,
-    algorithm: &P,
-) -> HashMap<S::NodeId, (P::Cost, Vec<Node<'a, S>>)>
-where
-    P: ShortestPath<S>,
-    S: GraphStorage,
-    S::NodeId: Copy + Eq + Hash,
-{
-    algorithm
-        .path_from(graph, source)
-        .unwrap()
-        .map(|route| {
-            (
-                *route.path.target.id(),
-                (route.distance.value, route.path.to_vec()),
-            )
-        })
-        .collect()
-}
-
-fn distance_from<'a, S, P>(
-    graph: &'a Graph<S>,
-    source: &'a S::NodeId,
-    algorithm: &P,
-) -> HashMap<S::NodeId, P::Cost>
-where
-    P: ShortestDistance<S>,
-    S: GraphStorage,
-    S::NodeId: Copy + Eq + Hash,
-{
-    algorithm
-        .distance_from(graph, source)
-        .unwrap()
-        .map(|route| (*route.target.id(), route.distance.value))
-        .collect()
-}
+// TODO: multigraph
+// TODO: more test cases
 
 #[test]
 fn path_from_directed_default_edge_cost() {
@@ -318,6 +253,28 @@ fn distance_from_undirected_custom_edge_cost() {
     ];
 
     assert_distance(received, &expected)
+}
+
+#[test]
+fn lifetime() {
+    let GraphCollection { graph, nodes, .. } = networkx::create();
+
+    let dijkstra = Dijkstra::directed();
+
+    let top3: Vec<_> = dijkstra
+        .path_from(&graph, &nodes.a)
+        .unwrap()
+        .take(3)
+        .collect();
+
+    drop(dijkstra);
+
+    let top3: Vec<_> = top3
+        .into_iter()
+        .map(|route| route.cost.into_value())
+        .collect();
+
+    assert_eq!(top3, [0, 5, 7]);
 }
 
 // fn non_empty_graph() -> impl Strategy<Value = Graph<(), u8, Directed, u8>> {
