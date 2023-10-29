@@ -6,20 +6,23 @@ use core::{hash::Hash, ops::Add};
 use error_stack::Result;
 use num_traits::Zero;
 use petgraph_core::{
-    base::MaybeOwned,
     edge::marker::{Directed, Undirected},
-    Edge, GraphDirectionality, GraphStorage, Node,
+    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
 use self::{
     error::ShortestPathFasterError,
-    iter::{Intermediates, SPFACandidateOrder, ShortestPathFasterIter},
+    iter::{SPFACandidateOrder, ShortestPathFasterIter},
 };
-use super::{ShortestDistance, ShortestPath};
+use super::{
+    common::{connections::outgoing_connections, cost::GraphCost, intermediates::Intermediates},
+    DirectRoute, Route, ShortestDistance, ShortestPath,
+};
+use crate::polyfill::IteratorExt;
 
-pub struct ShortestPathFaster<D, F> {
+pub struct ShortestPathFaster<D, E> {
     direction: D,
-    edge_cost: F,
+    edge_cost: E,
     candidate_order: SPFACandidateOrder,
 }
 
@@ -43,7 +46,7 @@ impl ShortestPathFaster<Undirected, ()> {
     }
 }
 
-impl<D, F> ShortestPathFaster<D, F>
+impl<D, E> ShortestPathFaster<D, E>
 where
     D: GraphDirectionality,
 {
@@ -76,7 +79,7 @@ where
     }
 }
 
-impl<S> ShortestPath<S> for ShortestPathFaster<Undirected, ()>
+impl<S, E> ShortestPath<S> for ShortestPathFaster<Undirected, E>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
@@ -84,14 +87,14 @@ where
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
-    type Cost = S::EdgeWeight;
+    type Cost = E::Value;
     type Error = ShortestPathFasterError;
 
-    fn path_from<'a>(
-        &self,
-        graph: &'a petgraph_core::Graph<S>,
-        source: &'a <S as GraphStorage>::NodeId,
-    ) -> Result<impl Iterator<Item = super::Route<'a, S, Self::Cost>>, Self::Error> {
+    fn path_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph petgraph_core::Graph<S>,
+        source: &'graph <S as GraphStorage>::NodeId,
+    ) -> Result<impl Iterator<Item = super::Route<'graph, S, Self::Cost>>, Self::Error> {
         ShortestPathFasterIter::new(
             graph,
             &self.edge_cost,
@@ -126,7 +129,7 @@ where
     }
 }
 
-impl<S> ShortestDistance<S> for ShortestPathFaster<Undirected, ()>
+impl<S, E> ShortestDistance<S> for ShortestPathFaster<Undirected, E>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,

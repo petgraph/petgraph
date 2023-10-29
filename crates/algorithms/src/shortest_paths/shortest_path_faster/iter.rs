@@ -8,12 +8,18 @@ use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 
 use super::error::ShortestPathFasterError;
 use crate::shortest_paths::{
-    common::{intermediates::Intermediates, traits::ConnectionFn},
-    Route,
+    common::{
+        connections::Connections,
+        cost::GraphCost,
+        double_ended_queue::DoubleEndedQueue,
+        intermediates::{reconstruct_intermediates, Intermediates},
+    },
+    Cost, Path, Route,
 };
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SPFACandidateOrder {
+    #[default]
     SmallFirst,
     LargeLast,
 }
@@ -24,23 +30,23 @@ where
     E: GraphCost<S>,
     E::Value: Ord,
 {
-    queue: Queue<'graph, S, E::Value>,
+    queue: DoubleEndedQueue<Node<'graph, S>>,
 
-    edge_cost: F,
+    edge_cost: &'parent E,
     connections: G,
 
-    source: Node<'a, S>,
+    source: Node<'graph, S>,
 
     num_nodes: usize,
 
     init: bool,
-    next: Option<Node<'a, S>>,
+    next: Option<Node<'graph, S>>,
 
     intermediates: Intermediates,
     candidate_order: SPFACandidateOrder,
 
-    distances: HashMap<&'a S::NodeId, T, FxBuildHasher>,
-    predecessors: HashMap<&'a S::NodeId, Option<Node<'a, S>>, FxBuildHasher>,
+    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
+    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterIter<'graph, 'parent, S, E, G>
@@ -53,12 +59,12 @@ where
     G: Connections<'graph, S>,
 {
     pub(super) fn new(
-        graph: &'a Graph<S>,
+        graph: &'graph Graph<S>,
 
-        edge_cost: F,
+        edge_cost: &'parent E,
         connections: G,
 
-        source: &'a S::NodeId,
+        source: &'graph S::NodeId,
 
         intermediates: Intermediates,
         candidate_order: SPFACandidateOrder,
@@ -67,11 +73,11 @@ where
             .node(source)
             .ok_or_else(|| Report::new(ShortestPathFasterError::NodeNotFound))?;
 
-        let mut queue: Queue<'_, S, <E as GraphCost<S>>::Value> = Queue::new();
-        queue.push(source_node, T::zero());
+        let mut queue = DoubleEndedQueue::new();
+        queue.push_back(source_node);
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
-        distances.insert(source, T::zero());
+        distances.insert(source, E::Value::zero());
 
         let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
         if intermediates == Intermediates::Record {
@@ -136,7 +142,8 @@ where
             let (u, v) = edge.endpoints();
             let target = if v.id() == node.id() { u } else { v };
 
-            let next_distance_cost = self.distances[&node.id()] + (self.edge_cost)(edge);
+            let next_distance_cost =
+                &self.distances[&node.id()] + self.edge_cost.cost(edge).as_ref();
 
             if next_distance_cost < self.distances[&target.id()] {
                 self.distances.insert(target.id(), next_distance_cost);
@@ -145,11 +152,11 @@ where
                     self.predecessors.insert(target.id(), Some(node));
                 }
 
-                self.queue.decrease_priority(target, next_distance_cost);
+                self.queue.push_back(target);
             }
         }
 
-        let Some(node) = self.queue.pop_min() else {
+        let Some(node) = self.queue.pop_front() else {
             // No more elements in the queue, we're done.
             self.next = None;
             return None;

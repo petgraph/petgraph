@@ -1,13 +1,15 @@
-// Newtype for VecDeque<T> to avoid exposing the VecDeque type as we may decide to reimplement this.
-pub(in crate::shortest_paths) struct DoubleEndedQueue<T>(VecDequeue<T>);
+use alloc::collections::VecDeque;
 
-impl DoubleEndedQueue<T> {
+// Newtype for VecDeque<T> to avoid exposing the VecDeque type as we may decide to reimplement this.
+pub(in crate::shortest_paths) struct DoubleEndedQueue<T>(VecDeque<T>);
+
+impl<T> DoubleEndedQueue<T> {
     pub(in crate::shortest_paths) fn new() -> Self {
-        Self(VecDequeue::new())
+        Self(VecDeque::new())
     }
 
     pub(in crate::shortest_paths) fn with_capacity(capacity: usize) -> Self {
-        Self(VecDequeue::with_capacity(capacity))
+        Self(VecDeque::with_capacity(capacity))
     }
 
     pub(in crate::shortest_paths) fn push_front(&mut self, item: T) {
