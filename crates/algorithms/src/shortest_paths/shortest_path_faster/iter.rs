@@ -3,7 +3,7 @@ use core::{hash::Hash, ops::Add};
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::{HashMap, HashSet};
-use num_traits::Zero;
+use num_traits::{Bounded, Zero};
 use petgraph_core::{Graph, GraphStorage, Node};
 
 use super::error::ShortestPathFasterError;
@@ -33,12 +33,12 @@ where
     num_nodes: usize,
 
     iteration: usize,
-    init: bool,
     next: Option<&'graph S::NodeId>,
 
     // candidate_order: SPFACandidateOrder,
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
     predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
+    in_queue: HashSet<&'graph S::NodeId, FxBuildHasher>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterIter<'graph, 'parent, S, E, G>
@@ -46,7 +46,7 @@ where
     S: GraphStorage,
     S::NodeId: PartialEq + Eq + Hash,
     E: GraphCost<S>,
-    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
+    E::Value: PartialOrd + Ord + Zero + Bounded + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
     G: Connections<'graph, S>,
 {
@@ -72,6 +72,8 @@ where
         let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
         predecessors.insert(source, None);
 
+        let in_queue = HashSet::with_hasher(FxBuildHasher::default());
+
         Ok(Self {
             graph,
             queue,
@@ -80,20 +82,18 @@ where
             source: source_node,
             num_nodes: graph.num_nodes(),
             iteration: 0,
-            init: true,
-            next: None,
+            next: Some(source),
             // candidate_order,
             distances,
             predecessors,
+            in_queue,
         })
     }
 
-    fn detect_cycle(&self) -> bool {
-        let mut visited =
-            HashSet::with_capacity_and_hasher(self.num_nodes, FxBuildHasher::default());
-        let mut on_stack =
-            HashSet::with_capacity_and_hasher(self.num_nodes, FxBuildHasher::default());
-        let mut stack = Vec::with_capacity(self.num_nodes);
+    fn has_cycle(&self) -> bool {
+        let mut visited = HashSet::with_hasher(FxBuildHasher::default());
+        let mut on_stack = HashSet::with_hasher(FxBuildHasher::default());
+        let mut stack = Vec::new();
 
         for node in self.predecessors.keys() {
             if !visited.contains(*node) {
@@ -126,7 +126,7 @@ where
     S: GraphStorage,
     S::NodeId: PartialEq + Eq + Hash,
     E: GraphCost<S>,
-    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
+    E::Value: PartialOrd + Ord + Zero + Bounded + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
     G: Connections<'graph, S>,
 {
@@ -139,21 +139,7 @@ where
     // as well as a variation to terminate on negative cycles.
     // https://konaeakira.github.io/posts/using-the-shortest-path-faster-algorithm-to-find-negative-cycles.html
     fn next(&mut self) -> Option<Self::Item> {
-        // the first iteration is special, as we immediately return the source node
-        // and then begin with the actual iteration loop.
-        if self.init {
-            self.init = false;
-            self.next = Some(self.source.id());
-
-            return Some(Route {
-                path: Path {
-                    source: self.source,
-                    target: self.source,
-                    intermediates: Vec::new(),
-                },
-                cost: Cost(E::Value::zero()),
-            });
-        }
+        let default_distance = E::Value::max_value();
 
         let node_id = self.next?;
         let node = self.graph.node(&node_id).expect("node to be present");
@@ -165,31 +151,32 @@ where
 
             let next_distance_cost = &self.distances[&node_id] + self.edge_cost.cost(edge).as_ref();
 
-            if let Some(distance) = self.distances.get(target) {
-                if next_distance_cost < *distance {
-                    self.distances.insert(target, next_distance_cost);
+            let distance = self.distances.get(target).unwrap_or(&default_distance);
 
-                    self.iteration += 1;
+            if next_distance_cost >= *distance {
+                continue;
+            }
 
-                    if self.iteration == self.num_nodes {
-                        self.iteration = 0;
-                        if self.detect_cycle() {
-                            // We've reached the maximum number of iterations, which means that
-                            // we've detected a negative cycle. We
-                            // terminate early.
-                            return None;
-                        }
-                    }
+            self.distances.insert(target, next_distance_cost);
+            self.predecessors.insert(
+                target,
+                Some(self.graph.node(node_id).expect("node to exist")),
+            );
 
-                    self.predecessors.insert(
-                        target,
-                        Some(self.graph.node(node_id).expect("node to exist")),
-                    );
+            self.iteration += 1;
 
-                    if !self.queue.contains(&target) {
-                        self.queue.push_back(target);
-                    }
+            if self.iteration == self.num_nodes {
+                self.iteration = 0;
+                if self.has_cycle() {
+                    // A shortest path can at most go to n nodes, therefore we
+                    // terminate early if we detected a cycle at the nth iteration
+                    return None;
                 }
+            }
+
+            if !self.in_queue.contains(target) {
+                self.queue.push_back(target);
+                self.in_queue.insert(target);
             }
         }
 
@@ -198,6 +185,7 @@ where
             self.next = None;
             return None;
         };
+        self.in_queue.remove(node);
 
         self.next = Some(node);
 

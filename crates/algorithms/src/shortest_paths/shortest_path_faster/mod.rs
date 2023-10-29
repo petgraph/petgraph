@@ -6,7 +6,7 @@ mod tests;
 use core::{hash::Hash, ops::Add};
 
 use error_stack::Result;
-use num_traits::Zero;
+use num_traits::{Bounded, Zero};
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
@@ -93,7 +93,7 @@ where
     S: GraphStorage,
     S::NodeId: PartialEq + Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> E::Value: PartialOrd + Ord + Zero + Bounded + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
@@ -142,7 +142,7 @@ where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> E::Value: PartialOrd + Ord + Zero + Zero + Bounded + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
@@ -198,7 +198,7 @@ where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> E::Value: PartialOrd + Ord + Zero + Zero + Bounded + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
@@ -236,7 +236,7 @@ where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
+    for<'a> E::Value: PartialOrd + Ord + Zero + Zero + Bounded + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
