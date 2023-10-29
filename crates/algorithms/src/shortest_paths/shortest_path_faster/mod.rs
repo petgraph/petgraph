@@ -10,15 +10,19 @@ use petgraph_core::{
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
-use self::{
-    error::ShortestPathFasterError,
-    iter::{SPFACandidateOrder, ShortestPathFasterIter},
-};
+use self::{error::ShortestPathFasterError, iter::ShortestPathFasterIter};
 use super::{
-    common::{connections::outgoing_connections, cost::GraphCost, intermediates::Intermediates},
+    common::{connections::outgoing_connections, cost::GraphCost},
     DirectRoute, Route, ShortestDistance, ShortestPath,
 };
 use crate::polyfill::IteratorExt;
+
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum SPFACandidateOrder {
+    #[default]
+    SmallFirst,
+    LargeLast,
+}
 
 pub struct ShortestPathFaster<D, E> {
     direction: D,
@@ -100,8 +104,7 @@ where
             &self.edge_cost,
             Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
             source,
-            Intermediates::Record,
-            self.candidate_order,
+            // self.candidate_order,
         )
     }
 
@@ -151,8 +154,7 @@ where
             &self.edge_cost,
             Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
             source,
-            Intermediates::Record,
-            self.candidate_order,
+            // self.candidate_order,
         )?;
 
         Ok(iter.map(|route| DirectRoute {
@@ -207,8 +209,7 @@ where
             &self.edge_cost,
             outgoing_connections as fn(&Node<'graph, S>) -> _,
             source,
-            Intermediates::Record,
-            self.candidate_order,
+            // self.candidate_order,
         )
     }
 
@@ -246,8 +247,7 @@ where
             &self.edge_cost,
             outgoing_connections as fn(&Node<'graph, S>) -> _,
             source,
-            Intermediates::Discard,
-            self.candidate_order,
+            // self.candidate_order,
         )?;
 
         Ok(iter.map(|route| DirectRoute {

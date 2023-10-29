@@ -28,6 +28,14 @@ impl<T> DoubleEndedQueue<T> {
         self.0.pop_back()
     }
 
+    pub(in crate::shortest_paths) fn front(&self) -> Option<&T> {
+        self.0.front()
+    }
+
+    pub(in crate::shortest_paths) fn back(&self) -> Option<&T> {
+        self.0.back()
+    }
+
     pub(in crate::shortest_paths) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }

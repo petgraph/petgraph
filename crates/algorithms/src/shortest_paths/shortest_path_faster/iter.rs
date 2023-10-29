@@ -2,7 +2,7 @@ use core::{hash::Hash, ops::Add};
 
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use num_traits::Zero;
 use petgraph_core::{base::MaybeOwned, Edge, Graph, GraphStorage, Node};
 
@@ -16,13 +16,6 @@ use crate::shortest_paths::{
     },
     Cost, Path, Route,
 };
-
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum SPFACandidateOrder {
-    #[default]
-    SmallFirst,
-    LargeLast,
-}
 
 pub(super) struct ShortestPathFasterIter<'graph: 'parent, 'parent, S, E, G>
 where
@@ -39,12 +32,10 @@ where
 
     num_nodes: usize,
 
-    init: bool,
+    iteration: usize,
     next: Option<Node<'graph, S>>,
 
-    intermediates: Intermediates,
-    candidate_order: SPFACandidateOrder,
-
+    // candidate_order: SPFACandidateOrder,
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
     predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
 }
@@ -65,9 +56,7 @@ where
         connections: G,
 
         source: &'graph S::NodeId,
-
-        intermediates: Intermediates,
-        candidate_order: SPFACandidateOrder,
+        // candidate_order: SPFACandidateOrder,
     ) -> Result<Self, ShortestPathFasterError> {
         let source_node = graph
             .node(source)
@@ -80,9 +69,7 @@ where
         distances.insert(source, E::Value::zero());
 
         let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
-        if intermediates == Intermediates::Record {
-            predecessors.insert(source, None);
-        }
+        predecessors.insert(source, None);
 
         Ok(Self {
             queue,
@@ -90,13 +77,43 @@ where
             connections,
             source: source_node,
             num_nodes: graph.num_nodes(),
-            init: true,
+            iteration: 0,
             next: None,
-            intermediates,
-            candidate_order,
+            // candidate_order,
             distances,
             predecessors,
         })
+    }
+
+    fn detect_cycle(&self) -> bool {
+        let mut visited =
+            HashSet::with_capacity_and_hasher(self.num_nodes, FxBuildHasher::default());
+        let mut on_stack =
+            HashSet::with_capacity_and_hasher(self.num_nodes, FxBuildHasher::default());
+        let mut stack = Vec::with_capacity(self.num_nodes);
+
+        for node in self.predecessors.keys() {
+            if !visited.contains(*node) {
+                while let Some(Some(pre)) = self.predecessors.get(*node) {
+                    let predecessor_id = pre.id();
+                    if !visited.contains(predecessor_id) {
+                        visited.insert(predecessor_id);
+                        on_stack.insert(predecessor_id);
+                        stack.push(predecessor_id);
+                    } else {
+                        if on_stack.contains(predecessor_id) {
+                            return true;
+                        }
+                        break;
+                    }
+                }
+
+                while let Some(p) = stack.pop() {
+                    on_stack.remove(p);
+                }
+            }
+        }
+        false
     }
 }
 
@@ -121,8 +138,8 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         // the first iteration is special, as we immediately return the source node
         // and then begin with the actual iteration loop.
-        if self.init {
-            self.init = false;
+        if self.iteration == 0 {
+            self.iteration += 1;
             self.next = Some(self.source);
 
             return Some(Route {
@@ -148,9 +165,18 @@ where
             if next_distance_cost < self.distances[&target.id()] {
                 self.distances.insert(target.id(), next_distance_cost);
 
-                if self.intermediates == Intermediates::Record {
-                    self.predecessors.insert(target.id(), Some(node));
+                self.iteration += 1;
+
+                if self.iteration == self.num_nodes {
+                    self.iteration = 0;
+                    if self.detect_cycle() {
+                        // We've reached the maximum number of iterations, which means that we've
+                        // detected a negative cycle. We terminate early.
+                        return None;
+                    }
                 }
+
+                self.predecessors.insert(target.id(), Some(node));
 
                 self.queue.push_back(target);
             }
@@ -167,11 +193,7 @@ where
         // we're currently visiting the node that has the shortest distance, therefore we know
         // that the distance is the shortest possible
         let distance = self.distances[node.id()].clone();
-        let intermediates = if self.intermediates == Intermediates::Discard {
-            Vec::new()
-        } else {
-            reconstruct_intermediates(&self.predecessors, node.id())
-        };
+        let intermediates = reconstruct_intermediates(&self.predecessors, node.id());
 
         let path = Path {
             source: self.source,
