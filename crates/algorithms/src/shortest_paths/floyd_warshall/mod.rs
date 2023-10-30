@@ -183,6 +183,7 @@ where
     type Cost = E::Value;
     type Error = FloydWarshallError;
 
+    // TODO: benchmark if the filter has an actual impact on performance
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,

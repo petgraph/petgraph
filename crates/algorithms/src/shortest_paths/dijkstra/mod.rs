@@ -190,6 +190,8 @@ where
     type Cost = E::Value;
     type Error = DijkstraError;
 
+    // TODO: benchmark if an eager filter is faster, to circumvent path creation (which allocates a
+    //  Vec) -> only for path_between and path_to
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
