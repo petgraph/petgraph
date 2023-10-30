@@ -61,11 +61,7 @@ where
         if let Some(free_index) = self.free.pop() {
             free_index.0
         } else {
-            assert_ne!(
-                self.entries.len(),
-                (EntryId::GENERATION_MAX as usize) + 1,
-                "slab is full"
-            );
+            assert_ne!(self.entries.len(), EntryId::INDEX_MASK, "slab is full");
 
             self.entries.push(Entry::new());
             self.entries.len() - 1
