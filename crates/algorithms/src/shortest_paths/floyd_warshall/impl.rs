@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use error_stack::{Report, Result};
 use num_traits::{CheckedAdd, Zero};
-use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage, Node};
+use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage};
 
 use crate::shortest_paths::{
     common::{cost::GraphCost, intermediates::Intermediates},
@@ -106,6 +106,19 @@ where
     path
 }
 
+type InitEdgeDistanceFn<'graph, S, E> = fn(
+    &mut SlotMatrix<'graph, S, MaybeOwned<'graph, <E as GraphCost<S>>::Value>>,
+    &<S as GraphStorage>::NodeId,
+    &<S as GraphStorage>::NodeId,
+    Option<MaybeOwned<'graph, <E as GraphCost<S>>::Value>>,
+);
+
+type InitEdgePredecessorFn<'graph, S> = fn(
+    &mut SlotMatrix<'graph, S, &'graph <S as GraphStorage>::NodeId>,
+    &'graph <S as GraphStorage>::NodeId,
+    &'graph <S as GraphStorage>::NodeId,
+);
+
 pub(super) struct FloydWarshallImpl<'graph: 'parent, 'parent, S, E>
 where
     S: GraphStorage,
@@ -117,14 +130,8 @@ where
 
     intermediates: Intermediates,
 
-    init_edge_distance: fn(
-        &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
-        &S::NodeId,
-        &S::NodeId,
-        Option<MaybeOwned<'graph, E::Value>>,
-    ),
-    init_edge_predecessor:
-        fn(&mut SlotMatrix<'graph, S, &'graph S::NodeId>, &'graph S::NodeId, &'graph S::NodeId),
+    init_edge_distance: InitEdgeDistanceFn<'graph, S, E>,
+    init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
 
     distances: SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
     predecessors: SlotMatrix<'graph, S, &'graph S::NodeId>,
@@ -144,17 +151,8 @@ where
 
         intermediates: Intermediates,
 
-        init_edge_distance: fn(
-            &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
-            &S::NodeId,
-            &S::NodeId,
-            Option<MaybeOwned<'graph, E::Value>>,
-        ),
-        init_edge_predecessor: fn(
-            &mut SlotMatrix<'graph, S, &'graph S::NodeId>,
-            &'graph S::NodeId,
-            &'graph S::NodeId,
-        ),
+        init_edge_distance: InitEdgeDistanceFn<'graph, S, E>,
+        init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
     ) -> Result<Self, FloydWarshallError> {
         let distances = SlotMatrix::new(graph);
 
@@ -184,8 +182,7 @@ where
     fn eval(&mut self) -> Result<(), FloydWarshallError> {
         for edge in self.graph.edges() {
             let (u, v) = edge.endpoints();
-            // in a directed graph we would need to assign to both
-            // distance[(u, v)] and distance[(v, u)]
+
             (self.init_edge_distance)(
                 &mut self.distances,
                 u.id(),

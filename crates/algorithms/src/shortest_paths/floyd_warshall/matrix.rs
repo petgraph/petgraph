@@ -1,5 +1,4 @@
 use alloc::vec::Vec;
-use core::iter::repeat_with;
 
 use petgraph_core::{
     base::MaybeOwned,
@@ -15,7 +14,7 @@ enum MatrixIndexMapper<I> {
 impl<I, T> IndexMapper<T> for MatrixIndexMapper<I>
 where
     I: IndexMapper<T>,
-    T: PartialEq + Clone,
+    T: PartialEq,
 {
     fn max(&self) -> usize {
         match self {
@@ -52,7 +51,7 @@ where
 impl<'a, S, T> SlotMatrix<'a, S, T>
 where
     S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone,
+    S::NodeId: LinearGraphId<S>,
 {
     pub(crate) fn new(graph: &'a Graph<S>) -> Self {
         let length = graph.num_nodes();
@@ -61,7 +60,7 @@ where
         ));
 
         let mut matrix = Vec::with_capacity(length * length);
-        matrix.extend(repeat_with(|| None).take(length * length));
+        matrix.resize_with(length * length, Default::default);
 
         Self {
             mapper,
