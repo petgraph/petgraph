@@ -69,13 +69,16 @@ macro_rules! expect {
 
                 for (source, target, expected_cost, expected_path) in expected {
                     let route = routes.remove(&(source, target)).expect("route not found");
-                    let path: Vec<_> = route.path.iter().map(|node| *node.id()).collect();
+                    let mut path: Vec<_> = route.path.iter().map(|node| *node.id()).collect();
 
-                    assert_eq!(
-                        route.cost.into_value(),
-                        expected_cost,
-                        "cost of {source} -> {target}"
-                    );
+                    let received_target = path.pop();
+                    path.reverse();
+                    let received_source = path.pop();
+                    path.reverse();
+
+                    assert_eq!(route.cost.into_value(), expected_cost, "cost of {source} -> {target}");
+                    assert_eq!(received_source, Some(source), "source of {source} -> {target}");
+                    assert_eq!(received_target, Some(target), "target of {source} -> {target}");
                     assert_eq!(path, expected_path, "path of {source} -> {target}");
                 }
 
@@ -278,6 +281,60 @@ fn weighted_directed_path() {
 }
 
 #[test]
+fn weighted_directed_path_between() {
+    let GraphCollection { graph, nodes, .. } = weighted::create();
+
+    let floyd_warshall = FloydWarshall::directed();
+
+    let path = floyd_warshall
+        .path_between(&graph, &nodes.a, &nodes.c)
+        .unwrap();
+    assert_eq!(path.cost.into_value(), 3);
+    assert_eq!(
+        path.path
+            .to_vec()
+            .into_iter()
+            .map(|node| *node.id())
+            .collect::<Vec<_>>(),
+        vec![nodes.a, nodes.b, nodes.c]
+    );
+}
+
+#[test]
+fn weighted_directed_path_from() {
+    let GraphCollection { graph, nodes, .. } = weighted::create();
+
+    let floyd_warshall = FloydWarshall::directed();
+
+    let paths = floyd_warshall.path_from(&graph, &nodes.a).unwrap();
+
+    let mut expected: HashSet<_> = [nodes.a, nodes.b, nodes.c, nodes.d].into_iter().collect();
+    // cost is tested above, this just checks that the filter is correct.
+
+    for route in paths {
+        assert_eq!(*route.path.source.id(), nodes.a);
+        assert!(expected.remove(route.path.target.id()));
+    }
+}
+
+#[test]
+fn weighted_directed_path_to() {
+    let GraphCollection { graph, nodes, .. } = weighted::create();
+
+    let floyd_warshall = FloydWarshall::directed();
+
+    let paths = floyd_warshall.path_to(&graph, &nodes.c).unwrap();
+
+    let mut expected: HashSet<_> = [nodes.a, nodes.b, nodes.c].into_iter().collect();
+    // cost is tested above, this just checks that the filter is correct.
+
+    for route in paths {
+        assert!(expected.remove(route.path.source.id()));
+        assert_eq!(*route.path.target.id(), nodes.c);
+    }
+}
+
+#[test]
 fn weighted_directed_distance() {
     let GraphCollection { graph, nodes, .. } = weighted::create();
 
@@ -315,6 +372,61 @@ fn weighted_undirected_path() {
     let floyd_warshall = FloydWarshall::undirected();
 
     expect_undirected_weighted::path(&graph, &nodes, floyd_warshall);
+}
+
+#[test]
+fn weighted_undirected_path_between() {
+    let GraphCollection { graph, nodes, .. } = weighted::create();
+
+    let floyd_warshall = FloydWarshall::undirected();
+
+    let path = floyd_warshall
+        .path_between(&graph, &nodes.a, &nodes.c)
+        .unwrap();
+
+    assert_eq!(path.cost.into_value(), 3);
+    assert_eq!(
+        path.path
+            .to_vec()
+            .into_iter()
+            .map(|node| *node.id())
+            .collect::<Vec<_>>(),
+        vec![nodes.a, nodes.b, nodes.c]
+    );
+}
+
+#[test]
+fn weighted_undirected_path_from() {
+    let GraphCollection { graph, nodes, .. } = weighted::create();
+
+    let floyd_warshall = FloydWarshall::undirected();
+
+    let paths = floyd_warshall.path_from(&graph, &nodes.a).unwrap();
+
+    let mut expected: HashSet<_> = [nodes.a, nodes.b, nodes.c, nodes.d].into_iter().collect();
+    // cost is tested above, this just checks that the filter is correct.
+
+    for route in paths {
+        assert_eq!(*route.path.source.id(), nodes.a);
+        assert!(expected.remove(route.path.target.id()));
+    }
+}
+
+#[test]
+fn weighted_undirected_path_to() {
+    let GraphCollection { graph, nodes, .. } = weighted::create();
+
+    let floyd_warshall = FloydWarshall::undirected();
+
+    let paths = floyd_warshall.path_to(&graph, &nodes.c).unwrap();
+
+    let mut expected: HashSet<_> = [nodes.a, nodes.b, nodes.c, nodes.d].into_iter().collect();
+    // cost is tested above, this just checks that the filter is correct.
+
+    for route in paths {
+        assert!(expected.remove(route.path.source.id()));
+        assert_eq!(*route.path.target.id(), nodes.c);
+    }
 }
 
 #[test]

@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use error_stack::{Report, Result};
 use num_traits::{CheckedAdd, Zero};
-use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage};
+use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{cost::GraphCost, intermediates::Intermediates},
@@ -85,7 +85,6 @@ where
     }
 
     let mut current = target;
-    path.push(current);
 
     // eager loop termination here, so that we don't need to push and then pop the last element
     // again.
@@ -273,7 +272,10 @@ where
         result
     }
 
-    pub(super) fn iter(self) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
+    pub(super) fn filter(
+        self,
+        mut filter: impl FnMut(Node<S>, Node<S>) -> bool + 'parent,
+    ) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
         let Self {
             graph,
 
@@ -287,7 +289,15 @@ where
         graph
             .nodes()
             .flat_map(move |source| graph.nodes().map(move |target| (source, target)))
+            .filter(move |(source, target)| filter(*source, *target))
             .filter_map(move |(source, target)| {
+                // filter out before so that we don't have to reconstruct the path for
+                // unreachable nodes
+                distances
+                    .get(source.id(), target.id())
+                    .map(|cost| (source, target, cost.clone().into_owned()))
+            })
+            .map(move |(source, target, cost)| {
                 let path = match intermediates {
                     Intermediates::Discard => Path {
                         source,
@@ -304,15 +314,10 @@ where
                     },
                 };
 
-                let cost = distances
-                    .get(source.id(), target.id())
-                    .cloned()
-                    .map(MaybeOwned::into_owned)?;
-
-                Some(Route {
+                Route {
                     path,
                     cost: Cost(cost),
-                })
+                }
             })
     }
 }

@@ -76,20 +76,70 @@ where
     type Cost = E::Value;
     type Error = FloydWarshallError;
 
-    fn every_path<'graph: 'this, 'this>(
-        &'this self,
+    fn path_between<'graph>(
+        &self,
         graph: &'graph Graph<S>,
-    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
-        let iter = FloydWarshallImpl::new(
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Route<'graph, S, Self::Cost>> {
+        let r#impl = FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
             Intermediates::Record,
             init_undirected_edge_distance::<S, E>,
             init_undirected_edge_predecessor::<S>,
-        )?
-        .iter();
+        )
+        .ok()?;
 
-        Ok(iter)
+        r#impl
+            .filter(|source_node, target_node| {
+                source_node.id() == source && target_node.id() == target
+            })
+            .next()
+    }
+
+    fn path_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            Intermediates::Record,
+            init_undirected_edge_distance::<S, E>,
+            init_undirected_edge_predecessor::<S>,
+        )
+        .map(move |r#impl| r#impl.filter(move |source_node, _| source_node.id() == source))
+    }
+
+    fn path_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            Intermediates::Record,
+            init_undirected_edge_distance::<S, E>,
+            init_undirected_edge_predecessor::<S>,
+        )
+        .map(move |r#impl| r#impl.filter(move |_, target_node| target_node.id() == target))
+    }
+
+    fn every_path<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            Intermediates::Record,
+            init_undirected_edge_distance::<S, E>,
+            init_undirected_edge_predecessor::<S>,
+        )
+        .map(|r#impl| r#impl.filter(|_, _| true))
     }
 }
 
@@ -115,7 +165,7 @@ where
             init_undirected_edge_predecessor::<S>,
         )?;
 
-        Ok(iter.iter().map(|route| DirectRoute {
+        Ok(iter.filter(|_, _| true).map(|route| DirectRoute {
             source: route.path.source,
             target: route.path.target,
             cost: route.cost,
@@ -133,19 +183,70 @@ where
     type Cost = E::Value;
     type Error = FloydWarshallError;
 
-    fn every_path<'graph: 'this, 'this>(
-        &'this self,
+    fn path_between<'graph>(
+        &self,
         graph: &'graph Graph<S>,
-    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
-        let iter = FloydWarshallImpl::new(
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Route<'graph, S, Self::Cost>> {
+        let r#impl = FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
             Intermediates::Record,
             init_directed_edge_distance::<S, E>,
             init_directed_edge_predecessor::<S>,
-        )?;
+        )
+        .ok()?;
 
-        Ok(iter.iter())
+        r#impl
+            .filter(|source_node, target_node| {
+                source_node.id() == source && target_node.id() == target
+            })
+            .next()
+    }
+
+    fn path_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            Intermediates::Record,
+            init_directed_edge_distance::<S, E>,
+            init_directed_edge_predecessor::<S>,
+        )
+        .map(move |r#impl| r#impl.filter(move |source_node, _| source_node.id() == source))
+    }
+
+    fn path_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            Intermediates::Record,
+            init_directed_edge_distance::<S, E>,
+            init_directed_edge_predecessor::<S>,
+        )
+        .map(move |r#impl| r#impl.filter(move |_, target_node| target_node.id() == target))
+    }
+
+    fn every_path<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            Intermediates::Record,
+            init_directed_edge_distance::<S, E>,
+            init_directed_edge_predecessor::<S>,
+        )
+        .map(|r#impl| r#impl.filter(|_, _| true))
     }
 }
 
@@ -171,7 +272,7 @@ where
             init_directed_edge_predecessor::<S>,
         )?;
 
-        Ok(iter.iter().map(|route| DirectRoute {
+        Ok(iter.filter(|_, _| true).map(|route| DirectRoute {
             source: route.path.source,
             target: route.path.target,
             cost: route.cost,

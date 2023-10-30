@@ -10,6 +10,7 @@ mod floyd_warshall;
 // mod total_ord;
 
 use alloc::vec::{IntoIter, Vec};
+use std::iter::once;
 
 use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage, Node};
@@ -53,12 +54,10 @@ where
         vec
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Node<'a, S>> {
-        let mut iter = self.intermediates.iter();
-
-        iter.next_back();
-
-        iter
+    pub fn iter(&self) -> impl Iterator<Item = Node<'a, S>> + '_ {
+        once(self.source)
+            .chain(self.intermediates.iter().copied())
+            .chain(once(self.target))
     }
 
     fn reverse(self) -> Self {
