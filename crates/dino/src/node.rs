@@ -5,10 +5,12 @@ use petgraph_core::{
     edge::marker::GraphDirectionality,
     id::{GraphId, LinearGraphId, ManagedGraphId},
 };
+use roaring::RoaringBitmap;
 
 use crate::{
+    closure::{UnionIntoIterator, UnionIterator},
     slab::{EntryId, Key, SlabIndexMapper},
-    DinoStorage,
+    DinoStorage, EdgeId,
 };
 
 /// Identifier for a node in [`DinoStorage`].
@@ -67,14 +69,84 @@ where
 
 impl ManagedGraphId for NodeId {}
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) type NodeSlab<T> = crate::slab::Slab<NodeId, Node<T>>;
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct NodeClosures {
+    pub(crate) source_to_targets: RoaringBitmap,
+    pub(crate) target_to_sources: RoaringBitmap,
+
+    pub(crate) source_to_edges: RoaringBitmap,
+    pub(crate) target_to_edges: RoaringBitmap,
+}
+
+impl NodeClosures {
+    pub(crate) fn clear(&mut self) {
+        self.source_to_targets.clear();
+        self.target_to_sources.clear();
+
+        self.source_to_edges.clear();
+        self.target_to_edges.clear();
+    }
+
+    pub(crate) fn into_edges(self) -> impl Iterator<Item = EdgeId> {
+        UnionIntoIterator::new(self.source_to_edges, self.target_to_edges)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Node<T> {
     pub(crate) id: NodeId,
     pub(crate) weight: T,
+
+    pub(crate) closures: NodeClosures,
 }
 
 impl<T> Node<T> {
-    pub(crate) const fn new(id: NodeId, weight: T) -> Self {
-        Self { id, weight }
+    pub(crate) fn outgoing_neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
+        self.closures
+            .source_to_targets
+            .iter()
+            .map(|value| NodeId::from_id(EntryId::new_unchecked(value)))
+    }
+
+    pub(crate) fn incoming_neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
+        self.closures
+            .target_to_sources
+            .iter()
+            .map(|value| NodeId::from_id(EntryId::new_unchecked(value)))
+    }
+
+    pub(crate) fn neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
+        UnionIterator::new(
+            &self.closures.source_to_targets,
+            &self.closures.target_to_sources,
+        )
+    }
+
+    pub(crate) fn outgoing_edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
+        self.closures
+            .source_to_edges
+            .iter()
+            .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
+    }
+
+    pub(crate) fn incoming_edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
+        self.closures
+            .target_to_edges
+            .iter()
+            .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
+    }
+
+    pub(crate) fn edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
+        UnionIterator::new(
+            &self.closures.source_to_edges,
+            &self.closures.target_to_edges,
+        )
+        .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
+    }
+
+    pub(crate) fn is_external(&self) -> bool {
+        self.closures.source_to_targets.is_empty() && self.closures.target_to_sources.is_empty()
     }
 }
