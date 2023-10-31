@@ -2,8 +2,6 @@ mod union;
 
 use either::Either;
 use fnv::FnvBuildHasher;
-// The closure tables have quite a bit of allocations (due to the nested nature of the data
-// structure). Question is can we avoid them?
 use hashbrown::HashMap;
 use roaring::RoaringBitmap;
 
@@ -282,12 +280,15 @@ mod tests {
     use core::iter::once;
 
     use hashbrown::{HashMap, HashSet};
-    use petgraph_core::{attributes::Attributes, edge::marker::Directed};
+    use petgraph_core::{
+        attributes::Attributes, edge::marker::Directed, GraphDirectionality, GraphStorage,
+    };
+    use roaring::RoaringBitmap;
 
     use crate::{
         closure::{Closures, Key},
         slab::{EntryId, Key as _},
-        DinoGraph, EdgeId, NodeId,
+        DiDinoGraph, DinoGraph, DinoStorage, EdgeId, NodeId,
     };
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -304,19 +305,19 @@ mod tests {
     }
 
     impl EvaluatedNodeClosure {
-        fn new(closures: &Closures, id: NodeId) -> Self {
-            let lookup = closures.nodes();
+        fn new<N, E>(storage: &DinoStorage<N, E>, id: NodeId) -> Self {
+            let node = storage.nodes.get(id).expect("node not found");
 
             Self {
-                outgoing_neighbours: lookup.outgoing_neighbours(id).collect(),
-                incoming_neighbours: lookup.incoming_neighbours(id).collect(),
+                outgoing_neighbours: node.outgoing_neighbours().collect(),
+                incoming_neighbours: node.incoming_neighbours().collect(),
 
-                neighbours: lookup.neighbours(id).collect(),
+                neighbours: node.neighbours().collect(),
 
-                outgoing_edges: lookup.outgoing_edges(id).collect(),
-                incoming_edges: lookup.incoming_edges(id).collect(),
+                outgoing_edges: node.outgoing_edges().collect(),
+                incoming_edges: node.incoming_edges().collect(),
 
-                edges: lookup.edges(id).collect(),
+                edges: node.edges().collect(),
             }
         }
     }
@@ -333,71 +334,46 @@ mod tests {
     }
 
     impl EvaluatedEdgeClosures {
-        fn new(closures: &Closures) -> Self {
+        fn new<N, E>(storage: &DinoStorage<N, E>) -> Self {
+            fn node_id_set(bitmap: &RoaringBitmap) -> HashSet<NodeId> {
+                bitmap
+                    .iter()
+                    .map(|id| NodeId::from_id(EntryId::new_unchecked(id)))
+                    .collect()
+            }
+
+            fn edge_id_set(bitmap: &RoaringBitmap) -> HashSet<EdgeId> {
+                bitmap
+                    .iter()
+                    .map(|id| EdgeId::from_id(EntryId::new_unchecked(id)))
+                    .collect()
+            }
+
             Self {
-                source_to_targets: closures
-                    .storage
-                    .inner
-                    .iter()
-                    .filter_map(|(key, bitmap)| match key {
-                        Key::SourceToTargets(id) => Some((
-                            *id,
-                            bitmap
-                                .iter()
-                                .map(|id| NodeId::from_id(EntryId::new_unchecked(id)))
-                                .collect::<HashSet<_>>(),
-                        )),
-                        _ => None,
-                    })
+                source_to_targets: storage
+                    .nodes
+                    .entries()
+                    .map(|(id, node)| (id, node_id_set(&node.closures.source_to_targets)))
                     .collect(),
-                target_to_sources: closures
-                    .storage
-                    .inner
-                    .iter()
-                    .filter_map(|(key, bitmap)| match key {
-                        Key::TargetToSources(id) => Some((
-                            *id,
-                            bitmap
-                                .iter()
-                                .map(|id| NodeId::from_id(EntryId::new_unchecked(id)))
-                                .collect::<HashSet<_>>(),
-                        )),
-                        _ => None,
-                    })
+                target_to_sources: storage
+                    .nodes
+                    .entries()
+                    .map(|(id, node)| (id, node_id_set(&node.closures.target_to_sources)))
                     .collect(),
 
-                source_to_edges: closures
-                    .storage
-                    .inner
-                    .iter()
-                    .filter_map(|(key, bitmap)| match key {
-                        Key::SourceToEdges(id) => Some((
-                            *id,
-                            bitmap
-                                .iter()
-                                .map(|id| EdgeId::from_id(EntryId::new_unchecked(id)))
-                                .collect::<HashSet<_>>(),
-                        )),
-                        _ => None,
-                    })
+                source_to_edges: storage
+                    .nodes
+                    .entries()
+                    .map(|(id, node)| (id, edge_id_set(&node.closures.source_to_edges)))
                     .collect(),
-                targets_to_edges: closures
-                    .storage
-                    .inner
-                    .iter()
-                    .filter_map(|(key, bitmap)| match key {
-                        Key::TargetsToEdges(id) => Some((
-                            *id,
-                            bitmap
-                                .iter()
-                                .map(|id| EdgeId::from_id(EntryId::new_unchecked(id)))
-                                .collect::<HashSet<_>>(),
-                        )),
-                        _ => None,
-                    })
+                targets_to_edges: storage
+                    .nodes
+                    .entries()
+                    .map(|(id, node)| (id, edge_id_set(&node.closures.target_to_edges)))
                     .collect(),
 
-                endpoints_to_edges: closures
+                endpoints_to_edges: storage
+                    .closures
                     .storage
                     .inner
                     .iter()
@@ -431,16 +407,6 @@ mod tests {
         }};
     }
 
-    fn assert_storage_size(closure: &Closures, expected_nodes: usize, expected_endpoints: usize) {
-        // expected_nodes * (SourceToTargets + TargetToSources + SourceToEdges + TargetToEdges)
-        // + expected_endpoints * EndpointsToEdges
-
-        assert_eq!(
-            closure.storage.inner.len(),
-            4 * expected_nodes + expected_endpoints
-        );
-    }
-
     #[test]
     fn single_node() {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
@@ -450,14 +416,13 @@ mod tests {
 
         let closures = &graph.storage().closures;
 
-        assert_storage_size(closures, 1, 0);
         assert_eq!(
             closures.nodes().externals().collect::<HashSet<_>>(),
             once(id).collect()
         );
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, id),
+            EvaluatedNodeClosure::new(graph.storage(), id),
             EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: HashSet::new(),
@@ -469,7 +434,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures::new(graph.storage()),
             EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     id => HashSet::new(),
@@ -488,6 +453,18 @@ mod tests {
         );
     }
 
+    fn externals<N, E, D>(graph: &DinoGraph<N, E, D>) -> HashSet<NodeId>
+    where
+        D: GraphDirectionality,
+    {
+        graph
+            .storage()
+            .nodes
+            .entries()
+            .filter_map(|(id, node)| node.is_external().then_some(id))
+            .collect()
+    }
+
     #[test]
     fn multiple_nodes() {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
@@ -498,16 +475,10 @@ mod tests {
         let b = graph.try_insert_node(Attributes::new(2)).unwrap();
         let b = *b.id();
 
-        let closures = &graph.storage().closures;
-
-        assert_storage_size(closures, 2, 0);
-        assert_eq!(
-            closures.nodes().externals().collect::<HashSet<_>>(),
-            [a, b].into_iter().collect()
-        );
+        assert_eq!(externals(&graph), [a, b].into_iter().collect());
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure::new(graph.storage(), a),
             EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: HashSet::new(),
@@ -519,7 +490,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, b),
+            EvaluatedNodeClosure::new(graph.storage(), b),
             EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: HashSet::new(),
@@ -531,7 +502,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures::new(graph.storage()),
             EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => HashSet::new(),
@@ -567,13 +538,10 @@ mod tests {
         let edge = graph.try_insert_edge(1u8, &a, &b).unwrap();
         let edge = *edge.id();
 
-        let closures = &graph.storage().closures;
-
-        assert_storage_size(closures, 2, 1);
-        assert_eq!(closures.nodes().externals().count(), 0);
+        assert!(externals(&graph).is_empty());
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure::new(graph.storage(), a),
             EvaluatedNodeClosure {
                 outgoing_neighbours: once(b).collect(),
                 incoming_neighbours: HashSet::new(),
@@ -585,7 +553,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, b),
+            EvaluatedNodeClosure::new(graph.storage(), b),
             EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: once(a).collect(),
@@ -597,7 +565,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures::new(graph.storage()),
             EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => once(b).collect(),
@@ -632,13 +600,10 @@ mod tests {
         let edge = graph.try_insert_edge(1u8, &a, &a).unwrap();
         let edge = *edge.id();
 
-        let closures = &graph.storage().closures;
-
-        assert_storage_size(closures, 1, 1);
-        assert_eq!(closures.nodes().externals().count(), 0);
+        assert!(externals(&graph).is_empty());
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure::new(graph.storage(), a),
             EvaluatedNodeClosure {
                 outgoing_neighbours: once(a).collect(),
                 incoming_neighbours: once(a).collect(),
@@ -650,7 +615,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures::new(graph.storage()),
             EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => once(a).collect(),
@@ -729,13 +694,10 @@ mod tests {
 
             let (a, b, c, ab, bc, ca) = (*a, *b, *c, *ab, *bc, *ca);
 
-            let closures = &graph.storage().closures;
-
-            assert_storage_size(closures, 3, 3);
-            assert_eq!(closures.nodes().externals().count(), 0);
+            assert!(externals(&graph).is_empty());
 
             assert_eq!(
-                EvaluatedNodeClosure::new(closures, a),
+                EvaluatedNodeClosure::new(graph.storage(), a),
                 EvaluatedNodeClosure {
                     outgoing_neighbours: once(b).collect(),
                     incoming_neighbours: once(c).collect(),
@@ -747,7 +709,7 @@ mod tests {
             );
 
             assert_eq!(
-                EvaluatedNodeClosure::new(closures, b),
+                EvaluatedNodeClosure::new(graph.storage(), b),
                 EvaluatedNodeClosure {
                     outgoing_neighbours: once(c).collect(),
                     incoming_neighbours: once(a).collect(),
@@ -759,7 +721,7 @@ mod tests {
             );
 
             assert_eq!(
-                EvaluatedNodeClosure::new(closures, c),
+                EvaluatedNodeClosure::new(graph.storage(), c),
                 EvaluatedNodeClosure {
                     outgoing_neighbours: once(a).collect(),
                     incoming_neighbours: once(b).collect(),
@@ -771,7 +733,7 @@ mod tests {
             );
 
             assert_eq!(
-                EvaluatedEdgeClosures::new(closures),
+                EvaluatedEdgeClosures::new(graph.storage()),
                 EvaluatedEdgeClosures {
                     source_to_targets: map! {
                         a => once(b).collect(),
@@ -825,13 +787,10 @@ mod tests {
         let ab2 = graph.try_insert_edge(1u8, &a, &b).unwrap();
         let ab2 = *ab2.id();
 
-        let closures = &graph.storage().closures;
-
-        assert_storage_size(closures, 2, 1);
-        assert_eq!(closures.nodes().externals().count(), 0);
+        assert!(externals(&graph).is_empty());
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure::new(graph.storage(), a),
             EvaluatedNodeClosure {
                 outgoing_neighbours: once(b).collect(),
                 incoming_neighbours: HashSet::new(),
@@ -843,7 +802,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, b),
+            EvaluatedNodeClosure::new(graph.storage(), b),
             EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: once(a).collect(),
@@ -855,7 +814,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures::new(graph.storage()),
             EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => once(b).collect(),
@@ -896,13 +855,10 @@ mod tests {
 
         graph.remove_node(&b).unwrap();
 
-        let closures = &graph.storage().closures;
-
-        assert_storage_size(closures, 2, 1);
-        assert_eq!(closures.nodes().externals().count(), 0);
+        assert!(externals(&graph).is_empty());
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure::new(graph.storage(), a),
             EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: once(c).collect(),
@@ -914,7 +870,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, c),
+            EvaluatedNodeClosure::new(graph.storage(), c),
             EvaluatedNodeClosure {
                 outgoing_neighbours: once(a).collect(),
                 incoming_neighbours: HashSet::new(),
@@ -926,7 +882,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures::new(graph.storage()),
             EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => HashSet::new(),
@@ -968,13 +924,10 @@ mod tests {
 
         graph.remove_edge(&bc).unwrap();
 
-        let closures = &graph.storage().closures;
-
-        assert_storage_size(closures, 3, 2);
-        assert_eq!(closures.nodes().externals().count(), 0);
+        assert!(externals(&graph).is_empty());
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, a),
+            EvaluatedNodeClosure::new(graph.storage(), a),
             EvaluatedNodeClosure {
                 outgoing_neighbours: once(b).collect(),
                 incoming_neighbours: once(c).collect(),
@@ -986,7 +939,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, b),
+            EvaluatedNodeClosure::new(graph.storage(), b),
             EvaluatedNodeClosure {
                 outgoing_neighbours: HashSet::new(),
                 incoming_neighbours: once(a).collect(),
@@ -998,7 +951,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedNodeClosure::new(closures, c),
+            EvaluatedNodeClosure::new(graph.storage(), c),
             EvaluatedNodeClosure {
                 outgoing_neighbours: once(a).collect(),
                 incoming_neighbours: HashSet::new(),
@@ -1010,7 +963,7 @@ mod tests {
         );
 
         assert_eq!(
-            EvaluatedEdgeClosures::new(closures),
+            EvaluatedEdgeClosures::new(graph.storage()),
             EvaluatedEdgeClosures {
                 source_to_targets: map! {
                     a => once(b).collect(),
