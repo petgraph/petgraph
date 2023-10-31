@@ -3,7 +3,7 @@
 
 use error_stack::Result;
 
-trait Container<T> {
+pub(crate) trait Container<T> {
     fn new() -> Self;
     fn with_capacity(capacity: usize) -> Self;
 

@@ -1,5 +1,8 @@
+use core::{borrow::Borrow, fmt::Display};
+
 use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Cost<T>(pub(in crate::shortest_paths) T);
 
 impl<T> Cost<T> {
@@ -9,6 +12,38 @@ impl<T> Cost<T> {
 
     pub fn into_value(self) -> T {
         self.0
+    }
+}
+
+// ensure that all traits have been implemented
+// see: https://rust-lang.github.io/api-guidelines/interoperability.html
+#[cfg(test)]
+static_assertions::assert_impl_all!(Cost<&'static str>: core::fmt::Debug, Display, Clone, PartialEq, Eq, PartialOrd, Ord, core::hash::Hash, Send, Sync, From<&'static str>, AsRef<&'static str>, Borrow<&'static str>);
+
+impl<T> Display for Cost<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl<T> From<T> for Cost<T> {
+    fn from(value: T) -> Self {
+        Self(value)
+    }
+}
+
+impl<T> AsRef<T> for Cost<T> {
+    fn as_ref(&self) -> &T {
+        &self.0
+    }
+}
+
+impl<T> Borrow<T> for Cost<T> {
+    fn borrow(&self) -> &T {
+        &self.0
     }
 }
 

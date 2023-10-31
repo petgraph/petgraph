@@ -1,5 +1,9 @@
-use core::fmt::{Debug, Formatter};
-use std::iter::once;
+use core::fmt::{Debug, Display, Formatter};
+use std::{
+    cmp::Ordering,
+    hash::{Hash, Hasher},
+    iter::once,
+};
 
 use petgraph_core::{GraphStorage, Node};
 
@@ -11,6 +15,54 @@ where
     pub(in crate::shortest_paths) target: Node<'a, S>,
 
     pub(in crate::shortest_paths) transit: Vec<Node<'a, S>>,
+}
+
+// ensure that all traits have been implemented
+// see: https://rust-lang.github.io/api-guidelines/interoperability.html
+#[cfg(test)]
+static_assertions::assert_impl_all!(Path<'_, petgraph_dino::DinoStorage<(), ()>>: Debug, Display, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Send, Sync);
+
+impl<'a, S> Debug for Path<'a, S>
+where
+    S: GraphStorage,
+    Node<'a, S>: Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Path")
+            .field("source", &self.source)
+            .field("target", &self.target)
+            .field("transit", &self.transit)
+            .finish()
+    }
+}
+
+impl<S> Display for Path<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        Display::fmt(&self.source.id(), f)?;
+
+        for node in &self.transit {
+            write!(f, " -> {}", node.id())?;
+        }
+
+        write!(f, " -> {}", self.target.id())
+    }
+}
+
+impl<S> Clone for Path<'_, S>
+where
+    S: GraphStorage,
+{
+    fn clone(&self) -> Self {
+        Self {
+            source: self.source,
+            target: self.target,
+            transit: self.transit.clone(),
+        }
+    }
 }
 
 impl<'a, S> PartialEq for Path<'a, S>
@@ -31,30 +83,41 @@ where
 {
 }
 
-impl<S> Clone for Path<'_, S>
+impl<'a, S> PartialOrd for Path<'a, S>
 where
     S: GraphStorage,
+    Node<'a, S>: PartialOrd,
 {
-    fn clone(&self) -> Self {
-        Self {
-            source: self.source,
-            target: self.target,
-            transit: self.transit.clone(),
-        }
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        (&self.source, &self.transit, &self.target).partial_cmp(&(
+            &other.source,
+            &other.transit,
+            &other.target,
+        ))
     }
 }
 
-impl<'a, S> Debug for Path<'a, S>
+impl<'a, S> Ord for Path<'a, S>
 where
     S: GraphStorage,
-    Node<'a, S>: Debug,
+    Node<'a, S>: Ord,
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Path")
-            .field("source", &self.source)
-            .field("target", &self.target)
-            .field("transit", &self.transit)
-            .finish()
+    fn cmp(&self, other: &Self) -> Ordering {
+        (&self.source, &self.transit, &self.target).cmp(&(
+            &other.source,
+            &other.transit,
+            &other.target,
+        ))
+    }
+}
+
+impl<'a, S> Hash for Path<'a, S>
+where
+    S: GraphStorage,
+    Node<'a, S>: Hash,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        (&self.source, &self.target, &self.transit).hash(state);
     }
 }
 
