@@ -5,7 +5,7 @@ use num_traits::{CheckedAdd, Zero};
 use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
-    common::{cost::GraphCost, intermediates::Intermediates},
+    common::{cost::GraphCost, transit::PredecessorMode},
     floyd_warshall::{error::FloydWarshallError, matrix::SlotMatrix},
     Cost, Path, Route,
 };
@@ -127,7 +127,7 @@ where
     graph: &'graph Graph<S>,
     edge_cost: &'parent E,
 
-    intermediates: Intermediates,
+    predecessor_mode: PredecessorMode,
 
     init_edge_distance: InitEdgeDistanceFn<'graph, S, E>,
     init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
@@ -148,23 +148,23 @@ where
 
         edge_cost: &'parent E,
 
-        intermediates: Intermediates,
+        predecessor_mode: PredecessorMode,
 
         init_edge_distance: InitEdgeDistanceFn<'graph, S, E>,
         init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
     ) -> Result<Self, FloydWarshallError> {
         let distances = SlotMatrix::new(graph);
 
-        let predecessors = match intermediates {
-            Intermediates::Discard => SlotMatrix::empty(),
-            Intermediates::Record => SlotMatrix::new(graph),
+        let predecessors = match predecessor_mode {
+            PredecessorMode::Discard => SlotMatrix::empty(),
+            PredecessorMode::Record => SlotMatrix::new(graph),
         };
 
         let mut this = Self {
             graph,
             edge_cost,
 
-            intermediates,
+            predecessor_mode,
 
             init_edge_distance,
             init_edge_predecessor,
@@ -189,7 +189,7 @@ where
                 Some(self.edge_cost.cost(edge)),
             );
 
-            if self.intermediates == Intermediates::Record {
+            if self.predecessor_mode == PredecessorMode::Record {
                 (self.init_edge_predecessor)(&mut self.predecessors, u.id(), v.id());
             }
         }
@@ -201,7 +201,7 @@ where
                 Some(MaybeOwned::Owned(E::Value::zero())),
             );
 
-            if self.intermediates == Intermediates::Record {
+            if self.predecessor_mode == PredecessorMode::Record {
                 self.predecessors.set(node.id(), node.id(), Some(node.id()));
             }
         }
@@ -240,7 +240,7 @@ where
                     self.distances
                         .set(i, j, Some(MaybeOwned::Owned(alternative)));
 
-                    if self.intermediates == Intermediates::Record {
+                    if self.predecessor_mode == PredecessorMode::Record {
                         let predecessor = self.predecessors.get(k, j).copied();
                         self.predecessors.set(i, j, predecessor);
                     }
@@ -278,8 +278,7 @@ where
     ) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
         let Self {
             graph,
-
-            intermediates,
+            predecessor_mode,
 
             distances,
             predecessors,
@@ -298,16 +297,16 @@ where
                     .map(|cost| (source, target, cost.clone().into_owned()))
             })
             .map(move |(source, target, cost)| {
-                let path = match intermediates {
-                    Intermediates::Discard => Path {
+                let path = match predecessor_mode {
+                    PredecessorMode::Discard => Path {
                         source,
                         target,
-                        intermediates: Vec::new(),
+                        transit: Vec::new(),
                     },
-                    Intermediates::Record => Path {
+                    PredecessorMode::Record => Path {
                         source,
                         target,
-                        intermediates: reconstruct_path(&predecessors, source.id(), target.id())
+                        transit: reconstruct_path(&predecessors, source.id(), target.id())
                             .into_iter()
                             .filter_map(|id| graph.node(id))
                             .collect(),

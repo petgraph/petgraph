@@ -11,11 +11,12 @@ use crate::shortest_paths::{
     common::{
         connections::Connections,
         cost::GraphCost,
-        intermediates::{reconstruct_intermediates, Intermediates},
+        path::Path,
         queue::Queue,
+        transit::{reconstruct_path_to, PredecessorMode},
     },
     dijkstra::DijkstraError,
-    Cost, Path, Route,
+    Cost, Route,
 };
 
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
@@ -36,7 +37,7 @@ where
     init: bool,
     next: Option<Node<'graph, S>>,
 
-    intermediates: Intermediates,
+    predecessor_mode: PredecessorMode,
 
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
     predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
@@ -59,7 +60,7 @@ where
 
         source: &'graph S::NodeId,
 
-        intermediates: Intermediates,
+        intermediates: PredecessorMode,
     ) -> Result<Self, DijkstraError> {
         let source_node = graph
             .node(source)
@@ -71,7 +72,7 @@ where
         distances.insert(source, E::Value::zero());
 
         let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
-        if intermediates == Intermediates::Record {
+        if intermediates == PredecessorMode::Record {
             predecessors.insert(source, None);
         }
 
@@ -83,7 +84,7 @@ where
             num_nodes: graph.num_nodes(),
             init: true,
             next: None,
-            intermediates,
+            predecessor_mode: intermediates,
             distances,
             predecessors,
         })
@@ -112,7 +113,7 @@ where
                 path: Path {
                     source: self.source,
                     target: self.source,
-                    intermediates: Vec::new(),
+                    transit: Vec::new(),
                 },
                 cost: Cost(E::Value::zero()),
             });
@@ -139,7 +140,7 @@ where
 
             self.distances.insert(target.id(), alternative.clone());
 
-            if self.intermediates == Intermediates::Record {
+            if self.predecessor_mode == PredecessorMode::Record {
                 self.predecessors.insert(target.id(), Some(node));
             }
 
@@ -171,16 +172,16 @@ where
         // we're currently visiting the node that has the shortest distance, therefore we know
         // that the distance is the shortest possible
         let distance = self.distances[node.id()].clone();
-        let intermediates = if self.intermediates == Intermediates::Discard {
+        let transit = if self.predecessor_mode == PredecessorMode::Discard {
             Vec::new()
         } else {
-            reconstruct_intermediates(&self.predecessors, node.id())
+            reconstruct_path_to(&self.predecessors, node.id())
         };
 
         let path = Path {
             source: self.source,
             target: node,
-            intermediates,
+            transit,
         };
 
         Some(Route {

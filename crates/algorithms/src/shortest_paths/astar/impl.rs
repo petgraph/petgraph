@@ -12,8 +12,8 @@ use crate::shortest_paths::{
     common::{
         connections::Connections,
         cost::GraphCost,
-        intermediates::{reconstruct_intermediates, Intermediates},
         queue::Queue,
+        transit::{reconstruct_path_to, PredecessorMode},
     },
     Cost, DirectRoute, Path, Route,
 };
@@ -34,7 +34,7 @@ where
     source: Node<'graph, S>,
     target: Node<'graph, S>,
 
-    intermediates: Intermediates,
+    predecessor_mode: PredecessorMode,
 
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
     predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
@@ -60,7 +60,7 @@ where
         source: &'graph S::NodeId,
         target: &'graph S::NodeId,
 
-        intermediates: Intermediates,
+        predecessor_mode: PredecessorMode,
     ) -> Result<Self, AStarError> {
         let source_node = graph
             .node(source)
@@ -80,7 +80,7 @@ where
         distances.insert(source, E::Value::zero());
 
         let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
-        if intermediates == Intermediates::Record {
+        if predecessor_mode == PredecessorMode::Record {
             predecessors.insert(source, None);
         }
 
@@ -94,7 +94,7 @@ where
             source: source_node,
             target: target_node,
 
-            intermediates,
+            predecessor_mode,
 
             distances,
             predecessors,
@@ -104,8 +104,8 @@ where
     pub(super) fn find(mut self) -> Option<Route<'graph, S, E::Value>> {
         while let Some(node) = self.queue.pop_min() {
             if node.id() == self.target.id() {
-                let intermediates = if self.intermediates == Intermediates::Record {
-                    reconstruct_intermediates(&self.predecessors, node.id())
+                let transit = if self.predecessor_mode == PredecessorMode::Record {
+                    reconstruct_path_to(&self.predecessors, node.id())
                 } else {
                     Vec::new()
                 };
@@ -115,7 +115,7 @@ where
                 let path = Path {
                     source: self.source,
                     target: self.target,
-                    intermediates,
+                    transit,
                 };
 
                 return Some(Route {
@@ -140,7 +140,7 @@ where
                 let guess = &alternative + self.heuristic.estimate(neighbour, self.target).as_ref();
                 self.distances.insert(neighbour.id(), alternative);
 
-                if self.intermediates == Intermediates::Record {
+                if self.predecessor_mode == PredecessorMode::Record {
                     self.predecessors.insert(neighbour.id(), Some(node));
                 }
 

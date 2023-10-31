@@ -19,7 +19,7 @@ use petgraph_core::{
 
 use self::{error::AStarError, r#impl::AStarImpl};
 use super::{
-    common::intermediates::Intermediates, Cost, DirectRoute, Route, ShortestDistance, ShortestPath,
+    common::transit::PredecessorMode, Cost, DirectRoute, Route, ShortestDistance, ShortestPath,
 };
 use crate::{
     polyfill::IteratorExt,
@@ -108,7 +108,7 @@ impl<E, H> AStar<Directed, E, H> {
         graph: &'graph Graph<S>,
         source: &'graph S::NodeId,
         target: &'graph S::NodeId,
-        intermediates: Intermediates,
+        intermediates: PredecessorMode,
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
         S: DirectedGraphStorage,
@@ -136,7 +136,7 @@ impl<E, H> AStar<Undirected, E, H> {
         graph: &'graph Graph<S>,
         source: &'graph S::NodeId,
         target: &'graph S::NodeId,
-        intermediates: Intermediates,
+        intermediates: PredecessorMode,
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
         S: GraphStorage,
@@ -181,7 +181,7 @@ where
         let sources = graph.nodes().map(|node| node.id());
 
         let iter = sources
-            .map(move |source| self.call(graph, source, target, Intermediates::Record))
+            .map(move |source| self.call(graph, source, target, PredecessorMode::Record))
             .collect_reports::<Vec<_>>()?;
 
         Ok(AStarImpl::find_all(iter))
@@ -195,7 +195,7 @@ where
         let targets = graph.nodes().map(|node| node.id());
 
         let iter = targets
-            .map(move |target| self.call(graph, source, target, Intermediates::Record))
+            .map(move |target| self.call(graph, source, target, PredecessorMode::Record))
             .collect_reports::<Vec<_>>()?;
 
         Ok(AStarImpl::find_all(iter))
@@ -207,7 +207,7 @@ where
         source: &'graph S::NodeId,
         target: &'graph S::NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
-        self.call(graph, source, target, Intermediates::Record)
+        self.call(graph, source, target, PredecessorMode::Record)
             .ok()?
             .find()
     }
@@ -223,7 +223,7 @@ where
                 graph
                     .nodes()
                     .map(|node| node.id())
-                    .map(move |target| self.call(graph, source, target, Intermediates::Record))
+                    .map(move |target| self.call(graph, source, target, PredecessorMode::Record))
             })
             .collect_reports::<Vec<_>>()?;
 
@@ -251,7 +251,7 @@ where
         let sources = graph.nodes().map(|node| node.id());
 
         let iter = sources
-            .map(move |source| self.call(graph, source, target, Intermediates::Discard))
+            .map(move |source| self.call(graph, source, target, PredecessorMode::Discard))
             .collect_reports::<Vec<_>>()?;
 
         Ok(AStarImpl::find_all_direct(iter))
@@ -265,7 +265,7 @@ where
         let targets = graph.nodes().map(|node| node.id());
 
         let iter = targets
-            .map(move |target| self.call(graph, source, target, Intermediates::Discard))
+            .map(move |target| self.call(graph, source, target, PredecessorMode::Discard))
             .collect_reports::<Vec<_>>()?;
 
         Ok(AStarImpl::find_all_direct(iter))
@@ -277,7 +277,7 @@ where
         source: &'graph S::NodeId,
         target: &'graph S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
-        self.call(graph, source, target, Intermediates::Discard)
+        self.call(graph, source, target, PredecessorMode::Discard)
             .ok()?
             .find()
             .map(|route| route.cost)
@@ -294,7 +294,7 @@ where
                 graph
                     .nodes()
                     .map(|node| node.id())
-                    .map(move |target| self.call(graph, source, target, Intermediates::Discard))
+                    .map(move |target| self.call(graph, source, target, PredecessorMode::Discard))
             })
             .collect_reports::<Vec<_>>()?;
 
@@ -322,7 +322,7 @@ where
         let sources = graph.nodes().map(|node| node.id());
 
         let iter = sources
-            .map(move |source| self.call(graph, source, target, Intermediates::Record))
+            .map(move |source| self.call(graph, source, target, PredecessorMode::Record))
             .collect_reports::<Vec<_>>()?;
 
         Ok(AStarImpl::find_all(iter))
@@ -336,7 +336,7 @@ where
         let targets = graph.nodes().map(|node| node.id());
 
         let iter = targets
-            .map(move |target| self.call(graph, source, target, Intermediates::Record))
+            .map(move |target| self.call(graph, source, target, PredecessorMode::Record))
             .collect_reports::<Vec<_>>()?;
 
         Ok(AStarImpl::find_all(iter))
@@ -348,7 +348,7 @@ where
         source: &'graph S::NodeId,
         target: &'graph S::NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
-        self.call(graph, source, target, Intermediates::Record)
+        self.call(graph, source, target, PredecessorMode::Record)
             .ok()?
             .find()
     }
@@ -364,7 +364,7 @@ where
                 graph
                     .nodes()
                     .map(|node| node.id())
-                    .map(move |target| self.call(graph, source, target, Intermediates::Record))
+                    .map(move |target| self.call(graph, source, target, PredecessorMode::Record))
             })
             .collect_reports::<Vec<_>>()?;
 
@@ -392,7 +392,7 @@ where
         let sources = graph.nodes().map(|node| node.id());
 
         let iter = sources
-            .map(move |source| self.call(graph, source, target, Intermediates::Discard))
+            .map(move |source| self.call(graph, source, target, PredecessorMode::Discard))
             .collect_reports::<Vec<_>>()?;
 
         Ok(AStarImpl::find_all_direct(iter))
@@ -406,7 +406,7 @@ where
         let targets = graph.nodes().map(|node| node.id());
 
         let iter = targets
-            .map(move |target| self.call(graph, source, target, Intermediates::Discard))
+            .map(move |target| self.call(graph, source, target, PredecessorMode::Discard))
             .collect_reports::<Vec<_>>()?;
 
         Ok(AStarImpl::find_all_direct(iter))
@@ -418,7 +418,7 @@ where
         source: &'graph S::NodeId,
         target: &'graph S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
-        self.call(graph, source, target, Intermediates::Discard)
+        self.call(graph, source, target, PredecessorMode::Discard)
             .ok()?
             .find()
             .map(|route| route.cost)
@@ -435,7 +435,7 @@ where
                 graph
                     .nodes()
                     .map(|node| node.id())
-                    .map(move |target| self.call(graph, source, target, Intermediates::Discard))
+                    .map(move |target| self.call(graph, source, target, PredecessorMode::Discard))
             })
             .collect_reports::<Vec<_>>()?;
 

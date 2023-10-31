@@ -5,12 +5,12 @@ use hashbrown::HashMap;
 use petgraph_core::{GraphStorage, Node};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(in crate::shortest_paths) enum Intermediates {
+pub(in crate::shortest_paths) enum PredecessorMode {
     Discard,
     Record,
 }
 
-pub(in crate::shortest_paths) fn reconstruct_intermediates<'a, S, H>(
+pub(in crate::shortest_paths) fn reconstruct_path_to<'a, S, H>(
     predecessors: &HashMap<&'a S::NodeId, Option<Node<'a, S>>, H>,
     target: &'a S::NodeId,
 ) -> Vec<Node<'a, S>>

@@ -18,7 +18,7 @@ use petgraph_core::{
 
 pub(crate) use self::error::DijkstraError;
 use self::iter::DijkstraIter;
-use super::common::intermediates::Intermediates;
+use super::common::transit::PredecessorMode;
 use crate::{
     polyfill::IteratorExt,
     shortest_paths::{
@@ -98,7 +98,7 @@ where
             &self.edge_cost,
             Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
             source,
-            Intermediates::Record,
+            PredecessorMode::Record,
         )
     }
 
@@ -146,7 +146,7 @@ where
             &self.edge_cost,
             Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
             source,
-            Intermediates::Discard,
+            PredecessorMode::Discard,
         )?;
 
         Ok(iter.map(|route| DirectRoute {
@@ -200,7 +200,7 @@ where
             &self.edge_cost,
             outgoing_connections as fn(&Node<'graph, S>) -> _,
             source,
-            Intermediates::Record,
+            PredecessorMode::Record,
         )
     }
 
@@ -238,7 +238,7 @@ where
             &self.edge_cost,
             outgoing_connections as fn(&Node<'graph, S>) -> _,
             source,
-            Intermediates::Discard,
+            PredecessorMode::Discard,
         )?;
 
         Ok(iter.map(|route| DirectRoute {

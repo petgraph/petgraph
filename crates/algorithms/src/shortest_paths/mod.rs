@@ -1,13 +1,7 @@
-// mod astar;
-// mod bellman_ford;
 mod astar;
 mod common;
 mod dijkstra;
 mod floyd_warshall;
-// mod floyd_warshall;
-// mod k_shortest_path_length;
-// mod measure;
-// mod total_ord;
 
 use alloc::vec::{IntoIter, Vec};
 use std::iter::once;
@@ -16,6 +10,7 @@ use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage, Node};
 
 pub use self::{astar::AStar, dijkstra::Dijkstra};
+use crate::shortest_paths::common::path::Path;
 
 pub struct Cost<T>(T);
 
@@ -26,62 +21,6 @@ impl<T> Cost<T> {
 
     fn into_value(self) -> T {
         self.0
-    }
-}
-
-pub struct Path<'a, S>
-where
-    S: GraphStorage,
-{
-    source: Node<'a, S>,
-    target: Node<'a, S>,
-
-    intermediates: Vec<Node<'a, S>>,
-}
-
-impl<'a, S> Path<'a, S>
-where
-    S: GraphStorage,
-{
-    #[must_use]
-    pub fn to_vec(self) -> Vec<Node<'a, S>> {
-        let mut vec = Vec::with_capacity(self.intermediates.len() + 2);
-
-        vec.push(self.source);
-        vec.extend(self.intermediates);
-        vec.push(self.target);
-
-        vec
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = Node<'a, S>> + '_ {
-        once(self.source)
-            .chain(self.intermediates.iter().copied())
-            .chain(once(self.target))
-    }
-
-    fn reverse(self) -> Self {
-        let mut intermediates = self.intermediates;
-
-        intermediates.reverse();
-
-        Self {
-            source: self.target,
-            target: self.source,
-            intermediates,
-        }
-    }
-}
-
-impl<'a, S> IntoIterator for Path<'a, S>
-where
-    S: GraphStorage,
-{
-    type IntoIter = IntoIter<Node<'a, S>>;
-    type Item = Node<'a, S>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.to_vec().into_iter()
     }
 }
 

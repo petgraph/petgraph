@@ -17,7 +17,7 @@ use petgraph_core::{
 use crate::shortest_paths::{
     common::{
         cost::{DefaultCost, GraphCost},
-        intermediates::Intermediates,
+        transit::PredecessorMode,
     },
     floyd_warshall::{
         error::FloydWarshallError,
@@ -85,7 +85,7 @@ where
         let r#impl = FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Record,
+            PredecessorMode::Record,
             init_undirected_edge_distance::<S, E>,
             init_undirected_edge_predecessor::<S>,
         )
@@ -106,7 +106,7 @@ where
         FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Record,
+            PredecessorMode::Record,
             init_undirected_edge_distance::<S, E>,
             init_undirected_edge_predecessor::<S>,
         )
@@ -121,7 +121,7 @@ where
         FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Record,
+            PredecessorMode::Record,
             init_undirected_edge_distance::<S, E>,
             init_undirected_edge_predecessor::<S>,
         )
@@ -135,7 +135,7 @@ where
         FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Record,
+            PredecessorMode::Record,
             init_undirected_edge_distance::<S, E>,
             init_undirected_edge_predecessor::<S>,
         )
@@ -160,7 +160,7 @@ where
         let iter = FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Discard,
+            PredecessorMode::Discard,
             init_undirected_edge_distance::<S, E>,
             init_undirected_edge_predecessor::<S>,
         )?;
@@ -193,7 +193,7 @@ where
         let r#impl = FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Record,
+            PredecessorMode::Record,
             init_directed_edge_distance::<S, E>,
             init_directed_edge_predecessor::<S>,
         )
@@ -214,7 +214,7 @@ where
         FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Record,
+            PredecessorMode::Record,
             init_directed_edge_distance::<S, E>,
             init_directed_edge_predecessor::<S>,
         )
@@ -229,7 +229,7 @@ where
         FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Record,
+            PredecessorMode::Record,
             init_directed_edge_distance::<S, E>,
             init_directed_edge_predecessor::<S>,
         )
@@ -243,7 +243,7 @@ where
         FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Record,
+            PredecessorMode::Record,
             init_directed_edge_distance::<S, E>,
             init_directed_edge_predecessor::<S>,
         )
@@ -268,7 +268,7 @@ where
         let iter = FloydWarshallImpl::new(
             graph,
             &self.edge_cost,
-            Intermediates::Discard,
+            PredecessorMode::Discard,
             init_directed_edge_distance::<S, E>,
             init_directed_edge_predecessor::<S>,
         )?;
