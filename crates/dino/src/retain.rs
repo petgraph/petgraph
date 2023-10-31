@@ -42,7 +42,7 @@ where
             edges(edge)
         });
 
-        self.closures.refresh(&self.nodes, &self.edges);
+        self.closures.refresh(&mut self.nodes, &self.edges);
     }
 
     fn retain_nodes(&mut self, mut f: impl FnMut(NodeMut<'_, Self>) -> bool) {
@@ -65,7 +65,7 @@ where
                 && !removed.contains(value.target.into_id().raw())
         });
 
-        self.closures.refresh(&self.nodes, &self.edges);
+        self.closures.refresh(&mut self.nodes, &self.edges);
     }
 
     fn retain_edges(&mut self, mut f: impl FnMut(EdgeMut<'_, Self>) -> bool) {
@@ -75,6 +75,6 @@ where
             f(edge)
         });
 
-        self.closures.refresh(&self.nodes, &self.edges);
+        self.closures.refresh(&mut self.nodes, &self.edges);
     }
 }

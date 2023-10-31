@@ -62,7 +62,7 @@ impl ClosureStorage {
             .insert(raw_index);
     }
 
-    fn remove_edge<T>(&mut self, edge: &Edge<T>, nodes: &mut NodeSlab<T>) {
+    fn remove_edge<T, U>(&mut self, edge: &Edge<T>, nodes: &mut NodeSlab<U>) {
         let raw_index = edge.id.into_id().raw();
 
         let source = edge.source;
@@ -236,10 +236,6 @@ impl Closures {
         }
     }
 
-    pub(crate) fn create_node<T>(&mut self, node: &Node<T>) {
-        self.storage.create_node(node);
-    }
-
     pub(crate) fn remove_node<T>(&mut self, node: Node<T>, nodes: &mut NodeSlab<T>) -> (NodeId, T) {
         self.storage.remove_node(node, nodes)
     }
@@ -272,8 +268,8 @@ impl Closures {
         self.storage.refresh(nodes, edges);
     }
 
-    pub(crate) fn clear(&mut self) {
-        self.storage.clear();
+    pub(crate) fn clear<N>(&mut self, nodes: &mut NodeSlab<N>) {
+        self.storage.clear(nodes);
     }
 }
 
@@ -418,10 +414,7 @@ mod tests {
 
         let closures = &graph.storage().closures;
 
-        assert_eq!(
-            closures.nodes().externals().collect::<HashSet<_>>(),
-            once(id).collect()
-        );
+        assert_eq!(externals(&graph), once(id).collect());
 
         assert_eq!(
             EvaluatedNodeClosure::new(graph.storage(), id),
