@@ -62,22 +62,21 @@ macro_rules! expect {
                         .every_path(&graph)
                         .unwrap()
                         .map(|route| {
-                            let Route { path, .. } = &route;
-
-                            ((*path.source.id(), *path.target.id()), route)
+                            ((*route.path().source().id(), *route.path().target().id()), route)
                         })
                         .collect();
 
                 for (source, target, expected_cost, expected_path) in expected {
                     let route = routes.remove(&(source, target)).expect("route not found");
-                    let mut path: Vec<_> = route.path.iter().map(|node| *node.id()).collect();
+                    let (path, cost) = route.into_parts();
+                    let mut path: Vec<_> = path.iter().map(|node| *node.id()).collect();
 
                     let received_target = path.pop();
                     path.reverse();
                     let received_source = path.pop();
                     path.reverse();
 
-                    assert_eq!(route.cost.into_value(), expected_cost, "cost of {source} -> {target}");
+                    assert_eq!(cost.into_value(), expected_cost, "cost of {source} -> {target}");
                     assert_eq!(received_source, Some(source), "source of {source} -> {target}");
                     assert_eq!(received_target, Some(target), "target of {source} -> {target}");
                     assert_eq!(path, expected_path, "path of {source} -> {target}");
@@ -102,7 +101,7 @@ macro_rules! expect {
                         .every_distance(&graph)
                         .unwrap()
                         .map(|route| {
-                            ((*route.source.id(), *route.target.id()), route)
+                            ((*route.source().id(), *route.target().id()), route)
                         })
                         .collect();
 
@@ -110,7 +109,7 @@ macro_rules! expect {
                     let route = routes.remove(&(source, target)).expect("route not found");
 
                     assert_eq!(
-                        route.cost.into_value(),
+                        route.into_cost().into_value(),
                         expected_cost,
                         "cost of {source} -> {target}"
                     );
@@ -287,13 +286,14 @@ fn weighted_directed_path_between() {
 
     let floyd_warshall = FloydWarshall::directed();
 
-    let path = floyd_warshall
+    let route = floyd_warshall
         .path_between(&graph, &nodes.a, &nodes.c)
         .unwrap();
-    assert_eq!(path.cost.into_value(), 3);
+    let (path, cost) = route.into_parts();
+
+    assert_eq!(cost.into_value(), 3);
     assert_eq!(
-        path.path
-            .to_vec()
+        path.to_vec()
             .into_iter()
             .map(|node| *node.id())
             .collect::<Vec<_>>(),
@@ -313,8 +313,8 @@ fn weighted_directed_path_from() {
     // cost is tested above, this just checks that the filter is correct.
 
     for route in paths {
-        assert_eq!(*route.path.source.id(), nodes.a);
-        assert!(expected.remove(route.path.target.id()));
+        assert_eq!(*route.path().source().id(), nodes.a);
+        assert!(expected.remove(route.path().target().id()));
     }
 }
 
@@ -330,8 +330,8 @@ fn weighted_directed_path_to() {
     // cost is tested above, this just checks that the filter is correct.
 
     for route in paths {
-        assert!(expected.remove(route.path.source.id()));
-        assert_eq!(*route.path.target.id(), nodes.c);
+        assert!(expected.remove(route.path().source().id()));
+        assert_eq!(*route.path().target().id(), nodes.c);
     }
 }
 
@@ -381,14 +381,14 @@ fn weighted_undirected_path_between() {
 
     let floyd_warshall = FloydWarshall::undirected();
 
-    let path = floyd_warshall
+    let route = floyd_warshall
         .path_between(&graph, &nodes.a, &nodes.c)
         .unwrap();
 
-    assert_eq!(path.cost.into_value(), 3);
+    let (path, cost) = route.into_parts();
+    assert_eq!(cost.into_value(), 3);
     assert_eq!(
-        path.path
-            .to_vec()
+        path.to_vec()
             .into_iter()
             .map(|node| *node.id())
             .collect::<Vec<_>>(),
@@ -408,8 +408,8 @@ fn weighted_undirected_path_from() {
     // cost is tested above, this just checks that the filter is correct.
 
     for route in paths {
-        assert_eq!(*route.path.source.id(), nodes.a);
-        assert!(expected.remove(route.path.target.id()));
+        assert_eq!(*route.path().source().id(), nodes.a);
+        assert!(expected.remove(route.path().target().id()));
     }
 }
 
@@ -425,8 +425,8 @@ fn weighted_undirected_path_to() {
     // cost is tested above, this just checks that the filter is correct.
 
     for route in paths {
-        assert!(expected.remove(route.path.source.id()));
-        assert_eq!(*route.path.target.id(), nodes.c);
+        assert!(expected.remove(route.path().source().id()));
+        assert_eq!(*route.path().target().id(), nodes.c);
     }
 }
 

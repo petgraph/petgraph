@@ -3,9 +3,13 @@ use core::{borrow::Borrow, fmt::Display};
 use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Cost<T>(pub(in crate::shortest_paths) T);
+pub struct Cost<T>(T);
 
 impl<T> Cost<T> {
+    pub fn new(value: T) -> Self {
+        Self(value)
+    }
+
     pub fn value(&self) -> &T {
         &self.0
     }

@@ -239,7 +239,7 @@ fn lifetime() {
 
     let top3: Vec<_> = top3
         .into_iter()
-        .map(|route| route.cost.into_value())
+        .map(|route| route.into_cost().into_value())
         .collect();
 
     assert_eq!(top3, [0, 5, 7]);

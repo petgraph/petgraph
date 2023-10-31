@@ -113,16 +113,10 @@ where
 
                 let distance = self.distances[node.id()].clone();
 
-                let path = Path {
-                    source: self.source,
-                    target: self.target,
-                    transit,
-                };
-
-                return Some(Route {
-                    path,
-                    cost: Cost(distance),
-                });
+                return Some(Route::new(
+                    Path::new(self.source, transit, self.target),
+                    Cost::new(distance),
+                ));
             }
 
             let connections = self.connections.connections(&node);
@@ -163,10 +157,6 @@ where
     pub(super) fn find_all_direct(
         items: Vec<Self>,
     ) -> impl Iterator<Item = DirectRoute<'graph, S, E::Value>> + 'parent {
-        Self::find_all(items).map(|route| DirectRoute {
-            source: route.path.source,
-            target: route.path.target,
-            cost: route.cost,
-        })
+        Self::find_all(items).map(From::from)
     }
 }

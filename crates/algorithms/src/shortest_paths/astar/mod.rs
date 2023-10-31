@@ -279,7 +279,7 @@ where
         self.call(graph, source, target, PredecessorMode::Discard)
             .ok()?
             .find()
-            .map(|route| route.cost)
+            .map(|route| route.into_cost())
     }
 
     fn every_distance<'graph: 'this, 'this>(
@@ -420,7 +420,7 @@ where
         self.call(graph, source, target, PredecessorMode::Discard)
             .ok()?
             .find()
-            .map(|route| route.cost)
+            .map(|route| route.into_cost())
     }
 
     fn every_distance<'graph: 'this, 'this>(

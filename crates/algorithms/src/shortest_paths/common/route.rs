@@ -9,15 +9,19 @@ pub struct Route<'a, S, T>
 where
     S: GraphStorage,
 {
-    pub(in crate::shortest_paths) path: Path<'a, S>,
+    path: Path<'a, S>,
 
-    pub(in crate::shortest_paths) cost: Cost<T>,
+    cost: Cost<T>,
 }
 
 impl<'a, S, T> Route<'a, S, T>
 where
     S: GraphStorage,
 {
+    pub fn new(path: Path<'a, S>, cost: Cost<T>) -> Self {
+        Self { path, cost }
+    }
+
     pub fn path(&self) -> &Path<'a, S> {
         &self.path
     }
@@ -149,16 +153,24 @@ pub struct DirectRoute<'a, S, T>
 where
     S: GraphStorage,
 {
-    pub(in crate::shortest_paths) source: Node<'a, S>,
-    pub(in crate::shortest_paths) target: Node<'a, S>,
+    source: Node<'a, S>,
+    target: Node<'a, S>,
 
-    pub(in crate::shortest_paths) cost: Cost<T>,
+    cost: Cost<T>,
 }
 
 impl<'a, S, T> DirectRoute<'a, S, T>
 where
     S: GraphStorage,
 {
+    pub fn new(source: Node<'a, S>, target: Node<'a, S>, cost: Cost<T>) -> Self {
+        Self {
+            source,
+            target,
+            cost,
+        }
+    }
+
     pub fn source(&self) -> &Node<'a, S> {
         &self.source
     }
@@ -296,5 +308,19 @@ where
 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         (&self.source, &self.target, &self.cost).hash(state)
+    }
+}
+
+impl<'a, S, T> From<Route<'a, S, T>> for DirectRoute<'a, S, T>
+where
+    S: GraphStorage,
+    T: Clone,
+{
+    fn from(route: Route<'a, S, T>) -> Self {
+        Self {
+            source: route.path.source(),
+            target: route.path.target(),
+            cost: route.cost,
+        }
     }
 }

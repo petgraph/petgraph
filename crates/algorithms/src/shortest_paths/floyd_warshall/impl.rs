@@ -301,26 +301,17 @@ where
                     .map(|cost| (source, target, cost.clone().into_owned()))
             })
             .map(move |(source, target, cost)| {
-                let path = match predecessor_mode {
-                    PredecessorMode::Discard => Path {
-                        source,
-                        target,
-                        transit: Vec::new(),
-                    },
-                    PredecessorMode::Record => Path {
-                        source,
-                        target,
-                        transit: reconstruct_path(&predecessors, source.id(), target.id())
+                let transit = match predecessor_mode {
+                    PredecessorMode::Discard => Vec::new(),
+                    PredecessorMode::Record => {
+                        reconstruct_path(&predecessors, source.id(), target.id())
                             .into_iter()
                             .filter_map(|id| graph.node(id))
-                            .collect(),
-                    },
+                            .collect()
+                    }
                 };
 
-                Route {
-                    path,
-                    cost: Cost(cost),
-                }
+                Route::new(Path::new(source, transit, target), Cost::new(cost))
             })
     }
 }

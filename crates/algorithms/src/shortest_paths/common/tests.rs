@@ -53,7 +53,11 @@ where
     algorithm
         .path_from(graph, source)
         .unwrap()
-        .map(|route| (*route.path.target.id(), (route.cost.0, route.path.to_vec())))
+        .map(|route| {
+            let (path, cost) = route.into_parts();
+
+            (*path.target().id(), (cost.into_value(), path.to_vec()))
+        })
         .collect()
 }
 
@@ -70,6 +74,10 @@ where
     algorithm
         .distance_from(graph, source)
         .unwrap()
-        .map(|route| (*route.target.id(), route.cost.0))
+        .map(|route| {
+            let (_, target, cost) = route.into_parts();
+
+            (*target.id(), cost.into_value())
+        })
         .collect()
 }

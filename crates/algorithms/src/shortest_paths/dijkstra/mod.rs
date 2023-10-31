@@ -162,11 +162,7 @@ where
             PredecessorMode::Discard,
         )?;
 
-        Ok(iter.map(|route| DirectRoute {
-            source: route.path.source,
-            target: route.path.target,
-            cost: route.cost,
-        }))
+        Ok(iter.map(From::from))
     }
 
     fn every_distance<'graph: 'this, 'this>(
@@ -244,11 +240,7 @@ where
             PredecessorMode::Discard,
         )?;
 
-        Ok(iter.map(|route| DirectRoute {
-            source: route.path.source,
-            target: route.path.target,
-            cost: route.cost,
-        }))
+        Ok(iter.map(From::from))
     }
 
     fn every_distance<'graph: 'this, 'this>(

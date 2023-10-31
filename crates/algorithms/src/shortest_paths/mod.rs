@@ -34,7 +34,7 @@ where
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
-        Ok(iter.filter(move |route| route.path.target.id() == target))
+        Ok(iter.filter(move |route| route.path().target().id() == target))
     }
 
     fn path_from<'graph: 'this, 'this>(
@@ -44,7 +44,7 @@ where
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
-        Ok(iter.filter(move |route| route.path.source.id() == source))
+        Ok(iter.filter(move |route| route.path().source().id() == source))
     }
 
     fn path_between<'graph>(
@@ -55,7 +55,7 @@ where
     ) -> Option<Route<'graph, S, Self::Cost>> {
         self.path_from(graph, source)
             .ok()?
-            .find(|route| route.path.target.id() == target)
+            .find(|route| route.path().target().id() == target)
     }
 
     fn every_path<'graph: 'this, 'this>(
@@ -78,7 +78,7 @@ where
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
-        Ok(iter.filter(move |route| route.target.id() == target))
+        Ok(iter.filter(move |route| route.target().id() == target))
     }
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
@@ -87,7 +87,7 @@ where
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
-        Ok(iter.filter(move |route| route.source.id() == source))
+        Ok(iter.filter(move |route| route.source().id() == source))
     }
     fn distance_between<'graph>(
         &self,
@@ -97,8 +97,8 @@ where
     ) -> Option<Cost<Self::Cost>> {
         self.every_distance(graph)
             .ok()?
-            .find(move |route| route.source.id() == source && route.target.id() == target)
-            .map(|route| route.cost)
+            .find(move |route| route.source().id() == source && route.target().id() == target)
+            .map(|route| route.into_cost())
     }
     fn every_distance<'graph: 'this, 'this>(
         &'this self,

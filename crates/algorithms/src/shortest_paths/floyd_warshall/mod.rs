@@ -166,11 +166,7 @@ where
             init_undirected_edge_predecessor::<S>,
         )?;
 
-        Ok(iter.filter(|_, _| true).map(|route| DirectRoute {
-            source: route.path.source,
-            target: route.path.target,
-            cost: route.cost,
-        }))
+        Ok(iter.filter(|_, _| true).map(From::from))
     }
 }
 
@@ -274,10 +270,6 @@ where
             init_directed_edge_predecessor::<S>,
         )?;
 
-        Ok(iter.filter(|_, _| true).map(|route| DirectRoute {
-            source: route.path.source,
-            target: route.path.target,
-            cost: route.cost,
-        }))
+        Ok(iter.filter(|_, _| true).map(From::from))
     }
 }

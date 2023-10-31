@@ -109,14 +109,10 @@ where
             self.init = false;
             self.next = Some(self.source);
 
-            return Some(Route {
-                path: Path {
-                    source: self.source,
-                    target: self.source,
-                    transit: Vec::new(),
-                },
-                cost: Cost(E::Value::zero()),
-            });
+            return Some(Route::new(
+                Path::new(self.source, Vec::new(), self.source),
+                Cost::new(E::Value::zero()),
+            ));
         }
 
         // Process the neighbours from the node we determined in the last iteration.
@@ -178,16 +174,9 @@ where
             reconstruct_path_to(&self.predecessors, node.id())
         };
 
-        let path = Path {
-            source: self.source,
-            target: node,
-            transit,
-        };
+        let path = Path::new(self.source, transit, node);
 
-        Some(Route {
-            path,
-            cost: Cost(distance),
-        })
+        Some(Route::new(path, Cost::new(distance)))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

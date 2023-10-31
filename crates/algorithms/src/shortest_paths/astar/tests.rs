@@ -88,16 +88,16 @@ fn directed_path_between() {
 
     let astar = AStar::directed().with_heuristic(no_heuristic);
     let route = astar.path_between(&graph, &nodes.s, &nodes.v).unwrap();
+    let (path, cost) = route.into_parts();
 
-    let nodes: Vec<_> = route
-        .path
+    let nodes: Vec<_> = path
         .to_vec()
         .into_iter()
         .map(|node| *node.weight())
         .collect();
 
     assert_eq!(nodes, vec!["S", "X", "U", "V"]);
-    assert_eq!(route.cost.into_value(), 9);
+    assert_eq!(cost.into_value(), 9);
 }
 
 #[test]
@@ -116,16 +116,16 @@ fn undirected_path_between() {
 
     let astar = AStar::undirected().with_heuristic(no_heuristic);
     let route = astar.path_between(&graph, &nodes.s, &nodes.v).unwrap();
+    let (path, cost) = route.into_parts();
 
-    let nodes: Vec<_> = route
-        .path
+    let nodes: Vec<_> = path
         .to_vec()
         .into_iter()
         .map(|node| *node.weight())
         .collect();
 
     assert_eq!(nodes, vec!["S", "Y", "V"]);
-    assert_eq!(route.cost.into_value(), 8);
+    assert_eq!(cost.into_value(), 8);
 }
 
 #[test]
@@ -212,12 +212,9 @@ fn directed_path_between_manhattan() {
         .with_heuristic(manhattan_distance);
     let route = astar.path_between(&graph, &nodes.a, &nodes.f).unwrap();
 
-    let path: Vec<_> = route
-        .path
-        .to_vec()
-        .into_iter()
-        .map(|node| *node.id())
-        .collect();
+    let (path, cost) = route.into_parts();
+
+    let path: Vec<_> = path.to_vec().into_iter().map(|node| *node.id()).collect();
 
     assert_eq!(path, [nodes.a, nodes.b, nodes.f]);
 
@@ -226,7 +223,7 @@ fn directed_path_between_manhattan() {
     let f = graph.node(&nodes.f).unwrap();
 
     assert_eq!(
-        route.cost.into_value(),
+        cost.into_value(),
         a.weight().distance(*b.weight()) + b.weight().distance(*f.weight())
     );
 }
@@ -297,15 +294,12 @@ fn directed_path_between_admissible_inconsistent() {
     let astar = AStar::directed().with_heuristic(admissible_inconsistent);
     let route = astar.path_between(&graph, &nodes.a, &nodes.d).unwrap();
 
-    let path: Vec<_> = route
-        .path
-        .to_vec()
-        .into_iter()
-        .map(|node| *node.id())
-        .collect();
+    let (path, cost) = route.into_parts();
+
+    let path: Vec<_> = path.to_vec().into_iter().map(|node| *node.id()).collect();
 
     assert_eq!(path, [nodes.a, nodes.b, nodes.c, nodes.d]);
-    assert_eq!(route.cost.into_value(), 9);
+    assert_eq!(cost.into_value(), 9);
 }
 
 graph!(factory(runtime) => DiDinoGraph<char, usize>;
