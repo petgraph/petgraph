@@ -9,64 +9,16 @@ use std::iter::once;
 use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage, Node};
 
-pub use self::{astar::AStar, dijkstra::Dijkstra};
-use crate::shortest_paths::common::path::Path;
-
-pub struct Cost<T>(T);
-
-impl<T> Cost<T> {
-    fn value(&self) -> &T {
-        &self.0
-    }
-
-    fn into_value(self) -> T {
-        self.0
-    }
-}
-
-pub struct Route<'a, S, T>
-where
-    S: GraphStorage,
-{
-    path: Path<'a, S>,
-
-    cost: Cost<T>,
-}
-
-impl<'a, S, T> Route<'a, S, T>
-where
-    S: GraphStorage,
-{
-    fn reverse(self) -> Self {
-        Self {
-            path: self.path.reverse(),
-            cost: self.cost,
-        }
-    }
-}
-
-pub struct DirectRoute<'a, S, T>
-where
-    S: GraphStorage,
-{
-    source: Node<'a, S>,
-    target: Node<'a, S>,
-
-    cost: Cost<T>,
-}
-
-impl<'a, S, T> DirectRoute<'a, S, T>
-where
-    S: GraphStorage,
-{
-    fn reverse(self) -> Self {
-        Self {
-            source: self.target,
-            target: self.source,
-            cost: self.cost,
-        }
-    }
-}
+pub use self::{
+    astar::AStar,
+    common::{
+        cost::Cost,
+        path::Path,
+        route::{DirectRoute, Route},
+    },
+    dijkstra::Dijkstra,
+    floyd_warshall::FloydWarshall,
+};
 
 pub trait ShortestPath<S>
 where

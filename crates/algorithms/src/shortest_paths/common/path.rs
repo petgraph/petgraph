@@ -1,3 +1,4 @@
+use core::fmt::{Debug, Formatter};
 use std::iter::once;
 
 use petgraph_core::{GraphStorage, Node};
@@ -10,6 +11,51 @@ where
     pub(in crate::shortest_paths) target: Node<'a, S>,
 
     pub(in crate::shortest_paths) transit: Vec<Node<'a, S>>,
+}
+
+impl<'a, S> PartialEq for Path<'a, S>
+where
+    S: GraphStorage,
+    Node<'a, S>: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        (&self.source, &self.target, &self.transit)
+            == (&other.source, &other.target, &other.transit)
+    }
+}
+
+impl<'a, S> Eq for Path<'a, S>
+where
+    S: GraphStorage,
+    Node<'a, S>: Eq,
+{
+}
+
+impl<S> Clone for Path<'_, S>
+where
+    S: GraphStorage,
+{
+    fn clone(&self) -> Self {
+        Self {
+            source: self.source,
+            target: self.target,
+            transit: self.transit.clone(),
+        }
+    }
+}
+
+impl<'a, S> Debug for Path<'a, S>
+where
+    S: GraphStorage,
+    Node<'a, S>: Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Path")
+            .field("source", &self.source)
+            .field("target", &self.target)
+            .field("transit", &self.transit)
+            .finish()
+    }
 }
 
 impl<'a, S> Path<'a, S>

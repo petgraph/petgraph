@@ -22,8 +22,11 @@ use super::common::transit::PredecessorMode;
 use crate::{
     polyfill::IteratorExt,
     shortest_paths::{
-        common::cost::{DefaultCost, GraphCost},
-        DirectRoute, Route, ShortestDistance, ShortestPath,
+        common::{
+            cost::{DefaultCost, GraphCost},
+            route::{DirectRoute, Route},
+        },
+        ShortestDistance, ShortestPath,
     },
 };
 
@@ -88,6 +91,16 @@ where
     type Cost = E::Value;
     type Error = DijkstraError;
 
+    fn path_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
+        let iter = self.path_from(graph, target)?;
+
+        Ok(iter.map(Route::reverse))
+    }
+
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
@@ -100,16 +113,6 @@ where
             source,
             PredecessorMode::Record,
         )
-    }
-
-    fn path_to<'graph: 'this, 'this>(
-        &'this self,
-        graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
-    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
-        let iter = self.path_from(graph, target)?;
-
-        Ok(iter.map(Route::reverse))
     }
 
     fn every_path<'graph: 'this, 'this>(
@@ -136,6 +139,16 @@ where
     type Cost = E::Value;
     type Error = DijkstraError;
 
+    fn distance_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
+        let iter = self.distance_from(graph, target)?;
+
+        Ok(iter.map(DirectRoute::reverse))
+    }
+
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
@@ -154,16 +167,6 @@ where
             target: route.path.target,
             cost: route.cost,
         }))
-    }
-
-    fn distance_to<'graph: 'this, 'this>(
-        &'this self,
-        graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
-    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
-        let iter = self.distance_from(graph, target)?;
-
-        Ok(iter.map(DirectRoute::reverse))
     }
 
     fn every_distance<'graph: 'this, 'this>(

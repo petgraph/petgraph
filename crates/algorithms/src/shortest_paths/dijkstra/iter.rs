@@ -10,13 +10,13 @@ use petgraph_core::{Graph, GraphStorage, Node};
 use crate::shortest_paths::{
     common::{
         connections::Connections,
-        cost::GraphCost,
+        cost::{Cost, GraphCost},
         path::Path,
         queue::Queue,
+        route::Route,
         transit::{reconstruct_path_to, PredecessorMode},
     },
     dijkstra::DijkstraError,
-    Cost, Route,
 };
 
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>

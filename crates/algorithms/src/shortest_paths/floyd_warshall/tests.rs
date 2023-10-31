@@ -6,8 +6,9 @@ use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{
+    common::route::Route,
     floyd_warshall::{error::FloydWarshallError, FloydWarshall},
-    Route, ShortestPath,
+    ShortestPath,
 };
 
 /// Helper Macro to create a map of expected results

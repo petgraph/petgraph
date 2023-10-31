@@ -1,5 +1,17 @@
 use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
 
+pub struct Cost<T>(pub(in crate::shortest_paths) T);
+
+impl<T> Cost<T> {
+    pub fn value(&self) -> &T {
+        &self.0
+    }
+
+    pub fn into_value(self) -> T {
+        self.0
+    }
+}
+
 pub struct DefaultCost;
 
 pub trait GraphCost<S>

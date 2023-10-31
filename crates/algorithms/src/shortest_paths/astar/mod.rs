@@ -18,16 +18,15 @@ use petgraph_core::{
 };
 
 use self::{error::AStarError, r#impl::AStarImpl};
-use super::{
-    common::transit::PredecessorMode, Cost, DirectRoute, Route, ShortestDistance, ShortestPath,
-};
+use super::{common::transit::PredecessorMode, ShortestDistance, ShortestPath};
 use crate::{
     polyfill::IteratorExt,
     shortest_paths::{
         astar::heuristic::GraphHeuristic,
         common::{
             connections::Connections,
-            cost::{DefaultCost, GraphCost},
+            cost::{Cost, DefaultCost, GraphCost},
+            route::{DirectRoute, Route},
         },
     },
 };

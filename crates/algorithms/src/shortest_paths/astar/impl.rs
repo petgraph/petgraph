@@ -11,11 +11,12 @@ use crate::shortest_paths::{
     astar::{error::AStarError, heuristic::GraphHeuristic},
     common::{
         connections::Connections,
-        cost::GraphCost,
+        cost::{Cost, GraphCost},
         queue::Queue,
+        route::{DirectRoute, Route},
         transit::{reconstruct_path_to, PredecessorMode},
     },
-    Cost, DirectRoute, Path, Route,
+    Path,
 };
 
 // The graph must outlive the A* instance
