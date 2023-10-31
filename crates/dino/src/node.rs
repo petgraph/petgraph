@@ -81,6 +81,16 @@ pub(crate) struct NodeClosures {
 }
 
 impl NodeClosures {
+    fn new() -> Self {
+        Self {
+            source_to_targets: RoaringBitmap::new(),
+            target_to_sources: RoaringBitmap::new(),
+
+            source_to_edges: RoaringBitmap::new(),
+            target_to_edges: RoaringBitmap::new(),
+        }
+    }
+
     pub(crate) fn clear(&mut self) {
         self.source_to_targets.clear();
         self.target_to_sources.clear();
@@ -103,6 +113,14 @@ pub(crate) struct Node<T> {
 }
 
 impl<T> Node<T> {
+    pub(crate) fn new(id: NodeId, weight: T) -> Self {
+        Self {
+            id,
+            weight,
+            closures: NodeClosures::new(),
+        }
+    }
+
     pub(crate) fn outgoing_neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
         self.closures
             .source_to_targets
@@ -146,7 +164,7 @@ impl<T> Node<T> {
         .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
     }
 
-    pub(crate) fn is_external(&self) -> bool {
+    pub(crate) fn is_isolated(&self) -> bool {
         self.closures.source_to_targets.is_empty() && self.closures.target_to_sources.is_empty()
     }
 }

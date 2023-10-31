@@ -40,13 +40,14 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
-        let closure = self.closures.nodes();
-
-        match direction {
-            Direction::Incoming => Either::Left(closure.incoming_edges(*id)),
-            Direction::Outgoing => Either::Right(closure.outgoing_edges(*id)),
-        }
-        .filter_map(move |id| self.edge(&id))
+        self.nodes
+            .get(*id)
+            .into_iter()
+            .flat_map(move |node| match direction {
+                Direction::Incoming => node.incoming_edges(),
+                Direction::Outgoing => node.outgoing_edges(),
+            })
+            .filter_map(move |id| self.edge(&id))
     }
 
     fn node_directed_connections_mut<'a: 'b, 'b>(
@@ -54,19 +55,18 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
-        let Self {
-            closures, edges, ..
-        } = self;
+        let Self { nodes, edges, .. } = self;
 
-        let closure = closures.nodes();
-
-        let available = match direction {
-            Direction::Incoming => Either::Left(closure.incoming_edges(*id)),
-            Direction::Outgoing => Either::Right(closure.outgoing_edges(*id)),
-        };
+        let allow = nodes
+            .get(*id)
+            .into_iter()
+            .flat_map(move |node| match direction {
+                Direction::Incoming => node.incoming_edges(),
+                Direction::Outgoing => node.outgoing_edges(),
+            });
 
         edges
-            .filter_mut(available)
+            .filter_mut(allow)
             .map(|edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
     }
 
@@ -75,13 +75,14 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
-        let closure = self.closures.nodes();
-
-        match direction {
-            Direction::Incoming => Either::Left(closure.incoming_neighbours(*id)),
-            Direction::Outgoing => Either::Right(closure.outgoing_neighbours(*id)),
-        }
-        .filter_map(move |id| self.node(&id))
+        self.nodes
+            .get(*id)
+            .into_iter()
+            .flat_map(move |node| match direction {
+                Direction::Incoming => node.incoming_neighbours(),
+                Direction::Outgoing => node.outgoing_neighbours(),
+            })
+            .filter_map(move |id| self.node(&id))
     }
 
     fn node_directed_neighbours_mut<'a: 'b, 'b>(

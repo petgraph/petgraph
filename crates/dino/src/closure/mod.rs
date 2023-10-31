@@ -104,7 +104,7 @@ impl ClosureStorage {
         }
     }
 
-    fn remove_node<T>(&mut self, node: Node<T>, nodes: &mut NodeSlab<T>) {
+    fn remove_node<T>(&mut self, node: Node<T>, nodes: &mut NodeSlab<T>) -> (NodeId, T) {
         let raw_index = node.id.into_id().raw();
 
         let targets = node.closures.source_to_targets;
@@ -134,6 +134,8 @@ impl ClosureStorage {
             self.inner
                 .remove(&Key::EndpointsToEdges(source_id, node.id));
         }
+
+        (node.id, node.weight)
     }
 
     fn clear<N>(&mut self, nodes: &mut NodeSlab<N>) {
@@ -238,8 +240,8 @@ impl Closures {
         self.storage.create_node(node);
     }
 
-    pub(crate) fn remove_node<T>(&mut self, node: Node<T>, nodes: &mut NodeSlab<T>) {
-        self.storage.remove_node(node, nodes);
+    pub(crate) fn remove_node<T>(&mut self, node: Node<T>, nodes: &mut NodeSlab<T>) -> (NodeId, T) {
+        self.storage.remove_node(node, nodes)
     }
 
     pub(crate) const fn edges(&self) -> EdgeClosure<'_> {
@@ -461,7 +463,7 @@ mod tests {
             .storage()
             .nodes
             .entries()
-            .filter_map(|(id, node)| node.is_external().then_some(id))
+            .filter_map(|(id, node)| node.is_isolated().then_some(id))
             .collect()
     }
 
