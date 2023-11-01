@@ -1666,12 +1666,12 @@ where
 /// assert_eq!(gr[b], 4.);
 /// assert_eq!(gr[c], 2.);
 /// ```
-pub struct WalkNeighbors<Ix> {
+#[derive(Clone)]
+pub struct WalkNeighbors<Ix>
+where
+    Ix: IndexType,
+{
     inner: super::WalkNeighbors<Ix>,
-}
-
-impl<Ix: IndexType> Clone for WalkNeighbors<Ix> {
-    clone_fields!(WalkNeighbors, inner);
 }
 
 impl<Ix: IndexType> WalkNeighbors<Ix> {
