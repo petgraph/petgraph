@@ -1,16 +1,16 @@
 use core::fmt::{Display, Formatter};
 
 use bitvec::{boxed::BitBox, vec::BitVec};
+use croaring::Bitmap as RoaringBitmap;
 use petgraph_core::{
     attributes::NoValue,
     edge::marker::GraphDirectionality,
     id::{FlagStorage, FlaggableGraphId, GraphId, IndexMapper, LinearGraphId, ManagedGraphId},
     GraphStorage,
 };
-use roaring::RoaringBitmap;
 
 use crate::{
-    closure::{UnionIntoIterator, UnionIterator},
+    closure::UnionIterator,
     slab::{EntryId, Key, SlabIndexMapper},
     DinoStorage, EdgeId,
 };

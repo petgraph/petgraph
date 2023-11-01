@@ -1,11 +1,11 @@
 mod union;
 
+use croaring::Bitmap as RoaringBitmap;
 use either::Either;
 use fnv::FnvBuildHasher;
 use hashbrown::HashMap;
-use roaring::RoaringBitmap;
 
-pub(crate) use self::union::{UnionIntoIterator, UnionIterator};
+pub(crate) use self::union::UnionIterator;
 use crate::{
     edge::{Edge, EdgeSlab},
     node::{Node, NodeSlab},
@@ -39,27 +39,21 @@ impl ClosureStorage {
         let target = edge.target;
 
         if let Some(source) = nodes.get_mut(source) {
-            source
-                .closures
-                .outgoing_nodes
-                .insert(target.into_id().raw());
+            source.closures.outgoing_nodes.add(target.into_id().raw());
 
-            source.closures.outgoing_edges.insert(raw_index);
+            source.closures.outgoing_edges.add(raw_index);
         }
 
         if let Some(target) = nodes.get_mut(target) {
-            target
-                .closures
-                .incoming_nodes
-                .insert(source.into_id().raw());
+            target.closures.incoming_nodes.add(source.into_id().raw());
 
-            target.closures.incoming_edges.insert(raw_index);
+            target.closures.incoming_edges.add(raw_index);
         }
 
         self.inner
             .entry(Key::EndpointsToEdges(source, target))
             .or_default()
-            .insert(raw_index);
+            .add(raw_index);
     }
 
     fn remove_edge<T, U>(&mut self, edge: &Edge<T>, nodes: &mut NodeSlab<U>) {
@@ -71,7 +65,7 @@ impl ClosureStorage {
         let is_multi = self
             .inner
             .get(&Key::EndpointsToEdges(edge.source, edge.target))
-            .map_or(false, |bitmap| bitmap.len() > 1);
+            .map_or(false, |bitmap| bitmap.cardinality() > 1);
 
         if let Some(source) = nodes.get_mut(source) {
             if !is_multi {
@@ -108,7 +102,7 @@ impl ClosureStorage {
         let raw_index = node.id.into_id().raw();
 
         let targets = node.closures.outgoing_nodes;
-        for target in targets {
+        for target in targets.iter() {
             let target_id = NodeId::from_id(EntryId::new_unchecked(target));
 
             let Some(target) = nodes.get_mut(target_id) else {
@@ -122,8 +116,7 @@ impl ClosureStorage {
         }
 
         let sources = node.closures.incoming_nodes;
-
-        for source in sources {
+        for source in sources.iter() {
             let source_id = NodeId::from_id(EntryId::new_unchecked(source));
 
             let Some(source) = nodes.get_mut(source_id) else {
@@ -278,15 +271,13 @@ mod tests {
     use core::iter::once;
 
     use hashbrown::{HashMap, HashSet};
-    use petgraph_core::{
-        attributes::Attributes, edge::marker::Directed, GraphDirectionality, GraphStorage,
-    };
+    use petgraph_core::{attributes::Attributes, edge::marker::Directed, GraphDirectionality};
     use roaring::RoaringBitmap;
 
     use crate::{
-        closure::{Closures, Key},
+        closure::Key,
         slab::{EntryId, Key as _},
-        DiDinoGraph, DinoGraph, DinoStorage, EdgeId, NodeId,
+        DinoGraph, DinoStorage, EdgeId, NodeId,
     };
 
     #[derive(Debug, Clone, PartialEq, Eq)]

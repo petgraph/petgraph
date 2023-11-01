@@ -22,7 +22,7 @@ where
     S: GraphStorage,
 {
     #[must_use]
-    pub fn new(source: Node<'a, S>, transit: Vec<Node<'a, S>>, target: Node<'a, S>) -> Self {
+    pub const fn new(source: Node<'a, S>, transit: Vec<Node<'a, S>>, target: Node<'a, S>) -> Self {
         Self {
             source,
             target,

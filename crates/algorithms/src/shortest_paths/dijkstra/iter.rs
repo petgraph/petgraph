@@ -63,7 +63,7 @@ where
 
         source: &'graph S::NodeId,
 
-        intermediates: PredecessorMode,
+        predecessor_mode: PredecessorMode,
     ) -> Result<Self, DijkstraError> {
         let source_node = graph
             .node(source)
@@ -75,7 +75,7 @@ where
         distances.insert(source, E::Value::zero());
 
         let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
-        if intermediates == PredecessorMode::Record {
+        if predecessor_mode == PredecessorMode::Record {
             predecessors.insert(source, None);
         }
 
@@ -88,7 +88,7 @@ where
             num_nodes: graph.num_nodes(),
             init: true,
             next: None,
-            predecessor_mode: intermediates,
+            predecessor_mode,
             distances,
             predecessors,
         })
@@ -135,7 +135,6 @@ where
             let target = if v == node.id() { u } else { v };
 
             // do not pursue edges that have already been processed.
-            // TODO: potentially remove
             if self.queue.has_been_visited(target) {
                 continue;
             }
@@ -188,20 +187,22 @@ where
         };
 
         let node = item.node;
+        let cost = item.priority.clone();
         self.next = Some(item);
 
         // we're currently visiting the node that has the shortest distance, therefore we know
         // that the distance is the shortest possible
-        let distance = self.distances[node.id()].clone();
+        let distance = cost;
         let transit = if self.predecessor_mode == PredecessorMode::Discard {
             Vec::new()
         } else {
             reconstruct_path_to(&self.predecessors, node.id())
         };
 
-        let path = Path::new(self.source, transit, node);
-
-        Some(Route::new(path, Cost::new(distance)))
+        Some(Route::new(
+            Path::new(self.source, transit, node),
+            Cost::new(distance),
+        ))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

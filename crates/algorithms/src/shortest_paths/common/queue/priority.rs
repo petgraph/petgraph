@@ -95,11 +95,12 @@ where
         while let Some(Reverse(item)) = self.heap.pop() {
             let visited = self.flags.index(item.node.id());
 
-            if !visited {
-                self.flags.set(item.node.id(), true);
-
-                return Some(item);
+            if visited {
+                continue;
             }
+
+            self.flags.set(item.node.id(), true);
+            return Some(item);
         }
 
         None

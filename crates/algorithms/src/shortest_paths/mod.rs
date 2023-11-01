@@ -1,4 +1,4 @@
-// mod astar;
+mod astar;
 mod common;
 mod dijkstra;
 mod floyd_warshall;
@@ -7,7 +7,7 @@ use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage};
 
 pub use self::{
-    // astar::AStar,
+    astar::AStar,
     common::{
         cost::Cost,
         path::Path,
