@@ -1,9 +1,11 @@
 use core::fmt::{Display, Formatter};
 
+use bitvec::{boxed::BitBox, vec::BitVec};
 use petgraph_core::{
     attributes::NoValue,
     edge::marker::GraphDirectionality,
-    id::{GraphId, LinearGraphId, ManagedGraphId},
+    id::{FlagStorage, FlaggableGraphId, GraphId, IndexMapper, LinearGraphId, ManagedGraphId},
+    GraphStorage,
 };
 use roaring::RoaringBitmap;
 
@@ -64,6 +66,43 @@ where
 
     fn index_mapper(storage: &DinoStorage<N, E, D>) -> Self::Mapper<'_> {
         SlabIndexMapper::new(&storage.nodes)
+    }
+}
+
+pub struct FlagStore<'a> {
+    vector: BitBox,
+    mapper: SlabIndexMapper<'a, NodeId>,
+}
+
+impl FlagStorage<NodeId> for FlagStore<'_> {
+    fn get(&self, id: &NodeId) -> Option<bool> {
+        let index = self.mapper.get(id)?;
+
+        Some(self.vector[index])
+    }
+
+    fn set(&mut self, id: &NodeId, flag: bool) -> Option<bool> {
+        let index = self.mapper.get(id)?;
+
+        let old = self.vector.replace(index, flag);
+
+        Some(old)
+    }
+}
+
+impl<N, E, D> FlaggableGraphId<DinoStorage<N, E, D>> for NodeId
+where
+    D: GraphDirectionality,
+{
+    type Store<'a> = FlagStore<'a> where
+        DinoStorage<N, E, D>: 'a;
+
+    fn flag_store(storage: &DinoStorage<N, E, D>) -> Self::Store<'_> {
+        let mapper = Self::index_mapper(storage);
+
+        let vector = BitVec::repeat(false, storage.num_nodes()).into_boxed_bitslice();
+
+        Self::Store { vector, mapper }
     }
 }
 

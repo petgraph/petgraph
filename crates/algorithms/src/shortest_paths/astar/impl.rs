@@ -5,7 +5,7 @@ use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
 use num_traits::Zero;
-use petgraph_core::{Graph, GraphStorage, Node};
+use petgraph_core::{id::FlaggableGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     astar::{error::AStarError, heuristic::GraphHeuristic},
@@ -23,6 +23,7 @@ use crate::shortest_paths::{
 pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
     S: GraphStorage,
+    S::NodeId: FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: Ord,
 {
@@ -44,7 +45,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -103,7 +104,7 @@ where
     }
 
     pub(super) fn find(mut self) -> Option<Route<'graph, S, E::Value>> {
-        while let Some(node) = self.queue.pop_min() {
+        while let Some(QueueItem { node, .. }) = self.queue.pop_min() {
             if node.id() == self.target.id() {
                 let transit = if self.predecessor_mode == PredecessorMode::Record {
                     reconstruct_path_to(&self.predecessors, node.id())

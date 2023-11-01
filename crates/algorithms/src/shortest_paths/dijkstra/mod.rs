@@ -10,6 +10,9 @@ use error_stack::Result;
 use num_traits::Zero;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
+        Direction,
+    },
+    id::FlaggableGraphId,
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
@@ -75,7 +78,7 @@ where
 impl<S, E> ShortestPath<S> for Dijkstra<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -123,7 +126,7 @@ where
 impl<S, E> ShortestDistance<S> for Dijkstra<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -173,7 +176,7 @@ where
 impl<S, E> ShortestPath<S> for Dijkstra<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -211,7 +214,7 @@ where
 impl<S, E> ShortestDistance<S> for Dijkstra<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,

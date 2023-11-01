@@ -11,6 +11,9 @@ use error_stack::Result;
 use num_traits::Zero;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
+        Direction,
+    },
+    id::FlaggableGraphId,
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
@@ -101,7 +104,7 @@ impl<E, H> AStar<Directed, E, H> {
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
         S: DirectedGraphStorage,
-        S::NodeId: Eq + Hash,
+        S::NodeId: FlaggableGraphId<S> + Eq + Hash,
         E: GraphCost<S>,
         E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
         for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -129,7 +132,7 @@ impl<E, H> AStar<Undirected, E, H> {
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
         S: GraphStorage,
-        S::NodeId: Eq + Hash,
+        S::NodeId: FlaggableGraphId<S> + Eq + Hash,
         E: GraphCost<S>,
         E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
         for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -153,7 +156,7 @@ impl<E, H> AStar<Undirected, E, H> {
 impl<S, E, H> ShortestPath<S> for AStar<Undirected, E, H>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -223,7 +226,7 @@ where
 impl<S, E, H> ShortestDistance<S> for AStar<Undirected, E, H>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -294,7 +297,7 @@ where
 impl<S, E, H> ShortestPath<S> for AStar<Directed, E, H>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -364,7 +367,7 @@ where
 impl<S, E, H> ShortestDistance<S> for AStar<Directed, E, H>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
     for<'a> &'a E::Value: Add<Output = E::Value>,

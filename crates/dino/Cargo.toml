@@ -10,6 +10,7 @@ petgraph-core = { workspace = true, features = ['alloc'] }
 error-stack.workspace = true
 
 either = "1.9.0" # TODO: potentially remove
+bitvec = "1.0.1"
 
 # Closures
 roaring = "0.10.2"

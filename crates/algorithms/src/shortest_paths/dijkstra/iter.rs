@@ -1,11 +1,12 @@
 use alloc::vec::Vec;
 use core::{hash::Hash, ops::Add};
+use std::mem;
 
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
-use hashbrown::HashMap;
+use hashbrown::{hash_map::Entry, HashMap};
 use num_traits::Zero;
-use petgraph_core::{Graph, GraphStorage, Node};
+use petgraph_core::{id::FlaggableGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{
@@ -22,9 +23,11 @@ use crate::shortest_paths::{
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
+    S::NodeId: FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: Ord,
 {
+    graph: &'graph Graph<S>,
     queue: PriorityQueue<'graph, S, E::Value>,
 
     edge_cost: &'parent E,
@@ -35,18 +38,18 @@ where
     num_nodes: usize,
 
     init: bool,
-    next: Option<Node<'graph, S>>,
+    next: Option<QueueItem<'graph, S, E::Value>>,
 
     predecessor_mode: PredecessorMode,
 
-    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
-    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
+    distances: HashMap<&'graph S::NodeId, E::Value>,
+    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -66,17 +69,18 @@ where
             .node(source)
             .ok_or_else(|| Report::new(DijkstraError::NodeNotFound))?;
 
-        let mut queue = PriorityQueue::new();
+        let queue = PriorityQueue::new();
 
-        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
+        let mut distances = HashMap::new();
         distances.insert(source, E::Value::zero());
 
-        let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
+        let mut predecessors = HashMap::new();
         if intermediates == PredecessorMode::Record {
             predecessors.insert(source, None);
         }
 
         Ok(Self {
+            graph,
             queue,
             edge_cost,
             connections,
@@ -94,7 +98,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -107,7 +111,10 @@ where
         // and then begin with the actual iteration loop.
         if self.init {
             self.init = false;
-            self.next = Some(self.source);
+            self.next = Some(QueueItem {
+                node: self.source,
+                priority: E::Value::zero(),
+            });
 
             return Some(Route::new(
                 Path::new(self.source, Vec::new(), self.source),
@@ -117,30 +124,48 @@ where
 
         // Process the neighbours from the node we determined in the last iteration.
         // Reasoning behind this see below.
-        let node = self.next?;
+        // TODO: potentially remove
+        let QueueItem {
+            node,
+            priority: cost,
+        } = mem::take(&mut self.next)?;
         let connections = self.connections.connections(&node);
 
         for edge in connections {
-            let (u, v) = edge.endpoints();
-            let target = if v.id() == node.id() { u } else { v };
+            let (u, v) = edge.endpoint_ids();
+            let target = if v == node.id() { u } else { v };
 
-            let alternative = &self.distances[node.id()] + self.edge_cost.cost(edge).as_ref();
+            // do not pursue edges that have already been processed.
+            // TODO: potentially remove
+            if self.queue.has_been_visited(target) {
+                continue;
+            }
 
-            if let Some(distance) = self.distances.get(target.id()) {
-                // do not insert the updated distance if it is not strictly better than the current
-                // one
-                if alternative >= *distance {
-                    continue;
+            let alternative = &cost + self.edge_cost.cost(edge).as_ref();
+
+            // doing this allows us to not index into the hashmap twice.
+            match self.distances.entry(target) {
+                Entry::Occupied(mut entry) => {
+                    // do not insert the updated distance if it is not strictly better than the
+                    // current one
+                    if alternative >= *entry.get() {
+                        continue;
+                    }
+
+                    *entry.get_mut() = alternative.clone();
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(alternative.clone());
                 }
             }
 
-            self.distances.insert(target.id(), alternative.clone());
-
             if self.predecessor_mode == PredecessorMode::Record {
-                self.predecessors.insert(target.id(), Some(node));
+                self.predecessors.insert(target, Some(node));
             }
 
-            self.queue.decrease_priority(target, alternative);
+            if let Some(target) = self.graph.node(target) {
+                self.queue.decrease_priority(target, alternative);
+            }
         }
 
         // this is what makes this special: instead of getting the next node as the start of next
@@ -158,12 +183,13 @@ where
         // for neighbour in get_neighbours() { ... }
         // ```
         // Only difference is that we do not have generators in stable Rust (yet).
-        let Some(node) = self.queue.pop_min() else {
-            self.next = None;
+        let Some(item) = self.queue.pop_min() else {
+            // next is already `None`
             return None;
         };
 
-        self.next = Some(node);
+        let node = item.node;
+        self.next = Some(item);
 
         // we're currently visiting the node that has the shortest distance, therefore we know
         // that the distance is the shortest possible
