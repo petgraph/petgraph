@@ -42,8 +42,8 @@ where
 
     predecessor_mode: PredecessorMode,
 
-    distances: HashMap<&'graph S::NodeId, E::Value>,
-    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>>,
+    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
+    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
@@ -71,10 +71,10 @@ where
 
         let queue = PriorityQueue::new();
 
-        let mut distances = HashMap::new();
+        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, E::Value::zero());
 
-        let mut predecessors = HashMap::new();
+        let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
         if intermediates == PredecessorMode::Record {
             predecessors.insert(source, None);
         }
