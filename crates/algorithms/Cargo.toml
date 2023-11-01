@@ -49,6 +49,9 @@ std = ["petgraph-core/std"]
 remove-me-only-intended-for-move-graph = []
 remove-me-only-intended-for-move-adjacency-matrix = []
 
+[profile.release]
+lto = "fat"
+
 [[bench]]
 name = "shortest_paths"
 harness = false

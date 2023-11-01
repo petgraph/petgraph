@@ -124,13 +124,12 @@ where
 
         // Process the neighbours from the node we determined in the last iteration.
         // Reasoning behind this see below.
-        // TODO: potentially remove
         let QueueItem {
             node,
             priority: cost,
         } = mem::take(&mut self.next)?;
-        let connections = self.connections.connections(&node);
 
+        let connections = self.connections.connections(&node);
         for edge in connections {
             let (u, v) = edge.endpoint_ids();
             let target = if v == node.id() { u } else { v };

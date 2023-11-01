@@ -49,6 +49,7 @@ impl Key for NodeId {
         Self(id)
     }
 
+    #[inline]
     fn into_id(self) -> EntryId {
         self.0
     }
@@ -112,52 +113,47 @@ pub(crate) type NodeSlab<T> = crate::slab::Slab<NodeId, Node<T>>;
 
 #[derive(Debug, Clone)]
 pub(crate) struct NodeClosures {
-    pub(crate) source_to_targets: RoaringBitmap,
-    pub(crate) target_to_sources: RoaringBitmap,
+    pub(crate) outgoing_nodes: RoaringBitmap,
+    pub(crate) incoming_nodes: RoaringBitmap,
 
-    pub(crate) source_to_edges: RoaringBitmap,
-    pub(crate) target_to_edges: RoaringBitmap,
+    pub(crate) outgoing_edges: RoaringBitmap,
+    pub(crate) incoming_edges: RoaringBitmap,
 }
 
 impl NodeClosures {
     fn new() -> Self {
         Self {
-            source_to_targets: RoaringBitmap::new(),
-            target_to_sources: RoaringBitmap::new(),
+            outgoing_nodes: RoaringBitmap::new(),
+            incoming_nodes: RoaringBitmap::new(),
 
-            source_to_edges: RoaringBitmap::new(),
-            target_to_edges: RoaringBitmap::new(),
+            outgoing_edges: RoaringBitmap::new(),
+            incoming_edges: RoaringBitmap::new(),
         }
     }
 
     pub(crate) fn outgoing_neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
-        self.source_to_targets
+        self.outgoing_nodes
             .iter()
             .map(|value| NodeId::from_id(EntryId::new_unchecked(value)))
     }
 
     pub(crate) fn incoming_neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
-        self.target_to_sources
+        self.incoming_nodes
             .iter()
             .map(|value| NodeId::from_id(EntryId::new_unchecked(value)))
     }
 
     pub(crate) fn neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
-        UnionIterator::new(&self.source_to_targets, &self.target_to_sources)
+        UnionIterator::new(&self.outgoing_nodes, &self.incoming_nodes)
             .map(|value| NodeId::from_id(EntryId::new_unchecked(value)))
     }
 
     pub(crate) fn clear(&mut self) {
-        self.source_to_targets.clear();
-        self.target_to_sources.clear();
+        self.outgoing_nodes.clear();
+        self.incoming_nodes.clear();
 
-        self.source_to_edges.clear();
-        self.target_to_edges.clear();
-    }
-
-    pub(crate) fn into_edges(self) -> impl Iterator<Item = EdgeId> {
-        UnionIntoIterator::new(self.source_to_edges, self.target_to_edges)
-            .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
+        self.outgoing_edges.clear();
+        self.incoming_edges.clear();
     }
 }
 
@@ -192,28 +188,25 @@ impl<T> Node<T> {
 
     pub(crate) fn outgoing_edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
         self.closures
-            .source_to_edges
+            .outgoing_edges
             .iter()
             .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
     }
 
     pub(crate) fn incoming_edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
         self.closures
-            .target_to_edges
+            .incoming_edges
             .iter()
             .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
     }
 
     pub(crate) fn edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
-        UnionIterator::new(
-            &self.closures.source_to_edges,
-            &self.closures.target_to_edges,
-        )
-        .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
+        UnionIterator::new(&self.closures.outgoing_edges, &self.closures.incoming_edges)
+            .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
     }
 
     pub(crate) fn is_isolated(&self) -> bool {
-        self.closures.source_to_targets.is_empty() && self.closures.target_to_sources.is_empty()
+        self.closures.outgoing_nodes.is_empty() && self.closures.incoming_nodes.is_empty()
     }
 }
 

@@ -41,19 +41,19 @@ impl ClosureStorage {
         if let Some(source) = nodes.get_mut(source) {
             source
                 .closures
-                .source_to_targets
+                .outgoing_nodes
                 .insert(target.into_id().raw());
 
-            source.closures.source_to_edges.insert(raw_index);
+            source.closures.outgoing_edges.insert(raw_index);
         }
 
         if let Some(target) = nodes.get_mut(target) {
             target
                 .closures
-                .target_to_sources
+                .incoming_nodes
                 .insert(source.into_id().raw());
 
-            target.closures.target_to_edges.insert(raw_index);
+            target.closures.incoming_edges.insert(raw_index);
         }
 
         self.inner
@@ -77,22 +77,22 @@ impl ClosureStorage {
             if !is_multi {
                 source
                     .closures
-                    .source_to_targets
+                    .outgoing_nodes
                     .remove(target.into_id().raw());
             }
 
-            source.closures.source_to_edges.remove(raw_index);
+            source.closures.outgoing_edges.remove(raw_index);
         }
 
         if let Some(target) = nodes.get_mut(target) {
             if !is_multi {
                 target
                     .closures
-                    .target_to_sources
+                    .incoming_nodes
                     .remove(source.into_id().raw());
             }
 
-            target.closures.target_to_edges.remove(raw_index);
+            target.closures.incoming_edges.remove(raw_index);
         }
 
         if let Some(edges) = self.inner.get_mut(&Key::EndpointsToEdges(source, target)) {
@@ -107,7 +107,7 @@ impl ClosureStorage {
     fn remove_node<T>(&mut self, node: Node<T>, nodes: &mut NodeSlab<T>) -> (NodeId, T) {
         let raw_index = node.id.into_id().raw();
 
-        let targets = node.closures.source_to_targets;
+        let targets = node.closures.outgoing_nodes;
         for target in targets {
             let target_id = NodeId::from_id(EntryId::new_unchecked(target));
 
@@ -115,13 +115,13 @@ impl ClosureStorage {
                 continue;
             };
 
-            target.closures.target_to_sources.remove(raw_index);
+            target.closures.incoming_nodes.remove(raw_index);
 
             self.inner
                 .remove(&Key::EndpointsToEdges(node.id, target_id));
         }
 
-        let sources = node.closures.target_to_sources;
+        let sources = node.closures.incoming_nodes;
 
         for source in sources {
             let source_id = NodeId::from_id(EntryId::new_unchecked(source));
@@ -130,7 +130,7 @@ impl ClosureStorage {
                 continue;
             };
 
-            source.closures.source_to_targets.remove(raw_index);
+            source.closures.outgoing_nodes.remove(raw_index);
             self.inner
                 .remove(&Key::EndpointsToEdges(source_id, node.id));
         }
@@ -351,23 +351,23 @@ mod tests {
                 source_to_targets: storage
                     .nodes
                     .entries()
-                    .map(|(id, node)| (id, node_id_set(&node.closures.source_to_targets)))
+                    .map(|(id, node)| (id, node_id_set(&node.closures.outgoing_nodes)))
                     .collect(),
                 target_to_sources: storage
                     .nodes
                     .entries()
-                    .map(|(id, node)| (id, node_id_set(&node.closures.target_to_sources)))
+                    .map(|(id, node)| (id, node_id_set(&node.closures.incoming_nodes)))
                     .collect(),
 
                 source_to_edges: storage
                     .nodes
                     .entries()
-                    .map(|(id, node)| (id, edge_id_set(&node.closures.source_to_edges)))
+                    .map(|(id, node)| (id, edge_id_set(&node.closures.outgoing_edges)))
                     .collect(),
                 targets_to_edges: storage
                     .nodes
                     .entries()
-                    .map(|(id, node)| (id, edge_id_set(&node.closures.target_to_edges)))
+                    .map(|(id, node)| (id, edge_id_set(&node.closures.incoming_edges)))
                     .collect(),
 
                 endpoints_to_edges: storage

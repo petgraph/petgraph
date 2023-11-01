@@ -188,9 +188,7 @@ fn dijkstra(criterion: &mut Criterion) {
             let dijkstra = Dijkstra::directed();
 
             bench.iter(|| {
-                for distances in dijkstra.distance_from(&graph, &source).unwrap() {
-                    black_box(distances);
-                }
+                let _scores: Vec<_> = dijkstra.distance_from(&graph, &source).unwrap().collect();
             });
         },
     );
