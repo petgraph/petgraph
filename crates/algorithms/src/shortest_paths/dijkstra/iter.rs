@@ -6,7 +6,10 @@ use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::{hash_map::Entry, HashMap};
 use num_traits::Zero;
-use petgraph_core::{id::FlaggableGraphId, Graph, GraphStorage, Node};
+use petgraph_core::{
+    id::{AttributeGraphId, AttributeStorage, FlaggableGraphId},
+    Graph, GraphStorage, Node,
+};
 
 use crate::shortest_paths::{
     common::{
@@ -23,7 +26,7 @@ use crate::shortest_paths::{
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: Ord,
 {
@@ -42,14 +45,14 @@ where
 
     predecessor_mode: PredecessorMode,
 
-    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
-    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
+    distances: <S::NodeId as AttributeGraphId<S>>::Store<'graph, E::Value>,
+    predecessors: <S::NodeId as AttributeGraphId<S>>::Store<'graph, Option<Node<'graph, S>>>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -71,12 +74,12 @@ where
 
         let queue = PriorityQueue::new();
 
-        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
-        distances.insert(source, E::Value::zero());
+        let mut distances = <S::NodeId as AttributeGraphId<S>>::attribute_store(graph.storage());
+        distances.set(source, E::Value::zero());
 
-        let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
+        let mut predecessors = <S::NodeId as AttributeGraphId<S>>::attribute_store(graph.storage());
         if predecessor_mode == PredecessorMode::Record {
-            predecessors.insert(source, None);
+            predecessors.set(source, None);
         }
 
         Ok(Self {
@@ -98,7 +101,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + Eq + Hash,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
     for<'a> &'a E::Value: Add<Output = E::Value>,
@@ -141,24 +144,21 @@ where
 
             let alternative = &cost + self.edge_cost.cost(edge).as_ref();
 
-            // doing this allows us to not index into the hashmap twice.
-            match self.distances.entry(target) {
-                Entry::Occupied(mut entry) => {
-                    // do not insert the updated distance if it is not strictly better than the
-                    // current one
-                    if alternative >= *entry.get() {
-                        continue;
-                    }
+            // TODO: Entry API
+            if let Some(distance) = self.distances.get_mut(target) {
+                // do not insert the updated distance if it is not strictly better than the
+                // current one
+                if *distance <= alternative {
+                    continue;
+                }
 
-                    *entry.get_mut() = alternative.clone();
-                }
-                Entry::Vacant(entry) => {
-                    entry.insert(alternative.clone());
-                }
+                *distance = alternative.clone();
+            } else {
+                self.distances.set(target, alternative.clone());
             }
 
             if self.predecessor_mode == PredecessorMode::Record {
-                self.predecessors.insert(target, Some(node));
+                self.predecessors.set(target, Some(node));
             }
 
             if let Some(target) = self.graph.node(target) {

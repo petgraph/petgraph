@@ -1,17 +1,24 @@
 use alloc::vec::Vec;
-use core::fmt::{Display, Formatter};
+use core::{
+    fmt::{Display, Formatter},
+    iter::Enumerate,
+};
 
 use bitvec::{boxed::BitBox, vec::BitVec};
 use petgraph_core::{
     attributes::NoValue,
+    base::MaybeOwned,
     edge::marker::GraphDirectionality,
-    id::{FlagStorage, FlaggableGraphId, GraphId, IndexMapper, LinearGraphId, ManagedGraphId},
+    id::{
+        AttributeGraphId, AttributeStorage, FlagStorage, FlaggableGraphId, GraphId, IndexMapper,
+        LinearGraphId, ManagedGraphId,
+    },
     GraphStorage,
 };
 
 use crate::{
     iter::closure::{EdgeIdClosureIter, NodeIdClosureIter},
-    slab::{EntryId, Key, SlabIndexMapper},
+    slab::{EntryId, Generation, Key, SlabIndexMapper},
     DinoStorage, EdgeId,
 };
 
@@ -105,6 +112,110 @@ where
         let vector = BitVec::repeat(false, storage.num_nodes()).into_boxed_bitslice();
 
         Self::Store { vector }
+    }
+}
+
+pub struct AttributeStoreIter<'a, T> {
+    iter: Enumerate<core::slice::Iter<'a, Option<(Generation, T)>>>,
+}
+
+impl<'a, T> Iterator for AttributeStoreIter<'a, T> {
+    type Item = (MaybeOwned<'a, NodeId>, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let (index, item) = self.iter.next()?;
+
+            if let Some((generation, item)) = item {
+                let id = EntryId::new(*generation, index)?;
+                let id = NodeId::from_id(id);
+
+                return Some((MaybeOwned::Owned(id), item));
+            }
+        }
+    }
+}
+
+pub struct AttributeStore<T> {
+    items: Vec<Option<(Generation, T)>>,
+}
+
+impl<T> AttributeStorage<NodeId, T> for AttributeStore<T> {
+    type Iter<'a> = AttributeStoreIter<'a, T> where NodeId: 'a, T: 'a, Self: 'a;
+
+    fn get(&self, id: &NodeId) -> Option<&T> {
+        if id.into_id().index() >= self.items.len() {
+            return None;
+        }
+
+        self.items[id.into_id().index()]
+            .as_ref()
+            .map(|(_, item)| item)
+    }
+
+    fn get_mut(&mut self, id: &NodeId) -> Option<&mut T> {
+        if id.into_id().index() >= self.items.len() {
+            return None;
+        }
+
+        self.items[id.into_id().index()]
+            .as_mut()
+            .map(|(_, item)| item)
+    }
+
+    fn index(&self, id: &NodeId) -> &T {
+        self.items[id.into_id().index()]
+            .as_ref()
+            .map(|(_, item)| item)
+            .expect("index called on empty node")
+    }
+
+    fn index_mut(&mut self, id: &NodeId) -> &mut T {
+        self.items[id.into_id().index()]
+            .as_mut()
+            .map(|(_, item)| item)
+            .expect("index_mut called on empty node")
+    }
+
+    fn set(&mut self, id: &NodeId, value: T) -> Option<T> {
+        let index = id.into_id().index();
+        let generation = id.into_id().generation();
+
+        if index >= self.items.len() {
+            return None;
+        }
+
+        core::mem::replace(&mut self.items[index], Some((generation, value))).map(|(_, item)| item)
+    }
+
+    fn remove(&mut self, id: &NodeId) -> Option<T> {
+        let index = id.into_id().index();
+
+        if index >= self.items.len() {
+            return None;
+        }
+
+        self.items[index].take().map(|(_, item)| item)
+    }
+
+    fn iter(&self) -> Self::Iter<'_> {
+        Self::Iter {
+            iter: self.items.iter().enumerate(),
+        }
+    }
+}
+
+impl<N, E, D> AttributeGraphId<DinoStorage<N, E, D>> for NodeId
+where
+    D: GraphDirectionality,
+{
+    type Store<'a, T> = AttributeStore<T> where DinoStorage<N, E, D>: 'a;
+
+    fn attribute_store<T>(storage: &DinoStorage<N, E, D>) -> Self::Store<'_, T> {
+        let mut items = Vec::with_capacity(storage.nodes.total_len());
+        items.resize_with(storage.nodes.total_len(), || None);
+
+        Self::Store { items }
     }
 }
 
