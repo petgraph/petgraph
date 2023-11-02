@@ -110,6 +110,7 @@ mod directed;
 mod edge;
 mod node;
 
+pub(crate) mod iter;
 mod retain;
 pub(crate) mod slab;
 #[cfg(test)]

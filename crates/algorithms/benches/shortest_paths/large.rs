@@ -133,7 +133,7 @@ fn parse_graph_file(path: &Path) -> Vec<(usize, usize, u128)> {
                 output.push((source, target, weight));
 
                 if let Some(amount_of_lines) = &mut amount_of_lines {
-                    *amount_of_lines = amount_of_lines.checked_sub(1).expect("too many lines")
+                    *amount_of_lines = amount_of_lines.checked_sub(1).expect("too many lines");
                 }
             }
             b'a' => panic!("edge lines before problem statement"),

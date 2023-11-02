@@ -39,15 +39,13 @@ impl ClosureStorage {
         let target = edge.target;
 
         if let Some(source) = nodes.get_mut(source) {
-            source.closures.outgoing_nodes.add(target.into_id().raw());
-
-            source.closures.outgoing_edges.add(raw_index);
+            source.closures.outgoing_nodes.push(target);
+            source.closures.outgoing_edges.push(edge.id);
         }
 
         if let Some(target) = nodes.get_mut(target) {
-            target.closures.incoming_nodes.add(source.into_id().raw());
-
-            target.closures.incoming_edges.add(raw_index);
+            target.closures.incoming_nodes.push(source);
+            target.closures.incoming_edges.push(edge.id);
         }
 
         self.inner
@@ -57,78 +55,80 @@ impl ClosureStorage {
     }
 
     fn remove_edge<T, U>(&mut self, edge: &Edge<T>, nodes: &mut NodeSlab<U>) {
-        let raw_index = edge.id.into_id().raw();
-
-        let source = edge.source;
-        let target = edge.target;
-
-        let is_multi = self
-            .inner
-            .get(&Key::EndpointsToEdges(edge.source, edge.target))
-            .map_or(false, |bitmap| bitmap.cardinality() > 1);
-
-        if let Some(source) = nodes.get_mut(source) {
-            if !is_multi {
-                source
-                    .closures
-                    .outgoing_nodes
-                    .remove(target.into_id().raw());
-            }
-
-            source.closures.outgoing_edges.remove(raw_index);
-        }
-
-        if let Some(target) = nodes.get_mut(target) {
-            if !is_multi {
-                target
-                    .closures
-                    .incoming_nodes
-                    .remove(source.into_id().raw());
-            }
-
-            target.closures.incoming_edges.remove(raw_index);
-        }
-
-        if let Some(edges) = self.inner.get_mut(&Key::EndpointsToEdges(source, target)) {
-            edges.remove(raw_index);
-
-            if edges.is_empty() {
-                self.inner.remove(&Key::EndpointsToEdges(source, target));
-            }
-        }
+        todo!()
+        // let raw_index = edge.id.into_id().raw();
+        //
+        // let source = edge.source;
+        // let target = edge.target;
+        //
+        // let is_multi = self
+        //     .inner
+        //     .get(&Key::EndpointsToEdges(edge.source, edge.target))
+        //     .map_or(false, |bitmap| bitmap.cardinality() > 1);
+        //
+        // if let Some(source) = nodes.get_mut(source) {
+        //     if !is_multi {
+        //         source
+        //             .closures
+        //             .outgoing_nodes
+        //             .remove(target.into_id().raw());
+        //     }
+        //
+        //     source.closures.outgoing_edges.remove(raw_index);
+        // }
+        //
+        // if let Some(target) = nodes.get_mut(target) {
+        //     if !is_multi {
+        //         target
+        //             .closures
+        //             .incoming_nodes
+        //             .remove(source.into_id().raw());
+        //     }
+        //
+        //     target.closures.incoming_edges.remove(raw_index);
+        // }
+        //
+        // if let Some(edges) = self.inner.get_mut(&Key::EndpointsToEdges(source, target)) {
+        //     edges.remove(raw_index);
+        //
+        //     if edges.is_empty() {
+        //         self.inner.remove(&Key::EndpointsToEdges(source, target));
+        //     }
+        // }
     }
 
     fn remove_node<T>(&mut self, node: Node<T>, nodes: &mut NodeSlab<T>) -> (NodeId, T) {
-        let raw_index = node.id.into_id().raw();
-
-        let targets = node.closures.outgoing_nodes;
-        for target in targets.iter() {
-            let target_id = NodeId::from_id(EntryId::new_unchecked(target));
-
-            let Some(target) = nodes.get_mut(target_id) else {
-                continue;
-            };
-
-            target.closures.incoming_nodes.remove(raw_index);
-
-            self.inner
-                .remove(&Key::EndpointsToEdges(node.id, target_id));
-        }
-
-        let sources = node.closures.incoming_nodes;
-        for source in sources.iter() {
-            let source_id = NodeId::from_id(EntryId::new_unchecked(source));
-
-            let Some(source) = nodes.get_mut(source_id) else {
-                continue;
-            };
-
-            source.closures.outgoing_nodes.remove(raw_index);
-            self.inner
-                .remove(&Key::EndpointsToEdges(source_id, node.id));
-        }
-
-        (node.id, node.weight)
+        todo!()
+        // let raw_index = node.id.into_id().raw();
+        //
+        // let targets = node.closures.outgoing_nodes;
+        // for target in targets.iter() {
+        //     let target_id = NodeId::from_id(EntryId::new_unchecked(target));
+        //
+        //     let Some(target) = nodes.get_mut(target_id) else {
+        //         continue;
+        //     };
+        //
+        //     target.closures.incoming_nodes.remove(raw_index);
+        //
+        //     self.inner
+        //         .remove(&Key::EndpointsToEdges(node.id, target_id));
+        // }
+        //
+        // let sources = node.closures.incoming_nodes;
+        // for source in sources.iter() {
+        //     let source_id = NodeId::from_id(EntryId::new_unchecked(source));
+        //
+        //     let Some(source) = nodes.get_mut(source_id) else {
+        //         continue;
+        //     };
+        //
+        //     source.closures.outgoing_nodes.remove(raw_index);
+        //     self.inner
+        //         .remove(&Key::EndpointsToEdges(source_id, node.id));
+        // }
+        //
+        // (node.id, node.weight)
     }
 
     fn clear<N>(&mut self, nodes: &mut NodeSlab<N>) {
@@ -268,6 +268,7 @@ impl Closures {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
     use core::iter::once;
 
     use hashbrown::{HashMap, HashSet};
@@ -324,18 +325,12 @@ mod tests {
 
     impl EvaluatedEdgeClosures {
         fn new<N, E>(storage: &DinoStorage<N, E>) -> Self {
-            fn node_id_set(bitmap: &RoaringBitmap) -> HashSet<NodeId> {
-                bitmap
-                    .iter()
-                    .map(|id| NodeId::from_id(EntryId::new_unchecked(id)))
-                    .collect()
+            fn node_id_set(bitmap: &[NodeId]) -> HashSet<NodeId> {
+                bitmap.iter().copied().collect()
             }
 
-            fn edge_id_set(bitmap: &RoaringBitmap) -> HashSet<EdgeId> {
-                bitmap
-                    .iter()
-                    .map(|id| EdgeId::from_id(EntryId::new_unchecked(id)))
-                    .collect()
+            fn edge_id_set(bitmap: &[EdgeId]) -> HashSet<EdgeId> {
+                bitmap.iter().copied().collect()
             }
 
             Self {

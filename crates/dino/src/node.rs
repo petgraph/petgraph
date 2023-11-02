@@ -1,7 +1,7 @@
+use alloc::vec::Vec;
 use core::fmt::{Display, Formatter};
 
 use bitvec::{boxed::BitBox, vec::BitVec};
-use croaring::Bitmap as RoaringBitmap;
 use petgraph_core::{
     attributes::NoValue,
     edge::marker::GraphDirectionality,
@@ -10,7 +10,7 @@ use petgraph_core::{
 };
 
 use crate::{
-    closure::UnionIterator,
+    iter::closure::{EdgeIdClosureIter, NodeIdClosureIter},
     slab::{EntryId, Key, SlabIndexMapper},
     DinoStorage, EdgeId,
 };
@@ -70,6 +70,7 @@ where
     }
 }
 
+// remove of mapper gives us ~3s speedup on the benchmark
 pub struct FlagStore<'a> {
     vector: BitBox,
     mapper: SlabIndexMapper<'a, NodeId>,
@@ -113,39 +114,48 @@ pub(crate) type NodeSlab<T> = crate::slab::Slab<NodeId, Node<T>>;
 
 #[derive(Debug, Clone)]
 pub(crate) struct NodeClosures {
-    pub(crate) outgoing_nodes: RoaringBitmap,
-    pub(crate) incoming_nodes: RoaringBitmap,
+    pub(crate) outgoing_nodes: Vec<NodeId>,
+    pub(crate) incoming_nodes: Vec<NodeId>,
 
-    pub(crate) outgoing_edges: RoaringBitmap,
-    pub(crate) incoming_edges: RoaringBitmap,
+    pub(crate) outgoing_edges: Vec<EdgeId>,
+    pub(crate) incoming_edges: Vec<EdgeId>,
 }
 
 impl NodeClosures {
     fn new() -> Self {
         Self {
-            outgoing_nodes: RoaringBitmap::new(),
-            incoming_nodes: RoaringBitmap::new(),
+            outgoing_nodes: Vec::new(),
+            incoming_nodes: Vec::new(),
 
-            outgoing_edges: RoaringBitmap::new(),
-            incoming_edges: RoaringBitmap::new(),
+            outgoing_edges: Vec::new(),
+            incoming_edges: Vec::new(),
         }
     }
 
-    pub(crate) fn outgoing_neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
-        self.outgoing_nodes
-            .iter()
-            .map(|value| NodeId::from_id(EntryId::new_unchecked(value)))
+    pub(crate) fn outgoing_neighbours(&self) -> NodeIdClosureIter {
+        self.outgoing_nodes.iter().copied()
     }
 
-    pub(crate) fn incoming_neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
-        self.incoming_nodes
-            .iter()
-            .map(|value| NodeId::from_id(EntryId::new_unchecked(value)))
+    pub(crate) fn incoming_neighbours(&self) -> NodeIdClosureIter {
+        self.incoming_nodes.iter().copied()
     }
 
     pub(crate) fn neighbours(&self) -> impl Iterator<Item = NodeId> + '_ {
-        UnionIterator::new(&self.outgoing_nodes, &self.incoming_nodes)
-            .map(|value| NodeId::from_id(EntryId::new_unchecked(value)))
+        todo!();
+        core::iter::empty()
+    }
+
+    pub(crate) fn outgoing_edges(&self) -> EdgeIdClosureIter {
+        self.outgoing_edges.iter().copied()
+    }
+
+    pub(crate) fn incoming_edges(&self) -> EdgeIdClosureIter {
+        self.incoming_edges.iter().copied()
+    }
+
+    pub(crate) fn edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
+        todo!();
+        core::iter::empty()
     }
 
     pub(crate) fn clear(&mut self) {
@@ -187,22 +197,15 @@ impl<T> Node<T> {
     }
 
     pub(crate) fn outgoing_edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
-        self.closures
-            .outgoing_edges
-            .iter()
-            .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
+        self.closures.outgoing_edges()
     }
 
     pub(crate) fn incoming_edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
-        self.closures
-            .incoming_edges
-            .iter()
-            .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
+        self.closures.incoming_edges()
     }
 
     pub(crate) fn edges(&self) -> impl Iterator<Item = EdgeId> + '_ {
-        UnionIterator::new(&self.closures.outgoing_edges, &self.closures.incoming_edges)
-            .map(|value| EdgeId::from_id(EntryId::new_unchecked(value)))
+        self.closures.edges()
     }
 
     pub(crate) fn is_isolated(&self) -> bool {

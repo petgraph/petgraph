@@ -5,7 +5,9 @@ use petgraph_core::{
     storage::{DirectedGraphStorage, GraphStorage},
 };
 
-use crate::{node::NodeClosures, DinoStorage, Directed};
+use crate::{
+    iter::directed::NodeDirectedConnectionsIter, node::NodeClosures, DinoStorage, Directed,
+};
 
 impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
     fn directed_edges_between<'a: 'b, 'b>(
@@ -40,14 +42,13 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
-        self.nodes
-            .get(*id)
-            .into_iter()
-            .flat_map(move |node| match direction {
-                Direction::Incoming => Either::Left(node.incoming_edges()),
-                Direction::Outgoing => Either::Right(node.outgoing_edges()),
-            })
-            .filter_map(move |id| self.edge(&id))
+        NodeDirectedConnectionsIter {
+            storage: self,
+            iter: self.nodes.get(*id).map(|node| match direction {
+                Direction::Incoming => node.closures.incoming_edges(),
+                Direction::Outgoing => node.closures.outgoing_edges(),
+            }),
+        }
     }
 
     fn node_directed_connections_mut<'a: 'b, 'b>(
