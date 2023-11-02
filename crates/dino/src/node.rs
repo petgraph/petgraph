@@ -70,23 +70,18 @@ where
     }
 }
 
-// remove of mapper gives us ~3s speedup on the benchmark
-pub struct FlagStore<'a> {
+// TODO: potential matter to reduce memory usage
+pub struct FlagStore {
     vector: BitBox,
-    mapper: SlabIndexMapper<'a, NodeId>,
 }
 
-impl FlagStorage<NodeId> for FlagStore<'_> {
+impl FlagStorage<NodeId> for FlagStore {
     fn get(&self, id: &NodeId) -> Option<bool> {
-        let index = self.mapper.get(id)?;
-
-        Some(self.vector[index])
+        Some(self.vector[id.into_id().index()])
     }
 
     fn set(&mut self, id: &NodeId, flag: bool) -> Option<bool> {
-        let index = self.mapper.get(id)?;
-
-        let old = self.vector.replace(index, flag);
+        let old = self.vector.replace(id.into_id().index(), flag);
 
         Some(old)
     }
@@ -96,15 +91,13 @@ impl<N, E, D> FlaggableGraphId<DinoStorage<N, E, D>> for NodeId
 where
     D: GraphDirectionality,
 {
-    type Store<'a> = FlagStore<'a> where
+    type Store<'a> = FlagStore where
         DinoStorage<N, E, D>: 'a;
 
     fn flag_store(storage: &DinoStorage<N, E, D>) -> Self::Store<'_> {
-        let mapper = Self::index_mapper(storage);
-
         let vector = BitVec::repeat(false, storage.num_nodes()).into_boxed_bitslice();
 
-        Self::Store { vector, mapper }
+        Self::Store { vector }
     }
 }
 
