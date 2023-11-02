@@ -179,19 +179,16 @@ fn build_graph(filename: &str) -> (NodeId, DiDinoGraph<Node, u128>) {
 }
 
 fn dijkstra(criterion: &mut Criterion) {
-    criterion.bench_with_input(
-        // BenchmarkId::from_parameter("dimacs9/florida"),
-        BenchmarkId::new("dimacs9/florida", "dijkstra"),
-        &"USA-road-d.FLA",
-        |bench, &filename| {
-            let (source, graph) = build_graph(filename);
-            let dijkstra = Dijkstra::directed();
+    let (source, graph) = build_graph("USA-road-d.FLA");
+    let dijkstra = Dijkstra::directed();
 
-            bench.iter(|| {
-                let _scores: Vec<_> = dijkstra.distance_from(&graph, &source).unwrap().collect();
-            });
-        },
-    );
+    criterion.bench_function("dimacs9/florida/dijkstra", |bench| {
+        bench.iter_with_large_drop(|| {
+            let scores: Vec<_> = dijkstra.distance_from(&graph, &source).unwrap().collect();
+
+            scores
+        });
+    });
 }
 
 criterion_group!(benches, dijkstra);

@@ -3,6 +3,7 @@ use crate::GraphStorage;
 
 pub trait FlagStorage<Id> {
     fn get(&self, id: &Id) -> Option<bool>;
+    #[inline]
     fn index(&self, id: &Id) -> bool {
         self.get(id).unwrap_or(false)
     }

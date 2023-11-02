@@ -41,17 +41,17 @@ where
     T: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.priority.partial_cmp(&other.priority)
+        other.priority.partial_cmp(&self.priority)
     }
 }
 
-impl<S, T> Ord for PriorityQueueItem<'_, S, T>
+impl<S, T> Ord for QueueItem<'_, S, T>
 where
     S: GraphStorage,
     T: Ord,
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.priority.cmp(&other.priority)
+        other.priority.cmp(&self.priority)
     }
 }
 
@@ -61,7 +61,7 @@ where
     S::NodeId: FlaggableGraphId<S>,
     T: Ord,
 {
-    heap: BinaryHeap<Reverse<PriorityQueueItem<'a, S, T>>>,
+    heap: BinaryHeap<PriorityQueueItem<'a, S, T>>,
 
     flags: <S::NodeId as FlaggableGraphId<S>>::Store<'a>,
 }
@@ -80,7 +80,7 @@ where
     }
 
     pub(in crate::shortest_paths) fn push(&mut self, node: Node<'a, S>, priority: T) {
-        self.heap.push(Reverse(PriorityQueueItem { node, priority }));
+        self.heap.push(PriorityQueueItem { node, priority });
     }
 
     pub(in crate::shortest_paths) fn has_been_visited(&self, id: &'a S::NodeId) -> bool {
@@ -88,11 +88,17 @@ where
     }
 
     pub(in crate::shortest_paths) fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
-        self.heap.push(Reverse(PriorityQueueItem { node, priority }));
+        if self.has_been_visited(node.id()) {
+            return;
+        }
+
+        self.heap.push(PriorityQueueItem { node, priority });
     }
 
     pub(in crate::shortest_paths) fn pop_min(&mut self) -> Option<QueueItem<'a, S, T>> {
-        while let Some(Reverse(item)) = self.heap.pop() {
+        loop {
+            let item = self.heap.pop()?;
+
             let visited = self.flags.index(item.node.id());
 
             if visited {
@@ -102,7 +108,5 @@ where
             self.flags.set(item.node.id(), true);
             return Some(item);
         }
-
-        None
     }
 }

@@ -7,11 +7,11 @@
 //! exclusive and define if a node or edge id will be automatically assigned by the graph (are
 //! managed) and a user has no control over their value or are arbitrary, allowing the user to use
 //! _any_ value.
-mod attributes;
+mod flag;
 mod linear;
 
 pub use self::{
-    attributes::{FlagStorage, FlaggableGraphId},
+    flag::{FlagStorage, FlaggableGraphId},
     linear::{IndexMapper, LinearGraphId},
 };
 use crate::attributes::NoValue;

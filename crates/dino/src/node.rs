@@ -76,8 +76,15 @@ pub struct FlagStore {
 }
 
 impl FlagStorage<NodeId> for FlagStore {
+    #[inline]
     fn get(&self, id: &NodeId) -> Option<bool> {
-        Some(self.vector[id.into_id().index()])
+        self.vector.get(id.into_id().index()).map(|flag| *flag)
+    }
+
+    #[inline]
+
+    fn index(&self, id: &NodeId) -> bool {
+        self.vector[id.into_id().index()]
     }
 
     fn set(&mut self, id: &NodeId, flag: bool) -> Option<bool> {
