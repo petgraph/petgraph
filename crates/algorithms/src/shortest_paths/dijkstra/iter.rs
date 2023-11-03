@@ -135,7 +135,7 @@ where
         let connections = self.connections.connections(&node);
         for edge in connections {
             let (u, v) = edge.endpoint_ids();
-            let target = if v == node.id() { u } else { v };
+            let target = if u == node.id() { v } else { u };
 
             // do not pursue edges that have already been processed.
             if self.queue.has_been_visited(target) {
