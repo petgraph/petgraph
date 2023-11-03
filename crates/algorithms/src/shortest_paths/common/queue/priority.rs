@@ -85,6 +85,10 @@ where
         self.heap.push(PriorityQueueItem { node, priority });
     }
 
+    pub(in crate::shortest_paths) fn force_visit(&mut self, id: &'a S::NodeId) {
+        self.flags.set(id, true);
+    }
+
     #[inline]
     pub(in crate::shortest_paths) fn has_been_visited(&self, id: &'a S::NodeId) -> bool {
         self.flags.index(id)

@@ -118,6 +118,7 @@ where
                 node: self.source,
                 priority: E::Value::zero(),
             });
+            self.queue.force_visit(self.source.id());
 
             return Some(Route::new(
                 Path::new(self.source, Vec::new(), self.source),
