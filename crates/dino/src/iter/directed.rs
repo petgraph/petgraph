@@ -18,16 +18,26 @@ where
     type Item = Edge<'storage, DinoStorage<N, E, D>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let id = self.iter.as_mut()?.next()?;
+        let iter = self.iter.as_mut()?;
 
-        let edge = self.storage.edges.get_unchecked(id)?;
+        loop {
+            let id = iter.next()?;
 
-        Some(Edge::new(
-            self.storage,
-            &edge.id,
-            &edge.weight,
-            &edge.source,
-            &edge.target,
-        ))
+            let Some(edge) = self.storage.edges.get_unchecked(id) else {
+                continue;
+            };
+
+            return Some(Edge::new(
+                self.storage,
+                &edge.id,
+                &edge.weight,
+                &edge.source,
+                &edge.target,
+            ));
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.as_ref().map_or((0, Some(0)), Iterator::size_hint)
     }
 }

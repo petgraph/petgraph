@@ -24,7 +24,7 @@ where
     T: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.priority.eq(&other.priority)
+        other.priority.eq(&self.priority)
     }
 }
 
@@ -72,6 +72,8 @@ where
     S::NodeId: FlaggableGraphId<S>,
     T: Ord,
 {
+    #[inline]
+
     pub(in crate::shortest_paths) fn new(storage: &'a S) -> Self {
         Self {
             heap: BinaryHeap::new(),
@@ -83,10 +85,12 @@ where
         self.heap.push(PriorityQueueItem { node, priority });
     }
 
+    #[inline]
     pub(in crate::shortest_paths) fn has_been_visited(&self, id: &'a S::NodeId) -> bool {
         self.flags.index(id)
     }
 
+    #[inline]
     pub(in crate::shortest_paths) fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
         if self.has_been_visited(node.id()) {
             return;
@@ -95,13 +99,12 @@ where
         self.heap.push(PriorityQueueItem { node, priority });
     }
 
+    #[inline]
     pub(in crate::shortest_paths) fn pop_min(&mut self) -> Option<QueueItem<'a, S, T>> {
         loop {
             let item = self.heap.pop()?;
 
-            let visited = self.flags.index(item.node.id());
-
-            if visited {
+            if self.has_been_visited(item.node.id()) {
                 continue;
             }
 
