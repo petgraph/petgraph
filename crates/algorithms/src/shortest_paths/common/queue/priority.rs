@@ -73,7 +73,6 @@ where
     T: Ord,
 {
     #[inline]
-
     pub(in crate::shortest_paths) fn new(storage: &'a S) -> Self {
         Self {
             heap: BinaryHeap::new(),
