@@ -85,7 +85,7 @@ where
         self.heap.push(PriorityQueueItem { node, priority });
     }
 
-    pub(in crate::shortest_paths) fn force_visit(&mut self, id: &'a S::NodeId) {
+    pub(in crate::shortest_paths) fn visit(&mut self, id: &'a S::NodeId) {
         self.flags.set(id, true);
     }
 
@@ -112,7 +112,7 @@ where
                 continue;
             }
 
-            self.flags.set(item.node.id(), true);
+            self.visit(item.node.id());
             return Some(item);
         }
     }
