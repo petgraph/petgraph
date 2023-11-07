@@ -9,6 +9,7 @@
 #![cfg_attr(nightly, feature(error_in_core))]
 
 extern crate alloc;
+extern crate core;
 
 // pub mod bipartite;
 // mod common;
