@@ -10,11 +10,8 @@ use core::{hash::Hash, marker::PhantomData, ops::Add};
 use error_stack::Result;
 use num_traits::Zero;
 use petgraph_core::{
-    edge::{
-        marker::{Directed, Undirected},
-        Direction,
-    },
-    DirectedGraphStorage, Edge, Graph, GraphDirectionality, GraphStorage, Node,
+    edge::marker::{Directed, Undirected},
+    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
 use self::{error::AStarError, r#impl::AStarImpl};
@@ -24,19 +21,12 @@ use crate::{
     shortest_paths::{
         astar::heuristic::GraphHeuristic,
         common::{
-            connections::Connections,
+            connections::{outgoing_connections, Connections},
             cost::{Cost, DefaultCost, GraphCost},
             route::{DirectRoute, Route},
         },
     },
 };
-
-fn outgoing_connections<'a, S>(node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a
-where
-    S: DirectedGraphStorage,
-{
-    node.directed_connections(Direction::Outgoing)
-}
 
 pub struct AStar<D, E, H>
 where

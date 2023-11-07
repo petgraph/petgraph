@@ -1,5 +1,14 @@
 use petgraph_core::{edge::Direction, DirectedGraphStorage, Edge, GraphStorage, Node};
 
+pub(in crate::shortest_paths) fn outgoing_connections<'a, S>(
+    node: &Node<'a, S>,
+) -> impl Iterator<Item = Edge<'a, S>> + 'a
+where
+    S: DirectedGraphStorage,
+{
+    node.directed_connections(Direction::Outgoing)
+}
+
 pub(in crate::shortest_paths) trait Connections<'a, S>
 where
     S: GraphStorage,
@@ -15,13 +24,4 @@ where
     fn connections(&self, node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a {
         (*self)(node)
     }
-}
-
-pub(in crate::shortest_paths) fn outgoing_connections<'a, S>(
-    node: &Node<'a, S>,
-) -> impl Iterator<Item = Edge<'a, S>> + 'a
-where
-    S: DirectedGraphStorage,
-{
-    node.directed_connections(Direction::Outgoing)
 }

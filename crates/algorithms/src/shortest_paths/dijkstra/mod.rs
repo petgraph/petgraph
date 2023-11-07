@@ -37,6 +37,7 @@ where
 }
 
 impl Dijkstra<Directed, DefaultCost> {
+    #[must_use]
     pub fn directed() -> Self {
         Self {
             direction: PhantomData,
@@ -46,6 +47,7 @@ impl Dijkstra<Directed, DefaultCost> {
 }
 
 impl Dijkstra<Undirected, DefaultCost> {
+    #[must_use]
     pub fn undirected() -> Self {
         Self {
             direction: PhantomData,

@@ -94,7 +94,7 @@ fn distance_from_directed_default_edge_cost() {
         (nodes.e, 7),
     ];
 
-    assert_distance(received, &expected)
+    assert_distance(received, &expected);
 }
 
 fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<'_, usize>

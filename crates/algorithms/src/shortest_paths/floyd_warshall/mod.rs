@@ -37,6 +37,7 @@ pub struct FloydWarshall<D, E> {
 }
 
 impl FloydWarshall<Directed, DefaultCost> {
+    #[must_use]
     pub fn directed() -> Self {
         Self {
             edge_cost: DefaultCost,
@@ -46,6 +47,7 @@ impl FloydWarshall<Directed, DefaultCost> {
 }
 
 impl FloydWarshall<Undirected, DefaultCost> {
+    #[must_use]
     pub fn undirected() -> Self {
         Self {
             edge_cost: DefaultCost,

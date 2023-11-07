@@ -12,10 +12,9 @@ use crate::shortest_paths::{
     common::{
         connections::Connections,
         cost::{Cost, GraphCost},
-        queue::Queue,
+        queue::priority::PriorityQueue,
         route::{DirectRoute, Route},
-        priority_queue::PriorityQueue,
-		transit::{reconstruct_path_to, PredecessorMode},
+        transit::{reconstruct_path_to, PredecessorMode},
     },
     Path,
 };
@@ -151,7 +150,7 @@ where
     pub(super) fn find_all(
         items: Vec<Self>,
     ) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
-        items.into_iter().filter_map(|item| item.find())
+        items.into_iter().filter_map(Self::find)
     }
 
     #[inline]

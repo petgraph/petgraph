@@ -6,11 +6,11 @@ use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
 pub struct Cost<T>(T);
 
 impl<T> Cost<T> {
-    pub fn new(value: T) -> Self {
+    pub const fn new(value: T) -> Self {
         Self(value)
     }
 
-    pub fn value(&self) -> &T {
+    pub const fn value(&self) -> &T {
         &self.0
     }
 

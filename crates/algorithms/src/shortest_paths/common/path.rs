@@ -21,6 +21,7 @@ impl<'a, S> Path<'a, S>
 where
     S: GraphStorage,
 {
+    #[must_use]
     pub fn new(source: Node<'a, S>, transit: Vec<Node<'a, S>>, target: Node<'a, S>) -> Self {
         Self {
             source,
@@ -29,14 +30,17 @@ where
         }
     }
 
-    pub fn source(&self) -> Node<'a, S> {
+    #[must_use]
+    pub const fn source(&self) -> Node<'a, S> {
         self.source
     }
 
-    pub fn target(&self) -> Node<'a, S> {
+    #[must_use]
+    pub const fn target(&self) -> Node<'a, S> {
         self.target
     }
 
+    #[must_use]
     pub fn transit(&self) -> &[Node<'a, S>] {
         &self.transit
     }

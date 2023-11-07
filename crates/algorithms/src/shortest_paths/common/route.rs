@@ -18,15 +18,15 @@ impl<'a, S, T> Route<'a, S, T>
 where
     S: GraphStorage,
 {
-    pub fn new(path: Path<'a, S>, cost: Cost<T>) -> Self {
+    pub const fn new(path: Path<'a, S>, cost: Cost<T>) -> Self {
         Self { path, cost }
     }
 
-    pub fn path(&self) -> &Path<'a, S> {
+    pub const fn path(&self) -> &Path<'a, S> {
         &self.path
     }
 
-    pub fn cost(&self) -> &Cost<T> {
+    pub const fn cost(&self) -> &Cost<T> {
         &self.cost
     }
 
@@ -145,7 +145,7 @@ where
     T: Hash,
 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        (&self.path, &self.cost).hash(state)
+        (&self.path, &self.cost).hash(state);
     }
 }
 
@@ -163,7 +163,7 @@ impl<'a, S, T> DirectRoute<'a, S, T>
 where
     S: GraphStorage,
 {
-    pub fn new(source: Node<'a, S>, target: Node<'a, S>, cost: Cost<T>) -> Self {
+    pub const fn new(source: Node<'a, S>, target: Node<'a, S>, cost: Cost<T>) -> Self {
         Self {
             source,
             target,
@@ -171,15 +171,15 @@ where
         }
     }
 
-    pub fn source(&self) -> &Node<'a, S> {
+    pub const fn source(&self) -> &Node<'a, S> {
         &self.source
     }
 
-    pub fn target(&self) -> &Node<'a, S> {
+    pub const fn target(&self) -> &Node<'a, S> {
         &self.target
     }
 
-    pub fn cost(&self) -> &Cost<T> {
+    pub const fn cost(&self) -> &Cost<T> {
         &self.cost
     }
 
@@ -307,7 +307,7 @@ where
     T: Hash,
 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        (&self.source, &self.target, &self.cost).hash(state)
+        (&self.source, &self.target, &self.cost).hash(state);
     }
 }
 

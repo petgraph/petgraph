@@ -42,7 +42,7 @@ struct Point {
 
 impl Point {
     fn distance(self, other: Self) -> f32 {
-        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+        (self.x - other.x).hypot(self.y - other.y)
     }
 
     fn manhattan_distance(self, other: Self) -> f32 {
@@ -72,7 +72,7 @@ graph!(
     ] as EdgeId
 );
 
-fn no_heuristic<'a, S>(_: Node<'a, S>, _: Node<'a, S>) -> MaybeOwned<'a, usize>
+const fn no_heuristic<'a, S>(_: Node<'a, S>, _: Node<'a, S>) -> MaybeOwned<'a, usize>
 where
     S: GraphStorage,
 {
@@ -321,14 +321,14 @@ graph!(factory(runtime) => DiDinoGraph<char, usize>;
 
 #[test]
 fn optimal_runtime() {
-    static CALLS: AtomicUsize = AtomicUsize::new(0);
-
-    let GraphCollection { graph, nodes, .. } = runtime::create();
-
     // Needed to bind the lifetime of the closure, does some compiler magic.
     fn bind<S, T>(closure: impl Fn(Edge<S>) -> MaybeOwned<T>) -> impl Fn(Edge<S>) -> MaybeOwned<T> {
         closure
     }
+
+    static CALLS: AtomicUsize = AtomicUsize::new(0);
+
+    let GraphCollection { graph, nodes, .. } = runtime::create();
 
     let astar = AStar::directed()
         .with_edge_cost(bind(|edge: Edge<DinoStorage<char, usize, Directed>>| {
