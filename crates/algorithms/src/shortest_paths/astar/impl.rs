@@ -14,7 +14,8 @@ use crate::shortest_paths::{
         cost::{Cost, GraphCost},
         queue::Queue,
         route::{DirectRoute, Route},
-        transit::{reconstruct_path_to, PredecessorMode},
+        priority_queue::PriorityQueue,
+		transit::{reconstruct_path_to, PredecessorMode},
     },
     Path,
 };
@@ -26,7 +27,7 @@ where
     E: GraphCost<S>,
     E::Value: Ord,
 {
-    queue: Queue<'graph, S, E::Value>,
+    queue: PriorityQueue<'graph, S, E::Value>,
 
     edge_cost: &'parent E,
     heuristic: &'parent H,
@@ -71,7 +72,7 @@ where
             .node(target)
             .ok_or_else(|| Report::new(AStarError::NodeNotFound))?;
 
-        let mut queue = Queue::new();
+        let mut queue = PriorityQueue::new();
         queue.push(
             source_node,
             heuristic.estimate(source_node, target_node).into_owned(),

@@ -6,7 +6,7 @@ use core::{
 
 use petgraph_core::{GraphStorage, Node};
 
-struct QueueItem<'a, S, T>
+struct PriorityQueueItem<'a, S, T>
 where
     S: GraphStorage,
 {
@@ -17,7 +17,7 @@ where
     skip: Cell<bool>,
 }
 
-impl<S, T> PartialEq for QueueItem<'_, S, T>
+impl<S, T> PartialEq for PriorityQueueItem<'_, S, T>
 where
     S: GraphStorage,
     T: PartialEq,
@@ -27,14 +27,14 @@ where
     }
 }
 
-impl<S, T> Eq for QueueItem<'_, S, T>
+impl<S, T> Eq for PriorityQueueItem<'_, S, T>
 where
     S: GraphStorage,
     T: Eq,
 {
 }
 
-impl<S, T> PartialOrd for QueueItem<'_, S, T>
+impl<S, T> PartialOrd for PriorityQueueItem<'_, S, T>
 where
     S: GraphStorage,
     T: PartialOrd,
@@ -44,7 +44,7 @@ where
     }
 }
 
-impl<S, T> Ord for QueueItem<'_, S, T>
+impl<S, T> Ord for PriorityQueueItem<'_, S, T>
 where
     S: GraphStorage,
     T: Ord,
@@ -54,15 +54,15 @@ where
     }
 }
 
-pub(in crate::shortest_paths) struct Queue<'a, S, T>
+pub(in crate::shortest_paths) struct PriorityQueue<'a, S, T>
 where
     S: GraphStorage,
     T: Ord,
 {
-    heap: BinaryHeap<Reverse<QueueItem<'a, S, T>>>,
+    heap: BinaryHeap<Reverse<PriorityQueueItem<'a, S, T>>>,
 }
 
-impl<'a, S, T> Queue<'a, S, T>
+impl<'a, S, T> PriorityQueue<'a, S, T>
 where
     S: GraphStorage,
     T: Ord,
@@ -74,7 +74,7 @@ where
     }
 
     pub(in crate::shortest_paths) fn push(&mut self, node: Node<'a, S>, priority: T) {
-        self.heap.push(Reverse(QueueItem {
+        self.heap.push(Reverse(PriorityQueueItem {
             node,
             priority,
 
@@ -90,7 +90,7 @@ where
             }
         }
 
-        self.heap.push(Reverse(QueueItem {
+        self.heap.push(Reverse(PriorityQueueItem {
             node,
             priority,
 

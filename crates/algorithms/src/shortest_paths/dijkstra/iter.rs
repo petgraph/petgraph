@@ -12,8 +12,8 @@ use crate::shortest_paths::{
         connections::Connections,
         cost::{Cost, GraphCost},
         path::Path,
-        queue::Queue,
-        route::Route,
+		route::Route,
+        priority_queue::PriorityQueue,
         transit::{reconstruct_path_to, PredecessorMode},
     },
     dijkstra::DijkstraError,
@@ -25,7 +25,7 @@ where
     E: GraphCost<S>,
     E::Value: Ord,
 {
-    queue: Queue<'graph, S, E::Value>,
+    queue: PriorityQueue<'graph, S, E::Value>,
 
     edge_cost: &'parent E,
     connections: G,
@@ -66,7 +66,7 @@ where
             .node(source)
             .ok_or_else(|| Report::new(DijkstraError::NodeNotFound))?;
 
-        let mut queue = Queue::new();
+        let mut queue = PriorityQueue::new();
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, E::Value::zero());

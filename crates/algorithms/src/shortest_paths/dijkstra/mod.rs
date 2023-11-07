@@ -9,16 +9,13 @@ use core::{hash::Hash, marker::PhantomData, ops::Add};
 use error_stack::Result;
 use num_traits::Zero;
 use petgraph_core::{
-    edge::{
-        marker::{Directed, Undirected},
-        Direction,
-    },
-    DirectedGraphStorage, Edge, Graph, GraphDirectionality, GraphStorage, Node,
+    edge::marker::{Directed, Undirected},
+    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
 pub(crate) use self::error::DijkstraError;
 use self::iter::DijkstraIter;
-use super::common::transit::PredecessorMode;
+use super::common::{connections::outgoing_connections, transit::PredecessorMode};
 use crate::{
     polyfill::IteratorExt,
     shortest_paths::{
@@ -29,13 +26,6 @@ use crate::{
         ShortestDistance, ShortestPath,
     },
 };
-
-fn outgoing_connections<'a, S>(node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a
-where
-    S: DirectedGraphStorage,
-{
-    node.directed_connections(Direction::Outgoing)
-}
 
 pub struct Dijkstra<D, E>
 where

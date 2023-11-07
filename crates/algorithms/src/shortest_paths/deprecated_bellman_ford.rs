@@ -63,14 +63,10 @@ pub struct Paths<NodeId, EdgeWeight> {
 /// assert!(path.is_ok());
 /// let path = path.unwrap();
 /// assert_eq!(path.distances, vec![0.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
-/// assert_eq!(path.predecessors, vec![
-///     None,
-///     Some(a),
-///     Some(b),
-///     Some(a),
-///     Some(d),
-///     Some(e)
-/// ]);
+/// assert_eq!(
+///     path.predecessors,
+///     vec![None, Some(a), Some(b), Some(a), Some(d), Some(e)]
+/// );
 ///
 /// // Node f (indice 5) can be reach from a with a path costing 6.
 /// // Predecessor of f is Some(e) which predecessor is Some(d) which predecessor is Some(a).
@@ -262,7 +258,7 @@ mod tests {
     use petgraph_graph::Graph;
     use proptest::prelude::*;
 
-    use crate::shortest_paths::bellman_ford;
+    use crate::shortest_paths::_bellman_ford;
 
     #[cfg(not(miri))]
     proptest! {
@@ -273,7 +269,7 @@ mod tests {
             }
 
             for node in graph.node_indices() {
-                bellman_ford(&graph, node).expect("should be possible");
+                _bellman_ford(&graph, node).expect("should be possible");
             }
         }
 
@@ -284,14 +280,14 @@ mod tests {
             }
 
             for node in graph.node_indices() {
-                bellman_ford(&graph, node).expect("should be possible");
+                _bellman_ford(&graph, node).expect("should be possible");
             }
         }
 
         #[test]
         fn negative_path_never_empty(graph in any::<Graph<(), f32, Directed, u8>>()) {
             for node in graph.node_indices() {
-                let path = super::find_negative_cycle(&graph, node);
+                let path = _bellman_ford::find_negative_cycle(&graph, node);
 
                 if let Some(path) = path {
                     prop_assert!(!path.is_empty());
