@@ -1,9 +1,11 @@
+use petgraph::csr::{Csr, DefaultIx};
 use std::marker::PhantomData;
 
 use petgraph::data::Build;
 use petgraph::prelude::*;
 use petgraph::visit::NodeIndexable;
 
+use petgraph::matrix_graph::MatrixGraph;
 use petgraph::EdgeType;
 
 /// Petersen A and B are isomorphic
@@ -33,6 +35,20 @@ const PETERSEN_B: &str = "
  0 0 1 1 0 0 0 0 1 0
  0 0 0 0 1 1 0 1 0 0
  1 0 1 0 1 0 0 0 0 0
+";
+
+/// An almost full set
+const FULL: &str = "
+ 1 1 1 1 1 1 1 1 1 1
+ 1 1 1 1 1 1 1 1 1 1
+ 1 1 1 1 1 1 1 1 1 1
+ 1 1 1 1 1 1 1 1 1 1
+ 1 1 1 1 1 1 1 1 1 1
+ 1 1 1 1 1 1 1 1 1 1
+ 1 1 1 1 1 1 1 1 1 1
+ 1 1 1 1 1 1 1 1 1 1
+ 1 1 1 1 0 1 1 1 0 1
+ 1 1 1 1 1 1 1 1 1 1
 ";
 
 /// An almost full set, isomorphic
@@ -203,6 +219,55 @@ where
     g
 }
 
+/// Parse a text adjacency matrix format into a CSR graph
+fn parse_csr_graph(s: &str) -> Csr<(), ()> {
+    let mut gr = Csr::<(), ()>::new();
+    let s = s.trim();
+    let lines = s.lines().filter(|l| !l.is_empty());
+    for (row, line) in lines.enumerate() {
+        for (col, word) in line.split(' ').filter(|s| !s.is_empty()).enumerate() {
+            let has_edge = word.parse::<i32>().unwrap();
+            assert!(has_edge == 0 || has_edge == 1);
+            if has_edge == 0 {
+                continue;
+            }
+            while col >= gr.node_count() || row >= gr.node_count() {
+                gr.add_node(());
+            }
+            gr.add_edge(row as DefaultIx, col as DefaultIx, ());
+        }
+    }
+    gr
+}
+
+// Note: CSR does not implement the Build trait thus cannot be created from the GraphFactory
+// Apparently, the build trait requires 5 generic parameters whereas CSR only takes 4 so
+// there is no simple way around without refactoring CSR. To keep things simple, we add a second,
+// non-generic CsrFactory until Csr implements Build.
+pub struct CsrFactory {
+    g: Csr<(), ()>,
+}
+
+impl CsrFactory {
+    fn new() -> Self {
+        CsrFactory { g: Csr::new() }
+    }
+
+    pub fn full(self) -> Self {
+        let g = parse_csr_graph(FULL);
+        Self { g }
+    }
+
+    pub fn bigger(self) -> Self {
+        let g = parse_csr_graph(BIGGER);
+        Self { g }
+    }
+
+    pub fn graph(self) -> Csr<(), ()> {
+        self.g
+    }
+}
+
 pub struct GraphFactory<Ty, G = Graph<(), (), Ty>> {
     ty: PhantomData<Ty>,
     g: PhantomData<G>,
@@ -226,6 +291,10 @@ where
 
     pub fn petersen_b(self) -> G {
         parse_graph::<Ty, _>(PETERSEN_B)
+    }
+
+    pub fn full(self) -> G {
+        parse_graph::<Ty, _>(FULL)
     }
 
     pub fn full_a(self) -> G {
@@ -263,6 +332,13 @@ pub fn ungraph() -> GraphFactory<Undirected, Graph<(), (), Undirected>> {
 
 pub fn digraph() -> GraphFactory<Directed, Graph<(), (), Directed>> {
     graph()
+}
+
+pub fn csr_graph() -> CsrFactory {
+    CsrFactory::new()
+}
+pub fn matrix_graph<Ty: EdgeType>() -> GraphFactory<Ty, MatrixGraph<(), (), Ty>> {
+    GraphFactory::new()
 }
 
 pub fn stable_graph<Ty: EdgeType>() -> GraphFactory<Ty, StableGraph<(), (), Ty>> {

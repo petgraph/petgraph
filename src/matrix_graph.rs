@@ -27,7 +27,7 @@ pub use crate::graph::IndexType;
 // The following types are used to control the max size of the adjacency matrix. Since the maximum
 // size of the matrix vector's is the square of the maximum number of nodes, the number of nodes
 // should be reasonably picked.
-type DefaultIx = u16;
+type DefaultIx = u32;
 
 /// Node identifier.
 pub type NodeIndex<Ix = DefaultIx> = GraphNodeIndex<Ix>;
@@ -204,7 +204,7 @@ pub fn node_index(ax: usize) -> NodeIndex {
 /// This graph is backed by a flattened 2D array. For undirected graphs, only the lower triangular
 /// matrix is stored. Since the backing array stores edge weights, it is recommended to box large
 /// edge weights.
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MatrixGraph<N, E, Ty = Directed, Null: Nullable<Wrapped = E> = Option<E>, Ix = DefaultIx>
 {
     node_adjacencies: Vec<Null>,
@@ -900,7 +900,7 @@ fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
     v.resize_with(size, T::default);
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct IdStorage<T> {
     elements: Vec<Option<T>>,
     upper_bound: usize,

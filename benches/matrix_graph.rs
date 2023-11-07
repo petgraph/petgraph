@@ -7,7 +7,11 @@ use test::Bencher;
 
 use petgraph::algo;
 use petgraph::matrix_graph::{node_index, MatrixGraph};
-use petgraph::{Directed, EdgeType, Incoming, Outgoing};
+use petgraph::{Directed, Incoming, Outgoing};
+
+#[allow(dead_code)]
+mod common;
+use common::*;
 
 #[bench]
 fn add_100_nodes(b: &mut test::Bencher) {
@@ -94,154 +98,75 @@ fn add_adjacent_edges(bench: &mut test::Bencher) {
     });
 }
 
-/// An almost full set
-const FULL: &str = "
- 1 1 1 1 1 1 1 1 1 1
- 1 1 1 1 1 1 1 1 1 1
- 1 1 1 1 1 1 1 1 1 1
- 1 1 1 1 1 1 1 1 1 1
- 1 1 1 1 1 1 1 1 1 1
- 1 1 1 1 1 1 1 1 1 1
- 1 1 1 1 1 1 1 1 1 1
- 1 1 1 1 1 1 1 1 1 1
- 1 1 1 1 0 1 1 1 0 1
- 1 1 1 1 1 1 1 1 1 1
-";
-
-const BIGGER: &str = "
- 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 1 1 0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 1 0 0 0 1 1 0 0 0 0 0 0 0 1 0 1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0
- 0 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0
- 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 1 1 0 1 0 0
- 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 1 1 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 1 1 1 0 0 0
- 0 0 0 0 0 0 1 0 0 0 0 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1 1 0 1 0 0 0 1
- 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 0 0 1 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 1 1 0 1 1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 1 1
- 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 1 0 1 1 0 1 1 1 0 0 0 0 0 1 0 0 1 0 0 0 1 0 1 1
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 1
- 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 1 1 0
- 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0
- 1 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 1 1 0 1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
- 0 0 1 0 1 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 1 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0
- 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 0
- 1 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 1 0 0 0
- 0 1 0 0 0 0 0 0 1 0 1 1 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 1 0 1 1 0 0 0 0 0 1 0 0
- 0 0 1 0 0 0 0 0 1 1 0 1 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 1 1 0 1 0 0 0 0 0 0 1 0
- 0 0 0 1 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 1
- 0 0 0 0 1 0 0 0 0 0 0 0 0 1 1 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 1 1 0 1 0 0
- 0 0 0 0 0 1 0 0 0 0 0 0 1 0 1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 1 1 1 0 0 0
- 0 1 0 0 0 0 1 0 0 0 0 0 1 1 0 1 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1 1 0 1 0 0 0 1
- 0 1 0 0 0 0 0 1 0 0 0 0 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 0 0 1 0
- 0 1 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 1 1
- 0 1 0 0 0 0 0 0 0 1 0 0 1 0 0 0 1 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 1 0 1 1
- 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 1
- 0 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 1 1 0
-";
-
-/// Parse a text adjacency matrix format into a directed graph
-fn parse_matrix<Ty: EdgeType>(s: &str) -> MatrixGraph<(), (), Ty> {
-    let mut gr = MatrixGraph::default();
-    let s = s.trim();
-    let lines = s.lines().filter(|l| !l.is_empty());
-    for (row, line) in lines.enumerate() {
-        for (col, word) in line.split(' ').filter(|s| !s.is_empty()).enumerate() {
-            let has_edge = word.parse::<i32>().unwrap();
-            assert!(has_edge == 0 || has_edge == 1);
-            if has_edge == 0 {
-                continue;
-            }
-            while col >= gr.node_count() || row >= gr.node_count() {
-                gr.add_node(());
-            }
-            gr.add_edge(node_index(row), node_index(col), ());
-        }
-    }
-    gr
-}
-
 #[bench]
 fn full_edges_out(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(FULL);
+    let a = matrix_graph::<Directed>().full();
     bench.iter(|| a.edges_directed(node_index(1), Outgoing).count())
 }
 
 #[bench]
 fn full_edges_in(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(FULL);
+    let a = matrix_graph::<Directed>().full();
     bench.iter(|| a.edges_directed(node_index(1), Incoming).count())
 }
 
 #[bench]
 fn full_neighbors_out(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(FULL);
+    let a = matrix_graph::<Directed>().full();
     bench.iter(|| a.neighbors_directed(node_index(1), Outgoing).count())
 }
 
 #[bench]
 fn full_neighbors_in(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(FULL);
-
+    let a = matrix_graph::<Directed>().full();
     bench.iter(|| a.neighbors_directed(node_index(1), Incoming).count())
 }
 
 #[bench]
 fn full_kosaraju_sccs(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(FULL);
+    let a = matrix_graph::<Directed>().full();
     bench.iter(|| algo::kosaraju_scc(&a));
 }
 
 #[bench]
 fn full_tarjan_sccs(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(FULL);
+    let a = matrix_graph::<Directed>().full();
     bench.iter(|| algo::tarjan_scc(&a));
 }
 
 #[bench]
 fn bigger_edges_out(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(BIGGER);
+    let a = matrix_graph::<Directed>().bigger();
     bench.iter(|| a.edges_directed(node_index(1), Outgoing).count())
 }
 
 #[bench]
 fn bigger_edges_in(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(BIGGER);
+    let a = matrix_graph::<Directed>().bigger();
     bench.iter(|| a.edges_directed(node_index(1), Incoming).count())
 }
 
 #[bench]
 fn bigger_neighbors_out(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(BIGGER);
+    let a = matrix_graph::<Directed>().bigger();
     bench.iter(|| a.neighbors_directed(node_index(1), Outgoing).count())
 }
 
 #[bench]
 fn bigger_neighbors_in(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(BIGGER);
+    let a = matrix_graph::<Directed>().bigger();
 
     bench.iter(|| a.neighbors_directed(node_index(1), Incoming).count())
 }
 
 #[bench]
 fn bigger_kosaraju_sccs(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(BIGGER);
+    let a = matrix_graph::<Directed>().bigger();
     bench.iter(|| algo::kosaraju_scc(&a));
 }
 
 #[bench]
 fn bigger_tarjan_sccs(bench: &mut Bencher) {
-    let a = parse_matrix::<Directed>(BIGGER);
+    let a = matrix_graph::<Directed>().bigger();
     bench.iter(|| algo::tarjan_scc(&a));
 }
