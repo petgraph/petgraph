@@ -5,7 +5,9 @@ use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{
-    common::tests::{assert_distance, assert_path, distance_from, path_from},
+    common::tests::{
+        assert_distance, assert_path, distance_from, expected, path_from, Expect, TestCase,
+    },
     dijkstra::Dijkstra,
     ShortestPath,
 };
@@ -35,6 +37,18 @@ graph!(
     ] as EdgeId
 );
 
+fn networkx_expect_from(
+    nodes: &networkx::NodeCollection<NodeId>,
+) -> Vec<Expect<networkx::Graph, i32>> {
+    expected!(nodes; [
+        a -()> a: 0,
+        a -(c)> b: 8,
+        a -()> c: 5,
+        a -(c, b)> d: 9,
+        a -(c)> e: 7,
+    ])
+}
+
 graph!(
     /// Uses a randomly generated graph
     factory(random) => DiDinoGraph<&'static str, &'static str>;
@@ -62,39 +76,21 @@ graph!(
 #[test]
 fn path_from_directed_default_edge_cost() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
+    let expected = networkx_expect_from(&nodes);
 
     let dijkstra = Dijkstra::directed();
 
-    let received = path_from(&graph, &nodes.a, &dijkstra);
-
-    let expected = [
-        (nodes.a, 0, &[nodes.a, nodes.a] as &[_]),
-        (nodes.b, 8, &[nodes.a, nodes.c, nodes.b]),
-        (nodes.c, 5, &[nodes.a, nodes.c]),
-        (nodes.d, 9, &[nodes.a, nodes.c, nodes.b, nodes.d]),
-        (nodes.e, 7, &[nodes.a, nodes.c, nodes.e]),
-    ];
-
-    assert_path(received, &expected);
+    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(&nodes.a);
 }
 
 #[test]
 fn distance_from_directed_default_edge_cost() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
+    let expected = networkx_expect_from(&nodes);
 
     let dijkstra = Dijkstra::directed();
 
-    let received = distance_from(&graph, &nodes.a, &dijkstra);
-
-    let expected = [
-        (nodes.a, 0),
-        (nodes.b, 8),
-        (nodes.c, 5),
-        (nodes.d, 9),
-        (nodes.e, 7),
-    ];
-
-    assert_distance(received, &expected);
+    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(&nodes.a);
 }
 
 fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<'_, usize>

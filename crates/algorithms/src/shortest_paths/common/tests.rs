@@ -4,11 +4,12 @@ use core::{
     hash::Hash,
 };
 
+use error_stack::Result;
 use hashbrown::HashMap;
 use petgraph_core::{Graph, GraphStorage, Node};
 use petgraph_dino::NodeId;
 
-use crate::shortest_paths::{ShortestDistance, ShortestPath};
+use crate::shortest_paths::{DirectRoute, Route, ShortestDistance, ShortestPath};
 
 /// Helper Macro to create a map of expected results
 ///
@@ -32,35 +33,35 @@ macro_rules! expected {
 
 pub(in crate::shortest_paths) use expected;
 
-pub(in crate::shortest_paths) struct Expect<S, T>
+pub(in crate::shortest_paths) struct Expect<G, T>
 where
-    S: GraphExt,
+    G: GraphExt,
 {
-    pub(in crate::shortest_paths) source: <S::Storage as GraphStorage>::NodeId,
-    pub(in crate::shortest_paths) target: <S::Storage as GraphStorage>::NodeId,
+    pub(in crate::shortest_paths) source: <G::Storage as GraphStorage>::NodeId,
+    pub(in crate::shortest_paths) target: <G::Storage as GraphStorage>::NodeId,
 
-    pub(in crate::shortest_paths) transit: Vec<<S::Storage as GraphStorage>::NodeId>,
+    pub(in crate::shortest_paths) transit: Vec<<G::Storage as GraphStorage>::NodeId>,
 
     pub(in crate::shortest_paths) cost: T,
 }
 
-pub(in crate::shortest_paths) struct TestCase<'a, S, A, T>
+pub(in crate::shortest_paths) struct TestCase<'a, G, A, T>
 where
-    S: GraphExt,
+    G: GraphExt,
 {
-    graph: &'a Graph<S::Storage>,
+    graph: &'a Graph<G::Storage>,
     algorithm: &'a A,
-    expected: &'a [Expect<S, T>],
+    expected: &'a [Expect<G, T>],
 }
 
-impl<'a, S, A, T> TestCase<'a, S, A, T>
+impl<'a, G, A, T> TestCase<'a, G, A, T>
 where
-    S: GraphExt,
+    G: GraphExt,
 {
     pub(crate) const fn new(
-        graph: &'a Graph<S::Storage>,
+        graph: &'a Graph<G::Storage>,
         algorithm: &'a A,
-        expected: &'a [Expect<S, T>],
+        expected: &'a [Expect<G, T>],
     ) -> Self {
         Self {
             graph,
@@ -70,17 +71,18 @@ where
     }
 }
 
-impl<'a, S, A, T> TestCase<'a, S, A, T>
+impl<'a, G, A, T> TestCase<'a, G, A, T>
 where
-    S: GraphExt,
-    <S::Storage as GraphStorage>::NodeId: Eq + Hash + Debug + Display,
-    A: ShortestPath<S::Storage, Cost = T>,
+    G: GraphExt,
+    <G::Storage as GraphStorage>::NodeId: Eq + Hash + Debug + Display,
+    A: ShortestPath<G::Storage, Cost = T>,
     T: PartialEq + Debug,
 {
-    pub(in crate::shortest_paths) fn assert_path(&self) {
-        let mut routes: HashMap<_, _> = self
-            .algorithm
-            .every_path(self.graph)
+    fn assert_path_routes(
+        &self,
+        routes: Result<impl Iterator<Item = Route<'a, G::Storage, T>>, A::Error>,
+    ) {
+        let mut routes: HashMap<_, _> = routes
             .unwrap()
             .map(|route| {
                 (
@@ -110,19 +112,31 @@ where
 
         assert!(routes.is_empty());
     }
+
+    pub(in crate::shortest_paths) fn assert_every_path(&self) {
+        self.assert_path_routes(self.algorithm.every_path(self.graph));
+    }
+
+    pub(in crate::shortest_paths) fn assert_path_from(
+        &self,
+        source: &<G::Storage as GraphStorage>::NodeId,
+    ) {
+        self.assert_path_routes(self.algorithm.path_from(self.graph, source));
+    }
 }
 
-impl<'a, S, A, T> TestCase<'a, S, A, T>
+impl<'a, G, A, T> TestCase<'a, G, A, T>
 where
-    S: GraphExt,
-    <S::Storage as GraphStorage>::NodeId: Eq + Hash + Debug + Display,
-    A: ShortestDistance<S::Storage, Cost = T>,
+    G: GraphExt,
+    <G::Storage as GraphStorage>::NodeId: Eq + Hash + Debug + Display,
+    A: ShortestDistance<G::Storage, Cost = T>,
     T: PartialEq + Debug,
 {
-    pub(in crate::shortest_paths) fn assert_distance(&self) {
-        let mut routes: HashMap<_, _> = self
-            .algorithm
-            .every_distance(self.graph)
+    fn assert_distance_routes(
+        &self,
+        routes: Result<impl Iterator<Item = DirectRoute<'a, G::Storage, T>>, A::Error>,
+    ) {
+        let mut routes: HashMap<_, _> = routes
             .unwrap()
             .map(|route| ((route.source().id(), route.target().id()), route))
             .collect();
@@ -152,6 +166,17 @@ where
         }
 
         assert!(routes.is_empty());
+    }
+
+    pub(in crate::shortest_paths) fn assert_every_distance(&self) {
+        self.assert_distance_routes(self.algorithm.every_distance(self.graph));
+    }
+
+    pub(in crate::shortest_paths) fn assert_distance_from(
+        &self,
+        source: &<G::Storage as GraphStorage>::NodeId,
+    ) {
+        self.assert_distance_routes(self.algorithm.distance_from(self.graph, source));
     }
 }
 

@@ -109,7 +109,7 @@ fn uniform_directed_path() {
 
     let floyd_warshall = FloydWarshall::directed();
 
-    TestCase::new(&graph, &floyd_warshall, &expected).assert_path();
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_every_path();
 }
 
 #[test]
@@ -119,7 +119,7 @@ fn uniform_directed_distance() {
 
     let floyd_warshall = FloydWarshall::directed();
 
-    TestCase::new(&graph, &floyd_warshall, &expected).assert_distance();
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_every_distance();
 }
 
 graph!(
@@ -174,7 +174,7 @@ fn weighted_directed_path() {
 
     let floyd_warshall = FloydWarshall::directed();
 
-    TestCase::new(&graph, &floyd_warshall, &expected).assert_path();
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_every_path();
 }
 
 #[test]
@@ -239,7 +239,7 @@ fn weighted_directed_distance() {
 
     let floyd_warshall = FloydWarshall::directed();
 
-    TestCase::new(&graph, &floyd_warshall, &expected).assert_distance();
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_every_distance();
 }
 
 fn undirected_weighted_expect(
@@ -275,7 +275,7 @@ fn weighted_undirected_path() {
 
     let floyd_warshall = FloydWarshall::undirected();
 
-    TestCase::new(&graph, &floyd_warshall, &expected).assert_path();
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_every_path();
 }
 
 #[test]
@@ -340,7 +340,7 @@ fn weighted_undirected_distance() {
 
     let floyd_warshall = FloydWarshall::undirected();
 
-    TestCase::new(&graph, &floyd_warshall, &expected).assert_distance();
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_every_distance();
 }
 
 graph!(factory(negative_cycle) => DiDinoGraph<&'static str, isize>;
