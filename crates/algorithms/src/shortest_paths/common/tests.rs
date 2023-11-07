@@ -19,48 +19,48 @@ macro_rules! expected {
         Expect {
             source: $nodes.$source,
             target: $nodes.$target,
-            transit: &[$($nodes.$path),*],
+            transit: alloc::vec![$($nodes.$path),*],
             cost: $cost,
         }
     };
     ($nodes:ident; [$($source:ident -( $($path:ident),* )> $target:ident : $cost:literal),* $(,)?]) => {
-        [
-            $(expect!(@rule $nodes; $source; ($($path),*) ;$target; $cost)),*
+        alloc::vec![
+            $(expected!(@rule $nodes; $source; ($($path),*) ;$target; $cost)),*
         ]
     };
 }
 
 pub(in crate::shortest_paths) use expected;
 
-pub(in crate::shortest_paths) struct Expect<'a, S, T>
+pub(in crate::shortest_paths) struct Expect<S, T>
 where
-    S: GraphStorage,
+    S: GraphExt,
 {
-    pub(in crate::shortest_paths) source: S::NodeId,
-    pub(in crate::shortest_paths) target: S::NodeId,
+    pub(in crate::shortest_paths) source: <S::Storage as GraphStorage>::NodeId,
+    pub(in crate::shortest_paths) target: <S::Storage as GraphStorage>::NodeId,
 
-    pub(in crate::shortest_paths) transit: &'a [S::NodeId],
+    pub(in crate::shortest_paths) transit: Vec<<S::Storage as GraphStorage>::NodeId>,
 
     pub(in crate::shortest_paths) cost: T,
 }
 
 pub(in crate::shortest_paths) struct TestCase<'a, S, A, T>
 where
-    S: GraphStorage,
+    S: GraphExt,
 {
-    graph: &'a Graph<S>,
+    graph: &'a Graph<S::Storage>,
     algorithm: &'a A,
-    expected: &'a [Expect<'a, S, T>],
+    expected: &'a [Expect<S, T>],
 }
 
 impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
-    S: GraphStorage,
+    S: GraphExt,
 {
     pub(crate) const fn new(
-        graph: &'a Graph<S>,
+        graph: &'a Graph<S::Storage>,
         algorithm: &'a A,
-        expected: &'a [Expect<'a, S, T>],
+        expected: &'a [Expect<S, T>],
     ) -> Self {
         Self {
             graph,
@@ -72,9 +72,9 @@ where
 
 impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
-    S: GraphStorage,
-    S::NodeId: Eq + Hash + Debug + Display,
-    A: ShortestPath<S, Cost = T>,
+    S: GraphExt,
+    <S::Storage as GraphStorage>::NodeId: Eq + Hash + Debug + Display,
+    A: ShortestPath<S::Storage, Cost = T>,
     T: PartialEq + Debug,
 {
     pub(in crate::shortest_paths) fn assert_path(&self) {
@@ -114,9 +114,9 @@ where
 
 impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
-    S: GraphStorage,
-    S::NodeId: Eq + Hash + Debug + Display,
-    A: ShortestDistance<S, Cost = T>,
+    S: GraphExt,
+    <S::Storage as GraphStorage>::NodeId: Eq + Hash + Debug + Display,
+    A: ShortestDistance<S::Storage, Cost = T>,
     T: PartialEq + Debug,
 {
     pub(in crate::shortest_paths) fn assert_distance(&self) {
@@ -153,6 +153,17 @@ where
 
         assert!(routes.is_empty());
     }
+}
+
+pub(in crate::shortest_paths) trait GraphExt {
+    type Storage: GraphStorage;
+}
+
+impl<S> GraphExt for Graph<S>
+where
+    S: GraphStorage,
+{
+    type Storage = S;
 }
 
 pub(in crate::shortest_paths) fn assert_path<S, T>(

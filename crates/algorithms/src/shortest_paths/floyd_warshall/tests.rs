@@ -1,125 +1,14 @@
 use alloc::vec::Vec;
 
-use hashbrown::{HashMap, HashSet};
-use petgraph_core::{Graph, GraphStorage};
+use hashbrown::HashSet;
 use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{
+    common::tests::{expected, Expect, TestCase},
     floyd_warshall::{error::FloydWarshallError, FloydWarshall},
     ShortestPath,
 };
-
-/// Helper Macro to create a map of expected results
-///
-/// Technically this macro is not necessarily needed, but it makes the test code much more
-/// readable
-macro_rules! expected {
-    [$nodes:ident; $($source:ident -$path:tt> $target:ident : $cost:tt),* $(,)?] => {
-        {
-            [$(expected!(@rule $nodes; $source -$path> $target : $cost)),*]
-        }
-    };
-    (@rule $nodes:ident; $source:ident -?> $target:ident : $cost:literal) => {
-        ($nodes.$source, $nodes.$target, $cost)
-    };
-    (@rule $nodes:ident; $source:ident -( $($path:ident),* )> $target:ident : $cost:literal) => {
-        ($nodes.$source, $nodes.$target, $cost, &[$($nodes.$path),*] as &[_])
-    };
-}
-
-macro_rules! expect {
-    (@rule $nodes:ident; $source:ident; ($($path:ident),*) ;$target:ident; $cost:literal) => {
-        ($nodes.$source, $nodes.$target, $cost, &[$($nodes.$path),*] as &[_])
-    };
-    (@expected $nodes:ident; [$($source:ident -( $($path:ident),* )> $target:ident : $cost:literal),* $(,)?]) => {
-        [
-            $(expect!(@rule $nodes; $source; ($($path),*) ;$target; $cost)),*
-        ]
-    };
-    (factory($name:ident) => $factory:ident; $cost:ty[$($rules:tt)*]) => {
-        mod $name {
-            use core::fmt::{Debug, Display};
-            use core::hash::Hash;
-
-            use super::*;
-            use crate::shortest_paths::{ShortestDistance, ShortestPath};
-
-            pub(crate) fn path<S, A>(
-                graph: &Graph<S>,
-                nodes: &$factory::NodeCollection<S::NodeId>,
-                algorithm: A
-            )
-            where
-                S: GraphStorage,
-                S::NodeId: Copy + Eq + Hash + Debug + Display,
-                A: ShortestPath<S, Cost = $cost>,
-            {
-                let expected = expect!(@expected nodes; [$($rules)*]);
-
-                let mut routes: HashMap<_, _> = algorithm
-                        .every_path(&graph)
-                        .unwrap()
-                        .map(|route| {
-                            ((*route.path().source().id(), *route.path().target().id()), route)
-                        })
-                        .collect();
-
-                for (source, target, expected_cost, expected_path) in expected {
-                    let route = routes.remove(&(source, target)).expect("route not found");
-                    let (path, cost) = route.into_parts();
-                    let mut path: Vec<_> = path.iter().map(|node| *node.id()).collect();
-
-                    let received_target = path.pop();
-                    path.reverse();
-                    let received_source = path.pop();
-                    path.reverse();
-
-                    assert_eq!(cost.into_value(), expected_cost, "cost of {source} -> {target}");
-                    assert_eq!(received_source, Some(source), "source of {source} -> {target}");
-                    assert_eq!(received_target, Some(target), "target of {source} -> {target}");
-                    assert_eq!(path, expected_path, "path of {source} -> {target}");
-                }
-
-                assert!(routes.is_empty());
-            }
-
-            pub(crate) fn distance<S, A>(
-                graph: &Graph<S>,
-                nodes: &$factory::NodeCollection<S::NodeId>,
-                algorithm: A
-            )
-            where
-                S: GraphStorage,
-                S::NodeId: Copy + Eq + Hash + Debug + Display,
-                A: ShortestDistance<S, Cost = $cost>,
-            {
-                let expected = expect!(@expected nodes; [$($rules)*]);
-
-                let mut routes: HashMap<_, _> = algorithm
-                        .every_distance(&graph)
-                        .unwrap()
-                        .map(|route| {
-                            ((*route.source().id(), *route.target().id()), route)
-                        })
-                        .collect();
-
-                for (source, target, expected_cost, _) in expected {
-                    let route = routes.remove(&(source, target)).expect("route not found");
-
-                    assert_eq!(
-                        route.into_cost().into_value(),
-                        expected_cost,
-                        "cost of {source} -> {target}"
-                    );
-                }
-
-                assert!(routes.is_empty());
-            }
-        }
-
-    };
-}
 
 graph!(
     /// Graph:
@@ -153,80 +42,84 @@ graph!(
     ] as EdgeId
 );
 
-expect!(factory(expect_uniform) => uniform; usize[
-    a -()> a: 0,
-    a -()> b: 1,
-    a -(b)> c: 2,
-    a -(b, c)> d: 3,
-    a -(b)> e: 2,
-    a -(b, e)> f: 3,
-    a -(b, e, f)> g: 4,
-    a -(b, e, f, g)> h: 5,
+fn uniform_expect(nodes: &uniform::NodeCollection<NodeId>) -> Vec<Expect<uniform::Graph, usize>> {
+    expected!(nodes; [
+        a -()> a: 0,
+        a -()> b: 1,
+        a -(b)> c: 2,
+        a -(b, c)> d: 3,
+        a -(b)> e: 2,
+        a -(b, e)> f: 3,
+        a -(b, e, f)> g: 4,
+        a -(b, e, f, g)> h: 5,
 
-    b -(c, d)> a: 3,
-    b -()> b: 0,
-    b -()> c: 1,
-    b -(c)> d: 2,
-    b -()> e: 1,
-    b -(e)> f: 2,
-    b -(e, f)> g: 3,
-    b -(e, f, g)> h: 4,
+        b -(c, d)> a: 3,
+        b -()> b: 0,
+        b -()> c: 1,
+        b -(c)> d: 2,
+        b -()> e: 1,
+        b -(e)> f: 2,
+        b -(e, f)> g: 3,
+        b -(e, f, g)> h: 4,
 
-    c -(d)> a: 2,
-    c -(d, a)> b: 3,
-    c -()> c: 0,
-    c -()> d: 1,
-    c -(d, a, b)> e: 4,
-    c -(d, a, b, e)> f: 5,
-    c -(d, a, b, e, f)> g: 6,
-    c -(d, a, b, e, f, g)> h: 7,
+        c -(d)> a: 2,
+        c -(d, a)> b: 3,
+        c -()> c: 0,
+        c -()> d: 1,
+        c -(d, a, b)> e: 4,
+        c -(d, a, b, e)> f: 5,
+        c -(d, a, b, e, f)> g: 6,
+        c -(d, a, b, e, f, g)> h: 7,
 
-    d -()> a: 1,
-    d -(a)> b: 2,
-    d -(a, b)> c: 3,
-    d -()> d: 0,
-    d -(a, b)> e: 3,
-    d -(a, b, e)> f: 4,
-    d -(a, b, e, f)> g: 5,
-    d -(a, b, e, f, g)> h: 6,
+        d -()> a: 1,
+        d -(a)> b: 2,
+        d -(a, b)> c: 3,
+        d -()> d: 0,
+        d -(a, b)> e: 3,
+        d -(a, b, e)> f: 4,
+        d -(a, b, e, f)> g: 5,
+        d -(a, b, e, f, g)> h: 6,
 
-    e -()> e: 0,
-    e -()> f: 1,
-    e -(f)> g: 2,
-    e -(f, g)> h: 3,
+        e -()> e: 0,
+        e -()> f: 1,
+        e -(f)> g: 2,
+        e -(f, g)> h: 3,
 
-    f -(g, h)> e: 3,
-    f -()> f: 0,
-    f -()> g: 1,
-    f -(g)> h: 2,
+        f -(g, h)> e: 3,
+        f -()> f: 0,
+        f -()> g: 1,
+        f -(g)> h: 2,
 
-    g -(h)> e: 2,
-    g -(h, e)> f: 3,
-    g -()> g: 0,
-    g -()> h: 1,
+        g -(h)> e: 2,
+        g -(h, e)> f: 3,
+        g -()> g: 0,
+        g -()> h: 1,
 
-    h -()> e: 1,
-    h -(e)> f: 2,
-    h -(e, f)> g: 3,
-    h -()> h: 0,
-]);
+        h -()> e: 1,
+        h -(e)> f: 2,
+        h -(e, f)> g: 3,
+        h -()> h: 0,
+    ])
+}
 
 #[test]
 fn uniform_directed_path() {
     let GraphCollection { graph, nodes, .. } = uniform::create();
+    let expected = uniform_expect(&nodes);
 
     let floyd_warshall = FloydWarshall::directed();
 
-    expect_uniform::path(&graph, &nodes, floyd_warshall);
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_path();
 }
 
 #[test]
 fn uniform_directed_distance() {
     let GraphCollection { graph, nodes, .. } = uniform::create();
+    let expected = uniform_expect(&nodes);
 
     let floyd_warshall = FloydWarshall::directed();
 
-    expect_uniform::distance(&graph, &nodes, floyd_warshall);
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_distance();
 }
 
 graph!(
@@ -254,29 +147,34 @@ graph!(
     ] as EdgeId
 );
 
-expect!(factory(expect_directed_weighted) => weighted; usize[
-    a -()> a: 0,
-    a -()> b: 1,
-    a -(b)> c: 3,
-    a -(b)> d: 3,
+fn directed_weighted_expect(
+    nodes: &weighted::NodeCollection<NodeId>,
+) -> Vec<Expect<weighted::Graph, usize>> {
+    expected!(nodes; [
+        a -()> a: 0,
+        a -()> b: 1,
+        a -(b)> c: 3,
+        a -(b)> d: 3,
 
-    b -()> b: 0,
-    b -()> c: 2,
-    b -()> d: 2,
+        b -()> b: 0,
+        b -()> c: 2,
+        b -()> d: 2,
 
-    c -()> c: 0,
-    c -()> d: 2,
+        c -()> c: 0,
+        c -()> d: 2,
 
-    d -()> d: 0
-]);
+        d -()> d: 0
+    ])
+}
 
 #[test]
 fn weighted_directed_path() {
     let GraphCollection { graph, nodes, .. } = weighted::create();
+    let expected = directed_weighted_expect(&nodes);
 
     let floyd_warshall = FloydWarshall::directed();
 
-    expect_directed_weighted::path(&graph, &nodes, floyd_warshall);
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_path();
 }
 
 #[test]
@@ -337,41 +235,47 @@ fn weighted_directed_path_to() {
 #[test]
 fn weighted_directed_distance() {
     let GraphCollection { graph, nodes, .. } = weighted::create();
+    let expected = directed_weighted_expect(&nodes);
 
     let floyd_warshall = FloydWarshall::directed();
 
-    expect_directed_weighted::distance(&graph, &nodes, floyd_warshall);
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_distance();
 }
 
-expect!(factory(expect_undirected_weighted) => weighted; usize[
-    a -()> a: 0,
-    a -()> b: 1,
-    a -(b)> c: 3,
-    a -(b)> d: 3,
+fn undirected_weighted_expect(
+    nodes: &weighted::NodeCollection<NodeId>,
+) -> Vec<Expect<weighted::Graph, usize>> {
+    expected!(nodes; [
+        a -()> a: 0,
+        a -()> b: 1,
+        a -(b)> c: 3,
+        a -(b)> d: 3,
 
-    b -()> a: 1,
-    b -()> b: 0,
-    b -()> c: 2,
-    b -()> d: 2,
+        b -()> a: 1,
+        b -()> b: 0,
+        b -()> c: 2,
+        b -()> d: 2,
 
-    c -(b)> a: 3,
-    c -()> b: 2,
-    c -()> c: 0,
-    c -()> d: 2,
+        c -(b)> a: 3,
+        c -()> b: 2,
+        c -()> c: 0,
+        c -()> d: 2,
 
-    d -(b)> a: 3,
-    d -()> b: 2,
-    d -()> c: 2,
-    d -()> d: 0,
-]);
+        d -(b)> a: 3,
+        d -()> b: 2,
+        d -()> c: 2,
+        d -()> d: 0,
+    ])
+}
 
 #[test]
 fn weighted_undirected_path() {
     let GraphCollection { graph, nodes, .. } = weighted::create();
+    let expected = undirected_weighted_expect(&nodes);
 
     let floyd_warshall = FloydWarshall::undirected();
 
-    expect_undirected_weighted::path(&graph, &nodes, floyd_warshall);
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_path();
 }
 
 #[test]
@@ -432,10 +336,11 @@ fn weighted_undirected_path_to() {
 #[test]
 fn weighted_undirected_distance() {
     let GraphCollection { graph, nodes, .. } = weighted::create();
+    let expected = undirected_weighted_expect(&nodes);
 
     let floyd_warshall = FloydWarshall::undirected();
 
-    expect_undirected_weighted::distance(&graph, &nodes, floyd_warshall);
+    TestCase::new(&graph, &floyd_warshall, &expected).assert_distance();
 }
 
 graph!(factory(negative_cycle) => DiDinoGraph<&'static str, isize>;

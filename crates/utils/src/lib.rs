@@ -112,6 +112,8 @@ macro_rules! graph {
             $crate::graph!(@collection: node NodeCollection[$($nodes)*]);
             $crate::graph!(@collection: edge EdgeCollection[$($edges)*]);
 
+            pub type Graph = $graph;
+
             pub fn create() -> $crate::GraphCollection<$graph, NodeCollection<$nty>, EdgeCollection<$ety>> {
                 let mut graph = <$graph>::new();
 
