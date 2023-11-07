@@ -3,11 +3,8 @@ mod common;
 mod dijkstra;
 mod floyd_warshall;
 
-use alloc::vec::{IntoIter, Vec};
-use std::iter::once;
-
 use error_stack::{Context, Result};
-use petgraph_core::{Graph, GraphStorage, Node};
+use petgraph_core::{Graph, GraphStorage};
 
 pub use self::{
     astar::AStar,
