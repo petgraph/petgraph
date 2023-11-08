@@ -37,7 +37,7 @@ graph!(
     ] as EdgeId
 );
 
-fn networkx_expect_from(
+fn networkx_directed_expect_from(
     nodes: &networkx::NodeCollection<NodeId>,
 ) -> Vec<Expect<networkx::Graph, i32>> {
     expected!(nodes; [
@@ -76,7 +76,7 @@ graph!(
 #[test]
 fn path_from_directed_default_edge_cost() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
-    let expected = networkx_expect_from(&nodes);
+    let expected = networkx_directed_expect_from(&nodes);
 
     let dijkstra = Dijkstra::directed();
 
@@ -86,11 +86,24 @@ fn path_from_directed_default_edge_cost() {
 #[test]
 fn distance_from_directed_default_edge_cost() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
-    let expected = networkx_expect_from(&nodes);
+    let expected = networkx_directed_expect_from(&nodes);
 
     let dijkstra = Dijkstra::directed();
 
     TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(&nodes.a);
+}
+
+fn random_directed_expect_from(
+    nodes: &random::NodeCollection<NodeId>,
+) -> Vec<Expect<random::Graph, usize>> {
+    expected!(nodes; [
+        a -()> a: 0,
+        a -()> b: 5,
+        a -(b)> c: 8,
+        a -()> d: 8,
+        a -(d)> e: 10,
+        a -(d, e)> f: 16,
+    ])
 }
 
 fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<'_, usize>
@@ -106,19 +119,9 @@ fn path_from_directed_custom_edge_cost() {
     let GraphCollection { graph, nodes, .. } = random::create();
 
     let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
+    let expected = random_directed_expect_from(&nodes);
 
-    let received = path_from(&graph, &nodes.a, &dijkstra);
-
-    let expected = [
-        (nodes.a, 0, &[nodes.a, nodes.a] as &[_]),
-        (nodes.b, 5, &[nodes.a, nodes.b]),
-        (nodes.c, 8, &[nodes.a, nodes.b, nodes.c]),
-        (nodes.d, 8, &[nodes.a, nodes.d]),
-        (nodes.e, 10, &[nodes.a, nodes.d, nodes.e]),
-        (nodes.f, 16, &[nodes.a, nodes.d, nodes.e, nodes.f]),
-    ];
-
-    assert_path(received, &expected);
+    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(&nodes.a);
 }
 
 #[test]
@@ -126,19 +129,21 @@ fn distance_from_directed_custom_edge_cost() {
     let GraphCollection { graph, nodes, .. } = random::create();
 
     let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
+    let expected = random_directed_expect_from(&nodes);
 
-    let received = distance_from(&graph, &nodes.a, &dijkstra);
+    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(&nodes.a);
+}
 
-    let expected = [
-        (nodes.a, 0),
-        (nodes.b, 5),
-        (nodes.c, 8),
-        (nodes.d, 8),
-        (nodes.e, 10),
-        (nodes.f, 16),
-    ];
-
-    assert_distance(received, &expected)
+fn networkx_undirected_expect_from(
+    nodes: &networkx::NodeCollection<NodeId>,
+) -> Vec<Expect<networkx::Graph, i32>> {
+    expected!(nodes; [
+        a -()> a: 0,
+        a -(c)> b: 7,
+        a -()> c: 5,
+        a -(c)> d: 8,
+        a -()> e: 7,
+    ])
 }
 
 #[test]
@@ -146,18 +151,9 @@ fn path_from_undirected_default_edge_cost() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let dijkstra = Dijkstra::undirected();
+    let expected = networkx_undirected_expect_from(&nodes);
 
-    let received = path_from(&graph, &nodes.a, &dijkstra);
-
-    let expected = [
-        (nodes.a, 0, &[nodes.a, nodes.a] as &[_]),
-        (nodes.b, 7, &[nodes.a, nodes.c, nodes.b]),
-        (nodes.c, 5, &[nodes.a, nodes.c]),
-        (nodes.d, 8, &[nodes.a, nodes.e, nodes.d]),
-        (nodes.e, 7, &[nodes.a, nodes.e]),
-    ];
-
-    assert_path(received, &expected)
+    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(&nodes.a);
 }
 
 #[test]
@@ -165,18 +161,22 @@ fn distance_from_undirected_default_edge_cost() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let dijkstra = Dijkstra::undirected();
+    let expected = networkx_undirected_expect_from(&nodes);
 
-    let received = distance_from(&graph, &nodes.a, &dijkstra);
+    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(&nodes.a);
+}
 
-    let expected = [
-        (nodes.a, 0),
-        (nodes.b, 7),
-        (nodes.c, 5),
-        (nodes.d, 8),
-        (nodes.e, 7),
-    ];
-
-    assert_distance(received, &expected)
+fn random_undirected_expect_from(
+    nodes: &random::NodeCollection<NodeId>,
+) -> Vec<Expect<random::Graph, usize>> {
+    expected!(nodes; [
+        a -()> a: 0,
+        a -()> b: 5,
+        a -(b)> c: 8,
+        a -()> d: 8,
+        a -(f)> e: 10,
+        a -()> f: 4,
+    ])
 }
 
 #[test]
@@ -184,19 +184,9 @@ fn path_from_undirected_custom_edge_cost() {
     let GraphCollection { graph, nodes, .. } = random::create();
 
     let dijkstra = Dijkstra::undirected().with_edge_cost(edge_cost);
+    let expected = random_undirected_expect_from(&nodes);
 
-    let received = path_from(&graph, &nodes.a, &dijkstra);
-
-    let expected = [
-        (nodes.a, 0, &[nodes.a, nodes.a] as &[_]),
-        (nodes.b, 5, &[nodes.a, nodes.b]),
-        (nodes.c, 8, &[nodes.a, nodes.b, nodes.c]),
-        (nodes.d, 8, &[nodes.a, nodes.d]),
-        (nodes.e, 10, &[nodes.a, nodes.f, nodes.e]),
-        (nodes.f, 4, &[nodes.a, nodes.f]),
-    ];
-
-    assert_path(received, &expected);
+    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(&nodes.a);
 }
 
 #[test]
@@ -204,19 +194,9 @@ fn distance_from_undirected_custom_edge_cost() {
     let GraphCollection { graph, nodes, .. } = random::create();
 
     let dijkstra = Dijkstra::undirected().with_edge_cost(edge_cost);
+    let expected = random_undirected_expect_from(&nodes);
 
-    let received = distance_from(&graph, &nodes.a, &dijkstra);
-
-    let expected = [
-        (nodes.a, 0),
-        (nodes.b, 5),
-        (nodes.c, 8),
-        (nodes.d, 8),
-        (nodes.e, 10),
-        (nodes.f, 4),
-    ];
-
-    assert_distance(received, &expected)
+    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(&nodes.a);
 }
 
 #[test]
