@@ -7,6 +7,7 @@ use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{AStar, ShortestDistance, ShortestPath};
+
 graph!(
     /// Uses the graph from networkx
     ///
