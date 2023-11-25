@@ -8,12 +8,79 @@ use petgraph_core::{Graph, GraphStorage, Node};
 
 use super::error::ShortestPathFasterError;
 use crate::shortest_paths::{
-    common::{
-        connections::Connections, cost::GraphCost, double_ended_queue::DoubleEndedQueue,
-        intermediates::reconstruct_intermediates,
-    },
+    common::{connections::Connections, cost::GraphCost, queue::double_ended::DoubleEndedQueue},
     Cost, Path, Route,
 };
+
+fn small_label_first<'graph, S, E>(
+    node: Node<'graph, S>,
+    cost: E::Value,
+    queue: &mut DoubleEndedQueue<'graph, S, E::Value>,
+) where
+    S: GraphStorage,
+    E: GraphCost<S>,
+    E::Value: PartialOrd,
+{
+    let Some(item) = queue.peek_front() else {
+        // queue is empty, therefore we can just simply push the cost
+        queue.push_front(node, cost);
+        return;
+    };
+
+    if &cost < item.priority() {
+        // the cost is smaller than the current smallest cost, therefore we push it to the front
+        queue.push_front(node, cost);
+        return;
+    }
+
+    // the cost is larger than the current smallest cost, therefore we push it to the back
+    queue.push_back(node, cost);
+}
+
+fn large_label_last<'graph, S, E>(
+    node: Node<'graph, S>,
+    cost: E::Value,
+    queue: &mut DoubleEndedQueue<'graph, S, E::Value>,
+) where
+    S: GraphStorage,
+    E: GraphCost<S>,
+    E::Value: PartialOrd,
+{
+    if queue.is_empty() {
+        // queue is empty, therefore we can just simply push the cost
+        queue.push_back(node, cost);
+        return;
+    }
+
+    // always push the item to the back of the queue
+    queue.push_back(node, cost);
+
+    let Some(average) = queue.average_priority() else {
+        // we would divide by zero, this can only happen if the queue is empty, therefore we can
+        // just proceed as normal.
+        return;
+    };
+
+    loop {
+        let Some(front) = queue.peek_front() else {
+            // this should never happen, but if it does, we can just stop
+            return;
+        };
+
+        if front.priority() <= &average {
+            // the front item is smaller than the average, therefore we can stop
+            return;
+        }
+
+        let Some(front) = queue.pop_front() else {
+            // this should never happen, but if it does, we can just stop
+            return;
+        };
+
+        let (node, priority) = front.into_parts();
+        queue.push_back(node, priority);
+    }
+}
 
 pub(super) struct ShortestPathFasterIter<'graph: 'parent, 'parent, S, E, G>
 where
@@ -23,7 +90,7 @@ where
 {
     graph: &'graph Graph<S>,
 
-    queue: DoubleEndedQueue<&'graph S::NodeId>,
+    queue: DoubleEndedQueue<'graph, S, E::Value>,
 
     edge_cost: &'parent E,
     connections: G,
