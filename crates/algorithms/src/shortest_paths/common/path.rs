@@ -1,6 +1,7 @@
-use core::fmt::{Debug, Display, Formatter};
-use std::{
+use alloc::vec::Vec;
+use core::{
     cmp::Ordering,
+    fmt::{Debug, Display, Formatter},
     hash::{Hash, Hasher},
     iter::once,
 };

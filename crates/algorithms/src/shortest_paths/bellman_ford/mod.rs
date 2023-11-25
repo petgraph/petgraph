@@ -1,8 +1,9 @@
 mod error;
-mod iter;
+mod r#impl;
 #[cfg(test)]
 mod tests;
 
+use alloc::vec::Vec;
 use core::{hash::Hash, ops::Add};
 
 use error_stack::Result;
@@ -12,7 +13,7 @@ use petgraph_core::{
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
-use self::{error::BellmanFordError, iter::ShortestPathFasterIter};
+use self::{error::BellmanFordError, r#impl::ShortestPathFasterImpl};
 use super::{
     common::{
         connections::outgoing_connections,
@@ -20,7 +21,7 @@ use super::{
     },
     DirectRoute, Route, ShortestDistance, ShortestPath,
 };
-use crate::polyfill::IteratorExt;
+use crate::{polyfill::IteratorExt, shortest_paths::common::transit::PredecessorMode};
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CandidateOrder {
@@ -107,15 +108,17 @@ where
 
     fn path_from<'graph: 'this, 'this>(
         &'this self,
-        graph: &'graph petgraph_core::Graph<S>,
+        graph: &'graph Graph<S>,
         source: &'graph <S as GraphStorage>::NodeId,
-    ) -> Result<impl Iterator<Item = super::Route<'graph, S, Self::Cost>>, Self::Error> {
-        ShortestPathFasterIter::new(
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
+        ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
             Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
             source,
-            // self.candidate_order,
+            PredecessorMode::Record,
+            self.candidate_order,
+            self.negative_cycle_heuristics,
         )
     }
 
@@ -131,9 +134,8 @@ where
 
     fn every_path<'graph: 'this, 'this>(
         &'this self,
-        graph: &'graph petgraph_core::Graph<S>,
-    ) -> Result<impl Iterator<Item = super::Route<'graph, S, Self::Cost>> + 'this, Self::Error>
-    {
+        graph: &'graph Graph<S>,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = graph
             .nodes()
             .map(move |node| self.path_from(graph, node.id()))
@@ -156,23 +158,20 @@ where
 
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
-        graph: &'graph petgraph_core::Graph<S>,
+        graph: &'graph Graph<S>,
         source: &'graph <S as GraphStorage>::NodeId,
-    ) -> Result<impl Iterator<Item = super::DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error>
-    {
-        let iter = ShortestPathFasterIter::new(
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        let iter = ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
             Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
             source,
-            // self.candidate_order,
+            PredecessorMode::Discard,
+            self.candidate_order,
+            self.negative_cycle_heuristics,
         )?;
 
-        Ok(iter.map(|route| DirectRoute {
-            source: route.path.source,
-            target: route.path.target,
-            cost: route.cost,
-        }))
+        Ok(iter.map(Into::into))
     }
 
     fn distance_to<'graph: 'this, 'this>(
@@ -187,9 +186,8 @@ where
 
     fn every_distance<'graph: 'this, 'this>(
         &'this self,
-        graph: &'graph petgraph_core::Graph<S>,
-    ) -> Result<impl Iterator<Item = super::DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error>
-    {
+        graph: &'graph Graph<S>,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = graph
             .nodes()
             .map(move |node| self.distance_from(graph, node.id()))
@@ -215,12 +213,14 @@ where
         graph: &'graph Graph<S>,
         source: &'graph S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
-        ShortestPathFasterIter::new(
+        ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
             outgoing_connections as fn(&Node<'graph, S>) -> _,
             source,
-            // self.candidate_order,
+            PredecessorMode::Record,
+            self.candidate_order,
+            self.negative_cycle_heuristics,
         )
     }
 
@@ -253,19 +253,17 @@ where
         graph: &'graph Graph<S>,
         source: &'graph <S as GraphStorage>::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
-        let iter = ShortestPathFasterIter::new(
+        let iter = ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
             outgoing_connections as fn(&Node<'graph, S>) -> _,
             source,
-            // self.candidate_order,
+            PredecessorMode::Discard,
+            self.candidate_order,
+            self.negative_cycle_heuristics,
         )?;
 
-        Ok(iter.map(|route| DirectRoute {
-            source: route.path.source,
-            target: route.path.target,
-            cost: route.cost,
-        }))
+        Ok(iter.map(Into::into))
     }
 
     fn every_distance<'graph: 'this, 'this>(

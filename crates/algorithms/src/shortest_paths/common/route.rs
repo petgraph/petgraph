@@ -1,5 +1,7 @@
-use core::fmt::{Debug, Display};
-use std::hash::Hash;
+use core::{
+    fmt::{Debug, Display},
+    hash::Hash,
+};
 
 use petgraph_core::{GraphStorage, Node};
 

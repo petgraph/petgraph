@@ -11,8 +11,10 @@ use super::error::BellmanFordError;
 use crate::shortest_paths::{
     bellman_ford::CandidateOrder,
     common::{
-        connections::Connections, cost::GraphCost, queue::double_ended::DoubleEndedQueue,
-        transit::PredecessorMode,
+        connections::Connections,
+        cost::GraphCost,
+        queue::double_ended::DoubleEndedQueue,
+        transit::{reconstruct_paths_between, PredecessorMode},
     },
     Cost, Path, Route,
 };
@@ -144,13 +146,14 @@ where
     }
 }
 
-pub(super) struct ShortestPathFasterIter<'graph: 'parent, 'parent, S, E, G>
+pub(super) struct ShortestPathFasterImpl<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
     E: GraphCost<S>,
     E::Value: Ord,
 {
     graph: &'graph Graph<S>,
+    source: Node<'graph, S>,
 
     edge_cost: &'parent E,
     connections: G,
@@ -163,7 +166,7 @@ where
     predecessors: HashMap<&'graph S::NodeId, Vec<Node<'graph, S>>, FxBuildHasher>,
 }
 
-impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterIter<'graph, 'parent, S, E, G>
+impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterImpl<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
@@ -196,6 +199,7 @@ where
 
         let mut this = Self {
             graph,
+            source: source_node,
             edge_cost,
             connections,
             predecessor_mode,
@@ -205,7 +209,7 @@ where
             predecessors,
         };
 
-        this.relax(source_node);
+        this.relax();
 
         Ok(this)
     }
@@ -213,14 +217,14 @@ where
     /// Inner Relaxation Loop for the Bellman-Ford algorithm, an implementation of SPFA.
     ///
     /// Based on [networkx](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/weighted.py#L1363)
-    fn relax(&mut self, source: Node<'graph, S>) -> core::result::Result<(), &'graph S::NodeId> {
+    fn relax(&mut self) -> core::result::Result<(), &'graph S::NodeId> {
         // we always need to record predecessors to be able to skip relaxations
         let mut queue = DoubleEndedQueue::new();
         let mut heuristic = Heuristic::new(self.negative_cycle_heuristics);
         let mut occurrences = HashMap::new();
         let num_nodes = self.graph.num_nodes();
 
-        queue.push_back(source, E::Value::zero());
+        queue.push_back(self.source, E::Value::zero());
 
         while let Some(item) = queue.pop_front() {
             let (source, priority) = item.into_parts();
@@ -305,95 +309,49 @@ where
 
         Ok(())
     }
-}
 
-impl<'graph: 'parent, 'parent, S, E, G> Iterator
-    for ShortestPathFasterIter<'graph, 'parent, S, E, G>
-where
-    S: GraphStorage,
-    S::NodeId: PartialEq + Eq + Hash,
-    E: GraphCost<S>,
-    E::Value: PartialOrd + Ord + Zero + Bounded + Clone + 'graph,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
-    G: Connections<'graph, S>,
-{
-    type Item = Route<'graph, S, E::Value>;
+    fn between(mut self, target: &S::NodeId) -> Option<Route<'graph, S, E::Value>> {
+        let cost = self.distances.remove(target)?;
+        let target = self.graph.node(target)?;
 
-    // The concrete implementation is the SPFA (Shortest Path Faster Algorithm) algorithm, which is
-    // a variant of Bellman-Ford that uses a queue to avoid unnecessary relaxation.
-    // https://en.wikipedia.org/wiki/Shortest_path_faster_algorithm
-    // We've made use of optimization techniques for candidate order
-    // as well as a variation to terminate on negative cycles.
-    // https://konaeakira.github.io/posts/using-the-shortest-path-faster-algorithm-to-find-negative-cycles.html
-    fn next(&mut self) -> Option<Self::Item> {
-        let default_distance = E::Value::max_value();
-
-        let node_id = self.next?;
-        let node = self.graph.node(&node_id).expect("node to be present");
-        let connections = self.connections.connections(&node);
-
-        for edge in connections {
-            let (u, v) = edge.endpoints();
-            let target = if v.id() == node_id { u.id() } else { v.id() };
-
-            let next_distance_cost = &self.distances[&node_id] + self.edge_cost.cost(edge).as_ref();
-
-            let distance = self.distances.get(target).unwrap_or(&default_distance);
-
-            if next_distance_cost >= *distance {
-                continue;
-            }
-
-            self.distances.insert(target, next_distance_cost);
-            self.predecessors.insert(
-                target,
-                Some(self.graph.node(node_id).expect("node to exist")),
-            );
-
-            self.iteration += 1;
-
-            if self.iteration == self.num_nodes {
-                self.iteration = 0;
-                if self.has_cycle() {
-                    // A shortest path can at most go to n nodes, therefore we
-                    // terminate early if we detected a cycle at the nth iteration
-                    return None;
-                }
-            }
-
-            if !self.in_queue.contains(target) {
-                self.queue.push_back(target);
-                self.in_queue.insert(target);
-            }
-        }
-
-        let Some(node) = self.queue.pop_front() else {
-            // No more elements in the queue, we're done.
-            self.next = None;
-            return None;
-        };
-        self.in_queue.remove(node);
-
-        self.next = Some(node);
-
-        // we're currently visiting the node that has the shortest distance, therefore we know
-        // that the distance is the shortest possible
-        let distance = self.distances[node_id].clone();
-        let intermediates = reconstruct_intermediates(&self.predecessors, node);
-
-        let path = Path {
-            source: self.source,
-            target: self.graph.node(node).expect("node to exist"),
-            intermediates,
+        let transit = if self.predecessor_mode == PredecessorMode::Record {
+            reconstruct_paths_between(&self.predecessors, self.source.id(), target)
+                .next()
+                .unwrap_or_else(Vec::new)
+        } else {
+            Vec::new()
         };
 
-        Some(Route {
-            path,
-            cost: Cost(distance),
-        })
+        Some(Route::new(
+            Path::new(self.source, transit, target),
+            Cost::new(cost),
+        ))
     }
 
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.num_nodes))
+    fn all(self) -> impl Iterator<Item = Route<'graph, S, E::Value>> {
+        let Self {
+            graph,
+            source,
+            predecessor_mode,
+            mut distances,
+            predecessors,
+            ..
+        } = self;
+
+        // TODO: in theory we could also remove the distance cost in other implementations
+        distances
+            .into_iter()
+            .filter_map(|(target, cost)| graph.node(target).map(|target| (target, cost)))
+            .map(|(target, cost)| {
+                let transit = if predecessor_mode == PredecessorMode::Record {
+                    reconstruct_paths_between(&predecessors, source.id(), target)
+                        .next()
+                        .unwrap_or_else(Vec::new)
+                } else {
+                    Vec::new()
+                };
+
+                Route::new(Path::new(source, transit, target), Cost::new(cost))
+            })
     }
 }
