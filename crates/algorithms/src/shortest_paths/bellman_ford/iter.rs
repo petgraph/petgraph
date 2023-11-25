@@ -56,14 +56,16 @@ fn large_label_last<'graph, S, E>(
     queue.push_back(node, cost);
 
     let Some(average) = queue.average_priority() else {
-        // we would divide by zero, this can only happen if the queue is empty, therefore we can
-        // just proceed as normal.
+        // this should never happen, but if it does, we can just stop
+        // (previous check for empty queue should have caught this)
         return;
     };
 
     loop {
+        // TODO: should we panic here instead? This should never happen.
         let Some(front) = queue.peek_front() else {
             // this should never happen, but if it does, we can just stop
+            // (previous check for empty queue should have caught this)
             return;
         };
 
@@ -74,6 +76,7 @@ fn large_label_last<'graph, S, E>(
 
         let Some(front) = queue.pop_front() else {
             // this should never happen, but if it does, we can just stop
+            // (previous check for empty queue should have caught this)
             return;
         };
 
@@ -184,6 +187,64 @@ where
             }
         }
         false
+    }
+
+    /// Inner Relaxation Loop for the Bellman-Ford algorithm, an implementation of SPFA.
+    ///
+    /// Based on [networkx](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/weighted.py#L1363)
+    fn relax(&mut self) -> core::result::Result<(), &'graph S::NodeId> {
+        let mut predecessors = HashMap::new();
+        let mut occurrences = HashMap::new();
+        let num_nodes = self.graph.num_nodes();
+
+        while let Some(item) = self.queue.pop_front() {
+            let (node, priority) = item.into_parts();
+            // TODO: remove with FlaggableGraphId
+            self.in_queue.remove(node.id());
+
+            // skip relaxations if any of the predecessors of u is in the queue
+            let pred = predecessors.get(node.id()).unwrap_or(&Vec::new());
+            if pred.iter().any(|p| self.in_queue.contains(p)) {
+                continue;
+            }
+
+            let edges = self.connections.connections(&node);
+
+            for edge in edges {
+                let (u, v) = edge.endpoints();
+                let target = if v.id() == node.id() { u } else { v };
+
+                let alternative = &priority + self.edge_cost.cost(edge).as_ref();
+
+                if let Some(distance) = self.distances.get(target.id()) {
+                    if alternative >= *distance {
+                        continue;
+                    }
+                }
+
+                // TODO: heuristic
+
+                if !self.in_queue.contains(target.id()) {
+                    // TODO: LLL and SLF
+                    self.queue.push_back(target, alternative.clone());
+                    // TODO: keep track of this in the queue itself
+                    self.in_queue.insert(target.id());
+
+                    let count = occurrences.entry(target.id()).or_insert(0usize);
+                    *count += 1;
+
+                    if *count == num_nodes {
+                        // negative cycle detected
+                        return Err(target.id());
+                    }
+                }
+
+                self.distances.insert(target.id(), alternative);
+                predecessors.insert(target.id(), vec![node]);
+            }
+        }
+
+        Ok(())
     }
 }
 
