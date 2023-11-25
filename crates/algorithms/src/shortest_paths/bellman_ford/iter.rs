@@ -214,19 +214,19 @@ where
         queue.push_back(source, E::Value::zero());
 
         while let Some(item) = queue.pop_front() {
-            let (node, priority) = item.into_parts();
+            let (source, priority) = item.into_parts();
 
-            // skip relaxations if any of the predecessors of u are in the queue
-            let previous = predecessors.get(node.id()).unwrap_or(&Vec::new());
+            // skip relaxations if any of the predecessors of node are in the queue
+            let previous = predecessors.get(source.id()).unwrap_or(&Vec::new());
             if previous.iter().any(|p| queue.contains_node(p)) {
                 continue;
             }
 
-            let edges = self.connections.connections(&node);
+            let edges = self.connections.connections(&source);
 
             for edge in edges {
                 let (u, v) = edge.endpoints();
-                let target = if v.id() == node.id() { u } else { v };
+                let target = if u.id() == source.id() { v } else { u };
 
                 let alternative = &priority + self.edge_cost.cost(edge).as_ref();
 
@@ -236,7 +236,7 @@ where
                         predecessors
                             .entry(target.id())
                             .or_insert_with(Vec::new)
-                            .push(node);
+                            .push(source);
                         continue;
                     }
 
@@ -245,7 +245,7 @@ where
                     }
                 }
 
-                heuristic.update(node.id(), target.id());
+                heuristic.update(source.id(), target.id());
 
                 let did_push = match self.candidate_order {
                     SPFACandidateOrder::SmallFirst => {
@@ -272,7 +272,7 @@ where
                     // re-use the same buffer so that we don't need to allocate a new one
                     let previous = predecessors.entry(target.id()).or_insert_with(Vec::new);
                     previous.clear();
-                    previous.push(node);
+                    previous.push(source);
                 }
             }
         }
