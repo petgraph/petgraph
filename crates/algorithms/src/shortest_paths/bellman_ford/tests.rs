@@ -2,10 +2,7 @@ use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use super::ShortestPathFaster;
-use crate::shortest_paths::{
-    common::tests::{assert_path, path_from},
-    ShortestPath,
-};
+use crate::shortest_paths::ShortestPath;
 
 graph!(
     /// Uses the graph from networkx

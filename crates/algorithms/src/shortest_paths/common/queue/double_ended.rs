@@ -1,10 +1,9 @@
 use alloc::collections::VecDeque;
-use std::{
-    iter::Sum,
-    ops::{Add, Div},
-};
+use core::{hash::Hash, iter::Sum, ops::Add};
 
-use num_traits::{CheckedDiv, Zero};
+use fxhash::FxBuildHasher;
+use hashbrown::HashSet;
+use num_traits::CheckedDiv;
 use petgraph_core::{GraphStorage, Node};
 
 struct DoubleEndedQueueItem<'graph, S, T>
@@ -39,32 +38,54 @@ where
     S: GraphStorage,
 {
     queue: VecDeque<DoubleEndedQueueItem<'graph, S, T>>,
+    active: HashSet<&'graph S::NodeId, FxBuildHasher>,
 }
 
 impl<'graph, S, T> DoubleEndedQueue<'graph, S, T>
 where
     S: GraphStorage,
+    S::NodeId: Eq + Hash,
 {
     pub(in crate::shortest_paths) fn new() -> Self {
         Self {
             queue: VecDeque::new(),
+            active: HashSet::with_hasher(FxBuildHasher::default()),
         }
     }
 
     pub(in crate::shortest_paths) fn with_capacity(capacity: usize) -> Self {
         Self {
             queue: VecDeque::with_capacity(capacity),
+            active: HashSet::with_capacity_and_hasher(capacity, FxBuildHasher::default()),
         }
     }
 
-    pub(in crate::shortest_paths) fn push_front(&mut self, node: Node<'graph, S>, priority: T) {
+    pub(in crate::shortest_paths) fn push_front(
+        &mut self,
+        node: Node<'graph, S>,
+        priority: T,
+    ) -> bool {
+        if !self.active.insert(node.id()) {
+            return false;
+        }
+
         self.queue
             .push_front(DoubleEndedQueueItem { node, priority });
+        true
     }
 
-    pub(in crate::shortest_paths) fn push_back(&mut self, node: Node<'graph, S>, priority: T) {
+    pub(in crate::shortest_paths) fn push_back(
+        &mut self,
+        node: Node<'graph, S>,
+        priority: T,
+    ) -> bool {
+        if !self.active.insert(node.id()) {
+            return false;
+        }
+
         self.queue
             .push_back(DoubleEndedQueueItem { node, priority });
+        true
     }
 
     pub(in crate::shortest_paths) fn pop_front(&mut self) -> Option<DoubleEndedQueueItem<S, T>> {
@@ -92,10 +113,12 @@ where
     }
 
     pub(in crate::shortest_paths) fn contains_node(&self, node: &S::NodeId) -> bool {
-        let (front, back) = self.queue.as_slices();
+        // let (front, back) = self.queue.as_slices();
+        //
+        // front.iter().any(|item| item.id() == node.id())
+        //     || back.iter().any(|item| item.id() == node.id())
 
-        front.iter().any(|item| item.id() == node.id())
-            || back.iter().any(|item| item.id() == node.id())
+        self.active.contains(node)
     }
 }
 

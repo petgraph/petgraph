@@ -1,14 +1,19 @@
+use alloc::{vec, vec::Vec};
 use core::{hash::Hash, ops::Add};
 
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::{HashMap, HashSet};
 use num_traits::{Bounded, Zero};
-use petgraph_core::{Graph, GraphStorage, Node};
+use petgraph_core::{Edge, Graph, GraphStorage, Node};
 
 use super::error::ShortestPathFasterError;
 use crate::shortest_paths::{
-    common::{connections::Connections, cost::GraphCost, queue::double_ended::DoubleEndedQueue},
+    bellman_ford::SPFACandidateOrder,
+    common::{
+        connections::Connections, cost::GraphCost, queue::double_ended::DoubleEndedQueue,
+        transit::PredecessorMode,
+    },
     Cost, Path, Route,
 };
 
@@ -16,49 +21,49 @@ fn small_label_first<'graph, S, E>(
     node: Node<'graph, S>,
     cost: E::Value,
     queue: &mut DoubleEndedQueue<'graph, S, E::Value>,
-) where
+) -> bool
+where
     S: GraphStorage,
     E: GraphCost<S>,
     E::Value: PartialOrd,
 {
     let Some(item) = queue.peek_front() else {
         // queue is empty, therefore we can just simply push the cost
-        queue.push_front(node, cost);
-        return;
+        return queue.push_front(node, cost);
     };
 
     if &cost < item.priority() {
         // the cost is smaller than the current smallest cost, therefore we push it to the front
-        queue.push_front(node, cost);
-        return;
+
+        return queue.push_front(node, cost);
     }
 
     // the cost is larger than the current smallest cost, therefore we push it to the back
-    queue.push_back(node, cost);
+    queue.push_back(node, cost)
 }
 
 fn large_label_last<'graph, S, E>(
     node: Node<'graph, S>,
     cost: E::Value,
     queue: &mut DoubleEndedQueue<'graph, S, E::Value>,
-) where
+) -> bool
+where
     S: GraphStorage,
     E: GraphCost<S>,
     E::Value: PartialOrd,
 {
     if queue.is_empty() {
         // queue is empty, therefore we can just simply push the cost
-        queue.push_back(node, cost);
-        return;
+        return queue.push_back(node, cost);
     }
 
     // always push the item to the back of the queue
-    queue.push_back(node, cost);
+    let did_push = queue.push_back(node, cost);
 
     let Some(average) = queue.average_priority() else {
         // this should never happen, but if it does, we can just stop
         // (previous check for empty queue should have caught this)
-        return;
+        return did_push;
     };
 
     loop {
@@ -66,22 +71,67 @@ fn large_label_last<'graph, S, E>(
         let Some(front) = queue.peek_front() else {
             // this should never happen, but if it does, we can just stop
             // (previous check for empty queue should have caught this)
-            return;
+            return did_push;
         };
 
         if front.priority() <= &average {
             // the front item is smaller than the average, therefore we can stop
-            return;
+            return did_push;
         }
 
         let Some(front) = queue.pop_front() else {
             // this should never happen, but if it does, we can just stop
             // (previous check for empty queue should have caught this)
-            return;
+            return did_push;
         };
 
         let (node, priority) = front.into_parts();
         queue.push_back(node, priority);
+    }
+}
+
+struct Heuristic<'graph, S>
+where
+    S: GraphStorage,
+{
+    enabled: bool,
+    recent_update: HashMap<&'graph S::NodeId, (&'graph S::NodeId, &'graph S::NodeId)>,
+    predecessor: HashMap<&'graph S::NodeId, &'graph S::NodeId>,
+}
+
+impl<'graph, S> Heuristic<'graph, S>
+where
+    S: GraphStorage,
+{
+    fn new(enabled: bool) -> Self {
+        Self {
+            enabled,
+            recent_update: HashMap::default(),
+            predecessor: HashMap::default(),
+        }
+    }
+
+    fn update(&mut self, source: &'graph S::NodeId, target: &'graph S::NodeId) {
+        if !self.enabled {
+            return;
+        }
+
+        // TODO: docs
+        if let Some((u, v)) = self.recent_update.get(source) {
+            if target == u || target == v {
+                // we found a cycle
+                todo!()
+            }
+        }
+
+        if self.predecessor.get(target) == Some(source) {
+            self.recent_update
+                .insert(target, self.recent_update[source]);
+        } else {
+            self.recent_update.insert(target, (source, target));
+        }
+
+        self.predecessor.insert(target, source);
     }
 }
 
@@ -93,30 +143,23 @@ where
 {
     graph: &'graph Graph<S>,
 
-    queue: DoubleEndedQueue<'graph, S, E::Value>,
-
     edge_cost: &'parent E,
     connections: G,
 
-    source: Node<'graph, S>,
+    predecessor_mode: PredecessorMode,
+    candidate_order: SPFACandidateOrder,
+    negative_cycle_heuristics: bool,
 
-    num_nodes: usize,
-
-    iteration: usize,
-    next: Option<&'graph S::NodeId>,
-
-    // candidate_order: SPFACandidateOrder,
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
     predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
-    in_queue: HashSet<&'graph S::NodeId, FxBuildHasher>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: PartialEq + Eq + Hash,
+    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    E::Value: PartialOrd + Ord + Zero + Bounded + Clone + 'graph,
+    E::Value: Zero,
     for<'a> &'a E::Value: Add<Output = E::Value>,
     G: Connections<'graph, S>,
 {
@@ -127,14 +170,14 @@ where
         connections: G,
 
         source: &'graph S::NodeId,
-        // candidate_order: SPFACandidateOrder,
+
+        predecessor_mode: PredecessorMode,
+        candidate_order: SPFACandidateOrder,
+        negative_cycle_heuristics: bool,
     ) -> Result<Self, ShortestPathFasterError> {
         let source_node = graph
             .node(source)
             .ok_or_else(|| Report::new(ShortestPathFasterError::NodeNotFound))?;
-
-        let mut queue = DoubleEndedQueue::new();
-        queue.push_back(source);
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, E::Value::zero());
@@ -142,69 +185,40 @@ where
         let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
         predecessors.insert(source, None);
 
-        let in_queue = HashSet::with_hasher(FxBuildHasher::default());
-
-        Ok(Self {
+        let mut this = Self {
             graph,
-            queue,
             edge_cost,
             connections,
-            source: source_node,
-            num_nodes: graph.num_nodes(),
-            iteration: 0,
-            next: Some(source),
-            // candidate_order,
+            predecessor_mode,
+            candidate_order,
+            negative_cycle_heuristics,
             distances,
             predecessors,
-            in_queue,
-        })
-    }
+        };
 
-    fn has_cycle(&self) -> bool {
-        let mut visited = HashSet::with_hasher(FxBuildHasher::default());
-        let mut on_stack = HashSet::with_hasher(FxBuildHasher::default());
-        let mut stack = Vec::new();
+        this.relax(source_node);
 
-        for node in self.predecessors.keys() {
-            if !visited.contains(*node) {
-                while let Some(Some(pre)) = self.predecessors.get(*node) {
-                    let predecessor_id = pre.id();
-                    if !visited.contains(predecessor_id) {
-                        visited.insert(predecessor_id);
-                        on_stack.insert(predecessor_id);
-                        stack.push(predecessor_id);
-                    } else {
-                        if on_stack.contains(predecessor_id) {
-                            return true;
-                        }
-                        break;
-                    }
-                }
-
-                while let Some(p) = stack.pop() {
-                    on_stack.remove(p);
-                }
-            }
-        }
-        false
+        Ok(this)
     }
 
     /// Inner Relaxation Loop for the Bellman-Ford algorithm, an implementation of SPFA.
     ///
     /// Based on [networkx](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/weighted.py#L1363)
-    fn relax(&mut self) -> core::result::Result<(), &'graph S::NodeId> {
+    fn relax(&mut self, source: Node<'graph, S>) -> core::result::Result<(), &'graph S::NodeId> {
+        let mut queue = DoubleEndedQueue::new();
+        let mut heuristic = Heuristic::new(self.negative_cycle_heuristics);
         let mut predecessors = HashMap::new();
         let mut occurrences = HashMap::new();
         let num_nodes = self.graph.num_nodes();
 
-        while let Some(item) = self.queue.pop_front() {
-            let (node, priority) = item.into_parts();
-            // TODO: remove with FlaggableGraphId
-            self.in_queue.remove(node.id());
+        queue.push_back(source, E::Value::zero());
 
-            // skip relaxations if any of the predecessors of u is in the queue
-            let pred = predecessors.get(node.id()).unwrap_or(&Vec::new());
-            if pred.iter().any(|p| self.in_queue.contains(p)) {
+        while let Some(item) = queue.pop_front() {
+            let (node, priority) = item.into_parts();
+
+            // skip relaxations if any of the predecessors of u are in the queue
+            let previous = predecessors.get(node.id()).unwrap_or(&Vec::new());
+            if previous.iter().any(|p| queue.contains_node(p)) {
                 continue;
             }
 
@@ -217,19 +231,32 @@ where
                 let alternative = &priority + self.edge_cost.cost(edge).as_ref();
 
                 if let Some(distance) = self.distances.get(target.id()) {
+                    if self.predecessor_mode == PredecessorMode::Record && alternative == *distance
+                    {
+                        predecessors
+                            .entry(target.id())
+                            .or_insert_with(Vec::new)
+                            .push(node);
+                        continue;
+                    }
+
                     if alternative >= *distance {
                         continue;
                     }
                 }
 
-                // TODO: heuristic
+                heuristic.update(node.id(), target.id());
 
-                if !self.in_queue.contains(target.id()) {
-                    // TODO: LLL and SLF
-                    self.queue.push_back(target, alternative.clone());
-                    // TODO: keep track of this in the queue itself
-                    self.in_queue.insert(target.id());
+                let did_push = match self.candidate_order {
+                    SPFACandidateOrder::SmallFirst => {
+                        small_label_first(target, alternative.clone(), &mut queue)
+                    }
+                    SPFACandidateOrder::LargeLast => {
+                        large_label_last(target, alternative.clone(), &mut queue)
+                    }
+                };
 
+                if did_push {
                     let count = occurrences.entry(target.id()).or_insert(0usize);
                     *count += 1;
 
@@ -240,7 +267,13 @@ where
                 }
 
                 self.distances.insert(target.id(), alternative);
-                predecessors.insert(target.id(), vec![node]);
+
+                if self.predecessor_mode == PredecessorMode::Record {
+                    // re-use the same buffer so that we don't need to allocate a new one
+                    let previous = predecessors.entry(target.id()).or_insert_with(Vec::new);
+                    previous.clear();
+                    previous.push(node);
+                }
             }
         }
 
