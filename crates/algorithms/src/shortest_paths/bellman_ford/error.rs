@@ -3,12 +3,12 @@ use core::fmt::{Display, Formatter};
 use error_stack::Context;
 
 #[derive(Debug)]
-pub enum ShortestPathFasterError {
+pub enum BellmanFordError {
     NodeNotFound,
     NegativeCycle,
 }
 
-impl Display for ShortestPathFasterError {
+impl Display for BellmanFordError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::NodeNotFound => write!(f, "node not found"),
@@ -17,4 +17,4 @@ impl Display for ShortestPathFasterError {
     }
 }
 
-impl Context for ShortestPathFasterError {}
+impl Context for BellmanFordError {}

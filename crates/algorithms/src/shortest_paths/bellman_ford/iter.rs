@@ -7,7 +7,7 @@ use hashbrown::{HashMap, HashSet};
 use num_traits::{Bounded, Zero};
 use petgraph_core::{Edge, Graph, GraphStorage, Node};
 
-use super::error::ShortestPathFasterError;
+use super::error::BellmanFordError;
 use crate::shortest_paths::{
     bellman_ford::CandidateOrder,
     common::{
@@ -111,16 +111,24 @@ where
         }
     }
 
-    fn update(&mut self, source: &'graph S::NodeId, target: &'graph S::NodeId) {
+    fn update(
+        &mut self,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> core::result::Result<(), &'graph S::NodeId> {
         if !self.enabled {
-            return;
+            return Ok(());
         }
 
-        // TODO: docs
+        // the heuristic is used to find a negative cycle before it is fully constructed.
+        // this is done via an implied check over multiple iterations.
+        // if it happens that some earlier update added the target node (as signified by the recent
+        // update) we know,
+        // that we have a negative cycle
+        // as the same node would be on the same path twice.
         if let Some((u, v)) = self.recent_update.get(source) {
             if target == u || target == v {
-                // we found a cycle
-                todo!()
+                return Err(target);
             }
         }
 
@@ -132,6 +140,7 @@ where
         }
 
         self.predecessor.insert(target, source);
+        Ok(())
     }
 }
 
@@ -151,7 +160,7 @@ where
     negative_cycle_heuristics: bool,
 
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
-    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
+    predecessors: HashMap<&'graph S::NodeId, Vec<Node<'graph, S>>, FxBuildHasher>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterIter<'graph, 'parent, S, E, G>
@@ -174,16 +183,16 @@ where
         predecessor_mode: PredecessorMode,
         candidate_order: CandidateOrder,
         negative_cycle_heuristics: bool,
-    ) -> Result<Self, ShortestPathFasterError> {
+    ) -> Result<Self, BellmanFordError> {
         let source_node = graph
             .node(source)
-            .ok_or_else(|| Report::new(ShortestPathFasterError::NodeNotFound))?;
+            .ok_or_else(|| Report::new(BellmanFordError::NodeNotFound))?;
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, E::Value::zero());
 
         let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
-        predecessors.insert(source, None);
+        predecessors.insert(source, Vec::new());
 
         let mut this = Self {
             graph,
@@ -205,9 +214,9 @@ where
     ///
     /// Based on [networkx](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/weighted.py#L1363)
     fn relax(&mut self, source: Node<'graph, S>) -> core::result::Result<(), &'graph S::NodeId> {
+        // we always need to record predecessors to be able to skip relaxations
         let mut queue = DoubleEndedQueue::new();
         let mut heuristic = Heuristic::new(self.negative_cycle_heuristics);
-        let mut predecessors = HashMap::new();
         let mut occurrences = HashMap::new();
         let num_nodes = self.graph.num_nodes();
 
@@ -217,8 +226,11 @@ where
             let (source, priority) = item.into_parts();
 
             // skip relaxations if any of the predecessors of node are in the queue
-            let previous = predecessors.get(source.id()).unwrap_or(&Vec::new());
-            if previous.iter().any(|p| queue.contains_node(p)) {
+            let predecessors = self.predecessors.get(source.id()).unwrap_or(&Vec::new());
+            if predecessors
+                .iter()
+                .any(|node| queue.contains_node(node.id()))
+            {
                 continue;
             }
 
@@ -231,9 +243,8 @@ where
                 let alternative = &priority + self.edge_cost.cost(edge).as_ref();
 
                 if let Some(distance) = self.distances.get(target.id()) {
-                    if self.predecessor_mode == PredecessorMode::Record && alternative == *distance
-                    {
-                        predecessors
+                    if alternative == *distance {
+                        self.predecessors
                             .entry(target.id())
                             .or_insert_with(Vec::new)
                             .push(source);
@@ -245,7 +256,13 @@ where
                     }
                 }
 
-                heuristic.update(source.id(), target.id());
+                if let Err(node) = heuristic.update(source.id(), target.id()) {
+                    self.predecessors
+                        .entry(target.id())
+                        .or_insert_with(Vec::new)
+                        .push(source);
+                    return Err(node);
+                };
 
                 let did_push = match self.candidate_order {
                     CandidateOrder::SmallFirst => {
@@ -260,6 +277,14 @@ where
                     let count = occurrences.entry(target.id()).or_insert(0usize);
                     *count += 1;
 
+                    // If the heuristic failed (or is disabled) this is the fail-safe mechanism
+                    // to detect any negative cycles.
+                    // We know that a shortest path can at most go through n nodes, therefore we
+                    // can detect a negative cycle,
+                    // if we have visited the same node n times.
+                    //
+                    // As we can only detect a negative cycle quite late this is the worst case and
+                    // the heuristic should be used instead.
                     if *count == num_nodes {
                         // negative cycle detected
                         return Err(target.id());
@@ -268,12 +293,13 @@ where
 
                 self.distances.insert(target.id(), alternative);
 
-                if self.predecessor_mode == PredecessorMode::Record {
-                    // re-use the same buffer so that we don't need to allocate a new one
-                    let previous = predecessors.entry(target.id()).or_insert_with(Vec::new);
-                    previous.clear();
-                    previous.push(source);
-                }
+                // re-use the same buffer so that we don't need to allocate a new one
+                let predecessors = self
+                    .predecessors
+                    .entry(target.id())
+                    .or_insert_with(Vec::new);
+                predecessors.clear();
+                predecessors.push(source);
             }
         }
 

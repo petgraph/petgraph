@@ -12,7 +12,7 @@ use petgraph_core::{
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
-use self::{error::ShortestPathFasterError, iter::ShortestPathFasterIter};
+use self::{error::BellmanFordError, iter::ShortestPathFasterIter};
 use super::{
     common::{
         connections::outgoing_connections,
@@ -103,7 +103,7 @@ where
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
-    type Error = ShortestPathFasterError;
+    type Error = BellmanFordError;
 
     fn path_from<'graph: 'this, 'this>(
         &'this self,
@@ -152,7 +152,7 @@ where
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
-    type Error = ShortestPathFasterError;
+    type Error = BellmanFordError;
 
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
@@ -208,7 +208,7 @@ where
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
-    type Error = ShortestPathFasterError;
+    type Error = BellmanFordError;
 
     fn path_from<'graph: 'this, 'this>(
         &'this self,
@@ -246,7 +246,7 @@ where
     for<'a> &'a E::Value: Add<Output = E::Value>,
 {
     type Cost = E::Value;
-    type Error = ShortestPathFasterError;
+    type Error = BellmanFordError;
 
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
