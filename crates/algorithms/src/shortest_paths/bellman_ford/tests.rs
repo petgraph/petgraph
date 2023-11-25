@@ -1,7 +1,7 @@
 use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
-use super::ShortestPathFaster;
+use super::BellmanFord;
 use crate::shortest_paths::ShortestPath;
 
 graph!(
@@ -37,7 +37,7 @@ fn path_from_directed_default_edge_cost() {
         edges,
     } = networkx::create();
 
-    let spfa = ShortestPathFaster::directed();
+    let spfa = BellmanFord::directed();
     // let received = path_from(&graph, &nodes.a, &spfa);
 
     let res = spfa

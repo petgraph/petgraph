@@ -9,7 +9,7 @@ use petgraph_core::{Edge, Graph, GraphStorage, Node};
 
 use super::error::ShortestPathFasterError;
 use crate::shortest_paths::{
-    bellman_ford::SPFACandidateOrder,
+    bellman_ford::CandidateOrder,
     common::{
         connections::Connections, cost::GraphCost, queue::double_ended::DoubleEndedQueue,
         transit::PredecessorMode,
@@ -147,7 +147,7 @@ where
     connections: G,
 
     predecessor_mode: PredecessorMode,
-    candidate_order: SPFACandidateOrder,
+    candidate_order: CandidateOrder,
     negative_cycle_heuristics: bool,
 
     distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
@@ -172,7 +172,7 @@ where
         source: &'graph S::NodeId,
 
         predecessor_mode: PredecessorMode,
-        candidate_order: SPFACandidateOrder,
+        candidate_order: CandidateOrder,
         negative_cycle_heuristics: bool,
     ) -> Result<Self, ShortestPathFasterError> {
         let source_node = graph
@@ -248,10 +248,10 @@ where
                 heuristic.update(source.id(), target.id());
 
                 let did_push = match self.candidate_order {
-                    SPFACandidateOrder::SmallFirst => {
+                    CandidateOrder::SmallFirst => {
                         small_label_first(target, alternative.clone(), &mut queue)
                     }
-                    SPFACandidateOrder::LargeLast => {
+                    CandidateOrder::LargeLast => {
                         large_label_last(target, alternative.clone(), &mut queue)
                     }
                 };

@@ -23,64 +23,78 @@ use super::{
 use crate::polyfill::IteratorExt;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum SPFACandidateOrder {
+pub enum CandidateOrder {
     #[default]
     SmallFirst,
     LargeLast,
 }
 
-pub struct ShortestPathFaster<D, E> {
+pub struct BellmanFord<D, E> {
     direction: D,
     edge_cost: E,
-    candidate_order: SPFACandidateOrder,
+    candidate_order: CandidateOrder,
+    negative_cycle_heuristics: bool,
 }
 
-impl ShortestPathFaster<Directed, DefaultCost> {
+impl BellmanFord<Directed, DefaultCost> {
     pub fn directed() -> Self {
         Self {
             direction: Directed,
             edge_cost: DefaultCost,
-            candidate_order: Default::default(),
+            candidate_order: CandidateOrder::default(),
+            negative_cycle_heuristics: false,
         }
     }
 }
 
-impl ShortestPathFaster<Undirected, DefaultCost> {
+impl BellmanFord<Undirected, DefaultCost> {
     pub fn undirected() -> Self {
         Self {
             direction: Undirected,
             edge_cost: DefaultCost,
-            candidate_order: Default::default(),
+            candidate_order: CandidateOrder::default(),
+            negative_cycle_heuristics: false,
         }
     }
 }
 
-impl<D, E> ShortestPathFaster<D, E>
+impl<D, E> BellmanFord<D, E>
 where
     D: GraphDirectionality,
 {
-    pub fn with_edge_cost<S, F>(self, edge_cost: F) -> ShortestPathFaster<D, F>
+    pub fn with_edge_cost<S, F>(self, edge_cost: F) -> BellmanFord<D, F>
     where
         S: GraphStorage,
         F: GraphCost<S>,
     {
-        ShortestPathFaster {
+        BellmanFord {
             direction: self.direction,
             edge_cost,
-            candidate_order: Default::default(),
+            candidate_order: self.candidate_order,
+            negative_cycle_heuristics: self.negative_cycle_heuristics,
         }
     }
 
-    pub fn with_candidate_order(self, candidate_order: SPFACandidateOrder) -> Self {
+    pub fn with_candidate_order(self, candidate_order: CandidateOrder) -> Self {
         Self {
             direction: self.direction,
             edge_cost: self.edge_cost,
             candidate_order,
+            negative_cycle_heuristics: self.negative_cycle_heuristics,
+        }
+    }
+
+    pub fn with_negative_cycle_heuristics(self, negative_cycle_heuristics: bool) -> Self {
+        Self {
+            direction: self.direction,
+            edge_cost: self.edge_cost,
+            candidate_order: self.candidate_order,
+            negative_cycle_heuristics,
         }
     }
 }
 
-impl<S, E> ShortestPath<S> for ShortestPathFaster<Undirected, E>
+impl<S, E> ShortestPath<S> for BellmanFord<Undirected, E>
 where
     S: GraphStorage,
     S::NodeId: PartialEq + Eq + Hash,
@@ -129,7 +143,7 @@ where
     }
 }
 
-impl<S, E> ShortestDistance<S> for ShortestPathFaster<Undirected, E>
+impl<S, E> ShortestDistance<S> for BellmanFord<Undirected, E>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
@@ -185,7 +199,7 @@ where
     }
 }
 
-impl<S, E> ShortestPath<S> for ShortestPathFaster<Directed, E>
+impl<S, E> ShortestPath<S> for BellmanFord<Directed, E>
 where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
@@ -223,7 +237,7 @@ where
     }
 }
 
-impl<S, E> ShortestDistance<S> for ShortestPathFaster<Directed, E>
+impl<S, E> ShortestDistance<S> for BellmanFord<Directed, E>
 where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
