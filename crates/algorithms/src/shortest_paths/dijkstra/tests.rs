@@ -5,9 +5,7 @@ use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{
-    common::tests::{
-        assert_distance, assert_path, distance_from, expected, path_from, Expect, TestCase,
-    },
+    common::tests::{expected, Expect, TestCase},
     dijkstra::Dijkstra,
     ShortestPath,
 };
@@ -141,7 +139,7 @@ fn networkx_undirected_expect_from(
         a -()> a: 0,
         a -(c)> b: 7,
         a -()> c: 5,
-        a -(c)> d: 8,
+        a -(e)> d: 8,
         a -()> e: 7,
     ])
 }
