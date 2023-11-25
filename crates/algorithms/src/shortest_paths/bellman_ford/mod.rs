@@ -71,14 +71,6 @@ where
         }
     }
 
-    pub fn without_edge_cost(self) -> ShortestPathFaster<D, ()> {
-        ShortestPathFaster {
-            direction: self.direction,
-            edge_cost: (),
-            candidate_order: Default::default(),
-        }
-    }
-
     pub fn with_candidate_order(self, candidate_order: SPFACandidateOrder) -> Self {
         Self {
             direction: self.direction,
