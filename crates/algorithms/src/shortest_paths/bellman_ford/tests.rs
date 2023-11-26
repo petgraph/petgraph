@@ -2,7 +2,7 @@ use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
 use super::BellmanFord;
-use crate::shortest_paths::ShortestPath;
+use crate::shortest_paths::{bellman_ford::error::BellmanFordError, ShortestPath};
 
 graph!(
     /// Uses the graph from networkx
@@ -28,6 +28,24 @@ graph!(
         ed: e -> d: 6,
     ] as EdgeId
 );
+
+#[test]
+fn source_does_not_exist() {
+    let GraphCollection {
+        mut graph,
+        nodes,
+        edges,
+    } = networkx::create();
+
+    let f = *graph.insert_node("F").id();
+    graph.remove_node(&f);
+
+    let spfa = BellmanFord::directed();
+    let received = spfa.path_from(&graph, &f).expect_err("node not found");
+    let error = received.current_context();
+
+    assert_eq!(error, &BellmanFordError::NodeNotFound);
+}
 
 #[test]
 fn path_from_directed_default_edge_cost() {
