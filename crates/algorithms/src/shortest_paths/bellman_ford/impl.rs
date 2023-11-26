@@ -1,11 +1,11 @@
-use alloc::{vec, vec::Vec};
-use core::{hash::Hash, ops::Add};
+use alloc::vec::Vec;
+use core::hash::Hash;
 
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
-use hashbrown::{HashMap, HashSet};
-use num_traits::{Bounded, Zero};
-use petgraph_core::{Edge, Graph, GraphStorage, Node};
+use hashbrown::HashMap;
+use num_traits::Zero;
+use petgraph_core::{Graph, GraphStorage, Node};
 
 use super::error::BellmanFordError;
 use crate::shortest_paths::{

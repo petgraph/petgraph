@@ -5,10 +5,9 @@ mod measure;
 mod tests;
 
 use alloc::vec::Vec;
-use core::{hash::Hash, ops::Add};
+use core::hash::Hash;
 
 use error_stack::Result;
-use num_traits::{Bounded, Zero};
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,

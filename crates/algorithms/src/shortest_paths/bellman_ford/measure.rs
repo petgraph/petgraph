@@ -14,6 +14,7 @@ pub trait BellmanFordMeasure:
 {
 }
 
+// TODO: &Self Add without where clause
 impl<T> BellmanFordMeasure for T where
     T: PartialOrd
         + Clone
