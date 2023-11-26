@@ -14,18 +14,16 @@ use petgraph_core::{
     Graph, GraphStorage,
 };
 
+pub use self::error::FloydWarshallError;
+use self::r#impl::{
+    init_directed_edge_distance, init_directed_edge_predecessor, init_undirected_edge_distance,
+    init_undirected_edge_predecessor, FloydWarshallImpl,
+};
 use crate::shortest_paths::{
     common::{
         cost::{DefaultCost, GraphCost},
         route::{DirectRoute, Route},
         transit::PredecessorMode,
-    },
-    floyd_warshall::{
-        error::FloydWarshallError,
-        r#impl::{
-            init_directed_edge_distance, init_directed_edge_predecessor,
-            init_undirected_edge_distance, init_undirected_edge_predecessor, FloydWarshallImpl,
-        },
     },
     ShortestDistance, ShortestPath,
 };

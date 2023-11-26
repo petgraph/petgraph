@@ -14,19 +14,18 @@ use petgraph_core::{
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
-use self::{error::AStarError, r#impl::AStarImpl};
-use super::{common::transit::PredecessorMode, ShortestDistance, ShortestPath};
-use crate::{
-    polyfill::IteratorExt,
-    shortest_paths::{
-        astar::heuristic::GraphHeuristic,
-        common::{
-            connections::{outgoing_connections, Connections},
-            cost::{Cost, DefaultCost, GraphCost},
-            route::{DirectRoute, Route},
-        },
+use self::r#impl::AStarImpl;
+pub use self::{error::AStarError, heuristic::GraphHeuristic};
+use super::{
+    common::{
+        connections::{outgoing_connections, Connections},
+        cost::{Cost, DefaultCost, GraphCost},
+        route::{DirectRoute, Route},
+        transit::PredecessorMode,
     },
+    ShortestDistance, ShortestPath,
 };
+use crate::polyfill::IteratorExt;
 
 pub struct AStar<D, E, H>
 where

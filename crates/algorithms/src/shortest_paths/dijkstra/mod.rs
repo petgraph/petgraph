@@ -13,19 +13,18 @@ use petgraph_core::{
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
-pub(crate) use self::error::DijkstraError;
+pub use self::error::DijkstraError;
 use self::iter::DijkstraIter;
-use super::common::{connections::outgoing_connections, transit::PredecessorMode};
-use crate::{
-    polyfill::IteratorExt,
-    shortest_paths::{
-        common::{
-            cost::{DefaultCost, GraphCost},
-            route::{DirectRoute, Route},
-        },
-        ShortestDistance, ShortestPath,
+use super::{
+    common::{
+        connections::outgoing_connections,
+        cost::{DefaultCost, GraphCost},
+        route::{DirectRoute, Route},
+        transit::PredecessorMode,
     },
+    ShortestDistance, ShortestPath,
 };
+use crate::polyfill::IteratorExt;
 
 pub struct Dijkstra<D, E>
 where

@@ -1,16 +1,17 @@
-mod astar;
-mod bellman_ford;
+pub mod astar;
+pub mod bellman_ford;
 mod common;
-mod dijkstra;
-mod floyd_warshall;
+pub mod dijkstra;
+pub mod floyd_warshall;
 
 use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage};
 
 pub use self::{
     astar::AStar,
+    bellman_ford::BellmanFord,
     common::{
-        cost::Cost,
+        cost::{Cost, GraphCost},
         path::Path,
         route::{DirectRoute, Route},
     },
