@@ -6,7 +6,7 @@ use hashbrown::HashSet;
 use num_traits::CheckedDiv;
 use petgraph_core::{GraphStorage, Node};
 
-struct DoubleEndedQueueItem<'graph, S, T>
+pub(in crate::shortest_paths) struct DoubleEndedQueueItem<'graph, S, T>
 where
     S: GraphStorage,
 {
@@ -88,19 +88,27 @@ where
         true
     }
 
-    pub(in crate::shortest_paths) fn pop_front(&mut self) -> Option<DoubleEndedQueueItem<S, T>> {
+    pub(in crate::shortest_paths) fn pop_front(
+        &mut self,
+    ) -> Option<DoubleEndedQueueItem<'graph, S, T>> {
         self.queue.pop_front()
     }
 
-    pub(in crate::shortest_paths) fn pop_back(&mut self) -> Option<DoubleEndedQueueItem<S, T>> {
+    pub(in crate::shortest_paths) fn pop_back(
+        &mut self,
+    ) -> Option<DoubleEndedQueueItem<'graph, S, T>> {
         self.queue.pop_back()
     }
 
-    pub(in crate::shortest_paths) fn peek_front(&self) -> Option<&DoubleEndedQueueItem<S, T>> {
+    pub(in crate::shortest_paths) fn peek_front(
+        &self,
+    ) -> Option<&DoubleEndedQueueItem<'graph, S, T>> {
         self.queue.front()
     }
 
-    pub(in crate::shortest_paths) fn peek_back(&self) -> Option<&DoubleEndedQueueItem<S, T>> {
+    pub(in crate::shortest_paths) fn peek_back(
+        &self,
+    ) -> Option<&DoubleEndedQueueItem<'graph, S, T>> {
         self.queue.back()
     }
 

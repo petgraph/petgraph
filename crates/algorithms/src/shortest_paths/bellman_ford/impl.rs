@@ -210,7 +210,11 @@ where
             predecessors,
         };
 
-        this.relax();
+        // TODO: reconstruct negative cycle (needs `NodeId` to have additional trait bounds for
+        //  error-stack)
+        if this.relax().is_err() {
+            return Err(Report::new(BellmanFordError::NegativeCycle));
+        }
 
         Ok(this)
     }
@@ -231,12 +235,13 @@ where
             let (source, priority) = item.into_parts();
 
             // skip relaxations if any of the predecessors of node are in the queue
-            let predecessors = self.predecessors.get(source.id()).unwrap_or(&Vec::new());
-            if predecessors
-                .iter()
-                .any(|node| queue.contains_node(node.id()))
-            {
-                continue;
+            if let Some(predecessors) = self.predecessors.get(source.id()) {
+                if predecessors
+                    .iter()
+                    .any(|node| queue.contains_node(node.id()))
+                {
+                    continue;
+                }
             }
 
             let edges = self.connections.connections(&source);
