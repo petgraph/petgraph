@@ -124,6 +124,8 @@ where
             let (u, v) = edge.endpoints();
             let target = if v.id() == node.id() { u } else { v };
 
+            // TODO: investigate if add by ref (like here) is slower than just cloning (/copying)
+            //  the distance value
             let alternative = &self.distances[node.id()] + self.edge_cost.cost(edge).as_ref();
 
             if let Some(distance) = self.distances.get(target.id()) {

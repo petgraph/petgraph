@@ -51,11 +51,11 @@ where
 /// Reconstruct all simple paths between two nodes without those nodes being part of the path.
 ///
 /// This has been adapted from the [NetworkX implementation](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/generic.py#L655)
-pub(in crate::shortest_paths) fn reconstruct_paths_between<'graph, S, H>(
-    predecessors: &HashMap<&'graph S::NodeId, Vec<Node<'graph, S>>, H>,
+pub(in crate::shortest_paths) fn reconstruct_paths_between<'a, 'graph, S, H>(
+    predecessors: &'a HashMap<&'graph S::NodeId, Vec<Node<'graph, S>>, H>,
     source: &'graph S::NodeId,
     target: Node<'graph, S>,
-) -> impl Iterator<Item = Vec<Node<'graph, S>>>
+) -> impl Iterator<Item = Vec<Node<'graph, S>>> + 'a
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
@@ -69,12 +69,17 @@ where
     // by using a `yielded` boolean, we're able to suspend and resume, as in the first iteration we
     // early return and then try "again" in the next iteration but do not early return again.
     let mut yielded = false;
+    let mut exhausted = false;
 
-    iter::from_fn(|| {
-        while top >= 0 {
+    iter::from_fn(move || {
+        if exhausted {
+            return None;
+        }
+
+        loop {
             let (node, index) = stack[top];
 
-            if !yielded && node == source {
+            if !yielded && node.id() == source {
                 // "yield" result
                 yielded = true;
 
@@ -85,7 +90,7 @@ where
                 return Some(path);
             }
 
-            if predecessors[node].len() > index {
+            if predecessors[node.id()].len() > index {
                 stack[top].1 = index + 1;
                 let next = predecessors[node.id()][index];
                 if !seen.insert(next.id()) {
@@ -102,7 +107,15 @@ where
                 }
             } else {
                 seen.remove(&node.id());
-                top -= 1;
+
+                match top.checked_sub(1) {
+                    Some(new_top) => top = new_top,
+                    None => {
+                        // we have exhausted all paths
+                        exhausted = true;
+                        break;
+                    }
+                }
             }
 
             yielded = false;

@@ -1,5 +1,6 @@
 mod error;
 mod r#impl;
+mod measure;
 #[cfg(test)]
 mod tests;
 
@@ -13,15 +14,17 @@ use petgraph_core::{
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
-use self::{error::BellmanFordError, r#impl::ShortestPathFasterImpl};
+use self::r#impl::ShortestPathFasterImpl;
+pub use self::{error::BellmanFordError, measure::BellmanFordMeasure};
 use super::{
     common::{
         connections::outgoing_connections,
         cost::{DefaultCost, GraphCost},
+        transit::PredecessorMode,
     },
-    DirectRoute, Route, ShortestDistance, ShortestPath,
+    Cost, DirectRoute, Route, ShortestDistance, ShortestPath,
 };
-use crate::{polyfill::IteratorExt, shortest_paths::common::transit::PredecessorMode};
+use crate::polyfill::IteratorExt;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CandidateOrder {
@@ -100,8 +103,7 @@ where
     S: GraphStorage,
     S::NodeId: PartialEq + Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Bounded + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: BellmanFordMeasure,
 {
     type Cost = E::Value;
     type Error = BellmanFordError;
@@ -120,6 +122,7 @@ where
             self.candidate_order,
             self.negative_cycle_heuristics,
         )
+        .map(ShortestPathFasterImpl::all)
     }
 
     fn path_to<'graph: 'this, 'this>(
@@ -132,14 +135,33 @@ where
         Ok(iter.map(Route::reverse))
     }
 
+    fn path_between<'graph>(
+        &self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Route<'graph, S, Self::Cost>> {
+        ShortestPathFasterImpl::new(
+            graph,
+            &self.edge_cost,
+            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            source,
+            PredecessorMode::Record,
+            self.candidate_order,
+            self.negative_cycle_heuristics,
+        )
+        .ok()?
+        .between(target)
+    }
+
     fn every_path<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
-        let iter = graph
+        let iter: Vec<_> = graph
             .nodes()
             .map(move |node| self.path_from(graph, node.id()))
-            .collect_reports::<Vec<_>>()?;
+            .collect_reports()?;
 
         Ok(iter.into_iter().flatten())
     }
@@ -150,8 +172,7 @@ where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Zero + Bounded + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: BellmanFordMeasure,
 {
     type Cost = E::Value;
     type Error = BellmanFordError;
@@ -171,7 +192,7 @@ where
             self.negative_cycle_heuristics,
         )?;
 
-        Ok(iter.map(Into::into))
+        Ok(iter.all().map(Into::into))
     }
 
     fn distance_to<'graph: 'this, 'this>(
@@ -184,14 +205,34 @@ where
         Ok(iter.map(DirectRoute::reverse))
     }
 
+    fn distance_between<'graph>(
+        &self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Cost<Self::Cost>> {
+        ShortestPathFasterImpl::new(
+            graph,
+            &self.edge_cost,
+            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            source,
+            PredecessorMode::Discard,
+            self.candidate_order,
+            self.negative_cycle_heuristics,
+        )
+        .ok()?
+        .between(target)
+        .map(Route::into_cost)
+    }
+
     fn every_distance<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
-        let iter = graph
+        let iter: Vec<_> = graph
             .nodes()
             .map(move |node| self.distance_from(graph, node.id()))
-            .collect_reports::<Vec<_>>()?;
+            .collect_reports()?;
 
         Ok(iter.into_iter().flatten())
     }
@@ -202,8 +243,7 @@ where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Zero + Bounded + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: BellmanFordMeasure,
 {
     type Cost = E::Value;
     type Error = BellmanFordError;
@@ -222,16 +262,36 @@ where
             self.candidate_order,
             self.negative_cycle_heuristics,
         )
+        .map(ShortestPathFasterImpl::all)
+    }
+
+    fn path_between<'graph>(
+        &self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Route<'graph, S, Self::Cost>> {
+        ShortestPathFasterImpl::new(
+            graph,
+            &self.edge_cost,
+            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            source,
+            PredecessorMode::Record,
+            self.candidate_order,
+            self.negative_cycle_heuristics,
+        )
+        .ok()?
+        .between(target)
     }
 
     fn every_path<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
-        let iter = graph
+        let iter: Vec<_> = graph
             .nodes()
             .map(move |node| self.path_from(graph, node.id()))
-            .collect_reports::<Vec<_>>()?;
+            .collect_reports()?;
 
         Ok(iter.into_iter().flatten())
     }
@@ -242,8 +302,7 @@ where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Zero + Bounded + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: BellmanFordMeasure,
 {
     type Cost = E::Value;
     type Error = BellmanFordError;
@@ -263,17 +322,37 @@ where
             self.negative_cycle_heuristics,
         )?;
 
-        Ok(iter.map(Into::into))
+        Ok(iter.all().map(Into::into))
+    }
+
+    fn distance_between<'graph>(
+        &self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Cost<Self::Cost>> {
+        ShortestPathFasterImpl::new(
+            graph,
+            &self.edge_cost,
+            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            source,
+            PredecessorMode::Discard,
+            self.candidate_order,
+            self.negative_cycle_heuristics,
+        )
+        .ok()?
+        .between(target)
+        .map(Route::into_cost)
     }
 
     fn every_distance<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
-        let iter = graph
+        let iter: Vec<_> = graph
             .nodes()
             .map(move |node| self.distance_from(graph, node.id()))
-            .collect_reports::<Vec<_>>()?;
+            .collect_reports()?;
 
         Ok(iter.into_iter().flatten())
     }

@@ -128,21 +128,20 @@ where
 {
     pub(in crate::shortest_paths) fn average_priority(&self) -> Option<T>
     where
-        T: CheckedDiv + for<'a> Sum<&'a T> + From<usize>,
-        for<'a> &'a T: Add<Output = T>,
+        T: CheckedDiv + Add<Output = T> + for<'a> Sum<&'a T> + TryFrom<usize>,
     {
         let (front, back) = self.queue.as_slices();
 
         let front_sum: T = front.iter().map(|item| &item.priority).sum();
         let back_sum: T = back.iter().map(|item| &item.priority).sum();
 
-        let total_sum: T = &front_sum + &back_sum;
+        let total_sum: T = front_sum + back_sum;
 
         if self.queue.is_empty() {
             return None;
         }
 
-        let length: T = self.queue.len().into();
+        let length: T = self.queue.len().try_into().ok()?;
 
         total_sum.checked_div(&length)
     }

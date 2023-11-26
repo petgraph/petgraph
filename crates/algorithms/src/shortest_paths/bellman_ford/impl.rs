@@ -9,7 +9,7 @@ use petgraph_core::{Edge, Graph, GraphStorage, Node};
 
 use super::error::BellmanFordError;
 use crate::shortest_paths::{
-    bellman_ford::CandidateOrder,
+    bellman_ford::{measure::BellmanFordMeasure, CandidateOrder},
     common::{
         connections::Connections,
         cost::GraphCost,
@@ -26,8 +26,9 @@ fn small_label_first<'graph, S, E>(
 ) -> bool
 where
     S: GraphStorage,
+    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    E::Value: PartialOrd,
+    E::Value: BellmanFordMeasure,
 {
     let Some(item) = queue.peek_front() else {
         // queue is empty, therefore we can just simply push the cost
@@ -51,8 +52,9 @@ fn large_label_last<'graph, S, E>(
 ) -> bool
 where
     S: GraphStorage,
+    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    E::Value: PartialOrd,
+    E::Value: BellmanFordMeasure,
 {
     if queue.is_empty() {
         // queue is empty, therefore we can just simply push the cost
@@ -63,8 +65,8 @@ where
     let did_push = queue.push_back(node, cost);
 
     let Some(average) = queue.average_priority() else {
-        // this should never happen, but if it does, we can just stop
-        // (previous check for empty queue should have caught this)
+        // this only happens if the length is 0 or we were unable to convert the length (usize)
+        // to the value type (E::Value)
         return did_push;
     };
 
@@ -76,7 +78,7 @@ where
             return did_push;
         };
 
-        if front.priority() <= &average {
+        if *front.priority() <= average {
             // the front item is smaller than the average, therefore we can stop
             return did_push;
         }
@@ -104,6 +106,7 @@ where
 impl<'graph, S> Heuristic<'graph, S>
 where
     S: GraphStorage,
+    S::NodeId: Eq + Hash,
 {
     fn new(enabled: bool) -> Self {
         Self {
@@ -129,12 +132,12 @@ where
         // that we have a negative cycle
         // as the same node would be on the same path twice.
         if let Some((u, v)) = self.recent_update.get(source) {
-            if target == u || target == v {
+            if target == *u || target == *v {
                 return Err(target);
             }
         }
 
-        if self.predecessor.get(target) == Some(source) {
+        if self.predecessor.get(target) == Some(&source) {
             self.recent_update
                 .insert(target, self.recent_update[source]);
         } else {
@@ -150,7 +153,6 @@ pub(super) struct ShortestPathFasterImpl<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
     E: GraphCost<S>,
-    E::Value: Ord,
 {
     graph: &'graph Graph<S>,
     source: Node<'graph, S>,
@@ -171,8 +173,7 @@ where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    E::Value: Zero,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: BellmanFordMeasure,
     G: Connections<'graph, S>,
 {
     pub(super) fn new(
@@ -220,7 +221,7 @@ where
     fn relax(&mut self) -> core::result::Result<(), &'graph S::NodeId> {
         // we always need to record predecessors to be able to skip relaxations
         let mut queue = DoubleEndedQueue::new();
-        let mut heuristic = Heuristic::new(self.negative_cycle_heuristics);
+        let mut heuristic: Heuristic<'graph, S> = Heuristic::new(self.negative_cycle_heuristics);
         let mut occurrences = HashMap::new();
         let num_nodes = self.graph.num_nodes();
 
@@ -244,7 +245,8 @@ where
                 let (u, v) = edge.endpoints();
                 let target = if u.id() == source.id() { v } else { u };
 
-                let alternative = &priority + self.edge_cost.cost(edge).as_ref();
+                // TODO: I'd like to remove this with an additional trait bound on the super-type...
+                let alternative = priority.clone() + self.edge_cost.cost(edge).as_ref();
 
                 if let Some(distance) = self.distances.get(target.id()) {
                     if alternative == *distance {
@@ -270,10 +272,10 @@ where
 
                 let did_push = match self.candidate_order {
                     CandidateOrder::SmallFirst => {
-                        small_label_first(target, alternative.clone(), &mut queue)
+                        small_label_first::<S, E>(target, alternative.clone(), &mut queue)
                     }
                     CandidateOrder::LargeLast => {
-                        large_label_last(target, alternative.clone(), &mut queue)
+                        large_label_last::<S, E>(target, alternative.clone(), &mut queue)
                     }
                 };
 
@@ -310,7 +312,7 @@ where
         Ok(())
     }
 
-    fn between(mut self, target: &S::NodeId) -> Option<Route<'graph, S, E::Value>> {
+    pub(crate) fn between(mut self, target: &S::NodeId) -> Option<Route<'graph, S, E::Value>> {
         let cost = self.distances.remove(target)?;
         let target = self.graph.node(target)?;
 
@@ -328,7 +330,7 @@ where
         ))
     }
 
-    fn all(self) -> impl Iterator<Item = Route<'graph, S, E::Value>> {
+    pub(crate) fn all(self) -> impl Iterator<Item = Route<'graph, S, E::Value>> {
         let Self {
             graph,
             source,
@@ -342,7 +344,7 @@ where
         distances
             .into_iter()
             .filter_map(|(target, cost)| graph.node(target).map(|target| (target, cost)))
-            .map(|(target, cost)| {
+            .map(move |(target, cost)| {
                 let transit = if predecessor_mode == PredecessorMode::Record {
                     reconstruct_paths_between(&predecessors, source.id(), target)
                         .next()

@@ -2,7 +2,7 @@ use core::fmt::{Display, Formatter};
 
 use error_stack::Context;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BellmanFordError {
     NodeNotFound,
     NegativeCycle,
