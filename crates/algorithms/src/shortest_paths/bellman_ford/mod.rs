@@ -14,7 +14,10 @@ use petgraph_core::{
 };
 
 use self::r#impl::ShortestPathFasterImpl;
-pub use self::{error::BellmanFordError, measure::BellmanFordMeasure};
+pub use self::{
+    error::BellmanFordError,
+    measure::{AddRef, BellmanFordMeasure},
+};
 use super::{
     common::{
         connections::outgoing_connections,

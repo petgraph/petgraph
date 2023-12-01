@@ -1,9 +1,13 @@
 use alloc::collections::VecDeque;
-use core::{hash::Hash, iter::Sum, ops::Add};
+use core::{
+    hash::Hash,
+    iter::Sum,
+    ops::{Add, Div},
+};
 
 use fxhash::FxBuildHasher;
 use hashbrown::HashSet;
-use num_traits::CheckedDiv;
+use num_traits::{CheckedDiv, Zero};
 use petgraph_core::{GraphStorage, Node};
 
 pub(in crate::shortest_paths) struct DoubleEndedQueueItem<'graph, S, T>
@@ -136,7 +140,7 @@ where
 {
     pub(in crate::shortest_paths) fn average_priority(&self) -> Option<T>
     where
-        T: CheckedDiv + Add<Output = T> + for<'a> Sum<&'a T> + TryFrom<usize>,
+        T: Zero + Div<Output = T> + Add<Output = T> + for<'a> Sum<&'a T> + TryFrom<usize>,
     {
         let (front, back) = self.queue.as_slices();
 
@@ -151,6 +155,10 @@ where
 
         let length: T = self.queue.len().try_into().ok()?;
 
-        total_sum.checked_div(&length)
+        if length.is_zero() {
+            return None;
+        }
+
+        Some(total_sum / length)
     }
 }

@@ -19,7 +19,7 @@ use self::r#impl::{
     init_directed_edge_distance, init_directed_edge_predecessor, init_undirected_edge_distance,
     init_undirected_edge_predecessor, FloydWarshallImpl,
 };
-use crate::shortest_paths::{
+use super::{
     common::{
         cost::{DefaultCost, GraphCost},
         route::{DirectRoute, Route},

@@ -9,7 +9,10 @@ use petgraph_core::{Graph, GraphStorage, Node};
 
 use super::error::BellmanFordError;
 use crate::shortest_paths::{
-    bellman_ford::{measure::BellmanFordMeasure, CandidateOrder},
+    bellman_ford::{
+        measure::{AddRef, BellmanFordMeasure},
+        CandidateOrder,
+    },
     common::{
         connections::Connections,
         cost::GraphCost,
@@ -250,8 +253,7 @@ where
                 let (u, v) = edge.endpoints();
                 let target = if u.id() == source.id() { v } else { u };
 
-                // TODO: I'd like to remove this with an additional trait bound on the super-type...
-                let alternative = priority.clone() + self.edge_cost.cost(edge).as_ref();
+                let alternative = priority.add_ref(self.edge_cost.cost(edge).as_ref());
 
                 if let Some(distance) = self.distances.get(target.id()) {
                     if alternative == *distance {
