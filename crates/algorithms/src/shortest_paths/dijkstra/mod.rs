@@ -26,6 +26,22 @@ use super::{
 };
 use crate::polyfill::IteratorExt;
 
+// TODO: DijkstraMeasure
+
+/// An implementation of Dijkstra's shortest path algorithm.
+///
+/// Dijkstra's algorithm is an algorithm for finding the shortest paths between a source node and
+/// all reachable nodes in a graph.
+/// A limitation of Dijkstra's algorithm is that it does not work for graphs with negative edge
+/// weights.
+///
+/// This implementation is generic over the directionality of the graph and the cost function.
+///
+/// Edge weights need to implement [`DijkstraMeasure`], a trait that is automatically implemented
+/// for all types that satisfy the constraints.
+///
+/// This implementation makes use of a binary heap, giving a time complexity of `O(|E| + |V| log
+/// |E|/|V| log |V|)`
 pub struct Dijkstra<D, E>
 where
     D: GraphDirectionality,
@@ -36,6 +52,16 @@ where
 }
 
 impl Dijkstra<Directed, DefaultCost> {
+    /// Create a new instance of `Dijkstra` for a directed graph.
+    ///
+    /// If instantiated for a directed graph, [`Dijkstra`] will not implement [`ShortestPath`] and
+    /// [`ShortestDistance`] on undirected graphs.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // TODO: example
+    /// ```
     #[must_use]
     pub fn directed() -> Self {
         Self {
@@ -46,6 +72,16 @@ impl Dijkstra<Directed, DefaultCost> {
 }
 
 impl Dijkstra<Undirected, DefaultCost> {
+    /// Create a new instance of `Dijkstra` for an undirected graph.
+    ///
+    /// If instantiated for an undirected graph, [`Dijkstra`] will treat a directed graph as an
+    /// undirected graph.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // TODO
+    /// ```
     #[must_use]
     pub fn undirected() -> Self {
         Self {
@@ -59,6 +95,17 @@ impl<D, E> Dijkstra<D, E>
 where
     D: GraphDirectionality,
 {
+    /// Set the cost function for the algorithm.
+    ///
+    /// By default the algorithm will use the edge weight as the cost, this function allows you to
+    /// override that behaviour,
+    /// transforming a previously unsupported graph weight into a supported one.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // TODO: example
+    /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> Dijkstra<D, F>
     where
         S: GraphStorage,

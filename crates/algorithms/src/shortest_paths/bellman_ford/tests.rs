@@ -65,3 +65,5 @@ fn negative_cycle_heuristic() {
     *graph.edge_mut(&da).unwrap().weight_mut() = 2.0;
     assert!(spfa.every_path(&graph).is_ok());
 }
+
+// TODO: tests c:

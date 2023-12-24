@@ -1,3 +1,4 @@
+//! An implementation of the Floyd-Warshall shortest path algorithm.
 mod error;
 mod r#impl;
 mod matrix;
@@ -28,6 +29,28 @@ use super::{
     Cost, ShortestDistance, ShortestPath,
 };
 
+// TODO: FloydWarshallMeasure
+
+/// An implementation of the Floyd-Warshall shortest path algorithm.
+///
+/// The Floyd-Warshall algorithm is an algorithm for finding shortest paths in a weighted graph with
+/// positive or negative edge weights (but with no negative cycles).
+/// A single execution of the algorithm will find the lengths (summed weights) of the shortest paths
+/// between all pairs of vertices, though it does not return details of the paths themselves.
+///
+/// The implementation chosen overcomes this limitation by storing the predecessor of each node in
+/// an associated matrix.
+///
+/// The algorithm is implemented for both directed and undirected graphs (undirected graphs are
+/// simply treated as directed graphs with the same edge in both directions).
+///
+/// Edge weights need to implement [`FloydWarshallMeasure`], a trait that is automatically
+/// implemented for all types that satisfy the constraints. The graph id for edges need to be
+/// linear, refer to the documentation of the graph type used for further information if graph ids
+/// implement [`LinearGraphId`].
+///
+/// The time complexity of the algorithm is `O(|V|^3)`, where `|V|` is the number of nodes in the
+/// graph.
 pub struct FloydWarshall<D, E> {
     edge_cost: E,
 
@@ -43,11 +66,22 @@ impl FloydWarshall<Directed, DefaultCost> {
     /// # Example
     ///
     /// ```
-    /// use petgraph_algorithms::shortest_paths::FloydWarshall;
+    /// use petgraph_algorithms::shortest_paths::{FloydWarshall, ShortestPath};
+    /// use petgraph_dino::DiDinoGraph;
     ///
     /// let algorithm = FloydWarshall::directed();
     ///
-    /// // TODO: add example
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    ///
+    /// graph.insert_edge(7, &a, &b);
+    ///
+    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// assert!(path.is_some());
+    ///
+    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// assert!(path.is_none());
     /// ```
     #[must_use]
     pub fn directed() -> Self {
@@ -66,11 +100,22 @@ impl FloydWarshall<Undirected, DefaultCost> {
     /// # Example
     ///
     /// ```
-    /// use petgraph_algorithms::shortest_paths::FloydWarshall;
+    /// use petgraph_algorithms::shortest_paths::{FloydWarshall, ShortestPath};
+    /// use petgraph_dino::DiDinoGraph;
     ///
     /// let algorithm = FloydWarshall::undirected();
     ///
-    /// // TODO: add example
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    ///
+    /// graph.insert_edge(7, &a, &b);
+    ///
+    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// assert!(path.is_some());
+    ///
+    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// assert!(path.is_some());
     /// ```
     #[must_use]
     pub fn undirected() -> Self {
@@ -89,7 +134,34 @@ impl<D, E> FloydWarshall<D, E> {
     /// with the [`FloydWarshall`] implementation into one that is.
     ///
     /// # Example
-    // TODO: add example
+    ///
+    /// ```
+    /// use petgraph_algorithms::shortest_paths::{FloydWarshall, ShortestPath};
+    /// use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<usize>
+    /// where
+    ///     S: GraphStorage,
+    ///     S::EdgeWeight: AsRef<str>,
+    /// {
+    ///     edge.weight().as_ref().len().into()
+    /// }
+    ///
+    /// let algorithm = FloydWarshall::directed().with_edge_cost(edge_cost);
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    ///
+    /// graph.insert_edge("AB", &a, &b);
+    ///
+    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// assert!(path.is_some());
+    ///
+    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// assert!(path.is_none());
+    /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> FloydWarshall<D, F>
     where
         S: GraphStorage,
@@ -198,7 +270,9 @@ where
             init_undirected_edge_predecessor::<S>,
         )?;
 
-        Ok(iter.filter(move |route| route.target().id() == target))
+        Ok(iter
+            .filter(move |_, target_node| target_node.id() == target)
+            .map(From::from))
     }
 
     fn distance_from<'graph: 'this, 'this>(
@@ -214,7 +288,9 @@ where
             init_undirected_edge_predecessor::<S>,
         )?;
 
-        Ok(iter.filter(move |route| route.source().id() == source))
+        Ok(iter
+            .filter(move |source_node, _| source_node.id() == source)
+            .map(From::from))
     }
 
     fn distance_between<'graph>(
@@ -348,7 +424,9 @@ where
             init_directed_edge_predecessor::<S>,
         )?;
 
-        Ok(iter.filter(move |route| route.target().id() == target))
+        Ok(iter
+            .filter(move |_, target_node| target_node.id() == target)
+            .map(From::from))
     }
 
     fn distance_from<'graph: 'this, 'this>(
@@ -364,7 +442,9 @@ where
             init_directed_edge_predecessor::<S>,
         )?;
 
-        Ok(iter.filter(move |route| route.source().id() == source))
+        Ok(iter
+            .filter(move |source_node, _| source_node.id() == source)
+            .map(From::from))
     }
 
     fn distance_between<'graph>(
