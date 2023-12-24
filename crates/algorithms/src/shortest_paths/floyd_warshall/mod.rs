@@ -25,7 +25,7 @@ use super::{
         route::{DirectRoute, Route},
         transit::PredecessorMode,
     },
-    ShortestDistance, ShortestPath,
+    Cost, ShortestDistance, ShortestPath,
 };
 
 pub struct FloydWarshall<D, E> {
@@ -35,6 +35,20 @@ pub struct FloydWarshall<D, E> {
 }
 
 impl FloydWarshall<Directed, DefaultCost> {
+    /// Creates a new instance of the Floyd-Warshall shortest path algorithm for directed graphs.
+    ///
+    /// If instantiated for a directed graph, the algorithm will not implement the [`ShortestPath`]
+    /// and [`ShortestDistance`] traits for undirected graphs.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_algorithms::shortest_paths::FloydWarshall;
+    ///
+    /// let algorithm = FloydWarshall::directed();
+    ///
+    /// // TODO: add example
+    /// ```
     #[must_use]
     pub fn directed() -> Self {
         Self {
@@ -45,6 +59,19 @@ impl FloydWarshall<Directed, DefaultCost> {
 }
 
 impl FloydWarshall<Undirected, DefaultCost> {
+    /// Creates a new instance of the Floyd-Warshall shortest path algorithm for undirected graphs.
+    ///
+    /// If used on a directed graph, the algorithm will treat the graph as undirected.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_algorithms::shortest_paths::FloydWarshall;
+    ///
+    /// let algorithm = FloydWarshall::undirected();
+    ///
+    /// // TODO: add example
+    /// ```
     #[must_use]
     pub fn undirected() -> Self {
         Self {
@@ -55,6 +82,14 @@ impl FloydWarshall<Undirected, DefaultCost> {
 }
 
 impl<D, E> FloydWarshall<D, E> {
+    /// Sets the cost function to use for the algorithm.
+    ///
+    /// By default the algorithm will use the edge weight as cost, this enables the use of a custom
+    /// edge cost function, which may transform the edge weight, which is initially incompatible
+    /// with the [`FloydWarshall`] implementation into one that is.
+    ///
+    /// # Example
+    // TODO: add example
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> FloydWarshall<D, F>
     where
         S: GraphStorage,
@@ -122,11 +157,7 @@ where
         )
         .ok()?;
 
-        r#impl
-            .filter(|source_node, target_node| {
-                source_node.id() == source && target_node.id() == target
-            })
-            .next()
+        r#impl.pick(source, target)
     }
 
     fn every_path<'graph: 'this, 'this>(
@@ -153,6 +184,56 @@ where
 {
     type Cost = E::Value;
     type Error = FloydWarshallError;
+
+    fn distance_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        let iter = FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            PredecessorMode::Discard,
+            init_undirected_edge_distance::<S, E>,
+            init_undirected_edge_predecessor::<S>,
+        )?;
+
+        Ok(iter.filter(move |route| route.target().id() == target))
+    }
+
+    fn distance_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        let iter = FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            PredecessorMode::Discard,
+            init_undirected_edge_distance::<S, E>,
+            init_undirected_edge_predecessor::<S>,
+        )?;
+
+        Ok(iter.filter(move |route| route.source().id() == source))
+    }
+
+    fn distance_between<'graph>(
+        &self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Cost<Self::Cost>> {
+        let iter = FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            PredecessorMode::Discard,
+            init_undirected_edge_distance::<S, E>,
+            init_undirected_edge_predecessor::<S>,
+        )
+        .ok()?;
+
+        iter.pick(source, target).map(Route::into_cost)
+    }
 
     fn every_distance<'graph: 'this, 'this>(
         &'this self,
@@ -226,11 +307,7 @@ where
         )
         .ok()?;
 
-        r#impl
-            .filter(|source_node, target_node| {
-                source_node.id() == source && target_node.id() == target
-            })
-            .next()
+        r#impl.pick(source, target)
     }
 
     fn every_path<'graph: 'this, 'this>(
@@ -257,6 +334,56 @@ where
 {
     type Cost = E::Value;
     type Error = FloydWarshallError;
+
+    fn distance_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        let iter = FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            PredecessorMode::Discard,
+            init_directed_edge_distance::<S, E>,
+            init_directed_edge_predecessor::<S>,
+        )?;
+
+        Ok(iter.filter(move |route| route.target().id() == target))
+    }
+
+    fn distance_from<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
+        let iter = FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            PredecessorMode::Discard,
+            init_directed_edge_distance::<S, E>,
+            init_directed_edge_predecessor::<S>,
+        )?;
+
+        Ok(iter.filter(move |route| route.source().id() == source))
+    }
+
+    fn distance_between<'graph>(
+        &self,
+        graph: &'graph Graph<S>,
+        source: &'graph S::NodeId,
+        target: &'graph S::NodeId,
+    ) -> Option<Cost<Self::Cost>> {
+        let iter = FloydWarshallImpl::new(
+            graph,
+            &self.edge_cost,
+            PredecessorMode::Discard,
+            init_directed_edge_distance::<S, E>,
+            init_directed_edge_predecessor::<S>,
+        )
+        .ok()?;
+
+        iter.pick(source, target).map(Route::into_cost)
+    }
 
     fn every_distance<'graph: 'this, 'this>(
         &'this self,

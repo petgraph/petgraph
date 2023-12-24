@@ -314,4 +314,37 @@ where
                 Route::new(Path::new(source, transit, target), Cost::new(cost))
             })
     }
+
+    pub(super) fn pick(
+        self,
+        source: &S::NodeId,
+        target: &S::NodeId,
+    ) -> Option<Route<'graph, S, E::Value>> {
+        let Self {
+            graph,
+            distances,
+            predecessors,
+            predecessor_mode,
+            ..
+        } = self;
+
+        let source_node = graph.node(source)?;
+        let target_node = graph.node(target)?;
+
+        let cost = distances.get(source, target)?;
+        let transit = match predecessor_mode {
+            PredecessorMode::Discard => Vec::new(),
+            PredecessorMode::Record => reconstruct_path(&predecessors, source, target)
+                .into_iter()
+                .filter_map(|id| graph.node(id))
+                .collect(),
+        };
+
+        let cost = Cost::new(cost.clone().into_owned());
+
+        Some(Route::new(
+            Path::new(source_node, transit, target_node),
+            cost,
+        ))
+    }
 }
