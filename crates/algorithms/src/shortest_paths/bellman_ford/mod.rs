@@ -14,10 +14,7 @@ use petgraph_core::{
 };
 
 use self::r#impl::ShortestPathFasterImpl;
-pub use self::{
-    error::BellmanFordError,
-    measure::{AddRef, BellmanFordMeasure},
-};
+pub use self::{error::BellmanFordError, measure::BellmanFordMeasure};
 use super::{
     common::{
         connections::outgoing_connections,
@@ -110,6 +107,16 @@ where
     type Cost = E::Value;
     type Error = BellmanFordError;
 
+    fn path_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
+        let iter = self.path_from(graph, target)?;
+
+        Ok(iter.map(Route::reverse))
+    }
+
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
@@ -125,16 +132,6 @@ where
             self.negative_cycle_heuristics,
         )
         .map(ShortestPathFasterImpl::all)
-    }
-
-    fn path_to<'graph: 'this, 'this>(
-        &'this self,
-        graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
-    ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
-        let iter = self.path_from(graph, target)?;
-
-        Ok(iter.map(Route::reverse))
     }
 
     fn path_between<'graph>(
@@ -179,6 +176,16 @@ where
     type Cost = E::Value;
     type Error = BellmanFordError;
 
+    fn distance_to<'graph: 'this, 'this>(
+        &'this self,
+        graph: &'graph Graph<S>,
+        target: &'graph S::NodeId,
+    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
+        let iter = self.distance_from(graph, target)?;
+
+        Ok(iter.map(DirectRoute::reverse))
+    }
+
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
@@ -195,16 +202,6 @@ where
         )?;
 
         Ok(iter.all().map(Into::into))
-    }
-
-    fn distance_to<'graph: 'this, 'this>(
-        &'this self,
-        graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
-    ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
-        let iter = self.distance_from(graph, target)?;
-
-        Ok(iter.map(DirectRoute::reverse))
     }
 
     fn distance_between<'graph>(

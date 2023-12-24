@@ -38,22 +38,22 @@ where
     }
 }
 
-pub(super) struct SlotMatrix<'a, S, T>
+pub(super) struct SlotMatrix<'graph, S, T>
 where
-    S: GraphStorage + 'a,
+    S: GraphStorage + 'graph,
     S::NodeId: LinearGraphId<S>,
 {
-    mapper: MatrixIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'a>>,
+    mapper: MatrixIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'graph>>,
     matrix: Vec<Option<T>>,
     length: usize,
 }
 
-impl<'a, S, T> SlotMatrix<'a, S, T>
+impl<'graph, S, T> SlotMatrix<'graph, S, T>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S>,
 {
-    pub(crate) fn new(graph: &'a Graph<S>) -> Self {
+    pub(crate) fn new(graph: &'graph Graph<S>) -> Self {
         let length = graph.num_nodes();
         let mapper = MatrixIndexMapper::Store(<S::NodeId as LinearGraphId<S>>::index_mapper(
             graph.storage(),

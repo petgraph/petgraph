@@ -59,7 +59,7 @@ where
 {
     type Value;
 
-    fn cost<'a>(&self, edge: Edge<'a, S>) -> MaybeOwned<'a, Self::Value>;
+    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> MaybeOwned<'graph, Self::Value>;
 }
 
 impl<S, F, T> GraphCost<S> for F
@@ -69,7 +69,7 @@ where
 {
     type Value = T;
 
-    fn cost<'a>(&self, edge: Edge<'a, S>) -> MaybeOwned<'a, T> {
+    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> MaybeOwned<'graph, T> {
         self(edge)
     }
 }
@@ -80,7 +80,7 @@ where
 {
     type Value = S::EdgeWeight;
 
-    fn cost<'a>(&self, edge: Edge<'a, S>) -> MaybeOwned<'a, S::EdgeWeight> {
+    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> MaybeOwned<'graph, S::EdgeWeight> {
         MaybeOwned::Borrowed(edge.weight())
     }
 }

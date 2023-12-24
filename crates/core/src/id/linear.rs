@@ -131,9 +131,9 @@ where
     S: GraphStorage,
 {
     /// The index mapper for this graph identifier.
-    type Mapper<'a>: IndexMapper<Self>
+    type Mapper<'graph>: IndexMapper<Self>
     where
-        S: 'a;
+        S: 'graph;
 
     /// Get the index mapper for this graph identifier.
     ///

@@ -7,24 +7,24 @@ use petgraph_core::{GraphStorage, Node};
 
 use crate::shortest_paths::common::{cost::Cost, path::Path};
 
-pub struct Route<'a, S, T>
+pub struct Route<'graph, S, T>
 where
     S: GraphStorage,
 {
-    path: Path<'a, S>,
+    path: Path<'graph, S>,
 
     cost: Cost<T>,
 }
 
-impl<'a, S, T> Route<'a, S, T>
+impl<'graph, S, T> Route<'graph, S, T>
 where
     S: GraphStorage,
 {
-    pub const fn new(path: Path<'a, S>, cost: Cost<T>) -> Self {
+    pub const fn new(path: Path<'graph, S>, cost: Cost<T>) -> Self {
         Self { path, cost }
     }
 
-    pub const fn path(&self) -> &Path<'a, S> {
+    pub const fn path(&self) -> &Path<'graph, S> {
         &self.path
     }
 
@@ -36,11 +36,11 @@ where
         self.cost
     }
 
-    pub fn into_path(self) -> Path<'a, S> {
+    pub fn into_path(self) -> Path<'graph, S> {
         self.path
     }
 
-    pub fn into_parts(self) -> (Path<'a, S>, Cost<T>) {
+    pub fn into_parts(self) -> (Path<'graph, S>, Cost<T>) {
         (self.path, self.cost)
     }
 
@@ -57,10 +57,10 @@ where
 #[cfg(test)]
 static_assertions::assert_impl_all!(Route<'_, petgraph_dino::DinoStorage<(), ()>, &'static str>: Debug, Display, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Send, Sync);
 
-impl<'a, S, T> Debug for Route<'a, S, T>
+impl<'graph, S, T> Debug for Route<'graph, S, T>
 where
     S: GraphStorage,
-    Node<'a, S>: Debug,
+    Node<'graph, S>: Debug,
     T: Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -85,7 +85,7 @@ where
     }
 }
 
-impl<'a, S, T> Clone for Route<'a, S, T>
+impl<'graph, S, T> Clone for Route<'graph, S, T>
 where
     S: GraphStorage,
     T: Clone,
@@ -98,10 +98,10 @@ where
     }
 }
 
-impl<'a, S, T> PartialEq for Route<'a, S, T>
+impl<'graph, S, T> PartialEq for Route<'graph, S, T>
 where
     S: GraphStorage,
-    Path<'a, S>: PartialEq,
+    Path<'graph, S>: PartialEq,
     T: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -109,18 +109,18 @@ where
     }
 }
 
-impl<'a, S, T> Eq for Route<'a, S, T>
+impl<'graph, S, T> Eq for Route<'graph, S, T>
 where
     S: GraphStorage,
-    Path<'a, S>: Eq,
+    Path<'graph, S>: Eq,
     T: Eq,
 {
 }
 
-impl<'a, S, T> PartialOrd for Route<'a, S, T>
+impl<'graph, S, T> PartialOrd for Route<'graph, S, T>
 where
     S: GraphStorage,
-    Path<'a, S>: PartialOrd,
+    Path<'graph, S>: PartialOrd,
     T: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
@@ -129,10 +129,10 @@ where
     }
 }
 
-impl<'a, S, T> Ord for Route<'a, S, T>
+impl<'graph, S, T> Ord for Route<'graph, S, T>
 where
     S: GraphStorage,
-    Path<'a, S>: Ord,
+    Path<'graph, S>: Ord,
     T: Ord,
 {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
@@ -140,10 +140,10 @@ where
     }
 }
 
-impl<'a, S, T> Hash for Route<'a, S, T>
+impl<'graph, S, T> Hash for Route<'graph, S, T>
 where
     S: GraphStorage,
-    Path<'a, S>: Hash,
+    Path<'graph, S>: Hash,
     T: Hash,
 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -151,21 +151,21 @@ where
     }
 }
 
-pub struct DirectRoute<'a, S, T>
+pub struct DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
 {
-    source: Node<'a, S>,
-    target: Node<'a, S>,
+    source: Node<'graph, S>,
+    target: Node<'graph, S>,
 
     cost: Cost<T>,
 }
 
-impl<'a, S, T> DirectRoute<'a, S, T>
+impl<'graph, S, T> DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
 {
-    pub const fn new(source: Node<'a, S>, target: Node<'a, S>, cost: Cost<T>) -> Self {
+    pub const fn new(source: Node<'graph, S>, target: Node<'graph, S>, cost: Cost<T>) -> Self {
         Self {
             source,
             target,
@@ -173,11 +173,11 @@ where
         }
     }
 
-    pub const fn source(&self) -> &Node<'a, S> {
+    pub const fn source(&self) -> &Node<'graph, S> {
         &self.source
     }
 
-    pub const fn target(&self) -> &Node<'a, S> {
+    pub const fn target(&self) -> &Node<'graph, S> {
         &self.target
     }
 
@@ -185,7 +185,7 @@ where
         &self.cost
     }
 
-    pub fn into_endpoints(self) -> (Node<'a, S>, Node<'a, S>) {
+    pub fn into_endpoints(self) -> (Node<'graph, S>, Node<'graph, S>) {
         (self.source, self.target)
     }
 
@@ -193,7 +193,7 @@ where
         self.cost
     }
 
-    pub fn into_parts(self) -> (Node<'a, S>, Node<'a, S>, Cost<T>) {
+    pub fn into_parts(self) -> (Node<'graph, S>, Node<'graph, S>, Cost<T>) {
         (self.source, self.target, self.cost)
     }
 
@@ -211,10 +211,10 @@ where
 #[cfg(test)]
 static_assertions::assert_impl_all!(DirectRoute<'_, petgraph_dino::DinoStorage<(), ()>, &'static str>: Debug, Display, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Send, Sync);
 
-impl<'a, S, T> Debug for DirectRoute<'a, S, T>
+impl<'graph, S, T> Debug for DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
-    Node<'a, S>: Debug,
+    Node<'graph, S>: Debug,
     T: Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -242,7 +242,7 @@ where
     }
 }
 
-impl<'a, S, T> Clone for DirectRoute<'a, S, T>
+impl<'graph, S, T> Clone for DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
     T: Clone,
@@ -256,10 +256,10 @@ where
     }
 }
 
-impl<'a, S, T> PartialEq for DirectRoute<'a, S, T>
+impl<'graph, S, T> PartialEq for DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
-    Node<'a, S>: PartialEq,
+    Node<'graph, S>: PartialEq,
     T: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -267,18 +267,18 @@ where
     }
 }
 
-impl<'a, S, T> Eq for DirectRoute<'a, S, T>
+impl<'graph, S, T> Eq for DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
-    Node<'a, S>: Eq,
+    Node<'graph, S>: Eq,
     T: Eq,
 {
 }
 
-impl<'a, S, T> PartialOrd for DirectRoute<'a, S, T>
+impl<'graph, S, T> PartialOrd for DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
-    Node<'a, S>: PartialOrd,
+    Node<'graph, S>: PartialOrd,
     T: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
@@ -291,10 +291,10 @@ where
     }
 }
 
-impl<'a, S, T> Ord for DirectRoute<'a, S, T>
+impl<'graph, S, T> Ord for DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
-    Node<'a, S>: Ord,
+    Node<'graph, S>: Ord,
     T: Ord,
 {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
@@ -302,10 +302,10 @@ where
     }
 }
 
-impl<'a, S, T> Hash for DirectRoute<'a, S, T>
+impl<'graph, S, T> Hash for DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
-    Node<'a, S>: Hash,
+    Node<'graph, S>: Hash,
     T: Hash,
 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -313,12 +313,12 @@ where
     }
 }
 
-impl<'a, S, T> From<Route<'a, S, T>> for DirectRoute<'a, S, T>
+impl<'graph, S, T> From<Route<'graph, S, T>> for DirectRoute<'graph, S, T>
 where
     S: GraphStorage,
     T: Clone,
 {
-    fn from(route: Route<'a, S, T>) -> Self {
+    fn from(route: Route<'graph, S, T>) -> Self {
         Self {
             source: route.path.source(),
             target: route.path.target(),

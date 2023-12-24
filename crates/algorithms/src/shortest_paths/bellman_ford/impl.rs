@@ -9,15 +9,13 @@ use petgraph_core::{Graph, GraphStorage, Node};
 
 use super::error::BellmanFordError;
 use crate::shortest_paths::{
-    bellman_ford::{
-        measure::{AddRef, BellmanFordMeasure},
-        CandidateOrder,
-    },
+    bellman_ford::{measure::BellmanFordMeasure, CandidateOrder},
     common::{
         connections::Connections,
         cost::GraphCost,
         queue::double_ended::DoubleEndedQueue,
         transit::{reconstruct_paths_between, PredecessorMode},
+        AddRef,
     },
     Cost, Path, Route,
 };

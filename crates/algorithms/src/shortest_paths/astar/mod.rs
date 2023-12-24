@@ -1,6 +1,7 @@
 mod error;
 mod heuristic;
 mod r#impl;
+mod measure;
 #[cfg(test)]
 mod tests;
 
@@ -15,7 +16,7 @@ use petgraph_core::{
 };
 
 use self::r#impl::AStarImpl;
-pub use self::{error::AStarError, heuristic::GraphHeuristic};
+pub use self::{error::AStarError, heuristic::GraphHeuristic, measure::AStarMeasure};
 use super::{
     common::{
         connections::{outgoing_connections, Connections},
@@ -102,8 +103,7 @@ impl<E, H> AStar<Directed, E, H> {
         S: DirectedGraphStorage,
         S::NodeId: Eq + Hash,
         E: GraphCost<S>,
-        E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-        for<'a> &'a E::Value: Add<Output = E::Value>,
+        E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
     {
         AStarImpl::new(
@@ -130,8 +130,7 @@ impl<E, H> AStar<Undirected, E, H> {
         S: GraphStorage,
         S::NodeId: Eq + Hash,
         E: GraphCost<S>,
-        E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-        for<'a> &'a E::Value: Add<Output = E::Value>,
+        E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
     {
         AStarImpl::new(
@@ -154,8 +153,7 @@ where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
 {
     type Cost = E::Value;
@@ -224,8 +222,7 @@ where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
 {
     type Cost = E::Value;
@@ -295,8 +292,7 @@ where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
 {
     type Cost = E::Value;
@@ -365,8 +361,7 @@ where
     S: DirectedGraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
 {
     type Cost = E::Value;

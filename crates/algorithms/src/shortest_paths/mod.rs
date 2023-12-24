@@ -52,7 +52,7 @@
 
 pub mod astar;
 pub mod bellman_ford;
-mod common;
+pub mod common;
 pub mod dijkstra;
 pub mod floyd_warshall;
 

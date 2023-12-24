@@ -15,15 +15,16 @@ use crate::shortest_paths::{
         queue::priority::PriorityQueue,
         route::Route,
         transit::{reconstruct_path_to, PredecessorMode},
+        AddRef,
     },
-    dijkstra::DijkstraError,
+    dijkstra::{measure::DijkstraMeasure, DijkstraError},
 };
 
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
     E: GraphCost<S>,
-    E::Value: Ord,
+    E::Value: DijkstraMeasure,
 {
     queue: PriorityQueue<'graph, S, E::Value>,
 
@@ -48,8 +49,7 @@ where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
 {
     pub(super) fn new(
@@ -96,8 +96,7 @@ where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
     E: GraphCost<S>,
-    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
 {
     type Item = Route<'graph, S, E::Value>;
@@ -124,9 +123,7 @@ where
             let (u, v) = edge.endpoints();
             let target = if v.id() == node.id() { u } else { v };
 
-            // TODO: investigate if add by ref (like here) is slower than just cloning (/copying)
-            //  the distance value
-            let alternative = &self.distances[node.id()] + self.edge_cost.cost(edge).as_ref();
+            let alternative = self.distances[node.id()].add_ref(self.edge_cost.cost(edge).as_ref());
 
             if let Some(distance) = self.distances.get(target.id()) {
                 // do not insert the updated distance if it is not strictly better than the current

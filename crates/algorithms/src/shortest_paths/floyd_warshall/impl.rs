@@ -10,15 +10,15 @@ use crate::shortest_paths::{
         route::Route,
         transit::PredecessorMode,
     },
-    floyd_warshall::{error::FloydWarshallError, matrix::SlotMatrix},
+    floyd_warshall::{error::FloydWarshallError, matrix::SlotMatrix, FloydWarshallMeasure},
     Path,
 };
 
-pub(super) fn init_directed_edge_distance<'graph, S, E>(
-    matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
+pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
+    matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'this, E::Value>>,
     u: &S::NodeId,
     v: &S::NodeId,
-    value: Option<MaybeOwned<'graph, E::Value>>,
+    value: Option<MaybeOwned<'this, E::Value>>,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -28,11 +28,11 @@ pub(super) fn init_directed_edge_distance<'graph, S, E>(
     matrix.set(u, v, value);
 }
 
-pub(super) fn init_undirected_edge_distance<'graph, S, E>(
-    matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
+pub(super) fn init_undirected_edge_distance<'graph: 'this, 'this, S, E>(
+    matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'this, E::Value>>,
     u: &S::NodeId,
     v: &S::NodeId,
-    value: Option<MaybeOwned<'graph, E::Value>>,
+    value: Option<MaybeOwned<'this, E::Value>>,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -108,12 +108,11 @@ where
     path.reverse();
     path
 }
-
-type InitEdgeDistanceFn<'graph, S, E> = fn(
-    &mut SlotMatrix<'graph, S, MaybeOwned<'graph, <E as GraphCost<S>>::Value>>,
+type InitEdgeDistanceFn<'graph, 'this, S, E> = fn(
+    &mut SlotMatrix<'graph, S, MaybeOwned<'this, <E as GraphCost<S>>::Value>>,
     &<S as GraphStorage>::NodeId,
     &<S as GraphStorage>::NodeId,
-    Option<MaybeOwned<'graph, <E as GraphCost<S>>::Value>>,
+    Option<MaybeOwned<'this, <E as GraphCost<S>>::Value>>,
 );
 
 type InitEdgePredecessorFn<'graph, S> = fn(
@@ -133,10 +132,10 @@ where
 
     predecessor_mode: PredecessorMode,
 
-    init_edge_distance: InitEdgeDistanceFn<'graph, S, E>,
+    init_edge_distance: InitEdgeDistanceFn<'graph, 'parent, S, E>,
     init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
 
-    distances: SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
+    distances: SlotMatrix<'graph, S, MaybeOwned<'parent, E::Value>>,
     predecessors: SlotMatrix<'graph, S, &'graph S::NodeId>,
 }
 
@@ -145,7 +144,7 @@ where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
     E: GraphCost<S>,
-    E::Value: PartialOrd + CheckedAdd + Zero + Clone + 'graph,
+    E::Value: FloydWarshallMeasure,
 {
     pub(super) fn new(
         graph: &'graph Graph<S>,
@@ -154,7 +153,7 @@ where
 
         predecessor_mode: PredecessorMode,
 
-        init_edge_distance: InitEdgeDistanceFn<'graph, S, E>,
+        init_edge_distance: InitEdgeDistanceFn<'graph, 'parent, S, E>,
         init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
     ) -> Result<Self, FloydWarshallError> {
         let distances = SlotMatrix::new(graph);
@@ -278,7 +277,7 @@ where
 
     pub(super) fn filter(
         self,
-        mut filter: impl FnMut(Node<S>, Node<S>) -> bool + 'parent,
+        mut filter: impl FnMut(Node<'graph, S>, Node<'graph, S>) -> bool + 'parent,
     ) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
         let Self {
             graph,

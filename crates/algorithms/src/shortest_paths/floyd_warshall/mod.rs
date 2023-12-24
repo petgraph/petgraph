@@ -2,6 +2,7 @@
 mod error;
 mod r#impl;
 mod matrix;
+mod measure;
 #[cfg(test)]
 mod tests;
 
@@ -15,11 +16,11 @@ use petgraph_core::{
     Graph, GraphStorage,
 };
 
-pub use self::error::FloydWarshallError;
 use self::r#impl::{
     init_directed_edge_distance, init_directed_edge_predecessor, init_undirected_edge_distance,
     init_undirected_edge_predecessor, FloydWarshallImpl,
 };
+pub use self::{error::FloydWarshallError, measure::FloydWarshallMeasure};
 use super::{
     common::{
         cost::{DefaultCost, GraphCost},
@@ -179,7 +180,7 @@ where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + CheckedAdd + Zero + Clone + 'a,
+    E::Value: FloydWarshallMeasure,
 {
     type Cost = E::Value;
     type Error = FloydWarshallError;
@@ -243,7 +244,7 @@ where
             init_undirected_edge_distance::<S, E>,
             init_undirected_edge_predecessor::<S>,
         )
-        .map(|r#impl| r#impl.filter(|_, _| true))
+        .map(move |r#impl| r#impl.filter(|_, _| true))
     }
 }
 
@@ -252,7 +253,7 @@ where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + CheckedAdd + Zero + Clone + 'a,
+    E::Value: FloydWarshallMeasure,
 {
     type Cost = E::Value;
     type Error = FloydWarshallError;
@@ -332,7 +333,7 @@ where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + CheckedAdd + Zero + Clone + 'a,
+    E::Value: FloydWarshallMeasure,
 {
     type Cost = E::Value;
     type Error = FloydWarshallError;
@@ -397,7 +398,7 @@ where
             init_directed_edge_distance::<S, E>,
             init_directed_edge_predecessor::<S>,
         )
-        .map(|r#impl| r#impl.filter(|_, _| true))
+        .map(move |r#impl| r#impl.filter(|_, _| true))
     }
 }
 
@@ -406,7 +407,7 @@ where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + CheckedAdd + Zero + Clone + 'a,
+    E::Value: FloydWarshallMeasure,
 {
     type Cost = E::Value;
     type Error = FloydWarshallError;
