@@ -1,3 +1,4 @@
+//! An implementation of Dijkstra's shortest path algorithm.
 mod error;
 mod iter;
 mod measure;
@@ -59,7 +60,22 @@ impl Dijkstra<Directed, DefaultCost> {
     /// # Example
     ///
     /// ```
-    /// // TODO: example
+    /// use petgraph_algorithms::shortest_paths::{Dijkstra, ShortestPath};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let algorithm = Dijkstra::directed();
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    ///
+    /// graph.insert_edge(2, &a, &b);
+    ///
+    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// assert!(path.is_some());
+    ///
+    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// assert!(path.is_none());
     /// ```
     #[must_use]
     pub fn directed() -> Self {
@@ -79,7 +95,22 @@ impl Dijkstra<Undirected, DefaultCost> {
     /// # Example
     ///
     /// ```
-    /// // TODO
+    /// use petgraph_algorithms::shortest_paths::{Dijkstra, ShortestPath};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// let algorithm = Dijkstra::undirected();
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    ///
+    /// graph.insert_edge(2, &a, &b);
+    ///
+    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// assert!(path.is_some());
+    ///
+    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// assert!(path.is_some());
     /// ```
     #[must_use]
     pub fn undirected() -> Self {
@@ -100,10 +131,33 @@ where
     /// override that behaviour,
     /// transforming a previously unsupported graph weight into a supported one.
     ///
+    /// For all supported functions see [`GraphCost`].
+    ///
     /// # Example
     ///
     /// ```
-    /// // TODO: example
+    /// use petgraph_algorithms::shortest_paths::{Dijkstra, ShortestPath};
+    /// use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
+    /// use petgraph_dino::DiDinoGraph;
+    ///
+    /// fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<usize>
+    /// where
+    ///     S: GraphStorage,
+    ///     S::EdgeWeight: AsRef<str>,
+    /// {
+    ///     edge.weight().as_ref().len().into()
+    /// }
+    ///
+    /// let algorithm = Dijkstra::directed().with_edge_cost(edge_cost);
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    ///
+    /// graph.insert_edge("AB", &a, &b);
+    ///
+    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// assert!(path.is_some());
     /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> Dijkstra<D, F>
     where

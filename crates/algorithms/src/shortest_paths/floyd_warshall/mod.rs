@@ -30,8 +30,6 @@ use super::{
     Cost, ShortestDistance, ShortestPath,
 };
 
-// TODO: FloydWarshallMeasure
-
 /// An implementation of the Floyd-Warshall shortest path algorithm.
 ///
 /// The Floyd-Warshall algorithm is an algorithm for finding shortest paths in a weighted graph with
