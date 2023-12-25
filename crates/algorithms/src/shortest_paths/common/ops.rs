@@ -1,4 +1,7 @@
-use core::ops::Add;
+use core::{
+    num::{Saturating, Wrapping},
+    ops::Add,
+};
 
 // proxy trait to not need to carry around where clause.
 /// Automatically implemented trait for adding a reference to a reference.
@@ -26,5 +29,68 @@ where
 
     fn add_ref(&self, rhs: &T) -> Self::Output {
         self + rhs
+    }
+}
+
+pub trait CastTo<T> {
+    fn cast_to(self) -> T;
+}
+
+impl<T> CastTo<T> for T {
+    fn cast_to(self) -> T {
+        self
+    }
+}
+
+macro_rules! impl_cast_to {
+    (@impl $from:ty, $to:ty) => {
+        impl CastTo<$to> for $from {
+            fn cast_to(self) -> $to {
+                self as $to
+            }
+        }
+    };
+    (@proxy $from:ty; $($to:ty),* $(,)?) => {
+        $(impl_cast_to!(@impl $from, $to);)*
+    };
+    (@dist $head:tt; @() @( $($prev:tt)* )) => {
+        impl_cast_to!(@proxy $head; $($prev),*);
+    };
+    (@dist $head:tt; @( $next:tt $($tail:tt)*) @( $($prev:tt)* )) => {
+        impl_cast_to!(@dist $next; @( $($tail)* ) @( $($prev)* $head ));
+        impl_cast_to!(@proxy $head; $($prev ,)* $next , $($tail ,)*);
+    };
+    ($first:tt $(, $tail:tt)* $(,)?) => {
+        impl_cast_to!(@dist $first; @($($tail)*) @());
+    };
+}
+
+impl_cast_to!(
+    u8, u16, u32, u64, u128, usize, // unsigned integers
+    i8, i16, i32, i64, i128, isize, // signed integers
+    f32, f64, // floating point numbers
+);
+
+impl<T> CastTo<T> for Wrapping<T> {
+    fn cast_to(self) -> T {
+        self.0
+    }
+}
+
+impl<T> CastTo<Wrapping<T>> for T {
+    fn cast_to(self) -> Wrapping<T> {
+        Wrapping(self)
+    }
+}
+
+impl<T> CastTo<T> for Saturating<T> {
+    fn cast_to(self) -> T {
+        self.0
+    }
+}
+
+impl<T> CastTo<Saturating<T>> for T {
+    fn cast_to(self) -> Saturating<T> {
+        Saturating(self)
     }
 }

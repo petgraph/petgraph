@@ -19,9 +19,7 @@ use crate::shortest_paths::common::AddRef;
 /// # Example
 ///
 /// ```rust
-/// use core::num::Wrapping;
-///
-/// use core::num::Saturating;
+/// use core::num::{Wrapping, Saturating};
 /// use petgraph_algorithms::shortest_paths::bellman_ford::BellmanFordMeasure;
 /// use static_assertions::assert_impl_all;
 ///
