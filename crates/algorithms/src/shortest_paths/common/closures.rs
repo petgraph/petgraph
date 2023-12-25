@@ -2,6 +2,8 @@ use core::marker::PhantomData;
 
 use petgraph_core::{base::MaybeOwned, Edge, GraphStorage, Node};
 
+use crate::shortest_paths::GraphCost;
+
 struct GraphCostClosure<F, S, T> {
     closure: F,
     _marker: PhantomData<fn() -> *const (S, T)>,
@@ -40,6 +42,18 @@ where
             closure: self.closure,
             _marker: PhantomData,
         }
+    }
+}
+
+impl<F, S, T> GraphCost<S> for GraphCostClosure<F, S, T>
+where
+    F: Fn(Edge<S>) -> MaybeOwned<T>,
+    S: GraphStorage,
+{
+    type Value = T;
+
+    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> MaybeOwned<'graph, Self::Value> {
+        (self.closure)(edge)
     }
 }
 
