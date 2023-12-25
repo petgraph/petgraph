@@ -1,6 +1,7 @@
 use core::marker::PhantomData;
 
-use petgraph_core::{base::MaybeOwned, Edge, GraphStorage, Node};
+use numi::borrow::Moo;
+use petgraph_core::{Edge, GraphStorage, Node};
 
 use crate::shortest_paths::GraphCost;
 
@@ -11,8 +12,8 @@ struct GraphCostClosure<F, S, T> {
 
 impl<S, T> GraphCostClosure<(), S, T> {
     pub fn new(
-        closure: impl Fn(Edge<S>) -> MaybeOwned<T>,
-    ) -> GraphCostClosure<impl Fn(Edge<S>) -> MaybeOwned<T>, S, T> {
+        closure: impl Fn(Edge<S>) -> Moo<T>,
+    ) -> GraphCostClosure<impl Fn(Edge<S>) -> Moo<T>, S, T> {
         GraphCostClosure {
             closure,
             _marker: PhantomData,
@@ -22,9 +23,9 @@ impl<S, T> GraphCostClosure<(), S, T> {
 
 impl<F, S, T> GraphCostClosure<F, S, T>
 where
-    F: Fn(Edge<S>) -> MaybeOwned<T>,
+    F: Fn(Edge<S>) -> Moo<T>,
 {
-    pub fn narrow_node_weight<N>(self) -> GraphCostClosure<impl Fn(Edge<S>) -> MaybeOwned<T>, S, T>
+    pub fn narrow_node_weight<N>(self) -> GraphCostClosure<impl Fn(Edge<S>) -> Moo<T>, S, T>
     where
         S: GraphStorage<NodeWeight = N>,
     {
@@ -34,7 +35,7 @@ where
         }
     }
 
-    pub fn narrow_edge_weight<E>(self) -> GraphCostClosure<impl Fn(Edge<S>) -> MaybeOwned<T>, S, T>
+    pub fn narrow_edge_weight<E>(self) -> GraphCostClosure<impl Fn(Edge<S>) -> Moo<T>, S, T>
     where
         S: GraphStorage<EdgeWeight = E>,
     {
@@ -47,25 +48,26 @@ where
 
 impl<F, S, T> GraphCost<S> for GraphCostClosure<F, S, T>
 where
-    F: Fn(Edge<S>) -> MaybeOwned<T>,
+    F: Fn(Edge<S>) -> Moo<T>,
     S: GraphStorage,
 {
     type Value = T;
 
-    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> MaybeOwned<'graph, Self::Value> {
+    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> Moo<'graph, Self::Value> {
         (self.closure)(edge)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use petgraph_core::{base::MaybeOwned, Graph};
+    use numi::borrow::Moo;
+    use petgraph_core::Graph;
 
     use crate::shortest_paths::{common::closures::GraphCostClosure, Dijkstra};
 
     #[test]
     fn cost() {
-        let closure = GraphCostClosure::new(|edge| MaybeOwned::Borrowed(edge.weight()))
+        let closure = GraphCostClosure::new(|edge| Moo::Borrowed(edge.weight()))
             .narrow_edge_weight::<i32>()
             .narrow_node_weight::<i32>();
 
@@ -74,7 +76,7 @@ mod test {
 }
 
 // pub fn bind_heuristic<S, T>(
-//     closure: impl Fn(Node<S>, Node<S>) -> MaybeOwned<T>,
-// ) -> impl Fn(Node<S>, Node<S>) -> MaybeOwned<T> {
+//     closure: impl Fn(Node<S>, Node<S>) -> Moo<T>,
+// ) -> impl Fn(Node<S>, Node<S>) -> Moo<T> {
 //     closure
 // }

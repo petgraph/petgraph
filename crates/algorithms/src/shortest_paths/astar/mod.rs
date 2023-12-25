@@ -60,19 +60,20 @@ impl AStar<Directed, DefaultCost, ()> {
     /// # Example
     ///
     /// ```
+    /// use numi::borrow::Moo;
     /// use petgraph_algorithms::shortest_paths::AStar;
-    /// use petgraph_core::{base::MaybeOwned, edge::marker::Directed, GraphStorage, Node};
+    /// use petgraph_core::{edge::marker::Directed, GraphStorage, Node};
     /// use petgraph_dino::{DiDinoGraph, DinoStorage};
     ///
     /// // TODO: heuristic utils
-    /// fn heuristic<S>(source: Node<S>, target: Node<S>) -> MaybeOwned<i32>
+    /// fn heuristic<S>(source: Node<S>, target: Node<S>) -> Moo<i32>
     /// where
     ///     S: GraphStorage<NodeWeight = (i32, i32), EdgeWeight = i32>,
     /// {
     ///     let source = source.weight();
     ///     let target = target.weight();
     ///
-    ///     MaybeOwned::Owned((source.0 - target.0).abs() + (source.1 - target.1).abs())
+    ///     Moo::Owned((source.0 - target.0).abs() + (source.1 - target.1).abs())
     /// }
     ///
     /// let algorithm = AStar::directed().with_heuristic(heuristic);

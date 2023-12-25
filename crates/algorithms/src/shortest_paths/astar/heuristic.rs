@@ -1,4 +1,5 @@
-use petgraph_core::{base::MaybeOwned, GraphStorage, Node};
+use numi::borrow::Moo;
+use petgraph_core::{GraphStorage, Node};
 
 pub trait GraphHeuristic<S>
 where
@@ -6,18 +7,17 @@ where
 {
     type Value;
 
-    fn estimate<'a>(&self, source: Node<'a, S>, target: Node<'a, S>)
-    -> MaybeOwned<'a, Self::Value>;
+    fn estimate<'a>(&self, source: Node<'a, S>, target: Node<'a, S>) -> Moo<'a, Self::Value>;
 }
 
 impl<S, F, T> GraphHeuristic<S> for F
 where
     S: GraphStorage,
-    F: for<'a> Fn(Node<'a, S>, Node<'a, S>) -> MaybeOwned<'a, T>,
+    F: for<'a> Fn(Node<'a, S>, Node<'a, S>) -> Moo<'a, T>,
 {
     type Value = T;
 
-    fn estimate<'a>(&self, source: Node<'a, S>, target: Node<'a, S>) -> MaybeOwned<'a, T> {
+    fn estimate<'a>(&self, source: Node<'a, S>, target: Node<'a, S>) -> Moo<'a, T> {
         self(source, target)
     }
 }

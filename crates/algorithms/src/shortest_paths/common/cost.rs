@@ -1,6 +1,7 @@
 use core::{borrow::Borrow, fmt::Display};
 
-use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
+use numi::borrow::Moo;
+use petgraph_core::{Edge, GraphStorage};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Cost<T>(T);
@@ -59,17 +60,17 @@ where
 {
     type Value;
 
-    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> MaybeOwned<'graph, Self::Value>;
+    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> Moo<'graph, Self::Value>;
 }
 
 impl<S, F, T> GraphCost<S> for F
 where
     S: GraphStorage,
-    F: Fn(Edge<S>) -> MaybeOwned<T>,
+    F: Fn(Edge<S>) -> Moo<T>,
 {
     type Value = T;
 
-    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> MaybeOwned<'graph, T> {
+    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> Moo<'graph, T> {
         self(edge)
     }
 }
@@ -80,14 +81,15 @@ where
 {
     type Value = S::EdgeWeight;
 
-    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> MaybeOwned<'graph, S::EdgeWeight> {
-        MaybeOwned::Borrowed(edge.weight())
+    fn cost<'graph>(&self, edge: Edge<'graph, S>) -> Moo<'graph, S::EdgeWeight> {
+        Moo::Borrowed(edge.weight())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge, GraphStorage};
+    use numi::borrow::Moo;
+    use petgraph_core::{edge::marker::Directed, Edge, GraphStorage};
     use petgraph_dino::DinoStorage;
 
     use crate::shortest_paths::common::cost::{DefaultCost, GraphCost};
@@ -99,7 +101,7 @@ mod tests {
     {
     }
 
-    fn maybe_edge_cost<S>(edge: Edge<S>) -> MaybeOwned<'_, usize>
+    fn maybe_edge_cost<S>(edge: Edge<S>) -> Moo<'_, usize>
     where
         S: GraphStorage,
         S::EdgeWeight: AsRef<[u8]>,

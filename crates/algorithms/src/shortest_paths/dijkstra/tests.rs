@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
-use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
+use numi::borrow::Moo;
+use petgraph_core::{Edge, GraphStorage};
 use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
@@ -104,12 +105,12 @@ fn random_directed_expect_from(
     ])
 }
 
-fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<'_, usize>
+fn edge_cost<S>(edge: Edge<S>) -> Moo<'_, usize>
 where
     S: GraphStorage,
     S::EdgeWeight: AsRef<[u8]>,
 {
-    MaybeOwned::Owned(edge.weight().as_ref().len())
+    Moo::Owned(edge.weight().as_ref().len())
 }
 
 #[test]

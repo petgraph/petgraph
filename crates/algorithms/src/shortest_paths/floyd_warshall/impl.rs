@@ -1,8 +1,11 @@
 use alloc::vec::Vec;
 
 use error_stack::{Report, Result};
-use numi::num::{checked::CheckedAdd, identity::Zero};
-use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage, Node};
+use numi::{
+    borrow::Moo,
+    num::{checked::CheckedAdd, identity::Zero},
+};
+use petgraph_core::{id::LinearGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{
@@ -15,10 +18,10 @@ use crate::shortest_paths::{
 };
 
 pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
-    matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'this, E::Value>>,
+    matrix: &mut SlotMatrix<'graph, S, Moo<'this, E::Value>>,
     u: &S::NodeId,
     v: &S::NodeId,
-    value: Option<MaybeOwned<'this, E::Value>>,
+    value: Option<Moo<'this, E::Value>>,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -29,10 +32,10 @@ pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
 }
 
 pub(super) fn init_undirected_edge_distance<'graph: 'this, 'this, S, E>(
-    matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'this, E::Value>>,
+    matrix: &mut SlotMatrix<'graph, S, Moo<'this, E::Value>>,
     u: &S::NodeId,
     v: &S::NodeId,
-    value: Option<MaybeOwned<'this, E::Value>>,
+    value: Option<Moo<'this, E::Value>>,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -109,10 +112,10 @@ where
     path
 }
 type InitEdgeDistanceFn<'graph, 'this, S, E> = fn(
-    &mut SlotMatrix<'graph, S, MaybeOwned<'this, <E as GraphCost<S>>::Value>>,
+    &mut SlotMatrix<'graph, S, Moo<'this, <E as GraphCost<S>>::Value>>,
     &<S as GraphStorage>::NodeId,
     &<S as GraphStorage>::NodeId,
-    Option<MaybeOwned<'this, <E as GraphCost<S>>::Value>>,
+    Option<Moo<'this, <E as GraphCost<S>>::Value>>,
 );
 
 type InitEdgePredecessorFn<'graph, S> = fn(
@@ -135,7 +138,7 @@ where
     init_edge_distance: InitEdgeDistanceFn<'graph, 'parent, S, E>,
     init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
 
-    distances: SlotMatrix<'graph, S, MaybeOwned<'parent, E::Value>>,
+    distances: SlotMatrix<'graph, S, Moo<'parent, E::Value>>,
     predecessors: SlotMatrix<'graph, S, &'graph S::NodeId>,
 }
 
@@ -198,11 +201,8 @@ where
         }
 
         for node in self.graph.nodes() {
-            self.distances.set(
-                node.id(),
-                node.id(),
-                Some(MaybeOwned::Owned(E::Value::zero())),
-            );
+            self.distances
+                .set(node.id(), node.id(), Some(Moo::Owned(E::Value::zero())));
 
             if self.predecessor_mode == PredecessorMode::Record {
                 self.predecessors.set(node.id(), node.id(), Some(node.id()));
@@ -240,8 +240,7 @@ where
                         }
                     }
 
-                    self.distances
-                        .set(i, j, Some(MaybeOwned::Owned(alternative)));
+                    self.distances.set(i, j, Some(Moo::Owned(alternative)));
 
                     if self.predecessor_mode == PredecessorMode::Record {
                         let predecessor = self.predecessors.get(k, j).copied();
@@ -262,7 +261,7 @@ where
         let mut result: Result<(), FloydWarshallError> = Ok(());
 
         for index in negative_cycles {
-            let Some(node) = self.distances.resolve(index).map(MaybeOwned::into_owned) else {
+            let Some(node) = self.distances.resolve(index).map(Moo::into_owned) else {
                 continue;
             };
 

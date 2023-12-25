@@ -1,4 +1,6 @@
-use crate::{base::owned::MaybeOwned, id::GraphId, storage::GraphStorage};
+use numi::borrow::Moo;
+
+use crate::{id::GraphId, storage::GraphStorage};
 
 /// Index mapper for a graph.
 ///
@@ -102,10 +104,8 @@ pub trait IndexMapper<Id> {
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{
-    ///     base::MaybeOwned,
-    ///     id::{IndexMapper, LinearGraphId},
-    /// };
+    /// use numi::borrow::Moo;
+    /// use petgraph_core::id::{IndexMapper, LinearGraphId};
     /// use petgraph_dino::{DiDinoGraph, NodeId};
     ///
     /// let mut graph = DiDinoGraph::new();
@@ -117,9 +117,9 @@ pub trait IndexMapper<Id> {
     /// let mut mapper = NodeId::index_mapper(graph.storage());
     ///
     /// let mapped = mapper.index(&a);
-    /// assert_eq!(mapper.reverse(mapped), Some(MaybeOwned::Borrowed(&a)));
+    /// assert_eq!(mapper.reverse(mapped), Some(Moo::Borrowed(&a)));
     /// ```
-    fn reverse(&self, to: usize) -> Option<MaybeOwned<Id>>;
+    fn reverse(&self, to: usize) -> Option<Moo<Id>>;
 }
 
 /// Linear graph identifier.

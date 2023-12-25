@@ -121,7 +121,6 @@
 extern crate alloc;
 
 pub mod attributes;
-pub mod base;
 #[deprecated(since = "0.1.0")]
 pub mod deprecated;
 pub mod edge;

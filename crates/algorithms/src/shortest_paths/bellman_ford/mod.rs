@@ -9,6 +9,7 @@ use alloc::vec::Vec;
 use core::hash::Hash;
 
 use error_stack::Result;
+use numi::borrow::Moo;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
@@ -142,11 +143,12 @@ where
     /// # Example
     ///
     /// ```
+    /// use numi::borrow::Moo;
     /// use petgraph_algorithms::shortest_paths::{BellmanFord, ShortestPath};
-    /// use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
+    /// use petgraph_core::{Edge, GraphStorage};
     /// use petgraph_dino::DiDinoGraph;
     ///
-    /// fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<usize>
+    /// fn edge_cost<S>(edge: Edge<S>) -> Moo<usize>
     /// where
     ///     S: GraphStorage,
     ///     S::EdgeWeight: AsRef<str>,

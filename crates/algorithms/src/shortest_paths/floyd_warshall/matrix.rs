@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
+use numi::borrow::Moo;
 use petgraph_core::{
-    base::MaybeOwned,
     id::{IndexMapper, LinearGraphId},
     Graph, GraphStorage,
 };
@@ -30,7 +30,7 @@ where
         }
     }
 
-    fn reverse(&self, to: usize) -> Option<MaybeOwned<T>> {
+    fn reverse(&self, to: usize) -> Option<Moo<T>> {
         match self {
             Self::Store(mapper) => mapper.reverse(to),
             Self::Discard => None,
@@ -113,7 +113,7 @@ where
         self.matrix[source * self.length + target].as_ref()
     }
 
-    pub(crate) fn resolve(&self, index: usize) -> Option<MaybeOwned<S::NodeId>> {
+    pub(crate) fn resolve(&self, index: usize) -> Option<Moo<S::NodeId>> {
         self.mapper.reverse(index)
     }
 }
