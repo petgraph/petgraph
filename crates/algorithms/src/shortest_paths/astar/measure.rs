@@ -1,6 +1,4 @@
-use num_traits::Zero;
-
-use crate::shortest_paths::common::AddRef;
+use numi::num::{identity::Zero, ops::AddRef};
 
 /// Automatically implemented trait for types that can be used as a measure in the Dijkstra
 ///

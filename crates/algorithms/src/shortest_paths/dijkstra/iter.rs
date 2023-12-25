@@ -4,7 +4,7 @@ use core::{hash::Hash, ops::Add};
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
-use num_traits::Zero;
+use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
@@ -15,7 +15,6 @@ use crate::shortest_paths::{
         queue::priority::PriorityQueue,
         route::Route,
         transit::{reconstruct_path_to, PredecessorMode},
-        AddRef,
     },
     dijkstra::{measure::DijkstraMeasure, DijkstraError},
 };

@@ -3,9 +3,7 @@ use core::{
     ops::{Add, Div},
 };
 
-use num_traits::{CheckedDiv, Zero};
-
-use crate::shortest_paths::common::AddRef;
+use numi::num::{identity::Zero, ops::AddRef};
 
 /// Automatically implemented trait for types that can be used as a measure in the Bellman-Ford
 /// algorithm.

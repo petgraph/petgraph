@@ -4,7 +4,7 @@ use core::hash::Hash;
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
-use num_traits::Zero;
+use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{Graph, GraphStorage, Node};
 
 use super::error::BellmanFordError;
@@ -15,7 +15,6 @@ use crate::shortest_paths::{
         cost::GraphCost,
         queue::double_ended::DoubleEndedQueue,
         transit::{reconstruct_paths_between, PredecessorMode},
-        AddRef,
     },
     Cost, Path, Route,
 };

@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use error_stack::{Report, Result};
-use num_traits::{CheckedAdd, Zero};
+use numi::num::{checked::CheckedAdd, identity::Zero};
 use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{

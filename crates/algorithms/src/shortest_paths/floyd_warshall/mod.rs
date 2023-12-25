@@ -9,7 +9,6 @@ mod tests;
 use core::marker::PhantomData;
 
 use error_stack::Result;
-use num_traits::{CheckedAdd, Zero};
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
     id::LinearGraphId,

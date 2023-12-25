@@ -7,7 +7,7 @@ use core::{
 
 use fxhash::FxBuildHasher;
 use hashbrown::HashSet;
-use num_traits::{CheckedDiv, Zero};
+use numi::num::identity::Zero;
 use petgraph_core::{GraphStorage, Node};
 
 pub(in crate::shortest_paths) struct DoubleEndedQueueItem<'graph, S, T>

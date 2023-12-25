@@ -9,7 +9,6 @@ use alloc::vec::Vec;
 use core::{hash::Hash, marker::PhantomData, ops::Add};
 
 use error_stack::Result;
-use num_traits::Zero;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,

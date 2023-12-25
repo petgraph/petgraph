@@ -1,4 +1,4 @@
-use num_traits::{CheckedAdd, Zero};
+use numi::num::{checked::CheckedAdd, identity::Zero};
 
 /// A trait for types that can be used as edge weights in the Floyd-Warshall algorithm.
 ///
@@ -33,32 +33,7 @@ use num_traits::{CheckedAdd, Zero};
 /// assert_impl_all!(f32: FloydWarshallMeasure);
 /// assert_impl_all!(f64: FloydWarshallMeasure);
 ///
-/// assert_impl_all!(Wrapping<u8>: FloydWarshallMeasure);
-/// assert_impl_all!(Wrapping<u16>: FloydWarshallMeasure);
-/// assert_impl_all!(Wrapping<u32>: FloydWarshallMeasure);
-/// assert_impl_all!(Wrapping<u64>: FloydWarshallMeasure);
-/// assert_impl_all!(Wrapping<u128>: FloydWarshallMeasure);
-/// assert_impl_all!(Wrapping<usize>: FloydWarshallMeasure);
-///
-/// assert_impl_all!(Wrapping<i8>: FloydWarshallMeasure);
-/// assert_impl_all!(Wrapping<i16>: FloydWarshallMeasure);
-/// assert_impl_all!(Wrapping<i32>: FloydWarshallMeasure);
-/// assert_impl_all!(Wrapping<i64>: FloydWarshallMeasure);
-/// assert_impl_all!(Wrapping<i128>: FloydWarshallMeasure);
-///
-/// assert_impl_all!(Saturating<u8>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<u16>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<u32>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<u64>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<u128>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<usize>: FloydWarshallMeasure);
-///
-/// assert_impl_all!(Saturating<i8>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<i16>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<i32>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<i64>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<i128>: FloydWarshallMeasure);
-/// assert_impl_all!(Saturating<isize>: FloydWarshallMeasure);
+/// // see `CheckedAdd` why `Wrapping<T>` and `Saturating<T>` are not implemented
 /// ```
 pub trait FloydWarshallMeasure: Clone + PartialOrd + CheckedAdd + Zero {}
 
