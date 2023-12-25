@@ -49,6 +49,7 @@ petgraph-io = { path = "crates/io", default-features = false }
 petgraph-test-utils = { path = "crates/test-utils", default-features = false }
 petgraph-dino = { path = "crates/dino", default-features = false }
 petgraph-utils = { path = "crates/utils", default-features = false }
+numi = { path = "crates/numi", default-features = false }
 
 [dependencies]
 petgraph-adjacency-matrix = { workspace = true, optional = true, default-features = false }
