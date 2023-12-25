@@ -7,6 +7,7 @@
 
 #![no_std]
 
+pub mod borrow;
 pub mod cast;
 mod macros;
 pub mod num;
