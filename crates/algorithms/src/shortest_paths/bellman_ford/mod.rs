@@ -27,10 +27,37 @@ use super::{
 };
 use crate::polyfill::IteratorExt;
 
+/// The order in which candidates are inserted into the queue.
+///
+/// The order in which candidates are inserted into the queue can have a significant impact on the
+/// performance of the algorithm.
+///
+/// [`CandidateOrder::SmallFirst`] is the default, as it is an easy to implement heuristic, with
+/// little overhead which can exhibit good performance improvements in practice.
+///
+/// # See Also
+///
+/// - <https://www.researchgate.net/publication/274174007_An_Improved_SPFA_Algorithm_for_Single-Source_Shortest_Path_Problem_Using_Forward_Star_Data_Structure>
+// TODO: add citation about the different orders
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CandidateOrder {
+    /// # Naive
+    ///
+    /// Push the item to the back of the queue.
+    Naive,
+
+    /// # Small Label First (SSF)
+    ///
+    /// Checks if the current value is smaller than the next value, if that is the case, push it to
+    /// the front, otherwise push it to the back.
     #[default]
     SmallFirst,
+
+    /// # Large Label Last (LLL)
+    ///
+    /// Push the item to the back of the queue.
+    /// Calculate the average value of the queue and as long as the next value larger than the
+    /// average value, pop it from the front and push it to the back.
     LargeLast,
 }
 

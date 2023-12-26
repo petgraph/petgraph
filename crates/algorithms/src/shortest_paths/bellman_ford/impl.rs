@@ -281,6 +281,7 @@ where
                     CandidateOrder::LargeLast => {
                         large_label_last::<S, E>(target, alternative.clone(), &mut queue)
                     }
+                    CandidateOrder::Naive => queue.push_back(target, alternative.clone()),
                 };
 
                 if did_push {

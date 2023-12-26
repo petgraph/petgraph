@@ -4,14 +4,16 @@ use core::{
     hash::{Hash, Hasher},
 };
 
-/// A borrowed or owned value.
+/// # Maybe Owned Object
 ///
 /// This is analogous to [`Cow`], but without the additional [`ToOwned`] trait requirement which
 /// makes it unsuitable for `no_std` environments.
 ///
-/// # Name
+/// ## Name
 ///
 /// The name `Moo` is a play on `Cow`, and is also a reference to the fact that cows moo.
+///
+/// > I totally didn't come up with the name first and then try to find an abbreviation that fit.
 ///
 /// [`Cow`]: alloc::borrow::Cow
 pub enum Moo<'a, T> {
