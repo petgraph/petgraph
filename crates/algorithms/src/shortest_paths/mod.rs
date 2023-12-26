@@ -85,6 +85,32 @@ pub use self::{
 /// The shortest distance is the cost of the shortest path.
 /// You should prefer shortest distance algorithms over shortest path algorithms if you are only
 /// interested in the cost of the shortest path.
+///
+/// # Example
+///
+/// ```rust
+/// use petgraph_algorithms::shortest_paths::{Dijkstra, ShortestPath};
+/// use petgraph_dino::DiDinoGraph;
+///
+/// let mut graph = DiDinoGraph::new();
+/// let a = *graph.insert_node("A").id();
+/// let b = *graph.insert_node("B").id();
+/// let c = *graph.insert_node("C").id();
+///
+/// graph.insert_edge(7, &a, &b);
+/// graph.insert_edge(5, &b, &c);
+/// graph.insert_edge(3, &a, &c);
+///
+/// let dijkstra = Dijkstra::directed();
+/// let path = dijkstra.path_between(&graph, &a, &c).expect("path exists");
+///
+/// assert_eq!(path.cost().into_value(), 3);
+///
+/// assert_eq!(path.path().source().id(), &a);
+/// assert_eq!(path.path().target().id(), &c);
+///
+/// assert!(path.path().transit().is_empty());
+/// ```
 // TODO: example?
 pub trait ShortestPath<S>
 where

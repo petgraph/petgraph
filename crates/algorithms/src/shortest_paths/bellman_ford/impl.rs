@@ -340,7 +340,7 @@ where
             graph,
             source,
             predecessor_mode,
-            mut distances,
+            distances,
             predecessors,
             ..
         } = self;

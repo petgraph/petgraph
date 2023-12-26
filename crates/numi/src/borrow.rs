@@ -16,6 +16,7 @@ use core::{
 /// > I totally didn't come up with the name first and then try to find an abbreviation that fit.
 ///
 /// [`Cow`]: alloc::borrow::Cow
+#[derive(Debug, Copy, Clone)]
 pub enum Moo<'a, T> {
     Borrowed(&'a T),
     Owned(T),

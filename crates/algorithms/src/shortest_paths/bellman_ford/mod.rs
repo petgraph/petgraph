@@ -9,7 +9,6 @@ use alloc::vec::Vec;
 use core::hash::Hash;
 
 use error_stack::Result;
-use numi::borrow::Moo;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,

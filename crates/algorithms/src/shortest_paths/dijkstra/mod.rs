@@ -6,7 +6,7 @@ mod measure;
 mod tests;
 
 use alloc::vec::Vec;
-use core::{hash::Hash, marker::PhantomData, ops::Add};
+use core::{hash::Hash, marker::PhantomData};
 
 use error_stack::Result;
 use petgraph_core::{

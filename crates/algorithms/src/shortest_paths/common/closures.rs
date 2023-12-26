@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 use numi::borrow::Moo;
-use petgraph_core::{Edge, GraphStorage, Node};
+use petgraph_core::{Edge, GraphStorage};
 
 use crate::shortest_paths::GraphCost;
 

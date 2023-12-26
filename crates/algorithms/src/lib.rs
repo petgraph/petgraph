@@ -3,7 +3,6 @@
 //! It is a goal to gradually migrate the algorithms to be based on graph traits
 //! so that they are generally applicable. For now, some of these still require
 //! the `Graph` type.
-#![feature(return_position_impl_trait_in_trait)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(all(doc, nightly), feature(doc_auto_cfg))]
 #![cfg_attr(nightly, feature(error_in_core))]
