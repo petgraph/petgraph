@@ -125,7 +125,7 @@ pub trait IndexMapper<Id> {
 /// Linear graph identifier.
 ///
 /// A linear graph identifier is a graph identifier that has a linear mapping to a `usize` value,
-/// that mapping _may_ be continuous or discrete.
+/// that mapping must be continuous .
 pub trait LinearGraphId<S>: GraphId + Sized
 where
     S: GraphStorage,
