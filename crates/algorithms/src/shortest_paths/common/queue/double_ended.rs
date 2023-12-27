@@ -8,7 +8,7 @@ use core::{
 use fxhash::FxBuildHasher;
 use hashbrown::HashSet;
 use numi::{
-    cast::{CastFrom, CastTo},
+    cast::{CastFrom, CastTo, TryCastFrom},
     num::identity::Zero,
 };
 use petgraph_core::{GraphStorage, Node};
@@ -143,7 +143,7 @@ where
 {
     pub(in crate::shortest_paths) fn average_priority(&self) -> Option<T>
     where
-        T: Zero + Div<Output = T> + Add<Output = T> + for<'a> Sum<&'a T> + CastFrom<usize>,
+        T: Zero + Div<Output = T> + Add<Output = T> + for<'a> Sum<&'a T> + TryCastFrom<usize>,
     {
         let (front, back) = self.queue.as_slices();
 
@@ -156,7 +156,7 @@ where
             return None;
         }
 
-        let length: T = CastFrom::cast_from(self.queue.len());
+        let length: T = TryCastFrom::try_cast_from(self.queue.len()).ok()?;
 
         if length.is_zero() {
             return None;

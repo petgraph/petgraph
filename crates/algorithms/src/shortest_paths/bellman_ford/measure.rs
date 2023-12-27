@@ -4,7 +4,7 @@ use core::{
 };
 
 use numi::{
-    cast::CastFrom,
+    cast::{CastFrom, TryCastFrom},
     num::{identity::Zero, ops::AddRef},
 };
 
@@ -21,6 +21,7 @@ use numi::{
 ///
 /// ```rust
 /// use core::num::{Wrapping, Saturating};
+/// use ordered_float::NotNan;
 /// use petgraph_algorithms::shortest_paths::bellman_ford::BellmanFordMeasure;
 /// use static_assertions::assert_impl_all;
 ///
@@ -41,6 +42,10 @@ use numi::{
 ///
 /// assert_impl_all!(f32: BellmanFordMeasure);
 /// assert_impl_all!(f64: BellmanFordMeasure);
+/// // `OrderedFloat` is not supported because `AddRef` isn't implemented, see:
+/// // https://github.com/reem/rust-ordered-float/issues/145
+/// assert_impl_all!(NotNan<f32>: BellmanFordMeasure);
+/// assert_impl_all!(NotNan<f64>: BellmanFordMeasure);
 ///
 /// assert_impl_all!(Wrapping<u8>: BellmanFordMeasure);
 /// assert_impl_all!(Wrapping<u16>: BellmanFordMeasure);
@@ -55,19 +60,8 @@ use numi::{
 /// assert_impl_all!(Wrapping<i64>: BellmanFordMeasure);
 /// assert_impl_all!(Wrapping<i128>: BellmanFordMeasure);
 ///
-/// assert_impl_all!(Saturating<u8>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<u16>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<u32>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<u64>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<u128>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<usize>: BellmanFordMeasure);
-///
-/// assert_impl_all!(Saturating<i8>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<i16>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<i32>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<i64>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<i128>: BellmanFordMeasure);
-/// assert_impl_all!(Saturating<isize>: BellmanFordMeasure);
+/// // `Saturating` currently does not implement `Sum`, see:
+/// // https://github.com/rust-lang/libs-team/issues/303
 /// ```
 pub trait BellmanFordMeasure:
     Clone
@@ -76,7 +70,7 @@ pub trait BellmanFordMeasure:
     + AddRef<Self, Output = Self>
     + Div<Self, Output = Self>
     + for<'a> Sum<&'a Self>
-    + CastFrom<usize>
+    + TryCastFrom<usize>
     + Zero
 {
 }
@@ -88,7 +82,7 @@ impl<T> BellmanFordMeasure for T where
         + AddRef<Self, Output = Self>
         + Div<Self, Output = Self>
         + for<'a> Sum<&'a Self>
-        + CastFrom<usize>
+        + TryCastFrom<usize>
         + Zero
 {
 }
