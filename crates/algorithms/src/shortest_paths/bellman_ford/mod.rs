@@ -113,7 +113,7 @@ impl BellmanFord<Directed, DefaultCost> {
             direction: Directed,
             edge_cost: DefaultCost,
             candidate_order: CandidateOrder::default(),
-            negative_cycle_heuristics: false,
+            negative_cycle_heuristics: true,
         }
     }
 }
@@ -149,7 +149,7 @@ impl BellmanFord<Undirected, DefaultCost> {
             direction: Undirected,
             edge_cost: DefaultCost,
             candidate_order: CandidateOrder::default(),
-            negative_cycle_heuristics: false,
+            negative_cycle_heuristics: true,
         }
     }
 }

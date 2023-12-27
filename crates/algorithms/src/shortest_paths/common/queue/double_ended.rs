@@ -98,13 +98,21 @@ where
     pub(in crate::shortest_paths) fn pop_front(
         &mut self,
     ) -> Option<DoubleEndedQueueItem<'graph, S, T>> {
-        self.queue.pop_front()
+        let value = self.queue.pop_front()?;
+
+        self.active.remove(value.node.id());
+
+        Some(value)
     }
 
     pub(in crate::shortest_paths) fn pop_back(
         &mut self,
     ) -> Option<DoubleEndedQueueItem<'graph, S, T>> {
-        self.queue.pop_back()
+        let value = self.queue.pop_back()?;
+
+        self.active.remove(value.node.id());
+
+        Some(value)
     }
 
     pub(in crate::shortest_paths) fn peek_front(

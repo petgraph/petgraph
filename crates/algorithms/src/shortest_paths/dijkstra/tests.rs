@@ -38,7 +38,7 @@ graph!(
 
 fn networkx_directed_expect_from(
     nodes: &networkx::NodeCollection<NodeId>,
-) -> Vec<Expect<networkx::Graph, i32>> {
+) -> Vec<Expect<NodeId, i32>> {
     expected!(nodes; [
         a -()> a: 0,
         a -(c)> b: 8,
@@ -94,7 +94,7 @@ fn distance_from_directed_default_edge_cost() {
 
 fn random_directed_expect_from(
     nodes: &random::NodeCollection<NodeId>,
-) -> Vec<Expect<random::Graph, usize>> {
+) -> Vec<Expect<NodeId, usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 5,
@@ -135,7 +135,7 @@ fn distance_from_directed_custom_edge_cost() {
 
 fn networkx_undirected_expect_from(
     nodes: &networkx::NodeCollection<NodeId>,
-) -> Vec<Expect<networkx::Graph, i32>> {
+) -> Vec<Expect<NodeId, i32>> {
     expected!(nodes; [
         a -()> a: 0,
         a -(c)> b: 7,
@@ -167,7 +167,7 @@ fn distance_from_undirected_default_edge_cost() {
 
 fn random_undirected_expect_from(
     nodes: &random::NodeCollection<NodeId>,
-) -> Vec<Expect<random::Graph, usize>> {
+) -> Vec<Expect<NodeId, usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 5,

@@ -125,6 +125,9 @@ where
             return Ok(());
         }
 
+        // source = u
+        // target = v
+
         // the heuristic is used to find a negative cycle before it is fully constructed.
         // this is done via an implied check over multiple iterations.
         // if it happens that some earlier update added the target node (as signified by the recent
@@ -138,8 +141,9 @@ where
         }
 
         if self.predecessor.get(target) == Some(&source) {
-            self.recent_update
-                .insert(target, self.recent_update[source]);
+            if let Some(previous) = self.recent_update.get(source) {
+                self.recent_update.insert(target, *previous);
+            }
         } else {
             self.recent_update.insert(target, (source, target));
         }
@@ -274,6 +278,10 @@ where
                     return Err(node);
                 };
 
+                // we have a concrete problem here: we do not update the priority in the queue
+                // if it is larger.
+                // Could we in theory use the HashBrown API here instead, referencing the item in
+                // question?
                 let did_push = match self.candidate_order {
                     CandidateOrder::SmallFirst => {
                         small_label_first::<S, E>(target, alternative.clone(), &mut queue)

@@ -101,7 +101,6 @@
 //! ### Iterating over nodes and edges
 // TODO
 //!
-#![feature(return_position_impl_trait_in_trait)]
 #![warn(missing_docs)]
 #![no_std]
 

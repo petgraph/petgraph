@@ -16,14 +16,22 @@ use crate::shortest_paths::{DirectRoute, Route, ShortestDistance, ShortestPath};
 /// readable
 macro_rules! expected {
     (@rule $nodes:ident; $source:ident; ($($path:ident),*) ;$target:ident; $cost:literal) => {
-        Expect {
+        $crate::shortest_paths::common::tests::Expect {
             source: $nodes.$source,
             target: $nodes.$target,
             transit: alloc::vec![$($nodes.$path),*],
             cost: $cost,
         }
     };
-    ($nodes:ident; [$($source:ident -( $($path:ident),* )> $target:ident : $cost:literal),* $(,)?]) => {
+    (@rule $nodes:ident; $source:literal; ($($path:literal),*) ;$target:literal; $cost:literal) => {
+        $crate::shortest_paths::common::tests::Expect {
+            source: $nodes[$source],
+            target: $nodes[$target],
+            transit: alloc::vec![$($nodes[$path]),*],
+            cost: $cost,
+        }
+    };
+    ($nodes:ident; [$($source:tt -( $($path:tt),* )> $target:tt : $cost:literal),* $(,)?]) => {
         alloc::vec![
             $(expected!(@rule $nodes; $source; ($($path),*) ;$target; $cost)),*
         ]
@@ -32,35 +40,32 @@ macro_rules! expected {
 
 pub(in crate::shortest_paths) use expected;
 
-pub(in crate::shortest_paths) struct Expect<G, T>
-where
-    G: GraphExt,
-{
-    pub(in crate::shortest_paths) source: <G::Storage as GraphStorage>::NodeId,
-    pub(in crate::shortest_paths) target: <G::Storage as GraphStorage>::NodeId,
+pub(in crate::shortest_paths) struct Expect<N, T> {
+    pub(in crate::shortest_paths) source: N,
+    pub(in crate::shortest_paths) target: N,
 
-    pub(in crate::shortest_paths) transit: Vec<<G::Storage as GraphStorage>::NodeId>,
+    pub(in crate::shortest_paths) transit: Vec<N>,
 
     pub(in crate::shortest_paths) cost: T,
 }
 
-pub(in crate::shortest_paths) struct TestCase<'a, G, A, T>
+pub(in crate::shortest_paths) struct TestCase<'a, S, A, T>
 where
-    G: GraphExt,
+    S: GraphStorage,
 {
-    graph: &'a Graph<G::Storage>,
+    graph: &'a Graph<S>,
     algorithm: &'a A,
-    expected: &'a [Expect<G, T>],
+    expected: &'a [Expect<S::NodeId, T>],
 }
 
-impl<'a, G, A, T> TestCase<'a, G, A, T>
+impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
-    G: GraphExt,
+    S: GraphStorage,
 {
     pub(crate) const fn new(
-        graph: &'a Graph<G::Storage>,
+        graph: &'a Graph<S>,
         algorithm: &'a A,
-        expected: &'a [Expect<G, T>],
+        expected: &'a [Expect<<S as GraphStorage>::NodeId, T>],
     ) -> Self {
         Self {
             graph,
@@ -70,17 +75,15 @@ where
     }
 }
 
-impl<'a, G, A, T> TestCase<'a, G, A, T>
+impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
-    G: GraphExt,
-    <G::Storage as GraphStorage>::NodeId: Eq + Hash + Debug + Display,
-    A: ShortestPath<G::Storage, Cost = T>,
+    S: GraphStorage,
+    S::NodeId: Eq + Hash + Debug + Display,
+    A: ShortestPath<S, Cost = T>,
     T: PartialEq + Debug,
 {
-    fn assert_path_routes(
-        &self,
-        routes: Result<impl Iterator<Item = Route<'a, G::Storage, T>>, A::Error>,
-    ) {
+    #[track_caller]
+    fn assert_path_routes(&self, routes: Result<impl Iterator<Item = Route<'a, S, T>>, A::Error>) {
         let mut routes: HashMap<_, _> = routes
             .unwrap()
             .map(|route| {
@@ -116,24 +119,23 @@ where
         self.assert_path_routes(self.algorithm.every_path(self.graph));
     }
 
-    pub(in crate::shortest_paths) fn assert_path_from(
-        &self,
-        source: &<G::Storage as GraphStorage>::NodeId,
-    ) {
+    #[track_caller]
+    pub(in crate::shortest_paths) fn assert_path_from(&self, source: &S::NodeId) {
         self.assert_path_routes(self.algorithm.path_from(self.graph, source));
     }
 }
 
-impl<'a, G, A, T> TestCase<'a, G, A, T>
+impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
-    G: GraphExt,
-    <G::Storage as GraphStorage>::NodeId: Eq + Hash + Debug + Display,
-    A: ShortestDistance<G::Storage, Cost = T>,
+    S: GraphStorage,
+    S::NodeId: Eq + Hash + Debug + Display,
+    A: ShortestDistance<S, Cost = T>,
     T: PartialEq + Debug,
 {
+    #[track_caller]
     fn assert_distance_routes(
         &self,
-        routes: Result<impl Iterator<Item = DirectRoute<'a, G::Storage, T>>, A::Error>,
+        routes: Result<impl Iterator<Item = DirectRoute<'a, S, T>>, A::Error>,
     ) {
         let mut routes: HashMap<_, _> = routes
             .unwrap()
@@ -171,21 +173,8 @@ where
         self.assert_distance_routes(self.algorithm.every_distance(self.graph));
     }
 
-    pub(in crate::shortest_paths) fn assert_distance_from(
-        &self,
-        source: &<G::Storage as GraphStorage>::NodeId,
-    ) {
+    #[track_caller]
+    pub(in crate::shortest_paths) fn assert_distance_from(&self, source: &S::NodeId) {
         self.assert_distance_routes(self.algorithm.distance_from(self.graph, source));
     }
-}
-
-pub(in crate::shortest_paths) trait GraphExt {
-    type Storage: GraphStorage;
-}
-
-impl<S> GraphExt for Graph<S>
-where
-    S: GraphStorage,
-{
-    type Storage = S;
 }
