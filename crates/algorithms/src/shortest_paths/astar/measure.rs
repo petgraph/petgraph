@@ -4,7 +4,7 @@ use numi::num::{identity::Zero, ops::AddRef};
 ///
 /// This trait is implemented for all types that implement the supertraits mentioned in the trait
 /// definition.
-/// These traits either originate from [`core`] or [`num_traits`].
+/// These traits either originate from [`core`] or [`numi`].
 /// Special attention must be paid to the [`AddRef`] trait, which is a proxy trait which is
 /// implemented for types that implement: `&Self: Add<&Self, Output = Self>`.
 ///
@@ -13,6 +13,7 @@ use numi::num::{identity::Zero, ops::AddRef};
 /// ```rust
 /// use core::num::Wrapping;
 /// use core::num::Saturating;
+/// use ordered_float::NotNan;
 /// use petgraph_algorithms::shortest_paths::astar::AStarMeasure;
 /// use static_assertions::assert_impl_all;
 ///
@@ -31,8 +32,8 @@ use numi::num::{identity::Zero, ops::AddRef};
 /// assert_impl_all!(i128: AStarMeasure);
 /// assert_impl_all!(isize: AStarMeasure);
 ///
-/// assert_impl_all!(f32: AStarMeasure);
-/// assert_impl_all!(f64: AStarMeasure);
+/// assert_impl_all!(NotNan<f32>: AStarMeasure);
+/// assert_impl_all!(NotNan<f64>: AStarMeasure);
 ///
 /// assert_impl_all!(Wrapping<u8>: AStarMeasure);
 /// assert_impl_all!(Wrapping<u16>: AStarMeasure);

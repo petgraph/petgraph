@@ -5,7 +5,7 @@ use numi::num::{identity::Zero, ops::AddRef};
 ///
 /// This trait is implemented for all types that implement the supertraits mentioned in the trait
 /// definition.
-/// These traits either originate from [`core`] or [`num_traits`].
+/// These traits either originate from [`core`] or [`numi`].
 /// Special attention must be paid to the [`AddRef`] trait, which is a proxy trait which is
 /// implemented for types that implement: `&Self: Add<&Self, Output = Self>`.
 ///

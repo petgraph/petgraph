@@ -61,12 +61,12 @@ impl AStar<Directed, DefaultCost, ()> {
     ///
     /// ```
     /// use numi::borrow::Moo;
-    /// use petgraph_algorithms::shortest_paths::AStar;
+    /// use petgraph_algorithms::shortest_paths::{AStar, ShortestPath};
     /// use petgraph_core::{edge::marker::Directed, GraphStorage, Node};
     /// use petgraph_dino::{DiDinoGraph, DinoStorage};
     ///
     /// // TODO: heuristic utils
-    /// fn heuristic<S>(source: Node<S>, target: Node<S>) -> Moo<i32>
+    /// fn heuristic<'graph, S>(source: Node<'graph, S>, target: Node<'graph, S>) -> Moo<'graph, i32>
     /// where
     ///     S: GraphStorage<NodeWeight = (i32, i32), EdgeWeight = i32>,
     /// {
@@ -83,6 +83,9 @@ impl AStar<Directed, DefaultCost, ()> {
     /// let b = *graph.insert_node((2, 2)).id();
     ///
     /// graph.insert_edge(5, &a, &b);
+    ///
+    /// let path = algorithm.path_between(&graph, &a, &b).expect("path exists");
+    /// assert_eq!(path.cost().into_value(), 5);
     /// ```
     pub fn directed() -> Self {
         Self {

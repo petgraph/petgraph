@@ -180,7 +180,10 @@ fn undirected_no_distance_between() {
     assert!(cost.is_none());
 }
 
-fn manhattan_distance<'a, S>(source: Node<'a, S>, target: Node<'a, S>) -> Moo<'a, NotNan<f32>>
+fn manhattan_distance<'graph, S>(
+    source: Node<'graph, S>,
+    target: Node<'graph, S>,
+) -> Moo<'graph, NotNan<f32>>
 where
     S: GraphStorage<NodeWeight = Point>,
 {
@@ -209,6 +212,7 @@ fn directed_path_between_manhattan() {
     let astar = AStar::directed()
         .with_edge_cost(ensure_not_nan)
         .with_heuristic(manhattan_distance);
+
     let route = astar.path_between(&graph, &nodes.a, &nodes.f).unwrap();
 
     let (path, cost) = route.into_parts();

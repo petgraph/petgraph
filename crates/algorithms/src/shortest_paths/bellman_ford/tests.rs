@@ -51,10 +51,10 @@ fn negative_cycle_heuristic() {
         mut graph, nodes, ..
     } = networkx::create();
 
-    graph.insert_edge(-1, &nodes.a, &nodes.b);
-    graph.insert_edge(-1, &nodes.b, &nodes.c);
-    graph.insert_edge(-1, &nodes.c, &nodes.d);
-    graph.insert_edge(3, &nodes.d, &nodes.a);
+    graph.insert_edge(-1f32, &nodes.a, &nodes.b);
+    graph.insert_edge(-1f32, &nodes.b, &nodes.c);
+    graph.insert_edge(-1f32, &nodes.c, &nodes.d);
+    graph.insert_edge(3f32, &nodes.d, &nodes.a);
 
     let spfa = BellmanFord::directed();
     assert!(spfa.every_path(&graph).is_ok());
@@ -66,4 +66,32 @@ fn negative_cycle_heuristic() {
     assert!(spfa.every_path(&graph).is_ok());
 }
 
-// TODO: tests c:
+#[test]
+fn negative_cycle() {
+    unimplemented!()
+}
+
+#[test]
+fn zero_cycle() {
+    unimplemented!()
+}
+
+#[test]
+fn negative_weight() {
+    unimplemented!()
+}
+
+#[test]
+fn negative_cycle_not_connected() {
+    unimplemented!()
+}
+
+#[test]
+fn path_graph() {
+    unimplemented!()
+}
+
+#[test]
+fn multigraph() {
+    unimplemented!()
+}

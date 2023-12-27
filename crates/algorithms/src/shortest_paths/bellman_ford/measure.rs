@@ -3,14 +3,17 @@ use core::{
     ops::{Add, Div},
 };
 
-use numi::num::{identity::Zero, ops::AddRef};
+use numi::{
+    cast::CastFrom,
+    num::{identity::Zero, ops::AddRef},
+};
 
 /// Automatically implemented trait for types that can be used as a measure in the Bellman-Ford
 /// algorithm.
 ///
 /// This trait is implemented for all types that implement the supertraits mentioned in the trait
 /// definition.
-/// These traits either originate from [`core`] or [`num_traits`].
+/// These traits either originate from [`core`] or [`numi`].
 /// Special attention must be paid to the [`AddRef`] trait, which is a proxy trait which is
 /// implemented for types that implement: `&Self: Add<&Self, Output = Self>`.
 ///
@@ -73,7 +76,7 @@ pub trait BellmanFordMeasure:
     + AddRef<Self, Output = Self>
     + Div<Self, Output = Self>
     + for<'a> Sum<&'a Self>
-    + TryFrom<usize>
+    + CastFrom<usize>
     + Zero
 {
 }
@@ -85,7 +88,7 @@ impl<T> BellmanFordMeasure for T where
         + AddRef<Self, Output = Self>
         + Div<Self, Output = Self>
         + for<'a> Sum<&'a Self>
-        + TryFrom<usize>
+        + CastFrom<usize>
         + Zero
 {
 }

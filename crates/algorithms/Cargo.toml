@@ -27,6 +27,7 @@ rustc_version = "0.4.0"
 #petgraph = { workspace = true, default-features = true, features = ['proptest', 'stable-graph'] }
 # petgraph is only available in integration tests, while we use petgraph-graph in unit tests
 #petgraph-graph = { workspace = true, features = ['stable'] }
+numi = { workspace = true, features = ["ordered-float-impl"] }
 petgraph-dino = { workspace = true }
 petgraph-utils = { workspace = true }
 petgraph-proptest = { workspace = true }

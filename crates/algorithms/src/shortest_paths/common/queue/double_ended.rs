@@ -7,7 +7,10 @@ use core::{
 
 use fxhash::FxBuildHasher;
 use hashbrown::HashSet;
-use numi::num::identity::Zero;
+use numi::{
+    cast::{CastFrom, CastTo},
+    num::identity::Zero,
+};
 use petgraph_core::{GraphStorage, Node};
 
 pub(in crate::shortest_paths) struct DoubleEndedQueueItem<'graph, S, T>
@@ -140,7 +143,7 @@ where
 {
     pub(in crate::shortest_paths) fn average_priority(&self) -> Option<T>
     where
-        T: Zero + Div<Output = T> + Add<Output = T> + for<'a> Sum<&'a T> + TryFrom<usize>,
+        T: Zero + Div<Output = T> + Add<Output = T> + for<'a> Sum<&'a T> + CastFrom<usize>,
     {
         let (front, back) = self.queue.as_slices();
 
@@ -153,7 +156,7 @@ where
             return None;
         }
 
-        let length: T = self.queue.len().try_into().ok()?;
+        let length: T = CastFrom::cast_from(self.queue.len());
 
         if length.is_zero() {
             return None;

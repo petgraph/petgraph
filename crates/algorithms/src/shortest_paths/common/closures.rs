@@ -21,7 +21,6 @@ where
 #[cfg(test)]
 mod test {
     use numi::borrow::Moo;
-    use petgraph_core::Graph;
     use petgraph_dino::DiDinoGraph;
 
     use crate::shortest_paths::{

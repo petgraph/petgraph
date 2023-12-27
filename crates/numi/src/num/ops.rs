@@ -7,7 +7,7 @@ use core::ops::Add;
 ///
 /// This is a helper trait that shouldn't need to be implemented directly.
 /// The reason for it's existence is due to limitations in the Rust trait system.
-/// To have a similar bound on a trait like [`BellmanFordMeasure`] one would need to use
+/// To have a similar bound on a trait that requires this as a supertrait one would need to use
 /// `where for<'a> &'a Self: Add<&'a Self, Output = Self>`, but that means that this where clause
 /// would need to be repeated every time the trait is used.
 ///

@@ -142,6 +142,7 @@ where
     predecessors: SlotMatrix<'graph, S, &'graph S::NodeId>,
 }
 
+// TODO: relax `NodeId` requirements or make `Send + Sync + 'static` across the board
 impl<'graph: 'parent, 'parent, S, E> FloydWarshallImpl<'graph, 'parent, S, E>
 where
     S: GraphStorage,
@@ -239,6 +240,8 @@ where
                             continue;
                         }
                     }
+
+                    // TODO: check for diagonal here and apply suggestion from paper
 
                     self.distances.set(i, j, Some(Moo::Owned(alternative)));
 
