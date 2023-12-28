@@ -29,7 +29,7 @@ where
     I: std::fmt::Display,
     E: std::fmt::Display,
     S: Fn(std::path::PathBuf) -> Case + Send + Sync + 'static,
-    T: Fn(&std::path::Path, &'static str) -> Result<I, E> + Send + Sync + 'static + Clone,
+    T: Fn(&Path, &'static str) -> Result<I, E> + Send + Sync + 'static + Clone,
 {
     pub fn new(root: impl Into<std::path::PathBuf>, setup: S, test: T) -> Self {
         Self {
