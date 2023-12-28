@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use core::array;
 
 use petgraph_core::{
@@ -98,8 +99,48 @@ where
     (graph, nodes, edges)
 }
 
+fn complete_graph<const N: usize, S>() -> (Graph<S>, [S::NodeId; N], Vec<S::EdgeId>)
+where
+    S: GraphStorage<NodeWeight = usize, EdgeWeight = f32>,
+    S::NodeId: ManagedGraphId + Copy,
+    S::EdgeId: ManagedGraphId + Copy,
+{
+    let mut graph = Graph::new();
+
+    let nodes: [_; N] = array::from_fn(|index| *graph.insert_node(index).id());
+
+    let mut edges = Vec::with_capacity(N * (N - 1) / 2);
+
+    for i in 0..N {
+        for j in i + 1..N {
+            edges.push(*graph.insert_edge(1f32, &nodes[i], &nodes[j]).id());
+        }
+    }
+
+    (graph, nodes, edges)
+}
+
+fn path_graph<const N: usize, S>() -> (Graph<S>, [S::NodeId; N], Vec<S::EdgeId>)
+where
+    S: GraphStorage<NodeWeight = usize, EdgeWeight = f32>,
+    S::NodeId: ManagedGraphId + Copy,
+    S::EdgeId: ManagedGraphId + Copy,
+{
+    let mut graph = Graph::new();
+
+    let nodes: [_; N] = array::from_fn(|index| *graph.insert_node(index).id());
+
+    let mut edges = Vec::with_capacity(N - 1);
+
+    for i in 0..N - 1 {
+        edges.push(*graph.insert_edge(1f32, &nodes[i], &nodes[i + 1]).id());
+    }
+
+    (graph, nodes, edges)
+}
+
 #[test]
-fn negative_cycle_directed() {
+fn negative_cycle_multigraph_directed() {
     let (mut graph, nodes, _) = cycle_graph::<5, DinoStorage<_, _>>();
 
     let spfa = BellmanFord::directed();
@@ -111,7 +152,7 @@ fn negative_cycle_directed() {
 }
 
 #[test]
-fn negative_cyle_undirected() {
+fn negative_cycle_multigraph_undirected() {
     let (mut graph, nodes, _) = cycle_graph::<5, DinoStorage<_, _, Undirected>>();
 
     let spfa = BellmanFord::undirected();
@@ -172,16 +213,69 @@ fn negative_weight() {
 }
 
 #[test]
+fn not_connected() {
+    let (mut graph, nodes, _) = complete_graph::<6, DinoStorage<_, _>>();
+
+    let g = *graph.insert_node(10).id();
+    let h = *graph.insert_node(11).id();
+    let i = *graph.insert_node(12).id();
+
+    graph.insert_edge(1f32, &g, &h);
+    graph.insert_edge(1f32, &g, &i);
+
+    let spfa = BellmanFord::directed();
+
+    let expected = expected!(nodes; [
+        0 -()> 0: 0f32,
+        0 -()> 1: 1f32,
+        0 -()> 2: 1f32,
+        0 -()> 3: 1f32,
+        0 -()> 4: 1f32,
+        0 -()> 5: 1f32,
+    ]);
+
+    TestCase::new(&graph, &spfa, &expected).assert_path_from(&nodes[0]);
+}
+
+#[test]
 fn negative_cycle_not_connected() {
-    unimplemented!()
+    let (mut graph, nodes, _) = complete_graph::<6, DinoStorage<_, _>>();
+
+    let g = *graph.insert_node(10).id();
+    let h = *graph.insert_node(11).id();
+    let i = *graph.insert_node(12).id();
+
+    graph.insert_edge(1f32, &g, &h);
+    graph.insert_edge(1f32, &h, &i);
+    graph.insert_edge(-3f32, &i, &g);
+
+    let spfa = BellmanFord::directed();
+
+    let expected = expected!(nodes; [
+        0 -()> 0: 0f32,
+        0 -()> 1: 1f32,
+        0 -()> 2: 1f32,
+        0 -()> 3: 1f32,
+        0 -()> 4: 1f32,
+        0 -()> 5: 1f32,
+    ]);
+
+    TestCase::new(&graph, &spfa, &expected).assert_path_from(&nodes[0]);
 }
 
 #[test]
-fn path_graph() {
-    unimplemented!()
-}
+fn path() {
+    let (graph, nodes, _) = path_graph::<5, DinoStorage<_, _>>();
 
-#[test]
-fn multigraph() {
-    unimplemented!()
+    let spfa = BellmanFord::directed();
+
+    let expected = expected!(nodes; [
+        0 -()> 0: 0f32,
+        0 -()> 1: 1f32,
+        0 -(1)> 2: 2f32,
+        0 -(1, 2)> 3: 3f32,
+        0 -(1, 2, 3)> 4: 4f32,
+    ]);
+
+    TestCase::new(&graph, &spfa, &expected).assert_path_from(&nodes[0]);
 }

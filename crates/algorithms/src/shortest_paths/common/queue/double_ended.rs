@@ -67,12 +67,22 @@ where
         }
     }
 
+    // TODO: this has potential for speedup by not needing to update the priority
+    fn update_priority(&mut self, node: Node<'graph, S>, priority: T) {
+        let id = node.id();
+
+        if let Some(item) = self.queue.iter_mut().find(|item| item.node.id() == id) {
+            item.priority = priority;
+        }
+    }
+
     pub(in crate::shortest_paths) fn push_front(
         &mut self,
         node: Node<'graph, S>,
         priority: T,
     ) -> bool {
         if !self.active.insert(node.id()) {
+            self.update_priority(node, priority);
             return false;
         }
 
@@ -87,6 +97,7 @@ where
         priority: T,
     ) -> bool {
         if !self.active.insert(node.id()) {
+            self.update_priority(node, priority);
             return false;
         }
 
