@@ -17,7 +17,7 @@ impl Display for Error {
 }
 
 #[cfg(not(feature = "std"))]
-impl Context for Error {}
+impl error_stack::Context for Error {}
 
 #[cfg(feature = "std")]
 impl std::error::Error for Error {}
