@@ -111,7 +111,6 @@ pub use self::{
 ///
 /// assert!(path.path().transit().is_empty());
 /// ```
-// TODO: example?
 pub trait ShortestPath<S>
 where
     S: GraphStorage,

@@ -82,7 +82,6 @@ where
 }
 
 // TODO: multigraph
-// TODO: more test cases
 
 #[test]
 fn directed_path_between() {

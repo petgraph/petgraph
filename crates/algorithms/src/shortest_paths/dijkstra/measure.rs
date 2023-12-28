@@ -63,7 +63,6 @@ use numi::num::{identity::Zero, ops::AddRef};
 /// assert_impl_all!(Wrapping<i64>: DijkstraMeasure);
 /// assert_impl_all!(Wrapping<i128>: DijkstraMeasure);
 ///
-/// // TODO: these won't work :/
 /// assert_impl_all!(Saturating<u8>: DijkstraMeasure);
 /// assert_impl_all!(Saturating<u16>: DijkstraMeasure);
 /// assert_impl_all!(Saturating<u32>: DijkstraMeasure);

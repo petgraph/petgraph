@@ -353,7 +353,6 @@ where
             ..
         } = self;
 
-        // TODO: in theory we could also remove the distance cost in other implementations
         distances
             .into_iter()
             .filter_map(|(target, cost)| graph.node(target).map(|target| (target, cost)))
