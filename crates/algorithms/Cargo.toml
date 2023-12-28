@@ -36,11 +36,11 @@ proptest = "1.1.0"
 approx = "0.5.1"
 criterion = "0.5.1"
 rand = "0.8.5"
-#petgraph-test-utils.workspace = true
 itertools = "0.10.5"
 ordered-float = "4.1.1"
 serde_json = "1.0.107"
 static_assertions = "1.1.0"
+snapbox = { version = "0.4.15", features = ["harness"] }
 
 [features]
 default = ["std"]
@@ -71,4 +71,8 @@ harness = false
 
 [[bench]]
 name = "tree"
+harness = false
+
+[[test]]
+name = "shortest_paths"
 harness = false
