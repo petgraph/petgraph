@@ -1,1 +1,1 @@
-crates/algorithms/tests/cases/** binary=true linguist-generated=true
+crates/algorithms/tests/cases/**/* binary=true linguist-generated=true
