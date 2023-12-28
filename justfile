@@ -124,3 +124,35 @@ bench *arguments:
 # Run the test suite and generate a coverage report
 coverage *arguments: install-llvm-cov
   cargo llvm-cov nextest --workspace --all-features --all-targets {{arguments}}
+
+######################################################################
+## Utilities
+######################################################################
+
+[private]
+clone-or-pull url path:
+    git clone "{{url}}" "{{path}}" 2>/dev/null || git -C "{{path}}" pull
+
+[private]
+generate-problem category name:
+    @echo "Generating problem {{name}}"
+    @cd "{{repo}}/crates/algorithms/tests/cases/problems" && ./venv/bin/python generate.py -p {{name}}
+
+    @echo "Copying files of problem {{name}}"
+    @mkdir -p "{{repo}}/crates/algorithms/tests/cases/{{name}}"
+    @rm -rf "{{repo}}/crates/algorithms/tests/cases/{{name}}/*"
+
+    @cp -r "{{repo}}/crates/algorithms/tests/cases/problems/{{category}}/{{name}}/in/" "{{repo}}/crates/algorithms/tests/cases/{{name}}/"
+    @cp -r "{{repo}}/crates/algorithms/tests/cases/problems/{{category}}/{{name}}/out/" "{{repo}}/crates/algorithms/tests/cases/{{name}}/"
+
+generate-problems:
+    # pull or clone repository
+    @just clone-or-pull https://github.com/yosupo06/library-checker-problems "{{repo}}/crates/algorithms/tests/cases/problems"
+    # create python virtual environment
+    @python3 -m venv crates/algorithms/tests/cases/problems/venv
+    # install dependencies
+    @crates/algorithms/tests/cases/problems/venv/bin/pip install -r crates/algorithms/tests/cases/problems/requirements.txt
+    # generate problems
+    @just generate-problem graph shortest_path
+
+
