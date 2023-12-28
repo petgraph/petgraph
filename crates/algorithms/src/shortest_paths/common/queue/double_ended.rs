@@ -147,11 +147,6 @@ where
     }
 
     pub(in crate::shortest_paths) fn contains_node(&self, node: &S::NodeId) -> bool {
-        // let (front, back) = self.queue.as_slices();
-        //
-        // front.iter().any(|item| item.id() == node.id())
-        //     || back.iter().any(|item| item.id() == node.id())
-
         self.active.contains(node)
     }
 }

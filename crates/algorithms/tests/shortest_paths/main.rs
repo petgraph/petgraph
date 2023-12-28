@@ -1,3 +1,5 @@
+mod harness;
+
 use std::{
     error::Error,
     fs::File,
@@ -5,13 +7,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use petgraph_algorithms::shortest_paths::{Dijkstra, Route, ShortestPath};
-use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
-use snapbox::{
-    harness::{Case, Harness},
-    utils::normalize_lines,
-    Action,
+use petgraph_algorithms::shortest_paths::{
+    bellman_ford::CandidateOrder, BellmanFord, Dijkstra, FloydWarshall, Route, ShortestPath,
 };
+use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
+use snapbox::{utils::normalize_lines, Action};
+
+use crate::harness::{Case, Harness};
 
 fn setup(input_path: PathBuf) -> Case {
     let name = input_path
@@ -116,7 +118,7 @@ fn dump(route: Route<DinoStorage<usize, u64>, u64>) -> String {
     output
 }
 
-fn test(input_path: &Path) -> Result<String, Box<dyn Error>> {
+fn test(input_path: &Path, name: &'static str) -> Result<String, Box<dyn Error>> {
     let Parse {
         graph,
         source,
@@ -124,8 +126,14 @@ fn test(input_path: &Path) -> Result<String, Box<dyn Error>> {
         ..
     } = read(input_path)?;
 
-    let algorithm = Dijkstra::directed();
-    let Some(route) = algorithm.path_between(&graph, &source, &target) else {
+    let route = match name {
+        "dijkstra" => Dijkstra::directed().path_between(&graph, &source, &target),
+        "bellman_ford" => BellmanFord::directed().path_between(&graph, &source, &target),
+        "floyd_warshall" => FloydWarshall::directed().path_between(&graph, &source, &target),
+        _ => unreachable!(),
+    };
+
+    let Some(route) = route else {
         return Ok(normalize_lines("-1\n"));
     };
 
@@ -135,6 +143,7 @@ fn test(input_path: &Path) -> Result<String, Box<dyn Error>> {
 pub fn main() {
     Harness::new("tests/cases/shortest_path", setup, test)
         .select(["*.in"])
+        .each(&["dijkstra", "bellman_ford", "floyd_warshall"])
         .action(Action::Verify)
         .test();
 }
