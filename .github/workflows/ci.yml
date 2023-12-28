@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: [ 1.65, stable, nightly ]
+        toolchain: [ 1.75, stable, nightly ]
 
     steps:
       - name: Checkout source code
@@ -78,7 +78,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: [ 1.65, stable, nightly ]
+        toolchain: [ 1.75, stable, nightly ]
 
     steps:
       - name: Checkout source code
@@ -119,7 +119,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-          components: ${{ matrix.toolchain == 'nightly' && 'rustfmt clippy llvm-tools-preview miri' || 'rustfmt clippy' }}
+          components: rustfmt clippy llvm-tools-preview miri
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
