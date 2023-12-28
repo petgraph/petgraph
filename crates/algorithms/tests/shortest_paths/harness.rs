@@ -2,6 +2,9 @@
 //!
 //! Taken from [snapbox](https://docs.rs/snapshot) and adapted to make matrix tests possible.
 
+use std::path::Path;
+
+use hashbrown::{HashMap, HashSet};
 use ignore::{
     overrides::{Override, OverrideBuilder},
     WalkBuilder,
@@ -9,7 +12,7 @@ use ignore::{
 use libtest_mimic::Trial;
 use snapbox::{
     report::{write_diff, Palette},
-    Action, Data, DataFormat, NormalizeNewlines,
+    Action, Assert, Data, DataFormat, NormalizeNewlines,
 };
 
 pub struct Harness<S, T> {
@@ -102,10 +105,9 @@ where
             Trial::test(trial_name, move || {
                 let actual = test(&case.fixture, name)?;
                 let actual = actual.to_string();
-                let actual = Data::text(actual).normalize(NormalizeNewlines);
 
-                let verify = Verifier::new().palette(Palette::color()).action(action);
-                verify.verify(&case.expected, actual)?;
+                let verify = Verifier::new();
+                verify.assert(&case.fixture, &case.expected, actual)?;
                 Ok(())
             })
             .with_ignored_flag(action == Action::Ignore)
@@ -123,71 +125,242 @@ where
     }
 }
 
+struct Solution {
+    cost: u64,
+    edges: usize,
+
+    path: Vec<Connection>,
+}
+
+#[derive(Debug, Copy, Clone)]
+struct Connection {
+    source: usize,
+    target: usize,
+}
+
+struct Graph {
+    nodes: usize,
+    edges_len: usize,
+
+    source: usize,
+    target: usize,
+
+    edges: HashMap<(usize, usize), u64>,
+}
+
+macro_rules! next {
+    ($iter:ident as $ty:ty) => {
+        $iter
+            .next()
+            .expect("expected token")
+            .parse::<$ty>()
+            .expect(concat!("is ", stringify!($ty)))
+    };
+}
+
 struct Verifier {
     palette: Palette,
-    action: Action,
 }
 
 impl Verifier {
     fn new() -> Self {
-        Default::default()
-    }
-
-    fn palette(mut self, palette: Palette) -> Self {
-        self.palette = palette;
-        self
-    }
-
-    fn action(mut self, action: Action) -> Self {
-        self.action = action;
-        self
-    }
-
-    fn verify(&self, expected_path: &std::path::Path, actual: Data) -> snapbox::Result<()> {
-        match self.action {
-            Action::Skip => Ok(()),
-            Action::Ignore => {
-                let _ = self.try_verify(expected_path, actual);
-                Ok(())
-            }
-            Action::Verify => self.try_verify(expected_path, actual),
-            Action::Overwrite => self.try_overwrite(expected_path, actual),
-        }
-    }
-
-    fn try_overwrite(&self, expected_path: &std::path::Path, actual: Data) -> snapbox::Result<()> {
-        actual.write_to(expected_path)?;
-        Ok(())
-    }
-
-    fn try_verify(&self, expected_path: &std::path::Path, actual: Data) -> snapbox::Result<()> {
-        let expected =
-            Data::read_from(expected_path, Some(DataFormat::Text))?.normalize(NormalizeNewlines);
-
-        if expected != actual {
-            let mut buf = String::new();
-            write_diff(
-                &mut buf,
-                &expected,
-                &actual,
-                Some(&expected_path.display()),
-                None,
-                self.palette,
-            )
-            .map_err(|e| e.to_string())?;
-            Err(buf.into())
-        } else {
-            Ok(())
-        }
-    }
-}
-
-impl Default for Verifier {
-    fn default() -> Self {
         Self {
             palette: Palette::color(),
-            action: Action::Verify,
         }
+    }
+
+    fn parse_out(value: String) -> Option<Solution> {
+        let mut lines = value.lines();
+
+        let (cost, edges) = {
+            let line = lines.next().expect("at least one line");
+            let mut iter = line.split_whitespace();
+
+            let cost = next!(iter as i128);
+            if cost < 0 {
+                return None;
+            }
+            let cost = cost as u64;
+
+            let edges = next!(iter as usize);
+
+            (cost, edges)
+        };
+
+        let mut path = Vec::with_capacity(edges);
+
+        for _ in 0..edges {
+            let line = lines.next().expect("expected line");
+            let mut iter = line.split_whitespace();
+
+            let source = next!(iter as usize);
+            let target = next!(iter as usize);
+
+            path.push(Connection { source, target });
+        }
+
+        Some(Solution { cost, edges, path })
+    }
+
+    fn parse_in(value: String) -> Graph {
+        let mut lines = value.lines();
+
+        let (nodes, edges_len, source, target) = {
+            let line = lines.next().expect("at least one line");
+            let mut iter = line.split_whitespace();
+            let nodes = next!(iter as usize);
+            let edges_len = next!(iter as usize);
+            let source = next!(iter as usize);
+            let target = next!(iter as usize);
+
+            (nodes, edges_len, source, target)
+        };
+
+        let mut edges = HashMap::with_capacity(edges_len);
+
+        for _ in 0..edges_len {
+            let line = lines.next().expect("expected line");
+            let mut iter = line.split_whitespace();
+            let source = next!(iter as usize);
+            let target = next!(iter as usize);
+            let weight = next!(iter as u64);
+
+            edges.insert((source, target), weight);
+        }
+
+        Graph {
+            nodes,
+            edges_len,
+            source,
+            target,
+            edges,
+        }
+    }
+
+    fn assert(&self, graph: &Path, expected: &Path, received: String) -> snapbox::Result<()> {
+        let graph = std::fs::read_to_string(graph).map_err(snapbox::Error::new)?;
+        let graph = Self::parse_in(graph);
+
+        let expected = std::fs::read_to_string(expected).map_err(snapbox::Error::new)?;
+        let expected = Self::parse_out(expected);
+
+        let received = Self::parse_out(received);
+
+        self.verify(graph, expected, received)
+    }
+
+    /// Implementation of the algorithm used in `library-checker-problems`
+    ///
+    /// see:
+    /// <https://github.com/yosupo06/library-checker-problems/blob/1115a1bf77a8f3d66ab95e46a693a841cd4a7098/graph/shortest_path/checker.cpp>
+    fn verify(
+        &self,
+        graph: Graph,
+        expected: Option<Solution>,
+        received: Option<Solution>,
+    ) -> snapbox::Result<()> {
+        let (expected, received) = match (expected, received) {
+            (Some(expected), Some(received)) => (expected, received),
+            (None, None) => return Ok(()),
+            (Some(_), None) => panic!(
+                "{}: expected path, but didn't receive one",
+                self.palette.error("path existence differs")
+            ),
+            (None, Some(_)) => panic!(
+                "{}: received path, but didn't expect one",
+                self.palette.error("path existence differs")
+            ),
+        };
+
+        let first = expected.path.first().expect("at least one edge");
+        let last = expected.path.last().expect("at least one edge");
+
+        if first.source != graph.source {
+            panic!(
+                "{}: path starts at wrong node",
+                self.palette.error("path differs")
+            );
+        }
+
+        if last.target != graph.target {
+            panic!(
+                "{}: path ends at wrong node",
+                self.palette.error("path differs")
+            );
+        }
+
+        let mut used = HashSet::new();
+        used.insert(graph.source);
+
+        let mut total = 0;
+
+        for index in 0..expected.edges {
+            let current = expected.path[index];
+
+            if index + 1 < expected.edges {
+                let next = expected.path[index + 1];
+
+                if current.target != next.source {
+                    panic!(
+                        "{}: teleporting between {}th edge and {}th edge from vertex {} to {}",
+                        self.palette.error("teleportation"),
+                        index,
+                        index + 1,
+                        current.target,
+                        next.source
+                    );
+                }
+            }
+
+            let Some(&cost) = graph.edges.get(&(current.source, current.target)) else {
+                panic!(
+                    "{}: edge from {} to {} doesn't exist",
+                    self.palette.error("edge existence"),
+                    current.source,
+                    current.target
+                );
+            };
+
+            if used.contains(&current.target) {
+                panic!(
+                    "{}: vertex {} is used twice",
+                    self.palette.error("vertex usage"),
+                    current.target
+                );
+            }
+
+            used.insert(current.target);
+            total += cost;
+        }
+
+        if total != received.cost {
+            panic!(
+                "{}: total weights differ between calculated ({}) and received path ({})",
+                self.palette.error("total weight differs"),
+                total,
+                received.cost
+            )
+        }
+
+        if total > expected.cost {
+            panic!(
+                "{}: not the shortest path, shortest {}, submitted {}",
+                self.palette.error("not shortest"),
+                expected.cost,
+                total
+            )
+        }
+
+        if total < expected.cost {
+            panic!(
+                "{}: submitted solution shorter than judge's solution, submitted {}, judge {}",
+                self.palette.error("shorter"),
+                total,
+                expected.cost
+            )
+        }
+
+        Ok(())
     }
 }
 
