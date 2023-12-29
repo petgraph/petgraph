@@ -1,6 +1,8 @@
 //! Implementation of traits that are not yet available in error-stack and friends, but are
 //! tremendously useful.
 
+use alloc::vec::Vec;
+
 use error_stack::Result;
 
 pub(crate) trait Container<T> {
@@ -12,11 +14,11 @@ pub(crate) trait Container<T> {
 
 impl<T> Container<T> for Vec<T> {
     fn new() -> Self {
-        Vec::new()
+        Self::new()
     }
 
     fn with_capacity(capacity: usize) -> Self {
-        Vec::with_capacity(capacity)
+        Self::with_capacity(capacity)
     }
 
     fn extend_one(&mut self, item: T) {
@@ -46,11 +48,7 @@ where
     {
         let (_, max) = self.size_hint();
 
-        let state = if let Some(max) = max {
-            F::with_capacity(max)
-        } else {
-            F::new()
-        };
+        let state = max.map_or_else(F::new, |max| F::with_capacity(max));
 
         let mut state: Result<F, Self::Context> = Ok(state);
 
