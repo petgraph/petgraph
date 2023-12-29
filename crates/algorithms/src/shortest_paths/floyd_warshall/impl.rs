@@ -1,8 +1,11 @@
 use alloc::vec::Vec;
 
 use error_stack::{Report, Result};
-use num_traits::{CheckedAdd, Zero};
-use petgraph_core::{base::MaybeOwned, id::LinearGraphId, Graph, GraphStorage, Node};
+use numi::{
+    borrow::Moo,
+    num::{checked::CheckedAdd, identity::Zero},
+};
+use petgraph_core::{id::LinearGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{
@@ -10,15 +13,15 @@ use crate::shortest_paths::{
         route::Route,
         transit::PredecessorMode,
     },
-    floyd_warshall::{error::FloydWarshallError, matrix::SlotMatrix},
+    floyd_warshall::{error::FloydWarshallError, matrix::SlotMatrix, FloydWarshallMeasure},
     Path,
 };
 
-pub(super) fn init_directed_edge_distance<'graph, S, E>(
-    matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
+pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
+    matrix: &mut SlotMatrix<'graph, S, Moo<'this, E::Value>>,
     u: &S::NodeId,
     v: &S::NodeId,
-    value: Option<MaybeOwned<'graph, E::Value>>,
+    value: Option<Moo<'this, E::Value>>,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -28,11 +31,11 @@ pub(super) fn init_directed_edge_distance<'graph, S, E>(
     matrix.set(u, v, value);
 }
 
-pub(super) fn init_undirected_edge_distance<'graph, S, E>(
-    matrix: &mut SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
+pub(super) fn init_undirected_edge_distance<'graph: 'this, 'this, S, E>(
+    matrix: &mut SlotMatrix<'graph, S, Moo<'this, E::Value>>,
     u: &S::NodeId,
     v: &S::NodeId,
-    value: Option<MaybeOwned<'graph, E::Value>>,
+    value: Option<Moo<'this, E::Value>>,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -108,12 +111,11 @@ where
     path.reverse();
     path
 }
-
-type InitEdgeDistanceFn<'graph, S, E> = fn(
-    &mut SlotMatrix<'graph, S, MaybeOwned<'graph, <E as GraphCost<S>>::Value>>,
+type InitEdgeDistanceFn<'graph, 'this, S, E> = fn(
+    &mut SlotMatrix<'graph, S, Moo<'this, <E as GraphCost<S>>::Value>>,
     &<S as GraphStorage>::NodeId,
     &<S as GraphStorage>::NodeId,
-    Option<MaybeOwned<'graph, <E as GraphCost<S>>::Value>>,
+    Option<Moo<'this, <E as GraphCost<S>>::Value>>,
 );
 
 type InitEdgePredecessorFn<'graph, S> = fn(
@@ -133,19 +135,20 @@ where
 
     predecessor_mode: PredecessorMode,
 
-    init_edge_distance: InitEdgeDistanceFn<'graph, S, E>,
+    init_edge_distance: InitEdgeDistanceFn<'graph, 'parent, S, E>,
     init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
 
-    distances: SlotMatrix<'graph, S, MaybeOwned<'graph, E::Value>>,
+    distances: SlotMatrix<'graph, S, Moo<'parent, E::Value>>,
     predecessors: SlotMatrix<'graph, S, &'graph S::NodeId>,
 }
 
+// TODO: relax `NodeId` requirements or make `Send + Sync + 'static` across the board
 impl<'graph: 'parent, 'parent, S, E> FloydWarshallImpl<'graph, 'parent, S, E>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
     E: GraphCost<S>,
-    E::Value: PartialOrd + CheckedAdd + Zero + Clone + 'graph,
+    E::Value: FloydWarshallMeasure,
 {
     pub(super) fn new(
         graph: &'graph Graph<S>,
@@ -154,7 +157,7 @@ where
 
         predecessor_mode: PredecessorMode,
 
-        init_edge_distance: InitEdgeDistanceFn<'graph, S, E>,
+        init_edge_distance: InitEdgeDistanceFn<'graph, 'parent, S, E>,
         init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
     ) -> Result<Self, FloydWarshallError> {
         let distances = SlotMatrix::new(graph);
@@ -199,11 +202,8 @@ where
         }
 
         for node in self.graph.nodes() {
-            self.distances.set(
-                node.id(),
-                node.id(),
-                Some(MaybeOwned::Owned(E::Value::zero())),
-            );
+            self.distances
+                .set(node.id(), node.id(), Some(Moo::Owned(E::Value::zero())));
 
             if self.predecessor_mode == PredecessorMode::Record {
                 self.predecessors.set(node.id(), node.id(), Some(node.id()));
@@ -241,8 +241,9 @@ where
                         }
                     }
 
-                    self.distances
-                        .set(i, j, Some(MaybeOwned::Owned(alternative)));
+                    // TODO: check for diagonal here and apply suggestion from paper
+
+                    self.distances.set(i, j, Some(Moo::Owned(alternative)));
 
                     if self.predecessor_mode == PredecessorMode::Record {
                         let predecessor = self.predecessors.get(k, j).copied();
@@ -263,7 +264,7 @@ where
         let mut result: Result<(), FloydWarshallError> = Ok(());
 
         for index in negative_cycles {
-            let Some(node) = self.distances.resolve(index).map(MaybeOwned::into_owned) else {
+            let Some(node) = self.distances.resolve(index).map(Moo::into_owned) else {
                 continue;
             };
 
@@ -278,7 +279,7 @@ where
 
     pub(super) fn filter(
         self,
-        mut filter: impl FnMut(Node<S>, Node<S>) -> bool + 'parent,
+        mut filter: impl FnMut(Node<'graph, S>, Node<'graph, S>) -> bool + 'parent,
     ) -> impl Iterator<Item = Route<'graph, S, E::Value>> + 'parent {
         let Self {
             graph,
@@ -313,5 +314,38 @@ where
 
                 Route::new(Path::new(source, transit, target), Cost::new(cost))
             })
+    }
+
+    pub(super) fn pick(
+        self,
+        source: &S::NodeId,
+        target: &S::NodeId,
+    ) -> Option<Route<'graph, S, E::Value>> {
+        let Self {
+            graph,
+            distances,
+            predecessors,
+            predecessor_mode,
+            ..
+        } = self;
+
+        let source_node = graph.node(source)?;
+        let target_node = graph.node(target)?;
+
+        let cost = distances.get(source, target)?;
+        let transit = match predecessor_mode {
+            PredecessorMode::Discard => Vec::new(),
+            PredecessorMode::Record => reconstruct_path(&predecessors, source, target)
+                .into_iter()
+                .filter_map(|id| graph.node(id))
+                .collect(),
+        };
+
+        let cost = Cost::new(cost.clone().into_owned());
+
+        Some(Route::new(
+            Path::new(source_node, transit, target_node),
+            cost,
+        ))
     }
 }

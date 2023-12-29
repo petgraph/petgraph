@@ -1,28 +1,33 @@
-use core::fmt::{Debug, Display, Formatter};
-use std::{
+use alloc::vec::Vec;
+use core::{
     cmp::Ordering,
+    fmt::{Debug, Display, Formatter},
     hash::{Hash, Hasher},
     iter::once,
 };
 
 use petgraph_core::{GraphStorage, Node};
 
-pub struct Path<'a, S>
+pub struct Path<'graph, S>
 where
     S: GraphStorage,
 {
-    source: Node<'a, S>,
-    target: Node<'a, S>,
+    source: Node<'graph, S>,
+    target: Node<'graph, S>,
 
-    transit: Vec<Node<'a, S>>,
+    transit: Vec<Node<'graph, S>>,
 }
 
-impl<'a, S> Path<'a, S>
+impl<'graph, S> Path<'graph, S>
 where
     S: GraphStorage,
 {
     #[must_use]
-    pub const fn new(source: Node<'a, S>, transit: Vec<Node<'a, S>>, target: Node<'a, S>) -> Self {
+    pub fn new(
+        source: Node<'graph, S>,
+        transit: Vec<Node<'graph, S>>,
+        target: Node<'graph, S>,
+    ) -> Self {
         Self {
             source,
             target,
@@ -31,22 +36,22 @@ where
     }
 
     #[must_use]
-    pub const fn source(&self) -> Node<'a, S> {
+    pub const fn source(&self) -> Node<'graph, S> {
         self.source
     }
 
     #[must_use]
-    pub const fn target(&self) -> Node<'a, S> {
+    pub const fn target(&self) -> Node<'graph, S> {
         self.target
     }
 
     #[must_use]
-    pub fn transit(&self) -> &[Node<'a, S>] {
+    pub fn transit(&self) -> &[Node<'graph, S>] {
         &self.transit
     }
 
     #[must_use]
-    pub fn to_vec(self) -> Vec<Node<'a, S>> {
+    pub fn to_vec(self) -> Vec<Node<'graph, S>> {
         let mut vec = Vec::with_capacity(self.transit.len() + 2);
 
         vec.push(self.source);
@@ -56,7 +61,7 @@ where
         vec
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = Node<'a, S>> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = Node<'graph, S>> + '_ {
         once(self.source)
             .chain(self.transit.iter().copied())
             .chain(once(self.target))
@@ -80,10 +85,10 @@ where
 #[cfg(test)]
 static_assertions::assert_impl_all!(Path<'_, petgraph_dino::DinoStorage<(), ()>>: Debug, Display, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Send, Sync);
 
-impl<'a, S> Debug for Path<'a, S>
+impl<'graph, S> Debug for Path<'graph, S>
 where
     S: GraphStorage,
-    Node<'a, S>: Debug,
+    Node<'graph, S>: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Path")
@@ -123,10 +128,10 @@ where
     }
 }
 
-impl<'a, S> PartialEq for Path<'a, S>
+impl<'graph, S> PartialEq for Path<'graph, S>
 where
     S: GraphStorage,
-    Node<'a, S>: PartialEq,
+    Node<'graph, S>: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
         (&self.source, &self.target, &self.transit)
@@ -134,17 +139,17 @@ where
     }
 }
 
-impl<'a, S> Eq for Path<'a, S>
+impl<'graph, S> Eq for Path<'graph, S>
 where
     S: GraphStorage,
-    Node<'a, S>: Eq,
+    Node<'graph, S>: Eq,
 {
 }
 
-impl<'a, S> PartialOrd for Path<'a, S>
+impl<'graph, S> PartialOrd for Path<'graph, S>
 where
     S: GraphStorage,
-    Node<'a, S>: PartialOrd,
+    Node<'graph, S>: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         (&self.source, &self.transit, &self.target).partial_cmp(&(
@@ -155,10 +160,10 @@ where
     }
 }
 
-impl<'a, S> Ord for Path<'a, S>
+impl<'graph, S> Ord for Path<'graph, S>
 where
     S: GraphStorage,
-    Node<'a, S>: Ord,
+    Node<'graph, S>: Ord,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         (&self.source, &self.transit, &self.target).cmp(&(
@@ -169,22 +174,22 @@ where
     }
 }
 
-impl<'a, S> Hash for Path<'a, S>
+impl<'graph, S> Hash for Path<'graph, S>
 where
     S: GraphStorage,
-    Node<'a, S>: Hash,
+    Node<'graph, S>: Hash,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         (&self.source, &self.target, &self.transit).hash(state);
     }
 }
 
-impl<'a, S> IntoIterator for Path<'a, S>
+impl<'graph, S> IntoIterator for Path<'graph, S>
 where
     S: GraphStorage,
 {
-    type IntoIter = alloc::vec::IntoIter<Node<'a, S>>;
-    type Item = Node<'a, S>;
+    type IntoIter = alloc::vec::IntoIter<Node<'graph, S>>;
+    type Item = Node<'graph, S>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.to_vec().into_iter()

@@ -7,7 +7,8 @@ mod key;
 use alloc::{vec, vec::Vec};
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
 
-use petgraph_core::{base::MaybeOwned, id::IndexMapper};
+use numi::borrow::Moo;
+use petgraph_core::id::IndexMapper;
 
 use crate::slab::entry::{Entry, State};
 pub(crate) use crate::slab::{generation::Generation, id::EntryId, key::Key};
@@ -442,12 +443,8 @@ where
         self.lookup[from.into_id().index()].expect("tried to access vacant entry")
     }
 
-    fn reverse(&self, to: usize) -> Option<MaybeOwned<K>> {
-        self.reverse
-            .get(to)
-            .copied()
-            .flatten()
-            .map(MaybeOwned::from)
+    fn reverse(&self, to: usize) -> Option<Moo<K>> {
+        self.reverse.get(to).copied().flatten().map(Moo::from)
     }
 }
 

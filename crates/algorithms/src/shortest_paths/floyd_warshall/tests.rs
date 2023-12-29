@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 
 use hashbrown::HashSet;
 use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
@@ -42,7 +42,7 @@ graph!(
     ] as EdgeId
 );
 
-fn uniform_expect(nodes: &uniform::NodeCollection<NodeId>) -> Vec<Expect<uniform::Graph, usize>> {
+fn uniform_expect(nodes: &uniform::NodeCollection<NodeId>) -> Vec<Expect<NodeId, usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 1,
@@ -149,7 +149,7 @@ graph!(
 
 fn directed_weighted_expect(
     nodes: &weighted::NodeCollection<NodeId>,
-) -> Vec<Expect<weighted::Graph, usize>> {
+) -> Vec<Expect<NodeId, usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 1,
@@ -244,7 +244,7 @@ fn weighted_directed_distance() {
 
 fn undirected_weighted_expect(
     nodes: &weighted::NodeCollection<NodeId>,
-) -> Vec<Expect<weighted::Graph, usize>> {
+) -> Vec<Expect<NodeId, usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 1,

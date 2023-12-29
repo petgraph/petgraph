@@ -1,11 +1,11 @@
 use alloc::vec::Vec;
-use core::{hash::Hash, ops::Add};
+use core::hash::Hash;
 use std::mem;
 
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
-use hashbrown::{hash_map::Entry, HashMap};
-use num_traits::Zero;
+use hashbrown::HashMap;
+use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{
     id::{AttributeGraphId, AttributeStorage, FlaggableGraphId},
     Graph, GraphStorage, Node,
@@ -20,7 +20,7 @@ use crate::shortest_paths::{
         route::Route,
         transit::{reconstruct_path_to, PredecessorMode},
     },
-    dijkstra::DijkstraError,
+    dijkstra::{measure::DijkstraMeasure, DijkstraError},
 };
 
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
@@ -28,7 +28,7 @@ where
     S: GraphStorage,
     S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
-    E::Value: Ord,
+    E::Value: DijkstraMeasure,
 {
     graph: &'graph Graph<S>,
     queue: PriorityQueue<'graph, S, E::Value>,
@@ -54,8 +54,7 @@ where
     S: GraphStorage,
     S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
-    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
 {
     pub(super) fn new(
@@ -103,8 +102,7 @@ where
     S: GraphStorage,
     S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
-    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
 {
     type Item = Route<'graph, S, E::Value>;

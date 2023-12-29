@@ -53,8 +53,6 @@ where
 {
     storage: &'a S,
 
-    // TODO: we might want to consider making these `MaybeOwned`, to allow for `Node` that cannot
-    //  borrow data.
     id: &'a S::NodeId,
     weight: &'a S::NodeWeight,
 }

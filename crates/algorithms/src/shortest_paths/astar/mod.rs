@@ -1,14 +1,15 @@
+//! A* shortest path algorithm.
 mod error;
 mod heuristic;
 mod r#impl;
+mod measure;
 #[cfg(test)]
 mod tests;
 
 use alloc::vec::Vec;
-use core::{hash::Hash, marker::PhantomData, ops::Add};
+use core::{hash::Hash, marker::PhantomData};
 
 use error_stack::Result;
-use num_traits::Zero;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
         Direction,
@@ -17,20 +18,30 @@ use petgraph_core::{
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
-use self::{error::AStarError, r#impl::AStarImpl};
-use super::{common::transit::PredecessorMode, ShortestDistance, ShortestPath};
-use crate::{
-    polyfill::IteratorExt,
-    shortest_paths::{
-        astar::heuristic::GraphHeuristic,
-        common::{
-            connections::{outgoing_connections, Connections},
-            cost::{Cost, DefaultCost, GraphCost},
-            route::{DirectRoute, Route},
-        },
+use self::r#impl::AStarImpl;
+pub use self::{error::AStarError, heuristic::GraphHeuristic, measure::AStarMeasure};
+use super::{
+    common::{
+        connections::{outgoing_connections, Connections},
+        cost::{Cost, DefaultCost, GraphCost},
+        route::{DirectRoute, Route},
+        transit::PredecessorMode,
     },
+    ShortestDistance, ShortestPath,
 };
+use crate::polyfill::IteratorExt;
 
+/// A* shortest path algorithm.
+///
+/// A* is a shortest path algorithm that uses a heuristic to guide the search.
+/// It is an extension of Dijkstra's algorithm, and is guaranteed to find the shortest path if the
+/// heuristic is admissible.
+/// A heuristic is admissible if it never overestimates the cost to reach the goal.
+///
+/// This implementation of A* is generic over the graph directionality, edge cost, and heuristic.
+///
+/// Edge weights need to implement [`AStarMeasure`], a trait that is automatically implemented for
+/// all types that satisfy the constraints of the algorithm.
 pub struct AStar<D, E, H>
 where
     D: GraphDirectionality,
@@ -42,6 +53,43 @@ where
 }
 
 impl AStar<Directed, DefaultCost, ()> {
+    /// Create a new A* instance with the default edge cost and no heuristic.
+    ///
+    /// You won't be able to run A* without providing a heuristic using [`Self::with_heuristic`].
+    ///
+    /// If instantiated for a directed graph, [`AStar`] will not implement [`ShortestPath`] and
+    /// [`ShortestDistance`] on undirected graphs.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use numi::borrow::Moo;
+    /// use petgraph_algorithms::shortest_paths::{AStar, ShortestPath};
+    /// use petgraph_core::{edge::marker::Directed, GraphStorage, Node};
+    /// use petgraph_dino::{DiDinoGraph, DinoStorage};
+    ///
+    /// // TODO: heuristic utils
+    /// fn heuristic<'graph, S>(source: Node<'graph, S>, target: Node<'graph, S>) -> Moo<'graph, i32>
+    /// where
+    ///     S: GraphStorage<NodeWeight = (i32, i32), EdgeWeight = i32>,
+    /// {
+    ///     let source = source.weight();
+    ///     let target = target.weight();
+    ///
+    ///     Moo::Owned((source.0 - target.0).abs() + (source.1 - target.1).abs())
+    /// }
+    ///
+    /// let algorithm = AStar::directed().with_heuristic(heuristic);
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    /// let a = *graph.insert_node((0, 1)).id();
+    /// let b = *graph.insert_node((2, 2)).id();
+    ///
+    /// graph.insert_edge(5, &a, &b);
+    ///
+    /// let path = algorithm.path_between(&graph, &a, &b).expect("path exists");
+    /// assert_eq!(path.cost().into_value(), 5);
+    /// ```
     pub fn directed() -> Self {
         Self {
             edge_cost: DefaultCost,
@@ -106,8 +154,7 @@ impl<E, H> AStar<Directed, E, H> {
         S: DirectedGraphStorage,
         S::NodeId: FlaggableGraphId<S> + Eq + Hash,
         E: GraphCost<S>,
-        E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-        for<'a> &'a E::Value: Add<Output = E::Value>,
+        E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
     {
         AStarImpl::new(
@@ -134,8 +181,7 @@ impl<E, H> AStar<Undirected, E, H> {
         S: GraphStorage,
         S::NodeId: FlaggableGraphId<S> + Eq + Hash,
         E: GraphCost<S>,
-        E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-        for<'a> &'a E::Value: Add<Output = E::Value>,
+        E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
     {
         AStarImpl::new(
@@ -158,8 +204,7 @@ where
     S: GraphStorage,
     S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
 {
     type Cost = E::Value;
@@ -228,8 +273,7 @@ where
     S: GraphStorage,
     S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
 {
     type Cost = E::Value;
@@ -299,8 +343,7 @@ where
     S: DirectedGraphStorage,
     S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
 {
     type Cost = E::Value;
@@ -369,8 +412,7 @@ where
     S: DirectedGraphStorage,
     S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
-    for<'a> E::Value: PartialOrd + Ord + Zero + Clone + 'a,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
 {
     type Cost = E::Value;

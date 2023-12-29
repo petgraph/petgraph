@@ -1,14 +1,14 @@
 use alloc::vec::Vec;
-use core::{hash::Hash, ops::Add};
+use core::hash::Hash;
 
 use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
-use num_traits::Zero;
-use petgraph_core::{id::FlaggableGraphId, Graph, GraphStorage, Node};
+use numi::num::{identity::Zero, ops::AddRef};
+use petgraph_core::{Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
-    astar::{error::AStarError, heuristic::GraphHeuristic},
+    astar::{error::AStarError, heuristic::GraphHeuristic, AStarMeasure},
     common::{
         connections::Connections,
         cost::{Cost, GraphCost},
@@ -47,8 +47,7 @@ where
     S: GraphStorage,
     S::NodeId: FlaggableGraphId<S> + Eq + Hash,
     E: GraphCost<S>,
-    E::Value: PartialOrd + Ord + Zero + Clone + 'graph,
-    for<'a> &'a E::Value: Add<Output = E::Value>,
+    E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
     C: Connections<'graph, S> + 'parent,
 {
@@ -122,7 +121,8 @@ where
 
             let connections = self.connections.connections(&node);
             for edge in connections {
-                let alternative = &self.distances[node.id()] + self.edge_cost.cost(edge).as_ref();
+                let alternative =
+                    self.distances[node.id()].add_ref(self.edge_cost.cost(edge).as_ref());
 
                 let (u, v) = edge.endpoints();
                 let neighbour = if u.id() == node.id() { v } else { u };
@@ -133,7 +133,8 @@ where
                     }
                 }
 
-                let guess = &alternative + self.heuristic.estimate(neighbour, self.target).as_ref();
+                let guess =
+                    alternative.add_ref(self.heuristic.estimate(neighbour, self.target).as_ref());
                 self.distances.insert(neighbour.id(), alternative);
 
                 if self.predecessor_mode == PredecessorMode::Record {

@@ -1,8 +1,9 @@
 use alloc::{vec, vec::Vec};
 use core::sync::atomic::{AtomicUsize, Ordering};
 
+use numi::borrow::Moo;
 use ordered_float::NotNan;
-use petgraph_core::{base::MaybeOwned, edge::marker::Directed, Edge, GraphStorage, Node};
+use petgraph_core::{edge::marker::Directed, Edge, GraphStorage, Node};
 use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
@@ -73,15 +74,14 @@ graph!(
     ] as EdgeId
 );
 
-const fn no_heuristic<'a, S>(_: Node<'a, S>, _: Node<'a, S>) -> MaybeOwned<'a, usize>
+const fn no_heuristic<'a, S>(_: Node<'a, S>, _: Node<'a, S>) -> Moo<'a, usize>
 where
     S: GraphStorage,
 {
-    MaybeOwned::Owned(0)
+    Moo::Owned(0)
 }
 
 // TODO: multigraph
-// TODO: more test cases
 
 #[test]
 fn directed_path_between() {
@@ -179,10 +179,10 @@ fn undirected_no_distance_between() {
     assert!(cost.is_none());
 }
 
-fn manhattan_distance<'a, S>(
-    source: Node<'a, S>,
-    target: Node<'a, S>,
-) -> MaybeOwned<'a, NotNan<f32>>
+fn manhattan_distance<'graph, S>(
+    source: Node<'graph, S>,
+    target: Node<'graph, S>,
+) -> Moo<'graph, NotNan<f32>>
 where
     S: GraphStorage<NodeWeight = Point>,
 {
@@ -192,16 +192,16 @@ where
     let distance =
         NotNan::new(source.manhattan_distance(*target)).expect("distance should be a number");
 
-    MaybeOwned::Owned(distance)
+    Moo::Owned(distance)
 }
 
-fn ensure_not_nan<S>(edge: Edge<S>) -> MaybeOwned<'_, NotNan<f32>>
+fn ensure_not_nan<S>(edge: Edge<S>) -> Moo<'_, NotNan<f32>>
 where
     S: GraphStorage<EdgeWeight = f32>,
 {
     let weight = NotNan::new(*edge.weight()).expect("weight should be a number");
 
-    MaybeOwned::Owned(weight)
+    Moo::Owned(weight)
 }
 
 #[test]
@@ -211,6 +211,7 @@ fn directed_path_between_manhattan() {
     let astar = AStar::directed()
         .with_edge_cost(ensure_not_nan)
         .with_heuristic(manhattan_distance);
+
     let route = astar.path_between(&graph, &nodes.a, &nodes.f).unwrap();
 
     let (path, cost) = route.into_parts();
@@ -264,15 +265,15 @@ graph!(factory(inconsistent) => DiDinoGraph<&'static str, usize>;
     ] as EdgeId
 );
 
-fn admissible_inconsistent<'a, S>(source: Node<'a, S>, target: Node<'a, S>) -> MaybeOwned<'a, usize>
+fn admissible_inconsistent<'a, S>(source: Node<'a, S>, target: Node<'a, S>) -> Moo<'a, usize>
 where
     S: GraphStorage,
     S::NodeWeight: AsRef<str>,
 {
     match source.weight().as_ref() {
-        "A" => MaybeOwned::Owned(9),
-        "B" => MaybeOwned::Owned(6),
-        _ => MaybeOwned::Owned(0),
+        "A" => Moo::Owned(9),
+        "B" => Moo::Owned(6),
+        _ => Moo::Owned(0),
     }
 }
 
@@ -323,7 +324,7 @@ graph!(factory(runtime) => DiDinoGraph<char, usize>;
 #[test]
 fn optimal_runtime() {
     // Needed to bind the lifetime of the closure, does some compiler magic.
-    fn bind<S, T>(closure: impl Fn(Edge<S>) -> MaybeOwned<T>) -> impl Fn(Edge<S>) -> MaybeOwned<T> {
+    fn bind<S, T>(closure: impl Fn(Edge<S>) -> Moo<T>) -> impl Fn(Edge<S>) -> Moo<T> {
         closure
     }
 
@@ -334,7 +335,7 @@ fn optimal_runtime() {
     let astar = AStar::directed()
         .with_edge_cost(bind(|edge: Edge<DinoStorage<char, usize, Directed>>| {
             CALLS.fetch_add(1, Ordering::SeqCst);
-            MaybeOwned::Borrowed(edge.weight())
+            Moo::Borrowed(edge.weight())
         }))
         .with_heuristic(no_heuristic);
 

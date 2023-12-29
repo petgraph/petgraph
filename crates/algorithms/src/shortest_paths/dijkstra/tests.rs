@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
-use petgraph_core::{base::MaybeOwned, Edge, GraphStorage};
+use numi::borrow::Moo;
+use petgraph_core::{Edge, GraphStorage};
 use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
 use petgraph_utils::{graph, GraphCollection};
 
@@ -37,7 +38,7 @@ graph!(
 
 fn networkx_directed_expect_from(
     nodes: &networkx::NodeCollection<NodeId>,
-) -> Vec<Expect<networkx::Graph, i32>> {
+) -> Vec<Expect<NodeId, i32>> {
     expected!(nodes; [
         a -()> a: 0,
         a -(c)> b: 8,
@@ -69,7 +70,6 @@ graph!(
 );
 
 // TODO: multigraph
-// TODO: more test cases
 
 #[test]
 fn path_from_directed_default_edge_cost() {
@@ -93,7 +93,7 @@ fn distance_from_directed_default_edge_cost() {
 
 fn random_directed_expect_from(
     nodes: &random::NodeCollection<NodeId>,
-) -> Vec<Expect<random::Graph, usize>> {
+) -> Vec<Expect<NodeId, usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 5,
@@ -104,12 +104,12 @@ fn random_directed_expect_from(
     ])
 }
 
-fn edge_cost<S>(edge: Edge<S>) -> MaybeOwned<'_, usize>
+fn edge_cost<S>(edge: Edge<S>) -> Moo<'_, usize>
 where
     S: GraphStorage,
     S::EdgeWeight: AsRef<[u8]>,
 {
-    MaybeOwned::Owned(edge.weight().as_ref().len())
+    Moo::Owned(edge.weight().as_ref().len())
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn distance_from_directed_custom_edge_cost() {
 
 fn networkx_undirected_expect_from(
     nodes: &networkx::NodeCollection<NodeId>,
-) -> Vec<Expect<networkx::Graph, i32>> {
+) -> Vec<Expect<NodeId, i32>> {
     expected!(nodes; [
         a -()> a: 0,
         a -(c)> b: 7,
@@ -166,7 +166,7 @@ fn distance_from_undirected_default_edge_cost() {
 
 fn random_undirected_expect_from(
     nodes: &random::NodeCollection<NodeId>,
-) -> Vec<Expect<random::Graph, usize>> {
+) -> Vec<Expect<NodeId, usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 5,

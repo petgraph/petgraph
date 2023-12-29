@@ -1,25 +1,28 @@
-//! Collection of utility types and traits for working with values that may be owned or borrowed.
 use core::{
     cmp::Ordering,
     fmt::{Display, Formatter},
     hash::{Hash, Hasher},
 };
 
-/// A type that may be owned or borrowed.
+/// # Maybe Owned Object
 ///
-/// This is analogous to [`Cow`], but without the `ToOwned` trait requirement (and therefore without
-/// the `alloc` requirement).
+/// This is analogous to [`Cow`], but without the additional [`ToOwned`] trait requirement which
+/// makes it unsuitable for `no_std` environments.
+///
+/// ## Name
+///
+/// The name `Moo` is a play on `Cow`, and is also a reference to the fact that cows moo.
+///
+/// > I totally didn't come up with the name first and then try to find an abbreviation that fit.
 ///
 /// [`Cow`]: alloc::borrow::Cow
 #[derive(Debug, Copy, Clone)]
-pub enum MaybeOwned<'a, T> {
-    /// A borrowed value.
+pub enum Moo<'a, T> {
     Borrowed(&'a T),
-    /// An owned value.
     Owned(T),
 }
 
-impl<T> Display for MaybeOwned<'_, T>
+impl<T> Display for Moo<'_, T>
 where
     T: Display,
 {
@@ -28,30 +31,30 @@ where
     }
 }
 
-impl<'a, T> From<T> for MaybeOwned<'a, T> {
+impl<'a, T> From<T> for Moo<'a, T> {
     fn from(value: T) -> Self {
         Self::Owned(value)
     }
 }
 
-impl<'a, T> From<&'a T> for MaybeOwned<'a, T> {
+impl<'a, T> From<&'a T> for Moo<'a, T> {
     fn from(value: &'a T) -> Self {
         Self::Borrowed(value)
     }
 }
 
-impl<'a, T> MaybeOwned<'a, T> {
+impl<'a, T> Moo<'a, T> {
     /// Returns a mutable reference to the owned value, if any.
     ///
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::base::MaybeOwned;
+    /// use numi::borrow::Moo;
     ///
-    /// let mut value = MaybeOwned::Owned(42);
+    /// let mut value = Moo::Owned(42);
     /// assert_eq!(value.as_mut(), Some(&mut 42));
     ///
-    /// let mut value = MaybeOwned::Borrowed(&42);
+    /// let mut value = Moo::Borrowed(&42);
     /// assert_eq!(value.as_mut(), None);
     /// ```
     pub fn as_mut(&mut self) -> Option<&mut T> {
@@ -61,19 +64,19 @@ impl<'a, T> MaybeOwned<'a, T> {
         }
     }
 
-    /// Converts the `MaybeOwned` into an owned value.
+    /// Converts the `Moo` into an owned value.
     ///
     /// This is a no-op if the value is already owned, and requires cloning if it is borrowed.
     ///
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::base::MaybeOwned;
+    /// use numi::borrow::Moo;
     ///
-    /// let value = MaybeOwned::Owned(42);
+    /// let value = Moo::Owned(42);
     /// assert_eq!(value.into_owned(), 42);
     ///
-    /// let value = MaybeOwned::Borrowed(&42);
+    /// let value = Moo::Borrowed(&42);
     /// assert_eq!(value.into_owned(), 42);
     /// ```
     pub fn into_owned(self) -> T
@@ -87,7 +90,7 @@ impl<'a, T> MaybeOwned<'a, T> {
     }
 }
 
-impl<T> AsRef<T> for MaybeOwned<'_, T> {
+impl<T> AsRef<T> for Moo<'_, T> {
     fn as_ref(&self) -> &T {
         match self {
             Self::Borrowed(value) => value,
@@ -96,7 +99,7 @@ impl<T> AsRef<T> for MaybeOwned<'_, T> {
     }
 }
 
-impl<T> PartialEq<T> for MaybeOwned<'_, T>
+impl<T> PartialEq<T> for Moo<'_, T>
 where
     T: PartialEq,
 {
@@ -105,7 +108,7 @@ where
     }
 }
 
-impl<T> PartialEq for MaybeOwned<'_, T>
+impl<T> PartialEq for Moo<'_, T>
 where
     T: PartialEq,
 {
@@ -114,9 +117,9 @@ where
     }
 }
 
-impl<T> Eq for MaybeOwned<'_, T> where T: Eq {}
+impl<T> Eq for Moo<'_, T> where T: Eq {}
 
-impl<T> PartialOrd<T> for MaybeOwned<'_, T>
+impl<T> PartialOrd<T> for Moo<'_, T>
 where
     T: PartialOrd,
 {
@@ -125,7 +128,7 @@ where
     }
 }
 
-impl<T> PartialOrd for MaybeOwned<'_, T>
+impl<T> PartialOrd for Moo<'_, T>
 where
     T: PartialOrd,
 {
@@ -134,7 +137,7 @@ where
     }
 }
 
-impl<T> Ord for MaybeOwned<'_, T>
+impl<T> Ord for Moo<'_, T>
 where
     T: Ord,
 {
@@ -143,7 +146,7 @@ where
     }
 }
 
-impl<T> Hash for MaybeOwned<'_, T>
+impl<T> Hash for Moo<'_, T>
 where
     T: Hash,
 {
