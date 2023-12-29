@@ -5,14 +5,14 @@ use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
 use numi::num::{identity::Zero, ops::AddRef};
-use petgraph_core::{Graph, GraphStorage, Node};
+use petgraph_core::{id::FlaggableGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     astar::{error::AStarError, heuristic::GraphHeuristic, AStarMeasure},
     common::{
         connections::Connections,
         cost::{Cost, GraphCost},
-        queue::priority::PriorityQueue,
+        queue::priority::{PriorityQueue, PriorityQueueItem},
         route::{DirectRoute, Route},
         transit::{reconstruct_path_to, PredecessorMode},
     },
@@ -23,6 +23,7 @@ use crate::shortest_paths::{
 pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
     S: GraphStorage,
+    S::NodeId: FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: Ord,
 {
@@ -44,7 +45,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -70,7 +71,7 @@ where
             .node(target)
             .ok_or_else(|| Report::new(AStarError::NodeNotFound))?;
 
-        let mut queue = PriorityQueue::new();
+        let mut queue = PriorityQueue::new(graph.storage());
         queue.push(
             source_node,
             heuristic.estimate(source_node, target_node).into_owned(),
@@ -102,15 +103,17 @@ where
     }
 
     pub(super) fn find(mut self) -> Option<Route<'graph, S, E::Value>> {
-        while let Some(node) = self.queue.pop_min() {
+        while let Some(PriorityQueueItem {
+            node,
+            priority: distance,
+        }) = self.queue.pop_min()
+        {
             if node.id() == self.target.id() {
                 let transit = if self.predecessor_mode == PredecessorMode::Record {
                     reconstruct_path_to(&self.predecessors, node.id())
                 } else {
                     Vec::new()
                 };
-
-                let distance = self.distances[node.id()].clone();
 
                 return Some(Route::new(
                     Path::new(self.source, transit, self.target),

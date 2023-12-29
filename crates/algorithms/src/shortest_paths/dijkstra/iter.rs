@@ -5,14 +5,14 @@ use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
 use numi::num::{identity::Zero, ops::AddRef};
-use petgraph_core::{Graph, GraphStorage, Node};
+use petgraph_core::{id::FlaggableGraphId, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{
         connections::Connections,
         cost::{Cost, GraphCost},
         path::Path,
-        queue::priority::PriorityQueue,
+        queue::priority::{PriorityQueue, PriorityQueueItem},
         route::Route,
         transit::{reconstruct_path_to, PredecessorMode},
     },
@@ -22,6 +22,7 @@ use crate::shortest_paths::{
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
+    S::NodeId: FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -46,7 +47,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -65,7 +66,7 @@ where
             .node(source)
             .ok_or_else(|| Report::new(DijkstraError::NodeNotFound))?;
 
-        let queue = PriorityQueue::new();
+        let queue = PriorityQueue::new(graph.storage());
 
         let mut distances = HashMap::with_hasher(FxBuildHasher::default());
         distances.insert(source, E::Value::zero());
@@ -93,7 +94,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -156,16 +157,19 @@ where
         // for neighbour in get_neighbours() { ... }
         // ```
         // Only difference is that we do not have generators in stable Rust (yet).
-        let Some(node) = self.queue.pop_min() else {
+        let Some(PriorityQueueItem {
+            node,
+            priority: distance,
+        }) = self.queue.pop_min()
+        else {
             self.next = None;
             return None;
         };
 
-        self.next = Some(node);
-
         // we're currently visiting the node that has the shortest distance, therefore we know
         // that the distance is the shortest possible
-        let distance = self.distances[node.id()].clone();
+
+        self.next = Some(node);
         let transit = if self.predecessor_mode == PredecessorMode::Discard {
             Vec::new()
         } else {

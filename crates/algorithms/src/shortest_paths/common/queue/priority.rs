@@ -6,7 +6,7 @@ use petgraph_core::{
     GraphStorage, Node,
 };
 
-struct PriorityQueueItem<'a, S, T>
+pub(in crate::shortest_paths) struct PriorityQueueItem<'a, S, T>
 where
     S: GraphStorage,
 {

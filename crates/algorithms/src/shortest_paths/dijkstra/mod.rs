@@ -11,6 +11,7 @@ use core::{hash::Hash, marker::PhantomData};
 use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
+    id::FlaggableGraphId,
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
@@ -174,7 +175,7 @@ where
 impl<S, E> ShortestPath<S> for Dijkstra<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -221,7 +222,7 @@ where
 impl<S, E> ShortestPath<S> for Dijkstra<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -258,7 +259,7 @@ where
 impl<S, E> ShortestDistance<S> for Dijkstra<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -307,7 +308,7 @@ where
 impl<S, E> ShortestDistance<S> for Dijkstra<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
