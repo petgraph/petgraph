@@ -12,7 +12,7 @@ use core::{hash::Hash, marker::PhantomData};
 use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
-    id::FlaggableGraphId,
+    id::{AttributeGraphId, FlaggableGraphId},
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
@@ -150,7 +150,7 @@ impl<E, H> AStar<Directed, E, H> {
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
         S: DirectedGraphStorage,
-        S::NodeId: Eq + Hash + FlaggableGraphId<S>,
+        S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
         E: GraphCost<S>,
         E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
@@ -177,7 +177,7 @@ impl<E, H> AStar<Undirected, E, H> {
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
         S: GraphStorage,
-        S::NodeId: Eq + Hash + FlaggableGraphId<S>,
+        S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
         E: GraphCost<S>,
         E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
@@ -200,7 +200,7 @@ impl<E, H> AStar<Undirected, E, H> {
 impl<S, E, H> ShortestPath<S> for AStar<Undirected, E, H>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -269,7 +269,7 @@ where
 impl<S, E, H> ShortestDistance<S> for AStar<Undirected, E, H>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -339,7 +339,7 @@ where
 impl<S, E, H> ShortestPath<S> for AStar<Directed, E, H>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -408,7 +408,7 @@ where
 impl<S, E, H> ShortestDistance<S> for AStar<Directed, E, H>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,

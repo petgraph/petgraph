@@ -1,11 +1,12 @@
 use alloc::vec::Vec;
-use core::hash::Hash;
+use core::mem;
 
 use error_stack::{Report, Result};
-use fxhash::FxBuildHasher;
-use hashbrown::HashMap;
 use numi::num::{identity::Zero, ops::AddRef};
-use petgraph_core::{id::FlaggableGraphId, Graph, GraphStorage, Node};
+use petgraph_core::{
+    id::{AttributeGraphId, AttributeStorage, FlaggableGraphId},
+    Graph, GraphStorage, Node,
+};
 
 use crate::shortest_paths::{
     common::{
@@ -22,10 +23,11 @@ use crate::shortest_paths::{
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
+    graph: &'graph Graph<S>,
     queue: PriorityQueue<'graph, S, E::Value>,
 
     edge_cost: &'parent E,
@@ -36,18 +38,18 @@ where
     num_nodes: usize,
 
     init: bool,
-    next: Option<Node<'graph, S>>,
+    next: Option<PriorityQueueItem<'graph, S, E::Value>>,
 
     predecessor_mode: PredecessorMode,
 
-    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
-    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
+    distances: <S::NodeId as AttributeGraphId<S>>::Store<'graph, E::Value>,
+    predecessors: <S::NodeId as AttributeGraphId<S>>::Store<'graph, Option<Node<'graph, S>>>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -60,7 +62,7 @@ where
 
         source: &'graph S::NodeId,
 
-        intermediates: PredecessorMode,
+        predecessor_mode: PredecessorMode,
     ) -> Result<Self, DijkstraError> {
         let source_node = graph
             .node(source)
@@ -68,15 +70,16 @@ where
 
         let queue = PriorityQueue::new(graph.storage());
 
-        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
-        distances.insert(source, E::Value::zero());
+        let mut distances = <S::NodeId as AttributeGraphId<S>>::attribute_store(graph.storage());
+        distances.set(source, E::Value::zero());
 
-        let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
-        if intermediates == PredecessorMode::Record {
-            predecessors.insert(source, None);
+        let mut predecessors = <S::NodeId as AttributeGraphId<S>>::attribute_store(graph.storage());
+        if predecessor_mode == PredecessorMode::Record {
+            predecessors.set(source, None);
         }
 
         Ok(Self {
+            graph,
             queue,
             edge_cost,
             connections,
@@ -84,7 +87,7 @@ where
             num_nodes: graph.num_nodes(),
             init: true,
             next: None,
-            predecessor_mode: intermediates,
+            predecessor_mode,
             distances,
             predecessors,
         })
@@ -94,7 +97,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash + FlaggableGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -106,7 +109,11 @@ where
         // and then begin with the actual iteration loop.
         if self.init {
             self.init = false;
-            self.next = Some(self.source);
+            self.next = Some(PriorityQueueItem {
+                node: self.source,
+                priority: E::Value::zero(),
+            });
+            self.queue.visit(self.source.id());
 
             return Some(Route::new(
                 Path::new(self.source, Vec::new(), self.source),
@@ -116,30 +123,43 @@ where
 
         // Process the neighbours from the node we determined in the last iteration.
         // Reasoning behind this see below.
-        let node = self.next?;
+        let PriorityQueueItem {
+            node,
+            priority: cost,
+        } = mem::take(&mut self.next)?;
+
         let connections = self.connections.connections(&node);
-
         for edge in connections {
-            let (u, v) = edge.endpoints();
-            let target = if v.id() == node.id() { u } else { v };
+            let (u, v) = edge.endpoint_ids();
+            let target = if u == node.id() { v } else { u };
 
-            let alternative = self.distances[node.id()].add_ref(self.edge_cost.cost(edge).as_ref());
+            // do not pursue edges that have already been processed.
+            if self.queue.has_been_visited(target) {
+                continue;
+            }
 
-            if let Some(distance) = self.distances.get(target.id()) {
-                // do not insert the updated distance if it is not strictly better than the current
-                // one
-                if alternative >= *distance {
+            let alternative = cost.add_ref(self.edge_cost.cost(edge).as_ref());
+
+            // TODO: Entry API
+            if let Some(distance) = self.distances.get_mut(target) {
+                // do not insert the updated distance if it is not strictly better than the
+                // current one
+                if *distance <= alternative {
                     continue;
                 }
-            }
 
-            self.distances.insert(target.id(), alternative.clone());
+                *distance = alternative.clone();
+            } else {
+                self.distances.set(target, alternative.clone());
+            }
 
             if self.predecessor_mode == PredecessorMode::Record {
-                self.predecessors.insert(target.id(), Some(node));
+                self.predecessors.set(target, Some(node));
             }
 
-            self.queue.decrease_priority(target, alternative);
+            if let Some(target) = self.graph.node(target) {
+                self.queue.decrease_priority(target, alternative);
+            }
         }
 
         // this is what makes this special: instead of getting the next node as the start of next
@@ -157,28 +177,28 @@ where
         // for neighbour in get_neighbours() { ... }
         // ```
         // Only difference is that we do not have generators in stable Rust (yet).
-        let Some(PriorityQueueItem {
-            node,
-            priority: distance,
-        }) = self.queue.pop_min()
-        else {
-            self.next = None;
+        let Some(item) = self.queue.pop_min() else {
+            // next is already `None`
             return None;
         };
 
+        let node = item.node;
+        let cost = item.priority.clone();
+        self.next = Some(item);
+
         // we're currently visiting the node that has the shortest distance, therefore we know
         // that the distance is the shortest possible
-
-        self.next = Some(node);
+        let distance = cost;
         let transit = if self.predecessor_mode == PredecessorMode::Discard {
             Vec::new()
         } else {
             reconstruct_path_to(&self.predecessors, node.id())
         };
 
-        let path = Path::new(self.source, transit, node);
-
-        Some(Route::new(path, Cost::new(distance)))
+        Some(Route::new(
+            Path::new(self.source, transit, node),
+            Cost::new(distance),
+        ))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
