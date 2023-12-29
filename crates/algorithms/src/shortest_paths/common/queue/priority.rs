@@ -1,20 +1,18 @@
 use alloc::collections::BinaryHeap;
-use core::{
-    cell::Cell,
-    cmp::{Ordering, Reverse},
-};
+use core::cmp::Ordering;
 
-use petgraph_core::{GraphStorage, Node};
+use petgraph_core::{
+    id::{FlagStorage, FlaggableGraphId},
+    GraphStorage, Node,
+};
 
 struct PriorityQueueItem<'a, S, T>
 where
     S: GraphStorage,
 {
-    node: Node<'a, S>,
+    pub(in crate::shortest_paths) node: Node<'a, S>,
 
-    priority: T,
-
-    skip: Cell<bool>,
+    pub(in crate::shortest_paths) priority: T,
 }
 
 impl<S, T> PartialEq for PriorityQueueItem<'_, S, T>
@@ -23,7 +21,7 @@ where
     T: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.priority.eq(&other.priority)
+        other.priority.eq(&self.priority)
     }
 }
 
@@ -40,7 +38,7 @@ where
     T: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.priority.partial_cmp(&other.priority)
+        other.priority.partial_cmp(&self.priority)
     }
 }
 
@@ -50,61 +48,68 @@ where
     T: Ord,
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.priority.cmp(&other.priority)
+        other.priority.cmp(&self.priority)
     }
 }
 
 pub(in crate::shortest_paths) struct PriorityQueue<'a, S, T>
 where
     S: GraphStorage,
+    S::NodeId: FlaggableGraphId<S>,
     T: Ord,
 {
-    heap: BinaryHeap<Reverse<PriorityQueueItem<'a, S, T>>>,
+    heap: BinaryHeap<PriorityQueueItem<'a, S, T>>,
+
+    flags: <S::NodeId as FlaggableGraphId<S>>::Store<'a>,
 }
 
 impl<'a, S, T> PriorityQueue<'a, S, T>
 where
     S: GraphStorage,
+    S::NodeId: FlaggableGraphId<S>,
     T: Ord,
 {
-    pub(in crate::shortest_paths) fn new() -> Self {
+    #[inline]
+    pub(in crate::shortest_paths) fn new(storage: &'a S) -> Self {
         Self {
             heap: BinaryHeap::new(),
+            flags: <S::NodeId as FlaggableGraphId<S>>::flag_store(storage),
         }
     }
 
     pub(in crate::shortest_paths) fn push(&mut self, node: Node<'a, S>, priority: T) {
-        self.heap.push(Reverse(PriorityQueueItem {
-            node,
-            priority,
-
-            skip: Cell::new(false),
-        }));
+        self.heap.push(PriorityQueueItem { node, priority });
     }
 
+    pub(in crate::shortest_paths) fn visit(&mut self, id: &'a S::NodeId) {
+        self.flags.set(id, true);
+    }
+
+    #[inline]
+    pub(in crate::shortest_paths) fn has_been_visited(&self, id: &'a S::NodeId) -> bool {
+        self.flags.index(id)
+    }
+
+    #[inline]
     pub(in crate::shortest_paths) fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
-        for Reverse(item) in &self.heap {
-            if item.node.id() == node.id() {
-                item.skip.set(true);
-                break;
-            }
+        if self.has_been_visited(node.id()) {
+            return;
         }
 
-        self.heap.push(Reverse(PriorityQueueItem {
-            node,
-            priority,
-
-            skip: Cell::new(false),
-        }));
+        self.heap.push(PriorityQueueItem { node, priority });
     }
 
-    pub(in crate::shortest_paths) fn pop_min(&mut self) -> Option<Node<'a, S>> {
-        while let Some(Reverse(item)) = self.heap.pop() {
-            if !item.skip.get() {
-                return Some(item.node);
-            }
-        }
+    #[inline]
+    pub(in crate::shortest_paths) fn pop_min(&mut self) -> Option<PriorityQueueItem<'a, S, T>> {
+        loop {
+            let item = self.heap.pop()?;
 
-        None
+            if self.has_been_visited(item.node.id()) {
+                continue;
+            }
+
+            self.visit(item.node.id());
+            return Some(item);
+        }
     }
 }

@@ -7,9 +7,15 @@
 //! exclusive and define if a node or edge id will be automatically assigned by the graph (are
 //! managed) and a user has no control over their value or are arbitrary, allowing the user to use
 //! _any_ value.
+mod attributes;
+mod flag;
 mod linear;
 
-pub use self::linear::{IndexMapper, LinearGraphId};
+pub use self::{
+    attributes::{AttributeGraphId, AttributeStorage},
+    flag::{FlagStorage, FlaggableGraphId},
+    linear::{IndexMapper, LinearGraphId},
+};
 use crate::attributes::NoValue;
 
 // The `PartialEq` bound is required for the default implementation, we could in theory remove it,
