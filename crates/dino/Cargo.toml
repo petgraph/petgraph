@@ -13,8 +13,7 @@ error-stack.workspace = true
 either = "1.9.0" # TODO: potentially remove
 
 # Closures
-roaring = "0.10.2"
-croaring = "1.0.1"
-fnv = { version = "1.0.7", default-features = false }
-hashbrown = { workspace = true, features = ['ahash'] }
 bitvec = "1.0.1"
+
+[dev-dependencies]
+hashbrown = { workspace = true, features = ['ahash'] }

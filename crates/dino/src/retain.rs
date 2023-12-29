@@ -1,11 +1,12 @@
+use alloc::collections::BTreeSet;
+
 use petgraph_core::{
     edge::{marker::GraphDirectionality, EdgeMut},
     node::NodeMut,
     storage::RetainableGraphStorage,
 };
-use roaring::RoaringBitmap;
 
-use crate::{closure::Closures, slab::Key, DinoStorage};
+use crate::{closure::Closures, DinoStorage};
 
 impl<N, E, D> RetainableGraphStorage for DinoStorage<N, E, D>
 where
@@ -16,7 +17,7 @@ where
         mut nodes: impl FnMut(NodeMut<'_, Self>) -> bool,
         mut edges: impl FnMut(EdgeMut<'_, Self>) -> bool,
     ) {
-        let mut removed = RoaringBitmap::new();
+        let mut removed = BTreeSet::new();
 
         self.nodes.retain(|_, value| {
             let node = NodeMut::new(&value.id, &mut value.weight);
@@ -24,16 +25,14 @@ where
             let retain = nodes(node);
 
             if !retain {
-                removed.insert(value.id.into_id().raw());
+                removed.insert(value.id);
             }
 
             retain
         });
 
         self.edges.retain(|_, value| {
-            if removed.contains(value.source.into_id().raw())
-                || removed.contains(value.target.into_id().raw())
-            {
+            if removed.contains(&value.source) || removed.contains(&value.target) {
                 return false;
             }
 
@@ -46,7 +45,7 @@ where
     }
 
     fn retain_nodes(&mut self, mut f: impl FnMut(NodeMut<'_, Self>) -> bool) {
-        let mut removed = RoaringBitmap::new();
+        let mut removed = BTreeSet::new();
 
         self.nodes.retain(|_, value| {
             let node = NodeMut::new(&value.id, &mut value.weight);
@@ -54,15 +53,14 @@ where
             let retain = f(node);
 
             if !retain {
-                removed.insert(value.id.into_id().raw());
+                removed.insert(value.id);
             }
 
             retain
         });
 
         self.edges.retain(|_, value| {
-            !removed.contains(value.source.into_id().raw())
-                && !removed.contains(value.target.into_id().raw())
+            !removed.contains(&value.source) && !removed.contains(&value.target)
         });
 
         Closures::refresh(&mut self.nodes, &self.edges);
