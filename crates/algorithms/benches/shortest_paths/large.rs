@@ -41,7 +41,9 @@ fn get_cargo_workspace() -> Arc<Path> {
 
 fn input(file: &str) -> Arc<Path> {
     let workspace = get_cargo_workspace();
-    let path = workspace.join("crates/algorithms/benches/input").join(file);
+    let path = workspace
+        .join("crates/algorithms/benches/cases/shortest_path")
+        .join(file);
 
     assert!(path.exists(), "{} does not exist", path.display());
 
