@@ -7,38 +7,49 @@ edition = "2021"
 
 [dependencies]
 petgraph-core = { workspace = true, features = ["alloc"] }
-petgraph-graph = { workspace = true, optional = true }
-petgraph-adjacency-matrix = { workspace = true, optional = true }
-funty.workspace = true
+#petgraph-graph = { workspace = true, optional = true }
+#petgraph-adjacency-matrix = { workspace = true, optional = true }
+numi = { workspace = true }
 # Like `std::collection::HashMap`, `IndexMap` is built on top of `hashbrown`, but because
 # we're already using `IndexMap` in a lot of crates I do not want to pull in `hashbrown`
 # separately as it would be another version to maintain. This way we only have one version.
 indexmap.workspace = true
 fxhash = "0.2.1"
 fixedbitset.workspace = true
+error-stack.workspace = true
+hashbrown = { workspace = true, features = ['ahash'] }
+either = "1.9.0"
 
 [build-dependencies]
 rustc_version = "0.4.0"
 
 [dev-dependencies]
-petgraph = { workspace = true, default-features = true, features = ['proptest', 'stable-graph'] }
+#petgraph = { workspace = true, default-features = true, features = ['proptest', 'stable-graph'] }
 # petgraph is only available in integration tests, while we use petgraph-graph in unit tests
-petgraph-graph = { workspace = true, features = ['stable'] }
+#petgraph-graph = { workspace = true, features = ['stable'] }
+numi = { workspace = true, features = ["ordered-float-impl"] }
+petgraph-dino = { workspace = true }
+petgraph-utils = { workspace = true }
 petgraph-proptest = { workspace = true }
 paste = "1.0.12"
 proptest = "1.1.0"
 approx = "0.5.1"
 criterion = "0.5.1"
 rand = "0.8.5"
-petgraph-test-utils.workspace = true
 itertools = "0.10.5"
+ordered-float = "4.1.1"
+serde_json = "1.0.107"
+static_assertions = "1.1.0"
+snapbox = { version = "0.4.15" }
+libtest-mimic = "0.6.1"
+ignore = "0.4.21"
 
 [features]
 default = ["std"]
 std = ["petgraph-core/std"]
 
-remove-me-only-intended-for-move-graph = ["dep:petgraph-graph"]
-remove-me-only-intended-for-move-adjacency-matrix = ["dep:petgraph-adjacency-matrix"]
+remove-me-only-intended-for-move-graph = []
+remove-me-only-intended-for-move-adjacency-matrix = []
 
 [[bench]]
 name = "shortest_paths"
@@ -62,4 +73,8 @@ harness = false
 
 [[bench]]
 name = "tree"
+harness = false
+
+[[test]]
+name = "shortest_paths"
 harness = false

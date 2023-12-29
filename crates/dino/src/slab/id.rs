@@ -13,7 +13,7 @@ use crate::slab::{generation::Generation, key::Key};
 /// |------------------------|-----------------|------------|-------------|
 /// | 16                     | 4               | 12         | 0           |
 /// | 32                     | 8               | 24         | 0           |
-/// | 32                     | 8               | 24         | 32          |
+/// | 64                     | 8               | 24         | 32          |
 ///
 /// Each time a lot is allocated, its generation is incremented. When retrieving
 /// values using a `EntryId`, the generation is validated as a safe guard against

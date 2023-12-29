@@ -1,7 +1,5 @@
-use petgraph_core::{Graph, GraphStorage};
-
-pub struct GraphCollection<S, N, E> {
-    pub graph: Graph<S>,
+pub struct GraphCollection<T, N, E> {
+    pub graph: T,
     pub nodes: N,
     pub edges: E,
 }
@@ -53,6 +51,16 @@ macro_rules! graph {
     };
 
     (
+        @collection: edge
+        $name:ident[$($id:ident : $source:ident $(->)? $(--)? $target:ident : @{$attr:expr}),* $(,)?]
+    ) => {
+        #[allow(unreachable_pub)]
+        pub struct $name<T> {
+            $(pub $id: T,)*
+        }
+    };
+
+    (
         @insert: node
         $graph:ident; $output:ident; $name:ident[$($id:ident : $attr:expr),* $(,)?]
     ) => {
@@ -63,11 +71,62 @@ macro_rules! graph {
 
     (
         @insert: edge
+        $graph:ident; $nodes:ident; $source:ident; $target:ident; $attr:expr
+    ) => {
+        *$graph.insert_edge($attr, &$nodes.$source, &$nodes.$target).id()
+    };
+
+    (
+        @insert: edge
+        $graph:ident; $nodes:ident; $source:ident; $target:ident; @{ $attr:expr }
+    ) => {{
+        let $source = $graph.node(&$nodes.$source).unwrap().weight();
+        let $target = $graph.node(&$nodes.$target).unwrap().weight();
+
+        *$graph.insert_edge($attr, &$nodes.$source, &$nodes.$target).id()
+    }};
+
+    (
+        @insert: edge
+        $graph:ident; $nodes:ident; $output:ident; $name:ident[$($id:ident : $source:ident $(->)? $(--)? $target:ident : @{ $attr:expr }),* $(,)?]
+    ) => {
+        let $output = $name {
+            $($id: $crate::graph!(@insert: edge $graph; $nodes; $source; $target; @{ $attr }),)*
+        };
+    };
+
+    (
+        @insert: edge
         $graph:ident; $nodes:ident; $output:ident; $name:ident[$($id:ident : $source:ident $(->)? $(--)? $target:ident : $attr:expr),* $(,)?]
     ) => {
         let $output = $name {
-            $($id: *$graph.insert_edge($attr, &$nodes.$source, &$nodes.$target).id(),)*
+            $($id: $crate::graph!(@insert: edge $graph; $nodes; $source; $target; $attr),)*
         };
+    };
+
+    ($(#[$meta:meta])* $vis:vis factory($name:ident) => $graph:ty; [$($nodes:tt)*] as $nty:ty, [$($edges:tt)*] as $ety:ty) => {
+        $(#[$meta])*
+        $vis mod $name {
+            use super::*;
+
+            $crate::graph!(@collection: node NodeCollection[$($nodes)*]);
+            $crate::graph!(@collection: edge EdgeCollection[$($edges)*]);
+
+            pub type Graph = $graph;
+
+            pub fn create() -> $crate::GraphCollection<$graph, NodeCollection<$nty>, EdgeCollection<$ety>> {
+                let mut graph = <$graph>::new();
+
+                $crate::graph!(@insert: node graph; nodes; NodeCollection[$($nodes)*]);
+                $crate::graph!(@insert: edge graph; nodes; edges; EdgeCollection[$($edges)*]);
+
+                $crate::GraphCollection {
+                    graph,
+                    nodes,
+                    edges,
+                }
+            }
+        }
     };
 
     ($graph:ident; [$($nodes:tt)*],[$($edges:tt)*]) => {{

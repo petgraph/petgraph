@@ -1,77 +1,48 @@
-#[cfg(feature = "alloc")]
-use alloc::vec::Vec;
+use numi::borrow::Moo;
 
-use crate::{base::owned::MaybeOwned, id::GraphId, storage::GraphStorage};
-
-mod sealed {
-    pub trait Sealed: Copy {}
-
-    impl Sealed for super::Continuous {}
-    impl Sealed for super::Discrete {}
-}
-
-/// Marker trait for the continuity property of a node or edge index.
-///
-/// This trait is sealed and cannot be implemented outside of this crate.
-///
-/// The type is implemented for two types: [`Continuous`] and [`Discrete`].
-pub trait Continuity: sealed::Sealed {
-    /// Whether the index is continuous.
-    ///
-    /// If this is `true`, then the index is continuous, otherwise it is discrete.
-    const CONTINUOUS: bool;
-
-    /// Whether the index is continuous.
-    #[must_use]
-    fn is_continuous() -> bool {
-        Self::CONTINUOUS
-    }
-}
-
-/// Marker type for a continuous index.
-///
-/// This type is ZST and is only really useful as a generic argument to specify the continuity of a
-/// graph index.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Continuous;
-
-impl Continuity for Continuous {
-    const CONTINUOUS: bool = true;
-}
-
-/// Marker type for a discrete index.
-///
-/// This type is ZST and is only really useful as a generic argument to specify the continuity of a
-/// graph index.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Discrete;
-
-impl Continuity for Discrete {
-    const CONTINUOUS: bool = false;
-}
+use crate::{id::GraphId, storage::GraphStorage};
 
 /// Index mapper for a graph.
 ///
 /// The index mapper is a type, that maps a specific value (`From`), typically a [`LinearGraphId`],
-/// into a different value (`To`), typically a [`usize`].
+/// into a different value ([`usize`]).
+///
+/// Mapping is bijective, meaning that `From -> usize` and `usize -> From` are both possible, and
+/// that every `From` value has a unique `usize` value in the range specified by `0..Self::MAX`.
+/// Meaning it is not possible to have a mapping of e.g. three nodes, like: `A`, `B`, `C` to `1`,
+/// `3`, `5` with `MAX = 5`, because `2` and `4` are not mapped to anything.
 ///
 /// How this conversion is done is up to the implementation, but should be consistent, i.e. the same
 /// input value should always map to the same output value.
-/// Index lookup should also be (if possible) `O(1)` for `From -> To`, but not necessarily for `To
-/// -> From`.
-pub trait IndexMapper<From, To> {
-    // we cannot use `const` in trait bounds (yet), so we need to use marker traits and types
-    /// The continuity property of the index mapper.
+/// Index lookup should also be (if possible) `O(1)` for `Id -> usize`, but not necessarily for
+/// `usize -> Id`.
+pub trait IndexMapper<Id> {
+    /// The maximum value that can be mapped to.
     ///
-    /// This is either [`Continuous`] or [`Discrete`], meaning that if [`Continuous`], the value
-    /// returned from [`Self::map`] and [`Self::lookup`] will be continuous, with no holes in the
-    /// `To` value range.
-    type Continuity: Continuity;
+    /// This **must** be equal to the number of nodes in the graph.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::id::{IndexMapper, LinearGraphId};
+    /// use petgraph_dino::{DiDinoGraph, NodeId};
+    ///
+    /// let mut graph = DiDinoGraph::new();
+    ///
+    /// let a = *graph.insert_node("A").id();
+    /// let b = *graph.insert_node("B").id();
+    /// # let ab = graph.insert_edge("A → B", &a, &b);
+    ///
+    /// let mapper = NodeId::index_mapper(graph.storage());
+    ///
+    /// assert_eq!(mapper.max(), 2);
+    /// ```
+    fn max(&self) -> usize;
 
-    /// Map a value from `From` to `To`.
+    /// Map a value from `From` to [`usize`].
     ///
-    /// This **must** be pure and **must** return a valid value for any `From` value.
-    /// This might mutate the internal state of the mapper.
+    /// This **must** be pure and **must** return a valid value for any `Id` value in the graph it
+    /// is bound to.
     ///
     /// # Example
     ///
@@ -89,14 +60,14 @@ pub trait IndexMapper<From, To> {
     ///
     /// // The mapping is highly dependent on the implementation, but should be consistent.
     /// // The order for which node maps to which value is not guaranteed.
-    /// assert_ne!(mapper.map(&a), mapper.map(&b));
+    /// assert_ne!(mapper.get(&a), mapper.get(&b));
     /// ```
-    fn map(&mut self, from: &From) -> To;
+    fn get(&self, from: &Id) -> Option<usize>;
 
-    /// Lookup a value from `From` to `To`.
+    /// Lookup a value from `To` to [`usize`].
     ///
-    /// This **must** be pure, but **may** return `None` if the value has not been [`Self::map`]ped
-    /// previously.
+    /// This **must** be pure and **must** return a valid value for any `Id` value in the graph
+    /// it is bound to.
     ///
     /// # Example
     ///
@@ -112,24 +83,29 @@ pub trait IndexMapper<From, To> {
     ///
     /// let mut mapper = NodeId::index_mapper(graph.storage());
     ///
-    /// let mapped = mapper.map(&a);
-    /// assert_eq!(mapper.lookup(&a), Some(mapped));
+    /// // The mapping is highly dependent on the implementation, but should be consistent.
+    /// // The order for which node maps to which value is not guaranteed.
+    /// assert_ne!(mapper.index(&a), mapper.index(&b));
     /// ```
-    fn lookup(&self, from: &From) -> Option<To>;
+    ///
+    /// # Panics
+    ///
+    /// Panics if the provided id is not valid, meaning it is not part of the graph (e.g. id from
+    /// another instance)
+    fn index(&self, from: &Id) -> usize {
+        self.get(from).expect("invalid id provided")
+    }
 
     /// Reverse lookup a value from `To` to `From`.
     ///
-    /// This **must** be pure, but **may** return `None` if the value has not been [`Self::map`]ped
-    /// or if a reverse mapping does not exist (for example `To` is too large and therefore does not
-    /// exist, or is a hole in the `To` value range).
+    /// This **must** be pure, but **may** return `None` if a reverse mapping does not exist (for
+    /// example `usize` is too large and therefore does not exist).
     ///
     /// # Example
     ///
     /// ```
-    /// use petgraph_core::{
-    ///     base::MaybeOwned,
-    ///     id::{IndexMapper, LinearGraphId},
-    /// };
+    /// use numi::borrow::Moo;
+    /// use petgraph_core::id::{IndexMapper, LinearGraphId};
     /// use petgraph_dino::{DiDinoGraph, NodeId};
     ///
     /// let mut graph = DiDinoGraph::new();
@@ -140,25 +116,24 @@ pub trait IndexMapper<From, To> {
     ///
     /// let mut mapper = NodeId::index_mapper(graph.storage());
     ///
-    /// let mapped = mapper.map(&a);
-    /// assert_eq!(mapper.reverse(&mapped), Some(MaybeOwned::Borrowed(&a)));
+    /// let mapped = mapper.index(&a);
+    /// assert_eq!(mapper.reverse(mapped), Some(Moo::Borrowed(&a)));
     /// ```
-    fn reverse(&mut self, to: &To) -> Option<MaybeOwned<From>>;
+    fn reverse(&self, to: usize) -> Option<Moo<Id>>;
 }
 
 /// Linear graph identifier.
 ///
 /// A linear graph identifier is a graph identifier that has a linear mapping to a `usize` value,
-/// that mapping _may_ be continuous or discrete.
+/// that mapping must be continuous .
 pub trait LinearGraphId<S>: GraphId + Sized
 where
     S: GraphStorage,
 {
     /// The index mapper for this graph identifier.
-    type Mapper<'a>: IndexMapper<Self, usize>
+    type Mapper<'graph>: IndexMapper<Self>
     where
-        Self: 'a,
-        S: 'a;
+        S: 'graph;
 
     /// Get the index mapper for this graph identifier.
     ///
@@ -177,82 +152,4 @@ where
     /// let mapper = NodeId::index_mapper(graph.storage());
     /// ```
     fn index_mapper(storage: &S) -> Self::Mapper<'_>;
-}
-
-/// Continuous index mapper.
-///
-/// Implementation of an `IndexMapper` on-top of an existing `IndexMapper`, that if the inner
-/// `IndexMapper` is not continuous, will create an internal lookup table to make it continuous.
-/// The lookup table simply takes every value requested, looks it up in the internal lookup table,
-/// returns the index or pushes a new index to the lookup table and returns that.
-///
-/// Wrapping an already continuous `IndexMapper` will simply return the value from the inner mapper
-/// without any additional lookup or allocation.
-#[cfg(feature = "alloc")]
-pub struct ContinuousIndexMapper<I, T> {
-    inner: I,
-    lookup: Vec<T>,
-}
-
-#[cfg(feature = "alloc")]
-impl<I, T> ContinuousIndexMapper<I, T>
-where
-    I: IndexMapper<T, usize>,
-    T: PartialEq + Clone,
-{
-    /// Create a new `ContinuousIndexMapper` from an existing `IndexMapper`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use petgraph_core::id::{ContinuousIndexMapper, IndexMapper, LinearGraphId};
-    /// use petgraph_dino::{DiDinoGraph, NodeId};
-    ///
-    /// let mut graph = DiDinoGraph::<u8, u8>::new();
-    ///
-    /// let index_mapper = NodeId::index_mapper(graph.storage());
-    /// let mut continuous_index_mapper = ContinuousIndexMapper::new(index_mapper);
-    /// ```
-    pub fn new(inner: I) -> Self {
-        Self {
-            inner,
-            lookup: Vec::new(),
-        }
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl<I, T> IndexMapper<T, usize> for ContinuousIndexMapper<I, T>
-where
-    I: IndexMapper<T, usize>,
-    T: PartialEq + Clone,
-{
-    type Continuity = Continuous;
-
-    fn map(&mut self, from: &T) -> usize {
-        if I::Continuity::CONTINUOUS {
-            self.inner.map(from)
-        } else if let Some(index) = self.lookup.iter().position(|v| v == from) {
-            index
-        } else {
-            self.lookup.push(from.clone());
-            self.lookup.len() - 1
-        }
-    }
-
-    fn lookup(&self, from: &T) -> Option<usize> {
-        if I::Continuity::CONTINUOUS {
-            self.inner.lookup(from)
-        } else {
-            self.lookup.iter().position(|v| v == from)
-        }
-    }
-
-    fn reverse(&mut self, to: &usize) -> Option<MaybeOwned<T>> {
-        if I::Continuity::CONTINUOUS {
-            self.inner.reverse(to)
-        } else {
-            self.lookup.get(*to).map(|v| MaybeOwned::Borrowed(v))
-        }
-    }
 }

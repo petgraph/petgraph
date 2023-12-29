@@ -9,9 +9,7 @@
 //! _any_ value.
 mod linear;
 
-#[cfg(feature = "alloc")]
-pub use self::linear::ContinuousIndexMapper;
-pub use self::linear::{Continuity, Continuous, Discrete, IndexMapper, LinearGraphId};
+pub use self::linear::{IndexMapper, LinearGraphId};
 use crate::attributes::NoValue;
 
 // The `PartialEq` bound is required for the default implementation, we could in theory remove it,

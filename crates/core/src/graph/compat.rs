@@ -18,7 +18,7 @@ use crate::{
     },
     edge::{Direction, Edge},
     graph::Graph,
-    id::{Continuous, ContinuousIndexMapper, IndexMapper, LinearGraphId, ManagedGraphId},
+    id::{IndexMapper, LinearGraphId, ManagedGraphId},
     node::Node,
     storage::{DirectedGraphStorage, GraphStorage},
 };
@@ -57,12 +57,12 @@ where
     }
 
     fn to_index(&self, a: Self::NodeId) -> usize {
-        S::NodeId::index_mapper(&self.storage).map(&a)
+        S::NodeId::index_mapper(&self.storage).index(&a)
     }
 
     fn from_index(&self, i: usize) -> Self::NodeId {
         S::NodeId::index_mapper(&self.storage)
-            .reverse(&i)
+            .reverse(i)
             .expect("unable to determine index")
             .into_owned()
     }
@@ -72,8 +72,6 @@ impl<S> NodeCompactIndexable for Graph<S>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Copy,
-    for<'a> <S::NodeId as LinearGraphId<S>>::Mapper<'a>:
-        IndexMapper<S::NodeId, usize, Continuity = Continuous>,
     S::EdgeId: Copy,
 {
 }
@@ -94,20 +92,18 @@ where
     S: GraphStorage,
     S::NodeId: Copy,
     S::EdgeId: LinearGraphId<S> + Copy,
-    for<'a> <S::EdgeId as LinearGraphId<S>>::Mapper<'a>:
-        IndexMapper<S::EdgeId, usize, Continuity = Continuous>,
 {
     fn edge_bound(&self) -> usize {
         self.num_edges()
     }
 
     fn to_index(&self, a: Self::EdgeId) -> usize {
-        S::EdgeId::index_mapper(&self.storage).map(&a)
+        S::EdgeId::index_mapper(&self.storage).index(&a)
     }
 
     fn from_index(&self, i: usize) -> Self::EdgeId {
         S::EdgeId::index_mapper(&self.storage)
-            .reverse(&i)
+            .reverse(i)
             .expect("unable to determine index")
             .into_owned()
     }
@@ -243,7 +239,7 @@ where
     T: LinearGraphId<S> + Clone + 'a,
 {
     inner: BitBox,
-    mapper: ContinuousIndexMapper<<T as LinearGraphId<S>>::Mapper<'a>, T>,
+    mapper: <T as LinearGraphId<S>>::Mapper<'a>,
 }
 
 impl<'a, S> VisitationMap<'a, S, S::NodeId>
@@ -254,7 +250,7 @@ where
     fn new_node(size: usize, mapper: <S::NodeId as LinearGraphId<S>>::Mapper<'a>) -> Self {
         Self {
             inner: BitVec::repeat(false, size).into_boxed_bitslice(),
-            mapper: ContinuousIndexMapper::new(mapper),
+            mapper,
         }
     }
 }
@@ -265,13 +261,15 @@ where
     T: LinearGraphId<S> + Clone,
 {
     fn visit(&mut self, a: T) -> bool {
-        let index = self.mapper.map(&a);
+        let Some(index) = self.mapper.get(&a) else {
+            return false;
+        };
 
         !self.inner.replace(index, true)
     }
 
     fn is_visited(&self, a: &T) -> bool {
-        let Some(index) = self.mapper.lookup(a) else {
+        let Some(index) = self.mapper.get(a) else {
             return false;
         };
 

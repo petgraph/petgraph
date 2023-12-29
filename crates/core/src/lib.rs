@@ -113,7 +113,6 @@
 //! [`FixedBitSet`]: fixedbitset::FixedBitSet
 //! [`IndexMap`]: indexmap::IndexMap
 //! [`HashSet`]: std::collections::HashSet
-#![feature(return_position_impl_trait_in_trait)]
 #![feature(impl_trait_in_assoc_type)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
@@ -122,7 +121,6 @@
 extern crate alloc;
 
 pub mod attributes;
-pub mod base;
 #[deprecated(since = "0.1.0")]
 pub mod deprecated;
 pub mod edge;

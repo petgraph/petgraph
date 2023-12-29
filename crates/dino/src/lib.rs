@@ -101,7 +101,6 @@
 //! ### Iterating over nodes and edges
 // TODO
 //!
-#![feature(return_position_impl_trait_in_trait)]
 #![warn(missing_docs)]
 #![no_std]
 
@@ -449,6 +448,12 @@ where
                 },
             )
             .collect();
+
+        // TODO: test-case c:
+        // TODO: this doesn't work if we remove a node
+        // TODO: NodeId rename is not of concern for us though
+        // TODO: what about nodes that are added or edges?
+        //      We don't know their ID yet (need a way to get those -> PartialNode/Edge)
 
         let mut closures = Closures::new();
         closures.refresh(&nodes, &edges);

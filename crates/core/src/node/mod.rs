@@ -16,7 +16,10 @@
 //! used sparingly.
 mod compat;
 
-use core::fmt::{Debug, Formatter};
+use core::{
+    fmt::{Debug, Formatter},
+    hash::Hash,
+};
 
 use crate::{
     edge::{Direction, Edge},
@@ -44,17 +47,66 @@ use crate::{
 /// assert_eq!(node.id(), &a);
 /// assert_eq!(node.weight(), &"A");
 /// ```
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Node<'a, S>
 where
     S: GraphStorage,
 {
     storage: &'a S,
 
-    // TODO: we might want to consider making these `MaybeOwned`, to allow for `Node` that cannot
-    //  borrow data.
     id: &'a S::NodeId,
     weight: &'a S::NodeWeight,
+}
+
+impl<S> PartialEq for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: PartialEq,
+    S::NodeWeight: PartialEq,
+{
+    fn eq(&self, other: &Node<'_, S>) -> bool {
+        (self.id, self.weight).eq(&(other.id, other.weight))
+    }
+}
+
+impl<S> Eq for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Eq,
+    S::NodeWeight: Eq,
+{
+}
+
+impl<S> PartialOrd for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: PartialOrd,
+    S::NodeWeight: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Node<'_, S>) -> Option<core::cmp::Ordering> {
+        (self.id, self.weight).partial_cmp(&(other.id, other.weight))
+    }
+}
+
+impl<S> Ord for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Ord,
+    S::NodeWeight: Ord,
+{
+    fn cmp(&self, other: &Node<'_, S>) -> core::cmp::Ordering {
+        (self.id, self.weight).cmp(&(other.id, other.weight))
+    }
+}
+
+impl<S> Hash for Node<'_, S>
+where
+    S: GraphStorage,
+    S::NodeId: Hash,
+    S::NodeWeight: Hash,
+{
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        (self.id, self.weight).hash(state);
+    }
 }
 
 impl<S> Clone for Node<'_, S>
@@ -203,7 +255,7 @@ where
     ///     vec![b, c]
     /// );
     /// ```
-    pub fn neighbours(&self) -> impl Iterator<Item = Node<'_, S>> {
+    pub fn neighbours(&self) -> impl Iterator<Item = Node<'a, S>> + 'a {
         self.storage.node_neighbours(self.id)
     }
 
@@ -235,7 +287,7 @@ where
     ///     vec![ab, ca]
     /// );
     /// ```
-    pub fn connections(&self) -> impl Iterator<Item = Edge<'_, S>> {
+    pub fn connections(&self) -> impl Iterator<Item = Edge<'a, S>> + 'a {
         self.storage.node_connections(self.id)
     }
 
@@ -307,7 +359,10 @@ where
     ///     vec![ca]
     /// );
     /// ```
-    pub fn directed_connections(&self, direction: Direction) -> impl Iterator<Item = Edge<'_, S>> {
+    pub fn directed_connections(
+        &self,
+        direction: Direction,
+    ) -> impl Iterator<Item = Edge<'a, S>> + 'a {
         self.storage.node_directed_connections(self.id, direction)
     }
 
@@ -345,7 +400,10 @@ where
     ///     vec![c]
     /// );
     /// ```
-    pub fn directed_neighbours(&self, direction: Direction) -> impl Iterator<Item = Node<'_, S>> {
+    pub fn directed_neighbours(
+        &self,
+        direction: Direction,
+    ) -> impl Iterator<Item = Node<'a, S>> + 'a {
         self.storage.node_directed_neighbours(self.id, direction)
     }
 }
