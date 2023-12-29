@@ -13,9 +13,11 @@ where
     }
 
     pub(crate) fn insert(&mut self, node: T) {
-        self.0.push(node);
-        self.0.sort_unstable();
-        self.0.dedup();
+        let Err(index) = self.0.binary_search(&node) else {
+            return;
+        };
+
+        self.0.insert(index, node);
     }
 
     pub(crate) fn clear(&mut self) {
@@ -30,6 +32,10 @@ where
         self.0.is_empty()
     }
 
+    pub(crate) fn contains(&self, node: &T) -> bool {
+        self.0.binary_search(node).is_ok()
+    }
+
     pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
@@ -41,5 +47,49 @@ impl<T> IntoIterator for UniqueVec<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use alloc::vec;
+
+    #[test]
+    fn insert_sorted() {
+        let mut vec = super::UniqueVec::new();
+
+        vec.insert(1);
+        vec.insert(2);
+        vec.insert(3);
+        vec.insert(4);
+        vec.insert(5);
+
+        assert_eq!(vec.0, vec![1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn insert_unsorted() {
+        let mut vec = super::UniqueVec::new();
+
+        vec.insert(5);
+        vec.insert(4);
+        vec.insert(3);
+        vec.insert(2);
+        vec.insert(1);
+
+        assert_eq!(vec.0, vec![1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn insert_duplicates() {
+        let mut vec = super::UniqueVec::new();
+
+        vec.insert(1);
+        vec.insert(1);
+        vec.insert(1);
+        vec.insert(1);
+        vec.insert(1);
+
+        assert_eq!(vec.0, vec![1]);
     }
 }

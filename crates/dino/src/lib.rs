@@ -141,7 +141,7 @@ use petgraph_core::{
 use crate::{
     closure::Closures,
     edge::Edge,
-    node::{Node, NodeClosures},
+    node::{Node, NodeClosures, NodeSlab},
     slab::Slab,
 };
 
@@ -419,6 +419,20 @@ impl Display for Error {
 
 impl Context for Error {}
 
+fn edges_between_undirected<N>(
+    nodes: &NodeSlab<N>,
+    source: NodeId,
+    target: NodeId,
+) -> impl Iterator<Item = EdgeId> + '_ {
+    let source = nodes.get(source);
+    let target = nodes.get(target);
+
+    source
+        .and_then(|source| target.map(|target| (source, target)))
+        .into_iter()
+        .flat_map(|(source, target)| source.closures.edges_between_undirected(&target.closures))
+}
+
 impl<N, E, D> GraphStorage for DinoStorage<N, E, D>
 where
     D: GraphDirectionality,
@@ -666,12 +680,8 @@ where
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,
     ) -> impl Iterator<Item = petgraph_core::edge::Edge<'a, Self>> + 'b {
-        let edges = self
-            .closures
-            .edges()
-            .undirected_endpoints_to_edges(*source, *target);
-
-        edges.filter_map(move |edge| self.edge(&edge))
+        edges_between_undirected(&self.nodes, *source, *target)
+            .filter_map(move |edge| self.edge(&edge))
     }
 
     fn edges_between_mut<'a: 'b, 'b>(
@@ -679,13 +689,10 @@ where
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
-        let edges = self
-            .closures
-            .edges()
-            .undirected_endpoints_to_edges(*source, *target);
+        let available = edges_between_undirected(&self.nodes, *source, *target);
 
         self.edges
-            .filter_mut(edges)
+            .filter_mut(available)
             .map(move |edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
     }
 

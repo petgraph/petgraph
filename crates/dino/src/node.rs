@@ -1,15 +1,17 @@
-use alloc::{collections::BTreeSet, vec::Vec};
 use core::fmt::{Display, Formatter};
 
 use petgraph_core::{
     attributes::NoValue,
-    edge::marker::GraphDirectionality,
+    edge::{marker::GraphDirectionality, Direction},
     id::{AttributeGraphId, FlaggableGraphId, GraphId, LinearGraphId, ManagedGraphId},
 };
 
 use crate::{
-    closure::{Closures, UniqueVec},
-    iter::closure::{EdgeIdClosureIter, EdgeIterator, NeighbourIterator, NodeIdClosureIter},
+    closure::UniqueVec,
+    iter::closure::{
+        EdgeBetweenIterator, EdgeIdClosureIter, EdgeIntersectionIterator, EdgeIterator,
+        NeighbourIterator, NodeIdClosureIter,
+    },
     slab::{
         secondary::{SlabAttributeStorage, SlabFlagStorage},
         EntryId, Key, SlabIndexMapper,
@@ -160,6 +162,23 @@ impl NodeClosures {
         EdgeIterator::new(
             self.outgoing_edges.iter().copied(),
             self.incoming_edges.iter().copied(),
+        )
+    }
+
+    pub(crate) fn edges_between_undirected<'a>(
+        &'a self,
+        other: &'a Self,
+    ) -> EdgeBetweenIterator<'a> {
+        EdgeBetweenIterator::new(self, other)
+    }
+
+    pub(crate) fn edges_between_directed<'a>(
+        &'a self,
+        other: &'a Self,
+    ) -> EdgeIntersectionIterator<'a> {
+        EdgeIntersectionIterator::new(
+            self.outgoing_edges.iter().copied(),
+            other.incoming_edges.iter().copied(),
         )
     }
 

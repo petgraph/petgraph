@@ -6,8 +6,24 @@ use petgraph_core::{
 };
 
 use crate::{
-    iter::directed::NodeDirectedConnectionsIter, node::NodeClosures, DinoStorage, Directed,
+    iter::directed::NodeDirectedConnectionsIter,
+    node::{NodeClosures, NodeSlab},
+    DinoStorage, Directed, EdgeId, NodeId,
 };
+
+fn directed_edges_between<N>(
+    nodes: &NodeSlab<N>,
+    source: NodeId,
+    target: NodeId,
+) -> impl Iterator<Item = EdgeId> + '_ {
+    let source = nodes.get(source);
+    let target = nodes.get(target);
+
+    source
+        .and_then(|source| target.map(|target| (source, target)))
+        .into_iter()
+        .flat_map(|(source, target)| source.closures.edges_between_directed(&target.closures))
+}
 
 impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
     fn directed_edges_between<'a: 'b, 'b>(
@@ -15,10 +31,7 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
-        self.closures
-            .edges()
-            .endpoints_to_edges(*source, *target)
-            .filter_map(|id| self.edge(&id))
+        directed_edges_between(&self.nodes, *source, *target).filter_map(move |id| self.edge(&id))
     }
 
     fn directed_edges_between_mut<'a: 'b, 'b>(
@@ -26,11 +39,9 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         source: &'b Self::NodeId,
         target: &'b Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
-        let Self {
-            closures, edges, ..
-        } = self;
+        let Self { edges, nodes, .. } = self;
 
-        let available = closures.edges().endpoints_to_edges(*source, *target);
+        let available = directed_edges_between(nodes, *source, *target);
 
         edges
             .filter_mut(available)
