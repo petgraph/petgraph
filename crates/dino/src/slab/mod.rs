@@ -3,6 +3,7 @@ mod entry;
 mod generation;
 mod id;
 mod key;
+pub(crate) mod secondary;
 
 use alloc::{vec, vec::Vec};
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
@@ -351,6 +352,10 @@ where
 
     pub(crate) fn len(&self) -> usize {
         self.entries.len() - self.free.len()
+    }
+
+    pub(crate) fn total_len(&self) -> usize {
+        self.entries.len()
     }
 }
 

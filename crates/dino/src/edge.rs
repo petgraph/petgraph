@@ -3,12 +3,15 @@ use core::fmt::{Display, Formatter};
 use petgraph_core::{
     attributes::NoValue,
     edge::marker::GraphDirectionality,
-    id::{GraphId, LinearGraphId, ManagedGraphId},
+    id::{AttributeGraphId, FlaggableGraphId, GraphId, LinearGraphId, ManagedGraphId},
 };
 
 use crate::{
     node::NodeId,
-    slab::{EntryId, Key, SlabIndexMapper},
+    slab::{
+        secondary::{SlabAttributeStorage, SlabFlagStorage},
+        EntryId, Key, SlabIndexMapper,
+    },
     DinoStorage,
 };
 
@@ -66,6 +69,28 @@ where
 
     fn index_mapper(storage: &DinoStorage<N, E, D>) -> Self::Mapper<'_> {
         SlabIndexMapper::new(&storage.edges)
+    }
+}
+
+impl<N, E, D> FlaggableGraphId<DinoStorage<N, E, D>> for EdgeId
+where
+    D: GraphDirectionality,
+{
+    type Store<'a> = SlabFlagStorage<'a> where DinoStorage<N, E, D>: 'a;
+
+    fn flag_store(storage: &DinoStorage<N, E, D>) -> Self::Store<'_> {
+        SlabFlagStorage::new(&storage.edges)
+    }
+}
+
+impl<N, E, D> AttributeGraphId<DinoStorage<N, E, D>> for EdgeId
+where
+    D: GraphDirectionality,
+{
+    type Store<'a, V> = SlabAttributeStorage<'a, Self, V> where DinoStorage<N, E, D>: 'a;
+
+    fn attribute_store<V>(storage: &DinoStorage<N, E, D>) -> Self::Store<'_, V> {
+        SlabAttributeStorage::new(&storage.edges)
     }
 }
 
