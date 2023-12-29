@@ -1,4 +1,4 @@
-use roaring::RoaringBitmap;
+use croaring::Bitmap as RoaringBitmap;
 
 #[derive(Default)]
 struct IteratorState {
@@ -83,35 +83,9 @@ impl IteratorState {
     }
 }
 
-pub(crate) struct UnionIntoIterator {
-    left: roaring::bitmap::IntoIter,
-    right: roaring::bitmap::IntoIter,
-
-    state: IteratorState,
-}
-
-impl UnionIntoIterator {
-    pub(crate) fn new(left: RoaringBitmap, right: RoaringBitmap) -> Self {
-        Self {
-            left: left.into_iter(),
-            right: right.into_iter(),
-
-            state: IteratorState::default(),
-        }
-    }
-}
-
-impl Iterator for UnionIntoIterator {
-    type Item = u32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.state.next(&mut self.left, &mut self.right)
-    }
-}
-
 pub(crate) struct UnionIterator<'a> {
-    left: roaring::bitmap::Iter<'a>,
-    right: roaring::bitmap::Iter<'a>,
+    left: croaring::bitmap::BitmapIterator<'a>,
+    right: croaring::bitmap::BitmapIterator<'a>,
 
     state: IteratorState,
 }
@@ -142,9 +116,9 @@ impl Iterator for UnionIterator<'_> {
 mod tests {
     use alloc::vec::Vec;
 
-    use roaring::RoaringBitmap;
+    use croaring::Bitmap as RoaringBitmap;
 
-    use crate::closure::union::{UnionIntoIterator, UnionIterator};
+    use crate::closure::union::UnionIterator;
 
     #[test]
     fn empty() {
@@ -153,51 +127,39 @@ mod tests {
 
         let iterator = UnionIterator::new(&a, &b);
         assert_eq!(iterator.count(), 0);
-
-        let iterator = UnionIntoIterator::new(a, b);
-        assert_eq!(iterator.count(), 0);
     }
 
     #[test]
     fn non_overlapping() {
-        let a = RoaringBitmap::from_sorted_iter(0..10).unwrap();
-        let b = RoaringBitmap::from_sorted_iter(10..20).unwrap();
+        let a = RoaringBitmap::from_iter(0..10);
+        let b = RoaringBitmap::from_iter(10..20);
 
         let iterator = UnionIterator::new(&a, &b);
-        assert_eq!(iterator.collect::<Vec<_>>(), (0..20).collect::<Vec<_>>());
-
-        let iterator = UnionIntoIterator::new(a, b);
         assert_eq!(iterator.collect::<Vec<_>>(), (0..20).collect::<Vec<_>>());
     }
 
     #[test]
     fn overlapping() {
-        let a = RoaringBitmap::from_sorted_iter(0..10).unwrap();
-        let b = RoaringBitmap::from_sorted_iter(5..15).unwrap();
+        let a = RoaringBitmap::from_iter(0..10);
+        let b = RoaringBitmap::from_iter(5..15);
 
         let iterator = UnionIterator::new(&a, &b);
-        assert_eq!(iterator.collect::<Vec<_>>(), (0..15).collect::<Vec<_>>());
-
-        let iterator = UnionIntoIterator::new(a, b);
         assert_eq!(iterator.collect::<Vec<_>>(), (0..15).collect::<Vec<_>>());
     }
 
     #[test]
     fn multiple_overlapping_regions() {
-        let mut a = RoaringBitmap::from_sorted_iter(0..10).unwrap();
-        let mut b = RoaringBitmap::from_sorted_iter(5..15).unwrap();
+        let mut a = RoaringBitmap::from_iter(0..10);
+        let mut b = RoaringBitmap::from_iter(5..15);
 
-        a.insert_range(20..30);
-        b.insert_range(25..35);
+        a.add_range(20..30);
+        b.add_range(25..35);
 
-        a.insert_range(40..50);
-        b.insert_range(15..21);
-        b.insert_range(29..42);
+        a.add_range(40..50);
+        b.add_range(15..21);
+        b.add_range(29..42);
 
         let iterator = UnionIterator::new(&a, &b);
-        assert_eq!(iterator.collect::<Vec<_>>(), (0..50).collect::<Vec<_>>());
-
-        let iterator = UnionIntoIterator::new(a, b);
         assert_eq!(iterator.collect::<Vec<_>>(), (0..50).collect::<Vec<_>>());
     }
 }

@@ -5,7 +5,9 @@ use petgraph_core::{
     storage::{DirectedGraphStorage, GraphStorage},
 };
 
-use crate::{DinoStorage, Directed};
+use crate::{
+    iter::directed::NodeDirectedConnectionsIter, node::NodeClosures, DinoStorage, Directed,
+};
 
 impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
     fn directed_edges_between<'a: 'b, 'b>(
@@ -40,13 +42,13 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
-        let closure = self.closures.nodes();
-
-        match direction {
-            Direction::Incoming => Either::Left(closure.incoming_edges(*id)),
-            Direction::Outgoing => Either::Right(closure.outgoing_edges(*id)),
+        NodeDirectedConnectionsIter {
+            storage: self,
+            iter: self.nodes.get(*id).map(|node| match direction {
+                Direction::Incoming => node.closures.incoming_edges(),
+                Direction::Outgoing => node.closures.outgoing_edges(),
+            }),
         }
-        .filter_map(move |id| self.edge(&id))
     }
 
     fn node_directed_connections_mut<'a: 'b, 'b>(
@@ -54,19 +56,18 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
-        let Self {
-            closures, edges, ..
-        } = self;
+        let Self { nodes, edges, .. } = self;
 
-        let closure = closures.nodes();
-
-        let available = match direction {
-            Direction::Incoming => Either::Left(closure.incoming_edges(*id)),
-            Direction::Outgoing => Either::Right(closure.outgoing_edges(*id)),
-        };
+        let allow = nodes
+            .get(*id)
+            .into_iter()
+            .flat_map(move |node| match direction {
+                Direction::Incoming => Either::Left(node.closures.incoming_edges()),
+                Direction::Outgoing => Either::Right(node.closures.outgoing_edges()),
+            });
 
         edges
-            .filter_mut(available)
+            .filter_mut(allow)
             .map(|edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
     }
 
@@ -75,13 +76,14 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
-        let closure = self.closures.nodes();
-
-        match direction {
-            Direction::Incoming => Either::Left(closure.incoming_neighbours(*id)),
-            Direction::Outgoing => Either::Right(closure.outgoing_neighbours(*id)),
-        }
-        .filter_map(move |id| self.node(&id))
+        self.nodes
+            .get(*id)
+            .into_iter()
+            .flat_map(move |node| match direction {
+                Direction::Incoming => Either::Left(node.closures.incoming_neighbours()),
+                Direction::Outgoing => Either::Right(node.closures.outgoing_neighbours()),
+            })
+            .filter_map(move |id| self.node(&id))
     }
 
     fn node_directed_neighbours_mut<'a: 'b, 'b>(
@@ -89,19 +91,22 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
         id: &'b Self::NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b {
-        let Self {
-            closures, nodes, ..
-        } = self;
-
-        let closure = closures.nodes();
-
-        let available = match direction {
-            Direction::Incoming => Either::Left(closure.incoming_neighbours(*id)),
-            Direction::Outgoing => Either::Right(closure.outgoing_neighbours(*id)),
+        let Some(node) = self.nodes.get(*id) else {
+            return Either::Right(core::iter::empty());
         };
 
-        nodes
-            .filter_mut(available)
-            .map(|node| NodeMut::new(&node.id, &mut node.weight))
+        // SAFETY: we never access the closure argument mutably, only the weight.
+        // Therefore it is safe for us to access both at the same time.
+        let closure: &NodeClosures = unsafe { &*(&node.closures as *const _) };
+        let neighbours = match direction {
+            Direction::Incoming => Either::Left(closure.incoming_neighbours()),
+            Direction::Outgoing => Either::Right(closure.outgoing_neighbours()),
+        };
+
+        Either::Left(
+            self.nodes
+                .filter_mut(neighbours)
+                .map(move |node| NodeMut::new(&node.id, &mut node.weight)),
+        )
     }
 }

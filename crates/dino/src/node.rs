@@ -163,6 +163,10 @@ impl NodeClosures {
         )
     }
 
+    pub(crate) fn is_isolated(&self) -> bool {
+        self.outgoing_nodes.is_empty() && self.incoming_nodes.is_empty()
+    }
+
     pub(crate) fn clear(&mut self) {
         self.outgoing_nodes.clear();
         self.incoming_nodes.clear();

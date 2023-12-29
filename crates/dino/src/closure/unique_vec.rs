@@ -14,7 +14,7 @@ where
 
     pub(crate) fn insert(&mut self, node: T) {
         self.0.push(node);
-        self.0.sort();
+        self.0.sort_unstable();
         self.0.dedup();
     }
 
@@ -24,6 +24,10 @@ where
 
     pub(crate) fn iter(&self) -> slice::Iter<'_, T> {
         self.0.iter()
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     pub(crate) fn len(&self) -> usize {

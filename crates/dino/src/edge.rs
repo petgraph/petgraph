@@ -96,6 +96,8 @@ where
 
 impl ManagedGraphId for EdgeId {}
 
+pub(crate) type EdgeSlab<T> = crate::slab::Slab<EdgeId, Edge<T>>;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Edge<T> {
     pub(crate) id: EdgeId,
