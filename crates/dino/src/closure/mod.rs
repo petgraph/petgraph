@@ -1,4 +1,5 @@
 mod union;
+mod unique_vec;
 
 use either::Either;
 use fnv::FnvBuildHasher;
@@ -8,6 +9,7 @@ use hashbrown::HashMap;
 use roaring::RoaringBitmap;
 
 use self::union::UnionIterator;
+pub(crate) use self::unique_vec::UniqueVec;
 use crate::{
     closure::union::UnionIntoIterator,
     edge::Edge,

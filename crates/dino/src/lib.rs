@@ -104,17 +104,22 @@
 #![warn(missing_docs)]
 #![no_std]
 
+// TODO: benchmark a linked-list based implementation (mirroring current `Graph` implementation)
+//  & overhead
+// Using such an approach would allow us to reduce heap allocations in favor of slower iteration
+// speed.
+
+extern crate alloc;
+
 pub(crate) mod closure;
 mod directed;
 mod edge;
+mod iter;
 mod node;
-
 mod retain;
 pub(crate) mod slab;
 #[cfg(test)]
 mod tests;
-
-extern crate alloc;
 
 use core::fmt::{Debug, Display};
 

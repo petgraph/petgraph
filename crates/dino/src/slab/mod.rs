@@ -146,6 +146,16 @@ where
         entry.get()
     }
 
+    pub(crate) fn get_unchecked(&self, key: K) -> Option<&V> {
+        let id = key.into_id();
+
+        let index = id.index();
+
+        let entry = self.entries.get(index)?;
+
+        entry.get()
+    }
+
     pub(crate) fn get_mut(&mut self, key: K) -> Option<&mut V> {
         let id = key.into_id();
 
