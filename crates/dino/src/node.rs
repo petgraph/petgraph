@@ -2,7 +2,7 @@ use core::fmt::{Display, Formatter};
 
 use petgraph_core::{
     attributes::NoValue,
-    edge::{marker::GraphDirectionality, Direction},
+    edge::marker::GraphDirectionality,
     id::{AttributeGraphId, FlaggableGraphId, GraphId, LinearGraphId, ManagedGraphId},
 };
 
@@ -123,23 +123,39 @@ impl NodeClosures {
         self.outgoing_nodes.insert(node);
     }
 
+    pub(crate) fn remove_outgoing_node(&mut self, node: NodeId) {
+        self.outgoing_nodes.remove(&node);
+    }
+
     pub(crate) fn insert_incoming_node(&mut self, node: NodeId) {
         self.incoming_nodes.insert(node);
+    }
+
+    pub(crate) fn remove_incoming_node(&mut self, node: NodeId) {
+        self.incoming_nodes.remove(&node);
     }
 
     pub(crate) fn insert_outgoing_edge(&mut self, edge: EdgeId) {
         self.outgoing_edges.insert(edge);
     }
 
+    pub(crate) fn remove_outgoing_edge(&mut self, edge: EdgeId) {
+        self.outgoing_edges.remove(&edge);
+    }
+
     pub(crate) fn insert_incoming_edge(&mut self, edge: EdgeId) {
         self.incoming_edges.insert(edge);
     }
 
-    pub(crate) fn outgoing_neighbours(&self) -> NodeIdClosureIter {
+    pub(crate) fn remove_incoming_edge(&mut self, edge: EdgeId) {
+        self.incoming_edges.remove(&edge);
+    }
+
+    pub(crate) fn outgoing_nodes(&self) -> NodeIdClosureIter {
         self.outgoing_nodes.iter().copied()
     }
 
-    pub(crate) fn incoming_neighbours(&self) -> NodeIdClosureIter {
+    pub(crate) fn incoming_nodes(&self) -> NodeIdClosureIter {
         self.incoming_nodes.iter().copied()
     }
 

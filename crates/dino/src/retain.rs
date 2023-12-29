@@ -5,7 +5,7 @@ use petgraph_core::{
 };
 use roaring::RoaringBitmap;
 
-use crate::{slab::Key, DinoStorage};
+use crate::{closure::Closures, slab::Key, DinoStorage};
 
 impl<N, E, D> RetainableGraphStorage for DinoStorage<N, E, D>
 where
@@ -42,7 +42,7 @@ where
             edges(edge)
         });
 
-        self.closures.refresh(&mut self.nodes, &self.edges);
+        Closures::refresh(&mut self.nodes, &self.edges);
     }
 
     fn retain_nodes(&mut self, mut f: impl FnMut(NodeMut<'_, Self>) -> bool) {
@@ -65,7 +65,7 @@ where
                 && !removed.contains(value.target.into_id().raw())
         });
 
-        self.closures.refresh(&mut self.nodes, &self.edges);
+        Closures::refresh(&mut self.nodes, &self.edges);
     }
 
     fn retain_edges(&mut self, mut f: impl FnMut(EdgeMut<'_, Self>) -> bool) {
@@ -75,6 +75,6 @@ where
             f(edge)
         });
 
-        self.closures.refresh(&mut self.nodes, &self.edges);
+        Closures::refresh(&mut self.nodes, &self.edges);
     }
 }

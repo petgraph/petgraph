@@ -1,43 +1,17 @@
-mod union;
 mod unique_vec;
 
-use croaring::Bitmap as RoaringBitmap;
-use either::Either;
-use fnv::FnvBuildHasher;
-use hashbrown::HashMap;
-
-pub(crate) use self::{union::UnionIterator, unique_vec::UniqueVec};
+pub(crate) use self::unique_vec::UniqueVec;
 use crate::{
     edge::{Edge, EdgeSlab},
     node::{Node, NodeSlab},
-    slab::{EntryId, Key as _, Slab},
     EdgeId, NodeId,
 };
 
-// TODO: move to node closure
-// TODO: or just don't closure it
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum Key {
-    EndpointsToEdges(NodeId, NodeId),
-}
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub(crate) struct Closures;
 
-#[derive(Debug, Clone, PartialEq)]
-struct ClosureStorage {
-    inner: HashMap<Key, RoaringBitmap, FnvBuildHasher>,
-    nodes: RoaringBitmap,
-}
-
-impl ClosureStorage {
-    fn new() -> Self {
-        Self {
-            inner: HashMap::with_hasher(FnvBuildHasher::default()),
-            nodes: RoaringBitmap::new(),
-        }
-    }
-
-    fn create_edge<T, U>(&mut self, edge: &Edge<T>, nodes: &mut NodeSlab<U>) {
-        let raw_index = edge.id.into_id().raw();
-
+impl Closures {
+    pub(crate) fn create_edge<T, U>(edge: &Edge<T>, nodes: &mut NodeSlab<U>) {
         let source = edge.source;
         let target = edge.target;
 
@@ -50,236 +24,102 @@ impl ClosureStorage {
             target.closures.insert_incoming_node(source);
             target.closures.insert_incoming_edge(edge.id);
         }
-
-        self.inner
-            .entry(Key::EndpointsToEdges(source, target))
-            .or_default()
-            .add(raw_index);
     }
 
-    fn remove_edge<T, U>(&mut self, edge: &Edge<T>, nodes: &mut NodeSlab<U>) {
-        todo!()
-        // let raw_index = edge.id.into_id().raw();
-        //
-        // let source = edge.source;
-        // let target = edge.target;
-        //
-        // let is_multi = self
-        //     .inner
-        //     .get(&Key::EndpointsToEdges(edge.source, edge.target))
-        //     .map_or(false, |bitmap| bitmap.cardinality() > 1);
-        //
-        // if let Some(source) = nodes.get_mut(source) {
-        //     if !is_multi {
-        //         source
-        //             .closures
-        //             .outgoing_nodes
-        //             .remove(target.into_id().raw());
-        //     }
-        //
-        //     source.closures.outgoing_edges.remove(raw_index);
-        // }
-        //
-        // if let Some(target) = nodes.get_mut(target) {
-        //     if !is_multi {
-        //         target
-        //             .closures
-        //             .incoming_nodes
-        //             .remove(source.into_id().raw());
-        //     }
-        //
-        //     target.closures.incoming_edges.remove(raw_index);
-        // }
-        //
-        // if let Some(edges) = self.inner.get_mut(&Key::EndpointsToEdges(source, target)) {
-        //     edges.remove(raw_index);
-        //
-        //     if edges.is_empty() {
-        //         self.inner.remove(&Key::EndpointsToEdges(source, target));
-        //     }
-        // }
+    fn has_multiple_edges<T, U>(edge: &Edge<T>, nodes: &NodeSlab<U>) -> bool {
+        let source = edge.source;
+        let target = edge.target;
+
+        let Some(source) = nodes.get(source) else {
+            return false;
+        };
+        let Some(target) = nodes.get(target) else {
+            return false;
+        };
+
+        // multi means more than one
+        let mut iter = source.closures.edges_between_directed(&target.closures);
+
+        // advance twice, instead of `.count()` this will be faster
+        if iter.next().is_some() {
+            iter.next().is_some()
+        } else {
+            false
+        }
     }
 
-    fn remove_node<T>(&mut self, node: Node<T>, nodes: &mut NodeSlab<T>) -> (NodeId, T) {
-        todo!()
-        // let raw_index = node.id.into_id().raw();
-        //
-        // let targets = node.closures.outgoing_nodes;
-        // for target in targets.iter() {
-        //     let target_id = NodeId::from_id(EntryId::new_unchecked(target));
-        //
-        //     let Some(target) = nodes.get_mut(target_id) else {
-        //         continue;
-        //     };
-        //
-        //     target.closures.incoming_nodes.remove(raw_index);
-        //
-        //     self.inner
-        //         .remove(&Key::EndpointsToEdges(node.id, target_id));
-        // }
-        //
-        // let sources = node.closures.incoming_nodes;
-        // for source in sources.iter() {
-        //     let source_id = NodeId::from_id(EntryId::new_unchecked(source));
-        //
-        //     let Some(source) = nodes.get_mut(source_id) else {
-        //         continue;
-        //     };
-        //
-        //     source.closures.outgoing_nodes.remove(raw_index);
-        //     self.inner
-        //         .remove(&Key::EndpointsToEdges(source_id, node.id));
-        // }
-        //
-        // (node.id, node.weight)
+    pub(crate) fn remove_edge<T, U>(edge: &Edge<T>, nodes: &mut NodeSlab<U>) {
+        let has_multiple = Self::has_multiple_edges(edge, nodes);
+
+        if let Some(source) = nodes.get_mut(edge.source) {
+            source.closures.remove_outgoing_edge(edge.id);
+
+            if !has_multiple {
+                source.closures.remove_outgoing_node(edge.target);
+            }
+        }
+
+        if let Some(target) = nodes.get_mut(edge.target) {
+            target.closures.remove_incoming_edge(edge.id);
+
+            if !has_multiple {
+                target.closures.remove_incoming_node(edge.source);
+            }
+        }
     }
 
-    fn clear<N>(&mut self, nodes: &mut NodeSlab<N>) {
-        self.inner.clear();
+    /// Removes the node from the graph.
+    ///
+    /// You must ensure that the node is not connected to any other node.
+    ///
+    /// (meaning you must call `remove_edge` for all edges connected to this node)
+    pub(crate) fn remove_node<T>(node: Node<T>, nodes: &mut NodeSlab<T>) -> (NodeId, T) {
+        let targets = node.closures.outgoing_nodes();
+        for target in targets {
+            let Some(target) = nodes.get_mut(target) else {
+                continue;
+            };
 
+            target.closures.remove_incoming_node(node.id);
+        }
+
+        let sources = node.closures.incoming_nodes();
+        for source in sources {
+            let Some(source) = nodes.get_mut(source) else {
+                continue;
+            };
+
+            source.closures.remove_outgoing_node(node.id);
+        }
+
+        (node.id, node.weight)
+    }
+
+    pub(crate) fn clear<N>(nodes: &mut NodeSlab<N>) {
         for node in nodes.iter_mut() {
             node.closures.clear();
         }
     }
 
-    fn refresh<N, E>(&mut self, nodes: &mut NodeSlab<N>, edges: &EdgeSlab<E>) {
-        self.clear(nodes);
+    pub(crate) fn refresh<N, E>(nodes: &mut NodeSlab<N>, edges: &EdgeSlab<E>) {
+        Self::clear(nodes);
 
         for edge in edges.iter() {
-            self.create_edge(edge, nodes);
+            Self::create_edge(edge, nodes);
         }
-    }
-
-    fn reserve(&mut self, additional: usize) {
-        self.inner.reserve(additional);
-    }
-
-    fn shrink_to_fit(&mut self) {
-        self.inner.shrink_to_fit();
-    }
-}
-
-pub(crate) struct EdgeClosure<'a> {
-    storage: &'a ClosureStorage,
-}
-
-impl<'a> EdgeClosure<'a> {
-    const fn new(storage: &'a ClosureStorage) -> Self {
-        Self { storage }
-    }
-
-    pub(crate) fn endpoints_to_edges(
-        &self,
-        source: NodeId,
-        target: NodeId,
-    ) -> impl Iterator<Item = EdgeId> + 'a {
-        let Some(bitmap) = self
-            .storage
-            .inner
-            .get(&Key::EndpointsToEdges(source, target))
-        else {
-            return Either::Left(core::iter::empty());
-        };
-
-        Either::Right(
-            bitmap
-                .iter()
-                .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
-        )
-    }
-
-    pub(crate) fn undirected_endpoints_to_edges(
-        &self,
-        source: NodeId,
-        target: NodeId,
-    ) -> impl Iterator<Item = EdgeId> + 'a {
-        let Some(source_to_targets) = self
-            .storage
-            .inner
-            .get(&Key::EndpointsToEdges(source, target))
-        else {
-            return Either::Left(core::iter::empty());
-        };
-
-        let Some(target_to_sources) = self
-            .storage
-            .inner
-            .get(&Key::EndpointsToEdges(target, source))
-        else {
-            return Either::Right(Either::Right(
-                source_to_targets
-                    .iter()
-                    .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
-            ));
-        };
-
-        Either::Right(Either::Left(
-            UnionIterator::new(source_to_targets, target_to_sources)
-                .map(|value| EdgeId::from_id(EntryId::new_unchecked(value))),
-        ))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Closures {
-    storage: ClosureStorage,
-}
-
-impl Closures {
-    pub(crate) fn new() -> Self {
-        Self {
-            storage: ClosureStorage::new(),
-        }
-    }
-
-    pub(crate) fn remove_node<T>(&mut self, node: Node<T>, nodes: &mut NodeSlab<T>) -> (NodeId, T) {
-        self.storage.remove_node(node, nodes)
-    }
-
-    pub(crate) const fn edges(&self) -> EdgeClosure<'_> {
-        EdgeClosure::new(&self.storage)
-    }
-
-    pub(crate) fn create_edge<T, U>(&mut self, edge: &Edge<T>, nodes: &mut NodeSlab<U>) {
-        self.storage.create_edge(edge, nodes);
-    }
-
-    pub(crate) fn remove_edge<T, U>(&mut self, edge: &Edge<T>, nodes: &mut NodeSlab<U>) {
-        self.storage.remove_edge(edge, nodes);
-    }
-
-    pub(crate) fn reserve(&mut self, additional: usize) {
-        self.storage.reserve(additional);
-    }
-
-    pub(crate) fn shrink_to_fit(&mut self) {
-        self.storage.shrink_to_fit();
-    }
-
-    pub(crate) fn refresh<N, E>(
-        &mut self,
-        nodes: &mut Slab<NodeId, Node<N>>,
-        edges: &Slab<EdgeId, Edge<E>>,
-    ) {
-        self.storage.refresh(nodes, edges);
-    }
-
-    pub(crate) fn clear<N>(&mut self, nodes: &mut NodeSlab<N>) {
-        self.storage.clear(nodes);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec::Vec;
     use core::iter::once;
 
     use hashbrown::{HashMap, HashSet};
-    use petgraph_core::{attributes::Attributes, edge::marker::Directed, GraphDirectionality};
-    use roaring::RoaringBitmap;
+    use petgraph_core::{
+        attributes::Attributes, edge::marker::Directed, GraphDirectionality, GraphStorage,
+    };
 
     use crate::{
-        closure::Key,
         slab::{EntryId, Key as _},
         DinoGraph, DinoStorage, EdgeId, NodeId,
     };
@@ -302,8 +142,8 @@ mod tests {
             let node = storage.nodes.get(id).expect("node not found");
 
             Self {
-                outgoing_neighbours: node.closures.outgoing_neighbours().collect(),
-                incoming_neighbours: node.closures.incoming_neighbours().collect(),
+                outgoing_neighbours: node.closures.outgoing_nodes().collect(),
+                incoming_neighbours: node.closures.incoming_nodes().collect(),
 
                 neighbours: node.closures.neighbours().collect(),
 
@@ -332,12 +172,12 @@ mod tests {
                 source_to_targets: storage
                     .nodes
                     .entries()
-                    .map(|(id, node)| (id, node.closures.outgoing_neighbours().collect()))
+                    .map(|(id, node)| (id, node.closures.outgoing_nodes().collect()))
                     .collect(),
                 target_to_sources: storage
                     .nodes
                     .entries()
-                    .map(|(id, node)| (id, node.closures.incoming_neighbours().collect()))
+                    .map(|(id, node)| (id, node.closures.incoming_nodes().collect()))
                     .collect(),
 
                 source_to_edges: storage
@@ -352,19 +192,21 @@ mod tests {
                     .collect(),
 
                 endpoints_to_edges: storage
-                    .closures
-                    .storage
-                    .inner
+                    .nodes
                     .iter()
-                    .filter_map(|(key, bitmap)| match key {
-                        Key::EndpointsToEdges(source, target) => Some((
-                            (*source, *target),
-                            bitmap
-                                .iter()
-                                .map(|id| EdgeId::from_id(EntryId::new_unchecked(id)))
+                    .flat_map(|source| {
+                        source.closures.outgoing_nodes().map(move |target| {
+                            (source, storage.nodes.get(target).expect("node available"))
+                        })
+                    })
+                    .map(|(source, target)| {
+                        (
+                            (source.id, target.id),
+                            source
+                                .closures
+                                .edges_between_directed(&target.closures)
                                 .collect::<HashSet<_>>(),
-                        )),
-                        _ => None,
+                        )
                     })
                     .collect(),
             }
@@ -392,8 +234,6 @@ mod tests {
 
         let node = graph.try_insert_node(1).unwrap();
         let id = *node.id();
-
-        let closures = &graph.storage().closures;
 
         assert_eq!(isolated(&graph), once(id).collect());
 

@@ -342,8 +342,6 @@ where
     nodes: Slab<NodeId, Node<N>>,
     edges: Slab<EdgeId, Edge<E>>,
 
-    closures: Closures,
-
     _marker: core::marker::PhantomData<fn() -> *const D>,
 }
 
@@ -448,8 +446,6 @@ where
             nodes: Slab::with_capacity(node_capacity),
             edges: Slab::with_capacity(edge_capacity),
 
-            closures: Closures::new(),
-
             _marker: core::marker::PhantomData,
         }
     }
@@ -480,13 +476,11 @@ where
         // TODO: what about nodes that are added or edges?
         //      We don't know their ID yet (need a way to get those -> PartialNode/Edge)
 
-        let mut closures = Closures::new();
-        closures.refresh(&mut nodes, &edges);
+        Closures::refresh(&mut nodes, &edges);
 
         Ok(Self {
             nodes,
             edges,
-            closures,
 
             _marker: core::marker::PhantomData,
         })
@@ -595,7 +589,7 @@ where
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
 
-        self.closures.create_edge(edge, &mut self.nodes);
+        Closures::create_edge(edge, &mut self.nodes);
 
         Ok(EdgeMut::new(
             &edge.id,
@@ -613,11 +607,11 @@ where
 
         for edge in node.closures.edges() {
             if let Some(edge) = self.edges.remove(edge) {
-                self.closures.remove_edge(&edge, &mut self.nodes);
+                Closures::remove_edge(&edge, &mut self.nodes);
             }
         }
 
-        let (id, weight) = self.closures.remove_node(node, &mut self.nodes);
+        let (id, weight) = Closures::remove_node(node, &mut self.nodes);
 
         Some(DetachedNode::new(id, weight))
     }
@@ -627,7 +621,7 @@ where
         id: &Self::EdgeId,
     ) -> Option<DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>> {
         let edge = self.edges.remove(*id)?;
-        self.closures.remove_edge(&edge, &mut self.nodes);
+        Closures::remove_edge(&edge, &mut self.nodes);
 
         Some(DetachedEdge::new(
             edge.id,
@@ -640,7 +634,7 @@ where
     fn clear(&mut self) {
         self.nodes.clear();
         self.edges.clear();
-        self.closures.clear(&mut self.nodes);
+        Closures::clear(&mut self.nodes);
     }
 
     fn node(&self, id: &Self::NodeId) -> Option<petgraph_core::node::Node<Self>> {
@@ -744,7 +738,7 @@ where
 
         // SAFETY: we never access the closure argument mutably, only the weight.
         // Therefore it is safe for us to access both at the same time.
-        let closure: &NodeClosures = unsafe { &*(&node.closures as *const _) };
+        let closure: &NodeClosures = unsafe { &*core::ptr::addr_of!(node.closures) };
         let neighbours = closure.neighbours();
 
         Either::Left(
@@ -794,21 +788,17 @@ where
 
     fn reserve_nodes(&mut self, additional: usize) {
         self.nodes.reserve(additional);
-        self.closures.reserve(additional);
     }
 
     fn reserve_edges(&mut self, additional: usize) {
         self.edges.reserve(additional);
-        self.closures.reserve(additional);
     }
 
     fn shrink_to_fit_nodes(&mut self) {
         self.nodes.shrink_to_fit();
-        self.closures.shrink_to_fit();
     }
 
     fn shrink_to_fit_edges(&mut self) {
         self.edges.shrink_to_fit();
-        self.closures.shrink_to_fit();
     }
 }

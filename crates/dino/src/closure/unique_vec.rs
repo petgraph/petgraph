@@ -20,6 +20,14 @@ where
         self.0.insert(index, node);
     }
 
+    pub(crate) fn remove(&mut self, node: &T) {
+        let Ok(index) = self.0.binary_search(node) else {
+            return;
+        };
+
+        self.0.remove(index);
+    }
+
     pub(crate) fn clear(&mut self) {
         self.0.clear();
     }
@@ -30,14 +38,6 @@ where
 
     pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
-    }
-
-    pub(crate) fn contains(&self, node: &T) -> bool {
-        self.0.binary_search(node).is_ok()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
     }
 }
 

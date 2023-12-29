@@ -73,8 +73,8 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
             .get(*id)
             .into_iter()
             .flat_map(move |node| match direction {
-                Direction::Incoming => Either::Left(node.closures.incoming_edges()),
-                Direction::Outgoing => Either::Right(node.closures.outgoing_edges()),
+                Direction::Incoming => node.closures.incoming_edges(),
+                Direction::Outgoing => node.closures.outgoing_edges(),
             });
 
         edges
@@ -91,8 +91,8 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
             .get(*id)
             .into_iter()
             .flat_map(move |node| match direction {
-                Direction::Incoming => Either::Left(node.closures.incoming_neighbours()),
-                Direction::Outgoing => Either::Right(node.closures.outgoing_neighbours()),
+                Direction::Incoming => node.closures.incoming_nodes(),
+                Direction::Outgoing => node.closures.outgoing_nodes(),
             })
             .filter_map(move |id| self.node(&id))
     }
@@ -108,10 +108,10 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
 
         // SAFETY: we never access the closure argument mutably, only the weight.
         // Therefore it is safe for us to access both at the same time.
-        let closure: &NodeClosures = unsafe { &*(&node.closures as *const _) };
+        let closure: &NodeClosures = unsafe { &*core::ptr::addr_of!(node.closures) };
         let neighbours = match direction {
-            Direction::Incoming => Either::Left(closure.incoming_neighbours()),
-            Direction::Outgoing => Either::Right(closure.outgoing_neighbours()),
+            Direction::Incoming => closure.incoming_nodes(),
+            Direction::Outgoing => closure.outgoing_nodes(),
         };
 
         Either::Left(
