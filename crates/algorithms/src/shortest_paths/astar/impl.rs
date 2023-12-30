@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use error_stack::{Report, Result};
 use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{
-    id::{AssociativeGraphId, AttributeMapper, FlaggableGraphId},
+    id::{AssociativeGraphId, AttributeMapper},
     Graph, GraphStorage, Node,
 };
 
@@ -23,7 +23,7 @@ use crate::shortest_paths::{
 pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + AssociativeGraphId<S>,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: Ord,
 {
@@ -46,7 +46,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + AssociativeGraphId<S>,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -59,8 +59,8 @@ where
         heuristic: &'parent H,
         connections: C,
 
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
 
         predecessor_mode: PredecessorMode,
     ) -> Result<Self, AStarError> {

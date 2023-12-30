@@ -292,7 +292,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.path_from(graph, target)?;
 
@@ -302,7 +302,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph <S as GraphStorage>::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
         ShortestPathFasterImpl::new(
             graph,
@@ -319,8 +319,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
@@ -361,7 +361,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.distance_from(graph, target)?;
 
@@ -371,7 +371,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph <S as GraphStorage>::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = ShortestPathFasterImpl::new(
             graph,
@@ -389,8 +389,8 @@ where
     fn distance_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
@@ -432,7 +432,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         ShortestPathFasterImpl::new(
             graph,
@@ -449,8 +449,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
@@ -491,7 +491,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph <S as GraphStorage>::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = ShortestPathFasterImpl::new(
             graph,
@@ -509,8 +509,8 @@ where
     fn distance_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,

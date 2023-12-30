@@ -2,7 +2,7 @@ use alloc::collections::BinaryHeap;
 use core::cmp::Ordering;
 
 use petgraph_core::{
-    id::{BooleanMapper, FlaggableGraphId},
+    id::{AssociativeGraphId, BooleanMapper},
     GraphStorage, Node,
 };
 
@@ -55,25 +55,25 @@ where
 pub(in crate::shortest_paths) struct PriorityQueue<'a, S, T>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S>,
+    S::NodeId: AssociativeGraphId<S>,
     T: Ord,
 {
     heap: BinaryHeap<PriorityQueueItem<'a, S, T>>,
 
-    flags: <S::NodeId as FlaggableGraphId<S>>::Store<'a>,
+    flags: <S::NodeId as AssociativeGraphId<S>>::BooleanMapper<'a>,
 }
 
 impl<'a, S, T> PriorityQueue<'a, S, T>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S>,
+    S::NodeId: AssociativeGraphId<S>,
     T: Ord,
 {
     #[inline]
     pub(in crate::shortest_paths) fn new(storage: &'a S) -> Self {
         Self {
             heap: BinaryHeap::new(),
-            flags: <S::NodeId as FlaggableGraphId<S>>::flag_store(storage),
+            flags: <S::NodeId as AssociativeGraphId<S>>::boolean_mapper(storage),
         }
     }
 
@@ -81,12 +81,12 @@ where
         self.heap.push(PriorityQueueItem { node, priority });
     }
 
-    pub(in crate::shortest_paths) fn visit(&mut self, id: &'a S::NodeId) {
+    pub(in crate::shortest_paths) fn visit(&mut self, id: S::NodeId) {
         self.flags.set(id, true);
     }
 
     #[inline]
-    pub(in crate::shortest_paths) fn has_been_visited(&self, id: &'a S::NodeId) -> bool {
+    pub(in crate::shortest_paths) fn has_been_visited(&self, id: S::NodeId) -> bool {
         self.flags.index(id)
     }
 

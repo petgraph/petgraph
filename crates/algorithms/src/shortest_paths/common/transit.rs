@@ -16,10 +16,13 @@ pub(in crate::shortest_paths) enum PredecessorMode {
     Record,
 }
 
-pub(in crate::shortest_paths) fn reconstruct_path_to<'a, S>(
-    predecessors: &<S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'a, Option<Node<'a, S>>>,
-    target: &'a S::NodeId,
-) -> Vec<Node<'a, S>>
+pub(in crate::shortest_paths) fn reconstruct_path_to<'graph, S>(
+    predecessors: &<S::NodeId as AssociativeGraphId<S>>::AttributeMapper<
+        'graph,
+        Option<Node<'graph, S>>,
+    >,
+    target: S::NodeId,
+) -> Vec<Node<'graph, S>>
 where
     S: GraphStorage,
     S::NodeId: AssociativeGraphId<S>,
@@ -54,8 +57,8 @@ where
 ///
 /// This has been adapted from the [NetworkX implementation](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/generic.py#L655)
 pub(in crate::shortest_paths) fn reconstruct_paths_between<'a, 'graph, S, H>(
-    predecessors: &'a HashMap<&'graph S::NodeId, Vec<Node<'graph, S>>, H>,
-    source: &'graph S::NodeId,
+    predecessors: &'a HashMap<S::NodeId, Vec<Node<'graph, S>>, H>,
+    source: S::NodeId,
     target: Node<'graph, S>,
 ) -> impl Iterator<Item = Vec<Node<'graph, S>>> + 'a
 where
@@ -92,9 +95,9 @@ where
                 return Some(path);
             }
 
-            if predecessors[node.id()].len() > index {
+            if predecessors[&node.id()].len() > index {
                 stack[top].1 = index + 1;
-                let next = predecessors[node.id()][index];
+                let next = predecessors[&node.id()][index];
                 if !seen.insert(next.id()) {
                     // value already seen
                     continue;

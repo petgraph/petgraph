@@ -167,7 +167,7 @@ fn build_graph(filename: &str) -> (NodeId, DiDinoGraph<Node, u128>) {
     let mut graph = DiDinoGraph::<Node, u128>::with_capacity(Some(nodes.len()), Some(edges.len()));
 
     for (id, x, y) in nodes {
-        let node_id = *graph.insert_node(Node { id, x, y }).id();
+        let node_id = graph.insert_node(Node { id, x, y }).id();
         lookup.insert(id, node_id);
 
         if source.is_none() {
@@ -179,7 +179,7 @@ fn build_graph(filename: &str) -> (NodeId, DiDinoGraph<Node, u128>) {
         let source = lookup[&source];
         let target = lookup[&target];
 
-        graph.insert_edge(weight, &source, &target);
+        graph.insert_edge(weight, source, target);
     }
 
     (source.expect("source available"), graph)
@@ -195,7 +195,7 @@ fn dijkstra(criterion: &mut Criterion) {
 
             bench.iter(|| {
                 for distances in dijkstra
-                    .distance_from(&graph, &source)
+                    .distance_from(&graph, source)
                     .expect("route available")
                 {
                     black_box(distances);

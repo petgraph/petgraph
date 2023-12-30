@@ -4,7 +4,7 @@ use core::mem;
 use error_stack::{Report, Result};
 use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{
-    id::{AssociativeGraphId, AttributeMapper, FlaggableGraphId},
+    id::{AssociativeGraphId, AttributeMapper},
     Graph, GraphStorage, Node,
 };
 
@@ -23,7 +23,7 @@ use crate::shortest_paths::{
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + AssociativeGraphId<S>,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -50,7 +50,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + AssociativeGraphId<S>,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -61,7 +61,7 @@ where
         edge_cost: &'parent E,
         connections: G,
 
-        source: &'graph S::NodeId,
+        source: S::NodeId,
 
         predecessor_mode: PredecessorMode,
     ) -> Result<Self, DijkstraError> {
@@ -99,7 +99,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + AssociativeGraphId<S>,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,

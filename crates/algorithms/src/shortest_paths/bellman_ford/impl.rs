@@ -94,16 +94,16 @@ where
     }
 }
 
-struct Heuristic<'graph, S>
+struct Heuristic<S>
 where
     S: GraphStorage,
 {
     enabled: bool,
-    recent_update: HashMap<&'graph S::NodeId, (&'graph S::NodeId, &'graph S::NodeId)>,
-    predecessor: HashMap<&'graph S::NodeId, &'graph S::NodeId>,
+    recent_update: HashMap<S::NodeId, (S::NodeId, S::NodeId)>,
+    predecessor: HashMap<S::NodeId, S::NodeId>,
 }
 
-impl<'graph, S> Heuristic<'graph, S>
+impl<S> Heuristic<S>
 where
     S: GraphStorage,
     S::NodeId: Eq + Hash,
@@ -118,9 +118,9 @@ where
 
     fn update(
         &mut self,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
-    ) -> core::result::Result<(), &'graph S::NodeId> {
+        source: S::NodeId,
+        target: S::NodeId,
+    ) -> core::result::Result<(), S::NodeId> {
         if !self.enabled {
             return Ok(());
         }
@@ -134,14 +134,14 @@ where
         // update) we know,
         // that we have a negative cycle
         // as the same node would be on the same path twice.
-        if let Some((u, v)) = self.recent_update.get(source) {
+        if let Some((u, v)) = self.recent_update.get(&source) {
             if target == *u || target == *v {
                 return Err(target);
             }
         }
 
-        if self.predecessor.get(target) == Some(&source) {
-            if let Some(previous) = self.recent_update.get(source) {
+        if self.predecessor.get(&target) == Some(&source) {
+            if let Some(previous) = self.recent_update.get(&source) {
                 self.recent_update.insert(target, *previous);
             }
         } else {
@@ -168,8 +168,8 @@ where
     candidate_order: CandidateOrder,
     negative_cycle_heuristics: bool,
 
-    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
-    predecessors: HashMap<&'graph S::NodeId, Vec<Node<'graph, S>>, FxBuildHasher>,
+    distances: HashMap<S::NodeId, E::Value, FxBuildHasher>,
+    predecessors: HashMap<S::NodeId, Vec<Node<'graph, S>>, FxBuildHasher>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterImpl<'graph, 'parent, S, E, G>
@@ -186,7 +186,7 @@ where
         edge_cost: &'parent E,
         connections: G,
 
-        source: &'graph S::NodeId,
+        source: S::NodeId,
 
         predecessor_mode: PredecessorMode,
         candidate_order: CandidateOrder,
@@ -226,10 +226,10 @@ where
     /// Inner Relaxation Loop for the Bellman-Ford algorithm, an implementation of SPFA.
     ///
     /// Based on [networkx](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/weighted.py#L1363)
-    fn relax(&mut self) -> core::result::Result<(), &'graph S::NodeId> {
+    fn relax(&mut self) -> core::result::Result<(), S::NodeId> {
         // we always need to record predecessors to be able to skip relaxations
         let mut queue = DoubleEndedQueue::new();
-        let mut heuristic: Heuristic<'graph, S> = Heuristic::new(self.negative_cycle_heuristics);
+        let mut heuristic: Heuristic<S> = Heuristic::new(self.negative_cycle_heuristics);
         let mut occurrences = HashMap::new();
         let num_nodes = self.graph.num_nodes();
 
@@ -239,10 +239,10 @@ where
             let (source, priority) = item.into_parts();
 
             // skip relaxations if any of the predecessors of node are in the queue
-            if let Some(predecessors) = self.predecessors.get(source.id()) {
+            if let Some(predecessors) = self.predecessors.get(&source.id()) {
                 if predecessors
                     .iter()
-                    .any(|node| queue.contains_node(node.id()))
+                    .any(|node| queue.contains_node(&node.id()))
                 {
                     continue;
                 }
@@ -256,7 +256,7 @@ where
 
                 let alternative = priority.add_ref(self.edge_cost.cost(edge).as_ref());
 
-                if let Some(distance) = self.distances.get(target.id()) {
+                if let Some(distance) = self.distances.get(&target.id()) {
                     if alternative == *distance {
                         self.predecessors
                             .entry(target.id())
@@ -325,8 +325,8 @@ where
         Ok(())
     }
 
-    pub(crate) fn between(mut self, target: &S::NodeId) -> Option<Route<'graph, S, E::Value>> {
-        let cost = self.distances.remove(target)?;
+    pub(crate) fn between(mut self, target: S::NodeId) -> Option<Route<'graph, S, E::Value>> {
+        let cost = self.distances.remove(&target)?;
         let target = self.graph.node(target)?;
 
         let transit = if self.predecessor_mode == PredecessorMode::Record {
