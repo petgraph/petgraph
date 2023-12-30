@@ -4,5 +4,6 @@ use crate::slab::id::EntryId;
 
 pub trait Key: Debug + Copy + Clone + PartialEq + Eq + PartialOrd + Ord + Hash {
     fn from_id(id: EntryId) -> Self;
+
     fn into_id(self) -> EntryId;
 }

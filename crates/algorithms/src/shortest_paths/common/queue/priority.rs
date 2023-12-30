@@ -6,18 +6,14 @@ use petgraph_core::{
     GraphStorage, Node,
 };
 
-pub(in crate::shortest_paths) struct PriorityQueueItem<'a, S, T>
-where
-    S: GraphStorage,
-{
-    pub(in crate::shortest_paths) node: Node<'a, S>,
+pub(in crate::shortest_paths) struct PriorityQueueItem<I, T> {
+    pub(in crate::shortest_paths) node: I,
 
     pub(in crate::shortest_paths) priority: T,
 }
 
-impl<S, T> PartialEq for PriorityQueueItem<'_, S, T>
+impl<I, T> PartialEq for PriorityQueueItem<I, T>
 where
-    S: GraphStorage,
     T: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -25,16 +21,10 @@ where
     }
 }
 
-impl<S, T> Eq for PriorityQueueItem<'_, S, T>
-where
-    S: GraphStorage,
-    T: Eq,
-{
-}
+impl<I, T> Eq for PriorityQueueItem<I, T> where T: Eq {}
 
-impl<S, T> PartialOrd for PriorityQueueItem<'_, S, T>
+impl<I, T> PartialOrd for PriorityQueueItem<I, T>
 where
-    S: GraphStorage,
     T: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -42,9 +32,8 @@ where
     }
 }
 
-impl<S, T> Ord for PriorityQueueItem<'_, S, T>
+impl<I, T> Ord for PriorityQueueItem<I, T>
 where
-    S: GraphStorage,
     T: Ord,
 {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -54,11 +43,11 @@ where
 
 pub(in crate::shortest_paths) struct PriorityQueue<'a, S, T>
 where
-    S: GraphStorage,
+    S: GraphStorage + 'a,
     S::NodeId: AssociativeGraphId<S>,
     T: Ord,
 {
-    heap: BinaryHeap<PriorityQueueItem<'a, S, T>>,
+    heap: BinaryHeap<PriorityQueueItem<S::NodeId, T>>,
 
     flags: <S::NodeId as AssociativeGraphId<S>>::BooleanMapper<'a>,
 }
@@ -77,7 +66,7 @@ where
         }
     }
 
-    pub(in crate::shortest_paths) fn push(&mut self, node: Node<'a, S>, priority: T) {
+    pub(in crate::shortest_paths) fn push(&mut self, node: S::NodeId, priority: T) {
         self.heap.push(PriorityQueueItem { node, priority });
     }
 
@@ -91,8 +80,8 @@ where
     }
 
     #[inline]
-    pub(in crate::shortest_paths) fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
-        if self.has_been_visited(node.id()) {
+    pub(in crate::shortest_paths) fn decrease_priority(&mut self, node: S::NodeId, priority: T) {
+        if self.has_been_visited(node) {
             return;
         }
 
@@ -100,15 +89,15 @@ where
     }
 
     #[inline]
-    pub(in crate::shortest_paths) fn pop_min(&mut self) -> Option<PriorityQueueItem<'a, S, T>> {
+    pub(in crate::shortest_paths) fn pop_min(&mut self) -> Option<PriorityQueueItem<S::NodeId, T>> {
         loop {
             let item = self.heap.pop()?;
 
-            if self.has_been_visited(item.node.id()) {
+            if self.has_been_visited(item.node) {
                 continue;
             }
 
-            self.visit(item.node.id());
+            self.visit(item.node);
             return Some(item);
         }
     }

@@ -49,10 +49,12 @@ impl Display for NodeId {
 }
 
 impl Key for NodeId {
+    #[inline]
     fn from_id(id: EntryId) -> Self {
         Self(id)
     }
 
+    #[inline]
     fn into_id(self) -> EntryId {
         self.0
     }

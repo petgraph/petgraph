@@ -21,7 +21,10 @@ where
         let iter = self.iter.as_mut()?;
 
         loop {
-            let id = iter.next()?;
+            let Some(id) = iter.next() else {
+                self.iter = None;
+                return None;
+            };
 
             let Some(edge) = self.storage.edges.get_unchecked(id) else {
                 continue;

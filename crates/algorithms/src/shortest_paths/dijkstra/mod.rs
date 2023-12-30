@@ -19,14 +19,13 @@ use self::iter::DijkstraIter;
 pub use self::{error::DijkstraError, measure::DijkstraMeasure};
 use super::{
     common::{
-        connections::outgoing_connections,
         cost::{DefaultCost, GraphCost},
         route::{DirectRoute, Route},
         transit::PredecessorMode,
     },
     ShortestDistance, ShortestPath,
 };
-use crate::polyfill::IteratorExt;
+use crate::{polyfill::IteratorExt, shortest_paths::common::connections::NodeConnections};
 
 /// An implementation of Dijkstra's shortest path algorithm.
 ///
@@ -200,7 +199,7 @@ where
         DijkstraIter::new(
             graph,
             &self.edge_cost,
-            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::undirected(graph.storage()),
             source,
             PredecessorMode::Record,
         )
@@ -237,7 +236,7 @@ where
         DijkstraIter::new(
             graph,
             &self.edge_cost,
-            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::directed(graph.storage()),
             source,
             PredecessorMode::Record,
         )
@@ -284,7 +283,7 @@ where
         let iter = DijkstraIter::new(
             graph,
             &self.edge_cost,
-            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::undirected(graph.storage()),
             source,
             PredecessorMode::Discard,
         )?;
@@ -323,7 +322,7 @@ where
         let iter = DijkstraIter::new(
             graph,
             &self.edge_cost,
-            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::directed(graph.storage()),
             source,
             PredecessorMode::Discard,
         )?;

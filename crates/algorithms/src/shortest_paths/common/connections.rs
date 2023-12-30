@@ -1,27 +1,68 @@
-use petgraph_core::{edge::Direction, DirectedGraphStorage, Edge, GraphStorage, Node};
+use core::marker::PhantomData;
 
-pub(in crate::shortest_paths) fn outgoing_connections<'a, S>(
-    node: &Node<'a, S>,
-) -> impl Iterator<Item = Edge<'a, S>> + 'a
+use petgraph_core::{
+    edge::{
+        marker::{Directed, Undirected},
+        Direction,
+    },
+    DirectedGraphStorage, Edge, GraphDirectionality, GraphStorage,
+};
+
+pub(in crate::shortest_paths) struct NodeConnections<'graph, S, D>
 where
-    S: DirectedGraphStorage,
+    S: GraphStorage,
+    D: GraphDirectionality,
 {
-    node.directed_connections(Direction::Outgoing)
+    storage: &'graph S,
+    _marker: PhantomData<fn() -> *const D>,
+}
+
+impl<'graph, S> NodeConnections<'graph, S, Directed>
+where
+    S: GraphStorage,
+{
+    pub(in crate::shortest_paths) fn directed(storage: &'graph S) -> Self {
+        Self {
+            storage,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<'graph, S> NodeConnections<'graph, S, Undirected>
+where
+    S: GraphStorage,
+{
+    pub(in crate::shortest_paths) fn undirected(storage: &'graph S) -> Self {
+        Self {
+            storage,
+            _marker: PhantomData,
+        }
+    }
 }
 
 pub(in crate::shortest_paths) trait Connections<'a, S>
 where
-    S: GraphStorage,
+    S: GraphStorage + 'a,
 {
-    fn connections(&self, node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a;
+    fn connections(&self, node: S::NodeId) -> impl Iterator<Item = Edge<'a, S>> + 'a;
 }
 
-impl<'a, S, I> Connections<'a, S> for fn(&Node<'a, S>) -> I
+impl<'graph, S> Connections<'graph, S> for NodeConnections<'graph, S, Directed>
+where
+    S: DirectedGraphStorage,
+{
+    fn connections(&self, node: S::NodeId) -> impl Iterator<Item = Edge<'graph, S>> + 'graph {
+        self.storage
+            .node_directed_connections(node, Direction::Outgoing)
+    }
+}
+
+impl<'graph, S> Connections<'graph, S> for NodeConnections<'graph, S, Undirected>
 where
     S: GraphStorage,
-    I: Iterator<Item = Edge<'a, S>> + 'a,
 {
-    fn connections(&self, node: &Node<'a, S>) -> impl Iterator<Item = Edge<'a, S>> + 'a {
-        (*self)(node)
+    fn connections(&self, node: S::NodeId) -> impl Iterator<Item = Edge<'graph, S>> + 'graph {
+        self.storage.node_connections(node)
     }
 }

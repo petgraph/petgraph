@@ -38,13 +38,12 @@ where
     num_nodes: usize,
 
     init: bool,
-    next: Option<PriorityQueueItem<'graph, S, E::Value>>,
+    next: Option<PriorityQueueItem<S::NodeId, E::Value>>,
 
     predecessor_mode: PredecessorMode,
 
     distances: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, E::Value>,
-    predecessors:
-        <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, Option<Node<'graph, S>>>,
+    predecessors: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, Option<S::NodeId>>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
@@ -112,7 +111,7 @@ where
         if self.init {
             self.init = false;
             self.next = Some(PriorityQueueItem {
-                node: self.source,
+                node: self.source.id(),
                 priority: E::Value::zero(),
             });
             self.queue.visit(self.source.id());
@@ -130,10 +129,10 @@ where
             priority: cost,
         } = mem::take(&mut self.next)?;
 
-        let connections = self.connections.connections(&node);
+        let connections = self.connections.connections(node);
         for edge in connections {
             let (u, v) = edge.endpoint_ids();
-            let target = if u == node.id() { v } else { u };
+            let target = if u == node { v } else { u };
 
             // do not pursue edges that have already been processed.
             if self.queue.has_been_visited(target) {
@@ -159,9 +158,9 @@ where
                 self.predecessors.set(target, Some(node));
             }
 
-            if let Some(target) = self.graph.node(target) {
-                self.queue.decrease_priority(target, alternative);
-            }
+            // if let Some(target) = self.graph.node(target) {
+            self.queue.decrease_priority(target, alternative);
+            // }
         }
 
         // this is what makes this special: instead of getting the next node as the start of next
@@ -194,8 +193,13 @@ where
         let transit = if self.predecessor_mode == PredecessorMode::Discard {
             Vec::new()
         } else {
-            reconstruct_path_to(&self.predecessors, node.id())
+            reconstruct_path_to::<S>(&self.predecessors, node)
+                .into_iter()
+                .filter_map(|id| self.graph.node(id))
+                .collect()
         };
+
+        let node = self.graph.node(node)?;
 
         Some(Route::new(
             Path::new(self.source, transit, node),
