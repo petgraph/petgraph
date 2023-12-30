@@ -4,7 +4,7 @@ use core::mem;
 use error_stack::{Report, Result};
 use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{
-    id::{AttributeGraphId, AttributeStorage, FlaggableGraphId},
+    id::{AssociativeGraphId, AttributeMapper, FlaggableGraphId},
     Graph, GraphStorage, Node,
 };
 
@@ -23,7 +23,7 @@ use crate::shortest_paths::{
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -42,14 +42,15 @@ where
 
     predecessor_mode: PredecessorMode,
 
-    distances: <S::NodeId as AttributeGraphId<S>>::Store<'graph, E::Value>,
-    predecessors: <S::NodeId as AttributeGraphId<S>>::Store<'graph, Option<Node<'graph, S>>>,
+    distances: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, E::Value>,
+    predecessors:
+        <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, Option<Node<'graph, S>>>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -70,10 +71,11 @@ where
 
         let queue = PriorityQueue::new(graph.storage());
 
-        let mut distances = <S::NodeId as AttributeGraphId<S>>::attribute_store(graph.storage());
+        let mut distances = <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
         distances.set(source, E::Value::zero());
 
-        let mut predecessors = <S::NodeId as AttributeGraphId<S>>::attribute_store(graph.storage());
+        let mut predecessors =
+            <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
         if predecessor_mode == PredecessorMode::Record {
             predecessors.set(source, None);
         }
@@ -97,7 +99,7 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: FlaggableGraphId<S> + AttributeGraphId<S>,
+    S::NodeId: FlaggableGraphId<S> + AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,

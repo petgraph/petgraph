@@ -3,7 +3,7 @@ use core::iter;
 
 use bitvec::{boxed::BitBox, prelude::BitVec};
 use numi::borrow::Moo;
-use petgraph_core::id::{AttributeStorage, FlagStorage};
+use petgraph_core::id::{AttributeMapper, BooleanMapper};
 
 use crate::slab::{EntryId, Generation, Key, Slab};
 
@@ -26,7 +26,7 @@ impl<'a> SlabFlagStorage<'a> {
     }
 }
 
-impl<Id> FlagStorage<Id> for SlabFlagStorage<'_>
+impl<Id> BooleanMapper<Id> for SlabFlagStorage<'_>
 where
     Id: Key,
 {
@@ -103,7 +103,7 @@ impl<'a, K, T> SlabAttributeStorage<'a, K, T> {
     }
 }
 
-impl<K, T> AttributeStorage<K, T> for SlabAttributeStorage<'_, K, T>
+impl<K, T> AttributeMapper<K, T> for SlabAttributeStorage<'_, K, T>
 where
     K: Key,
 {

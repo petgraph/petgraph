@@ -136,7 +136,7 @@ mod tests {
         ArbitraryGraphId, GraphId, ManagedGraphId,
     };
 
-    #[derive(PartialEq)]
+    #[derive(Debug, Copy, Clone, PartialEq)]
     struct Managed(usize);
 
     impl GraphId for Managed {
@@ -145,17 +145,17 @@ mod tests {
 
     impl ManagedGraphId for Managed {}
 
-    #[derive(PartialEq)]
+    #[derive(Debug, Copy, Clone, PartialEq)]
     struct Arbitrary<V>(V);
 
     impl<V> GraphId for Arbitrary<V>
     where
-        V: PartialEq,
+        V: Debug + Copy + Clone + PartialEq,
     {
         type AttributeIndex = Self;
     }
 
-    impl<V> ArbitraryGraphId for Arbitrary<V> where V: PartialEq {}
+    impl<V> ArbitraryGraphId for Arbitrary<V> where V: Debug + Copy + Clone + PartialEq {}
 
     impl<T> From<T> for Arbitrary<T> {
         fn from(value: T) -> Self {

@@ -3,7 +3,7 @@ use core::fmt::{Display, Formatter};
 use petgraph_core::{
     attributes::NoValue,
     edge::marker::GraphDirectionality,
-    id::{AttributeGraphId, FlaggableGraphId, GraphId, LinearGraphId, ManagedGraphId},
+    id::{AssociativeGraphId, FlaggableGraphId, GraphId, LinearGraphId, ManagedGraphId},
 };
 
 use crate::{
@@ -83,13 +83,13 @@ where
     }
 }
 
-impl<N, E, D> AttributeGraphId<DinoStorage<N, E, D>> for EdgeId
+impl<N, E, D> AssociativeGraphId<DinoStorage<N, E, D>> for EdgeId
 where
     D: GraphDirectionality,
 {
-    type Store<'a, V> = SlabAttributeStorage<'a, Self, V> where DinoStorage<N, E, D>: 'a;
+    type AttributeMapper<'a, V> = SlabAttributeStorage<'a, Self, V> where DinoStorage<N, E, D>: 'a;
 
-    fn attribute_store<V>(storage: &DinoStorage<N, E, D>) -> Self::Store<'_, V> {
+    fn attribute_mapper<V>(storage: &DinoStorage<N, E, D>) -> Self::AttributeMapper<'_, V> {
         SlabAttributeStorage::new(&storage.edges)
     }
 }

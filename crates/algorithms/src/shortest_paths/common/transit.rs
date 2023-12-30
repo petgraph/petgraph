@@ -6,7 +6,7 @@ use core::{
 
 use hashbrown::{HashMap, HashSet};
 use petgraph_core::{
-    id::{AttributeGraphId, AttributeStorage},
+    id::{AssociativeGraphId, AttributeMapper},
     GraphStorage, Node,
 };
 
@@ -17,12 +17,12 @@ pub(in crate::shortest_paths) enum PredecessorMode {
 }
 
 pub(in crate::shortest_paths) fn reconstruct_path_to<'a, S>(
-    predecessors: &<S::NodeId as AttributeGraphId<S>>::Store<'a, Option<Node<'a, S>>>,
+    predecessors: &<S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'a, Option<Node<'a, S>>>,
     target: &'a S::NodeId,
 ) -> Vec<Node<'a, S>>
 where
     S: GraphStorage,
-    S::NodeId: AttributeGraphId<S>,
+    S::NodeId: AssociativeGraphId<S>,
 {
     let mut current = target;
 

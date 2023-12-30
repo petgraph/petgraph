@@ -2,7 +2,7 @@ use alloc::collections::BinaryHeap;
 use core::cmp::Ordering;
 
 use petgraph_core::{
-    id::{FlagStorage, FlaggableGraphId},
+    id::{BooleanMapper, FlaggableGraphId},
     GraphStorage, Node,
 };
 

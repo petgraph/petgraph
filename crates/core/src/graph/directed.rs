@@ -44,11 +44,11 @@ where
     ///     [(ba, u8::MAX - 1)].into_iter().collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn directed_edges_between<'a: 'b, 'b>(
-        &'a self,
-        source: &'b S::NodeId,
-        target: &'b S::NodeId,
-    ) -> impl Iterator<Item = Edge<'a, S>> + 'b {
+    pub fn directed_edges_between(
+        &self,
+        source: S::NodeId,
+        target: S::NodeId,
+    ) -> impl Iterator<Item = Edge<'_, S>> {
         self.storage.directed_edges_between(source, target)
     }
 
@@ -87,11 +87,11 @@ where
     ///         .collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn directed_edges_between_mut<'a: 'b, 'b>(
-        &'a mut self,
-        source: &'b S::NodeId,
-        target: &'b S::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'a, S>> + 'b {
+    pub fn directed_edges_between_mut(
+        &mut self,
+        source: S::NodeId,
+        target: S::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'_, S>> {
         self.storage.directed_edges_between_mut(source, target)
     }
 
@@ -106,11 +106,11 @@ where
     /// This is an alias for [`Self::neighbours_directed`], due to spelling differences between
     /// American and British English.
     #[inline]
-    pub fn neighbors_directed<'a: 'b, 'b>(
-        &'a self,
-        id: &'b S::NodeId,
+    pub fn neighbors_directed(
+        &self,
+        id: S::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = Node<'a, S>> + 'b {
+    ) -> impl Iterator<Item = Node<'_, S>> {
         self.neighbours_directed(id, direction)
     }
 
@@ -154,11 +154,11 @@ where
     ///     [a].into_iter().collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn neighbours_directed<'a: 'b, 'b>(
-        &'a self,
-        id: &'b S::NodeId,
+    pub fn neighbours_directed(
+        &self,
+        id: S::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = Node<'a, S>> + 'b {
+    ) -> impl Iterator<Item = Node<'_, S>> {
         self.storage.node_directed_neighbours(id, direction)
     }
 
@@ -174,11 +174,11 @@ where
     /// This is an alias for [`Self::neighbours_directed_mut`], due to spelling differences between
     /// American and British English.
     #[inline]
-    pub fn neighbors_directed_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b S::NodeId,
+    pub fn neighbors_directed_mut(
+        &mut self,
+        id: S::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = NodeMut<'a, S>> + 'b {
+    ) -> impl Iterator<Item = NodeMut<'_, S>> {
         self.neighbours_directed_mut(id, direction)
     }
 
@@ -219,11 +219,11 @@ where
     ///     [(a, 1), (b, 1), (c, 3)].into_iter().collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn neighbours_directed_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b S::NodeId,
+    pub fn neighbours_directed_mut(
+        &mut self,
+        id: S::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = NodeMut<'a, S>> + 'b {
+    ) -> impl Iterator<Item = NodeMut<'_, S>> {
         self.storage.node_directed_neighbours_mut(id, direction)
     }
 
@@ -261,11 +261,11 @@ where
     ///         .collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn connections_directed<'a: 'b, 'b>(
-        &'a self,
-        id: &'b S::NodeId,
+    pub fn connections_directed(
+        &self,
+        id: S::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = Edge<'a, S>> + 'b {
+    ) -> impl Iterator<Item = Edge<'_, S>> {
         self.storage.node_directed_connections(id, direction)
     }
 
@@ -308,11 +308,11 @@ where
     ///         .collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn connections_directed_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b S::NodeId,
+    pub fn connections_directed_mut(
+        &mut self,
+        id: S::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = EdgeMut<'a, S>> + 'b {
+    ) -> impl Iterator<Item = EdgeMut<'_, S>> {
         self.storage.node_directed_connections_mut(id, direction)
     }
 

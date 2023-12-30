@@ -7,13 +7,14 @@
 //! exclusive and define if a node or edge id will be automatically assigned by the graph (are
 //! managed) and a user has no control over their value or are arbitrary, allowing the user to use
 //! _any_ value.
-mod attributes;
-mod flag;
+mod associative;
+
 mod linear;
 
+use core::fmt::Debug;
+
 pub use self::{
-    attributes::{AttributeGraphId, AttributeStorage},
-    flag::{FlagStorage, FlaggableGraphId},
+    associative::{AssociativeGraphId, AttributeMapper, BooleanMapper},
     linear::{IndexMapper, LinearGraphId},
 };
 use crate::attributes::NoValue;
@@ -28,7 +29,7 @@ use crate::attributes::NoValue;
 /// This trait is implemented for all types that are used as node or edge identifiers in the graph.
 /// A type should never only implement this trait, but also [`ManagedGraphId`] or
 /// [`ArbitraryGraphId`].
-pub trait GraphId: PartialEq {
+pub trait GraphId: Debug + Copy + Clone + PartialEq {
     /// The type of value used to index attributes.
     ///
     /// Used to differentiate between [`ManagedGraphId`] and [`ArbitraryGraphId`] and to allow for

@@ -53,7 +53,7 @@ where
 {
     storage: &'a S,
 
-    id: &'a S::NodeId,
+    id: S::NodeId,
     weight: &'a S::NodeWeight,
 }
 
@@ -123,7 +123,6 @@ impl<S> Copy for Node<'_, S> where S: GraphStorage {}
 impl<S> Debug for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Debug,
     S::NodeWeight: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -169,7 +168,7 @@ where
     /// ```
     ///
     /// [`Graph::node`]: crate::graph::Graph::node
-    pub const fn new(storage: &'a S, id: &'a S::NodeId, weight: &'a S::NodeWeight) -> Self {
+    pub const fn new(storage: &'a S, id: S::NodeId, weight: &'a S::NodeWeight) -> Self {
         Self {
             storage,
             id,
@@ -198,7 +197,7 @@ where
     /// assert_eq!(node.id(), &a);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> &'a S::NodeId {
+    pub const fn id(&self) -> S::NodeId {
         self.id
     }
 
@@ -411,7 +410,6 @@ where
 impl<S> Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Clone,
     S::NodeWeight: Clone,
 {
     /// Detaches the node from the graph.
@@ -445,7 +443,7 @@ where
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
     pub fn detach(self) -> DetachedNode<S::NodeId, S::NodeWeight> {
-        DetachedNode::new(self.id.clone(), self.weight.clone())
+        DetachedNode::new(self.id, self.weight.clone())
     }
 }
 
@@ -476,7 +474,7 @@ pub struct NodeMut<'a, S>
 where
     S: GraphStorage,
 {
-    id: &'a S::NodeId,
+    id: S::NodeId,
 
     weight: &'a mut S::NodeWeight,
 }
@@ -500,7 +498,7 @@ where
     ///
     /// [`Graph::node_mut`]: crate::graph::Graph::node_mut
     /// [`Graph::insert_node`]: crate::graph::Graph::insert_node
-    pub fn new(id: &'a S::NodeId, weight: &'a mut S::NodeWeight) -> Self {
+    pub fn new(id: S::NodeId, weight: &'a mut S::NodeWeight) -> Self {
         Self { id, weight }
     }
 
@@ -525,7 +523,7 @@ where
     /// assert_eq!(node.id(), &a);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> &'a S::NodeId {
+    pub const fn id(&self) -> S::NodeId {
         self.id
     }
 
@@ -576,7 +574,6 @@ where
 impl<S> NodeMut<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Clone,
     S::NodeWeight: Clone,
 {
     /// Detaches the node from the graph.
@@ -611,7 +608,7 @@ where
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
     pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
-        DetachedNode::new(self.id.clone(), self.weight.clone())
+        DetachedNode::new(self.id, self.weight.clone())
     }
 }
 
