@@ -50,8 +50,8 @@
 //! assert!(path.is_none());
 //! ```
 
-// pub mod astar;
-// pub mod bellman_ford;
+pub mod astar;
+pub mod bellman_ford;
 mod common;
 pub mod dijkstra;
 pub mod floyd_warshall;
@@ -60,8 +60,8 @@ use error_stack::{Context, Result};
 use petgraph_core::{Graph, GraphStorage};
 
 pub use self::{
-    // astar::AStar,
-    // bellman_ford::BellmanFord,
+    astar::AStar,
+    bellman_ford::BellmanFord,
     common::{
         cost::{Cost, GraphCost},
         path::Path,
@@ -242,7 +242,7 @@ where
         self.every_distance(graph)
             .ok()?
             .find(move |route| route.source().id() == source && route.target().id() == target)
-            .map(|route| route.into_cost())
+            .map(DirectRoute::into_cost)
     }
 
     /// Returns an iterator over all shortest distances in the graph.

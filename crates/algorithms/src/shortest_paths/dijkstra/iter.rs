@@ -193,6 +193,7 @@ where
         let transit = if self.predecessor_mode == PredecessorMode::Discard {
             Vec::new()
         } else {
+            // TODO: cache via dedicated structure
             reconstruct_path_to::<S>(&self.predecessors, node)
                 .into_iter()
                 .filter_map(|id| self.graph.node(id))

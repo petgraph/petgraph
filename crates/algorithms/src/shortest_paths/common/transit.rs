@@ -110,13 +110,12 @@ where
             } else {
                 seen.remove(&node.id());
 
-                match top.checked_sub(1) {
-                    Some(new_top) => top = new_top,
-                    None => {
-                        // we have exhausted all paths
-                        exhausted = true;
-                        break;
-                    }
+                if let Some(new_top) = top.checked_sub(1) {
+                    top = new_top;
+                } else {
+                    // we have exhausted all paths
+                    exhausted = true;
+                    break;
                 }
             }
 

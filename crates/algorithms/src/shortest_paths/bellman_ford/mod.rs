@@ -11,20 +11,19 @@ use core::hash::Hash;
 use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
-    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
+    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
 use self::r#impl::ShortestPathFasterImpl;
 pub use self::{error::BellmanFordError, measure::BellmanFordMeasure};
 use super::{
     common::{
-        connections::outgoing_connections,
         cost::{DefaultCost, GraphCost},
         transit::PredecessorMode,
     },
     Cost, DirectRoute, Route, ShortestDistance, ShortestPath,
 };
-use crate::polyfill::IteratorExt;
+use crate::{polyfill::IteratorExt, shortest_paths::common::connections::NodeConnections};
 
 /// The order in which candidates are inserted into the queue.
 ///
@@ -230,6 +229,7 @@ where
     /// let path = algorithm.path_between(&graph, &a, &b);
     /// assert!(path.is_some());
     /// ```
+    #[must_use]
     pub fn with_candidate_order(self, candidate_order: CandidateOrder) -> Self {
         Self {
             direction: self.direction,
@@ -269,6 +269,7 @@ where
     /// let path = algorithm.path_between(&graph, &a, &b);
     /// assert!(path.is_some());
     /// ```
+    #[must_use]
     pub fn with_negative_cycle_heuristics(self, negative_cycle_heuristics: bool) -> Self {
         Self {
             direction: self.direction,
@@ -307,7 +308,7 @@ where
         ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
-            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::undirected(graph.storage()),
             source,
             PredecessorMode::Record,
             self.candidate_order,
@@ -325,7 +326,7 @@ where
         ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
-            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::undirected(graph.storage()),
             source,
             PredecessorMode::Record,
             self.candidate_order,
@@ -376,7 +377,7 @@ where
         let iter = ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
-            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::undirected(graph.storage()),
             source,
             PredecessorMode::Discard,
             self.candidate_order,
@@ -386,16 +387,16 @@ where
         Ok(iter.all().map(Into::into))
     }
 
-    fn distance_between<'graph>(
+    fn distance_between(
         &self,
-        graph: &'graph Graph<S>,
+        graph: &Graph<S>,
         source: S::NodeId,
         target: S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
-            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::undirected(graph.storage()),
             source,
             PredecessorMode::Discard,
             self.candidate_order,
@@ -437,7 +438,7 @@ where
         ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
-            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::directed(graph.storage()),
             source,
             PredecessorMode::Record,
             self.candidate_order,
@@ -455,7 +456,7 @@ where
         ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
-            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::directed(graph.storage()),
             source,
             PredecessorMode::Record,
             self.candidate_order,
@@ -496,7 +497,7 @@ where
         let iter = ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
-            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::directed(graph.storage()),
             source,
             PredecessorMode::Discard,
             self.candidate_order,
@@ -506,16 +507,16 @@ where
         Ok(iter.all().map(Into::into))
     }
 
-    fn distance_between<'graph>(
+    fn distance_between(
         &self,
-        graph: &'graph Graph<S>,
+        graph: &Graph<S>,
         source: S::NodeId,
         target: S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
             &self.edge_cost,
-            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::directed(graph.storage()),
             source,
             PredecessorMode::Discard,
             self.candidate_order,

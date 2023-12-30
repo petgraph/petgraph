@@ -65,7 +65,7 @@ macro_rules! graph {
         $graph:ident; $output:ident; $name:ident[$($id:ident : $attr:expr),* $(,)?]
     ) => {
         let $output = $name {
-            $($id: *$graph.insert_node($attr).id(),)*
+            $($id: $graph.insert_node($attr).id(),)*
         };
     };
 
@@ -73,17 +73,17 @@ macro_rules! graph {
         @insert: edge
         $graph:ident; $nodes:ident; $source:ident; $target:ident; $attr:expr
     ) => {
-        *$graph.insert_edge($attr, &$nodes.$source, &$nodes.$target).id()
+        $graph.insert_edge($attr, $nodes.$source, $nodes.$target).id()
     };
 
     (
         @insert: edge
         $graph:ident; $nodes:ident; $source:ident; $target:ident; @{ $attr:expr }
     ) => {{
-        let $source = $graph.node(&$nodes.$source).unwrap().weight();
-        let $target = $graph.node(&$nodes.$target).unwrap().weight();
+        let $source = $graph.node($nodes.$source).unwrap().weight();
+        let $target = $graph.node($nodes.$target).unwrap().weight();
 
-        *$graph.insert_edge($attr, &$nodes.$source, &$nodes.$target).id()
+        $graph.insert_edge($attr, $nodes.$source, $nodes.$target).id()
     }};
 
     (

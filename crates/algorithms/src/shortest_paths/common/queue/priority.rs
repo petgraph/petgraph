@@ -3,7 +3,7 @@ use core::cmp::Ordering;
 
 use petgraph_core::{
     id::{AssociativeGraphId, BooleanMapper},
-    GraphStorage, Node,
+    GraphStorage,
 };
 
 pub(in crate::shortest_paths) struct PriorityQueueItem<I, T> {
@@ -48,6 +48,7 @@ where
     T: Ord,
 {
     heap: BinaryHeap<PriorityQueueItem<S::NodeId, T>>,
+    pub(crate) check_admissibility: bool,
 
     flags: <S::NodeId as AssociativeGraphId<S>>::BooleanMapper<'a>,
 }
@@ -62,6 +63,7 @@ where
     pub(in crate::shortest_paths) fn new(storage: &'a S) -> Self {
         Self {
             heap: BinaryHeap::new(),
+            check_admissibility: true,
             flags: <S::NodeId as AssociativeGraphId<S>>::boolean_mapper(storage),
         }
     }
@@ -81,7 +83,7 @@ where
 
     #[inline]
     pub(in crate::shortest_paths) fn decrease_priority(&mut self, node: S::NodeId, priority: T) {
-        if self.has_been_visited(node) {
+        if self.check_admissibility && self.has_been_visited(node) {
             return;
         }
 
@@ -93,7 +95,7 @@ where
         loop {
             let item = self.heap.pop()?;
 
-            if self.has_been_visited(item.node) {
+            if self.check_admissibility && self.has_been_visited(item.node) {
                 continue;
             }
 

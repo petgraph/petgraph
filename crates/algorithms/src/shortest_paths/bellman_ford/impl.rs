@@ -248,7 +248,7 @@ where
                 }
             }
 
-            let edges = self.connections.connections(&source);
+            let edges = self.connections.connections(source.id());
 
             for edge in edges {
                 let (u, v) = edge.endpoints();

@@ -19,7 +19,6 @@ use crate::shortest_paths::{
     Path,
 };
 
-// The graph must outlive the A* instance
 pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
     S: GraphStorage,
@@ -27,6 +26,7 @@ where
     E: GraphCost<S>,
     E::Value: Ord,
 {
+    graph: &'graph Graph<S>,
     queue: PriorityQueue<'graph, S, E::Value>,
 
     edge_cost: &'parent E,
@@ -39,8 +39,8 @@ where
     predecessor_mode: PredecessorMode,
 
     distances: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, E::Value>,
-    predecessors:
-        <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, Option<Node<'graph, S>>>,
+    estimates: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, E::Value>,
+    predecessors: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, Option<S::NodeId>>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
@@ -72,14 +72,17 @@ where
             .node(target)
             .ok_or_else(|| Report::new(AStarError::NodeNotFound))?;
 
+        let estimate = heuristic.estimate(source_node, target_node);
+
         let mut queue = PriorityQueue::new(graph.storage());
-        queue.push(
-            source_node,
-            heuristic.estimate(source_node, target_node).into_owned(),
-        );
+        queue.check_admissibility = false;
+
+        queue.push(source_node.id(), estimate.clone().into_owned());
 
         let mut distances = <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
         distances.set(source, E::Value::zero());
+
+        let estimates = <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
 
         let mut predecessors =
             <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
@@ -88,6 +91,7 @@ where
         }
 
         Ok(Self {
+            graph,
             queue,
 
             edge_cost,
@@ -100,33 +104,52 @@ where
             predecessor_mode,
 
             distances,
+            estimates,
             predecessors,
         })
     }
 
     pub(super) fn find(mut self) -> Option<Route<'graph, S, E::Value>> {
-        while let Some(PriorityQueueItem { node, .. }) = self.queue.pop_min() {
-            if node.id() == self.target.id() {
+        while let Some(PriorityQueueItem {
+            node,
+            priority: current_estimate,
+        }) = self.queue.pop_min()
+        {
+            if node == self.target.id() {
                 let transit = if self.predecessor_mode == PredecessorMode::Record {
-                    reconstruct_path_to(&self.predecessors, node.id())
+                    reconstruct_path_to::<S>(&self.predecessors, node)
+                        .into_iter()
+                        .filter_map(|id| self.graph.node(id))
+                        .collect()
                 } else {
                     Vec::new()
                 };
 
-                let distance = self.distances.get(node.id())?.clone();
+                let distance = self.distances.get(node)?.clone();
                 return Some(Route::new(
                     Path::new(self.source, transit, self.target),
                     Cost::new(distance),
                 ));
             }
 
-            let connections = self.connections.connections(&node);
+            if let Some(estimate) = self.estimates.get_mut(node) {
+                // if the current estimate is better than the estimate in the queue, skip this node
+                if *estimate <= current_estimate {
+                    continue;
+                }
+
+                *estimate = current_estimate;
+            } else {
+                self.estimates.set(node, current_estimate);
+            }
+
+            let connections = self.connections.connections(node);
             for edge in connections {
-                let source_distance = self.distances.get(node.id())?;
+                let source_distance = self.distances.get(node)?;
                 let alternative = source_distance.add_ref(self.edge_cost.cost(edge).as_ref());
 
                 let (u, v) = edge.endpoints();
-                let neighbour = if u.id() == node.id() { v } else { u };
+                let neighbour = if u.id() == node { v } else { u };
 
                 if let Some(distance) = self.distances.get(neighbour.id()) {
                     if alternative >= *distance {
@@ -142,7 +165,7 @@ where
                     self.predecessors.set(neighbour.id(), Some(node));
                 }
 
-                self.queue.decrease_priority(neighbour, guess);
+                self.queue.decrease_priority(neighbour.id(), guess);
             }
         }
 

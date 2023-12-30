@@ -88,7 +88,7 @@ fn directed_path_between() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::directed().with_heuristic(no_heuristic);
-    let route = astar.path_between(&graph, &nodes.s, &nodes.v).unwrap();
+    let route = astar.path_between(&graph, nodes.s, nodes.v).unwrap();
     let (path, cost) = route.into_parts();
 
     let nodes: Vec<_> = path
@@ -106,7 +106,7 @@ fn directed_no_path_between() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::directed().with_heuristic(no_heuristic);
-    let route = astar.path_between(&graph, &nodes.s, &nodes.z);
+    let route = astar.path_between(&graph, nodes.s, nodes.z);
 
     assert!(route.is_none());
 }
@@ -116,7 +116,7 @@ fn undirected_path_between() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::undirected().with_heuristic(no_heuristic);
-    let route = astar.path_between(&graph, &nodes.s, &nodes.v).unwrap();
+    let route = astar.path_between(&graph, nodes.s, nodes.v).unwrap();
     let (path, cost) = route.into_parts();
 
     let nodes: Vec<_> = path
@@ -134,7 +134,7 @@ fn undirected_no_path_between() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::undirected().with_heuristic(no_heuristic);
-    let route = astar.path_between(&graph, &nodes.s, &nodes.z);
+    let route = astar.path_between(&graph, nodes.s, nodes.z);
 
     assert!(route.is_none());
 }
@@ -144,7 +144,7 @@ fn directed_distance_between() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::directed().with_heuristic(no_heuristic);
-    let cost = astar.distance_between(&graph, &nodes.s, &nodes.v).unwrap();
+    let cost = astar.distance_between(&graph, nodes.s, nodes.v).unwrap();
 
     assert_eq!(cost.into_value(), 9);
 }
@@ -154,7 +154,7 @@ fn directed_no_distance_between() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::directed().with_heuristic(no_heuristic);
-    let cost = astar.distance_between(&graph, &nodes.s, &nodes.z);
+    let cost = astar.distance_between(&graph, nodes.s, nodes.z);
 
     assert!(cost.is_none());
 }
@@ -164,7 +164,7 @@ fn undirected_distance_between() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::undirected().with_heuristic(no_heuristic);
-    let cost = astar.distance_between(&graph, &nodes.s, &nodes.v).unwrap();
+    let cost = astar.distance_between(&graph, nodes.s, nodes.v).unwrap();
 
     assert_eq!(cost.into_value(), 8);
 }
@@ -174,7 +174,7 @@ fn undirected_no_distance_between() {
     let GraphCollection { graph, nodes, .. } = networkx::create();
 
     let astar = AStar::undirected().with_heuristic(no_heuristic);
-    let cost = astar.distance_between(&graph, &nodes.s, &nodes.z);
+    let cost = astar.distance_between(&graph, nodes.s, nodes.z);
 
     assert!(cost.is_none());
 }
@@ -212,17 +212,17 @@ fn directed_path_between_manhattan() {
         .with_edge_cost(ensure_not_nan)
         .with_heuristic(manhattan_distance);
 
-    let route = astar.path_between(&graph, &nodes.a, &nodes.f).unwrap();
+    let route = astar.path_between(&graph, nodes.a, nodes.f).unwrap();
 
     let (path, cost) = route.into_parts();
 
-    let path: Vec<_> = path.to_vec().into_iter().map(|node| *node.id()).collect();
+    let path: Vec<_> = path.to_vec().into_iter().map(|node| node.id()).collect();
 
     assert_eq!(path, [nodes.a, nodes.b, nodes.f]);
 
-    let a = graph.node(&nodes.a).unwrap();
-    let b = graph.node(&nodes.b).unwrap();
-    let f = graph.node(&nodes.f).unwrap();
+    let a = graph.node(nodes.a).unwrap();
+    let b = graph.node(nodes.b).unwrap();
+    let f = graph.node(nodes.f).unwrap();
 
     assert_eq!(
         cost.into_value(),
@@ -237,11 +237,11 @@ fn directed_distance_between_manhattan() {
     let astar = AStar::directed()
         .with_edge_cost(ensure_not_nan)
         .with_heuristic(manhattan_distance);
-    let cost = astar.distance_between(&graph, &nodes.a, &nodes.f).unwrap();
+    let cost = astar.distance_between(&graph, nodes.a, nodes.f).unwrap();
 
-    let a = graph.node(&nodes.a).unwrap();
-    let b = graph.node(&nodes.b).unwrap();
-    let f = graph.node(&nodes.f).unwrap();
+    let a = graph.node(nodes.a).unwrap();
+    let b = graph.node(nodes.b).unwrap();
+    let f = graph.node(nodes.f).unwrap();
 
     assert_eq!(
         cost.into_value(),
@@ -294,11 +294,11 @@ fn directed_path_between_admissible_inconsistent() {
     let GraphCollection { graph, nodes, .. } = inconsistent::create();
 
     let astar = AStar::directed().with_heuristic(admissible_inconsistent);
-    let route = astar.path_between(&graph, &nodes.a, &nodes.d).unwrap();
+    let route = astar.path_between(&graph, nodes.a, nodes.d).unwrap();
 
     let (path, cost) = route.into_parts();
 
-    let path: Vec<_> = path.to_vec().into_iter().map(|node| *node.id()).collect();
+    let path: Vec<_> = path.to_vec().into_iter().map(|node| node.id()).collect();
 
     assert_eq!(path, [nodes.a, nodes.b, nodes.c, nodes.d]);
     assert_eq!(cost.into_value(), 9);
@@ -339,7 +339,7 @@ fn optimal_runtime() {
         }))
         .with_heuristic(no_heuristic);
 
-    astar.path_between(&graph, &nodes.a, &nodes.e).unwrap();
+    astar.path_between(&graph, nodes.a, nodes.e).unwrap();
 
     // A* is runtime optimal in the sense it won't expand more nodes than needed, for the given
     // heuristic. Here, A* should expand, in order: A, B, C, D, E. This should should ask for

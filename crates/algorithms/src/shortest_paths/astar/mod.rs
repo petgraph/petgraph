@@ -20,14 +20,14 @@ use self::r#impl::AStarImpl;
 pub use self::{error::AStarError, heuristic::GraphHeuristic, measure::AStarMeasure};
 use super::{
     common::{
-        connections::{outgoing_connections, Connections},
+        connections::Connections,
         cost::{Cost, DefaultCost, GraphCost},
         route::{DirectRoute, Route},
         transit::PredecessorMode,
     },
     ShortestDistance, ShortestPath,
 };
-use crate::polyfill::IteratorExt;
+use crate::{polyfill::IteratorExt, shortest_paths::common::connections::NodeConnections};
 
 /// A* shortest path algorithm.
 ///
@@ -159,7 +159,7 @@ impl<E, H> AStar<Directed, E, H> {
             graph,
             &self.edge_cost,
             &self.heuristic,
-            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::directed(graph.storage()),
             source,
             target,
             intermediates,
@@ -186,7 +186,7 @@ impl<E, H> AStar<Undirected, E, H> {
             graph,
             &self.edge_cost,
             &self.heuristic,
-            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::undirected(graph.storage()),
             source,
             target,
             intermediates,

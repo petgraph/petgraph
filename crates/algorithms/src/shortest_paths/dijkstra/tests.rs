@@ -78,7 +78,7 @@ fn path_from_directed_default_edge_cost() {
 
     let dijkstra = Dijkstra::directed();
 
-    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(&nodes.a);
+    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(nodes.a);
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn distance_from_directed_default_edge_cost() {
 
     let dijkstra = Dijkstra::directed();
 
-    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(&nodes.a);
+    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(nodes.a);
 }
 
 fn random_directed_expect_from(
@@ -119,7 +119,7 @@ fn path_from_directed_custom_edge_cost() {
     let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
     let expected = random_directed_expect_from(&nodes);
 
-    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(&nodes.a);
+    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(nodes.a);
 }
 
 #[test]
@@ -129,7 +129,7 @@ fn distance_from_directed_custom_edge_cost() {
     let dijkstra = Dijkstra::directed().with_edge_cost(edge_cost);
     let expected = random_directed_expect_from(&nodes);
 
-    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(&nodes.a);
+    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(nodes.a);
 }
 
 fn networkx_undirected_expect_from(
@@ -151,7 +151,7 @@ fn path_from_undirected_default_edge_cost() {
     let dijkstra = Dijkstra::undirected();
     let expected = networkx_undirected_expect_from(&nodes);
 
-    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(&nodes.a);
+    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(nodes.a);
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn distance_from_undirected_default_edge_cost() {
     let dijkstra = Dijkstra::undirected();
     let expected = networkx_undirected_expect_from(&nodes);
 
-    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(&nodes.a);
+    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(nodes.a);
 }
 
 fn random_undirected_expect_from(
@@ -184,7 +184,7 @@ fn path_from_undirected_custom_edge_cost() {
     let dijkstra = Dijkstra::undirected().with_edge_cost(edge_cost);
     let expected = random_undirected_expect_from(&nodes);
 
-    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(&nodes.a);
+    TestCase::new(&graph, &dijkstra, &expected).assert_path_from(nodes.a);
 }
 
 #[test]
@@ -194,7 +194,7 @@ fn distance_from_undirected_custom_edge_cost() {
     let dijkstra = Dijkstra::undirected().with_edge_cost(edge_cost);
     let expected = random_undirected_expect_from(&nodes);
 
-    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(&nodes.a);
+    TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(nodes.a);
 }
 
 #[test]
@@ -204,7 +204,7 @@ fn lifetime() {
     let dijkstra = Dijkstra::directed();
 
     let top3: Vec<_> = dijkstra
-        .path_from(&graph, &nodes.a)
+        .path_from(&graph, nodes.a)
         .unwrap()
         .take(3)
         .collect();
