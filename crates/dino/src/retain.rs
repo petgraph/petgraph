@@ -20,7 +20,7 @@ where
         let mut removed = BTreeSet::new();
 
         self.nodes.retain(|_, value| {
-            let node = NodeMut::new(&value.id, &mut value.weight);
+            let node = NodeMut::new(value.id, &mut value.weight);
 
             let retain = nodes(node);
 
@@ -36,7 +36,7 @@ where
                 return false;
             }
 
-            let edge = EdgeMut::new(&value.id, &mut value.weight, &value.source, &value.target);
+            let edge = EdgeMut::new(value.id, &mut value.weight, value.source, value.target);
 
             edges(edge)
         });
@@ -48,7 +48,7 @@ where
         let mut removed = BTreeSet::new();
 
         self.nodes.retain(|_, value| {
-            let node = NodeMut::new(&value.id, &mut value.weight);
+            let node = NodeMut::new(value.id, &mut value.weight);
 
             let retain = f(node);
 
@@ -68,7 +68,7 @@ where
 
     fn retain_edges(&mut self, mut f: impl FnMut(EdgeMut<'_, Self>) -> bool) {
         self.edges.retain(|_, value| {
-            let edge = EdgeMut::new(&value.id, &mut value.weight, &value.source, &value.target);
+            let edge = EdgeMut::new(value.id, &mut value.weight, value.source, value.target);
 
             f(edge)
         });

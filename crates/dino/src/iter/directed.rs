@@ -29,10 +29,10 @@ where
 
             return Some(Edge::new(
                 self.storage,
-                &edge.id,
+                edge.id,
                 &edge.weight,
-                &edge.source,
-                &edge.target,
+                edge.source,
+                edge.target,
             ));
         }
     }

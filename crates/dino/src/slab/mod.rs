@@ -436,16 +436,16 @@ where
         self.reverse.len()
     }
 
-    fn get(&self, from: &K) -> Option<usize> {
+    fn get(&self, from: K) -> Option<usize> {
         self.lookup.get(from.into_id().index()).copied().flatten()
     }
 
-    fn index(&self, from: &K) -> usize {
+    fn index(&self, from: K) -> usize {
         self.lookup[from.into_id().index()].expect("tried to access vacant entry")
     }
 
-    fn reverse(&self, to: usize) -> Option<Moo<K>> {
-        self.reverse.get(to).copied().flatten().map(Moo::from)
+    fn reverse(&self, to: usize) -> Option<K> {
+        self.reverse.get(to).copied().flatten()
     }
 }
 

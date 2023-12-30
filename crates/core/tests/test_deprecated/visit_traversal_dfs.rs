@@ -24,14 +24,14 @@ use petgraph_dino::DiDinoGraph;
 fn simple() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
-    let d = *graph.insert_node("D").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
+    let d = graph.insert_node("D").id();
 
-    graph.insert_edge("A → B", &a, &b);
-    graph.insert_edge("B → C", &b, &c);
-    graph.insert_edge("B → D", &b, &d);
+    graph.insert_edge("A → B", a, b);
+    graph.insert_edge("B → C", b, c);
+    graph.insert_edge("B → D", b, d);
 
     let dfs = Dfs::new(&graph, a);
 
@@ -53,12 +53,12 @@ fn simple() {
 fn unreachable() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
 
-    graph.insert_edge("A → B", &a, &b);
-    graph.insert_edge("B → C", &b, &c);
+    graph.insert_edge("A → B", a, b);
+    graph.insert_edge("B → C", b, c);
 
     let dfs = Dfs::new(&graph, b);
 
@@ -82,11 +82,11 @@ fn unreachable() {
 fn disconnected() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
 
-    graph.insert_edge("A → B", &a, &b);
+    graph.insert_edge("A → B", a, b);
 
     let dfs = Dfs::new(&graph, a);
 
@@ -120,12 +120,12 @@ fn disconnected() {
 fn order() {
     let mut graph = DiDinoGraph::new();
 
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
-    let d = *graph.insert_node("D").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
+    let d = graph.insert_node("D").id();
 
-    graph.insert_edge("B → C", &b, &c);
-    graph.insert_edge("B → D", &b, &d);
+    graph.insert_edge("B → C", b, c);
+    graph.insert_edge("B → D", b, d);
 
     let dfs = Dfs::new(&graph, b);
 
@@ -150,20 +150,20 @@ fn order() {
 fn order_deep() {
     let mut graph = DiDinoGraph::new();
 
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
-    let d = *graph.insert_node("D").id();
-    let e = *graph.insert_node("E").id();
-    let f = *graph.insert_node("F").id();
-    let g = *graph.insert_node("G").id();
-    let h = *graph.insert_node("H").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
+    let d = graph.insert_node("D").id();
+    let e = graph.insert_node("E").id();
+    let f = graph.insert_node("F").id();
+    let g = graph.insert_node("G").id();
+    let h = graph.insert_node("H").id();
 
-    graph.insert_edge("B → C", &b, &c);
-    graph.insert_edge("B → D", &b, &d);
-    graph.insert_edge("C → G", &c, &g);
-    graph.insert_edge("C → H", &c, &h);
-    graph.insert_edge("H → E", &d, &e);
-    graph.insert_edge("D → F", &d, &f);
+    graph.insert_edge("B → C", b, c);
+    graph.insert_edge("B → D", b, d);
+    graph.insert_edge("C → G", c, g);
+    graph.insert_edge("C → H", c, h);
+    graph.insert_edge("H → E", d, e);
+    graph.insert_edge("D → F", d, f);
 
     let dfs = Dfs::new(&graph, b);
 

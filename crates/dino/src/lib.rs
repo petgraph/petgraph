@@ -542,7 +542,7 @@ where
 
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
-        Ok(NodeMut::new(&node.id, &mut node.weight))
+        Ok(NodeMut::new(node.id, &mut node.weight))
     }
 
     fn next_edge_id(&self, _: <Self::EdgeId as GraphId>::AttributeIndex) -> Self::EdgeId {
@@ -554,19 +554,19 @@ where
         id: Self::EdgeId,
         weight: Self::EdgeWeight,
 
-        source: &Self::NodeId,
-        target: &Self::NodeId,
+        source: Self::NodeId,
+        target: Self::NodeId,
     ) -> Result<EdgeMut<Self>, Self::Error> {
         // TODO: option to disallow self-loops and parallel edges
 
         // undirected edges in the graph are stored in a canonical form, where the source node id is
         // always smaller than the target node id
         let (source, target) = if D::is_directed() {
-            (*source, *target)
+            (source, target)
         } else if source > target {
-            (*target, *source)
+            (target, source)
         } else {
-            (*source, *target)
+            (source, target)
         };
 
         let expected = id;
@@ -592,18 +592,18 @@ where
         Closures::create_edge(edge, &mut self.nodes);
 
         Ok(EdgeMut::new(
-            &edge.id,
+            edge.id,
             &mut edge.weight,
-            &edge.source,
-            &edge.target,
+            edge.source,
+            edge.target,
         ))
     }
 
     fn remove_node(
         &mut self,
-        id: &Self::NodeId,
+        id: Self::NodeId,
     ) -> Option<DetachedNode<Self::NodeId, Self::NodeWeight>> {
-        let node = self.nodes.remove(*id)?;
+        let node = self.nodes.remove(id)?;
 
         for edge in node.closures.edges() {
             if let Some(edge) = self.edges.remove(edge) {
@@ -618,9 +618,9 @@ where
 
     fn remove_edge(
         &mut self,
-        id: &Self::EdgeId,
+        id: Self::EdgeId,
     ) -> Option<DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>> {
-        let edge = self.edges.remove(*id)?;
+        let edge = self.edges.remove(id)?;
         Closures::remove_edge(&edge, &mut self.nodes);
 
         Some(DetachedEdge::new(
@@ -637,102 +637,96 @@ where
         Closures::clear(&mut self.nodes);
     }
 
-    fn node(&self, id: &Self::NodeId) -> Option<petgraph_core::node::Node<Self>> {
+    fn node(&self, id: Self::NodeId) -> Option<petgraph_core::node::Node<Self>> {
         self.nodes
-            .get(*id)
-            .map(|node| petgraph_core::node::Node::new(self, &node.id, &node.weight))
+            .get(id)
+            .map(|node| petgraph_core::node::Node::new(self, node.id, &node.weight))
     }
 
-    fn node_mut(&mut self, id: &Self::NodeId) -> Option<NodeMut<Self>> {
+    fn node_mut(&mut self, id: Self::NodeId) -> Option<NodeMut<Self>> {
         self.nodes
-            .get_mut(*id)
-            .map(|node| NodeMut::new(&node.id, &mut node.weight))
+            .get_mut(id)
+            .map(|node| NodeMut::new(node.id, &mut node.weight))
     }
 
-    fn contains_node(&self, id: &Self::NodeId) -> bool {
-        self.nodes.contains_key(*id)
+    fn contains_node(&self, id: Self::NodeId) -> bool {
+        self.nodes.contains_key(id)
     }
 
-    fn edge(&self, id: &Self::EdgeId) -> Option<petgraph_core::edge::Edge<Self>> {
-        self.edges.get(*id).map(|edge| {
-            petgraph_core::edge::Edge::new(self, &edge.id, &edge.weight, &edge.source, &edge.target)
+    fn edge(&self, id: Self::EdgeId) -> Option<petgraph_core::edge::Edge<Self>> {
+        self.edges.get(id).map(|edge| {
+            petgraph_core::edge::Edge::new(self, edge.id, &edge.weight, edge.source, edge.target)
         })
     }
 
-    fn edge_mut(&mut self, id: &Self::EdgeId) -> Option<EdgeMut<Self>> {
+    fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<Self>> {
         self.edges
-            .get_mut(*id)
-            .map(|edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
+            .get_mut(id)
+            .map(|edge| EdgeMut::new(edge.id, &mut edge.weight, edge.source, edge.target))
     }
 
-    fn contains_edge(&self, id: &Self::EdgeId) -> bool {
-        self.edges.contains_key(*id)
+    fn contains_edge(&self, id: Self::EdgeId) -> bool {
+        self.edges.contains_key(id)
     }
 
-    fn edges_between<'a: 'b, 'b>(
-        &'a self,
-        source: &'b Self::NodeId,
-        target: &'b Self::NodeId,
-    ) -> impl Iterator<Item = petgraph_core::edge::Edge<'a, Self>> + 'b {
-        edges_between_undirected(&self.nodes, *source, *target)
-            .filter_map(move |edge| self.edge(&edge))
+    fn edges_between(
+        &self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+    ) -> impl Iterator<Item = petgraph_core::edge::Edge<Self>> {
+        edges_between_undirected(&self.nodes, source, target)
+            .filter_map(move |edge| self.edge(edge))
     }
 
-    fn edges_between_mut<'a: 'b, 'b>(
-        &'a mut self,
-        source: &'b Self::NodeId,
-        target: &'b Self::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
-        let available = edges_between_undirected(&self.nodes, *source, *target);
+    fn edges_between_mut(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<Self>> {
+        let available = edges_between_undirected(&self.nodes, source, target);
 
         self.edges
             .filter_mut(available)
-            .map(move |edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
+            .map(move |edge| EdgeMut::new(edge.id, &mut edge.weight, edge.source, edge.target))
     }
 
-    fn node_connections<'a: 'b, 'b>(
-        &'a self,
-        id: &'b Self::NodeId,
-    ) -> impl Iterator<Item = petgraph_core::edge::Edge<'a, Self>> + 'b {
+    fn node_connections(
+        &self,
+        id: Self::NodeId,
+    ) -> impl Iterator<Item = petgraph_core::edge::Edge<Self>> {
         self.nodes
-            .get(*id)
+            .get(id)
             .into_iter()
             .flat_map(move |node| node.closures.edges())
-            .filter_map(move |edge| self.edge(&edge))
+            .filter_map(move |edge| self.edge(edge))
     }
 
-    fn node_connections_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b Self::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
+    fn node_connections_mut(&mut self, id: Self::NodeId) -> impl Iterator<Item = EdgeMut<Self>> {
         let Self { nodes, edges, .. } = self;
 
-        let allow = nodes
-            .get(*id)
+        let available = nodes
+            .get(id)
             .into_iter()
             .flat_map(move |node| node.closures.edges());
 
         edges
-            .filter_mut(allow)
-            .map(move |edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
+            .filter_mut(available)
+            .map(move |edge| EdgeMut::new(edge.id, &mut edge.weight, edge.source, edge.target))
     }
 
-    fn node_neighbours<'a: 'b, 'b>(
-        &'a self,
-        id: &'b Self::NodeId,
-    ) -> impl Iterator<Item = petgraph_core::node::Node<'a, Self>> + 'b {
+    fn node_neighbours(
+        &self,
+        id: Self::NodeId,
+    ) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
         self.nodes
-            .get(*id)
+            .get(id)
             .into_iter()
             .flat_map(move |node| node.closures.neighbours())
-            .filter_map(move |node| self.node(&node))
+            .filter_map(move |node| self.node(node))
     }
 
-    fn node_neighbours_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b Self::NodeId,
-    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b {
-        let Some(node) = self.nodes.get(*id) else {
+    fn node_neighbours_mut(&mut self, id: Self::NodeId) -> impl Iterator<Item = NodeMut<Self>> {
+        let Some(node) = self.nodes.get(id) else {
             return Either::Right(core::iter::empty());
         };
 
@@ -744,7 +738,7 @@ where
         Either::Left(
             self.nodes
                 .filter_mut(neighbours)
-                .map(move |node| NodeMut::new(&node.id, &mut node.weight)),
+                .map(move |node| NodeMut::new(node.id, &mut node.weight)),
         )
     }
 
@@ -752,38 +746,38 @@ where
         self.nodes
             .iter()
             .filter(|node| node.closures.is_isolated())
-            .map(move |node| petgraph_core::node::Node::new(self, &node.id, &node.weight))
+            .map(move |node| petgraph_core::node::Node::new(self, node.id, &node.weight))
     }
 
     fn isolated_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
         self.nodes
             .iter_mut()
             .filter(move |node| node.closures.is_isolated())
-            .map(move |node| NodeMut::new(&node.id, &mut node.weight))
+            .map(move |node| NodeMut::new(node.id, &mut node.weight))
     }
 
     fn nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
         self.nodes
             .iter()
-            .map(move |node| petgraph_core::node::Node::new(self, &node.id, &node.weight))
+            .map(move |node| petgraph_core::node::Node::new(self, node.id, &node.weight))
     }
 
     fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
         self.nodes
             .iter_mut()
-            .map(move |node| NodeMut::new(&node.id, &mut node.weight))
+            .map(move |node| NodeMut::new(node.id, &mut node.weight))
     }
 
     fn edges(&self) -> impl Iterator<Item = petgraph_core::edge::Edge<Self>> {
         self.edges.iter().map(move |edge| {
-            petgraph_core::edge::Edge::new(self, &edge.id, &edge.weight, &edge.source, &edge.target)
+            petgraph_core::edge::Edge::new(self, edge.id, &edge.weight, edge.source, edge.target)
         })
     }
 
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<Self>> {
         self.edges
             .iter_mut()
-            .map(move |edge| EdgeMut::new(&edge.id, &mut edge.weight, &edge.source, &edge.target))
+            .map(move |edge| EdgeMut::new(edge.id, &mut edge.weight, edge.source, edge.target))
     }
 
     fn reserve_nodes(&mut self, additional: usize) {

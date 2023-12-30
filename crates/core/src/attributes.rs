@@ -129,7 +129,7 @@ impl<W> From<W> for Attributes<NoValue, W> {
 
 #[cfg(test)]
 mod tests {
-    use core::marker::PhantomData;
+    use core::{fmt::Debug, marker::PhantomData};
 
     use crate::{
         attributes::{Attributes, NoValue},

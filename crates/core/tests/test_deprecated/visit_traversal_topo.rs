@@ -14,12 +14,12 @@ fn assert_topologically_sorted<N, E>(graph: &DiDinoGraph<N, E>, order: &[NodeId]
 
         let source_index = order
             .iter()
-            .position(|x| x == source)
+            .position(|x| *x == source)
             .expect("Source node not found");
 
         let target_index = order
             .iter()
-            .position(|x| x == target)
+            .position(|x| *x == target)
             .expect("Target node not found");
 
         assert!(
@@ -44,14 +44,14 @@ fn assert_topologically_sorted<N, E>(graph: &DiDinoGraph<N, E>, order: &[NodeId]
 fn setup() -> DiDinoGraph<&'static str, &'static str> {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
-    let d = *graph.insert_node("D").id();
-    let e = *graph.insert_node("E").id();
-    let f = *graph.insert_node("F").id();
-    let g = *graph.insert_node("G").id();
-    let h = *graph.insert_node("H").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
+    let d = graph.insert_node("D").id();
+    let e = graph.insert_node("E").id();
+    let f = graph.insert_node("F").id();
+    let g = graph.insert_node("G").id();
+    let h = graph.insert_node("H").id();
 
     for (source, target, weight) in [
         (b, e, "B → E"), //
@@ -64,7 +64,7 @@ fn setup() -> DiDinoGraph<&'static str, &'static str> {
         (h, f, "H → F"),
         (h, g, "H → G"),
     ] {
-        graph.insert_edge(weight, &source, &target);
+        graph.insert_edge(weight, source, target);
     }
 
     graph
@@ -88,13 +88,13 @@ fn example() {
 fn disjoint() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
-    let d = *graph.insert_node("D").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
+    let d = graph.insert_node("D").id();
 
-    graph.insert_edge("A → B", &a, &b);
-    graph.insert_edge("C → D", &c, &d);
+    graph.insert_edge("A → B", a, b);
+    graph.insert_edge("C → D", c, d);
 
     let mut topo = Topo::new(&graph);
     let mut order = vec![];
@@ -111,10 +111,10 @@ fn disjoint() {
 fn path() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
 
-    graph.insert_edge("A → B", &a, &b);
+    graph.insert_edge("A → B", a, b);
 
     let mut topo = Topo::new(&graph);
     let mut order = vec![];
@@ -130,11 +130,11 @@ fn path() {
 fn error_on_cycle() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
 
-    graph.insert_edge("A → B", &a, &b);
-    graph.insert_edge("B → A", &b, &a);
+    graph.insert_edge("A → B", a, b);
+    graph.insert_edge("B → A", b, a);
 
     let mut topo = Topo::new(&graph);
     // toposort silently ignores cycles, therefore `Topo` will output `None`, instead of returning a

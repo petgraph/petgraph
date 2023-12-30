@@ -47,5 +47,5 @@ where
 
     fn attribute_mapper<V>(storage: &S) -> Self::AttributeMapper<'_, V>;
 
-    fn flag_mapper(storage: &S) -> Self::BooleanMapper<'_>;
+    fn boolean_mapper(storage: &S) -> Self::BooleanMapper<'_>;
 }

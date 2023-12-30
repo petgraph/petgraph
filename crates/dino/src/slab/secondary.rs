@@ -7,12 +7,12 @@ use petgraph_core::id::{AttributeMapper, BooleanMapper};
 
 use crate::slab::{EntryId, Generation, Key, Slab};
 
-pub struct SlabFlagStorage<'a> {
+pub struct SlabBooleanMapper<'a> {
     flags: BitBox,
     _marker: core::marker::PhantomData<&'a ()>,
 }
 
-impl<'a> SlabFlagStorage<'a> {
+impl<'a> SlabBooleanMapper<'a> {
     pub(crate) fn new<K, V>(slab: &'a Slab<K, V>) -> Self
     where
         K: Key,
@@ -26,26 +26,26 @@ impl<'a> SlabFlagStorage<'a> {
     }
 }
 
-impl<Id> BooleanMapper<Id> for SlabFlagStorage<'_>
+impl<Id> BooleanMapper<Id> for SlabBooleanMapper<'_>
 where
     Id: Key,
 {
     #[inline]
-    fn get(&self, id: &Id) -> Option<bool> {
+    fn get(&self, id: Id) -> Option<bool> {
         let index = id.into_id().index();
 
         self.flags.get(index).map(|bit| *bit)
     }
 
     #[inline]
-    fn index(&self, id: &Id) -> bool {
+    fn index(&self, id: Id) -> bool {
         let index = id.into_id().index();
 
         self.flags[index]
     }
 
     #[inline]
-    fn set(&mut self, id: &Id, flag: bool) -> Option<bool> {
+    fn set(&mut self, id: Id, flag: bool) -> Option<bool> {
         let index = id.into_id().index();
 
         let value = self.flags.replace(index, flag);
@@ -63,7 +63,7 @@ impl<'a, K, T> Iterator for SlabAttributeStorageIter<'a, K, T>
 where
     K: Key,
 {
-    type Item = (Moo<'a, K>, &'a T);
+    type Item = (K, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -73,13 +73,13 @@ where
                 let id = EntryId::new(*generation, index)?;
                 let id = K::from_id(id);
 
-                return Some((Moo::Owned(id), value));
+                return Some((id, value));
             }
         }
     }
 }
 
-pub struct SlabAttributeStorage<'a, K, T> {
+pub struct SlabAttributeMapper<'a, K, T> {
     // generation is needed for iter
     items: Vec<Option<(Generation, T)>>,
 
@@ -87,7 +87,7 @@ pub struct SlabAttributeStorage<'a, K, T> {
     _key: core::marker::PhantomData<fn() -> *const K>,
 }
 
-impl<'a, K, T> SlabAttributeStorage<'a, K, T> {
+impl<'a, K, T> SlabAttributeMapper<'a, K, T> {
     pub(crate) fn new<V>(slab: &'a Slab<K, V>) -> Self
     where
         K: Key,
@@ -103,7 +103,7 @@ impl<'a, K, T> SlabAttributeStorage<'a, K, T> {
     }
 }
 
-impl<K, T> AttributeMapper<K, T> for SlabAttributeStorage<'_, K, T>
+impl<K, T> AttributeMapper<K, T> for SlabAttributeMapper<'_, K, T>
 where
     K: Key,
 {
@@ -112,7 +112,7 @@ where
         T: 'a,
         Self: 'a,;
 
-    fn get(&self, id: &K) -> Option<&T> {
+    fn get(&self, id: K) -> Option<&T> {
         let index = id.into_id().index();
 
         self.items
@@ -121,7 +121,7 @@ where
             .map(|(_, value)| value)
     }
 
-    fn get_mut(&mut self, id: &K) -> Option<&mut T> {
+    fn get_mut(&mut self, id: K) -> Option<&mut T> {
         let index = id.into_id().index();
 
         self.items
@@ -130,7 +130,7 @@ where
             .map(|(_, value)| value)
     }
 
-    fn set(&mut self, id: &K, value: T) -> Option<T> {
+    fn set(&mut self, id: K, value: T) -> Option<T> {
         let index = id.into_id().index();
         let generation = id.into_id().generation();
 
@@ -140,7 +140,7 @@ where
             .map(|(_, value)| value)
     }
 
-    fn remove(&mut self, id: &K) -> Option<T> {
+    fn remove(&mut self, id: K) -> Option<T> {
         let index = id.into_id().index();
 
         self.items

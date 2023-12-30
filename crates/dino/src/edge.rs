@@ -3,13 +3,13 @@ use core::fmt::{Display, Formatter};
 use petgraph_core::{
     attributes::NoValue,
     edge::marker::GraphDirectionality,
-    id::{AssociativeGraphId, FlaggableGraphId, GraphId, LinearGraphId, ManagedGraphId},
+    id::{AssociativeGraphId, GraphId, LinearGraphId, ManagedGraphId},
 };
 
 use crate::{
     node::NodeId,
     slab::{
-        secondary::{SlabAttributeStorage, SlabFlagStorage},
+        secondary::{SlabAttributeMapper, SlabBooleanMapper},
         EntryId, Key, SlabIndexMapper,
     },
     DinoStorage,
@@ -72,25 +72,19 @@ where
     }
 }
 
-impl<N, E, D> FlaggableGraphId<DinoStorage<N, E, D>> for EdgeId
-where
-    D: GraphDirectionality,
-{
-    type Store<'a> = SlabFlagStorage<'a> where DinoStorage<N, E, D>: 'a;
-
-    fn flag_store(storage: &DinoStorage<N, E, D>) -> Self::Store<'_> {
-        SlabFlagStorage::new(&storage.edges)
-    }
-}
-
 impl<N, E, D> AssociativeGraphId<DinoStorage<N, E, D>> for EdgeId
 where
     D: GraphDirectionality,
 {
-    type AttributeMapper<'a, V> = SlabAttributeStorage<'a, Self, V> where DinoStorage<N, E, D>: 'a;
+    type AttributeMapper<'a, V> = SlabAttributeMapper<'a, Self, V> where DinoStorage<N, E, D>: 'a;
+    type BooleanMapper<'a> = SlabBooleanMapper<'a> where DinoStorage<N, E, D>: 'a;
 
     fn attribute_mapper<V>(storage: &DinoStorage<N, E, D>) -> Self::AttributeMapper<'_, V> {
-        SlabAttributeStorage::new(&storage.edges)
+        SlabAttributeMapper::new(&storage.edges)
+    }
+
+    fn boolean_mapper(storage: &DinoStorage<N, E, D>) -> Self::BooleanMapper<'_> {
+        SlabBooleanMapper::new(&storage.edges)
     }
 }
 

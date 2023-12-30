@@ -10,13 +10,13 @@ use petgraph_dino::{DiDinoGraph, NodeId};
 fn simple() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
 
-    graph.insert_edge("A → B", &a, &b);
-    graph.insert_edge("B → C", &b, &c);
-    graph.insert_edge("C → A", &c, &a);
+    graph.insert_edge("A → B", a, b);
+    graph.insert_edge("B → C", b, c);
+    graph.insert_edge("C → A", c, a);
 
     // TODO: think about moving this to an iterator instead
     depth_first_search(&graph, Some(a), |event| match event {
@@ -57,20 +57,20 @@ fn simple() {
 fn terminate_early() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
 
-    graph.insert_edge("A → B", &a, &b);
-    graph.insert_edge("B → C", &b, &c);
-    graph.insert_edge("C → A", &c, &a);
+    graph.insert_edge("A → B", a, b);
+    graph.insert_edge("B → C", b, c);
+    graph.insert_edge("C → A", c, a);
 
     let mut mapper = NodeId::index_mapper(graph.storage());
 
     let mut predecessor = vec![None; graph.num_nodes()];
     let control = depth_first_search(&graph, once(a), |event| {
         if let DfsEvent::TreeEdge(start, end) = event {
-            predecessor[mapper.get(&end)] = Some(start);
+            predecessor[mapper.index(end)] = Some(start);
             if end == b {
                 return Control::Break(start);
             }
@@ -87,13 +87,13 @@ fn terminate_early() {
 fn cross_forward_edge() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
 
-    graph.insert_edge("A → B", &a, &b);
-    graph.insert_edge("B → C", &b, &c);
-    graph.insert_edge("A → C", &a, &c);
+    graph.insert_edge("A → B", a, b);
+    graph.insert_edge("B → C", b, c);
+    graph.insert_edge("A → C", a, c);
 
     depth_first_search(&graph, once(a), |event| {
         if let DfsEvent::CrossForwardEdge(start, end) = event {
@@ -109,12 +109,12 @@ fn cross_forward_edge() {
 fn prune() {
     let mut graph = DiDinoGraph::new();
 
-    let a = *graph.insert_node("A").id();
-    let b = *graph.insert_node("B").id();
-    let c = *graph.insert_node("C").id();
+    let a = graph.insert_node("A").id();
+    let b = graph.insert_node("B").id();
+    let c = graph.insert_node("C").id();
 
-    graph.insert_edge("A → B", &a, &b);
-    graph.insert_edge("B → C", &b, &c);
+    graph.insert_edge("A → B", a, b);
+    graph.insert_edge("B → C", b, c);
 
     depth_first_search(&graph, once(a), |event| {
         if let DfsEvent::Discover(node, _) = event {
@@ -124,7 +124,7 @@ fn prune() {
         }
 
         if let DfsEvent::TreeEdge(start, end) = event {
-            assert!(end != c, "Unexpected edge: {start:?} → {end:?}");
+            assert_ne!(end, c, "Unexpected edge: {start:?} → {end:?}");
         }
 
         Control::Continue

@@ -13,7 +13,7 @@ use crate::{
         NeighbourIterator, NodeIdClosureIter,
     },
     slab::{
-        secondary::{SlabAttributeStorage, SlabFlagStorage},
+        secondary::{SlabAttributeMapper, SlabBooleanMapper},
         EntryId, Key, SlabIndexMapper,
     },
     DinoStorage, EdgeId,
@@ -73,25 +73,19 @@ where
     }
 }
 
-impl<N, E, D> FlaggableGraphId<DinoStorage<N, E, D>> for NodeId
-where
-    D: GraphDirectionality,
-{
-    type Store<'a> = SlabFlagStorage<'a> where DinoStorage<N, E, D>: 'a;
-
-    fn flag_store(storage: &DinoStorage<N, E, D>) -> Self::Store<'_> {
-        SlabFlagStorage::new(&storage.nodes)
-    }
-}
-
 impl<N, E, D> AssociativeGraphId<DinoStorage<N, E, D>> for NodeId
 where
     D: GraphDirectionality,
 {
-    type AttributeMapper<'a, V> = SlabAttributeStorage<'a, Self, V> where DinoStorage<N, E, D>: 'a;
+    type AttributeMapper<'a, V> = SlabAttributeMapper<'a, Self, V> where DinoStorage<N, E, D>: 'a;
+    type BooleanMapper<'a> = SlabBooleanMapper<'a> where DinoStorage<N, E, D>: 'a;
 
     fn attribute_mapper<V>(storage: &DinoStorage<N, E, D>) -> Self::AttributeMapper<'_, V> {
-        SlabAttributeStorage::new(&storage.nodes)
+        SlabAttributeMapper::new(&storage.nodes)
+    }
+
+    fn boolean_mapper(storage: &DinoStorage<N, E, D>) -> Self::BooleanMapper<'_> {
+        SlabBooleanMapper::new(&storage.nodes)
     }
 }
 
