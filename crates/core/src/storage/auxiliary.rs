@@ -95,21 +95,21 @@ pub trait BooleanGraphStorage<K> {
 /// For boolean values prefer [`Self::boolean_edge_storage`] and [`Self::boolean_node_storage`],
 /// as they usually have a more efficient implementation.
 pub trait AuxiliaryGraphStorage: GraphStorage {
-    type BooleanEdgeStorage<'a>: BooleanGraphStorage<EdgeId>
+    type BooleanEdgeStorage<'graph>: BooleanGraphStorage<EdgeId>
     where
-        Self: 'a;
+        Self: 'graph;
 
-    type BooleanNodeStorage<'a>: BooleanGraphStorage<NodeId>
+    type BooleanNodeStorage<'graph>: BooleanGraphStorage<NodeId>
     where
-        Self: 'a;
+        Self: 'graph;
 
-    type SecondaryEdgeStorage<'a, V>: SecondaryGraphStorage<EdgeId, V>
+    type SecondaryEdgeStorage<'graph, V>: SecondaryGraphStorage<EdgeId, V>
     where
-        Self: 'a;
+        Self: 'graph;
 
-    type SecondaryNodeStorage<'a, V>: SecondaryGraphStorage<NodeId, V>
+    type SecondaryNodeStorage<'graph, V>: SecondaryGraphStorage<NodeId, V>
     where
-        Self: 'a;
+        Self: 'graph;
 
     fn secondary_node_storage<V>(&self, hints: Hints) -> Self::SecondaryNodeStorage<'_, V>;
     fn secondary_edge_storage<V>(&self, hints: Hints) -> Self::SecondaryEdgeStorage<'_, V>;

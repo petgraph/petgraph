@@ -384,6 +384,21 @@ where
     pub fn degree(&self) -> usize {
         self.storage.node_degree(self.id)
     }
+
+    /// Change the underlying storage of the node.
+    ///
+    /// Should only be used when layering multiple graph storages on top of each other by graph
+    /// storage implementors.
+    ///
+    /// # Safety
+    ///
+    /// Can lead to undefined behaviour if the id is not valid for the given storage.
+    pub unsafe fn change_storage_unchecked<S2>(self) -> Node<'a, S2>
+    where
+        S2: GraphStorage<NodeWeight = S::NodeWeight>,
+    {
+        Node::new(self.storage, self.id, self.weight)
+    }
 }
 
 impl<'a, S> Node<'a, S>
@@ -634,6 +649,21 @@ where
     /// ```
     pub fn weight_mut(&mut self) -> &mut S::NodeWeight {
         self.weight
+    }
+
+    /// Change the underlying storage of the node.
+    ///
+    /// Should only be used when layering multiple graph storages on top of each other by graph
+    /// storage implementors.
+    ///
+    /// # Safety
+    ///
+    /// Can lead to undefined behaviour if the id is not valid for the given storage.
+    pub unsafe fn change_storage_unchecked<S2>(self) -> NodeMut<'a, S2>
+    where
+        S2: GraphStorage<NodeWeight = S::NodeWeight>,
+    {
+        NodeMut::new(self.id, self.weight)
     }
 }
 
