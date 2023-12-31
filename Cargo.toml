@@ -63,7 +63,6 @@ petgraph-io = { workspace = true, default-features = false, optional = true }
 
 [dependencies.petgraph-graphmap]
 workspace = true
-features = ["convert"]
 optional = true
 default-features = false
 
@@ -73,7 +72,7 @@ csr = ["dep:petgraph-csr"]
 default = ["std", "graphmap", "stable-graph", "matrix-graph", "csr", "adjacency-matrix"]
 graphmap = ["dep:petgraph-graphmap"]
 matrix-graph = ["dep:petgraph-matrix-graph"]
-serde = ["petgraph-graph/serde", "petgraph-graphmap?/serde"]
+serde = ["petgraph-graph/serde"]
 stable-graph = ["petgraph-graph/stable"]
 io = ["petgraph-io"]
 unstable-generators = ["petgraph-generators"]
@@ -81,11 +80,10 @@ std = [
     "petgraph-core/std",
     "petgraph-graph/std",
     "petgraph-adjacency-matrix?/std",
-    "petgraph-graphmap?/std",
     "petgraph-csr?/std",
     "petgraph-io?/std"
 ]
-proptest = ["petgraph-graph/proptest", "petgraph-graphmap?/proptest"]
+proptest = ["petgraph-graph/proptest"]
 
 [lib]
 bench = false

@@ -28,7 +28,9 @@
 mod directed;
 
 pub mod auxiliary;
+pub mod compact;
 mod retain;
+pub mod reverse;
 
 use error_stack::{Context, Result};
 

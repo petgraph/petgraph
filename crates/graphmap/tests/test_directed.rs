@@ -5,7 +5,7 @@ use petgraph_core::{
 };
 #[cfg(feature = "convert")]
 use petgraph_graph::{Graph, NodeIndex};
-use petgraph_graphmap::{DiGraphMap, GraphMap};
+use petgraph_graphmap::{DiGraphMap, MapStorage};
 
 #[test]
 fn self_loop() {
@@ -97,11 +97,10 @@ fn from_graph() {
     assert_eq!(graphmap.edges(1).collect::<Vec<_>>(), vec![(1, 2, &-2)]);
     assert_eq!(graphmap.edges(2).collect::<Vec<_>>(), vec![(2, 0, &-3)]);
 
-    assert_eq!(graphmap.all_edges().collect::<Vec<_>>(), vec![
-        (0, 1, &-1),
-        (1, 2, &-2),
-        (2, 0, &-3),
-    ]);
+    assert_eq!(
+        graphmap.all_edges().collect::<Vec<_>>(),
+        vec![(0, 1, &-1), (1, 2, &-2), (2, 0, &-3),]
+    );
 }
 
 #[test]
@@ -121,12 +120,15 @@ fn into_graph() {
     assert_eq!(graph.node_count(), 4);
     assert_eq!(graph.edge_count(), 3);
 
-    assert_eq!(graph.node_references().collect::<Vec<_>>(), vec![
-        (NodeIndex::new(0), &0),
-        (NodeIndex::new(1), &1),
-        (NodeIndex::new(2), &2),
-        (NodeIndex::new(3), &3),
-    ]);
+    assert_eq!(
+        graph.node_references().collect::<Vec<_>>(),
+        vec![
+            (NodeIndex::new(0), &0),
+            (NodeIndex::new(1), &1),
+            (NodeIndex::new(2), &2),
+            (NodeIndex::new(3), &3),
+        ]
+    );
 
     assert_eq!(
         graph

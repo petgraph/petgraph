@@ -7,10 +7,10 @@ use petgraph_core::{
     edge::{Directed, EdgeType, Undirected},
     visit::IntoNodeIdentifiers,
 };
-use petgraph_graphmap::{GraphMap, NodeTrait};
+use petgraph_graphmap::{MapStorage, NodeTrait};
 use proptest::prelude::*;
 
-fn assert_graphmap_consistent<N, E, Ty>(g: &GraphMap<N, E, Ty>)
+fn assert_graphmap_consistent<N, E, Ty>(g: &MapStorage<N, E, Ty>)
 where
     Ty: EdgeType,
     N: NodeTrait + fmt::Debug,
@@ -36,7 +36,7 @@ where
     }
 }
 
-fn remove_node<Ty>(graph: &mut GraphMap<i8, (), Ty>, node: i8)
+fn remove_node<Ty>(graph: &mut MapStorage<i8, (), Ty>, node: i8)
 where
     Ty: EdgeType,
 {
@@ -49,7 +49,7 @@ where
     assert!(!graph.contains_node(node));
 }
 
-fn remove_edge<Ty>(graph: &mut GraphMap<i8, (), Ty>, a: i8, b: i8)
+fn remove_edge<Ty>(graph: &mut MapStorage<i8, (), Ty>, a: i8, b: i8)
 where
     Ty: EdgeType,
 {
@@ -64,7 +64,7 @@ where
     assert!(!graph.neighbors(a).any(|x| x == b));
 }
 
-fn add_remove_edge<Ty>(graph: &mut GraphMap<i8, (), Ty>, a: i8, b: i8)
+fn add_remove_edge<Ty>(graph: &mut MapStorage<i8, (), Ty>, a: i8, b: i8)
 where
     Ty: EdgeType,
 {
@@ -90,7 +90,7 @@ where
     }
 }
 
-fn find_free_edge<Ty>(graph: &GraphMap<i8, (), Ty>) -> (i8, i8)
+fn find_free_edge<Ty>(graph: &MapStorage<i8, (), Ty>) -> (i8, i8)
 where
     Ty: EdgeType,
 {
@@ -107,11 +107,11 @@ where
     panic!("no free edge found");
 }
 
-fn graph_and_node<Ty>() -> impl Strategy<Value = (GraphMap<i8, (), Ty>, i8)>
+fn graph_and_node<Ty>() -> impl Strategy<Value = (MapStorage<i8, (), Ty>, i8)>
 where
     Ty: EdgeType + Clone + 'static,
 {
-    any::<GraphMap<i8, (), Ty>>()
+    any::<MapStorage<i8, (), Ty>>()
         .prop_filter("graph must have nodes", |graph| graph.node_count() > 0)
         .prop_flat_map(|graph| {
             let nodes = graph.node_count();
@@ -125,11 +125,11 @@ where
         })
 }
 
-fn graph_and_edge<Ty>() -> impl Strategy<Value = (GraphMap<i8, (), Ty>, (i8, i8))>
+fn graph_and_edge<Ty>() -> impl Strategy<Value = (MapStorage<i8, (), Ty>, (i8, i8))>
 where
     Ty: EdgeType + Clone + 'static,
 {
-    any::<GraphMap<i8, (), Ty>>()
+    any::<MapStorage<i8, (), Ty>>()
         .prop_filter("graph must have edges", |graph| graph.edge_count() > 0)
         .prop_flat_map(|graph| {
             let edges = graph.edge_count();
@@ -143,11 +143,11 @@ where
         })
 }
 
-fn at_least_one_free_edge<Ty>() -> impl Strategy<Value = GraphMap<i8, (), Ty>>
+fn at_least_one_free_edge<Ty>() -> impl Strategy<Value = MapStorage<i8, (), Ty>>
 where
     Ty: EdgeType + 'static,
 {
-    any::<GraphMap<i8, (), Ty>>()
+    any::<MapStorage<i8, (), Ty>>()
         .prop_filter("graph must have at least one node", |graph| {
             graph.node_count() > 0
         })
