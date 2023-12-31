@@ -3,6 +3,7 @@ mod directed;
 mod insert;
 mod resize;
 mod retain;
+mod reverse;
 
 use error_stack::Result;
 

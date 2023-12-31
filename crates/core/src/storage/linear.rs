@@ -1,6 +1,4 @@
-use numi::borrow::Moo;
-
-use crate::{id::GraphId, storage::GraphStorage};
+use crate::{edge::EdgeId, node::NodeId, GraphStorage};
 
 /// Index mapper for a graph.
 ///
@@ -122,34 +120,15 @@ pub trait IndexMapper<Id> {
     fn reverse(&self, to: usize) -> Option<Id>;
 }
 
-/// Linear graph identifier.
-///
-/// A linear graph identifier is a graph identifier that has a linear mapping to a `usize` value,
-/// that mapping must be continuous .
-pub trait LinearGraphId<S>: GraphId + Sized
-where
-    S: GraphStorage,
-{
-    /// The index mapper for this graph identifier.
-    type Mapper<'graph>: IndexMapper<Self>
+pub trait LinearGraphStorage: GraphStorage {
+    type NodeIndexMapper<'graph>: IndexMapper<NodeId>
     where
-        S: 'graph;
+        Self: 'graph;
 
-    /// Get the index mapper for this graph identifier.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use petgraph_core::id::{IndexMapper, LinearGraphId};
-    /// use petgraph_dino::{DiDinoGraph, NodeId};
-    ///
-    /// let mut graph = DiDinoGraph::new();
-    ///
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
-    /// # let ab = graph.insert_edge("A → B", &a, &b);
-    ///
-    /// let mapper = NodeId::index_mapper(graph.storage());
-    /// ```
-    fn index_mapper(storage: &S) -> Self::Mapper<'_>;
+    type EdgeIndexMapper<'graph>: IndexMapper<EdgeId>
+    where
+        Self: 'graph;
+
+    fn node_index_mapper(&self) -> Self::NodeIndexMapper<'_>;
+    fn edge_index_mapper(&self) -> Self::EdgeIndexMapper<'_>;
 }

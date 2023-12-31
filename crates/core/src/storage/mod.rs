@@ -28,7 +28,7 @@
 mod directed;
 
 pub mod auxiliary;
-pub mod compact;
+pub mod linear;
 mod retain;
 pub mod reverse;
 
@@ -40,7 +40,6 @@ pub use self::{
 };
 use crate::{
     edge::{DetachedEdge, Edge, EdgeId, EdgeMut},
-    id::GraphId,
     node::{DetachedNode, Node, NodeId, NodeMut},
 };
 
