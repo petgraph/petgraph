@@ -26,6 +26,68 @@ use crate::{
     storage::{DirectedGraphStorage, GraphStorage},
 };
 
+/// ID of a node in a graph.
+///
+/// This is guaranteed to be unique within the graph, library authors and library consumers **must**
+/// treat this as an opaque value akin to [`TypeId`].
+///
+/// The layout of the type is semver stable, but not part of the public API.
+///
+/// [`GraphStorage`] implementations may uphold additional invariants on the inner value and
+/// code outside of the [`GraphStorage`] should **never** construct a [`NodeId`] directly.
+///
+/// Accessing a [`GraphStorage`] implementation with a [`NodeId`] not returned by an instance itself
+/// is considered undefined behavior.
+///
+/// [`TypeId`]: core::any::TypeId
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct NodeId(usize);
+
+// TODO: find a better way to gate these functions
+impl NodeId {
+    /// Creates a new [`NodeId`].
+    ///
+    /// # Note
+    ///
+    /// Using this outside of the [`GraphStorage`] implementation is considered undefined behavior.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::node::NodeId;
+    ///
+    /// let id = NodeId::new(0);
+    /// ```
+    // Hidden so that non-GraphStorage implementors are not tempted to use this.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn new(id: usize) -> Self {
+        Self(id)
+    }
+
+    /// Returns the inner value of the [`NodeId`].
+    ///
+    /// # Note
+    ///
+    /// Using this outside of the [`GraphStorage`] implementation is considered undefined behavior.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::node::NodeId;
+    ///
+    /// let id = NodeId::new(0);
+    ///
+    /// assert_eq!(id.into_inner(), 0);
+    /// ```
+    // Hidden so that non-GraphStorage implementors are not tempted to use this.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn into_inner(self) -> usize {
+        self.0
+    }
+}
+
 /// Active node in a graph.
 ///
 /// Node that is part of a graph.

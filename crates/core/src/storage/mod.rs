@@ -13,6 +13,7 @@
 //!   to an undirected graph.
 //! - [`DirectedGraphStorage`]: A trait for directed graph storage implementations.
 //! - [`RetainableGraphStorage`]: A trait for retainable graph storage implementations.
+//! - [`AuxiliaryGraphStorage`]: A trait to access storage for arbitrary additional data.
 //!
 //! [`GraphStorage`] proposes that [`DirectedGraphStorage`] is simply a specialization of an
 //! undirected graph, meaning that the supertrait of [`DirectedGraphStorage`] is also
@@ -26,11 +27,15 @@
 //! [`Graph`]: crate::graph::Graph
 mod directed;
 
+pub mod auxiliary;
 mod retain;
 
 use error_stack::{Context, Result};
 
-pub use self::{directed::DirectedGraphStorage, retain::RetainableGraphStorage};
+pub use self::{
+    auxiliary::AuxiliaryGraphStorage, directed::DirectedGraphStorage,
+    retain::RetainableGraphStorage,
+};
 use crate::{
     edge::{DetachedEdge, Edge, EdgeMut},
     id::GraphId,
