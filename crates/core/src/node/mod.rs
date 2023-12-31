@@ -115,14 +115,13 @@ where
 {
     storage: &'a S,
 
-    id: S::NodeId,
+    id: NodeId,
     weight: &'a S::NodeWeight,
 }
 
 impl<S> PartialEq for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: PartialEq,
     S::NodeWeight: PartialEq,
 {
     fn eq(&self, other: &Node<'_, S>) -> bool {
@@ -133,7 +132,6 @@ where
 impl<S> Eq for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Eq,
     S::NodeWeight: Eq,
 {
 }
@@ -141,7 +139,6 @@ where
 impl<S> PartialOrd for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: PartialOrd,
     S::NodeWeight: PartialOrd,
 {
     fn partial_cmp(&self, other: &Node<'_, S>) -> Option<core::cmp::Ordering> {
@@ -152,7 +149,6 @@ where
 impl<S> Ord for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Ord,
     S::NodeWeight: Ord,
 {
     fn cmp(&self, other: &Node<'_, S>) -> core::cmp::Ordering {
@@ -163,7 +159,6 @@ where
 impl<S> Hash for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Hash,
     S::NodeWeight: Hash,
 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -230,7 +225,7 @@ where
     /// ```
     ///
     /// [`Graph::node`]: crate::graph::Graph::node
-    pub const fn new(storage: &'a S, id: S::NodeId, weight: &'a S::NodeWeight) -> Self {
+    pub const fn new(storage: &'a S, id: NodeId, weight: &'a S::NodeWeight) -> Self {
         Self {
             storage,
             id,
@@ -259,7 +254,7 @@ where
     /// assert_eq!(node.id(), &a);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> S::NodeId {
+    pub const fn id(&self) -> NodeId {
         self.id
     }
 
@@ -504,7 +499,7 @@ where
     ///
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
-    pub fn detach(self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+    pub fn detach(self) -> DetachedNode<S::NodeWeight> {
         DetachedNode::new(self.id, self.weight.clone())
     }
 }
@@ -536,7 +531,7 @@ pub struct NodeMut<'a, S>
 where
     S: GraphStorage,
 {
-    id: S::NodeId,
+    id: NodeId,
 
     weight: &'a mut S::NodeWeight,
 }
@@ -560,7 +555,7 @@ where
     ///
     /// [`Graph::node_mut`]: crate::graph::Graph::node_mut
     /// [`Graph::insert_node`]: crate::graph::Graph::insert_node
-    pub fn new(id: S::NodeId, weight: &'a mut S::NodeWeight) -> Self {
+    pub fn new(id: NodeId, weight: &'a mut S::NodeWeight) -> Self {
         Self { id, weight }
     }
 
@@ -585,7 +580,7 @@ where
     /// assert_eq!(node.id(), &a);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> S::NodeId {
+    pub const fn id(&self) -> NodeId {
         self.id
     }
 
@@ -669,7 +664,7 @@ where
     ///
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
-    pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+    pub fn detach(&self) -> DetachedNode<S::NodeWeight> {
         DetachedNode::new(self.id, self.weight.clone())
     }
 }
@@ -702,15 +697,15 @@ where
 /// [`Graph::into_parts`]: crate::graph::Graph::into_parts
 /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct DetachedNode<N, W> {
+pub struct DetachedNode<W> {
     /// The unique id of the node.
-    pub id: N,
+    pub id: NodeId,
 
     /// The weight of the node.
     pub weight: W,
 }
 
-impl<N, W> DetachedNode<N, W> {
+impl<W> DetachedNode<W> {
     /// Creates a new detached node.
     ///
     /// # Example
@@ -720,7 +715,7 @@ impl<N, W> DetachedNode<N, W> {
     ///
     /// let node = DetachedNode::new(0, "A");
     /// ```
-    pub const fn new(id: N, weight: W) -> Self {
+    pub const fn new(id: NodeId, weight: W) -> Self {
         Self { id, weight }
     }
 }

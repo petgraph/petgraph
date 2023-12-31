@@ -16,21 +16,19 @@ use crate::{
         IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
         IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, VisitMap, Visitable,
     },
-    edge::{Direction, Edge},
+    edge::{Direction, Edge, EdgeId},
     graph::Graph,
     id::{IndexMapper, LinearGraphId, ManagedGraphId},
-    node::Node,
+    node::{Node, NodeId},
     storage::{DirectedGraphStorage, GraphStorage},
 };
 
 impl<S> GraphBase for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
-    type EdgeId = S::EdgeId;
-    type NodeId = S::NodeId;
+    type EdgeId = EdgeId;
+    type NodeId = NodeId;
 }
 
 // TODO: GraphProp?!
@@ -38,8 +36,6 @@ where
 impl<S> NodeCount for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     fn node_count(&self) -> usize {
         self.num_nodes()
@@ -49,8 +45,7 @@ where
 impl<S> NodeIndexable for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Copy,
-    S::EdgeId: Copy,
+    S::NodeId: LinearGraphId<S>,
 {
     fn node_bound(&self) -> usize {
         self.num_nodes()

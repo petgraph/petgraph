@@ -24,13 +24,13 @@ pub mod marker;
 use core::fmt::{Debug, Formatter};
 
 pub use self::{direction::Direction, marker::GraphDirectionality};
-use crate::{node::Node, storage::GraphStorage, DirectedGraphStorage};
+use crate::{
+    node::{Node, NodeId},
+    storage::GraphStorage,
+    DirectedGraphStorage,
+};
 
-type DetachedStorageEdge<S> = DetachedEdge<
-    <S as GraphStorage>::EdgeId,
-    <S as GraphStorage>::NodeId,
-    <S as GraphStorage>::EdgeWeight,
->;
+type DetachedStorageEdge<S> = DetachedEdge<<S as GraphStorage>::EdgeWeight>;
 
 /// ID of an edge in a graph.
 ///
@@ -46,6 +46,7 @@ type DetachedStorageEdge<S> = DetachedEdge<
 /// is considered undefined behavior.
 ///
 /// [`TypeId`]: core::any::TypeId
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeId(usize);
 
 // TODO: find a better way to gate these functions
@@ -125,10 +126,10 @@ where
 {
     storage: &'a S,
 
-    id: S::EdgeId,
+    id: EdgeId,
 
-    u: S::NodeId,
-    v: S::NodeId,
+    u: NodeId,
+    v: NodeId,
 
     weight: &'a S::EdgeWeight,
 }
@@ -212,11 +213,11 @@ where
     pub fn new(
         storage: &'a S,
 
-        id: S::EdgeId,
+        id: EdgeId,
         weight: &'a S::EdgeWeight,
 
-        u: S::NodeId,
-        v: S::NodeId,
+        u: NodeId,
+        v: NodeId,
     ) -> Self {
         debug_assert!(storage.contains_node(u));
         debug_assert!(storage.contains_node(v));
@@ -256,7 +257,7 @@ where
     /// assert_eq!(edge.id(), &aa);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> S::EdgeId {
+    pub const fn id(&self) -> EdgeId {
         self.id
     }
 
@@ -291,7 +292,7 @@ where
     /// assert!((u, v) == (&a, &b) || (u, v) == (&b, &a));
     /// ```
     #[must_use]
-    pub const fn endpoint_ids(&self) -> (S::NodeId, S::NodeId) {
+    pub const fn endpoint_ids(&self) -> (NodeId, NodeId) {
         (self.u, self.v)
     }
 
@@ -397,7 +398,7 @@ where
     /// assert_eq!(edge.source_id(), &a);
     /// ```
     #[must_use]
-    pub const fn source_id(&self) -> S::NodeId {
+    pub const fn source_id(&self) -> NodeId {
         self.u
     }
 
@@ -462,7 +463,7 @@ where
     /// let edge = graph.edge(&ab).unwrap();
     /// assert_eq!(edge.target_id(), &b);
     /// ```
-    pub const fn target_id(&self) -> S::NodeId {
+    pub const fn target_id(&self) -> NodeId {
         self.v
     }
 
@@ -579,12 +580,12 @@ pub struct EdgeMut<'a, S>
 where
     S: GraphStorage,
 {
-    id: S::EdgeId,
+    id: EdgeId,
 
     weight: &'a mut S::EdgeWeight,
 
-    u: S::NodeId,
-    v: S::NodeId,
+    u: NodeId,
+    v: NodeId,
 }
 
 impl<'a, S> EdgeMut<'a, S>
@@ -608,7 +609,7 @@ where
     ///
     /// [`Graph::edge_mut`]: crate::graph::Graph::edge_mut
     /// [`Graph::insert_edge`]: crate::graph::Graph::insert_edge
-    pub fn new(id: S::EdgeId, weight: &'a mut S::EdgeWeight, u: S::NodeId, v: S::NodeId) -> Self {
+    pub fn new(id: EdgeId, weight: &'a mut S::EdgeWeight, u: NodeId, v: NodeId) -> Self {
         Self { id, weight, u, v }
     }
 
@@ -633,7 +634,7 @@ where
     /// assert_eq!(edge.id(), &ab);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> S::EdgeId {
+    pub const fn id(&self) -> EdgeId {
         self.id
     }
 
@@ -666,7 +667,7 @@ where
     /// assert!((u, v) == (&a, &b) || (u, v) == (&b, &a));
     /// ```
     #[must_use]
-    pub const fn endpoint_ids(&self) -> (S::NodeId, S::NodeId) {
+    pub const fn endpoint_ids(&self) -> (NodeId, NodeId) {
         (self.u, self.v)
     }
 
@@ -736,7 +737,7 @@ where
     /// assert_eq!(edge.source_id(), &a);
     /// ```
     #[must_use]
-    pub const fn source_id(&self) -> S::NodeId {
+    pub const fn source_id(&self) -> NodeId {
         self.u
     }
 
@@ -758,7 +759,7 @@ where
     /// assert_eq!(edge.target_id(), &b);
     /// ```
     #[must_use]
-    pub const fn target_id(&self) -> S::NodeId {
+    pub const fn target_id(&self) -> NodeId {
         self.v
     }
 }
@@ -832,20 +833,20 @@ where
 /// [`Graph::into_parts`]: crate::graph::Graph::into_parts
 /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct DetachedEdge<E, N, W> {
+pub struct DetachedEdge<W> {
     /// The unique id of the edge.
-    pub id: E,
+    pub id: EdgeId,
 
     /// The `u` endpoint of the `(u, v)` pair of endpoints.
-    pub u: N,
+    pub u: NodeId,
     /// The `v` endpoint of the `(u, v)` pair of endpoints.
-    pub v: N,
+    pub v: NodeId,
 
     /// The weight of the edge.
     pub weight: W,
 }
 
-impl<E, N, W> DetachedEdge<E, N, W> {
+impl<W> DetachedEdge<W> {
     /// Create a new detached edge.
     ///
     /// In an undirected graph `u` and `v` are interchangeable, but in a directed graph (implements
@@ -858,7 +859,7 @@ impl<E, N, W> DetachedEdge<E, N, W> {
     ///
     /// let edge = DetachedEdge::new(0, "A → B", 1, 2);
     /// ```
-    pub const fn new(id: E, weight: W, u: N, v: N) -> Self {
+    pub const fn new(id: EdgeId, weight: W, u: NodeId, v: NodeId) -> Self {
         Self { id, u, v, weight }
     }
 }

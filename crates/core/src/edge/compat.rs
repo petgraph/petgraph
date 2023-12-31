@@ -1,24 +1,27 @@
 //! Compatability implementations for deprecated graph traits.
 #![allow(deprecated)]
 
-use crate::{deprecated::visit::EdgeRef, edge::Edge, storage::GraphStorage};
+use crate::{
+    deprecated::visit::EdgeRef,
+    edge::{Edge, EdgeId},
+    node::NodeId,
+    storage::GraphStorage,
+};
 
 impl<S> EdgeRef for Edge<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Clone,
-    S::EdgeId: Clone,
 {
-    type EdgeId = S::EdgeId;
-    type NodeId = S::NodeId;
+    type EdgeId = EdgeId;
+    type NodeId = NodeId;
     type Weight = S::EdgeWeight;
 
     fn source(&self) -> Self::NodeId {
-        self.u.clone()
+        self.u
     }
 
     fn target(&self) -> Self::NodeId {
-        self.v.clone()
+        self.v
     }
 
     fn weight(&self) -> &Self::Weight {
@@ -26,6 +29,6 @@ where
     }
 
     fn id(&self) -> Self::EdgeId {
-        self.id.clone()
+        self.id
     }
 }
