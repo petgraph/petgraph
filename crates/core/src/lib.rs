@@ -119,6 +119,8 @@
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
+extern crate core;
+extern crate core;
 
 #[deprecated(since = "0.1.0")]
 pub mod deprecated;

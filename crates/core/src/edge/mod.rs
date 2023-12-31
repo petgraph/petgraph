@@ -21,7 +21,7 @@ mod compat;
 mod direction;
 pub mod marker;
 
-use core::fmt::{Debug, Formatter};
+use core::fmt::{Debug, Display, Formatter};
 
 pub use self::{direction::Direction, marker::GraphDirectionality};
 use crate::{
@@ -48,6 +48,15 @@ type DetachedStorageEdge<S> = DetachedEdge<<S as GraphStorage>::EdgeWeight>;
 /// [`TypeId`]: core::any::TypeId
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeId(usize);
+
+impl Display for EdgeId {
+    // we could also utilize a VTable here instead, that would allow for custom formatting
+    // but that would be an additional pointer added to the type that must be carried around
+    // that's about ~8 bytes on 64-bit systems
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "EdgeId({})", self.0)
+    }
+}
 
 // TODO: find a better way to gate these functions
 impl EdgeId {

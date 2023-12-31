@@ -1,6 +1,8 @@
 use core::{cmp::Ordering, iter::Peekable};
 
-use crate::{node::NodeClosures, EdgeId, NodeId};
+use petgraph_core::{edge::EdgeId, node::NodeId};
+
+use crate::node::NodeClosures;
 
 pub(crate) type NodeIdClosureIter<'a> = core::iter::Copied<core::slice::Iter<'a, NodeId>>;
 pub(crate) type EdgeIdClosureIter<'a> = core::iter::Copied<core::slice::Iter<'a, EdgeId>>;

@@ -14,6 +14,8 @@
 //! - [`DirectedGraphStorage`]: A trait for directed graph storage implementations.
 //! - [`RetainableGraphStorage`]: A trait for retainable graph storage implementations.
 //! - [`AuxiliaryGraphStorage`]: A trait to access storage for arbitrary additional data.
+//! - [`LinearGraphStorage`]: A trait for graph storage implementations that allow the mapping of
+//!   their internal indices to a set of linear indices.
 //!
 //! [`GraphStorage`] proposes that [`DirectedGraphStorage`] is simply a specialization of an
 //! undirected graph, meaning that the supertrait of [`DirectedGraphStorage`] is also
@@ -22,7 +24,9 @@
 //!
 //! # Implementation Notes
 //!
-//! [`RetainableGraphStorage`] is subject to removal during the alpha period.
+//! * [`RetainableGraphStorage`] is subject to removal during the alpha period.
+//! * [`LinearGraphStorage`] is subject to removal or rename during the alpha period.
+//! * [`AuxiliaryGraphStorage`] is subject to removal or rename during the alpha period.
 //!
 //! [`Graph`]: crate::graph::Graph
 mod directed;
@@ -35,7 +39,7 @@ pub mod reverse;
 use error_stack::{Context, Result};
 
 pub use self::{
-    auxiliary::AuxiliaryGraphStorage, directed::DirectedGraphStorage,
+    auxiliary::AuxiliaryGraphStorage, directed::DirectedGraphStorage, linear::LinearGraphStorage,
     retain::RetainableGraphStorage,
 };
 use crate::{
@@ -236,6 +240,7 @@ pub trait GraphStorage: Sized {
     ///
     /// Implementations may choose to override this default implementation, but should try to also
     /// be fail-slow.
+    // TODO: additionally should return a mapping!
     fn from_parts(
         nodes: impl IntoIterator<Item = DetachedNode<Self::NodeWeight>>,
         edges: impl IntoIterator<Item = DetachedEdge<Self::EdgeWeight>>,

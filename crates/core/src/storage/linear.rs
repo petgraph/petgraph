@@ -121,11 +121,11 @@ pub trait IndexMapper<Id> {
 }
 
 pub trait LinearGraphStorage: GraphStorage {
-    type NodeIndexMapper<'graph>: IndexMapper<NodeId>
+    type EdgeIndexMapper<'graph>: IndexMapper<EdgeId>
     where
         Self: 'graph;
 
-    type EdgeIndexMapper<'graph>: IndexMapper<EdgeId>
+    type NodeIndexMapper<'graph>: IndexMapper<NodeId>
     where
         Self: 'graph;
 

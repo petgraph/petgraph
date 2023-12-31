@@ -17,7 +17,7 @@
 mod compat;
 
 use core::{
-    fmt::{Debug, Formatter},
+    fmt::{Debug, Display, Formatter},
     hash::Hash,
 };
 
@@ -42,6 +42,15 @@ use crate::{
 /// [`TypeId`]: core::any::TypeId
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeId(usize);
+
+impl Display for NodeId {
+    // we could also utilize a VTable here instead, that would allow for custom formatting
+    // but that would be an additional pointer added to the type that must be carried around
+    // that's about ~8 bytes on 64-bit systems
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        writeln!(f, "NodeId({})", self.0)
+    }
+}
 
 // TODO: find a better way to gate these functions
 impl NodeId {
