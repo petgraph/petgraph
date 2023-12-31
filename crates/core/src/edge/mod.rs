@@ -64,10 +64,10 @@ where
 {
     storage: &'a S,
 
-    id: &'a S::EdgeId,
+    id: S::EdgeId,
 
-    u: &'a S::NodeId,
-    v: &'a S::NodeId,
+    u: S::NodeId,
+    v: S::NodeId,
 
     weight: &'a S::EdgeWeight,
 }
@@ -86,8 +86,6 @@ impl<S> Copy for Edge<'_, S> where S: GraphStorage {}
 impl<S> Debug for Edge<'_, S>
 where
     S: GraphStorage,
-    S::EdgeId: Debug,
-    S::NodeId: Debug,
     S::EdgeWeight: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -153,11 +151,11 @@ where
     pub fn new(
         storage: &'a S,
 
-        id: &'a S::EdgeId,
+        id: S::EdgeId,
         weight: &'a S::EdgeWeight,
 
-        u: &'a S::NodeId,
-        v: &'a S::NodeId,
+        u: S::NodeId,
+        v: S::NodeId,
     ) -> Self {
         debug_assert!(storage.contains_node(u));
         debug_assert!(storage.contains_node(v));
@@ -197,7 +195,7 @@ where
     /// assert_eq!(edge.id(), &aa);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> &'a S::EdgeId {
+    pub const fn id(&self) -> S::EdgeId {
         self.id
     }
 
@@ -232,7 +230,7 @@ where
     /// assert!((u, v) == (&a, &b) || (u, v) == (&b, &a));
     /// ```
     #[must_use]
-    pub const fn endpoint_ids(&self) -> (&'a S::NodeId, &'a S::NodeId) {
+    pub const fn endpoint_ids(&self) -> (S::NodeId, S::NodeId) {
         (self.u, self.v)
     }
 
@@ -338,7 +336,7 @@ where
     /// assert_eq!(edge.source_id(), &a);
     /// ```
     #[must_use]
-    pub const fn source_id(&self) -> &'a S::NodeId {
+    pub const fn source_id(&self) -> S::NodeId {
         self.u
     }
 
@@ -403,7 +401,7 @@ where
     /// let edge = graph.edge(&ab).unwrap();
     /// assert_eq!(edge.target_id(), &b);
     /// ```
-    pub const fn target_id(&self) -> &'a S::NodeId {
+    pub const fn target_id(&self) -> S::NodeId {
         self.v
     }
 
@@ -451,8 +449,6 @@ where
 impl<S> Edge<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Clone,
-    S::EdgeId: Clone,
     S::EdgeWeight: Clone,
 {
     /// Detach this edge from the graph.
@@ -490,12 +486,7 @@ where
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
     pub fn detach(self) -> DetachedStorageEdge<S> {
-        DetachedEdge::new(
-            self.id.clone(),
-            self.weight.clone(),
-            self.u.clone(),
-            self.v.clone(),
-        )
+        DetachedEdge::new(self.id, self.weight.clone(), self.u, self.v)
     }
 }
 
@@ -527,12 +518,12 @@ pub struct EdgeMut<'a, S>
 where
     S: GraphStorage,
 {
-    id: &'a S::EdgeId,
+    id: S::EdgeId,
 
     weight: &'a mut S::EdgeWeight,
 
-    u: &'a S::NodeId,
-    v: &'a S::NodeId,
+    u: S::NodeId,
+    v: S::NodeId,
 }
 
 impl<'a, S> EdgeMut<'a, S>
@@ -556,13 +547,7 @@ where
     ///
     /// [`Graph::edge_mut`]: crate::graph::Graph::edge_mut
     /// [`Graph::insert_edge`]: crate::graph::Graph::insert_edge
-    pub fn new(
-        id: &'a S::EdgeId,
-        weight: &'a mut S::EdgeWeight,
-
-        u: &'a S::NodeId,
-        v: &'a S::NodeId,
-    ) -> Self {
+    pub fn new(id: S::EdgeId, weight: &'a mut S::EdgeWeight, u: S::NodeId, v: S::NodeId) -> Self {
         Self { id, weight, u, v }
     }
 
@@ -587,7 +572,7 @@ where
     /// assert_eq!(edge.id(), &ab);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> &'a S::EdgeId {
+    pub const fn id(&self) -> S::EdgeId {
         self.id
     }
 
@@ -620,7 +605,7 @@ where
     /// assert!((u, v) == (&a, &b) || (u, v) == (&b, &a));
     /// ```
     #[must_use]
-    pub const fn endpoint_ids(&self) -> (&'a S::NodeId, &'a S::NodeId) {
+    pub const fn endpoint_ids(&self) -> (S::NodeId, S::NodeId) {
         (self.u, self.v)
     }
 
@@ -690,7 +675,7 @@ where
     /// assert_eq!(edge.source_id(), &a);
     /// ```
     #[must_use]
-    pub const fn source_id(&self) -> &'a S::NodeId {
+    pub const fn source_id(&self) -> S::NodeId {
         self.u
     }
 
@@ -712,7 +697,7 @@ where
     /// assert_eq!(edge.target_id(), &b);
     /// ```
     #[must_use]
-    pub const fn target_id(&self) -> &'a S::NodeId {
+    pub const fn target_id(&self) -> S::NodeId {
         self.v
     }
 }
@@ -720,8 +705,6 @@ where
 impl<S> EdgeMut<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Clone,
-    S::EdgeId: Clone,
     S::EdgeWeight: Clone,
 {
     /// Detaches the edge from the graph.
@@ -756,12 +739,7 @@ where
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
     pub fn detach(self) -> DetachedStorageEdge<S> {
-        DetachedEdge::new(
-            self.id.clone(),
-            self.weight.clone(),
-            self.u.clone(),
-            self.v.clone(),
-        )
+        DetachedEdge::new(self.id, self.weight.clone(), self.u, self.v)
     }
 }
 

@@ -128,7 +128,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
@@ -143,7 +143,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
@@ -156,8 +156,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         self.path_from(graph, source)
             .ok()?
@@ -207,7 +207,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
@@ -223,7 +223,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
@@ -233,16 +233,16 @@ where
     /// Returns the shortest distance from the source to the target.
     ///
     /// This will return [`None`] if no path exists between the source and the target.
-    fn distance_between<'graph>(
+    fn distance_between(
         &self,
-        graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        graph: &Graph<S>,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         self.every_distance(graph)
             .ok()?
             .find(move |route| route.source().id() == source && route.target().id() == target)
-            .map(|route| route.into_cost())
+            .map(DirectRoute::into_cost)
     }
 
     /// Returns an iterator over all shortest distances in the graph.

@@ -3,6 +3,7 @@ mod entry;
 mod generation;
 mod id;
 mod key;
+pub(crate) mod secondary;
 
 use alloc::{vec, vec::Vec};
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
@@ -141,6 +142,16 @@ where
         if entry.generation != generation {
             return None;
         }
+
+        entry.get()
+    }
+
+    pub(crate) fn get_unchecked(&self, key: K) -> Option<&V> {
+        let id = key.into_id();
+
+        let index = id.index();
+
+        let entry = self.entries.get(index)?;
 
         entry.get()
     }
@@ -352,6 +363,10 @@ where
     pub(crate) fn len(&self) -> usize {
         self.entries.len() - self.free.len()
     }
+
+    pub(crate) fn total_len(&self) -> usize {
+        self.entries.len()
+    }
 }
 
 impl<K, V> FromIterator<(K, V)> for Slab<K, V>
@@ -421,16 +436,16 @@ where
         self.reverse.len()
     }
 
-    fn get(&self, from: &K) -> Option<usize> {
+    fn get(&self, from: K) -> Option<usize> {
         self.lookup.get(from.into_id().index()).copied().flatten()
     }
 
-    fn index(&self, from: &K) -> usize {
+    fn index(&self, from: K) -> usize {
         self.lookup[from.into_id().index()].expect("tried to access vacant entry")
     }
 
-    fn reverse(&self, to: usize) -> Option<Moo<K>> {
-        self.reverse.get(to).copied().flatten().map(Moo::from)
+    fn reverse(&self, to: usize) -> Option<K> {
+        self.reverse.get(to).copied().flatten()
     }
 }
 

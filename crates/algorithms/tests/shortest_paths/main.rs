@@ -8,7 +8,7 @@ use std::{
 };
 
 use petgraph_algorithms::shortest_paths::{
-    bellman_ford::CandidateOrder, BellmanFord, Dijkstra, FloydWarshall, Route, ShortestPath,
+    BellmanFord, Dijkstra, FloydWarshall, Route, ShortestPath,
 };
 use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
 use snapbox::{utils::normalize_lines, Action};
@@ -18,10 +18,10 @@ use crate::harness::{Case, Harness};
 fn setup(input_path: PathBuf) -> Case {
     let name = input_path
         .file_stem()
-        .unwrap()
+        .expect("file stem")
         .to_str()
-        .unwrap()
-        .to_string();
+        .expect("to str")
+        .to_owned();
 
     let expected = input_path.with_extension("out");
 
@@ -49,10 +49,10 @@ fn read(input_path: &Path) -> Result<Parse, Box<dyn Error>> {
 }
 
 fn parse(mut input: Lines<impl BufRead>) -> Result<Parse, Box<dyn Error>> {
-    let meta = input.next().unwrap()?;
+    let meta = input.next().expect("first line")?;
     let meta = meta
         .split_whitespace()
-        .map(|x| x.parse::<usize>())
+        .map(str::parse::<usize>)
         .collect::<Result<Vec<_>, _>>()?;
 
     let n = meta[0];
@@ -64,22 +64,22 @@ fn parse(mut input: Lines<impl BufRead>) -> Result<Parse, Box<dyn Error>> {
 
     let mut nodes = Vec::with_capacity(n);
     for index in 0..n {
-        nodes.push(*graph.insert_node(index).id());
+        nodes.push(graph.insert_node(index).id());
     }
 
     let mut edges = Vec::with_capacity(m);
     for _ in 0..m {
-        let edge = input.next().unwrap()?;
+        let edge = input.next().expect("edge")?;
         let edge = edge
             .split_whitespace()
-            .map(|x| x.parse::<usize>())
+            .map(str::parse::<usize>)
             .collect::<Result<Vec<_>, _>>()?;
 
         let u = edge[0];
         let v = edge[1];
         let w = edge[2] as u64;
 
-        let id = *graph.insert_edge(w, &nodes[u], &nodes[v]).id();
+        let id = graph.insert_edge(w, nodes[u], nodes[v]).id();
         edges.push(id);
     }
 
@@ -101,7 +101,7 @@ fn dump(route: Route<DinoStorage<usize, u64>, u64>) -> String {
     // so we add `+ 2`, edges are between them, so we subtract `- 1`, resulting in `+ 1`
     let y = route.path().transit().len() + 1;
 
-    let mut nodes: Vec<_> = route.into_path().into_iter().map(|x| *x.weight()).collect();
+    let nodes: Vec<_> = route.into_path().into_iter().map(|x| *x.weight()).collect();
 
     let mut output = vec![];
     output.push(format!("{x} {y}"));
@@ -127,9 +127,9 @@ fn test(input_path: &Path, name: &'static str) -> Result<String, Box<dyn Error>>
     } = read(input_path)?;
 
     let route = match name {
-        "dijkstra" => Dijkstra::directed().path_between(&graph, &source, &target),
-        "bellman_ford" => BellmanFord::directed().path_between(&graph, &source, &target),
-        "floyd_warshall" => FloydWarshall::directed().path_between(&graph, &source, &target),
+        "dijkstra" => Dijkstra::directed().path_between(&graph, source, target),
+        "bellman_ford" => BellmanFord::directed().path_between(&graph, source, target),
+        "floyd_warshall" => FloydWarshall::directed().path_between(&graph, source, target),
         _ => unreachable!(),
     };
 

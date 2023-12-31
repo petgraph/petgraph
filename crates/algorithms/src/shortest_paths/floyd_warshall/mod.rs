@@ -186,7 +186,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         FloydWarshallImpl::new(
             graph,
@@ -201,7 +201,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         FloydWarshallImpl::new(
             graph,
@@ -216,8 +216,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         let r#impl = FloydWarshallImpl::new(
             graph,
@@ -259,7 +259,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -277,7 +277,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -292,11 +292,11 @@ where
             .map(From::from))
     }
 
-    fn distance_between<'graph>(
+    fn distance_between(
         &self,
-        graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        graph: &Graph<S>,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -339,7 +339,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         FloydWarshallImpl::new(
             graph,
@@ -354,7 +354,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         FloydWarshallImpl::new(
             graph,
@@ -370,8 +370,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         let r#impl = FloydWarshallImpl::new(
             graph,
@@ -413,7 +413,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -431,7 +431,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -446,11 +446,11 @@ where
             .map(From::from))
     }
 
-    fn distance_between<'graph>(
+    fn distance_between(
         &self,
-        graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        graph: &Graph<S>,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Cost<Self::Cost>> {
         let iter = FloydWarshallImpl::new(
             graph,

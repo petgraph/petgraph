@@ -7,10 +7,7 @@ use core::{
 
 use fxhash::FxBuildHasher;
 use hashbrown::HashSet;
-use numi::{
-    cast::{CastFrom, CastTo, TryCastFrom},
-    num::identity::Zero,
-};
+use numi::{cast::TryCastFrom, num::identity::Zero};
 use petgraph_core::{GraphStorage, Node};
 
 pub(in crate::shortest_paths) struct DoubleEndedQueueItem<'graph, S, T>
@@ -45,7 +42,7 @@ where
     S: GraphStorage,
 {
     queue: VecDeque<DoubleEndedQueueItem<'graph, S, T>>,
-    active: HashSet<&'graph S::NodeId, FxBuildHasher>,
+    active: HashSet<S::NodeId, FxBuildHasher>,
 }
 
 impl<'graph, S, T> DoubleEndedQueue<'graph, S, T>
@@ -111,7 +108,7 @@ where
     ) -> Option<DoubleEndedQueueItem<'graph, S, T>> {
         let value = self.queue.pop_front()?;
 
-        self.active.remove(value.node.id());
+        self.active.remove(&value.node.id());
 
         Some(value)
     }
@@ -121,7 +118,7 @@ where
     ) -> Option<DoubleEndedQueueItem<'graph, S, T>> {
         let value = self.queue.pop_back()?;
 
-        self.active.remove(value.node.id());
+        self.active.remove(&value.node.id());
 
         Some(value)
     }

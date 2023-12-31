@@ -10,6 +10,8 @@ use petgraph_core::{
 
 use crate::{DinoGraph, DinoStorage, EdgeId, NodeId};
 
+// TODO: rework tests to be more encompassing and use test utils!
+
 #[test]
 fn empty() {
     let graph = DinoGraph::<(), (), Directed>::new();

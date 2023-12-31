@@ -1,110 +1,106 @@
 use alloc::collections::BinaryHeap;
-use core::{
-    cell::Cell,
-    cmp::{Ordering, Reverse},
+use core::cmp::Ordering;
+
+use petgraph_core::{
+    id::{AssociativeGraphId, BooleanMapper},
+    GraphStorage,
 };
 
-use petgraph_core::{GraphStorage, Node};
+pub(in crate::shortest_paths) struct PriorityQueueItem<I, T> {
+    pub(in crate::shortest_paths) node: I,
 
-struct PriorityQueueItem<'a, S, T>
-where
-    S: GraphStorage,
-{
-    node: Node<'a, S>,
-
-    priority: T,
-
-    skip: Cell<bool>,
+    pub(in crate::shortest_paths) priority: T,
 }
 
-impl<S, T> PartialEq for PriorityQueueItem<'_, S, T>
+impl<I, T> PartialEq for PriorityQueueItem<I, T>
 where
-    S: GraphStorage,
     T: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.priority.eq(&other.priority)
+        other.priority.eq(&self.priority)
     }
 }
 
-impl<S, T> Eq for PriorityQueueItem<'_, S, T>
-where
-    S: GraphStorage,
-    T: Eq,
-{
-}
+impl<I, T> Eq for PriorityQueueItem<I, T> where T: Eq {}
 
-impl<S, T> PartialOrd for PriorityQueueItem<'_, S, T>
+impl<I, T> PartialOrd for PriorityQueueItem<I, T>
 where
-    S: GraphStorage,
     T: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.priority.partial_cmp(&other.priority)
+        other.priority.partial_cmp(&self.priority)
     }
 }
 
-impl<S, T> Ord for PriorityQueueItem<'_, S, T>
+impl<I, T> Ord for PriorityQueueItem<I, T>
 where
-    S: GraphStorage,
     T: Ord,
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.priority.cmp(&other.priority)
+        other.priority.cmp(&self.priority)
     }
 }
 
 pub(in crate::shortest_paths) struct PriorityQueue<'a, S, T>
 where
-    S: GraphStorage,
+    S: GraphStorage + 'a,
+    S::NodeId: AssociativeGraphId<S>,
     T: Ord,
 {
-    heap: BinaryHeap<Reverse<PriorityQueueItem<'a, S, T>>>,
+    heap: BinaryHeap<PriorityQueueItem<S::NodeId, T>>,
+    pub(crate) check_admissibility: bool,
+
+    flags: <S::NodeId as AssociativeGraphId<S>>::BooleanMapper<'a>,
 }
 
 impl<'a, S, T> PriorityQueue<'a, S, T>
 where
     S: GraphStorage,
+    S::NodeId: AssociativeGraphId<S>,
     T: Ord,
 {
-    pub(in crate::shortest_paths) fn new() -> Self {
+    #[inline]
+    pub(in crate::shortest_paths) fn new(storage: &'a S) -> Self {
         Self {
             heap: BinaryHeap::new(),
+            check_admissibility: true,
+            flags: <S::NodeId as AssociativeGraphId<S>>::boolean_mapper(storage),
         }
     }
 
-    pub(in crate::shortest_paths) fn push(&mut self, node: Node<'a, S>, priority: T) {
-        self.heap.push(Reverse(PriorityQueueItem {
-            node,
-            priority,
-
-            skip: Cell::new(false),
-        }));
+    pub(in crate::shortest_paths) fn push(&mut self, node: S::NodeId, priority: T) {
+        self.heap.push(PriorityQueueItem { node, priority });
     }
 
-    pub(in crate::shortest_paths) fn decrease_priority(&mut self, node: Node<'a, S>, priority: T) {
-        for Reverse(item) in &self.heap {
-            if item.node.id() == node.id() {
-                item.skip.set(true);
-                break;
+    pub(in crate::shortest_paths) fn visit(&mut self, id: S::NodeId) {
+        self.flags.set(id, true);
+    }
+
+    #[inline]
+    pub(in crate::shortest_paths) fn has_been_visited(&self, id: S::NodeId) -> bool {
+        self.flags.index(id)
+    }
+
+    #[inline]
+    pub(in crate::shortest_paths) fn decrease_priority(&mut self, node: S::NodeId, priority: T) {
+        if self.check_admissibility && self.has_been_visited(node) {
+            return;
+        }
+
+        self.heap.push(PriorityQueueItem { node, priority });
+    }
+
+    #[inline]
+    pub(in crate::shortest_paths) fn pop_min(&mut self) -> Option<PriorityQueueItem<S::NodeId, T>> {
+        loop {
+            let item = self.heap.pop()?;
+
+            if self.check_admissibility && self.has_been_visited(item.node) {
+                continue;
             }
+
+            self.visit(item.node);
+            return Some(item);
         }
-
-        self.heap.push(Reverse(PriorityQueueItem {
-            node,
-            priority,
-
-            skip: Cell::new(false),
-        }));
-    }
-
-    pub(in crate::shortest_paths) fn pop_min(&mut self) -> Option<Node<'a, S>> {
-        while let Some(Reverse(item)) = self.heap.pop() {
-            if !item.skip.get() {
-                return Some(item.node);
-            }
-        }
-
-        None
     }
 }

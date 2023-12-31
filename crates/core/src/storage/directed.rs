@@ -73,11 +73,11 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// This method is implemented by calling [`Self::node_directed_connections`] and filtering the
     /// edges by their target.
     /// Most implementations should be able to provide a more efficient implementation.
-    fn directed_edges_between<'a: 'b, 'b>(
-        &'a self,
-        source: &'b Self::NodeId,
-        target: &'b Self::NodeId,
-    ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
+    fn directed_edges_between(
+        &self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+    ) -> impl Iterator<Item = Edge<'_, Self>> {
         self.node_directed_connections(source, Direction::Outgoing)
             .filter(move |edge| edge.target_id() == target)
     }
@@ -128,11 +128,11 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// This method is implemented by calling [`Self::node_directed_connections_mut`] and filtering
     /// the edges by their target.
     /// Most implementations should be able to provide a more efficient implementation.
-    fn directed_edges_between_mut<'a: 'b, 'b>(
-        &'a mut self,
-        source: &'b Self::NodeId,
-        target: &'b Self::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b {
+    fn directed_edges_between_mut(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.node_directed_connections_mut(source, Direction::Outgoing)
             .filter(move |edge| edge.target_id() == target)
     }
@@ -189,11 +189,11 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///     [ca]
     /// );
     /// ```
-    fn node_directed_connections<'a: 'b, 'b>(
-        &'a self,
-        id: &'b Self::NodeId,
+    fn node_directed_connections(
+        &self,
+        id: Self::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = Edge<'a, Self>> + 'b;
+    ) -> impl Iterator<Item = Edge<'_, Self>>;
 
     /// Returns an iterator over all directed edges that are connected to the given node, by the
     /// given direction with mutable weights.
@@ -243,11 +243,11 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///     [5, 5]
     /// );
     /// ```
-    fn node_directed_connections_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b Self::NodeId,
+    fn node_directed_connections_mut(
+        &mut self,
+        id: Self::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
+    ) -> impl Iterator<Item = EdgeMut<'_, Self>>;
 
     /// Returns the number of directed edges that are connected to the given node, by the given
     /// direction.
@@ -280,7 +280,7 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// assert_eq!(storage.node_directed_degree(&a, Direction::Outgoing), 1);
     /// assert_eq!(storage.node_directed_degree(&a, Direction::Incoming), 1);
     /// ```
-    fn node_directed_degree(&self, id: &Self::NodeId, direction: Direction) -> usize {
+    fn node_directed_degree(&self, id: Self::NodeId, direction: Direction) -> usize {
         self.node_directed_connections(id, direction).count()
     }
 
@@ -343,11 +343,11 @@ pub trait DirectedGraphStorage: GraphStorage {
     ///
     /// Implementations should try to provide a more efficient implementation than the default one,
     /// and must uphold the contract that the returned iterator does not contain duplicates.
-    fn node_directed_neighbours<'a: 'b, 'b>(
-        &'a self,
-        id: &'b Self::NodeId,
+    fn node_directed_neighbours(
+        &self,
+        id: Self::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
+    ) -> impl Iterator<Item = Node<'_, Self>> {
         self.node_directed_connections(id, direction)
             .map(move |edge| match direction {
                 Direction::Outgoing => edge.target(),
@@ -412,9 +412,9 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// No default implementation is provided, as a mutable iterator based on
     /// [`Self::node_directed_connections_mut`] could potentially lead to a double mutable borrow.
     // I'd love to provide a default implementation for this, but I just can't get it to work.
-    fn node_directed_neighbours_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b Self::NodeId,
+    fn node_directed_neighbours_mut(
+        &mut self,
+        id: Self::NodeId,
         direction: Direction,
-    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b;
+    ) -> impl Iterator<Item = NodeMut<'_, Self>>;
 }

@@ -62,7 +62,7 @@ pub trait IndexMapper<Id> {
     /// // The order for which node maps to which value is not guaranteed.
     /// assert_ne!(mapper.get(&a), mapper.get(&b));
     /// ```
-    fn get(&self, from: &Id) -> Option<usize>;
+    fn get(&self, from: Id) -> Option<usize>;
 
     /// Lookup a value from `To` to [`usize`].
     ///
@@ -92,7 +92,7 @@ pub trait IndexMapper<Id> {
     ///
     /// Panics if the provided id is not valid, meaning it is not part of the graph (e.g. id from
     /// another instance)
-    fn index(&self, from: &Id) -> usize {
+    fn index(&self, from: Id) -> usize {
         self.get(from).expect("invalid id provided")
     }
 
@@ -119,7 +119,7 @@ pub trait IndexMapper<Id> {
     /// let mapped = mapper.index(&a);
     /// assert_eq!(mapper.reverse(mapped), Some(Moo::Borrowed(&a)));
     /// ```
-    fn reverse(&self, to: usize) -> Option<Moo<Id>>;
+    fn reverse(&self, to: usize) -> Option<Id>;
 }
 
 /// Linear graph identifier.

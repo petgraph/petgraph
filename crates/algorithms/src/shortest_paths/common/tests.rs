@@ -95,8 +95,8 @@ where
             .collect();
 
         for expect in self.expected {
-            let source = &expect.source;
-            let target = &expect.target;
+            let source = expect.source;
+            let target = expect.target;
 
             let route = routes.remove(&(source, target)).expect("route not found");
 
@@ -106,7 +106,7 @@ where
             assert_eq!(path.target().id(), target, "target of {source} -> {target}");
             assert_eq!(
                 path.transit().iter().map(Node::id).collect::<Vec<_>>(),
-                expect.transit.iter().collect::<Vec<_>>(),
+                expect.transit.iter().copied().collect::<Vec<_>>(),
                 "transit of {source} -> {target}"
             );
             assert_eq!(*cost.value(), expect.cost, "cost of {source} -> {target}");
@@ -120,7 +120,7 @@ where
     }
 
     #[track_caller]
-    pub(in crate::shortest_paths) fn assert_path_from(&self, source: &S::NodeId) {
+    pub(in crate::shortest_paths) fn assert_path_from(&self, source: S::NodeId) {
         self.assert_path_routes(self.algorithm.path_from(self.graph, source));
     }
 }
@@ -143,8 +143,8 @@ where
             .collect();
 
         for expect in self.expected {
-            let source = &expect.source;
-            let target = &expect.target;
+            let source = expect.source;
+            let target = expect.target;
 
             let route = routes.remove(&(source, target)).expect("route not found");
 
@@ -174,7 +174,7 @@ where
     }
 
     #[track_caller]
-    pub(in crate::shortest_paths) fn assert_distance_from(&self, source: &S::NodeId) {
+    pub(in crate::shortest_paths) fn assert_distance_from(&self, source: S::NodeId) {
         self.assert_distance_routes(self.algorithm.distance_from(self.graph, source));
     }
 }

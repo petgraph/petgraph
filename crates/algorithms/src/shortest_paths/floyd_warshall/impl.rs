@@ -19,8 +19,8 @@ use crate::shortest_paths::{
 
 pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
     matrix: &mut SlotMatrix<'graph, S, Moo<'this, E::Value>>,
-    u: &S::NodeId,
-    v: &S::NodeId,
+    u: S::NodeId,
+    v: S::NodeId,
     value: Option<Moo<'this, E::Value>>,
 ) where
     S: GraphStorage,
@@ -33,8 +33,8 @@ pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
 
 pub(super) fn init_undirected_edge_distance<'graph: 'this, 'this, S, E>(
     matrix: &mut SlotMatrix<'graph, S, Moo<'this, E::Value>>,
-    u: &S::NodeId,
-    v: &S::NodeId,
+    u: S::NodeId,
+    v: S::NodeId,
     value: Option<Moo<'this, E::Value>>,
 ) where
     S: GraphStorage,
@@ -49,10 +49,10 @@ pub(super) fn init_undirected_edge_distance<'graph: 'this, 'this, S, E>(
     }
 }
 
-pub(super) fn init_directed_edge_predecessor<'graph, S>(
-    matrix: &mut SlotMatrix<'graph, S, &'graph S::NodeId>,
-    u: &'graph S::NodeId,
-    v: &'graph S::NodeId,
+pub(super) fn init_directed_edge_predecessor<S>(
+    matrix: &mut SlotMatrix<S, S::NodeId>,
+    u: S::NodeId,
+    v: S::NodeId,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -60,10 +60,10 @@ pub(super) fn init_directed_edge_predecessor<'graph, S>(
     matrix.set(u, v, Some(u));
 }
 
-pub(super) fn init_undirected_edge_predecessor<'graph, S>(
-    matrix: &mut SlotMatrix<'graph, S, &'graph S::NodeId>,
-    u: &'graph S::NodeId,
-    v: &'graph S::NodeId,
+pub(super) fn init_undirected_edge_predecessor<S>(
+    matrix: &mut SlotMatrix<S, S::NodeId>,
+    u: S::NodeId,
+    v: S::NodeId,
 ) where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -72,11 +72,11 @@ pub(super) fn init_undirected_edge_predecessor<'graph, S>(
     matrix.set(v, u, Some(v));
 }
 
-fn reconstruct_path<'a, S>(
-    matrix: &SlotMatrix<'_, S, &'a S::NodeId>,
-    source: &S::NodeId,
-    target: &'a S::NodeId,
-) -> Vec<&'a S::NodeId>
+fn reconstruct_path<S>(
+    matrix: &SlotMatrix<'_, S, S::NodeId>,
+    source: S::NodeId,
+    target: S::NodeId,
+) -> Vec<S::NodeId>
 where
     S: GraphStorage,
     S::NodeId: LinearGraphId<S> + Clone,
@@ -113,15 +113,15 @@ where
 }
 type InitEdgeDistanceFn<'graph, 'this, S, E> = fn(
     &mut SlotMatrix<'graph, S, Moo<'this, <E as GraphCost<S>>::Value>>,
-    &<S as GraphStorage>::NodeId,
-    &<S as GraphStorage>::NodeId,
+    <S as GraphStorage>::NodeId,
+    <S as GraphStorage>::NodeId,
     Option<Moo<'this, <E as GraphCost<S>>::Value>>,
 );
 
 type InitEdgePredecessorFn<'graph, S> = fn(
-    &mut SlotMatrix<'graph, S, &'graph <S as GraphStorage>::NodeId>,
-    &'graph <S as GraphStorage>::NodeId,
-    &'graph <S as GraphStorage>::NodeId,
+    &mut SlotMatrix<'graph, S, <S as GraphStorage>::NodeId>,
+    <S as GraphStorage>::NodeId,
+    <S as GraphStorage>::NodeId,
 );
 
 pub(super) struct FloydWarshallImpl<'graph: 'parent, 'parent, S, E>
@@ -139,7 +139,7 @@ where
     init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
 
     distances: SlotMatrix<'graph, S, Moo<'parent, E::Value>>,
-    predecessors: SlotMatrix<'graph, S, &'graph S::NodeId>,
+    predecessors: SlotMatrix<'graph, S, S::NodeId>,
 }
 
 // TODO: relax `NodeId` requirements or make `Send + Sync + 'static` across the board
@@ -264,7 +264,7 @@ where
         let mut result: Result<(), FloydWarshallError> = Ok(());
 
         for index in negative_cycles {
-            let Some(node) = self.distances.resolve(index).map(Moo::into_owned) else {
+            let Some(node) = self.distances.resolve(index) else {
                 continue;
             };
 
@@ -318,8 +318,8 @@ where
 
     pub(super) fn pick(
         self,
-        source: &S::NodeId,
-        target: &S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Option<Route<'graph, S, E::Value>> {
         let Self {
             graph,

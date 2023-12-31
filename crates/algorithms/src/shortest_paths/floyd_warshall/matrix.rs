@@ -23,14 +23,14 @@ where
         }
     }
 
-    fn get(&self, from: &T) -> Option<usize> {
+    fn get(&self, from: T) -> Option<usize> {
         match self {
             Self::Store(mapper) => mapper.get(from),
             Self::Discard => None,
         }
     }
 
-    fn reverse(&self, to: usize) -> Option<Moo<T>> {
+    fn reverse(&self, to: usize) -> Option<T> {
         match self {
             Self::Store(mapper) => mapper.reverse(to),
             Self::Discard => None,
@@ -81,7 +81,7 @@ where
         }
     }
 
-    pub(crate) fn set(&mut self, source: &S::NodeId, target: &S::NodeId, value: Option<T>) {
+    pub(crate) fn set(&mut self, source: S::NodeId, target: S::NodeId, value: Option<T>) {
         if matches!(self.mapper, MatrixIndexMapper::Discard) {
             // this should never happen, even if it does, we don't want to panic here (map call)
             // so we simply return.
@@ -106,14 +106,14 @@ where
     ///
     /// See the contract described on the [`IndexMapper`] for more information about the
     /// `map/lookup` contract.
-    pub(crate) fn get(&self, source: &S::NodeId, target: &S::NodeId) -> Option<&T> {
+    pub(crate) fn get(&self, source: S::NodeId, target: S::NodeId) -> Option<&T> {
         let source = self.mapper.get(source)?;
         let target = self.mapper.get(target)?;
 
         self.matrix[source * self.length + target].as_ref()
     }
 
-    pub(crate) fn resolve(&self, index: usize) -> Option<Moo<S::NodeId>> {
+    pub(crate) fn resolve(&self, index: usize) -> Option<S::NodeId> {
         self.mapper.reverse(index)
     }
 }

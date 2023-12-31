@@ -5,7 +5,10 @@ use core::{
 };
 
 use hashbrown::{HashMap, HashSet};
-use petgraph_core::{GraphStorage, Node};
+use petgraph_core::{
+    id::{AssociativeGraphId, AttributeMapper},
+    GraphStorage, Node,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(in crate::shortest_paths) enum PredecessorMode {
@@ -13,34 +16,33 @@ pub(in crate::shortest_paths) enum PredecessorMode {
     Record,
 }
 
-pub(in crate::shortest_paths) fn reconstruct_path_to<'a, S, H>(
-    predecessors: &HashMap<&'a S::NodeId, Option<Node<'a, S>>, H>,
-    target: &'a S::NodeId,
-) -> Vec<Node<'a, S>>
+pub(in crate::shortest_paths) fn reconstruct_path_to<S>(
+    predecessors: &<S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'_, Option<S::NodeId>>,
+    target: S::NodeId,
+) -> Vec<S::NodeId>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
-    H: BuildHasher,
+    S::NodeId: AssociativeGraphId<S>,
 {
     let mut current = target;
 
     let mut path = Vec::new();
 
     loop {
-        let Some(node) = predecessors[current] else {
+        let &Some(node) = predecessors.index(current) else {
             // this case should in theory _never_ happen, as the next statement
             // terminates if the next node is `None` (we're at a source node)
             // we do it this way, so that we don't need to push and then pop immediately.
             break;
         };
 
-        if predecessors[node.id()].is_none() {
+        if predecessors.index(node).is_none() {
             // we have reached the source node
             break;
         }
 
         path.push(node);
-        current = node.id();
+        current = node;
     }
 
     path.reverse();
@@ -52,8 +54,8 @@ where
 ///
 /// This has been adapted from the [NetworkX implementation](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/generic.py#L655)
 pub(in crate::shortest_paths) fn reconstruct_paths_between<'a, 'graph, S, H>(
-    predecessors: &'a HashMap<&'graph S::NodeId, Vec<Node<'graph, S>>, H>,
-    source: &'graph S::NodeId,
+    predecessors: &'a HashMap<S::NodeId, Vec<Node<'graph, S>>, H>,
+    source: S::NodeId,
     target: Node<'graph, S>,
 ) -> impl Iterator<Item = Vec<Node<'graph, S>>> + 'a
 where
@@ -90,9 +92,9 @@ where
                 return Some(path);
             }
 
-            if predecessors[node.id()].len() > index {
+            if predecessors[&node.id()].len() > index {
                 stack[top].1 = index + 1;
-                let next = predecessors[node.id()][index];
+                let next = predecessors[&node.id()][index];
                 if !seen.insert(next.id()) {
                     // value already seen
                     continue;
@@ -108,13 +110,12 @@ where
             } else {
                 seen.remove(&node.id());
 
-                match top.checked_sub(1) {
-                    Some(new_top) => top = new_top,
-                    None => {
-                        // we have exhausted all paths
-                        exhausted = true;
-                        break;
-                    }
+                if let Some(new_top) = top.checked_sub(1) {
+                    top = new_top;
+                } else {
+                    // we have exhausted all paths
+                    exhausted = true;
+                    break;
                 }
             }
 

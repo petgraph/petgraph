@@ -57,14 +57,13 @@ where
     }
 
     fn to_index(&self, a: Self::NodeId) -> usize {
-        S::NodeId::index_mapper(&self.storage).index(&a)
+        S::NodeId::index_mapper(&self.storage).index(a)
     }
 
     fn from_index(&self, i: usize) -> Self::NodeId {
         S::NodeId::index_mapper(&self.storage)
             .reverse(i)
             .expect("unable to determine index")
-            .into_owned()
     }
 }
 
@@ -98,14 +97,13 @@ where
     }
 
     fn to_index(&self, a: Self::EdgeId) -> usize {
-        S::EdgeId::index_mapper(&self.storage).index(&a)
+        S::EdgeId::index_mapper(&self.storage).index(a)
     }
 
     fn from_index(&self, i: usize) -> Self::EdgeId {
         S::EdgeId::index_mapper(&self.storage)
             .reverse(i)
             .expect("unable to determine index")
-            .into_owned()
     }
 }
 
@@ -128,7 +126,7 @@ where
     type NodeIdentifiers = impl Iterator<Item = Self::NodeId>;
 
     fn node_identifiers(self) -> Self::NodeIdentifiers {
-        self.nodes().map(|node| *node.id())
+        self.nodes().map(|node| node.id())
     }
 }
 
@@ -176,8 +174,8 @@ where
         // We make use of `&n` in the trait and the iterator is bound to it, which means that we
         // need to collect to avoid having a lifetime we created in this code.
         // we _could_ in theory also use `Cow` here, but that's a bit overkill.
-        self.neighbours(&n)
-            .map(|node| *node.id())
+        self.neighbours(n)
+            .map(|node| node.id())
             .collect::<Vec<_>>()
             .into_iter()
     }
@@ -194,8 +192,8 @@ where
 
     fn neighbors_directed(self, n: Self::NodeId, d: Direction) -> Self::NeighborsDirected {
         // see comment in `IntoNeighbors` for why we need to collect here.
-        self.neighbours_directed(&n, d)
-            .map(|node| *node.id())
+        self.neighbours_directed(n, d)
+            .map(|node| node.id())
             .collect::<Vec<_>>()
             .into_iter()
     }
@@ -212,7 +210,7 @@ where
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         // see comment in `IntoNeighbors` for why we need to collect here.
-        self.connections(&a).collect::<Vec<_>>().into_iter()
+        self.connections(a).collect::<Vec<_>>().into_iter()
     }
 }
 
@@ -227,7 +225,7 @@ where
 
     fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
         // see comment in `IntoNeighbors` for why we need to collect here.
-        self.connections_directed(&a, dir)
+        self.connections_directed(a, dir)
             .collect::<Vec<_>>()
             .into_iter()
     }
@@ -261,7 +259,7 @@ where
     T: LinearGraphId<S> + Clone,
 {
     fn visit(&mut self, a: T) -> bool {
-        let Some(index) = self.mapper.get(&a) else {
+        let Some(index) = self.mapper.get(a) else {
             return false;
         };
 
@@ -269,7 +267,7 @@ where
     }
 
     fn is_visited(&self, a: &T) -> bool {
-        let Some(index) = self.mapper.get(a) else {
+        let Some(index) = self.mapper.get(*a) else {
             return false;
         };
 
@@ -330,7 +328,7 @@ where
     fn adjacency_matrix(&self) -> Self::AdjMatrix {}
 
     fn is_adjacent(&self, _: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool {
-        self.edges_between(&a, &b).next().is_some()
+        self.edges_between(a, b).next().is_some()
     }
 }
 
@@ -342,11 +340,11 @@ where
     S::EdgeId: Copy,
 {
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
-        self.node(&id).map(|node| node.weight())
+        self.node(id).map(|node| node.weight())
     }
 
     fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
-        self.edge(&id).map(|edge| edge.weight())
+        self.edge(id).map(|edge| edge.weight())
     }
 }
 
@@ -358,7 +356,7 @@ where
     S::EdgeId: ManagedGraphId + Copy,
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
-        *self.insert_node(weight).id()
+        self.insert_node(weight).id()
     }
 
     fn update_edge(
@@ -367,7 +365,7 @@ where
         b: Self::NodeId,
         weight: Self::EdgeWeight,
     ) -> Self::EdgeId {
-        *self.insert_edge(weight, &a, &b).id()
+        self.insert_edge(weight, a, b).id()
     }
 }
 

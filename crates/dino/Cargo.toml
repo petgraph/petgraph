@@ -10,9 +10,8 @@ numi = { workspace = true }
 petgraph-core = { workspace = true, features = ['alloc'] }
 error-stack.workspace = true
 
+bitvec = "1.0.1"
 either = "1.9.0" # TODO: potentially remove
 
-# Closures
-roaring = "0.10.2"
-fnv = { version = "1.0.7", default-features = false }
+[dev-dependencies]
 hashbrown = { workspace = true, features = ['ahash'] }

@@ -138,10 +138,10 @@ where
     /// Refer to the documentation of the underlying storage for more information.
     pub fn try_insert_node_with(
         &mut self,
-        weight: impl FnOnce(&S::NodeId) -> S::NodeWeight,
+        weight: impl FnOnce(S::NodeId) -> S::NodeWeight,
     ) -> Result<NodeMut<S>, Error> {
         let id = self.storage.next_node_id(NoValue::new());
-        let weight = weight(&id);
+        let weight = weight(id);
 
         self.storage.insert_node(id, weight).change_context(Error)
     }
@@ -180,7 +180,7 @@ where
     /// Refer to the documentation of the underlying storage for more information.
     pub fn insert_node_with(
         &mut self,
-        weight: impl FnOnce(&S::NodeId) -> S::NodeWeight,
+        weight: impl FnOnce(S::NodeId) -> S::NodeWeight,
     ) -> NodeMut<S> {
         self.try_insert_node_with(weight)
             .expect("Constraint violation. Try using `try_insert_node_with` instead.")
@@ -213,10 +213,10 @@ where
         weight: S::NodeWeight,
     ) -> Result<NodeMut<S>, Error> {
         // we cannot use `if let` here due to limitations of the borrow checker
-        if self.storage.contains_node(&id) {
+        if self.storage.contains_node(id) {
             let mut node = self
                 .storage
-                .node_mut(&id)
+                .node_mut(id)
                 .expect("inconsistent storage, node must exist");
 
             *node.weight_mut() = weight;
@@ -272,8 +272,8 @@ where
     pub fn try_insert_edge(
         &mut self,
         attributes: impl Into<Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>>,
-        source: &S::NodeId,
-        target: &S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Result<EdgeMut<S>, Error> {
         let Attributes { id, weight } = attributes.into();
 
@@ -312,8 +312,8 @@ where
     pub fn insert_edge(
         &mut self,
         attributes: impl Into<Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>>,
-        source: &S::NodeId,
-        target: &S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> EdgeMut<S> {
         self.try_insert_edge(attributes, source, target)
             .expect("Constraint violation. Try using `try_insert_edge` instead.")
@@ -361,12 +361,12 @@ where
     /// The same errors as [`Self::try_insert_edge`] may occur.
     pub fn try_insert_edge_with(
         &mut self,
-        weight: impl FnOnce(&S::EdgeId) -> S::EdgeWeight,
-        source: &S::NodeId,
-        target: &S::NodeId,
+        weight: impl FnOnce(S::EdgeId) -> S::EdgeWeight,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Result<EdgeMut<S>, Error> {
         let id = self.storage.next_edge_id(NoValue::new());
-        let weight = weight(&id);
+        let weight = weight(id);
 
         self.storage
             .insert_edge(id, weight, source, target)
@@ -406,9 +406,9 @@ where
     /// The same panics as [`Self::insert_edge`] may occur.
     pub fn insert_edge_with(
         &mut self,
-        weight: impl FnOnce(&S::EdgeId) -> S::EdgeWeight,
-        source: &S::NodeId,
-        target: &S::NodeId,
+        weight: impl FnOnce(S::EdgeId) -> S::EdgeWeight,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> EdgeMut<S> {
         self.try_insert_edge_with(weight, source, target)
             .expect("Constraint violation. Try using `try_insert_edge_with` instead.")
@@ -441,13 +441,13 @@ where
         id: S::EdgeId,
         weight: S::EdgeWeight,
 
-        source: &S::NodeId,
-        target: &S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> Result<EdgeMut<S>, Error> {
-        if self.storage.contains_edge(&id) {
+        if self.storage.contains_edge(id) {
             let mut edge = self
                 .storage
-                .edge_mut(&id)
+                .edge_mut(id)
                 .expect("inconsistent storage, edge must exist");
 
             *edge.weight_mut() = weight;
@@ -473,8 +473,8 @@ where
         id: S::EdgeId,
         weight: S::EdgeWeight,
 
-        source: &S::NodeId,
-        target: &S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
     ) -> EdgeMut<S> {
         self.try_upsert_edge(id, weight, source, target)
             .expect("Constraint violation. Try using `try_upsert_edge` instead.")

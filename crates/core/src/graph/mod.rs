@@ -472,7 +472,7 @@ where
     ///     None
     /// );
     /// ```
-    pub fn node(&self, id: &S::NodeId) -> Option<Node<S>> {
+    pub fn node(&self, id: S::NodeId) -> Option<Node<S>> {
         self.storage.node(id)
     }
 
@@ -502,7 +502,7 @@ where
     ///
     /// assert!(graph.node_mut(&b).is_none());
     /// ```
-    pub fn node_mut(&mut self, id: &S::NodeId) -> Option<NodeMut<S>> {
+    pub fn node_mut(&mut self, id: S::NodeId) -> Option<NodeMut<S>> {
         self.storage.node_mut(id)
     }
 
@@ -526,7 +526,7 @@ where
     /// assert!(graph.contains_node(&a));
     /// assert!(!graph.contains_node(&b));
     /// ```
-    pub fn contains_node(&self, id: &S::NodeId) -> bool {
+    pub fn contains_node(&self, id: S::NodeId) -> bool {
         self.storage.contains_node(id)
     }
 
@@ -555,10 +555,7 @@ where
     /// assert_eq!(graph.remove_node(&a), None);
     /// assert_eq!(graph.remove_node(&b), None);
     /// ```
-    pub fn remove_node(
-        &mut self,
-        id: &S::NodeId,
-    ) -> Option<DetachedNode<S::NodeId, S::NodeWeight>> {
+    pub fn remove_node(&mut self, id: S::NodeId) -> Option<DetachedNode<S::NodeId, S::NodeWeight>> {
         self.storage.remove_node(id)
     }
 
@@ -589,7 +586,7 @@ where
     /// );
     /// assert!(graph.edge(&bc).is_none());
     /// ```
-    pub fn edge(&self, id: &S::EdgeId) -> Option<Edge<S>> {
+    pub fn edge(&self, id: S::EdgeId) -> Option<Edge<S>> {
         self.storage.edge(id)
     }
 
@@ -621,7 +618,7 @@ where
     /// );
     /// assert!(graph.edge_mut(&bc).is_none());
     /// ```
-    pub fn edge_mut(&mut self, id: &S::EdgeId) -> Option<EdgeMut<S>> {
+    pub fn edge_mut(&mut self, id: S::EdgeId) -> Option<EdgeMut<S>> {
         self.storage.edge_mut(id)
     }
 
@@ -646,7 +643,7 @@ where
     /// assert!(graph.contains_edge(&ab));
     /// assert!(!graph.contains_edge(&bc));
     /// ```
-    pub fn contains_edge(&self, id: &S::EdgeId) -> bool {
+    pub fn contains_edge(&self, id: S::EdgeId) -> bool {
         self.storage.contains_edge(id)
     }
 
@@ -683,7 +680,7 @@ where
     /// ```
     pub fn remove_edge(
         &mut self,
-        id: &S::EdgeId,
+        id: S::EdgeId,
     ) -> Option<DetachedEdge<S::EdgeId, S::NodeId, S::EdgeWeight>> {
         self.storage.remove_edge(id)
     }
@@ -693,10 +690,7 @@ where
     /// This is an alias for [`Self::neighbours`], as there's a spelling difference between the
     /// American and British English.
     #[inline]
-    pub fn neighbors<'a: 'b, 'b>(
-        &'a self,
-        id: &'b S::NodeId,
-    ) -> impl Iterator<Item = Node<'a, S>> + 'b {
+    pub fn neighbors(&self, id: S::NodeId) -> impl Iterator<Item = Node<'_, S>> {
         self.neighbours(id)
     }
 
@@ -742,10 +736,7 @@ where
     ///     [a, c].into_iter().collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn neighbours<'a: 'b, 'b>(
-        &'a self,
-        id: &'b S::NodeId,
-    ) -> impl Iterator<Item = Node<S>> + 'b {
+    pub fn neighbours(&self, id: S::NodeId) -> impl Iterator<Item = Node<'_, S>> {
         self.storage.node_neighbours(id)
     }
 
@@ -754,10 +745,7 @@ where
     /// This is an alias for [`Self::neighbours_mut`], as there's a spelling difference between
     /// American and British English.
     #[inline]
-    pub fn neighbors_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b S::NodeId,
-    ) -> impl Iterator<Item = NodeMut<'a, S>> + 'b {
+    pub fn neighbors_mut(&mut self, id: S::NodeId) -> impl Iterator<Item = NodeMut<'_, S>> {
         self.neighbours_mut(id)
     }
 
@@ -805,10 +793,7 @@ where
     ///     Some((d, 3))
     /// );
     /// ```
-    pub fn neighbours_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b S::NodeId,
-    ) -> impl Iterator<Item = NodeMut<'a, S>> + 'b {
+    pub fn neighbours_mut(&mut self, id: S::NodeId) -> impl Iterator<Item = NodeMut<'_, S>> {
         self.storage.node_neighbours_mut(id)
     }
 
@@ -843,10 +828,7 @@ where
     ///     [ab, ca, aa].into_iter().collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn connections<'a: 'b, 'b>(
-        &'a self,
-        id: &'b S::NodeId,
-    ) -> impl Iterator<Item = Edge<'a, S>> + 'b {
+    pub fn connections(&self, id: S::NodeId) -> impl Iterator<Item = Edge<'_, S>> {
         self.storage.node_connections(id)
     }
 
@@ -892,10 +874,7 @@ where
     ///     Some((bc, u8::MAX - 1))
     /// );
     /// ```
-    pub fn connections_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b S::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'a, S>> + 'b {
+    pub fn connections_mut(&mut self, id: S::NodeId) -> impl Iterator<Item = EdgeMut<'_, S>> {
         self.storage.node_connections_mut(id)
     }
 
@@ -926,7 +905,7 @@ where
     /// assert_eq!(graph.degree(&c), 2);
     /// assert_eq!(graph.degree(&d), 0);
     /// ```
-    pub fn degree(&self, id: &S::NodeId) -> usize {
+    pub fn degree(&self, id: S::NodeId) -> usize {
         self.storage.node_degree(id)
     }
 
@@ -960,11 +939,7 @@ where
     ///     [ab, ba].into_iter().collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn edges_between<'a: 'b, 'b>(
-        &'a self,
-        u: &'b S::NodeId,
-        v: &'b S::NodeId,
-    ) -> impl Iterator<Item = Edge<'a, S>> + 'b {
+    pub fn edges_between(&self, u: S::NodeId, v: S::NodeId) -> impl Iterator<Item = Edge<'_, S>> {
         self.storage.edges_between(u, v)
     }
 
@@ -1002,11 +977,11 @@ where
     ///         .collect::<HashSet<_>>()
     /// );
     /// ```
-    pub fn edges_between_mut<'a: 'b, 'b>(
-        &'a mut self,
-        u: &'b S::NodeId,
-        v: &'b S::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'a, S>> + 'b {
+    pub fn edges_between_mut(
+        &mut self,
+        u: S::NodeId,
+        v: S::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'_, S>> {
         self.storage.edges_between_mut(u, v)
     }
 

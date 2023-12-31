@@ -57,3 +57,5 @@ crates/algorithms/tests/cases/shortest_path/wrong_dijkstra_handmade_00.out filte
 crates/algorithms/tests/cases/shortest_path/grid_swirl_00.out filter=lfs diff=lfs merge=lfs -text
 crates/algorithms/tests/cases/shortest_path/max_dense_zero_00.out filter=lfs diff=lfs merge=lfs -text
 crates/algorithms/tests/cases/shortest_path/wrong_dijkstra_killer_00.in filter=lfs diff=lfs merge=lfs -text
+crates/algorithms/benches/cases/shortest_path/USA-road-d.FLA.co filter=lfs diff=lfs merge=lfs -text
+crates/algorithms/benches/cases/shortest_path/USA-road-d.FLA.gr filter=lfs diff=lfs merge=lfs -text

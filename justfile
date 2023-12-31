@@ -156,3 +156,14 @@ generate-problems:
     @just generate-problem graph shortest_path
 
 
+download-benchmarks:
+    # create output directory if it does not exist
+    mkdir -p crates/algorithms/benches/cases/shortest_path
+
+    wget http://www.diag.uniroma1.it/challenge9/data/USA-road-d/USA-road-d.FLA.gr.gz -O crates/algorithms/benches/cases/shortest_path/USA-road-d.FLA.gr.gz
+    wget http://www.diag.uniroma1.it/challenge9/data/USA-road-d/USA-road-d.FLA.co.gz -O crates/algorithms/benches/cases/shortest_path/USA-road-d.FLA.co.gz
+
+    # uncompress the files
+    gunzip crates/algorithms/benches/cases/shortest_path/USA-road-d.FLA.gr.gz
+    gunzip crates/algorithms/benches/cases/shortest_path/USA-road-d.FLA.co.gz
+

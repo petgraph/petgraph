@@ -6,11 +6,12 @@ mod measure;
 mod tests;
 
 use alloc::vec::Vec;
-use core::{hash::Hash, marker::PhantomData};
+use core::marker::PhantomData;
 
 use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
+    id::AssociativeGraphId,
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
 };
 
@@ -18,14 +19,13 @@ use self::iter::DijkstraIter;
 pub use self::{error::DijkstraError, measure::DijkstraMeasure};
 use super::{
     common::{
-        connections::outgoing_connections,
         cost::{DefaultCost, GraphCost},
         route::{DirectRoute, Route},
         transit::PredecessorMode,
     },
     ShortestDistance, ShortestPath,
 };
-use crate::polyfill::IteratorExt;
+use crate::{polyfill::IteratorExt, shortest_paths::common::connections::NodeConnections};
 
 /// An implementation of Dijkstra's shortest path algorithm.
 ///
@@ -174,7 +174,7 @@ where
 impl<S, E> ShortestPath<S> for Dijkstra<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -184,7 +184,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.path_from(graph, target)?;
 
@@ -194,12 +194,12 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         DijkstraIter::new(
             graph,
             &self.edge_cost,
-            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::undirected(graph.storage()),
             source,
             PredecessorMode::Record,
         )
@@ -221,7 +221,7 @@ where
 impl<S, E> ShortestPath<S> for Dijkstra<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -231,12 +231,12 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph S::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         DijkstraIter::new(
             graph,
             &self.edge_cost,
-            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::directed(graph.storage()),
             source,
             PredecessorMode::Record,
         )
@@ -258,7 +258,7 @@ where
 impl<S, E> ShortestDistance<S> for Dijkstra<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -268,7 +268,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: &'graph S::NodeId,
+        target: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.distance_from(graph, target)?;
 
@@ -278,12 +278,12 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph <S as GraphStorage>::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = DijkstraIter::new(
             graph,
             &self.edge_cost,
-            Node::<'graph, S>::connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::undirected(graph.storage()),
             source,
             PredecessorMode::Discard,
         )?;
@@ -307,7 +307,7 @@ where
 impl<S, E> ShortestDistance<S> for Dijkstra<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -317,12 +317,12 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: &'graph <S as GraphStorage>::NodeId,
+        source: S::NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = DijkstraIter::new(
             graph,
             &self.edge_cost,
-            outgoing_connections as fn(&Node<'graph, S>) -> _,
+            NodeConnections::directed(graph.storage()),
             source,
             PredecessorMode::Discard,
         )?;

@@ -3,12 +3,15 @@ use core::fmt::{Display, Formatter};
 use petgraph_core::{
     attributes::NoValue,
     edge::marker::GraphDirectionality,
-    id::{GraphId, LinearGraphId, ManagedGraphId},
+    id::{AssociativeGraphId, GraphId, LinearGraphId, ManagedGraphId},
 };
 
 use crate::{
     node::NodeId,
-    slab::{EntryId, Key, SlabIndexMapper},
+    slab::{
+        secondary::{SlabAttributeMapper, SlabBooleanMapper},
+        EntryId, Key, SlabIndexMapper,
+    },
     DinoStorage,
 };
 
@@ -45,10 +48,12 @@ impl Display for EdgeId {
 }
 
 impl Key for EdgeId {
+    #[inline]
     fn from_id(id: EntryId) -> Self {
         Self(id)
     }
 
+    #[inline]
     fn into_id(self) -> EntryId {
         self.0
     }
@@ -69,7 +74,25 @@ where
     }
 }
 
+impl<N, E, D> AssociativeGraphId<DinoStorage<N, E, D>> for EdgeId
+where
+    D: GraphDirectionality,
+{
+    type AttributeMapper<'a, V> = SlabAttributeMapper<'a, Self, V> where DinoStorage<N, E, D>: 'a;
+    type BooleanMapper<'a> = SlabBooleanMapper<'a> where DinoStorage<N, E, D>: 'a;
+
+    fn attribute_mapper<V>(storage: &DinoStorage<N, E, D>) -> Self::AttributeMapper<'_, V> {
+        SlabAttributeMapper::new(&storage.edges)
+    }
+
+    fn boolean_mapper(storage: &DinoStorage<N, E, D>) -> Self::BooleanMapper<'_> {
+        SlabBooleanMapper::new(&storage.edges)
+    }
+}
+
 impl ManagedGraphId for EdgeId {}
+
+pub(crate) type EdgeSlab<T> = crate::slab::Slab<EdgeId, Edge<T>>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Edge<T> {

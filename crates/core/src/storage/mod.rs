@@ -326,7 +326,7 @@ pub trait GraphStorage: Sized {
         let mut result: Result<(), Self::Error> = Ok(());
 
         for edge in edges {
-            if let Err(error) = graph.insert_edge(edge.id, edge.weight, &edge.u, &edge.v) {
+            if let Err(error) = graph.insert_edge(edge.id, edge.weight, edge.u, edge.v) {
                 match &mut result {
                     Err(errors) => errors.extend_one(error),
                     result => *result = Err(error),
@@ -614,8 +614,8 @@ pub trait GraphStorage: Sized {
         id: Self::EdgeId,
         weight: Self::EdgeWeight,
 
-        u: &Self::NodeId,
-        v: &Self::NodeId,
+        u: Self::NodeId,
+        v: Self::NodeId,
     ) -> Result<EdgeMut<Self>, Self::Error>;
 
     /// Removes the node with the given identifier from the graph.
@@ -682,7 +682,7 @@ pub trait GraphStorage: Sized {
     /// ```
     fn remove_node(
         &mut self,
-        id: &Self::NodeId,
+        id: Self::NodeId,
     ) -> Option<DetachedNode<Self::NodeId, Self::NodeWeight>>;
 
     /// Removes the edge with the given identifier from the graph.
@@ -716,7 +716,7 @@ pub trait GraphStorage: Sized {
     /// ```
     fn remove_edge(
         &mut self,
-        id: &Self::EdgeId,
+        id: Self::EdgeId,
     ) -> Option<DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>;
 
     /// Clears the graph, removing all nodes and edges.
@@ -773,7 +773,7 @@ pub trait GraphStorage: Sized {
     /// // This will access the underlying storage, and is equivalent to `storage.neighbours(&a)`.
     /// assert_eq!(node.neighbours().count(), 0);
     /// ```
-    fn node(&self, id: &Self::NodeId) -> Option<Node<Self>>;
+    fn node(&self, id: Self::NodeId) -> Option<Node<Self>>;
 
     /// Returns the node, with a mutable weight, with the given identifier.
     ///
@@ -797,7 +797,7 @@ pub trait GraphStorage: Sized {
     /// assert_eq!(node.id(), &a);
     /// assert_eq!(node.weight(), &mut 1);
     /// ```
-    fn node_mut(&mut self, id: &Self::NodeId) -> Option<NodeMut<Self>>;
+    fn node_mut(&mut self, id: Self::NodeId) -> Option<NodeMut<Self>>;
 
     /// Checks if the node with the given identifier exists.
     ///
@@ -825,7 +825,7 @@ pub trait GraphStorage: Sized {
     /// The default implementation simply checks if [`Self::node`] returns [`Some`], but if
     /// possible, custom implementations that are able to do this more efficiently should override
     /// this.
-    fn contains_node(&self, id: &Self::NodeId) -> bool {
+    fn contains_node(&self, id: Self::NodeId) -> bool {
         self.node(id).is_some()
     }
 
@@ -872,7 +872,7 @@ pub trait GraphStorage: Sized {
     /// assert_eq!(edge.target().id(), &b);
     /// assert_eq!(edge.target().weight(), &2);
     /// ```
-    fn edge(&self, id: &Self::EdgeId) -> Option<Edge<Self>>;
+    fn edge(&self, id: Self::EdgeId) -> Option<Edge<Self>>;
 
     /// Returns the edge, with a mutable weight, with the given identifier, if it exists.
     ///
@@ -905,7 +905,7 @@ pub trait GraphStorage: Sized {
     ///
     /// assert_eq!(storage.edge(&ab).unwrap().weight(), &4);
     /// ```
-    fn edge_mut(&mut self, id: &Self::EdgeId) -> Option<EdgeMut<Self>>;
+    fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<Self>>;
 
     /// Checks if the edge with the given identifier exists.
     ///
@@ -938,7 +938,7 @@ pub trait GraphStorage: Sized {
     /// The default implementation simply checks if [`Self::edge`] returns [`Some`], but if
     /// possible, custom implementations that are able to do this more efficiently should override
     /// this.
-    fn contains_edge(&self, id: &Self::EdgeId) -> bool {
+    fn contains_edge(&self, id: Self::EdgeId) -> bool {
         self.edge(id).is_some()
     }
 
@@ -981,11 +981,11 @@ pub trait GraphStorage: Sized {
     /// The default implementation simply calls [`Self::node_connections`] on both nodes and then
     /// chains those, after filtering for the respective end. Most implementations should be able to
     /// provide a more efficient implementation.
-    fn edges_between<'a: 'b, 'b>(
-        &'a self,
-        u: &'b Self::NodeId,
-        v: &'b Self::NodeId,
-    ) -> impl Iterator<Item = Edge<'a, Self>> + 'b {
+    fn edges_between(
+        &self,
+        u: Self::NodeId,
+        v: Self::NodeId,
+    ) -> impl Iterator<Item = Edge<'_, Self>> {
         // How does this work with a default implementation?
         let from_source = self.node_connections(u).filter(move |edge| {
             let (edge_u, edge_v) = edge.endpoint_ids();
@@ -1050,11 +1050,11 @@ pub trait GraphStorage: Sized {
     /// [`Self::node_connections_mut`] for `source` and `target` would lead to a double mutable
     /// borrow.
     // I'd love to provide a default implementation for this, but I just can't get it to work.
-    fn edges_between_mut<'a: 'b, 'b>(
-        &'a mut self,
-        u: &'b Self::NodeId,
-        v: &'b Self::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
+    fn edges_between_mut(
+        &mut self,
+        u: Self::NodeId,
+        v: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'_, Self>>;
 
     /// Returns an iterator over all edges that are connected to the given node.
     ///
@@ -1094,10 +1094,7 @@ pub trait GraphStorage: Sized {
     ///     [ab, ca]
     /// );
     /// ```
-    fn node_connections<'a: 'b, 'b>(
-        &'a self,
-        id: &'b Self::NodeId,
-    ) -> impl Iterator<Item = Edge<'a, Self>> + 'b;
+    fn node_connections(&self, id: Self::NodeId) -> impl Iterator<Item = Edge<'_, Self>>;
 
     /// Returns an iterator over all edges that are connected to the given node, with mutable
     /// weights.
@@ -1142,10 +1139,8 @@ pub trait GraphStorage: Sized {
     ///     [5, 6]
     /// );
     /// ```
-    fn node_connections_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b Self::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'a, Self>> + 'b;
+    fn node_connections_mut(&mut self, id: Self::NodeId)
+    -> impl Iterator<Item = EdgeMut<'_, Self>>;
 
     /// Returns the number of edges that are connected to the given node.
     ///
@@ -1181,7 +1176,7 @@ pub trait GraphStorage: Sized {
     /// edges.
     /// This is unlikely to be the most efficient implementation, so custom implementations should
     /// override this.
-    fn node_degree(&self, id: &Self::NodeId) -> usize {
+    fn node_degree(&self, id: Self::NodeId) -> usize {
         self.node_connections(id).count()
     }
 
@@ -1239,10 +1234,7 @@ pub trait GraphStorage: Sized {
     ///
     /// Changing the requirement from **SHOULD NOT** to **MUST NOT** may occur in the future, and is
     /// to be considered a breaking change.
-    fn node_neighbours<'a: 'b, 'b>(
-        &'a self,
-        id: &'b Self::NodeId,
-    ) -> impl Iterator<Item = Node<'a, Self>> + 'b {
+    fn node_neighbours(&self, id: Self::NodeId) -> impl Iterator<Item = Node<'_, Self>> {
         self.node_connections(id)
             .filter_map(move |edge: Edge<Self>| {
                 let (u, v) = edge.endpoint_ids();
@@ -1303,10 +1295,7 @@ pub trait GraphStorage: Sized {
     ///
     /// No default implementation is provided, as a mutable iterator based on
     /// [`Self::node_connections_mut`] could potentially lead to a double mutable borrow.
-    fn node_neighbours_mut<'a: 'b, 'b>(
-        &'a mut self,
-        id: &'b Self::NodeId,
-    ) -> impl Iterator<Item = NodeMut<'a, Self>> + 'b;
+    fn node_neighbours_mut(&mut self, id: Self::NodeId) -> impl Iterator<Item = NodeMut<'_, Self>>;
 
     /// Returns an iterator over all nodes that do not have any edges connected to them.
     ///

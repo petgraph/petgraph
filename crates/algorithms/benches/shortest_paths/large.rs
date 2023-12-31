@@ -15,46 +15,53 @@ fn get_cargo_workspace() -> Arc<Path> {
     static WORKSPACES: Mutex<BTreeMap<String, Arc<Path>>> = Mutex::new(BTreeMap::new());
 
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
-    let mut workspaces = WORKSPACES.lock().unwrap();
+    let mut workspaces = WORKSPACES.lock().expect("lock workspaces");
 
     if let Some(path) = workspaces.get(manifest_dir) {
         return Arc::clone(path);
     }
 
-    let output = process::Command::new(
-        env::var("CARGO")
-            .ok()
-            .unwrap_or_else(|| "cargo".to_string()),
-    )
-    .arg("metadata")
-    .arg("--format-version=1")
-    .arg("--no-deps")
-    .current_dir(manifest_dir)
-    .output()
-    .unwrap();
+    let output =
+        process::Command::new(env::var("CARGO").ok().unwrap_or_else(|| "cargo".to_owned()))
+            .arg("metadata")
+            .arg("--format-version=1")
+            .arg("--no-deps")
+            .current_dir(manifest_dir)
+            .output()
+            .expect("execute `cargo metadata`");
 
-    let manifest = serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
+    let manifest = serde_json::from_slice::<serde_json::Value>(&output.stdout).expect("parse json");
 
-    let root = PathBuf::from(manifest["workspace_root"].as_str().unwrap());
+    let root = PathBuf::from(manifest["workspace_root"].as_str().expect("workspace root"));
     let root = Arc::from(root);
 
-    workspaces.insert(manifest_dir.to_string(), Arc::clone(&root));
+    workspaces.insert(manifest_dir.to_owned(), Arc::clone(&root));
     root
 }
 
 fn input(file: &str) -> Arc<Path> {
     let workspace = get_cargo_workspace();
-    let path = workspace.join("crates/algorithms/benches/input").join(file);
+    let path = workspace
+        .join("crates/algorithms/benches/cases/shortest_path")
+        .join(file);
 
-    if !path.exists() {
-        panic!("{} does not exist", path.display());
-    }
+    assert!(path.exists(), "{} does not exist", path.display());
 
     Arc::from(path)
 }
 
+macro_rules! next {
+    ($iter:ident as $ty:ty) => {
+        $iter
+            .next()
+            .expect("expected token")
+            .parse::<$ty>()
+            .expect(concat!("is ", stringify!($ty)))
+    };
+}
+
 fn parse_coordinate_file(path: &Path) -> Vec<(usize, i128, i128)> {
-    let contents = fs::read_to_string(path).unwrap();
+    let contents = fs::read_to_string(path).expect("able to read file");
 
     let mut output = vec![];
     let mut amount_of_lines = None;
@@ -71,7 +78,7 @@ fn parse_coordinate_file(path: &Path) -> Vec<(usize, i128, i128)> {
                 assert_eq!(iter.next(), Some("sp"));
                 assert_eq!(iter.next(), Some("co"));
 
-                amount_of_lines = Some(iter.next().unwrap().parse::<usize>().unwrap());
+                amount_of_lines = Some(next!(iter as usize));
 
                 assert_eq!(iter.next(), None);
             }
@@ -79,16 +86,16 @@ fn parse_coordinate_file(path: &Path) -> Vec<(usize, i128, i128)> {
             b'v' if amount_of_lines.is_some() => {
                 let mut iter = line.split_whitespace();
                 assert_eq!(iter.next(), Some("v"));
-                let id = iter.next().unwrap().parse::<usize>().unwrap();
-                let x = iter.next().unwrap().parse::<i128>().unwrap();
-                let y = iter.next().unwrap().parse::<i128>().unwrap();
+                let id = next!(iter as usize);
+                let x = next!(iter as i128);
+                let y = next!(iter as i128);
 
                 assert_eq!(iter.next(), None);
 
                 output.push((id, x, y));
 
                 if let Some(amount_of_lines) = &mut amount_of_lines {
-                    *amount_of_lines = amount_of_lines.checked_sub(1).expect("too many lines")
+                    *amount_of_lines = amount_of_lines.checked_sub(1).expect("too many lines");
                 }
             }
             b'v' => panic!("vertex lines before problem statement"),
@@ -100,7 +107,7 @@ fn parse_coordinate_file(path: &Path) -> Vec<(usize, i128, i128)> {
 }
 
 fn parse_graph_file(path: &Path) -> Vec<(usize, usize, u128)> {
-    let mut contents = fs::read_to_string(path).unwrap();
+    let contents = fs::read_to_string(path).expect("able to read file");
 
     let mut output = vec![];
     let mut amount_of_lines = None;
@@ -114,8 +121,8 @@ fn parse_graph_file(path: &Path) -> Vec<(usize, usize, u128)> {
                 let mut iter = line.split_whitespace();
                 assert_eq!(iter.next(), Some("p"));
                 assert_eq!(iter.next(), Some("sp"));
-                let _number_of_nodes = iter.next().unwrap().parse::<usize>().unwrap();
-                let number_of_edges = iter.next().unwrap().parse::<usize>().unwrap();
+                let _number_of_nodes = next!(iter as usize);
+                let number_of_edges = next!(iter as usize);
                 amount_of_lines = Some(number_of_edges);
 
                 assert_eq!(iter.next(), None);
@@ -124,16 +131,16 @@ fn parse_graph_file(path: &Path) -> Vec<(usize, usize, u128)> {
             b'a' if amount_of_lines.is_some() => {
                 let mut iter = line.split_whitespace();
                 assert_eq!(iter.next(), Some("a"));
-                let source = iter.next().unwrap().parse::<usize>().unwrap();
-                let target = iter.next().unwrap().parse::<usize>().unwrap();
-                let weight = iter.next().unwrap().parse::<u128>().unwrap();
+                let source = next!(iter as usize);
+                let target = next!(iter as usize);
+                let weight = next!(iter as u128);
 
                 assert_eq!(iter.next(), None);
 
                 output.push((source, target, weight));
 
                 if let Some(amount_of_lines) = &mut amount_of_lines {
-                    *amount_of_lines = amount_of_lines.checked_sub(1).expect("too many lines")
+                    *amount_of_lines = amount_of_lines.checked_sub(1).expect("too many lines");
                 }
             }
             b'a' => panic!("edge lines before problem statement"),
@@ -160,7 +167,7 @@ fn build_graph(filename: &str) -> (NodeId, DiDinoGraph<Node, u128>) {
     let mut graph = DiDinoGraph::<Node, u128>::with_capacity(Some(nodes.len()), Some(edges.len()));
 
     for (id, x, y) in nodes {
-        let node_id = *graph.insert_node(Node { id, x, y }).id();
+        let node_id = graph.insert_node(Node { id, x, y }).id();
         lookup.insert(id, node_id);
 
         if source.is_none() {
@@ -172,15 +179,14 @@ fn build_graph(filename: &str) -> (NodeId, DiDinoGraph<Node, u128>) {
         let source = lookup[&source];
         let target = lookup[&target];
 
-        graph.insert_edge(weight, &source, &target);
+        graph.insert_edge(weight, source, target);
     }
 
-    (source.unwrap(), graph)
+    (source.expect("source available"), graph)
 }
 
 fn dijkstra(criterion: &mut Criterion) {
     criterion.bench_with_input(
-        // BenchmarkId::from_parameter("dimacs9/florida"),
         BenchmarkId::new("dimacs9/florida", "dijkstra"),
         &"USA-road-d.FLA",
         |bench, &filename| {
@@ -188,7 +194,10 @@ fn dijkstra(criterion: &mut Criterion) {
             let dijkstra = Dijkstra::directed();
 
             bench.iter(|| {
-                for distances in dijkstra.distance_from(&graph, &source).unwrap() {
+                for distances in dijkstra
+                    .distance_from(&graph, source)
+                    .expect("route available")
+                {
                     black_box(distances);
                 }
             });

@@ -35,12 +35,12 @@ mod test {
         let algorithm = Dijkstra::undirected().with_edge_cost(closure);
 
         let mut graph = DiDinoGraph::new();
-        let a = *graph.insert_node("A").id();
-        let b = *graph.insert_node("B").id();
+        let a = graph.insert_node("A").id();
+        let b = graph.insert_node("B").id();
 
-        graph.insert_edge(7, &a, &b);
+        graph.insert_edge(7, a, b);
 
-        let path = algorithm.path_between(&graph, &a, &b).expect("path exists");
+        let path = algorithm.path_between(&graph, a, b).expect("path exists");
     }
 
     #[test]
@@ -50,12 +50,12 @@ mod test {
         let algorithm = AStar::undirected().with_heuristic(closure);
 
         let mut graph = DiDinoGraph::new();
-        let a = *graph.insert_node("A").id();
-        let b = *graph.insert_node("B").id();
+        let a = graph.insert_node("A").id();
+        let b = graph.insert_node("B").id();
 
-        graph.insert_edge(7i32, &a, &b);
+        graph.insert_edge(7i32, a, b);
 
-        let path = algorithm.path_between(&graph, &a, &b).expect("path exists");
+        let path = algorithm.path_between(&graph, a, b).expect("path exists");
     }
 }
 

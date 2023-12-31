@@ -1,31 +1,32 @@
 use alloc::vec::Vec;
-use core::hash::Hash;
 
 use error_stack::{Report, Result};
-use fxhash::FxBuildHasher;
-use hashbrown::HashMap;
 use numi::num::{identity::Zero, ops::AddRef};
-use petgraph_core::{Graph, GraphStorage, Node};
+use petgraph_core::{
+    id::{AssociativeGraphId, AttributeMapper},
+    Graph, GraphStorage, Node,
+};
 
 use crate::shortest_paths::{
     astar::{error::AStarError, heuristic::GraphHeuristic, AStarMeasure},
     common::{
         connections::Connections,
         cost::{Cost, GraphCost},
-        queue::priority::PriorityQueue,
+        queue::priority::{PriorityQueue, PriorityQueueItem},
         route::{DirectRoute, Route},
         transit::{reconstruct_path_to, PredecessorMode},
     },
     Path,
 };
 
-// The graph must outlive the A* instance
 pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
     S: GraphStorage,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: Ord,
 {
+    graph: &'graph Graph<S>,
     queue: PriorityQueue<'graph, S, E::Value>,
 
     edge_cost: &'parent E,
@@ -37,14 +38,15 @@ where
 
     predecessor_mode: PredecessorMode,
 
-    distances: HashMap<&'graph S::NodeId, E::Value, FxBuildHasher>,
-    predecessors: HashMap<&'graph S::NodeId, Option<Node<'graph, S>>, FxBuildHasher>,
+    distances: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, E::Value>,
+    estimates: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, E::Value>,
+    predecessors: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, Option<S::NodeId>>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -57,8 +59,8 @@ where
         heuristic: &'parent H,
         connections: C,
 
-        source: &'graph S::NodeId,
-        target: &'graph S::NodeId,
+        source: S::NodeId,
+        target: S::NodeId,
 
         predecessor_mode: PredecessorMode,
     ) -> Result<Self, AStarError> {
@@ -70,21 +72,26 @@ where
             .node(target)
             .ok_or_else(|| Report::new(AStarError::NodeNotFound))?;
 
-        let mut queue = PriorityQueue::new();
-        queue.push(
-            source_node,
-            heuristic.estimate(source_node, target_node).into_owned(),
-        );
+        let estimate = heuristic.estimate(source_node, target_node);
 
-        let mut distances = HashMap::with_hasher(FxBuildHasher::default());
-        distances.insert(source, E::Value::zero());
+        let mut queue = PriorityQueue::new(graph.storage());
+        queue.check_admissibility = false;
 
-        let mut predecessors = HashMap::with_hasher(FxBuildHasher::default());
+        queue.push(source_node.id(), estimate.clone().into_owned());
+
+        let mut distances = <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
+        distances.set(source, E::Value::zero());
+
+        let estimates = <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
+
+        let mut predecessors =
+            <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
         if predecessor_mode == PredecessorMode::Record {
-            predecessors.insert(source, None);
+            predecessors.set(source, None);
         }
 
         Ok(Self {
+            graph,
             queue,
 
             edge_cost,
@@ -97,34 +104,52 @@ where
             predecessor_mode,
 
             distances,
+            estimates,
             predecessors,
         })
     }
 
     pub(super) fn find(mut self) -> Option<Route<'graph, S, E::Value>> {
-        while let Some(node) = self.queue.pop_min() {
-            if node.id() == self.target.id() {
+        while let Some(PriorityQueueItem {
+            node,
+            priority: current_estimate,
+        }) = self.queue.pop_min()
+        {
+            if node == self.target.id() {
                 let transit = if self.predecessor_mode == PredecessorMode::Record {
-                    reconstruct_path_to(&self.predecessors, node.id())
+                    reconstruct_path_to::<S>(&self.predecessors, node)
+                        .into_iter()
+                        .filter_map(|id| self.graph.node(id))
+                        .collect()
                 } else {
                     Vec::new()
                 };
 
-                let distance = self.distances[node.id()].clone();
-
+                let distance = self.distances.get(node)?.clone();
                 return Some(Route::new(
                     Path::new(self.source, transit, self.target),
                     Cost::new(distance),
                 ));
             }
 
-            let connections = self.connections.connections(&node);
+            if let Some(estimate) = self.estimates.get_mut(node) {
+                // if the current estimate is better than the estimate in the queue, skip this node
+                if *estimate <= current_estimate {
+                    continue;
+                }
+
+                *estimate = current_estimate;
+            } else {
+                self.estimates.set(node, current_estimate);
+            }
+
+            let connections = self.connections.connections(node);
             for edge in connections {
-                let alternative =
-                    self.distances[node.id()].add_ref(self.edge_cost.cost(edge).as_ref());
+                let source_distance = self.distances.get(node)?;
+                let alternative = source_distance.add_ref(self.edge_cost.cost(edge).as_ref());
 
                 let (u, v) = edge.endpoints();
-                let neighbour = if u.id() == node.id() { v } else { u };
+                let neighbour = if u.id() == node { v } else { u };
 
                 if let Some(distance) = self.distances.get(neighbour.id()) {
                     if alternative >= *distance {
@@ -134,13 +159,13 @@ where
 
                 let guess =
                     alternative.add_ref(self.heuristic.estimate(neighbour, self.target).as_ref());
-                self.distances.insert(neighbour.id(), alternative);
+                self.distances.set(neighbour.id(), alternative);
 
                 if self.predecessor_mode == PredecessorMode::Record {
-                    self.predecessors.insert(neighbour.id(), Some(node));
+                    self.predecessors.set(neighbour.id(), Some(node));
                 }
 
-                self.queue.decrease_priority(neighbour, guess);
+                self.queue.decrease_priority(neighbour.id(), guess);
             }
         }
 
