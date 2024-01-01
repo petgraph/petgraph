@@ -68,11 +68,7 @@ impl EntryId {
         })
     }
 
-    pub(crate) fn new_unchecked(raw: u32) -> Self {
-        Self(NonZeroUsize::new(raw as usize).expect("raw is zero"))
-    }
-
-    pub(crate) fn new_unchecked_usize(raw: usize) -> Self {
+    pub(crate) fn new_unchecked(raw: usize) -> Self {
         Self(NonZeroUsize::new(raw).expect("raw is zero"))
     }
 

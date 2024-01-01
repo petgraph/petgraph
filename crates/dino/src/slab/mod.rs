@@ -8,7 +8,6 @@ pub(crate) mod secondary;
 use alloc::{vec, vec::Vec};
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
 
-use numi::borrow::Moo;
 use petgraph_core::storage::linear::IndexMapper;
 
 use crate::slab::entry::{Entry, State};

@@ -7,7 +7,7 @@ use petgraph_core::{
     storage::GraphStorage,
 };
 
-use crate::{DinoGraph, DinoStorage, EdgeId, NodeId};
+use crate::{DinoGraph, DinoStorage};
 
 // TODO: rework tests to be more encompassing and use test utils!
 

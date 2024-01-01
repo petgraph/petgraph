@@ -1,9 +1,4 @@
-use core::fmt::{Display, Formatter};
-
-use petgraph_core::{
-    edge::{marker::GraphDirectionality, EdgeId},
-    node::NodeId,
-};
+use petgraph_core::{edge::EdgeId, node::NodeId};
 
 use crate::{
     closure::UniqueVec,
@@ -11,11 +6,7 @@ use crate::{
         EdgeBetweenIterator, EdgeIdClosureIter, EdgeIntersectionIterator, EdgeIterator,
         NeighbourIterator, NodeIdClosureIter,
     },
-    slab::{
-        secondary::{SlabBooleanStorage, SlabSecondaryStorage},
-        EntryId, Key, SlabIndexMapper,
-    },
-    DinoStorage,
+    slab::{EntryId, Key},
 };
 
 impl Key for NodeId {
@@ -26,7 +17,7 @@ impl Key for NodeId {
 
     #[inline]
     fn into_id(self) -> EntryId {
-        EntryId::new_unchecked_usize(self.into_inner())
+        EntryId::new_unchecked(self.into_inner())
     }
 }
 

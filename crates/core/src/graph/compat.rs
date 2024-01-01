@@ -4,23 +4,21 @@
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use bitvec::{boxed::BitBox, vec::BitVec};
-
 #[cfg(feature = "alloc")]
 use crate::deprecated::data::{Build, Create, DataMap, FromElements};
 #[cfg(feature = "fixedbitset")]
 use crate::deprecated::visit::GetAdjacencyMatrix;
 use crate::{
     deprecated::visit::{
-        Data, EdgeCount, EdgeIndexable, FilterEdge, FilterNode, GraphBase, IntoEdgeReferences,
-        IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
+        Data, EdgeCount, EdgeIndexable, FilterNode, GraphBase, IntoEdgeReferences, IntoEdges,
+        IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
         IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, VisitMap, Visitable,
     },
     edge::{Direction, Edge, EdgeId},
     graph::Graph,
     node::{Node, NodeId},
     storage::{
-        auxiliary::{BooleanGraphStorage, Hints, PerformanceHint},
+        auxiliary::{BooleanGraphStorage, Hints},
         linear::IndexMapper,
         AuxiliaryGraphStorage, DirectedGraphStorage, GraphStorage, LinearGraphStorage,
     },
@@ -47,7 +45,6 @@ where
 
 impl<S> NodeIndexable for Graph<S>
 where
-    S: GraphStorage,
     S: LinearGraphStorage,
 {
     fn node_bound(&self) -> usize {
@@ -259,7 +256,7 @@ where
 
     fn adjacency_matrix(&self) -> Self::AdjMatrix {}
 
-    fn is_adjacent(&self, _: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool {
+    fn is_adjacent(&self, (): &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool {
         self.edges_between(a, b).next().is_some()
     }
 }

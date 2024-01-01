@@ -9,7 +9,8 @@ use std::{
 
 use criterion::{criterion_group, BenchmarkId, Criterion};
 use petgraph_algorithms::shortest_paths::{Dijkstra, ShortestDistance};
-use petgraph_dino::{DiDinoGraph, NodeId};
+use petgraph_core::node::NodeId;
+use petgraph_dino::DiDinoGraph;
 
 fn get_cargo_workspace() -> Arc<Path> {
     static WORKSPACES: Mutex<BTreeMap<String, Arc<Path>>> = Mutex::new(BTreeMap::new());

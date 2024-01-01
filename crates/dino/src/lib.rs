@@ -333,7 +333,7 @@ pub type UnDinoGraph<N, E> = DinoGraph<N, E, Undirected>;
 ///
 /// let ab = *graph.insert_edge(Edge, &a, &b).id();
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DinoStorage<N, E, D = Directed>
 where
     D: GraphDirectionality,

@@ -4,7 +4,7 @@ pub(crate) use self::unique_vec::UniqueVec;
 use crate::{
     edge::{Edge, EdgeSlab},
     node::{Node, NodeSlab},
-    EdgeId, NodeId,
+    NodeId,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -118,13 +118,10 @@ mod tests {
     use petgraph_core::{
         edge::{marker::Directed, EdgeId},
         node::NodeId,
-        GraphDirectionality, GraphStorage,
+        GraphDirectionality,
     };
 
-    use crate::{
-        slab::{EntryId, Key as _},
-        DinoGraph, DinoStorage,
-    };
+    use crate::{DinoGraph, DinoStorage};
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct EvaluatedNodeClosure {

@@ -1,17 +1,6 @@
-use core::fmt::{Display, Formatter};
+use petgraph_core::{edge::EdgeId, node::NodeId};
 
-use petgraph_core::{
-    edge::{marker::GraphDirectionality, EdgeId},
-    node::NodeId,
-};
-
-use crate::{
-    slab::{
-        secondary::{SlabBooleanStorage, SlabSecondaryStorage},
-        EntryId, Key, SlabIndexMapper,
-    },
-    DinoStorage,
-};
+use crate::slab::{EntryId, Key};
 
 impl Key for EdgeId {
     #[inline]
@@ -21,7 +10,7 @@ impl Key for EdgeId {
 
     #[inline]
     fn into_id(self) -> EntryId {
-        EntryId::new_unchecked_usize(self.into_inner())
+        EntryId::new_unchecked(self.into_inner())
     }
 }
 

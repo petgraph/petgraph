@@ -2,7 +2,6 @@ use alloc::vec::Vec;
 use core::iter;
 
 use bitvec::{boxed::BitBox, prelude::BitVec};
-use numi::borrow::Moo;
 use petgraph_core::storage::auxiliary::{BooleanGraphStorage, SecondaryGraphStorage};
 
 use crate::slab::{EntryId, Generation, Key, Slab};
