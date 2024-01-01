@@ -21,7 +21,7 @@ use crate::{
 impl Key for NodeId {
     #[inline]
     fn from_id(id: EntryId) -> Self {
-        Self(id.into_usize())
+        Self::new(id.into_usize())
     }
 
     #[inline]

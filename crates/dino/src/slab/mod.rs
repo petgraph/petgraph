@@ -9,7 +9,7 @@ use alloc::{vec, vec::Vec};
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
 
 use numi::borrow::Moo;
-use petgraph_core::id::IndexMapper;
+use petgraph_core::storage::linear::IndexMapper;
 
 use crate::slab::entry::{Entry, State};
 pub(crate) use crate::slab::{generation::Generation, id::EntryId, key::Key};

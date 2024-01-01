@@ -6,7 +6,8 @@ use core::{
 
 use hashbrown::{HashMap, HashSet};
 use petgraph_core::{
-    id::{AssociativeGraphId, AttributeMapper},
+    node::NodeId,
+    storage::{auxiliary::SecondaryGraphStorage, AuxiliaryGraphStorage},
     GraphStorage, Node,
 };
 
@@ -17,26 +18,25 @@ pub(in crate::shortest_paths) enum PredecessorMode {
 }
 
 pub(in crate::shortest_paths) fn reconstruct_path_to<S>(
-    predecessors: &<S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'_, Option<S::NodeId>>,
-    target: S::NodeId,
-) -> Vec<S::NodeId>
+    predecessors: &S::SecondaryNodeStorage<'_, Option<NodeId>>,
+    target: NodeId,
+) -> Vec<NodeId>
 where
-    S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
+    S: AuxiliaryGraphStorage,
 {
     let mut current = target;
 
     let mut path = Vec::new();
 
     loop {
-        let &Some(node) = predecessors.index(current) else {
+        let Some(node) = predecessors.get(current).copied().flatten() else {
             // this case should in theory _never_ happen, as the next statement
             // terminates if the next node is `None` (we're at a source node)
             // we do it this way, so that we don't need to push and then pop immediately.
             break;
         };
 
-        if predecessors.index(node).is_none() {
+        if predecessors.get(node).copied().flatten().is_none() {
             // we have reached the source node
             break;
         }
@@ -54,13 +54,12 @@ where
 ///
 /// This has been adapted from the [NetworkX implementation](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/generic.py#L655)
 pub(in crate::shortest_paths) fn reconstruct_paths_between<'a, 'graph, S, H>(
-    predecessors: &'a HashMap<S::NodeId, Vec<Node<'graph, S>>, H>,
-    source: S::NodeId,
+    predecessors: &'a HashMap<NodeId, Vec<Node<'graph, S>>, H>,
+    source: NodeId,
     target: Node<'graph, S>,
 ) -> impl Iterator<Item = Vec<Node<'graph, S>>> + 'a
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
     H: BuildHasher,
 {
     let mut seen = HashSet::new();

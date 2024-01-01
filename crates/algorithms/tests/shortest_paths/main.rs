@@ -10,7 +10,8 @@ use std::{
 use petgraph_algorithms::shortest_paths::{
     BellmanFord, Dijkstra, FloydWarshall, Route, ShortestPath,
 };
-use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
+use petgraph_core::{edge::EdgeId, node::NodeId};
+use petgraph_dino::{DiDinoGraph, DinoStorage};
 use snapbox::{utils::normalize_lines, Action};
 
 use crate::harness::{Case, Harness};

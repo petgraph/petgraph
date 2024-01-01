@@ -551,7 +551,7 @@ where
     /// assert_eq!(graph.remove_node(&a), None);
     /// assert_eq!(graph.remove_node(&b), None);
     /// ```
-    pub fn remove_node(&mut self, id: NodeId) -> Option<DetachedNode<NodeId, S::NodeWeight>> {
+    pub fn remove_node(&mut self, id: NodeId) -> Option<DetachedNode<S::NodeWeight>> {
         self.storage.remove_node(id)
     }
 

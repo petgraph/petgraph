@@ -3,7 +3,11 @@ use alloc::vec::Vec;
 use error_stack::{Report, Result};
 use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{
-    id::{AssociativeGraphId, AttributeMapper},
+    node::NodeId,
+    storage::{
+        auxiliary::{FrequencyHint, Hints, OccupancyHint, PerformanceHint, SecondaryGraphStorage},
+        AuxiliaryGraphStorage,
+    },
     Graph, GraphStorage, Node,
 };
 
@@ -21,8 +25,7 @@ use crate::shortest_paths::{
 
 pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
-    S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
+    S: AuxiliaryGraphStorage,
     E: GraphCost<S>,
     E::Value: Ord,
 {
@@ -38,15 +41,14 @@ where
 
     predecessor_mode: PredecessorMode,
 
-    distances: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, E::Value>,
-    estimates: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, E::Value>,
-    predecessors: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, Option<S::NodeId>>,
+    distances: S::SecondaryNodeStorage<'graph, E::Value>,
+    estimates: S::SecondaryNodeStorage<'graph, E::Value>,
+    predecessors: S::SecondaryNodeStorage<'graph, Option<NodeId>>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
 where
-    S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
+    S: AuxiliaryGraphStorage,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -59,8 +61,8 @@ where
         heuristic: &'parent H,
         connections: C,
 
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
 
         predecessor_mode: PredecessorMode,
     ) -> Result<Self, AStarError> {
@@ -79,13 +81,30 @@ where
 
         queue.push(source_node.id(), estimate.clone().into_owned());
 
-        let mut distances = <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
+        let mut distances = graph.storage().secondary_node_storage(Hints {
+            performance: PerformanceHint {
+                read: FrequencyHint::Frequent,
+                write: FrequencyHint::Frequent,
+            },
+            occupancy: OccupancyHint::Dense,
+        });
         distances.set(source, E::Value::zero());
 
-        let estimates = <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
+        let estimates = graph.storage().secondary_node_storage(Hints {
+            performance: PerformanceHint {
+                read: FrequencyHint::Frequent,
+                write: FrequencyHint::Infrequent,
+            },
+            occupancy: OccupancyHint::Dense,
+        });
 
-        let mut predecessors =
-            <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
+        let mut predecessors = graph.storage().secondary_node_storage(Hints {
+            performance: PerformanceHint {
+                read: FrequencyHint::Infrequent,
+                write: FrequencyHint::Frequent,
+            },
+            occupancy: OccupancyHint::Dense,
+        });
         if predecessor_mode == PredecessorMode::Record {
             predecessors.set(source, None);
         }

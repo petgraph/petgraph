@@ -5,7 +5,7 @@ use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
 use numi::num::{identity::Zero, ops::AddRef};
-use petgraph_core::{Graph, GraphStorage, Node};
+use petgraph_core::{node::NodeId, Graph, GraphStorage, Node};
 
 use super::error::BellmanFordError;
 use crate::shortest_paths::{
@@ -26,7 +26,6 @@ fn small_label_first<'graph, S, E>(
 ) -> bool
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -52,7 +51,7 @@ fn large_label_last<'graph, S, E>(
 ) -> bool
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
+    NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -94,20 +93,14 @@ where
     }
 }
 
-struct Heuristic<S>
-where
-    S: GraphStorage,
-{
+// TODO: make use of auxiliary graph storage
+struct Heuristic {
     enabled: bool,
-    recent_update: HashMap<S::NodeId, (S::NodeId, S::NodeId)>,
-    predecessor: HashMap<S::NodeId, S::NodeId>,
+    recent_update: HashMap<NodeId, (NodeId, NodeId)>,
+    predecessor: HashMap<NodeId, NodeId>,
 }
 
-impl<S> Heuristic<S>
-where
-    S: GraphStorage,
-    S::NodeId: Eq + Hash,
-{
+impl Heuristic {
     fn new(enabled: bool) -> Self {
         Self {
             enabled,
@@ -116,11 +109,7 @@ where
         }
     }
 
-    fn update(
-        &mut self,
-        source: S::NodeId,
-        target: S::NodeId,
-    ) -> core::result::Result<(), S::NodeId> {
+    fn update(&mut self, source: NodeId, target: NodeId) -> core::result::Result<(), NodeId> {
         if !self.enabled {
             return Ok(());
         }
@@ -168,14 +157,13 @@ where
     candidate_order: CandidateOrder,
     negative_cycle_heuristics: bool,
 
-    distances: HashMap<S::NodeId, E::Value, FxBuildHasher>,
-    predecessors: HashMap<S::NodeId, Vec<Node<'graph, S>>, FxBuildHasher>,
+    distances: HashMap<NodeId, E::Value, FxBuildHasher>,
+    predecessors: HashMap<NodeId, Vec<Node<'graph, S>>, FxBuildHasher>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterImpl<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
     G: Connections<'graph, S>,
@@ -186,7 +174,7 @@ where
         edge_cost: &'parent E,
         connections: G,
 
-        source: S::NodeId,
+        source: NodeId,
 
         predecessor_mode: PredecessorMode,
         candidate_order: CandidateOrder,
@@ -226,10 +214,10 @@ where
     /// Inner Relaxation Loop for the Bellman-Ford algorithm, an implementation of SPFA.
     ///
     /// Based on [networkx](https://github.com/networkx/networkx/blob/f93f0e2a066fc456aa447853af9d00eec1058542/networkx/algorithms/shortest_paths/weighted.py#L1363)
-    fn relax(&mut self) -> core::result::Result<(), S::NodeId> {
+    fn relax(&mut self) -> core::result::Result<(), NodeId> {
         // we always need to record predecessors to be able to skip relaxations
         let mut queue = DoubleEndedQueue::new();
-        let mut heuristic: Heuristic<S> = Heuristic::new(self.negative_cycle_heuristics);
+        let mut heuristic = Heuristic::new(self.negative_cycle_heuristics);
         let mut occurrences = HashMap::new();
         let num_nodes = self.graph.num_nodes();
 
@@ -325,7 +313,7 @@ where
         Ok(())
     }
 
-    pub(crate) fn between(mut self, target: S::NodeId) -> Option<Route<'graph, S, E::Value>> {
+    pub(crate) fn between(mut self, target: NodeId) -> Option<Route<'graph, S, E::Value>> {
         let cost = self.distances.remove(&target)?;
         let target = self.graph.node(target)?;
 

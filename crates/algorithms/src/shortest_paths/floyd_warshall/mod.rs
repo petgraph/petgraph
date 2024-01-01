@@ -11,8 +11,9 @@ use core::marker::PhantomData;
 use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
-    id::LinearGraphId,
-    Graph, GraphStorage,
+    node::NodeId,
+    storage::LinearGraphStorage,
+    DirectedGraphStorage, Graph, GraphStorage,
 };
 
 use self::r#impl::{
@@ -175,8 +176,7 @@ impl<D, E> FloydWarshall<D, E> {
 
 impl<S, E> ShortestPath<S> for FloydWarshall<Undirected, E>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
+    S: LinearGraphStorage,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -186,7 +186,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         FloydWarshallImpl::new(
             graph,
@@ -201,7 +201,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         FloydWarshallImpl::new(
             graph,
@@ -216,8 +216,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         let r#impl = FloydWarshallImpl::new(
             graph,
@@ -248,8 +248,7 @@ where
 
 impl<S, E> ShortestDistance<S> for FloydWarshall<Undirected, E>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
+    S: LinearGraphStorage,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -259,7 +258,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -277,7 +276,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -295,8 +294,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -328,8 +327,7 @@ where
 
 impl<S, E> ShortestPath<S> for FloydWarshall<Directed, E>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
+    S: DirectedGraphStorage + LinearGraphStorage,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -339,7 +337,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         FloydWarshallImpl::new(
             graph,
@@ -354,7 +352,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         FloydWarshallImpl::new(
             graph,
@@ -370,8 +368,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         let r#impl = FloydWarshallImpl::new(
             graph,
@@ -402,8 +400,7 @@ where
 
 impl<S, E> ShortestDistance<S> for FloydWarshall<Directed, E>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
+    S: DirectedGraphStorage + LinearGraphStorage,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -413,7 +410,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -431,7 +428,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = FloydWarshallImpl::new(
             graph,
@@ -449,8 +446,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         let iter = FloydWarshallImpl::new(
             graph,

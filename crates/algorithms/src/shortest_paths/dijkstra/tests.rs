@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use numi::borrow::Moo;
 use petgraph_core::{Edge, GraphStorage};
-use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
+use petgraph_dino::DiDinoGraph;
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{
@@ -22,7 +22,7 @@ graph!(
         c: "C",
         d: "D",
         e: "E",
-    ] as NodeId, [
+    ], [
         ab: a -> b: 10,
         ac: a -> c: 5,
         bd: b -> d: 1,
@@ -33,12 +33,10 @@ graph!(
         ce: c -> e: 2,
         ea: e -> a: 7,
         ed: e -> d: 6,
-    ] as EdgeId
+    ]
 );
 
-fn networkx_directed_expect_from(
-    nodes: &networkx::NodeCollection<NodeId>,
-) -> Vec<Expect<NodeId, i32>> {
+fn networkx_directed_expect_from(nodes: &networkx::NodeCollection) -> Vec<Expect<i32>> {
     expected!(nodes; [
         a -()> a: 0,
         a -(c)> b: 8,
@@ -58,7 +56,7 @@ graph!(
         d: "D",
         e: "E",
         f: "F",
-    ] as NodeId, [
+    ], [
         ab: a -> b: "apple",
         bc: b -> c: "cat",
         cd: c -> d: "giraffe",
@@ -66,7 +64,7 @@ graph!(
         ef: e -> f: "banana",
         fa: f -> a: "bear",
         ad: a -> d: "elephant",
-    ] as EdgeId
+    ]
 );
 
 // TODO: multigraph
@@ -91,9 +89,7 @@ fn distance_from_directed_default_edge_cost() {
     TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(nodes.a);
 }
 
-fn random_directed_expect_from(
-    nodes: &random::NodeCollection<NodeId>,
-) -> Vec<Expect<NodeId, usize>> {
+fn random_directed_expect_from(nodes: &random::NodeCollection) -> Vec<Expect<usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 5,
@@ -132,9 +128,7 @@ fn distance_from_directed_custom_edge_cost() {
     TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(nodes.a);
 }
 
-fn networkx_undirected_expect_from(
-    nodes: &networkx::NodeCollection<NodeId>,
-) -> Vec<Expect<NodeId, i32>> {
+fn networkx_undirected_expect_from(nodes: &networkx::NodeCollection) -> Vec<Expect<i32>> {
     expected!(nodes; [
         a -()> a: 0,
         a -(c)> b: 7,
@@ -164,9 +158,7 @@ fn distance_from_undirected_default_edge_cost() {
     TestCase::new(&graph, &dijkstra, &expected).assert_distance_from(nodes.a);
 }
 
-fn random_undirected_expect_from(
-    nodes: &random::NodeCollection<NodeId>,
-) -> Vec<Expect<NodeId, usize>> {
+fn random_undirected_expect_from(nodes: &random::NodeCollection) -> Vec<Expect<usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 5,

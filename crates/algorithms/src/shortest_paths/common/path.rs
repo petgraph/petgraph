@@ -102,7 +102,6 @@ where
 impl<S> Display for Path<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Display,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         Display::fmt(&self.source.id(), f)?;

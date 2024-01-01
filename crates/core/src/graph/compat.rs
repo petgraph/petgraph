@@ -18,9 +18,12 @@ use crate::{
     },
     edge::{Direction, Edge, EdgeId},
     graph::Graph,
-    id::{IndexMapper, LinearGraphId, ManagedGraphId},
     node::{Node, NodeId},
-    storage::{DirectedGraphStorage, GraphStorage},
+    storage::{
+        auxiliary::{BooleanGraphStorage, Hints, PerformanceHint},
+        linear::IndexMapper,
+        AuxiliaryGraphStorage, DirectedGraphStorage, GraphStorage, LinearGraphStorage,
+    },
 };
 
 impl<S> GraphBase for Graph<S>
@@ -45,36 +48,29 @@ where
 impl<S> NodeIndexable for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: LinearGraphId<S>,
+    S: LinearGraphStorage,
 {
     fn node_bound(&self) -> usize {
         self.num_nodes()
     }
 
     fn to_index(&self, a: Self::NodeId) -> usize {
-        S::NodeId::index_mapper(&self.storage).index(a)
+        self.storage.node_index_mapper().index(a)
     }
 
     fn from_index(&self, i: usize) -> Self::NodeId {
-        S::NodeId::index_mapper(&self.storage)
+        self.storage
+            .node_index_mapper()
             .reverse(i)
             .expect("unable to determine index")
     }
 }
 
-impl<S> NodeCompactIndexable for Graph<S>
-where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Copy,
-    S::EdgeId: Copy,
-{
-}
+impl<S> NodeCompactIndexable for Graph<S> where S: LinearGraphStorage {}
 
 impl<S> EdgeCount for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     fn edge_count(&self) -> usize {
         self.num_edges()
@@ -83,20 +79,19 @@ where
 
 impl<S> EdgeIndexable for Graph<S>
 where
-    S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: LinearGraphId<S> + Copy,
+    S: LinearGraphStorage,
 {
     fn edge_bound(&self) -> usize {
         self.num_edges()
     }
 
     fn to_index(&self, a: Self::EdgeId) -> usize {
-        S::EdgeId::index_mapper(&self.storage).index(a)
+        self.storage.edge_index_mapper().index(a)
     }
 
     fn from_index(&self, i: usize) -> Self::EdgeId {
-        S::EdgeId::index_mapper(&self.storage)
+        self.storage
+            .edge_index_mapper()
             .reverse(i)
             .expect("unable to determine index")
     }
@@ -105,8 +100,6 @@ where
 impl<S> Data for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     type EdgeWeight = S::EdgeWeight;
     type NodeWeight = S::NodeWeight;
@@ -115,8 +108,6 @@ where
 impl<S> IntoNodeIdentifiers for &Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     type NodeIdentifiers = impl Iterator<Item = Self::NodeId>;
 
@@ -128,8 +119,6 @@ where
 impl<'a, S> IntoNodeReferences for &'a Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     type NodeRef = Node<'a, S>;
 
@@ -143,8 +132,6 @@ where
 impl<'a, S> IntoEdgeReferences for &'a Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     type EdgeRef = Edge<'a, S>;
 
@@ -159,8 +146,6 @@ where
 impl<'a, S> IntoNeighbors for &'a Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     type Neighbors = impl Iterator<Item = Self::NodeId>;
 
@@ -180,8 +165,6 @@ where
 impl<'a, S> IntoNeighborsDirected for &'a Graph<S>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     type NeighborsDirected = impl Iterator<Item = Self::NodeId>;
 
@@ -198,8 +181,6 @@ where
 impl<'a, S> IntoEdges for &'a Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     type Edges = impl Iterator<Item = Self::EdgeRef>;
 
@@ -213,8 +194,6 @@ where
 impl<'a, S> IntoEdgesDirected for &'a Graph<S>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     type EdgesDirected = impl Iterator<Item = Self::EdgeRef>;
 
@@ -226,84 +205,45 @@ where
     }
 }
 
-pub struct VisitationMap<'a, S, T>
+pub struct NodeVisitationMap<'a, S>
 where
-    S: GraphStorage + 'a,
-    T: LinearGraphId<S> + Clone + 'a,
+    S: AuxiliaryGraphStorage + 'a,
 {
-    inner: BitBox,
-    mapper: <T as LinearGraphId<S>>::Mapper<'a>,
+    inner: S::BooleanNodeStorage<'a>,
 }
 
-impl<'a, S> VisitationMap<'a, S, S::NodeId>
+impl<'a, S> VisitMap<NodeId> for NodeVisitationMap<'a, S>
 where
-    S: GraphStorage + 'a,
-    S::NodeId: LinearGraphId<S> + Clone,
+    S: AuxiliaryGraphStorage + 'a,
 {
-    fn new_node(size: usize, mapper: <S::NodeId as LinearGraphId<S>>::Mapper<'a>) -> Self {
-        Self {
-            inner: BitVec::repeat(false, size).into_boxed_bitslice(),
-            mapper,
-        }
+    fn visit(&mut self, a: NodeId) -> bool {
+        self.inner.set(a, true).is_none()
+    }
+
+    fn is_visited(&self, a: &NodeId) -> bool {
+        self.inner.get(*a).unwrap_or(false)
     }
 }
 
-impl<'a, S, T> VisitMap<T> for VisitationMap<'a, S, T>
+impl<'a, S> FilterNode<NodeId> for NodeVisitationMap<'a, S>
 where
-    S: GraphStorage + 'a,
-    T: LinearGraphId<S> + Clone,
+    S: AuxiliaryGraphStorage + 'a,
 {
-    fn visit(&mut self, a: T) -> bool {
-        let Some(index) = self.mapper.get(a) else {
-            return false;
-        };
-
-        !self.inner.replace(index, true)
-    }
-
-    fn is_visited(&self, a: &T) -> bool {
-        let Some(index) = self.mapper.get(*a) else {
-            return false;
-        };
-
-        let Some(bit) = self.inner.get(index) else {
-            return false;
-        };
-
-        *bit
-    }
-}
-
-impl<'a, S> FilterNode<S::NodeId> for VisitationMap<'a, S, S::NodeId>
-where
-    S: GraphStorage + 'a,
-    S::NodeId: LinearGraphId<S> + Clone,
-{
-    fn include_node(&self, node: S::NodeId) -> bool {
+    fn include_node(&self, node: NodeId) -> bool {
         self.is_visited(&node)
-    }
-}
-
-impl<'a, S> FilterEdge<S::EdgeId> for VisitationMap<'a, S, S::EdgeId>
-where
-    S: GraphStorage + 'a,
-    S::EdgeId: LinearGraphId<S> + Clone,
-{
-    fn include_edge(&self, edge: S::EdgeId) -> bool {
-        self.is_visited(&edge)
     }
 }
 
 impl<'a, S> Visitable for &'a Graph<S>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Copy,
-    S::EdgeId: Copy,
+    S: AuxiliaryGraphStorage,
 {
-    type Map = VisitationMap<'a, S, S::NodeId>;
+    type Map = NodeVisitationMap<'a, S>;
 
     fn visit_map(&self) -> Self::Map {
-        VisitationMap::new_node(self.num_nodes(), S::NodeId::index_mapper(&self.storage))
+        NodeVisitationMap {
+            inner: self.storage.boolean_node_storage(Hints::default()),
+        }
     }
 
     fn reset_map(&self, map: &mut Self::Map) {
@@ -311,12 +251,9 @@ where
     }
 }
 
-#[cfg(feature = "fixedbitset")]
 impl<S> GetAdjacencyMatrix for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     type AdjMatrix = ();
 
@@ -331,8 +268,6 @@ where
 impl<S> DataMap for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: Copy,
-    S::EdgeId: Copy,
 {
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
         self.node(id).map(|node| node.weight())
@@ -347,8 +282,6 @@ where
 impl<S> Build for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: ManagedGraphId + Copy,
-    S::EdgeId: ManagedGraphId + Copy,
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         self.insert_node(weight).id()
@@ -368,8 +301,6 @@ where
 impl<S> Create for Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: ManagedGraphId + Copy,
-    S::EdgeId: ManagedGraphId + Copy,
 {
     fn with_capacity(nodes: usize, edges: usize) -> Self {
         Self::with_capacity(Some(nodes), Some(edges))
@@ -377,10 +308,4 @@ where
 }
 
 #[cfg(feature = "alloc")]
-impl<S> FromElements for Graph<S>
-where
-    S: GraphStorage,
-    S::NodeId: ManagedGraphId + Copy,
-    S::EdgeId: ManagedGraphId + Copy,
-{
-}
+impl<S> FromElements for Graph<S> where S: GraphStorage {}

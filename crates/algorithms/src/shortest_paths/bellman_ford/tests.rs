@@ -2,10 +2,14 @@ use alloc::vec::Vec;
 use core::array;
 
 use petgraph_core::{
-    edge::marker::{Directed, Undirected},
-    Graph, GraphStorage, ManagedGraphId,
+    edge::{
+        marker::{Directed, Undirected},
+        EdgeId,
+    },
+    node::NodeId,
+    Graph, GraphStorage,
 };
-use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
+use petgraph_dino::{DiDinoGraph, DinoStorage};
 use petgraph_utils::{graph, GraphCollection};
 
 use super::BellmanFord;
@@ -26,7 +30,7 @@ graph!(
         c: "C",
         d: "D",
         e: "E",
-    ] as NodeId, [
+    ], [
         ab: a -> b: 10f32,
         ac: a -> c: 5f32,
         bd: b -> d: 1f32,
@@ -37,7 +41,7 @@ graph!(
         ce: c -> e: 2f32,
         ea: e -> a: 7f32,
         ed: e -> d: 6f32,
-    ] as EdgeId
+    ]
 );
 
 #[test]
@@ -80,11 +84,9 @@ fn negative_cycle_heuristic() {
     assert!(spfa.every_path(&graph).is_ok());
 }
 
-fn cycle_graph<const N: usize, S>() -> (Graph<S>, [S::NodeId; N], [S::EdgeId; N])
+fn cycle_graph<const N: usize, S>() -> (Graph<S>, [NodeId; N], [EdgeId; N])
 where
     S: GraphStorage<NodeWeight = usize, EdgeWeight = f32>,
-    S::NodeId: ManagedGraphId + Copy,
-    S::EdgeId: ManagedGraphId + Copy,
 {
     let mut graph = Graph::new();
 
@@ -99,11 +101,9 @@ where
     (graph, nodes, edges)
 }
 
-fn complete_graph<const N: usize, S>() -> (Graph<S>, [S::NodeId; N], Vec<S::EdgeId>)
+fn complete_graph<const N: usize, S>() -> (Graph<S>, [NodeId; N], Vec<EdgeId>)
 where
     S: GraphStorage<NodeWeight = usize, EdgeWeight = f32>,
-    S::NodeId: ManagedGraphId + Copy,
-    S::EdgeId: ManagedGraphId + Copy,
 {
     let mut graph = Graph::new();
 
@@ -120,11 +120,9 @@ where
     (graph, nodes, edges)
 }
 
-fn path_graph<const N: usize, S>() -> (Graph<S>, [S::NodeId; N], Vec<S::EdgeId>)
+fn path_graph<const N: usize, S>() -> (Graph<S>, [NodeId; N], Vec<EdgeId>)
 where
     S: GraphStorage<NodeWeight = usize, EdgeWeight = f32>,
-    S::NodeId: ManagedGraphId + Copy,
-    S::EdgeId: ManagedGraphId + Copy,
 {
     let mut graph = Graph::new();
 

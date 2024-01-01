@@ -116,25 +116,23 @@ pub(crate) mod closure;
 mod directed;
 mod edge;
 mod iter;
+mod linear;
 mod node;
 mod retain;
 pub(crate) mod slab;
 #[cfg(test)]
 mod tests;
-mod linear;
 
 use core::fmt::{Debug, Display};
 
-pub use edge::EdgeId;
 use either::Either;
 use error_stack::{Context, Report, Result};
-pub use node::NodeId;
 use petgraph_core::{
     edge::{
         marker::{Directed, GraphDirectionality, Undirected},
-        DetachedEdge, EdgeMut,
+        DetachedEdge, EdgeId, EdgeMut,
     },
-    node::{DetachedNode, NodeMut},
+    node::{DetachedNode, NodeId, NodeMut},
     storage::GraphStorage,
     Graph,
 };
@@ -454,34 +452,12 @@ where
         edges: impl IntoIterator<Item = DetachedEdge<Self::EdgeWeight>>,
     ) -> Result<Self, Self::Error> {
         todo!();
-        let mut nodes: Slab<_, _> = nodes
-            .into_iter()
-            .map(|node: DetachedNode<NodeId, Self::NodeWeight>| {
-                (node.id, Node::new(node.id, node.weight))
-            })
-            .collect();
-
-        let edges: Slab<_, _> = edges
-            .into_iter()
-            .map(|edge: DetachedEdge<EdgeId, NodeId, Self::EdgeWeight>| {
-                (edge.id, Edge::new(edge.id, edge.weight, edge.u, edge.v))
-            })
-            .collect();
 
         // TODO: test-case c:
         // TODO: this doesn't work if we remove a node
         // TODO: NodeId rename is not of concern for us though
         // TODO: what about nodes that are added or edges?
         //      We don't know their ID yet (need a way to get those -> PartialNode/Edge)
-
-        Closures::refresh(&mut nodes, &edges);
-
-        Ok(Self {
-            nodes,
-            edges,
-
-            _marker: core::marker::PhantomData,
-        })
     }
 
     fn into_parts(

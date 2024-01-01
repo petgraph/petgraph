@@ -393,11 +393,11 @@ where
     /// # Safety
     ///
     /// Can lead to undefined behaviour if the id is not valid for the given storage.
-    pub unsafe fn change_storage_unchecked<S2>(self) -> Node<'a, S2>
+    pub unsafe fn change_storage_unchecked<S2>(self, storage: &'a S2) -> Node<'a, S2>
     where
         S2: GraphStorage<NodeWeight = S::NodeWeight>,
     {
-        Node::new(self.storage, self.id, self.weight)
+        Node::new(storage, self.id, self.weight)
     }
 }
 

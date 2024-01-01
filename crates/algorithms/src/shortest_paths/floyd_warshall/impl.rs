@@ -5,7 +5,7 @@ use numi::{
     borrow::Moo,
     num::{checked::CheckedAdd, identity::Zero},
 };
-use petgraph_core::{id::LinearGraphId, Graph, GraphStorage, Node};
+use petgraph_core::{node::NodeId, storage::LinearGraphStorage, Graph, GraphStorage, Node};
 
 use crate::shortest_paths::{
     common::{
@@ -19,12 +19,11 @@ use crate::shortest_paths::{
 
 pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
     matrix: &mut SlotMatrix<'graph, S, Moo<'this, E::Value>>,
-    u: S::NodeId,
-    v: S::NodeId,
+    u: NodeId,
+    v: NodeId,
     value: Option<Moo<'this, E::Value>>,
 ) where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone,
+    S: LinearGraphStorage,
     E: GraphCost<S>,
     E::Value: Clone,
 {
@@ -33,12 +32,11 @@ pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
 
 pub(super) fn init_undirected_edge_distance<'graph: 'this, 'this, S, E>(
     matrix: &mut SlotMatrix<'graph, S, Moo<'this, E::Value>>,
-    u: S::NodeId,
-    v: S::NodeId,
+    u: NodeId,
+    v: NodeId,
     value: Option<Moo<'this, E::Value>>,
 ) where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone,
+    S: LinearGraphStorage,
     E: GraphCost<S>,
     E::Value: Clone,
 {
@@ -50,36 +48,33 @@ pub(super) fn init_undirected_edge_distance<'graph: 'this, 'this, S, E>(
 }
 
 pub(super) fn init_directed_edge_predecessor<S>(
-    matrix: &mut SlotMatrix<S, S::NodeId>,
-    u: S::NodeId,
-    v: S::NodeId,
+    matrix: &mut SlotMatrix<S, NodeId>,
+    u: NodeId,
+    v: NodeId,
 ) where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone,
+    S: LinearGraphStorage,
 {
     matrix.set(u, v, Some(u));
 }
 
 pub(super) fn init_undirected_edge_predecessor<S>(
-    matrix: &mut SlotMatrix<S, S::NodeId>,
-    u: S::NodeId,
-    v: S::NodeId,
+    matrix: &mut SlotMatrix<S, NodeId>,
+    u: NodeId,
+    v: NodeId,
 ) where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone,
+    S: LinearGraphStorage,
 {
     matrix.set(u, v, Some(u));
     matrix.set(v, u, Some(v));
 }
 
 fn reconstruct_path<S>(
-    matrix: &SlotMatrix<'_, S, S::NodeId>,
-    source: S::NodeId,
-    target: S::NodeId,
-) -> Vec<S::NodeId>
+    matrix: &SlotMatrix<'_, S, NodeId>,
+    source: NodeId,
+    target: NodeId,
+) -> Vec<NodeId>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone,
+    S: LinearGraphStorage,
 {
     let mut path = Vec::new();
 
@@ -113,21 +108,16 @@ where
 }
 type InitEdgeDistanceFn<'graph, 'this, S, E> = fn(
     &mut SlotMatrix<'graph, S, Moo<'this, <E as GraphCost<S>>::Value>>,
-    <S as GraphStorage>::NodeId,
-    <S as GraphStorage>::NodeId,
+    NodeId,
+    NodeId,
     Option<Moo<'this, <E as GraphCost<S>>::Value>>,
 );
 
-type InitEdgePredecessorFn<'graph, S> = fn(
-    &mut SlotMatrix<'graph, S, <S as GraphStorage>::NodeId>,
-    <S as GraphStorage>::NodeId,
-    <S as GraphStorage>::NodeId,
-);
+type InitEdgePredecessorFn<'graph, S> = fn(&mut SlotMatrix<'graph, S, NodeId>, NodeId, NodeId);
 
 pub(super) struct FloydWarshallImpl<'graph: 'parent, 'parent, S, E>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S>,
+    S: LinearGraphStorage,
     E: GraphCost<S>,
 {
     graph: &'graph Graph<S>,
@@ -139,14 +129,12 @@ where
     init_edge_predecessor: InitEdgePredecessorFn<'graph, S>,
 
     distances: SlotMatrix<'graph, S, Moo<'parent, E::Value>>,
-    predecessors: SlotMatrix<'graph, S, S::NodeId>,
+    predecessors: SlotMatrix<'graph, S, NodeId>,
 }
 
-// TODO: relax `NodeId` requirements or make `Send + Sync + 'static` across the board
 impl<'graph: 'parent, 'parent, S, E> FloydWarshallImpl<'graph, 'parent, S, E>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone + Send + Sync + 'static,
+    S: LinearGraphStorage,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -263,6 +251,7 @@ where
 
         let mut result: Result<(), FloydWarshallError> = Ok(());
 
+        // TODO: rework to attach all nodes in cycle into single struct
         for index in negative_cycles {
             let Some(node) = self.distances.resolve(index) else {
                 continue;
@@ -316,11 +305,7 @@ where
             })
     }
 
-    pub(super) fn pick(
-        self,
-        source: S::NodeId,
-        target: S::NodeId,
-    ) -> Option<Route<'graph, S, E::Value>> {
+    pub(super) fn pick(self, source: NodeId, target: NodeId) -> Option<Route<'graph, S, E::Value>> {
         let Self {
             graph,
             distances,

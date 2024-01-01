@@ -8,7 +8,7 @@ use core::{
 use fxhash::FxBuildHasher;
 use hashbrown::HashSet;
 use numi::{cast::TryCastFrom, num::identity::Zero};
-use petgraph_core::{GraphStorage, Node};
+use petgraph_core::{node::NodeId, GraphStorage, Node};
 
 pub(in crate::shortest_paths) struct DoubleEndedQueueItem<'graph, S, T>
 where
@@ -42,13 +42,12 @@ where
     S: GraphStorage,
 {
     queue: VecDeque<DoubleEndedQueueItem<'graph, S, T>>,
-    active: HashSet<S::NodeId, FxBuildHasher>,
+    active: HashSet<NodeId, FxBuildHasher>,
 }
 
 impl<'graph, S, T> DoubleEndedQueue<'graph, S, T>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
 {
     pub(in crate::shortest_paths) fn new() -> Self {
         Self {
@@ -143,7 +142,7 @@ where
         self.queue.len()
     }
 
-    pub(in crate::shortest_paths) fn contains_node(&self, node: &S::NodeId) -> bool {
+    pub(in crate::shortest_paths) fn contains_node(&self, node: &NodeId) -> bool {
         self.active.contains(node)
     }
 }

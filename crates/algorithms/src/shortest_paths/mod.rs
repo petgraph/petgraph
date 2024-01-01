@@ -57,7 +57,7 @@ pub mod dijkstra;
 pub mod floyd_warshall;
 
 use error_stack::{Context, Result};
-use petgraph_core::{Graph, GraphStorage};
+use petgraph_core::{node::NodeId, Graph, GraphStorage};
 
 pub use self::{
     astar::AStar,
@@ -71,6 +71,7 @@ pub use self::{
     floyd_warshall::FloydWarshall,
 };
 
+// TODO: should algorithms take `Node<T>` instead?!
 /// # Shortest Path
 ///
 /// A shortest path algorithm is an algorithm that finds a path between two nodes in a graph such
@@ -128,7 +129,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
@@ -143,7 +144,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
@@ -156,8 +157,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         self.path_from(graph, source)
             .ok()?
@@ -207,7 +208,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
@@ -223,7 +224,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
@@ -236,8 +237,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         self.every_distance(graph)
             .ok()?

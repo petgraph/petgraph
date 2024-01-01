@@ -11,6 +11,7 @@ use core::hash::Hash;
 use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
+    node::NodeId,
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
@@ -283,7 +284,6 @@ where
 impl<S, E> ShortestPath<S> for BellmanFord<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: PartialEq + Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -293,7 +293,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.path_from(graph, target)?;
 
@@ -303,7 +303,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
         ShortestPathFasterImpl::new(
             graph,
@@ -320,8 +320,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
@@ -352,7 +352,6 @@ where
 impl<S, E> ShortestDistance<S> for BellmanFord<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -362,7 +361,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.distance_from(graph, target)?;
 
@@ -372,7 +371,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = ShortestPathFasterImpl::new(
             graph,
@@ -390,8 +389,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
@@ -423,7 +422,6 @@ where
 impl<S, E> ShortestPath<S> for BellmanFord<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -433,7 +431,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         ShortestPathFasterImpl::new(
             graph,
@@ -450,8 +448,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
@@ -482,7 +480,6 @@ where
 impl<S, E> ShortestDistance<S> for BellmanFord<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -492,7 +489,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = ShortestPathFasterImpl::new(
             graph,
@@ -510,8 +507,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,

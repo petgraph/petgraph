@@ -3,7 +3,6 @@ use error_stack::{Result, ResultExt};
 use crate::{
     edge::{EdgeId, EdgeMut},
     graph::Graph,
-    id::{ArbitraryGraphId, GraphId, ManagedGraphId},
     node::{NodeId, NodeMut},
     storage::GraphStorage,
     Error,
@@ -424,7 +423,7 @@ where
     /// The same errors as [`Self::try_insert_edge`] may occur.
     pub fn try_upsert_edge_with(
         &mut self,
-        on_update: impl FnMut(EdgeMut<S>) -> S::EdgeWeight,
+        mut on_update: impl FnMut(&mut EdgeMut<S>) -> S::EdgeWeight,
         on_insert: impl FnOnce(EdgeId) -> S::EdgeWeight,
 
         source: NodeId,
@@ -433,7 +432,7 @@ where
         let mut affected = vec![];
 
         for mut edge in self.storage.edges_between_mut(source, target) {
-            *edge.weight_mut() = on_update(edge);
+            *edge.weight_mut() = on_update(&mut edge);
             affected.push(edge.id());
         }
 
@@ -458,7 +457,7 @@ where
     /// [`Self::insert_edge_with`].
     pub fn upsert_edge_with(
         &mut self,
-        on_update: impl FnMut(EdgeMut<S>) -> S::EdgeWeight,
+        on_update: impl FnMut(&mut EdgeMut<S>) -> S::EdgeWeight,
         on_insert: impl FnOnce(EdgeId) -> S::EdgeWeight,
 
         source: NodeId,

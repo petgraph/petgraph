@@ -2,7 +2,8 @@ use alloc::vec::Vec;
 
 use numi::borrow::Moo;
 use petgraph_core::{
-    id::{IndexMapper, LinearGraphId},
+    node::NodeId,
+    storage::{linear::IndexMapper, LinearGraphStorage},
     Graph, GraphStorage,
 };
 
@@ -40,24 +41,20 @@ where
 
 pub(super) struct SlotMatrix<'graph, S, T>
 where
-    S: GraphStorage + 'graph,
-    S::NodeId: LinearGraphId<S>,
+    S: LinearGraphStorage + 'graph,
 {
-    mapper: MatrixIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'graph>>,
+    mapper: MatrixIndexMapper<S::NodeIndexMapper<'graph>>,
     matrix: Vec<Option<T>>,
     length: usize,
 }
 
 impl<'graph, S, T> SlotMatrix<'graph, S, T>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S>,
+    S: LinearGraphStorage,
 {
     pub(crate) fn new(graph: &'graph Graph<S>) -> Self {
         let length = graph.num_nodes();
-        let mapper = MatrixIndexMapper::Store(<S::NodeId as LinearGraphId<S>>::index_mapper(
-            graph.storage(),
-        ));
+        let mapper = MatrixIndexMapper::Store(graph.storage().node_index_mapper());
 
         let mut matrix = Vec::with_capacity(length * length);
         matrix.resize_with(length * length, Default::default);
@@ -81,7 +78,7 @@ where
         }
     }
 
-    pub(crate) fn set(&mut self, source: S::NodeId, target: S::NodeId, value: Option<T>) {
+    pub(crate) fn set(&mut self, source: NodeId, target: NodeId, value: Option<T>) {
         if matches!(self.mapper, MatrixIndexMapper::Discard) {
             // this should never happen, even if it does, we don't want to panic here (map call)
             // so we simply return.
@@ -106,14 +103,14 @@ where
     ///
     /// See the contract described on the [`IndexMapper`] for more information about the
     /// `map/lookup` contract.
-    pub(crate) fn get(&self, source: S::NodeId, target: S::NodeId) -> Option<&T> {
+    pub(crate) fn get(&self, source: NodeId, target: NodeId) -> Option<&T> {
         let source = self.mapper.get(source)?;
         let target = self.mapper.get(target)?;
 
         self.matrix[source * self.length + target].as_ref()
     }
 
-    pub(crate) fn resolve(&self, index: usize) -> Option<S::NodeId> {
+    pub(crate) fn resolve(&self, index: usize) -> Option<NodeId> {
         self.mapper.reverse(index)
     }
 }
@@ -124,8 +121,7 @@ impl<'a, T: ?Sized> Captures<'a> for T {}
 
 impl<'a, S, T> SlotMatrix<'a, S, T>
 where
-    S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone,
+    S: LinearGraphStorage,
 {
     pub(crate) fn diagonal(&self) -> impl Iterator<Item = Option<&T>> + Captures<'a> + '_ {
         let len = self.length;

@@ -74,7 +74,6 @@ where
 impl<S, T> Display for Route<'_, S, T>
 where
     S: GraphStorage,
-    S::NodeId: Display,
     T: Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -229,7 +228,6 @@ where
 impl<S, T> Display for DirectRoute<'_, S, T>
 where
     S: GraphStorage,
-    S::NodeId: Display,
     T: Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

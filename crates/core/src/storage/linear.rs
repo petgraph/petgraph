@@ -120,6 +120,8 @@ pub trait IndexMapper<Id> {
     fn reverse(&self, to: usize) -> Option<Id>;
 }
 
+// TODO: IndexMapper ~> IdProjection?
+// TODO: LinearGraphStorage ~> IdProjectionGraphStorage?
 pub trait LinearGraphStorage: GraphStorage {
     type EdgeIndexMapper<'graph>: IndexMapper<EdgeId>
     where

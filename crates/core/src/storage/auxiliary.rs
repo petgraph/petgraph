@@ -85,6 +85,8 @@ pub trait BooleanGraphStorage<K> {
     fn get(&self, id: K) -> Option<bool>;
 
     fn set(&mut self, id: K, flag: bool) -> Option<bool>;
+
+    fn fill(&mut self, flag: bool);
 }
 
 /// Auxiliary storage for a graph.
@@ -94,6 +96,11 @@ pub trait BooleanGraphStorage<K> {
 ///
 /// For boolean values prefer [`Self::boolean_edge_storage`] and [`Self::boolean_node_storage`],
 /// as they usually have a more efficient implementation.
+// TODO: move to main trait?!
+//  fn auxiliary(&self) -> Self::Auxiliary<'_>;
+//  fn project(&self) -> Self::Projection<'_>;
+// trait GraphIdProjection
+// trait AuxiliaryStorage
 pub trait AuxiliaryGraphStorage: GraphStorage {
     type BooleanEdgeStorage<'graph>: BooleanGraphStorage<EdgeId>
     where

@@ -49,6 +49,11 @@ where
 
         Some(value)
     }
+
+    #[inline]
+    fn fill(&mut self, flag: bool) {
+        self.flags.fill(flag);
+    }
 }
 
 pub struct SlabSecondaryStorageIter<'a, K, T> {
