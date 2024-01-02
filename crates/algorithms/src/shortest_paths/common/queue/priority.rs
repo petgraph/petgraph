@@ -7,7 +7,6 @@ use petgraph_core::{
         auxiliary::{BooleanGraphStorage, FrequencyHint, Hints, OccupancyHint, PerformanceHint},
         AuxiliaryGraphStorage,
     },
-    GraphStorage,
 };
 
 pub(in crate::shortest_paths) struct PriorityQueueItem<T> {

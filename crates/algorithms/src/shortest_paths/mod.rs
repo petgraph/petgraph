@@ -38,15 +38,15 @@
 //! use petgraph_dino::DiDinoGraph;
 //!
 //! let mut graph = DiDinoGraph::new();
-//! let a = *graph.insert_node("A").id();
-//! let b = *graph.insert_node("B").id();
-//! graph.insert_edge(7, &a, &b);
+//! let a = graph.insert_node("A").id();
+//! let b = graph.insert_node("B").id();
+//! graph.insert_edge(7, a, b);
 //!
 //! let dijkstra = Dijkstra::directed();
-//! let path = dijkstra.path_between(&graph, &a, &b);
+//! let path = dijkstra.path_between(&graph, a, b);
 //! assert!(path.is_some());
 //!
-//! let path = dijkstra.path_between(&graph, &b, &a);
+//! let path = dijkstra.path_between(&graph, b, a);
 //! assert!(path.is_none());
 //! ```
 
@@ -71,6 +71,17 @@ pub use self::{
     floyd_warshall::FloydWarshall,
 };
 
+pub mod utilities {
+    //! # Utilities
+    //!
+    //! This module contains utilities that can be used with shortest path algorithms.
+    //!
+    //! Currently this module only contains the [`cost`] and [`heuristic`] functions, which resolve
+    //! common lifetime problems whenever closures are used for the cost and heuristic functions.
+
+    pub use super::common::closures::{cost, heuristic};
+}
+
 // TODO: should algorithms take `Node<T>` instead?!
 /// # Shortest Path
 ///
@@ -94,21 +105,21 @@ pub use self::{
 /// use petgraph_dino::DiDinoGraph;
 ///
 /// let mut graph = DiDinoGraph::new();
-/// let a = *graph.insert_node("A").id();
-/// let b = *graph.insert_node("B").id();
-/// let c = *graph.insert_node("C").id();
+/// let a = graph.insert_node("A").id();
+/// let b = graph.insert_node("B").id();
+/// let c = graph.insert_node("C").id();
 ///
-/// graph.insert_edge(7, &a, &b);
-/// graph.insert_edge(5, &b, &c);
-/// graph.insert_edge(3, &a, &c);
+/// graph.insert_edge(7, a, b);
+/// graph.insert_edge(5, b, c);
+/// graph.insert_edge(3, a, c);
 ///
 /// let dijkstra = Dijkstra::directed();
-/// let path = dijkstra.path_between(&graph, &a, &c).expect("path exists");
+/// let path = dijkstra.path_between(&graph, a, c).expect("path exists");
 ///
 /// assert_eq!(path.cost().into_value(), 3);
 ///
-/// assert_eq!(path.path().source().id(), &a);
-/// assert_eq!(path.path().target().id(), &c);
+/// assert_eq!(path.path().source().id(), a);
+/// assert_eq!(path.path().target().id(), c);
 ///
 /// assert!(path.path().transit().is_empty());
 /// ```

@@ -5,7 +5,7 @@ use numi::{
     borrow::Moo,
     num::{checked::CheckedAdd, identity::Zero},
 };
-use petgraph_core::{node::NodeId, storage::LinearGraphStorage, Graph, GraphStorage, Node};
+use petgraph_core::{node::NodeId, storage::LinearGraphStorage, Graph, Node};
 
 use crate::shortest_paths::{
     common::{

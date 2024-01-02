@@ -1,8 +1,5 @@
 use alloc::vec::Vec;
-use core::{
-    fmt::{Debug, Display},
-    hash::Hash,
-};
+use core::fmt::Debug;
 
 use error_stack::Result;
 use hashbrown::HashMap;

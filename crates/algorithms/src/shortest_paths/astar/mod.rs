@@ -14,7 +14,7 @@ use petgraph_core::{
     edge::marker::{Directed, Undirected},
     node::NodeId,
     storage::AuxiliaryGraphStorage,
-    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
+    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
 use self::r#impl::AStarImpl;
@@ -81,12 +81,12 @@ impl AStar<Directed, DefaultCost, ()> {
     /// let algorithm = AStar::directed().with_heuristic(heuristic);
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node((0, 1)).id();
-    /// let b = *graph.insert_node((2, 2)).id();
+    /// let a = graph.insert_node((0, 1)).id();
+    /// let b = graph.insert_node((2, 2)).id();
     ///
-    /// graph.insert_edge(5, &a, &b);
+    /// graph.insert_edge(5, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b).expect("path exists");
+    /// let path = algorithm.path_between(&graph, a, b).expect("path exists");
     /// assert_eq!(path.cost().into_value(), 5);
     /// ```
     pub fn directed() -> Self {

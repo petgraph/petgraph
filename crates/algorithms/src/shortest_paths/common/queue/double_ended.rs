@@ -1,6 +1,5 @@
 use alloc::collections::VecDeque;
 use core::{
-    hash::Hash,
     iter::Sum,
     ops::{Add, Div},
 };

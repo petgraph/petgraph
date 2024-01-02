@@ -1,10 +1,9 @@
 use alloc::vec::Vec;
 
-use numi::borrow::Moo;
 use petgraph_core::{
     node::NodeId,
     storage::{linear::IndexMapper, LinearGraphStorage},
-    Graph, GraphStorage,
+    Graph,
 };
 
 enum MatrixIndexMapper<I> {

@@ -9,7 +9,7 @@ use petgraph_core::{
         auxiliary::{FrequencyHint, Hints, OccupancyHint, PerformanceHint, SecondaryGraphStorage},
         AuxiliaryGraphStorage,
     },
-    Graph, GraphStorage, Node,
+    Graph, Node,
 };
 
 use crate::shortest_paths::{

@@ -1,8 +1,5 @@
 use alloc::{vec, vec::Vec};
-use core::{
-    hash::{BuildHasher, Hash},
-    iter,
-};
+use core::{hash::BuildHasher, iter};
 
 use hashbrown::{HashMap, HashSet};
 use petgraph_core::{

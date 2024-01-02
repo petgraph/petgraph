@@ -10,12 +10,9 @@ use ignore::{
     WalkBuilder,
 };
 use libtest_mimic::Trial;
-use snapbox::{
-    report::{write_diff, Palette},
-    Action, Assert, Data, DataFormat, NormalizeNewlines,
-};
+use snapbox::{report::Palette, Action};
 
-pub struct Harness<S, T> {
+pub(crate) struct Harness<S, T> {
     root: std::path::PathBuf,
     overrides: Option<Override>,
     each: Option<&'static [&'static str]>,
@@ -31,7 +28,7 @@ where
     S: Fn(std::path::PathBuf) -> Case + Send + Sync + 'static,
     T: Fn(&Path, &'static str) -> Result<I, E> + Send + Sync + 'static + Clone,
 {
-    pub fn new(root: impl Into<std::path::PathBuf>, setup: S, test: T) -> Self {
+    pub(crate) fn new(root: impl Into<std::path::PathBuf>, setup: S, test: T) -> Self {
         Self {
             root: root.into(),
             overrides: None,
@@ -47,7 +44,7 @@ where
     /// Path patterns for selecting input files
     ///
     /// This used gitignore syntax
-    pub fn select<'p>(mut self, patterns: impl IntoIterator<Item = &'p str>) -> Self {
+    pub(crate) fn select<'p>(mut self, patterns: impl IntoIterator<Item = &'p str>) -> Self {
         let mut overrides = OverrideBuilder::new(&self.root);
         for line in patterns {
             overrides.add(line).unwrap();
@@ -56,20 +53,13 @@ where
         self
     }
 
-    pub fn each(mut self, names: &'static [&'static str]) -> Self {
+    pub(crate) fn each(mut self, names: &'static [&'static str]) -> Self {
         self.each = Some(names);
         self
     }
 
-    /// Read the failure action from an environment variable
-    pub fn action_env(mut self, var_name: &str) -> Self {
-        let action = Action::with_env_var(var_name);
-        self.action = action.unwrap_or(self.action);
-        self
-    }
-
     /// Override the failure action
-    pub fn action(mut self, action: Action) -> Self {
+    pub(crate) fn action(mut self, action: Action) -> Self {
         self.action = action;
         self
     }
@@ -115,7 +105,7 @@ where
     }
 
     /// Run tests
-    pub fn test(self) -> ! {
+    pub(crate) fn test(self) -> ! {
         let each = self.each.unwrap_or(&[""]);
 
         let tests = each.iter().flat_map(|name| self.trials(name)).collect();
@@ -364,8 +354,8 @@ impl Verifier {
     }
 }
 
-pub struct Case {
-    pub name: String,
-    pub fixture: std::path::PathBuf,
-    pub expected: std::path::PathBuf,
+pub(crate) struct Case {
+    pub(crate) name: String,
+    pub(crate) fixture: std::path::PathBuf,
+    pub(crate) expected: std::path::PathBuf,
 }

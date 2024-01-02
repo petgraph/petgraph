@@ -71,15 +71,15 @@ impl FloydWarshall<Directed, DefaultCost> {
     /// let algorithm = FloydWarshall::directed();
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(7, &a, &b);
+    /// graph.insert_edge(7, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     ///
-    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// let path = algorithm.path_between(&graph, b, a);
     /// assert!(path.is_none());
     /// ```
     #[must_use]
@@ -105,15 +105,15 @@ impl FloydWarshall<Undirected, DefaultCost> {
     /// let algorithm = FloydWarshall::undirected();
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(7, &a, &b);
+    /// graph.insert_edge(7, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     ///
-    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// let path = algorithm.path_between(&graph, b, a);
     /// assert!(path.is_some());
     /// ```
     #[must_use]
@@ -151,15 +151,15 @@ impl<D, E> FloydWarshall<D, E> {
     /// let algorithm = FloydWarshall::directed().with_edge_cost(edge_cost);
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge("AB", &a, &b);
+    /// graph.insert_edge("AB", a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     ///
-    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// let path = algorithm.path_between(&graph, b, a);
     /// assert!(path.is_none());
     /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> FloydWarshall<D, F>

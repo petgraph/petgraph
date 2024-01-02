@@ -265,7 +265,7 @@ graph!(factory(inconsistent) => DiDinoGraph<&'static str, usize>;
     ]
 );
 
-fn admissible_inconsistent<'a, S>(source: Node<'a, S>, target: Node<'a, S>) -> Moo<'a, usize>
+fn admissible_inconsistent<'a, S>(source: Node<'a, S>, _target: Node<'a, S>) -> Moo<'a, usize>
 where
     S: GraphStorage,
     S::NodeWeight: AsRef<str>,

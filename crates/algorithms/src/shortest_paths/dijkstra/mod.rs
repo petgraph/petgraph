@@ -13,7 +13,7 @@ use petgraph_core::{
     edge::marker::{Directed, Undirected},
     node::NodeId,
     storage::AuxiliaryGraphStorage,
-    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
+    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
 use self::iter::DijkstraIter;
@@ -66,15 +66,15 @@ impl Dijkstra<Directed, DefaultCost> {
     /// let algorithm = Dijkstra::directed();
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(2, &a, &b);
+    /// graph.insert_edge(2, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     ///
-    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// let path = algorithm.path_between(&graph, b, a);
     /// assert!(path.is_none());
     /// ```
     #[must_use]
@@ -101,15 +101,15 @@ impl Dijkstra<Undirected, DefaultCost> {
     /// let algorithm = Dijkstra::undirected();
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(2, &a, &b);
+    /// graph.insert_edge(2, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     ///
-    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// let path = algorithm.path_between(&graph, b, a);
     /// assert!(path.is_some());
     /// ```
     #[must_use]
@@ -152,12 +152,12 @@ where
     /// let algorithm = Dijkstra::directed().with_edge_cost(edge_cost);
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge("AB", &a, &b);
+    /// graph.insert_edge("AB", a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> Dijkstra<D, F>
