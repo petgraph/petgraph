@@ -17,6 +17,10 @@ pub enum FloydWarshallError {
     ///
     /// Note that multiple negative cycles may exist in the graph, and each attachment only means
     /// that it is part of a negative cycle and not which cycle(s) it is part of.
+    ///
+    /// To find all negative cycles, use [`BellmanFord`] instead.
+    ///
+    /// [`BellmanFord`]: crate::shortest_paths::BellmanFord
     NegativeCycle,
 }
 

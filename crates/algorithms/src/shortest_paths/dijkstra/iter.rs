@@ -170,9 +170,7 @@ where
                 self.predecessors.set(target, Some(node));
             }
 
-            // if let Some(target) = self.graph.node(target) {
             self.queue.decrease_priority(target, alternative);
-            // }
         }
 
         // this is what makes this special: instead of getting the next node as the start of next
