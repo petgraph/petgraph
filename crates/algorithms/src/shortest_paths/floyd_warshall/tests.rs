@@ -7,7 +7,7 @@ use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{
     common::tests::{expected, Expect, TestCase},
-    floyd_warshall::{error::FloydWarshallError, FloydWarshall},
+    floyd_warshall::{error::FloydWarshallError, FloydWarshall, NegativeCycle},
     ShortestPath,
 };
 
@@ -364,7 +364,10 @@ fn directed_negative_cycle() {
     };
 
     assert_eq!(error.current_context(), &FloydWarshallError::NegativeCycle);
-    let participants: HashSet<_> = error.request_ref::<NodeId>().copied().collect();
+    let participants: HashSet<_> = error
+        .request_ref::<NegativeCycle>()
+        .map(|cycle| cycle.node())
+        .collect();
 
     assert_eq!(
         participants,

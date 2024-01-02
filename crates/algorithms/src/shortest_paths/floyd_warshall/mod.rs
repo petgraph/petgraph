@@ -20,7 +20,10 @@ use self::r#impl::{
     init_directed_edge_distance, init_directed_edge_predecessor, init_undirected_edge_distance,
     init_undirected_edge_predecessor, FloydWarshallImpl,
 };
-pub use self::{error::FloydWarshallError, measure::FloydWarshallMeasure};
+pub use self::{
+    error::{FloydWarshallError, NegativeCycle},
+    measure::FloydWarshallMeasure,
+};
 use super::{
     common::{
         cost::{DefaultCost, GraphCost},

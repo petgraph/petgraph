@@ -13,7 +13,9 @@ use crate::shortest_paths::{
         route::Route,
         transit::PredecessorMode,
     },
-    floyd_warshall::{error::FloydWarshallError, matrix::SlotMatrix, FloydWarshallMeasure},
+    floyd_warshall::{
+        error::FloydWarshallError, matrix::SlotMatrix, FloydWarshallMeasure, NegativeCycle,
+    },
     Path,
 };
 
@@ -251,15 +253,16 @@ where
 
         let mut result: Result<(), FloydWarshallError> = Ok(());
 
-        // TODO: rework to attach all nodes in cycle into single struct
         for index in negative_cycles {
             let Some(node) = self.distances.resolve(index) else {
                 continue;
             };
 
+            let cycle = NegativeCycle::new(node);
+
             result = match result {
-                Ok(()) => Err(Report::new(FloydWarshallError::NegativeCycle).attach(node)),
-                Err(report) => Err(report.attach(node)),
+                Ok(()) => Err(Report::new(FloydWarshallError::NegativeCycle).attach(cycle)),
+                Err(report) => Err(report.attach(cycle)),
             };
         }
 

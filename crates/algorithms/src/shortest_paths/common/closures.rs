@@ -54,9 +54,3 @@ mod test {
         let _path = algorithm.path_between(&graph, a, b).expect("path exists");
     }
 }
-
-// pub fn bind_heuristic<S, T>(
-//     closure: impl Fn(Node<S>, Node<S>) -> Moo<T>,
-// ) -> impl Fn(Node<S>, Node<S>) -> Moo<T> {
-//     closure
-// }
