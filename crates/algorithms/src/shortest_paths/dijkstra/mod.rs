@@ -174,7 +174,7 @@ where
 
 impl<S, E> ShortestPath<S> for Dijkstra<Undirected, E>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -220,7 +220,7 @@ where
 
 impl<S, E> ShortestPath<S> for Dijkstra<Directed, E>
 where
-    S: DirectedGraphStorage + AuxiliaryGraphStorage,
+    S: DirectedGraphStorage,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -256,7 +256,7 @@ where
 
 impl<S, E> ShortestDistance<S> for Dijkstra<Undirected, E>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -304,7 +304,7 @@ where
 
 impl<S, E> ShortestDistance<S> for Dijkstra<Directed, E>
 where
-    S: DirectedGraphStorage + AuxiliaryGraphStorage,
+    S: DirectedGraphStorage,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {

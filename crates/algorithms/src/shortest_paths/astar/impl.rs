@@ -8,7 +8,7 @@ use petgraph_core::{
         auxiliary::{FrequencyHint, Hints, OccupancyHint, PerformanceHint, SecondaryGraphStorage},
         AuxiliaryGraphStorage,
     },
-    Graph, Node,
+    Graph, GraphStorage, Node,
 };
 
 use crate::shortest_paths::{
@@ -25,7 +25,7 @@ use crate::shortest_paths::{
 
 pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: Ord,
 {
@@ -48,7 +48,7 @@ where
 
 impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,

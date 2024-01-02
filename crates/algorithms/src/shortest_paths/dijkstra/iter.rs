@@ -9,7 +9,7 @@ use petgraph_core::{
         auxiliary::{FrequencyHint, Hints, OccupancyHint, PerformanceHint, SecondaryGraphStorage},
         AuxiliaryGraphStorage,
     },
-    Graph, Node,
+    Graph, GraphStorage, Node,
 };
 
 use crate::shortest_paths::{
@@ -26,7 +26,7 @@ use crate::shortest_paths::{
 
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -51,7 +51,7 @@ where
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -110,7 +110,7 @@ where
 
 impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,

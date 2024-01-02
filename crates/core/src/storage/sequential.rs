@@ -14,7 +14,7 @@ use crate::{edge::EdgeId, node::NodeId, GraphStorage};
 /// input value should always map to the same output value.
 /// Index lookup should also be (if possible) `O(1)` for `Id -> usize`, but not necessarily for
 /// `usize -> Id`.
-pub trait IndexMapper<Id> {
+pub trait GraphIdBijection<Id> {
     /// The maximum value that can be mapped to.
     ///
     /// This **must** be equal to the number of nodes in the graph.
@@ -103,14 +103,13 @@ pub trait IndexMapper<Id> {
     ///
     /// ```
     /// use numi::borrow::Moo;
-    /// use petgraph_core::id::{IndexMapper, LinearGraphId};
     /// use petgraph_dino::{DiDinoGraph, NodeId};
     ///
     /// let mut graph = DiDinoGraph::new();
     ///
     /// let a = *graph.insert_node("A").id();
     /// let b = *graph.insert_node("B").id();
-    /// # let ab = graph.insert_edge("A → B", &a, &b);
+    /// # let ab = graph.insert_edge("A → B", a, b);
     ///
     /// let mut mapper = NodeId::index_mapper(graph.storage());
     ///
@@ -120,17 +119,15 @@ pub trait IndexMapper<Id> {
     fn reverse(&self, to: usize) -> Option<Id>;
 }
 
-// TODO: IndexMapper ~> IdProjection?
-// TODO: LinearGraphStorage ~> IdProjectionGraphStorage?
-pub trait LinearGraphStorage: GraphStorage {
-    type EdgeIndexMapper<'graph>: IndexMapper<EdgeId>
+pub trait SequentialGraphStorage {
+    type EdgeIdBijection<'graph>: GraphIdBijection<EdgeId>
     where
         Self: 'graph;
 
-    type NodeIndexMapper<'graph>: IndexMapper<NodeId>
+    type NodeIdBijection<'graph>: GraphIdBijection<NodeId>
     where
         Self: 'graph;
 
-    fn node_index_mapper(&self) -> Self::NodeIndexMapper<'_>;
-    fn edge_index_mapper(&self) -> Self::EdgeIndexMapper<'_>;
+    fn node_id_bijection(&self) -> Self::NodeIdBijection<'_>;
+    fn edge_id_bijection(&self) -> Self::EdgeIdBijection<'_>;
 }

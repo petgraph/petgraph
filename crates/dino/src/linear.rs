@@ -1,21 +1,21 @@
 use petgraph_core::{
-    edge::EdgeId, node::NodeId, storage::linear::LinearGraphStorage, GraphDirectionality,
+    edge::EdgeId, node::NodeId, storage::sequential::SequentialGraphStorage, GraphDirectionality,
 };
 
 use crate::{slab::SlabIndexMapper, DinoStorage};
 
-impl<N, E, D> LinearGraphStorage for DinoStorage<N, E, D>
+impl<N, E, D> SequentialGraphStorage for DinoStorage<N, E, D>
 where
     D: GraphDirectionality,
 {
-    type EdgeIndexMapper<'graph> = SlabIndexMapper<'graph, EdgeId> where Self: 'graph;
-    type NodeIndexMapper<'graph> = SlabIndexMapper<'graph, NodeId> where Self: 'graph;
+    type EdgeIdBijection<'graph> = SlabIndexMapper<'graph, EdgeId> where Self: 'graph;
+    type NodeIdBijection<'graph> = SlabIndexMapper<'graph, NodeId> where Self: 'graph;
 
-    fn node_index_mapper(&self) -> Self::NodeIndexMapper<'_> {
+    fn node_id_bijection(&self) -> Self::NodeIdBijection<'_> {
         SlabIndexMapper::new(&self.nodes)
     }
 
-    fn edge_index_mapper(&self) -> Self::EdgeIndexMapper<'_> {
+    fn edge_id_bijection(&self) -> Self::EdgeIdBijection<'_> {
         SlabIndexMapper::new(&self.edges)
     }
 }

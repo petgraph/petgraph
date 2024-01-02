@@ -14,8 +14,8 @@
 //! - [`DirectedGraphStorage`]: A trait for directed graph storage implementations.
 //! - [`RetainableGraphStorage`]: A trait for retainable graph storage implementations.
 //! - [`AuxiliaryGraphStorage`]: A trait to access storage for arbitrary additional data.
-//! - [`LinearGraphStorage`]: A trait for graph storage implementations that allow the mapping of
-//!   their internal indices to a set of linear indices.
+//! - [`SequentialGraphStorage`]: A trait for graph storage implementations that allow the mapping
+//!   of their internal indices to a set of linear indices.
 //!
 //! [`GraphStorage`] proposes that [`DirectedGraphStorage`] is simply a specialization of an
 //! undirected graph, meaning that the supertrait of [`DirectedGraphStorage`] is also
@@ -25,22 +25,22 @@
 //! # Implementation Notes
 //!
 //! * [`RetainableGraphStorage`] is subject to removal during the alpha period.
-//! * [`LinearGraphStorage`] is subject to removal or rename during the alpha period.
+//! * [`SequentialGraphStorage`] is subject to removal or rename during the alpha period.
 //! * [`AuxiliaryGraphStorage`] is subject to removal or rename during the alpha period.
 //!
 //! [`Graph`]: crate::graph::Graph
 mod directed;
 
 pub mod auxiliary;
-pub mod linear;
 mod retain;
 pub mod reverse;
+pub mod sequential;
 
 use error_stack::{Context, Result};
 
 pub use self::{
-    auxiliary::AuxiliaryGraphStorage, directed::DirectedGraphStorage, linear::LinearGraphStorage,
-    retain::RetainableGraphStorage,
+    auxiliary::AuxiliaryGraphStorage, directed::DirectedGraphStorage,
+    retain::RetainableGraphStorage, sequential::SequentialGraphStorage,
 };
 use crate::{
     edge::{DetachedEdge, Edge, EdgeId, EdgeMut},
@@ -125,7 +125,7 @@ use crate::{
 /// [`Graph::new`]: crate::graph::Graph::new
 /// [`Graph::new_in`]: crate::graph::Graph::new_in
 /// [`Graph::with_capacity`]: crate::graph::Graph::with_capacity
-pub trait GraphStorage: Sized {
+pub trait GraphStorage: SequentialGraphStorage + AuxiliaryGraphStorage + Sized {
     /// The weight of an edge.
     ///
     /// No constraints are enforced on this type (except that it needs to be `Sized`), but

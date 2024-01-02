@@ -19,8 +19,8 @@ use crate::{
     node::{Node, NodeId},
     storage::{
         auxiliary::{BooleanGraphStorage, Hints},
-        linear::IndexMapper,
-        AuxiliaryGraphStorage, DirectedGraphStorage, GraphStorage, LinearGraphStorage,
+        sequential::GraphIdBijection,
+        AuxiliaryGraphStorage, DirectedGraphStorage, GraphStorage, SequentialGraphStorage,
     },
 };
 
@@ -45,25 +45,25 @@ where
 
 impl<S> NodeIndexable for Graph<S>
 where
-    S: LinearGraphStorage,
+    S: GraphStorage,
 {
     fn node_bound(&self) -> usize {
         self.num_nodes()
     }
 
     fn to_index(&self, a: Self::NodeId) -> usize {
-        self.storage.node_index_mapper().index(a)
+        self.storage.node_id_bijection().index(a)
     }
 
     fn from_index(&self, i: usize) -> Self::NodeId {
         self.storage
-            .node_index_mapper()
+            .node_id_bijection()
             .reverse(i)
             .expect("unable to determine index")
     }
 }
 
-impl<S> NodeCompactIndexable for Graph<S> where S: LinearGraphStorage {}
+impl<S> NodeCompactIndexable for Graph<S> where S: GraphStorage {}
 
 impl<S> EdgeCount for Graph<S>
 where
@@ -76,19 +76,19 @@ where
 
 impl<S> EdgeIndexable for Graph<S>
 where
-    S: LinearGraphStorage,
+    S: GraphStorage,
 {
     fn edge_bound(&self) -> usize {
         self.num_edges()
     }
 
     fn to_index(&self, a: Self::EdgeId) -> usize {
-        self.storage.edge_index_mapper().index(a)
+        self.storage.edge_id_bijection().index(a)
     }
 
     fn from_index(&self, i: usize) -> Self::EdgeId {
         self.storage
-            .edge_index_mapper()
+            .edge_id_bijection()
             .reverse(i)
             .expect("unable to determine index")
     }
@@ -204,14 +204,14 @@ where
 
 pub struct NodeVisitationMap<'a, S>
 where
-    S: AuxiliaryGraphStorage + 'a,
+    S: GraphStorage + 'a,
 {
     inner: S::BooleanNodeStorage<'a>,
 }
 
 impl<'a, S> VisitMap<NodeId> for NodeVisitationMap<'a, S>
 where
-    S: AuxiliaryGraphStorage + 'a,
+    S: GraphStorage + 'a,
 {
     fn visit(&mut self, a: NodeId) -> bool {
         self.inner.set(a, true).is_none()
@@ -224,7 +224,7 @@ where
 
 impl<'a, S> FilterNode<NodeId> for NodeVisitationMap<'a, S>
 where
-    S: AuxiliaryGraphStorage + 'a,
+    S: GraphStorage + 'a,
 {
     fn include_node(&self, node: NodeId) -> bool {
         self.is_visited(&node)
@@ -233,7 +233,7 @@ where
 
 impl<'a, S> Visitable for &'a Graph<S>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
 {
     type Map = NodeVisitationMap<'a, S>;
 

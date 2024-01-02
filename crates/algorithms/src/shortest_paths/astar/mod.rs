@@ -150,7 +150,7 @@ impl<E, H> AStar<Directed, E, H> {
         intermediates: PredecessorMode,
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
-        S: DirectedGraphStorage + AuxiliaryGraphStorage,
+        S: DirectedGraphStorage,
         E: GraphCost<S>,
         E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
@@ -176,7 +176,7 @@ impl<E, H> AStar<Undirected, E, H> {
         intermediates: PredecessorMode,
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
-        S: AuxiliaryGraphStorage,
+        S: GraphStorage,
         E: GraphCost<S>,
         E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
@@ -198,7 +198,7 @@ impl<E, H> AStar<Undirected, E, H> {
 // For now, while more code this is more flexible and more readable to the reader.
 impl<S, E, H> ShortestPath<S> for AStar<Undirected, E, H>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -266,7 +266,7 @@ where
 
 impl<S, E, H> ShortestDistance<S> for AStar<Undirected, E, H>
 where
-    S: AuxiliaryGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -335,7 +335,7 @@ where
 
 impl<S, E, H> ShortestPath<S> for AStar<Directed, E, H>
 where
-    S: DirectedGraphStorage + AuxiliaryGraphStorage,
+    S: DirectedGraphStorage,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -403,7 +403,7 @@ where
 
 impl<S, E, H> ShortestDistance<S> for AStar<Directed, E, H>
 where
-    S: DirectedGraphStorage + AuxiliaryGraphStorage,
+    S: DirectedGraphStorage,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,

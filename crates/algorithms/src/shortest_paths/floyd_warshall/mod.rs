@@ -12,7 +12,7 @@ use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
     node::NodeId,
-    storage::LinearGraphStorage,
+    storage::SequentialGraphStorage,
     DirectedGraphStorage, Graph, GraphStorage,
 };
 
@@ -179,7 +179,7 @@ impl<D, E> FloydWarshall<D, E> {
 
 impl<S, E> ShortestPath<S> for FloydWarshall<Undirected, E>
 where
-    S: LinearGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -251,7 +251,7 @@ where
 
 impl<S, E> ShortestDistance<S> for FloydWarshall<Undirected, E>
 where
-    S: LinearGraphStorage,
+    S: GraphStorage,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -330,7 +330,7 @@ where
 
 impl<S, E> ShortestPath<S> for FloydWarshall<Directed, E>
 where
-    S: DirectedGraphStorage + LinearGraphStorage,
+    S: DirectedGraphStorage,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -403,7 +403,7 @@ where
 
 impl<S, E> ShortestDistance<S> for FloydWarshall<Directed, E>
 where
-    S: DirectedGraphStorage + LinearGraphStorage,
+    S: DirectedGraphStorage,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {

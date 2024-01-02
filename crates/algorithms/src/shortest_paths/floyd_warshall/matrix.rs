@@ -2,8 +2,8 @@ use alloc::vec::Vec;
 
 use petgraph_core::{
     node::NodeId,
-    storage::{linear::IndexMapper, LinearGraphStorage},
-    Graph,
+    storage::{sequential::GraphIdBijection, SequentialGraphStorage},
+    Graph, GraphStorage,
 };
 
 enum MatrixIndexMapper<I> {
@@ -11,9 +11,9 @@ enum MatrixIndexMapper<I> {
     Discard,
 }
 
-impl<I, T> IndexMapper<T> for MatrixIndexMapper<I>
+impl<I, T> GraphIdBijection<T> for MatrixIndexMapper<I>
 where
-    I: IndexMapper<T>,
+    I: GraphIdBijection<T>,
     T: PartialEq,
 {
     fn max(&self) -> usize {
@@ -40,20 +40,20 @@ where
 
 pub(super) struct SlotMatrix<'graph, S, T>
 where
-    S: LinearGraphStorage + 'graph,
+    S: GraphStorage + 'graph,
 {
-    mapper: MatrixIndexMapper<S::NodeIndexMapper<'graph>>,
+    mapper: MatrixIndexMapper<S::NodeIdBijection<'graph>>,
     matrix: Vec<Option<T>>,
     length: usize,
 }
 
 impl<'graph, S, T> SlotMatrix<'graph, S, T>
 where
-    S: LinearGraphStorage,
+    S: GraphStorage,
 {
     pub(crate) fn new(graph: &'graph Graph<S>) -> Self {
         let length = graph.num_nodes();
-        let mapper = MatrixIndexMapper::Store(graph.storage().node_index_mapper());
+        let mapper = MatrixIndexMapper::Store(graph.storage().node_id_bijection());
 
         let mut matrix = Vec::with_capacity(length * length);
         matrix.resize_with(length * length, Default::default);
@@ -100,7 +100,7 @@ where
     /// Returns `None` if the node cannot be looked up, this only happens if you try to query for a
     /// value on an index that has not yet been set via `set`.
     ///
-    /// See the contract described on the [`IndexMapper`] for more information about the
+    /// See the contract described on the [`GraphIdBijection`] for more information about the
     /// `map/lookup` contract.
     pub(crate) fn get(&self, source: NodeId, target: NodeId) -> Option<&T> {
         let source = self.mapper.get(source)?;
@@ -120,7 +120,7 @@ impl<'a, T: ?Sized> Captures<'a> for T {}
 
 impl<'a, S, T> SlotMatrix<'a, S, T>
 where
-    S: LinearGraphStorage,
+    S: GraphStorage,
 {
     pub(crate) fn diagonal(&self) -> impl Iterator<Item = Option<&T>> + Captures<'a> + '_ {
         let len = self.length;

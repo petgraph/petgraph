@@ -13,8 +13,8 @@ use petgraph_core::{
     edge::EdgeId,
     node::NodeId,
     storage::{
-        auxiliary::Hints, reverse::ReverseGraphStorage, AuxiliaryGraphStorage, LinearGraphStorage,
-        RetainableGraphStorage,
+        auxiliary::Hints, reverse::ReverseGraphStorage, AuxiliaryGraphStorage,
+        RetainableGraphStorage, SequentialGraphStorage,
     },
     DetachedEdge, DetachedNode, Edge, EdgeMut, GraphDirectionality, GraphStorage, Node, NodeMut,
 };
@@ -415,21 +415,21 @@ where
     }
 }
 
-impl<NK, NV, EK, EV, D> LinearGraphStorage for MapStorage<NK, NV, EK, EV, D>
+impl<NK, NV, EK, EV, D> SequentialGraphStorage for MapStorage<NK, NV, EK, EV, D>
 where
     D: GraphDirectionality,
     NK: Hash,
     EK: Hash,
 {
-    type EdgeIndexMapper<'a> = InnerStorage<NK, NV, EK, EV, D>::EdgeIndexMapper<'a> where Self: 'a;
-    type NodeIndexMapper<'a> = InnerStorage<NK, NV, EK, EV, D>::NodeIndexMapper<'a> where Self: 'a;
+    type EdgeIdBijection<'a> = InnerStorage<NK, NV, EK, EV, D>::EdgeIdBijection<'a> where Self: 'a;
+    type NodeIdBijection<'a> = InnerStorage<NK, NV, EK, EV, D>::NodeIdBijection<'a> where Self: 'a;
 
-    fn node_index_mapper(&self) -> Self::NodeIndexMapper<'_> {
-        self.inner.node_index_mapper()
+    fn node_id_bijection(&self) -> Self::NodeIdBijection<'_> {
+        self.inner.node_id_bijection()
     }
 
-    fn edge_index_mapper(&self) -> Self::EdgeIndexMapper<'_> {
-        self.inner.edge_index_mapper()
+    fn edge_id_bijection(&self) -> Self::EdgeIdBijection<'_> {
+        self.inner.edge_id_bijection()
     }
 }
 
