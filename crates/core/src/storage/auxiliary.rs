@@ -2,7 +2,7 @@
 //!
 //! This module provides traits for auxiliary storage for graphs, which can be used to associate
 //! arbitrary additional data with nodes and edges.
-use crate::{edge::EdgeId, node::NodeId, GraphStorage};
+use crate::{edge::EdgeId, node::NodeId};
 
 /// Hints about frequency.
 ///

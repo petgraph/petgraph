@@ -1,4 +1,4 @@
-use crate::{edge::EdgeId, node::NodeId, GraphStorage};
+use crate::{edge::EdgeId, node::NodeId};
 
 /// Index mapper for a graph.
 ///

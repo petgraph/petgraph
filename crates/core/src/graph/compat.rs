@@ -20,7 +20,7 @@ use crate::{
     storage::{
         auxiliary::{BooleanGraphStorage, Hints},
         sequential::GraphIdBijection,
-        AuxiliaryGraphStorage, DirectedGraphStorage, GraphStorage, SequentialGraphStorage,
+        DirectedGraphStorage, GraphStorage,
     },
 };
 
