@@ -5,7 +5,7 @@ use petgraph_core::{
 };
 #[cfg(feature = "convert")]
 use petgraph_graph::{Graph, NodeIndex};
-use petgraph_graphmap::{DiGraphMap, MapStorage};
+use petgraph_graphmap::{DiGraphMap, EntryStorage};
 
 #[test]
 fn self_loop() {

@@ -1,3 +1,6 @@
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
 use error_stack::{Result, ResultExt};
 
 use crate::{
@@ -344,6 +347,7 @@ where
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<S> Graph<S>
 where
     S: GraphStorage,

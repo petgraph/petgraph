@@ -8,7 +8,7 @@ pub struct ValueHash<T> {
 impl<T> ValueHash<T> {
     pub fn new<S>(hash_builder: &S, value: &T) -> Self
     where
-        T: Hash + ?Sized,
+        T: Hash,
         S: BuildHasher,
     {
         let hash = {

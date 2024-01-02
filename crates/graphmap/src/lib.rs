@@ -1,22 +1,21 @@
 #![no_std]
 
+mod auxiliary;
+mod directed;
 mod hash;
+mod retain;
+mod reverse;
+mod sequential;
 
 extern crate alloc;
 
-use alloc::vec;
-use core::hash::{BuildHasher, BuildHasherDefault, Hash, Hasher};
+use core::hash::Hash;
 
 use error_stack::{Report, ResultExt};
-use hashbrown::HashMap;
+use hashbrown::{hash_map::DefaultHashBuilder, HashMap};
 use petgraph_core::{
-    edge::EdgeId,
-    node::NodeId,
-    storage::{
-        auxiliary::Hints, reverse::ReverseGraphStorage, AuxiliaryGraphStorage,
-        RetainableGraphStorage, SequentialGraphStorage,
-    },
-    DetachedEdge, DetachedNode, Edge, EdgeMut, GraphDirectionality, GraphStorage, Node, NodeMut,
+    edge::EdgeId, node::NodeId, DetachedEdge, DetachedNode, Edge, EdgeMut, GraphDirectionality,
+    GraphStorage, Node, NodeMut,
 };
 use petgraph_dino::DinoStorage;
 
@@ -33,22 +32,25 @@ pub enum MapError {
     EdgeExists,
 }
 
-type InnerStorage<NK, NV, EK, EV, D> = DinoStorage<Entry<NK, NV>, Entry<EK, EV>, D>;
+type Backend<NK, NV, EK, EV, D> = DinoStorage<Entry<NK, NV>, Entry<EK, EV>, D>;
 
 // TODO: better name
 // TODO: reduce generics
-pub struct MapStorage<NK, NV, EK, EV, D>
+pub struct EntryStorage<NK, NV, EK, EV, D>
 where
     D: GraphDirectionality,
-    NK: Eq + Hash,
-    EK: Eq + Hash,
+    NK: Hash,
+    EK: Hash,
 {
-    inner: InnerStorage<NK, NV, EK, EV, D>,
+    inner: Backend<NK, NV, EK, EV, D>,
+
     nodes: HashMap<ValueHash<NK>, NodeId>,
     edges: HashMap<ValueHash<EK>, EdgeId>,
+
+    hasher: DefaultHashBuilder,
 }
 
-impl<NK, NV, EK, EV, D> GraphStorage for MapStorage<NK, NV, EK, EV, D>
+impl<NK, NV, EK, EV, D> GraphStorage for EntryStorage<NK, NV, EK, EV, D>
 where
     D: GraphDirectionality,
     NK: Hash,
@@ -63,6 +65,7 @@ where
             inner: DinoStorage::with_capacity(node_capacity, edge_capacity),
             nodes: HashMap::with_capacity(node_capacity.unwrap_or(0)),
             edges: HashMap::with_capacity(edge_capacity.unwrap_or(0)),
+            hasher: DefaultHashBuilder::default(),
         }
     }
 
@@ -99,7 +102,7 @@ where
         id: NodeId,
         weight: Self::NodeWeight,
     ) -> error_stack::Result<NodeMut<Self>, Self::Error> {
-        let hash = ValueHash::new(&BuildHasherDefault, &weight.key);
+        let hash = ValueHash::new(&self.hasher, &weight.key);
 
         if self.nodes.contains_key(&hash) {
             return Err(Report::new(MapError::NodeExists));
@@ -126,7 +129,7 @@ where
         u: NodeId,
         v: NodeId,
     ) -> error_stack::Result<EdgeMut<Self>, Self::Error> {
-        let hash = ValueHash::new(&BuildHasherDefault, &weight.key);
+        let hash = ValueHash::new(&self.hasher, &weight.key);
 
         if self.edges.contains_key(&hash) {
             return Err(Report::new(MapError::EdgeExists));
@@ -144,7 +147,7 @@ where
 
     fn remove_node(&mut self, id: NodeId) -> Option<DetachedNode<Self::NodeWeight>> {
         let node = self.inner.remove_node(id)?;
-        let hash = ValueHash::new(&BuildHasherDefault, &node.weight.key);
+        let hash = ValueHash::new(&self.hasher, &node.weight.key);
         self.nodes.remove(&hash);
 
         Some(node)
@@ -152,7 +155,7 @@ where
 
     fn remove_edge(&mut self, id: EdgeId) -> Option<DetachedEdge<Self::EdgeWeight>> {
         let edge = self.inner.remove_edge(id)?;
-        let hash = ValueHash::new(&BuildHasherDefault, &edge.weight.key);
+        let hash = ValueHash::new(&self.hasher, &edge.weight.key);
         self.edges.remove(&hash);
 
         Some(edge)
@@ -349,127 +352,5 @@ where
     fn shrink_to_fit_edges(&mut self) {
         self.inner.shrink_to_fit_edges();
         self.edges.shrink_to_fit();
-    }
-}
-
-impl<NK, NV, EK, EV, D> AuxiliaryGraphStorage for MapStorage<NK, NV, EK, EV, D>
-where
-    D: GraphDirectionality,
-    NK: Hash,
-    EK: Hash,
-{
-    type BooleanEdgeStorage<'a> = InnerStorage<NK, NV, EK, EV, D>::BooleanEdgeStorage<'a> where Self: 'a;
-    type BooleanNodeStorage<'a> = InnerStorage<NK, NV, EK, EV, D>::BooleanNodeStorage<'a> where Self: 'a;
-    type SecondaryEdgeStorage<'a, V> = InnerStorage<NK, NV, EK, EV, D>::SecondaryEdgeStorage<'a, V> where Self: 'a;
-    type SecondaryNodeStorage<'a, V> = InnerStorage<NK, NV, EK, EV, D>::SecondaryNodeStorage<'a, V> where Self: 'a;
-
-    fn secondary_node_storage<V>(&self, hints: Hints) -> Self::SecondaryNodeStorage<'_, V> {
-        self.inner.secondary_node_storage(hints)
-    }
-
-    fn secondary_edge_storage<V>(&self, hints: Hints) -> Self::SecondaryEdgeStorage<'_, V> {
-        self.inner.secondary_edge_storage(hints)
-    }
-
-    fn boolean_node_storage(&self, hints: Hints) -> Self::BooleanNodeStorage<'_> {
-        self.inner.boolean_node_storage(hints)
-    }
-
-    fn boolean_edge_storage(&self, hints: Hints) -> Self::BooleanEdgeStorage<'_> {
-        self.inner.boolean_edge_storage(hints)
-    }
-}
-
-impl<NK, NV, EK, EV, D> RetainableGraphStorage for MapStorage<NK, NV, EK, EV, D>
-where
-    D: GraphDirectionality,
-    NK: Hash,
-    EK: Hash,
-{
-    fn retain_nodes(&mut self, f: impl FnMut(NodeMut<'_, Self>) -> bool) {
-        let mut remove = vec![];
-        for node in self.inner.nodes_mut() {
-            let node = unsafe { node.change_storage_unchecked() };
-            if !f(node) {
-                remove.push(node.id());
-            }
-        }
-
-        for id in remove {
-            self.remove_node(id);
-        }
-    }
-
-    fn retain_edges(&mut self, f: impl FnMut(EdgeMut<'_, Self>) -> bool) {
-        let mut remove = vec![];
-        for edge in self.inner.edges_mut() {
-            let edge = unsafe { edge.change_storage_unchecked() };
-            if !f(edge) {
-                remove.push(edge.id());
-            }
-        }
-
-        for id in remove {
-            self.remove_edge(id);
-        }
-    }
-}
-
-impl<NK, NV, EK, EV, D> SequentialGraphStorage for MapStorage<NK, NV, EK, EV, D>
-where
-    D: GraphDirectionality,
-    NK: Hash,
-    EK: Hash,
-{
-    type EdgeIdBijection<'a> = InnerStorage<NK, NV, EK, EV, D>::EdgeIdBijection<'a> where Self: 'a;
-    type NodeIdBijection<'a> = InnerStorage<NK, NV, EK, EV, D>::NodeIdBijection<'a> where Self: 'a;
-
-    fn node_id_bijection(&self) -> Self::NodeIdBijection<'_> {
-        self.inner.node_id_bijection()
-    }
-
-    fn edge_id_bijection(&self) -> Self::EdgeIdBijection<'_> {
-        self.inner.edge_id_bijection()
-    }
-}
-
-impl<NK, NV, EK, EV, D> ReverseGraphStorage for MapStorage<NK, NV, EK, EV, D>
-where
-    D: GraphDirectionality,
-    NK: Hash,
-    EK: Hash,
-{
-    type EdgeKey = EK;
-    type NodeKey = NK;
-
-    fn contains_node_key(&self, key: &Self::NodeKey) -> bool {
-        let hash = ValueHash::new(&BuildHasherDefault, key);
-        self.nodes.contains_key(&hash)
-    }
-
-    fn node_by_key(&self, key: &Self::NodeKey) -> Option<Node<Self>> {
-        let hash = ValueHash::new(&BuildHasherDefault, key);
-
-        self.nodes.get(&hash).and_then(|id| self.node(*id))
-    }
-
-    fn node_by_key_mut(&mut self, key: &Self::NodeKey) -> Option<NodeMut<Self>> {
-        let hash = ValueHash::new(&BuildHasherDefault, key);
-
-        self.nodes.get(&hash).and_then(move |id| self.node_mut(*id))
-    }
-
-    fn contains_edge_key(&self, key: &Self::EdgeKey) -> bool {
-        let hash = ValueHash::new(&BuildHasherDefault, key);
-
-        self.edges.contains_key(&hash)
-    }
-
-    fn edge_by_key(&self, key: &Self::EdgeKey) -> Option<Edge<Self>> {
-        self.edges.get(key).and_then(|id| self.edge(*id))
-    }
-
-    fn edge_by_key_mut(&mut self, key: &Self::EdgeKey) -> Option<EdgeMut<Self>> {
-        self.edges.get(key).and_then(move |id| self.edge_mut(*id))
     }
 }

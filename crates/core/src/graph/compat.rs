@@ -248,6 +248,7 @@ where
     }
 }
 
+#[cfg(feature = "fixedbitset")]
 impl<S> GetAdjacencyMatrix for Graph<S>
 where
     S: GraphStorage,
