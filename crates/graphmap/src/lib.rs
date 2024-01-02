@@ -2,6 +2,7 @@
 
 mod auxiliary;
 mod directed;
+mod error;
 mod hash;
 mod retain;
 mod reverse;
@@ -19,17 +20,21 @@ use petgraph_core::{
 };
 use petgraph_dino::DinoStorage;
 
-use crate::hash::ValueHash;
+use crate::{error::EntryError, hash::ValueHash};
 
 pub struct Entry<K, V> {
     key: K,
-    value: V,
+    pub value: V,
 }
 
-pub enum MapError {
-    UnderlyingStorage,
-    NodeExists,
-    EdgeExists,
+impl<K, V> Entry<K, V> {
+    pub fn new(key: K, value: V) -> Self {
+        Self { key, value }
+    }
+
+    pub fn key(&self) -> &K {
+        &self.key
+    }
 }
 
 type Backend<NK, NV, EK, EV, D> = DinoStorage<Entry<NK, NV>, Entry<EK, EV>, D>;
@@ -57,7 +62,7 @@ where
     EK: Hash,
 {
     type EdgeWeight = Entry<EK, EV>;
-    type Error = MapError;
+    type Error = EntryError;
     type NodeWeight = Entry<NK, EV>;
 
     fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self {
@@ -105,13 +110,13 @@ where
         let hash = ValueHash::new(&self.hasher, &weight.key);
 
         if self.nodes.contains_key(&hash) {
-            return Err(Report::new(MapError::NodeExists));
+            return Err(Report::new(EntryError::NodeAlreadyExists));
         }
 
         let node = self
             .inner
             .insert_node(id, weight)
-            .change_context(MapError::UnderlyingStorage)?;
+            .change_context(EntryError::Backend)?;
         self.nodes.insert(hash, id);
 
         // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph storage
@@ -132,13 +137,13 @@ where
         let hash = ValueHash::new(&self.hasher, &weight.key);
 
         if self.edges.contains_key(&hash) {
-            return Err(Report::new(MapError::EdgeExists));
+            return Err(Report::new(EntryError::EdgeAlreadyExists));
         }
 
         let edge = self
             .inner
             .insert_edge(id, weight, u, v)
-            .change_context(MapError::UnderlyingStorage)?;
+            .change_context(EntryError::Backend)?;
         self.edges.insert(hash, id);
 
         // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph storage
