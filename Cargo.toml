@@ -39,7 +39,7 @@ petgraph = { path = "." }
 petgraph-core = { path = "crates/core", default-features = false }
 petgraph-graph = { path = "crates/graph", default-features = false }
 petgraph-adjacency-matrix = { path = "crates/adjacency-matrix", default-features = false }
-petgraph-graphmap = { path = "crates/graphmap", default-features = false }
+petgraph-entry = { path = "crates/entry", default-features = false }
 petgraph-csr = { path = "crates/csr", default-features = false }
 petgraph-matrix-graph = { path = "crates/matrix-graph", default-features = false }
 petgraph-algorithms = { path = "crates/algorithms", default-features = false }
@@ -61,7 +61,7 @@ petgraph-algorithms = { workspace = true, default-features = false, features = [
 petgraph-generators = { workspace = true, default-features = false, optional = true }
 petgraph-io = { workspace = true, default-features = false, optional = true }
 
-[dependencies.petgraph-graphmap]
+[dependencies.petgraph-entry]
 workspace = true
 optional = true
 default-features = false
@@ -69,8 +69,8 @@ default-features = false
 [features]
 adjacency-matrix = ["dep:petgraph-adjacency-matrix", "petgraph-algorithms/remove-me-only-intended-for-move-adjacency-matrix"]
 csr = ["dep:petgraph-csr"]
-default = ["std", "graphmap", "stable-graph", "matrix-graph", "csr", "adjacency-matrix"]
-graphmap = ["dep:petgraph-graphmap"]
+default = ["std", "entry", "stable-graph", "matrix-graph", "csr", "adjacency-matrix"]
+entry = ["dep:petgraph-entry"]
 matrix-graph = ["dep:petgraph-matrix-graph"]
 serde = ["petgraph-graph/serde"]
 stable-graph = ["petgraph-graph/stable"]

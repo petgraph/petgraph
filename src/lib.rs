@@ -155,7 +155,7 @@ pub mod csr {
     pub use petgraph_csr::*;
 }
 
-#[cfg(feature = "graphmap")]
+#[cfg(feature = "entry")]
 pub mod graphmap {
     pub use petgraph_graphmap::*;
 }
