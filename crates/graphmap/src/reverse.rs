@@ -30,7 +30,9 @@ where
     fn node_by_key_mut(&mut self, key: &Self::NodeKey) -> Option<NodeMut<Self>> {
         let hash = ValueHash::new(&self.hasher, key);
 
-        self.nodes.get(&hash).and_then(move |id| self.node_mut(*id))
+        let &node = self.nodes.get(&hash)?;
+
+        self.node_mut(node)
     }
 
     fn contains_edge_key(&self, key: &Self::EdgeKey) -> bool {
@@ -40,10 +42,16 @@ where
     }
 
     fn edge_by_key(&self, key: &Self::EdgeKey) -> Option<Edge<Self>> {
-        self.edges.get(key).and_then(|id| self.edge(*id))
+        let hash = ValueHash::new(&self.hasher, key);
+
+        self.edges.get(&hash).and_then(|id| self.edge(*id))
     }
 
     fn edge_by_key_mut(&mut self, key: &Self::EdgeKey) -> Option<EdgeMut<Self>> {
-        self.edges.get(key).and_then(move |id| self.edge_mut(*id))
+        let hash = ValueHash::new(&self.hasher, key);
+
+        let &edge = self.edges.get(&hash)?;
+
+        self.edge_mut(edge)
     }
 }

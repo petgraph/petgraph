@@ -387,17 +387,24 @@ where
 
     /// Change the underlying storage of the node.
     ///
-    /// Should only be used when layering multiple graph storages on top of each other by graph
-    /// storage implementors.
+    /// Should only be used when layering multiple [`GraphStorage`] implementations on top of each
+    /// other.
     ///
-    /// # Safety
+    /// # Note
     ///
-    /// Can lead to undefined behaviour if the id is not valid for the given storage.
-    pub const unsafe fn change_storage_unchecked<S2>(self, storage: &'a S2) -> Node<'a, S2>
+    /// This should not lead to any undefined behaviour, but might have unintended consequences if
+    /// the storage does not recognize the inner id as valid.
+    /// You should only use this if you know what you are doing.
+    #[must_use]
+    pub const fn change_storage_unchecked<T>(self, storage: &'a T) -> Node<'a, T>
     where
-        S2: GraphStorage<NodeWeight = S::NodeWeight>,
+        T: GraphStorage<NodeWeight = S::NodeWeight>,
     {
-        Node::new(storage, self.id, self.weight)
+        Node {
+            storage,
+            id: self.id,
+            weight: self.weight,
+        }
     }
 }
 
@@ -653,18 +660,23 @@ where
 
     /// Change the underlying storage of the node.
     ///
-    /// Should only be used when layering multiple graph storages on top of each other by graph
-    /// storage implementors.
+    /// Should only be used when layering multiple [`GraphStorage`] implementations on top of each
+    /// other.
     ///
-    /// # Safety
+    /// # Note
     ///
-    /// Can lead to undefined behaviour if the id is not valid for the given storage.
+    /// This should not lead to any undefined behaviour, but might have unintended consequences if
+    /// the storage does not recognize the inner id as valid.
+    /// You should only use this if you know what you are doing.
     #[must_use]
-    pub unsafe fn change_storage_unchecked<S2>(self) -> NodeMut<'a, S2>
+    pub fn change_storage_unchecked<T>(self) -> NodeMut<'a, T>
     where
-        S2: GraphStorage<NodeWeight = S::NodeWeight>,
+        T: GraphStorage<NodeWeight = S::NodeWeight>,
     {
-        NodeMut::new(self.id, self.weight)
+        NodeMut {
+            id: self.id,
+            weight: self.weight,
+        }
     }
 }
 

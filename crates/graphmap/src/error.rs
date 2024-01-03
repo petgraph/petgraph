@@ -1,5 +1,7 @@
 use core::{fmt, fmt::Display};
 
+use error_stack::Context;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EntryError {
     /// An underlying backend error occurred.
@@ -29,3 +31,5 @@ impl Display for EntryError {
         }
     }
 }
+
+impl Context for EntryError {}

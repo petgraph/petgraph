@@ -380,6 +380,33 @@ where
     pub const fn weight(&self) -> &'a S::EdgeWeight {
         self.weight
     }
+
+    /// Change the underlying storage of this edge.
+    ///
+    /// Should only be used when layering multiple [`GraphStorage`] implementations on top of each
+    /// other.
+    ///
+    /// # Note
+    ///
+    /// This should not lead to any undefined behaviour, but might have unintended consequences if
+    /// the storage does not recognize the inner id as valid.
+    /// You should only use this if you know what you are doing.
+    #[must_use]
+    pub const fn change_storage_unchecked<T>(self, storage: &'a T) -> Edge<'a, T>
+    where
+        T: GraphStorage<EdgeWeight = S::EdgeWeight>,
+    {
+        Edge {
+            storage,
+
+            id: self.id,
+
+            u: self.u,
+            v: self.v,
+
+            weight: self.weight,
+        }
+    }
 }
 
 impl<'a, S> Edge<'a, S>
@@ -721,6 +748,31 @@ where
     /// ```
     pub fn weight_mut(&mut self) -> &mut S::EdgeWeight {
         self.weight
+    }
+
+    /// Change the underlying storage of this edge.
+    ///
+    /// Should only be used when layering multiple [`GraphStorage`] implementations on top of each
+    /// other.
+    ///
+    /// # Note
+    ///
+    /// This should not lead to any undefined behaviour, but might have unintended consequences if
+    /// the storage does not recognize the inner id as valid.
+    /// You should only use this if you know what you are doing.
+    #[must_use]
+    pub fn change_storage_unchecked<T>(self) -> EdgeMut<'a, T>
+    where
+        T: GraphStorage<EdgeWeight = S::EdgeWeight>,
+    {
+        EdgeMut {
+            id: self.id,
+
+            weight: self.weight,
+
+            u: self.u,
+            v: self.v,
+        }
     }
 }
 

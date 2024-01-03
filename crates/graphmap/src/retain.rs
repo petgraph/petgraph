@@ -13,13 +13,15 @@ where
     NK: Hash,
     EK: Hash,
 {
-    fn retain_nodes(&mut self, f: impl FnMut(NodeMut<'_, Self>) -> bool) {
+    fn retain_nodes(&mut self, mut f: impl FnMut(NodeMut<'_, Self>) -> bool) {
         let mut remove = vec![];
 
         for node in self.inner.nodes_mut() {
-            let node = unsafe { node.change_storage_unchecked() };
+            let node = node.change_storage_unchecked();
+            let id = node.id();
+
             if !f(node) {
-                remove.push(node.id());
+                remove.push(id);
             }
         }
 
@@ -28,12 +30,14 @@ where
         }
     }
 
-    fn retain_edges(&mut self, f: impl FnMut(EdgeMut<'_, Self>) -> bool) {
+    fn retain_edges(&mut self, mut f: impl FnMut(EdgeMut<'_, Self>) -> bool) {
         let mut remove = vec![];
         for edge in self.inner.edges_mut() {
-            let edge = unsafe { edge.change_storage_unchecked() };
+            let edge = edge.change_storage_unchecked();
+            let id = edge.id();
+
             if !f(edge) {
-                remove.push(edge.id());
+                remove.push(id);
             }
         }
 

@@ -15,8 +15,13 @@ use core::hash::Hash;
 use error_stack::{Report, ResultExt};
 use hashbrown::{hash_map::DefaultHashBuilder, HashMap};
 use petgraph_core::{
-    edge::EdgeId, node::NodeId, DetachedEdge, DetachedNode, Edge, EdgeMut, GraphDirectionality,
-    GraphStorage, Node, NodeMut,
+    edge::{
+        marker::{Directed, Undirected},
+        EdgeId,
+    },
+    node::NodeId,
+    DetachedEdge, DetachedNode, Edge, EdgeMut, Graph, GraphDirectionality, GraphStorage, Node,
+    NodeMut,
 };
 use petgraph_dino::DinoStorage;
 
@@ -36,6 +41,12 @@ impl<K, V> Entry<K, V> {
         &self.key
     }
 }
+
+pub type EntryGraph<NK, NV, EK, EV, D> = Graph<EntryStorage<NK, NV, EK, EV, D>>;
+pub type UnEntryGraph<NK, NV, EK, EV> =
+    Graph<DinoStorage<Entry<NK, NV>, Entry<EK, EV>, Undirected>>;
+
+pub type DiEntryGraph<NK, NV, EK, EV> = Graph<DinoStorage<Entry<NK, NV>, Entry<EK, EV>, Directed>>;
 
 type Backend<NK, NV, EK, EV, D> = DinoStorage<Entry<NK, NV>, Entry<EK, EV>, D>;
 
@@ -63,7 +74,7 @@ where
 {
     type EdgeWeight = Entry<EK, EV>;
     type Error = EntryError;
-    type NodeWeight = Entry<NK, EV>;
+    type NodeWeight = Entry<NK, NV>;
 
     fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self {
         Self {
@@ -174,14 +185,12 @@ where
 
     fn node(&self, id: NodeId) -> Option<Node<Self>> {
         let node = self.inner.node(id)?;
-        // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph storage
-        Some(unsafe { node.change_storage_unchecked() })
+        Some(node.change_storage_unchecked(self))
     }
 
     fn node_mut(&mut self, id: NodeId) -> Option<NodeMut<Self>> {
         let node = self.inner.node_mut(id)?;
-        // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph storage
-        Some(unsafe { node.change_storage_unchecked() })
+        Some(node.change_storage_unchecked())
     }
 
     fn contains_node(&self, id: NodeId) -> bool {
@@ -191,15 +200,13 @@ where
     fn edge(&self, id: EdgeId) -> Option<Edge<Self>> {
         let edge = self.inner.edge(id)?;
 
-        // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph storage
-        Some(unsafe { edge.change_storage_unchecked() })
+        Some(edge.change_storage_unchecked(self))
     }
 
     fn edge_mut(&mut self, id: EdgeId) -> Option<EdgeMut<Self>> {
         let edge = self.inner.edge_mut(id)?;
 
-        // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph storage
-        Some(unsafe { edge.change_storage_unchecked() })
+        Some(edge.change_storage_unchecked())
     }
 
     fn contains_edge(&self, id: EdgeId) -> bool {
@@ -207,11 +214,9 @@ where
     }
 
     fn edges_between(&self, u: NodeId, v: NodeId) -> impl Iterator<Item = Edge<'_, Self>> {
-        self.inner.edges_between(u, v).map(|edge| {
-            // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { edge.change_storage_unchecked() }
-        })
+        self.inner
+            .edges_between(u, v)
+            .map(|edge| edge.change_storage_unchecked(self))
     }
 
     fn edges_between_mut(
@@ -219,27 +224,21 @@ where
         u: NodeId,
         v: NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        self.inner.edges_between_mut(u, v).map(|edge| {
-            // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { edge.change_storage_unchecked() }
-        })
+        self.inner
+            .edges_between_mut(u, v)
+            .map(|edge| edge.change_storage_unchecked())
     }
 
     fn node_connections(&self, id: NodeId) -> impl Iterator<Item = Edge<'_, Self>> {
-        self.inner.node_connections(id).map(|edge| {
-            // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { edge.change_storage_unchecked() }
-        })
+        self.inner
+            .node_connections(id)
+            .map(|edge| edge.change_storage_unchecked(self))
     }
 
     fn node_connections_mut(&mut self, id: NodeId) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        self.inner.node_connections_mut(id).map(|edge| {
-            // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { edge.change_storage_unchecked() }
-        })
+        self.inner
+            .node_connections_mut(id)
+            .map(|edge| edge.change_storage_unchecked())
     }
 
     fn node_degree(&self, id: NodeId) -> usize {
@@ -247,67 +246,51 @@ where
     }
 
     fn node_neighbours(&self, id: NodeId) -> impl Iterator<Item = Node<'_, Self>> {
-        self.inner.node_neighbours(id).map(|node| {
-            // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { node.change_storage_unchecked() }
-        })
+        self.inner
+            .node_neighbours(id)
+            .map(|node| node.change_storage_unchecked(self))
     }
 
     fn node_neighbours_mut(&mut self, id: NodeId) -> impl Iterator<Item = NodeMut<'_, Self>> {
-        self.inner.node_neighbours_mut(id).map(|node| {
-            // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { node.change_storage_unchecked() }
-        })
+        self.inner
+            .node_neighbours_mut(id)
+            .map(|node| node.change_storage_unchecked())
     }
 
     fn isolated_nodes(&self) -> impl Iterator<Item = Node<Self>> {
-        self.inner.isolated_nodes().map(|node| {
-            // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { node.change_storage_unchecked() }
-        })
+        self.inner
+            .isolated_nodes()
+            .map(|node| node.change_storage_unchecked(self))
     }
 
     fn isolated_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
-        self.inner.isolated_nodes_mut().map(|node| {
-            // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { node.change_storage_unchecked() }
-        })
+        self.inner
+            .isolated_nodes_mut()
+            .map(|node| node.change_storage_unchecked())
     }
 
     fn nodes(&self) -> impl Iterator<Item = Node<Self>> {
-        self.inner.nodes().map(|node| {
-            // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { node.change_storage_unchecked() }
-        })
+        self.inner
+            .nodes()
+            .map(|node| node.change_storage_unchecked(self))
     }
 
     fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
-        self.inner.nodes_mut().map(|node| {
-            // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { node.change_storage_unchecked() }
-        })
+        self.inner
+            .nodes_mut()
+            .map(|node| node.change_storage_unchecked())
     }
 
     fn edges(&self) -> impl Iterator<Item = Edge<Self>> {
-        self.inner.edges().map(|edge| {
-            // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { edge.change_storage_unchecked() }
-        })
+        self.inner
+            .edges()
+            .map(|edge| edge.change_storage_unchecked(self))
     }
 
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<Self>> {
-        self.inner.edges_mut().map(|edge| {
-            // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph
-            // storage
-            unsafe { edge.change_storage_unchecked() }
-        })
+        self.inner
+            .edges_mut()
+            .map(|edge| edge.change_storage_unchecked())
     }
 
     fn reserve(&mut self, additional_nodes: usize, additional_edges: usize) {
