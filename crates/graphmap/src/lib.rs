@@ -33,11 +33,12 @@ pub struct Entry<K, V> {
 }
 
 impl<K, V> Entry<K, V> {
-    pub fn new(key: K, value: V) -> Self {
+    #[must_use]
+    pub const fn new(key: K, value: V) -> Self {
         Self { key, value }
     }
 
-    pub fn key(&self) -> &K {
+    pub const fn key(&self) -> &K {
         &self.key
     }
 }
@@ -130,8 +131,7 @@ where
             .change_context(EntryError::Backend)?;
         self.nodes.insert(hash, id);
 
-        // SAFETY: Any node in the inner storage is guaranteed to be valid for this graph storage
-        Ok(unsafe { node.change_storage_unchecked() })
+        Ok(node.change_storage_unchecked())
     }
 
     fn next_edge_id(&self) -> EdgeId {
@@ -157,8 +157,7 @@ where
             .change_context(EntryError::Backend)?;
         self.edges.insert(hash, id);
 
-        // SAFETY: Any edge in the inner storage is guaranteed to be valid for this graph storage
-        Ok(unsafe { edge.change_storage_unchecked() })
+        Ok(edge.change_storage_unchecked())
     }
 
     fn remove_node(&mut self, id: NodeId) -> Option<DetachedNode<Self::NodeWeight>> {
@@ -226,7 +225,7 @@ where
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.inner
             .edges_between_mut(u, v)
-            .map(|edge| edge.change_storage_unchecked())
+            .map(EdgeMut::change_storage_unchecked)
     }
 
     fn node_connections(&self, id: NodeId) -> impl Iterator<Item = Edge<'_, Self>> {
@@ -238,7 +237,7 @@ where
     fn node_connections_mut(&mut self, id: NodeId) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.inner
             .node_connections_mut(id)
-            .map(|edge| edge.change_storage_unchecked())
+            .map(EdgeMut::change_storage_unchecked)
     }
 
     fn node_degree(&self, id: NodeId) -> usize {
@@ -254,7 +253,7 @@ where
     fn node_neighbours_mut(&mut self, id: NodeId) -> impl Iterator<Item = NodeMut<'_, Self>> {
         self.inner
             .node_neighbours_mut(id)
-            .map(|node| node.change_storage_unchecked())
+            .map(NodeMut::change_storage_unchecked)
     }
 
     fn isolated_nodes(&self) -> impl Iterator<Item = Node<Self>> {
@@ -266,7 +265,7 @@ where
     fn isolated_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
         self.inner
             .isolated_nodes_mut()
-            .map(|node| node.change_storage_unchecked())
+            .map(NodeMut::change_storage_unchecked)
     }
 
     fn nodes(&self) -> impl Iterator<Item = Node<Self>> {
@@ -278,7 +277,7 @@ where
     fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
         self.inner
             .nodes_mut()
-            .map(|node| node.change_storage_unchecked())
+            .map(NodeMut::change_storage_unchecked)
     }
 
     fn edges(&self) -> impl Iterator<Item = Edge<Self>> {
@@ -290,7 +289,7 @@ where
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<Self>> {
         self.inner
             .edges_mut()
-            .map(|edge| edge.change_storage_unchecked())
+            .map(EdgeMut::change_storage_unchecked)
     }
 
     fn reserve(&mut self, additional_nodes: usize, additional_edges: usize) {

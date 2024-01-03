@@ -30,7 +30,7 @@ where
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.inner
             .directed_edges_between_mut(source, target)
-            .map(|edge| edge.change_storage_unchecked())
+            .map(EdgeMut::change_storage_unchecked)
     }
 
     fn node_directed_connections(
@@ -50,7 +50,7 @@ where
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.inner
             .node_directed_connections_mut(id, direction)
-            .map(|edge| edge.change_storage_unchecked())
+            .map(EdgeMut::change_storage_unchecked)
     }
 
     fn node_directed_degree(&self, id: NodeId, direction: Direction) -> usize {
@@ -74,6 +74,6 @@ where
     ) -> impl Iterator<Item = NodeMut<'_, Self>> {
         self.inner
             .node_directed_neighbours_mut(id, direction)
-            .map(|node| node.change_storage_unchecked())
+            .map(NodeMut::change_storage_unchecked)
     }
 }

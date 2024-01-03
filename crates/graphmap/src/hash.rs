@@ -1,12 +1,12 @@
 use core::hash::{BuildHasher, Hash, Hasher};
 
-pub struct ValueHash<T> {
+pub(crate) struct ValueHash<T> {
     value: u64,
     _phantom: core::marker::PhantomData<T>,
 }
 
 impl<T> ValueHash<T> {
-    pub fn new<S>(hash_builder: &S, value: &T) -> Self
+    pub(crate) fn new<S>(hash_builder: &S, value: &T) -> Self
     where
         T: Hash,
         S: BuildHasher,
@@ -40,10 +40,7 @@ impl<T> Hash for ValueHash<T> {
 
 impl<T> Clone for ValueHash<T> {
     fn clone(&self) -> Self {
-        Self {
-            value: self.value,
-            _phantom: core::marker::PhantomData,
-        }
+        *self
     }
 }
 
