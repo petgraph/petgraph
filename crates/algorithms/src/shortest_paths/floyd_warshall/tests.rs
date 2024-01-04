@@ -1,12 +1,13 @@
 use alloc::{vec, vec::Vec};
 
 use hashbrown::HashSet;
-use petgraph_dino::{DiDinoGraph, EdgeId, NodeId};
+use petgraph_core::node::NodeId;
+use petgraph_dino::DiDinoGraph;
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{
     common::tests::{expected, Expect, TestCase},
-    floyd_warshall::{error::FloydWarshallError, FloydWarshall},
+    floyd_warshall::{error::FloydWarshallError, FloydWarshall, NegativeCycle},
     ShortestPath,
 };
 
@@ -28,7 +29,7 @@ graph!(
         f: "F",
         g: "G",
         h: "H",
-    ] as NodeId,
+    ],
     [
         ab: a -> b: 1,
         bc: b -> c: 1,
@@ -39,10 +40,10 @@ graph!(
         fg: f -> g: 1,
         gh: g -> h: 1,
         he: h -> e: 1,
-    ] as EdgeId
+    ]
 );
 
-fn uniform_expect(nodes: &uniform::NodeCollection<NodeId>) -> Vec<Expect<NodeId, usize>> {
+fn uniform_expect(nodes: &uniform::NodeCollection) -> Vec<Expect<usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 1,
@@ -136,7 +137,7 @@ graph!(
         b: "B",
         c: "C",
         d: "D",
-    ] as NodeId,
+    ],
     [
         ab: a -> b: 1,
         ac: a -> c: 4,
@@ -144,12 +145,10 @@ graph!(
         bc: b -> c: 2,
         bd: b -> d: 2,
         cd: c -> d: 2,
-    ] as EdgeId
+    ]
 );
 
-fn directed_weighted_expect(
-    nodes: &weighted::NodeCollection<NodeId>,
-) -> Vec<Expect<NodeId, usize>> {
+fn directed_weighted_expect(nodes: &weighted::NodeCollection) -> Vec<Expect<usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 1,
@@ -242,9 +241,7 @@ fn weighted_directed_distance() {
     TestCase::new(&graph, &floyd_warshall, &expected).assert_every_distance();
 }
 
-fn undirected_weighted_expect(
-    nodes: &weighted::NodeCollection<NodeId>,
-) -> Vec<Expect<NodeId, usize>> {
+fn undirected_weighted_expect(nodes: &weighted::NodeCollection) -> Vec<Expect<usize>> {
     expected!(nodes; [
         a -()> a: 0,
         a -()> b: 1,
@@ -348,12 +345,12 @@ graph!(factory(negative_cycle) => DiDinoGraph<&'static str, isize>;
         a: "A",
         b: "B",
         c: "C",
-    ] as NodeId,
+    ],
     [
         ab: a -> b: 1,
         bc: b -> c: -3,
         ca: c -> a: 1,
-    ] as EdgeId
+    ]
 );
 
 #[test]
@@ -367,7 +364,10 @@ fn directed_negative_cycle() {
     };
 
     assert_eq!(error.current_context(), &FloydWarshallError::NegativeCycle);
-    let participants: HashSet<_> = error.request_ref::<NodeId>().copied().collect();
+    let participants: HashSet<_> = error
+        .request_ref::<NegativeCycle>()
+        .map(|cycle| cycle.node())
+        .collect();
 
     assert_eq!(
         participants,

@@ -1,14 +1,14 @@
 use either::Either;
 use petgraph_core::{
-    edge::{Direction, Edge, EdgeMut},
-    node::{Node, NodeMut},
+    edge::{Direction, Edge, EdgeId, EdgeMut},
+    node::{Node, NodeId, NodeMut},
     storage::{DirectedGraphStorage, GraphStorage},
 };
 
 use crate::{
     iter::directed::NodeDirectedConnectionsIter,
     node::{NodeClosures, NodeSlab},
-    DinoStorage, Directed, EdgeId, NodeId,
+    DinoStorage, Directed,
 };
 
 fn directed_edges_between<N>(
@@ -28,16 +28,16 @@ fn directed_edges_between<N>(
 impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
     fn directed_edges_between(
         &self,
-        source: Self::NodeId,
-        target: Self::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> impl Iterator<Item = Edge<Self>> {
         directed_edges_between(&self.nodes, source, target).filter_map(move |id| self.edge(id))
     }
 
     fn directed_edges_between_mut(
         &mut self,
-        source: Self::NodeId,
-        target: Self::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> impl Iterator<Item = EdgeMut<Self>> {
         let Self { edges, nodes, .. } = self;
 
@@ -50,7 +50,7 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
 
     fn node_directed_connections(
         &self,
-        id: Self::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Edge<Self>> {
         NodeDirectedConnectionsIter {
@@ -64,7 +64,7 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
 
     fn node_directed_connections_mut(
         &mut self,
-        id: Self::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = EdgeMut<Self>> {
         let Self { nodes, edges, .. } = self;
@@ -84,7 +84,7 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
 
     fn node_directed_neighbours(
         &self,
-        id: Self::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Node<Self>> {
         self.nodes
@@ -99,7 +99,7 @@ impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
 
     fn node_directed_neighbours_mut(
         &mut self,
-        id: Self::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = NodeMut<Self>> {
         let Some(node) = self.nodes.get(id) else {

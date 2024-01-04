@@ -4,7 +4,7 @@ pub(crate) use self::unique_vec::UniqueVec;
 use crate::{
     edge::{Edge, EdgeSlab},
     node::{Node, NodeSlab},
-    EdgeId, NodeId,
+    NodeId,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -116,13 +116,12 @@ mod tests {
 
     use hashbrown::{HashMap, HashSet};
     use petgraph_core::{
-        attributes::Attributes, edge::marker::Directed, GraphDirectionality, GraphStorage,
+        edge::{marker::Directed, EdgeId},
+        node::NodeId,
+        GraphDirectionality,
     };
 
-    use crate::{
-        slab::{EntryId, Key as _},
-        DinoGraph, DinoStorage, EdgeId, NodeId,
-    };
+    use crate::{DinoGraph, DinoStorage};
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct EvaluatedNodeClosure {
@@ -233,7 +232,7 @@ mod tests {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
         let node = graph.try_insert_node(1).unwrap();
-        let id = *node.id();
+        let id = node.id();
 
         assert_eq!(isolated(&graph), once(id).collect());
 
@@ -285,11 +284,11 @@ mod tests {
     fn multiple_nodes() {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
-        let a = graph.try_insert_node(Attributes::new(1)).unwrap();
-        let a = *a.id();
+        let a = graph.try_insert_node(1).unwrap();
+        let a = a.id();
 
-        let b = graph.try_insert_node(Attributes::new(2)).unwrap();
-        let b = *b.id();
+        let b = graph.try_insert_node(2).unwrap();
+        let b = b.id();
 
         assert_eq!(isolated(&graph), [a, b].into_iter().collect());
 
@@ -346,13 +345,13 @@ mod tests {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
         let a = graph.try_insert_node(1u8).unwrap();
-        let a = *a.id();
+        let a = a.id();
 
         let b = graph.try_insert_node(1u8).unwrap();
-        let b = *b.id();
+        let b = b.id();
 
-        let edge = graph.try_insert_edge(1u8, &a, &b).unwrap();
-        let edge = *edge.id();
+        let edge = graph.try_insert_edge(1u8, a, b).unwrap();
+        let edge = edge.id();
 
         assert!(isolated(&graph).is_empty());
 
@@ -411,10 +410,10 @@ mod tests {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
         let a = graph.try_insert_node(1u8).unwrap();
-        let a = *a.id();
+        let a = a.id();
 
-        let edge = graph.try_insert_edge(1u8, &a, &a).unwrap();
-        let edge = *edge.id();
+        let edge = graph.try_insert_edge(1u8, a, a).unwrap();
+        let edge = edge.id();
 
         assert!(isolated(&graph).is_empty());
 
@@ -469,22 +468,22 @@ mod tests {
             let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
             let a = graph.try_insert_node(1u8).unwrap();
-            let a = *a.id();
+            let a = a.id();
 
             let b = graph.try_insert_node(1u8).unwrap();
-            let b = *b.id();
+            let b = b.id();
 
             let c = graph.try_insert_node(1u8).unwrap();
-            let c = *c.id();
+            let c = c.id();
 
-            let ab = graph.try_insert_edge(1u8, &a, &b).unwrap();
-            let ab = *ab.id();
+            let ab = graph.try_insert_edge(1u8, a, b).unwrap();
+            let ab = ab.id();
 
-            let bc = graph.try_insert_edge(1u8, &b, &c).unwrap();
-            let bc = *bc.id();
+            let bc = graph.try_insert_edge(1u8, b, c).unwrap();
+            let bc = bc.id();
 
-            let ca = graph.try_insert_edge(1u8, &c, &a).unwrap();
-            let ca = *ca.id();
+            let ca = graph.try_insert_edge(1u8, c, a).unwrap();
+            let ca = ca.id();
 
             Self {
                 graph,
@@ -592,16 +591,16 @@ mod tests {
         let mut graph = DinoGraph::<u8, u8, Directed>::new();
 
         let a = graph.try_insert_node(1u8).unwrap();
-        let a = *a.id();
+        let a = a.id();
 
         let b = graph.try_insert_node(1u8).unwrap();
-        let b = *b.id();
+        let b = b.id();
 
-        let ab1 = graph.try_insert_edge(1u8, &a, &b).unwrap();
-        let ab1 = *ab1.id();
+        let ab1 = graph.try_insert_edge(1u8, a, b).unwrap();
+        let ab1 = ab1.id();
 
-        let ab2 = graph.try_insert_edge(1u8, &a, &b).unwrap();
-        let ab2 = *ab2.id();
+        let ab2 = graph.try_insert_edge(1u8, a, b).unwrap();
+        let ab2 = ab2.id();
 
         assert!(isolated(&graph).is_empty());
 
@@ -669,7 +668,7 @@ mod tests {
             ..
         } = graph;
 
-        graph.remove_node(&b).unwrap();
+        graph.remove_node(b).unwrap();
 
         assert!(isolated(&graph).is_empty());
 
@@ -738,7 +737,7 @@ mod tests {
             ca,
         } = graph;
 
-        graph.remove_edge(&bc).unwrap();
+        graph.remove_edge(bc).unwrap();
 
         assert!(isolated(&graph).is_empty());
 

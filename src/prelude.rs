@@ -20,6 +20,6 @@ pub use petgraph_graph::stable::{StableDiGraph, StableGraph, StableUnGraph};
 #[doc(no_inline)]
 pub use petgraph_graph::{DiGraph, EdgeIndex, Graph, NodeIndex, UnGraph};
 
-#[cfg(feature = "graphmap")]
+#[cfg(feature = "entry")]
 #[doc(no_inline)]
 pub use crate::graphmap::{DiGraphMap, GraphMap, UnGraphMap};

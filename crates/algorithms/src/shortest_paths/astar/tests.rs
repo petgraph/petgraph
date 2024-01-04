@@ -4,7 +4,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use numi::borrow::Moo;
 use ordered_float::NotNan;
 use petgraph_core::{edge::marker::Directed, Edge, GraphStorage, Node};
-use petgraph_dino::{DiDinoGraph, DinoStorage, EdgeId, NodeId};
+use petgraph_dino::{DiDinoGraph, DinoStorage};
 use petgraph_utils::{graph, GraphCollection};
 
 use crate::shortest_paths::{AStar, ShortestDistance, ShortestPath};
@@ -21,7 +21,7 @@ graph!(
         x: "X",
         y: "Y",
         z: "Z",
-    ] as NodeId,
+    ],
     [
         su: s -> u: 10,
         sx: s -> x: 5,
@@ -33,7 +33,7 @@ graph!(
         xy: x -> y: 2,
         ys: y -> s: 7,
         yv: y -> v: 6,
-    ] as EdgeId
+    ]
 );
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -62,7 +62,7 @@ graph!(
         e: Point { x: 3.0, y: 3.0 },
         f: Point { x: 4.0, y: 2.0 },
         g: Point { x: 5.0, y: 5.0 },
-    ] as NodeId,
+    ],
     [
         ab: a -> b: @{ a.distance(*b) },
         ad: a -> d: @{ a.distance(*d) },
@@ -71,7 +71,7 @@ graph!(
         ce: c -> e: @{ c.distance(*e) },
         ef: e -> f: @{ e.distance(*f) },
         de: d -> e: @{ d.distance(*e) },
-    ] as EdgeId
+    ]
 );
 
 const fn no_heuristic<'a, S>(_: Node<'a, S>, _: Node<'a, S>) -> Moo<'a, usize>
@@ -255,17 +255,17 @@ graph!(factory(inconsistent) => DiDinoGraph<&'static str, usize>;
         b: "B",
         c: "C",
         d: "D",
-    ] as NodeId,
+    ],
     [
         ab: a -> b: 3,
         bc: b -> c: 3,
         cd: c -> d: 3,
         ac: a -> c: 8,
         ad: a -> d: 10,
-    ] as EdgeId
+    ]
 );
 
-fn admissible_inconsistent<'a, S>(source: Node<'a, S>, target: Node<'a, S>) -> Moo<'a, usize>
+fn admissible_inconsistent<'a, S>(source: Node<'a, S>, _target: Node<'a, S>) -> Moo<'a, usize>
 where
     S: GraphStorage,
     S::NodeWeight: AsRef<str>,
@@ -311,14 +311,14 @@ graph!(factory(runtime) => DiDinoGraph<char, usize>;
         c: 'C',
         d: 'D',
         e: 'E',
-    ] as NodeId,
+    ],
     [
         ab: a -> b: 2,
         ac: a -> c: 3,
         bd: b -> d: 3,
         cd: c -> d: 1,
         de: d -> e: 1,
-    ] as EdgeId
+    ]
 );
 
 #[test]

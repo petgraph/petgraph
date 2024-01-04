@@ -11,8 +11,9 @@ use core::marker::PhantomData;
 use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
-    id::AssociativeGraphId,
-    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
+    node::NodeId,
+    storage::AuxiliaryGraphStorage,
+    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
 use self::iter::DijkstraIter;
@@ -65,15 +66,15 @@ impl Dijkstra<Directed, DefaultCost> {
     /// let algorithm = Dijkstra::directed();
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(2, &a, &b);
+    /// graph.insert_edge(2, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     ///
-    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// let path = algorithm.path_between(&graph, b, a);
     /// assert!(path.is_none());
     /// ```
     #[must_use]
@@ -100,15 +101,15 @@ impl Dijkstra<Undirected, DefaultCost> {
     /// let algorithm = Dijkstra::undirected();
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(2, &a, &b);
+    /// graph.insert_edge(2, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     ///
-    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// let path = algorithm.path_between(&graph, b, a);
     /// assert!(path.is_some());
     /// ```
     #[must_use]
@@ -151,12 +152,12 @@ where
     /// let algorithm = Dijkstra::directed().with_edge_cost(edge_cost);
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge("AB", &a, &b);
+    /// graph.insert_edge("AB", a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> Dijkstra<D, F>
@@ -174,7 +175,6 @@ where
 impl<S, E> ShortestPath<S> for Dijkstra<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -184,7 +184,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.path_from(graph, target)?;
 
@@ -194,7 +194,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         DijkstraIter::new(
             graph,
@@ -221,7 +221,6 @@ where
 impl<S, E> ShortestPath<S> for Dijkstra<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -231,7 +230,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         DijkstraIter::new(
             graph,
@@ -258,7 +257,6 @@ where
 impl<S, E> ShortestDistance<S> for Dijkstra<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -268,7 +266,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.distance_from(graph, target)?;
 
@@ -278,7 +276,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = DijkstraIter::new(
             graph,
@@ -307,7 +305,6 @@ where
 impl<S, E> ShortestDistance<S> for Dijkstra<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -317,7 +314,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = DijkstraIter::new(
             graph,

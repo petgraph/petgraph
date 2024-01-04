@@ -13,6 +13,9 @@
 //!   to an undirected graph.
 //! - [`DirectedGraphStorage`]: A trait for directed graph storage implementations.
 //! - [`RetainableGraphStorage`]: A trait for retainable graph storage implementations.
+//! - [`AuxiliaryGraphStorage`]: A trait to access storage for arbitrary additional data.
+//! - [`SequentialGraphStorage`]: A trait for graph storage implementations that allow the mapping
+//!   of their internal indices to a set of linear indices.
 //!
 //! [`GraphStorage`] proposes that [`DirectedGraphStorage`] is simply a specialization of an
 //! undirected graph, meaning that the supertrait of [`DirectedGraphStorage`] is also
@@ -21,20 +24,27 @@
 //!
 //! # Implementation Notes
 //!
-//! [`RetainableGraphStorage`] is subject to removal during the alpha period.
+//! * [`RetainableGraphStorage`] is subject to removal during the alpha period.
+//! * [`SequentialGraphStorage`] is subject to removal or rename during the alpha period.
+//! * [`AuxiliaryGraphStorage`] is subject to removal or rename during the alpha period.
 //!
 //! [`Graph`]: crate::graph::Graph
 mod directed;
 
+pub mod auxiliary;
 mod retain;
+pub mod reverse;
+pub mod sequential;
 
 use error_stack::{Context, Result};
 
-pub use self::{directed::DirectedGraphStorage, retain::RetainableGraphStorage};
+pub use self::{
+    auxiliary::AuxiliaryGraphStorage, directed::DirectedGraphStorage,
+    retain::RetainableGraphStorage, sequential::SequentialGraphStorage,
+};
 use crate::{
-    edge::{DetachedEdge, Edge, EdgeMut},
-    id::GraphId,
-    node::{DetachedNode, Node, NodeMut},
+    edge::{DetachedEdge, Edge, EdgeId, EdgeMut},
+    node::{DetachedNode, Node, NodeId, NodeMut},
 };
 
 /// A trait for graph storage implementations.
@@ -115,39 +125,9 @@ use crate::{
 /// [`Graph::new`]: crate::graph::Graph::new
 /// [`Graph::new_in`]: crate::graph::Graph::new_in
 /// [`Graph::with_capacity`]: crate::graph::Graph::with_capacity
-pub trait GraphStorage: Sized {
-    /// The unique identifier for an edge.
-    ///
-    /// This is used to identify edges in the graph.
-    /// The equivalent in a `HashMap` would be the key.
-    /// In contrast to a `HashMap` (or similar data structures) the trait does not enforce any
-    /// additional constraints,
-    /// implementations are free to choose to limit identifiers to a certain subset if required, or
-    /// choose a concrete type.
-    ///
-    /// Fundamentally, while [`Self::EdgeId`] must be of type [`GraphId`], the chosen
-    /// [`Self::EdgeId`] of an implementation should either implement [`ManagedGraphId`] or
-    /// [`ArbitraryGraphId`], which work as marker traits.
-    ///
-    /// [`ManagedGraphId`] indicates that the implementation manages the identifiers, subsequently,
-    /// users are not allowed to create identifiers themselves.
-    /// [`ArbitraryGraphId`] indicates that the implementation does not manage the identifiers, and
-    /// users are allowed to create identifiers themselves.
-    /// This is reflected in the API through the [`Attributes`] type, which needs to be supplied
-    /// when creating edges, if the implementation does not manage the identifiers, [`Attributes`]
-    /// will allow users to specify the identifier and weight of the edge, while if the
-    /// implementation manages the identifiers, [`Attributes`] will only allow users to specify the
-    /// weight of the edge.
-    ///
-    /// [`Attributes`]: crate::attributes::Attributes
-    /// [`ManagedGraphId`]: crate::id::ManagedGraphId
-    /// [`ArbitraryGraphId`]: crate::id::ArbitraryGraphId
-    type EdgeId: GraphId;
-
+pub trait GraphStorage: SequentialGraphStorage + AuxiliaryGraphStorage + Sized {
     /// The weight of an edge.
     ///
-    /// This works in tandem with [`Self::EdgeId`], and is used to store the weight of an edge.
-    /// The equivalent in a `HashMap` would be the value.
     /// No constraints are enforced on this type (except that it needs to be `Sized`), but
     /// implementations _may_ choose to enforce additional constraints, or limit the type to a
     /// specific concrete type.
@@ -171,38 +151,8 @@ pub trait GraphStorage: Sized {
     /// [`Report`]: error_stack::Report
     type Error: Context;
 
-    /// The unique identifier for a node.
-    ///
-    /// This is used to identify nodes in the graph.
-    /// The equivalent in a `HashMap` would be the key.
-    /// In contrast to a `HashMap` (or similar data structures) the trait does not enforce any
-    /// additional constraints,
-    /// implementations are free to choose to limit identifiers to a certain subset if required, or
-    /// choose a concrete type.
-    ///
-    /// Fundamentally, while [`Self::NodeId`] must be of type [`GraphId`], the chosen
-    /// [`Self::NodeId`] of an implementation should either implement [`ManagedGraphId`] or
-    /// [`ArbitraryGraphId`], which work as marker traits.
-    ///
-    /// [`ManagedGraphId`] indicates that the implementation manages the identifiers, subsequently,
-    /// users are not allowed to create identifiers themselves.
-    /// [`ArbitraryGraphId`] indicates that the implementation does not manage the identifiers, and
-    /// users are allowed to create identifiers themselves.
-    /// This is reflected in the API through the [`Attributes`] type, which needs to be supplied
-    /// when creating a node, if the implementation does not manage the identifiers, [`Attributes`]
-    /// will allow users to specify the identifier and weight of the node, while if the
-    /// implementation manages the identifiers, [`Attributes`] will only allow users to specify the
-    /// weight of the node.
-    ///
-    /// [`Attributes`]: crate::attributes::Attributes
-    /// [`ManagedGraphId`]: crate::id::ManagedGraphId
-    /// [`ArbitraryGraphId`]: crate::id::ArbitraryGraphId
-    type NodeId: GraphId;
-
     /// The weight of a node.
     ///
-    /// This works in tandem with [`Self::NodeId`], and is used to store the weight of a node.
-    /// The equivalent in a `HashMap` would be the value.
     /// No constraints are enforced on this type (except that it needs to be `Sized`), but
     /// implementations _may_ choose to enforce additional constraints, or limit the type to a
     /// specific concrete type.
@@ -243,13 +193,9 @@ pub trait GraphStorage: Sized {
     /// This is the reverse operation of [`Self::into_parts`], which converts the current graph
     /// storage into an iterable of nodes and edges.
     ///
-    /// The ordering of the nodes and edges in the resulting graph storage is not preserved, if that
-    /// is the case in a storage implementation it should be considered an implementation
-    /// detail and not be relied upon.
-    /// The same applies to identifiers of nodes and edges, which may be changed during
-    /// construction.
-    /// The only properties that can be relied upon is that all nodes and edges will be present,
-    /// their weights will be the same, and that the graph will be structurally identical.
+    /// This process is lossy, neither the node ids or the edge ids are guaranteed to be preserved.
+    /// This function only guarantees that the weights of the nodes and edges are preserved as well
+    /// as the structure of the graph.
     ///
     /// # Example
     ///
@@ -294,10 +240,12 @@ pub trait GraphStorage: Sized {
     ///
     /// Implementations may choose to override this default implementation, but should try to also
     /// be fail-slow.
+    // TODO: additionally should return a mapping!
     fn from_parts(
-        nodes: impl IntoIterator<Item = DetachedNode<Self::NodeId, Self::NodeWeight>>,
-        edges: impl IntoIterator<Item = DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>,
+        nodes: impl IntoIterator<Item = DetachedNode<Self::NodeWeight>>,
+        edges: impl IntoIterator<Item = DetachedEdge<Self::EdgeWeight>>,
     ) -> Result<Self, Self::Error> {
+        // TODO: rework this!
         let nodes = nodes.into_iter();
         let edges = edges.into_iter();
 
@@ -386,8 +334,8 @@ pub trait GraphStorage: Sized {
     fn into_parts(
         self,
     ) -> (
-        impl Iterator<Item = DetachedNode<Self::NodeId, Self::NodeWeight>>,
-        impl Iterator<Item = DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>,
+        impl Iterator<Item = DetachedNode<Self::NodeWeight>>,
+        impl Iterator<Item = DetachedEdge<Self::EdgeWeight>>,
     );
 
     /// Returns the number of nodes in the graph.
@@ -465,9 +413,6 @@ pub trait GraphStorage: Sized {
     /// and is instead used by the [`Graph`] type to generate a new identifier that is then used
     /// during [`Graph::insert_node`].
     ///
-    /// This function is only of interest for implementations that manage the identifiers of nodes
-    /// (using the [`ManagedGraphId`] marker trait).
-    ///
     /// # Example
     ///
     /// ```
@@ -500,18 +445,7 @@ pub trait GraphStorage: Sized {
     ///
     /// The implementation of this function must also be fast, as it is called every time a new node
     /// is inserted and must be pure, meaning that it must not have any side-effects.
-    ///
-    /// If the [`Self::NodeId`] is a [`ManagedGraphId`], the implementation of this function must
-    /// return [`Self::NodeId`] and must not take `attribute` into account (in fact it can't, as the
-    /// value is always [`NoValue`]). Should the [`ArbitraryGraphId`] marker trait be implemented,
-    /// this function should effectively be a no-op and given `attribute`.
-    ///
-    /// [`Graph`]: crate::graph::Graph
-    /// [`Graph::insert_node`]: crate::graph::Graph::insert_node
-    /// [`ManagedGraphId`]: crate::id::ManagedGraphId
-    /// [`ArbitraryGraphId`]: crate::id::ArbitraryGraphId
-    /// [`NoValue`]: crate::attributes::NoValue
-    fn next_node_id(&self, attribute: <Self::NodeId as GraphId>::AttributeIndex) -> Self::NodeId;
+    fn next_node_id(&self) -> NodeId;
 
     /// Inserts a new node into the graph.
     ///
@@ -537,7 +471,7 @@ pub trait GraphStorage: Sized {
     /// constraints (depending on the implementation) are violated.
     fn insert_node(
         &mut self,
-        id: Self::NodeId,
+        id: NodeId,
 
         weight: Self::NodeWeight,
     ) -> Result<NodeMut<Self>, Self::Error>;
@@ -547,9 +481,6 @@ pub trait GraphStorage: Sized {
     /// This is used to generate new edge identifiers and should not be called by a user directly
     /// and is instead used by the [`Graph`] type to generate a new identifier that is then used
     /// during [`Graph::insert_edge`].
-    ///
-    /// This function is only of interest for implementations that manage the identifiers of edges
-    /// (using the [`ManagedGraphId`] marker trait).
     ///
     /// # Example
     ///
@@ -573,8 +504,7 @@ pub trait GraphStorage: Sized {
     ///
     /// [`Graph`]: crate::graph::Graph
     /// [`Graph::insert_edge`]: crate::graph::Graph::insert_edge
-    /// [`ManagedGraphId`]: crate::id::ManagedGraphId
-    fn next_edge_id(&self, attribute: <Self::EdgeId as GraphId>::AttributeIndex) -> Self::EdgeId;
+    fn next_edge_id(&self) -> EdgeId;
 
     /// Inserts a new edge into the graph.
     ///
@@ -611,11 +541,11 @@ pub trait GraphStorage: Sized {
     /// but some implementations may choose to allow parallel edges.
     fn insert_edge(
         &mut self,
-        id: Self::EdgeId,
+        id: EdgeId,
         weight: Self::EdgeWeight,
 
-        u: Self::NodeId,
-        v: Self::NodeId,
+        u: NodeId,
+        v: NodeId,
     ) -> Result<EdgeMut<Self>, Self::Error>;
 
     /// Removes the node with the given identifier from the graph.
@@ -680,10 +610,7 @@ pub trait GraphStorage: Sized {
     ///
     /// storage.remove_node(&a).unwrap();
     /// ```
-    fn remove_node(
-        &mut self,
-        id: Self::NodeId,
-    ) -> Option<DetachedNode<Self::NodeId, Self::NodeWeight>>;
+    fn remove_node(&mut self, id: NodeId) -> Option<DetachedNode<Self::NodeWeight>>;
 
     /// Removes the edge with the given identifier from the graph.
     ///
@@ -714,10 +641,7 @@ pub trait GraphStorage: Sized {
     /// #
     /// # assert_eq!(storage.num_edges(), 0);
     /// ```
-    fn remove_edge(
-        &mut self,
-        id: Self::EdgeId,
-    ) -> Option<DetachedEdge<Self::EdgeId, Self::NodeId, Self::EdgeWeight>>;
+    fn remove_edge(&mut self, id: EdgeId) -> Option<DetachedEdge<Self::EdgeWeight>>;
 
     /// Clears the graph, removing all nodes and edges.
     ///
@@ -773,7 +697,7 @@ pub trait GraphStorage: Sized {
     /// // This will access the underlying storage, and is equivalent to `storage.neighbours(&a)`.
     /// assert_eq!(node.neighbours().count(), 0);
     /// ```
-    fn node(&self, id: Self::NodeId) -> Option<Node<Self>>;
+    fn node(&self, id: NodeId) -> Option<Node<Self>>;
 
     /// Returns the node, with a mutable weight, with the given identifier.
     ///
@@ -797,7 +721,7 @@ pub trait GraphStorage: Sized {
     /// assert_eq!(node.id(), &a);
     /// assert_eq!(node.weight(), &mut 1);
     /// ```
-    fn node_mut(&mut self, id: Self::NodeId) -> Option<NodeMut<Self>>;
+    fn node_mut(&mut self, id: NodeId) -> Option<NodeMut<Self>>;
 
     /// Checks if the node with the given identifier exists.
     ///
@@ -825,7 +749,7 @@ pub trait GraphStorage: Sized {
     /// The default implementation simply checks if [`Self::node`] returns [`Some`], but if
     /// possible, custom implementations that are able to do this more efficiently should override
     /// this.
-    fn contains_node(&self, id: Self::NodeId) -> bool {
+    fn contains_node(&self, id: NodeId) -> bool {
         self.node(id).is_some()
     }
 
@@ -872,7 +796,7 @@ pub trait GraphStorage: Sized {
     /// assert_eq!(edge.target().id(), &b);
     /// assert_eq!(edge.target().weight(), &2);
     /// ```
-    fn edge(&self, id: Self::EdgeId) -> Option<Edge<Self>>;
+    fn edge(&self, id: EdgeId) -> Option<Edge<Self>>;
 
     /// Returns the edge, with a mutable weight, with the given identifier, if it exists.
     ///
@@ -905,7 +829,7 @@ pub trait GraphStorage: Sized {
     ///
     /// assert_eq!(storage.edge(&ab).unwrap().weight(), &4);
     /// ```
-    fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<Self>>;
+    fn edge_mut(&mut self, id: EdgeId) -> Option<EdgeMut<Self>>;
 
     /// Checks if the edge with the given identifier exists.
     ///
@@ -938,7 +862,7 @@ pub trait GraphStorage: Sized {
     /// The default implementation simply checks if [`Self::edge`] returns [`Some`], but if
     /// possible, custom implementations that are able to do this more efficiently should override
     /// this.
-    fn contains_edge(&self, id: Self::EdgeId) -> bool {
+    fn contains_edge(&self, id: EdgeId) -> bool {
         self.edge(id).is_some()
     }
 
@@ -981,11 +905,7 @@ pub trait GraphStorage: Sized {
     /// The default implementation simply calls [`Self::node_connections`] on both nodes and then
     /// chains those, after filtering for the respective end. Most implementations should be able to
     /// provide a more efficient implementation.
-    fn edges_between(
-        &self,
-        u: Self::NodeId,
-        v: Self::NodeId,
-    ) -> impl Iterator<Item = Edge<'_, Self>> {
+    fn edges_between(&self, u: NodeId, v: NodeId) -> impl Iterator<Item = Edge<'_, Self>> {
         // How does this work with a default implementation?
         let from_source = self.node_connections(u).filter(move |edge| {
             let (edge_u, edge_v) = edge.endpoint_ids();
@@ -1052,8 +972,8 @@ pub trait GraphStorage: Sized {
     // I'd love to provide a default implementation for this, but I just can't get it to work.
     fn edges_between_mut(
         &mut self,
-        u: Self::NodeId,
-        v: Self::NodeId,
+        u: NodeId,
+        v: NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>>;
 
     /// Returns an iterator over all edges that are connected to the given node.
@@ -1094,7 +1014,7 @@ pub trait GraphStorage: Sized {
     ///     [ab, ca]
     /// );
     /// ```
-    fn node_connections(&self, id: Self::NodeId) -> impl Iterator<Item = Edge<'_, Self>>;
+    fn node_connections(&self, id: NodeId) -> impl Iterator<Item = Edge<'_, Self>>;
 
     /// Returns an iterator over all edges that are connected to the given node, with mutable
     /// weights.
@@ -1139,8 +1059,7 @@ pub trait GraphStorage: Sized {
     ///     [5, 6]
     /// );
     /// ```
-    fn node_connections_mut(&mut self, id: Self::NodeId)
-    -> impl Iterator<Item = EdgeMut<'_, Self>>;
+    fn node_connections_mut(&mut self, id: NodeId) -> impl Iterator<Item = EdgeMut<'_, Self>>;
 
     /// Returns the number of edges that are connected to the given node.
     ///
@@ -1176,7 +1095,7 @@ pub trait GraphStorage: Sized {
     /// edges.
     /// This is unlikely to be the most efficient implementation, so custom implementations should
     /// override this.
-    fn node_degree(&self, id: Self::NodeId) -> usize {
+    fn node_degree(&self, id: NodeId) -> usize {
         self.node_connections(id).count()
     }
 
@@ -1234,7 +1153,7 @@ pub trait GraphStorage: Sized {
     ///
     /// Changing the requirement from **SHOULD NOT** to **MUST NOT** may occur in the future, and is
     /// to be considered a breaking change.
-    fn node_neighbours(&self, id: Self::NodeId) -> impl Iterator<Item = Node<'_, Self>> {
+    fn node_neighbours(&self, id: NodeId) -> impl Iterator<Item = Node<'_, Self>> {
         self.node_connections(id)
             .filter_map(move |edge: Edge<Self>| {
                 let (u, v) = edge.endpoint_ids();
@@ -1295,7 +1214,7 @@ pub trait GraphStorage: Sized {
     ///
     /// No default implementation is provided, as a mutable iterator based on
     /// [`Self::node_connections_mut`] could potentially lead to a double mutable borrow.
-    fn node_neighbours_mut(&mut self, id: Self::NodeId) -> impl Iterator<Item = NodeMut<'_, Self>>;
+    fn node_neighbours_mut(&mut self, id: NodeId) -> impl Iterator<Item = NodeMut<'_, Self>>;
 
     /// Returns an iterator over all nodes that do not have any edges connected to them.
     ///

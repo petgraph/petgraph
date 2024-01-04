@@ -5,6 +5,7 @@ use petgraph_core::{
         marker::{Directed, Undirected},
         Direction,
     },
+    node::NodeId,
     DirectedGraphStorage, Edge, GraphDirectionality, GraphStorage,
 };
 
@@ -45,14 +46,14 @@ pub(in crate::shortest_paths) trait Connections<'a, S>
 where
     S: GraphStorage + 'a,
 {
-    fn connections(&self, node: S::NodeId) -> impl Iterator<Item = Edge<'a, S>> + 'a;
+    fn connections(&self, node: NodeId) -> impl Iterator<Item = Edge<'a, S>> + 'a;
 }
 
 impl<'graph, S> Connections<'graph, S> for NodeConnections<'graph, S, Directed>
 where
     S: DirectedGraphStorage,
 {
-    fn connections(&self, node: S::NodeId) -> impl Iterator<Item = Edge<'graph, S>> + 'graph {
+    fn connections(&self, node: NodeId) -> impl Iterator<Item = Edge<'graph, S>> + 'graph {
         self.storage
             .node_directed_connections(node, Direction::Outgoing)
     }
@@ -62,7 +63,7 @@ impl<'graph, S> Connections<'graph, S> for NodeConnections<'graph, S, Undirected
 where
     S: GraphStorage,
 {
-    fn connections(&self, node: S::NodeId) -> impl Iterator<Item = Edge<'graph, S>> + 'graph {
+    fn connections(&self, node: NodeId) -> impl Iterator<Item = Edge<'graph, S>> + 'graph {
         self.storage.node_connections(node)
     }
 }

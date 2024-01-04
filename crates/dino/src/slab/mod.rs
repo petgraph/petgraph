@@ -8,8 +8,7 @@ pub(crate) mod secondary;
 use alloc::{vec, vec::Vec};
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
 
-use numi::borrow::Moo;
-use petgraph_core::id::IndexMapper;
+use petgraph_core::storage::sequential::GraphIdBijection;
 
 use crate::slab::entry::{Entry, State};
 pub(crate) use crate::slab::{generation::Generation, id::EntryId, key::Key};
@@ -428,7 +427,7 @@ where
     }
 }
 
-impl<K> IndexMapper<K> for SlabIndexMapper<'_, K>
+impl<K> GraphIdBijection<K> for SlabIndexMapper<'_, K>
 where
     K: Key,
 {

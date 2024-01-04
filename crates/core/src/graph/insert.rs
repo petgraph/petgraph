@@ -1,11 +1,12 @@
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
 use error_stack::{Result, ResultExt};
 
 use crate::{
-    attributes::{Attributes, NoValue},
-    edge::EdgeMut,
+    edge::{EdgeId, EdgeMut},
     graph::Graph,
-    id::{ArbitraryGraphId, GraphId, ManagedGraphId},
-    node::NodeMut,
+    node::{NodeId, NodeMut},
     storage::GraphStorage,
     Error,
 };
@@ -35,13 +36,8 @@ where
     /// This may include things like parallel edges or self loops depending on implementation.
     ///
     /// Refer to the documentation of the underlying storage for more information.
-    pub fn try_insert_node(
-        &mut self,
-        attributes: impl Into<Attributes<<S::NodeId as GraphId>::AttributeIndex, S::NodeWeight>>,
-    ) -> Result<NodeMut<S>, Error> {
-        let Attributes { id, weight } = attributes.into();
-
-        let id = self.storage.next_node_id(id);
+    pub fn try_insert_node(&mut self, weight: S::NodeWeight) -> Result<NodeMut<S>, Error> {
+        let id = self.storage.next_node_id();
         self.storage.insert_node(id, weight).change_context(Error)
     }
 
@@ -71,7 +67,7 @@ where
     /// The reason is that some storage types might not be able to guarantee that the node can be
     /// inserted, but we still want to provide a convenient way to insert a node.
     /// Another reason is that this mirrors the API of other libraries and the std, such as the
-    /// standard library (through [`alloc::vec::Vec::push`], or
+    /// standard library (through [`Vec::push`], or
     /// [`std::collections::HashMap::insert`]).
     /// These may also panic and do not return a result.
     /// But(!) it is important to note that the constraints and reason why they may panic are quite
@@ -87,11 +83,8 @@ where
     /// This may include things like parallel edges or self loops depending on implementation.
     ///
     /// Refer to the documentation of the underlying storage for more information.
-    pub fn insert_node(
-        &mut self,
-        attributes: impl Into<Attributes<<S::NodeId as GraphId>::AttributeIndex, S::NodeWeight>>,
-    ) -> NodeMut<S> {
-        self.try_insert_node(attributes)
+    pub fn insert_node(&mut self, weight: S::NodeWeight) -> NodeMut<S> {
+        self.try_insert_node(weight)
             .expect("Constraint violation. Try using `try_insert_node` instead.")
     }
 }
@@ -99,7 +92,6 @@ where
 impl<S> Graph<S>
 where
     S: GraphStorage,
-    S::NodeId: ManagedGraphId,
 {
     /// Insert a node, where the weight is dependent on the id.
     ///
@@ -138,9 +130,9 @@ where
     /// Refer to the documentation of the underlying storage for more information.
     pub fn try_insert_node_with(
         &mut self,
-        weight: impl FnOnce(S::NodeId) -> S::NodeWeight,
+        weight: impl FnOnce(NodeId) -> S::NodeWeight,
     ) -> Result<NodeMut<S>, Error> {
-        let id = self.storage.next_node_id(NoValue::new());
+        let id = self.storage.next_node_id();
         let weight = weight(id);
 
         self.storage.insert_node(id, weight).change_context(Error)
@@ -178,66 +170,9 @@ where
     /// This may include things like parallel edges or self loops depending on implementation.
     ///
     /// Refer to the documentation of the underlying storage for more information.
-    pub fn insert_node_with(
-        &mut self,
-        weight: impl FnOnce(S::NodeId) -> S::NodeWeight,
-    ) -> NodeMut<S> {
+    pub fn insert_node_with(&mut self, weight: impl FnOnce(NodeId) -> S::NodeWeight) -> NodeMut<S> {
         self.try_insert_node_with(weight)
             .expect("Constraint violation. Try using `try_insert_node_with` instead.")
-    }
-}
-
-impl<S> Graph<S>
-where
-    S: GraphStorage,
-    S::NodeId: ArbitraryGraphId,
-{
-    /// Insert a node, or update the weight of an existing node.
-    ///
-    /// This is the fallible version of [`Self::upsert_node`].
-    // TODO: Example
-    /// # Errors
-    ///
-    /// The same errors as [`Self::try_insert_node`] may occur.
-    ///
-    /// # Panics
-    ///
-    /// If the storage is inconsistent.
-    /// This should never happen, as this is an implementation error of the underlying
-    /// [`GraphStorage`], which must guarantee that if one calls [`GraphStorage::contains_node`]
-    /// with the id of the node to check if a node exists, and then calls
-    /// [`GraphStorage::node_mut`] with the same id, it must return a node.
-    pub fn try_upsert_node(
-        &mut self,
-        id: S::NodeId,
-        weight: S::NodeWeight,
-    ) -> Result<NodeMut<S>, Error> {
-        // we cannot use `if let` here due to limitations of the borrow checker
-        if self.storage.contains_node(id) {
-            let mut node = self
-                .storage
-                .node_mut(id)
-                .expect("inconsistent storage, node must exist");
-
-            *node.weight_mut() = weight;
-
-            Ok(node)
-        } else {
-            self.storage.insert_node(id, weight).change_context(Error)
-        }
-    }
-
-    /// Insert a node, or update the weight of an existing node.
-    ///
-    /// This is the infallible version of [`Self::try_upsert_node`], which will panic instead.
-    // TODO: Example
-    /// # Panics
-    ///
-    /// The same panics as [`Self::try_upsert_node`] may occur, as well as the ones from
-    /// [`Self::insert_node`].
-    pub fn upsert_node(&mut self, id: S::NodeId, weight: S::NodeWeight) -> NodeMut<S> {
-        self.try_upsert_node(id, weight)
-            .expect("Constraint violation. Try using `try_upsert_node` instead.")
     }
 }
 
@@ -271,13 +206,11 @@ where
     /// Refer to the documentation of the underlying storage for more information.
     pub fn try_insert_edge(
         &mut self,
-        attributes: impl Into<Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>>,
-        source: S::NodeId,
-        target: S::NodeId,
+        weight: S::EdgeWeight,
+        source: NodeId,
+        target: NodeId,
     ) -> Result<EdgeMut<S>, Error> {
-        let Attributes { id, weight } = attributes.into();
-
-        let id = self.storage.next_edge_id(id);
+        let id = self.storage.next_edge_id();
         self.storage
             .insert_edge(id, weight, source, target)
             .change_context(Error)
@@ -311,11 +244,11 @@ where
     /// This may include things like parallel edges or self loops depending on implementation.
     pub fn insert_edge(
         &mut self,
-        attributes: impl Into<Attributes<<S::EdgeId as GraphId>::AttributeIndex, S::EdgeWeight>>,
-        source: S::NodeId,
-        target: S::NodeId,
+        weight: S::EdgeWeight,
+        source: NodeId,
+        target: NodeId,
     ) -> EdgeMut<S> {
-        self.try_insert_edge(attributes, source, target)
+        self.try_insert_edge(weight, source, target)
             .expect("Constraint violation. Try using `try_insert_edge` instead.")
     }
 }
@@ -323,7 +256,6 @@ where
 impl<S> Graph<S>
 where
     S: GraphStorage,
-    S::EdgeId: ManagedGraphId,
 {
     /// Insert an edge, where the weight is dependent on the id.
     ///
@@ -361,11 +293,11 @@ where
     /// The same errors as [`Self::try_insert_edge`] may occur.
     pub fn try_insert_edge_with(
         &mut self,
-        weight: impl FnOnce(S::EdgeId) -> S::EdgeWeight,
-        source: S::NodeId,
-        target: S::NodeId,
+        weight: impl FnOnce(EdgeId) -> S::EdgeWeight,
+        source: NodeId,
+        target: NodeId,
     ) -> Result<EdgeMut<S>, Error> {
-        let id = self.storage.next_edge_id(NoValue::new());
+        let id = self.storage.next_edge_id();
         let weight = weight(id);
 
         self.storage
@@ -406,21 +338,29 @@ where
     /// The same panics as [`Self::insert_edge`] may occur.
     pub fn insert_edge_with(
         &mut self,
-        weight: impl FnOnce(S::EdgeId) -> S::EdgeWeight,
-        source: S::NodeId,
-        target: S::NodeId,
+        weight: impl FnOnce(EdgeId) -> S::EdgeWeight,
+        source: NodeId,
+        target: NodeId,
     ) -> EdgeMut<S> {
         self.try_insert_edge_with(weight, source, target)
             .expect("Constraint violation. Try using `try_insert_edge_with` instead.")
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<S> Graph<S>
 where
     S: GraphStorage,
-    S::EdgeId: ArbitraryGraphId,
+    S::EdgeWeight: Clone,
 {
     /// Insert an edge, or update the weight of an existing edge, if it exists.
+    ///
+    /// If multiple edges exist between the given nodes, all of them will be updated with the given
+    ///
+    /// Edges are treated as undirected, so the order of the nodes does not matter.
+    ///
+    /// Unlike [`Self::try_upsert_edge`], this will not return the edge, and instead return a list
+    /// containing all affected edge identifiers.
     ///
     /// This is the fallible version of [`Self::upsert_edge`].
     // TODO: Example
@@ -428,39 +368,32 @@ where
     /// # Errors
     ///
     /// The same errors as [`Self::try_insert_edge`] may occur.
-    ///
-    /// # Panics
-    ///
-    /// If the storage is inconsistent.
-    /// This should never happen, as this is an implementation error of the underlying
-    /// [`GraphStorage`], which must guarantee that if one calls [`GraphStorage::contains_edge`]
-    /// with the id of the edge to check if an edge exists, and then calls
-    /// [`GraphStorage::edge_mut`] with the same id, it must return an edge.
     pub fn try_upsert_edge(
         &mut self,
-        id: S::EdgeId,
         weight: S::EdgeWeight,
 
-        source: S::NodeId,
-        target: S::NodeId,
-    ) -> Result<EdgeMut<S>, Error> {
-        if self.storage.contains_edge(id) {
-            let mut edge = self
-                .storage
-                .edge_mut(id)
-                .expect("inconsistent storage, edge must exist");
+        source: NodeId,
+        target: NodeId,
+    ) -> Result<Vec<EdgeId>, Error> {
+        let mut affected = vec![];
 
-            *edge.weight_mut() = weight;
-
-            Ok(edge)
-        } else {
-            self.storage
-                .insert_edge(id, weight, source, target)
-                .change_context(Error)
+        for mut edge in self.storage.edges_between_mut(source, target) {
+            *edge.weight_mut() = weight.clone();
+            affected.push(edge.id());
         }
+
+        if !affected.is_empty() {
+            return Ok(affected);
+        }
+
+        self.try_insert_edge(weight, source, target)
+            .map(|edge| vec![edge.id()])
     }
 
     /// Insert an edge, or update the weight of an existing edge, if it exists.
+    ///
+    /// If multiple edges exist between the given nodes, all of them will be updated with the given
+    /// value.
     ///
     /// This is the infallible version of [`Self::try_upsert_edge`], which will panic instead.
     ///
@@ -470,13 +403,71 @@ where
     /// [`Self::insert_edge`].
     pub fn upsert_edge(
         &mut self,
-        id: S::EdgeId,
         weight: S::EdgeWeight,
 
-        source: S::NodeId,
-        target: S::NodeId,
-    ) -> EdgeMut<S> {
-        self.try_upsert_edge(id, weight, source, target)
+        source: NodeId,
+        target: NodeId,
+    ) -> Vec<EdgeId> {
+        self.try_upsert_edge(weight, source, target)
             .expect("Constraint violation. Try using `try_upsert_edge` instead.")
+    }
+
+    /// Insert an edge, or update the weight of an existing edge, if it exists.
+    ///
+    /// If multiple edges exist between the given nodes, all of them will invoke the given closure
+    /// with the edge.
+    ///
+    /// Unlike [`Self::try_upsert_edge_with`], this will not return the edge, and instead return a
+    /// list containing all affected edge identifiers.
+    ///
+    /// This is the fallible version of [`Self::upsert_edge_with`].
+    ///
+    /// # Errors
+    ///
+    /// The same errors as [`Self::try_insert_edge`] may occur.
+    pub fn try_upsert_edge_with(
+        &mut self,
+        mut on_update: impl FnMut(&mut EdgeMut<S>) -> S::EdgeWeight,
+        on_insert: impl FnOnce(EdgeId) -> S::EdgeWeight,
+
+        source: NodeId,
+        target: NodeId,
+    ) -> Result<Vec<EdgeId>, Error> {
+        let mut affected = vec![];
+
+        for mut edge in self.storage.edges_between_mut(source, target) {
+            *edge.weight_mut() = on_update(&mut edge);
+            affected.push(edge.id());
+        }
+
+        if !affected.is_empty() {
+            return Ok(affected);
+        }
+
+        self.try_insert_edge_with(on_insert, source, target)
+            .map(|edge| vec![edge.id()])
+    }
+
+    /// Insert an edge, or update the weight of an existing edge, if it exists.
+    ///
+    /// If multiple edges exist between the given nodes, all of them will invoke the given closure
+    /// with the edge.
+    ///
+    /// This is the infallible version of [`Self::try_upsert_edge_with`], which will panic instead.
+    ///
+    /// # Panics
+    ///
+    /// The same panics as [`Self::try_upsert_edge_with`] may occur, as well as the ones from
+    /// [`Self::insert_edge_with`].
+    pub fn upsert_edge_with(
+        &mut self,
+        on_update: impl FnMut(&mut EdgeMut<S>) -> S::EdgeWeight,
+        on_insert: impl FnOnce(EdgeId) -> S::EdgeWeight,
+
+        source: NodeId,
+        target: NodeId,
+    ) -> Vec<EdgeId> {
+        self.try_upsert_edge_with(on_update, on_insert, source, target)
+            .expect("Constraint violation. Try using `try_upsert_edge_with` instead.")
     }
 }

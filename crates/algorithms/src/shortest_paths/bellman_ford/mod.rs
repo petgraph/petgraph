@@ -6,11 +6,11 @@ mod measure;
 mod tests;
 
 use alloc::vec::Vec;
-use core::hash::Hash;
 
 use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
+    node::NodeId,
     DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
@@ -96,15 +96,15 @@ impl BellmanFord<Directed, DefaultCost> {
     /// let algorithm = BellmanFord::directed();
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(2, &a, &b);
+    /// graph.insert_edge(2, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     ///
-    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// let path = algorithm.path_between(&graph, b, a);
     /// assert!(path.is_none());
     /// ```
     pub fn directed() -> Self {
@@ -132,15 +132,15 @@ impl BellmanFord<Undirected, DefaultCost> {
     /// let algorithm = BellmanFord::undirected();
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(2, &a, &b);
+    /// graph.insert_edge(2, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     ///
-    /// let path = algorithm.path_between(&graph, &b, &a);
+    /// let path = algorithm.path_between(&graph, b, a);
     /// assert!(path.is_some());
     /// ```
     pub fn undirected() -> Self {
@@ -184,12 +184,12 @@ where
     /// let algorithm = BellmanFord::directed().with_edge_cost(edge_cost);
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge("AB", &a, &b);
+    /// graph.insert_edge("AB", a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> BellmanFord<D, F>
@@ -221,12 +221,12 @@ where
     /// let algorithm = BellmanFord::directed().with_candidate_order(CandidateOrder::LargeLast);
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(2, &a, &b);
+    /// graph.insert_edge(2, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     /// ```
     #[must_use]
@@ -261,12 +261,12 @@ where
     /// let algorithm = BellmanFord::directed().with_negative_cycle_heuristics(false);
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
+    /// let a = graph.insert_node("A").id();
+    /// let b = graph.insert_node("B").id();
     ///
-    /// graph.insert_edge(2, &a, &b);
+    /// graph.insert_edge(2, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b);
+    /// let path = algorithm.path_between(&graph, a, b);
     /// assert!(path.is_some());
     /// ```
     #[must_use]
@@ -283,7 +283,6 @@ where
 impl<S, E> ShortestPath<S> for BellmanFord<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: PartialEq + Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -293,7 +292,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.path_from(graph, target)?;
 
@@ -303,7 +302,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>>, Self::Error> {
         ShortestPathFasterImpl::new(
             graph,
@@ -320,8 +319,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
@@ -352,7 +351,6 @@ where
 impl<S, E> ShortestDistance<S> for BellmanFord<Undirected, E>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -362,7 +360,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = self.distance_from(graph, target)?;
 
@@ -372,7 +370,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = ShortestPathFasterImpl::new(
             graph,
@@ -390,8 +388,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
@@ -423,7 +421,6 @@ where
 impl<S, E> ShortestPath<S> for BellmanFord<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -433,7 +430,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         ShortestPathFasterImpl::new(
             graph,
@@ -450,8 +447,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,
@@ -482,7 +479,6 @@ where
 impl<S, E> ShortestDistance<S> for BellmanFord<Directed, E>
 where
     S: DirectedGraphStorage,
-    S::NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -492,7 +488,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>>, Self::Error> {
         let iter = ShortestPathFasterImpl::new(
             graph,
@@ -510,8 +506,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         ShortestPathFasterImpl::new(
             graph,

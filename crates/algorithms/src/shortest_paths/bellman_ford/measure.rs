@@ -4,7 +4,7 @@ use core::{
 };
 
 use numi::{
-    cast::{CastFrom, TryCastFrom},
+    cast::TryCastFrom,
     num::{identity::Zero, ops::AddRef},
 };
 

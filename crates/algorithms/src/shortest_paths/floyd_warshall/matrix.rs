@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 
-use numi::borrow::Moo;
 use petgraph_core::{
-    id::{IndexMapper, LinearGraphId},
+    node::NodeId,
+    storage::{sequential::GraphIdBijection, SequentialGraphStorage},
     Graph, GraphStorage,
 };
 
@@ -11,9 +11,9 @@ enum MatrixIndexMapper<I> {
     Discard,
 }
 
-impl<I, T> IndexMapper<T> for MatrixIndexMapper<I>
+impl<I, T> GraphIdBijection<T> for MatrixIndexMapper<I>
 where
-    I: IndexMapper<T>,
+    I: GraphIdBijection<T>,
     T: PartialEq,
 {
     fn max(&self) -> usize {
@@ -41,9 +41,8 @@ where
 pub(super) struct SlotMatrix<'graph, S, T>
 where
     S: GraphStorage + 'graph,
-    S::NodeId: LinearGraphId<S>,
 {
-    mapper: MatrixIndexMapper<<S::NodeId as LinearGraphId<S>>::Mapper<'graph>>,
+    mapper: MatrixIndexMapper<S::NodeIdBijection<'graph>>,
     matrix: Vec<Option<T>>,
     length: usize,
 }
@@ -51,13 +50,10 @@ where
 impl<'graph, S, T> SlotMatrix<'graph, S, T>
 where
     S: GraphStorage,
-    S::NodeId: LinearGraphId<S>,
 {
     pub(crate) fn new(graph: &'graph Graph<S>) -> Self {
         let length = graph.num_nodes();
-        let mapper = MatrixIndexMapper::Store(<S::NodeId as LinearGraphId<S>>::index_mapper(
-            graph.storage(),
-        ));
+        let mapper = MatrixIndexMapper::Store(graph.storage().node_id_bijection());
 
         let mut matrix = Vec::with_capacity(length * length);
         matrix.resize_with(length * length, Default::default);
@@ -81,7 +77,7 @@ where
         }
     }
 
-    pub(crate) fn set(&mut self, source: S::NodeId, target: S::NodeId, value: Option<T>) {
+    pub(crate) fn set(&mut self, source: NodeId, target: NodeId, value: Option<T>) {
         if matches!(self.mapper, MatrixIndexMapper::Discard) {
             // this should never happen, even if it does, we don't want to panic here (map call)
             // so we simply return.
@@ -104,16 +100,16 @@ where
     /// Returns `None` if the node cannot be looked up, this only happens if you try to query for a
     /// value on an index that has not yet been set via `set`.
     ///
-    /// See the contract described on the [`IndexMapper`] for more information about the
+    /// See the contract described on the [`GraphIdBijection`] for more information about the
     /// `map/lookup` contract.
-    pub(crate) fn get(&self, source: S::NodeId, target: S::NodeId) -> Option<&T> {
+    pub(crate) fn get(&self, source: NodeId, target: NodeId) -> Option<&T> {
         let source = self.mapper.get(source)?;
         let target = self.mapper.get(target)?;
 
         self.matrix[source * self.length + target].as_ref()
     }
 
-    pub(crate) fn resolve(&self, index: usize) -> Option<S::NodeId> {
+    pub(crate) fn resolve(&self, index: usize) -> Option<NodeId> {
         self.mapper.reverse(index)
     }
 }
@@ -125,7 +121,6 @@ impl<'a, T: ?Sized> Captures<'a> for T {}
 impl<'a, S, T> SlotMatrix<'a, S, T>
 where
     S: GraphStorage,
-    S::NodeId: LinearGraphId<S> + Clone,
 {
     pub(crate) fn diagonal(&self) -> impl Iterator<Item = Option<&T>> + Captures<'a> + '_ {
         let len = self.length;

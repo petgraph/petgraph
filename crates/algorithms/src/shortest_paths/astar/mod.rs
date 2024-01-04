@@ -12,8 +12,9 @@ use core::marker::PhantomData;
 use error_stack::Result;
 use petgraph_core::{
     edge::marker::{Directed, Undirected},
-    id::AssociativeGraphId,
-    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage, Node,
+    node::NodeId,
+    storage::AuxiliaryGraphStorage,
+    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
 use self::r#impl::AStarImpl;
@@ -80,12 +81,12 @@ impl AStar<Directed, DefaultCost, ()> {
     /// let algorithm = AStar::directed().with_heuristic(heuristic);
     ///
     /// let mut graph = DiDinoGraph::new();
-    /// let a = *graph.insert_node((0, 1)).id();
-    /// let b = *graph.insert_node((2, 2)).id();
+    /// let a = graph.insert_node((0, 1)).id();
+    /// let b = graph.insert_node((2, 2)).id();
     ///
-    /// graph.insert_edge(5, &a, &b);
+    /// graph.insert_edge(5, a, b);
     ///
-    /// let path = algorithm.path_between(&graph, &a, &b).expect("path exists");
+    /// let path = algorithm.path_between(&graph, a, b).expect("path exists");
     /// assert_eq!(path.cost().into_value(), 5);
     /// ```
     pub fn directed() -> Self {
@@ -144,13 +145,12 @@ impl<E, H> AStar<Directed, E, H> {
     fn call<'graph: 'this, 'this, S>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
         intermediates: PredecessorMode,
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
         S: DirectedGraphStorage,
-        S::NodeId: AssociativeGraphId<S>,
         E: GraphCost<S>,
         E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
@@ -171,13 +171,12 @@ impl<E, H> AStar<Undirected, E, H> {
     fn call<'graph: 'this, 'this, S>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
         intermediates: PredecessorMode,
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
         S: GraphStorage,
-        S::NodeId: AssociativeGraphId<S>,
         E: GraphCost<S>,
         E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
@@ -200,7 +199,6 @@ impl<E, H> AStar<Undirected, E, H> {
 impl<S, E, H> ShortestPath<S> for AStar<Undirected, E, H>
 where
     S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -211,7 +209,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let sources = graph.nodes().map(|node| node.id());
 
@@ -225,7 +223,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let targets = graph.nodes().map(|node| node.id());
 
@@ -239,8 +237,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         self.call(graph, source, target, PredecessorMode::Record)
             .ok()?
@@ -269,7 +267,6 @@ where
 impl<S, E, H> ShortestDistance<S> for AStar<Undirected, E, H>
 where
     S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -280,7 +277,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let sources = graph.nodes().map(|node| node.id());
 
@@ -294,7 +291,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let targets = graph.nodes().map(|node| node.id());
 
@@ -308,8 +305,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         self.call(graph, source, target, PredecessorMode::Discard)
             .ok()?
@@ -339,7 +336,6 @@ where
 impl<S, E, H> ShortestPath<S> for AStar<Directed, E, H>
 where
     S: DirectedGraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -350,7 +346,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let sources = graph.nodes().map(|node| node.id());
 
@@ -364,7 +360,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let targets = graph.nodes().map(|node| node.id());
 
@@ -378,8 +374,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         self.call(graph, source, target, PredecessorMode::Record)
             .ok()?
@@ -408,7 +404,6 @@ where
 impl<S, E, H> ShortestDistance<S> for AStar<Directed, E, H>
 where
     S: DirectedGraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -419,7 +414,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let sources = graph.nodes().map(|node| node.id());
 
@@ -433,7 +428,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let targets = graph.nodes().map(|node| node.id());
 
@@ -447,8 +442,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         self.call(graph, source, target, PredecessorMode::Discard)
             .ok()?

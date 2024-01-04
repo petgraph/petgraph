@@ -68,8 +68,8 @@ impl EntryId {
         })
     }
 
-    pub(crate) fn new_unchecked(raw: u32) -> Self {
-        Self(NonZeroUsize::new(raw as usize).expect("raw is zero"))
+    pub(crate) fn new_unchecked(raw: usize) -> Self {
+        Self(NonZeroUsize::new(raw).expect("raw is zero"))
     }
 
     #[inline]
@@ -84,6 +84,12 @@ impl EntryId {
     pub(crate) const fn raw(self) -> u32 {
         // we know that the index will never be larger than 32 bits
         self.0.get() as u32
+    }
+
+    #[inline]
+    #[must_use]
+    pub(crate) const fn into_usize(self) -> usize {
+        self.0.get()
     }
 
     #[inline]

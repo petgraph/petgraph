@@ -38,15 +38,15 @@
 //! use petgraph_dino::DiDinoGraph;
 //!
 //! let mut graph = DiDinoGraph::new();
-//! let a = *graph.insert_node("A").id();
-//! let b = *graph.insert_node("B").id();
-//! graph.insert_edge(7, &a, &b);
+//! let a = graph.insert_node("A").id();
+//! let b = graph.insert_node("B").id();
+//! graph.insert_edge(7, a, b);
 //!
 //! let dijkstra = Dijkstra::directed();
-//! let path = dijkstra.path_between(&graph, &a, &b);
+//! let path = dijkstra.path_between(&graph, a, b);
 //! assert!(path.is_some());
 //!
-//! let path = dijkstra.path_between(&graph, &b, &a);
+//! let path = dijkstra.path_between(&graph, b, a);
 //! assert!(path.is_none());
 //! ```
 
@@ -57,7 +57,7 @@ pub mod dijkstra;
 pub mod floyd_warshall;
 
 use error_stack::{Context, Result};
-use petgraph_core::{Graph, GraphStorage};
+use petgraph_core::{node::NodeId, Graph, GraphStorage};
 
 pub use self::{
     astar::AStar,
@@ -71,6 +71,18 @@ pub use self::{
     floyd_warshall::FloydWarshall,
 };
 
+pub mod utilities {
+    //! # Utilities
+    //!
+    //! This module contains utilities that can be used with shortest path algorithms.
+    //!
+    //! Currently this module only contains the [`cost`] and [`heuristic`] functions, which resolve
+    //! common lifetime problems whenever closures are used for the cost and heuristic functions.
+
+    pub use super::common::closures::{cost, heuristic};
+}
+
+// TODO: should algorithms take `Node<T>` instead?!
 /// # Shortest Path
 ///
 /// A shortest path algorithm is an algorithm that finds a path between two nodes in a graph such
@@ -93,21 +105,21 @@ pub use self::{
 /// use petgraph_dino::DiDinoGraph;
 ///
 /// let mut graph = DiDinoGraph::new();
-/// let a = *graph.insert_node("A").id();
-/// let b = *graph.insert_node("B").id();
-/// let c = *graph.insert_node("C").id();
+/// let a = graph.insert_node("A").id();
+/// let b = graph.insert_node("B").id();
+/// let c = graph.insert_node("C").id();
 ///
-/// graph.insert_edge(7, &a, &b);
-/// graph.insert_edge(5, &b, &c);
-/// graph.insert_edge(3, &a, &c);
+/// graph.insert_edge(7, a, b);
+/// graph.insert_edge(5, b, c);
+/// graph.insert_edge(3, a, c);
 ///
 /// let dijkstra = Dijkstra::directed();
-/// let path = dijkstra.path_between(&graph, &a, &c).expect("path exists");
+/// let path = dijkstra.path_between(&graph, a, c).expect("path exists");
 ///
 /// assert_eq!(path.cost().into_value(), 3);
 ///
-/// assert_eq!(path.path().source().id(), &a);
-/// assert_eq!(path.path().target().id(), &c);
+/// assert_eq!(path.path().source().id(), a);
+/// assert_eq!(path.path().target().id(), c);
 ///
 /// assert!(path.path().transit().is_empty());
 /// ```
@@ -128,7 +140,7 @@ where
     fn path_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
@@ -143,7 +155,7 @@ where
     fn path_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = Route<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_path(graph)?;
 
@@ -156,8 +168,8 @@ where
     fn path_between<'graph>(
         &self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Route<'graph, S, Self::Cost>> {
         self.path_from(graph, source)
             .ok()?
@@ -207,7 +219,7 @@ where
     fn distance_to<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        target: S::NodeId,
+        target: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
@@ -223,7 +235,7 @@ where
     fn distance_from<'graph: 'this, 'this>(
         &'this self,
         graph: &'graph Graph<S>,
-        source: S::NodeId,
+        source: NodeId,
     ) -> Result<impl Iterator<Item = DirectRoute<'graph, S, Self::Cost>> + 'this, Self::Error> {
         let iter = self.every_distance(graph)?;
 
@@ -236,8 +248,8 @@ where
     fn distance_between(
         &self,
         graph: &Graph<S>,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Option<Cost<Self::Cost>> {
         self.every_distance(graph)
             .ok()?

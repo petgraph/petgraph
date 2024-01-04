@@ -1,7 +1,7 @@
 use crate::{
     edge::{Direction, Edge, EdgeMut},
     graph::Graph,
-    node::{Node, NodeMut},
+    node::{Node, NodeId, NodeMut},
     storage::DirectedGraphStorage,
 };
 
@@ -46,8 +46,8 @@ where
     /// ```
     pub fn directed_edges_between(
         &self,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> impl Iterator<Item = Edge<'_, S>> {
         self.storage.directed_edges_between(source, target)
     }
@@ -89,8 +89,8 @@ where
     /// ```
     pub fn directed_edges_between_mut(
         &mut self,
-        source: S::NodeId,
-        target: S::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, S>> {
         self.storage.directed_edges_between_mut(source, target)
     }
@@ -108,7 +108,7 @@ where
     #[inline]
     pub fn neighbors_directed(
         &self,
-        id: S::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Node<'_, S>> {
         self.neighbours_directed(id, direction)
@@ -156,7 +156,7 @@ where
     /// ```
     pub fn neighbours_directed(
         &self,
-        id: S::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Node<'_, S>> {
         self.storage.node_directed_neighbours(id, direction)
@@ -176,7 +176,7 @@ where
     #[inline]
     pub fn neighbors_directed_mut(
         &mut self,
-        id: S::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = NodeMut<'_, S>> {
         self.neighbours_directed_mut(id, direction)
@@ -221,7 +221,7 @@ where
     /// ```
     pub fn neighbours_directed_mut(
         &mut self,
-        id: S::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = NodeMut<'_, S>> {
         self.storage.node_directed_neighbours_mut(id, direction)
@@ -263,7 +263,7 @@ where
     /// ```
     pub fn connections_directed(
         &self,
-        id: S::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Edge<'_, S>> {
         self.storage.node_directed_connections(id, direction)
@@ -310,7 +310,7 @@ where
     /// ```
     pub fn connections_directed_mut(
         &mut self,
-        id: S::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = EdgeMut<'_, S>> {
         self.storage.node_directed_connections_mut(id, direction)

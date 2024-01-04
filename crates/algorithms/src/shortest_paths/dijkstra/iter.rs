@@ -4,7 +4,11 @@ use core::mem;
 use error_stack::{Report, Result};
 use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{
-    id::{AssociativeGraphId, AttributeMapper},
+    node::NodeId,
+    storage::{
+        auxiliary::{FrequencyHint, Hints, OccupancyHint, PerformanceHint, SecondaryGraphStorage},
+        AuxiliaryGraphStorage,
+    },
     Graph, GraphStorage, Node,
 };
 
@@ -23,7 +27,6 @@ use crate::shortest_paths::{
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -38,18 +41,17 @@ where
     num_nodes: usize,
 
     init: bool,
-    next: Option<PriorityQueueItem<S::NodeId, E::Value>>,
+    next: Option<PriorityQueueItem<E::Value>>,
 
     predecessor_mode: PredecessorMode,
 
-    distances: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, E::Value>,
-    predecessors: <S::NodeId as AssociativeGraphId<S>>::AttributeMapper<'graph, Option<S::NodeId>>,
+    distances: S::SecondaryNodeStorage<'graph, E::Value>,
+    predecessors: S::SecondaryNodeStorage<'graph, Option<NodeId>>,
 }
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -60,7 +62,7 @@ where
         edge_cost: &'parent E,
         connections: G,
 
-        source: S::NodeId,
+        source: NodeId,
 
         predecessor_mode: PredecessorMode,
     ) -> Result<Self, DijkstraError> {
@@ -70,11 +72,22 @@ where
 
         let queue = PriorityQueue::new(graph.storage());
 
-        let mut distances = <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
+        let mut distances = graph.storage().secondary_node_storage(Hints {
+            performance: PerformanceHint {
+                read: FrequencyHint::Frequent,
+                write: FrequencyHint::Frequent,
+            },
+            occupancy: OccupancyHint::Dense,
+        });
         distances.set(source, E::Value::zero());
 
-        let mut predecessors =
-            <S::NodeId as AssociativeGraphId<S>>::attribute_mapper(graph.storage());
+        let mut predecessors = graph.storage().secondary_node_storage(Hints {
+            performance: PerformanceHint {
+                read: FrequencyHint::Infrequent,
+                write: FrequencyHint::Frequent,
+            },
+            occupancy: OccupancyHint::Dense,
+        });
         if predecessor_mode == PredecessorMode::Record {
             predecessors.set(source, None);
         }
@@ -98,7 +111,6 @@ where
 impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
     S: GraphStorage,
-    S::NodeId: AssociativeGraphId<S>,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -158,9 +170,7 @@ where
                 self.predecessors.set(target, Some(node));
             }
 
-            // if let Some(target) = self.graph.node(target) {
             self.queue.decrease_priority(target, alternative);
-            // }
         }
 
         // this is what makes this special: instead of getting the next node as the start of next

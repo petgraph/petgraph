@@ -1,6 +1,6 @@
 use crate::{
     edge::{Direction, Edge, EdgeMut},
-    node::{Node, NodeMut},
+    node::{Node, NodeId, NodeMut},
     storage::GraphStorage,
 };
 
@@ -75,8 +75,8 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// Most implementations should be able to provide a more efficient implementation.
     fn directed_edges_between(
         &self,
-        source: Self::NodeId,
-        target: Self::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> impl Iterator<Item = Edge<'_, Self>> {
         self.node_directed_connections(source, Direction::Outgoing)
             .filter(move |edge| edge.target_id() == target)
@@ -130,8 +130,8 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// Most implementations should be able to provide a more efficient implementation.
     fn directed_edges_between_mut(
         &mut self,
-        source: Self::NodeId,
-        target: Self::NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.node_directed_connections_mut(source, Direction::Outgoing)
             .filter(move |edge| edge.target_id() == target)
@@ -191,7 +191,7 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// ```
     fn node_directed_connections(
         &self,
-        id: Self::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Edge<'_, Self>>;
 
@@ -245,7 +245,7 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// ```
     fn node_directed_connections_mut(
         &mut self,
-        id: Self::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>>;
 
@@ -280,7 +280,7 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// assert_eq!(storage.node_directed_degree(&a, Direction::Outgoing), 1);
     /// assert_eq!(storage.node_directed_degree(&a, Direction::Incoming), 1);
     /// ```
-    fn node_directed_degree(&self, id: Self::NodeId, direction: Direction) -> usize {
+    fn node_directed_degree(&self, id: NodeId, direction: Direction) -> usize {
         self.node_directed_connections(id, direction).count()
     }
 
@@ -345,7 +345,7 @@ pub trait DirectedGraphStorage: GraphStorage {
     /// and must uphold the contract that the returned iterator does not contain duplicates.
     fn node_directed_neighbours(
         &self,
-        id: Self::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = Node<'_, Self>> {
         self.node_directed_connections(id, direction)
@@ -414,7 +414,7 @@ pub trait DirectedGraphStorage: GraphStorage {
     // I'd love to provide a default implementation for this, but I just can't get it to work.
     fn node_directed_neighbours_mut(
         &mut self,
-        id: Self::NodeId,
+        id: NodeId,
         direction: Direction,
     ) -> impl Iterator<Item = NodeMut<'_, Self>>;
 }

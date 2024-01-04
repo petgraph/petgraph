@@ -1,8 +1,5 @@
 use alloc::vec::Vec;
-use core::{
-    fmt::{Debug, Display},
-    hash::Hash,
-};
+use core::fmt::Debug;
 
 use error_stack::Result;
 use hashbrown::HashMap;
@@ -39,12 +36,13 @@ macro_rules! expected {
 }
 
 pub(in crate::shortest_paths) use expected;
+use petgraph_core::node::NodeId;
 
-pub(in crate::shortest_paths) struct Expect<N, T> {
-    pub(in crate::shortest_paths) source: N,
-    pub(in crate::shortest_paths) target: N,
+pub(in crate::shortest_paths) struct Expect<T> {
+    pub(in crate::shortest_paths) source: NodeId,
+    pub(in crate::shortest_paths) target: NodeId,
 
-    pub(in crate::shortest_paths) transit: Vec<N>,
+    pub(in crate::shortest_paths) transit: Vec<NodeId>,
 
     pub(in crate::shortest_paths) cost: T,
 }
@@ -55,7 +53,7 @@ where
 {
     graph: &'a Graph<S>,
     algorithm: &'a A,
-    expected: &'a [Expect<S::NodeId, T>],
+    expected: &'a [Expect<T>],
 }
 
 impl<'a, S, A, T> TestCase<'a, S, A, T>
@@ -65,7 +63,7 @@ where
     pub(crate) const fn new(
         graph: &'a Graph<S>,
         algorithm: &'a A,
-        expected: &'a [Expect<<S as GraphStorage>::NodeId, T>],
+        expected: &'a [Expect<T>],
     ) -> Self {
         Self {
             graph,
@@ -78,7 +76,6 @@ where
 impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash + Debug + Display,
     A: ShortestPath<S, Cost = T>,
     T: PartialEq + Debug,
 {
@@ -120,7 +117,7 @@ where
     }
 
     #[track_caller]
-    pub(in crate::shortest_paths) fn assert_path_from(&self, source: S::NodeId) {
+    pub(in crate::shortest_paths) fn assert_path_from(&self, source: NodeId) {
         self.assert_path_routes(self.algorithm.path_from(self.graph, source));
     }
 }
@@ -128,7 +125,6 @@ where
 impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
     S: GraphStorage,
-    S::NodeId: Eq + Hash + Debug + Display,
     A: ShortestDistance<S, Cost = T>,
     T: PartialEq + Debug,
 {
@@ -174,7 +170,7 @@ where
     }
 
     #[track_caller]
-    pub(in crate::shortest_paths) fn assert_distance_from(&self, source: S::NodeId) {
+    pub(in crate::shortest_paths) fn assert_distance_from(&self, source: NodeId) {
         self.assert_distance_routes(self.algorithm.distance_from(self.graph, source));
     }
 }

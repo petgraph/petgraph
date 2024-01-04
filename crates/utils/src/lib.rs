@@ -27,8 +27,8 @@ macro_rules! graph {
 
     (@collection: node $name:ident[$($id:ident : $attr:expr),* $(,)?]) => {
         #[allow(unreachable_pub)]
-        pub struct $name<T> {
-            $(pub $id: T,)*
+        pub struct $name {
+            $(pub $id: petgraph_core::node::NodeId,)*
         }
     };
 
@@ -45,8 +45,8 @@ macro_rules! graph {
         $name:ident[$($id:ident : $source:ident $(->)? $(--)? $target:ident : $attr:expr),* $(,)?]
     ) => {
         #[allow(unreachable_pub)]
-        pub struct $name<T> {
-            $(pub $id: T,)*
+        pub struct $name {
+            $(pub $id: petgraph_core::edge::EdgeId,)*
         }
     };
 
@@ -55,8 +55,8 @@ macro_rules! graph {
         $name:ident[$($id:ident : $source:ident $(->)? $(--)? $target:ident : @{$attr:expr}),* $(,)?]
     ) => {
         #[allow(unreachable_pub)]
-        pub struct $name<T> {
-            $(pub $id: T,)*
+        pub struct $name {
+            $(pub $id: petgraph_core::edge::EdgeId,)*
         }
     };
 
@@ -104,7 +104,7 @@ macro_rules! graph {
         };
     };
 
-    ($(#[$meta:meta])* $vis:vis factory($name:ident) => $graph:ty; [$($nodes:tt)*] as $nty:ty, [$($edges:tt)*] as $ety:ty) => {
+    ($(#[$meta:meta])* $vis:vis factory($name:ident) => $graph:ty; [$($nodes:tt)*], [$($edges:tt)*]) => {
         $(#[$meta])*
         $vis mod $name {
             use super::*;
@@ -114,7 +114,7 @@ macro_rules! graph {
 
             pub type Graph = $graph;
 
-            pub fn create() -> $crate::GraphCollection<$graph, NodeCollection<$nty>, EdgeCollection<$ety>> {
+            pub fn create() -> $crate::GraphCollection<$graph, NodeCollection, EdgeCollection> {
                 let mut graph = <$graph>::new();
 
                 $crate::graph!(@insert: node graph; nodes; NodeCollection[$($nodes)*]);

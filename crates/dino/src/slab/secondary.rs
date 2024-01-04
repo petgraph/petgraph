@@ -2,64 +2,65 @@ use alloc::vec::Vec;
 use core::iter;
 
 use bitvec::{boxed::BitBox, prelude::BitVec};
-use numi::borrow::Moo;
-use petgraph_core::id::{AttributeMapper, BooleanMapper};
+use petgraph_core::storage::auxiliary::{BooleanGraphStorage, SecondaryGraphStorage};
 
 use crate::slab::{EntryId, Generation, Key, Slab};
 
-pub struct SlabBooleanMapper<'a> {
+pub struct SlabBooleanStorage<'a, K> {
     flags: BitBox,
-    _marker: core::marker::PhantomData<&'a ()>,
+
+    _slab: core::marker::PhantomData<&'a ()>,
+    _key: core::marker::PhantomData<fn() -> *const K>,
 }
 
-impl<'a> SlabBooleanMapper<'a> {
-    pub(crate) fn new<K, V>(slab: &'a Slab<K, V>) -> Self
-    where
-        K: Key,
-    {
+impl<'a, K> SlabBooleanStorage<'a, K>
+where
+    K: Key,
+{
+    pub(crate) fn new<V>(slab: &'a Slab<K, V>) -> Self {
         let length = slab.total_len();
 
         Self {
             flags: BitVec::repeat(false, length).into_boxed_bitslice(),
-            _marker: core::marker::PhantomData,
+
+            _slab: core::marker::PhantomData,
+            _key: core::marker::PhantomData,
         }
     }
 }
 
-impl<Id> BooleanMapper<Id> for SlabBooleanMapper<'_>
+impl<K> BooleanGraphStorage<K> for SlabBooleanStorage<'_, K>
 where
-    Id: Key,
+    K: Key,
 {
     #[inline]
-    fn get(&self, id: Id) -> Option<bool> {
+    fn get(&self, id: K) -> Option<bool> {
         let index = id.into_id().index();
 
         self.flags.get(index).map(|bit| *bit)
     }
 
     #[inline]
-    fn index(&self, id: Id) -> bool {
-        let index = id.into_id().index();
-
-        self.flags[index]
-    }
-
-    #[inline]
-    fn set(&mut self, id: Id, flag: bool) -> Option<bool> {
+    fn set(&mut self, id: K, flag: bool) -> Option<bool> {
         let index = id.into_id().index();
 
         let value = self.flags.replace(index, flag);
 
         Some(value)
     }
+
+    #[inline]
+    fn fill(&mut self, flag: bool) {
+        self.flags.fill(flag);
+    }
 }
 
-pub struct SlabAttributeStorageIter<'a, K, T> {
+pub struct SlabSecondaryStorageIter<'a, K, T> {
     iter: iter::Enumerate<core::slice::Iter<'a, Option<(Generation, T)>>>,
     _marker: core::marker::PhantomData<&'a K>,
 }
 
-impl<'a, K, T> Iterator for SlabAttributeStorageIter<'a, K, T>
+impl<'a, K, T> Iterator for SlabSecondaryStorageIter<'a, K, T>
 where
     K: Key,
 {
@@ -79,7 +80,7 @@ where
     }
 }
 
-pub struct SlabAttributeMapper<'a, K, T> {
+pub struct SlabSecondaryStorage<'a, K, T> {
     // generation is needed for iter
     items: Vec<Option<(Generation, T)>>,
 
@@ -87,7 +88,7 @@ pub struct SlabAttributeMapper<'a, K, T> {
     _key: core::marker::PhantomData<fn() -> *const K>,
 }
 
-impl<'a, K, T> SlabAttributeMapper<'a, K, T> {
+impl<'a, K, T> SlabSecondaryStorage<'a, K, T> {
     pub(crate) fn new<V>(slab: &'a Slab<K, V>) -> Self
     where
         K: Key,
@@ -103,11 +104,11 @@ impl<'a, K, T> SlabAttributeMapper<'a, K, T> {
     }
 }
 
-impl<K, T> AttributeMapper<K, T> for SlabAttributeMapper<'_, K, T>
+impl<K, T> SecondaryGraphStorage<K, T> for SlabSecondaryStorage<'_, K, T>
 where
     K: Key,
 {
-    type Iter<'a> = SlabAttributeStorageIter<'a, K, T> where
+    type Iter<'a> = SlabSecondaryStorageIter<'a, K, T> where
         K: 'a,
         T: 'a,
         Self: 'a,;
@@ -150,7 +151,7 @@ where
     }
 
     fn iter(&self) -> Self::Iter<'_> {
-        SlabAttributeStorageIter {
+        SlabSecondaryStorageIter {
             iter: self.items.iter().enumerate(),
             _marker: core::marker::PhantomData,
         }

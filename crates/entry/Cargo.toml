@@ -1,0 +1,14 @@
+[package]
+name = "petgraph-entry"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+petgraph-core = { workspace = true }
+petgraph-dino = { workspace = true }
+
+error-stack = { workspace = true }
+hashbrown = "0.14.3"
+
+[features]

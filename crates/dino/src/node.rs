@@ -1,10 +1,4 @@
-use core::fmt::{Display, Formatter};
-
-use petgraph_core::{
-    attributes::NoValue,
-    edge::marker::GraphDirectionality,
-    id::{AssociativeGraphId, GraphId, LinearGraphId, ManagedGraphId},
-};
+use petgraph_core::{edge::EdgeId, node::NodeId};
 
 use crate::{
     closure::UniqueVec,
@@ -12,86 +6,20 @@ use crate::{
         EdgeBetweenIterator, EdgeIdClosureIter, EdgeIntersectionIterator, EdgeIterator,
         NeighbourIterator, NodeIdClosureIter,
     },
-    slab::{
-        secondary::{SlabAttributeMapper, SlabBooleanMapper},
-        EntryId, Key, SlabIndexMapper,
-    },
-    DinoStorage, EdgeId,
+    slab::{EntryId, Key},
 };
-
-/// Identifier for a node in [`DinoStorage`].
-///
-/// [`NodeId`] is a unique identifier for a node in a [`DinoStorage`].
-/// It is used to reference nodes within the graph.
-///
-/// A [`NodeId`] is managed, meaning that it is chosen by the graph itself and not by the user.
-///
-/// [`NodeId`] implements [`GraphId`], [`ManagedGraphId`] and [`LinearGraphId`].
-///
-/// # Example
-///
-/// ```
-/// use petgraph_dino::DiDinoGraph;
-///
-/// let mut graph = DiDinoGraph::<_, u8>::new();
-///
-/// let a = *graph.insert_node("A").id();
-///
-/// println!("Node A: {a}");
-/// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct NodeId(EntryId);
-
-impl Display for NodeId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        Display::fmt(&self.0, f)
-    }
-}
 
 impl Key for NodeId {
     #[inline]
     fn from_id(id: EntryId) -> Self {
-        Self(id)
+        Self::new(id.into_usize())
     }
 
     #[inline]
     fn into_id(self) -> EntryId {
-        self.0
+        EntryId::new_unchecked(self.into_inner())
     }
 }
-
-impl GraphId for NodeId {
-    type AttributeIndex = NoValue;
-}
-
-impl<N, E, D> LinearGraphId<DinoStorage<N, E, D>> for NodeId
-where
-    D: GraphDirectionality,
-{
-    type Mapper<'a> = SlabIndexMapper<'a, Self> where Self: 'a, N: 'a, E: 'a;
-
-    fn index_mapper(storage: &DinoStorage<N, E, D>) -> Self::Mapper<'_> {
-        SlabIndexMapper::new(&storage.nodes)
-    }
-}
-
-impl<N, E, D> AssociativeGraphId<DinoStorage<N, E, D>> for NodeId
-where
-    D: GraphDirectionality,
-{
-    type AttributeMapper<'a, V> = SlabAttributeMapper<'a, Self, V> where DinoStorage<N, E, D>: 'a;
-    type BooleanMapper<'a> = SlabBooleanMapper<'a> where DinoStorage<N, E, D>: 'a;
-
-    fn attribute_mapper<V>(storage: &DinoStorage<N, E, D>) -> Self::AttributeMapper<'_, V> {
-        SlabAttributeMapper::new(&storage.nodes)
-    }
-
-    fn boolean_mapper(storage: &DinoStorage<N, E, D>) -> Self::BooleanMapper<'_> {
-        SlabBooleanMapper::new(&storage.nodes)
-    }
-}
-
-impl ManagedGraphId for NodeId {}
 
 pub(crate) type NodeSlab<T> = crate::slab::Slab<NodeId, Node<T>>;
 

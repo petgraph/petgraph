@@ -1,6 +1,4 @@
-use numi::borrow::Moo;
-
-use crate::{id::GraphId, storage::GraphStorage};
+use crate::{edge::EdgeId, node::NodeId};
 
 /// Index mapper for a graph.
 ///
@@ -16,7 +14,7 @@ use crate::{id::GraphId, storage::GraphStorage};
 /// input value should always map to the same output value.
 /// Index lookup should also be (if possible) `O(1)` for `Id -> usize`, but not necessarily for
 /// `usize -> Id`.
-pub trait IndexMapper<Id> {
+pub trait GraphIdBijection<Id> {
     /// The maximum value that can be mapped to.
     ///
     /// This **must** be equal to the number of nodes in the graph.
@@ -105,14 +103,13 @@ pub trait IndexMapper<Id> {
     ///
     /// ```
     /// use numi::borrow::Moo;
-    /// use petgraph_core::id::{IndexMapper, LinearGraphId};
     /// use petgraph_dino::{DiDinoGraph, NodeId};
     ///
     /// let mut graph = DiDinoGraph::new();
     ///
     /// let a = *graph.insert_node("A").id();
     /// let b = *graph.insert_node("B").id();
-    /// # let ab = graph.insert_edge("A → B", &a, &b);
+    /// # let ab = graph.insert_edge("A → B", a, b);
     ///
     /// let mut mapper = NodeId::index_mapper(graph.storage());
     ///
@@ -122,34 +119,15 @@ pub trait IndexMapper<Id> {
     fn reverse(&self, to: usize) -> Option<Id>;
 }
 
-/// Linear graph identifier.
-///
-/// A linear graph identifier is a graph identifier that has a linear mapping to a `usize` value,
-/// that mapping must be continuous .
-pub trait LinearGraphId<S>: GraphId + Sized
-where
-    S: GraphStorage,
-{
-    /// The index mapper for this graph identifier.
-    type Mapper<'graph>: IndexMapper<Self>
+pub trait SequentialGraphStorage {
+    type EdgeIdBijection<'graph>: GraphIdBijection<EdgeId>
     where
-        S: 'graph;
+        Self: 'graph;
 
-    /// Get the index mapper for this graph identifier.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use petgraph_core::id::{IndexMapper, LinearGraphId};
-    /// use petgraph_dino::{DiDinoGraph, NodeId};
-    ///
-    /// let mut graph = DiDinoGraph::new();
-    ///
-    /// let a = *graph.insert_node("A").id();
-    /// let b = *graph.insert_node("B").id();
-    /// # let ab = graph.insert_edge("A → B", &a, &b);
-    ///
-    /// let mapper = NodeId::index_mapper(graph.storage());
-    /// ```
-    fn index_mapper(storage: &S) -> Self::Mapper<'_>;
+    type NodeIdBijection<'graph>: GraphIdBijection<NodeId>
+    where
+        Self: 'graph;
+
+    fn node_id_bijection(&self) -> Self::NodeIdBijection<'_>;
+    fn edge_id_bijection(&self) -> Self::EdgeIdBijection<'_>;
 }

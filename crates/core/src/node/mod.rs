@@ -17,7 +17,7 @@
 mod compat;
 
 use core::{
-    fmt::{Debug, Formatter},
+    fmt::{Debug, Display, Formatter},
     hash::Hash,
 };
 
@@ -25,6 +25,77 @@ use crate::{
     edge::{Direction, Edge},
     storage::{DirectedGraphStorage, GraphStorage},
 };
+
+/// ID of a node in a graph.
+///
+/// This is guaranteed to be unique within the graph, library authors and library consumers **must**
+/// treat this as an opaque value akin to [`TypeId`].
+///
+/// The layout of the type is semver stable, but not part of the public API.
+///
+/// [`GraphStorage`] implementations may uphold additional invariants on the inner value and
+/// code outside of the [`GraphStorage`] should **never** construct a [`NodeId`] directly.
+///
+/// Accessing a [`GraphStorage`] implementation with a [`NodeId`] not returned by an instance itself
+/// is considered undefined behavior.
+///
+/// [`TypeId`]: core::any::TypeId
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct NodeId(usize);
+
+impl Display for NodeId {
+    // we could also utilize a VTable here instead, that would allow for custom formatting
+    // but that would be an additional pointer added to the type that must be carried around
+    // that's about ~8 bytes on 64-bit systems
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        writeln!(f, "NodeId({})", self.0)
+    }
+}
+
+// TODO: find a better way to gate these functions
+impl NodeId {
+    /// Creates a new [`NodeId`].
+    ///
+    /// # Note
+    ///
+    /// Using this outside of the [`GraphStorage`] implementation is considered undefined behavior.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::node::NodeId;
+    ///
+    /// let id = NodeId::new(0);
+    /// ```
+    // Hidden so that non-GraphStorage implementors are not tempted to use this.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn new(id: usize) -> Self {
+        Self(id)
+    }
+
+    /// Returns the inner value of the [`NodeId`].
+    ///
+    /// # Note
+    ///
+    /// Using this outside of the [`GraphStorage`] implementation is considered undefined behavior.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::node::NodeId;
+    ///
+    /// let id = NodeId::new(0);
+    ///
+    /// assert_eq!(id.into_inner(), 0);
+    /// ```
+    // Hidden so that non-GraphStorage implementors are not tempted to use this.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn into_inner(self) -> usize {
+        self.0
+    }
+}
 
 /// Active node in a graph.
 ///
@@ -53,14 +124,13 @@ where
 {
     storage: &'a S,
 
-    id: S::NodeId,
+    id: NodeId,
     weight: &'a S::NodeWeight,
 }
 
 impl<S> PartialEq for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: PartialEq,
     S::NodeWeight: PartialEq,
 {
     fn eq(&self, other: &Node<'_, S>) -> bool {
@@ -71,7 +141,6 @@ where
 impl<S> Eq for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Eq,
     S::NodeWeight: Eq,
 {
 }
@@ -79,7 +148,6 @@ where
 impl<S> PartialOrd for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: PartialOrd,
     S::NodeWeight: PartialOrd,
 {
     fn partial_cmp(&self, other: &Node<'_, S>) -> Option<core::cmp::Ordering> {
@@ -90,7 +158,6 @@ where
 impl<S> Ord for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Ord,
     S::NodeWeight: Ord,
 {
     fn cmp(&self, other: &Node<'_, S>) -> core::cmp::Ordering {
@@ -101,7 +168,6 @@ where
 impl<S> Hash for Node<'_, S>
 where
     S: GraphStorage,
-    S::NodeId: Hash,
     S::NodeWeight: Hash,
 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -168,7 +234,7 @@ where
     /// ```
     ///
     /// [`Graph::node`]: crate::graph::Graph::node
-    pub const fn new(storage: &'a S, id: S::NodeId, weight: &'a S::NodeWeight) -> Self {
+    pub const fn new(storage: &'a S, id: NodeId, weight: &'a S::NodeWeight) -> Self {
         Self {
             storage,
             id,
@@ -197,7 +263,7 @@ where
     /// assert_eq!(node.id(), &a);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> S::NodeId {
+    pub const fn id(&self) -> NodeId {
         self.id
     }
 
@@ -317,6 +383,28 @@ where
     #[must_use]
     pub fn degree(&self) -> usize {
         self.storage.node_degree(self.id)
+    }
+
+    /// Change the underlying storage of the node.
+    ///
+    /// Should only be used when layering multiple [`GraphStorage`] implementations on top of each
+    /// other.
+    ///
+    /// # Note
+    ///
+    /// This should not lead to any undefined behaviour, but might have unintended consequences if
+    /// the storage does not recognize the inner id as valid.
+    /// You should only use this if you know what you are doing.
+    #[must_use]
+    pub const fn change_storage_unchecked<T>(self, storage: &'a T) -> Node<'a, T>
+    where
+        T: GraphStorage<NodeWeight = S::NodeWeight>,
+    {
+        Node {
+            storage,
+            id: self.id,
+            weight: self.weight,
+        }
     }
 }
 
@@ -442,7 +530,7 @@ where
     ///
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
-    pub fn detach(self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+    pub fn detach(self) -> DetachedNode<S::NodeWeight> {
         DetachedNode::new(self.id, self.weight.clone())
     }
 }
@@ -474,7 +562,7 @@ pub struct NodeMut<'a, S>
 where
     S: GraphStorage,
 {
-    id: S::NodeId,
+    id: NodeId,
 
     weight: &'a mut S::NodeWeight,
 }
@@ -498,7 +586,7 @@ where
     ///
     /// [`Graph::node_mut`]: crate::graph::Graph::node_mut
     /// [`Graph::insert_node`]: crate::graph::Graph::insert_node
-    pub fn new(id: S::NodeId, weight: &'a mut S::NodeWeight) -> Self {
+    pub fn new(id: NodeId, weight: &'a mut S::NodeWeight) -> Self {
         Self { id, weight }
     }
 
@@ -523,7 +611,7 @@ where
     /// assert_eq!(node.id(), &a);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> S::NodeId {
+    pub const fn id(&self) -> NodeId {
         self.id
     }
 
@@ -569,6 +657,27 @@ where
     pub fn weight_mut(&mut self) -> &mut S::NodeWeight {
         self.weight
     }
+
+    /// Change the underlying storage of the node.
+    ///
+    /// Should only be used when layering multiple [`GraphStorage`] implementations on top of each
+    /// other.
+    ///
+    /// # Note
+    ///
+    /// This should not lead to any undefined behaviour, but might have unintended consequences if
+    /// the storage does not recognize the inner id as valid.
+    /// You should only use this if you know what you are doing.
+    #[must_use]
+    pub fn change_storage_unchecked<T>(self) -> NodeMut<'a, T>
+    where
+        T: GraphStorage<NodeWeight = S::NodeWeight>,
+    {
+        NodeMut {
+            id: self.id,
+            weight: self.weight,
+        }
+    }
 }
 
 impl<S> NodeMut<'_, S>
@@ -607,7 +716,7 @@ where
     ///
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
-    pub fn detach(&self) -> DetachedNode<S::NodeId, S::NodeWeight> {
+    pub fn detach(&self) -> DetachedNode<S::NodeWeight> {
         DetachedNode::new(self.id, self.weight.clone())
     }
 }
@@ -640,15 +749,15 @@ where
 /// [`Graph::into_parts`]: crate::graph::Graph::into_parts
 /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct DetachedNode<N, W> {
+pub struct DetachedNode<W> {
     /// The unique id of the node.
-    pub id: N,
+    pub id: NodeId,
 
     /// The weight of the node.
     pub weight: W,
 }
 
-impl<N, W> DetachedNode<N, W> {
+impl<W> DetachedNode<W> {
     /// Creates a new detached node.
     ///
     /// # Example
@@ -658,7 +767,7 @@ impl<N, W> DetachedNode<N, W> {
     ///
     /// let node = DetachedNode::new(0, "A");
     /// ```
-    pub const fn new(id: N, weight: W) -> Self {
+    pub const fn new(id: NodeId, weight: W) -> Self {
         Self { id, weight }
     }
 }

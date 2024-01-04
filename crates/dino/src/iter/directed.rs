@@ -1,6 +1,6 @@
-use petgraph_core::{Edge, GraphDirectionality};
+use petgraph_core::{edge::EdgeId, Edge, GraphDirectionality};
 
-use crate::{DinoStorage, EdgeId};
+use crate::DinoStorage;
 
 pub(crate) struct NodeDirectedConnectionsIter<'storage, N, E, D, I>
 where

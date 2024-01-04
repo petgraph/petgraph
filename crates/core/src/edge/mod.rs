@@ -21,16 +21,87 @@ mod compat;
 mod direction;
 pub mod marker;
 
-use core::fmt::{Debug, Formatter};
+use core::fmt::{Debug, Display, Formatter};
 
 pub use self::{direction::Direction, marker::GraphDirectionality};
-use crate::{node::Node, storage::GraphStorage, DirectedGraphStorage};
+use crate::{
+    node::{Node, NodeId},
+    storage::GraphStorage,
+    DirectedGraphStorage,
+};
 
-type DetachedStorageEdge<S> = DetachedEdge<
-    <S as GraphStorage>::EdgeId,
-    <S as GraphStorage>::NodeId,
-    <S as GraphStorage>::EdgeWeight,
->;
+type DetachedStorageEdge<S> = DetachedEdge<<S as GraphStorage>::EdgeWeight>;
+
+/// ID of an edge in a graph.
+///
+/// This is guaranteed to be unique within the graph, library authors and library consumers **must**
+/// treat this as an opaque type akin to [`TypeId`].
+///
+/// The layout of the type is semver stable, but not part of the public API.
+///
+/// [`GraphStorage`] implementations may uphold additional invariants on the inner value and
+/// code outside of the [`GraphStorage`] should **never** construct a [`EdgeId`] directly.
+///
+/// Accessing a [`GraphStorage`] implementation with a [`EdgeId`] not returned by an instance itself
+/// is considered undefined behavior.
+///
+/// [`TypeId`]: core::any::TypeId
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct EdgeId(usize);
+
+impl Display for EdgeId {
+    // we could also utilize a VTable here instead, that would allow for custom formatting
+    // but that would be an additional pointer added to the type that must be carried around
+    // that's about ~8 bytes on 64-bit systems
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "EdgeId({})", self.0)
+    }
+}
+
+// TODO: find a better way to gate these functions
+impl EdgeId {
+    /// Creates a new [`EdgeId`].
+    ///
+    /// # Note
+    ///
+    /// Using this outside of the [`GraphStorage`] implementation is considered undefined behavior.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::edge::EdgeId;
+    ///
+    /// let id = EdgeId::new(0);
+    /// ```
+    // Hidden so that non-GraphStorage implementors are not tempted to use this.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn new(id: usize) -> Self {
+        Self(id)
+    }
+
+    /// Returns the inner value of the [`EdgeId`].
+    ///
+    /// # Note
+    ///
+    /// Using this outside of the [`GraphStorage`] implementation is considered undefined behavior.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use petgraph_core::edge::EdgeId;
+    ///
+    /// let id = EdgeId::new(0);
+    ///
+    /// assert_eq!(id.into_inner(), 0);
+    /// ```
+    // Hidden so that non-GraphStorage implementors are not tempted to use this.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn into_inner(self) -> usize {
+        self.0
+    }
+}
 
 /// Active edge in the graph.
 ///
@@ -64,10 +135,10 @@ where
 {
     storage: &'a S,
 
-    id: S::EdgeId,
+    id: EdgeId,
 
-    u: S::NodeId,
-    v: S::NodeId,
+    u: NodeId,
+    v: NodeId,
 
     weight: &'a S::EdgeWeight,
 }
@@ -151,11 +222,11 @@ where
     pub fn new(
         storage: &'a S,
 
-        id: S::EdgeId,
+        id: EdgeId,
         weight: &'a S::EdgeWeight,
 
-        u: S::NodeId,
-        v: S::NodeId,
+        u: NodeId,
+        v: NodeId,
     ) -> Self {
         debug_assert!(storage.contains_node(u));
         debug_assert!(storage.contains_node(v));
@@ -195,7 +266,7 @@ where
     /// assert_eq!(edge.id(), &aa);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> S::EdgeId {
+    pub const fn id(&self) -> EdgeId {
         self.id
     }
 
@@ -230,7 +301,7 @@ where
     /// assert!((u, v) == (&a, &b) || (u, v) == (&b, &a));
     /// ```
     #[must_use]
-    pub const fn endpoint_ids(&self) -> (S::NodeId, S::NodeId) {
+    pub const fn endpoint_ids(&self) -> (NodeId, NodeId) {
         (self.u, self.v)
     }
 
@@ -309,6 +380,33 @@ where
     pub const fn weight(&self) -> &'a S::EdgeWeight {
         self.weight
     }
+
+    /// Change the underlying storage of this edge.
+    ///
+    /// Should only be used when layering multiple [`GraphStorage`] implementations on top of each
+    /// other.
+    ///
+    /// # Note
+    ///
+    /// This should not lead to any undefined behaviour, but might have unintended consequences if
+    /// the storage does not recognize the inner id as valid.
+    /// You should only use this if you know what you are doing.
+    #[must_use]
+    pub const fn change_storage_unchecked<T>(self, storage: &'a T) -> Edge<'a, T>
+    where
+        T: GraphStorage<EdgeWeight = S::EdgeWeight>,
+    {
+        Edge {
+            storage,
+
+            id: self.id,
+
+            u: self.u,
+            v: self.v,
+
+            weight: self.weight,
+        }
+    }
 }
 
 impl<'a, S> Edge<'a, S>
@@ -336,7 +434,7 @@ where
     /// assert_eq!(edge.source_id(), &a);
     /// ```
     #[must_use]
-    pub const fn source_id(&self) -> S::NodeId {
+    pub const fn source_id(&self) -> NodeId {
         self.u
     }
 
@@ -401,7 +499,7 @@ where
     /// let edge = graph.edge(&ab).unwrap();
     /// assert_eq!(edge.target_id(), &b);
     /// ```
-    pub const fn target_id(&self) -> S::NodeId {
+    pub const fn target_id(&self) -> NodeId {
         self.v
     }
 
@@ -518,12 +616,12 @@ pub struct EdgeMut<'a, S>
 where
     S: GraphStorage,
 {
-    id: S::EdgeId,
+    id: EdgeId,
 
     weight: &'a mut S::EdgeWeight,
 
-    u: S::NodeId,
-    v: S::NodeId,
+    u: NodeId,
+    v: NodeId,
 }
 
 impl<'a, S> EdgeMut<'a, S>
@@ -547,7 +645,7 @@ where
     ///
     /// [`Graph::edge_mut`]: crate::graph::Graph::edge_mut
     /// [`Graph::insert_edge`]: crate::graph::Graph::insert_edge
-    pub fn new(id: S::EdgeId, weight: &'a mut S::EdgeWeight, u: S::NodeId, v: S::NodeId) -> Self {
+    pub fn new(id: EdgeId, weight: &'a mut S::EdgeWeight, u: NodeId, v: NodeId) -> Self {
         Self { id, weight, u, v }
     }
 
@@ -572,7 +670,7 @@ where
     /// assert_eq!(edge.id(), &ab);
     /// ```
     #[must_use]
-    pub const fn id(&self) -> S::EdgeId {
+    pub const fn id(&self) -> EdgeId {
         self.id
     }
 
@@ -605,7 +703,7 @@ where
     /// assert!((u, v) == (&a, &b) || (u, v) == (&b, &a));
     /// ```
     #[must_use]
-    pub const fn endpoint_ids(&self) -> (S::NodeId, S::NodeId) {
+    pub const fn endpoint_ids(&self) -> (NodeId, NodeId) {
         (self.u, self.v)
     }
 
@@ -651,6 +749,31 @@ where
     pub fn weight_mut(&mut self) -> &mut S::EdgeWeight {
         self.weight
     }
+
+    /// Change the underlying storage of this edge.
+    ///
+    /// Should only be used when layering multiple [`GraphStorage`] implementations on top of each
+    /// other.
+    ///
+    /// # Note
+    ///
+    /// This should not lead to any undefined behaviour, but might have unintended consequences if
+    /// the storage does not recognize the inner id as valid.
+    /// You should only use this if you know what you are doing.
+    #[must_use]
+    pub fn change_storage_unchecked<T>(self) -> EdgeMut<'a, T>
+    where
+        T: GraphStorage<EdgeWeight = S::EdgeWeight>,
+    {
+        EdgeMut {
+            id: self.id,
+
+            weight: self.weight,
+
+            u: self.u,
+            v: self.v,
+        }
+    }
 }
 
 impl<'a, S> EdgeMut<'a, S>
@@ -675,7 +798,7 @@ where
     /// assert_eq!(edge.source_id(), &a);
     /// ```
     #[must_use]
-    pub const fn source_id(&self) -> S::NodeId {
+    pub const fn source_id(&self) -> NodeId {
         self.u
     }
 
@@ -697,7 +820,7 @@ where
     /// assert_eq!(edge.target_id(), &b);
     /// ```
     #[must_use]
-    pub const fn target_id(&self) -> S::NodeId {
+    pub const fn target_id(&self) -> NodeId {
         self.v
     }
 }
@@ -771,20 +894,20 @@ where
 /// [`Graph::into_parts`]: crate::graph::Graph::into_parts
 /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct DetachedEdge<E, N, W> {
+pub struct DetachedEdge<W> {
     /// The unique id of the edge.
-    pub id: E,
+    pub id: EdgeId,
 
     /// The `u` endpoint of the `(u, v)` pair of endpoints.
-    pub u: N,
+    pub u: NodeId,
     /// The `v` endpoint of the `(u, v)` pair of endpoints.
-    pub v: N,
+    pub v: NodeId,
 
     /// The weight of the edge.
     pub weight: W,
 }
 
-impl<E, N, W> DetachedEdge<E, N, W> {
+impl<W> DetachedEdge<W> {
     /// Create a new detached edge.
     ///
     /// In an undirected graph `u` and `v` are interchangeable, but in a directed graph (implements
@@ -797,7 +920,7 @@ impl<E, N, W> DetachedEdge<E, N, W> {
     ///
     /// let edge = DetachedEdge::new(0, "A → B", 1, 2);
     /// ```
-    pub const fn new(id: E, weight: W, u: N, v: N) -> Self {
+    pub const fn new(id: EdgeId, weight: W, u: NodeId, v: NodeId) -> Self {
         Self { id, u, v, weight }
     }
 }

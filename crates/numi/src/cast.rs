@@ -168,5 +168,5 @@ mod test {
     assert_impl_all!(Saturating<u16>: CastTo<Wrapping<u32>>);
 
     #[test]
-    fn compile() {}
+    const fn compile() {}
 }
