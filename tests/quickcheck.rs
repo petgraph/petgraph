@@ -14,8 +14,7 @@ mod utils;
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
-use std::collections::BTreeSet;
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::hash::Hash;
 
 use itertools::assert_equal;
@@ -24,10 +23,10 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
-    greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
-    is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
+    bellman_ford, condensation, dijkstra, dsatur_coloring, find_negative_cycle, floyd_warshall,
+    ford_fulkerson, greedy_feedback_arc_set, greedy_matching, is_cyclic_directed,
+    is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc,
+    maximum_matching, min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1430,6 +1429,29 @@ quickcheck! {
                 new_g = new_g_backup;
             }
         }
+        true
+    }
+}
+
+fn is_proper_coloring<G>(g: G, coloring: &HashMap<G::NodeId, usize>) -> bool
+where
+    G: IntoNodeIdentifiers + IntoEdges,
+    G::NodeId: Eq + Hash,
+{
+    for node in g.node_identifiers() {
+        for nbor in g.neighbors(node) {
+            if node != nbor && coloring[&node] == coloring[&nbor] {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+quickcheck! {
+    fn dsatur_coloring_quickcheck(g: Graph<(), (), Undirected>) -> bool {
+        let (coloring, _) = dsatur_coloring(&g);
+        assert!(is_proper_coloring(&g, &coloring), "dsatur_coloring returned a non proper coloring");
         true
     }
 }
