@@ -148,10 +148,10 @@ where
     let len = seen_list.len();
     let last = seen_list[len-1];
     let before_last = seen_list[len-2];
-    let edges: Vec<_> = graph.edges(last).map(|e| e.weight().0).collect();
-    let weight = sum(graph.edges(last).map(|e| e.weight().1));
+    let cut: Vec<_> = graph.edges(last).map(|e| e.weight().0).collect();
+    let cut_weight = sum(graph.edges(last).map(|e| e.weight().1));
     
-    (edges, weight, last, before_last)
+    (cut, cut_weight, last, before_last)
 }
 
 fn minimum_cut_aux<N, EdgeId, K, Ix>(
