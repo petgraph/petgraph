@@ -91,3 +91,40 @@ fn minimum_cut_disconnected() {
     assert_eq!(cut.len(), 0);
     assert_eq!(weight, 0);
 }
+
+#[test]
+fn minimum_cut_two_cliques() {
+    let mut graph: Graph<(), u32, Undirected> = Graph::new_undirected();
+    let a = graph.add_node(());
+    let b = graph.add_node(());
+    let c = graph.add_node(());
+    let d = graph.add_node(());
+    let e = graph.add_node(());
+    let f = graph.add_node(());
+
+    let g = graph.add_node(());
+    let h = graph.add_node(());
+    let i = graph.add_node(());
+    let j = graph.add_node(());
+    let k = graph.add_node(());
+    let l = graph.add_node(());
+
+    let clique1 = vec!(a, b, c, d, e, f);
+    let clique2 = vec!(g, h, i, j, k, l);
+
+    for idx in 0 .. clique1.len() - 1 {
+        for idx2 in idx+1 .. clique1.len() {
+            graph.add_edge(clique1[idx], clique1[idx2], 1);
+            graph.add_edge(clique2[idx], clique2[idx2], 1);
+        }
+    }
+    graph.extend_with_edges(&[
+        (a, g, 1),
+        (b, h, 1),
+        (c, i, 1),
+    ]);
+
+    let (cut, weight) = minimum_cut(&graph, |e| *e.weight());
+    assert_eq!(cut.len(), 3);
+    assert_eq!(weight, 3);
+}

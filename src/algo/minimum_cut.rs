@@ -7,8 +7,10 @@ use crate::scored::MaxScored;
 use crate::visit::{EdgeRef, IntoNodeIdentifiers, IntoEdgeReferences, Visitable, VisitMap};
 
 /// \[Generic\] Stoer–Wagner algorithm to solve the minimum cut problem on undirected weighted graphs.
+/// https://en.wikipedia.org/wiki/Stoer%E2%80%93Wagner_algorithm
 ///
 /// A (global) minimum cut of a graph is a set of edges of minimum weight whose deletion disconnects the graph.
+/// https://en.wikipedia.org/wiki/Minimum_cut
 /// 
 /// The graph must be undirected. It must implement `IntoNodeIdentifiers` and `IntoEdgeReferences`.
 /// The function `edge_cost` should return the cost for a particular edge. Edge costs must be
