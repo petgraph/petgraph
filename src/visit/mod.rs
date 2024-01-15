@@ -409,8 +409,12 @@ pub trait VisitMap<N> {
 
 /// Ability to track paths when visiting a collection of NodeIds `N`.
 pub trait TrackPath<N> {
+    /// Set the `previous` node as the predecessor of the `current` node
+    /// in the path tracked currently, if `current` node is not `None`, else do nothing.
     fn set_predecessor(&mut self, current: N, previous: Option<N>);
+    /// Unset the predecessor of the `current` node in the path tracked currently.
     fn unset_predecessor(&mut self, current: N) -> Option<N>;
+    /// Construct and return the (sub)path of the underyling tracked path that ends at `last` node.
     fn reconstruct_path_to(&self, last: N) -> Vec<N>;
 }
 
@@ -428,7 +432,8 @@ where
         self.remove(&current)
     }
     fn reconstruct_path_to(&self, last: N) -> Vec<N> {
-        let mut path = vec![last];
+        let mut path = Vec::with_capacity(self.len());
+        path.push(last);
 
         let mut current = last;
         while let Some(&previous) = self.get(&current) {
