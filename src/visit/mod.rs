@@ -74,7 +74,7 @@ pub use self::dfsvisit::*;
 pub use self::traversal::*;
 
 use fixedbitset::FixedBitSet;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::hash::{BuildHasher, Hash};
 
 use super::EdgeType;
@@ -404,6 +404,40 @@ pub trait VisitMap<N> {
     /// Return **true** if this vertex was marked as visited at the time of unsetting it, false otherwise.
     fn unvisit(&mut self, _a: N) -> bool {
         unimplemented!("We don't know how to mark the node as unvisited.")
+    }
+}
+
+
+/// Ability to track paths when visiting a collection of NodeIds `N`.
+pub trait TrackPath<N> {
+    fn set_predecessor(&mut self, current: N, previous: N);
+    fn unset_predecessor(&mut self, current: N) -> Option<N>;
+    fn reconstruct_path_to(&self, last: N) -> Vec<N>;
+}
+
+impl<N, S> TrackPath<N> for HashMap<N, N, S> 
+where
+    N: Hash + Eq + Copy,
+    S: BuildHasher
+{
+    fn set_predecessor(&mut self, current: N, previous: N) {
+        self.insert(current, previous);
+    }
+    fn unset_predecessor(&mut self, current: N) -> Option<N> {
+        self.remove(&current)
+    }
+    fn reconstruct_path_to(&self, last: N) -> Vec<N> {
+        let mut path = vec![last];
+
+        let mut current = last;
+        while let Some(&previous) = self.get(&current) {
+            path.push(previous);
+            current = previous;
+        }
+
+        path.reverse();
+
+        path
     }
 }
 
