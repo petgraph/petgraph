@@ -506,6 +506,7 @@ pub trait TrackablePath : GraphBase {
     fn reset_path_tracker(self: &Self, tracker: &mut Self::Tracker);
 }
 
+#[allow(clippy::needless_arbitrary_self_type)]
 impl<G> TrackablePath for G 
 where
     G: GraphBase,
