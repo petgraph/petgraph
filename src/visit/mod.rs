@@ -410,7 +410,7 @@ pub trait VisitMap<N> {
 
 /// Ability to track paths when visiting a collection of NodeIds `N`.
 pub trait TrackPath<N> {
-    fn set_predecessor(&mut self, current: N, previous: N);
+    fn set_predecessor(&mut self, current: N, previous: Option<N>);
     fn unset_predecessor(&mut self, current: N) -> Option<N>;
     fn reconstruct_path_to(&self, last: N) -> Vec<N>;
 }
@@ -420,8 +420,10 @@ where
     N: Hash + Eq + Copy,
     S: BuildHasher
 {
-    fn set_predecessor(&mut self, current: N, previous: N) {
-        self.insert(current, previous);
+    fn set_predecessor(&mut self, current: N, previous: Option<N>) {
+        if let Some(previous) = previous {
+            self.insert(current, previous);
+        }
     }
     fn unset_predecessor(&mut self, current: N) -> Option<N> {
         self.remove(&current)
