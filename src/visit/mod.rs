@@ -518,6 +518,11 @@ where
 {
     type Tracker = HashMap<G::NodeId, G::NodeId>;
     fn path_tracker(self: &Self) -> Self::Tracker {
+        // FIXME: If we could have `G: NodeCount`, then we
+        // might benefit from `HashMap::with_capacity(self.node_count())`.
+        // But, as of yet, we can't have multiple blanket impls with differing
+        // trait bounds.
+        // Refer to https://github.com/rust-lang/rfcs/issues/1053
         HashMap::new()
     }
 
