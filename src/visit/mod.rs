@@ -398,13 +398,6 @@ pub trait VisitMap<N> {
 
     /// Return whether `a` has been visited before.
     fn is_visited(&self, a: &N) -> bool;
-
-    /// Mark `a` as unvisited.
-    ///
-    /// Return **true** if this vertex was marked as visited at the time of unsetting it, false otherwise.
-    fn unvisit(&mut self, _a: N) -> bool {
-        unimplemented!("We don't know how to mark the node as unvisited.")
-    }
 }
 
 /// Ability to track paths when visiting a collection of NodeIds `N`.
@@ -457,14 +450,6 @@ where
     fn is_visited(&self, x: &Ix) -> bool {
         self.contains(x.index())
     }
-
-    fn unvisit(&mut self, x: Ix) -> bool {
-        if self.is_visited(&x) {
-            self.toggle(x.index());
-            return true;
-        }
-        false
-    }
 }
 
 impl<N, S> VisitMap<N> for HashSet<N, S>
@@ -477,10 +462,6 @@ where
     }
     fn is_visited(&self, x: &N) -> bool {
         self.contains(x)
-    }
-
-    fn unvisit(&mut self, x: N) -> bool {
-        self.remove(&x)
     }
 }
 
