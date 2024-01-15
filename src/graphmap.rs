@@ -5,7 +5,7 @@ use indexmap::map::Keys;
 use indexmap::map::{Iter as IndexMapIter, IterMut as IndexMapIterMut};
 use indexmap::IndexMap;
 use std::cmp::Ordering;
-use std::collections::{HashSet, HashMap};
+use std::collections::HashSet;
 use std::fmt;
 use std::hash::{self, Hash};
 use std::iter::FromIterator;

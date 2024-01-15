@@ -496,19 +496,14 @@ pub trait Visitable : GraphBase {
 }
 Visitable! {delegate_impl []}
 
-trait_template! {
-/// A graph that can create a path tracker that tracks a sequence of nodes.
 #[allow(clippy::needless_arbitrary_self_type)]
 pub trait TrackablePath : GraphBase {
-    @section type
     /// The associated tracker type.
     type Tracker: TrackPath<Self::NodeId>;
-    @section self
     /// Create a new tracker.
     fn path_tracker(self: &Self) -> Self::Tracker;
     /// Reset the tracker (and resize to new size of graph if needed)
     fn reset_path_tracker(self: &Self, tracker: &mut Self::Tracker);
-}
 }
 
 impl<G> TrackablePath for G 
