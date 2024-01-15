@@ -1,5 +1,6 @@
 //! `MatrixGraph<N, E, Ty, NullN, NullE, Ix>` is a graph datastructure backed by an adjacency matrix.
 
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::ops::{Index, IndexMut};
 
@@ -17,7 +18,7 @@ use crate::graph::NodeIndex as GraphNodeIndex;
 use crate::visit::{
     Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
     IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
+    IntoNodeReferences, NodeCount, NodeIndexable, Visitable, TrackablePath,
 };
 
 use crate::data::Build;
