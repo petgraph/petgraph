@@ -17,7 +17,7 @@ use crate::graph::NodeIndex as GraphNodeIndex;
 use crate::visit::{
     Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
     IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, Visitable
+    IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
 };
 
 use crate::data::Build;

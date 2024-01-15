@@ -74,7 +74,7 @@ pub use self::dfsvisit::*;
 pub use self::traversal::*;
 
 use fixedbitset::FixedBitSet;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasher, Hash};
 
 use super::EdgeType;
@@ -407,7 +407,6 @@ pub trait VisitMap<N> {
     }
 }
 
-
 /// Ability to track paths when visiting a collection of NodeIds `N`.
 pub trait TrackPath<N> {
     fn set_predecessor(&mut self, current: N, previous: Option<N>);
@@ -415,10 +414,10 @@ pub trait TrackPath<N> {
     fn reconstruct_path_to(&self, last: N) -> Vec<N>;
 }
 
-impl<N, S> TrackPath<N> for HashMap<N, N, S> 
+impl<N, S> TrackPath<N> for HashMap<N, N, S>
 where
     N: Hash + Eq + Copy,
-    S: BuildHasher
+    S: BuildHasher,
 {
     fn set_predecessor(&mut self, current: N, previous: Option<N>) {
         if let Some(previous) = previous {
@@ -497,7 +496,7 @@ pub trait Visitable : GraphBase {
 Visitable! {delegate_impl []}
 
 #[allow(clippy::needless_arbitrary_self_type)]
-pub trait TrackablePath : GraphBase {
+pub trait TrackablePath: GraphBase {
     /// The associated tracker type.
     type Tracker: TrackPath<Self::NodeId>;
     /// Create a new tracker.
@@ -507,10 +506,10 @@ pub trait TrackablePath : GraphBase {
 }
 
 #[allow(clippy::needless_arbitrary_self_type)]
-impl<G> TrackablePath for G 
+impl<G> TrackablePath for G
 where
     G: GraphBase,
-    G::NodeId: std::hash::Hash + Eq
+    G::NodeId: std::hash::Hash + Eq,
 {
     type Tracker = HashMap<G::NodeId, G::NodeId>;
     fn path_tracker(self: &Self) -> Self::Tracker {
