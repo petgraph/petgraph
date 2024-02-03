@@ -18,12 +18,12 @@ jobs:
         include:
           - rust: 1.64.0  # MSRV
           - rust: stable
-            features: unstable quickcheck
+            features: unstable quickcheck rayon
             test_all: --all
           - rust: beta
             test_all: --all
           - rust: nightly
-            features: unstable quickcheck
+            features: unstable quickcheck rayon
             test_all: --all
             bench: true
 
