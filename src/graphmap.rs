@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::hash::{self, Hash};
 use std::iter::FromIterator;
-use std::iter::{Cloned, DoubleEndedIterator};
+use std::iter::{Copied, DoubleEndedIterator};
 use std::marker::PhantomData;
 use std::mem;
 use std::ops::{Deref, Index, IndexMut};
@@ -387,7 +387,7 @@ where
     /// Iterator element type is `N`.
     pub fn nodes(&self) -> Nodes<'_, N> {
         Nodes {
-            iter: self.nodes.keys().cloned(),
+            iter: self.nodes.keys().copied(),
         }
     }
 
@@ -621,7 +621,7 @@ iterator_wrap! {
     #[derive(Debug, Clone)]
     struct Nodes <'a, N> where { N: 'a + NodeTrait }
     item: N,
-    iter: Cloned<Keys<'a, N, Vec<(N, CompactDirection)>>>,
+    iter: Copied<Keys<'a, N, Vec<(N, CompactDirection)>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -1266,10 +1266,10 @@ where
 {
     type Item = N;
 
-    fn drive_unindexed<C>(self, c: C) -> C::Result
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
     where
         C: UnindexedConsumer<Self::Item>,
     {
-        self.iter.cloned().drive_unindexed(c)
+        self.iter.copied().drive_unindexed(consumer)
     }
 }
