@@ -21,7 +21,7 @@ rust-version = "1.64"
 edition = "2018"
 
 [package.metadata.docs.rs]
-features = ["serde-1", "quickcheck"]
+features = ["rayon", "serde-1", "quickcheck"]
 
 [package.metadata.release]
 no-dev-version = true
