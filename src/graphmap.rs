@@ -25,7 +25,7 @@ use crate::IntoWeightedEdge;
 #[cfg(feature = "rayon")]
 use indexmap::map::rayon::ParKeys;
 #[cfg(feature = "rayon")]
-use rayon::{iter::plumbing::UnindexedConsumer, prelude::*};
+use rayon::prelude::*;
 
 /// A `GraphMap` with undirected edges.
 ///
@@ -1268,8 +1268,36 @@ where
 
     fn drive_unindexed<C>(self, consumer: C) -> C::Result
     where
-        C: UnindexedConsumer<Self::Item>,
+        C: rayon::iter::plumbing::UnindexedConsumer<Self::Item>,
     {
         self.iter.copied().drive_unindexed(consumer)
+    }
+
+    fn opt_len(&self) -> Option<usize> {
+        self.iter.opt_len()
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, N> IndexedParallelIterator for ParNodes<'a, N>
+where
+    N: NodeTrait + Send + Sync,
+{
+    fn drive<C>(self, consumer: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::Consumer<Self::Item>,
+    {
+        self.iter.copied().drive(consumer)
+    }
+
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
+
+    fn with_producer<CB>(self, callback: CB) -> CB::Output
+    where
+        CB: rayon::iter::plumbing::ProducerCallback<Self::Item>,
+    {
+        self.iter.copied().with_producer(callback)
     }
 }
