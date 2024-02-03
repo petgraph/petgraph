@@ -385,12 +385,15 @@ where
     /// Return an iterator over the nodes of the graph.
     ///
     /// Iterator element type is `N`.
-    pub fn nodes(&self) -> Nodes<N> {
+    pub fn nodes(&self) -> Nodes<'_, N> {
         Nodes {
             iter: self.nodes.keys().cloned(),
         }
     }
 
+    /// Return a parallel iterator over the nodes of the graph.
+    ///
+    /// Iterator element type is `N`.
     #[cfg(feature = "rayon")]
     pub fn par_nodes(&self) -> ParNodes<'_, N>
     where
@@ -1251,7 +1254,7 @@ where
 #[cfg(feature = "rayon")]
 pub struct ParNodes<'a, N>
 where
-    N: Send + Sync,
+    N: NodeTrait + Send + Sync,
 {
     iter: ParKeys<'a, N, Vec<(N, CompactDirection)>>,
 }
@@ -1259,14 +1262,14 @@ where
 #[cfg(feature = "rayon")]
 impl<'a, N> ParallelIterator for ParNodes<'a, N>
 where
-    N: Send + Sync,
+    N: NodeTrait + Send + Sync,
 {
-    type Item = &'a N;
+    type Item = N;
 
     fn drive_unindexed<C>(self, c: C) -> C::Result
     where
         C: UnindexedConsumer<Self::Item>,
     {
-        self.iter.drive_unindexed(c)
+        self.iter.cloned().drive_unindexed(c)
     }
 }
