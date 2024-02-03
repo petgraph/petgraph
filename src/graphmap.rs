@@ -23,7 +23,7 @@ use crate::visit;
 use crate::IntoWeightedEdge;
 
 #[cfg(feature = "rayon")]
-use indexmap::map::rayon::ParKeys;
+use indexmap::map::rayon::{ParIter, ParIterMut, ParKeys};
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
@@ -510,6 +510,38 @@ where
         AllEdgesMut {
             inner: self.edges.iter_mut(),
             ty: self.ty,
+        }
+    }
+
+    /// Return a parallel iterator over all edges of the graph with their weight in arbitrary
+    /// order.
+    ///
+    /// Iterator element type is `(N, N, &E)`
+    #[cfg(feature = "rayon")]
+    pub fn par_all_edges(&self) -> ParAllEdges<N, E, Ty>
+    where
+        N: Send + Sync,
+        E: Sync,
+    {
+        ParAllEdges {
+            inner: self.edges.par_iter(),
+            ty: PhantomData,
+        }
+    }
+
+    /// Return a parallel iterator over all edges of the graph in arbitrary order, with a mutable
+    /// reference to their weight.
+    ///
+    /// Iterator element type is `(N, N, &mut E)`
+    #[cfg(feature = "rayon")]
+    pub fn par_all_edges_mut(&mut self) -> ParAllEdgesMut<N, E, Ty>
+    where
+        N: Send + Sync,
+        E: Send,
+    {
+        ParAllEdgesMut {
+            inner: self.edges.par_iter_mut(),
+            ty: PhantomData,
         }
     }
 
@@ -1299,5 +1331,121 @@ where
         CB: rayon::iter::plumbing::ProducerCallback<Self::Item>,
     {
         self.iter.copied().with_producer(callback)
+    }
+}
+
+/// A [ParallelIterator] over this graph's edges.
+#[cfg(feature = "rayon")]
+pub struct ParAllEdges<'a, N, E, Ty>
+where
+    N: NodeTrait + Send + Sync,
+    E: Sync,
+{
+    inner: ParIter<'a, (N, N), E>,
+    ty: PhantomData<fn(Ty)>,
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, N, E, Ty> ParallelIterator for ParAllEdges<'a, N, E, Ty>
+where
+    N: NodeTrait + Send + Sync,
+    E: Sync,
+{
+    type Item = (N, N, &'a E);
+
+    fn drive_unindexed<C>(self, c: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::UnindexedConsumer<Self::Item>,
+    {
+        self.inner.map(|(&(a, b), v)| (a, b, v)).drive_unindexed(c)
+    }
+
+    fn opt_len(&self) -> Option<usize> {
+        self.inner.opt_len()
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, N, E, Ty> IndexedParallelIterator for ParAllEdges<'a, N, E, Ty>
+where
+    N: NodeTrait + Send + Sync,
+    E: Sync,
+{
+    fn drive<C>(self, consumer: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::Consumer<Self::Item>,
+    {
+        self.inner.map(|(&(a, b), v)| (a, b, v)).drive(consumer)
+    }
+
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    fn with_producer<CB>(self, callback: CB) -> CB::Output
+    where
+        CB: rayon::iter::plumbing::ProducerCallback<Self::Item>,
+    {
+        self.inner
+            .map(|(&(a, b), v)| (a, b, v))
+            .with_producer(callback)
+    }
+}
+
+/// A [ParallelIterator] over this graph's edges by mutable reference.
+#[cfg(feature = "rayon")]
+pub struct ParAllEdgesMut<'a, N, E: 'a, Ty>
+where
+    N: NodeTrait + Send + Sync,
+    E: Send,
+{
+    inner: ParIterMut<'a, (N, N), E>,
+    ty: PhantomData<fn(Ty)>,
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, N, E, Ty> ParallelIterator for ParAllEdgesMut<'a, N, E, Ty>
+where
+    N: NodeTrait + Send + Sync,
+    E: Send,
+{
+    type Item = (N, N, &'a mut E);
+
+    fn drive_unindexed<C>(self, c: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::UnindexedConsumer<Self::Item>,
+    {
+        self.inner.map(|(&(a, b), v)| (a, b, v)).drive_unindexed(c)
+    }
+
+    fn opt_len(&self) -> Option<usize> {
+        self.inner.opt_len()
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, N, E, Ty> IndexedParallelIterator for ParAllEdgesMut<'a, N, E, Ty>
+where
+    N: NodeTrait + Send + Sync,
+    E: Send,
+{
+    fn drive<C>(self, consumer: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::Consumer<Self::Item>,
+    {
+        self.inner.map(|(&(a, b), v)| (a, b, v)).drive(consumer)
+    }
+
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    fn with_producer<CB>(self, callback: CB) -> CB::Output
+    where
+        CB: rayon::iter::plumbing::ProducerCallback<Self::Item>,
+    {
+        self.inner
+            .map(|(&(a, b), v)| (a, b, v))
+            .with_producer(callback)
     }
 }
