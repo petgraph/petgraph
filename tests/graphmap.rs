@@ -412,4 +412,8 @@ fn test_parallel_iterator() {
     let serial_sum: u32 = gr.nodes().sum();
     let parallel_sum: u32 = gr.par_nodes().sum();
     assert_eq!(serial_sum, parallel_sum);
+
+    gr.par_nodes()
+        .enumerate()
+        .for_each(|(i, n)| assert_eq!(i as u32, n));
 }
