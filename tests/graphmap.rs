@@ -416,4 +416,15 @@ fn test_parallel_iterator() {
     gr.par_nodes()
         .enumerate()
         .for_each(|(i, n)| assert_eq!(i as u32, n));
+
+    for i in 0..1000 {
+        gr.add_edge(i / 2, i, i + i / 2);
+    }
+
+    let serial_sum: u32 = gr.all_edges().map(|(.., &e)| e).sum();
+    let parallel_sum: u32 = gr.par_all_edges().map(|(.., &e)| e).sum();
+    assert_eq!(serial_sum, parallel_sum);
+
+    gr.par_all_edges_mut().for_each(|(n1, n2, e)| *e -= n1 + n2);
+    gr.all_edges().for_each(|(.., &e)| assert_eq!(e, 0));
 }
