@@ -167,7 +167,7 @@ where
     let externals_outgoing: Vec<_> = graph.externals(Direction::Outgoing).collect();
     let externals_incoming: Vec<_> = graph.externals(Direction::Incoming).collect();
 
-    let out_degress = graph
+    let out_degrees = graph
         .node_indices()
         .map(|index| graph.neighbors_directed(index, Direction::Outgoing).count())
         .collect::<Vec<_>>();
@@ -182,7 +182,7 @@ where
     let reversed_externals_outgoing: Vec<_> = graph.externals(Direction::Outgoing).collect();
     let reversed_externals_incoming: Vec<_> = graph.externals(Direction::Incoming).collect();
 
-    let reversed_out_degress = graph
+    let reversed_out_degrees = graph
         .node_indices()
         .map(|index| graph.neighbors_directed(index, Direction::Outgoing).count())
         .collect::<Vec<_>>();
@@ -194,16 +194,16 @@ where
 
     assert_eq!(externals_outgoing, reversed_externals_incoming);
     assert_eq!(externals_incoming, reversed_externals_outgoing);
-    assert_eq!(out_degress, reversed_in_degrees);
-    assert_eq!(in_degrees, reversed_out_degress);
+    assert_eq!(out_degrees, reversed_in_degrees);
+    assert_eq!(in_degrees, reversed_out_degrees);
 
     // additional test if we're isomorphic by simply eq out and in
     if !Ty::is_directed() {
         assert_eq!(externals_outgoing, externals_incoming);
         assert_eq!(reversed_externals_outgoing, reversed_externals_incoming);
 
-        assert_eq!(out_degress, in_degrees);
-        assert_eq!(reversed_out_degress, reversed_in_degrees);
+        assert_eq!(out_degrees, in_degrees);
+        assert_eq!(reversed_out_degrees, reversed_in_degrees);
     }
 }
 

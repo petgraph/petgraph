@@ -4,7 +4,7 @@ use core::fmt;
 use petgraph_core::deprecated::visit::{GraphRef, IntoNeighbors, VisitMap, Visitable};
 
 /// Return `true` if the graph is bipartite. A graph is bipartite if its nodes can be divided into
-/// two disjoint and indepedent sets U and V such that every edge connects U to one in V. This
+/// two disjoint and independent sets U and V such that every edge connects U to one in V. This
 /// algorithm implements 2-coloring algorithm based on the BFS algorithm.
 ///
 /// Always treats the input graph as if undirected.
@@ -32,14 +32,14 @@ where
         assert!(is_red ^ is_blue);
 
         for neighbour in g.neighbors(node) {
-            let is_neigbour_red = red.is_visited(&neighbour);
-            let is_neigbour_blue = blue.is_visited(&neighbour);
+            let is_neighbour_red = red.is_visited(&neighbour);
+            let is_neighbour_blue = blue.is_visited(&neighbour);
 
-            if (is_red && is_neigbour_red) || (is_blue && is_neigbour_blue) {
+            if (is_red && is_neighbour_red) || (is_blue && is_neighbour_blue) {
                 return false;
             }
 
-            if !is_neigbour_red && !is_neigbour_blue {
+            if !is_neighbour_red && !is_neighbour_blue {
                 //hasn't been visited yet
 
                 match (is_red, is_blue) {

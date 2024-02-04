@@ -114,7 +114,7 @@ where
 
             // generate an edge where no self edges are allowed, this allows the use in
             // a lot more graphs
-            // exlude the last node, since in that case we would have no matching end node.
+            // exclude the last node, since in that case we would have no matching end node.
             // `saturating_sub` here, as `0..(0 - 1)` will happen, but will never be selected.
             let edge_endpoints_always = Arc::new((0..nodes_len.saturating_sub(1)).prop_flat_map(
                 move |start| {

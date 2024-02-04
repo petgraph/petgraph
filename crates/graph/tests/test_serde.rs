@@ -124,7 +124,7 @@ pub fn assert_stable_graph_eq<N, E, Ix>(
         let last_edge_graph1_index = edge_graph1.id().index();
         let last_edge_graph2_index = edge_graph2.id().index();
 
-        // same edge weigths
+        // same edge weights
         assert_iter_eq(
             (0..last_edge_graph1_index).map(|i| graph1.edge_weight(EdgeIndex::new(i))),
             (0..last_edge_graph2_index).map(|i| graph2.edge_weight(EdgeIndex::new(i))),

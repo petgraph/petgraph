@@ -263,8 +263,8 @@ mod tests {
         fn condensation_is_acyclic(graph in any::<Graph<(), (), Directed, u8>>()) {
             let condensed = super::condensation(graph, true);
 
-            let is_cylic = is_cyclic_directed(&condensed);
-            prop_assert!(!is_cylic);
+            let is_cyclic = is_cyclic_directed(&condensed);
+            prop_assert!(!is_cyclic);
         }
     }
 }
