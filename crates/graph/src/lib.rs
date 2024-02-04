@@ -723,7 +723,7 @@ where
         // indices.
         let edge = self.edges.swap_remove(e.index());
         let swap = match self.edges.get(e.index()) {
-            // no elment needed to be swapped.
+            // no element needed to be swapped.
             None => return Some(edge.weight),
             Some(ed) => ed.node,
         };

@@ -56,8 +56,8 @@ where
 
     // list of visited nodes
     let mut visited: IndexSet<G::NodeId> = IndexSet::from_iter(Some(from));
-    // list of childs of currently exploring path nodes,
-    // last elem is list of childs of last visited node
+    // list of children of currently exploring path nodes,
+    // last elem is list of children of last visited node
     let mut stack = vec![graph.neighbors_directed(from, Direction::Outgoing)];
 
     from_fn(move || {

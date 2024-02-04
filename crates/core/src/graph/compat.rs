@@ -1,4 +1,4 @@
-//! Compatability implementations for deprecated graph traits.
+//! Compatibility implementations for deprecated graph traits.
 #![allow(deprecated)]
 
 #[cfg(feature = "alloc")]

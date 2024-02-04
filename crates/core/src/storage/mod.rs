@@ -675,7 +675,7 @@ pub trait GraphStorage: SequentialGraphStorage + AuxiliaryGraphStorage + Sized {
     /// This will return [`None`] if the node does not exist, and will return the node if it does.
     ///
     /// The [`Node`] type returned by this function contains a reference to the current graph,
-    /// meaning you are able to query for e.g. the neighours of the node.
+    /// meaning you are able to query for e.g. the neighbours of the node.
     ///
     /// # Example
     ///

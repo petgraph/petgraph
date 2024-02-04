@@ -88,7 +88,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ([#369](https://github.com/petgraph/petgraph/issues/369)).
 - Implement Debug and Clone for all the iterators
   ([#418](https://github.com/petgraph/petgraph/issues/418)).
-- Implement multiple mising traits on graph implementations and
+- Implement multiple missing traits on graph implementations and
   adapters ([#405](https://github.com/petgraph/petgraph/issues/405),
   [#429](https://github.com/petgraph/petgraph/issues/429)).
 - Add an EdgeIndexable public trait
@@ -146,7 +146,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Now using github actions as CI
   ([#391](https://github.com/petgraph/petgraph/issues/391)).
-- Replace matchs on [Option\<T\>]{.title-ref} with [map]{.title-ref}
+- Replace matches on [Option\<T\>]{.title-ref} with [map]{.title-ref}
   ([#381](https://github.com/petgraph/petgraph/issues/381)).
 - Added benchmarks for `tarjan_scc`
   ([#421](https://github.com/petgraph/petgraph/issues/421)).

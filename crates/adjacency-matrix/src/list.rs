@@ -93,7 +93,7 @@ where
 {
     /// Source of the edge.
     from: NodeIndex<Ix>,
-    /// Index of the sucessor in the successor list.
+    /// Index of the successor in the successor list.
     successor_index: usize,
 }
 
@@ -108,10 +108,10 @@ item: EdgeIndex<Ix>,
 iter: iter::Map<iter::Zip<Range<usize>, iter::Repeat<NodeIndex<Ix>>>, fn((usize, NodeIndex<Ix>)) -> EdgeIndex<Ix>>,
 }
 
-/// Weighted sucessor
+/// Weighted successor
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 struct WSuc<E, Ix: IndexType> {
-    /// Index of the sucessor.
+    /// Index of the successor.
     suc: NodeIndex<Ix>,
     /// Weight of the edge to `suc`.
     weight: E,
@@ -280,7 +280,7 @@ impl<E, Ix: IndexType> AdjacencyList<E, Ix> {
     }
 
     /// Adds a new node to the list by giving its list of successors and the corresponding
-    /// weigths.
+    /// weights.
     pub fn add_node_from_edges<I: Iterator<Item = (NodeIndex<Ix>, E)>>(
         &mut self,
         edges: I,
