@@ -112,3 +112,55 @@ where
 
     res
 }
+
+pub struct CliqueIterator<G, T>
+where
+    G: Visitable + NodeIndexable + IntoNodeIdentifiers + IntoNeighbors,
+    G::NodeId: Hash + Eq,
+    T: Iterator<Item = G::NodeId>,
+{
+    graph: G,
+    peo: T,
+    eliminated: <G as Visitable>::Map,
+}
+
+impl<G> CliqueIterator<G, std::vec::IntoIter<G::NodeId>>
+where
+    G: Visitable + NodeIndexable + IntoNodeIdentifiers + IntoNeighbors,
+    G::NodeId: Hash + Eq,
+{
+    pub fn new(graph: G) -> Option<Self> {
+        let Some(peo) = peo(graph) else { return None };
+        Some(Self {
+            graph,
+            peo: peo.into_iter(),
+            eliminated: graph.visit_map(),
+        })
+    }
+}
+
+impl<G, T> Iterator for CliqueIterator<G, T>
+where
+    G: Visitable + NodeIndexable + IntoNodeIdentifiers + IntoNeighbors,
+    G::NodeId: Hash + Eq,
+    T: Iterator<Item = G::NodeId>,
+{
+    type Item = HashSet<G::NodeId>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(node) = self.peo.next() {
+            let hm = self
+                .graph
+                .neighbors(node)
+                .filter(|x| !self.eliminated.is_visited(x))
+                .chain(std::iter::once(node))
+                .collect();
+            let true = self.eliminated.visit(node) else {
+                unreachable!()
+            };
+            Some(hm)
+        } else {
+            None
+        }
+    }
+}
