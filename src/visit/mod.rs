@@ -404,9 +404,7 @@ pub trait VisitMap<N> {
     /// Mark `a` as unvisited.
     ///
     /// Return **true** if this vertex was marked as visited at the time of unsetting it, false otherwise.
-    fn unvisit(&mut self, _a: N) -> bool {
-        unimplemented!("We don't know how to mark the node as unvisited.")
-    }
+    fn unvisit(&mut self, _a: N) -> bool;
 }
 
 impl<Ix> VisitMap<Ix> for FixedBitSet
