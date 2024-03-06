@@ -248,6 +248,66 @@ where
     }
 }
 
+/// Detects whether the input has multiple lines
+struct MultilineDetector<W> {
+    writer: W,
+    saw_backslash: bool,
+    saw_backslash_then_l: bool,
+}
+
+impl<W> MultilineDetector<W> {
+    fn new(writer: W) -> Self {
+        Self {
+            writer,
+            saw_backslash: false,
+            saw_backslash_then_l: false,
+        }
+    }
+
+    /// Whether the written data was multiline
+    fn was_multiline(&self) -> bool {
+        // This will be true if we saw at least one occurence of `\l`
+        self.saw_backslash_then_l
+    }
+}
+
+impl<W> fmt::Write for MultilineDetector<W>
+where
+    W: fmt::Write,
+{
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        if !self.was_multiline() {
+            for c in s.chars() {
+                self.write_char(c)?;
+            }
+        } else {
+            // We got what we wanted and don't need to check anything else
+            self.writer.write_str(s)?;
+        }
+
+        Ok(())
+    }
+
+    fn write_char(&mut self, c: char) -> fmt::Result {
+        self.writer.write_char(c)?;
+
+        if self.saw_backslash_then_l {
+            // We got what we wanted and don't need to check anything else
+            return Ok(());
+        }
+
+        match c {
+            '\\' => self.saw_backslash = true,
+            'l' if self.saw_backslash => self.saw_backslash_then_l = true,
+            _ => {
+                self.saw_backslash = false;
+            }
+        }
+
+        Ok(())
+    }
+}
+
 /// Pass Display formatting through a simple escaping filter
 struct Escaped<T>(T);
 
@@ -256,11 +316,22 @@ where
     T: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if f.alternate() {
-            writeln!(&mut Escaper(f), "{:#}", &self.0)
+        let alternate = f.alternate();
+
+        let mut w = Escaper(MultilineDetector::new(&mut *f));
+
+        if alternate {
+            writeln!(w, "{:#}", &self.0)?;
         } else {
-            write!(&mut Escaper(f), "{}", &self.0)
+            write!(w, "{}", &self.0)?;
         }
+
+        // If there's more than one line, make the last line left-justified
+        if w.0.was_multiline() {
+            write!(f, "\\l")?;
+        }
+
+        Ok(())
     }
 }
 
@@ -345,5 +416,24 @@ mod test {
             ),
         );
         assert_eq!(dot, "digraph {\n    0 [ label = \"a\"]\n    1 [ label = \"b\"]\n    0 -> 1 [ label = \"EDGE_LABEL\"]\n}\n");
+    }
+
+    #[derive(Debug)]
+    struct MultilineDebug {
+        #[allow(dead_code)]
+        content: &'static str,
+    }
+
+    #[test]
+    fn test_multiline_debug() {
+        let mut graph = Graph::<_, i32>::new();
+        graph.add_node(MultilineDebug { content: "foo" });
+
+        let dot = format!("{:#?}", Dot::new(&graph));
+
+        // The final `\l` just before the `\"` to end the label is the important
+        // part. It ensures the last line is left-aligned like everything else
+        // instead of center-aligned.
+        assert_eq!(dot, "digraph {\n    0 [ label = \"MultilineDebug {\\l    content: \\\"foo\\\",\\l}\\l\\l\" ]\n}\n");
     }
 }
