@@ -14,7 +14,7 @@ mod utils;
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::hash::Hash;
 
 use itertools::assert_equal;
@@ -23,7 +23,7 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
+    bellman_ford, condensation, dijkstra, dsatur_coloring, find_negative_cycle, floyd_warshall,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
     min_spanning_tree, tarjan_scc, toposort, Matching,
@@ -1309,6 +1309,29 @@ quickcheck! {
         assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
         assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
 
+        true
+    }
+}
+
+fn is_proper_coloring<G>(g: G, coloring: &HashMap<G::NodeId, usize>) -> bool
+    where
+        G: IntoNodeIdentifiers + IntoEdges,
+        G::NodeId: Eq + Hash,
+{
+    for node in g.node_identifiers() {
+        for nbor in g.neighbors(node) {
+            if node != nbor && coloring[&node] == coloring[&nbor] {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+quickcheck! {
+    fn dsatur_coloring_quickcheck(g: Graph<(), (), Undirected>) -> bool {
+        let (coloring, _) = dsatur_coloring(&g);
+        assert!(is_proper_coloring(&g, &coloring), "dsatur_coloring returned a non proper coloring");
         true
     }
 }
