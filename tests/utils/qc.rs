@@ -27,6 +27,31 @@ where
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+/// quickcheck Arbitrary adaptor - fixed size of 10
+pub struct VerySmall<T>(pub T);
+
+impl<T> Deref for VerySmall<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+
+impl<T> Arbitrary for VerySmall<T>
+where
+    T: Arbitrary,
+{
+    fn arbitrary<G: Gen>(g: &mut G) -> Self {
+        let sz = 10;
+        VerySmall(T::arbitrary(&mut StdGen::new(g, sz)))
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        Box::new((**self).shrink().map(VerySmall))
+    }
+}
+
 #[cfg(feature = "stable_graph")]
 /// A directed graph where each pair of nodes has exactly one edge between them, and no loops.
 #[derive(Clone, Debug)]

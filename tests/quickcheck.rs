@@ -11,11 +11,13 @@ extern crate odds;
 
 mod utils;
 
-use utils::{Small, Tournament};
+use utils::{Small, Tournament, VerySmall};
 
 use odds::prelude::*;
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::iter::FromIterator;
+use std::ops::Deref;
 
 use itertools::assert_equal;
 use itertools::cloned;
@@ -24,9 +26,9 @@ use rand::Rng;
 
 use petgraph::algo::{
     bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
-    greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
-    is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, tarjan_scc, toposort, Matching,
+    greedy_feedback_arc_set, greedy_matching, hamiltonian_circuits_directed, is_cyclic_directed,
+    is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc,
+    maximum_matching, min_spanning_tree, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -565,6 +567,34 @@ fn graph_condensation_acyclic() {
         !is_cyclic_directed(&condensation(g, /* make_acyclic */ true))
     }
     quickcheck::quickcheck(prop as fn(_) -> bool);
+}
+
+/// Generatable directed graph with no self-loops
+#[derive(Debug, Clone)]
+struct SimpleGraph(Graph<(), ()>);
+
+impl Deref for SimpleGraph {
+    type Target = Graph<(), ()>;
+    fn deref(&self) -> &Graph<(), ()> {
+        &self.0
+    }
+}
+
+impl Arbitrary for SimpleGraph {
+    fn arbitrary<G: Gen>(g: &mut G) -> Self {
+        let mut ret = Self(Graph::arbitrary(g));
+        let graph = &mut ret.0;
+        let mut to_delete = Vec::new();
+        for edge in graph.edge_references() {
+            if edge.source() == edge.target() {
+                to_delete.push(edge.id());
+            }
+        }
+        for edge in to_delete {
+            graph.remove_edge(edge);
+        }
+        ret
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1309,6 +1339,86 @@ quickcheck! {
         assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
         assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
 
+        true
+    }
+}
+
+quickcheck! {
+    // checks that hamiltonian_circuits_directed either says there are no circuits, or the paths it
+    // finds are valid circuits that visit every node.
+    fn hamiltonian_finds_covering_circuits(g: VerySmall<SimpleGraph>) -> bool {
+        // Find the first 200 circuits. Stop after that since some graphs
+        // can have a very large number.
+        for c in hamiltonian_circuits_directed(&**g).take(200) {
+            // c contains the right number of nodes, with no repeats
+            assert!(c.len() == g.node_count());
+            assert!(HashSet::<&NodeIndex<_>>::from_iter(&c).len() == g.node_count());
+
+            // The path we have found actually exists in g
+            let mut prev_node = None;
+            for node in c.iter() {
+                if let Some(p) = prev_node {
+                    assert!(g.find_edge(p, *node).is_some());
+                }
+                prev_node = Some(*node);
+            }
+
+            // The last node is connected to the first
+            if let (Some(f), Some(l)) = (c.first(), c.last()) {
+                assert!(g.find_edge(*f, *l).is_some());
+            }
+        }
+        true
+    }
+}
+
+/// Generatable directed graph with no self-loops
+#[derive(Debug, Clone)]
+struct HamiltonianGraph(Graph<(), ()>);
+
+impl Deref for HamiltonianGraph {
+    type Target = Graph<(), ()>;
+    fn deref(&self) -> &Graph<(), ()> {
+        &self.0
+    }
+}
+
+impl Arbitrary for HamiltonianGraph {
+    fn arbitrary<G: Gen>(g: &mut G) -> Self {
+        let mut ret = Self(SimpleGraph::arbitrary(g).0);
+        let graph = &mut ret.0;
+
+        // Gurarantee at least 3 nodes, since otherwise there are no hamiltonian circuits
+        while graph.node_count() < 3 {
+            graph.add_node(());
+        }
+        assert!(graph.node_count() >= 3);
+
+        // Find a random list of nodes
+        let mut nodes: Vec<_> = graph.node_indices().collect();
+        g.shuffle(&mut nodes);
+
+        // And make it into a circuit
+        let last = *(nodes.last().unwrap()); // Safe because graph.node_count() >= 3
+        let mut prev_n: Option<NodeIndex<_>> = None;
+        for n in nodes {
+            let p = if let Some(p) = prev_n { p } else { last };
+            if graph.find_edge(p, n).is_none() {
+                graph.add_edge(p, n, ());
+            }
+            prev_n = Some(n);
+        }
+
+        ret
+    }
+}
+
+quickcheck! {
+    // checks that hamiltonian_circuits_directed always finds a circuit in a graph that definitely
+    // has one..
+    fn hamiltonian_always_finds_circuit_where_there_is_one(g: VerySmall<HamiltonianGraph>) -> bool {
+        let c = hamiltonian_circuits_directed(&**g).next();
+        assert!(c.is_some());
         true
     }
 }
