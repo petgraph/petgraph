@@ -1889,6 +1889,17 @@ where
     }
 }
 
+impl<'a, N, E: 'a, Ty, Ix> visit::IntoNeighborsUnirected for &'a StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type NeighborsUndirected = Neighbors<'a, E, Ix>;
+    fn neighbors_undirected(self, n: NodeIndex<Ix>) -> Self::NeighborsUndirected {
+        StableGraph::neighbors_undirected(self, n)
+    }
+}
+
 impl<'a, N, E, Ty, Ix> visit::IntoEdges for &'a StableGraph<N, E, Ty, Ix>
 where
     Ty: EdgeType,

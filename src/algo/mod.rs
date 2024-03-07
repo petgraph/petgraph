@@ -40,7 +40,9 @@ pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
 pub use isomorphism::{
     is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
-    subgraph_isomorphisms_iter,
+    subgraph_isomorphisms_iter, vf2pp_is_isomorphism_matching,
+    vf2pp_is_isomorphism_semantic_matching, vf2pp_isomorphism_semantic_matching_iter,
+    Vf2ppMatcherBuilder,
 };
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_matching, Matching};

@@ -417,6 +417,9 @@ where
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
             },
+            start_node: a,
+            dir: Direction::Outgoing,
+            undirected: false,
             ty: self.ty,
         }
     }
@@ -431,14 +434,32 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `N`.
-    pub fn neighbors_directed(&self, a: N, dir: Direction) -> NeighborsDirected<N, Ty> {
-        NeighborsDirected {
+    pub fn neighbors_directed(&self, a: N, dir: Direction) -> Neighbors<N, Ty> {
+        Neighbors {
             iter: match self.nodes.get(&a) {
                 Some(neigh) => neigh.iter(),
                 None => [].iter(),
             },
             start_node: a,
             dir,
+            undirected: false,
+            ty: self.ty,
+        }
+    }
+
+    /// Return an iterator of all nodes with an edge starting from `a` or ending to `a`.
+    ///
+    /// - `Directed`, All edges from or to `a`.
+    /// - `Undirected`: All edges from or to `a`.
+    pub fn neighbors_undirected(&self, a: N) -> Neighbors<N, Ty> {
+        Neighbors {
+            iter: match self.nodes.get(&a) {
+                Some(neigh) => neigh.iter(),
+                None => [].iter(),
+            },
+            start_node: a,
+            dir: Outgoing,
+            undirected: true,
             ty: self.ty,
         }
     }
@@ -663,6 +684,9 @@ where
     Ty: EdgeType,
 {
     iter: Iter<'a, (N, CompactDirection)>,
+    start_node: N,
+    dir: Direction,
+    undirected: bool,
     ty: PhantomData<Ty>,
 }
 
@@ -673,48 +697,13 @@ where
 {
     type Item = N;
     fn next(&mut self) -> Option<N> {
-        if Ty::is_directed() {
-            (&mut self.iter)
-                .filter_map(|&(n, dir)| if dir == Outgoing { Some(n) } else { None })
-                .next()
-        } else {
+        if self.undirected || !Ty::is_directed() {
             self.iter.next().map(|&(n, _)| n)
-        }
-    }
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let (lower, upper) = self.iter.size_hint();
-        if Ty::is_directed() {
-            (0, upper)
         } else {
-            (lower, upper)
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct NeighborsDirected<'a, N, Ty>
-where
-    N: 'a,
-    Ty: EdgeType,
-{
-    iter: Iter<'a, (N, CompactDirection)>,
-    start_node: N,
-    dir: Direction,
-    ty: PhantomData<Ty>,
-}
-
-impl<'a, N, Ty> Iterator for NeighborsDirected<'a, N, Ty>
-where
-    N: NodeTrait,
-    Ty: EdgeType,
-{
-    type Item = N;
-    fn next(&mut self) -> Option<N> {
-        if Ty::is_directed() {
             let self_dir = self.dir;
             let start_node = self.start_node;
             (&mut self.iter)
-                .filter_map(move |&(n, dir)| {
+                .filter_map(|&(n, dir)| {
                     if dir == self_dir || n == start_node {
                         Some(n)
                     } else {
@@ -722,8 +711,6 @@ where
                     }
                 })
                 .next()
-        } else {
-            self.iter.next().map(|&(n, _)| n)
         }
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -777,7 +764,7 @@ where
     from: N,
     dir: Direction,
     edges: &'a IndexMap<(N, N), E>,
-    iter: NeighborsDirected<'a, N, Ty>,
+    iter: Neighbors<'a, N, Ty>,
 }
 
 impl<'a, N, E, Ty> Iterator for EdgesDirected<'a, N, E, Ty>
@@ -1190,9 +1177,20 @@ where
     N: Copy + Ord + Hash,
     Ty: EdgeType,
 {
-    type NeighborsDirected = NeighborsDirected<'a, N, Ty>;
+    type NeighborsDirected = Neighbors<'a, N, Ty>;
     fn neighbors_directed(self, n: N, dir: Direction) -> Self::NeighborsDirected {
         self.neighbors_directed(n, dir)
+    }
+}
+
+impl<'a, N: 'a, E, Ty> visit::IntoNeighborsUnirected for &'a GraphMap<N, E, Ty>
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
+{
+    type NeighborsUndirected = Neighbors<'a, N, Ty>;
+    fn neighbors_undirected(self, n: N) -> Self::NeighborsUndirected {
+        self.neighbors_undirected(n)
     }
 }
 
