@@ -13,6 +13,7 @@ pub mod floyd_warshall;
 pub mod isomorphism;
 pub mod k_shortest_path;
 pub mod matching;
+pub mod minimum_cut;
 pub mod simple_paths;
 pub mod tred;
 
@@ -44,6 +45,7 @@ pub use isomorphism::{
 };
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_matching, Matching};
+pub use minimum_cut::minimum_cut;
 pub use simple_paths::all_simple_paths;
 
 /// \[Generic\] Return the number of connected components of the graph.

@@ -23,14 +23,14 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
+    bellman_ford, connected_components, condensation, dijkstra, find_negative_cycle, floyd_warshall,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
-    is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
+    is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, minimum_cut, maximum_matching,
     min_spanning_tree, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
-use petgraph::graph::{edge_index, node_index, IndexType};
+use petgraph::graph::{edge_index, node_index, IndexType, EdgeIndex};
 use petgraph::graphmap::NodeTrait;
 use petgraph::operator::complement;
 use petgraph::prelude::*;
@@ -1309,6 +1309,25 @@ quickcheck! {
         assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
         assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
 
+        true
+    }
+}
+
+fn is_valid_cut<V, E, Ix>(graph: &Graph<V, E, Undirected, Ix>, cut: &Vec<EdgeIndex<Ix>>) -> bool 
+    where Ix: IndexType, V: Clone, E: Clone,
+{
+    let mut g = graph.clone();
+    for &edge in cut {
+        g.remove_edge(edge);
+    }
+    g.node_count() <= 1 || connected_components(&g) > 1
+}
+
+quickcheck! {
+    fn minimum_cut_quickcheck(g: Graph<(), (), Undirected>) -> bool {
+        let (cut, weight) = minimum_cut(&g, |_| 1);
+        assert!(cut.len() == weight, "cut size and weight don't match");
+        assert!(is_valid_cut(&g, &cut), "minimum_cut returned an invalid cut");
         true
     }
 }
