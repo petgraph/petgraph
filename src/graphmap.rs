@@ -15,6 +15,12 @@ use std::mem;
 use std::ops::{Deref, Index, IndexMut};
 use std::slice::Iter;
 
+#[cfg(feature = "ahash")]
+use ahash::RandomState;
+
+#[cfg(not(feature = "ahash"))]
+use std::collections::hash_map::RandomState;
+
 use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
 
 use crate::graph::node_index;
@@ -64,8 +70,8 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 /// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
 pub struct GraphMap<N, E, Ty> {
-    nodes: IndexMap<N, Vec<(N, CompactDirection)>>,
-    edges: IndexMap<(N, N), E>,
+    nodes: IndexMap<N, Vec<(N, CompactDirection)>, RandomState>,
+    edges: IndexMap<(N, N), E, RandomState>,
     ty: PhantomData<Ty>,
 }
 
@@ -173,14 +179,18 @@ where
 {
     /// Create a new `GraphMap`
     pub fn new() -> Self {
-        Self::default()
+        GraphMap {
+            nodes: IndexMap::with_hasher(RandomState::new()),
+            edges: IndexMap::with_hasher(RandomState::new()),
+            ty: PhantomData,
+        }
     }
 
     /// Create a new `GraphMap` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         GraphMap {
-            nodes: IndexMap::with_capacity(nodes),
-            edges: IndexMap::with_capacity(edges),
+            nodes: IndexMap::with_capacity_and_hasher(nodes, RandomState::new()),
+            edges: IndexMap::with_capacity_and_hasher(edges, RandomState::new()),
             ty: PhantomData,
         }
     }
@@ -743,7 +753,7 @@ where
     Ty: EdgeType,
 {
     from: N,
-    edges: &'a IndexMap<(N, N), E>,
+    edges: &'a IndexMap<(N, N), E, RandomState>,
     iter: Neighbors<'a, N, Ty>,
 }
 
@@ -776,7 +786,7 @@ where
 {
     from: N,
     dir: Direction,
-    edges: &'a IndexMap<(N, N), E>,
+    edges: &'a IndexMap<(N, N), E, RandomState>,
     iter: NeighborsDirected<'a, N, Ty>,
 }
 
