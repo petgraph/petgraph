@@ -428,3 +428,16 @@ fn test_parallel_iterator() {
     gr.par_all_edges_mut().for_each(|(n1, n2, e)| *e -= n1 + n2);
     gr.all_edges().for_each(|(.., &e)| assert_eq!(e, 0));
 }
+
+#[test]
+fn test_alternative_hasher() {
+    let mut gr: GraphMap<&str, u32, Directed, fxhash::FxBuildHasher> = GraphMap::new();
+    gr.add_node("abc");
+    gr.add_node("def");
+    gr.add_node("ghi");
+
+    gr.add_edge("abc", "def", 1);
+
+    assert!(gr.contains_edge("abc", "def"));
+    assert!(!gr.contains_edge("abc", "ghi"));
+}

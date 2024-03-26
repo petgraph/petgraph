@@ -50,6 +50,8 @@ defmac = "0.2.1"
 itertools = { version = "0.11.0", default-features = false }
 odds = { version = "0.4.0" }
 rand = "0.5.5"
+ahash = "0.7.2"
+fxhash = "0.2.1"
 
 [features]
 rayon = ["dep:rayon", "indexmap/rayon"]
