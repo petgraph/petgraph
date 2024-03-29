@@ -1,5 +1,7 @@
 use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 
+use super::{Measure, UnitMeasure};
+
 /// \[Generic\] Page Rank algorithm.
 ///
 /// Computes the ranks of every node in a graph.
@@ -28,30 +30,31 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 /// //    1 -> 2 [ label = "0.0" ]
 /// //    1 -> 3 [ label = "0.0" ]
 /// //}
-/// let output_ranks = page_rank(&g, 0.7, 10);
+/// let output_ranks = page_rank(&g, 0.7_f32, 10);
 /// let expected_ranks = vec![0.14685437, 0.20267677, 0.22389607, 0.27971846, 0.14685437];
 /// assert_eq!(expected_ranks, output_ranks);
 /// ```
-pub fn page_rank<G>(graph: G, damping_factor: f32, nb_iter: usize) -> Vec<f32>
+pub fn page_rank<G, D>(graph: G, damping_factor: D, nb_iter: usize) -> Vec<D>
 where
     G: NodeCount + IntoEdges + NodeIndexable,
+    D: UnitMeasure + Copy,
 {
     let node_count = graph.node_count();
     assert!(node_count > 0, "Graph must have nodes.");
     assert!(
-        0.0 <= damping_factor && damping_factor <= 1.0,
+        D::zero() <= damping_factor && damping_factor <= D::one(),
         "Damping factor should be between 0 et 1."
     );
-    let nb = node_count as f32;
-    let mut ranks = vec![1. / nb; node_count];
+    let nb = D::from_usize(node_count);
+    let mut ranks = vec![D::one() / nb; node_count];
     let nodeix = |i| graph.from_index(i);
-    let out_degrees: Vec<f32> = (0..node_count)
-        .map(|i| graph.edges(nodeix(i)).map(|_| 1.).sum::<f32>())
+    let out_degrees: Vec<D> = (0..node_count)
+        .map(|i| graph.edges(nodeix(i)).map(|_| D::one()).sum::<D>())
         .collect();
 
     for iter in 0..nb_iter {
         println!("Iteration: {iter}");
-        let mut pi = (0..node_count)
+        let pi = (0..node_count)
             .enumerate()
             .map(|(v, _)| {
                 ranks
@@ -61,18 +64,17 @@ where
                         let mut w_out_edges = graph.edges(nodeix(w));
                         if let Some(_) = w_out_edges.find(|e| e.target() == nodeix(v)) {
                             damping_factor * *r / out_degrees[w]
-                        } else if out_degrees[w] == 0. {
+                        } else if out_degrees[w] == D::zero() {
                             damping_factor * *r / nb // stochastic matrix condition
                         } else {
-                            (1.0 - damping_factor) * *r / nb // random jumps
+                            (D::one() - damping_factor) * *r / nb // random jumps
                         }
                     })
-                    .sum::<f32>()
+                    .sum::<D>()
             })
-            .collect::<Vec<f32>>();
-        let sum = pi.iter().sum::<f32>();
-        pi = pi.iter().map(|r| r / sum).collect::<Vec<f32>>();
-        ranks = pi;
+            .collect::<Vec<D>>();
+        let sum = pi.iter().map(|score| *score).sum::<D>();
+        ranks = pi.iter().map(|r| *r / sum).collect::<Vec<D>>();
     }
     ranks
 }
@@ -121,7 +123,7 @@ mod tests {
             (12, 5), // K->B
         ]);
 
-        let output_ranks = page_rank(&graph, 0.85, 100);
+        let output_ranks = page_rank(&graph, 0.85_f32, 100);
         let expected_ranks = vec![
             0.029228685,
             0.38176042,

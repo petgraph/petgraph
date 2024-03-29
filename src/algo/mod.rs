@@ -903,3 +903,37 @@ macro_rules! impl_bounded_measure_float(
 );
 
 impl_bounded_measure_float!(f32, f64);
+
+pub trait UnitMeasure:
+    Measure
+    + std::ops::Sub<Self, Output = Self>
+    + std::ops::Mul<Self, Output = Self>
+    + std::ops::Div<Self, Output = Self>
+    + std::iter::Sum
+{
+    fn zero() -> Self;
+    fn one() -> Self;
+    fn from_usize(nb: usize) -> Self;
+}
+
+macro_rules! impl_unit_measure(
+    ( $( $t:ident ),* )=> {
+        $(
+            impl UnitMeasure for $t {
+                fn zero() -> Self {
+                    0 as $t
+                }
+                fn one() -> Self {
+                    1 as $t
+                }
+
+                fn from_usize(nb: usize) -> Self {
+                    nb as $t
+                }
+
+            }
+
+        )*
+    }
+);
+impl_unit_measure!(f32, f64);
