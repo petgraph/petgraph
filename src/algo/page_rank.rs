@@ -1,5 +1,37 @@
 use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 
+/// \[Generic\] Page Rank algorithm.
+///
+/// Computes the ranks of every node in a graph.
+///
+/// Returns a `Vec` container mapping each node index to its rank.
+/// # Example
+/// ```rust
+/// use petgraph::Graph;
+/// use petgraph::algo::page_rank;
+/// let mut g: Graph<(), usize> = Graph::new();
+/// let a = g.add_node(());
+/// let b = g.add_node(());
+/// let c = g.add_node(());
+/// let d = g.add_node(());
+/// let e = g.add_node(());
+/// g.extend_with_edges(&[(0, 1), (0, 3), (1, 2), (1, 3)]);
+/// // With the following dot representation.
+/// //digraph {
+/// //    0 [ label = "()" ]
+/// //    1 [ label = "()" ]
+/// //    2 [ label = "()" ]
+/// //    3 [ label = "()" ]
+/// //    4 [ label = "()" ]
+/// //    0 -> 1 [ label = "0.0" ]
+/// //    0 -> 3 [ label = "0.0" ]
+/// //    1 -> 2 [ label = "0.0" ]
+/// //    1 -> 3 [ label = "0.0" ]
+/// //}
+/// let output_ranks = page_rank(&g, 0.7, 10);
+/// let expected_ranks = vec![0.14685437, 0.20267677, 0.22389607, 0.27971846, 0.14685437];
+/// assert_eq!(expected_ranks, output_ranks);
+/// ```
 pub fn page_rank<G>(graph: G, damping_factor: f32, nb_iter: usize) -> Vec<f32>
 where
     G: NodeCount + IntoEdges + NodeIndexable,
