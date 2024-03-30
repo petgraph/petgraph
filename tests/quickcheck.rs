@@ -26,7 +26,7 @@ use petgraph::algo::{
     bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, tarjan_scc, toposort, Matching,
+    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1309,6 +1309,24 @@ quickcheck! {
         assert_eq!(m1.is_perfect(), is_perfect_matching(&g, &m1), "greedy_matching incorrectly determined whether the matching is perfect");
         assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
 
+        true
+    }
+}
+
+quickcheck! {
+    // The ranks are probabilities,
+    // as such they are positive and they should sum up to 1.
+    fn test_page_rank_proba(gr: Graph<(), f32>) -> bool {
+        if gr.node_count() == 0 {
+            return true;
+        }
+        let tol = 1e-10;
+        let ranks: Vec<f64> = page_rank(&gr, 0.85_f64, 5);
+        let at_least_one_neg_rank = ranks.iter().any(|rank| *rank < 0.);
+        let not_sumup_to_one = (ranks.iter().sum::<f64>() - 1.).abs() > tol;
+        if  at_least_one_neg_rank | not_sumup_to_one{
+            return false;
+        }
         true
     }
 }

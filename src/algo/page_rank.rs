@@ -4,10 +4,20 @@ use super::UnitMeasure;
 
 /// \[Generic\] Page Rank algorithm.
 ///
-/// Computes the ranks of every node in a graph.
+/// Computes the ranks of every node in a graph using the [Page Rank algorithm][pr].
 ///
 /// Returns a `Vec` container mapping each node index to its rank.
-/// The damping factor should be of type `f32` or `f64`.
+///
+/// # Panics
+/// The damping factor should be a number of type `f32` or `f64` between 0 and 1 (0 and 1 included).
+/// The graph should at least have one node. If one of these two conditions is not satisfied, it panics.
+///
+/// # Complexity
+/// Time complexity is **O()**.
+/// Space complexity is **O()**
+///
+/// [pr]: https://en.wikipedia.org/wiki/PageRank
+///
 /// # Example
 /// ```rust
 /// use petgraph::Graph;
