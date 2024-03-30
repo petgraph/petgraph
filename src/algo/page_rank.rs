@@ -55,8 +55,7 @@ where
         .map(|i| graph.edges(nodeix(i)).map(|_| D::one()).sum::<D>())
         .collect();
 
-    for iter in 0..nb_iter {
-        println!("Iteration: {iter}");
+    for _ in 0..nb_iter {
         let pi = (0..node_count)
             .enumerate()
             .map(|(v, _)| {
