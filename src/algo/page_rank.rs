@@ -1,12 +1,13 @@
 use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 
-use super::{Measure, UnitMeasure};
+use super::UnitMeasure;
 
 /// \[Generic\] Page Rank algorithm.
 ///
 /// Computes the ranks of every node in a graph.
 ///
 /// Returns a `Vec` container mapping each node index to its rank.
+/// The damping factor should be of type `f32` or `f64`.
 /// # Example
 /// ```rust
 /// use petgraph::Graph;
@@ -30,7 +31,9 @@ use super::{Measure, UnitMeasure};
 /// //    1 -> 2 [ label = "0.0" ]
 /// //    1 -> 3 [ label = "0.0" ]
 /// //}
-/// let output_ranks = page_rank(&g, 0.7_f32, 10);
+/// let damping_factor = 0.7_f32;
+/// let number_iterations = 10;
+/// let output_ranks = page_rank(&g, damping_factor, number_iterations);
 /// let expected_ranks = vec![0.14685437, 0.20267677, 0.22389607, 0.27971846, 0.14685437];
 /// assert_eq!(expected_ranks, output_ranks);
 /// ```
