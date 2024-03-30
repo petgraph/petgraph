@@ -13,7 +13,7 @@ use super::UnitMeasure;
 /// The graph should at least have one node. If one of these two conditions is not satisfied, it panics.
 ///
 /// # Complexity
-/// Time complexity is **O(N|V|^2|E|)**.
+/// Time complexity is **O(N|V|²|E|)**.
 /// Space complexity is **O(|V| + |E|)**
 /// where **N** is the number of iterations, **|V|** the number of vertices (i.e nodes) and **|E|** the number of edges.
 ///
