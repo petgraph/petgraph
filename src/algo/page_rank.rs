@@ -1,6 +1,9 @@
 use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 
-use super::UnitMeasure;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
+use super::{DiGraph, UnitMeasure};
 
 /// \[Generic\] Page Rank algorithm.
 ///
@@ -88,6 +91,52 @@ where
             .collect::<Vec<D>>();
         let sum = pi.iter().map(|score| *score).sum::<D>();
         ranks = pi.iter().map(|r| *r / sum).collect::<Vec<D>>();
+    }
+    ranks
+}
+
+/// \[Generic\] Parrallel Page Rank algorithm.
+/// ```
+#[cfg(feature = "rayon")]
+pub fn parallel_page_rank<G, D>(graph: G, damping_factor: D, nb_iter: usize) -> Vec<D>
+where
+    G: NodeCount + IntoEdges + NodeIndexable + std::marker::Sync + std::marker::Send,
+    D: UnitMeasure + Copy + std::marker::Send + std::marker::Sync,
+{
+    let node_count = graph.node_count();
+    assert!(node_count > 0, "Graph must have nodes.");
+    assert!(
+        D::zero() <= damping_factor && damping_factor <= D::one(),
+        "Damping factor should be between 0 et 1."
+    );
+    let nb = D::from_usize(node_count);
+    let mut ranks: Vec<D> = (0..node_count)
+        .into_par_iter()
+        .map(|i| D::one() / nb)
+        .collect();
+    let nodeix = |i| graph.from_index(i);
+    for _ in 0..nb_iter {
+        let pi = (0..node_count)
+            .into_par_iter()
+            .map(|v| {
+                ranks
+                    .iter()
+                    .enumerate()
+                    .map(|(w, r)| {
+                        let out_deg = graph.edges(nodeix(w)).map(|_| D::one()).sum::<D>();
+                        if let Some(_) = graph.edges(nodeix(w)).find(|e| e.target() == nodeix(v)) {
+                            damping_factor * *r / out_deg
+                        } else if out_deg == D::zero() {
+                            damping_factor * *r / nb // stochastic matrix condition
+                        } else {
+                            (D::one() - damping_factor) * *r / nb // random jumps
+                        }
+                    })
+                    .sum::<D>()
+            })
+            .collect::<Vec<D>>();
+        let sum = pi.par_iter().map(|score| *score).sum::<D>();
+        ranks = pi.par_iter().map(|r| *r / sum).collect::<Vec<D>>();
     }
     ranks
 }

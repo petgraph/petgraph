@@ -1,22 +1,24 @@
 use petgraph::{algo::page_rank, Graph};
 
-#[test]
-fn test_page_rank() {
+#[cfg(feature = "rayon")]
+use petgraph::algo::page_rank::parallel_page_rank;
+
+fn graph_example() -> Graph<String, f32> {
     // Taken and adapted from https://github.com/neo4j-labs/graph?tab=readme-ov-file#how-to-run-algorithms
     let mut graph = Graph::<_, f32>::new();
-    graph.add_node("A");
-    graph.add_node("B");
-    graph.add_node("C");
-    graph.add_node("D");
-    graph.add_node("E");
-    graph.add_node("F");
-    graph.add_node("G");
-    graph.add_node("H");
-    graph.add_node("I");
-    graph.add_node("J");
-    graph.add_node("K");
-    graph.add_node("L");
-    graph.add_node("M");
+    graph.add_node("A".to_owned());
+    graph.add_node("B".to_owned());
+    graph.add_node("C".to_owned());
+    graph.add_node("D".to_owned());
+    graph.add_node("E".to_owned());
+    graph.add_node("F".to_owned());
+    graph.add_node("G".to_owned());
+    graph.add_node("H".to_owned());
+    graph.add_node("I".to_owned());
+    graph.add_node("J".to_owned());
+    graph.add_node("K".to_owned());
+    graph.add_node("L".to_owned());
+    graph.add_node("M".to_owned());
     graph.extend_with_edges(&[
         (1, 2),  // B->C
         (2, 1),  // C->B
@@ -38,9 +40,11 @@ fn test_page_rank() {
         (11, 5), // J->B
         (12, 5), // K->B
     ]);
+    graph
+}
 
-    let output_ranks = page_rank(&graph, 0.85_f32, 100);
-    let expected_ranks = vec![
+fn expected_ranks() -> Vec<f32> {
+    vec![
         0.029228685,
         0.38176042,
         0.3410649,
@@ -54,6 +58,24 @@ fn test_page_rank() {
         0.014170233,
         0.014170233,
         0.014170233,
-    ];
-    assert_eq!(expected_ranks, output_ranks);
+    ]
+}
+
+#[test]
+fn test_page_rank() {
+    let graph = graph_example();
+    let output_ranks = page_rank(&graph, 0.85_f32, 100);
+    assert_eq!(expected_ranks(), output_ranks);
+}
+
+#[test]
+#[cfg(feature = "rayon")]
+
+fn test_par_page_rank() {
+    let graph = graph_example();
+    let output_ranks = parallel_page_rank(&graph, 0.85_f32, 100);
+    assert!(!expected_ranks()
+        .iter()
+        .enumerate()
+        .any(|(pos, val)| (val - output_ranks[pos]).abs() > 1e-7));
 }
