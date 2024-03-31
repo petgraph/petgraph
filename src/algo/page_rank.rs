@@ -100,7 +100,7 @@ where
 #[cfg(feature = "rayon")]
 pub fn parallel_page_rank<G, D>(graph: G, damping_factor: D, nb_iter: usize) -> Vec<D>
 where
-    G: NodeCount + IntoEdges + NodeIndexable + std::marker::Sync + std::marker::Send,
+    G: NodeCount + IntoEdges + NodeIndexable + std::marker::Sync,
     D: UnitMeasure + Copy + std::marker::Send + std::marker::Sync,
 {
     let node_count = graph.node_count();
@@ -123,8 +123,10 @@ where
                     .iter()
                     .enumerate()
                     .map(|(w, r)| {
-                        let out_deg = graph.edges(nodeix(w)).map(|_| D::one()).sum::<D>();
-                        if let Some(_) = graph.edges(nodeix(w)).find(|e| e.target() == nodeix(v)) {
+                        let mut w_out_edges = graph.edges(nodeix(w));
+                        let w_points_to_v = w_out_edges.find(|e| e.target() == nodeix(v));
+                        let out_deg = w_out_edges.map(|_| D::one()).sum::<D>();
+                        if let Some(_) = w_points_to_v {
                             damping_factor * *r / out_deg
                         } else if out_deg == D::zero() {
                             damping_factor * *r / nb // stochastic matrix condition
