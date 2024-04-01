@@ -914,6 +914,7 @@ pub trait UnitMeasure:
     fn zero() -> Self;
     fn one() -> Self;
     fn from_usize(nb: usize) -> Self;
+    fn default_tol() -> Self;
 }
 
 macro_rules! impl_unit_measure(
@@ -929,6 +930,10 @@ macro_rules! impl_unit_measure(
 
                 fn from_usize(nb: usize) -> Self {
                     nb as $t
+                }
+
+                fn default_tol() -> Self {
+                    1e-6 as $t
                 }
 
             }

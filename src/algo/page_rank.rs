@@ -118,7 +118,12 @@ where
 /// \[Generic\] Parrallel Page Rank algorithm.
 /// ```
 #[cfg(feature = "rayon")]
-pub fn parallel_page_rank<G, D>(graph: G, damping_factor: D, nb_iter: usize) -> Vec<D>
+pub fn parallel_page_rank<G, D>(
+    graph: G,
+    damping_factor: D,
+    nb_iter: usize,
+    tol: Option<D>,
+) -> Vec<D>
 where
     G: NodeCount + IntoEdges + NodeIndexable + std::marker::Sync,
     D: UnitMeasure + Copy + std::marker::Send + std::marker::Sync,
@@ -129,6 +134,10 @@ where
         D::zero() <= damping_factor && damping_factor <= D::one(),
         "Damping factor should be between 0 et 1."
     );
+    let mut tolerance = D::default_tol();
+    if let Some(_tol) = tol {
+        tolerance = _tol;
+    }
     let nb = D::from_usize(node_count);
     let mut ranks: Vec<D> = (0..node_count)
         .into_par_iter()
@@ -155,7 +164,17 @@ where
             })
             .collect::<Vec<D>>();
         let sum = pi.par_iter().map(|score| *score).sum::<D>();
-        ranks = pi.par_iter().map(|r| *r / sum).collect::<Vec<D>>();
+        let new_ranks = pi.par_iter().map(|r| *r / sum).collect::<Vec<D>>();
+        let squared_norm_2 = new_ranks
+            .par_iter()
+            .zip(&ranks)
+            .map(|(new, old)| (*new - *old) * (*new - *old))
+            .sum::<D>();
+        if squared_norm_2 <= tolerance {
+            return ranks;
+        } else {
+            ranks = new_ranks;
+        }
     }
     ranks
 }

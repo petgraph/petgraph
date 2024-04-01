@@ -31,6 +31,6 @@ fn par_page_rank_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 2_000;
     let g = directed_fan(NODE_COUNT);
     bench.iter(|| {
-        let _ranks = parallel_page_rank(&g, 0.6_f64, 10);
+        let _ranks = parallel_page_rank(&g, 0.6_f64, 100, None);
     });
 }
