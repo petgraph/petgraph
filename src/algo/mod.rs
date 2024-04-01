@@ -13,6 +13,7 @@ pub mod floyd_warshall;
 pub mod isomorphism;
 pub mod k_shortest_path;
 pub mod matching;
+pub mod page_rank;
 pub mod simple_paths;
 pub mod tred;
 
@@ -44,6 +45,7 @@ pub use isomorphism::{
 };
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_matching, Matching};
+pub use page_rank::page_rank;
 pub use simple_paths::all_simple_paths;
 
 /// \[Generic\] Return the number of connected components of the graph.
@@ -901,3 +903,44 @@ macro_rules! impl_bounded_measure_float(
 );
 
 impl_bounded_measure_float!(f32, f64);
+
+/// A floating-point measure that can be computed from `usize`
+/// and with a default measure of proximity.  
+pub trait UnitMeasure:
+    Measure
+    + std::ops::Sub<Self, Output = Self>
+    + std::ops::Mul<Self, Output = Self>
+    + std::ops::Div<Self, Output = Self>
+    + std::iter::Sum
+{
+    fn zero() -> Self;
+    fn one() -> Self;
+    fn from_usize(nb: usize) -> Self;
+    fn default_tol() -> Self;
+}
+
+macro_rules! impl_unit_measure(
+    ( $( $t:ident ),* )=> {
+        $(
+            impl UnitMeasure for $t {
+                fn zero() -> Self {
+                    0 as $t
+                }
+                fn one() -> Self {
+                    1 as $t
+                }
+
+                fn from_usize(nb: usize) -> Self {
+                    nb as $t
+                }
+
+                fn default_tol() -> Self {
+                    1e-6 as $t
+                }
+
+            }
+
+        )*
+    }
+);
+impl_unit_measure!(f32, f64);
