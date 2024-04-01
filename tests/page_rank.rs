@@ -76,6 +76,8 @@ fn test_par_page_rank() {
     let output_ranks = parallel_page_rank(&graph, 0.85_f32, 100);
     assert!(!expected_ranks()
         .iter()
-        .enumerate()
-        .any(|(pos, val)| (val - output_ranks[pos]).abs() > 1e-7));
+        .zip(output_ranks)
+        .any(|(expected, computed)| ((expected - computed).abs() > 1e-7)
+            || computed.is_nan()
+            || expected.is_nan()));
 }

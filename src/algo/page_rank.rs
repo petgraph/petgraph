@@ -3,8 +3,7 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
-use super::{DiGraph, UnitMeasure};
-
+use super::UnitMeasure;
 /// \[Generic\] Page Rank algorithm.
 ///
 /// Computes the ranks of every node in a graph using the [Page Rank algorithm][pr].
@@ -95,6 +94,27 @@ where
     ranks
 }
 
+#[allow(dead_code)]
+fn out_edges_info<G, D>(graph: G, index_w: usize, index_v: usize) -> (D, bool)
+where
+    G: NodeCount + IntoEdges + NodeIndexable + std::marker::Sync,
+    D: UnitMeasure + Copy + std::marker::Send + std::marker::Sync,
+{
+    let node_w = graph.from_index(index_w);
+    let node_v = graph.from_index(index_v);
+    let mut out_edges = graph.edges(node_w);
+    let mut out_edge = out_edges.next();
+    let mut out_degree = D::zero();
+    let mut flag_points_to = false;
+    while let Some(edge) = out_edge {
+        out_degree = out_degree + D::one();
+        if edge.target() == node_v {
+            flag_points_to = true;
+        }
+        out_edge = out_edges.next();
+    }
+    (out_degree, flag_points_to)
+}
 /// \[Generic\] Parrallel Page Rank algorithm.
 /// ```
 #[cfg(feature = "rayon")]
@@ -114,7 +134,6 @@ where
         .into_par_iter()
         .map(|i| D::one() / nb)
         .collect();
-    let nodeix = |i| graph.from_index(i);
     for _ in 0..nb_iter {
         let pi = (0..node_count)
             .into_par_iter()
@@ -123,10 +142,8 @@ where
                     .iter()
                     .enumerate()
                     .map(|(w, r)| {
-                        let mut w_out_edges = graph.edges(nodeix(w));
-                        let w_points_to_v = w_out_edges.find(|e| e.target() == nodeix(v));
-                        let out_deg = w_out_edges.map(|_| D::one()).sum::<D>();
-                        if let Some(_) = w_points_to_v {
+                        let (out_deg, w_points_to_v) = out_edges_info(graph, w, v);
+                        if w_points_to_v {
                             damping_factor * *r / out_deg
                         } else if out_deg == D::zero() {
                             damping_factor * *r / nb // stochastic matrix condition
