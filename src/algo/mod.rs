@@ -904,6 +904,8 @@ macro_rules! impl_bounded_measure_float(
 
 impl_bounded_measure_float!(f32, f64);
 
+/// A floating-point measure that can be computed from `usize`
+/// and with a default measure of proximity.  
 pub trait UnitMeasure:
     Measure
     + std::ops::Sub<Self, Output = Self>

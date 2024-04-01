@@ -11,8 +11,7 @@ use super::UnitMeasure;
 /// Returns a `Vec` container mapping each node index to its rank.
 ///
 /// # Panics
-/// The damping factor should be a number of type `f32` or `f64` between 0 and 1 (0 and 1 included).
-/// The graph should at least have one node. If one of these two conditions is not satisfied, it panics.
+/// The damping factor should be a number of type `f32` or `f64` between 0 and 1 (0 and 1 included). Otherwise, it panics.
 ///
 /// # Complexity
 /// Time complexity is **O(N|V|²|E|)**.
@@ -26,6 +25,7 @@ use super::UnitMeasure;
 /// use petgraph::Graph;
 /// use petgraph::algo::page_rank;
 /// let mut g: Graph<(), usize> = Graph::new();
+/// assert_eq!(page_rank(&g, 0.5_f64, 1), vec![]); // empty graphs have no node ranks.
 /// let a = g.add_node(());
 /// let b = g.add_node(());
 /// let c = g.add_node(());
@@ -56,7 +56,9 @@ where
     D: UnitMeasure + Copy,
 {
     let node_count = graph.node_count();
-    assert!(node_count > 0, "Graph must have nodes.");
+    if node_count == 0 {
+        return vec![];
+    }
     assert!(
         D::zero() <= damping_factor && damping_factor <= D::one(),
         "Damping factor should be between 0 et 1."
@@ -116,7 +118,6 @@ where
     (out_degree, flag_points_to)
 }
 /// \[Generic\] Parrallel Page Rank algorithm.
-/// ```
 #[cfg(feature = "rayon")]
 pub fn parallel_page_rank<G, D>(
     graph: G,
