@@ -117,7 +117,9 @@ where
     }
     (out_degree, flag_points_to)
 }
-/// \[Generic\] Parrallel Page Rank algorithm.
+/// \[Generic\] Parallel Page Rank algorithm.
+///
+/// See [`page_rank`].
 #[cfg(feature = "rayon")]
 pub fn parallel_page_rank<G, D>(
     graph: G,
@@ -130,7 +132,9 @@ where
     D: UnitMeasure + Copy + std::marker::Send + std::marker::Sync,
 {
     let node_count = graph.node_count();
-    assert!(node_count > 0, "Graph must have nodes.");
+    if node_count == 0 {
+        return vec![];
+    }
     assert!(
         D::zero() <= damping_factor && damping_factor <= D::one(),
         "Damping factor should be between 0 et 1."
