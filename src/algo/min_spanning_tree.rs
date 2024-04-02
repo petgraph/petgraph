@@ -52,6 +52,8 @@ where
 }
 
 /// An iterator producing a minimum spanning forest of a graph.
+/// It will first iterate all Node elements from original graph,
+/// then iterate Edge elements from computed minimum spanning forest.
 #[derive(Debug, Clone)]
 pub struct MinSpanningTree<G>
 where
