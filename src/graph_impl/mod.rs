@@ -29,6 +29,8 @@ pub type DefaultIx = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
 ///
+/// # Safety
+///
 /// Marked `unsafe` because: the trait must faithfully preserve
 /// and convert index values.
 pub unsafe trait IndexType: Copy + Default + Hash + Ord + fmt::Debug + 'static {
