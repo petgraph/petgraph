@@ -344,7 +344,7 @@ where
             .row
             .get(a.index() + 1)
             .cloned()
-            .unwrap_or_else(|| self.column.len());
+            .unwrap_or(self.column.len());
         index..end
     }
 
