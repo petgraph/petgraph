@@ -766,8 +766,7 @@ mod matching {
 
             // We hardcode n! values into an array that accounts for architectures
             // with smaller usizes to get our upper bound.
-            let upper_bounds: Vec<Option<usize>> = vec![
-                1u64,
+            let upper_bounds: Vec<Option<usize>> = [1u64,
                 1,
                 2,
                 6,
@@ -787,8 +786,7 @@ mod matching {
                 355687428096000,
                 6402373705728000,
                 121645100408832000,
-                2432902008176640000,
-            ]
+                2432902008176640000]
             .iter()
             .map(|n| usize::try_from(*n).ok())
             .collect();

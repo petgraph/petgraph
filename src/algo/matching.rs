@@ -494,8 +494,8 @@ fn find_join<G, F>(
     graph: &G,
     edge: G::EdgeRef,
     mate: &[Option<G::NodeId>],
-    label: &mut Vec<Label<G>>,
-    first_inner: &mut Vec<usize>,
+    label: &mut [Label<G>],
+    first_inner: &mut [usize],
     mut visitor: F,
 ) where
     G: IntoEdges + NodeIndexable + Visitable,

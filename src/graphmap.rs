@@ -278,7 +278,7 @@ where
 
     /// Add node `n` to the graph.
     pub fn add_node(&mut self, n: N) -> N {
-        self.nodes.entry(n).or_insert(Vec::new());
+        self.nodes.entry(n).or_default();
         n
     }
 
@@ -400,7 +400,7 @@ where
         } else {
             exist1
         };
-        let weight = self.edges.remove(&Self::edge_key(a, b));
+        let weight = self.edges.swap_remove(&Self::edge_key(a, b));
         debug_assert!(exist1 == exist2 && exist1 == weight.is_some());
         weight
     }

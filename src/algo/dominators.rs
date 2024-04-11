@@ -132,7 +132,7 @@ where
     type Item = N;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(next) = self.iter.next() {
+        for next in self.iter.by_ref() {
             if next.1 == &self.node {
                 return Some(*next.0);
             }
@@ -267,7 +267,7 @@ where
                         .map(|p| *node_to_post_order_idx.get(&p).unwrap())
                         .collect()
                 })
-                .unwrap_or_else(Vec::new)
+                .unwrap_or_default()
         })
         .collect()
 }
