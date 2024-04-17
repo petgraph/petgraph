@@ -10,6 +10,7 @@ pub mod dijkstra;
 pub mod dominators;
 pub mod feedback_arc_set;
 pub mod floyd_warshall;
+pub mod ford_fulkerson;
 pub mod isomorphism;
 pub mod k_shortest_path;
 pub mod matching;
