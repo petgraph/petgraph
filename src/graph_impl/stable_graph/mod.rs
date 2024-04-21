@@ -733,6 +733,22 @@ where
         }
     }
 
+    /// Return an iterator of both incoming and outgoing edges of `a`.
+    ///
+    /// Produces an empty iterator if the node `a` doesn't exist.<br>
+    /// Iterator element type is `EdgeReference<E, Ix>`.
+    pub fn edges_incident(&self, a: NodeIndex<Ix>) -> EdgesIncident<E, Ty, Ix> {
+        EdgesIncident {
+            skip_start: a,
+            edges: &self.g.edges,
+            next: match self.get_node(a) {
+                None => [EdgeIndex::end(), EdgeIndex::end()],
+                Some(n) => n.next,
+            },
+            ty: PhantomData,
+        }
+    }
+
     /// Return an iterator over either the nodes without edges to them
     /// (`Incoming`) or from them (`Outgoing`).
     ///
@@ -1457,6 +1473,127 @@ where
     }
 }
 
+/// Reference to a `StableGraph` edge.
+#[derive(Debug)]
+pub struct IncidentEdgeReference<'a, E: 'a, Ix = DefaultIx> {
+    index: EdgeIndex<Ix>,
+    neighbour: NodeIndex<Ix>,
+    direction: Direction,
+    weight: &'a E,
+}
+
+impl<'a, E, Ix: IndexType> Clone for IncidentEdgeReference<'a, E, Ix> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'a, E, Ix: IndexType> Copy for IncidentEdgeReference<'a, E, Ix> {}
+
+impl<'a, E, Ix: IndexType> PartialEq for IncidentEdgeReference<'a, E, Ix>
+where
+    E: PartialEq,
+{
+    fn eq(&self, rhs: &Self) -> bool {
+        self.index == rhs.index && self.weight == rhs.weight && self.direction == rhs.direction
+    }
+}
+
+impl<'a, Ix, E> IncidentEdgeReference<'a, E, Ix>
+where
+    Ix: IndexType,
+{
+    /// Returns the index of the edge.
+    pub fn index(&self) -> EdgeIndex<Ix> {
+        self.index
+    }
+
+    /// Access the edge’s weight.
+    ///
+    /// **NOTE** that this method offers a longer lifetime
+    /// than the trait (unfortunately they don't match yet).
+    pub fn weight(&self) -> &'a E {
+        self.weight
+    }
+
+    /// Returns the edges direction in relation to the iterated node.
+    /// If iterating over the incident edges of a node `a`, then an incoming edge is incoming to `a`,
+    /// and an outgoing edge is outgoing from `a`.
+    pub fn direction(&self) -> Direction {
+        self.direction
+    }
+
+    /// Returns the neighbour node this edge connects to.
+    /// If iterating over the incident edges of a node `a`, this is the other endpoint of the edge.
+    pub fn neighbour(&self) -> NodeIndex<Ix> {
+        self.neighbour
+    }
+}
+
+/// Iterator over the incident edges of a node.
+/// Self loops are output only once.
+#[derive(Debug, Clone)]
+pub struct EdgesIncident<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    /// starting node to skip over
+    skip_start: NodeIndex<Ix>,
+    edges: &'a [Edge<Option<E>, Ix>],
+
+    /// Next edge to visit.
+    next: [EdgeIndex<Ix>; 2],
+
+    ty: PhantomData<Ty>,
+}
+
+impl<'a, E, Ty, Ix> Iterator for EdgesIncident<'a, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    type Item = IncidentEdgeReference<'a, E, Ix>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let i = self.next[0].index();
+        if let Some(Edge {
+            node,
+            weight: Some(weight),
+            next,
+        }) = self.edges.get(i)
+        {
+            self.next[0] = next[0];
+            return Some(IncidentEdgeReference {
+                index: edge_index(i),
+                neighbour: node[1],
+                weight,
+                direction: Outgoing,
+            });
+        }
+
+        while let Some(Edge { node, weight, next }) = self.edges.get(self.next[1].index()) {
+            debug_assert!(weight.is_some());
+            let edge_index = self.next[1];
+            self.next[1] = next[1];
+            // In any of the "both" situations, self-loops would be iterated over twice.
+            // Skip them here.
+            if node[0] == self.skip_start {
+                continue;
+            }
+
+            return Some(IncidentEdgeReference {
+                index: edge_index,
+                neighbour: node[0],
+                weight: weight.as_ref().unwrap(),
+                direction: Incoming,
+            });
+        }
+
+        None
+    }
+}
+
 /// Iterator over the multiple directed edges connecting a source node to a target node
 #[derive(Debug, Clone)]
 pub struct EdgesConnecting<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
@@ -2100,4 +2237,38 @@ fn test_reverse() {
     for i in gr.node_indices() {
         itertools::assert_equal(gr.edges_directed(i, Incoming), reversed_gr.edges(i));
     }
+}
+
+#[test]
+fn test_incident_edge_iteration() {
+    let mut gr = StableDiGraph::<_, _>::default();
+    let n: Vec<_> = (0..4).map(|index| gr.add_node(index)).collect();
+
+    let e = [
+        gr.add_edge(n[0], n[1], 10),
+        gr.add_edge(n[1], n[2], 11),
+        gr.add_edge(n[1], n[1], 12),
+        gr.add_edge(n[2], n[3], 13),
+        gr.add_edge(n[1], n[3], 14),
+    ];
+
+    assert_eq!(
+        gr.edges_incident(n[1])
+            .map(|edge| (
+                edge.index(),
+                edge.direction(),
+                edge.neighbour(),
+                *edge.weight(),
+            ))
+            .collect::<std::collections::HashSet<_>>(),
+        [
+            (e[0], Incoming, n[0], 10),
+            (e[1], Outgoing, n[2], 11),
+            (e[2], Outgoing, n[1], 12),
+            (e[4], Outgoing, n[3], 14)
+        ]
+        .iter()
+        .cloned()
+        .collect(),
+    );
 }
