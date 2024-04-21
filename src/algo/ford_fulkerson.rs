@@ -1,15 +1,8 @@
-use std::{
-    cmp::min,
-    collections::VecDeque,
-    ops::{Add, Index, Sub},
-};
-
-use graph_impl::Edge;
+use std::{collections::VecDeque, ops::Sub};
 
 use crate::{
-    graph::{EdgeWeightsMut, IndexType},
-    graph_impl,
-    visit::{IntoEdges, NodeCount, NodeIndexable, NodeRef, Visitable},
+    data::DataMap,
+    visit::{EdgeCount, EdgeIndexable, IntoEdges, NodeCount, NodeIndexable},
 };
 
 use super::{EdgeRef, FloatMeasure};
@@ -19,26 +12,26 @@ fn has_augmented_path<N>(
     source: N::NodeId,
     destination: N::NodeId,
     edge_to: &mut [Option<N::NodeId>],
-    capacities: &Vec<N::EdgeWeight>,
+    capacities: &[N::EdgeWeight],
+    forward_flows: &[N::EdgeWeight],
 ) -> bool
 where
-    N: NodeCount + IntoEdges + NodeIndexable, // + Visitable,
+    N: NodeCount + IntoEdges + NodeIndexable + EdgeIndexable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + FloatMeasure,
-    // <N::EdgeWeight as Sub>::Output: PartialOrd<N::EdgeWeight>,
 {
     let mut marked = vec![false; network.node_count()];
     let mut queue = VecDeque::new();
-    // let nodeix = |i| network.from_index(i);
 
-    marked[network.to_index(source)] = true;
+    marked[NodeIndexable::to_index(&network, source)] = true;
     queue.push_back(source);
 
     while let Some(vertex) = queue.pop_front() {
-        let mut edges = network.edges(vertex);
-        while let Some(edge) = edges.next() {
+        let edges = network.edges(vertex);
+        for edge in edges {
             let next = edge.target();
-            let index_next = network.to_index(next);
-            let residual_capacity = capacities[index_next] - *edge.weight();
+            let index_next = NodeIndexable::to_index(&network, next);
+            let edge_index = EdgeIndexable::to_index(&network, edge.id());
+            let residual_capacity = capacities[edge_index] - forward_flows[edge_index];
             if !marked[index_next] && (residual_capacity > N::EdgeWeight::zero()) {
                 marked[index_next] = true;
                 edge_to[index_next] = Some(vertex);
@@ -52,37 +45,87 @@ where
     false
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::Graph;
+pub fn ford_fulkerson<N>(
+    network: N,
+    source: N::NodeId,
+    destination: N::NodeId,
+    capacities: &[N::EdgeWeight],
+) -> N::EdgeWeight
+where
+    N: NodeCount + EdgeCount + IntoEdges + EdgeIndexable + NodeIndexable + DataMap, // + Visitable,
+    N::EdgeWeight: Sub<Output = N::EdgeWeight> + FloatMeasure,
+{
+    let mut edge_to = vec![None; network.node_count()];
+    let mut forward_flows = vec![N::EdgeWeight::zero(); network.edge_count()];
+    let mut max_flow = N::EdgeWeight::zero();
+    while has_augmented_path(
+        network,
+        source,
+        destination,
+        &mut edge_to,
+        capacities,
+        &forward_flows,
+    ) {
+        let mut path_flow = N::EdgeWeight::infinite();
 
-    #[test]
-    fn test_has_augmented_path() {
-        // Example from CLRS book
-        let mut graph = Graph::<usize, f32>::new();
-        let a = graph.add_node(0);
-        let b = graph.add_node(1);
-        let c = graph.add_node(2);
-        let d = graph.add_node(3);
-        let e = graph.add_node(4);
-        let f = graph.add_node(5);
-        graph.extend_with_edges(&[
-            (0, 1),
-            (0, 2),
-            (1, 3),
-            (2, 1),
-            (2, 4),
-            (3, 2),
-            (3, 5),
-            (4, 3),
-            (4, 5),
-        ]);
-        let capacities: Vec<f32> = vec![16., 13., 12., 4., 14., 9., 20., 7., 4.];
+        // Find the bottleneck capacity of the path
+        let mut vertex = destination;
+        while let Some(parent_vertex) = edge_to[NodeIndexable::to_index(&network, vertex)] {
+            let edge = network
+                .edges(parent_vertex)
+                .find(|e| e.target() == vertex)
+                .unwrap();
+            let edge_index = EdgeIndexable::to_index(&network, edge.id());
+            let res_cap = capacities[edge_index] - forward_flows[edge_index];
+            // Minimum between the path flow and the residual capacity.
+            path_flow = if path_flow > res_cap {
+                res_cap
+            } else {
+                path_flow
+            };
+            vertex = parent_vertex;
+        }
 
-        let mut edge_to = vec![None; 13];
-        let flag = has_augmented_path(&graph, a, f, &mut edge_to, &capacities);
-        assert!(flag);
-        // println!("{:?}", flag);
+        // Update the flow of each edge along the path
+        vertex = destination;
+        while let Some(parent_vertex) = edge_to[NodeIndexable::to_index(&network, vertex)] {
+            let forward_edge = network
+                .edges(parent_vertex)
+                .find(|e| e.target() == vertex)
+                .unwrap();
+            let fwd_index = EdgeIndexable::to_index(&network, forward_edge.id());
+
+            forward_flows[fwd_index] = add_residual_flow_to(
+                network,
+                forward_edge,
+                vertex,
+                forward_flows[fwd_index],
+                path_flow,
+            );
+            vertex = parent_vertex;
+        }
+        max_flow = max_flow + path_flow;
+    }
+    max_flow
+}
+
+fn add_residual_flow_to<N>(
+    network: N,
+    edge: N::EdgeRef,
+    vertex: N::NodeId,
+    flow: N::EdgeWeight,
+    delta: N::EdgeWeight,
+) -> N::EdgeWeight
+where
+    N: NodeIndexable + IntoEdges,
+    N::EdgeWeight: Sub<Output = N::EdgeWeight> + FloatMeasure,
+{
+    if vertex == edge.source() {
+        flow - delta
+    } else if vertex == edge.target() {
+        flow + delta
+    } else {
+        let end_point = NodeIndexable::to_index(&network, vertex);
+        panic!("Illegal endpoint {}", end_point);
     }
 }
