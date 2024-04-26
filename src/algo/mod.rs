@@ -838,3 +838,28 @@ macro_rules! impl_unit_measure(
     }
 );
 impl_unit_measure!(f32, f64);
+
+/// Some measure of positive numbers, assuming positive
+/// float-pointing numbers
+pub trait PositiveMeasure: Measure + Copy {
+    fn zero() -> Self;
+    fn max() -> Self;
+}
+
+macro_rules! impl_positive_measure(
+    ( $( $t:ident ),* )=> {
+        $(
+            impl PositiveMeasure for $t {
+                fn zero() -> Self {
+                    0 as $t
+                }
+                fn max() -> Self {
+                    std::$t::MAX
+                }
+            }
+
+        )*
+    }
+);
+
+impl_positive_measure!(u8, u16, u32, u64, u128, usize, f32, f64);

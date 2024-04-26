@@ -11,6 +11,7 @@ extern crate odds;
 
 mod utils;
 
+use petgraph::visit::{EdgeIndexable, NodeIndexable};
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
@@ -23,7 +24,7 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
+    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
     min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
@@ -35,8 +36,8 @@ use petgraph::graphmap::NodeTrait;
 use petgraph::operator::complement;
 use petgraph::prelude::*;
 use petgraph::visit::{
-    EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, VisitMap, Visitable,
+    EdgeFiltered, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
+    IntoNodeReferences, NodeCount, Reversed, Topo, VisitMap, Visitable,
 };
 use petgraph::EdgeType;
 
@@ -1328,5 +1329,51 @@ quickcheck! {
             return false;
         }
         true
+    }
+}
+
+fn sum_flows<N, F: std::iter::Sum + Copy>(
+    gr: &Graph<N, F>,
+    flows: &[F],
+    node: NodeIndex,
+    dir: Direction,
+) -> F {
+    gr.edges_directed(node, dir)
+        .map(|edge| flows[EdgeIndexable::to_index(&gr, edge.id())])
+        .sum::<F>()
+}
+
+quickcheck! {
+    // 1. (Capacity)
+    //    The flows should be <= capacities
+    // 2. (Flow conservation)
+    //    For every internal node (i.e a node different from the
+    //    source node and the destination (or sink) node), the sum
+    //    of incoming flows (i.e flows of incoming edges) is equal
+    //    to the sum of the outgoing flows (i.e flows of outgoing edges).
+    // 3. (Maximum flow)
+    //    It is equal to the sum of the destination node incoming flows and
+    //    also the sum of the outgoing flows of the source node.
+    fn test_ford_fulkerson_flows(gr: Graph<usize, u32>) -> bool {
+        if gr.node_count() <= 1 || gr.edge_count() == 0 {
+            return true;
+        }
+        let source = NodeIndex::from(0);
+        let destination = NodeIndex::from(gr.node_count() as u32 / 2);
+        let (max_flow, flows) = ford_fulkerson(&gr, source, destination);
+        let capacity_constraint = flows
+            .iter()
+            .enumerate()
+            .all(|(ix, flow)| flow <= gr.edge_weight(EdgeIndexable::from_index(&gr, ix)).unwrap());
+        let flow_conservation_constraint = (0..gr.node_count()).all(|ix| {
+            let node = NodeIndexable::from_index(&gr, ix);
+            if (node != source) && (node != destination){
+            sum_flows(&gr, &flows, node, Direction::Outgoing)
+                == sum_flows(&gr, &flows, node, Direction::Incoming)
+            } else {true}
+        });
+        let max_flow_constaint = (sum_flows(&gr, &flows, source, Direction::Outgoing) == max_flow)
+            && (sum_flows(&gr, &flows, destination, Direction::Incoming) == max_flow);
+        return capacity_constraint && flow_conservation_constraint && max_flow_constaint;
     }
 }
