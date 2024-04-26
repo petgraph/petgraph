@@ -11,7 +11,6 @@ extern crate odds;
 
 mod utils;
 
-use petgraph::visit::{EdgeIndexable, NodeIndexable};
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
@@ -36,8 +35,8 @@ use petgraph::graphmap::NodeTrait;
 use petgraph::operator::complement;
 use petgraph::prelude::*;
 use petgraph::visit::{
-    EdgeFiltered, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, Reversed, Topo, VisitMap, Visitable,
+    EdgeFiltered, EdgeIndexable, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
+    IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, VisitMap, Visitable,
 };
 use petgraph::EdgeType;
 
