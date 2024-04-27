@@ -2,7 +2,10 @@ use std::{collections::VecDeque, ops::Sub};
 
 use crate::{
     data::DataMap,
-    visit::{EdgeCount, EdgeIndexable, IntoEdges, IntoEdgesDirected, NodeCount, NodeIndexable},
+    visit::{
+        EdgeCount, EdgeIndexable, IntoEdges, IntoEdgesDirected, NodeCount, NodeIndexable, VisitMap,
+        Visitable,
+    },
 };
 
 use super::{EdgeRef, PositiveMeasure};
@@ -54,12 +57,12 @@ fn has_augmented_path<N>(
     flows: &[N::EdgeWeight],
 ) -> bool
 where
-    N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable,
+    N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
-    let mut marked = vec![false; network.node_count()];
+    let mut visited = network.visit_map();
     let mut queue = VecDeque::new();
-    marked[NodeIndexable::to_index(&network, source)] = true;
+    visited.visit(source);
     queue.push_back(source);
 
     while let Some(vertex) = queue.pop_front() {
@@ -67,12 +70,11 @@ where
         let in_edges = network.edges_directed(vertex, Direction::Incoming);
         for edge in out_edges.chain(in_edges) {
             let next = other_endpoint(&network, edge, vertex);
-            let next_index = NodeIndexable::to_index(&network, next);
             let edge_index: usize = EdgeIndexable::to_index(&network, edge.id());
             let residual_cap = residual_capacity(&network, edge, next, flows[edge_index]);
-            if !marked[next_index] && (residual_cap > N::EdgeWeight::zero()) {
-                marked[next_index] = true;
-                edge_to[next_index] = Some(edge);
+            if !visited.is_visited(&next) && (residual_cap > N::EdgeWeight::zero()) {
+                visited.visit(next);
+                edge_to[NodeIndexable::to_index(&network, next)] = Some(edge);
                 if destination == next {
                     return true;
                 }
@@ -147,7 +149,13 @@ pub fn ford_fulkerson<N>(
     destination: N::NodeId,
 ) -> (N::EdgeWeight, Vec<N::EdgeWeight>)
 where
-    N: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + DataMap, // + Visitable,
+    N: NodeCount
+        + EdgeCount
+        + IntoEdgesDirected
+        + EdgeIndexable
+        + NodeIndexable
+        + DataMap
+        + Visitable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
     let mut edge_to = vec![None; network.node_count()];
