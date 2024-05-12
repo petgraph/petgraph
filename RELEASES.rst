@@ -6,7 +6,7 @@ Version 0.6.5 (2024-05-06)
 - Add logo to the project (`#598`_)
 - Add Ford-Fulkerson algorithm (`#640`_)
 - Update ``itertools`` to 0.12.1 (`#628`_)
-- Update ``GraphMap`` to allow custom hash functions (`#623`_)
+- Update ``GraphMap`` to allow custom hash functions (`#622`_)
 - Fix documentation (`#630`_)
 - Fix clippy warnings (`#627`_)
 - (internal) Fix remove old ``copyclone`` macro (`#601`_)
@@ -18,7 +18,7 @@ Version 0.6.5 (2024-05-06)
 .. _`#598`: https://github.com/petgraph/petgraph/pull/598
 .. _`#640`: https://github.com/petgraph/petgraph/pull/640
 .. _`#628`: https://github.com/petgraph/petgraph/pull/628
-.. _`#623`: https://github.com/petgraph/petgraph/pull/623
+.. _`#622`: https://github.com/petgraph/petgraph/pull/622
 .. _`#630`: https://github.com/petgraph/petgraph/pull/630
 .. _`#627`: https://github.com/petgraph/petgraph/pull/627
 .. _`#601`: https://github.com/petgraph/petgraph/pull/601
