@@ -124,13 +124,16 @@ where
 
 /// \[Generic\] Compute a *minimum spanning tree* of a graph using Prim's algorithm.
 ///
-/// Behavior is undefined if input graph is disconnected (has more than 1 component)
-/// or if graph is directed.
+/// Graph is treated as if undirected. The computed minimum spanning tree can be wrong
+/// if this is not true.
+///
+/// Graph is treated as if connected (has only 1 component). Otherwise, the resulting
+/// graph will only contain edges for an arbitrary minimum spanning tree.
 ///
 /// Using Prim's algorithm with runtime **O(|E| log |E|)**.
 ///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
-/// and **|V| - 1** edges.
+/// and **|V| - 1** edges if input graph is connected, and |W| edges if disconnected, where |W| < |V| - 1.
 ///
 /// Use `from_elements` to create a graph from the resulting iterator.
 ///
