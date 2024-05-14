@@ -87,22 +87,23 @@ fn min_spanning_tree_prim_petersen_undir_bench(bench: &mut Bencher) {
     bench.iter(|| (iterate_mst_prim(&a), iterate_mst_prim(&b)));
 }
 
-fn iterate_mst_kruskal<G>(g: G) -> bool
+fn iterate_mst_kruskal<G>(g: G)
 where
     G: Data + IntoEdges + IntoNodeReferences + IntoEdgeReferences + NodeIndexable,
     G::NodeWeight: Clone,
     G::EdgeWeight: Clone + PartialOrd,
 {
-    let mst = min_spanning_tree(g);
-    mst.into_iter().all(|_| true)
+    for e in min_spanning_tree(g) {
+        std::hint::black_box(e);
+    }
 }
-
-fn iterate_mst_prim<G>(g: G) -> bool
+fn iterate_mst_prim<G>(g: G)
 where
     G: Data + IntoEdges + IntoNodeReferences + IntoEdgeReferences + NodeIndexable,
     G::NodeWeight: Clone,
     G::EdgeWeight: Clone + PartialOrd,
 {
-    let mst = min_spanning_tree_prim(g);
-    mst.into_iter().all(|_| true)
+    for e in min_spanning_tree_prim(g) {
+        std::hint::black_box(e);
+    }
 }
