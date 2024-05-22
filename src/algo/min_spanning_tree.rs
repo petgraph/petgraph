@@ -216,6 +216,11 @@ where
         };
         self.initial_node = None;
 
+        // Clear edges queue if all nodes were already included in MST.
+        if self.nodes_taken.len() == self.node_count {
+            self.sort_edges.clear();
+        };
+
         // Prim's algorithm:
         // Iterate through Edge elements, adding an edge to the MST iff some of it's nodes are not part of MST yet.
         while let Some(MinScored(score, (source, target))) = self.sort_edges.pop() {
