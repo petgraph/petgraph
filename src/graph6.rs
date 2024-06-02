@@ -2,32 +2,13 @@
 
 use crate::visit::{GetAdjacencyMatrix, IntoNodeIdentifiers};
 
-pub struct Graph6 {
-    graph6: String,
-}
-
-impl Graph6 {
-    pub fn from_graph<G>(graph: G) -> Self
-    where
-        G: GetAdjacencyMatrix + IntoNodeIdentifiers,
-    {
-        Graph6 {
-            graph6: get_graph6_representation(graph),
-        }
-    }
-
-    pub fn from_string(str: String) -> Self {
-        Graph6 { graph6: str }
-    }
-
-    pub fn to_string(self) -> String {
-        self.graph6
-    }
-}
-
 const N: usize = 63;
 
-fn get_graph6_representation<G>(graph: G) -> String
+pub trait Graph6 {
+    fn graph6_string(self: &Self) -> String;
+}
+
+pub fn get_graph6_representation<G>(graph: G) -> String
 where
     G: GetAdjacencyMatrix + IntoNodeIdentifiers,
 {
@@ -73,7 +54,8 @@ where
         node_ids_vec.push(node_id);
 
         for i in 1..=n {
-            let is_adjacent = graph.is_adjacent(&adj_matrix, node_ids_vec[i - 1], node_ids_vec[n]);
+            let is_adjacent: bool =
+                graph.is_adjacent(&adj_matrix, node_ids_vec[i - 1], node_ids_vec[n]);
             bits.push(if is_adjacent { 1 } else { 0 });
         }
 

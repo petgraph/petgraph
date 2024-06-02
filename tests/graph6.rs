@@ -2,27 +2,25 @@ use petgraph::{graph6::Graph6, Graph};
 
 #[test]
 fn test_graph6_from_small_graph() {
-    let mut gr = Graph::<_, _>::new();
-    let _0 = gr.add_node("A");
-    let _1 = gr.add_node("B");
-    let _2 = gr.add_node("C");
-    let _3 = gr.add_node("D");
-    let _4 = gr.add_node("E");
-    gr.add_edge(_0, _2, 7.);
-    gr.add_edge(_0, _4, 7.);
-    gr.add_edge(_1, _3, 7.);
-    gr.add_edge(_3, _4, 7.);
+    let mut gr = Graph::new_undirected();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    gr.add_edge(a, c, ());
+    gr.add_edge(a, e, ());
+    gr.add_edge(b, d, ());
+    gr.add_edge(d, e, ());
 
-    let graph6 = Graph6::from_graph(&gr);
-
-    let str_representation = graph6.to_string();
-    println!("{}", str_representation);
-    assert!(str_representation == "DQc");
+    let graph6_string = gr.graph6_string();
+    println!("{}", graph6_string);
+    assert!(graph6_string == "DQc");
 }
 
 #[test]
 fn test_graph6_from_graph() {
-    let mut gr = Graph::<_, _>::new();
+    let mut gr = Graph::new_undirected();
     let a = gr.add_node("A");
     let b = gr.add_node("B");
     let c = gr.add_node("C");
@@ -30,27 +28,27 @@ fn test_graph6_from_graph() {
     let e = gr.add_node("E");
     let f = gr.add_node("F");
     let g = gr.add_node("G");
-    gr.add_edge(a, b, 7.);
-    gr.add_edge(a, d, 5.);
-    gr.add_edge(d, b, 9.);
-    gr.add_edge(b, c, 8.);
-    gr.add_edge(b, e, 7.);
-    gr.add_edge(c, e, 5.);
-    gr.add_edge(d, e, 15.);
-    gr.add_edge(d, f, 6.);
-    gr.add_edge(f, e, 8.);
-    gr.add_edge(f, g, 11.);
-    gr.add_edge(e, g, 9.);
+    gr.add_edge(a, b, ());
+    gr.add_edge(a, d, ());
+    gr.add_edge(d, b, ());
+    gr.add_edge(b, c, ());
+    gr.add_edge(b, e, ());
+    gr.add_edge(c, e, ());
+    gr.add_edge(d, e, ());
+    gr.add_edge(d, f, ());
+    gr.add_edge(f, e, ());
+    gr.add_edge(f, g, ());
+    gr.add_edge(e, g, ());
 
     // add a disjoint part
     let h = gr.add_node("H");
     let i = gr.add_node("I");
     let j = gr.add_node("J");
-    gr.add_edge(h, i, 1.);
-    gr.add_edge(h, j, 3.);
-    gr.add_edge(i, j, 1.);
+    gr.add_edge(h, i, ());
+    gr.add_edge(h, j, ());
+    gr.add_edge(i, j, ());
 
-    let graph6 = Graph6::from_graph(&gr);
+    let graph6 = gr.graph6_string();
 
     let str_representation = graph6.to_string();
     println!("{}", str_representation);

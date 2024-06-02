@@ -9,6 +9,7 @@ use std::slice;
 
 use fixedbitset::FixedBitSet;
 
+use crate::graph6::{get_graph6_representation, Graph6};
 use crate::{Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected};
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
@@ -2390,6 +2391,12 @@ where
 
     fn from_index(&self, ix: usize) -> Self::EdgeId {
         EdgeIndex::new(ix)
+    }
+}
+
+impl<N, E> Graph6 for Graph<N, E, Undirected> {
+    fn graph6_string(self: &Self) -> String {
+        get_graph6_representation(self)
     }
 }
 
