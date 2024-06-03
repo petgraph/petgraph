@@ -1,11 +1,20 @@
 //! Graph6 file format input and output.
 
-use crate::visit::{GetAdjacencyMatrix, IntoNodeIdentifiers};
+use crate::{
+    visit::{GetAdjacencyMatrix, IntoNodeIdentifiers},
+    Graph, Undirected,
+};
 
 const N: usize = 63;
 
 pub trait Graph6 {
     fn graph6_string(self: &Self) -> String;
+}
+
+impl<N, E> Graph6 for Graph<N, E, Undirected> {
+    fn graph6_string(self: &Self) -> String {
+        get_graph6_representation(self)
+    }
 }
 
 pub fn get_graph6_representation<G>(graph: G) -> String
