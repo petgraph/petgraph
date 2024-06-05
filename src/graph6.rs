@@ -1,16 +1,23 @@
 //! Graph6 file format input and output.
 
-use std::hash::BuildHasher;
-
 use crate::{
     csr::Csr,
     graph::IndexType,
-    graphmap::{GraphMap, NodeTrait},
-    matrix_graph::{MatrixGraph, Nullable},
-    stable_graph::StableGraph,
     visit::{GetAdjacencyMatrix, IntoNodeIdentifiers},
     Graph, Undirected,
 };
+
+#[cfg(feature = "graphmap")]
+use crate::graphmap::{GraphMap, NodeTrait};
+
+#[cfg(feature = "graphmap")]
+use std::hash::BuildHasher;
+
+#[cfg(feature = "matrix_graph")]
+use crate::matrix_graph::{MatrixGraph, Nullable};
+
+#[cfg(feature = "stable_graph")]
+use crate::stable_graph::StableGraph;
 
 const N: usize = 63;
 
@@ -112,18 +119,21 @@ impl<N, E, Ix: IndexType> Graph6 for Graph<N, E, Undirected, Ix> {
     }
 }
 
+#[cfg(feature = "stable_graph")]
 impl<N, E, Ix: IndexType> Graph6 for StableGraph<N, E, Undirected, Ix> {
     fn graph6_string(self: &Self) -> String {
         get_graph6_representation(self)
     }
 }
 
+#[cfg(feature = "graphmap")]
 impl<N: NodeTrait, E, S: BuildHasher> Graph6 for GraphMap<N, E, Undirected, S> {
     fn graph6_string(self: &Self) -> String {
         get_graph6_representation(self)
     }
 }
 
+#[cfg(feature = "matrix_graph")]
 impl<N, E, Null, Ix> Graph6 for MatrixGraph<N, E, Undirected, Null, Ix>
 where
     N: NodeTrait,
