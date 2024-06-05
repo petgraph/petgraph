@@ -99,7 +99,7 @@ pub type StableDiGraph<N, E, Ix = DefaultIx> = StableGraph<N, E, Directed, Ix>;
 
 /// A `StableGraph` with undirected edges.
 ///
-/// For example, an edge between *1* and *2* is equivalent to an edge between
+/// For example, an hdge between *1* and *2* is equivalent to an edge between
 /// *2* and *1*.
 pub type StableUnGraph<N, E, Ix = DefaultIx> = StableGraph<N, E, Undirected, Ix>;
 

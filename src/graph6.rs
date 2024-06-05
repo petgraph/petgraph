@@ -1,6 +1,13 @@
 //! Graph6 file format input and output.
 
+use std::hash::BuildHasher;
+
 use crate::{
+    csr::Csr,
+    graph::IndexType,
+    graphmap::{GraphMap, NodeTrait},
+    matrix_graph::{MatrixGraph, Nullable},
+    stable_graph::StableGraph,
     visit::{GetAdjacencyMatrix, IntoNodeIdentifiers},
     Graph, Undirected,
 };
@@ -9,12 +16,6 @@ const N: usize = 63;
 
 pub trait Graph6 {
     fn graph6_string(self: &Self) -> String;
-}
-
-impl<N, E> Graph6 for Graph<N, E, Undirected> {
-    fn graph6_string(self: &Self) -> String {
-        get_graph6_representation(self)
-    }
 }
 
 pub fn get_graph6_representation<G>(graph: G) -> String
@@ -51,6 +52,7 @@ where
         for i in 1..=n {
             let is_adjacent: bool =
                 graph.is_adjacent(&adj_matrix, node_ids_vec[i - 1], node_ids_vec[n]);
+            println!("is adjacent {} {} = {}", i - 1, n, is_adjacent);
             bits.push(if is_adjacent { 1 } else { 0 });
         }
 
@@ -102,4 +104,39 @@ fn bits_to_ascii(mut bits: Vec<usize>) -> String {
     bytes
         .map(|byte| char::from((N + byte.unwrap()) as u8))
         .collect()
+}
+
+impl<N, E, Ix: IndexType> Graph6 for Graph<N, E, Undirected, Ix> {
+    fn graph6_string(self: &Self) -> String {
+        get_graph6_representation(self)
+    }
+}
+
+impl<N, E, Ix: IndexType> Graph6 for StableGraph<N, E, Undirected, Ix> {
+    fn graph6_string(self: &Self) -> String {
+        get_graph6_representation(self)
+    }
+}
+
+impl<N: NodeTrait, E, S: BuildHasher> Graph6 for GraphMap<N, E, Undirected, S> {
+    fn graph6_string(self: &Self) -> String {
+        get_graph6_representation(self)
+    }
+}
+
+impl<N, E, Null, Ix> Graph6 for MatrixGraph<N, E, Undirected, Null, Ix>
+where
+    N: NodeTrait,
+    Null: Nullable<Wrapped = E>,
+    Ix: IndexType,
+{
+    fn graph6_string(self: &Self) -> String {
+        get_graph6_representation(self)
+    }
+}
+
+impl<N, E, Ix: IndexType> Graph6 for Csr<N, E, Undirected, Ix> {
+    fn graph6_string(self: &Self) -> String {
+        get_graph6_representation(self)
+    }
 }

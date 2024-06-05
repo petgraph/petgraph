@@ -1,14 +1,21 @@
-use petgraph::{graph6::Graph6, Graph, Undirected};
+use petgraph::{
+    csr::Csr,
+    graph6::Graph6,
+    graphmap::GraphMap,
+    matrix_graph::MatrixGraph,
+    stable_graph::{StableGraph, StableUnGraph},
+    Graph, Undirected,
+};
 
 #[test]
-fn test_graph6_string_for_test_cases() {
+fn test_graph6_string_for_graph_test_cases() {
     for (order, expected, edges) in TEST_CASES {
-        test_graph6_string(expected, order, edges.to_vec());
+        test_graph6_string_for_graph(expected, order, edges.to_vec());
     }
 }
 
-fn test_graph6_string(expected: &str, order: usize, edges: Vec<(u32, u32)>) {
-    let mut graph: Graph<(), (), Undirected> = Graph::new_undirected();
+fn test_graph6_string_for_graph(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
+    let mut graph: Graph<(), (), Undirected, u16> = Graph::with_capacity(order, edges.len());
     for _ in 0..order {
         graph.add_node(());
     }
@@ -17,15 +24,93 @@ fn test_graph6_string(expected: &str, order: usize, edges: Vec<(u32, u32)>) {
     assert_eq!(graph.graph6_string(), expected);
 }
 
+#[test]
+fn test_graph6_string_for_stable_graph_test_cases() {
+    for (order, expected, edges) in TEST_CASES {
+        test_graph6_string_for_stable_graph(expected, order, edges.to_vec());
+    }
+}
+
+fn test_graph6_string_for_stable_graph(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
+    let mut graph: StableGraph<(), (), Undirected, u16> =
+        StableUnGraph::with_capacity(order, edges.len());
+    for _ in 0..order {
+        graph.add_node(());
+    }
+    graph.extend_with_edges(edges);
+
+    assert_eq!(graph.graph6_string(), expected);
+}
+
+#[test]
+fn test_graph6_string_for_graph_map_test_cases() {
+    for (order, expected, edges) in TEST_CASES {
+        test_graph6_string_for_graph_map(expected, order, edges.to_vec());
+    }
+}
+
+fn test_graph6_string_for_graph_map(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
+    let mut graph: GraphMap<u16, (), Undirected> = GraphMap::with_capacity(order, edges.len());
+    for i in 0..order {
+        graph.add_node(i as u16);
+    }
+    for (a, b) in edges {
+        graph.add_edge(a, b, ());
+    }
+
+    assert_eq!(graph.graph6_string(), expected);
+}
+
+#[test]
+fn test_graph6_string_for_matrix_graph_test_cases() {
+    for (order, expected, edges) in TEST_CASES {
+        test_graph6_string_for_matrix_graph(expected, order, edges.to_vec());
+    }
+}
+
+fn test_graph6_string_for_matrix_graph(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
+    let mut graph: MatrixGraph<(), (), Undirected> = MatrixGraph::with_capacity(order);
+    for _ in 0..order {
+        graph.add_node(());
+    }
+    graph.extend_with_edges(edges.iter());
+
+    assert_eq!(graph.graph6_string(), expected);
+}
+
+#[test]
+fn test_graph6_string_for_csr_test_cases() {
+    for (order, expected, edges) in TEST_CASES {
+        test_graph6_string_for_csr(expected, order, edges.to_vec());
+    }
+}
+
+fn test_graph6_string_for_csr(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
+    let mut graph: Csr<(), (), Undirected, u16> = Csr::new();
+    let mut nodes = Vec::new();
+    for _ in 0..order {
+        let i = graph.add_node(());
+        nodes.push(i);
+        println!("i: {}", i);
+    }
+    for (a, b) in edges {
+        println!("a: {} b: {}", a, b);
+        graph.add_edge(a, b, ());
+    }
+    println!("finish");
+
+    assert_eq!(graph.graph6_string(), expected);
+}
+
 // Test cases format: (graph order, expected ghaph6 representation, graph edges)
 #[rustfmt::skip]
-const TEST_CASES: [(usize, &str, &[(u32, u32)]); 20] = [
+const TEST_CASES: [(usize, &str, &[(u16, u16)]); 20] = [
     // Empty Graphs
     (0, r"?", &[]),
     (1, r"@", &[]),
     (2, r"A?", &[]),
     // Small Graphs
-    (4, r"DQc", &[(0, 2), (0, 4), (1, 3), (3, 4)]),
+    (5, r"DQc", &[(0, 2), (0, 4), (1, 3), (3, 4)]),
     (5, r"Dhc", &[(0, 1), (0, 4), (1, 2), (2, 3), (3, 4)]),
     (5, r"D^k", &[(0, 2), (0, 3), (0, 4), (1, 2), (1, 3), (2, 3), (2, 4), (3, 4)]),
     (6, r"E@??", &[(2, 3)]),
