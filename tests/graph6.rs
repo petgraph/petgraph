@@ -1,11 +1,13 @@
-use petgraph::{
-    csr::Csr,
-    graph6::Graph6,
-    graphmap::GraphMap,
-    matrix_graph::MatrixGraph,
-    stable_graph::{StableGraph, StableUnGraph},
-    Graph, Undirected,
-};
+use petgraph::{csr::Csr, graph6::Graph6, Graph, Undirected};
+
+#[cfg(feature = "graphmap")]
+use petgraph::graphmap::GraphMap;
+
+#[cfg(feature = "matrix_graph")]
+use petgraph::matrix_graph::MatrixGraph;
+
+#[cfg(feature = "stable_graph")]
+use petgraph::stable_graph::{StableGraph, StableUnGraph};
 
 #[test]
 fn test_graph6_string_for_graph_test_cases() {
@@ -24,6 +26,7 @@ fn test_graph6_string_for_graph(expected: &str, order: usize, edges: Vec<(u16, u
     assert_eq!(graph.graph6_string(), expected);
 }
 
+#[cfg(feature = "stable_graph")]
 #[test]
 fn test_graph6_string_for_stable_graph_test_cases() {
     for (order, expected, edges) in TEST_CASES {
@@ -31,6 +34,7 @@ fn test_graph6_string_for_stable_graph_test_cases() {
     }
 }
 
+#[cfg(feature = "stable_graph")]
 fn test_graph6_string_for_stable_graph(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
     let mut graph: StableGraph<(), (), Undirected, u16> =
         StableUnGraph::with_capacity(order, edges.len());
@@ -42,6 +46,7 @@ fn test_graph6_string_for_stable_graph(expected: &str, order: usize, edges: Vec<
     assert_eq!(graph.graph6_string(), expected);
 }
 
+#[cfg(feature = "graphmap")]
 #[test]
 fn test_graph6_string_for_graph_map_test_cases() {
     for (order, expected, edges) in TEST_CASES {
@@ -49,6 +54,7 @@ fn test_graph6_string_for_graph_map_test_cases() {
     }
 }
 
+#[cfg(feature = "graphmap")]
 fn test_graph6_string_for_graph_map(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
     let mut graph: GraphMap<u16, (), Undirected> = GraphMap::with_capacity(order, edges.len());
     for i in 0..order {
@@ -61,6 +67,7 @@ fn test_graph6_string_for_graph_map(expected: &str, order: usize, edges: Vec<(u1
     assert_eq!(graph.graph6_string(), expected);
 }
 
+#[cfg(feature = "matrix_graph")]
 #[test]
 fn test_graph6_string_for_matrix_graph_test_cases() {
     for (order, expected, edges) in TEST_CASES {
@@ -68,6 +75,7 @@ fn test_graph6_string_for_matrix_graph_test_cases() {
     }
 }
 
+#[cfg(feature = "matrix_graph")]
 fn test_graph6_string_for_matrix_graph(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
     let mut graph: MatrixGraph<(), (), Undirected> = MatrixGraph::with_capacity(order);
     for _ in 0..order {
