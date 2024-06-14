@@ -641,15 +641,12 @@ where
         for edge in self.edge_references() {
             let i = edge.source().index() * n + edge.target().index();
             matrix.put(i);
-
-            let j = edge.source().index() + n * edge.target().index();
-            matrix.put(j);
         }
         matrix
     }
 
     fn is_adjacent(&self, matrix: &FixedBitSet, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
-        let n = self.edge_count();
+        let n = self.node_count();
         let index = n * a.index() + b.index();
         matrix.contains(index)
     }
