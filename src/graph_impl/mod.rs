@@ -2030,6 +2030,20 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
         }
         None
     }
+
+    /// Return a [`Neighbors`] iterator for graph `g`.
+    ///
+    /// Note: [`Neighbors`] borrows from the graph. However, it may be more
+    /// ergonomic to work with since it implements [`Iterator`].
+    pub fn attach<'a, N, E, Ty: EdgeType>(
+        &self,
+        g: &'a Graph<N, E, Ty, Ix>,
+    ) -> Neighbors<'a, E, Ix> {
+        Neighbors {
+            walker: self.clone(),
+            edges: &g.edges,
+        }
+    }
 }
 
 /// Iterator over the node indices of a graph.
