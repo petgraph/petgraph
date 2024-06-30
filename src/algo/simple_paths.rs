@@ -4,11 +4,12 @@ use std::{
 };
 
 use indexmap::IndexSet;
+use std::collections::HashMap;
 
-use crate::{
-    visit::{IntoNeighborsDirected, NodeCount},
-    Direction::Outgoing,
-};
+use crate::visit::{EdgeRef, GraphProp, IntoEdges};
+use crate::visit::{IntoNeighborsDirected, NodeCount};
+use crate::Directed;
+use crate::Direction::Outgoing;
 
 /// Returns an iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermediate_nodes` nodes
 /// and at most `max_intermediate_nodes`, if given, or limited by the graph's order otherwise. The simple path is a path without repetitions.
@@ -101,14 +102,81 @@ where
     })
 }
 
+type Path<T> = Vec<T>;
+
+/// Compute all possible paths in a directed graph from a given starting node, without repeating
+/// edges. For this algorithm, paths are sequences of edges.
+///
+/// starting_node: Explore paths from this node
+///
+/// (*) without repeating edges; a path can still visit the same node multiple times if there are
+/// multiple edges between nodes. For a regular directed graph (not multigraph), this
+/// means all paths without cycles.
+///
+/// The returned map will contain paths for all explored nodes
+pub fn all_non_repeating_paths_from<G>(
+    graph: G,
+    starting_node: G::NodeId,
+) -> HashMap<G::NodeId, Vec<Path<G::EdgeId>>>
+where
+    G: IntoEdges + GraphProp<EdgeType = Directed>,
+    G::NodeId: Eq + Hash,
+    G::EdgeId: Eq + Hash,
+{
+    let mut path_stack = Vec::<Vec<_>>::new();
+    let mut result = HashMap::<G::NodeId, Vec<Path<_>>>::default();
+    // Map edge id to edge target node id
+    // This extra map needed when we don't have graph[edge_id] lookup
+    let mut edge_targets = HashMap::new();
+
+    for edge in graph.edges(starting_node) {
+        edge_targets.entry(edge.id()).or_insert(edge.target());
+        path_stack.push(vec![edge.id()]);
+    }
+
+    result.entry(starting_node).or_default().push(Vec::new());
+
+    // Using a BFS order, explore all possible paths from the starting point
+    let mut new_path_stack = Vec::new();
+    while !path_stack.is_empty() {
+        for path in &path_stack {
+            let path_end = *path.last().expect("non-empty path");
+            let target = edge_targets[&path_end];
+            if let Some(existing_paths) = result.get(&target) {
+                if existing_paths
+                    .iter()
+                    .any(|existing_path| path.starts_with(existing_path))
+                {
+                    continue;
+                }
+            }
+            result.entry(target).or_default().push(path.clone());
+            for edge in graph.edges(target) {
+                debug_assert!(!path.contains(&edge.id()));
+                let mut new_path = path.clone();
+                edge_targets.entry(edge.id()).or_insert(edge.target());
+                new_path.push(edge.id());
+                new_path_stack.push(new_path);
+            }
+        }
+        path_stack.clear();
+        std::mem::swap(&mut path_stack, &mut new_path_stack);
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod test {
-    use std::{collections::HashSet, iter::FromIterator};
+    use std::{collections::HashMap, collections::HashSet, iter::FromIterator};
 
     use itertools::assert_equal;
 
-    use crate::{dot::Dot, prelude::DiGraph};
+    use crate::dot::Dot;
+    use crate::graph::{DiGraph, EdgeIndex, Graph, NodeIndex};
+    use crate::visit::NodeFiltered;
 
+    use super::all_non_repeating_paths_from;
     use super::all_simple_paths;
 
     #[test]
@@ -178,5 +246,103 @@ mod test {
                 .collect();
 
         assert_eq!(actual_simple_paths_0_to_2.len(), 0);
+    }
+
+    #[test]
+    fn test_all_non_repeating_paths() {
+        let mut gr = Graph::new();
+        let n0 = gr.add_node("0");
+        let n1 = gr.add_node("1");
+        let n2 = gr.add_node("2");
+        let n3 = gr.add_node("3");
+        let n4 = gr.add_node("4");
+        let n5 = gr.add_node("5");
+        let n6 = gr.add_node("6");
+        let n7 = gr.add_node("7");
+        let n8 = gr.add_node("8");
+
+        gr.add_edge(n0, n2, "A");
+        gr.add_edge(n0, n1, "B");
+        gr.add_edge(n2, n3, "D");
+        gr.add_edge(n3, n6, "I");
+        gr.add_edge(n3, n4, "E");
+        gr.add_edge(n1, n4, "C");
+        gr.add_edge(n4, n5, "F");
+        gr.add_edge(n5, n6, "H");
+        gr.add_edge(n6, n2, "J");
+        gr.add_edge(n5, n7, "K");
+        gr.add_edge(n6, n8, "L");
+        gr.add_edge(n5, n3, "G");
+
+        let paths_full: Vec<(&str, &[&str])> = vec![
+            ("0", &[]),
+            ("1", &["B"]),
+            ("2", &["A"]),
+            ("2", &["B", "C", "F", "H", "J"]),
+            ("2", &["B", "C", "F", "G", "I", "J"]),
+            ("3", &["A", "D"]),
+            ("3", &["B", "C", "F", "G"]),
+            ("3", &["B", "C", "F", "H", "J", "D"]),
+            ("4", &["B", "C"]),
+            ("4", &["A", "D", "E"]),
+            ("5", &["B", "C", "F"]),
+            ("5", &["A", "D", "E", "F"]),
+            ("6", &["A", "D", "I"]),
+            ("6", &["B", "C", "F", "H"]),
+            ("6", &["B", "C", "F", "G", "I"]),
+            ("6", &["A", "D", "E", "F", "H"]),
+            ("7", &["B", "C", "F", "K"]),
+            ("7", &["A", "D", "E", "F", "K"]),
+            ("8", &["A", "D", "I", "L"]),
+            ("8", &["B", "C", "F", "H", "L"]),
+            ("8", &["B", "C", "F", "G", "I", "L"]),
+            ("8", &["A", "D", "E", "F", "H", "L"]),
+        ];
+
+        fn string_paths_to_index_map(
+            graph: &Graph<&str, &str>,
+            paths: &[(&str, &[&str])],
+        ) -> HashMap<NodeIndex, Vec<Vec<EdgeIndex>>> {
+            let mut result = HashMap::<_, Vec<Vec<_>>>::new();
+            for &(node_weight, edge_path) in paths.iter() {
+                let node_id = graph
+                    .node_indices()
+                    .find(|ni| graph[*ni] == node_weight)
+                    .unwrap();
+                let edge_ids = edge_path
+                    .iter()
+                    .map(|&edge_weight| {
+                        graph
+                            .edge_indices()
+                            .find(|ei| graph[*ei] == edge_weight)
+                            .unwrap()
+                    })
+                    .collect::<Vec<_>>();
+                result.entry(node_id).or_default().push(edge_ids);
+            }
+            result
+        }
+        let paths_full_map = string_paths_to_index_map(&gr, &paths_full);
+
+        let result_full = all_non_repeating_paths_from(&gr, n0);
+
+        assert_eq!(paths_full_map, result_full);
+
+        let paths_subset: Vec<(_, &[&str])> = vec![
+            ("2", &["F", "H", "J"]),
+            ("2", &["F", "G", "I", "J"]),
+            ("3", &["F", "G"]),
+            ("3", &["F", "H", "J", "D"]),
+            ("4", &[]),
+            ("5", &["F"]),
+            ("6", &["F", "H"]),
+            ("6", &["F", "G", "I"]),
+        ];
+        let subset = [n2, n3, n4, n5, n6]; // strongly connected component as subset
+        let paths_subset_map = string_paths_to_index_map(&gr, &paths_subset);
+
+        let subset_graph = NodeFiltered(&gr, |node| subset.contains(&node));
+        let result_subset = all_non_repeating_paths_from(&subset_graph, n4);
+        assert_eq!(paths_subset_map, result_subset);
     }
 }
