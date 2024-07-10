@@ -48,8 +48,8 @@ quickcheck = { optional = true, version = "0.8", default-features = false }
 serde = { version = "1.0", default-features = false, optional = true }
 serde_derive = { version = "1.0", default-features = false, optional = true }
 rayon = { version = "1.5.3", optional = true }
-dot-parser = { version = "0.2", optional = true}
-dot-parser-macros = { version = "0.2", optional = true }
+dot-parser = { version = "0.3", optional = true}
+dot-parser-macros = { version = "0.3", optional = true }
 
 [dev-dependencies]
 bincode = "1.3.3"
