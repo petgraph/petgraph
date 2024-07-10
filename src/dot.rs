@@ -380,7 +380,7 @@ pub mod dot_parser {
 #[macro_export]
     /// Statically imports a [Graph] from a valid DOT/Graphviz [&str].
     macro_rules! graph_from_str {
-        ($s:expr) => { $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_string!($s)) };
+        ($s:tt) => { $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_string!($s)) };
     }
 
 #[macro_export]
@@ -389,7 +389,7 @@ pub mod dot_parser {
     /// Notice that, since the graph is imported *statically*, the file must exist at compile time, but
     /// can be removed at runtime.
     macro_rules! graph_from_file {
-        ($s:expr) => { $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_file!($s)) };
+        ($s:tt) => { $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_file!($s)) };
     }
 
     pub use graph_from_file;
