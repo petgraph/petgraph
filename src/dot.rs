@@ -395,12 +395,13 @@ pub mod dot_parser {
     pub use graph_from_file;
     pub use graph_from_str;
 
+    impl<'a> ParseFromDot<'a> for crate::graph::Graph<Node<(&'a str, &'a str)>, AList<(&'a str, &'a str)>> {}
 
     #[cfg(test)]
     mod test {
         #[test]
         fn test_dot_parsing() {
-            let graph = graph_from_str!("digraph { A -> B }");
+            let graph: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> B }");
         }
     }
 }
