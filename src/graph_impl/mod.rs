@@ -523,63 +523,6 @@ impl<N, E> Graph<N, E, Undirected> {
     }
 }
 
-#[cfg(feature = "dot_parser")]
-pub use dot_parser::canonical::{Node as CNode};
-#[cfg(feature = "dot_parser")]
-pub use dot_parser::subgraph_free::{AList};
-#[cfg(feature = "dot_parser")]
-use dot_parser::canonical::Graph as CGraph;
-#[cfg(feature = "dot_parser")]
-use dot_parser::ast::Graph as AstGraph;
-#[cfg(feature = "dot_parser")]
-impl<A> From<CGraph<A>> for Graph<CNode<A>, AList<A>> {
-    fn from(val: CGraph<A>) -> Self {
-        let mut graph = Graph::new();
-        let mut node_indices = std::collections::HashMap::new();
-        for node in val.nodes.set {
-            let ni = graph.add_node(node.1);
-            node_indices.insert(node.0, ni);
-        }
-        for edge in val.edges.set {
-            let from_ni = node_indices.get(&edge.from).unwrap();
-            let to_ni = node_indices.get(&edge.to).unwrap();
-            graph.add_edge(*from_ni, *to_ni, edge.attr);
-        }
-        graph
-    }
-}
-
-#[cfg(feature = "dot_parser")]
-use std::convert::TryFrom;
-
-#[cfg(feature = "dot_parser")]
-impl<'a> TryFrom<&'a str> for Graph<CNode<(&'a str, &'a str)>, AList<(&'a str, &'a str)>> {
-    type Error = ();
-    fn try_from(s: &'a str) -> Result<Graph<CNode<(&'a str, &'a str)>, AList<(&'a str, &'a str)>>, ()> {
-        let ast = AstGraph::try_from(s).map_err(|_| ())?;
-        let canonical: CGraph<(&'a str, &'a str)> = ast.into();
-        let petgraph: Graph<_, _> = Graph::from(canonical);
-        Ok(petgraph)
-    }
-}
-
-#[cfg(feature = "dot_parser")]
-#[macro_export]
-/// Statically imports a [Graph] from a valid DOT/Graphviz [&str].
-macro_rules! graph_from_str {
-    ($s:expr) => { Graph::from(dot_parser_macros::from_dot_string!($s)) };
-}
-
-#[cfg(feature = "dot_parser")]
-#[macro_export]
-/// Statically imports a [Graph] from a DOT/Graphviz file. The macro expects the file path as argument. 
-///
-/// Notice that, since the graph is imported *statically*, the file must exist at compile time, but
-/// can be removed at runtime.
-macro_rules! graph_from_file {
-    ($s:expr) => { Graph::from(dot_parser_macros::from_dot_file!($s)) };
-}
-
 impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
 where
     Ty: EdgeType,
