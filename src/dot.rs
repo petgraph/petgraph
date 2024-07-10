@@ -325,6 +325,7 @@ where
 }
 
 #[cfg(feature = "dot_parser")]
+#[macro_use]
 pub mod dot_parser {
     pub use dot_parser::canonical::{Node};
     pub use dot_parser::ast::AList;
@@ -378,7 +379,7 @@ pub mod dot_parser {
 #[macro_export]
     /// Statically imports a [Graph] from a valid DOT/Graphviz [&str].
     macro_rules! graph_from_str {
-        ($s:expr) => { ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_string!($s)) };
+        ($s:expr) => { $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_string!($s)) };
     }
 
 #[macro_export]
@@ -387,7 +388,19 @@ pub mod dot_parser {
     /// Notice that, since the graph is imported *statically*, the file must exist at compile time, but
     /// can be removed at runtime.
     macro_rules! graph_from_file {
-        ($s:expr) => { ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_file!($s)) };
+        ($s:expr) => { $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_file!($s)) };
+    }
+
+    pub use graph_from_file;
+    pub use graph_from_str;
+
+
+    #[cfg(test)]
+    mod test {
+        #[test]
+        fn test_dot_parsing() {
+            let graph = graph_from_str!("digraph { A -> B }");
+        }
     }
 }
 
