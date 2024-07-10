@@ -325,15 +325,31 @@ where
 }
 
 #[cfg(feature = "dot_parser")]
-mod dot_parser {
-    pub use dot_parser::canonical::{Node as CNode};
+pub mod dot_parser {
+    pub use dot_parser::canonical::{Node};
+    pub use dot_parser::ast::AList;
     use dot_parser::canonical::Graph as CGraph;
     use dot_parser::ast::Graph as AstGraph;
-    use dot_parser::ast::AList;
+    use dot_parser::ast::ParseError;
     use crate::data::Create;
     use std::convert::TryFrom;
+    use std::fmt::{Display, Formatter};
+    use std::error::Error;
 
-    pub trait ParseFromDot<'a>: Create<EdgeWeight=AList<(&'a str, &'a str)>, NodeWeight=CNode<(&'a str, &'a str)>> {
+    #[derive(Debug)]
+    pub struct DotParsingError<'a> {
+        error: ParseError<'a>
+    }
+
+    impl Display for DotParsingError<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+            write!(f, "{}", self.error)
+        }
+    }
+
+    impl Error for DotParsingError<'_> {}
+
+    pub trait ParseFromDot<'a>: Create<EdgeWeight=AList<(&'a str, &'a str)>, NodeWeight=Node<(&'a str, &'a str)>> {
         fn from_dot_graph(dot_graph: CGraph<(&'a str, &'a str)>) -> Self {
             let node_number = dot_graph.nodes.set.len(); 
             let edge_number = dot_graph.edges.set.len();
@@ -373,8 +389,6 @@ mod dot_parser {
     macro_rules! graph_from_file {
         ($s:expr) => { ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_file!($s)) };
     }
-
-
 }
 
 #[cfg(test)]
