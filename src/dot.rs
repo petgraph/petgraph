@@ -327,9 +327,9 @@ where
 #[cfg(feature = "dot_parser")]
 mod dot_parser {
     pub use dot_parser::canonical::{Node as CNode};
-    pub use dot_parser::subgraph_free::{AList};
     use dot_parser::canonical::Graph as CGraph;
     use dot_parser::ast::Graph as AstGraph;
+    use dot_parser::ast::AList;
     use crate::data::Create;
     use std::convert::TryFrom;
 
