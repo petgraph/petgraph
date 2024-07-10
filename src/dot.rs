@@ -350,6 +350,7 @@ pub mod dot_parser {
 
     impl Error for DotParsingError<'_> {}
 
+    /// This trait extends [Create] with a method to parse a graph from a dot string.
     pub trait ParseFromDot<'a>: Create<EdgeWeight=AList<(&'a str, &'a str)>, NodeWeight=Node<(&'a str, &'a str)>> {
         fn from_dot_graph(dot_graph: CGraph<(&'a str, &'a str)>) -> Self {
             let node_number = dot_graph.nodes.set.len(); 
