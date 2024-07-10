@@ -100,7 +100,7 @@ fn floyd_warshall_uniform_weight() {
     .iter()
     .cloned()
     .collect();
-    let res = floyd_warshall(&graph, |_| 1 as i32).unwrap();
+    let res = floyd_warshall(&graph, |_| 1_i32).unwrap();
 
     let nodes = [a, b, c, d, e, f, g, h];
     for node1 in &nodes {

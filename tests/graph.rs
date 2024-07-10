@@ -1481,7 +1481,7 @@ fn toposort_generic() {
     {
         order.clear();
         let init_nodes = gr.node_identifiers().filter(|n| {
-            gr.neighbors_directed(n.clone(), Direction::Incoming)
+            gr.neighbors_directed(*n, Direction::Incoming)
                 .next()
                 .is_none()
         });
@@ -1766,7 +1766,7 @@ where
     G::NodeId: PartialEq,
 {
     // self loops count twice
-    let original_node = node.clone();
+    let original_node = node;
     let mut degree = 0;
     for v in g.neighbors(node) {
         degree += if v == original_node { 2 } else { 1 };
@@ -2141,7 +2141,7 @@ fn filtered_post_order() {
         Graph::from_edges(&[(0, 2), (1, 2), (0, 3), (1, 4), (2, 4), (4, 5), (3, 5)]);
     // map reachable nodes
     let mut dfs = Dfs::new(&gr, n(0));
-    while let Some(_) = dfs.next(&gr) {}
+    while dfs.next(&gr).is_some() {}
 
     let map = dfs.discovered;
     gr.add_edge(n(0), n(1), ());
@@ -2259,7 +2259,7 @@ fn test_edge_filtered() {
     assert_eq!(connected_components(&positive_edges), 2);
 
     let mut dfs = DfsPostOrder::new(&positive_edges, n(0));
-    while let Some(_) = dfs.next(&positive_edges) {}
+    while dfs.next(&positive_edges).is_some() {}
 
     let n = n::<u32>;
     for node in &[n(0), n(1), n(2)] {

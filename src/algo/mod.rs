@@ -10,6 +10,7 @@ pub mod dijkstra;
 pub mod dominators;
 pub mod feedback_arc_set;
 pub mod floyd_warshall;
+pub mod ford_fulkerson;
 pub mod isomorphism;
 pub mod k_shortest_path;
 pub mod matching;
@@ -36,6 +37,7 @@ pub use bellman_ford::{bellman_ford, find_negative_cycle};
 pub use dijkstra::dijkstra;
 pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
+pub use ford_fulkerson::ford_fulkerson;
 pub use isomorphism::{
     is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
     subgraph_isomorphisms_iter,
@@ -836,3 +838,28 @@ macro_rules! impl_unit_measure(
     }
 );
 impl_unit_measure!(f32, f64);
+
+/// Some measure of positive numbers, assuming positive
+/// float-pointing numbers
+pub trait PositiveMeasure: Measure + Copy {
+    fn zero() -> Self;
+    fn max() -> Self;
+}
+
+macro_rules! impl_positive_measure(
+    ( $( $t:ident ),* )=> {
+        $(
+            impl PositiveMeasure for $t {
+                fn zero() -> Self {
+                    0 as $t
+                }
+                fn max() -> Self {
+                    std::$t::MAX
+                }
+            }
+
+        )*
+    }
+);
+
+impl_positive_measure!(u8, u16, u32, u64, u128, usize, f32, f64);

@@ -44,7 +44,7 @@ fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
     let edges_to_add: Vec<_> = nodes
         .iter()
         .enumerate()
-        .map(|(i, &node)| {
+        .flat_map(|(i, &node)| {
             let edges: Vec<_> = (0..5)
                 .map(|j| (i + j + 1) % nodes.len())
                 .map(|j| (node, nodes[j]))
@@ -52,7 +52,6 @@ fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
 
             edges
         })
-        .flatten()
         .collect();
 
     b.iter(|| {

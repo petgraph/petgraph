@@ -168,7 +168,7 @@ fn dfs() {
     {
         let mut cnt = 0;
         let mut dfs = Dfs::new(&gr, h);
-        while let Some(_) = dfs.next(&gr) {
+        while dfs.next(&gr).is_some() {
             cnt += 1;
         }
         assert_eq!(cnt, 4);
@@ -176,7 +176,7 @@ fn dfs() {
     {
         let mut cnt = 0;
         let mut dfs = Dfs::new(&gr, z);
-        while let Some(_) = dfs.next(&gr) {
+        while dfs.next(&gr).is_some() {
             cnt += 1;
         }
         assert_eq!(cnt, 1);
@@ -250,10 +250,10 @@ fn graphmap_directed() {
     // Add reverse edges -- ok!
     assert!(gr.add_edge(e, d, ()).is_none());
     // duplicate edge - no
-    assert!(!gr.add_edge(a, b, ()).is_none());
+    assert!(gr.add_edge(a, b, ()).is_some());
 
     // duplicate self loop - no
-    assert!(!gr.add_edge(b, b, ()).is_none());
+    assert!(gr.add_edge(b, b, ()).is_some());
     println!("{:#?}", gr);
 }
 

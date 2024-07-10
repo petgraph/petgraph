@@ -79,7 +79,7 @@ where
                     .enumerate()
                     .map(|(w, r)| {
                         let mut w_out_edges = graph.edges(nodeix(w));
-                        if let Some(_) = w_out_edges.find(|e| e.target() == nodeix(v)) {
+                        if w_out_edges.any(|e| e.target() == nodeix(v)) {
                             damping_factor * *r / out_degrees[w]
                         } else if out_degrees[w] == D::zero() {
                             damping_factor * *r / nb // stochastic matrix condition
@@ -90,7 +90,7 @@ where
                     .sum::<D>()
             })
             .collect::<Vec<D>>();
-        let sum = pi.iter().map(|score| *score).sum::<D>();
+        let sum = pi.iter().copied().sum::<D>();
         ranks = pi.iter().map(|r| *r / sum).collect::<Vec<D>>();
     }
     ranks
