@@ -3,7 +3,7 @@
 extern crate petgraph;
 extern crate test;
 
-use petgraph::graph6::Graph6;
+use petgraph::graph6_encoder::Graph6;
 use test::Bencher;
 
 #[allow(dead_code)]

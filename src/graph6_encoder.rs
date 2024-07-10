@@ -1,4 +1,4 @@
-//! Graph6 file format input and output.
+//! Encoder for graph6 format for graphs.
 
 use crate::{
     csr::Csr,
@@ -59,7 +59,6 @@ where
         for i in 1..=n {
             let is_adjacent: bool =
                 graph.is_adjacent(&adj_matrix, node_ids_vec[i - 1], node_ids_vec[n]);
-            println!("is adjacent {} {} = {}", i - 1, n, is_adjacent);
             bits.push(if is_adjacent { 1 } else { 0 });
         }
 

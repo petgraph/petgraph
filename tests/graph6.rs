@@ -1,4 +1,9 @@
-use petgraph::{csr::Csr, graph6::Graph6, Graph, Undirected};
+use petgraph::{
+    csr::Csr,
+    graph6_decoder::{from_graph6_representation, FromGraph6},
+    graph6_encoder::{get_graph6_representation, Graph6},
+    Graph, Undirected,
+};
 
 #[cfg(feature = "graphmap")]
 use petgraph::graphmap::GraphMap;
@@ -7,56 +12,130 @@ use petgraph::graphmap::GraphMap;
 use petgraph::matrix_graph::MatrixGraph;
 
 #[cfg(feature = "stable_graph")]
-use petgraph::stable_graph::{StableGraph, StableUnGraph};
+use petgraph::stable_graph::StableGraph;
 
 #[test]
-fn test_graph6_string_for_graph_test_cases() {
-    for (order, expected, edges) in TEST_CASES {
-        test_graph6_string_for_graph(expected, order, edges.to_vec());
+fn generic_graph6_encoder_test_cases() {
+    for (order, graph6_str, edges) in TEST_CASES {
+        test_generic_graph6_encoder(graph6_str, order, edges.to_vec());
     }
 }
 
-fn test_graph6_string_for_graph(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
-    let mut graph: Graph<(), (), Undirected, u16> = Graph::with_capacity(order, edges.len());
+fn test_generic_graph6_encoder(expected_graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
+    type G = Graph<(), (), Undirected, u16>;
+
+    // Assert encoded graph6 string is as expected
+    let mut graph: G = Graph::with_capacity(order, edges.len());
     for _ in 0..order {
         graph.add_node(());
     }
     graph.extend_with_edges(edges);
 
-    assert_eq!(graph.graph6_string(), expected);
+    let graph6_string = get_graph6_representation(&graph);
+    assert_eq!(graph6_string, expected_graph6_str);
 }
 
-#[cfg(feature = "stable_graph")]
 #[test]
-fn test_graph6_string_for_stable_graph_test_cases() {
-    for (order, expected, edges) in TEST_CASES {
-        test_graph6_string_for_stable_graph(expected, order, edges.to_vec());
+fn graph6_generic_decoder_test_cases() {
+    for (order, graph6_str, edges) in TEST_CASES {
+        test_graph6_generic_decoder(graph6_str, order, edges.to_vec());
     }
 }
 
-#[cfg(feature = "stable_graph")]
-fn test_graph6_string_for_stable_graph(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
-    let mut graph: StableGraph<(), (), Undirected, u16> =
-        StableUnGraph::with_capacity(order, edges.len());
+fn test_graph6_generic_decoder(
+    graph6_str: &str,
+    expected_order: usize,
+    mut expected_edges: Vec<(u16, u16)>,
+) {
+    type G = (usize, Vec<(u16, u16)>);
+
+    let (order, mut edges): G = from_graph6_representation(graph6_str.to_string());
+    assert_eq!(order, expected_order, "order should be the same");
+
+    edges.sort();
+    expected_edges.sort();
+    assert_eq!(edges, expected_edges, "edges should be the same");
+}
+
+#[test]
+fn graph6_for_graph_test_cases() {
+    for (order, graph6_str, edges) in TEST_CASES {
+        test_graph6_for_graph(graph6_str, order, edges.to_vec());
+    }
+}
+
+fn test_graph6_for_graph(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
+    type G = Graph<(), (), Undirected, u16>;
+    let size = edges.len();
+
+    // Build test graph
+    let mut graph: G = Graph::with_capacity(order, size);
     for _ in 0..order {
         graph.add_node(());
     }
     graph.extend_with_edges(edges);
 
-    assert_eq!(graph.graph6_string(), expected);
+    // Assert encoded graph6 string is as expected
+    let graph6_string = graph.graph6_string();
+    assert_eq!(graph6_string, graph6_str);
+
+    // Assert decoded graph properties
+    let decoded_graph = G::from_graph6_string(graph6_string);
+    assert_eq!(decoded_graph.node_count(), order);
+    assert_eq!(decoded_graph.edge_count(), size);
+
+    // Assert re-encoded graph6 string is the same
+    assert_eq!(decoded_graph.graph6_string(), graph6_str);
+}
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn graph6_for_stable_graph_test_cases() {
+    for (order, graph6_str, edges) in TEST_CASES {
+        test_graph6_for_stable_graph(graph6_str, order, edges.to_vec());
+    }
+}
+
+#[cfg(feature = "stable_graph")]
+fn test_graph6_for_stable_graph(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
+    type G = StableGraph<(), (), Undirected, u16>;
+    let size = edges.len();
+
+    // Build test graph
+    let mut graph = G::with_capacity(order, edges.len());
+    for _ in 0..order {
+        graph.add_node(());
+    }
+    graph.extend_with_edges(edges);
+
+    // Assert encoded graph6 string is as expected
+    let graph6_string = graph.graph6_string();
+    assert_eq!(graph6_string, graph6_str);
+
+    // Assert decoded graph properties
+    let decoded_graph = G::from_graph6_string(graph6_string);
+    assert_eq!(decoded_graph.node_count(), order);
+    assert_eq!(decoded_graph.edge_count(), size);
+
+    // Assert re-encoded graph6 string is the same
+    assert_eq!(decoded_graph.graph6_string(), graph6_str);
 }
 
 #[cfg(feature = "graphmap")]
 #[test]
-fn test_graph6_string_for_graph_map_test_cases() {
-    for (order, expected, edges) in TEST_CASES {
-        test_graph6_string_for_graph_map(expected, order, edges.to_vec());
+fn graph6_for_graph_map_test_cases() {
+    for (order, graph6_str, edges) in TEST_CASES {
+        test_graph6_for_graph_map(graph6_str, order, edges.to_vec());
     }
 }
 
 #[cfg(feature = "graphmap")]
-fn test_graph6_string_for_graph_map(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
-    let mut graph: GraphMap<u16, (), Undirected> = GraphMap::with_capacity(order, edges.len());
+fn test_graph6_for_graph_map(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
+    type G = GraphMap<u16, (), Undirected>;
+    let size = edges.len();
+
+    // Build test graph
+    let mut graph = G::with_capacity(order, edges.len());
     for i in 0..order {
         graph.add_node(i as u16);
     }
@@ -64,50 +143,85 @@ fn test_graph6_string_for_graph_map(expected: &str, order: usize, edges: Vec<(u1
         graph.add_edge(a, b, ());
     }
 
-    assert_eq!(graph.graph6_string(), expected);
+    // Assert encoded graph6 string is as expected
+    let graph6_string = graph.graph6_string();
+    assert_eq!(graph6_string, graph6_str);
+
+    // Assert decoded graph properties
+    let decoded_graph = G::from_graph6_string(graph6_string);
+    assert_eq!(decoded_graph.node_count(), order);
+    assert_eq!(decoded_graph.edge_count(), size);
+
+    // Assert re-encoded graph6 string is the same
+    assert_eq!(decoded_graph.graph6_string(), graph6_str);
 }
 
 #[cfg(feature = "matrix_graph")]
 #[test]
-fn test_graph6_string_for_matrix_graph_test_cases() {
-    for (order, expected, edges) in TEST_CASES {
-        test_graph6_string_for_matrix_graph(expected, order, edges.to_vec());
+fn graph6_for_matrix_graph_test_cases() {
+    for (order, graph6_str, edges) in TEST_CASES {
+        test_graph6_for_matrix_graph(graph6_str, order, edges.to_vec());
     }
 }
 
 #[cfg(feature = "matrix_graph")]
-fn test_graph6_string_for_matrix_graph(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
-    let mut graph: MatrixGraph<(), (), Undirected> = MatrixGraph::with_capacity(order);
+fn test_graph6_for_matrix_graph(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
+    type G = MatrixGraph<(), (), Undirected>;
+    let size = edges.len();
+
+    // Build test graph
+    let mut graph = G::with_capacity(order);
     for _ in 0..order {
         graph.add_node(());
     }
     graph.extend_with_edges(edges.iter());
 
-    assert_eq!(graph.graph6_string(), expected);
+    // Assert encoded graph6 string is as expected
+    let graph6_string = graph.graph6_string();
+    assert_eq!(graph6_string, graph6_str);
+
+    // Assert decoded graph properties
+    let decoded_graph = G::from_graph6_string(graph6_string);
+    assert_eq!(decoded_graph.node_count(), order);
+    assert_eq!(decoded_graph.edge_count(), size);
+
+    // Assert re-encoded graph6 string is the same
+    assert_eq!(decoded_graph.graph6_string(), graph6_str);
 }
 
 #[test]
-fn test_graph6_string_for_csr_test_cases() {
-    for (order, expected, edges) in TEST_CASES {
-        test_graph6_string_for_csr(expected, order, edges.to_vec());
+fn graph6_for_csr_test_cases() {
+    for (order, graph6_str, edges) in TEST_CASES {
+        test_graph6_for_csr(graph6_str, order, edges.to_vec());
     }
 }
 
-fn test_graph6_string_for_csr(expected: &str, order: usize, edges: Vec<(u16, u16)>) {
-    let mut graph: Csr<(), (), Undirected, u16> = Csr::new();
+fn test_graph6_for_csr(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
+    type G = Csr<(), (), Undirected, u16>;
+    let size = edges.len();
+
+    // Build test graph
+    let mut graph = G::new();
     let mut nodes = Vec::new();
     for _ in 0..order {
         let i = graph.add_node(());
         nodes.push(i);
-        println!("i: {}", i);
     }
     for (a, b) in edges {
-        println!("a: {} b: {}", a, b);
         graph.add_edge(a, b, ());
     }
-    println!("finish");
 
-    assert_eq!(graph.graph6_string(), expected);
+    // Assert encoded graph6 string is as expected
+    let graph6_string = graph.graph6_string();
+    assert_eq!(graph6_string, graph6_str);
+
+    // Assert decoded graph properties
+    let decoded_graph = G::from_graph6_string(graph6_string);
+    assert_eq!(decoded_graph.node_count(), order);
+    assert_eq!(decoded_graph.edge_count(), size);
+
+    // Assert re-encoded graph6 string is the same
+    assert_eq!(decoded_graph.graph6_string(), graph6_str);
 }
 
 // Test cases format: (graph order, expected ghaph6 representation, graph edges)
