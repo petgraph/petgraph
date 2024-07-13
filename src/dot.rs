@@ -396,18 +396,23 @@ pub mod dot_parser {
     pub use graph_from_str;
 
     impl<'a> ParseFromDot<'a> for crate::graph::Graph<Node<(&'a str, &'a str)>, AList<(&'a str, &'a str)>> {}
+    #[cfg(stable_graph)]
+    impl<'a> ParseFromDot<'a> for crate::stable_graph::StableGraph<Node<(&'a str, &'a str)>, AList<(&'a str, &'a str)>> {}
 
     #[cfg(test)]
     mod test {
         #[test]
         fn test_dot_parsing_str() {
-            let graph: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> B }");
+            let _: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> B }");
+            #[cfg(stable_graph)]
+            let _: crate::stable_graph::StableGraph<_, _> = graph_from_str!("digraph { A -> B }");
         }
 
         #[test]
         fn test_dot_parsing_file() {
-            let graph: crate::graph::Graph<_, _> = graph_from_file!("graph-example.dot");
-            println!("{:?}", graph);
+            let _: crate::graph::Graph<_, _> = graph_from_file!("graph-example.dot");
+            #[cfg(stable_graph)]
+            let _: crate::stable_graph::StableGraph<_, _> = graph_from_file!("graph-example.dot");
         }
     }
 }
