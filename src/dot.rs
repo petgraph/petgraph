@@ -400,8 +400,14 @@ pub mod dot_parser {
     #[cfg(test)]
     mod test {
         #[test]
-        fn test_dot_parsing() {
+        fn test_dot_parsing_str() {
             let graph: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> B }");
+        }
+
+        #[test]
+        fn test_dot_parsing_file() {
+            let graph: crate::graph::Graph<_, _> = graph_from_file!("graph-example.dot");
+            println!("{:?}", graph);
         }
     }
 }
