@@ -254,55 +254,6 @@ mod test {
 
     #[test]
     fn test_all_non_repeating_paths() {
-        let mut gr = Graph::new();
-        let n0 = gr.add_node("0");
-        let n1 = gr.add_node("1");
-        let n2 = gr.add_node("2");
-        let n3 = gr.add_node("3");
-        let n4 = gr.add_node("4");
-        let n5 = gr.add_node("5");
-        let n6 = gr.add_node("6");
-        let n7 = gr.add_node("7");
-        let n8 = gr.add_node("8");
-
-        gr.add_edge(n0, n2, "A");
-        gr.add_edge(n0, n1, "B");
-        gr.add_edge(n2, n3, "D");
-        gr.add_edge(n3, n6, "I");
-        gr.add_edge(n3, n4, "E");
-        gr.add_edge(n1, n4, "C");
-        gr.add_edge(n4, n5, "F");
-        gr.add_edge(n5, n6, "H");
-        gr.add_edge(n6, n2, "J");
-        gr.add_edge(n5, n7, "K");
-        gr.add_edge(n6, n8, "L");
-        gr.add_edge(n5, n3, "G");
-
-        let paths_full: Vec<(&str, &[&str])> = vec![
-            ("0", &[]),
-            ("1", &["B"]),
-            ("2", &["A"]),
-            ("2", &["B", "C", "F", "H", "J"]),
-            ("2", &["B", "C", "F", "G", "I", "J"]),
-            ("3", &["A", "D"]),
-            ("3", &["B", "C", "F", "G"]),
-            ("3", &["B", "C", "F", "H", "J", "D"]),
-            ("4", &["B", "C"]),
-            ("4", &["A", "D", "E"]),
-            ("5", &["B", "C", "F"]),
-            ("5", &["A", "D", "E", "F"]),
-            ("6", &["A", "D", "I"]),
-            ("6", &["B", "C", "F", "H"]),
-            ("6", &["B", "C", "F", "G", "I"]),
-            ("6", &["A", "D", "E", "F", "H"]),
-            ("7", &["B", "C", "F", "K"]),
-            ("7", &["A", "D", "E", "F", "K"]),
-            ("8", &["A", "D", "I", "L"]),
-            ("8", &["B", "C", "F", "H", "L"]),
-            ("8", &["B", "C", "F", "G", "I", "L"]),
-            ("8", &["A", "D", "E", "F", "H", "L"]),
-        ];
-
         fn string_paths_to_index_map(
             graph: &Graph<&str, &str>,
             paths: &[(&str, &[&str])],
@@ -326,27 +277,96 @@ mod test {
             }
             result
         }
-        let paths_full_map = string_paths_to_index_map(&gr, &paths_full);
 
-        let result_full = all_non_repeating_paths_from(&gr, n0);
+        {
+            let mut gr = Graph::new();
+            let n0 = gr.add_node("0");
+            let n1 = gr.add_node("1");
+            let n2 = gr.add_node("2");
+            let n3 = gr.add_node("3");
+            let n4 = gr.add_node("4");
+            let n5 = gr.add_node("5");
+            let n6 = gr.add_node("6");
+            let n7 = gr.add_node("7");
+            let n8 = gr.add_node("8");
 
-        assert_eq!(paths_full_map, result_full);
+            gr.add_edge(n0, n2, "A");
+            gr.add_edge(n0, n1, "B");
+            gr.add_edge(n2, n3, "D");
+            gr.add_edge(n3, n6, "I");
+            gr.add_edge(n3, n4, "E");
+            gr.add_edge(n1, n4, "C");
+            gr.add_edge(n4, n5, "F");
+            gr.add_edge(n5, n6, "H");
+            gr.add_edge(n6, n2, "J");
+            gr.add_edge(n5, n7, "K");
+            gr.add_edge(n6, n8, "L");
+            gr.add_edge(n5, n3, "G");
 
-        let paths_subset: Vec<(_, &[&str])> = vec![
-            ("2", &["F", "H", "J"]),
-            ("2", &["F", "G", "I", "J"]),
-            ("3", &["F", "G"]),
-            ("3", &["F", "H", "J", "D"]),
-            ("4", &[]),
-            ("5", &["F"]),
-            ("6", &["F", "H"]),
-            ("6", &["F", "G", "I"]),
-        ];
-        let subset = [n2, n3, n4, n5, n6]; // strongly connected component as subset
-        let paths_subset_map = string_paths_to_index_map(&gr, &paths_subset);
+            let paths_full: Vec<(&str, &[&str])> = vec![
+                ("0", &[]),
+                ("1", &["B"]),
+                ("2", &["A"]),
+                ("2", &["B", "C", "F", "H", "J"]),
+                ("2", &["B", "C", "F", "G", "I", "J"]),
+                ("3", &["A", "D"]),
+                ("3", &["B", "C", "F", "G"]),
+                ("3", &["B", "C", "F", "H", "J", "D"]),
+                ("4", &["B", "C"]),
+                ("4", &["A", "D", "E"]),
+                ("5", &["B", "C", "F"]),
+                ("5", &["A", "D", "E", "F"]),
+                ("6", &["A", "D", "I"]),
+                ("6", &["B", "C", "F", "H"]),
+                ("6", &["B", "C", "F", "G", "I"]),
+                ("6", &["A", "D", "E", "F", "H"]),
+                ("7", &["B", "C", "F", "K"]),
+                ("7", &["A", "D", "E", "F", "K"]),
+                ("8", &["A", "D", "I", "L"]),
+                ("8", &["B", "C", "F", "H", "L"]),
+                ("8", &["B", "C", "F", "G", "I", "L"]),
+                ("8", &["A", "D", "E", "F", "H", "L"]),
+            ];
 
-        let subset_graph = NodeFiltered(&gr, |node| subset.contains(&node));
-        let result_subset = all_non_repeating_paths_from(&subset_graph, n4);
-        assert_eq!(paths_subset_map, result_subset);
+            let paths_full_map = string_paths_to_index_map(&gr, &paths_full);
+
+            let result_full = all_non_repeating_paths_from(&gr, n0);
+
+            assert_eq!(paths_full_map, result_full);
+
+            let paths_subset: Vec<(_, &[&str])> = vec![
+                ("2", &["F", "H", "J"]),
+                ("2", &["F", "G", "I", "J"]),
+                ("3", &["F", "G"]),
+                ("3", &["F", "H", "J", "D"]),
+                ("4", &[]),
+                ("5", &["F"]),
+                ("6", &["F", "H"]),
+                ("6", &["F", "G", "I"]),
+            ];
+            let subset = [n2, n3, n4, n5, n6]; // strongly connected component as subset
+            let paths_subset_map = string_paths_to_index_map(&gr, &paths_subset);
+
+            let subset_graph = NodeFiltered(&gr, |node| subset.contains(&node));
+            let result_subset = all_non_repeating_paths_from(&subset_graph, n4);
+            assert_eq!(paths_subset_map, result_subset);
+        }
+
+        {
+            // In this graph, find only the path A from 0 to 1.
+            // Do not include path A, B from 0 to 1.
+            let mut gr = Graph::new();
+            let n0 = gr.add_node("0");
+            let n1 = gr.add_node("1");
+
+            let e0 = gr.add_edge(n0, n1, "A");
+            gr.add_edge(n1, n1, "B");
+
+            println!("{}", Dot::new(&gr));
+
+            let result = all_non_repeating_paths_from(&gr, n0);
+            assert_eq!(result[&n0], vec![vec![]]);
+            assert_eq!(result[&n1], vec![vec![e0]]);
+        }
     }
 }
