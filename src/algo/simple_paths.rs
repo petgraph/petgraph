@@ -123,7 +123,7 @@ where
     G::NodeId: Eq + Hash,
     G::EdgeId: Eq + Hash,
 {
-    let mut path_stack = Vec::<Vec<_>>::new();
+    let mut current_paths = Vec::<Path<_>>::new();
     let mut result = HashMap::<G::NodeId, Vec<Path<_>>>::default();
     // Map edge id to edge target node id
     // This extra map needed when we don't have graph[edge_id] lookup
@@ -131,36 +131,40 @@ where
 
     for edge in graph.edges(starting_node) {
         edge_targets.entry(edge.id()).or_insert(edge.target());
-        path_stack.push(vec![edge.id()]);
+        current_paths.push(vec![edge.id()]);
     }
 
     result.entry(starting_node).or_default().push(Vec::new());
 
     // Using a BFS order, explore all possible paths from the starting point
-    let mut new_path_stack = Vec::new();
-    while !path_stack.is_empty() {
-        for path in &path_stack {
+    let mut next_paths = Vec::new();
+    while !current_paths.is_empty() {
+        for path in current_paths.drain(..) {
             let path_end = *path.last().expect("non-empty path");
             let target = edge_targets[&path_end];
-            if let Some(existing_paths) = result.get(&target) {
-                if existing_paths
-                    .iter()
-                    .any(|existing_path| path.starts_with(existing_path))
-                {
-                    continue;
-                }
+
+            // Given a path P to `target`
+            // Skip if there is already an existing path to `target` that is a prefix of `P`.
+            let paths_to_target = result.entry(target).or_default();
+            if paths_to_target
+                .iter()
+                .any(|existing_path| path.starts_with(existing_path))
+            {
+                continue;
             }
-            result.entry(target).or_default().push(path.clone());
+
+            // Else add P to `target` and explore all paths P + E where E is an edge from target.
             for edge in graph.edges(target) {
                 debug_assert!(!path.contains(&edge.id()));
-                let mut new_path = path.clone();
                 edge_targets.entry(edge.id()).or_insert(edge.target());
+                let mut new_path = path.clone();
                 new_path.push(edge.id());
-                new_path_stack.push(new_path);
+                next_paths.push(new_path);
             }
+            paths_to_target.push(path);
         }
-        path_stack.clear();
-        std::mem::swap(&mut path_stack, &mut new_path_stack);
+        // current_paths now empty, swap with next list to explore
+        std::mem::swap(&mut current_paths, &mut next_paths);
     }
 
     result
