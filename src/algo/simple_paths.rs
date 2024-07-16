@@ -368,5 +368,31 @@ mod test {
             assert_eq!(result[&n0], vec![vec![]]);
             assert_eq!(result[&n1], vec![vec![e0]]);
         }
+
+        {
+            // In this graph, there are 2 trails from 0 to 1 and 4 trails from 0 to 2.
+            let mut gr = Graph::new();
+            let n0 = gr.add_node("0");
+            let n1 = gr.add_node("1");
+            let n2 = gr.add_node("2");
+
+            let e0 = gr.add_edge(n0, n1, "A");
+            let e1 = gr.add_edge(n0, n1, "B");
+            let e2 = gr.add_edge(n1, n2, "C");
+            let e3 = gr.add_edge(n1, n2, "D");
+
+            println!("{}", Dot::new(&gr));
+
+            let mut result = all_non_repeating_paths_from(&gr, n0);
+
+            assert_eq!(result[&n0], vec![vec![]]);
+            assert_eq!(result[&n1], vec![vec![e1], vec![e0]]);
+
+            result.get_mut(&n2).unwrap().sort_unstable();
+
+            let mut expected_n0_to_n2 = vec![vec![e0, e2], vec![e1, e2], vec![e0, e3], vec![e1, e3]];
+            expected_n0_to_n2.sort_unstable();
+            assert_eq!(result[&n2], expected_n0_to_n2);
+        }
     }
 }
