@@ -104,17 +104,21 @@ where
 
 type Path<T> = Vec<T>;
 
-/// Compute all possible paths in a directed graph from a given starting node, without repeating
-/// edges. For this algorithm, paths are sequences of edges.
+/// Compute all simple paths in a directed graph from a given starting node to
+/// all reachable nodes.
+///
+/// For this algorithm, paths are sequences of edges. All simple paths here
+/// means that in any given path, an edge or a vertex can not be repeated.
 ///
 /// starting_node: Explore paths from this node
 ///
-/// (*) without repeating edges; a path can still visit the same node multiple times if there are
-/// multiple edges between nodes. For a regular directed graph (not multigraph), this
-/// means all paths without cycles.
+/// If there are multiple edges between the same nodes, these count as different
+/// paths and will both appear in the output. With many such options, it's can
+/// lead to a "combinatorial explosion" of paths.
 ///
-/// The returned map will contain paths for all explored nodes
-pub fn all_non_repeating_paths_from<G>(
+/// The returned map will contain entries for all explored nodes including the
+/// starting node.
+pub fn all_simple_paths_from<G>(
     graph: G,
     starting_node: G::NodeId,
 ) -> HashMap<G::NodeId, Vec<Path<G::EdgeId>>>
@@ -180,8 +184,8 @@ mod test {
     use crate::graph::{DiGraph, EdgeIndex, Graph, NodeIndex};
     use crate::visit::NodeFiltered;
 
-    use super::all_non_repeating_paths_from;
     use super::all_simple_paths;
+    use super::all_simple_paths_from;
 
     #[test]
     fn test_all_simple_paths() {
@@ -253,7 +257,7 @@ mod test {
     }
 
     #[test]
-    fn test_all_non_repeating_paths() {
+    fn test_all_simple_paths_from() {
         fn string_paths_to_index_map(
             graph: &Graph<&str, &str>,
             paths: &[(&str, &[&str])],
@@ -330,7 +334,7 @@ mod test {
 
             let paths_full_map = string_paths_to_index_map(&gr, &paths_full);
 
-            let result_full = all_non_repeating_paths_from(&gr, n0);
+            let result_full = all_simple_paths_from(&gr, n0);
 
             assert_eq!(paths_full_map, result_full);
 
@@ -348,7 +352,7 @@ mod test {
             let paths_subset_map = string_paths_to_index_map(&gr, &paths_subset);
 
             let subset_graph = NodeFiltered(&gr, |node| subset.contains(&node));
-            let result_subset = all_non_repeating_paths_from(&subset_graph, n4);
+            let result_subset = all_simple_paths_from(&subset_graph, n4);
             assert_eq!(paths_subset_map, result_subset);
         }
 
@@ -364,7 +368,7 @@ mod test {
 
             println!("{}", Dot::new(&gr));
 
-            let result = all_non_repeating_paths_from(&gr, n0);
+            let result = all_simple_paths_from(&gr, n0);
             assert_eq!(result[&n0], vec![vec![]]);
             assert_eq!(result[&n1], vec![vec![e0]]);
         }
@@ -383,14 +387,15 @@ mod test {
 
             println!("{}", Dot::new(&gr));
 
-            let mut result = all_non_repeating_paths_from(&gr, n0);
+            let mut result = all_simple_paths_from(&gr, n0);
 
             assert_eq!(result[&n0], vec![vec![]]);
             assert_eq!(result[&n1], vec![vec![e1], vec![e0]]);
 
             result.get_mut(&n2).unwrap().sort_unstable();
 
-            let mut expected_n0_to_n2 = vec![vec![e0, e2], vec![e1, e2], vec![e0, e3], vec![e1, e3]];
+            let mut expected_n0_to_n2 =
+                vec![vec![e0, e2], vec![e1, e2], vec![e0, e3], vec![e1, e3]];
             expected_n0_to_n2.sort_unstable();
             assert_eq!(result[&n2], expected_n0_to_n2);
         }
