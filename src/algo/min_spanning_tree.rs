@@ -128,7 +128,7 @@ where
 /// if this is not true.
 ///
 /// Graph is treated as if connected (has only 1 component). Otherwise, the resulting
-/// graph will only contain edges for an arbitrary minimum spanning tree.
+/// graph will only contain edges for an arbitrary minimum spanning tree for a single component.
 ///
 /// Using Prim's algorithm with runtime **O(|E| log |E|)**.
 ///
