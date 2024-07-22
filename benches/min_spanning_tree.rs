@@ -67,13 +67,13 @@ fn min_spanning_tree_kruskal_petersen_dir_bench(bench: &mut Bencher) {
 }
 
 #[bench]
-fn min_spanning_tree_kruskal_2_000n(bench: &mut Bencher) {
+fn min_spanning_tree_kruskal_2000n(bench: &mut Bencher) {
     let g = graph_from_graph6_file("tests/res/graph_2000n.g6");
     bench.iter(|| iterate_mst_kruskal(&g));
 }
 
 #[bench]
-fn min_spanning_tree_kruskal_6_000n(bench: &mut Bencher) {
+fn min_spanning_tree_kruskal_6000n(bench: &mut Bencher) {
     let g = graph_from_graph6_file("tests/res/graph_6000n.g6");
     bench.iter(|| iterate_mst_kruskal(&g));
 }
@@ -103,13 +103,13 @@ fn min_spanning_tree_prim_petersen_undir_bench(bench: &mut Bencher) {
 }
 
 #[bench]
-fn min_spanning_tree_prim_2_000n(bench: &mut Bencher) {
+fn min_spanning_tree_prim_2000n(bench: &mut Bencher) {
     let g = graph_from_graph6_file("tests/res/graph_2000n.g6");
     bench.iter(|| iterate_mst_prim(&g));
 }
 
 #[bench]
-fn min_spanning_tree_prim_6_000n(bench: &mut Bencher) {
+fn min_spanning_tree_prim_6000n(bench: &mut Bencher) {
     let g = graph_from_graph6_file("tests/res/graph_6000n.g6");
     bench.iter(|| iterate_mst_prim(&g));
 }
