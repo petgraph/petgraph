@@ -135,7 +135,7 @@ where
     }
 }
 
-/// Parse a file in adjacency matrix format into a directed graph
+/// Parse a file in graph6 format into an undirected graph
 fn graph_from_graph6_file(path: &str) -> Graph<(), (), Undirected, u32> {
     let mut f = File::open(path).expect("file not found");
     let mut contents = String::new();
