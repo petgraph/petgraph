@@ -588,7 +588,6 @@ mod test {
             .collect();
 
         assert_eq!(actual.as_slice(), expected_edge_paths);
-        println!("ACTUAL: {:?}", actual);
     }
 
     #[test]
