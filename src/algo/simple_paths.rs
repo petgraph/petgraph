@@ -1,18 +1,32 @@
 use std::{
+    collections::HashMap,
     hash::Hash,
     iter::{from_fn, FromIterator},
 };
 
-use indexmap::IndexSet;
-use std::collections::HashMap;
-
-use crate::visit::{EdgeRef, GraphProp, IntoEdges};
-use crate::visit::{IntoNeighborsDirected, NodeCount};
+use crate::visit::{
+    EdgeCount, EdgeRef, GraphProp, IntoEdges, IntoEdgesDirected, IntoNeighborsDirected, NodeCount,
+};
 use crate::Directed;
 use crate::Direction::Outgoing;
 
-/// Returns an iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermediate_nodes` nodes
-/// and at most `max_intermediate_nodes`, if given, or limited by the graph's order otherwise. The simple path is a path without repetitions.
+type Path<T> = Vec<T>;
+
+/// Returns an iterator that produces all simple paths on a directed graph `G(V, E)`,
+/// with each path specified as an (ordered) list of nodes from node `from` to node `to`.
+/// Each path contains at least `min_edges_traversed` steps (default 1) and at most
+/// `max_edges_traversed` (default is the order of `G(V, E)`).
+///
+/// Panics if either `min_edges_traversed` or `max_edges_traversed` is zero or
+/// `min_edges_traversed > max_edges_traversed` is specified.
+///
+/// # Note:
+///  * a simple path is a path without repetition,
+///  * the number of nodes in a path is the number of steps taken + 1.
+///  * no provision exists to limit/pre-check the size of the iterable, meaning
+///    that if `G(V, E)` contains numerous parallel edges (for example) it may
+///    take consideralbe time to iterate through all paths and/or materializing
+///    all paths may lead to memory issues.
 ///
 /// This algorithm is adapted from <https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.simple_paths.all_simple_paths.html>.
 ///
@@ -29,39 +43,31 @@ use crate::Direction::Outgoing;
 ///
 /// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
 ///
-/// let ways = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+/// let ways = algo::all_simple_node_paths(&graph, a, d, None, None)
 ///   .collect::<Vec<_>>();
 ///
 /// assert_eq!(4, ways.len());
 /// ```
-pub fn all_simple_paths<TargetColl, G>(
+pub fn all_simple_node_paths<G>(
     graph: G,
     from: G::NodeId,
     to: G::NodeId,
-    min_intermediate_nodes: usize,
-    max_intermediate_nodes: Option<usize>,
-) -> impl Iterator<Item = TargetColl>
+    min_edges_traversed: Option<usize>,
+    max_edges_traversed: Option<usize>,
+) -> impl Iterator<Item = Path<G::NodeId>>
 where
-    G: NodeCount,
-    G: IntoNeighborsDirected,
-    G::NodeId: Eq + Hash,
-    TargetColl: FromIterator<G::NodeId>,
+    G: NodeCount + IntoNeighborsDirected,
+    G::NodeId: Eq,
 {
-    // how many nodes are allowed in simple path up to target node
-    // it is min/max allowed path length minus one, because it is more appropriate when implementing lookahead
-    // than constantly add 1 to length of current path
-    let max_length = if let Some(l) = max_intermediate_nodes {
-        l + 1
-    } else {
-        graph.node_count() - 1
-    };
+    let min_length = min_edges_traversed.unwrap_or(1);
+    let max_length = max_edges_traversed.unwrap_or(graph.node_count() - 1);
+    assert!(min_length.gt(&0), "paths must contain at least one edge");
+    assert!(
+        max_length.ge(&min_length),
+        "impossible `min_length > max_length` condition specified"
+    );
 
-    let min_length = min_intermediate_nodes + 1;
-
-    // list of visited nodes
-    let mut visited: IndexSet<G::NodeId> = IndexSet::from_iter(Some(from));
-    // list of childs of currently exploring path nodes,
-    // last elem is list of childs of last visited node
+    let mut visited: Path<G::NodeId> = Path::from_iter(Some(from));
     let mut stack = vec![graph.neighbors_directed(from, Outgoing)];
 
     from_fn(move || {
@@ -70,24 +76,18 @@ where
                 if visited.len() < max_length {
                     if child == to {
                         if visited.len() >= min_length {
-                            let path = visited
-                                .iter()
-                                .cloned()
-                                .chain(Some(to))
-                                .collect::<TargetColl>();
+                            let path = visited.iter().cloned().chain(Some(to)).collect::<Path<_>>();
                             return Some(path);
                         }
                     } else if !visited.contains(&child) {
-                        visited.insert(child);
+                        visited.push(child);
                         stack.push(graph.neighbors_directed(child, Outgoing));
                     }
                 } else {
-                    if (child == to || children.any(|v| v == to)) && visited.len() >= min_length {
-                        let path = visited
-                            .iter()
-                            .cloned()
-                            .chain(Some(to))
-                            .collect::<TargetColl>();
+                    if (child.eq(&to) || children.any(|v| v.eq(&to)))
+                        && visited.len().ge(&min_length)
+                    {
+                        let path = visited.iter().cloned().chain(Some(to)).collect::<Path<_>>();
                         return Some(path);
                     }
                     stack.pop();
@@ -102,7 +102,89 @@ where
     })
 }
 
-type Path<T> = Vec<T>;
+/// Returns an iterator that produces all simple paths on a directed graph `G(V, E)`,
+/// with each path specified as an (ordered) list of edges from node `from` to node `to`.
+/// Each path contains at least `min_edges_traversed` steps (default 1) and at most
+/// `max_edges_traversed` (default is order of `G(V, E)`).
+///
+/// Panics if either `min_edges_traversed` or `max_edges_traversed` is zero or
+/// `min_edges_traversed > max_edges_traversed` is specified.
+///
+/// # Note:
+///  * a simple path is a path without repetition,
+///  * no provision exists to limit/pre-check the size of the iterable, meaning
+///    that if `G(V, E)` contains numerous parallel edges (for example) it may
+///    take consideralbe time to iterate through all paths and/or materializing
+///    all paths may lead to memory issues.
+///
+/// # Example
+/// ```
+/// use petgraph::{algo, prelude::*};
+///
+/// let mut graph = DiGraph::<&str, i32>::new();
+///
+/// let a = graph.add_node("a");
+/// let b = graph.add_node("b");
+/// let c = graph.add_node("c");
+/// let d = graph.add_node("d");
+///
+/// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
+///
+/// let ways = algo::all_simple_edge_paths(&graph, a, d, None, None)
+///   .collect::<Vec<_>>();
+///
+/// assert_eq!(4, ways.len());
+/// ```
+pub fn all_simple_edge_paths<G>(
+    graph: G,
+    from: G::NodeId,
+    to: G::NodeId,
+    min_edges_traversed: Option<usize>,
+    max_edges_traversed: Option<usize>,
+) -> impl Iterator<Item = Path<G::EdgeId>>
+where
+    G: EdgeCount + IntoEdgesDirected,
+    G::NodeId: Eq,
+    G::EdgeId: Eq,
+{
+    let min_length = min_edges_traversed.unwrap_or(1);
+    let max_length = max_edges_traversed.unwrap_or(graph.edge_count());
+    assert!(min_length.gt(&0), "paths must contain at least one edge");
+    assert!(
+        max_length.ge(&min_length),
+        "impossible `min_length > max_length` condition specified"
+    );
+
+    let mut visited: Path<G::EdgeId> = Path::new();
+    let mut stack = vec![graph.edges_directed(from, Outgoing)];
+
+    from_fn(move || {
+        visited.pop();
+        while let Some(children) = stack.last_mut() {
+            if let Some(child) = children.next() {
+                if visited.len().lt(&max_length) {
+                    if child.target().eq(&to) {
+                        if visited.len().ge(&min_length) {
+                            visited.push(child.id());
+                            let path = visited.to_vec();
+                            return Some(path);
+                        }
+                    } else if !visited.contains(&child.id()) {
+                        visited.push(child.id());
+                        stack.push(graph.edges_directed(child.target(), Outgoing));
+                    }
+                } else {
+                    stack.pop();
+                    visited.pop();
+                }
+            } else {
+                stack.pop();
+                visited.pop();
+            }
+        }
+        None
+    })
+}
 
 /// Compute all simple paths in a directed graph from a given starting node to
 /// all reachable nodes.
@@ -118,7 +200,7 @@ type Path<T> = Vec<T>;
 ///
 /// The returned map will contain entries for all explored nodes including the
 /// starting node.
-pub fn all_simple_paths_from<G>(
+pub fn all_simple_edge_paths_from<G>(
     graph: G,
     starting_node: G::NodeId,
 ) -> HashMap<G::NodeId, Vec<Path<G::EdgeId>>>
@@ -176,88 +258,50 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashMap, collections::HashSet, iter::FromIterator};
-
-    use itertools::assert_equal;
+    use std::{
+        collections::{HashMap, HashSet},
+        panic,
+    };
 
     use crate::dot::Dot;
-    use crate::graph::{DiGraph, EdgeIndex, Graph, NodeIndex};
+    use crate::graph::{EdgeIndex, Graph, NodeIndex};
     use crate::visit::NodeFiltered;
 
-    use super::all_simple_paths;
-    use super::all_simple_paths_from;
+    use super::all_simple_edge_paths;
+    use super::all_simple_edge_paths_from;
+    use super::all_simple_node_paths;
 
-    #[test]
-    fn test_all_simple_paths() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[
-            (0, 1),
-            (0, 2),
-            (0, 3),
-            (1, 2),
-            (1, 3),
-            (2, 3),
-            (2, 4),
-            (3, 2),
-            (3, 4),
-            (4, 2),
-            (4, 5),
-            (5, 2),
-            (5, 3),
-        ]);
+    /// test on a common graph that has all the features one could expect to test
+    fn build_test_graph<'a>() -> Graph<&'a str, &'a str> {
+        let mut graph: Graph<&str, &str> = Graph::new();
+        let n0 = graph.add_node("0");
+        let n1 = graph.add_node("1");
+        let n2 = graph.add_node("2");
+        let n3 = graph.add_node("3");
+        let n4 = graph.add_node("4");
+        let n5 = graph.add_node("5");
 
-        let expexted_simple_paths_0_to_5 = vec![
-            vec![0usize, 1, 2, 3, 4, 5],
-            vec![0, 1, 2, 4, 5],
-            vec![0, 1, 3, 2, 4, 5],
-            vec![0, 1, 3, 4, 5],
-            vec![0, 2, 3, 4, 5],
-            vec![0, 2, 4, 5],
-            vec![0, 3, 2, 4, 5],
-            vec![0, 3, 4, 5],
-        ];
+        graph.add_edge(n0, n1, "A0");
+        graph.add_edge(n0, n1, "A1");
+        graph.add_edge(n0, n1, "A2");
+        graph.add_edge(n0, n2, "B");
+        graph.add_edge(n0, n3, "C");
+        graph.add_edge(n1, n2, "D");
+        graph.add_edge(n1, n3, "E");
+        graph.add_edge(n2, n3, "F");
+        graph.add_edge(n2, n4, "G");
+        graph.add_edge(n3, n2, "H");
+        graph.add_edge(n3, n4, "I");
+        graph.add_edge(n4, n2, "J");
+        graph.add_edge(n4, n5, "K");
+        graph.add_edge(n5, n2, "L");
+        graph.add_edge(n5, n3, "M");
 
-        println!("{}", Dot::new(&graph));
-        let actual_simple_paths_0_to_5: HashSet<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 5u32.into(), 0, None)
-                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
-                .collect();
-        assert_eq!(actual_simple_paths_0_to_5.len(), 8);
-        assert_eq!(
-            HashSet::from_iter(expexted_simple_paths_0_to_5),
-            actual_simple_paths_0_to_5
-        );
+        graph
     }
 
     #[test]
-    fn test_one_simple_path() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
-
-        let expexted_simple_paths_0_to_1 = &[vec![0usize, 1]];
-        println!("{}", Dot::new(&graph));
-        let actual_simple_paths_0_to_1: Vec<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 1u32.into(), 0, None)
-                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
-                .collect();
-
-        assert_eq!(actual_simple_paths_0_to_1.len(), 1);
-        assert_equal(expexted_simple_paths_0_to_1, &actual_simple_paths_0_to_1);
-    }
-
-    #[test]
-    fn test_no_simple_paths() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
-
-        println!("{}", Dot::new(&graph));
-        let actual_simple_paths_0_to_2: Vec<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 2u32.into(), 0, None)
-                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
-                .collect();
-
-        assert_eq!(actual_simple_paths_0_to_2.len(), 0);
-    }
-
-    #[test]
-    fn test_all_simple_paths_from() {
+    fn test_all_simple_edge_paths_from() {
         fn string_paths_to_index_map(
             graph: &Graph<&str, &str>,
             paths: &[(&str, &[&str])],
@@ -334,7 +378,7 @@ mod test {
 
             let paths_full_map = string_paths_to_index_map(&gr, &paths_full);
 
-            let result_full = all_simple_paths_from(&gr, n0);
+            let result_full = all_simple_edge_paths_from(&gr, n0);
 
             assert_eq!(paths_full_map, result_full);
 
@@ -352,7 +396,7 @@ mod test {
             let paths_subset_map = string_paths_to_index_map(&gr, &paths_subset);
 
             let subset_graph = NodeFiltered(&gr, |node| subset.contains(&node));
-            let result_subset = all_simple_paths_from(&subset_graph, n4);
+            let result_subset = all_simple_edge_paths_from(&subset_graph, n4);
             assert_eq!(paths_subset_map, result_subset);
         }
 
@@ -368,7 +412,7 @@ mod test {
 
             println!("{}", Dot::new(&gr));
 
-            let result = all_simple_paths_from(&gr, n0);
+            let result = all_simple_edge_paths_from(&gr, n0);
             assert_eq!(result[&n0], vec![vec![]]);
             assert_eq!(result[&n1], vec![vec![e0]]);
         }
@@ -387,7 +431,7 @@ mod test {
 
             println!("{}", Dot::new(&gr));
 
-            let mut result = all_simple_paths_from(&gr, n0);
+            let mut result = all_simple_edge_paths_from(&gr, n0);
 
             assert_eq!(result[&n0], vec![vec![]]);
             assert_eq!(result[&n1], vec![vec![e1], vec![e0]]);
@@ -398,6 +442,244 @@ mod test {
                 vec![vec![e0, e2], vec![e1, e2], vec![e0, e3], vec![e1, e3]];
             expected_n0_to_n2.sort_unstable();
             assert_eq!(result[&n2], expected_n0_to_n2);
+        }
+    }
+    #[test]
+    fn test_all_simple_node_paths() {
+        let graph = build_test_graph();
+        let n0 = graph
+            .node_indices()
+            .find(|&idx| graph.node_weight(idx).eq(&Some(&"0")))
+            .unwrap();
+        let n5 = graph
+            .node_indices()
+            .find(|&idx| graph.node_weight(idx).eq(&Some(&"5")))
+            .unwrap();
+
+        // test node paths
+        let expected_node_paths: HashSet<Vec<_>> = vec![
+            vec!["0", "1", "2", "3", "4", "5"],
+            vec!["0", "1", "2", "4", "5"],
+            vec!["0", "1", "3", "2", "4", "5"],
+            vec!["0", "1", "3", "4", "5"],
+            vec!["0", "2", "3", "4", "5"],
+            vec!["0", "2", "4", "5"],
+            vec!["0", "3", "2", "4", "5"],
+            vec!["0", "3", "4", "5"],
+        ]
+        .into_iter()
+        .collect();
+
+        let mut n_paths = 0;
+        let actual: HashSet<Vec<_>> = all_simple_node_paths(&graph, n0, n5, None, None)
+            .map(|path| {
+                n_paths += 1;
+                path.iter()
+                    .map(|&node| *graph.node_weight(node).unwrap())
+                    .collect()
+            })
+            .collect();
+
+        assert_eq!(n_paths, 16);
+        assert_eq!(actual.len(), 8);
+        assert_eq!(expected_node_paths, actual);
+
+        // test edge paths
+        let expected_edge_paths: HashSet<Vec<_>> = vec![
+            vec!["A2", "D", "G", "J", "F", "I", "K"],
+            vec!["B", "G", "K"],
+            vec!["B", "G", "J", "F", "I", "K"],
+            vec!["A2", "D", "F", "I", "K"],
+            vec!["A1", "E", "H", "F", "I", "J", "G", "K"],
+            vec!["A2", "E", "H", "F", "I", "K"],
+            vec!["A1", "E", "H", "G", "J", "F", "I", "K"],
+            vec!["A1", "D", "G", "J", "F", "I", "K"],
+            vec!["A2", "E", "I", "J", "G", "K"],
+            vec!["A2", "E", "I", "J", "F", "H", "G", "K"],
+            vec!["A0", "D", "G", "K"],
+            vec!["A0", "E", "I", "J", "F", "H", "G", "K"],
+            vec!["A2", "D", "G", "K"],
+            vec!["A2", "D", "F", "H", "G", "K"],
+            vec!["A0", "E", "H", "F", "I", "J", "G", "K"],
+            vec!["B", "F", "I", "J", "G", "K"],
+            vec!["A1", "D", "F", "I", "J", "G", "K"],
+            vec!["A0", "E", "H", "F", "I", "K"],
+            vec!["C", "H", "G", "J", "F", "I", "K"],
+            vec!["A1", "D", "G", "K"],
+            vec!["A2", "E", "H", "G", "J", "F", "I", "K"],
+            vec!["A1", "E", "H", "G", "K"],
+            vec!["A1", "E", "I", "J", "G", "K"],
+            vec!["A0", "E", "I", "K"],
+            vec!["A0", "D", "F", "I", "K"],
+            vec!["C", "H", "F", "I", "K"],
+            vec!["A1", "D", "F", "I", "K"],
+            vec!["B", "F", "I", "K"],
+            vec!["A1", "D", "F", "H", "G", "K"],
+            vec!["A0", "E", "H", "G", "K"],
+            vec!["A0", "E", "H", "G", "J", "F", "I", "K"],
+            vec!["C", "H", "F", "I", "J", "G", "K"],
+            vec!["A2", "E", "H", "G", "K"],
+            vec!["A1", "E", "I", "K"],
+            vec!["A2", "E", "H", "F", "I", "J", "G", "K"],
+            vec!["A0", "D", "G", "J", "F", "I", "K"],
+            vec!["C", "I", "K"],
+            vec!["C", "I", "J", "F", "H", "G", "K"],
+            vec!["A2", "D", "F", "I", "J", "G", "K"],
+            vec!["A2", "E", "I", "K"],
+            vec!["A1", "E", "I", "J", "F", "H", "G", "K"],
+            vec!["C", "H", "G", "K"],
+            vec!["B", "F", "H", "G", "K"],
+            vec!["A0", "E", "I", "J", "G", "K"],
+            vec!["A0", "D", "F", "I", "J", "G", "K"],
+            vec!["A0", "D", "F", "H", "G", "K"],
+            vec!["A1", "E", "H", "F", "I", "K"],
+            vec!["C", "I", "J", "G", "K"],
+        ]
+        .into_iter()
+        .collect();
+
+        let mut n_paths = 0;
+        let actual: HashSet<Vec<_>> = all_simple_edge_paths(&graph, n0, n5, None, None)
+            .map(|path| {
+                n_paths += 1;
+                path.iter()
+                    .map(|&edge| *graph.edge_weight(edge).unwrap())
+                    .collect()
+            })
+            .collect();
+
+        assert_eq!(n_paths, 48);
+        assert_eq!(actual.len(), 48);
+        assert_eq!(expected_edge_paths, actual);
+    }
+
+    #[test]
+    fn test_one_simple_node_path() {
+        let graph = build_test_graph();
+        let n2 = graph
+            .node_indices()
+            .find(|&idx| graph.node_weight(idx).eq(&Some(&"2")))
+            .unwrap();
+        let n5 = graph
+            .node_indices()
+            .find(|&idx| graph.node_weight(idx).eq(&Some(&"5")))
+            .unwrap();
+
+        // node paths
+        let expected_node_paths = [vec!["2", "3", "4", "5"]];
+        let actual: Vec<Vec<_>> = all_simple_node_paths(&graph, n2, n5, Some(3), None)
+            .map(|path| {
+                path.iter()
+                    .map(|&node| *graph.node_weight(node).unwrap())
+                    .collect()
+            })
+            .collect();
+
+        assert_eq!(actual.as_slice(), expected_node_paths);
+
+        // edge paths
+        let expected_edge_paths = [vec!["F", "H", "G", "K"]];
+        let actual: Vec<Vec<_>> = all_simple_edge_paths(&graph, n2, n5, Some(3), Some(4))
+            .map(|path| {
+                path.iter()
+                    .map(|&edge| *graph.edge_weight(edge).unwrap())
+                    .collect()
+            })
+            .collect();
+
+        assert_eq!(actual.as_slice(), expected_edge_paths);
+        println!("ACTUAL: {:?}", actual);
+    }
+
+    #[test]
+    fn test_no_simple_node_paths() {
+        let graph = build_test_graph();
+        let n0 = graph
+            .node_indices()
+            .find(|&idx| graph.node_weight(idx).eq(&Some(&"0")))
+            .unwrap();
+        let n5 = graph
+            .node_indices()
+            .find(|&idx| graph.node_weight(idx).eq(&Some(&"5")))
+            .unwrap();
+
+        let paths = all_simple_node_paths(&graph, n5, n0, None, None);
+
+        assert_eq!(paths.count(), 0);
+    }
+
+    #[test]
+    fn negative_path_tests() {
+        let graph = build_test_graph();
+        let n0 = graph
+            .node_indices()
+            .find(|&idx| graph.node_weight(idx).eq(&Some(&"0")))
+            .unwrap();
+        let n5 = graph
+            .node_indices()
+            .find(|&idx| graph.node_weight(idx).eq(&Some(&"5")))
+            .unwrap();
+
+        let result = panic::catch_unwind(|| {
+            all_simple_node_paths(&graph, n0, n5, Some(0), None).count();
+        });
+        match result {
+            Err(msg) => {
+                if let Some(s) = msg.downcast_ref::<&str>() {
+                    assert_eq!(*s, "paths must contain at least one edge");
+                } else {
+                    panic!("unexpected panic message");
+                }
+            }
+            Ok(_) => panic!("expected a panic, but the code managed to run"),
+        }
+
+        let result = panic::catch_unwind(|| {
+            all_simple_edge_paths(&graph, n0, n5, Some(0), None).count();
+        });
+        match result {
+            Err(msg) => {
+                if let Some(s) = msg.downcast_ref::<&str>() {
+                    assert_eq!(*s, "paths must contain at least one edge");
+                } else {
+                    panic!("unexpected panic message");
+                }
+            }
+            Ok(_) => panic!("expected a panic, but the code managed to run"),
+        }
+
+        let result = panic::catch_unwind(|| {
+            all_simple_node_paths(&graph, n0, n5, Some(5), Some(1)).count();
+        });
+        match result {
+            Err(msg) => {
+                if let Some(s) = msg.downcast_ref::<&str>() {
+                    assert_eq!(
+                        *s,
+                        "impossible `min_length > max_length` condition specified"
+                    );
+                } else {
+                    panic!("unexpected panic message");
+                }
+            }
+            Ok(_) => panic!("expected a panic, but the code managed to run"),
+        }
+
+        let result = panic::catch_unwind(|| {
+            all_simple_edge_paths(&graph, n0, n5, Some(5), Some(1)).count();
+        });
+        match result {
+            Err(msg) => {
+                if let Some(s) = msg.downcast_ref::<&str>() {
+                    assert_eq!(
+                        *s,
+                        "impossible `min_length > max_length` condition specified"
+                    );
+                } else {
+                    panic!("unexpected panic message");
+                }
+            }
+            Ok(_) => panic!("expected a panic, but the code managed to run"),
         }
     }
 }
