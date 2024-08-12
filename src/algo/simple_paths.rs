@@ -164,12 +164,12 @@ where
             if let Some(child) = children.next() {
                 if visited.len().lt(&max_length) {
                     if child.target().eq(&to) {
-                        if visited.len().ge(&min_length) {
+                        if visited.len().ge(&(min_length - 1)) {
                             visited.push(child.id());
                             let path = visited.to_vec();
                             return Some(path);
                         }
-                    } else if !visited.contains(&child.id()) {
+                    } else if !visited.contains(&child.id()) && child.source().ne(&child.target()) {
                         visited.push(child.id());
                         stack.push(graph.edges_directed(child.target(), Outgoing));
                     }
@@ -578,8 +578,8 @@ mod test {
         assert_eq!(actual.as_slice(), expected_node_paths);
 
         // edge paths
-        let expected_edge_paths = [vec!["F", "H", "G", "K"]];
-        let actual: Vec<Vec<_>> = all_simple_edge_paths(&graph, n2, n5, Some(3), Some(4))
+        let expected_edge_paths = [vec!["F", "I", "K"]];
+        let actual: Vec<Vec<_>> = all_simple_edge_paths(&graph, n2, n5, Some(3), Some(3))
             .map(|path| {
                 path.iter()
                     .map(|&edge| *graph.edge_weight(edge).unwrap())
