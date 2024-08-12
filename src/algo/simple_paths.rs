@@ -445,7 +445,7 @@ mod test {
         }
     }
     #[test]
-    fn test_all_simple_node_paths() {
+    fn test_all_simple_paths() {
         let graph = build_test_graph();
         let n0 = graph
             .node_indices()
@@ -554,7 +554,7 @@ mod test {
     }
 
     #[test]
-    fn test_one_simple_node_path() {
+    fn test_one_simple_path() {
         let graph = build_test_graph();
         let n2 = graph
             .node_indices()
@@ -591,7 +591,7 @@ mod test {
     }
 
     #[test]
-    fn test_no_simple_node_paths() {
+    fn test_no_simple_paths() {
         let graph = build_test_graph();
         let n0 = graph
             .node_indices()
