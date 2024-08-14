@@ -113,7 +113,7 @@ pub enum Config {
     /// Do not print the graph/digraph string.
     GraphContentOnly,
     /// For aing any attributes, mostly intended for: https://graphviz.org/docs/graph/
-    _GraphAttr(String, String),
+    GraphAttribute(String, String),
     #[doc(hidden)]
     _Incomplete(()),
 }
@@ -132,7 +132,7 @@ macro_rules! make_config_struct {
                 for c in configs {
                     match *c {
                         $(Config::$variant => conf.$variant = true,)*
-                        Config::_GraphAttr(ref key, ref val) => { conf.graph_attrs.insert(key.to_owned(), val.to_owned()); }
+                        Config::GraphAttribute(ref key, ref val) => { conf.graph_attrs.insert(key.to_owned(), val.to_owned()); }
                         Config::_Incomplete(()) => {}
                     }
                 }
@@ -363,7 +363,7 @@ mod test {
             "{:?}",
             Dot::with_config(
                 &graph,
-                &[Config::_GraphAttr(
+                &[Config::GraphAttribute(
                     "bgcolor".to_string(),
                     "lightblue".to_string(),
                 )],
