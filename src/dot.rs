@@ -352,6 +352,7 @@ pub mod dot_parser {
 
     /// This trait extends [Create] with a method to parse a graph from a dot string.
     pub trait ParseFromDot<'a>: Create<EdgeWeight=AList<(&'a str, &'a str)>, NodeWeight=Node<(&'a str, &'a str)>> {
+        /// Convert a DOT/Graphviz graph (represented as an [AstGraph] into a petgraph's graph.
         fn from_dot_graph(dot_graph: AstGraph<(&'a str, &'a str)>) -> Self {
             let dot_graph: CGraph<(&'a str, &'a str)> = dot_graph.into();
             let node_number = dot_graph.nodes.set.len(); 
@@ -370,6 +371,8 @@ pub mod dot_parser {
             graph
         }
 
+        /// Attempt to parse a DOT/Graphviz string into a graph. Fail if the string is not a
+        /// well-formed DOT/Graphviz string.
         fn try_from(s: &'a str) -> Result<Self, ()> {
             let ast = AstGraph::try_from(s).map_err(|_| ())?;
             let petgraph = Self::from_dot_graph(ast);
