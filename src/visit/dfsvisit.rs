@@ -264,7 +264,7 @@ where
     C::continuing()
 }
 
-fn dfs_visitor<G, F, C>(
+pub(crate) fn dfs_visitor<G, F, C>(
     graph: G,
     u: G::NodeId,
     visitor: &mut F,

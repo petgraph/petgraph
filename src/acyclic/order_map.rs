@@ -6,7 +6,7 @@ use std::fmt;
 
 use crate::{
     algo::{toposort, Cycle},
-    visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeIndexable, Visitable},
+    visit::{GraphBase, IntoNeighborsDirected, IntoNodeIdentifiers, NodeIndexable, Visitable},
 };
 
 /// A bijective map between node indices and their position in a topological order.
@@ -87,12 +87,15 @@ impl<N: Copy> OrderMap<N> {
     }
 }
 
-impl<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitable> super::Acyclic<G> {
-    pub(super) fn get_order(&self, id: G::NodeId) -> usize {
-        self.1.get_order(id, &self.0)
+impl<G: Visitable> super::Acyclic<G> {
+    pub(super) fn get_order(&self, id: G::NodeId) -> usize
+    where
+        for<'a> &'a G: NodeIndexable + GraphBase<NodeId = G::NodeId>,
+    {
+        self.order_map.get_order(id, &self.graph)
     }
 
     pub(super) fn get_node(&self, pos: usize) -> G::NodeId {
-        self.1.get_node(pos)
+        self.order_map.get_node(pos)
     }
 }

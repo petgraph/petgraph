@@ -6,10 +6,10 @@ extern crate test;
 use petgraph::algo::{toposort, DfsSpace};
 use petgraph::prelude::*;
 use petgraph::{acyclic::Acyclic, data::Build};
-use std::cmp::{max, min};
+use std::cmp::max;
 use test::Bencher;
 
-/// Dynamic toposort
+/// Dynamic toposort using Acyclic<G>
 #[bench]
 fn acyclic_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;
@@ -31,7 +31,7 @@ fn acyclic_bench(bench: &mut Bencher) {
     });
 }
 
-/// As a baseline: build the graph and toposort it once
+/// As a baseline: build the graph and toposort it every time a new edge is added
 #[bench]
 fn toposort_baseline_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;

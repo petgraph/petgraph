@@ -9,10 +9,10 @@ use crate::{
     algo::Cycle,
     data::{Build, Create, DataMap, DataMapMut},
     visit::{
-        depth_first_search, Control, Data, DfsEvent, EdgeCount, EdgeIndexable, GetAdjacencyMatrix,
+        dfs_visitor, Control, Data, DfsEvent, EdgeCount, EdgeIndexable, GetAdjacencyMatrix,
         GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
         IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
-        NodeCount, NodeIndexable, Reversed, Visitable,
+        NodeCount, NodeIndexable, Reversed, Time, Visitable,
     },
     Direction,
 };
@@ -53,9 +53,18 @@ use order_map::OrderMap;
 /// will return `None` if the edge cannot be added (either it already exists on
 /// a graph type that does not support it or would create a cycle).
 #[derive(Clone, Debug)]
-pub struct Acyclic<G: GraphBase>(G, OrderMap<G::NodeId>);
+pub struct Acyclic<G: Visitable> {
+    /// The underlying graph, accessible through the `inner` method.
+    graph: G,
+    /// The current topological order of the nodes.
+    order_map: OrderMap<G::NodeId>,
+    /// Helper map for DFS tracking discovered nodes.
+    discovered: G::Map,
+    /// Helper map for DFS tracking finished nodes.
+    finished: G::Map,
+}
 
-impl<G: GraphBase> Acyclic<G> {
+impl<G: Visitable> Acyclic<G> {
     /// Create a new empty acyclic graph.
     pub fn new() -> Self
     where
@@ -66,37 +75,48 @@ impl<G: GraphBase> Acyclic<G> {
 
     /// Get the current topological order of the nodes.
     pub fn order(&self) -> &[G::NodeId] {
-        self.1.as_slice()
+        self.order_map.as_slice()
     }
 
     /// Get the underlying graph.
     pub fn inner(&self) -> &G {
-        &self.0
+        &self.graph
+    }
+
+    /// Get the underlying graph mutably.
+    pub fn inner_mut(&mut self) -> &mut G {
+        &mut self.graph
     }
 
     /// Consume the `Acyclic` wrapper and return the underlying graph.
     pub fn into_inner(self) -> G {
-        self.0
+        self.graph
     }
 
-    /// Get a reference to the underlying graph.
-    pub fn as_ref(&self) -> Acyclic<&G> {
-        Acyclic(&self.0, self.1.clone())
+    fn reset_maps(&mut self) {
+        self.graph.reset_map(&mut self.discovered);
+        self.graph.reset_map(&mut self.finished);
     }
 }
 
-impl<G: GraphBase> Acyclic<G>
+impl<G: Visitable + NodeIndexable> Acyclic<G>
 where
-    for<'a> &'a G: NodeIndexable
-        + IntoNeighborsDirected
+    for<'a> &'a G: IntoNeighborsDirected
         + IntoNodeIdentifiers
-        + Visitable
+        + Visitable<Map = G::Map>
         + GraphBase<NodeId = G::NodeId>,
 {
     /// Wrap a graph into an acyclic graph.
     pub fn try_from_graph(graph: G) -> Result<Self, Cycle<G::NodeId>> {
         let order_map = OrderMap::try_from_graph(&graph)?;
-        Ok(Self(graph, order_map))
+        let discovered = graph.visit_map();
+        let finished = graph.visit_map();
+        Ok(Self {
+            graph,
+            order_map,
+            discovered,
+            finished,
+        })
     }
 
     /// Add an edge to the graph.
@@ -112,33 +132,105 @@ where
     where
         G: Build,
     {
-        update_ordering(&mut self.1, a, b, &self.0)?;
-        Ok(self.0.update_edge(a, b, weight))
+        self.update_ordering(a, b)?;
+        Ok(self.graph.update_edge(a, b, weight))
+    }
+
+    /// Update the ordering of the nodes in the order map resulting from adding an
+    /// edge a -> b.
+    ///
+    /// If a cycle is detected, an error is returned and `self` remains unchanged.
+    ///
+    /// Implements the core update logic of the PK algorithm.
+    fn update_ordering(&mut self, a: G::NodeId, b: G::NodeId) -> Result<(), Cycle<G::NodeId>> {
+        let min_order = self.get_order(b);
+        let max_order = self.get_order(a);
+        if min_order >= max_order {
+            // Order is already correct
+            return Ok(());
+        }
+
+        // Reset the maps to clear any previous state (and resize if needed)
+        self.reset_maps();
+
+        // Get all nodes reachable from b with min_order <= order < max_order
+        let b_fut = dfs(
+            &self.graph,
+            b,
+            &self.order_map,
+            |order| {
+                debug_assert!(order >= min_order, "invalid topological order");
+                match order.cmp(&max_order) {
+                    Ordering::Less => Ok(true),       // node within b_fut
+                    Ordering::Equal => Err(Cycle(a)), // cycle!
+                    Ordering::Greater => Ok(false),   // node beyond b_fut
+                }
+            },
+            &mut self.discovered,
+            &mut self.finished,
+        )?;
+        // Get all remaining nodes that can reach a with min_order < order <= max_order
+        let a_past = dfs(
+            Reversed(&self.graph),
+            a,
+            &self.order_map,
+            |order| {
+                debug_assert!(order <= max_order, "invalid topological order");
+                match order.cmp(&min_order) {
+                    Ordering::Less => Ok(false),      // node beyond a_past
+                    Ordering::Equal => Err(Cycle(b)), // cycle!
+                    Ordering::Greater => Ok(true),    // node within a_past
+                }
+            },
+            &mut self.discovered,
+            &mut self.finished,
+        )?;
+
+        // Now reorder of nodes in a_past and b_fut such that
+        //  i) within each vec, the nodes are in topological order,
+        // ii) all elements of b_fut come before all elements of a_past in the new order.
+        let all_positions: BTreeSet<_> = b_fut.keys().chain(a_past.keys()).copied().collect();
+        let all_nodes = a_past.values().chain(b_fut.values()).copied();
+
+        debug_assert_eq!(all_positions.len(), b_fut.len() + a_past.len());
+
+        for (pos, node) in all_positions.into_iter().zip(all_nodes) {
+            self.order_map.set_order(node, pos, &self.graph);
+        }
+        Ok(())
     }
 }
 
-impl<G: GraphBase> GraphBase for Acyclic<G> {
+impl<G: Visitable> GraphBase for Acyclic<G> {
     type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
 }
 
-impl<G: Default + GraphBase> Default for Acyclic<G> {
+impl<G: Default + Visitable> Default for Acyclic<G> {
     fn default() -> Self {
-        Self(Default::default(), Default::default())
+        let graph: G = Default::default();
+        let order_map = Default::default();
+        let discovered = graph.visit_map();
+        let finished = graph.visit_map();
+        Self {
+            graph,
+            order_map,
+            discovered,
+            finished,
+        }
     }
 }
 
-impl<G: Build> Build for Acyclic<G>
+impl<G: Build + Visitable + NodeIndexable> Build for Acyclic<G>
 where
-    for<'a> &'a G: NodeIndexable
-        + IntoNeighborsDirected
+    for<'a> &'a G: IntoNeighborsDirected
         + IntoNodeIdentifiers
-        + Visitable
+        + Visitable<Map = G::Map>
         + GraphBase<NodeId = G::NodeId>,
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
-        let n = self.0.add_node(weight);
-        self.1.add_node(n, &self.0);
+        let n = self.graph.add_node(weight);
+        self.order_map.add_node(n, &self.graph);
         n
     }
 
@@ -161,71 +253,25 @@ where
     }
 }
 
-impl<G: Create + GraphBase> Create for Acyclic<G>
+impl<G: Create + Visitable + NodeIndexable> Create for Acyclic<G>
 where
-    for<'a> &'a G: NodeIndexable
-        + IntoNeighborsDirected
+    for<'a> &'a G: IntoNeighborsDirected
         + IntoNodeIdentifiers
-        + Visitable
+        + Visitable<Map = G::Map>
         + GraphBase<NodeId = G::NodeId>,
 {
     fn with_capacity(nodes: usize, edges: usize) -> Self {
         let graph = G::with_capacity(nodes, edges);
-        let order_map = OrderMap::default();
-        Self(graph, order_map)
-    }
-}
-
-/// Update the ordering of the nodes in the order map resulting from adding an
-/// edge a -> b.
-///
-/// Implements the core update logic of the PK algorithm.
-fn update_ordering<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitable>(
-    order: &mut OrderMap<G::NodeId>,
-    a: G::NodeId,
-    b: G::NodeId,
-    graph: G,
-) -> Result<(), Cycle<G::NodeId>> {
-    let min_order = order.get_order(b, graph);
-    let max_order = order.get_order(a, graph);
-    if min_order >= max_order {
-        // Order is already correct
-        return Ok(());
-    }
-    // Get all nodes reachable from b with min_order <= order < max_order
-    let b_fut = dfs(graph, b, order, |order| {
-        debug_assert!(order >= min_order, "invalid topological order");
-        match order.cmp(&max_order) {
-            Ordering::Less => Ok(true),       // node within b_fut
-            Ordering::Equal => Err(Cycle(a)), // cycle!
-            Ordering::Greater => Ok(false),   // node beyond b_fut
+        let order_map = OrderMap::with_capacity(nodes);
+        let discovered = graph.visit_map();
+        let finished = graph.visit_map();
+        Self {
+            graph,
+            order_map,
+            discovered,
+            finished,
         }
-    })?;
-    // Get all remaining nodes that can reach a with min_order < order <= max_order
-    let a_past = dfs(Reversed(graph), a, order, |order| {
-        debug_assert!(order <= max_order, "invalid topological order");
-        if b_fut.contains_key(&order) {
-            return Ok(false);
-        }
-        match order.cmp(&min_order) {
-            Ordering::Less => Ok(false),      // node beyond a_past
-            Ordering::Equal => Err(Cycle(b)), // cycle!
-            Ordering::Greater => Ok(true),    // node within a_past
-        }
-    })?;
-
-    // Now reorder of nodes in a_past and b_fut such that
-    //  i) within each vec, the nodes are in topological order,
-    // ii) all elements of b_fut come before all elements of a_past in the new order.
-    let all_positions: BTreeSet<_> = b_fut.keys().chain(a_past.keys()).copied().collect();
-    let all_nodes = a_past.values().chain(b_fut.values()).copied();
-
-    debug_assert_eq!(all_positions.len(), b_fut.len() + a_past.len());
-
-    for (pos, node) in all_positions.into_iter().zip(all_nodes) {
-        order.set_order(node, pos, graph);
     }
-    Ok(())
 }
 
 /// Traverse nodes in `graph` in DFS order, starting from `start`, for as long
@@ -237,12 +283,14 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
     // A predicate that returns whether to continue the search from a node,
     // or an error to stop and shortcircuit the search.
     mut valid_order: impl FnMut(usize) -> Result<bool, Cycle<G::NodeId>>,
+    discovered: &mut G::Map,
+    finished: &mut G::Map,
 ) -> Result<BTreeMap<usize, G::NodeId>, Cycle<G::NodeId>> {
     let mut res = BTreeMap::new();
-    depth_first_search(
+    dfs_visitor(
         graph,
-        Some(start),
-        |ev| -> Result<Control<()>, Cycle<G::NodeId>> {
+        start,
+        &mut |ev| -> Result<Control<()>, Cycle<G::NodeId>> {
             let DfsEvent::Discover(u, _) = ev else {
                 return Ok(Control::Continue);
             };
@@ -255,24 +303,138 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
                 false => Ok(Control::Prune),
             }
         },
+        discovered,
+        finished,
+        &mut Time::default(),
     )?;
     Ok(res)
 }
 
 /////////////////////// Pass-through graph traits ///////////////////////
-Data! {delegate_impl [[G], G, Acyclic<G>, access0]}
-DataMap! {delegate_impl [[G], G, Acyclic<G>, access0]}
-DataMapMut! {delegate_impl [[G], G, Acyclic<G>, access0]}
-EdgeCount! {delegate_impl [[G], G, Acyclic<G>, access0]}
-EdgeIndexable! {delegate_impl [[G], G, Acyclic<G>, access0]}
-GetAdjacencyMatrix! {delegate_impl [[G], G, Acyclic<G>, access0]}
-GraphProp! {delegate_impl [[G], G, Acyclic<G>, access0]}
-NodeCompactIndexable! {delegate_impl [[G], G, Acyclic<G>, access0]}
-NodeCount! {delegate_impl [[G], G, Acyclic<G>, access0]}
-NodeIndexable! {delegate_impl [[G], G, Acyclic<G>, access0]}
-Visitable! {delegate_impl [[G], G, Acyclic<G>, access0]}
+// We implement all the following traits by delegating to the inner graph:
+// - Data
+// - DataMap
+// - DataMapMut
+// - EdgeCount
+// - EdgeIndexable
+// - GetAdjacencyMatrix
+// - GraphProp
+// - NodeCompactIndexable
+// - NodeCount
+// - NodeIndexable
+// - Visitable
+//
+// Further, we also implement the following traits that act on references to
+// graphs `&G`:
+// - IntoEdgeReferences
+// - IntoEdges
+// - IntoEdgesDirected
+// - IntoNeighbors
+// - IntoNeighborsDirected
+// - IntoNodeIdentifiers
+// - IntoNodeReferences
 
-impl<'a, G: GraphBase + Data> IntoEdgeReferences for &'a Acyclic<G>
+impl<G: Visitable + Data> Data for Acyclic<G> {
+    type NodeWeight = G::NodeWeight;
+    type EdgeWeight = G::EdgeWeight;
+}
+
+impl<G: Visitable + DataMap> DataMap for Acyclic<G> {
+    fn node_weight(self: &Self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
+        self.inner().node_weight(id)
+    }
+
+    fn edge_weight(self: &Self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
+        self.inner().edge_weight(id)
+    }
+}
+
+impl<G: Visitable + DataMapMut> DataMapMut for Acyclic<G> {
+    fn node_weight_mut(self: &mut Self, id: Self::NodeId) -> Option<&mut Self::NodeWeight> {
+        self.inner_mut().node_weight_mut(id)
+    }
+
+    fn edge_weight_mut(self: &mut Self, id: Self::EdgeId) -> Option<&mut Self::EdgeWeight> {
+        self.inner_mut().edge_weight_mut(id)
+    }
+}
+
+impl<G: Visitable + EdgeCount> EdgeCount for Acyclic<G> {
+    fn edge_count(self: &Self) -> usize {
+        self.inner().edge_count()
+    }
+}
+
+impl<G: Visitable + EdgeIndexable> EdgeIndexable for Acyclic<G> {
+    fn edge_bound(self: &Self) -> usize {
+        self.inner().edge_bound()
+    }
+
+    fn to_index(self: &Self, a: Self::EdgeId) -> usize {
+        self.inner().to_index(a)
+    }
+
+    fn from_index(self: &Self, i: usize) -> Self::EdgeId {
+        self.inner().from_index(i)
+    }
+}
+
+impl<G: Visitable + GetAdjacencyMatrix> GetAdjacencyMatrix for Acyclic<G> {
+    type AdjMatrix = G::AdjMatrix;
+
+    fn adjacency_matrix(self: &Self) -> Self::AdjMatrix {
+        self.inner().adjacency_matrix()
+    }
+
+    fn is_adjacent(
+        self: &Self,
+        matrix: &Self::AdjMatrix,
+        a: Self::NodeId,
+        b: Self::NodeId,
+    ) -> bool {
+        self.inner().is_adjacent(matrix, a, b)
+    }
+}
+
+impl<G: Visitable + GraphProp> GraphProp for Acyclic<G> {
+    type EdgeType = G::EdgeType;
+}
+
+impl<G: Visitable + NodeCompactIndexable> NodeCompactIndexable for Acyclic<G> {}
+
+impl<G: Visitable + NodeCount> NodeCount for Acyclic<G> {
+    fn node_count(self: &Self) -> usize {
+        self.inner().node_count()
+    }
+}
+
+impl<G: Visitable + NodeIndexable> NodeIndexable for Acyclic<G> {
+    fn node_bound(self: &Self) -> usize {
+        self.inner().node_bound()
+    }
+
+    fn to_index(self: &Self, a: Self::NodeId) -> usize {
+        self.inner().to_index(a)
+    }
+
+    fn from_index(self: &Self, i: usize) -> Self::NodeId {
+        self.inner().from_index(i)
+    }
+}
+
+impl<G: Visitable> Visitable for Acyclic<G> {
+    type Map = G::Map;
+
+    fn visit_map(self: &Self) -> Self::Map {
+        self.inner().visit_map()
+    }
+
+    fn reset_map(self: &Self, map: &mut Self::Map) {
+        self.inner().reset_map(map)
+    }
+}
+
+impl<'a, G: Visitable + Data> IntoEdgeReferences for &'a Acyclic<G>
 where
     &'a G: IntoEdgeReferences<
         NodeId = G::NodeId,
@@ -289,7 +451,7 @@ where
     }
 }
 
-impl<'a, G: GraphBase + Data> IntoEdges for &'a Acyclic<G>
+impl<'a, G: Visitable + Data> IntoEdges for &'a Acyclic<G>
 where
     &'a G: IntoEdges<
         NodeId = G::NodeId,
@@ -305,7 +467,7 @@ where
     }
 }
 
-impl<'a, G: GraphBase + Data> IntoEdgesDirected for &'a Acyclic<G>
+impl<'a, G: Visitable + Data> IntoEdgesDirected for &'a Acyclic<G>
 where
     &'a G: IntoEdgesDirected<
         NodeId = G::NodeId,
@@ -321,7 +483,7 @@ where
     }
 }
 
-impl<'a, G: GraphBase> IntoNeighbors for &'a Acyclic<G>
+impl<'a, G: Visitable> IntoNeighbors for &'a Acyclic<G>
 where
     &'a G: IntoNeighbors<NodeId = G::NodeId>,
 {
@@ -332,7 +494,7 @@ where
     }
 }
 
-impl<'a, G: GraphBase> IntoNeighborsDirected for &'a Acyclic<G>
+impl<'a, G: Visitable> IntoNeighborsDirected for &'a Acyclic<G>
 where
     &'a G: IntoNeighborsDirected<NodeId = G::NodeId>,
 {
@@ -343,7 +505,7 @@ where
     }
 }
 
-impl<'a, G: GraphBase> IntoNodeIdentifiers for &'a Acyclic<G>
+impl<'a, G: Visitable> IntoNodeIdentifiers for &'a Acyclic<G>
 where
     &'a G: IntoNodeIdentifiers<NodeId = G::NodeId>,
 {
@@ -354,7 +516,7 @@ where
     }
 }
 
-impl<'a, G: GraphBase> IntoNodeReferences for &'a Acyclic<G>
+impl<'a, G: Visitable> IntoNodeReferences for &'a Acyclic<G>
 where
     &'a G: IntoNodeReferences,
 {
@@ -407,7 +569,7 @@ mod tests {
 
     fn assert_valid_topological_order<'a, G>(acyclic: &'a Acyclic<G>)
     where
-        G: GraphBase,
+        G: Visitable,
         &'a G: NodeIndexable
             + IntoNodeReferences
             + IntoNeighborsDirected
@@ -415,7 +577,7 @@ mod tests {
     {
         let order = acyclic.order();
         for (idx, &node) in order.iter().enumerate() {
-            for neighbor in acyclic.neighbors(node) {
+            for neighbor in acyclic.inner().neighbors(node) {
                 assert!(order.iter().position(|&n| n == neighbor).unwrap() > idx);
             }
         }
