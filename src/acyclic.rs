@@ -132,6 +132,10 @@ where
     where
         G: Build,
     {
+        if a == b {
+            // No self-loops allowed
+            return Err(Cycle(a));
+        }
         self.update_ordering(a, b)?;
         Ok(self.graph.update_edge(a, b, weight))
     }
