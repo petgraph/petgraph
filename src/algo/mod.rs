@@ -639,7 +639,7 @@ where
 
 /// An algorithm error: a cycle was found in the graph.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Cycle<N>(N);
+pub struct Cycle<N>(pub(crate) N);
 
 impl<N> Cycle<N> {
     /// Return a node id that participates in the cycle
