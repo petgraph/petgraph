@@ -1,13 +1,19 @@
 //! A wrapper around graph types that enforces an acyclicity invariant.
 
 use std::{
+    cell::RefCell,
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
+    convert::TryFrom,
+    ops::Deref,
 };
 
 use crate::{
+    adj::IndexType,
     algo::Cycle,
     data::{Build, Create, DataMap, DataMapMut},
+    graph::NodeIndex,
+    prelude::{DiGraph, StableDiGraph},
     visit::{
         dfs_visitor, Control, Data, DfsEvent, EdgeCount, EdgeIndexable, GetAdjacencyMatrix,
         GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
@@ -18,6 +24,7 @@ use crate::{
 };
 
 mod order_map;
+use fixedbitset::FixedBitSet;
 use order_map::OrderMap;
 
 /// A directed acyclic graph.
@@ -47,7 +54,8 @@ use order_map::OrderMap;
 ///
 /// ## Behaviour on cycles
 /// By design, edge additions to this datatype may fail. It is recommended to
-/// prefer the dedicated [`Acyclic::try_add_edge`] method whenever possible. The
+/// prefer the dedicated [`Acyclic::try_add_edge`] and
+/// [`Acyclic::try_update_edge`] methods whenever possible. The
 /// [`Build::update_edge`] methods will panic if it is attempted to add an edge
 /// that would create a cycle. The [`Build::add_edge`] on the other hand method
 /// will return `None` if the edge cannot be added (either it already exists on
@@ -58,10 +66,30 @@ pub struct Acyclic<G: Visitable> {
     graph: G,
     /// The current topological order of the nodes.
     order_map: OrderMap<G::NodeId>,
+
+    // We fix the internal DFS maps to FixedBitSet instead of G::VisitMap to do
+    // faster resets (by just setting bits to false)
     /// Helper map for DFS tracking discovered nodes.
-    discovered: G::Map,
+    discovered: RefCell<FixedBitSet>,
     /// Helper map for DFS tracking finished nodes.
-    finished: G::Map,
+    finished: RefCell<FixedBitSet>,
+}
+
+/// An error that can occur during edge addition for acyclic graphs.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AcyclicEdgeError<N> {
+    /// The edge would create a cycle.
+    Cycle(Cycle<N>),
+    /// The edge would create a self-loop.
+    SelfLoop,
+    /// Could not successfully add the edge to the underlying graph.
+    InvalidEdge,
+}
+
+impl<N> From<Cycle<N>> for AcyclicEdgeError<N> {
+    fn from(cycle: Cycle<N>) -> Self {
+        AcyclicEdgeError::Cycle(cycle)
+    }
 }
 
 impl<G: Visitable> Acyclic<G> {
@@ -84,7 +112,9 @@ impl<G: Visitable> Acyclic<G> {
     }
 
     /// Get the underlying graph mutably.
-    pub fn inner_mut(&mut self) -> &mut G {
+    ///
+    /// This cannot be public because it might break the acyclicity invariant.
+    fn inner_mut(&mut self) -> &mut G {
         &mut self.graph
     }
 
@@ -92,25 +122,21 @@ impl<G: Visitable> Acyclic<G> {
     pub fn into_inner(self) -> G {
         self.graph
     }
-
-    fn reset_maps(&mut self) {
-        self.graph.reset_map(&mut self.discovered);
-        self.graph.reset_map(&mut self.finished);
-    }
 }
 
 impl<G: Visitable + NodeIndexable> Acyclic<G>
 where
-    for<'a> &'a G: IntoNeighborsDirected
-        + IntoNodeIdentifiers
-        + Visitable<Map = G::Map>
-        + GraphBase<NodeId = G::NodeId>,
+    for<'a> &'a G: IntoNeighborsDirected + IntoNodeIdentifiers + GraphBase<NodeId = G::NodeId>,
 {
     /// Wrap a graph into an acyclic graph.
+    ///
+    /// The graph types [`DiGraph`] and [`StableDiGraph`] also implement
+    /// [`TryFrom`], which can be used instead of this method and have looser
+    /// type bounds.
     pub fn try_from_graph(graph: G) -> Result<Self, Cycle<G::NodeId>> {
         let order_map = OrderMap::try_from_graph(&graph)?;
-        let discovered = graph.visit_map();
-        let finished = graph.visit_map();
+        let discovered = RefCell::new(FixedBitSet::with_capacity(graph.node_bound()));
+        let finished = RefCell::new(FixedBitSet::with_capacity(graph.node_bound()));
         Ok(Self {
             graph,
             order_map,
@@ -119,25 +145,76 @@ where
         })
     }
 
-    /// Add an edge to the graph.
+    /// Add an edge to the graph using [`Build::add_edge`].
     ///
-    /// Returns the id of the added edge, or a [`Cycle`] error if the edge would
-    /// create a cycle.
+    /// Returns the id of the added edge, or an [`AcyclicEdgeError`] if the edge
+    /// would create a cycle, a self-loop or if the edge addition failed in
+    /// the underlying graph.
+    ///
+    /// In cases where edge addition cannot fail in the underlying graph (e.g.
+    /// when multi-edges are allowed, as in [`DiGraph`] and [`StableDiGraph`]),
+    /// this will return an error if and only if [`Self::is_valid_edge`]
+    /// returns `false`.
     pub fn try_add_edge(
         &mut self,
         a: G::NodeId,
         b: G::NodeId,
         weight: G::EdgeWeight,
-    ) -> Result<G::EdgeId, Cycle<G::NodeId>>
+    ) -> Result<G::EdgeId, AcyclicEdgeError<G::NodeId>>
     where
         G: Build,
+        G::NodeId: IndexType,
     {
         if a == b {
             // No self-loops allowed
-            return Err(Cycle(a));
+            return Err(AcyclicEdgeError::SelfLoop);
+        }
+        self.update_ordering(a, b)?;
+        self.graph
+            .add_edge(a, b, weight)
+            .ok_or(AcyclicEdgeError::InvalidEdge)
+    }
+
+    /// Update an edge in a graph using [`Build::update_edge`].
+    ///
+    /// Returns the id of the updated edge, or an [`AcyclicEdgeError`] if the edge
+    /// would create a cycle or a self-loop. If the edge does not exist, the
+    /// edge is created.
+    ///
+    /// This will return an error if and only if [`Self::is_valid_edge`] returns
+    /// `false`.
+    pub fn try_update_edge(
+        &mut self,
+        a: G::NodeId,
+        b: G::NodeId,
+        weight: G::EdgeWeight,
+    ) -> Result<G::EdgeId, AcyclicEdgeError<G::NodeId>>
+    where
+        G: Build,
+        G::NodeId: IndexType,
+    {
+        if a == b {
+            // No self-loops allowed
+            return Err(AcyclicEdgeError::SelfLoop);
         }
         self.update_ordering(a, b)?;
         Ok(self.graph.update_edge(a, b, weight))
+    }
+
+    /// Check if an edge would be valid, i.e. adding it would not create a cycle.
+    pub fn is_valid_edge(&self, a: G::NodeId, b: G::NodeId) -> bool
+    where
+        G::NodeId: IndexType,
+    {
+        if a == b {
+            false // No self-loops
+        } else if self.get_position(a) < self.get_position(b) {
+            true // valid edge in the current topological order
+        } else {
+            // Check if the future of `b` is disjoint from the past of `a`
+            // (in which case the topological order could be adjusted)
+            self.causal_cones(b, a).is_ok()
+        }
     }
 
     /// Update the ordering of the nodes in the order map resulting from adding an
@@ -146,49 +223,20 @@ where
     /// If a cycle is detected, an error is returned and `self` remains unchanged.
     ///
     /// Implements the core update logic of the PK algorithm.
-    fn update_ordering(&mut self, a: G::NodeId, b: G::NodeId) -> Result<(), Cycle<G::NodeId>> {
-        let min_order = self.get_order(b);
-        let max_order = self.get_order(a);
+    fn update_ordering(&mut self, a: G::NodeId, b: G::NodeId) -> Result<(), Cycle<G::NodeId>>
+    where
+        G::NodeId: IndexType,
+    {
+        let min_order = self.get_position(b);
+        let max_order = self.get_position(a);
         if min_order >= max_order {
             // Order is already correct
             return Ok(());
         }
 
-        // Reset the maps to clear any previous state (and resize if needed)
-        self.reset_maps();
-
-        // Get all nodes reachable from b with min_order <= order < max_order
-        let b_fut = dfs(
-            &self.graph,
-            b,
-            &self.order_map,
-            |order| {
-                debug_assert!(order >= min_order, "invalid topological order");
-                match order.cmp(&max_order) {
-                    Ordering::Less => Ok(true),       // node within b_fut
-                    Ordering::Equal => Err(Cycle(a)), // cycle!
-                    Ordering::Greater => Ok(false),   // node beyond b_fut
-                }
-            },
-            &mut self.discovered,
-            &mut self.finished,
-        )?;
-        // Get all remaining nodes that can reach a with min_order < order <= max_order
-        let a_past = dfs(
-            Reversed(&self.graph),
-            a,
-            &self.order_map,
-            |order| {
-                debug_assert!(order <= max_order, "invalid topological order");
-                match order.cmp(&min_order) {
-                    Ordering::Less => Ok(false),      // node beyond a_past
-                    Ordering::Equal => Err(Cycle(b)), // cycle!
-                    Ordering::Greater => Ok(true),    // node within a_past
-                }
-            },
-            &mut self.discovered,
-            &mut self.finished,
-        )?;
+        // Get the nodes reachable from `b` and the nodes that can reach `a`
+        // between `min_order` and `max_order`
+        let (b_fut, a_past) = self.causal_cones(b, a)?;
 
         // Now reorder of nodes in a_past and b_fut such that
         //  i) within each vec, the nodes are in topological order,
@@ -203,6 +251,74 @@ where
         }
         Ok(())
     }
+
+    /// Use DFS to find the future causal cone of `min_node` and the past causal
+    /// cone of `max_node`.
+    ///
+    /// The cones are trimmed to the range `[min_order, max_order]`. The cones
+    /// are returned if they are disjoint. Otherwise, a [`Cycle`] error is returned.
+    ///
+    /// If `return_result` is false, then the cones are not constructed and the
+    /// method only checks for disjointness.
+    fn causal_cones(
+        &self,
+        min_node: G::NodeId,
+        max_node: G::NodeId,
+    ) -> Result<(BTreeMap<usize, G::NodeId>, BTreeMap<usize, G::NodeId>), Cycle<G::NodeId>>
+    where
+        G::NodeId: IndexType,
+    {
+        let min_order = self.get_position(min_node);
+        let max_order = self.get_position(max_node);
+
+        // Make sure the maps have enough capacity
+        if self.discovered.borrow().len() < self.graph.node_bound() {
+            self.discovered.borrow_mut().grow(self.graph.node_bound());
+            self.finished.borrow_mut().grow(self.graph.node_bound());
+        }
+
+        // Get all nodes reachable from b with min_order <= order < max_order
+        let forward_res = dfs(
+            &self.graph,
+            min_node,
+            &self.order_map,
+            |order| {
+                debug_assert!(order >= min_order, "invalid topological order");
+                match order.cmp(&max_order) {
+                    Ordering::Less => Ok(true), // node within [min_node, max_node]
+                    Ordering::Equal => Err(Cycle(min_node)), // cycle!
+                    Ordering::Greater => Ok(false), // node beyond [min_node, max_node]
+                }
+            },
+            &mut self.discovered.borrow_mut(),
+            &mut self.finished.borrow_mut(),
+        )?;
+        // Get all remaining nodes that can reach a with min_order < order <= max_order
+        let backward_res = dfs(
+            Reversed(&self.graph),
+            max_node,
+            &self.order_map,
+            |order| {
+                debug_assert!(order <= max_order, "invalid topological order");
+                match order.cmp(&min_order) {
+                    Ordering::Less => Ok(false), // node beyond [min_node, max_node]
+                    Ordering::Equal => Err(Cycle(max_node)), // cycle!
+                    Ordering::Greater => Ok(true), // node within [min_node, max_node]
+                }
+            },
+            &mut self.discovered.borrow_mut(),
+            &mut self.finished.borrow_mut(),
+        )?;
+
+        // Reset map to 0. This is faster than a full reset, especially on sparser
+        // graphs.
+        for &v in forward_res.values().chain(backward_res.values()) {
+            self.discovered.borrow_mut().set(v.index(), false);
+            self.finished.borrow_mut().set(v.index(), false);
+        }
+
+        Ok((forward_res, backward_res))
+    }
 }
 
 impl<G: Visitable> GraphBase for Acyclic<G> {
@@ -214,8 +330,8 @@ impl<G: Default + Visitable> Default for Acyclic<G> {
     fn default() -> Self {
         let graph: G = Default::default();
         let order_map = Default::default();
-        let discovered = graph.visit_map();
-        let finished = graph.visit_map();
+        let discovered = RefCell::new(FixedBitSet::default());
+        let finished = RefCell::new(FixedBitSet::default());
         Self {
             graph,
             order_map,
@@ -231,6 +347,7 @@ where
         + IntoNodeIdentifiers
         + Visitable<Map = G::Map>
         + GraphBase<NodeId = G::NodeId>,
+    G::NodeId: IndexType,
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         let n = self.graph.add_node(weight);
@@ -253,7 +370,7 @@ where
         b: Self::NodeId,
         weight: Self::EdgeWeight,
     ) -> Self::EdgeId {
-        self.try_add_edge(a, b, weight).ok().unwrap()
+        self.try_update_edge(a, b, weight).unwrap()
     }
 }
 
@@ -263,18 +380,27 @@ where
         + IntoNodeIdentifiers
         + Visitable<Map = G::Map>
         + GraphBase<NodeId = G::NodeId>,
+    G::NodeId: IndexType,
 {
     fn with_capacity(nodes: usize, edges: usize) -> Self {
         let graph = G::with_capacity(nodes, edges);
         let order_map = OrderMap::with_capacity(nodes);
-        let discovered = graph.visit_map();
-        let finished = graph.visit_map();
+        let discovered = FixedBitSet::with_capacity(nodes);
+        let finished = FixedBitSet::with_capacity(nodes);
         Self {
             graph,
             order_map,
-            discovered,
-            finished,
+            discovered: RefCell::new(discovered),
+            finished: RefCell::new(finished),
         }
+    }
+}
+
+impl<G: Visitable> Deref for Acyclic<G> {
+    type Target = G;
+
+    fn deref(&self) -> &Self::Target {
+        &self.graph
     }
 }
 
@@ -287,10 +413,15 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
     // A predicate that returns whether to continue the search from a node,
     // or an error to stop and shortcircuit the search.
     mut valid_order: impl FnMut(usize) -> Result<bool, Cycle<G::NodeId>>,
-    discovered: &mut G::Map,
-    finished: &mut G::Map,
-) -> Result<BTreeMap<usize, G::NodeId>, Cycle<G::NodeId>> {
+    discovered: &mut FixedBitSet,
+    finished: &mut FixedBitSet,
+) -> Result<BTreeMap<usize, G::NodeId>, Cycle<G::NodeId>>
+where
+    G::NodeId: IndexType,
+{
+    // The result map to return, if requested
     let mut res = BTreeMap::new();
+
     dfs_visitor(
         graph,
         start,
@@ -298,7 +429,7 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
             let DfsEvent::Discover(u, _) = ev else {
                 return Ok(Control::Continue);
             };
-            let order = order_map.get_order(u, &graph);
+            let order = order_map.get_position(u, &graph);
             match valid_order(order)? {
                 true => {
                     res.insert(order, u);
@@ -311,6 +442,7 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
         finished,
         &mut Time::default(),
     )?;
+
     Ok(res)
 }
 
@@ -328,8 +460,10 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
 // - NodeIndexable
 // - Visitable
 //
-// Further, we also implement the following traits that act on references to
-// graphs `&G`:
+// Furthermore, we also implement the `remove_node` and `remove_edge` methods,
+// as well as the following traits for `DiGraph` and `StableDiGraph` (these
+// are hard/impossible to implement generically):
+// - TryFrom
 // - IntoEdgeReferences
 // - IntoEdges
 // - IntoEdgesDirected
@@ -438,105 +572,119 @@ impl<G: Visitable> Visitable for Acyclic<G> {
     }
 }
 
-impl<'a, G: Visitable + Data> IntoEdgeReferences for &'a Acyclic<G>
-where
-    &'a G: IntoEdgeReferences<
-        NodeId = G::NodeId,
-        EdgeId = G::EdgeId,
-        NodeWeight = G::NodeWeight,
-        EdgeWeight = G::EdgeWeight,
-    >,
-{
-    type EdgeRef = <&'a G as IntoEdgeReferences>::EdgeRef;
-    type EdgeReferences = <&'a G as IntoEdgeReferences>::EdgeReferences;
+macro_rules! impl_graph_traits {
+    ($graph_type:ident) => {
+        // Remove edge and node methods (not available through traits)
+        impl<N, E, Ix: IndexType> Acyclic<$graph_type<N, E, Ix>> {
+            /// Remove an edge and return its edge weight, or None if it didn't exist.
+            ///
+            /// Pass through to underlying graph.
+            pub fn remove_edge(
+                &mut self,
+                e: <$graph_type<N, E, Ix> as GraphBase>::EdgeId,
+            ) -> Option<E> {
+                self.graph.remove_edge(e)
+            }
 
-    fn edge_references(self) -> Self::EdgeReferences {
-        self.inner().edge_references()
-    }
+            /// Remove a from the graph if it exists, and return its weight. If it doesn't exist in the graph, return None.
+            ///
+            /// Pass through to underlying graph.
+            pub fn remove_node(
+                &mut self,
+                n: <$graph_type<N, E, Ix> as GraphBase>::NodeId,
+            ) -> Option<N> {
+                self.order_map.remove_node(n, &self.graph);
+                self.graph.remove_node(n)
+            }
+        }
+
+        impl<N, E, Ix: IndexType> TryFrom<$graph_type<N, E, Ix>>
+            for Acyclic<$graph_type<N, E, Ix>>
+        {
+            type Error = Cycle<NodeIndex<Ix>>;
+
+            fn try_from(graph: $graph_type<N, E, Ix>) -> Result<Self, Self::Error> {
+                let order_map = OrderMap::try_from_graph(&graph)?;
+                let discovered = RefCell::new(FixedBitSet::with_capacity(graph.node_bound()));
+                let finished = RefCell::new(FixedBitSet::with_capacity(graph.node_bound()));
+                Ok(Self {
+                    graph,
+                    order_map,
+                    discovered,
+                    finished,
+                })
+            }
+        }
+
+        impl<'a, N, E, Ix: IndexType> IntoEdgeReferences for &'a Acyclic<$graph_type<N, E, Ix>> {
+            type EdgeRef = <&'a $graph_type<N, E, Ix> as IntoEdgeReferences>::EdgeRef;
+            type EdgeReferences = <&'a $graph_type<N, E, Ix> as IntoEdgeReferences>::EdgeReferences;
+
+            fn edge_references(self) -> Self::EdgeReferences {
+                self.inner().edge_references()
+            }
+        }
+
+        impl<'a, N, E, Ix: IndexType> IntoEdges for &'a Acyclic<$graph_type<N, E, Ix>> {
+            type Edges = <&'a $graph_type<N, E, Ix> as IntoEdges>::Edges;
+
+            fn edges(self, a: Self::NodeId) -> Self::Edges {
+                self.inner().edges(a)
+            }
+        }
+
+        impl<'a, N, E, Ix: IndexType> IntoEdgesDirected for &'a Acyclic<$graph_type<N, E, Ix>> {
+            type EdgesDirected = <&'a $graph_type<N, E, Ix> as IntoEdgesDirected>::EdgesDirected;
+
+            fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
+                self.inner().edges_directed(a, dir)
+            }
+        }
+
+        impl<'a, N, E, Ix: IndexType> IntoNeighbors for &'a Acyclic<$graph_type<N, E, Ix>> {
+            type Neighbors = <&'a $graph_type<N, E, Ix> as IntoNeighbors>::Neighbors;
+
+            fn neighbors(self, a: Self::NodeId) -> Self::Neighbors {
+                self.inner().neighbors(a)
+            }
+        }
+
+        impl<'a, N, E, Ix: IndexType> IntoNeighborsDirected for &'a Acyclic<$graph_type<N, E, Ix>> {
+            type NeighborsDirected =
+                <&'a $graph_type<N, E, Ix> as IntoNeighborsDirected>::NeighborsDirected;
+
+            fn neighbors_directed(self, n: Self::NodeId, d: Direction) -> Self::NeighborsDirected {
+                self.inner().neighbors_directed(n, d)
+            }
+        }
+
+        impl<'a, N, E, Ix: IndexType> IntoNodeIdentifiers for &'a Acyclic<$graph_type<N, E, Ix>> {
+            type NodeIdentifiers =
+                <&'a $graph_type<N, E, Ix> as IntoNodeIdentifiers>::NodeIdentifiers;
+
+            fn node_identifiers(self) -> Self::NodeIdentifiers {
+                self.inner().node_identifiers()
+            }
+        }
+
+        impl<'a, N, E, Ix: IndexType> IntoNodeReferences for &'a Acyclic<$graph_type<N, E, Ix>> {
+            type NodeRef = <&'a $graph_type<N, E, Ix> as IntoNodeReferences>::NodeRef;
+            type NodeReferences = <&'a $graph_type<N, E, Ix> as IntoNodeReferences>::NodeReferences;
+
+            fn node_references(self) -> Self::NodeReferences {
+                self.inner().node_references()
+            }
+        }
+    };
 }
 
-impl<'a, G: Visitable + Data> IntoEdges for &'a Acyclic<G>
-where
-    &'a G: IntoEdges<
-        NodeId = G::NodeId,
-        EdgeId = G::EdgeId,
-        NodeWeight = G::NodeWeight,
-        EdgeWeight = G::EdgeWeight,
-    >,
-{
-    type Edges = <&'a G as IntoEdges>::Edges;
-
-    fn edges(self, a: Self::NodeId) -> Self::Edges {
-        self.inner().edges(a)
-    }
-}
-
-impl<'a, G: Visitable + Data> IntoEdgesDirected for &'a Acyclic<G>
-where
-    &'a G: IntoEdgesDirected<
-        NodeId = G::NodeId,
-        EdgeId = G::EdgeId,
-        NodeWeight = G::NodeWeight,
-        EdgeWeight = G::EdgeWeight,
-    >,
-{
-    type EdgesDirected = <&'a G as IntoEdgesDirected>::EdgesDirected;
-
-    fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
-        self.inner().edges_directed(a, dir)
-    }
-}
-
-impl<'a, G: Visitable> IntoNeighbors for &'a Acyclic<G>
-where
-    &'a G: IntoNeighbors<NodeId = G::NodeId>,
-{
-    type Neighbors = <&'a G as IntoNeighbors>::Neighbors;
-
-    fn neighbors(self, a: Self::NodeId) -> Self::Neighbors {
-        self.inner().neighbors(a)
-    }
-}
-
-impl<'a, G: Visitable> IntoNeighborsDirected for &'a Acyclic<G>
-where
-    &'a G: IntoNeighborsDirected<NodeId = G::NodeId>,
-{
-    type NeighborsDirected = <&'a G as IntoNeighborsDirected>::NeighborsDirected;
-
-    fn neighbors_directed(self, n: Self::NodeId, d: Direction) -> Self::NeighborsDirected {
-        self.inner().neighbors_directed(n, d)
-    }
-}
-
-impl<'a, G: Visitable> IntoNodeIdentifiers for &'a Acyclic<G>
-where
-    &'a G: IntoNodeIdentifiers<NodeId = G::NodeId>,
-{
-    type NodeIdentifiers = <&'a G as IntoNodeIdentifiers>::NodeIdentifiers;
-
-    fn node_identifiers(self) -> Self::NodeIdentifiers {
-        self.inner().node_identifiers()
-    }
-}
-
-impl<'a, G: Visitable> IntoNodeReferences for &'a Acyclic<G>
-where
-    &'a G: IntoNodeReferences,
-{
-    type NodeRef = <&'a G as IntoNodeReferences>::NodeRef;
-
-    type NodeReferences = <&'a G as IntoNodeReferences>::NodeReferences;
-
-    fn node_references(self) -> Self::NodeReferences {
-        self.inner().node_references()
-    }
-}
+impl_graph_traits!(StableDiGraph);
+impl_graph_traits!(DiGraph);
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::DiGraph;
+    use crate::prelude::{DiGraph, StableDiGraph};
     use crate::visit::IntoNodeReferences;
 
     #[test]
@@ -571,16 +719,56 @@ mod tests {
         assert!(acyclic.add_edge(d, a, ()).is_none());
     }
 
+    #[test]
+    fn test_acyclic_graph_add_remove() {
+        // Create an initial Acyclic graph with two nodes and one edge
+        let mut acyclic = Acyclic::<StableDiGraph<(), ()>>::new();
+        let a = acyclic.add_node(());
+        let b = acyclic.add_node(());
+        assert!(acyclic.try_add_edge(a, b, ()).is_ok());
+
+        // Check initial topological order
+        assert_valid_topological_order(&acyclic);
+
+        // Add a new node and an edge
+        let c = acyclic.add_node(());
+        assert!(acyclic.try_add_edge(b, c, ()).is_ok());
+
+        // Check topological order after addition
+        assert_valid_topological_order(&acyclic);
+
+        // Remove the node connected to two edges (node b)
+        acyclic.remove_node(b);
+
+        // Check topological order after removal
+        assert_valid_topological_order(&acyclic);
+
+        // Verify the remaining structure
+        let remaining_nodes: Vec<_> = acyclic
+            .inner()
+            .node_references()
+            .map(|(id, _)| id)
+            .collect();
+        assert_eq!(remaining_nodes.len(), 2);
+        assert!(remaining_nodes.contains(&a));
+        assert!(remaining_nodes.contains(&c));
+        assert!(!acyclic.inner().contains_edge(a, c));
+    }
+
     fn assert_valid_topological_order<'a, G>(acyclic: &'a Acyclic<G>)
     where
-        G: Visitable,
+        G: Visitable + NodeCount + NodeIndexable,
         &'a G: NodeIndexable
             + IntoNodeReferences
             + IntoNeighborsDirected
             + GraphBase<NodeId = G::NodeId>,
     {
         let order = acyclic.order();
+        assert_eq!(order.len(), acyclic.node_count());
+        let nodes: Vec<_> = acyclic.inner().node_identifiers().collect();
         for (idx, &node) in order.iter().enumerate() {
+            assert!(nodes.contains(&node));
+            assert_eq!(acyclic.get_position(node), idx);
             for neighbor in acyclic.inner().neighbors(node) {
                 assert!(order.iter().position(|&n| n == neighbor).unwrap() > idx);
             }

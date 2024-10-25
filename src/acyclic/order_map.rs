@@ -57,12 +57,12 @@ impl<N: Copy> OrderMap<N> {
     }
 
     /// Map a node to its position in the topological order.
-    pub(super) fn get_order(&self, id: N, graph: impl NodeIndexable<NodeId = N>) -> usize {
+    pub(super) fn get_position(&self, id: N, graph: impl NodeIndexable<NodeId = N>) -> usize {
         self.order_inv[graph.to_index(id)]
     }
 
     /// Map a position in the topological order to a node.
-    pub(super) fn get_node(&self, pos: usize) -> N {
+    pub(super) fn at_position(&self, pos: usize) -> N {
         self.order[pos]
     }
 
@@ -81,6 +81,22 @@ impl<N: Copy> OrderMap<N> {
         self.order_inv[idx] = pos;
     }
 
+    /// Remove a node from the order map.
+    ///
+    /// This is currently inefficient (O(v) runtime) because the topological
+    /// order is stored in a contiguous array.
+    pub(super) fn remove_node(&mut self, id: N, graph: impl NodeIndexable<NodeId = N>) {
+        let idx = graph.to_index(id);
+        let pos = self.order_inv[idx];
+        self.order_inv[idx] = 0;
+        self.order.remove(pos);
+        // Adjust the positions for the nodes that have moved up.
+        for n in &self.order[pos..] {
+            let n_idx = graph.to_index(*n);
+            self.order_inv[n_idx] -= 1;
+        }
+    }
+
     pub(super) fn set_order(&mut self, id: N, pos: usize, graph: impl NodeIndexable<NodeId = N>) {
         self.order[pos] = id;
         self.order_inv[graph.to_index(id)] = pos;
@@ -88,14 +104,16 @@ impl<N: Copy> OrderMap<N> {
 }
 
 impl<G: Visitable> super::Acyclic<G> {
-    pub(super) fn get_order(&self, id: G::NodeId) -> usize
+    /// Get the position of a node in the topological sort.
+    pub fn get_position<'a>(&'a self, id: G::NodeId) -> usize
     where
-        for<'a> &'a G: NodeIndexable + GraphBase<NodeId = G::NodeId>,
+        &'a G: NodeIndexable + GraphBase<NodeId = G::NodeId>,
     {
-        self.order_map.get_order(id, &self.graph)
+        self.order_map.get_position(id, &self.graph)
     }
 
-    pub(super) fn get_node(&self, pos: usize) -> G::NodeId {
-        self.order_map.get_node(pos)
+    /// Get the node at a given position in the topological sort.
+    pub fn at_position(&self, pos: usize) -> G::NodeId {
+        self.order_map.at_position(pos)
     }
 }

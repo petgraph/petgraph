@@ -268,8 +268,8 @@ pub(crate) fn dfs_visitor<G, F, C>(
     graph: G,
     u: G::NodeId,
     visitor: &mut F,
-    discovered: &mut G::Map,
-    finished: &mut G::Map,
+    discovered: &mut impl VisitMap<G::NodeId>,
+    finished: &mut impl VisitMap<G::NodeId>,
     time: &mut Time,
 ) -> C
 where

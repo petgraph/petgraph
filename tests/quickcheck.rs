@@ -14,6 +14,7 @@ mod utils;
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
+use std::collections::BTreeSet;
 use std::collections::HashSet;
 use std::hash::Hash;
 
@@ -1391,23 +1392,25 @@ quickcheck! {
         let mut new_g = DiGraph::<(), ()>::new();
 
         // This test is quite slow, so we bound the number of nodes.
-        const MAX_NODES: usize = 100;
+        const MAX_NODES: usize = 30;
+        let nodes: BTreeSet<_> = g.node_indices().take(MAX_NODES).collect();
 
         // Add all nodes
-        let acyclic_nodes: BTreeMap<_, _> = g
-            .node_indices()
-            .take(MAX_NODES)
+        let acyclic_nodes: BTreeMap<_, _> = nodes
+            .iter()
             .zip(iter::repeat_with(|| acylic_g.add_node(())))
             .collect();
-        let new_nodes: BTreeMap<_, _> = g
-            .node_indices()
-            .take(MAX_NODES)
+        let new_nodes: BTreeMap<_, _> = nodes
+            .iter()
             .zip(iter::repeat_with(|| new_g.add_node(())))
             .collect();
 
         // Now add edges one by one
         for e in g.edge_indices() {
             let (src, dst) = g.edge_endpoints(e).unwrap();
+            if !nodes.contains(&src) || !nodes.contains(&dst) {
+                continue;
+            }
             let new_g_backup = new_g.clone();
 
             // Add the edge to the new graph
