@@ -7,6 +7,53 @@ use crate::visit::{
     EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable,
 };
 
+
+pub fn floyd_warshall_path<G, F, K>(
+    graph: G,
+    mut edge_cost: F,
+) -> (Vec<Vec<K>>, Vec<Vec<Option<usize>>>)
+where
+    G: NodeCompactIndexable + IntoEdgeReferences + IntoNodeIdentifiers + GraphProp,
+    G::NodeId: Eq + Hash,
+    F: FnMut(G::EdgeRef) -> K,
+    K: BoundedMeasure + Copy,
+{
+    let num_of_nodes = graph.node_count();
+
+    // |V|x|V| matrix
+    let mut dist = vec![vec![K::max(); num_of_nodes]; num_of_nodes];
+    let mut prev: Vec<Vec<Option<usize>>> = vec![vec![None; num_of_nodes]; num_of_nodes];
+
+    // init distances of paths with no intermediate nodes
+    for edge in graph.edge_references() {
+        dist[graph.to_index(edge.source())][graph.to_index(edge.target())] = edge_cost(edge);
+        prev[graph.to_index(edge.source())][graph.to_index(edge.target())] = Some(graph.to_index(edge.source()));
+        if !graph.is_directed() {
+            dist[graph.to_index(edge.target())][graph.to_index(edge.source())] = edge_cost(edge);
+            prev[graph.to_index(edge.target())][graph.to_index(edge.source())] = Some(graph.to_index(edge.target()));
+        }
+    }
+
+    // distance of each node to itself is 0(default value)
+    for node in graph.node_identifiers() {
+        dist[graph.to_index(node)][graph.to_index(node)] = K::default();
+        prev[graph.to_index(node)][graph.to_index(node)] = Some(graph.to_index(node));
+    }
+
+    for k in 0..num_of_nodes {
+        for i in 0..num_of_nodes {
+            for j in 0..num_of_nodes {
+                let (result, overflow) = dist[i][k].overflowing_add(dist[k][j]);
+                if !overflow && dist[i][j] > result {
+                    dist[i][j] = result;
+                    prev[i][j] = prev[k][j];
+                }
+            }
+        }
+    }
+    (dist, prev)
+}
+
 #[allow(clippy::type_complexity, clippy::needless_range_loop)]
 /// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
 ///
@@ -93,35 +140,7 @@ where
     // |V|x|V| matrix
     let mut dist = vec![vec![K::max(); num_of_nodes]; num_of_nodes];
 
-    // init distances of paths with no intermediate nodes
-    for edge in graph.edge_references() {
-        let i = graph.to_index(edge.source());
-        let j = graph.to_index(edge.target());
-        let cost = edge_cost(edge);
-
-        if dist[i][j] > cost {
-            dist[i][j] = cost;
-            if !graph.is_directed() {
-                dist[j][i] = cost;
-            }
-        }
-    }
-
-    // distance of each node to itself is 0(default value)
-    for node in graph.node_identifiers() {
-        dist[graph.to_index(node)][graph.to_index(node)] = K::default();
-    }
-
-    for k in 0..num_of_nodes {
-        for i in 0..num_of_nodes {
-            for j in 0..num_of_nodes {
-                let (result, overflow) = dist[i][k].overflowing_add(dist[k][j]);
-                if !overflow && dist[i][j] > result {
-                    dist[i][j] = result;
-                }
-            }
-        }
-    }
+    let (dist, _) = floyd_warshall_path(graph, edge_cost);
 
     // value less than 0(default value) indicates a negative cycle
     for i in 0..num_of_nodes {
