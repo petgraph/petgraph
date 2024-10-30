@@ -2,7 +2,7 @@
 //!
 //! This data structure is an implementation detail and is not exposed in the
 //! public API.
-use std::fmt;
+use std::{collections::BTreeSet, fmt};
 
 use crate::{
     algo::{toposort, Cycle},
@@ -94,6 +94,43 @@ impl<N: Copy> OrderMap<N> {
         for n in &self.order[pos..] {
             let n_idx = graph.to_index(*n);
             self.order_inv[n_idx] -= 1;
+        }
+    }
+
+    /// Remove multiple nodes from the order map.
+    ///
+    /// This function exists because in the current implementation, removing one
+    /// node costs the same as removing many.
+    pub(super) fn remove_nodes(
+        &mut self,
+        nodes: impl IntoIterator<Item = N>,
+        graph: &impl NodeIndexable<NodeId = N>,
+    ) {
+        let nodes = nodes.into_iter();
+
+        // Get and reset the positions of the nodes to remove.
+        let drain_positions = nodes.map(|n| {
+            let idx = graph.to_index(n);
+            let pos = self.order_inv[idx];
+            self.order_inv[idx] = 0;
+            pos
+        });
+        let positions: BTreeSet<_> = drain_positions.collect();
+
+        // Retain only the nodes that are not in the positions set.
+        let mut callback_pos = 0;
+        self.order.retain(|_| {
+            let keep = !positions.contains(&callback_pos);
+            callback_pos += 1;
+            keep
+        });
+
+        // Adjust the positions for the nodes that have moved up.
+        if let Some(&smallest_pos) = positions.first() {
+            for (pos_offset, n) in self.order[smallest_pos..].iter().enumerate() {
+                let n_idx = graph.to_index(*n);
+                self.order_inv[n_idx] = pos_offset + smallest_pos;
+            }
         }
     }
 

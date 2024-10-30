@@ -586,15 +586,29 @@ macro_rules! impl_graph_traits {
                 self.graph.remove_edge(e)
             }
 
-            /// Remove a from the graph if it exists, and return its weight. If it doesn't exist in the graph, return None.
+            /// Remove a node from the graph if it exists, and return its
+            /// weight. If it doesn't exist in the graph, return None.
             ///
-            /// Pass through to underlying graph.
+            /// This updates the order in O(v) runtime and removes the node in
+            /// the underlying graph.
             pub fn remove_node(
                 &mut self,
                 n: <$graph_type<N, E, Ix> as GraphBase>::NodeId,
             ) -> Option<N> {
                 self.order_map.remove_node(n, &self.graph);
                 self.graph.remove_node(n)
+            }
+
+            /// Remove multiple nodes from a graph and return their weights.
+            ///
+            /// This updates the order in O(v) runtime and removes the nodes in
+            /// the underlying graph.
+            pub fn remove_nodes(
+                &mut self,
+                nodes: impl IntoIterator<Item = <$graph_type<N, E, Ix> as GraphBase>::NodeId> + Clone,
+            ) -> Vec<Option<N>> {
+                self.order_map.remove_nodes(nodes.clone(), &self.graph);
+                nodes.into_iter().map(|n| self.graph.remove_node(n)).collect()
             }
         }
 
