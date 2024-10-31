@@ -14,26 +14,32 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::ops::Add;
 
-pub fn compute_shortest_path_length<G>(graph: G, source: G::NodeId, target: G::NodeId) -> G::EdgeWeight
+pub fn compute_shortest_path_length<G>(
+    graph: G,
+    source: G::NodeId,
+    target: G::NodeId,
+) -> G::EdgeWeight
 where
     G: Visitable + IntoEdges + IntoNodeReferences,
     G::NodeId: Eq + Hash,
     G::EdgeWeight: Add + Measure + Copy,
 {
-    let m_target = Some(target);
-    let output = dijkstra(graph, source, m_target, |e| *e.weight());
+    let output = dijkstra(graph, source, Some(target), |e| *e.weight());
     output[&target]
 }
 
-
-pub fn compute_shortest_path<G>(graph: G, source: usize, target: usize) -> (Vec<usize>, G::EdgeWeight)
+pub fn compute_shortest_path<G>(
+    graph: G,
+    source: usize,
+    target: usize,
+) -> (Vec<usize>, G::EdgeWeight)
 where
     G: Visitable + IntoEdges + IntoNodeReferences + NodeCompactIndexable + GraphProp,
     G::NodeId: Eq + Hash + Debug,
     G::EdgeWeight: Add + Measure + Copy + BoundedMeasure,
 {
-    let (dist, prev) = floyd_warshall_path(&graph, |e| *e.weight());
-    if prev[source][target] == None {
+    let (dist, prev) = floyd_warshall_path(graph, |e| *e.weight());
+    if prev[source][target].is_none() {
         return (vec![], dist[source][target]);
     }
     let mut path = vec![target];
@@ -54,13 +60,13 @@ pub fn compute_metric_closure<G>(
     terminals: Vec<G::NodeId>,
 ) -> Graph<G::NodeWeight, G::EdgeWeight, Undirected>
 where
-    G: Visitable +
-    GraphBase +
-    Data +
-    IntoNodeReferences +
-    IntoEdges +
-    IntoEdgeReferences +
-    NodeIndexable,
+    G: Visitable
+        + GraphBase
+        + Data
+        + IntoNodeReferences
+        + IntoEdges
+        + IntoEdgeReferences
+        + NodeIndexable,
     G::NodeId: PartialOrd + Copy + Hash + Eq + Debug + PartialOrd,
     G::NodeWeight: Clone,
     G::EdgeWeight: PartialOrd + Copy + Measure,
@@ -76,12 +82,12 @@ where
     }
     for source in graph.node_references() {
         for target in graph.node_references() {
-            if source < target {
-                if terminals.contains(&source.id()) &&
-                    terminals.contains(&target.id()) {
-                    let weight = compute_shortest_path_length(graph, source.id(), target.id());
-                    closure.add_edge(node_map[&source.id()], node_map[&target.id()], weight);
-                }
+            if source < target
+                && terminals.contains(&source.id())
+                && terminals.contains(&target.id())
+            {
+                let weight = compute_shortest_path_length(graph, source.id(), target.id());
+                closure.add_edge(node_map[&source.id()], node_map[&target.id()], weight);
             }
         }
     }
