@@ -1,18 +1,17 @@
-use crate::adj::IndexType;
 use crate::algo::floyd_warshall::floyd_warshall_path;
 use crate::algo::{dijkstra, min_spanning_tree, BoundedMeasure, Measure};
-use crate::data::{Build, FromElements};
+use crate::data::FromElements;
 use crate::dot::Dot;
-use crate::graph::{NodeIndex, NodeIndices, UnGraph};
-use crate::matrix_graph::Nullable;
-use crate::visit::{Data, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoNodeIdentifiers, NodeCompactIndexable, NodeIndexable, Visitable};
+use crate::graph::{NodeIndex, UnGraph};
+use crate::visit::{
+    Data, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, NodeCompactIndexable,
+    NodeIndexable, Visitable,
+};
 use crate::visit::{IntoNodeReferences, NodeRef};
 use crate::{Graph, Undirected};
-use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::iter::FromIterator;
 use std::ops::Add;
 
 pub fn compute_shortest_path_length<G>(graph: G, source: G::NodeId, target: G::NodeId) -> G::EdgeWeight
