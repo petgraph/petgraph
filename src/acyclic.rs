@@ -268,6 +268,9 @@ where
     where
         G::NodeId: IndexType,
     {
+        debug_assert!(self.discovered.borrow().is_clear());
+        debug_assert!(self.finished.borrow().is_clear());
+
         let min_order = self.get_position(min_node);
         let max_order = self.get_position(max_node);
 
@@ -276,7 +279,6 @@ where
             self.discovered.borrow_mut().grow(self.graph.node_bound());
             self.finished.borrow_mut().grow(self.graph.node_bound());
         }
-        let mut reset_discovered = Vec::new();
 
         // Get all nodes reachable from b with min_order <= order < max_order
         let mut forward_cone = BTreeMap::new();
@@ -285,25 +287,19 @@ where
         // The main logic: run DFS twice. We run this in a closure to catch
         // errors and reset the maps properly at the end.
         let mut run_dfs = || {
-            self.future_cone(
-                min_node,
-                min_order,
-                max_order,
-                &mut forward_cone,
-                &mut reset_discovered,
-            )?;
-            // Get all remaining nodes that can reach a with min_order < order <= max_order
-            self.past_cone(
-                max_node,
-                min_order,
-                max_order,
-                &mut backward_cone,
-                &mut reset_discovered,
-            )?;
+            // Get all nodes reachable from min_node with min_order < order <= max_order
+            self.future_cone(min_node, min_order, max_order, &mut forward_cone)?;
+
+            // Get all nodes that can reach a with min_order < order <= max_order
+            // These are disjoint from the nodes in the forward cone, otherwise
+            // we would have a cycle.
+            self.past_cone(max_node, min_order, max_order, &mut backward_cone)
+                .expect("cycles already detected in future_cone");
+
             Ok(())
         };
 
-        let res = run_dfs();
+        let success = run_dfs();
 
         // Cleanup: reset map to 0. This is faster than a full reset, especially
         // on large sparse graphs.
@@ -311,11 +307,10 @@ where
             self.discovered.borrow_mut().set(v.index(), false);
             self.finished.borrow_mut().set(v.index(), false);
         }
-        for v in reset_discovered {
-            self.discovered.borrow_mut().set(v.index(), false);
-        }
+        debug_assert!(self.discovered.borrow().is_clear());
+        debug_assert!(self.finished.borrow().is_clear());
 
-        match res {
+        match success {
             Ok(()) => Ok((forward_cone, backward_cone)),
             Err(cycle) => Err(cycle),
         }
@@ -327,7 +322,6 @@ where
         min_order: usize,
         max_order: usize,
         res: &mut BTreeMap<usize, G::NodeId>,
-        reset_discovered: &mut Vec<G::NodeId>,
     ) -> Result<(), Cycle<G::NodeId>>
     where
         G::NodeId: IndexType,
@@ -347,7 +341,6 @@ where
             res,
             &mut self.discovered.borrow_mut(),
             &mut self.finished.borrow_mut(),
-            reset_discovered,
         )
     }
 
@@ -357,7 +350,6 @@ where
         min_order: usize,
         max_order: usize,
         res: &mut BTreeMap<usize, G::NodeId>,
-        reset_discovered: &mut Vec<G::NodeId>,
     ) -> Result<(), Cycle<G::NodeId>>
     where
         G::NodeId: IndexType,
@@ -369,15 +361,14 @@ where
             |order| {
                 debug_assert!(order <= max_order, "invalid topological order");
                 match order.cmp(&min_order) {
-                    Ordering::Less => Ok(false),          // node beyond [min_node, max_node]
-                    Ordering::Equal => Err(Cycle(start)), // cycle!
-                    Ordering::Greater => Ok(true),        // node within [min_node, max_node]
+                    Ordering::Less => Ok(false), // node beyond [min_node, max_node]
+                    Ordering::Equal => panic!("found by future_cone"), // cycle!
+                    Ordering::Greater => Ok(true), // node within [min_node, max_node]
                 }
             },
             res,
             &mut self.discovered.borrow_mut(),
             &mut self.finished.borrow_mut(),
-            reset_discovered,
         )
     }
 }
@@ -477,7 +468,6 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
     res: &mut BTreeMap<usize, G::NodeId>,
     discovered: &mut FixedBitSet,
     finished: &mut FixedBitSet,
-    reset_discovered: &mut Vec<G::NodeId>,
 ) -> Result<(), Cycle<G::NodeId>>
 where
     G::NodeId: IndexType,
@@ -486,23 +476,23 @@ where
         graph,
         start,
         &mut |ev| -> Result<Control<()>, Cycle<G::NodeId>> {
-            let DfsEvent::Discover(u, _) = ev else {
-                return Ok(Control::Continue);
-            };
-            let order = order_map.get_position(u, &graph);
-            match valid_order(order) {
-                Ok(true) => {
+            match ev {
+                DfsEvent::Discover(u, _) => {
+                    // We are visiting u
+                    let order = order_map.get_position(u, &graph);
                     res.insert(order, u);
                     Ok(Control::Continue)
                 }
-                Ok(false) => {
-                    reset_discovered.push(u);
-                    Ok(Control::Prune)
+                DfsEvent::TreeEdge(_, u) => {
+                    // Should we visit u?
+                    let order = order_map.get_position(u, &graph);
+                    match valid_order(order) {
+                        Ok(true) => Ok(Control::Continue),
+                        Ok(false) => Ok(Control::Prune),
+                        Err(cycle) => Err(cycle),
+                    }
                 }
-                Err(cycle) => {
-                    reset_discovered.push(u);
-                    Err(cycle)
-                }
+                _ => Ok(Control::Continue),
             }
         },
         discovered,
