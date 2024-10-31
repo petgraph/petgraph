@@ -1,204 +1,337 @@
 use crate::algo::floyd_warshall::floyd_warshall_path;
 use crate::algo::{dijkstra, min_spanning_tree, BoundedMeasure, Measure};
 use crate::data::FromElements;
-use crate::dot::Dot;
 use crate::graph::{NodeIndex, UnGraph};
 use crate::visit::{
-    Data, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, NodeCompactIndexable,
-    NodeIndexable, Visitable,
+    Data, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoNeighbors,
+    IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeIndexable, Visitable,
 };
-use crate::visit::{IntoNodeReferences, NodeRef};
-use crate::{Graph, Undirected};
-use std::collections::HashMap;
+
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::ops::Add;
 
-pub fn compute_shortest_path_length<G>(
-    graph: G,
-    source: G::NodeId,
-    target: G::NodeId,
-) -> G::EdgeWeight
+fn compute_shortest_path_length<G>(graph: G, source: G::NodeId, target: G::NodeId) -> G::EdgeWeight
 where
-    G: Visitable + IntoEdges + IntoNodeReferences,
+    G: Visitable + IntoEdges,
     G::NodeId: Eq + Hash,
-    G::EdgeWeight: Add + Measure + Copy,
+    G::EdgeWeight: Measure + Copy,
 {
     let output = dijkstra(graph, source, Some(target), |e| *e.weight());
     output[&target]
 }
 
-pub fn compute_shortest_path<G>(
+fn compute_metric_closure<G>(
     graph: G,
-    source: usize,
-    target: usize,
-) -> (Vec<usize>, G::EdgeWeight)
+    terminals: &[G::NodeId],
+) -> HashMap<(usize, usize), G::EdgeWeight>
 where
-    G: Visitable + IntoEdges + IntoNodeReferences + NodeCompactIndexable + GraphProp,
-    G::NodeId: Eq + Hash + Debug,
-    G::EdgeWeight: Add + Measure + Copy + BoundedMeasure,
+    G: Data + IntoNodeReferences + NodeIndexable + Visitable + IntoEdges,
+    G::EdgeWeight: Copy + Measure,
+    G::NodeId: PartialOrd + Eq + Hash,
 {
-    let (dist, prev) = floyd_warshall_path(graph, |e| *e.weight());
-    if prev[source][target].is_none() {
-        return (vec![], dist[source][target]);
-    }
-    let mut path = vec![target];
-    let mut current = target;
-    while source != current {
-        if let Some(prev_node) = prev[source][current] {
-            current = prev_node;
-            path.insert(0, current);
-        } else {
-            return (vec![], dist[source][target]);
+    let mut closure = HashMap::new();
+    for (i, node_id_1) in terminals.iter().enumerate() {
+        for node_id_2 in terminals.iter().skip(i + 1) {
+            closure.insert(
+                (graph.to_index(*node_id_1), graph.to_index(*node_id_2)),
+                compute_shortest_path_length(graph, *node_id_1, *node_id_2),
+            );
         }
     }
-    (path, dist[source][target])
-}
-
-pub fn compute_metric_closure<G>(
-    graph: G,
-    terminals: Vec<G::NodeId>,
-) -> Graph<G::NodeWeight, G::EdgeWeight, Undirected>
-where
-    G: Visitable
-        + GraphBase
-        + Data
-        + IntoNodeReferences
-        + IntoEdges
-        + IntoEdgeReferences
-        + NodeIndexable,
-    G::NodeId: PartialOrd + Copy + Hash + Eq + Debug + PartialOrd,
-    G::NodeWeight: Clone,
-    G::EdgeWeight: PartialOrd + Copy + Measure,
-    G::NodeRef: PartialOrd,
-{
-    let mut closure: Graph<G::NodeWeight, (G::EdgeWeight), Undirected> = UnGraph::new_undirected();
-    let mut node_map: HashMap<G::NodeId, NodeIndex> = HashMap::new();
-    for graph_node in graph.node_references() {
-        if terminals.contains(&graph_node.id()) {
-            let new_node = closure.add_node(graph_node.weight().clone());
-            node_map.insert(graph_node.id(), new_node);
-        }
-    }
-    for source in graph.node_references() {
-        for target in graph.node_references() {
-            if source < target
-                && terminals.contains(&source.id())
-                && terminals.contains(&target.id())
-            {
-                let weight = compute_shortest_path_length(graph, source.id(), target.id());
-                closure.add_edge(node_map[&source.id()], node_map[&target.id()], weight);
-            }
-        }
-    }
-
     closure
 }
 
-
-pub fn reconstruct_metric_closure<G>(graph: G, t_1: Graph<G::NodeWeight, G::EdgeWeight, Undirected>)
-                                     -> Graph<G::NodeWeight, G::EdgeWeight, Undirected>
+fn subgraph_edges_from_metric_closure<G>(
+    graph: G,
+    minimum_spanning_closure: G,
+) -> Vec<(G::NodeId, G::NodeId)>
 where
-    G: Visitable +
-    IntoEdges +
-    IntoEdgeReferences +
-    IntoNodeReferences +
-    NodeCompactIndexable +
-    GraphProp +
-    Data +
-    GraphBase +
-    IntoEdgeReferences,
-    G::NodeId: PartialOrd + Copy + Hash + Eq + Debug + PartialOrd,
-    G::NodeWeight: Clone,
-    G::EdgeWeight: PartialOrd + Copy + Measure + BoundedMeasure,
-    G::NodeRef: PartialOrd,
+    G: GraphBase
+        + NodeCompactIndexable
+        + IntoEdgeReferences
+        + IntoNodeIdentifiers
+        + GraphProp
+        + IntoNodeReferences,
+    G::EdgeWeight: BoundedMeasure + Copy,
+    G::NodeId: Eq + Hash + Ord + Debug,
 {
-    let mut result: Graph<G::NodeWeight, G::EdgeWeight, Undirected> = UnGraph::new_undirected();
-    let mut node_map: HashMap<G::NodeId, NodeIndex> = HashMap::new();
-    let mut rev_node_map: HashMap<NodeIndex, G::NodeId> = HashMap::new();
-    for node in graph.node_references() {
-        let new_node = result.add_node(node.weight().clone());
-        node_map.insert(node.id(), new_node);
-        rev_node_map.insert(new_node, node.id());
-    }
+    let mut retained_edges = Vec::new();
+    let (_, prev) = floyd_warshall_path(graph, |e| *e.weight());
 
-
-    let mut edge_weight: HashMap<(usize, usize), G::EdgeWeight> = HashMap::new();
-
-    for edge in graph.edge_references() {
-        let source = graph.to_index(edge.source());
+    for edge in minimum_spanning_closure.edge_references() {
         let target = graph.to_index(edge.target());
-        edge_weight.insert((source, target), *edge.weight());
-    }
+        let source = graph.to_index(edge.source());
 
-    for edge in t_1.edge_references() {
-        let source = graph.to_index(rev_node_map[&edge.source()]);
-        let target = graph.to_index(rev_node_map[&edge.target()]);
-        let (path, path_length) = compute_shortest_path(&graph, source, target);
-        for window in path.windows(2) {
-            if let [u, v] = window {
-                result.update_edge(node_map[&graph.from_index(*u)],
-                                   node_map[&graph.from_index(*v)],
-                                   edge_weight[&(*u, *v)]);
+        let mut current = target;
+        while current != source {
+            if let Some(prev_node) = prev[source][current] {
+                retained_edges.push((graph.from_index(prev_node), graph.from_index(current)));
+                current = prev_node;
             }
         }
     }
 
-    result
+    retained_edges
 }
 
-fn my_node_ids<G>(graph: &G, terminal_ids: Vec<G::NodeId>) -> Vec<NodeIndex>
+fn non_terminal_leaves<G>(graph: G, terminals: &[G::NodeId]) -> HashSet<G::NodeId>
 where
-    G: NodeIndexable,
+    G: GraphBase + IntoNodeReferences + IntoNodeIdentifiers + IntoNeighbors,
+    G::NodeId: Hash + Eq + Debug,
+    G::NodeRef: Eq + Hash,
 {
-    terminal_ids
-        .iter()
-        .map(|id| graph.to_index(*id))  // Convert NodeId to the corresponding index
-        .map(NodeIndex::new)            // Create a NodeIndex from the index
-        .collect()
+    let mut removed_leaves = HashSet::new();
+
+    let mut remaining_leaves = graph
+        .node_identifiers()
+        .filter(|node_id| {
+            graph.neighbors(*node_id).collect::<HashSet<_>>().len() == 1
+                && !terminals.contains(node_id)
+        })
+        .collect::<HashSet<_>>();
+
+    while !remaining_leaves.is_empty() {
+        remaining_leaves = graph
+            .node_identifiers()
+            .filter(|node_id| {
+                !terminals.contains(node_id)
+                    && !removed_leaves.contains(node_id)
+                    && (graph
+                        .neighbors(*node_id)
+                        .collect::<HashSet<_>>()
+                        .difference(&removed_leaves))
+                    .collect::<Vec<_>>()
+                    .len()
+                        == 1
+            })
+            .collect::<HashSet<_>>();
+
+        removed_leaves = removed_leaves
+            .union(&remaining_leaves)
+            .cloned()
+            .collect::<HashSet<_>>();
+    }
+
+    removed_leaves
 }
 
-pub fn remove_non_terminal_leaves<G>(graph: &mut Graph<G::NodeWeight, G::EdgeWeight, Undirected>, terminals: Vec<G::NodeId>)
+/// \[Generic\] Steiner Tree algorithm.
+///
+/// Computes the Steiner tree of an undirected graph given a set of terminal nodes via [Kou's algorithm][pr]. Implementation details mirrors NetworkX implementation.
+///
+/// Returns a `Graph` representing the Steiner tree of the input graph.
+///
+///
+/// # Complexity
+/// Time complexity is **O(|S| |V|²)**.
+/// where **|V|** the number of vertices (i.e nodes) and **|E|** the number of edges.
+///
+/// [pr]: https://networkx.org/documentation/stable/_modules/networkx/algorithms/approximation/steinertree.html#steiner_tree
+///
+/// # Example
+/// ```rust
+/// use petgraph::Graph;
+/// use petgraph::algo::steiner_tree::steiner_tree;
+/// use petgraph::graph::UnGraph;
+/// let mut graph = UnGraph::<(), i32>::default();
+/// let a = graph.add_node(());
+/// let b = graph.add_node(());
+/// let c = graph.add_node(());
+/// let d = graph.add_node(());
+/// let e = graph.add_node(());
+/// let f = graph.add_node(());
+/// graph.extend_with_edges([
+///     (a, b, 7),
+///     (a, f, 6),
+///     (b, c, 1),
+///     (b, f, 5),
+///     (c, d, 1),
+///     (c, e, 3),
+///     (d, e, 1),
+///     (d, f, 4),
+///     (e, f, 10),
+/// ]);
+/// let terminals = vec![a, c, e, f];
+/// let tree = steiner_tree(&graph, &terminals);
+/// assert_eq!(tree.edge_weights().sum::<i32>(), 12);
+/// ```
+pub fn steiner_tree<N, E>(graph: &UnGraph<N, E>, terminals: &[NodeIndex]) -> UnGraph<N, E>
 where
-    G: Visitable + GraphBase + Data + IntoNodeReferences + IntoEdges + IntoEdgeReferences + NodeCompactIndexable + GraphProp,
-    G::NodeId: PartialOrd + Copy + Hash + Eq + Debug + PartialOrd,
-    G::EdgeWeight: PartialOrd + Copy + BoundedMeasure,
-    G::NodeRef: PartialOrd,
-    G::NodeWeight: Debug,
-    G::NodeWeight: Clone,
+    N: Default + Clone + Eq + Hash + Debug,
+    E: Copy + Eq + Ord + Measure + BoundedMeasure,
 {
-    // TODO implement as in: https://networkx.org/documentation/stable/_modules/networkx/algorithms/approximation/steinertree.html#steiner_tree
+    let mut graph = graph.clone();
+    let metric_closure = compute_metric_closure(&graph, &terminals);
+    let metric_closure_graph: UnGraph<N, E, _> = UnGraph::from_edges(
+        metric_closure
+            .iter()
+            .map(|((node1, node2), &weight)| (*node1, *node2, weight)),
+    );
+
+    let minimum_spanning = UnGraph::from_elements(min_spanning_tree(&metric_closure_graph));
+
+    let subgraph_edges = subgraph_edges_from_metric_closure(&graph, &minimum_spanning);
+
+    graph.retain_edges(|graph, e| {
+        let edge = graph.edge_endpoints(e).unwrap();
+        subgraph_edges.contains(&(edge.0, edge.1)) || subgraph_edges.contains(&(edge.1, edge.0))
+    });
+
+    let non_terminal_nodes = non_terminal_leaves(&graph, terminals);
+    graph.retain_nodes(|_, n| !non_terminal_nodes.contains(&n));
+
+    graph
 }
 
-pub fn minimal_steiner_tree<G>(
-    graph: G,
-    terminals: Vec<G::NodeId>,
-) -> Graph<G::NodeWeight, G::EdgeWeight, Undirected>
-where
-    G: Visitable + GraphBase + Data + IntoNodeReferences + IntoEdges + IntoEdgeReferences + NodeCompactIndexable + GraphProp,
-    G::NodeId: PartialOrd + Copy + Hash + Eq + Debug + PartialOrd,
-    G::EdgeWeight: PartialOrd + Copy + BoundedMeasure,
-    G::NodeRef: PartialOrd,
-    G::NodeWeight: Debug,
-    G::NodeWeight: Clone,
-{
-    println!("Graph:");
-    println!("{:?}", Dot::with_config(&graph, &[]));
-    // Step 1: Compute the metric closure of the graph.
-    let g_1 = compute_metric_closure(graph, terminals);
-    println!("G_1");
-    println!("{:?}", Dot::with_config(&g_1, &[]));
-    // Step 2: Compute the MST of the metric closure.
-    let t_1: Graph<G::NodeWeight, G::EdgeWeight, Undirected> = UnGraph::from_elements(min_spanning_tree(&g_1));
-    println!("T_1");
-    println!("{:?}", Dot::with_config(&t_1, &[]));
-    // Step 3: Construct the subgraph of G, by placing the shortest path on each edge.
-    let g_s = reconstruct_metric_closure(graph, t_1);
-    println!("G_s");
-    println!("{:?}", Dot::with_config(&g_s, &[]));
-    // Step 4: Compute the MST of the subgraph
-    let mut t_s = UnGraph::from_elements(min_spanning_tree(&g_s));
+#[cfg(test)]
+mod test {
+    use std::collections::{HashMap, HashSet};
 
-    t_s
-    //g_1
+    use crate::{
+        algo::{min_spanning_tree, EdgeRef, UnGraph},
+        data::FromElements,
+        matrix_graph::NodeIndex,
+        Graph, Undirected,
+    };
+
+    use super::{compute_metric_closure, non_terminal_leaves, subgraph_edges_from_metric_closure};
+
+    #[test]
+    fn test_compute_metric_closure() {
+        let mut graph = Graph::<(), i32, Undirected>::new_undirected();
+
+        let a = graph.add_node(());
+        let b = graph.add_node(());
+        let c = graph.add_node(());
+        let d = graph.add_node(());
+        let e = graph.add_node(());
+        let f = graph.add_node(());
+        graph.extend_with_edges([
+            (a, b, 7),
+            (a, f, 6),
+            (b, c, 1),
+            (b, f, 5),
+            (c, d, 1),
+            (c, e, 3),
+            (d, e, 1),
+            (d, f, 4),
+            (e, f, 10),
+        ]);
+
+        let terminals = vec![a, c, e, f];
+        let metric_closure = compute_metric_closure(&graph, &terminals);
+
+        let metric_closure_graph: UnGraph<&str, _, _> = UnGraph::from_edges(
+            metric_closure
+                .iter()
+                .map(|((node1, node2), &weight)| (*node1, *node2, weight)),
+        );
+
+        let ref_weights = HashMap::from([
+            ((0, 2), 8),
+            ((0, 4), 10),
+            ((0, 5), 6),
+            ((2, 4), 2),
+            ((2, 5), 5),
+            ((4, 5), 5),
+        ]);
+        for ((node1, node2), ref_weight) in ref_weights {
+            assert_eq!(metric_closure[&(node1, node2)], ref_weight);
+            assert_eq!(
+                *metric_closure_graph
+                    .edge_weight(
+                        metric_closure_graph
+                            .find_edge(NodeIndex::new(node1), NodeIndex::new(node2))
+                            .unwrap()
+                    )
+                    .unwrap(),
+                ref_weight
+            );
+        }
+    }
+
+    #[test]
+    fn test_subgraph_from_metric_closure() {
+        let mut graph = Graph::<(), i32, _>::new_undirected();
+
+        let a = graph.add_node(());
+        let b = graph.add_node(());
+        let c = graph.add_node(());
+        let d = graph.add_node(());
+        let e = graph.add_node(());
+        let f = graph.add_node(());
+        graph.extend_with_edges([
+            (a, b, 7),
+            (a, f, 6),
+            (b, c, 1),
+            (b, f, 5),
+            (c, d, 1),
+            (c, e, 3),
+            (d, e, 1),
+            (d, f, 4),
+            (e, f, 10),
+        ]);
+
+        let terminals = vec![a, c, e, f];
+        let metric_closure = compute_metric_closure(&graph, &terminals);
+
+        let metric_closure_graph: UnGraph<(), _, _> = UnGraph::from_edges(
+            metric_closure
+                .iter()
+                .map(|((node1, node2), &weight)| (*node1 as u32, *node2 as u32, weight)),
+        );
+
+        let minimum_spanning = UnGraph::from_elements(min_spanning_tree(&metric_closure_graph));
+
+        let subgraph_edges = subgraph_edges_from_metric_closure(&graph, &minimum_spanning);
+
+        graph.retain_edges(|graph, e| {
+            let edge = graph.edge_endpoints(e).unwrap();
+            subgraph_edges.contains(&(edge.0, edge.1))
+        });
+
+        let mut ref_graph = UnGraph::<(), _>::new_undirected();
+        let ref_a = ref_graph.add_node(());
+        let _ = ref_graph.add_node(());
+        let ref_c = ref_graph.add_node(());
+        let ref_d = ref_graph.add_node(());
+        let ref_e = ref_graph.add_node(());
+        let ref_f = ref_graph.add_node(());
+
+        ref_graph.extend_with_edges([
+            (ref_c, ref_d, 1),
+            (ref_d, ref_e, 1),
+            (ref_d, ref_f, 4),
+            (ref_a, ref_f, 6),
+        ]);
+
+        for ref_edge in ref_graph.edge_references() {
+            let (edge_index, _) = graph
+                .find_edge_undirected(ref_edge.source(), ref_edge.target())
+                .unwrap();
+            let edge_endpoints = graph.edge_endpoints(edge_index).unwrap();
+            assert_eq!(graph.edge_weight(edge_index).unwrap(), ref_edge.weight());
+            assert_eq!(edge_endpoints.0, ref_edge.source());
+            assert_eq!(edge_endpoints.1, ref_edge.target());
+        }
+    }
+
+    #[test]
+    fn test_remove_non_terminal_nodes() {
+        let mut graph = Graph::<(), i32, _>::new_undirected();
+
+        let a = graph.add_node(());
+        let b = graph.add_node(());
+        let c = graph.add_node(());
+        let d = graph.add_node(());
+        let e = graph.add_node(());
+        let f = graph.add_node(());
+        graph.extend_with_edges([(a, b, 7), (b, c, 6), (c, d, 1), (d, e, 5), (e, f, 1)]);
+
+        let terminals = vec![a, c];
+        let non_terminal_nodes = non_terminal_leaves(&graph, &terminals);
+        let non_terminal_refs = HashSet::from([d, e, f]);
+        assert_eq!(non_terminal_refs, non_terminal_nodes);
+    }
 }
