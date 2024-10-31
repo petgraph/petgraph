@@ -128,9 +128,8 @@ where
     for edge in graph.edge_references() {
         let source = graph.to_index(edge.source());
         let target = graph.to_index(edge.target());
-        edge_weight.insert((source, target), edge.weight().clone());
+        edge_weight.insert((source, target), *edge.weight());
     }
-
 
     for edge in t_1.edge_references() {
         let source = graph.to_index(rev_node_map[&edge.source()]);
