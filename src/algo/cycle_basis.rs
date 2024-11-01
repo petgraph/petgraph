@@ -1,18 +1,16 @@
 use std::{
     collections::{HashMap, HashSet, VecDeque},
-    hash::Hash,
     vec::Vec,
 };
 
-use crate::visit::{IntoEdges, IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIndexable};
+use crate::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIndexable};
 
 pub fn cycle_basis<G>(
     g: G, 
     root_choice_index: Option<usize>,
 ) -> Option<Vec<Vec<usize>>>
 where
-    G: IntoNeighborsDirected + IntoNodeIdentifiers + IntoEdges + NodeCount + NodeIndexable,
-    G::NodeId: Eq + Hash + Copy,
+    G: IntoNeighborsDirected + IntoNodeIdentifiers + NodeCount + NodeIndexable
 {
     let g_node_count: usize = g.node_count();
     if g_node_count == 0 {
