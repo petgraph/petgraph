@@ -6,6 +6,7 @@
 
 pub mod astar;
 pub mod bellman_ford;
+pub mod cycle_basis;
 pub mod dijkstra;
 pub mod dominators;
 pub mod feedback_arc_set;
@@ -34,6 +35,7 @@ use crate::visit::Walker;
 
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
+pub use cycle_basis::cycle_basis;
 pub use dijkstra::dijkstra;
 pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
