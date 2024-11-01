@@ -29,6 +29,8 @@ pub type DefaultIx = u32;
 
 /// Trait for the unsigned integer type used for node and edge indices.
 ///
+/// # Safety
+///
 /// Marked `unsafe` because: the trait must faithfully preserve
 /// and convert index values.
 pub unsafe trait IndexType: Copy + Default + Hash + Ord + fmt::Debug + 'static {
@@ -1733,13 +1735,10 @@ where
     type Item = EdgeReference<'a, E, Ix>;
 
     fn next(&mut self) -> Option<EdgeReference<'a, E, Ix>> {
-        while let Some(edge) = self.edges.next() {
-            if edge.node[1] == self.target_node {
-                return Some(edge);
-            }
-        }
-
-        None
+        let target_node = self.target_node;
+        self.edges
+            .by_ref()
+            .find(|&edge| edge.node[1] == target_node)
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.edges.size_hint();

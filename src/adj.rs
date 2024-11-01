@@ -71,10 +71,7 @@ pub struct EdgeReference<'a, E, Ix: IndexType> {
 impl<'a, E, Ix: IndexType> Copy for EdgeReference<'a, E, Ix> {}
 impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
     fn clone(&self) -> Self {
-        EdgeReference {
-            id: self.id,
-            edge: self.edge,
-        }
+        *self
     }
 }
 

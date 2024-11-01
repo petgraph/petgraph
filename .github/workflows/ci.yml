@@ -18,17 +18,17 @@ jobs:
         include:
           - rust: 1.64.0  # MSRV
           - rust: stable
-            features: unstable quickcheck
+            features: unstable quickcheck rayon
             test_all: --all
           - rust: beta
             test_all: --all
           - rust: nightly
-            features: unstable quickcheck
+            features: unstable quickcheck rayon
             test_all: --all
             bench: true
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -58,7 +58,7 @@ jobs:
             rustfmt: rustfmt
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -72,7 +72,7 @@ jobs:
   miri:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: miri
