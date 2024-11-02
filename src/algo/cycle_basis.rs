@@ -5,6 +5,45 @@ use std::{
 
 use crate::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIndexable};
 
+
+/// \[Generic\] An algorithm for determining the cycle basis of a graph.
+///
+/// A set of basis for cycles of a graph is a minimal collection of cycles such that
+/// any cycle in the graph can be derived as a sum of the cycles in the cycle basis.
+/// 
+/// Note that graphs may have multiple, correct cycle basis (see the example below). 
+/// 
+/// If no root is selected, then the first node from the 'node_identifiers' iterator is used
+/// as the initial root.
+/// 
+/// This algorithm works for disconnected graphs.
+///
+/// Returns a `Vec` of 'Vec', each containing a cycle. Returns None if no cycles are present.
+/// # Example
+/// ```rust
+/// use petgraph::algo::cycle_basis;
+/// use petgraph::{Graph, Undirected};
+/// use petgraph::visit::NodeIndexable;
+///
+/// let mut graph: Graph<(), u16, Undirected> = Graph::from_edges(&[
+/// (0,1),(1,2),(2,3),(3,0),(0,2),]);
+/// 
+/// // 0 -----> 1
+/// // ^  \     |
+/// // |   \    |
+/// // |    \   |
+/// // |     \  |
+/// // |      > v
+/// // 3 <----- 2
+///
+/// let expected_res: Vec<Vec<usize>> = vec![vec![0,2,3], vec![0,1,2,3]];
+/// let res: Vec<Vec<usize>> = cycle_basis(&graph, Some(graph.to_index(3.into()))).unwrap();
+/// assert_eq!(res, expected_res);
+/// 
+/// // Note that the cycle [0,1,2] is equal to the cycle [0,1,2,3] minus [0,2,3].
+/// // Also note that [0,1,2] and [0,3,2] is an equally correct cycle basis,
+/// // as [0,1,2,3] = [0,1,2] plus [0,3,2] (the edge between 0-2 cancels out).
+/// ```
 pub fn cycle_basis<G>(
     g: G, 
     root_choice_index: Option<usize>,
