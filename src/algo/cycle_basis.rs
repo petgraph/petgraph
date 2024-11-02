@@ -36,8 +36,9 @@ use crate::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIn
 /// // |      > v
 /// // 3 <----- 2
 ///
-/// let expected_res: Vec<Vec<usize>> = vec![vec![0,2,3], vec![0,1,2,3]];
+/// let expected_res: Vec<Vec<usize>> = vec![vec![0,1,2,3], vec![0,2,3]];
 /// let res: Vec<Vec<usize>> = cycle_basis(&graph, Some(graph.to_index(3.into()))).unwrap();
+/// res.sort();
 /// assert_eq!(res, expected_res);
 /// 
 /// // Note that the cycle [0,1,2] is equal to the cycle [0,1,2,3] minus [0,2,3].

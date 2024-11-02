@@ -4,7 +4,6 @@ use petgraph::visit::NodeIndexable;
 
 #[test]
 fn test_cycle_basis() {
-    //Borrowing the tests from Networkx
     let mut graph: Graph<(), u16, Undirected> = Graph::from_edges(&[
         (0,1),(1,2),(2,3),(3,4),(4,5),(3,0),(5,0),(1,6),(6,7),(7,8),(8,0),(8,9),
     ]);
@@ -21,4 +20,9 @@ fn test_cycle_basis() {
     cy = cycle_basis(&graph, Some(graph.to_index(3.into()))).unwrap();
     cy.sort();
     assert_eq!(cy, vec![vec![0,1,2,3], vec![0,2,3]]);
+     // test self loop
+     graph.add_edge(0.into(), 0.into(), 0);
+     cy = cycle_basis(&graph, Some(graph.to_index(3.into()))).unwrap();
+     cy.sort();
+     assert_eq!(cy, vec![vec![0],vec![0,1,2,3], vec![0,2,3]]);
 }
