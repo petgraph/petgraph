@@ -11,6 +11,7 @@ extern crate odds;
 
 mod utils;
 
+use petgraph::algo::Cycle;
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
@@ -23,7 +24,7 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
+    bellman_ford, condensation, connected_components, cycle_basis, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
     min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
@@ -1374,5 +1375,27 @@ quickcheck! {
         let max_flow_constaint = (sum_flows(&gr, &flows, source, Direction::Outgoing) == max_flow)
             && (sum_flows(&gr, &flows, destination, Direction::Incoming) == max_flow);
         return capacity_constraint && flow_conservation_constraint && max_flow_constaint;
+    }
+}
+
+quickcheck! {
+    fn test_cycle_basis(gr: Graph<(), u32, Undirected>) -> bool {
+        if gr.node_count() == 0 {
+            let c = cycle_basis(&gr, None);
+            match c {
+                None => return true,
+                _ => return false
+            }
+        }
+        // A connected graph has N - L + k independent cycles
+        for (j, i) in gr.node_indices().enumerate() {
+            if j >= 10 { break; } // testing all is too slow
+            let c = cycle_basis(&gr, Some(i)).unwrap();
+            let n = gr.node_count();
+            let l = gr.edge_count(); 
+            let k = connected_components(&gr);
+            assert_eq!(c.len(), n - l + k);
+        }
+        true
     }
 }

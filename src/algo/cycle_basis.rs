@@ -4,7 +4,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIndexable};
+use crate::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIndexable, Visitable, VisitMap};
 
 
 /// \[Generic\] An algorithm for determining the cycle basis of a graph.
@@ -19,6 +19,10 @@ use crate::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIn
 /// 
 /// This algorithm works for disconnected graphs.
 ///
+/// This algorithm can handle parallel edges (including parallel self-loops), however it
+/// will choose one parallel edge between nodes to define cycles. Additional parallel edges
+/// are ignored.
+/// 
 /// Returns a `Vec` of 'Vec', each containing a cycle. Returns None if no cycles are present.
 /// # Example
 /// ```rust
@@ -56,14 +60,15 @@ pub fn cycle_basis<G>(
     root_choice: Option<G::NodeId>,
 ) -> Option<Vec<Vec<G::NodeId>>>
 where
-    G: IntoNeighborsDirected + IntoNodeIdentifiers + NodeCount + NodeIndexable,
+    G: IntoNeighborsDirected + IntoNodeIdentifiers + NodeCount + NodeIndexable + Visitable,
     G::NodeId: Eq + Hash + Copy,
 {
     let g_node_count: usize = g.node_count();
     if g_node_count == 0 {
         return None  //Handle the trivial case of an empty graph
     }
-    let mut processed_node_ix: HashSet<usize> = HashSet::with_capacity(g_node_count);
+    let mut processed_nodes = g.visit_map();
+    let mut visited_edges: HashSet<(usize, usize)> = HashSet::new();
     let mut cycles: Vec<Vec<G::NodeId>> = Vec::new();
 
     let node_vec: VecDeque<G::NodeId> = match root_choice {
@@ -84,7 +89,7 @@ where
 
     while let Some(root) = node_iter.next() {
         let rooti = ix(*root);
-        if processed_node_ix.contains(&rooti) {
+        if processed_nodes.is_visited(root) {
             continue
         }
         let mut stack: Vec<usize> = vec![rooti];
@@ -97,10 +102,11 @@ where
             };
             for nbr in g.neighbors(deix(z)) {
                 let nbri = ix(nbr);
+                let edge = (z, nbri);
                 if !used.contains_key(&nbri) {
                     pred.insert(nbri, z);
                     stack.push(nbri);
-                    used.insert(nbri, HashSet::from([z,]));
+                    used.insert(nbri, HashSet::from([z]));
                 } 
                 else if nbri == z {
                     cycles.push(vec![deix(z)]);
@@ -109,25 +115,21 @@ where
                     let pn: &HashSet<usize> = used.get(&nbri).unwrap();
                     let mut cycle: Vec<G::NodeId> = vec![deix(nbri), deix(z)];
                     let mut p = pred.get(&z).unwrap();
-                    loop {
+                    while !pn.contains(&p) {
                         cycle.push(deix(*p));
                         p = pred.get(&p).unwrap();
-                        if pn.contains(&p) {
-                            break
-                        }
                     }
                     cycle.push(deix(*p));
-                    cycle.dedup(); //As we have an explicit self-loop conditional, this is ok
                     cycles.push(cycle);
                     used.get_mut(&nbri).unwrap().insert(z);
                 }
-            }
-            let mut iter_pred = pred.iter();
-            while let Some((key, _value)) = iter_pred.next() {
-                processed_node_ix.insert(*key);
+                visited_edges.insert(edge);
             }
         }
-        processed_node_ix.insert(rooti);
+        let iter_pred = pred.iter();
+        for (key, _value) in iter_pred {
+            processed_nodes.visit(deix(*key));
+        }
     }
     if !cycles.is_empty() {
         return Some(cycles)
