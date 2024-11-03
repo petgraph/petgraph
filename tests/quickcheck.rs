@@ -1391,9 +1391,7 @@ quickcheck! {
         let n = gr.node_count();
         let l = gr.edge_count();
         let k = connected_components(&gr);
-        dbg!(&k);
         let c = cycle_basis(&gr, None).unwrap();
-        dbg!(&c);
         //cyclomatic number for undirected graphs with n nodes, l edges, k connected components
         // ignoring parallel edges
         let theory = l + k - n - count_parallel_edges(&gr);
@@ -1409,7 +1407,6 @@ fn count_parallel_edges<N, E>(graph: &UnGraph<N, E>) -> usize {
     for edge in graph.edge_references() {
         // In an undirected graph, (u, v) is the same as (v, u), so sort the nodes to handle this
         let mut nodes = [edge.source(), edge.target()];
-        dbg!(nodes);
         nodes.sort();
 
         let key = (nodes[0], nodes[1]);
