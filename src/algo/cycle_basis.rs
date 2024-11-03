@@ -12,7 +12,6 @@ use crate::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIn
 /// A set of basis for cycles of a graph is a minimal collection of cycles such that
 /// any cycle in the graph can be derived as a sum of the cycles in the cycle basis.
 /// 
-/// Note that graphs may have multiple, correct cycle basis (see the example below). 
 /// 
 /// If no root is selected, then the first node from the 'node_identifiers' iterator is used
 /// as the initial root.
@@ -20,8 +19,8 @@ use crate::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIn
 /// This algorithm works for disconnected graphs.
 ///
 /// This algorithm can handle parallel edges (including parallel self-loops), however it
-/// will choose one parallel edge between nodes to define cycles. Additional parallel edges
-/// are ignored.
+/// will arbitrarily choose one parallel edge between nodes to define cycles. 
+/// Additional parallel edges are ignored.
 /// 
 /// Returns a `Vec` of 'Vec', each containing a cycle. Returns None if no cycles are present.
 /// # Example
@@ -34,26 +33,21 @@ use crate::visit::{IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIn
 /// let mut graph: Graph<(), u16, Undirected> = Graph::from_edges(&[
 /// (0,1),(1,2),(2,3),(3,0),(0,2),]);
 /// 
-/// // 0 ------ 1
+/// // 0--------1
 /// // |  \     |
 /// // |   \    |
 /// // |    \   |
 /// // |     \  |
 /// // |      \ |
-/// // 3 <----- 2
+/// // 3--------2
 ///
 /// let expected_res: Vec<Vec<NodeIndex>> = vec![
-///     vec![0,1,2,3].into_iter().map(NodeIndex::new).collect(),
+///     vec![0,1,2].into_iter().map(NodeIndex::new).collect(),
 ///     vec![0,2,3].into_iter().map(NodeIndex::new).collect(),
 ///     ];
 /// let mut res: Vec<Vec<NodeIndex>> = cycle_basis(&graph, Some(3.into())).unwrap();
 /// res.sort();
 /// assert_eq!(res, expected_res);
-/// 
-/// // Note that the cycle [0,1,2] is equal to the cycle [0,1,2,3] minus [0,2,3].
-/// // Also note that [0,1,2] and [0,3,2] is an equally correct cycle basis,
-/// // as [0,1,2,3] = [0,1,2] plus [0,3,2] (the edge between 0-2 cancels out).
-/// // Which set is returned will depend on the choice of initial root node.
 /// ```
 pub fn cycle_basis<G>(
     g: G, 
@@ -64,8 +58,8 @@ where
     G::NodeId: Eq + Hash + Copy,
 {
     let g_node_count: usize = g.node_count();
-    if g_node_count == 0 {
-        return None  //Handle the trivial case of an empty graph
+    if g_node_count <= 2 {
+        return None  //Handle the trivial cases
     }
     let mut processed_nodes = g.visit_map();
     let mut visited_edges: HashSet<(usize, usize)> = HashSet::new();
@@ -100,18 +94,25 @@ where
                 None => break,
                 Some(q) => q
             };
+            let mut nbr_seen: HashSet<usize> = HashSet::new();
             for nbr in g.neighbors(deix(z)) {
                 let nbri = ix(nbr);
+                
+                if nbr_seen.contains(&nbri) { // Deal with parallel self-loops
+                    continue
+                }
+                nbr_seen.insert(nbri);
                 let edge = (z, nbri);
-                if !used.contains_key(&nbri) {
+                if !used.contains_key(&nbri) { //New node, add it to tracking
                     pred.insert(nbri, z);
                     stack.push(nbri);
                     used.insert(nbri, HashSet::from([z]));
                 } 
-                else if nbri == z {
+                else if nbri == z { //Self-loop
                     cycles.push(vec![deix(z)]);
                 } 
                 else if !((used.get(&z).unwrap()).contains(&nbri)) {
+                    // This is a cycle - we've looped back to a previous node
                     let pn: &HashSet<usize> = used.get(&nbri).unwrap();
                     let mut cycle: Vec<G::NodeId> = vec![deix(nbri), deix(z)];
                     let mut p = pred.get(&z).unwrap();
