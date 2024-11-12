@@ -134,7 +134,7 @@ fn b01_example() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
 }
 
 fn b07_example() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
-    // Implementing b01 case from Vienna test set B
+    // Implementing b07 case from Vienna test set B
     let mut graph = Graph::<(), i32, Undirected>::new_undirected();
     let _n0 = graph.add_node(());
     let _n1 = graph.add_node(());
