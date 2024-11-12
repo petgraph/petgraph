@@ -158,7 +158,6 @@ mod util;
 
 pub mod operator;
 pub mod prelude;
-mod test;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
