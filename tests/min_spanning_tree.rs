@@ -1,9 +1,7 @@
 use petgraph::{
     algo::{min_spanning_tree, min_spanning_tree_prim},
-    csr::IndexType,
     dot::Dot,
     graph::{NodeIndex, UnGraph},
-    visit::{IntoEdges, NodeRef},
     Graph, Undirected,
 };
 
