@@ -4,6 +4,7 @@
 //! so that they are generally applicable. For now, some of these still require
 //! the `Graph` type.
 
+pub mod articulation_points;
 pub mod astar;
 pub mod bellman_ford;
 pub mod dijkstra;
