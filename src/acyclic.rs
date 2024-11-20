@@ -5,7 +5,7 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
     convert::TryFrom,
-    ops::Deref,
+    ops::{Deref, RangeBounds},
 };
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
     algo::Cycle,
     data::{Build, Create, DataMap, DataMapMut},
     graph::NodeIndex,
-    prelude::{DiGraph, StableDiGraph},
+    prelude::DiGraph,
     visit::{
         dfs_visitor, Control, Data, DfsEvent, EdgeCount, EdgeIndexable, GetAdjacencyMatrix,
         GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
@@ -23,9 +23,13 @@ use crate::{
     Direction,
 };
 
+#[cfg(feature = "stable_graph")]
+use crate::stable_graph::StableDiGraph;
+
 mod order_map;
 use fixedbitset::FixedBitSet;
 use order_map::OrderMap;
+pub use order_map::TopologicalPosition;
 
 /// A directed acyclic graph.
 ///
@@ -101,9 +105,19 @@ impl<G: Visitable> Acyclic<G> {
         Default::default()
     }
 
-    /// Get the current topological order of the nodes.
-    pub fn order(&self) -> &[G::NodeId] {
-        self.order_map.as_slice()
+    /// Get an iterator over the nodes, ordered by their position.
+    pub fn nodes_iter(&self) -> impl Iterator<Item = G::NodeId> + '_ {
+        self.order_map.nodes_iter()
+    }
+
+    /// Get an iterator over the nodes within the range of positions.
+    ///
+    /// The nodes are ordered by their position in the topological sort.
+    pub fn range(
+        &self,
+        range: impl RangeBounds<TopologicalPosition>,
+    ) -> impl Iterator<Item = G::NodeId> + '_ {
+        self.order_map.range(range)
     }
 
     /// Get the underlying graph.
@@ -247,7 +261,7 @@ where
         debug_assert_eq!(all_positions.len(), b_fut.len() + a_past.len());
 
         for (pos, node) in all_positions.into_iter().zip(all_nodes) {
-            self.order_map.set_order(node, pos, &self.graph);
+            self.order_map.set_position(node, pos, &self.graph);
         }
         Ok(())
     }
@@ -264,7 +278,13 @@ where
         &self,
         min_node: G::NodeId,
         max_node: G::NodeId,
-    ) -> Result<(BTreeMap<usize, G::NodeId>, BTreeMap<usize, G::NodeId>), Cycle<G::NodeId>>
+    ) -> Result<
+        (
+            BTreeMap<TopologicalPosition, G::NodeId>,
+            BTreeMap<TopologicalPosition, G::NodeId>,
+        ),
+        Cycle<G::NodeId>,
+    >
     where
         G::NodeId: IndexType,
     {
@@ -319,9 +339,9 @@ where
     fn future_cone(
         &self,
         start: G::NodeId,
-        min_order: usize,
-        max_order: usize,
-        res: &mut BTreeMap<usize, G::NodeId>,
+        min_position: TopologicalPosition,
+        max_position: TopologicalPosition,
+        res: &mut BTreeMap<TopologicalPosition, G::NodeId>,
     ) -> Result<(), Cycle<G::NodeId>>
     where
         G::NodeId: IndexType,
@@ -331,8 +351,8 @@ where
             start,
             &self.order_map,
             |order| {
-                debug_assert!(order >= min_order, "invalid topological order");
-                match order.cmp(&max_order) {
+                debug_assert!(order >= min_position, "invalid topological order");
+                match order.cmp(&max_position) {
                     Ordering::Less => Ok(true),           // node within [min_node, max_node]
                     Ordering::Equal => Err(Cycle(start)), // cycle!
                     Ordering::Greater => Ok(false),       // node beyond [min_node, max_node]
@@ -347,9 +367,9 @@ where
     fn past_cone(
         &self,
         start: G::NodeId,
-        min_order: usize,
-        max_order: usize,
-        res: &mut BTreeMap<usize, G::NodeId>,
+        min_position: TopologicalPosition,
+        max_position: TopologicalPosition,
+        res: &mut BTreeMap<TopologicalPosition, G::NodeId>,
     ) -> Result<(), Cycle<G::NodeId>>
     where
         G::NodeId: IndexType,
@@ -359,8 +379,8 @@ where
             start,
             &self.order_map,
             |order| {
-                debug_assert!(order <= max_order, "invalid topological order");
-                match order.cmp(&min_order) {
+                debug_assert!(order <= max_position, "invalid topological order");
+                match order.cmp(&min_position) {
                     Ordering::Less => Ok(false), // node beyond [min_node, max_node]
                     Ordering::Equal => panic!("found by future_cone"), // cycle!
                     Ordering::Greater => Ok(true), // node within [min_node, max_node]
@@ -464,8 +484,8 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
     order_map: &OrderMap<G::NodeId>,
     // A predicate that returns whether to continue the search from a node,
     // or an error to stop and shortcircuit the search.
-    mut valid_order: impl FnMut(usize) -> Result<bool, Cycle<G::NodeId>>,
-    res: &mut BTreeMap<usize, G::NodeId>,
+    mut valid_order: impl FnMut(TopologicalPosition) -> Result<bool, Cycle<G::NodeId>>,
+    res: &mut BTreeMap<TopologicalPosition, G::NodeId>,
     discovered: &mut FixedBitSet,
     finished: &mut FixedBitSet,
 ) -> Result<(), Cycle<G::NodeId>>
@@ -655,18 +675,6 @@ macro_rules! impl_graph_traits {
                 self.order_map.remove_node(n, &self.graph);
                 self.graph.remove_node(n)
             }
-
-            /// Remove multiple nodes from a graph and return their weights.
-            ///
-            /// This updates the order in O(v) runtime and removes the nodes in
-            /// the underlying graph.
-            pub fn remove_nodes(
-                &mut self,
-                nodes: impl IntoIterator<Item = <$graph_type<N, E, Ix> as GraphBase>::NodeId> + Clone,
-            ) -> Vec<Option<N>> {
-                self.order_map.remove_nodes(nodes.clone(), &self.graph);
-                nodes.into_iter().map(|n| self.graph.remove_node(n)).collect()
-            }
         }
 
         impl<N, E, Ix: IndexType> TryFrom<$graph_type<N, E, Ix>>
@@ -749,8 +757,9 @@ macro_rules! impl_graph_traits {
     };
 }
 
-impl_graph_traits!(StableDiGraph);
 impl_graph_traits!(DiGraph);
+#[cfg(feature = "stable_graph")]
+impl_graph_traits!(StableDiGraph);
 
 #[cfg(test)]
 mod tests {
@@ -833,15 +842,26 @@ mod tests {
             + IntoNodeReferences
             + IntoNeighborsDirected
             + GraphBase<NodeId = G::NodeId>,
+        G::NodeId: std::fmt::Debug,
     {
-        let order = acyclic.order();
-        assert_eq!(order.len(), acyclic.node_count());
+        let ordered_nodes: Vec<_> = acyclic.nodes_iter().collect();
+        assert_eq!(ordered_nodes.len(), acyclic.node_count());
         let nodes: Vec<_> = acyclic.inner().node_identifiers().collect();
-        for (idx, &node) in order.iter().enumerate() {
+
+        // Check that the nodes are in topological order
+        let mut last_position = None;
+        for (idx, &node) in ordered_nodes.iter().enumerate() {
             assert!(nodes.contains(&node));
-            assert_eq!(acyclic.get_position(node), idx);
+
+            // Check that the node positions are monotonically increasing
+            let pos = acyclic.get_position(node);
+            assert!(Some(pos) > last_position);
+            last_position = Some(pos);
+
+            // Check that the neighbors are in the future of the current node
             for neighbor in acyclic.inner().neighbors(node) {
-                assert!(order.iter().position(|&n| n == neighbor).unwrap() > idx);
+                let neighbour_idx = ordered_nodes.iter().position(|&n| n == neighbor).unwrap();
+                assert!(neighbour_idx > idx);
             }
         }
     }
