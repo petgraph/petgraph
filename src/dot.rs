@@ -112,7 +112,7 @@ pub enum Config {
     NodeNoLabel,
     /// Do not print the graph/digraph string.
     GraphContentOnly,
-    /// For aing any attributes, mostly intended for: https://graphviz.org/docs/graph/
+    /// For adding any attributes, mostly intended for: https://graphviz.org/docs/graph/
     GraphAttribute(String, String),
     #[doc(hidden)]
     _Incomplete(()),
