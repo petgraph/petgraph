@@ -44,7 +44,7 @@ pub use isomorphism::{
 };
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_matching, Matching};
-pub use min_spanning_tree::min_spanning_tree;
+pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;
 pub use simple_paths::all_simple_paths;
 
