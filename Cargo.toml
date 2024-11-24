@@ -1,7 +1,7 @@
 [package]
 
 name = "petgraph"
-version = "0.6.6"
+version = "0.6.5"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 authors = ["bluss", "mitchmindtree"]
