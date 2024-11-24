@@ -119,6 +119,3 @@ where
     }
     scores
 }
-
-
-
