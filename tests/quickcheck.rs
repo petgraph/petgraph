@@ -11,6 +11,7 @@ extern crate odds;
 
 mod utils;
 
+use petgraph::algo::Cycle;
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
@@ -23,7 +24,7 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
+    bellman_ford, condensation, connected_components, cycle_basis, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
     min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
@@ -1375,4 +1376,47 @@ quickcheck! {
             && (sum_flows(&gr, &flows, destination, Direction::Incoming) == max_flow);
         return capacity_constraint && flow_conservation_constraint && max_flow_constaint;
     }
+}
+
+quickcheck! {
+    // Check that the number of calculated cycles matches cyclometric number
+    fn test_cycle_basis(gr: Graph<(), u32, Undirected>) -> bool {
+        if gr.node_count() <= 2 {
+            let c = cycle_basis(&gr, None);
+            match c {
+                None => return true,
+                _ => return false
+            }
+        };
+        let n = gr.node_count();
+        let l = gr.edge_count();
+        let k = connected_components(&gr);
+        let c = cycle_basis(&gr, None).unwrap();
+        //cyclomatic number for undirected graphs with n nodes, l edges, k connected components
+        // ignoring parallel edges
+        let theory = l + k - n - count_parallel_edges(&gr);
+        assert_eq!(c.len(), theory);
+    true
+    }
+}
+
+fn count_parallel_edges<N, E>(graph: &UnGraph<N, E>) -> usize {
+    let mut parallel_edge_count = 0;
+    let mut edge_pairs = HashSet::new();
+
+    for edge in graph.edge_references() {
+        // In an undirected graph, (u, v) is the same as (v, u), so sort the nodes to handle this
+        let mut nodes = [edge.source(), edge.target()];
+        nodes.sort();
+
+        let key = (nodes[0], nodes[1]);
+        match edge_pairs.get(&key) {
+            Some(_) => parallel_edge_count += 1,
+            None => {edge_pairs.insert(key);
+                ()
+            },
+        };
+    }
+    dbg!(parallel_edge_count);
+    parallel_edge_count
 }
