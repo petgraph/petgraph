@@ -188,13 +188,13 @@ where
 mod test {
     use std::collections::{HashMap, HashSet};
 
+    use super::{compute_metric_closure, non_terminal_leaves, subgraph_edges_from_metric_closure};
+    use crate::graph::NodeIndex;
     use crate::{
         algo::{min_spanning_tree, EdgeRef, UnGraph},
         data::FromElements,
         Graph, Undirected,
     };
-    use crate::graph::NodeIndex;
-    use super::{compute_metric_closure, non_terminal_leaves, subgraph_edges_from_metric_closure};
 
     #[test]
     fn test_compute_metric_closure() {

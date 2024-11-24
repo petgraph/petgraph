@@ -7,7 +7,6 @@ use crate::visit::{
     EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, NodeCompactIndexable,
 };
 
-
 pub fn floyd_warshall_path<G, F, K>(
     graph: G,
     mut edge_cost: F,
@@ -27,10 +26,12 @@ where
     // init distances of paths with no intermediate nodes
     for edge in graph.edge_references() {
         dist[graph.to_index(edge.source())][graph.to_index(edge.target())] = edge_cost(edge);
-        prev[graph.to_index(edge.source())][graph.to_index(edge.target())] = Some(graph.to_index(edge.source()));
+        prev[graph.to_index(edge.source())][graph.to_index(edge.target())] =
+            Some(graph.to_index(edge.source()));
         if !graph.is_directed() {
             dist[graph.to_index(edge.target())][graph.to_index(edge.source())] = edge_cost(edge);
-            prev[graph.to_index(edge.target())][graph.to_index(edge.source())] = Some(graph.to_index(edge.target()));
+            prev[graph.to_index(edge.target())][graph.to_index(edge.source())] =
+                Some(graph.to_index(edge.target()));
         }
     }
 

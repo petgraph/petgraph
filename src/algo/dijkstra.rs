@@ -1,6 +1,9 @@
 use crate::algo::Measure;
 use crate::scored::MinScored;
-use crate::visit::{EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNodeReferences, NodeRef, VisitMap, Visitable};
+use crate::visit::{
+    EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNodeReferences, NodeRef, VisitMap,
+    Visitable,
+};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{BinaryHeap, HashMap};
 use std::fmt::Debug;
