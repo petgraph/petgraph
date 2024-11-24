@@ -191,10 +191,9 @@ mod test {
     use crate::{
         algo::{min_spanning_tree, EdgeRef, UnGraph},
         data::FromElements,
-        matrix_graph::NodeIndex,
         Graph, Undirected,
     };
-
+    use crate::graph::NodeIndex;
     use super::{compute_metric_closure, non_terminal_leaves, subgraph_edges_from_metric_closure};
 
     #[test]
