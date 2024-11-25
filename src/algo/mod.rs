@@ -11,6 +11,7 @@ pub mod dominators;
 pub mod feedback_arc_set;
 pub mod floyd_warshall;
 pub mod ford_fulkerson;
+pub mod hits;
 pub mod isomorphism;
 pub mod k_shortest_path;
 pub mod matching;
@@ -38,6 +39,7 @@ pub use dijkstra::dijkstra;
 pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
 pub use ford_fulkerson::ford_fulkerson;
+pub use hits::{hits, HitsNorm};
 pub use isomorphism::{
     is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
     subgraph_isomorphisms_iter,

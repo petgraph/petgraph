@@ -24,9 +24,9 @@ use rand::Rng;
 
 use petgraph::algo::{
     bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
-    greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
+    greedy_feedback_arc_set, greedy_matching, hits, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
+    min_spanning_tree, page_rank, tarjan_scc, toposort, HitsNorm, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1374,5 +1374,21 @@ quickcheck! {
         let max_flow_constaint = (sum_flows(&gr, &flows, source, Direction::Outgoing) == max_flow)
             && (sum_flows(&gr, &flows, destination, Direction::Incoming) == max_flow);
         return capacity_constraint && flow_conservation_constraint && max_flow_constaint;
+    }
+}
+
+quickcheck! {
+    // If norm 1 is used for normalization, hubs and autority scores are probabilities.
+    fn test_hits_scores(gr: Graph<(), ()>) -> bool {
+        if gr.node_count() == 0 {
+            return true;
+        }
+        let (auths, hubs) = hits(&gr, None, 10, HitsNorm::One);
+        let are_positive_scores =
+            auths.iter().all(|rank| *rank >= 0.) && hubs.iter().all(|rank| *rank >= 0.);
+        let tol = 1e-4;
+        let sum_up_to_one = ((auths.iter().sum::<f32>() - 1.).abs() <= tol)
+            && ((hubs.iter().sum::<f32>() - 1.).abs() <= tol);
+        return are_positive_scores && sum_up_to_one;
     }
 }
