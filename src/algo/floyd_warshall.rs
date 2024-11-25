@@ -91,45 +91,18 @@ where
     let num_of_nodes = graph.node_count();
 
     // |V|x|V| matrix
-    let mut dist = vec![vec![K::max(); num_of_nodes]; num_of_nodes];
+    let mut m_dist = Some(vec![vec![K::max(); num_of_nodes]; num_of_nodes]);
 
-    // init distances of paths with no intermediate nodes
-    for edge in graph.edge_references() {
-        dist[graph.to_index(edge.source())][graph.to_index(edge.target())] = edge_cost(edge);
-        if !graph.is_directed() {
-            dist[graph.to_index(edge.target())][graph.to_index(edge.source())] = edge_cost(edge);
-        }
-    }
-
-    // distance of each node to itself is 0(default value)
-    for node in graph.node_identifiers() {
-        dist[graph.to_index(node)][graph.to_index(node)] = K::default();
-    }
-
-    for k in 0..num_of_nodes {
-        for i in 0..num_of_nodes {
-            for j in 0..num_of_nodes {
-                let (result, overflow) = dist[i][k].overflowing_add(dist[k][j]);
-                if !overflow && dist[i][j] > result {
-                    dist[i][j] = result;
-                }
-            }
-        }
-    }
-
-    // value less than 0(default value) indicates a negative cycle
-    for i in 0..num_of_nodes {
-        if dist[i][i] < K::default() {
-            return Err(NegativeCycle(()));
-        }
-    }
+    _floyd_warshall_path(graph, edge_cost, &mut m_dist, &mut None)?;
 
     let mut distance_map: HashMap<(G::NodeId, G::NodeId), K> =
         HashMap::with_capacity(num_of_nodes * num_of_nodes);
 
-    for i in 0..num_of_nodes {
-        for j in 0..num_of_nodes {
-            distance_map.insert((graph.from_index(i), graph.from_index(j)), dist[i][j]);
+    if let Some(dist) = m_dist {
+        for i in 0..num_of_nodes {
+            for j in 0..num_of_nodes {
+                distance_map.insert((graph.from_index(i), graph.from_index(j)), dist[i][j]);
+            }
         }
     }
 
@@ -213,7 +186,7 @@ where
 /// ```
 pub fn floyd_warshall_path<G, F, K>(
     graph: G,
-    mut edge_cost: F,
+    edge_cost: F,
 ) -> Result<(HashMap<(G::NodeId, G::NodeId), K>, Vec<Vec<Option<usize>>>), NegativeCycle>
 where
     G: NodeCompactIndexable + IntoEdgeReferences + IntoNodeIdentifiers + GraphProp,
@@ -224,46 +197,92 @@ where
     let num_of_nodes = graph.node_count();
 
     // |V|x|V| matrix
-    let mut dist = vec![vec![K::max(); num_of_nodes]; num_of_nodes];
+    let mut m_dist = Some(vec![vec![K::max(); num_of_nodes]; num_of_nodes]);
     // `prev[source][target]` holds the penultimate vertex on path from `source` to `target`, except `prev[source][source]`, which always stores `source`.
-    let mut prev: Vec<Vec<Option<usize>>> = vec![vec![None; num_of_nodes]; num_of_nodes];
+    let mut m_prev = Some(vec![vec![None; num_of_nodes]; num_of_nodes]);
 
-    // init distances of paths with no intermediate nodes
-    for edge in graph.edge_references() {
-        dist[graph.to_index(edge.source())][graph.to_index(edge.target())] = edge_cost(edge);
-        prev[graph.to_index(edge.source())][graph.to_index(edge.target())] =
-            Some(graph.to_index(edge.source()));
-        if !graph.is_directed() {
-            dist[graph.to_index(edge.target())][graph.to_index(edge.source())] = edge_cost(edge);
-            prev[graph.to_index(edge.target())][graph.to_index(edge.source())] =
-                Some(graph.to_index(edge.target()));
+    _floyd_warshall_path(graph, edge_cost, &mut m_dist, &mut m_prev)?;
+
+    let mut distance_map = HashMap::with_capacity(num_of_nodes * num_of_nodes);
+
+    if let Some(dist) = m_dist {
+        for i in 0..num_of_nodes {
+            for j in 0..num_of_nodes {
+                distance_map.insert((graph.from_index(i), graph.from_index(j)), dist[i][j]);
+            }
         }
     }
 
-    // distance of each node to itself is 0(default value)
-    for node in graph.node_identifiers() {
-        dist[graph.to_index(node)][graph.to_index(node)] = K::default();
-        prev[graph.to_index(node)][graph.to_index(node)] = Some(graph.to_index(node));
+    Ok((distance_map, m_prev.unwrap()))
+}
+
+/// Helper function to copy a value to a 2D array
+fn set_object<K: Clone>(m_dist: &mut Option<Vec<Vec<K>>>, i: usize, j: usize, value: K) {
+    if let Some(dist) = m_dist {
+        dist[i][j] = value;
+    }
+}
+
+/// Helper that implements the floyd warshall routine, but paths are optional for memory overhead.
+fn _floyd_warshall_path<G, F, K>(
+    graph: G,
+    mut edge_cost: F,
+    m_dist: &mut Option<Vec<Vec<K>>>,
+    m_prev: &mut Option<Vec<Vec<Option<usize>>>>,
+) -> Result<(), NegativeCycle>
+where
+    G: NodeCompactIndexable + IntoEdgeReferences + IntoNodeIdentifiers + GraphProp,
+    G::NodeId: Eq + Hash,
+    F: FnMut(G::EdgeRef) -> K,
+    K: BoundedMeasure + Copy,
+{
+    let num_of_nodes = graph.node_count();
+
+    // Initialize distances and predecessors for edges
+    for edge in graph.edge_references() {
+        let source = graph.to_index(edge.source());
+        let target = graph.to_index(edge.target());
+        let cost = edge_cost(edge);
+        set_object(m_dist, source, target, cost);
+        set_object(m_prev, source, target, Some(source));
+
+        if !graph.is_directed() {
+            set_object(m_dist, target, source, cost);
+            set_object(m_prev, target, source, Some(target));
+        }
     }
 
+    // Distance of each node to itself is the default value
+    for node in graph.node_identifiers() {
+        let index = graph.to_index(node);
+        set_object(m_dist, index, index, K::default());
+        set_object(m_prev, index, index, Some(index));
+    }
+
+    // Perform the Floyd-Warshall algorithm
     for k in 0..num_of_nodes {
         for i in 0..num_of_nodes {
             for j in 0..num_of_nodes {
-                let (result, overflow) = dist[i][k].overflowing_add(dist[k][j]);
-                if !overflow && dist[i][j] > result {
-                    dist[i][j] = result;
-                    prev[i][j] = prev[k][j];
+                if let Some(dist) = m_dist {
+                    let (result, overflow) = dist[i][k].overflowing_add(dist[k][j]);
+                    if !overflow && dist[i][j] > result {
+                        dist[i][j] = result;
+                        if let Some(prev) = m_prev {
+                            prev[i][j] = prev[k][j];
+                        }
+                    }
                 }
             }
         }
     }
-    let mut distance_map = HashMap::with_capacity(num_of_nodes * num_of_nodes);
 
+    // value less than 0(default value) indicates a negative cycle
     for i in 0..num_of_nodes {
-        for j in 0..num_of_nodes {
-            distance_map.insert((graph.from_index(i), graph.from_index(j)), dist[i][j]);
+        if let Some(dist) = m_dist {
+            if dist[i][i] < K::default() {
+                return Err(NegativeCycle(()));
+            }
         }
     }
-
-    Ok((distance_map, prev))
+    Ok(())
 }
