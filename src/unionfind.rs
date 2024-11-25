@@ -50,6 +50,20 @@ where
         UnionFind { parent, rank }
     }
 
+    /// Adds a new disjoint set and returns the index of the new set.
+    ///
+    /// The new disjoint set is always added to the end, so the returned
+    /// index is the same as the number of elements before calling this function.
+    ///
+    /// **Time Complexity**
+    /// Takes amortized O(1) time.
+    pub fn new_set(&mut self) -> K {
+        let retval = K::new(self.parent.len());
+        self.rank.push(0);
+        self.parent.push(retval);
+        retval
+    }
+
     /// Return the representative for `x`.
     ///
     /// **Panics** if `x` is out of bounds.
