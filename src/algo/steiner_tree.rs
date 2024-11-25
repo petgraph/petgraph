@@ -57,7 +57,7 @@ where
     G::NodeId: Eq + Hash + Ord + Debug,
 {
     let mut retained_edges = Vec::new();
-    let (_, prev) = floyd_warshall_path(graph, |e| *e.weight());
+    let (_, prev) = floyd_warshall_path(graph, |e| *e.weight()).unwrap();
 
     for edge in minimum_spanning_closure.edge_references() {
         let target = graph.to_index(edge.target());
