@@ -766,7 +766,7 @@ mod matching {
 
             // We hardcode n! values into an array that accounts for architectures
             // with smaller usizes to get our upper bound.
-            let upper_bounds: Vec<Option<usize>> = vec![
+            let upper_bounds: Vec<Option<usize>> = [
                 1u64,
                 1,
                 2,

@@ -10,7 +10,7 @@ use petgraph as pg;
 
 use petgraph::algo::{
     dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
-    is_isomorphic_matching, min_spanning_tree,
+    is_isomorphic_matching,
 };
 
 use petgraph::graph::node_index as n;
@@ -163,64 +163,6 @@ fn bfs() {
     let nx = bfs.next(&gr);
     assert_eq!(nx, Some(k));
     assert_eq!(bfs.next(&gr), None);
-}
-
-#[test]
-fn mst() {
-    use petgraph::data::FromElements;
-
-    let mut gr = Graph::<_, _>::new();
-    let a = gr.add_node("A");
-    let b = gr.add_node("B");
-    let c = gr.add_node("C");
-    let d = gr.add_node("D");
-    let e = gr.add_node("E");
-    let f = gr.add_node("F");
-    let g = gr.add_node("G");
-    gr.add_edge(a, b, 7.);
-    gr.add_edge(a, d, 5.);
-    gr.add_edge(d, b, 9.);
-    gr.add_edge(b, c, 8.);
-    gr.add_edge(b, e, 7.);
-    gr.add_edge(c, e, 5.);
-    gr.add_edge(d, e, 15.);
-    gr.add_edge(d, f, 6.);
-    gr.add_edge(f, e, 8.);
-    gr.add_edge(f, g, 11.);
-    gr.add_edge(e, g, 9.);
-
-    // add a disjoint part
-    let h = gr.add_node("H");
-    let i = gr.add_node("I");
-    let j = gr.add_node("J");
-    gr.add_edge(h, i, 1.);
-    gr.add_edge(h, j, 3.);
-    gr.add_edge(i, j, 1.);
-
-    println!("{}", Dot::new(&gr));
-
-    let mst = UnGraph::from_elements(min_spanning_tree(&gr));
-
-    println!("{}", Dot::new(&mst));
-    println!("{:?}", Dot::new(&mst));
-    println!("MST is:\n{:#?}", mst);
-    assert!(mst.node_count() == gr.node_count());
-    // |E| = |N| - 2  because there are two disconnected components.
-    assert!(mst.edge_count() == gr.node_count() - 2);
-
-    // check the exact edges are there
-    assert!(mst.find_edge(a, b).is_some());
-    assert!(mst.find_edge(a, d).is_some());
-    assert!(mst.find_edge(b, e).is_some());
-    assert!(mst.find_edge(e, c).is_some());
-    assert!(mst.find_edge(e, g).is_some());
-    assert!(mst.find_edge(d, f).is_some());
-
-    assert!(mst.find_edge(h, i).is_some());
-    assert!(mst.find_edge(i, j).is_some());
-
-    assert!(mst.find_edge(d, b).is_none());
-    assert!(mst.find_edge(b, c).is_none());
 }
 
 #[test]
@@ -1538,6 +1480,30 @@ fn toposort_generic() {
 
     {
         order.clear();
+        let init_nodes = gr.node_identifiers().filter(|n| {
+            gr.neighbors_directed(*n, Direction::Incoming)
+                .next()
+                .is_none()
+        });
+        let mut topo = Topo::with_initials(&gr, init_nodes);
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+        }
+        assert_is_topo_order(&gr, &order);
+    }
+
+    {
+        // test `with_initials` API using nodes with incoming edges
+        order.clear();
+        let mut topo = Topo::with_initials(&gr, gr.node_identifiers());
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+        }
+        assert_is_topo_order(&gr, &order);
+    }
+
+    {
+        order.clear();
         let mut topo = Topo::new(&gr);
         while let Some(nx) = topo.next(&gr) {
             order.push(nx);
@@ -1800,7 +1766,7 @@ where
     G::NodeId: PartialEq,
 {
     // self loops count twice
-    let original_node = node.clone();
+    let original_node = node;
     let mut degree = 0;
     for v in g.neighbors(node) {
         degree += if v == original_node { 2 } else { 1 };
@@ -2175,7 +2141,7 @@ fn filtered_post_order() {
         Graph::from_edges(&[(0, 2), (1, 2), (0, 3), (1, 4), (2, 4), (4, 5), (3, 5)]);
     // map reachable nodes
     let mut dfs = Dfs::new(&gr, n(0));
-    while let Some(_) = dfs.next(&gr) {}
+    while dfs.next(&gr).is_some() {}
 
     let map = dfs.discovered;
     gr.add_edge(n(0), n(1), ());
@@ -2293,7 +2259,7 @@ fn test_edge_filtered() {
     assert_eq!(connected_components(&positive_edges), 2);
 
     let mut dfs = DfsPostOrder::new(&positive_edges, n(0));
-    while let Some(_) = dfs.next(&positive_edges) {}
+    while dfs.next(&positive_edges).is_some() {}
 
     let n = n::<u32>;
     for node in &[n(0), n(1), n(2)] {

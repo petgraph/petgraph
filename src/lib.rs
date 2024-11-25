@@ -139,6 +139,7 @@ pub mod csr;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
+pub mod graph6;
 mod graph_impl;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
@@ -170,20 +171,9 @@ pub mod graph {
 #[cfg(feature = "stable_graph")]
 pub use crate::graph_impl::stable_graph;
 
-macro_rules! copyclone {
-    ($name:ident) => {
-        impl Clone for $name {
-            #[inline]
-            fn clone(&self) -> Self {
-                *self
-            }
-        }
-    };
-}
-
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction.
-#[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
 #[repr(usize)]
 #[cfg_attr(feature = "serde-1", derive(serde::Serialize, serde::Deserialize))]
 pub enum Direction {
@@ -192,8 +182,6 @@ pub enum Direction {
     /// An `Incoming` edge is an inbound edge *to* the current node.
     Incoming = 1,
 }
-
-copyclone!(Direction);
 
 impl Direction {
     /// Return the opposite `Direction`.
@@ -216,14 +204,12 @@ impl Direction {
 pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
-#[derive(Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Directed {}
-copyclone!(Directed);
 
 /// Marker type for an undirected graph.
-#[derive(Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Undirected {}
-copyclone!(Undirected);
 
 /// A graph's edge type determines whether it has directed edges or not.
 pub trait EdgeType {

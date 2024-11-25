@@ -23,10 +23,10 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall,
+    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, tarjan_scc, toposort, Matching,
+    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -35,7 +35,7 @@ use petgraph::graphmap::NodeTrait;
 use petgraph::operator::complement;
 use petgraph::prelude::*;
 use petgraph::visit::{
-    EdgeFiltered, EdgeRef, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
+    EdgeFiltered, EdgeIndexable, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
     IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, VisitMap, Visitable,
 };
 use petgraph::EdgeType;
@@ -727,6 +727,35 @@ fn full_topo_generic() {
                 return false;
             }
         }
+
+        {
+            order.clear();
+            let init_nodes = gr.node_identifiers().filter(|n| {
+                gr.neighbors_directed(n.clone(), Direction::Incoming)
+                    .next()
+                    .is_none()
+            });
+            let mut topo = Topo::with_initials(&gr, init_nodes);
+            while let Some(nx) = topo.next(&gr) {
+                order.push(nx);
+            }
+            if !is_topo_order(&gr, &order) {
+                println!("{:?}", gr);
+                return false;
+            }
+        }
+
+        {
+            order.clear();
+            let mut topo = Topo::with_initials(&gr, gr.node_identifiers());
+            while let Some(nx) = topo.next(&gr) {
+                order.push(nx);
+            }
+            if !is_topo_order(&gr, &order) {
+                println!("{:?}", gr);
+                return false;
+            }
+        }
         true
     }
     quickcheck::quickcheck(prop_generic as fn(_) -> bool);
@@ -1281,5 +1310,69 @@ quickcheck! {
         assert_eq!(m2.is_perfect(), is_perfect_matching(&g, &m2), "maximum_matching incorrectly determined whether the matching is perfect");
 
         true
+    }
+}
+
+quickcheck! {
+    // The ranks are probabilities,
+    // as such they are positive and they should sum up to 1.
+    fn test_page_rank_proba(gr: Graph<(), f32>) -> bool {
+        if gr.node_count() == 0 {
+            return true;
+        }
+        let tol = 1e-10;
+        let ranks: Vec<f64> = page_rank(&gr, 0.85_f64, 5);
+        let at_least_one_neg_rank = ranks.iter().any(|rank| *rank < 0.);
+        let not_sumup_to_one = (ranks.iter().sum::<f64>() - 1.).abs() > tol;
+        if  at_least_one_neg_rank | not_sumup_to_one{
+            return false;
+        }
+        true
+    }
+}
+
+fn sum_flows<N, F: std::iter::Sum + Copy>(
+    gr: &Graph<N, F>,
+    flows: &[F],
+    node: NodeIndex,
+    dir: Direction,
+) -> F {
+    gr.edges_directed(node, dir)
+        .map(|edge| flows[EdgeIndexable::to_index(&gr, edge.id())])
+        .sum::<F>()
+}
+
+quickcheck! {
+    // 1. (Capacity)
+    //    The flows should be <= capacities
+    // 2. (Flow conservation)
+    //    For every internal node (i.e a node different from the
+    //    source node and the destination (or sink) node), the sum
+    //    of incoming flows (i.e flows of incoming edges) is equal
+    //    to the sum of the outgoing flows (i.e flows of outgoing edges).
+    // 3. (Maximum flow)
+    //    It is equal to the sum of the destination node incoming flows and
+    //    also the sum of the outgoing flows of the source node.
+    fn test_ford_fulkerson_flows(gr: Graph<usize, u32>) -> bool {
+        if gr.node_count() <= 1 || gr.edge_count() == 0 {
+            return true;
+        }
+        let source = NodeIndex::from(0);
+        let destination = NodeIndex::from(gr.node_count() as u32 / 2);
+        let (max_flow, flows) = ford_fulkerson(&gr, source, destination);
+        let capacity_constraint = flows
+            .iter()
+            .enumerate()
+            .all(|(ix, flow)| flow <= gr.edge_weight(EdgeIndexable::from_index(&gr, ix)).unwrap());
+        let flow_conservation_constraint = (0..gr.node_count()).all(|ix| {
+            let node = NodeIndexable::from_index(&gr, ix);
+            if (node != source) && (node != destination){
+            sum_flows(&gr, &flows, node, Direction::Outgoing)
+                == sum_flows(&gr, &flows, node, Direction::Incoming)
+            } else {true}
+        });
+        let max_flow_constaint = (sum_flows(&gr, &flows, source, Direction::Outgoing) == max_flow)
+            && (sum_flows(&gr, &flows, destination, Direction::Incoming) == max_flow);
+        return capacity_constraint && flow_conservation_constraint && max_flow_constaint;
     }
 }

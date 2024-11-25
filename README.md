@@ -1,10 +1,16 @@
+![](assets/graphosaurus-512.png)
+
 # petgraph
 
 Graph data structure library. Please read the [API documentation here][].
 
-Supports Rust 1.41 and later (some older versions may require picking the dependency versions [by hand][dependency_hack]).
+Supports Rust 1.64 and later.
 
-[![build_status][]](https://github.com/petgraph/petgraph/actions) [![crates][]](https://crates.io/crates/petgraph) [![gitter][]](https://gitter.im/petgraph-rs/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Crates.io][crates-badge]][crates-url]
+[![docs.rs][docsrs-badge]][docsrs-url]
+![MSRV][msrv-badge]
+[![Discord chat][discord-badge]][discord-url]
+[![build_status][]](https://github.com/petgraph/petgraph/actions)
 
 Crate feature flags:
 
@@ -13,11 +19,17 @@ Crate feature flags:
 -   `matrix_graph` (default) enable `MatrixGraph`.
 -   `serde-1` (optional) enable serialization for `Graph, StableGraph, GraphMap`
     using serde 1.0. Requires Rust version as required by serde.
+-   `rayon` (optional) enable parallel iterators for the underlying data in `GraphMap`. Requires Rust version as required by Rayon.
 
 ## Recent Changes
 
 See [RELEASES][] for a list of changes. The minimum supported rust
 version will only change on major releases.
+
+## Logo
+
+The mascot is named "Sir Paul Rustory Graphosaurus" (close friends call him Paul).
+The logo has been created by the talented Aren.
 
 ## License
 
@@ -28,9 +40,13 @@ Licensed under the Apache License, Version 2.0
 <http://opensource.org/licenses/MIT>, at your option. This file may not
 be copied, modified, or distributed except according to those terms.
 
-  [API documentation here]: https://docs.rs/petgraph/
-  [build_status]: https://github.com/petgraph/petgraph/workflows/Continuous%20integration/badge.svg?branch=master
-  [crates]: https://img.shields.io/crates/v/petgraph
-  [gitter]: https://badges.gitter.im/petgraph-rs/community.svg
-  [RELEASES]: RELEASES.rst
-  [dependency_hack]: https://github.com/petgraph/petgraph/pull/493#issuecomment-1134970689
+[API documentation here]: https://docs.rs/petgraph/
+[build_status]: https://github.com/petgraph/petgraph/workflows/Continuous%20integration/badge.svg?branch=master
+[docsrs-badge]: https://img.shields.io/docsrs/petgraph
+[docsrs-url]: https://docs.rs/petgraph/latest/petgraph/
+[crates-badge]: https://img.shields.io/crates/v/petgraph.svg
+[crates-url]: https://crates.io/crates/petgraph
+[discord-badge]:  https://img.shields.io/discord/1166289348384280616?logo=discord&style=flat
+[discord-url]: https://discord.gg/n2tc79tJ4e
+[msrv-badge]: https://img.shields.io/badge/rustc-1.64+-blue.svg
+[RELEASES]: RELEASES.rst
