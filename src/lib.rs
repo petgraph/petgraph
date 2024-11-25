@@ -205,10 +205,12 @@ pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde-1", derive(serde::Serialize, serde::Deserialize))]
 pub enum Directed {}
 
 /// Marker type for an undirected graph.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde-1", derive(serde::Serialize, serde::Deserialize))]
 pub enum Undirected {}
 
 /// A graph's edge type determines whether it has directed edges or not.
