@@ -1,8 +1,7 @@
+use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRef};
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
-
-use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRef};
 
 pub fn articulation_points<G>(g: G) -> HashSet<G::NodeId>
 where
@@ -49,30 +48,37 @@ fn dfs<G>(
 ) where
     G: IntoEdges + NodeIndexable,
 {
-    visited.insert(u);
-    *time += 1;
-    disc.insert(u, *time);
-    low.insert(u, *time);
-    let mut children = 0;
+    let mut stack: Vec<(usize, Option<usize>)> = vec![(u, None)];
 
-    for edge in g.edges(g.from_index(u)) {
-        let v = g.to_index(edge.target());
-        if !visited.contains(&v) {
-            children += 1;
-            parent.insert(v, u);
-            dfs(g, v, visited, parent, low, disc, ap, time);
+    while let Some((current_node, maybe_current_child)) = stack.pop() {
+        if let Some(current_child) = maybe_current_child {
+            low.insert(current_node, min(low[&current_node], low[&current_child]));
 
-            low.insert(u, min(low[&u], low[&v]));
-
-            if parent.contains_key(&u) && low[&v] >= disc[&u] {
-                ap.insert(u);
+            if parent.contains_key(&current_node) && low[&current_child] >= disc[&current_node] {
+                ap.insert(current_node);
             }
-        } else if v != parent.get(&u).cloned().unwrap_or(usize::MAX) {
-            low.insert(u, min(low[&u], disc[&v]));
-        }
-    }
+        } else {
+            visited.insert(current_node);
+            *time += 1;
+            disc.insert(current_node, *time);
+            low.insert(current_node, *time);
+            let mut children: usize = 0;
 
-    if parent.get(&u).is_none() && children > 1 {
-        ap.insert(u);
+            for edge in g.edges(g.from_index(current_node)) {
+                let current_child = g.to_index(edge.target());
+                if !visited.contains(&current_child) {
+                    children += 1;
+                    parent.insert(current_child, current_node);
+                    stack.push((current_node, Some(current_child)));
+                    stack.push((current_child, None));
+                } else if current_child != parent.get(&current_node).cloned().unwrap_or(usize::MAX)
+                {
+                    low.insert(current_node, min(low[&current_node], disc[&current_child]));
+                }
+            }
+            if parent.get(&current_node).is_none() && children > 1 {
+                ap.insert(current_node);
+            }
+        }
     }
 }
