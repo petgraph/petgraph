@@ -10,7 +10,7 @@ use crate::visit::{
 #[allow(clippy::type_complexity, clippy::needless_range_loop)]
 /// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
 ///
-/// Compute shortest paths in a weighted graph with positive or negative edge weights (but with no negative cycles)
+/// Compute distance of shortest paths in a weighted graph with positive or negative edge weights (but with no negative cycles)
 ///
 /// # Arguments
 /// * `graph`: graph with no negative cycle
@@ -93,7 +93,29 @@ where
     // |V|x|V| matrix
     let mut dist = vec![vec![K::max(); num_of_nodes]; num_of_nodes];
 
-    let (dist, _) = floyd_warshall_path(graph, edge_cost);
+    // init distances of paths with no intermediate nodes
+    for edge in graph.edge_references() {
+        dist[graph.to_index(edge.source())][graph.to_index(edge.target())] = edge_cost(edge);
+        if !graph.is_directed() {
+            dist[graph.to_index(edge.target())][graph.to_index(edge.source())] = edge_cost(edge);
+        }
+    }
+
+    // distance of each node to itself is 0(default value)
+    for node in graph.node_identifiers() {
+        dist[graph.to_index(node)][graph.to_index(node)] = K::default();
+    }
+
+    for k in 0..num_of_nodes {
+        for i in 0..num_of_nodes {
+            for j in 0..num_of_nodes {
+                let (result, overflow) = dist[i][k].overflowing_add(dist[k][j]);
+                if !overflow && dist[i][j] > result {
+                    dist[i][j] = result;
+                }
+            }
+        }
+    }
 
     // value less than 0(default value) indicates a negative cycle
     for i in 0..num_of_nodes {
