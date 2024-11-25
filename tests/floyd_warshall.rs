@@ -282,3 +282,60 @@ fn floyd_warshall_negative_cycle() {
 
     assert!(res.is_err());
 }
+
+#[test]
+fn floyd_warshall_multiple_edges() {
+    let mut graph: Graph<(), i32, Directed> = Graph::new();
+    let a = graph.add_node(());
+    let b = graph.add_node(());
+    let c = graph.add_node(());
+    let d = graph.add_node(());
+
+    graph.extend_with_edges(&[
+        (a, b, 10),
+        (a, b, 1),
+        (a, c, 4),
+        (a, d, 10),
+        (b, c, 2),
+        (b, d, 2),
+        (c, d, 2),
+        (a, d, 100),
+        (c, d, 20),
+        (a, a, 5),
+    ]);
+
+    let inf = std::i32::MAX;
+    let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
+        ((a, a), 0),
+        ((a, b), 1),
+        ((a, c), 3),
+        ((a, d), 3),
+        ((b, a), inf),
+        ((b, b), 0),
+        ((b, c), 2),
+        ((b, d), 2),
+        ((c, a), inf),
+        ((c, b), inf),
+        ((c, c), 0),
+        ((c, d), 2),
+        ((d, a), inf),
+        ((d, b), inf),
+        ((d, c), inf),
+        ((d, d), 0),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    let res = floyd_warshall(&graph, |edge| *edge.weight()).unwrap();
+
+    let nodes = [a, b, c, d];
+    for node1 in &nodes {
+        for node2 in &nodes {
+            assert_eq!(
+                res.get(&(*node1, *node2)).unwrap(),
+                expected_res.get(&(*node1, *node2)).unwrap()
+            );
+        }
+    }
+}
