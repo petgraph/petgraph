@@ -1,9 +1,8 @@
 //! Shortest Path Faster Algorithm.
-use alloc::{collections::VecDeque, vec};
-
 use super::{bellman_ford::Paths, BoundedMeasure, NegativeCycle};
 use crate::prelude::*;
 use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable};
+use alloc::{vec, vec::Vec};
 
 /// \[Generic\] Compute shortest paths from node `source` to all other.
 ///
@@ -87,17 +86,17 @@ where
     distances[ix(source)] = K::default();
 
     // Queue of vertices capable of relaxation of the found shortest distances.
-    let mut queue: VecDeque<G::NodeId> = VecDeque::with_capacity(graph.node_bound());
+    let mut queue: Vec<G::NodeId> = Vec::with_capacity(graph.node_bound());
     let mut in_queue = vec![false; graph.node_bound()];
 
-    queue.push_back(source);
+    queue.push(source);
     in_queue[ix(source)] = true;
 
     // Keep track of how many times each vertex appeared
     // in the queue to be able to detect a negative cycle.
     let mut visits = vec![0; graph.node_bound()];
 
-    while let Some(i) = queue.pop_front() {
+    while let Some(i) = queue.pop() {
         in_queue[ix(i)] = false;
 
         // In a graph without a negative cycle, no vertex can improve
@@ -119,7 +118,7 @@ where
 
                 if !in_queue[ix(j)] {
                     in_queue[ix(j)] = true;
-                    queue.push_back(j);
+                    queue.push(j);
                 }
             }
         }
