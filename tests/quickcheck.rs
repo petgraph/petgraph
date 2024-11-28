@@ -27,7 +27,7 @@ use petgraph::algo::{
     bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
+    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1385,16 +1385,13 @@ quickcheck! {
         use petgraph::algo::toposort;
         use std::collections::BTreeMap;
         use std::iter;
-
         // We will re-build `g` from scratch, adding edges one by one.
         let mut acylic_g =
             Acyclic::<DiGraph<(), ()>>::with_capacity(g.node_count(), g.edge_count());
         let mut new_g = DiGraph::<(), ()>::new();
-
         // This test is quite slow, so we bound the number of nodes.
         const MAX_NODES: usize = 30;
         let nodes: BTreeSet<_> = g.node_indices().take(MAX_NODES).collect();
-
         // Add all nodes
         let acyclic_nodes: BTreeMap<_, _> = nodes
             .iter()
@@ -1404,7 +1401,6 @@ quickcheck! {
             .iter()
             .zip(iter::repeat_with(|| new_g.add_node(())))
             .collect();
-
         // Now add edges one by one
         for e in g.edge_indices() {
             let (src, dst) = g.edge_endpoints(e).unwrap();
@@ -1412,23 +1408,53 @@ quickcheck! {
                 continue;
             }
             let new_g_backup = new_g.clone();
-
             // Add the edge to the new graph
             new_g.add_edge(new_nodes[&src], new_nodes[&dst], ());
             let is_dag_exp = toposort(&new_g, None).is_ok();
-
             // Add the edge to the acyclic graph
             let is_dag_dyn = acylic_g
                 .try_add_edge(acyclic_nodes[&src], acyclic_nodes[&dst], ())
                 .is_ok();
-
             // Check that both approaches agree on whether the graph is a DAG
             assert_eq!(is_dag_exp, is_dag_dyn);
-
             if !is_dag_exp {
                 // Remove the edge that makes it non-acyclic
                 new_g = new_g_backup;
             }
+        }
+        true
+    }
+}
+
+quickcheck! {
+    fn test_spfa(gr: Graph<(), f32>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+        }
+        true
+    }
+}
+
+quickcheck! {
+    fn test_spfa_undir(gr: Graph<(), f32, Undirected>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            spfa(&gr, start, |edge| *edge.weight()).unwrap();
         }
         true
     }
