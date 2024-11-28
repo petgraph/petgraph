@@ -18,6 +18,7 @@ pub mod matching;
 pub mod min_spanning_tree;
 pub mod page_rank;
 pub mod simple_paths;
+pub mod spfa;
 pub mod tred;
 
 use std::num::NonZeroUsize;
@@ -49,6 +50,7 @@ pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use min_spanning_tree::min_spanning_tree;
 pub use page_rank::page_rank;
 pub use simple_paths::all_simple_paths;
+pub use spfa::spfa;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///
