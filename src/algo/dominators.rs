@@ -132,8 +132,10 @@ where
     type Item = N;
 
     fn next(&mut self) -> Option<Self::Item> {
-        for next in self.iter.by_ref() {
-            if next.1 == &self.node && next.1 != next.0 {
+        for (dominator, dominated) in self.iter.by_ref() {
+            // The root node dominates itself, but it should not be included in
+            // the results.
+            if dominated == &self.node && dominated != dominator {
                 return Some(*next.0);
             }
         }
