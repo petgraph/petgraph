@@ -136,7 +136,7 @@ where
             // The root node dominates itself, but it should not be included in
             // the results.
             if dominated == &self.node && dominated != dominator {
-                return Some(*next.0);
+                return Some(*dominator);
             }
         }
         None
