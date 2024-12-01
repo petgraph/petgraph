@@ -26,7 +26,7 @@ use petgraph::algo::{
     bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
+    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1374,5 +1374,39 @@ quickcheck! {
         let max_flow_constaint = (sum_flows(&gr, &flows, source, Direction::Outgoing) == max_flow)
             && (sum_flows(&gr, &flows, destination, Direction::Incoming) == max_flow);
         return capacity_constraint && flow_conservation_constraint && max_flow_constaint;
+    }
+}
+
+quickcheck! {
+    fn test_spfa(gr: Graph<(), f32>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+        }
+        true
+    }
+}
+
+quickcheck! {
+    fn test_spfa_undir(gr: Graph<(), f32, Undirected>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+        }
+        true
     }
 }
