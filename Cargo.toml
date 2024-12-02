@@ -34,8 +34,8 @@ name = "petgraph"
 debug = true
 
 [dependencies]
-fixedbitset = { version = "0.4.0", default-features = false }
-indexmap = "2.0"
+fixedbitset = { version = "0.5.7", default-features = false }
+indexmap = "~2.5.0"
 quickcheck = { optional = true, version = "0.8", default-features = false }
 serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }

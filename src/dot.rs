@@ -212,6 +212,28 @@ where
     }
 }
 
+impl<'a, G> fmt::LowerHex for Dot<'a, G>
+where
+    G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
+    G::EdgeWeight: fmt::LowerHex,
+    G::NodeWeight: fmt::LowerHex,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.graph_fmt(f, fmt::LowerHex::fmt, fmt::LowerHex::fmt)
+    }
+}
+
+impl<'a, G> fmt::UpperHex for Dot<'a, G>
+where
+    G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
+    G::EdgeWeight: fmt::UpperHex,
+    G::NodeWeight: fmt::UpperHex,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.graph_fmt(f, fmt::UpperHex::fmt, fmt::UpperHex::fmt)
+    }
+}
+
 impl<'a, G> fmt::Debug for Dot<'a, G>
 where
     G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
