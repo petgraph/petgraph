@@ -2,7 +2,10 @@ on:
   push:
     branches: [ master ]
   pull_request:
-    branches: [ master ]
+    branches: '*'
+  merge_group:
+    types: [ checks_requested ]
+  workflow_dispatch: {} 
 
 name: Continuous integration
 
