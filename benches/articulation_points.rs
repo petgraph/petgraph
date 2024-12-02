@@ -1,4 +1,3 @@
-
 #![feature(test)]
 
 extern crate petgraph;
@@ -7,7 +6,6 @@ extern crate test;
 use petgraph::algo::articulation_points::articulation_points;
 use petgraph::prelude::*;
 use test::Bencher;
-
 
 #[bench]
 fn bridges_bench(bench: &mut Bencher) {

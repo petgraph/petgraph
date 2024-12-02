@@ -141,7 +141,6 @@ fn art_3x3_grid() {
     let h = gr.add_node("H");
     let i = gr.add_node("I");
 
-
     gr.add_edge(a, b, ());
     gr.add_edge(b, c, ());
 
@@ -164,7 +163,6 @@ fn art_3x3_grid() {
     assert_eq!(articulation_points(&gr), set);
 }
 
-
 #[test]
 fn art_simple2() {
     let mut gr = UnGraph::<&str, ()>::new_undirected();
@@ -183,5 +181,3 @@ fn art_simple2() {
 
     assert_eq!(articulation_points(&gr), set);
 }
-
-
