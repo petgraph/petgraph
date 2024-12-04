@@ -764,7 +764,9 @@ impl_graph_traits!(StableDiGraph);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::{DiGraph, StableDiGraph};
+    use crate::prelude::DiGraph;
+    #[cfg(feature = "stable_graph")]
+    use crate::prelude::StableDiGraph;
     use crate::visit::IntoNodeReferences;
 
     #[test]
@@ -799,6 +801,7 @@ mod tests {
         assert!(acyclic.add_edge(d, a, ()).is_none());
     }
 
+    #[cfg(feature = "stable_graph")]
     #[test]
     fn test_acyclic_graph_add_remove() {
         // Create an initial Acyclic graph with two nodes and one edge
