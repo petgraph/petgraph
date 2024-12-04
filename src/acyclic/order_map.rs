@@ -127,7 +127,8 @@ impl<N: Copy> OrderMap<N> {
         // The position and node index
         let new_pos = self
             .pos_to_node
-            .last_key_value()
+            .iter()
+            .next_back()
             .map(|(TopologicalPosition(idx), _)| TopologicalPosition(idx + 1))
             .unwrap_or_default();
         let idx = graph.to_index(id);
