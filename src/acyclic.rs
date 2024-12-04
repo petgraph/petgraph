@@ -113,10 +113,10 @@ impl<G: Visitable> Acyclic<G> {
     /// Get an iterator over the nodes within the range of positions.
     ///
     /// The nodes are ordered by their position in the topological sort.
-    pub fn range(
-        &self,
-        range: impl RangeBounds<TopologicalPosition>,
-    ) -> impl Iterator<Item = G::NodeId> + '_ {
+    pub fn range<'r>(
+        &'r self,
+        range: impl RangeBounds<TopologicalPosition> + 'r,
+    ) -> impl Iterator<Item = G::NodeId> + 'r {
         self.order_map.range(range)
     }
 
