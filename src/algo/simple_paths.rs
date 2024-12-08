@@ -28,11 +28,28 @@ use crate::{
 ///
 /// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
 ///
-/// let ways = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+/// let paths = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
 ///   .collect::<Vec<_>>();
 ///
-/// assert_eq!(4, ways.len());
+/// assert_eq!(paths.len(), 4);
+///
+///
+/// // Take only 2 paths.
+/// let paths = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+///   .take(2)
+///   .collect::<Vec<_>>();
+///
+/// assert_eq!(paths.len(), 2);
+///
 /// ```
+///
+/// # Note
+///
+/// The number of simple paths between a given pair of vertices almost always grows exponentially,
+/// reaching `O(V!)` on a dense graphs at `V` vertices.
+///
+/// So if you have a large enough graph, be prepared to wait for the results for years.
+/// Or consider extracting only part of the simple paths using the adapter [`Iterator::take`].
 pub fn all_simple_paths<TargetColl, G>(
     graph: G,
     from: G::NodeId,
