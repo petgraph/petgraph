@@ -14,6 +14,7 @@ mod utils;
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
+use std::collections::BTreeSet;
 use std::collections::HashSet;
 use std::hash::Hash;
 
@@ -1374,5 +1375,61 @@ quickcheck! {
         let max_flow_constaint = (sum_flows(&gr, &flows, source, Direction::Outgoing) == max_flow)
             && (sum_flows(&gr, &flows, destination, Direction::Incoming) == max_flow);
         return capacity_constraint && flow_conservation_constraint && max_flow_constaint;
+    }
+}
+
+quickcheck! {
+    fn test_dynamic_toposort(g: DiGraph<(), ()>) -> bool {
+        use petgraph::acyclic::Acyclic;
+        use petgraph::data::{Build, Create};
+        use petgraph::algo::toposort;
+        use std::collections::BTreeMap;
+        use std::iter;
+
+        // We will re-build `g` from scratch, adding edges one by one.
+        let mut acylic_g =
+            Acyclic::<DiGraph<(), ()>>::with_capacity(g.node_count(), g.edge_count());
+        let mut new_g = DiGraph::<(), ()>::new();
+
+        // This test is quite slow, so we bound the number of nodes.
+        const MAX_NODES: usize = 30;
+        let nodes: BTreeSet<_> = g.node_indices().take(MAX_NODES).collect();
+
+        // Add all nodes
+        let acyclic_nodes: BTreeMap<_, _> = nodes
+            .iter()
+            .zip(iter::repeat_with(|| acylic_g.add_node(())))
+            .collect();
+        let new_nodes: BTreeMap<_, _> = nodes
+            .iter()
+            .zip(iter::repeat_with(|| new_g.add_node(())))
+            .collect();
+
+        // Now add edges one by one
+        for e in g.edge_indices() {
+            let (src, dst) = g.edge_endpoints(e).unwrap();
+            if !nodes.contains(&src) || !nodes.contains(&dst) {
+                continue;
+            }
+            let new_g_backup = new_g.clone();
+
+            // Add the edge to the new graph
+            new_g.add_edge(new_nodes[&src], new_nodes[&dst], ());
+            let is_dag_exp = toposort(&new_g, None).is_ok();
+
+            // Add the edge to the acyclic graph
+            let is_dag_dyn = acylic_g
+                .try_add_edge(acyclic_nodes[&src], acyclic_nodes[&dst], ())
+                .is_ok();
+
+            // Check that both approaches agree on whether the graph is a DAG
+            assert_eq!(is_dag_exp, is_dag_dyn);
+
+            if !is_dag_exp {
+                // Remove the edge that makes it non-acyclic
+                new_g = new_g_backup;
+            }
+        }
+        true
     }
 }
