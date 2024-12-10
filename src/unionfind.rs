@@ -26,6 +26,15 @@ pub struct UnionFind<K> {
     rank: Vec<u8>,
 }
 
+impl<K> Default for UnionFind<K> {
+    fn default() -> Self {
+        Self {
+            parent: Vec::new(),
+            rank: Vec::new(),
+        }
+    }
+}
+
 #[inline]
 unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K {
     debug_assert!(index < xs.len());
@@ -50,11 +59,43 @@ where
         UnionFind { parent, rank }
     }
 
+    /// Create a new `UnionFind` with no elements.
+    pub const fn new_empty() -> Self {
+        Self {
+            parent: Vec::new(),
+            rank: Vec::new(),
+        }
+    }
+
+    /// Returns the number of elements in the union-find data-structure.
+    pub fn len(&self) -> usize {
+        self.parent.len()
+    }
+
+    /// Returns true if there are no elements in the union-find data-structure.
+    pub fn is_empty(&self) -> bool {
+        self.parent.is_empty()
+    }
+
+    /// Adds a new disjoint set and returns the index of the new set.
+    ///
+    /// The new disjoint set is always added to the end, so the returned
+    /// index is the same as the number of elements before calling this function.
+    ///
+    /// **Time Complexity**
+    /// Takes amortized O(1) time.
+    pub fn new_set(&mut self) -> K {
+        let retval = K::new(self.parent.len());
+        self.rank.push(0);
+        self.parent.push(retval);
+        retval
+    }
+
     /// Return the representative for `x`.
     ///
     /// **Panics** if `x` is out of bounds.
     pub fn find(&self, x: K) -> K {
-        assert!(x.index() < self.parent.len());
+        assert!(x.index() < self.len());
         unsafe {
             let mut x = x;
             loop {
@@ -76,7 +117,7 @@ where
     ///
     /// **Panics** if `x` is out of bounds.
     pub fn find_mut(&mut self, x: K) -> K {
-        assert!(x.index() < self.parent.len());
+        assert!(x.index() < self.len());
         unsafe { self.find_mut_recursive(x) }
     }
 
@@ -135,7 +176,7 @@ where
     pub fn into_labeling(mut self) -> Vec<K> {
         // write in the labeling of each element
         unsafe {
-            for ix in 0..self.parent.len() {
+            for ix in 0..self.len() {
                 let k = *get_unchecked(&self.parent, ix);
                 let xrep = self.find_mut_recursive(k);
                 *self.parent.get_unchecked_mut(ix) = xrep;

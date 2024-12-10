@@ -103,3 +103,36 @@ fn labeling() {
     let v = u.into_labeling();
     assert!(v.iter().all(|x| *x == v[0]));
 }
+
+#[test]
+fn uf_incremental() {
+    let mut u = UnionFind::<u32>::new_empty();
+    assert_eq!(u.new_set(), 0);
+    assert_eq!(u.new_set(), 1);
+    assert_eq!(u.len(), 2);
+    u.union(0, 1);
+    assert_eq!(u.find(0), u.find(1));
+    assert_eq!(u.new_set(), 2);
+    assert_eq!(u.new_set(), 3);
+    u.union(1, 3);
+    assert_eq!(u.new_set(), 4);
+    u.union(1, 4);
+    assert_eq!(u.new_set(), 5);
+    assert_eq!(u.new_set(), 6);
+    assert_eq!(u.new_set(), 7);
+    assert_eq!(u.len(), 8);
+    u.union(4, 7);
+    assert_eq!(u.find(0), u.find(3));
+    assert_eq!(u.find(1), u.find(3));
+    assert!(u.find(0) != u.find(2));
+    assert_eq!(u.find(7), u.find(0));
+    u.union(5, 6);
+    assert_eq!(u.find(6), u.find(5));
+    assert!(u.find(6) != u.find(7));
+
+    // check that there are now 3 disjoint sets
+    let set = (0..u.len() as u32)
+        .map(|i| u.find(i))
+        .collect::<HashSet<_>>();
+    assert_eq!(set.len(), 3);
+}
