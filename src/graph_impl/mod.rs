@@ -2,7 +2,6 @@ use std::cmp;
 use std::fmt;
 use std::hash::Hash;
 use std::iter;
-use std::iter::Chain;
 use std::marker::PhantomData;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut, Range};
@@ -879,7 +878,7 @@ where
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<E, Ty, Ix> {
-        Edges::Single(self.edges_directed_iter(a, dir))
+        Edges::new(self.edges_directed_iter(a, dir), None)
     }
 
     /// Returns an `EdgeIter` of all edges of `a`, in the specified direction.
@@ -908,9 +907,9 @@ where
     /// Iterator element type is `EdgeReference<E, Ix>`.
     pub fn edges_undirected(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
         if Ty::is_directed() {
-            Edges::Chain(
-                self.edges_directed_iter(a, Outgoing)
-                    .chain(self.edges_directed_iter(a, Incoming)),
+            Edges::new(
+                self.edges_directed_iter(a, Outgoing),
+                Some(self.edges_directed_iter(a, Incoming)),
             )
         } else {
             self.edges_directed(a, Outgoing)
@@ -1659,13 +1658,23 @@ where
 
 /// Iterator over the edges from and/or to a node.
 #[derive(Clone, Debug)]
-pub enum Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
+pub struct Edges<'a, E: 'a, Ty, Ix: 'a = DefaultIx>
 where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    Single(EdgeIter<'a, E, Ty, Ix>),
-    Chain(Chain<EdgeIter<'a, E, Ty, Ix>, EdgeIter<'a, E, Ty, Ix>>),
+    iter: EdgeIter<'a, E, Ty, Ix>,
+    second: Option<EdgeIter<'a, E, Ty, Ix>>,
+}
+
+impl<'a, E, Ty, Ix> Edges<'a, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    fn new(iter: EdgeIter<'a, E, Ty, Ix>, second: Option<EdgeIter<'a, E, Ty, Ix>>) -> Self {
+        Edges { iter, second }
+    }
 }
 
 impl<'a, E, Ty, Ix> Iterator for Edges<'a, E, Ty, Ix>
@@ -1676,10 +1685,12 @@ where
     type Item = EdgeReference<'a, E, Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Edges::Single(iter) => iter.next(),
-            Edges::Chain(iter) => iter.next(),
-        }
+        self.iter.next().or_else(|| {
+            if let Some(second) = self.second.take() {
+                self.iter = second;
+            }
+            self.iter.next()
+        })
     }
 }
 
