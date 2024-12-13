@@ -176,6 +176,10 @@ pub use crate::graph_impl::stable_graph;
 /// Edge direction.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
 #[repr(usize)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Direction {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
@@ -205,10 +209,18 @@ pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Directed {}
 
 /// Marker type for an undirected graph.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Undirected {}
 
 /// A graph's edge type determines whether it has directed edges or not.
