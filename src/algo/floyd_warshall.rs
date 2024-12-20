@@ -224,13 +224,17 @@ fn set_object<K: Clone>(m_dist: &mut Option<Vec<Vec<K>>>, i: usize, j: usize, va
 }
 
 /// Helper to check if the distance map is greater then a specific value
-fn is_greater<K: PartialOrd>(m_dist: &mut Option<Vec<Vec<K>>>, i: usize, j: usize, value: K) -> bool {
+fn is_greater<K: PartialOrd>(
+    m_dist: &mut Option<Vec<Vec<K>>>,
+    i: usize,
+    j: usize,
+    value: K,
+) -> bool {
     if let Some(dist) = m_dist {
         return dist[i][j] > value;
     }
     false
 }
-
 
 /// Helper that implements the floyd warshall routine, but paths are optional for memory overhead.
 fn _floyd_warshall_path<G, F, K>(
