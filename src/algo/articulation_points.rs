@@ -75,7 +75,6 @@ where
     ap.into_iter().map(|id| g.from_index(id)).collect()
 }
 
-
 /// Small helper enum that defines the various splitup recursion steps of Tarjan's algorithm.
 enum RecursionStep {
     BaseStep(usize),
@@ -119,7 +118,10 @@ fn _dfs<G>(
                     parent[child_node] = current_node;
                     *children_count.entry(current_node).or_insert(0) += 1;
 
-                    stack.push(RecursionStep::NoBackEdgeConditionCheck(current_node, child_node));
+                    stack.push(RecursionStep::NoBackEdgeConditionCheck(
+                        current_node,
+                        child_node,
+                    ));
                     stack.push(RecursionStep::BaseStep(child_node));
                 } else if child_node != parent[current_node] {
                     low[current_node] = min(low[current_node], disc[child_node]);

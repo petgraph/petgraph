@@ -23,10 +23,11 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, dsatur_coloring, find_negative_cycle, floyd_warshall,
-    ford_fulkerson, greedy_feedback_arc_set, greedy_matching, is_cyclic_directed,
-    is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc,
-    maximum_matching, min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
+    bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
+    find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
+    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
+    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, page_rank, tarjan_scc,
+    toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -50,6 +51,7 @@ where
     Graph::from_elements(min_spanning_tree(&g))
 }
 
+use petgraph::algo::articulation_points::articulation_points;
 use std::fmt;
 
 quickcheck! {
@@ -1452,6 +1454,25 @@ quickcheck! {
     fn dsatur_coloring_quickcheck(g: Graph<(), (), Undirected>) -> bool {
         let (coloring, _) = dsatur_coloring(&g);
         assert!(is_proper_coloring(&g, &coloring), "dsatur_coloring returned a non proper coloring");
+        true
+    }
+}
+
+quickcheck! {
+    // Test that removal of articulation points will always increase the amount of connected components.
+    fn test_articulation_points(g: Graph<(), u32, Undirected>) -> bool {
+
+        let articulation_points = articulation_points(&g);
+        let original_components = connected_components(&g);
+
+        for point in articulation_points {
+        let mut modified_graph = g.clone();
+        modified_graph.remove_node(point);
+        let new_components = connected_components(&modified_graph);
+        if new_components <= original_components {
+            return false;
+        }
+    }
         true
     }
 }
