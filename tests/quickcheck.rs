@@ -27,7 +27,7 @@ use petgraph::algo::{
     bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
+    min_spanning_tree, page_rank, tarjan_scc, toposort, AstarInstance, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1094,6 +1094,16 @@ quickcheck! {
     }
 }
 
+quickcheck! {
+    fn astar_instance_equivalence(graph: Graph<u32, u32>, node: u32) -> () {
+        let mut instance = AstarInstance::new(&graph, |f| f == node.into(), |e| *e.weight(), |_| 0);
+        for start in graph.node_indices() {
+            let path = petgraph::algo::astar(&graph, start, |f| f == node.into(), |e| *e.weight(), |_| 0);
+            let instance_path = instance.run(start);
+            assert_eq!(path, instance_path);
+        }
+    }
+}
 fn naive_closure_foreach<G, F>(g: G, mut f: F)
 where
     G: Visitable + IntoNeighbors + IntoNodeIdentifiers,

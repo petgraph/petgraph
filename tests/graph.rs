@@ -16,7 +16,7 @@ use petgraph::algo::{
 use petgraph::graph::node_index as n;
 use petgraph::graph::IndexType;
 
-use petgraph::algo::{astar, dijkstra, DfsSpace};
+use petgraph::algo::{astar, dijkstra, AstarInstance, DfsSpace};
 use petgraph::visit::{
     IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNodeIdentifiers, NodeFiltered, Reversed, Topo,
     VisitMap, Walker,
@@ -32,6 +32,22 @@ where
     iter.into_iter().collect()
 }
 
+fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    assert_eq!(g.node_count(), g.node_indices().count());
+    assert_eq!(g.edge_count(), g.edge_indices().count());
+    for edge in g.raw_edges() {
+        assert!(
+            g.find_edge(edge.source(), edge.target()).is_some(),
+            "Edge not in graph! {:?} to {:?}",
+            edge.source(),
+            edge.target()
+        );
+    }
+}
 #[test]
 fn undirected() {
     let mut og = Graph::new_undirected();
@@ -465,6 +481,32 @@ fn test_astar_null_heuristic() {
 }
 
 #[test]
+fn test_astar_instance_null_heuristic() {
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+
+    let mut instance = AstarInstance::new(&g, |finish| finish == e, |e| *e.weight(), |_| 0);
+    for start in g.node_indices() {
+        let instance_path = instance.run(start);
+        let path = astar(&g, start, |finish| finish == e, |e| *e.weight(), |_| 0);
+        assert_eq!(instance_path, path);
+    }
+}
+
+#[test]
 fn test_astar_manhattan_heuristic() {
     let mut g = Graph::new();
     let a = g.add_node((0., 0.));
@@ -517,6 +559,48 @@ fn test_astar_manhattan_heuristic() {
 }
 
 #[test]
+fn test_astar_instance_manhattan_heuristic() {
+    let mut g = Graph::new();
+    let a = g.add_node((0., 0.));
+    let b = g.add_node((2., 0.));
+    let c = g.add_node((1., 1.));
+    let d = g.add_node((0., 2.));
+    let e = g.add_node((3., 3.));
+    let f = g.add_node((4., 2.));
+    let _ = g.add_node((5., 5.)); // no path to node
+    g.add_edge(a, b, 2.);
+    g.add_edge(a, d, 4.);
+    g.add_edge(b, c, 1.);
+    g.add_edge(b, f, 7.);
+    g.add_edge(c, e, 5.);
+    g.add_edge(e, f, 1.);
+    g.add_edge(d, e, 1.);
+
+    let heuristic_for = |f: NodeIndex| {
+        let g = &g;
+        move |node: NodeIndex| -> f32 {
+            let (x1, y1): (f32, f32) = g[node];
+            let (x2, y2): (f32, f32) = g[f];
+
+            (x2 - x1).abs() + (y2 - y1).abs()
+        }
+    };
+
+    let mut instance = AstarInstance::new(&g, |n| n == f, |e| *e.weight(), heuristic_for(f));
+
+    for start in g.node_indices() {
+        let instance_path = instance.run(start);
+        let path = astar(
+            &g,
+            start,
+            |finish| finish == f,
+            |e| *e.weight(),
+            heuristic_for(f),
+        );
+        assert_eq!(instance_path, path);
+    }
+}
+
 fn test_astar_runtime_optimal() {
     let mut g = Graph::new();
     let a = g.add_node("A");
@@ -1663,23 +1747,6 @@ fn retain() {
     assert!(gr.find_edge(n(1), n(1)).is_none());
     assert!(gr.find_edge(n(0), n(2)).is_none());
     assert_graph_consistent(&gr);
-}
-
-fn assert_graph_consistent<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>)
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
-    assert_eq!(g.node_count(), g.node_indices().count());
-    assert_eq!(g.edge_count(), g.edge_indices().count());
-    for edge in g.raw_edges() {
-        assert!(
-            g.find_edge(edge.source(), edge.target()).is_some(),
-            "Edge not in graph! {:?} to {:?}",
-            edge.source(),
-            edge.target()
-        );
-    }
 }
 
 #[test]

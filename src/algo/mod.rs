@@ -33,6 +33,7 @@ use super::EdgeType;
 use crate::visit::Walker;
 
 pub use astar::astar;
+pub use astar::AstarInstance;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
 pub use dijkstra::dijkstra;
 pub use feedback_arc_set::greedy_feedback_arc_set;
