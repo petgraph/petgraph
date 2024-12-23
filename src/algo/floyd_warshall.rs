@@ -126,7 +126,7 @@ where
 /// # Examples
 /// ```rust
 /// use petgraph::{prelude::*, Graph, Directed};
-/// use petgraph::algo::floyd_warshall_path;
+/// use petgraph::algo::floyd_warshall::floyd_warshall_path;
 /// use std::collections::HashMap;
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
