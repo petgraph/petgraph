@@ -13,7 +13,7 @@
 //! dominates **C** and **C** dominates **B**.
 
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
+use std::collections::{hash_map::Iter, HashMap, HashSet};
 use std::hash::Hash;
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
@@ -79,9 +79,19 @@ where
             None
         }
     }
+
+    /// Iterate over all nodes immediately dominated by the given node (not
+    /// including the given node itself).
+    pub fn immediately_dominated_by(&self, node: N) -> DominatedByIter<N> {
+        DominatedByIter {
+            iter: self.dominators.iter(),
+            node,
+        }
+    }
 }
 
 /// Iterator for a node's dominators.
+#[derive(Debug, Clone)]
 pub struct DominatorsIter<'a, N>
 where
     N: 'a + Copy + Eq + Hash,
@@ -105,6 +115,38 @@ where
     }
 }
 
+/// Iterator for nodes dominated by a given node.
+#[derive(Debug, Clone)]
+pub struct DominatedByIter<'a, N>
+where
+    N: 'a + Copy + Eq + Hash,
+{
+    iter: Iter<'a, N, N>,
+    node: N,
+}
+
+impl<'a, N> Iterator for DominatedByIter<'a, N>
+where
+    N: 'a + Copy + Eq + Hash,
+{
+    type Item = N;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        for (dominator, dominated) in self.iter.by_ref() {
+            // The root node dominates itself, but it should not be included in
+            // the results.
+            if dominated == &self.node && dominated != dominator {
+                return Some(*dominator);
+            }
+        }
+        None
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
+    }
+}
+
 /// The undefined dominator sentinel, for when we have not yet discovered a
 /// node's dominator.
 const UNDEFINED: usize = ::std::usize::MAX;
@@ -117,7 +159,7 @@ const UNDEFINED: usize = ::std::usize::MAX;
 /// Cooper et al found it to be faster in practice on control flow graphs of up
 /// to ~30,000 vertices.
 ///
-/// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
+/// [0]: http://www.hipersoft.rice.edu/grads/publications/dom14.pdf
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
 where
     G: IntoNeighbors + Visitable,
@@ -227,15 +269,17 @@ where
                         .map(|p| *node_to_post_order_idx.get(&p).unwrap())
                         .collect()
                 })
-                .unwrap_or_else(Vec::new)
+                .unwrap_or_default()
         })
         .collect()
 }
 
+type PredecessorSets<NodeId> = HashMap<NodeId, HashSet<NodeId>>;
+
 fn simple_fast_post_order<G>(
     graph: G,
     root: G::NodeId,
-) -> (Vec<G::NodeId>, HashMap<G::NodeId, HashSet<G::NodeId>>)
+) -> (Vec<G::NodeId>, PredecessorSets<G::NodeId>)
 where
     G: IntoNeighbors + Visitable,
     <G as GraphBase>::NodeId: Eq + Hash,
@@ -280,5 +324,10 @@ mod tests {
             None::<()>,
             doms.strict_dominators(99).map(|_| unreachable!())
         );
+
+        let dom_by: Vec<_> = doms.immediately_dominated_by(1).collect();
+        assert_eq!(vec![2], dom_by);
+        assert_eq!(None, doms.immediately_dominated_by(99).next());
+        assert_eq!(1, doms.immediately_dominated_by(0).count());
     }
 }

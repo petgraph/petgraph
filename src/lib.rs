@@ -4,7 +4,7 @@
 //! provides several [graph types](index.html#graph-types) (each differing in the
 //! tradeoffs taken in their internal representation),
 //! [algorithms](./algo/index.html#functions) on those graphs, and functionality to
-//! [output graphs](./doc/petgraph/dot/struct.Dot.html) in
+//! [output graphs](./dot/struct.Dot.html) in
 //! [`graphviz`](https://www.graphviz.org/) format. Both nodes and edges
 //! can have arbitrary associated data, and edges may be either directed or undirected.
 //!
@@ -74,8 +74,8 @@
 //! [`GraphMap`](./graphmap/struct.GraphMap.html) requires node weights that can serve as hash
 //! map keys, since that graph type does not create standalone node indices.
 //!
-//! `Ty` controls whether edges are [`Directed`](./petgraph/enum.Directed.html) or
-//! [`Undirected`](./petgraph/enum.Unirected.html).
+//! `Ty` controls whether edges are [`Directed`](./enum.Directed.html) or
+//! [`Undirected`](./enum.Undirected.html).
 //!
 //! `Ix` appears on graph types that use indices. It is exposed so you can control
 //! the size of node and edge indices, and therefore the memory footprint of your graphs.
@@ -93,7 +93,7 @@
 //! # Crate features
 //!
 //! * **serde-1** -
-//!   Defaults off. Enables serialization for ``Graph, StableGraph`` using
+//!   Defaults off. Enables serialization for ``Graph, StableGraph, GraphMap`` using
 //!   [`serde 1.0`](https://crates.io/crates/serde). May require a more recent version
 //!   of Rust than petgraph alone.
 //! * **graphmap** -
@@ -133,31 +133,30 @@ pub mod visit;
 #[macro_use]
 pub mod data;
 
+pub mod acyclic;
+pub mod adj;
 pub mod algo;
-mod astar;
 pub mod csr;
-mod dijkstra;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
+pub mod graph6;
 mod graph_impl;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
-mod isomorphism;
 mod iter_format;
 mod iter_utils;
-mod k_shortest_path;
 #[cfg(feature = "matrix_graph")]
 pub mod matrix_graph;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
 #[cfg(feature = "serde-1")]
 mod serde_utils;
-mod simple_paths;
 mod traits_graph;
 pub mod unionfind;
 mod util;
 
+pub mod operator;
 pub mod prelude;
 
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
@@ -173,29 +172,20 @@ pub mod graph {
 #[cfg(feature = "stable_graph")]
 pub use crate::graph_impl::stable_graph;
 
-macro_rules! copyclone {
-    ($name:ident) => {
-        impl Clone for $name {
-            #[inline]
-            fn clone(&self) -> Self {
-                *self
-            }
-        }
-    };
-}
-
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction.
-#[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
 #[repr(usize)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Direction {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
     /// An `Incoming` edge is an inbound edge *to* the current node.
     Incoming = 1,
 }
-
-copyclone!(Direction);
 
 impl Direction {
     /// Return the opposite `Direction`.
@@ -218,14 +208,20 @@ impl Direction {
 pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
-#[derive(Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Directed {}
-copyclone!(Directed);
 
 /// Marker type for an undirected graph.
-#[derive(Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Undirected {}
-copyclone!(Undirected);
 
 /// A graph's edge type determines whether it has directed edges or not.
 pub trait EdgeType {

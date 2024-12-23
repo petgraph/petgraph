@@ -10,7 +10,7 @@ use petgraph as pg;
 
 use petgraph::algo::{
     dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
-    is_isomorphic_matching, min_spanning_tree,
+    is_isomorphic_matching,
 };
 
 use petgraph::graph::node_index as n;
@@ -163,64 +163,6 @@ fn bfs() {
     let nx = bfs.next(&gr);
     assert_eq!(nx, Some(k));
     assert_eq!(bfs.next(&gr), None);
-}
-
-#[test]
-fn mst() {
-    use petgraph::data::FromElements;
-
-    let mut gr = Graph::<_, _>::new();
-    let a = gr.add_node("A");
-    let b = gr.add_node("B");
-    let c = gr.add_node("C");
-    let d = gr.add_node("D");
-    let e = gr.add_node("E");
-    let f = gr.add_node("F");
-    let g = gr.add_node("G");
-    gr.add_edge(a, b, 7.);
-    gr.add_edge(a, d, 5.);
-    gr.add_edge(d, b, 9.);
-    gr.add_edge(b, c, 8.);
-    gr.add_edge(b, e, 7.);
-    gr.add_edge(c, e, 5.);
-    gr.add_edge(d, e, 15.);
-    gr.add_edge(d, f, 6.);
-    gr.add_edge(f, e, 8.);
-    gr.add_edge(f, g, 11.);
-    gr.add_edge(e, g, 9.);
-
-    // add a disjoint part
-    let h = gr.add_node("H");
-    let i = gr.add_node("I");
-    let j = gr.add_node("J");
-    gr.add_edge(h, i, 1.);
-    gr.add_edge(h, j, 3.);
-    gr.add_edge(i, j, 1.);
-
-    println!("{}", Dot::new(&gr));
-
-    let mst = UnGraph::from_elements(min_spanning_tree(&gr));
-
-    println!("{}", Dot::new(&mst));
-    println!("{:?}", Dot::new(&mst));
-    println!("MST is:\n{:#?}", mst);
-    assert!(mst.node_count() == gr.node_count());
-    // |E| = |N| - 2  because there are two disconnected components.
-    assert!(mst.edge_count() == gr.node_count() - 2);
-
-    // check the exact edges are there
-    assert!(mst.find_edge(a, b).is_some());
-    assert!(mst.find_edge(a, d).is_some());
-    assert!(mst.find_edge(b, e).is_some());
-    assert!(mst.find_edge(e, c).is_some());
-    assert!(mst.find_edge(e, g).is_some());
-    assert!(mst.find_edge(d, f).is_some());
-
-    assert!(mst.find_edge(h, i).is_some());
-    assert!(mst.find_edge(i, j).is_some());
-
-    assert!(mst.find_edge(d, b).is_none());
-    assert!(mst.find_edge(b, c).is_none());
 }
 
 #[test]
@@ -641,6 +583,62 @@ fn test_astar_instance_manhattan_heuristic() {
         );
         assert_eq!(instance_path, path);
     }
+fn test_astar_runtime_optimal() {
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    g.add_edge(a, b, 2);
+    g.add_edge(a, c, 3);
+    g.add_edge(b, d, 3);
+    g.add_edge(c, d, 1);
+    g.add_edge(d, e, 1);
+
+    let mut times_called = 0;
+
+    let _ = astar(
+        &g,
+        a,
+        |n| n == e,
+        |edge| {
+            times_called += 1;
+            *edge.weight()
+        },
+        |_| 0,
+    );
+
+    // A* is runtime optimal in the sense it won't expand more nodes than needed, for the given
+    // heuristic. Here, A* should expand, in order: A, B, C, D, E. This should should ask for the
+    // costs of edges (A, B), (A, C), (B, D), (C, D), (D, E). Node D will be added to `visit_next`
+    // twice, but should only be expanded once. If it is erroneously expanded twice, it will call
+    // for (D, E) again and `times_called` will be 6.
+    assert_eq!(times_called, 5);
+}
+
+#[test]
+fn test_astar_admissible_inconsistent() {
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    g.add_edge(a, b, 3);
+    g.add_edge(b, c, 3);
+    g.add_edge(c, d, 3);
+    g.add_edge(a, c, 8);
+    g.add_edge(a, d, 10);
+
+    let admissible_inconsistent = |n: NodeIndex| match g[n] {
+        "A" => 9,
+        "B" => 6,
+        "C" => 0,
+        &_ => 0,
+    };
+
+    let optimal = astar(&g, a, |n| n == d, |e| *e.weight(), admissible_inconsistent);
+    assert_eq!(optimal, Some((9, vec![a, b, c, d])));
 }
 
 #[cfg(feature = "generate")]
@@ -965,8 +963,12 @@ fn tarjan_scc() {
         (4, 1),
     ]);
 
+    let mut tarjan_scc = petgraph::algo::TarjanScc::new();
+
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&gr),
+        result,
         vec![
             vec![n(0), n(3), n(6)],
             vec![n(2), n(5), n(8)],
@@ -982,8 +984,10 @@ fn tarjan_scc() {
     let ed = hr.find_edge(n(6), n(8)).unwrap();
     assert!(hr.remove_edge(ed).is_some());
 
+    let mut result = Vec::new();
+    tarjan_scc.run(&hr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&hr),
+        result,
         vec![
             vec![n(1), n(2), n(4), n(5), n(7), n(8)],
             vec![n(0), n(3), n(6)],
@@ -1003,8 +1007,10 @@ fn tarjan_scc() {
     gr.add_edge(n(2), n(0), ());
     gr.add_edge(n(1), n(0), ());
 
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&gr),
+        result,
         vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
         true,
     );
@@ -1014,8 +1020,10 @@ fn tarjan_scc() {
     gr.extend_with_edges(&[(0, 0), (1, 0), (2, 0), (2, 1), (2, 2)]);
     gr.add_node(());
     // no order for the disconnected one
+    let mut result = Vec::new();
+    tarjan_scc.run(&gr, |scc| result.push(scc.iter().rev().cloned().collect()));
     assert_sccs_eq(
-        petgraph::algo::tarjan_scc(&gr),
+        result,
         vec![vec![n(0)], vec![n(1)], vec![n(2)], vec![n(3)]],
         false,
     );
@@ -1386,6 +1394,54 @@ fn test_edge_iterators_directed() {
 }
 
 #[test]
+fn test_edge_filtered_iterators_directed() {
+    use petgraph::{
+        graph::EdgeReference,
+        visit::{EdgeFiltered, IntoEdgesDirected},
+    };
+
+    let gr = make_edge_iterator_graph::<Directed>();
+    let filter = |edge: EdgeReference<f64>| -> bool { *edge.weight() > 8.0 };
+    let filtered = EdgeFiltered::from_fn(&gr, filter);
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            filtered.edges_directed(i, Outgoing),
+            gr.edges_directed(i, Outgoing).filter(|edge| filter(*edge)),
+        );
+        itertools::assert_equal(
+            filtered.edges_directed(i, Incoming),
+            gr.edges_directed(i, Incoming).filter(|edge| filter(*edge)),
+        );
+    }
+}
+
+#[test]
+fn test_node_filtered_iterators_directed() {
+    use petgraph::{
+        graph::NodeIndex,
+        visit::{IntoEdgesDirected, NodeFiltered},
+    };
+
+    let gr = make_edge_iterator_graph::<Directed>();
+    let filter = |node: NodeIndex<u32>| node.index() < 5; // < 5 makes sure there are edges going both ways between included and excluded nodes (e -> g, f -> e)
+    let filtered = NodeFiltered::from_fn(&gr, filter);
+
+    for i in gr.node_indices() {
+        itertools::assert_equal(
+            filtered.edges_directed(i, Outgoing),
+            gr.edges_directed(i, Outgoing)
+                .filter(|edge| filter(edge.source()) && filter(edge.target())),
+        );
+        itertools::assert_equal(
+            filtered.edges_directed(i, Incoming),
+            gr.edges_directed(i, Incoming)
+                .filter(|edge| filter(edge.source()) && filter(edge.target())),
+        );
+    }
+}
+
+#[test]
 fn test_edge_iterators_undir() {
     let gr = make_edge_iterator_graph::<Undirected>();
 
@@ -1487,6 +1543,30 @@ fn toposort_generic() {
     }
     println!("{:?}", gr);
     assert_is_topo_order(&gr, &order);
+
+    {
+        order.clear();
+        let init_nodes = gr.node_identifiers().filter(|n| {
+            gr.neighbors_directed(*n, Direction::Incoming)
+                .next()
+                .is_none()
+        });
+        let mut topo = Topo::with_initials(&gr, init_nodes);
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+        }
+        assert_is_topo_order(&gr, &order);
+    }
+
+    {
+        // test `with_initials` API using nodes with incoming edges
+        order.clear();
+        let mut topo = Topo::with_initials(&gr, gr.node_identifiers());
+        while let Some(nx) = topo.next(&gr) {
+            order.push(nx);
+        }
+        assert_is_topo_order(&gr, &order);
+    }
 
     {
         order.clear();
@@ -1752,7 +1832,7 @@ where
     G::NodeId: PartialEq,
 {
     // self loops count twice
-    let original_node = node.clone();
+    let original_node = node;
     let mut degree = 0;
     for v in g.neighbors(node) {
         degree += if v == original_node { 2 } else { 1 };
@@ -1830,7 +1910,7 @@ fn dot() {
     struct Record {
         a: i32,
         b: &'static str,
-    };
+    }
     let mut gr = Graph::new();
     let a = gr.add_node(Record { a: 1, b: r"abc\" });
     gr.add_edge(a, a, (1, 2));
@@ -2127,7 +2207,7 @@ fn filtered_post_order() {
         Graph::from_edges(&[(0, 2), (1, 2), (0, 3), (1, 4), (2, 4), (4, 5), (3, 5)]);
     // map reachable nodes
     let mut dfs = Dfs::new(&gr, n(0));
-    while let Some(_) = dfs.next(&gr) {}
+    while dfs.next(&gr).is_some() {}
 
     let map = dfs.discovered;
     gr.add_edge(n(0), n(1), ());
@@ -2245,7 +2325,7 @@ fn test_edge_filtered() {
     assert_eq!(connected_components(&positive_edges), 2);
 
     let mut dfs = DfsPostOrder::new(&positive_edges, n(0));
-    while let Some(_) = dfs.next(&positive_edges) {}
+    while dfs.next(&positive_edges).is_some() {}
 
     let n = n::<u32>;
     for node in &[n(0), n(1), n(2)] {
