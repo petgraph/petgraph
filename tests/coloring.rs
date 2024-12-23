@@ -10,14 +10,7 @@ fn dsatur_coloring_cycle6() {
     let c = graph.add_node(());
     let e = graph.add_node(());
     let f = graph.add_node(());
-    graph.extend_with_edges(&[
-        (a, b),
-        (b, c),
-        (c, d),
-        (d, e),
-        (e, f),
-        (f, e),
-    ]);
+    graph.extend_with_edges(&[(a, b), (b, c), (c, d), (d, e), (e, f), (f, e)]);
 
     let (coloring, nb_colors) = dsatur_coloring(&graph);
     assert_eq!(nb_colors, 2);
