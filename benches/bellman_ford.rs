@@ -10,6 +10,7 @@ use test::Bencher;
 use petgraph::algo::{bellman_ford, find_negative_cycle};
 
 #[bench]
+#[allow(clippy::needless_range_loop)]
 fn bellman_ford_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;
     let mut g = Graph::new();
@@ -35,6 +36,7 @@ fn bellman_ford_bench(bench: &mut Bencher) {
 }
 
 #[bench]
+#[allow(clippy::needless_range_loop)]
 fn find_negative_cycle_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;
     let mut g = Graph::new();

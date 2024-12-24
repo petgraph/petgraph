@@ -10,6 +10,7 @@ use test::Bencher;
 use petgraph::algo::floyd_warshall;
 
 #[bench]
+#[allow(clippy::needless_range_loop)]
 fn floyd_warshall_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;
     let mut g = Graph::new_undirected();

@@ -10,6 +10,7 @@ use test::Bencher;
 use petgraph::algo::dijkstra;
 
 #[bench]
+#[allow(clippy::needless_range_loop)]
 fn dijkstra_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 10_000;
     let mut g = Graph::new_undirected();

@@ -10,6 +10,7 @@ use test::Bencher;
 use petgraph::algo::k_shortest_path;
 
 #[bench]
+#[allow(clippy::needless_range_loop)]
 fn k_shortest_path_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 10_000;
     let mut g = Graph::new_undirected();
