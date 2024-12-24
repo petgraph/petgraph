@@ -274,6 +274,7 @@ where
     ///
     /// If `return_result` is false, then the cones are not constructed and the
     /// method only checks for disjointness.
+    #[allow(clippy::type_complexity)]
     fn causal_cones(
         &self,
         min_node: G::NodeId,
@@ -555,41 +556,41 @@ impl<G: Visitable + Data> Data for Acyclic<G> {
 }
 
 impl<G: Visitable + DataMap> DataMap for Acyclic<G> {
-    fn node_weight(self: &Self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
+    fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
         self.inner().node_weight(id)
     }
 
-    fn edge_weight(self: &Self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
+    fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
         self.inner().edge_weight(id)
     }
 }
 
 impl<G: Visitable + DataMapMut> DataMapMut for Acyclic<G> {
-    fn node_weight_mut(self: &mut Self, id: Self::NodeId) -> Option<&mut Self::NodeWeight> {
+    fn node_weight_mut(&mut self, id: Self::NodeId) -> Option<&mut Self::NodeWeight> {
         self.inner_mut().node_weight_mut(id)
     }
 
-    fn edge_weight_mut(self: &mut Self, id: Self::EdgeId) -> Option<&mut Self::EdgeWeight> {
+    fn edge_weight_mut(&mut self, id: Self::EdgeId) -> Option<&mut Self::EdgeWeight> {
         self.inner_mut().edge_weight_mut(id)
     }
 }
 
 impl<G: Visitable + EdgeCount> EdgeCount for Acyclic<G> {
-    fn edge_count(self: &Self) -> usize {
+    fn edge_count(&self) -> usize {
         self.inner().edge_count()
     }
 }
 
 impl<G: Visitable + EdgeIndexable> EdgeIndexable for Acyclic<G> {
-    fn edge_bound(self: &Self) -> usize {
+    fn edge_bound(&self) -> usize {
         self.inner().edge_bound()
     }
 
-    fn to_index(self: &Self, a: Self::EdgeId) -> usize {
+    fn to_index(&self, a: Self::EdgeId) -> usize {
         self.inner().to_index(a)
     }
 
-    fn from_index(self: &Self, i: usize) -> Self::EdgeId {
+    fn from_index(&self, i: usize) -> Self::EdgeId {
         self.inner().from_index(i)
     }
 }
@@ -597,16 +598,11 @@ impl<G: Visitable + EdgeIndexable> EdgeIndexable for Acyclic<G> {
 impl<G: Visitable + GetAdjacencyMatrix> GetAdjacencyMatrix for Acyclic<G> {
     type AdjMatrix = G::AdjMatrix;
 
-    fn adjacency_matrix(self: &Self) -> Self::AdjMatrix {
+    fn adjacency_matrix(&self) -> Self::AdjMatrix {
         self.inner().adjacency_matrix()
     }
 
-    fn is_adjacent(
-        self: &Self,
-        matrix: &Self::AdjMatrix,
-        a: Self::NodeId,
-        b: Self::NodeId,
-    ) -> bool {
+    fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool {
         self.inner().is_adjacent(matrix, a, b)
     }
 }
@@ -618,21 +614,21 @@ impl<G: Visitable + GraphProp> GraphProp for Acyclic<G> {
 impl<G: Visitable + NodeCompactIndexable> NodeCompactIndexable for Acyclic<G> {}
 
 impl<G: Visitable + NodeCount> NodeCount for Acyclic<G> {
-    fn node_count(self: &Self) -> usize {
+    fn node_count(&self) -> usize {
         self.inner().node_count()
     }
 }
 
 impl<G: Visitable + NodeIndexable> NodeIndexable for Acyclic<G> {
-    fn node_bound(self: &Self) -> usize {
+    fn node_bound(&self) -> usize {
         self.inner().node_bound()
     }
 
-    fn to_index(self: &Self, a: Self::NodeId) -> usize {
+    fn to_index(&self, a: Self::NodeId) -> usize {
         self.inner().to_index(a)
     }
 
-    fn from_index(self: &Self, i: usize) -> Self::NodeId {
+    fn from_index(&self, i: usize) -> Self::NodeId {
         self.inner().from_index(i)
     }
 }
@@ -640,11 +636,11 @@ impl<G: Visitable + NodeIndexable> NodeIndexable for Acyclic<G> {
 impl<G: Visitable> Visitable for Acyclic<G> {
     type Map = G::Map;
 
-    fn visit_map(self: &Self) -> Self::Map {
+    fn visit_map(&self) -> Self::Map {
         self.inner().visit_map()
     }
 
-    fn reset_map(self: &Self, map: &mut Self::Map) {
+    fn reset_map(&self, map: &mut Self::Map) {
         self.inner().reset_map(map)
     }
 }

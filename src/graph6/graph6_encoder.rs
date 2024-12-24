@@ -23,7 +23,7 @@ const N: usize = 63;
 
 /// A graph that can be converted to graph6 format string.
 pub trait ToGraph6 {
-    fn graph6_string(self: &Self) -> String;
+    fn graph6_string(&self) -> String;
 }
 
 /// Converts a graph that implements GetAdjacencyMatrix and IntoNodeIdentifers
@@ -50,13 +50,13 @@ fn get_adj_matrix_upper_diagonal_as_bits<G>(graph: G) -> (usize, Vec<usize>)
 where
     G: GetAdjacencyMatrix + IntoNodeIdentifiers,
 {
-    let mut node_ids_iter = graph.node_identifiers();
+    let node_ids_iter = graph.node_identifiers();
     let mut node_ids_vec = vec![];
 
     let adj_matrix = graph.adjacency_matrix();
     let mut bits = vec![];
     let mut n = 0;
-    while let Some(node_id) = node_ids_iter.next() {
+    for node_id in node_ids_iter {
         node_ids_vec.push(node_id);
 
         for i in 1..=n {
@@ -68,7 +68,7 @@ where
         n += 1;
     }
 
-    return (n, bits);
+    (n, bits)
 }
 
 // Converts graph order to a bits vector.
@@ -116,21 +116,21 @@ fn bits_to_ascii(mut bits: Vec<usize>) -> String {
 }
 
 impl<N, E, Ix: IndexType> ToGraph6 for Graph<N, E, Undirected, Ix> {
-    fn graph6_string(self: &Self) -> String {
+    fn graph6_string(&self) -> String {
         get_graph6_representation(self)
     }
 }
 
 #[cfg(feature = "stable_graph")]
 impl<N, E, Ix: IndexType> ToGraph6 for StableGraph<N, E, Undirected, Ix> {
-    fn graph6_string(self: &Self) -> String {
+    fn graph6_string(&self) -> String {
         get_graph6_representation(self)
     }
 }
 
 #[cfg(feature = "graphmap")]
 impl<N: NodeTrait, E, S: BuildHasher> ToGraph6 for GraphMap<N, E, Undirected, S> {
-    fn graph6_string(self: &Self) -> String {
+    fn graph6_string(&self) -> String {
         get_graph6_representation(self)
     }
 }
@@ -142,13 +142,13 @@ where
     Null: Nullable<Wrapped = E>,
     Ix: IndexType,
 {
-    fn graph6_string(self: &Self) -> String {
+    fn graph6_string(&self) -> String {
         get_graph6_representation(self)
     }
 }
 
 impl<N, E, Ix: IndexType> ToGraph6 for Csr<N, E, Undirected, Ix> {
-    fn graph6_string(self: &Self) -> String {
+    fn graph6_string(&self) -> String {
         get_graph6_representation(self)
     }
 }

@@ -146,7 +146,7 @@ where
     let nb = D::from_usize(node_count);
     let mut ranks: Vec<D> = (0..node_count)
         .into_par_iter()
-        .map(|i| D::one() / nb)
+        .map(|_| D::one() / nb)
         .collect();
     for _ in 0..nb_iter {
         let pi = (0..node_count)
