@@ -1841,6 +1841,7 @@ fn neighbor_order() {
 fn dot() {
     // test alternate formatting
     #[derive(Debug)]
+    #[allow(unused)]
     struct Record {
         a: i32,
         b: &'static str,

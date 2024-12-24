@@ -105,7 +105,6 @@ where
 
 trait WithDummy: NodeIndexable {
     fn dummy_idx(&self) -> usize;
-    fn node_bound_with_dummy(&self) -> usize;
     /// Convert `i` to a node index, returns None for the dummy node
     fn try_from_index(&self, i: usize) -> Option<Self::NodeId>;
 }
@@ -116,10 +115,6 @@ impl<G: NodeIndexable> WithDummy for G {
         // vertex. Our vertex indices are zero-based and so we use the node
         // bound as the dummy node.
         self.node_bound()
-    }
-
-    fn node_bound_with_dummy(&self) -> usize {
-        self.node_bound() + 1
     }
 
     fn try_from_index(&self, i: usize) -> Option<Self::NodeId> {
