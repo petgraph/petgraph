@@ -224,6 +224,7 @@ fn test_graph6_for_csr(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
 }
 
 // Test cases format: (graph order, expected ghaph6 representation, graph edges)
+#[allow(clippy::type_complexity)]
 #[rustfmt::skip]
 const TEST_CASES: [(usize, &str, &[(u16, u16)]); 20] = [
     // Empty Graphs
