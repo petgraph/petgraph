@@ -55,16 +55,16 @@ mod serialization;
 /// is some local measure of edge count.
 ///
 /// - Nodes and edges are each numbered in an interval from *0* to some number
-/// *m*, but *not all* indices in the range are valid, since gaps are formed
-/// by deletions.
+///     *m*, but *not all* indices in the range are valid, since gaps are formed
+///     by deletions.
 ///
 /// - You can select graph index integer type after the size of the graph. A smaller
-/// size may have better performance.
+///     size may have better performance.
 ///
 /// - Using indices allows mutation while traversing the graph, see `Dfs`.
 ///
 /// - The `StableGraph` is a regular rust collection and is `Send` and `Sync`
-/// (as long as associated data `N` and `E` are).
+///     (as long as associated data `N` and `E` are).
 ///
 /// - Indices don't allow as much compile time checking as references.
 ///

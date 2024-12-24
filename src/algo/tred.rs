@@ -94,6 +94,7 @@ where
 /// list such that:
 /// * Node indices are a toposort, and
 /// * The neighbors of all nodes are stored in topological order.
+///
 /// To get such a representation, use the function [`dag_to_toposorted_adjacency_list`].
 ///
 /// [`dag_to_toposorted_adjacency_list`]: ./fn.dag_to_toposorted_adjacency_list.html
