@@ -415,10 +415,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let mut elt = match self.iter.next() {
-                None => return None,
-                Some(elt) => elt,
-            };
+            let mut elt = self.iter.next()?;
             let keep = (self.f)(match elt {
                 Element::Node { ref mut weight } => Element::Node { weight },
                 Element::Edge {

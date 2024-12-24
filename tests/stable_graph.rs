@@ -456,8 +456,8 @@ fn from_min_spanning_tree() {
     for &(a, b) in es.iter() {
         g.add_edge(NodeIndex::new(a), NodeIndex::new(b), ());
     }
-    for i in 0..3 {
-        let _ = g.remove_node(nodes[i]);
+    for &node in nodes.iter().take(3) {
+        let _ = g.remove_node(node);
     }
     let _ = StableGraph::<(), (), Undirected, usize>::from_elements(min_spanning_tree(&g));
 }
