@@ -11,6 +11,7 @@ use test::Bencher;
 
 /// Dynamic toposort using Acyclic<G>
 #[bench]
+#[allow(clippy::needless_range_loop)]
 fn acyclic_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;
     let mut g = Acyclic::<DiGraph<usize, ()>>::new();
@@ -33,6 +34,7 @@ fn acyclic_bench(bench: &mut Bencher) {
 
 /// As a baseline: build the graph and toposort it every time a new edge is added
 #[bench]
+#[allow(clippy::needless_range_loop)]
 fn toposort_baseline_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;
     let mut g = DiGraph::<usize, ()>::new();
