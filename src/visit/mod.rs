@@ -103,7 +103,7 @@ GraphBase! {delegate_impl [['a, G], G, &'a mut G, deref]}
 /// A copyable reference to a graph.
 pub trait GraphRef: Copy + GraphBase {}
 
-impl<'a, G> GraphRef for &'a G where G: GraphBase {}
+impl<G> GraphRef for &G where G: GraphBase {}
 
 trait_template! {
 /// Access to the neighbors of each node
@@ -232,7 +232,7 @@ pub trait EdgeRef: Copy {
     fn id(&self) -> Self::EdgeId;
 }
 
-impl<'a, N, E> EdgeRef for (N, N, &'a E)
+impl<N, E> EdgeRef for (N, N, &E)
 where
     N: Copy,
 {
@@ -290,7 +290,7 @@ where
     }
 }
 
-impl<'a, Id, W> NodeRef for (Id, &'a W)
+impl<Id, W> NodeRef for (Id, &W)
 where
     Id: Copy,
 {

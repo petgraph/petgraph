@@ -485,7 +485,7 @@ where
     }
 }
 
-impl<'a, C, W: ?Sized> Walker<C> for &'a mut W
+impl<C, W: ?Sized> Walker<C> for &mut W
 where
     W: Walker<C>,
 {

@@ -58,7 +58,7 @@ pub trait IterFormatExt: Iterator {
 
 impl<I> IterFormatExt for I where I: Iterator {}
 
-impl<'a, I> Format<'a, I>
+impl<I> Format<'_, I>
 where
     I: Iterator,
 {

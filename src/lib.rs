@@ -270,7 +270,7 @@ impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, E) {
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<E> for (Ix, Ix, &'a E)
+impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, &E)
 where
     E: Clone,
 {
@@ -281,7 +281,7 @@ where
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix)
+impl<Ix, E> IntoWeightedEdge<E> for &(Ix, Ix)
 where
     Ix: Copy,
     E: Default,
@@ -293,7 +293,7 @@ where
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix, E)
+impl<Ix, E> IntoWeightedEdge<E> for &(Ix, Ix, E)
 where
     Ix: Copy,
     E: Clone,

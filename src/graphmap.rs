@@ -697,7 +697,7 @@ where
     ty: PhantomData<Ty>,
 }
 
-impl<'a, N, Ty> Iterator for Neighbors<'a, N, Ty>
+impl<N, Ty> Iterator for Neighbors<'_, N, Ty>
 where
     N: NodeTrait,
     Ty: EdgeType,
@@ -734,7 +734,7 @@ where
     ty: PhantomData<Ty>,
 }
 
-impl<'a, N, Ty> Iterator for NeighborsDirected<'a, N, Ty>
+impl<N, Ty> Iterator for NeighborsDirected<'_, N, Ty>
 where
     N: NodeTrait,
     Ty: EdgeType,
@@ -997,8 +997,8 @@ where
 /// with the `Cell<T>` being `TypedArena` allocated.
 pub struct Ptr<'b, T: 'b>(pub &'b T);
 
-impl<'b, T> Copy for Ptr<'b, T> {}
-impl<'b, T> Clone for Ptr<'b, T> {
+impl<T> Copy for Ptr<'_, T> {}
+impl<T> Clone for Ptr<'_, T> {
     fn clone(&self) -> Self {
         *self
     }
@@ -1030,23 +1030,23 @@ impl<'b, T> Ord for Ptr<'b, T> {
     }
 }
 
-impl<'b, T> Deref for Ptr<'b, T> {
+impl<T> Deref for Ptr<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
         self.0
     }
 }
 
-impl<'b, T> Eq for Ptr<'b, T> {}
+impl<T> Eq for Ptr<'_, T> {}
 
-impl<'b, T> Hash for Ptr<'b, T> {
+impl<T> Hash for Ptr<'_, T> {
     fn hash<H: hash::Hasher>(&self, st: &mut H) {
         let ptr = (self.0) as *const T;
         ptr.hash(st)
     }
 }
 
-impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
+impl<T: fmt::Debug> fmt::Debug for Ptr<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
     }

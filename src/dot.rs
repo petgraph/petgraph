@@ -144,7 +144,7 @@ make_config_struct!(
     GraphContentOnly,
 );
 
-impl<'a, G> Dot<'a, G>
+impl<G> Dot<'_, G>
 where
     G: IntoNodeReferences + IntoEdgeReferences + NodeIndexable + GraphProp,
 {
@@ -201,7 +201,7 @@ where
     }
 }
 
-impl<'a, G> fmt::Display for Dot<'a, G>
+impl<G> fmt::Display for Dot<'_, G>
 where
     G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
     G::EdgeWeight: fmt::Display,
@@ -212,7 +212,7 @@ where
     }
 }
 
-impl<'a, G> fmt::LowerHex for Dot<'a, G>
+impl<G> fmt::LowerHex for Dot<'_, G>
 where
     G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
     G::EdgeWeight: fmt::LowerHex,
@@ -223,7 +223,7 @@ where
     }
 }
 
-impl<'a, G> fmt::UpperHex for Dot<'a, G>
+impl<G> fmt::UpperHex for Dot<'_, G>
 where
     G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
     G::EdgeWeight: fmt::UpperHex,
@@ -234,7 +234,7 @@ where
     }
 }
 
-impl<'a, G> fmt::Debug for Dot<'a, G>
+impl<G> fmt::Debug for Dot<'_, G>
 where
     G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
     G::EdgeWeight: fmt::Debug,
