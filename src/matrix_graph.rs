@@ -587,7 +587,7 @@ impl<'a, Ix: IndexType> NodeIdentifiers<'a, Ix> {
     }
 }
 
-impl<'a, Ix: IndexType> Iterator for NodeIdentifiers<'a, Ix> {
+impl<Ix: IndexType> Iterator for NodeIdentifiers<'_, Ix> {
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -709,7 +709,7 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator
 #[derive(Debug, Clone)]
 pub struct Neighbors<'a, Ty: EdgeType, Null: 'a + Nullable, Ix>(Edges<'a, Ty, Null, Ix>);
 
-impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Neighbors<'a, Ty, Null, Ix> {
+impl<Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Neighbors<'_, Ty, Null, Ix> {
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -983,7 +983,7 @@ struct IdIterator<'a> {
     current: Option<usize>,
 }
 
-impl<'a> Iterator for IdIterator<'a> {
+impl Iterator for IdIterator<'_> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1381,8 +1381,8 @@ mod tests {
         let c = g.add_node('c');
         g.add_edge(a, b, true);
         g.add_edge(b, c, false);
-        assert_eq!(*g.edge_weight(a, b), true);
-        assert_eq!(*g.edge_weight(b, c), false);
+        assert!(*g.edge_weight(a, b));
+        assert!(!*g.edge_weight(b, c));
     }
 
     #[test]

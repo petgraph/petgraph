@@ -731,7 +731,7 @@ mod matching {
         }
     }
 
-    impl<'a, 'b, 'c, G0, G1, NM, EM> Iterator for GraphMatcher<'a, 'b, 'c, G0, G1, NM, EM>
+    impl<G0, G1, NM, EM> Iterator for GraphMatcher<'_, '_, '_, G0, G1, NM, EM>
     where
         G0: NodeCompactIndexable
             + EdgeCount
