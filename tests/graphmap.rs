@@ -441,3 +441,49 @@ fn test_alternative_hasher() {
     assert!(gr.contains_edge("abc", "def"));
     assert!(!gr.contains_edge("abc", "ghi"));
 }
+
+#[test]
+fn map_filter_map() {
+    let mut g = UnGraphMap::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
+    println!("{:?}", g);
+
+    let g2 = g.filter_map(
+        |&name| Some(name),
+        |_source, _target, &weight| if weight >= 10 { Some(weight) } else { None },
+    );
+    assert_eq!(g2.edge_count(), 4);
+    for edge in g2.all_edges() {
+        assert!(*edge.2 >= 10);
+    }
+
+    let g3 = g.filter_map(
+        |&name| if name == "A" || name == "E" { None } else { Some(name) },
+        |&source, &target, &weight| {
+            // don't map edges from a removed node
+            assert_ne!(source, a);
+            assert_ne!(target, a);
+            assert_ne!(source, e);
+            assert_ne!(target, e);
+            Some(weight)
+        },
+    );
+    assert_eq!(g3.node_count(), g.node_count() - 2);
+    assert_eq!(g3.edge_count(), g.edge_count() - 5);
+
+}

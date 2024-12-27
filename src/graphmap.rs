@@ -632,6 +632,53 @@ where
 
         new_graph
     }
+
+    /// Create a new `GraphMap` by mapping nodes and edges.
+    /// A node or edge may be mapped to `None` to exclude it from
+    /// the resulting graph.
+    ///
+    /// Nodes are mapped first with the `node_map` closure, then
+    /// `edge_map` is called for the edges that have not had any endpoint
+    /// removed.
+    ///
+    /// The resulting graph has the structure of a subgraph of the original graph.
+    pub fn filter_map<'a, F, G, N2, E2>(
+        &'a self,
+        mut node_map: F,
+        mut edge_map: G,
+    ) -> GraphMap<N2, E2, Ty>
+    where
+        N2: NodeTrait + 'a,
+        F: FnMut(&'a N) -> Option<N2>,
+        G: FnMut(&'a N, &'a N, &'a E) -> Option<E2>,
+    {
+        let mut g = GraphMap::with_capacity(0, 0);
+
+        // mapping from old node to new node.
+        let mut node_mapping: IndexMap<N, N2> = IndexMap::new();
+
+        for node in self.nodes.keys() {
+            if let Some(nw) = node_map(node) {
+                g.add_node(nw);
+
+                node_mapping.insert(*node, nw);
+            }
+        }
+
+        for edge in self.edges.iter() {
+            let ((source, target), e) = edge;
+
+            if let Some(new_source) = node_mapping.get(source) {
+                if let Some(new_target) = node_mapping.get(target) {
+                    if let Some(new_e) = edge_map(source, target, e) {
+                        g.add_edge(*new_source, *new_target, new_e);
+                    }
+                }
+            }
+        }
+
+        g
+    }
 }
 
 /// Create a new `GraphMap` from an iterable of edges.
