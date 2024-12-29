@@ -802,8 +802,13 @@ where
         let n = self.node_count();
         let mut matrix = FixedBitSet::with_capacity(n * n);
         for edge in self.edge_references() {
-            let index = n * edge.source().index() + edge.target().index();
-            matrix.put(index);
+            let i = n * edge.source().index() + edge.target().index();
+            matrix.put(i);
+
+            if !self.is_directed() {
+                let j = edge.source().index() + n * edge.target().index();
+                matrix.put(j);
+            }
         }
         matrix
     }
