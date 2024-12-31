@@ -19,6 +19,7 @@ pub mod min_spanning_tree;
 pub mod page_rank;
 pub mod simple_paths;
 pub mod tred;
+pub mod wfc_color;
 
 use std::num::NonZeroUsize;
 
