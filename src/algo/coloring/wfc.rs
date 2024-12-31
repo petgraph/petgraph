@@ -1,6 +1,6 @@
 use crate::visit::{IntoNeighbors, NodeCount, NodeIndexable, Visitable};
-use std::hash::Hash;
 use std::collections::HashMap;
+use std::hash::Hash;
 
 /// [Generic] Wave Function Collapse graph coloring algorithm.
 ///
