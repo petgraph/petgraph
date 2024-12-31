@@ -118,7 +118,7 @@ impl NodeId {
 /// assert_eq!(node.id(), &a);
 /// assert_eq!(node.weight(), &"A");
 /// ```
-pub struct Node<'a, S>
+pub struct Node<'a, S: ?Sized>
 where
     S: GraphStorage,
 {
@@ -128,7 +128,7 @@ where
     weight: &'a S::NodeWeight,
 }
 
-impl<S> PartialEq for Node<'_, S>
+impl<S: ?Sized> PartialEq for Node<'_, S>
 where
     S: GraphStorage,
     S::NodeWeight: PartialEq,
@@ -138,14 +138,14 @@ where
     }
 }
 
-impl<S> Eq for Node<'_, S>
+impl<S: ?Sized> Eq for Node<'_, S>
 where
     S: GraphStorage,
     S::NodeWeight: Eq,
 {
 }
 
-impl<S> PartialOrd for Node<'_, S>
+impl<S: ?Sized> PartialOrd for Node<'_, S>
 where
     S: GraphStorage,
     S::NodeWeight: PartialOrd,
@@ -155,7 +155,7 @@ where
     }
 }
 
-impl<S> Ord for Node<'_, S>
+impl<S: ?Sized> Ord for Node<'_, S>
 where
     S: GraphStorage,
     S::NodeWeight: Ord,
@@ -165,7 +165,7 @@ where
     }
 }
 
-impl<S> Hash for Node<'_, S>
+impl<S: ?Sized> Hash for Node<'_, S>
 where
     S: GraphStorage,
     S::NodeWeight: Hash,
@@ -175,7 +175,7 @@ where
     }
 }
 
-impl<S> Clone for Node<'_, S>
+impl<S: ?Sized> Clone for Node<'_, S>
 where
     S: GraphStorage,
 {
@@ -184,9 +184,9 @@ where
     }
 }
 
-impl<S> Copy for Node<'_, S> where S: GraphStorage {}
+impl<S: ?Sized> Copy for Node<'_, S> where S: GraphStorage {}
 
-impl<S> Debug for Node<'_, S>
+impl<S: ?Sized> Debug for Node<'_, S>
 where
     S: GraphStorage,
     S::NodeWeight: Debug,
@@ -199,7 +199,7 @@ where
     }
 }
 
-impl<'a, S> Node<'a, S>
+impl<'a, S: ?Sized> Node<'a, S>
 where
     S: GraphStorage,
 {
@@ -290,7 +290,7 @@ where
     }
 }
 
-impl<'a, S> Node<'a, S>
+impl<'a, S: ?Sized> Node<'a, S>
 where
     S: GraphStorage,
 {
@@ -408,7 +408,7 @@ where
     }
 }
 
-impl<'a, S> Node<'a, S>
+impl<'a, S: ?Sized> Node<'a, S>
 where
     S: DirectedGraphStorage,
 {
@@ -495,7 +495,7 @@ where
     }
 }
 
-impl<S> Node<'_, S>
+impl<S: ?Sized> Node<'_, S>
 where
     S: GraphStorage,
     S::NodeWeight: Clone,
@@ -558,7 +558,7 @@ where
 /// # graph.insert_edge("A → A", &a, &a);
 /// ```
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct NodeMut<'a, S>
+pub struct NodeMut<'a, S: ?Sized>
 where
     S: GraphStorage,
 {
@@ -567,7 +567,7 @@ where
     weight: &'a mut S::NodeWeight,
 }
 
-impl<'a, S> NodeMut<'a, S>
+impl<'a, S: ?Sized> NodeMut<'a, S>
 where
     S: GraphStorage,
 {
@@ -680,7 +680,7 @@ where
     }
 }
 
-impl<S> NodeMut<'_, S>
+impl<S: ?Sized> NodeMut<'_, S>
 where
     S: GraphStorage,
     S::NodeWeight: Clone,

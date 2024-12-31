@@ -1,8 +1,8 @@
-use crate::{edge::EdgeMut, graph::Graph, node::NodeMut, storage::RetainableGraphStorage};
+use crate::{edge::EdgeMut, graph::Graph, node::NodeMut, storage::GraphStoragePrune};
 
 impl<S> Graph<S>
 where
-    S: RetainableGraphStorage,
+    S: GraphStoragePrune,
 {
     /// Retains only the nodes and edges specified by the predicate.
     ///

@@ -120,8 +120,6 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[deprecated(since = "0.1.0")]
-pub mod deprecated;
 pub mod edge;
 mod error;
 pub(crate) mod graph;

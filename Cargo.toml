@@ -5,7 +5,7 @@ authors = [
     "bluss",
     "Agustín Borgna <agustinborgna@gmail.com>",
     "Anton Kochkov <xvilka@gmail.com>",
-    "Bilal Mahmoud <mahmoud@fastmail.com>"
+    "Bilal Mahmoud <mahmoud@fastmail.com>",
 ]
 categories = ["data-structures"]
 documentation = "https://docs.rs/petgraph/"
@@ -22,10 +22,7 @@ no-dev-version = true
 
 [workspace]
 resolver = "2"
-members = [
-    ".",
-    "crates/*",
-]
+members = [".", "crates/*"]
 
 [workspace.dependencies]
 fixedbitset = { version = "0.4", default-features = false }
@@ -57,7 +54,9 @@ petgraph-core = { workspace = true, default-features = false }
 petgraph-csr = { workspace = true, optional = true, default-features = false }
 petgraph-graph = { workspace = true, default-features = false }
 petgraph-matrix-graph = { workspace = true, optional = true, default-features = false }
-petgraph-algorithms = { workspace = true, default-features = false, features = ["remove-me-only-intended-for-move-graph"] }
+petgraph-algorithms = { workspace = true, default-features = false, features = [
+    "remove-me-only-intended-for-move-graph",
+] }
 petgraph-generators = { workspace = true, default-features = false, optional = true }
 petgraph-io = { workspace = true, default-features = false, optional = true }
 
@@ -67,9 +66,19 @@ optional = true
 default-features = false
 
 [features]
-adjacency-matrix = ["dep:petgraph-adjacency-matrix", "petgraph-algorithms/remove-me-only-intended-for-move-adjacency-matrix"]
+adjacency-matrix = [
+    "dep:petgraph-adjacency-matrix",
+    "petgraph-algorithms/remove-me-only-intended-for-move-adjacency-matrix",
+]
 csr = ["dep:petgraph-csr"]
-default = ["std", "entry", "stable-graph", "matrix-graph", "csr", "adjacency-matrix"]
+default = [
+    "std",
+    "entry",
+    "stable-graph",
+    "matrix-graph",
+    "csr",
+    "adjacency-matrix",
+]
 entry = ["dep:petgraph-entry"]
 matrix-graph = ["dep:petgraph-matrix-graph"]
 serde = ["petgraph-graph/serde"]
@@ -81,7 +90,7 @@ std = [
     "petgraph-graph/std",
     "petgraph-adjacency-matrix?/std",
     "petgraph-csr?/std",
-    "petgraph-io?/std"
+    "petgraph-io?/std",
 ]
 proptest = ["petgraph-graph/proptest"]
 
@@ -93,3 +102,69 @@ name = "petgraph"
 debug = true
 
 [profile.release]
+
+[workspace.lints.rust]
+future_incompatible = { level = "warn", priority = -1 }
+nonstandard_style = { level = "warn", priority = -1 }
+
+unreachable_pub = "warn"
+unsafe_code = "deny"
+
+[workspace.lints.cargo]
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+restriction = { level = "warn", priority = -1 }
+
+absolute_paths = "allow"
+allow_attributes_without_reason = "allow"
+arbitrary_source_item_ordering = "allow"
+arithmetic_side_effects = "allow"
+as_conversions = "allow"
+else_if_without_else = "allow"
+enum_variant_names = "allow"
+expect_used = "allow"
+indexing_slicing = "allow"
+let_underscore_must_use = "allow"
+missing_assert_message = "allow"
+multiple_inherent_impl = "allow"
+panic = "allow"
+partial_pub_fields = "allow"
+unwrap_in_result = "allow"
+wildcard_enum_match_arm = "allow"
+
+# Consider enabling:
+default_numeric_fallback = "allow"
+impl_trait_in_params = "allow"
+iter_over_hash_type = "allow"
+multiple_unsafe_ops_per_block = "allow"
+pattern_type_mismatch = "allow"
+shadow_unrelated = "allow"
+single_call_fn = "allow"
+single_char_lifetime_names = "allow"
+tests_outside_test_module = "allow"
+unimplemented = "allow"
+unreachable = "allow"
+
+# Does not apply to us:
+blanket_clippy_restriction_lints = "allow"
+exhaustive_enums = "allow"
+exhaustive_structs = "allow"
+implicit_return = "allow"
+missing_docs_in_private_items = "allow"
+missing_inline_in_public_items = "allow"
+missing_trait_methods = "allow"
+mod_module_files = "allow"
+module_name_repetitions = "allow"
+pub_use = "allow"
+pub_with_shorthand = "allow"
+question_mark_used = "allow"
+redundant_pub_crate = "allow"
+ref_patterns = "allow"
+semicolon_outside_block = "allow"
+separated_literal_suffix = "allow"
+shadow_reuse = "allow"
+shadow_same = "allow"
+unneeded_field_pattern = "allow"

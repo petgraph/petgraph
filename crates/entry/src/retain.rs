@@ -2,12 +2,12 @@ use alloc::vec;
 use core::hash::Hash;
 
 use petgraph_core::{
-    storage::RetainableGraphStorage, EdgeMut, GraphDirectionality, GraphStorage, NodeMut,
+    EdgeMut, GraphDirectionality, GraphStorage, NodeMut, storage::GraphStoragePrune,
 };
 
 use crate::EntryStorage;
 
-impl<NK, NV, EK, EV, D> RetainableGraphStorage for EntryStorage<NK, NV, EK, EV, D>
+impl<NK, NV, EK, EV, D> GraphStoragePrune for EntryStorage<NK, NV, EK, EV, D>
 where
     D: GraphDirectionality,
     NK: Hash,

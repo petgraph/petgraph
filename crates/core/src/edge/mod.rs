@@ -25,9 +25,9 @@ use core::fmt::{Debug, Display, Formatter};
 
 pub use self::{direction::Direction, marker::GraphDirectionality};
 use crate::{
+    DirectedGraphStorage,
     node::{Node, NodeId},
     storage::GraphStorage,
-    DirectedGraphStorage,
 };
 
 type DetachedStorageEdge<S> = DetachedEdge<<S as GraphStorage>::EdgeWeight>;
@@ -129,7 +129,7 @@ impl EdgeId {
 /// assert_eq!(edge.weight(), &"A → A");
 /// ```
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Edge<'a, S>
+pub struct Edge<'a, S: ?Sized>
 where
     S: GraphStorage,
 {
@@ -143,7 +143,7 @@ where
     weight: &'a S::EdgeWeight,
 }
 
-impl<S> Clone for Edge<'_, S>
+impl<S: ?Sized> Clone for Edge<'_, S>
 where
     S: GraphStorage,
 {
@@ -152,9 +152,9 @@ where
     }
 }
 
-impl<S> Copy for Edge<'_, S> where S: GraphStorage {}
+impl<S: ?Sized> Copy for Edge<'_, S> where S: GraphStorage {}
 
-impl<S> Debug for Edge<'_, S>
+impl<S: ?Sized> Debug for Edge<'_, S>
 where
     S: GraphStorage,
     S::EdgeWeight: Debug,
@@ -169,7 +169,7 @@ where
     }
 }
 
-impl<'a, S> Edge<'a, S>
+impl<'a, S: ?Sized> Edge<'a, S>
 where
     S: GraphStorage,
 {
@@ -409,7 +409,7 @@ where
     }
 }
 
-impl<'a, S> Edge<'a, S>
+impl<'a, S: ?Sized> Edge<'a, S>
 where
     S: DirectedGraphStorage,
 {
@@ -544,7 +544,7 @@ where
     }
 }
 
-impl<S> Edge<'_, S>
+impl<S: ?Sized> Edge<'_, S>
 where
     S: GraphStorage,
     S::EdgeWeight: Clone,
@@ -612,7 +612,7 @@ where
 /// assert_eq!(ab.weight_mut(), &mut "A → B");
 /// ```
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct EdgeMut<'a, S>
+pub struct EdgeMut<'a, S: ?Sized>
 where
     S: GraphStorage,
 {
@@ -624,7 +624,7 @@ where
     v: NodeId,
 }
 
-impl<'a, S> EdgeMut<'a, S>
+impl<'a, S: ?Sized> EdgeMut<'a, S>
 where
     S: GraphStorage,
 {
@@ -776,7 +776,7 @@ where
     }
 }
 
-impl<'a, S> EdgeMut<'a, S>
+impl<'a, S: ?Sized> EdgeMut<'a, S>
 where
     S: DirectedGraphStorage,
 {
@@ -825,7 +825,7 @@ where
     }
 }
 
-impl<S> EdgeMut<'_, S>
+impl<S: ?Sized> EdgeMut<'_, S>
 where
     S: GraphStorage,
     S::EdgeWeight: Clone,

@@ -1,14 +1,14 @@
 use alloc::collections::BTreeSet;
 
 use petgraph_core::{
-    edge::{marker::GraphDirectionality, EdgeMut},
+    edge::{EdgeMut, marker::GraphDirectionality},
     node::NodeMut,
-    storage::RetainableGraphStorage,
+    storage::GraphStoragePrune,
 };
 
-use crate::{closure::Closures, DinoStorage};
+use crate::{DinoStorage, closure::Closures};
 
-impl<N, E, D> RetainableGraphStorage for DinoStorage<N, E, D>
+impl<N, E, D> GraphStoragePrune for DinoStorage<N, E, D>
 where
     D: GraphDirectionality,
 {
