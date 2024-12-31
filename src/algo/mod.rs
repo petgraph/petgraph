@@ -50,6 +50,7 @@ pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use min_spanning_tree::min_spanning_tree;
 pub use page_rank::page_rank;
 pub use simple_paths::all_simple_paths;
+pub use wfc_color::wfc_color;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///

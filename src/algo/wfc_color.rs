@@ -18,7 +18,7 @@ use std::collections::HashMap;
 /// use petgraph::Graph;
 /// use petgraph::Undirected;
 /// use std::collections::HashMap;
-/// use petgraph::algo::wfc_color::wfc_color;
+/// use petgraph::algo::wfc_color;
 ///
 /// let mut graph = Graph::<(), (), Undirected>::new_undirected();
 /// let a = graph.add_node(());
