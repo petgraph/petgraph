@@ -2,7 +2,9 @@ use error_stack::Result;
 
 use super::GraphStorage;
 use crate::{DetachedEdge, DetachedNode};
-pub trait GraphStorageFromParts: GraphStorage + Sized {
+
+// TODO: this shouldn't be a trait. I think?
+pub trait FromGraphStorage: GraphStorage + Sized {
     /// Convert an existing graph into the current graph storage type.
     ///
     /// This takes an existing graph storage implementation and converts it into the current

@@ -1,6 +1,7 @@
 use super::r#mut::GraphStorageMut;
 use crate::{edge::EdgeMut, node::NodeMut, storage::GraphStorage};
 
+// TODO: this shouldn't be a trait? I think
 /// Graph storage, which can retain nodes and edges based on a predicate.
 pub trait GraphStoragePrune: GraphStorageMut {
     /// Retains all nodes and edges for which the predicate returns `true`.

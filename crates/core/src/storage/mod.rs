@@ -42,7 +42,8 @@ use error_stack::Context;
 
 pub use self::{
     auxiliary::AuxiliaryGraphStorage,
-    parts::{GraphStorageFromParts, GraphStorageIntoParts},
+    r#mut::{DirectedGraphStorageMut, GraphStorageMut},
+    parts::{FromGraphStorage, GraphStorageIntoParts},
     prune::GraphStoragePrune,
 };
 use crate::{

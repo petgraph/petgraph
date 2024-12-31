@@ -6,46 +6,6 @@ use crate::{
 };
 
 pub trait GraphStorageMut: GraphStorage {
-    /// Return the next node identifier for the given attribute.
-    ///
-    /// This is used to generate new node identifiers and should not be called by a user directly
-    /// and is instead used by the [`Graph`] type to generate a new identifier that is then used
-    /// during [`Graph::insert_node`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinoStorage;
-    ///
-    /// let mut storage = DinoStorage::<(), (), Directed>::new();
-    ///
-    /// // `DinoStorage` uses `ManagedGraphId` for both node and edge identifiers,
-    /// // so we must use `NoValue` here.
-    /// let a = storage.next_node_id(NoValue::new());
-    /// let b = storage.next_node_id(NoValue::new());
-    ///
-    /// assert_eq!(a, b);
-    ///
-    /// storage.insert_node(a, ()).unwrap();
-    ///
-    /// let c = storage.next_node_id(NoValue::new());
-    ///
-    /// assert_ne!(a, c);
-    /// ```
-    ///
-    /// # Implementation Notes
-    ///
-    /// When implementing this function, it is important to ensure that the returned identifier is
-    /// stable, and unique and must ensure that the returned identifier is not already in use.
-    ///
-    /// Stable meaning that repeated calls to this function (without any other changes to the graph)
-    /// should return the same identifier.
-    ///
-    /// The implementation of this function must also be fast, as it is called every time a new node
-    /// is inserted and must be pure, meaning that it must not have any side-effects.
-    fn next_node_id(&self) -> NodeId;
-
     /// Inserts a new node into the graph.
     ///
     /// # Example
@@ -68,42 +28,14 @@ pub trait GraphStorageMut: GraphStorage {
     ///
     /// Returns an error if a node with the given identifier already exists, or if any of the
     /// constraints (depending on the implementation) are violated.
-    fn insert_node(
+    fn insert_node(&mut self, weight: Self::NodeWeight) -> Result<NodeMut<Self>, Self::Error> {
+        self.insert_node_with(|_| weight)
+    }
+
+    fn insert_node_with(
         &mut self,
-        id: NodeId,
-
-        weight: Self::NodeWeight,
+        weight: impl FnOnce(NodeId) -> Self::NodeWeight,
     ) -> Result<NodeMut<Self>, Self::Error>;
-
-    /// Return the next edge identifier for the given attribute.
-    ///
-    /// This is used to generate new edge identifiers and should not be called by a user directly
-    /// and is instead used by the [`Graph`] type to generate a new identifier that is then used
-    /// during [`Graph::insert_edge`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use petgraph_core::{attributes::NoValue, edge::marker::Directed, storage::GraphStorage};
-    /// use petgraph_dino::DinoStorage;
-    ///
-    /// let mut storage = DinoStorage::<u8, (), Directed>::new();
-    ///
-    /// // `DinoStorage` uses `ManagedGraphId` for both node and edge identifiers,
-    /// // so we must use `NoValue` here.
-    /// let id = storage.next_node_id(NoValue::new());
-    /// storage.insert_node(id, 1).unwrap();
-    /// #
-    /// # assert_eq!(storage.node(&id).unwrap().weight(), &1);
-    /// ```
-    ///
-    /// # Implementation Notes
-    ///
-    /// All the same notes as [`Self::next_node_id`] apply here as well.
-    ///
-    /// [`Graph`]: crate::graph::Graph
-    /// [`Graph::insert_edge`]: crate::graph::Graph::insert_edge
-    fn next_edge_id(&self) -> EdgeId;
 
     /// Inserts a new edge into the graph.
     ///
@@ -140,11 +72,20 @@ pub trait GraphStorageMut: GraphStorage {
     /// but some implementations may choose to allow parallel edges.
     fn insert_edge(
         &mut self,
-        id: EdgeId,
-        weight: Self::EdgeWeight,
+        source: NodeId,
+        target: NodeId,
 
-        u: NodeId,
-        v: NodeId,
+        weight: Self::EdgeWeight,
+    ) -> Result<EdgeMut<Self>, Self::Error> {
+        self.insert_edge_with(source, target, |_| weight)
+    }
+
+    fn insert_edge_with(
+        &mut self,
+        source: NodeId,
+        target: NodeId,
+
+        weight: impl FnOnce(EdgeId) -> Self::EdgeWeight,
     ) -> Result<EdgeMut<Self>, Self::Error>;
 
     /// Removes the node with the given identifier from the graph.
