@@ -36,7 +36,7 @@ use crate::visit::Walker;
 
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
-pub use coloring::dsatur_coloring;
+pub use coloring::{dsatur_coloring, wfc_coloring};
 pub use dijkstra::dijkstra;
 pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
@@ -50,7 +50,6 @@ pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use min_spanning_tree::min_spanning_tree;
 pub use page_rank::page_rank;
 pub use simple_paths::all_simple_paths;
-pub use wfc_color::wfc_color;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///
