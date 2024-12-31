@@ -11,22 +11,22 @@ use core::marker::PhantomData;
 
 use error_stack::Result;
 use petgraph_core::{
+    DirectedGraph, Graph, GraphDirectionality,
     edge::marker::{Directed, Undirected},
+    graph::AuxiliaryGraphStorage,
     node::NodeId,
-    storage::AuxiliaryGraphStorage,
-    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
 use self::r#impl::AStarImpl;
 pub use self::{error::AStarError, heuristic::GraphHeuristic, measure::AStarMeasure};
 use super::{
+    ShortestDistance, ShortestPath,
     common::{
         connections::Connections,
         cost::{Cost, DefaultCost, GraphCost},
         route::{DirectRoute, Route},
         transit::PredecessorMode,
     },
-    ShortestDistance, ShortestPath,
 };
 use crate::{polyfill::IteratorExt, shortest_paths::common::connections::NodeConnections};
 
@@ -64,7 +64,7 @@ impl AStar<Directed, DefaultCost, ()> {
     /// ```
     /// use numi::borrow::Moo;
     /// use petgraph_algorithms::shortest_paths::{AStar, ShortestPath};
-    /// use petgraph_core::{edge::marker::Directed, GraphStorage, Node};
+    /// use petgraph_core::{GraphStorage, Node, edge::marker::Directed};
     /// use petgraph_dino::{DiDinoGraph, DinoStorage};
     ///
     /// // TODO: heuristic utils
@@ -116,7 +116,7 @@ where
 {
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> AStar<D, F, H>
     where
-        S: GraphStorage,
+        S: Graph,
         F: GraphCost<S>,
     {
         AStar {
@@ -129,7 +129,7 @@ where
 
     pub fn with_heuristic<S, I>(self, heuristic: I) -> AStar<D, E, I>
     where
-        S: GraphStorage,
+        S: Graph,
         I: GraphHeuristic<S>,
     {
         AStar {
@@ -150,7 +150,7 @@ impl<E, H> AStar<Directed, E, H> {
         intermediates: PredecessorMode,
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
-        S: DirectedGraphStorage,
+        S: DirectedGraph,
         E: GraphCost<S>,
         E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
@@ -176,7 +176,7 @@ impl<E, H> AStar<Undirected, E, H> {
         intermediates: PredecessorMode,
     ) -> Result<AStarImpl<'graph, 'this, S, E, H, impl Connections<'graph, S> + 'this>, AStarError>
     where
-        S: GraphStorage,
+        S: Graph,
         E: GraphCost<S>,
         E::Value: AStarMeasure,
         H: GraphHeuristic<S, Value = E::Value>,
@@ -198,7 +198,7 @@ impl<E, H> AStar<Undirected, E, H> {
 // For now, while more code this is more flexible and more readable to the reader.
 impl<S, E, H> ShortestPath<S> for AStar<Undirected, E, H>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -266,7 +266,7 @@ where
 
 impl<S, E, H> ShortestDistance<S> for AStar<Undirected, E, H>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -335,7 +335,7 @@ where
 
 impl<S, E, H> ShortestPath<S> for AStar<Directed, E, H>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,
@@ -403,7 +403,7 @@ where
 
 impl<S, E, H> ShortestDistance<S> for AStar<Directed, E, H>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,

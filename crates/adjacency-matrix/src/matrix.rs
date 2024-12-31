@@ -3,11 +3,11 @@ use core::marker::PhantomData;
 use fixedbitset::FixedBitSet;
 use petgraph_core::{
     edge::{
-        marker::{Directed, GraphDirectionality, Undirected},
         Edge,
+        marker::{Directed, GraphDirectionality, Undirected},
     },
+    graph::{DirectedGraph, Graph},
     id::{LinearGraphId, LinearGraphIdMapper},
-    storage::{DirectedGraphStorage, GraphStorage},
 };
 
 // Thanks to: https://stackoverflow.com/a/27088560/9077988
@@ -31,7 +31,7 @@ pub struct Mutable;
 
 pub struct AdjacencyMatrix<'a, S, D = Directed, T = Frozen>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeId: LinearGraphId<Storage = S>,
     D: GraphDirectionality,
 {
@@ -47,7 +47,7 @@ where
 
 impl<'a, S, D, T> AdjacencyMatrix<'a, S, D, T>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeId: LinearGraphId<Storage = S>,
     D: GraphDirectionality,
 {
@@ -81,7 +81,7 @@ where
 
 impl<'a, S, D> AdjacencyMatrix<'a, S, D, Mutable>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeId: LinearGraphId<Storage = S>,
     D: GraphDirectionality,
 {
@@ -102,7 +102,7 @@ where
 
 impl<'a, S> AdjacencyMatrix<'a, S, Undirected, Mutable>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeId: LinearGraphId<Storage = S>,
 {
     pub fn new_undirected(storage: &'a S) -> Self {
@@ -123,7 +123,7 @@ where
 
 impl<'a, S> AdjacencyMatrix<'a, S, Directed, Mutable>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
     S::NodeId: LinearGraphId<Storage = S>,
 {
     pub fn new_directed(storage: &'a S) -> Self {
@@ -145,7 +145,7 @@ where
 
 impl<'a, S, D> AdjacencyMatrix<'a, S, D, Frozen>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeId: LinearGraphId<Storage = S>,
     D: GraphDirectionality,
 {

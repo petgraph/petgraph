@@ -23,7 +23,7 @@ use core::{
 
 use crate::{
     edge::{Direction, Edge},
-    storage::{DirectedGraphStorage, GraphStorage},
+    graph::{DirectedGraph, Graph},
 };
 
 /// ID of a node in a graph.
@@ -120,7 +120,7 @@ impl NodeId {
 /// ```
 pub struct Node<'a, S: ?Sized>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     storage: &'a S,
 
@@ -130,7 +130,7 @@ where
 
 impl<S: ?Sized> PartialEq for Node<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeWeight: PartialEq,
 {
     fn eq(&self, other: &Node<'_, S>) -> bool {
@@ -140,14 +140,14 @@ where
 
 impl<S: ?Sized> Eq for Node<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeWeight: Eq,
 {
 }
 
 impl<S: ?Sized> PartialOrd for Node<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeWeight: PartialOrd,
 {
     fn partial_cmp(&self, other: &Node<'_, S>) -> Option<core::cmp::Ordering> {
@@ -157,7 +157,7 @@ where
 
 impl<S: ?Sized> Ord for Node<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeWeight: Ord,
 {
     fn cmp(&self, other: &Node<'_, S>) -> core::cmp::Ordering {
@@ -167,7 +167,7 @@ where
 
 impl<S: ?Sized> Hash for Node<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeWeight: Hash,
 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -177,18 +177,18 @@ where
 
 impl<S: ?Sized> Clone for Node<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<S: ?Sized> Copy for Node<'_, S> where S: GraphStorage {}
+impl<S: ?Sized> Copy for Node<'_, S> where S: Graph {}
 
 impl<S: ?Sized> Debug for Node<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeWeight: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -201,7 +201,7 @@ where
 
 impl<'a, S: ?Sized> Node<'a, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     /// Creates a new node.
     ///
@@ -292,7 +292,7 @@ where
 
 impl<'a, S: ?Sized> Node<'a, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     /// Returns an iterator over the node's neighbours.
     ///
@@ -398,7 +398,7 @@ where
     #[must_use]
     pub const fn change_storage_unchecked<T>(self, storage: &'a T) -> Node<'a, T>
     where
-        T: GraphStorage<NodeWeight = S::NodeWeight>,
+        T: Graph<NodeWeight = S::NodeWeight>,
     {
         Node {
             storage,
@@ -410,7 +410,7 @@ where
 
 impl<'a, S: ?Sized> Node<'a, S>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
 {
     /// Returns an iterator over the node's neighbours in the given direction.
     ///
@@ -497,7 +497,7 @@ where
 
 impl<S: ?Sized> Node<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeWeight: Clone,
 {
     /// Detaches the node from the graph.
@@ -560,7 +560,7 @@ where
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeMut<'a, S: ?Sized>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     id: NodeId,
 
@@ -569,7 +569,7 @@ where
 
 impl<'a, S: ?Sized> NodeMut<'a, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     /// Creates a new node.
     ///
@@ -671,7 +671,7 @@ where
     #[must_use]
     pub fn change_storage_unchecked<T>(self) -> NodeMut<'a, T>
     where
-        T: GraphStorage<NodeWeight = S::NodeWeight>,
+        T: Graph<NodeWeight = S::NodeWeight>,
     {
         NodeMut {
             id: self.id,
@@ -682,7 +682,7 @@ where
 
 impl<S: ?Sized> NodeMut<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeWeight: Clone,
 {
     /// Detaches the node from the graph.

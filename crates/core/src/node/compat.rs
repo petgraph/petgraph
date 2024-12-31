@@ -3,13 +3,13 @@
 
 use crate::{
     deprecated::visit::NodeRef,
+    graph::Graph,
     node::{Node, NodeId},
-    storage::GraphStorage,
 };
 
 impl<S> NodeRef for Node<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     type NodeId = NodeId;
     type Weight = S::NodeWeight;

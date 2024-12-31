@@ -42,9 +42,9 @@ use error_stack::Context;
 
 pub use self::{
     auxiliary::AuxiliaryGraphStorage,
-    r#mut::{DirectedGraphStorageMut, GraphStorageMut},
-    parts::{FromGraphStorage, GraphStorageIntoParts},
-    prune::GraphStoragePrune,
+    r#mut::{DirectedGraphMut, GraphMut},
+    parts::{FromGraph, GraphIntoParts},
+    prune::GraphRetain,
 };
 use crate::{
     edge::{Direction, Edge, EdgeId},
@@ -129,7 +129,7 @@ use crate::{
 /// [`Graph::new`]: crate::graph::Graph::new
 /// [`Graph::new_in`]: crate::graph::Graph::new_in
 /// [`Graph::with_capacity`]: crate::graph::Graph::with_capacity
-pub trait GraphStorage {
+pub trait Graph {
     /// The weight of an edge.
     ///
     /// No constraints are enforced on this type (except that it needs to be `Sized`), but
@@ -142,18 +142,7 @@ pub trait GraphStorage {
     /// The error type used by the graph.
     ///
     /// Some operations on a graph may fail, for example during insertion of a node or edge.
-    /// This error (which needs to be an `error-stack` context) will be returned in a [`Report`] if
-    /// any of these operations fail.
-    ///
-    /// # Implementation Notes
-    ///
-    /// Instead of being able to specify a different error type for each operation, we only allow
-    /// for a single error type.
-    /// This is very intentional, as error-stack allows us to layer errors on top of each other,
-    /// meaning that a more specific error may be wrapped in this more general error type.
-    ///
-    /// [`Report`]: error_stack::Report
-    type Error: Error;
+    type Error;
 
     /// The weight of a node.
     ///
@@ -703,7 +692,7 @@ pub trait GraphStorage {
 /// ```
 ///
 /// [`Graph`]: crate::graph::Graph
-pub trait DirectedGraphStorage: GraphStorage {
+pub trait DirectedGraph: Graph {
     /// Returns an iterator over all directed edges between the source and target node.
     ///
     /// This will return an iterator over all directed edges between the source and target node,

@@ -1,14 +1,14 @@
 use core::hash::Hash;
 
 use petgraph_core::{
-    edge::{marker::Directed, Direction},
+    DirectedGraph, Edge, EdgeMut, Node, NodeMut,
+    edge::{Direction, marker::Directed},
     node::NodeId,
-    DirectedGraphStorage, Edge, EdgeMut, Node, NodeMut,
 };
 
 use crate::EntryStorage;
 
-impl<NK, NV, EK, EV> DirectedGraphStorage for EntryStorage<NK, NV, EK, EV, Directed>
+impl<NK, NV, EK, EV> DirectedGraph for EntryStorage<NK, NV, EK, EV, Directed>
 where
     NK: Hash,
     EK: Hash,

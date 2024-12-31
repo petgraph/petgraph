@@ -1,5 +1,5 @@
 use numi::borrow::Moo;
-use petgraph_core::{Edge, GraphStorage, Node};
+use petgraph_core::{Edge, Graph, Node};
 
 pub fn cost<S, T>(closure: impl Fn(Edge<S>) -> Moo<T>) -> impl Fn(Edge<S>) -> Moo<T> {
     closure
@@ -9,7 +9,7 @@ pub fn heuristic<S, T>(
     closure: impl for<'graph> Fn(Node<'graph, S>, Node<'graph, S>) -> Moo<'graph, T>,
 ) -> impl for<'graph> Fn(Node<'graph, S>, Node<'graph, S>) -> Moo<'graph, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     closure
 }
@@ -20,8 +20,8 @@ mod test {
     use petgraph_dino::DiDinoGraph;
 
     use crate::shortest_paths::{
-        common::closures::{cost, heuristic},
         AStar, Dijkstra, ShortestPath,
+        common::closures::{cost, heuristic},
     };
 
     #[test]

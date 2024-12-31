@@ -10,27 +10,27 @@ use core::marker::PhantomData;
 
 use error_stack::Result;
 use petgraph_core::{
+    DirectedGraph, Graph,
     edge::marker::{Directed, Undirected},
+    graph::SequentialGraphStorage,
     node::NodeId,
-    storage::SequentialGraphStorage,
-    DirectedGraphStorage, Graph, GraphStorage,
 };
 
 use self::r#impl::{
-    init_directed_edge_distance, init_directed_edge_predecessor, init_undirected_edge_distance,
-    init_undirected_edge_predecessor, FloydWarshallImpl,
+    FloydWarshallImpl, init_directed_edge_distance, init_directed_edge_predecessor,
+    init_undirected_edge_distance, init_undirected_edge_predecessor,
 };
 pub use self::{
     error::{FloydWarshallError, NegativeCycle},
     measure::FloydWarshallMeasure,
 };
 use super::{
+    Cost, ShortestDistance, ShortestPath,
     common::{
         cost::{DefaultCost, GraphCost},
         route::{DirectRoute, Route},
         transit::PredecessorMode,
     },
-    Cost, ShortestDistance, ShortestPath,
 };
 
 /// An implementation of the Floyd-Warshall shortest path algorithm.
@@ -167,7 +167,7 @@ impl<D, E> FloydWarshall<D, E> {
     /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> FloydWarshall<D, F>
     where
-        S: GraphStorage,
+        S: Graph,
         F: GraphCost<S>,
     {
         FloydWarshall {
@@ -179,7 +179,7 @@ impl<D, E> FloydWarshall<D, E> {
 
 impl<S, E> ShortestPath<S> for FloydWarshall<Undirected, E>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -251,7 +251,7 @@ where
 
 impl<S, E> ShortestDistance<S> for FloydWarshall<Undirected, E>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -330,7 +330,7 @@ where
 
 impl<S, E> ShortestPath<S> for FloydWarshall<Directed, E>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {
@@ -403,7 +403,7 @@ where
 
 impl<S, E> ShortestDistance<S> for FloydWarshall<Directed, E>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {

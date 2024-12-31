@@ -1,14 +1,14 @@
 use either::Either;
 use petgraph_core::{
     edge::{Direction, Edge, EdgeId, EdgeMut},
+    graph::{DirectedGraph, Graph},
     node::{Node, NodeId, NodeMut},
-    storage::{DirectedGraphStorage, GraphStorage},
 };
 
 use crate::{
+    DinoStorage, Directed,
     iter::directed::NodeDirectedConnectionsIter,
     node::{NodeClosures, NodeSlab},
-    DinoStorage, Directed,
 };
 
 fn directed_edges_between<N>(
@@ -25,7 +25,7 @@ fn directed_edges_between<N>(
         .flat_map(|(source, target)| source.closures.edges_between_directed(&target.closures))
 }
 
-impl<N, E> DirectedGraphStorage for DinoStorage<N, E, Directed> {
+impl<N, E> DirectedGraph for DinoStorage<N, E, Directed> {
     fn directed_edges_between(
         &self,
         source: NodeId,

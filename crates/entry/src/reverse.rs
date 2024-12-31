@@ -1,11 +1,10 @@
 use core::hash::Hash;
 
 use petgraph_core::{
-    storage::reverse::ReverseGraphStorage, Edge, EdgeMut, GraphDirectionality, GraphStorage, Node,
-    NodeMut,
+    Edge, EdgeMut, Graph, GraphDirectionality, Node, NodeMut, graph::reverse::ReverseGraphStorage,
 };
 
-use crate::{hash::ValueHash, EntryStorage};
+use crate::{EntryStorage, hash::ValueHash};
 
 impl<NK, NV, EK, EV, D> ReverseGraphStorage for EntryStorage<NK, NV, EK, EV, D>
 where

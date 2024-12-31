@@ -9,19 +9,19 @@ use alloc::vec::Vec;
 
 use error_stack::Result;
 use petgraph_core::{
+    DirectedGraph, Graph, GraphDirectionality,
     edge::marker::{Directed, Undirected},
     node::NodeId,
-    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
 use self::r#impl::ShortestPathFasterImpl;
 pub use self::{error::BellmanFordError, measure::BellmanFordMeasure};
 use super::{
+    Cost, DirectRoute, Route, ShortestDistance, ShortestPath,
     common::{
         cost::{DefaultCost, GraphCost},
         transit::PredecessorMode,
     },
-    Cost, DirectRoute, Route, ShortestDistance, ShortestPath,
 };
 use crate::{polyfill::IteratorExt, shortest_paths::common::connections::NodeConnections};
 
@@ -194,7 +194,7 @@ where
     /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> BellmanFord<D, F>
     where
-        S: GraphStorage,
+        S: Graph,
         F: GraphCost<S>,
     {
         BellmanFord {
@@ -214,7 +214,7 @@ where
     ///
     /// ```
     /// use petgraph_algorithms::shortest_paths::{
-    ///     bellman_ford::CandidateOrder, BellmanFord, ShortestPath,
+    ///     BellmanFord, ShortestPath, bellman_ford::CandidateOrder,
     /// };
     /// use petgraph_dino::DiDinoGraph;
     ///
@@ -282,7 +282,7 @@ where
 
 impl<S, E> ShortestPath<S> for BellmanFord<Undirected, E>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -350,7 +350,7 @@ where
 
 impl<S, E> ShortestDistance<S> for BellmanFord<Undirected, E>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -420,7 +420,7 @@ where
 
 impl<S, E> ShortestPath<S> for BellmanFord<Directed, E>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -478,7 +478,7 @@ where
 
 impl<S, E> ShortestDistance<S> for BellmanFord<Directed, E>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {

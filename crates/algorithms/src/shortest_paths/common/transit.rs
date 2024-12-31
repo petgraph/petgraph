@@ -3,9 +3,9 @@ use core::{hash::BuildHasher, iter};
 
 use hashbrown::{HashMap, HashSet};
 use petgraph_core::{
+    Graph, Node,
+    graph::{AuxiliaryGraphStorage, auxiliary::SecondaryGraphStorage},
     node::NodeId,
-    storage::{auxiliary::SecondaryGraphStorage, AuxiliaryGraphStorage},
-    GraphStorage, Node,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -56,7 +56,7 @@ pub(in crate::shortest_paths) fn reconstruct_paths_between<'a, 'graph, S, H>(
     target: Node<'graph, S>,
 ) -> impl Iterator<Item = Vec<Node<'graph, S>>> + 'a
 where
-    S: GraphStorage,
+    S: Graph,
     H: BuildHasher,
 {
     let mut seen = HashSet::new();

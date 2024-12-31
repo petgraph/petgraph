@@ -1,14 +1,14 @@
 use alloc::vec::Vec;
 
 use numi::borrow::Moo;
-use petgraph_core::{Edge, GraphStorage};
+use petgraph_core::{Edge, Graph};
 use petgraph_dino::DiDinoGraph;
-use petgraph_utils::{graph, GraphCollection};
+use petgraph_utils::{GraphCollection, graph};
 
 use crate::shortest_paths::{
-    common::tests::{expected, Expect, TestCase},
-    dijkstra::Dijkstra,
     ShortestPath,
+    common::tests::{Expect, TestCase, expected},
+    dijkstra::Dijkstra,
 };
 
 graph!(
@@ -102,7 +102,7 @@ fn random_directed_expect_from(nodes: &random::NodeCollection) -> Vec<Expect<usi
 
 fn edge_cost<S>(edge: Edge<S>) -> Moo<'_, usize>
 where
-    S: GraphStorage,
+    S: Graph,
     S::EdgeWeight: AsRef<[u8]>,
 {
     Moo::Owned(edge.weight().as_ref().len())

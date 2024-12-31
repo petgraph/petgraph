@@ -57,7 +57,7 @@ pub mod dijkstra;
 pub mod floyd_warshall;
 
 use error_stack::{Context, Result};
-use petgraph_core::{node::NodeId, Graph, GraphStorage};
+use petgraph_core::{Graph, node::NodeId};
 
 pub use self::{
     astar::AStar,
@@ -125,7 +125,7 @@ pub mod utilities {
 /// ```
 pub trait ShortestPath<S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     /// The cost of the shortest path.
     type Cost;
@@ -204,7 +204,7 @@ where
 // TODO: example?
 pub trait ShortestDistance<S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     /// The cost of the shortest path.
     type Cost;

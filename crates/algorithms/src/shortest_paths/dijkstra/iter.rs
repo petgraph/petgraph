@@ -4,12 +4,12 @@ use core::mem;
 use error_stack::{Report, Result};
 use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{
-    node::NodeId,
-    storage::{
-        auxiliary::{FrequencyHint, Hints, OccupancyHint, PerformanceHint, SecondaryGraphStorage},
+    Graph, Node,
+    graph::{
         AuxiliaryGraphStorage,
+        auxiliary::{FrequencyHint, Hints, OccupancyHint, PerformanceHint, SecondaryGraphStorage},
     },
-    Graph, GraphStorage, Node,
+    node::NodeId,
 };
 
 use crate::shortest_paths::{
@@ -19,14 +19,14 @@ use crate::shortest_paths::{
         path::Path,
         queue::priority::{PriorityQueue, PriorityQueueItem},
         route::Route,
-        transit::{reconstruct_path_to, PredecessorMode},
+        transit::{PredecessorMode, reconstruct_path_to},
     },
-    dijkstra::{measure::DijkstraMeasure, DijkstraError},
+    dijkstra::{DijkstraError, measure::DijkstraMeasure},
 };
 
 pub(super) struct DijkstraIter<'graph: 'parent, 'parent, S, E, G>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -51,7 +51,7 @@ where
 
 impl<'graph: 'parent, 'parent, S, E, G> DijkstraIter<'graph, 'parent, S, E, G>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,
@@ -110,7 +110,7 @@ where
 
 impl<'graph: 'parent, 'parent, S, E, G> Iterator for DijkstraIter<'graph, 'parent, S, E, G>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
     G: Connections<'graph, S>,

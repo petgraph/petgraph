@@ -1,11 +1,11 @@
-use super::{DirectedGraphStorage, GraphStorage};
+use super::{DirectedGraph, Graph};
 use crate::{
     DetachedEdge, DetachedNode, EdgeMut, NodeMut,
     edge::{Direction, EdgeId},
     node::NodeId,
 };
 
-pub trait GraphStorageMut: GraphStorage {
+pub trait GraphMut: Graph {
     /// Inserts a new node into the graph.
     ///
     /// # Example
@@ -776,7 +776,7 @@ pub trait GraphStorageMut: GraphStorage {
     fn shrink_to_fit_edges(&mut self) {}
 }
 
-pub trait DirectedGraphStorageMut: DirectedGraphStorage {
+pub trait DirectedGraphMut: DirectedGraph {
     /// Returns an iterator over all directed edges between the source and target node with mutable
     /// weights.
     ///

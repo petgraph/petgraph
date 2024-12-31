@@ -3,29 +3,29 @@ use alloc::vec::Vec;
 use error_stack::{Report, Result};
 use numi::num::{identity::Zero, ops::AddRef};
 use petgraph_core::{
-    node::NodeId,
-    storage::{
-        auxiliary::{FrequencyHint, Hints, OccupancyHint, PerformanceHint, SecondaryGraphStorage},
+    Graph, Node,
+    graph::{
         AuxiliaryGraphStorage,
+        auxiliary::{FrequencyHint, Hints, OccupancyHint, PerformanceHint, SecondaryGraphStorage},
     },
-    Graph, GraphStorage, Node,
+    node::NodeId,
 };
 
 use crate::shortest_paths::{
-    astar::{error::AStarError, heuristic::GraphHeuristic, AStarMeasure},
+    Path,
+    astar::{AStarMeasure, error::AStarError, heuristic::GraphHeuristic},
     common::{
         connections::Connections,
         cost::{Cost, GraphCost},
         queue::priority::{PriorityQueue, PriorityQueueItem},
         route::{DirectRoute, Route},
-        transit::{reconstruct_path_to, PredecessorMode},
+        transit::{PredecessorMode, reconstruct_path_to},
     },
-    Path,
 };
 
 pub(super) struct AStarImpl<'graph: 'parent, 'parent, S, E, H, C>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: Ord,
 {
@@ -48,7 +48,7 @@ where
 
 impl<'graph: 'parent, 'parent, S, E, H, C> AStarImpl<'graph, 'parent, S, E, H, C>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: AStarMeasure,
     H: GraphHeuristic<S, Value = E::Value>,

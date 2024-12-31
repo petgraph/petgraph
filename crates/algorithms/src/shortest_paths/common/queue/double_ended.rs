@@ -7,11 +7,11 @@ use core::{
 use fxhash::FxBuildHasher;
 use hashbrown::HashSet;
 use numi::{cast::TryCastFrom, num::identity::Zero};
-use petgraph_core::{node::NodeId, GraphStorage, Node};
+use petgraph_core::{node::NodeId, Graph, Node};
 
 pub(in crate::shortest_paths) struct DoubleEndedQueueItem<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     node: Node<'graph, S>,
 
@@ -20,7 +20,7 @@ where
 
 impl<'graph, S, T> DoubleEndedQueueItem<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub(in crate::shortest_paths) fn node(&self) -> Node<'graph, S> {
         self.node
@@ -38,7 +38,7 @@ where
 // Newtype for VecDeque<T> to avoid exposing the VecDeque type as we may decide to reimplement this.
 pub(in crate::shortest_paths) struct DoubleEndedQueue<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     queue: VecDeque<DoubleEndedQueueItem<'graph, S, T>>,
     active: HashSet<NodeId, FxBuildHasher>,
@@ -46,7 +46,7 @@ where
 
 impl<'graph, S, T> DoubleEndedQueue<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub(in crate::shortest_paths) fn new() -> Self {
         Self {
@@ -148,7 +148,7 @@ where
 
 impl<'graph, S, T> DoubleEndedQueue<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub(in crate::shortest_paths) fn average_priority(&self) -> Option<T>
     where

@@ -57,7 +57,7 @@
 //! through compressed bitsets.
 //!
 //! ```rust
-//! use petgraph_core::{edge::marker::Directed, Graph};
+//! use petgraph_core::{Graph, edge::marker::Directed};
 //! use petgraph_dino::DinoStorage;
 //!
 //! let mut graph = Graph::<DinoStorage<_, _, Directed>>::new();
@@ -122,14 +122,12 @@ extern crate alloc;
 
 pub mod edge;
 mod error;
-pub(crate) mod graph;
+pub mod graph;
 pub mod node;
-pub mod storage;
 
 pub use crate::{
     edge::{DetachedEdge, Edge, EdgeMut, GraphDirectionality},
     error::Error,
-    graph::Graph,
+    graph::{DirectedGraph, Graph},
     node::{DetachedNode, Node, NodeMut},
-    storage::{DirectedGraphStorage, GraphStorage},
 };

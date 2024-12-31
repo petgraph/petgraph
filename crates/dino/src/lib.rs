@@ -53,8 +53,8 @@
 //!
 //! ```rust
 //! use petgraph_core::{
-//!     edge::marker::{Directed, Undirected},
 //!     Graph,
+//!     edge::marker::{Directed, Undirected},
 //! };
 //! use petgraph_dino::{DiDinoGraph, DinoGraph, DinoStorage, UnDinoGraph};
 //!
@@ -128,13 +128,13 @@ use core::fmt::{Debug, Display};
 use either::Either;
 use error_stack::{Context, Report, Result};
 use petgraph_core::{
-    edge::{
-        marker::{Directed, GraphDirectionality, Undirected},
-        DetachedEdge, EdgeId, EdgeMut,
-    },
-    node::{DetachedNode, NodeId, NodeMut},
-    storage::GraphStorage,
     Graph,
+    edge::{
+        DetachedEdge, EdgeId, EdgeMut,
+        marker::{Directed, GraphDirectionality, Undirected},
+    },
+    graph::Graph,
+    node::{DetachedNode, NodeId, NodeMut},
 };
 
 use crate::{
@@ -430,7 +430,7 @@ fn edges_between_undirected<N>(
         .flat_map(|(source, target)| source.closures.edges_between_undirected(&target.closures))
 }
 
-impl<N, E, D> GraphStorage for DinoStorage<N, E, D>
+impl<N, E, D> Graph for DinoStorage<N, E, D>
 where
     D: GraphDirectionality,
 {
@@ -473,8 +473,8 @@ where
 
         let edges = self.edges.into_iter().map(|edge| DetachedEdge {
             id: edge.id,
-            u: edge.source,
-            v: edge.target,
+            source: edge.source,
+            target: edge.target,
             weight: edge.weight,
         });
 

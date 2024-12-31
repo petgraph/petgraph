@@ -1,10 +1,10 @@
 use error_stack::Result;
 
-use super::GraphStorage;
+use super::Graph;
 use crate::{DetachedEdge, DetachedNode};
 
 // TODO: this shouldn't be a trait. I think?
-pub trait FromGraphStorage: GraphStorage + Sized {
+pub trait FromGraph: Graph + Sized {
     /// Convert an existing graph into the current graph storage type.
     ///
     /// This takes an existing graph storage implementation and converts it into the current
@@ -59,11 +59,11 @@ pub trait FromGraphStorage: GraphStorage + Sized {
     /// be fail-slow.
     // TODO: additionally should return a mapping!
     fn from_graph(
-        graph: impl GraphStorage<NodeWeight = Self::NodeWeight, EdgeWeight = Self::EdgeWeight>,
+        graph: impl Graph<NodeWeight = Self::NodeWeight, EdgeWeight = Self::EdgeWeight>,
     ) -> Result<Self, Self::Error>;
 }
 
-pub trait GraphStorageIntoParts: GraphStorage {
+pub trait GraphIntoParts: Graph {
     /// Convert the current graph storage into an iterable of nodes and edges.
     ///
     /// This is the reverse operation of [`Self::from_parts`], which takes an iterable of nodes and

@@ -1,9 +1,7 @@
 use alloc::vec;
 use core::hash::Hash;
 
-use petgraph_core::{
-    EdgeMut, GraphDirectionality, GraphStorage, NodeMut, storage::GraphStoragePrune,
-};
+use petgraph_core::{EdgeMut, Graph, GraphDirectionality, NodeMut, graph::GraphStoragePrune};
 
 use crate::EntryStorage;
 

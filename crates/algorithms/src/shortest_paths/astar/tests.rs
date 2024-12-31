@@ -3,9 +3,9 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 use numi::borrow::Moo;
 use ordered_float::NotNan;
-use petgraph_core::{edge::marker::Directed, Edge, GraphStorage, Node};
+use petgraph_core::{Edge, Graph, Node, edge::marker::Directed};
 use petgraph_dino::{DiDinoGraph, DinoStorage};
-use petgraph_utils::{graph, GraphCollection};
+use petgraph_utils::{GraphCollection, graph};
 
 use crate::shortest_paths::{AStar, ShortestDistance, ShortestPath};
 
@@ -76,7 +76,7 @@ graph!(
 
 const fn no_heuristic<'a, S>(_: Node<'a, S>, _: Node<'a, S>) -> Moo<'a, usize>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     Moo::Owned(0)
 }
@@ -184,7 +184,7 @@ fn manhattan_distance<'graph, S>(
     target: Node<'graph, S>,
 ) -> Moo<'graph, NotNan<f32>>
 where
-    S: GraphStorage<NodeWeight = Point>,
+    S: Graph<NodeWeight = Point>,
 {
     let source = source.weight();
     let target = target.weight();
@@ -197,7 +197,7 @@ where
 
 fn ensure_not_nan<S>(edge: Edge<S>) -> Moo<'_, NotNan<f32>>
 where
-    S: GraphStorage<EdgeWeight = f32>,
+    S: Graph<EdgeWeight = f32>,
 {
     let weight = NotNan::new(*edge.weight()).expect("weight should be a number");
 
@@ -267,7 +267,7 @@ graph!(factory(inconsistent) => DiDinoGraph<&'static str, usize>;
 
 fn admissible_inconsistent<'a, S>(source: Node<'a, S>, _target: Node<'a, S>) -> Moo<'a, usize>
 where
-    S: GraphStorage,
+    S: Graph,
     S::NodeWeight: AsRef<str>,
 {
     match source.weight().as_ref() {

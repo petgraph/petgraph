@@ -1,9 +1,9 @@
 use numi::borrow::Moo;
-use petgraph_core::{GraphStorage, Node};
+use petgraph_core::{Graph, Node};
 
 pub trait GraphHeuristic<S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     type Value;
 
@@ -12,7 +12,7 @@ where
 
 impl<S, F, T> GraphHeuristic<S> for F
 where
-    S: GraphStorage,
+    S: Graph,
     F: for<'a> Fn(Node<'a, S>, Node<'a, S>) -> Moo<'a, T>,
 {
     type Value = T;

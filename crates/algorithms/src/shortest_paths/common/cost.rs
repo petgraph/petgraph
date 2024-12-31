@@ -1,7 +1,7 @@
 use core::{borrow::Borrow, fmt::Display};
 
 use numi::borrow::Moo;
-use petgraph_core::{Edge, GraphStorage};
+use petgraph_core::{Edge, Graph};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Cost<T>(T);
@@ -56,7 +56,7 @@ pub struct DefaultCost;
 
 pub trait GraphCost<S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     type Value;
 
@@ -65,7 +65,7 @@ where
 
 impl<S, F, T> GraphCost<S> for F
 where
-    S: GraphStorage,
+    S: Graph,
     F: Fn(Edge<S>) -> Moo<T>,
 {
     type Value = T;
@@ -77,7 +77,7 @@ where
 
 impl<S> GraphCost<S> for DefaultCost
 where
-    S: GraphStorage,
+    S: Graph,
 {
     type Value = S::EdgeWeight;
 
@@ -89,21 +89,21 @@ where
 #[cfg(test)]
 mod tests {
     use numi::borrow::Moo;
-    use petgraph_core::{edge::marker::Directed, Edge, GraphStorage};
+    use petgraph_core::{Edge, Graph, edge::marker::Directed};
     use petgraph_dino::DinoStorage;
 
     use crate::shortest_paths::common::cost::{DefaultCost, GraphCost};
 
     fn needs_cost_fn<S, F, T>(_: F)
     where
-        S: GraphStorage,
+        S: Graph,
         F: GraphCost<S, Value = T>,
     {
     }
 
     fn maybe_edge_cost<S>(edge: Edge<S>) -> Moo<'_, usize>
     where
-        S: GraphStorage,
+        S: Graph,
         S::EdgeWeight: AsRef<[u8]>,
     {
         edge.weight().as_ref().len().into()

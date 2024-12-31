@@ -2,9 +2,9 @@ use core::iter::once;
 
 use hashbrown::HashSet;
 use petgraph_core::{
-    edge::{marker::Directed, DetachedEdge, Direction, EdgeId},
+    edge::{DetachedEdge, Direction, EdgeId, marker::Directed},
+    graph::Graph,
     node::{DetachedNode, Node, NodeId, NodeMut},
-    storage::GraphStorage,
 };
 
 use crate::{DinoGraph, DinoStorage};

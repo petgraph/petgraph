@@ -1,6 +1,6 @@
-use crate::{Edge, EdgeMut, GraphStorage, Node, NodeMut};
+use crate::{Edge, EdgeMut, Graph, Node, NodeMut};
 
-pub trait ReverseGraphStorage: GraphStorage {
+pub trait ReverseGraphStorage: Graph {
     type NodeKey;
     type EdgeKey;
 

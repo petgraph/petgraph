@@ -3,13 +3,13 @@ use core::{
     hash::Hash,
 };
 
-use petgraph_core::{GraphStorage, Node};
+use petgraph_core::{Graph, Node};
 
 use crate::shortest_paths::common::{cost::Cost, path::Path};
 
 pub struct Route<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     path: Path<'graph, S>,
 
@@ -18,7 +18,7 @@ where
 
 impl<'graph, S, T> Route<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub const fn new(path: Path<'graph, S>, cost: Cost<T>) -> Self {
         Self { path, cost }
@@ -59,7 +59,7 @@ static_assertions::assert_impl_all!(Route<'_, petgraph_dino::DinoStorage<(), ()>
 
 impl<'graph, S, T> Debug for Route<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: Debug,
     T: Debug,
 {
@@ -73,7 +73,7 @@ where
 
 impl<S, T> Display for Route<'_, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     T: Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -86,7 +86,7 @@ where
 
 impl<'graph, S, T> Clone for Route<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     T: Clone,
 {
     fn clone(&self) -> Self {
@@ -99,7 +99,7 @@ where
 
 impl<'graph, S, T> PartialEq for Route<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Path<'graph, S>: PartialEq,
     T: PartialEq,
 {
@@ -110,7 +110,7 @@ where
 
 impl<'graph, S, T> Eq for Route<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Path<'graph, S>: Eq,
     T: Eq,
 {
@@ -118,7 +118,7 @@ where
 
 impl<'graph, S, T> PartialOrd for Route<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Path<'graph, S>: PartialOrd,
     T: PartialOrd,
 {
@@ -130,7 +130,7 @@ where
 
 impl<'graph, S, T> Ord for Route<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Path<'graph, S>: Ord,
     T: Ord,
 {
@@ -141,7 +141,7 @@ where
 
 impl<'graph, S, T> Hash for Route<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Path<'graph, S>: Hash,
     T: Hash,
 {
@@ -152,7 +152,7 @@ where
 
 pub struct DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     source: Node<'graph, S>,
     target: Node<'graph, S>,
@@ -162,7 +162,7 @@ where
 
 impl<'graph, S, T> DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub const fn new(source: Node<'graph, S>, target: Node<'graph, S>, cost: Cost<T>) -> Self {
         Self {
@@ -212,7 +212,7 @@ static_assertions::assert_impl_all!(DirectRoute<'_, petgraph_dino::DinoStorage<(
 
 impl<'graph, S, T> Debug for DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: Debug,
     T: Debug,
 {
@@ -227,7 +227,7 @@ where
 
 impl<S, T> Display for DirectRoute<'_, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     T: Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -242,7 +242,7 @@ where
 
 impl<'graph, S, T> Clone for DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     T: Clone,
 {
     fn clone(&self) -> Self {
@@ -256,7 +256,7 @@ where
 
 impl<'graph, S, T> PartialEq for DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: PartialEq,
     T: PartialEq,
 {
@@ -267,7 +267,7 @@ where
 
 impl<'graph, S, T> Eq for DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: Eq,
     T: Eq,
 {
@@ -275,7 +275,7 @@ where
 
 impl<'graph, S, T> PartialOrd for DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: PartialOrd,
     T: PartialOrd,
 {
@@ -291,7 +291,7 @@ where
 
 impl<'graph, S, T> Ord for DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: Ord,
     T: Ord,
 {
@@ -302,7 +302,7 @@ where
 
 impl<'graph, S, T> Hash for DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: Hash,
     T: Hash,
 {
@@ -313,7 +313,7 @@ where
 
 impl<'graph, S, T> From<Route<'graph, S, T>> for DirectRoute<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
     T: Clone,
 {
     fn from(route: Route<'graph, S, T>) -> Self {

@@ -6,11 +6,11 @@ use core::{
     iter::once,
 };
 
-use petgraph_core::{GraphStorage, Node};
+use petgraph_core::{Graph, Node};
 
 pub struct Path<'graph, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     source: Node<'graph, S>,
     target: Node<'graph, S>,
@@ -20,7 +20,7 @@ where
 
 impl<'graph, S> Path<'graph, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     #[must_use]
     pub fn new(
@@ -87,7 +87,7 @@ static_assertions::assert_impl_all!(Path<'_, petgraph_dino::DinoStorage<(), ()>>
 
 impl<'graph, S> Debug for Path<'graph, S>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -101,7 +101,7 @@ where
 
 impl<S> Display for Path<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         Display::fmt(&self.source.id(), f)?;
@@ -116,7 +116,7 @@ where
 
 impl<S> Clone for Path<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     fn clone(&self) -> Self {
         Self {
@@ -129,7 +129,7 @@ where
 
 impl<'graph, S> PartialEq for Path<'graph, S>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -140,14 +140,14 @@ where
 
 impl<'graph, S> Eq for Path<'graph, S>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: Eq,
 {
 }
 
 impl<'graph, S> PartialOrd for Path<'graph, S>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -161,7 +161,7 @@ where
 
 impl<'graph, S> Ord for Path<'graph, S>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: Ord,
 {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -175,7 +175,7 @@ where
 
 impl<'graph, S> Hash for Path<'graph, S>
 where
-    S: GraphStorage,
+    S: Graph,
     Node<'graph, S>: Hash,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -185,7 +185,7 @@ where
 
 impl<'graph, S> IntoIterator for Path<'graph, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     type IntoIter = alloc::vec::IntoIter<Node<'graph, S>>;
     type Item = Node<'graph, S>;

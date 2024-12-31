@@ -2,21 +2,21 @@ use alloc::vec::Vec;
 use core::array;
 
 use petgraph_core::{
+    Graph,
     edge::{
-        marker::{Directed, Undirected},
         EdgeId,
+        marker::{Directed, Undirected},
     },
     node::NodeId,
-    Graph, GraphStorage,
 };
 use petgraph_dino::{DiDinoGraph, DinoStorage};
-use petgraph_utils::{graph, GraphCollection};
+use petgraph_utils::{GraphCollection, graph};
 
 use super::BellmanFord;
 use crate::shortest_paths::{
-    bellman_ford::error::BellmanFordError,
-    common::tests::{expected, TestCase},
     ShortestPath,
+    bellman_ford::error::BellmanFordError,
+    common::tests::{TestCase, expected},
 };
 
 graph!(
@@ -86,7 +86,7 @@ fn negative_cycle_heuristic() {
 
 fn cycle_graph<const N: usize, S>() -> (Graph<S>, [NodeId; N], [EdgeId; N])
 where
-    S: GraphStorage<NodeWeight = usize, EdgeWeight = f32>,
+    S: Graph<NodeWeight = usize, EdgeWeight = f32>,
 {
     let mut graph = Graph::new();
 
@@ -103,7 +103,7 @@ where
 
 fn complete_graph<const N: usize, S>() -> (Graph<S>, [NodeId; N], Vec<EdgeId>)
 where
-    S: GraphStorage<NodeWeight = usize, EdgeWeight = f32>,
+    S: Graph<NodeWeight = usize, EdgeWeight = f32>,
 {
     let mut graph = Graph::new();
 
@@ -122,7 +122,7 @@ where
 
 fn path_graph<const N: usize, S>() -> (Graph<S>, [NodeId; N], Vec<EdgeId>)
 where
-    S: GraphStorage<NodeWeight = usize, EdgeWeight = f32>,
+    S: Graph<NodeWeight = usize, EdgeWeight = f32>,
 {
     let mut graph = Graph::new();
 

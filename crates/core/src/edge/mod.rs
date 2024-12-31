@@ -25,12 +25,12 @@ use core::fmt::{Debug, Display, Formatter};
 
 pub use self::{direction::Direction, marker::GraphDirectionality};
 use crate::{
-    DirectedGraphStorage,
+    DirectedGraph,
+    graph::Graph,
     node::{Node, NodeId},
-    storage::GraphStorage,
 };
 
-type DetachedStorageEdge<S> = DetachedEdge<<S as GraphStorage>::EdgeWeight>;
+type DetachedGraphEdge<S> = DetachedEdge<<S as Graph>::EdgeWeight>;
 
 /// ID of an edge in a graph.
 ///
@@ -131,39 +131,39 @@ impl EdgeId {
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Edge<'a, S: ?Sized>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     storage: &'a S,
 
     id: EdgeId,
 
-    u: NodeId,
-    v: NodeId,
+    source: NodeId,
+    target: NodeId,
 
     weight: &'a S::EdgeWeight,
 }
 
 impl<S: ?Sized> Clone for Edge<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<S: ?Sized> Copy for Edge<'_, S> where S: GraphStorage {}
+impl<S: ?Sized> Copy for Edge<'_, S> where S: Graph {}
 
 impl<S: ?Sized> Debug for Edge<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::EdgeWeight: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Edge")
             .field("id", &self.id)
-            .field("u", &self.u)
-            .field("v", &self.v)
+            .field("source", &self.source)
+            .field("target", &self.target)
             .field("weight", &self.weight)
             .finish()
     }
@@ -171,7 +171,7 @@ where
 
 impl<'a, S: ?Sized> Edge<'a, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     /// Create a new edge.
     ///
@@ -225,19 +225,19 @@ where
         id: EdgeId,
         weight: &'a S::EdgeWeight,
 
-        u: NodeId,
-        v: NodeId,
+        source: NodeId,
+        target: NodeId,
     ) -> Self {
-        debug_assert!(storage.contains_node(u));
-        debug_assert!(storage.contains_node(v));
+        debug_assert!(storage.contains_node(source));
+        debug_assert!(storage.contains_node(target));
 
         Self {
             storage,
 
             id,
 
-            u,
-            v,
+            source,
+            target,
 
             weight,
         }
@@ -302,7 +302,7 @@ where
     /// ```
     #[must_use]
     pub const fn endpoint_ids(&self) -> (NodeId, NodeId) {
-        (self.u, self.v)
+        (self.source, self.target)
     }
 
     /// Get the endpoints of this edge.
@@ -345,11 +345,11 @@ where
     #[must_use]
     pub fn endpoints(&self) -> (Node<'a, S>, Node<'a, S>) {
         (
-            self.storage.node(self.u).expect(
+            self.storage.node(self.source).expect(
                 "corrupted storage or violated contract upon creation of this edge; the endpoint \
                  node must be active in the same storage as this edge",
             ),
-            self.storage.node(self.v).expect(
+            self.storage.node(self.target).expect(
                 "corrupted storage or violated contract upon creation of this edge; the endpoint \
                  node must be active in the same storage as this edge",
             ),
@@ -394,15 +394,15 @@ where
     #[must_use]
     pub const fn change_storage_unchecked<T>(self, storage: &'a T) -> Edge<'a, T>
     where
-        T: GraphStorage<EdgeWeight = S::EdgeWeight>,
+        T: Graph<EdgeWeight = S::EdgeWeight>,
     {
         Edge {
             storage,
 
             id: self.id,
 
-            u: self.u,
-            v: self.v,
+            source: self.source,
+            target: self.target,
 
             weight: self.weight,
         }
@@ -411,7 +411,7 @@ where
 
 impl<'a, S: ?Sized> Edge<'a, S>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
 {
     /// Get the source node id of this edge.
     ///
@@ -435,7 +435,7 @@ where
     /// ```
     #[must_use]
     pub const fn source_id(&self) -> NodeId {
-        self.u
+        self.source
     }
 
     /// Get the source node of this edge.
@@ -472,7 +472,7 @@ where
     /// [`Edge::new`] is violated.
     #[must_use]
     pub fn source(&self) -> Node<'a, S> {
-        self.storage.node(self.u).expect(
+        self.storage.node(self.source).expect(
             "corrupted storage or violated contract upon creation of this edge; the source node \
              must be active in the same storage as this edge",
         )
@@ -500,7 +500,7 @@ where
     /// assert_eq!(edge.target_id(), &b);
     /// ```
     pub const fn target_id(&self) -> NodeId {
-        self.v
+        self.target
     }
 
     /// Get the target node of this edge.
@@ -537,7 +537,7 @@ where
     /// [`Edge::new`] is violated.
     #[must_use]
     pub fn target(&self) -> Node<'a, S> {
-        self.storage.node(self.v).expect(
+        self.storage.node(self.target).expect(
             "corrupted storage or violated contract upon creation of this edge; the target node \
              must be active in the same storage as this edge",
         )
@@ -546,7 +546,7 @@ where
 
 impl<S: ?Sized> Edge<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::EdgeWeight: Clone,
 {
     /// Detach this edge from the graph.
@@ -583,8 +583,8 @@ where
     ///
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
-    pub fn detach(self) -> DetachedStorageEdge<S> {
-        DetachedEdge::new(self.id, self.weight.clone(), self.u, self.v)
+    pub fn detach(self) -> DetachedGraphEdge<S> {
+        DetachedEdge::new(self.id, self.weight.clone(), self.source, self.target)
     }
 }
 
@@ -614,19 +614,19 @@ where
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeMut<'a, S: ?Sized>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     id: EdgeId,
 
     weight: &'a mut S::EdgeWeight,
 
-    u: NodeId,
-    v: NodeId,
+    source: NodeId,
+    target: NodeId,
 }
 
 impl<'a, S: ?Sized> EdgeMut<'a, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     /// Create a new edge.
     ///
@@ -645,8 +645,13 @@ where
     ///
     /// [`Graph::edge_mut`]: crate::graph::Graph::edge_mut
     /// [`Graph::insert_edge`]: crate::graph::Graph::insert_edge
-    pub fn new(id: EdgeId, weight: &'a mut S::EdgeWeight, u: NodeId, v: NodeId) -> Self {
-        Self { id, weight, u, v }
+    pub fn new(id: EdgeId, source: NodeId, target: NodeId, weight: &'a mut S::EdgeWeight) -> Self {
+        Self {
+            id,
+            weight,
+            source,
+            target,
+        }
     }
 
     /// The unique id of the edge.
@@ -704,7 +709,7 @@ where
     /// ```
     #[must_use]
     pub const fn endpoint_ids(&self) -> (NodeId, NodeId) {
-        (self.u, self.v)
+        (self.source, self.target)
     }
 
     /// The weight of the edge.
@@ -763,22 +768,22 @@ where
     #[must_use]
     pub fn change_storage_unchecked<T>(self) -> EdgeMut<'a, T>
     where
-        T: GraphStorage<EdgeWeight = S::EdgeWeight>,
+        T: Graph<EdgeWeight = S::EdgeWeight>,
     {
         EdgeMut {
             id: self.id,
 
             weight: self.weight,
 
-            u: self.u,
-            v: self.v,
+            source: self.source,
+            target: self.target,
         }
     }
 }
 
 impl<'a, S: ?Sized> EdgeMut<'a, S>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
 {
     /// The source node id of the edge.
     ///
@@ -799,7 +804,7 @@ where
     /// ```
     #[must_use]
     pub const fn source_id(&self) -> NodeId {
-        self.u
+        self.source
     }
 
     /// The target node id of the edge.
@@ -821,13 +826,13 @@ where
     /// ```
     #[must_use]
     pub const fn target_id(&self) -> NodeId {
-        self.v
+        self.target
     }
 }
 
 impl<S: ?Sized> EdgeMut<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
     S::EdgeWeight: Clone,
 {
     /// Detaches the edge from the graph.
@@ -861,8 +866,8 @@ where
     ///
     /// [`Graph::from_parts`]: crate::graph::Graph::from_parts
     #[must_use]
-    pub fn detach(self) -> DetachedStorageEdge<S> {
-        DetachedEdge::new(self.id, self.weight.clone(), self.u, self.v)
+    pub fn detach(self) -> DetachedGraphEdge<S> {
+        DetachedEdge::new(self.id, self.weight.clone(), self.source, self.target)
     }
 }
 
@@ -899,9 +904,9 @@ pub struct DetachedEdge<W> {
     pub id: EdgeId,
 
     /// The `u` endpoint of the `(u, v)` pair of endpoints.
-    pub u: NodeId,
+    pub source: NodeId,
     /// The `v` endpoint of the `(u, v)` pair of endpoints.
-    pub v: NodeId,
+    pub target: NodeId,
 
     /// The weight of the edge.
     pub weight: W,
@@ -920,7 +925,12 @@ impl<W> DetachedEdge<W> {
     ///
     /// let edge = DetachedEdge::new(0, "A → B", 1, 2);
     /// ```
-    pub const fn new(id: EdgeId, weight: W, u: NodeId, v: NodeId) -> Self {
-        Self { id, u, v, weight }
+    pub const fn new(id: EdgeId, source: NodeId, target: NodeId, weight: W) -> Self {
+        Self {
+            id,
+            source,
+            target,
+            weight,
+        }
     }
 }

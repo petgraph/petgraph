@@ -1,17 +1,17 @@
 use core::marker::PhantomData;
 
 use petgraph_core::{
+    DirectedGraph, Edge, Graph, GraphDirectionality,
     edge::{
-        marker::{Directed, Undirected},
         Direction,
+        marker::{Directed, Undirected},
     },
     node::NodeId,
-    DirectedGraphStorage, Edge, GraphDirectionality, GraphStorage,
 };
 
 pub(in crate::shortest_paths) struct NodeConnections<'graph, S, D>
 where
-    S: GraphStorage,
+    S: Graph,
     D: GraphDirectionality,
 {
     storage: &'graph S,
@@ -20,7 +20,7 @@ where
 
 impl<'graph, S> NodeConnections<'graph, S, Directed>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub(in crate::shortest_paths) fn directed(storage: &'graph S) -> Self {
         Self {
@@ -32,7 +32,7 @@ where
 
 impl<'graph, S> NodeConnections<'graph, S, Undirected>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub(in crate::shortest_paths) fn undirected(storage: &'graph S) -> Self {
         Self {
@@ -44,14 +44,14 @@ where
 
 pub(in crate::shortest_paths) trait Connections<'a, S>
 where
-    S: GraphStorage + 'a,
+    S: Graph + 'a,
 {
     fn connections(&self, node: NodeId) -> impl Iterator<Item = Edge<'a, S>> + 'a;
 }
 
 impl<'graph, S> Connections<'graph, S> for NodeConnections<'graph, S, Directed>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
 {
     fn connections(&self, node: NodeId) -> impl Iterator<Item = Edge<'graph, S>> + 'graph {
         self.storage
@@ -61,7 +61,7 @@ where
 
 impl<'graph, S> Connections<'graph, S> for NodeConnections<'graph, S, Undirected>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     fn connections(&self, node: NodeId) -> impl Iterator<Item = Edge<'graph, S>> + 'graph {
         self.storage.node_connections(node)

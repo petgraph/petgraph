@@ -4,24 +4,24 @@
 use crate::{
     deprecated::visit::EdgeRef,
     edge::{Edge, EdgeId},
+    graph::Graph,
     node::NodeId,
-    storage::GraphStorage,
 };
 
 impl<S> EdgeRef for Edge<'_, S>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     type EdgeId = EdgeId;
     type NodeId = NodeId;
     type Weight = S::EdgeWeight;
 
     fn source(&self) -> Self::NodeId {
-        self.u
+        self.source
     }
 
     fn target(&self) -> Self::NodeId {
-        self.v
+        self.target
     }
 
     fn weight(&self) -> &Self::Weight {

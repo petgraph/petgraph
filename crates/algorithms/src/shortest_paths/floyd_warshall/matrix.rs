@@ -1,9 +1,9 @@
 use alloc::vec::Vec;
 
 use petgraph_core::{
+    Graph,
+    graph::{SequentialGraphStorage, sequential::GraphIdBijection},
     node::NodeId,
-    storage::{sequential::GraphIdBijection, SequentialGraphStorage},
-    Graph, GraphStorage,
 };
 
 enum MatrixIndexMapper<I> {
@@ -40,7 +40,7 @@ where
 
 pub(super) struct SlotMatrix<'graph, S, T>
 where
-    S: GraphStorage + 'graph,
+    S: Graph + 'graph,
 {
     mapper: MatrixIndexMapper<S::NodeIdBijection<'graph>>,
     matrix: Vec<Option<T>>,
@@ -49,7 +49,7 @@ where
 
 impl<'graph, S, T> SlotMatrix<'graph, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub(crate) fn new(graph: &'graph Graph<S>) -> Self {
         let length = graph.num_nodes();
@@ -120,7 +120,7 @@ impl<'a, T: ?Sized> Captures<'a> for T {}
 
 impl<'a, S, T> SlotMatrix<'a, S, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub(crate) fn diagonal(&self) -> impl Iterator<Item = Option<&T>> + Captures<'a> + '_ {
         let len = self.length;

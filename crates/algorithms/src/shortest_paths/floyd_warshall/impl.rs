@@ -5,18 +5,18 @@ use numi::{
     borrow::Moo,
     num::{checked::CheckedAdd, identity::Zero},
 };
-use petgraph_core::{node::NodeId, storage::SequentialGraphStorage, Graph, GraphStorage, Node};
+use petgraph_core::{Graph, Node, graph::SequentialGraphStorage, node::NodeId};
 
 use crate::shortest_paths::{
+    Path,
     common::{
         cost::{Cost, GraphCost},
         route::Route,
         transit::PredecessorMode,
     },
     floyd_warshall::{
-        error::FloydWarshallError, matrix::SlotMatrix, FloydWarshallMeasure, NegativeCycle,
+        FloydWarshallMeasure, NegativeCycle, error::FloydWarshallError, matrix::SlotMatrix,
     },
-    Path,
 };
 
 pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
@@ -25,7 +25,7 @@ pub(super) fn init_directed_edge_distance<'graph: 'this, 'this, S, E>(
     v: NodeId,
     value: Option<Moo<'this, E::Value>>,
 ) where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: Clone,
 {
@@ -38,7 +38,7 @@ pub(super) fn init_undirected_edge_distance<'graph: 'this, 'this, S, E>(
     v: NodeId,
     value: Option<Moo<'this, E::Value>>,
 ) where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: Clone,
 {
@@ -54,7 +54,7 @@ pub(super) fn init_directed_edge_predecessor<S>(
     u: NodeId,
     v: NodeId,
 ) where
-    S: GraphStorage,
+    S: Graph,
 {
     matrix.set(u, v, Some(u));
 }
@@ -64,7 +64,7 @@ pub(super) fn init_undirected_edge_predecessor<S>(
     u: NodeId,
     v: NodeId,
 ) where
-    S: GraphStorage,
+    S: Graph,
 {
     matrix.set(u, v, Some(u));
     matrix.set(v, u, Some(v));
@@ -76,7 +76,7 @@ fn reconstruct_path<S>(
     target: NodeId,
 ) -> Vec<NodeId>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     let mut path = Vec::new();
 
@@ -119,7 +119,7 @@ type InitEdgePredecessorFn<'graph, S> = fn(&mut SlotMatrix<'graph, S, NodeId>, N
 
 pub(super) struct FloydWarshallImpl<'graph: 'parent, 'parent, S, E>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
 {
     graph: &'graph Graph<S>,
@@ -136,7 +136,7 @@ where
 
 impl<'graph: 'parent, 'parent, S, E> FloydWarshallImpl<'graph, 'parent, S, E>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: FloydWarshallMeasure,
 {

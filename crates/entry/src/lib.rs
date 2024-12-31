@@ -13,15 +13,14 @@ extern crate alloc;
 use core::hash::Hash;
 
 use error_stack::{Report, ResultExt};
-use hashbrown::{hash_map::DefaultHashBuilder, HashMap};
+use hashbrown::{HashMap, hash_map::DefaultHashBuilder};
 use petgraph_core::{
+    DetachedEdge, DetachedNode, Edge, EdgeMut, Graph, GraphDirectionality, Node, NodeMut,
     edge::{
-        marker::{Directed, Undirected},
         EdgeId,
+        marker::{Directed, Undirected},
     },
     node::NodeId,
-    DetachedEdge, DetachedNode, Edge, EdgeMut, Graph, GraphDirectionality, GraphStorage, Node,
-    NodeMut,
 };
 use petgraph_dino::DinoStorage;
 
@@ -67,7 +66,7 @@ where
     hasher: DefaultHashBuilder,
 }
 
-impl<NK, NV, EK, EV, D> GraphStorage for EntryStorage<NK, NV, EK, EV, D>
+impl<NK, NV, EK, EV, D> Graph for EntryStorage<NK, NV, EK, EV, D>
 where
     D: GraphDirectionality,
     NK: Hash,

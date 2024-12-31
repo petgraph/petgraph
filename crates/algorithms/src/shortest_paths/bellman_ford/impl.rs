@@ -5,18 +5,18 @@ use error_stack::{Report, Result};
 use fxhash::FxBuildHasher;
 use hashbrown::HashMap;
 use numi::num::{identity::Zero, ops::AddRef};
-use petgraph_core::{node::NodeId, Graph, GraphStorage, Node};
+use petgraph_core::{Graph, Node, node::NodeId};
 
 use super::error::BellmanFordError;
 use crate::shortest_paths::{
-    bellman_ford::{measure::BellmanFordMeasure, CandidateOrder},
+    Cost, Path, Route,
+    bellman_ford::{CandidateOrder, measure::BellmanFordMeasure},
     common::{
         connections::Connections,
         cost::GraphCost,
         queue::double_ended::DoubleEndedQueue,
-        transit::{reconstruct_paths_between, PredecessorMode},
+        transit::{PredecessorMode, reconstruct_paths_between},
     },
-    Cost, Path, Route,
 };
 
 fn small_label_first<'graph, S, E>(
@@ -25,7 +25,7 @@ fn small_label_first<'graph, S, E>(
     queue: &mut DoubleEndedQueue<'graph, S, E::Value>,
 ) -> bool
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
 {
@@ -50,7 +50,7 @@ fn large_label_last<'graph, S, E>(
     queue: &mut DoubleEndedQueue<'graph, S, E::Value>,
 ) -> bool
 where
-    S: GraphStorage,
+    S: Graph,
     NodeId: Eq + Hash,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
@@ -144,7 +144,7 @@ impl Heuristic {
 
 pub(super) struct ShortestPathFasterImpl<'graph: 'parent, 'parent, S, E, G>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
 {
     graph: &'graph Graph<S>,
@@ -163,7 +163,7 @@ where
 
 impl<'graph: 'parent, 'parent, S, E, G> ShortestPathFasterImpl<'graph, 'parent, S, E, G>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: BellmanFordMeasure,
     G: Connections<'graph, S>,

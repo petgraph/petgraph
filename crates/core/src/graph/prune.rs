@@ -1,9 +1,9 @@
-use super::r#mut::GraphStorageMut;
-use crate::{edge::EdgeMut, node::NodeMut, storage::GraphStorage};
+use super::r#mut::GraphMut;
+use crate::{edge::EdgeMut, graph::Graph, node::NodeMut};
 
 // TODO: this shouldn't be a trait? I think
 /// Graph storage, which can retain nodes and edges based on a predicate.
-pub trait GraphStoragePrune: GraphStorageMut {
+pub trait GraphRetain: GraphMut {
     /// Retains all nodes and edges for which the predicate returns `true`.
     ///
     /// There are no guarantees about the order in which the predicate is called.

@@ -10,21 +10,21 @@ use core::marker::PhantomData;
 
 use error_stack::Result;
 use petgraph_core::{
+    DirectedGraph, Graph, GraphDirectionality,
     edge::marker::{Directed, Undirected},
+    graph::AuxiliaryGraphStorage,
     node::NodeId,
-    storage::AuxiliaryGraphStorage,
-    DirectedGraphStorage, Graph, GraphDirectionality, GraphStorage,
 };
 
 use self::iter::DijkstraIter;
 pub use self::{error::DijkstraError, measure::DijkstraMeasure};
 use super::{
+    ShortestDistance, ShortestPath,
     common::{
         cost::{DefaultCost, GraphCost},
         route::{DirectRoute, Route},
         transit::PredecessorMode,
     },
-    ShortestDistance, ShortestPath,
 };
 use crate::{polyfill::IteratorExt, shortest_paths::common::connections::NodeConnections};
 
@@ -162,7 +162,7 @@ where
     /// ```
     pub fn with_edge_cost<S, F>(self, edge_cost: F) -> Dijkstra<D, F>
     where
-        S: GraphStorage,
+        S: Graph,
         F: GraphCost<S>,
     {
         Dijkstra {
@@ -174,7 +174,7 @@ where
 
 impl<S, E> ShortestPath<S> for Dijkstra<Undirected, E>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -220,7 +220,7 @@ where
 
 impl<S, E> ShortestPath<S> for Dijkstra<Directed, E>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -256,7 +256,7 @@ where
 
 impl<S, E> ShortestDistance<S> for Dijkstra<Undirected, E>
 where
-    S: GraphStorage,
+    S: Graph,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {
@@ -304,7 +304,7 @@ where
 
 impl<S, E> ShortestDistance<S> for Dijkstra<Directed, E>
 where
-    S: DirectedGraphStorage,
+    S: DirectedGraph,
     E: GraphCost<S>,
     E::Value: DijkstraMeasure,
 {

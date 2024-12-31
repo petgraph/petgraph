@@ -3,7 +3,7 @@ use core::fmt::Debug;
 
 use error_stack::Result;
 use hashbrown::HashMap;
-use petgraph_core::{Graph, GraphStorage, Node};
+use petgraph_core::{Graph, Node};
 
 use crate::shortest_paths::{DirectRoute, Route, ShortestDistance, ShortestPath};
 
@@ -49,7 +49,7 @@ pub(in crate::shortest_paths) struct Expect<T> {
 
 pub(in crate::shortest_paths) struct TestCase<'a, S, A, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     graph: &'a Graph<S>,
     algorithm: &'a A,
@@ -58,7 +58,7 @@ where
 
 impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
-    S: GraphStorage,
+    S: Graph,
 {
     pub(crate) const fn new(
         graph: &'a Graph<S>,
@@ -75,7 +75,7 @@ where
 
 impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
-    S: GraphStorage,
+    S: Graph,
     A: ShortestPath<S, Cost = T>,
     T: PartialEq + Debug,
 {
@@ -124,7 +124,7 @@ where
 
 impl<'a, S, A, T> TestCase<'a, S, A, T>
 where
-    S: GraphStorage,
+    S: Graph,
     A: ShortestDistance<S, Cost = T>,
     T: PartialEq + Debug,
 {
