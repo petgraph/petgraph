@@ -2,7 +2,12 @@ use crate::visit::{IntoNeighbors, NodeCount, NodeIndexable, Visitable};
 use std::collections::HashMap;
 use std::hash::Hash;
 
-/// [Generic] Wave Function Collapse graph coloring algorithm.
+/// [Generic] Wave Function Collapse vertex coloring algorithm.
+/// https://arxiv.org/pdf/2108.09329
+///
+/// Complexity:
+///  - Best case: O(|V|(|V| + |E|))
+///  - Worst case: O(|V|² * (|V| + |E|))
 ///
 /// Compute a valid vertex coloring for an undirected graph using the Wave Function
 /// Collapse algorithm. The algorithm assigns colors (represented as usize values)
@@ -30,6 +35,12 @@ use std::hash::Hash;
 ///     (b, c),
 ///     (c, a),
 /// ]);
+///
+/// // a ----- b
+/// // \      /
+/// //   \  /
+/// //    c
+///
 ///
 /// let coloring = wfc_coloring(&graph);
 /// assert_ne!(coloring[&a], coloring[&b]); // Adjacent vertices have different colors
