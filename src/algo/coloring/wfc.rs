@@ -23,8 +23,7 @@ use std::hash::Hash;
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::Undirected;
+/// use petgraph::{Graph, Undirected};
 /// use std::collections::HashMap;
 /// use petgraph::algo::wfc_coloring;
 ///
