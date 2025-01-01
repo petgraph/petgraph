@@ -1152,9 +1152,19 @@ where
         T: GraphIndex,
         U: GraphIndex,
     {
+        // We can trust these values since GraphIndex is sealed.
         assert!(T::is_node_index() != U::is_node_index() || i.index() != j.index());
 
         // Allow two mutable indexes here -- they are nonoverlapping
+        //
+        // We know this will either use the IndexMut impl for NodeIndex or EdgeIndex since
+        // GraphIndex is only implemented for those two types. Both of those IndexMut
+        // implementations avoid stacked borrows violations by using
+        // util::index_mut_no_sb_invalidation which avoids materializing a reference to the whole
+        // slice.
+        //
+        // This approach is taken to avoid breaking changes. This is expected to be removed or
+        // replaced with a cleaner solution in https://github.com/petgraph/petgraph/pull/567.
         unsafe {
             let self_mut = self as *mut _;
             (
@@ -1870,7 +1880,7 @@ where
     Ix: IndexType,
 {
     fn index_mut(&mut self, index: NodeIndex<Ix>) -> &mut N {
-        &mut self.nodes[index.index()].weight
+        &mut crate::util::index_mut_no_sb_invalidation(&mut self.nodes, index.index()).weight
     }
 }
 
@@ -1897,7 +1907,7 @@ where
     Ix: IndexType,
 {
     fn index_mut(&mut self, index: EdgeIndex<Ix>) -> &mut E {
-        &mut self.edges[index.index()].weight
+        &mut crate::util::index_mut_no_sb_invalidation(&mut self.edges, index.index()).weight
     }
 }
 
@@ -1913,11 +1923,18 @@ where
 }
 
 /// A `GraphIndex` is a node or edge index.
-pub trait GraphIndex: Copy {
+pub trait GraphIndex: Copy + sealed::Sealed {
     #[doc(hidden)]
     fn index(&self) -> usize;
     #[doc(hidden)]
     fn is_node_index() -> bool;
+}
+
+mod sealed {
+    use super::{EdgeIndex, IndexType, NodeIndex};
+    pub trait Sealed {}
+    impl<Ix: IndexType> Sealed for NodeIndex<Ix> {}
+    impl<Ix: IndexType> Sealed for EdgeIndex<Ix> {}
 }
 
 impl<Ix: IndexType> GraphIndex for NodeIndex<Ix> {
