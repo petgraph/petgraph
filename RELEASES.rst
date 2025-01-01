@@ -1,5 +1,10 @@
-Version 0.6.6 (2024-12-31)
+Version 0.7.0 (2024-12-31)
 ==========================
+
+- Re-released version 0.6.6 with the correct version number, as it included a major update to an exposed crate (`#664`_).
+
+Version 0.6.6 (2024-12-31 - yanked)
+===================================
 
 - Add graph6 format encoder and decoder (`#658`_)
 - Dynamic Topological Sort algorithm support (`#675`_)
