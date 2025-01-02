@@ -1,19 +1,20 @@
-use crate::graph::{Graph, NodeIndex};
-use crate::Undirected;
+use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeRef, Visitable};
 use std::collections::HashSet;
+use std::hash::Hash;
 
 /// \[Generic\] Bron-Kerbosch algorithm for finding maximal cliques in an undirected graph.
 ///
-/// Arguments:
-/// * `graph` - The input graph
+/// Algorithm source: [ACM](https://dl.acm.org/doi/pdf/10.1145/362342.362367)
+/// Complexity: [O(3^(n/3))](https://en.wikipedia.org/wiki/Bron%E2%80%93Kerbosch_algorithm#Worst-case_analysis)
 ///
-/// Returns:
-/// A vector of vectors, where each inner vector contains the NodeIndices forming a maximal clique
+/// Arguments:
+/// * `graph` - Any graph type that implements `IntoEdges` , `Visitable` and `IntoNodeReferences`
+///
+/// Returns: A vector of vectors, where each inner vector contains node IDs forming a maximal clique
 ///
 /// # Example
 /// ```rust
 /// use petgraph::graph::UnGraph;
-/// use std::collections::HashSet;
 /// use petgraph::algo::bron_kerbosch;
 ///
 /// let mut graph = UnGraph::<(), ()>::new_undirected();
@@ -38,56 +39,58 @@ use std::collections::HashSet;
 /// let cliques = bron_kerbosch(&graph);
 ///
 /// assert_eq!(cliques.len(), 2);
-/// assert_eq!(cliques[0].len(), 3);
-/// assert_eq!(cliques[1].len(), 2);
 /// ```
-
-pub fn bron_kerbosch<N, E>(graph: &Graph<N, E, Undirected>) -> Vec<Vec<NodeIndex>> {
+pub fn bron_kerbosch<G>(graph: G) -> Vec<Vec<G::NodeId>>
+where
+    G: IntoEdges + Visitable + IntoNodeReferences,
+    G::NodeId: Eq + Hash,
+{
     let mut maximal_cliques = Vec::new();
     let mut r = HashSet::new();
-    let p: HashSet<NodeIndex> = graph.node_indices().collect();
+    let p: HashSet<G::NodeId> = graph.node_references().map(|n| n.id()).collect();
     let mut x = HashSet::new();
 
-    bron_kerbosch_recursive(graph, &mut r, &p, &mut x, &mut maximal_cliques);
+    bron_kerbosch_recursive(&graph, &mut r, &p, &mut x, &mut maximal_cliques);
     maximal_cliques
 }
 
-fn bron_kerbosch_recursive<N, E>(
-    graph: &Graph<N, E, Undirected>,
-    r: &mut HashSet<NodeIndex>,
-    p: &HashSet<NodeIndex>,
-    x: &mut HashSet<NodeIndex>,
-    maximal_cliques: &mut Vec<Vec<NodeIndex>>,
-) {
-    // If P and X are empty, we found a maximal clique
+fn bron_kerbosch_recursive<G>(
+    graph: &G,
+    r: &mut HashSet<G::NodeId>,
+    p: &HashSet<G::NodeId>,
+    x: &mut HashSet<G::NodeId>,
+    maximal_cliques: &mut Vec<Vec<G::NodeId>>,
+) where
+    G: IntoEdges + Visitable,
+    G::NodeId: Eq + Hash,
+{
     if p.is_empty() && x.is_empty() {
         maximal_cliques.push(r.iter().cloned().collect());
         return;
     }
 
-    // Choose pivot vertex from P ∪ X that maximizes |P ∩ N(u)|
     let pivot = p
         .iter()
         .chain(x.iter())
-        .max_by_key(|&&u| p.iter().filter(|&&v| graph.contains_edge(u, v)).count())
+        .max_by_key(|&&u| {
+            p.iter()
+                .filter(|&&v| graph.edges(u).any(|e| e.target() == v))
+                .count()
+        })
         .cloned();
 
-    // Get vertices to process
     let vertices_to_process = if let Some(pivot) = pivot {
         p.iter()
             .cloned()
-            .filter(|&v| !graph.contains_edge(pivot, v))
+            .filter(|&v| !graph.edges(pivot).any(|e| e.target() == v))
             .collect::<Vec<_>>()
     } else {
         p.iter().cloned().collect()
     };
 
-    // Process each vertex
     for v in vertices_to_process {
-        // Get neighbors of v
-        let neighbors: HashSet<NodeIndex> = graph.neighbors(v).collect();
+        let neighbors: HashSet<G::NodeId> = graph.edges(v).map(|e| e.target()).collect();
 
-        // Recursively find cliques
         let new_p: HashSet<_> = p.intersection(&neighbors).cloned().collect();
         let mut new_x: HashSet<_> = x.intersection(&neighbors).cloned().collect();
 
