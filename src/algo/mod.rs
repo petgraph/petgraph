@@ -6,6 +6,7 @@
 
 pub mod astar;
 pub mod bellman_ford;
+pub mod bron_kerbosch;
 pub mod coloring;
 pub mod dijkstra;
 pub mod dominators;
@@ -35,6 +36,7 @@ use crate::visit::Walker;
 
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
+pub use bron_kerbosch::bron_kerbosch;
 pub use coloring::dsatur_coloring;
 pub use dijkstra::dijkstra;
 pub use feedback_arc_set::greedy_feedback_arc_set;
