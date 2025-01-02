@@ -1,4 +1,4 @@
-use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeRef, Visitable};
+use crate::visit::{EdgeRef, GraphProp, IntoEdges, IntoNodeReferences, NodeRef, Visitable};
 use std::collections::HashSet;
 use std::hash::Hash;
 
@@ -10,7 +10,9 @@ use std::hash::Hash;
 /// Arguments:
 /// * `graph` - Any graph type that implements `IntoEdges` , `Visitable` and `IntoNodeReferences`
 ///
-/// Returns: A vector of vectors, where each inner vector contains node IDs forming a maximal clique
+/// Note: The algorithm only supports undirected graphs, and providing a directed graph will result in an error.
+///
+/// Returns: Result containing a vector of vectors, where each inner vector contains node IDs forming a maximal clique, or an error message.
 ///
 /// # Example
 /// ```rust
@@ -36,22 +38,27 @@ use std::hash::Hash;
 /// //  \   /
 /// //    b
 ///
-/// let cliques = bron_kerbosch(&graph);
+/// let cliques = bron_kerbosch(&graph)?;
 ///
 /// assert_eq!(cliques.len(), 2);
 /// ```
-pub fn bron_kerbosch<G>(graph: G) -> Vec<Vec<G::NodeId>>
+pub fn bron_kerbosch<G>(graph: G) -> Result<Vec<Vec<G::NodeId>>, String>
 where
-    G: IntoEdges + Visitable + IntoNodeReferences,
+    G: IntoEdges + Visitable + IntoNodeReferences + GraphProp,
     G::NodeId: Eq + Hash,
 {
+
+    if !graph.is_directed() {
+        return Err("Bron-Kerbosch doesn't support directed graphs".to_string());
+    }
+
     let mut maximal_cliques = Vec::new();
     let mut r = HashSet::new();
     let p: HashSet<G::NodeId> = graph.node_references().map(|n| n.id()).collect();
     let mut x = HashSet::new();
 
     bron_kerbosch_recursive(&graph, &mut r, &p, &mut x, &mut maximal_cliques);
-    maximal_cliques
+    Ok(maximal_cliques)
 }
 
 fn bron_kerbosch_recursive<G>(
