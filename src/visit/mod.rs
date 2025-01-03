@@ -64,6 +64,7 @@
 // so that they can use the trait template macros
 pub use self::filter::*;
 pub use self::reversed::*;
+pub use self::undirected_adaptor::*;
 
 #[macro_use]
 mod macros;
