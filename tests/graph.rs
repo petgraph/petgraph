@@ -14,7 +14,7 @@ use petgraph::algo::{
 };
 
 use petgraph::graph::node_index as n;
-use petgraph::graph::IndexType;
+use petgraph::graph::{GraphError, IndexType};
 
 use petgraph::algo::{astar, dijkstra, DfsSpace};
 use petgraph::visit::{
@@ -2458,4 +2458,13 @@ fn test_dominators_simple_fast() {
         None,
         "nodes that aren't reachable from the root do not have an idom"
     );
+}
+
+#[test]
+fn test_try_add_node() {
+    let mut graph = Graph::<(), (), Directed, u8>::with_capacity(256, 0);
+    for i in 0..255 {
+        assert_eq!(graph.try_add_node(()), Ok(i.into()));
+    }
+    assert_eq!(graph.try_add_node(()), Err(GraphError::NodeIxLimit));
 }

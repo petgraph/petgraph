@@ -276,6 +276,39 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
     }
 }
 
+/// The error type for fallible `Graph` operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GraphError {
+    /// The Graph is at the maximum number of nodes for its index.
+    NodeIxLimit,
+
+    /// The Graph is at the maximum number of edges for its index.
+    EdgeIxLimit,
+
+    /// The specified node is missing from the graph.
+    NodeMissed,
+
+    /// Node indices out of bounds.
+    NodeOutBounds,
+}
+
+impl fmt::Display for GraphError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            GraphError::NodeIxLimit => write!(
+                f,
+                "The Graph is at the maximum number of nodes for its index"
+            ),
+            GraphError::EdgeIxLimit => write!(
+                f,
+                "The Graph is at the maximum number of edges for its index."
+            ),
+            GraphError::NodeMissed => write!(f, "The specified node is missing from the graph."),
+            GraphError::NodeOutBounds => write!(f, "Node indices out of bounds."),
+        }
+    }
+}
+
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 ///
 /// `Graph` is parameterized over:
@@ -534,6 +567,28 @@ where
         assert!(<Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx);
         self.nodes.push(node);
         node_idx
+    }
+
+    /// Try to add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// Returns `Err` if the Graph is at the maximum number of nodes for its index.
+    pub fn try_add_node(&mut self, weight: N) -> Result<NodeIndex<Ix>, GraphError> {
+        let node = Node {
+            weight,
+            next: [EdgeIndex::end(), EdgeIndex::end()],
+        };
+        let node_idx = NodeIndex::new(self.nodes.len());
+        // check for max capacity, except if we use usize
+        if <Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx {
+            self.nodes.push(node);
+            Ok(node_idx)
+        } else {
+            Err(GraphError::NodeIxLimit)
+        }
     }
 
     /// Access the weight for node `a`.
