@@ -557,7 +557,7 @@ where
     ///
     /// Return the index of the new node.
     ///
-    /// **Panics** if the Graph is at the maximum number of nodes for its index
+    /// **Panics** if the `Graph` is at the maximum number of nodes for its index
     /// type (N/A if usize).
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         self.try_add_node(weight).unwrap()
@@ -569,7 +569,7 @@ where
     ///
     /// Return the index of the new node.
     ///
-    /// Returns `Err` if the Graph is at the maximum number of nodes for its index.
+    /// Return [`GraphError::NodeIxLimit`] if the `Graph` is at the maximum number of nodes for its index.
     pub fn try_add_node(&mut self, weight: N) -> Result<NodeIndex<Ix>, GraphError> {
         let node = Node {
             weight,
@@ -609,7 +609,7 @@ where
     /// Computes in **O(1)** time.
     ///
     /// **Panics** if any of the nodes don't exist.<br>
-    /// **Panics** if the Graph is at the maximum number of edges for its index
+    /// **Panics** if the `Graph` is at the maximum number of edges for its index
     /// type (N/A if usize).
     ///
     /// **Note:** `Graph` allows adding parallel (“duplicate”) edges. If you want
@@ -631,7 +631,7 @@ where
     ///
     /// Possible errors:
     /// - [`GraphError::NodeOutBounds`] - if any of the nodes don't exist.<br>
-    /// - [`GraphError::EdgeIxLimit`] if the Graph is at the maximum number of edges for its index
+    /// - [`GraphError::EdgeIxLimit`] if the `Graph` is at the maximum number of edges for its index
     ///     type (N/A if usize).
     ///
     /// Note: Graph allows adding parallel (“duplicate”) edges. If you want
@@ -694,7 +694,7 @@ where
     ///
     /// Possible errors:
     /// - [`GraphError::NodeOutBounds`] - if any of the nodes don't exist.<br>
-    /// - [`GraphError::EdgeIxLimit`] if the Graph is at the maximum number of edges for its index
+    /// - [`GraphError::EdgeIxLimit`] if the `Graph` is at the maximum number of edges for its index
     ///     type (N/A if usize).
     pub fn try_update_edge(
         &mut self,
