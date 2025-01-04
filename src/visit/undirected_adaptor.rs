@@ -7,7 +7,7 @@ use crate::Direction;
 
 /// An edge direction removing graph adaptor.
 #[derive(Copy, Clone, Debug)]
-pub struct UndirectedAdaptor<G>(G);
+pub struct UndirectedAdaptor<G>(pub G);
 
 impl<G: GraphRef> GraphRef for UndirectedAdaptor<G> {}
 
