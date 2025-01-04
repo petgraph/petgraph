@@ -471,13 +471,35 @@ where
     /// Computes in **O(e')** time, where **e'** is the number of edges
     /// connected to `a` (and `b`, if the graph edges are undirected).
     ///
-    /// **Panics** if any of the nodes don't exist.
+    /// **Panics** if any of the nodes don't exist
+    /// or the stable graph is at the maximum number of edges for its index (when adding new edge).
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
+        self.try_update_edge(a, b, weight).unwrap()
+    }
+
+    /// Try to add or update an edge from `a` to `b`.
+    /// If the edge already exists, its weight is updated.
+    ///
+    /// Return the index of the affected edge.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to `a` (and `b`, if the graph edges are undirected).
+    ///
+    /// Possible errors:
+    /// - [`GraphError::NodeMissed`] - if any of the nodes don't exist.<br>
+    /// - [`GraphError::EdgeIxLimit`] if the `StableGraph` is at the maximum number of edges for its index
+    ///     type (N/A if usize).
+    pub fn try_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<EdgeIndex<Ix>, GraphError> {
         if let Some(ix) = self.find_edge(a, b) {
             self[ix] = weight;
-            return ix;
+            return Ok(ix);
         }
-        self.add_edge(a, b, weight)
+        self.try_add_edge(a, b, weight)
     }
 
     /// Remove an edge and return its edge weight, or `None` if it didn't exist.

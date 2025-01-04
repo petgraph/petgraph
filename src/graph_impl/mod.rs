@@ -679,6 +679,7 @@ where
     /// connected to `a` (and `b`, if the graph edges are undirected).
     ///
     /// **Panics** if any of the nodes doesn't exist.
+    /// or the graph is at the maximum number of edges for its index (when adding new edge)
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         self.try_update_edge(a, b, weight).unwrap()
     }
