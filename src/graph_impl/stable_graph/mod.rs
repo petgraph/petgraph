@@ -359,11 +359,10 @@ where
     /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         let res = self.try_add_edge(a, b, weight);
-        if res == Err(GraphError::NodeMissed) {
+        if let Err(GraphError::NodeMissed(i)) = res {
             panic!(
                 "StableGraph::add_edge: node index {} is not a node in the graph",
-                //i
-                0 // Temporary stub
+                i
             );
         }
         res.unwrap()
@@ -439,8 +438,8 @@ where
                     }
                 }
             };
-            if wrong_index.is_some() {
-                return Err(GraphError::NodeMissed);
+            if let Some(i) = wrong_index {
+                return Err(GraphError::NodeMissed(i));
             }
             self.edge_count += 1;
         }

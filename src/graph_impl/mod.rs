@@ -276,7 +276,7 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
     }
 }
 
-/// The error type for fallible `Graph` operations.
+/// The error type for fallible `Graph` & `StableGraph` operations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GraphError {
     /// The Graph is at the maximum number of nodes for its index.
@@ -285,8 +285,8 @@ pub enum GraphError {
     /// The Graph is at the maximum number of edges for its index.
     EdgeIxLimit,
 
-    /// The specified node is missing from the graph.
-    NodeMissed,
+    /// The node with the specified index is missing from the graph.
+    NodeMissed(usize),
 
     /// Node indices out of bounds.
     NodeOutBounds,
@@ -303,7 +303,9 @@ impl fmt::Display for GraphError {
                 f,
                 "The Graph is at the maximum number of edges for its index."
             ),
-            GraphError::NodeMissed => write!(f, "The specified node is missing from the graph."),
+            GraphError::NodeMissed(i) => {
+                write!(f, "The node with index {i} is missing from the graph.")
+            }
             GraphError::NodeOutBounds => write!(f, "Node indices out of bounds."),
         }
     }
