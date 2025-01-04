@@ -2468,3 +2468,19 @@ fn test_try_add_node() {
     }
     assert_eq!(graph.try_add_node(()), Err(GraphError::NodeIxLimit));
 }
+
+#[test]
+fn test_try_add_edge() {
+    let mut graph = Graph::<(), (), Directed, u8>::with_capacity(1, 512);
+    let a = graph.try_add_node(()).unwrap();
+
+    assert_eq!(
+        graph.try_add_edge(a.into(), 10.into(), ()),
+        Err(GraphError::NodeOutBounds)
+    );
+    for i in 0..255 {
+        assert_eq!(graph.try_add_edge(a, a, ()), Ok(i.into()));
+    }
+
+    assert_eq!(graph.try_add_edge(a, a, ()), Err(GraphError::EdgeIxLimit));
+}

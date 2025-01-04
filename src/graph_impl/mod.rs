@@ -646,6 +646,54 @@ where
         edge_idx
     }
 
+    /// Try to add an edge from a to b to the graph, with its associated
+    /// data weight.
+    ///
+    /// Return the index of the new edge.
+    ///
+    /// Computes in O(1) time.
+    ///
+    /// Possible errors:
+    /// - [`GraphError::NodeOutBounds`] - if any of the nodes don't exist.<br>
+    /// - [`GraphError::EdgeIxLimit`] if the Graph is at the maximum number of edges for its index
+    ///     type (N/A if usize).
+    ///
+    /// Note: Graph allows adding parallel (“duplicate”) edges. If you want
+    /// to avoid this, use [.update_edge(a, b, weight)](#method.update_edge) instead.
+    pub fn try_add_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<EdgeIndex<Ix>, GraphError> {
+        let edge_idx = EdgeIndex::new(self.edges.len());
+        if !(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx) {
+            return Err(GraphError::EdgeIxLimit);
+        }
+
+        let mut edge = Edge {
+            weight,
+            node: [a, b],
+            next: [EdgeIndex::end(); 2],
+        };
+        match index_twice(&mut self.nodes, a.index(), b.index()) {
+            Pair::None => return Err(GraphError::NodeOutBounds),
+            Pair::One(an) => {
+                edge.next = an.next;
+                an.next[0] = edge_idx;
+                an.next[1] = edge_idx;
+            }
+            Pair::Both(an, bn) => {
+                // a and b are different indices
+                edge.next = [an.next[0], bn.next[1]];
+                an.next[0] = edge_idx;
+                bn.next[1] = edge_idx;
+            }
+        }
+        self.edges.push(edge);
+        Ok(edge_idx)
+    }
+
     /// Add or update an edge from `a` to `b`.
     /// If the edge already exists, its weight is updated.
     ///
