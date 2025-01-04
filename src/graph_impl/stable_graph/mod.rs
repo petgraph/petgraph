@@ -272,7 +272,7 @@ where
     ///
     /// Return the index of the new node.
     ///
-    /// Returns `Err` if the `StableGraph` is at the maximum number of nodes for its index.
+    /// Return [`GraphError::NodeIxLimit`] if the `StableGraph` is at the maximum number of nodes for its index.
     pub fn try_add_node(&mut self, weight: N) -> Result<NodeIndex<Ix>, GraphError> {
         if self.free_node != NodeIndex::end() {
             let node_idx = self.free_node;
@@ -371,7 +371,7 @@ where
         res.unwrap()
     }
 
-    /// Add an edge from `a` to `b` to the graph, with its associated
+    /// Try to add an edge from `a` to `b` to the graph, with its associated
     /// data `weight`.
     ///
     /// Return the index of the new edge.
