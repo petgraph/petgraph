@@ -558,15 +558,7 @@ where
     /// **Panics** if the Graph is at the maximum number of nodes for its index
     /// type (N/A if usize).
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
-        let node = Node {
-            weight,
-            next: [EdgeIndex::end(), EdgeIndex::end()],
-        };
-        let node_idx = NodeIndex::new(self.nodes.len());
-        // check for max capacity, except if we use usize
-        assert!(<Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx);
-        self.nodes.push(node);
-        node_idx
+        self.try_add_node(weight).unwrap()
     }
 
     /// Try to add a node (also called vertex) with associated data `weight` to the graph.
@@ -621,29 +613,11 @@ where
     /// **Note:** `Graph` allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
-        let edge_idx = EdgeIndex::new(self.edges.len());
-        assert!(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx);
-        let mut edge = Edge {
-            weight,
-            node: [a, b],
-            next: [EdgeIndex::end(); 2],
-        };
-        match index_twice(&mut self.nodes, a.index(), b.index()) {
-            Pair::None => panic!("Graph::add_edge: node indices out of bounds"),
-            Pair::One(an) => {
-                edge.next = an.next;
-                an.next[0] = edge_idx;
-                an.next[1] = edge_idx;
-            }
-            Pair::Both(an, bn) => {
-                // a and b are different indices
-                edge.next = [an.next[0], bn.next[1]];
-                an.next[0] = edge_idx;
-                bn.next[1] = edge_idx;
-            }
+        let res = self.try_add_edge(a, b, weight);
+        if res == Err(GraphError::NodeOutBounds) {
+            panic!("Graph::add_edge: node indices out of bounds");
         }
-        self.edges.push(edge);
-        edge_idx
+        res.unwrap()
     }
 
     /// Try to add an edge from a to b to the graph, with its associated
