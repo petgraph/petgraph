@@ -397,6 +397,32 @@ fn update_edge() {
 }
 
 #[test]
+fn try_update_edge() {
+    {
+        let mut gr = Graph::new();
+        let a = gr.add_node("a");
+        let b = gr.add_node("b");
+        let e = gr.try_update_edge(a, b, 1).unwrap();
+        let f = gr.try_update_edge(a, b, 2).unwrap();
+        let _ = gr.try_update_edge(b, a, 3).unwrap();
+        assert_eq!(gr.edge_count(), 2);
+        assert_eq!(e, f);
+        assert_eq!(*gr.edge_weight(f).unwrap(), 2);
+    }
+
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("a");
+        let b = gr.add_node("b");
+        let e = gr.try_update_edge(a, b, 1).unwrap();
+        let f = gr.try_update_edge(b, a, 2).unwrap();
+        assert_eq!(gr.edge_count(), 1);
+        assert_eq!(e, f);
+        assert_eq!(*gr.edge_weight(f).unwrap(), 2);
+    }
+}
+
+#[test]
 fn dijk() {
     let mut g = Graph::new_undirected();
     let a = g.add_node("A");
