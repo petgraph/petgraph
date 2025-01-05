@@ -420,12 +420,16 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         old_weight.unwrap()
     }
 
-    /// Return true if there is an edge between `a` and `b`.
+    /// Return `true` if there is an edge between `a` and `b`.
     ///
-    /// **Panics** if any of the nodes don't exist.
+    /// If any of the nodes don't exist - returns `false`.
     pub fn has_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
         if let Some(p) = self.to_edge_position(a, b) {
-            return !self.node_adjacencies[p].is_null();
+            return self
+                .node_adjacencies
+                .get(p)
+                .map(|e| !e.is_null())
+                .unwrap_or(false);
         }
         false
     }
@@ -1402,6 +1406,20 @@ mod tests {
         assert!(g.has_edge(n2, n1));
         assert!(g.has_edge(n2, n3));
         assert!(g.has_edge(n2, n4));
+    }
+
+    #[test]
+    fn test_has_edge() {
+        let mut g = MatrixGraph::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, ());
+        g.add_edge(b, c, ());
+        assert!(g.has_edge(a, b));
+        assert!(g.has_edge(b, c));
+        assert!(!g.has_edge(a, c));
+        assert!(!g.has_edge(10.into(), 100.into())); // Non-existent nodes.
     }
 
     #[test]
