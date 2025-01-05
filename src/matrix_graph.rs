@@ -490,6 +490,19 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         old_weight.unwrap()
     }
 
+    /// Try to remove the edge from `a` to `b`.
+    ///
+    /// Return old value if present.
+    pub fn try_remove_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<E> {
+        let p = self.to_edge_position(a, b)?;
+        if let Some(entry) = self.node_adjacencies.get_mut(p) {
+            let old_weight = mem::take(entry).into()?;
+            self.nb_edges -= 1;
+            return Some(old_weight);
+        }
+        None
+    }
+
     /// Return `true` if there is an edge between `a` and `b`.
     ///
     /// If any of the nodes don't exist - returns `false`.
@@ -1994,5 +2007,18 @@ mod tests {
         assert_eq!(g.add_or_update_edge(10.into(), 20.into(), 5), Ok(None));
         assert!(g.has_edge(10.into(), 20.into()));
         assert!(g.node_capacity >= 20);
+    }
+
+    #[test]
+    fn test_remove_edge() {
+        let mut g = MatrixGraph::<char, u32>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, 1);
+        g.add_edge(b, c, 2);
+        assert_eq!(g.try_remove_edge(a, b), Some(1));
+        assert_eq!(g.try_remove_edge(a, b), None);
+        assert_eq!(g.try_remove_edge(a, c), None);
     }
 }
