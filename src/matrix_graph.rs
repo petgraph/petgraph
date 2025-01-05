@@ -421,7 +421,7 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         old_weight.into()
     }
 
-    /// try to update the edge from `a` to `b`, with its associated data `weight`.
+    /// Try to update the edge from `a` to `b`, with its associated data `weight`.
     ///
     /// Return the previous data, if any.
     ///
@@ -454,6 +454,26 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) {
         let old_edge_id = self.update_edge(a, b, weight);
         assert!(old_edge_id.is_none());
+    }
+
+    /// Add or update edge from `a` to `b` to the graph, with its associated
+    /// data `weight`.
+    ///
+    /// Return the previous data, if any.
+    ///
+    /// Computes in **O(1)** time, best case.
+    /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
+    ///
+    /// Possible errors:
+    /// - [`MatrixError::NodeMissed`] if any of the nodes don't exist.
+    pub fn add_or_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<Option<E>, MatrixError> {
+        self.extend_capacity_for_edge(a, b);
+        self.try_update_edge(a, b, weight)
     }
 
     /// Remove the edge from `a` to `b` to the graph.
@@ -1959,5 +1979,20 @@ mod tests {
             g.try_update_edge(10.into(), 20.into(), 5),
             Err(MatrixError::NodeMissed(10))
         );
+    }
+
+    #[test]
+    fn test_add_or_update_edge() {
+        let mut g = MatrixGraph::<char, u32>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        assert_eq!(g.add_or_update_edge(a, b, 1), Ok(None));
+        assert_eq!(g.add_or_update_edge(b, c, 2), Ok(None));
+        assert_eq!(g.add_or_update_edge(a, b, 10), Ok(Some(1)));
+        assert_eq!(g.add_or_update_edge(a, c, 33), Ok(None));
+        assert_eq!(g.add_or_update_edge(10.into(), 20.into(), 5), Ok(None));
+        assert!(g.has_edge(10.into(), 20.into()));
+        assert!(g.node_capacity >= 20);
     }
 }
