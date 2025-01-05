@@ -531,6 +531,14 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
             .expect("No edge found between the nodes.")
     }
 
+    /// Access the weight for edge from `a` to `b`.
+    ///
+    /// Return `None` if the edge doesn't exist.
+    pub fn get_edge_weight(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<&E> {
+        let p = self.to_edge_position(a, b)?;
+        self.node_adjacencies.get(p)?.as_ref()
+    }
+
     /// Access the weight for edge `e`, mutably.
     ///
     /// Also available with indexing syntax: `&mut graph[e]`.
@@ -543,6 +551,14 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
         self.node_adjacencies[p]
             .as_mut()
             .expect("No edge found between the nodes.")
+    }
+
+    /// Access the weight for edge from `a` to `b`, mutably.
+    ///
+    /// Return `None` if the edge doesn't exist.
+    pub fn get_edge_weight_mut(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<&mut E> {
+        let p = self.to_edge_position(a, b)?;
+        self.node_adjacencies.get_mut(p)?.as_mut()
     }
 
     /// Return an iterator of all nodes with an edge starting from `a`.
