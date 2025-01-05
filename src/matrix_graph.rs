@@ -1,6 +1,6 @@
 //! `MatrixGraph<N, E, Ty, NullN, NullE, Ix>` is a graph datastructure backed by an adjacency matrix.
 
-use alloc::{vec, vec::Vec};
+use alloc::{fmt, vec, vec::Vec};
 use core::{
     cmp,
     hash::BuildHasher,
@@ -187,6 +187,37 @@ not_zero_impls!(f32, f64);
 #[inline]
 pub fn node_index(ax: usize) -> NodeIndex {
     NodeIndex::new(ax)
+}
+
+/// The error type for fallible `MatrixGraph` operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatrixError {
+    /// The `MatrixGraph` is at the maximum number of nodes for its index.
+    NodeIxLimit,
+
+    /// The node with the specified index is missing from the graph.
+    NodeMissed(usize),
+
+    /// Edge between nodes with specified indices already exist in `MatrixGraph`.
+    EdgeAlreadyExist(usize, usize),
+}
+
+impl fmt::Display for MatrixError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MatrixError::NodeIxLimit => write!(
+                f,
+                "The MatrixGraph is at the maximum number of nodes for its index"
+            ),
+
+            MatrixError::NodeMissed(i) => {
+                write!(f, "The node with index {i} is missing from the graph.")
+            }
+            MatrixError::EdgeAlreadyExist(a, b) => {
+                write!(f, "The edge between nodes {a} and {b} already exists.")
+            }
+        }
+    }
 }
 
 /// `MatrixGraph<N, E, Ty, Null>` is a graph datastructure using an adjacency matrix
@@ -390,6 +421,25 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         old_weight.into()
     }
 
+    /// try to update the edge from `a` to `b`, with its associated data `weight`.
+    ///
+    /// Return the previous data, if any.
+    ///
+    /// Computes in **O(1)** time, best case.
+    /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
+    ///
+    /// Possible errors:
+    /// - [`MatrixError::NodeMissed`] if any of the nodes don't exist.
+    pub fn try_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<Option<E>, MatrixError> {
+        self.assert_node_bounds(a, b)?;
+        Ok(self.update_edge(a, b, weight))
+    }
+
     /// Add an edge from `a` to `b` to the graph, with its associated
     /// data `weight`.
     ///
@@ -558,6 +608,16 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
                 self.add_node(N::default());
             }
             self.add_edge(source, target, weight);
+        }
+    }
+
+    fn assert_node_bounds(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Result<(), MatrixError> {
+        if a.index() >= self.node_capacity {
+            Err(MatrixError::NodeMissed(a.index()))
+        } else if b.index() >= self.node_capacity {
+            Err(MatrixError::NodeMissed(b.index()))
+        } else {
+            Ok(())
         }
     }
 }
@@ -1410,7 +1470,7 @@ mod tests {
 
     #[test]
     fn test_has_edge() {
-        let mut g = MatrixGraph::new();
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1880,6 +1940,24 @@ mod tests {
         assert_eq!(
             crate::algo::kosaraju_scc(&g),
             [[node_index(2)], [node_index(0)]]
+        );
+    }
+
+    #[test]
+    fn test_try_update_edge() {
+        let mut g = MatrixGraph::<char, u32>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, 1);
+        g.add_edge(b, c, 2);
+        assert_eq!(g.try_update_edge(a, b, 10), Ok(Some(1)));
+        assert_eq!(g.try_update_edge(a, b, 100), Ok(Some(10)));
+        assert_eq!(g.try_update_edge(a, c, 33), Ok(None));
+        assert_eq!(g.try_update_edge(a, c, 66), Ok(Some(33)));
+        assert_eq!(
+            g.try_update_edge(10.into(), 20.into(), 5),
+            Err(MatrixError::NodeMissed(10))
         );
     }
 }
