@@ -194,9 +194,6 @@ pub enum MatrixError {
 
     /// The node with the specified index is missing from the graph.
     NodeMissed(usize),
-
-    /// Edge between nodes with specified indices already exist in `MatrixGraph`.
-    EdgeAlreadyExist(usize, usize),
 }
 
 impl fmt::Display for MatrixError {
@@ -209,9 +206,6 @@ impl fmt::Display for MatrixError {
 
             MatrixError::NodeMissed(i) => {
                 write!(f, "The node with index {i} is missing from the graph.")
-            }
-            MatrixError::EdgeAlreadyExist(a, b) => {
-                write!(f, "The edge between nodes {a} and {b} already exists.")
             }
         }
     }
@@ -328,6 +322,22 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// **Panics** if the MatrixGraph is at the maximum number of nodes for its index type.
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         NodeIndex::new(self.nodes.add(weight))
+    }
+
+    /// Try to add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// Possible errors:
+    /// - [`MatrixError::NodeIxLimit`] if the `MatrixGraph` is at the maximum number of nodes for its index type.
+    pub fn try_add_node(&mut self, weight: N) -> Result<NodeIndex<Ix>, MatrixError> {
+        let node_idx = NodeIndex::<Ix>::new(self.nodes.len());
+        if !(<Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx) {
+            return Err(MatrixError::NodeIxLimit);
+        }
+        Ok(NodeIndex::new(self.nodes.add(weight)))
     }
 
     /// Remove `a` from the graph.
@@ -1404,6 +1414,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Build
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use crate::{Incoming, Outgoing};
 
@@ -1998,5 +2009,14 @@ mod tests {
         assert_eq!(g.try_remove_edge(a, b), Some(1));
         assert_eq!(g.try_remove_edge(a, b), None);
         assert_eq!(g.try_remove_edge(a, c), None);
+    }
+
+    #[test]
+    fn test_try_add_node() {
+        let mut graph = MatrixGraph::<(), u32, Directed, Option<u32>, u8>::with_capacity(255);
+        for i in 0..255 {
+            assert_eq!(graph.try_add_node(()), Ok(i.into()));
+        }
+        assert_eq!(graph.try_add_node(()), Err(MatrixError::NodeIxLimit));
     }
 }
