@@ -494,6 +494,13 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
         &self.nodes[a.index()]
     }
 
+    /// Try to access the weight for node `a`.
+    ///
+    /// Return `None` if the node doesn't exist.
+    pub fn get_node_weight(&self, a: NodeIndex<Ix>) -> Option<&N> {
+        self.nodes.elements.get(a.index())?.as_ref()
+    }
+
     /// Access the weight for node `a`, mutably.
     ///
     /// Also available with indexing syntax: `&mut graph[a]`.
@@ -501,6 +508,13 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// **Panics** if the node doesn't exist.
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> &mut N {
         &mut self.nodes[a.index()]
+    }
+
+    /// Try to access the weight for node `a`, mutably.
+    ///
+    /// Return `None` if the node doesn't exist.
+    pub fn get_node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N> {
+        self.nodes.elements.get_mut(a.index())?.as_mut()
     }
 
     /// Access the weight for edge `e`.
