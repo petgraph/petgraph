@@ -1,7 +1,7 @@
 Version 0.7.1 (2025-01-08)
 ==========================
 
-- Do not limit ``indexmap`` version (`#714`_)
+- Do not unnecessarily restrict ``indexmap`` version (`#714`_)
 - Export ``UndirectedAdaptor`` (`#717`_)
 
 .. _`#714`: https://github.com/petgraph/petgraph/pull/714
