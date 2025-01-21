@@ -3,6 +3,7 @@ extern crate petgraph;
 use std::collections::HashSet;
 use std::hash::Hash;
 
+use petgraph::graph::DefaultIx;
 use petgraph::prelude::*;
 use petgraph::EdgeType;
 
@@ -1586,7 +1587,7 @@ fn map_filter_map() {
     g.add_edge(e, f, 6);
     println!("{:?}", g);
 
-    let g2 = g.filter_map(
+    let g2: Graph<_, _, _, DefaultIx> = g.filter_map(
         |_, name| Some(*name),
         |_, &weight| if weight >= 10 { Some(weight) } else { None },
     );
@@ -1595,7 +1596,7 @@ fn map_filter_map() {
         assert!(edge.weight >= 10);
     }
 
-    let g3 = g.filter_map(
+    let g3: Graph<_, _, _, DefaultIx> = g.filter_map(
         |i, &name| if i == a || i == e { None } else { Some(name) },
         |i, &weight| {
             let (source, target) = g.edge_endpoints(i).unwrap();
