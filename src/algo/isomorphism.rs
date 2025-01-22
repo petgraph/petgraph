@@ -30,14 +30,14 @@ mod state {
         /// out[i] is non-zero if i is in either M_0(s) or Tout_0(s)
         /// These are all the next vertices that are not mapped yet, but
         /// have an outgoing edge from the mapping.
-        out: Vec<usize>,
+        pub out: Vec<usize>,
         /// ins[i] is non-zero if i is in either M_0(s) or Tin_0(s)
         /// These are all the incoming vertices, those not mapped yet, but
         /// have an edge from them into the mapping.
         /// Unused if graph is undirected -- it's identical with out in that case.
-        ins: Vec<usize>,
-        pub out_size: usize,
-        pub ins_size: usize,
+        pub ins: Vec<usize>,
+        // pub out_size: usize,
+        // pub ins_size: usize,
         pub adjacency_matrix: G::AdjMatrix,
         generation: usize,
     }
@@ -53,8 +53,8 @@ mod state {
                 mapping: vec![std::usize::MAX; c0],
                 out: vec![0; c0],
                 ins: vec![0; c0 * (g.is_directed() as usize)],
-                out_size: 0,
-                ins_size: 0,
+                // out_size: 0,
+                // ins_size: 0,
                 adjacency_matrix: g.adjacency_matrix(),
                 generation: 0,
             }
@@ -75,14 +75,14 @@ mod state {
             for ix in self.graph.neighbors_directed(from, Outgoing) {
                 if self.out[self.graph.to_index(ix)] == 0 {
                     self.out[self.graph.to_index(ix)] = self.generation;
-                    self.out_size += 1;
+                    // self.out_size += 1;
                 }
             }
             if self.graph.is_directed() {
                 for ix in self.graph.neighbors_directed(from, Incoming) {
                     if self.ins[self.graph.to_index(ix)] == 0 {
                         self.ins[self.graph.to_index(ix)] = self.generation;
-                        self.ins_size += 1;
+                        // self.ins_size += 1;
                     }
                 }
             }
@@ -97,14 +97,14 @@ mod state {
             for ix in self.graph.neighbors_directed(from, Outgoing) {
                 if self.out[self.graph.to_index(ix)] == self.generation {
                     self.out[self.graph.to_index(ix)] = 0;
-                    self.out_size -= 1;
+                    // self.out_size -= 1;
                 }
             }
             if self.graph.is_directed() {
                 for ix in self.graph.neighbors_directed(from, Incoming) {
                     if self.ins[self.graph.to_index(ix)] == self.generation {
                         self.ins[self.graph.to_index(ix)] = 0;
-                        self.ins_size -= 1;
+                        // self.ins_size -= 1;
                     }
                 }
             }
@@ -284,6 +284,7 @@ mod matching {
         nodes: (G0::NodeId, G1::NodeId),
         node_match: &mut NM,
         edge_match: &mut EM,
+        match_subgraph: bool,
     ) -> bool
     where
         G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
@@ -308,19 +309,40 @@ mod matching {
 
         macro_rules! r_succ {
             ($j:tt) => {{
-                let mut succ_count = 0;
+                let mut succ_count_sum = 0usize;
+                let mut succ_ins_count = 0usize;
+                let mut succ_outs_count = 0usize;
+                let mut succ_outside_count = 0usize;
                 for n_neigh in field!(st, $j)
                     .graph
                     .neighbors_directed(field!(nodes, $j), Outgoing)
                 {
-                    succ_count += 1;
+                    succ_count_sum += 1;
+
+                    let n_neigh_idx = field!(st, $j).graph.to_index(n_neigh);
                     // handle the self loop case; it's not in the mapping (yet)
                     let m_neigh = if field!(nodes, $j) != n_neigh {
-                        field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)]
+                        field!(st, $j).mapping[n_neigh_idx]
                     } else {
                         field!(st, 1 - $j).graph.to_index(field!(nodes, 1 - $j))
                     };
                     if m_neigh == std::usize::MAX {
+                        let neigh_in_outs = field!(st, $j).out[n_neigh_idx] != 0;
+                        let neigh_in_ins = field!(st, $j)
+                            .ins
+                            .get(n_neigh_idx)
+                            .map(|v| v.clone())
+                            .unwrap_or(0)
+                            != 0;
+                        if neigh_in_outs {
+                            succ_outs_count += 1;
+                        }
+                        if neigh_in_ins {
+                            succ_ins_count += 1;
+                        }
+                        if !neigh_in_outs && !neigh_in_ins {
+                            succ_outside_count += 1;
+                        }
                         continue;
                     }
                     let has_edge = field!(st, 1 - $j).graph.is_adjacent(
@@ -332,21 +354,49 @@ mod matching {
                         return false;
                     }
                 }
-                succ_count
+                (
+                    succ_count_sum,
+                    succ_outs_count,
+                    succ_ins_count,
+                    succ_outside_count,
+                )
             }};
         }
 
         macro_rules! r_pred {
             ($j:tt) => {{
-                let mut pred_count = 0;
+                let mut pred_count_sum = 0usize;
+                let mut pred_ins_count = 0usize;
+                let mut pred_outs_count = 0usize;
+                let mut pred_outside_count = 0usize;
+
                 for n_neigh in field!(st, $j)
                     .graph
                     .neighbors_directed(field!(nodes, $j), Incoming)
                 {
-                    pred_count += 1;
+                    pred_count_sum += 1;
+
+                    let n_neigh_idx = field!(st, $j).graph.to_index(n_neigh);
                     // the self loop case is handled in outgoing
-                    let m_neigh = field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)];
+                    let m_neigh = field!(st, $j).mapping[n_neigh_idx];
                     if m_neigh == std::usize::MAX {
+                        let neigh_in_outs = field!(st, $j).out[n_neigh_idx] != 0;
+                        let neigh_in_ins = field!(st, $j)
+                            .ins
+                            .get(n_neigh_idx)
+                            .map(|v| v.clone())
+                            .unwrap_or(0)
+                            != 0;
+                        if neigh_in_outs {
+                            pred_outs_count += 1;
+                        }
+                        if neigh_in_ins {
+                            pred_ins_count += 1;
+                        }
+                        if !neigh_in_outs && !neigh_in_ins {
+                            pred_outside_count += 1;
+                        }
+
                         continue;
                     }
                     let has_edge = field!(st, 1 - $j).graph.is_adjacent(
@@ -358,7 +408,13 @@ mod matching {
                         return false;
                     }
                 }
-                pred_count
+
+                (
+                    pred_count_sum,
+                    pred_outs_count,
+                    pred_ins_count,
+                    pred_outside_count,
+                )
             }};
         }
 
@@ -379,12 +435,45 @@ mod matching {
         // R_new: Equal for G0, G1: Ñ n Pred(G, n); both Succ and Pred,
         //      Ñ is G0 - M - Tin - Tout
         // last attempt to add these did not speed up any of the testcases
-        if r_succ!(0) > r_succ!(1) {
+        let (s0_succ_count_sum, s0_succ_outs_count, s0_succ_ins_count, s0_succ_outside_count) =
+            r_succ!(0);
+        let (s1_succ_count_sum, s1_succ_outs_count, s1_succ_ins_count, s1_succ_outside_count) =
+            r_succ!(1);
+        let is_feasible = if !match_subgraph {
+            s0_succ_count_sum == s1_succ_count_sum
+                && s0_succ_outs_count == s1_succ_outs_count
+                && s0_succ_ins_count == s1_succ_ins_count
+                && s0_succ_outside_count == s1_succ_outside_count
+        } else {
+            s0_succ_count_sum <= s1_succ_count_sum
+                && s0_succ_outs_count <= s1_succ_outs_count
+                && s0_succ_ins_count <= s1_succ_ins_count
+                && s0_succ_outside_count <= s1_succ_outside_count
+        };
+
+        if !is_feasible {
             return false;
         }
         // R_pred
-        if st.0.graph.is_directed() && r_pred!(0) > r_pred!(1) {
-            return false;
+        if st.0.graph.is_directed() {
+            let (s0_pred_count_sum, s0_pred_outs_count, s0_pred_ins_count, s0_pred_outside_count) =
+                r_pred!(0);
+            let (s1_pred_count_sum, s1_pred_outs_count, s1_pred_ins_count, s1_pred_outside_count) =
+                r_pred!(1);
+            let is_feasible = if !match_subgraph {
+                s0_pred_count_sum == s1_pred_count_sum
+                    && s0_pred_outs_count == s1_pred_outs_count
+                    && s0_pred_ins_count == s1_pred_ins_count
+                    && s0_pred_outside_count == s1_pred_outside_count
+            } else {
+                s0_pred_count_sum <= s1_pred_count_sum
+                    && s0_pred_outs_count <= s1_pred_outs_count
+                    && s0_pred_ins_count <= s1_pred_ins_count
+                    && s0_pred_outside_count <= s1_pred_outside_count
+            };
+            if !is_feasible {
+                return false;
+            }
         }
 
         // // semantic feasibility: compare associated data for nodes
@@ -637,25 +726,15 @@ mod matching {
                     }
                 },
                 Frame::Inner { nodes, open_list } => {
-                    if is_feasible(st, nodes, node_match, edge_match) {
+                    if is_feasible(st, nodes, node_match, edge_match, match_subgraph) {
                         push_state(st, nodes);
                         if st.0.is_complete() {
                             result = Some(st.0.mapping.clone());
                         }
-                        // Check cardinalities of Tin, Tout sets
-                        if (!match_subgraph
-                            && st.0.out_size == st.1.out_size
-                            && st.0.ins_size == st.1.ins_size)
-                            || (match_subgraph
-                                && st.0.out_size <= st.1.out_size
-                                && st.0.ins_size <= st.1.ins_size)
-                        {
-                            let f0 = Frame::Unwind { nodes, open_list };
-                            stack.push(f0);
-                            stack.push(Frame::Outer);
-                            continue;
-                        }
-                        pop_state(st, nodes);
+                        let f0 = Frame::Unwind { nodes, open_list };
+                        stack.push(f0);
+                        stack.push(Frame::Outer);
+                        continue;
                     }
                     match next_from_ix(st, nodes.1, open_list) {
                         None => continue,

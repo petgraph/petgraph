@@ -55,3 +55,12 @@ fn praust_undir_no_iso_bench(bench: &mut Bencher) {
     bench.iter(|| is_isomorphic(&a, &b));
     assert!(!is_isomorphic(&a, &b));
 }
+
+#[bench]
+fn iso_large(bench: &mut Bencher) {
+    let g0 = graph_from_file("benches/res/graph_1000n_1000e.txt");
+    let g1 = graph_from_file("benches/res/graph_1000n_1000e.txt");
+
+    bench.iter(|| is_isomorphic(&g0, &g1));
+    assert!(is_isomorphic(&g0, &g1));
+}
