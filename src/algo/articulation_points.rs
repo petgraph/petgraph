@@ -1,5 +1,6 @@
 use crate::visit;
 use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRef};
+use fixedbitset::FixedBitSet;
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -74,7 +75,7 @@ enum RecursionStep {
 
 /// Internal auxiliary helper struct for global variables.
 struct ArticulationPointTracker {
-    visited: Vec<bool>,
+    visited: FixedBitSet,
     low: Vec<usize>,
     disc: Vec<usize>,
     parent: Vec<usize>,
@@ -85,7 +86,7 @@ struct ArticulationPointTracker {
 impl ArticulationPointTracker {
     fn new(graph_size: usize) -> Self {
         Self {
-            visited: vec![false; graph_size],
+            visited: FixedBitSet::with_capacity(graph_size),
             low: vec![usize::MAX; graph_size],
             disc: vec![usize::MAX; graph_size],
             parent: vec![usize::MAX; graph_size],
@@ -106,7 +107,7 @@ where
     while let Some(recursion_step) = stack.pop() {
         match recursion_step {
             RecursionStep::BaseStep(current_node) => {
-                constants.visited[current_node] = true;
+                constants.visited.toggle(current_node);
                 constants.disc[current_node] = constants.time;
                 constants.low[current_node] = constants.time;
                 constants.time += 1;
@@ -118,7 +119,7 @@ where
                 }
             }
             RecursionStep::ProcessChildStep(current_node, child_node) => {
-                if !constants.visited[child_node] {
+                if !constants.visited.contains(child_node) {
                     constants.parent[child_node] = current_node;
                     *children_count.entry(current_node).or_insert(0) += 1;
 
