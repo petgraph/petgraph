@@ -48,31 +48,20 @@ where
     G::NodeId: Eq + Hash,
 {
     let graph_size = g.node_references().size_hint().0;
-
-    let mut visited = vec![false; graph_size];
-    let mut disc = vec![usize::MAX; graph_size];
-    let mut low = vec![usize::MAX; graph_size];
-    let mut parent = vec![usize::MAX; graph_size];
-    let mut ap = HashSet::with_capacity(graph_size);
-    let mut time = 0;
+    let mut auxiliary_const = ArticulationPointTracker::new(graph_size);
 
     for node in g.node_references() {
         let node_id = g.to_index(node.id());
-        if !visited[node_id] {
-            _dfs(
-                &g,
-                node_id,
-                &mut visited,
-                &mut parent,
-                &mut low,
-                &mut disc,
-                &mut ap,
-                &mut time,
-            );
+        if !auxiliary_const.visited[node_id] {
+            _dfs(&g, node_id, &mut auxiliary_const);
         }
     }
 
-    ap.into_iter().map(|id| g.from_index(id)).collect()
+    auxiliary_const
+        .articulation_points
+        .into_iter()
+        .map(|id| g.from_index(id))
+        .collect()
 }
 
 /// Small helper enum that defines the various splitup recursion steps of Tarjan's algorithm.
@@ -83,17 +72,32 @@ enum RecursionStep {
     RootMoreThanTwoChildrenCheck(usize),
 }
 
+/// Internal auxiliary helper struct for global variables.
+struct ArticulationPointTracker {
+    visited: Vec<bool>,
+    low: Vec<usize>,
+    disc: Vec<usize>,
+    parent: Vec<usize>,
+    time: usize,
+    articulation_points: HashSet<usize>,
+}
+
+impl ArticulationPointTracker {
+    fn new(graph_size: usize) -> Self {
+        Self {
+            visited: vec![false; graph_size],
+            low: vec![usize::MAX; graph_size],
+            disc: vec![usize::MAX; graph_size],
+            parent: vec![usize::MAX; graph_size],
+            articulation_points: HashSet::with_capacity(graph_size),
+            time: 0,
+        }
+    }
+}
+
 /// Helper that performs the required DFS in an iterative manner.
-fn _dfs<G>(
-    g: &G,
-    target_node: usize,
-    visited: &mut Vec<bool>,
-    parent: &mut Vec<usize>,
-    low: &mut Vec<usize>,
-    disc: &mut Vec<usize>,
-    ap: &mut HashSet<usize>,
-    time: &mut usize,
-) where
+fn _dfs<G>(g: &G, target_node: usize, constants: &mut ArticulationPointTracker)
+where
     G: IntoEdges + NodeIndexable,
 {
     let mut stack: Vec<RecursionStep> = vec![RecursionStep::BaseStep(target_node)];
@@ -102,10 +106,10 @@ fn _dfs<G>(
     while let Some(recursion_step) = stack.pop() {
         match recursion_step {
             RecursionStep::BaseStep(current_node) => {
-                visited[current_node] = true;
-                disc[current_node] = *time;
-                low[current_node] = *time;
-                *time += 1;
+                constants.visited[current_node] = true;
+                constants.disc[current_node] = constants.time;
+                constants.low[current_node] = constants.time;
+                constants.time += 1;
 
                 stack.push(RecursionStep::RootMoreThanTwoChildrenCheck(current_node));
                 for edge in g.edges(g.from_index(current_node)) {
@@ -114,8 +118,8 @@ fn _dfs<G>(
                 }
             }
             RecursionStep::ProcessChildStep(current_node, child_node) => {
-                if !visited[child_node] {
-                    parent[child_node] = current_node;
+                if !constants.visited[child_node] {
+                    constants.parent[child_node] = current_node;
                     *children_count.entry(current_node).or_insert(0) += 1;
 
                     stack.push(RecursionStep::NoBackEdgeConditionCheck(
@@ -123,22 +127,26 @@ fn _dfs<G>(
                         child_node,
                     ));
                     stack.push(RecursionStep::BaseStep(child_node));
-                } else if child_node != parent[current_node] {
-                    low[current_node] = min(low[current_node], disc[child_node]);
+                } else if child_node != constants.parent[current_node] {
+                    constants.low[current_node] =
+                        min(constants.low[current_node], constants.disc[child_node]);
                 }
             }
             RecursionStep::NoBackEdgeConditionCheck(current_node, child_node) => {
-                low[current_node] = min(low[current_node], low[child_node]);
+                constants.low[current_node] =
+                    min(constants.low[current_node], constants.low[child_node]);
 
-                if parent[current_node] != usize::MAX && low[child_node] >= disc[current_node] {
-                    ap.insert(current_node);
+                if constants.parent[current_node] != usize::MAX
+                    && constants.low[child_node] >= constants.disc[current_node]
+                {
+                    constants.articulation_points.insert(current_node);
                 }
             }
 
             RecursionStep::RootMoreThanTwoChildrenCheck(current_node) => {
                 let child_count = children_count.get(&current_node).cloned().unwrap_or(0);
-                if parent[current_node] == usize::MAX && child_count > 1 {
-                    ap.insert(current_node);
+                if constants.parent[current_node] == usize::MAX && child_count > 1 {
+                    constants.articulation_points.insert(current_node);
                 }
             }
         }
