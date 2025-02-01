@@ -199,6 +199,8 @@ pub enum MatrixError {
     NodeMissed(usize),
 }
 
+impl std::error::Error for MatrixError {}
+
 impl fmt::Display for MatrixError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
