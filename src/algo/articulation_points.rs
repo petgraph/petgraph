@@ -12,7 +12,7 @@ use std::hash::Hash;
 /// * `graph`: A directed graph
 ///
 /// # Returns
-/// * `HashSet`: Hashset of the node ids which correspond to the articulation points of the grpah.
+/// * `HashSet`: Hashset of the node ids which correspond to the articulation points of the graph.
 ///
 /// # Examples
 /// ```rust
