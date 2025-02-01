@@ -309,6 +309,7 @@ where
 
     /// Try to add an edge from `a` to `b` to the `Csr`, with its associated
     /// data weight.
+    ///
     /// Return `true` if the edge was added
     ///
     /// If you add all edges in row-major order, the time complexity
