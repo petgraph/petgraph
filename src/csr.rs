@@ -1,6 +1,7 @@
 //! Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
 
 use std::cmp::{max, Ordering};
+use std::fmt;
 use std::iter::{Enumerate, Zip};
 use std::marker::PhantomData;
 use std::ops::{Index, IndexMut, Range};
@@ -25,6 +26,25 @@ pub type NodeIndex<Ix = DefaultIx> = Ix;
 pub type EdgeIndex = usize;
 
 const BINARY_SEARCH_CUTOFF: usize = 32;
+
+/// The error type for fallible operations with `Csr`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CsrError {
+    /// Both vertex indexes go outside the graph.
+    IndicesOutBounds(usize, usize),
+}
+
+impl std::error::Error for CsrError {}
+
+impl fmt::Display for CsrError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CsrError::IndicesOutBounds(a, b) => {
+                write!(f, "Both node indices {a} and {b} is out of Csr bounds")
+            }
+        }
+    }
+}
 
 /// Compressed Sparse Row ([`CSR`]) is a sparse adjacency matrix graph.
 ///
@@ -273,6 +293,9 @@ where
         Ix::new(i)
     }
 
+    /// Add an edge from `a` to `b` to the `Csr`, with its associated
+    /// data weight.
+    ///
     /// Return `true` if the edge was added
     ///
     /// If you add all edges in row-major order, the time complexity
@@ -283,25 +306,54 @@ where
     where
         E: Clone,
     {
-        let ret = self.add_edge_(a, b, weight.clone());
+        self.try_add_edge(a, b, weight).unwrap()
+    }
+
+    /// Try to add an edge from `a` to `b` to the `Csr`, with its associated
+    /// data weight.
+    ///
+    /// Return `true` if the edge was added
+    ///
+    /// If you add all edges in row-major order, the time complexity
+    /// is **O(|V|·|E|)** for the whole operation.
+    ///
+    /// Possible errors:
+    /// - [`CsrError::IndicesOutBounds`] - when both idxs `a` & `b` is out of bounds.
+    pub fn try_add_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<bool, CsrError>
+    where
+        E: Clone,
+    {
+        let ret = self.add_edge_(a, b, weight.clone())?;
         if ret && !self.is_directed() {
             self.edge_count += 1;
         }
         if ret && !self.is_directed() && a != b {
-            let _ret2 = self.add_edge_(b, a, weight);
+            let _ret2 = self.add_edge_(b, a, weight)?;
             debug_assert_eq!(ret, _ret2);
         }
-        ret
+        Ok(ret)
     }
 
     // Return false if the edge already exists
-    fn add_edge_(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> bool {
-        assert!(a.index() < self.node_count() && b.index() < self.node_count());
+    fn add_edge_(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<bool, CsrError> {
+        if !(a.index() < self.node_count() && b.index() < self.node_count()) {
+            return Err(CsrError::IndicesOutBounds(a.index(), b.index()));
+        }
         // a x b is at (a, b) in the matrix
 
         // find current range of edges from a
         let pos = match self.find_edge_pos(a, b) {
-            Ok(_) => return false, /* already exists */
+            Ok(_) => return Ok(false), /* already exists */
             Err(i) => i,
         };
         self.column.insert(pos, b);
@@ -310,7 +362,7 @@ where
         for r in &mut self.row[a.index() + 1..] {
             *r += 1;
         }
-        true
+        Ok(true)
     }
 
     fn find_edge_pos(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Result<usize, usize> {
