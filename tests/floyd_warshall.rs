@@ -14,7 +14,7 @@ fn floyd_warshall_uniform_weight() {
     let g = graph.add_node(());
     let h = graph.add_node(());
 
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (a, b),
         (b, c),
         (c, d),
@@ -30,7 +30,7 @@ fn floyd_warshall_uniform_weight() {
     // |       v       |       v
     // d <---- c       h <---- g
 
-    let inf = std::i32::MAX;
+    let inf = i32::MAX;
     let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
         ((a, a), 0),
         ((a, b), 1),
@@ -121,9 +121,9 @@ fn floyd_warshall_weighted() {
     let c = graph.add_node(());
     let d = graph.add_node(());
 
-    graph.extend_with_edges(&[(a, b), (a, c), (a, d), (b, c), (b, d), (c, d)]);
+    graph.extend_with_edges([(a, b), (a, c), (a, d), (b, c), (b, d), (c, d)]);
 
-    let inf = std::i32::MAX;
+    let inf = i32::MAX;
     let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
         ((a, a), 0),
         ((a, b), 1),
@@ -189,9 +189,9 @@ fn floyd_warshall_weighted_undirected() {
     let c = graph.add_node(());
     let d = graph.add_node(());
 
-    graph.extend_with_edges(&[(a, b), (a, c), (a, d), (b, d), (c, b), (c, d)]);
+    graph.extend_with_edges([(a, b), (a, c), (a, d), (b, d), (c, b), (c, d)]);
 
-    let inf = std::i32::MAX;
+    let inf = i32::MAX;
     let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
         ((a, a), 0),
         ((a, b), 1),
@@ -256,9 +256,9 @@ fn floyd_warshall_negative_cycle() {
     let b = graph.add_node(());
     let c = graph.add_node(());
 
-    graph.extend_with_edges(&[(a, b), (b, c), (c, a)]);
+    graph.extend_with_edges([(a, b), (b, c), (c, a)]);
 
-    let inf = std::i32::MAX;
+    let inf = i32::MAX;
 
     let weight_map: HashMap<(NodeIndex, NodeIndex), i32> = [
         ((a, a), 0),
@@ -291,7 +291,7 @@ fn floyd_warshall_multiple_edges() {
     let c = graph.add_node(());
     let d = graph.add_node(());
 
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (a, b, 10),
         (a, b, 1),
         (a, c, 4),
@@ -304,7 +304,7 @@ fn floyd_warshall_multiple_edges() {
         (a, a, 5),
     ]);
 
-    let inf = std::i32::MAX;
+    let inf = i32::MAX;
     let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
         ((a, a), 0),
         ((a, b), 1),

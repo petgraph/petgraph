@@ -10,7 +10,7 @@ fn test_complement() {
     let c = graph.add_node(());
     let d = graph.add_node(());
 
-    graph.extend_with_edges(&[(a, b), (b, c), (c, d)]);
+    graph.extend_with_edges([(a, b), (b, c), (c, d)]);
     let mut output: Graph<(), (), Directed> = Graph::new();
 
     complement(&graph, &mut output, ());
@@ -20,7 +20,7 @@ fn test_complement() {
     let b = expected_res.add_node(());
     let c = expected_res.add_node(());
     let d = expected_res.add_node(());
-    expected_res.extend_with_edges(&[
+    expected_res.extend_with_edges([
         (a, c),
         (a, d),
         (b, a),

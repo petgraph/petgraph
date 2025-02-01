@@ -47,7 +47,6 @@ use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visi
 /// assert_eq!(nb_colors, 2);
 /// assert_ne!(coloring[&a], coloring[&b]);
 /// ```
-
 pub fn dsatur_coloring<G>(graph: G) -> (HashMap<G::NodeId, usize>, usize)
 where
     G: IntoEdges + IntoNodeIdentifiers + Visitable + NodeIndexable,

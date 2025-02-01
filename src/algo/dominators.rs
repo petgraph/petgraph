@@ -149,7 +149,7 @@ where
 
 /// The undefined dominator sentinel, for when we have not yet discovered a
 /// node's dominator.
-const UNDEFINED: usize = ::std::usize::MAX;
+const UNDEFINED: usize = usize::MAX;
 
 /// This is an implementation of the engineered ["Simple, Fast Dominance
 /// Algorithm"][0] discovered by Cooper et al.

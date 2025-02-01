@@ -13,8 +13,6 @@ use common::directed_fan;
 
 #[cfg(feature = "rayon")]
 use petgraph::algo::page_rank::parallel_page_rank;
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
 
 #[bench]
 fn page_rank_bench(bench: &mut Bencher) {

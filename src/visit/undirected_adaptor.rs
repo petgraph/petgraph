@@ -75,7 +75,7 @@ mod tests {
         // create a linear digraph, choose a node in the centre and check all nodes are visited
         // by a dfs
 
-        let graph = DiGraph::<(), ()>::from_edges(&LINEAR_EDGES);
+        let graph = DiGraph::<(), ()>::from_edges(LINEAR_EDGES);
 
         let mut nodes = graph.node_identifiers().collect::<Vec<_>>();
         nodes.sort();
@@ -91,7 +91,7 @@ mod tests {
     #[test]
     pub fn test_neighbors_count() {
         {
-            let graph = Graph::<(), ()>::from_edges(&LINEAR_EDGES);
+            let graph = Graph::<(), ()>::from_edges(LINEAR_EDGES);
             let graph = UndirectedAdaptor(&graph);
 
             let mut nodes = graph.node_identifiers().collect::<Vec<_>>();
@@ -100,7 +100,7 @@ mod tests {
         }
 
         {
-            let graph = Graph::<(), ()>::from_edges(&LINEAR_EDGES);
+            let graph = Graph::<(), ()>::from_edges(LINEAR_EDGES);
             let graph = UndirectedAdaptor(&graph);
 
             let mut nodes = graph.node_identifiers().collect::<Vec<_>>();

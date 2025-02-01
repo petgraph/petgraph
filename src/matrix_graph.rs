@@ -1602,7 +1602,7 @@ mod tests {
 
     #[test]
     fn test_edges_directed() {
-        let g: MatrixGraph<char, bool> = MatrixGraph::from_edges(&[
+        let g: MatrixGraph<char, bool> = MatrixGraph::from_edges([
             (0, 5),
             (0, 2),
             (0, 3),
@@ -1633,7 +1633,7 @@ mod tests {
 
     #[test]
     fn test_edges_undirected() {
-        let g: UnMatrix<char, bool> = UnMatrix::from_edges(&[
+        let g: UnMatrix<char, bool> = UnMatrix::from_edges([
             (0, 5),
             (0, 2),
             (0, 3),
@@ -1668,7 +1668,7 @@ mod tests {
 
     #[test]
     fn test_edge_references() {
-        let g: MatrixGraph<char, bool> = MatrixGraph::from_edges(&[
+        let g: MatrixGraph<char, bool> = MatrixGraph::from_edges([
             (0, 5),
             (0, 2),
             (0, 3),
@@ -1685,7 +1685,7 @@ mod tests {
 
     #[test]
     fn test_edge_references_undirected() {
-        let g: UnMatrix<char, bool> = UnMatrix::from_edges(&[
+        let g: UnMatrix<char, bool> = UnMatrix::from_edges([
             (0, 5),
             (0, 2),
             (0, 3),

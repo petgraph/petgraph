@@ -187,7 +187,7 @@ where
     }
 }
 
-impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
 where
     Ix: IndexType,
     Ty: EdgeType,
@@ -230,11 +230,7 @@ where
 
         let node_bound = nodes.len();
         let mut sgr = StableGraph {
-            g: Graph {
-                nodes,
-                edges,
-                ty,
-            },
+            g: Graph { nodes, edges, ty },
             node_count: 0,
             edge_count: 0,
             free_edge: EdgeIndex::end(),

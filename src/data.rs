@@ -428,11 +428,7 @@ where
                     weight,
                 },
             });
-            let is_node = if let Element::Node { .. } = elt {
-                true
-            } else {
-                false
-            };
+            let is_node = matches!(elt, Element::Node { .. });
             if !keep && is_node {
                 self.map.push(self.node_index);
             }

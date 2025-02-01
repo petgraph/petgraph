@@ -23,23 +23,21 @@ use std::hash::Hash;
 ///     algo::articulation_points::articulation_points,
 /// };
 ///
-/// fn main() {
-///     let mut gr = UnGraph::<&str, ()>::new_undirected();
-///     let a = gr.add_node("A");
-///     let b = gr.add_node("B");
-///     let c = gr.add_node("C");
+/// let mut gr = UnGraph::<&str, ()>::new_undirected();
+/// let a = gr.add_node("A");
+/// let b = gr.add_node("B");
+/// let c = gr.add_node("C");
 ///
-///     gr.add_edge(a, b, ());
-///     gr.add_edge(b, c, ());
+/// gr.add_edge(a, b, ());
+/// gr.add_edge(b, c, ());
 ///
-///     let articulation_points: Vec<&str> = articulation_points(&gr)
-///         .into_iter()
-///         .map(|node_idx| gr[node_idx])
-///         .collect();
+/// let articulation_points: Vec<&str> = articulation_points(&gr)
+///     .into_iter()
+///     .map(|node_idx| gr[node_idx])
+///     .collect();
 ///
-///     // Articulation Points: ["B"]
-///     println!("Articulation Points: {:?}", articulation_points);
-/// }
+/// // Articulation Points: ["B"]
+/// println!("Articulation Points: {:?}", articulation_points);
 /// ```
 pub fn articulation_points<G>(g: G) -> HashSet<G::NodeId>
 where

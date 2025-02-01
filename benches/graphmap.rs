@@ -30,12 +30,12 @@ fn test_nodes() -> Vec<MyStruct> {
 }
 
 fn test_graph<H: BuildHasher + Default>(
-    data: &Vec<MyStruct>,
+    data: &[MyStruct],
 ) -> GraphMap<&MyStruct, usize, Directed, H> {
     let mut gr = GraphMap::new();
 
-    for i in 0..2500 {
-        gr.add_node(&data[i]);
+    for val in data {
+        gr.add_node(val);
     }
 
     for i in 0..1_000 {
@@ -76,7 +76,7 @@ fn graphmap_parallel_bench(bench: &mut Bencher) {
     let data = test_nodes();
     let gr = test_graph::<std::hash::RandomState>(&data);
     bench.iter(|| {
-        let sources: Vec<MyStruct> = gr
+        let _sources: Vec<MyStruct> = gr
             .par_nodes()
             .map(|n| {
                 let mut sources = vec![];
