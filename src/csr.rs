@@ -34,6 +34,8 @@ pub enum CsrError {
     IndicesOutBounds(usize, usize),
 }
 
+impl std::error::Error for CsrError {}
+
 impl fmt::Display for CsrError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
