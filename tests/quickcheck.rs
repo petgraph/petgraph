@@ -24,12 +24,9 @@ use rand::Rng;
 
 use petgraph::algo::{
     bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
-    find_negative_cycle,
-    floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
-    is_cyclic_directed,
-    is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
-    k_shortest_path, kosaraju_scc,
-    maximum_matching, min_spanning_tree, page_rank, tarjan_scc,
+    find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
+    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
+    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, page_rank, tarjan_scc,
     toposort, Matching,
 };
 use petgraph::data::FromElements;
