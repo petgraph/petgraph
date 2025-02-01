@@ -8,7 +8,7 @@ use std::collections::HashSet;
 #[test]
 fn art_single_node() {
     let mut gr = UnGraph::<&str, ()>::new_undirected();
-    let a = gr.add_node("A");
+    let _a = gr.add_node("A");
 
     let set: HashSet<NodeIndex> = HashSet::new();
 
