@@ -99,8 +99,8 @@ fn _dfs<G>(
     let mut stack: Vec<RecursionStep> = vec![RecursionStep::BaseStep(target_node)];
     let mut children_count: HashMap<usize, usize> = HashMap::new();
 
-    while let Some(recursionStep) = stack.pop() {
-        match recursionStep {
+    while let Some(recursion_step) = stack.pop() {
+        match recursion_step {
             RecursionStep::BaseStep(current_node) => {
                 visited[current_node] = true;
                 disc[current_node] = *time;
