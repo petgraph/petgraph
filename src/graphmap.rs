@@ -1345,7 +1345,7 @@ where
 }
 
 #[cfg(feature = "rayon")]
-impl<'a, N> ParallelIterator for ParNodes<'a, N>
+impl<N> ParallelIterator for ParNodes<'_, N>
 where
     N: NodeTrait + Send + Sync,
 {
@@ -1364,7 +1364,7 @@ where
 }
 
 #[cfg(feature = "rayon")]
-impl<'a, N> IndexedParallelIterator for ParNodes<'a, N>
+impl<N> IndexedParallelIterator for ParNodes<'_, N>
 where
     N: NodeTrait + Send + Sync,
 {
@@ -1419,7 +1419,7 @@ where
 }
 
 #[cfg(feature = "rayon")]
-impl<'a, N, E, Ty> IndexedParallelIterator for ParAllEdges<'a, N, E, Ty>
+impl<N, E, Ty> IndexedParallelIterator for ParAllEdges<'_, N, E, Ty>
 where
     N: NodeTrait + Send + Sync,
     E: Sync,
@@ -1477,7 +1477,7 @@ where
 }
 
 #[cfg(feature = "rayon")]
-impl<'a, N, E, Ty> IndexedParallelIterator for ParAllEdgesMut<'a, N, E, Ty>
+impl<N, E, Ty> IndexedParallelIterator for ParAllEdgesMut<'_, N, E, Ty>
 where
     N: NodeTrait + Send + Sync,
     E: Send,

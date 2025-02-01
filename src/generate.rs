@@ -45,8 +45,8 @@ impl Generator<Directed> {
         Generator {
             acyclic: true,
             selfloops: false,
-            nodes: nodes,
-            nedges: nedges,
+            nodes,
+            nedges,
             bits: !0,
             g: Graph::with_capacity(nodes, nedges),
         }
@@ -71,8 +71,8 @@ impl<Ty: EdgeType> Generator<Ty> {
         Generator {
             acyclic: false,
             selfloops: allow_selfloops,
-            nodes: nodes,
-            nedges: nedges,
+            nodes,
+            nedges,
             bits: !0,
             g: Graph::with_capacity(nodes, nedges),
         }

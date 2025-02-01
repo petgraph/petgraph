@@ -327,9 +327,9 @@ where
         }
 
         let mut gr = Graph {
-            nodes: nodes,
-            edges: edges,
-            ty: ty,
+            nodes,
+            edges,
+            ty,
         };
         let nc = gr.node_count();
         gr.link_edges()
