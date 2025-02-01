@@ -1,6 +1,5 @@
 use petgraph::{
     algo::articulation_points::articulation_points,
-    csr::IndexType,
     graph::{NodeIndex, UnGraph},
 };
 
