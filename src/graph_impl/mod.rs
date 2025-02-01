@@ -292,6 +292,8 @@ pub enum GraphError {
     NodeOutBounds,
 }
 
+impl std::error::Error for GraphError {}
+
 impl fmt::Display for GraphError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
