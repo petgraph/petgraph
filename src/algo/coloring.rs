@@ -5,7 +5,7 @@ use crate::scored::MaxScored;
 use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visitable};
 
 /// \[Generic\] DStatur algorithm to properly color a non weighted undirected graph.
-/// https://en.wikipedia.org/wiki/DSatur
+/// <https://en.wikipedia.org/wiki/DSatur>
 ///
 /// This is a heuristic. So, it does not necessarily return a minimum coloring.
 ///
