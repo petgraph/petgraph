@@ -321,19 +321,50 @@ fn b07_example() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
     ];
     (graph, terminals)
 }
+
+fn example_kou_paper() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
+    let mut graph = Graph::<(), i32, Undirected>::new_undirected();
+    // Add nodes
+    let nodes: Vec<_> = (0..9).map(|_| graph.add_node(())).collect();
+
+    let edges = vec![
+        (0, 1, 20),
+        (0, 8, 1),
+        (1, 2, 8),
+        (1, 5, 1),
+        (2, 4, 2),
+        (2, 3, 9),
+        (3, 4, 2),
+        (4, 8, 1),
+        (4, 4, 1),
+        (5, 6, 1),
+        (6, 7, 0), // Note: In the Kou Paper this is 0.5, but the nodes are not present in terminals, so we approximate this with 0
+        (7, 8, 0), // Note: In the Kou Paper this is 0.5, but the nodes are not present in terminals, so we approximate this with 0
+    ];
+
+    // Add edges to the graph
+    for (u, v, weight) in edges {
+        graph.add_edge(nodes[u], nodes[v], weight);
+    }
+
+    (graph, vec![nodes[0], nodes[1], nodes[2], nodes[3]])
+}
+
 #[cfg(test)]
 mod test {
-    use petgraph::algo::steiner_tree;
-
-    use crate::{b01_example, b07_example};
+    use crate::{b01_example, b07_example, example_kou_paper};
+    use petgraph::algo::{connected_components, steiner_tree};
+    use petgraph::graph::UnGraph;
 
     #[test]
     fn b01_vienna_test() {
         let (graph, terminals) = b01_example();
         let st = steiner_tree(&graph, &terminals);
-
         let weights = st.edge_weights().cloned().sum::<i32>();
-
+        let steiner_tree_nodes: Vec<_> = st.node_indices().collect();
+        assert!(terminals.iter().all(|&t| steiner_tree_nodes.contains(&t)));
+        assert!(st.edge_count() == st.node_count() - 1);
+        assert_eq!(connected_components(&UnGraph::from(st)), 1);
         assert_eq!(weights, 82);
     }
 
@@ -343,7 +374,23 @@ mod test {
         let st = steiner_tree(&graph, &terminals);
 
         let weights = st.edge_weights().cloned().sum::<i32>();
-
+        let steiner_tree_nodes: Vec<_> = st.node_indices().collect();
+        assert!(terminals.iter().all(|&t| steiner_tree_nodes.contains(&t)));
+        assert!(st.edge_count() == st.node_count() - 1);
+        assert_eq!(connected_components(&UnGraph::from(st)), 1);
         assert_eq!(weights, 111);
+    }
+
+    #[test]
+    fn example_kous_paper() {
+        let (graph, terminals) = example_kou_paper();
+        let st = steiner_tree(&graph, &terminals);
+
+        let weights = st.edge_weights().cloned().sum::<i32>();
+        let steiner_tree_nodes: Vec<_> = st.node_indices().collect();
+        assert!(terminals.iter().all(|&t| steiner_tree_nodes.contains(&t)));
+        assert!(st.edge_count() == st.node_count() - 1);
+        assert_eq!(connected_components(&UnGraph::from(st)), 1);
+        assert_eq!(weights, 8);
     }
 }

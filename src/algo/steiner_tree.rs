@@ -10,6 +10,8 @@ use crate::visit::{
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
+use crate::stable_graph::StableGraph;
+use crate::Undirected;
 
 fn compute_shortest_path_length<G>(graph: G, source: G::NodeId, target: G::NodeId) -> G::EdgeWeight
 where
@@ -45,7 +47,7 @@ where
 fn subgraph_edges_from_metric_closure<G>(
     graph: G,
     minimum_spanning_closure: G,
-) -> Vec<(G::NodeId, G::NodeId)>
+) -> (Vec<(<G as GraphBase>::NodeId, <G as GraphBase>::NodeId)>, HashSet<<G as GraphBase>::NodeId>)
 where
     G: GraphBase
         + NodeCompactIndexable
@@ -56,6 +58,7 @@ where
     G::EdgeWeight: BoundedMeasure + Copy,
     G::NodeId: Eq + Hash + Ord + Debug,
 {
+    let mut retained_nodes = HashSet::new();
     let mut retained_edges = Vec::new();
     let (_, prev) = floyd_warshall_path(graph, |e| *e.weight()).unwrap();
 
@@ -66,13 +69,15 @@ where
         let mut current = target;
         while current != source {
             if let Some(prev_node) = prev[source][current] {
+                retained_nodes.insert(graph.from_index(prev_node));
+                retained_nodes.insert(graph.from_index(current));
                 retained_edges.push((graph.from_index(prev_node), graph.from_index(current)));
                 current = prev_node;
             }
         }
     }
 
-    retained_edges
+    (retained_edges, retained_nodes)
 }
 
 fn non_terminal_leaves<G>(graph: G, terminals: &[G::NodeId]) -> HashSet<G::NodeId>
@@ -156,12 +161,11 @@ where
 /// let tree = steiner_tree(&graph, &terminals);
 /// assert_eq!(tree.edge_weights().sum::<i32>(), 12);
 /// ```
-pub fn steiner_tree<N, E>(graph: &UnGraph<N, E>, terminals: &[NodeIndex]) -> UnGraph<N, E>
+pub fn steiner_tree<N, E>(graph: &UnGraph<N, E>, terminals: &[NodeIndex]) -> StableGraph<N, E, Undirected>
 where
     N: Default + Clone + Eq + Hash + Debug,
     E: Copy + Eq + Ord + Measure + BoundedMeasure,
 {
-    let mut graph = graph.clone();
     let metric_closure = compute_metric_closure(&graph, &terminals);
     let metric_closure_graph: UnGraph<N, E, _> = UnGraph::from_edges(
         metric_closure
@@ -171,12 +175,14 @@ where
 
     let minimum_spanning = UnGraph::from_elements(min_spanning_tree(&metric_closure_graph));
 
-    let subgraph_edges = subgraph_edges_from_metric_closure(&graph, &minimum_spanning);
+    let (subgraph_edges, subgraph_nodes) = subgraph_edges_from_metric_closure(graph, &minimum_spanning);
 
+    let mut graph = StableGraph::from(graph.clone());
     graph.retain_edges(|graph, e| {
         let edge = graph.edge_endpoints(e).unwrap();
         subgraph_edges.contains(&(edge.0, edge.1)) || subgraph_edges.contains(&(edge.1, edge.0))
     });
+    graph.retain_nodes(|_, n| subgraph_nodes.contains(&n));
 
     let non_terminal_nodes = non_terminal_leaves(&graph, terminals);
     graph.retain_nodes(|_, n| !non_terminal_nodes.contains(&n));
@@ -187,7 +193,7 @@ where
 #[cfg(test)]
 mod test {
     use std::collections::{HashMap, HashSet};
-
+    use itertools::Itertools;
     use super::{compute_metric_closure, non_terminal_leaves, subgraph_edges_from_metric_closure};
     use crate::graph::NodeIndex;
     use crate::{
@@ -283,7 +289,7 @@ mod test {
 
         let minimum_spanning = UnGraph::from_elements(min_spanning_tree(&metric_closure_graph));
 
-        let subgraph_edges = subgraph_edges_from_metric_closure(&graph, &minimum_spanning);
+        let (mut subgraph_edges, subgraph_nodes) = subgraph_edges_from_metric_closure(&graph, &minimum_spanning);
 
         graph.retain_edges(|graph, e| {
             let edge = graph.edge_endpoints(e).unwrap();
