@@ -9,7 +9,7 @@ fn test_ford_fulkerson() {
     let _ = graph.add_node(1);
     let _ = graph.add_node(2);
     let destination = graph.add_node(3);
-    graph.extend_with_edges(&[(0, 1, 3), (0, 2, 2), (1, 2, 5), (1, 3, 2), (2, 3, 3)]);
+    graph.extend_with_edges([(0, 1, 3), (0, 2, 2), (1, 2, 5), (1, 3, 2), (2, 3, 3)]);
     let (max_flow, _) = ford_fulkerson(&graph, source, destination);
     assert_eq!(5, max_flow);
 
@@ -21,7 +21,7 @@ fn test_ford_fulkerson() {
     let _ = graph.add_node(3);
     let _ = graph.add_node(4);
     let destination = graph.add_node(5);
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (0, 1, 4.),
         (0, 2, 3.),
         (1, 3, 4.),
@@ -41,7 +41,7 @@ fn test_ford_fulkerson() {
     let _ = graph.add_node(3);
     let _ = graph.add_node(4);
     let destination = graph.add_node(5);
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (0, 1, 7.),
         (0, 2, 4.),
         (1, 3, 5.),
@@ -63,7 +63,7 @@ fn test_ford_fulkerson() {
     let _ = graph.add_node(3);
     let _ = graph.add_node(4);
     let destination = graph.add_node(5);
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (0, 1, 8.),
         (0, 2, 3.),
         (1, 3, 9.),
@@ -82,7 +82,7 @@ fn test_ford_fulkerson() {
     let _ = graph.add_node(3);
     let _ = graph.add_node(4);
     let destination = graph.add_node(5);
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (0, 1, 16),
         (0, 2, 13),
         (1, 2, 10),
@@ -105,7 +105,7 @@ fn test_ford_fulkerson() {
     let _ = graph.add_node(3);
     let _ = graph.add_node(4);
     let destination = graph.add_node(5);
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (0, 1, 10),
         (0, 2, 10),
         (1, 2, 2),

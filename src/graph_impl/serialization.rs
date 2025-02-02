@@ -305,7 +305,7 @@ where
     ))
 }
 
-impl<'a, N, E, Ty, Ix> FromDeserialized for Graph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> FromDeserialized for Graph<N, E, Ty, Ix>
 where
     Ix: IndexType,
     Ty: EdgeType,
@@ -326,11 +326,7 @@ where
             Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
         }
 
-        let mut gr = Graph {
-            nodes: nodes,
-            edges: edges,
-            ty: ty,
-        };
+        let mut gr = Graph { nodes, edges, ty };
         let nc = gr.node_count();
         gr.link_edges()
             .map_err(|i| invalid_node_err(i.index(), nc))?;

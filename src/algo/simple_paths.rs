@@ -28,11 +28,28 @@ use crate::{
 ///
 /// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
 ///
-/// let ways = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+/// let paths = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
 ///   .collect::<Vec<_>>();
 ///
-/// assert_eq!(4, ways.len());
+/// assert_eq!(paths.len(), 4);
+///
+///
+/// // Take only 2 paths.
+/// let paths = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+///   .take(2)
+///   .collect::<Vec<_>>();
+///
+/// assert_eq!(paths.len(), 2);
+///
 /// ```
+///
+/// # Note
+///
+/// The number of simple paths between a given pair of vertices almost always grows exponentially,
+/// reaching `O(V!)` on a dense graphs at `V` vertices.
+///
+/// So if you have a large enough graph, be prepared to wait for the results for years.
+/// Or consider extracting only part of the simple paths using the adapter [`Iterator::take`].
 pub fn all_simple_paths<TargetColl, G>(
     graph: G,
     from: G::NodeId,
@@ -113,7 +130,7 @@ mod test {
 
     #[test]
     fn test_all_simple_paths() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[
+        let graph = DiGraph::<i32, i32, _>::from_edges([
             (0, 1),
             (0, 2),
             (0, 3),
@@ -154,7 +171,7 @@ mod test {
 
     #[test]
     fn test_one_simple_path() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
+        let graph = DiGraph::<i32, i32, _>::from_edges([(0, 1), (2, 1)]);
 
         let expexted_simple_paths_0_to_1 = &[vec![0usize, 1]];
         println!("{}", Dot::new(&graph));
@@ -169,7 +186,7 @@ mod test {
 
     #[test]
     fn test_no_simple_paths() {
-        let graph = DiGraph::<i32, i32, _>::from_edges(&[(0, 1), (2, 1)]);
+        let graph = DiGraph::<i32, i32, _>::from_edges([(0, 1), (2, 1)]);
 
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_2: Vec<Vec<_>> =

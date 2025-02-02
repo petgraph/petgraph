@@ -50,13 +50,13 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 ///
 /// - Associated data `N` for nodes and `E` for edges, called *weights*.
 /// - The node weight `N` must implement `Copy` and will be used as node
-/// identifier, duplicated into several places in the data structure.
-/// It must be suitable as a hash table key (implementing `Eq + Hash`).
-/// The node type must also implement `Ord` so that the implementation can
-/// order the pair (`a`, `b`) for an edge connecting any two nodes `a` and `b`.
+///     identifier, duplicated into several places in the data structure.
+///     It must be suitable as a hash table key (implementing `Eq + Hash`).
+///     The node type must also implement `Ord` so that the implementation can
+///     order the pair (`a`, `b`) for an edge connecting any two nodes `a` and `b`.
 /// - `E` can be of arbitrary type.
 /// - Edge type `Ty` that determines whether the graph edges are directed or
-/// undirected.
+///     undirected.
 ///
 /// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
 ///
@@ -697,7 +697,7 @@ where
     ty: PhantomData<Ty>,
 }
 
-impl<'a, N, Ty> Iterator for Neighbors<'a, N, Ty>
+impl<N, Ty> Iterator for Neighbors<'_, N, Ty>
 where
     N: NodeTrait,
     Ty: EdgeType,
@@ -734,7 +734,7 @@ where
     ty: PhantomData<Ty>,
 }
 
-impl<'a, N, Ty> Iterator for NeighborsDirected<'a, N, Ty>
+impl<N, Ty> Iterator for NeighborsDirected<'_, N, Ty>
 where
     N: NodeTrait,
     Ty: EdgeType,
@@ -997,8 +997,8 @@ where
 /// with the `Cell<T>` being `TypedArena` allocated.
 pub struct Ptr<'b, T: 'b>(pub &'b T);
 
-impl<'b, T> Copy for Ptr<'b, T> {}
-impl<'b, T> Clone for Ptr<'b, T> {
+impl<T> Copy for Ptr<'_, T> {}
+impl<T> Clone for Ptr<'_, T> {
     fn clone(&self) -> Self {
         *self
     }
@@ -1030,23 +1030,23 @@ impl<'b, T> Ord for Ptr<'b, T> {
     }
 }
 
-impl<'b, T> Deref for Ptr<'b, T> {
+impl<T> Deref for Ptr<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
         self.0
     }
 }
 
-impl<'b, T> Eq for Ptr<'b, T> {}
+impl<T> Eq for Ptr<'_, T> {}
 
-impl<'b, T> Hash for Ptr<'b, T> {
+impl<T> Hash for Ptr<'_, T> {
     fn hash<H: hash::Hasher>(&self, st: &mut H) {
         let ptr = (self.0) as *const T;
         ptr.hash(st)
     }
 }
 
-impl<'b, T: fmt::Debug> fmt::Debug for Ptr<'b, T> {
+impl<T: fmt::Debug> fmt::Debug for Ptr<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
     }
@@ -1345,7 +1345,7 @@ where
 }
 
 #[cfg(feature = "rayon")]
-impl<'a, N> ParallelIterator for ParNodes<'a, N>
+impl<N> ParallelIterator for ParNodes<'_, N>
 where
     N: NodeTrait + Send + Sync,
 {
@@ -1364,7 +1364,7 @@ where
 }
 
 #[cfg(feature = "rayon")]
-impl<'a, N> IndexedParallelIterator for ParNodes<'a, N>
+impl<N> IndexedParallelIterator for ParNodes<'_, N>
 where
     N: NodeTrait + Send + Sync,
 {
@@ -1419,7 +1419,7 @@ where
 }
 
 #[cfg(feature = "rayon")]
-impl<'a, N, E, Ty> IndexedParallelIterator for ParAllEdges<'a, N, E, Ty>
+impl<N, E, Ty> IndexedParallelIterator for ParAllEdges<'_, N, E, Ty>
 where
     N: NodeTrait + Send + Sync,
     E: Sync,
@@ -1477,7 +1477,7 @@ where
 }
 
 #[cfg(feature = "rayon")]
-impl<'a, N, E, Ty> IndexedParallelIterator for ParAllEdgesMut<'a, N, E, Ty>
+impl<N, E, Ty> IndexedParallelIterator for ParAllEdgesMut<'_, N, E, Ty>
 where
     N: NodeTrait + Send + Sync,
     E: Send,

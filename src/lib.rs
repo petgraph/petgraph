@@ -133,12 +133,14 @@ pub mod visit;
 #[macro_use]
 pub mod data;
 
+pub mod acyclic;
 pub mod adj;
 pub mod algo;
 pub mod csr;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
+pub mod graph6;
 mod graph_impl;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
@@ -174,6 +176,10 @@ pub use crate::graph_impl::stable_graph;
 /// Edge direction.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
 #[repr(usize)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Direction {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
@@ -203,10 +209,18 @@ pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Directed {}
 
 /// Marker type for an undirected graph.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Undirected {}
 
 /// A graph's edge type determines whether it has directed edges or not.
@@ -256,7 +270,7 @@ impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, E) {
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<E> for (Ix, Ix, &'a E)
+impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, &E)
 where
     E: Clone,
 {
@@ -267,7 +281,7 @@ where
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix)
+impl<Ix, E> IntoWeightedEdge<E> for &(Ix, Ix)
 where
     Ix: Copy,
     E: Default,
@@ -279,7 +293,7 @@ where
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix, E)
+impl<Ix, E> IntoWeightedEdge<E> for &(Ix, Ix, E)
 where
     Ix: Copy,
     E: Clone,

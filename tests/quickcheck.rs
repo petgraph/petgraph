@@ -14,7 +14,7 @@ mod utils;
 use utils::{Small, Tournament};
 
 use odds::prelude::*;
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::hash::Hash;
 
 use itertools::assert_equal;
@@ -23,10 +23,11 @@ use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
 use petgraph::algo::{
-    bellman_ford, condensation, dijkstra, find_negative_cycle, floyd_warshall, ford_fulkerson,
-    greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
-    is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching,
-    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
+    bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
+    find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
+    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
+    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, page_rank, tarjan_scc,
+    toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -50,6 +51,7 @@ where
     Graph::from_elements(min_spanning_tree(&g))
 }
 
+use petgraph::algo::articulation_points::articulation_points;
 use std::fmt;
 
 quickcheck! {
@@ -207,7 +209,7 @@ fn graph_retain_edges() {
         if og.edge_count() < 30 {
             // check against filter_map
             let filtered = og.filter_map(
-                |_, w| Some(*w),
+                |_, _| Some(()),
                 |_, w| if *w >= 0 { Some(*w) } else { None },
             );
             assert_eq!(g.node_count(), filtered.node_count());
@@ -243,7 +245,7 @@ fn stable_graph_retain_edges() {
         if og.edge_count() < 30 {
             // check against filter_map
             let filtered = og.filter_map(
-                |_, w| Some(*w),
+                |_, _| Some(()),
                 |_, w| if *w >= 0 { Some(*w) } else { None },
             );
             assert_eq!(g.node_count(), filtered.node_count());
@@ -344,9 +346,9 @@ fn graph_remove_edge() {
         }
         assert_graph_consistent(&g);
         assert!(g.find_edge(a, b).is_none());
-        assert!(g.neighbors(a).find(|x| *x == b).is_none());
+        assert!(!g.neighbors(a).any(|x| x == b));
         if !g.is_directed() {
-            assert!(g.neighbors(b).find(|x| *x == a).is_none());
+            assert!(!g.neighbors(b).any(|x| x == a));
         }
         true
     }
@@ -369,10 +371,10 @@ fn stable_graph_remove_edge() {
         }
         //assert_graph_consistent(&g);
         assert!(g.find_edge(a, b).is_none());
-        assert!(g.neighbors(a).find(|x| *x == b).is_none());
+        assert!(!g.neighbors(a).any(|x| x == b));
         if !g.is_directed() {
             assert!(g.find_edge(b, a).is_none());
-            assert!(g.neighbors(b).find(|x| *x == a).is_none());
+            assert!(!g.neighbors(b).any(|x| x == a));
         }
         true
     }
@@ -407,10 +409,10 @@ fn stable_graph_add_remove_edges() {
                 (a, b),
                 g
             );
-            assert!(g.neighbors(a).find(|x| *x == b).is_none());
+            assert!(!g.neighbors(a).any(|x| x == b));
             if !g.is_directed() {
                 assert!(g.find_edge(b, a).is_none());
-                assert!(g.neighbors(b).find(|x| *x == a).is_none());
+                assert!(!g.neighbors(b).any(|x| x == a));
             }
         }
         true
@@ -432,14 +434,14 @@ where
             b
         );
         assert!(
-            g.neighbors(a).find(|x| *x == b).is_some(),
+            g.neighbors(a).any(|x| x == b),
             "Edge {:?} not in neighbor list for {:?}",
             (a, b),
             a
         );
         if !g.is_directed() {
             assert!(
-                g.neighbors(b).find(|x| *x == a).is_some(),
+                g.neighbors(b).any(|x| x == a),
                 "Edge {:?} not in neighbor list for {:?}",
                 (b, a),
                 b
@@ -458,7 +460,7 @@ fn graphmap_remove() {
             assert_eq!(contains, g.contains_edge(b, a));
         }
         assert_eq!(g.remove_edge(a, b).is_some(), contains);
-        assert!(!g.contains_edge(a, b) && g.neighbors(a).find(|x| *x == b).is_none());
+        assert!(!g.contains_edge(a, b) && !g.neighbors(a).any(|x| x == b));
         //(g.is_directed() || g.neighbors(b).find(|x| *x == a).is_none()));
         assert!(g.remove_edge(a, b).is_none());
         assert_graphmap_consistent(&g);
@@ -473,9 +475,7 @@ fn graphmap_add_remove() {
     fn prop(mut g: UnGraphMap<i8, ()>, a: i8, b: i8) -> bool {
         assert_eq!(g.contains_edge(a, b), g.add_edge(a, b, ()).is_some());
         g.remove_edge(a, b);
-        !g.contains_edge(a, b)
-            && g.neighbors(a).find(|x| *x == b).is_none()
-            && g.neighbors(b).find(|x| *x == a).is_none()
+        !g.contains_edge(a, b) && !g.neighbors(a).any(|x| x == b) && !g.neighbors(b).any(|x| x == a)
     }
     quickcheck::quickcheck(prop as fn(_, _, _) -> bool);
 }
@@ -568,13 +568,13 @@ fn graph_condensation_acyclic() {
 }
 
 #[derive(Debug, Clone)]
-struct DAG<N: Default + Clone + Send + 'static>(Graph<N, ()>);
+struct Dag<N: Default + Clone + Send + 'static>(Graph<N, ()>);
 
-impl<N: Default + Clone + Send + 'static> Arbitrary for DAG<N> {
+impl<N: Default + Clone + Send + 'static> Arbitrary for Dag<N> {
     fn arbitrary<G: Gen>(g: &mut G) -> Self {
         let nodes = usize::arbitrary(g);
         if nodes == 0 {
-            return DAG(Graph::with_capacity(0, 0));
+            return Dag(Graph::with_capacity(0, 0));
         }
         let split = g.gen_range(0., 1.);
         let max_width = f64::sqrt(nodes as f64) as usize;
@@ -599,7 +599,7 @@ impl<N: Default + Clone + Send + 'static> Arbitrary for DAG<N> {
             }
             nodes += cur_nodes;
         }
-        DAG(gr)
+        Dag(gr)
     }
 
     // shrink the graph by splitting it in two by a very
@@ -615,11 +615,11 @@ impl<N: Default + Clone + Send + 'static> Arbitrary for DAG<N> {
                         None
                     }
                 },
-                |_, w| Some(w.clone()),
+                |_, _| Some(()),
             );
             // make sure we shrink
             if gr.node_count() < self_.0.node_count() {
-                Some(DAG(gr))
+                Some(Dag(gr))
             } else {
                 None
             }
@@ -685,7 +685,7 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
 
 #[test]
 fn full_topo() {
-    fn prop(DAG(gr): DAG<()>) -> bool {
+    fn prop(Dag(gr): Dag<()>) -> bool {
         let order = toposort(&gr, None).unwrap();
         is_topo_order(&gr, &order)
     }
@@ -694,7 +694,7 @@ fn full_topo() {
 
 #[test]
 fn full_topo_generic() {
-    fn prop_generic(DAG(mut gr): DAG<usize>) -> bool {
+    fn prop_generic(Dag(mut gr): Dag<usize>) -> bool {
         assert!(!is_cyclic_directed(&gr));
         let mut index = 0;
         let mut topo = Topo::new(&gr);
@@ -731,7 +731,7 @@ fn full_topo_generic() {
         {
             order.clear();
             let init_nodes = gr.node_identifiers().filter(|n| {
-                gr.neighbors_directed(n.clone(), Direction::Incoming)
+                gr.neighbors_directed(*n, Direction::Incoming)
                     .next()
                     .is_none()
             });
@@ -796,7 +796,7 @@ quickcheck! {
         let second_best_distances = k_shortest_path(&g, v, None, 2, |e| *e.weight());
         let dijkstra_distances = dijkstra(&g, v, None, |e| *e.weight());
         for v in second_best_distances.keys() {
-            if second_best_distances[&v] < dijkstra_distances[&v] {
+            if second_best_distances[v] < dijkstra_distances[v] {
                 return false;
             }
         }
@@ -936,14 +936,13 @@ quickcheck! {
 
 quickcheck! {
     fn test_find_negative_cycle(gr: Graph<(), f32>) -> bool {
-        let gr = gr;
         if gr.node_count() == 0 {
             return true;
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
             if let Some(path) = find_negative_cycle(&gr, start) {
-                assert!(path.len() >= 1);
+                assert!(!path.is_empty());
             }
         }
         true
@@ -1129,7 +1128,7 @@ where
 }
 
 quickcheck! {
-    fn test_tred(g: DAG<()>) -> bool {
+    fn test_tred(g: Dag<()>) -> bool {
         let acyclic = g.0;
         println!("acyclic graph {:#?}", &acyclic);
         let toposort = toposort(&acyclic, None).unwrap();
@@ -1374,5 +1373,103 @@ quickcheck! {
         let max_flow_constaint = (sum_flows(&gr, &flows, source, Direction::Outgoing) == max_flow)
             && (sum_flows(&gr, &flows, destination, Direction::Incoming) == max_flow);
         return capacity_constraint && flow_conservation_constraint && max_flow_constaint;
+    }
+}
+
+quickcheck! {
+    fn test_dynamic_toposort(g: DiGraph<(), ()>) -> bool {
+        use petgraph::acyclic::Acyclic;
+        use petgraph::data::{Build, Create};
+        use petgraph::algo::toposort;
+        use std::collections::BTreeMap;
+        use std::iter;
+
+        // We will re-build `g` from scratch, adding edges one by one.
+        let mut acylic_g =
+            Acyclic::<DiGraph<(), ()>>::with_capacity(g.node_count(), g.edge_count());
+        let mut new_g = DiGraph::<(), ()>::new();
+
+        // This test is quite slow, so we bound the number of nodes.
+        const MAX_NODES: usize = 30;
+        let nodes: BTreeSet<_> = g.node_indices().take(MAX_NODES).collect();
+
+        // Add all nodes
+        let acyclic_nodes: BTreeMap<_, _> = nodes
+            .iter()
+            .zip(iter::repeat_with(|| acylic_g.add_node(())))
+            .collect();
+        let new_nodes: BTreeMap<_, _> = nodes
+            .iter()
+            .zip(iter::repeat_with(|| new_g.add_node(())))
+            .collect();
+
+        // Now add edges one by one
+        for e in g.edge_indices() {
+            let (src, dst) = g.edge_endpoints(e).unwrap();
+            if !nodes.contains(&src) || !nodes.contains(&dst) {
+                continue;
+            }
+            let new_g_backup = new_g.clone();
+
+            // Add the edge to the new graph
+            new_g.add_edge(new_nodes[&src], new_nodes[&dst], ());
+            let is_dag_exp = toposort(&new_g, None).is_ok();
+
+            // Add the edge to the acyclic graph
+            let is_dag_dyn = acylic_g
+                .try_add_edge(acyclic_nodes[&src], acyclic_nodes[&dst], ())
+                .is_ok();
+
+            // Check that both approaches agree on whether the graph is a DAG
+            assert_eq!(is_dag_exp, is_dag_dyn);
+
+            if !is_dag_exp {
+                // Remove the edge that makes it non-acyclic
+                new_g = new_g_backup;
+            }
+        }
+        true
+    }
+}
+
+fn is_proper_coloring<G>(g: G, coloring: &HashMap<G::NodeId, usize>) -> bool
+where
+    G: IntoNodeIdentifiers + IntoEdges,
+    G::NodeId: Eq + Hash,
+{
+    for node in g.node_identifiers() {
+        for nbor in g.neighbors(node) {
+            if node != nbor && coloring[&node] == coloring[&nbor] {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+quickcheck! {
+    fn dsatur_coloring_quickcheck(g: Graph<(), (), Undirected>) -> bool {
+        let (coloring, _) = dsatur_coloring(&g);
+        assert!(is_proper_coloring(&g, &coloring), "dsatur_coloring returned a non proper coloring");
+        true
+    }
+}
+
+quickcheck! {
+    // Test that removal of articulation points will always increase the amount of connected components.
+    fn test_articulation_points(g: Graph<(), u32, Undirected>) -> bool {
+
+        let articulation_points = articulation_points(&g);
+        let original_components = connected_components(&g);
+
+        for point in articulation_points {
+        let mut modified_graph = g.clone();
+        modified_graph.remove_node(point);
+        let new_components = connected_components(&modified_graph);
+        if new_components <= original_components {
+            return false;
+        }
+    }
+        true
     }
 }

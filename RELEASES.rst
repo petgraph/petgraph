@@ -1,3 +1,44 @@
+Version 0.7.1 (2025-01-08)
+==========================
+
+- Do not unnecessarily restrict ``indexmap`` version (`#714`_)
+- Export ``UndirectedAdaptor`` (`#717`_)
+
+.. _`#714`: https://github.com/petgraph/petgraph/pull/714
+.. _`#717`: https://github.com/petgraph/petgraph/pull/717
+
+Version 0.7.0 (2024-12-31)
+==========================
+
+- Re-released version 0.6.6 with the correct version number, as it included a major update to an exposed crate (`#664`_).
+
+Version 0.6.6 (2024-12-31 - yanked)
+===================================
+
+- Add graph6 format encoder and decoder (`#658`_)
+- Dynamic Topological Sort algorithm support (`#675`_)
+- Add ``UndirectedAdaptor`` (`#695`_)
+- Add ``LowerHex`` and ``UpperHex`` implementations for ``Dot`` (`#687`_)
+- Make ``serde`` support more complete (`#550`_)
+- Process multiple edges in the Floyd-Warshall implementation (`#685`_)
+- Update ``fixedbitset`` to 0.5.7 (`#664`_)
+- Fix ``immediately_dominated_by`` function called on root of graph returns root itself (`#670`_)
+- Fix adjacency matrix for ``Csr`` and ``List`` (`#648`_)
+- Fix clippy warnings (`#701`_)
+- Add performance note to the ``all_simple_paths`` function documentation (`#693`_)
+
+.. _`#658`: https://github.com/petgraph/petgraph/pull/658
+.. _`#675`: https://github.com/petgraph/petgraph/pull/675
+.. _`#695`: https://github.com/petgraph/petgraph/pull/695
+.. _`#687`: https://github.com/petgraph/petgraph/pull/687
+.. _`#550`: https://github.com/petgraph/petgraph/pull/550
+.. _`#685`: https://github.com/petgraph/petgraph/pull/685
+.. _`#664`: https://github.com/petgraph/petgraph/pull/664
+.. _`#670`: https://github.com/petgraph/petgraph/pull/670
+.. _`#648`: https://github.com/petgraph/petgraph/pull/648
+.. _`#701`: https://github.com/petgraph/petgraph/pull/701
+.. _`#693`: https://github.com/petgraph/petgraph/pull/693
+
 Version 0.6.5 (2024-05-06)
 ==========================
 
@@ -6,7 +47,7 @@ Version 0.6.5 (2024-05-06)
 - Add logo to the project (`#598`_)
 - Add Ford-Fulkerson algorithm (`#640`_)
 - Update ``itertools`` to 0.12.1 (`#628`_)
-- Update ``GraphMap`` to allow custom hash functions (`#623`_)
+- Update ``GraphMap`` to allow custom hash functions (`#622`_)
 - Fix documentation (`#630`_)
 - Fix clippy warnings (`#627`_)
 - (internal) Fix remove old ``copyclone`` macro (`#601`_)
@@ -18,7 +59,7 @@ Version 0.6.5 (2024-05-06)
 .. _`#598`: https://github.com/petgraph/petgraph/pull/598
 .. _`#640`: https://github.com/petgraph/petgraph/pull/640
 .. _`#628`: https://github.com/petgraph/petgraph/pull/628
-.. _`#623`: https://github.com/petgraph/petgraph/pull/623
+.. _`#622`: https://github.com/petgraph/petgraph/pull/622
 .. _`#630`: https://github.com/petgraph/petgraph/pull/630
 .. _`#627`: https://github.com/petgraph/petgraph/pull/627
 .. _`#601`: https://github.com/petgraph/petgraph/pull/601

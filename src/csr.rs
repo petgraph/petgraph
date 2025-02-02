@@ -1,6 +1,7 @@
 //! Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
 
 use std::cmp::{max, Ordering};
+use std::fmt;
 use std::iter::{Enumerate, Zip};
 use std::marker::PhantomData;
 use std::ops::{Index, IndexMut, Range};
@@ -25,6 +26,25 @@ pub type NodeIndex<Ix = DefaultIx> = Ix;
 pub type EdgeIndex = usize;
 
 const BINARY_SEARCH_CUTOFF: usize = 32;
+
+/// The error type for fallible operations with `Csr`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CsrError {
+    /// Both vertex indexes go outside the graph.
+    IndicesOutBounds(usize, usize),
+}
+
+impl std::error::Error for CsrError {}
+
+impl fmt::Display for CsrError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CsrError::IndicesOutBounds(a, b) => {
+                write!(f, "Both node indices {a} and {b} is out of Csr bounds")
+            }
+        }
+    }
+}
 
 /// Compressed Sparse Row ([`CSR`]) is a sparse adjacency matrix graph.
 ///
@@ -131,6 +151,7 @@ where
 /// Csr creation error: edges were not in sorted order.
 #[derive(Clone, Debug)]
 pub struct EdgesNotSorted {
+    #[allow(unused)]
     first_error: (usize, usize),
 }
 
@@ -272,6 +293,9 @@ where
         Ix::new(i)
     }
 
+    /// Add an edge from `a` to `b` to the `Csr`, with its associated
+    /// data weight.
+    ///
     /// Return `true` if the edge was added
     ///
     /// If you add all edges in row-major order, the time complexity
@@ -282,25 +306,54 @@ where
     where
         E: Clone,
     {
-        let ret = self.add_edge_(a, b, weight.clone());
+        self.try_add_edge(a, b, weight).unwrap()
+    }
+
+    /// Try to add an edge from `a` to `b` to the `Csr`, with its associated
+    /// data weight.
+    ///
+    /// Return `true` if the edge was added
+    ///
+    /// If you add all edges in row-major order, the time complexity
+    /// is **O(|V|·|E|)** for the whole operation.
+    ///
+    /// Possible errors:
+    /// - [`CsrError::IndicesOutBounds`] - when both idxs `a` & `b` is out of bounds.
+    pub fn try_add_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<bool, CsrError>
+    where
+        E: Clone,
+    {
+        let ret = self.add_edge_(a, b, weight.clone())?;
         if ret && !self.is_directed() {
             self.edge_count += 1;
         }
         if ret && !self.is_directed() && a != b {
-            let _ret2 = self.add_edge_(b, a, weight);
+            let _ret2 = self.add_edge_(b, a, weight)?;
             debug_assert_eq!(ret, _ret2);
         }
-        ret
+        Ok(ret)
     }
 
     // Return false if the edge already exists
-    fn add_edge_(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> bool {
-        assert!(a.index() < self.node_count() && b.index() < self.node_count());
+    fn add_edge_(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<bool, CsrError> {
+        if !(a.index() < self.node_count() && b.index() < self.node_count()) {
+            return Err(CsrError::IndicesOutBounds(a.index(), b.index()));
+        }
         // a x b is at (a, b) in the matrix
 
         // find current range of edges from a
         let pos = match self.find_edge_pos(a, b) {
-            Ok(_) => return false, /* already exists */
+            Ok(_) => return Ok(false), /* already exists */
             Err(i) => i,
         };
         self.column.insert(pos, b);
@@ -309,7 +362,7 @@ where
         for r in &mut self.row[a.index() + 1..] {
             *r += 1;
         }
-        true
+        Ok(true)
     }
 
     fn find_edge_pos(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Result<usize, usize> {
@@ -410,13 +463,13 @@ pub struct EdgeReference<'a, E: 'a, Ty, Ix: 'a = DefaultIx> {
     ty: PhantomData<Ty>,
 }
 
-impl<'a, E, Ty, Ix: Copy> Clone for EdgeReference<'a, E, Ty, Ix> {
+impl<E, Ty, Ix: Copy> Clone for EdgeReference<'_, E, Ty, Ix> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<'a, E, Ty, Ix: Copy> Copy for EdgeReference<'a, E, Ty, Ix> {}
+impl<E, Ty, Ix: Copy> Copy for EdgeReference<'_, E, Ty, Ix> {}
 
 impl<'a, Ty, E, Ix> EdgeReference<'a, E, Ty, Ix>
 where
@@ -431,7 +484,7 @@ where
     }
 }
 
-impl<'a, E, Ty, Ix> EdgeRef for EdgeReference<'a, E, Ty, Ix>
+impl<E, Ty, Ix> EdgeRef for EdgeReference<'_, E, Ty, Ix>
 where
     Ty: EdgeType,
     Ix: IndexType,
@@ -593,7 +646,7 @@ pub struct Neighbors<'a, Ix: 'a = DefaultIx> {
     iter: SliceIter<'a, NodeIndex<Ix>>,
 }
 
-impl<'a, Ix> Iterator for Neighbors<'a, Ix>
+impl<Ix> Iterator for Neighbors<'_, Ix>
 where
     Ix: IndexType,
 {
@@ -695,7 +748,7 @@ where
     }
 }
 
-impl<'a, N, E, Ty, Ix> IntoNodeIdentifiers for &'a Csr<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> IntoNodeIdentifiers for &Csr<N, E, Ty, Ix>
 where
     Ty: EdgeType,
     Ix: IndexType,
@@ -775,7 +828,7 @@ where
     }
 }
 
-impl<'a, N, Ix> DoubleEndedIterator for NodeReferences<'a, N, Ix>
+impl<N, Ix> DoubleEndedIterator for NodeReferences<'_, N, Ix>
 where
     Ix: IndexType,
 {
@@ -786,11 +839,11 @@ where
     }
 }
 
-impl<'a, N, Ix> ExactSizeIterator for NodeReferences<'a, N, Ix> where Ix: IndexType {}
+impl<N, Ix> ExactSizeIterator for NodeReferences<'_, N, Ix> where Ix: IndexType {}
 
 /// The adjacency matrix for **Csr** is a bitmap that's computed by
 /// `.adjacency_matrix()`.
-impl<'a, N, E, Ty, Ix> GetAdjacencyMatrix for &'a Csr<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> GetAdjacencyMatrix for &Csr<N, E, Ty, Ix>
 where
     Ix: IndexType,
     Ty: EdgeType,
@@ -801,8 +854,13 @@ where
         let n = self.node_count();
         let mut matrix = FixedBitSet::with_capacity(n * n);
         for edge in self.edge_references() {
-            let index = n * edge.source().index() + edge.target().index();
-            matrix.put(index);
+            let i = n * edge.source().index() + edge.target().index();
+            matrix.put(i);
+
+            if !self.is_directed() {
+                let j = edge.source().index() + n * edge.target().index();
+                matrix.put(j);
+            }
         }
         matrix
     }
@@ -925,7 +983,7 @@ mod tests {
         .unwrap();
         println!("{:?}", m);
         let mut dfs = Dfs::new(&m, 0);
-        while let Some(_) = dfs.next(&m) {}
+        while dfs.next(&m).is_some() {}
         for i in 0..m.node_count() - 2 {
             assert!(dfs.discovered.is_visited(&i), "visited {}", i)
         }
@@ -937,7 +995,7 @@ mod tests {
 
         dfs.reset(&m);
         dfs.move_to(0);
-        while let Some(_) = dfs.next(&m) {}
+        while dfs.next(&m).is_some() {}
 
         for i in 0..m.node_count() {
             assert!(dfs.discovered[i], "visited {}", i)

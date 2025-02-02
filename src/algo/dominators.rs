@@ -132,9 +132,11 @@ where
     type Item = N;
 
     fn next(&mut self) -> Option<Self::Item> {
-        for next in self.iter.by_ref() {
-            if next.1 == &self.node {
-                return Some(*next.0);
+        for (dominator, dominated) in self.iter.by_ref() {
+            // The root node dominates itself, but it should not be included in
+            // the results.
+            if dominated == &self.node && dominated != dominator {
+                return Some(*dominator);
             }
         }
         None
@@ -147,7 +149,7 @@ where
 
 /// The undefined dominator sentinel, for when we have not yet discovered a
 /// node's dominator.
-const UNDEFINED: usize = ::std::usize::MAX;
+const UNDEFINED: usize = usize::MAX;
 
 /// This is an implementation of the engineered ["Simple, Fast Dominance
 /// Algorithm"][0] discovered by Cooper et al.
@@ -326,5 +328,6 @@ mod tests {
         let dom_by: Vec<_> = doms.immediately_dominated_by(1).collect();
         assert_eq!(vec![2], dom_by);
         assert_eq!(None, doms.immediately_dominated_by(99).next());
+        assert_eq!(1, doms.immediately_dominated_by(0).count());
     }
 }

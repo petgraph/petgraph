@@ -68,14 +68,14 @@ pub struct EdgeReference<'a, E, Ix: IndexType> {
     edge: &'a WSuc<E, Ix>,
 }
 
-impl<'a, E, Ix: IndexType> Copy for EdgeReference<'a, E, Ix> {}
-impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
+impl<E, Ix: IndexType> Copy for EdgeReference<'_, E, Ix> {}
+impl<E, Ix: IndexType> Clone for EdgeReference<'_, E, Ix> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<'a, E, Ix: IndexType> visit::EdgeRef for EdgeReference<'a, E, Ix> {
+impl<E, Ix: IndexType> visit::EdgeRef for EdgeReference<'_, E, Ix> {
     type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex<Ix>;
     type Weight = E;
@@ -101,7 +101,7 @@ pub struct EdgeIndices<'a, E, Ix: IndexType> {
     cur: usize,
 }
 
-impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
+impl<E, Ix: IndexType> Iterator for EdgeIndices<'_, E, Ix> {
     type Item = EdgeIndex<Ix>;
     fn next(&mut self) -> Option<EdgeIndex<Ix>> {
         loop {
@@ -371,7 +371,7 @@ impl<E, Ix: IndexType> Build for List<E, Ix> {
     }
 }
 
-impl<'a, E, Ix> fmt::Debug for EdgeReferences<'a, E, Ix>
+impl<E, Ix> fmt::Debug for EdgeReferences<'_, E, Ix>
 where
     E: fmt::Debug,
     Ix: IndexType,
@@ -431,7 +431,7 @@ where
     }
 }
 
-impl<'a, E, Ix: IndexType> visit::IntoNodeIdentifiers for &'a List<E, Ix> {
+impl<E, Ix: IndexType> visit::IntoNodeIdentifiers for &List<E, Ix> {
     type NodeIdentifiers = NodeIndices<Ix>;
     fn node_identifiers(self) -> NodeIndices<Ix> {
         self.node_indices()
@@ -449,7 +449,7 @@ impl<Ix: IndexType> visit::NodeRef for NodeIndex<Ix> {
     }
 }
 
-impl<'a, Ix: IndexType, E> visit::IntoNodeReferences for &'a List<E, Ix> {
+impl<Ix: IndexType, E> visit::IntoNodeReferences for &List<E, Ix> {
     type NodeRef = NodeIndex<Ix>;
     type NodeReferences = NodeIndices<Ix>;
     fn node_references(self) -> Self::NodeReferences {
@@ -496,7 +496,7 @@ iter: std::iter::FlatMap<
 >,
 }
 
-impl<'a, E, Ix: IndexType> Clone for EdgeReferences<'a, E, Ix> {
+impl<E, Ix: IndexType> Clone for EdgeReferences<'_, E, Ix> {
     fn clone(&self) -> Self {
         EdgeReferences {
             iter: self.iter.clone(),
@@ -641,15 +641,12 @@ where
         for edge in self.edge_references() {
             let i = edge.source().index() * n + edge.target().index();
             matrix.put(i);
-
-            let j = edge.source().index() + n * edge.target().index();
-            matrix.put(j);
         }
         matrix
     }
 
     fn is_adjacent(&self, matrix: &FixedBitSet, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
-        let n = self.edge_count();
+        let n = self.node_count();
         let index = n * a.index() + b.index();
         matrix.contains(index)
     }

@@ -55,16 +55,16 @@ mod serialization;
 /// is some local measure of edge count.
 ///
 /// - Nodes and edges are each numbered in an interval from *0* to some number
-/// *m*, but *not all* indices in the range are valid, since gaps are formed
-/// by deletions.
+///     *m*, but *not all* indices in the range are valid, since gaps are formed
+///     by deletions.
 ///
 /// - You can select graph index integer type after the size of the graph. A smaller
-/// size may have better performance.
+///     size may have better performance.
 ///
 /// - Using indices allows mutation while traversing the graph, see `Dfs`.
 ///
 /// - The `StableGraph` is a regular rust collection and is `Send` and `Sync`
-/// (as long as associated data `N` and `E` are).
+///     (as long as associated data `N` and `E` are).
 ///
 /// - Indices don't allow as much compile time checking as references.
 ///
@@ -1318,7 +1318,7 @@ where
     }
 }
 
-impl<'a, N, Ix> DoubleEndedIterator for NodeReferences<'a, N, Ix>
+impl<N, Ix> DoubleEndedIterator for NodeReferences<'_, N, Ix>
 where
     Ix: IndexType,
 {
@@ -1336,15 +1336,15 @@ pub struct EdgeReference<'a, E: 'a, Ix = DefaultIx> {
     weight: &'a E,
 }
 
-impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
+impl<E, Ix: IndexType> Clone for EdgeReference<'_, E, Ix> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<'a, E, Ix: IndexType> Copy for EdgeReference<'a, E, Ix> {}
+impl<E, Ix: IndexType> Copy for EdgeReference<'_, E, Ix> {}
 
-impl<'a, E, Ix: IndexType> PartialEq for EdgeReference<'a, E, Ix>
+impl<E, Ix: IndexType> PartialEq for EdgeReference<'_, E, Ix>
 where
     E: PartialEq,
 {
@@ -1516,7 +1516,7 @@ where
     }
 }
 
-impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
+impl<E, Ix> DoubleEndedIterator for EdgeReferences<'_, E, Ix>
 where
     Ix: IndexType,
 {
@@ -1580,7 +1580,7 @@ pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> {
     next: [EdgeIndex<Ix>; 2],
 }
 
-impl<'a, E, Ix> Neighbors<'a, E, Ix>
+impl<E, Ix> Neighbors<'_, E, Ix>
 where
     Ix: IndexType,
 {
@@ -1599,7 +1599,7 @@ where
     }
 }
 
-impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix>
+impl<E, Ix> Iterator for Neighbors<'_, E, Ix>
 where
     Ix: IndexType,
 {
@@ -1709,7 +1709,7 @@ pub struct NodeIndices<'a, N: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
 
-impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
+impl<N, Ix: IndexType> Iterator for NodeIndices<'_, N, Ix> {
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1727,7 +1727,7 @@ impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
     }
 }
 
-impl<'a, N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'a, N, Ix> {
+impl<N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'_, N, Ix> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.ex_rfind_map(|(i, node)| {
             if node.weight.is_some() {
@@ -1745,7 +1745,7 @@ pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
 }
 
-impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
+impl<E, Ix: IndexType> Iterator for EdgeIndices<'_, E, Ix> {
     type Item = EdgeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1763,7 +1763,7 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
     }
 }
 
-impl<'a, E, Ix: IndexType> DoubleEndedIterator for EdgeIndices<'a, E, Ix> {
+impl<E, Ix: IndexType> DoubleEndedIterator for EdgeIndices<'_, E, Ix> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.ex_rfind_map(|(i, node)| {
             if node.weight.is_some() {
@@ -1900,7 +1900,7 @@ where
     }
 }
 
-impl<'a, Ix, E> visit::EdgeRef for EdgeReference<'a, E, Ix>
+impl<Ix, E> visit::EdgeRef for EdgeReference<'_, E, Ix>
 where
     Ix: IndexType,
 {

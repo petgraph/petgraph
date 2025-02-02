@@ -415,10 +415,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let mut elt = match self.iter.next() {
-                None => return None,
-                Some(elt) => elt,
-            };
+            let mut elt = self.iter.next()?;
             let keep = (self.f)(match elt {
                 Element::Node { ref mut weight } => Element::Node { weight },
                 Element::Edge {
@@ -431,11 +428,7 @@ where
                     weight,
                 },
             });
-            let is_node = if let Element::Node { .. } = elt {
-                true
-            } else {
-                false
-            };
+            let is_node = matches!(elt, Element::Node { .. });
             if !keep && is_node {
                 self.map.push(self.node_index);
             }
