@@ -22,13 +22,7 @@ use itertools::cloned;
 use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
-use petgraph::algo::{
-    bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
-    find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
-    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
-    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, page_rank, tarjan_scc,
-    toposort, Matching,
-};
+use petgraph::algo::{bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring, find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, page_rank, steiner_tree, tarjan_scc, toposort, Matching};
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::{edge_index, node_index, IndexType};
@@ -1471,5 +1465,23 @@ quickcheck! {
         }
     }
         true
+    }
+}
+
+quickcheck! {
+    fn test_steiner_tree(g: Graph<(), u32, Undirected>) -> bool {
+        if g.node_count() <= 1 {
+            return true; // We naturally don't support steiner trees with zero or one node
+        }
+        let mut terminals = g.node_indices().collect::<Vec<_>>();
+        terminals = terminals.into_iter().take(5).collect();
+        let m_steiner_tree = steiner_tree(&g, &terminals);
+
+        let steiner_tree_nodes: Vec<NodeIndex> = m_steiner_tree.node_indices().collect();
+
+        let spans_terminals = terminals.iter().all(|&t| steiner_tree_nodes.contains(&t));
+
+        let is_tree = m_steiner_tree.edge_count() == m_steiner_tree.node_count() - 1;
+        is_tree && spans_terminals
     }
 }
