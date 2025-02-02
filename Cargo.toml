@@ -4,7 +4,7 @@ name = "petgraph"
 version = "0.7.1"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-authors = ["bluss", "mitchmindtree"]
+authors = { workspace = true }
 
 description = "Graph data structure library. Provides graph types and graph algorithms."
 documentation = "https://docs.rs/petgraph/"
@@ -13,15 +13,22 @@ repository = "https://github.com/petgraph/petgraph"
 keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
 categories = ["data-structures"]
 
-rust-version = "1.64"
-
-edition = "2018"
+rust-version = { workspace = true }
+edition = { workspace = true }
 
 [package.metadata.docs.rs]
 features = ["rayon", "serde-1", "quickcheck"]
 
 [package.metadata.release]
 no-dev-version = true
+
+[workspace.package]
+rust-version = "1.64"
+edition = "2021"
+authors = ["bluss", "mitchmindtree"]
+
+[workspace]
+members = [".", "serialization-tests"]
 
 [lib]
 bench = false
@@ -71,6 +78,3 @@ matrix_graph = []
 serde-1 = ["serde", "serde_derive"]
 stable_graph = []
 unstable = ["generate"]
-
-[workspace]
-members = ["serialization-tests"]

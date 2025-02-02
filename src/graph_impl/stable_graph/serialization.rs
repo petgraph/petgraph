@@ -51,7 +51,7 @@ pub struct DeserStableGraph<N, E, Ix> {
 /// `Somes` are the present node weights N, with known length.
 struct Somes<T>(usize, T);
 
-impl<'a, N, Ix> Serialize for Somes<&'a [Node<Option<N>, Ix>]>
+impl<N, Ix> Serialize for Somes<&[Node<Option<N>, Ix>]>
 where
     N: Serialize,
 {
@@ -69,7 +69,7 @@ where
 /// Holes are the node indices of vacancies, with known length
 struct Holes<T>(usize, T);
 
-impl<'a, N, Ix> Serialize for Holes<&'a [Node<Option<N>, Ix>]>
+impl<N, Ix> Serialize for Holes<&[Node<Option<N>, Ix>]>
 where
     Ix: Serialize + IndexType,
 {
@@ -165,7 +165,7 @@ where
         SerStableGraph {
             nodes: Somes(node_count, nodes),
             node_holes: Holes(hole_count, nodes),
-            edges: edges,
+            edges,
             edge_property: EdgeProperty::from(PhantomData::<Ty>),
         }
     }
@@ -187,7 +187,7 @@ where
     }
 }
 
-impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
 where
     Ix: IndexType,
     Ty: EdgeType,
@@ -230,11 +230,7 @@ where
 
         let node_bound = nodes.len();
         let mut sgr = StableGraph {
-            g: Graph {
-                nodes: nodes,
-                edges: edges,
-                ty: ty,
-            },
+            g: Graph { nodes, edges, ty },
             node_count: 0,
             edge_count: 0,
             free_edge: EdgeIndex::end(),

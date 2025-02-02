@@ -4,9 +4,10 @@ name = "petgraph-serialization-tests"
 version = "0.0.0"
 publish = false
 license = "MIT/Apache-2.0"
-authors = [
-"bluss",
-]
+authors = ["bluss"]
+
+rust-version = { workspace = true }
+edition = { workspace = true }
 
 description = ""
 documentation = ""

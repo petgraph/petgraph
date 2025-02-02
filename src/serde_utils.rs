@@ -34,7 +34,7 @@ where
 {
     pub fn new(f: F) -> Self {
         MappedSequenceVisitor {
-            f: f,
+            f,
             marker: PhantomData,
         }
     }

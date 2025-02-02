@@ -20,7 +20,7 @@ fn second_shortest_path() {
     let l = graph.add_node(());
     let m = graph.add_node(());
 
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (a, b),
         (b, c),
         (c, d),

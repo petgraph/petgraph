@@ -96,17 +96,10 @@ impl<B> ControlFlow for Control<B> {
         Control::Continue
     }
     fn should_break(&self) -> bool {
-        if let Control::Break(_) = *self {
-            true
-        } else {
-            false
-        }
+        matches!(*self, Control::Break(_))
     }
     fn should_prune(&self) -> bool {
-        match *self {
-            Control::Prune => true,
-            Control::Continue | Control::Break(_) => false,
-        }
+        matches!(*self, Control::Prune)
     }
 }
 

@@ -19,7 +19,7 @@ fn graph_example() -> Graph<String, f32> {
     graph.add_node("K".to_owned());
     graph.add_node("L".to_owned());
     graph.add_node("M".to_owned());
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (1, 2),  // B->C
         (2, 1),  // C->B
         (4, 0),  // D->A
@@ -70,7 +70,6 @@ fn test_page_rank() {
 
 #[test]
 #[cfg(feature = "rayon")]
-
 fn test_par_page_rank() {
     let graph = graph_example();
     let output_ranks = parallel_page_rank(&graph, 0.85_f32, 100, Some(1e-12));
