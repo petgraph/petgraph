@@ -172,6 +172,7 @@ where
     node_ids: Option<G::NodeReferences>,
     node_map: HashMap<usize, usize>,
     node_count: usize,
+    #[allow(clippy::type_complexity)]
     sort_edges: BinaryHeap<MinScored<G::EdgeWeight, (G::NodeId, G::NodeId)>>,
     nodes_taken: HashSet<usize>,
     initial_node: Option<G::NodeRef>,
@@ -252,6 +253,6 @@ where
             });
         }
 
-        return None;
+        None
     }
 }
