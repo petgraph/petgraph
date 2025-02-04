@@ -10,7 +10,7 @@ use crate::visit::{
 #[allow(clippy::type_complexity, clippy::needless_range_loop)]
 /// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
 ///
-/// Compute distance of shortest paths in a weighted graph with positive or negative edge weights (but with no negative cycles)
+/// Compute the length of each shortest path in a weighted graph with positive or negative edge weights (but with no negative cycles).
 ///
 /// # Arguments
 /// * `graph`: graph with no negative cycle
@@ -80,7 +80,7 @@ use crate::visit::{
 /// ```
 pub fn floyd_warshall<G, F, K>(
     graph: G,
-    mut edge_cost: F,
+    edge_cost: F,
 ) -> Result<HashMap<(G::NodeId, G::NodeId), K>, NegativeCycle>
 where
     G: NodeCompactIndexable + IntoEdgeReferences + IntoNodeIdentifiers + GraphProp,

@@ -7,11 +7,15 @@ use crate::visit::{
     IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeIndexable, Visitable,
 };
 
+#[cfg(feature = "stable_graph")]
+use crate::stable_graph::StableGraph;
+use crate::Undirected;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
-use crate::stable_graph::StableGraph;
-use crate::Undirected;
+
+type Edge<G> = (<G as GraphBase>::NodeId, <G as GraphBase>::NodeId);
+type Subgraph<G> = HashSet<<G as GraphBase>::NodeId>;
 
 fn compute_shortest_path_length<G>(graph: G, source: G::NodeId, target: G::NodeId) -> G::EdgeWeight
 where
@@ -47,7 +51,7 @@ where
 fn subgraph_edges_from_metric_closure<G>(
     graph: G,
     minimum_spanning_closure: G,
-) -> (Vec<(<G as GraphBase>::NodeId, <G as GraphBase>::NodeId)>, HashSet<<G as GraphBase>::NodeId>)
+) -> (Vec<Edge<G>>, Subgraph<G>)
 where
     G: GraphBase
         + NodeCompactIndexable
@@ -160,13 +164,17 @@ where
 /// let terminals = vec![a, c, e, f];
 /// let tree = steiner_tree(&graph, &terminals);
 /// assert_eq!(tree.edge_weights().sum::<i32>(), 12);
-/// ```
-pub fn steiner_tree<N, E>(graph: &UnGraph<N, E>, terminals: &[NodeIndex]) -> StableGraph<N, E, Undirected>
+///
+#[cfg(feature = "stable_graph")]
+pub fn steiner_tree<N, E>(
+    graph: &UnGraph<N, E>,
+    terminals: &[NodeIndex],
+) -> StableGraph<N, E, Undirected>
 where
     N: Default + Clone + Eq + Hash + Debug,
     E: Copy + Eq + Ord + Measure + BoundedMeasure,
 {
-    let metric_closure = compute_metric_closure(&graph, &terminals);
+    let metric_closure = compute_metric_closure(&graph, terminals);
     let metric_closure_graph: UnGraph<N, E, _> = UnGraph::from_edges(
         metric_closure
             .iter()
@@ -175,7 +183,8 @@ where
 
     let minimum_spanning = UnGraph::from_elements(min_spanning_tree(&metric_closure_graph));
 
-    let (subgraph_edges, subgraph_nodes) = subgraph_edges_from_metric_closure(graph, &minimum_spanning);
+    let (subgraph_edges, subgraph_nodes) =
+        subgraph_edges_from_metric_closure(graph, &minimum_spanning);
 
     let mut graph = StableGraph::from(graph.clone());
     graph.retain_edges(|graph, e| {
@@ -192,8 +201,6 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::collections::{HashMap, HashSet};
-    use itertools::Itertools;
     use super::{compute_metric_closure, non_terminal_leaves, subgraph_edges_from_metric_closure};
     use crate::graph::NodeIndex;
     use crate::{
@@ -201,6 +208,7 @@ mod test {
         data::FromElements,
         Graph, Undirected,
     };
+    use std::collections::{HashMap, HashSet};
 
     #[test]
     fn test_compute_metric_closure() {
@@ -289,7 +297,8 @@ mod test {
 
         let minimum_spanning = UnGraph::from_elements(min_spanning_tree(&metric_closure_graph));
 
-        let (mut subgraph_edges, subgraph_nodes) = subgraph_edges_from_metric_closure(&graph, &minimum_spanning);
+        let (subgraph_edges, _subgraph_nodes) =
+            subgraph_edges_from_metric_closure(&graph, &minimum_spanning);
 
         graph.retain_edges(|graph, e| {
             let edge = graph.edge_endpoints(e).unwrap();

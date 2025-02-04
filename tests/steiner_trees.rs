@@ -350,6 +350,7 @@ fn example_kou_paper() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
     (graph, vec![nodes[0], nodes[1], nodes[2], nodes[3]])
 }
 
+#[cfg(feature = "stable_graph")]
 #[cfg(test)]
 mod test {
     use crate::{b01_example, b07_example, example_kou_paper};
