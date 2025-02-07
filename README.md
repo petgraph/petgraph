@@ -23,7 +23,7 @@ Crate feature flags:
 
 ## Recent Changes
 
-See [RELEASES][] for a list of changes. The minimum supported rust
+See [CHANGELOG][] for a list of changes. The minimum supported rust
 version will only change on major releases.
 
 ## Logo
@@ -49,4 +49,4 @@ be copied, modified, or distributed except according to those terms.
 [discord-badge]:  https://img.shields.io/discord/1166289348384280616?logo=discord&style=flat
 [discord-url]: https://discord.gg/n2tc79tJ4e
 [msrv-badge]: https://img.shields.io/badge/rustc-1.64+-blue.svg
-[RELEASES]: RELEASES.rst
+[CHANGELOG]: CHANGELOG.md
