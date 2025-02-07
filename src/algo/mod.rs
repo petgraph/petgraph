@@ -734,6 +734,8 @@ impl<M> Measure for M where M: Debug + PartialOrd + Add<M, Output = M> + Default
 pub trait FloatMeasure: Measure + Copy {
     fn zero() -> Self;
     fn infinite() -> Self;
+    fn from_f32(val: f32) -> Self;
+    fn from_f64(val: f64) -> Self;
 }
 
 impl FloatMeasure for f32 {
@@ -743,6 +745,12 @@ impl FloatMeasure for f32 {
     fn infinite() -> Self {
         1. / 0.
     }
+    fn from_f32(val: f32) -> Self {
+        val
+    }
+    fn from_f64(val: f64) -> Self {
+        val as f32
+    }
 }
 
 impl FloatMeasure for f64 {
@@ -751,6 +759,12 @@ impl FloatMeasure for f64 {
     }
     fn infinite() -> Self {
         1. / 0.
+    }
+    fn from_f32(val: f32) -> Self {
+        val as f64
+    }
+    fn from_f64(val: f64) -> Self {
+        val
     }
 }
 
