@@ -40,7 +40,6 @@ jobs:
             feat
             fix
             docs
-            style
             refactor
             perf
             test
@@ -92,41 +91,10 @@ jobs:
           message: |
             Hey there and thank you for opening this pull request! 👋
 
-            It looks like your proposed title indicates a breaking change. If that's the case,
-            please make sure to include a "BREAKING CHANGE:" footer in the body of the pull request
-            describing the breaking change and any migration instructions.
+            It looks like your proposed title indicates a breaking change. If that's the case, please make sure to include a "BREAKING CHANGE:" footer in the body of the pull request describing the breaking change and any migration instructions.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Fail if the footer is required but missing
         if: ${{ github.event_name == 'pull_request_target' && steps.breaking.outputs.breaking == 'true' && steps.breaking.outputs.has_breaking_footer == 'false' }}
-        run: exit 1
-
-      # PR titles marked as `rfc:` or `RFC:` are still errors, but we special case and print a different message,
-      # reminding the author to change the title before merging.
-      - name: Check for RFC tag
-        if: always()  && github.event_name == 'pull_request_target' && (steps.lint_pr_title.outputs.error_message != null)
-        id: rfc-tag
-        run: |
-          shopt -s nocasematch
-          if [[ "${PR_TITLE}" =~ ^rfc:.*$ ]]; then
-            echo "rfc=true" >> $GITHUB_OUTPUT
-          else
-            echo "rfc=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-      - name: Post comment if the PR is an RFC
-        id: rfc-tag-comment
-        if: ${{ github.event_name == 'pull_request_target' && steps.rfc-tag.outputs.rfc == 'true' }}
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: pr-title-lint-error
-          message: |
-            Hey there and thank you for opening this pull request! 👋
-
-            This PR is marked as an RFC. Please make sure to change the conventional commit type before merging.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Terminate the workflow after posting the RFC comment
-        if: ${{ github.event_name == 'pull_request_target' && steps.rfc-tag.outputs.rfc == 'true' }}
         run: exit 1
 
       - name: Post a comment if the PR badly formatted
@@ -139,8 +107,7 @@ jobs:
           message: |
             Hey there and thank you for opening this pull request! 👋
 
-            We require pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/)
-            and it looks like your proposed title needs to be adjusted.
+            We require pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/) and it looks like your proposed title needs to be adjusted.
 
             Your title should look like this. The scope field is optional.
             ```
@@ -153,10 +120,16 @@ jobs:
             ```
             and include a "BREAKING CHANGE:" footer in the body of the pull request.
 
-            Details:
-            ```
-            ${{ steps.lint_pr_title.outputs.error_message }}
-            ```
+            Available types:
+            - feat: A new feature
+            - fix: A bug fix
+            - docs: Documentation only changes
+            - refactor: A code change that neither fixes a bug nor adds a feature
+            - perf: A code change that improves performance
+            - test: Adding missing tests or correcting existing tests
+            - ci: Changes to the CI configuration files and scripts
+            - chore: Other changes that don't affect the published crate
+            - revert: Reverts a previous commit
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 

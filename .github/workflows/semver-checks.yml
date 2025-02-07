@@ -122,9 +122,7 @@ jobs:
           header: rs-semver-checks
           message: |
             This PR contains breaking changes to the public Rust API.
-            Please deprecate the old API instead (if possible), or mark the PR with a `!`
-            following the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
-            format to indicate a breaking change.
+            Please deprecate the old API instead (if possible), or mark the PR with a `!` following the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) format to indicate a breaking change.
 
             <details>
               <summary>cargo-semver-checks summary</summary>
