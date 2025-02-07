@@ -1,5 +1,6 @@
 //! Simple graphviz dot file format output.
 
+use std::collections::HashMap;
 use std::fmt::{self, Display, Write};
 
 use crate::visit::{
@@ -111,6 +112,8 @@ pub enum Config {
     NodeNoLabel,
     /// Do not print the graph/digraph string.
     GraphContentOnly,
+    /// For adding any attributes, mostly intended for: https://graphviz.org/docs/graph/
+    GraphAttribute(String, String),
     #[doc(hidden)]
     _Incomplete(()),
 }
@@ -120,6 +123,7 @@ macro_rules! make_config_struct {
         #[derive(Default)]
         struct Configs {
             $($variant: bool,)*
+            graph_attrs: HashMap<String, String>,
         }
         impl Configs {
             #[inline]
@@ -128,6 +132,7 @@ macro_rules! make_config_struct {
                 for c in configs {
                     match *c {
                         $(Config::$variant => conf.$variant = true,)*
+                        Config::GraphAttribute(ref key, ref val) => { conf.graph_attrs.insert(key.to_owned(), val.to_owned()); }
                         Config::_Incomplete(()) => {}
                     }
                 }
@@ -156,6 +161,10 @@ where
         let g = self.graph;
         if !self.config.GraphContentOnly {
             writeln!(f, "{} {{", TYPE[g.is_directed() as usize])?;
+        }
+
+        for (k, v) in &self.config.graph_attrs {
+            writeln!(f, "{}{:?} = {:?}", INDENT, k, v)?;
         }
 
         // output all labels
@@ -367,5 +376,21 @@ mod test {
             ),
         );
         assert_eq!(dot, "digraph {\n    0 [ label = \"a\"]\n    1 [ label = \"b\"]\n    0 -> 1 [ label = \"EDGE_LABEL\"]\n}\n");
+    }
+
+    #[test]
+    fn test_with_graph_attrs() {
+        let graph = simple_graph();
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(
+                &graph,
+                &[Config::GraphAttribute(
+                    "bgcolor".to_string(),
+                    "lightblue".to_string(),
+                )],
+            ),
+        );
+        assert_eq!(dot, "digraph {\n    \"bgcolor\" = \"lightblue\"\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n");
     }
 }
