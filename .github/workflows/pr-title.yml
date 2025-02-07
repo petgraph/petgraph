@@ -92,9 +92,7 @@ jobs:
           message: |
             Hey there and thank you for opening this pull request! 👋
 
-            It looks like your proposed title indicates a breaking change. If that's the case,
-            please make sure to include a "BREAKING CHANGE:" footer in the body of the pull request
-            describing the breaking change and any migration instructions.
+            It looks like your proposed title indicates a breaking change. If that's the case, please make sure to include a "BREAKING CHANGE:" footer in the body of the pull request describing the breaking change and any migration instructions.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Fail if the footer is required but missing
         if: ${{ github.event_name == 'pull_request_target' && steps.breaking.outputs.breaking == 'true' && steps.breaking.outputs.has_breaking_footer == 'false' }}
@@ -139,8 +137,7 @@ jobs:
           message: |
             Hey there and thank you for opening this pull request! 👋
 
-            We require pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/)
-            and it looks like your proposed title needs to be adjusted.
+            We require pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/) and it looks like your proposed title needs to be adjusted.
 
             Your title should look like this. The scope field is optional.
             ```
