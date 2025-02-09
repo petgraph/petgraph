@@ -75,7 +75,7 @@ pub use self::dfsvisit::*;
 pub use self::traversal::*;
 
 use fixedbitset::FixedBitSet;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasher, Hash};
 
 use super::EdgeType;
@@ -401,6 +401,46 @@ pub trait VisitMap<N> {
     fn is_visited(&self, a: &N) -> bool;
 }
 
+/// Ability to track paths when visiting a collection of NodeIds `N`.
+pub trait TrackPath<N> {
+    /// Set the `previous` node as the predecessor of the `current` node
+    /// in the path tracked currently, if `current` node is not `None`, else do nothing.
+    fn set_predecessor(&mut self, current: N, previous: Option<N>);
+    /// Unset the predecessor of the `current` node in the path tracked currently.
+    fn unset_predecessor(&mut self, current: N) -> Option<N>;
+    /// Construct and return the (sub)path of the underyling tracked path that ends at `last` node.
+    fn reconstruct_path_to(&self, last: N) -> Vec<N>;
+}
+
+impl<N, S> TrackPath<N> for HashMap<N, N, S>
+where
+    N: Hash + Eq + Copy,
+    S: BuildHasher,
+{
+    fn set_predecessor(&mut self, current: N, previous: Option<N>) {
+        if let Some(previous) = previous {
+            self.insert(current, previous);
+        }
+    }
+    fn unset_predecessor(&mut self, current: N) -> Option<N> {
+        self.remove(&current)
+    }
+    fn reconstruct_path_to(&self, last: N) -> Vec<N> {
+        let mut path = Vec::with_capacity(self.len());
+        path.push(last);
+
+        let mut current = last;
+        while let Some(&previous) = self.get(&current) {
+            path.push(previous);
+            current = previous;
+        }
+
+        path.reverse();
+
+        path
+    }
+}
+
 impl<Ix> VisitMap<Ix> for FixedBitSet
 where
     Ix: IndexType,
@@ -441,6 +481,37 @@ pub trait Visitable : GraphBase {
 }
 }
 Visitable! {delegate_impl []}
+
+#[allow(clippy::needless_arbitrary_self_type)]
+pub trait TrackablePath: GraphBase {
+    /// The associated tracker type.
+    type Tracker: TrackPath<Self::NodeId>;
+    /// Create a new tracker.
+    fn path_tracker(self: &Self) -> Self::Tracker;
+    /// Reset the tracker (and resize to new size of graph if needed)
+    fn reset_path_tracker(self: &Self, tracker: &mut Self::Tracker);
+}
+
+#[allow(clippy::needless_arbitrary_self_type)]
+impl<G> TrackablePath for G
+where
+    G: GraphBase,
+    G::NodeId: std::hash::Hash + Eq,
+{
+    type Tracker = HashMap<G::NodeId, G::NodeId>;
+    fn path_tracker(self: &Self) -> Self::Tracker {
+        // FIXME: If we could have `G: NodeCount`, then we
+        // might benefit from `HashMap::with_capacity(self.node_count())`.
+        // But, as of yet, we can't have multiple blanket impls with differing
+        // trait bounds.
+        // Refer to https://github.com/rust-lang/rfcs/issues/1053
+        HashMap::new()
+    }
+
+    fn reset_path_tracker(self: &Self, tracker: &mut Self::Tracker) {
+        tracker.clear();
+    }
+}
 
 trait_template! {
 /// Create or access the adjacency matrix of a graph.
