@@ -1,11 +1,9 @@
-use std::collections::hash_map::Entry::{Occupied, Vacant};
-use std::collections::{BinaryHeap, HashMap};
-
-use std::hash::Hash;
-
 use crate::algo::Measure;
 use crate::scored::MinScored;
 use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
+use std::collections::hash_map::Entry::{Occupied, Vacant};
+use std::collections::{BinaryHeap, HashMap};
+use std::hash::Hash;
 
 /// \[Generic\] Dijkstra's shortest path algorithm.
 ///

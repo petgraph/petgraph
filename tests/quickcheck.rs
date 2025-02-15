@@ -22,6 +22,8 @@ use itertools::cloned;
 use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
+#[cfg(feature = "stable_graph")]
+use petgraph::algo::steiner_tree;
 use petgraph::algo::{
     bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
@@ -1471,5 +1473,24 @@ quickcheck! {
         }
     }
         true
+    }
+}
+
+#[cfg(feature = "stable_graph")]
+quickcheck! {
+    fn test_steiner_tree(g: Graph<(), u32, Undirected>) -> bool {
+        if g.node_count() <= 1 {
+            return true; // We naturally don't support steiner trees with zero or one node
+        }
+
+        let mut terminals = g.node_indices().collect::<Vec<_>>();
+        terminals = terminals.into_iter().take(5).collect();
+        let m_steiner_tree = steiner_tree(&g, &terminals);
+
+        let steiner_tree_nodes: Vec<NodeIndex> = m_steiner_tree.node_indices().collect();
+
+        let spans_terminals = terminals.iter().all(|&t| steiner_tree_nodes.contains(&t));
+
+        spans_terminals
     }
 }
