@@ -4,18 +4,18 @@ use super::Color;
 use crate::{algo::IntoNeighbors, visit::IntoNodeIdentifiers};
 
 pub struct CutEdgesSearch<'a, N> {
-    /// The map of colors of each node.
-    /// If it hasn't any color it means it wasn't visited yet,
-    /// if it has gray color it means it is being processed and
-    /// if it has black color it means its processing is finished.
+    /// Map of node colors during search.
+    /// If it hasn't any color, it wasn't visited yet,
+    /// if it has gray color, it is being processed, and
+    /// if it has black color, has finished being processed.
     pub color: HashMap<N, Color>,
-    /// The preorder number of each node in the DFS search.
+    /// Preorder number of each node in DFS search.
     pub pre: HashMap<N, usize>,
-    /// The map of lowest preorder number each node is reachable in DFS search.
+    /// Lowest preorder number each node is reached in DFS search.
     pub low: HashMap<N, usize>,
-    /// The map of neighbors of each node.
+    /// Neighbors of each node.
     pub neighbors: HashMap<N, Box<dyn Iterator<Item = N> + 'a>>,
-    /// The stack of edges to be processed, it simulates a DFS search.
+    /// Stack of edges to be processed. Simulates a DFS search.
     pub edges_stack: Vec<(N, N)>,
 }
 
@@ -29,11 +29,10 @@ where
     where
         G: IntoNodeIdentifiers<NodeId = N>,
     {
-        let edges_stack = if let Some(start) = graph.node_identifiers().next() {
+        let root = graph.node_identifiers().next();
+        let edges_stack = if let Some(start) = root {
             // Initial dummy edge
-            let mut edges_stack = Vec::new();
-            edges_stack.push((start, start));
-            edges_stack
+            vec![(start, start)]
         } else {
             Vec::new()
         };
@@ -54,7 +53,7 @@ where
         while !self.edges_stack.is_empty() {
             let (parent, a) = *self.edges_stack.last().unwrap();
 
-            if self.color.get(&a) == None {
+            if !self.color.contains_key(&a) {
                 let cnt = self.color.len();
                 self.color.insert(a, Color::Gray);
                 self.pre.insert(a, cnt);
@@ -64,7 +63,7 @@ where
 
             if self.color.get(&a) == Some(&Color::Gray) {
                 if let Some(b) = (*self.neighbors.get_mut(&a).unwrap()).next() {
-                    if self.color.get(&b) == None {
+                    if !self.color.contains_key(&b) {
                         self.edges_stack.push((a, b));
                     } else if b != parent {
                         let low_a = *self.low.get(&a).unwrap();
