@@ -207,7 +207,7 @@ fn cut_edges_test_small_tree() {
         nodes.push(gr.add_node(1));
     }
 
-    let edges = vec![
+    let edges = [
         (1, 2, 1.0),
         (2, 3, 1.0),
         (3, 4, 1.0),
