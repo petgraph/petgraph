@@ -184,43 +184,43 @@ fn two_edge_connected_components_test_d() {
 }
 
 #[test]
-// 0 - 1 ---- 2
+// A - B ---- C
 // |   | \  / |
-// |   |  3 - 4
+// |   |  D - E
 // |   |
-// 6 - 5 - 7
+// G - F - H
 //      \ /
-//       8 - 9
+//       I - J
 fn two_edge_connected_components_test_e() {
     let mut gr = Graph::new_undirected();
-    let _0 = gr.add_node("0");
-    let _1 = gr.add_node("A");
-    let _2 = gr.add_node("B");
-    let _3 = gr.add_node("C");
-    let _4 = gr.add_node("D");
-    let _5 = gr.add_node("E");
-    let _6 = gr.add_node("F");
-    let _7 = gr.add_node("G");
-    let _8 = gr.add_node("H");
-    let _9 = gr.add_node("I");
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
+    let g = gr.add_node("G");
+    let h = gr.add_node("H");
+    let i = gr.add_node("I");
+    let j = gr.add_node("J");
 
-    gr.add_edge(_0, _1, 1.);
-    gr.add_edge(_0, _6, 2.);
-    gr.add_edge(_1, _2, 3.);
-    gr.add_edge(_1, _3, 4.);
-    gr.add_edge(_1, _5, 5.);
-    gr.add_edge(_2, _3, 6.);
-    gr.add_edge(_2, _4, 7.);
-    gr.add_edge(_3, _4, 8.);
-    gr.add_edge(_5, _6, 9.);
-    gr.add_edge(_5, _7, 10.);
-    gr.add_edge(_5, _8, 11.);
-    gr.add_edge(_7, _8, 12.);
-    gr.add_edge(_8, _9, 13.);
+    gr.add_edge(a, b, 1.);
+    gr.add_edge(a, g, 2.);
+    gr.add_edge(b, c, 3.);
+    gr.add_edge(b, d, 4.);
+    gr.add_edge(b, f, 5.);
+    gr.add_edge(c, d, 6.);
+    gr.add_edge(c, e, 7.);
+    gr.add_edge(d, e, 8.);
+    gr.add_edge(f, g, 9.);
+    gr.add_edge(f, h, 10.);
+    gr.add_edge(f, i, 11.);
+    gr.add_edge(h, i, 12.);
+    gr.add_edge(i, j, 13.);
 
     let expected_two_edge_connected_components = vec![
-        HashSet::from([_0, _1, _2, _3, _4, _5, _6, _7, _8]),
-        HashSet::from([_9]),
+        HashSet::from([a, b, c, d, e, f, g, h, i]),
+        HashSet::from([j]),
     ];
 
     test_two_edge_connected_components(&gr, expected_two_edge_connected_components);
