@@ -104,28 +104,28 @@ fn maximum_matching_huge(bench: &mut Bencher) {
 
 #[bench]
 fn maximum_bipartite_matching_100(bench: &mut Bencher) {
-    let (g, partition_1, partition_2) = generate_bipartite(100);
-    let partition_1_ids = partition_1
+    let (g, partition_a, partition_b) = generate_bipartite(100);
+    let partition_a_ids: Vec<_> = partition_a
         .iter()
         .map(|&id| NodeIndexable::from_index(&g, id as usize))
         .collect();
-    let partition_2_ids = partition_2
+    let partition_b_ids: Vec<_> = partition_b
         .iter()
         .map(|&id| NodeIndexable::from_index(&g, id as usize))
         .collect();
-    bench.iter(|| maximum_bipartite_matching(&g, &partition_1_ids, &partition_2_ids));
+    bench.iter(|| maximum_bipartite_matching(&g, &partition_a_ids, &partition_b_ids));
 }
 
 #[bench]
 fn maximum_bipartite_matching_1000(bench: &mut Bencher) {
-    let (g, partition_1, partition_2) = generate_bipartite(1_000);
-    let partition_1_ids = partition_1
+    let (g, partition_a, partition_b) = generate_bipartite(1_000);
+    let partition_a_ids: Vec<_> = partition_a
         .iter()
         .map(|&id| NodeIndexable::from_index(&g, id as usize))
         .collect();
-    let partition_2_ids = partition_2
+    let partition_b_ids: Vec<_> = partition_b
         .iter()
         .map(|&id| NodeIndexable::from_index(&g, id as usize))
         .collect();
-    bench.iter(|| maximum_bipartite_matching(&g, &partition_1_ids, &partition_2_ids));
+    bench.iter(|| maximum_bipartite_matching(&g, &partition_a_ids, &partition_b_ids));
 }
