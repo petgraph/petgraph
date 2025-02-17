@@ -14,6 +14,7 @@ pub mod feedback_arc_set;
 pub mod floyd_warshall;
 pub mod ford_fulkerson;
 pub mod isomorphism;
+mod johnson;
 pub mod k_shortest_path;
 pub mod matching;
 pub mod maximal_cliques;
@@ -50,6 +51,7 @@ pub use isomorphism::{
     is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
     subgraph_isomorphisms_iter,
 };
+pub use johnson::johnson;
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use maximal_cliques::maximal_cliques;
