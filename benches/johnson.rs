@@ -7,11 +7,11 @@ use petgraph::prelude::*;
 use std::cmp::{max, min};
 use test::Bencher;
 
-use petgraph::algo::floyd_warshall;
+use petgraph::algo::johnson;
 
 #[bench]
 #[allow(clippy::needless_range_loop)]
-fn floyd_warshall_bench(bench: &mut Bencher) {
+fn johnson_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;
     let mut g = Graph::new_undirected();
     let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).map(|i| g.add_node(i)).collect();
@@ -28,25 +28,25 @@ fn floyd_warshall_bench(bench: &mut Bencher) {
     }
 
     bench.iter(|| {
-        let _scores = floyd_warshall(&g, |e| *e.weight());
+        let _scores = johnson(&g, |e| *e.weight());
     });
 }
 
 #[bench]
-fn floyd_warshall_sparse_1000_nodes(bench: &mut Bencher) {
+fn johnson_sparse_1000_nodes(bench: &mut Bencher) {
     let graph = build_graph(1000, false);
 
     bench.iter(|| {
-        let _scores = floyd_warshall(&graph, |e| *e.weight());
+        let _scores = johnson(&graph, |e| *e.weight());
     });
 }
 
 #[bench]
-fn floyd_warshall_dense_1000_nodes(bench: &mut Bencher) {
+fn johnson_dense_1000_nodes(bench: &mut Bencher) {
     let graph = build_graph(1000, true);
 
     bench.iter(|| {
-        let _scores = floyd_warshall(&graph, |e| *e.weight());
+        let _scores = johnson(&graph, |e| *e.weight());
     });
 }
 
