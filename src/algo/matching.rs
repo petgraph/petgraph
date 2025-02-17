@@ -3,7 +3,7 @@ use std::hash::Hash;
 
 use crate::visit::{
     EdgeCount, EdgeIndexable, EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, VisitMap, Visitable,
+    NodeCount, NodeIndexable, VisitMap, Visitable,
 };
 
 use crate::{algo::ford_fulkerson, graph::NodeIndex, Directed, Graph};
@@ -609,7 +609,7 @@ pub fn maximum_bipartite_matching<G>(
     partition_b: &[G::NodeId],
 ) -> Matching<G>
 where
-    G: NodeIndexable + EdgeIndexable + NodeCount + EdgeCount + IntoNodeReferences + IntoEdges,
+    G: NodeIndexable + EdgeIndexable + NodeCount + EdgeCount + IntoEdges,
 {
     let (network, source, sink) =
         maximum_bipartite_matching_instance(&graph, partition_a, partition_b);
@@ -640,7 +640,7 @@ fn maximum_bipartite_matching_instance<G>(
     partition_b: &[G::NodeId],
 ) -> (Graph<(), usize, Directed>, NodeIndex, NodeIndex)
 where
-    G: NodeIndexable + EdgeIndexable + NodeCount + EdgeCount + IntoNodeReferences + IntoEdges,
+    G: NodeIndexable + NodeCount + EdgeCount + IntoEdges,
 {
     let mut network = Graph::with_capacity(
         graph.node_count() + 2,
