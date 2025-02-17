@@ -3,7 +3,6 @@ use std::hash::Hash;
 
 use petgraph::algo::{greedy_matching, maximum_bipartite_matching, maximum_matching};
 use petgraph::prelude::*;
-use petgraph::visit::EdgeIndexable;
 
 macro_rules! assert_one_of {
     ($actual:expr, [$($expected:expr),+]) => {
