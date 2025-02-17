@@ -71,7 +71,7 @@ use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable};
 pub fn spfa<G, F, K>(
     graph: G,
     source: G::NodeId,
-    mut edge_cost: F,
+    edge_cost: F,
 ) -> Result<Paths<G::NodeId, K>, NegativeCycle>
 where
     G: IntoEdges + IntoNodeIdentifiers + NodeIndexable,
@@ -80,9 +80,9 @@ where
 {
     let ix = |i| graph.to_index(i);
 
-    let mut predecessors = vec![None; graph.node_bound()];
-    let mut distances = vec![K::max(); graph.node_bound()];
-    distances[ix(source)] = K::default();
+    let pred = vec![None; graph.node_bound()];
+    let mut dist = vec![K::max(); graph.node_bound()];
+    dist[ix(source)] = K::default();
 
     // Queue of vertices capable of relaxation of the found shortest distances.
     let mut queue: Vec<G::NodeId> = Vec::with_capacity(graph.node_bound());
@@ -90,6 +90,34 @@ where
 
     queue.push(source);
     in_queue[ix(source)] = true;
+
+    let (distances, predecessors) = spfa_loop(graph, dist, Some(pred), queue, in_queue, edge_cost)?;
+
+    Ok(Paths {
+        distances,
+        predecessors: predecessors.unwrap_or_default(),
+    })
+}
+
+/// The main cycle of the SPFA algorithm. Calculating the predecessors is optional.
+///
+/// The `queue` must be pre-initialized by at least one `source` node.
+/// The content of `in_queue` must match to `queue`.
+#[allow(clippy::type_complexity)]
+pub(crate) fn spfa_loop<G, F, K>(
+    graph: G,
+    mut distances: Vec<K>,
+    mut predecessors: Option<Vec<Option<G::NodeId>>>,
+    mut queue: Vec<G::NodeId>,
+    mut in_queue: Vec<bool>,
+    mut edge_cost: F,
+) -> Result<(Vec<K>, Option<Vec<Option<G::NodeId>>>), NegativeCycle>
+where
+    G: IntoEdges + IntoNodeIdentifiers + NodeIndexable,
+    F: FnMut(G::EdgeRef) -> K,
+    K: BoundedMeasure + Copy,
+{
+    let ix = |i| graph.to_index(i);
 
     // Keep track of how many times each vertex appeared
     // in the queue to be able to detect a negative cycle.
@@ -113,7 +141,9 @@ where
 
             if !overflow && dist < distances[ix(j)] {
                 distances[ix(j)] = dist;
-                predecessors[ix(j)] = Some(i);
+                if let Some(p) = predecessors.as_mut() {
+                    p[ix(j)] = Some(i)
+                }
 
                 if !in_queue[ix(j)] {
                     in_queue[ix(j)] = true;
@@ -123,8 +153,5 @@ where
         }
     }
 
-    Ok(Paths {
-        distances,
-        predecessors,
-    })
+    Ok((distances, predecessors))
 }
