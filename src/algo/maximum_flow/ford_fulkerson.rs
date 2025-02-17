@@ -2,15 +2,14 @@ use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::ops::Sub;
 
 use crate::{
+    algo::{EdgeRef, PositiveMeasure},
     data::DataMap,
+    prelude::Direction,
     visit::{
         EdgeCount, EdgeIndexable, IntoEdges, IntoEdgesDirected, NodeCount, NodeIndexable, VisitMap,
         Visitable,
     },
 };
-
-use super::{EdgeRef, PositiveMeasure};
-use crate::prelude::Direction;
 
 fn residual_capacity<N>(
     network: N,
