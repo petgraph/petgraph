@@ -605,8 +605,8 @@ fn augment_path<G>(
 /// The input graph is treated as if undirected.
 pub fn maximum_bipartite_matching<G>(
     graph: G,
-    partition_a: &Vec<G::NodeId>,
-    partition_b: &Vec<G::NodeId>,
+    partition_a: &[G::NodeId],
+    partition_b: &[G::NodeId],
 ) -> Matching<G>
 where
     G: NodeIndexable + EdgeIndexable + NodeCount + EdgeCount + IntoNodeReferences + IntoEdges,
@@ -636,8 +636,8 @@ where
 /// with the ones from original graph.
 fn maximum_bipartite_matching_instance<G>(
     graph: &G,
-    partition_a: &Vec<G::NodeId>,
-    partition_b: &Vec<G::NodeId>,
+    partition_a: &[G::NodeId],
+    partition_b: &[G::NodeId],
 ) -> (Graph<(), usize, Directed>, NodeIndex, NodeIndex)
 where
     G: NodeIndexable + EdgeIndexable + NodeCount + EdgeCount + IntoNodeReferences + IntoEdges,
@@ -684,8 +684,8 @@ where
 
 fn source_and_target_from_partitions<G>(
     edge: G::EdgeRef,
-    partition_a: &Vec<G::NodeId>,
-    partition_b: &Vec<G::NodeId>,
+    partition_a: &[G::NodeId],
+    partition_b: &[G::NodeId],
 ) -> (G::NodeId, G::NodeId)
 where
     G: IntoEdges,
