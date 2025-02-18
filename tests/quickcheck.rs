@@ -34,7 +34,7 @@ use petgraph::algo::{
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
     k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
-    min_spanning_tree, page_rank, parallel_johnson, spfa, tarjan_scc, toposort, Matching,
+    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -47,6 +47,9 @@ use petgraph::visit::{
     IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, VisitMap, Visitable,
 };
 use petgraph::EdgeType;
+
+#[cfg(feature = "rayon")]
+use petgraph::algo::parallel_johnson;
 
 fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
 where
