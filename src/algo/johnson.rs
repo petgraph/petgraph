@@ -116,7 +116,7 @@ where
 
 /// [Johnson algorithm][johnson]
 /// implementation for all pairs shortest path problem,
-/// parallelizing the [`dijkstra`] algorithm calls.
+/// parallelizing the `dijkstra` algorithm calls with `rayon`.
 ///
 /// Сompute the lengths of shortest paths in a weighted graph with
 /// positive or negative edge weights, but no negative cycles.
