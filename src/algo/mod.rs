@@ -14,7 +14,7 @@ pub mod feedback_arc_set;
 pub mod floyd_warshall;
 pub mod ford_fulkerson;
 pub mod isomorphism;
-mod johnson;
+pub mod johnson;
 pub mod k_shortest_path;
 pub mod matching;
 pub mod maximal_cliques;
@@ -61,6 +61,9 @@ pub use simple_paths::all_simple_paths;
 pub use spfa::spfa;
 #[cfg(feature = "stable_graph")]
 pub use steiner_tree::steiner_tree;
+
+#[cfg(feature = "rayon")]
+pub use johnson::parallel_johnson;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///

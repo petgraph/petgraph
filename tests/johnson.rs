@@ -1,6 +1,12 @@
 use petgraph::algo::johnson;
+use petgraph::visit::GraphBase;
 use petgraph::{prelude::*, Directed, Graph, Undirected};
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::hash::Hash;
+
+#[cfg(feature = "rayon")]
+use petgraph::algo::parallel_johnson;
 
 #[test]
 fn johnson_uniform_weight() {
@@ -83,16 +89,16 @@ fn johnson_uniform_weight() {
     .iter()
     .cloned()
     .collect();
-    let res = johnson(&graph, |_| 1_i32).unwrap();
 
+    let res = johnson(&graph, |_| 1_i32).unwrap();
     let nodes = [a, b, c, d, e, f, g, h];
-    for node1 in &nodes {
-        for node2 in &nodes {
-            assert_eq!(
-                res.get(&(*node1, *node2)),
-                expected_res.get(&(*node1, *node2))
-            );
-        }
+
+    match_results::<Graph<(), i32, Directed>, i32>(res, &expected_res, &nodes);
+
+    #[cfg(feature = "rayon")]
+    {
+        let res = parallel_johnson(&graph, |_| 1_i32).unwrap();
+        match_results::<Graph<(), i32, Directed>, i32>(res, &expected_res, &nodes);
     }
 }
 
@@ -130,15 +136,14 @@ fn johnson_weighted() {
     .collect();
 
     let res = johnson(&graph, |edge| *edge.weight()).unwrap();
-
     let nodes = [a, b, c, d];
-    for node1 in &nodes {
-        for node2 in &nodes {
-            assert_eq!(
-                res.get(&(*node1, *node2)),
-                expected_res.get(&(*node1, *node2))
-            );
-        }
+
+    match_results::<Graph<(), i32, Directed>, i32>(res, &expected_res, &nodes);
+
+    #[cfg(feature = "rayon")]
+    {
+        let res = parallel_johnson(&graph, |edge| *edge.weight()).unwrap();
+        match_results::<Graph<(), i32, Directed>, i32>(res, &expected_res, &nodes);
     }
 }
 
@@ -182,15 +187,14 @@ fn johnson_weighted_undirected() {
     .collect();
 
     let res = johnson(&graph, |edge| *edge.weight()).unwrap();
-
     let nodes = [a, b, c, d];
-    for node1 in &nodes {
-        for node2 in &nodes {
-            assert_eq!(
-                res.get(&(*node1, *node2)),
-                expected_res.get(&(*node1, *node2))
-            );
-        }
+
+    match_results::<Graph<(), i32, Directed>, i32>(res, &expected_res, &nodes);
+
+    #[cfg(feature = "rayon")]
+    {
+        let res = parallel_johnson(&graph, |edge| *edge.weight()).unwrap();
+        match_results::<Graph<(), i32, Directed>, i32>(res, &expected_res, &nodes);
     }
 }
 
@@ -204,8 +208,13 @@ fn johnson_negative_cycle() {
     graph.extend_with_edges([(a, b, 1.0), (b, c, -3.0), (c, a, 1.0)]);
 
     let res = johnson(&graph, |edge| *edge.weight());
-
     assert!(res.is_err());
+
+    #[cfg(feature = "rayon")]
+    {
+        let res = parallel_johnson(&graph, |edge| *edge.weight());
+        assert!(res.is_err());
+    }
 }
 
 #[test]
@@ -246,10 +255,28 @@ fn johnson_multiple_edges() {
     .collect();
 
     let res = johnson(&graph, |edge| *edge.weight()).unwrap();
-
     let nodes = [a, b, c, d];
-    for node1 in &nodes {
-        for node2 in &nodes {
+
+    match_results::<Graph<(), i32, Directed>, i32>(res, &expected_res, &nodes);
+
+    #[cfg(feature = "rayon")]
+    {
+        let res = parallel_johnson(&graph, |edge| *edge.weight()).unwrap();
+        match_results::<Graph<(), i32, Directed>, i32>(res, &expected_res, &nodes);
+    }
+}
+
+fn match_results<G, K>(
+    res: HashMap<(G::NodeId, G::NodeId), K>,
+    expected_res: &HashMap<(G::NodeId, G::NodeId), K>,
+    nodes: &[G::NodeId],
+) where
+    G: GraphBase,
+    G::NodeId: Eq + Hash,
+    K: Eq + Debug,
+{
+    for node1 in nodes {
+        for node2 in nodes {
             assert_eq!(
                 res.get(&(*node1, *node2)),
                 expected_res.get(&(*node1, *node2))
