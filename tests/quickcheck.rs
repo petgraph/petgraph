@@ -32,7 +32,7 @@ use petgraph::algo::steiner_tree;
 use petgraph::algo::{
     bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
-    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
+    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
     k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
     min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
 };
@@ -1554,6 +1554,30 @@ quickcheck! {
             if i >= 10 { break; } // testing all is too slow
             spfa(&gr, start, |edge| *edge.weight()).unwrap();
         }
+        true
+    }
+}
+
+quickcheck! {
+    // checks johnson against dijkstra results
+    fn johnson_(g: Graph<u32, u32>) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+
+        let johnson_res = johnson(&g, |e| *e.weight()).unwrap();
+
+        for node1 in g.node_identifiers() {
+            let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
+
+            for node2 in g.node_identifiers() {
+                // The results must be same
+                if johnson_res.get(&(node1, node2)) != dijkstra_res.get(&node2) {
+                    return false;
+                }
+            }
+        }
+
         true
     }
 }
