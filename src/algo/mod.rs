@@ -14,11 +14,13 @@ pub mod feedback_arc_set;
 pub mod floyd_warshall;
 pub mod ford_fulkerson;
 pub mod isomorphism;
+pub mod johnson;
 pub mod k_shortest_path;
 pub mod matching;
 pub mod min_spanning_tree;
 pub mod page_rank;
 pub mod simple_paths;
+pub mod spfa;
 pub mod tred;
 
 use std::num::NonZeroUsize;
@@ -45,11 +47,16 @@ pub use isomorphism::{
     is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
     subgraph_isomorphisms_iter,
 };
+pub use johnson::johnson;
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;
 pub use simple_paths::all_simple_paths;
+pub use spfa::spfa;
+
+#[cfg(feature = "rayon")]
+pub use johnson::parallel_johnson;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///
