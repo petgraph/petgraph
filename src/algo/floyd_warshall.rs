@@ -21,6 +21,9 @@ use crate::visit::{
 /// * `Ok`: (if graph contains no negative cycle) a hashmap containing all pairs shortest paths
 /// * `Err`: if graph contains negative cycle.
 ///
+/// **Note**: If the graph is sparse (the number of edges is quite small),
+/// consider using the [`johnson`](fn@crate::algo::johnson), which is likely to show better performance.
+///
 /// # Examples
 /// ```rust
 /// use petgraph::{prelude::*, Graph, Directed};
