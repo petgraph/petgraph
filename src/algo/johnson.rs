@@ -10,10 +10,15 @@ use crate::visit::{EdgeRef, IntoEdges, IntoNodeIdentifiers, NodeIndexable, Visit
 #[cfg(feature = "rayon")]
 use std::marker::{Send, Sync};
 
-/// [Johnson algorithm][johnson] for all pairs shortest path problem.
+/// \[Generic\] [Johnson algorithm][johnson] for all pairs shortest path problem.
 ///
 /// Сompute the lengths of shortest paths in a weighted graph with
 /// positive or negative edge weights, but no negative cycles.
+///
+/// The time complexity of this implementation is O(VElog(V) + V^2*log(V)),
+/// which is faster than [`floyd_warshall`](fn@crate::algo::floyd_warshall) on sparse graphs and slower on dense ones.
+///
+/// There is also a parallel implementation `parallel_johnson`, available under the `rayon` feature.
 ///
 /// ## Arguments
 /// * `graph`: weighted graph.
@@ -114,7 +119,7 @@ where
     Ok(distance_map)
 }
 
-/// [Johnson algorithm][johnson]
+/// \[Generic\] [Johnson algorithm][johnson]
 /// implementation for all pairs shortest path problem,
 /// parallelizing the `dijkstra` algorithm calls with `rayon`.
 ///
