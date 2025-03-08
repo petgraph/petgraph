@@ -1481,7 +1481,7 @@ quickcheck! {
         if nb_nodes == 0 {
             return label_propagation(&graph, &[], 1, 1).is_empty();
         }
-        let labels: Vec<Option<usize>> = (0..nb_nodes).map(|n| Some(n)).collect();
+        let labels: Vec<Option<usize>> = (0..nb_nodes).map(Some).collect();
         let predicted_labels = label_propagation(&graph, &labels, 2, 1);
         for node in predicted_labels.keys() {
             if graph.node_weight(*node).unwrap().is_some() {

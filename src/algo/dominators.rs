@@ -228,7 +228,7 @@ where
 
     // All done! Translate the indices back into proper `G::NodeId`s.
 
-    debug_assert!(!dominators.iter().any(|&dom| dom == UNDEFINED));
+    debug_assert!(!dominators.contains(&UNDEFINED));
 
     Dominators {
         root,

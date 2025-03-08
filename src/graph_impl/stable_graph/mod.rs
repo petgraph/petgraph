@@ -7,7 +7,6 @@ use std::cmp;
 use std::fmt;
 use std::iter;
 use std::marker::PhantomData;
-use std::mem::replace;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
@@ -55,16 +54,16 @@ mod serialization;
 /// is some local measure of edge count.
 ///
 /// - Nodes and edges are each numbered in an interval from *0* to some number
-///     *m*, but *not all* indices in the range are valid, since gaps are formed
-///     by deletions.
+///   *m*, but *not all* indices in the range are valid, since gaps are formed
+///   by deletions.
 ///
 /// - You can select graph index integer type after the size of the graph. A smaller
-///     size may have better performance.
+///   size may have better performance.
 ///
 /// - Using indices allows mutation while traversing the graph, see `Dfs`.
 ///
 /// - The `StableGraph` is a regular rust collection and is `Send` and `Sync`
-///     (as long as associated data `N` and `E` are).
+///   (as long as associated data `N` and `E` are).
 ///
 /// - Indices don't allow as much compile time checking as references.
 ///
@@ -357,7 +356,7 @@ where
             if self.free_edge != EdgeIndex::end() {
                 edge_idx = self.free_edge;
                 edge = &mut self.g.edges[edge_idx.index()];
-                let _old = replace(&mut edge.weight, Some(weight));
+                let _old = edge.weight.replace(weight);
                 debug_assert!(_old.is_none());
                 self.free_edge = edge.next[0];
                 edge.node = [a, b];
@@ -994,7 +993,7 @@ where
     /// updating the free nodes doubly linked list.
     fn occupy_vacant_node(&mut self, node_idx: NodeIndex<Ix>, weight: N) {
         let node_slot = &mut self.g.nodes[node_idx.index()];
-        let _old = replace(&mut node_slot.weight, Some(weight));
+        let _old = node_slot.weight.replace(weight);
         debug_assert!(_old.is_none());
         let previous_node = node_slot.next[1];
         let next_node = node_slot.next[0];
