@@ -1,5 +1,5 @@
 use crate::data::DataMap;
-use crate::matrix_graph::Nullable;
+
 use crate::visit::{IntoNeighbors, IntoNodeReferences, NodeCount, NodeRef};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -27,7 +27,7 @@ where
 
 /// \[Generic\] Label propagation.
 ///
-/// Labels nodes by propagating available node labels throuh the graph following the edges.
+/// Labels nodes by propagating available node labels through the graph following the edges.
 ///
 /// The predicted labels and their stability depends on the order of nodes iteration, that is
 /// the implementation of [IntoNodeReferences].
@@ -95,7 +95,7 @@ pub fn label_propagation<G>(
 where
     G: IntoNodeReferences + NodeCount + IntoNeighbors + DataMap,
     G::NodeId: Hash + Eq,
-    G::NodeWeight: PartialEq + Clone + Nullable,
+    G::NodeWeight: PartialEq + Clone + Missing,
 {
     let mut predicted_labels = HashMap::new();
     if graph.node_count() == 0 || labels.is_empty() {
@@ -104,7 +104,7 @@ where
     for _ in 0..nb_iter {
         for node in graph.node_references() {
             // Ignore nodes with label.
-            if predicted_labels.contains_key(&node.id()) || node.weight().is_null() {
+            if predicted_labels.contains_key(&node.id()) || node.weight().is_missing() {
                 let mut label_frequencies = labels
                     .iter()
                     .map(|label| Tracker::new(label.clone(), 0))
@@ -112,12 +112,13 @@ where
                 // Find the most frequent label in the neighbourhood of the current node.
                 for neighbor in k_neighborhood(graph, node.id(), k) {
                     let mut neighbor_label = graph.node_weight(neighbor).unwrap();
-                    if neighbor_label.is_null() && predicted_labels.contains_key(&neighbor) {
+                    if neighbor_label.is_missing() && predicted_labels.contains_key(&neighbor) {
                         neighbor_label = &predicted_labels[&neighbor];
                     };
                     label_frequencies.iter_mut().for_each(|labelf| {
                         labelf.freq += usize::from(
-                            (labelf.label == neighbor_label.clone()) && !neighbor_label.is_null(),
+                            (labelf.label == neighbor_label.clone())
+                                && !neighbor_label.is_missing(),
                         )
                     });
                 }
@@ -131,6 +132,18 @@ where
         }
     }
     predicted_labels
+}
+
+/// Helper trait for types with possibly missing values.
+pub trait Missing {
+    type Wrapped;
+    fn is_missing(&self) -> bool;
+}
+impl<T> Missing for Option<T> {
+    type Wrapped = T;
+    fn is_missing(&self) -> bool {
+        self.is_none()
+    }
 }
 
 /// Helper to compare node labels by their frequencies.
