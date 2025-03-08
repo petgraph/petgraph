@@ -11,7 +11,7 @@ where
     G: IntoNeighbors,
 {
     if k == 0 {
-        return vec![];
+        vec![]
     } else if k == 1 {
         return graph.neighbors(node).collect();
     } else {
@@ -167,7 +167,7 @@ impl<L> PartialEq for Tracker<L> {
 impl<L> Eq for Tracker<L> {}
 impl<L> PartialOrd for Tracker<L> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.freq.partial_cmp(&other.freq)
+        Some(self.cmp(other))
     }
 }
 impl<L> Ord for Tracker<L> {
