@@ -15,6 +15,7 @@ pub mod floyd_warshall;
 pub mod ford_fulkerson;
 pub mod isomorphism;
 pub mod k_shortest_path;
+pub mod label_propagation;
 pub mod matching;
 pub mod min_spanning_tree;
 pub mod page_rank;
@@ -46,6 +47,7 @@ pub use isomorphism::{
     subgraph_isomorphisms_iter,
 };
 pub use k_shortest_path::k_shortest_path;
+pub use label_propagation::label_propagation;
 pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;

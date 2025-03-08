@@ -26,8 +26,8 @@ use petgraph::algo::{
     bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
-    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, page_rank, tarjan_scc,
-    toposort, Matching,
+    k_shortest_path, kosaraju_scc, label_propagation, maximum_matching, min_spanning_tree,
+    page_rank, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1470,6 +1470,24 @@ quickcheck! {
             return false;
         }
     }
+        true
+    }
+}
+
+quickcheck! {
+    // Test whether or not labeled nodes are not predicted.
+    fn test_labeled_node_not_predicted(graph: Graph<Option<usize>, ()>) -> bool{
+        let nb_nodes = graph.node_count();
+        if nb_nodes == 0 {
+            return label_propagation(&graph, &[], 1, 1).is_empty();
+        }
+        let labels: Vec<Option<usize>> = (0..nb_nodes).map(Some).collect();
+        let predicted_labels = label_propagation(&graph, &labels, 2, 1);
+        for node in predicted_labels.keys() {
+            if graph.node_weight(*node).unwrap().is_some() {
+                return false;
+            }
+        }
         true
     }
 }
