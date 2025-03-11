@@ -80,7 +80,7 @@ serde-1 = ["serde", "serde_derive"]
 stable_graph = ["std"] # TODO: could be `no_std` with refactor
 unstable = ["generate"]
 
-std = []
+std = ["indexmap/std"]
 
 [lints.clippy]
 alloc_instead_of_core = "warn"
