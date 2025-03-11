@@ -1,6 +1,8 @@
-use std::collections::{BinaryHeap, HashMap};
+use alloc::collections::BinaryHeap;
+use alloc::{vec, vec::Vec};
+use core::hash::Hash;
 
-use std::hash::Hash;
+use hashbrown::HashMap;
 
 use crate::algo::Measure;
 use crate::scored::MinScored;
@@ -26,7 +28,7 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 /// use petgraph::Graph;
 /// use petgraph::algo::k_shortest_path;
 /// use petgraph::prelude::*;
-/// use std::collections::HashMap;
+/// use core::collections::HashMap;
 ///
 /// let mut graph : Graph<(),(),Directed>= Graph::new();
 /// let a = graph.add_node(()); // node with no weight

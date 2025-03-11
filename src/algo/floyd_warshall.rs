@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use alloc::vec;
+use core::hash::Hash;
 
-use std::hash::Hash;
+use hashbrown::HashMap;
 
 use crate::algo::{BoundedMeasure, NegativeCycle};
 use crate::visit::{
@@ -24,7 +25,7 @@ use crate::visit::{
 /// ```rust
 /// use petgraph::{prelude::*, Graph, Directed};
 /// use petgraph::algo::floyd_warshall;
-/// use std::collections::HashMap;
+/// use core::collections::HashMap;
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(());
@@ -54,7 +55,7 @@ use crate::visit::{
 /// //    |      v         v
 /// //     --->  d <-------
 ///
-/// let inf = std::i32::MAX;
+/// let inf = core::i32::MAX;
 /// let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
 ///    ((a, a), 0), ((a, b), 1), ((a, c), 3), ((a, d), 3),
 ///    ((b, a), inf), ((b, b), 0), ((b, c), 2), ((b, d), 2),

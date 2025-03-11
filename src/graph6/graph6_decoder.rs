@@ -1,12 +1,18 @@
 //! [graph6 format](https://users.cecs.anu.edu.au/~bdm/data/formats.txt) decoder for undirected graphs.
 
+use alloc::{
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
+
 use crate::{csr::Csr, graph::IndexType, Graph, Undirected};
 
 #[cfg(feature = "graphmap")]
 use crate::graphmap::GraphMap;
 
 #[cfg(feature = "graphmap")]
-use std::hash::BuildHasher;
+use core::hash::BuildHasher;
 
 #[cfg(feature = "matrix_graph")]
 use crate::matrix_graph::{MatrixGraph, Nullable};

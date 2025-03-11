@@ -92,6 +92,21 @@ jobs:
         env:
           RUSTDOCFLAGS: "-Dwarnings"
 
+  check-no-std:
+    name: Check no_std
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.7
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32v1-none
+
+      - name: Check
+        run: cargo check --no-default-features -p petgraph --target wasm32v1-none --features graphmap,serde-1
+
   miri:
     name: Unsoundness check
     if: github.event_name != 'merge_group'

@@ -1,27 +1,30 @@
 //! `GraphMap<N, E, Ty>` is a graph datastructure where node values are mapping
 //! keys.
 
+use alloc::vec::Vec;
+use core::cmp::Ordering;
+use core::fmt;
+use core::hash::{self, BuildHasher, Hash};
+use core::iter::Copied;
+use core::iter::FromIterator;
+use core::marker::PhantomData;
+use core::mem;
+use core::ops::{Deref, Index, IndexMut};
+use core::slice::Iter;
+
+use hashbrown::HashSet;
 use indexmap::map::Keys;
 use indexmap::map::{Iter as IndexMapIter, IterMut as IndexMapIterMut};
 use indexmap::IndexMap;
-use std::cmp::Ordering;
-use std::collections::hash_map::RandomState;
-use std::collections::HashSet;
-use std::fmt;
-use std::hash::{self, BuildHasher, Hash};
-use std::iter::Copied;
-use std::iter::FromIterator;
-use std::marker::PhantomData;
-use std::mem;
-use std::ops::{Deref, Index, IndexMut};
-use std::slice::Iter;
-
-use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
 
 use crate::graph::node_index;
 use crate::graph::Graph;
 use crate::visit;
 use crate::IntoWeightedEdge;
+use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
+
+#[cfg(feature = "std")]
+use std::collections::hash_map::RandomState;
 
 #[cfg(feature = "rayon")]
 use indexmap::map::rayon::{ParIter, ParIterMut, ParKeys};
@@ -32,12 +35,14 @@ use rayon::prelude::*;
 ///
 /// For example, an edge between *1* and *2* is equivalent to an edge between
 /// *2* and *1*.
-pub type UnGraphMap<N, E> = GraphMap<N, E, Undirected>;
+pub type UnGraphMap<N, E, #[cfg(not(feature = "std"))] RandomState> =
+    GraphMap<N, E, Undirected, RandomState>;
 /// A `GraphMap` with directed edges.
 ///
 /// For example, an edge from *1* to *2* is distinct from an edge from *2* to
 /// *1*.
-pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
+pub type DiGraphMap<N, E, #[cfg(not(feature = "std"))] RandomState> =
+    GraphMap<N, E, Directed, RandomState>;
 
 /// `GraphMap<N, E, Ty>` is a graph datastructure using an associative array
 /// of its node weights `N`.
@@ -64,8 +69,13 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 ///
 /// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
-pub struct GraphMap<N, E, Ty, S = RandomState>
-where
+pub struct GraphMap<
+    N,
+    E,
+    Ty,
+    #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
+> where
     S: BuildHasher,
 {
     nodes: IndexMap<N, Vec<(N, CompactDirection)>, S>,
@@ -768,8 +778,14 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct Edges<'a, N, E: 'a, Ty, S = RandomState>
-where
+pub struct Edges<
+    'a,
+    N,
+    E: 'a,
+    Ty,
+    #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
+> where
     N: 'a + NodeTrait,
     Ty: EdgeType,
     S: BuildHasher,
@@ -790,7 +806,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|b| {
             let a = self.from;
-            match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
+            match self.edges.get(&GraphMap::<N, E, Ty, S>::edge_key(a, b)) {
                 None => unreachable!(),
                 Some(edge) => (a, b, edge),
             }
@@ -802,8 +818,14 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct EdgesDirected<'a, N, E: 'a, Ty, S = RandomState>
-where
+pub struct EdgesDirected<
+    'a,
+    N,
+    E: 'a,
+    Ty,
+    #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
+> where
     N: 'a + NodeTrait,
     Ty: EdgeType,
     S: BuildHasher,
@@ -828,7 +850,7 @@ where
             if self.dir == Direction::Incoming {
                 mem::swap(&mut a, &mut b);
             }
-            match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
+            match self.edges.get(&GraphMap::<N, E, Ty, S>::edge_key(a, b)) {
                 None => unreachable!(),
                 Some(edge) => (a, b, edge),
             }

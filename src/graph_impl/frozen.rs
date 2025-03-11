@@ -1,4 +1,4 @@
-use std::ops::{Deref, Index, IndexMut};
+use core::ops::{Deref, Index, IndexMut};
 
 use super::Frozen;
 use crate::data::{DataMap, DataMapMut};

@@ -1,26 +1,22 @@
 //! `MatrixGraph<N, E, Ty, NullN, NullE, Ix>` is a graph datastructure backed by an adjacency matrix.
 
-use std::marker::PhantomData;
-use std::ops::{Index, IndexMut};
-
-use std::cmp;
-use std::mem;
-
-use indexmap::IndexSet;
+use alloc::{vec, vec::Vec};
+use core::cmp;
+use core::marker::PhantomData;
+use core::mem;
+use core::ops::{Index, IndexMut};
 
 use fixedbitset::FixedBitSet;
+use indexmap::IndexSet;
 
-use crate::{Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirected};
-
+use crate::data::Build;
 use crate::graph::NodeIndex as GraphNodeIndex;
-
 use crate::visit::{
     Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
     IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
     IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
 };
-
-use crate::data::Build;
+use crate::{Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirected};
 
 pub use crate::graph::IndexType;
 

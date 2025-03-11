@@ -1,4 +1,5 @@
-use std::convert::TryFrom;
+use alloc::{vec, vec::Vec};
+use core::convert::TryFrom;
 
 use crate::data::DataMap;
 use crate::visit::EdgeCount;

@@ -12,9 +12,11 @@
 //! strictly dominates **B** and there does not exist any node **C** where **A**
 //! dominates **C** and **C** dominates **B**.
 
-use std::cmp::Ordering;
-use std::collections::{hash_map::Iter, HashMap, HashSet};
-use std::hash::Hash;
+use alloc::{vec, vec::Vec};
+use core::cmp::Ordering;
+use core::hash::Hash;
+
+use hashbrown::{hash_map::Iter, HashMap, HashSet};
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 

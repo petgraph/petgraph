@@ -1,11 +1,12 @@
 //! Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
 
-use std::cmp::{max, Ordering};
-use std::fmt;
-use std::iter::{Enumerate, Zip};
-use std::marker::PhantomData;
-use std::ops::{Index, IndexMut, Range};
-use std::slice::Windows;
+use alloc::{vec, vec::Vec};
+use core::cmp::{max, Ordering};
+use core::fmt;
+use core::iter::{Enumerate, Zip};
+use core::marker::PhantomData;
+use core::ops::{Index, IndexMut, Range};
+use core::slice::Windows;
 
 use crate::visit::{
     Data, EdgeCount, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences,
@@ -34,7 +35,7 @@ pub enum CsrError {
     IndicesOutBounds(usize, usize),
 }
 
-impl std::error::Error for CsrError {}
+impl core::error::Error for CsrError {}
 
 impl fmt::Display for CsrError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -639,7 +640,7 @@ where
     }
 }
 
-use std::slice::Iter as SliceIter;
+use core::slice::Iter as SliceIter;
 
 #[derive(Clone, Debug)]
 pub struct Neighbors<'a, Ix: 'a = DefaultIx> {

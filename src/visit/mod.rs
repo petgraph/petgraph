@@ -74,9 +74,9 @@ mod traversal;
 pub use self::dfsvisit::*;
 pub use self::traversal::*;
 
+use core::hash::{BuildHasher, Hash};
 use fixedbitset::FixedBitSet;
-use std::collections::HashSet;
-use std::hash::{BuildHasher, Hash};
+use hashbrown::HashSet;
 
 use super::EdgeType;
 use crate::prelude::Direction;

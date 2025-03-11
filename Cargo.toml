@@ -42,10 +42,11 @@ debug = true
 
 [dependencies]
 fixedbitset = { version = "0.5.7", default-features = false }
-indexmap = "2.5.0"
+indexmap = { version = "2.5.0", default-features = false }
+hashbrown = { version = "^0.15.0" }
 quickcheck = { optional = true, version = "0.8", default-features = false }
-serde = { version = "1.0", optional = true }
-serde_derive = { version = "1.0", optional = true }
+serde = { version = "1.0", default-features = false, optional = true }
+serde_derive = { version = "1.0", default-features = false, optional = true }
 rayon = { version = "1.5.3", optional = true }
 
 [dev-dependencies]
@@ -58,7 +59,7 @@ ahash = "0.7.2"
 fxhash = "0.2.1"
 
 [features]
-rayon = ["dep:rayon", "indexmap/rayon"]
+rayon = ["std", "dep:rayon", "indexmap/rayon"]
 
 # feature flags for testing use only
 all = [
@@ -69,12 +70,19 @@ all = [
     "graphmap",
     "rayon",
 ]
-default = ["graphmap", "stable_graph", "matrix_graph"]
+default = ["std", "graphmap", "stable_graph", "matrix_graph"]
 
-generate = [] # For unstable features
+generate = ["std"] # For unstable features
 
 graphmap = []
-matrix_graph = []
+matrix_graph = ["std"] # TODO: could be `no_std` with refactor
 serde-1 = ["serde", "serde_derive"]
-stable_graph = []
+stable_graph = ["std"] # TODO: could be `no_std` with refactor
 unstable = ["generate"]
+
+std = []
+
+[lints.clippy]
+alloc_instead_of_core = "warn"
+std_instead_of_alloc = "warn"
+std_instead_of_core = "warn"

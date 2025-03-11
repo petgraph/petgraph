@@ -21,7 +21,8 @@ pub mod page_rank;
 pub mod simple_paths;
 pub mod tred;
 
-use std::num::NonZeroUsize;
+use alloc::{vec, vec::Vec};
+use core::num::NonZeroUsize;
 
 use crate::prelude::*;
 
@@ -666,14 +667,14 @@ pub struct NegativeCycle(pub ());
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
 where
     G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
-    N: Copy + PartialEq + std::fmt::Debug,
+    N: Copy + PartialEq + core::fmt::Debug,
     VM: VisitMap<N>,
 {
     let mut red = g.visit_map();
     red.visit(start);
     let mut blue = g.visit_map();
 
-    let mut stack = ::std::collections::VecDeque::new();
+    let mut stack = ::alloc::collections::VecDeque::new();
     stack.push_front(start);
 
     while let Some(node) = stack.pop_front() {
@@ -713,8 +714,8 @@ where
     true
 }
 
-use std::fmt::Debug;
-use std::ops::Add;
+use core::fmt::Debug;
+use core::ops::Add;
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Clone {}
@@ -745,7 +746,7 @@ impl FloatMeasure for f64 {
     }
 }
 
-pub trait BoundedMeasure: Measure + std::ops::Sub<Self, Output = Self> {
+pub trait BoundedMeasure: Measure + core::ops::Sub<Self, Output = Self> {
     fn min() -> Self;
     fn max() -> Self;
     fn overflowing_add(self, rhs: Self) -> (Self, bool);
@@ -805,10 +806,10 @@ impl_bounded_measure_float!(f32, f64);
 /// and with a default measure of proximity.  
 pub trait UnitMeasure:
     Measure
-    + std::ops::Sub<Self, Output = Self>
-    + std::ops::Mul<Self, Output = Self>
-    + std::ops::Div<Self, Output = Self>
-    + std::iter::Sum
+    + core::ops::Sub<Self, Output = Self>
+    + core::ops::Mul<Self, Output = Self>
+    + core::ops::Div<Self, Output = Self>
+    + core::iter::Sum
 {
     fn zero() -> Self;
     fn one() -> Self;

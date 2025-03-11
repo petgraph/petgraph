@@ -1,4 +1,5 @@
-use std::{
+use alloc::vec;
+use core::{
     hash::Hash,
     iter::{from_fn, FromIterator},
 };
@@ -50,7 +51,11 @@ use crate::{
 ///
 /// So if you have a large enough graph, be prepared to wait for the results for years.
 /// Or consider extracting only part of the simple paths using the adapter [`Iterator::take`].
-pub fn all_simple_paths<TargetColl, G>(
+pub fn all_simple_paths<
+    TargetColl,
+    G,
+    #[cfg(not(feature = "std"))] S: core::hash::BuildHasher + Default,
+>(
     graph: G,
     from: G::NodeId,
     to: G::NodeId,
@@ -63,6 +68,9 @@ where
     G::NodeId: Eq + Hash,
     TargetColl: FromIterator<G::NodeId>,
 {
+    #[cfg(feature = "std")]
+    type S = std::hash::RandomState;
+
     // how many nodes are allowed in simple path up to target node
     // it is min/max allowed path length minus one, because it is more appropriate when implementing lookahead
     // than constantly add 1 to length of current path
@@ -75,7 +83,7 @@ where
     let min_length = min_intermediate_nodes + 1;
 
     // list of visited nodes
-    let mut visited: IndexSet<G::NodeId> = IndexSet::from_iter(Some(from));
+    let mut visited: IndexSet<G::NodeId, S> = IndexSet::from_iter(Some(from));
     // list of childs of currently exploring path nodes,
     // last elem is list of childs of last visited node
     let mut stack = vec![graph.neighbors_directed(from, Outgoing)];
@@ -120,7 +128,8 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashSet, iter::FromIterator};
+    use core::iter::FromIterator;
+    use hashbrown::HashSet;
 
     use itertools::assert_equal;
 

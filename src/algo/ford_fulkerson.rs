@@ -1,4 +1,6 @@
-use std::{collections::VecDeque, ops::Sub};
+use alloc::collections::VecDeque;
+use alloc::{vec, vec::Vec};
+use core::ops::Sub;
 
 use crate::{
     data::DataMap,

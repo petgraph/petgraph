@@ -1,6 +1,7 @@
 //! Minimum Spanning Tree algorithms.
 
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use alloc::collections::BinaryHeap;
+use hashbrown::{HashMap, HashSet};
 
 use crate::prelude::*;
 
