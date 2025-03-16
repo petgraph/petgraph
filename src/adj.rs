@@ -225,6 +225,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
     ///
     /// **Note:** `List` allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
+    #[track_caller]
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         if b.index() >= self.suc.len() {
             panic!(
@@ -470,6 +471,7 @@ impl<'a, E, Ix: IndexType> IntoNeighbors for &'a List<E, Ix> {
     /// Panics if `a` is out of bounds.
     /// Use [`List::edge_indices_from`] instead if you do not want to borrow the adjacency list while
     /// iterating.
+    #[track_caller]
     fn neighbors(self, a: NodeIndex<Ix>) -> Self::Neighbors {
         let proj: fn(&WSuc<E, Ix>) -> NodeIndex<Ix> = |x| x.suc;
         let iter = self.suc[a.index()].iter().map(proj);
