@@ -55,6 +55,7 @@ where
     get_edge_attributes: &'a dyn Fn(G, G::EdgeRef) -> String,
     get_node_attributes: &'a dyn Fn(G, G::NodeRef) -> String,
     config: Configs,
+    rankdir: Option<RankDir>,
 }
 
 static TYPE: [&str; 2] = ["graph", "digraph"];
@@ -90,8 +91,21 @@ where
             get_edge_attributes,
             get_node_attributes,
             config,
+            rankdir: None,
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum RankDir {
+    /// Top to bottom
+    TB,
+    /// Bottom to top
+    BT,
+    /// Left to right
+    LR,
+    /// Righth to left
+    RL,
 }
 
 /// `Dot` configuration.
@@ -156,6 +170,16 @@ where
         let g = self.graph;
         if !self.config.GraphContentOnly {
             writeln!(f, "{} {{", TYPE[g.is_directed() as usize])?;
+        }
+
+        if let Some(rankdir) = &self.rankdir {
+            let value = match rankdir {
+                RankDir::TB => "TB",
+                RankDir::BT => "BT",
+                RankDir::LR => "LR",
+                RankDir::RL => "RL",
+            };
+            writeln!(f, "{}rankdir=\"{}\"", INDENT, value)?;
         }
 
         // output all labels
