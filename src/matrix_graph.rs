@@ -294,6 +294,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Return the index of the new node.
     ///
     /// **Panics** if the MatrixGraph is at the maximum number of nodes for its index type.
+    #[track_caller]
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         NodeIndex::new(self.nodes.add(weight))
     }
@@ -303,6 +304,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Computes in **O(V)** time, due to the removal of edges with other nodes.
     ///
     /// **Panics** if the node `a` does not exist.
+    #[track_caller]
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> N {
         for id in self.nodes.iter_ids() {
             let position = self.to_edge_position(a, NodeIndex::new(id));
@@ -347,6 +349,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
     ///
     /// **Panics** if any of the nodes don't exist.
+    #[track_caller]
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> Option<E> {
         self.extend_capacity_for_edge(a, b);
         let p = self.to_edge_position_unchecked(a, b);
@@ -368,6 +371,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     ///
     /// **Note:** `MatrixGraph` does not allow adding parallel (“duplicate”) edges. If you want to avoid
     /// this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
+    #[track_caller]
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) {
         let old_edge_id = self.update_edge(a, b, weight);
         assert!(old_edge_id.is_none());
@@ -377,6 +381,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     ///
     /// **Panics** if any of the nodes don't exist.
     /// **Panics** if no edge exists between `a` and `b`.
+    #[track_caller]
     pub fn remove_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> E {
         let p = self
             .to_edge_position(a, b)
@@ -390,6 +395,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Return true if there is an edge between `a` and `b`.
     ///
     /// **Panics** if any of the nodes don't exist.
+    #[track_caller]
     pub fn has_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
         if let Some(p) = self.to_edge_position(a, b) {
             return !self.node_adjacencies[p].is_null();
@@ -402,6 +408,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Also available with indexing syntax: `&graph[a]`.
     ///
     /// **Panics** if the node doesn't exist.
+    #[track_caller]
     pub fn node_weight(&self, a: NodeIndex<Ix>) -> &N {
         &self.nodes[a.index()]
     }
@@ -411,6 +418,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Also available with indexing syntax: `&mut graph[a]`.
     ///
     /// **Panics** if the node doesn't exist.
+    #[track_caller]
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> &mut N {
         &mut self.nodes[a.index()]
     }
@@ -420,6 +428,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Also available with indexing syntax: `&graph[e]`.
     ///
     /// **Panics** if no edge exists between `a` and `b`.
+    #[track_caller]
     pub fn edge_weight(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> &E {
         let p = self
             .to_edge_position(a, b)
@@ -434,6 +443,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Also available with indexing syntax: `&mut graph[e]`.
     ///
     /// **Panics** if no edge exists between `a` and `b`.
+    #[track_caller]
     pub fn edge_weight_mut(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> &mut E {
         let p = self
             .to_edge_position(a, b)
