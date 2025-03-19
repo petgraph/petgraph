@@ -301,10 +301,12 @@ where
 
 #[cfg(test)]
 mod test {
+    use alloc::{format, string::String};
+    use core::fmt::Write;
+
     use super::{Config, Dot, Escaper};
     use crate::prelude::Graph;
     use crate::visit::NodeRef;
-    use core::fmt::Write;
 
     #[test]
     fn test_escape() {

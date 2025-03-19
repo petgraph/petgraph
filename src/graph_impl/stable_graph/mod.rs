@@ -1983,6 +1983,8 @@ where
 
 #[test]
 fn stable_graph() {
+    use std::println;
+
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
     let a = gr.add_node(0);
     let b = gr.add_node(1);
@@ -2013,6 +2015,8 @@ fn stable_graph() {
 
 #[test]
 fn dfs() {
+    use std::println;
+
     use crate::visit::Dfs;
 
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);

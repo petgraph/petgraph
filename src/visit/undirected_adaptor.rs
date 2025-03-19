@@ -64,6 +64,8 @@ NodeCount! {delegate_impl [[G], G, UndirectedAdaptor<G>, access0]}
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
     use super::*;
     use crate::graph::{DiGraph, Graph};
     use crate::visit::Dfs;

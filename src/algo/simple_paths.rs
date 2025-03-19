@@ -128,14 +128,15 @@ where
 
 #[cfg(test)]
 mod test {
+    use alloc::{vec, vec::Vec};
     use core::iter::FromIterator;
-    use hashbrown::HashSet;
+    use std::println;
 
+    use hashbrown::HashSet;
     use itertools::assert_equal;
 
-    use crate::{dot::Dot, prelude::DiGraph};
-
     use super::all_simple_paths;
+    use crate::{dot::Dot, prelude::DiGraph};
 
     #[test]
     fn test_all_simple_paths() {

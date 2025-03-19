@@ -759,11 +759,14 @@ impl_graph_traits!(StableDiGraph);
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
     use super::*;
     use crate::prelude::DiGraph;
+    use crate::visit::IntoNodeReferences;
+
     #[cfg(feature = "stable_graph")]
     use crate::prelude::StableDiGraph;
-    use crate::visit::IntoNodeReferences;
 
     #[test]
     fn test_acyclic_graph() {

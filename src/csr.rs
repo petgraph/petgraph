@@ -889,6 +889,9 @@ Row   : [0, 2, 5]   <- value index of row start
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+    use std::println;
+
     use super::Csr;
     use crate::algo::bellman_ford;
     use crate::algo::find_negative_cycle;

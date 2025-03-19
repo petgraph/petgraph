@@ -260,10 +260,13 @@ where
 
 #[test]
 fn test_from_deserialized_with_holes() {
-    use crate::graph::node_index;
-    use crate::stable_graph::StableUnGraph;
+    use alloc::vec;
+
     use itertools::assert_equal;
     use serde::de::value::Error as SerdeError;
+
+    use crate::graph::node_index;
+    use crate::stable_graph::StableUnGraph;
 
     let input = DeserStableGraph::<_, (), u32> {
         nodes: vec![
