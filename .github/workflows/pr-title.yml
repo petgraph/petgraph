@@ -10,12 +10,13 @@ on:
       - opened
       - edited
       - synchronize
-      - labeled
-      - unlabeled
   # The action does not support running on merge_group events,
   # but if the check succeeds in the PR there is no need to check it again.
   merge_group:
     types: [checks_requested]
+
+permissions:
+  pull-requests: read
 
 jobs:
   main:
@@ -53,6 +54,8 @@ jobs:
           #  .*
           # Configure that a scope must always be provided.
           requireScope: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # `action-semantic-pull-request` does not parse the title, so it cannot
       # detect if it is marked as a breaking change.
