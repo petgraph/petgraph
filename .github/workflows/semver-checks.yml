@@ -56,7 +56,7 @@ jobs:
           set +e
 
           cd PR_BRANCH
-          cargo semver-checks --color never --baseline-root ../BASELINE_BRANCH > diagnostic.txt
+          cargo semver-checks --color never --baseline-root ../BASELINE_BRANCH --release-type minor > diagnostic.txt
           if [ "$?" -ne 0 ]; then
             echo "breaking=true" >> $GITHUB_OUTPUT
           else
