@@ -19,6 +19,8 @@ pub mod matching;
 pub mod min_spanning_tree;
 pub mod page_rank;
 pub mod simple_paths;
+#[cfg(feature = "stable_graph")]
+pub mod steiner_tree;
 pub mod tred;
 
 use std::num::NonZeroUsize;
@@ -50,6 +52,8 @@ pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;
 pub use simple_paths::all_simple_paths;
+#[cfg(feature = "stable_graph")]
+pub use steiner_tree::steiner_tree;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///
