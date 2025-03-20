@@ -323,24 +323,24 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
 /// but these are only stable across certain operations:
 ///
 /// * **Removing nodes or edges may shift other indices.** Removing a node will
-///     force the last node to shift its index to take its place. Similarly,
-///     removing an edge shifts the index of the last edge.
+///   force the last node to shift its index to take its place. Similarly,
+///   removing an edge shifts the index of the last edge.
 /// * Adding nodes or edges keeps indices stable.
 ///
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
 /// completely unless you need a very big graph -- then you can use `usize`.
 ///
 /// * The fact that the node and edge indices in the graph each are numbered in compact
-///     intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
+///   intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
 ///
 /// * You can select graph index integer type after the size of the graph. A smaller
-///     size may have better performance.
+///   size may have better performance.
 ///
 /// * Using indices allows mutation while traversing the graph, see `Dfs`,
-///     and `.neighbors(a).detach()`.
+///   and `.neighbors(a).detach()`.
 ///
 /// * You can create several graphs using the equal node indices but with
-///     differing weights or differing edges.
+///   differing weights or differing edges.
 ///
 /// * Indices don't allow as much compile time checking as references.
 ///
