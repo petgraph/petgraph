@@ -24,7 +24,7 @@ use crate::IntoWeightedEdge;
 use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
 
 #[cfg(feature = "std")]
-use std::collections::hash_map::RandomState;
+use std::hash::RandomState;
 
 #[cfg(feature = "rayon")]
 use indexmap::map::rayon::{ParIter, ParIterMut, ParKeys};
@@ -35,14 +35,14 @@ use rayon::prelude::*;
 ///
 /// For example, an edge between *1* and *2* is equivalent to an edge between
 /// *2* and *1*.
-pub type UnGraphMap<N, E, #[cfg(not(feature = "std"))] RandomState> =
-    GraphMap<N, E, Undirected, RandomState>;
+pub type UnGraphMap<N, E, #[cfg(not(feature = "std"))] S, #[cfg(feature = "std")] S = RandomState> =
+    GraphMap<N, E, Undirected, S>;
 /// A `GraphMap` with directed edges.
 ///
 /// For example, an edge from *1* to *2* is distinct from an edge from *2* to
 /// *1*.
-pub type DiGraphMap<N, E, #[cfg(not(feature = "std"))] RandomState> =
-    GraphMap<N, E, Directed, RandomState>;
+pub type DiGraphMap<N, E, #[cfg(not(feature = "std"))] S, #[cfg(feature = "std")] S = RandomState> =
+    GraphMap<N, E, Directed, S>;
 
 /// `GraphMap<N, E, Ty>` is a graph datastructure using an associative array
 /// of its node weights `N`.

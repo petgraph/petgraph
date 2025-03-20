@@ -168,15 +168,16 @@ impl<Ix: IndexType, S: BuildHasher + Default> FromGraph6 for GraphMap<Ix, (), Un
 }
 
 #[cfg(feature = "matrix_graph")]
-impl<Null, Ix> FromGraph6 for MatrixGraph<(), (), Undirected, Null, Ix>
+impl<Null, Ix, S> FromGraph6 for MatrixGraph<(), (), S, Undirected, Null, Ix>
 where
     Null: Nullable<Wrapped = ()>,
     Ix: IndexType,
+    S: BuildHasher + Default,
 {
     fn from_graph6_string(graph6_string: String) -> Self {
         let (order, edges): (usize, Vec<(Ix, Ix)>) = from_graph6_representation(graph6_string);
 
-        let mut graph: MatrixGraph<(), (), Undirected, Null, Ix> =
+        let mut graph: MatrixGraph<(), (), S, Undirected, Null, Ix> =
             MatrixGraph::with_capacity(order);
         for _ in 0..order {
             graph.add_node(());

@@ -72,12 +72,12 @@ all = [
 ]
 default = ["std", "graphmap", "stable_graph", "matrix_graph"]
 
-generate = ["std"] # For unstable features
+generate = [] # For unstable features
 
 graphmap = []
-matrix_graph = ["std"] # TODO: could be `no_std` with refactor
+matrix_graph = []
 serde-1 = ["serde", "serde_derive"]
-stable_graph = ["std"] # TODO: could be `no_std` with refactor
+stable_graph = ["serde?/alloc"]
 unstable = ["generate"]
 
 std = ["indexmap/std"]

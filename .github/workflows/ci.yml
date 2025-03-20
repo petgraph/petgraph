@@ -106,7 +106,7 @@ jobs:
           targets: wasm32v1-none
 
       - name: Check
-        run: cargo check --no-default-features -p petgraph --target wasm32v1-none --features graphmap,serde-1
+        run: cargo check --no-default-features -p petgraph --target wasm32v1-none --features graphmap,serde-1,stable_graph,matrix_graph,generate,unstable
 
   miri:
     name: Unsoundness check

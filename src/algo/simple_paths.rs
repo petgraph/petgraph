@@ -1,6 +1,6 @@
 use alloc::vec;
 use core::{
-    hash::Hash,
+    hash::{BuildHasher, Hash},
     iter::{from_fn, FromIterator},
 };
 
@@ -51,11 +51,7 @@ use crate::{
 ///
 /// So if you have a large enough graph, be prepared to wait for the results for years.
 /// Or consider extracting only part of the simple paths using the adapter [`Iterator::take`].
-pub fn all_simple_paths<
-    TargetColl,
-    G,
-    #[cfg(not(feature = "std"))] S: core::hash::BuildHasher + Default,
->(
+pub fn all_simple_paths<TargetColl, G, S>(
     graph: G,
     from: G::NodeId,
     to: G::NodeId,
@@ -67,10 +63,8 @@ where
     G: IntoNeighborsDirected,
     G::NodeId: Eq + Hash,
     TargetColl: FromIterator<G::NodeId>,
+    S: BuildHasher + Default,
 {
-    #[cfg(feature = "std")]
-    type S = std::hash::RandomState;
-
     // how many nodes are allowed in simple path up to target node
     // it is min/max allowed path length minus one, because it is more appropriate when implementing lookahead
     // than constantly add 1 to length of current path
@@ -130,7 +124,7 @@ where
 mod test {
     use alloc::{vec, vec::Vec};
     use core::iter::FromIterator;
-    use std::println;
+    use std::{hash::RandomState, println};
 
     use hashbrown::HashSet;
     use itertools::assert_equal;
@@ -169,7 +163,7 @@ mod test {
 
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_5: HashSet<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 5u32.into(), 0, None)
+            all_simple_paths::<_, _, RandomState>(&graph, 0u32.into(), 5u32.into(), 0, None)
                 .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
                 .collect();
         assert_eq!(actual_simple_paths_0_to_5.len(), 8);
@@ -186,7 +180,7 @@ mod test {
         let expexted_simple_paths_0_to_1 = &[vec![0usize, 1]];
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_1: Vec<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 1u32.into(), 0, None)
+            all_simple_paths::<_, _, RandomState>(&graph, 0u32.into(), 1u32.into(), 0, None)
                 .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
                 .collect();
 
@@ -200,7 +194,7 @@ mod test {
 
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_2: Vec<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 2u32.into(), 0, None)
+            all_simple_paths::<_, _, RandomState>(&graph, 0u32.into(), 2u32.into(), 0, None)
                 .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
                 .collect();
 
