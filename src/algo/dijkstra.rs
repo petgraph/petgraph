@@ -26,7 +26,7 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 /// use petgraph::Graph;
 /// use petgraph::algo::dijkstra;
 /// use petgraph::prelude::*;
-/// use core::collections::HashMap;
+/// use hashbrown::HashMap;
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight

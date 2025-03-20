@@ -108,7 +108,7 @@
 
 extern crate alloc;
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", test))]
 extern crate std;
 
 extern crate fixedbitset;

@@ -25,7 +25,7 @@ use crate::visit::{
 /// ```rust
 /// use petgraph::{prelude::*, Graph, Directed};
 /// use petgraph::algo::floyd_warshall;
-/// use core::collections::HashMap;
+/// use hashbrown::HashMap;
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(());
