@@ -1,6 +1,5 @@
 use alloc::vec::Vec;
-use core::fmt::Debug;
-use core::hash::Hash;
+use core::{fmt::Debug, hash::Hash};
 
 use hashbrown::{HashMap, HashSet};
 

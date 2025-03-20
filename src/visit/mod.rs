@@ -75,6 +75,7 @@ pub use self::dfsvisit::*;
 pub use self::traversal::*;
 
 use core::hash::{BuildHasher, Hash};
+
 use fixedbitset::FixedBitSet;
 use hashbrown::HashSet;
 

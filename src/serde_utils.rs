@@ -1,9 +1,10 @@
 use alloc::vec::Vec;
-use core::fmt;
-use core::marker::PhantomData;
+use core::{fmt, marker::PhantomData};
 
-use serde::de::{Deserialize, Error, SeqAccess, Visitor};
-use serde::ser::{Serialize, SerializeSeq, Serializer};
+use serde::{
+    de::{Deserialize, Error, SeqAccess, Visitor},
+    ser::{Serialize, SerializeSeq, Serializer},
+};
 
 /// Map to serializeable representation
 pub trait IntoSerializable {

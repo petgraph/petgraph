@@ -3,8 +3,7 @@
 //!
 //! This data structure is an implementation detail and is not exposed in the
 //! public API.
-use alloc::collections::BTreeMap;
-use alloc::{vec, vec::Vec};
+use alloc::{collections::BTreeMap, vec, vec::Vec};
 use core::{fmt, ops::RangeBounds};
 
 use crate::{

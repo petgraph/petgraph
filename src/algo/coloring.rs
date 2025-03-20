@@ -1,5 +1,4 @@
-use alloc::collections::BinaryHeap;
-use alloc::vec;
+use alloc::{collections::BinaryHeap, vec};
 use core::hash::Hash;
 
 use hashbrown::{HashMap, HashSet};

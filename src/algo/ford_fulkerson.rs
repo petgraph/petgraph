@@ -1,5 +1,4 @@
-use alloc::collections::VecDeque;
-use alloc::{vec, vec::Vec};
+use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::ops::Sub;
 
 use crate::{

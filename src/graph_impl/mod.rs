@@ -1,12 +1,13 @@
 use alloc::{vec, vec::Vec};
-use core::cmp;
-use core::fmt;
-use core::hash::Hash;
-use core::iter;
-use core::marker::PhantomData;
-use core::mem::size_of;
-use core::ops::{Index, IndexMut, Range};
-use core::slice;
+use core::{
+    cmp, fmt,
+    hash::Hash,
+    iter,
+    marker::PhantomData,
+    mem::size_of,
+    ops::{Index, IndexMut, Range},
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
 

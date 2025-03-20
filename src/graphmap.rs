@@ -2,34 +2,36 @@
 //! keys.
 
 use alloc::vec::Vec;
-use core::cmp::Ordering;
-use core::fmt;
-use core::hash::{self, BuildHasher, Hash};
-use core::iter::Copied;
-use core::iter::FromIterator;
-use core::marker::PhantomData;
-use core::mem;
-use core::ops::{Deref, Index, IndexMut};
-use core::slice::Iter;
+use core::{
+    cmp::Ordering,
+    fmt,
+    hash::{self, BuildHasher, Hash},
+    iter::{Copied, FromIterator},
+    marker::PhantomData,
+    mem,
+    ops::{Deref, Index, IndexMut},
+    slice::Iter,
+};
 
 use hashbrown::HashSet;
-use indexmap::map::Keys;
-use indexmap::map::{Iter as IndexMapIter, IterMut as IndexMapIterMut};
-use indexmap::IndexMap;
+use indexmap::{
+    map::{Iter as IndexMapIter, IterMut as IndexMapIterMut, Keys},
+    IndexMap,
+};
 
-use crate::graph::node_index;
-use crate::graph::Graph;
-use crate::visit;
-use crate::IntoWeightedEdge;
-use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
+use crate::{
+    graph::{node_index, Graph},
+    visit, Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected,
+};
 
 #[cfg(feature = "std")]
 use std::hash::RandomState;
 
 #[cfg(feature = "rayon")]
-use indexmap::map::rayon::{ParIter, ParIterMut, ParKeys};
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
+use {
+    indexmap::map::rayon::{ParIter, ParIterMut, ParKeys},
+    rayon::prelude::*,
+};
 
 /// A `GraphMap` with undirected edges.
 ///

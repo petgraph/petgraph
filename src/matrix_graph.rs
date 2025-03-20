@@ -1,23 +1,27 @@
 //! `MatrixGraph<N, E, Ty, NullN, NullE, Ix>` is a graph datastructure backed by an adjacency matrix.
 
 use alloc::{vec, vec::Vec};
-use core::cmp;
-use core::hash::BuildHasher;
-use core::marker::PhantomData;
-use core::mem;
-use core::ops::{Index, IndexMut};
+use core::{
+    cmp,
+    hash::BuildHasher,
+    marker::PhantomData,
+    mem,
+    ops::{Index, IndexMut},
+};
 
 use fixedbitset::FixedBitSet;
 use indexmap::IndexSet;
 
-use crate::data::Build;
-use crate::graph::NodeIndex as GraphNodeIndex;
-use crate::visit::{
-    Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
-    IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
+use crate::{
+    data::Build,
+    graph::NodeIndex as GraphNodeIndex,
+    visit::{
+        Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
+        IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
+        IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
+    },
+    Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirected,
 };
-use crate::{Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirected};
 
 #[cfg(feature = "std")]
 use std::hash::RandomState;

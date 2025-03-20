@@ -1,8 +1,9 @@
-use alloc::collections::VecDeque;
-use alloc::vec::Vec;
+use alloc::{collections::VecDeque, vec::Vec};
 
-use super::{GraphRef, IntoNodeIdentifiers, Reversed};
-use super::{IntoNeighbors, IntoNeighborsDirected, VisitMap, Visitable};
+use super::{
+    GraphRef, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap,
+    Visitable,
+};
 use crate::Incoming;
 
 /// Visit nodes of a graph in a depth-first-search (DFS) emitting nodes in

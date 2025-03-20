@@ -1,9 +1,10 @@
-use alloc::collections::BinaryHeap;
-use alloc::{vec, vec::Vec};
+use alloc::{collections::BinaryHeap, vec, vec::Vec};
 use core::hash::Hash;
 
-use hashbrown::hash_map::Entry::{Occupied, Vacant};
-use hashbrown::HashMap;
+use hashbrown::hash_map::{
+    Entry::{Occupied, Vacant},
+    HashMap,
+};
 
 use crate::algo::Measure;
 use crate::scored::MinScored;

@@ -13,8 +13,7 @@
 //! dominates **C** and **C** dominates **B**.
 
 use alloc::{vec, vec::Vec};
-use core::cmp::Ordering;
-use core::hash::Hash;
+use core::{cmp::Ordering, hash::Hash};
 
 use hashbrown::{hash_map::Iter, HashMap, HashSet};
 

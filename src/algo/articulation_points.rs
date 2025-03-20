@@ -1,6 +1,5 @@
 use alloc::{vec, vec::Vec};
-use core::cmp::min;
-use core::hash::Hash;
+use core::{cmp::min, hash::Hash};
 
 use fixedbitset::FixedBitSet;
 use hashbrown::{HashMap, HashSet};

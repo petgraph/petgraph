@@ -1,5 +1,4 @@
-use alloc::collections::VecDeque;
-use alloc::vec::Vec;
+use alloc::{collections::VecDeque, vec::Vec};
 use core::ops::{Index, IndexMut};
 
 use hashbrown::HashMap;

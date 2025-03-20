@@ -3,9 +3,11 @@ extern crate quickcheck;
 use alloc::{boxed::Box, vec::Vec};
 
 use self::quickcheck::{Arbitrary, Gen};
-use crate::graph::{node_index, IndexType};
-use crate::visit::NodeIndexable;
-use crate::{EdgeType, Graph};
+use crate::{
+    graph::{node_index, IndexType},
+    visit::NodeIndexable,
+    EdgeType, Graph,
+};
 
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph::StableGraph;

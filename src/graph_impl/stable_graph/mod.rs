@@ -4,14 +4,13 @@
 //!
 
 use alloc::vec;
-use core::cmp;
-use core::fmt;
-use core::iter;
-use core::marker::PhantomData;
-use core::mem::replace;
-use core::mem::size_of;
-use core::ops::{Index, IndexMut};
-use core::slice;
+use core::{
+    cmp, fmt, iter,
+    marker::PhantomData,
+    mem::{replace, size_of},
+    ops::{Index, IndexMut},
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
 

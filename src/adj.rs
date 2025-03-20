@@ -1,7 +1,6 @@
 //! Simple adjacency list.
 use alloc::{boxed::Box, vec::Vec};
-use core::fmt;
-use core::ops::Range;
+use core::{fmt, ops::Range};
 
 use fixedbitset::FixedBitSet;
 

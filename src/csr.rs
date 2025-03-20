@@ -1,12 +1,14 @@
 //! Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
 
 use alloc::{vec, vec::Vec};
-use core::cmp::{max, Ordering};
-use core::fmt;
-use core::iter::{Enumerate, Zip};
-use core::marker::PhantomData;
-use core::ops::{Index, IndexMut, Range};
-use core::slice::Windows;
+use core::{
+    cmp::{max, Ordering},
+    fmt,
+    iter::{Enumerate, Zip},
+    marker::PhantomData,
+    ops::{Index, IndexMut, Range},
+    slice::Windows,
+};
 
 use crate::visit::{
     Data, EdgeCount, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences,
