@@ -1,8 +1,8 @@
 use alloc::collections::BinaryHeap;
+use core::hash::Hash;
+
 use hashbrown::hash_map::Entry::{Occupied, Vacant};
 use hashbrown::HashMap;
-
-use core::hash::Hash;
 
 use crate::algo::Measure;
 use crate::scored::MinScored;
