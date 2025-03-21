@@ -116,7 +116,8 @@ fn test_adjacency_matrix_for_graph_map_undirected() {
 #[cfg(feature = "matrix_graph")]
 fn test_adjacency_matrix_for_matrix_graph<Ty: EdgeType>() {
     for (order, edges) in TEST_CASES {
-        let mut g: MatrixGraph<(), (), Ty> = MatrixGraph::with_capacity(order);
+        let mut g: MatrixGraph<(), (), std::collections::hash_map::RandomState, Ty> =
+            MatrixGraph::with_capacity(order);
 
         for _ in 0..order {
             g.add_node(());

@@ -1,9 +1,9 @@
 //! A wrapper around graph types that enforces an acyclicity invariant.
 
-use std::{
+use alloc::collections::{BTreeMap, BTreeSet};
+use core::{
     cell::RefCell,
     cmp::Ordering,
-    collections::{BTreeMap, BTreeSet},
     convert::TryFrom,
     ops::{Deref, RangeBounds},
 };
@@ -759,11 +759,14 @@ impl_graph_traits!(StableDiGraph);
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
     use super::*;
     use crate::prelude::DiGraph;
+    use crate::visit::IntoNodeReferences;
+
     #[cfg(feature = "stable_graph")]
     use crate::prelude::StableDiGraph;
-    use crate::visit::IntoNodeReferences;
 
     #[test]
     fn test_acyclic_graph() {
@@ -841,7 +844,7 @@ mod tests {
             + IntoNodeReferences
             + IntoNeighborsDirected
             + GraphBase<NodeId = G::NodeId>,
-        G::NodeId: std::fmt::Debug,
+        G::NodeId: core::fmt::Debug,
     {
         let ordered_nodes: Vec<_> = acyclic.nodes_iter().collect();
         assert_eq!(ordered_nodes.len(), acyclic.node_count());

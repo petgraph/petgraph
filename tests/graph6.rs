@@ -8,7 +8,7 @@ use petgraph::{
 use petgraph::graphmap::GraphMap;
 
 #[cfg(feature = "matrix_graph")]
-use petgraph::matrix_graph::MatrixGraph;
+use petgraph::matrix_graph::UnMatrix;
 
 #[cfg(feature = "stable_graph")]
 use petgraph::stable_graph::StableGraph;
@@ -165,7 +165,7 @@ fn graph6_for_matrix_graph_test_cases() {
 
 #[cfg(feature = "matrix_graph")]
 fn test_graph6_for_matrix_graph(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
-    type G = MatrixGraph<(), (), Undirected>;
+    type G = UnMatrix<(), ()>;
     let size = edges.len();
 
     // Build test graph

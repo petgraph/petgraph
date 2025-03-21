@@ -1,4 +1,7 @@
 #![cfg(feature = "quickcheck")]
+
+extern crate alloc;
+
 #[macro_use]
 extern crate quickcheck;
 extern crate petgraph;
@@ -11,12 +14,13 @@ extern crate odds;
 
 mod utils;
 
+use odds::prelude::*;
 use utils::{Small, Tournament};
 
-use odds::prelude::*;
-use std::collections::{BTreeSet, HashMap, HashSet};
-use std::hash::Hash;
+use alloc::collections::BTreeSet;
+use core::hash::Hash;
 
+use hashbrown::{HashMap, HashSet};
 use itertools::assert_equal;
 use itertools::cloned;
 use quickcheck::{Arbitrary, Gen};
@@ -53,8 +57,8 @@ where
     Graph::from_elements(min_spanning_tree(&g))
 }
 
+use core::fmt;
 use petgraph::algo::articulation_points::articulation_points;
-use std::fmt;
 
 quickcheck! {
     fn mst_directed(g: Small<Graph<(), u32>>) -> bool {
@@ -1332,7 +1336,7 @@ quickcheck! {
     }
 }
 
-fn sum_flows<N, F: std::iter::Sum + Copy>(
+fn sum_flows<N, F: core::iter::Sum + Copy>(
     gr: &Graph<N, F>,
     flows: &[F],
     node: NodeIndex,
@@ -1383,8 +1387,8 @@ quickcheck! {
         use petgraph::acyclic::Acyclic;
         use petgraph::data::{Build, Create};
         use petgraph::algo::toposort;
-        use std::collections::BTreeMap;
-        use std::iter;
+        use alloc::collections::BTreeMap;
+        use core::iter;
 
         // We will re-build `g` from scratch, adding edges one by one.
         let mut acylic_g =

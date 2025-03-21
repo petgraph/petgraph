@@ -3,26 +3,24 @@
 //! Depends on `feature = "stable_graph"`.
 //!
 
-use std::cmp;
-use std::fmt;
-use std::iter;
-use std::marker::PhantomData;
-use std::mem::replace;
-use std::mem::size_of;
-use std::ops::{Index, IndexMut};
-use std::slice;
+use alloc::vec;
+use core::{
+    cmp, fmt, iter,
+    marker::PhantomData,
+    mem::{replace, size_of},
+    ops::{Index, IndexMut},
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
 
-use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
-
+use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 use crate::iter_utils::IterUtilsExt;
-
-use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
 use crate::visit;
 use crate::visit::{EdgeIndexable, EdgeRef, IntoEdgeReferences, NodeIndexable};
 use crate::IntoWeightedEdge;
+use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
 
 // reexport those things that are shared with Graph
 #[doc(no_inline)]
@@ -1984,6 +1982,8 @@ where
 
 #[test]
 fn stable_graph() {
+    use std::println;
+
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
     let a = gr.add_node(0);
     let b = gr.add_node(1);
@@ -2014,6 +2014,8 @@ fn stable_graph() {
 
 #[test]
 fn dfs() {
+    use std::println;
+
     use crate::visit::Dfs;
 
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);

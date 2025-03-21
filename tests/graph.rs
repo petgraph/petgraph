@@ -1,7 +1,7 @@
 extern crate petgraph;
 
+use core::hash::Hash;
 use std::collections::HashSet;
-use std::hash::Hash;
 
 use petgraph::prelude::*;
 use petgraph::EdgeType;
@@ -18,11 +18,15 @@ use petgraph::graph::IndexType;
 
 use petgraph::algo::{astar, dijkstra, DfsSpace};
 use petgraph::visit::{
-    IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNodeIdentifiers, NodeFiltered, Reversed, Topo,
-    VisitMap, Walker,
+    IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, Reversed, Topo, VisitMap,
+    Walker,
 };
 
 use petgraph::dot::Dot;
+
+#[cfg(feature = "stable_graph")]
+#[cfg(test)]
+use petgraph::visit::IntoNeighbors;
 
 fn set<I>(iter: I) -> HashSet<I::Item>
 where
@@ -1761,6 +1765,8 @@ fn neighbors_selfloops() {
     assert_eq!(&seen_undir, &undir_edges);
 }
 
+#[cfg(feature = "stable_graph")]
+#[cfg(test)]
 fn degree<G>(g: G, node: G::NodeId) -> usize
 where
     G: IntoNeighbors,
