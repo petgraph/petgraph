@@ -22,6 +22,8 @@ jobs:
       matrix:
         include:
           - rust: 1.64.0  # MSRV
+            required_features: std
+          - rust: 1.81.0  # no_std MSRV
           - rust: stable
             features: unstable quickcheck rayon
             test_all: --all
@@ -51,14 +53,14 @@ jobs:
           cargo update -p once_cell --precise 1.20.3
 
       - name: Build with no features
-        run: cargo build --verbose --no-default-features
+        run: cargo build --verbose --no-default-features --features "${{ matrix.required_features }}"
       - name: Test with no features
-        run: cargo test --verbose --no-default-features
+        run: cargo test --verbose --no-default-features --features "${{ matrix.required_features }}"
 
       - name: Build with features "${{ matrix.features }}"
-        run: cargo build --verbose --features "${{ matrix.features }}"
+        run: cargo build --verbose --features "${{ matrix.features }}" --features "${{ matrix.required_features }}"
       - name: Test with features "${{ matrix.features }}"
-        run: cargo test ${{ matrix.test_all }} --verbose --features "${{ matrix.features }}"
+        run: cargo test ${{ matrix.test_all }} --verbose --features "${{ matrix.features }}" --features "${{ matrix.required_features }}"
 
       - name: Build benchmarks
         if: ${{ matrix.bench }}
