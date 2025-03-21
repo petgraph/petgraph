@@ -94,6 +94,21 @@ where
     }
 }
 
+/// Direction of graph layout.
+///
+/// https://graphviz.org/docs/attrs/rankdir/
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RankDir {
+    /// Top to bottom
+    TB,
+    /// Bottom to top
+    BT,
+    /// Left to right
+    LR,
+    /// Right to left
+    RL,
+}
+
 /// `Dot` configuration.
 ///
 /// This enum does not have an exhaustive definition (will be expanded)
@@ -111,6 +126,8 @@ pub enum Config {
     NodeNoLabel,
     /// Do not print the graph/digraph string.
     GraphContentOnly,
+    /// Sets direction of graph layout.
+    RankDir(RankDir),
     #[doc(hidden)]
     _Incomplete(()),
 }
@@ -120,14 +137,16 @@ macro_rules! make_config_struct {
         #[derive(Default)]
         struct Configs {
             $($variant: bool,)*
+            RankDir: Option<RankDir>,
         }
         impl Configs {
             #[inline]
             fn extract(configs: &[Config]) -> Self {
                 let mut conf = Self::default();
                 for c in configs {
-                    match *c {
+                    match c {
                         $(Config::$variant => conf.$variant = true,)*
+                        Config::RankDir(dir) => conf.RankDir = Some(*dir),
                         Config::_Incomplete(()) => {}
                     }
                 }
@@ -156,6 +175,16 @@ where
         let g = self.graph;
         if !self.config.GraphContentOnly {
             writeln!(f, "{} {{", TYPE[g.is_directed() as usize])?;
+        }
+
+        if let Some(rank_dir) = &self.config.RankDir {
+            let value = match rank_dir {
+                RankDir::TB => "TB",
+                RankDir::BT => "BT",
+                RankDir::LR => "LR",
+                RankDir::RL => "RL",
+            };
+            writeln!(f, "{}rankdir=\"{}\"", INDENT, value)?;
         }
 
         // output all labels
@@ -300,7 +329,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::{Config, Dot, Escaper};
+    use super::{Config, Dot, Escaper, RankDir};
     use crate::prelude::Graph;
     use crate::visit::NodeRef;
     use std::fmt::Write;
@@ -351,6 +380,62 @@ mod test {
         assert_eq!(
             dot,
             "digraph {\n    0 [ ]\n    1 [ ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
+    }
+
+    #[test]
+    fn test_rankdir_bt_option() {
+        let graph = simple_graph();
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::RankDir(RankDir::TB)])
+        );
+        assert_eq!(
+            dot,
+            "digraph {\n    rankdir=\"TB\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
+            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
+    }
+
+    #[test]
+    fn test_rankdir_tb_option() {
+        let graph = simple_graph();
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::RankDir(RankDir::BT)])
+        );
+        assert_eq!(
+            dot,
+            "digraph {\n    rankdir=\"BT\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
+            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
+    }
+
+    #[test]
+    fn test_rankdir_lr_option() {
+        let graph = simple_graph();
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::RankDir(RankDir::LR)])
+        );
+        assert_eq!(
+            dot,
+            "digraph {\n    rankdir=\"LR\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
+            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
+    }
+
+    #[test]
+    fn test_rankdir_rl_option() {
+        let graph = simple_graph();
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::RankDir(RankDir::RL)])
+        );
+        assert_eq!(
+            dot,
+            "digraph {\n    rankdir=\"RL\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
+            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
         );
     }
 
