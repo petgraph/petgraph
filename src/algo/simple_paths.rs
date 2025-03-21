@@ -18,7 +18,7 @@ use crate::{
 ///
 /// # Example
 /// ```
-/// use std::hash::RandomState;
+/// use std::collections::hash_map::RandomState;
 /// use petgraph::{algo, prelude::*};
 ///
 /// let mut graph = DiGraph::<&str, i32>::new();

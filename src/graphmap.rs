@@ -25,7 +25,7 @@ use crate::{
 };
 
 #[cfg(feature = "std")]
-use std::hash::RandomState;
+use std::collections::hash_map::RandomState;
 
 #[cfg(feature = "rayon")]
 use {

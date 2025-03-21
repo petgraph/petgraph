@@ -24,7 +24,7 @@ use crate::{
 };
 
 #[cfg(feature = "std")]
-use std::hash::RandomState;
+use std::collections::hash_map::RandomState;
 
 pub use crate::graph::IndexType;
 
@@ -1323,6 +1323,8 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
 
 #[cfg(test)]
 mod tests {
+    use std::collections::hash_map::RandomState;
+
     use super::*;
     use crate::{Incoming, Outgoing};
 
@@ -1371,7 +1373,7 @@ mod tests {
 
     #[test]
     fn test_add_edge() {
-        let mut g = MatrixGraph::<_, _, std::hash::RandomState>::new();
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1422,7 +1424,7 @@ mod tests {
 
     #[test]
     fn test_add_edge_with_weights() {
-        let mut g = MatrixGraph::<_, _, std::hash::RandomState>::new();
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1434,7 +1436,7 @@ mod tests {
 
     #[test]
     fn test_add_edge_with_weights_undirected() {
-        let mut g = MatrixGraph::<_, _, std::hash::RandomState, Undirected>::new_undirected();
+        let mut g = MatrixGraph::<_, _, RandomState, Undirected>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1463,7 +1465,7 @@ mod tests {
 
     #[test]
     fn test_clear() {
-        let mut g = MatrixGraph::<_, _, std::hash::RandomState>::new();
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1496,7 +1498,7 @@ mod tests {
 
     #[test]
     fn test_clear_undirected() {
-        let mut g = MatrixGraph::<_, _, std::hash::RandomState, Undirected>::new_undirected();
+        let mut g = MatrixGraph::<_, _, RandomState, Undirected>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1553,7 +1555,7 @@ mod tests {
 
     #[test]
     fn test_neighbors() {
-        let mut g = MatrixGraph::<_, _, std::hash::RandomState>::new();
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1572,7 +1574,7 @@ mod tests {
 
     #[test]
     fn test_neighbors_undirected() {
-        let mut g = MatrixGraph::<_, _, std::hash::RandomState, Undirected>::new_undirected();
+        let mut g = MatrixGraph::<_, _, RandomState, Undirected>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1774,7 +1776,7 @@ mod tests {
 
     #[test]
     fn test_not_zero() {
-        let mut g: MatrixGraph<(), i32, std::hash::RandomState, Directed, NotZero<i32>> =
+        let mut g: MatrixGraph<(), i32, RandomState, Directed, NotZero<i32>> =
             MatrixGraph::default();
 
         let a = g.add_node(());
@@ -1798,7 +1800,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_not_zero_asserted() {
-        let mut g: MatrixGraph<(), i32, std::hash::RandomState, Directed, NotZero<i32>> =
+        let mut g: MatrixGraph<(), i32, RandomState, Directed, NotZero<i32>> =
             MatrixGraph::default();
 
         let a = g.add_node(());
@@ -1809,7 +1811,7 @@ mod tests {
 
     #[test]
     fn test_not_zero_float() {
-        let mut g: MatrixGraph<(), f32, std::hash::RandomState, Directed, NotZero<f32>> =
+        let mut g: MatrixGraph<(), f32, RandomState, Directed, NotZero<f32>> =
             MatrixGraph::default();
 
         let a = g.add_node(());
