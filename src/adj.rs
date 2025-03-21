@@ -16,6 +16,7 @@ pub type NodeIndex<Ix = DefaultIx> = Ix;
 
 /// Adjacency list edge index type, a pair of integers.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(C)]
 pub struct EdgeIndex<Ix = DefaultIx>
 where
     Ix: IndexType,
