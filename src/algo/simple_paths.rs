@@ -125,7 +125,7 @@ where
 mod test {
     use alloc::{vec, vec::Vec};
     use core::iter::FromIterator;
-    use std::{hash::RandomState, println};
+    use std::{collections::hash_map::RandomState, println};
 
     use hashbrown::HashSet;
     use itertools::assert_equal;

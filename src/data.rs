@@ -1,7 +1,5 @@
 //! Graph traits for associated data and graph construction.
 
-use core::hash::BuildHasher;
-
 use alloc::vec::Vec;
 
 use crate::graph::IndexType;
@@ -13,7 +11,10 @@ use crate::Graph;
 use crate::stable_graph::StableGraph;
 
 #[cfg(feature = "graphmap")]
-use crate::graphmap::{GraphMap, NodeTrait};
+use {
+    crate::graphmap::{GraphMap, NodeTrait},
+    core::hash::BuildHasher,
+};
 
 trait_template! {
     /// Access node and edge weights (associated data).
