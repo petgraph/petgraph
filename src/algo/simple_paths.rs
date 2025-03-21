@@ -18,6 +18,7 @@ use crate::{
 ///
 /// # Example
 /// ```
+/// use std::hash::RandomState;
 /// use petgraph::{algo, prelude::*};
 ///
 /// let mut graph = DiGraph::<&str, i32>::new();
@@ -29,14 +30,14 @@ use crate::{
 ///
 /// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
 ///
-/// let paths = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+/// let paths = algo::all_simple_paths::<Vec<_>, _, RandomState>(&graph, a, d, 0, None)
 ///   .collect::<Vec<_>>();
 ///
 /// assert_eq!(paths.len(), 4);
 ///
 ///
 /// // Take only 2 paths.
-/// let paths = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+/// let paths = algo::all_simple_paths::<Vec<_>, _, RandomState>(&graph, a, d, 0, None)
 ///   .take(2)
 ///   .collect::<Vec<_>>();
 ///

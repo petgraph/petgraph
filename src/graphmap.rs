@@ -335,7 +335,7 @@ where
     /// // Create a GraphMap with directed edges, and add one edge to it
     /// use petgraph::graphmap::DiGraphMap;
     ///
-    /// let mut g = DiGraphMap::new();
+    /// let mut g = DiGraphMap::<_, _>::new();
     /// g.add_edge("x", "y", -1);
     /// assert_eq!(g.node_count(), 2);
     /// assert_eq!(g.edge_count(), 1);
@@ -398,7 +398,7 @@ where
     /// // Create a GraphMap with undirected edges, and add and remove an edge.
     /// use petgraph::graphmap::UnGraphMap;
     ///
-    /// let mut g = UnGraphMap::new();
+    /// let mut g = UnGraphMap::<_, _>::new();
     /// g.add_edge("x", "y", -1);
     ///
     /// let edge_data = g.remove_edge("y", "x");
