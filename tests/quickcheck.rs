@@ -12,6 +12,7 @@ extern crate defmac;
 extern crate itertools;
 extern crate odds;
 
+mod maximal_cliques;
 mod utils;
 
 use odds::prelude::*;
@@ -32,8 +33,8 @@ use petgraph::algo::{
     bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
-    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, page_rank, tarjan_scc,
-    toposort, Matching,
+    k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
+    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1497,4 +1498,28 @@ quickcheck! {
 
         spans_terminals
     }
+}
+
+#[test]
+fn maximal_cliques_matches_ref_impl() {
+    use maximal_cliques::maximal_cliques_ref;
+
+    fn prop<Ty>(g: Graph<(), (), Ty>) -> bool
+    where
+        Ty: EdgeType,
+    {
+        if g.edge_count() <= 200 && g.node_count() <= 200 {
+            let cliques = maximal_cliques_algo(&g);
+            let cliques_ref = maximal_cliques_ref(&g);
+
+            assert!(cliques.len() == cliques_ref.len());
+
+            for c in &cliques_ref {
+                assert!(cliques.contains(c));
+            }
+        }
+        true
+    }
+    quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
+    quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
 }
