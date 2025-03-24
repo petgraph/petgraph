@@ -3,26 +3,24 @@
 //! Depends on `feature = "stable_graph"`.
 //!
 
-use std::cmp;
-use std::fmt;
-use std::iter;
-use std::marker::PhantomData;
-use std::mem::replace;
-use std::mem::size_of;
-use std::ops::{Index, IndexMut};
-use std::slice;
+use alloc::vec;
+use core::{
+    cmp, fmt, iter,
+    marker::PhantomData,
+    mem::{replace, size_of},
+    ops::{Index, IndexMut},
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
 
-use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
-
+use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 use crate::iter_utils::IterUtilsExt;
-
-use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
 use crate::visit;
 use crate::visit::{EdgeIndexable, EdgeRef, IntoEdgeReferences, NodeIndexable};
 use crate::IntoWeightedEdge;
+use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
 
 // reexport those things that are shared with Graph
 #[doc(no_inline)]
@@ -55,16 +53,16 @@ mod serialization;
 /// is some local measure of edge count.
 ///
 /// - Nodes and edges are each numbered in an interval from *0* to some number
-///     *m*, but *not all* indices in the range are valid, since gaps are formed
-///     by deletions.
+///   *m*, but *not all* indices in the range are valid, since gaps are formed
+///   by deletions.
 ///
 /// - You can select graph index integer type after the size of the graph. A smaller
-///     size may have better performance.
+///   size may have better performance.
 ///
 /// - Using indices allows mutation while traversing the graph, see `Dfs`.
 ///
 /// - The `StableGraph` is a regular rust collection and is `Send` and `Sync`
-///     (as long as associated data `N` and `E` are).
+///   (as long as associated data `N` and `E` are).
 ///
 /// - Indices don't allow as much compile time checking as references.
 ///
@@ -1984,6 +1982,8 @@ where
 
 #[test]
 fn stable_graph() {
+    use std::println;
+
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
     let a = gr.add_node(0);
     let b = gr.add_node(1);
@@ -2014,6 +2014,8 @@ fn stable_graph() {
 
 #[test]
 fn dfs() {
+    use std::println;
+
     use crate::visit::Dfs;
 
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);

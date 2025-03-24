@@ -1,7 +1,9 @@
 //! `UnionFind<K>` is a disjoint-set data structure.
 
+use alloc::{vec, vec::Vec};
+use core::cmp::Ordering;
+
 use super::graph::IndexType;
-use std::cmp::Ordering;
 
 /// `UnionFind<K>` is a disjoint-set data structure. It tracks set membership of *n* elements
 /// indexed from *0* to *n - 1*. The scalar type is `K` which must be an unsigned integer type.
@@ -95,19 +97,25 @@ where
     ///
     /// **Panics** if `x` is out of bounds.
     pub fn find(&self, x: K) -> K {
-        assert!(x.index() < self.len());
-        unsafe {
-            let mut x = x;
-            loop {
-                // Use unchecked indexing because we can trust the internal set ids.
-                let xparent = *get_unchecked(&self.parent, x.index());
-                if xparent == x {
-                    break;
-                }
-                x = xparent;
-            }
-            x
+        self.try_find(x).expect("The index is out of bounds")
+    }
+
+    /// Return the representative for `x` or `None` if `x` is out of bounds.
+    pub fn try_find(&self, mut x: K) -> Option<K> {
+        if x.index() >= self.len() {
+            return None;
         }
+
+        loop {
+            // Use unchecked indexing because we can trust the internal set ids.
+            let xparent = unsafe { *get_unchecked(&self.parent, x.index()) };
+            if xparent == x {
+                break;
+            }
+            x = xparent;
+        }
+
+        Some(x)
     }
 
     /// Return the representative for `x`.
@@ -119,6 +127,17 @@ where
     pub fn find_mut(&mut self, x: K) -> K {
         assert!(x.index() < self.len());
         unsafe { self.find_mut_recursive(x) }
+    }
+
+    /// Return the representative for `x` or `None` if `x` is out of bounds.
+    ///
+    /// Write back the found representative, flattening the internal
+    /// datastructure in the process and quicken future lookups.
+    pub fn try_find_mut(&mut self, x: K) -> Option<K> {
+        if x.index() >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.find_mut_recursive(x) })
     }
 
     unsafe fn find_mut_recursive(&mut self, mut x: K) -> K {
@@ -134,8 +153,20 @@ where
 
     /// Returns `true` if the given elements belong to the same set, and returns
     /// `false` otherwise.
+    ///
+    /// **Panics** if `x` or `y` is out of bounds.
     pub fn equiv(&self, x: K, y: K) -> bool {
         self.find(x) == self.find(y)
+    }
+
+    /// Returns `Ok(true)` if the given elements belong to the same set, and returns
+    /// `Ok(false)` otherwise.
+    ///
+    /// If `x` or `y` are out of bounds, it returns `Err` with the first bad index found.
+    pub fn try_equiv(&self, x: K, y: K) -> Result<bool, K> {
+        let xrep = self.try_find(x).ok_or(x)?;
+        let yrep = self.try_find(y).ok_or(y)?;
+        Ok(xrep == yrep)
     }
 
     /// Unify the two sets containing `x` and `y`.
@@ -144,14 +175,24 @@ where
     ///
     /// **Panics** if `x` or `y` is out of bounds.
     pub fn union(&mut self, x: K, y: K) -> bool {
+        self.try_union(x, y).unwrap()
+    }
+
+    /// Unify the two sets containing `x` and `y`.
+    ///
+    /// Return `Ok(false)` if the sets were already the same, `Ok(true)` if they were unified.
+    ///
+    /// If `x` or `y` are out of bounds, it returns `Err` with first found bad index.
+    /// But if `x == y`, the result will be `Ok(false)` even if the indexes go out of bounds.
+    pub fn try_union(&mut self, x: K, y: K) -> Result<bool, K> {
         if x == y {
-            return false;
+            return Ok(false);
         }
-        let xrep = self.find_mut(x);
-        let yrep = self.find_mut(y);
+        let xrep = self.try_find_mut(x).ok_or(x)?;
+        let yrep = self.try_find_mut(y).ok_or(y)?;
 
         if xrep == yrep {
-            return false;
+            return Ok(false);
         }
 
         let xrepu = xrep.index();
@@ -169,7 +210,7 @@ where
                 self.rank[xrepu] += 1;
             }
         }
-        true
+        Ok(true)
     }
 
     /// Return a vector mapping each element to its representative.

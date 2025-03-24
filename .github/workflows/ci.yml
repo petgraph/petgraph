@@ -22,6 +22,8 @@ jobs:
       matrix:
         include:
           - rust: 1.64.0  # MSRV
+            required_features: std
+          - rust: 1.81.0  # no_std MSRV
           - rust: stable
             features: unstable quickcheck rayon
             test_all: --all
@@ -48,16 +50,17 @@ jobs:
         run: |
           cargo generate-lockfile
           cargo update -p hashbrown --precise 0.15.0
+          cargo update -p once_cell --precise 1.20.3
 
       - name: Build with no features
-        run: cargo build --verbose --no-default-features
+        run: cargo build --verbose --no-default-features --features "${{ matrix.required_features }}"
       - name: Test with no features
-        run: cargo test --verbose --no-default-features
+        run: cargo test --verbose --no-default-features --features "${{ matrix.required_features }}"
 
       - name: Build with features "${{ matrix.features }}"
-        run: cargo build --verbose --features "${{ matrix.features }}"
+        run: cargo build --verbose --features "${{ matrix.features }}" --features "${{ matrix.required_features }}"
       - name: Test with features "${{ matrix.features }}"
-        run: cargo test ${{ matrix.test_all }} --verbose --features "${{ matrix.features }}"
+        run: cargo test ${{ matrix.test_all }} --verbose --features "${{ matrix.features }}" --features "${{ matrix.required_features }}"
 
       - name: Build benchmarks
         if: ${{ matrix.bench }}
@@ -91,6 +94,21 @@ jobs:
         run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: "-Dwarnings"
+
+  check-no-std:
+    name: Check no_std
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.7
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32v1-none
+
+      - name: Check
+        run: cargo check --no-default-features -p petgraph --target wasm32v1-none --features graphmap,serde-1,stable_graph,matrix_graph,generate,unstable
 
   miri:
     name: Unsoundness check

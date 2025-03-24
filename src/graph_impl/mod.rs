@@ -1,11 +1,13 @@
-use std::cmp;
-use std::fmt;
-use std::hash::Hash;
-use std::iter;
-use std::marker::PhantomData;
-use std::mem::size_of;
-use std::ops::{Index, IndexMut, Range};
-use std::slice;
+use alloc::{vec, vec::Vec};
+use core::{
+    cmp, fmt,
+    hash::Hash,
+    iter,
+    marker::PhantomData,
+    mem::size_of,
+    ops::{Index, IndexMut, Range},
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
 
@@ -323,24 +325,24 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
 /// but these are only stable across certain operations:
 ///
 /// * **Removing nodes or edges may shift other indices.** Removing a node will
-///     force the last node to shift its index to take its place. Similarly,
-///     removing an edge shifts the index of the last edge.
+///   force the last node to shift its index to take its place. Similarly,
+///   removing an edge shifts the index of the last edge.
 /// * Adding nodes or edges keeps indices stable.
 ///
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
 /// completely unless you need a very big graph -- then you can use `usize`.
 ///
 /// * The fact that the node and edge indices in the graph each are numbered in compact
-///     intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
+///   intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
 ///
 /// * You can select graph index integer type after the size of the graph. A smaller
-///     size may have better performance.
+///   size may have better performance.
 ///
 /// * Using indices allows mutation while traversing the graph, see `Dfs`,
-///     and `.neighbors(a).detach()`.
+///   and `.neighbors(a).detach()`.
 ///
 /// * You can create several graphs using the equal node indices but with
-///     differing weights or differing edges.
+///   differing weights or differing edges.
 ///
 /// * Indices don't allow as much compile time checking as references.
 ///
@@ -433,7 +435,7 @@ enum Pair<T> {
     None,
 }
 
-use std::cmp::max;
+use core::cmp::max;
 
 /// Get mutable references at index `a` and `b`.
 fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T> {
@@ -1769,7 +1771,7 @@ where
 
 /// Iterator yielding immutable access to all node weights.
 pub struct NodeWeights<'a, N: 'a, Ix: IndexType = DefaultIx> {
-    nodes: ::std::slice::Iter<'a, Node<N, Ix>>,
+    nodes: ::core::slice::Iter<'a, Node<N, Ix>>,
 }
 impl<'a, N, Ix> Iterator for NodeWeights<'a, N, Ix>
 where
@@ -1788,7 +1790,7 @@ where
 /// Iterator yielding mutable access to all node weights.
 #[derive(Debug)]
 pub struct NodeWeightsMut<'a, N: 'a, Ix: IndexType = DefaultIx> {
-    nodes: ::std::slice::IterMut<'a, Node<N, Ix>>, // TODO: change type to something that implements Clone?
+    nodes: ::core::slice::IterMut<'a, Node<N, Ix>>, // TODO: change type to something that implements Clone?
 }
 
 impl<'a, N, Ix> Iterator for NodeWeightsMut<'a, N, Ix>
@@ -1808,7 +1810,7 @@ where
 
 /// Iterator yielding immutable access to all edge weights.
 pub struct EdgeWeights<'a, E: 'a, Ix: IndexType = DefaultIx> {
-    edges: ::std::slice::Iter<'a, Edge<E, Ix>>,
+    edges: ::core::slice::Iter<'a, Edge<E, Ix>>,
 }
 
 impl<'a, E, Ix> Iterator for EdgeWeights<'a, E, Ix>
@@ -1829,7 +1831,7 @@ where
 /// Iterator yielding mutable access to all edge weights.
 #[derive(Debug)]
 pub struct EdgeWeightsMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
-    edges: ::std::slice::IterMut<'a, Edge<E, Ix>>, // TODO: change type to something that implements Clone?
+    edges: ::core::slice::IterMut<'a, Edge<E, Ix>>, // TODO: change type to something that implements Clone?
 }
 
 impl<'a, E, Ix> Iterator for EdgeWeightsMut<'a, E, Ix>

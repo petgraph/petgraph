@@ -1,12 +1,14 @@
-use std::collections::hash_map::Entry::{Occupied, Vacant};
-use std::collections::{BinaryHeap, HashMap};
+use alloc::{collections::BinaryHeap, vec, vec::Vec};
+use core::hash::Hash;
 
-use std::hash::Hash;
-
-use crate::scored::MinScored;
-use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
+use hashbrown::hash_map::{
+    Entry::{Occupied, Vacant},
+    HashMap,
+};
 
 use crate::algo::Measure;
+use crate::scored::MinScored;
+use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 
 /// \[Generic\] A* shortest path algorithm.
 ///
