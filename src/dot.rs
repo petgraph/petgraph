@@ -97,7 +97,7 @@ where
 
 /// Direction of graph layout.
 ///
-/// https://graphviz.org/docs/attrs/rankdir/
+/// <https://graphviz.org/docs/attrs/rankdir/>
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RankDir {
     /// Top to bottom
