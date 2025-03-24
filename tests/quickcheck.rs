@@ -34,7 +34,7 @@ use petgraph::algo::{
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
     k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
-    min_spanning_tree, page_rank, tarjan_scc, toposort, Matching,
+    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1522,4 +1522,38 @@ fn maximal_cliques_matches_ref_impl() {
     }
     quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
     quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
+}
+
+quickcheck! {
+    fn test_spfa(gr: Graph<(), f32>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+        }
+        true
+    }
+}
+
+quickcheck! {
+    fn test_spfa_undir(gr: Graph<(), f32, Undirected>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+        }
+        true
+    }
 }
