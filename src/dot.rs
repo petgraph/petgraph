@@ -113,8 +113,7 @@ pub enum RankDir {
 /// `Dot` configuration.
 ///
 /// This enum does not have an exhaustive definition (will be expanded)
-// TODO: #[non_exhaustive] once MSRV >= 1.40,
-// and/or for a breaking change make this something like an EnumSet: https://docs.rs/enumset
+#[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
 pub enum Config {
     /// Use indices for node labels.
@@ -129,8 +128,6 @@ pub enum Config {
     GraphContentOnly,
     /// Sets direction of graph layout.
     RankDir(RankDir),
-    #[doc(hidden)]
-    _Incomplete(()),
 }
 macro_rules! make_config_struct {
     ($($variant:ident,)*) => {
@@ -148,7 +145,6 @@ macro_rules! make_config_struct {
                     match c {
                         $(Config::$variant => conf.$variant = true,)*
                         Config::RankDir(dir) => conf.RankDir = Some(*dir),
-                        Config::_Incomplete(()) => {}
                     }
                 }
                 conf
