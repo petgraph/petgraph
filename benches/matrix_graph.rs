@@ -66,7 +66,7 @@ fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
 #[bench]
 fn add_edges_from_root(bench: &mut test::Bencher) {
     bench.iter(|| {
-        let mut gr = MatrixGraph::new();
+        let mut gr = MatrixGraph::<_, _>::new();
         let a = gr.add_node(());
 
         for _ in 0..100 {
@@ -79,7 +79,7 @@ fn add_edges_from_root(bench: &mut test::Bencher) {
 #[bench]
 fn add_adjacent_edges(bench: &mut test::Bencher) {
     bench.iter(|| {
-        let mut gr = MatrixGraph::new();
+        let mut gr = MatrixGraph::<_, _>::new();
         let mut prev = None;
         for _ in 0..100 {
             let b = gr.add_node(());
@@ -151,7 +151,7 @@ const BIGGER: &str = "
 ";
 
 /// Parse a text adjacency matrix format into a directed graph
-fn parse_matrix<Ty: EdgeType>(s: &str) -> MatrixGraph<(), (), Ty> {
+fn parse_matrix<Ty: EdgeType>(s: &str) -> MatrixGraph<(), (), std::hash::RandomState, Ty> {
     let mut gr = MatrixGraph::default();
     let s = s.trim();
     let lines = s.lines().filter(|l| !l.is_empty());

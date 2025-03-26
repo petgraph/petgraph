@@ -1,8 +1,12 @@
+#[cfg(feature = "stable_graph")]
+#[cfg(test)]
 use petgraph::{
     graph::{NodeIndex, UnGraph},
     Graph, Undirected,
 };
 
+#[cfg(feature = "stable_graph")]
+#[cfg(test)]
 fn b01_example() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
     // Implementing b01 case from Vienna test set B
     let mut graph = Graph::<(), i32, Undirected>::new_undirected();
@@ -133,6 +137,8 @@ fn b01_example() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
     (graph, terminals)
 }
 
+#[cfg(feature = "stable_graph")]
+#[cfg(test)]
 fn b07_example() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
     // Implementing b07 case from Vienna test set B
     let mut graph = Graph::<(), i32, Undirected>::new_undirected();
@@ -322,6 +328,8 @@ fn b07_example() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
     (graph, terminals)
 }
 
+#[cfg(feature = "stable_graph")]
+#[cfg(test)]
 fn example_kou_paper() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
     let mut graph = Graph::<(), i32, Undirected>::new_undirected();
     // Add nodes

@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
-use std::hash::Hash;
+use alloc::{collections::VecDeque, vec, vec::Vec};
+use core::hash::Hash;
 
 use crate::visit::{
     EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable,
@@ -356,7 +356,7 @@ where
     assert_ne!(
         graph.node_bound(),
         usize::MAX,
-        "The input graph capacity should be strictly less than std::usize::MAX."
+        "The input graph capacity should be strictly less than core::usize::MAX."
     );
 
     // Greedy algorithm should create a fairly good initial matching. The hope
@@ -509,7 +509,7 @@ fn find_join<G, F>(
     let join = loop {
         // Swap the sides. Do not swap if the right side is already finished.
         if right != graph.dummy_idx() {
-            std::mem::swap(&mut left, &mut right);
+            core::mem::swap(&mut left, &mut right);
         }
 
         // Set left to the next inner vertex in P(source) or P(target).

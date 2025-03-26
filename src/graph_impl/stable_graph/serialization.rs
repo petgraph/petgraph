@@ -1,22 +1,19 @@
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
-use std::marker::PhantomData;
-
-use crate::prelude::*;
-
-use crate::graph::Node;
-use crate::graph::{Edge, IndexType};
-use crate::serde_utils::CollectSeqWithLength;
-use crate::serde_utils::MappedSequenceVisitor;
-use crate::serde_utils::{FromDeserialized, IntoSerializable};
-use crate::stable_graph::StableGraph;
-use crate::visit::{EdgeIndexable, NodeIndexable};
-use crate::EdgeType;
+use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 use super::super::serialization::{
     invalid_hole_err, invalid_length_err, invalid_node_err, EdgeProperty,
 };
+use crate::graph::{Edge, IndexType, Node};
+use crate::prelude::*;
+use crate::serde_utils::{
+    CollectSeqWithLength, FromDeserialized, IntoSerializable, MappedSequenceVisitor,
+};
+use crate::stable_graph::StableGraph;
+use crate::visit::{EdgeIndexable, NodeIndexable};
+use crate::EdgeType;
 
 // Serialization representation for StableGraph
 // Keep in sync with deserialization and Graph
@@ -260,10 +257,13 @@ where
 
 #[test]
 fn test_from_deserialized_with_holes() {
-    use crate::graph::node_index;
-    use crate::stable_graph::StableUnGraph;
+    use alloc::vec;
+
     use itertools::assert_equal;
     use serde::de::value::Error as SerdeError;
+
+    use crate::graph::node_index;
+    use crate::stable_graph::StableUnGraph;
 
     let input = DeserStableGraph::<_, (), u32> {
         nodes: vec![

@@ -1,3 +1,8 @@
+use alloc::vec::Vec;
+use core::{fmt::Debug, hash::Hash};
+
+use hashbrown::{HashMap, HashSet};
+
 use crate::algo::floyd_warshall::floyd_warshall_path;
 use crate::algo::{dijkstra, min_spanning_tree, BoundedMeasure, Measure};
 use crate::data::FromElements;
@@ -6,13 +11,10 @@ use crate::visit::{
     Data, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoNeighbors,
     IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeIndexable, Visitable,
 };
+use crate::Undirected;
 
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph::StableGraph;
-use crate::Undirected;
-use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
-use std::hash::Hash;
 
 type Edge<G> = (<G as GraphBase>::NodeId, <G as GraphBase>::NodeId);
 type Subgraph<G> = HashSet<<G as GraphBase>::NodeId>;
@@ -201,6 +203,10 @@ where
 
 #[cfg(test)]
 mod test {
+    use alloc::vec;
+
+    use hashbrown::{HashMap, HashSet};
+
     use super::{compute_metric_closure, non_terminal_leaves, subgraph_edges_from_metric_closure};
     use crate::graph::NodeIndex;
     use crate::{
@@ -208,7 +214,6 @@ mod test {
         data::FromElements,
         Graph, Undirected,
     };
-    use std::collections::{HashMap, HashSet};
 
     #[test]
     fn test_compute_metric_closure() {
@@ -241,7 +246,7 @@ mod test {
                 .map(|((node1, node2), &weight)| (*node1, *node2, weight)),
         );
 
-        let ref_weights = HashMap::from([
+        let ref_weights = HashMap::<_, _>::from([
             ((0, 2), 8),
             ((0, 4), 10),
             ((0, 5), 6),

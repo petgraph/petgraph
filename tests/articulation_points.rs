@@ -3,7 +3,7 @@ use petgraph::{
     graph::{NodeIndex, UnGraph},
 };
 
-use std::collections::HashSet;
+use hashbrown::HashSet;
 
 #[test]
 fn art_single_node() {

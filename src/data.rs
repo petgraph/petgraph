@@ -1,13 +1,20 @@
 //! Graph traits for associated data and graph construction.
 
+use alloc::vec::Vec;
+
 use crate::graph::IndexType;
-#[cfg(feature = "graphmap")]
-use crate::graphmap::{GraphMap, NodeTrait};
-#[cfg(feature = "stable_graph")]
-use crate::stable_graph::StableGraph;
 use crate::visit::{Data, NodeCount, NodeIndexable, Reversed};
 use crate::EdgeType;
 use crate::Graph;
+
+#[cfg(feature = "stable_graph")]
+use crate::stable_graph::StableGraph;
+
+#[cfg(feature = "graphmap")]
+use {
+    crate::graphmap::{GraphMap, NodeTrait},
+    core::hash::BuildHasher,
+};
 
 trait_template! {
     /// Access node and edge weights (associated data).
@@ -186,10 +193,11 @@ where
 }
 
 #[cfg(feature = "graphmap")]
-impl<N, E, Ty> Build for GraphMap<N, E, Ty>
+impl<N, E, Ty, S> Build for GraphMap<N, E, Ty, S>
 where
     Ty: EdgeType,
     N: NodeTrait,
+    S: BuildHasher,
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         self.add_node(weight)
@@ -241,10 +249,11 @@ where
 }
 
 #[cfg(feature = "graphmap")]
-impl<N, E, Ty> Create for GraphMap<N, E, Ty>
+impl<N, E, Ty, S> Create for GraphMap<N, E, Ty, S>
 where
     Ty: EdgeType,
     N: NodeTrait,
+    S: BuildHasher + Default,
 {
     fn with_capacity(nodes: usize, edges: usize) -> Self {
         Self::with_capacity(nodes, edges)
@@ -352,10 +361,11 @@ where
 }
 
 #[cfg(feature = "graphmap")]
-impl<N, E, Ty> FromElements for GraphMap<N, E, Ty>
+impl<N, E, Ty, S> FromElements for GraphMap<N, E, Ty, S>
 where
     Ty: EdgeType,
     N: NodeTrait,
+    S: BuildHasher + Default,
 {
     fn from_elements<I>(iterable: I) -> Self
     where

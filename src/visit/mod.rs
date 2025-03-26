@@ -74,9 +74,10 @@ mod traversal;
 pub use self::dfsvisit::*;
 pub use self::traversal::*;
 
+use core::hash::{BuildHasher, Hash};
+
 use fixedbitset::FixedBitSet;
-use std::collections::HashSet;
-use std::hash::{BuildHasher, Hash};
+use hashbrown::HashSet;
 
 use super::EdgeType;
 use crate::prelude::Direction;
@@ -399,6 +400,11 @@ pub trait VisitMap<N> {
 
     /// Return whether `a` has been visited before.
     fn is_visited(&self, a: &N) -> bool;
+
+    /// Mark `a` as unvisited.
+    ///
+    /// Return **true** if this vertex was marked as visited at the time of unsetting it, false otherwise.
+    fn unvisit(&mut self, _a: N) -> bool;
 }
 
 impl<Ix> VisitMap<Ix> for FixedBitSet
@@ -410,6 +416,14 @@ where
     }
     fn is_visited(&self, x: &Ix) -> bool {
         self.contains(x.index())
+    }
+
+    fn unvisit(&mut self, x: Ix) -> bool {
+        if self.is_visited(&x) {
+            self.toggle(x.index());
+            return true;
+        }
+        false
     }
 }
 
@@ -423,6 +437,10 @@ where
     }
     fn is_visited(&self, x: &N) -> bool {
         self.contains(x)
+    }
+
+    fn unvisit(&mut self, x: N) -> bool {
+        self.remove(&x)
     }
 }
 

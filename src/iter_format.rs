@@ -1,7 +1,6 @@
 //! Formatting utils
 
-use std::cell::RefCell;
-use std::fmt;
+use core::{cell::RefCell, fmt};
 
 /// Format the iterator like a map
 pub struct DebugMap<F>(pub F);

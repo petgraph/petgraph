@@ -15,7 +15,7 @@ impl<G> IntoNeighbors for UndirectedAdaptor<G>
 where
     G: IntoNeighborsDirected,
 {
-    type Neighbors = std::iter::Chain<G::NeighborsDirected, G::NeighborsDirected>;
+    type Neighbors = core::iter::Chain<G::NeighborsDirected, G::NeighborsDirected>;
     fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
         self.0
             .neighbors_directed(n, Direction::Incoming)
@@ -27,7 +27,7 @@ impl<G> IntoEdges for UndirectedAdaptor<G>
 where
     G: IntoEdgesDirected,
 {
-    type Edges = std::iter::Chain<G::EdgesDirected, G::EdgesDirected>;
+    type Edges = core::iter::Chain<G::EdgesDirected, G::EdgesDirected>;
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         self.0
             .edges_directed(a, Direction::Incoming)
@@ -64,6 +64,8 @@ NodeCount! {delegate_impl [[G], G, UndirectedAdaptor<G>, access0]}
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
     use super::*;
     use crate::graph::{DiGraph, Graph};
     use crate::visit::Dfs;
