@@ -54,6 +54,9 @@ pub trait Build: Data + NodeCount {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId;
     /// Add a new edge. If parallel edges (duplicate) are not allowed and
     /// the edge already exists, return `None`.
+    ///
+    /// Might panic if `a` or `b` are out of bounds.
+    #[track_caller]
     fn add_edge(
         &mut self,
         a: Self::NodeId,
@@ -64,6 +67,9 @@ pub trait Build: Data + NodeCount {
     }
     /// Add or update the edge from `a` to `b`. Return the id of the affected
     /// edge.
+    ///
+    /// Might panic if `a` or `b` are out of bounds.
+    #[track_caller]
     fn update_edge(
         &mut self,
         a: Self::NodeId,

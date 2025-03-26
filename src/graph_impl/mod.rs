@@ -524,6 +524,7 @@ where
     ///
     /// **Panics** if the Graph is at the maximum number of nodes for its index
     /// type (N/A if usize).
+    #[track_caller]
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         let node = Node {
             weight,
@@ -565,6 +566,7 @@ where
     ///
     /// **Note:** `Graph` allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
+    #[track_caller]
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         let edge_idx = EdgeIndex::new(self.edges.len());
         assert!(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx);
@@ -600,6 +602,7 @@ where
     /// connected to `a` (and `b`, if the graph edges are undirected).
     ///
     /// **Panics** if any of the nodes doesn't exist.
+    #[track_caller]
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         if let Some(ix) = self.find_edge(a, b) {
             if let Some(ed) = self.edge_weight_mut(ix) {
@@ -1141,6 +1144,7 @@ where
     /// assert_eq!(gr[b], 4.);
     /// assert_eq!(gr[c], 2.);
     /// ```
+    #[track_caller]
     pub fn index_twice_mut<T, U>(
         &mut self,
         i: T,
@@ -1203,6 +1207,7 @@ where
     /// the graph. Graph may reserve more space to avoid frequent reallocations.
     ///
     /// **Panics** if the new capacity overflows `usize`.
+    #[track_caller]
     pub fn reserve_nodes(&mut self, additional: usize) {
         self.nodes.reserve(additional);
     }
@@ -1211,6 +1216,7 @@ where
     /// the graph. Graph may reserve more space to avoid frequent reallocations.
     ///
     /// **Panics** if the new capacity overflows `usize`.
+    #[track_caller]
     pub fn reserve_edges(&mut self, additional: usize) {
         self.edges.reserve(additional);
     }
@@ -1222,6 +1228,7 @@ where
     /// Prefer `reserve_nodes` if future insertions are expected.
     ///
     /// **Panics** if the new capacity overflows `usize`.
+    #[track_caller]
     pub fn reserve_exact_nodes(&mut self, additional: usize) {
         self.nodes.reserve_exact(additional);
     }
@@ -1233,6 +1240,7 @@ where
     /// Prefer `reserve_edges` if future insertions are expected.
     ///
     /// **Panics** if the new capacity overflows `usize`.
+    #[track_caller]
     pub fn reserve_exact_edges(&mut self, additional: usize) {
         self.edges.reserve_exact(additional);
     }

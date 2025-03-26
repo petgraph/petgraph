@@ -259,6 +259,7 @@ where
     ///
     /// **Panics** if the `StableGraph` is at the maximum number of nodes for
     /// its index type.
+    #[track_caller]
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         if self.free_node != NodeIndex::end() {
             let node_idx = self.free_node;
@@ -346,6 +347,7 @@ where
     /// its index type.
     ///
     /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
+    #[track_caller]
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         let edge_idx;
         let mut new_edge = None::<Edge<_, _>>;
@@ -433,6 +435,7 @@ where
     /// connected to `a` (and `b`, if the graph edges are undirected).
     ///
     /// **Panics** if any of the nodes don't exist.
+    #[track_caller]
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
         if let Some(ix) = self.find_edge(a, b) {
             self[ix] = weight;
@@ -753,7 +756,8 @@ where
     /// Index the `StableGraph` by two indices, any combination of
     /// node or edge indices is fine.
     ///
-    /// **Panics** if the indices are equal or if they are out of bounds.
+    /// **Panics** if the indices are equal or if they are not found.
+    #[track_caller]
     pub fn index_twice_mut<T, U>(
         &mut self,
         i: T,
