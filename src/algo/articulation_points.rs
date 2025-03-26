@@ -1,9 +1,11 @@
+use alloc::{vec, vec::Vec};
+use core::{cmp::min, hash::Hash};
+
+use fixedbitset::FixedBitSet;
+use hashbrown::{HashMap, HashSet};
+
 use crate::visit;
 use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRef};
-use fixedbitset::FixedBitSet;
-use std::cmp::min;
-use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
 
 /// \[Generic\] Find articulation points in a graph using [Tarjan's algorithm](https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm).
 ///

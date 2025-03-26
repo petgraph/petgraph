@@ -1,6 +1,6 @@
+use core::ops::Deref;
 use petgraph::{graph::DiGraph, graphmap::NodeTrait};
 use quickcheck::{Arbitrary, Gen, StdGen};
-use std::ops::Deref;
 
 #[derive(Copy, Clone, Debug)]
 /// quickcheck Arbitrary adaptor - half the size of `T` on average

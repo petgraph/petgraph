@@ -1,5 +1,7 @@
-use std::collections::{BinaryHeap, HashMap, HashSet};
-use std::hash::Hash;
+use alloc::{collections::BinaryHeap, vec};
+use core::hash::Hash;
+
+use hashbrown::{HashMap, HashSet};
 
 use crate::scored::MaxScored;
 use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visitable};
