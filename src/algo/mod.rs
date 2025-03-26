@@ -837,6 +837,8 @@ pub trait UnitMeasure:
     fn one() -> Self;
     fn from_usize(nb: usize) -> Self;
     fn default_tol() -> Self;
+    fn from_f32(val: f32) -> Self;
+    fn from_f64(val: f64) -> Self;
 }
 
 macro_rules! impl_unit_measure(
@@ -858,6 +860,13 @@ macro_rules! impl_unit_measure(
                     1e-6 as $t
                 }
 
+                fn from_f32(val: f32) -> Self {
+                    val as $t
+                }
+
+                fn from_f64(val: f64) -> Self {
+                    val as $t
+                }
             }
 
         )*
