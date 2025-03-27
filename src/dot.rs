@@ -327,33 +327,42 @@ where
 #[cfg(feature = "dot_parser")]
 #[macro_use]
 pub mod dot_parser {
-    pub use dot_parser::canonical::{Node};
-    pub use dot_parser::ast::AList;
+    use dot_parser::canonical::Node;
+    use dot_parser::ast::AList;
     use dot_parser::canonical::Graph as CGraph;
-    use dot_parser::ast::Graph as AstGraph;
-    use dot_parser::ast::ParseError;
+    use dot_parser::ast::Graph as DotGraph;
+    use dot_parser::ast::PestError as ParsingError;
     use crate::data::Create;
     use std::convert::TryFrom;
     use std::fmt::{Display, Formatter};
     use std::error::Error;
 
+    pub type DotNodeWeight<'a> = Node<(&'a str, &'a str)>;
+    pub type DotAttrList<'a> = AList<(&'a str, &'a str)>;
+
     #[derive(Debug)]
-    pub struct DotParsingError<'a> {
-        error: ParseError<'a>
+    pub struct DotParsingError {
+        error: ParsingError
     }
 
-    impl Display for DotParsingError<'_> {
+    impl Display for DotParsingError {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
             write!(f, "{}", self.error)
         }
     }
 
-    impl Error for DotParsingError<'_> {}
+    impl From<ParsingError> for DotParsingError {
+        fn from(error: ParsingError) -> Self {
+            Self { error }
+        }
+    }
+
+    impl Error for DotParsingError {}
 
     /// This trait extends [Create] with a method to parse a graph from a dot string.
-    pub trait ParseFromDot<'a>: Create<EdgeWeight=AList<(&'a str, &'a str)>, NodeWeight=Node<(&'a str, &'a str)>> {
-        /// Convert a DOT/Graphviz graph (represented as an [AstGraph] into a petgraph's graph.
-        fn from_dot_graph(dot_graph: AstGraph<(&'a str, &'a str)>) -> Self {
+    pub trait ParseFromDot<'a>: Create<EdgeWeight=DotAttrList<'a>, NodeWeight=DotNodeWeight<'a>> {
+        /// Convert a DOT/Graphviz graph (represented as an [DotGraph]) into a petgraph's graph.
+        fn from_dot_graph(dot_graph: DotGraph<(&'a str, &'a str)>) -> Self {
             let dot_graph: CGraph<(&'a str, &'a str)> = dot_graph.into();
             let node_number = dot_graph.nodes.set.len(); 
             let edge_number = dot_graph.edges.set.len();
@@ -373,8 +382,8 @@ pub mod dot_parser {
 
         /// Attempt to parse a DOT/Graphviz string into a graph. Fail if the string is not a
         /// well-formed DOT/Graphviz string.
-        fn try_from(s: &'a str) -> Result<Self, ()> {
-            let ast = AstGraph::try_from(s).map_err(|_| ())?;
+        fn try_from(s: &'a str) -> Result<Self, DotParsingError> {
+            let ast = DotGraph::try_from(s)?;
             let petgraph = Self::from_dot_graph(ast);
             Ok(petgraph)
         }
@@ -398,9 +407,9 @@ pub mod dot_parser {
     pub use graph_from_file;
     pub use graph_from_str;
 
-    impl<'a> ParseFromDot<'a> for crate::graph::Graph<Node<(&'a str, &'a str)>, AList<(&'a str, &'a str)>> {}
+    impl<'a> ParseFromDot<'a> for crate::graph::Graph<DotNodeWeight<'a>, DotAttrList<'a>> {}
     #[cfg(stable_graph)]
-    impl<'a> ParseFromDot<'a> for crate::stable_graph::StableGraph<Node<(&'a str, &'a str)>, AList<(&'a str, &'a str)>> {}
+    impl<'a> ParseFromDot<'a> for crate::stable_graph::StableGraph<DotNodeWeight<'a>, DotAttrList<'a>> {}
 
     #[cfg(test)]
     mod test {
