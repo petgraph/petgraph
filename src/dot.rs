@@ -412,6 +412,12 @@ pub mod dot_parser {
         }
 
         #[test]
+        fn test_ill_formed_str() {
+            let g_res: Result<crate::graph::Graph<_, _>, crate::dot::dot_parser::DotParsingError> = crate::dot::dot_parser::ParseFromDot::try_from(":zcdza");
+            assert!(g_res.is_err())
+        }
+
+        #[test]
         fn test_dot_parsing_file() {
             let _: crate::graph::Graph<_, _> = graph_from_file!("graph-example.dot");
             #[cfg(stable_graph)]
