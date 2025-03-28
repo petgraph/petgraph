@@ -199,6 +199,10 @@ pub enum MatrixError {
     NodeMissed(usize),
 }
 
+#[cfg(feature = "std")]
+impl std::error::Error for MatrixError {}
+
+#[cfg(not(feature = "std"))]
 impl core::error::Error for MatrixError {}
 
 impl fmt::Display for MatrixError {
