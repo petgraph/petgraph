@@ -1,3 +1,59 @@
+Version 0.8.0 (2025-03-26)
+==========================
+
+Breaking changes
+----------------
+- Add ``no_std`` Support (`#747`_)
+- Add ``VisitMap::unvisit`` as proposed in #610 (`#611`_)
+- Add support for specifying rankdir on dot plots. (`#728`_)
+- Make ``dot::Config`` non_exhaustive (`#756`_)
+- Add ``from_f32/64`` methods for ``Float``, ``Unit``, and ``Bounded`` measures (`#733`_)
+
+New algorithms
+--------------
+- Add articulation points implementation (`#681`_)
+- Add Prim's Algorithm for Minimum Spanning Tree (`#625`_)
+- Add Kou's algorithm for finding a MST (`#682`_)
+- Add Bron-Kerbosch algorithm for maximal cliques (`#662`_)
+- Add Shortest Path Faster Algorithm Implementation (`#686`_)
+
+New features
+------------
+- Add ``UnionFind::new_set`` (`#684`_)
+- Implement ``Csr::try_add_edge`` (`#719`_)
+- Add checked ``UnionFind`` methods (`#730`_)
+
+CI & fixes
+----------
+- Fix all clippy lints and check them on CI (`#726`_)
+- Pin once_cell version for MSRV builds (`#750`_)
+- Require conventional commits tag in PR titles (`#734`_)
+- Fix wrong trigger for pr-title check (`#751`_)
+- Solve clippy warnings (`#749`_)
+- Fix github token in pr-title action (`#752`_)
+- Add new triggers for semver-checks (`#754`_)
+
+.. _`#684`: https://github.com/petgraph/petgraph/pull/684
+.. _`#681`: https://github.com/petgraph/petgraph/pull/681
+.. _`#719`: https://github.com/petgraph/petgraph/pull/719
+.. _`#726`: https://github.com/petgraph/petgraph/pull/726
+.. _`#625`: https://github.com/petgraph/petgraph/pull/625
+.. _`#730`: https://github.com/petgraph/petgraph/pull/730
+.. _`#750`: https://github.com/petgraph/petgraph/pull/750
+.. _`#734`: https://github.com/petgraph/petgraph/pull/734
+.. _`#751`: https://github.com/petgraph/petgraph/pull/751
+.. _`#682`: https://github.com/petgraph/petgraph/pull/682
+.. _`#749`: https://github.com/petgraph/petgraph/pull/749
+.. _`#752`: https://github.com/petgraph/petgraph/pull/752
+.. _`#747`: https://github.com/petgraph/petgraph/pull/747
+.. _`#754`: https://github.com/petgraph/petgraph/pull/754
+.. _`#611`: https://github.com/petgraph/petgraph/pull/611
+.. _`#662`: https://github.com/petgraph/petgraph/pull/662
+.. _`#686`: https://github.com/petgraph/petgraph/pull/686
+.. _`#728`: https://github.com/petgraph/petgraph/pull/728
+.. _`#733`: https://github.com/petgraph/petgraph/pull/733
+.. _`#756`: https://github.com/petgraph/petgraph/pull/756
+
 Version 0.7.1 (2025-01-08)
 ==========================
 
