@@ -14,7 +14,7 @@ use indexmap::IndexSet;
 
 use crate::{
     data::Build,
-    graph::{IndexType, NodeIndex as GraphNodeIndex},
+    graph::NodeIndex as GraphNodeIndex,
     visit::{
         Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
         IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
@@ -25,6 +25,8 @@ use crate::{
 
 #[cfg(feature = "std")]
 use std::collections::hash_map::RandomState;
+
+pub use crate::graph::IndexType;
 
 // The following types are used to control the max size of the adjacency matrix. Since the maximum
 // size of the matrix vector's is the square of the maximum number of nodes, the number of nodes
