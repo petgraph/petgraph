@@ -1023,6 +1023,11 @@ where
         }
     }
 
+    /// Return an iterator yielding immutable access to all node weights and their corresponding index.
+    pub fn node_weights_and_indices(&self) -> impl Iterator<Item = (NodeIndex<Ix>, &N)> {
+        self.node_indices().zip(self.node_weights())
+    }
+
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<Ix> {
         EdgeIndices {
