@@ -2501,7 +2501,7 @@ fn test_try_add_edge() {
     let a = graph.try_add_node(()).unwrap();
 
     assert_eq!(
-        graph.try_add_edge(a.into(), 10.into(), ()),
+        graph.try_add_edge(a, 10.into(), ()),
         Err(GraphError::NodeOutBounds)
     );
     for i in 0..255 {

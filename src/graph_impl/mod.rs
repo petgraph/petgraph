@@ -292,7 +292,11 @@ pub enum GraphError {
     NodeOutBounds,
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for GraphError {}
+
+#[cfg(not(feature = "std"))]
+impl core::error::Error for GraphError {}
 
 impl fmt::Display for GraphError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
