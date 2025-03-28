@@ -1,6 +1,6 @@
 //! `MatrixGraph<N, E, Ty, NullN, NullE, Ix>` is a graph datastructure backed by an adjacency matrix.
 
-use alloc::{vec, vec::Vec};
+use alloc::{fmt, vec, vec::Vec};
 use core::{
     cmp,
     hash::BuildHasher,
@@ -189,6 +189,37 @@ pub fn node_index(ax: usize) -> NodeIndex {
     NodeIndex::new(ax)
 }
 
+/// The error type for fallible `MatrixGraph` operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatrixError {
+    /// The `MatrixGraph` is at the maximum number of nodes for its index.
+    NodeIxLimit,
+
+    /// The node with the specified index is missing from the graph.
+    NodeMissed(usize),
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for MatrixError {}
+
+#[cfg(not(feature = "std"))]
+impl core::error::Error for MatrixError {}
+
+impl fmt::Display for MatrixError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MatrixError::NodeIxLimit => write!(
+                f,
+                "The MatrixGraph is at the maximum number of nodes for its index"
+            ),
+
+            MatrixError::NodeMissed(i) => {
+                write!(f, "The node with index {i} is missing from the graph.")
+            }
+        }
+    }
+}
+
 /// `MatrixGraph<N, E, Ty, Null>` is a graph datastructure using an adjacency matrix
 /// representation.
 ///
@@ -331,6 +362,22 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         NodeIndex::new(self.nodes.add(weight))
     }
 
+    /// Try to add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// Possible errors:
+    /// - [`MatrixError::NodeIxLimit`] if the `MatrixGraph` is at the maximum number of nodes for its index type.
+    pub fn try_add_node(&mut self, weight: N) -> Result<NodeIndex<Ix>, MatrixError> {
+        let node_idx = NodeIndex::<Ix>::new(self.nodes.len());
+        if !(<Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx) {
+            return Err(MatrixError::NodeIxLimit);
+        }
+        Ok(NodeIndex::new(self.nodes.add(weight)))
+    }
+
     /// Remove `a` from the graph.
     ///
     /// Computes in **O(V)** time, due to the removal of edges with other nodes.
@@ -390,6 +437,25 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         old_weight.into()
     }
 
+    /// Try to update the edge from `a` to `b`, with its associated data `weight`.
+    ///
+    /// Return the previous data, if any.
+    ///
+    /// Computes in **O(1)** time, best case.
+    /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
+    ///
+    /// Possible errors:
+    /// - [`MatrixError::NodeMissed`] if any of the nodes don't exist.
+    pub fn try_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<Option<E>, MatrixError> {
+        self.assert_node_bounds(a, b)?;
+        Ok(self.update_edge(a, b, weight))
+    }
+
     /// Add an edge from `a` to `b` to the graph, with its associated
     /// data `weight`.
     ///
@@ -406,6 +472,26 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         assert!(old_edge_id.is_none());
     }
 
+    /// Add or update edge from `a` to `b` to the graph, with its associated
+    /// data `weight`.
+    ///
+    /// Return the previous data, if any.
+    ///
+    /// Computes in **O(1)** time, best case.
+    /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
+    ///
+    /// Possible errors:
+    /// - [`MatrixError::NodeMissed`] if any of the nodes don't exist.
+    pub fn add_or_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<Option<E>, MatrixError> {
+        self.extend_capacity_for_edge(a, b);
+        self.try_update_edge(a, b, weight)
+    }
+
     /// Remove the edge from `a` to `b` to the graph.
     ///
     /// **Panics** if any of the nodes don't exist.
@@ -420,12 +506,29 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         old_weight.unwrap()
     }
 
-    /// Return true if there is an edge between `a` and `b`.
+    /// Try to remove the edge from `a` to `b`.
     ///
-    /// **Panics** if any of the nodes don't exist.
+    /// Return old value if present.
+    pub fn try_remove_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<E> {
+        let p = self.to_edge_position(a, b)?;
+        if let Some(entry) = self.node_adjacencies.get_mut(p) {
+            let old_weight = mem::take(entry).into()?;
+            self.nb_edges -= 1;
+            return Some(old_weight);
+        }
+        None
+    }
+
+    /// Return `true` if there is an edge between `a` and `b`.
+    ///
+    /// If any of the nodes don't exist - returns `false`.
     pub fn has_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
         if let Some(p) = self.to_edge_position(a, b) {
-            return !self.node_adjacencies[p].is_null();
+            return self
+                .node_adjacencies
+                .get(p)
+                .map(|e| !e.is_null())
+                .unwrap_or(false);
         }
         false
     }
@@ -439,6 +542,13 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         &self.nodes[a.index()]
     }
 
+    /// Try to access the weight for node `a`.
+    ///
+    /// Return `None` if the node doesn't exist.
+    pub fn get_node_weight(&self, a: NodeIndex<Ix>) -> Option<&N> {
+        self.nodes.elements.get(a.index())?.as_ref()
+    }
+
     /// Access the weight for node `a`, mutably.
     ///
     /// Also available with indexing syntax: `&mut graph[a]`.
@@ -446,6 +556,13 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
     /// **Panics** if the node doesn't exist.
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> &mut N {
         &mut self.nodes[a.index()]
+    }
+
+    /// Try to access the weight for node `a`, mutably.
+    ///
+    /// Return `None` if the node doesn't exist.
+    pub fn get_node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N> {
+        self.nodes.elements.get_mut(a.index())?.as_mut()
     }
 
     /// Access the weight for edge `e`.
@@ -462,6 +579,14 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
             .expect("No edge found between the nodes.")
     }
 
+    /// Access the weight for edge from `a` to `b`.
+    ///
+    /// Return `None` if the edge doesn't exist.
+    pub fn get_edge_weight(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<&E> {
+        let p = self.to_edge_position(a, b)?;
+        self.node_adjacencies.get(p)?.as_ref()
+    }
+
     /// Access the weight for edge `e`, mutably.
     ///
     /// Also available with indexing syntax: `&mut graph[e]`.
@@ -474,6 +599,14 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         self.node_adjacencies[p]
             .as_mut()
             .expect("No edge found between the nodes.")
+    }
+
+    /// Access the weight for edge from `a` to `b`, mutably.
+    ///
+    /// Return `None` if the edge doesn't exist.
+    pub fn get_edge_weight_mut(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<&mut E> {
+        let p = self.to_edge_position(a, b)?;
+        self.node_adjacencies.get_mut(p)?.as_mut()
     }
 
     /// Return an iterator of all nodes with an edge starting from `a`.
@@ -554,6 +687,16 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
                 self.add_node(N::default());
             }
             self.add_edge(source, target, weight);
+        }
+    }
+
+    fn assert_node_bounds(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Result<(), MatrixError> {
+        if a.index() >= self.node_capacity {
+            Err(MatrixError::NodeMissed(a.index()))
+        } else if b.index() >= self.node_capacity {
+            Err(MatrixError::NodeMissed(b.index()))
+        } else {
+            Ok(())
         }
     }
 }
@@ -1323,10 +1466,9 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
 
 #[cfg(test)]
 mod tests {
-    use std::collections::hash_map::RandomState;
-
     use super::*;
     use crate::{Incoming, Outgoing};
+    use std::collections::hash_map::RandomState;
 
     #[test]
     fn test_new() {
@@ -1402,6 +1544,20 @@ mod tests {
         assert!(g.has_edge(n2, n1));
         assert!(g.has_edge(n2, n3));
         assert!(g.has_edge(n2, n4));
+    }
+
+    #[test]
+    fn test_has_edge() {
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, ());
+        g.add_edge(b, c, ());
+        assert!(g.has_edge(a, b));
+        assert!(g.has_edge(b, c));
+        assert!(!g.has_edge(a, c));
+        assert!(!g.has_edge(10.into(), 100.into())); // Non-existent nodes.
     }
 
     #[test]
@@ -1863,5 +2019,61 @@ mod tests {
             crate::algo::kosaraju_scc(&g),
             [[node_index(2)], [node_index(0)]]
         );
+    }
+
+    #[test]
+    fn test_try_update_edge() {
+        let mut g = MatrixGraph::<char, u32>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, 1);
+        g.add_edge(b, c, 2);
+        assert_eq!(g.try_update_edge(a, b, 10), Ok(Some(1)));
+        assert_eq!(g.try_update_edge(a, b, 100), Ok(Some(10)));
+        assert_eq!(g.try_update_edge(a, c, 33), Ok(None));
+        assert_eq!(g.try_update_edge(a, c, 66), Ok(Some(33)));
+        assert_eq!(
+            g.try_update_edge(10.into(), 20.into(), 5),
+            Err(MatrixError::NodeMissed(10))
+        );
+    }
+
+    #[test]
+    fn test_add_or_update_edge() {
+        let mut g = MatrixGraph::<char, u32>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        assert_eq!(g.add_or_update_edge(a, b, 1), Ok(None));
+        assert_eq!(g.add_or_update_edge(b, c, 2), Ok(None));
+        assert_eq!(g.add_or_update_edge(a, b, 10), Ok(Some(1)));
+        assert_eq!(g.add_or_update_edge(a, c, 33), Ok(None));
+        assert_eq!(g.add_or_update_edge(10.into(), 20.into(), 5), Ok(None));
+        assert!(g.has_edge(10.into(), 20.into()));
+        assert!(g.node_capacity >= 20);
+    }
+
+    #[test]
+    fn test_remove_edge() {
+        let mut g = MatrixGraph::<char, u32>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, 1);
+        g.add_edge(b, c, 2);
+        assert_eq!(g.try_remove_edge(a, b), Some(1));
+        assert_eq!(g.try_remove_edge(a, b), None);
+        assert_eq!(g.try_remove_edge(a, c), None);
+    }
+
+    #[test]
+    fn test_try_add_node() {
+        let mut graph =
+            MatrixGraph::<(), u32, RandomState, Directed, Option<u32>, u8>::with_capacity(255);
+        for i in 0..255 {
+            assert_eq!(graph.try_add_node(()), Ok(i.into()));
+        }
+        assert_eq!(graph.try_add_node(()), Err(MatrixError::NodeIxLimit));
     }
 }
