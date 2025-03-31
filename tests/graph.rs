@@ -14,7 +14,7 @@ use petgraph::algo::{
 };
 
 use petgraph::graph::node_index as n;
-use petgraph::graph::IndexType;
+use petgraph::graph::{GraphError, IndexType};
 
 use petgraph::algo::{astar, dijkstra, DfsSpace};
 use petgraph::visit::{
@@ -390,6 +390,32 @@ fn update_edge() {
         let b = gr.add_node("b");
         let e = gr.update_edge(a, b, 1);
         let f = gr.update_edge(b, a, 2);
+        assert_eq!(gr.edge_count(), 1);
+        assert_eq!(e, f);
+        assert_eq!(*gr.edge_weight(f).unwrap(), 2);
+    }
+}
+
+#[test]
+fn try_update_edge() {
+    {
+        let mut gr = Graph::new();
+        let a = gr.add_node("a");
+        let b = gr.add_node("b");
+        let e = gr.try_update_edge(a, b, 1).unwrap();
+        let f = gr.try_update_edge(a, b, 2).unwrap();
+        let _ = gr.try_update_edge(b, a, 3).unwrap();
+        assert_eq!(gr.edge_count(), 2);
+        assert_eq!(e, f);
+        assert_eq!(*gr.edge_weight(f).unwrap(), 2);
+    }
+
+    {
+        let mut gr = Graph::new_undirected();
+        let a = gr.add_node("a");
+        let b = gr.add_node("b");
+        let e = gr.try_update_edge(a, b, 1).unwrap();
+        let f = gr.try_update_edge(b, a, 2).unwrap();
         assert_eq!(gr.edge_count(), 1);
         assert_eq!(e, f);
         assert_eq!(*gr.edge_weight(f).unwrap(), 2);
@@ -2458,4 +2484,29 @@ fn test_dominators_simple_fast() {
         None,
         "nodes that aren't reachable from the root do not have an idom"
     );
+}
+
+#[test]
+fn test_try_add_node() {
+    let mut graph = Graph::<(), (), Directed, u8>::with_capacity(256, 0);
+    for i in 0..255 {
+        assert_eq!(graph.try_add_node(()), Ok(i.into()));
+    }
+    assert_eq!(graph.try_add_node(()), Err(GraphError::NodeIxLimit));
+}
+
+#[test]
+fn test_try_add_edge() {
+    let mut graph = Graph::<(), (), Directed, u8>::with_capacity(1, 512);
+    let a = graph.try_add_node(()).unwrap();
+
+    assert_eq!(
+        graph.try_add_edge(a, 10.into(), ()),
+        Err(GraphError::NodeOutBounds)
+    );
+    for i in 0..255 {
+        assert_eq!(graph.try_add_edge(a, a, ()), Ok(i.into()));
+    }
+
+    assert_eq!(graph.try_add_edge(a, a, ()), Err(GraphError::EdgeIxLimit));
 }

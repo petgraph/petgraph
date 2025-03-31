@@ -14,13 +14,13 @@ use core::{
 
 use fixedbitset::FixedBitSet;
 
-use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
+use super::{index_twice, Edge, Frozen, GraphError, Node, Pair, DIRECTIONS};
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 use crate::iter_utils::IterUtilsExt;
-use crate::visit;
-use crate::visit::{EdgeIndexable, EdgeRef, IntoEdgeReferences, NodeIndexable};
-use crate::IntoWeightedEdge;
-use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
+use crate::visit::{self, EdgeIndexable, EdgeRef, IntoEdgeReferences, NodeIndexable};
+use crate::{
+    Directed, Direction, EdgeType, Graph, Incoming, IntoWeightedEdge, Outgoing, Undirected,
+};
 
 // reexport those things that are shared with Graph
 #[doc(no_inline)]
@@ -260,13 +260,24 @@ where
     /// **Panics** if the `StableGraph` is at the maximum number of nodes for
     /// its index type.
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
+        self.try_add_node(weight).unwrap()
+    }
+
+    /// Add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// Return [`GraphError::NodeIxLimit`] if the `StableGraph` is at the maximum number of nodes for its index.
+    pub fn try_add_node(&mut self, weight: N) -> Result<NodeIndex<Ix>, GraphError> {
         if self.free_node != NodeIndex::end() {
             let node_idx = self.free_node;
             self.occupy_vacant_node(node_idx, weight);
-            node_idx
+            Ok(node_idx)
         } else {
             self.node_count += 1;
-            self.g.add_node(Some(weight))
+            self.g.try_add_node(Some(weight))
         }
     }
 
@@ -347,6 +358,35 @@ where
     ///
     /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
+        let res = self.try_add_edge(a, b, weight);
+        if let Err(GraphError::NodeMissed(i)) = res {
+            panic!(
+                "StableGraph::add_edge: node index {} is not a node in the graph",
+                i
+            );
+        }
+        res.unwrap()
+    }
+
+    /// Try to add an edge from `a` to `b` to the graph, with its associated
+    /// data `weight`.
+    ///
+    /// Return the index of the new edge.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Possible errors:
+    /// - [`GraphError::NodeMissed`] - if any of the nodes don't exist.<br>
+    /// - [`GraphError::EdgeIxLimit`] if the `StableGraph` is at the maximum number of edges for its index
+    ///     type (N/A if usize).
+    ///
+    /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
+    pub fn try_add_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<EdgeIndex<Ix>, GraphError> {
         let edge_idx;
         let mut new_edge = None::<Edge<_, _>>;
         {
@@ -361,7 +401,9 @@ where
                 edge.node = [a, b];
             } else {
                 edge_idx = EdgeIndex::new(self.g.edges.len());
-                assert!(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx);
+                if !(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx) {
+                    return Err(GraphError::EdgeIxLimit);
+                }
                 new_edge = Some(Edge {
                     weight: Some(weight),
                     node: [a, b],
@@ -397,17 +439,14 @@ where
                 }
             };
             if let Some(i) = wrong_index {
-                panic!(
-                    "StableGraph::add_edge: node index {} is not a node in the graph",
-                    i
-                );
+                return Err(GraphError::NodeMissed(i));
             }
             self.edge_count += 1;
         }
         if let Some(edge) = new_edge {
             self.g.edges.push(edge);
         }
-        edge_idx
+        Ok(edge_idx)
     }
 
     /// free_edge: Which free list to update for the vacancy
@@ -432,13 +471,35 @@ where
     /// Computes in **O(e')** time, where **e'** is the number of edges
     /// connected to `a` (and `b`, if the graph edges are undirected).
     ///
-    /// **Panics** if any of the nodes don't exist.
+    /// **Panics** if any of the nodes don't exist
+    /// or the stable graph is at the maximum number of edges for its index (when adding new edge).
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
+        self.try_update_edge(a, b, weight).unwrap()
+    }
+
+    /// Try to add or update an edge from `a` to `b`.
+    /// If the edge already exists, its weight is updated.
+    ///
+    /// Return the index of the affected edge.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to `a` (and `b`, if the graph edges are undirected).
+    ///
+    /// Possible errors:
+    /// - [`GraphError::NodeMissed`] - if any of the nodes don't exist.<br>
+    /// - [`GraphError::EdgeIxLimit`] if the `StableGraph` is at the maximum number of edges for its index
+    ///     type (N/A if usize).
+    pub fn try_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<EdgeIndex<Ix>, GraphError> {
         if let Some(ix) = self.find_edge(a, b) {
             self[ix] = weight;
-            return ix;
+            return Ok(ix);
         }
-        self.add_edge(a, b, weight)
+        self.try_add_edge(a, b, weight)
     }
 
     /// Remove an edge and return its edge weight, or `None` if it didn't exist.
