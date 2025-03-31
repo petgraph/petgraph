@@ -443,6 +443,47 @@ pub mod dot_parser {
             #[cfg(feature = "stable_graph")]
             let _: crate::stable_graph::StableGraph<_, _> = graph_from_file!("graph-example.dot");
         }
+
+        #[test]
+        fn test_dot_parsing_isomorph() {
+            use crate::algo::is_isomorphic;
+
+            let g1: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> { B C }}");
+            let g2: crate::graph::Graph<_, _> = graph_from_str!("digraph { D -> E; D -> F}");
+            assert!(is_isomorphic(&g1, &g2));
+        }
+
+        #[test]
+        fn test_dot_parsing_not_isomorph() {
+            use crate::algo::is_isomorphic;
+
+            let g1: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> { B C D }}");
+            let g2: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> B; A -> C}");
+            assert!(!is_isomorphic(&g1, &g2));
+        }
+
+        #[test]
+        fn test_dot_parsing_subgraph_isomorph() {
+            use crate::algo::is_isomorphic_subgraph;
+
+            let g1: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> B; A -> C}");
+            let g2: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> { B C D }}");
+            assert!(is_isomorphic_subgraph(&g1, &g2));
+        }
+
+        #[test]
+        fn test_dot_parsing_cyclic() {
+            use crate::algo::is_cyclic_directed;
+            let g: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> { B C } -> {D E F}; F -> A}");
+            assert!(is_cyclic_directed(&g));
+        }
+
+        #[test]
+        fn test_dot_parsing_not_cyclic() {
+            use crate::algo::is_cyclic_directed;
+            let g: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> { B C } -> {D E F}}");
+            assert!(!is_cyclic_directed(&g));
+        }
     }
 }
 
