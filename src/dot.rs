@@ -408,7 +408,7 @@ pub mod dot_parser {
     pub use graph_from_str;
 
     impl<'a> ParseFromDot<'a> for crate::graph::Graph<DotNodeWeight<'a>, DotAttrList<'a>> {}
-    #[cfg(stable_graph)]
+    #[cfg(feature = "stable_graph")]
     impl<'a> ParseFromDot<'a> for crate::stable_graph::StableGraph<DotNodeWeight<'a>, DotAttrList<'a>> {}
 
     #[cfg(test)]
