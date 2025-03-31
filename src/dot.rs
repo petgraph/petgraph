@@ -327,22 +327,22 @@ where
 #[cfg(feature = "dot_parser")]
 #[macro_use]
 pub mod dot_parser {
-    use dot_parser::canonical::Node;
+    use crate::data::Create;
     use dot_parser::ast::AList;
-    use dot_parser::canonical::Graph as CGraph;
     use dot_parser::ast::Graph as DotGraph;
     use dot_parser::ast::PestError as ParsingError;
-    use crate::data::Create;
+    use dot_parser::canonical::Graph as CGraph;
+    use dot_parser::canonical::Node;
     use std::convert::TryFrom;
-    use std::fmt::{Display, Formatter};
     use std::error::Error;
+    use std::fmt::{Display, Formatter};
 
     pub type DotNodeWeight<'a> = Node<(&'a str, &'a str)>;
     pub type DotAttrList<'a> = AList<(&'a str, &'a str)>;
 
     #[derive(Debug)]
     pub struct DotParsingError {
-        error: ParsingError
+        error: ParsingError,
     }
 
     impl Display for DotParsingError {
@@ -360,11 +360,13 @@ pub mod dot_parser {
     impl Error for DotParsingError {}
 
     /// This trait extends [Create] with a method to parse a graph from a dot string.
-    pub trait ParseFromDot<'a>: Create<EdgeWeight=DotAttrList<'a>, NodeWeight=DotNodeWeight<'a>> {
+    pub trait ParseFromDot<'a>:
+        Create<EdgeWeight = DotAttrList<'a>, NodeWeight = DotNodeWeight<'a>>
+    {
         /// Convert a DOT/Graphviz graph (represented as an [DotGraph]) into a petgraph's graph.
         fn from_dot_graph(dot_graph: DotGraph<(&'a str, &'a str)>) -> Self {
             let dot_graph: CGraph<(&'a str, &'a str)> = dot_graph.into();
-            let node_number = dot_graph.nodes.set.len(); 
+            let node_number = dot_graph.nodes.set.len();
             let edge_number = dot_graph.edges.set.len();
             let mut graph = Self::with_capacity(node_number, edge_number);
             let mut node_indices = std::collections::HashMap::new();
@@ -389,19 +391,27 @@ pub mod dot_parser {
         }
     }
 
-#[macro_export]
+    #[macro_export]
     /// Statically imports a Graph from a valid DOT/Graphviz [&str].
     macro_rules! graph_from_str {
-        ($s:tt) => { $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_string!($s)) };
+        ($s:tt) => {
+            $crate::dot::dot_parser::ParseFromDot::from_dot_graph(
+                dot_parser_macros::from_dot_string!($s),
+            )
+        };
     }
 
-#[macro_export]
+    #[macro_export]
     /// Statically imports a Graph from a DOT/Graphviz file. The macro expects the file path as argument.
     ///
     /// Notice that, since the graph is imported *statically*, the file must exist at compile time, but
     /// can be removed at runtime.
     macro_rules! graph_from_file {
-        ($s:tt) => { $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_file!($s)) };
+        ($s:tt) => {
+            $crate::dot::dot_parser::ParseFromDot::from_dot_graph(
+                dot_parser_macros::from_dot_file!($s),
+            )
+        };
     }
 
     pub use graph_from_file;
@@ -422,7 +432,8 @@ pub mod dot_parser {
 
         #[test]
         fn test_ill_formed_str() {
-            let g_res: Result<crate::graph::Graph<_, _>, crate::dot::dot_parser::DotParsingError> = crate::dot::dot_parser::ParseFromDot::try_from(":zcdza");
+            let g_res: Result<crate::graph::Graph<_, _>, crate::dot::dot_parser::DotParsingError> =
+                crate::dot::dot_parser::ParseFromDot::try_from(":zcdza");
             assert!(g_res.is_err())
         }
 
