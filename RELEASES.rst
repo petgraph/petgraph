@@ -22,6 +22,8 @@ New features
 - Add ``UnionFind::new_set`` (`#684`_)
 - Implement ``Csr::try_add_edge`` (`#719`_)
 - Add checked ``UnionFind`` methods (`#730`_)
+- Add ``MatrixGraph`` methods with recoverable errors (`#720`_)
+- Add methods with recoverable errors for ``Graph`` and ``StableGraph`` (`#718`_)
 
 CI & fixes
 ----------
@@ -32,6 +34,10 @@ CI & fixes
 - Solve clippy warnings (`#749`_)
 - Fix github token in pr-title action (`#752`_)
 - Add new triggers for semver-checks (`#754`_)
+
+Documentation
+-------------
+- Add some missed features into crate-lvl doc (`#758`_)
 
 .. _`#684`: https://github.com/petgraph/petgraph/pull/684
 .. _`#681`: https://github.com/petgraph/petgraph/pull/681
@@ -53,6 +59,9 @@ CI & fixes
 .. _`#728`: https://github.com/petgraph/petgraph/pull/728
 .. _`#733`: https://github.com/petgraph/petgraph/pull/733
 .. _`#756`: https://github.com/petgraph/petgraph/pull/756
+.. _`#720`: https://github.com/petgraph/petgraph/pull/720
+.. _`#718`: https://github.com/petgraph/petgraph/pull/718
+.. _`#758`: https://github.com/petgraph/petgraph/pull/758
 
 Version 0.7.1 (2025-01-08)
 ==========================
