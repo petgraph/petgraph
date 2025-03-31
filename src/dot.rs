@@ -426,7 +426,7 @@ pub mod dot_parser {
         #[test]
         fn test_dot_parsing_str() {
             let _: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> B }");
-            #[cfg(stable_graph)]
+            #[cfg(feature = "stable_graph")]
             let _: crate::stable_graph::StableGraph<_, _> = graph_from_str!("digraph { A -> B }");
         }
 
@@ -440,7 +440,7 @@ pub mod dot_parser {
         #[test]
         fn test_dot_parsing_file() {
             let _: crate::graph::Graph<_, _> = graph_from_file!("graph-example.dot");
-            #[cfg(stable_graph)]
+            #[cfg(feature = "stable_graph")]
             let _: crate::stable_graph::StableGraph<_, _> = graph_from_file!("graph-example.dot");
         }
     }
