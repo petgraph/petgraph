@@ -330,8 +330,8 @@ fn b07_example() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
 
 #[cfg(feature = "stable_graph")]
 #[cfg(test)]
-fn example_kou_paper() -> (UnGraph<(), i32>, Vec<NodeIndex>) {
-    let mut graph = Graph::<(), i32, Undirected>::new_undirected();
+fn example_kou_paper() -> (UnGraph<(), usize>, Vec<NodeIndex>) {
+    let mut graph = Graph::<(), usize, Undirected>::new_undirected();
     // Add nodes
     let nodes: Vec<_> = (0..9).map(|_| graph.add_node(())).collect();
 
@@ -395,7 +395,7 @@ mod test {
         let (graph, terminals) = example_kou_paper();
         let st = steiner_tree(&graph, &terminals);
 
-        let weights = st.edge_weights().cloned().sum::<i32>();
+        let weights = st.edge_weights().cloned().sum::<usize>();
         let steiner_tree_nodes: Vec<_> = st.node_indices().collect();
         assert!(terminals.iter().all(|&t| steiner_tree_nodes.contains(&t)));
         assert!(st.edge_count() == st.node_count() - 1);
