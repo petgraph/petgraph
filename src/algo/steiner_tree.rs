@@ -6,7 +6,7 @@ use hashbrown::{HashMap, HashSet};
 use crate::algo::floyd_warshall::floyd_warshall_path;
 use crate::algo::{dijkstra, min_spanning_tree, BoundedMeasure, Measure};
 use crate::data::FromElements;
-use crate::graph::{NodeIndex, UnGraph};
+use crate::graph::{IndexType, NodeIndex, UnGraph};
 use crate::visit::{
     Data, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoNeighbors,
     IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeIndexable, Visitable,
@@ -168,13 +168,14 @@ where
 /// assert_eq!(tree.edge_weights().sum::<i32>(), 12);
 ///
 #[cfg(feature = "stable_graph")]
-pub fn steiner_tree<N, E>(
-    graph: &UnGraph<N, E>,
-    terminals: &[NodeIndex],
-) -> StableGraph<N, E, Undirected>
+pub fn steiner_tree<N, E, Ix>(
+    graph: &UnGraph<N, E, Ix>,
+    terminals: &[NodeIndex<Ix>],
+) -> StableGraph<N, E, Undirected, Ix>
 where
     N: Default + Clone + Eq + Hash + Debug,
     E: Copy + Eq + Ord + Measure + BoundedMeasure,
+    Ix: IndexType,
 {
     let metric_closure = compute_metric_closure(&graph, terminals);
     let metric_closure_graph: UnGraph<N, E, _> = UnGraph::from_edges(
