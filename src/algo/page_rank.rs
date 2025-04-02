@@ -52,6 +52,7 @@ use rayon::prelude::*;
 /// let expected_ranks = vec![0.14685437, 0.20267677, 0.22389607, 0.27971846, 0.14685437];
 /// assert_eq!(expected_ranks, output_ranks);
 /// ```
+#[track_caller]
 pub fn page_rank<G, D>(graph: G, damping_factor: D, nb_iter: usize) -> Vec<D>
 where
     G: NodeCount + IntoEdges + NodeIndexable,
