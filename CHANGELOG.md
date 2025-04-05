@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0](https://github.com/petgraph/petgraph/releases/tag/petgraph@v0.8.0) - 2025-04-05
+
+### Breaking changes
+
+- Add ``no_std`` Support ([#747](https://github.com/petgraph/petgraph/issues/747))
+- Add ``VisitMap::unvisit`` as proposed in #610 ([#611](https://github.com/petgraph/petgraph/issues/611))
+- Add support for specifying rankdir on dot plots. ([#728](https://github.com/petgraph/petgraph/issues/728))
+- Make ``dot::Config`` non_exhaustive ([#756](https://github.com/petgraph/petgraph/issues/756))
+- Add ``from_f32/64`` methods for ``Float``, ``Unit``, and ``Bounded`` measures ([#733](https://github.com/petgraph/petgraph/issues/733))
+
+### New algorithms
+
+- Add articulation points implementation ([#681](https://github.com/petgraph/petgraph/issues/681))
+- Add Prim's Algorithm for Minimum Spanning Tree ([#625](https://github.com/petgraph/petgraph/issues/625))
+- Add Kou's algorithm for finding a MST ([#682](https://github.com/petgraph/petgraph/issues/682))
+- Add Bron-Kerbosch algorithm for maximal cliques ([#662](https://github.com/petgraph/petgraph/issues/662))
+- Add Shortest Path Faster Algorithm Implementation ([#686](https://github.com/petgraph/petgraph/issues/686))
+
+### New features
+
+- Add ``UnionFind::new_set`` ([#684](https://github.com/petgraph/petgraph/issues/684))
+- Implement ``Csr::try_add_edge`` ([#719](https://github.com/petgraph/petgraph/issues/719))
+- Add checked ``UnionFind`` methods ([#730](https://github.com/petgraph/petgraph/issues/730))
+- Add ``MatrixGraph`` methods with recoverable errors ([#720](https://github.com/petgraph/petgraph/issues/720))
+- Add methods with recoverable errors for ``Graph`` and ``StableGraph`` ([#718](https://github.com/petgraph/petgraph/issues/718))
+
+### CI & fixes
+
+- Fix all clippy lints and check them on CI ([#726](https://github.com/petgraph/petgraph/issues/726))
+- Pin once_cell version for MSRV builds ([#750](https://github.com/petgraph/petgraph/issues/750))
+- Require conventional commits tag in PR titles ([#734](https://github.com/petgraph/petgraph/issues/734))
+- Fix wrong trigger for pr-title check ([#751](https://github.com/petgraph/petgraph/issues/751))
+- Solve clippy warnings ([#749](https://github.com/petgraph/petgraph/issues/749))
+- Fix github token in pr-title action ([#752](https://github.com/petgraph/petgraph/issues/752))
+- Add new triggers for semver-checks ([#754](https://github.com/petgraph/petgraph/issues/754))
+
+### Documentation
+
+- Add some missed features into crate-lvl doc ([#758](https://github.com/petgraph/petgraph/issues/758))
 
 ## [0.7.1](https://github.com/petgraph/petgraph/releases/tag/petgraph@v0.7.1) - 2025-01-08
 
