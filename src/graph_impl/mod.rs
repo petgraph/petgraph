@@ -638,7 +638,7 @@ where
     /// Possible errors:
     /// - [`GraphError::NodeOutBounds`] - if any of the nodes don't exist.<br>
     /// - [`GraphError::EdgeIxLimit`] if the `Graph` is at the maximum number of edges for its index
-    ///     type (N/A if usize).
+    ///   type (N/A if usize).
     ///
     /// Note: Graph allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [.update_edge(a, b, weight)](#method.update_edge) instead.
@@ -701,7 +701,7 @@ where
     /// Possible errors:
     /// - [`GraphError::NodeOutBounds`] - if any of the nodes don't exist.<br>
     /// - [`GraphError::EdgeIxLimit`] if the `Graph` is at the maximum number of edges for its index
-    ///     type (N/A if usize).
+    ///   type (N/A if usize).
     pub fn try_update_edge(
         &mut self,
         a: NodeIndex<Ix>,

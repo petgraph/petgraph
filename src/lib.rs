@@ -106,11 +106,11 @@
 //!   Defaults off. Enables parallel versions of iterators and algorithms using
 //!   [`rayon`](https://docs.rs/rayon/latest/rayon/) crate. Requires the `std` feature.
 //! * **std** -
-//!    Defaults on. Enables the Rust Standard Library. Disabling the `std` feature makes it possible to use `petgraph` in `no_std` contexts.
+//!   Defaults on. Enables the Rust Standard Library. Disabling the `std` feature makes it possible to use `petgraph` in `no_std` contexts.
 //! * **generate** -
-//!    Defaults off. Enables graph generators.
+//!   Defaults off. Enables graph generators.
 //! * **unstable** -
-//!    Defaults off. Enables unstable crate features (currently onle `generate`).
+//!   Defaults off. Enables unstable crate features (currently onle `generate`).
 //!
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
 #![no_std]
