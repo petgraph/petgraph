@@ -20,7 +20,7 @@ use alloc::{vec, vec::Vec};
 /// ## Returns
 /// * `Err`: if graph contains negative cycle.
 /// * `Ok`: a pair of a vector of shortest distances and a vector
-///         of predecessors of each vertex along the shortest path.
+///   of predecessors of each vertex along the shortest path.
 ///
 /// [spfa]: https://www.geeksforgeeks.org/shortest-path-faster-algorithm/
 ///
