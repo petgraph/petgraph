@@ -42,8 +42,6 @@ jobs:
   release-plz-pr:
     name: Generate release PR
     runs-on: ubuntu-latest
-    # Disabled for now.
-    if: false
     permissions:
       contents: write
       pull-requests: write
