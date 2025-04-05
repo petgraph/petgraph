@@ -378,7 +378,7 @@ where
     /// Possible errors:
     /// - [`GraphError::NodeMissed`] - if any of the nodes don't exist.<br>
     /// - [`GraphError::EdgeIxLimit`] if the `StableGraph` is at the maximum number of edges for its index
-    ///     type (N/A if usize).
+    ///   type (N/A if usize).
     ///
     /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
     pub fn try_add_edge(
@@ -488,7 +488,7 @@ where
     /// Possible errors:
     /// - [`GraphError::NodeMissed`] - if any of the nodes don't exist.<br>
     /// - [`GraphError::EdgeIxLimit`] if the `StableGraph` is at the maximum number of edges for its index
-    ///     type (N/A if usize).
+    ///   type (N/A if usize).
     pub fn try_update_edge(
         &mut self,
         a: NodeIndex<Ix>,
