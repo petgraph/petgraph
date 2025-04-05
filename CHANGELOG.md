@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [0.8.1](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.0...petgraph@v0.8.1) - 2025-04-05
+
+### New Features
+
+- Add `UnionFind` capacity management methods ([#736](https://github.com/petgraph/petgraph/pull/736))
 ## [0.8.0](https://github.com/petgraph/petgraph/releases/tag/petgraph@v0.8.0) - 2025-04-05
 
 ### Breaking changes
