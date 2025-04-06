@@ -1,15 +1,15 @@
-use std::{
-    collections::HashSet,
-    fmt::{Debug, Display},
-    hash::Hash,
-};
-
 use petgraph::{
     algo::connectivity::BiconnectedComponentsSearch,
     dot::Dot,
     visit::{GraphProp, IntoEdgeReferences, IntoNeighbors, IntoNodeReferences, NodeIndexable},
     Graph, Undirected,
 };
+
+use core::{
+    fmt::{Debug, Display},
+    hash::Hash,
+};
+use hashbrown::HashSet;
 
 #[test]
 fn biconnected_components_test_empty() {

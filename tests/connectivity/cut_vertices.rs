@@ -1,8 +1,8 @@
-use std::collections::HashSet;
-
 use petgraph::{
     algo::connectivity::CutVerticesSearch, dot::Dot, graph::NodeIndex, Graph, Undirected,
 };
+
+use hashbrown::HashSet;
 
 #[test]
 fn cut_vertices_test_empty() {

@@ -1,8 +1,8 @@
-use std::collections::HashSet;
-
 use petgraph::{
     algo::connectivity::CutEdgesSearch, dot::Dot, graph6::FromGraph6, Graph, Undirected,
 };
+
+use hashbrown::HashSet;
 
 #[test]
 fn cut_edges_test_empty() {

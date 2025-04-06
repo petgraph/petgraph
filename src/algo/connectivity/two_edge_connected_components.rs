@@ -1,7 +1,6 @@
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-};
+use alloc::{boxed::Box, vec::Vec};
+use core::hash::Hash;
+use hashbrown::{HashMap, HashSet};
 
 use super::Color;
 use crate::{algo::IntoNeighbors, visit::IntoNodeIdentifiers};

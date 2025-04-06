@@ -1,7 +1,7 @@
 extern crate petgraph;
 extern crate test;
 
-use std::hash::Hash;
+use core::hash::Hash;
 
 use test::Bencher;
 
