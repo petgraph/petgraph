@@ -67,14 +67,17 @@ macro_rules! test_case_with_hasher {
     };
 }
 
-test_case_with_hasher!(graphmap_serial_bench, std::hash::RandomState);
+test_case_with_hasher!(
+    graphmap_serial_bench,
+    std::collections::hash_map::RandomState
+);
 test_case_with_hasher!(graphmap_serial_bench_fxhash, fxhash::FxBuildHasher);
 test_case_with_hasher!(graphmap_serial_bench_ahash, ahash::RandomState);
 
 #[bench]
 fn graphmap_parallel_bench(bench: &mut Bencher) {
     let data = test_nodes();
-    let gr = test_graph::<std::hash::RandomState>(&data);
+    let gr = test_graph::<std::collections::hash_map::RandomState>(&data);
     bench.iter(|| {
         let _sources: Vec<MyStruct> = gr
             .par_nodes()

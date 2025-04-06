@@ -1,5 +1,6 @@
-use std::{
-    hash::Hash,
+use alloc::vec;
+use core::{
+    hash::{BuildHasher, Hash},
     iter::{from_fn, FromIterator},
 };
 
@@ -17,6 +18,7 @@ use crate::{
 ///
 /// # Example
 /// ```
+/// use std::collections::hash_map::RandomState;
 /// use petgraph::{algo, prelude::*};
 ///
 /// let mut graph = DiGraph::<&str, i32>::new();
@@ -28,14 +30,14 @@ use crate::{
 ///
 /// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
 ///
-/// let paths = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+/// let paths = algo::all_simple_paths::<Vec<_>, _, RandomState>(&graph, a, d, 0, None)
 ///   .collect::<Vec<_>>();
 ///
 /// assert_eq!(paths.len(), 4);
 ///
 ///
 /// // Take only 2 paths.
-/// let paths = algo::all_simple_paths::<Vec<_>, _>(&graph, a, d, 0, None)
+/// let paths = algo::all_simple_paths::<Vec<_>, _, RandomState>(&graph, a, d, 0, None)
 ///   .take(2)
 ///   .collect::<Vec<_>>();
 ///
@@ -50,7 +52,7 @@ use crate::{
 ///
 /// So if you have a large enough graph, be prepared to wait for the results for years.
 /// Or consider extracting only part of the simple paths using the adapter [`Iterator::take`].
-pub fn all_simple_paths<TargetColl, G>(
+pub fn all_simple_paths<TargetColl, G, S>(
     graph: G,
     from: G::NodeId,
     to: G::NodeId,
@@ -62,6 +64,7 @@ where
     G: IntoNeighborsDirected,
     G::NodeId: Eq + Hash,
     TargetColl: FromIterator<G::NodeId>,
+    S: BuildHasher + Default,
 {
     // how many nodes are allowed in simple path up to target node
     // it is min/max allowed path length minus one, because it is more appropriate when implementing lookahead
@@ -75,7 +78,7 @@ where
     let min_length = min_intermediate_nodes + 1;
 
     // list of visited nodes
-    let mut visited: IndexSet<G::NodeId> = IndexSet::from_iter(Some(from));
+    let mut visited: IndexSet<G::NodeId, S> = IndexSet::from_iter(Some(from));
     // list of childs of currently exploring path nodes,
     // last elem is list of childs of last visited node
     let mut stack = vec![graph.neighbors_directed(from, Outgoing)];
@@ -120,13 +123,15 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashSet, iter::FromIterator};
+    use alloc::{vec, vec::Vec};
+    use core::iter::FromIterator;
+    use std::{collections::hash_map::RandomState, println};
 
+    use hashbrown::HashSet;
     use itertools::assert_equal;
 
-    use crate::{dot::Dot, prelude::DiGraph};
-
     use super::all_simple_paths;
+    use crate::{dot::Dot, prelude::DiGraph};
 
     #[test]
     fn test_all_simple_paths() {
@@ -159,7 +164,7 @@ mod test {
 
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_5: HashSet<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 5u32.into(), 0, None)
+            all_simple_paths::<_, _, RandomState>(&graph, 0u32.into(), 5u32.into(), 0, None)
                 .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
                 .collect();
         assert_eq!(actual_simple_paths_0_to_5.len(), 8);
@@ -176,7 +181,7 @@ mod test {
         let expexted_simple_paths_0_to_1 = &[vec![0usize, 1]];
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_1: Vec<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 1u32.into(), 0, None)
+            all_simple_paths::<_, _, RandomState>(&graph, 0u32.into(), 1u32.into(), 0, None)
                 .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
                 .collect();
 
@@ -190,7 +195,7 @@ mod test {
 
         println!("{}", Dot::new(&graph));
         let actual_simple_paths_0_to_2: Vec<Vec<_>> =
-            all_simple_paths(&graph, 0u32.into(), 2u32.into(), 0, None)
+            all_simple_paths::<_, _, RandomState>(&graph, 0u32.into(), 2u32.into(), 0, None)
                 .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
                 .collect();
 
