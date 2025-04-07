@@ -88,7 +88,7 @@ std_instead_of_alloc = "warn"
 std_instead_of_core = "warn"
 
 [package.metadata.cargo-semver-checks.lints]
-# Lint temporarily disabled, as this bug is causing a false positives:
+# Lint temporarily disabled, as this bug is causing false positives:
 # https://github.com/obi1kenobi/cargo-semver-checks/issues/1200
 #
 # TODO: re-enable once the bug is fixed
