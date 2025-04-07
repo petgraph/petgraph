@@ -151,7 +151,7 @@ impl<B> Default for Control<B> {
 /// `C: ControlFlow`. The implementation for `()` will continue until finished.
 /// For `Result`, upon encountering an `E` it will break, otherwise acting the same as `C`.
 ///
-/// ***Panics** if you attempt to prune a node from its `Finish` event.
+/// **Panics** if you attempt to prune a node from its `Finish` event.
 ///
 /// [de]: enum.DfsEvent.html
 ///
@@ -237,6 +237,7 @@ impl<B> Default for Control<B> {
 /// println!("number of backedges encountered: {}", back_edges);
 /// println!("back edge: {:?}", result);
 /// ```
+#[track_caller]
 pub fn depth_first_search<G, I, F, C>(graph: G, starts: I, mut visitor: F) -> C
 where
     G: IntoNeighbors + Visitable,
