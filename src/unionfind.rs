@@ -95,6 +95,7 @@ where
     /// Return the representative for `x`.
     ///
     /// **Panics** if `x` is out of bounds.
+    #[track_caller]
     pub fn find(&self, x: K) -> K {
         self.try_find(x).expect("The index is out of bounds")
     }
@@ -123,6 +124,7 @@ where
     /// datastructure in the process and quicken future lookups.
     ///
     /// **Panics** if `x` is out of bounds.
+    #[track_caller]
     pub fn find_mut(&mut self, x: K) -> K {
         assert!(x.index() < self.len());
         unsafe { self.find_mut_recursive(x) }
@@ -154,6 +156,7 @@ where
     /// `false` otherwise.
     ///
     /// **Panics** if `x` or `y` is out of bounds.
+    #[track_caller]
     pub fn equiv(&self, x: K, y: K) -> bool {
         self.find(x) == self.find(y)
     }
@@ -173,6 +176,7 @@ where
     /// Return `false` if the sets were already the same, `true` if they were unified.
     ///
     /// **Panics** if `x` or `y` is out of bounds.
+    #[track_caller]
     pub fn union(&mut self, x: K, y: K) -> bool {
         self.try_union(x, y).unwrap()
     }

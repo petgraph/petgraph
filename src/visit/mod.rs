@@ -345,8 +345,10 @@ trait_template! {
         /// (suitable for the size of a bitmap).
         fn node_bound(self: &Self) -> usize;
         /// Convert `a` to an integer index.
+        #[track_caller]
         fn to_index(self: &Self, a: Self::NodeId) -> usize;
         /// Convert `i` to a node index. `i` must be a valid value in the graph.
+        #[track_caller]
         fn from_index(self: &Self, i: usize) -> Self::NodeId;
     }
 }
@@ -362,8 +364,10 @@ trait_template! {
         /// (suitable for the size of a bitmap).
         fn edge_bound(self: &Self) -> usize;
         /// Convert `a` to an integer index.
+        #[track_caller]
         fn to_index(self: &Self, a: Self::EdgeId) -> usize;
         /// Convert `i` to an edge index. `i` must be a valid value in the graph.
+        #[track_caller]
         fn from_index(self: &Self, i: usize) -> Self::EdgeId;
     }
 }
