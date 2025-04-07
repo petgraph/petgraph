@@ -86,3 +86,10 @@ std = ["indexmap/std"]
 alloc_instead_of_core = "warn"
 std_instead_of_alloc = "warn"
 std_instead_of_core = "warn"
+
+[package.metadata.cargo-semver-checks.lints]
+# Lint temporarily disabled, as this bug is causing a false positives:
+# https://github.com/obi1kenobi/cargo-semver-checks/issues/1200
+#
+# TODO: re-enable once the bug is fixed
+trait_newly_sealed = "allow"
