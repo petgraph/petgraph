@@ -448,6 +448,24 @@ where
     }
 }
 
+#[cfg(feature = "std")]
+impl<N, S> VisitMap<N> for std::collections::HashSet<N, S>
+where
+    N: Hash + Eq,
+    S: BuildHasher,
+{
+    fn visit(&mut self, x: N) -> bool {
+        self.insert(x)
+    }
+    fn is_visited(&self, x: &N) -> bool {
+        self.contains(x)
+    }
+
+    fn unvisit(&mut self, x: N) -> bool {
+        self.remove(&x)
+    }
+}
+
 trait_template! {
 /// A graph that can create a map that tracks the visited status of its nodes.
 #[allow(clippy::needless_arbitrary_self_type)]
