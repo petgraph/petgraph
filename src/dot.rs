@@ -333,27 +333,28 @@ pub mod dot_parser {
     use dot_parser::ast::PestError as ParsingError;
     use dot_parser::canonical::Graph as CGraph;
     use dot_parser::canonical::Node;
-    use std::convert::TryFrom;
-    use std::error::Error;
-    use std::fmt::{Display, Formatter};
+    use core::convert::TryFrom;
+    use core::error::Error;
+    use core::fmt::{Display, Formatter};
+    use alloc::boxed::Box;
 
     pub type DotNodeWeight<'a> = Node<(&'a str, &'a str)>;
     pub type DotAttrList<'a> = AList<(&'a str, &'a str)>;
 
     #[derive(Debug)]
     pub struct DotParsingError {
-        error: ParsingError,
+        error: Box<ParsingError>,
     }
 
     impl Display for DotParsingError {
-        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
             write!(f, "{}", self.error)
         }
     }
 
     impl From<ParsingError> for DotParsingError {
         fn from(error: ParsingError) -> Self {
-            Self { error }
+            Self { error: Box::new(error) }
         }
     }
 
