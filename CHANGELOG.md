@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.8.2](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.1...petgraph@v0.8.2) - 2025-04-08
+
+### New Features
+
+- *(parser)* allow parsing graphs from Dot/Graphviz files ([#653](https://github.com/petgraph/petgraph/pull/653))
+
 ## [0.8.1](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.0...petgraph@v0.8.1) - 2025-04-07
 
 This patch release re-adds a missing `VisitMap` implementation that was dropped in the `0.8.0` release,
