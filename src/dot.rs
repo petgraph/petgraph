@@ -328,15 +328,15 @@ where
 #[macro_use]
 pub mod dot_parser {
     use crate::data::Create;
+    use alloc::boxed::Box;
+    use core::convert::TryFrom;
+    use core::error::Error;
+    use core::fmt::{Display, Formatter};
     use dot_parser::ast::AList;
     use dot_parser::ast::Graph as DotGraph;
     use dot_parser::ast::PestError as ParsingError;
     use dot_parser::canonical::Graph as CGraph;
     use dot_parser::canonical::Node;
-    use core::convert::TryFrom;
-    use core::error::Error;
-    use core::fmt::{Display, Formatter};
-    use alloc::boxed::Box;
 
     pub type DotNodeWeight<'a> = Node<(&'a str, &'a str)>;
     pub type DotAttrList<'a> = AList<(&'a str, &'a str)>;
@@ -354,7 +354,9 @@ pub mod dot_parser {
 
     impl From<ParsingError> for DotParsingError {
         fn from(error: ParsingError) -> Self {
-            Self { error: Box::new(error) }
+            Self {
+                error: Box::new(error),
+            }
         }
     }
 
@@ -475,14 +477,16 @@ pub mod dot_parser {
         #[test]
         fn test_dot_parsing_cyclic() {
             use crate::algo::is_cyclic_directed;
-            let g: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> { B C } -> {D E F}; F -> A}");
+            let g: crate::graph::Graph<_, _> =
+                graph_from_str!("digraph { A -> { B C } -> {D E F}; F -> A}");
             assert!(is_cyclic_directed(&g));
         }
 
         #[test]
         fn test_dot_parsing_not_cyclic() {
             use crate::algo::is_cyclic_directed;
-            let g: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> { B C } -> {D E F}}");
+            let g: crate::graph::Graph<_, _> =
+                graph_from_str!("digraph { A -> { B C } -> {D E F}}");
             assert!(!is_cyclic_directed(&g));
         }
     }
