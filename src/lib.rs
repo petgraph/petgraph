@@ -111,6 +111,8 @@
 //!   Defaults off. Enables graph generators.
 //! * **unstable** -
 //!   Defaults off. Enables unstable crate features (currently onle `generate`).
+//! * **dot_parser** -
+//!   Defaults off. Enables building [`Graph`](./graph/struct.Graph.html) and [`StableGraph`](./stable_graph/struct.StableGraph.html) from [DOT/Graphviz](https://www.graphviz.org/doc/info/lang.html) descriptions. Imports can be made statically or dynamically (i.e. at compile time or at runtime).
 //!
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
 #![no_std]

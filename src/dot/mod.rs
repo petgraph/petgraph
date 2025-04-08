@@ -324,6 +324,10 @@ where
     }
 }
 
+#[cfg(feature = "dot_parser")]
+#[macro_use]
+pub mod dot_parser;
+
 #[cfg(test)]
 mod test {
     use alloc::{format, string::String};
