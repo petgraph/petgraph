@@ -35,7 +35,7 @@ impl Error for DotParsingError {}
 
 /// This trait extends [Create] with a method to parse a graph from a dot string.
 pub trait ParseFromDot<'a>:
-Create<EdgeWeight = DotAttrList<'a>, NodeWeight = DotNodeWeight<'a>>
+    Create<EdgeWeight = DotAttrList<'a>, NodeWeight = DotNodeWeight<'a>>
 {
     /// Convert a DOT/Graphviz graph (represented as an [DotGraph]) into a petgraph's graph.
     fn from_dot_graph(dot_graph: DotGraph<(&'a str, &'a str)>) -> Self {
@@ -69,9 +69,9 @@ Create<EdgeWeight = DotAttrList<'a>, NodeWeight = DotNodeWeight<'a>>
 /// Statically imports a Graph from a valid DOT/Graphviz [&str].
 macro_rules! graph_from_str {
     ($s:tt) => {
-        $crate::dot::dot_parser::ParseFromDot::from_dot_graph(
-            dot_parser_macros::from_dot_string!($s),
-        )
+        $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_string!(
+            $s
+        ))
     };
 }
 
@@ -82,9 +82,7 @@ macro_rules! graph_from_str {
 /// can be removed at runtime.
 macro_rules! graph_from_file {
     ($s:tt) => {
-        $crate::dot::dot_parser::ParseFromDot::from_dot_graph(
-            dot_parser_macros::from_dot_file!($s),
-        )
+        $crate::dot::dot_parser::ParseFromDot::from_dot_graph(dot_parser_macros::from_dot_file!($s))
     };
 }
 
@@ -156,8 +154,7 @@ mod test {
     #[test]
     fn test_dot_parsing_not_cyclic() {
         use crate::algo::is_cyclic_directed;
-        let g: crate::graph::Graph<_, _> =
-            graph_from_str!("digraph { A -> { B C } -> {D E F}}");
+        let g: crate::graph::Graph<_, _> = graph_from_str!("digraph { A -> { B C } -> {D E F}}");
         assert!(!is_cyclic_directed(&g));
     }
 }
