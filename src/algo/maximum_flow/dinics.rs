@@ -1,4 +1,5 @@
-use std::{collections::VecDeque, ops::Sub};
+use alloc::{collections::VecDeque, vec, vec::Vec};
+use core::ops::Sub;
 
 use crate::{
     algo::{EdgeRef, PositiveMeasure},
