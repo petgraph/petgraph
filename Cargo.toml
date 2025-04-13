@@ -1,7 +1,7 @@
 [package]
 
 name = "petgraph"
-version = "0.8.0"
+version = "0.8.1"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 authors = { workspace = true }
@@ -48,6 +48,8 @@ quickcheck = { optional = true, version = "0.8", default-features = false }
 serde = { version = "1.0", default-features = false, optional = true }
 serde_derive = { version = "1.0", default-features = false, optional = true }
 rayon = { version = "1.5.3", optional = true }
+dot-parser = { version = "0.5.1", optional = true}
+dot-parser-macros = { version = "0.5.1", optional = true }
 
 [dev-dependencies]
 bincode = "1.3.3"
@@ -60,6 +62,7 @@ fxhash = "0.2.1"
 
 [features]
 rayon = ["std", "dep:rayon", "indexmap/rayon"]
+dot_parser = ["std", "dep:dot-parser", "dep:dot-parser-macros"]
 
 # feature flags for testing use only
 all = [
@@ -69,6 +72,7 @@ all = [
     "stable_graph",
     "graphmap",
     "rayon",
+    "dot_parser",
 ]
 default = ["std", "graphmap", "stable_graph", "matrix_graph"]
 
@@ -86,3 +90,10 @@ std = ["indexmap/std"]
 alloc_instead_of_core = "warn"
 std_instead_of_alloc = "warn"
 std_instead_of_core = "warn"
+
+[package.metadata.cargo-semver-checks.lints]
+# Lint temporarily disabled, as this bug is causing false positives:
+# https://github.com/obi1kenobi/cargo-semver-checks/issues/1200
+#
+# TODO: re-enable once the bug is fixed
+trait_newly_sealed = "allow"

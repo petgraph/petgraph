@@ -596,6 +596,7 @@ where
     ///
     /// **Panics** if the number of nodes or edges does not fit with
     /// the resulting graph's index type.
+    #[track_caller]
     pub fn into_graph<Ix>(self) -> Graph<N, E, Ty, Ix>
     where
         Ix: crate::graph::IndexType,
@@ -1224,7 +1225,7 @@ where
         self.node_count()
     }
     fn to_index(&self, ix: Self::NodeId) -> usize {
-        self.nodes.get_index_of(&ix).unwrap()
+        self.nodes.get_index_of(&ix).expect("node not found")
     }
     fn from_index(&self, ix: usize) -> Self::NodeId {
         assert!(
@@ -1280,7 +1281,7 @@ where
     }
 
     fn to_index(&self, ix: Self::EdgeId) -> usize {
-        self.edges.get_index_of(&ix).unwrap()
+        self.edges.get_index_of(&ix).expect("edge not found")
     }
 
     fn from_index(&self, ix: usize) -> Self::EdgeId {
