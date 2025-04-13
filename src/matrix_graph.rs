@@ -1,26 +1,30 @@
 //! `MatrixGraph<N, E, Ty, NullN, NullE, Ix>` is a graph datastructure backed by an adjacency matrix.
 
-use std::marker::PhantomData;
-use std::ops::{Index, IndexMut};
-
-use std::cmp;
-use std::mem;
-
-use indexmap::IndexSet;
-
-use fixedbitset::FixedBitSet;
-
-use crate::{Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirected};
-
-use crate::graph::NodeIndex as GraphNodeIndex;
-
-use crate::visit::{
-    Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
-    IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
+use alloc::{fmt, vec, vec::Vec};
+use core::{
+    cmp,
+    hash::BuildHasher,
+    marker::PhantomData,
+    mem,
+    ops::{Index, IndexMut},
 };
 
-use crate::data::Build;
+use fixedbitset::FixedBitSet;
+use indexmap::IndexSet;
+
+use crate::{
+    data::Build,
+    graph::NodeIndex as GraphNodeIndex,
+    visit::{
+        Data, EdgeCount, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
+        IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
+        IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
+    },
+    Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirected,
+};
+
+#[cfg(feature = "std")]
+use std::collections::hash_map::RandomState;
 
 pub use crate::graph::IndexType;
 
@@ -185,6 +189,37 @@ pub fn node_index(ax: usize) -> NodeIndex {
     NodeIndex::new(ax)
 }
 
+/// The error type for fallible `MatrixGraph` operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatrixError {
+    /// The `MatrixGraph` is at the maximum number of nodes for its index.
+    NodeIxLimit,
+
+    /// The node with the specified index is missing from the graph.
+    NodeMissed(usize),
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for MatrixError {}
+
+#[cfg(not(feature = "std"))]
+impl core::error::Error for MatrixError {}
+
+impl fmt::Display for MatrixError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MatrixError::NodeIxLimit => write!(
+                f,
+                "The MatrixGraph is at the maximum number of nodes for its index"
+            ),
+
+            MatrixError::NodeMissed(i) => {
+                write!(f, "The node with index {i} is missing from the graph.")
+            }
+        }
+    }
+}
+
 /// `MatrixGraph<N, E, Ty, Null>` is a graph datastructure using an adjacency matrix
 /// representation.
 ///
@@ -205,31 +240,60 @@ pub fn node_index(ax: usize) -> NodeIndex {
 /// matrix is stored. Since the backing array stores edge weights, it is recommended to box large
 /// edge weights.
 #[derive(Clone)]
-pub struct MatrixGraph<N, E, Ty = Directed, Null: Nullable<Wrapped = E> = Option<E>, Ix = DefaultIx>
-{
+pub struct MatrixGraph<
+    N,
+    E,
+    #[cfg(feature = "std")] S = RandomState,
+    #[cfg(not(feature = "std"))] S,
+    Ty = Directed,
+    Null: Nullable<Wrapped = E> = Option<E>,
+    Ix = DefaultIx,
+> {
     node_adjacencies: Vec<Null>,
     node_capacity: usize,
-    nodes: IdStorage<N>,
+    nodes: IdStorage<N, S>,
     nb_edges: usize,
     ty: PhantomData<Ty>,
     ix: PhantomData<Ix>,
 }
 
 /// A `MatrixGraph` with directed edges.
-pub type DiMatrix<N, E, Null = Option<E>, Ix = DefaultIx> = MatrixGraph<N, E, Directed, Null, Ix>;
+pub type DiMatrix<
+    N,
+    E,
+    #[cfg(feature = "std")] S = RandomState,
+    #[cfg(not(feature = "std"))] S,
+    Null = Option<E>,
+    Ix = DefaultIx,
+> = MatrixGraph<N, E, S, Directed, Null, Ix>;
 
 /// A `MatrixGraph` with undirected edges.
-pub type UnMatrix<N, E, Null = Option<E>, Ix = DefaultIx> = MatrixGraph<N, E, Undirected, Null, Ix>;
+pub type UnMatrix<
+    N,
+    E,
+    #[cfg(feature = "std")] S = RandomState,
+    #[cfg(not(feature = "std"))] S,
+    Null = Option<E>,
+    Ix = DefaultIx,
+> = MatrixGraph<N, E, S, Undirected, Null, Ix>;
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
-    MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     /// Create a new `MatrixGraph` with estimated capacity for nodes.
-    pub fn with_capacity(node_capacity: usize) -> Self {
+    pub fn with_capacity(node_capacity: usize) -> Self
+    where
+        S: Default,
+    {
+        Self::with_capacity_and_hasher(node_capacity, Default::default())
+    }
+
+    /// Create a new `MatrixGraph` with estimated capacity for nodes and a provided hasher.
+    pub fn with_capacity_and_hasher(node_capacity: usize, hasher: S) -> Self {
         let mut m = Self {
             node_adjacencies: vec![],
             node_capacity: 0,
-            nodes: IdStorage::with_capacity(node_capacity),
+            nodes: IdStorage::with_capacity_and_hasher(node_capacity, hasher),
             nb_edges: 0,
             ty: PhantomData,
             ix: PhantomData,
@@ -294,8 +358,25 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Return the index of the new node.
     ///
     /// **Panics** if the MatrixGraph is at the maximum number of nodes for its index type.
+    #[track_caller]
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
         NodeIndex::new(self.nodes.add(weight))
+    }
+
+    /// Try to add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// Possible errors:
+    /// - [`MatrixError::NodeIxLimit`] if the `MatrixGraph` is at the maximum number of nodes for its index type.
+    pub fn try_add_node(&mut self, weight: N) -> Result<NodeIndex<Ix>, MatrixError> {
+        let node_idx = NodeIndex::<Ix>::new(self.nodes.len());
+        if !(<Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx) {
+            return Err(MatrixError::NodeIxLimit);
+        }
+        Ok(NodeIndex::new(self.nodes.add(weight)))
     }
 
     /// Remove `a` from the graph.
@@ -303,6 +384,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Computes in **O(V)** time, due to the removal of edges with other nodes.
     ///
     /// **Panics** if the node `a` does not exist.
+    #[track_caller]
     pub fn remove_node(&mut self, a: NodeIndex<Ix>) -> N {
         for id in self.nodes.iter_ids() {
             let position = self.to_edge_position(a, NodeIndex::new(id));
@@ -347,6 +429,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
     ///
     /// **Panics** if any of the nodes don't exist.
+    #[track_caller]
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> Option<E> {
         self.extend_capacity_for_edge(a, b);
         let p = self.to_edge_position_unchecked(a, b);
@@ -355,6 +438,25 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
             self.nb_edges += 1;
         }
         old_weight.into()
+    }
+
+    /// Try to update the edge from `a` to `b`, with its associated data `weight`.
+    ///
+    /// Return the previous data, if any.
+    ///
+    /// Computes in **O(1)** time, best case.
+    /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
+    ///
+    /// Possible errors:
+    /// - [`MatrixError::NodeMissed`] if any of the nodes don't exist.
+    pub fn try_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<Option<E>, MatrixError> {
+        self.assert_node_bounds(a, b)?;
+        Ok(self.update_edge(a, b, weight))
     }
 
     /// Add an edge from `a` to `b` to the graph, with its associated
@@ -368,15 +470,37 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     ///
     /// **Note:** `MatrixGraph` does not allow adding parallel (“duplicate”) edges. If you want to avoid
     /// this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
+    #[track_caller]
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) {
         let old_edge_id = self.update_edge(a, b, weight);
         assert!(old_edge_id.is_none());
+    }
+
+    /// Add or update edge from `a` to `b` to the graph, with its associated
+    /// data `weight`.
+    ///
+    /// Return the previous data, if any.
+    ///
+    /// Computes in **O(1)** time, best case.
+    /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
+    ///
+    /// Possible errors:
+    /// - [`MatrixError::NodeMissed`] if any of the nodes don't exist.
+    pub fn add_or_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<Option<E>, MatrixError> {
+        self.extend_capacity_for_edge(a, b);
+        self.try_update_edge(a, b, weight)
     }
 
     /// Remove the edge from `a` to `b` to the graph.
     ///
     /// **Panics** if any of the nodes don't exist.
     /// **Panics** if no edge exists between `a` and `b`.
+    #[track_caller]
     pub fn remove_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> E {
         let p = self
             .to_edge_position(a, b)
@@ -387,12 +511,31 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
         old_weight.unwrap()
     }
 
-    /// Return true if there is an edge between `a` and `b`.
+    /// Try to remove the edge from `a` to `b`.
     ///
+    /// Return old value if present.
+    pub fn try_remove_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<E> {
+        let p = self.to_edge_position(a, b)?;
+        if let Some(entry) = self.node_adjacencies.get_mut(p) {
+            let old_weight = mem::take(entry).into()?;
+            self.nb_edges -= 1;
+            return Some(old_weight);
+        }
+        None
+    }
+
+    /// Return `true` if there is an edge between `a` and `b`.
+    ///
+    /// If any of the nodes don't exist - returns `false`.
     /// **Panics** if any of the nodes don't exist.
+    #[track_caller]
     pub fn has_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
         if let Some(p) = self.to_edge_position(a, b) {
-            return !self.node_adjacencies[p].is_null();
+            return self
+                .node_adjacencies
+                .get(p)
+                .map(|e| !e.is_null())
+                .unwrap_or(false);
         }
         false
     }
@@ -402,8 +545,16 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Also available with indexing syntax: `&graph[a]`.
     ///
     /// **Panics** if the node doesn't exist.
+    #[track_caller]
     pub fn node_weight(&self, a: NodeIndex<Ix>) -> &N {
         &self.nodes[a.index()]
+    }
+
+    /// Try to access the weight for node `a`.
+    ///
+    /// Return `None` if the node doesn't exist.
+    pub fn get_node_weight(&self, a: NodeIndex<Ix>) -> Option<&N> {
+        self.nodes.elements.get(a.index())?.as_ref()
     }
 
     /// Access the weight for node `a`, mutably.
@@ -411,8 +562,16 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Also available with indexing syntax: `&mut graph[a]`.
     ///
     /// **Panics** if the node doesn't exist.
+    #[track_caller]
     pub fn node_weight_mut(&mut self, a: NodeIndex<Ix>) -> &mut N {
         &mut self.nodes[a.index()]
+    }
+
+    /// Try to access the weight for node `a`, mutably.
+    ///
+    /// Return `None` if the node doesn't exist.
+    pub fn get_node_weight_mut(&mut self, a: NodeIndex<Ix>) -> Option<&mut N> {
+        self.nodes.elements.get_mut(a.index())?.as_mut()
     }
 
     /// Access the weight for edge `e`.
@@ -420,6 +579,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
     /// Also available with indexing syntax: `&graph[e]`.
     ///
     /// **Panics** if no edge exists between `a` and `b`.
+    #[track_caller]
     pub fn edge_weight(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> &E {
         let p = self
             .to_edge_position(a, b)
@@ -429,11 +589,20 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
             .expect("No edge found between the nodes.")
     }
 
+    /// Access the weight for edge from `a` to `b`.
+    ///
+    /// Return `None` if the edge doesn't exist.
+    pub fn get_edge_weight(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<&E> {
+        let p = self.to_edge_position(a, b)?;
+        self.node_adjacencies.get(p)?.as_ref()
+    }
+
     /// Access the weight for edge `e`, mutably.
     ///
     /// Also available with indexing syntax: `&mut graph[e]`.
     ///
     /// **Panics** if no edge exists between `a` and `b`.
+    #[track_caller]
     pub fn edge_weight_mut(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> &mut E {
         let p = self
             .to_edge_position(a, b)
@@ -441,6 +610,14 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
         self.node_adjacencies[p]
             .as_mut()
             .expect("No edge found between the nodes.")
+    }
+
+    /// Access the weight for edge from `a` to `b`, mutably.
+    ///
+    /// Return `None` if the edge doesn't exist.
+    pub fn get_edge_weight_mut(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<&mut E> {
+        let p = self.to_edge_position(a, b)?;
+        self.node_adjacencies.get_mut(p)?.as_mut()
     }
 
     /// Return an iterator of all nodes with an edge starting from `a`.
@@ -492,6 +669,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
         I::Item: IntoWeightedEdge<E>,
         <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
         N: Default,
+        S: Default,
     {
         let mut g = Self::default();
         g.extend_with_edges(iterable);
@@ -522,9 +700,21 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
             self.add_edge(source, target, weight);
         }
     }
+
+    fn assert_node_bounds(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Result<(), MatrixError> {
+        if a.index() >= self.node_capacity {
+            Err(MatrixError::NodeMissed(a.index()))
+        } else if b.index() >= self.node_capacity {
+            Err(MatrixError::NodeMissed(b.index()))
+        } else {
+            Ok(())
+        }
+    }
 }
 
-impl<N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> MatrixGraph<N, E, Directed, Null, Ix> {
+impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    MatrixGraph<N, E, S, Directed, Null, Ix>
+{
     /// Return an iterator of all neighbors that have an edge between them and
     /// `a`, in the specified direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
@@ -573,13 +763,18 @@ impl<N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> MatrixGraph<N, E, Directe
 /// [1]: ../visit/trait.IntoNodeIdentifiers.html#tymethod.node_identifiers
 /// [2]: struct.MatrixGraph.html
 #[derive(Debug, Clone)]
-pub struct NodeIdentifiers<'a, Ix> {
-    iter: IdIterator<'a>,
+pub struct NodeIdentifiers<
+    'a,
+    Ix,
+    #[cfg(feature = "std")] S = RandomState,
+    #[cfg(not(feature = "std"))] S,
+> {
+    iter: IdIterator<'a, S>,
     ix: PhantomData<Ix>,
 }
 
-impl<'a, Ix: IndexType> NodeIdentifiers<'a, Ix> {
-    fn new(iter: IdIterator<'a>) -> Self {
+impl<'a, Ix: IndexType, S> NodeIdentifiers<'a, Ix, S> {
+    fn new(iter: IdIterator<'a, S>) -> Self {
         Self {
             iter,
             ix: PhantomData,
@@ -587,7 +782,7 @@ impl<'a, Ix: IndexType> NodeIdentifiers<'a, Ix> {
     }
 }
 
-impl<Ix: IndexType> Iterator for NodeIdentifiers<'_, Ix> {
+impl<Ix: IndexType, S: BuildHasher> Iterator for NodeIdentifiers<'_, Ix, S> {
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -605,14 +800,20 @@ impl<Ix: IndexType> Iterator for NodeIdentifiers<'_, Ix> {
 /// [1]: ../visit/trait.IntoNodeReferences.html#tymethod.node_references
 /// [2]: struct.MatrixGraph.html
 #[derive(Debug, Clone)]
-pub struct NodeReferences<'a, N: 'a, Ix> {
-    nodes: &'a IdStorage<N>,
-    iter: IdIterator<'a>,
+pub struct NodeReferences<
+    'a,
+    N: 'a,
+    Ix,
+    #[cfg(feature = "std")] S = RandomState,
+    #[cfg(not(feature = "std"))] S,
+> {
+    nodes: &'a IdStorage<N, S>,
+    iter: IdIterator<'a, S>,
     ix: PhantomData<Ix>,
 }
 
-impl<'a, N: 'a, Ix> NodeReferences<'a, N, Ix> {
-    fn new(nodes: &'a IdStorage<N>) -> Self {
+impl<'a, N: 'a, Ix, S: BuildHasher> NodeReferences<'a, N, Ix, S> {
+    fn new(nodes: &'a IdStorage<N, S>) -> Self {
         NodeReferences {
             nodes,
             iter: nodes.iter_ids(),
@@ -621,7 +822,7 @@ impl<'a, N: 'a, Ix> NodeReferences<'a, N, Ix> {
     }
 }
 
-impl<'a, N: 'a, Ix: IndexType> Iterator for NodeReferences<'a, N, Ix> {
+impl<'a, N: 'a, Ix: IndexType, S: BuildHasher> Iterator for NodeReferences<'a, N, Ix, S> {
     type Item = (NodeIndex<Ix>, &'a N);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -901,18 +1102,18 @@ fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
 }
 
 #[derive(Debug, Clone)]
-struct IdStorage<T> {
+struct IdStorage<T, #[cfg(feature = "std")] S = RandomState, #[cfg(not(feature = "std"))] S> {
     elements: Vec<Option<T>>,
     upper_bound: usize,
-    removed_ids: IndexSet<usize>,
+    removed_ids: IndexSet<usize, S>,
 }
 
-impl<T> IdStorage<T> {
-    fn with_capacity(capacity: usize) -> Self {
+impl<T, S: BuildHasher> IdStorage<T, S> {
+    fn with_capacity_and_hasher(capacity: usize, hasher: S) -> Self {
         IdStorage {
             elements: Vec::with_capacity(capacity),
             upper_bound: 0,
-            removed_ids: IndexSet::new(),
+            removed_ids: IndexSet::with_hasher(hasher),
         }
     }
 
@@ -954,7 +1155,7 @@ impl<T> IdStorage<T> {
         self.upper_bound - self.removed_ids.len()
     }
 
-    fn iter_ids(&self) -> IdIterator {
+    fn iter_ids(&self) -> IdIterator<S> {
         IdIterator {
             upper_bound: self.upper_bound,
             removed_ids: &self.removed_ids,
@@ -963,27 +1164,27 @@ impl<T> IdStorage<T> {
     }
 }
 
-impl<T> Index<usize> for IdStorage<T> {
+impl<T, S> Index<usize> for IdStorage<T, S> {
     type Output = T;
     fn index(&self, index: usize) -> &T {
         self.elements[index].as_ref().unwrap()
     }
 }
 
-impl<T> IndexMut<usize> for IdStorage<T> {
+impl<T, S> IndexMut<usize> for IdStorage<T, S> {
     fn index_mut(&mut self, index: usize) -> &mut T {
         self.elements[index].as_mut().unwrap()
     }
 }
 
 #[derive(Debug, Clone)]
-struct IdIterator<'a> {
+struct IdIterator<'a, S> {
     upper_bound: usize,
-    removed_ids: &'a IndexSet<usize>,
+    removed_ids: &'a IndexSet<usize, S>,
     current: Option<usize>,
 }
 
-impl Iterator for IdIterator<'_> {
+impl<S: BuildHasher> Iterator for IdIterator<'_, S> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1013,15 +1214,15 @@ impl Iterator for IdIterator<'_> {
 }
 
 /// Create a new empty `MatrixGraph`.
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Default
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher + Default, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    Default for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     fn default() -> Self {
         Self::with_capacity(0)
     }
 }
 
-impl<N, E> MatrixGraph<N, E, Directed> {
+impl<N, E, S: BuildHasher + Default> MatrixGraph<N, E, S, Directed> {
     /// Create a new `MatrixGraph` with directed edges.
     ///
     /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
@@ -1031,7 +1232,7 @@ impl<N, E> MatrixGraph<N, E, Directed> {
     }
 }
 
-impl<N, E> MatrixGraph<N, E, Undirected> {
+impl<N, E, S: BuildHasher + Default> MatrixGraph<N, E, S, Undirected> {
     /// Create a new `MatrixGraph` with undirected edges.
     ///
     /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
@@ -1044,8 +1245,8 @@ impl<N, E> MatrixGraph<N, E, Undirected> {
 /// Index the `MatrixGraph` by `NodeIndex` to access node weights.
 ///
 /// **Panics** if the node doesn't exist.
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Index<NodeIndex<Ix>>
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    Index<NodeIndex<Ix>> for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type Output = N;
 
@@ -1057,24 +1258,24 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Index<NodeI
 /// Index the `MatrixGraph` by `NodeIndex` to access node weights.
 ///
 /// **Panics** if the node doesn't exist.
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IndexMut<NodeIndex<Ix>>
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    IndexMut<NodeIndex<Ix>> for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     fn index_mut(&mut self, ax: NodeIndex<Ix>) -> &mut N {
         self.node_weight_mut(ax)
     }
 }
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeCount
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeCount
+    for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     fn node_count(&self) -> usize {
         MatrixGraph::node_count(self)
     }
 }
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> EdgeCount
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> EdgeCount
+    for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     #[inline]
     fn edge_count(&self) -> usize {
@@ -1087,8 +1288,8 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> EdgeCount
 /// Also available with indexing syntax: `&graph[e]`.
 ///
 /// **Panics** if no edge exists between `a` and `b`.
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
-    Index<(NodeIndex<Ix>, NodeIndex<Ix>)> for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    Index<(NodeIndex<Ix>, NodeIndex<Ix>)> for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type Output = E;
 
@@ -1102,16 +1303,16 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
 /// Also available with indexing syntax: `&mut graph[e]`.
 ///
 /// **Panics** if no edge exists between `a` and `b`.
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
-    IndexMut<(NodeIndex<Ix>, NodeIndex<Ix>)> for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    IndexMut<(NodeIndex<Ix>, NodeIndex<Ix>)> for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     fn index_mut(&mut self, (ax, bx): (NodeIndex<Ix>, NodeIndex<Ix>)) -> &mut E {
         self.edge_weight_mut(ax, bx)
     }
 }
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> GetAdjacencyMatrix
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    GetAdjacencyMatrix for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type AdjMatrix = ();
 
@@ -1122,8 +1323,8 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> GetAdjacenc
     }
 }
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Visitable
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Visitable
+    for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type Map = FixedBitSet;
 
@@ -1137,38 +1338,38 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Visitable
     }
 }
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> GraphBase
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> GraphBase
+    for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type NodeId = NodeIndex<Ix>;
     type EdgeId = (NodeIndex<Ix>, NodeIndex<Ix>);
 }
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> GraphProp
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> GraphProp
+    for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type EdgeType = Ty;
 }
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Data
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Data
+    for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type NodeWeight = N;
     type EdgeWeight = E;
 }
 
-impl<'a, N, E: 'a, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoNodeIdentifiers
-    for &'a MatrixGraph<N, E, Ty, Null, Ix>
+impl<'a, N, E: 'a, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    IntoNodeIdentifiers for &'a MatrixGraph<N, E, S, Ty, Null, Ix>
 {
-    type NodeIdentifiers = NodeIdentifiers<'a, Ix>;
+    type NodeIdentifiers = NodeIdentifiers<'a, Ix, S>;
 
     fn node_identifiers(self) -> Self::NodeIdentifiers {
         NodeIdentifiers::new(self.nodes.iter_ids())
     }
 }
 
-impl<'a, N, E: 'a, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoNeighbors
-    for &'a MatrixGraph<N, E, Ty, Null, Ix>
+impl<'a, N, E: 'a, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType>
+    IntoNeighbors for &'a MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type Neighbors = Neighbors<'a, Ty, Null, Ix>;
 
@@ -1177,8 +1378,8 @@ impl<'a, N, E: 'a, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Int
     }
 }
 
-impl<'a, N, E: 'a, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoNeighborsDirected
-    for &'a MatrixGraph<N, E, Directed, Null, Ix>
+impl<'a, N, E: 'a, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoNeighborsDirected
+    for &'a MatrixGraph<N, E, S, Directed, Null, Ix>
 {
     type NeighborsDirected = Neighbors<'a, Directed, Null, Ix>;
 
@@ -1187,18 +1388,18 @@ impl<'a, N, E: 'a, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoNeighborsDire
     }
 }
 
-impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoNodeReferences
-    for &'a MatrixGraph<N, E, Ty, Null, Ix>
+impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType, S: BuildHasher + 'a>
+    IntoNodeReferences for &'a MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type NodeRef = (NodeIndex<Ix>, &'a N);
-    type NodeReferences = NodeReferences<'a, N, Ix>;
+    type NodeReferences = NodeReferences<'a, N, Ix, S>;
     fn node_references(self) -> Self::NodeReferences {
         NodeReferences::new(&self.nodes)
     }
 }
 
-impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdgeReferences
-    for &'a MatrixGraph<N, E, Ty, Null, Ix>
+impl<'a, N, E, S, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdgeReferences
+    for &'a MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type EdgeRef = (NodeIndex<Ix>, NodeIndex<Ix>, &'a E);
     type EdgeReferences = EdgeReferences<'a, Ty, Null, Ix>;
@@ -1207,8 +1408,8 @@ impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdg
     }
 }
 
-impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdges
-    for &'a MatrixGraph<N, E, Ty, Null, Ix>
+impl<'a, N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdges
+    for &'a MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     type Edges = Edges<'a, Ty, Null, Ix>;
     fn edges(self, a: Self::NodeId) -> Self::Edges {
@@ -1216,8 +1417,8 @@ impl<'a, N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdg
     }
 }
 
-impl<'a, N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdgesDirected
-    for &'a MatrixGraph<N, E, Directed, Null, Ix>
+impl<'a, N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdgesDirected
+    for &'a MatrixGraph<N, E, S, Directed, Null, Ix>
 {
     type EdgesDirected = Edges<'a, Directed, Null, Ix>;
 
@@ -1226,8 +1427,8 @@ impl<'a, N, E, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdgesDirected
     }
 }
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeIndexable
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeIndexable
+    for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     fn node_bound(&self) -> usize {
         self.nodes.upper_bound
@@ -1242,8 +1443,8 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> NodeIndexab
     }
 }
 
-impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Build
-    for MatrixGraph<N, E, Ty, Null, Ix>
+impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Build
+    for MatrixGraph<N, E, S, Ty, Null, Ix>
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         self.add_node(weight)
@@ -1278,6 +1479,7 @@ impl<N, E, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Build
 mod tests {
     use super::*;
     use crate::{Incoming, Outgoing};
+    use std::collections::hash_map::RandomState;
 
     #[test]
     fn test_new() {
@@ -1324,7 +1526,7 @@ mod tests {
 
     #[test]
     fn test_add_edge() {
-        let mut g = MatrixGraph::new();
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1356,6 +1558,20 @@ mod tests {
     }
 
     #[test]
+    fn test_has_edge() {
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, ());
+        g.add_edge(b, c, ());
+        assert!(g.has_edge(a, b));
+        assert!(g.has_edge(b, c));
+        assert!(!g.has_edge(a, c));
+        assert!(!g.has_edge(10.into(), 100.into())); // Non-existent nodes.
+    }
+
+    #[test]
     fn test_matrix_resize() {
         let mut g = DiMatrix::<u8, ()>::with_capacity(3);
         let n0 = g.add_node(0);
@@ -1375,7 +1591,7 @@ mod tests {
 
     #[test]
     fn test_add_edge_with_weights() {
-        let mut g = MatrixGraph::new();
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1387,7 +1603,7 @@ mod tests {
 
     #[test]
     fn test_add_edge_with_weights_undirected() {
-        let mut g = MatrixGraph::new_undirected();
+        let mut g = MatrixGraph::<_, _, RandomState, Undirected>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1416,7 +1632,7 @@ mod tests {
 
     #[test]
     fn test_clear() {
-        let mut g = MatrixGraph::new();
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1449,7 +1665,7 @@ mod tests {
 
     #[test]
     fn test_clear_undirected() {
-        let mut g = MatrixGraph::new_undirected();
+        let mut g = MatrixGraph::<_, _, RandomState, Undirected>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1506,7 +1722,7 @@ mod tests {
 
     #[test]
     fn test_neighbors() {
-        let mut g = MatrixGraph::new();
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1525,7 +1741,7 @@ mod tests {
 
     #[test]
     fn test_neighbors_undirected() {
-        let mut g = MatrixGraph::new_undirected();
+        let mut g = MatrixGraph::<_, _, RandomState, Undirected>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1544,7 +1760,7 @@ mod tests {
 
     #[test]
     fn test_remove_node_and_edges() {
-        let mut g = MatrixGraph::new();
+        let mut g = MatrixGraph::<_, _>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1566,7 +1782,7 @@ mod tests {
 
     #[test]
     fn test_remove_node_and_edges_undirected() {
-        let mut g = UnMatrix::new_undirected();
+        let mut g = UnMatrix::<_, _>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1588,7 +1804,7 @@ mod tests {
 
     #[test]
     fn test_node_identifiers() {
-        let mut g = MatrixGraph::new();
+        let mut g = MatrixGraph::<_, _>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1704,7 +1920,8 @@ mod tests {
     fn test_id_storage() {
         use super::IdStorage;
 
-        let mut storage: IdStorage<char> = IdStorage::with_capacity(0);
+        let mut storage: IdStorage<char> =
+            IdStorage::with_capacity_and_hasher(0, Default::default());
         let a = storage.add('a');
         let b = storage.add('b');
         let c = storage.add('c');
@@ -1726,7 +1943,8 @@ mod tests {
 
     #[test]
     fn test_not_zero() {
-        let mut g: MatrixGraph<(), i32, Directed, NotZero<i32>> = MatrixGraph::default();
+        let mut g: MatrixGraph<(), i32, RandomState, Directed, NotZero<i32>> =
+            MatrixGraph::default();
 
         let a = g.add_node(());
         let b = g.add_node(());
@@ -1749,7 +1967,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_not_zero_asserted() {
-        let mut g: MatrixGraph<(), i32, Directed, NotZero<i32>> = MatrixGraph::default();
+        let mut g: MatrixGraph<(), i32, RandomState, Directed, NotZero<i32>> =
+            MatrixGraph::default();
 
         let a = g.add_node(());
         let b = g.add_node(());
@@ -1759,7 +1978,8 @@ mod tests {
 
     #[test]
     fn test_not_zero_float() {
-        let mut g: MatrixGraph<(), f32, Directed, NotZero<f32>> = MatrixGraph::default();
+        let mut g: MatrixGraph<(), f32, RandomState, Directed, NotZero<f32>> =
+            MatrixGraph::default();
 
         let a = g.add_node(());
         let b = g.add_node(());
@@ -1810,5 +2030,61 @@ mod tests {
             crate::algo::kosaraju_scc(&g),
             [[node_index(2)], [node_index(0)]]
         );
+    }
+
+    #[test]
+    fn test_try_update_edge() {
+        let mut g = MatrixGraph::<char, u32>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, 1);
+        g.add_edge(b, c, 2);
+        assert_eq!(g.try_update_edge(a, b, 10), Ok(Some(1)));
+        assert_eq!(g.try_update_edge(a, b, 100), Ok(Some(10)));
+        assert_eq!(g.try_update_edge(a, c, 33), Ok(None));
+        assert_eq!(g.try_update_edge(a, c, 66), Ok(Some(33)));
+        assert_eq!(
+            g.try_update_edge(10.into(), 20.into(), 5),
+            Err(MatrixError::NodeMissed(10))
+        );
+    }
+
+    #[test]
+    fn test_add_or_update_edge() {
+        let mut g = MatrixGraph::<char, u32>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        assert_eq!(g.add_or_update_edge(a, b, 1), Ok(None));
+        assert_eq!(g.add_or_update_edge(b, c, 2), Ok(None));
+        assert_eq!(g.add_or_update_edge(a, b, 10), Ok(Some(1)));
+        assert_eq!(g.add_or_update_edge(a, c, 33), Ok(None));
+        assert_eq!(g.add_or_update_edge(10.into(), 20.into(), 5), Ok(None));
+        assert!(g.has_edge(10.into(), 20.into()));
+        assert!(g.node_capacity >= 20);
+    }
+
+    #[test]
+    fn test_remove_edge() {
+        let mut g = MatrixGraph::<char, u32>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, 1);
+        g.add_edge(b, c, 2);
+        assert_eq!(g.try_remove_edge(a, b), Some(1));
+        assert_eq!(g.try_remove_edge(a, b), None);
+        assert_eq!(g.try_remove_edge(a, c), None);
+    }
+
+    #[test]
+    fn test_try_add_node() {
+        let mut graph =
+            MatrixGraph::<(), u32, RandomState, Directed, Option<u32>, u8>::with_capacity(255);
+        for i in 0..255 {
+            assert_eq!(graph.try_add_node(()), Ok(i.into()));
+        }
+        assert_eq!(graph.try_add_node(()), Err(MatrixError::NodeIxLimit));
     }
 }

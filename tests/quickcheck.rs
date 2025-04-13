@@ -1,4 +1,7 @@
 #![cfg(feature = "quickcheck")]
+
+extern crate alloc;
+
 #[macro_use]
 extern crate quickcheck;
 extern crate petgraph;
@@ -9,25 +12,29 @@ extern crate defmac;
 extern crate itertools;
 extern crate odds;
 
+mod maximal_cliques;
 mod utils;
 
+use odds::prelude::*;
 use utils::{Small, Tournament};
 
-use odds::prelude::*;
-use std::collections::{BTreeSet, HashMap, HashSet};
-use std::hash::Hash;
+use alloc::collections::BTreeSet;
+use core::hash::Hash;
 
+use hashbrown::{HashMap, HashSet};
 use itertools::assert_equal;
 use itertools::cloned;
 use quickcheck::{Arbitrary, Gen};
 use rand::Rng;
 
+#[cfg(feature = "stable_graph")]
+use petgraph::algo::steiner_tree;
 use petgraph::algo::{
     bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
-    k_shortest_path, kosaraju_scc, maximum_matching, min_spanning_tree, page_rank, tarjan_scc,
-    toposort, Matching,
+    k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
+    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -51,8 +58,8 @@ where
     Graph::from_elements(min_spanning_tree(&g))
 }
 
+use core::fmt;
 use petgraph::algo::articulation_points::articulation_points;
-use std::fmt;
 
 quickcheck! {
     fn mst_directed(g: Small<Graph<(), u32>>) -> bool {
@@ -1330,7 +1337,7 @@ quickcheck! {
     }
 }
 
-fn sum_flows<N, F: std::iter::Sum + Copy>(
+fn sum_flows<N, F: core::iter::Sum + Copy>(
     gr: &Graph<N, F>,
     flows: &[F],
     node: NodeIndex,
@@ -1381,8 +1388,8 @@ quickcheck! {
         use petgraph::acyclic::Acyclic;
         use petgraph::data::{Build, Create};
         use petgraph::algo::toposort;
-        use std::collections::BTreeMap;
-        use std::iter;
+        use alloc::collections::BTreeMap;
+        use core::iter;
 
         // We will re-build `g` from scratch, adding edges one by one.
         let mut acylic_g =
@@ -1470,6 +1477,83 @@ quickcheck! {
             return false;
         }
     }
+        true
+    }
+}
+
+#[cfg(feature = "stable_graph")]
+quickcheck! {
+    fn test_steiner_tree(g: Graph<(), u32, Undirected>) -> bool {
+        if g.node_count() <= 1 {
+            return true; // We naturally don't support steiner trees with zero or one node
+        }
+
+        let mut terminals = g.node_indices().collect::<Vec<_>>();
+        terminals = terminals.into_iter().take(5).collect();
+        let m_steiner_tree = steiner_tree(&g, &terminals);
+
+        let steiner_tree_nodes: Vec<NodeIndex> = m_steiner_tree.node_indices().collect();
+
+        let spans_terminals = terminals.iter().all(|&t| steiner_tree_nodes.contains(&t));
+
+        spans_terminals
+    }
+}
+
+#[test]
+fn maximal_cliques_matches_ref_impl() {
+    use maximal_cliques::maximal_cliques_ref;
+
+    fn prop<Ty>(g: Graph<(), (), Ty>) -> bool
+    where
+        Ty: EdgeType,
+    {
+        if g.edge_count() <= 200 && g.node_count() <= 200 {
+            let cliques = maximal_cliques_algo(&g);
+            let cliques_ref = maximal_cliques_ref(&g);
+
+            assert!(cliques.len() == cliques_ref.len());
+
+            for c in &cliques_ref {
+                assert!(cliques.contains(c));
+            }
+        }
+        true
+    }
+    quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
+    quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
+}
+
+quickcheck! {
+    fn test_spfa(gr: Graph<(), f32>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+        }
+        true
+    }
+}
+
+quickcheck! {
+    fn test_spfa_undir(gr: Graph<(), f32, Undirected>) -> bool {
+        let mut gr = gr;
+        for elt in gr.edge_weights_mut() {
+            *elt = elt.abs();
+        }
+        if gr.node_count() == 0 {
+            return true;
+        }
+        for (i, start) in gr.node_indices().enumerate() {
+            if i >= 10 { break; } // testing all is too slow
+            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+        }
         true
     }
 }

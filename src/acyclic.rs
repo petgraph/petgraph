@@ -1,9 +1,9 @@
 //! A wrapper around graph types that enforces an acyclicity invariant.
 
-use std::{
+use alloc::collections::{BTreeMap, BTreeSet};
+use core::{
     cell::RefCell,
     cmp::Ordering,
-    collections::{BTreeMap, BTreeSet},
     convert::TryFrom,
     ops::{Deref, RangeBounds},
 };
@@ -169,6 +169,9 @@ where
     /// when multi-edges are allowed, as in [`DiGraph`] and [`StableDiGraph`]),
     /// this will return an error if and only if [`Self::is_valid_edge`]
     /// returns `false`.
+    ///
+    /// **Panics** if `a` or `b` are not found.
+    #[track_caller]
     pub fn try_add_edge(
         &mut self,
         a: G::NodeId,
@@ -197,6 +200,8 @@ where
     ///
     /// This will return an error if and only if [`Self::is_valid_edge`] returns
     /// `false`.
+    ///
+    /// **Panics** if `a` or `b` are not found.
     pub fn try_update_edge(
         &mut self,
         a: G::NodeId,
@@ -216,6 +221,8 @@ where
     }
 
     /// Check if an edge would be valid, i.e. adding it would not create a cycle.
+    ///
+    /// **Panics** if `a` or `b` are not found.
     pub fn is_valid_edge(&self, a: G::NodeId, b: G::NodeId) -> bool
     where
         G::NodeId: IndexType,
@@ -237,6 +244,7 @@ where
     /// If a cycle is detected, an error is returned and `self` remains unchanged.
     ///
     /// Implements the core update logic of the PK algorithm.
+    #[track_caller]
     fn update_ordering(&mut self, a: G::NodeId, b: G::NodeId) -> Result<(), Cycle<G::NodeId>>
     where
         G::NodeId: IndexType,
@@ -315,7 +323,7 @@ where
             // These are disjoint from the nodes in the forward cone, otherwise
             // we would have a cycle.
             self.past_cone(max_node, min_order, max_order, &mut backward_cone)
-                .expect("cycles already detected in future_cone");
+                .expect("cycles already checked in future_cone");
 
             Ok(())
         };
@@ -383,7 +391,7 @@ where
                 debug_assert!(order <= max_position, "invalid topological order");
                 match order.cmp(&min_position) {
                     Ordering::Less => Ok(false), // node beyond [min_node, max_node]
-                    Ordering::Equal => panic!("found by future_cone"), // cycle!
+                    Ordering::Equal => unreachable!("checked by future_cone"), // cycle!
                     Ordering::Greater => Ok(true), // node within [min_node, max_node]
                 }
             },
@@ -759,11 +767,14 @@ impl_graph_traits!(StableDiGraph);
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
     use super::*;
     use crate::prelude::DiGraph;
+    use crate::visit::IntoNodeReferences;
+
     #[cfg(feature = "stable_graph")]
     use crate::prelude::StableDiGraph;
-    use crate::visit::IntoNodeReferences;
 
     #[test]
     fn test_acyclic_graph() {
@@ -841,7 +852,7 @@ mod tests {
             + IntoNodeReferences
             + IntoNeighborsDirected
             + GraphBase<NodeId = G::NodeId>,
-        G::NodeId: std::fmt::Debug,
+        G::NodeId: core::fmt::Debug,
     {
         let ordered_nodes: Vec<_> = acyclic.nodes_iter().collect();
         assert_eq!(ordered_nodes.len(), acyclic.node_count());

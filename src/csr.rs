@@ -1,11 +1,14 @@
 //! Compressed Sparse Row (CSR) is a sparse adjacency matrix graph.
 
-use std::cmp::{max, Ordering};
-use std::fmt;
-use std::iter::{Enumerate, Zip};
-use std::marker::PhantomData;
-use std::ops::{Index, IndexMut, Range};
-use std::slice::Windows;
+use alloc::{vec, vec::Vec};
+use core::{
+    cmp::{max, Ordering},
+    fmt,
+    iter::{Enumerate, Zip},
+    marker::PhantomData,
+    ops::{Index, IndexMut, Range},
+    slice::Windows,
+};
 
 use crate::visit::{
     Data, EdgeCount, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences,
@@ -34,7 +37,11 @@ pub enum CsrError {
     IndicesOutBounds(usize, usize),
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for CsrError {}
+
+#[cfg(not(feature = "std"))]
+impl core::error::Error for CsrError {}
 
 impl fmt::Display for CsrError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -302,6 +309,7 @@ where
     /// is **O(|V|·|E|)** for the whole operation.
     ///
     /// **Panics** if `a` or `b` are out of bounds.
+    #[track_caller]
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> bool
     where
         E: Clone,
@@ -387,6 +395,7 @@ where
     /// Computes in **O(log |V|)** time.
     ///
     /// **Panics** if the node `a` does not exist.
+    #[track_caller]
     pub fn contains_edge(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
         self.find_edge_pos(a, b).is_ok()
     }
@@ -409,6 +418,7 @@ where
     /// Computes in **O(1)** time.
     ///
     /// **Panics** if the node `a` does not exist.
+    #[track_caller]
     pub fn out_degree(&self, a: NodeIndex<Ix>) -> usize {
         let r = self.neighbors_range(a);
         r.end - r.start
@@ -417,6 +427,7 @@ where
     /// Computes in **O(1)** time.
     ///
     /// **Panics** if the node `a` does not exist.
+    #[track_caller]
     pub fn neighbors_slice(&self, a: NodeIndex<Ix>) -> &[NodeIndex<Ix>] {
         self.neighbors_of(a).1
     }
@@ -424,6 +435,7 @@ where
     /// Computes in **O(1)** time.
     ///
     /// **Panics** if the node `a` does not exist.
+    #[track_caller]
     pub fn edges_slice(&self, a: NodeIndex<Ix>) -> &[E] {
         &self.edges[self.neighbors_range(a)]
     }
@@ -435,6 +447,7 @@ where
     ///
     /// **Panics** if the node `a` does not exist.<br>
     /// Iterator element type is `EdgeReference<E, Ty, Ix>`.
+    #[track_caller]
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
         let r = self.neighbors_range(a);
         Edges {
@@ -639,7 +652,7 @@ where
     }
 }
 
-use std::slice::Iter as SliceIter;
+use core::slice::Iter as SliceIter;
 
 #[derive(Clone, Debug)]
 pub struct Neighbors<'a, Ix: 'a = DefaultIx> {
@@ -675,6 +688,7 @@ where
     ///
     /// **Panics** if the node `a` does not exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
+    #[track_caller]
     fn neighbors(self, a: Self::NodeId) -> Self::Neighbors {
         Neighbors {
             iter: self.neighbors_slice(a).iter(),
@@ -888,6 +902,9 @@ Row   : [0, 2, 5]   <- value index of row start
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+    use std::println;
+
     use super::Csr;
     use crate::algo::bellman_ford;
     use crate::algo::find_negative_cycle;

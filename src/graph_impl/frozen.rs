@@ -1,4 +1,4 @@
-use std::ops::{Deref, Index, IndexMut};
+use core::ops::{Deref, Index, IndexMut};
 
 use super::Frozen;
 use crate::data::{DataMap, DataMapMut};
@@ -57,6 +57,7 @@ where
     /// node or edge indices is fine.
     ///
     /// **Panics** if the indices are equal or if they are out of bounds.
+    #[track_caller]
     pub fn index_twice_mut<T, U>(
         &mut self,
         i: T,

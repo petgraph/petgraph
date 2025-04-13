@@ -1,43 +1,50 @@
 //! `GraphMap<N, E, Ty>` is a graph datastructure where node values are mapping
 //! keys.
 
-use indexmap::map::Keys;
-use indexmap::map::{Iter as IndexMapIter, IterMut as IndexMapIterMut};
-use indexmap::IndexMap;
-use std::cmp::Ordering;
+use alloc::vec::Vec;
+use core::{
+    cmp::Ordering,
+    fmt,
+    hash::{self, BuildHasher, Hash},
+    iter::{Copied, FromIterator},
+    marker::PhantomData,
+    mem,
+    ops::{Deref, Index, IndexMut},
+    slice::Iter,
+};
+
+use hashbrown::HashSet;
+use indexmap::{
+    map::{Iter as IndexMapIter, IterMut as IndexMapIterMut, Keys},
+    IndexMap,
+};
+
+use crate::{
+    graph::{node_index, Graph},
+    visit, Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected,
+};
+
+#[cfg(feature = "std")]
 use std::collections::hash_map::RandomState;
-use std::collections::HashSet;
-use std::fmt;
-use std::hash::{self, BuildHasher, Hash};
-use std::iter::Copied;
-use std::iter::FromIterator;
-use std::marker::PhantomData;
-use std::mem;
-use std::ops::{Deref, Index, IndexMut};
-use std::slice::Iter;
-
-use crate::{Directed, Direction, EdgeType, Incoming, Outgoing, Undirected};
-
-use crate::graph::node_index;
-use crate::graph::Graph;
-use crate::visit;
-use crate::IntoWeightedEdge;
 
 #[cfg(feature = "rayon")]
-use indexmap::map::rayon::{ParIter, ParIterMut, ParKeys};
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
+use {
+    indexmap::map::rayon::{ParIter, ParIterMut, ParKeys},
+    rayon::prelude::*,
+};
 
 /// A `GraphMap` with undirected edges.
 ///
 /// For example, an edge between *1* and *2* is equivalent to an edge between
 /// *2* and *1*.
-pub type UnGraphMap<N, E> = GraphMap<N, E, Undirected>;
+pub type UnGraphMap<N, E, #[cfg(not(feature = "std"))] S, #[cfg(feature = "std")] S = RandomState> =
+    GraphMap<N, E, Undirected, S>;
 /// A `GraphMap` with directed edges.
 ///
 /// For example, an edge from *1* to *2* is distinct from an edge from *2* to
 /// *1*.
-pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
+pub type DiGraphMap<N, E, #[cfg(not(feature = "std"))] S, #[cfg(feature = "std")] S = RandomState> =
+    GraphMap<N, E, Directed, S>;
 
 /// `GraphMap<N, E, Ty>` is a graph datastructure using an associative array
 /// of its node weights `N`.
@@ -50,13 +57,13 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 ///
 /// - Associated data `N` for nodes and `E` for edges, called *weights*.
 /// - The node weight `N` must implement `Copy` and will be used as node
-///     identifier, duplicated into several places in the data structure.
-///     It must be suitable as a hash table key (implementing `Eq + Hash`).
-///     The node type must also implement `Ord` so that the implementation can
-///     order the pair (`a`, `b`) for an edge connecting any two nodes `a` and `b`.
+///   identifier, duplicated into several places in the data structure.
+///   It must be suitable as a hash table key (implementing `Eq + Hash`).
+///   The node type must also implement `Ord` so that the implementation can
+///   order the pair (`a`, `b`) for an edge connecting any two nodes `a` and `b`.
 /// - `E` can be of arbitrary type.
 /// - Edge type `Ty` that determines whether the graph edges are directed or
-///     undirected.
+///   undirected.
 ///
 /// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
 ///
@@ -64,8 +71,13 @@ pub type DiGraphMap<N, E> = GraphMap<N, E, Directed>;
 ///
 /// Depends on crate feature `graphmap` (default).
 #[derive(Clone)]
-pub struct GraphMap<N, E, Ty, S = RandomState>
-where
+pub struct GraphMap<
+    N,
+    E,
+    Ty,
+    #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
+> where
     S: BuildHasher,
 {
     nodes: IndexMap<N, Vec<(N, CompactDirection)>, S>,
@@ -323,7 +335,7 @@ where
     /// // Create a GraphMap with directed edges, and add one edge to it
     /// use petgraph::graphmap::DiGraphMap;
     ///
-    /// let mut g = DiGraphMap::new();
+    /// let mut g = DiGraphMap::<_, _>::new();
     /// g.add_edge("x", "y", -1);
     /// assert_eq!(g.node_count(), 2);
     /// assert_eq!(g.edge_count(), 1);
@@ -386,7 +398,7 @@ where
     /// // Create a GraphMap with undirected edges, and add and remove an edge.
     /// use petgraph::graphmap::UnGraphMap;
     ///
-    /// let mut g = UnGraphMap::new();
+    /// let mut g = UnGraphMap::<_, _>::new();
     /// g.add_edge("x", "y", -1);
     ///
     /// let edge_data = g.remove_edge("y", "x");
@@ -584,6 +596,7 @@ where
     ///
     /// **Panics** if the number of nodes or edges does not fit with
     /// the resulting graph's index type.
+    #[track_caller]
     pub fn into_graph<Ix>(self) -> Graph<N, E, Ty, Ix>
     where
         Ix: crate::graph::IndexType,
@@ -768,8 +781,14 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct Edges<'a, N, E: 'a, Ty, S = RandomState>
-where
+pub struct Edges<
+    'a,
+    N,
+    E: 'a,
+    Ty,
+    #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
+> where
     N: 'a + NodeTrait,
     Ty: EdgeType,
     S: BuildHasher,
@@ -790,7 +809,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|b| {
             let a = self.from;
-            match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
+            match self.edges.get(&GraphMap::<N, E, Ty, S>::edge_key(a, b)) {
                 None => unreachable!(),
                 Some(edge) => (a, b, edge),
             }
@@ -802,8 +821,14 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct EdgesDirected<'a, N, E: 'a, Ty, S = RandomState>
-where
+pub struct EdgesDirected<
+    'a,
+    N,
+    E: 'a,
+    Ty,
+    #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
+> where
     N: 'a + NodeTrait,
     Ty: EdgeType,
     S: BuildHasher,
@@ -828,7 +853,7 @@ where
             if self.dir == Direction::Incoming {
                 mem::swap(&mut a, &mut b);
             }
-            match self.edges.get(&GraphMap::<N, E, Ty>::edge_key(a, b)) {
+            match self.edges.get(&GraphMap::<N, E, Ty, S>::edge_key(a, b)) {
                 None => unreachable!(),
                 Some(edge) => (a, b, edge),
             }
@@ -1200,7 +1225,7 @@ where
         self.node_count()
     }
     fn to_index(&self, ix: Self::NodeId) -> usize {
-        self.nodes.get_index_of(&ix).unwrap()
+        self.nodes.get_index_of(&ix).expect("node not found")
     }
     fn from_index(&self, ix: usize) -> Self::NodeId {
         assert!(
@@ -1256,7 +1281,7 @@ where
     }
 
     fn to_index(&self, ix: Self::EdgeId) -> usize {
-        self.edges.get_index_of(&ix).unwrap()
+        self.edges.get_index_of(&ix).expect("edge not found")
     }
 
     fn from_index(&self, ix: usize) -> Self::EdgeId {

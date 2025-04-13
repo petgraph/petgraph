@@ -1,5 +1,6 @@
-use std::collections::HashSet;
-use std::hash::Hash;
+use core::hash::Hash;
+
+use hashbrown::HashSet;
 
 use petgraph::algo::{greedy_matching, maximum_bipartite_matching, maximum_matching};
 use petgraph::prelude::*;

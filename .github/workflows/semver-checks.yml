@@ -4,6 +4,11 @@ on:
     pull_request_target:
         branches:
             - master
+        types:
+            - opened
+            - edited
+            - synchronize
+            - reopened
     workflow_dispatch:
         inputs:
             base:
@@ -56,7 +61,7 @@ jobs:
           set +e
 
           cd PR_BRANCH
-          cargo semver-checks --color never --baseline-root ../BASELINE_BRANCH > diagnostic.txt
+          cargo semver-checks --color never --baseline-root ../BASELINE_BRANCH --release-type minor > diagnostic.txt
           if [ "$?" -ne 0 ]; then
             echo "breaking=true" >> $GITHUB_OUTPUT
           else
@@ -122,9 +127,7 @@ jobs:
           header: rs-semver-checks
           message: |
             This PR contains breaking changes to the public Rust API.
-            Please deprecate the old API instead (if possible), or mark the PR with a `!`
-            following the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
-            format to indicate a breaking change.
+            Please deprecate the old API instead (if possible), or mark the PR with a `!` following the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) format to indicate a breaking change.
 
             <details>
               <summary>cargo-semver-checks summary</summary>

@@ -1,11 +1,13 @@
-use std::cmp;
-use std::fmt;
-use std::hash::Hash;
-use std::iter;
-use std::marker::PhantomData;
-use std::mem::size_of;
-use std::ops::{Index, IndexMut, Range};
-use std::slice;
+use alloc::{vec, vec::Vec};
+use core::{
+    cmp, fmt,
+    hash::Hash,
+    iter,
+    marker::PhantomData,
+    mem::size_of,
+    ops::{Index, IndexMut, Range},
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
 
@@ -274,6 +276,47 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
     }
 }
 
+/// The error type for fallible `Graph` & `StableGraph` operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GraphError {
+    /// The Graph is at the maximum number of nodes for its index.
+    NodeIxLimit,
+
+    /// The Graph is at the maximum number of edges for its index.
+    EdgeIxLimit,
+
+    /// The node with the specified index is missing from the graph.
+    NodeMissed(usize),
+
+    /// Node indices out of bounds.
+    NodeOutBounds,
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for GraphError {}
+
+#[cfg(not(feature = "std"))]
+impl core::error::Error for GraphError {}
+
+impl fmt::Display for GraphError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            GraphError::NodeIxLimit => write!(
+                f,
+                "The Graph is at the maximum number of nodes for its index"
+            ),
+            GraphError::EdgeIxLimit => write!(
+                f,
+                "The Graph is at the maximum number of edges for its index."
+            ),
+            GraphError::NodeMissed(i) => {
+                write!(f, "The node with index {i} is missing from the graph.")
+            }
+            GraphError::NodeOutBounds => write!(f, "Node indices out of bounds."),
+        }
+    }
+}
+
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 ///
 /// `Graph` is parameterized over:
@@ -323,24 +366,24 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
 /// but these are only stable across certain operations:
 ///
 /// * **Removing nodes or edges may shift other indices.** Removing a node will
-///     force the last node to shift its index to take its place. Similarly,
-///     removing an edge shifts the index of the last edge.
+///   force the last node to shift its index to take its place. Similarly,
+///   removing an edge shifts the index of the last edge.
 /// * Adding nodes or edges keeps indices stable.
 ///
 /// The `Ix` parameter is `u32` by default. The goal is that you can ignore this parameter
 /// completely unless you need a very big graph -- then you can use `usize`.
 ///
 /// * The fact that the node and edge indices in the graph each are numbered in compact
-///     intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
+///   intervals (from 0 to *n* - 1 for *n* nodes) simplifies some graph algorithms.
 ///
 /// * You can select graph index integer type after the size of the graph. A smaller
-///     size may have better performance.
+///   size may have better performance.
 ///
 /// * Using indices allows mutation while traversing the graph, see `Dfs`,
-///     and `.neighbors(a).detach()`.
+///   and `.neighbors(a).detach()`.
 ///
 /// * You can create several graphs using the equal node indices but with
-///     differing weights or differing edges.
+///   differing weights or differing edges.
 ///
 /// * Indices don't allow as much compile time checking as references.
 ///
@@ -433,7 +476,7 @@ enum Pair<T> {
     None,
 }
 
-use std::cmp::max;
+use core::cmp::max;
 
 /// Get mutable references at index `a` and `b`.
 fn index_twice<T>(slc: &mut [T], a: usize, b: usize) -> Pair<&mut T> {
@@ -520,18 +563,33 @@ where
     ///
     /// Return the index of the new node.
     ///
-    /// **Panics** if the Graph is at the maximum number of nodes for its index
+    /// **Panics** if the `Graph` is at the maximum number of nodes for its index
     /// type (N/A if usize).
+    #[track_caller]
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
+        self.try_add_node(weight).unwrap()
+    }
+
+    /// Try to add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// Return [`GraphError::NodeIxLimit`] if the `Graph` is at the maximum number of nodes for its index.
+    pub fn try_add_node(&mut self, weight: N) -> Result<NodeIndex<Ix>, GraphError> {
         let node = Node {
             weight,
             next: [EdgeIndex::end(), EdgeIndex::end()],
         };
         let node_idx = NodeIndex::new(self.nodes.len());
         // check for max capacity, except if we use usize
-        assert!(<Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx);
-        self.nodes.push(node);
-        node_idx
+        if <Ix as IndexType>::max().index() == !0 || NodeIndex::end() != node_idx {
+            self.nodes.push(node);
+            Ok(node_idx)
+        } else {
+            Err(GraphError::NodeIxLimit)
+        }
     }
 
     /// Access the weight for node `a`.
@@ -558,21 +616,52 @@ where
     /// Computes in **O(1)** time.
     ///
     /// **Panics** if any of the nodes don't exist.<br>
-    /// **Panics** if the Graph is at the maximum number of edges for its index
+    /// **Panics** if the `Graph` is at the maximum number of edges for its index
     /// type (N/A if usize).
     ///
     /// **Note:** `Graph` allows adding parallel (“duplicate”) edges. If you want
     /// to avoid this, use [`.update_edge(a, b, weight)`](#method.update_edge) instead.
+    #[track_caller]
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
+        let res = self.try_add_edge(a, b, weight);
+        if res == Err(GraphError::NodeOutBounds) {
+            panic!("Graph::add_edge: node indices out of bounds");
+        }
+        res.unwrap()
+    }
+
+    /// Try to add an edge from a to b to the graph, with its associated
+    /// data weight.
+    ///
+    /// Return the index of the new edge.
+    ///
+    /// Computes in O(1) time.
+    ///
+    /// Possible errors:
+    /// - [`GraphError::NodeOutBounds`] - if any of the nodes don't exist.<br>
+    /// - [`GraphError::EdgeIxLimit`] if the `Graph` is at the maximum number of edges for its index
+    ///   type (N/A if usize).
+    ///
+    /// Note: Graph allows adding parallel (“duplicate”) edges. If you want
+    /// to avoid this, use [.update_edge(a, b, weight)](#method.update_edge) instead.
+    pub fn try_add_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<EdgeIndex<Ix>, GraphError> {
         let edge_idx = EdgeIndex::new(self.edges.len());
-        assert!(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx);
+        if !(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx) {
+            return Err(GraphError::EdgeIxLimit);
+        }
+
         let mut edge = Edge {
             weight,
             node: [a, b],
             next: [EdgeIndex::end(); 2],
         };
         match index_twice(&mut self.nodes, a.index(), b.index()) {
-            Pair::None => panic!("Graph::add_edge: node indices out of bounds"),
+            Pair::None => return Err(GraphError::NodeOutBounds),
             Pair::One(an) => {
                 edge.next = an.next;
                 an.next[0] = edge_idx;
@@ -586,7 +675,7 @@ where
             }
         }
         self.edges.push(edge);
-        edge_idx
+        Ok(edge_idx)
     }
 
     /// Add or update an edge from `a` to `b`.
@@ -598,14 +687,37 @@ where
     /// connected to `a` (and `b`, if the graph edges are undirected).
     ///
     /// **Panics** if any of the nodes doesn't exist.
+    /// or the graph is at the maximum number of edges for its index (when adding new edge)
+    #[track_caller]
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
+        self.try_update_edge(a, b, weight).unwrap()
+    }
+
+    /// Try to add or update an edge from `a` to `b`.
+    /// If the edge already exists, its weight is updated.
+    ///
+    /// Return the index of the affected edge.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to `a` (and `b`, if the graph edges are undirected).
+    ///
+    /// Possible errors:
+    /// - [`GraphError::NodeOutBounds`] - if any of the nodes don't exist.<br>
+    /// - [`GraphError::EdgeIxLimit`] if the `Graph` is at the maximum number of edges for its index
+    ///   type (N/A if usize).
+    pub fn try_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<EdgeIndex<Ix>, GraphError> {
         if let Some(ix) = self.find_edge(a, b) {
             if let Some(ed) = self.edge_weight_mut(ix) {
                 *ed = weight;
-                return ix;
+                return Ok(ix);
             }
         }
-        self.add_edge(a, b, weight)
+        self.try_add_edge(a, b, weight)
     }
 
     /// Access the weight for edge `e`.
@@ -1139,6 +1251,7 @@ where
     /// assert_eq!(gr[b], 4.);
     /// assert_eq!(gr[c], 2.);
     /// ```
+    #[track_caller]
     pub fn index_twice_mut<T, U>(
         &mut self,
         i: T,
@@ -1201,6 +1314,7 @@ where
     /// the graph. Graph may reserve more space to avoid frequent reallocations.
     ///
     /// **Panics** if the new capacity overflows `usize`.
+    #[track_caller]
     pub fn reserve_nodes(&mut self, additional: usize) {
         self.nodes.reserve(additional);
     }
@@ -1209,6 +1323,7 @@ where
     /// the graph. Graph may reserve more space to avoid frequent reallocations.
     ///
     /// **Panics** if the new capacity overflows `usize`.
+    #[track_caller]
     pub fn reserve_edges(&mut self, additional: usize) {
         self.edges.reserve(additional);
     }
@@ -1220,6 +1335,7 @@ where
     /// Prefer `reserve_nodes` if future insertions are expected.
     ///
     /// **Panics** if the new capacity overflows `usize`.
+    #[track_caller]
     pub fn reserve_exact_nodes(&mut self, additional: usize) {
         self.nodes.reserve_exact(additional);
     }
@@ -1231,6 +1347,7 @@ where
     /// Prefer `reserve_edges` if future insertions are expected.
     ///
     /// **Panics** if the new capacity overflows `usize`.
+    #[track_caller]
     pub fn reserve_exact_edges(&mut self, additional: usize) {
         self.edges.reserve_exact(additional);
     }
@@ -1769,7 +1886,7 @@ where
 
 /// Iterator yielding immutable access to all node weights.
 pub struct NodeWeights<'a, N: 'a, Ix: IndexType = DefaultIx> {
-    nodes: ::std::slice::Iter<'a, Node<N, Ix>>,
+    nodes: ::core::slice::Iter<'a, Node<N, Ix>>,
 }
 impl<'a, N, Ix> Iterator for NodeWeights<'a, N, Ix>
 where
@@ -1788,7 +1905,7 @@ where
 /// Iterator yielding mutable access to all node weights.
 #[derive(Debug)]
 pub struct NodeWeightsMut<'a, N: 'a, Ix: IndexType = DefaultIx> {
-    nodes: ::std::slice::IterMut<'a, Node<N, Ix>>, // TODO: change type to something that implements Clone?
+    nodes: ::core::slice::IterMut<'a, Node<N, Ix>>, // TODO: change type to something that implements Clone?
 }
 
 impl<'a, N, Ix> Iterator for NodeWeightsMut<'a, N, Ix>
@@ -1808,7 +1925,7 @@ where
 
 /// Iterator yielding immutable access to all edge weights.
 pub struct EdgeWeights<'a, E: 'a, Ix: IndexType = DefaultIx> {
-    edges: ::std::slice::Iter<'a, Edge<E, Ix>>,
+    edges: ::core::slice::Iter<'a, Edge<E, Ix>>,
 }
 
 impl<'a, E, Ix> Iterator for EdgeWeights<'a, E, Ix>
@@ -1829,7 +1946,7 @@ where
 /// Iterator yielding mutable access to all edge weights.
 #[derive(Debug)]
 pub struct EdgeWeightsMut<'a, E: 'a, Ix: IndexType = DefaultIx> {
-    edges: ::std::slice::IterMut<'a, Edge<E, Ix>>, // TODO: change type to something that implements Clone?
+    edges: ::core::slice::IterMut<'a, Edge<E, Ix>>, // TODO: change type to something that implements Clone?
 }
 
 impl<'a, E, Ix> Iterator for EdgeWeightsMut<'a, E, Ix>

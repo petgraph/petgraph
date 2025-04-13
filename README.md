@@ -20,10 +20,11 @@ Crate feature flags:
 -   `serde-1` (optional) enable serialization for `Graph, StableGraph, GraphMap`
     using serde 1.0. Requires Rust version as required by serde.
 -   `rayon` (optional) enable parallel iterators for the underlying data in `GraphMap`. Requires Rust version as required by Rayon.
+-   `dot_parser` (optional) enable parsing graph from [DOT/Graphviz](https://www.graphviz.org/doc/info/lang.html) strings and files.
 
 ## Recent Changes
 
-See [RELEASES][] for a list of changes. The minimum supported rust
+See [CHANGELOG][] for a list of changes. The minimum supported rust
 version will only change on major releases.
 
 ## Logo
@@ -49,4 +50,4 @@ be copied, modified, or distributed except according to those terms.
 [discord-badge]:  https://img.shields.io/discord/1166289348384280616?logo=discord&style=flat
 [discord-url]: https://discord.gg/n2tc79tJ4e
 [msrv-badge]: https://img.shields.io/badge/rustc-1.64+-blue.svg
-[RELEASES]: RELEASES.rst
+[CHANGELOG]: CHANGELOG.md

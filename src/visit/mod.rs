@@ -74,9 +74,10 @@ mod traversal;
 pub use self::dfsvisit::*;
 pub use self::traversal::*;
 
+use core::hash::{BuildHasher, Hash};
+
 use fixedbitset::FixedBitSet;
-use std::collections::HashSet;
-use std::hash::{BuildHasher, Hash};
+use hashbrown::HashSet;
 
 use super::EdgeType;
 use crate::prelude::Direction;
@@ -344,8 +345,10 @@ trait_template! {
         /// (suitable for the size of a bitmap).
         fn node_bound(self: &Self) -> usize;
         /// Convert `a` to an integer index.
+        #[track_caller]
         fn to_index(self: &Self, a: Self::NodeId) -> usize;
         /// Convert `i` to a node index. `i` must be a valid value in the graph.
+        #[track_caller]
         fn from_index(self: &Self, i: usize) -> Self::NodeId;
     }
 }
@@ -361,8 +364,10 @@ trait_template! {
         /// (suitable for the size of a bitmap).
         fn edge_bound(self: &Self) -> usize;
         /// Convert `a` to an integer index.
+        #[track_caller]
         fn to_index(self: &Self, a: Self::EdgeId) -> usize;
         /// Convert `i` to an edge index. `i` must be a valid value in the graph.
+        #[track_caller]
         fn from_index(self: &Self, i: usize) -> Self::EdgeId;
     }
 }
@@ -399,6 +404,11 @@ pub trait VisitMap<N> {
 
     /// Return whether `a` has been visited before.
     fn is_visited(&self, a: &N) -> bool;
+
+    /// Mark `a` as unvisited.
+    ///
+    /// Return **true** if this vertex was marked as visited at the time of unsetting it, false otherwise.
+    fn unvisit(&mut self, _a: N) -> bool;
 }
 
 impl<Ix> VisitMap<Ix> for FixedBitSet
@@ -410,6 +420,14 @@ where
     }
     fn is_visited(&self, x: &Ix) -> bool {
         self.contains(x.index())
+    }
+
+    fn unvisit(&mut self, x: Ix) -> bool {
+        if self.is_visited(&x) {
+            self.toggle(x.index());
+            return true;
+        }
+        false
     }
 }
 
@@ -423,6 +441,28 @@ where
     }
     fn is_visited(&self, x: &N) -> bool {
         self.contains(x)
+    }
+
+    fn unvisit(&mut self, x: N) -> bool {
+        self.remove(&x)
+    }
+}
+
+#[cfg(feature = "std")]
+impl<N, S> VisitMap<N> for std::collections::HashSet<N, S>
+where
+    N: Hash + Eq,
+    S: BuildHasher,
+{
+    fn visit(&mut self, x: N) -> bool {
+        self.insert(x)
+    }
+    fn is_visited(&self, x: &N) -> bool {
+        self.contains(x)
+    }
+
+    fn unvisit(&mut self, x: N) -> bool {
+        self.remove(&x)
     }
 }
 

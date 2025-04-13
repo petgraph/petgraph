@@ -1,10 +1,11 @@
 //! Minimum Spanning Tree algorithms.
 
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use alloc::collections::BinaryHeap;
 
-use crate::prelude::*;
+use hashbrown::{HashMap, HashSet};
 
 use crate::data::Element;
+use crate::prelude::*;
 use crate::scored::MinScored;
 use crate::unionfind::UnionFind;
 use crate::visit::{Data, IntoEdges, IntoNodeReferences, NodeRef};

@@ -16,12 +16,17 @@ pub mod ford_fulkerson;
 pub mod isomorphism;
 pub mod k_shortest_path;
 pub mod matching;
+pub mod maximal_cliques;
 pub mod min_spanning_tree;
 pub mod page_rank;
 pub mod simple_paths;
+pub mod spfa;
+#[cfg(feature = "stable_graph")]
+pub mod steiner_tree;
 pub mod tred;
 
-use std::num::NonZeroUsize;
+use alloc::{vec, vec::Vec};
+use core::num::NonZeroUsize;
 
 use crate::prelude::*;
 
@@ -47,9 +52,13 @@ pub use isomorphism::{
 };
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_bipartite_matching, maximum_matching, Matching};
+pub use maximal_cliques::maximal_cliques;
 pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;
 pub use simple_paths::all_simple_paths;
+pub use spfa::spfa;
+#[cfg(feature = "stable_graph")]
+pub use steiner_tree::steiner_tree;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///
@@ -666,14 +675,14 @@ pub struct NegativeCycle(pub ());
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
 where
     G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
-    N: Copy + PartialEq + std::fmt::Debug,
+    N: Copy + PartialEq + core::fmt::Debug,
     VM: VisitMap<N>,
 {
     let mut red = g.visit_map();
     red.visit(start);
     let mut blue = g.visit_map();
 
-    let mut stack = ::std::collections::VecDeque::new();
+    let mut stack = ::alloc::collections::VecDeque::new();
     stack.push_front(start);
 
     while let Some(node) = stack.pop_front() {
@@ -713,8 +722,8 @@ where
     true
 }
 
-use std::fmt::Debug;
-use std::ops::Add;
+use core::fmt::Debug;
+use core::ops::Add;
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Clone {}
@@ -725,6 +734,8 @@ impl<M> Measure for M where M: Debug + PartialOrd + Add<M, Output = M> + Default
 pub trait FloatMeasure: Measure + Copy {
     fn zero() -> Self;
     fn infinite() -> Self;
+    fn from_f32(val: f32) -> Self;
+    fn from_f64(val: f64) -> Self;
 }
 
 impl FloatMeasure for f32 {
@@ -733,6 +744,12 @@ impl FloatMeasure for f32 {
     }
     fn infinite() -> Self {
         1. / 0.
+    }
+    fn from_f32(val: f32) -> Self {
+        val
+    }
+    fn from_f64(val: f64) -> Self {
+        val as f32
     }
 }
 
@@ -743,12 +760,20 @@ impl FloatMeasure for f64 {
     fn infinite() -> Self {
         1. / 0.
     }
+    fn from_f32(val: f32) -> Self {
+        val as f64
+    }
+    fn from_f64(val: f64) -> Self {
+        val
+    }
 }
 
-pub trait BoundedMeasure: Measure + std::ops::Sub<Self, Output = Self> {
+pub trait BoundedMeasure: Measure + core::ops::Sub<Self, Output = Self> {
     fn min() -> Self;
     fn max() -> Self;
     fn overflowing_add(self, rhs: Self) -> (Self, bool);
+    fn from_f32(val: f32) -> Self;
+    fn from_f64(val: f64) -> Self;
 }
 
 macro_rules! impl_bounded_measure_integer(
@@ -765,6 +790,14 @@ macro_rules! impl_bounded_measure_integer(
 
                 fn overflowing_add(self, rhs: Self) -> (Self, bool) {
                     self.overflowing_add(rhs)
+                }
+
+                fn from_f32(val: f32) -> Self {
+                    val as $t
+                }
+
+                fn from_f64(val: f64) -> Self {
+                    val as $t
                 }
             }
         )*
@@ -794,6 +827,14 @@ macro_rules! impl_bounded_measure_float(
 
                     (self + rhs, overflow || underflow)
                 }
+
+                fn from_f32(val: f32) -> Self {
+                    val as $t
+                }
+
+                fn from_f64(val: f64) -> Self {
+                    val as $t
+                }
             }
         )*
     };
@@ -805,15 +846,17 @@ impl_bounded_measure_float!(f32, f64);
 /// and with a default measure of proximity.  
 pub trait UnitMeasure:
     Measure
-    + std::ops::Sub<Self, Output = Self>
-    + std::ops::Mul<Self, Output = Self>
-    + std::ops::Div<Self, Output = Self>
-    + std::iter::Sum
+    + core::ops::Sub<Self, Output = Self>
+    + core::ops::Mul<Self, Output = Self>
+    + core::ops::Div<Self, Output = Self>
+    + core::iter::Sum
 {
     fn zero() -> Self;
     fn one() -> Self;
     fn from_usize(nb: usize) -> Self;
     fn default_tol() -> Self;
+    fn from_f32(val: f32) -> Self;
+    fn from_f64(val: f64) -> Self;
 }
 
 macro_rules! impl_unit_measure(
@@ -835,6 +878,13 @@ macro_rules! impl_unit_measure(
                     1e-6 as $t
                 }
 
+                fn from_f32(val: f32) -> Self {
+                    val as $t
+                }
+
+                fn from_f64(val: f64) -> Self {
+                    val as $t
+                }
             }
 
         )*
