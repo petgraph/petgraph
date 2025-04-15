@@ -51,7 +51,7 @@ pub use isomorphism::{
     subgraph_isomorphisms_iter,
 };
 pub use k_shortest_path::k_shortest_path;
-pub use matching::{greedy_matching, maximum_matching, Matching};
+pub use matching::{greedy_matching, maximum_bipartite_matching, maximum_matching, Matching};
 pub use maximal_cliques::maximal_cliques;
 pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;
