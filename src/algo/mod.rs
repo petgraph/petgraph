@@ -8,6 +8,7 @@ pub mod articulation_points;
 pub mod astar;
 pub mod bellman_ford;
 pub mod coloring;
+pub mod connectivity;
 pub mod dijkstra;
 pub mod dominators;
 pub mod feedback_arc_set;
