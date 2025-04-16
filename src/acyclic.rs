@@ -192,7 +192,7 @@ where
             .ok_or(AcyclicEdgeError::InvalidEdge)
     }
 
-    /// Update an edge in a graph using [`Build::update_edge`].
+    /// Add or update an edge in a graph using [`Build::update_edge`].
     ///
     /// Returns the id of the updated edge, or an [`AcyclicEdgeError`] if the edge
     /// would create a cycle or a self-loop. If the edge does not exist, the
@@ -874,5 +874,18 @@ mod tests {
                 assert!(neighbour_idx > idx);
             }
         }
+    }
+
+    #[cfg(feature = "graphmap")]
+    #[test]
+    fn test_multiedge_allowed() {
+        use crate::prelude::GraphMap;
+        use crate::Directed;
+
+        let mut graph = Acyclic::<GraphMap<usize, (), Directed>>::new();
+        graph.add_node(0);
+        graph.add_node(1);
+        graph.try_update_edge(0, 1, ()).unwrap();
+        graph.try_update_edge(0, 1, ()).unwrap(); // `Result::unwrap()` on an `Err` value: InvalidEdge
     }
 }
