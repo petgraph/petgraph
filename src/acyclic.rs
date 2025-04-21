@@ -165,10 +165,14 @@ where
     /// would create a cycle, a self-loop or if the edge addition failed in
     /// the underlying graph.
     ///
-    /// In cases where edge addition cannot fail in the underlying graph (e.g.
-    /// when multi-edges are allowed, as in [`DiGraph`] and [`StableDiGraph`]),
-    /// this will return an error if and only if [`Self::is_valid_edge`]
-    /// returns `false`.
+    /// In cases where edge addition using [`Build::add_edge`] cannot fail in
+    /// the underlying graph (e.g. when multi-edges are allowed, as in
+    /// [`DiGraph`] and [`StableDiGraph`]), this will return an error if and
+    /// only if [`Self::is_valid_edge`] returns `false`.
+    ///
+    /// Note that for some graph types, the semantics of [`Build::add_edge`] may
+    /// not coincide with the semantics of the `add_edge` method provided by the
+    /// graph type.
     ///
     /// **Panics** if `a` or `b` are not found.
     #[track_caller]
