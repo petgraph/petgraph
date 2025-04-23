@@ -20,8 +20,7 @@ use indexmap::{
 };
 
 use crate::{
-    graph::{node_index, Graph},
-    visit, Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected,
+    data, graph::{node_index, Graph}, visit, Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected
 };
 
 #[cfg(feature = "std")]
@@ -1357,6 +1356,22 @@ where
     #[inline]
     fn is_adjacent(&self, _: &(), a: N, b: N) -> bool {
         self.contains_edge(a, b)
+    }
+}
+
+impl<N, E, Ty, S> data::DataMap for GraphMap<N, E, Ty, S>
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
+    S: BuildHasher,
+{
+    fn edge_weight(self: &Self,id:Self::EdgeId) -> Option< &Self::EdgeWeight> {
+        self.edge_weight(id.0, id.1)
+    }
+
+    fn node_weight(self: &Self,id:Self::NodeId) -> Option< &Self::NodeWeight> {
+        // Technically `id` is already the weight for `GraphMap`, but since we need to return a reference, this is a O(1) borrowing alternative:
+        self.nodes.get_key_value(&id).map(|(k, _)| k)
     }
 }
 
