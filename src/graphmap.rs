@@ -1367,11 +1367,11 @@ where
     Ty: EdgeType,
     S: BuildHasher,
 {
-    fn edge_weight(self: &Self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
+    fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
         self.edge_weight(id.0, id.1)
     }
 
-    fn node_weight(self: &Self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
+    fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
         // Technically `id` is already the weight for `GraphMap`, but since we need to return a reference, this is a O(1) borrowing alternative:
         self.nodes.get_key_value(&id).map(|(k, _)| k)
     }
