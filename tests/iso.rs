@@ -513,42 +513,38 @@ fn iter_subgraph() {
             let b_ref = &b;
             let mut node_match = { |x: &(), y: &()| x == y };
             let mut edge_match = { |x: &(), y: &()| x == y };
-        
-            let mappings =
-                $fn_name(&a_ref, &b_ref, &mut node_match, &mut edge_match).unwrap();
-        
+
+            let mappings = $fn_name(&a_ref, &b_ref, &mut node_match, &mut edge_match).unwrap();
+
             // Verify the iterator returns the expected mappings
-            let expected_mappings: Vec<Vec<usize>> = vec![vec![0, 1, 2], vec![1, 2, 0], vec![2, 0, 1]];
+            let expected_mappings: Vec<Vec<usize>> =
+                vec![vec![0, 1, 2], vec![1, 2, 0], vec![2, 0, 1]];
             for mapping in mappings {
                 assert!(expected_mappings.contains(&mapping))
             }
-        
+
             // Verify all the mappings from the iterator are different
             let a = str_to_digraph(COXETER_A);
             let b = str_to_digraph(COXETER_B);
             let a_ref = &a;
             let b_ref = &b;
-        
+
             let mut unique = HashSet::new();
-            assert!(
-                $fn_name(&a_ref, &b_ref, &mut node_match, &mut edge_match)
-                    .unwrap()
-                    .all(|x| unique.insert(x))
-            );
-        
+            assert!($fn_name(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+                .unwrap()
+                .all(|x| unique.insert(x)));
+
             // The iterator should return None for graphs that are not isomorphic
             let a = str_to_digraph(G8_1);
             let b = str_to_digraph(G8_2);
             let a_ref = &a;
             let b_ref = &b;
-        
-            assert!(
-                $fn_name(&a_ref, &b_ref, &mut node_match, &mut edge_match)
-                    .unwrap()
-                    .next()
-                    .is_none()
-            );
-        
+
+            assert!($fn_name(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+                .unwrap()
+                .next()
+                .is_none());
+
             // https://github.com/petgraph/petgraph/issues/534
             let mut g = Graph::<String, ()>::new();
             let e1 = g.add_node("l1".to_string());
@@ -558,12 +554,12 @@ fn iter_subgraph() {
             g.add_edge(e2, e3, ());
             let e4 = g.add_node("l4".to_string());
             g.add_edge(e3, e4, ());
-        
+
             let mut sub = Graph::<String, ()>::new();
             let e3 = sub.add_node("l3".to_string());
             let e4 = sub.add_node("l4".to_string());
             sub.add_edge(e3, e4, ());
-        
+
             let mut node_match = { |x: &String, y: &String| x == y };
             let mut edge_match = { |x: &(), y: &()| x == y };
             assert_eq!(
@@ -572,7 +568,7 @@ fn iter_subgraph() {
                     .collect::<Vec<_>>(),
                 vec![vec![2, 3]]
             );
-        }
+        };
     }
 
     test_for_iter_subgraph_type!(subgraph_isomorphisms_iter);
