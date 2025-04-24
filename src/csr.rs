@@ -400,6 +400,43 @@ where
         self.find_edge_pos(a, b).is_ok()
     }
 
+    /// Accesses the weight for edge `e`.
+    ///
+    /// Also available with indexing syntax: `&graph[e]`?
+    /// (NOTE TO MAINTAINERS - NOT SURE ABOUT THIS, NOT ENTIRELY SURE WHAT THIS MEANS)
+    ///
+    /// **Panics** if no edge exists between `a` and `b`.
+    pub fn edge_weight(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> &E {
+        let p = self
+            .find_edge_pos(a, b)
+            .expect("No edge found between the nodes.");
+        &self.edges[p]
+    }
+
+    /// Access the weight for edge `e`, mutably.
+    ///
+    /// Also available with indexing syntax: `&mut graph[e]`.
+    /// (NOTE TO MAINTAINERS - NOT SURE ABOUT THIS, NOT ENTIRELY SURE WHAT THIS MEANS)
+    ///
+    /// **Panics** if no edge exists between `a` and `b`.
+    pub fn edge_weight_mut(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> &mut E {
+        let p = self
+            .find_edge_pos(a, b)
+            .expect("No edge found between the nodes.");
+        &mut self.edges[p]
+    }
+
+    /// Safely accesses the weight for edge `e`.
+    ///
+    /// Also available with indexing syntax: `&graph[e]`?
+    /// (NOTE TO MAINTAINERS - NOT SURE ABOUT THIS, NOT ENTIRELY SURE WHAT THIS MEANS)
+    ///
+    /// Returns None if no edge is found.
+    pub fn edge_weight_safe(&self, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> Option<&E> {
+        let p = self.find_edge_pos(a, b).ok()?;
+        Some(&self.edges[p])
+    }
+
     fn neighbors_range(&self, a: NodeIndex<Ix>) -> Range<usize> {
         let index = self.row[a.index()];
         let end = self
