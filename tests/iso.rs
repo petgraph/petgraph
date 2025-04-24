@@ -9,7 +9,8 @@ use petgraph::prelude::*;
 use petgraph::EdgeType;
 
 use petgraph::algo::{
-    is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, subgraph_isomorphisms_iter, general_subgraph_monomorphisms_iter,
+    general_subgraph_monomorphisms_iter, is_isomorphic, is_isomorphic_matching,
+    is_isomorphic_subgraph, subgraph_isomorphisms_iter,
 };
 
 /// Petersen A and B are isomorphic
@@ -586,15 +587,15 @@ fn iter_subgraph_induced_difference() {
     let mut edge_match = { |x: &(), y: &()| x == y };
 
     let mappings =
-        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
-            .unwrap();
+        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match).unwrap();
 
     // a is not an induced subgraph of b due to the missing edge 1->2
     assert_eq!(mappings.count(), 0);
 
     // it is a general subgraph of b, however
-    let mappings = general_subgraph_monomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
-        .unwrap();
+    let mappings =
+        general_subgraph_monomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+            .unwrap();
     // Verify the iterator returns the expected mappings
     let expected_mappings: Vec<Vec<usize>> = vec![vec![0, 1, 2], vec![0, 2, 1]];
     let actual_mappings: Vec<Vec<usize>> = mappings.collect();

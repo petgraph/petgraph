@@ -979,7 +979,7 @@ where
 /// isomorphism (graph structure and matching node and edge weights) and,
 /// if `g0` is isomorphic to an *induced* subgraph of `g1`, return the mappings between
 /// them.
-/// 
+///
 /// If you are looking for general (non-induced) subgraph isomorphisms, see [`general_subgraph_monomorphisms_iter`].
 ///
 /// The graphs should not be multigraphs.
@@ -1020,9 +1020,9 @@ where
 /// isomorphism (graph structure and matching node and edge weights) and,
 /// if `g0` is monomorphic to a general subgraph of `g1`, return the mappings between
 /// them.
-/// 
-/// If you only interested in finding *induced* subgraph isomorphisms, see [`subgraph_isomorphisms_iter`].
-/// 
+///
+/// If you are only interested in finding *induced* subgraph isomorphisms, see [`subgraph_isomorphisms_iter`].
+///
 /// For motivation behind the difference of "isomorphic" and "monomorphic", see discussion in [`is_isomorphic_subgraph`].
 ///
 /// The graphs should not be multigraphs.
