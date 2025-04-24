@@ -9,7 +9,7 @@ use petgraph::prelude::*;
 use petgraph::EdgeType;
 
 use petgraph::algo::{
-    is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, subgraph_isomorphisms_iter,
+    is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, subgraph_isomorphisms_iter, general_subgraph_monomorphisms_iter,
 };
 
 /// Petersen A and B are isomorphic
@@ -503,6 +503,8 @@ fn iso_subgraph() {
 #[test]
 #[cfg_attr(miri, ignore = "Takes too long to run in Miri")]
 fn iter_subgraph() {
+    // TODO: for every test here, add one for the general monomorphism subgraph case. They should all work
+
     let a = Graph::<(), ()>::from_edges([(0, 1), (1, 2), (2, 0)]);
     let b = Graph::<(), ()>::from_edges([(0, 1), (1, 2), (2, 0), (2, 3), (0, 4)]);
     let a_ref = &a;
@@ -568,6 +570,38 @@ fn iter_subgraph() {
             .collect::<Vec<_>>(),
         vec![vec![2, 3]]
     );
+}
+
+#[test]
+#[cfg_attr(miri, ignore = "Takes too long to run in Miri")]
+fn iter_subgraph_induced_difference() {
+    // 0 -> {1, 2}
+    let a = Graph::<(), ()>::from_edges([(0, 1), (0, 2)]);
+    // 0 -> {1, 2}
+    // 1 -> 2
+    let b = Graph::<(), ()>::from_edges([(0, 1), (0, 2), (1, 2)]);
+    let a_ref = &a;
+    let b_ref = &b;
+    let mut node_match = { |x: &(), y: &()| x == y };
+    let mut edge_match = { |x: &(), y: &()| x == y };
+
+    let mappings =
+        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+            .unwrap();
+
+    // a is not an induced subgraph of b due to the missing edge 1->2
+    assert_eq!(mappings.count(), 0);
+
+    // it is a general subgraph of b, however
+    let mappings = general_subgraph_monomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+        .unwrap();
+    // Verify the iterator returns the expected mappings
+    let expected_mappings: Vec<Vec<usize>> = vec![vec![0, 1, 2], vec![0, 2, 1]];
+    let actual_mappings: Vec<Vec<usize>> = mappings.collect();
+    assert_eq!(actual_mappings.len(), expected_mappings.len());
+    for mapping in actual_mappings {
+        assert!(expected_mappings.contains(&mapping))
+    }
 }
 
 /// Isomorphic pair
