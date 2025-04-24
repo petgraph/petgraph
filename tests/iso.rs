@@ -9,7 +9,8 @@ use petgraph::prelude::*;
 use petgraph::EdgeType;
 
 use petgraph::algo::{
-    is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, subgraph_isomorphisms_iter,
+    general_subgraph_monomorphisms_iter, is_isomorphic, is_isomorphic_matching,
+    is_isomorphic_subgraph, subgraph_isomorphisms_iter,
 };
 
 /// Petersen A and B are isomorphic
@@ -503,8 +504,85 @@ fn iso_subgraph() {
 #[test]
 #[cfg_attr(miri, ignore = "Takes too long to run in Miri")]
 fn iter_subgraph() {
-    let a = Graph::<(), ()>::from_edges([(0, 1), (1, 2), (2, 0)]);
-    let b = Graph::<(), ()>::from_edges([(0, 1), (1, 2), (2, 0), (2, 3), (0, 4)]);
+    // All of the below test cases are both induced subgraphs and general subgraphs
+    macro_rules! test_for_iter_subgraph_type {
+        ($fn_name:ident) => {
+            let a = Graph::<(), ()>::from_edges([(0, 1), (1, 2), (2, 0)]);
+            let b = Graph::<(), ()>::from_edges([(0, 1), (1, 2), (2, 0), (2, 3), (0, 4)]);
+            let a_ref = &a;
+            let b_ref = &b;
+            let mut node_match = { |x: &(), y: &()| x == y };
+            let mut edge_match = { |x: &(), y: &()| x == y };
+
+            let mappings = $fn_name(&a_ref, &b_ref, &mut node_match, &mut edge_match).unwrap();
+
+            // Verify the iterator returns the expected mappings
+            let expected_mappings: Vec<Vec<usize>> =
+                vec![vec![0, 1, 2], vec![1, 2, 0], vec![2, 0, 1]];
+            for mapping in mappings {
+                assert!(expected_mappings.contains(&mapping))
+            }
+
+            // Verify all the mappings from the iterator are different
+            let a = str_to_digraph(COXETER_A);
+            let b = str_to_digraph(COXETER_B);
+            let a_ref = &a;
+            let b_ref = &b;
+
+            let mut unique = HashSet::new();
+            assert!($fn_name(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+                .unwrap()
+                .all(|x| unique.insert(x)));
+
+            // The iterator should return None for graphs that are not isomorphic
+            let a = str_to_digraph(G8_1);
+            let b = str_to_digraph(G8_2);
+            let a_ref = &a;
+            let b_ref = &b;
+
+            assert!($fn_name(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+                .unwrap()
+                .next()
+                .is_none());
+
+            // https://github.com/petgraph/petgraph/issues/534
+            let mut g = Graph::<String, ()>::new();
+            let e1 = g.add_node("l1".to_string());
+            let e2 = g.add_node("l2".to_string());
+            g.add_edge(e1, e2, ());
+            let e3 = g.add_node("l3".to_string());
+            g.add_edge(e2, e3, ());
+            let e4 = g.add_node("l4".to_string());
+            g.add_edge(e3, e4, ());
+
+            let mut sub = Graph::<String, ()>::new();
+            let e3 = sub.add_node("l3".to_string());
+            let e4 = sub.add_node("l4".to_string());
+            sub.add_edge(e3, e4, ());
+
+            let mut node_match = { |x: &String, y: &String| x == y };
+            let mut edge_match = { |x: &(), y: &()| x == y };
+            assert_eq!(
+                $fn_name(&&sub, &&g, &mut node_match, &mut edge_match)
+                    .unwrap()
+                    .collect::<Vec<_>>(),
+                vec![vec![2, 3]]
+            );
+        };
+    }
+
+    test_for_iter_subgraph_type!(subgraph_isomorphisms_iter);
+    test_for_iter_subgraph_type!(general_subgraph_monomorphisms_iter);
+}
+
+#[test]
+#[cfg_attr(miri, ignore = "Takes too long to run in Miri")]
+fn iter_subgraph_induced_difference() {
+    // 0 -> {1, 2}
+    let a = Graph::<(), ()>::from_edges([(0, 1), (0, 2)]);
+    // 0 -> {1, 2}
+    // 1 -> 2
+    let b = Graph::<(), ()>::from_edges([(0, 1), (0, 2), (1, 2)]);
     let a_ref = &a;
     let b_ref = &b;
     let mut node_match = { |x: &(), y: &()| x == y };
@@ -513,61 +591,20 @@ fn iter_subgraph() {
     let mappings =
         subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match).unwrap();
 
+    // a is not an induced subgraph of b due to the missing edge 1->2
+    assert_eq!(mappings.count(), 0);
+
+    // it is a general subgraph of b, however
+    let mappings =
+        general_subgraph_monomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
+            .unwrap();
     // Verify the iterator returns the expected mappings
-    let expected_mappings: Vec<Vec<usize>> = vec![vec![0, 1, 2], vec![1, 2, 0], vec![2, 0, 1]];
-    for mapping in mappings {
+    let expected_mappings: Vec<Vec<usize>> = vec![vec![0, 1, 2], vec![0, 2, 1]];
+    let actual_mappings: Vec<Vec<usize>> = mappings.collect();
+    assert_eq!(actual_mappings.len(), expected_mappings.len());
+    for mapping in actual_mappings {
         assert!(expected_mappings.contains(&mapping))
     }
-
-    // Verify all the mappings from the iterator are different
-    let a = str_to_digraph(COXETER_A);
-    let b = str_to_digraph(COXETER_B);
-    let a_ref = &a;
-    let b_ref = &b;
-
-    let mut unique = HashSet::new();
-    assert!(
-        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
-            .unwrap()
-            .all(|x| unique.insert(x))
-    );
-
-    // The iterator should return None for graphs that are not isomorphic
-    let a = str_to_digraph(G8_1);
-    let b = str_to_digraph(G8_2);
-    let a_ref = &a;
-    let b_ref = &b;
-
-    assert!(
-        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
-            .unwrap()
-            .next()
-            .is_none()
-    );
-
-    // https://github.com/petgraph/petgraph/issues/534
-    let mut g = Graph::<String, ()>::new();
-    let e1 = g.add_node("l1".to_string());
-    let e2 = g.add_node("l2".to_string());
-    g.add_edge(e1, e2, ());
-    let e3 = g.add_node("l3".to_string());
-    g.add_edge(e2, e3, ());
-    let e4 = g.add_node("l4".to_string());
-    g.add_edge(e3, e4, ());
-
-    let mut sub = Graph::<String, ()>::new();
-    let e3 = sub.add_node("l3".to_string());
-    let e4 = sub.add_node("l4".to_string());
-    sub.add_edge(e3, e4, ());
-
-    let mut node_match = { |x: &String, y: &String| x == y };
-    let mut edge_match = { |x: &(), y: &()| x == y };
-    assert_eq!(
-        subgraph_isomorphisms_iter(&&sub, &&g, &mut node_match, &mut edge_match)
-            .unwrap()
-            .collect::<Vec<_>>(),
-        vec![vec![2, 3]]
-    );
 }
 
 /// Isomorphic pair
