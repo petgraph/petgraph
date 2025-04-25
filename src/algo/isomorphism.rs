@@ -553,7 +553,7 @@ mod matching {
         st.1.push_mapping(nodes.1, st.0.graph.to_index(nodes.0));
     }
 
-    // Note: This function will not find the empty isomorphism (i.e., if g0 is the empty graph). 
+    // Note: This function will not find the empty isomorphism (i.e., if g0 is the empty graph).
     fn isomorphisms<G0, G1, NM, EM>(
         st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
         node_match: &mut NM,
@@ -811,9 +811,9 @@ where
         return false;
     }
 
-    self::matching::GraphMatcher::new(
-        &g0, &g1, &mut NoSemanticMatch, &mut NoSemanticMatch, false,
-    ).next().is_some()
+    self::matching::GraphMatcher::new(&g0, &g1, &mut NoSemanticMatch, &mut NoSemanticMatch, false)
+        .next()
+        .is_some()
 }
 
 /// Return `true` if the graphs `g0` and `g1` are isomorphic.
@@ -850,9 +850,9 @@ where
         return false;
     }
 
-    self::matching::GraphMatcher::new(
-        &g0, &g1, &mut node_match, &mut edge_match, false,
-    ).next().is_some()
+    self::matching::GraphMatcher::new(&g0, &g1, &mut node_match, &mut edge_match, false)
+        .next()
+        .is_some()
 }
 
 /// Return `true` if `g0` is isomorphic to a subgraph of `g1`.
@@ -904,9 +904,9 @@ where
         return false;
     }
 
-    self::matching::GraphMatcher::new(
-        &g0, &g1, &mut NoSemanticMatch, &mut NoSemanticMatch, true,
-    ).next().is_some()
+    self::matching::GraphMatcher::new(&g0, &g1, &mut NoSemanticMatch, &mut NoSemanticMatch, true)
+        .next()
+        .is_some()
 }
 
 /// Return `true` if `g0` is isomorphic to a subgraph of `g1`.
@@ -943,9 +943,9 @@ where
         return false;
     }
 
-    self::matching::GraphMatcher::new(
-        &g0, &g1, &mut node_match, &mut edge_match, true,
-    ).next().is_some()
+    self::matching::GraphMatcher::new(&g0, &g1, &mut node_match, &mut edge_match, true)
+        .next()
+        .is_some()
 }
 
 /// Using the VF2 algorithm, examine both syntactic and semantic graph

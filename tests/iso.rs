@@ -509,8 +509,8 @@ fn iter_subgraph_empty() {
     let b_ref = &b;
     let mut node_match = { |x: &(), y: &()| x == y };
     let mut edge_match = { |x: &(), y: &()| x == y };
-    let mut mappings = subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match)
-        .unwrap();
+    let mut mappings =
+        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match).unwrap();
     assert_eq!(mappings.next(), Some(vec![]));
     assert_eq!(mappings.next(), None);
 }
