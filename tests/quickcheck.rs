@@ -815,6 +815,37 @@ quickcheck! {
 }
 
 quickcheck! {
+    // checks bidirectional dijkstra against normal dijkstra
+    fn bidirectional_dijkstra(g: Graph<u32, u32>) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+
+        let fw_res = floyd_warshall(&g, |e| *e.weight()).unwrap();
+
+        for node1 in g.node_identifiers() {
+            let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
+
+            for node2 in g.node_identifiers() {
+                let bidirectional_dijkstra_res = bidirectional_dijkstra(&g, node1, node2, |e| *e.weight());
+
+                match (dijkstra_res.get(&node2), bidirectional_dijkstra_res) {
+                    (None, None) => continue,
+                    (Some(distance), Some(bidirectional_distance)) => {
+                        if distance != bidirectional_distance {
+                            return false;
+                        }
+                    }
+                    // Both algorithms must find a solution for the same problem.
+                    (Some(_), None) | (None, Some(_)) => return false,
+                }
+            }
+         }
+        true
+    }
+}
+
+quickcheck! {
     // checks floyd_warshall against dijkstra results
     fn floyd_warshall_(g: Graph<u32, u32>) -> bool {
         if g.node_count() == 0 {
