@@ -161,8 +161,9 @@ pub struct EdgesNotSorted {
     first_error: (usize, usize),
 }
 
-impl<N, E, Ix> Csr<N, E, Directed, Ix>
+impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
 where
+    Ty: EdgeType,
     Ix: IndexType,
 {
     /// Create a new `Csr` from a sorted sequence of edges
@@ -171,6 +172,11 @@ where
     /// order for the pair *(u, v)* in Rust (*u* has priority).
     ///
     /// Computes in **O(|V| + |E|)** time where V is the set of nodes and E is the set of edges.
+    ///
+    /// # Note
+    /// When constructing an **undirected** graph, edges have to be present in both directions,
+    /// i.e. `(u, v)` requires the sequence to also contain `(v, u)`.
+    ///
     /// # Example
     /// ```rust
     /// use petgraph::csr::Csr;
@@ -981,6 +987,27 @@ mod tests {
         assert_eq!(m.neighbors_slice(2), &[2, 4]);
         assert_eq!(m.node_count(), 5);
         assert_eq!(m.edge_count(), 6);
+    }
+
+    #[test]
+    fn csr_from_undirected() {
+        let m: Csr<(), u8, Undirected> = Csr::from_sorted_edges(&[
+            (0, 1),
+            (0, 2),
+            (1, 0),
+            (1, 1),
+            (2, 0),
+            (2, 2),
+            (2, 4),
+            (4, 2),
+        ])
+        .unwrap();
+        println!("{m:?}");
+        assert_eq!(m.neighbors_slice(0), &[1, 2]);
+        assert_eq!(m.neighbors_slice(1), &[0, 1]);
+        assert_eq!(m.neighbors_slice(2), &[0, 2, 4]);
+        assert_eq!(m.node_count(), 5);
+        assert_eq!(m.edge_count(), 8);
     }
 
     #[test]
