@@ -13,7 +13,6 @@ use core::{
     slice::Iter,
 };
 
-use hashbrown::HashSet;
 use indexmap::{
     map::{Iter as IndexMapIter, IterMut as IndexMapIterMut, Keys},
     IndexMap,
@@ -24,6 +23,12 @@ use crate::{
     graph::{node_index, Graph},
     visit, Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected,
 };
+
+#[cfg(feature = "std")]
+use std::collections::hash_set::HashSet;
+
+#[cfg(not(feature = "std"))]
+use hashbrown::HashSet;
 
 #[cfg(feature = "std")]
 use std::collections::hash_map::RandomState;
