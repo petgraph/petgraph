@@ -44,11 +44,11 @@ debug = true
 fixedbitset = { version = "0.5.7", default-features = false }
 indexmap = { version = "2.5.0", default-features = false }
 hashbrown = { version = "^0.15.0" }
-quickcheck = { optional = true, version = "0.8", default-features = false }
+quickcheck = { optional = true, version = "1.0.3", default-features = false }
 serde = { version = "1.0", default-features = false, optional = true }
 serde_derive = { version = "1.0", default-features = false, optional = true }
 rayon = { version = "1.5.3", optional = true }
-dot-parser = { version = "0.5.1", optional = true}
+dot-parser = { version = "0.5.1", optional = true }
 dot-parser-macros = { version = "0.5.1", optional = true }
 
 [dev-dependencies]
