@@ -1,5 +1,6 @@
 use petgraph::algo::ford_fulkerson;
-use petgraph::prelude::Graph;
+use petgraph::prelude::{Graph, StableDiGraph, StableGraph};
+use petgraph::Directed;
 
 #[test]
 fn test_ford_fulkerson() {
@@ -118,4 +119,54 @@ fn test_ford_fulkerson() {
     ]);
     let (max_flow, _) = ford_fulkerson(&graph, source, destination);
     assert_eq!(19, max_flow);
+}
+
+#[test]
+fn test_ford_fulkerson_stable_graphs() {
+    // See issue https://github.com/petgraph/petgraph/issues/792
+    let mut g: StableGraph<(), u32, Directed> = StableDiGraph::new();
+
+    let a = g.add_node(());
+    let b = g.add_node(());
+    let c = g.add_node(());
+    let d = g.add_node(());
+
+    let ac = g.add_edge(a, c, 1);
+    let _ = g.add_edge(a, b, 1);
+    let bc = g.add_edge(b, c, 1);
+    let _ = g.add_edge(b, d, 1);
+
+    // Current state of graph:
+    // a --1-- b --1-- c --1-- d
+    // |               |
+    // - -- -- 1 -- -- -
+
+    g.remove_edge(bc);
+
+    // Current state of graph:
+    // a --1-- b       c --1-- d
+    // |               |
+    // - -- -- 1 -- -- -
+
+    assert_eq!(1, ford_fulkerson(&g, a, d).0);
+
+    let _ = g.add_edge(b, c, 1);
+    g.remove_edge(ac);
+
+    // Current state of graph:
+    // a --1-- b --1-- c --1-- d
+
+    assert_eq!(1, ford_fulkerson(&g, a, d).0);
+
+    let _ = g.add_edge(a, c, 1);
+    let _ = g.add_edge(c, d, 1);
+
+    // Current state of graph:
+    //                 - --1-- -
+    //                 |       |
+    // a --1-- b --1-- c --1-- d
+    // |               |
+    // - -- -- 1 -- -- -
+
+    assert_eq!(2, ford_fulkerson(&g, a, d).0);
 }

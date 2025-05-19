@@ -109,12 +109,14 @@ where
     }
 }
 
-/// \[Generic\] Ford-Fulkerson algorithm.
+/// \[Generic\] [Ford-Fulkerson][ff] algorithm.
 ///
-/// Computes the [maximum flow][ff] of a weighted directed graph.
+/// Computes the [maximum flow] of a weighted directed graph.
 ///
-/// If it terminates, it returns the maximum flow and also the computed edge flows.
+/// If it terminates, it returns the computed maximum flow and a vector containing the flow of
+/// each edge. The vector is indexed by the indices of the edges in the graph.
 ///
+/// [maximum flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [ff]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 ///
 /// # Example
@@ -160,7 +162,7 @@ where
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
     let mut edge_to = vec![None; network.node_count()];
-    let mut flows = vec![N::EdgeWeight::zero(); network.edge_count()];
+    let mut flows = vec![N::EdgeWeight::zero(); network.edge_bound()];
     let mut max_flow = N::EdgeWeight::zero();
     while has_augmented_path(&network, source, destination, &mut edge_to, &flows) {
         let mut path_flow = N::EdgeWeight::max();
