@@ -7,7 +7,7 @@ use alloc::vec;
 use core::{
     cmp, fmt, iter,
     marker::PhantomData,
-    mem::{replace, size_of},
+    mem::size_of,
     ops::{Index, IndexMut},
     slice,
 };
@@ -397,7 +397,7 @@ where
             if self.free_edge != EdgeIndex::end() {
                 edge_idx = self.free_edge;
                 edge = &mut self.g.edges[edge_idx.index()];
-                let _old = replace(&mut edge.weight, Some(weight));
+                let _old = edge.weight.replace(weight);
                 debug_assert!(_old.is_none());
                 self.free_edge = edge.next[0];
                 edge.node = [a, b];
@@ -1057,7 +1057,7 @@ where
     /// updating the free nodes doubly linked list.
     fn occupy_vacant_node(&mut self, node_idx: NodeIndex<Ix>, weight: N) {
         let node_slot = &mut self.g.nodes[node_idx.index()];
-        let _old = replace(&mut node_slot.weight, Some(weight));
+        let _old = node_slot.weight.replace(weight);
         debug_assert!(_old.is_none());
         let previous_node = node_slot.next[1];
         let next_node = node_slot.next[0];
