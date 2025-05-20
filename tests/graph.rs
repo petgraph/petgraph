@@ -1598,31 +1598,19 @@ fn map_map_owned() {
     let a = g.add_node("A");
     let b = g.add_node("B");
     let c = g.add_node("C");
-    let d = g.add_node("D");
-    let e = g.add_node("E");
-    let f = g.add_node("F");
     let ab = g.add_edge(a, b, 7);
+    let bc = g.add_edge(b, c, 14);
     let ca = g.add_edge(c, a, 9);
-    let ad = g.add_edge(a, d, 14);
-    let bc = g.add_edge(b, c, 10);
-    let dc = g.add_edge(d, c, 2);
-    let de = g.add_edge(d, e, 9);
-    let bf = g.add_edge(b, f, 15);
-    let cf = g.add_edge(c, f, 11);
-    let ef = g.add_edge(e, f, 6);
-    println!("{:?}", g);
 
     let g2 = g.map_owned(|_, name| format!("map-{name}"), |_, weight| weight * 2);
-    assert_eq!(g2.edge_count(), 9);
+    assert_eq!(g2.node_count(), 3);
+    assert_eq!(g2.node_weight(a).map(|s| &**s), Some("map-A"));
+    assert_eq!(g2.node_weight(b).map(|s| &**s), Some("map-B"));
+    assert_eq!(g2.node_weight(c).map(|s| &**s), Some("map-C"));
+    assert_eq!(g2.edge_count(), 3);
     assert_eq!(g2.edge_weight(ab), Some(&14));
+    assert_eq!(g2.edge_weight(bc), Some(&28));
     assert_eq!(g2.edge_weight(ca), Some(&18));
-    assert_eq!(g2.edge_weight(ad), Some(&28));
-    assert_eq!(g2.edge_weight(bc), Some(&20));
-    assert_eq!(g2.edge_weight(dc), Some(&4));
-    assert_eq!(g2.edge_weight(de), Some(&18));
-    assert_eq!(g2.edge_weight(bf), Some(&30));
-    assert_eq!(g2.edge_weight(cf), Some(&22));
-    assert_eq!(g2.edge_weight(ef), Some(&12));
 }
 
 #[test]
