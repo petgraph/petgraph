@@ -1,5 +1,7 @@
 extern crate quickcheck;
 
+use core::ops::Range;
+
 use alloc::{boxed::Box, vec::Vec};
 
 use self::quickcheck::{Arbitrary, Gen};
@@ -14,15 +16,6 @@ use crate::stable_graph::StableGraph;
 
 #[cfg(feature = "graphmap")]
 use crate::graphmap::{GraphMap, NodeTrait};
-
-/// Return a random float in the range [0, 1.)
-fn random_01<G: Gen>(g: &mut G) -> f64 {
-    // from rand
-    let bits = 53;
-    let scale = 1. / ((1u64 << bits) as f64);
-    let x: u64 = Arbitrary::arbitrary(g);
-    (x >> (64 - bits)) as f64 * scale
-}
 
 /// `Arbitrary` for `Graph` creates a graph by selecting a node count
 /// and a probability for each possible edge to exist.
@@ -40,13 +33,13 @@ where
     Ty: EdgeType + Send + 'static,
     Ix: IndexType + Send,
 {
-    fn arbitrary<G: Gen>(g: &mut G) -> Self {
-        let nodes = usize::arbitrary(g);
+    fn arbitrary(g: &mut Gen) -> Self {
+        let nodes = gen_range(g, 0..g.size());
         if nodes == 0 {
             return Graph::with_capacity(0, 0);
         }
         // use X² for edge probability (bias towards lower)
-        let edge_prob = random_01(g) * random_01(g);
+        let edge_prob = gen_float(g, 1.) * gen_float(g, 1.);
         let edges = ((nodes as f64).powi(2) * edge_prob) as usize;
         let mut gr = Graph::with_capacity(nodes, edges);
         for _ in 0..nodes {
@@ -57,7 +50,7 @@ where
                 if !gr.is_directed() && i > j {
                     continue;
                 }
-                let p: f64 = random_01(g);
+                let p: f64 = gen_float(g, 1.);
                 if p <= edge_prob {
                     gr.add_edge(i, j, E::arbitrary(g));
                 }
@@ -108,13 +101,13 @@ where
     Ty: EdgeType + Send + 'static,
     Ix: IndexType + Send,
 {
-    fn arbitrary<G: Gen>(g: &mut G) -> Self {
-        let nodes = usize::arbitrary(g);
+    fn arbitrary(g: &mut Gen) -> Self {
+        let nodes = gen_range(g, 0..g.size());
         if nodes == 0 {
             return StableGraph::with_capacity(0, 0);
         }
         // use X² for edge probability (bias towards lower)
-        let edge_prob = random_01(g) * random_01(g);
+        let edge_prob = gen_float(g, 1.) * gen_float(g, 1.);
         let edges = ((nodes as f64).powi(2) * edge_prob) as usize;
         let mut gr = StableGraph::with_capacity(nodes, edges);
         for _ in 0..nodes {
@@ -127,7 +120,7 @@ where
                 if !gr.is_directed() && i > j {
                     continue;
                 }
-                let p: f64 = random_01(g);
+                let p: f64 = gen_float(g, 1.);
                 if p <= edge_prob {
                     gr.add_edge(i, j, E::arbitrary(g));
                 }
@@ -187,8 +180,8 @@ where
     E: Arbitrary,
     Ty: EdgeType + Clone + Send + 'static,
 {
-    fn arbitrary<G: Gen>(g: &mut G) -> Self {
-        let nodes = usize::arbitrary(g);
+    fn arbitrary(g: &mut Gen) -> Self {
+        let nodes = gen_range(g, 0..g.size());
         if nodes == 0 {
             return GraphMap::with_capacity(0, 0);
         }
@@ -197,7 +190,7 @@ where
         nodes.dedup();
 
         // use X² for edge probability (bias towards lower)
-        let edge_prob = random_01(g) * random_01(g);
+        let edge_prob = gen_float(g, 1.) * gen_float(g, 1.);
         let edges = ((nodes.len() as f64).powi(2) * edge_prob) as usize;
         let mut gr = GraphMap::with_capacity(nodes.len(), edges);
         for &node in &nodes {
@@ -210,7 +203,7 @@ where
                 &nodes[index..]
             };
             for &j in js {
-                let p: f64 = random_01(g);
+                let p: f64 = gen_float(g, 1.);
                 if p <= edge_prob {
                     gr.add_edge(i, j, E::arbitrary(g));
                 }
@@ -218,4 +211,26 @@ where
         }
         gr
     }
+}
+
+/// Generate a random float in the range [0., max).
+fn gen_float(g: &mut Gen, max: f64) -> f64 {
+    // from rand
+    let bits = 53;
+    let scale = 1. / ((1u64 << bits) as f64);
+    let x = u64::arbitrary(g);
+    let normalized = (x >> (64 - bits)) as f64 * scale;
+    normalized * max
+}
+
+/// Generate a random `usize` in the given range.
+///
+/// See <https://github.com/BurntSushi/quickcheck/issues/267>
+fn gen_range(g: &mut Gen, range: Range<usize>) -> usize {
+    let span = range.end - range.start;
+    let bits = span.next_power_of_two().trailing_zeros();
+    let mask = (1 << bits) - 1;
+    let mut x = u64::arbitrary(g);
+    x &= mask;
+    range.start + (x as usize % span)
 }

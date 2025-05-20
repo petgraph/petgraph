@@ -1,6 +1,8 @@
 use core::ops::Deref;
 use petgraph::{graph::DiGraph, graphmap::NodeTrait};
-use quickcheck::{Arbitrary, Gen, StdGen};
+use quickcheck::{Arbitrary, Gen};
+
+use crate::gen_range;
 
 #[derive(Copy, Clone, Debug)]
 /// quickcheck Arbitrary adaptor - half the size of `T` on average
@@ -17,9 +19,9 @@ impl<T> Arbitrary for Small<T>
 where
     T: Arbitrary,
 {
-    fn arbitrary<G: Gen>(g: &mut G) -> Self {
+    fn arbitrary(g: &mut Gen) -> Self {
         let sz = g.size() / 2;
-        Small(T::arbitrary(&mut StdGen::new(g, sz)))
+        Small(T::arbitrary(&mut Gen::new(sz)))
     }
 
     fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
@@ -40,8 +42,9 @@ where
     N: NodeTrait + Arbitrary,
     E: Arbitrary,
 {
-    fn arbitrary<G: Gen>(g: &mut G) -> Self {
-        let nodes = usize::arbitrary(g) / 4;
+    fn arbitrary(g: &mut Gen) -> Self {
+        let g_size_sqrt = (g.size() as f64).sqrt() as usize;
+        let nodes = gen_range(g, 0..g_size_sqrt);
         if nodes == 0 {
             return Tournament(DiGraph::with_capacity(0, 0));
         }
