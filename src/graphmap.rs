@@ -295,7 +295,9 @@ where
         n
     }
 
-    /// Return `true` if node `n` was removed.
+    /// Remove node `n` from the graph.
+    ///
+    /// Return `true` if it did exist.
     ///
     /// Computes in **O(V)** time, due to the removal of edges with other nodes.
     pub fn remove_node(&mut self, n: N) -> bool {
