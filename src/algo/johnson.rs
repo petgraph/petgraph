@@ -10,7 +10,7 @@ pub use super::{BoundedMeasure, NegativeCycle};
 use crate::visit::{EdgeRef, IntoEdges, IntoNodeIdentifiers, NodeIndexable, Visitable};
 
 #[cfg(feature = "rayon")]
-use std::marker::{Send, Sync};
+use core::marker::{Send, Sync};
 
 /// \[Generic\] [Johnson algorithm][johnson] for all pairs shortest path problem.
 ///
