@@ -7,6 +7,7 @@
 pub mod articulation_points;
 pub mod astar;
 pub mod bellman_ford;
+pub mod bridges;
 pub mod coloring;
 pub mod dijkstra;
 pub mod dominators;
