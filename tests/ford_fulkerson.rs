@@ -1,5 +1,7 @@
 use petgraph::algo::ford_fulkerson;
-use petgraph::prelude::{Graph, StableDiGraph, StableGraph};
+use petgraph::prelude::Graph;
+#[cfg(feature = "stable_graph")]
+use petgraph::prelude::{StableDiGraph, StableGraph};
 use petgraph::Directed;
 
 #[test]
@@ -121,6 +123,7 @@ fn test_ford_fulkerson() {
     assert_eq!(19, max_flow);
 }
 
+#[cfg(feature = "stable_graph")]
 #[test]
 fn test_ford_fulkerson_stable_graphs() {
     // See issue https://github.com/petgraph/petgraph/issues/792
