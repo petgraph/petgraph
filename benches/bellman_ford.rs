@@ -10,10 +10,11 @@ use test::Bencher;
 use petgraph::algo::{bellman_ford, find_negative_cycle};
 
 #[bench]
+#[allow(clippy::needless_range_loop)]
 fn bellman_ford_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;
     let mut g = Graph::new();
-    let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).into_iter().map(|i| g.add_node(i)).collect();
+    let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).map(|i| g.add_node(i)).collect();
     for i in 0..NODE_COUNT {
         let n1 = nodes[i];
         let neighbour_count = i % 8 + 3;
@@ -25,7 +26,7 @@ fn bellman_ford_bench(bench: &mut Bencher) {
             if n1 != n2 {
                 distance -= 1.0
             }
-            g.add_edge(n1, n2, distance as f64);
+            g.add_edge(n1, n2, distance);
         }
     }
 
@@ -35,10 +36,11 @@ fn bellman_ford_bench(bench: &mut Bencher) {
 }
 
 #[bench]
+#[allow(clippy::needless_range_loop)]
 fn find_negative_cycle_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 100;
     let mut g = Graph::new();
-    let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).into_iter().map(|i| g.add_node(i)).collect();
+    let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).map(|i| g.add_node(i)).collect();
     for i in 0..NODE_COUNT {
         let n1 = nodes[i];
         let neighbour_count = i % 8 + 3;

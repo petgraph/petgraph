@@ -2,13 +2,18 @@ on:
   push:
     branches: [ master ]
   pull_request:
-    branches: [ master ]
+    branches: '*'
+  merge_group:
+    types: [ checks_requested ]
+  workflow_dispatch: {} 
 
 name: Continuous integration
 
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
 
 jobs:
   tests:
@@ -17,62 +22,101 @@ jobs:
       matrix:
         include:
           - rust: 1.64.0  # MSRV
+            required_features: std
+          - rust: 1.81.0  # no_std MSRV
           - rust: stable
-            features: unstable quickcheck
+            features: unstable quickcheck rayon
             test_all: --all
           - rust: beta
             test_all: --all
           - rust: nightly
-            features: unstable quickcheck
+            features: unstable quickcheck rayon
             test_all: --all
             bench: true
+    name: Tests (Rust ${{ matrix.rust }})
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.8
+      - id: toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
-          override: true
-      - name: Build
+      - name: Configure default rust toolchain
+        run: rustup override set ${{steps.toolchain.outputs.name}}
+
+      - name: MSRV downgrade
+        if: matrix.rust == '1.64.0'
         run: |
-          cargo build --verbose --no-default-features
-          cargo build --verbose --features "${{ matrix.features }}"
-      - name: Tests
-        run: |
-          cargo test --verbose --no-default-features
-          cargo test ${{ matrix.test_all }} --verbose --features "${{ matrix.features }}"
+          cargo generate-lockfile
+          cargo update -p hashbrown --precise 0.15.0
+          cargo update -p once_cell --precise 1.20.3
+
+      - name: Build with no features
+        run: cargo build --verbose --no-default-features --features "${{ matrix.required_features }}"
+      - name: Test with no features
+        run: cargo test --verbose --no-default-features --features "${{ matrix.required_features }}"
+
+      - name: Build with features "${{ matrix.features }}"
+        run: cargo build --verbose --features "${{ matrix.features }}" --features "${{ matrix.required_features }}"
+      - name: Test with features "${{ matrix.features }}"
+        run: cargo test ${{ matrix.test_all }} --verbose --features "${{ matrix.features }}" --features "${{ matrix.required_features }}"
+
       - name: Build benchmarks
         if: ${{ matrix.bench }}
         run: |
           cargo bench --verbose --no-run
           cargo bench --verbose --no-run --all-features
 
-  rustfmt:
+  check:
+    name: Lints
     runs-on: ubuntu-latest
-    continue-on-error: true
-    strategy:
-      matrix:
-        include:
-          - rust: stable
-            rustfmt: rustfmt
-
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.8
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          components: ${{ matrix.rustfmt }}
-          override: true
-      - name: Rustfmt
-        if: matrix.rustfmt
+          components: rustfmt, clippy
+
+      - name: Check formatting
         run: cargo fmt -- --check
 
-  miri:
+      - name: Run clippy
+        # The benchmarks target require nightly,
+        # so we cannot use --all-targets here.
+        run: |
+          cargo clippy --all-features \
+            --lib --bins --examples --tests \
+            -- -D warnings
+
+      - name: Build docs
+        run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: "-Dwarnings"
+
+  check-no-std:
+    name: Check no_std
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.8
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32v1-none
+
+      - name: Check
+        run: cargo check --no-default-features -p petgraph --target wasm32v1-none --features graphmap,serde-1,stable_graph,matrix_graph,generate,unstable
+
+  miri:
+    name: Unsoundness check
+    if: github.event_name != 'merge_group'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.8
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: miri

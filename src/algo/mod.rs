@@ -4,21 +4,29 @@
 //! so that they are generally applicable. For now, some of these still require
 //! the `Graph` type.
 
+pub mod articulation_points;
 pub mod astar;
 pub mod bellman_ford;
-pub mod bridges;
+pub mod coloring;
 pub mod dijkstra;
 pub mod dominators;
 pub mod feedback_arc_set;
 pub mod floyd_warshall;
+pub mod ford_fulkerson;
 pub mod isomorphism;
 pub mod k_shortest_path;
 pub mod matching;
+pub mod maximal_cliques;
+pub mod min_spanning_tree;
+pub mod page_rank;
 pub mod simple_paths;
+pub mod spfa;
+#[cfg(feature = "stable_graph")]
+pub mod steiner_tree;
 pub mod tred;
 
-use std::collections::{BinaryHeap, HashMap};
-use std::num::NonZeroUsize;
+use alloc::{vec, vec::Vec};
+use core::num::NonZeroUsize;
 
 use crate::prelude::*;
 
@@ -29,24 +37,28 @@ use super::visit::{
     IntoNodeIdentifiers, NodeCompactIndexable, NodeIndexable, Reversed, VisitMap, Visitable,
 };
 use super::EdgeType;
-use crate::data::Element;
-use crate::scored::MinScored;
 use crate::visit::Walker;
-use crate::visit::{Data, IntoNodeReferences, NodeRef};
 
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
-pub use bridges::bridges;
+pub use coloring::dsatur_coloring;
 pub use dijkstra::dijkstra;
 pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
+pub use ford_fulkerson::ford_fulkerson;
 pub use isomorphism::{
     is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
     subgraph_isomorphisms_iter,
 };
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_matching, Matching};
+pub use maximal_cliques::maximal_cliques;
+pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
+pub use page_rank::page_rank;
 pub use simple_paths::all_simple_paths;
+pub use spfa::spfa;
+#[cfg(feature = "stable_graph")]
+pub use steiner_tree::steiner_tree;
 
 /// \[Generic\] Return the number of connected components of the graph.
 ///
@@ -368,8 +380,8 @@ impl<N> TarjanScc<N> {
     /// Creates a new `TarjanScc`
     pub fn new() -> Self {
         TarjanScc {
-            index: 1,                        // Invariant: index < componentcount at all times.
-            componentcount: std::usize::MAX, // Will hold if componentcount is initialized to number of nodes - 1 or higher.
+            index: 1,                   // Invariant: index < componentcount at all times.
+            componentcount: usize::MAX, // Will hold if componentcount is initialized to number of nodes - 1 or higher.
             nodes: Vec::new(),
             stack: Vec::new(),
         }
@@ -488,7 +500,7 @@ impl<N> TarjanScc<N> {
             rindex > self.componentcount,
             "Given node has been visited but not yet assigned to a component."
         );
-        std::usize::MAX - rindex
+        usize::MAX - rindex
     }
 }
 
@@ -637,115 +649,9 @@ where
     condensed
 }
 
-/// \[Generic\] Compute a *minimum spanning tree* of a graph.
-///
-/// The input graph is treated as if undirected.
-///
-/// Using Kruskal's algorithm with runtime **O(|E| log |E|)**. We actually
-/// return a minimum spanning forest, i.e. a minimum spanning tree for each connected
-/// component of the graph.
-///
-/// The resulting graph has all the vertices of the input graph (with identical node indices),
-/// and **|V| - c** edges, where **c** is the number of connected components in `g`.
-///
-/// Use `from_elements` to create a graph from the resulting iterator.
-pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
-where
-    G::NodeWeight: Clone,
-    G::EdgeWeight: Clone + PartialOrd,
-    G: IntoNodeReferences + IntoEdgeReferences + NodeIndexable,
-{
-    // Initially each vertex is its own disjoint subgraph, track the connectedness
-    // of the pre-MST with a union & find datastructure.
-    let subgraphs = UnionFind::new(g.node_bound());
-
-    let edges = g.edge_references();
-    let mut sort_edges = BinaryHeap::with_capacity(edges.size_hint().0);
-    for edge in edges {
-        sort_edges.push(MinScored(
-            edge.weight().clone(),
-            (edge.source(), edge.target()),
-        ));
-    }
-
-    MinSpanningTree {
-        graph: g,
-        node_ids: Some(g.node_references()),
-        subgraphs,
-        sort_edges,
-        node_map: HashMap::new(),
-        node_count: 0,
-    }
-}
-
-/// An iterator producing a minimum spanning forest of a graph.
-#[derive(Debug, Clone)]
-pub struct MinSpanningTree<G>
-where
-    G: Data + IntoNodeReferences,
-{
-    graph: G,
-    node_ids: Option<G::NodeReferences>,
-    subgraphs: UnionFind<usize>,
-    #[allow(clippy::type_complexity)]
-    sort_edges: BinaryHeap<MinScored<G::EdgeWeight, (G::NodeId, G::NodeId)>>,
-    node_map: HashMap<usize, usize>,
-    node_count: usize,
-}
-
-impl<G> Iterator for MinSpanningTree<G>
-where
-    G: IntoNodeReferences + NodeIndexable,
-    G::NodeWeight: Clone,
-    G::EdgeWeight: PartialOrd,
-{
-    type Item = Element<G::NodeWeight, G::EdgeWeight>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let g = self.graph;
-        if let Some(ref mut iter) = self.node_ids {
-            if let Some(node) = iter.next() {
-                self.node_map.insert(g.to_index(node.id()), self.node_count);
-                self.node_count += 1;
-                return Some(Element::Node {
-                    weight: node.weight().clone(),
-                });
-            }
-        }
-        self.node_ids = None;
-
-        // Kruskal's algorithm.
-        // Algorithm is this:
-        //
-        // 1. Create a pre-MST with all the vertices and no edges.
-        // 2. Repeat:
-        //
-        //  a. Remove the shortest edge from the original graph.
-        //  b. If the edge connects two disjoint trees in the pre-MST,
-        //     add the edge.
-        while let Some(MinScored(score, (a, b))) = self.sort_edges.pop() {
-            // check if the edge would connect two disjoint parts
-            let (a_index, b_index) = (g.to_index(a), g.to_index(b));
-            if self.subgraphs.union(a_index, b_index) {
-                let (&a_order, &b_order) =
-                    match (self.node_map.get(&a_index), self.node_map.get(&b_index)) {
-                        (Some(a_id), Some(b_id)) => (a_id, b_id),
-                        _ => panic!("Edge references unknown node"),
-                    };
-                return Some(Element::Edge {
-                    source: a_order,
-                    target: b_order,
-                    weight: score,
-                });
-            }
-        }
-        None
-    }
-}
-
 /// An algorithm error: a cycle was found in the graph.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Cycle<N>(N);
+pub struct Cycle<N>(pub(crate) N);
 
 impl<N> Cycle<N> {
     /// Return a node id that participates in the cycle
@@ -769,14 +675,14 @@ pub struct NegativeCycle(pub ());
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
 where
     G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
-    N: Copy + PartialEq + std::fmt::Debug,
+    N: Copy + PartialEq + core::fmt::Debug,
     VM: VisitMap<N>,
 {
     let mut red = g.visit_map();
     red.visit(start);
     let mut blue = g.visit_map();
 
-    let mut stack = ::std::collections::VecDeque::new();
+    let mut stack = ::alloc::collections::VecDeque::new();
     stack.push_front(start);
 
     while let Some(node) = stack.pop_front() {
@@ -816,8 +722,8 @@ where
     true
 }
 
-use std::fmt::Debug;
-use std::ops::Add;
+use core::fmt::Debug;
+use core::ops::Add;
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Clone {}
@@ -828,6 +734,8 @@ impl<M> Measure for M where M: Debug + PartialOrd + Add<M, Output = M> + Default
 pub trait FloatMeasure: Measure + Copy {
     fn zero() -> Self;
     fn infinite() -> Self;
+    fn from_f32(val: f32) -> Self;
+    fn from_f64(val: f64) -> Self;
 }
 
 impl FloatMeasure for f32 {
@@ -836,6 +744,12 @@ impl FloatMeasure for f32 {
     }
     fn infinite() -> Self {
         1. / 0.
+    }
+    fn from_f32(val: f32) -> Self {
+        val
+    }
+    fn from_f64(val: f64) -> Self {
+        val as f32
     }
 }
 
@@ -846,12 +760,20 @@ impl FloatMeasure for f64 {
     fn infinite() -> Self {
         1. / 0.
     }
+    fn from_f32(val: f32) -> Self {
+        val as f64
+    }
+    fn from_f64(val: f64) -> Self {
+        val
+    }
 }
 
-pub trait BoundedMeasure: Measure + std::ops::Sub<Self, Output = Self> {
+pub trait BoundedMeasure: Measure + core::ops::Sub<Self, Output = Self> {
     fn min() -> Self;
     fn max() -> Self;
     fn overflowing_add(self, rhs: Self) -> (Self, bool);
+    fn from_f32(val: f32) -> Self;
+    fn from_f64(val: f64) -> Self;
 }
 
 macro_rules! impl_bounded_measure_integer(
@@ -859,15 +781,23 @@ macro_rules! impl_bounded_measure_integer(
         $(
             impl BoundedMeasure for $t {
                 fn min() -> Self {
-                    std::$t::MIN
+                    $t::MIN
                 }
 
                 fn max() -> Self {
-                    std::$t::MAX
+                    $t::MAX
                 }
 
                 fn overflowing_add(self, rhs: Self) -> (Self, bool) {
                     self.overflowing_add(rhs)
+                }
+
+                fn from_f32(val: f32) -> Self {
+                    val as $t
+                }
+
+                fn from_f64(val: f64) -> Self {
+                    val as $t
                 }
             }
         )*
@@ -881,21 +811,29 @@ macro_rules! impl_bounded_measure_float(
         $(
             impl BoundedMeasure for $t {
                 fn min() -> Self {
-                    std::$t::MIN
+                    $t::MIN
                 }
 
                 fn max() -> Self {
-                    std::$t::MAX
+                    $t::MAX
                 }
 
                 fn overflowing_add(self, rhs: Self) -> (Self, bool) {
                     // for an overflow: a + b > max: both values need to be positive and a > max - b must be satisfied
-                    let overflow = self > Self::default() && rhs > Self::default() && self > std::$t::MAX - rhs;
+                    let overflow = self > Self::default() && rhs > Self::default() && self > $t::MAX - rhs;
 
                     // for an underflow: a + b < min: overflow can not happen and both values must be negative and a < min - b must be satisfied
-                    let underflow = !overflow && self < Self::default() && rhs < Self::default() && self < std::$t::MIN - rhs;
+                    let underflow = !overflow && self < Self::default() && rhs < Self::default() && self < $t::MIN - rhs;
 
                     (self + rhs, overflow || underflow)
+                }
+
+                fn from_f32(val: f32) -> Self {
+                    val as $t
+                }
+
+                fn from_f64(val: f64) -> Self {
+                    val as $t
                 }
             }
         )*
@@ -903,3 +841,78 @@ macro_rules! impl_bounded_measure_float(
 );
 
 impl_bounded_measure_float!(f32, f64);
+
+/// A floating-point measure that can be computed from `usize`
+/// and with a default measure of proximity.  
+pub trait UnitMeasure:
+    Measure
+    + core::ops::Sub<Self, Output = Self>
+    + core::ops::Mul<Self, Output = Self>
+    + core::ops::Div<Self, Output = Self>
+    + core::iter::Sum
+{
+    fn zero() -> Self;
+    fn one() -> Self;
+    fn from_usize(nb: usize) -> Self;
+    fn default_tol() -> Self;
+    fn from_f32(val: f32) -> Self;
+    fn from_f64(val: f64) -> Self;
+}
+
+macro_rules! impl_unit_measure(
+    ( $( $t:ident ),* )=> {
+        $(
+            impl UnitMeasure for $t {
+                fn zero() -> Self {
+                    0 as $t
+                }
+                fn one() -> Self {
+                    1 as $t
+                }
+
+                fn from_usize(nb: usize) -> Self {
+                    nb as $t
+                }
+
+                fn default_tol() -> Self {
+                    1e-6 as $t
+                }
+
+                fn from_f32(val: f32) -> Self {
+                    val as $t
+                }
+
+                fn from_f64(val: f64) -> Self {
+                    val as $t
+                }
+            }
+
+        )*
+    }
+);
+impl_unit_measure!(f32, f64);
+
+/// Some measure of positive numbers, assuming positive
+/// float-pointing numbers
+pub trait PositiveMeasure: Measure + Copy {
+    fn zero() -> Self;
+    fn max() -> Self;
+}
+
+macro_rules! impl_positive_measure(
+    ( $( $t:ident ),* )=> {
+        $(
+            impl PositiveMeasure for $t {
+                fn zero() -> Self {
+                    0 as $t
+                }
+                fn max() -> Self {
+                    $t::MAX
+                }
+            }
+
+        )*
+    }
+);
+
+impl_positive_measure!(u8, u16, u32, u64, u128, usize, f32, f64);

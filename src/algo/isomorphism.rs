@@ -1,4 +1,5 @@
-use std::convert::TryFrom;
+use alloc::{vec, vec::Vec};
+use core::convert::TryFrom;
 
 use crate::data::DataMap;
 use crate::visit::EdgeCount;
@@ -50,7 +51,7 @@ mod state {
             let c0 = g.node_count();
             Vf2State {
                 graph: g,
-                mapping: vec![std::usize::MAX; c0],
+                mapping: vec![usize::MAX; c0],
                 out: vec![0; c0],
                 ins: vec![0; c0 * (g.is_directed() as usize)],
                 out_size: 0,
@@ -91,7 +92,7 @@ mod state {
         /// Restore the state to before the last added mapping
         pub fn pop_mapping(&mut self, from: G::NodeId) {
             // undo (n, m) mapping
-            self.mapping[self.graph.to_index(from)] = std::usize::MAX;
+            self.mapping[self.graph.to_index(from)] = usize::MAX;
 
             // unmark in ins and outs
             for ix in self.graph.neighbors_directed(from, Outgoing) {
@@ -118,7 +119,7 @@ mod state {
                 .iter()
                 .enumerate()
                 .find(move |&(index, &elt)| {
-                    elt > 0 && self.mapping[from_index + index] == std::usize::MAX
+                    elt > 0 && self.mapping[from_index + index] == usize::MAX
                 })
                 .map(|(index, _)| index)
         }
@@ -132,7 +133,7 @@ mod state {
                 .iter()
                 .enumerate()
                 .find(move |&(index, &elt)| {
-                    elt > 0 && self.mapping[from_index + index] == std::usize::MAX
+                    elt > 0 && self.mapping[from_index + index] == usize::MAX
                 })
                 .map(|(index, _)| index)
         }
@@ -142,7 +143,7 @@ mod state {
             self.mapping[from_index..]
                 .iter()
                 .enumerate()
-                .find(|&(_, &elt)| elt == std::usize::MAX)
+                .find(|&(_, &elt)| elt == usize::MAX)
                 .map(|(index, _)| index)
         }
     }
@@ -320,7 +321,7 @@ mod matching {
                     } else {
                         field!(st, 1 - $j).graph.to_index(field!(nodes, 1 - $j))
                     };
-                    if m_neigh == std::usize::MAX {
+                    if m_neigh == usize::MAX {
                         continue;
                     }
                     let has_edge = field!(st, 1 - $j).graph.is_adjacent(
@@ -346,7 +347,7 @@ mod matching {
                     pred_count += 1;
                     // the self loop case is handled in outgoing
                     let m_neigh = field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)];
-                    if m_neigh == std::usize::MAX {
+                    if m_neigh == usize::MAX {
                         continue;
                     }
                     let has_edge = field!(st, 1 - $j).graph.is_adjacent(
@@ -404,7 +405,7 @@ mod matching {
                         } else {
                             field!(st, 1 - $j).graph.to_index(field!(nodes, 1 - $j))
                         };
-                        if m_neigh == std::usize::MAX {
+                        if m_neigh == usize::MAX {
                             continue;
                         }
 
@@ -431,7 +432,7 @@ mod matching {
                             // the self loop case is handled in outgoing
                             let m_neigh =
                                 field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)];
-                            if m_neigh == std::usize::MAX {
+                            if m_neigh == usize::MAX {
                                 continue;
                             }
 
@@ -731,7 +732,7 @@ mod matching {
         }
     }
 
-    impl<'a, 'b, 'c, G0, G1, NM, EM> Iterator for GraphMatcher<'a, 'b, 'c, G0, G1, NM, EM>
+    impl<G0, G1, NM, EM> Iterator for GraphMatcher<'_, '_, '_, G0, G1, NM, EM>
     where
         G0: NodeCompactIndexable
             + EdgeCount
@@ -766,7 +767,7 @@ mod matching {
 
             // We hardcode n! values into an array that accounts for architectures
             // with smaller usizes to get our upper bound.
-            let upper_bounds: Vec<Option<usize>> = vec![
+            let upper_bounds: Vec<Option<usize>> = [
                 1u64,
                 1,
                 2,

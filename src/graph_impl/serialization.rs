@@ -1,18 +1,15 @@
-use serde::de::Error;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
-use std::marker::PhantomData;
-
-use crate::prelude::*;
-
-use crate::graph::Node;
-use crate::graph::{Edge, IndexType};
-use crate::serde_utils::CollectSeqWithLength;
-use crate::serde_utils::MappedSequenceVisitor;
-use crate::serde_utils::{FromDeserialized, IntoSerializable};
-use crate::EdgeType;
+use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 use super::{EdgeIndex, NodeIndex};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use crate::graph::{Edge, IndexType, Node};
+use crate::prelude::*;
+use crate::serde_utils::{
+    CollectSeqWithLength, FromDeserialized, IntoSerializable, MappedSequenceVisitor,
+};
+use crate::EdgeType;
 
 /// Serialization representation for Graph
 /// Keep in sync with deserialization and StableGraph
@@ -305,7 +302,7 @@ where
     ))
 }
 
-impl<'a, N, E, Ty, Ix> FromDeserialized for Graph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> FromDeserialized for Graph<N, E, Ty, Ix>
 where
     Ix: IndexType,
     Ty: EdgeType,
@@ -326,11 +323,7 @@ where
             Err(invalid_length_err::<Ix, _>("edge", edges.len()))?
         }
 
-        let mut gr = Graph {
-            nodes: nodes,
-            edges: edges,
-            ty: ty,
-        };
+        let mut gr = Graph { nodes, edges, ty };
         let nc = gr.node_count();
         gr.link_edges()
             .map_err(|i| invalid_node_err(i.index(), nc))?;

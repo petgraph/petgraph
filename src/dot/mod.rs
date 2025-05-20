@@ -1,6 +1,7 @@
 //! Simple graphviz dot file format output.
 
-use std::fmt::{self, Display, Write};
+use alloc::string::String;
+use core::fmt::{self, Display, Write};
 
 use crate::visit::{
     EdgeRef, GraphProp, IntoEdgeReferences, IntoNodeReferences, NodeIndexable, NodeRef,
@@ -94,11 +95,25 @@ where
     }
 }
 
+/// Direction of graph layout.
+///
+/// <https://graphviz.org/docs/attrs/rankdir/>
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RankDir {
+    /// Top to bottom
+    TB,
+    /// Bottom to top
+    BT,
+    /// Left to right
+    LR,
+    /// Right to left
+    RL,
+}
+
 /// `Dot` configuration.
 ///
 /// This enum does not have an exhaustive definition (will be expanded)
-// TODO: #[non_exhaustive] once MSRV >= 1.40,
-// and/or for a breaking change make this something like an EnumSet: https://docs.rs/enumset
+#[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
 pub enum Config {
     /// Use indices for node labels.
@@ -111,8 +126,8 @@ pub enum Config {
     NodeNoLabel,
     /// Do not print the graph/digraph string.
     GraphContentOnly,
-    #[doc(hidden)]
-    _Incomplete(()),
+    /// Sets direction of graph layout.
+    RankDir(RankDir),
 }
 macro_rules! make_config_struct {
     ($($variant:ident,)*) => {
@@ -120,15 +135,16 @@ macro_rules! make_config_struct {
         #[derive(Default)]
         struct Configs {
             $($variant: bool,)*
+            RankDir: Option<RankDir>,
         }
         impl Configs {
             #[inline]
             fn extract(configs: &[Config]) -> Self {
                 let mut conf = Self::default();
                 for c in configs {
-                    match *c {
+                    match c {
                         $(Config::$variant => conf.$variant = true,)*
-                        Config::_Incomplete(()) => {}
+                        Config::RankDir(dir) => conf.RankDir = Some(*dir),
                     }
                 }
                 conf
@@ -144,7 +160,7 @@ make_config_struct!(
     GraphContentOnly,
 );
 
-impl<'a, G> Dot<'a, G>
+impl<G> Dot<'_, G>
 where
     G: IntoNodeReferences + IntoEdgeReferences + NodeIndexable + GraphProp,
 {
@@ -156,6 +172,16 @@ where
         let g = self.graph;
         if !self.config.GraphContentOnly {
             writeln!(f, "{} {{", TYPE[g.is_directed() as usize])?;
+        }
+
+        if let Some(rank_dir) = &self.config.RankDir {
+            let value = match rank_dir {
+                RankDir::TB => "TB",
+                RankDir::BT => "BT",
+                RankDir::LR => "LR",
+                RankDir::RL => "RL",
+            };
+            writeln!(f, "{}rankdir=\"{}\"", INDENT, value)?;
         }
 
         // output all labels
@@ -201,7 +227,7 @@ where
     }
 }
 
-impl<'a, G> fmt::Display for Dot<'a, G>
+impl<G> fmt::Display for Dot<'_, G>
 where
     G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
     G::EdgeWeight: fmt::Display,
@@ -212,7 +238,29 @@ where
     }
 }
 
-impl<'a, G> fmt::Debug for Dot<'a, G>
+impl<G> fmt::LowerHex for Dot<'_, G>
+where
+    G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
+    G::EdgeWeight: fmt::LowerHex,
+    G::NodeWeight: fmt::LowerHex,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.graph_fmt(f, fmt::LowerHex::fmt, fmt::LowerHex::fmt)
+    }
+}
+
+impl<G> fmt::UpperHex for Dot<'_, G>
+where
+    G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
+    G::EdgeWeight: fmt::UpperHex,
+    G::NodeWeight: fmt::UpperHex,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.graph_fmt(f, fmt::UpperHex::fmt, fmt::UpperHex::fmt)
+    }
+}
+
+impl<G> fmt::Debug for Dot<'_, G>
 where
     G: IntoEdgeReferences + IntoNodeReferences + NodeIndexable + GraphProp,
     G::EdgeWeight: fmt::Debug,
@@ -276,12 +324,18 @@ where
     }
 }
 
+#[cfg(feature = "dot_parser")]
+#[macro_use]
+pub mod dot_parser;
+
 #[cfg(test)]
 mod test {
-    use super::{Config, Dot, Escaper};
+    use alloc::{format, string::String};
+    use core::fmt::Write;
+
+    use super::{Config, Dot, Escaper, RankDir};
     use crate::prelude::Graph;
     use crate::visit::NodeRef;
-    use std::fmt::Write;
 
     #[test]
     fn test_escape() {
@@ -329,6 +383,62 @@ mod test {
         assert_eq!(
             dot,
             "digraph {\n    0 [ ]\n    1 [ ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
+    }
+
+    #[test]
+    fn test_rankdir_bt_option() {
+        let graph = simple_graph();
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::RankDir(RankDir::TB)])
+        );
+        assert_eq!(
+            dot,
+            "digraph {\n    rankdir=\"TB\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
+            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
+    }
+
+    #[test]
+    fn test_rankdir_tb_option() {
+        let graph = simple_graph();
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::RankDir(RankDir::BT)])
+        );
+        assert_eq!(
+            dot,
+            "digraph {\n    rankdir=\"BT\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
+            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
+    }
+
+    #[test]
+    fn test_rankdir_lr_option() {
+        let graph = simple_graph();
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::RankDir(RankDir::LR)])
+        );
+        assert_eq!(
+            dot,
+            "digraph {\n    rankdir=\"LR\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
+            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
+    }
+
+    #[test]
+    fn test_rankdir_rl_option() {
+        let graph = simple_graph();
+        let dot = format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::RankDir(RankDir::RL)])
+        );
+        assert_eq!(
+            dot,
+            "digraph {\n    rankdir=\"RL\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
+            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
         );
     }
 

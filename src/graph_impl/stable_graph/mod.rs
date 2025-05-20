@@ -3,26 +3,24 @@
 //! Depends on `feature = "stable_graph"`.
 //!
 
-use std::cmp;
-use std::fmt;
-use std::iter;
-use std::marker::PhantomData;
-use std::mem::replace;
-use std::mem::size_of;
-use std::ops::{Index, IndexMut};
-use std::slice;
+use alloc::vec;
+use core::{
+    cmp, fmt, iter,
+    marker::PhantomData,
+    mem::size_of,
+    ops::{Index, IndexMut},
+    slice,
+};
 
 use fixedbitset::FixedBitSet;
 
-use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
-
+use super::{index_twice, Edge, Frozen, GraphError, Node, Pair, DIRECTIONS};
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 use crate::iter_utils::IterUtilsExt;
-
-use super::{index_twice, Edge, Frozen, Node, Pair, DIRECTIONS};
-use crate::visit;
-use crate::visit::{EdgeIndexable, EdgeRef, IntoEdgeReferences, NodeIndexable};
-use crate::IntoWeightedEdge;
+use crate::visit::{self, EdgeIndexable, EdgeRef, IntoEdgeReferences, NodeIndexable};
+use crate::{
+    Directed, Direction, EdgeType, Graph, Incoming, IntoWeightedEdge, Outgoing, Undirected,
+};
 
 // reexport those things that are shared with Graph
 #[doc(no_inline)]
@@ -55,16 +53,16 @@ mod serialization;
 /// is some local measure of edge count.
 ///
 /// - Nodes and edges are each numbered in an interval from *0* to some number
-/// *m*, but *not all* indices in the range are valid, since gaps are formed
-/// by deletions.
+///   *m*, but *not all* indices in the range are valid, since gaps are formed
+///   by deletions.
 ///
 /// - You can select graph index integer type after the size of the graph. A smaller
-/// size may have better performance.
+///   size may have better performance.
 ///
 /// - Using indices allows mutation while traversing the graph, see `Dfs`.
 ///
 /// - The `StableGraph` is a regular rust collection and is `Send` and `Sync`
-/// (as long as associated data `N` and `E` are).
+///   (as long as associated data `N` and `E` are).
 ///
 /// - Indices don't allow as much compile time checking as references.
 ///
@@ -261,14 +259,26 @@ where
     ///
     /// **Panics** if the `StableGraph` is at the maximum number of nodes for
     /// its index type.
+    #[track_caller]
     pub fn add_node(&mut self, weight: N) -> NodeIndex<Ix> {
+        self.try_add_node(weight).unwrap()
+    }
+
+    /// Add a node (also called vertex) with associated data `weight` to the graph.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Return the index of the new node.
+    ///
+    /// Return [`GraphError::NodeIxLimit`] if the `StableGraph` is at the maximum number of nodes for its index.
+    pub fn try_add_node(&mut self, weight: N) -> Result<NodeIndex<Ix>, GraphError> {
         if self.free_node != NodeIndex::end() {
             let node_idx = self.free_node;
             self.occupy_vacant_node(node_idx, weight);
-            node_idx
+            Ok(node_idx)
         } else {
             self.node_count += 1;
-            self.g.add_node(Some(weight))
+            self.g.try_add_node(Some(weight))
         }
     }
 
@@ -348,7 +358,37 @@ where
     /// its index type.
     ///
     /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
+    #[track_caller]
     pub fn add_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
+        let res = self.try_add_edge(a, b, weight);
+        if let Err(GraphError::NodeMissed(i)) = res {
+            panic!(
+                "StableGraph::add_edge: node index {} is not a node in the graph",
+                i
+            );
+        }
+        res.unwrap()
+    }
+
+    /// Try to add an edge from `a` to `b` to the graph, with its associated
+    /// data `weight`.
+    ///
+    /// Return the index of the new edge.
+    ///
+    /// Computes in **O(1)** time.
+    ///
+    /// Possible errors:
+    /// - [`GraphError::NodeMissed`] - if any of the nodes don't exist.<br>
+    /// - [`GraphError::EdgeIxLimit`] if the `StableGraph` is at the maximum number of edges for its index
+    ///   type (N/A if usize).
+    ///
+    /// **Note:** `StableGraph` allows adding parallel (“duplicate”) edges.
+    pub fn try_add_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<EdgeIndex<Ix>, GraphError> {
         let edge_idx;
         let mut new_edge = None::<Edge<_, _>>;
         {
@@ -357,13 +397,15 @@ where
             if self.free_edge != EdgeIndex::end() {
                 edge_idx = self.free_edge;
                 edge = &mut self.g.edges[edge_idx.index()];
-                let _old = replace(&mut edge.weight, Some(weight));
+                let _old = edge.weight.replace(weight);
                 debug_assert!(_old.is_none());
                 self.free_edge = edge.next[0];
                 edge.node = [a, b];
             } else {
                 edge_idx = EdgeIndex::new(self.g.edges.len());
-                assert!(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx);
+                if !(<Ix as IndexType>::max().index() == !0 || EdgeIndex::end() != edge_idx) {
+                    return Err(GraphError::EdgeIxLimit);
+                }
                 new_edge = Some(Edge {
                     weight: Some(weight),
                     node: [a, b],
@@ -399,17 +441,14 @@ where
                 }
             };
             if let Some(i) = wrong_index {
-                panic!(
-                    "StableGraph::add_edge: node index {} is not a node in the graph",
-                    i
-                );
+                return Err(GraphError::NodeMissed(i));
             }
             self.edge_count += 1;
         }
         if let Some(edge) = new_edge {
             self.g.edges.push(edge);
         }
-        edge_idx
+        Ok(edge_idx)
     }
 
     /// free_edge: Which free list to update for the vacancy
@@ -434,13 +473,36 @@ where
     /// Computes in **O(e')** time, where **e'** is the number of edges
     /// connected to `a` (and `b`, if the graph edges are undirected).
     ///
-    /// **Panics** if any of the nodes don't exist.
+    /// **Panics** if any of the nodes don't exist
+    /// or the stable graph is at the maximum number of edges for its index (when adding new edge).
+    #[track_caller]
     pub fn update_edge(&mut self, a: NodeIndex<Ix>, b: NodeIndex<Ix>, weight: E) -> EdgeIndex<Ix> {
+        self.try_update_edge(a, b, weight).unwrap()
+    }
+
+    /// Try to add or update an edge from `a` to `b`.
+    /// If the edge already exists, its weight is updated.
+    ///
+    /// Return the index of the affected edge.
+    ///
+    /// Computes in **O(e')** time, where **e'** is the number of edges
+    /// connected to `a` (and `b`, if the graph edges are undirected).
+    ///
+    /// Possible errors:
+    /// - [`GraphError::NodeMissed`] - if any of the nodes don't exist.<br>
+    /// - [`GraphError::EdgeIxLimit`] if the `StableGraph` is at the maximum number of edges for its index
+    ///   type (N/A if usize).
+    pub fn try_update_edge(
+        &mut self,
+        a: NodeIndex<Ix>,
+        b: NodeIndex<Ix>,
+        weight: E,
+    ) -> Result<EdgeIndex<Ix>, GraphError> {
         if let Some(ix) = self.find_edge(a, b) {
             self[ix] = weight;
-            return ix;
+            return Ok(ix);
         }
-        self.add_edge(a, b, weight)
+        self.try_add_edge(a, b, weight)
     }
 
     /// Remove an edge and return its edge weight, or `None` if it didn't exist.
@@ -755,7 +817,8 @@ where
     /// Index the `StableGraph` by two indices, any combination of
     /// node or edge indices is fine.
     ///
-    /// **Panics** if the indices are equal or if they are out of bounds.
+    /// **Panics** if the indices are equal or if they are not found.
+    #[track_caller]
     pub fn index_twice_mut<T, U>(
         &mut self,
         i: T,
@@ -994,7 +1057,7 @@ where
     /// updating the free nodes doubly linked list.
     fn occupy_vacant_node(&mut self, node_idx: NodeIndex<Ix>, weight: N) {
         let node_slot = &mut self.g.nodes[node_idx.index()];
-        let _old = replace(&mut node_slot.weight, Some(weight));
+        let _old = node_slot.weight.replace(weight);
         debug_assert!(_old.is_none());
         let previous_node = node_slot.next[1];
         let next_node = node_slot.next[0];
@@ -1318,7 +1381,7 @@ where
     }
 }
 
-impl<'a, N, Ix> DoubleEndedIterator for NodeReferences<'a, N, Ix>
+impl<N, Ix> DoubleEndedIterator for NodeReferences<'_, N, Ix>
 where
     Ix: IndexType,
 {
@@ -1336,15 +1399,15 @@ pub struct EdgeReference<'a, E: 'a, Ix = DefaultIx> {
     weight: &'a E,
 }
 
-impl<'a, E, Ix: IndexType> Clone for EdgeReference<'a, E, Ix> {
+impl<E, Ix: IndexType> Clone for EdgeReference<'_, E, Ix> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<'a, E, Ix: IndexType> Copy for EdgeReference<'a, E, Ix> {}
+impl<E, Ix: IndexType> Copy for EdgeReference<'_, E, Ix> {}
 
-impl<'a, E, Ix: IndexType> PartialEq for EdgeReference<'a, E, Ix>
+impl<E, Ix: IndexType> PartialEq for EdgeReference<'_, E, Ix>
 where
     E: PartialEq,
 {
@@ -1516,7 +1579,7 @@ where
     }
 }
 
-impl<'a, E, Ix> DoubleEndedIterator for EdgeReferences<'a, E, Ix>
+impl<E, Ix> DoubleEndedIterator for EdgeReferences<'_, E, Ix>
 where
     Ix: IndexType,
 {
@@ -1580,7 +1643,7 @@ pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> {
     next: [EdgeIndex<Ix>; 2],
 }
 
-impl<'a, E, Ix> Neighbors<'a, E, Ix>
+impl<E, Ix> Neighbors<'_, E, Ix>
 where
     Ix: IndexType,
 {
@@ -1599,7 +1662,7 @@ where
     }
 }
 
-impl<'a, E, Ix> Iterator for Neighbors<'a, E, Ix>
+impl<E, Ix> Iterator for Neighbors<'_, E, Ix>
 where
     Ix: IndexType,
 {
@@ -1709,7 +1772,7 @@ pub struct NodeIndices<'a, N: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<Option<N>, Ix>>>,
 }
 
-impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
+impl<N, Ix: IndexType> Iterator for NodeIndices<'_, N, Ix> {
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1727,7 +1790,7 @@ impl<'a, N, Ix: IndexType> Iterator for NodeIndices<'a, N, Ix> {
     }
 }
 
-impl<'a, N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'a, N, Ix> {
+impl<N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'_, N, Ix> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.ex_rfind_map(|(i, node)| {
             if node.weight.is_some() {
@@ -1745,7 +1808,7 @@ pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
 }
 
-impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
+impl<E, Ix: IndexType> Iterator for EdgeIndices<'_, E, Ix> {
     type Item = EdgeIndex<Ix>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1763,7 +1826,7 @@ impl<'a, E, Ix: IndexType> Iterator for EdgeIndices<'a, E, Ix> {
     }
 }
 
-impl<'a, E, Ix: IndexType> DoubleEndedIterator for EdgeIndices<'a, E, Ix> {
+impl<E, Ix: IndexType> DoubleEndedIterator for EdgeIndices<'_, E, Ix> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.ex_rfind_map(|(i, node)| {
             if node.weight.is_some() {
@@ -1900,7 +1963,7 @@ where
     }
 }
 
-impl<'a, Ix, E> visit::EdgeRef for EdgeReference<'a, E, Ix>
+impl<Ix, E> visit::EdgeRef for EdgeReference<'_, E, Ix>
 where
     Ix: IndexType,
 {
@@ -1984,6 +2047,8 @@ where
 
 #[test]
 fn stable_graph() {
+    use std::println;
+
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);
     let a = gr.add_node(0);
     let b = gr.add_node(1);
@@ -2014,6 +2079,8 @@ fn stable_graph() {
 
 #[test]
 fn dfs() {
+    use std::println;
+
     use crate::visit::Dfs;
 
     let mut gr = StableGraph::<_, _>::with_capacity(0, 0);

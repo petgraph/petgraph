@@ -1,4 +1,4 @@
-use std::ops::{Deref, Index, IndexMut};
+use core::ops::{Deref, Index, IndexMut};
 
 use super::Frozen;
 use crate::data::{DataMap, DataMapMut};
@@ -21,14 +21,14 @@ impl<'a, G> Frozen<'a, G> {
 
 /// Deref allows transparent access to all shared reference (read-only)
 /// functionality in the underlying graph.
-impl<'a, G> Deref for Frozen<'a, G> {
+impl<G> Deref for Frozen<'_, G> {
     type Target = G;
     fn deref(&self) -> &G {
         self.0
     }
 }
 
-impl<'a, G, I> Index<I> for Frozen<'a, G>
+impl<G, I> Index<I> for Frozen<'_, G>
 where
     G: Index<I>,
 {
@@ -38,7 +38,7 @@ where
     }
 }
 
-impl<'a, G, I> IndexMut<I> for Frozen<'a, G>
+impl<G, I> IndexMut<I> for Frozen<'_, G>
 where
     G: IndexMut<I>,
 {
@@ -47,7 +47,7 @@ where
     }
 }
 
-impl<'a, N, E, Ty, Ix> Frozen<'a, Graph<N, E, Ty, Ix>>
+impl<N, E, Ty, Ix> Frozen<'_, Graph<N, E, Ty, Ix>>
 where
     Ty: EdgeType,
     Ix: IndexType,
@@ -57,6 +57,7 @@ where
     /// node or edge indices is fine.
     ///
     /// **Panics** if the indices are equal or if they are out of bounds.
+    #[track_caller]
     pub fn index_twice_mut<T, U>(
         &mut self,
         i: T,
@@ -80,7 +81,7 @@ macro_rules! access0 {
     };
 }
 
-impl<'a, G> GraphBase for Frozen<'a, G>
+impl<G> GraphBase for Frozen<'_, G>
 where
     G: GraphBase,
 {

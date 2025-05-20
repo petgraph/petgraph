@@ -12,9 +12,10 @@
 //! strictly dominates **B** and there does not exist any node **C** where **A**
 //! dominates **C** and **C** dominates **B**.
 
-use std::cmp::Ordering;
-use std::collections::{hash_map::Iter, HashMap, HashSet};
-use std::hash::Hash;
+use alloc::{vec, vec::Vec};
+use core::{cmp::Ordering, hash::Hash};
+
+use hashbrown::{hash_map::Iter, HashMap, HashSet};
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 
@@ -132,9 +133,11 @@ where
     type Item = N;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(next) = self.iter.next() {
-            if next.1 == &self.node {
-                return Some(*next.0);
+        for (dominator, dominated) in self.iter.by_ref() {
+            // The root node dominates itself, but it should not be included in
+            // the results.
+            if dominated == &self.node && dominated != dominator {
+                return Some(*dominator);
             }
         }
         None
@@ -147,7 +150,7 @@ where
 
 /// The undefined dominator sentinel, for when we have not yet discovered a
 /// node's dominator.
-const UNDEFINED: usize = ::std::usize::MAX;
+const UNDEFINED: usize = usize::MAX;
 
 /// This is an implementation of the engineered ["Simple, Fast Dominance
 /// Algorithm"][0] discovered by Cooper et al.
@@ -157,7 +160,7 @@ const UNDEFINED: usize = ::std::usize::MAX;
 /// Cooper et al found it to be faster in practice on control flow graphs of up
 /// to ~30,000 vertices.
 ///
-/// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
+/// [0]: http://www.hipersoft.rice.edu/grads/publications/dom14.pdf
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
 where
     G: IntoNeighbors + Visitable,
@@ -225,8 +228,7 @@ where
     }
 
     // All done! Translate the indices back into proper `G::NodeId`s.
-
-    debug_assert!(!dominators.iter().any(|&dom| dom == UNDEFINED));
+    debug_assert!(!dominators.contains(&UNDEFINED));
 
     Dominators {
         root,
@@ -267,7 +269,7 @@ where
                         .map(|p| *node_to_post_order_idx.get(&p).unwrap())
                         .collect()
                 })
-                .unwrap_or_else(Vec::new)
+                .unwrap_or_default()
         })
         .collect()
 }
@@ -326,5 +328,6 @@ mod tests {
         let dom_by: Vec<_> = doms.immediately_dominated_by(1).collect();
         assert_eq!(vec![2], dom_by);
         assert_eq!(None, doms.immediately_dominated_by(99).next());
+        assert_eq!(1, doms.immediately_dominated_by(0).count());
     }
 }

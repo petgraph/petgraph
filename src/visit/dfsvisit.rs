@@ -96,17 +96,10 @@ impl<B> ControlFlow for Control<B> {
         Control::Continue
     }
     fn should_break(&self) -> bool {
-        if let Control::Break(_) = *self {
-            true
-        } else {
-            false
-        }
+        matches!(*self, Control::Break(_))
     }
     fn should_prune(&self) -> bool {
-        match *self {
-            Control::Prune => true,
-            Control::Continue | Control::Break(_) => false,
-        }
+        matches!(*self, Control::Prune)
     }
 }
 
@@ -158,7 +151,7 @@ impl<B> Default for Control<B> {
 /// `C: ControlFlow`. The implementation for `()` will continue until finished.
 /// For `Result`, upon encountering an `E` it will break, otherwise acting the same as `C`.
 ///
-/// ***Panics** if you attempt to prune a node from its `Finish` event.
+/// **Panics** if you attempt to prune a node from its `Finish` event.
 ///
 /// [de]: enum.DfsEvent.html
 ///
@@ -244,6 +237,7 @@ impl<B> Default for Control<B> {
 /// println!("number of backedges encountered: {}", back_edges);
 /// println!("back edge: {:?}", result);
 /// ```
+#[track_caller]
 pub fn depth_first_search<G, I, F, C>(graph: G, starts: I, mut visitor: F) -> C
 where
     G: IntoNeighbors + Visitable,
@@ -264,12 +258,12 @@ where
     C::continuing()
 }
 
-fn dfs_visitor<G, F, C>(
+pub(crate) fn dfs_visitor<G, F, C>(
     graph: G,
     u: G::NodeId,
     visitor: &mut F,
-    discovered: &mut G::Map,
-    finished: &mut G::Map,
+    discovered: &mut impl VisitMap<G::NodeId>,
+    finished: &mut impl VisitMap<G::NodeId>,
     time: &mut Time,
 ) -> C
 where

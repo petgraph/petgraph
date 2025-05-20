@@ -1,12 +1,11 @@
 //! Formatting utils
 
-use std::cell::RefCell;
-use std::fmt;
+use core::{cell::RefCell, fmt};
 
 /// Format the iterator like a map
 pub struct DebugMap<F>(pub F);
 
-impl<'a, F, I, K, V> fmt::Debug for DebugMap<F>
+impl<F, I, K, V> fmt::Debug for DebugMap<F>
 where
     F: Fn() -> I,
     I: IntoIterator<Item = (K, V)>,
@@ -58,7 +57,7 @@ pub trait IterFormatExt: Iterator {
 
 impl<I> IterFormatExt for I where I: Iterator {}
 
-impl<'a, I> Format<'a, I>
+impl<I> Format<'_, I>
 where
     I: Iterator,
 {

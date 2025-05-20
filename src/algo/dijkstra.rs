@@ -1,7 +1,10 @@
-use std::collections::hash_map::Entry::{Occupied, Vacant};
-use std::collections::{BinaryHeap, HashMap};
+use alloc::collections::BinaryHeap;
+use core::hash::Hash;
 
-use std::hash::Hash;
+use hashbrown::hash_map::{
+    Entry::{Occupied, Vacant},
+    HashMap,
+};
 
 use crate::algo::Measure;
 use crate::scored::MinScored;
@@ -25,7 +28,7 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 /// use petgraph::Graph;
 /// use petgraph::algo::dijkstra;
 /// use petgraph::prelude::*;
-/// use std::collections::HashMap;
+/// use hashbrown::HashMap;
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight

@@ -1,5 +1,6 @@
-use std::collections::HashSet;
-use std::hash::Hash;
+use core::hash::Hash;
+
+use hashbrown::HashSet;
 
 use petgraph::algo::{greedy_matching, maximum_matching};
 use petgraph::prelude::*;
@@ -54,7 +55,7 @@ fn greedy_empty() {
 
 #[test]
 fn greedy_disjoint() {
-    let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (2, 3)]);
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (2, 3)]);
     let m = greedy_matching(&g);
     assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
     assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
@@ -62,7 +63,7 @@ fn greedy_disjoint() {
 
 #[test]
 fn greedy_odd_path() {
-    let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (1, 2), (2, 3)]);
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (1, 2), (2, 3)]);
     let m = greedy_matching(&g);
     assert_one_of!(collect(m.edges()), [set![(0, 1), (2, 3)], set![(1, 2)]]);
     assert_one_of!(collect(m.nodes()), [set![0, 1, 2, 3], set![1, 2]]);
@@ -70,7 +71,7 @@ fn greedy_odd_path() {
 
 #[test]
 fn greedy_star() {
-    let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (0, 2), (0, 3)]);
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (0, 2), (0, 3)]);
     let m = greedy_matching(&g);
     assert_one_of!(
         collect(m.edges()),
@@ -89,7 +90,7 @@ fn maximum_empty() {
 
 #[test]
 fn maximum_disjoint() {
-    let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (2, 3)]);
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (2, 3)]);
     let m = maximum_matching(&g);
     assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
     assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
@@ -97,7 +98,7 @@ fn maximum_disjoint() {
 
 #[test]
 fn maximum_odd_path() {
-    let g: UnGraph<(), ()> = UnGraph::from_edges(&[(0, 1), (1, 2), (2, 3)]);
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (1, 2), (2, 3)]);
     let m = maximum_matching(&g);
     assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
     assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
@@ -107,7 +108,7 @@ fn maximum_odd_path() {
 #[test]
 fn maximum_in_stable_graph() {
     let mut g: StableUnGraph<(), ()> =
-        StableUnGraph::from_edges(&[(0, 1), (0, 2), (1, 2), (1, 3), (2, 4), (3, 4), (3, 5)]);
+        StableUnGraph::from_edges([(0, 1), (0, 2), (1, 2), (1, 3), (2, 4), (3, 4), (3, 5)]);
 
     // Create a hole by removing node that would otherwise belong to the maximum
     // matching.
@@ -131,7 +132,7 @@ fn maximum_in_stable_graph() {
 #[cfg(feature = "stable_graph")]
 #[test]
 fn is_perfect_in_stable_graph() {
-    let mut g: StableUnGraph<(), ()> = StableUnGraph::from_edges(&[(0, 1), (1, 2), (2, 3)]);
+    let mut g: StableUnGraph<(), ()> = StableUnGraph::from_edges([(0, 1), (1, 2), (2, 3)]);
     g.remove_node(NodeIndex::new(0));
     g.remove_node(NodeIndex::new(1));
 

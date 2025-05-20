@@ -44,7 +44,7 @@ fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
     let edges_to_add: Vec<_> = nodes
         .iter()
         .enumerate()
-        .map(|(i, &node)| {
+        .flat_map(|(i, &node)| {
             let edges: Vec<_> = (0..5)
                 .map(|j| (i + j + 1) % nodes.len())
                 .map(|j| (node, nodes[j]))
@@ -52,7 +52,6 @@ fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
 
             edges
         })
-        .flatten()
         .collect();
 
     b.iter(|| {
@@ -67,7 +66,7 @@ fn add_5_edges_for_each_of_100_nodes(b: &mut test::Bencher) {
 #[bench]
 fn add_edges_from_root(bench: &mut test::Bencher) {
     bench.iter(|| {
-        let mut gr = MatrixGraph::new();
+        let mut gr = MatrixGraph::<_, _>::new();
         let a = gr.add_node(());
 
         for _ in 0..100 {
@@ -80,7 +79,7 @@ fn add_edges_from_root(bench: &mut test::Bencher) {
 #[bench]
 fn add_adjacent_edges(bench: &mut test::Bencher) {
     bench.iter(|| {
-        let mut gr = MatrixGraph::new();
+        let mut gr = MatrixGraph::<_, _>::new();
         let mut prev = None;
         for _ in 0..100 {
             let b = gr.add_node(());
@@ -152,7 +151,7 @@ const BIGGER: &str = "
 ";
 
 /// Parse a text adjacency matrix format into a directed graph
-fn parse_matrix<Ty: EdgeType>(s: &str) -> MatrixGraph<(), (), Ty> {
+fn parse_matrix<Ty: EdgeType>(s: &str) -> MatrixGraph<(), (), std::hash::RandomState, Ty> {
     let mut gr = MatrixGraph::default();
     let s = s.trim();
     let lines = s.lines().filter(|l| !l.is_empty());

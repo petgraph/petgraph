@@ -102,8 +102,25 @@
 //!   Defaults on. Enables [`StableGraph`](./stable_graph/struct.StableGraph.html).
 //! * **matrix_graph** -
 //!   Defaults on. Enables [`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html).
+//! * **rayon** -
+//!   Defaults off. Enables parallel versions of iterators and algorithms using
+//!   [`rayon`](https://docs.rs/rayon/latest/rayon/) crate. Requires the `std` feature.
+//! * **std** -
+//!   Defaults on. Enables the Rust Standard Library. Disabling the `std` feature makes it possible to use `petgraph` in `no_std` contexts.
+//! * **generate** -
+//!   Defaults off. Enables graph generators.
+//! * **unstable** -
+//!   Defaults off. Enables unstable crate features (currently onle `generate`).
+//! * **dot_parser** -
+//!   Defaults off. Enables building [`Graph`](./graph/struct.Graph.html) and [`StableGraph`](./stable_graph/struct.StableGraph.html) from [DOT/Graphviz](https://www.graphviz.org/doc/info/lang.html) descriptions. Imports can be made statically or dynamically (i.e. at compile time or at runtime).
 //!
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
+#![no_std]
+
+extern crate alloc;
+
+#[cfg(any(feature = "std", test))]
+extern crate std;
 
 extern crate fixedbitset;
 #[cfg(feature = "graphmap")]
@@ -133,12 +150,14 @@ pub mod visit;
 #[macro_use]
 pub mod data;
 
+pub mod acyclic;
 pub mod adj;
 pub mod algo;
 pub mod csr;
 pub mod dot;
 #[cfg(feature = "generate")]
 pub mod generate;
+pub mod graph6;
 mod graph_impl;
 #[cfg(feature = "graphmap")]
 pub mod graphmap;
@@ -162,7 +181,7 @@ pub mod graph {
     pub use crate::graph_impl::{
         edge_index, node_index, DefaultIx, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference,
         EdgeReferences, EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen, Graph,
-        GraphIndex, IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences,
+        GraphError, GraphIndex, IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences,
         NodeWeightsMut, UnGraph, WalkNeighbors,
     };
 }
@@ -170,29 +189,20 @@ pub mod graph {
 #[cfg(feature = "stable_graph")]
 pub use crate::graph_impl::stable_graph;
 
-macro_rules! copyclone {
-    ($name:ident) => {
-        impl Clone for $name {
-            #[inline]
-            fn clone(&self) -> Self {
-                *self
-            }
-        }
-    };
-}
-
 // Index into the NodeIndex and EdgeIndex arrays
 /// Edge direction.
-#[derive(Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
 #[repr(usize)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Direction {
     /// An `Outgoing` edge is an outward edge *from* the current node.
     Outgoing = 0,
     /// An `Incoming` edge is an inbound edge *to* the current node.
     Incoming = 1,
 }
-
-copyclone!(Direction);
 
 impl Direction {
     /// Return the opposite `Direction`.
@@ -215,14 +225,20 @@ impl Direction {
 pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
-#[derive(Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Directed {}
-copyclone!(Directed);
 
 /// Marker type for an undirected graph.
-#[derive(Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(
+    feature = "serde-1",
+    derive(serde_derive::Serialize, serde_derive::Deserialize)
+)]
 pub enum Undirected {}
-copyclone!(Undirected);
 
 /// A graph's edge type determines whether it has directed edges or not.
 pub trait EdgeType {
@@ -271,7 +287,7 @@ impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, E) {
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<E> for (Ix, Ix, &'a E)
+impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, &E)
 where
     E: Clone,
 {
@@ -282,7 +298,7 @@ where
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix)
+impl<Ix, E> IntoWeightedEdge<E> for &(Ix, Ix)
 where
     Ix: Copy,
     E: Default,
@@ -294,7 +310,7 @@ where
     }
 }
 
-impl<'a, Ix, E> IntoWeightedEdge<E> for &'a (Ix, Ix, E)
+impl<Ix, E> IntoWeightedEdge<E> for &(Ix, Ix, E)
 where
     Ix: Copy,
     E: Clone,

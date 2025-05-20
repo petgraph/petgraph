@@ -1,15 +1,17 @@
-use crate::prelude::*;
+use core::marker::PhantomData;
 
 use fixedbitset::FixedBitSet;
-use std::collections::HashSet;
-use std::marker::PhantomData;
+use hashbrown::HashSet;
 
-use crate::data::DataMap;
-use crate::visit::{Data, NodeCompactIndexable, NodeCount};
-use crate::visit::{
-    EdgeIndexable, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected,
-    IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeIndexable,
-    NodeRef, VisitMap, Visitable,
+use crate::{
+    data::DataMap,
+    prelude::*,
+    visit::{
+        Data, EdgeIndexable, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges,
+        IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
+        IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, NodeRef, VisitMap,
+        Visitable,
+    },
 };
 
 /// A graph filter for nodes.
@@ -113,7 +115,7 @@ pub struct NodeFilteredNeighbors<'a, I, F: 'a> {
     f: &'a F,
 }
 
-impl<'a, I, F> Iterator for NodeFilteredNeighbors<'a, I, F>
+impl<I, F> Iterator for NodeFilteredNeighbors<'_, I, F>
 where
     I: Iterator,
     I::Item: Copy,
@@ -188,7 +190,7 @@ pub struct NodeFilteredNodes<'a, I, F: 'a> {
     f: &'a F,
 }
 
-impl<'a, I, F> Iterator for NodeFilteredNodes<'a, I, F>
+impl<I, F> Iterator for NodeFilteredNodes<'_, I, F>
 where
     I: Iterator,
     I::Item: Copy + NodeRef,
@@ -233,7 +235,7 @@ pub struct NodeFilteredEdgeReferences<'a, G, I, F: 'a> {
     f: &'a F,
 }
 
-impl<'a, G, I, F> Iterator for NodeFilteredEdgeReferences<'a, G, I, F>
+impl<G, I, F> Iterator for NodeFilteredEdgeReferences<'_, G, I, F>
 where
     F: FilterNode<G::NodeId>,
     G: IntoEdgeReferences,
@@ -295,7 +297,7 @@ pub struct NodeFilteredEdges<'a, G, I, F: 'a> {
     dir: Direction,
 }
 
-impl<'a, G, I, F> Iterator for NodeFilteredEdges<'a, G, I, F>
+impl<G, I, F> Iterator for NodeFilteredEdges<'_, G, I, F>
 where
     F: FilterNode<G::NodeId>,
     G: IntoEdges,
@@ -436,7 +438,7 @@ where
     f: &'a F,
 }
 
-impl<'a, G, F> Iterator for EdgeFilteredNeighbors<'a, G, F>
+impl<G, F> Iterator for EdgeFilteredNeighbors<'_, G, F>
 where
     F: FilterEdge<G::EdgeRef>,
     G: IntoEdges,
@@ -515,7 +517,7 @@ pub struct EdgeFilteredEdges<'a, G, I, F: 'a> {
     f: &'a F,
 }
 
-impl<'a, G, I, F> Iterator for EdgeFilteredEdges<'a, G, I, F>
+impl<G, I, F> Iterator for EdgeFilteredEdges<'_, G, I, F>
 where
     F: FilterEdge<G::EdgeRef>,
     G: IntoEdgeReferences,
@@ -543,7 +545,7 @@ where
     from: G::NodeId,
 }
 
-impl<'a, G, F> Iterator for EdgeFilteredNeighborsDirected<'a, G, F>
+impl<G, F> Iterator for EdgeFilteredNeighborsDirected<'_, G, F>
 where
     F: FilterEdge<G::EdgeRef>,
     G: IntoEdgesDirected,

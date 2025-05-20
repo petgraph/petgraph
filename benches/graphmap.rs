@@ -6,6 +6,7 @@ extern crate test;
 
 use petgraph::prelude::*;
 use rayon::iter::ParallelIterator;
+use std::hash::BuildHasher;
 use test::Bencher;
 
 #[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -28,11 +29,13 @@ fn test_nodes() -> Vec<MyStruct> {
     nodes
 }
 
-fn test_graph(data: &Vec<MyStruct>) -> DiGraphMap<&MyStruct, usize> {
-    let mut gr: DiGraphMap<&MyStruct, usize> = DiGraphMap::new();
+fn test_graph<H: BuildHasher + Default>(
+    data: &[MyStruct],
+) -> GraphMap<&MyStruct, usize, Directed, H> {
+    let mut gr = GraphMap::new();
 
-    for i in 0..2500 {
-        gr.add_node(&data[i]);
+    for val in data {
+        gr.add_node(val);
     }
 
     for i in 0..1_000 {
@@ -44,28 +47,39 @@ fn test_graph(data: &Vec<MyStruct>) -> DiGraphMap<&MyStruct, usize> {
     gr
 }
 
-#[bench]
-fn graphmap_serial_bench(bench: &mut Bencher) {
-    let data = test_nodes();
-    let gr = test_graph(&data);
-    bench.iter(|| {
-        let mut sources = vec![];
-        for n in gr.nodes() {
-            for (src, _, e) in gr.edges_directed(n, Direction::Outgoing) {
-                if *e == 500 {
-                    sources.push(src.clone());
+macro_rules! test_case_with_hasher {
+    ($name:ident, $hasher:path) => {
+        #[bench]
+        fn $name(bench: &mut Bencher) {
+            let data = test_nodes();
+            let gr = test_graph::<$hasher>(&data);
+            bench.iter(|| {
+                let mut sources = vec![];
+                for n in gr.nodes() {
+                    for (src, _, e) in gr.edges_directed(n, Direction::Outgoing) {
+                        if *e == 500 {
+                            sources.push(src.clone());
+                        }
+                    }
                 }
-            }
+            });
         }
-    });
+    };
 }
+
+test_case_with_hasher!(
+    graphmap_serial_bench,
+    std::collections::hash_map::RandomState
+);
+test_case_with_hasher!(graphmap_serial_bench_fxhash, fxhash::FxBuildHasher);
+test_case_with_hasher!(graphmap_serial_bench_ahash, ahash::RandomState);
 
 #[bench]
 fn graphmap_parallel_bench(bench: &mut Bencher) {
     let data = test_nodes();
-    let gr = test_graph(&data);
+    let gr = test_graph::<std::collections::hash_map::RandomState>(&data);
     bench.iter(|| {
-        let sources: Vec<MyStruct> = gr
+        let _sources: Vec<MyStruct> = gr
             .par_nodes()
             .map(|n| {
                 let mut sources = vec![];

@@ -1,22 +1,19 @@
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
-use std::marker::PhantomData;
-
-use crate::prelude::*;
-
-use crate::graph::Node;
-use crate::graph::{Edge, IndexType};
-use crate::serde_utils::CollectSeqWithLength;
-use crate::serde_utils::MappedSequenceVisitor;
-use crate::serde_utils::{FromDeserialized, IntoSerializable};
-use crate::stable_graph::StableGraph;
-use crate::visit::{EdgeIndexable, NodeIndexable};
-use crate::EdgeType;
+use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 use super::super::serialization::{
     invalid_hole_err, invalid_length_err, invalid_node_err, EdgeProperty,
 };
+use crate::graph::{Edge, IndexType, Node};
+use crate::prelude::*;
+use crate::serde_utils::{
+    CollectSeqWithLength, FromDeserialized, IntoSerializable, MappedSequenceVisitor,
+};
+use crate::stable_graph::StableGraph;
+use crate::visit::{EdgeIndexable, NodeIndexable};
+use crate::EdgeType;
 
 // Serialization representation for StableGraph
 // Keep in sync with deserialization and Graph
@@ -51,7 +48,7 @@ pub struct DeserStableGraph<N, E, Ix> {
 /// `Somes` are the present node weights N, with known length.
 struct Somes<T>(usize, T);
 
-impl<'a, N, Ix> Serialize for Somes<&'a [Node<Option<N>, Ix>]>
+impl<N, Ix> Serialize for Somes<&[Node<Option<N>, Ix>]>
 where
     N: Serialize,
 {
@@ -69,7 +66,7 @@ where
 /// Holes are the node indices of vacancies, with known length
 struct Holes<T>(usize, T);
 
-impl<'a, N, Ix> Serialize for Holes<&'a [Node<Option<N>, Ix>]>
+impl<N, Ix> Serialize for Holes<&[Node<Option<N>, Ix>]>
 where
     Ix: Serialize + IndexType,
 {
@@ -165,7 +162,7 @@ where
         SerStableGraph {
             nodes: Somes(node_count, nodes),
             node_holes: Holes(hole_count, nodes),
-            edges: edges,
+            edges,
             edge_property: EdgeProperty::from(PhantomData::<Ty>),
         }
     }
@@ -187,7 +184,7 @@ where
     }
 }
 
-impl<'a, N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> FromDeserialized for StableGraph<N, E, Ty, Ix>
 where
     Ix: IndexType,
     Ty: EdgeType,
@@ -230,11 +227,7 @@ where
 
         let node_bound = nodes.len();
         let mut sgr = StableGraph {
-            g: Graph {
-                nodes: nodes,
-                edges: edges,
-                ty: ty,
-            },
+            g: Graph { nodes, edges, ty },
             node_count: 0,
             edge_count: 0,
             free_edge: EdgeIndex::end(),
@@ -264,10 +257,13 @@ where
 
 #[test]
 fn test_from_deserialized_with_holes() {
-    use crate::graph::node_index;
-    use crate::stable_graph::StableUnGraph;
+    use alloc::vec;
+
     use itertools::assert_equal;
     use serde::de::value::Error as SerdeError;
+
+    use crate::graph::node_index;
+    use crate::stable_graph::StableUnGraph;
 
     let input = DeserStableGraph::<_, (), u32> {
         nodes: vec![

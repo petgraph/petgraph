@@ -8,13 +8,16 @@
 //! closure of **Gr** is the same as that of **G**.
 //! The transitive reduction is well-defined for acyclic graphs only.
 
+use alloc::{vec, vec::Vec};
+
+use fixedbitset::FixedBitSet;
+
 use crate::adj::{List, UnweightedList};
 use crate::graph::IndexType;
 use crate::visit::{
     GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount,
 };
 use crate::Direction;
-use fixedbitset::FixedBitSet;
 
 /// Creates a representation of the same graph respecting topological order for use in `tred::dag_transitive_reduction_closure`.
 ///
@@ -94,6 +97,7 @@ where
 /// list such that:
 /// * Node indices are a toposort, and
 /// * The neighbors of all nodes are stored in topological order.
+///
 /// To get such a representation, use the function [`dag_to_toposorted_adjacency_list`].
 ///
 /// [`dag_to_toposorted_adjacency_list`]: ./fn.dag_to_toposorted_adjacency_list.html

@@ -1,3 +1,4 @@
+#[cfg_attr(not(feature = "stable_graph"), allow(dead_code))]
 pub trait IterUtilsExt: Iterator {
     /// Return the first element that maps to `Some(_)`, or None if the iterator
     /// was exhausted.

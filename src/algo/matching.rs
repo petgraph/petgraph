@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
-use std::hash::Hash;
+use alloc::{collections::VecDeque, vec, vec::Vec};
+use core::hash::Hash;
 
 use crate::visit::{
     EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable,
@@ -105,7 +105,6 @@ where
 
 trait WithDummy: NodeIndexable {
     fn dummy_idx(&self) -> usize;
-    fn node_bound_with_dummy(&self) -> usize;
     /// Convert `i` to a node index, returns None for the dummy node
     fn try_from_index(&self, i: usize) -> Option<Self::NodeId>;
 }
@@ -116,10 +115,6 @@ impl<G: NodeIndexable> WithDummy for G {
         // vertex. Our vertex indices are zero-based and so we use the node
         // bound as the dummy node.
         self.node_bound()
-    }
-
-    fn node_bound_with_dummy(&self) -> usize {
-        self.node_bound() + 1
     }
 
     fn try_from_index(&self, i: usize) -> Option<Self::NodeId> {
@@ -260,8 +255,9 @@ where
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 enum Label<G: GraphBase> {
+    #[default]
     None,
     Start,
     // If node v is outer node, then label(v) = w is another outer node on path
@@ -277,11 +273,7 @@ enum Label<G: GraphBase> {
 
 impl<G: GraphBase> Label<G> {
     fn is_outer(&self) -> bool {
-        self != &Label::None
-            && !match self {
-                Label::Flag(_) => true,
-                _ => false,
-            }
+        self != &Label::None && !matches!(self, Label::Flag(_))
     }
 
     fn is_inner(&self) -> bool {
@@ -296,16 +288,7 @@ impl<G: GraphBase> Label<G> {
     }
 
     fn is_flagged(&self, edge: G::EdgeId) -> bool {
-        match self {
-            Label::Flag(flag) if flag == &edge => true,
-            _ => false,
-        }
-    }
-}
-
-impl<G: GraphBase> Default for Label<G> {
-    fn default() -> Self {
-        Label::None
+        matches!(self, Label::Flag(flag) if flag == &edge)
     }
 }
 
@@ -332,7 +315,7 @@ impl<G: GraphBase> PartialEq for Label<G> {
 /// *O(|V|³)*. An algorithm with a better time complexity might be used in the
 /// future.
 ///
-/// **Panics** if `g.node_bound()` is `std::usize::MAX`.
+/// **Panics** if `g.node_bound()` is `usize::MAX`.
 ///
 /// # Examples
 ///
@@ -372,8 +355,8 @@ where
     // The dummy identifier needs an unused index
     assert_ne!(
         graph.node_bound(),
-        std::usize::MAX,
-        "The input graph capacity should be strictly less than std::usize::MAX."
+        usize::MAX,
+        "The input graph capacity should be strictly less than core::usize::MAX."
     );
 
     // Greedy algorithm should create a fairly good initial matching. The hope
@@ -387,7 +370,7 @@ where
     debug_assert_eq!(mate.len(), len);
 
     let mut label: Vec<Label<G>> = vec![Label::None; len];
-    let mut first_inner = vec![std::usize::MAX; len];
+    let mut first_inner = vec![usize::MAX; len];
     let visited = &mut graph.visit_map();
 
     for start in 0..graph.node_bound() {
@@ -494,8 +477,8 @@ fn find_join<G, F>(
     graph: &G,
     edge: G::EdgeRef,
     mate: &[Option<G::NodeId>],
-    label: &mut Vec<Label<G>>,
-    first_inner: &mut Vec<usize>,
+    label: &mut [Label<G>],
+    first_inner: &mut [usize],
     mut visitor: F,
 ) where
     G: IntoEdges + NodeIndexable + Visitable,
@@ -526,7 +509,7 @@ fn find_join<G, F>(
     let join = loop {
         // Swap the sides. Do not swap if the right side is already finished.
         if right != graph.dummy_idx() {
-            std::mem::swap(&mut left, &mut right);
+            core::mem::swap(&mut left, &mut right);
         }
 
         // Set left to the next inner vertex in P(source) or P(target).

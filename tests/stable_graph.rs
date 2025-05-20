@@ -87,7 +87,7 @@ fn assert_sccs_eq(mut res: Vec<Vec<NodeIndex>>, normalized: Vec<Vec<NodeIndex>>)
 }
 
 fn scc_graph() -> StableGraph<(), ()> {
-    let mut gr: StableGraph<(), ()> = StableGraph::from_edges(&[
+    let mut gr: StableGraph<(), ()> = StableGraph::from_edges([
         (6, 0),
         (0, 3),
         (3, 6),
@@ -146,7 +146,7 @@ where
     let mut gr = StableGraph::default();
     let mut c = 0..;
     let mut e = || -> i32 { c.next().unwrap() };
-    gr.extend_with_edges(&[
+    gr.extend_with_edges([
         (6, 0, e()),
         (0, 3, e()),
         (3, 6, e()),
@@ -299,7 +299,7 @@ fn iterators_undir() {
     let b = g.add_node(1);
     let c = g.add_node(2);
     let d = g.add_node(3);
-    g.extend_with_edges(&[(a, b, 1), (a, c, 2), (b, c, 3), (c, c, 4), (a, d, 5)]);
+    g.extend_with_edges([(a, b, 1), (a, c, 2), (b, c, 3), (c, c, 4), (a, d, 5)]);
     g.remove_node(b);
 
     itertools::assert_equal(g.neighbors(a), vec![d, c]);
@@ -456,8 +456,8 @@ fn from_min_spanning_tree() {
     for &(a, b) in es.iter() {
         g.add_edge(NodeIndex::new(a), NodeIndex::new(b), ());
     }
-    for i in 0..3 {
-        let _ = g.remove_node(nodes[i]);
+    for &node in nodes.iter().take(3) {
+        let _ = g.remove_node(node);
     }
     let _ = StableGraph::<(), (), Undirected, usize>::from_elements(min_spanning_tree(&g));
 }
