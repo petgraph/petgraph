@@ -1,9 +1,9 @@
+use core::fmt::Debug;
+use core::hash::Hash;
+use hashbrown::HashMap;
 use petgraph::algo::johnson;
 use petgraph::visit::GraphBase;
 use petgraph::{prelude::*, Directed, Graph, Undirected};
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::hash::Hash;
 
 #[cfg(feature = "rayon")]
 use petgraph::algo::parallel_johnson;

@@ -1,7 +1,9 @@
 //! Johnson's algorithm implementation.
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::ops::Sub;
+use alloc::{vec, vec::Vec};
+use core::hash::Hash;
+use core::ops::Sub;
+
+use hashbrown::HashMap;
 
 use super::{dijkstra, spfa::spfa_loop};
 pub use super::{BoundedMeasure, NegativeCycle};
