@@ -20,6 +20,9 @@ use core::marker::{Send, Sync};
 /// The time complexity of this implementation is O(VElog(V) + V^2*log(V)),
 /// which is faster than [`floyd_warshall`](fn@crate::algo::floyd_warshall) on sparse graphs and slower on dense ones.
 ///
+/// If you are working with a sparse graph that is guaranteed to have no negative weights,
+/// it's preferable to run [`dijkstra`](fn@crate::algo::dijkstra) several times.
+///
 /// There is also a parallel implementation `parallel_johnson`, available under the `rayon` feature.
 ///
 /// ## Arguments
@@ -123,10 +126,13 @@ where
 
 /// \[Generic\] [Johnson algorithm][johnson]
 /// implementation for all pairs shortest path problem,
-/// parallelizing the `dijkstra` algorithm calls with `rayon`.
+/// parallelizing the [`dijkstra`](fn@crate::algo::dijkstra) calls with `rayon`.
 ///
 /// Сompute the lengths of shortest paths in a weighted graph with
 /// positive or negative edge weights, but no negative cycles.
+///
+/// If you are working with a sparse graph that is guaranteed to have no negative weights,
+/// it's preferable to run [`dijkstra`](fn@crate::algo::dijkstra) several times in parallel.
 ///
 /// ## Arguments
 /// * `graph`: weighted graph.
