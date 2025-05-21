@@ -15,6 +15,8 @@ extern crate odds;
 mod maximal_cliques;
 mod utils;
 
+use petgraph::algo::bridges;
+use petgraph::algo::connected_components;
 use odds::prelude::*;
 use utils::{Small, Tournament};
 

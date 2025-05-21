@@ -2,6 +2,8 @@ use crate::visit::{
     EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers, NodeIndexable,
 };
 
+use alloc::{vec, vec::Vec};
+
 /// Find all [bridges](https://en.wikipedia.org/wiki/Bridge_(graph_theory)) in a simple undirected graph.
 ///
 /// Returns the vector of pairs `(G::NodeID, G:: NodeID)`,
@@ -11,7 +13,7 @@ use crate::visit::{
 /// # Examples
 ///
 /// ```
-/// use petgraph::algo::bridges;
+/// use petgraph::algo::bridges::bridges;
 /// use petgraph::graph::UnGraph;
 /// use petgraph::visit::EdgeRef;
 ///
