@@ -15,8 +15,6 @@ extern crate odds;
 mod maximal_cliques;
 mod utils;
 
-use petgraph::algo::bridges;
-use petgraph::algo::connected_components;
 use odds::prelude::*;
 use utils::{Small, Tournament};
 
@@ -32,7 +30,7 @@ use rand::Rng;
 #[cfg(feature = "stable_graph")]
 use petgraph::algo::steiner_tree;
 use petgraph::algo::{
-    bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
+    bellman_ford, bridges, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
     k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
