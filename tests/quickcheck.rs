@@ -821,7 +821,6 @@ quickcheck! {
             return true;
         }
 
-
         for node1 in g.node_identifiers() {
             let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
 
