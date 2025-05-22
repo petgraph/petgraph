@@ -235,7 +235,7 @@ where
     let mut path_tracker = PathTracker::<G>::new();
 
     let mut best_so_far = start; // The best node so far (the one with the lowest heuristic (estimate - cost) score)
-    let mut best_so_far_score = K::default(); // The best heuristic (estimate - cost) score so far
+    let mut best_so_far_score = estimate_cost(best_so_far); // The best heuristic (estimate - cost) score so far
 
     let zero_score = K::default();
     scores.insert(start, zero_score);
@@ -252,7 +252,7 @@ where
         // before adding it to `visit_next`.
         let node_score = scores[&node];
 
-        if best_so_far_score < estimate_score - node_score {
+        if best_so_far_score > estimate_score - node_score {
             best_so_far = node;
             best_so_far_score = estimate_score - node_score;
         }
