@@ -149,9 +149,9 @@ where
 /// 
 /// The function `time_out_reached` should return `true` if the timeout has been reached.
 /// 
-/// You can construct such a function using either an atomic boolean (set from another thread) or check the system time on each iteration.
+/// You can construct such a function using either an atomic boolean (set from another thread), check the system time on each iteration or use a simple counter.
 /// 
-/// Example with an atomic boolean:
+/// Example with a simple counter:
 /// ```
 /// use petgraph::Graph;
 /// use petgraph::algo::astar_with_timeout;
@@ -187,17 +187,28 @@ where
 /// use std::sync::Arc;
 /// use std::thread;
 /// 
-/// let timeout_reached = Arc::new(AtomicBool::new(false));
-/// let timeout_reached_clone = Arc::clone(&timeout_reached);
+/// // First, we do a test where the timeout is not reached.
+/// let mut timeout_counter = 0;
+/// let timeout_counter_pointer = &mut timeout_counter;
+/// let timeout_reached = || {
+///    *timeout_counter_pointer += 1;
+///   if *timeout_counter_pointer > 5 { true } else { false }
+/// };
 /// 
-/// thread::spawn(move || {
-///    // Simulate some work
-///   thread::sleep(std::time::Duration::from_secs(2));
-///   timeout_reached_clone.store(true, Ordering::SeqCst);
-/// });
-/// 
-/// let path = astar_with_timeout( &g, a, |finish| finish == f, || timeout_reached.load(Ordering::SeqCst), |e| *e.weight(), |_| 0, );
+/// let path = astar_with_timeout( &g, a, |finish| finish == f, timeout_reached, |e| *e.weight(), |_| 0, );
 /// assert_eq!(path, Some((6, vec![a, d, e, f])));
+/// 
+/// // Now, we do a test where the timeout is reached.
+/// *timeout_counter_pointer = 0;
+/// let timeout_reached_larger = || {
+///    *timeout_counter_pointer += 1;
+///   if *timeout_counter_pointer > 4 { true } else { false }
+/// };
+/// 
+/// let path = astar_with_timeout( &g, a, |finish| finish == f, timeout_reached_larger, |e| *e.weight(), |_| 0, );
+/// println!("Path: {:?}", path);
+/// assert_eq!(path, Some((0, vec![a])));
+/// 
 /// ```
 pub fn astar_with_timeout<G, F, H, K, IsGoal, TimeOut>(
     graph: G,
