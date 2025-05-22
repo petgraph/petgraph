@@ -142,15 +142,15 @@ where
 }
 
 /// \[Generic\] A* shortest path algorithm with a timeout.
-/// 
+///
 /// Similar to the `astar` function, but with an additional timeout check.
 /// If the timeout is reached, the function will return the best node found so far.
 /// What is considered the best node is determined by the heuristic score (estimate - cost).
-/// 
+///
 /// The function `time_out_reached` should return `true` if the timeout has been reached.
-/// 
+///
 /// You can construct such a function using either an atomic boolean (set from another thread), check the system time on each iteration or use a simple counter.
-/// 
+///
 /// Example with a simple counter:
 /// ```
 /// use petgraph::Graph;
@@ -186,7 +186,7 @@ where
 /// use std::sync::atomic::{AtomicBool, Ordering};
 /// use std::sync::Arc;
 /// use std::thread;
-/// 
+///
 /// // First, we do a test where the timeout is not reached.
 /// let mut timeout_counter = 0;
 /// let timeout_counter_pointer = &mut timeout_counter;
@@ -194,23 +194,23 @@ where
 ///    *timeout_counter_pointer += 1;
 ///   if *timeout_counter_pointer > 5 { true } else { false }
 /// };
-/// 
+///
 /// let path = astar_with_timeout( &g, a, |finish| finish == f, timeout_reached, |e| *e.weight(), |_| 0, );
 /// assert_eq!(path, Some((6, vec![a, d, e, f])));
-/// 
+///
 /// // Now, we do a test where the timeout is reached.
 /// *timeout_counter_pointer = 0;
 /// let timeout_reached_larger = || {
 ///    *timeout_counter_pointer += 1;
 ///   if *timeout_counter_pointer > 4 { true } else { false }
 /// };
-/// 
+///
 /// let path = astar_with_timeout( &g, a, |finish| finish == f, timeout_reached_larger, |e| *e.weight(), |_| 0, );
 /// println!("Path: {:?}", path);
 /// // The best node found so far is `a` with a cost of 0.
 /// // The reason that we don't get a better result is because we don't use a heuristic here and we are essentially just using dijkstra (there is no usefull notion of best so far).
-/// assert_eq!(path, Some((0, vec![a]))); 
-/// 
+/// assert_eq!(path, Some((0, vec![a])));
+///
 /// ```
 pub fn astar_with_timeout<G, F, H, K, IsGoal, TimeOut>(
     graph: G,
@@ -227,7 +227,7 @@ where
     G::NodeId: Eq + Hash,
     F: FnMut(G::EdgeRef) -> K,
     H: FnMut(G::NodeId) -> K,
-    K: Measure + Copy + Sub<Output = K> ,
+    K: Measure + Copy + Sub<Output = K>,
 {
     let mut visit_next = BinaryHeap::new();
     let mut scores = HashMap::new(); // g-values, cost to reach the node
@@ -247,7 +247,7 @@ where
             let cost = scores[&node];
             return Some((cost, path));
         }
-        
+
         // This lookup can be unwrapped without fear of panic since the node was necessarily scored
         // before adding it to `visit_next`.
         let node_score = scores[&node];
