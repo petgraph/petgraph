@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use petgraph::data::Build;
 use petgraph::prelude::*;
@@ -330,4 +330,28 @@ pub fn directed_fan(n: usize) -> DiGraph<(), ()> {
     }
 
     g
+}
+
+#[allow(clippy::needless_range_loop)]
+pub fn build_graph(node_count: usize, dense: bool) -> Graph<usize, i32, Undirected> {
+    use core::cmp::{max, min};
+
+    let mut graph = Graph::new_undirected();
+    let nodes: Vec<NodeIndex<_>> = (0..node_count).map(|i| graph.add_node(i)).collect();
+    for i in 0..node_count {
+        let n1 = nodes[i];
+        let neighbour_count = if dense {
+            i % (node_count / 3) + 3
+        } else {
+            i % 8 + 3
+        };
+        let j_from = max(0, i as i32 - neighbour_count as i32 / 2) as usize;
+        let j_to = min(node_count, j_from + neighbour_count);
+        for j in j_from..j_to {
+            let n2 = nodes[j];
+            let distance = (i + 3) % 10;
+            graph.add_edge(n1, n2, distance as i32);
+        }
+    }
+    graph
 }
