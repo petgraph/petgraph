@@ -252,7 +252,7 @@ where
         // before adding it to `visit_next`.
         let node_score = scores[&node];
 
-        if best_so_far_score > estimate_score - node_score {
+        if best_so_far_score < estimate_score - node_score {
             best_so_far = node;
             best_so_far_score = estimate_score - node_score;
         }
