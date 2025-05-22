@@ -207,7 +207,9 @@ where
 /// 
 /// let path = astar_with_timeout( &g, a, |finish| finish == f, timeout_reached_larger, |e| *e.weight(), |_| 0, );
 /// println!("Path: {:?}", path);
-/// assert_eq!(path, Some((0, vec![a])));
+/// // The best node found so far is `a` with a cost of 0.
+/// // The reason that we don't get a better result is because we don't use a heuristic here and we are essentially just using dijkstra (there is no usefull notion of best so far).
+/// assert_eq!(path, Some((0, vec![a]))); 
 /// 
 /// ```
 pub fn astar_with_timeout<G, F, H, K, IsGoal, TimeOut>(
