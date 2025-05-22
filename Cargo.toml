@@ -61,7 +61,7 @@ ahash = "0.7.2"
 fxhash = "0.2.1"
 
 [features]
-rayon = ["std", "dep:rayon", "indexmap/rayon"]
+rayon = ["std", "dep:rayon", "indexmap/rayon", "hashbrown/rayon"]
 dot_parser = ["std", "dep:dot-parser", "dep:dot-parser-macros"]
 
 # feature flags for testing use only
