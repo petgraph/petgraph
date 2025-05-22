@@ -1339,7 +1339,7 @@ quickcheck! {
                assert_eq!(connected_components(&graph), num);
            }
         }
-        
+
         true
     }
 }
