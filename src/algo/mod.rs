@@ -7,6 +7,7 @@
 pub mod articulation_points;
 pub mod astar;
 pub mod bellman_ford;
+mod chordal;
 pub mod coloring;
 pub mod dijkstra;
 pub mod dominators;
@@ -42,6 +43,7 @@ use crate::visit::Walker;
 
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
+pub use chordal::{is_chordal, maximum_cardinality_search};
 pub use coloring::dsatur_coloring;
 pub use dijkstra::dijkstra;
 pub use feedback_arc_set::greedy_feedback_arc_set;
