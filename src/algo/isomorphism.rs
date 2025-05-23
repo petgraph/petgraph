@@ -281,10 +281,11 @@ mod matching {
     }
 
     fn is_feasible<G0, G1, NM, EM>(
-        st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
+        st: &(Vf2State<'_, G0>, Vf2State<'_, G1>),
         nodes: (G0::NodeId, G1::NodeId),
         node_match: &mut NM,
         edge_match: &mut EM,
+        induced_only: bool,
     ) -> bool
     where
         G0: GetAdjacencyMatrix + GraphProp + NodeCompactIndexable + IntoNeighborsDirected,
@@ -324,6 +325,11 @@ mod matching {
                     if m_neigh == usize::MAX {
                         continue;
                     }
+                    if !induced_only && $j == 1 {
+                        // The code we're skipping is for checking that the query's graph (g0) contains all edges that g1 contains. This is the definition of an induced subgraph.
+                        // If we're not interested in only induced subgraphs, we must skip this check.
+                        continue;
+                    }
                     let has_edge = field!(st, 1 - $j).graph.is_adjacent(
                         &field!(st, 1 - $j).adjacency_matrix,
                         field!(nodes, 1 - $j),
@@ -348,6 +354,11 @@ mod matching {
                     // the self loop case is handled in outgoing
                     let m_neigh = field!(st, $j).mapping[field!(st, $j).graph.to_index(n_neigh)];
                     if m_neigh == usize::MAX {
+                        continue;
+                    }
+                    if !induced_only && $j == 1 {
+                        // The code we're skipping is for checking that the query's graph (g0) contains all edges that g1 contains. This is the definition of an induced subgraph.
+                        // If we're not interested in only induced subgraphs, we must skip this check.
                         continue;
                     }
                     let has_edge = field!(st, 1 - $j).graph.is_adjacent(
@@ -456,7 +467,10 @@ mod matching {
             }
 
             edge_feasibility!(0);
-            edge_feasibility!(1);
+            if induced_only {
+                // Only check all edges from g1 for semantic feasibility if we're looking for induced subgraphs.
+                edge_feasibility!(1);
+            }
         }
         true
     }
@@ -575,7 +589,7 @@ mod matching {
         EM: EdgeMatcher<G0, G1>,
     {
         let mut stack = vec![Frame::Outer];
-        if isomorphisms(st, node_match, edge_match, match_subgraph, &mut stack).is_some() {
+        if isomorphisms(st, node_match, edge_match, match_subgraph, true, &mut stack).is_some() {
             Some(true)
         } else {
             None
@@ -587,6 +601,7 @@ mod matching {
         node_match: &mut NM,
         edge_match: &mut EM,
         match_subgraph: bool,
+        induced_only: bool,
         stack: &mut Vec<Frame<G0, G1>>,
     ) -> Option<Vec<usize>>
     where
@@ -638,7 +653,7 @@ mod matching {
                     }
                 },
                 Frame::Inner { nodes, open_list } => {
-                    if is_feasible(st, nodes, node_match, edge_match) {
+                    if is_feasible(st, nodes, node_match, edge_match, induced_only) {
                         push_state(st, nodes);
                         if st.0.is_complete() {
                             result = Some(st.0.mapping.clone());
@@ -696,6 +711,7 @@ mod matching {
         node_match: &'c mut NM,
         edge_match: &'c mut EM,
         match_subgraph: bool,
+        induced_only: bool,
         stack: Vec<Frame<G0, G1>>,
     }
 
@@ -720,6 +736,7 @@ mod matching {
             node_match: &'c mut NM,
             edge_match: &'c mut EM,
             match_subgraph: bool,
+            induced_only: bool,
         ) -> Self {
             let stack = vec![Frame::Outer];
             Self {
@@ -727,6 +744,7 @@ mod matching {
                 node_match,
                 edge_match,
                 match_subgraph,
+                induced_only,
                 stack,
             }
         }
@@ -755,6 +773,7 @@ mod matching {
                 self.node_match,
                 self.edge_match,
                 self.match_subgraph,
+                self.induced_only,
                 &mut self.stack,
             )
         }
@@ -868,7 +887,7 @@ where
     self::matching::try_match(&mut st, &mut node_match, &mut edge_match, false).unwrap_or(false)
 }
 
-/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+/// \[Generic\] Return `true` if `g0` is isomorphic to an *induced* subgraph of `g1`.
 ///
 /// Using the VF2 algorithm, only matching graph syntactically (graph
 /// structure).
@@ -896,6 +915,7 @@ where
 /// ‘subgraph’ always means a ‘node-induced subgraph’. Edge-induced subgraph
 /// isomorphisms are not directly supported. For subgraphs which are not
 /// induced, the term ‘monomorphism’ is preferred over ‘isomorphism’.
+/// For such subgraphs, the function [`general_subgraph_monomorphisms_iter`] may be of interest.
 ///
 /// **Reference**
 ///
@@ -919,7 +939,7 @@ where
         .unwrap_or(false)
 }
 
-/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+/// \[Generic\] Return `true` if `g0` is isomorphic to an *induced* subgraph of `g1`.
 ///
 /// Using the VF2 algorithm, examining both syntactic and semantic
 /// graph isomorphism (graph structure and matching node and edge weights).
@@ -957,8 +977,10 @@ where
 
 /// Using the VF2 algorithm, examine both syntactic and semantic graph
 /// isomorphism (graph structure and matching node and edge weights) and,
-/// if `g0` is isomorphic to a subgraph of `g1`, return the mappings between
+/// if `g0` is isomorphic to an *induced* subgraph of `g1`, return the mappings between
 /// them.
+///
+/// If you are looking for general (non-induced) subgraph isomorphisms, see [`general_subgraph_monomorphisms_iter`].
 ///
 /// The graphs should not be multigraphs.
 pub fn subgraph_isomorphisms_iter<'a, G0, G1, NM, EM>(
@@ -990,6 +1012,49 @@ where
     }
 
     Some(self::matching::GraphMatcher::new(
-        g0, g1, node_match, edge_match, true,
+        g0, g1, node_match, edge_match, true, true,
+    ))
+}
+
+/// Using the VF2 algorithm, examine both syntactic and semantic graph
+/// isomorphism (graph structure and matching node and edge weights) and,
+/// if `g0` is monomorphic to a general subgraph of `g1`, return the mappings between
+/// them.
+///
+/// If you are only interested in finding *induced* subgraph isomorphisms, see [`subgraph_isomorphisms_iter`].
+///
+/// For motivation behind the difference of "isomorphic" and "monomorphic", see discussion in [`is_isomorphic_subgraph`].
+///
+/// The graphs should not be multigraphs.
+pub fn general_subgraph_monomorphisms_iter<'a, G0, G1, NM, EM>(
+    g0: &'a G0,
+    g1: &'a G1,
+    node_match: &'a mut NM,
+    edge_match: &'a mut EM,
+) -> Option<impl Iterator<Item = Vec<usize>> + 'a>
+where
+    G0: 'a
+        + NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp
+        + IntoEdgesDirected,
+    G1: 'a
+        + NodeCompactIndexable
+        + EdgeCount
+        + DataMap
+        + GetAdjacencyMatrix
+        + GraphProp<EdgeType = G0::EdgeType>
+        + IntoEdgesDirected,
+    NM: 'a + FnMut(&G0::NodeWeight, &G1::NodeWeight) -> bool,
+    EM: 'a + FnMut(&G0::EdgeWeight, &G1::EdgeWeight) -> bool,
+{
+    if g0.node_count() > g1.node_count() || g0.edge_count() > g1.edge_count() {
+        return None;
+    }
+
+    Some(self::matching::GraphMatcher::new(
+        g0, g1, node_match, edge_match, true, false,
     ))
 }
