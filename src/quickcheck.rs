@@ -20,7 +20,7 @@ fn random_01<G: Gen>(g: &mut G) -> f64 {
     // from rand
     let bits = 53;
     let scale = 1. / ((1u64 << bits) as f64);
-    let x: u64 = Arbitrary::arbitrary(g);
+    let x: u64 = g.next_u64();
     (x >> (64 - bits)) as f64 * scale
 }
 
