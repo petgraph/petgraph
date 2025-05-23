@@ -501,6 +501,21 @@ fn iso_subgraph() {
 }
 
 #[test]
+fn iter_subgraph_empty() {
+    let a = Graph::<(), ()>::new();
+    let b = Graph::<(), ()>::from_edges([(0, 1), (1, 2), (2, 0)]);
+
+    let a_ref = &a;
+    let b_ref = &b;
+    let mut node_match = { |x: &(), y: &()| x == y };
+    let mut edge_match = { |x: &(), y: &()| x == y };
+    let mut mappings =
+        subgraph_isomorphisms_iter(&a_ref, &b_ref, &mut node_match, &mut edge_match).unwrap();
+    assert_eq!(mappings.next(), Some(vec![]));
+    assert_eq!(mappings.next(), None);
+}
+
+#[test]
 #[cfg_attr(miri, ignore = "Takes too long to run in Miri")]
 fn iter_subgraph() {
     let a = Graph::<(), ()>::from_edges([(0, 1), (1, 2), (2, 0)]);
