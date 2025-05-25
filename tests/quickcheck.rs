@@ -63,6 +63,7 @@ where
 
 use core::fmt;
 use petgraph::algo::articulation_points::articulation_points;
+use petgraph::unionfind::UnionFind;
 
 quickcheck! {
     fn mst_directed(g: Small<Graph<(), u32>>) -> bool {
@@ -1507,10 +1508,15 @@ quickcheck! {
 }
 
 #[cfg(feature = "stable_graph")]
-quickcheck! {
-    fn test_steiner_tree(g: Graph<(), u32, Undirected>) -> bool {
+#[test]
+fn test_steiner_tree() {
+    fn prop(g: Graph<(), u32, Undirected>) -> bool {
         if g.node_count() <= 1 {
             return true; // We naturally don't support steiner trees with zero or one node
+        }
+
+        if connected_components(&g) > 1 {
+            return true; // We only want to test connected graphs
         }
 
         let mut terminals = g.node_indices().collect::<Vec<_>>();
@@ -1523,6 +1529,8 @@ quickcheck! {
 
         spans_terminals
     }
+
+    quickcheck::quickcheck(prop as fn(Graph<(), u32, Undirected>) -> bool);
 }
 
 #[test]
