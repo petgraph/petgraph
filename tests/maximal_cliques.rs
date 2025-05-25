@@ -1,9 +1,10 @@
 extern crate petgraph;
 use core::hash::Hash;
 use hashbrown::HashSet;
+use petgraph::graph::{DiGraph, UnGraph};
 use petgraph::{
     algo::maximal_cliques,
-    graph::{Graph, NodeIndex},
+    graph::Graph,
     visit::{GetAdjacencyMatrix, IntoNeighbors, IntoNodeIdentifiers},
     Undirected,
 };
@@ -11,7 +12,10 @@ use petgraph::{
 /// (reference implementation)
 /// Finds maximal cliques containing all the vertices in r, some of the
 /// vertices in p, and none of the vertices in x.
-#[allow(dead_code)] //used by tests
+///
+/// By default, only works on undirected graphs. It can be used on directed graphs
+/// if the graph is symmetric. I.e., if an edge (u, v) exists, then (v, u) also exists.
+#[allow(dead_code)] // used by tests
 fn bron_kerbosch_ref<G>(
     g: G,
     adj_mat: &G::AdjMatrix,
@@ -61,7 +65,10 @@ where
 
 /// (reference implementation)
 /// Find all maximal cliques in a graph.
-#[allow(dead_code)] //used by tests
+///
+/// By default, only works on undirected graphs. It can be used on directed graphs
+/// if the graph is symmetric. I.e., if an edge (u, v) exists, then (v, u) also exists.
+#[allow(dead_code)] // used by tests
 pub(crate) fn maximal_cliques_ref<G>(g: G) -> Vec<HashSet<G::NodeId>>
 where
     G: GetAdjacencyMatrix,
@@ -74,92 +81,188 @@ where
 }
 
 #[test]
-fn test_maximal_cliques_ref_directed() {
-    // 5 <- 3 = 4 == 0
-    //      ||  || //
-    //      2 <- 1
-    let mut g = Graph::<i32, ()>::new();
-    let a = g.add_node(0);
-    let b = g.add_node(1);
-    let c = g.add_node(2);
-    let d = g.add_node(3);
-    let e = g.add_node(4);
-    let f = g.add_node(5);
-    g.extend_with_edges([
-        (a, b),
-        (b, a),
-        (a, e),
-        (e, a),
-        (b, e),
-        (e, b),
-        (b, c),
-        (c, d),
-        (d, c),
-        (d, e),
-        (e, d),
-        (e, f),
-    ]);
-
-    let mut cliques = maximal_cliques_ref(&g);
-    println!("{:?}", &cliques);
-
-    let answer = vec![vec![a, b, e], vec![c, d], vec![d, e], vec![f]];
-    assert_eq!(cliques.len(), answer.len());
-
-    for a in answer {
-        let s = a.iter().cloned().collect::<HashSet<NodeIndex>>();
-        cliques.retain(|c| *c != s);
-    }
-    assert!(cliques.is_empty());
-}
-
-#[test]
-fn test_maximal_cliques_ref_undirected() {
-    // 5 - 3 - 4 - 0
-    //     |   | /
-    //     2 - 1
-    let mut g = Graph::<i32, (), Undirected>::new_undirected();
-    let a = g.add_node(0);
-    let b = g.add_node(1);
-    let c = g.add_node(2);
-    let d = g.add_node(3);
-    let e = g.add_node(4);
-    let f = g.add_node(5);
-    g.extend_with_edges([(a, b), (a, e), (b, e), (b, c), (c, d), (d, e), (e, f)]);
-
-    let mut cliques = maximal_cliques_ref(&g);
-    println!("{:?}", &cliques);
-
-    let answer = vec![
-        vec![a, b, e],
-        vec![b, c],
-        vec![c, d],
-        vec![d, e],
-        vec![e, f],
-    ];
-    assert_eq!(cliques.len(), answer.len());
-
-    for a in answer {
-        let s = a.iter().cloned().collect::<HashSet<NodeIndex>>();
-        cliques.retain(|c| *c != s);
-    }
-    assert!(cliques.is_empty());
-}
-
-#[test]
 fn test_maximal_cliques_empty_graph() {
     // empty graph should not yield any cliques
     let g = Graph::<i32, ()>::new();
     let cliques = maximal_cliques(&g);
-    let answer = vec![HashSet::new()];
-    assert_eq!(cliques, answer);
+    let expected_cliques = vec![HashSet::new()];
+    assert_eq!(expected_cliques, cliques);
+}
+
+#[test]
+fn test_maximal_cliques_ref_empty_graph() {
+    // empty graph should not yield any cliques
+    let g = Graph::<i32, ()>::new();
+    let cliques = maximal_cliques_ref(&g);
+    let expected_cliques = vec![HashSet::new()];
+    assert_eq!(expected_cliques, cliques);
+}
+
+#[test]
+fn test_maximal_cliques_undirected_sparse_graph() {
+    // c     d
+    //
+    // b --- a
+    let mut g = UnGraph::<i32, ()>::new_undirected();
+
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let c = g.add_node(2);
+    let d = g.add_node(3);
+
+    g.extend_with_edges([(a, b), (b, a)]);
+
+    let cliques = maximal_cliques(&g);
+
+    let expected_cliques = vec![vec![a, b], vec![c], vec![d]];
+    assert_eq!(expected_cliques.len(), cliques.len());
+
+    for v in expected_cliques {
+        assert!(cliques.contains(&v.iter().cloned().collect()));
+    }
+}
+
+#[test]
+fn test_maximal_cliques_undirected_ref_sparse_graph() {
+    // c     d
+    //
+    // b --- a
+    let mut g = UnGraph::<i32, ()>::new_undirected();
+
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let c = g.add_node(2);
+    let d = g.add_node(3);
+
+    g.extend_with_edges([(a, b), (b, a)]);
+
+    let cliques = maximal_cliques_ref(&g);
+
+    let expected_cliques = vec![vec![a, b], vec![c], vec![d]];
+    assert_eq!(expected_cliques.len(), cliques.len());
+
+    for v in expected_cliques {
+        assert!(cliques.contains(&v.iter().cloned().collect()));
+    }
+}
+
+#[test]
+fn test_maximal_cliques_directed_sparse_graph() {
+    // c     d
+    //
+    // b <-> a
+    let mut g = DiGraph::<i32, ()>::new();
+
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let c = g.add_node(2);
+    let d = g.add_node(3);
+
+    g.extend_with_edges([(a, b), (b, a)]);
+
+    let cliques = maximal_cliques(&g);
+
+    let expected_cliques = vec![vec![a, b], vec![c], vec![d]];
+    assert_eq!(expected_cliques.len(), cliques.len());
+
+    for v in expected_cliques {
+        assert!(cliques.contains(&v.iter().cloned().collect()));
+    }
+}
+
+#[test]
+fn test_maximal_cliques_directed_ref_sparse_graph() {
+    // c     d
+    //
+    // b <-> a
+    let mut g = DiGraph::<i32, ()>::new();
+
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let c = g.add_node(2);
+    let d = g.add_node(3);
+
+    g.extend_with_edges([(a, b), (b, a)]);
+
+    let cliques = maximal_cliques_ref(&g);
+
+    let expected_cliques = vec![vec![a, b], vec![c], vec![d]];
+    assert_eq!(expected_cliques.len(), cliques.len());
+
+    for v in expected_cliques {
+        assert!(cliques.contains(&v.iter().cloned().collect()));
+    }
+}
+
+#[test]
+fn test_maximal_cliques_undirected() {
+    // f - d - e - a
+    //     |   | /
+    //     c - b
+    let mut g = Graph::<i32, (), Undirected>::new_undirected();
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let c = g.add_node(2);
+    let d = g.add_node(3);
+    let e = g.add_node(4);
+    let f = g.add_node(5);
+    g.extend_with_edges([(a, b), (a, e), (b, e), (b, c), (c, d), (d, e), (e, f)]);
+
+    let mut cliques = maximal_cliques(&g);
+    println!("{:?}", &cliques);
+
+    let expected_cliques = vec![
+        vec![a, b, e],
+        vec![b, c],
+        vec![c, d],
+        vec![d, e],
+        vec![e, f],
+    ];
+    assert_eq!(expected_cliques.len(), cliques.len());
+
+    for v in expected_cliques {
+        assert!(cliques.contains(&v.iter().cloned().collect()));
+    }
+}
+
+#[test]
+fn test_maximal_cliques_ref_undirected() {
+    // f - d - e - a
+    //     |   | /
+    //     c - b
+    let mut g = Graph::<i32, (), Undirected>::new_undirected();
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let c = g.add_node(2);
+    let d = g.add_node(3);
+    let e = g.add_node(4);
+    let f = g.add_node(5);
+    g.extend_with_edges([(a, b), (a, e), (b, e), (b, c), (c, d), (d, e), (e, f)]);
+
+    let mut cliques = maximal_cliques_ref(&g);
+    println!("{:?}", &cliques);
+
+    let expected_cliques = vec![
+        vec![a, b, e],
+        vec![b, c],
+        vec![c, d],
+        vec![d, e],
+        vec![e, f],
+    ];
+    assert_eq!(expected_cliques.len(), cliques.len());
+
+    for v in expected_cliques {
+        assert!(cliques.contains(&v.iter().cloned().collect()));
+    }
 }
 
 #[test]
 fn test_maximal_cliques_directed() {
-    // 5 <- 3 = 4 == 0
-    //      ||  || //
-    //      2 <- 1
+    // f <-> d <-> e <-> a
+    //       ^     ^     ^
+    //       |     |     |
+    //       v     v     |
+    //       c <-> b <---|
     let mut g = Graph::<i32, ()>::new();
     let a = g.add_node(0);
     let b = g.add_node(1);
@@ -175,55 +278,76 @@ fn test_maximal_cliques_directed() {
         (b, e),
         (e, b),
         (b, c),
+        (c, b),
         (c, d),
         (d, c),
         (d, e),
         (e, d),
-        (e, f),
+        (d, f),
+        (f, d),
     ]);
 
-    let mut cliques = maximal_cliques_ref(&g);
+    let mut cliques = maximal_cliques(&g);
     println!("{:?}", &cliques);
 
-    let answer = vec![vec![a, b, e], vec![c, d], vec![d, e], vec![f]];
-    assert_eq!(cliques.len(), answer.len());
+    let expected_cliques = vec![
+        vec![a, b, e],
+        vec![b, c],
+        vec![c, d],
+        vec![d, e],
+        vec![d, f],
+    ];
+    assert_eq!(expected_cliques.len(), cliques.len());
 
-    for a in answer {
-        let s = a.iter().cloned().collect::<HashSet<NodeIndex>>();
-        cliques.retain(|c| *c != s);
+    for v in expected_cliques {
+        assert!(cliques.contains(&v.iter().cloned().collect()));
     }
-    assert!(cliques.is_empty());
 }
 
 #[test]
-fn test_maximal_cliques_undirected() {
-    // 5 - 3 - 4 - 0
-    //     |   | /
-    //     2 - 1
-    let mut g = Graph::<i32, (), Undirected>::new_undirected();
+fn test_maximal_cliques_ref_directed() {
+    // f <-> d <-> e <-> a
+    //       ^     ^     ^
+    //       |     |     |
+    //       v     v     |
+    //       c <-> b <---|
+    let mut g = Graph::<i32, ()>::new();
     let a = g.add_node(0);
     let b = g.add_node(1);
     let c = g.add_node(2);
     let d = g.add_node(3);
     let e = g.add_node(4);
     let f = g.add_node(5);
-    g.extend_with_edges([(a, b), (a, e), (b, e), (b, c), (c, d), (d, e), (e, f)]);
+    g.extend_with_edges([
+        (a, b),
+        (b, a),
+        (a, e),
+        (e, a),
+        (b, e),
+        (e, b),
+        (b, c),
+        (c, b),
+        (c, d),
+        (d, c),
+        (d, e),
+        (e, d),
+        (d, f),
+        (f, d),
+    ]);
 
     let mut cliques = maximal_cliques_ref(&g);
     println!("{:?}", &cliques);
 
-    let answer = vec![
+    let expected_cliques = vec![
         vec![a, b, e],
         vec![b, c],
         vec![c, d],
         vec![d, e],
-        vec![e, f],
+        vec![d, f],
     ];
-    assert_eq!(cliques.len(), answer.len());
+    assert_eq!(expected_cliques.len(), cliques.len());
 
-    for a in answer {
-        let s = a.iter().cloned().collect::<HashSet<NodeIndex>>();
-        cliques.retain(|c| *c != s);
+    for v in expected_cliques {
+        assert!(cliques.contains(&v.iter().cloned().collect()));
     }
-    assert!(cliques.is_empty());
 }
