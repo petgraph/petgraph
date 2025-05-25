@@ -72,9 +72,16 @@ where
 /// This method may also be called on directed graphs, but one needs to ensure that
 /// if an edge (u, v) exists, then (v, u) also exists.
 ///
+/// ## Arguments
+/// * `g`: The graph to find maximal cliques in.
+///
+/// ## Returns
+/// A vector of sets making up the maximal cliques in the graph.
+///
 /// [1]: https://en.wikipedia.org/wiki/Bron%E2%80%93Kerbosch_algorithm
 ///
-/// Example
+/// # Example
+///
 /// ```
 /// use petgraph::algo::maximal_cliques;
 /// use petgraph::graph::UnGraph;
