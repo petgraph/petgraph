@@ -63,7 +63,6 @@ where
 
 use core::fmt;
 use petgraph::algo::articulation_points::articulation_points;
-use petgraph::unionfind::UnionFind;
 
 quickcheck! {
     fn mst_directed(g: Small<Graph<(), u32>>) -> bool {
