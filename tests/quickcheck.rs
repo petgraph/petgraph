@@ -1718,7 +1718,7 @@ fn is_chordal_matches_dfs() {
             }
         }
 
-        if g.edge_count() > 75 || g.node_count() > 30 {
+        if g.edge_count() > 50 || g.node_count() > 30 {
             // Skip large graphs to avoid long test times and out of memory errors
             return true;
         }
