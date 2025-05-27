@@ -208,7 +208,7 @@ fn test_maximal_cliques_undirected() {
     let f = g.add_node(5);
     g.extend_with_edges([(a, b), (a, e), (b, e), (b, c), (c, d), (d, e), (e, f)]);
 
-    let mut cliques = maximal_cliques(&g);
+    let cliques = maximal_cliques(&g);
     println!("{:?}", &cliques);
 
     let expected_cliques = vec![
@@ -239,7 +239,7 @@ fn test_maximal_cliques_ref_undirected() {
     let f = g.add_node(5);
     g.extend_with_edges([(a, b), (a, e), (b, e), (b, c), (c, d), (d, e), (e, f)]);
 
-    let mut cliques = maximal_cliques_ref(&g);
+    let cliques = maximal_cliques_ref(&g);
     println!("{:?}", &cliques);
 
     let expected_cliques = vec![
@@ -287,7 +287,7 @@ fn test_maximal_cliques_directed() {
         (f, d),
     ]);
 
-    let mut cliques = maximal_cliques(&g);
+    let cliques = maximal_cliques(&g);
     println!("{:?}", &cliques);
 
     let expected_cliques = vec![
@@ -335,7 +335,7 @@ fn test_maximal_cliques_ref_directed() {
         (f, d),
     ]);
 
-    let mut cliques = maximal_cliques_ref(&g);
+    let cliques = maximal_cliques_ref(&g);
     println!("{:?}", &cliques);
 
     let expected_cliques = vec![

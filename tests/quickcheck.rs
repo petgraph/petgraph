@@ -1537,11 +1537,11 @@ fn maximal_cliques_matches_ref_impl() {
         // or symmetric directed graphs. So we filter out directed edges if needed.
         let g = if Ty::is_directed() {
             g.filter_map(
-                |_, node_weight| Some(node_weight.clone()),
-                |edge_index, edge_weight| {
+                |_, _| Some(()),
+                |edge_index, _| {
                     let (source, target) = g.edge_endpoints(edge_index).unwrap();
                     if g.contains_edge(target, source) {
-                        Some(edge_weight.clone())
+                        Some(())
                     } else {
                         None
                     }
