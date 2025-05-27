@@ -12,6 +12,7 @@ extern crate defmac;
 extern crate itertools;
 extern crate odds;
 
+mod chordal;
 mod maximal_cliques;
 mod utils;
 
@@ -32,9 +33,9 @@ use petgraph::algo::steiner_tree;
 use petgraph::algo::{
     bellman_ford, bridges, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
-    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
-    k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
-    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
+    is_chordal, is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
+    johnson, k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo,
+    maximum_matching, min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1705,4 +1706,34 @@ quickcheck! {
 
         true
     }
+}
+
+#[test]
+fn is_chordal_matches_dfs() {
+    fn prop(g: UnGraph<(), ()>) -> bool {
+        let mut g = g.clone();
+        for node in g.node_indices() {
+            if let Some(edge_index) = g.find_edge(node, node) {
+                g.remove_edge(edge_index);
+            }
+        }
+
+        if g.edge_count() > 75 || g.node_count() > 30 {
+            // Skip large graphs to avoid long test times and out of memory errors
+            return true;
+        }
+
+        let mut g = g.clone();
+        for node in g.node_indices() {
+            if let Some(edge) = g.find_edge(node, node) {
+                g.remove_edge(edge);
+            }
+        }
+
+        let alg_output = is_chordal(&g);
+        let reference_output = chordal::is_chordal_ref(&g);
+
+        alg_output == reference_output
+    }
+    quickcheck::quickcheck(prop as fn(_) -> bool);
 }
