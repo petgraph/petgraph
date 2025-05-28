@@ -6,6 +6,13 @@ use hashbrown::HashSet;
 
 /// Finds maximal cliques containing all the vertices in r, some of the
 /// vertices in p, and none of the vertices in x.
+///
+/// By default, only works on undirected graphs. It can be used on directed graphs
+/// if the graph is symmetric. I.e., if an edge (u, v) exists, then (v, u) also exists.
+///
+/// Uses the [Bron–Kerbosch algorithm][1] with pivoting.
+///
+/// [1]: https://en.wikipedia.org/wiki/Bron%E2%80%93Kerbosch_algorithm
 fn bron_kerbosch_pivot<G>(
     g: G,
     adj_mat: &G::AdjMatrix,
@@ -54,15 +61,27 @@ where
     cliques
 }
 
-/// Find all maximal cliques in a graph using Bron–Kerbosch algorithm
-/// with pivoting.
+/// Find all maximal cliques in an undirected graph using [Bron–Kerbosch algorithm][1]
+/// with pivoting. Also works on symmetric directed graphs, see the note below.
 ///
 /// A clique is a set of nodes such that every node connects to
 /// every other. A maximal clique is a clique that cannot be extended
 /// by including one more adjacent vertex. A graph may have multiple
 /// maximal cliques.
 ///
-/// Example
+/// This method may also be called on directed graphs, but one needs to ensure that
+/// if an edge (u, v) exists, then (v, u) also exists.
+///
+/// ## Arguments
+/// * `g`: The graph to find maximal cliques in.
+///
+/// ## Returns
+/// A vector of sets making up the maximal cliques in the graph.
+///
+/// [1]: https://en.wikipedia.org/wiki/Bron%E2%80%93Kerbosch_algorithm
+///
+/// # Example
+///
 /// ```
 /// use petgraph::algo::maximal_cliques;
 /// use petgraph::graph::UnGraph;
