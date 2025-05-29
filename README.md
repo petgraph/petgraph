@@ -27,13 +27,7 @@ Supports Rust 1.64 and later. This will only change on major releases.
 [![Discord chat][discord-badge]][discord-url]
 [![Build Status][build-status]][ci-url]
 
-### Documentation
-
-* [API documentation on docs.rs][docsrs]
-* [Examples on docs.rs][docsrs-examples]
-* [Changelog][changelog]
-
-### Example
+## Example
 
 For more examples, see
 the [documentation on docs.rs][docsrs-examples].
@@ -79,6 +73,12 @@ fn main() {
     // }
 }
 ```
+
+## Documentation
+
+* [API documentation on docs.rs][docsrs]
+* [Examples on docs.rs][docsrs-examples]
+* [Changelog][changelog]
 
 ### Crate features
 
