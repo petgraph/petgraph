@@ -321,9 +321,16 @@ where
                 }
             }
 
-            if backward_visited.is_visited(&x)
-                && best_value.is_none_or(|mu| backward_distance[&x] + edge_cost < mu)
-            {
+            if !backward_visited.is_visited(&x) {
+                continue;
+            }
+
+            let improves_best_value = match best_value {
+                None => true,
+                Some(mu) => backward_distance[&x] + edge_cost < mu,
+            };
+
+            if improves_best_value {
                 best_value = Some(distance_to_u + edge_cost + backward_distance[&x]);
             }
         }
@@ -349,9 +356,16 @@ where
                 }
             }
 
-            if forward_visited.is_visited(&x)
-                && best_value.is_none_or(|mu| forward_distance[&x] + edge_cost < mu)
-            {
+            if !forward_visited.is_visited(&x) {
+                continue;
+            }
+
+            let improves_best_value = match best_value {
+                None => true,
+                Some(mu) => forward_distance[&x] + edge_cost < mu,
+            };
+
+            if improves_best_value {
                 best_value = Some(distance_to_v + edge_cost + forward_distance[&x]);
             }
         }
