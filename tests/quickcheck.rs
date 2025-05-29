@@ -1555,8 +1555,7 @@ fn steiner_tree_spans_terminals() {
                     },
                 );
 
-                let mut terminals = g.node_indices().collect::<Vec<_>>();
-                terminals = terminals.into_iter().take(5).collect();
+                let terminals = g.node_indices().take(5).collect::<Vec<_>>();
                 let m_steiner_tree = steiner_tree(&g, &terminals);
 
                 let steiner_tree_nodes: Vec<NodeIndex> = m_steiner_tree.node_indices().collect();
