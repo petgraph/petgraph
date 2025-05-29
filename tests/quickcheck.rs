@@ -1507,22 +1507,71 @@ quickcheck! {
 }
 
 #[cfg(feature = "stable_graph")]
-quickcheck! {
-    fn test_steiner_tree(g: Graph<(), u32, Undirected>) -> bool {
+#[test]
+fn steiner_tree_spans_terminals() {
+    fn prop(g: UnGraph<(), u32>) -> bool {
         if g.node_count() <= 1 {
             return true; // We naturally don't support steiner trees with zero or one node
         }
 
-        let mut terminals = g.node_indices().collect::<Vec<_>>();
-        terminals = terminals.into_iter().take(5).collect();
-        let m_steiner_tree = steiner_tree(&g, &terminals);
+        // Run the steiner tree algorithm on connected components, to test it on both
+        // connected and disconnected graphs.
+        let mut connected_components = Vec::new();
+        let mut visited = g.visit_map();
 
-        let steiner_tree_nodes: Vec<NodeIndex> = m_steiner_tree.node_indices().collect();
+        for node in g.node_indices() {
+            if !visited.is_visited(&node) {
+                let mut component = HashSet::new();
 
-        let spans_terminals = terminals.iter().all(|&t| steiner_tree_nodes.contains(&t));
+                let mut dfs = Dfs::new(&g, node);
+                while let Some(nx) = dfs.next(&g) {
+                    visited.visit(nx);
+                    component.insert(nx);
+                }
 
-        spans_terminals
+                connected_components.push(component);
+            }
+        }
+
+        for component in connected_components {
+            if component.len() < 2 {
+                continue; // We naturally don't support steiner trees with zero or one node
+            } else {
+                let g = g.filter_map(
+                    |node_index, _| {
+                        if component.contains(&node_index) {
+                            Some(())
+                        } else {
+                            None
+                        }
+                    },
+                    |edge_index, edge_weight| {
+                        let edge = g.edge_endpoints(edge_index).unwrap();
+                        if component.contains(&(edge.0)) && component.contains(&(edge.1)) {
+                            Some(*edge_weight)
+                        } else {
+                            None
+                        }
+                    },
+                );
+
+                let terminals = g.node_indices().take(5).collect::<Vec<_>>();
+                let m_steiner_tree = steiner_tree(&g, &terminals);
+
+                let steiner_tree_nodes: Vec<NodeIndex> = m_steiner_tree.node_indices().collect();
+
+                let spans_terminals = terminals.iter().all(|&t| steiner_tree_nodes.contains(&t));
+
+                if !spans_terminals {
+                    return false; // The steiner tree does not span all terminals
+                }
+            }
+        }
+
+        true
     }
+
+    quickcheck::quickcheck(prop as fn(Graph<(), u32, Undirected>) -> bool);
 }
 
 #[test]
