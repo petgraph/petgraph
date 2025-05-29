@@ -1582,14 +1582,40 @@ fn maximal_cliques_matches_ref_impl() {
     where
         Ty: EdgeType,
     {
+        // Our implementations of maximal cliques only works for undirected graphs
+        // or symmetric directed graphs. So we filter out directed edges if needed.
+        let g = if Ty::is_directed() {
+            g.filter_map(
+                |_, _| Some(()),
+                |edge_index, _| {
+                    let (source, target) = g.edge_endpoints(edge_index).unwrap();
+                    if g.contains_edge(target, source) {
+                        Some(())
+                    } else {
+                        None
+                    }
+                },
+            )
+        } else {
+            g
+        };
         if g.edge_count() <= 200 && g.node_count() <= 200 {
             let cliques = maximal_cliques_algo(&g);
             let cliques_ref = maximal_cliques_ref(&g);
 
-            assert!(cliques.len() == cliques_ref.len());
+            assert!(cliques.len() == cliques_ref.len(),
+                "Maximal cliques algo returned different number of cliques than the reference implementation: {} != {}",
+                cliques.len(),
+                cliques_ref.len()
+            );
 
             for c in &cliques_ref {
-                assert!(cliques.contains(c));
+                assert!(
+                    cliques.contains(c),
+                    "Ref Clique {:?} not found in the result of maximal_cliques_algo: {:?}",
+                    c,
+                    cliques
+                );
             }
         }
         true
