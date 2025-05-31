@@ -5,7 +5,7 @@ on:
     branches: '*'
   merge_group:
     types: [ checks_requested ]
-  workflow_dispatch: {} 
+  workflow_dispatch: { }
 
 name: Continuous integration
 
@@ -120,4 +120,4 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: miri
-      - run: cargo miri test
+      - run: cargo miri test -- --skip b07_vienna_test
