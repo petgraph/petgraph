@@ -61,14 +61,14 @@ Second, add a dependency on `petgraph`:
 cargo add petgraph
 ```
 
-Third, replace the contents of `src/main.rs` with the following code:
-```
+Third, replace the contents of your main function in `src/main.rs` with the following code:
+```text
 use petgraph::graph::UnGraph;
 
 fn main() {
     let g = UnGraph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
 
-    println!("{:?}", g);
+    println!("Graph: {:?}", g);
 }
 ```
 
@@ -129,7 +129,8 @@ module documentation lists the available shorthand types.
 * [Creating an undirected graph and manipulating nodes and edges](#creating-an-undirected-graph-and-manipulating-nodes-and-edges)
 * [Differences of stable and non-stable graphs in index management](#differences-of-stable-and-non-stable-graphs-in-index-management)
 * [Using algorithms on graphs](#usign-algorithms-on-graphs)
-* [Associating data with nodes and edges and transforming the type of the data](#associating-data-with-nodes-and-edges-and-transforming-the-type-of-the-data)
+* [Associating data with nodes and edges and transmuting the type of the data](#associating-data-with-nodes-and-edges-and-transmuting-the-type-of-the-data)
+* [Exporting graphs to DOT format](#exporting-graphs-to-dot-format)
 
 ### Creating an undirected graph and manipulating nodes and edges
 
@@ -137,42 +138,40 @@ module documentation lists the available shorthand types.
 use petgraph::graph::UnGraph;
 use petgraph::visit::NodeIndexable;
 
-fn main() {
-    // Create an undirected graph with associated data of type `i32` for nodes and `()` for edges.
-    let mut g = UnGraph::<i32, ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
+// Create an undirected graph with associated data of type `i32` for nodes and `()` for edges.
+let mut g = UnGraph::<i32, ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
 
-    // The graph looks like this:
-    // 0 -- 1
-    // |    |
-    // 3 -- 2
+// The graph looks like this:
+// 0 -- 1
+// |    |
+// 3 -- 2
 
-    // Add two more edges between nodes 0 and 2, and 1 and 3
-    g.extend_with_edges(&[(0, 2), (1, 3)]);
+// Add two more edges between nodes 0 and 2, and 1 and 3
+g.extend_with_edges(&[(0, 2), (1, 3)]);
 
-    // Add another node with a weight of 5
-    let node = g.add_node(5);
+// Add another node with a weight of 5
+let node = g.add_node(5);
 
-    // Connect the new node to node 2.
-    // We can access the recently added node via the returned `NodeIndex`.
-    g.add_edge(node, 2.into(), ());
+// Connect the new node to node 2.
+// We can access the recently added node via the returned `NodeIndex`.
+g.add_edge(node, 2.into(), ());
 
-    // The graph now looks like this:
-    // 0 -- 1
-    // | \/ |
-    // | /\ |
-    // 3 -- 2
-    //        \
-    //         4
+// The graph now looks like this:
+// 0 -- 1
+// | \/ |
+// | /\ |
+// 3 -- 2
+//        \
+//         4
 
-    // We can also access existing nodes by creating a `NodeIndex` using the from_index
-    // method on g. Indexes are zero-based, so the first node is at index 0.
-    let node_0 = g.from_index(0);
+// We can also access existing nodes by creating a `NodeIndex` using the from_index
+// method on g. Indexes are zero-based, so the first node is at index 0.
+let node_0 = g.from_index(0);
 
-    // And then change the weight of node 0 to 10.
-    let node_0_weight = g.node_weight_mut(node_0).unwrap();
-    *node_0_weight = 10;
-    assert_eq!(g.node_weight(node_0), Some(&10));
-}
+// And then change the weight of node 0 to 10.
+let node_0_weight = g.node_weight_mut(node_0).unwrap();
+*node_0_weight = 10;
+assert_eq!(g.node_weight(node_0), Some(&10));
 ```
 
 Note that when creating the graph, we only specified the edges, and the nodes were created
@@ -194,43 +193,41 @@ and edges stable, even after removals. Currently, this comes at the cost of poss
 usage and lack of some features that other graph types provide. For all the graph types, and their
 internal structure and feature set, please refer to [Graph Types](#graph-types).
 
-```
+```ignore
 use petgraph::graph::UnGraph;
 use petgraph::stable_graph::StableUnGraph;
 use petgraph::visit::IntoNodeIdentifiers;
 
-fn main() {
-    // Create an stable and non-stable undirected graph.
-    let mut g_non_stable = UnGraph::<i32, ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
-    let mut g_stable = StableUnGraph::<i32, ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
+// Create an stable and non-stable undirected graph.
+let mut g_non_stable = UnGraph::<i32, ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
+let mut g_stable = StableUnGraph::<i32, ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
 
-    // The graphs look like this:
-    // 0 -- 1
-    // |    |
-    // 3 -- 2
+// The graphs look like this:
+// 0 -- 1
+// |    |
+// 3 -- 2
 
-    // Remove node 1 and see how the node indexes change.
-    g_non_stable.remove_node(1.into());
-    g_stable.remove_node(1.into());
+// Remove node 1 and see how the node indexes change.
+g_non_stable.remove_node(1.into());
+g_stable.remove_node(1.into());
 
-    println!("Node Indices (Non-Stable): {:?}", g_non_stable.node_identifiers().collect::<Vec<_>>());
-    // Output: Node Indices (Non-Stable): [NodeIndex(0), NodeIndex(1), NodeIndex(2)]
-    println!("Node Indices (Stable): {:?}", g_stable.node_identifiers().collect::<Vec<_>>());
-    // Output: Node Indices (Stable):     [NodeIndex(0), NodeIndex(1), NodeIndex(3)]
+println!("Node Indices (Non-Stable): {:?}", g_non_stable.node_identifiers().collect::<Vec<_>>());
+// Output: Node Indices (Non-Stable): [NodeIndex(0), NodeIndex(1), NodeIndex(2)]
+println!("Node Indices (Stable): {:?}", g_stable.node_identifiers().collect::<Vec<_>>());
+// Output: Node Indices (Stable):     [NodeIndex(0), NodeIndex(1), NodeIndex(3)]
 
-    // The non-stable graph now looks like this:
-    // 0
-    // |
-    // 1 -- 2
-    // The node which previously had index 1 has been removed, and the node which previously had
-    // index 2 has now taken index 1. The other nodes' indices remain unchanged.
+// The non-stable graph now looks like this:
+// 0
+// |
+// 1 -- 2
+// The node which previously had index 1 has been removed, and the node which previously had
+// index 2 has now taken index 1. The other nodes' indices remain unchanged.
 
-    // The stable graph now looks like this:
-    // 0
-    // |
-    // 2 -- 3
-    // The node indices have remained stable and the node with index 1 has been removed.
-}
+// The stable graph now looks like this:
+// 0
+// |
+// 2 -- 3
+// The node indices have remained stable and the node with index 1 has been removed.
 ```
 
 ### Using algorithms on graphs
@@ -248,24 +245,22 @@ use petgraph::algo::min_spanning_tree;
 use petgraph::data::FromElements;
 use petgraph::graph::UnGraph;
 
-fn main() {
-    // Create a graph to compute the minimum spanning tree of.
-    let g = UnGraph::<i32, ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
+// Create a graph to compute the minimum spanning tree of.
+let g = UnGraph::<i32, ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
 
-    // The graphs look like this:
-    // 0 -- 1
-    // |    |
-    // 3 -- 2
+// The graphs look like this:
+// 0 -- 1
+// |    |
+// 3 -- 2
 
-    // Compute a minimum spanning tree of the graph and collect it into a new graph.
-    let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&g));
+// Compute a minimum spanning tree of the graph and collect it into a new graph.
+let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&g));
 
-    // Check that the minimum spanning tree has one edge less than the original graph.
-    assert_eq!(g.raw_edges().len() - 1, mst.raw_edges().len());
-}
+// Check that the minimum spanning tree has one edge less than the original graph.
+assert_eq!(g.raw_edges().len() - 1, mst.raw_edges().len());
 ```
 
-### Associating data with nodes and edges and transforming the type of the data
+### Associating data with nodes and edges and transmuting the type of the data
 
 In many cases, it is useful to associate data with nodes and/or edges in a graph.
 For example, associating an integer with each edge to represent its usage cost in a network.
@@ -279,33 +274,31 @@ Associated data might also be referred to as *weights* in the documentation.
 ```
 use petgraph::graph::UnGraph;
 
-fn main() {
-    // Create an undirected graph with city names as node data and their distances as edge data.
-    let mut g = UnGraph::<String, u32>::new_undirected();
+// Create an undirected graph with city names as node data and their distances as edge data.
+let mut g = UnGraph::<String, u32>::new_undirected();
 
-    let ber = g.add_node("Berlin".to_owned());
-    let del = g.add_node("New Delhi".to_owned());
-    let mex = g.add_node("Mexico City".to_owned());
-    let syd = g.add_node("Sydney".to_owned());
+let ber = g.add_node("Berlin".to_owned());
+let del = g.add_node("New Delhi".to_owned());
+let mex = g.add_node("Mexico City".to_owned());
+let syd = g.add_node("Sydney".to_owned());
 
-    // Add distances in kilometers as edge data.
-    g.extend_with_edges(&[
-        (ber, del, 6_000),
-        (ber, mex, 10_000),
-        (ber, syd, 16_000),
-        (del, mex, 14_000),
-        (del, syd, 12_000),
-        (mex, syd, 15_000),
-    ]);
+// Add distances in kilometers as edge data.
+g.extend_with_edges(&[
+    (ber, del, 6_000),
+    (ber, mex, 10_000),
+    (ber, syd, 16_000),
+    (del, mex, 14_000),
+    (del, syd, 12_000),
+    (mex, syd, 15_000),
+]);
 
-    // We might now want to change up the distances to be in miles instead and to be strings.
-    // We can do this using the `map` method, which takes two closures for the node and edge data,
-    // respectively, and returns a new graph with the transformed data.
-    let g_miles: UnGraph<String, String> = g.map(
-        |_, city| city.to_owned(),
-        |_, distance| format!("{} miles", (*distance as f64 * 0.621371).round() as i32),
-    );
-}
+// We might now want to change up the distances to be in miles instead and to be strings.
+// We can do this using the `map` method, which takes two closures for the node and edge data,
+// respectively, and returns a new graph with the transformed data.
+let g_miles: UnGraph<String, String> = g.map(
+    |_, city| city.to_owned(),
+    |_, distance| format!("{} miles", (*distance as f64 * 0.621371).round() as i32),
+);
 ```
 
 ### Exporting graphs to DOT format
@@ -322,80 +315,78 @@ use petgraph::dot::{Config, Dot};
 use petgraph::graph::UnGraph;
 use petgraph::visit::EdgeRef;
 
-fn main() {
-    // Create an undirected graph with city names as node data and their distances as edge data.
-    let mut g = UnGraph::<String, u32>::new_undirected();
+// Create an undirected graph with city names as node data and their distances as edge data.
+let mut g = UnGraph::<String, u32>::new_undirected();
 
-    let ber = g.add_node("Berlin".to_owned());
-    let del = g.add_node("New Delhi".to_owned());
-    let mex = g.add_node("Mexico City".to_owned());
-    let syd = g.add_node("Sydney".to_owned());
+let ber = g.add_node("Berlin".to_owned());
+let del = g.add_node("New Delhi".to_owned());
+let mex = g.add_node("Mexico City".to_owned());
+let syd = g.add_node("Sydney".to_owned());
 
-    // Add distances in kilometers as edge data.
-    g.extend_with_edges(&[
-        (ber, del, 6_000),
-        (ber, mex, 10_000),
-        (ber, syd, 16_000),
-        (del, mex, 14_000),
-        (del, syd, 12_000),
-        (mex, syd, 15_000),
-    ]);
+// Add distances in kilometers as edge data.
+g.extend_with_edges(&[
+    (ber, del, 6_000),
+    (ber, mex, 10_000),
+    (ber, syd, 16_000),
+    (del, mex, 14_000),
+    (del, syd, 12_000),
+    (mex, syd, 15_000),
+]);
 
-    // Basic DOT export with automatic labels
-    let basic_dot = Dot::new(&g);
-    println!("Basic DOT format:\n{:?}\n", basic_dot);
-    // Output:
-    // Basic DOT format:
-    // graph {
-    //     0 [ label = "\"Berlin\"" ]
-    //     1 [ label = "\"New Delhi\"" ]
-    //     2 [ label = "\"Mexico City\"" ]
-    //     3 [ label = "\"Sydney\"" ]
-    //     0 -- 1 [ label = "6000" ]
-    //     0 -- 2 [ label = "10000" ]
-    //     0 -- 3 [ label = "16000" ]
-    //     1 -- 2 [ label = "14000" ]
-    //     1 -- 3 [ label = "12000" ]
-    //     2 -- 3 [ label = "15000" ]
-    // }
+// Basic DOT export with automatic labels
+let basic_dot = Dot::new(&g);
+println!("Basic DOT format:\n{:?}\n", basic_dot);
+// Output:
+// Basic DOT format:
+// graph {
+//     0 [ label = "\"Berlin\"" ]
+//     1 [ label = "\"New Delhi\"" ]
+//     2 [ label = "\"Mexico City\"" ]
+//     3 [ label = "\"Sydney\"" ]
+//     0 -- 1 [ label = "6000" ]
+//     0 -- 2 [ label = "10000" ]
+//     0 -- 3 [ label = "16000" ]
+//     1 -- 2 [ label = "14000" ]
+//     1 -- 3 [ label = "12000" ]
+//     2 -- 3 [ label = "15000" ]
+// }
 
-    // Enhanced DOT export with custom attributes
-    let fancy_dot = Dot::with_attr_getters(
-        &g,
-        // Global graph attributes
-        &[],
-        // Edge attribute getter
-        &|graph_reference, edge_reference| {
-            // Style edges depending on distance
-            if graph_reference.edge_weight(edge_reference.id()).unwrap() > &12_500 {
-                "style=dashed, penwidth=3".to_owned()
-            } else {
-                "style=solid".to_owned()
-            }
-        },
-        // Node attribute getter; We don't change any node attributes
-        &|_, (_, _)| String::new(),
-    );
+// Enhanced DOT export with custom attributes
+let fancy_dot = Dot::with_attr_getters(
+    &g,
+    // Global graph attributes
+    &[],
+    // Edge attribute getter
+    &|graph_reference, edge_reference| {
+        // Style edges depending on distance
+        if graph_reference.edge_weight(edge_reference.id()).unwrap() > &12_500 {
+            "style=dashed, penwidth=3".to_owned()
+        } else {
+            "style=solid".to_owned()
+        }
+    },
+    // Node attribute getter; We don't change any node attributes
+    &|_, (_, _)| String::new(),
+);
 
-    println!("Enhanced DOT format:\n{:?}", fancy_dot);
-    // Output:
-    // Enhanced DOT format:
-    // graph {
-    //     0 [ label = "\"Berlin\"" ]
-    //     1 [ label = "\"New Delhi\"" ]
-    //     2 [ label = "\"Mexico City\"" ]
-    //     3 [ label = "\"Sydney\"" ]
-    //     0 -- 1 [ label = "6000" style=solid]
-    //     0 -- 2 [ label = "10000" style=solid]
-    //     0 -- 3 [ label = "16000" style=dashed, penwidth=3]
-    //     1 -- 2 [ label = "14000" style=dashed, penwidth=3]
-    //     1 -- 3 [ label = "12000" style=solid]
-    //     2 -- 3 [ label = "15000" style=dashed, penwidth=3]
-    // }
+println!("Enhanced DOT format:\n{:?}", fancy_dot);
+// Output:
+// Enhanced DOT format:
+// graph {
+//     0 [ label = "\"Berlin\"" ]
+//     1 [ label = "\"New Delhi\"" ]
+//     2 [ label = "\"Mexico City\"" ]
+//     3 [ label = "\"Sydney\"" ]
+//     0 -- 1 [ label = "6000" style=solid]
+//     0 -- 2 [ label = "10000" style=solid]
+//     0 -- 3 [ label = "16000" style=dashed, penwidth=3]
+//     1 -- 2 [ label = "14000" style=dashed, penwidth=3]
+//     1 -- 3 [ label = "12000" style=solid]
+//     2 -- 3 [ label = "15000" style=dashed, penwidth=3]
+// }
 
-    // This would typically be written to a file:
-    // std::fs::write("flight_network.dot", format!("{:?}", fancy_dot)).unwrap();
-}
+// This would typically be written to a file:
+// std::fs::write("flight_network.dot", format!("{:?}", fancy_dot)).unwrap();
 ```
 
 # Crate features
