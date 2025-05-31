@@ -120,4 +120,5 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: miri
+      # Exclude the `b07_vienna_test` test, as it takes very long to run with miri
       - run: cargo miri test -- --skip b07_vienna_test
