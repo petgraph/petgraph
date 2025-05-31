@@ -123,4 +123,5 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest
-      - run: cargo miri nextest run
+      # Exclude the `b07_vienna_test` test, as it takes very long to run with miri
+      - run: cargo miri nextest run -- --skip b07_vienna_test
