@@ -28,6 +28,8 @@ functionality to convert graphs to DOT format so you can visualize or analyze th
 
 The remainder of this documentation is organized as follows:
 
+* [Usage](#usage) shows how to add `petgraph` to your project.
+
 * [Graph types](#graph-types) explains each implementation’s internal structure and feature set.
 
     * [Generic parameters](#generic-parameters) clarifies what N, E, Ty, and Ix signify and any trait bounds they impose.
@@ -39,6 +41,41 @@ The remainder of this documentation is organized as follows:
 * [Crate features](#crate-features) covers (optional) Cargo flags (e.g. serde or rayon support).
 
 * Finally, each submodule page (e.g., [`algo`], [`graph`], [`graphmap`], etc.) provides detailed API documentation and design notes.
+
+# Usage
+
+`petgraph` is available on [crates.io](https://crates.io/crates/petgraph) and can be added to your
+project by adding `petgraph` to your `Cargo.toml`. Or more simply, by running `cargo add petgraph`.
+
+Here is an example that creates a new Rust project, adds a dependency on `petgraph`, and runs
+a simple program that creates an undirected graph.
+
+First, create a new Rust project in a new directory:
+```bash
+cargo new petgraph_example
+cd petgraph_example
+```
+
+Second, add a dependency on `petgraph`:
+```bash
+cargo add petgraph
+```
+
+Third, replace the contents of `src/main.rs` with the following code:
+```
+use petgraph::graph::UnGraph;
+
+fn main() {
+    let g = UnGraph::<(), ()>::from_edges(&[(0, 1), (1, 2), (2, 3), (0, 3)]);
+
+    println!("{:?}", g);
+}
+```
+
+Finally, run the program with `cargo run`:
+```bash
+Graph { Ty: "Undirected", node_count: 4, edge_count: 4, edges: (0, 1), (1, 2), (2, 3), (0, 3) }
+```
 
 # Graph types
 
