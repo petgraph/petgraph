@@ -19,39 +19,37 @@ use petgraph::data::FromElements;
 use petgraph::dot::{Dot, Config};
 use petgraph::visit::NodeIndexable;
 
-fn main() {
-    // Create an undirected graph with associated data
-    // of type `i32` for the nodes and `()` for the edges.
-    let g = UnGraph::<i32, ()>::from_edges(&[
-        (0, 1), (1, 2), (2, 3), (0, 3)
-    ]);
+// Create an undirected graph with associated data
+// of type `i32` for the nodes and `()` for the edges.
+let g = UnGraph::<i32, ()>::from_edges(&[
+    (0, 1), (1, 2), (2, 3), (0, 3)
+]);
 
-    // The graph looks like this:
-    // 0 -- 1
-    // |    |
-    // 3 -- 2
+// The graph looks like this:
+// 0 -- 1
+// |    |
+// 3 -- 2
 
-    // Find the shortest path from `0` to `2` using `1` as the cost for every edge.
-    let node_map = dijkstra(&g, 0.into(), Some(2.into()), |_| 1);
-    assert_eq!(&2i32, node_map.get(&g.from_index(2)).unwrap());
+// Find the shortest path from `0` to `2` using `1` as the cost for every edge.
+let node_map = dijkstra(&g, 0.into(), Some(2.into()), |_| 1);
+assert_eq!(&2i32, node_map.get(&g.from_index(2)).unwrap());
 
-    // Get the minimum spanning tree of the graph as a new graph, and check that
-    // one edge was trimmed.
-    let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&g));
-    assert_eq!(g.raw_edges().len() - 1, mst.raw_edges().len());
+// Get the minimum spanning tree of the graph as a new graph, and check that
+// one edge was trimmed.
+let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&g));
+assert_eq!(g.raw_edges().len() - 1, mst.raw_edges().len());
 
-    // Output the tree to `graphviz` `DOT` format
-    println!("{:?}", Dot::with_config(&mst, &[Config::EdgeNoLabel]));
-    // graph {
-    //     0 [ label = "0" ]
-    //     1 [ label = "0" ]
-    //     2 [ label = "0" ]
-    //     3 [ label = "0" ]
-    //     0 -- 1 [ ]
-    //     2 -- 3 [ ]
-    //     1 -- 2 [ ]
-    // }
-}
+// Output the tree to `graphviz` `DOT` format
+println!("{:?}", Dot::with_config(&mst, &[Config::EdgeNoLabel]));
+// graph {
+//     0 [ label = "0" ]
+//     1 [ label = "0" ]
+//     2 [ label = "0" ]
+//     3 [ label = "0" ]
+//     0 -- 1 [ ]
+//     2 -- 3 [ ]
+//     1 -- 2 [ ]
+// }
 ```
 
 `petgraph` provides several concrete graph types — [`Graph`](./graph/struct.Graph.html),
