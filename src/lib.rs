@@ -234,7 +234,9 @@ and edges stable, even after removals. Currently, this comes at the cost of poss
 usage and lack of some features that other graph types provide. For all the graph types, and their
 internal structure and feature set, please refer to [Graph Types](#graph-types).
 
-```ignore
+```
+#[cfg(feature = "StableGraph")]
+{
 use petgraph::graph::UnGraph;
 use petgraph::stable_graph::StableUnGraph;
 use petgraph::visit::IntoNodeIdentifiers;
@@ -269,6 +271,7 @@ println!("Node Indices (Stable): {:?}", g_stable.node_identifiers().collect::<Ve
 // |
 // 2 -- 3
 // The node indices have remained stable and the node with index 1 has been removed.
+}
 ```
 
 ### Using algorithms on graphs
