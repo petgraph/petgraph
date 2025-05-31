@@ -6,8 +6,39 @@ provides several [graph types](index.html#graph-types) (each differing in the
 tradeoffs taken in their internal representation),
 [algorithms](./algo/index.html#functions) on those graphs, and functionality to
 [output graphs](./dot/struct.Dot.html) in
-[`graphviz`](https://www.graphviz.org/) format. Both nodes and edges
+[`Graphviz`](https://www.graphviz.org/) format. Both nodes and edges
 can have arbitrary associated data, and edges may be either directed or undirected.
+
+# Overview
+
+`petgraph` provides several concrete graph types — [`Graph`](./graph/struct.Graph.html),
+[`StableGraph`](./stable_graph/struct.StableGraph.html), [`GraphMap`](./graphmap/struct.GraphMap.html),
+[`MatrixGraph`](./matrix_graph/struct.MatrixGraph.html), and [`Csr`](./csr/struct.Csr.html)
+— each optimized for different trade-offs in memory layout, index stability, and lookup speed.
+Some types (e.g., [`Graph`](./graph/struct.Graph.html)) expose the fullest set of methods
+and algorithm support, while others (like [`StableGraph`](./stable_graph/struct.StableGraph.html)
+or [`Csr`](./csr/struct.Csr.html)) are more recent and may not yet implement the full feature set,
+see [Graph Types](#graph-types) for more details.
+
+With these types as building blocks, you can insert or remove nodes and edges, attach arbitrary data to them,
+explore neighbors, and apply standard graph algorithms. The [`algo`] module implements routines such as
+shortest‐path searches and minimum spanning trees for any compatible graph, and the [`dot`] module exports
+functionality to convert graphs to DOT format so you can visualize or analyze them with
+[`Graphviz`](https://www.graphviz.org/).
+
+The remainder of this documentation is organized as follows:
+
+* [Graph types](#graph-types) explains each implementation’s internal structure and feature set.
+
+    * [Generic parameters](#generic-parameters) clarifies what N, E, Ty, and Ix signify and any trait bounds they impose.
+
+    * [Shorthand types](#shorthand-types) lists commonly used aliases (for example, [`DiGraph<_, _>`](./graph/type.DiGraph.html) for [`Graph<_, _, Directed>`](./graph/struct.Graph.html).
+
+* [Examples](#examples) walks through common tasks such as basic graph construction, index behavior, running algorithms, weight transformations, and DOT export.
+
+* [Crate features](#crate-features) covers (optional) Cargo flags (e.g. serde or rayon support).
+
+* Finally, each submodule page (e.g., [`algo`], [`graph`], [`graphmap`], etc.) provides detailed API documentation and design notes.
 
 # Graph types
 
@@ -60,7 +91,7 @@ module documentation lists the available shorthand types.
 
 * [Creating an undirected graph and manipulating nodes and edges](#creating-an-undirected-graph-and-manipulating-nodes-and-edges)
 * [Differences of stable and non-stable graphs in index management](#differences-of-stable-and-non-stable-graphs-in-index-management)
-* [Applying algorithms to graphs](#applying-algorithms-to-graphs)
+* [Using algorithms on graphs](#usign-algorithms-on-graphs)
 * [Associating data with nodes and edges and transforming the type of the data](#associating-data-with-nodes-and-edges-and-transforming-the-type-of-the-data)
 
 ### Creating an undirected graph and manipulating nodes and edges
@@ -122,9 +153,8 @@ node did not have the highest index, the node with the highest index will take t
 removed node and all other indices stay the same.
 
 [Stable graphs](TODO) address this by keeping the indices of nodes stable even after removals.
-TODO: Does this come at a cost and if so, what kind of cost?
-
-For the other graph types, please refer to [Graph Types](#graph-types).
+TODO: Does this come at a cost and if so, what kind of cost? For the other graph types, and their
+possible use cases, please refer to [Graph Types](#graph-types).
 
 ```
 use petgraph::graph::UnGraph;
@@ -165,7 +195,7 @@ fn main() {
 }
 ```
 
-### Applying algorithms to graphs
+### Using algorithms on graphs
 
 Petgraph provides not only data structures for modeling graphs, but also a wide range of algorithms
 that can be applied to them. For example, given a graph, one can compute shortest paths,
@@ -173,7 +203,7 @@ minimum spanning trees, or even compute the maximal cliques of a graph.
 
 Generally, algorithms are found in the [`algo`] module. All of them should include an example of
 how to use them. For example, to compute the minimum spanning tree of a graph, one can use the
-[`min_spanning_tree`](./algo/fn.min_spanning_tree.html) function.
+[`min_spanning_tree`](algo/min_spanning_tree/fn.min_spanning_tree.html) function.
 
 ```
 use petgraph::algo::min_spanning_tree;
@@ -192,7 +222,7 @@ fn main() {
     // Compute a minimum spanning tree of the graph and collect it into a new graph.
     let mst = UnGraph::<_, _>::from_elements(min_spanning_tree(&g));
 
-    // Check that the minimum spanning tree has one less edge than the original graph.
+    // Check that the minimum spanning tree has one edge less than the original graph.
     assert_eq!(g.raw_edges().len() - 1, mst.raw_edges().len());
 }
 ```
@@ -200,7 +230,7 @@ fn main() {
 ### Associating data with nodes and edges and transforming the type of the data
 
 In many cases, it is useful to associate data with nodes and/or edges in a graph.
-For example, associating an integer with each edge to represent its cost in a network.
+For example, associating an integer with each edge to represent its usage cost in a network.
 
 Petgraph allows you to associate arbitrary data with both nodes and edges in a graph.
 Not only that, but it also exposes functionality to easily work with your associated
