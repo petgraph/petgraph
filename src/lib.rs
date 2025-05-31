@@ -152,9 +152,10 @@ If the node had the highest index, the other nodes' indices don't change. If the
 node did not have the highest index, the node with the highest index will take the index of the
 removed node and all other indices stay the same.
 
-[Stable graphs](TODO) address this by keeping the indices of nodes stable even after removals.
-TODO: Does this come at a cost and if so, what kind of cost? For the other graph types, and their
-possible use cases, please refer to [Graph Types](#graph-types).
+[Stable graphs](./stable_graph/struct.StableGraph.html) address this by keeping the indices of nodes
+and edges stable, even after removals. Currently, this comes at the cost of possible additional memory
+usage and lack of some features that other graph types provide. For all the graph types, and their
+internal structure and feature set, please refer to [Graph Types](#graph-types).
 
 ```
 use petgraph::graph::UnGraph;
