@@ -13,7 +13,7 @@ can have arbitrary associated data, and edges may be either directed or undirect
 
 Here is a simple example showing off some features of `petgraph`:
 ```
-use petgraph::graph::{UnGraph};
+use petgraph::graph::UnGraph;
 use petgraph::algo::{dijkstra, min_spanning_tree};
 use petgraph::data::FromElements;
 use petgraph::dot::{Dot, Config};
@@ -450,7 +450,7 @@ println!("Enhanced DOT format:\n{:?}", fancy_dot);
 * **generate** -
   Defaults off. Enables graph generators.
 * **unstable** -
-  Defaults off. Enables unstable crate features (currently onle `generate`).
+  Defaults off. Enables unstable crate features (currently only `generate`).
 * **dot_parser** -
   Defaults off. Enables building [`Graph`](./graph/struct.Graph.html) and [`StableGraph`](./stable_graph/struct.StableGraph.html) from [DOT/Graphviz](https://www.graphviz.org/doc/info/lang.html) descriptions. Imports can be made statically or dynamically (i.e. at compile time or at runtime).
 */
