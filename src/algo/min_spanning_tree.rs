@@ -187,7 +187,7 @@ where
 ///
 /// Use `from_elements` to create a graph from the resulting iterator.
 ///
-/// See also: [`.min_spanning_tree(g)`][1] for implementation using Kruskal's algorithm and support for minimum spanning forest.
+/// See also: [`min_spanning_tree`][1] for an implementation using Kruskal's algorithm and support for minimum spanning forest.
 ///
 /// [1]: fn.min_spanning_tree.html
 ///
