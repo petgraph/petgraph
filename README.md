@@ -33,7 +33,7 @@ For more examples, see
 the [documentation on docs.rs][docsrs-examples].
 
 ```rust
-use petgraph::graph::{UnGraph};
+use petgraph::graph::UnGraph;
 use petgraph::algo::{dijkstra, min_spanning_tree};
 use petgraph::data::FromElements;
 use petgraph::dot::{Dot, Config};
