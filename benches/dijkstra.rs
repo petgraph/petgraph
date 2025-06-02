@@ -33,7 +33,6 @@ fn dijkstra_bench(bench: &mut Bencher) {
     });
 }
 
-
 #[bench]
 fn dijkstra_2d_grid_line_bench(bench: &mut Bencher) {
     // Same line grid as ./astar.rs
