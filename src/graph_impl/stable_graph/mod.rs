@@ -629,7 +629,10 @@ where
         }
     }
 
-    /// Return an iterator over the edge indices of the graph
+    /// Return an iterator over the edge indices of the graph.
+    ///
+    /// Note: the iterator borrows a graph in contrast to the behavior of
+    /// [`Graph::edge_indices`](fn@crate::Graph::edge_indices).
     pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
         EdgeIndices {
             iter: enumerate(self.raw_edges()),
@@ -1803,6 +1806,8 @@ impl<N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'_, N, Ix> {
 }
 
 /// Iterator over the edge indices of a graph.
+///
+/// Note: `EdgeIndices` borrows a graph.
 #[derive(Debug, Clone)]
 pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
