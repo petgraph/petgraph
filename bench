@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+ 
+# COLOURS
+RED='\033[0;31m'
+NC='\033[0m' # No Colour
+
+if [[ -z "$BENCH" ]]; then
+    echo "Must provide BENCH in environment" 1>&2
+    exit 1
+fi
+
+BASE="${BASE:=master}" 
+declare -a BRANCHES=("${BASE}")
+
+for b in $@; do
+    echo "Adding $b"
+    BRANCHES+=("${b}")
+done
+
+echo "Will run '${BENCH}' benchmark on ${BRANCHES[@]}"
+sleep 2
+
+TEMPDIR=$(mktemp -d)
+declare -a BENCHES=()
+for b in "${BRANCHES[@]}"; do
+    echo
+    echo -e "Running '${BENCH}' benchmark on ${RED}${b}${NC}"
+
+    git checkout "${b}"
+    bb=$(echo $b | sed 's!/!__!g')
+    bench_data="${TEMPDIR}/${bb}"
+
+    cargo bench \
+        --bench "${BENCH}" > "${bench_data}"
+
+    BENCHES+=("${bench_data}")
+done
+
+echo cargo benchcmp "${BENCHES[@]}"
+cargo benchcmp "${BENCHES[@]}"
