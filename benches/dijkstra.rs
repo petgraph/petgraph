@@ -3,10 +3,11 @@
 extern crate petgraph;
 extern crate test;
 
+use core::cmp::{max, min};
 use petgraph::prelude::*;
-use std::cmp::{max, min};
 use test::Bencher;
 
+mod common;
 use petgraph::algo::dijkstra;
 
 #[bench]
@@ -29,5 +30,45 @@ fn dijkstra_bench(bench: &mut Bencher) {
 
     bench.iter(|| {
         let _scores = dijkstra(&g, nodes[0], None, |e| *e.weight());
+    });
+}
+
+
+#[bench]
+fn dijkstra_2d_grid_line_bench(bench: &mut Bencher) {
+    // Same line grid as ./astar.rs
+    const N: usize = 500;
+    const M: usize = 5;
+    let g = common::build_2d_grid(N, M);
+
+    let start_i = 0;
+    let goal_i = N * M - 1;
+    let start = NodeIndex::new(start_i);
+    let goal = NodeIndex::new(goal_i);
+
+    let costs = dijkstra(&g, start, None, |e| *e.weight());
+    assert_eq!(costs[&goal], N + M - 2);
+
+    bench.iter(|| {
+        let _ = dijkstra(&g, start, None, |e| *e.weight());
+    });
+}
+
+#[bench]
+fn dijkstra_2d_grid_bench(bench: &mut Bencher) {
+    // Same 2D grid as ./astar.rs
+    const N: usize = 500;
+    let g = common::build_2d_grid(N, N);
+
+    let start_i = 0;
+    let goal_i = N * N - 1;
+    let start = NodeIndex::new(start_i);
+    let goal = NodeIndex::new(goal_i);
+
+    let costs = dijkstra(&g, start, None, |e| *e.weight());
+    assert_eq!(costs[&goal], 2 * (N - 1));
+
+    bench.iter(|| {
+        let _ = dijkstra(&g, start, None, |e| *e.weight());
     });
 }
