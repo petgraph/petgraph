@@ -24,6 +24,21 @@ pub struct Paths<NodeId, EdgeWeight> {
 /// out the predecessor of a node along a shortest path. The vectors
 /// are indexed by the graph's node indices.
 ///
+/// # Arguments
+/// * `g`: graph with no negative cycle
+/// * `source`: the source node
+///
+/// # Returns
+/// * `Ok`: (if graph contains no negative cycle) a struct [`Paths`] containing distances and
+///   predecessors along each shortest path.
+/// * `Err`: if graph contains negative cycle.
+///
+/// # Complexity
+/// * Time complexity: **O(|V||E|)**
+/// * Space complexity: **O(|V|)**
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 /// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
 ///
 /// # Example
@@ -117,7 +132,20 @@ where
 ///
 /// If a negative cycle is found from source, return one vec with a path of `NodeId`s.
 ///
-/// The time complexity of this algorithm should be the same as the Bellman-Ford (O(|V|·|E|)).
+/// # Arguments
+/// * `g`: graph
+/// * `source`: the source node
+///
+/// # Returns
+/// * `Some(Vec<G::NodeId>)` - the path of the negative cycle (if found)
+/// * `None` - if `g` doesn't contain negative cycles reachable from `source`
+///
+/// # Complexity
+/// * Time complexity: **O(|V||E|)**
+/// * Space complexity: **O(|V|)**
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 ///
 /// [nc]: https://blogs.asarkar.com/assets/docs/algorithms-curated/Negative-Weight%20Cycle%20Algorithms%20-%20Huang.pdf
 /// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
