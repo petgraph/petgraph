@@ -169,7 +169,7 @@ module documentation lists the available shorthand types.
 
 * [Creating an undirected graph and manipulating nodes and edges](#creating-an-undirected-graph-and-manipulating-nodes-and-edges)
 * [Differences of stable and non-stable graphs in index management](#differences-of-stable-and-non-stable-graphs-in-index-management)
-* [Using algorithms on graphs](#usign-algorithms-on-graphs)
+* [Using algorithms on graphs](#using-algorithms-on-graphs)
 * [Associating data with nodes and edges and transmuting the type of the data](#associating-data-with-nodes-and-edges-and-transmuting-the-type-of-the-data)
 * [Exporting graphs to DOT format](#exporting-graphs-to-dot-format)
 
