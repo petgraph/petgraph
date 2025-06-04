@@ -373,6 +373,10 @@ where
     let mut first_inner = vec![usize::MAX; len];
     let visited = &mut graph.visit_map();
 
+    // Queue will contain outer vertices that should be processed next.
+    // The queue is cleared after each iteration of the main loop.
+    let mut queue = VecDeque::new();
+
     for start in 0..graph.node_bound() {
         if mate[start].is_some() {
             // The vertex is already matched. A start must be a free vertex.
@@ -387,9 +391,7 @@ where
         // start is never a dummy index
         let start = graph.from_index(start);
 
-        // Queue will contain outer vertices that should be processed next. The
-        // start vertex is considered an outer vertex.
-        let mut queue = VecDeque::new();
+        // The start vertex is considered a first outer vertex on each iteration.
         queue.push_back(start);
         // Mark the start vertex so it is not processed repeatedly.
         visited.visit(start);
@@ -465,6 +467,8 @@ where
         for lbl in label.iter_mut() {
             *lbl = Label::None;
         }
+
+        queue.clear();
     }
 
     // Discard the dummy node.
