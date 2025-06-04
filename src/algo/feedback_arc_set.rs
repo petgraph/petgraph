@@ -15,12 +15,20 @@ use self::linked_list::{LinkedList, LinkedListEntry};
 /// removed, make the graph acyclic.
 ///
 /// Uses a [greedy heuristic algorithm] to select a small number of edges, but does not necessarily
-/// find the minimum feedback arc set. Time complexity is roughly **O(|E|)** for an input graph with
-/// edges **E**.
+/// find the minimum feedback arc set.
 ///
 /// Does not consider edge/node weights when selecting edges for the feedback arc set.
 ///
 /// Loops (edges to and from the same node) are always included in the returned set.
+///
+/// # Arguments
+/// * `g`: a directed graph
+///
+/// # Returns
+/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef`
+///
+/// # Complexity
+/// * Time complexity: **O(|E|)**, where |E| is the number of edges in the input graph.
 ///
 /// # Example
 ///
