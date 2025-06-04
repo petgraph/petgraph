@@ -22,7 +22,21 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 /// If `goal` is not `None`, then the algorithm terminates once the `goal` node's
 /// cost is calculated.
 ///
-/// Returns a `HashMap` that maps `NodeId` to path cost.
+/// # Arguments
+/// * `graph` - weighted graph
+/// * `start` - the start node  
+/// * `goal` - optional *goal* node
+/// * `edge_cost`: closure that returns cost of a particular edge
+///
+/// # Returns
+/// * `HashMap`: [`struct@hashbrown::HashMap`] that maps `NodeId` to path cost.
+///
+/// # Complexity
+/// * Time complexity: **O((|V|+|E|)log(|V|))**
+/// * Space complexity: **O(|V|+|E|)**
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 /// # Example
 /// ```rust
 /// use petgraph::Graph;
