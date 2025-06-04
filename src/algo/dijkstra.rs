@@ -23,9 +23,9 @@ use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 /// cost is calculated.
 ///
 /// # Arguments
-/// * `graph` - weighted graph
-/// * `start` - the start node  
-/// * `goal` - optional *goal* node
+/// * `graph`: weighted graph
+/// * `start`: the start node  
+/// * `goal`: optional *goal* node
 /// * `edge_cost`: closure that returns cost of a particular edge
 ///
 /// # Returns

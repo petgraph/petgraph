@@ -19,9 +19,22 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 /// If `goal` is not `None`, then the algorithm terminates once the `goal` node's
 /// cost is calculated.
 ///
-/// Computes in **O(k * (|E| + |V|*log(|V|)))** time (average).
+/// # Arguments
+/// * `graph`: an input graph
+/// * `start`: the *start* node
+/// * `goal`: optional *goal* node
+/// * `k`: sequence number of the required shortest paths
+/// * `edge_cost`: closure that returns cost of a particular edge
 ///
-/// Returns a `HashMap` that maps `NodeId` to path cost.
+/// # Returns
+/// * `HashMap`: [`struct@hashbrown::HashMap`] that maps `NodeId` to path cost.
+///
+/// # Complexity
+/// * Time complexity: **O(k(|E| + |V|log(|V|)))**
+/// * Space complexity: **O(|V| + k|E|)**
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 /// # Example
 /// ```rust
 /// use petgraph::Graph;
