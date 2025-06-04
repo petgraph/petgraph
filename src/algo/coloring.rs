@@ -13,9 +13,21 @@ use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visi
 ///
 /// The graph must be undirected. It should not contain loops.
 /// It must implement `IntoEdges`, `IntoNodeIdentifiers` and `Visitable`
-/// Returns a tuple composed of a HashMap that associates to each `NodeId` its color and the number of used colors.
+/// Returns a tuple composed of a `HashMap` that associates to each `NodeId` its color and the number of used colors.
 ///
-/// Computes in **O((|V| + |E|)log(|V|)** time.
+///
+/// # Arguments
+/// * `graph`: undirected graph without loops
+///
+/// # Returns
+/// * `(HashMap, usize)`: [`struct@hashbrown::HashMap`] that associates to each `NodeId` its color
+///   and the `usize` number of used colors.
+///
+/// # Complexity
+/// * Time complexity: **O((|V| + |E|)log(|V|)**
+/// * Space complexity: **O(|V|)**
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [1]: https://en.wikipedia.org/wiki/DSatur
 ///
