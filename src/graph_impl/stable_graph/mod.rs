@@ -46,7 +46,7 @@ mod serialization;
 /// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
-/// The graph uses **O(|V| + |E|)** space where V is the set of nodes and E is the 
+/// The graph uses **O(|V| + |E|)** space where V is the set of nodes and E is the
 /// set of edges, and allows fast node and edge insert and efficient graph search.
 ///
 /// It implements **O(e')** edge lookup and edge and node removals, where **e'**

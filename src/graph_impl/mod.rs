@@ -329,7 +329,7 @@ impl fmt::Display for GraphError {
 /// The `Graph` is a regular Rust collection and is `Send` and `Sync` (as long
 /// as associated data `N` and `E` are).
 ///
-/// The graph uses **O(|V| + |E|)** space where V is the set of nodes and E is the number 
+/// The graph uses **O(|V| + |E|)** space where V is the set of nodes and E is the number
 /// of edges, and allows fast node and edge insert,
 /// efficient graph search and graph algorithms.
 /// It implements **O(e')** edge lookup and edge and node removals, where **e'**
