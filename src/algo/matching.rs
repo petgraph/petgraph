@@ -197,14 +197,14 @@ where
 /// instead.
 ///
 /// # Arguments
-/// * `graph`: an undirected graph
+/// * `graph`: an undirected graph.
 ///
 /// # Returns
 /// * [`struct@Matching`] calculated using greedy heuristic.
 ///
 /// # Complexity
-/// * Time complexity: **O(|V| + |E|)**
-/// * Space complexity: **O(|V|)**
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Space complexity: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -330,14 +330,14 @@ impl<G: GraphBase> PartialEq for Label<G> {
 /// **Panics** if `g.node_bound()` is `usize::MAX`.
 ///
 /// # Arguments
-/// * `graph`: an undirected graph
+/// * `graph`: an undirected graph.
 ///
 /// # Returns
 /// * [`struct@Matching`]: computed maximum matching.
 ///
 /// # Complexity
-/// * Time complexity: **O(|V|³)**
-/// * Space complexity: **O(|V| + |E|)**
+/// * Time complexity: **O(|V|³)**.
+/// * Space complexity: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///

@@ -161,16 +161,16 @@ const UNDEFINED: usize = usize::MAX;
 /// to ~30,000 nodes.
 ///
 /// # Arguments
-/// * `graph`: a control-flow graph
-/// * `root`: the *root* node of the `graph`
+/// * `graph`: a control-flow graph.
+/// * `root`: the *root* node of the `graph`.
 ///
 /// # Returns
 /// * `Dominators`: the dominance relation for given `graph` and `root`
-///   represented by [`struct@Dominators`]
+///   represented by [`struct@Dominators`].
 ///
 /// # Complexity
-/// * Time complexity: **O(|V|²)**
-/// * Space complexity: **O(|V| + |E|)**
+/// * Time complexity: **O(|V|²)**.
+/// * Space complexity: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///

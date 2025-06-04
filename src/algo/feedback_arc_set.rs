@@ -22,13 +22,13 @@ use self::linked_list::{LinkedList, LinkedListEntry};
 /// Loops (edges to and from the same node) are always included in the returned set.
 ///
 /// # Arguments
-/// * `g`: a directed graph
+/// * `g`: a directed graph.
 ///
 /// # Returns
-/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef`
+/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef`.
 ///
 /// # Complexity
-/// * Time complexity: **O(|E|)**, where |E| is the number of edges in the input graph.
+/// * Time complexity: **O(|E|)**, where **|E|** is the number of edges in the input graph.
 ///
 /// # Example
 ///

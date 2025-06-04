@@ -15,7 +15,7 @@ use alloc::{vec, vec::Vec};
 /// ## Arguments
 /// * `graph`: weighted graph.
 /// * `source`: the source vertex, for which we calculate the lengths of the shortest paths to all the others.
-/// * `edge_cost`: closure that returns cost of a particular edge
+/// * `edge_cost`: closure that returns cost of a particular edge.
 ///
 /// ## Returns
 /// * `Err`: if graph contains negative cycle.
@@ -23,8 +23,8 @@ use alloc::{vec, vec::Vec};
 ///   of predecessors of each vertex along the shortest path.
 ///
 /// ## Complexity
-/// * Time complexity: **O(|V||E|)**, but it's generally assumed that in the average case it is **O(|E|)**
-/// * Space complexity: **O(|V|)**
+/// * Time complexity: **O(|V||E|)**, but it's generally assumed that in the average case it is **O(|E|)**.
+/// * Space complexity: **O(|V|)**.
 ///
 /// |V| is the number of nodes, |E| is the number of edges in the input graph.
 ///

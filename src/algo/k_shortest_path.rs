@@ -10,28 +10,25 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 /// \[Generic\] k'th shortest path algorithm.
 ///
 /// Compute the length of the k'th shortest path from `start` to every reachable
-/// node.
-///
-/// The graph should be `Visitable` and implement `IntoEdges`. The function
-/// `edge_cost` should return the cost for a particular edge, which is used
-/// to compute path costs. Edge costs must be non-negative.
+/// node. Edge costs must be non-negative.
 ///
 /// If `goal` is not `None`, then the algorithm terminates once the `goal` node's
 /// cost is calculated.
 ///
 /// # Arguments
-/// * `graph`: an input graph
-/// * `start`: the *start* node
-/// * `goal`: optional *goal* node
-/// * `k`: sequence number of the required shortest paths
-/// * `edge_cost`: closure that returns cost of a particular edge
+/// * `graph`: an input graph.
+/// * `start`: the *start* node.
+/// * `goal`: optional *goal* node.
+/// * `k`: sequence number of the required shortest paths.
+/// * `edge_cost`: closure that should return the cost for a particular edge, which is used
+///   to compute path costs. Edge costs must be non-negative.
 ///
 /// # Returns
 /// * `HashMap`: [`struct@hashbrown::HashMap`] that maps `NodeId` to path cost.
 ///
 /// # Complexity
-/// * Time complexity: **O(k(|E| + |V|log(|V|)))**
-/// * Space complexity: **O(|V| + k|E|)**
+/// * Time complexity: **O(k(|E| + |V|log(|V|)))**.
+/// * Space complexity: **O(|V| + k|E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///

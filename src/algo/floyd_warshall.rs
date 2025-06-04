@@ -14,16 +14,16 @@ use crate::visit::{
 /// Compute the length of each shortest path in a weighted graph with positive or negative edge weights (but with no negative cycles).
 ///
 /// # Arguments
-/// * `graph`: graph with no negative cycle
-/// * `edge_cost`: closure that returns cost of a particular edge
+/// * `graph`: graph with no negative cycle.
+/// * `edge_cost`: closure that returns cost of a particular edge.
 ///
 /// # Returns
-/// * `Ok`: (if graph contains no negative cycle) a hashmap containing all pairs shortest paths
+/// * `Ok`: (if graph contains no negative cycle) a [`struct@hashbrown::HashMap`] containing all pairs shortest paths.
 /// * `Err`: if graph contains negative cycle.
 ///
 /// # Complexity
-/// * Time complexity: **O(|V|³)**
-/// * Space complexity: **O(|V|²)**
+/// * Time complexity: **O(|V|³)**.
+/// * Space complexity: **O(|V|²)**.
 ///
 /// where **|V|** is the number of nodes.
 ///

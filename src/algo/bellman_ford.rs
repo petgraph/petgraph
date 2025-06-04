@@ -20,22 +20,18 @@ pub struct Paths<NodeId, EdgeWeight> {
 /// permitted, but the graph must not have a cycle of negative weights
 /// (in that case it will return an error).
 ///
-/// On success, return one vec with path costs, and another one which points
-/// out the predecessor of a node along a shortest path. The vectors
-/// are indexed by the graph's node indices.
-///
 /// # Arguments
-/// * `g`: graph with no negative cycle
-/// * `source`: the source node
+/// * `g`: graph with no negative cycle.
+/// * `source`: the source node.
 ///
 /// # Returns
 /// * `Ok`: (if graph contains no negative cycle) a struct [`Paths`] containing distances and
-///   predecessors along each shortest path.
+///   predecessors along each shortest path. The vectors in [`Paths`] are indexed by the graph's node indices.
 /// * `Err`: if graph contains negative cycle.
 ///
 /// # Complexity
-/// * Time complexity: **O(|V||E|)**
-/// * Space complexity: **O(|V|)**
+/// * Time complexity: **O(|V||E|)**.
+/// * Space complexity: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -127,22 +123,22 @@ where
 
 /// \[Generic\] Find the path of a negative cycle reachable from node `source`.
 ///
-/// Using the [find_negative_cycle][nc]; will search the Graph for negative cycles using
+/// Using the [find_negative_cycle][nc]; will search the graph for negative cycles using
 /// [Bellman–Ford algorithm][bf]. If no negative cycle is found the function will return `None`.
 ///
 /// If a negative cycle is found from source, return one vec with a path of `NodeId`s.
 ///
 /// # Arguments
-/// * `g`: graph
-/// * `source`: the source node
+/// * `g`: graph.
+/// * `source`: the source node.
 ///
 /// # Returns
-/// * `Some(Vec<G::NodeId>)` - the path of the negative cycle (if found)
-/// * `None` - if `g` doesn't contain negative cycles reachable from `source`
+/// * `Some(Vec<G::NodeId>)` - the path of the negative cycle (if found).
+/// * `None` - if `g` doesn't contain negative cycles reachable from `source`.
 ///
 /// # Complexity
-/// * Time complexity: **O(|V||E|)**
-/// * Space complexity: **O(|V|)**
+/// * Time complexity: **O(|V||E|)**.
+/// * Space complexity: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
