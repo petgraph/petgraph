@@ -25,7 +25,27 @@ use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 /// it should never overestimate the actual cost to get to the nearest goal node. Estimate costs
 /// must also be non-negative.
 ///
+/// Returns the total cost + the path of subsequent `NodeId` from start to finish, if one was
+/// found.
+///
 /// The graph should be `Visitable` and implement `IntoEdges`.
+///
+///
+/// # Arguments
+/// * `graph`: weighted graph
+/// * `start`: the start node
+/// * `is_goal`: the callback defines the goal node
+/// * `edge_cost`: closure that returns cost of a particular edge
+/// * `estimate_cost`: closure that returns the estimated cost to the finish for particular node
+///
+/// # Returns
+/// * `Some(...)` - the total cost and path from start to finish, if one was found.
+/// * `None` - if such path was not found.
+///
+/// # Complexity
+/// * Time complexity: **O(b^d)**, where **b** is branching factor (the average number of successors per state)
+///   and **d** is the depth of *goal* node.
+///
 ///
 /// # Example
 /// ```
@@ -62,9 +82,6 @@ use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 /// let path = astar(&g, a, |finish| finish == f, |e| *e.weight(), |_| 0);
 /// assert_eq!(path, Some((6, vec![a, d, e, f])));
 /// ```
-///
-/// Returns the total cost + the path of subsequent `NodeId` from start to finish, if one was
-/// found.
 pub fn astar<G, F, H, K, IsGoal>(
     graph: G,
     start: G::NodeId,
