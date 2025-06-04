@@ -37,9 +37,9 @@ use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 /// * `None` - if such a path was not found.
 ///
 /// # Complexity
-/// The time complexity largely depends on the heuristic used. You can contribute to improve the documentation in this place ;)
+/// The time complexity largely depends on the heuristic used. Feel free to contribute and provide the exact time complexity :)
 ///
-/// With a trivial heuristic, the algorithm will work like [`fn@crate::algo::dijkstra`], but other situations are possible too.
+/// With a trivial heuristic, the algorithm will behave like [`fn@crate::algo::dijkstra`].
 ///
 /// # Example
 /// ```
