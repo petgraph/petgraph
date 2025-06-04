@@ -329,7 +329,7 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         self.nb_edges = 0;
     }
 
-    /// Return the number of nodes (vertices) in the graph.
+    /// Return the number of nodes (also called vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
     #[inline]
