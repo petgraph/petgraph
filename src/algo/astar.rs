@@ -25,9 +25,6 @@ use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 /// it should never overestimate the actual cost to get to the nearest goal node. Estimate costs
 /// must also be non-negative.
 ///
-/// The graph should be `Visitable` and implement `IntoEdges`.
-///
-///
 /// # Arguments
 /// * `graph`: weighted graph.
 /// * `start`: the start node.
@@ -40,9 +37,9 @@ use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 /// * `None` - if such a path was not found.
 ///
 /// # Complexity
-/// * Time complexity: **O(b^d)**, where **b** is the branching factor (the average number of successors per state)
-///   and **d** is the depth of *goal* node.
+/// The time complexity largely depends on the heuristic used. You can contribute to improve the documentation in this place ;)
 ///
+/// With a trivial heuristic, the algorithm will work like [`fn@crate::algo::dijkstra`], but other situations are possible too.
 ///
 /// # Example
 /// ```
