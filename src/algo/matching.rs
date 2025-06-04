@@ -189,12 +189,24 @@ where
 /// greedy heuristic.
 ///
 /// The input graph is treated as if undirected. The underlying heuristic is
-/// unspecified, but is guaranteed to be bounded by *O(|V| + |E|)*. No
+/// unspecified, but is guaranteed to be bounded by **O(|V| + |E|)**. No
 /// guarantees about the output are given other than that it is a valid
 /// matching.
 ///
 /// If you require a maximum matching, use [`maximum_matching`][1] function
 /// instead.
+///
+/// # Arguments
+/// * `graph`: an undirected graph
+///
+/// # Returns
+/// * [`struct@Matching`] calculated using greedy heuristic.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**
+/// * Space complexity: **O(|V|)**
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [1]: fn.maximum_matching.html
 pub fn greedy_matching<G>(graph: G) -> Matching<G>
@@ -312,10 +324,22 @@ impl<G: GraphBase> PartialEq for Label<G> {
 /// [1]: https://dl.acm.org/doi/10.1145/321941.321942
 ///
 /// The input graph is treated as if undirected. The algorithm runs in
-/// *O(|V|³)*. An algorithm with a better time complexity might be used in the
+/// **O(|V|³)**. An algorithm with a better time complexity might be used in the
 /// future.
 ///
 /// **Panics** if `g.node_bound()` is `usize::MAX`.
+///
+/// # Arguments
+/// * `graph`: an undirected graph
+///
+/// # Returns
+/// * [`struct@Matching`]: computed maximum matching.
+///
+/// # Complexity
+/// * Time complexity: **O(|V|³)**
+/// * Space complexity: **O(|V| + |E|)**
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// # Examples
 ///
