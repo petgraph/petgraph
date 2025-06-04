@@ -6,19 +6,16 @@ use alloc::{vec, vec::Vec};
 
 /// Find all [bridges](https://en.wikipedia.org/wiki/Bridge_(graph_theory)) in a simple undirected graph.
 ///
-/// Returns the iterator of edge references `G::EdgeRef`,
-/// representing the edges of the input graph that are bridges.
-/// The order of the edges is arbitrary.
-///
 /// # Arguments
-/// * `graph`: a simple undirected graph
+/// * `graph`: a simple undirected graph.
 ///
 /// # Returns
-/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef`
+/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef` representing the edges
+///   of the input graph that are bridges. The order of the edges is arbitrary.
 ///
 /// # Complexity
-/// * Time complexity: **O(|V| + |E|)**
-/// * Space complexity: **O(|V| + |E|)**
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Space complexity: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
