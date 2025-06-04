@@ -160,6 +160,20 @@ const UNDEFINED: usize = usize::MAX;
 /// Cooper et al found it to be faster in practice on control flow graphs of up
 /// to ~30,000 nodes.
 ///
+/// # Arguments
+/// * `graph`: a control-flow graph
+/// * `root`: the *root* node of the `graph`
+///
+/// # Returns
+/// * `Dominators`: the dominance relation for given `graph` and `root`
+///   represented by [`struct@Dominators`]
+///
+/// # Complexity
+/// * Time complexity: **O(|V|²)**
+/// * Space complexity: **O(|V| + |E|)**
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 /// [0]: http://www.hipersoft.rice.edu/grads/publications/dom14.pdf
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
 where
