@@ -6,8 +6,8 @@ use hashbrown::{HashMap, HashSet};
 use crate::scored::MaxScored;
 use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visitable};
 
-/// \[Generic\] DStatur algorithm to properly color a non weighted undirected graph.
-/// <https://en.wikipedia.org/wiki/DSatur>
+/// \[Generic\] [DStatur algorithm][1] to properly color a non weighted undirected graph.
+///
 ///
 /// This is a heuristic. So, it does not necessarily return a minimum coloring.
 ///
@@ -15,7 +15,9 @@ use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visi
 /// It must implement `IntoEdges`, `IntoNodeIdentifiers` and `Visitable`
 /// Returns a tuple composed of a HashMap that associates to each `NodeId` its color and the number of used colors.
 ///
-/// Computes in **O((|V| + |E|)*log(|V|)** time
+/// Computes in **O((|V| + |E|)log(|V|)** time.
+///
+/// [1]: https://en.wikipedia.org/wiki/DSatur
 ///
 /// # Example
 /// ```rust
