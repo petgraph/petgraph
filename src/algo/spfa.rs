@@ -22,6 +22,13 @@ use alloc::{vec, vec::Vec};
 /// * `Ok`: a pair of a vector of shortest distances and a vector
 ///   of predecessors of each vertex along the shortest path.
 ///
+/// ## Complexity
+/// * Time complexity: **O(|V||E|)**, but it's generally assumed that in the average case it is **O(|E|)**
+/// * Space complexity: **O(|V|)**
+///
+/// |V| is the number of nodes, |E| is the number of edges in the input graph.
+///
+///
 /// [spfa]: https://www.geeksforgeeks.org/shortest-path-faster-algorithm/
 ///
 /// # Example
