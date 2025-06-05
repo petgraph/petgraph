@@ -145,7 +145,8 @@ where
 /// `g`: an input graph that always treated as undirected.
 ///
 /// # Returns
-/// `bool`: `true` if the input graph contains a cycle and `false` otherwise.
+/// `true`: if the input graph contains a cycle.
+/// `false`: otherwise.
 ///
 /// # Complexity
 /// * Time complexity: amortized **O(|E|)**.
@@ -258,7 +259,8 @@ where
 /// `g`: a directed graph.
 ///
 /// # Returns
-/// `bool`: `true` if the input graph contains a cycle and `false` otherwise.
+/// `true`: if the input graph contains a cycle.
+/// `false`: otherwise.
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
