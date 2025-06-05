@@ -252,8 +252,19 @@ where
 
 /// \[Generic\] Return `true` if the input directed graph contains a cycle.
 ///
-/// This implementation is recursive; use `toposort` if an alternative is
-/// needed.
+/// This implementation is recursive; use [`toposort`] if an alternative is needed.
+///
+/// # Arguments:
+/// `g`: a directed graph.
+///
+/// # Returns
+/// `bool`: `true` if the input graph contains a cycle and `false` otherwise.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Space complexity: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_cyclic_directed<G>(g: G) -> bool
 where
     G: IntoNodeIdentifiers + IntoNeighbors + Visitable,
