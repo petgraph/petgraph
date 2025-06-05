@@ -70,6 +70,20 @@ pub use johnson::parallel_johnson;
 /// \[Generic\] Return the number of connected components of the graph.
 ///
 /// For a directed graph, this is the *weakly* connected components.
+///
+/// # Arguments
+/// * `g`: an input graph.
+///
+/// # Returns
+/// * `usize`: the number of connected components if `g` is undirected
+///   or number of *weakly* connected components if `g` is directed.
+///
+/// # Complexity
+/// * Time complexity: **O(|E| + |V|log|V|)**.
+/// * Space complexity: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 /// # Example
 /// ```rust
 /// use petgraph::Graph;
@@ -126,6 +140,18 @@ where
 /// \[Generic\] Return `true` if the input graph contains a cycle.
 ///
 /// Always treats the input graph as if undirected.
+///
+/// # Arguments:
+/// `g`: an input graph that always treated as undirected.
+///
+/// # Returns
+/// `bool`: `true` if the input graph contains a cycle and `false` otherwise.
+///
+/// # Complexity
+/// * Time complexity: amortized **O(|E|)**.
+/// * Space complexity: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_cyclic_undirected<G>(g: G) -> bool
 where
     G: NodeIndexable + IntoEdgeReferences,
