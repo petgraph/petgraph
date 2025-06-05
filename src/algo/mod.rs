@@ -774,11 +774,29 @@ impl<N> Cycle<N> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct NegativeCycle(pub ());
 
-/// Return `true` if the graph is bipartite. A graph is bipartite if its nodes can be divided into
-/// two disjoint and indepedent sets U and V such that every edge connects U to one in V. This
-/// algorithm implements 2-coloring algorithm based on the BFS algorithm.
+/// Return `true` if the graph\* is bipartite.
 ///
+/// A graph is bipartite if its nodes can be divided into
+/// two disjoint and indepedent sets U and V such that every edge connects U to one in V.
+///
+/// This algorithm implements 2-coloring algorithm based on the BFS algorithm.
 /// Always treats the input graph as if undirected.
+///
+/// \* The algorithm checks only the subgraph that is reachable from the `start`.
+///
+/// # Arguments
+/// * `g`: an input graph.
+/// * `start`: some node of the graph.
+///
+/// # Returns
+/// * `true`: if the subgraph accessible from the start node is bipartite.
+/// * `false`: if such a subgraph is not bipartite.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Space complexity: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
 where
     G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
