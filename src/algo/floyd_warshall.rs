@@ -28,7 +28,7 @@ use crate::visit::{
 /// where **|V|** is the number of nodes.
 ///
 /// **Note**: If the graph is sparse (the number of edges is quite small),
-/// consider using the [`johnson`](fn@crate::algo::johnson), which is likely to show better performance.
+/// consider using [`johnson`](fn@crate::algo::johnson)'s algorithm, which is likely to show better performance in such cases.
 ///
 /// # Examples
 /// ```rust
