@@ -25,10 +25,13 @@ use self::linked_list::{LinkedList, LinkedListEntry};
 /// * `g`: a directed graph.
 ///
 /// # Returns
-/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef`.
+/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef` in the feedback arc set.
 ///
 /// # Complexity
-/// * Time complexity: **O(|E|)**, where **|E|** is the number of edges in the input graph.
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Space complexity: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// # Example
 ///

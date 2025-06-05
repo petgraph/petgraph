@@ -9,7 +9,7 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 
 /// \[Generic\] k'th shortest path algorithm.
 ///
-/// Compute the length of the k'th shortest path from `start` to every reachable
+/// Compute the length of the k-th shortest path from `start` to every reachable
 /// node. Edge costs must be non-negative.
 ///
 /// If `goal` is not `None`, then the algorithm terminates once the `goal` node's

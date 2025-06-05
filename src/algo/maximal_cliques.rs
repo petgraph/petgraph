@@ -76,7 +76,7 @@ where
 /// * `g`: The graph to find maximal cliques in.
 ///
 /// # Returns
-/// * A vector of sets making up the maximal cliques in the graph.
+/// * `Vec<HashSet>`: A vector of [`struct@hashbrown::HashSet`] making up the maximal cliques in the graph.
 ///
 /// # Complexity
 /// * Time complexity: **O(3^(|V|/3))**

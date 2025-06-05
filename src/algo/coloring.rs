@@ -21,7 +21,7 @@ use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visi
 ///
 /// # Complexity
 /// * Time complexity: **O((|V| + |E|)log(|V|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Space complexity: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
