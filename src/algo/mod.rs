@@ -627,9 +627,21 @@ where
 
 /// [Graph] Condense every strongly connected component into a single node and return the result.
 ///
-/// If `make_acyclic` is true, self-loops and multi edges are ignored, guaranteeing that
-/// the output is acyclic.
-/// # Example
+/// # Arguments
+/// * `g`: an input [`Graph`].
+/// * `make_acyclic`: if `true`, self-loops and multi edges are ignored, guaranteeing that
+///   the output is acyclic.
+///
+/// # Returns
+/// Returns a `Graph` with nodes `Vec<N>` representing strongly connected components.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Space complexity: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
+/// # Examples
 /// ```rust
 /// use petgraph::Graph;
 /// use petgraph::algo::condensation;
