@@ -169,7 +169,7 @@ module documentation lists the available shorthand types.
 
 * [Creating an undirected graph and manipulating nodes and edges](#creating-an-undirected-graph-and-manipulating-nodes-and-edges)
 * [Differences of stable and non-stable graphs in index management](#differences-of-stable-and-non-stable-graphs-in-index-management)
-* [Using algorithms on graphs](#usign-algorithms-on-graphs)
+* [Using algorithms on graphs](#using-algorithms-on-graphs)
 * [Associating data with nodes and edges and transmuting the type of the data](#associating-data-with-nodes-and-edges-and-transmuting-the-type-of-the-data)
 * [Exporting graphs to DOT format](#exporting-graphs-to-dot-format)
 
@@ -280,8 +280,9 @@ Petgraph provides not only data structures for modeling graphs, but also a wide 
 that can be applied to them. For example, given a graph, one can compute shortest paths,
 minimum spanning trees, or even compute the maximal cliques of a graph.
 
-Generally, algorithms are found in the [`algo`] module. All of them should include an example of
-how to use them. For example, to compute the minimum spanning tree of a graph, one can use the
+Generally, algorithms are found in the [`algo`] module, except for algorithms like
+depth-/breadth-first-search, which can be found in the [visit] module. All of them should include
+an example of how to use them. For example, to compute the minimum spanning tree of a graph, one can use the
 [`min_spanning_tree`](algo/min_spanning_tree/fn.min_spanning_tree.html) function.
 
 ```
