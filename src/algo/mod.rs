@@ -333,8 +333,23 @@ where
 ///
 /// If `from` and `to` are equal, this function returns true.
 ///
-/// If `space` is not `None`, it is used instead of creating a new workspace for
-/// graph traversal.
+/// # Arguments:
+/// * `g`: an input graph.
+/// * `from`: the first node of a desired path.
+/// * `to`: the last node of a desired path.
+/// * `space`: optional [`DfsSpace`]. If `space` is not `None`,
+///   it is used instead of creating a new workspace for graph traversal.
+///
+/// # Returns
+/// * `true`: if there exists a path starting at `from` and reaching
+///   `to` or `from` and `to` are equal.
+/// * `false`: otherwise.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Space complexity: **O(|V|)** or **O(1)** if `space` was provided.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn has_path_connecting<G>(
     g: G,
     from: G::NodeId,
