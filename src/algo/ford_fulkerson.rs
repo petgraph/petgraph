@@ -121,8 +121,7 @@ where
 /// # Returns
 /// Returns a tuple of two values:
 /// * `N::EdgeWeight`: computed maximum flow;
-/// * `Vec<N::EdgeWeight>`: the flow of each edge.
-///   The vector is indexed by the graph's edge indices.
+/// * `Vec<N::EdgeWeight>`: the flow of each edge. The vector is indexed by the graph's edge indices.
 ///
 /// # Complexity
 /// * Time complexity: **O(|V||E|²)**.

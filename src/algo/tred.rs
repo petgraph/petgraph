@@ -26,7 +26,9 @@ use crate::Direction;
 /// * `toposort`: a topological order on the node indices of `g` (for example obtained from [`toposort`](fn@crate::algo::toposort)).
 ///
 /// # Returns
-/// Returns a pair of a graph `res` represented with [`UnweightedList`](type@crate::adj::UnweightedList) and the reciprocal of the topological sort `revmap`:
+/// Returns a tuple of:
+/// * [`UnweightedList`](type@crate::adj::UnweightedList) `res` graph.
+/// * `Vec`: reciprocal of the topological sort `revmap`.
 ///
 /// `res` is the same graph as `g` with the following differences:
 /// * Node and edge weights are stripped,
@@ -108,7 +110,8 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + \sum_{(x, y) \in Er} d(y))** where **d(y)**
-///   denotes the outgoing degree of **y** in the transitive closure of **G**.
+///   denotes the outgoing degree of **y** in the transitive closure of **G**
+///   and **Er** the edge set of the transitive reduction.
 ///   This is still **O(|V|³)** in the worst case like the naive algorithm but
 ///   should perform better for some classes of graphs.
 /// * Auxiliary space: **O(|E|)**.

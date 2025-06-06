@@ -13,12 +13,13 @@ use crate::{
 
 /// Calculate all simple paths with specified constraints from node `from` to node `to`.
 ///
-/// The simple path is a path without repetitions.
-/// The number of simple paths between a given pair of vertices almost always grows exponentially,
-/// reaching `O(V!)` on a dense graphs at `V` vertices.
+/// A simple path is a path without repeating nodes.
+/// The number of simple paths between a given pair of vertices can grow exponentially,
+/// reaching `O(|V|!)` on complete graphs with `|V|` vertices.
 ///
-/// So if you have a large enough graph, be prepared to wait for the results for years.
+/// So if you have a large enough graph, be prepared to wait on the results for years.
 /// Or consider extracting only part of the simple paths using the adapter [`Iterator::take`].
+/// Also note, that this algorithm does not check that a path exists between `from` and `to`. This may lead to very long running times and it may be worth it to check if a path exists before running this algorithm on large graphs.
 ///
 /// This algorithm is adapted from [NetworkX](https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.simple_paths.all_simple_paths.html).
 /// # Arguments
@@ -32,7 +33,7 @@ use crate::{
 /// and at most `max_intermediate_nodes`, if given, or limited by the graph's order otherwise.
 ///
 /// # Complexity
-/// * Time complexity: for computing first **k** paths, the running time will be **O(k|V| + k|E|)**.
+/// * Time complexity: for computing the first **k** paths, the running time will be **O(k|V| + k|E|)**.
 /// * Auxillary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.

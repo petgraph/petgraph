@@ -140,7 +140,7 @@ where
 /// A `StableGraph` containing the nodes and edges of the Steiner tree.
 ///
 /// ## Complexity
-/// Time complexity is **O(|S| |V|²)**,
+/// Time complexity: **O(|S| |V|²)**.
 /// where **|V|** the number of vertices (i.e nodes) and **|S|** the number of provided terminals.
 ///
 /// [1]: https://en.wikipedia.org/wiki/Steiner_tree_problem

@@ -16,6 +16,7 @@ use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visi
 /// * `graph`: undirected graph without loops.
 ///
 /// # Returns
+/// Returns a tuple of:
 /// * [`struct@hashbrown::HashMap`] that associates to each `NodeId` its color.
 /// * `usize`: the number of used colors.
 ///
