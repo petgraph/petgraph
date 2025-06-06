@@ -79,7 +79,7 @@ pub use johnson::parallel_johnson;
 ///   or number of *weakly* connected components if `g` is directed.
 ///
 /// # Complexity
-/// * Time complexity: **O(|E| + |V|log|V|)**.
+/// * Time complexity: amortized **O(|E| + |V|log|V|)**.
 /// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
