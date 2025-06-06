@@ -27,10 +27,10 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 /// * `HashMap`: [`struct@hashbrown::HashMap`] that maps `NodeId` to path cost.
 ///
 /// # Complexity
-/// * Time complexity: **O(k(|E| + |V|log(|V|)))**.
+/// * Time complexity: **O(k|E| log(k|E|))**.
 /// * Auxiliary space: **O(|V| + k|E|)**.
 ///
-/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+/// where **|V|** is the number of nodes, **|E|** is the number of edges and **k** is the provided parameter.
 ///
 /// # Example
 /// ```rust
