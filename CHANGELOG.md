@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 
 ## [0.8.2](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.1...petgraph@v0.8.2) - 2025-06-06
+This minor release fixes several bugs, adds two new algorithms, slightly improves the performance of `maximum_matching`, 
+adds a tool for parsing graphs from Dot/Graphviz files, and improves the documentation, making it more complete and uniform, as well as clarifying several points.
 
 ### Bug Fixes
 
