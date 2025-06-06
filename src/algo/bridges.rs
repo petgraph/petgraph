@@ -5,11 +5,20 @@ use crate::visit::{
 use alloc::{vec, vec::Vec};
 
 /// Find all [bridges](https://en.wikipedia.org/wiki/Bridge_(graph_theory)) in a simple undirected graph.
-/// The algorithm is **O(|E|)** where **|E|** is the number of edges in the graph.
 ///
-/// Returns the vector of pairs `(G::NodeID, G:: NodeID)`,
-/// representing the edges of the input graph that are bridges.
-/// The order of the vertices in the pair and the order of the edges themselves are arbitrary.
+/// # Arguments
+/// * `graph`: a simple undirected graph.
+///
+/// # Returns
+/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef` representing the edges
+///   of the input graph that are bridges. The order of the edges is arbitrary.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 ///
 /// # Examples
 ///

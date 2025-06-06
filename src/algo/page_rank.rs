@@ -10,14 +10,20 @@ use rayon::prelude::*;
 ///
 /// Computes the ranks of every node in a graph using the [Page Rank algorithm][pr].
 ///
-/// Returns a `Vec` container mapping each node index to its rank.
+/// # Arguments
+/// * `graph`: a directed graph.
+/// * `damping_factor`: a value in range `0.0 <= damping_factor <= 1.0`.
+/// * `nb_iter`: number of iterations of the main loop.
+///
+/// # Returns
+/// * A `Vec` mapping each node index to its rank.
 ///
 /// # Panics
-/// The damping factor should be a number of type `f32` or `f64` between 0 and 1 (0 and 1 included). Otherwise, it panics.
+/// The damping factor should be a measure (like `f32` or `f64`) between 0 and 1 (0 and 1 included). Otherwise, it panics.
 ///
 /// # Complexity
-/// - Time complexity is **O(n|V|²|E|)**,
-/// - Space complexity is **O(|V| + |E|)**,
+/// * Time complexity: **O(n|V|²|E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **n** is the number of iterations, **|V|** the number of vertices (i.e nodes) and **|E|** the number of edges.
 ///

@@ -22,9 +22,20 @@ use crate::visit::{IntoEdgeReferences, NodeIndexable};
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
 /// and **|V| - c** edges, where **c** is the number of connected components in `g`.
 ///
-/// Use `from_elements` to create a graph from the resulting iterator.
-///
 /// See also: [`min_spanning_tree_prim`][1] for an implementation using Prim's algorithm.
+///
+/// # Arguments
+/// * `g`: an undirected graph.
+///
+/// # Returns
+/// * [`MinSpanningTree`]: an iterator producing a minimum spanning forest of a graph.
+///   Use `from_elements` to create a graph from the resulting iterator.
+///
+/// # Complexity
+/// * Time complexity: **O(|E| log |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [1]: fn.min_spanning_tree_prim.html
 ///
@@ -180,14 +191,23 @@ where
 /// Graph is treated as if connected (has only 1 component). Otherwise, the resulting
 /// graph will only contain edges for an arbitrary minimum spanning tree for a single component.
 ///
-/// Using Prim's algorithm with runtime **O(|E| log |V|)**.
-///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
 /// and **|V| - 1** edges if input graph is connected, and |W| edges if disconnected, where |W| < |V| - 1.
 ///
-/// Use `from_elements` to create a graph from the resulting iterator.
-///
 /// See also: [`min_spanning_tree`][1] for an implementation using Kruskal's algorithm and support for minimum spanning forest.
+///
+/// # Arguments
+/// * `g`: an undirected graph.
+///
+/// # Returns
+/// * [`MinSpanningTreePrim`]: an iterator producing a minimum spanning tree of a graph.
+///   Use `from_elements` to create a graph from the resulting iterator.
+///
+/// # Complexity
+/// * Time complexity: **O(|E| log |V|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [1]: fn.min_spanning_tree.html
 ///

@@ -70,6 +70,20 @@ pub use johnson::parallel_johnson;
 /// \[Generic\] Return the number of connected components of the graph.
 ///
 /// For a directed graph, this is the *weakly* connected components.
+///
+/// # Arguments
+/// * `g`: an input graph.
+///
+/// # Returns
+/// * `usize`: the number of connected components if `g` is undirected
+///   or number of *weakly* connected components if `g` is directed.
+///
+/// # Complexity
+/// * Time complexity: amortized **O(|E| + |V|log|V|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 /// # Example
 /// ```rust
 /// use petgraph::Graph;
@@ -126,6 +140,19 @@ where
 /// \[Generic\] Return `true` if the input graph contains a cycle.
 ///
 /// Always treats the input graph as if undirected.
+///
+/// # Arguments:
+/// `g`: an input graph that always treated as undirected.
+///
+/// # Returns
+/// `true`: if the input graph contains a cycle.
+/// `false`: otherwise.
+///
+/// # Complexity
+/// * Time complexity: amortized **O(|E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_cyclic_undirected<G>(g: G) -> bool
 where
     G: NodeIndexable + IntoEdgeReferences,
@@ -145,15 +172,28 @@ where
 
 /// \[Generic\] Perform a topological sort of a directed graph.
 ///
-/// If the graph was acyclic, return a vector of nodes in topological order:
-/// each node is ordered before its successors.
-/// Otherwise, it will return a `Cycle` error. Self loops are also cycles.
+/// `toposort` returns `Err` on graphs with cycles.
+/// To handle graphs with cycles, use the one of scc algorithms or
+/// [`DfsPostOrder`](struct@crate::visit::DfsPostOrder)
+///   instead of this function.
 ///
-/// To handle graphs with cycles, use the scc algorithms or `DfsPostOrder`
-/// instead of this function.
+/// The implementation is iterative.
 ///
-/// If `space` is not `None`, it is used instead of creating a new workspace for
-/// graph traversal. The implementation is iterative.
+/// # Arguments
+/// * `g`: an acyclic directed graph.
+/// * `space`: optional [`DfsSpace`]. If `space` is not `None`,
+///   it is used instead of creating a new workspace for graph traversal.
+///
+/// # Returns
+/// * `Ok`: a vector of nodes in topological order: each node is ordered before its successors
+///   (if the graph was acyclic).
+/// * `Err`: [`Cycle`] if the graph was not acyclic. Self loops are also cycles this case.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn toposort<G>(
     g: G,
     space: Option<&mut DfsSpace<G::NodeId, G::Map>>,
@@ -213,8 +253,20 @@ where
 
 /// \[Generic\] Return `true` if the input directed graph contains a cycle.
 ///
-/// This implementation is recursive; use `toposort` if an alternative is
-/// needed.
+/// This implementation is recursive; use [`toposort`] if an alternative is needed.
+///
+/// # Arguments:
+/// `g`: a directed graph.
+///
+/// # Returns
+/// `true`: if the input graph contains a cycle.
+/// `false`: otherwise.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_cyclic_directed<G>(g: G) -> bool
 where
     G: IntoNodeIdentifiers + IntoNeighbors + Visitable,
@@ -283,8 +335,23 @@ where
 ///
 /// If `from` and `to` are equal, this function returns true.
 ///
-/// If `space` is not `None`, it is used instead of creating a new workspace for
-/// graph traversal.
+/// # Arguments:
+/// * `g`: an input graph.
+/// * `from`: the first node of a desired path.
+/// * `to`: the last node of a desired path.
+/// * `space`: optional [`DfsSpace`]. If `space` is not `None`,
+///   it is used instead of creating a new workspace for graph traversal.
+///
+/// # Returns
+/// * `true`: if there exists a path starting at `from` and reaching
+///   `to` or `from` and `to` are equal.
+/// * `false`: otherwise.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V|)** or **O(1)** if `space` was provided.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn has_path_connecting<G>(
     g: G,
     from: G::NodeId,
@@ -312,15 +379,25 @@ where
 
 /// \[Generic\] Compute the *strongly connected components* using [Kosaraju's algorithm][1].
 ///
-/// [1]: https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm
+/// This implementation is iterative and does two passes over the nodes.
 ///
+/// # Arguments
+/// * `g`: a directed or undirected graph.
+///
+/// # Returns
 /// Return a vector where each element is a strongly connected component (scc).
 /// The order of node ids within each scc is arbitrary, but the order of
 /// the sccs is their postorder (reverse topological sort).
 ///
 /// For an undirected graph, the sccs are simply the connected components.
 ///
-/// This implementation is iterative and does two passes over the nodes.
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
+/// [1]: https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm
 pub fn kosaraju_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 where
     G: IntoNeighborsDirected + Visitable + IntoNodeIdentifiers,
@@ -514,18 +591,28 @@ impl<N> TarjanScc<N> {
 
 /// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
 ///
-/// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
-/// [2]: https://homepages.ecs.vuw.ac.nz/~djp/files/P05.pdf
+/// This implementation is recursive and does one pass over the nodes. It is based on
+/// [A Space-Efficient Algorithm for Finding Strongly Connected Components][2] by David J. Pierce,
+/// to provide a memory-efficient implementation of [Tarjan's algorithm][1].
 ///
+/// # Arguments
+/// * `g`: a directed or undirected graph.
+///
+/// # Returns
 /// Return a vector where each element is a strongly connected component (scc).
 /// The order of node ids within each scc is arbitrary, but the order of
 /// the sccs is their postorder (reverse topological sort).
 ///
 /// For an undirected graph, the sccs are simply the connected components.
 ///
-/// This implementation is recursive and does one pass over the nodes. It is based on
-/// [A Space-Efficient Algorithm for Finding Strongly Connected Components][2] by David J. Pierce,
-/// to provide a memory-efficient implementation of [Tarjan's algorithm][1].
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
+/// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+/// [2]: https://www.researchgate.net/publication/283024636_A_space-efficient_algorithm_for_finding_strongly_connected_components
 pub fn tarjan_scc<G>(g: G) -> Vec<Vec<G::NodeId>>
 where
     G: IntoNodeIdentifiers + IntoNeighbors + NodeIndexable,
@@ -540,9 +627,21 @@ where
 
 /// [Graph] Condense every strongly connected component into a single node and return the result.
 ///
-/// If `make_acyclic` is true, self-loops and multi edges are ignored, guaranteeing that
-/// the output is acyclic.
-/// # Example
+/// # Arguments
+/// * `g`: an input [`Graph`].
+/// * `make_acyclic`: if `true`, self-loops and multi edges are ignored, guaranteeing that
+///   the output is acyclic.
+///
+/// # Returns
+/// Returns a `Graph` with nodes `Vec<N>` representing strongly connected components.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
+/// # Examples
 /// ```rust
 /// use petgraph::Graph;
 /// use petgraph::algo::condensation;
@@ -675,11 +774,29 @@ impl<N> Cycle<N> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct NegativeCycle(pub ());
 
-/// Return `true` if the graph is bipartite. A graph is bipartite if its nodes can be divided into
-/// two disjoint and indepedent sets U and V such that every edge connects U to one in V. This
-/// algorithm implements 2-coloring algorithm based on the BFS algorithm.
+/// Return `true` if the graph\* is bipartite.
 ///
+/// A graph is bipartite if its nodes can be divided into
+/// two disjoint and indepedent sets U and V such that every edge connects U to one in V.
+///
+/// This algorithm implements 2-coloring algorithm based on the BFS algorithm.
 /// Always treats the input graph as if undirected.
+///
+/// \* The algorithm checks only the subgraph that is reachable from the `start`.
+///
+/// # Arguments
+/// * `g`: an input graph.
+/// * `start`: some node of the graph.
+///
+/// # Returns
+/// * `true`: if the subgraph accessible from the start node is bipartite.
+/// * `false`: if such a subgraph is not bipartite.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
 where
     G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
