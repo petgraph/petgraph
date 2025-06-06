@@ -35,7 +35,7 @@ use core::marker::{Send, Sync};
 ///
 /// # Complexity
 /// * Time complexity: **O(|V||E|log(|V|) + |V|²log(|V|))** since the implementation is based on [`dijkstra`](fn@crate::algo::dijkstra).
-/// * Space complexity: **O(|V|² + |V||E|)**.
+/// * Auxiliary space: **O(|V|² + |V||E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///

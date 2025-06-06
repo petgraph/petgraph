@@ -80,7 +80,7 @@ pub use johnson::parallel_johnson;
 ///
 /// # Complexity
 /// * Time complexity: **O(|E| + |V|log|V|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -150,7 +150,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: amortized **O(|E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_cyclic_undirected<G>(g: G) -> bool
@@ -191,7 +191,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn toposort<G>(
@@ -264,7 +264,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_cyclic_directed<G>(g: G) -> bool
@@ -349,7 +349,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
-/// * Space complexity: **O(|V|)** or **O(1)** if `space` was provided.
+/// * Auxiliary space: **O(|V|)** or **O(1)** if `space` was provided.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn has_path_connecting<G>(
@@ -393,7 +393,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -607,7 +607,7 @@ impl<N> TarjanScc<N> {
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -637,7 +637,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
-/// * Space complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -794,7 +794,7 @@ pub struct NegativeCycle(pub ());
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool

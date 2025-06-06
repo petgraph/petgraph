@@ -22,8 +22,8 @@ use rayon::prelude::*;
 /// The damping factor should be a measure (like `f32` or `f64`) between 0 and 1 (0 and 1 included). Otherwise, it panics.
 ///
 /// # Complexity
-/// * Time complexity is **O(n|V|²|E|)**.
-/// * Space complexity is **O(|V| + |E|)**.
+/// * Time complexity: **O(n|V|²|E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **n** is the number of iterations, **|V|** the number of vertices (i.e nodes) and **|E|** the number of edges.
 ///

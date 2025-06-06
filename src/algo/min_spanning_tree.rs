@@ -33,7 +33,7 @@ use crate::visit::{IntoEdgeReferences, NodeIndexable};
 ///
 /// # Complexity
 /// * Time complexity: **O(|E| log |E|)**.
-/// * Space complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -205,7 +205,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|E| log |V|)**.
-/// * Space complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///

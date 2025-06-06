@@ -37,7 +37,7 @@ use crate::Direction;
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
-/// * Space complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -111,7 +111,7 @@ where
 ///   denotes the outgoing degree of **y** in the transitive closure of **G**.
 ///   This is still **O(|V|³)** in the worst case like the naive algorithm but
 ///   should perform better for some classes of graphs.
-/// * Space complexity: **O(|E|)**.
+/// * Auxiliary space: **O(|E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn dag_transitive_reduction_closure<E, Ix: IndexType>(

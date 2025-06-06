@@ -80,7 +80,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(3^(|V|/3))**
-/// * Space complexity: **O(|V|²)** plus the space needed for sets R, P, and X.
+/// * Auxiliary space: **O(|V|²)**.
 ///
 /// where **|V|** is the number of nodes.
 ///

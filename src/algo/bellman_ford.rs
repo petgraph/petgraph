@@ -31,7 +31,7 @@ pub struct Paths<NodeId, EdgeWeight> {
 ///
 /// # Complexity
 /// * Time complexity: **O(|V||E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -138,7 +138,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V||E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///

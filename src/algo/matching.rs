@@ -204,7 +204,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
@@ -337,7 +337,7 @@ impl<G: GraphBase> PartialEq for Label<G> {
 ///
 /// # Complexity
 /// * Time complexity: **O(|V|³)**.
-/// * Space complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///

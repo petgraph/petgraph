@@ -24,7 +24,7 @@ use alloc::{vec, vec::Vec};
 ///
 /// ## Complexity
 /// * Time complexity: **O(|V||E|)**, but it's generally assumed that in the average case it is **O(|E|)**.
-/// * Space complexity: **O(|V|)**.
+/// * Auxiliary space: **O(|V|)**.
 ///
 /// |V| is the number of nodes, |E| is the number of edges in the input graph.
 ///

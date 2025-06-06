@@ -170,7 +170,7 @@ const UNDEFINED: usize = usize::MAX;
 ///
 /// # Complexity
 /// * Time complexity: **O(|V|²)**.
-/// * Space complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///

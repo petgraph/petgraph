@@ -126,7 +126,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V||E|²)**.
-/// * Space complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///

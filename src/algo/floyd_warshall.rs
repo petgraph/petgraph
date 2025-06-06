@@ -23,7 +23,7 @@ use crate::visit::{
 ///
 /// # Complexity
 /// * Time complexity: **O(|V|³)**.
-/// * Space complexity: **O(|V|²)**.
+/// * Auxiliary space: **O(|V|²)**.
 ///
 /// where **|V|** is the number of nodes.
 ///
@@ -135,7 +135,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(|V|³)**
-/// * Space complexity: **O(|V|²)**
+/// * Auxiliary space: **O(|V|²)**
 ///
 /// # Examples
 /// ```rust
