@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.8.2](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.1...petgraph@v0.8.2) - 2025-06-06
+
+### Bug Fixes
+
+- Ford Fulkerson sometimes Panics on StableGraphs ([#793](https://github.com/petgraph/petgraph/pull/793))
+- Run Maximal Cliques Quickcheck only on Digraphs which are symmetrical ([#800](https://github.com/petgraph/petgraph/pull/800))
+- Run Steiner Tree Quickcheck on the connected components to properly support disconnected graphs ([#801](https://github.com/petgraph/petgraph/pull/801))
+- Quickcheck random01 function only outputs 0 ([#798](https://github.com/petgraph/petgraph/pull/798))
+
+### Documentation
+
+- Specify that Acyclic::try_udpate_edge may add an edge ([#770](https://github.com/petgraph/petgraph/pull/770))
+- Update remove_node doc comment in graphmap.rs ([#663](https://github.com/petgraph/petgraph/pull/663))
+- Add examples to minimum spanning tree functions ([#808](https://github.com/petgraph/petgraph/pull/808))
+- Minimal typo fix in comments ([#803](https://github.com/petgraph/petgraph/pull/803))
+- Update docs.rs ([#807](https://github.com/petgraph/petgraph/pull/807))
+- Add note about `StableGraph::edge_indices` behaviour ([#812](https://github.com/petgraph/petgraph/pull/812))
+- Clarification of references to nodes and V (refresh #358) ([#814](https://github.com/petgraph/petgraph/pull/814))
+- Fix link and mention Dfs and Bfs as special case in examples ([#816](https://github.com/petgraph/petgraph/pull/816))
+- Unify algo docs ([#815](https://github.com/petgraph/petgraph/pull/815))
+
+### New Features
+
+- *(parser)* allow parsing graphs from Dot/Graphviz files ([#653](https://github.com/petgraph/petgraph/pull/653))
+- Implement `DataMap` for `GraphMap` graphs ([#776](https://github.com/petgraph/petgraph/pull/776))
+- Add Johnson's algorithm ([#741](https://github.com/petgraph/petgraph/pull/741))
+- Add algorithm to find bridge edges ([#590](https://github.com/petgraph/petgraph/pull/590))
+
+### Performance
+
+- Reuse queue allocation in `maximum_matching` main loop ([#817](https://github.com/petgraph/petgraph/pull/817))
+
+### Refactor
+
+- Fix new clippy warnings ([#791](https://github.com/petgraph/petgraph/pull/791))
+
 ## [0.8.1](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.0...petgraph@v0.8.1) - 2025-04-07
 
 This patch release re-adds a missing `VisitMap` implementation that was dropped in the `0.8.0` release,
