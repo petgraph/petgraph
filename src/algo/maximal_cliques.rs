@@ -80,9 +80,10 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(3^(|V|/3))**
-/// * Auxiliary space: **O(|V|²)**.
+/// * Auxiliary space: **O(|V|² + k)**.
 ///
-/// where **|V|** is the number of nodes.
+/// where **|V|** is the number of nodes and k is the number of maximal cliques in the graph
+/// (possibly up to *3^(|V|/3)** many).
 ///
 /// [1]: https://en.wikipedia.org/wiki/Bron%E2%80%93Kerbosch_algorithm
 ///
