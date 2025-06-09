@@ -152,7 +152,7 @@ terms.
 
 [docsrs-badge]: https://img.shields.io/docsrs/petgraph
 
-[docsrs-examples]: https://docs.rs/petgraph/latest/petgraph/index.html#example
+[docsrs-examples]: https://docs.rs/petgraph/latest/petgraph/index.html#examples
 
 [docsrs-graph-map]: https://docs.rs/petgraph/latest/petgraph/stable_graph/struct.StableGraph.html
 
