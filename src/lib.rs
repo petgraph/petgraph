@@ -281,7 +281,7 @@ that can be applied to them. For example, given a graph, one can compute shortes
 minimum spanning trees, or even compute the maximal cliques of a graph.
 
 Generally, algorithms are found in the [`algo`] module, except for algorithms like
-depth-/breadth-first-search, which can be found in the [visit] module. All of them should include
+depth-/breadth-first-search, which can be found in the [`visit`] module. All of them should include
 an example of how to use them. For example, to compute the minimum spanning tree of a graph, one can use the
 [`min_spanning_tree`](algo/min_spanning_tree/fn.min_spanning_tree.html) function.
 
