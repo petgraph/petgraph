@@ -190,8 +190,6 @@ where
 
 impl<N, E, Ty, S> GraphMap<N, E, Ty, S>
 where
-    N: NodeTrait,
-    Ty: EdgeType,
     S: BuildHasher,
 {
     /// Create a new `GraphMap`
@@ -225,7 +223,14 @@ where
             ty: PhantomData,
         }
     }
+}
 
+impl<N, E, Ty, S> GraphMap<N, E, Ty, S>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+    S: BuildHasher,
+{
     /// Return the current node and edge capacity of the graph.
     pub fn capacity(&self) -> (usize, usize) {
         (self.nodes.capacity(), self.edges.capacity())
@@ -1009,8 +1014,6 @@ where
 /// Create a new empty `GraphMap`.
 impl<N, E, Ty, S> Default for GraphMap<N, E, Ty, S>
 where
-    N: NodeTrait,
-    Ty: EdgeType,
     S: BuildHasher + Default,
 {
     fn default() -> Self {
