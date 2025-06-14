@@ -8,7 +8,7 @@ use core::hash::Hash;
 use hashbrown::HashMap;
 use fixedbitset::FixedBitSet;
 
-/// \[Generic\] [Wave Function Collapse algorithm][1] to properly color a non-weighted undirected graph.
+/// \[Generic\] [Wave Function Collapse Coloring algorithm][1] to properly color a non-weighted undirected graph.
 ///
 /// This is a constraint satisfaction algorithm that assigns colors to vertices such that
 /// no adjacent vertices share the same color. The algorithm uses entropy-based heuristics
