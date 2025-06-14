@@ -43,7 +43,7 @@ debug = true
 [dependencies]
 fixedbitset = { version = "0.5.7", default-features = false }
 indexmap = { version = "2.5.0", default-features = false }
-hashbrown = { version = "^0.15.0", default-features = false, features = ["default-hasher"] }
+hashbrown = { version = "^0.15.0", default-features = false, features = ["default-hasher", "inline-more"] }
 quickcheck = { optional = true, version = "0.8", default-features = false }
 serde = { version = "1.0", default-features = false, optional = true }
 serde_derive = { version = "1.0", default-features = false, optional = true }
