@@ -3,12 +3,10 @@ use crate::algo::Vec;
 use crate::alloc::collections::vec_deque::VecDeque;
 use crate::alloc::string::String;
 use crate::alloc::string::ToString;
-use crate::visit::{
-    GetAdjacencyMatrix, GraphProp, IntoNeighbors, NodeCount, NodeIndexable, Visitable,
-};
+use crate::visit::{GraphProp, IntoNeighbors, NodeCount, NodeIndexable, Visitable, GetAdjacencyMatrix};
 use core::hash::Hash;
-use fixedbitset::FixedBitSet;
 use hashbrown::HashMap;
+use fixedbitset::FixedBitSet;
 
 /// \[Generic\] [Wave Function Collapse algorithm][1] to properly color a non-weighted undirected graph.
 ///
@@ -125,7 +123,7 @@ struct WfcState<AdjMatrix> {
     colors: usize,
     adjacency_matrix: AdjMatrix,
     available_colors: Vec<FixedBitSet>,
-    entropy: Vec<usize>,
+    entropy: Vec<Option<usize>>,
     output: Vec<isize>,
     affected_nodes: VecDeque<usize>,
     finished: bool,
@@ -147,7 +145,7 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
                     bitset
                 })
                 .collect(),
-            entropy: vec![colors; nodes],
+            entropy: vec![Some(colors); nodes],
             output: vec![-1; nodes],
             affected_nodes: VecDeque::new(),
             finished: false,
@@ -162,7 +160,7 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
                 bitset
             })
             .collect();
-        self.entropy = vec![self.colors; self.nodes];
+        self.entropy = vec![Some(self.colors); self.nodes];
         self.output = vec![-1; self.nodes];
         self.affected_nodes.clear();
         self.finished = false;
@@ -174,17 +172,19 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
         self.finished = true;
 
         for (index, &val) in self.entropy.iter().enumerate() {
-            if val == usize::MAX {
+            if val.is_none() {
                 continue;
             }
-            if val == 0 {
+            if val == Some(0) {
                 self.restart_wfc();
                 return EntropyResult::Restart;
             }
-            if val < min_value {
-                min_value = val;
-                min_index = Some(index);
-                self.finished = false;
+            if let Some(entropy_val) = val {
+                if entropy_val < min_value {
+                    min_value = entropy_val;
+                    min_index = Some(index);
+                    self.finished = false;
+                }
             }
         }
 
@@ -198,11 +198,11 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
         if self.finished {
             return Ok(());
         }
-        if self.entropy[index] == 0 {
+        if self.entropy[index] == Some(0) {
             return Err("Impossible pattern".to_string());
         }
 
-        self.entropy[index] = usize::MAX;
+        self.entropy[index] = None;
         self.affected_nodes.push_back(index);
 
         let color_index = self.available_colors[index]
@@ -234,18 +234,21 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
                 let neighbor = graph.from_index(node_index);
 
                 if graph.is_adjacent(&self.adjacency_matrix, node, neighbor)
-                    && self.entropy[node_index] != usize::MAX
+                    && self.entropy[node_index].is_some()
                     && self.available_colors[node_index].contains(color_index)
                 {
                     self.available_colors[node_index].set(color_index, false);
-                    self.entropy[node_index] -= 1;
 
-                    if self.entropy[node_index] == 0 {
-                        return Err("Propagation error: no valid configuration".to_string());
-                    }
-                    if self.entropy[node_index] == 1 && !visited[node_index] {
-                        visited[node_index] = true;
-                        self.affected_nodes.push_back(node_index);
+                    if let Some(current_entropy) = self.entropy[node_index] {
+                        self.entropy[node_index] = Some(current_entropy - 1);
+
+                        if self.entropy[node_index] == Some(0) {
+                            return Err("Propagation error: no valid configuration".to_string());
+                        }
+                        if self.entropy[node_index] == Some(1) && !visited[node_index] {
+                            visited[node_index] = true;
+                            self.affected_nodes.push_back(node_index);
+                        }
                     }
                 }
             }
