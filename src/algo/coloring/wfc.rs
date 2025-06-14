@@ -3,10 +3,12 @@ use crate::algo::Vec;
 use crate::alloc::collections::vec_deque::VecDeque;
 use crate::alloc::string::String;
 use crate::alloc::string::ToString;
-use crate::visit::{GraphProp, IntoNeighbors, NodeCount, NodeIndexable, Visitable, GetAdjacencyMatrix};
+use crate::visit::{
+    GetAdjacencyMatrix, GraphProp, IntoNeighbors, NodeCount, NodeIndexable, Visitable,
+};
 use core::hash::Hash;
-use hashbrown::HashMap;
 use fixedbitset::FixedBitSet;
+use hashbrown::HashMap;
 
 /// \[Generic\] [Wave Function Collapse algorithm][1] to properly color a non-weighted undirected graph.
 ///
