@@ -3,12 +3,14 @@ use crate::algo::Vec;
 use crate::alloc::collections::vec_deque::VecDeque;
 use crate::alloc::string::String;
 use crate::alloc::string::ToString;
-use crate::visit::{GraphProp, IntoNeighbors, NodeCount, NodeIndexable, Visitable, GetAdjacencyMatrix};
+use crate::visit::{
+    GetAdjacencyMatrix, GraphProp, IntoNeighbors, NodeCount, NodeIndexable, Visitable,
+};
 use core::hash::Hash;
-use hashbrown::HashMap;
 use fixedbitset::FixedBitSet;
+use hashbrown::HashMap;
 
-/// \[Generic\] [Wave Function Collapse Coloring algorithm][1] to properly color a non-weighted undirected graph.
+/// \[Generic\] [Wave Function Collapse algorithm][1] to properly color a non-weighted undirected graph.
 ///
 /// This is a constraint satisfaction algorithm that assigns colors to vertices such that
 /// no adjacent vertices share the same color. The algorithm uses entropy-based heuristics
@@ -111,6 +113,13 @@ where
 }
 
 #[derive(Debug)]
+enum EntropyResult {
+    Found(usize),
+    Restart,
+    Finished,
+}
+
+#[derive(Debug)]
 struct WfcState<AdjMatrix> {
     nodes: usize,
     colors: usize,
@@ -119,9 +128,7 @@ struct WfcState<AdjMatrix> {
     entropy: Vec<usize>,
     output: Vec<isize>,
     affected_nodes: VecDeque<usize>,
-    min_index: Option<usize>,
     finished: bool,
-    restart_flag: bool,
 }
 
 impl<AdjMatrix> WfcState<AdjMatrix> {
@@ -143,9 +150,7 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
             entropy: vec![colors; nodes],
             output: vec![-1; nodes],
             affected_nodes: VecDeque::new(),
-            min_index: None,
             finished: false,
-            restart_flag: false,
         }
     }
 
@@ -160,30 +165,32 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
         self.entropy = vec![self.colors; self.nodes];
         self.output = vec![-1; self.nodes];
         self.affected_nodes.clear();
-        self.min_index = None;
         self.finished = false;
-        self.restart_flag = false;
     }
 
-    fn find_lowest_entropy(&mut self) {
+    fn find_lowest_entropy(&mut self) -> EntropyResult {
         let mut min_value = self.colors + 1;
+        let mut min_index = None;
         self.finished = true;
-        self.min_index = None;
 
         for (index, &val) in self.entropy.iter().enumerate() {
             if val == usize::MAX {
                 continue;
             }
             if val == 0 {
-                self.restart_flag = true;
                 self.restart_wfc();
-                return;
+                return EntropyResult::Restart;
             }
             if val < min_value {
                 min_value = val;
-                self.min_index = Some(index);
+                min_index = Some(index);
                 self.finished = false;
             }
+        }
+
+        match min_index {
+            Some(index) => EntropyResult::Found(index),
+            None => EntropyResult::Finished,
         }
     }
 
@@ -252,17 +259,13 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
         G: NodeIndexable + GetAdjacencyMatrix<AdjMatrix = AdjMatrix>,
     {
         while !self.finished {
-            self.restart_flag = false;
-            self.find_lowest_entropy();
-
-            if let Some(index) = self.min_index {
-                if self.restart_flag {
-                    continue;
+            match self.find_lowest_entropy() {
+                EntropyResult::Found(index) => {
+                    self.collapse(index)?;
+                    self.propagate(graph)?;
                 }
-                self.collapse(index)?;
-                self.propagate(graph)?;
-            } else {
-                break;
+                EntropyResult::Restart => continue,
+                EntropyResult::Finished => break,
             }
         }
         Ok(self.output.clone())
