@@ -102,7 +102,7 @@ where
     let result = wfc_state.run()?;
 
     // Convert result to hashmap
-    let mut color_map = HashMap::new();
+    let mut color_map = HashMap::with_capacity(node_count);
     for i in 0..node_count {
         let node = graph.from_index(i);
         color_map.insert(node, (result[i] as usize) + 1); // Convert to 1-based colors
