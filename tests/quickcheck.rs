@@ -34,7 +34,7 @@ use petgraph::algo::{
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
     k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
-    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
+    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, wfc_coloring, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1704,5 +1704,20 @@ quickcheck! {
         }
 
         true
+    }
+}
+
+quickcheck! {
+    fn wfc_coloring_quickcheck(g: Graph<(), (), Undirected>) -> bool {
+        match wfc_coloring(&g) {
+            Ok(coloring) => {
+                assert!(
+                    is_proper_coloring(&g, &coloring),
+                    "wfc_coloring returned a non proper coloring"
+                );
+                true
+            },
+            Err(_) => true // WFC can legitimately fail on some graphs, unlike DSatur
+        }
     }
 }
