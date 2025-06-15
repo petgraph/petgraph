@@ -68,7 +68,7 @@ fn wfc_coloring_random_graph() {
     let e = graph.add_node(());
     let f = graph.add_node(());
 
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (a, b),
         (a, c),
         (a, d),
@@ -144,7 +144,7 @@ fn wfc_coloring_directed() {
     let c = graph.add_node(());
     let d = graph.add_node(());
 
-    graph.extend_with_edges(&[(a, b), (b, c), (c, d), (d, a), (a, c)]);
+    graph.extend_with_edges([(a, b), (b, c), (c, d), (d, a), (a, c)]);
 
     let result = wfc_coloring(&graph);
     assert!(result.is_err(), "Expected an error for directed graph");
