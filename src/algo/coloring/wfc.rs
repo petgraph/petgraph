@@ -1,12 +1,33 @@
 use crate::algo::vec;
 use crate::algo::Vec;
 use crate::alloc::collections::vec_deque::VecDeque;
-use crate::alloc::string::String;
-use crate::alloc::string::ToString;
 use crate::visit::{GraphProp, IntoNeighbors, NodeCount, NodeIndexable, Visitable};
 use core::hash::Hash;
 use fixedbitset::FixedBitSet;
 use hashbrown::HashMap;
+
+/// Error type for WFC coloring algorithm.
+#[derive(Debug, Clone, PartialEq)]
+pub enum WfcColoringError {
+    /// The input graph is directed, but the algorithm requires an undirected graph.
+    DirectedGraph,
+    /// No valid coloring configuration could be found.
+    NoValidConfiguration,
+}
+
+impl core::fmt::Display for WfcColoringError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            WfcColoringError::DirectedGraph => write!(f, "Graph must be undirected"),
+            WfcColoringError::NoValidConfiguration => {
+                write!(f, "No valid coloring configuration found")
+            }
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for WfcColoringError {}
 
 /// \[Generic\] [Wave Function Collapse algorithm][1] to properly color a non-weighted undirected graph.
 ///
@@ -21,8 +42,8 @@ use hashbrown::HashMap;
 ///
 /// # Returns
 /// Returns a [`Result`] containing:
-/// * [`struct@std::collections::HashMap`] that associates to each `NodeId` its color (1-based numbering).
-/// * [`String`]: error message if the graph cannot be colored or is directed.
+/// * [`struct@std::collections::HashMap`] that associates to each `NodeId` its color (1-based numbering), or
+/// * [`WfcColoringError`]: error if the graph cannot be colored or is directed.
 ///
 /// # Complexity
 /// * Time complexity: **O(|V|² × (|V| + |E|))** in worst case, **O(|V| × (|V| + |E|))** in best case.
@@ -68,13 +89,13 @@ use hashbrown::HashMap;
 /// assert_ne!(coloring[&b], coloring[&c]); // Adjacent vertices have different colors
 /// assert_ne!(coloring[&c], coloring[&a]); // Adjacent vertices have different colors
 /// ```
-pub fn wfc_coloring<G>(graph: G) -> Result<HashMap<G::NodeId, usize>, String>
+pub fn wfc_coloring<G>(graph: G) -> Result<HashMap<G::NodeId, usize>, WfcColoringError>
 where
     G: IntoNeighbors + NodeCount + NodeIndexable + Visitable + GraphProp,
     G::NodeId: Eq + Hash + Copy,
 {
     if graph.is_directed() {
-        return Err("Graph must be undirected".into());
+        return Err(WfcColoringError::DirectedGraph);
     }
 
     let node_count = graph.node_count();
@@ -195,12 +216,9 @@ impl WfcState {
         }
     }
 
-    fn collapse(&mut self, index: usize) -> Result<(), String> {
+    fn collapse(&mut self, index: usize) -> Result<(), WfcColoringError> {
         if self.finished {
             return Ok(());
-        }
-        if self.entropy[index] == Some(0) {
-            return Err("Impossible pattern".to_string());
         }
 
         self.entropy[index] = None;
@@ -209,7 +227,7 @@ impl WfcState {
         let color_index = self.available_colors[index]
             .ones()
             .next()
-            .ok_or_else(|| "No available color".to_string())?;
+            .ok_or(WfcColoringError::NoValidConfiguration)?;
 
         self.available_colors[index].clear();
         self.available_colors[index].set(color_index, true);
@@ -218,14 +236,14 @@ impl WfcState {
         Ok(())
     }
 
-    fn propagate(&mut self) -> Result<(), String> {
+    fn propagate(&mut self) -> Result<(), WfcColoringError> {
         let mut visited = vec![false; self.nodes];
 
         while let Some(index) = self.affected_nodes.pop_front() {
             let color_index = self.available_colors[index]
                 .ones()
                 .next()
-                .ok_or_else(|| "No available color during propagation".to_string())?;
+                .ok_or(WfcColoringError::NoValidConfiguration)?;
 
             for node_index in 0..self.nodes {
                 if self.connections[index * self.nodes + node_index]
@@ -238,7 +256,7 @@ impl WfcState {
                         self.entropy[node_index] = Some(current_entropy - 1);
 
                         if self.entropy[node_index] == Some(0) {
-                            return Err("Propagation error: no valid configuration".to_string());
+                            return Err(WfcColoringError::NoValidConfiguration);
                         }
                         if self.entropy[node_index] == Some(1) && !visited[node_index] {
                             visited[node_index] = true;
@@ -252,7 +270,7 @@ impl WfcState {
         Ok(())
     }
 
-    fn run(&mut self) -> Result<Vec<isize>, String> {
+    fn run(&mut self) -> Result<Vec<isize>, WfcColoringError> {
         while !self.finished {
             match self.find_lowest_entropy() {
                 EntropyResult::Found(index) => {
