@@ -127,9 +127,9 @@ where
 
     // Convert result to hashmap
     let mut color_map = HashMap::with_capacity(node_count);
-    for i in 0..node_count {
+    for (i, &color) in result.iter().enumerate() {
         let node = graph.from_index(i);
-        color_map.insert(node, (result[i] as usize) + 1); // Convert to 1-based colors
+        color_map.insert(node, (color as usize) + 1); // Convert to 1-based colors
     }
 
     Ok(color_map)
@@ -245,6 +245,7 @@ impl WfcState {
                 .next()
                 .ok_or(WfcColoringError::NoValidConfiguration)?;
 
+            #[allow(clippy::needless_range_loop)]
             for node_index in 0..self.nodes {
                 if self.connections[index * self.nodes + node_index]
                     && self.entropy[node_index].is_some()
