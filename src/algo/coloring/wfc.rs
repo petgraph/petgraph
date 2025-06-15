@@ -3,9 +3,7 @@ use crate::algo::Vec;
 use crate::alloc::collections::vec_deque::VecDeque;
 use crate::alloc::string::String;
 use crate::alloc::string::ToString;
-use crate::visit::{
-    GetAdjacencyMatrix, GraphProp, IntoNeighbors, NodeCount, NodeIndexable, Visitable,
-};
+use crate::visit::{GraphProp, IntoNeighbors, NodeCount, NodeIndexable, Visitable};
 use core::hash::Hash;
 use fixedbitset::FixedBitSet;
 use hashbrown::HashMap;
@@ -72,7 +70,7 @@ use hashbrown::HashMap;
 /// ```
 pub fn wfc_coloring<G>(graph: G) -> Result<HashMap<G::NodeId, usize>, String>
 where
-    G: IntoNeighbors + NodeCount + NodeIndexable + Visitable + GraphProp + GetAdjacencyMatrix,
+    G: IntoNeighbors + NodeCount + NodeIndexable + Visitable + GraphProp,
     G::NodeId: Eq + Hash + Copy,
 {
     if graph.is_directed() {
@@ -81,26 +79,30 @@ where
 
     let node_count = graph.node_count();
 
-    // Get adjacency matrix from the graph
-    let adjacency_matrix = graph.adjacency_matrix();
+    // Convert graph to adjacency matrix using FixedBitSet
+    let mut connections = FixedBitSet::with_capacity(node_count * node_count);
+    for i in 0..node_count {
+        let node = graph.from_index(i);
+        for neighbor in graph.neighbors(node) {
+            let j = graph.to_index(neighbor);
+            connections.set(i * node_count + j, true);
+            connections.set(j * node_count + i, true);
+        }
+    }
 
     // Calculate maximum degree for color count
     let mut max_degree = 0;
     for i in 0..node_count {
-        let node = graph.from_index(i);
         let degree = (0..node_count)
-            .filter(|&j| {
-                let neighbor = graph.from_index(j);
-                graph.is_adjacent(&adjacency_matrix, node, neighbor)
-            })
+            .filter(|&j| connections[i * node_count + j])
             .count();
         max_degree = max_degree.max(degree);
     }
     let colors = max_degree + 1;
 
     // Create and run WFC state
-    let mut wfc_state = WfcState::new(node_count, colors, adjacency_matrix, &graph);
-    let result = wfc_state.run(&graph)?;
+    let mut wfc_state = WfcState::new(node_count, colors, connections);
+    let result = wfc_state.run()?;
 
     // Convert result to hashmap
     let mut color_map = HashMap::with_capacity(node_count);
@@ -120,10 +122,10 @@ enum EntropyResult {
 }
 
 #[derive(Debug)]
-struct WfcState<AdjMatrix> {
+struct WfcState {
     nodes: usize,
     colors: usize,
-    adjacency_matrix: AdjMatrix,
+    connections: FixedBitSet,
     available_colors: Vec<FixedBitSet>,
     entropy: Vec<Option<usize>>,
     output: Vec<isize>,
@@ -131,15 +133,12 @@ struct WfcState<AdjMatrix> {
     finished: bool,
 }
 
-impl<AdjMatrix> WfcState<AdjMatrix> {
-    fn new<G>(nodes: usize, colors: usize, adjacency_matrix: AdjMatrix, _graph: &G) -> Self
-    where
-        G: GetAdjacencyMatrix<AdjMatrix = AdjMatrix>,
-    {
+impl WfcState {
+    fn new(nodes: usize, colors: usize, connections: FixedBitSet) -> Self {
         Self {
             nodes,
             colors,
-            adjacency_matrix,
+            connections,
             available_colors: (0..nodes)
                 .map(|_| {
                     let mut bitset = FixedBitSet::with_capacity(colors);
@@ -219,10 +218,7 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
         Ok(())
     }
 
-    fn propagate<G>(&mut self, graph: &G) -> Result<(), String>
-    where
-        G: NodeIndexable + GetAdjacencyMatrix<AdjMatrix = AdjMatrix>,
-    {
+    fn propagate(&mut self) -> Result<(), String> {
         let mut visited = vec![false; self.nodes];
 
         while let Some(index) = self.affected_nodes.pop_front() {
@@ -232,10 +228,7 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
                 .ok_or_else(|| "No available color during propagation".to_string())?;
 
             for node_index in 0..self.nodes {
-                let node = graph.from_index(index);
-                let neighbor = graph.from_index(node_index);
-
-                if graph.is_adjacent(&self.adjacency_matrix, node, neighbor)
+                if self.connections[index * self.nodes + node_index]
                     && self.entropy[node_index].is_some()
                     && self.available_colors[node_index].contains(color_index)
                 {
@@ -259,15 +252,12 @@ impl<AdjMatrix> WfcState<AdjMatrix> {
         Ok(())
     }
 
-    fn run<G>(&mut self, graph: &G) -> Result<Vec<isize>, String>
-    where
-        G: NodeIndexable + GetAdjacencyMatrix<AdjMatrix = AdjMatrix>,
-    {
+    fn run(&mut self) -> Result<Vec<isize>, String> {
         while !self.finished {
             match self.find_lowest_entropy() {
                 EntropyResult::Found(index) => {
                     self.collapse(index)?;
-                    self.propagate(graph)?;
+                    self.propagate()?;
                 }
                 EntropyResult::Restart => continue,
                 EntropyResult::Finished => break,
