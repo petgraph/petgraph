@@ -105,7 +105,7 @@ fn wfc_coloring_crown_graph() {
     let g = graph.add_node(());
     let h = graph.add_node(());
 
-    graph.extend_with_edges(&[
+    graph.extend_with_edges([
         (a, f),
         (a, g),
         (a, h),
