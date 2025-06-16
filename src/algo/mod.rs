@@ -29,7 +29,6 @@ pub mod steiner_tree;
 pub mod tred;
 
 use alloc::{vec, vec::Vec};
-use core::num::NonZeroUsize;
 
 use crate::prelude::*;
 
@@ -60,9 +59,9 @@ pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use maximal_cliques::maximal_cliques;
 pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;
-pub use scc::{kosaraju_scc, tarjan_scc, TarjanScc};
 #[allow(deprecated)]
 pub use scc::scc;
+pub use scc::{kosaraju_scc, tarjan_scc, TarjanScc};
 pub use simple_paths::all_simple_paths;
 pub use spfa::spfa;
 #[cfg(feature = "stable_graph")]
@@ -370,11 +369,6 @@ where
         dfs.move_to(from);
         dfs.iter(g).any(|x| x == to)
     })
-}
-
-#[derive(Copy, Clone, Debug)]
-struct NodeData {
-    rootindex: Option<NonZeroUsize>,
 }
 
 /// [Graph] Condense every strongly connected component into a single node and return the result.
