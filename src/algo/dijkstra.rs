@@ -325,13 +325,16 @@ where
                 continue;
             }
 
+            // check for a path s --- u - x --- t
+            let potential_best_value = distance_to_u + edge_cost + backward_distance[&x];
+
             let improves_best_value = match best_value {
                 None => true,
-                Some(mu) => backward_distance[&x] + edge_cost < mu,
+                Some(mu) => potential_best_value < mu,
             };
 
             if improves_best_value {
-                best_value = Some(distance_to_u + edge_cost + backward_distance[&x]);
+                best_value = Some(potential_best_value);
             }
         }
 
@@ -360,13 +363,15 @@ where
                 continue;
             }
 
+            let potential_best_value = distance_to_v + edge_cost + forward_distance[&x];
+
             let improves_best_value = match best_value {
                 None => true,
-                Some(mu) => forward_distance[&x] + edge_cost < mu,
+                Some(mu) => potential_best_value < mu,
             };
 
             if improves_best_value {
-                best_value = Some(distance_to_v + edge_cost + forward_distance[&x]);
+                best_value = Some(potential_best_value);
             }
         }
 

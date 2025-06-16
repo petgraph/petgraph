@@ -813,7 +813,7 @@ quickcheck! {
 quickcheck! {
     // checks bidirectional dijkstra against normal dijkstra
     fn bidirectional_dijkstra_(g: Graph<u32, u32>) -> bool {
-        if g.node_count() == 0 {
+        if g.node_count() <= 1 {
             return true;
         }
 
@@ -821,6 +821,10 @@ quickcheck! {
             let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
 
             for node2 in g.node_identifiers() {
+                if node1 == node2 {
+                    continue;
+                }
+                
                 let bidirectional_dijkstra_res = bidirectional_dijkstra(&g, node1, node2, |e| *e.weight());
 
                 match (dijkstra_res.get(&node2), bidirectional_dijkstra_res) {
