@@ -60,7 +60,9 @@ pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use maximal_cliques::maximal_cliques;
 pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;
-pub use scc::{kosaraju_scc, scc, tarjan_scc, TarjanScc};
+pub use scc::{kosaraju_scc, tarjan_scc, TarjanScc};
+#[allow(deprecated)]
+pub use scc::scc;
 pub use simple_paths::all_simple_paths;
 pub use spfa::spfa;
 #[cfg(feature = "stable_graph")]
