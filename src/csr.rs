@@ -162,8 +162,9 @@ pub struct EdgesNotSorted {
     first_error: (usize, usize),
 }
 
-impl<N, E, Ix> Csr<N, E, Directed, Ix>
+impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
 where
+    Ty: EdgeType,
     Ix: IndexType,
 {
     /// Create a new `Csr` from a sorted sequence of edges
