@@ -824,7 +824,7 @@ quickcheck! {
                 if node1 == node2 {
                     continue;
                 }
-                
+
                 let bidirectional_dijkstra_res = bidirectional_dijkstra(&g, node1, node2, |e| *e.weight());
 
                 match (dijkstra_res.get(&node2), bidirectional_dijkstra_res) {

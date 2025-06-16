@@ -221,11 +221,27 @@ where
 ///
 /// Compute the length of the shortest path from `start` to `target`.
 ///
-/// The graph should be `Visitable` and implement `IntoEdgesDirected`. The function
-/// `edge_cost` should return the cost for a particular edge, which is used
+/// The graph should be `Visitable` and implement `IntoEdgesDirected`.
+///
+/// The function `edge_cost` should return the cost for a particular edge, which is used
 /// to compute path costs. Edge costs must be non-negative.
 ///
-/// Returns the cost of the shortest path from `start` to `target` if it exists, `None` otherwise.
+/// # Arguments
+/// * `graph`: weighted graph.
+/// * `start`: the start node.
+/// * `goal`: the goal node.
+/// * `edge_cost`: closure that returns cost of a particular edge.
+///
+/// # Returns
+/// * `Some(K)` - the total cost from start to finish, if one was found.
+/// * `None` - if such a path was not found.
+///
+/// # Complexity
+/// * Time complexity: **O((|V|+|E|)log(|V|))**.
+/// * Auxiliary space: **O(|V|+|E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 /// # Example
 /// ```rust
 /// use petgraph::Graph;
@@ -325,7 +341,6 @@ where
                 continue;
             }
 
-            // check for a path s --- u - x --- t
             let potential_best_value = distance_to_u + edge_cost + backward_distance[&x];
 
             let improves_best_value = match best_value {
