@@ -80,7 +80,7 @@ where
 ///
 /// # Complexity
 /// * Time complexity: **O(3^(|V|/3))**
-/// * Auxiliary space: **O(|V|² + k)**.
+/// * Auxiliary space: **O(|V|² + |V|k)**.
 ///
 /// where **|V|** is the number of nodes and k is the number of maximal cliques in the graph
 /// (possibly up to *3^(|V|/3)** many).
