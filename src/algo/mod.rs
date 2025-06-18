@@ -61,7 +61,10 @@ pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;
 #[allow(deprecated)]
 pub use scc::scc;
-pub use scc::{kosaraju_scc, tarjan_scc, TarjanScc};
+pub use scc::{
+    kosaraju_scc::kosaraju_scc,
+    tarjan_scc::{tarjan_scc, TarjanScc},
+};
 pub use simple_paths::all_simple_paths;
 pub use spfa::spfa;
 #[cfg(feature = "stable_graph")]
