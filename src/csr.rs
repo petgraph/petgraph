@@ -63,11 +63,11 @@ impl fmt::Display for CsrError {
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
 ///
-/// Using **O(|E| + |V|)** space.
+/// Using **O(|V| + |E|)** space where V is the set of nodes and E is the set of edges.
 ///
 /// Self loops are allowed, no parallel edges.
 ///
-/// Fast iteration of the outgoing edges of a vertex.
+/// Fast iteration of the outgoing edges of a node.
 ///
 /// [`CSR`]: https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
 #[derive(Debug)]
@@ -171,7 +171,7 @@ where
     /// Edges **must** be sorted and unique, where the sort order is the default
     /// order for the pair *(u, v)* in Rust (*u* has priority).
     ///
-    /// Computes in **O(|E| + |V|)** time.
+    /// Computes in **O(|V| + |E|)** time where V is the set of nodes and E is the set of edges.
     /// # Example
     /// ```rust
     /// use petgraph::csr::Csr;
@@ -392,7 +392,7 @@ where
         }
     }
 
-    /// Computes in **O(log |V|)** time.
+    /// Computes in **O(log |V|)** time where V is the set of nodes.
     ///
     /// **Panics** if the node `a` does not exist.
     #[track_caller]
