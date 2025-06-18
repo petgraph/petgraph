@@ -12,10 +12,17 @@ use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRe
 /// Compute the articulation points of a graph (Nodes, which would increase the number of connected components in the graph.
 ///
 /// # Arguments
-/// * `graph`: A directed graph
+/// * `graph`: A directed graph.
 ///
 /// # Returns
-/// * `HashSet`: HashSet of the node ids which correspond to the articulation points of the graph.
+/// * `HashSet`: [`struct@hashbrown::HashSet`] of the node ids which correspond to the articulation points of the graph.
+///
+/// # Complexity
+/// - Time complexity: **O(|V| + |E|)**,
+/// - Auxiliary space: **O(|V|)**,
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 ///
 /// # Examples
 /// ```rust

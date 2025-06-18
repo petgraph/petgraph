@@ -72,11 +72,18 @@ where
 /// This method may also be called on directed graphs, but one needs to ensure that
 /// if an edge (u, v) exists, then (v, u) also exists.
 ///
-/// ## Arguments
+/// # Arguments
 /// * `g`: The graph to find maximal cliques in.
 ///
-/// ## Returns
-/// A vector of sets making up the maximal cliques in the graph.
+/// # Returns
+/// * `Vec<HashSet>`: A vector of [`struct@hashbrown::HashSet`] making up the maximal cliques in the graph.
+///
+/// # Complexity
+/// * Time complexity: **O(3^(|V|/3))**
+/// * Auxiliary space: **O(|V|² + |V|k)**.
+///
+/// where **|V|** is the number of nodes and k is the number of maximal cliques in the graph
+/// (possibly up to *3^(|V|/3)** many).
 ///
 /// [1]: https://en.wikipedia.org/wiki/Bron%E2%80%93Kerbosch_algorithm
 ///

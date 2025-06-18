@@ -15,12 +15,19 @@ use alloc::{vec, vec::Vec};
 /// ## Arguments
 /// * `graph`: weighted graph.
 /// * `source`: the source vertex, for which we calculate the lengths of the shortest paths to all the others.
-/// * `edge_cost`: closure that returns cost of a particular edge
+/// * `edge_cost`: closure that returns the cost of a particular edge.
 ///
 /// ## Returns
 /// * `Err`: if graph contains negative cycle.
 /// * `Ok`: a pair of a vector of shortest distances and a vector
 ///   of predecessors of each vertex along the shortest path.
+///
+/// ## Complexity
+/// * Time complexity: **O(|V||E|)**, but it's generally assumed that in the average case it is **O(|E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 ///
 /// [spfa]: https://www.geeksforgeeks.org/shortest-path-faster-algorithm/
 ///
