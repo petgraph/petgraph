@@ -217,9 +217,6 @@ impl WfcState {
     }
 
     fn collapse(&mut self, index: usize) -> Result<(), WfcColoringError> {
-        if self.finished {
-            return Ok(());
-        }
 
         self.entropy[index] = None;
         self.affected_nodes.push_back(index);
