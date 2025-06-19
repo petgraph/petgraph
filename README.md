@@ -84,22 +84,29 @@ fn main() {
 
 petgraph is built with these features enabled by default:
 
-- `graphmap` enable [`GraphMap`][docsrs-graph-map].
-- `stable_graph` enable [`StableGraph`][docsrs-stable-graph].
-- `matrix_graph` enable [`MatrixGraph`][docsrs-matrix-graph].
+- `graphmap` - Enables [`GraphMap`][docsrs-graph-map].
+- `stable_graph` - Enables [`StableGraph`][docsrs-stable-graph].
+- `matrix_graph` - Enables [`MatrixGraph`][docsrs-matrix-graph].
+- `std` - Enables the Rust Standard Library.
+  Disabling the `std` feature makes it possible to use `petgraph`
+  in `no_std` contexts.
 
 Optionally, the following features can be enabled:
 
-- `serde-1` enable serialization for
+- `serde-1` - Enables serialization for
   `Graph, StableGraph, GraphMap`
   using [serde 1.0][docsrs-serde]. Requires Rust version as required
   by serde.
-- `rayon` enable parallel iterators for the underlying data
+- `rayon` - Enables parallel iterators for the underlying data
   in `GraphMap`. Requires Rust version as required
   by [rayon][docsrs-rayon].
-- `dot_parser` enable parsing graph
+- `dot_parser` - Enables parsing graph
   from [DOT/Graphviz][dot-url]
   strings and files.
+- `generate` - Enables graph generators.
+- `unstable` - Enables unstable crate features (currently only
+  `generate`). The API of functionality behind this flag is subject to
+  change at any time.
 
 ## Getting Help
 
