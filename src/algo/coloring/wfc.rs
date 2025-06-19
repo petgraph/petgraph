@@ -217,7 +217,6 @@ impl WfcState {
     }
 
     fn collapse(&mut self, index: usize) -> Result<(), WfcColoringError> {
-
         self.entropy[index] = None;
         self.affected_nodes.push_back(index);
 
@@ -250,7 +249,8 @@ impl WfcState {
                 {
                     self.available_colors[node_index].set(color_index, false);
 
-                    let current_entropy = self.entropy[node_index].expect("Entropy should be some according to if block condition");
+                    let current_entropy = self.entropy[node_index]
+                        .expect("Entropy should be some according to if block condition");
                     self.entropy[node_index] = Some(current_entropy.saturating_sub(1));
 
                     if self.entropy[node_index] == Some(0) {
