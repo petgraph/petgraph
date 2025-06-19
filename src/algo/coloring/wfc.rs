@@ -250,16 +250,15 @@ impl WfcState {
                 {
                     self.available_colors[node_index].set(color_index, false);
 
-                    if let Some(current_entropy) = self.entropy[node_index] {
-                        self.entropy[node_index] = Some(current_entropy - 1);
+                    let current_entropy = self.entropy[node_index].expect("Entropy should be some according to if block condition");
+                    self.entropy[node_index] = Some(current_entropy - 1);
 
-                        if self.entropy[node_index] == Some(0) {
-                            return Err(WfcColoringError::NoValidConfiguration);
-                        }
-                        if self.entropy[node_index] == Some(1) && !visited[node_index] {
-                            visited[node_index] = true;
-                            self.affected_nodes.push_back(node_index);
-                        }
+                    if self.entropy[node_index] == Some(0) {
+                        return Err(WfcColoringError::NoValidConfiguration);
+                    }
+                    if self.entropy[node_index] == Some(1) && !visited[node_index] {
+                        visited[node_index] = true;
+                        self.affected_nodes.push_back(node_index);
                     }
                 }
             }
