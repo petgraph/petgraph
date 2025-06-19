@@ -459,7 +459,7 @@ Optionally, the following features can be enabled:
 * **dot_parser** -
   Enables building [`Graph`](./graph/struct.Graph.html) and [`StableGraph`](./stable_graph/struct.StableGraph.html) from [DOT/Graphviz](https://www.graphviz.org/doc/info/lang.html) descriptions. Imports can be made statically or dynamically (i.e. at compile time or at runtime).
 * **unstable** -
-  Enables unstable crate features (currently only [`generate`](./)).
+  Enables unstable crate features (currently only `generate`).
 * **generate** -
   Enables graph generators. The API of functionality behind this flag is subject to change at any time.
 */
