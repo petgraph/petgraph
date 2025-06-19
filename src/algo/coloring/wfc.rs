@@ -224,7 +224,7 @@ impl WfcState {
         let color_index = self.available_colors[index]
             .ones()
             .next()
-            .ok_or(WfcColoringError::NoValidConfiguration)?;
+            .expect("A color should be available, since otherwise entropy should be 0 and we would have restarted the algorithm.");
 
         self.available_colors[index].clear();
         self.available_colors[index].set(color_index, true);
