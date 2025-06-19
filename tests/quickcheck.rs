@@ -1726,7 +1726,7 @@ quickcheck! {
                 );
                 true
             },
-            Err(_) => true // WFC can legitimately fail on some graphs, unlike DSatur
+            Err(_) => false
         }
     }
 }
