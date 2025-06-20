@@ -233,7 +233,7 @@ impl WfcState {
     }
 
     fn propagate(&mut self) -> Result<(), WfcColoringError> {
-        let mut visited = vec![false; self.nodes];
+        let mut visited = FixedBitSet::with_capacity(self.nodes); // Replaces Vec<bool>
 
         while let Some(index) = self.affected_nodes.pop_front() {
             let color_index = self.available_colors[index]
@@ -245,7 +245,6 @@ impl WfcState {
             self.output[index] = color_index as isize;
             self.entropy[index] = None;
 
-            #[allow(clippy::needless_range_loop)]
             for node_index in 0..self.nodes {
                 if self.connections[index * self.nodes + node_index]
                     && self.entropy[node_index].is_some()
@@ -260,8 +259,8 @@ impl WfcState {
                     if self.entropy[node_index] == Some(0) {
                         return Err(WfcColoringError::NoValidConfiguration);
                     }
-                    if self.entropy[node_index] == Some(1) && !visited[node_index] {
-                        visited[node_index] = true;
+                    if self.entropy[node_index] == Some(1) && !visited.contains(node_index) {
+                        visited.insert(node_index); // Mark as visited
                         self.affected_nodes.push_back(node_index);
                     }
                 }
