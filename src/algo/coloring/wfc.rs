@@ -239,7 +239,11 @@ impl WfcState {
             let color_index = self.available_colors[index]
                 .ones()
                 .next()
-                .expect("A color should be available, since otherwise entropy should be 0 and we would have restarted the algorithm.");
+                .ok_or(WfcColoringError::NoValidConfiguration)?;
+
+            // Immediately finalize node assignment
+            self.output[index] = color_index as isize;
+            self.entropy[index] = None;
 
             #[allow(clippy::needless_range_loop)]
             for node_index in 0..self.nodes {
