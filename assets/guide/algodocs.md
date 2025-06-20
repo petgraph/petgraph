@@ -34,6 +34,8 @@ The documentation line of the algorithm should consist of:
 5. `Complexity` - time complexity and the amount of auxiliary memory.
 6. `Examples` - sample usage to illustrate the algorithm and help users get started quickly.
 
+The description of the algorithm should also include a reference to the literature. It can be either a Wikipedia page or a link to a journal article, etc.
+
 ## Example
 The `bellman_ford` algorithm documentation is given below as an example:
 ```markdown
