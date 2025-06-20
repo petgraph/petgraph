@@ -17,7 +17,7 @@ use core::marker::{Send, Sync};
 /// Сompute the lengths of shortest paths in a weighted graph with
 /// positive or negative edge weights, but no negative cycles.
 ///
-/// The time complexity of this implementation is O(VElog(V) + V^2*log(V)),
+/// The time complexity of this implementation is **O(|V||E|log(|V|) + |V|²*log(|V|))**,
 /// which is faster than [`floyd_warshall`](fn@crate::algo::floyd_warshall) on sparse graphs and slower on dense ones.
 ///
 /// If you are working with a sparse graph that is guaranteed to have no negative weights,
@@ -32,6 +32,12 @@ use core::marker::{Send, Sync};
 /// ## Returns
 /// * `Err`: if graph contains negative cycle.
 /// * `Ok`: `HashMap` of shortest distances.
+///
+/// # Complexity
+/// * Time complexity: **O(|V||E|log(|V|) + |V|²log(|V|))** since the implementation is based on [`dijkstra`](fn@crate::algo::dijkstra).
+/// * Auxiliary space: **O(|V|² + |V||E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [johnson]: https://en.wikipedia.org/wiki/Johnson%27s_algorithm
 ///

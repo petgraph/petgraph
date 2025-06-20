@@ -14,15 +14,21 @@ use crate::visit::{
 /// Compute the length of each shortest path in a weighted graph with positive or negative edge weights (but with no negative cycles).
 ///
 /// # Arguments
-/// * `graph`: graph with no negative cycle
-/// * `edge_cost`: closure that returns cost of a particular edge
+/// * `graph`: graph with no negative cycle.
+/// * `edge_cost`: closure that returns cost of a particular edge.
 ///
 /// # Returns
-/// * `Ok`: (if graph contains no negative cycle) a hashmap containing all pairs shortest paths
+/// * `Ok`: (if graph contains no negative cycle) a [`struct@hashbrown::HashMap`] containing all pairs shortest paths.
 /// * `Err`: if graph contains negative cycle.
 ///
+/// # Complexity
+/// * Time complexity: **O(|V|³)**.
+/// * Auxiliary space: **O(|V|²)**.
+///
+/// where **|V|** is the number of nodes.
+///
 /// **Note**: If the graph is sparse (the number of edges is quite small),
-/// consider using the [`johnson`](fn@crate::algo::johnson), which is likely to show better performance.
+/// consider using [`johnson`](fn@crate::algo::johnson)'s algorithm, which is likely to show better performance in such cases.
 ///
 /// # Examples
 /// ```rust
@@ -126,6 +132,10 @@ where
 /// # Returns
 /// * `Ok`: (if graph contains no negative cycle) a hashmap containing all pairs shortest path distances and a hashmap for all pairs shortest paths
 /// * `Err`: if graph contains negative cycle.
+///
+/// # Complexity
+/// * Time complexity: **O(|V|³)**
+/// * Auxiliary space: **O(|V|²)**
 ///
 /// # Examples
 /// ```rust
