@@ -257,7 +257,9 @@ impl WfcState {
                     self.entropy[node_index] = Some(current_entropy.saturating_sub(1));
 
                     if self.entropy[node_index] == Some(0) {
-                        return Err(WfcColoringError::NoValidConfiguration);
+                        self.colors += 1; // Increase color count
+                        self.restart_wfc();
+                        return Ok(());
                     }
                     if self.entropy[node_index] == Some(1) && !visited.contains(node_index) {
                         visited.insert(node_index); // Mark as visited
