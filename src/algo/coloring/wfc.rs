@@ -98,35 +98,35 @@ where
         return Err(WfcColoringError::DirectedGraph);
     }
 
-    let node_count = graph.node_bound();
+    let node_bound = graph.node_bound();
 
     // Convert graph to adjacency matrix using FixedBitSet
-    let mut connections = FixedBitSet::with_capacity(node_count * node_count);
-    for i in 0..node_count {
+    let mut connections = FixedBitSet::with_capacity(node_bound * node_bound);
+    for i in 0..node_bound {
         let node = graph.from_index(i);
         for neighbor in graph.neighbors(node) {
             let j = graph.to_index(neighbor);
-            connections.set(i * node_count + j, true);
-            connections.set(j * node_count + i, true);
+            connections.set(i * node_bound + j, true);
+            connections.set(j * node_bound + i, true);
         }
     }
 
     // Calculate maximum degree for color count
     let mut max_degree = 0;
-    for i in 0..node_count {
-        let degree = (0..node_count)
-            .filter(|&j| connections[i * node_count + j])
+    for i in 0..node_bound {
+        let degree = (0..node_bound)
+            .filter(|&j| connections[i * node_bound + j])
             .count();
         max_degree = max_degree.max(degree);
     }
     let colors = max_degree + 1;
 
     // Create and run WFC state
-    let mut wfc_state = WfcState::new(node_count, colors, connections);
+    let mut wfc_state = WfcState::new(node_bound, colors, connections);
     let result = wfc_state.run()?;
 
     // Convert result to hashmap
-    let mut color_map = HashMap::with_capacity(node_count);
+    let mut color_map = HashMap::with_capacity(node_bound);
     for (i, &color) in result.iter().enumerate() {
         let node = graph.from_index(i);
         color_map.insert(node, (color as usize) + 1); // Convert to 1-based colors
