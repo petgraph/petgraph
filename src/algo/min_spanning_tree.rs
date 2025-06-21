@@ -11,7 +11,7 @@ use crate::unionfind::UnionFind;
 use crate::visit::{Data, IntoEdges, IntoNodeReferences, NodeRef};
 use crate::visit::{IntoEdgeReferences, NodeIndexable};
 
-/// \[Generic\] Compute a *minimum spanning tree* of a graph.
+/// Compute a *minimum spanning tree* of a graph.
 ///
 /// The input graph is treated as if undirected.
 ///
@@ -183,7 +183,7 @@ where
     }
 }
 
-/// \[Generic\] Compute a *minimum spanning tree* of a graph using Prim's algorithm.
+/// Compute a *minimum spanning tree* of a graph using Prim's algorithm.
 ///
 /// Graph is treated as if undirected. The computed minimum spanning tree can be wrong
 /// if this is not true.

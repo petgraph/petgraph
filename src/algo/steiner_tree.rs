@@ -127,7 +127,7 @@ where
     removed_leaves
 }
 
-/// \[Generic\] [Steiner Tree][1] algorithm.
+/// [Steiner Tree][1] algorithm.
 ///
 /// Computes the Steiner tree of an undirected connected graph given a set of terminal nodes via
 /// [Kou's algorithm][2]. Implementation details are the same as in the [NetworkX implementation][3].

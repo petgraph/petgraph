@@ -803,7 +803,7 @@ mod matching {
     }
 }
 
-/// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, only matching graph syntactically (graph
 /// structure).
@@ -834,7 +834,7 @@ where
         .unwrap_or(false)
 }
 
-/// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, examining both syntactic and semantic
 /// graph isomorphism (graph structure and matching node and edge weights).
@@ -872,7 +872,7 @@ where
     self::matching::try_match(&mut st, &mut node_match, &mut edge_match, false).unwrap_or(false)
 }
 
-/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+/// Return `true` if `g0` is isomorphic to a subgraph of `g1`.
 ///
 /// Using the VF2 algorithm, only matching graph syntactically (graph
 /// structure).
@@ -926,7 +926,7 @@ where
         .unwrap_or(false)
 }
 
-/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+/// Return `true` if `g0` is isomorphic to a subgraph of `g1`.
 ///
 /// Using the VF2 algorithm, examining both syntactic and semantic
 /// graph isomorphism (graph structure and matching node and edge weights).

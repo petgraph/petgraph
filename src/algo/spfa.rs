@@ -4,7 +4,7 @@ use crate::prelude::*;
 use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable};
 use alloc::{vec, vec::Vec};
 
-/// \[Generic\] Compute shortest paths from node `source` to all other.
+/// Compute shortest paths from node `source` to all other.
 ///
 /// Using the [Shortest Path Faster Algorithm][spfa].
 /// Compute shortest distances from node `source` to all other.

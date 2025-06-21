@@ -12,7 +12,7 @@ use crate::visit::{EdgeRef, IntoEdges, IntoNodeIdentifiers, NodeIndexable, Visit
 #[cfg(feature = "rayon")]
 use core::marker::{Send, Sync};
 
-/// \[Generic\] [Johnson algorithm][johnson] for all pairs shortest path problem.
+/// [Johnson algorithm][johnson] for all pairs shortest path problem.
 ///
 /// Сompute the lengths of shortest paths in a weighted graph with
 /// positive or negative edge weights, but no negative cycles.
@@ -130,7 +130,7 @@ where
     Ok(distance_map)
 }
 
-/// \[Generic\] [Johnson algorithm][johnson]
+/// [Johnson algorithm][johnson]
 /// implementation for all pairs shortest path problem,
 /// parallelizing the [`dijkstra`](fn@crate::algo::dijkstra) calls with `rayon`.
 ///
