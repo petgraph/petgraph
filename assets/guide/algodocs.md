@@ -39,7 +39,7 @@ The description of the algorithm should also include a reference to the literatu
 ## Example
 The `bellman_ford` algorithm documentation is given below as an example:
 ```markdown
-/// \[Generic\] Compute shortest paths from node `source` to all other.
+/// Compute shortest paths from node `source` to all other.
 ///
 /// Using the [Bellman–Ford algorithm][bf]; negative edge costs are
 /// permitted, but the graph must not have a cycle of negative weights
