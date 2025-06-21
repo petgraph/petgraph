@@ -18,33 +18,33 @@ contribute to petgraph. **Do not let this guide intimidate you.** It
 should simply be a reference for you, which you can refer to when
 contributing. The structure of this guide is as follows:
 
-- [Conduct](#conduct)
+- [Conduct](#-conduct)
 
-- [Where We Need Help](#where-we-need-help)
-    - [Issues](#issues)
+- [Where We Need Help](#-where-we-need-help)
+    - [Issues](#-issues)
         - [Tackling existing issues](#tackling-existing-issues)
         - [Creating new issues](#creating-new-issues)
-    - [Pull Requests](#pull-requests)
+    - [Pull Requests](#-pull-requests)
         - [Creating pull requests](#creating-pull-requests)
         - [Reviewing pull requests](#reviewing-pull-requests)
 
-- [Setup](#setup)
-    - [Building](#building)
-    - [Testing](#testing)
-    - [Benchmarks](#benchmarks)
+- [Setup](#-setup)
+    - [Building](#-building)
+    - [Testing](#-testing)
+    - [Benchmarks](#-benchmarks)
 
-- [Contributors](#contributors)
+- [Contributors](#-contributors)
 
-## Conduct
+## 🫂 Conduct
 
 The petgraph project adheres to
 the [Rust Code of Conduct][code-of-conduct-url]. This
 describes
 the minimum behavior expected from all contributors.
 
-## Where We Need Help
+## 🧩 Where We Need Help
 
-### Issues
+### 🐞 Issues
 
 #### Tackling existing issues
 
@@ -74,7 +74,7 @@ are just waiting for someone to implement them! 👀
 If you have an idea for a new feature, or if you found a bug, please
 open a new issue on the [GitHub issues page][github-new-issue].
 
-### Pull Requests
+### 📥 Pull Requests
 
 Pull Requests are the way concrete changes are made to the code,
 documentation, and dependencies in petgraph.
@@ -92,7 +92,7 @@ We are working on templates for the different kinds of pull requests,
 which will explain teh requirements for each kind of pull request.
 
 Until then, the different kinds of pull requests are described in the
-[old section below](#old-section-on-pull-requests).
+[old section below](#-old-section-on-pull-requests).
 
 #### Reviewing pull requests
 
@@ -124,7 +124,7 @@ Regarding the content of the pull request:
   performance benchmarks. The benchmarks should be included in the
   `benches` directory, and should be run with `cargo bench`.
 
-## Setup
+## ⚙️ Setup
 
 petgraph does not have any special setup requirements, other than
 having a working Rust toolchain. The project is built using
@@ -146,7 +146,7 @@ to the stable toolchain by running:
 rustup default stable
 ```
 
-### Building
+### 🏗️ Building
 
 Building petgraph is as simple as running:
 
@@ -154,7 +154,7 @@ Building petgraph is as simple as running:
 cargo build
 ```
 
-### Testing
+### 🧪 Testing
 
 Testing petgraph is also simple, and can be done by running:
 
@@ -166,7 +166,7 @@ Note the `--features all` flag, which enables all features of
 petgraph. This makes sure that quickcheck tests are also
 run.
 
-### Benchmarks
+### ⏱️ Benchmarks
 
 Benchmarks can be run by running:
 
@@ -174,7 +174,7 @@ Benchmarks can be run by running:
 cargo bench
 ```
 
-## Contributors
+## 🙌 Contributors
 
 Currently, the petgraph crate is being maintained by:
 
@@ -211,7 +211,7 @@ a [discussion][github-discussions-url].
 
 [unifty-algo-docs-pr]: https://github.com/petgraph/petgraph/pull/815
 
-## Old Section on Pull Requests
+## 🏛️ Old Section on Pull Requests
 
 The following section is just here for historical reasons, until
 the information on the different kinds of pull requests is included
