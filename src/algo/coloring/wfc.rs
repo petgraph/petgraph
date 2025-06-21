@@ -98,7 +98,7 @@ where
         return Err(WfcColoringError::DirectedGraph);
     }
 
-    let node_count = graph.node_count();
+    let node_count = graph.node_bound();
 
     // Convert graph to adjacency matrix using FixedBitSet
     let mut connections = FixedBitSet::with_capacity(node_count * node_count);
