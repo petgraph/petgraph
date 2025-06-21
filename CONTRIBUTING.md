@@ -1,7 +1,5 @@
 # Contributing to petgraph
 
-===
-
 🦕 Thanks for your help improving the project! We are so happy to have
 you!
 
