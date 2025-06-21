@@ -6,7 +6,7 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
-/// \[Generic\] Page Rank algorithm.
+/// Page Rank algorithm.
 ///
 /// Computes the ranks of every node in a graph using the [Page Rank algorithm][pr].
 ///
@@ -127,7 +127,7 @@ where
     }
     (out_degree, flag_points_to)
 }
-/// \[Generic\] Parallel Page Rank algorithm.
+/// Parallel Page Rank algorithm.
 ///
 /// See [`page_rank`].
 #[cfg(feature = "rayon")]

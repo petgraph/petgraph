@@ -10,7 +10,7 @@ use crate::algo::Measure;
 use crate::scored::MinScored;
 use crate::visit::{EdgeRef, IntoEdges, VisitMap, Visitable};
 
-/// \[Generic\] Dijkstra's shortest path algorithm.
+/// Dijkstra's shortest path algorithm.
 ///
 /// Compute the length of the shortest path from `start` to every reachable
 /// node.

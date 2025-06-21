@@ -109,7 +109,7 @@ where
     }
 }
 
-/// \[Generic\] [Ford-Fulkerson][ff] algorithm in the [Edmonds-Karp][ek] variation.
+/// [Ford-Fulkerson][ff] algorithm in the [Edmonds-Karp][ek] variation.
 ///
 /// Computes the [maximum flow] from `source` to `destination` in a weighted directed graph.
 ///

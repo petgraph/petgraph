@@ -14,7 +14,7 @@ pub struct Paths<NodeId, EdgeWeight> {
     pub predecessors: Vec<Option<NodeId>>,
 }
 
-/// \[Generic\] Compute shortest paths from node `source` to all other.
+/// Compute shortest paths from node `source` to all other.
 ///
 /// Using the [Bellman–Ford algorithm][bf]; negative edge costs are
 /// permitted, but the graph must not have a cycle of negative weights
@@ -121,7 +121,7 @@ where
     })
 }
 
-/// \[Generic\] Find the path of a negative cycle reachable from node `source`.
+/// Find the path of a negative cycle reachable from node `source`.
 ///
 /// Using the [find_negative_cycle][nc]; will search the graph for negative cycles using
 /// [Bellman–Ford algorithm][bf]. If no negative cycle is found the function will return `None`.

@@ -36,7 +36,7 @@ impl<N> TarjanScc<N> {
         }
     }
 
-    /// \[Generic\] Compute the *strongly connected components* using Algorithm 3 in
+    /// Compute the *strongly connected components* using Algorithm 3 in
     /// [A Space-Efficient Algorithm for Finding Strongly Connected Components][1] by David J. Pierce,
     /// which is a memory-efficient variation of [Tarjan's algorithm][2].
     ///
@@ -153,7 +153,7 @@ impl<N> TarjanScc<N> {
     }
 }
 
-/// \[Generic\] Compute the *strongly connected components* using [Tarjan's algorithm][1].
+/// Compute the *strongly connected components* using [Tarjan's algorithm][1].
 ///
 /// This implementation is recursive and does one pass over the nodes. It is based on
 /// [A Space-Efficient Algorithm for Finding Strongly Connected Components][2] by David J. Pierce,

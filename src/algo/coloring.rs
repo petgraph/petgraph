@@ -6,7 +6,7 @@ use hashbrown::{HashMap, HashSet};
 use crate::scored::MaxScored;
 use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visitable};
 
-/// \[Generic\] [DStatur algorithm][1] to properly color a non weighted undirected graph.
+/// [DStatur algorithm][1] to properly color a non weighted undirected graph.
 ///
 ///
 /// This is a heuristic. So, it does not necessarily return a minimum coloring.

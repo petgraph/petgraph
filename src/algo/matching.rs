@@ -184,8 +184,7 @@ where
     }
 }
 
-/// \[Generic\] Compute a
-/// [*matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)) using a
+/// Compute a [*matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)) using a
 /// greedy heuristic.
 ///
 /// The input graph is treated as if undirected. The underlying heuristic is
@@ -317,8 +316,7 @@ impl<G: GraphBase> PartialEq for Label<G> {
     }
 }
 
-/// \[Generic\] Compute the [*maximum
-/// matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)) using
+/// Compute the [*maximum matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)) using
 /// [Gabow's algorithm][1].
 ///
 /// [1]: https://dl.acm.org/doi/10.1145/321941.321942
