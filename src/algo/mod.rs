@@ -45,7 +45,7 @@ pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
 pub use bridges::bridges;
 pub use coloring::dsatur_coloring;
-pub use dijkstra::dijkstra;
+pub use dijkstra::{bidirectional_dijkstra, dijkstra};
 pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
 pub use ford_fulkerson::ford_fulkerson;
