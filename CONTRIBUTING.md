@@ -115,7 +115,7 @@ Regarding the content of the pull request:
 - **Documentation**: Make sure that the pull request includes
   documentation for the changes made. If it is a new algorithm,
   it should comply with
-  the [algorithm documentation defaults][unifty-algo-docs-pr].
+  the [algorithm documentation defaults][algo-docs-template].
 - **Traits**: Make sure that the pull request uses the existing
   graph traits. This will help to ensure that the code is
   generic and can be used with the different graph types.
@@ -209,7 +209,7 @@ a [discussion][github-discussions-url].
 
 [github-new-issue]: https://github.com/petgraph/petgraph/issues/new
 
-[unifty-algo-docs-pr]: https://github.com/petgraph/petgraph/pull/815
+[algo-docs-template]: https://github.com/petgraph/petgraph/blob/master/assets/guide/algodocs.md
 
 ## 🏛️ Old Section on Pull Requests
 
