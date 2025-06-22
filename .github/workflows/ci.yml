@@ -125,7 +125,16 @@ jobs:
         with:
           tool: nextest
       # Exclude some tests from fast-miri, as they take very long to run. thorough-miri includes all tests without nextest.
-      - run: cargo miri nextest run -- --skip b01_vienna_test --skip b07_vienna_test --skip generic_graph6_encoder_test_cases --skip graph6_for_csr_test_cases --skip graph6_for_graph_map_test_cases --skip graph6_for_graph_test_cases --skip graph6_for_matrix_graph_test_case --skip graph6_for_stable_graph_test_cases
+      - run: |
+          cargo miri nextest run -- \
+            --skip b01_vienna_test \
+            --skip b07_vienna_test \
+            --skip generic_graph6_encoder_test_cases \
+            --skip graph6_for_csr_test_cases \
+            --skip graph6_for_graph_map_test_cases \
+            --skip graph6_for_graph_test_cases \
+            --skip graph6_for_matrix_graph_test_case \
+            --skip graph6_for_stable_graph_test_cases
 
   thorough-miri:
     # This job runs on push and pull_request with the `S-run-thorough-tests` label.
