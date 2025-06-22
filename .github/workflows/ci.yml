@@ -2,7 +2,7 @@ on:
   push:
     branches: [ master ]
   pull_request:
-    branches: '*'
+    branches: [ '*' ]
   merge_group:
     types: [ checks_requested ]
   workflow_dispatch: { }
@@ -111,9 +111,9 @@ jobs:
         run: cargo check --no-default-features -p petgraph --target wasm32v1-none --features graphmap,serde-1,stable_graph,matrix_graph,generate,unstable
 
   fast-miri:
-    # This job runs on pull_request without the `S-run-thorough-tests` label.
+    # This job runs on pull_request without the `S-run-thorough-ci-tests` label.
     name: Unsoundness check fast
-    if: ${{ github.event_name != 'merge_group' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'S-run-thorough-tests') }}
+    if: ${{ github.event_name != 'merge_group' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'S-run-thorough-ci-tests') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -137,9 +137,9 @@ jobs:
             --skip graph6_for_stable_graph_test_cases
 
   thorough-miri:
-    # This job runs on push and pull_request with the `S-run-thorough-tests` label.
+    # This job runs on push and pull_request with the `S-run-thorough-ci-tests` label.
     name: Unsoundness check thorough
-    if: ${{ github.event_name != 'merge_group' && (github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'S-run-thorough-tests'))) }}
+    if: ${{ github.event_name != 'merge_group' && (github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'S-run-thorough-ci-tests'))) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
