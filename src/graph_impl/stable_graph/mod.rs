@@ -176,7 +176,6 @@ impl<N, E> StableGraph<N, E, Directed> {
 
 impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
 where
-    Ty: EdgeType,
     Ix: IndexType,
 {
     /// Create a new `StableGraph` with estimated capacity.
@@ -189,7 +188,13 @@ where
             free_edge: EdgeIndex::end(),
         }
     }
+}
 
+impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
     /// Return the current node and edge capacity of the graph.
     pub fn capacity(&self) -> (usize, usize) {
         self.g.capacity()
@@ -1197,10 +1202,11 @@ where
 }
 
 /// The resulting cloned graph has the same graph indices as `self`.
-impl<N, E, Ty, Ix: IndexType> Clone for StableGraph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> Clone for StableGraph<N, E, Ty, Ix>
 where
     N: Clone,
     E: Clone,
+    Ix: Copy,
 {
     fn clone(&self) -> Self {
         StableGraph {
@@ -1278,7 +1284,6 @@ where
 /// Create a new empty `StableGraph`.
 impl<N, E, Ty, Ix> Default for StableGraph<N, E, Ty, Ix>
 where
-    Ty: EdgeType,
     Ix: IndexType,
 {
     fn default() -> Self {
