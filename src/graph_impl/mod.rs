@@ -103,6 +103,7 @@ unsafe impl IndexType for u8 {
 
 /// Node identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[repr(transparent)]
 pub struct NodeIndex<Ix = DefaultIx>(Ix);
 
 impl<Ix: IndexType> NodeIndex<Ix> {
@@ -162,6 +163,7 @@ pub fn edge_index<Ix: IndexType>(index: usize) -> EdgeIndex<Ix> {
 
 /// Edge identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[repr(transparent)]
 pub struct EdgeIndex<Ix = DefaultIx>(Ix);
 
 impl<Ix: IndexType> EdgeIndex<Ix> {
