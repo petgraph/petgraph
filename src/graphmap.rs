@@ -175,7 +175,7 @@ where
     /// Deserializes into a new `GraphMap` from the same format as the standard
     /// `Graph`. Needs feature `serde-1`.
     ///
-    /// **Warning**: When deseralizing a graph that was not originally a `GraphMap`,
+    /// **Warning**: When deserializing a graph that was not originally a `GraphMap`,
     /// the restrictions from [`from_graph`](#method.from_graph) apply.
     ///
     /// Note: The edge weights have to be `Clone` for this to work.
