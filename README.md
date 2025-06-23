@@ -145,7 +145,7 @@ terms.
 
 [ci-url]: https://github.com/petgraph/petgraph/actions/workflows/ci.yml
 
-[contributing]: CONTRIBUTING.rst
+[contributing]: CONTRIBUTING.md
 
 [crates-badge]: https://img.shields.io/crates/v/petgraph.svg
 
