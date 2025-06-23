@@ -139,7 +139,7 @@ jobs:
   thorough-miri:
     # This job runs on push and pull_request with the `S-run-thorough-ci-tests` label.
     name: Unsoundness check thorough
-    if: ${{ github.event_name != 'merge_group' && (github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'S-run-thorough-ci-tests'))) }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'S-run-thorough-ci-tests')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
