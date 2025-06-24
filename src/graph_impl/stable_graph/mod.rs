@@ -817,6 +817,15 @@ where
         }
     }
 
+    pub fn into_nodes_edges(self) -> (impl Iterator<Item = (NodeIndex<Ix>, N)>, impl Iterator<Item = (EdgeIndex<Ix>, NodeIndex<Ix>, NodeIndex<Ix>, E)>) {
+        let (inner_nodes, inner_edges) = self.g.into_nodes_edges();
+
+        (
+            inner_nodes.into_iter().enumerate().filter_map(|(i, node)| node.weight.map(|node| (i, node))).map(|(index, node)| (NodeIndex::new(index), node)), 
+            inner_edges.into_iter().enumerate().filter(|(_, edge)| edge.weight.is_some()).map(|(index, edge)| (EdgeIndex::new(index), edge.source(), edge.target(), edge.weight.unwrap()))
+        )
+    }
+
     /// Index the `StableGraph` by two indices, any combination of
     /// node or edge indices is fine.
     ///
