@@ -139,11 +139,11 @@ where
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
     let mut visited = network.visit_map();
-    let mut queue = VecDeque::new();
+    let mut stack = Vec::new();
     visited.visit(source);
-    queue.push_back(source);
+    stack.push(source);
 
-    while let Some(vertex) = queue.pop_front() {
+    while let Some(vertex) = stack.pop() {
         let vertex_index = NodeIndexable::to_index(&network, vertex);
         let out_edges = network.edges_directed(vertex, Direction::Outgoing);
         let in_edges = network.edges_directed(vertex, Direction::Incoming);
@@ -161,7 +161,7 @@ where
                 if destination == next_vertex {
                     return true;
                 }
-                queue.push_front(next_vertex);
+                stack.push(next_vertex);
             }
         }
     }
