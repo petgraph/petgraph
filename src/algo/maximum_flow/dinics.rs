@@ -29,10 +29,17 @@ where
     let mut max_flow = N::EdgeWeight::zero();
     let mut flows = vec![N::EdgeWeight::zero(); network.edge_count()];
     let mut allowed_edges = vec![Default::default(); network.node_count()];
+    let mut visited = network.visit_map();
 
     while build_level_graph(&network, source, sink, &flows, &mut allowed_edges) {
-        let flow_increase =
-            find_blocking_flow(network, source, sink, &mut flows, &mut allowed_edges);
+        let flow_increase = find_blocking_flow(
+            network,
+            source,
+            sink,
+            &mut flows,
+            &mut allowed_edges,
+            &mut visited,
+        );
         max_flow = max_flow + flow_increase;
     }
     (max_flow, flows)
@@ -102,6 +109,7 @@ fn find_blocking_flow<N>(
     sink: N::NodeId,
     flows: &mut [N::EdgeWeight],
     allowed_edges: &mut [VecDeque<N::EdgeRef>],
+    visited: &mut N::Map,
 ) -> N::EdgeWeight
 where
     N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
@@ -109,7 +117,15 @@ where
 {
     let mut flow_increase = N::EdgeWeight::zero();
     let mut edge_to = vec![None; network.node_count()];
-    while find_augmenting_path(&network, source, sink, flows, &mut edge_to, allowed_edges) {
+    while find_augmenting_path(
+        &network,
+        source,
+        sink,
+        flows,
+        &mut edge_to,
+        allowed_edges,
+        visited,
+    ) {
         let mut path_flow = N::EdgeWeight::max();
 
         // Find the bottleneck capacity of the path
@@ -146,13 +162,14 @@ fn find_augmenting_path<N>(
     flows: &[N::EdgeWeight],
     edge_to: &mut [Option<N::EdgeRef>],
     allowed_edges: &mut [VecDeque<N::EdgeRef>],
+    visited: &mut N::Map,
 ) -> bool
 where
     N: IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
-    let mut visited = network.visit_map();
     let mut stack = Vec::new();
+    network.reset_map(visited);
     visited.visit(source);
     stack.push(source);
 
