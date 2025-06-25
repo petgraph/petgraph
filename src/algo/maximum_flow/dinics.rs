@@ -76,8 +76,10 @@ where
             if residual_cap > N::EdgeWeight::zero() {
                 if next_vertex_level == 0 {
                     level_graph[next_vertex_index] = vertex_level + 1;
-                    queue.push_back(next_vertex);
                     allowed_edges[vertex_index].push_back(edge);
+                    if next_vertex != sink {
+                        queue.push_back(next_vertex);
+                    }
                 } else if next_vertex_level == vertex_level + 1 {
                     allowed_edges[vertex_index].push_back(edge);
                 }
@@ -140,7 +142,7 @@ where
 fn find_augmenting_path<N>(
     network: N,
     source: N::NodeId,
-    destination: N::NodeId,
+    sink: N::NodeId,
     flows: &[N::EdgeWeight],
     edge_to: &mut [Option<N::EdgeRef>],
     allowed_edges: &mut [VecDeque<N::EdgeRef>],
@@ -169,7 +171,7 @@ where
             if !visited.is_visited(&next_vertex) && (residual_cap > N::EdgeWeight::zero()) {
                 visited.visit(next_vertex);
                 edge_to[next_vertex_index] = Some(edge);
-                if destination == next_vertex {
+                if sink == next_vertex {
                     return true;
                 }
                 stack.push(next_vertex);
