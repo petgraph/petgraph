@@ -41,3 +41,61 @@ fn ford_fulkerson_bench_many_edges(bench: &mut Bencher) {
         );
     });
 }
+
+#[bench]
+fn ford_fulkerson_bench_wide(bench: &mut Bencher) {
+    let node_count = 1000;
+    let mut g: Graph<usize, usize> = Graph::new();
+    let source = g.add_node(0);
+    let sink = g.add_node(1);
+
+    let mut intermediates = Vec::new();
+    for i in 0..(node_count - 2) {
+        let n = g.add_node(i + 2);
+        intermediates.push(n);
+        g.add_edge(source, n, 1);
+        g.add_edge(n, sink, 1);
+    }
+
+    bench.iter(|| {
+        let _flow = ford_fulkerson(&g, source, sink);
+    });
+}
+
+#[bench]
+fn ford_fulkerson_bench_dense_middle(bench: &mut Bencher) {
+    let node_count = 500;
+    let mut g: Graph<usize, usize> = Graph::new();
+    let source = g.add_node(0);
+    let sink = g.add_node(1);
+
+    let mut intermediates = Vec::new();
+    for i in 0..(node_count - 2) {
+        let node = g.add_node(i + 2);
+        intermediates.push(node);
+    }
+
+    for (i, &node) in (&intermediates).iter().enumerate() {
+        if i % 7 == 0 {
+            g.add_edge(source, node, 1);
+        }
+    }
+
+    for (i, &node) in (&intermediates).iter().enumerate() {
+        if i % 11 == 0 {
+            g.add_edge(node, sink, 1);
+        }
+    }
+
+    for i in 0..intermediates.len() {
+        for j in (i + 1)..intermediates.len() {
+            if (i + j) % 13 == 0 {
+                g.add_edge(intermediates[i], intermediates[j], 1);
+            }
+        }
+    }
+
+    bench.iter(|| {
+        let _flow = ford_fulkerson(&g, source, sink);
+    });
+}
