@@ -63,8 +63,11 @@ where
         let vertex_index = NodeIndexable::to_index(&network, vertex);
         let vertex_level = level_graph[vertex_index];
         let out_edges = network.edges_directed(vertex, Direction::Outgoing);
+        // let in_edges = network.edges_directed(vertex, Direction::Incoming);
         allowed_edges[vertex_index].clear();
-        for edge in out_edges {
+        for edge in out_edges
+        // .chain(in_edges)
+        {
             let next_vertex = other_endpoint(&network, edge, vertex);
             let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
             let next_vertex_level = level_graph[next_vertex_index];
