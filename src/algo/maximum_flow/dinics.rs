@@ -3,6 +3,7 @@ use core::{
     iter::{Chain, Peekable},
     ops::Sub,
 };
+use std::collections::LinkedList;
 
 use crate::{
     algo::{EdgeRef, PositiveMeasure},
@@ -51,14 +52,13 @@ fn build_level_graph<N>(
     sink: N::NodeId,
     level_graph: &mut [usize],
     flows: &[N::EdgeWeight],
+    // allowed_edges: &mut [LinkedList<N::EdgeRef>],
 ) -> bool
 where
-    N: IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
+    N: IntoEdgesDirected + NodeIndexable + EdgeIndexable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
-    let mut visited = network.visit_map();
     let mut queue = VecDeque::new();
-    visited.visit(source);
     queue.push_back(source);
 
     //    println!("\n----level-graph-----\n");
@@ -67,13 +67,13 @@ where
         let vertex_level = level_graph[NodeIndexable::to_index(&network, vertex)];
         let out_edges = network.edges_directed(vertex, Direction::Outgoing);
         for edge in out_edges {
-            let next = other_endpoint(&network, edge, vertex);
+            let next_vertex = other_endpoint(&network, edge, vertex);
+            let next_vertex_level = NodeIndexable::to_index(&network, next_vertex);
             let edge_index = EdgeIndexable::to_index(&network, edge.id());
-            let residual_cap = residual_capacity(&network, edge, next, flows[edge_index]);
-            if !visited.is_visited(&next) && (residual_cap > N::EdgeWeight::zero()) {
-                visited.visit(next);
-                level_graph[NodeIndexable::to_index(&network, next)] = vertex_level + 1;
-                queue.push_back(next);
+            let residual_cap = residual_capacity(&network, edge, next_vertex, flows[edge_index]);
+            if level_graph[next_vertex_level] == 0 && residual_cap > N::EdgeWeight::zero() {
+                level_graph[next_vertex_level] = vertex_level + 1;
+                queue.push_back(next_vertex);
             }
         }
     }
