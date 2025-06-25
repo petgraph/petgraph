@@ -1,5 +1,8 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
-use core::ops::Sub;
+use core::{
+    iter::{Chain, Peekable},
+    ops::Sub,
+};
 
 use crate::{
     algo::{EdgeRef, PositiveMeasure},
@@ -33,7 +36,7 @@ where
         let flow_increase = find_blocking_flow(network, source, sink, &level_graph, &mut flows);
         max_flow = max_flow + flow_increase;
         // Resets level graph for next iteration
-        level_graph = vec![0; network.node_count()];
+        level_graph.fill(0);
     }
     (max_flow, flows)
 }
@@ -58,12 +61,12 @@ where
     visited.visit(source);
     queue.push_back(source);
 
+    //    println!("\n----level-graph-----\n");
     level_graph[NodeIndexable::to_index(&network, source)] = 1;
     while let Some(vertex) = queue.pop_front() {
         let vertex_level = level_graph[NodeIndexable::to_index(&network, vertex)];
         let out_edges = network.edges_directed(vertex, Direction::Outgoing);
-        let in_edges = network.edges_directed(vertex, Direction::Incoming);
-        for edge in out_edges.chain(in_edges) {
+        for edge in out_edges {
             let next = other_endpoint(&network, edge, vertex);
             let edge_index = EdgeIndexable::to_index(&network, edge.id());
             let residual_cap = residual_capacity(&network, edge, next, flows[edge_index]);
@@ -76,6 +79,7 @@ where
     }
 
     let sink_level = level_graph[NodeIndexable::to_index(&network, sink)];
+    //    println!("sink level {:?}", sink_level);
     sink_level > 0
 }
 
@@ -97,7 +101,18 @@ where
 {
     let mut flow_increase = N::EdgeWeight::zero();
     let mut edge_to = vec![None; network.node_count()];
-    while find_augmenting_path(&network, source, sink, level_graph, flows, &mut edge_to) {
+    let mut virtual_edges = Vec::new();
+    virtual_edges.resize_with(network.node_count(), || None);
+    //    println!("\n----blocking-flow-----\n");
+    while find_augmenting_path(
+        &network,
+        source,
+        sink,
+        level_graph,
+        flows,
+        &mut edge_to,
+        &mut virtual_edges,
+    ) {
         let mut path_flow = N::EdgeWeight::max();
 
         // Find the bottleneck capacity of the path
@@ -119,6 +134,7 @@ where
         }
         flow_increase = flow_increase + path_flow;
     }
+    //    println!("flow increase {:?}", flow_increase);
     flow_increase
 }
 
@@ -133,6 +149,7 @@ fn find_augmenting_path<N>(
     level_graph: &[usize],
     flows: &[N::EdgeWeight],
     edge_to: &mut [Option<N::EdgeRef>],
+    virtual_edges: &mut [Option<Peekable<N::EdgesDirected>>],
 ) -> bool
 where
     N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
@@ -143,11 +160,19 @@ where
     visited.visit(source);
     stack.push(source);
 
-    while let Some(vertex) = stack.pop() {
+    //    println!("\n----augmenting-path-----\n");
+    while let Some(&vertex) = stack.last() {
         let vertex_index = NodeIndexable::to_index(&network, vertex);
-        let out_edges = network.edges_directed(vertex, Direction::Outgoing);
-        let in_edges = network.edges_directed(vertex, Direction::Incoming);
-        for edge in out_edges.chain(in_edges) {
+        //        println!("vertex: {:?}", vertex_index);
+
+        let edges = virtual_edges[vertex_index].get_or_insert(
+            network
+                .edges_directed(vertex, Direction::Outgoing)
+                .peekable(),
+        );
+
+        let mut found_next = false;
+        while let Some(&edge) = edges.peek() {
             let next_vertex = other_endpoint(&network, edge, vertex);
             let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
             let edge_index: usize = EdgeIndexable::to_index(&network, edge.id());
@@ -162,7 +187,14 @@ where
                     return true;
                 }
                 stack.push(next_vertex);
+                found_next = true;
+                break;
+            } else {
+                (*edges).next();
             }
+        }
+        if !found_next {
+            stack.pop();
         }
     }
     false
