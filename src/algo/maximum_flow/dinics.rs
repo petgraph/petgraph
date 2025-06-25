@@ -1,9 +1,5 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
-use core::{
-    iter::{Chain, Peekable},
-    ops::Sub,
-};
-use std::collections::LinkedList;
+use core::ops::Sub;
 
 use crate::{
     algo::{EdgeRef, PositiveMeasure},
@@ -33,11 +29,25 @@ where
     let mut max_flow = N::EdgeWeight::zero();
     let mut flows = vec![N::EdgeWeight::zero(); network.edge_count()];
     let mut level_graph = vec![0; network.node_count()];
-    while build_level_graph(&network, source, sink, &mut level_graph, &flows) {
-        let flow_increase = find_blocking_flow(network, source, sink, &level_graph, &mut flows);
+    let mut allowed_edges = vec![Default::default(); network.node_count()];
+
+    while build_level_graph(
+        &network,
+        source,
+        sink,
+        &mut level_graph,
+        &flows,
+        &mut allowed_edges,
+    ) {
+        let flow_increase = find_blocking_flow(
+            network,
+            source,
+            sink,
+            &level_graph,
+            &mut flows,
+            &mut allowed_edges,
+        );
         max_flow = max_flow + flow_increase;
-        // Resets level graph for next iteration
-        level_graph.fill(0);
     }
     (max_flow, flows)
 }
@@ -52,34 +62,41 @@ fn build_level_graph<N>(
     sink: N::NodeId,
     level_graph: &mut [usize],
     flows: &[N::EdgeWeight],
-    // allowed_edges: &mut [LinkedList<N::EdgeRef>],
+    allowed_edges: &mut [VecDeque<N::EdgeRef>],
 ) -> bool
 where
-    N: IntoEdgesDirected + NodeIndexable + EdgeIndexable,
+    N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
-    let mut queue = VecDeque::new();
+    let mut queue = VecDeque::with_capacity(network.node_count());
     queue.push_back(source);
 
-    //    println!("\n----level-graph-----\n");
+    level_graph.fill(0);
     level_graph[NodeIndexable::to_index(&network, source)] = 1;
     while let Some(vertex) = queue.pop_front() {
-        let vertex_level = level_graph[NodeIndexable::to_index(&network, vertex)];
+        let vertex_index = NodeIndexable::to_index(&network, vertex);
+        let vertex_level = level_graph[vertex_index];
         let out_edges = network.edges_directed(vertex, Direction::Outgoing);
+        allowed_edges[vertex_index].clear();
         for edge in out_edges {
             let next_vertex = other_endpoint(&network, edge, vertex);
-            let next_vertex_level = NodeIndexable::to_index(&network, next_vertex);
+            let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
+            let next_vertex_level = level_graph[next_vertex_index];
             let edge_index = EdgeIndexable::to_index(&network, edge.id());
             let residual_cap = residual_capacity(&network, edge, next_vertex, flows[edge_index]);
-            if level_graph[next_vertex_level] == 0 && residual_cap > N::EdgeWeight::zero() {
-                level_graph[next_vertex_level] = vertex_level + 1;
-                queue.push_back(next_vertex);
+            if residual_cap > N::EdgeWeight::zero() {
+                if next_vertex_level == 0 {
+                    level_graph[next_vertex_index] = vertex_level + 1;
+                    queue.push_back(next_vertex);
+                    allowed_edges[vertex_index].push_back(edge);
+                } else if next_vertex_level == vertex_level + 1 {
+                    allowed_edges[vertex_index].push_back(edge);
+                }
             }
         }
     }
 
     let sink_level = level_graph[NodeIndexable::to_index(&network, sink)];
-    //    println!("sink level {:?}", sink_level);
     sink_level > 0
 }
 
@@ -94,6 +111,7 @@ fn find_blocking_flow<N>(
     sink: N::NodeId,
     level_graph: &[usize],
     flows: &mut [N::EdgeWeight],
+    allowed_edges: &mut [VecDeque<N::EdgeRef>],
 ) -> N::EdgeWeight
 where
     N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
@@ -101,9 +119,6 @@ where
 {
     let mut flow_increase = N::EdgeWeight::zero();
     let mut edge_to = vec![None; network.node_count()];
-    let mut virtual_edges = Vec::new();
-    virtual_edges.resize_with(network.node_count(), || None);
-    //    println!("\n----blocking-flow-----\n");
     while find_augmenting_path(
         &network,
         source,
@@ -111,7 +126,7 @@ where
         level_graph,
         flows,
         &mut edge_to,
-        &mut virtual_edges,
+        allowed_edges,
     ) {
         let mut path_flow = N::EdgeWeight::max();
 
@@ -134,7 +149,7 @@ where
         }
         flow_increase = flow_increase + path_flow;
     }
-    //    println!("flow increase {:?}", flow_increase);
+
     flow_increase
 }
 
@@ -149,10 +164,10 @@ fn find_augmenting_path<N>(
     level_graph: &[usize],
     flows: &[N::EdgeWeight],
     edge_to: &mut [Option<N::EdgeRef>],
-    virtual_edges: &mut [Option<Peekable<N::EdgesDirected>>],
+    allowed_edges: &mut [VecDeque<N::EdgeRef>],
 ) -> bool
 where
-    N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
+    N: IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
     let mut visited = network.visit_map();
@@ -160,23 +175,18 @@ where
     visited.visit(source);
     stack.push(source);
 
-    //    println!("\n----augmenting-path-----\n");
     while let Some(&vertex) = stack.last() {
         let vertex_index = NodeIndexable::to_index(&network, vertex);
-        //        println!("vertex: {:?}", vertex_index);
 
-        let edges = virtual_edges[vertex_index].get_or_insert(
-            network
-                .edges_directed(vertex, Direction::Outgoing)
-                .peekable(),
-        );
+        let edges = &mut allowed_edges[vertex_index];
 
         let mut found_next = false;
-        while let Some(&edge) = edges.peek() {
+        while let Some(&edge) = edges.front() {
             let next_vertex = other_endpoint(&network, edge, vertex);
             let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
             let edge_index: usize = EdgeIndexable::to_index(&network, edge.id());
             let residual_cap = residual_capacity(&network, edge, next_vertex, flows[edge_index]);
+
             if level_graph[next_vertex_index] == level_graph[vertex_index] + 1
                 && !visited.is_visited(&next_vertex)
                 && (residual_cap > N::EdgeWeight::zero())
@@ -190,7 +200,7 @@ where
                 found_next = true;
                 break;
             } else {
-                (*edges).next();
+                edges.pop_front();
             }
         }
         if !found_next {
