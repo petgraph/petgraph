@@ -28,25 +28,11 @@ where
 {
     let mut max_flow = N::EdgeWeight::zero();
     let mut flows = vec![N::EdgeWeight::zero(); network.edge_count()];
-    let mut level_graph = vec![0; network.node_count()];
     let mut allowed_edges = vec![Default::default(); network.node_count()];
 
-    while build_level_graph(
-        &network,
-        source,
-        sink,
-        &mut level_graph,
-        &flows,
-        &mut allowed_edges,
-    ) {
-        let flow_increase = find_blocking_flow(
-            network,
-            source,
-            sink,
-            &level_graph,
-            &mut flows,
-            &mut allowed_edges,
-        );
+    while build_level_graph(&network, source, sink, &flows, &mut allowed_edges) {
+        let flow_increase =
+            find_blocking_flow(network, source, sink, &mut flows, &mut allowed_edges);
         max_flow = max_flow + flow_increase;
     }
     (max_flow, flows)
@@ -60,7 +46,6 @@ fn build_level_graph<N>(
     network: N,
     source: N::NodeId,
     sink: N::NodeId,
-    level_graph: &mut [usize],
     flows: &[N::EdgeWeight],
     allowed_edges: &mut [VecDeque<N::EdgeRef>],
 ) -> bool
@@ -68,6 +53,7 @@ where
     N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
+    let mut level_graph = vec![0; network.node_count()];
     let mut queue = VecDeque::with_capacity(network.node_count());
     queue.push_back(source);
 
@@ -109,7 +95,6 @@ fn find_blocking_flow<N>(
     network: N,
     source: N::NodeId,
     sink: N::NodeId,
-    level_graph: &[usize],
     flows: &mut [N::EdgeWeight],
     allowed_edges: &mut [VecDeque<N::EdgeRef>],
 ) -> N::EdgeWeight
@@ -119,15 +104,7 @@ where
 {
     let mut flow_increase = N::EdgeWeight::zero();
     let mut edge_to = vec![None; network.node_count()];
-    while find_augmenting_path(
-        &network,
-        source,
-        sink,
-        level_graph,
-        flows,
-        &mut edge_to,
-        allowed_edges,
-    ) {
+    while find_augmenting_path(&network, source, sink, flows, &mut edge_to, allowed_edges) {
         let mut path_flow = N::EdgeWeight::max();
 
         // Find the bottleneck capacity of the path
@@ -161,7 +138,6 @@ fn find_augmenting_path<N>(
     network: N,
     source: N::NodeId,
     destination: N::NodeId,
-    level_graph: &[usize],
     flows: &[N::EdgeWeight],
     edge_to: &mut [Option<N::EdgeRef>],
     allowed_edges: &mut [VecDeque<N::EdgeRef>],
@@ -187,10 +163,7 @@ where
             let edge_index: usize = EdgeIndexable::to_index(&network, edge.id());
             let residual_cap = residual_capacity(&network, edge, next_vertex, flows[edge_index]);
 
-            if level_graph[next_vertex_index] == level_graph[vertex_index] + 1
-                && !visited.is_visited(&next_vertex)
-                && (residual_cap > N::EdgeWeight::zero())
-            {
+            if !visited.is_visited(&next_vertex) && (residual_cap > N::EdgeWeight::zero()) {
                 visited.visit(next_vertex);
                 edge_to[next_vertex_index] = Some(edge);
                 if destination == next_vertex {
