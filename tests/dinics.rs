@@ -134,3 +134,31 @@ fn test_dinics_f() {
     let (max_flow, _) = dinics(&graph, source, sink);
     assert_eq!(19, max_flow);
 }
+
+#[test]
+fn test_dinics_g() {
+    // Example that can lead to invalid answers if backward edges
+    // in residual network are not considered, resulting in a flow of 3
+    // instead of the maximum 4
+
+    let mut g = Graph::<(), u32>::new();
+
+    let s = g.add_node(());
+    let a = g.add_node(());
+    let b = g.add_node(());
+    let c = g.add_node(());
+    let d = g.add_node(());
+    let t = g.add_node(());
+
+    g.add_edge(s, a, 2);
+    g.add_edge(s, b, 2);
+    g.add_edge(a, c, 1); // misleading edge
+    g.add_edge(a, d, 2);
+    g.add_edge(b, c, 2);
+    g.add_edge(c, t, 2);
+    g.add_edge(d, t, 2);
+
+    let (flow, _) = dinics(&g, s, t);
+
+    assert_eq!(flow, 4);
+}

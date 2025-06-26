@@ -1,12 +1,12 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
-use core::ops::Sub;
+use core::{fmt::Debug, ops::Sub};
 
 use crate::{
     algo::{EdgeRef, PositiveMeasure},
     prelude::Direction,
     visit::{
-        Data, EdgeCount, EdgeIndexable, IntoEdges, IntoEdgesDirected, NodeCount, NodeIndexable,
-        VisitMap, Visitable,
+        Data, EdgeCount, EdgeIndexable, IntoEdgeReferences, IntoEdges, IntoEdgesDirected,
+        NodeCount, NodeIndexable, VisitMap, Visitable,
     },
 };
 
@@ -25,19 +25,20 @@ pub fn dinics<N>(
 where
     N: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
+    N::NodeId: Debug,
 {
     let mut max_flow = N::EdgeWeight::zero();
     let mut flows = vec![N::EdgeWeight::zero(); network.edge_count()];
-    let mut allowed_edges = vec![Default::default(); network.node_count()];
     let mut visited = network.visit_map();
+    let mut level_edges = vec![Default::default(); network.node_count()];
 
-    while build_level_graph(&network, source, sink, &flows, &mut allowed_edges) {
+    while build_level_graph(&network, source, sink, &flows, &mut level_edges) {
         let flow_increase = find_blocking_flow(
             network,
             source,
             sink,
             &mut flows,
-            &mut allowed_edges,
+            &mut level_edges,
             &mut visited,
         );
         max_flow = max_flow + flow_increase;
@@ -45,8 +46,11 @@ where
     (max_flow, flows)
 }
 
-/// Makes a BFS to label network vertices with levels representing
+/// Makes a BFS that labels network vertices with levels representing
 /// their distance to the source vertex.
+///
+/// Aggregates in `level_edges` the edges that connects each
+/// vertex to its neighbours in the next level.
 ///
 /// Returns a boolean indicating if sink vertex is reachable.
 fn build_level_graph<N>(
@@ -54,42 +58,38 @@ fn build_level_graph<N>(
     source: N::NodeId,
     sink: N::NodeId,
     flows: &[N::EdgeWeight],
-    allowed_edges: &mut [VecDeque<N::EdgeRef>],
+    level_edges: &mut [Vec<N::EdgeRef>],
 ) -> bool
 where
     N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
     let mut level_graph = vec![0; network.node_count()];
-    let mut queue = VecDeque::with_capacity(network.node_count());
-    queue.push_back(source);
+    let mut bfs_queue = VecDeque::with_capacity(network.node_count());
+    bfs_queue.push_back(source);
 
-    level_graph.fill(0);
     level_graph[NodeIndexable::to_index(&network, source)] = 1;
-    while let Some(vertex) = queue.pop_front() {
+    while let Some(vertex) = bfs_queue.pop_front() {
         let vertex_index = NodeIndexable::to_index(&network, vertex);
-        let vertex_level = level_graph[vertex_index];
         let out_edges = network.edges_directed(vertex, Direction::Outgoing);
-        // let in_edges = network.edges_directed(vertex, Direction::Incoming);
-        allowed_edges[vertex_index].clear();
-        for edge in out_edges
-        // .chain(in_edges)
-        {
+        let in_edges = network.edges_directed(vertex, Direction::Incoming);
+        level_edges[vertex_index].clear();
+        for edge in out_edges.chain(in_edges) {
             let next_vertex = other_endpoint(&network, edge, vertex);
-            let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
-            let next_vertex_level = level_graph[next_vertex_index];
             let edge_index = EdgeIndexable::to_index(&network, edge.id());
             let residual_cap = residual_capacity(&network, edge, next_vertex, flows[edge_index]);
-            if residual_cap > N::EdgeWeight::zero() {
-                if next_vertex_level == 0 {
-                    level_graph[next_vertex_index] = vertex_level + 1;
-                    allowed_edges[vertex_index].push_back(edge);
-                    if next_vertex != sink {
-                        queue.push_back(next_vertex);
-                    }
-                } else if next_vertex_level == vertex_level + 1 {
-                    allowed_edges[vertex_index].push_back(edge);
+            if residual_cap == N::EdgeWeight::zero() {
+                continue;
+            }
+            let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
+            if level_graph[next_vertex_index] == 0 {
+                level_graph[next_vertex_index] = level_graph[vertex_index] + 1;
+                level_edges[vertex_index].push(edge);
+                if next_vertex != sink {
+                    bfs_queue.push_back(next_vertex);
                 }
+            } else if level_graph[next_vertex_index] == level_graph[vertex_index] + 1 {
+                level_edges[vertex_index].push(edge);
             }
         }
     }
@@ -99,7 +99,7 @@ where
 }
 
 /// Find blocking flow for current level graph by repeatingly finding
-/// augmenting paths in it using DFS.
+/// augmenting paths in it.
 ///
 /// Attach computed flows to given `flows` parameter and returns the
 /// flow increase of current level graph.
@@ -108,12 +108,13 @@ fn find_blocking_flow<N>(
     source: N::NodeId,
     sink: N::NodeId,
     flows: &mut [N::EdgeWeight],
-    allowed_edges: &mut [VecDeque<N::EdgeRef>],
+    level_edges: &mut [Vec<N::EdgeRef>],
     visited: &mut N::Map,
 ) -> N::EdgeWeight
 where
-    N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
+    N: NodeCount + IntoEdges + NodeIndexable + EdgeIndexable + Visitable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
+    N::NodeId: Debug,
 {
     let mut flow_increase = N::EdgeWeight::zero();
     let mut edge_to = vec![None; network.node_count()];
@@ -123,7 +124,7 @@ where
         sink,
         flows,
         &mut edge_to,
-        allowed_edges,
+        level_edges,
         visited,
     ) {
         let mut path_flow = N::EdgeWeight::max();
@@ -147,12 +148,11 @@ where
         }
         flow_increase = flow_increase + path_flow;
     }
-
     flow_increase
 }
 
-/// Makes a DFS to build an augmenting path to destination vertex using
-/// previously found vertex levels.
+/// Makes a DFS to find an augmenting path from source to destination vertex
+/// using previously computed `edge_levels` from level graph.
 ///
 /// Returns a boolean indicating if an augmenting path to destination was found.
 fn find_augmenting_path<N>(
@@ -161,45 +161,41 @@ fn find_augmenting_path<N>(
     sink: N::NodeId,
     flows: &[N::EdgeWeight],
     edge_to: &mut [Option<N::EdgeRef>],
-    allowed_edges: &mut [VecDeque<N::EdgeRef>],
+    level_edges: &mut [Vec<N::EdgeRef>],
     visited: &mut N::Map,
 ) -> bool
 where
-    N: IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
+    N: IntoEdges + NodeIndexable + EdgeIndexable + Visitable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
-    let mut stack = Vec::new();
     network.reset_map(visited);
-    visited.visit(source);
-    stack.push(source);
 
-    while let Some(&vertex) = stack.last() {
+    let mut dfs_stack = Vec::new();
+    dfs_stack.push(source);
+    visited.visit(source);
+    while let Some(&vertex) = dfs_stack.last() {
         let vertex_index = NodeIndexable::to_index(&network, vertex);
 
-        let edges = &mut allowed_edges[vertex_index];
-
         let mut found_next = false;
-        while let Some(&edge) = edges.front() {
+        while let Some(edge) = level_edges[vertex_index].pop() {
             let next_vertex = other_endpoint(&network, edge, vertex);
-            let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
             let edge_index: usize = EdgeIndexable::to_index(&network, edge.id());
             let residual_cap = residual_capacity(&network, edge, next_vertex, flows[edge_index]);
 
-            if !visited.is_visited(&next_vertex) && (residual_cap > N::EdgeWeight::zero()) {
-                visited.visit(next_vertex);
+            if !visited.is_visited(&next_vertex) && residual_cap > N::EdgeWeight::zero() {
+                let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
                 edge_to[next_vertex_index] = Some(edge);
                 if sink == next_vertex {
                     return true;
                 }
-                stack.push(next_vertex);
+                dfs_stack.push(next_vertex);
+                visited.visit(next_vertex);
                 found_next = true;
                 break;
-            } else {
-                edges.pop_front();
             }
         }
         if !found_next {
-            stack.pop();
+            dfs_stack.pop();
         }
     }
     false
@@ -268,7 +264,7 @@ where
 /// Gets the other endpoint of graph edge, if any, otherwise panics.
 fn other_endpoint<N>(network: N, edge: N::EdgeRef, vertex: N::NodeId) -> N::NodeId
 where
-    N: NodeIndexable + IntoEdges,
+    N: NodeIndexable + IntoEdgeReferences,
 {
     if vertex == edge.source() {
         edge.target()
