@@ -1,5 +1,5 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
-use core::{fmt::Debug, ops::Sub};
+use core::ops::Sub;
 
 use crate::{
     algo::{EdgeRef, PositiveMeasure},
@@ -25,14 +25,18 @@ pub fn dinics<N>(
 where
     N: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
-    N::NodeId: Debug,
 {
     let mut max_flow = N::EdgeWeight::zero();
     let mut flows = vec![N::EdgeWeight::zero(); network.edge_count()];
     let mut visited = network.visit_map();
     let mut level_edges = vec![Default::default(); network.node_count()];
 
-    while build_level_graph(&network, source, sink, &flows, &mut level_edges) {
+    loop {
+        let (sink_reachable, _) =
+            build_level_graph(&network, source, sink, &flows, &mut level_edges);
+        if !sink_reachable {
+            break;
+        }
         let flow_increase = find_blocking_flow(
             network,
             source,
@@ -52,14 +56,15 @@ where
 /// Aggregates in `level_edges` the edges that connects each
 /// vertex to its neighbours in the next level.
 ///
-/// Returns a boolean indicating if sink vertex is reachable.
-fn build_level_graph<N>(
+/// Returns a boolean indicating if sink vertex is reachable and the
+/// computed level graph.
+pub fn build_level_graph<N>(
     network: N,
     source: N::NodeId,
     sink: N::NodeId,
     flows: &[N::EdgeWeight],
     level_edges: &mut [Vec<N::EdgeRef>],
-) -> bool
+) -> (bool, Vec<usize>)
 where
     N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
@@ -95,7 +100,7 @@ where
     }
 
     let sink_level = level_graph[NodeIndexable::to_index(&network, sink)];
-    sink_level > 0
+    (sink_level > 0, level_graph)
 }
 
 /// Find blocking flow for current level graph by repeatingly finding
@@ -114,7 +119,6 @@ fn find_blocking_flow<N>(
 where
     N: NodeCount + IntoEdges + NodeIndexable + EdgeIndexable + Visitable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
-    N::NodeId: Debug,
 {
     let mut flow_increase = N::EdgeWeight::zero();
     let mut edge_to = vec![None; network.node_count()];

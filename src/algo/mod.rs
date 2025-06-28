@@ -57,7 +57,7 @@ pub use johnson::johnson;
 pub use k_shortest_path::k_shortest_path;
 pub use matching::{greedy_matching, maximum_matching, Matching};
 pub use maximal_cliques::maximal_cliques;
-pub use maximum_flow::{dinics, ford_fulkerson};
+pub use maximum_flow::{dinics, ford_fulkerson, min_st_cut};
 pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
 pub use page_rank::page_rank;
 #[allow(deprecated)]
