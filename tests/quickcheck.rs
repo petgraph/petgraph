@@ -933,7 +933,7 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            bellman_ford(&gr, start).unwrap();
+            return bellman_ford(&gr, start).is_ok();
         }
         true
     }
@@ -965,7 +965,7 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            bellman_ford(&gr, start).unwrap();
+            return bellman_ford(&gr, start).is_ok();
         }
         true
     }
@@ -1628,7 +1628,11 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+            let spfa_res = spfa(&gr, start, |edge| *edge.weight());
+            let bf_res = bellman_ford(&gr, start);
+            // We only compare the predecessors, since the algorithms use different actual values
+            // to represent inf weights.
+            return spfa_res.map(|p| p.predecessors) == bf_res.map(|p| p.predecessors);
         }
         true
     }
@@ -1645,7 +1649,11 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+            let spfa_res = spfa(&gr, start, |edge| *edge.weight());
+            let bf_res = bellman_ford(&gr, start);
+            // We only compare the predecessors, since the algorithms use different actual values
+            // to represent inf weight.
+            return spfa_res.map(|p| p.predecessors) == bf_res.map(|p| p.predecessors);
         }
         true
     }
