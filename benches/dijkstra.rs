@@ -4,7 +4,7 @@ extern crate petgraph;
 extern crate test;
 
 use petgraph::prelude::*;
-use std::cmp::{max, min};
+use core::cmp::{max, min};
 use test::Bencher;
 
 use petgraph::algo::dijkstra;
