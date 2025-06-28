@@ -1,5 +1,5 @@
 use alloc::{vec, vec::Vec};
-use core::ops::Sub;
+use core::ops::{Add, Sub};
 
 use crate::{
     algo::{maximum_flow::dinics::build_level_graph, EdgeRef, PositiveMeasure},
@@ -28,7 +28,7 @@ pub fn min_st_cut<N>(
 ) -> (N::EdgeWeight, Vec<N::EdgeRef>)
 where
     N: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
-    N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
+    N::EdgeWeight: Add<Output = N::EdgeWeight> + Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
     let (max_flow, flows) = dinics(network, source, sink);
     let level_edges = &mut vec![Default::default(); network.node_count()];
@@ -41,12 +41,22 @@ where
         "Sink should be unreachable after Dinic's completion"
     );
 
-    let cut_edges = network
+    let cut_edges: Vec<N::EdgeRef> = network
         .edge_references()
         .filter(|edge| is_edge_in_st_cut(network, &flows, &level_graph, edge))
         .collect();
 
-    (max_flow, cut_edges)
+    let cut_capacity = cut_edges
+        .iter()
+        .map(|edge| *edge.weight())
+        .fold(N::EdgeWeight::zero(), |a, b| a + b);
+
+    assert_eq!(
+        max_flow, cut_capacity,
+        "Min-cut capacity should equal to the network's maximum flow"
+    );
+
+    (cut_capacity, cut_edges)
 }
 
 // Checks if edge is part of network's st cut.
