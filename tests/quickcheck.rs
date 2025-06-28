@@ -437,10 +437,7 @@ where
     N: NodeTrait + fmt::Debug,
 {
     for (a, b, _weight) in g.all_edges() {
-        assert!(
-            g.contains_edge(a, b),
-            "Edge not in graph! {a:?} to {b:?}"
-        );
+        assert!(g.contains_edge(a, b), "Edge not in graph! {a:?} to {b:?}");
         assert!(
             g.neighbors(a).any(|x| x == b),
             "Edge {:?} not in neighbor list for {:?}",
