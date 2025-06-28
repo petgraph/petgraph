@@ -183,11 +183,11 @@ fn selfloop() {
     assert!(gr.find_edge(b, a).is_none());
     assert!(gr.find_edge_undirected(b, a).is_some());
     assert!(gr.find_edge(a, a).is_some());
-    println!("{:?}", gr);
+    println!("{gr:?}");
 
     gr.remove_edge(sed);
     assert!(gr.find_edge(a, a).is_none());
-    println!("{:?}", gr);
+    println!("{gr:?}");
 }
 
 #[test]
@@ -440,7 +440,7 @@ fn dijk() {
     g.add_edge(b, f, 15);
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
-    println!("{:?}", g);
+    println!("{g:?}");
     for no in Bfs::new(&g, a).iter(&g) {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
@@ -712,12 +712,10 @@ fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex]) {
         let b = edge.target();
         let ai = order.iter().position(|x| *x == a).unwrap();
         let bi = order.iter().position(|x| *x == b).unwrap();
-        println!("Check that {:?} is before {:?}", a, b);
+        println!("Check that {a:?} is before {b:?}");
         assert!(
             ai < bi,
-            "Topo order: assertion that node {:?} is before {:?} failed",
-            a,
-            b
+            "Topo order: assertion that node {a:?} is before {b:?} failed"
         );
     }
 }
@@ -755,7 +753,7 @@ fn test_toposort() {
     gr.add_edge(i, j, 1.);
 
     let order = petgraph::algo::toposort(&gr, None).unwrap();
-    println!("{:?}", order);
+    println!("{order:?}");
     assert_eq!(order.len(), gr.node_count());
 
     assert_is_topo_order(&gr, &order);
@@ -1018,8 +1016,7 @@ fn condensation() {
     assert!(cond.edge_count() == 2);
     assert!(
         !petgraph::algo::is_cyclic_directed(&cond),
-        "Assertion failed: {:?} acyclic",
-        cond
+        "Assertion failed: {cond:?} acyclic"
     );
 
     // make_acyclic = false
@@ -1170,7 +1167,7 @@ fn test_weight_iterators() {
         *ew = -*ew;
     }
     for (index, edge) in gr.raw_edges().iter().enumerate() {
-        assert_eq!(edge.weight, -1. * old[EdgeIndex::new(index)]);
+        assert_eq!(edge.weight, -old[EdgeIndex::new(index)]);
     }
 }
 
@@ -1263,7 +1260,7 @@ fn index_twice_mut() {
                 .fold(0., |a, b| a + b);
             assert_eq!(s, gr[ni]);
         }
-        println!("Sum {:?}: {:?}", dir, gr);
+        println!("Sum {dir:?}: {gr:?}");
     }
 }
 
@@ -1327,7 +1324,7 @@ fn test_edge_iterators_directed() {
     let mut reversed_gr = gr.clone();
     reversed_gr.reverse();
 
-    println!("{:#?}", gr);
+    println!("{gr:#?}");
     for i in gr.node_indices() {
         // Compare against reversed graphs two different ways: using .reverse() and Reversed.
         itertools::assert_equal(gr.edges_directed(i, Incoming), reversed_gr.edges(i));
@@ -1506,7 +1503,7 @@ fn toposort_generic() {
         assert_eq!(gr[nx].1, index);
         index += 1.;
     }
-    println!("{:?}", gr);
+    println!("{gr:?}");
     assert_is_topo_order(&gr, &order);
 
     {
@@ -1539,7 +1536,7 @@ fn toposort_generic() {
         while let Some(nx) = topo.next(&gr) {
             order.push(nx);
         }
-        println!("{:?}", gr);
+        println!("{gr:?}");
         assert_is_topo_order(&gr, &order);
     }
     let mut gr2 = gr.clone();
@@ -1614,7 +1611,7 @@ fn map_filter_map() {
     g.add_edge(b, f, 15);
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
-    println!("{:?}", g);
+    println!("{g:?}");
 
     let g2 = g.filter_map(
         |_, name| Some(*name),
@@ -1912,14 +1909,14 @@ fn filtered() {
     g.add_edge(b, f, 15);
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
-    println!("{:?}", g);
+    println!("{g:?}");
 
     let filt = NodeFiltered(&g, |n: NodeIndex| n != c && n != e);
 
     let mut dfs = DfsPostOrder::new(&filt, a);
     let mut po = Vec::new();
     while let Some(nx) = dfs.next(&filt) {
-        println!("Next: {:?}", nx);
+        println!("Next: {nx:?}");
         po.push(nx);
     }
     assert_eq!(set(po), set(g.node_identifiers().filter(|n| (filt.1)(*n))));
@@ -2088,13 +2085,13 @@ fn dfs_visit() {
     let mut has_tree_edge = gr.visit_map();
     let mut edges = HashSet::new();
     depth_first_search(&gr, Some(n(0)), |evt| {
-        println!("Event: {:?}", evt);
+        println!("Event: {evt:?}");
         match evt {
             Discover(n, t) => discover_time[n.index()] = t,
             Finish(n, t) => finish_time[n.index()] = t,
             TreeEdge(u, v) => {
                 // v is an ancestor of u
-                assert!(has_tree_edge.visit(v), "Two tree edges to {:?}!", v);
+                assert!(has_tree_edge.visit(v), "Two tree edges to {v:?}!");
                 assert!(discover_time[v.index()] == invalid_time);
                 assert!(discover_time[u.index()] != invalid_time);
                 assert!(finish_time[u.index()] == invalid_time);
@@ -2118,8 +2115,8 @@ fn dfs_visit() {
         edges,
         set(gr.edge_references().map(|e| (e.source(), e.target())))
     );
-    println!("{:?}", discover_time);
-    println!("{:?}", finish_time);
+    println!("{discover_time:?}");
+    println!("{finish_time:?}");
 
     // find path from 0 to 4
     let mut predecessor = vec![NodeIndex::end(); gr.node_count()];
@@ -2247,7 +2244,7 @@ fn filter_elements() {
         },
     ];
     let mut g = DiGraph::<_, _>::from_elements(elements.iter().cloned());
-    println!("{:#?}", g);
+    println!("{g:#?}");
     assert!(g.contains_edge(n(1), n(5)));
     let g2 = DiGraph::<_, _>::from_elements(
         elements
@@ -2255,7 +2252,7 @@ fn filter_elements() {
             .cloned()
             .filter_elements(|elt| !matches!(elt, Node { ref weight } if **weight == "B")),
     );
-    println!("{:#?}", g2);
+    println!("{g2:#?}");
     g.remove_node(n(1));
     assert!(is_isomorphic_matching(
         &g,
