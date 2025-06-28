@@ -614,7 +614,7 @@ fn test_generate_undirected() {
         let mut n = 0;
         while let Some(g) = gen.next_ref() {
             n += 1;
-            println!("{:?}", g);
+            println!("{g:?}");
         }
 
         assert_eq!(n, 1 << nedges);
@@ -672,8 +672,7 @@ fn test_generate_dag() {
         for gr in &graphs {
             assert!(
                 !petgraph::algo::is_cyclic_directed(gr),
-                "Assertion failed: {:?} acyclic",
-                gr
+                "Assertion failed: {gr:?} acyclic",
             );
         }
     }
