@@ -1234,8 +1234,7 @@ where
     fn from_index(&self, ix: usize) -> Self::NodeId {
         assert!(
             ix < self.nodes.len(),
-            "The requested index {} is out-of-bounds.",
-            ix
+            "The requested index {ix} is out-of-bounds."
         );
         let (&key, _) = self.nodes.get_index(ix).unwrap();
         key
@@ -1291,8 +1290,7 @@ where
     fn from_index(&self, ix: usize) -> Self::EdgeId {
         assert!(
             ix < self.edges.len(),
-            "The requested index {} is out-of-bounds.",
-            ix
+            "The requested index {ix} is out-of-bounds."
         );
         let (&key, _) = self.edges.get_index(ix).unwrap();
         key

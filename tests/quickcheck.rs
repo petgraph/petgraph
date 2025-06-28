@@ -311,7 +311,7 @@ fn isomorphism_1() {
 fn isomorphism_modify() {
     // using small weights so that duplicates are likely
     fn prop<Ty: EdgeType>(g: Small<Graph<i16, i8, Ty>>, node: u8, edge: u8) -> bool {
-        println!("graph {:#?}", g);
+        println!("graph {g:#?}");
         let mut ng = (*g).clone();
         let i = node_index(node as usize);
         let j = edge_index(edge as usize);
@@ -437,12 +437,7 @@ where
     N: NodeTrait + fmt::Debug,
 {
     for (a, b, _weight) in g.all_edges() {
-        assert!(
-            g.contains_edge(a, b),
-            "Edge not in graph! {:?} to {:?}",
-            a,
-            b
-        );
+        assert!(g.contains_edge(a, b), "Edge not in graph! {a:?} to {b:?}");
         assert!(
             g.neighbors(a).any(|x| x == b),
             "Edge {:?} not in neighbor list for {:?}",
@@ -507,8 +502,8 @@ quickcheck! {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
                                       Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Tarjan) {:?}", tsccs);
+            println!("Sccs {sccs:?}");
+            println!("Sccs (Tarjan) {tsccs:?}");
             return false;
         }
         true
@@ -542,8 +537,8 @@ quickcheck! {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
                                       Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Reversed) {:?}", tsccs);
+            println!("Sccs {sccs:?}");
+            println!("Sccs (Reversed) {tsccs:?}");
             return false;
         }
         true
@@ -561,8 +556,8 @@ quickcheck! {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
                                       Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Reversed) {:?}", tsccs);
+            println!("Sccs {sccs:?}");
+            println!("Sccs (Reversed) {tsccs:?}");
             return false;
         }
         true
@@ -653,7 +648,7 @@ fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
         let ai = order.find(&a).unwrap();
         let bi = order.find(&b).unwrap();
         if ai >= bi {
-            println!("{:?} > {:?} ", a, b);
+            println!("{a:?} > {b:?} ");
             return false;
         }
     }
@@ -686,7 +681,7 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
             None => continue,
         };
         if ai >= bi {
-            println!("{:?} > {:?} ", a, b);
+            println!("{a:?} > {b:?} ");
             return false;
         }
     }
@@ -722,7 +717,7 @@ fn full_topo_generic() {
             index += 1;
         }
         if !is_topo_order(&gr, &order) {
-            println!("{:?}", gr);
+            println!("{gr:?}");
             return false;
         }
 
@@ -733,7 +728,7 @@ fn full_topo_generic() {
                 order.push(nx);
             }
             if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
+                println!("{gr:?}");
                 return false;
             }
         }
@@ -750,7 +745,7 @@ fn full_topo_generic() {
                 order.push(nx);
             }
             if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
+                println!("{gr:?}");
                 return false;
             }
         }
@@ -762,7 +757,7 @@ fn full_topo_generic() {
                 order.push(nx);
             }
             if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
+                println!("{gr:?}");
                 return false;
             }
         }
@@ -902,7 +897,7 @@ quickcheck! {
                 Finish(n, t) => finish_time[n.index()] = t,
                 TreeEdge(u, v) => {
                     // v is an ancestor of u
-                    assert!(has_tree_edge.visit(v), "Two tree edges to {:?}!", v);
+                    assert!(has_tree_edge.visit(v), "Two tree edges to {v:?}!");
                     assert!(discover_time[v.index()] == invalid_time);
                     assert!(discover_time[u.index()] != invalid_time);
                     assert!(finish_time[u.index()] == invalid_time);
@@ -1612,9 +1607,7 @@ fn maximal_cliques_matches_ref_impl() {
             for c in &cliques_ref {
                 assert!(
                     cliques.contains(c),
-                    "Ref Clique {:?} not found in the result of maximal_cliques_algo: {:?}",
-                    c,
-                    cliques
+                    "Ref Clique {c:?} not found in the result of maximal_cliques_algo: {cliques:?}"
                 );
             }
         }
