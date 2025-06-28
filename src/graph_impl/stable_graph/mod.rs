@@ -2059,25 +2059,25 @@ fn stable_graph() {
     let b = gr.add_node(1);
     let c = gr.add_node(2);
     let _ed = gr.add_edge(a, b, 1);
-    println!("{:?}", gr);
+    println!("{gr:?}");
     gr.remove_node(b);
-    println!("{:?}", gr);
+    println!("{gr:?}");
     let d = gr.add_node(3);
-    println!("{:?}", gr);
+    println!("{gr:?}");
     gr.check_free_lists();
     gr.remove_node(a);
     gr.check_free_lists();
     gr.remove_node(c);
     gr.check_free_lists();
-    println!("{:?}", gr);
+    println!("{gr:?}");
     gr.add_edge(d, d, 2);
-    println!("{:?}", gr);
+    println!("{gr:?}");
 
     let e = gr.add_node(4);
     gr.add_edge(d, e, 3);
-    println!("{:?}", gr);
+    println!("{gr:?}");
     for neigh in gr.neighbors(d) {
-        println!("edge {:?} -> {:?}", d, neigh);
+        println!("edge {d:?} -> {neigh:?}");
     }
     gr.check_free_lists();
 }
@@ -2100,7 +2100,7 @@ fn dfs() {
     gr.add_edge(c, d, 5);
     gr.add_edge(d, b, 6);
     gr.add_edge(c, b, 7);
-    println!("{:?}", gr);
+    println!("{gr:?}");
 
     let mut dfs = Dfs::new(&gr, a);
     while let Some(next) = dfs.next(&gr) {
