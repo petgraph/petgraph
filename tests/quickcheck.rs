@@ -1632,7 +1632,9 @@ quickcheck! {
             let bf_res = bellman_ford(&gr, start);
             // We only compare the predecessors, since the algorithms use different actual values
             // to represent inf weights.
-            return spfa_res.map(|p| p.predecessors) == bf_res.map(|p| p.predecessors);
+            if spfa_res.map(|p| p.predecessors) != bf_res.map(|p| p.predecessors) {
+                return false;
+            }
         }
         true
     }
@@ -1653,7 +1655,9 @@ quickcheck! {
             let bf_res = bellman_ford(&gr, start);
             // We only compare the predecessors, since the algorithms use different actual values
             // to represent inf weight.
-            return spfa_res.map(|p| p.predecessors) == bf_res.map(|p| p.predecessors);
+            if spfa_res.map(|p| p.predecessors) != bf_res.map(|p| p.predecessors) {
+                return false;
+            }
         }
         true
     }
