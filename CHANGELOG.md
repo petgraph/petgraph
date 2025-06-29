@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.8.3](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.2...petgraph@v0.8.3) - 2025-06-29
+
+### Documentation
+
+- Fix examples link in README and unify typesetting of one word ([#823](https://github.com/petgraph/petgraph/pull/823))
+- Add link to multigraph definition to isomorphism algos ([#824](https://github.com/petgraph/petgraph/pull/824))
+- Fix auxiliary space (and time) complexity of bron-kerbosch ([#825](https://github.com/petgraph/petgraph/pull/825))
+- Fix Typo in Operator Module Documentation ([#831](https://github.com/petgraph/petgraph/pull/831))
+- Sync the crate feature flags in the README and docs ([#832](https://github.com/petgraph/petgraph/pull/832))
+- Remove all \[Generic\] tags from algo docstrings ([#835](https://github.com/petgraph/petgraph/pull/835))
+- Fix typos in comments ([#836](https://github.com/petgraph/petgraph/pull/836))
+- Revamp CONTRIBUTING.md ([#833](https://github.com/petgraph/petgraph/pull/833))
+
+### Refactor
+
+- add examples for scc algorithms and reorganize into dedicated module ([#830](https://github.com/petgraph/petgraph/pull/830))
+
+### Testing
+
+- Add dependency list for 'quickcheck' feature ([#822](https://github.com/petgraph/petgraph/pull/822))
+
 ## [0.8.2](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.1...petgraph@v0.8.2) - 2025-06-06
 This minor release fixes several bugs, adds two new algorithms, slightly improves the performance of `maximum_matching`, 
 adds a tool for parsing graphs from Dot/Graphviz files, and improves the documentation, making it more complete and uniform, as well as clarifying several points.
