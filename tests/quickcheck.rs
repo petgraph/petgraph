@@ -933,7 +933,9 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            return bellman_ford(&gr, start).is_ok();
+            if bellman_ford(&gr, start).is_err() {
+                return false;
+            }
         }
         true
     }
@@ -965,7 +967,9 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            return bellman_ford(&gr, start).is_ok();
+            if bellman_ford(&gr, start).is_err() {
+                return false;
+            }
         }
         true
     }
