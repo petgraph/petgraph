@@ -99,3 +99,41 @@ fn dinics_bench_dense_middle(bench: &mut Bencher) {
         let _flow = dinics(&g, source, sink);
     });
 }
+
+#[bench]
+fn dinics_bench_dense_middle_varying_weights(bench: &mut Bencher) {
+    let node_count = 500;
+    let mut g: Graph<usize, usize> = Graph::new();
+    let source = g.add_node(0);
+    let sink = g.add_node(1);
+
+    let mut intermediates = Vec::new();
+    for i in 0..(node_count - 2) {
+        let node = g.add_node(i + 2);
+        intermediates.push(node);
+    }
+
+    for (i, &node) in (&intermediates).iter().enumerate() {
+        if i % 7 == 0 {
+            g.add_edge(source, node, 1 + (i % 11));
+        }
+    }
+
+    for (i, &node) in (&intermediates).iter().enumerate() {
+        if i % 11 == 0 {
+            g.add_edge(node, sink, 11 - (i % 11));
+        }
+    }
+
+    for i in 0..intermediates.len() {
+        for j in (i + 1)..intermediates.len() {
+            if (i + j) % 13 == 0 {
+                g.add_edge(intermediates[i], intermediates[j], (i + j) % 13 + 1);
+            }
+        }
+    }
+
+    bench.iter(|| {
+        let _flow = dinics(&g, source, sink);
+    });
+}

@@ -122,14 +122,16 @@ where
 {
     let mut flow_increase = N::EdgeWeight::zero();
     let mut edge_to = vec![None; network.node_count()];
+    let mut level_edges_i = vec![0; level_edges.len()];
     while find_augmenting_path(
         &network,
         source,
         sink,
         flows,
-        &mut edge_to,
         level_edges,
         visited,
+        &mut level_edges_i,
+        &mut edge_to,
     ) {
         let mut path_flow = N::EdgeWeight::max();
 
@@ -164,9 +166,10 @@ fn find_augmenting_path<N>(
     source: N::NodeId,
     sink: N::NodeId,
     flows: &[N::EdgeWeight],
-    edge_to: &mut [Option<N::EdgeRef>],
     level_edges: &mut [Vec<N::EdgeRef>],
     visited: &mut N::Map,
+    level_edges_i: &mut [usize],
+    edge_to: &mut [Option<N::EdgeRef>],
 ) -> bool
 where
     N: IntoEdges + NodeIndexable + EdgeIndexable + Visitable,
@@ -175,18 +178,27 @@ where
     network.reset_map(visited);
 
     let mut dfs_stack = Vec::new();
+    level_edges_i.fill(0);
+
     dfs_stack.push(source);
     visited.visit(source);
     while let Some(&vertex) = dfs_stack.last() {
         let vertex_index = NodeIndexable::to_index(&network, vertex);
 
         let mut found_next = false;
-        while let Some(edge) = level_edges[vertex_index].pop() {
+        while level_edges_i[vertex_index] < level_edges[vertex_index].len() {
+            let curr_level_edges_i = level_edges_i[vertex_index];
+            let edge = level_edges[vertex_index][curr_level_edges_i];
             let next_vertex = other_endpoint(&network, edge, vertex);
+
             let edge_index: usize = EdgeIndexable::to_index(&network, edge.id());
             let residual_cap = residual_capacity(&network, edge, next_vertex, flows[edge_index]);
+            if residual_cap == N::EdgeWeight::zero() {
+                level_edges[vertex_index].swap_remove(curr_level_edges_i);
+                continue;
+            }
 
-            if !visited.is_visited(&next_vertex) && residual_cap > N::EdgeWeight::zero() {
+            if !visited.is_visited(&next_vertex) {
                 let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
                 edge_to[next_vertex_index] = Some(edge);
                 if sink == next_vertex {
@@ -197,6 +209,7 @@ where
                 found_next = true;
                 break;
             }
+            level_edges_i[vertex_index] += 1;
         }
         if !found_next {
             dfs_stack.pop();
