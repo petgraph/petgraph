@@ -33,11 +33,9 @@ where
     let (max_flow, flows) = dinics(network, source, sink);
     let level_edges = &mut vec![Default::default(); network.node_count()];
 
-    let (sink_reachable, level_graph) =
-        build_level_graph(&network, source, sink, &flows, level_edges);
-
+    let level_graph = build_level_graph(&network, source, sink, &flows, level_edges);
     assert!(
-        !sink_reachable,
+        level_graph[NodeIndexable::to_index(&network, sink)] == 0,
         "Sink should be unreachable after Dinic's completion"
     );
 
