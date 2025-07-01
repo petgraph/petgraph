@@ -31,12 +31,8 @@ where
     let mut visited = network.visit_map();
     let mut level_edges = vec![Default::default(); network.node_count()];
 
-    loop {
-        let (sink_reachable, _) =
-            build_level_graph(&network, source, sink, &flows, &mut level_edges);
-        if !sink_reachable {
-            break;
-        }
+    let sink_index = NodeIndexable::to_index(&network, sink);
+    while build_level_graph(&network, source, sink, &flows, &mut level_edges)[sink_index] > 0 {
         let flow_increase = find_blocking_flow(
             network,
             source,
@@ -51,20 +47,23 @@ where
 }
 
 /// Makes a BFS that labels network vertices with levels representing
-/// their distance to the source vertex.
+/// their distance to the source vertex, considering only edges with
+/// positive residual capacity.
+///
+/// The source vertex is labeled as 1, and vertices not reachable are
+/// labeled as 0.
 ///
 /// Aggregates in `level_edges` the edges that connects each
 /// vertex to its neighbours in the next level.
 ///
-/// Returns a boolean indicating if sink vertex is reachable and the
-/// computed level graph.
+/// Returns the computed level graph.
 pub fn build_level_graph<N>(
     network: N,
     source: N::NodeId,
     sink: N::NodeId,
     flows: &[N::EdgeWeight],
     level_edges: &mut [Vec<N::EdgeRef>],
-) -> (bool, Vec<usize>)
+) -> Vec<usize>
 where
     N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable,
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
@@ -99,15 +98,14 @@ where
         }
     }
 
-    let sink_level = level_graph[NodeIndexable::to_index(&network, sink)];
-    (sink_level > 0, level_graph)
+    level_graph
 }
 
 /// Find blocking flow for current level graph by repeatingly finding
 /// augmenting paths in it.
 ///
-/// Attach computed flows to given `flows` parameter and returns the
-/// flow increase of current level graph.
+/// Attach computed flows to `flows` and returns the total flow increase from
+/// edges available in `level_edges` at this iteration.
 fn find_blocking_flow<N>(
     network: N,
     source: N::NodeId,
