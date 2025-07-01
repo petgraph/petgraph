@@ -176,10 +176,9 @@ where
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
     network.reset_map(visited);
-
-    let mut dfs_stack = Vec::new();
     level_edges_i.fill(0);
 
+    let mut dfs_stack = Vec::new();
     dfs_stack.push(source);
     visited.visit(source);
     while let Some(&vertex) = dfs_stack.last() {
