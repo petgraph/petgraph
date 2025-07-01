@@ -175,7 +175,7 @@ where
     /// Deserializes into a new `GraphMap` from the same format as the standard
     /// `Graph`. Needs feature `serde-1`.
     ///
-    /// **Warning**: When deseralizing a graph that was not originally a `GraphMap`,
+    /// **Warning**: When deserializing a graph that was not originally a `GraphMap`,
     /// the restrictions from [`from_graph`](#method.from_graph) apply.
     ///
     /// Note: The edge weights have to be `Clone` for this to work.
@@ -1234,8 +1234,7 @@ where
     fn from_index(&self, ix: usize) -> Self::NodeId {
         assert!(
             ix < self.nodes.len(),
-            "The requested index {} is out-of-bounds.",
-            ix
+            "The requested index {ix} is out-of-bounds."
         );
         let (&key, _) = self.nodes.get_index(ix).unwrap();
         key
@@ -1291,8 +1290,7 @@ where
     fn from_index(&self, ix: usize) -> Self::EdgeId {
         assert!(
             ix < self.edges.len(),
-            "The requested index {} is out-of-bounds.",
-            ix
+            "The requested index {ix} is out-of-bounds."
         );
         let (&key, _) = self.edges.get_index(ix).unwrap();
         key

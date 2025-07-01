@@ -9,7 +9,7 @@ use crate::visit::{
 };
 
 #[allow(clippy::type_complexity, clippy::needless_range_loop)]
-/// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
+/// [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
 ///
 /// Compute the length of each shortest path in a weighted graph with positive or negative edge weights (but with no negative cycles).
 ///
@@ -120,7 +120,7 @@ where
 }
 
 #[allow(clippy::type_complexity, clippy::needless_range_loop)]
-/// \[Generic\] [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
+/// [Floyd–Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) is an algorithm for all pairs shortest path problem
 ///
 /// Compute all pairs shortest paths in a weighted graph with positive or negative edge weights (but with no negative cycles).
 /// Returns HashMap of shortest path lengths. Additionally, returns HashMap of intermediate nodes along shortest path for indicated edges.

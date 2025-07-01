@@ -73,7 +73,7 @@ pub use steiner_tree::steiner_tree;
 #[cfg(feature = "rayon")]
 pub use johnson::parallel_johnson;
 
-/// \[Generic\] Return the number of connected components of the graph.
+/// Return the number of connected components of the graph.
 ///
 /// For a directed graph, this is the *weakly* connected components.
 ///
@@ -143,7 +143,7 @@ where
     labels.len()
 }
 
-/// \[Generic\] Return `true` if the input graph contains a cycle.
+/// Return `true` if the input graph contains a cycle.
 ///
 /// Always treats the input graph as if undirected.
 ///
@@ -176,7 +176,7 @@ where
     false
 }
 
-/// \[Generic\] Perform a topological sort of a directed graph.
+/// Perform a topological sort of a directed graph.
 ///
 /// `toposort` returns `Err` on graphs with cycles.
 /// To handle graphs with cycles, use the one of scc algorithms or
@@ -257,7 +257,7 @@ where
     })
 }
 
-/// \[Generic\] Return `true` if the input directed graph contains a cycle.
+/// Return `true` if the input directed graph contains a cycle.
 ///
 /// This implementation is recursive; use [`toposort`] if an alternative is needed.
 ///
@@ -337,7 +337,7 @@ where
     f(dfs)
 }
 
-/// \[Generic\] Check if there exists a path starting at `from` and reaching `to`.
+/// Check if there exists a path starting at `from` and reaching `to`.
 ///
 /// If `from` and `to` are equal, this function returns true.
 ///

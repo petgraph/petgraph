@@ -11,7 +11,7 @@ use crate::{
 
 use self::linked_list::{LinkedList, LinkedListEntry};
 
-/// \[Generic\] Finds a [feedback arc set]: a set of edges in the given directed graph, which when
+/// Finds a [feedback arc set]: a set of edges in the given directed graph, which when
 /// removed, make the graph acyclic.
 ///
 /// Uses a [greedy heuristic algorithm] to select a small number of edges, but does not necessarily

@@ -10,7 +10,7 @@ use crate::algo::Measure;
 use crate::scored::MinScored;
 use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 
-/// \[Generic\] A* shortest path algorithm.
+/// A* shortest path algorithm.
 ///
 /// Computes the shortest path from `start` to `finish`, including the total path cost.
 ///
