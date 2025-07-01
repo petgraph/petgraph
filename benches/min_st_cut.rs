@@ -15,7 +15,7 @@ fn min_st_cut_bench(bench: &mut Bencher) {
         g.add_edge(nodes[i], nodes[i + 1], 1);
     }
     bench.iter(|| {
-        let _flow = min_st_cut(
+        let _result = min_st_cut(
             &g,
             NodeIndex::from(0),
             NodeIndex::from(g.node_count() as u32 - 1),
@@ -34,7 +34,7 @@ fn min_st_cut_bench_many_edges(bench: &mut Bencher) {
         }
     }
     bench.iter(|| {
-        let _flow = min_st_cut(
+        let _result = min_st_cut(
             &g,
             NodeIndex::from(0),
             NodeIndex::from(g.node_count() as u32 - 1),
@@ -58,7 +58,7 @@ fn min_st_cut_bench_wide(bench: &mut Bencher) {
     }
 
     bench.iter(|| {
-        let _flow = min_st_cut(&g, source, sink);
+        let _result = min_st_cut(&g, source, sink);
     });
 }
 
@@ -96,6 +96,44 @@ fn min_st_cut_bench_dense_middle(bench: &mut Bencher) {
     }
 
     bench.iter(|| {
-        let _flow = min_st_cut(&g, source, sink);
+        let _result = min_st_cut(&g, source, sink);
+    });
+}
+
+#[bench]
+fn min_st_cut_bench_dense_middle_varying_weights(bench: &mut Bencher) {
+    let node_count = 500;
+    let mut g: Graph<usize, usize> = Graph::new();
+    let source = g.add_node(0);
+    let sink = g.add_node(1);
+
+    let mut intermediates = Vec::new();
+    for i in 0..(node_count - 2) {
+        let node = g.add_node(i + 2);
+        intermediates.push(node);
+    }
+
+    for (i, &node) in (&intermediates).iter().enumerate() {
+        if i % 7 == 0 {
+            g.add_edge(source, node, 1 + (i % 11));
+        }
+    }
+
+    for (i, &node) in (&intermediates).iter().enumerate() {
+        if i % 11 == 0 {
+            g.add_edge(node, sink, 11 - (i % 11));
+        }
+    }
+
+    for i in 0..intermediates.len() {
+        for j in (i + 1)..intermediates.len() {
+            if (i + j) % 13 == 0 {
+                g.add_edge(intermediates[i], intermediates[j], (i + j) % 13 + 1);
+            }
+        }
+    }
+
+    bench.iter(|| {
+        let _result = min_st_cut(&g, source, sink);
     });
 }

@@ -19,7 +19,7 @@ use super::dinics::dinics;
 /// Returns the edges present in minimum cut and the computed min cut capacity
 /// (which is equivalent to the maximum flow in the network).
 ///
-/// [min_cut]: https://en-m-wikipedia-org.translate.goog/wiki/Minimum_cut?_x_tr_sl=en&_x_tr_tl=pt&_x_tr_hl=pt&_x_tr_pto=tc
+/// [min_cut]: https://en.wikipedia.org/wiki/Minimum_cut
 /// [max_flow_min_cut]: https://en.wikipedia.org/wiki/Max-flow_min-cut_theorem
 pub fn min_st_cut<N>(
     network: N,
