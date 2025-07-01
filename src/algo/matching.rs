@@ -657,8 +657,9 @@ where
     Matching::new(graph, mate, n_edges)
 }
 
-/// Create a network from given graph.
-/// Created Nodes and Edges indices are compatible
+/// Create a network from given bipartite `graph` and its partitions,
+/// `partition_a` and `partition_b`.
+/// Created Nodes' and Edges' indices are compatible
 /// with the ones from original graph.
 fn maximum_bipartite_matching_instance<G>(
     graph: &G,
