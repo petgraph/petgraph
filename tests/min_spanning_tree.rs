@@ -43,7 +43,7 @@ fn mst_kruskal() {
 
     println!("{}", Dot::new(&mst));
     println!("{:?}", Dot::new(&mst));
-    println!("MST is:\n{:#?}", mst);
+    println!("MST is:\n{mst:#?}");
     assert!(mst.node_count() == gr.node_count());
     // |E| = |N| - 2  because there are two disconnected components.
     assert!(mst.edge_count() == gr.node_count() - 2);
@@ -93,7 +93,7 @@ fn mst_prim() {
 
     println!("{}", Dot::new(&mst));
     println!("{:?}", Dot::new(&mst));
-    println!("MST is:\n{:#?}", mst);
+    println!("MST is:\n{mst:#?}");
 
     assert!(mst.node_count() == gr.node_count());
     assert!(mst.edge_count() == gr.node_count() - 1);
@@ -123,7 +123,7 @@ fn mst_prim_trivial_graph() {
 
     println!("{}", Dot::new(&mst));
     println!("{:?}", Dot::new(&mst));
-    println!("MST is:\n{:#?}", mst);
+    println!("MST is:\n{mst:#?}");
 
     assert!(mst.node_count() == gr.node_count());
     assert!(mst.edge_count() == gr.node_count() - 1);

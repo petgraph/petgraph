@@ -922,7 +922,7 @@ mod tests {
         m.add_edge(0, 2, ());
         m.add_edge(1, 0, ());
         m.add_edge(1, 1, ());
-        println!("{:?}", m);
+        println!("{m:?}");
         assert_eq!(&m.column, &[0, 2, 0, 1, 2, 2]);
         assert_eq!(&m.row, &[0, 2, 5, 6]);
 
@@ -949,7 +949,7 @@ mod tests {
         m.add_edge(0, 2, ());
         m.add_edge(1, 2, ());
         m.add_edge(2, 2, ());
-        println!("{:?}", m);
+        println!("{m:?}");
         assert_eq!(&m.column, &[0, 2, 2, 0, 1, 2]);
         assert_eq!(&m.row, &[0, 2, 3, 6]);
         assert_eq!(m.node_count(), 3);
@@ -961,7 +961,7 @@ mod tests {
     fn csr_from_error_1() {
         // not sorted in source
         let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (0, 2)]).unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
     }
 
     #[should_panic]
@@ -969,14 +969,14 @@ mod tests {
     fn csr_from_error_2() {
         // not sorted in target
         let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (1, 2), (1, 1)]).unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
     }
 
     #[test]
     fn csr_from() {
         let m: Csr =
             Csr::from_sorted_edges(&[(0, 1), (0, 2), (1, 0), (1, 1), (2, 2), (2, 4)]).unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
         assert_eq!(m.neighbors_slice(0), &[1, 2]);
         assert_eq!(m.neighbors_slice(1), &[0, 1]);
         assert_eq!(m.neighbors_slice(2), &[2, 4]);
@@ -998,24 +998,24 @@ mod tests {
             (4, 5),
         ])
         .unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
         let mut dfs = Dfs::new(&m, 0);
         while dfs.next(&m).is_some() {}
         for i in 0..m.node_count() - 2 {
-            assert!(dfs.discovered.is_visited(&i), "visited {}", i)
+            assert!(dfs.discovered.is_visited(&i), "visited {i}")
         }
         assert!(!dfs.discovered[4]);
         assert!(!dfs.discovered[5]);
 
         m.add_edge(1, 4, ());
-        println!("{:?}", m);
+        println!("{m:?}");
 
         dfs.reset(&m);
         dfs.move_to(0);
         while dfs.next(&m).is_some() {}
 
         for i in 0..m.node_count() {
-            assert!(dfs.discovered[i], "visited {}", i)
+            assert!(dfs.discovered[i], "visited {i}")
         }
     }
 
@@ -1034,7 +1034,7 @@ mod tests {
             (5, 2),
         ])
         .unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
         println!("{:?}", tarjan_scc(&m));
     }
 
@@ -1054,9 +1054,9 @@ mod tests {
             (7, 8, 3.),
         ])
         .unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
         let result = bellman_ford(&m, 0).unwrap();
-        println!("{:?}", result);
+        println!("{result:?}");
         let answer = [0., 0.5, 1.5, 1.5];
         assert_eq!(&answer, &result.distances[..4]);
         assert!(result.distances[4..].iter().all(|&x| f64::is_infinite(x)));
@@ -1152,7 +1152,7 @@ mod tests {
         let mut copy = Vec::new();
         for e in m.edge_references() {
             copy.push((e.source(), e.target(), *e.weight()));
-            println!("{:?}", e);
+            println!("{e:?}");
         }
         let m2: Csr<(), _> = Csr::from_sorted_edges(&copy).unwrap();
         assert_eq!(&m.row, &m2.row);
@@ -1171,7 +1171,7 @@ mod tests {
         assert!(g.add_edge(b, c, ()));
         assert!(g.add_edge(c, a, ()));
 
-        println!("{:?}", g);
+        println!("{g:?}");
 
         assert_eq!(g.node_count(), 3);
 
@@ -1192,7 +1192,7 @@ mod tests {
 
         let c = g.add_node(());
 
-        println!("{:?}", g);
+        println!("{g:?}");
 
         assert_eq!(g.node_count(), 3);
 
