@@ -120,7 +120,6 @@ where
 {
     let mut flow_increase = N::EdgeWeight::zero();
     let mut edge_to = vec![None; network.node_count()];
-    let mut level_edges_i = vec![0; level_edges.len()];
     while find_augmenting_path(
         &network,
         source,
@@ -128,7 +127,6 @@ where
         flows,
         level_edges,
         visited,
-        &mut level_edges_i,
         &mut edge_to,
     ) {
         let mut path_flow = N::EdgeWeight::max();
@@ -166,7 +164,6 @@ fn find_augmenting_path<N>(
     flows: &[N::EdgeWeight],
     level_edges: &mut [Vec<N::EdgeRef>],
     visited: &mut N::Map,
-    level_edges_i: &mut [usize],
     edge_to: &mut [Option<N::EdgeRef>],
 ) -> bool
 where
@@ -174,7 +171,7 @@ where
     N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
 {
     network.reset_map(visited);
-    level_edges_i.fill(0);
+    let mut level_edges_i = vec![0; level_edges.len()];
 
     let mut dfs_stack = Vec::new();
     dfs_stack.push(source);
