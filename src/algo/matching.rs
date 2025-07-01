@@ -186,17 +186,28 @@ where
     }
 }
 
-/// \[Generic\] Compute a
-/// [*matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)) using a
+/// Compute a [*matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)) using a
 /// greedy heuristic.
 ///
 /// The input graph is treated as if undirected. The underlying heuristic is
-/// unspecified, but is guaranteed to be bounded by *O(|V| + |E|)*. No
+/// unspecified, but is guaranteed to be bounded by **O(|V| + |E|)**. No
 /// guarantees about the output are given other than that it is a valid
 /// matching.
 ///
 /// If you require a maximum matching, use [`maximum_matching`][1] function
 /// instead.
+///
+/// # Arguments
+/// * `graph`: an undirected graph.
+///
+/// # Returns
+/// * [`struct@Matching`] calculated using greedy heuristic.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [1]: fn.maximum_matching.html
 pub fn greedy_matching<G>(graph: G) -> Matching<G>
@@ -307,17 +318,28 @@ impl<G: GraphBase> PartialEq for Label<G> {
     }
 }
 
-/// \[Generic\] Compute the [*maximum
-/// matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)) using
+/// Compute the [*maximum matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)) using
 /// [Gabow's algorithm][1].
 ///
 /// [1]: https://dl.acm.org/doi/10.1145/321941.321942
 ///
 /// The input graph is treated as if undirected. The algorithm runs in
-/// *O(|V|³)*. An algorithm with a better time complexity might be used in the
+/// **O(|V|³)**. An algorithm with a better time complexity might be used in the
 /// future.
 ///
 /// **Panics** if `g.node_bound()` is `usize::MAX`.
+///
+/// # Arguments
+/// * `graph`: an undirected graph.
+///
+/// # Returns
+/// * [`struct@Matching`]: computed maximum matching.
+///
+/// # Complexity
+/// * Time complexity: **O(|V|³)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// # Examples
 ///
@@ -375,6 +397,10 @@ where
     let mut first_inner = vec![usize::MAX; len];
     let visited = &mut graph.visit_map();
 
+    // Queue will contain outer vertices that should be processed next.
+    // The queue is cleared after each iteration of the main loop.
+    let mut queue = VecDeque::new();
+
     for start in 0..graph.node_bound() {
         if mate[start].is_some() {
             // The vertex is already matched. A start must be a free vertex.
@@ -389,9 +415,7 @@ where
         // start is never a dummy index
         let start = graph.from_index(start);
 
-        // Queue will contain outer vertices that should be processed next. The
-        // start vertex is considered an outer vertex.
-        let mut queue = VecDeque::new();
+        // The start vertex is considered a first outer vertex on each iteration.
         queue.push_back(start);
         // Mark the start vertex so it is not processed repeatedly.
         visited.visit(start);
@@ -467,6 +491,8 @@ where
         for lbl in label.iter_mut() {
             *lbl = Label::None;
         }
+
+        queue.clear();
     }
 
     // Discard the dummy node.

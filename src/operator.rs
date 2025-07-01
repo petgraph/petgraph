@@ -1,4 +1,4 @@
-//! Operators for creating new graphs from existings ones.
+//! Operators for creating new graphs from existing ones.
 use super::graph::{Graph, IndexType};
 use super::EdgeType;
 use crate::visit::IntoNodeReferences;

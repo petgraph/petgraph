@@ -165,10 +165,14 @@ where
     /// would create a cycle, a self-loop or if the edge addition failed in
     /// the underlying graph.
     ///
-    /// In cases where edge addition cannot fail in the underlying graph (e.g.
-    /// when multi-edges are allowed, as in [`DiGraph`] and [`StableDiGraph`]),
-    /// this will return an error if and only if [`Self::is_valid_edge`]
-    /// returns `false`.
+    /// In cases where edge addition using [`Build::add_edge`] cannot fail in
+    /// the underlying graph (e.g. when multi-edges are allowed, as in
+    /// [`DiGraph`] and [`StableDiGraph`]), this will return an error if and
+    /// only if [`Self::is_valid_edge`] returns `false`.
+    ///
+    /// Note that for some graph types, the semantics of [`Build::add_edge`] may
+    /// not coincide with the semantics of the `add_edge` method provided by the
+    /// graph type.
     ///
     /// **Panics** if `a` or `b` are not found.
     #[track_caller]
@@ -192,7 +196,7 @@ where
             .ok_or(AcyclicEdgeError::InvalidEdge)
     }
 
-    /// Update an edge in a graph using [`Build::update_edge`].
+    /// Add or update an edge in a graph using [`Build::update_edge`].
     ///
     /// Returns the id of the updated edge, or an [`AcyclicEdgeError`] if the edge
     /// would create a cycle or a self-loop. If the edge does not exist, the
@@ -281,7 +285,7 @@ where
     /// are returned if they are disjoint. Otherwise, a [`Cycle`] error is returned.
     ///
     /// If `return_result` is false, then the cones are not constructed and the
-    /// method only checks for disjointness.
+    /// method only checks for disjointedness.
     #[allow(clippy::type_complexity)]
     fn causal_cones(
         &self,
@@ -874,5 +878,18 @@ mod tests {
                 assert!(neighbour_idx > idx);
             }
         }
+    }
+
+    #[cfg(feature = "graphmap")]
+    #[test]
+    fn test_multiedge_allowed() {
+        use crate::prelude::GraphMap;
+        use crate::Directed;
+
+        let mut graph = Acyclic::<GraphMap<usize, (), Directed>>::new();
+        graph.add_node(0);
+        graph.add_node(1);
+        graph.try_update_edge(0, 1, ()).unwrap();
+        graph.try_update_edge(0, 1, ()).unwrap(); // `Result::unwrap()` on an `Err` value: InvalidEdge
     }
 }

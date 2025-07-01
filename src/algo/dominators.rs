@@ -155,10 +155,24 @@ const UNDEFINED: usize = usize::MAX;
 /// This is an implementation of the engineered ["Simple, Fast Dominance
 /// Algorithm"][0] discovered by Cooper et al.
 ///
-/// This algorithm is **O(|V|²)**, and therefore has slower theoretical running time
-/// than the Lengauer-Tarjan algorithm (which is **O(|E| log |V|)**. However,
+/// This algorithm is **O(|V|²)** where V is the set of nodes, and therefore has slower theoretical running time
+/// than the Lengauer-Tarjan algorithm (which is **O(|E| log |V|)** where E is the set of edges). However,
 /// Cooper et al found it to be faster in practice on control flow graphs of up
-/// to ~30,000 vertices.
+/// to ~30,000 nodes.
+///
+/// # Arguments
+/// * `graph`: a control-flow graph.
+/// * `root`: the *root* node of the `graph`.
+///
+/// # Returns
+/// * `Dominators`: the dominance relation for given `graph` and `root`
+///   represented by [`struct@Dominators`].
+///
+/// # Complexity
+/// * Time complexity: **O(|V|²)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [0]: http://www.hipersoft.rice.edu/grads/publications/dom14.pdf
 pub fn simple_fast<G>(graph: G, root: G::NodeId) -> Dominators<G::NodeId>
@@ -228,8 +242,7 @@ where
     }
 
     // All done! Translate the indices back into proper `G::NodeId`s.
-
-    debug_assert!(!dominators.iter().any(|&dom| dom == UNDEFINED));
+    debug_assert!(!dominators.contains(&UNDEFINED));
 
     Dominators {
         root,

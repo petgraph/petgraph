@@ -30,9 +30,9 @@ use rand::Rng;
 #[cfg(feature = "stable_graph")]
 use petgraph::algo::steiner_tree;
 use petgraph::algo::{
-    bellman_ford, condensation, connected_components, dijkstra, dsatur_coloring,
+    bellman_ford, bridges, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
-    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching,
+    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
     k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
     min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
 };
@@ -47,6 +47,9 @@ use petgraph::visit::{
     IntoNodeReferences, NodeCount, NodeIndexable, Reversed, Topo, VisitMap, Visitable,
 };
 use petgraph::EdgeType;
+
+#[cfg(feature = "rayon")]
+use petgraph::algo::parallel_johnson;
 
 fn mst_graph<N, E, Ty, Ix>(g: &Graph<N, E, Ty, Ix>) -> Graph<N, E, Undirected, Ix>
 where
@@ -308,7 +311,7 @@ fn isomorphism_1() {
 fn isomorphism_modify() {
     // using small weights so that duplicates are likely
     fn prop<Ty: EdgeType>(g: Small<Graph<i16, i8, Ty>>, node: u8, edge: u8) -> bool {
-        println!("graph {:#?}", g);
+        println!("graph {g:#?}");
         let mut ng = (*g).clone();
         let i = node_index(node as usize);
         let j = edge_index(edge as usize);
@@ -434,12 +437,7 @@ where
     N: NodeTrait + fmt::Debug,
 {
     for (a, b, _weight) in g.all_edges() {
-        assert!(
-            g.contains_edge(a, b),
-            "Edge not in graph! {:?} to {:?}",
-            a,
-            b
-        );
+        assert!(g.contains_edge(a, b), "Edge not in graph! {a:?} to {b:?}");
         assert!(
             g.neighbors(a).any(|x| x == b),
             "Edge {:?} not in neighbor list for {:?}",
@@ -504,8 +502,8 @@ quickcheck! {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
                                       Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Tarjan) {:?}", tsccs);
+            println!("Sccs {sccs:?}");
+            println!("Sccs (Tarjan) {tsccs:?}");
             return false;
         }
         true
@@ -539,8 +537,8 @@ quickcheck! {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
                                       Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Reversed) {:?}", tsccs);
+            println!("Sccs {sccs:?}");
+            println!("Sccs (Reversed) {tsccs:?}");
             return false;
         }
         true
@@ -558,8 +556,8 @@ quickcheck! {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
                                       Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Reversed) {:?}", tsccs);
+            println!("Sccs {sccs:?}");
+            println!("Sccs (Reversed) {tsccs:?}");
             return false;
         }
         true
@@ -650,7 +648,7 @@ fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
         let ai = order.find(&a).unwrap();
         let bi = order.find(&b).unwrap();
         if ai >= bi {
-            println!("{:?} > {:?} ", a, b);
+            println!("{a:?} > {b:?} ");
             return false;
         }
     }
@@ -683,7 +681,7 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
             None => continue,
         };
         if ai >= bi {
-            println!("{:?} > {:?} ", a, b);
+            println!("{a:?} > {b:?} ");
             return false;
         }
     }
@@ -719,7 +717,7 @@ fn full_topo_generic() {
             index += 1;
         }
         if !is_topo_order(&gr, &order) {
-            println!("{:?}", gr);
+            println!("{gr:?}");
             return false;
         }
 
@@ -730,7 +728,7 @@ fn full_topo_generic() {
                 order.push(nx);
             }
             if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
+                println!("{gr:?}");
                 return false;
             }
         }
@@ -747,7 +745,7 @@ fn full_topo_generic() {
                 order.push(nx);
             }
             if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
+                println!("{gr:?}");
                 return false;
             }
         }
@@ -759,7 +757,7 @@ fn full_topo_generic() {
                 order.push(nx);
             }
             if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
+                println!("{gr:?}");
                 return false;
             }
         }
@@ -899,7 +897,7 @@ quickcheck! {
                 Finish(n, t) => finish_time[n.index()] = t,
                 TreeEdge(u, v) => {
                     // v is an ancestor of u
-                    assert!(has_tree_edge.visit(v), "Two tree edges to {:?}!", v);
+                    assert!(has_tree_edge.visit(v), "Two tree edges to {v:?}!");
                     assert!(discover_time[v.index()] == invalid_time);
                     assert!(discover_time[u.index()] != invalid_time);
                     assert!(finish_time[u.index()] == invalid_time);
@@ -935,7 +933,9 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            bellman_ford(&gr, start).unwrap();
+            if bellman_ford(&gr, start).is_err() {
+                return false;
+            }
         }
         true
     }
@@ -967,7 +967,9 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            bellman_ford(&gr, start).unwrap();
+            if bellman_ford(&gr, start).is_err() {
+                return false;
+            }
         }
         true
     }
@@ -1318,6 +1320,28 @@ quickcheck! {
         true
     }
 }
+quickcheck! {
+    fn test_bridges(g: Graph<(), (), Undirected>) -> bool {
+        let num = connected_components(&g);
+        let br = bridges(&g).map(|edge| edge.id()).collect::<HashSet<_>>();
+
+        for &edge in &br {
+            let mut graph = g.clone();
+            graph.remove_edge(edge);
+            assert_eq!(connected_components(&graph), num+1);
+        }
+
+        for e in g.edge_references() {
+            if !br.contains(&e.id()) {
+               let mut graph = g.clone();
+               graph.remove_edge(e.id());
+               assert_eq!(connected_components(&graph), num);
+           }
+        }
+
+        true
+    }
+}
 
 quickcheck! {
     // The ranks are probabilities,
@@ -1482,22 +1506,71 @@ quickcheck! {
 }
 
 #[cfg(feature = "stable_graph")]
-quickcheck! {
-    fn test_steiner_tree(g: Graph<(), u32, Undirected>) -> bool {
+#[test]
+fn steiner_tree_spans_terminals() {
+    fn prop(g: UnGraph<(), u32>) -> bool {
         if g.node_count() <= 1 {
             return true; // We naturally don't support steiner trees with zero or one node
         }
 
-        let mut terminals = g.node_indices().collect::<Vec<_>>();
-        terminals = terminals.into_iter().take(5).collect();
-        let m_steiner_tree = steiner_tree(&g, &terminals);
+        // Run the steiner tree algorithm on connected components, to test it on both
+        // connected and disconnected graphs.
+        let mut connected_components = Vec::new();
+        let mut visited = g.visit_map();
 
-        let steiner_tree_nodes: Vec<NodeIndex> = m_steiner_tree.node_indices().collect();
+        for node in g.node_indices() {
+            if !visited.is_visited(&node) {
+                let mut component = HashSet::new();
 
-        let spans_terminals = terminals.iter().all(|&t| steiner_tree_nodes.contains(&t));
+                let mut dfs = Dfs::new(&g, node);
+                while let Some(nx) = dfs.next(&g) {
+                    visited.visit(nx);
+                    component.insert(nx);
+                }
 
-        spans_terminals
+                connected_components.push(component);
+            }
+        }
+
+        for component in connected_components {
+            if component.len() < 2 {
+                continue; // We naturally don't support steiner trees with zero or one node
+            } else {
+                let g = g.filter_map(
+                    |node_index, _| {
+                        if component.contains(&node_index) {
+                            Some(())
+                        } else {
+                            None
+                        }
+                    },
+                    |edge_index, edge_weight| {
+                        let edge = g.edge_endpoints(edge_index).unwrap();
+                        if component.contains(&(edge.0)) && component.contains(&(edge.1)) {
+                            Some(*edge_weight)
+                        } else {
+                            None
+                        }
+                    },
+                );
+
+                let terminals = g.node_indices().take(5).collect::<Vec<_>>();
+                let m_steiner_tree = steiner_tree(&g, &terminals);
+
+                let steiner_tree_nodes: Vec<NodeIndex> = m_steiner_tree.node_indices().collect();
+
+                let spans_terminals = terminals.iter().all(|&t| steiner_tree_nodes.contains(&t));
+
+                if !spans_terminals {
+                    return false; // The steiner tree does not span all terminals
+                }
+            }
+        }
+
+        true
     }
+
+    quickcheck::quickcheck(prop as fn(Graph<(), u32, Undirected>) -> bool);
 }
 
 #[test]
@@ -1508,14 +1581,38 @@ fn maximal_cliques_matches_ref_impl() {
     where
         Ty: EdgeType,
     {
+        // Our implementations of maximal cliques only works for undirected graphs
+        // or symmetric directed graphs. So we filter out directed edges if needed.
+        let g = if Ty::is_directed() {
+            g.filter_map(
+                |_, _| Some(()),
+                |edge_index, _| {
+                    let (source, target) = g.edge_endpoints(edge_index).unwrap();
+                    if g.contains_edge(target, source) {
+                        Some(())
+                    } else {
+                        None
+                    }
+                },
+            )
+        } else {
+            g
+        };
         if g.edge_count() <= 200 && g.node_count() <= 200 {
             let cliques = maximal_cliques_algo(&g);
             let cliques_ref = maximal_cliques_ref(&g);
 
-            assert!(cliques.len() == cliques_ref.len());
+            assert!(cliques.len() == cliques_ref.len(),
+                "Maximal cliques algo returned different number of cliques than the reference implementation: {} != {}",
+                cliques.len(),
+                cliques_ref.len()
+            );
 
             for c in &cliques_ref {
-                assert!(cliques.contains(c));
+                assert!(
+                    cliques.contains(c),
+                    "Ref Clique {c:?} not found in the result of maximal_cliques_algo: {cliques:?}"
+                );
             }
         }
         true
@@ -1535,7 +1632,13 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+            let spfa_res = spfa(&gr, start, |edge| *edge.weight());
+            let bf_res = bellman_ford(&gr, start);
+            // We only compare the predecessors, since the algorithms use different actual values
+            // to represent inf weights.
+            if spfa_res.map(|p| p.predecessors) != bf_res.map(|p| p.predecessors) {
+                return false;
+            }
         }
         true
     }
@@ -1552,8 +1655,63 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+            let spfa_res = spfa(&gr, start, |edge| *edge.weight());
+            let bf_res = bellman_ford(&gr, start);
+            // We only compare the predecessors, since the algorithms use different actual values
+            // to represent inf weight.
+            if spfa_res.map(|p| p.predecessors) != bf_res.map(|p| p.predecessors) {
+                return false;
+            }
         }
+        true
+    }
+}
+
+quickcheck! {
+    // checks johnson against dijkstra results
+    fn johnson_(g: Graph<u32, u32>) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+
+        let johnson_res = johnson(&g, |e| *e.weight()).unwrap();
+
+        for node1 in g.node_identifiers() {
+            let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
+
+            for node2 in g.node_identifiers() {
+                // The results must be same
+                if johnson_res.get(&(node1, node2)) != dijkstra_res.get(&node2) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+}
+
+#[cfg(feature = "rayon")]
+quickcheck! {
+    // checks parallel_johnson against dijkstra results
+    fn parallel_johnson_(g: Graph<u32, u32>) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+
+        let johnson_res = parallel_johnson(&g, |e| *e.weight()).unwrap();
+
+        for node1 in g.node_identifiers() {
+            let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
+
+            for node2 in g.node_identifiers() {
+                // The results must be same
+                if johnson_res.get(&(node1, node2)) != dijkstra_res.get(&node2) {
+                    return false;
+                }
+            }
+        }
+
         true
     }
 }

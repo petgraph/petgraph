@@ -7,7 +7,7 @@ use alloc::vec;
 use core::{
     cmp, fmt, iter,
     marker::PhantomData,
-    mem::{replace, size_of},
+    mem::size_of,
     ops::{Index, IndexMut},
     slice,
 };
@@ -46,8 +46,8 @@ mod serialization;
 /// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
-/// The graph uses **O(|V| + |E|)** space, and allows fast node and edge insert
-/// and efficient graph search.
+/// The graph uses **O(|V| + |E|)** space where V is the set of nodes and E is the
+/// set of edges, and allows fast node and edge insert and efficient graph search.
 ///
 /// It implements **O(e')** edge lookup and edge and node removals, where **e'**
 /// is some local measure of edge count.
@@ -231,7 +231,7 @@ where
         }
     }
 
-    /// Return the number of nodes (vertices) in the graph.
+    /// Return the number of nodes (also called vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
     pub fn node_count(&self) -> usize {
@@ -397,7 +397,7 @@ where
             if self.free_edge != EdgeIndex::end() {
                 edge_idx = self.free_edge;
                 edge = &mut self.g.edges[edge_idx.index()];
-                let _old = replace(&mut edge.weight, Some(weight));
+                let _old = edge.weight.replace(weight);
                 debug_assert!(_old.is_none());
                 self.free_edge = edge.next[0];
                 edge.node = [a, b];
@@ -629,7 +629,10 @@ where
         }
     }
 
-    /// Return an iterator over the edge indices of the graph
+    /// Return an iterator over the edge indices of the graph.
+    ///
+    /// Note: the iterator borrows a graph in contrast to the behavior of
+    /// [`Graph::edge_indices`](fn@crate::Graph::edge_indices).
     pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
         EdgeIndices {
             iter: enumerate(self.raw_edges()),
@@ -805,7 +808,7 @@ where
     /// For a graph with undirected edges, both the sinks and the sources are
     /// just the nodes without edges.
     ///
-    /// The whole iteration computes in **O(|V|)** time.
+    /// The whole iteration computes in **O(|V|)** time where V is the set of nodes.
     pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix> {
         Externals {
             iter: self.raw_nodes().iter().enumerate(),
@@ -1057,7 +1060,7 @@ where
     /// updating the free nodes doubly linked list.
     fn occupy_vacant_node(&mut self, node_idx: NodeIndex<Ix>, weight: N) {
         let node_slot = &mut self.g.nodes[node_idx.index()];
-        let _old = replace(&mut node_slot.weight, Some(weight));
+        let _old = node_slot.weight.replace(weight);
         debug_assert!(_old.is_none());
         let previous_node = node_slot.next[1];
         let next_node = node_slot.next[0];
@@ -1285,7 +1288,7 @@ where
 
 /// Convert a `Graph` into a `StableGraph`
 ///
-/// Computes in **O(|V| + |E|)** time.
+/// Computes in **O(|V| + |E|)** time where V is the set of nodes and E is the set of edges.
 ///
 /// The resulting graph has the same node and edge indices as
 /// the original graph.
@@ -1320,7 +1323,7 @@ where
 
 /// Convert a `StableGraph` into a `Graph`
 ///
-/// Computes in **O(|V| + |E|)** time.
+/// Computes in **O(|V| + |E|)** time where V is the set of nodes and E is the set of edges.
 ///
 /// This translates the stable graph into a graph with node and edge indices in
 /// a compact interval without holes (like `Graph`s always are).
@@ -1803,6 +1806,8 @@ impl<N, Ix: IndexType> DoubleEndedIterator for NodeIndices<'_, N, Ix> {
 }
 
 /// Iterator over the edge indices of a graph.
+///
+/// Note: `EdgeIndices` borrows a graph.
 #[derive(Debug, Clone)]
 pub struct EdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Edge<Option<E>, Ix>>>,
@@ -2054,25 +2059,25 @@ fn stable_graph() {
     let b = gr.add_node(1);
     let c = gr.add_node(2);
     let _ed = gr.add_edge(a, b, 1);
-    println!("{:?}", gr);
+    println!("{gr:?}");
     gr.remove_node(b);
-    println!("{:?}", gr);
+    println!("{gr:?}");
     let d = gr.add_node(3);
-    println!("{:?}", gr);
+    println!("{gr:?}");
     gr.check_free_lists();
     gr.remove_node(a);
     gr.check_free_lists();
     gr.remove_node(c);
     gr.check_free_lists();
-    println!("{:?}", gr);
+    println!("{gr:?}");
     gr.add_edge(d, d, 2);
-    println!("{:?}", gr);
+    println!("{gr:?}");
 
     let e = gr.add_node(4);
     gr.add_edge(d, e, 3);
-    println!("{:?}", gr);
+    println!("{gr:?}");
     for neigh in gr.neighbors(d) {
-        println!("edge {:?} -> {:?}", d, neigh);
+        println!("edge {d:?} -> {neigh:?}");
     }
     gr.check_free_lists();
 }
@@ -2095,7 +2100,7 @@ fn dfs() {
     gr.add_edge(c, d, 5);
     gr.add_edge(d, b, 6);
     gr.add_edge(c, b, 7);
-    println!("{:?}", gr);
+    println!("{gr:?}");
 
     let mut dfs = Dfs::new(&gr, a);
     while let Some(next) = dfs.next(&gr) {

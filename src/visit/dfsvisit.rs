@@ -133,9 +133,9 @@ impl<B> Default for Control<B> {
 /// A recursive depth first search.
 ///
 /// Starting points are the nodes in the iterator `starts` (specify just one
-/// start vertex *x* by using `Some(x)`).
+/// start node *x* by using `Some(x)`).
 ///
-/// The traversal emits discovery and finish events for each reachable vertex,
+/// The traversal emits discovery and finish events for each reachable node,
 /// and edge classification of each reachable edge. `visitor` is called for each
 /// event, see [`DfsEvent`][de] for possible values.
 ///
@@ -157,8 +157,8 @@ impl<B> Default for Control<B> {
 ///
 /// # Example returning `Control`.
 ///
-/// Find a path from vertex 0 to 5, and exit the visit as soon as we reach
-/// the goal vertex.
+/// Find a path from node 0 to 5, and exit the visit as soon as we reach
+/// the goal node.
 ///
 /// ```
 /// use petgraph::prelude::*;

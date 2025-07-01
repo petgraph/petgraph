@@ -24,7 +24,7 @@ where
 {
     /// Source of the edge.
     from: NodeIndex<Ix>,
-    /// Index of the sucessor in the successor list.
+    /// Index of the successor in the successor list.
     successor_index: usize,
 }
 
@@ -39,10 +39,10 @@ item: EdgeIndex<Ix>,
 iter: core::iter::Map<core::iter::Zip<Range<usize>, core::iter::Repeat<NodeIndex<Ix>>>, fn((usize, NodeIndex<Ix>)) -> EdgeIndex<Ix>>,
 }
 
-/// Weighted sucessor
+/// Weighted successor
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 struct WSuc<E, Ix: IndexType> {
-    /// Index of the sucessor.
+    /// Index of the successor.
     suc: Ix,
     /// Weight of the edge to `suc`.
     weight: E,

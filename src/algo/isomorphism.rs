@@ -803,17 +803,19 @@ mod matching {
     }
 }
 
-/// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, only matching graph syntactically (graph
 /// structure).
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
 ///
 /// **Reference**
 ///
 /// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento;
 ///   *A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs*
+///
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn is_isomorphic<G0, G1>(g0: G0, g1: G1) -> bool
 where
     G0: NodeCompactIndexable + EdgeCount + GetAdjacencyMatrix + GraphProp + IntoNeighborsDirected,
@@ -832,12 +834,14 @@ where
         .unwrap_or(false)
 }
 
-/// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, examining both syntactic and semantic
 /// graph isomorphism (graph structure and matching node and edge weights).
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
+///
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn is_isomorphic_matching<G0, G1, NM, EM>(
     g0: G0,
     g1: G1,
@@ -868,16 +872,16 @@ where
     self::matching::try_match(&mut st, &mut node_match, &mut edge_match, false).unwrap_or(false)
 }
 
-/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+/// Return `true` if `g0` is isomorphic to a subgraph of `g1`.
 ///
 /// Using the VF2 algorithm, only matching graph syntactically (graph
 /// structure).
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
 ///
 /// # Subgraph isomorphism
 ///
-/// (adapted from [`networkx` documentation](https://networkx.github.io/documentation/stable/reference/algorithms/isomorphism.vf2.html))
+/// (adapted from [`networkx` documentation][networkx_vf2])
 ///
 /// Graph theory literature can be ambiguous about the meaning of the above statement,
 /// and we seek to clarify it now.
@@ -901,6 +905,9 @@ where
 ///
 /// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento;
 ///   *A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs*
+///
+/// [networkx_vf2]: https://networkx.github.io/documentation/stable/reference/algorithms/isomorphism.vf2.html
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn is_isomorphic_subgraph<G0, G1>(g0: G0, g1: G1) -> bool
 where
     G0: NodeCompactIndexable + EdgeCount + GetAdjacencyMatrix + GraphProp + IntoNeighborsDirected,
@@ -919,12 +926,14 @@ where
         .unwrap_or(false)
 }
 
-/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+/// Return `true` if `g0` is isomorphic to a subgraph of `g1`.
 ///
 /// Using the VF2 algorithm, examining both syntactic and semantic
 /// graph isomorphism (graph structure and matching node and edge weights).
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
+///
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn is_isomorphic_subgraph_matching<G0, G1, NM, EM>(
     g0: G0,
     g1: G1,
@@ -960,7 +969,9 @@ where
 /// if `g0` is isomorphic to a subgraph of `g1`, return the mappings between
 /// them.
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
+///
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn subgraph_isomorphisms_iter<'a, G0, G1, NM, EM>(
     g0: &'a G0,
     g1: &'a G1,

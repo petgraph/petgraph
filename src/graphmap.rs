@@ -20,6 +20,7 @@ use indexmap::{
 };
 
 use crate::{
+    data,
     graph::{node_index, Graph},
     visit, Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected,
 };
@@ -50,7 +51,8 @@ pub type DiGraphMap<N, E, #[cfg(not(feature = "std"))] S, #[cfg(feature = "std")
 /// of its node weights `N`.
 ///
 /// It uses an combined adjacency list and sparse adjacency matrix
-/// representation, using **O(|V| + |E|)** space, and allows testing for edge
+/// representation, using **O(|V| + |E|)** space where V is the set of nodes
+/// and E is the set of edges, and allows testing for edge
 /// existence in constant time.
 ///
 /// `GraphMap` is parameterized over:
@@ -173,7 +175,7 @@ where
     /// Deserializes into a new `GraphMap` from the same format as the standard
     /// `Graph`. Needs feature `serde-1`.
     ///
-    /// **Warning**: When deseralizing a graph that was not originally a `GraphMap`,
+    /// **Warning**: When deserializing a graph that was not originally a `GraphMap`,
     /// the restrictions from [`from_graph`](#method.from_graph) apply.
     ///
     /// Note: The edge weights have to be `Clone` for this to work.
@@ -294,7 +296,9 @@ where
         n
     }
 
-    /// Return `true` if node `n` was removed.
+    /// Remove node `n` from the graph.
+    ///
+    /// Return `true` if it did exist.
     ///
     /// Computes in **O(V)** time, due to the removal of edges with other nodes.
     pub fn remove_node(&mut self, n: N) -> bool {
@@ -592,7 +596,7 @@ where
     ///    node weights in the resulting `Graph`, too.
     /// 2. Note that the index type is user-chosen.
     ///
-    /// Computes in **O(|V| + |E|)** time (average).
+    /// Computes in **O(|V| + |E|)** time (average) where V is the set of nodes and E is the set of edges.
     ///
     /// **Panics** if the number of nodes or edges does not fit with
     /// the resulting graph's index type.
@@ -1230,8 +1234,7 @@ where
     fn from_index(&self, ix: usize) -> Self::NodeId {
         assert!(
             ix < self.nodes.len(),
-            "The requested index {} is out-of-bounds.",
-            ix
+            "The requested index {ix} is out-of-bounds."
         );
         let (&key, _) = self.nodes.get_index(ix).unwrap();
         key
@@ -1287,8 +1290,7 @@ where
     fn from_index(&self, ix: usize) -> Self::EdgeId {
         assert!(
             ix < self.edges.len(),
-            "The requested index {} is out-of-bounds.",
-            ix
+            "The requested index {ix} is out-of-bounds."
         );
         let (&key, _) = self.edges.get_index(ix).unwrap();
         key
@@ -1357,6 +1359,22 @@ where
     #[inline]
     fn is_adjacent(&self, _: &(), a: N, b: N) -> bool {
         self.contains_edge(a, b)
+    }
+}
+
+impl<N, E, Ty, S> data::DataMap for GraphMap<N, E, Ty, S>
+where
+    N: Copy + Ord + Hash,
+    Ty: EdgeType,
+    S: BuildHasher,
+{
+    fn edge_weight(&self, id: Self::EdgeId) -> Option<&Self::EdgeWeight> {
+        self.edge_weight(id.0, id.1)
+    }
+
+    fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
+        // Technically `id` is already the weight for `GraphMap`, but since we need to return a reference, this is a O(1) borrowing alternative:
+        self.nodes.get_key_value(&id).map(|(k, _)| k)
     }
 }
 
