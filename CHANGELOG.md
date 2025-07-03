@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Breaking changes
+
+- MSRV is now 1.66 ([#842](https://github.com/petgraph/petgraph/pull/842)).
+
+### New Features
+
+- Add optional support for `proptest` with a bunch of composable strategies ([#842](https://github.com/petgraph/petgraph/pull/842))
 
 ## [0.8.2](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.1...petgraph@v0.8.2) - 2025-06-06
 This minor release fixes several bugs, adds two new algorithms, slightly improves the performance of `maximum_matching`, 

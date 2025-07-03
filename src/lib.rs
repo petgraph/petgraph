@@ -514,6 +514,8 @@ mod iter_format;
 mod iter_utils;
 #[cfg(feature = "matrix_graph")]
 pub mod matrix_graph;
+#[cfg(feature = "proptest")]
+pub mod proptest;
 #[cfg(feature = "quickcheck")]
 mod quickcheck;
 #[cfg(feature = "serde-1")]

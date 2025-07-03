@@ -21,16 +21,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - rust: 1.64.0  # MSRV
+          - rust: 1.66.0  # MSRV
             required_features: std
           - rust: 1.81.0  # no_std MSRV
           - rust: stable
-            features: unstable quickcheck rayon
+            features: unstable quickcheck proptest rayon
             test_all: --all
           - rust: beta
             test_all: --all
           - rust: nightly
-            features: unstable quickcheck rayon
+            features: unstable quickcheck proptest rayon
             test_all: --all
             bench: true
     name: Tests (Rust ${{ matrix.rust }})
@@ -46,7 +46,7 @@ jobs:
         run: rustup override set ${{steps.toolchain.outputs.name}}
 
       - name: MSRV downgrade
-        if: matrix.rust == '1.64.0'
+        if: matrix.rust == '1.66.0'
         run: |
           cargo generate-lockfile
           cargo update -p hashbrown --precise 0.15.0
