@@ -27,7 +27,7 @@ use super::dinics::dinics;
 ///
 /// # Complexity
 /// * Time complexity:
-///   * In general: **O(|V|²|E|)** (same as Dinic's algorithm)
+///   * In general: **O(|V|²|E|)**
 ///   * In unit-capacity networks: **O(min{|V|²ᐟ³, |E|¹ᐟ²} |E|)**
 /// * Auxiliary space: **O(|V| + |E|)**.
 ///
