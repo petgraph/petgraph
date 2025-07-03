@@ -59,7 +59,7 @@ use super::dinics::dinics;
 /// ]);
 /// let (cut_capacity, cut_edges) = min_st_cut(&graph, source, destination);
 /// assert_eq!(cut_capacity, 23);
-/// assert_eq!(cut_edges.len(), 2);
+/// assert_eq!(cut_edges.len(), 3);
 /// ```
 ///
 /// [ff]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
