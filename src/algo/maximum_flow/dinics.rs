@@ -10,17 +10,63 @@ use crate::{
     },
 };
 
-/// Dinic's (or Dinitz's) algorithm.
+/// Compute the maximum flow from `source` to `destination` in a directed graph.
 ///
-/// Computes the [maximum flow][ff] of a weighted directed graph.
+/// Implements [Dinic's (or Dinitz's) algorithm][ff], which builds successive
+/// level graphs using breadth-first search and finds blocking flows within
+/// them through depth-first searches.
 ///
-/// Returns the maximum flow and also the computed edge flows.
+/// # Arguments
+/// * `network` — A directed graph with positive edge weights, namely "flow capacities".
+/// * `source` — The source node where flow originates.
+/// * `destination` — The destination node where flow terminates.
+///
+/// # Returns
+/// Returns a tuple of two values:
+/// * `N::EdgeWeight`: computed maximum flow;
+/// * `Vec<N::EdgeWeight>`: the flow of each edge. The vector is indexed by the graph's edge indices.
+///
+/// # Complexity
+/// * Time complexity:
+///   * In general: **O(|V|²|E|)**
+///   * In networks with only unit capacities: **O(min{|V|²ᐟ³, |E|¹ᐟ²} |E|)**
+/// * Auxiliary space: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [ff]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
+///
+/// # Example
+/// ```rust
+/// use petgraph::Graph;
+/// use petgraph::algo::dinics;
+/// // Example from CLRS book
+/// let mut graph = Graph::<u8, u8>::new();
+/// let source = graph.add_node(0);
+/// let _ = graph.add_node(1);
+/// let _ = graph.add_node(2);
+/// let _ = graph.add_node(3);
+/// let _ = graph.add_node(4);
+/// let destination = graph.add_node(5);
+/// graph.extend_with_edges(&[
+///    (0, 1, 16),
+///    (0, 2, 13),
+///    (1, 2, 10),
+///    (1, 3, 12),
+///    (2, 1, 4),
+///    (2, 4, 14),
+///    (3, 2, 9),
+///    (3, 5, 20),
+///    (4, 3, 7),
+///    (4, 5, 4),
+/// ]);
+/// let (max_flow, _) = dinics(&graph, source, destination);
+/// assert_eq!(23, max_flow);
+/// ```
 pub fn dinics<N>(
     network: N,
     source: N::NodeId,
-    sink: N::NodeId,
+    destination: N::NodeId,
 ) -> (N::EdgeWeight, Vec<N::EdgeWeight>)
 where
     N: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
@@ -31,12 +77,13 @@ where
     let mut visited = network.visit_map();
     let mut level_edges = vec![Default::default(); network.node_count()];
 
-    let sink_index = NodeIndexable::to_index(&network, sink);
-    while build_level_graph(&network, source, sink, &flows, &mut level_edges)[sink_index] > 0 {
+    let dest_index = NodeIndexable::to_index(&network, destination);
+    while build_level_graph(&network, source, destination, &flows, &mut level_edges)[dest_index] > 0
+    {
         let flow_increase = find_blocking_flow(
             network,
             source,
-            sink,
+            destination,
             &mut flows,
             &mut level_edges,
             &mut visited,
@@ -60,7 +107,7 @@ where
 pub fn build_level_graph<N>(
     network: N,
     source: N::NodeId,
-    sink: N::NodeId,
+    destination: N::NodeId,
     flows: &[N::EdgeWeight],
     level_edges: &mut [Vec<N::EdgeRef>],
 ) -> Vec<usize>
@@ -89,7 +136,7 @@ where
             if level_graph[next_vertex_index] == 0 {
                 level_graph[next_vertex_index] = level_graph[vertex_index] + 1;
                 level_edges[vertex_index].push(edge);
-                if next_vertex != sink {
+                if next_vertex != destination {
                     bfs_queue.push_back(next_vertex);
                 }
             } else if level_graph[next_vertex_index] == level_graph[vertex_index] + 1 {
@@ -109,7 +156,7 @@ where
 fn find_blocking_flow<N>(
     network: N,
     source: N::NodeId,
-    sink: N::NodeId,
+    destination: N::NodeId,
     flows: &mut [N::EdgeWeight],
     level_edges: &mut [Vec<N::EdgeRef>],
     visited: &mut N::Map,
@@ -123,7 +170,7 @@ where
     while find_augmenting_path(
         &network,
         source,
-        sink,
+        destination,
         flows,
         level_edges,
         visited,
@@ -132,7 +179,7 @@ where
         let mut path_flow = N::EdgeWeight::max();
 
         // Find the bottleneck capacity of the path
-        let mut vertex = sink;
+        let mut vertex = destination;
         while let Some(edge) = edge_to[NodeIndexable::to_index(&network, vertex)] {
             let edge_index = EdgeIndexable::to_index(&network, edge.id());
             let residual_capacity = residual_capacity(&network, edge, vertex, flows[edge_index]);
@@ -141,7 +188,7 @@ where
         }
 
         // Update the flow of each edge along the discovered path
-        let mut vertex = sink;
+        let mut vertex = destination;
         while let Some(edge) = edge_to[NodeIndexable::to_index(&network, vertex)] {
             let edge_index = EdgeIndexable::to_index(&network, edge.id());
             flows[edge_index] =
@@ -160,7 +207,7 @@ where
 fn find_augmenting_path<N>(
     network: N,
     source: N::NodeId,
-    sink: N::NodeId,
+    destination: N::NodeId,
     flows: &[N::EdgeWeight],
     level_edges: &mut [Vec<N::EdgeRef>],
     visited: &mut N::Map,
@@ -195,7 +242,7 @@ where
             if !visited.is_visited(&next_vertex) {
                 let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
                 edge_to[next_vertex_index] = Some(edge);
-                if sink == next_vertex {
+                if destination == next_vertex {
                     return true;
                 }
                 dfs_stack.push(next_vertex);
