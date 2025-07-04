@@ -696,7 +696,7 @@ where
         maximum_bipartite_matching_instance(&graph, partition_a, partition_b);
 
     let (_, flow) = ford_fulkerson(&network, source, destination);
-    let mut mate = vec![None; graph.node_count()];
+    let mut mate = vec![None; graph.node_bound()];
     let mut n_edges = 0;
 
     for edge in graph.edge_references() {
@@ -743,8 +743,8 @@ where
         let source_index = NodeIndexable::to_index(&graph, source);
         let target_index = NodeIndexable::to_index(&graph, target);
         network.add_edge(
-            NodeIndexable::from_index(&network, source_index),
-            NodeIndexable::from_index(&network, target_index),
+            *index_map.get(&source_index).unwrap(),
+            *index_map.get(&target_index).unwrap(),
             1,
         );
     }
