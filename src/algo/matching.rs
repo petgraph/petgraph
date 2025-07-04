@@ -1,5 +1,6 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::hash::Hash;
+use hashbrown::HashMap;
 
 use crate::visit::{
     EdgeCount, EdgeIndexable, EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
@@ -635,12 +636,12 @@ pub fn maximum_bipartite_matching<G>(
     partition_b: &[G::NodeId],
 ) -> Matching<G>
 where
-    G: NodeIndexable + EdgeIndexable + NodeCount + EdgeCount + IntoEdges,
+    G: NodeIndexable + EdgeIndexable + NodeCount + EdgeCount + IntoEdges + IntoNodeIdentifiers,
 {
-    let (network, source, sink) =
+    let (network, source, destination) =
         maximum_bipartite_matching_instance(&graph, partition_a, partition_b);
 
-    let (_, flow) = ford_fulkerson(&network, source, sink);
+    let (_, flow) = ford_fulkerson(&network, source, destination);
     let mut mate = vec![None; graph.node_count()];
     let mut n_edges = 0;
 
@@ -667,16 +668,20 @@ fn maximum_bipartite_matching_instance<G>(
     partition_b: &[G::NodeId],
 ) -> (Graph<(), usize, Directed>, NodeIndex, NodeIndex)
 where
-    G: NodeIndexable + NodeCount + EdgeCount + IntoEdges,
+    G: NodeIndexable + NodeCount + EdgeCount + IntoEdges + IntoNodeIdentifiers,
 {
     let mut network = Graph::with_capacity(
         graph.node_count() + 2,
         graph.edge_count() + partition_a.len() + partition_b.len(),
     );
 
+    let mut index_map = HashMap::new();
+
     // Add nodes from original graph
-    for _ in 0..graph.node_count() {
-        network.add_node(());
+    for node_id in graph.node_identifiers() {
+        let old_index = NodeIndexable::to_index(&graph, node_id);
+        let new_index = network.add_node(());
+        index_map.insert(old_index, new_index);
     }
 
     // Add edges from original graph, directed from partition_a to partition_b
@@ -696,17 +701,17 @@ where
     let source = network.add_node(());
     for &node in partition_a {
         let node_index = NodeIndexable::to_index(&graph, node);
-        network.add_edge(source, NodeIndex::new(node_index), 1);
+        network.add_edge(source, *index_map.get(&node_index).unwrap(), 1);
     }
 
-    // Add sink node
-    let sink = network.add_node(());
+    // Add destination node
+    let destination = network.add_node(());
     for &node in partition_b {
         let node_index = NodeIndexable::to_index(&graph, node);
-        network.add_edge(NodeIndex::new(node_index), sink, 1);
+        network.add_edge(*index_map.get(&node_index).unwrap(), destination, 1);
     }
 
-    (network, source, sink)
+    (network, source, destination)
 }
 
 fn source_and_target_from_partitions<G>(
