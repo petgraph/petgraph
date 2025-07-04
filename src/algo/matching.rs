@@ -622,14 +622,68 @@ fn augment_path<G>(
     }
 }
 
-/// Compute the [*maximum matching*][1]
-/// for a bipartite graph by reducing it to a [maximum flow][2] problem,
-/// and then using Ford Fulkerson method to solve maximum flow problem.
+/// Compute the maximum matching of a bipartite graph.
 ///
-/// [1]: https://en.wikipedia.org/wiki/Matching_(graph_theory)
-/// [2]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+/// The algorithm reduces the [*maximum bipartite matching*][matching]
+/// problem to a [*maximum flow*][flow] computation, by constructing an
+/// appropriate flow network and solving it using the [Ford–Fulkerson algorithm][ff].
 ///
-/// The input graph is treated as if undirected.
+/// The input graph is treated as undirected, and the caller must provide the two
+/// disjoint partitions `partition_a` and `partition_b` of the bipartite graph.
+///
+/// # Arguments
+/// * `graph` — The input graph.
+/// * `partition_a` — The list of nodes in the first partition.
+/// * `partition_b` — The list of nodes in the second partition.
+///
+/// # Returns
+/// * [`struct@Matching`]: computed maximum matching.
+///
+/// # Complexity
+/// * Time complexity: **O(|V||E|²)** (derived from Ford-Fulkerson time complexity).
+/// * Auxiliary space: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
+/// [matching]: https://en.wikipedia.org/wiki/Matching_(graph_theory)
+/// [flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+/// [ff]: https://en.wikipedia.org/wiki/Ford–Fulkerson_algorithm
+///
+/// # Example
+/// ```rust
+/// use petgraph::prelude::*;
+/// use petgraph::algo::maximum_bipartite_matching;
+///
+/// // The example graph:
+/// //
+/// //  a_1   a_2
+/// //   |  \  |
+/// //   |   \ |
+/// //  b_1   b_2
+/// //
+/// // Maximum matching: { (a_1, b_1), (a_2, b_2) }
+///
+/// let mut graph: UnGraph<(), ()> = UnGraph::new_undirected();
+/// let a_1 = graph.add_node(());
+/// let a_2 = graph.add_node(());
+/// let b_1 = graph.add_node(());
+/// let b_2 = graph.add_node(());
+///
+/// graph.extend_with_edges([(a_1, b_1), (a_1, b_2), (a_2, b_2)]);
+///
+/// let partition_a = [a_1, a_2];
+/// let partition_b = [b_1, b_2];
+///
+/// let matching = maximum_bipartite_matching(&graph, &partition_a, &partition_b);
+///
+/// assert_eq!(matching.len(), 2);
+/// assert!(matching.contains_edge(a_1, b_1));
+/// assert!(matching.contains_edge(a_2, b_2));
+/// assert_eq!(matching.mate(a_1), Some(b_1));
+/// assert_eq!(matching.mate(a_2), Some(b_2));
+/// assert_eq!(matching.mate(b_1), Some(a_1));
+/// assert_eq!(matching.mate(b_2), Some(a_2));
+/// ```
 pub fn maximum_bipartite_matching<G>(
     graph: G,
     partition_a: &[G::NodeId],
@@ -660,8 +714,6 @@ where
 
 /// Create a network from given bipartite `graph` and its partitions,
 /// `partition_a` and `partition_b`.
-/// Created Nodes' and Edges' indices are compatible
-/// with the ones from original graph.
 fn maximum_bipartite_matching_instance<G>(
     graph: &G,
     partition_a: &[G::NodeId],
