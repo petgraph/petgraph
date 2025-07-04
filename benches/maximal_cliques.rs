@@ -5,7 +5,7 @@ extern crate test;
 
 use test::Bencher;
 
-use petgraph::algo::maximal_cliques::{maximal_cliques, largest_maximal_clique};
+use petgraph::algo::maximal_cliques::{largest_maximal_clique, maximal_cliques};
 
 #[allow(dead_code)]
 mod common;

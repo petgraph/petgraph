@@ -128,10 +128,10 @@ where
 }
 
 /// Finds the largest maximal clique in an undirected graph using the algorithm outlined in McCreesh and Prosser's paper [1].
-/// Much faster than the standard Bron-Kerbosch technique, but only will get the largest maximal clique 
-/// instead of all maximal cliques 
+/// Much faster than the standard Bron-Kerbosch technique, but only will get the largest maximal clique
+/// instead of all maximal cliques
 ///  
-/// Uses a graph coloring algorithm to narrow the search space and start from the nodes most likely to be in a large clique, 
+/// Uses a graph coloring algorithm to narrow the search space and start from the nodes most likely to be in a large clique,
 /// and ignores any cliques that are not capable of reaching the max size to further reduce the time taken. This implementation
 /// can be dramatically improved through parallelization, as was originally outlined in the aforementioned paper [1]
 ///
@@ -190,7 +190,7 @@ where
     let mut nodes: Vec<_> = g.node_identifiers().collect();
 
     // sort nodes by degree as high edge nodes are more likely to be in a larger clique
-    nodes.sort_by_key(|&n| std::cmp::Reverse(g.edges(n).count()));
+    nodes.sort_by_key(|&n| core::cmp::Reverse(g.edges(n).count()));
     let mut clique = HashSet::new();
     let candidate_vertices: HashSet<_> = nodes.into_iter().collect();
 
@@ -223,7 +223,10 @@ fn expand<G>(
         // test how the clique changes when we add the new node (if it's worse we will remove it)
         clique.insert(node.clone());
         let neighbors: HashSet<_> = graph.neighbors(node.clone()).collect();
-        let new_candidate_vertices: HashSet<G::NodeId> = candidate_vertices.intersection(&neighbors).cloned().collect();
+        let new_candidate_vertices: HashSet<G::NodeId> = candidate_vertices
+            .intersection(&neighbors)
+            .cloned()
+            .collect();
 
         // this fires when we have a maximal clique
         if new_candidate_vertices.is_empty() {
@@ -247,7 +250,7 @@ fn expand<G>(
 ///
 /// This algorithm specifically is extremely useful for use in `mccreesh_prosser` clique finding as speed is
 /// very important and using a good coloring can be detrimental for that task.
-/// 
+///
 /// # Returns
 /// A tuple containing:
 /// * `order`: A vector of the nodes in `p`, sorted by their assigned color number.
