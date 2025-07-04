@@ -206,6 +206,39 @@ fn maximum_bipartite_test() {
     );
 }
 
+#[test]
+fn maximum_bipartite_disjoint_test() {
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (2, 3)]);
+    let partition_a = [NodeIndex::new(0), NodeIndex::new(2)];
+    let partition_b = [NodeIndex::new(1), NodeIndex::new(3)];
+    let m = maximum_bipartite_matching(&g, &partition_a, &partition_b);
+    assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
+    assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
+}
+
+#[test]
+fn maximum_bipartite_star_test() {
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (0, 2), (0, 3)]);
+    let partition_a = [NodeIndex::new(0)];
+    let partition_b = [NodeIndex::new(1), NodeIndex::new(2), NodeIndex::new(3)];
+    let m = maximum_bipartite_matching(&g, &partition_a, &partition_b);
+    assert_one_of!(
+        collect(m.edges()),
+        [set![(0, 1)], set![(0, 2)], set![(0, 3)]]
+    );
+    assert_one_of!(collect(m.nodes()), [set![0, 1], set![0, 2], set![0, 3]]);
+}
+
+#[test]
+fn maximum_bipartite_odd_path_test() {
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (1, 2), (2, 3)]);
+    let partition_a = [NodeIndex::new(0), NodeIndex::new(3)];
+    let partition_b = [NodeIndex::new(2)];
+    let m = maximum_matching(&g);
+    assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
+    assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
+}
+
 #[cfg(feature = "stable_graph")]
 #[test]
 fn maximum_bipartite_stable_graph_test() {
