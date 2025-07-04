@@ -163,6 +163,24 @@ where
     }
 }
 
+pub struct StableGraphNode<N, Ix>
+where
+    Ix: IndexType,
+{
+    pub index: NodeIndex<Ix>,
+    pub weight: N,
+}
+
+pub struct StableGraphEdge<E, Ix>
+where
+    Ix: IndexType,
+{
+    pub index: EdgeIndex<Ix>,
+    pub source: NodeIndex<Ix>,
+    pub target: NodeIndex<Ix>,
+    pub weight: E,
+}
+
 impl<N, E> StableGraph<N, E, Directed> {
     /// Create a new `StableGraph` with directed edges.
     ///
@@ -821,8 +839,8 @@ where
     pub fn into_nodes_edges_iters(
         self,
     ) -> (
-        impl Iterator<Item = (NodeIndex<Ix>, N)>,
-        impl Iterator<Item = (EdgeIndex<Ix>, NodeIndex<Ix>, NodeIndex<Ix>, E)>,
+        impl Iterator<Item = StableGraphNode<N, Ix>>,
+        impl Iterator<Item = StableGraphEdge<E, Ix>>,
     ) {
         let (inner_nodes, inner_edges) = self.g.into_nodes_edges();
 
@@ -831,18 +849,19 @@ where
                 .into_iter()
                 .enumerate()
                 .filter(|(_, node)| node.weight.is_some())
-                .map(|(index, node)| (NodeIndex::new(index), node.weight.unwrap())),
+                .map(|(index, node)| StableGraphNode {
+                    index: NodeIndex::new(index),
+                    weight: node.weight.unwrap(),
+                }),
             inner_edges
                 .into_iter()
                 .enumerate()
                 .filter(|(_, edge)| edge.weight.is_some())
-                .map(|(index, edge)| {
-                    (
-                        EdgeIndex::new(index),
-                        edge.source(),
-                        edge.target(),
-                        edge.weight.unwrap(),
-                    )
+                .map(|(index, edge)| StableGraphEdge {
+                    index: EdgeIndex::new(index),
+                    source: edge.source(),
+                    target: edge.target(),
+                    weight: edge.weight.unwrap(),
                 }),
         )
     }
