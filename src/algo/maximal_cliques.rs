@@ -1,6 +1,5 @@
 use crate::visit::{
-    GetAdjacencyMatrix, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeIndexable,
-    Visitable,
+    GetAdjacencyMatrix, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeIndexable, Visitable,
 };
 use alloc::vec::Vec;
 use core::hash::Hash;

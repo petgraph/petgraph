@@ -33,8 +33,9 @@ use petgraph::algo::{
     bellman_ford, bridges, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
-    k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximal_cliques::largest_maximal_clique, maximum_matching,
-    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
+    k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo,
+    maximal_cliques::largest_maximal_clique, maximum_matching, min_spanning_tree, page_rank, spfa,
+    tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1647,15 +1648,15 @@ fn largest_maximal_cliques_matches_ref_impl() {
             g
         };
         if g.edge_count() <= 200 && g.node_count() <= 200 {
+            let mut cliques_ref = maximal_cliques_ref(&g);
+            cliques_ref.sort_by(|a, b| b.len().cmp(&a.len()));
+            let longest_clique_ref = cliques_ref.first().unwrap();
             let longest_clique = largest_maximal_clique(&g);
-            let cliques_ref = maximal_cliques_ref(&g);
-            cliques_ref.sort_by(|a,b| a.len().cmp(b.len()));
-            let longest_clique_ref = cliques_ref.first()?;
 
-            assert!(longest_clique == longest_clique_ref,
-                "Largest Maximal cliques algorithm returned different largest clique than the reference implementation: {} != {}",
+            assert!(longest_clique.len() == longest_clique_ref.len(),
+                "Largest Maximal cliques algorithm returned different largest clique than the reference implementation: {:?} != {:?}",
                 longest_clique,
-                cliques_ref
+                longest_clique_ref
             );
         }
         true
