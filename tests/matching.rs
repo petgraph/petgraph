@@ -205,3 +205,51 @@ fn maximum_bipartite_test() {
         set![a_1, a_3, a_4, a_5, a_6, b_1, b_2, b_3, b_4, b_6]
     );
 }
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn maximum_bipartite_stable_graph_test() {
+    let mut g: StableUnGraph<(), ()> = StableUnGraph::with_capacity(12, 8);
+
+    // Partition A
+    let a_1 = g.add_node(());
+    let a_2 = g.add_node(());
+    let a_3 = g.add_node(());
+    let a_4_removed = g.add_node(());
+    let a_5 = g.add_node(());
+    let a_6 = g.add_node(());
+    let partition_a = vec![a_1, a_2, a_3, a_5, a_6];
+
+    // Partition B
+    let b_1 = g.add_node(());
+    let b_2 = g.add_node(());
+    let b_3 = g.add_node(());
+    let b_4 = g.add_node(());
+    let b_5 = g.add_node(());
+    let b_6 = g.add_node(());
+    let partition_b = vec![b_1, b_2, b_3, b_4, b_5, b_6];
+
+    // Edges
+    g.extend_with_edges([
+        (a_1, b_2),
+        (a_1, b_3),
+        (a_3, b_1),
+        (a_3, b_4),
+        (a_4_removed, b_3),
+        (a_5, b_3),
+        (a_5, b_4),
+        (a_6, b_6),
+    ]);
+
+    g.remove_node(a_4_removed);
+
+    let m = maximum_bipartite_matching(&g, &partition_a, &partition_b);
+    assert_eq!(
+        collect(m.edges()),
+        set![(a_1, b_3), (a_3, b_1), (a_5, b_4), (a_6, b_6)]
+    );
+    assert_eq!(
+        collect(m.nodes()),
+        set![a_1, a_3, a_5, a_6, b_1, b_3, b_4, b_6]
+    );
+}
