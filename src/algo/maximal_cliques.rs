@@ -1,5 +1,5 @@
 use crate::visit::{
-    EdgeRef, GetAdjacencyMatrix, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeIndexable,
+    GetAdjacencyMatrix, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeIndexable,
     Visitable,
 };
 use alloc::vec::Vec;
@@ -221,8 +221,8 @@ fn expand<G>(
             return;
         }
         // test how the clique changes when we add the new node (if it's worse we will remove it)
-        clique.insert(node.clone());
-        let neighbors: HashSet<_> = graph.neighbors(node.clone()).collect();
+        clique.insert(node);
+        let neighbors: HashSet<_> = graph.neighbors(node).collect();
         let new_candidate_vertices: HashSet<G::NodeId> = candidate_vertices
             .intersection(&neighbors)
             .cloned()
@@ -269,7 +269,7 @@ where
 
     for node in ordered_nodes {
         let mut neighboring_colors = HashSet::new();
-        for neighbor in graph.neighbors(node.clone()) {
+        for neighbor in graph.neighbors(node) {
             if let Some(color) = colors.get(&neighbor) {
                 neighboring_colors.insert(*color);
             }
