@@ -163,6 +163,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct StableGraphNode<N, Ix>
 where
     Ix: IndexType,
@@ -171,6 +172,21 @@ where
     pub weight: N,
 }
 
+impl<E, Ix> Clone for StableGraphNode<E, Ix>
+where
+    Ix: IndexType,
+    E: Clone,
+    Ix: Copy,
+{
+    fn clone(&self) -> Self {
+        Self {
+            index: self.index,
+            weight: self.weight.clone(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct StableGraphEdge<E, Ix>
 where
     Ix: IndexType,
@@ -179,6 +195,22 @@ where
     pub source: NodeIndex<Ix>,
     pub target: NodeIndex<Ix>,
     pub weight: E,
+}
+
+impl<E, Ix> Clone for StableGraphEdge<E, Ix>
+where
+    Ix: IndexType,
+    E: Clone,
+    Ix: Copy,
+{
+    fn clone(&self) -> Self {
+        Self {
+            index: self.index,
+            source: self.source,
+            target: self.target,
+            weight: self.weight.clone(),
+        }
+    }
 }
 
 impl<N, E> StableGraph<N, E, Directed> {
