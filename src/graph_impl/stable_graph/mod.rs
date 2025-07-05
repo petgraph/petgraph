@@ -164,18 +164,15 @@ where
 }
 
 #[derive(Debug)]
-pub struct StableGraphNode<N, Ix>
-where
-    Ix: IndexType,
-{
+pub struct StableGraphNode<N, Ix> {
     pub index: NodeIndex<Ix>,
     pub weight: N,
 }
 
 impl<N, Ix> Clone for StableGraphNode<N, Ix>
 where
-    Ix: IndexType,
     N: Clone,
+    Ix: Copy,
 {
     fn clone(&self) -> Self {
         Self {
@@ -186,10 +183,7 @@ where
 }
 
 #[derive(Debug)]
-pub struct StableGraphEdge<E, Ix>
-where
-    Ix: IndexType,
-{
+pub struct StableGraphEdge<E, Ix> {
     pub index: EdgeIndex<Ix>,
     pub source: NodeIndex<Ix>,
     pub target: NodeIndex<Ix>,
@@ -198,8 +192,8 @@ where
 
 impl<E, Ix> Clone for StableGraphEdge<E, Ix>
 where
-    Ix: IndexType,
     E: Clone,
+    Ix: Copy,
 {
     fn clone(&self) -> Self {
         Self {
