@@ -172,11 +172,10 @@ where
     pub weight: N,
 }
 
-impl<E, Ix> Clone for StableGraphNode<E, Ix>
+impl<N, Ix> Clone for StableGraphNode<N, Ix>
 where
     Ix: IndexType,
-    E: Clone,
-    Ix: Copy,
+    N: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -201,7 +200,6 @@ impl<E, Ix> Clone for StableGraphEdge<E, Ix>
 where
     Ix: IndexType,
     E: Clone,
-    Ix: Copy,
 {
     fn clone(&self) -> Self {
         Self {
