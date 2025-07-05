@@ -221,7 +221,10 @@ fn expand<G>(
         }
         // test how the clique changes when we add the new node (if it's worse we will remove it)
         clique.insert(node);
-        let neighbors: HashSet<_> = graph.neighbors(node).collect();
+        let neighbors: HashSet<_> = graph
+            .neighbors(node)
+            .filter(|&neighbor| neighbor != node) // filter out self-references
+            .collect();
         let new_candidate_vertices: HashSet<G::NodeId> = candidate_vertices
             .intersection(&neighbors)
             .cloned()

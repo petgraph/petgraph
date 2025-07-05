@@ -158,3 +158,13 @@ fn test_largest_maximal_clique_complete_graph() {
     let expected_clique: HashSet<_> = vec![a, b, c].into_iter().collect();
     assert_eq!(expected_clique, largest_clique);
 }
+
+#[test]
+fn test_largest_maximal_clique_self_loops() {
+    let mut g = Graph::<i32, (), Undirected>::new_undirected();
+    let a = g.add_node(0);
+    g.add_edge(a, a, ());
+    let expected_clique: HashSet<_> = vec![a].into_iter().collect();
+    let largest_clique = largest_maximal_clique(&g);
+    assert_eq!(expected_clique, largest_clique);
+}

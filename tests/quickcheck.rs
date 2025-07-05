@@ -1649,14 +1649,12 @@ fn largest_maximal_cliques_matches_ref_impl() {
         };
         if g.edge_count() <= 200 && g.node_count() <= 200 {
             let mut cliques_ref = maximal_cliques_ref(&g);
-            cliques_ref.sort_by(|a, b| b.len().cmp(&a.len()));
-            let longest_clique_ref = cliques_ref.first().unwrap();
+            cliques_ref.sort_by_key(|a| a.len());
+            let longest_clique_ref = cliques_ref.last().unwrap();
             let longest_clique = largest_maximal_clique(&g);
 
             assert!(longest_clique.len() == longest_clique_ref.len(),
-                "Largest Maximal cliques algorithm returned different largest clique than the reference implementation: {:?} != {:?}",
-                longest_clique,
-                longest_clique_ref
+                "Largest Maximal cliques algorithm returned different largest clique than the reference implementation: {longest_clique:?} != {longest_clique_ref:?}",
             );
         }
         true
