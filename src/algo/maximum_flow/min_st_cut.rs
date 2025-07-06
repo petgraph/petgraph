@@ -64,14 +64,14 @@ use super::dinics::dinics;
 ///
 /// [ff]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
 /// [max_flow_min_cut]: https://en.wikipedia.org/wiki/Max-flow_min-cut_theorem
-pub fn min_st_cut<N>(
-    network: N,
-    source: N::NodeId,
-    destination: N::NodeId,
-) -> (N::EdgeWeight, Vec<N::EdgeRef>)
+pub fn min_st_cut<G>(
+    network: G,
+    source: G::NodeId,
+    destination: G::NodeId,
+) -> (G::EdgeWeight, Vec<G::EdgeRef>)
 where
-    N: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
-    N::EdgeWeight: Add<Output = N::EdgeWeight> + Sub<Output = N::EdgeWeight> + PositiveMeasure,
+    G: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
+    G::EdgeWeight: Add<Output = G::EdgeWeight> + Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
     let (max_flow, flows) = dinics(network, source, destination);
     let level_edges = &mut vec![Default::default(); network.node_count()];
@@ -82,7 +82,7 @@ where
         "destination should be unreachable after Dinic's completion"
     );
 
-    let cut_edges: Vec<N::EdgeRef> = network
+    let cut_edges: Vec<G::EdgeRef> = network
         .edge_references()
         .filter(|edge| is_edge_in_st_cut(network, &flows, &level_graph, edge))
         .collect();
@@ -90,7 +90,7 @@ where
     let cut_capacity = cut_edges
         .iter()
         .map(|edge| *edge.weight())
-        .fold(N::EdgeWeight::zero(), |a, b| a + b);
+        .fold(G::EdgeWeight::zero(), |a, b| a + b);
 
     assert_eq!(
         max_flow, cut_capacity,
@@ -101,15 +101,15 @@ where
 }
 
 // Checks if edge is part of network's st cut.
-fn is_edge_in_st_cut<N>(
-    network: N,
-    flows: &[N::EdgeWeight],
+fn is_edge_in_st_cut<G>(
+    network: G,
+    flows: &[G::EdgeWeight],
     level_graph: &[usize],
-    edge: &N::EdgeRef,
+    edge: &G::EdgeRef,
 ) -> bool
 where
-    N: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
-    N::EdgeWeight: PartialEq,
+    G: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
+    G::EdgeWeight: PartialEq,
 {
     let source_index = NodeIndexable::to_index(&network, edge.source());
     let target_index = NodeIndexable::to_index(&network, edge.target());

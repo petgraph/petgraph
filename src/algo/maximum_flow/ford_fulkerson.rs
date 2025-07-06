@@ -11,15 +11,15 @@ use crate::{
     },
 };
 
-fn residual_capacity<N>(
-    network: N,
-    edge: N::EdgeRef,
-    vertex: N::NodeId,
-    flow: N::EdgeWeight,
-) -> N::EdgeWeight
+fn residual_capacity<G>(
+    network: G,
+    edge: G::EdgeRef,
+    vertex: G::NodeId,
+    flow: G::EdgeWeight,
+) -> G::EdgeWeight
 where
-    N: NodeIndexable + IntoEdges,
-    N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
+    G: NodeIndexable + IntoEdges,
+    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
     if vertex == edge.source() {
         // backward edge
@@ -34,9 +34,9 @@ where
 }
 
 /// Gets the other endpoint of graph edge, if any, otherwise panics.
-fn other_endpoint<N>(network: N, edge: N::EdgeRef, vertex: N::NodeId) -> N::NodeId
+fn other_endpoint<G>(network: G, edge: G::EdgeRef, vertex: G::NodeId) -> G::NodeId
 where
-    N: NodeIndexable + IntoEdges,
+    G: NodeIndexable + IntoEdges,
 {
     if vertex == edge.source() {
         edge.target()
@@ -49,16 +49,16 @@ where
 }
 
 /// Tells whether there is an augmented path in the graph
-fn has_augmented_path<N>(
-    network: N,
-    source: N::NodeId,
-    destination: N::NodeId,
-    edge_to: &mut [Option<N::EdgeRef>],
-    flows: &[N::EdgeWeight],
+fn has_augmented_path<G>(
+    network: G,
+    source: G::NodeId,
+    destination: G::NodeId,
+    edge_to: &mut [Option<G::EdgeRef>],
+    flows: &[G::EdgeWeight],
 ) -> bool
 where
-    N: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
-    N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
+    G: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable + Visitable,
+    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
     let mut visited = network.visit_map();
     let mut queue = VecDeque::new();
@@ -72,7 +72,7 @@ where
             let next = other_endpoint(&network, edge, vertex);
             let edge_index: usize = EdgeIndexable::to_index(&network, edge.id());
             let residual_cap = residual_capacity(&network, edge, next, flows[edge_index]);
-            if !visited.is_visited(&next) && (residual_cap > N::EdgeWeight::zero()) {
+            if !visited.is_visited(&next) && (residual_cap > G::EdgeWeight::zero()) {
                 visited.visit(next);
                 edge_to[NodeIndexable::to_index(&network, next)] = Some(edge);
                 if destination == next {
@@ -85,16 +85,16 @@ where
     false
 }
 
-fn adjust_residual_flow<N>(
-    network: N,
-    edge: N::EdgeRef,
-    vertex: N::NodeId,
-    flow: N::EdgeWeight,
-    delta: N::EdgeWeight,
-) -> N::EdgeWeight
+fn adjust_residual_flow<G>(
+    network: G,
+    edge: G::EdgeRef,
+    vertex: G::NodeId,
+    flow: G::EdgeWeight,
+    delta: G::EdgeWeight,
+) -> G::EdgeWeight
 where
-    N: NodeIndexable + IntoEdges,
-    N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
+    G: NodeIndexable + IntoEdges,
+    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
     if vertex == edge.source() {
         // backward edge
@@ -159,26 +159,26 @@ where
 /// let (max_flow, _) = ford_fulkerson(&graph, source, destination);
 /// assert_eq!(23, max_flow);
 /// ```
-pub fn ford_fulkerson<N>(
-    network: N,
-    source: N::NodeId,
-    destination: N::NodeId,
-) -> (N::EdgeWeight, Vec<N::EdgeWeight>)
+pub fn ford_fulkerson<G>(
+    network: G,
+    source: G::NodeId,
+    destination: G::NodeId,
+) -> (G::EdgeWeight, Vec<G::EdgeWeight>)
 where
-    N: NodeCount
+    G: NodeCount
         + EdgeCount
         + IntoEdgesDirected
         + EdgeIndexable
         + NodeIndexable
         + DataMap
         + Visitable,
-    N::EdgeWeight: Sub<Output = N::EdgeWeight> + PositiveMeasure,
+    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
     let mut edge_to = vec![None; network.node_count()];
-    let mut flows = vec![N::EdgeWeight::zero(); network.edge_bound()];
-    let mut max_flow = N::EdgeWeight::zero();
+    let mut flows = vec![G::EdgeWeight::zero(); network.edge_bound()];
+    let mut max_flow = G::EdgeWeight::zero();
     while has_augmented_path(&network, source, destination, &mut edge_to, &flows) {
-        let mut path_flow = N::EdgeWeight::max();
+        let mut path_flow = G::EdgeWeight::max();
 
         // Find the bottleneck capacity of the path
         let mut vertex = destination;
