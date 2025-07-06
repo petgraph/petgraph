@@ -287,6 +287,21 @@ where
         self.edge_count
     }
 
+    /// Shrinks the capacity of the underlying nodes collection as much as possible.
+    pub fn shrink_to_fit_nodes(&mut self) {
+        self.g.shrink_to_fit_nodes();
+    }
+
+    /// Shrinks the capacity of the underlying edges collection as much as possible.
+    pub fn shrink_to_fit_edges(&mut self) {
+        self.g.shrink_to_fit_edges();
+    }
+
+    /// Shrinks the capacity of the graph as much as possible.
+    pub fn shrink_to_fit(&mut self) {
+        self.g.shrink_to_fit();
+    }
+
     /// Whether the graph has directed edges or not.
     #[inline]
     pub fn is_directed(&self) -> bool {
