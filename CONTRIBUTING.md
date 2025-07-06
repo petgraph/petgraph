@@ -134,7 +134,7 @@ For running the benchmarks, you will need to switch to the `nightly`
 toolchain, as features are used which are only available in the
 nightly toolchain. You can do this by running:
 
-```bash
+```commandline
 rustup default nightly
 ```
 
@@ -142,7 +142,7 @@ Which will install the nightly toolchain if it is not already
 installed, and set it as the default toolchain. You can switch back
 to the stable toolchain by running:
 
-```bash
+```commandline
 rustup default stable
 ```
 
@@ -150,7 +150,7 @@ rustup default stable
 
 Building petgraph is as simple as running:
 
-```bash
+```commandline
 cargo build
 ```
 
@@ -158,7 +158,7 @@ cargo build
 
 Testing petgraph is also simple, and can be done by running:
 
-```bash
+```commandline
 cargo test --features all
 ```
 
@@ -166,11 +166,47 @@ Note the `--features all` flag, which enables all features of
 petgraph. This makes sure that quickcheck tests are also
 run.
 
+In CI, we run the tests on different rust versions and toolchains,
+including nightly, as well as our current minimum supported Rust
+version (MSRV). You can see which versions are tested exactly in 
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+Similarly, we also run [cargo miri][miri-url] in CI, which is a tool for
+detecting undefined behavior in Rust code. This will however
+again require the nightly toolchain:
+
+```commandline
+cargo miri test
+```
+
+This might, however, take a long time to run, so it is probably worth it 
+specifying individual tests to run, as follows:
+
+```commandline
+cargo miri test --test min_spanning_tree
+```
+
+### 🧹 Lints
+
+We use [clippy][clippy-url] and [rustfmt][rustfmt-url] to ensure that 
+the code is formatted and linted correctly. You can run these tools 
+yourself by running:
+
+```commandline
+cargo fmt
+```
+
+and
+
+```commandline
+cargo clippy --all-features --lib --bins --examples --tests -- -D warnings
+```
+
 ### ⏱️ Benchmarks
 
 Benchmarks can be run by running:
 
-```bash
+```commandline
 cargo bench
 ```
 
@@ -193,9 +229,16 @@ you are interested in helping out on a more long-term basis, feel free
 to introduce yourself on [discord][discord-url] or start
 a [discussion][github-discussions-url].
 
+
+[algo-docs-template]: https://github.com/petgraph/petgraph/blob/master/assets/guide/algodocs.md
+
 [code-of-conduct-url]: https://github.com/rust-lang/rust/blob/master/CODE_OF_CONDUCT.md
 
+[clippy-url]: https://github.com/rust-lang/rust-clippy
+
 [discord-url]: https://discord.gg/n2tc79tJ4e
+
+[rustfmt-url]: https://github.com/rust-lang/rustfmt
 
 [github-discussions-url]: https://github.com/petgraph/petgraph/discussions
 
@@ -209,7 +252,7 @@ a [discussion][github-discussions-url].
 
 [github-new-issue]: https://github.com/petgraph/petgraph/issues/new
 
-[algo-docs-template]: https://github.com/petgraph/petgraph/blob/master/assets/guide/algodocs.md
+[miri-url]: https://github.com/rust-lang/miri
 
 ## 🏛️ Old Section on Pull Requests
 
