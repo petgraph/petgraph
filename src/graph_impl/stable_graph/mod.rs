@@ -163,6 +163,48 @@ where
     }
 }
 
+#[derive(Debug)]
+pub struct StableGraphNode<N, Ix> {
+    pub index: NodeIndex<Ix>,
+    pub weight: N,
+}
+
+impl<N, Ix> Clone for StableGraphNode<N, Ix>
+where
+    N: Clone,
+    Ix: Copy,
+{
+    fn clone(&self) -> Self {
+        Self {
+            index: self.index,
+            weight: self.weight.clone(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct StableGraphEdge<E, Ix> {
+    pub index: EdgeIndex<Ix>,
+    pub source: NodeIndex<Ix>,
+    pub target: NodeIndex<Ix>,
+    pub weight: E,
+}
+
+impl<E, Ix> Clone for StableGraphEdge<E, Ix>
+where
+    E: Clone,
+    Ix: Copy,
+{
+    fn clone(&self) -> Self {
+        Self {
+            index: self.index,
+            source: self.source,
+            target: self.target,
+            weight: self.weight.clone(),
+        }
+    }
+}
+
 impl<N, E> StableGraph<N, E, Directed> {
     /// Create a new `StableGraph` with directed edges.
     ///
@@ -815,6 +857,37 @@ where
             dir,
             ty: PhantomData,
         }
+    }
+
+    /// Convert the `StableGraph` into iterators of Nodes and Edges
+    pub fn into_nodes_edges_iters(
+        self,
+    ) -> (
+        impl Iterator<Item = StableGraphNode<N, Ix>>,
+        impl Iterator<Item = StableGraphEdge<E, Ix>>,
+    ) {
+        let (inner_nodes, inner_edges) = self.g.into_nodes_edges();
+
+        (
+            inner_nodes
+                .into_iter()
+                .enumerate()
+                .filter(|(_, node)| node.weight.is_some())
+                .map(|(index, node)| StableGraphNode {
+                    index: NodeIndex::new(index),
+                    weight: node.weight.unwrap(),
+                }),
+            inner_edges
+                .into_iter()
+                .enumerate()
+                .filter(|(_, edge)| edge.weight.is_some())
+                .map(|(index, edge)| StableGraphEdge {
+                    index: EdgeIndex::new(index),
+                    source: edge.source(),
+                    target: edge.target(),
+                    weight: edge.weight.unwrap(),
+                }),
+        )
     }
 
     /// Index the `StableGraph` by two indices, any combination of
