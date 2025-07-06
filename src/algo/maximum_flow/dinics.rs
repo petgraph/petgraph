@@ -104,7 +104,7 @@ where
 /// vertex to its neighbours in the next level.
 ///
 /// Returns the computed level graph.
-pub fn build_level_graph<G>(
+fn build_level_graph<G>(
     network: G,
     source: G::NodeId,
     destination: G::NodeId,
