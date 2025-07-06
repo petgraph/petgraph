@@ -75,7 +75,7 @@ where
     let mut max_flow = G::EdgeWeight::zero();
     let mut flows = vec![G::EdgeWeight::zero(); network.edge_count()];
     let mut visited = network.visit_map();
-    let mut level_edges = vec![Default::default(); network.node_count()];
+    let mut level_edges = vec![Default::default(); network.node_bound()];
 
     let dest_index = NodeIndexable::to_index(&network, destination);
     while build_level_graph(&network, source, destination, &flows, &mut level_edges)[dest_index] > 0
@@ -115,7 +115,7 @@ where
     G: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable,
     G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
-    let mut level_graph = vec![0; network.node_count()];
+    let mut level_graph = vec![0; network.node_bound()];
     let mut bfs_queue = VecDeque::with_capacity(network.node_count());
     bfs_queue.push_back(source);
 
@@ -166,7 +166,7 @@ where
     G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
     let mut flow_increase = G::EdgeWeight::zero();
-    let mut edge_to = vec![None; network.node_count()];
+    let mut edge_to = vec![None; network.node_bound()];
     while find_augmenting_path(
         &network,
         source,

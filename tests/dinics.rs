@@ -162,3 +162,31 @@ fn test_dinics_g() {
 
     assert_eq!(flow, 4);
 }
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn test_dinics_stable_graph() {
+    use petgraph::prelude::StableGraph;
+
+    // Example from https://downey.io/blog/max-flow-ford-fulkerson-algorithm-explanation/
+    // Graph Image: https://images.downey.io/max-flow/max-flow-3.png
+    let mut graph = StableGraph::<usize, u16>::new();
+    let source = graph.add_node(0);
+    let _ = graph.add_node(1);
+    let _ = graph.add_node(2);
+    let node_to_remove = graph.add_node(3);
+    let sink = graph.add_node(4);
+    graph.extend_with_edges([
+        (0, 1, 3),
+        (0, 2, 2),
+        (1, 2, 5),
+        (1, 4, 2),
+        (2, 4, 3),
+        (0, 3, 1),
+        (3, 4, 3),
+        (1, 3, 3),
+    ]);
+    graph.remove_node(node_to_remove);
+    let (max_flow, _) = dinics(&graph, source, sink);
+    assert_eq!(5, max_flow);
+}
