@@ -134,7 +134,7 @@ For running the benchmarks, you will need to switch to the `nightly`
 toolchain, as features are used which are only available in the
 nightly toolchain. You can do this by running:
 
-```bash
+```commandline
 rustup default nightly
 ```
 
@@ -142,35 +142,98 @@ Which will install the nightly toolchain if it is not already
 installed, and set it as the default toolchain. You can switch back
 to the stable toolchain by running:
 
-```bash
+```commandline
 rustup default stable
 ```
+
+We use [just][just-url] as a command runner
+to simplify the commands you need to run. You can install it using
+cargo:
+
+```commandline
+cargo install just
+```
+
+To understand which commands are available, and what they do, you can
+run:
+
+```commandline
+just
+```
+
+or have a look at the [`justfile`](justfile).
 
 ### 🏗️ Building
 
 Building petgraph is as simple as running:
 
-```bash
-cargo build
+```commandline
+just build
 ```
 
 ### 🧪 Testing
 
-Testing petgraph is also simple, and can be done by running:
+Testing petgraph is similarly simple:
 
-```bash
-cargo test --features all
+```commandline
+just test
 ```
 
-Note the `--features all` flag, which enables all features of
-petgraph. This makes sure that quickcheck tests are also
-run.
+In CI, we run the tests on different rust versions and toolchains,
+including nightly, as well as our current minimum supported Rust
+version (MSRV). You can see which versions are tested exactly in
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+Similarly, we also run [cargo miri][miri-url] in CI, which is a tool
+for detecting undefined behavior in Rust code. This will however
+again require the nightly toolchain:
+
+```commandline
+just miri
+```
+
+This might, however, take a long time to run, so it is to run
+`miri-fast` instead, which
+uses [nextest][nextest-url]
+a faster test runner, and skips some tests which take very long:
+
+```commandline
+just miri-fast
+```
+
+Nextest can again be installed using cargo:
+
+```commandline
+cargo install cargo-nextest --locked
+```
+
+### 🧹 Lints
+
+We use [clippy][clippy-url] and [rustfmt][rustfmt-url] to ensure that
+the code is formatted and linted correctly. You can run all linting
+at once by running:
+
+```commandline
+just lint
+```
+
+Or individually, by running:
+
+```commandline
+just fmt
+```
+
+and
+
+```commandline
+just clippy
+```
 
 ### ⏱️ Benchmarks
 
 Benchmarks can be run by running:
 
-```bash
+```commandline
 cargo bench
 ```
 
@@ -193,9 +256,18 @@ you are interested in helping out on a more long-term basis, feel free
 to introduce yourself on [discord][discord-url] or start
 a [discussion][github-discussions-url].
 
+
+[algo-docs-template]: https://github.com/petgraph/petgraph/blob/master/assets/guide/algodocs.md
+
 [code-of-conduct-url]: https://github.com/rust-lang/rust/blob/master/CODE_OF_CONDUCT.md
 
+[clippy-url]: https://github.com/rust-lang/rust-clippy
+
 [discord-url]: https://discord.gg/n2tc79tJ4e
+
+[just-url]: https://github.com/casey/just
+
+[rustfmt-url]: https://github.com/rust-lang/rustfmt
 
 [github-discussions-url]: https://github.com/petgraph/petgraph/discussions
 
@@ -209,7 +281,9 @@ a [discussion][github-discussions-url].
 
 [github-new-issue]: https://github.com/petgraph/petgraph/issues/new
 
-[algo-docs-template]: https://github.com/petgraph/petgraph/blob/master/assets/guide/algodocs.md
+[miri-url]: https://github.com/rust-lang/miri
+
+[nextest-url]: https://github.com/nextest-rs/nextest
 
 ## 🏛️ Old Section on Pull Requests
 
