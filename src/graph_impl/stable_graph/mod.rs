@@ -287,6 +287,63 @@ where
         self.edge_count
     }
 
+    /// Reserves capacity for at least additional more nodes to be inserted in
+    /// the graph. Graph may reserve more space to avoid frequent reallocations.
+    ///
+    /// Panics if the new capacity overflows usize.
+    #[track_caller]
+    pub fn reserve_nodes(&mut self, additional: usize) {
+        self.g.reserve_nodes(additional);
+    }
+
+    /// Reserves capacity for at least additional more edges to be inserted in
+    /// the graph. Graph may reserve more space to avoid frequent reallocations.
+    ///
+    /// Panics if the new capacity overflows usize.
+    #[track_caller]
+    pub fn reserve_edges(&mut self, additional: usize) {
+        self.g.reserve_edges(additional);
+    }
+
+    /// Reserves the minimum capacity for exactly additional more nodes to be
+    /// inserted in the graph. Does nothing if the capacity is already
+    /// sufficient.
+    ///
+    /// Prefer reserve_nodes if future insertions are expected.
+    ///
+    /// Panics if the new capacity overflows usize.
+    #[track_caller]
+    pub fn reserve_exact_nodes(&mut self, additional: usize) {
+        self.g.reserve_exact_nodes(additional);
+    }
+
+    /// Reserves the minimum capacity for exactly additional more edges to be
+    /// inserted in the graph.
+    /// Does nothing if the capacity is already sufficient.
+    ///
+    /// Prefer reserve_edges if future insertions are expected.
+    ///
+    /// Panics if the new capacity overflows usize.
+    #[track_caller]
+    pub fn reserve_exact_edges(&mut self, additional: usize) {
+        self.g.reserve_exact_edges(additional);
+    }
+
+    /// Shrinks the capacity of the underlying nodes collection as much as possible.
+    pub fn shrink_to_fit_nodes(&mut self) {
+        self.g.shrink_to_fit_nodes();
+    }
+
+    /// Shrinks the capacity of the underlying edges collection as much as possible.
+    pub fn shrink_to_fit_edges(&mut self) {
+        self.g.shrink_to_fit_edges();
+    }
+
+    /// Shrinks the capacity of the graph as much as possible.
+    pub fn shrink_to_fit(&mut self) {
+        self.g.shrink_to_fit();
+    }
+
     /// Whether the graph has directed edges or not.
     #[inline]
     pub fn is_directed(&self) -> bool {
