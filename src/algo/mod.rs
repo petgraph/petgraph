@@ -9,6 +9,7 @@ pub mod astar;
 pub mod bellman_ford;
 pub mod bridges;
 pub mod coloring;
+pub mod community;
 pub mod dijkstra;
 pub mod dominators;
 pub mod feedback_arc_set;
