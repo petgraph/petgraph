@@ -146,60 +146,87 @@ to the stable toolchain by running:
 rustup default stable
 ```
 
+We use [just][just-url] as a command runner
+to simplify the commands you need to run. You can install it using
+cargo:
+
+```commandline
+cargo install just
+```
+
+To understand which commands are available, and what they do, you can
+run:
+
+```commandline
+just
+```
+
+or have a look at the [`justfile`](justfile).
+
 ### 🏗️ Building
 
 Building petgraph is as simple as running:
 
 ```commandline
-cargo build
+just build
 ```
 
 ### 🧪 Testing
 
-Testing petgraph is also simple, and can be done by running:
+Testing petgraph is similarly simple:
 
 ```commandline
-cargo test --features all
+just test
 ```
-
-Note the `--features all` flag, which enables all features of
-petgraph. This makes sure that quickcheck tests are also
-run.
 
 In CI, we run the tests on different rust versions and toolchains,
 including nightly, as well as our current minimum supported Rust
-version (MSRV). You can see which versions are tested exactly in 
+version (MSRV). You can see which versions are tested exactly in
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-Similarly, we also run [cargo miri][miri-url] in CI, which is a tool for
-detecting undefined behavior in Rust code. This will however
+Similarly, we also run [cargo miri][miri-url] in CI, which is a tool
+for detecting undefined behavior in Rust code. This will however
 again require the nightly toolchain:
 
 ```commandline
-cargo miri test
+just miri
 ```
 
-This might, however, take a long time to run, so it is probably worth it 
-specifying individual tests to run, as follows:
+This might, however, take a long time to run, so it is to run
+`miri-fast` instead, which
+uses [nextest][nextest-url]
+a faster test runner, and skips some tests which take very long:
 
 ```commandline
-cargo miri test --test min_spanning_tree
+just miri-fast
+```
+
+Nextest can again be installed using cargo:
+
+```commandline
+cargo install cargo-nextest --locked
 ```
 
 ### 🧹 Lints
 
-We use [clippy][clippy-url] and [rustfmt][rustfmt-url] to ensure that 
-the code is formatted and linted correctly. You can run these tools 
-yourself by running:
+We use [clippy][clippy-url] and [rustfmt][rustfmt-url] to ensure that
+the code is formatted and linted correctly. You can run all linting
+at once by running:
 
 ```commandline
-cargo fmt
+just lint
+```
+
+Or individually, by running:
+
+```commandline
+just fmt
 ```
 
 and
 
 ```commandline
-cargo clippy --all-features --lib --bins --examples --tests -- -D warnings
+just clippy
 ```
 
 ### ⏱️ Benchmarks
@@ -238,6 +265,8 @@ a [discussion][github-discussions-url].
 
 [discord-url]: https://discord.gg/n2tc79tJ4e
 
+[just-url]: https://github.com/casey/just
+
 [rustfmt-url]: https://github.com/rust-lang/rustfmt
 
 [github-discussions-url]: https://github.com/petgraph/petgraph/discussions
@@ -253,6 +282,8 @@ a [discussion][github-discussions-url].
 [github-new-issue]: https://github.com/petgraph/petgraph/issues/new
 
 [miri-url]: https://github.com/rust-lang/miri
+
+[nextest-url]: https://github.com/nextest-rs/nextest
 
 ## 🏛️ Old Section on Pull Requests
 
