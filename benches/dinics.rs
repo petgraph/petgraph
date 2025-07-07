@@ -2,12 +2,12 @@
 extern crate petgraph;
 extern crate test;
 
-use petgraph::algo::ford_fulkerson;
+use petgraph::algo::dinics;
 use petgraph::prelude::{Graph, NodeIndex};
 use test::Bencher;
 
 #[bench]
-fn ford_fulkerson_bench(bench: &mut Bencher) {
+fn dinics_bench(bench: &mut Bencher) {
     static NODE_COUNT: usize = 1_000;
     let mut g: Graph<usize, usize> = Graph::new();
     let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).map(|i| g.add_node(i)).collect();
@@ -15,7 +15,7 @@ fn ford_fulkerson_bench(bench: &mut Bencher) {
         g.add_edge(nodes[i], nodes[i + 1], 1);
     }
     bench.iter(|| {
-        let _flow = ford_fulkerson(
+        let _flow = dinics(
             &g,
             NodeIndex::from(0),
             NodeIndex::from(g.node_count() as u32 - 1),
@@ -24,7 +24,7 @@ fn ford_fulkerson_bench(bench: &mut Bencher) {
 }
 
 #[bench]
-fn ford_fulkerson_bench_many_edges(bench: &mut Bencher) {
+fn dinics_bench_many_edges(bench: &mut Bencher) {
     static NODE_COUNT: usize = 1_001;
     let mut g: Graph<usize, usize> = Graph::new();
     let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).map(|i| g.add_node(i)).collect();
@@ -34,7 +34,7 @@ fn ford_fulkerson_bench_many_edges(bench: &mut Bencher) {
         }
     }
     bench.iter(|| {
-        let _flow = ford_fulkerson(
+        let _flow = dinics(
             &g,
             NodeIndex::from(0),
             NodeIndex::from(g.node_count() as u32 - 1),
@@ -43,7 +43,7 @@ fn ford_fulkerson_bench_many_edges(bench: &mut Bencher) {
 }
 
 #[bench]
-fn ford_fulkerson_bench_wide(bench: &mut Bencher) {
+fn dinics_bench_wide(bench: &mut Bencher) {
     let node_count = 1000;
     let mut g: Graph<usize, usize> = Graph::new();
     let source = g.add_node(0);
@@ -58,12 +58,12 @@ fn ford_fulkerson_bench_wide(bench: &mut Bencher) {
     }
 
     bench.iter(|| {
-        let _flow = ford_fulkerson(&g, source, sink);
+        let _flow = dinics(&g, source, sink);
     });
 }
 
 #[bench]
-fn ford_fulkerson_bench_dense_middle(bench: &mut Bencher) {
+fn dinics_bench_dense_middle(bench: &mut Bencher) {
     let node_count = 500;
     let mut g: Graph<usize, usize> = Graph::new();
     let source = g.add_node(0);
@@ -96,12 +96,12 @@ fn ford_fulkerson_bench_dense_middle(bench: &mut Bencher) {
     }
 
     bench.iter(|| {
-        let _flow = ford_fulkerson(&g, source, sink);
+        let _flow = dinics(&g, source, sink);
     });
 }
 
 #[bench]
-fn ford_fulkerson_bench_dense_middle_varying_weights(bench: &mut Bencher) {
+fn dinics_bench_dense_middle_varying_weights(bench: &mut Bencher) {
     let node_count = 500;
     let mut g: Graph<usize, usize> = Graph::new();
     let source = g.add_node(0);
@@ -134,6 +134,6 @@ fn ford_fulkerson_bench_dense_middle_varying_weights(bench: &mut Bencher) {
     }
 
     bench.iter(|| {
-        let _flow = ford_fulkerson(&g, source, sink);
+        let _flow = dinics(&g, source, sink);
     });
 }
