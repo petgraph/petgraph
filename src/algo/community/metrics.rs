@@ -3,7 +3,7 @@ use crate::visit::{
     NodeCount, NodeIndexable,
 };
 use alloc::{vec, vec::Vec};
-use core::{error::Error, fmt, hash::Hash};
+use core::{fmt, hash::Hash};
 use hashbrown::HashSet;
 
 /// Traits for graphs to compute modularity
@@ -186,7 +186,6 @@ where
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct NotAPartitionError;
-impl Error for NotAPartitionError {}
 impl fmt::Display for NotAPartitionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
