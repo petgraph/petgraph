@@ -354,6 +354,8 @@ where
 ///
 /// # Examples
 /// ```
+/// use petgraph::{Graph, graph::UnGraph, algo::community::louvain_communities};
+/// use hashbrown::HashSet;
 /// // create graph with nodes and edges
 /// let mut graph: Graph<u32, f64, petgraph::Undirected> = UnGraph::new_undirected();
 /// let nodes: Vec<_> = (0..4).map(|i| graph.add_node(i)).collect();
