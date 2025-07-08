@@ -333,7 +333,7 @@ where
 /// Runs the Louvain community detection algorithm to detect the communities present in the input graph.
 /// Assigns each node a community, then combines those communities using the `Modularity` until the
 /// maximum value is reached
-/// 
+///
 /// Errors if it is given a graph with a negative edge
 ///
 /// # Arguments
@@ -343,33 +343,33 @@ where
 ///   terminate if it is not possible to meet this threshold by performing another level of aggregation. (0.001 is a good default)
 /// * `max_level` : Maximum number of levels (aggregation steps) to perform
 /// * `seed` : seed for RNG that determines the order in which we consider moving each node into a neighboring community
-/// 
+///
 /// # Returns
 /// * A custom struct containing information about the communities, or an error if the input
-/// graph has a negative edge (currently unsupported)
-/// 
+///   graph has a negative edge (currently unsupported)
+///
 /// # Time Complexity
 /// * Time complexity: **O(n log(n))**
 /// * Auxiliary space: **O(n)**
-/// 
+///
 /// # Examples
 /// ```
 /// // create graph with nodes and edges
 /// let mut graph: Graph<u32, f64, petgraph::Undirected> = UnGraph::new_undirected();
 /// let nodes: Vec<_> = (0..4).map(|i| graph.add_node(i)).collect();
-/// 
+///
 /// // Add edges with weights
 /// graph.add_edge(nodes[0], nodes[1], 1.0);
 /// graph.add_edge(nodes[0], nodes[2], 1.0);
 /// graph.add_edge(nodes[2], nodes[3], 1.0);
-/// 
+///
 /// // Currently the graph looks like this:
 /// // 0 - 1
 /// // |
 /// // 2 - 3
-/// 
+///
 /// let communities = louvain_communities(&graph, 1.0, 0.001, None, None).unwrap();
-/// 
+///
 /// // two communities: ((0,1), (2,3))
 /// assert!(communities.communities.len() == 2);
 /// assert!(communities.communities.contains(&HashSet::from([nodes[0], nodes[1]])));

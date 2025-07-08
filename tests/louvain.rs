@@ -45,9 +45,7 @@ fn test_modularity_on_full_graph() {
     let resolution = 1.0;
 
     // all nodes in one community
-    let single_community_partition = vec![
-        nodes.iter().cloned().collect::<HashSet<_>>(),
-    ];
+    let single_community_partition = vec![nodes.iter().cloned().collect::<HashSet<_>>()];
     let result1 = modularity(&graph, &single_community_partition, resolution).unwrap();
     assert!(
         (result1 - 0.0).abs() < f64::EPSILON,
@@ -132,7 +130,7 @@ fn test_modularity_on_full_graph() {
 fn test_modularity_on_directed_graph() {
     let mut graph: Graph<u32, f64, petgraph::Directed> = DiGraph::new();
     let nodes: Vec<NodeIndex> = (0..4).map(|i| graph.add_node(i)).collect();
-    
+
     graph.add_edge(nodes[0], nodes[1], 1.0);
     graph.add_edge(nodes[1], nodes[0], 1.0);
     graph.add_edge(nodes[0], nodes[2], 1.0);
@@ -141,9 +139,7 @@ fn test_modularity_on_directed_graph() {
     graph.add_edge(nodes[1], nodes[3], 1.0);
 
     let resolution = 1.0;
-    let single_community_partition = vec![
-        nodes.iter().cloned().collect::<HashSet<_>>(),
-    ];
+    let single_community_partition = vec![nodes.iter().cloned().collect::<HashSet<_>>()];
     let result1 = modularity(&graph, &single_community_partition, resolution).unwrap();
     assert!(
         (result1 - 0.0).abs() < f64::EPSILON,
@@ -153,7 +149,7 @@ fn test_modularity_on_directed_graph() {
         HashSet::from([nodes[0], nodes[1]]),
         HashSet::from([nodes[2], nodes[3]]),
     ];
-    
+
     let _result2 = modularity(&graph, &two_communities_partition, resolution).unwrap();
     let mut graph_asym: Graph<u32, f64, petgraph::Directed> = DiGraph::new();
     let nodes_asym: Vec<NodeIndex> = (0..4).map(|i| graph_asym.add_node(i)).collect();
@@ -205,7 +201,7 @@ fn test_modularity_on_directed_graph() {
 
     let partition_scc = vec![
         HashSet::from([nodes_scc[0], nodes_scc[1], nodes_scc[2]]), // the cycle
-        HashSet::from([nodes_scc[3]]), // isolated node
+        HashSet::from([nodes_scc[3]]),                             // isolated node
     ];
 
     let result5 = modularity(&graph_scc, &partition_scc, resolution).unwrap();
@@ -386,6 +382,10 @@ fn test_louvain_two_communities() {
 
     // two communities: ((0,1), (2,3))
     assert!(communities.communities.len() == 2);
-    assert!(communities.communities.contains(&HashSet::from([nodes[0], nodes[1]])));
-    assert!(communities.communities.contains(&HashSet::from([nodes[2], nodes[3]])));
+    assert!(communities
+        .communities
+        .contains(&HashSet::from([nodes[0], nodes[1]])));
+    assert!(communities
+        .communities
+        .contains(&HashSet::from([nodes[2], nodes[3]])));
 }
