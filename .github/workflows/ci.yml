@@ -74,21 +74,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.8
+      - uses: extractions/setup-just@v3
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
       - name: Check formatting
-        run: cargo fmt -- --check
+        run: just fmt
 
       - name: Run clippy
         # The benchmarks target require nightly,
         # so we cannot use --all-targets here.
-        run: |
-          cargo clippy --all-features \
-            --lib --bins --examples --tests \
-            -- -D warnings
+        run: just clippy
 
       - name: Build docs
         run: cargo doc --no-deps --all-features
@@ -101,6 +99,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.8
+      - uses: extractions/setup-just@v3
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -108,7 +107,7 @@ jobs:
           targets: wasm32v1-none
 
       - name: Check
-        run: cargo check --no-default-features -p petgraph --target wasm32v1-none --features graphmap,serde-1,stable_graph,matrix_graph,generate,unstable
+        run: just check-no-std
 
   fast-miri:
     # This job runs on pull_request without the `S-run-thorough-ci-tests` label.
@@ -118,6 +117,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.8
+      - uses: extractions/setup-just@v3
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: miri
@@ -125,16 +125,7 @@ jobs:
         with:
           tool: nextest
       # Exclude some tests from fast-miri, as they take very long to run. thorough-miri includes all tests without nextest.
-      - run: |
-          cargo miri nextest run -- \
-            --skip b01_vienna_test \
-            --skip b07_vienna_test \
-            --skip generic_graph6_encoder_test_cases \
-            --skip graph6_for_csr_test_cases \
-            --skip graph6_for_graph_map_test_cases \
-            --skip graph6_for_graph_test_cases \
-            --skip graph6_for_matrix_graph_test_case \
-            --skip graph6_for_stable_graph_test_cases
+      - run: just miri-fast
 
   thorough-miri:
     # This job runs on push and pull_request with the `S-run-thorough-ci-tests` label.
@@ -144,7 +135,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.8
+      - uses: extractions/setup-just@v3
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: miri
-      - run: cargo miri test
+      - run: just miri
