@@ -1593,6 +1593,27 @@ fn test_has_path() {
 }
 
 #[test]
+fn map_map_owned() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let ab = g.add_edge(a, b, 7);
+    let bc = g.add_edge(b, c, 14);
+    let ca = g.add_edge(c, a, 9);
+
+    let g2 = g.map_owned(|_, name| format!("map-{name}"), |_, weight| weight * 2);
+    assert_eq!(g2.node_count(), 3);
+    assert_eq!(g2.node_weight(a).map(|s| &**s), Some("map-A"));
+    assert_eq!(g2.node_weight(b).map(|s| &**s), Some("map-B"));
+    assert_eq!(g2.node_weight(c).map(|s| &**s), Some("map-C"));
+    assert_eq!(g2.edge_count(), 3);
+    assert_eq!(g2.edge_weight(ab), Some(&14));
+    assert_eq!(g2.edge_weight(bc), Some(&28));
+    assert_eq!(g2.edge_weight(ca), Some(&18));
+}
+
+#[test]
 fn map_filter_map() {
     let mut g = Graph::new_undirected();
     let a = g.add_node("A");
