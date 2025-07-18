@@ -4,6 +4,7 @@ use alloc::{vec, vec::Vec};
 use core::{
     cmp::{max, Ordering},
     fmt,
+    iter::zip,
     iter::{Enumerate, Zip},
     marker::PhantomData,
     ops::{Index, IndexMut, Range},
@@ -15,8 +16,6 @@ use crate::visit::{
     IntoEdges, IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
     NodeCount, NodeIndexable, Visitable,
 };
-
-use crate::util::zip;
 
 #[doc(no_inline)]
 pub use crate::graph::{DefaultIx, IndexType};
