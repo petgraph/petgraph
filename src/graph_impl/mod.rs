@@ -407,10 +407,11 @@ pub type DiGraph<N, E, Ix = DefaultIx> = Graph<N, E, Directed, Ix>;
 pub type UnGraph<N, E, Ix = DefaultIx> = Graph<N, E, Undirected, Ix>;
 
 /// The resulting cloned graph has the same graph indices as `self`.
-impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> Clone for Graph<N, E, Ty, Ix>
 where
     N: Clone,
     E: Clone,
+    Ix: Copy,
 {
     fn clone(&self) -> Self {
         Graph {
@@ -524,11 +525,7 @@ impl<N, E> Graph<N, E, Undirected> {
     }
 }
 
-impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix> {
     /// Create a new `Graph` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         Graph {
@@ -537,7 +534,13 @@ where
             ty: PhantomData,
         }
     }
+}
 
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
     /// Return the number of nodes (also called vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
@@ -2020,11 +2023,7 @@ where
 }
 
 /// Create a new empty `Graph`.
-impl<N, E, Ty, Ix> Default for Graph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
+impl<N, E, Ty, Ix> Default for Graph<N, E, Ty, Ix> {
     fn default() -> Self {
         Self::with_capacity(0, 0)
     }
