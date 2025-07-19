@@ -16,6 +16,8 @@ use crate::{
 /// level graphs using breadth-first search and finds blocking flows within
 /// them through depth-first searches.
 ///
+/// See also [`maximum_flow`][max flow mod] module for other maximum flow algorithms.
+///
 /// # Arguments
 /// * `network` — A directed graph with positive edge weights, namely "flow capacities".
 /// * `source` — The source node where flow originates.
@@ -35,6 +37,7 @@ use crate::{
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [dinics]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
+/// [max flow mod]: index.html
 ///
 /// # Example
 /// ```rust
