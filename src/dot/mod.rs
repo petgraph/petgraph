@@ -86,9 +86,13 @@ where
     /// want to calculate a `label` for a node, then return `"label = \"your label here\""`.
     /// Each function should take as arguments the graph and that graph's `EdgeRef` or `NodeRef`, respectively.
     /// Check the documentation for the graph type to see how it implements `IntoNodeReferences`.
+    /// The [Graphviz docs] list the available attributes.
+    /// 
+    /// Note that some attribute values, such as labels, should be strings and must be quoted. These can be
+    /// written using escapes (`"label = \"foo\""`) or [raw strings] (`r#"label = "foo""#`).
     ///
-    /// For example, using a `Graph<&str, &str>` where we want to truncate the node labels,
-    /// want to have no edge labels, nor generate any other attributes:
+    /// For example, using a `Graph<&str, &str>` where we want the node labels to be the nodes' weights
+    /// shortened to 4 characters, and all the edges are colored blue with no labels:
     /// ```
     /// use petgraph::Graph;
     /// use petgraph::dot::{Config, Dot};
@@ -106,7 +110,7 @@ where
     ///     Dot::with_attr_getters(
     ///         &deps,
     ///         &[Config::EdgeNoLabel, Config::NodeNoLabel],
-    ///         &|_, _| String::new(),
+    ///         &|_, _| "color = blue".to_string(),
     ///         &|_, (_, s)| format!(r#"label = "{}""#, s.chars().take(4).collect::<String>()),
     ///     )
     /// );
@@ -117,13 +121,16 @@ where
     /// //     2 [ label = "quic"]
     /// //     3 [ label = "rand"]
     /// //     4 [ label = "libc"]
-    /// //     0 -> 1 [ ]
-    /// //     0 -> 2 [ ]
-    /// //     2 -> 3 [ ]
-    /// //     3 -> 4 [ ]
-    /// //     2 -> 4 [ ]
+    /// //     0 -> 1 [ color = blue]
+    /// //     0 -> 2 [ color = blue]
+    /// //     2 -> 3 [ color = blue]
+    /// //     3 -> 4 [ color = blue]
+    /// //     2 -> 4 [ color = blue]
     /// // }
     /// ```
+    ///
+    /// [Graphviz docs]: https://graphviz.org/doc/info/attrs.html
+    /// [raw strings]: https://doc.rust-lang.org/rust-by-example/std/str.html#literals-and-escapes
     #[inline]
     pub fn with_attr_getters(
         graph: G,
