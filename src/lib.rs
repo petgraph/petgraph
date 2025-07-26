@@ -235,7 +235,7 @@ usage and lack of some features that other graph types provide. For all the grap
 internal structure and feature set, please refer to [Graph Types](#graph-types).
 
 ```
-#[cfg(feature = "StableGraph")]
+#[cfg(feature = "stable_graph")]
 {
 use petgraph::graph::UnGraph;
 use petgraph::stable_graph::StableUnGraph;
