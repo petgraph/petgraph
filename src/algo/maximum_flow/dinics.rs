@@ -11,10 +11,14 @@ use crate::{
 };
 
 /// Compute the maximum flow from `source` to `destination` in a directed graph.
-///
 /// Implements [Dinic's (or Dinitz's) algorithm][dinics], which builds successive
 /// level graphs using breadth-first search and finds blocking flows within
 /// them through depth-first searches.
+///
+/// For simplicity, the algorithm requires `N::EdgeWeight` to implement
+/// only [PartialOrd] trait, and not [Ord], but will panic if it tries to
+/// compare two elements that aren't comparable (i.e., given two edges `a`
+/// and `b`, neither `a >= b` or `a < b`).
 ///
 /// See also [`maximum_flow`][max flow mod] module for other maximum flow algorithms.
 ///
@@ -310,6 +314,8 @@ where
 }
 
 /// Returns the minimum value between given `a` and `b`.
+/// Will panic if it tries to compare two elements that aren't comparable
+/// (i.e., given two elements `a` and `b`, neither `a >= b` or `a < b`).
 fn min<G>(a: G::EdgeWeight, b: G::EdgeWeight) -> G::EdgeWeight
 where
     G: Data,
