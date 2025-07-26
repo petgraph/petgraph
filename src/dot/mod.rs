@@ -84,7 +84,7 @@ where
     /// generate your own `label` attributes.
     /// The getter functions should return an attribute list as a String. For example, if you
     /// want to calculate a `label` for a node, then return `"label = \"your label here\""`.
-    /// Each function should take as arguments the graph and that graph's `NodeRef`.
+    /// Each function should take as arguments the graph and that graph's `EdgeRef` or `NodeRef`, respectively.
     /// Check the documentation for the graph type to see how it implements `IntoNodeReferences`.
     ///
     /// For example, using a `Graph<&str, &str>` where we want to truncate the node labels,
