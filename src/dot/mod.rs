@@ -88,7 +88,7 @@ where
     /// Check the documentation for the graph type to see how it implements `IntoNodeReferences`.
     ///
     /// For example, using a `Graph<&str, &str>` where we want to truncate the node labels,
-    /// have no edge labels, and generate no other attributes:
+    /// want to have no edge labels, nor generate any other attributes:
     /// ```
     /// use petgraph::Graph;
     /// use petgraph::dot::{Config, Dot};
