@@ -130,9 +130,9 @@ petgraph does not have any special setup requirements, other than
 having a working Rust toolchain. The project is built using
 [Cargo](https://doc.rust-lang.org/cargo/).
 
-For running the benchmarks, you will need to switch to the `nightly`
-toolchain, as features are used which are only available in the
-nightly toolchain. You can do this by running:
+For running the benchmarks, as well as [miri][miri-url], you will
+need to switch to the `nightly`
+toolchain. You can do this by running:
 
 ```commandline
 rustup default nightly
@@ -163,6 +163,16 @@ just
 
 or have a look at the [`justfile`](justfile).
 
+To run a basic test suite, as it is run in CI (using the stable
+toolchain), you can run:
+
+```commandline
+just ci
+```
+
+Which will run the (cargo) tests and lints. More detailed commands
+will be explained in the following sections.
+
 ### 🏗️ Building
 
 Building petgraph is as simple as running:
@@ -192,9 +202,8 @@ again require the nightly toolchain:
 just miri
 ```
 
-This might, however, take a long time to run, so it is to run
-`miri-fast` instead, which
-uses [nextest][nextest-url]
+This might, however, take a long time to run, so consider running
+`miri-fast` instead, which uses [nextest][nextest-url],
 a faster test runner, and skips some tests which take very long:
 
 ```commandline

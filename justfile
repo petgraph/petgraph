@@ -4,7 +4,7 @@ default:
 
 # Builds the project in development mode
 build:
-    cargo build $args
+    cargo build
 
 # Tests with all features enabled
 test:
@@ -36,6 +36,8 @@ clippy:
 
 # Runs all linting checks that are run in CI
 lint: fmt clippy
+
+ci: fmt clippy test
 
 # Checks if no-std is working same as in CI. Requires the wasm32v1-none target to be installed
 check-no-std:
