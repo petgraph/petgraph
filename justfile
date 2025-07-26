@@ -37,6 +37,7 @@ clippy:
 # Runs all linting checks that are run in CI
 lint: fmt clippy
 
+# Runs all tests and linting that are run in CI
 ci: fmt clippy test
 
 # Checks if no-std is working same as in CI. Requires the wasm32v1-none target to be installed
