@@ -680,7 +680,7 @@ where
     }
 
     /// Return an iterator over the node indices of the graph
-    pub fn node_indices(&self) -> NodeIndices<N, Ix> {
+    pub fn node_indices(&self) -> NodeIndices<'_, N, Ix> {
         NodeIndices {
             iter: enumerate(self.raw_nodes()),
         }
@@ -737,7 +737,7 @@ where
     ///
     /// Note: the iterator borrows a graph in contrast to the behavior of
     /// [`Graph::edge_indices`](fn@crate::Graph::edge_indices).
-    pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
+    pub fn edge_indices(&self) -> EdgeIndices<'_, E, Ix> {
         EdgeIndices {
             iter: enumerate(self.raw_edges()),
         }
@@ -753,10 +753,10 @@ where
         &self,
         a: NodeIndex<Ix>,
         b: NodeIndex<Ix>,
-    ) -> EdgesConnecting<E, Ty, Ix> {
+    ) -> EdgesConnecting<'_, E, Ty, Ix> {
         EdgesConnecting {
             target_node: b,
-            edges: self.edges_directed(a, Direction::Outgoing),
+            edges: self.edges_directed(a, Outgoing),
             ty: PhantomData,
         }
     }
@@ -814,7 +814,7 @@ where
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
+    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<'_, E, Ix> {
         self.neighbors_directed(a, Outgoing)
     }
 
@@ -833,7 +833,7 @@ where
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Neighbors<E, Ix> {
+    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Neighbors<'_, E, Ix> {
         let mut iter = self.neighbors_undirected(a);
         if self.is_directed() {
             let k = dir.index();
@@ -856,7 +856,7 @@ where
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
+    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<'_, E, Ix> {
         Neighbors {
             skip_start: a,
             edges: &self.g.edges,
@@ -874,7 +874,7 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
+    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<'_, E, Ty, Ix> {
         self.edges_directed(a, Outgoing)
     }
 
@@ -889,7 +889,7 @@ where
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<E, Ty, Ix> {
+    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<'_, E, Ty, Ix> {
         Edges {
             skip_start: a,
             edges: &self.g.edges,
@@ -913,7 +913,7 @@ where
     /// just the nodes without edges.
     ///
     /// The whole iteration computes in **O(|V|)** time where V is the set of nodes.
-    pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix> {
+    pub fn externals(&self, dir: Direction) -> Externals<'_, N, Ty, Ix> {
         Externals {
             iter: self.raw_nodes().iter().enumerate(),
             dir,
