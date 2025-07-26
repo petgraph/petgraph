@@ -111,9 +111,10 @@ mod test {
 
     #[test]
     fn test_dot_parsing_file() {
-        let _: crate::graph::Graph<_, _> = graph_from_file!("graph-example.dot");
+        let _: crate::graph::Graph<_, _> = graph_from_file!("assets/examples/graph-example.dot");
         #[cfg(feature = "stable_graph")]
-        let _: crate::stable_graph::StableGraph<_, _> = graph_from_file!("graph-example.dot");
+        let _: crate::stable_graph::StableGraph<_, _> =
+            graph_from_file!("assets/examples/graph-example.dot");
     }
 
     #[test]
