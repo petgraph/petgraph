@@ -261,8 +261,8 @@ pub struct MatrixGraph<
 pub type DiMatrix<
     N,
     E,
-    #[cfg(feature = "std")] S = RandomState,
     #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
     Null = Option<E>,
     Ix = DefaultIx,
 > = MatrixGraph<N, E, S, Directed, Null, Ix>;
@@ -271,8 +271,8 @@ pub type DiMatrix<
 pub type UnMatrix<
     N,
     E,
-    #[cfg(feature = "std")] S = RandomState,
     #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
     Null = Option<E>,
     Ix = DefaultIx,
 > = MatrixGraph<N, E, S, Undirected, Null, Ix>;
@@ -766,8 +766,8 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType>
 pub struct NodeIdentifiers<
     'a,
     Ix,
-    #[cfg(feature = "std")] S = RandomState,
     #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
 > {
     iter: IdIterator<'a, S>,
     ix: PhantomData<Ix>,
@@ -804,8 +804,8 @@ pub struct NodeReferences<
     'a,
     N: 'a,
     Ix,
-    #[cfg(feature = "std")] S = RandomState,
     #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
 > {
     nodes: &'a IdStorage<N, S>,
     iter: IdIterator<'a, S>,
@@ -1102,7 +1102,7 @@ fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
 }
 
 #[derive(Debug, Clone)]
-struct IdStorage<T, #[cfg(feature = "std")] S = RandomState, #[cfg(not(feature = "std"))] S> {
+struct IdStorage<T, #[cfg(not(feature = "std"))] S, #[cfg(feature = "std")] S = RandomState> {
     elements: Vec<Option<T>>,
     upper_bound: usize,
     removed_ids: IndexSet<usize, S>,
