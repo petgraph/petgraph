@@ -18,8 +18,8 @@ use petgraph::graph::{GraphError, IndexType};
 
 use petgraph::algo::{astar, dijkstra, DfsSpace};
 use petgraph::visit::{
-    IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, Reversed, Topo, VisitMap,
-    Walker,
+    IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, NodeIndexable, Reversed, Topo,
+    VisitMap, Walker,
 };
 
 use petgraph::dot::Dot;
@@ -2505,4 +2505,436 @@ fn test_try_add_edge() {
     }
 
     assert_eq!(graph.try_add_edge(a, a, ()), Err(GraphError::EdgeIxLimit));
+}
+
+/// Test that the order of neighbors returned by `neighbors` is correct.
+/// See `neighbors` docs for more details.
+#[test]
+fn test_neighbors_iteration_order() {
+    // The test graph looks like this:
+    //      5
+    //      |
+    //      v
+    // 0 -> 1 -> 3
+    // |    |
+    // v    v
+    // 2    4
+    let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let neighbors_0_dir: Vec<_> = g.neighbors(g.from_index(0)).collect();
+    let neighbors_1_dir: Vec<_> = g.neighbors(g.from_index(1)).collect();
+
+    assert_eq!(neighbors_0_dir, vec![g.from_index(2), g.from_index(1)]);
+    assert_eq!(neighbors_1_dir, vec![g.from_index(3), g.from_index(4)]);
+
+    let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let neighbors_0_undir: Vec<_> = g.neighbors(g.from_index(0)).collect();
+    let neighbors_1_undir: Vec<_> = g.neighbors(g.from_index(1)).collect();
+
+    assert_eq!(neighbors_0_undir, vec![g.from_index(2), g.from_index(1)]);
+    assert_eq!(
+        neighbors_1_undir,
+        vec![
+            g.from_index(3),
+            g.from_index(4),
+            g.from_index(5),
+            g.from_index(0)
+        ]
+    );
+}
+
+/// Test that the order of neighbors returned by `neighbors_directed` is correct.
+/// See `neighbors_directed` docs for more details.
+#[test]
+fn test_neighbors_directed_iteration_order() {
+    // The test graph looks like this:
+    //      5
+    //      |
+    //      v
+    // 0 -> 1 -> 3
+    // |    |
+    // v    v
+    // 2    4
+    let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let neighbors_0_outgoing_dir: Vec<_> =
+        g.neighbors_directed(g.from_index(0), Outgoing).collect();
+    let neighbors_0_incoming_dir: Vec<_> =
+        g.neighbors_directed(g.from_index(0), Incoming).collect();
+    let neighbors_1_outgoing_dir: Vec<_> =
+        g.neighbors_directed(g.from_index(1), Outgoing).collect();
+    let neighbors_1_incoming_dir: Vec<_> =
+        g.neighbors_directed(g.from_index(1), Incoming).collect();
+
+    assert_eq!(
+        neighbors_0_outgoing_dir,
+        vec![g.from_index(2), g.from_index(1)]
+    );
+    assert_eq!(neighbors_0_incoming_dir, vec![]);
+    assert_eq!(
+        neighbors_1_outgoing_dir,
+        vec![g.from_index(3), g.from_index(4)]
+    );
+    assert_eq!(
+        neighbors_1_incoming_dir,
+        vec![g.from_index(5), g.from_index(0)]
+    );
+
+    let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let neighbors_0_outgoing_undir: Vec<_> =
+        g.neighbors_directed(g.from_index(0), Outgoing).collect();
+    let neighbors_0_incoming_undir: Vec<_> =
+        g.neighbors_directed(g.from_index(0), Incoming).collect();
+    let neighbors_1_outgoing_undir: Vec<_> =
+        g.neighbors_directed(g.from_index(1), Outgoing).collect();
+    let neighbors_1_incoming_undir: Vec<_> =
+        g.neighbors_directed(g.from_index(1), Incoming).collect();
+
+    assert_eq!(
+        neighbors_0_outgoing_undir,
+        vec![g.from_index(2), g.from_index(1)]
+    );
+    assert_eq!(
+        neighbors_0_incoming_undir,
+        vec![g.from_index(2), g.from_index(1)]
+    );
+    assert_eq!(
+        neighbors_1_outgoing_undir,
+        vec![
+            g.from_index(3),
+            g.from_index(4),
+            g.from_index(5),
+            g.from_index(0)
+        ]
+    );
+    assert_eq!(
+        neighbors_1_incoming_undir,
+        vec![
+            g.from_index(3),
+            g.from_index(4),
+            g.from_index(5),
+            g.from_index(0)
+        ]
+    );
+}
+
+/// Test that the order of neighbors returned by `neighbors_undirected` is correct.
+/// See `neighbors_undirected` docs for more details.
+#[test]
+fn test_neighbors_undirected_iteration_order() {
+    // The test graph looks like this:
+    //      5
+    //      |
+    //      v
+    // 0 -> 1 -> 3
+    // |    |
+    // v    v
+    // 2    4
+    let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let neighbors_0_outgoing_dir: Vec<_> = g.neighbors_undirected(g.from_index(0)).collect();
+    let neighbors_0_incoming_dir: Vec<_> = g.neighbors_undirected(g.from_index(0)).collect();
+    let neighbors_1_outgoing_dir: Vec<_> = g.neighbors_undirected(g.from_index(1)).collect();
+    let neighbors_1_incoming_dir: Vec<_> = g.neighbors_undirected(g.from_index(1)).collect();
+
+    assert_eq!(
+        neighbors_0_outgoing_dir,
+        vec![g.from_index(2), g.from_index(1)]
+    );
+    assert_eq!(
+        neighbors_0_incoming_dir,
+        vec![g.from_index(2), g.from_index(1)]
+    );
+    assert_eq!(
+        neighbors_1_outgoing_dir,
+        vec![
+            g.from_index(3),
+            g.from_index(4),
+            g.from_index(5),
+            g.from_index(0)
+        ]
+    );
+    assert_eq!(
+        neighbors_1_incoming_dir,
+        vec![
+            g.from_index(3),
+            g.from_index(4),
+            g.from_index(5),
+            g.from_index(0)
+        ]
+    );
+
+    let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let neighbors_0_outgoing_undir: Vec<_> = g.neighbors_undirected(g.from_index(0)).collect();
+    let neighbors_0_incoming_undir: Vec<_> = g.neighbors_undirected(g.from_index(0)).collect();
+    let neighbors_1_outgoing_undir: Vec<_> = g.neighbors_undirected(g.from_index(1)).collect();
+    let neighbors_1_incoming_undir: Vec<_> = g.neighbors_undirected(g.from_index(1)).collect();
+
+    assert_eq!(
+        neighbors_0_outgoing_undir,
+        vec![g.from_index(2), g.from_index(1)]
+    );
+    assert_eq!(
+        neighbors_0_incoming_undir,
+        vec![g.from_index(2), g.from_index(1)]
+    );
+    assert_eq!(
+        neighbors_1_outgoing_undir,
+        vec![
+            g.from_index(3),
+            g.from_index(4),
+            g.from_index(5),
+            g.from_index(0)
+        ]
+    );
+    assert_eq!(
+        neighbors_1_incoming_undir,
+        vec![
+            g.from_index(3),
+            g.from_index(4),
+            g.from_index(5),
+            g.from_index(0)
+        ]
+    );
+}
+
+/// Test that the order of neighbors returned by `edges` is correct.
+/// See `edges` docs for more details.
+#[test]
+fn test_edges_iteration_order() {
+    // The test graph looks like this:
+    //      5
+    //      |
+    //      v
+    // 0 -> 1 -> 3
+    // |    |
+    // v    v
+    // 2    4
+    let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let edges_0_dir: Vec<_> = g.edges(g.from_index(0)).map(|r| r.id()).collect();
+    let edges_1_dir: Vec<_> = g.edges(g.from_index(1)).map(|r| r.id()).collect();
+
+    assert_eq!(
+        edges_0_dir,
+        vec![
+            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
+            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+        ]
+    );
+    assert_eq!(
+        edges_1_dir,
+        vec![
+            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(4)).unwrap(),
+        ]
+    );
+
+    let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let edges_0_undir: Vec<_> = g.edges(g.from_index(0)).map(|r| r.id()).collect();
+    let edges_1_undir: Vec<_> = g.edges(g.from_index(1)).map(|r| r.id()).collect();
+
+    assert_eq!(
+        edges_0_undir,
+        vec![
+            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
+            g.find_edge(g.from_index(0), g.from_index(1)).unwrap(),
+        ]
+    );
+
+    assert_eq!(
+        edges_1_undir,
+        vec![
+            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(4)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(5)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(0)).unwrap()
+        ]
+    );
+}
+
+/// Test that the order of neighbors returned by `edges_directed` is correct.
+/// See `edges_directed` docs for more details.
+#[test]
+fn test_edges_directed_iteration_order() {
+    // The test graph looks like this:
+    //      5
+    //      |
+    //      v
+    // 0 -> 1 -> 3
+    // |    |
+    // v    v
+    // 2    4
+    let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let edges_directed_0_outgoing_dir: Vec<_> = g
+        .edges_directed(g.from_index(0), Outgoing)
+        .map(|r| r.id())
+        .collect();
+    let edges_directed_0_incoming_dir: Vec<_> = g
+        .edges_directed(g.from_index(0), Incoming)
+        .map(|r| r.id())
+        .collect();
+    let edges_directed_1_outgoing_dir: Vec<_> = g
+        .edges_directed(g.from_index(1), Outgoing)
+        .map(|r| r.id())
+        .collect();
+    let edges_directed_1_incoming_dir: Vec<_> = g
+        .edges_directed(g.from_index(1), Incoming)
+        .map(|r| r.id())
+        .collect();
+
+    assert_eq!(
+        edges_directed_0_outgoing_dir,
+        vec![
+            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
+            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+        ]
+    );
+    assert_eq!(edges_directed_0_incoming_dir, vec![]);
+    assert_eq!(
+        edges_directed_1_outgoing_dir,
+        vec![
+            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(4)).unwrap()
+        ]
+    );
+    assert_eq!(
+        edges_directed_1_incoming_dir,
+        vec![
+            g.find_edge(g.from_index(5), g.from_index(1)).unwrap(),
+            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+        ]
+    );
+
+    let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
+
+    let edges_directed_0_outgoing_undir: Vec<_> = g
+        .edges_directed(g.from_index(0), Outgoing)
+        .map(|r| r.id())
+        .collect();
+    let edges_directed_0_incoming_undir: Vec<_> = g
+        .edges_directed(g.from_index(0), Incoming)
+        .map(|r| r.id())
+        .collect();
+    let edges_directed_1_outgoing_undir: Vec<_> = g
+        .edges_directed(g.from_index(1), Outgoing)
+        .map(|r| r.id())
+        .collect();
+    let edges_directed_1_incoming_undir: Vec<_> = g
+        .edges_directed(g.from_index(1), Incoming)
+        .map(|r| r.id())
+        .collect();
+
+    assert_eq!(
+        edges_directed_0_outgoing_undir,
+        vec![
+            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
+            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+        ]
+    );
+    assert_eq!(
+        edges_directed_0_incoming_undir,
+        vec![
+            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
+            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+        ]
+    );
+    assert_eq!(
+        edges_directed_1_outgoing_undir,
+        vec![
+            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(4)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(5)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(0)).unwrap()
+        ]
+    );
+    assert_eq!(
+        edges_directed_1_incoming_undir,
+        vec![
+            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(4)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(5)).unwrap(),
+            g.find_edge(g.from_index(1), g.from_index(0)).unwrap()
+        ]
+    );
+}
+
+/// Test that the order of neighbors returned by `edges_connecting` is correct.
+/// See `edges_connecting` docs for more details.
+#[test]
+fn test_edges_connecting_iteration_order() {
+    let mut g = Graph::<(), u8, Directed>::new();
+
+    let node_zero = g.add_node(());
+    let node_one = g.add_node(());
+
+    // Edges from node_zero to node_one
+    let edge_zero = g.add_edge(node_zero, node_one, 1);
+    let edge_one = g.add_edge(node_zero, node_one, 2);
+    let edge_two = g.add_edge(node_zero, node_one, 3);
+
+    // Edges from node_one to node_zero
+    let edge_three = g.add_edge(node_one, node_zero, 4);
+    let edge_four = g.add_edge(node_one, node_zero, 5);
+    let edge_five = g.add_edge(node_one, node_zero, 6);
+
+    let edges_connecting_one_to_two: Vec<_> = g
+        .edges_connecting(node_zero, node_one)
+        .map(|r| r.id())
+        .collect();
+
+    assert_eq!(
+        edges_connecting_one_to_two,
+        vec![edge_two, edge_one, edge_zero]
+    );
+
+    let edges_connecting_two_to_one: Vec<_> = g
+        .edges_connecting(node_one, node_zero)
+        .map(|r| r.id())
+        .collect();
+
+    assert_eq!(
+        edges_connecting_two_to_one,
+        vec![edge_five, edge_four, edge_three]
+    );
+
+    let mut g = Graph::<(), u8, _>::new_undirected();
+
+    let node_zero = g.add_node(());
+    let node_one = g.add_node(());
+
+    // Edges from node_zero to node_one
+    let edge_zero = g.add_edge(node_zero, node_one, 1);
+    let edge_one = g.add_edge(node_zero, node_one, 2);
+    let edge_two = g.add_edge(node_zero, node_one, 3);
+
+    // Edges from node_one to node_zero
+    let edge_three = g.add_edge(node_one, node_zero, 4);
+    let edge_four = g.add_edge(node_one, node_zero, 5);
+    let edge_five = g.add_edge(node_one, node_zero, 6);
+
+    let edges_connecting_one_to_two: Vec<_> = g
+        .edges_connecting(node_zero, node_one)
+        .map(|r| r.id())
+        .collect();
+
+    assert_eq!(
+        edges_connecting_one_to_two,
+        vec![edge_two, edge_one, edge_zero, edge_five, edge_four, edge_three]
+    );
+
+    let edges_connecting_two_to_one: Vec<_> = g
+        .edges_connecting(node_one, node_zero)
+        .map(|r| r.id())
+        .collect();
+
+    assert_eq!(
+        edges_connecting_two_to_one,
+        vec![edge_five, edge_four, edge_three, edge_two, edge_one, edge_zero]
+    );
 }
