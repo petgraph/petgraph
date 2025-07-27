@@ -1,8 +1,15 @@
-//! Graph algorithms.
-//!
-//! It is a goal to gradually migrate the algorithms to be based on graph traits
-//! so that they are generally applicable. For now, some of these still require
-//! the `Graph` type.
+/*!
+This module contains most of `petgraph`'s algorithms to operate on graphs. Some, very simple search
+algorithms like depth-first search or breadth-first search are implemented in the
+[`visit`] module.
+
+The `algo` module contains multiple submodules, each implementing a specific algorithm or set of
+algorithms. Some functions, like [`connected_components`], are implemented directly in this module.
+
+It is a goal to gradually migrate the algorithms to be based on graph traits
+so that they are generally applicable. For now, some of these still require
+the `Graph` type.
+*/
 
 pub mod articulation_points;
 pub mod astar;
