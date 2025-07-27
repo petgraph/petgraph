@@ -11,7 +11,6 @@ use crate::{
 };
 
 /// Compute the maximum flow from `source` to `destination` in a directed graph.
-///
 /// Implements [Dinic's (or Dinitz's) algorithm][dinics], which builds successive
 /// level graphs using breadth-first search and finds blocking flows within
 /// them through depth-first searches.
