@@ -17,7 +17,7 @@ use hashbrown::HashSet;
 fn bron_kerbosch_pivot<G>(
     g: G,
     adj_mat: &G::AdjMatrix,
-    r: FixedBitSet,
+    r: HashSet<G::NodeId>,
     mut p: FixedBitSet,
     mut x: FixedBitSet,
 ) -> Vec<HashSet<G::NodeId>>
@@ -28,7 +28,7 @@ where
     let mut cliques = Vec::with_capacity(1);
     if p.is_empty() {
         if x.is_empty() {
-            cliques.push(HashSet::from_iter(r.ones().map(|v| g.from_index(v))));
+            cliques.push(r);
         }
         return cliques;
     }
@@ -41,7 +41,7 @@ where
         let mut neighbors = FixedBitSet::from_iter(g.neighbors(g.from_index(v)).map(|n| g.to_index(n)));
         p.remove(v);
         let mut next_r = r.clone();
-        next_r.insert(v);
+        next_r.insert(g.from_index(v));
 
         let next_p: FixedBitSet = p
             .intersection(&neighbors).collect();
@@ -113,7 +113,7 @@ where
     G::NodeId: Eq + Hash,
 {
     let adj_mat = g.adjacency_matrix();
-    let r = FixedBitSet::with_capacity(g.node_bound());
+    let r = HashSet::new();
     let mut p = FixedBitSet::with_capacity(g.node_bound());
     p.extend(g.node_identifiers().map(|n| g.to_index(n)));
     let x = FixedBitSet::with_capacity(g.node_bound());
