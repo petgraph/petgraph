@@ -2521,25 +2521,43 @@ fn test_neighbors_iteration_order() {
     // 2    4
     let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
-    let neighbors_0_dir: Vec<_> = g.neighbors(g.from_index(0)).collect();
-    let neighbors_1_dir: Vec<_> = g.neighbors(g.from_index(1)).collect();
+    let neighbors_0_dir: Vec<_> = g.neighbors(NodeIndexable::from_index(&g, 0)).collect();
+    let neighbors_1_dir: Vec<_> = g.neighbors(NodeIndexable::from_index(&g, 1)).collect();
 
-    assert_eq!(neighbors_0_dir, vec![g.from_index(2), g.from_index(1)]);
-    assert_eq!(neighbors_1_dir, vec![g.from_index(3), g.from_index(4)]);
+    assert_eq!(
+        neighbors_0_dir,
+        vec![
+            NodeIndexable::from_index(&g, 2),
+            NodeIndexable::from_index(&g, 1)
+        ]
+    );
+    assert_eq!(
+        neighbors_1_dir,
+        vec![
+            NodeIndexable::from_index(&g, 3),
+            NodeIndexable::from_index(&g, 4)
+        ]
+    );
 
     let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
-    let neighbors_0_undir: Vec<_> = g.neighbors(g.from_index(0)).collect();
-    let neighbors_1_undir: Vec<_> = g.neighbors(g.from_index(1)).collect();
+    let neighbors_0_undir: Vec<_> = g.neighbors(NodeIndexable::from_index(&g, 0)).collect();
+    let neighbors_1_undir: Vec<_> = g.neighbors(NodeIndexable::from_index(&g, 1)).collect();
 
-    assert_eq!(neighbors_0_undir, vec![g.from_index(2), g.from_index(1)]);
+    assert_eq!(
+        neighbors_0_undir,
+        vec![
+            NodeIndexable::from_index(&g, 2),
+            NodeIndexable::from_index(&g, 1)
+        ]
+    );
     assert_eq!(
         neighbors_1_undir,
         vec![
-            g.from_index(3),
-            g.from_index(4),
-            g.from_index(5),
-            g.from_index(0)
+            NodeIndexable::from_index(&g, 3),
+            NodeIndexable::from_index(&g, 4),
+            NodeIndexable::from_index(&g, 5),
+            NodeIndexable::from_index(&g, 0)
         ]
     );
 }
@@ -2558,64 +2576,87 @@ fn test_neighbors_directed_iteration_order() {
     // 2    4
     let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
-    let neighbors_0_outgoing_dir: Vec<_> =
-        g.neighbors_directed(g.from_index(0), Outgoing).collect();
-    let neighbors_0_incoming_dir: Vec<_> =
-        g.neighbors_directed(g.from_index(0), Incoming).collect();
-    let neighbors_1_outgoing_dir: Vec<_> =
-        g.neighbors_directed(g.from_index(1), Outgoing).collect();
-    let neighbors_1_incoming_dir: Vec<_> =
-        g.neighbors_directed(g.from_index(1), Incoming).collect();
+    let neighbors_0_outgoing_dir: Vec<_> = g
+        .neighbors_directed(NodeIndexable::from_index(&g, 0), Outgoing)
+        .collect();
+    let neighbors_0_incoming_dir: Vec<_> = g
+        .neighbors_directed(NodeIndexable::from_index(&g, 0), Incoming)
+        .collect();
+    let neighbors_1_outgoing_dir: Vec<_> = g
+        .neighbors_directed(NodeIndexable::from_index(&g, 1), Outgoing)
+        .collect();
+    let neighbors_1_incoming_dir: Vec<_> = g
+        .neighbors_directed(NodeIndexable::from_index(&g, 1), Incoming)
+        .collect();
 
     assert_eq!(
         neighbors_0_outgoing_dir,
-        vec![g.from_index(2), g.from_index(1)]
+        vec![
+            NodeIndexable::from_index(&g, 2),
+            NodeIndexable::from_index(&g, 1)
+        ]
     );
     assert_eq!(neighbors_0_incoming_dir, vec![]);
     assert_eq!(
         neighbors_1_outgoing_dir,
-        vec![g.from_index(3), g.from_index(4)]
+        vec![
+            NodeIndexable::from_index(&g, 3),
+            NodeIndexable::from_index(&g, 4)
+        ]
     );
     assert_eq!(
         neighbors_1_incoming_dir,
-        vec![g.from_index(5), g.from_index(0)]
+        vec![
+            NodeIndexable::from_index(&g, 5),
+            NodeIndexable::from_index(&g, 0)
+        ]
     );
 
     let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
-    let neighbors_0_outgoing_undir: Vec<_> =
-        g.neighbors_directed(g.from_index(0), Outgoing).collect();
-    let neighbors_0_incoming_undir: Vec<_> =
-        g.neighbors_directed(g.from_index(0), Incoming).collect();
-    let neighbors_1_outgoing_undir: Vec<_> =
-        g.neighbors_directed(g.from_index(1), Outgoing).collect();
-    let neighbors_1_incoming_undir: Vec<_> =
-        g.neighbors_directed(g.from_index(1), Incoming).collect();
+    let neighbors_0_outgoing_undir: Vec<_> = g
+        .neighbors_directed(NodeIndexable::from_index(&g, 0), Outgoing)
+        .collect();
+    let neighbors_0_incoming_undir: Vec<_> = g
+        .neighbors_directed(NodeIndexable::from_index(&g, 0), Incoming)
+        .collect();
+    let neighbors_1_outgoing_undir: Vec<_> = g
+        .neighbors_directed(NodeIndexable::from_index(&g, 1), Outgoing)
+        .collect();
+    let neighbors_1_incoming_undir: Vec<_> = g
+        .neighbors_directed(NodeIndexable::from_index(&g, 1), Incoming)
+        .collect();
 
     assert_eq!(
         neighbors_0_outgoing_undir,
-        vec![g.from_index(2), g.from_index(1)]
+        vec![
+            NodeIndexable::from_index(&g, 2),
+            NodeIndexable::from_index(&g, 1)
+        ]
     );
     assert_eq!(
         neighbors_0_incoming_undir,
-        vec![g.from_index(2), g.from_index(1)]
+        vec![
+            NodeIndexable::from_index(&g, 2),
+            NodeIndexable::from_index(&g, 1)
+        ]
     );
     assert_eq!(
         neighbors_1_outgoing_undir,
         vec![
-            g.from_index(3),
-            g.from_index(4),
-            g.from_index(5),
-            g.from_index(0)
+            NodeIndexable::from_index(&g, 3),
+            NodeIndexable::from_index(&g, 4),
+            NodeIndexable::from_index(&g, 5),
+            NodeIndexable::from_index(&g, 0)
         ]
     );
     assert_eq!(
         neighbors_1_incoming_undir,
         vec![
-            g.from_index(3),
-            g.from_index(4),
-            g.from_index(5),
-            g.from_index(0)
+            NodeIndexable::from_index(&g, 3),
+            NodeIndexable::from_index(&g, 4),
+            NodeIndexable::from_index(&g, 5),
+            NodeIndexable::from_index(&g, 0)
         ]
     );
 }
@@ -2634,69 +2675,97 @@ fn test_neighbors_undirected_iteration_order() {
     // 2    4
     let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
-    let neighbors_0_outgoing_dir: Vec<_> = g.neighbors_undirected(g.from_index(0)).collect();
-    let neighbors_0_incoming_dir: Vec<_> = g.neighbors_undirected(g.from_index(0)).collect();
-    let neighbors_1_outgoing_dir: Vec<_> = g.neighbors_undirected(g.from_index(1)).collect();
-    let neighbors_1_incoming_dir: Vec<_> = g.neighbors_undirected(g.from_index(1)).collect();
+    let neighbors_0_outgoing_dir: Vec<_> = g
+        .neighbors_undirected(NodeIndexable::from_index(&g, 0))
+        .collect();
+    let neighbors_0_incoming_dir: Vec<_> = g
+        .neighbors_undirected(NodeIndexable::from_index(&g, 0))
+        .collect();
+    let neighbors_1_outgoing_dir: Vec<_> = g
+        .neighbors_undirected(NodeIndexable::from_index(&g, 1))
+        .collect();
+    let neighbors_1_incoming_dir: Vec<_> = g
+        .neighbors_undirected(NodeIndexable::from_index(&g, 1))
+        .collect();
 
     assert_eq!(
         neighbors_0_outgoing_dir,
-        vec![g.from_index(2), g.from_index(1)]
+        vec![
+            NodeIndexable::from_index(&g, 2),
+            NodeIndexable::from_index(&g, 1)
+        ]
     );
     assert_eq!(
         neighbors_0_incoming_dir,
-        vec![g.from_index(2), g.from_index(1)]
+        vec![
+            NodeIndexable::from_index(&g, 2),
+            NodeIndexable::from_index(&g, 1)
+        ]
     );
     assert_eq!(
         neighbors_1_outgoing_dir,
         vec![
-            g.from_index(3),
-            g.from_index(4),
-            g.from_index(5),
-            g.from_index(0)
+            NodeIndexable::from_index(&g, 3),
+            NodeIndexable::from_index(&g, 4),
+            NodeIndexable::from_index(&g, 5),
+            NodeIndexable::from_index(&g, 0)
         ]
     );
     assert_eq!(
         neighbors_1_incoming_dir,
         vec![
-            g.from_index(3),
-            g.from_index(4),
-            g.from_index(5),
-            g.from_index(0)
+            NodeIndexable::from_index(&g, 3),
+            NodeIndexable::from_index(&g, 4),
+            NodeIndexable::from_index(&g, 5),
+            NodeIndexable::from_index(&g, 0)
         ]
     );
 
     let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
-    let neighbors_0_outgoing_undir: Vec<_> = g.neighbors_undirected(g.from_index(0)).collect();
-    let neighbors_0_incoming_undir: Vec<_> = g.neighbors_undirected(g.from_index(0)).collect();
-    let neighbors_1_outgoing_undir: Vec<_> = g.neighbors_undirected(g.from_index(1)).collect();
-    let neighbors_1_incoming_undir: Vec<_> = g.neighbors_undirected(g.from_index(1)).collect();
+    let neighbors_0_outgoing_undir: Vec<_> = g
+        .neighbors_undirected(NodeIndexable::from_index(&g, 0))
+        .collect();
+    let neighbors_0_incoming_undir: Vec<_> = g
+        .neighbors_undirected(NodeIndexable::from_index(&g, 0))
+        .collect();
+    let neighbors_1_outgoing_undir: Vec<_> = g
+        .neighbors_undirected(NodeIndexable::from_index(&g, 1))
+        .collect();
+    let neighbors_1_incoming_undir: Vec<_> = g
+        .neighbors_undirected(NodeIndexable::from_index(&g, 1))
+        .collect();
 
     assert_eq!(
         neighbors_0_outgoing_undir,
-        vec![g.from_index(2), g.from_index(1)]
+        vec![
+            NodeIndexable::from_index(&g, 2),
+            NodeIndexable::from_index(&g, 1)
+        ]
     );
     assert_eq!(
         neighbors_0_incoming_undir,
-        vec![g.from_index(2), g.from_index(1)]
+        vec![
+            NodeIndexable::from_index(&g, 2),
+            NodeIndexable::from_index(&g, 1)
+        ]
     );
     assert_eq!(
         neighbors_1_outgoing_undir,
         vec![
-            g.from_index(3),
-            g.from_index(4),
-            g.from_index(5),
-            g.from_index(0)
+            NodeIndexable::from_index(&g, 3),
+            NodeIndexable::from_index(&g, 4),
+            NodeIndexable::from_index(&g, 5),
+            NodeIndexable::from_index(&g, 0)
         ]
     );
     assert_eq!(
         neighbors_1_incoming_undir,
         vec![
-            g.from_index(3),
-            g.from_index(4),
-            g.from_index(5),
-            g.from_index(0)
+            NodeIndexable::from_index(&g, 3),
+            NodeIndexable::from_index(&g, 4),
+            NodeIndexable::from_index(&g, 5),
+            NodeIndexable::from_index(&g, 0)
         ]
     );
 }
@@ -2715,44 +2784,96 @@ fn test_edges_iteration_order() {
     // 2    4
     let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
-    let edges_0_dir: Vec<_> = g.edges(g.from_index(0)).map(|r| r.id()).collect();
-    let edges_1_dir: Vec<_> = g.edges(g.from_index(1)).map(|r| r.id()).collect();
+    let edges_0_dir: Vec<_> = g
+        .edges(NodeIndexable::from_index(&g, 0))
+        .map(|r| r.id())
+        .collect();
+    let edges_1_dir: Vec<_> = g
+        .edges(NodeIndexable::from_index(&g, 1))
+        .map(|r| r.id())
+        .collect();
 
     assert_eq!(
         edges_0_dir,
         vec![
-            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
-            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 2)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 1)
+            )
+            .unwrap()
         ]
     );
     assert_eq!(
         edges_1_dir,
         vec![
-            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(4)).unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 3)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 4)
+            )
+            .unwrap(),
         ]
     );
 
     let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
-    let edges_0_undir: Vec<_> = g.edges(g.from_index(0)).map(|r| r.id()).collect();
-    let edges_1_undir: Vec<_> = g.edges(g.from_index(1)).map(|r| r.id()).collect();
+    let edges_0_undir: Vec<_> = g
+        .edges(NodeIndexable::from_index(&g, 0))
+        .map(|r| r.id())
+        .collect();
+    let edges_1_undir: Vec<_> = g
+        .edges(NodeIndexable::from_index(&g, 1))
+        .map(|r| r.id())
+        .collect();
 
     assert_eq!(
         edges_0_undir,
         vec![
-            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
-            g.find_edge(g.from_index(0), g.from_index(1)).unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 2)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 1)
+            )
+            .unwrap(),
         ]
     );
 
     assert_eq!(
         edges_1_undir,
         vec![
-            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(4)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(5)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(0)).unwrap()
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 3)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 4)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 5)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 0)
+            )
+            .unwrap()
         ]
     );
 }
@@ -2772,94 +2893,166 @@ fn test_edges_directed_iteration_order() {
     let g = Graph::<(), (), Directed>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
     let edges_directed_0_outgoing_dir: Vec<_> = g
-        .edges_directed(g.from_index(0), Outgoing)
+        .edges_directed(NodeIndexable::from_index(&g, 0), Outgoing)
         .map(|r| r.id())
         .collect();
     let edges_directed_0_incoming_dir: Vec<_> = g
-        .edges_directed(g.from_index(0), Incoming)
+        .edges_directed(NodeIndexable::from_index(&g, 0), Incoming)
         .map(|r| r.id())
         .collect();
     let edges_directed_1_outgoing_dir: Vec<_> = g
-        .edges_directed(g.from_index(1), Outgoing)
+        .edges_directed(NodeIndexable::from_index(&g, 1), Outgoing)
         .map(|r| r.id())
         .collect();
     let edges_directed_1_incoming_dir: Vec<_> = g
-        .edges_directed(g.from_index(1), Incoming)
+        .edges_directed(NodeIndexable::from_index(&g, 1), Incoming)
         .map(|r| r.id())
         .collect();
 
     assert_eq!(
         edges_directed_0_outgoing_dir,
         vec![
-            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
-            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 2)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 1)
+            )
+            .unwrap()
         ]
     );
     assert_eq!(edges_directed_0_incoming_dir, vec![]);
     assert_eq!(
         edges_directed_1_outgoing_dir,
         vec![
-            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(4)).unwrap()
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 3)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 4)
+            )
+            .unwrap()
         ]
     );
     assert_eq!(
         edges_directed_1_incoming_dir,
         vec![
-            g.find_edge(g.from_index(5), g.from_index(1)).unwrap(),
-            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+            g.find_edge(
+                NodeIndexable::from_index(&g, 5),
+                NodeIndexable::from_index(&g, 1)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 1)
+            )
+            .unwrap()
         ]
     );
 
     let g = Graph::<(), (), Undirected>::from_edges([(0, 1), (0, 2), (1, 4), (1, 3), (5, 1)]);
 
     let edges_directed_0_outgoing_undir: Vec<_> = g
-        .edges_directed(g.from_index(0), Outgoing)
+        .edges_directed(NodeIndexable::from_index(&g, 0), Outgoing)
         .map(|r| r.id())
         .collect();
     let edges_directed_0_incoming_undir: Vec<_> = g
-        .edges_directed(g.from_index(0), Incoming)
+        .edges_directed(NodeIndexable::from_index(&g, 0), Incoming)
         .map(|r| r.id())
         .collect();
     let edges_directed_1_outgoing_undir: Vec<_> = g
-        .edges_directed(g.from_index(1), Outgoing)
+        .edges_directed(NodeIndexable::from_index(&g, 1), Outgoing)
         .map(|r| r.id())
         .collect();
     let edges_directed_1_incoming_undir: Vec<_> = g
-        .edges_directed(g.from_index(1), Incoming)
+        .edges_directed(NodeIndexable::from_index(&g, 1), Incoming)
         .map(|r| r.id())
         .collect();
 
     assert_eq!(
         edges_directed_0_outgoing_undir,
         vec![
-            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
-            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 2)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 1)
+            )
+            .unwrap()
         ]
     );
     assert_eq!(
         edges_directed_0_incoming_undir,
         vec![
-            g.find_edge(g.from_index(0), g.from_index(2)).unwrap(),
-            g.find_edge(g.from_index(0), g.from_index(1)).unwrap()
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 2)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 0),
+                NodeIndexable::from_index(&g, 1)
+            )
+            .unwrap()
         ]
     );
     assert_eq!(
         edges_directed_1_outgoing_undir,
         vec![
-            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(4)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(5)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(0)).unwrap()
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 3)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 4)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 5)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 0)
+            )
+            .unwrap()
         ]
     );
     assert_eq!(
         edges_directed_1_incoming_undir,
         vec![
-            g.find_edge(g.from_index(1), g.from_index(3)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(4)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(5)).unwrap(),
-            g.find_edge(g.from_index(1), g.from_index(0)).unwrap()
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 3)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 4)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 5)
+            )
+            .unwrap(),
+            g.find_edge(
+                NodeIndexable::from_index(&g, 1),
+                NodeIndexable::from_index(&g, 0)
+            )
+            .unwrap()
         ]
     );
 }
