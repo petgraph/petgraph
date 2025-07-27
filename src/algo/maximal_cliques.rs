@@ -1,7 +1,8 @@
-use crate::visit::{GetAdjacencyMatrix, IntoNeighbors, IntoNodeIdentifiers};
+use crate::visit::{GetAdjacencyMatrix, IntoNeighbors, IntoNodeIdentifiers, NodeIndexable};
 use alloc::vec::Vec;
 use core::hash::Hash;
 use core::iter::FromIterator;
+use fixedbitset::FixedBitSet;
 use hashbrown::HashSet;
 
 /// Finds maximal cliques containing all the vertices in r, some of the
@@ -16,43 +17,37 @@ use hashbrown::HashSet;
 fn bron_kerbosch_pivot<G>(
     g: G,
     adj_mat: &G::AdjMatrix,
-    r: HashSet<G::NodeId>,
-    mut p: HashSet<G::NodeId>,
-    mut x: HashSet<G::NodeId>,
+    r: FixedBitSet,
+    mut p: FixedBitSet,
+    mut x: FixedBitSet,
 ) -> Vec<HashSet<G::NodeId>>
 where
-    G: GetAdjacencyMatrix + IntoNeighbors,
+    G: GetAdjacencyMatrix + IntoNeighbors + NodeIndexable,
     G::NodeId: Eq + Hash,
 {
     let mut cliques = Vec::with_capacity(1);
     if p.is_empty() {
         if x.is_empty() {
-            cliques.push(r);
+            cliques.push(HashSet::from_iter(r.ones().map(|v| g.from_index(v))));
         }
         return cliques;
     }
     // pick the pivot u to be the vertex with max degree
-    let u = p.iter().max_by_key(|&v| g.neighbors(*v).count()).unwrap();
-    let mut todo = p
-        .iter()
-        .filter(|&v| *u == *v || !g.is_adjacent(adj_mat, *u, *v) || !g.is_adjacent(adj_mat, *v, *u)) //skip neighbors of pivot
-        .cloned()
-        .collect::<Vec<G::NodeId>>();
+    let u = p.ones().max_by_key(|&v| g.neighbors(g.from_index(v)).count()).unwrap();
+    let mut todo = p.ones()
+        .filter(|&v| u == v || !g.is_adjacent(adj_mat, g.from_index(u), g.from_index(v)) || !g.is_adjacent(adj_mat, g.from_index(v), g.from_index(u))) //skip neighbors of pivot
+        .collect::<Vec<usize>>();
     while let Some(v) = todo.pop() {
-        let neighbors = HashSet::from_iter(g.neighbors(v));
-        p.remove(&v);
+        let mut neighbors = FixedBitSet::from_iter(g.neighbors(g.from_index(v)).map(|n| g.to_index(n)));
+        p.remove(v);
         let mut next_r = r.clone();
         next_r.insert(v);
 
-        let next_p = p
-            .intersection(&neighbors)
-            .cloned()
-            .collect::<HashSet<G::NodeId>>();
-        let next_x = x
-            .intersection(&neighbors)
-            .cloned()
-            .collect::<HashSet<G::NodeId>>();
-
+        let next_p: FixedBitSet = p
+            .intersection(&neighbors).collect();
+        neighbors.intersect_with(&p);
+        let next_x = neighbors;
+        
         cliques.extend(bron_kerbosch_pivot(g, adj_mat, next_r, next_p, next_x));
 
         x.insert(v);
@@ -114,12 +109,13 @@ where
 /// ```
 pub fn maximal_cliques<G>(g: G) -> Vec<HashSet<G::NodeId>>
 where
-    G: GetAdjacencyMatrix + IntoNodeIdentifiers + IntoNeighbors,
+    G: GetAdjacencyMatrix + IntoNodeIdentifiers + IntoNeighbors + NodeIndexable,
     G::NodeId: Eq + Hash,
 {
     let adj_mat = g.adjacency_matrix();
-    let r = HashSet::new();
-    let p = g.node_identifiers().collect::<HashSet<G::NodeId>>();
-    let x = HashSet::new();
+    let r = FixedBitSet::with_capacity(g.node_bound());
+    let mut p = FixedBitSet::with_capacity(g.node_bound());
+    p.extend(g.node_identifiers().map(|n| g.to_index(n)));
+    let x = FixedBitSet::with_capacity(g.node_bound());
     bron_kerbosch_pivot(g, &adj_mat, r, p, x)
 }
