@@ -315,7 +315,7 @@ where
 
 /// Returns the minimum value between given `a` and `b`.
 /// Will panic if it tries to compare two elements that aren't comparable
-/// (i.e., given two elements `a` and `b`, neither `a >= b` or `a < b`).
+/// (i.e., given two elements `a` and `b`, neither `a >= b` nor `a < b`).
 fn min<G>(a: G::EdgeWeight, b: G::EdgeWeight) -> G::EdgeWeight
 where
     G: Data,
