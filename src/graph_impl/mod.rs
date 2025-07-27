@@ -407,10 +407,11 @@ pub type DiGraph<N, E, Ix = DefaultIx> = Graph<N, E, Directed, Ix>;
 pub type UnGraph<N, E, Ix = DefaultIx> = Graph<N, E, Undirected, Ix>;
 
 /// The resulting cloned graph has the same graph indices as `self`.
-impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> Clone for Graph<N, E, Ty, Ix>
 where
     N: Clone,
     E: Clone,
+    Ix: Copy,
 {
     fn clone(&self) -> Self {
         Graph {
@@ -524,11 +525,7 @@ impl<N, E> Graph<N, E, Undirected> {
     }
 }
 
-impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix> {
     /// Create a new `Graph` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         Graph {
@@ -537,7 +534,13 @@ where
             ty: PhantomData,
         }
     }
+}
 
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
     /// Return the number of nodes (also called vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
@@ -994,7 +997,7 @@ where
         &self,
         a: NodeIndex<Ix>,
         b: NodeIndex<Ix>,
-    ) -> EdgesConnecting<E, Ty, Ix> {
+    ) -> EdgesConnecting<'_, E, Ty, Ix> {
         EdgesConnecting {
             target_node: b,
             edges: self.edges_directed(a, Direction::Outgoing),
@@ -1087,7 +1090,7 @@ where
     /// just the nodes without edges.
     ///
     /// The whole iteration computes in **O(|V|)** time where V is the set of nodes.
-    pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix> {
+    pub fn externals(&self, dir: Direction) -> Externals<'_, N, Ty, Ix> {
         Externals {
             iter: self.nodes.iter().enumerate(),
             dir,
@@ -1118,7 +1121,7 @@ where
     ///
     /// The order in which weights are yielded matches the order of their
     /// node indices.
-    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<N, Ix> {
+    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<'_, N, Ix> {
         NodeWeightsMut {
             nodes: self.nodes.iter_mut(),
         }
@@ -1128,7 +1131,7 @@ where
     ///
     /// The order in which weights are yielded matches the order of their
     /// node indices.
-    pub fn node_weights(&self) -> NodeWeights<N, Ix> {
+    pub fn node_weights(&self) -> NodeWeights<'_, N, Ix> {
         NodeWeights {
             nodes: self.nodes.iter(),
         }
@@ -1145,7 +1148,7 @@ where
     /// Create an iterator over all edges, in indexed order.
     ///
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    pub fn edge_references(&self) -> EdgeReferences<E, Ix> {
+    pub fn edge_references(&self) -> EdgeReferences<'_, E, Ix> {
         EdgeReferences {
             iter: self.edges.iter().enumerate(),
         }
@@ -1155,7 +1158,7 @@ where
     ///
     /// The order in which weights are yielded matches the order of their
     /// edge indices.
-    pub fn edge_weights(&self) -> EdgeWeights<E, Ix> {
+    pub fn edge_weights(&self) -> EdgeWeights<'_, E, Ix> {
         EdgeWeights {
             edges: self.edges.iter(),
         }
@@ -1164,7 +1167,7 @@ where
     ///
     /// The order in which weights are yielded matches the order of their
     /// edge indices.
-    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<E, Ix> {
+    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<'_, E, Ix> {
         EdgeWeightsMut {
             edges: self.edges.iter_mut(),
         }
@@ -1698,7 +1701,7 @@ fn edges_walker_mut<E, Ix>(
     edges: &mut [Edge<E, Ix>],
     next: EdgeIndex<Ix>,
     dir: Direction,
-) -> EdgesWalkerMut<E, Ix>
+) -> EdgesWalkerMut<'_, E, Ix>
 where
     Ix: IndexType,
 {
@@ -2020,11 +2023,7 @@ where
 }
 
 /// Create a new empty `Graph`.
-impl<N, E, Ty, Ix> Default for Graph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
+impl<N, E, Ty, Ix> Default for Graph<N, E, Ty, Ix> {
     fn default() -> Self {
         Self::with_capacity(0, 0)
     }

@@ -218,7 +218,6 @@ impl<N, E> StableGraph<N, E, Directed> {
 
 impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
 where
-    Ty: EdgeType,
     Ix: IndexType,
 {
     /// Create a new `StableGraph` with estimated capacity.
@@ -231,7 +230,13 @@ where
             free_edge: EdgeIndex::end(),
         }
     }
+}
 
+impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
     /// Return the current node and edge capacity of the graph.
     pub fn capacity(&self) -> (usize, usize) {
         self.g.capacity()
@@ -285,6 +290,63 @@ where
     /// Computes in **O(1)** time.
     pub fn edge_count(&self) -> usize {
         self.edge_count
+    }
+
+    /// Reserves capacity for at least additional more nodes to be inserted in
+    /// the graph. Graph may reserve more space to avoid frequent reallocations.
+    ///
+    /// Panics if the new capacity overflows usize.
+    #[track_caller]
+    pub fn reserve_nodes(&mut self, additional: usize) {
+        self.g.reserve_nodes(additional);
+    }
+
+    /// Reserves capacity for at least additional more edges to be inserted in
+    /// the graph. Graph may reserve more space to avoid frequent reallocations.
+    ///
+    /// Panics if the new capacity overflows usize.
+    #[track_caller]
+    pub fn reserve_edges(&mut self, additional: usize) {
+        self.g.reserve_edges(additional);
+    }
+
+    /// Reserves the minimum capacity for exactly additional more nodes to be
+    /// inserted in the graph. Does nothing if the capacity is already
+    /// sufficient.
+    ///
+    /// Prefer reserve_nodes if future insertions are expected.
+    ///
+    /// Panics if the new capacity overflows usize.
+    #[track_caller]
+    pub fn reserve_exact_nodes(&mut self, additional: usize) {
+        self.g.reserve_exact_nodes(additional);
+    }
+
+    /// Reserves the minimum capacity for exactly additional more edges to be
+    /// inserted in the graph.
+    /// Does nothing if the capacity is already sufficient.
+    ///
+    /// Prefer reserve_edges if future insertions are expected.
+    ///
+    /// Panics if the new capacity overflows usize.
+    #[track_caller]
+    pub fn reserve_exact_edges(&mut self, additional: usize) {
+        self.g.reserve_exact_edges(additional);
+    }
+
+    /// Shrinks the capacity of the underlying nodes collection as much as possible.
+    pub fn shrink_to_fit_nodes(&mut self) {
+        self.g.shrink_to_fit_nodes();
+    }
+
+    /// Shrinks the capacity of the underlying edges collection as much as possible.
+    pub fn shrink_to_fit_edges(&mut self) {
+        self.g.shrink_to_fit_edges();
+    }
+
+    /// Shrinks the capacity of the graph as much as possible.
+    pub fn shrink_to_fit(&mut self) {
+        self.g.shrink_to_fit();
     }
 
     /// Whether the graph has directed edges or not.
@@ -618,7 +680,7 @@ where
     }
 
     /// Return an iterator over the node indices of the graph
-    pub fn node_indices(&self) -> NodeIndices<N, Ix> {
+    pub fn node_indices(&self) -> NodeIndices<'_, N, Ix> {
         NodeIndices {
             iter: enumerate(self.raw_nodes()),
         }
@@ -675,7 +737,7 @@ where
     ///
     /// Note: the iterator borrows a graph in contrast to the behavior of
     /// [`Graph::edge_indices`](fn@crate::Graph::edge_indices).
-    pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
+    pub fn edge_indices(&self) -> EdgeIndices<'_, E, Ix> {
         EdgeIndices {
             iter: enumerate(self.raw_edges()),
         }
@@ -691,10 +753,10 @@ where
         &self,
         a: NodeIndex<Ix>,
         b: NodeIndex<Ix>,
-    ) -> EdgesConnecting<E, Ty, Ix> {
+    ) -> EdgesConnecting<'_, E, Ty, Ix> {
         EdgesConnecting {
             target_node: b,
-            edges: self.edges_directed(a, Direction::Outgoing),
+            edges: self.edges_directed(a, Outgoing),
             ty: PhantomData,
         }
     }
@@ -752,7 +814,7 @@ where
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
+    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<'_, E, Ix> {
         self.neighbors_directed(a, Outgoing)
     }
 
@@ -771,7 +833,7 @@ where
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Neighbors<E, Ix> {
+    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Neighbors<'_, E, Ix> {
         let mut iter = self.neighbors_undirected(a);
         if self.is_directed() {
             let k = dir.index();
@@ -794,7 +856,7 @@ where
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
+    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<'_, E, Ix> {
         Neighbors {
             skip_start: a,
             edges: &self.g.edges,
@@ -812,7 +874,7 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
+    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<'_, E, Ty, Ix> {
         self.edges_directed(a, Outgoing)
     }
 
@@ -827,7 +889,7 @@ where
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<E, Ty, Ix> {
+    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<'_, E, Ty, Ix> {
         Edges {
             skip_start: a,
             edges: &self.g.edges,
@@ -851,7 +913,7 @@ where
     /// just the nodes without edges.
     ///
     /// The whole iteration computes in **O(|V|)** time where V is the set of nodes.
-    pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix> {
+    pub fn externals(&self, dir: Direction) -> Externals<'_, N, Ty, Ix> {
         Externals {
             iter: self.raw_nodes().iter().enumerate(),
             dir,
@@ -1270,10 +1332,11 @@ where
 }
 
 /// The resulting cloned graph has the same graph indices as `self`.
-impl<N, E, Ty, Ix: IndexType> Clone for StableGraph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> Clone for StableGraph<N, E, Ty, Ix>
 where
     N: Clone,
     E: Clone,
+    Ix: Copy,
 {
     fn clone(&self) -> Self {
         StableGraph {
@@ -1351,7 +1414,6 @@ where
 /// Create a new empty `StableGraph`.
 impl<N, E, Ty, Ix> Default for StableGraph<N, E, Ty, Ix>
 where
-    Ty: EdgeType,
     Ix: IndexType,
 {
     fn default() -> Self {

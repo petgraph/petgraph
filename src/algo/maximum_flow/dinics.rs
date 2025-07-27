@@ -16,6 +16,13 @@ use crate::{
 /// level graphs using breadth-first search and finds blocking flows within
 /// them through depth-first searches.
 ///
+/// For simplicity, the algorithm requires `N::EdgeWeight` to implement
+/// only [PartialOrd] trait, and not [Ord], but will panic if it tries to
+/// compare two elements that aren't comparable (i.e., given two edge weights `a`
+/// and `b`, where neither `a >= b` nor `a < b`).
+///
+/// See also [`maximum_flow`][max flow mod] module for other maximum flow algorithms.
+///
 /// # Arguments
 /// * `network` — A directed graph with positive edge weights, namely "flow capacities".
 /// * `source` — The source node where flow originates.
@@ -35,6 +42,7 @@ use crate::{
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [dinics]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
+/// [max flow mod]: index.html
 ///
 /// # Example
 /// ```rust
@@ -307,6 +315,8 @@ where
 }
 
 /// Returns the minimum value between given `a` and `b`.
+/// Will panic if it tries to compare two elements that aren't comparable
+/// (i.e., given two elements `a` and `b`, neither `a >= b` nor `a < b`).
 fn min<G>(a: G::EdgeWeight, b: G::EdgeWeight) -> G::EdgeWeight
 where
     G: Data,

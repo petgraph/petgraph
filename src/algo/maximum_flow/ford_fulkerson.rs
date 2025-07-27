@@ -109,8 +109,9 @@ where
 }
 
 /// [Ford-Fulkerson][ff] algorithm in the [Edmonds-Karp][ek] variation.
-///
 /// Computes the [maximum flow] from `source` to `destination` in a weighted directed graph.
+///
+/// See also [`maximum_flow`][max flow mod] module for other maximum flow algorithms.
 ///
 /// # Arguments
 /// * `network`: a wieghted directed graph.
@@ -131,6 +132,7 @@ where
 /// [maximum flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [ff]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 /// [ek]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
+/// [max flow mod]: index.html
 ///
 /// # Example
 /// ```rust
