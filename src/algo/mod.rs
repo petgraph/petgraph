@@ -1,7 +1,7 @@
 /*!
 This module contains most of `petgraph`'s algorithms to operate on graphs. Some, very simple search
 algorithms like depth-first search or breadth-first search are implemented in the
-[`visit`] module.
+[`visit`](crate::visit) module.
 
 The `algo` module contains multiple submodules, each implementing a specific algorithm or set of
 algorithms. Some functions, like [`connected_components`], are implemented directly in this module.
