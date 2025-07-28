@@ -26,8 +26,8 @@ where
     G::NodeId: Eq + Hash,
 {
     let mut cliques = Vec::with_capacity(1);
-    if p.is_empty() {
-        if x.is_empty() {
+    if p.is_clear() {
+        if x.is_clear() {
             cliques.push(r);
         }
         return cliques;
@@ -53,7 +53,7 @@ where
         next_r.insert(g.from_index(v));
 
         let next_p: FixedBitSet = p.intersection(&neighbors).collect();
-        neighbors.intersect_with(&p);
+        neighbors.intersect_with(&x);
         let next_x = neighbors;
 
         cliques.extend(bron_kerbosch_pivot(g, adj_mat, next_r, next_p, next_x));
