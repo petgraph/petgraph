@@ -40,7 +40,7 @@ use petgraph::dot::{Dot, Config};
 use petgraph::visit::NodeIndexable;
 
 fn main() {
-    // Create an undirected graph with associated data 
+    // Create an undirected graph with associated data
     // of type `i32` for the nodes and `()` for the edges.
     let g = UnGraph::<i32, ()>::from_edges(&[
         (0, 1), (1, 2), (2, 3), (0, 3)
@@ -161,7 +161,7 @@ terms.
 
 [docsrs-examples]: https://docs.rs/petgraph/latest/petgraph/index.html#examples
 
-[docsrs-graph-map]: https://docs.rs/petgraph/latest/petgraph/stable_graph/struct.StableGraph.html
+[docsrs-graph-map]: https://docs.rs/petgraph/latest/petgraph/graphmap/struct.GraphMap.html
 
 [docsrs-matrix-graph]: https://docs.rs/petgraph/latest/petgraph/matrix_graph/struct.MatrixGraph.html
 
