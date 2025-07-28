@@ -33,21 +33,29 @@ where
         return cliques;
     }
     // pick the pivot u to be the vertex with max degree
-    let u = p.ones().max_by_key(|&v| g.neighbors(g.from_index(v)).count()).unwrap();
-    let mut todo = p.ones()
-        .filter(|&v| u == v || !g.is_adjacent(adj_mat, g.from_index(u), g.from_index(v)) || !g.is_adjacent(adj_mat, g.from_index(v), g.from_index(u))) //skip neighbors of pivot
+    let u = p
+        .ones()
+        .max_by_key(|&v| g.neighbors(g.from_index(v)).count())
+        .unwrap();
+    let mut todo = p
+        .ones()
+        .filter(|&v| {
+            u == v
+                || !g.is_adjacent(adj_mat, g.from_index(u), g.from_index(v))
+                || !g.is_adjacent(adj_mat, g.from_index(v), g.from_index(u))
+        }) //skip neighbors of pivot
         .collect::<Vec<usize>>();
     while let Some(v) = todo.pop() {
-        let mut neighbors = FixedBitSet::from_iter(g.neighbors(g.from_index(v)).map(|n| g.to_index(n)));
+        let mut neighbors =
+            FixedBitSet::from_iter(g.neighbors(g.from_index(v)).map(|n| g.to_index(n)));
         p.remove(v);
         let mut next_r = r.clone();
         next_r.insert(g.from_index(v));
 
-        let next_p: FixedBitSet = p
-            .intersection(&neighbors).collect();
+        let next_p: FixedBitSet = p.intersection(&neighbors).collect();
         neighbors.intersect_with(&p);
         let next_x = neighbors;
-        
+
         cliques.extend(bron_kerbosch_pivot(g, adj_mat, next_r, next_p, next_x));
 
         x.insert(v);
