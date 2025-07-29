@@ -263,13 +263,7 @@ where
 
         Ok(self_)
     }
-}
 
-impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
     pub fn node_count(&self) -> usize {
         self.row.len() - 1
     }
