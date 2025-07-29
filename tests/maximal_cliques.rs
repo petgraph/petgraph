@@ -163,7 +163,6 @@ fn test_maximal_cliques_directed_sparse_graph() {
     let cliques = maximal_cliques(&g);
 
     let expected_cliques = vec![vec![a, b], vec![c], vec![d]];
-    println!("{:?}", &cliques);
     assert_eq!(expected_cliques.len(), cliques.len());
 
     for v in expected_cliques {
