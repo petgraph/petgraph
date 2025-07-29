@@ -111,7 +111,7 @@ fn scc_graph() -> StableGraph<(), ()> {
 #[test]
 fn test_scc() {
     let gr = scc_graph();
-    println!("{:?}", gr);
+    println!("{gr:?}");
 
     let x = n(gr.node_bound() - 1);
     assert_sccs_eq(
@@ -223,7 +223,7 @@ fn test_edge_iterators_directed() {
         }
     }
 
-    println!("{:#?}", gr);
+    println!("{gr:#?}");
     for i in gr.node_indices() {
         itertools::assert_equal(
             gr.edges_directed(i, Incoming).map(|e| e.source()),

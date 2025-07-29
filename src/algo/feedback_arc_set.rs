@@ -11,16 +11,27 @@ use crate::{
 
 use self::linked_list::{LinkedList, LinkedListEntry};
 
-/// \[Generic\] Finds a [feedback arc set]: a set of edges in the given directed graph, which when
+/// Finds a [feedback arc set]: a set of edges in the given directed graph, which when
 /// removed, make the graph acyclic.
 ///
 /// Uses a [greedy heuristic algorithm] to select a small number of edges, but does not necessarily
-/// find the minimum feedback arc set. Time complexity is roughly **O(|E|)** for an input graph with
-/// edges **E**.
+/// find the minimum feedback arc set.
 ///
 /// Does not consider edge/node weights when selecting edges for the feedback arc set.
 ///
 /// Loops (edges to and from the same node) are always included in the returned set.
+///
+/// # Arguments
+/// * `g`: a directed graph.
+///
+/// # Returns
+/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef` in the feedback arc set.
+///
+/// # Complexity
+/// * Time complexity: **O(|V| + |E|)**.
+/// * Auxiliary space: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// # Example
 ///

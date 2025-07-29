@@ -35,7 +35,7 @@ fn art_two_connected_components() {
         .into_iter()
         .map(|node_idx| gr[node_idx])
         .collect();
-    println!("{:?}", articulation_lables);
+    println!("{articulation_lables:?}");
 
     let set: HashSet<NodeIndex> = [b, e].iter().cloned().collect();
     assert_eq!(articulation_points(&gr), set);

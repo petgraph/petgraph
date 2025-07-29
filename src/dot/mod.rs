@@ -181,7 +181,7 @@ where
                 RankDir::LR => "LR",
                 RankDir::RL => "RL",
             };
-            writeln!(f, "{}rankdir=\"{}\"", INDENT, value)?;
+            writeln!(f, "{INDENT}rankdir=\"{value}\"")?;
         }
 
         // output all labels
@@ -211,7 +211,7 @@ where
             if !self.config.EdgeNoLabel {
                 write!(f, "label = \"")?;
                 if self.config.EdgeIndexLabel {
-                    write!(f, "{}", i)?;
+                    write!(f, "{i}")?;
                 } else {
                     Escaped(FnFmt(edge.weight(), &edge_fmt)).fmt(f)?;
                 }

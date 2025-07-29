@@ -14,15 +14,26 @@ pub struct Paths<NodeId, EdgeWeight> {
     pub predecessors: Vec<Option<NodeId>>,
 }
 
-/// \[Generic\] Compute shortest paths from node `source` to all other.
+/// Compute shortest paths from node `source` to all other.
 ///
 /// Using the [Bellman–Ford algorithm][bf]; negative edge costs are
 /// permitted, but the graph must not have a cycle of negative weights
 /// (in that case it will return an error).
 ///
-/// On success, return one vec with path costs, and another one which points
-/// out the predecessor of a node along a shortest path. The vectors
-/// are indexed by the graph's node indices.
+/// # Arguments
+/// * `g`: graph with no negative cycle.
+/// * `source`: the source node.
+///
+/// # Returns
+/// * `Ok`: (if graph contains no negative cycle) a struct [`Paths`] containing distances and
+///   predecessors along each shortest path. The vectors in [`Paths`] are indexed by the graph's node indices.
+/// * `Err`: if graph contains negative cycle.
+///
+/// # Complexity
+/// * Time complexity: **O(|V||E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
 ///
@@ -110,14 +121,27 @@ where
     })
 }
 
-/// \[Generic\] Find the path of a negative cycle reachable from node `source`.
+/// Find the path of a negative cycle reachable from node `source`.
 ///
-/// Using the [find_negative_cycle][nc]; will search the Graph for negative cycles using
+/// Using the [find_negative_cycle][nc]; will search the graph for negative cycles using
 /// [Bellman–Ford algorithm][bf]. If no negative cycle is found the function will return `None`.
 ///
 /// If a negative cycle is found from source, return one vec with a path of `NodeId`s.
 ///
-/// The time complexity of this algorithm should be the same as the Bellman-Ford (O(|V|·|E|)).
+/// # Arguments
+/// * `g`: graph.
+/// * `source`: the source node.
+///
+/// # Returns
+/// * `Some(Vec<G::NodeId>)` - the path of the negative cycle (if found).
+/// * `None` - if `g` doesn't contain negative cycles reachable from `source`.
+///
+/// # Complexity
+/// * Time complexity: **O(|V||E|)**.
+/// * Auxiliary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
 ///
 /// [nc]: https://blogs.asarkar.com/assets/docs/algorithms-curated/Negative-Weight%20Cycle%20Algorithms%20-%20Huang.pdf
 /// [bf]: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm

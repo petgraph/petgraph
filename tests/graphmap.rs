@@ -36,7 +36,7 @@ fn simple() {
     // duplicate edges
     assert_eq!(gr.add_edge(f, b, 16), Some(15));
     assert_eq!(gr.add_edge(f, e, 6), Some(5));
-    println!("{:?}", gr);
+    println!("{gr:?}");
     println!("{}", Dot::with_config(&gr, &[]));
 
     assert_eq!(gr.node_count(), 6);
@@ -129,7 +129,7 @@ fn remove_node() {
 fn remove_directed() {
     let mut g = GraphMap::<_, _, Directed>::with_capacity(0, 0);
     g.add_edge(1, 2, -1);
-    println!("{:?}", g);
+    println!("{g:?}");
 
     assert_eq!(g.edge_weight(1, 2), Some(&-1));
     assert_eq!(g.edge_weight(2, 1), None);
@@ -142,7 +142,7 @@ fn remove_directed() {
     assert_eq!(exist, None);
     let exist = g.remove_edge(1, 2);
     assert_eq!(exist, Some(-1));
-    println!("{:?}", g);
+    println!("{g:?}");
     assert_eq!(g.edge_count(), 0);
     assert_eq!(g.edge_weight(1, 2), None);
     assert_eq!(g.edge_weight(2, 1), None);
@@ -163,7 +163,7 @@ fn dfs() {
     gr.add_edge(i, j, 1.);
     gr.add_edge(i, k, 2.);
 
-    println!("{:?}", gr);
+    println!("{gr:?}");
 
     {
         let mut cnt = 0;
@@ -254,7 +254,7 @@ fn graphmap_directed() {
 
     // duplicate self loop - no
     assert!(gr.add_edge(b, b, ()).is_some());
-    println!("{:#?}", gr);
+    println!("{gr:#?}");
 }
 
 fn assert_sccs_eq<N>(mut res: Vec<Vec<N>>, mut answer: Vec<Vec<N>>)

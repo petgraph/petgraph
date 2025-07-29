@@ -553,35 +553,7 @@ mod matching {
         st.1.push_mapping(nodes.1, st.0.graph.to_index(nodes.0));
     }
 
-    /// Return Some(bool) if isomorphism is decided, else None.
-    pub fn try_match<G0, G1, NM, EM>(
-        st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
-        node_match: &mut NM,
-        edge_match: &mut EM,
-        match_subgraph: bool,
-    ) -> Option<bool>
-    where
-        G0: NodeCompactIndexable
-            + EdgeCount
-            + GetAdjacencyMatrix
-            + GraphProp
-            + IntoNeighborsDirected,
-        G1: NodeCompactIndexable
-            + EdgeCount
-            + GetAdjacencyMatrix
-            + GraphProp
-            + IntoNeighborsDirected,
-        NM: NodeMatcher<G0, G1>,
-        EM: EdgeMatcher<G0, G1>,
-    {
-        let mut stack = vec![Frame::Outer];
-        if isomorphisms(st, node_match, edge_match, match_subgraph, &mut stack).is_some() {
-            Some(true)
-        } else {
-            None
-        }
-    }
-
+    // Note: This function will not find the empty isomorphism (i.e., if g0 is the empty graph).
     fn isomorphisms<G0, G1, NM, EM>(
         st: &mut (Vf2State<'_, G0>, Vf2State<'_, G1>),
         node_match: &mut NM,
@@ -603,10 +575,6 @@ mod matching {
         NM: NodeMatcher<G0, G1>,
         EM: EdgeMatcher<G0, G1>,
     {
-        if st.0.is_complete() {
-            return Some(st.0.mapping.clone());
-        }
-
         // A "depth first" search of a valid mapping from graph 1 to graph 2
         // F(s, n, m) -- evaluate state s and add mapping n <-> m
         // Find least T1out node (in st.out[1] but not in M[1])
@@ -697,6 +665,8 @@ mod matching {
         edge_match: &'c mut EM,
         match_subgraph: bool,
         stack: Vec<Frame<G0, G1>>,
+        // if this is `Some(iter)` we're overriding any calls to `isomorphisms()` with calls to `iter` instead. that is, we return the single known mapping once.
+        iter_override: Option<Option<Vec<usize>>>,
     }
 
     impl<'a, 'b, 'c, G0, G1, NM, EM> GraphMatcher<'a, 'b, 'c, G0, G1, NM, EM>
@@ -722,12 +692,20 @@ mod matching {
             match_subgraph: bool,
         ) -> Self {
             let stack = vec![Frame::Outer];
+            let st = (Vf2State::new(g0), Vf2State::new(g1));
+            let iter_override = if st.0.is_complete() {
+                // the initial state is already complete. if this is the case, need to return the mapping immediately, because `next_candidate` in Frame::Outer will not succeed.
+                Some(Some(st.0.mapping.clone()))
+            } else {
+                None
+            };
             Self {
-                st: (Vf2State::new(g0), Vf2State::new(g1)),
+                st,
                 node_match,
                 edge_match,
                 match_subgraph,
                 stack,
+                iter_override,
             }
         }
     }
@@ -750,6 +728,10 @@ mod matching {
         type Item = Vec<usize>;
 
         fn next(&mut self) -> Option<Self::Item> {
+            if let Some(iter) = self.iter_override.as_mut() {
+                // if we are overriding calls to `isomorphisms`, we return the mapping once
+                return iter.take();
+            }
             isomorphisms(
                 &mut self.st,
                 self.node_match,
@@ -803,17 +785,19 @@ mod matching {
     }
 }
 
-/// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, only matching graph syntactically (graph
 /// structure).
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
 ///
 /// **Reference**
 ///
 /// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento;
 ///   *A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs*
+///
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn is_isomorphic<G0, G1>(g0: G0, g1: G1) -> bool
 where
     G0: NodeCompactIndexable + EdgeCount + GetAdjacencyMatrix + GraphProp + IntoNeighborsDirected,
@@ -827,17 +811,19 @@ where
         return false;
     }
 
-    let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, false)
-        .unwrap_or(false)
+    self::matching::GraphMatcher::new(&g0, &g1, &mut NoSemanticMatch, &mut NoSemanticMatch, false)
+        .next()
+        .is_some()
 }
 
-/// \[Generic\] Return `true` if the graphs `g0` and `g1` are isomorphic.
+/// Return `true` if the graphs `g0` and `g1` are isomorphic.
 ///
 /// Using the VF2 algorithm, examining both syntactic and semantic
 /// graph isomorphism (graph structure and matching node and edge weights).
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
+///
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn is_isomorphic_matching<G0, G1, NM, EM>(
     g0: G0,
     g1: G1,
@@ -864,20 +850,21 @@ where
         return false;
     }
 
-    let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut node_match, &mut edge_match, false).unwrap_or(false)
+    self::matching::GraphMatcher::new(&g0, &g1, &mut node_match, &mut edge_match, false)
+        .next()
+        .is_some()
 }
 
-/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+/// Return `true` if `g0` is isomorphic to a subgraph of `g1`.
 ///
 /// Using the VF2 algorithm, only matching graph syntactically (graph
 /// structure).
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
 ///
 /// # Subgraph isomorphism
 ///
-/// (adapted from [`networkx` documentation](https://networkx.github.io/documentation/stable/reference/algorithms/isomorphism.vf2.html))
+/// (adapted from [`networkx` documentation][networkx_vf2])
 ///
 /// Graph theory literature can be ambiguous about the meaning of the above statement,
 /// and we seek to clarify it now.
@@ -901,6 +888,9 @@ where
 ///
 /// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento;
 ///   *A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs*
+///
+/// [networkx_vf2]: https://networkx.github.io/documentation/stable/reference/algorithms/isomorphism.vf2.html
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn is_isomorphic_subgraph<G0, G1>(g0: G0, g1: G1) -> bool
 where
     G0: NodeCompactIndexable + EdgeCount + GetAdjacencyMatrix + GraphProp + IntoNeighborsDirected,
@@ -914,17 +904,19 @@ where
         return false;
     }
 
-    let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut NoSemanticMatch, &mut NoSemanticMatch, true)
-        .unwrap_or(false)
+    self::matching::GraphMatcher::new(&g0, &g1, &mut NoSemanticMatch, &mut NoSemanticMatch, true)
+        .next()
+        .is_some()
 }
 
-/// \[Generic\] Return `true` if `g0` is isomorphic to a subgraph of `g1`.
+/// Return `true` if `g0` is isomorphic to a subgraph of `g1`.
 ///
 /// Using the VF2 algorithm, examining both syntactic and semantic
 /// graph isomorphism (graph structure and matching node and edge weights).
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
+///
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn is_isomorphic_subgraph_matching<G0, G1, NM, EM>(
     g0: G0,
     g1: G1,
@@ -951,8 +943,9 @@ where
         return false;
     }
 
-    let mut st = (Vf2State::new(&g0), Vf2State::new(&g1));
-    self::matching::try_match(&mut st, &mut node_match, &mut edge_match, true).unwrap_or(false)
+    self::matching::GraphMatcher::new(&g0, &g1, &mut node_match, &mut edge_match, true)
+        .next()
+        .is_some()
 }
 
 /// Using the VF2 algorithm, examine both syntactic and semantic graph
@@ -960,7 +953,9 @@ where
 /// if `g0` is isomorphic to a subgraph of `g1`, return the mappings between
 /// them.
 ///
-/// The graphs should not be multigraphs.
+/// The graphs should not be [multigraphs].
+///
+/// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn subgraph_isomorphisms_iter<'a, G0, G1, NM, EM>(
     g0: &'a G0,
     g1: &'a G1,

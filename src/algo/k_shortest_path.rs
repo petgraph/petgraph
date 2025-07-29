@@ -7,21 +7,31 @@ use crate::algo::Measure;
 use crate::scored::MinScored;
 use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 
-/// \[Generic\] k'th shortest path algorithm.
+/// k'th shortest path algorithm.
 ///
-/// Compute the length of the k'th shortest path from `start` to every reachable
-/// node.
-///
-/// The graph should be `Visitable` and implement `IntoEdges`. The function
-/// `edge_cost` should return the cost for a particular edge, which is used
-/// to compute path costs. Edge costs must be non-negative.
+/// Compute the length of the k-th shortest path from `start` to every reachable
+/// node. Edge costs must be non-negative.
 ///
 /// If `goal` is not `None`, then the algorithm terminates once the `goal` node's
 /// cost is calculated.
 ///
-/// Computes in **O(k * (|E| + |V|*log(|V|)))** time (average).
+/// # Arguments
+/// * `graph`: an input graph.
+/// * `start`: the *start* node.
+/// * `goal`: optional *goal* node.
+/// * `k`: sequence number of the required shortest paths.
+/// * `edge_cost`: closure that should return the cost for a particular edge, which is used
+///   to compute path costs. Edge costs must be non-negative.
 ///
-/// Returns a `HashMap` that maps `NodeId` to path cost.
+/// # Returns
+/// * `HashMap`: [`struct@hashbrown::HashMap`] that maps `NodeId` to path cost.
+///
+/// # Complexity
+/// * Time complexity: **O(k|E| log(k|E|))**.
+/// * Auxiliary space: **O(|V| + k|E|)**.
+///
+/// where **|V|** is the number of nodes, **|E|** is the number of edges and **k** is the provided parameter.
+///
 /// # Example
 /// ```rust
 /// use petgraph::Graph;

@@ -127,21 +127,29 @@ where
     removed_leaves
 }
 
-/// \[Generic\] Steiner Tree algorithm.
+/// [Steiner Tree][1] algorithm.
 ///
-/// Computes the Steiner tree of an undirected graph given a set of terminal nodes via [Kou's algorithm][pr]. Implementation details mirrors NetworkX implementation.
+/// Computes the Steiner tree of an undirected connected graph given a set of terminal nodes via
+/// [Kou's algorithm][2]. Implementation details are the same as in the [NetworkX implementation][3].
 ///
-/// Returns a `Graph` representing the Steiner tree of the input graph.
+/// ## Arguments
+/// * `graph`: The undirected graph in which to find the Steiner tree.
+/// * `terminals`: A slice of node indices representing the terminals for which the Steiner tree is computed.
 ///
+/// ## Returns
+/// A `StableGraph` containing the nodes and edges of the Steiner tree.
 ///
-/// # Complexity
-/// Time complexity is **O(|S| |V|²)**.
-/// where **|V|** the number of vertices (i.e nodes) and **|E|** the number of edges.
+/// ## Complexity
+/// Time complexity: **O(|S| |V|²)**.
+/// where **|V|** the number of vertices (i.e nodes) and **|S|** the number of provided terminals.
 ///
-/// [pr]: https://networkx.org/documentation/stable/_modules/networkx/algorithms/approximation/steinertree.html#steiner_tree
+/// [1]: https://en.wikipedia.org/wiki/Steiner_tree_problem
+/// [2]: https://doi.org/10.1007/BF00288961
+/// [3]: https://networkx.org/documentation/stable/_modules/networkx/algorithms/approximation/steinertree.html#steiner_tree
 ///
 /// # Example
-/// ```rust
+///
+/// ```
 /// use petgraph::Graph;
 /// use petgraph::algo::steiner_tree::steiner_tree;
 /// use petgraph::graph::UnGraph;
@@ -166,7 +174,7 @@ where
 /// let terminals = vec![a, c, e, f];
 /// let tree = steiner_tree(&graph, &terminals);
 /// assert_eq!(tree.edge_weights().sum::<i32>(), 12);
-///
+/// ```
 #[cfg(feature = "stable_graph")]
 pub fn steiner_tree<N, E, Ix>(
     graph: &UnGraph<N, E, Ix>,

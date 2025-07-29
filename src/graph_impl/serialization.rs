@@ -273,9 +273,8 @@ where
     E: Error,
 {
     E::custom(format_args!(
-        "invalid value: node index `{}` does not exist in graph \
-         with node bound {}",
-        node_index, len
+        "invalid value: node index `{node_index}` does not exist in graph \
+         with node bound {len}",
     ))
 }
 
@@ -284,8 +283,7 @@ where
     E: Error,
 {
     E::custom(format_args!(
-        "invalid value: node hole `{}` is not allowed.",
-        node_index
+        "invalid value: node hole `{node_index}` is not allowed.",
     ))
 }
 

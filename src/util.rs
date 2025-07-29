@@ -6,11 +6,3 @@ where
 {
     iterable.into_iter().enumerate()
 }
-
-pub fn zip<I, J>(i: I, j: J) -> iter::Zip<I::IntoIter, J::IntoIter>
-where
-    I: IntoIterator,
-    J: IntoIterator,
-{
-    i.into_iter().zip(j)
-}

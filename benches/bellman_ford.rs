@@ -3,8 +3,8 @@
 extern crate petgraph;
 extern crate test;
 
+use core::cmp::{max, min};
 use petgraph::prelude::*;
-use std::cmp::{max, min};
 use test::Bencher;
 
 use petgraph::algo::{bellman_ford, find_negative_cycle};

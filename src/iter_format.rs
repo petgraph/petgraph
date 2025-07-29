@@ -44,7 +44,7 @@ pub struct Format<'a, I> {
 }
 
 pub trait IterFormatExt: Iterator {
-    fn format(self, separator: &str) -> Format<Self>
+    fn format(self, separator: &str) -> Format<'_, Self>
     where
         Self: Sized,
     {
