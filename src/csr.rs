@@ -249,6 +249,7 @@ where
                         self_.column.push(m);
                         self_.edges.push(weight);
                         rstart += 1;
+                        self_.edge_count += 1;
                     } else {
                         break 'outer;
                     }
