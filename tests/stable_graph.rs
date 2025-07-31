@@ -195,6 +195,7 @@ defmac!(edges ref gr, x => gr.edges(x).map(|r| (r.target(), *r.weight())));
 
 #[test]
 fn test_edges_directed() {
+    let gr = make_graph::<Directed>();
     let x = n(9);
     assert_equal(edges!(&gr, x), vec![(x, 16), (x, 14), (n(1), 13)]);
     assert_equal(edges!(&gr, n(0)), vec![(n(3), 1)]);
@@ -209,6 +210,7 @@ fn test_edge_references() {
 
 #[test]
 fn test_edges_undirected() {
+    let gr = make_graph::<Undirected>();
     let x = n(9);
     assert_equal(
         edges!(&gr, x),
@@ -440,6 +442,9 @@ fn from() {
     assert!(edges_eq!(&gr1, &gr3));
 
     gr1.remove_node(b);
+
+    let gr4 = Graph::from(gr1);
+    let gr5 = StableGraph::from(gr4.clone());
 
     let mut ans = StableGraph::new();
     let a = ans.add_node(1);
