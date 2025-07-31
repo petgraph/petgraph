@@ -1722,10 +1722,10 @@ fn test_filter_map_owned() {
         |i, weight| {
             let (source, target) = g.edge_endpoints(i).unwrap();
             // don't map edges from a removed node
-            assert!(source != a);
-            assert!(target != a);
-            assert!(source != e);
-            assert!(target != e);
+            assert_ne!(source, a);
+            assert_ne!(target, a);
+            assert_ne!(source, e);
+            assert_ne!(target, e);
             Some(weight)
         },
     );

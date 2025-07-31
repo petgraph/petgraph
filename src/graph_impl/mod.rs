@@ -1506,7 +1506,11 @@ where
     /// as `self`.
     ///
     /// If you want a non-consuming version of this function, see [`map`](struct.Graph.html#method.map).
-    pub fn map_owned<F, G, N2, E2>(self, mut node_map: F, mut edge_map: G) -> Graph<N2, E2, Ty, Ix>
+    pub fn map_owned<F, G, N2, E2>(
+        mut self,
+        mut node_map: F,
+        mut edge_map: G,
+    ) -> Graph<N2, E2, Ty, Ix>
     where
         F: FnMut(NodeIndex<Ix>, N) -> N2,
         G: FnMut(EdgeIndex<Ix>, E) -> E2,
