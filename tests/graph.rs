@@ -1593,7 +1593,49 @@ fn test_has_path() {
 }
 
 #[test]
-fn map_filter_map() {
+fn test_map() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let ab = g.add_edge(a, b, 7);
+    let bc = g.add_edge(b, c, 14);
+    let ca = g.add_edge(c, a, 9);
+
+    let g2 = g.map(|_, name| format!("map-{name}"), |_, weight| weight * 2);
+    assert_eq!(g2.node_count(), 3);
+    assert_eq!(g2.node_weight(a).map(|s| &**s), Some("map-A"));
+    assert_eq!(g2.node_weight(b).map(|s| &**s), Some("map-B"));
+    assert_eq!(g2.node_weight(c).map(|s| &**s), Some("map-C"));
+    assert_eq!(g2.edge_count(), 3);
+    assert_eq!(g2.edge_weight(ab), Some(&14));
+    assert_eq!(g2.edge_weight(bc), Some(&28));
+    assert_eq!(g2.edge_weight(ca), Some(&18));
+}
+
+#[test]
+fn test_map_owned() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let ab = g.add_edge(a, b, 7);
+    let bc = g.add_edge(b, c, 14);
+    let ca = g.add_edge(c, a, 9);
+
+    let g2 = g.map_owned(|_, name| format!("map-{name}"), |_, weight| weight * 2);
+    assert_eq!(g2.node_count(), 3);
+    assert_eq!(g2.node_weight(a).map(|s| &**s), Some("map-A"));
+    assert_eq!(g2.node_weight(b).map(|s| &**s), Some("map-B"));
+    assert_eq!(g2.node_weight(c).map(|s| &**s), Some("map-C"));
+    assert_eq!(g2.edge_count(), 3);
+    assert_eq!(g2.edge_weight(ab), Some(&14));
+    assert_eq!(g2.edge_weight(bc), Some(&28));
+    assert_eq!(g2.edge_weight(ca), Some(&18));
+}
+
+#[test]
+fn test_filter_map() {
     let mut g = Graph::new_undirected();
     let a = g.add_node("A");
     let b = g.add_node("B");
@@ -1620,6 +1662,11 @@ fn map_filter_map() {
     for edge in g2.raw_edges() {
         assert!(edge.weight >= 10);
     }
+    assert_eq!(g2.node_count(), g.node_count());
+    // Check if node indices are compatible
+    for i in g.node_indices() {
+        assert_eq!(g2.node_weight(i), g.node_weight(i));
+    }
 
     let g3 = g.filter_map(
         |i, &name| if i == a || i == e { None } else { Some(name) },
@@ -1630,6 +1677,65 @@ fn map_filter_map() {
             assert!(target != a);
             assert!(source != e);
             assert!(target != e);
+            Some(weight)
+        },
+    );
+    assert_eq!(g3.node_count(), g.node_count() - 2);
+    assert_eq!(g3.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g3);
+
+    let mut g4 = g.clone();
+    g4.retain_edges(|gr, i| {
+        let (s, t) = gr.edge_endpoints(i).unwrap();
+        !(s == a || s == e || t == a || t == e)
+    });
+    assert_eq!(g4.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g4);
+}
+
+#[test]
+fn test_filter_map_owned() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A".to_owned());
+    let b = g.add_node("B".to_owned());
+    let c = g.add_node("C".to_owned());
+    let d = g.add_node("D".to_owned());
+    let e = g.add_node("E".to_owned());
+    let f = g.add_node("F".to_owned());
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
+    println!("{g:?}");
+
+    let g2 = g.clone().filter_map_owned(
+        |_, name| Some(name),
+        |_, weight| if weight >= 10 { Some(weight) } else { None },
+    );
+    assert_eq!(g2.edge_count(), 4);
+    for edge in g2.raw_edges() {
+        assert!(edge.weight >= 10);
+    }
+    assert_eq!(g2.node_count(), g.node_count());
+    // Check if node indices are compatible
+    for i in g.node_indices() {
+        assert_eq!(g2.node_weight(i), g.node_weight(i));
+    }
+
+    let g3 = g.clone().filter_map_owned(
+        |i, name| if i == a || i == e { None } else { Some(name) },
+        |i, weight| {
+            let (source, target) = g.edge_endpoints(i).unwrap();
+            // don't map edges from a removed node
+            assert_ne!(source, a);
+            assert_ne!(target, a);
+            assert_ne!(source, e);
+            assert_ne!(target, e);
             Some(weight)
         },
     );
