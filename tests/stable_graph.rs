@@ -8,6 +8,7 @@ extern crate defmac;
 use std::collections::HashSet;
 
 use itertools::assert_equal;
+use petgraph::adj::IndexType;
 use petgraph::algo::{kosaraju_scc, min_spanning_tree, tarjan_scc};
 use petgraph::dot::Dot;
 use petgraph::prelude::*;
@@ -15,6 +16,23 @@ use petgraph::stable_graph::edge_index as e;
 use petgraph::stable_graph::node_index as n;
 use petgraph::visit::{EdgeIndexable, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
 use petgraph::EdgeType;
+
+fn assert_graph_consistent<N, E, Ty, Ix>(g: &StableGraph<N, E, Ty, Ix>)
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    assert_eq!(g.node_count(), g.node_indices().count());
+    assert_eq!(g.edge_count(), g.edge_indices().count());
+    for edge in g.edge_references() {
+        assert!(
+            g.find_edge(edge.source(), edge.target()).is_some(),
+            "Edge not in graph! {:?} to {:?}",
+            edge.source(),
+            edge.target()
+        );
+    }
+}
 
 #[test]
 fn node_indices() {
@@ -177,7 +195,6 @@ defmac!(edges ref gr, x => gr.edges(x).map(|r| (r.target(), *r.weight())));
 
 #[test]
 fn test_edges_directed() {
-    let gr = make_graph::<Directed>();
     let x = n(9);
     assert_equal(edges!(&gr, x), vec![(x, 16), (x, 14), (n(1), 13)]);
     assert_equal(edges!(&gr, n(0)), vec![(n(3), 1)]);
@@ -192,7 +209,6 @@ fn test_edge_references() {
 
 #[test]
 fn test_edges_undirected() {
-    let gr = make_graph::<Undirected>();
     let x = n(9);
     assert_equal(
         edges!(&gr, x),
@@ -425,9 +441,6 @@ fn from() {
 
     gr1.remove_node(b);
 
-    let gr4 = Graph::from(gr1);
-    let gr5 = StableGraph::from(gr4.clone());
-
     let mut ans = StableGraph::new();
     let a = ans.add_node(1);
     let c = ans.add_node(3);
@@ -492,4 +505,172 @@ fn weights_mut_iterator() {
     gr.remove_node(b);
     assert_eq!(gr.node_weights_mut().count(), gr.node_count());
     assert_eq!(gr.edge_weights_mut().count(), gr.edge_count());
+}
+
+#[test]
+fn test_map() {
+    let mut g: StableGraph<_, _, Undirected> = StableGraph::with_capacity(0, 0);
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let ab = g.add_edge(a, b, 7);
+    let bc = g.add_edge(b, c, 14);
+    let ca = g.add_edge(c, a, 9);
+
+    let g2 = g.map(|_, name| format!("map-{name}"), |_, weight| weight * 2);
+    assert_eq!(g2.node_count(), 3);
+    assert_eq!(g2.node_weight(a).map(|s| &**s), Some("map-A"));
+    assert_eq!(g2.node_weight(b).map(|s| &**s), Some("map-B"));
+    assert_eq!(g2.node_weight(c).map(|s| &**s), Some("map-C"));
+    assert_eq!(g2.edge_count(), 3);
+    assert_eq!(g2.edge_weight(ab), Some(&14));
+    assert_eq!(g2.edge_weight(bc), Some(&28));
+    assert_eq!(g2.edge_weight(ca), Some(&18));
+}
+
+#[test]
+fn test_map_owned() {
+    let mut g: StableGraph<_, _, Undirected> = StableGraph::with_capacity(0, 0);
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let ab = g.add_edge(a, b, 7);
+    let bc = g.add_edge(b, c, 14);
+    let ca = g.add_edge(c, a, 9);
+
+    let g2 = g.map_owned(|_, name| format!("map-{name}"), |_, weight| weight * 2);
+    assert_eq!(g2.node_count(), 3);
+    assert_eq!(g2.node_weight(a).map(|s| &**s), Some("map-A"));
+    assert_eq!(g2.node_weight(b).map(|s| &**s), Some("map-B"));
+    assert_eq!(g2.node_weight(c).map(|s| &**s), Some("map-C"));
+    assert_eq!(g2.edge_count(), 3);
+    assert_eq!(g2.edge_weight(ab), Some(&14));
+    assert_eq!(g2.edge_weight(bc), Some(&28));
+    assert_eq!(g2.edge_weight(ca), Some(&18));
+}
+
+#[test]
+fn test_filter_map() {
+    let mut g: StableGraph<_, _, Undirected> = StableGraph::with_capacity(0, 0);
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let d = g.add_node("D");
+    let e = g.add_node("E");
+    let f = g.add_node("F");
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
+    println!("{g:?}");
+
+    let g2 = g.filter_map(
+        |_, name| Some(*name),
+        |_, &weight| if weight >= 10 { Some(weight) } else { None },
+    );
+    assert_eq!(g2.edge_count(), 4);
+    for weight in g2.edge_weights() {
+        assert!(*weight >= 10);
+    }
+    assert_eq!(g2.node_count(), g.node_count());
+    // Check if node indices are compatible
+    for i in g.node_indices() {
+        assert_eq!(g2.node_weight(i), g.node_weight(i));
+    }
+
+    let g3 = g.filter_map(
+        |i, &name| if i == a || i == e { None } else { Some(name) },
+        |i, &weight| {
+            let (source, target) = g.edge_endpoints(i).unwrap();
+            // don't map edges from a removed node
+            assert!(source != a);
+            assert!(target != a);
+            assert!(source != e);
+            assert!(target != e);
+            Some(weight)
+        },
+    );
+    assert_eq!(g3.node_count(), g.node_count() - 2);
+    assert_eq!(g3.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g3);
+    // Check if node indices are compatible
+    for i in g3.node_indices() {
+        assert_eq!(g3.node_weight(i), g.node_weight(i));
+    }
+
+    let mut g4 = g.clone();
+    g4.retain_edges(|gr, i| {
+        let (s, t) = gr.edge_endpoints(i).unwrap();
+        !(s == a || s == e || t == a || t == e)
+    });
+    assert_eq!(g4.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g4);
+}
+
+#[test]
+fn test_filter_map_owned() {
+    let mut g: StableGraph<_, _, Undirected> = StableGraph::with_capacity(0, 0);
+    let a = g.add_node("A".to_owned());
+    let b = g.add_node("B".to_owned());
+    let c = g.add_node("C".to_owned());
+    let d = g.add_node("D".to_owned());
+    let e = g.add_node("E".to_owned());
+    let f = g.add_node("F".to_owned());
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
+    println!("{g:?}");
+
+    let g2 = g.clone().filter_map_owned(
+        |_, name| Some(name),
+        |_, weight| if weight >= 10 { Some(weight) } else { None },
+    );
+    assert_eq!(g2.edge_count(), 4);
+    for weight in g2.edge_weights() {
+        assert!(*weight >= 10);
+    }
+    assert_eq!(g2.node_count(), g.node_count());
+    // Check if node indices are compatible
+    for i in g.node_indices() {
+        assert_eq!(g2.node_weight(i), g.node_weight(i));
+    }
+
+    let g3 = g.clone().filter_map_owned(
+        |i, name| if i == a || i == e { None } else { Some(name) },
+        |i, weight| {
+            let (source, target) = g.edge_endpoints(i).unwrap();
+            // don't map edges from a removed node
+            assert_ne!(source, a);
+            assert_ne!(target, a);
+            assert_ne!(source, e);
+            assert_ne!(target, e);
+            Some(weight)
+        },
+    );
+    assert_eq!(g3.node_count(), g.node_count() - 2);
+    assert_eq!(g3.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g3);
+    // Check if node indices are compatible
+    for i in g3.node_indices() {
+        assert_eq!(g3.node_weight(i), g.node_weight(i));
+    }
+
+    let mut g4 = g.clone();
+    g4.retain_edges(|gr, i| {
+        let (s, t) = gr.edge_endpoints(i).unwrap();
+        !(s == a || s == e || t == a || t == e)
+    });
+    assert_eq!(g4.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g4);
 }
