@@ -1662,6 +1662,11 @@ fn test_filter_map() {
     for edge in g2.raw_edges() {
         assert!(edge.weight >= 10);
     }
+    assert_eq!(g2.node_count(), g.node_count());
+    // Check if node indices are compatible
+    for i in g.node_indices() {
+        assert_eq!(g2.node_weight(i), g.node_weight(i));
+    }
 
     let g3 = g.filter_map(
         |i, &name| if i == a || i == e { None } else { Some(name) },
@@ -1715,6 +1720,11 @@ fn test_filter_map_owned() {
     assert_eq!(g2.edge_count(), 4);
     for edge in g2.raw_edges() {
         assert!(edge.weight >= 10);
+    }
+    assert_eq!(g2.node_count(), g.node_count());
+    // Check if node indices are compatible
+    for i in g.node_indices() {
+        assert_eq!(g2.node_weight(i), g.node_weight(i));
     }
 
     let g3 = g.clone().filter_map_owned(
