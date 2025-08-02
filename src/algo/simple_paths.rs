@@ -4,6 +4,7 @@ use core::{
     iter::{from_fn, FromIterator},
 };
 
+use hashbrown::HashSet;
 use indexmap::IndexSet;
 
 use crate::{
@@ -100,6 +101,9 @@ where
     from_fn(move || {
         while let Some(children) = stack.last_mut() {
             if let Some(child) = children.next() {
+                if visited.contains(&child) {
+                    continue;
+                }
                 if visited.len() < max_length {
                     if child == to {
                         if visited.len() >= min_length {
@@ -110,12 +114,14 @@ where
                                 .collect::<TargetColl>();
                             return Some(path);
                         }
-                    } else if !visited.contains(&child) {
+                    } else {
                         visited.insert(child);
                         stack.push(graph.neighbors_directed(child, Outgoing));
                     }
                 } else {
-                    if (child == to || children.any(|v| v == to)) && visited.len() >= min_length {
+                    if (child == to || children.any(|v| v == to && !visited.contains(&v)))
+                        && visited.len() >= min_length
+                    {
                         let path = visited
                             .iter()
                             .cloned()
@@ -135,6 +141,77 @@ where
     })
 }
 
+pub fn all_simple_paths_multi<TargetColl, G, S>(
+    graph: G,
+    from: G::NodeId,
+    to: HashSet<G::NodeId, S>,
+    min_intermediate_nodes: usize,
+    max_intermediate_nodes: Option<usize>,
+) -> impl Iterator<Item = TargetColl>
+where
+    G: NodeCount,
+    G: IntoNeighborsDirected,
+    G::NodeId: Eq + Hash,
+    TargetColl: FromIterator<G::NodeId>,
+    S: BuildHasher + Default,
+{
+    let max_nodes = if let Some(l) = max_intermediate_nodes {
+        l + 2
+    } else {
+        graph.node_count()
+    };
+
+    let min_nodes = min_intermediate_nodes + 2;
+
+    // list of visited nodes
+    let mut visited: IndexSet<G::NodeId, S> = IndexSet::from_iter(Some(from));
+    // list of childs of currently exploring path nodes,
+    // last elem is list of childs of last visited node
+    let mut stack = vec![graph.neighbors_directed(from, Outgoing)];
+
+    from_fn(move || {
+        while let Some(children) = stack.last_mut() {
+            if let Some(child) = children.next() {
+                if visited.contains(&child) {
+                    continue;
+                }
+
+                let current_nodes = visited.len();
+                let mut valid_path: Option<TargetColl> = None;
+
+                // Check if we've reached a target node
+                if to.contains(&child) && (current_nodes + 1) >= min_nodes {
+                    valid_path = Some(
+                        visited
+                            .iter()
+                            .cloned()
+                            .chain(Some(child))
+                            .collect::<TargetColl>(),
+                    );
+                }
+
+                // Expand the search only if within max length and unexplored target nodes remain
+                if (current_nodes < max_nodes)
+                    && to.iter().any(|&n| n != child && !visited.contains(&n))
+                {
+                    visited.insert(child);
+                    stack.push(graph.neighbors_directed(child, Outgoing));
+                }
+
+                // yield the valid path if found
+                if valid_path.is_some() {
+                    return valid_path;
+                }
+            } else {
+                // All neighbors of the current node have been explored
+                stack.pop();
+                visited.pop();
+            }
+        }
+        None
+    })
+}
+
 #[cfg(test)]
 mod test {
     use alloc::{vec, vec::Vec};
@@ -144,8 +221,11 @@ mod test {
     use hashbrown::HashSet;
     use itertools::assert_equal;
 
-    use super::all_simple_paths;
-    use crate::{dot::Dot, prelude::DiGraph};
+    use super::{all_simple_paths, all_simple_paths_multi};
+    use crate::{
+        dot::Dot,
+        prelude::{DiGraph, UnGraph},
+    };
 
     #[test]
     fn test_all_simple_paths() {
@@ -214,5 +294,264 @@ mod test {
                 .collect();
 
         assert_eq!(actual_simple_paths_0_to_2.len(), 0);
+    }
+
+    #[test]
+    fn test_path_graph() {
+        let graph = UnGraph::<i32, i32>::from_edges([(0, 1), (1, 2), (2, 3)]);
+        let paths: Vec<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 0u32.into(), 3u32.into(), 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        assert_eq!(paths, vec![vec![0, 1, 2, 3]]);
+    }
+
+    #[test]
+    fn test_multi_target_paths() {
+        let graph = UnGraph::<i32, i32>::from_edges([(0, 1), (1, 2), (2, 3), (2, 4)]);
+        let targets = HashSet::from_iter([3.into(), 4.into()]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths_multi::<_, _, RandomState>(&graph, 0.into(), targets, 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected: HashSet<Vec<_>> = HashSet::from_iter([vec![0, 1, 2, 3], vec![0, 1, 2, 4]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_digraph_multi_target_paths() {
+        let graph = DiGraph::<i32, ()>::from_edges([(0, 1), (1, 2), (2, 3), (2, 4)]);
+        let targets = HashSet::from_iter([3.into(), 4.into()]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths_multi::<_, _, RandomState>(&graph, 0.into(), targets, 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected: HashSet<Vec<_>> = HashSet::from_iter([vec![0, 1, 2, 3], vec![0, 1, 2, 4]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_multi_target_paths_cutoff() {
+        let graph = UnGraph::<i32, ()>::from_edges([(0, 1), (1, 2), (2, 3), (2, 4)]);
+        let targets = HashSet::from_iter([3.into(), 4.into()]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths_multi::<_, _, RandomState>(&graph, 0.into(), targets, 0, Some(2))
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected: HashSet<Vec<_>> = HashSet::from_iter([vec![0, 1, 2, 3], vec![0, 1, 2, 4]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_digraph_multi_target_paths_cutoff() {
+        let graph = DiGraph::<i32, ()>::from_edges([(0, 1), (1, 2), (2, 3), (2, 4)]);
+        let targets = HashSet::from_iter([3.into(), 4.into()]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths_multi::<_, _, RandomState>(&graph, 0.into(), targets, 0, Some(2))
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected: HashSet<Vec<_>> = HashSet::from_iter([vec![0, 1, 2, 3], vec![0, 1, 2, 4]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_multi_target_paths_inline() {
+        let graph = UnGraph::<i32, ()>::from_edges([(0, 1), (1, 2), (2, 3)]);
+        let targets = HashSet::from_iter([2.into(), 3.into()]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths_multi::<_, _, RandomState>(&graph, 0.into(), targets, 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected: HashSet<Vec<_>> = HashSet::from_iter([vec![0, 1, 2], vec![0, 1, 2, 3]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_all_simple_paths_ignores_cycle() {
+        let graph = DiGraph::<i32, ()>::from_edges([(0, 1), (1, 2), (2, 0), (1, 3)]);
+        let paths: Vec<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 0.into(), 3.into(), 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        assert_eq!(paths, vec![vec![0, 1, 3]]);
+    }
+
+    #[test]
+    fn test_multi_target_paths_in_cycle() {
+        let graph = DiGraph::<i32, ()>::from_edges([(0, 1), (1, 2), (2, 0), (1, 3)]);
+        let targets = HashSet::from_iter([2.into(), 3.into()]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths_multi::<_, _, RandomState>(&graph, 0.into(), targets, 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected = HashSet::from_iter([vec![0, 1, 2], vec![0, 1, 3]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_simple_path_source_target() {
+        let graph = UnGraph::<i32, ()>::from_edges([(0, 1), (1, 2), (2, 3)]);
+        let paths: Vec<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 1.into(), 1.into(), 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        assert_eq!(paths, vec![vec![1]]);
+    }
+
+    #[test]
+    fn test_simple_paths_cutoff() {
+        let graph =
+            UnGraph::<i32, ()>::from_edges([(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 0.into(), 1.into(), 0, Some(0))
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        assert_eq!(paths, HashSet::from_iter([vec![0, 1]]));
+
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 0.into(), 1.into(), 0, Some(1))
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected = HashSet::from_iter([vec![0, 1], vec![0, 2, 1], vec![0, 3, 1]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_multi_target_source_is_target() {
+        let graph = UnGraph::<i32, ()>::from_edges([(0, 1), (1, 2)]);
+        let targets = HashSet::from_iter([0.into(), 1.into(), 2.into()]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths_multi::<_, _, RandomState>(&graph, 0.into(), targets, 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected = HashSet::from_iter([vec![0], vec![0, 1], vec![0, 1, 2]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_all_simple_paths_empty() {
+        let graph = UnGraph::<i32, ()>::from_edges([(0, 1), (1, 2), (2, 3)]);
+        let paths: Vec<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 0.into(), 3.into(), 0, Some(1))
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        assert!(paths.is_empty());
+    }
+
+    #[test]
+    fn test_all_simple_paths_on_non_trivial_graph() {
+        let graph = DiGraph::<i32, ()>::from_edges([
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (0, 5),
+            (1, 5),
+            (1, 3),
+            (5, 4),
+            (4, 2),
+            (4, 3),
+        ]);
+        let targets = HashSet::from_iter([2.into(), 3.into()]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths_multi::<_, _, RandomState>(&graph, 1.into(), targets, 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected = HashSet::from_iter([
+            vec![1, 2],
+            vec![1, 5, 4, 2],
+            vec![1, 3, 4, 2],
+            vec![1, 3],
+            vec![1, 2, 3],
+            vec![1, 5, 4, 3],
+            vec![1, 5, 4, 2, 3],
+        ]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_all_simple_paths_directed() {
+        let graph = DiGraph::<i32, ()>::from_edges([(1, 2), (2, 3), (3, 2), (2, 1)]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 1.into(), 3.into(), 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected = HashSet::from_iter([vec![1, 2, 3]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_all_simple_paths_corner_cases() {
+        let mut graph = DiGraph::<i32, ()>::new();
+        graph.add_node(0);
+        graph.add_node(1);
+
+        let paths: Vec<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 0.into(), 0.into(), 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        assert_eq!(paths, vec![vec![0]]);
+
+        let paths: Vec<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 0.into(), 1.into(), 0, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        assert!(paths.is_empty());
+    }
+
+    #[test]
+    fn test_simple_paths_min_intermediate_nodes() {
+        let graph =
+            UnGraph::<i32, ()>::from_edges([(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths::<_, _, RandomState>(&graph, 0.into(), 1.into(), 2, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected = HashSet::from_iter([vec![0, 2, 3, 1], vec![0, 3, 2, 1]]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_multi_target_paths_min_intermediate_nodes() {
+        let graph =
+            UnGraph::<i32, ()>::from_edges([(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
+        let targets = HashSet::from_iter([1.into(), 3.into()]);
+        let paths: HashSet<Vec<_>> =
+            all_simple_paths_multi::<_, _, RandomState>(&graph, 0.into(), targets, 2, None)
+                .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
+                .collect();
+        let expected = HashSet::from_iter([
+            vec![0, 2, 3, 1],
+            vec![0, 3, 2, 1],
+            vec![0, 1, 2, 3],
+            vec![0, 2, 1, 3],
+        ]);
+        assert_eq!(paths, expected);
+    }
+
+    #[test]
+    fn test_simple_paths_from_node_to_itself_in_complete_graph() {
+        // Create a directed graph
+        let mut graph = DiGraph::new();
+
+        let a = graph.add_node("A");
+        let b = graph.add_node("B");
+        let c = graph.add_node("C");
+
+        // Add edges for complete graph (every node connected to every other node)
+        graph.add_edge(a, b, ());
+        graph.add_edge(a, c, ());
+        graph.add_edge(b, a, ());
+        graph.add_edge(b, c, ());
+        graph.add_edge(c, a, ());
+        graph.add_edge(c, b, ());
+
+        // Find all simple paths from A to A
+        let paths: Vec<Vec<_>> =
+            all_simple_paths::<Vec<_>, _, RandomState>(&graph, a, a, 0, None).collect();
+
+        // The only simple path from a node to itself is a path of length 1 (just the node itself).
+        let expected_paths: Vec<Vec<_>> = vec![vec![a]];
+        assert_eq!(paths, expected_paths);
     }
 }
