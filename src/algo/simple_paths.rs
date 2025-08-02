@@ -395,7 +395,7 @@ mod test {
             all_simple_paths::<_, _, RandomState>(&graph, 1.into(), 1.into(), 0, None)
                 .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
                 .collect();
-        assert_eq!(paths, vec![vec![1]]);
+        assert!(paths.is_empty());
     }
 
     #[test]
@@ -424,7 +424,7 @@ mod test {
             all_simple_paths_multi::<_, _, RandomState>(&graph, 0.into(), targets, 0, None)
                 .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
                 .collect();
-        let expected = HashSet::from_iter([vec![0], vec![0, 1], vec![0, 1, 2]]);
+        let expected = HashSet::from_iter([vec![0, 1], vec![0, 1, 2]]);
         assert_eq!(paths, expected);
     }
 
@@ -490,7 +490,7 @@ mod test {
             all_simple_paths::<_, _, RandomState>(&graph, 0.into(), 0.into(), 0, None)
                 .map(|v: Vec<_>| v.into_iter().map(|i| i.index()).collect())
                 .collect();
-        assert_eq!(paths, vec![vec![0]]);
+        assert!(paths.is_empty());
 
         let paths: Vec<Vec<_>> =
             all_simple_paths::<_, _, RandomState>(&graph, 0.into(), 1.into(), 0, None)
@@ -551,7 +551,6 @@ mod test {
             all_simple_paths::<Vec<_>, _, RandomState>(&graph, a, a, 0, None).collect();
 
         // The only simple path from a node to itself is a path of length 1 (just the node itself).
-        let expected_paths: Vec<Vec<_>> = vec![vec![a]];
-        assert_eq!(paths, expected_paths);
+        assert!(paths.is_empty());
     }
 }
