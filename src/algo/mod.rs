@@ -66,7 +66,7 @@ pub use scc::{
     kosaraju_scc::kosaraju_scc,
     tarjan_scc::{tarjan_scc, TarjanScc},
 };
-pub use simple_paths::all_simple_paths;
+pub use simple_paths::{all_simple_paths, all_simple_paths_multi};
 pub use spfa::spfa;
 #[cfg(feature = "stable_graph")]
 pub use steiner_tree::steiner_tree;
