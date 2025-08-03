@@ -141,6 +141,53 @@ where
     })
 }
 
+/// Calculate all simple paths from a source node to any of several target nodes.
+///
+/// This function is a variant of [`all_simple_paths`] that accepts a `HashSet` of
+/// target nodes instead of a single one. A path is yielded as soon as it reaches any
+/// node in the `to` set.
+///
+/// # Performance Considerations
+///
+/// The efficiency of this function hinges on the graph's structure. It provides significant
+/// performance gains on graphs where paths share long initial segments (e.g., trees and DAGs),
+/// as the benefit of a single traversal outweighs the `HashSet` lookup overhead.
+///
+/// Conversely, in dense graphs where paths diverge quickly or for targets very close
+/// to the source, the lookup overhead can make repeated calls to [`all_simple_paths`]
+/// a faster alternative.
+///
+/// Path constraints (`min_intermediate_nodes`, `max_intermediate_nodes`) and complexity
+/// are otherwise identical to [`all_simple_paths`].
+///
+/// # Example
+/// ```
+/// use petgraph::{algo, prelude::*};
+/// use hashbrown::HashSet;
+/// use std::collections::hash_map::RandomState;
+///
+/// let mut graph = DiGraph::<&str, i32>::new();
+///
+/// let a = graph.add_node("a");
+/// let b = graph.add_node("b");
+/// let c = graph.add_node("c");
+/// let d = graph.add_node("d");
+/// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (b, d, 1)]);
+///
+/// // Find paths from "a" to either "c" or "d".
+/// let targets = HashSet::from_iter([c, d]);
+/// let mut paths = algo::all_simple_paths_multi::<Vec<_>, _, RandomState>(&graph, a, &targets, 0, None)
+///     .collect::<Vec<_>>();
+///
+/// paths.sort_by_key(|p| p.clone());
+/// let expected_paths = vec![
+///     vec![a, b, c],
+///     vec![a, b, d],
+/// ];
+///
+/// assert_eq!(paths, expected_paths);
+///
+/// ```
 pub fn all_simple_paths_multi<'a, TargetColl, G, S>(
     graph: G,
     from: G::NodeId,
