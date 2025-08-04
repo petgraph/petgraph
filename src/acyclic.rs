@@ -18,7 +18,7 @@ use crate::{
         dfs_visitor, Control, Data, DfsEvent, EdgeCount, EdgeIndexable, GetAdjacencyMatrix,
         GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
         IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
-        NodeCount, NodeIndexable, Reversed, Time, Visitable,
+        NodeCount, NodeIndexable, Reversed, Time, VisitMap, Visitable,
     },
     Direction,
 };
@@ -71,12 +71,10 @@ pub struct Acyclic<G: Visitable> {
     /// The current topological order of the nodes.
     order_map: OrderMap<G::NodeId>,
 
-    // We fix the internal DFS maps to FixedBitSet instead of G::VisitMap to do
-    // faster resets (by just setting bits to false)
     /// Helper map for DFS tracking discovered nodes.
-    discovered: RefCell<FixedBitSet>,
+    discovered: RefCell<G::Map>,
     /// Helper map for DFS tracking finished nodes.
-    finished: RefCell<FixedBitSet>,
+    finished: RefCell<G::Map>,
 }
 
 /// An error that can occur during edge addition for acyclic graphs.
@@ -149,8 +147,8 @@ where
     /// type bounds.
     pub fn try_from_graph(graph: G) -> Result<Self, Cycle<G::NodeId>> {
         let order_map = OrderMap::try_from_graph(&graph)?;
-        let discovered = RefCell::new(FixedBitSet::with_capacity(graph.node_bound()));
-        let finished = RefCell::new(FixedBitSet::with_capacity(graph.node_bound()));
+        let discovered = RefCell::new(graph.visit_map());
+        let finished = RefCell::new(graph.visit_map());
         Ok(Self {
             graph,
             order_map,
@@ -301,17 +299,19 @@ where
     where
         G::NodeId: IndexType,
     {
-        debug_assert!(self.discovered.borrow().is_clear());
-        debug_assert!(self.finished.borrow().is_clear());
+        debug_assert!(self.discovered.borrow().is_empty());
+        debug_assert!(self.finished.borrow().is_empty());
 
         let min_order = self.get_position(min_node);
         let max_order = self.get_position(max_node);
 
         // Prepare DFS scratch space: make sure the maps have enough capacity
-        if self.discovered.borrow().len() < self.graph.node_bound() {
-            self.discovered.borrow_mut().grow(self.graph.node_bound());
-            self.finished.borrow_mut().grow(self.graph.node_bound());
-        }
+        self.discovered
+            .borrow_mut()
+            .ensure_capacity(self.graph.node_bound());
+        self.finished
+            .borrow_mut()
+            .ensure_capacity(self.graph.node_bound());
 
         // Get all nodes reachable from b with min_order <= order < max_order
         let mut forward_cone = BTreeMap::new();
@@ -336,12 +336,12 @@ where
 
         // Cleanup: reset map to 0. This is faster than a full reset, especially
         // on large sparse graphs.
-        for &v in forward_cone.values().chain(backward_cone.values()) {
-            self.discovered.borrow_mut().set(v.index(), false);
-            self.finished.borrow_mut().set(v.index(), false);
-        }
-        debug_assert!(self.discovered.borrow().is_clear());
-        debug_assert!(self.finished.borrow().is_clear());
+        let iter = forward_cone.values().chain(backward_cone.values()).cloned();
+        self.discovered.borrow_mut().clear_all(iter.clone());
+        self.finished.borrow_mut().clear_all(iter);
+
+        debug_assert!(self.discovered.borrow().is_empty());
+        debug_assert!(self.finished.borrow().is_empty());
 
         match success {
             Ok(()) => Ok((forward_cone, backward_cone)),
@@ -415,8 +415,8 @@ impl<G: Default + Visitable> Default for Acyclic<G> {
     fn default() -> Self {
         let graph: G = Default::default();
         let order_map = Default::default();
-        let discovered = RefCell::new(FixedBitSet::default());
-        let finished = RefCell::new(FixedBitSet::default());
+        let discovered = RefCell::new(G::Map::default());
+        let finished = RefCell::new(G::Map::default());
         Self {
             graph,
             order_map,
@@ -470,8 +470,10 @@ where
     fn with_capacity(nodes: usize, edges: usize) -> Self {
         let graph = G::with_capacity(nodes, edges);
         let order_map = OrderMap::with_capacity(nodes);
-        let discovered = FixedBitSet::with_capacity(nodes);
-        let finished = FixedBitSet::with_capacity(nodes);
+        let mut discovered = G::Map::default();
+        discovered.ensure_capacity(nodes);
+        let mut finished = G::Map::default();
+        finished.ensure_capacity(nodes);
         Self {
             graph,
             order_map,
@@ -499,8 +501,8 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
     // or an error to stop and shortcircuit the search.
     mut valid_order: impl FnMut(TopologicalPosition) -> Result<bool, Cycle<G::NodeId>>,
     res: &mut BTreeMap<TopologicalPosition, G::NodeId>,
-    discovered: &mut FixedBitSet,
-    finished: &mut FixedBitSet,
+    discovered: &mut G::Map,
+    finished: &mut G::Map,
 ) -> Result<(), Cycle<G::NodeId>>
 where
     G::NodeId: IndexType,
