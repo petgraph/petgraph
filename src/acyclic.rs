@@ -892,4 +892,28 @@ mod tests {
         graph.try_update_edge(0, 1, ()).unwrap();
         graph.try_update_edge(0, 1, ()).unwrap(); // `Result::unwrap()` on an `Err` value: InvalidEdge
     }
+
+    #[cfg(feature = "graphmap")]
+    #[test]
+    fn test_graphmap_add_edge() {
+        use crate::prelude::GraphMap;
+        use crate::Directed;
+
+        let mut graph = Acyclic::<GraphMap<usize, (), Directed>>::new();
+        graph.add_node(1);
+        graph.add_node(2);
+        graph.try_add_edge(1, 2, ()).unwrap();
+    }
+
+    #[cfg(feature = "graphmap")]
+    #[test]
+    fn test_graphmap_add_edge_rev() {
+        use crate::prelude::GraphMap;
+        use crate::Directed;
+
+        let mut graph = Acyclic::<GraphMap<usize, (), Directed>>::new();
+        graph.add_node(1);
+        graph.add_node(2);
+        graph.try_add_edge(2, 1, ()).unwrap();
+    }
 }
