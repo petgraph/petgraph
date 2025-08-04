@@ -182,7 +182,7 @@ where
     ) -> Result<G::EdgeId, AcyclicEdgeError<G::NodeId>>
     where
         G: Build,
-        G::NodeId: IndexType,
+        G::NodeId: core::fmt::Debug,
     {
         if a == b {
             // No self-loops allowed
@@ -212,7 +212,7 @@ where
     ) -> Result<G::EdgeId, AcyclicEdgeError<G::NodeId>>
     where
         G: Build,
-        G::NodeId: IndexType,
+        G::NodeId: core::fmt::Debug,
     {
         if a == b {
             // No self-loops allowed
@@ -249,7 +249,7 @@ where
     #[track_caller]
     fn update_ordering(&mut self, a: G::NodeId, b: G::NodeId) -> Result<(), Cycle<G::NodeId>>
     where
-        G::NodeId: IndexType,
+        G::NodeId: core::fmt::Debug,
     {
         let min_order = self.get_position(b);
         let max_order = self.get_position(a);
@@ -297,7 +297,7 @@ where
         Cycle<G::NodeId>,
     >
     where
-        G::NodeId: IndexType,
+        G::NodeId: core::fmt::Debug,
     {
         debug_assert!(self.discovered.borrow().is_empty());
         debug_assert!(self.finished.borrow().is_empty());
@@ -355,10 +355,7 @@ where
         min_position: TopologicalPosition,
         max_position: TopologicalPosition,
         res: &mut BTreeMap<TopologicalPosition, G::NodeId>,
-    ) -> Result<(), Cycle<G::NodeId>>
-    where
-        G::NodeId: IndexType,
-    {
+    ) -> Result<(), Cycle<G::NodeId>> {
         dfs(
             &self.graph,
             start,
@@ -383,10 +380,7 @@ where
         min_position: TopologicalPosition,
         max_position: TopologicalPosition,
         res: &mut BTreeMap<TopologicalPosition, G::NodeId>,
-    ) -> Result<(), Cycle<G::NodeId>>
-    where
-        G::NodeId: IndexType,
-    {
+    ) -> Result<(), Cycle<G::NodeId>> {
         dfs(
             Reversed(&self.graph),
             start,
@@ -432,7 +426,7 @@ where
         + IntoNodeIdentifiers
         + Visitable<Map = G::Map>
         + GraphBase<NodeId = G::NodeId>,
-    G::NodeId: IndexType,
+    G::NodeId: core::fmt::Debug,
 {
     fn add_node(&mut self, weight: Self::NodeWeight) -> Self::NodeId {
         let n = self.graph.add_node(weight);
@@ -503,10 +497,7 @@ fn dfs<G: NodeIndexable + IntoNeighborsDirected + IntoNodeIdentifiers + Visitabl
     res: &mut BTreeMap<TopologicalPosition, G::NodeId>,
     discovered: &mut G::Map,
     finished: &mut G::Map,
-) -> Result<(), Cycle<G::NodeId>>
-where
-    G::NodeId: IndexType,
-{
+) -> Result<(), Cycle<G::NodeId>> {
     dfs_visitor(
         graph,
         start,
@@ -917,5 +908,17 @@ mod tests {
         graph.add_node(1);
         graph.add_node(2);
         graph.try_add_edge(2, 1, ()).unwrap();
+    }
+
+    #[cfg(feature = "graphmap")]
+    #[test]
+    fn test_graphmap_string_keys() {
+        use crate::prelude::GraphMap;
+        use crate::Directed;
+
+        let mut graph = Acyclic::<GraphMap<&str, (), Directed>>::new();
+        graph.add_node("hello");
+        graph.add_node("world");
+        graph.try_add_edge("hello", "world", ()).unwrap();
     }
 }
