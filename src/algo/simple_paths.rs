@@ -157,6 +157,9 @@ where
 /// to the source, the lookup overhead can make repeated calls to [`all_simple_paths`]
 /// a faster alternative.
 ///
+/// **Note**: If security is not a concern, you can use a faster hasher (e.g., `FxBuildHasher`)
+/// to minimize the `HashSet` lookup overhead.
+///
 /// Path constraints (`min_intermediate_nodes`, `max_intermediate_nodes`) and complexity
 /// are otherwise identical to [`all_simple_paths`].
 ///
