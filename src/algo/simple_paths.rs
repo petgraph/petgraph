@@ -30,8 +30,8 @@ use crate::{
 /// * `min_intermediate_nodes`: the minimum number of nodes in the desired paths.
 /// * `max_intermediate_nodes`: the maximum number of nodes in the desired paths (optional).
 /// # Returns
-/// Returns an iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermediate_nodes` nodes
-/// and at most `max_intermediate_nodes`, if given, or limited by the graph's order otherwise.
+/// Returns an iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermediate_nodes`
+/// and at most `max_intermediate_nodes` intermediate nodes, if given, or limited by the graph's order otherwise.
 ///
 /// # Complexity
 /// * Time complexity: for computing the first **k** paths, the running time will be **O(k|V| + k|E|)**.
@@ -154,14 +154,27 @@ where
 /// as the benefit of a single traversal outweighs the `HashSet` lookup overhead.
 ///
 /// Conversely, in dense graphs where paths diverge quickly or for targets very close
-/// to the source, the lookup overhead can make repeated calls to [`all_simple_paths`]
+/// to the source, the lookup overhead could make repeated calls to [`all_simple_paths`]
 /// a faster alternative.
 ///
-/// **Note**: If security is not a concern, you can use a faster hasher (e.g., `FxBuildHasher`)
-/// to minimize the `HashSet` lookup overhead.
+/// **Note**: If security is not a concern, a faster hasher (e.g., `FxBuildHasher`)
+/// can be specified to minimize the `HashSet` lookup overhead.
 ///
-/// Path constraints (`min_intermediate_nodes`, `max_intermediate_nodes`) and complexity
-/// are otherwise identical to [`all_simple_paths`].
+/// # Arguments
+/// * `graph`: an input graph.
+/// * `from`: an initial node of desired paths.
+/// * `to`: a `HashSet` of target nodes. A path is yielded as soon as it reaches any node in this set.
+/// * `min_intermediate_nodes`: the minimum number of nodes in the desired paths.
+/// * `max_intermediate_nodes`: the maximum number of nodes in the desired paths (optional).
+/// # Returns
+/// Returns an iterator that produces all simple paths from `from` node to any node in the `to` set, which contains at least `min_intermediate_nodes`
+/// and at most `max_intermediate_nodes` intermediate nodes, if given, or limited by the graph's order otherwise.
+///
+/// # Complexity
+/// * Time complexity: for computing the first **k** paths, the running time will be **O(k|V| + k|E|)**.
+/// * Auxillary space: **O(|V|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// # Example
 /// ```
