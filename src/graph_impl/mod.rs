@@ -921,8 +921,8 @@ where
         let mut iter = self.neighbors_undirected(a);
         if self.is_directed() {
             let k = dir.index();
-            iter.next[1 - k] = EdgeIndex::end();
-            iter.skip_start = NodeIndex::end();
+            iter.walker.next[1 - k] = EdgeIndex::end();
+            iter.walker.skip_start = NodeIndex::end();
         }
         iter
     }
@@ -943,12 +943,14 @@ where
     ///
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
         Neighbors {
-            skip_start: a,
-            edges: &self.edges,
-            next: match self.nodes.get(a.index()) {
-                None => [EdgeIndex::end(), EdgeIndex::end()],
-                Some(n) => n.next,
+            walker: WalkNeighbors {
+                skip_start: a,
+                next: match self.nodes.get(a.index()) {
+                    None => [EdgeIndex::end(), EdgeIndex::end()],
+                    Some(n) => n.next,
+                },
             },
+            edges: &self.edges,
         }
     }
 
@@ -1632,10 +1634,8 @@ where
 /// [3]: struct.Graph.html#method.neighbors_undirected
 #[derive(Debug)]
 pub struct Neighbors<'a, E: 'a, Ix: 'a = DefaultIx> {
-    /// starting node to skip over
-    skip_start: NodeIndex<Ix>,
+    walker: WalkNeighbors<Ix>,
     edges: &'a [Edge<E, Ix>],
-    next: [EdgeIndex<Ix>; 2],
 }
 
 impl<E, Ix> Iterator for Neighbors<'_, E, Ix>
@@ -1645,25 +1645,7 @@ where
     type Item = NodeIndex<Ix>;
 
     fn next(&mut self) -> Option<NodeIndex<Ix>> {
-        // First any outgoing edges
-        match self.edges.get(self.next[0].index()) {
-            None => {}
-            Some(edge) => {
-                self.next[0] = edge.next[0];
-                return Some(edge.node[1]);
-            }
-        }
-        // Then incoming edges
-        // For an "undirected" iterator (traverse both incoming
-        // and outgoing edge lists), make sure we don't double
-        // count selfloops by skipping them in the incoming list.
-        while let Some(edge) = self.edges.get(self.next[1].index()) {
-            self.next[1] = edge.next[1];
-            if edge.node[0] != self.skip_start {
-                return Some(edge.node[0]);
-            }
-        }
-        None
+        self.walker.next_inner(self.edges).map(|t| t.1)
     }
 }
 
@@ -1671,7 +1653,7 @@ impl<E, Ix> Clone for Neighbors<'_, E, Ix>
 where
     Ix: IndexType,
 {
-    clone_fields!(Neighbors, skip_start, edges, next,);
+    clone_fields!(Neighbors, walker, edges,);
 }
 
 impl<E, Ix> Neighbors<'_, E, Ix>
@@ -1684,10 +1666,7 @@ where
     /// Note: The walker does not borrow from the graph, this is to allow mixing
     /// edge walking with mutating the graph's weights.
     pub fn detach(&self) -> WalkNeighbors<Ix> {
-        WalkNeighbors {
-            skip_start: self.skip_start,
-            next: self.next,
-        }
+        self.walker.clone()
     }
 }
 
@@ -2098,7 +2077,9 @@ impl<Ix: IndexType> GraphIndex for EdgeIndex<Ix> {
 /// assert_eq!(gr[b], 4.);
 /// assert_eq!(gr[c], 2.);
 /// ```
+#[derive(Debug)]
 pub struct WalkNeighbors<Ix> {
+    /// starting node to skip over
     skip_start: NodeIndex<Ix>,
     next: [EdgeIndex<Ix>; 2],
 }
@@ -2126,27 +2107,7 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
         &mut self,
         g: &Graph<N, E, Ty, Ix>,
     ) -> Option<(EdgeIndex<Ix>, NodeIndex<Ix>)> {
-        // First any outgoing edges
-        match g.edges.get(self.next[0].index()) {
-            None => {}
-            Some(edge) => {
-                let ed = self.next[0];
-                self.next[0] = edge.next[0];
-                return Some((ed, edge.node[1]));
-            }
-        }
-        // Then incoming edges
-        // For an "undirected" iterator (traverse both incoming
-        // and outgoing edge lists), make sure we don't double
-        // count selfloops by skipping them in the incoming list.
-        while let Some(edge) = g.edges.get(self.next[1].index()) {
-            let ed = self.next[1];
-            self.next[1] = edge.next[1];
-            if edge.node[0] != self.skip_start {
-                return Some((ed, edge.node[0]));
-            }
-        }
-        None
+        self.next_inner(&g.edges)
     }
 
     pub fn next_node<N, E, Ty: EdgeType>(
@@ -2161,6 +2122,44 @@ impl<Ix: IndexType> WalkNeighbors<Ix> {
         g: &Graph<N, E, Ty, Ix>,
     ) -> Option<EdgeIndex<Ix>> {
         self.next(g).map(|t| t.0)
+    }
+
+    fn next_inner<E>(&mut self, edges: &[Edge<E, Ix>]) -> Option<(EdgeIndex<Ix>, NodeIndex<Ix>)> {
+        // First any outgoing edges
+        match edges.get(self.next[0].index()) {
+            None => {}
+            Some(edge) => {
+                let ed = self.next[0];
+                self.next[0] = edge.next[0];
+                return Some((ed, edge.node[1]));
+            }
+        }
+        // Then incoming edges
+        // For an "undirected" iterator (traverse both incoming
+        // and outgoing edge lists), make sure we don't double
+        // count selfloops by skipping them in the incoming list.
+        while let Some(edge) = edges.get(self.next[1].index()) {
+            let ed = self.next[1];
+            self.next[1] = edge.next[1];
+            if edge.node[0] != self.skip_start {
+                return Some((ed, edge.node[0]));
+            }
+        }
+        None
+    }
+
+    /// Return a [`Neighbors`] iterator for graph `g`.
+    ///
+    /// Note: [`Neighbors`] borrows from the graph. However, it may be more
+    /// ergonomic to work with since it implements [`Iterator`].
+    pub fn attach<'a, N, E, Ty: EdgeType>(
+        &self,
+        g: &'a Graph<N, E, Ty, Ix>,
+    ) -> Neighbors<'a, E, Ix> {
+        Neighbors {
+            walker: self.clone(),
+            edges: &g.edges,
+        }
     }
 }
 
