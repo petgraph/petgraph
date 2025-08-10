@@ -276,7 +276,7 @@ where
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 pub fn is_cyclic_directed<G>(g: G) -> bool
 where
-    G: IntoNodeIdentifiers + IntoNeighbors + Visitable,
+    G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable,
 {
     use crate::visit::{depth_first_search, DfsEvent};
 
