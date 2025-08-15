@@ -420,7 +420,6 @@ pub trait VisitMap<N>: Default {
     fn ensure_capacity(&mut self, n: usize);
 
     /// Checks that the map is empty
-    #[cfg(debug_assertions)]
     fn is_empty(&self) -> bool;
 }
 
@@ -455,7 +454,6 @@ where
         }
     }
 
-    #[cfg(debug_assertions)]
     fn is_empty(&self) -> bool {
         FixedBitSet::is_clear(self)
     }
@@ -487,7 +485,6 @@ where
         self.clear()
     }
 
-    #[cfg(debug_assertions)]
     fn is_empty(&self) -> bool {
         HashSet::is_empty(self)
     }
@@ -520,7 +517,6 @@ where
         }
     }
 
-    #[cfg(debug_assertions)]
     fn is_empty(&self) -> bool {
         std::collections::HashSet::is_empty(self)
     }
