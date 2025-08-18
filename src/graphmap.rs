@@ -190,8 +190,6 @@ where
 
 impl<N, E, Ty, S> GraphMap<N, E, Ty, S>
 where
-    N: NodeTrait,
-    Ty: EdgeType,
     S: BuildHasher,
 {
     /// Create a new `GraphMap`
@@ -225,7 +223,14 @@ where
             ty: PhantomData,
         }
     }
+}
 
+impl<N, E, Ty, S> GraphMap<N, E, Ty, S>
+where
+    N: NodeTrait,
+    Ty: EdgeType,
+    S: BuildHasher,
+{
     /// Return the current node and edge capacity of the graph.
     pub fn capacity(&self) -> (usize, usize) {
         (self.nodes.capacity(), self.edges.capacity())
@@ -455,7 +460,7 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `N`.
-    pub fn neighbors(&self, a: N) -> Neighbors<N, Ty> {
+    pub fn neighbors(&self, a: N) -> Neighbors<'_, N, Ty> {
         Neighbors {
             iter: match self.nodes.get(&a) {
                 Some(neigh) => neigh.iter(),
@@ -475,7 +480,7 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `N`.
-    pub fn neighbors_directed(&self, a: N, dir: Direction) -> NeighborsDirected<N, Ty> {
+    pub fn neighbors_directed(&self, a: N, dir: Direction) -> NeighborsDirected<'_, N, Ty> {
         NeighborsDirected {
             iter: match self.nodes.get(&a) {
                 Some(neigh) => neigh.iter(),
@@ -495,7 +500,7 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `(N, N, &E)`.
-    pub fn edges(&self, a: N) -> Edges<N, E, Ty, S> {
+    pub fn edges(&self, a: N) -> Edges<'_, N, E, Ty, S> {
         Edges {
             from: a,
             iter: self.neighbors(a),
@@ -515,7 +520,7 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `(N, N, &E)`.
-    pub fn edges_directed(&self, a: N, dir: Direction) -> EdgesDirected<N, E, Ty, S> {
+    pub fn edges_directed(&self, a: N, dir: Direction) -> EdgesDirected<'_, N, E, Ty, S> {
         EdgesDirected {
             from: a,
             iter: self.neighbors_directed(a, dir),
@@ -539,7 +544,7 @@ where
     /// Return an iterator over all edges of the graph with their weight in arbitrary order.
     ///
     /// Iterator element type is `(N, N, &E)`
-    pub fn all_edges(&self) -> AllEdges<N, E, Ty> {
+    pub fn all_edges(&self) -> AllEdges<'_, N, E, Ty> {
         AllEdges {
             inner: self.edges.iter(),
             ty: self.ty,
@@ -550,7 +555,7 @@ where
     /// to their weight.
     ///
     /// Iterator element type is `(N, N, &mut E)`
-    pub fn all_edges_mut(&mut self) -> AllEdgesMut<N, E, Ty> {
+    pub fn all_edges_mut(&mut self) -> AllEdgesMut<'_, N, E, Ty> {
         AllEdgesMut {
             inner: self.edges.iter_mut(),
             ty: self.ty,
@@ -562,7 +567,7 @@ where
     ///
     /// Iterator element type is `(N, N, &E)`
     #[cfg(feature = "rayon")]
-    pub fn par_all_edges(&self) -> ParAllEdges<N, E, Ty>
+    pub fn par_all_edges(&self) -> ParAllEdges<'_, N, E, Ty>
     where
         N: Send + Sync,
         E: Sync,
@@ -578,7 +583,7 @@ where
     ///
     /// Iterator element type is `(N, N, &mut E)`
     #[cfg(feature = "rayon")]
-    pub fn par_all_edges_mut(&mut self) -> ParAllEdgesMut<N, E, Ty>
+    pub fn par_all_edges_mut(&mut self) -> ParAllEdgesMut<'_, N, E, Ty>
     where
         N: Send + Sync,
         E: Send,
@@ -1009,8 +1014,6 @@ where
 /// Create a new empty `GraphMap`.
 impl<N, E, Ty, S> Default for GraphMap<N, E, Ty, S>
 where
-    N: NodeTrait,
-    Ty: EdgeType,
     S: BuildHasher + Default,
 {
     fn default() -> Self {
