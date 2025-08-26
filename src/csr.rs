@@ -448,7 +448,7 @@ where
     /// **Panics** if the node `a` does not exist.<br>
     /// Iterator element type is `EdgeReference<E, Ty, Ix>`.
     #[track_caller]
-    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
+    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<'_, E, Ty, Ix> {
         let r = self.neighbors_range(a);
         Edges {
             index: r.start,

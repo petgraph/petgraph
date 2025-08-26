@@ -311,7 +311,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
     /// Returns an iterator over all edge indices of the graph.
     ///
     /// Consuming the whole iterator take **O(|V| + |E|)**.
-    pub fn edge_indices(&self) -> EdgeIndices<E, Ix> {
+    pub fn edge_indices(&self) -> EdgeIndices<'_, E, Ix> {
         EdgeIndices {
             rows: self.suc.iter().enumerate(),
             row_index: 0,
@@ -510,14 +510,14 @@ impl<E, Ix: IndexType> Clone for EdgeReferences<'_, E, Ix> {
 
 fn proj1<E, Ix: IndexType>(
     ((successor_index, edge), from): ((usize, &WSuc<E, Ix>), Ix),
-) -> EdgeReference<E, Ix> {
+) -> EdgeReference<'_, E, Ix> {
     let id = EdgeIndex {
         from,
         successor_index,
     };
     EdgeReference { id, edge }
 }
-fn proj2<E, Ix: IndexType>((row_index, row): (usize, &Vec<WSuc<E, Ix>>)) -> SomeIter<E, Ix> {
+fn proj2<E, Ix: IndexType>((row_index, row): (usize, &Vec<WSuc<E, Ix>>)) -> SomeIter<'_, E, Ix> {
     row.iter()
         .enumerate()
         .zip(core::iter::repeat(Ix::new(row_index)))
