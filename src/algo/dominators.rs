@@ -54,7 +54,7 @@ where
     ///
     /// If the given node is not reachable from the root, then `None` is
     /// returned.
-    pub fn strict_dominators(&self, node: N) -> Option<DominatorsIter<N>> {
+    pub fn strict_dominators(&self, node: N) -> Option<DominatorsIter<'_, N>> {
         if self.dominators.contains_key(&node) {
             Some(DominatorsIter {
                 dominators: self,
@@ -70,7 +70,7 @@ where
     ///
     /// If the given node is not reachable from the root, then `None` is
     /// returned.
-    pub fn dominators(&self, node: N) -> Option<DominatorsIter<N>> {
+    pub fn dominators(&self, node: N) -> Option<DominatorsIter<'_, N>> {
         if self.dominators.contains_key(&node) {
             Some(DominatorsIter {
                 dominators: self,
@@ -83,7 +83,7 @@ where
 
     /// Iterate over all nodes immediately dominated by the given node (not
     /// including the given node itself).
-    pub fn immediately_dominated_by(&self, node: N) -> DominatedByIter<N> {
+    pub fn immediately_dominated_by(&self, node: N) -> DominatedByIter<'_, N> {
         DominatedByIter {
             iter: self.dominators.iter(),
             node,
