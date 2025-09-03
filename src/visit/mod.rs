@@ -396,7 +396,7 @@ pub trait NodeCompactIndexable : NodeIndexable + NodeCount { }
 NodeCompactIndexable! {delegate_impl []}
 
 /// A mapping for storing the visited status for NodeId `N`.
-pub trait VisitMap<N> {
+pub trait VisitMap<N>: Default {
     /// Mark `a` as visited.
     ///
     /// Return **true** if this is the first visit, false otherwise.
@@ -409,6 +409,18 @@ pub trait VisitMap<N> {
     ///
     /// Return **true** if this vertex was marked as visited at the time of unsetting it, false otherwise.
     fn unvisit(&mut self, _a: N) -> bool;
+
+    /// Clears the map, marking all nodes as unvisited
+    ///
+    /// The argument is an iterator of set items; in some cases, it may be more
+    /// efficient to clear then individually than in bulk.
+    fn clear_all(&mut self, iter: impl Iterator<Item = N>);
+
+    /// Ensures that we have capacity for at least `n` items
+    fn ensure_capacity(&mut self, n: usize);
+
+    /// Checks that the map is empty
+    fn is_empty(&self) -> bool;
 }
 
 impl<Ix> VisitMap<Ix> for FixedBitSet
@@ -429,12 +441,28 @@ where
         }
         false
     }
+
+    fn clear_all(&mut self, iter: impl Iterator<Item = Ix>) {
+        for x in iter {
+            self.set(x.index(), false);
+        }
+    }
+
+    fn ensure_capacity(&mut self, n: usize) {
+        if self.len() < n {
+            self.grow(n);
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        FixedBitSet::is_clear(self)
+    }
 }
 
 impl<N, S> VisitMap<N> for HashSet<N, S>
 where
     N: Hash + Eq,
-    S: BuildHasher,
+    S: BuildHasher + Default,
 {
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
@@ -445,6 +473,20 @@ where
 
     fn unvisit(&mut self, x: N) -> bool {
         self.remove(&x)
+    }
+
+    fn ensure_capacity(&mut self, n: usize) {
+        if let Some(more) = n.checked_sub(self.len()) {
+            self.reserve(more);
+        }
+    }
+
+    fn clear_all(&mut self, _iter: impl Iterator<Item = N>) {
+        self.clear()
+    }
+
+    fn is_empty(&self) -> bool {
+        HashSet::is_empty(self)
     }
 }
 
@@ -452,7 +494,7 @@ where
 impl<N, S> VisitMap<N> for std::collections::HashSet<N, S>
 where
     N: Hash + Eq,
-    S: BuildHasher,
+    S: BuildHasher + Default,
 {
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
@@ -463,6 +505,20 @@ where
 
     fn unvisit(&mut self, x: N) -> bool {
         self.remove(&x)
+    }
+
+    fn clear_all(&mut self, _iter: impl Iterator<Item = N>) {
+        self.clear()
+    }
+
+    fn ensure_capacity(&mut self, n: usize) {
+        if let Some(more) = n.checked_sub(self.len()) {
+            self.reserve(more);
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        std::collections::HashSet::is_empty(self)
     }
 }
 
