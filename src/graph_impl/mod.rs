@@ -1475,6 +1475,8 @@ where
     ///
     /// The resulting graph has the same structure and the same
     /// graph indices as `self`.
+    ///
+    /// If you want a consuming version of this function, see [`map_owned`](struct.Graph.html#method.map_owned).
     pub fn map<'a, F, G, N2, E2>(
         &'a self,
         mut node_map: F,
@@ -1497,6 +1499,31 @@ where
         g
     }
 
+    /// Create a new `Graph` by mapping node and edge weights to new values,
+    /// consuming the current graph.
+    ///
+    /// The resulting graph has the same structure and the same graph indices
+    /// as `self`.
+    ///
+    /// If you want a non-consuming version of this function, see [`map`](struct.Graph.html#method.map).
+    pub fn map_owned<F, G, N2, E2>(self, mut node_map: F, mut edge_map: G) -> Graph<N2, E2, Ty, Ix>
+    where
+        F: FnMut(NodeIndex<Ix>, N) -> N2,
+        G: FnMut(EdgeIndex<Ix>, E) -> E2,
+    {
+        let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
+        g.nodes.extend(enumerate(self.nodes).map(|(i, node)| Node {
+            weight: node_map(NodeIndex::new(i), node.weight),
+            next: node.next,
+        }));
+        g.edges.extend(enumerate(self.edges).map(|(i, edge)| Edge {
+            weight: edge_map(EdgeIndex::new(i), edge.weight),
+            next: edge.next,
+            node: edge.node,
+        }));
+        g
+    }
+
     /// Create a new `Graph` by mapping nodes and edges.
     /// A node or edge may be mapped to `None` to exclude it from
     /// the resulting graph.
@@ -1509,6 +1536,8 @@ where
     /// If no nodes are removed, the resulting graph has compatible node
     /// indices; if neither nodes nor edges are removed, the result has
     /// the same graph indices as `self`.
+    ///
+    /// If you want a consuming version of this function, see [`filter_map_owned`](struct.Graph.html#method.filter_map_owned).
     pub fn filter_map<'a, F, G, N2, E2>(
         &'a self,
         mut node_map: F,
@@ -1532,6 +1561,51 @@ where
             let target = node_index_map[edge.target().index()];
             if source != NodeIndex::end() && target != NodeIndex::end() {
                 if let Some(ew) = edge_map(EdgeIndex::new(i), &edge.weight) {
+                    g.add_edge(source, target, ew);
+                }
+            }
+        }
+        g
+    }
+
+    /// Create a new `Graph` by mapping nodes and edges,
+    /// consuming the current graph.
+    /// A node or edge may be mapped to `None` to exclude it from
+    /// the resulting graph.
+    ///
+    /// Nodes are mapped first with the `node_map` closure, then
+    /// `edge_map` is called for the edges that have not had any endpoint
+    /// removed.
+    ///
+    /// The resulting graph has the structure of a subgraph of the original graph.
+    /// If no nodes are removed, the resulting graph has compatible node
+    /// indices; if neither nodes nor edges are removed, the result has
+    /// the same graph indices as `self`.
+    ///
+    /// If you want a non-consuming version of this function, see [`filter_map`](struct.Graph.html#method.filter_map).
+    pub fn filter_map_owned<F, G, N2, E2>(
+        self,
+        mut node_map: F,
+        mut edge_map: G,
+    ) -> Graph<N2, E2, Ty, Ix>
+    where
+        F: FnMut(NodeIndex<Ix>, N) -> Option<N2>,
+        G: FnMut(EdgeIndex<Ix>, E) -> Option<E2>,
+    {
+        let mut g = Graph::with_capacity(0, 0);
+        // mapping from old node index to new node index, end represents removed.
+        let mut node_index_map = vec![NodeIndex::end(); self.node_count()];
+        for (i, node) in enumerate(self.nodes) {
+            if let Some(nw) = node_map(NodeIndex::new(i), node.weight) {
+                node_index_map[i] = g.add_node(nw);
+            }
+        }
+        for (i, edge) in enumerate(self.edges) {
+            // skip edge if any endpoint was removed
+            let source = node_index_map[edge.source().index()];
+            let target = node_index_map[edge.target().index()];
+            if source != NodeIndex::end() && target != NodeIndex::end() {
+                if let Some(ew) = edge_map(EdgeIndex::new(i), edge.weight) {
                     g.add_edge(source, target, ew);
                 }
             }
