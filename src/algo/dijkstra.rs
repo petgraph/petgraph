@@ -89,12 +89,90 @@ pub fn dijkstra<G, F, K>(
     graph: G,
     start: G::NodeId,
     goal: Option<G::NodeId>,
-    mut edge_cost: F,
+    edge_cost: F,
 ) -> HashMap<G::NodeId, K>
 where
     G: IntoEdges + Visitable,
     G::NodeId: Eq + Hash,
     F: FnMut(G::EdgeRef) -> K,
+    K: Measure + Copy,
+{
+    with_dynamic_goal(graph, start, |node| goal.as_ref() == Some(node), edge_cost).scores
+}
+
+/// Return value of [`with_dynamic_goal`].
+pub struct AlgoResult<N, K> {
+    /// A [`struct@hashbrown::HashMap`] that maps `NodeId` to path cost.
+    pub scores: HashMap<N, K>,
+    /// The goal node that terminated the search, if any was found.
+    pub goal_node: Option<N>,
+}
+
+/// Dijkstra's shortest path algorithm with a dynamic goal.
+///
+/// This algorithm is identical to [`dijkstra`],
+/// but allows matching multiple goal nodes, whichever is reached first.
+/// A node is considered a goal if `goal_fn` returns `true` for it.
+///
+/// See the [`dijkstra`] function for more details.
+///
+/// # Example
+/// ```rust
+/// use petgraph::Graph;
+/// use petgraph::algo::dijkstra;
+/// use petgraph::prelude::*;
+/// use hashbrown::HashMap;
+///
+/// let mut graph: Graph<(), (), Directed> = Graph::new();
+/// let a = graph.add_node(()); // node with no weight
+/// let b = graph.add_node(());
+/// let c = graph.add_node(());
+/// let d = graph.add_node(());
+/// let e = graph.add_node(());
+/// let f = graph.add_node(());
+/// let g = graph.add_node(());
+/// let h = graph.add_node(());
+/// // z will be in another connected component
+/// let z = graph.add_node(());
+///
+/// graph.extend_with_edges(&[
+///     (a, b),
+///     (b, c),
+///     (c, d),
+///     (d, a),
+///     (e, f),
+///     (b, e),
+///     (f, g),
+///     (g, h),
+///     (h, e),
+/// ]);
+/// // a ----> b ----> e ----> f
+/// // ^       |       ^       |
+/// // |       v       |       v
+/// // d <---- c       h <---- g
+///
+/// let expected_res: HashMap<NodeIndex, usize> = [
+///     (b, 0),
+///     (c, 1),
+///     (d, 2),
+///     (e, 1),
+///     (f, 2),
+/// ].iter().cloned().collect();
+/// let res = dijkstra::with_dynamic_goal(&graph, b, |&node| node == d || node == f, |_| 1);
+/// assert_eq!(res.scores, expected_res);
+/// assert!(res.goal_node == Some(d) || res.goal_node == Some(f));
+/// ```
+pub fn with_dynamic_goal<G, GoalFn, CostFn, K>(
+    graph: G,
+    start: G::NodeId,
+    mut goal_fn: GoalFn,
+    mut edge_cost: CostFn,
+) -> AlgoResult<G::NodeId, K>
+where
+    G: IntoEdges + Visitable,
+    G::NodeId: Eq + Hash,
+    GoalFn: FnMut(&G::NodeId) -> bool,
+    CostFn: FnMut(G::EdgeRef) -> K,
     K: Measure + Copy,
 {
     let mut visited = graph.visit_map();
@@ -104,11 +182,13 @@ where
     let zero_score = K::default();
     scores.insert(start, zero_score);
     visit_next.push(MinScored(zero_score, start));
+    let mut goal_node = None;
     while let Some(MinScored(node_score, node)) = visit_next.pop() {
         if visited.is_visited(&node) {
             continue;
         }
-        if goal.as_ref() == Some(&node) {
+        if goal_fn(&node) {
+            goal_node = Some(node);
             break;
         }
         for edge in graph.edges(node) {
@@ -134,5 +214,5 @@ where
         }
         visited.visit(node);
     }
-    scores
+    AlgoResult { scores, goal_node }
 }
