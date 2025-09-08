@@ -197,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_undirected_adapter_can_traverse() {
+    pub fn test_undirected_adaptor_can_traverse() {
         let graph = DiGraph::<(), ()>::from_edges(LINEAR_EDGES);
         let mut nodes = graph.node_identifiers().collect::<Vec<_>>();
         nodes.sort();
