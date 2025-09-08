@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/graphosaurus-512.png" alt="Petgraph Logo"/>
+  <img src="assets/images/graphosaurus-512.png" alt="Petgraph Logo"/>
 </p>
 
 petgraph
