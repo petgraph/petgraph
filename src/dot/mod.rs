@@ -87,8 +87,7 @@ where
     /// Each function should take as arguments the graph and that graph's `EdgeRef` or `NodeRef`, respectively.
     /// Check the documentation for the graph type to see how it implements `IntoNodeReferences`.
     /// The [Graphviz docs] list the available attributes.
-    /// 
-    /// 
+    ///
     /// Note that some attribute values, such as labels, should be strings and must be quoted. These can be
     /// written using escapes (`"label = \"foo\""`) or [raw strings] (`r#"label = "foo""#`).
     ///
