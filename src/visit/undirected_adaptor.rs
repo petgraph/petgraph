@@ -170,6 +170,7 @@ NodeCount! {delegate_impl [[G], G, UndirectedAdaptor<G>, access0]}
 #[cfg(test)]
 mod tests {
     use alloc::vec::Vec;
+    use std::collections::HashSet;
 
     use super::*;
     use crate::algo::astar::*;
@@ -209,6 +210,37 @@ mod tests {
         let (cost, path) = path.unwrap();
         assert_eq!(cost, 5);
         assert_eq!(path, true_path);
+    }
+
+    #[test]
+    pub fn test_undirected_edge_refs_point_both_ways() {
+        let graph = DiGraph::<(), ()>::from_edges(LINEAR_EDGES);
+        let mut nodes = graph.node_identifiers().collect::<Vec<_>>();
+        nodes.sort();
+        let ungraph = UndirectedAdaptor(&graph);
+
+        let expected_edge_targets = [
+            &[nodes[1]][..],
+            &[nodes[0], nodes[2]],
+            &[nodes[1], nodes[3]],
+            &[nodes[2], nodes[4]],
+            &[nodes[3], nodes[5]],
+            &[nodes[4]],
+        ];
+
+        for i in 0..nodes.len() {
+            let node = nodes[i];
+
+            let targets = ungraph
+                .edges(node)
+                .map(|e| e.target())
+                .collect::<HashSet<_>>();
+            let expected = expected_edge_targets[i]
+                .iter()
+                .cloned()
+                .collect::<HashSet<_>>();
+            assert_eq!(targets, expected);
+        }
     }
 
     #[test]
