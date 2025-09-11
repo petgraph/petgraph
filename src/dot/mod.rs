@@ -160,11 +160,17 @@ make_config_struct!(
     GraphContentOnly,
 );
 
+/// A low-level function allows specifying fmt functions for nodes and edges separately.
 impl<G> Dot<'_, G>
 where
     G: IntoNodeReferences + IntoEdgeReferences + NodeIndexable + GraphProp,
 {
-    fn graph_fmt<NF, EF>(&self, f: &mut fmt::Formatter, node_fmt: NF, edge_fmt: EF) -> fmt::Result
+    pub fn graph_fmt<NF, EF>(
+        &self,
+        f: &mut fmt::Formatter,
+        node_fmt: NF,
+        edge_fmt: EF,
+    ) -> fmt::Result
     where
         NF: Fn(&G::NodeWeight, &mut fmt::Formatter) -> fmt::Result,
         EF: Fn(&G::EdgeWeight, &mut fmt::Formatter) -> fmt::Result,
