@@ -78,6 +78,59 @@ where
         Self::with_attr_getters(graph, config, &|_, _| String::new(), &|_, _| String::new())
     }
 
+    /// Create a `Dot` that uses the given functions to generate edge and node attributes.
+    ///
+    /// NOTE: `Config::EdgeNoLabel` and `Config::NodeNoLabel` should be set if you intend to
+    /// generate your own `label` attributes.
+    /// The getter functions should return an attribute list as a String. For example, if you
+    /// want to calculate a `label` for a node, then return `"label = \"your label here\""`.
+    /// Each function should take as arguments the graph and that graph's `EdgeRef` or `NodeRef`, respectively.
+    /// Check the documentation for the graph type to see how it implements `IntoNodeReferences`.
+    /// The [Graphviz docs] list the available attributes.
+    ///
+    /// Note that some attribute values, such as labels, should be strings and must be quoted. These can be
+    /// written using escapes (`"label = \"foo\""`) or [raw strings] (`r#"label = "foo""#`).
+    ///
+    /// For example, using a `Graph<&str, &str>` where we want the node labels to be the nodes' weights
+    /// shortened to 4 characters, and all the edges are colored blue with no labels:
+    /// ```
+    /// use petgraph::Graph;
+    /// use petgraph::dot::{Config, Dot};
+    ///
+    /// let mut deps = Graph::<&str, &str>::new();
+    /// let pg = deps.add_node("petgraph");
+    /// let fb = deps.add_node("fixedbitset");
+    /// let qc = deps.add_node("quickcheck");
+    /// let rand = deps.add_node("rand");
+    /// let libc = deps.add_node("libc");
+    /// deps.extend_with_edges(&[(pg, fb), (pg, qc), (qc, rand), (rand, libc), (qc, libc)]);
+    ///
+    /// println!(
+    ///     "{:?}",
+    ///     Dot::with_attr_getters(
+    ///         &deps,
+    ///         &[Config::EdgeNoLabel, Config::NodeNoLabel],
+    ///         &|_, _| "color = blue".to_string(),
+    ///         &|_, (_, s)| format!(r#"label = "{}""#, s.chars().take(4).collect::<String>()),
+    ///     )
+    /// );
+    /// // This outputs:
+    /// // digraph {
+    /// //     0 [ label = "petg"]
+    /// //     1 [ label = "fixe"]
+    /// //     2 [ label = "quic"]
+    /// //     3 [ label = "rand"]
+    /// //     4 [ label = "libc"]
+    /// //     0 -> 1 [ color = blue]
+    /// //     0 -> 2 [ color = blue]
+    /// //     2 -> 3 [ color = blue]
+    /// //     3 -> 4 [ color = blue]
+    /// //     2 -> 4 [ color = blue]
+    /// // }
+    /// ```
+    ///
+    /// [Graphviz docs]: https://graphviz.org/doc/info/attrs.html
+    /// [raw strings]: https://doc.rust-lang.org/rust-by-example/std/str.html#literals-and-escapes
     #[inline]
     pub fn with_attr_getters(
         graph: G,
@@ -120,9 +173,9 @@ pub enum Config {
     NodeIndexLabel,
     /// Use indices for edge labels.
     EdgeIndexLabel,
-    /// Use no edge labels.
+    /// Do not generate `label` attributes for edges.
     EdgeNoLabel,
-    /// Use no node labels.
+    /// Do not generate `label` attributes for nodes.
     NodeNoLabel,
     /// Do not print the graph/digraph string.
     GraphContentOnly,
