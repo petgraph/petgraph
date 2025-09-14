@@ -1490,6 +1490,23 @@ where
     /// or they are filled with default values.
     ///
     /// Nodes are inserted automatically to match the edges.
+    ///
+    /// ```
+    /// use petgraph::Graph;
+    ///
+    /// let mut g = Graph::<(), i32>::new();
+    /// let a = g.add_node(());
+    /// let b = g.add_node(());
+    /// let c = g.add_node(());
+    /// let d = g.add_node(());
+    ///
+    /// g.extend_with_edges(&[
+    ///   (a, b, 7),
+    ///   (a, c, 8),
+    ///   (a, d, 9),
+    ///  (b, c, 10),
+    /// ]);
+    /// ```
     pub fn extend_with_edges<I>(&mut self, iterable: I)
     where
         I: IntoIterator,
