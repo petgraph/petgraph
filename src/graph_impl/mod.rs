@@ -1519,6 +1519,40 @@ where
     /// graph indices as `self`.
     ///
     /// If you want a consuming version of this function, see [`map_owned`](struct.Graph.html#method.map_owned).
+    ///
+    /// ```
+    /// use petgraph::graph::UnGraph;
+    ///
+    /// // Create an undirected graph with city names as node data and their distances as edge data.
+    /// let mut g = UnGraph::<String, u32>::new_undirected();
+    ///
+    /// let bie = g.add_node("Bielefeld".to_owned());
+    /// let del = g.add_node("New Delhi".to_owned());
+    /// let mex = g.add_node("Mexico City".to_owned());
+    /// let syd = g.add_node("Sydney".to_owned());
+    ///
+    /// // Add distances in kilometers as edge data.
+    /// g.extend_with_edges(&[
+    ///     (bie, del, 6_000),
+    ///     (bie, mex, 10_000),
+    ///     (bie, syd, 16_000),
+    ///     (del, mex, 14_000),
+    ///     (del, syd, 12_000),
+    ///     (mex, syd, 15_000),
+    /// ]);
+    ///
+    /// // We might now want to change up the distances to be in miles instead and to be strings.
+    /// // We can do this using the `map` method, which takes two closures for the node and edge data,
+    /// // respectively, and returns a new graph with the transformed data.
+    /// let g_miles: UnGraph<String, i32> = g.map(
+    ///     |_, city| city.to_owned(),
+    ///     |_, &distance| (distance as f64 * 0.621371).round() as i32,
+    /// );
+    ///
+    /// for &edge_weight in g_miles.edge_weights() {
+    ///     assert!(edge_weight < 10_000);
+    /// }
+    /// ```
     pub fn map<'a, F, G, N2, E2>(
         &'a self,
         mut node_map: F,
@@ -1550,6 +1584,39 @@ where
     /// as `self`.
     ///
     /// If you want a non-consuming version of this function, see [`map`](struct.Graph.html#method.map).
+    /// ```
+    /// use petgraph::graph::UnGraph;
+    ///
+    /// // Create an undirected graph with city names as node data and their distances as edge data.
+    /// let mut g = UnGraph::<String, u32>::new_undirected();
+    ///
+    /// let bie = g.add_node("Bielefeld".to_owned());
+    /// let del = g.add_node("New Delhi".to_owned());
+    /// let mex = g.add_node("Mexico City".to_owned());
+    /// let syd = g.add_node("Sydney".to_owned());
+    ///
+    /// // Add distances in kilometers as edge data.
+    /// g.extend_with_edges(&[
+    ///     (bie, del, 6_000),
+    ///     (bie, mex, 10_000),
+    ///     (bie, syd, 16_000),
+    ///     (del, mex, 14_000),
+    ///     (del, syd, 12_000),
+    ///     (mex, syd, 15_000),
+    /// ]);
+    ///
+    /// // We might now want to change up the distances to be in miles instead and to be strings.
+    /// // We can do this using the `map` method, which takes two closures for the node and edge data,
+    /// // respectively, and returns a new graph with the transformed data.
+    /// let g_miles: UnGraph<String, i32> = g.map_owned(
+    ///     |_, city| city,
+    ///     |_, distance| (distance as f64 * 0.621371).round() as i32,
+    /// );
+    ///
+    /// for &edge_weight in g_miles.edge_weights() {
+    ///     assert!(edge_weight < 10_000);
+    /// }
+    /// ```
     pub fn map_owned<F, G, N2, E2>(self, mut node_map: F, mut edge_map: G) -> Graph<N2, E2, Ty, Ix>
     where
         F: FnMut(NodeIndex<Ix>, N) -> N2,
@@ -1584,6 +1651,27 @@ where
     /// the same graph indices as `self`.
     ///
     /// If you want a consuming version of this function, see [`filter_map_owned`](struct.Graph.html#method.filter_map_owned).
+    /// 
+    /// ```
+    /// use petgraph::Graph;
+    /// 
+    /// // Create a graph with integer node weights
+    /// let mut g = Graph::<u32, ()>::new();
+    /// let a = g.add_node(0);
+    /// let b = g.add_node(2);
+    /// let c = g.add_node(5);
+    /// let d = g.add_node(7);
+    /// let e = g.add_node(4);
+    /// g.extend_with_edges(&[(a, b, ()), (a, c, ()), (b, d, ()), (c, d, ()), (d, e, ())]);
+    ///
+    /// // Filter the graph such that only nodes with weight greater than 2 are kept.
+    /// let g_filtered = g.filter_map(
+    ///     |_, &node_weight| if node_weight > 2 { Some(node_weight) } else { None },
+    ///     |_, &edge_weight| Some(edge_weight),
+    /// );
+    ///
+    /// assert_eq!(g_filtered.node_count(), 3);
+    /// ```
     pub fn filter_map<'a, F, G, N2, E2>(
         &'a self,
         mut node_map: F,
@@ -1629,6 +1717,27 @@ where
     /// the same graph indices as `self`.
     ///
     /// If you want a non-consuming version of this function, see [`filter_map`](struct.Graph.html#method.filter_map).
+    ///
+    /// ```
+    /// use petgraph::Graph;
+    ///
+    /// // Create a graph with integer node weights
+    /// let mut g = Graph::<u32, ()>::new();
+    /// let a = g.add_node(0);
+    /// let b = g.add_node(2);
+    /// let c = g.add_node(5);
+    /// let d = g.add_node(7);
+    /// let e = g.add_node(4);
+    /// g.extend_with_edges(&[(a, b, ()), (a, c, ()), (b, d, ()), (c, d, ()), (d, e, ())]);
+    ///
+    /// // Filter the graph such that only nodes with weight greater than 2 are kept.
+    /// let g_filtered = g.filter_map_owned(
+    ///     |_, node_weight| if node_weight > 2 { Some(node_weight) } else { None },
+    ///     |_, edge_weight| Some(edge_weight),
+    /// );
+    ///
+    /// assert_eq!(g_filtered.node_count(), 3);
+    /// ```
     pub fn filter_map_owned<F, G, N2, E2>(
         self,
         mut node_map: F,
