@@ -1651,10 +1651,10 @@ where
     /// the same graph indices as `self`.
     ///
     /// If you want a consuming version of this function, see [`filter_map_owned`](struct.Graph.html#method.filter_map_owned).
-    /// 
+    ///
     /// ```
     /// use petgraph::Graph;
-    /// 
+    ///
     /// // Create a graph with integer node weights
     /// let mut g = Graph::<u32, ()>::new();
     /// let a = g.add_node(0);
