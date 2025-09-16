@@ -33,8 +33,9 @@ use petgraph::algo::{
     bellman_ford, bridges, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
-    k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
-    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
+    k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo,
+    maximal_cliques::largest_maximal_clique, maximum_matching, min_spanning_tree, page_rank, spfa,
+    tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1614,6 +1615,47 @@ fn maximal_cliques_matches_ref_impl() {
                     "Ref Clique {c:?} not found in the result of maximal_cliques_algo: {cliques:?}"
                 );
             }
+        }
+        true
+    }
+    quickcheck::quickcheck(prop as fn(Graph<_, _, Undirected>) -> bool);
+    quickcheck::quickcheck(prop as fn(Graph<_, _, Directed>) -> bool);
+}
+
+#[test]
+fn largest_maximal_cliques_matches_ref_impl() {
+    use maximal_cliques::maximal_cliques_ref;
+
+    fn prop<Ty>(g: Graph<(), (), Ty>) -> bool
+    where
+        Ty: EdgeType,
+    {
+        // Our implementations of maximal cliques only works for undirected graphs
+        // or symmetric directed graphs. So we filter out directed edges if needed.
+        let g = if Ty::is_directed() {
+            g.filter_map(
+                |_, _| Some(()),
+                |edge_index, _| {
+                    let (source, target) = g.edge_endpoints(edge_index).unwrap();
+                    if g.contains_edge(target, source) {
+                        Some(())
+                    } else {
+                        None
+                    }
+                },
+            )
+        } else {
+            g
+        };
+        if g.edge_count() <= 200 && g.node_count() <= 200 {
+            let mut cliques_ref = maximal_cliques_ref(&g);
+            cliques_ref.sort_by_key(|a| a.len());
+            let longest_clique_ref = cliques_ref.last().unwrap();
+            let longest_clique = largest_maximal_clique(&g);
+
+            assert!(longest_clique.len() == longest_clique_ref.len(),
+                "Largest Maximal cliques algorithm returned different largest clique than the reference implementation: {longest_clique:?} != {longest_clique_ref:?}",
+            );
         }
         true
     }
