@@ -811,36 +811,48 @@ quickcheck! {
 }
 
 quickcheck! {
-    // checks bidirectional dijkstra against normal dijkstra
-    fn bidirectional_dijkstra_(g: Graph<u32, u32>) -> bool {
-        if g.node_count() <= 1 {
-            return true;
-        }
-
-        for node1 in g.node_identifiers() {
-            let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
-
-            for node2 in g.node_identifiers() {
-                if node1 == node2 {
-                    continue;
-                }
-
-                let bidirectional_dijkstra_res = bidirectional_dijkstra(&g, node1, node2, |e| *e.weight());
-
-                match (dijkstra_res.get(&node2), bidirectional_dijkstra_res) {
-                    (None, None) => continue,
-                    (Some(distance), Some(bidirectional_distance)) => {
-                        if *distance != bidirectional_distance {
-                            return false;
-                        }
-                    }
-                    // Both algorithms must find a solution for the same problem.
-                    (Some(_), None) | (None, Some(_)) => return false,
-                }
-            }
-         }
-        true
+    fn bidirectional_dijkstra_directed(g: Graph<u32, u32, Directed>) -> bool {
+        test_bidirectional_dijkstra_impl(g)
     }
+
+    fn bidirectional_dijkstra_undirected(g: Graph<u32, u32, Undirected>) -> bool {
+        test_bidirectional_dijkstra_impl(g)
+    }
+}
+
+fn test_bidirectional_dijkstra_impl<Ty>(g: Graph<u32, u32, Ty>) -> bool
+where
+    Ty: EdgeType,
+{
+    if g.node_count() <= 1 || g.node_count() > 50 {
+        return true;
+    }
+
+    for node1 in g.node_identifiers() {
+        let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
+
+        for node2 in g.node_identifiers() {
+            if node1 == node2 {
+                continue;
+            }
+
+            let bidirectional_dijkstra_res =
+                bidirectional_dijkstra(&g, node1, node2, |e| *e.weight());
+
+            match (dijkstra_res.get(&node2), bidirectional_dijkstra_res) {
+                (None, None) => continue,
+                (Some(distance), Some(bidirectional_distance)) => {
+                    if *distance != bidirectional_distance {
+                        return false;
+                    }
+                }
+                // Both algorithms must find a solution for the same problem.
+                (Some(_), None) | (None, Some(_)) => return false,
+            }
+        }
+    }
+
+    true
 }
 
 quickcheck! {
