@@ -242,6 +242,14 @@ where
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
+/// Bidirectional Dijkstra has the same time complexity as standard Dijkstra. However, because it
+/// searches simultaneously from both the start and goal nodes, meeting in the middle, it often
+/// explores roughly half the nodes that regular Dijkstra would explore. This is especially the case
+/// when the path is long relative to the graph size or when working with sparse graphs.
+///
+/// However, regular Dijkstra may be preferable when you need the shortest paths from the start node
+/// to multiple goals or when the start and goal are relatively close to each other.
+///
 /// # Example
 /// ```rust
 /// use petgraph::Graph;
@@ -318,10 +326,10 @@ where
 
         for edge in graph.edges_directed(u, Direction::Outgoing) {
             let x = edge.target();
-            let edge_cost = edge_cost(edge);
+            let current_edge_cost = edge_cost(edge);
 
             if !forward_visited.is_visited(&x) {
-                let next_score = distance_to_u + edge_cost;
+                let next_score = distance_to_u + current_edge_cost;
 
                 match forward_distance.entry(x) {
                     Occupied(entry) => {
@@ -341,7 +349,7 @@ where
                 continue;
             }
 
-            let potential_best_value = distance_to_u + edge_cost + backward_distance[&x];
+            let potential_best_value = distance_to_u + current_edge_cost + backward_distance[&x];
 
             let improves_best_value = match best_value {
                 None => true,

@@ -6,11 +6,10 @@ extern crate test;
 #[allow(dead_code)]
 mod common;
 
-use petgraph::prelude::*;
-use petgraph::algo::{bidirectional_dijkstra, dijkstra};
-use test::Bencher;
 use common::*;
-
+use petgraph::algo::{bidirectional_dijkstra, dijkstra};
+use petgraph::prelude::*;
+use test::Bencher;
 
 const RANDOM_GRAPH_SIZE: usize = 10_000;
 const RANDOM_GRAPH_START: usize = 1;
