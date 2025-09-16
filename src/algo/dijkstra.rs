@@ -230,7 +230,7 @@ where
 /// * `graph`: weighted graph.
 /// * `start`: the start node.
 /// * `goal`: the goal node.
-/// * `edge_cost`: closure that returns cost of a particular edge.
+/// * `edge_cost`: closure that returns the cost of a particular edge.
 ///
 /// # Returns
 /// * `Some(K)` - the total cost from start to finish, if one was found.
@@ -353,7 +353,7 @@ where
 
             let improves_best_value = match best_value {
                 None => true,
-                Some(mu) => potential_best_value < mu,
+                Some(current_best_value) => potential_best_value < current_best_value,
             };
 
             if improves_best_value {
