@@ -221,7 +221,13 @@ where
 ///
 /// Compute the length of the shortest path from `start` to `target`.
 ///
-/// The graph should be `Visitable` and implement `IntoEdgesDirected`.
+/// Bidirectional Dijkstra has the same time complexity as standard [`Dijkstra`][dijkstra]. However, because it
+/// searches simultaneously from both the start and goal nodes, meeting in the middle, it often
+/// explores roughly half the nodes that regular [`Dijkstra`][dijkstra] would explore. This is especially the case
+/// when the path is long relative to the graph size or when working with sparse graphs.
+///
+/// However, regular [`Dijkstra`][dijkstra] may be preferable when you need the shortest paths from the start node
+/// to multiple goals or when the start and goal are relatively close to each other.
 ///
 /// The function `edge_cost` should return the cost for a particular edge, which is used
 /// to compute path costs. Edge costs must be non-negative.
@@ -241,14 +247,6 @@ where
 /// * Auxiliary space: **O(|V|+|E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
-///
-/// Bidirectional Dijkstra has the same time complexity as standard Dijkstra. However, because it
-/// searches simultaneously from both the start and goal nodes, meeting in the middle, it often
-/// explores roughly half the nodes that regular Dijkstra would explore. This is especially the case
-/// when the path is long relative to the graph size or when working with sparse graphs.
-///
-/// However, regular Dijkstra may be preferable when you need the shortest paths from the start node
-/// to multiple goals or when the start and goal are relatively close to each other.
 ///
 /// # Example
 /// ```rust
