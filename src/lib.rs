@@ -520,7 +520,6 @@ mod quickcheck;
 mod serde_utils;
 mod traits_graph;
 pub mod unionfind;
-mod util;
 
 pub mod operator;
 pub mod prelude;
