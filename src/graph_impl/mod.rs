@@ -1556,15 +1556,17 @@ where
         G: FnMut(EdgeIndex<Ix>, E) -> E2,
     {
         let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
-        g.nodes.extend(self.nodes.into_iter().enumerate().map(|(i, node)| Node {
-            weight: node_map(NodeIndex::new(i), node.weight),
-            next: node.next,
-        }));
-        g.edges.extend(self.edges.into_iter().enumerate().map(|(i, edge)| Edge {
-            weight: edge_map(EdgeIndex::new(i), edge.weight),
-            next: edge.next,
-            node: edge.node,
-        }));
+        g.nodes
+            .extend(self.nodes.into_iter().enumerate().map(|(i, node)| Node {
+                weight: node_map(NodeIndex::new(i), node.weight),
+                next: node.next,
+            }));
+        g.edges
+            .extend(self.edges.into_iter().enumerate().map(|(i, edge)| Edge {
+                weight: edge_map(EdgeIndex::new(i), edge.weight),
+                next: edge.next,
+                node: edge.node,
+            }));
         g
     }
 

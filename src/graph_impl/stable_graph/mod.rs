@@ -1185,7 +1185,7 @@ where
 
         // the stable graph keeps the node map itself
 
-        for (i, node) in self.raw_nodes().into_iter().enumerate() {
+        for (i, node) in self.raw_nodes().iter().enumerate() {
             if i >= node_bound {
                 break;
             }
@@ -1197,7 +1197,7 @@ where
             }
             result_g.add_vacant_node(&mut free_node);
         }
-        for (i, edge) in self.raw_edges().into_iter().enumerate() {
+        for (i, edge) in self.raw_edges().iter().enumerate() {
             if i >= edge_bound {
                 break;
             }
@@ -2180,7 +2180,7 @@ where
     type NodeReferences = NodeReferences<'a, N, Ix>;
     fn node_references(self) -> Self::NodeReferences {
         NodeReferences {
-            iter: self.raw_nodes().into_iter().enumerate(),
+            iter: self.raw_nodes().iter().enumerate(),
         }
     }
 }
