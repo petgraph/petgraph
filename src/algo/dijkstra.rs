@@ -28,7 +28,7 @@ where
 }
 
 /// Return value of [`Dijkstra::run`]. To access values, use the respective methods.
-pub struct DijkstraResult<'a, N, C>
+pub struct DijkstraOutput<'a, N, C>
 where
     N: Eq + Hash,
     C: Measure + Copy,
@@ -38,7 +38,7 @@ where
 }
 
 /// Owned return value of [`Dijkstra::run_once`]. To access values, use `into_` methods.
-pub struct DijkstraResultOwned<N, C>
+pub struct DijkstraOutputOwned<N, C>
 where
     N: Eq + Hash,
     C: Measure + Copy,
@@ -136,7 +136,7 @@ where
     /// assert_eq!(res.scores, expected_res);
     /// assert!(res.goal_node == Some(d) || res.goal_node == Some(f));
     /// ```
-    pub fn run(&mut self) -> DijkstraResult<'_, G::NodeId, K> {
+    pub fn run(&mut self) -> DijkstraOutput<'_, G::NodeId, K> {
         let mut visit_next = BinaryHeap::new();
         let zero_score = K::default();
         self.distances.insert(self.start, zero_score);
@@ -171,16 +171,16 @@ where
             }
             self.visited.visit(node);
         }
-        DijkstraResult {
+        DijkstraOutput {
             paths: HashMap::new(),
             distances: &self.distances,
         }
     }
 
-    pub fn run_once(mut self) -> DijkstraResultOwned<G::NodeId, K> {
-        let result = self.run();
-        DijkstraResultOwned {
-            paths: result.paths,
+    pub fn run_once(mut self) -> DijkstraOutputOwned<G::NodeId, K> {
+        let output = self.run();
+        DijkstraOutputOwned {
+            paths: output.paths,
             distances: self.distances,
         }
     }
@@ -204,7 +204,7 @@ where
     }
 }
 
-impl<N, K> DijkstraResult<'_, N, K>
+impl<N, K> DijkstraOutput<'_, N, K>
 where
     N: Eq + Hash + Clone,
     K: Measure + Copy,
@@ -223,42 +223,42 @@ where
 
     /// Get the reference to a HashMap of the paths.
     ///
-    /// To get an owned HashMap, use [`DijkstraResult::into_paths`].
+    /// To get an owned HashMap, use [`DijkstraOutput::into_paths`].
     pub fn paths(&self) -> &HashMap<N, Vec<N>> {
         &self.paths
     }
 
     /// Get the the reference to a path to a specific node.
     ///
-    /// To get an owned HashMap, use [`DijkstraResult::into_paths`].
+    /// To get an owned HashMap, use [`DijkstraOutput::into_paths`].
     pub fn path_to_node(&self, node: &N) -> Option<&Vec<N>> {
         self.paths.get(node)
     }
 
-    /// Turn the result into the paths HashMap
+    /// Turn the output into the paths HashMap
     pub fn into_paths(self) -> HashMap<N, Vec<N>> {
         self.paths
     }
 }
 
-impl<N, K> DijkstraResultOwned<N, K>
+impl<N, K> DijkstraOutputOwned<N, K>
 where
     N: Eq + Hash + Clone,
     K: Measure + Copy,
 {
-    /// Turn the result into the paths HashMap. To get both paths and distances, use
-    /// [`DijkstraResultOwned::into_paths_and_distances`].
+    /// Turn the output into the paths HashMap. To get both paths and distances, use
+    /// [`DijkstraOutputOwned::into_paths_and_distances`].
     pub fn into_paths(self) -> HashMap<N, Vec<N>> {
         self.paths
     }
 
-    /// Turn the result into the distances HashMap. To get both paths and distances, use
-    /// [`DijkstraResultOwned::into_paths_and_distances`].
+    /// Turn the output into the distances HashMap. To get both paths and distances, use
+    /// [`DijkstraOutputOwned::into_paths_and_distances`].
     pub fn into_distances(self) -> HashMap<N, K> {
         self.distances
     }
 
-    /// Turn the result into both paths and distances HashMaps.
+    /// Turn the output into both paths and distances HashMaps.
     pub fn into_paths_and_distances(self) -> (HashMap<N, Vec<N>>, HashMap<N, K>) {
         (self.paths, self.distances)
     }
@@ -421,8 +421,8 @@ where
 /// // |       v       |       v
 /// // d <---- c       h <---- g
 ///
-/// let result = bidirectional_dijkstra(&graph, a, g, |_| 1);
-/// assert_eq!(result, Some(4));
+/// let output = bidirectional_dijkstra(&graph, a, g, |_| 1);
+/// assert_eq!(output, Some(4));
 /// ```
 pub fn bidirectional_dijkstra<G, F, K>(
     graph: G,
