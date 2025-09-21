@@ -30,11 +30,12 @@ use rand::Rng;
 #[cfg(feature = "stable_graph")]
 use petgraph::algo::steiner_tree;
 use petgraph::algo::{
-    bellman_ford, bridges, condensation, connected_components, dijkstra, dsatur_coloring,
-    find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
-    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
-    k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
-    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
+    bellman_ford, bidirectional_dijkstra, bridges, condensation, connected_components, dijkstra,
+    dsatur_coloring, find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set,
+    greedy_matching, is_cyclic_directed, is_cyclic_undirected, is_isomorphic,
+    is_isomorphic_matching, johnson, k_shortest_path, kosaraju_scc,
+    maximal_cliques as maximal_cliques_algo, maximum_matching, min_spanning_tree, page_rank, spfa,
+    tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -807,6 +808,51 @@ quickcheck! {
         }
         true
     }
+}
+
+quickcheck! {
+    fn bidirectional_dijkstra_directed(g: Graph<u32, u32, Directed>) -> bool {
+        test_bidirectional_dijkstra_impl(g)
+    }
+
+    fn bidirectional_dijkstra_undirected(g: Graph<u32, u32, Undirected>) -> bool {
+        test_bidirectional_dijkstra_impl(g)
+    }
+}
+
+fn test_bidirectional_dijkstra_impl<Ty>(g: Graph<u32, u32, Ty>) -> bool
+where
+    Ty: EdgeType,
+{
+    if g.node_count() <= 1 || g.node_count() > 50 {
+        return true;
+    }
+
+    for node1 in g.node_identifiers() {
+        let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
+
+        for node2 in g.node_identifiers() {
+            if node1 == node2 {
+                continue;
+            }
+
+            let bidirectional_dijkstra_res =
+                bidirectional_dijkstra(&g, node1, node2, |e| *e.weight());
+
+            match (dijkstra_res.get(&node2), bidirectional_dijkstra_res) {
+                (None, None) => continue,
+                (Some(distance), Some(bidirectional_distance)) => {
+                    if *distance != bidirectional_distance {
+                        return false;
+                    }
+                }
+                // Both algorithms must find a solution for the same problem.
+                (Some(_), None) | (None, Some(_)) => return false,
+            }
+        }
+    }
+
+    true
 }
 
 quickcheck! {
