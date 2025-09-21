@@ -23,16 +23,45 @@ where
     start: G::NodeId,
     goal: GoalFn,
     edge_cost: CostFn,
+    distances: HashMap<G::NodeId, K>,
+    visited: G::Map,
 }
 
 /// Return value of [`Dijkstra::run`]. To access values, use the respective methods.
-pub struct DijkstraResult<N, C>
+pub struct DijkstraResult<'a, N, C>
 where
     N: Eq + Hash,
     C: Measure + Copy,
 {
     paths: HashMap<N, Vec<N>>,
-    distances: HashMap<N, C>,
+    distances: &'a HashMap<N, C>,
+}
+
+// The GoalFn is instantiated to `fn(&G::NodeId) -> bool` in this impl, because new supplies a new
+// type for GoalFn, and thus the type of the Dijkstra of the impl block is actually irrelevant.
+// Thus, we can use an arbitrary type for GoalFn, as it is just a placeholder.
+impl<G, CostFn, K> Dijkstra<G, fn(&G::NodeId) -> bool, CostFn, K>
+where
+    G: IntoEdges + Visitable,
+    G::NodeId: Eq + Hash,
+    CostFn: FnMut(G::EdgeRef) -> K,
+    K: Measure + Copy,
+{
+    /// Create a new `Dijkstra` instance.
+    pub fn new(
+        graph: G,
+        start: G::NodeId,
+        edge_cost: CostFn,
+    ) -> Dijkstra<G, impl FnMut(&G::NodeId) -> bool, CostFn, K> {
+        Dijkstra {
+            graph,
+            start,
+            goal: |_: &G::NodeId| false,
+            edge_cost,
+            distances: HashMap::new(),
+            visited: graph.visit_map(),
+        }
+    }
 }
 
 impl<G, GoalFn, CostFn, K> Dijkstra<G, GoalFn, CostFn, K>
@@ -43,15 +72,6 @@ where
     CostFn: FnMut(G::EdgeRef) -> K,
     K: Measure + Copy,
 {
-    pub fn new(graph: G, start: G::NodeId, goal: GoalFn, edge_cost: CostFn) -> Self {
-        Dijkstra {
-            graph,
-            start,
-            goal,
-            edge_cost,
-        }
-    }
-
     /// Dijkstra's shortest path algorithm.
     ///
     /// This algorithm is identical to [`dijkstra`],
@@ -107,15 +127,12 @@ where
     /// assert!(res.goal_node == Some(d) || res.goal_node == Some(f));
     /// ```
     pub fn run(&mut self) -> DijkstraResult<G::NodeId, K> {
-        let mut visited = self.graph.visit_map();
-        let mut scores = HashMap::new();
-        //let mut predecessor = HashMap::new();
         let mut visit_next = BinaryHeap::new();
         let zero_score = K::default();
-        scores.insert(self.start, zero_score);
+        self.distances.insert(self.start, zero_score);
         visit_next.push(MinScored(zero_score, self.start));
         while let Some(MinScored(node_score, node)) = visit_next.pop() {
-            if visited.is_visited(&node) {
+            if self.visited.is_visited(&node) {
                 continue;
             }
             if (self.goal)(&node) {
@@ -123,11 +140,11 @@ where
             }
             for edge in self.graph.edges(node) {
                 let next = edge.target();
-                if visited.is_visited(&next) {
+                if self.visited.is_visited(&next) {
                     continue;
                 }
                 let next_score = node_score + (self.edge_cost)(edge);
-                match scores.entry(next) {
+                match self.distances.entry(next) {
                     Occupied(ent) => {
                         if next_score < *ent.get() {
                             *ent.into_mut() = next_score;
@@ -142,12 +159,56 @@ where
                     }
                 }
             }
-            visited.visit(node);
+            self.visited.visit(node);
         }
         DijkstraResult {
             paths: HashMap::new(),
-            distances: scores.clone(),
+            distances: &self.distances,
         }
+    }
+
+    pub fn with_goal<NewGoalFn>(self, goal: NewGoalFn) -> Dijkstra<G, NewGoalFn, CostFn, K>
+    where
+        NewGoalFn: FnMut(&G::NodeId) -> bool,
+    {
+        Dijkstra {
+            graph: self.graph,
+            start: self.start,
+            goal,
+            edge_cost: self.edge_cost,
+            distances: self.distances,
+            visited: self.visited,
+        }
+    }
+
+    pub fn into_distances(self) -> HashMap<G::NodeId, K> {
+        self.distances
+    }
+}
+
+impl<N, K> DijkstraResult<'_, N, K>
+where
+    N: Eq + Hash + Clone,
+    K: Measure + Copy,
+{
+    /// Get a HashMap of the distances.
+    pub fn distances(&self) -> &HashMap<N, K> {
+        self.distances
+    }
+
+    /// Get the distance to a specific node.
+    pub fn distance_to_node(&self, node: &N) -> Option<K> {
+        self.distances.get(node).cloned()
+    }
+
+    /// Get a HashMap of the paths.
+    pub fn paths(&self) -> &HashMap<N, Vec<N>> {
+        &self.paths
+    }
+
+    /// Get the path to a specific node.
+    pub fn path_to_node(&self, node: &N) -> Option<&Vec<N>> {
+        self.paths.get(node)
     }
 }
 
@@ -238,9 +299,10 @@ where
     F: FnMut(G::EdgeRef) -> K,
     K: Measure + Copy,
 {
-    Dijkstra::new(graph, start, |node| goal.as_ref() == Some(node), edge_cost)
-        .run()
-        .distances
+    let mut dijkstra =
+        Dijkstra::new(graph, start, edge_cost).with_goal(|node| goal.as_ref() == Some(node));
+    dijkstra.run();
+    dijkstra.into_distances()
 }
 
 /// Bidirectional Dijkstra's shortest path algorithm.
