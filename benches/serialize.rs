@@ -20,7 +20,7 @@ mod serialize {
             .collect();
 
         let mut rng = rand::thread_rng();
-        g.extend_with_edges((0, NUM_EDGES).map(|_| {
+        g.extend_with_edges((0..NUM_EDGES).map(|_| {
             let first = rng.gen_range(0, NUM_NODES + NUM_HOLES);
             let second = rng.gen_range(0, NUM_NODES + NUM_HOLES - 1);
             let second = second + (second >= first) as usize;
@@ -30,7 +30,7 @@ mod serialize {
 
         // Remove nodes to make the structure a bit more interesting
         while g.node_count() > NUM_NODES {
-            let idx = rng.gen_range(0..indices.len());
+            let idx = rng.gen_range(0, indices.len());
             g.remove_node(indices[idx]);
         }
 
