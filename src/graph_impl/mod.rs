@@ -884,11 +884,16 @@ where
 
     /// Return an iterator of all nodes with an edge starting from `a`.
     ///
+    /// Depending on whether the graph is directed or undirected, this means:
+    ///
     /// - `Directed`: Outgoing edges from `a`.
     /// - `Undirected`: All edges from or to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
+    ///
+    /// For the iteration order for `Directed` and `Undirected` graphs respectively,
+    /// please refer to the documentation of [`Graph::neighbors_directed`].
     ///
     /// Use [`.neighbors(a).detach()`][1] to get a neighbor walker that does
     /// not borrow from the graph.
@@ -902,6 +907,9 @@ where
     /// `a`, in the specified direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
+    /// That is, depending on the graphs' edge type and the provided direction,
+    /// the iterator will iterate over the following:
+    ///
     /// - `Directed`, `Outgoing`: All edges from `a`.
     /// - `Directed`, `Incoming`: All edges to `a`.
     /// - `Undirected`: All edges from or to `a`.
@@ -911,7 +919,10 @@ where
     ///
     /// For a `Directed` graph, neighbors are listed in reverse order of their
     /// addition to the graph, so the most recently added edge's neighbor is
-    /// listed first. The order in an `Undirected` graph is arbitrary.
+    /// listed first.
+    ///
+    /// For the ordering in case of an `Undirected` graph, please refer to
+    /// the documentation of [`Graph::neighbors_undirected`].
     ///
     /// Use [`.neighbors_directed(a, dir).detach()`][1] to get a neighbor walker that does
     /// not borrow from the graph.
@@ -936,11 +947,17 @@ where
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
     ///
+    /// All outgoing neighbors are listed first followed by all incoming neighbors.
+    /// The ordering among the outgoing and incoming neighbors respectively is the
+    /// reverse order of their addition to the graph. That is, the most recently
+    /// added edge's neighbor is listed first. Outgoing and incoming in this case
+    /// refer to the ordering in which the endpoints were listed when adding the
+    /// edge (`g.add_edge(a, b, w)` or `g.add_edge(b, a, w)`).
+    ///
     /// Use [`.neighbors_undirected(a).detach()`][1] to get a neighbor walker that does
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    ///
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<'_, E, Ix> {
         Neighbors {
             skip_start: a,
@@ -954,16 +971,27 @@ where
 
     /// Return an iterator of all edges of `a`.
     ///
+    /// Depending on whether the graph is directed or undirected, this means:
+    ///
     /// - `Directed`: Outgoing edges from `a`.
     /// - `Undirected`: All edges connected to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
+    ///
+    /// For a `Directed` graph, edges are listed in reverse order of their
+    /// addition to the graph, so the most recently added edge is listed first.
+    ///
+    /// For the ordering in case of an `Undirected` graph, please refer to
+    /// the `Undirected` case in the documentation of [`Graph::edges_directed`].
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<'_, E, Ty, Ix> {
         self.edges_directed(a, Outgoing)
     }
 
     /// Return an iterator of all edges of `a`, in the specified direction.
+    ///
+    /// That is, depending on the graphs' edge type and the provided direction,
+    /// the iterator will iterate over the following:
     ///
     /// - `Directed`, `Outgoing`: All edges from `a`.
     /// - `Directed`, `Incoming`: All edges to `a`.
@@ -974,6 +1002,16 @@ where
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
+    ///
+    /// For a `Directed` graph, edges are listed in reverse order of their
+    /// addition to the graph, so the most recently added edge is listed first.
+    ///
+    /// For an `Undirected` graph, the outgoing edges are listed first, then
+    /// all incoming edges. The ordering among the outgoing and incoming edges
+    /// respectively is the reverse order of their addition to the graph,
+    /// similar to the `Directed` case. Outgoing and incoming in this case
+    /// refer to the ordering in which the endpoints were listed when adding the
+    /// edge (`g.add_edge(a, b, w)` or `g.add_edge(b, a, w)`).
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<'_, E, Ty, Ix> {
         Edges {
             skip_start: a,
@@ -993,6 +1031,11 @@ where
     /// - `Undirected`: All edges connected to `a`.
     ///
     /// Iterator element type is `EdgeReference<E, Ix>`.
+    ///
+    /// The edges from a to b are listed first, then all edges from
+    /// b to a. The ordering among the edges from a to b and b to a
+    /// respectively is the reverse order of their addition to the graph.
+    /// That is, the most recently added edge is listed first.
     pub fn edges_connecting(
         &self,
         a: NodeIndex<Ix>,
