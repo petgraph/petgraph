@@ -109,6 +109,7 @@ where
     pub fn run(&mut self) -> DijkstraResult<G::NodeId, K> {
         let mut visited = self.graph.visit_map();
         let mut scores = HashMap::new();
+        //let mut predecessor = HashMap::new();
         let mut visit_next = BinaryHeap::new();
         let zero_score = K::default();
         scores.insert(self.start, zero_score);
@@ -116,6 +117,9 @@ where
         while let Some(MinScored(node_score, node)) = visit_next.pop() {
             if visited.is_visited(&node) {
                 continue;
+            }
+            if (self.goal)(&node) {
+                break;
             }
             for edge in self.graph.edges(node) {
                 let next = edge.target();
