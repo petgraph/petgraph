@@ -285,7 +285,7 @@ where
     /// are returned if they are disjoint. Otherwise, a [`Cycle`] error is returned.
     ///
     /// If `return_result` is false, then the cones are not constructed and the
-    /// method only checks for disjointness.
+    /// method only checks for disjointedness.
     #[allow(clippy::type_complexity)]
     fn causal_cones(
         &self,

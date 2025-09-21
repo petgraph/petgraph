@@ -243,8 +243,8 @@ impl fmt::Display for MatrixError {
 pub struct MatrixGraph<
     N,
     E,
-    #[cfg(feature = "std")] S = RandomState,
     #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
     Ty = Directed,
     Null: Nullable<Wrapped = E> = Option<E>,
     Ix = DefaultIx,
@@ -261,8 +261,8 @@ pub struct MatrixGraph<
 pub type DiMatrix<
     N,
     E,
-    #[cfg(feature = "std")] S = RandomState,
     #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
     Null = Option<E>,
     Ix = DefaultIx,
 > = MatrixGraph<N, E, S, Directed, Null, Ix>;
@@ -271,8 +271,8 @@ pub type DiMatrix<
 pub type UnMatrix<
     N,
     E,
-    #[cfg(feature = "std")] S = RandomState,
     #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
     Null = Option<E>,
     Ix = DefaultIx,
 > = MatrixGraph<N, E, S, Undirected, Null, Ix>;
@@ -627,7 +627,7 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is [`NodeIndex<Ix>`](../graph/struct.NodeIndex.html).
-    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<Ty, Null, Ix> {
+    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<'_, Ty, Null, Ix> {
         Neighbors(Edges::on_columns(
             a.index(),
             &self.node_adjacencies,
@@ -642,7 +642,7 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `(NodeIndex<Ix>, NodeIndex<Ix>, &E)`.
-    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<Ty, Null, Ix> {
+    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<'_, Ty, Null, Ix> {
         Edges::on_columns(a.index(), &self.node_adjacencies, self.node_capacity)
     }
 
@@ -728,7 +728,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType>
         &self,
         a: NodeIndex<Ix>,
         d: Direction,
-    ) -> Neighbors<Directed, Null, Ix> {
+    ) -> Neighbors<'_, Directed, Null, Ix> {
         if d == Outgoing {
             self.neighbors(a)
         } else {
@@ -747,7 +747,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType>
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `(NodeIndex<Ix>, NodeIndex<Ix>, &E)`.
-    pub fn edges_directed(&self, a: NodeIndex<Ix>, d: Direction) -> Edges<Directed, Null, Ix> {
+    pub fn edges_directed(&self, a: NodeIndex<Ix>, d: Direction) -> Edges<'_, Directed, Null, Ix> {
         if d == Outgoing {
             self.edges(a)
         } else {
@@ -766,8 +766,8 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType>
 pub struct NodeIdentifiers<
     'a,
     Ix,
-    #[cfg(feature = "std")] S = RandomState,
     #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
 > {
     iter: IdIterator<'a, S>,
     ix: PhantomData<Ix>,
@@ -804,8 +804,8 @@ pub struct NodeReferences<
     'a,
     N: 'a,
     Ix,
-    #[cfg(feature = "std")] S = RandomState,
     #[cfg(not(feature = "std"))] S,
+    #[cfg(feature = "std")] S = RandomState,
 > {
     nodes: &'a IdStorage<N, S>,
     iter: IdIterator<'a, S>,
@@ -1102,7 +1102,7 @@ fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
 }
 
 #[derive(Debug, Clone)]
-struct IdStorage<T, #[cfg(feature = "std")] S = RandomState, #[cfg(not(feature = "std"))] S> {
+struct IdStorage<T, #[cfg(not(feature = "std"))] S, #[cfg(feature = "std")] S = RandomState> {
     elements: Vec<Option<T>>,
     upper_bound: usize,
     removed_ids: IndexSet<usize, S>,
@@ -1155,7 +1155,7 @@ impl<T, S: BuildHasher> IdStorage<T, S> {
         self.upper_bound - self.removed_ids.len()
     }
 
-    fn iter_ids(&self) -> IdIterator<S> {
+    fn iter_ids(&self) -> IdIterator<'_, S> {
         IdIterator {
             upper_bound: self.upper_bound,
             removed_ids: &self.removed_ids,

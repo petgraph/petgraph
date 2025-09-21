@@ -7,7 +7,7 @@ use hashbrown::{HashMap, HashSet};
 use crate::visit;
 use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRef};
 
-/// \[Generic\] Find articulation points in a graph using [Tarjan's algorithm](https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm).
+/// Find articulation points in a graph using [Tarjan's algorithm](https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm).
 ///
 /// Compute the articulation points of a graph (Nodes, which would increase the number of connected components in the graph.
 ///

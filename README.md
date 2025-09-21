@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/graphosaurus-512.png" alt="Petgraph Logo"/>
+  <img src="assets/images/graphosaurus-512.png" alt="Petgraph Logo"/>
 </p>
 
 petgraph
@@ -40,7 +40,7 @@ use petgraph::dot::{Dot, Config};
 use petgraph::visit::NodeIndexable;
 
 fn main() {
-    // Create an undirected graph with associated data 
+    // Create an undirected graph with associated data
     // of type `i32` for the nodes and `()` for the edges.
     let g = UnGraph::<i32, ()>::from_edges(&[
         (0, 1), (1, 2), (2, 3), (0, 3)
@@ -84,22 +84,29 @@ fn main() {
 
 petgraph is built with these features enabled by default:
 
-- `graphmap` enable [`GraphMap`][docsrs-graph-map].
-- `stable_graph` enable [`StableGraph`][docsrs-stable-graph].
-- `matrix_graph` enable [`MatrixGraph`][docsrs-matrix-graph].
+- `graphmap` - Enables [`GraphMap`][docsrs-graph-map].
+- `stable_graph` - Enables [`StableGraph`][docsrs-stable-graph].
+- `matrix_graph` - Enables [`MatrixGraph`][docsrs-matrix-graph].
+- `std` - Enables the Rust Standard Library.
+  Disabling the `std` feature makes it possible to use `petgraph`
+  in `no_std` contexts.
 
 Optionally, the following features can be enabled:
 
-- `serde-1` enable serialization for
+- `serde-1` - Enables serialization for
   `Graph, StableGraph, GraphMap`
   using [serde 1.0][docsrs-serde]. Requires Rust version as required
   by serde.
-- `rayon` enable parallel iterators for the underlying data
+- `rayon` - Enables parallel iterators for the underlying data
   in `GraphMap`. Requires Rust version as required
   by [rayon][docsrs-rayon].
-- `dot_parser` enable parsing graph
+- `dot_parser` - Enables parsing graph
   from [DOT/Graphviz][dot-url]
   strings and files.
+- `generate` - Enables graph generators.
+- `unstable` - Enables unstable crate features (currently only
+  `generate`). The API of functionality behind this flag is subject to
+  change at any time.
 
 ## Getting Help
 
@@ -138,7 +145,7 @@ terms.
 
 [ci-url]: https://github.com/petgraph/petgraph/actions/workflows/ci.yml
 
-[contributing]: CONTRIBUTING.rst
+[contributing]: CONTRIBUTING.md
 
 [crates-badge]: https://img.shields.io/crates/v/petgraph.svg
 
@@ -154,7 +161,7 @@ terms.
 
 [docsrs-examples]: https://docs.rs/petgraph/latest/petgraph/index.html#examples
 
-[docsrs-graph-map]: https://docs.rs/petgraph/latest/petgraph/stable_graph/struct.StableGraph.html
+[docsrs-graph-map]: https://docs.rs/petgraph/latest/petgraph/graphmap/struct.GraphMap.html
 
 [docsrs-matrix-graph]: https://docs.rs/petgraph/latest/petgraph/matrix_graph/struct.MatrixGraph.html
 

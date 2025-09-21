@@ -14,7 +14,7 @@ where
     kosaraju_scc(g)
 }
 
-/// \[Generic\] Compute the *strongly connected components* using [Kosaraju's algorithm][1].
+/// Compute the *strongly connected components* using [Kosaraju's algorithm][1].
 ///
 /// This implementation is iterative and does two passes over the nodes.
 ///

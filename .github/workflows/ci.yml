@@ -2,10 +2,10 @@ on:
   push:
     branches: [ master ]
   pull_request:
-    branches: '*'
+    branches: [ '*' ]
   merge_group:
     types: [ checks_requested ]
-  workflow_dispatch: {} 
+  workflow_dispatch: { }
 
 name: Continuous integration
 
@@ -74,21 +74,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.8
+      - uses: extractions/setup-just@v3
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
       - name: Check formatting
-        run: cargo fmt -- --check
+        run: just fmt
 
       - name: Run clippy
         # The benchmarks target require nightly,
         # so we cannot use --all-targets here.
-        run: |
-          cargo clippy --all-features \
-            --lib --bins --examples --tests \
-            -- -D warnings
+        run: just clippy
 
       - name: Build docs
         run: cargo doc --no-deps --all-features
@@ -101,6 +99,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.8
+      - uses: extractions/setup-just@v3
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -108,16 +107,36 @@ jobs:
           targets: wasm32v1-none
 
       - name: Check
-        run: cargo check --no-default-features -p petgraph --target wasm32v1-none --features graphmap,serde-1,stable_graph,matrix_graph,generate,unstable
+        run: just check-no-std
 
-  miri:
-    name: Unsoundness check
-    if: github.event_name != 'merge_group'
+  fast-miri:
+    # This job runs on pull_request without the `S-run-thorough-ci-tests` label.
+    name: Unsoundness check fast
+    if: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'S-run-thorough-ci-tests') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.8
+      - uses: extractions/setup-just@v3
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: miri
-      - run: cargo miri test
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      # Exclude some tests from fast-miri, as they take very long to run. thorough-miri includes all tests without nextest.
+      - run: just miri-fast
+
+  thorough-miri:
+    # This job runs on push and pull_request with the `S-run-thorough-ci-tests` label.
+    name: Unsoundness check thorough
+    if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'S-run-thorough-ci-tests')) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.8
+      - uses: extractions/setup-just@v3
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - run: just miri

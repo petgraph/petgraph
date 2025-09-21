@@ -183,11 +183,11 @@ fn selfloop() {
     assert!(gr.find_edge(b, a).is_none());
     assert!(gr.find_edge_undirected(b, a).is_some());
     assert!(gr.find_edge(a, a).is_some());
-    println!("{:?}", gr);
+    println!("{gr:?}");
 
     gr.remove_edge(sed);
     assert!(gr.find_edge(a, a).is_none());
-    println!("{:?}", gr);
+    println!("{gr:?}");
 }
 
 #[test]
@@ -440,7 +440,7 @@ fn dijk() {
     g.add_edge(b, f, 15);
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
-    println!("{:?}", g);
+    println!("{g:?}");
     for no in Bfs::new(&g, a).iter(&g) {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
@@ -620,7 +620,7 @@ fn test_generate_undirected() {
         let mut n = 0;
         while let Some(g) = gen.next_ref() {
             n += 1;
-            println!("{:?}", g);
+            println!("{g:?}");
         }
 
         assert_eq!(n, 1 << nedges);
@@ -678,8 +678,7 @@ fn test_generate_dag() {
         for gr in &graphs {
             assert!(
                 !petgraph::algo::is_cyclic_directed(gr),
-                "Assertion failed: {:?} acyclic",
-                gr
+                "Assertion failed: {gr:?} acyclic",
             );
         }
     }
@@ -718,12 +717,10 @@ fn assert_is_topo_order<N, E>(gr: &Graph<N, E, Directed>, order: &[NodeIndex]) {
         let b = edge.target();
         let ai = order.iter().position(|x| *x == a).unwrap();
         let bi = order.iter().position(|x| *x == b).unwrap();
-        println!("Check that {:?} is before {:?}", a, b);
+        println!("Check that {a:?} is before {b:?}");
         assert!(
             ai < bi,
-            "Topo order: assertion that node {:?} is before {:?} failed",
-            a,
-            b
+            "Topo order: assertion that node {a:?} is before {b:?} failed"
         );
     }
 }
@@ -761,7 +758,7 @@ fn test_toposort() {
     gr.add_edge(i, j, 1.);
 
     let order = petgraph::algo::toposort(&gr, None).unwrap();
-    println!("{:?}", order);
+    println!("{order:?}");
     assert_eq!(order.len(), gr.node_count());
 
     assert_is_topo_order(&gr, &order);
@@ -1024,8 +1021,7 @@ fn condensation() {
     assert!(cond.edge_count() == 2);
     assert!(
         !petgraph::algo::is_cyclic_directed(&cond),
-        "Assertion failed: {:?} acyclic",
-        cond
+        "Assertion failed: {cond:?} acyclic"
     );
 
     // make_acyclic = false
@@ -1176,7 +1172,7 @@ fn test_weight_iterators() {
         *ew = -*ew;
     }
     for (index, edge) in gr.raw_edges().iter().enumerate() {
-        assert_eq!(edge.weight, -1. * old[EdgeIndex::new(index)]);
+        assert_eq!(edge.weight, -old[EdgeIndex::new(index)]);
     }
 }
 
@@ -1269,7 +1265,7 @@ fn index_twice_mut() {
                 .fold(0., |a, b| a + b);
             assert_eq!(s, gr[ni]);
         }
-        println!("Sum {:?}: {:?}", dir, gr);
+        println!("Sum {dir:?}: {gr:?}");
     }
 }
 
@@ -1333,7 +1329,7 @@ fn test_edge_iterators_directed() {
     let mut reversed_gr = gr.clone();
     reversed_gr.reverse();
 
-    println!("{:#?}", gr);
+    println!("{gr:#?}");
     for i in gr.node_indices() {
         // Compare against reversed graphs two different ways: using .reverse() and Reversed.
         itertools::assert_equal(gr.edges_directed(i, Incoming), reversed_gr.edges(i));
@@ -1512,7 +1508,7 @@ fn toposort_generic() {
         assert_eq!(gr[nx].1, index);
         index += 1.;
     }
-    println!("{:?}", gr);
+    println!("{gr:?}");
     assert_is_topo_order(&gr, &order);
 
     {
@@ -1545,7 +1541,7 @@ fn toposort_generic() {
         while let Some(nx) = topo.next(&gr) {
             order.push(nx);
         }
-        println!("{:?}", gr);
+        println!("{gr:?}");
         assert_is_topo_order(&gr, &order);
     }
     let mut gr2 = gr.clone();
@@ -1603,7 +1599,49 @@ fn test_has_path() {
 }
 
 #[test]
-fn map_filter_map() {
+fn test_map() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let ab = g.add_edge(a, b, 7);
+    let bc = g.add_edge(b, c, 14);
+    let ca = g.add_edge(c, a, 9);
+
+    let g2 = g.map(|_, name| format!("map-{name}"), |_, weight| weight * 2);
+    assert_eq!(g2.node_count(), 3);
+    assert_eq!(g2.node_weight(a).map(|s| &**s), Some("map-A"));
+    assert_eq!(g2.node_weight(b).map(|s| &**s), Some("map-B"));
+    assert_eq!(g2.node_weight(c).map(|s| &**s), Some("map-C"));
+    assert_eq!(g2.edge_count(), 3);
+    assert_eq!(g2.edge_weight(ab), Some(&14));
+    assert_eq!(g2.edge_weight(bc), Some(&28));
+    assert_eq!(g2.edge_weight(ca), Some(&18));
+}
+
+#[test]
+fn test_map_owned() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+    let ab = g.add_edge(a, b, 7);
+    let bc = g.add_edge(b, c, 14);
+    let ca = g.add_edge(c, a, 9);
+
+    let g2 = g.map_owned(|_, name| format!("map-{name}"), |_, weight| weight * 2);
+    assert_eq!(g2.node_count(), 3);
+    assert_eq!(g2.node_weight(a).map(|s| &**s), Some("map-A"));
+    assert_eq!(g2.node_weight(b).map(|s| &**s), Some("map-B"));
+    assert_eq!(g2.node_weight(c).map(|s| &**s), Some("map-C"));
+    assert_eq!(g2.edge_count(), 3);
+    assert_eq!(g2.edge_weight(ab), Some(&14));
+    assert_eq!(g2.edge_weight(bc), Some(&28));
+    assert_eq!(g2.edge_weight(ca), Some(&18));
+}
+
+#[test]
+fn test_filter_map() {
     let mut g = Graph::new_undirected();
     let a = g.add_node("A");
     let b = g.add_node("B");
@@ -1620,7 +1658,7 @@ fn map_filter_map() {
     g.add_edge(b, f, 15);
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
-    println!("{:?}", g);
+    println!("{g:?}");
 
     let g2 = g.filter_map(
         |_, name| Some(*name),
@@ -1629,6 +1667,11 @@ fn map_filter_map() {
     assert_eq!(g2.edge_count(), 4);
     for edge in g2.raw_edges() {
         assert!(edge.weight >= 10);
+    }
+    assert_eq!(g2.node_count(), g.node_count());
+    // Check if node indices are compatible
+    for i in g.node_indices() {
+        assert_eq!(g2.node_weight(i), g.node_weight(i));
     }
 
     let g3 = g.filter_map(
@@ -1640,6 +1683,65 @@ fn map_filter_map() {
             assert!(target != a);
             assert!(source != e);
             assert!(target != e);
+            Some(weight)
+        },
+    );
+    assert_eq!(g3.node_count(), g.node_count() - 2);
+    assert_eq!(g3.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g3);
+
+    let mut g4 = g.clone();
+    g4.retain_edges(|gr, i| {
+        let (s, t) = gr.edge_endpoints(i).unwrap();
+        !(s == a || s == e || t == a || t == e)
+    });
+    assert_eq!(g4.edge_count(), g.edge_count() - 5);
+    assert_graph_consistent(&g4);
+}
+
+#[test]
+fn test_filter_map_owned() {
+    let mut g = Graph::new_undirected();
+    let a = g.add_node("A".to_owned());
+    let b = g.add_node("B".to_owned());
+    let c = g.add_node("C".to_owned());
+    let d = g.add_node("D".to_owned());
+    let e = g.add_node("E".to_owned());
+    let f = g.add_node("F".to_owned());
+    g.add_edge(a, b, 7);
+    g.add_edge(c, a, 9);
+    g.add_edge(a, d, 14);
+    g.add_edge(b, c, 10);
+    g.add_edge(d, c, 2);
+    g.add_edge(d, e, 9);
+    g.add_edge(b, f, 15);
+    g.add_edge(c, f, 11);
+    g.add_edge(e, f, 6);
+    println!("{g:?}");
+
+    let g2 = g.clone().filter_map_owned(
+        |_, name| Some(name),
+        |_, weight| if weight >= 10 { Some(weight) } else { None },
+    );
+    assert_eq!(g2.edge_count(), 4);
+    for edge in g2.raw_edges() {
+        assert!(edge.weight >= 10);
+    }
+    assert_eq!(g2.node_count(), g.node_count());
+    // Check if node indices are compatible
+    for i in g.node_indices() {
+        assert_eq!(g2.node_weight(i), g.node_weight(i));
+    }
+
+    let g3 = g.clone().filter_map_owned(
+        |i, name| if i == a || i == e { None } else { Some(name) },
+        |i, weight| {
+            let (source, target) = g.edge_endpoints(i).unwrap();
+            // don't map edges from a removed node
+            assert_ne!(source, a);
+            assert_ne!(target, a);
+            assert_ne!(source, e);
+            assert_ne!(target, e);
             Some(weight)
         },
     );
@@ -1918,14 +2020,14 @@ fn filtered() {
     g.add_edge(b, f, 15);
     g.add_edge(c, f, 11);
     g.add_edge(e, f, 6);
-    println!("{:?}", g);
+    println!("{g:?}");
 
     let filt = NodeFiltered(&g, |n: NodeIndex| n != c && n != e);
 
     let mut dfs = DfsPostOrder::new(&filt, a);
     let mut po = Vec::new();
     while let Some(nx) = dfs.next(&filt) {
-        println!("Next: {:?}", nx);
+        println!("Next: {nx:?}");
         po.push(nx);
     }
     assert_eq!(set(po), set(g.node_identifiers().filter(|n| (filt.1)(*n))));
@@ -2094,13 +2196,13 @@ fn dfs_visit() {
     let mut has_tree_edge = gr.visit_map();
     let mut edges = HashSet::new();
     depth_first_search(&gr, Some(n(0)), |evt| {
-        println!("Event: {:?}", evt);
+        println!("Event: {evt:?}");
         match evt {
             Discover(n, t) => discover_time[n.index()] = t,
             Finish(n, t) => finish_time[n.index()] = t,
             TreeEdge(u, v) => {
                 // v is an ancestor of u
-                assert!(has_tree_edge.visit(v), "Two tree edges to {:?}!", v);
+                assert!(has_tree_edge.visit(v), "Two tree edges to {v:?}!");
                 assert!(discover_time[v.index()] == invalid_time);
                 assert!(discover_time[u.index()] != invalid_time);
                 assert!(finish_time[u.index()] == invalid_time);
@@ -2124,8 +2226,8 @@ fn dfs_visit() {
         edges,
         set(gr.edge_references().map(|e| (e.source(), e.target())))
     );
-    println!("{:?}", discover_time);
-    println!("{:?}", finish_time);
+    println!("{discover_time:?}");
+    println!("{finish_time:?}");
 
     // find path from 0 to 4
     let mut predecessor = vec![NodeIndex::end(); gr.node_count()];
@@ -2253,7 +2355,7 @@ fn filter_elements() {
         },
     ];
     let mut g = DiGraph::<_, _>::from_elements(elements.iter().cloned());
-    println!("{:#?}", g);
+    println!("{g:#?}");
     assert!(g.contains_edge(n(1), n(5)));
     let g2 = DiGraph::<_, _>::from_elements(
         elements
@@ -2261,7 +2363,7 @@ fn filter_elements() {
             .cloned()
             .filter_elements(|elt| !matches!(elt, Node { ref weight } if **weight == "B")),
     );
-    println!("{:#?}", g2);
+    println!("{g2:#?}");
     g.remove_node(n(1));
     assert!(is_isomorphic_matching(
         &g,

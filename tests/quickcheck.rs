@@ -311,7 +311,7 @@ fn isomorphism_1() {
 fn isomorphism_modify() {
     // using small weights so that duplicates are likely
     fn prop<Ty: EdgeType>(g: Small<Graph<i16, i8, Ty>>, node: u8, edge: u8) -> bool {
-        println!("graph {:#?}", g);
+        println!("graph {g:#?}");
         let mut ng = (*g).clone();
         let i = node_index(node as usize);
         let j = edge_index(edge as usize);
@@ -437,12 +437,7 @@ where
     N: NodeTrait + fmt::Debug,
 {
     for (a, b, _weight) in g.all_edges() {
-        assert!(
-            g.contains_edge(a, b),
-            "Edge not in graph! {:?} to {:?}",
-            a,
-            b
-        );
+        assert!(g.contains_edge(a, b), "Edge not in graph! {a:?} to {b:?}");
         assert!(
             g.neighbors(a).any(|x| x == b),
             "Edge {:?} not in neighbor list for {:?}",
@@ -507,8 +502,8 @@ quickcheck! {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
                                       Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Tarjan) {:?}", tsccs);
+            println!("Sccs {sccs:?}");
+            println!("Sccs (Tarjan) {tsccs:?}");
             return false;
         }
         true
@@ -542,8 +537,8 @@ quickcheck! {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
                                       Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Reversed) {:?}", tsccs);
+            println!("Sccs {sccs:?}");
+            println!("Sccs (Reversed) {tsccs:?}");
             return false;
         }
         true
@@ -561,8 +556,8 @@ quickcheck! {
             println!("{:?}",
                      Dot::with_config(&g, &[Config::EdgeNoLabel,
                                       Config::NodeIndexLabel]));
-            println!("Sccs {:?}", sccs);
-            println!("Sccs (Reversed) {:?}", tsccs);
+            println!("Sccs {sccs:?}");
+            println!("Sccs (Reversed) {tsccs:?}");
             return false;
         }
         true
@@ -653,7 +648,7 @@ fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
         let ai = order.find(&a).unwrap();
         let bi = order.find(&b).unwrap();
         if ai >= bi {
-            println!("{:?} > {:?} ", a, b);
+            println!("{a:?} > {b:?} ");
             return false;
         }
     }
@@ -686,7 +681,7 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
             None => continue,
         };
         if ai >= bi {
-            println!("{:?} > {:?} ", a, b);
+            println!("{a:?} > {b:?} ");
             return false;
         }
     }
@@ -722,7 +717,7 @@ fn full_topo_generic() {
             index += 1;
         }
         if !is_topo_order(&gr, &order) {
-            println!("{:?}", gr);
+            println!("{gr:?}");
             return false;
         }
 
@@ -733,7 +728,7 @@ fn full_topo_generic() {
                 order.push(nx);
             }
             if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
+                println!("{gr:?}");
                 return false;
             }
         }
@@ -750,7 +745,7 @@ fn full_topo_generic() {
                 order.push(nx);
             }
             if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
+                println!("{gr:?}");
                 return false;
             }
         }
@@ -762,7 +757,7 @@ fn full_topo_generic() {
                 order.push(nx);
             }
             if !is_topo_order(&gr, &order) {
-                println!("{:?}", gr);
+                println!("{gr:?}");
                 return false;
             }
         }
@@ -853,6 +848,51 @@ quickcheck! {
 }
 
 quickcheck! {
+    fn bidirectional_dijkstra_directed(g: Graph<u32, u32, Directed>) -> bool {
+        test_bidirectional_dijkstra_impl(g)
+    }
+
+    fn bidirectional_dijkstra_undirected(g: Graph<u32, u32, Undirected>) -> bool {
+        test_bidirectional_dijkstra_impl(g)
+    }
+}
+
+fn test_bidirectional_dijkstra_impl<Ty>(g: Graph<u32, u32, Ty>) -> bool
+where
+    Ty: EdgeType,
+{
+    if g.node_count() <= 1 || g.node_count() > 50 {
+        return true;
+    }
+
+    for node1 in g.node_identifiers() {
+        let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
+
+        for node2 in g.node_identifiers() {
+            if node1 == node2 {
+                continue;
+            }
+
+            let bidirectional_dijkstra_res =
+                bidirectional_dijkstra(&g, node1, node2, |e| *e.weight());
+
+            match (dijkstra_res.get(&node2), bidirectional_dijkstra_res) {
+                (None, None) => continue,
+                (Some(distance), Some(bidirectional_distance)) => {
+                    if *distance != bidirectional_distance {
+                        return false;
+                    }
+                }
+                // Both algorithms must find a solution for the same problem.
+                (Some(_), None) | (None, Some(_)) => return false,
+            }
+        }
+    }
+
+    true
+}
+
+quickcheck! {
     // checks floyd_warshall against dijkstra results
     fn floyd_warshall_(g: Graph<u32, u32>) -> bool {
         if g.node_count() == 0 {
@@ -940,7 +980,7 @@ quickcheck! {
                 Finish(n, t) => finish_time[n.index()] = t,
                 TreeEdge(u, v) => {
                     // v is an ancestor of u
-                    assert!(has_tree_edge.visit(v), "Two tree edges to {:?}!", v);
+                    assert!(has_tree_edge.visit(v), "Two tree edges to {v:?}!");
                     assert!(discover_time[v.index()] == invalid_time);
                     assert!(discover_time[u.index()] != invalid_time);
                     assert!(finish_time[u.index()] == invalid_time);
@@ -976,7 +1016,9 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            bellman_ford(&gr, start).unwrap();
+            if bellman_ford(&gr, start).is_err() {
+                return false;
+            }
         }
         true
     }
@@ -1008,7 +1050,9 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            bellman_ford(&gr, start).unwrap();
+            if bellman_ford(&gr, start).is_err() {
+                return false;
+            }
         }
         true
     }
@@ -1650,9 +1694,7 @@ fn maximal_cliques_matches_ref_impl() {
             for c in &cliques_ref {
                 assert!(
                     cliques.contains(c),
-                    "Ref Clique {:?} not found in the result of maximal_cliques_algo: {:?}",
-                    c,
-                    cliques
+                    "Ref Clique {c:?} not found in the result of maximal_cliques_algo: {cliques:?}"
                 );
             }
         }
@@ -1673,7 +1715,13 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+            let spfa_res = spfa(&gr, start, |edge| *edge.weight());
+            let bf_res = bellman_ford(&gr, start);
+            // We only compare the predecessors, since the algorithms use different actual values
+            // to represent inf weights.
+            if spfa_res.map(|p| p.predecessors) != bf_res.map(|p| p.predecessors) {
+                return false;
+            }
         }
         true
     }
@@ -1690,7 +1738,13 @@ quickcheck! {
         }
         for (i, start) in gr.node_indices().enumerate() {
             if i >= 10 { break; } // testing all is too slow
-            spfa(&gr, start, |edge| *edge.weight()).unwrap();
+            let spfa_res = spfa(&gr, start, |edge| *edge.weight());
+            let bf_res = bellman_ford(&gr, start);
+            // We only compare the predecessors, since the algorithms use different actual values
+            // to represent inf weight.
+            if spfa_res.map(|p| p.predecessors) != bf_res.map(|p| p.predecessors) {
+                return false;
+            }
         }
         true
     }

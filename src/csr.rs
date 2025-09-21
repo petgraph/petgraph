@@ -4,6 +4,7 @@ use alloc::{vec, vec::Vec};
 use core::{
     cmp::{max, Ordering},
     fmt,
+    iter::zip,
     iter::{Enumerate, Zip},
     marker::PhantomData,
     ops::{Index, IndexMut, Range},
@@ -15,8 +16,6 @@ use crate::visit::{
     IntoEdges, IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
     NodeCount, NodeIndexable, Visitable,
 };
-
-use crate::util::zip;
 
 #[doc(no_inline)]
 pub use crate::graph::{DefaultIx, IndexType};
@@ -162,8 +161,9 @@ pub struct EdgesNotSorted {
     first_error: (usize, usize),
 }
 
-impl<N, E, Ix> Csr<N, E, Directed, Ix>
+impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
 where
+    Ty: EdgeType,
     Ix: IndexType,
 {
     /// Create a new `Csr` from a sorted sequence of edges
@@ -172,6 +172,11 @@ where
     /// order for the pair *(u, v)* in Rust (*u* has priority).
     ///
     /// Computes in **O(|V| + |E|)** time where V is the set of nodes and E is the set of edges.
+    ///
+    /// # Note
+    /// When constructing an **undirected** graph, edges have to be present in both directions,
+    /// i.e. `(u, v)` requires the sequence to also contain `(v, u)`.
+    ///
     /// # Example
     /// ```rust
     /// use petgraph::csr::Csr;
@@ -244,6 +249,7 @@ where
                         self_.column.push(m);
                         self_.edges.push(weight);
                         rstart += 1;
+                        self_.edge_count += 1;
                     } else {
                         break 'outer;
                     }
@@ -257,13 +263,7 @@ where
 
         Ok(self_)
     }
-}
 
-impl<N, E, Ty, Ix> Csr<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
     pub fn node_count(&self) -> usize {
         self.row.len() - 1
     }
@@ -448,7 +448,7 @@ where
     /// **Panics** if the node `a` does not exist.<br>
     /// Iterator element type is `EdgeReference<E, Ty, Ix>`.
     #[track_caller]
-    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
+    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<'_, E, Ty, Ix> {
         let r = self.neighbors_range(a);
         Edges {
             index: r.start,
@@ -922,7 +922,7 @@ mod tests {
         m.add_edge(0, 2, ());
         m.add_edge(1, 0, ());
         m.add_edge(1, 1, ());
-        println!("{:?}", m);
+        println!("{m:?}");
         assert_eq!(&m.column, &[0, 2, 0, 1, 2, 2]);
         assert_eq!(&m.row, &[0, 2, 5, 6]);
 
@@ -949,7 +949,7 @@ mod tests {
         m.add_edge(0, 2, ());
         m.add_edge(1, 2, ());
         m.add_edge(2, 2, ());
-        println!("{:?}", m);
+        println!("{m:?}");
         assert_eq!(&m.column, &[0, 2, 2, 0, 1, 2]);
         assert_eq!(&m.row, &[0, 2, 3, 6]);
         assert_eq!(m.node_count(), 3);
@@ -961,7 +961,7 @@ mod tests {
     fn csr_from_error_1() {
         // not sorted in source
         let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (0, 2)]).unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
     }
 
     #[should_panic]
@@ -969,19 +969,40 @@ mod tests {
     fn csr_from_error_2() {
         // not sorted in target
         let m: Csr = Csr::from_sorted_edges(&[(0, 1), (1, 0), (1, 2), (1, 1)]).unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
     }
 
     #[test]
     fn csr_from() {
         let m: Csr =
             Csr::from_sorted_edges(&[(0, 1), (0, 2), (1, 0), (1, 1), (2, 2), (2, 4)]).unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
         assert_eq!(m.neighbors_slice(0), &[1, 2]);
         assert_eq!(m.neighbors_slice(1), &[0, 1]);
         assert_eq!(m.neighbors_slice(2), &[2, 4]);
         assert_eq!(m.node_count(), 5);
         assert_eq!(m.edge_count(), 6);
+    }
+
+    #[test]
+    fn csr_from_undirected() {
+        let m: Csr<(), u8, Undirected> = Csr::from_sorted_edges(&[
+            (0, 1),
+            (0, 2),
+            (1, 0),
+            (1, 1),
+            (2, 0),
+            (2, 2),
+            (2, 4),
+            (4, 2),
+        ])
+        .unwrap();
+        println!("{m:?}");
+        assert_eq!(m.neighbors_slice(0), &[1, 2]);
+        assert_eq!(m.neighbors_slice(1), &[0, 1]);
+        assert_eq!(m.neighbors_slice(2), &[0, 2, 4]);
+        assert_eq!(m.node_count(), 5);
+        assert_eq!(m.edge_count(), 8);
     }
 
     #[test]
@@ -998,24 +1019,24 @@ mod tests {
             (4, 5),
         ])
         .unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
         let mut dfs = Dfs::new(&m, 0);
         while dfs.next(&m).is_some() {}
         for i in 0..m.node_count() - 2 {
-            assert!(dfs.discovered.is_visited(&i), "visited {}", i)
+            assert!(dfs.discovered.is_visited(&i), "visited {i}")
         }
         assert!(!dfs.discovered[4]);
         assert!(!dfs.discovered[5]);
 
         m.add_edge(1, 4, ());
-        println!("{:?}", m);
+        println!("{m:?}");
 
         dfs.reset(&m);
         dfs.move_to(0);
         while dfs.next(&m).is_some() {}
 
         for i in 0..m.node_count() {
-            assert!(dfs.discovered[i], "visited {}", i)
+            assert!(dfs.discovered[i], "visited {i}")
         }
     }
 
@@ -1034,7 +1055,7 @@ mod tests {
             (5, 2),
         ])
         .unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
         println!("{:?}", tarjan_scc(&m));
     }
 
@@ -1054,9 +1075,9 @@ mod tests {
             (7, 8, 3.),
         ])
         .unwrap();
-        println!("{:?}", m);
+        println!("{m:?}");
         let result = bellman_ford(&m, 0).unwrap();
-        println!("{:?}", result);
+        println!("{result:?}");
         let answer = [0., 0.5, 1.5, 1.5];
         assert_eq!(&answer, &result.distances[..4]);
         assert!(result.distances[4..].iter().all(|&x| f64::is_infinite(x)));
@@ -1152,7 +1173,7 @@ mod tests {
         let mut copy = Vec::new();
         for e in m.edge_references() {
             copy.push((e.source(), e.target(), *e.weight()));
-            println!("{:?}", e);
+            println!("{e:?}");
         }
         let m2: Csr<(), _> = Csr::from_sorted_edges(&copy).unwrap();
         assert_eq!(&m.row, &m2.row);
@@ -1171,7 +1192,7 @@ mod tests {
         assert!(g.add_edge(b, c, ()));
         assert!(g.add_edge(c, a, ()));
 
-        println!("{:?}", g);
+        println!("{g:?}");
 
         assert_eq!(g.node_count(), 3);
 
@@ -1192,7 +1213,7 @@ mod tests {
 
         let c = g.add_node(());
 
-        println!("{:?}", g);
+        println!("{g:?}");
 
         assert_eq!(g.node_count(), 3);
 

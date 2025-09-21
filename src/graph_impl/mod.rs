@@ -407,10 +407,11 @@ pub type DiGraph<N, E, Ix = DefaultIx> = Graph<N, E, Directed, Ix>;
 pub type UnGraph<N, E, Ix = DefaultIx> = Graph<N, E, Undirected, Ix>;
 
 /// The resulting cloned graph has the same graph indices as `self`.
-impl<N, E, Ty, Ix: IndexType> Clone for Graph<N, E, Ty, Ix>
+impl<N, E, Ty, Ix> Clone for Graph<N, E, Ty, Ix>
 where
     N: Clone,
     E: Clone,
+    Ix: Copy,
 {
     fn clone(&self) -> Self {
         Graph {
@@ -524,11 +525,7 @@ impl<N, E> Graph<N, E, Undirected> {
     }
 }
 
-impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix> {
     /// Create a new `Graph` with estimated capacity.
     pub fn with_capacity(nodes: usize, edges: usize) -> Self {
         Graph {
@@ -537,7 +534,13 @@ where
             ty: PhantomData,
         }
     }
+}
 
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
+where
+    Ty: EdgeType,
+    Ix: IndexType,
+{
     /// Return the number of nodes (also called vertices) in the graph.
     ///
     /// Computes in **O(1)** time.
@@ -891,7 +894,7 @@ where
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
+    pub fn neighbors(&self, a: NodeIndex<Ix>) -> Neighbors<'_, E, Ix> {
         self.neighbors_directed(a, Outgoing)
     }
 
@@ -914,7 +917,7 @@ where
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Neighbors<E, Ix> {
+    pub fn neighbors_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Neighbors<'_, E, Ix> {
         let mut iter = self.neighbors_undirected(a);
         if self.is_directed() {
             let k = dir.index();
@@ -938,7 +941,7 @@ where
     ///
     /// [1]: struct.Neighbors.html#method.detach
     ///
-    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<E, Ix> {
+    pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<'_, E, Ix> {
         Neighbors {
             skip_start: a,
             edges: &self.edges,
@@ -956,7 +959,7 @@ where
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<E, Ty, Ix> {
+    pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<'_, E, Ty, Ix> {
         self.edges_directed(a, Outgoing)
     }
 
@@ -971,7 +974,7 @@ where
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<E, Ty, Ix> {
+    pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<'_, E, Ty, Ix> {
         Edges {
             skip_start: a,
             edges: &self.edges,
@@ -994,7 +997,7 @@ where
         &self,
         a: NodeIndex<Ix>,
         b: NodeIndex<Ix>,
-    ) -> EdgesConnecting<E, Ty, Ix> {
+    ) -> EdgesConnecting<'_, E, Ty, Ix> {
         EdgesConnecting {
             target_node: b,
             edges: self.edges_directed(a, Direction::Outgoing),
@@ -1087,7 +1090,7 @@ where
     /// just the nodes without edges.
     ///
     /// The whole iteration computes in **O(|V|)** time where V is the set of nodes.
-    pub fn externals(&self, dir: Direction) -> Externals<N, Ty, Ix> {
+    pub fn externals(&self, dir: Direction) -> Externals<'_, N, Ty, Ix> {
         Externals {
             iter: self.nodes.iter().enumerate(),
             dir,
@@ -1118,7 +1121,7 @@ where
     ///
     /// The order in which weights are yielded matches the order of their
     /// node indices.
-    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<N, Ix> {
+    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<'_, N, Ix> {
         NodeWeightsMut {
             nodes: self.nodes.iter_mut(),
         }
@@ -1128,7 +1131,7 @@ where
     ///
     /// The order in which weights are yielded matches the order of their
     /// node indices.
-    pub fn node_weights(&self) -> NodeWeights<N, Ix> {
+    pub fn node_weights(&self) -> NodeWeights<'_, N, Ix> {
         NodeWeights {
             nodes: self.nodes.iter(),
         }
@@ -1145,7 +1148,7 @@ where
     /// Create an iterator over all edges, in indexed order.
     ///
     /// Iterator element type is `EdgeReference<E, Ix>`.
-    pub fn edge_references(&self) -> EdgeReferences<E, Ix> {
+    pub fn edge_references(&self) -> EdgeReferences<'_, E, Ix> {
         EdgeReferences {
             iter: self.edges.iter().enumerate(),
         }
@@ -1155,7 +1158,7 @@ where
     ///
     /// The order in which weights are yielded matches the order of their
     /// edge indices.
-    pub fn edge_weights(&self) -> EdgeWeights<E, Ix> {
+    pub fn edge_weights(&self) -> EdgeWeights<'_, E, Ix> {
         EdgeWeights {
             edges: self.edges.iter(),
         }
@@ -1164,7 +1167,7 @@ where
     ///
     /// The order in which weights are yielded matches the order of their
     /// edge indices.
-    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<E, Ix> {
+    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<'_, E, Ix> {
         EdgeWeightsMut {
             edges: self.edges.iter_mut(),
         }
@@ -1472,6 +1475,8 @@ where
     ///
     /// The resulting graph has the same structure and the same
     /// graph indices as `self`.
+    ///
+    /// If you want a consuming version of this function, see [`map_owned`](struct.Graph.html#method.map_owned).
     pub fn map<'a, F, G, N2, E2>(
         &'a self,
         mut node_map: F,
@@ -1494,6 +1499,31 @@ where
         g
     }
 
+    /// Create a new `Graph` by mapping node and edge weights to new values,
+    /// consuming the current graph.
+    ///
+    /// The resulting graph has the same structure and the same graph indices
+    /// as `self`.
+    ///
+    /// If you want a non-consuming version of this function, see [`map`](struct.Graph.html#method.map).
+    pub fn map_owned<F, G, N2, E2>(self, mut node_map: F, mut edge_map: G) -> Graph<N2, E2, Ty, Ix>
+    where
+        F: FnMut(NodeIndex<Ix>, N) -> N2,
+        G: FnMut(EdgeIndex<Ix>, E) -> E2,
+    {
+        let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
+        g.nodes.extend(enumerate(self.nodes).map(|(i, node)| Node {
+            weight: node_map(NodeIndex::new(i), node.weight),
+            next: node.next,
+        }));
+        g.edges.extend(enumerate(self.edges).map(|(i, edge)| Edge {
+            weight: edge_map(EdgeIndex::new(i), edge.weight),
+            next: edge.next,
+            node: edge.node,
+        }));
+        g
+    }
+
     /// Create a new `Graph` by mapping nodes and edges.
     /// A node or edge may be mapped to `None` to exclude it from
     /// the resulting graph.
@@ -1506,6 +1536,8 @@ where
     /// If no nodes are removed, the resulting graph has compatible node
     /// indices; if neither nodes nor edges are removed, the result has
     /// the same graph indices as `self`.
+    ///
+    /// If you want a consuming version of this function, see [`filter_map_owned`](struct.Graph.html#method.filter_map_owned).
     pub fn filter_map<'a, F, G, N2, E2>(
         &'a self,
         mut node_map: F,
@@ -1529,6 +1561,51 @@ where
             let target = node_index_map[edge.target().index()];
             if source != NodeIndex::end() && target != NodeIndex::end() {
                 if let Some(ew) = edge_map(EdgeIndex::new(i), &edge.weight) {
+                    g.add_edge(source, target, ew);
+                }
+            }
+        }
+        g
+    }
+
+    /// Create a new `Graph` by mapping nodes and edges,
+    /// consuming the current graph.
+    /// A node or edge may be mapped to `None` to exclude it from
+    /// the resulting graph.
+    ///
+    /// Nodes are mapped first with the `node_map` closure, then
+    /// `edge_map` is called for the edges that have not had any endpoint
+    /// removed.
+    ///
+    /// The resulting graph has the structure of a subgraph of the original graph.
+    /// If no nodes are removed, the resulting graph has compatible node
+    /// indices; if neither nodes nor edges are removed, the result has
+    /// the same graph indices as `self`.
+    ///
+    /// If you want a non-consuming version of this function, see [`filter_map`](struct.Graph.html#method.filter_map).
+    pub fn filter_map_owned<F, G, N2, E2>(
+        self,
+        mut node_map: F,
+        mut edge_map: G,
+    ) -> Graph<N2, E2, Ty, Ix>
+    where
+        F: FnMut(NodeIndex<Ix>, N) -> Option<N2>,
+        G: FnMut(EdgeIndex<Ix>, E) -> Option<E2>,
+    {
+        let mut g = Graph::with_capacity(0, 0);
+        // mapping from old node index to new node index, end represents removed.
+        let mut node_index_map = vec![NodeIndex::end(); self.node_count()];
+        for (i, node) in enumerate(self.nodes) {
+            if let Some(nw) = node_map(NodeIndex::new(i), node.weight) {
+                node_index_map[i] = g.add_node(nw);
+            }
+        }
+        for (i, edge) in enumerate(self.edges) {
+            // skip edge if any endpoint was removed
+            let source = node_index_map[edge.source().index()];
+            let target = node_index_map[edge.target().index()];
+            if source != NodeIndex::end() && target != NodeIndex::end() {
+                if let Some(ew) = edge_map(EdgeIndex::new(i), edge.weight) {
                     g.add_edge(source, target, ew);
                 }
             }
@@ -1698,7 +1775,7 @@ fn edges_walker_mut<E, Ix>(
     edges: &mut [Edge<E, Ix>],
     next: EdgeIndex<Ix>,
     dir: Direction,
-) -> EdgesWalkerMut<E, Ix>
+) -> EdgesWalkerMut<'_, E, Ix>
 where
     Ix: IndexType,
 {
@@ -2020,11 +2097,7 @@ where
 }
 
 /// Create a new empty `Graph`.
-impl<N, E, Ty, Ix> Default for Graph<N, E, Ty, Ix>
-where
-    Ty: EdgeType,
-    Ix: IndexType,
-{
+impl<N, E, Ty, Ix> Default for Graph<N, E, Ty, Ix> {
     fn default() -> Self {
         Self::with_capacity(0, 0)
     }
