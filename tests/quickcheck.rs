@@ -30,11 +30,12 @@ use rand::Rng;
 #[cfg(feature = "stable_graph")]
 use petgraph::algo::steiner_tree;
 use petgraph::algo::{
-    astar, bellman_ford, bridges, condensation, connected_components, dijkstra, dsatur_coloring,
-    find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
-    is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
-    k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
-    min_spanning_tree, page_rank, spfa, tarjan_scc, toposort, Matching,
+    astar, bellman_ford, bidirectional_dijkstra, bridges, condensation, connected_components,
+    dijkstra, dsatur_coloring, find_negative_cycle, floyd_warshall, ford_fulkerson,
+    greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
+    is_isomorphic, is_isomorphic_matching, johnson, k_shortest_path, kosaraju_scc,
+    maximal_cliques as maximal_cliques_algo, maximum_matching, min_spanning_tree, page_rank, spfa,
+    tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -821,6 +822,43 @@ fn astar_triangle_ineq() {
                     }
                 }
             }
+        }
+
+        true
+    }
+
+    quickcheck::quickcheck(prop as fn(Graph<(), u32, Undirected>, usize, usize) -> bool);
+}
+
+#[test]
+// checks that the distances computed by astar is equivalent to dijkstra
+fn astar_compare_with_dijkstra() {
+    fn prop(g: Graph<(), u32, Undirected>, start: usize, end: usize) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+        let start_node = node_index(start % g.node_count());
+        let end_node = node_index(end % g.node_count());
+        let astar_output = astar(
+            &g,
+            start_node,
+            |node| node == end_node,
+            |e| *e.weight(),
+            |_| 0,
+        );
+
+        let dijkstra_output = dijkstra(&g, start_node, Some(end_node), |e| *e.weight());
+
+        if let Some((astar_distance, _)) = astar_output {
+            if let Some(dijkstra_distance) = dijkstra_output.get(&end_node) {
+                if astar_distance != *dijkstra_distance {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        } else if dijkstra_output.get(&end_node).is_some() {
+            return false;
         }
 
         true
