@@ -49,6 +49,8 @@ jobs:
         if: matrix.rust == '1.64.0'
         run: |
           cargo generate-lockfile
+          cargo update -p hashbrown@0.15.5 --precise 0.15.0
+          cargo update -p hashbrown@0.16.0 --precise 0.15.0
           cargo update -p once_cell --precise 1.20.3
 
       - name: Build with no features
