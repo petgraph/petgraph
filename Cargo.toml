@@ -42,7 +42,7 @@ debug = true
 
 [dependencies]
 fixedbitset = { version = "0.5.7", default-features = false }
-indexmap = { version = "2.5.0", default-features = false }
+indexmap = { version = "2.11.0", default-features = false }
 hashbrown = { version = "^0.15.0", default-features = false, features = ["default-hasher", "inline-more"] }
 quickcheck = { optional = true, version = "0.8", default-features = false }
 serde = { version = "1.0", default-features = false, optional = true }
@@ -52,12 +52,11 @@ dot-parser = { version = "0.5.1", optional = true }
 dot-parser-macros = { version = "0.5.1", optional = true }
 
 [dev-dependencies]
-bincode = "1.3.3"
+bincode = "2.0.1"
 defmac = "0.2.1"
-itertools = { version = "0.12.1", default-features = false }
-odds = { version = "0.4.0" }
-rand = "0.5.5"
-ahash = "0.7.2"
+itertools = { version = "0.14.0", default-features = false }
+rand = "0.6.3"
+ahash = "0.8.12"
 fxhash = "0.2.1"
 
 [features]
