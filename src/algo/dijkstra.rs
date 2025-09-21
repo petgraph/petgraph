@@ -132,9 +132,9 @@ where
     ///     (e, 1),
     ///     (f, 2),
     /// ].iter().cloned().collect();
-    /// let res = dijkstra::with_dynamic_goal(&graph, b, |&node| node == d || node == f, |_| 1);
-    /// assert_eq!(res.scores, expected_res);
-    /// assert!(res.goal_node == Some(d) || res.goal_node == Some(f));
+    /// let mut dijkstra = dijkstra::Dijkstra::new(&graph, b, |_| 1).with_goal(|&node| node == d || node == f);
+    /// let res = dijkstra.run();
+    /// assert_eq!(res.distances(), &expected_res);
     /// ```
     pub fn run(&mut self) -> DijkstraOutput<'_, G::NodeId, K> {
         let mut visit_next = BinaryHeap::new();
