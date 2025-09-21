@@ -126,7 +126,7 @@ where
     /// assert_eq!(res.scores, expected_res);
     /// assert!(res.goal_node == Some(d) || res.goal_node == Some(f));
     /// ```
-    pub fn run(&mut self) -> DijkstraResult<G::NodeId, K> {
+    pub fn run(&mut self) -> DijkstraResult<'_, G::NodeId, K> {
         let mut visit_next = BinaryHeap::new();
         let zero_score = K::default();
         self.distances.insert(self.start, zero_score);
