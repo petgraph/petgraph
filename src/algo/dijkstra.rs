@@ -37,6 +37,16 @@ where
     distances: &'a HashMap<N, C>,
 }
 
+/// Owned return value of [`Dijkstra::run_once`]. To access values, use `into_` methods.
+pub struct DijkstraResultOwned<N, C>
+where
+    N: Eq + Hash,
+    C: Measure + Copy,
+{
+    paths: HashMap<N, Vec<N>>,
+    distances: HashMap<N, C>,
+}
+
 // The GoalFn is instantiated to `fn(&G::NodeId) -> bool` in this impl, because new supplies a new
 // type for GoalFn, and thus the type of the Dijkstra of the impl block is actually irrelevant.
 // Thus, we can use an arbitrary type for GoalFn, as it is just a placeholder.
@@ -167,6 +177,14 @@ where
         }
     }
 
+    pub fn run_once(mut self) -> DijkstraResultOwned<G::NodeId, K> {
+        let result = self.run();
+        DijkstraResultOwned {
+            paths: result.paths,
+            distances: self.distances,
+        }
+    }
+
     pub fn with_goal<NewGoalFn>(self, goal: NewGoalFn) -> Dijkstra<G, NewGoalFn, CostFn, K>
     where
         NewGoalFn: FnMut(&G::NodeId) -> bool,
@@ -191,7 +209,9 @@ where
     N: Eq + Hash + Clone,
     K: Measure + Copy,
 {
-    /// Get a HashMap of the distances.
+    /// Get a reference to a HashMap of the distances.
+    ///
+    /// To get an owned HashMap, run [`Dijkstra::run_once`] or use [`Dijkstra::into_distances`].
     pub fn distances(&self) -> &HashMap<N, K> {
         self.distances
     }
@@ -201,14 +221,46 @@ where
         self.distances.get(node).cloned()
     }
 
-    /// Get a HashMap of the paths.
+    /// Get the reference to a HashMap of the paths.
+    ///
+    /// To get an owned HashMap, use [`DijkstraResult::into_paths`].
     pub fn paths(&self) -> &HashMap<N, Vec<N>> {
         &self.paths
     }
 
-    /// Get the path to a specific node.
+    /// Get the the reference to a path to a specific node.
+    ///
+    /// To get an owned HashMap, use [`DijkstraResult::into_paths`].
     pub fn path_to_node(&self, node: &N) -> Option<&Vec<N>> {
         self.paths.get(node)
+    }
+
+    /// Turn the result into the paths HashMap
+    pub fn into_paths(self) -> HashMap<N, Vec<N>> {
+        self.paths
+    }
+}
+
+impl<N, K> DijkstraResultOwned<N, K>
+where
+    N: Eq + Hash + Clone,
+    K: Measure + Copy,
+{
+    /// Turn the result into the paths HashMap. To get both paths and distances, use
+    /// [`DijkstraResultOwned::into_paths_and_distances`].
+    pub fn into_paths(self) -> HashMap<N, Vec<N>> {
+        self.paths
+    }
+
+    /// Turn the result into the distances HashMap. To get both paths and distances, use
+    /// [`DijkstraResultOwned::into_paths_and_distances`].
+    pub fn into_distances(self) -> HashMap<N, K> {
+        self.distances
+    }
+
+    /// Turn the result into both paths and distances HashMaps.
+    pub fn into_paths_and_distances(self) -> (HashMap<N, Vec<N>>, HashMap<N, K>) {
+        (self.paths, self.distances)
     }
 }
 
@@ -299,10 +351,10 @@ where
     F: FnMut(G::EdgeRef) -> K,
     K: Measure + Copy,
 {
-    let mut dijkstra =
-        Dijkstra::new(graph, start, edge_cost).with_goal(|node| goal.as_ref() == Some(node));
-    dijkstra.run();
-    dijkstra.into_distances()
+    Dijkstra::new(graph, start, edge_cost)
+        .with_goal(|node| goal.as_ref() == Some(node))
+        .run_once()
+        .distances
 }
 
 /// Bidirectional Dijkstra's shortest path algorithm.
