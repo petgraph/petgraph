@@ -1185,7 +1185,7 @@ where
 
         // the stable graph keeps the node map itself
 
-        for (i, node) in self.node_indices() {
+        for (i, node) in self.raw_nodes().into_iter().enumerate() {
             if i >= node_bound {
                 break;
             }
@@ -1197,7 +1197,7 @@ where
             }
             result_g.add_vacant_node(&mut free_node);
         }
-        for (i, edge) in self.edge_indices() {
+        for (i, edge) in self.raw_edges().into_iter().enumerate() {
             if i >= edge_bound {
                 break;
             }
@@ -1253,7 +1253,7 @@ where
 
         let (nodes, edges) = self.g.into_nodes_edges();
 
-        for (i, node) in enumerate(nodes) {
+        for (i, node) in nodes.into_iter().enumerate() {
             if i >= node_bound {
                 break;
             }
@@ -1265,7 +1265,7 @@ where
             }
             result_g.add_vacant_node(&mut free_node);
         }
-        for (i, edge) in enumerate(edges) {
+        for (i, edge) in edges.into_iter().enumerate() {
             if i >= edge_bound {
                 break;
             }
