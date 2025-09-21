@@ -30,7 +30,7 @@ use rand::Rng;
 #[cfg(feature = "stable_graph")]
 use petgraph::algo::steiner_tree;
 use petgraph::algo::{
-    bellman_ford, bridges, condensation, connected_components, dijkstra, dsatur_coloring,
+    astar, bellman_ford, bridges, condensation, connected_components, dijkstra, dsatur_coloring,
     find_negative_cycle, floyd_warshall, ford_fulkerson, greedy_feedback_arc_set, greedy_matching,
     is_cyclic_directed, is_cyclic_undirected, is_isomorphic, is_isomorphic_matching, johnson,
     k_shortest_path, kosaraju_scc, maximal_cliques as maximal_cliques_algo, maximum_matching,
@@ -794,6 +794,44 @@ quickcheck! {
         }
         true
     }
+}
+
+#[test]
+// checks that the distances computed by astar satisfy the triangle inequality.
+fn astar_triangle_ineq() {
+    fn prop(g: Graph<(), u32, Undirected>, start: usize, end: usize) -> bool {
+        if g.node_count() == 0 {
+            return true;
+        }
+        let start_node = node_index(start % g.node_count());
+        let end_node = node_index(end % g.node_count());
+        if let Some((distance, _)) = astar(
+            &g,
+            start_node,
+            |node| node == end_node,
+            |e| *e.weight(),
+            |_| 0,
+        ) {
+            for v in g.node_indices() {
+                if let Some(edge) = g.find_edge(v, end_node) {
+                    let weight = g.edge_weight(edge).unwrap();
+                    // triangle inequality:
+                    // d(start_node, end_node) <= d(start_node, v) + w(v, end_node)
+                    if let Some((distance_v, _)) =
+                        astar(&g, start_node, |node| node == v, |e| *e.weight(), |_| 0)
+                    {
+                        if distance > distance_v + *weight {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        true
+    }
+
+    quickcheck::quickcheck(prop as fn(Graph<(), u32, Undirected>, usize, usize) -> bool);
 }
 
 quickcheck! {
