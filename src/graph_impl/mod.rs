@@ -8,6 +8,7 @@ use core::{
     ops::{Index, IndexMut, Range},
     slice,
 };
+use std::{format, path::PathBuf};
 
 use fixedbitset::FixedBitSet;
 
@@ -15,6 +16,7 @@ use crate::{Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing,
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 
+use crate::dot::Dot;
 use crate::util::enumerate;
 use crate::visit;
 
@@ -522,6 +524,21 @@ impl<N, E> Graph<N, E, Undirected> {
             edges: Vec::new(),
             ty: PhantomData,
         }
+    }
+}
+
+impl<N, E, Ty, Ix> Graph<N, E, Ty, Ix>
+where
+    E: std::fmt::Debug,
+    N: std::fmt::Debug,
+    Ty: EdgeType,
+    Ix: IndexType,
+{
+    /// Write Graph to file in dot format.
+    pub fn write_to_file<S: Into<PathBuf>>(&self, path: S) -> std::io::Result<()> {
+        let path: PathBuf = path.into();
+        path.parent().map(|p| std::fs::create_dir_all(p));
+        std::fs::write(path, format!("{:?}", Dot::new(self)))
     }
 }
 
@@ -1135,6 +1152,20 @@ where
         NodeWeights {
             nodes: self.nodes.iter(),
         }
+    }
+
+    /// Return an iterator over the node indices and weights of the graph.
+    ///
+    /// Iterator element type is `(NodeIndex<Ix>, &N)`.
+    pub fn nodes<'a>(&'a self) -> impl Iterator<Item = (NodeIndex<Ix>, &'a N)> {
+        self.node_indices().zip(self.node_weights())
+    }
+
+    /// Return an iterator over the node indices and weights of the graph.
+    ///
+    /// Iterator element type is `(NodeIndex<Ix>, &mut N)`.
+    pub fn nodes_mut<'a>(&'a mut self) -> impl Iterator<Item = (NodeIndex<Ix>, &'a mut N)> {
+        self.node_indices().zip(self.node_weights_mut())
     }
 
     /// Return an iterator over the edge indices of the graph
