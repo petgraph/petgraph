@@ -6,6 +6,11 @@ labels: C-feature-request, S-Needs-Triage
 assignees: ''
 ---
 
+<!--
+  -- Thanks for filing a `petgraph` issue! Please fill out the template
+  -- below. We appreciate it :)
+  -->
+
 ## What problem does this solve or what need does it fill?
 
 A description of why this particular feature should be added.

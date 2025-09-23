@@ -6,6 +6,11 @@ labels: A-Crate, C-new-algorithm, S-Needs-Triage
 assignees: ''
 ---
 
+<!--
+  -- Thanks for filing a `petgraph` issue! Please fill out the template
+  -- below. We appreciate it :)
+  -->
+
 ### What algorithm are you requesting to be added?
 
 A description of the algorithm to be added. Try to answer the following questions:

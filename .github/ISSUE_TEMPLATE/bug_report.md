@@ -6,6 +6,11 @@ labels: B-uncategorized, S-Needs-Triage
 assignees: ''
 ---
 
+<!--
+  -- Thanks for filing a `petgraph` issue! Please fill out the template
+  -- below. We appreciate it :)
+  -->
+
 ## What problem did you encounter?
 
 A description of what you were trying to do and what went wrong.
@@ -14,11 +19,20 @@ A description of what you were trying to do and what went wrong.
 
 The expected outcome or behavior you were hoping for.
 
-## Please provide a minimal reproducible example if applicable.
+### Steps To Reproduce
 
-A small code snippet that reproduces the issue. Ideally, this should be a complete `main.rs` file that can be compiled and run or a link to [rust playground](https://play.rust-lang.org/).
+Insert instructions for reproducing the bug with the above test case. 
+Ideally, this could be a complete `main.rs` file that can be compiled and run or a link to [rust playground](https://play.rust-lang.org/).
+Or something like:
 
-## What version of petgraph did you use?
+* First, ...
+* Then, ...
+* ...
+
+Bonus points if you provide a `#[test]` that demonstrates the
+bug, which can then be used as a regression test once the bug is fixed :sauropod:
+
+### What version of petgraph did you use?
 
 ### Additional context
 
