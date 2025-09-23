@@ -38,20 +38,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.8
+      - name: Lock MSRV-compatible dependencies
+        if: matrix.rust == '1.64.0'
+        env:
+          CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: fallback
+        # Note that this uses the runner's pre-installed stable cargo
+        run: cargo generate-lockfile
       - id: toolchain
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-      - name: Configure default rust toolchain
-        run: rustup override set ${{steps.toolchain.outputs.name}}
-
-      - name: MSRV downgrade
-        if: matrix.rust == '1.64.0'
-        run: |
-          cargo generate-lockfile
-          cargo update -p hashbrown@0.15.5 --precise 0.15.0
-          cargo update -p hashbrown@0.16.0 --precise 0.15.0
-          cargo update -p once_cell --precise 1.20.3
 
       - name: Build with no features
         run: cargo build --verbose --no-default-features --features "${{ matrix.required_features }}"
