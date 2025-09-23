@@ -15,7 +15,6 @@ use crate::{Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing,
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 
-use crate::util::enumerate;
 use crate::visit;
 
 #[cfg(feature = "serde-1")]
@@ -1530,15 +1529,17 @@ where
         G: FnMut(EdgeIndex<Ix>, &'a E) -> E2,
     {
         let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
-        g.nodes.extend(enumerate(&self.nodes).map(|(i, node)| Node {
-            weight: node_map(NodeIndex::new(i), &node.weight),
-            next: node.next,
-        }));
-        g.edges.extend(enumerate(&self.edges).map(|(i, edge)| Edge {
-            weight: edge_map(EdgeIndex::new(i), &edge.weight),
-            next: edge.next,
-            node: edge.node,
-        }));
+        g.nodes
+            .extend(self.nodes.iter().enumerate().map(|(i, node)| Node {
+                weight: node_map(NodeIndex::new(i), &node.weight),
+                next: node.next,
+            }));
+        g.edges
+            .extend(self.edges.iter().enumerate().map(|(i, edge)| Edge {
+                weight: edge_map(EdgeIndex::new(i), &edge.weight),
+                next: edge.next,
+                node: edge.node,
+            }));
         g
     }
 
@@ -1555,15 +1556,17 @@ where
         G: FnMut(EdgeIndex<Ix>, E) -> E2,
     {
         let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
-        g.nodes.extend(enumerate(self.nodes).map(|(i, node)| Node {
-            weight: node_map(NodeIndex::new(i), node.weight),
-            next: node.next,
-        }));
-        g.edges.extend(enumerate(self.edges).map(|(i, edge)| Edge {
-            weight: edge_map(EdgeIndex::new(i), edge.weight),
-            next: edge.next,
-            node: edge.node,
-        }));
+        g.nodes
+            .extend(self.nodes.into_iter().enumerate().map(|(i, node)| Node {
+                weight: node_map(NodeIndex::new(i), node.weight),
+                next: node.next,
+            }));
+        g.edges
+            .extend(self.edges.into_iter().enumerate().map(|(i, edge)| Edge {
+                weight: edge_map(EdgeIndex::new(i), edge.weight),
+                next: edge.next,
+                node: edge.node,
+            }));
         g
     }
 
@@ -1593,12 +1596,12 @@ where
         let mut g = Graph::with_capacity(0, 0);
         // mapping from old node index to new node index, end represents removed.
         let mut node_index_map = vec![NodeIndex::end(); self.node_count()];
-        for (i, node) in enumerate(&self.nodes) {
+        for (i, node) in self.nodes.iter().enumerate() {
             if let Some(nw) = node_map(NodeIndex::new(i), &node.weight) {
                 node_index_map[i] = g.add_node(nw);
             }
         }
-        for (i, edge) in enumerate(&self.edges) {
+        for (i, edge) in self.edges.iter().enumerate() {
             // skip edge if any endpoint was removed
             let source = node_index_map[edge.source().index()];
             let target = node_index_map[edge.target().index()];
@@ -1638,12 +1641,12 @@ where
         let mut g = Graph::with_capacity(0, 0);
         // mapping from old node index to new node index, end represents removed.
         let mut node_index_map = vec![NodeIndex::end(); self.node_count()];
-        for (i, node) in enumerate(self.nodes) {
+        for (i, node) in self.nodes.into_iter().enumerate() {
             if let Some(nw) = node_map(NodeIndex::new(i), node.weight) {
                 node_index_map[i] = g.add_node(nw);
             }
         }
-        for (i, edge) in enumerate(self.edges) {
+        for (i, edge) in self.edges.into_iter().enumerate() {
             // skip edge if any endpoint was removed
             let source = node_index_map[edge.source().index()];
             let target = node_index_map[edge.target().index()];
@@ -1677,7 +1680,7 @@ where
     #[cfg(feature = "serde-1")]
     /// Fix up node and edge links after deserialization
     fn link_edges(&mut self) -> Result<(), NodeIndex<Ix>> {
-        for (edge_index, edge) in enumerate(&mut self.edges) {
+        for (edge_index, edge) in self.edges.iter_mut().enumerate() {
             let a = edge.source();
             let b = edge.target();
             let edge_idx = EdgeIndex::new(edge_index);

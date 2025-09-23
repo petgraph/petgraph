@@ -28,8 +28,6 @@ pub use crate::graph::{
     edge_index, node_index, DefaultIx, EdgeIndex, GraphIndex, IndexType, NodeIndex,
 };
 
-use crate::util::enumerate;
-
 #[cfg(feature = "serde-1")]
 mod serialization;
 
@@ -682,7 +680,7 @@ where
     /// Return an iterator over the node indices of the graph
     pub fn node_indices(&self) -> NodeIndices<'_, N, Ix> {
         NodeIndices {
-            iter: enumerate(self.raw_nodes()),
+            iter: self.raw_nodes().iter().enumerate(),
         }
     }
 
@@ -739,7 +737,7 @@ where
     /// [`Graph::edge_indices`](fn@crate::Graph::edge_indices).
     pub fn edge_indices(&self) -> EdgeIndices<'_, E, Ix> {
         EdgeIndices {
-            iter: enumerate(self.raw_edges()),
+            iter: self.raw_edges().iter().enumerate(),
         }
     }
 
@@ -1187,7 +1185,7 @@ where
 
         // the stable graph keeps the node map itself
 
-        for (i, node) in enumerate(self.raw_nodes()) {
+        for (i, node) in self.raw_nodes().iter().enumerate() {
             if i >= node_bound {
                 break;
             }
@@ -1199,7 +1197,7 @@ where
             }
             result_g.add_vacant_node(&mut free_node);
         }
-        for (i, edge) in enumerate(self.raw_edges()) {
+        for (i, edge) in self.raw_edges().iter().enumerate() {
             if i >= edge_bound {
                 break;
             }
@@ -1255,7 +1253,7 @@ where
 
         let (nodes, edges) = self.g.into_nodes_edges();
 
-        for (i, node) in enumerate(nodes) {
+        for (i, node) in nodes.into_iter().enumerate() {
             if i >= node_bound {
                 break;
             }
@@ -1267,7 +1265,7 @@ where
             }
             result_g.add_vacant_node(&mut free_node);
         }
-        for (i, edge) in enumerate(edges) {
+        for (i, edge) in edges.into_iter().enumerate() {
             if i >= edge_bound {
                 break;
             }
@@ -1386,7 +1384,7 @@ where
         self.free_node = free_node;
 
         let mut free_edge = EdgeIndex::end();
-        for (edge_index, edge) in enumerate(&mut self.g.edges) {
+        for (edge_index, edge) in self.g.edges.iter_mut().enumerate() {
             if edge.weight.is_none() {
                 // free edge
                 edge.next = [free_edge, EdgeIndex::end()];
@@ -1610,7 +1608,7 @@ where
         // mapping from old node index to new node index
         let mut node_index_map = vec![NodeIndex::end(); graph.node_bound()];
 
-        for (i, node) in enumerate(graph.g.nodes) {
+        for (i, node) in graph.g.nodes.into_iter().enumerate() {
             if let Some(nw) = node.weight {
                 node_index_map[i] = result_g.add_node(nw);
             }
@@ -2182,7 +2180,7 @@ where
     type NodeReferences = NodeReferences<'a, N, Ix>;
     fn node_references(self) -> Self::NodeReferences {
         NodeReferences {
-            iter: enumerate(self.raw_nodes()),
+            iter: self.raw_nodes().iter().enumerate(),
         }
     }
 }
