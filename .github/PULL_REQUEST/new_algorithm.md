@@ -40,3 +40,18 @@ Otherwise please add a description of the algorithm to be added. Try to answer t
 - What (graph) problem does it solve?
 - What is the basic idea of the algorithm?
 - What other, reference implementations exist / did you use?
+
+### Please make sure to check the following:
+
+[ ] Added a `regular` test for the new algorithm in the `tests/` directory.
+
+[ ] Added a `quickcheck` property test for the new algorithm in the `tests/quickcheck.rs` file.
+
+[ ] Added a `benchmark` test for measuring performance of the new algorithm
+
+[ ] Made the algorithm work with generic graphs, constraining the
+  generic graph type parameter with our existing graph traits, like ``Visitable``,
+  or with new graph traits
+
+[ ] Wrote a docstring for the algorithm, according to the algorithm
+  documentation guidelines in `assets/guide/algodocs.md`
