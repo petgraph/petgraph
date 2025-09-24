@@ -4,7 +4,7 @@
 Graphs are collections of nodes, and edges between nodes. `petgraph`
 provides several [graph types](index.html#graph-types) (each differing in the
 tradeoffs taken in their internal representation),
-[algorithms](./algo/index.html#functions) on those graphs, and functionality to
+[algorithms](./algo/index.html) on those graphs, and functionality to
 [output graphs](./dot/struct.Dot.html) in
 [`Graphviz`](https://www.graphviz.org/) format. Both nodes and edges
 can have arbitrary associated data, and edges may be either directed or undirected.
