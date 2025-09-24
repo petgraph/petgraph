@@ -43,6 +43,5 @@ Otherwise, describe the bug that you fixed. Try to answer the following question
 
 ### Please make sure to check the following
 
-[] Added a regression test for the bug so that we can be sure that we never accidentally re-introduce the bug again
-
-[] If the PR contains a breaking change, explain the change and why it is necessary
+- [] Added a regression test for the bug so that we can be sure that we never accidentally re-introduce the bug again
+- [] If the PR contains a breaking change, explain the change and why it is necessary

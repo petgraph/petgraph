@@ -43,17 +43,12 @@ Otherwise please add a description of the algorithm to be added. Try to answer t
 
 ### Please make sure to check the following
 
-[] Added a regular test for the new algorithm in the [`tests/`](https://github.com/petgraph/petgraph/tree/master/tests) directory.
-
-[] Added a `quickcheck` property test for the new algorithm in the [`tests/quickcheck.rs`](https://github.com/petgraph/petgraph/blob/master/tests/quickcheck.rs) file.
-
-[] Added a `benchmark` test for measuring performance of the new algorithm
-
-[] Made the algorithm work with generic graphs, constraining the
+- [] Added a regular test for the new algorithm in the [`tests/`](https://github.com/petgraph/petgraph/tree/master/tests) directory.
+- [] Added a `quickcheck` property test for the new algorithm in the [`tests/quickcheck.rs`](https://github.com/petgraph/petgraph/blob/master/tests/quickcheck.rs) file.
+- [] Added a `benchmark` test for measuring performance of the new algorithm
+- [] Made the algorithm work with generic graphs, constraining the
   generic graph type parameter with our existing graph traits, like ``Visitable``,
   or with new graph traits
-
-[] Wrote a docstring for the algorithm, according to the algorithm
+- [] Wrote a docstring for the algorithm, according to the algorithm
   documentation guidelines in [assets/guide/algodocs.md](https://github.com/petgraph/petgraph/blob/master/assets/guide/algodocs.md)
-
-[] If the PR contains a breaking change, explained the change and why it is necessary
+- [] If the PR contains a breaking change, explained the change and why it is necessary

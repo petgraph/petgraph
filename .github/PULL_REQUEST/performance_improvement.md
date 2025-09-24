@@ -37,8 +37,6 @@ Describe which algorithm or part of the crate you improved the performance of.
 
 ### Please make sure to check the following
 
-[] Added a new `#[bench]` function that exercises this code path, if one doesn't already exist
-
-[] Added before and after `cargo bench` scores, optionally formatted using [`cargo-benchcmp`](https://github.com/BurntSushi/cargo-benchcmp) to this PR.
-
-[] If the PR contains a breaking change, explained the change and why it is necessary
+- [] Added a new `#[bench]` function that exercises this code path, if one doesn't already exist
+- [] Added before and after `cargo bench` scores, optionally formatted using [`cargo-benchcmp`](https://github.com/BurntSushi/cargo-benchcmp) to this PR.
+- [] If the PR contains a breaking change, explained the change and why it is necessary

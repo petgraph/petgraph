@@ -35,4 +35,4 @@ assignees: ''
 
 ### Please make sure to check the following
 
-[] If the PR contains a breaking change, explain the change and why it is necessary
+- [] If the PR contains a breaking change, explain the change and why it is necessary
