@@ -501,7 +501,7 @@ fn test_astar_manhattan_heuristic() {
     let b = g.add_node((2., 0.));
     let c = g.add_node((1., 1.));
     let d = g.add_node((0., 2.));
-    let e = g.add_node((3., 3.));
+    let e = g.add_node((3., 2.));
     let f = g.add_node((4., 2.));
     let _ = g.add_node((5., 5.)); // no path to node
     g.add_edge(a, b, 2.);
@@ -512,15 +512,16 @@ fn test_astar_manhattan_heuristic() {
     g.add_edge(e, f, 1.);
     g.add_edge(d, e, 1.);
 
-    let heuristic_for = |f: NodeIndex| {
+    let heuristic_for = |goal: NodeIndex| {
         let g = &g;
         move |node: NodeIndex| -> f32 {
             let (x1, y1): (f32, f32) = g[node];
-            let (x2, y2): (f32, f32) = g[f];
+            let (x2, y2): (f32, f32) = g[goal];
 
             (x2 - x1).abs() + (y2 - y1).abs()
         }
     };
+
     let path = astar(
         &g,
         a,
@@ -529,20 +530,25 @@ fn test_astar_manhattan_heuristic() {
         heuristic_for(f),
     );
 
+    // Find expected optimal path with A*
     assert_eq!(path, Some((6., vec![a, d, e, f])));
 
-    // check against dijkstra
+    // Find all shortest paths with Dijkstra
     let dijkstra_run = dijkstra(&g, a, None, |e| *e.weight());
+    std::println!("Dijkstra: {dijkstra_run:?}");
 
-    for end in g.node_indices() {
-        let astar_path = astar(
-            &g,
-            a,
-            |finish| finish == end,
-            |e| *e.weight(),
-            heuristic_for(end),
+    // Search for all goals and compare against Dijkstra's cost.
+    for goal in g.node_indices() {
+        let heuristic = heuristic_for(goal);
+        let cost = *dijkstra_run.get(&goal).unwrap_or(&f32::INFINITY);
+        let h: f32 = heuristic(goal);
+        assert!(
+            h <= cost,
+            "Heuristic must be admissible. ({goal:?}) g={cost}, h={h}."
         );
-        assert_eq!(dijkstra_run.get(&end).cloned(), astar_path.map(|t| t.0));
+
+        let astar_path = astar(&g, a, |n| n == goal, |e| *e.weight(), heuristic);
+        assert_eq!(astar_path.map(|t| t.0), dijkstra_run.get(&goal).cloned());
     }
 }
 
