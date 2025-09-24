@@ -33,6 +33,8 @@ assignees: ''
 
 ### What change are you making to petgraph?
 
+If this addresses an existing issue, please just add a link to that issue, with "Resolves #ISSUE_NUMBER".
+
 ### Please make sure to check the following
 
 - [] If the PR contains a breaking change, explain the change and why it is necessary
