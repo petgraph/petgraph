@@ -15,7 +15,6 @@ use crate::{Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing,
 
 use crate::iter_format::{DebugMap, IterFormatExt, NoPretty};
 
-use crate::util::enumerate;
 use crate::visit;
 
 #[cfg(feature = "serde-1")]
@@ -884,11 +883,16 @@ where
 
     /// Return an iterator of all nodes with an edge starting from `a`.
     ///
+    /// Depending on whether the graph is directed or undirected, this means:
+    ///
     /// - `Directed`: Outgoing edges from `a`.
     /// - `Undirected`: All edges from or to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
+    ///
+    /// For the iteration order for `Directed` and `Undirected` graphs respectively,
+    /// please refer to the documentation of [`Graph::neighbors_directed`].
     ///
     /// Use [`.neighbors(a).detach()`][1] to get a neighbor walker that does
     /// not borrow from the graph.
@@ -902,6 +906,9 @@ where
     /// `a`, in the specified direction.
     /// If the graph's edges are undirected, this is equivalent to *.neighbors(a)*.
     ///
+    /// That is, depending on the graphs' edge type and the provided direction,
+    /// the iterator will iterate over the following:
+    ///
     /// - `Directed`, `Outgoing`: All edges from `a`.
     /// - `Directed`, `Incoming`: All edges to `a`.
     /// - `Undirected`: All edges from or to `a`.
@@ -911,7 +918,10 @@ where
     ///
     /// For a `Directed` graph, neighbors are listed in reverse order of their
     /// addition to the graph, so the most recently added edge's neighbor is
-    /// listed first. The order in an `Undirected` graph is arbitrary.
+    /// listed first.
+    ///
+    /// For the ordering in case of an `Undirected` graph, please refer to
+    /// the documentation of [`Graph::neighbors_undirected`].
     ///
     /// Use [`.neighbors_directed(a, dir).detach()`][1] to get a neighbor walker that does
     /// not borrow from the graph.
@@ -936,11 +946,17 @@ where
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `NodeIndex<Ix>`.
     ///
+    /// All outgoing neighbors are listed first followed by all incoming neighbors.
+    /// The ordering among the outgoing and incoming neighbors respectively is the
+    /// reverse order of their addition to the graph. That is, the most recently
+    /// added edge's neighbor is listed first. Outgoing and incoming in this case
+    /// refer to the ordering in which the endpoints were listed when adding the
+    /// edge (`g.add_edge(a, b, w)` or `g.add_edge(b, a, w)`).
+    ///
     /// Use [`.neighbors_undirected(a).detach()`][1] to get a neighbor walker that does
     /// not borrow from the graph.
     ///
     /// [1]: struct.Neighbors.html#method.detach
-    ///
     pub fn neighbors_undirected(&self, a: NodeIndex<Ix>) -> Neighbors<'_, E, Ix> {
         Neighbors {
             skip_start: a,
@@ -954,16 +970,27 @@ where
 
     /// Return an iterator of all edges of `a`.
     ///
+    /// Depending on whether the graph is directed or undirected, this means:
+    ///
     /// - `Directed`: Outgoing edges from `a`.
     /// - `Undirected`: All edges connected to `a`.
     ///
     /// Produces an empty iterator if the node doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
+    ///
+    /// For a `Directed` graph, edges are listed in reverse order of their
+    /// addition to the graph, so the most recently added edge is listed first.
+    ///
+    /// For the ordering in case of an `Undirected` graph, please refer to
+    /// the `Undirected` case in the documentation of [`Graph::edges_directed`].
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<'_, E, Ty, Ix> {
         self.edges_directed(a, Outgoing)
     }
 
     /// Return an iterator of all edges of `a`, in the specified direction.
+    ///
+    /// That is, depending on the graphs' edge type and the provided direction,
+    /// the iterator will iterate over the following:
     ///
     /// - `Directed`, `Outgoing`: All edges from `a`.
     /// - `Directed`, `Incoming`: All edges to `a`.
@@ -974,6 +1001,16 @@ where
     ///
     /// Produces an empty iterator if the node `a` doesn't exist.<br>
     /// Iterator element type is `EdgeReference<E, Ix>`.
+    ///
+    /// For a `Directed` graph, edges are listed in reverse order of their
+    /// addition to the graph, so the most recently added edge is listed first.
+    ///
+    /// For an `Undirected` graph, the outgoing edges are listed first, then
+    /// all incoming edges. The ordering among the outgoing and incoming edges
+    /// respectively is the reverse order of their addition to the graph,
+    /// similar to the `Directed` case. Outgoing and incoming in this case
+    /// refer to the ordering in which the endpoints were listed when adding the
+    /// edge (`g.add_edge(a, b, w)` or `g.add_edge(b, a, w)`).
     pub fn edges_directed(&self, a: NodeIndex<Ix>, dir: Direction) -> Edges<'_, E, Ty, Ix> {
         Edges {
             skip_start: a,
@@ -993,6 +1030,11 @@ where
     /// - `Undirected`: All edges connected to `a`.
     ///
     /// Iterator element type is `EdgeReference<E, Ix>`.
+    ///
+    /// The edges from a to b are listed first, then all edges from
+    /// b to a. The ordering among the edges from a to b and b to a
+    /// respectively is the reverse order of their addition to the graph.
+    /// That is, the most recently added edge is listed first.
     pub fn edges_connecting(
         &self,
         a: NodeIndex<Ix>,
@@ -1487,15 +1529,17 @@ where
         G: FnMut(EdgeIndex<Ix>, &'a E) -> E2,
     {
         let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
-        g.nodes.extend(enumerate(&self.nodes).map(|(i, node)| Node {
-            weight: node_map(NodeIndex::new(i), &node.weight),
-            next: node.next,
-        }));
-        g.edges.extend(enumerate(&self.edges).map(|(i, edge)| Edge {
-            weight: edge_map(EdgeIndex::new(i), &edge.weight),
-            next: edge.next,
-            node: edge.node,
-        }));
+        g.nodes
+            .extend(self.nodes.iter().enumerate().map(|(i, node)| Node {
+                weight: node_map(NodeIndex::new(i), &node.weight),
+                next: node.next,
+            }));
+        g.edges
+            .extend(self.edges.iter().enumerate().map(|(i, edge)| Edge {
+                weight: edge_map(EdgeIndex::new(i), &edge.weight),
+                next: edge.next,
+                node: edge.node,
+            }));
         g
     }
 
@@ -1512,15 +1556,17 @@ where
         G: FnMut(EdgeIndex<Ix>, E) -> E2,
     {
         let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
-        g.nodes.extend(enumerate(self.nodes).map(|(i, node)| Node {
-            weight: node_map(NodeIndex::new(i), node.weight),
-            next: node.next,
-        }));
-        g.edges.extend(enumerate(self.edges).map(|(i, edge)| Edge {
-            weight: edge_map(EdgeIndex::new(i), edge.weight),
-            next: edge.next,
-            node: edge.node,
-        }));
+        g.nodes
+            .extend(self.nodes.into_iter().enumerate().map(|(i, node)| Node {
+                weight: node_map(NodeIndex::new(i), node.weight),
+                next: node.next,
+            }));
+        g.edges
+            .extend(self.edges.into_iter().enumerate().map(|(i, edge)| Edge {
+                weight: edge_map(EdgeIndex::new(i), edge.weight),
+                next: edge.next,
+                node: edge.node,
+            }));
         g
     }
 
@@ -1550,12 +1596,12 @@ where
         let mut g = Graph::with_capacity(0, 0);
         // mapping from old node index to new node index, end represents removed.
         let mut node_index_map = vec![NodeIndex::end(); self.node_count()];
-        for (i, node) in enumerate(&self.nodes) {
+        for (i, node) in self.nodes.iter().enumerate() {
             if let Some(nw) = node_map(NodeIndex::new(i), &node.weight) {
                 node_index_map[i] = g.add_node(nw);
             }
         }
-        for (i, edge) in enumerate(&self.edges) {
+        for (i, edge) in self.edges.iter().enumerate() {
             // skip edge if any endpoint was removed
             let source = node_index_map[edge.source().index()];
             let target = node_index_map[edge.target().index()];
@@ -1595,12 +1641,12 @@ where
         let mut g = Graph::with_capacity(0, 0);
         // mapping from old node index to new node index, end represents removed.
         let mut node_index_map = vec![NodeIndex::end(); self.node_count()];
-        for (i, node) in enumerate(self.nodes) {
+        for (i, node) in self.nodes.into_iter().enumerate() {
             if let Some(nw) = node_map(NodeIndex::new(i), node.weight) {
                 node_index_map[i] = g.add_node(nw);
             }
         }
-        for (i, edge) in enumerate(self.edges) {
+        for (i, edge) in self.edges.into_iter().enumerate() {
             // skip edge if any endpoint was removed
             let source = node_index_map[edge.source().index()];
             let target = node_index_map[edge.target().index()];
@@ -1634,7 +1680,7 @@ where
     #[cfg(feature = "serde-1")]
     /// Fix up node and edge links after deserialization
     fn link_edges(&mut self) -> Result<(), NodeIndex<Ix>> {
-        for (edge_index, edge) in enumerate(&mut self.edges) {
+        for (edge_index, edge) in self.edges.iter_mut().enumerate() {
             let a = edge.source();
             let b = edge.target();
             let edge_idx = EdgeIndex::new(edge_index);
