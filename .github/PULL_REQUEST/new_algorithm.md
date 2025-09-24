@@ -7,7 +7,7 @@ assignees: ''
 ---
 
 <!--
-  -- Thanks for filing a `petgraph` issue!
+  -- Thanks for opening a `petgraph` pull request!
   -- We require PR titles to follow the Conventional Commits specification,
   -- https://www.conventionalcommits.org/en/v1.0.0/. This helps us generate
   -- changelogs and follow semantic versioning.
@@ -41,17 +41,19 @@ Otherwise please add a description of the algorithm to be added. Try to answer t
 - What is the basic idea of the algorithm?
 - What other, reference implementations exist / did you use?
 
-### Please make sure to check the following:
+### Please make sure to check the following
 
-[ ] Added a `regular` test for the new algorithm in the `tests/` directory.
+[] Added a regular test for the new algorithm in the [`tests/`](https://github.com/petgraph/petgraph/tree/master/tests) directory.
 
-[ ] Added a `quickcheck` property test for the new algorithm in the `tests/quickcheck.rs` file.
+[] Added a `quickcheck` property test for the new algorithm in the [`tests/quickcheck.rs`](https://github.com/petgraph/petgraph/blob/master/tests/quickcheck.rs) file.
 
-[ ] Added a `benchmark` test for measuring performance of the new algorithm
+[] Added a `benchmark` test for measuring performance of the new algorithm
 
-[ ] Made the algorithm work with generic graphs, constraining the
+[] Made the algorithm work with generic graphs, constraining the
   generic graph type parameter with our existing graph traits, like ``Visitable``,
   or with new graph traits
 
-[ ] Wrote a docstring for the algorithm, according to the algorithm
-  documentation guidelines in `assets/guide/algodocs.md`
+[] Wrote a docstring for the algorithm, according to the algorithm
+  documentation guidelines in [assets/guide/algodocs.md](https://github.com/petgraph/petgraph/blob/master/assets/guide/algodocs.md)
+
+[] If the PR contains a breaking change, explained the change and why it is necessary
