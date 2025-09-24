@@ -10,12 +10,12 @@ extern crate rand;
 extern crate defmac;
 
 extern crate itertools;
-extern crate odds;
 
 mod maximal_cliques;
 mod utils;
 
-use odds::prelude::*;
+use rand::seq::SliceRandom;
+use rand::Rng;
 use utils::{Small, Tournament};
 
 use alloc::collections::BTreeSet;
@@ -25,7 +25,6 @@ use hashbrown::{HashMap, HashSet};
 use itertools::assert_equal;
 use itertools::cloned;
 use quickcheck::{Arbitrary, Gen};
-use rand::Rng;
 
 #[cfg(feature = "stable_graph")]
 use petgraph::algo::steiner_tree;
@@ -277,7 +276,7 @@ fn isomorphism_1() {
         let mut map = g.node_indices().collect::<Vec<_>>();
         let mut ng = Graph::<_, _, Ty>::with_capacity(g.node_count(), g.edge_count());
         for _ in 0..1 {
-            rng.shuffle(&mut map);
+            map.shuffle(&mut rng);
             ng.clear();
 
             for _ in g.node_indices() {
@@ -646,8 +645,8 @@ fn is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> bool {
     for edge in gr.raw_edges() {
         let a = edge.source();
         let b = edge.target();
-        let ai = order.find(&a).unwrap();
-        let bi = order.find(&b).unwrap();
+        let ai = order.iter().position(|&x| x == a).unwrap();
+        let bi = order.iter().position(|&x| x == b).unwrap();
         if ai >= bi {
             println!("{a:?} > {b:?} ");
             return false;
@@ -673,11 +672,11 @@ fn subset_is_topo_order<N>(gr: &Graph<N, (), Directed>, order: &[NodeIndex]) -> 
             continue;
         }
         // skip those that are not in the subset
-        let ai = match order.find(&a) {
+        let ai = match order.iter().position(|&x| x == a) {
             Some(i) => i,
             None => continue,
         };
-        let bi = match order.find(&b) {
+        let bi = match order.iter().position(|&x| x == b) {
             Some(i) => i,
             None => continue,
         };
