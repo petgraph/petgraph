@@ -234,6 +234,9 @@ where
 /// a traversal over a graph while still retaining mutable access to it, if you
 /// use it like the following example:
 ///
+/// **Note:** The algorithm may not behave correctly if nodes are removed
+/// during iteration. It may not necessarily visit added nodes or edges.
+///
 /// ```
 /// use petgraph::Graph;
 /// use petgraph::visit::Bfs;
@@ -250,14 +253,87 @@ where
 /// assert_eq!(graph[a], 1);
 /// ```
 ///
-/// **Note:** The algorithm may not behave correctly if nodes are removed
-/// during iteration. It may not necessarily visit added nodes or edges.
+/// It is also possible to receive the distances from the starting point:
+///
+/// ```
+/// use petgraph::graph::UnGraph;
+/// use petgraph::visit::Bfs;
+///
+/// // Create an undirected graph with associated data
+/// // of type `i32` for the nodes and `()` for the edges.
+/// let g = UnGraph::<i32, ()>::from_edges(&[
+///     (0, 1), (1, 2), (2, 3), (0, 3)
+/// ]);
+/// // The graph looks like this:
+/// // 0 -- 1
+/// // |    |
+/// // 3 -- 2
+///
+/// // only nodes without distances
+/// {
+///     let mut bfs = Bfs::new(&g, 0.into());
+///     assert_eq!(Some(0.into()), bfs.next(&g));
+///     let second = bfs.next(&g).unwrap().index();
+///     let third = bfs.next(&g).unwrap().index();
+///     assert!(
+///         (1 == second && 3 == third) ||
+///         (1 == third && 3 == second)
+///     );
+///     assert_eq!(Some(2.into()), bfs.next(&g));
+///     assert_eq!(None, bfs.next(&g));
+/// }
+///
+/// // nodes with distances (u32 is enough for all distances here)
+/// {
+///     let mut dist_bfs = Bfs::new_with_distances::<u32>(&g, 0.into());
+///     assert_eq!(Some((0, 0.into())), dist_bfs.next(&g));
+///     let second = dist_bfs.next(&g).unwrap();
+///     let third = dist_bfs.next(&g).unwrap();
+///     assert!(
+///         ((1, 1.into()) == second && (1, 3.into()) == third) ||
+///         (((1, 3.into()) == second) && (1, 1.into()) == third)
+///     );
+///     assert_eq!(Some((2, 2.into())), dist_bfs.next(&g));
+///     assert_eq!(None, dist_bfs.next(&g));
+/// }
+/// ```
+///
 #[derive(Clone)]
-pub struct Bfs<N, VM> {
+pub struct Bfs<N, VM, D = ()> {
     /// The queue of nodes to visit
     pub stack: VecDeque<N>,
     /// The map of discovered nodes
-    pub discovered: VM,
+    pub discovered: VisitMapPhantom<VM, D>,
+}
+
+pub struct WithDistancesMarker<D>(core::marker::PhantomData<D>);
+
+#[derive(Clone)]
+pub struct VisitMapPhantom<VM, D>(pub VM, core::marker::PhantomData<D>);
+impl<VM, D> core::ops::Deref for VisitMapPhantom<VM, D> {
+    type Target = VM;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl<VM, D> core::ops::DerefMut for VisitMapPhantom<VM, D> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+impl<VM, D> VisitMapPhantom<VM, D> {
+    fn new(vm: VM) -> Self {
+        Self(vm, Default::default())
+    }
+}
+impl<VM, D> Default for VisitMapPhantom<VM, D>
+where
+    VM: Default,
+{
+    fn default() -> Self {
+        Self(Default::default(), Default::default())
+    }
 }
 
 impl<N, VM> Default for Bfs<N, VM>
@@ -267,7 +343,7 @@ where
     fn default() -> Self {
         Bfs {
             stack: VecDeque::new(),
-            discovered: VM::default(),
+            discovered: Default::default(),
         }
     }
 }
@@ -287,9 +363,39 @@ where
         discovered.visit(start);
         let mut stack = VecDeque::new();
         stack.push_front(start);
-        Bfs { stack, discovered }
+        Bfs {
+            stack,
+            discovered: VisitMapPhantom::new(discovered),
+        }
     }
 
+    /// Create a new **Bfs** that also returns the distances to the starting point,
+    /// using the graph's visitor map, and put **start** with distance 0 in the stack of nodes to visit.
+    ///
+    /// (`D` is the distance type (unsigned integer), checked by enforcing `From<u8>` as bound)
+    pub fn new_with_distances<D>(
+        graph: impl GraphRef + Visitable<NodeId = N, Map = VM>,
+        start: N,
+    ) -> Bfs<(D, N), VM, WithDistancesMarker<D>>
+    where
+        D: Copy + From<u8>,
+    {
+        let mut discovered = graph.visit_map();
+        discovered.visit(start);
+        let mut stack = VecDeque::new();
+        stack.push_front((D::from(0u8), start));
+        Bfs {
+            stack,
+            discovered: VisitMapPhantom::new(discovered),
+        }
+    }
+}
+
+impl<N, VM> Bfs<N, VM, ()>
+where
+    N: Copy + PartialEq,
+    VM: VisitMap<N>,
+{
     /// Return the next node in the bfs, or **None** if the traversal is done.
     pub fn next<G>(&mut self, graph: G) -> Option<N>
     where
@@ -303,6 +409,29 @@ where
             }
 
             return Some(node);
+        }
+        None
+    }
+}
+impl<N, VM, D> Bfs<(D, N), VM, WithDistancesMarker<D>>
+where
+    N: Copy + PartialEq,
+    VM: VisitMap<N>,
+    D: From<u8> + core::ops::Add<D, Output = D> + Copy,
+{
+    /// Return the distance to the next node in the bfs and the node itself, or **None** if the traversal is done.
+    pub fn next<G>(&mut self, graph: G) -> Option<(D, N)>
+    where
+        G: IntoNeighbors<NodeId = N>,
+    {
+        if let Some((distance, node)) = self.stack.pop_front() {
+            for succ in graph.neighbors(node) {
+                if self.discovered.visit(succ) {
+                    self.stack.push_back((distance + D::from(1u8), succ));
+                }
+            }
+
+            return Some((distance, node));
         }
         None
     }
