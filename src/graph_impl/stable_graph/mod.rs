@@ -246,11 +246,15 @@ where
         // edge incoming / outgoing lists,
         // node incoming / outgoing lists
         for edge in &mut self.g.edges {
-            edge.node.swap(0, 1);
-            edge.next.swap(0, 1);
+            if edge.weight.is_some() {
+                edge.node.swap(0, 1);
+                edge.next.swap(0, 1);
+            }
         }
         for node in &mut self.g.nodes {
-            node.next.swap(0, 1);
+            if node.weight.is_some() {
+                node.next.swap(0, 1);
+            }
         }
     }
 
