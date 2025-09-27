@@ -1,4 +1,5 @@
 //! Johnson's algorithm implementation.
+use alloc::collections::VecDeque;
 use alloc::{vec, vec::Vec};
 use core::hash::Hash;
 use core::ops::Sub;
@@ -262,7 +263,7 @@ where
     let reweight = vec![K::default(); node_bound];
 
     // Queue of vertices capable of relaxation of the found shortest distances.
-    let mut queue: Vec<G::NodeId> = Vec::with_capacity(node_bound);
+    let mut queue: VecDeque<G::NodeId> = VecDeque::with_capacity(node_bound);
 
     // Adding all vertices to the queue is the same as starting the algorithm from a virtual node.
     queue.extend(graph.node_identifiers());
