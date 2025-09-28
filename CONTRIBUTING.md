@@ -18,22 +18,22 @@ contribute to petgraph. **Do not let this guide intimidate you.** It
 should simply be a reference for you, which you can refer to when
 contributing. The structure of this guide is as follows:
 
-- [Conduct](#-conduct)
+- [Conduct](#🫂-conduct)
 
-- [Where We Need Help](#-where-we-need-help)
-    - [Issues](#-issues)
+- [Where We Need Help](#🧩-where-we-need-help)
+    - [Issues](#🐞-issues)
         - [Tackling existing issues](#tackling-existing-issues)
         - [Creating new issues](#creating-new-issues)
-    - [Pull Requests](#-pull-requests)
+    - [Pull Requests](#📥-pull-requests)
         - [Creating pull requests](#creating-pull-requests)
         - [Reviewing pull requests](#reviewing-pull-requests)
 
-- [Setup](#-setup)
-    - [Building](#-building)
-    - [Testing](#-testing)
-    - [Benchmarks](#-benchmarks)
+- [Setup](#⚙️-setup)
+    - [Building](#🏗️-building)
+    - [Testing](#🧪-testing)
+    - [Benchmarks](#⏱️-benchmarks)
 
-- [Contributors](#-contributors)
+- [Contributors](#🙌-contributors)
 
 ## 🫂 Conduct
 
