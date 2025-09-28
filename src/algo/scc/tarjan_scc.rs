@@ -44,7 +44,7 @@ impl<N> TarjanScc<N> {
     /// [1]: https://homepages.ecs.vuw.ac.nz/~djp/files/P05.pdf
     /// [2]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
     ///
-    /// Calls `f` for each strongly strongly connected component (scc).
+    /// Calls `f` for each strongly connected component (scc).
     /// The order of node ids within each scc is arbitrary, but the order of
     /// the sccs is their postorder (reverse topological sort).
     ///

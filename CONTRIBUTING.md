@@ -28,10 +28,11 @@ contributing. The structure of this guide is as follows:
         - [Creating pull requests](#creating-pull-requests)
         - [Reviewing pull requests](#reviewing-pull-requests)
 
-- [Setup](#-setup)
-    - [Building](#-building)
+- [Setup](#%EF%B8%8F-setup)
+    - [Building](#%EF%B8%8F-building)
     - [Testing](#-testing)
-    - [Benchmarks](#-benchmarks)
+    - [Lints](#-lints)
+    - [Benchmarks](#%EF%B8%8F-benchmarks)
 
 - [Contributors](#-contributors)
 
