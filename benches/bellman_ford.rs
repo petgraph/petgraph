@@ -24,7 +24,7 @@ fn bellman_ford_bench(bench: &mut Bencher) {
             let n2 = nodes[j];
             let mut distance: f64 = ((i + 3) % 10) as f64;
             if n1 != n2 {
-                distance -= 1.0
+                distance -= 0.5
             }
             g.add_edge(n1, n2, distance);
         }
