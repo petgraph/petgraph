@@ -28,7 +28,7 @@ contributing. The structure of this guide is as follows:
         - [Creating pull requests](#creating-pull-requests)
         - [Reviewing pull requests](#reviewing-pull-requests)
 
-- [Setup](#⚙️-setup)
+- [Setup](#%EF%B8%8F-setup)
     - [Building](#🏗️-building)
     - [Testing](#🧪-testing)
     - [Benchmarks](#⏱️-benchmarks)
