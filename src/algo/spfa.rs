@@ -163,3 +163,22 @@ where
 
     Ok((distances, predecessors))
 }
+
+#[test]
+fn test_spfa_no_neg_cycle() {
+    // fails if spfa uses a stack instead of a queue
+    let mut g = Graph::new();
+    let ns = (0..5).map(|_| g.add_node(())).collect::<Vec<_>>();
+    g.add_edge(ns[0], ns[4], 1000);
+    g.add_edge(ns[0], ns[3], 100);
+    g.add_edge(ns[0], ns[2], 10);
+    g.add_edge(ns[0], ns[1], 1);
+    g.add_edge(ns[3], ns[4], 100);
+    g.add_edge(ns[2], ns[4], 150);
+    g.add_edge(ns[2], ns[3], 10);
+    g.add_edge(ns[1], ns[4], 111);
+    g.add_edge(ns[1], ns[3], 10);
+
+    let spfa_res = spfa(&g, ns[0], |edge| *edge.weight());
+    assert!(spfa_res.is_ok());
+}
