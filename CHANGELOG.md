@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 
-## [0.8.3](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.2...petgraph@v0.8.3) - 2025-09-28
+## [0.8.3](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.2...petgraph@v0.8.3) - 2025-09-30
 
 ### Bug Fixes
 
