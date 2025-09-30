@@ -3,6 +3,60 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.8.3](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.2...petgraph@v0.8.3) - 2025-09-30
+
+### Bug Fixes
+
+- Infinite `subgraph_isomorphisms_iter` for empty isomorphisms ([#780](https://github.com/petgraph/petgraph/pull/780))
+- Algos don't work on `UndirectedAdaptor` ([#870](https://github.com/petgraph/petgraph/pull/870)) ([#871](https://github.com/petgraph/petgraph/pull/871))
+- use a queue for SPFA  ([#893](https://github.com/petgraph/petgraph/pull/893))
+- `StableGraph::reverse` breaks free lists ([#890](https://github.com/petgraph/petgraph/pull/890))
+
+### Documentation
+
+- Fix examples link in README and unify typesetting of one word ([#823](https://github.com/petgraph/petgraph/pull/823))
+- Add link to multigraph definition to isomorphism algos ([#824](https://github.com/petgraph/petgraph/pull/824))
+- Fix auxiliary space (and time) complexity of bron-kerbosch ([#825](https://github.com/petgraph/petgraph/pull/825))
+- Fix Typo in Operator Module Documentation ([#831](https://github.com/petgraph/petgraph/pull/831))
+- Sync the crate feature flags in the README and docs ([#832](https://github.com/petgraph/petgraph/pull/832))
+- Remove all \[Generic\] tags from algo docstrings ([#835](https://github.com/petgraph/petgraph/pull/835))
+- Fix typos in comments ([#836](https://github.com/petgraph/petgraph/pull/836))
+- Revamp CONTRIBUTING.md ([#833](https://github.com/petgraph/petgraph/pull/833))
+- Update `GraphMap` link in README ([#857](https://github.com/petgraph/petgraph/pull/857))
+- Add doc comment for `Dot::with_attr_getters` ([#850](https://github.com/petgraph/petgraph/pull/850))
+- Specify iteration order for neighbors and edges and their variants ([#790](https://github.com/petgraph/petgraph/pull/790))
+- Collection of Doc fixes ([#856](https://github.com/petgraph/petgraph/pull/856))
+
+### New Features
+
+- Add `into_nodes_edges_iters` to `StableGraph` ([#841](https://github.com/petgraph/petgraph/pull/841))
+- Add methods to reserve & shrink `StableGraph` capacity ([#846](https://github.com/petgraph/petgraph/pull/846))
+- Add Dinic's Maximum Flow Algorithm ([#739](https://github.com/petgraph/petgraph/pull/739))
+- make Csr::from_sorted_edges generic over edge type and properly increase edge_count in Csr::from_sorted_edges ([#861](https://github.com/petgraph/petgraph/pull/861))
+- Add `map_owned` and `filter_map_owned` for `Graph` and `StableGraph` ([#863](https://github.com/petgraph/petgraph/pull/863))
+- Add dijkstra::with_dynamic_goal ([#855](https://github.com/petgraph/petgraph/pull/855))
+- Fix self-loop bug in all_simple_paths and enable multiple targets ([#865](https://github.com/petgraph/petgraph/pull/865))
+- mark petgraph::dot::Dot::graph_fmt as public ([#866](https://github.com/petgraph/petgraph/pull/866))
+- Add bidirectional Dijkstra algorithm ([#782](https://github.com/petgraph/petgraph/pull/782))
+
+### Performance
+
+- Make A* tie break on lower h-values ([#882](https://github.com/petgraph/petgraph/pull/882))
+
+### Refactor
+
+- add examples for scc algorithms and reorganize into dedicated module ([#830](https://github.com/petgraph/petgraph/pull/830))
+- Remove unnecessary trait bounds from impls/methods ([#828](https://github.com/petgraph/petgraph/pull/828))
+- replace uses of 'crate::util::zip' with 'core::iter::zip' ([#849](https://github.com/petgraph/petgraph/pull/849))
+- Fix clippy (and other) lints ([#851](https://github.com/petgraph/petgraph/pull/851))
+- Cleanup repo ([#854](https://github.com/petgraph/petgraph/pull/854))
+- replace crate::util::enumerate with Iterator::enumerate ([#881](https://github.com/petgraph/petgraph/pull/881))
+
+### Testing
+
+- Add dependency list for 'quickcheck' feature ([#822](https://github.com/petgraph/petgraph/pull/822))
+- Fix feature cfg capitalization in doctest ([#852](https://github.com/petgraph/petgraph/pull/852))
+
 ## [0.8.2](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.1...petgraph@v0.8.2) - 2025-06-06
 This minor release fixes several bugs, adds two new algorithms, slightly improves the performance of `maximum_matching`, 
 adds a tool for parsing graphs from Dot/Graphviz files, and improves the documentation, making it more complete and uniform, as well as clarifying several points.
