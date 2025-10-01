@@ -49,7 +49,7 @@ use super::visit::{
 use super::EdgeType;
 use crate::visit::Walker;
 
-pub use astar::astar;
+pub use astar::{astar, astar_with_timeout};
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
 pub use bridges::bridges;
 pub use coloring::dsatur_coloring;
