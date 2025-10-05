@@ -1594,6 +1594,14 @@ where
         g
     }
 
+    /// Create a new `Graph` by trying to map node and
+    /// edge weights to new values.
+    ///
+    /// The resulting graph has the same structure and the same
+    /// graph indices as `self`.
+    ///
+    /// if a mapping should fail, an `MapError` gets returned
+    /// which contains the index of the node or edge, and its value
     pub fn try_map<'a, F, G, N2, E2, RN, RE>(
         &'a self,
         mut node_map: F,
@@ -1872,8 +1880,13 @@ pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
 }
 
 #[derive(Debug)]
+/// Calling `try_map` on a graph has failed
 pub enum MapError<RN, RE, Ix> {
+    /// the first node where mapping has failed
+    /// with its index and error
     Node(NodeIndex<Ix>, RN),
+    /// the first edge where mapping has failed
+    /// with its index and error
     Edge(EdgeIndex<Ix>, RE),
 }
 
