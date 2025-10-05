@@ -1594,6 +1594,48 @@ where
         g
     }
 
+    /// Create a new `Graph` by trying to map node and
+    /// edge weights to new values.
+    ///
+    /// The resulting graph has the same structure and the same
+    /// graph indices as `self`.
+    ///
+    /// if a mapping should fail, an `MapError` gets returned
+    /// which contains the index of the node or edge, and its value
+    pub fn try_map<'a, F, G, N2, E2, RN, RE>(
+        &'a self,
+        mut node_map: F,
+        mut edge_map: G,
+    ) -> Result<Graph<N2, E2, Ty, Ix>, MapError<RN, RE, Ix>>
+    where
+        F: FnMut(NodeIndex<Ix>, &'a N) -> Result<N2, RN>,
+        G: FnMut(EdgeIndex<Ix>, &'a E) -> Result<E2, RE>,
+    {
+        let mut g = Graph::with_capacity(self.node_count(), self.edge_count());
+
+        for (i, node) in self.nodes.iter().enumerate() {
+            g.nodes.push(Node {
+                next: node.next,
+                weight: match node_map(NodeIndex::new(i), &node.weight) {
+                    Ok(weight) => weight,
+                    Err(err) => return Err(MapError::Node(NodeIndex::new(i), err)),
+                },
+            })
+        }
+
+        for (i, edge) in self.edges.iter().enumerate() {
+            g.edges.push(Edge {
+                next: edge.next,
+                node: edge.node,
+                weight: match edge_map(EdgeIndex::new(i), &edge.weight) {
+                    Ok(weight) => weight,
+                    Err(err) => return Err(MapError::Edge(EdgeIndex::new(i), err)),
+                },
+            })
+        }
+        Ok(g)
+    }
+
     /// Create a new `Graph` by mapping node and edge weights to new values,
     /// consuming the current graph.
     ///
@@ -1835,6 +1877,17 @@ pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
     iter: iter::Enumerate<slice::Iter<'a, Node<N, Ix>>>,
     dir: Direction,
     ty: PhantomData<Ty>,
+}
+
+#[derive(Debug)]
+/// Calling `try_map` on a graph has failed
+pub enum MapError<RN, RE, Ix> {
+    /// the first node where mapping has failed
+    /// with its index and error
+    Node(NodeIndex<Ix>, RN),
+    /// the first edge where mapping has failed
+    /// with its index and error
+    Edge(EdgeIndex<Ix>, RE),
 }
 
 impl<'a, N: 'a, Ty, Ix> Iterator for Externals<'a, N, Ty, Ix>
