@@ -1,5 +1,5 @@
 use petgraph::algo::{dsatur_coloring, recursive_largest_first_coloring};
-use petgraph::{visit::EdgeRef, Directed, Graph, Undirected};
+use petgraph::{Graph, Undirected};
 
 #[test]
 fn recursive_largest_first_coloring_cycle6() {
