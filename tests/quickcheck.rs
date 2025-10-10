@@ -34,8 +34,8 @@ use petgraph::algo::{
     dijkstra, dsatur_coloring, find_negative_cycle, floyd_warshall, ford_fulkerson,
     greedy_feedback_arc_set, greedy_matching, is_cyclic_directed, is_cyclic_undirected,
     is_isomorphic, is_isomorphic_matching, johnson, k_shortest_path, kosaraju_scc,
-    maximal_cliques as maximal_cliques_algo, maximum_matching, min_spanning_tree, page_rank, spfa,
-    tarjan_scc, toposort, Matching,
+    maximal_cliques as maximal_cliques_algo, maximum_matching, min_spanning_tree, page_rank,
+    recursive_largest_first_coloring, spfa, tarjan_scc, toposort, Matching,
 };
 use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
@@ -1597,6 +1597,15 @@ where
         }
     }
     true
+}
+
+quickcheck! {
+    fn recursive_largest_first_coloring_quickcheck(g: Graph<(), (), Undirected>) -> bool {
+        let coloring = recursive_largest_first_coloring(&g);
+        assert!(coloring.color_count <= g.node_count(), "recursive-largest-first returned too many colors");
+        assert!(is_proper_coloring(&g, &coloring.nodes_to_colors), "recursive-largest-first returned a non-proper coloring");
+        true
+    }
 }
 
 quickcheck! {
