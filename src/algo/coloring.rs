@@ -84,9 +84,9 @@ where
 /// // |               |
 /// // f ----- e------ d
 ///
-/// let return = recursive_largest_first_coloring(&graph);
-/// assert_eq!(return.color_count, 2);
-/// assert_ne!(return.nodes_to_colors[&a], return.nodes_to_colors[&b]);
+/// let return_val = recursive_largest_first_coloring(&graph);
+/// assert_eq!(return_val.color_count, 2);
+/// assert_ne!(return_val.nodes_to_colors[&a], return_val.nodes_to_colors[&b]);
 /// ```
 pub fn recursive_largest_first_coloring<G>(graph: G) -> ColorReturn<G>
 where
