@@ -6,9 +6,10 @@ default:
 build:
     cargo build
 
-# Tests with all features enabled
+# Runs tests and doctests with all features enabled
 test:
     cargo test --features all
+    cargo test --doc --features all
 
 # Miri with all tests (this might take very long). Consider the fast-miri recipe instead or specify individual tests
 miri:
