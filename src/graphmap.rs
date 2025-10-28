@@ -933,6 +933,9 @@ where
     E: 'a,
     Ty: EdgeType,
 {
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
 }
 impl<'a, N, E, Ty> FusedIterator for AllEdges<'a, N, E, Ty>
 where
@@ -1002,6 +1005,9 @@ where
     E: 'a,
     Ty: EdgeType,
 {
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
 }
 
 impl<'a, N, E, Ty> FusedIterator for AllEdgesMut<'a, N, E, Ty>
