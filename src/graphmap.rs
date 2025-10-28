@@ -6,7 +6,7 @@ use core::{
     cmp::Ordering,
     fmt,
     hash::{self, BuildHasher, Hash},
-    iter::{Copied, FromIterator},
+    iter::{Copied, FromIterator, FusedIterator},
     marker::PhantomData,
     mem,
     ops::{Deref, Index, IndexMut},
@@ -913,13 +913,6 @@ where
             .map(|(&(n1, n2), weight)| (n1, n2, weight))
     }
 }
-impl<'a, N, E, Ty> ExactSizeIterator for AllEdges<'a, N, E, Ty>
-where
-    N: 'a + NodeTrait,
-    E: 'a,
-    Ty: EdgeType,
-{
-}
 
 impl<'a, N, E, Ty> DoubleEndedIterator for AllEdges<'a, N, E, Ty>
 where
@@ -932,6 +925,21 @@ where
             .next_back()
             .map(|(&(n1, n2), weight)| (n1, n2, weight))
     }
+}
+
+impl<'a, N, E, Ty> ExactSizeIterator for AllEdges<'a, N, E, Ty>
+where
+    N: 'a + NodeTrait,
+    E: 'a,
+    Ty: EdgeType,
+{
+}
+impl<'a, N, E, Ty> FusedIterator for AllEdges<'a, N, E, Ty>
+where
+    N: 'a + NodeTrait,
+    E: 'a,
+    Ty: EdgeType,
+{
 }
 
 pub struct AllEdgesMut<'a, N, E: 'a, Ty>
@@ -975,13 +983,6 @@ where
             .map(|(&(n1, n2), weight)| (n1, n2, weight))
     }
 }
-impl<'a, N, E, Ty> ExactSizeIterator for AllEdgesMut<'a, N, E, Ty>
-where
-    N: 'a + NodeTrait,
-    E: 'a,
-    Ty: EdgeType,
-{
-}
 
 impl<'a, N, E, Ty> DoubleEndedIterator for AllEdgesMut<'a, N, E, Ty>
 where
@@ -995,6 +996,22 @@ where
             .map(|(&(n1, n2), weight)| (n1, n2, weight))
     }
 }
+impl<'a, N, E, Ty> ExactSizeIterator for AllEdgesMut<'a, N, E, Ty>
+where
+    N: 'a + NodeTrait,
+    E: 'a,
+    Ty: EdgeType,
+{
+}
+
+impl<'a, N, E, Ty> FusedIterator for AllEdgesMut<'a, N, E, Ty>
+where
+    N: 'a + NodeTrait,
+    E: 'a,
+    Ty: EdgeType,
+{
+}
+
 
 /// Index `GraphMap` by node pairs to access edge weights.
 impl<N, E, Ty, S> Index<(N, N)> for GraphMap<N, E, Ty, S>
