@@ -975,6 +975,13 @@ where
             .map(|(&(n1, n2), weight)| (n1, n2, weight))
     }
 }
+impl<'a, N, E, Ty> ExactSizeIterator for AllEdgesMut<'a, N, E, Ty>
+where
+    N: 'a + NodeTrait,
+    E: 'a,
+    Ty: EdgeType,
+{
+}
 
 impl<'a, N, E, Ty> DoubleEndedIterator for AllEdgesMut<'a, N, E, Ty>
 where
