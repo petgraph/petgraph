@@ -181,6 +181,9 @@ pub enum Config {
     GraphContentOnly,
     /// Sets direction of graph layout.
     RankDir(RankDir),
+    /// Sets the rank separation.
+    /// <https://graphviz.org/docs/attrs/ranksep/>
+    RankSep(usize),
 }
 macro_rules! make_config_struct {
     ($($variant:ident,)*) => {
@@ -189,6 +192,7 @@ macro_rules! make_config_struct {
         struct Configs {
             $($variant: bool,)*
             RankDir: Option<RankDir>,
+            RankSep: Option<usize>,
         }
         impl Configs {
             #[inline]
@@ -198,6 +202,7 @@ macro_rules! make_config_struct {
                     match c {
                         $(Config::$variant => conf.$variant = true,)*
                         Config::RankDir(dir) => conf.RankDir = Some(*dir),
+                        Config::RankSep(sep) => conf.RankSep = Some(*sep),
                     }
                 }
                 conf
@@ -241,6 +246,10 @@ where
                 RankDir::RL => "RL",
             };
             writeln!(f, "{INDENT}rankdir=\"{value}\"")?;
+        }
+
+        if let Some(rank_sep) = &self.config.RankSep {
+            writeln!(f, "{INDENT}ranksep=\"{rank_sep}\"")?;
         }
 
         // output all labels
@@ -514,5 +523,16 @@ mod test {
             ),
         );
         assert_eq!(dot, "digraph {\n    0 [ label = \"a\"]\n    1 [ label = \"b\"]\n    0 -> 1 [ label = \"EDGE_LABEL\"]\n}\n");
+    }
+
+    #[test]
+    fn test_ranksep_option() {
+        let graph = simple_graph();
+        let dot = format!("{:?}", Dot::with_config(&graph, &[Config::RankSep(4)]));
+        assert_eq!(
+            dot,
+            "digraph {\n    ranksep=\"4\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
+            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+        );
     }
 }
