@@ -1,10 +1,13 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::hash::Hash;
+use hashbrown::HashMap;
 
 use crate::visit::{
-    EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable,
-    VisitMap, Visitable,
+    EdgeCount, EdgeIndexable, EdgeRef, GraphBase, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
+    NodeCount, NodeIndexable, VisitMap, Visitable,
 };
+
+use crate::{algo::ford_fulkerson, graph::NodeIndex, Directed, Graph};
 
 /// Computed
 /// [*matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)#Definitions)
@@ -616,5 +619,166 @@ fn augment_path<G>(
         augment_path(graph, target, source, mate, label);
     } else {
         panic!("Unexpected label when augmenting path");
+    }
+}
+
+/// Compute the maximum matching of a bipartite graph.
+///
+/// The algorithm reduces the [*maximum bipartite matching*][matching]
+/// problem to a [*maximum flow*][flow] computation, by constructing an
+/// appropriate flow network and solving it using the [Ford–Fulkerson algorithm][ff].
+///
+/// The input graph is treated as undirected, and the caller must provide the two
+/// disjoint partitions `partition_a` and `partition_b` of the bipartite graph.
+///
+/// # Arguments
+/// * `graph` — The input graph.
+/// * `partition_a` — The list of nodes in the first partition.
+/// * `partition_b` — The list of nodes in the second partition.
+///
+/// # Returns
+/// * [`struct@Matching`]: computed maximum matching.
+///
+/// # Complexity
+/// * Time complexity: **O(|V||E|²)** (derived from Ford-Fulkerson time complexity).
+/// * Auxiliary space: **O(|V| + |E|)**.
+///
+/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+///
+/// [matching]: https://en.wikipedia.org/wiki/Matching_(graph_theory)
+/// [flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+/// [ff]: https://en.wikipedia.org/wiki/Ford–Fulkerson_algorithm
+///
+/// # Example
+/// ```rust
+/// use petgraph::prelude::*;
+/// use petgraph::algo::maximum_bipartite_matching;
+///
+/// // The example graph:
+/// //
+/// //  a_1   a_2
+/// //   |  \  |
+/// //   |   \ |
+/// //  b_1   b_2
+/// //
+/// // Maximum matching: { (a_1, b_1), (a_2, b_2) }
+///
+/// let mut graph: UnGraph<(), ()> = UnGraph::new_undirected();
+/// let a_1 = graph.add_node(());
+/// let a_2 = graph.add_node(());
+/// let b_1 = graph.add_node(());
+/// let b_2 = graph.add_node(());
+///
+/// graph.extend_with_edges([(a_1, b_1), (a_1, b_2), (a_2, b_2)]);
+///
+/// let partition_a = [a_1, a_2];
+/// let partition_b = [b_1, b_2];
+///
+/// let matching = maximum_bipartite_matching(&graph, &partition_a, &partition_b);
+///
+/// assert_eq!(matching.len(), 2);
+/// assert!(matching.contains_edge(a_1, b_1));
+/// assert!(matching.contains_edge(a_2, b_2));
+/// assert_eq!(matching.mate(a_1), Some(b_1));
+/// assert_eq!(matching.mate(a_2), Some(b_2));
+/// assert_eq!(matching.mate(b_1), Some(a_1));
+/// assert_eq!(matching.mate(b_2), Some(a_2));
+/// ```
+pub fn maximum_bipartite_matching<G>(
+    graph: G,
+    partition_a: &[G::NodeId],
+    partition_b: &[G::NodeId],
+) -> Matching<G>
+where
+    G: NodeIndexable + EdgeIndexable + NodeCount + EdgeCount + IntoEdges + IntoNodeIdentifiers,
+{
+    let (network, source, destination) =
+        maximum_bipartite_matching_instance(&graph, partition_a, partition_b);
+
+    let (_, flow) = ford_fulkerson(&network, source, destination);
+    let mut mate = vec![None; graph.node_bound()];
+    let mut n_edges = 0;
+
+    for edge in graph.edge_references() {
+        if flow[EdgeIndexable::to_index(&graph, edge.id())] == 1 {
+            let (source, target) =
+                source_and_target_from_partitions::<G>(edge, partition_a, partition_b);
+            mate[NodeIndexable::to_index(&graph, source)] = Some(target);
+            mate[NodeIndexable::to_index(&graph, target)] = Some(source);
+            n_edges += 1;
+        }
+    }
+
+    Matching::new(graph, mate, n_edges)
+}
+
+/// Create a network from given bipartite `graph` and its partitions,
+/// `partition_a` and `partition_b`.
+fn maximum_bipartite_matching_instance<G>(
+    graph: &G,
+    partition_a: &[G::NodeId],
+    partition_b: &[G::NodeId],
+) -> (Graph<(), usize, Directed>, NodeIndex, NodeIndex)
+where
+    G: NodeIndexable + NodeCount + EdgeCount + IntoEdges + IntoNodeIdentifiers,
+{
+    let mut network = Graph::with_capacity(
+        graph.node_count() + 2,
+        graph.edge_count() + partition_a.len() + partition_b.len(),
+    );
+
+    let mut index_map = HashMap::new();
+
+    // Add nodes from original graph
+    for node_id in graph.node_identifiers() {
+        let old_index = NodeIndexable::to_index(&graph, node_id);
+        let new_index = network.add_node(());
+        index_map.insert(old_index, new_index);
+    }
+
+    // Add edges from original graph, directed from partition_a to partition_b
+    for edge in graph.edge_references() {
+        let (source, target) =
+            source_and_target_from_partitions::<G>(edge, partition_a, partition_b);
+        let source_index = NodeIndexable::to_index(&graph, source);
+        let target_index = NodeIndexable::to_index(&graph, target);
+        network.add_edge(
+            *index_map.get(&source_index).unwrap(),
+            *index_map.get(&target_index).unwrap(),
+            1,
+        );
+    }
+
+    // Add source node
+    let source = network.add_node(());
+    for &node in partition_a {
+        let node_index = NodeIndexable::to_index(&graph, node);
+        network.add_edge(source, *index_map.get(&node_index).unwrap(), 1);
+    }
+
+    // Add destination node
+    let destination = network.add_node(());
+    for &node in partition_b {
+        let node_index = NodeIndexable::to_index(&graph, node);
+        network.add_edge(*index_map.get(&node_index).unwrap(), destination, 1);
+    }
+
+    (network, source, destination)
+}
+
+fn source_and_target_from_partitions<G>(
+    edge: G::EdgeRef,
+    partition_a: &[G::NodeId],
+    partition_b: &[G::NodeId],
+) -> (G::NodeId, G::NodeId)
+where
+    G: IntoEdges,
+{
+    if partition_a.contains(&edge.source()) {
+        (edge.source(), edge.target())
+    } else if partition_b.contains(&edge.source()) {
+        (edge.target(), edge.source())
+    } else {
+        panic!("Partitions are inconsistent.");
     }
 }

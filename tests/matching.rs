@@ -2,7 +2,7 @@ use core::hash::Hash;
 
 use hashbrown::HashSet;
 
-use petgraph::algo::{greedy_matching, maximum_matching};
+use petgraph::algo::{greedy_matching, maximum_bipartite_matching, maximum_matching};
 use petgraph::prelude::*;
 
 macro_rules! assert_one_of {
@@ -139,4 +139,150 @@ fn is_perfect_in_stable_graph() {
     let m = maximum_matching(&g);
     assert_eq!(m.len(), 1);
     assert!(m.is_perfect());
+}
+
+#[test]
+fn maximum_bipartite_empty() {
+    let g: UnGraph<(), ()> = UnGraph::default();
+    let m = maximum_bipartite_matching(&g, &[], &[]);
+    assert_eq!(collect(m.edges()), set![]);
+    assert_eq!(collect(m.nodes()), set![]);
+}
+
+#[test]
+fn maximum_bipartite_k2() {
+    let mut g = UnGraph::new_undirected();
+    let a = g.add_node(());
+    let b = g.add_node(());
+    g.add_edge(a, b, ());
+
+    let m = maximum_bipartite_matching(&g, &[a], &[b]);
+    assert_eq!(collect(m.edges()), set![(0, 1)]);
+    assert_eq!(collect(m.nodes()), set![0, 1]);
+}
+
+#[test]
+fn maximum_bipartite_test() {
+    let mut g: Graph<(), (), Undirected> = UnGraph::new_undirected();
+
+    // Partition A
+    let a_1 = g.add_node(());
+    let a_2 = g.add_node(());
+    let a_3 = g.add_node(());
+    let a_4 = g.add_node(());
+    let a_5 = g.add_node(());
+    let a_6 = g.add_node(());
+    let partition_a = vec![a_1, a_2, a_3, a_4, a_5, a_6];
+
+    // Partition B
+    let b_1 = g.add_node(());
+    let b_2 = g.add_node(());
+    let b_3 = g.add_node(());
+    let b_4 = g.add_node(());
+    let b_5 = g.add_node(());
+    let b_6 = g.add_node(());
+    let partition_b = vec![b_1, b_2, b_3, b_4, b_5, b_6];
+
+    // Edges
+    g.extend_with_edges([
+        (a_1, b_2),
+        (a_1, b_3),
+        (a_3, b_1),
+        (a_3, b_4),
+        (a_4, b_3),
+        (a_5, b_3),
+        (a_5, b_4),
+        (a_6, b_6),
+    ]);
+
+    let m = maximum_bipartite_matching(&g, &partition_a, &partition_b);
+    assert_eq!(
+        collect(m.edges()),
+        set![(a_1, b_2), (a_3, b_1), (a_4, b_3), (a_5, b_4), (a_6, b_6)]
+    );
+    assert_eq!(
+        collect(m.nodes()),
+        set![a_1, a_3, a_4, a_5, a_6, b_1, b_2, b_3, b_4, b_6]
+    );
+}
+
+#[test]
+fn maximum_bipartite_disjoint_test() {
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (2, 3)]);
+    let partition_a = [NodeIndex::new(0), NodeIndex::new(2)];
+    let partition_b = [NodeIndex::new(1), NodeIndex::new(3)];
+    let m = maximum_bipartite_matching(&g, &partition_a, &partition_b);
+    assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
+    assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
+}
+
+#[test]
+fn maximum_bipartite_star_test() {
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (0, 2), (0, 3)]);
+    let partition_a = [NodeIndex::new(0)];
+    let partition_b = [NodeIndex::new(1), NodeIndex::new(2), NodeIndex::new(3)];
+    let m = maximum_bipartite_matching(&g, &partition_a, &partition_b);
+    assert_one_of!(
+        collect(m.edges()),
+        [set![(0, 1)], set![(0, 2)], set![(0, 3)]]
+    );
+    assert_one_of!(collect(m.nodes()), [set![0, 1], set![0, 2], set![0, 3]]);
+}
+
+#[test]
+fn maximum_bipartite_odd_path_test() {
+    let g: UnGraph<(), ()> = UnGraph::from_edges([(0, 1), (1, 2), (2, 3)]);
+    let partition_a = [NodeIndex::new(0), NodeIndex::new(2)];
+    let partition_b = [NodeIndex::new(1), NodeIndex::new(3)];
+    let m = maximum_bipartite_matching(&g, &partition_a, &partition_b);
+    assert_eq!(collect(m.edges()), set![(0, 1), (2, 3)]);
+    assert_eq!(collect(m.nodes()), set![0, 1, 2, 3]);
+}
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn maximum_bipartite_stable_graph_test() {
+    let mut g: StableUnGraph<(), ()> = StableUnGraph::with_capacity(12, 8);
+
+    // Partition A
+    let a_1 = g.add_node(());
+    let a_2 = g.add_node(());
+    let a_3 = g.add_node(());
+    let a_4_removed = g.add_node(());
+    let a_5 = g.add_node(());
+    let a_6 = g.add_node(());
+    let partition_a = vec![a_1, a_2, a_3, a_5, a_6];
+
+    // Partition B
+    let b_1 = g.add_node(());
+    let b_2 = g.add_node(());
+    let b_3 = g.add_node(());
+    let b_4 = g.add_node(());
+    let b_5 = g.add_node(());
+    let b_6 = g.add_node(());
+    let partition_b = vec![b_1, b_2, b_3, b_4, b_5, b_6];
+
+    // Edges
+    g.extend_with_edges([
+        (a_1, b_2),
+        (a_1, b_3),
+        (a_3, b_1),
+        (a_3, b_4),
+        (a_4_removed, b_3),
+        (a_5, b_3),
+        (a_5, b_4),
+        (a_6, b_6),
+    ]);
+
+    g.remove_node(a_4_removed);
+
+    let m = maximum_bipartite_matching(&g, &partition_a, &partition_b);
+    assert_eq!(
+        collect(m.edges()),
+        set![(a_1, b_3), (a_3, b_1), (a_5, b_4), (a_6, b_6)]
+    );
+    assert_eq!(
+        collect(m.nodes()),
+        set![a_1, a_3, a_5, a_6, b_1, b_3, b_4, b_6]
+    );
 }
