@@ -106,7 +106,9 @@ impl<G: Visitable> Acyclic<G> {
     }
 
     /// Get an iterator over the nodes, ordered by their position.
-    pub fn nodes_iter(&self) -> impl Iterator<Item = G::NodeId> + '_ {
+    pub fn nodes_iter(
+        &self,
+    ) -> impl Iterator<Item = G::NodeId> + DoubleEndedIterator + ExactSizeIterator + '_ {
         self.order_map.nodes_iter()
     }
 

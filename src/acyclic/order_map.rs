@@ -106,7 +106,9 @@ impl<N: Copy> OrderMap<N> {
     }
 
     /// Get an iterator over the nodes, ordered by their position.
-    pub(super) fn nodes_iter(&self) -> impl Iterator<Item = N> + '_ {
+    pub(super) fn nodes_iter(
+        &self,
+    ) -> impl Iterator<Item = N> + DoubleEndedIterator + ExactSizeIterator + '_ {
         self.pos_to_node.values().copied()
     }
 
