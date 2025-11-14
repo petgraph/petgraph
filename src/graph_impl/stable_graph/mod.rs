@@ -671,6 +671,12 @@ where
             .node_weights()
             .filter_map(|maybe_node| maybe_node.as_ref())
     }
+
+    /// Return an iterator yielding immutable access to all node weights and their corresponding index.
+    pub fn node_weights_and_indices(&self) -> impl Iterator<Item = (NodeIndex<Ix>, &N)> {
+        self.node_indices().zip(self.node_weights())
+    }
+
     /// Return an iterator yielding mutable access to all node weights.
     ///
     /// The order in which weights are yielded matches the order of their node
