@@ -8,7 +8,10 @@ use petgraph::EdgeType;
 
 use petgraph as pg;
 
-use petgraph::algo::{dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected, is_isomorphic_matching, ToposortGroupingStrategy};
+use petgraph::algo::{
+    dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
+    is_isomorphic_matching, ToposortGroupingStrategy,
+};
 
 use petgraph::graph::node_index as n;
 use petgraph::graph::{GraphError, IndexType};
@@ -795,7 +798,11 @@ fn test_toposort_grouped() {
     graph.add_edge(e, i, ());
     graph.add_edge(j, k, ());
 
-    fn print_toposort_grouped_result(label: &str, graph: &Graph<&str, ()>, result: &Vec<Vec<NodeIndex>>) {
+    fn print_toposort_grouped_result(
+        label: &str,
+        graph: &Graph<&str, ()>,
+        result: &Vec<Vec<NodeIndex>>,
+    ) {
         println!("\n{}", label);
         for (group_index, group) in result.iter().enumerate() {
             for node in group.iter() {
@@ -825,7 +832,8 @@ fn test_toposort_grouped() {
     //      |     +---+     |
     // 3:   +---->| F |<----+
     //            +---+
-    let result_eager: Vec<Vec<NodeIndex>> = petgraph::algo::toposort_grouped(&graph, ToposortGroupingStrategy::Eager).unwrap();
+    let result_eager: Vec<Vec<NodeIndex>> =
+        petgraph::algo::toposort_grouped(&graph, ToposortGroupingStrategy::Eager).unwrap();
 
     print_toposort_grouped_result("Eager", &graph, &result_eager);
 
@@ -856,7 +864,9 @@ fn test_toposort_grouped() {
     //      |     +---+     |     +---+
     // 3:   +---->| F |<----+     | K |
     //            +---+           +---+
-    let result_eager_except_last: Vec<Vec<NodeIndex>> = petgraph::algo::toposort_grouped(&graph, ToposortGroupingStrategy::EagerExceptLast).unwrap();
+    let result_eager_except_last: Vec<Vec<NodeIndex>> =
+        petgraph::algo::toposort_grouped(&graph, ToposortGroupingStrategy::EagerExceptLast)
+            .unwrap();
 
     print_toposort_grouped_result("EagerExceptLast", &graph, &result_eager_except_last);
 
@@ -887,7 +897,8 @@ fn test_toposort_grouped() {
     //      |     +---+     |     +---+
     // 3:   +---->| F |<----+     | K |
     //            +---+           +---+
-    let result_lazy: Vec<Vec<NodeIndex>> = petgraph::algo::toposort_grouped(&graph, ToposortGroupingStrategy::Lazy).unwrap();
+    let result_lazy: Vec<Vec<NodeIndex>> =
+        petgraph::algo::toposort_grouped(&graph, ToposortGroupingStrategy::Lazy).unwrap();
 
     print_toposort_grouped_result("Lazy", &graph, &result_lazy);
 
@@ -918,7 +929,9 @@ fn test_toposort_grouped() {
     //      |     +---+     |     +---+
     // 4:   +---->| F |<----+     | K |
     //            +---+           +---+
-    let result_lazy_except_first: Vec<Vec<NodeIndex>> = petgraph::algo::toposort_grouped(&graph, ToposortGroupingStrategy::LazyExceptFirst).unwrap();
+    let result_lazy_except_first: Vec<Vec<NodeIndex>> =
+        petgraph::algo::toposort_grouped(&graph, ToposortGroupingStrategy::LazyExceptFirst)
+            .unwrap();
 
     print_toposort_grouped_result("LazyExceptFirst", &graph, &result_lazy_except_first);
 

@@ -42,7 +42,11 @@ use crate::prelude::*;
 
 use super::graph::IndexType;
 use super::unionfind::UnionFind;
-use super::visit::{GraphBase, GraphRef, IntoEdgeReferences, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers, NodeCompactIndexable, NodeCount, NodeIndexable, Reversed, VisitMap, Visitable};
+use super::visit::{
+    GraphBase, GraphRef, IntoEdgeReferences, IntoEdgesDirected, IntoNeighbors,
+    IntoNeighborsDirected, IntoNodeIdentifiers, NodeCompactIndexable, NodeCount, NodeIndexable,
+    Reversed, VisitMap, Visitable,
+};
 use super::EdgeType;
 use crate::visit::Walker;
 
@@ -297,7 +301,7 @@ pub fn toposort_grouped<G>(
 where
     G: IntoEdgesDirected + NodeIndexable + NodeCount,
 {
-    use std::collections::VecDeque;
+    use alloc::collections::VecDeque;
     use ToposortGroupingStrategy::*;
 
     struct TargetStrategy<G: IntoEdgesDirected> {
@@ -322,7 +326,7 @@ where
             push: VecDeque::push_front,
             pushed: VecDeque::front,
             degree_target: EdgeRef::source,
-        }
+        },
     };
 
     let mut layers: VecDeque<Vec<G::NodeId>> = VecDeque::new();
@@ -341,7 +345,7 @@ where
     let mut final_layer: Vec<G::NodeId> = Vec::new();
 
     while !layer.is_empty() {
-        (target_strategy.push)(&mut layers, std::mem::take(&mut layer));
+        (target_strategy.push)(&mut layers, core::mem::take(&mut layer));
 
         for &node in (target_strategy.pushed)(&layers).unwrap() {
             for node_child in g.neighbors_directed(node, target_strategy.direction) {
@@ -350,7 +354,12 @@ where
                 degree[node_child_index] -= 1;
 
                 if degree[node_child_index] == 0 {
-                    if target_strategy.separate_final && g.neighbors_directed(node_child, target_strategy.direction).peekable().peek().is_none() {
+                    if target_strategy.separate_final
+                        && g.neighbors_directed(node_child, target_strategy.direction)
+                            .peekable()
+                            .peek()
+                            .is_none()
+                    {
                         final_layer.push(node_child);
                     } else {
                         layer.push(node_child);
