@@ -329,25 +329,25 @@ where
         },
     };
 
-    let mut layers: VecDeque<Vec<G::NodeId>> = VecDeque::new();
+    let mut groups: VecDeque<Vec<G::NodeId>> = VecDeque::new();
     let mut degree = vec![0usize; g.node_count()].into_boxed_slice();
 
     for edge in g.edge_references() {
         degree[g.to_index((target_strategy.degree_target)(&edge))] += 1;
     }
 
-    let mut layer: Vec<G::NodeId> = degree
+    let mut group: Vec<G::NodeId> = degree
         .iter()
         .enumerate()
         .filter_map(|(i, &d)| (d == 0).then(|| g.from_index(i)))
         .collect::<Vec<G::NodeId>>();
 
-    let mut final_layer: Vec<G::NodeId> = Vec::new();
+    let mut group_final: Vec<G::NodeId> = Vec::new();
 
-    while !layer.is_empty() {
-        (target_strategy.push)(&mut layers, core::mem::take(&mut layer));
+    while !group.is_empty() {
+        (target_strategy.push)(&mut groups, core::mem::take(&mut group));
 
-        for &node in (target_strategy.pushed)(&layers).unwrap() {
+        for &node in (target_strategy.pushed)(&groups).unwrap() {
             for node_child in g.neighbors_directed(node, target_strategy.direction) {
                 let node_child_index = g.to_index(node_child);
 
@@ -360,23 +360,23 @@ where
                             .peek()
                             .is_none()
                     {
-                        final_layer.push(node_child);
+                        group_final.push(node_child);
                     } else {
-                        layer.push(node_child);
+                        group.push(node_child);
                     }
                 }
             }
         }
     }
 
-    if !final_layer.is_empty() {
-        (target_strategy.push)(&mut layers, final_layer);
+    if !group_final.is_empty() {
+        (target_strategy.push)(&mut groups, group_final);
     }
 
     if let Some(cycle_index) = degree.iter().position(|&x| x > 0) {
         Err(Cycle(g.from_index(degree[cycle_index])))
     } else {
-        Ok(layers.into())
+        Ok(groups.into())
     }
 }
 
