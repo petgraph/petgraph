@@ -43,8 +43,9 @@ use crate::prelude::*;
 use super::graph::IndexType;
 use super::unionfind::UnionFind;
 use super::visit::{
-    GraphBase, GraphRef, IntoEdgeReferences, IntoNeighbors, IntoNeighborsDirected,
-    IntoNodeIdentifiers, NodeCompactIndexable, NodeIndexable, Reversed, VisitMap, Visitable,
+    GraphBase, GraphRef, IntoEdgeReferences, IntoEdgesDirected, IntoNeighbors,
+    IntoNeighborsDirected, IntoNodeIdentifiers, NodeCompactIndexable, NodeCount, NodeIndexable,
+    Reversed, VisitMap, Visitable,
 };
 use super::EdgeType;
 use crate::visit::Walker;
@@ -263,6 +264,122 @@ where
 
         Ok(finish_stack)
     })
+}
+
+/// Grouping strategy for toposort_grouped.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ToposortGroupingStrategy {
+    /// Nodes are placed within the first group possible.
+    Eager,
+    /// Nodes are placed within the first group possible, with the last group separate.
+    EagerExceptLast,
+    /// Nodes are placed within the last group possible.
+    Lazy,
+    /// Nodes are placed within the last group possible, with the first group separate.
+    LazyExceptFirst,
+}
+
+/// Perform a grouped topological sort of a directed graph.
+///
+/// `toposort_grouped` returns `Err` on graphs with cycles.
+///
+/// The implementation is iterative.
+///
+/// # Arguments
+/// * `g`: an acyclic directed graph.
+/// * `strategy`: grouping strategy.
+///
+/// # Returns
+/// * `Ok`: a vector of vectors of nodes in topological order: each group is ordered before its
+///   successors, while the order of nodes within a group is undefined (if the graph was acyclic).
+/// * `Err`: [`Cycle`] if the graph was not acyclic. Self loops are also cycles this case.
+pub fn toposort_grouped<G>(
+    g: G,
+    strategy: ToposortGroupingStrategy,
+) -> Result<Vec<Vec<G::NodeId>>, Cycle<G::NodeId>>
+where
+    G: IntoEdgesDirected + NodeIndexable + NodeCount,
+{
+    use alloc::collections::VecDeque;
+    use ToposortGroupingStrategy::*;
+
+    #[allow(clippy::type_complexity)]
+    struct TargetStrategy<G: IntoEdgesDirected> {
+        pub separate_final: bool,
+        pub direction: Direction,
+        pub push: fn(&mut VecDeque<Vec<G::NodeId>>, Vec<G::NodeId>),
+        pub pushed: fn(&VecDeque<Vec<G::NodeId>>) -> Option<&Vec<G::NodeId>>,
+        pub degree_target: fn(&G::EdgeRef) -> G::NodeId,
+    }
+
+    let target_strategy: TargetStrategy<G> = match strategy {
+        Eager | EagerExceptLast => TargetStrategy {
+            separate_final: matches!(strategy, EagerExceptLast),
+            direction: Outgoing,
+            push: VecDeque::push_back,
+            pushed: VecDeque::back,
+            degree_target: EdgeRef::target,
+        },
+        Lazy | LazyExceptFirst => TargetStrategy {
+            separate_final: matches!(strategy, LazyExceptFirst),
+            direction: Incoming,
+            push: VecDeque::push_front,
+            pushed: VecDeque::front,
+            degree_target: EdgeRef::source,
+        },
+    };
+
+    let mut groups: VecDeque<Vec<G::NodeId>> = VecDeque::new();
+    let mut degree = vec![0usize; g.node_count()].into_boxed_slice();
+
+    for edge in g.edge_references() {
+        degree[g.to_index((target_strategy.degree_target)(&edge))] += 1;
+    }
+
+    let mut group: Vec<G::NodeId> = degree
+        .iter()
+        .enumerate()
+        .filter(|(_, &d)| d == 0)
+        .map(|(i, _)| g.from_index(i))
+        .collect::<Vec<G::NodeId>>();
+
+    let mut group_final: Vec<G::NodeId> = Vec::new();
+
+    while !group.is_empty() {
+        (target_strategy.push)(&mut groups, core::mem::take(&mut group));
+
+        for &node in (target_strategy.pushed)(&groups).unwrap() {
+            for node_child in g.neighbors_directed(node, target_strategy.direction) {
+                let node_child_index = g.to_index(node_child);
+
+                degree[node_child_index] -= 1;
+
+                if degree[node_child_index] == 0 {
+                    if target_strategy.separate_final
+                        && g.neighbors_directed(node_child, target_strategy.direction)
+                            .peekable()
+                            .peek()
+                            .is_none()
+                    {
+                        group_final.push(node_child);
+                    } else {
+                        group.push(node_child);
+                    }
+                }
+            }
+        }
+    }
+
+    if !group_final.is_empty() {
+        (target_strategy.push)(&mut groups, group_final);
+    }
+
+    if let Some(cycle_index) = degree.iter().position(|&x| x > 0) {
+        Err(Cycle(g.from_index(degree[cycle_index])))
+    } else {
+        Ok(groups.into())
+    }
 }
 
 /// Return `true` if the input directed graph contains a cycle.
@@ -515,7 +632,7 @@ where
 
 /// An algorithm error: a cycle was found in the graph.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Cycle<N>(pub(crate) N);
+pub struct Cycle<N>(pub N);
 
 impl<N> Cycle<N> {
     /// Return a node id that participates in the cycle
