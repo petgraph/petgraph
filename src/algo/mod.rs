@@ -304,6 +304,7 @@ where
     use alloc::collections::VecDeque;
     use ToposortGroupingStrategy::*;
 
+    #[allow(clippy::type_complexity)]
     struct TargetStrategy<G: IntoEdgesDirected> {
         pub separate_final: bool,
         pub direction: Direction,
@@ -339,7 +340,8 @@ where
     let mut group: Vec<G::NodeId> = degree
         .iter()
         .enumerate()
-        .filter_map(|(i, &d)| (d == 0).then(|| g.from_index(i)))
+        .filter(|(_, &d)| d == 0)
+        .map(|(i, _)| g.from_index(i))
         .collect::<Vec<G::NodeId>>();
 
     let mut group_final: Vec<G::NodeId> = Vec::new();
