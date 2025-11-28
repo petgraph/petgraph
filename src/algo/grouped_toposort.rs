@@ -7,7 +7,9 @@ use crate::visit::{EdgeRef, GraphBase, IntoEdgeReferences, IntoNeighborsDirected
 /// 
 /// May be reused with [grouped_toposort_raw].
 pub struct GroupedToposort<NodeId>{
-    sorted: Vec<NodeId>, 
+    sorted: Vec<NodeId>,
+    // We use "span" as (start, len) instead of Range - because it is marginally
+    // faster to build slice with it.
     /// `(start, len)` as [sorted] index range, that forms each group/layer. 
     group_spans: Vec<(usize, usize)>
 }
@@ -135,16 +137,11 @@ where
     // that's our "level". With that, we achieve grouping by levels.
     //
     // We use `result` itself as a queue.
-    let mut level_start = 0;
-    while level_start != result.len() {
-        let level_end = result.len();
-        let range = level_start..level_end;
+    let mut range = 0..result.len();
+    while !range.is_empty() {
+        levels.push((range.start, range.len()));
         
-        levels.push((level_start, level_end-level_start));
-        
-        level_start = level_end;
-        
-        for i in range {
+        for i in range.clone() {
             // TODO: use get_unchecked everywhere - for performance.
             let node = result[i];
             for succ in graph.neighbors_directed(node, Direction::Outgoing) {
@@ -155,6 +152,8 @@ where
                 }
             }
         }
+        
+        range = range.end .. result.len();
     }
     
     if result.len() == node_count {
