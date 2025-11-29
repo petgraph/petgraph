@@ -1,4 +1,4 @@
-use std::ptr::slice_from_raw_parts;
+use core::ptr::slice_from_raw_parts;
 use alloc::vec::Vec;
 use crate::Direction;
 use crate::visit::{EdgeRef, GraphBase, IntoEdgeReferences, IntoNeighborsDirected, IntoNodeIdentifiers, NodeCount, NodeIndexable};
@@ -50,7 +50,7 @@ impl<NodeId> GroupedToposort<NodeId>{
 /// More low-level version of [grouped_toposort].
 /// 
 /// Useful if you already have necessary data. Also, completely 
-/// eliminate allocations, if `out` and `roots` are big enough.
+/// eliminate allocations, if `out` is big enough.
 /// 
 /// # Return
 /// 
