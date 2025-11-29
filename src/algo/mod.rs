@@ -35,6 +35,7 @@ pub mod spfa;
 #[cfg(feature = "stable_graph")]
 pub mod steiner_tree;
 pub mod tred;
+pub mod grouped_toposort;
 
 use alloc::{vec, vec::Vec};
 
