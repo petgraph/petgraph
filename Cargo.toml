@@ -1,5 +1,6 @@
 [workspace]
-members = ["crates/petgraph", "serialization-tests"]
+members = ["crates/core","crates/petgraph", "serialization-tests"]
+resolver = "3"
 
 [workspace.package]
 authors = [
