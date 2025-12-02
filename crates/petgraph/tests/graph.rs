@@ -2265,10 +2265,10 @@ fn dfs_visit() {
             if n == prune {
                 return Control::Prune;
             }
-        } else if let TreeEdge(u, v) = event {
-            if v == nongoal {
-                return Control::Break(u);
-            }
+        } else if let TreeEdge(u, v) = event
+            && v == nongoal
+        {
+            return Control::Break(u);
         }
         Control::Continue
     });

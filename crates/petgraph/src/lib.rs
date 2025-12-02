@@ -465,6 +465,7 @@ Optionally, the following features can be enabled:
 */
 #![doc(html_root_url = "https://docs.rs/petgraph/0.4/")]
 #![no_std]
+#![allow(clippy::all)]
 
 extern crate alloc;
 
@@ -527,10 +528,10 @@ pub mod prelude;
 /// `Graph<N, E, Ty, Ix>` is a graph datastructure using an adjacency list representation.
 pub mod graph {
     pub use crate::graph_impl::{
-        edge_index, node_index, DefaultIx, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference,
-        EdgeReferences, EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen, Graph,
-        GraphError, GraphIndex, IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences,
-        NodeWeightsMut, UnGraph, WalkNeighbors,
+        DefaultIx, DiGraph, Edge, EdgeIndex, EdgeIndices, EdgeReference, EdgeReferences,
+        EdgeWeightsMut, Edges, EdgesConnecting, Externals, Frozen, Graph, GraphError, GraphIndex,
+        IndexType, Neighbors, Node, NodeIndex, NodeIndices, NodeReferences, NodeWeightsMut,
+        UnGraph, WalkNeighbors, edge_index, node_index,
     };
 }
 

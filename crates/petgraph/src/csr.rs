@@ -2,7 +2,7 @@
 
 use alloc::{vec, vec::Vec};
 use core::{
-    cmp::{max, Ordering},
+    cmp::{Ordering, max},
     fmt,
     iter::zip,
     iter::{Enumerate, Zip},
@@ -36,10 +36,6 @@ pub enum CsrError {
     IndicesOutBounds(usize, usize),
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for CsrError {}
-
-#[cfg(not(feature = "std"))]
 impl core::error::Error for CsrError {}
 
 impl fmt::Display for CsrError {
@@ -906,12 +902,12 @@ mod tests {
     use std::println;
 
     use super::Csr;
+    use crate::Undirected;
     use crate::algo::bellman_ford;
     use crate::algo::find_negative_cycle;
     use crate::algo::tarjan_scc;
     use crate::visit::Dfs;
     use crate::visit::VisitMap;
-    use crate::Undirected;
 
     #[test]
     fn csr1() {

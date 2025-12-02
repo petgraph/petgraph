@@ -13,6 +13,7 @@ use fixedbitset::FixedBitSet;
 use indexmap::IndexSet;
 
 use crate::{
+    Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirected,
     data::Build,
     graph::NodeIndex as GraphNodeIndex,
     visit::{
@@ -20,7 +21,6 @@ use crate::{
         IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
         IntoNodeReferences, NodeCount, NodeIndexable, Visitable,
     },
-    Directed, Direction, EdgeType, IntoWeightedEdge, Outgoing, Undirected,
 };
 
 #[cfg(feature = "std")]
@@ -115,11 +115,7 @@ impl<T: Zero> Nullable for NotZero<T> {
 
     #[doc(hidden)]
     fn as_ref(&self) -> Option<&Self::Wrapped> {
-        if !self.is_null() {
-            Some(&self.0)
-        } else {
-            None
-        }
+        if !self.is_null() { Some(&self.0) } else { None }
     }
 
     #[doc(hidden)]
@@ -199,10 +195,6 @@ pub enum MatrixError {
     NodeMissed(usize),
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for MatrixError {}
-
-#[cfg(not(feature = "std"))]
 impl core::error::Error for MatrixError {}
 
 impl fmt::Display for MatrixError {
