@@ -1,5 +1,4 @@
 [package]
-
 name = "petgraph"
 version = "0.8.3"
 readme = "README.md"
@@ -28,7 +27,7 @@ edition = "2021"
 authors = ["bluss", "mitchmindtree"]
 
 [workspace]
-members = [".", "serialization-tests"]
+members = [".", "crates/petgraph", "serialization-tests"]
 
 [lib]
 bench = false
