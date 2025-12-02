@@ -4,6 +4,9 @@
 
 petgraph
 ===
+
+> **Warning:** The version currently on the trunk branch is the new development version which is currently in the process of transitioning to a multi-crate layout and new architecture. The previous release is available under the `0.8` branch.
+
 Petgraph provides fast, flexible graph data structures and algorithms
 in Rust. Supporting both directed and undirected graphs with arbitrary
 node and edge data. It comes with:
