@@ -1,8 +1,9 @@
 //! `UnionFind<K>` is a disjoint-set data structure.
 
-use super::graph::IndexType;
 use alloc::{collections::TryReserveError, vec, vec::Vec};
 use core::cmp::Ordering;
+
+use super::graph::IndexType;
 
 /// `UnionFind<K>` is a disjoint-set data structure. It tracks set membership of *n* elements
 /// indexed from *0* to *n - 1*. The scalar type is `K` which must be an unsigned integer type.
@@ -304,7 +305,7 @@ impl<K> UnionFind<K> {
     /// ```
     /// use petgraph::unionfind::UnionFind;
     ///
-    /// let mut uf: UnionFind<u32> =  UnionFind::new_empty();
+    /// let mut uf: UnionFind<u32> = UnionFind::new_empty();
     /// uf.reserve_exact(10);
     /// assert!(uf.capacity() >= 10);
     /// ```
@@ -359,8 +360,9 @@ impl<K> UnionFind<K> {
     /// Shrinks the capacity of the `UnionFind` as much as possible.
     ///
     /// The behavior of this method depends on the allocator, which may either shrink the
-    /// collection in-place or reallocate. The resulting `UnionFind` might still have some excess capacity, just as
-    /// is the case for [`with_capacity`]. See [`Vec::shrink_to_fit`] for more details, since the implementation is based on this method.
+    /// collection in-place or reallocate. The resulting `UnionFind` might still have some excess
+    /// capacity, just as is the case for [`with_capacity`]. See [`Vec::shrink_to_fit`] for more
+    /// details, since the implementation is based on this method.
     ///
     /// [`with_capacity`]: UnionFind::with_capacity
     ///

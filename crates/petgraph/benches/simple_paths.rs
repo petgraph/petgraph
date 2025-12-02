@@ -7,8 +7,10 @@ mod common;
 
 use common::ungraph;
 use hashbrown::HashSet;
-use petgraph::algo::{all_simple_paths, all_simple_paths_multi};
-use petgraph::prelude::*;
+use petgraph::{
+    algo::{all_simple_paths, all_simple_paths_multi},
+    prelude::*,
+};
 use test::Bencher;
 
 #[bench]

@@ -4,10 +4,9 @@ extern crate petgraph;
 extern crate test;
 
 use core::cmp::{max, min};
-use petgraph::prelude::*;
-use test::Bencher;
 
-use petgraph::algo::spfa;
+use petgraph::{algo::spfa, prelude::*};
+use test::Bencher;
 
 #[bench]
 fn spfa_bench(bench: &mut Bencher) {

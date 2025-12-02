@@ -1,10 +1,6 @@
 use core::marker::PhantomData;
 
-use petgraph::data::Build;
-use petgraph::prelude::*;
-use petgraph::visit::NodeIndexable;
-
-use petgraph::EdgeType;
+use petgraph::{EdgeType, data::Build, prelude::*, visit::NodeIndexable};
 
 /// Petersen A and B are isomorphic
 ///

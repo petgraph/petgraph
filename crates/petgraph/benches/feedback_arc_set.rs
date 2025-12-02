@@ -3,9 +3,8 @@
 extern crate petgraph;
 extern crate test;
 
-use test::Bencher;
-
 use petgraph::algo::greedy_feedback_arc_set;
+use test::Bencher;
 
 #[allow(dead_code)]
 mod common;

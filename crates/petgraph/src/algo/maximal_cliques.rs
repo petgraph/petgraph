@@ -1,8 +1,9 @@
-use crate::visit::{GetAdjacencyMatrix, IntoNeighbors, IntoNodeIdentifiers};
 use alloc::vec::Vec;
-use core::hash::Hash;
-use core::iter::FromIterator;
+use core::{hash::Hash, iter::FromIterator};
+
 use hashbrown::HashSet;
+
+use crate::visit::{GetAdjacencyMatrix, IntoNeighbors, IntoNodeIdentifiers};
 
 /// Finds maximal cliques containing all the vertices in r, some of the
 /// vertices in p, and none of the vertices in x.
@@ -35,7 +36,10 @@ where
     let u = p.iter().max_by_key(|&v| g.neighbors(*v).count()).unwrap();
     let mut todo = p
         .iter()
-        .filter(|&v| *u == *v || !g.is_adjacent(adj_mat, *u, *v) || !g.is_adjacent(adj_mat, *v, *u)) //skip neighbors of pivot
+        .filter(
+            //skip neighbors of pivot
+            |&v| *u == *v || !g.is_adjacent(adj_mat, *u, *v) || !g.is_adjacent(adj_mat, *v, *u),
+        )
         .cloned()
         .collect::<Vec<G::NodeId>>();
     while let Some(v) = todo.pop() {
@@ -76,7 +80,8 @@ where
 /// * `g`: The graph to find maximal cliques in.
 ///
 /// # Returns
-/// * `Vec<HashSet>`: A vector of [`struct@hashbrown::HashSet`] making up the maximal cliques in the graph.
+/// * `Vec<HashSet>`: A vector of [`struct@hashbrown::HashSet`] making up the maximal cliques in the
+///   graph.
 ///
 /// # Complexity
 /// * Time complexity: **O(3^(|V|/3))**
@@ -90,8 +95,7 @@ where
 /// # Example
 ///
 /// ```
-/// use petgraph::algo::maximal_cliques;
-/// use petgraph::graph::UnGraph;
+/// use petgraph::{algo::maximal_cliques, graph::UnGraph};
 ///
 /// let mut g = UnGraph::<i32, ()>::from_edges([(0, 1), (0, 2), (1, 2), (2, 3)]);
 /// g.add_node(4);

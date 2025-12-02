@@ -4,18 +4,22 @@ use core::{cmp::min, hash::Hash};
 use fixedbitset::FixedBitSet;
 use hashbrown::{HashMap, HashSet};
 
-use crate::visit;
-use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRef};
+use crate::{
+    visit,
+    visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRef},
+};
 
 /// Find articulation points in a graph using [Tarjan's algorithm](https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm).
 ///
-/// Compute the articulation points of a graph (Nodes, which would increase the number of connected components in the graph.
+/// Compute the articulation points of a graph (Nodes, which would increase the number of connected
+/// components in the graph.
 ///
 /// # Arguments
 /// * `graph`: A directed graph.
 ///
 /// # Returns
-/// * `HashSet`: [`struct@hashbrown::HashSet`] of the node ids which correspond to the articulation points of the graph.
+/// * `HashSet`: [`struct@hashbrown::HashSet`] of the node ids which correspond to the articulation
+///   points of the graph.
 ///
 /// # Complexity
 /// - Time complexity: **O(|V| + |E|)**,
@@ -27,9 +31,8 @@ use crate::visit::{EdgeRef, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRe
 /// # Examples
 /// ```rust
 /// use petgraph::{
-///     algo::articulation_points,
+///     algo::{articulation_points, articulation_points::articulation_points},
 ///     graph::{NodeIndex, UnGraph},
-///     algo::articulation_points::articulation_points,
 /// };
 ///
 /// let mut gr = UnGraph::<&str, ()>::new_undirected();

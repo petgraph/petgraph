@@ -30,7 +30,8 @@ use crate::{
 /// # Returns
 /// Returns a tuple of two values:
 /// * `N::EdgeWeight`: computed maximum flow;
-/// * `Vec<N::EdgeWeight>`: the flow of each edge. The vector is indexed by the graph's edge indices.
+/// * `Vec<N::EdgeWeight>`: the flow of each edge. The vector is indexed by the graph's edge
+///   indices.
 ///
 /// # Complexity
 /// * Time complexity:
@@ -45,8 +46,7 @@ use crate::{
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::dinics;
+/// use petgraph::{Graph, algo::dinics};
 /// // Example from CLRS book
 /// let mut graph = Graph::<u8, u8>::new();
 /// let source = graph.add_node(0);
@@ -56,16 +56,16 @@ use crate::{
 /// let _ = graph.add_node(4);
 /// let destination = graph.add_node(5);
 /// graph.extend_with_edges(&[
-///    (0, 1, 16),
-///    (0, 2, 13),
-///    (1, 2, 10),
-///    (1, 3, 12),
-///    (2, 1, 4),
-///    (2, 4, 14),
-///    (3, 2, 9),
-///    (3, 5, 20),
-///    (4, 3, 7),
-///    (4, 5, 4),
+///     (0, 1, 16),
+///     (0, 2, 13),
+///     (1, 2, 10),
+///     (1, 3, 12),
+///     (2, 1, 4),
+///     (2, 4, 14),
+///     (3, 2, 9),
+///     (3, 5, 20),
+///     (4, 3, 7),
+///     (4, 5, 4),
 /// ]);
 /// let (max_flow, _) = dinics(&graph, source, destination);
 /// assert_eq!(23, max_flow);

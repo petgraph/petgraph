@@ -8,14 +8,15 @@ extern crate defmac;
 use std::collections::HashSet;
 
 use itertools::assert_equal;
-use petgraph::adj::IndexType;
-use petgraph::algo::{kosaraju_scc, min_spanning_tree, tarjan_scc};
-use petgraph::dot::Dot;
-use petgraph::prelude::*;
-use petgraph::stable_graph::edge_index as e;
-use petgraph::stable_graph::node_index as n;
-use petgraph::visit::{EdgeIndexable, IntoEdgeReferences, IntoNodeReferences, NodeIndexable};
-use petgraph::EdgeType;
+use petgraph::{
+    EdgeType,
+    adj::IndexType,
+    algo::{kosaraju_scc, min_spanning_tree, tarjan_scc},
+    dot::Dot,
+    prelude::*,
+    stable_graph::{edge_index as e, node_index as n},
+    visit::{EdgeIndexable, IntoEdgeReferences, IntoNodeReferences, NodeIndexable},
+};
 
 fn assert_graph_consistent<N, E, Ty, Ix>(g: &StableGraph<N, E, Ty, Ix>)
 where
@@ -460,8 +461,7 @@ fn from() {
     assert!(edges_eq!(&gr5, &ans));
 }
 
-use petgraph::data::FromElements;
-use petgraph::stable_graph::StableGraph;
+use petgraph::{data::FromElements, stable_graph::StableGraph};
 
 #[test]
 fn from_min_spanning_tree() {
@@ -1291,7 +1291,9 @@ fn test_edges_connecting_iteration_order() {
 
     assert_eq!(
         edges_connecting_one_to_two,
-        vec![edge_two, edge_one, edge_zero, edge_five, edge_four, edge_three]
+        vec![
+            edge_two, edge_one, edge_zero, edge_five, edge_four, edge_three
+        ]
     );
 
     let edges_connecting_two_to_one: Vec<_> = g
@@ -1301,6 +1303,8 @@ fn test_edges_connecting_iteration_order() {
 
     assert_eq!(
         edges_connecting_two_to_one,
-        vec![edge_five, edge_four, edge_three, edge_two, edge_one, edge_zero]
+        vec![
+            edge_five, edge_four, edge_three, edge_two, edge_one, edge_zero
+        ]
     );
 }

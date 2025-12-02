@@ -3,30 +3,24 @@ extern crate petgraph;
 use core::hash::Hash;
 use std::collections::HashSet;
 
-use petgraph::EdgeType;
-use petgraph::prelude::*;
-
 use petgraph as pg;
-
-use petgraph::algo::{
-    dominators, has_path_connecting, is_bipartite_undirected, is_cyclic_undirected,
-    is_isomorphic_matching,
-};
-
-use petgraph::graph::node_index as n;
-use petgraph::graph::{GraphError, IndexType};
-
-use petgraph::algo::{DfsSpace, astar, dijkstra};
-use petgraph::visit::{
-    IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, NodeIndexable, Reversed, Topo,
-    VisitMap, Walker,
-};
-
-use petgraph::dot::Dot;
-
 #[cfg(feature = "stable_graph")]
 #[cfg(test)]
 use petgraph::visit::IntoNeighbors;
+use petgraph::{
+    EdgeType,
+    algo::{
+        DfsSpace, astar, dijkstra, dominators, has_path_connecting, is_bipartite_undirected,
+        is_cyclic_undirected, is_isomorphic_matching,
+    },
+    dot::Dot,
+    graph::{GraphError, IndexType, node_index as n},
+    prelude::*,
+    visit::{
+        IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, NodeIndexable, Reversed,
+        Topo, VisitMap, Walker,
+    },
+};
 
 fn set<I>(iter: I) -> HashSet<I::Item>
 where
@@ -1993,7 +1987,8 @@ fn dot() {
     let dot_output = format!("{:?}", Dot::new(&gr));
     assert_eq!(
         dot_output,
-        // The single \ turns into four \\\\ because of Debug which turns it to \\ and then escaping each \ to \\.
+        // The single \ turns into four \\\\ because of Debug which turns it to \\ and then
+        // escaping each \ to \\.
         r#"digraph {
     0 [ label = "Record { a: 1, b: \"abc\\\\\" }" ]
     0 -> 0 [ label = "(1, 2)" ]
@@ -2174,10 +2169,7 @@ fn filtered_edge_reverse() {
 
 #[test]
 fn dfs_visit() {
-    use petgraph::visit::Control;
-    use petgraph::visit::DfsEvent::*;
-    use petgraph::visit::{Time, depth_first_search};
-    use petgraph::visit::{VisitMap, Visitable};
+    use petgraph::visit::{Control, DfsEvent::*, Time, VisitMap, Visitable, depth_first_search};
     let gr: Graph<(), ()> = Graph::from_edges([
         (0, 5),
         (0, 2),
@@ -2298,9 +2290,10 @@ fn filtered_post_order() {
 
 #[test]
 fn filter_elements() {
-    use petgraph::data::Element::{Edge, Node};
-    use petgraph::data::ElementIterator;
-    use petgraph::data::FromElements;
+    use petgraph::data::{
+        Element::{Edge, Node},
+        ElementIterator, FromElements,
+    };
     let elements = vec![
         Node { weight: "A" },
         Node { weight: "B" },
@@ -2375,9 +2368,10 @@ fn filter_elements() {
 
 #[test]
 fn test_edge_filtered() {
-    use petgraph::algo::connected_components;
-    use petgraph::visit::EdgeFiltered;
-    use petgraph::visit::IntoEdgeReferences;
+    use petgraph::{
+        algo::connected_components,
+        visit::{EdgeFiltered, IntoEdgeReferences},
+    };
 
     let gr = UnGraph::<(), _>::from_edges([
         // cycle

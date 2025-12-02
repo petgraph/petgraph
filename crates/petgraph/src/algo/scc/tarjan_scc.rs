@@ -8,7 +8,8 @@ struct NodeData {
     rootindex: Option<NonZeroUsize>,
 }
 
-/// A reusable state for computing the *strongly connected components* using [Tarjan's algorithm][1].
+/// A reusable state for computing the *strongly connected components* using [Tarjan's
+/// algorithm][1].
 ///
 /// [1]: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 #[derive(Debug)]
@@ -29,16 +30,17 @@ impl<N> TarjanScc<N> {
     /// Creates a new `TarjanScc`
     pub fn new() -> Self {
         TarjanScc {
-            index: 1,                   // Invariant: index < componentcount at all times.
-            componentcount: usize::MAX, // Will hold if componentcount is initialized to number of nodes - 1 or higher.
+            index: 1, // Invariant: index < componentcount at all times.
+            componentcount: usize::MAX, /* Will hold if componentcount is initialized to number
+                       * of nodes - 1 or higher. */
             nodes: Vec::new(),
             stack: Vec::new(),
         }
     }
 
     /// Compute the *strongly connected components* using Algorithm 3 in
-    /// [A Space-Efficient Algorithm for Finding Strongly Connected Components][1] by David J. Pierce,
-    /// which is a memory-efficient variation of [Tarjan's algorithm][2].
+    /// [A Space-Efficient Algorithm for Finding Strongly Connected Components][1] by David J.
+    /// Pierce, which is a memory-efficient variation of [Tarjan's algorithm][2].
     ///
     ///
     /// [1]: https://homepages.ecs.vuw.ac.nz/~djp/files/P05.pdf
@@ -131,7 +133,8 @@ impl<N> TarjanScc<N> {
         }
     }
 
-    /// Returns the index of the component in which v has been assigned. Allows for using self as a lookup table for an scc decomposition produced by self.run().
+    /// Returns the index of the component in which v has been assigned. Allows for using self as a
+    /// lookup table for an scc decomposition produced by self.run().
     pub fn node_component_index<G>(&self, g: G, v: N) -> usize
     where
         G: IntoNeighbors<NodeId = N> + NodeIndexable<NodeId = N>,
@@ -178,9 +181,7 @@ impl<N> TarjanScc<N> {
 /// # Examples
 ///
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::tarjan_scc;
-/// use petgraph::prelude::*;
+/// use petgraph::{Graph, algo::tarjan_scc, prelude::*};
 ///
 /// let mut graph: Graph<char, (), Directed> = Graph::new();
 /// let a = graph.add_node('A');
@@ -190,8 +191,11 @@ impl<N> TarjanScc<N> {
 /// let e = graph.add_node('E');
 ///
 /// graph.extend_with_edges(&[
-///     (a, b), (b, c), (c, a),  // SCC 1: A -> B -> C -> A
-///     (b, d), (d, e),          // D and E form individual SCCs
+///     (a, b),
+///     (b, c),
+///     (c, a), // SCC 1: A -> B -> C -> A
+///     (b, d),
+///     (d, e), // D and E form individual SCCs
 /// ]);
 ///
 /// // Graph structure:
@@ -211,9 +215,7 @@ impl<N> TarjanScc<N> {
 /// Using `TarjanScc` for reusable computation:
 ///
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::TarjanScc;
-/// use petgraph::prelude::*;
+/// use petgraph::{Graph, algo::TarjanScc, prelude::*};
 ///
 /// let mut graph: Graph<u32, (), Directed> = Graph::new();
 /// let n1 = graph.add_node(1);
@@ -222,8 +224,10 @@ impl<N> TarjanScc<N> {
 /// let n4 = graph.add_node(4);
 ///
 /// graph.extend_with_edges(&[
-///     (n1, n2), (n2, n3), (n3, n1),  // Cycle: 1 -> 2 -> 3 -> 1
-///     (n2, n4),                       // Branch to isolated node 4
+///     (n1, n2),
+///     (n2, n3),
+///     (n3, n1), // Cycle: 1 -> 2 -> 3 -> 1
+///     (n2, n4), // Branch to isolated node 4
 /// ]);
 ///
 /// let mut tarjan = TarjanScc::new();
@@ -239,9 +243,7 @@ impl<N> TarjanScc<N> {
 /// For an undirected graph (SCCs are just connected components):
 ///
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::tarjan_scc;
-/// use petgraph::prelude::*;
+/// use petgraph::{Graph, algo::tarjan_scc, prelude::*};
 ///
 /// let mut graph: Graph<i32, (), Undirected> = Graph::new_undirected();
 /// let a = graph.add_node(1);

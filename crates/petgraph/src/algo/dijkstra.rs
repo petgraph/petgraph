@@ -1,14 +1,17 @@
 use alloc::collections::BinaryHeap;
 use core::hash::Hash;
+
 use hashbrown::hash_map::{
     Entry::{Occupied, Vacant},
     HashMap,
 };
 
-use crate::algo::Measure;
-use crate::scored::MinScored;
-use crate::visit::{EdgeRef, IntoEdges, IntoEdgesDirected, VisitMap, Visitable};
-use crate::Direction;
+use crate::{
+    Direction,
+    algo::Measure,
+    scored::MinScored,
+    visit::{EdgeRef, IntoEdges, IntoEdgesDirected, VisitMap, Visitable},
+};
 
 /// Dijkstra's shortest path algorithm.
 ///
@@ -38,10 +41,8 @@ use crate::Direction;
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::dijkstra;
-/// use petgraph::prelude::*;
 /// use hashbrown::HashMap;
+/// use petgraph::{Graph, algo::dijkstra, prelude::*};
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
@@ -80,7 +81,10 @@ use crate::Direction;
 ///     (f, 2),
 ///     (g, 3),
 ///     (h, 4),
-/// ].iter().cloned().collect();
+/// ]
+/// .iter()
+/// .cloned()
+/// .collect();
 /// let res = dijkstra(&graph, b, None, |_| 1);
 /// assert_eq!(res, expected_res);
 /// // z is not inside res because there is not path from b to z.
@@ -118,10 +122,8 @@ pub struct AlgoResult<N, K> {
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::dijkstra;
-/// use petgraph::prelude::*;
 /// use hashbrown::HashMap;
+/// use petgraph::{Graph, algo::dijkstra, prelude::*};
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
@@ -151,13 +153,10 @@ pub struct AlgoResult<N, K> {
 /// // |       v       |       v
 /// // d <---- c       h <---- g
 ///
-/// let expected_res: HashMap<NodeIndex, usize> = [
-///     (b, 0),
-///     (c, 1),
-///     (d, 2),
-///     (e, 1),
-///     (f, 2),
-/// ].iter().cloned().collect();
+/// let expected_res: HashMap<NodeIndex, usize> = [(b, 0), (c, 1), (d, 2), (e, 1), (f, 2)]
+///     .iter()
+///     .cloned()
+///     .collect();
 /// let res = dijkstra::with_dynamic_goal(&graph, b, |&node| node == d || node == f, |_| 1);
 /// assert_eq!(res.scores, expected_res);
 /// assert!(res.goal_node == Some(d) || res.goal_node == Some(f));
@@ -221,13 +220,14 @@ where
 ///
 /// Compute the length of the shortest path from `start` to `target`.
 ///
-/// Bidirectional Dijkstra has the same time complexity as standard [`Dijkstra`][dijkstra]. However, because it
-/// searches simultaneously from both the start and goal nodes, meeting in the middle, it often
-/// explores roughly half the nodes that regular [`Dijkstra`][dijkstra] would explore. This is especially the case
-/// when the path is long relative to the graph size or when working with sparse graphs.
+/// Bidirectional Dijkstra has the same time complexity as standard [`Dijkstra`][dijkstra]. However,
+/// because it searches simultaneously from both the start and goal nodes, meeting in the middle, it
+/// often explores roughly half the nodes that regular [`Dijkstra`][dijkstra] would explore. This is
+/// especially the case when the path is long relative to the graph size or when working with sparse
+/// graphs.
 ///
-/// However, regular [`Dijkstra`][dijkstra] may be preferable when you need the shortest paths from the start node
-/// to multiple goals or when the start and goal are relatively close to each other.
+/// However, regular [`Dijkstra`][dijkstra] may be preferable when you need the shortest paths from
+/// the start node to multiple goals or when the start and goal are relatively close to each other.
 ///
 /// The function `edge_cost` should return the cost for a particular edge, which is used
 /// to compute path costs. Edge costs must be non-negative.
@@ -250,10 +250,8 @@ where
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::bidirectional_dijkstra;
-/// use petgraph::prelude::*;
 /// use hashbrown::HashMap;
+/// use petgraph::{Graph, algo::bidirectional_dijkstra, prelude::*};
 ///
 /// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(());

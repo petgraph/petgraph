@@ -3,18 +3,20 @@ use core::{fmt::Debug, hash::Hash};
 
 use hashbrown::{HashMap, HashSet};
 
-use crate::algo::floyd_warshall::floyd_warshall_path;
-use crate::algo::{dijkstra, min_spanning_tree, BoundedMeasure, Measure};
-use crate::data::FromElements;
-use crate::graph::{IndexType, NodeIndex, UnGraph};
-use crate::visit::{
-    Data, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoNeighbors,
-    IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeIndexable, Visitable,
-};
-use crate::Undirected;
-
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph::StableGraph;
+use crate::{
+    Undirected,
+    algo::{
+        BoundedMeasure, Measure, dijkstra, floyd_warshall::floyd_warshall_path, min_spanning_tree,
+    },
+    data::FromElements,
+    graph::{IndexType, NodeIndex, UnGraph},
+    visit::{
+        Data, EdgeRef, GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoNeighbors,
+        IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeIndexable, Visitable,
+    },
+};
 
 type Edge<G> = (<G as GraphBase>::NodeId, <G as GraphBase>::NodeId);
 type Subgraph<G> = HashSet<<G as GraphBase>::NodeId>;
@@ -130,11 +132,13 @@ where
 /// [Steiner Tree][1] algorithm.
 ///
 /// Computes the Steiner tree of an undirected connected graph given a set of terminal nodes via
-/// [Kou's algorithm][2]. Implementation details are the same as in the [NetworkX implementation][3].
+/// [Kou's algorithm][2]. Implementation details are the same as in the [NetworkX
+/// implementation][3].
 ///
 /// ## Arguments
 /// * `graph`: The undirected graph in which to find the Steiner tree.
-/// * `terminals`: A slice of node indices representing the terminals for which the Steiner tree is computed.
+/// * `terminals`: A slice of node indices representing the terminals for which the Steiner tree is
+///   computed.
 ///
 /// ## Returns
 /// A `StableGraph` containing the nodes and edges of the Steiner tree.
@@ -150,9 +154,7 @@ where
 /// # Example
 ///
 /// ```
-/// use petgraph::Graph;
-/// use petgraph::algo::steiner_tree::steiner_tree;
-/// use petgraph::graph::UnGraph;
+/// use petgraph::{Graph, algo::steiner_tree::steiner_tree, graph::UnGraph};
 /// let mut graph = UnGraph::<(), i32>::default();
 /// let a = graph.add_node(());
 /// let b = graph.add_node(());
@@ -217,11 +219,11 @@ mod test {
     use hashbrown::{HashMap, HashSet};
 
     use super::{compute_metric_closure, non_terminal_leaves, subgraph_edges_from_metric_closure};
-    use crate::graph::NodeIndex;
     use crate::{
-        algo::{min_spanning_tree, EdgeRef, UnGraph},
-        data::FromElements,
         Graph, Undirected,
+        algo::{EdgeRef, UnGraph, min_spanning_tree},
+        data::FromElements,
+        graph::NodeIndex,
     };
 
     #[test]

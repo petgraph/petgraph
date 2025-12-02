@@ -4,9 +4,10 @@
 extern crate petgraph;
 extern crate test;
 
+use std::hash::BuildHasher;
+
 use petgraph::prelude::*;
 use rayon::iter::ParallelIterator;
-use std::hash::BuildHasher;
 use test::Bencher;
 
 #[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]

@@ -1,12 +1,12 @@
 extern crate petgraph;
 use core::hash::Hash;
+
 use hashbrown::HashSet;
-use petgraph::graph::{DiGraph, UnGraph};
 use petgraph::{
-    algo::maximal_cliques,
-    graph::Graph,
-    visit::{GetAdjacencyMatrix, IntoNeighbors, IntoNodeIdentifiers},
     Undirected,
+    algo::maximal_cliques,
+    graph::{DiGraph, Graph, UnGraph},
+    visit::{GetAdjacencyMatrix, IntoNeighbors, IntoNodeIdentifiers},
 };
 
 /// (reference implementation)

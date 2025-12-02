@@ -1,8 +1,6 @@
-use petgraph::algo::ford_fulkerson;
-use petgraph::prelude::Graph;
 #[cfg(feature = "stable_graph")]
 use petgraph::prelude::{StableDiGraph, StableGraph};
-use petgraph::Directed;
+use petgraph::{Directed, algo::ford_fulkerson, prelude::Graph};
 
 #[test]
 fn test_ford_fulkerson() {

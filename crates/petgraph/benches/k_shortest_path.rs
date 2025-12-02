@@ -4,10 +4,9 @@ extern crate petgraph;
 extern crate test;
 
 use core::cmp::{max, min};
-use petgraph::prelude::*;
-use test::Bencher;
 
-use petgraph::algo::k_shortest_path;
+use petgraph::{algo::k_shortest_path, prelude::*};
+use test::Bencher;
 
 #[bench]
 #[allow(clippy::needless_range_loop)]

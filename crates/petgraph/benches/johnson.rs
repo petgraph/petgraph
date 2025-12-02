@@ -6,12 +6,10 @@ extern crate test;
 #[allow(dead_code)]
 mod common;
 use common::*;
-
 use petgraph::algo::johnson;
-use test::Bencher;
-
 #[cfg(feature = "rayon")]
 use petgraph::algo::parallel_johnson;
+use test::Bencher;
 
 #[bench]
 fn johnson_sparse_100_nodes(bench: &mut Bencher) {

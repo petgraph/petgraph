@@ -1,18 +1,15 @@
+#[cfg(feature = "graphmap")]
+use petgraph::graphmap::GraphMap;
+#[cfg(feature = "matrix_graph")]
+use petgraph::matrix_graph::MatrixGraph;
+#[cfg(feature = "stable_graph")]
+use petgraph::stable_graph::StableGraph;
 use petgraph::{
+    Directed, EdgeType, Graph, Undirected,
     adj::List,
     csr::Csr,
     visit::{EdgeRef, GetAdjacencyMatrix, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers},
-    Directed, EdgeType, Graph, Undirected,
 };
-
-#[cfg(feature = "graphmap")]
-use petgraph::graphmap::GraphMap;
-
-#[cfg(feature = "matrix_graph")]
-use petgraph::matrix_graph::MatrixGraph;
-
-#[cfg(feature = "stable_graph")]
-use petgraph::stable_graph::StableGraph;
 
 fn test_adjacency_matrix<G>(g: G)
 where

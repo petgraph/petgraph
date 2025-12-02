@@ -3,8 +3,7 @@
 extern crate petgraph;
 extern crate test;
 
-use petgraph::algo::articulation_points::articulation_points;
-use petgraph::prelude::*;
+use petgraph::{algo::articulation_points::articulation_points, prelude::*};
 use test::Bencher;
 
 #[bench]

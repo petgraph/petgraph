@@ -12,26 +12,24 @@ use core::{
     ops::{Deref, Index, IndexMut},
     slice::Iter,
 };
-
-use hashbrown::HashSet;
-use indexmap::{
-    map::{Iter as IndexMapIter, IterMut as IndexMapIterMut, Keys},
-    IndexMap,
-};
-
-use crate::{
-    data,
-    graph::{node_index, Graph},
-    visit, Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected,
-};
-
 #[cfg(feature = "std")]
 use std::collections::hash_map::RandomState;
 
+use hashbrown::HashSet;
+use indexmap::{
+    IndexMap,
+    map::{Iter as IndexMapIter, IterMut as IndexMapIterMut, Keys},
+};
 #[cfg(feature = "rayon")]
 use {
     indexmap::map::rayon::{ParIter, ParIterMut, ParKeys},
     rayon::prelude::*,
+};
+
+use crate::{
+    Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected, data,
+    graph::{Graph, node_index},
+    visit,
 };
 
 /// A `GraphMap` with undirected edges.
@@ -58,14 +56,12 @@ pub type DiGraphMap<N, E, #[cfg(not(feature = "std"))] S, #[cfg(feature = "std")
 /// `GraphMap` is parameterized over:
 ///
 /// - Associated data `N` for nodes and `E` for edges, called *weights*.
-/// - The node weight `N` must implement `Copy` and will be used as node
-///   identifier, duplicated into several places in the data structure.
-///   It must be suitable as a hash table key (implementing `Eq + Hash`).
-///   The node type must also implement `Ord` so that the implementation can
-///   order the pair (`a`, `b`) for an edge connecting any two nodes `a` and `b`.
+/// - The node weight `N` must implement `Copy` and will be used as node identifier, duplicated into
+///   several places in the data structure. It must be suitable as a hash table key (implementing
+///   `Eq + Hash`). The node type must also implement `Ord` so that the implementation can order the
+///   pair (`a`, `b`) for an edge connecting any two nodes `a` and `b`.
 /// - `E` can be of arbitrary type.
-/// - Edge type `Ty` that determines whether the graph edges are directed or
-///   undirected.
+/// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
 ///
 /// You can use the type aliases `UnGraphMap` and `DiGraphMap` for convenience.
 ///
@@ -264,11 +260,7 @@ where
     ///
     /// // Create a new undirected GraphMap.
     /// // Use a type hint to have `()` be the edge weight type.
-    /// let gr = UnGraphMap::<_, ()>::from_edges(&[
-    ///     (0, 1), (0, 2), (0, 3),
-    ///     (1, 2), (1, 3),
-    ///     (2, 3),
-    /// ]);
+    /// let gr = UnGraphMap::<_, ()>::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
     /// ```
     pub fn from_edges<I>(iterable: I) -> Self
     where
@@ -596,12 +588,13 @@ where
 
     /// Return a `Graph` that corresponds to this `GraphMap`.
     ///
-    /// 1. Note that node and edge indices in the `Graph` have nothing in common
-    ///    with the `GraphMap`s node weights `N`. The node weights `N` are used as
-    ///    node weights in the resulting `Graph`, too.
+    /// 1. Note that node and edge indices in the `Graph` have nothing in common with the
+    ///    `GraphMap`s node weights `N`. The node weights `N` are used as node weights in the
+    ///    resulting `Graph`, too.
     /// 2. Note that the index type is user-chosen.
     ///
-    /// Computes in **O(|V| + |E|)** time (average) where V is the set of nodes and E is the set of edges.
+    /// Computes in **O(|V| + |E|)** time (average) where V is the set of nodes and E is the set of
+    /// edges.
     ///
     /// **Panics** if the number of nodes or edges does not fit with
     /// the resulting graph's index type.
@@ -725,6 +718,7 @@ where
     Ty: EdgeType,
 {
     type Item = N;
+
     fn next(&mut self) -> Option<N> {
         if Ty::is_directed() {
             (&mut self.iter)
@@ -734,6 +728,7 @@ where
             self.iter.next().map(|&(n, _)| n)
         }
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, upper) = self.iter.size_hint();
         if Ty::is_directed() {
@@ -762,6 +757,7 @@ where
     Ty: EdgeType,
 {
     type Item = N;
+
     fn next(&mut self) -> Option<N> {
         if Ty::is_directed() {
             let self_dir = self.dir;
@@ -779,6 +775,7 @@ where
             self.iter.next().map(|&(n, _)| n)
         }
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, upper) = self.iter.size_hint();
         if Ty::is_directed() {
@@ -815,6 +812,7 @@ where
     S: BuildHasher,
 {
     type Item = (N, N, &'a E);
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|b| {
             let a = self.from;
@@ -824,6 +822,7 @@ where
             }
         })
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -856,6 +855,7 @@ where
     S: BuildHasher,
 {
     type Item = (N, N, &'a E);
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|mut b| {
             let mut a = self.from;
@@ -868,6 +868,7 @@ where
             }
         })
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -889,6 +890,7 @@ where
     Ty: EdgeType,
 {
     type Item = (N, N, &'a E);
+
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|(&(a, b), v)| (a, b, v))
     }
@@ -931,7 +933,8 @@ pub struct AllEdgesMut<'a, N, E: 'a, Ty>
 where
     N: 'a + NodeTrait,
 {
-    inner: IndexMapIterMut<'a, (N, N), E>, // TODO: change to something that implements Debug + Clone?
+    inner: IndexMapIterMut<'a, (N, N), E>, /* TODO: change to something that implements Debug +
+                                            * Clone? */
     ty: PhantomData<Ty>,
 }
 
@@ -942,6 +945,7 @@ where
     Ty: EdgeType,
 {
     type Item = (N, N, &'a mut E);
+
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
@@ -990,6 +994,7 @@ where
     S: BuildHasher,
 {
     type Output = E;
+
     fn index(&self, index: (N, N)) -> &E {
         let index = Self::edge_key(index.0, index.1);
         self.edge_weight(index.0, index.1)
@@ -1064,6 +1069,7 @@ impl<'b, T> Ord for Ptr<'b, T> {
 
 impl<T> Deref for Ptr<'_, T> {
     type Target = T;
+
     fn deref(&self) -> &T {
         self.0
     }
@@ -1101,9 +1107,11 @@ where
     Ty: EdgeType,
 {
     type Item = N;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(&n, _)| n)
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -1126,9 +1134,11 @@ where
     Ty: EdgeType,
 {
     type Item = (N, &'a N);
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(n, _)| (*n, n))
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -1139,8 +1149,8 @@ where
     N: Copy + PartialEq,
     S: BuildHasher,
 {
-    type NodeId = N;
     type EdgeId = (N, N);
+    type NodeId = N;
 }
 
 impl<N, E, Ty, S> visit::Data for GraphMap<N, E, Ty, S>
@@ -1149,8 +1159,8 @@ where
     Ty: EdgeType,
     S: BuildHasher,
 {
-    type NodeWeight = N;
     type EdgeWeight = E;
+    type NodeWeight = N;
 }
 
 impl<N, E, Ty, S> visit::Visitable for GraphMap<N, E, Ty, S>
@@ -1160,9 +1170,11 @@ where
     S: BuildHasher,
 {
     type Map = HashSet<N>;
+
     fn visit_map(&self) -> HashSet<N> {
         HashSet::with_capacity(self.node_count())
     }
+
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
     }
@@ -1185,6 +1197,7 @@ where
 {
     type NodeRef = (N, &'a N);
     type NodeReferences = NodeReferences<'a, N, E, Ty>;
+
     fn node_references(self) -> Self::NodeReferences {
         NodeReferences {
             iter: self.nodes.iter(),
@@ -1231,9 +1244,11 @@ where
     fn node_bound(&self) -> usize {
         self.node_count()
     }
+
     fn to_index(&self, ix: Self::NodeId) -> usize {
         self.nodes.get_index_of(&ix).expect("node not found")
     }
+
     fn from_index(&self, ix: usize) -> Self::NodeId {
         assert!(
             ix < self.nodes.len(),
@@ -1259,6 +1274,7 @@ where
     S: BuildHasher,
 {
     type Neighbors = Neighbors<'a, N, Ty>;
+
     fn neighbors(self, n: Self::NodeId) -> Self::Neighbors {
         self.neighbors(n)
     }
@@ -1271,6 +1287,7 @@ where
     S: BuildHasher,
 {
     type NeighborsDirected = NeighborsDirected<'a, N, Ty>;
+
     fn neighbors_directed(self, n: N, dir: Direction) -> Self::NeighborsDirected {
         self.neighbors_directed(n, dir)
     }
@@ -1307,6 +1324,7 @@ where
     S: BuildHasher,
 {
     type Edges = Edges<'a, N, E, Ty, S>;
+
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         self.edges(a)
     }
@@ -1319,6 +1337,7 @@ where
     S: BuildHasher,
 {
     type EdgesDirected = EdgesDirected<'a, N, E, Ty, S>;
+
     fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::EdgesDirected {
         self.edges_directed(a, dir)
     }
@@ -1332,6 +1351,7 @@ where
 {
     type EdgeRef = (N, N, &'a E);
     type EdgeReferences = AllEdges<'a, N, E, Ty>;
+
     fn edge_references(self) -> Self::EdgeReferences {
         self.all_edges()
     }
@@ -1357,8 +1377,10 @@ where
     S: BuildHasher,
 {
     type AdjMatrix = ();
+
     #[inline]
     fn adjacency_matrix(&self) {}
+
     #[inline]
     fn is_adjacent(&self, _: &(), a: N, b: N) -> bool {
         self.contains_edge(a, b)
@@ -1376,7 +1398,8 @@ where
     }
 
     fn node_weight(&self, id: Self::NodeId) -> Option<&Self::NodeWeight> {
-        // Technically `id` is already the weight for `GraphMap`, but since we need to return a reference, this is a O(1) borrowing alternative:
+        // Technically `id` is already the weight for `GraphMap`, but since we need to return a
+        // reference, this is a O(1) borrowing alternative:
         self.nodes.get_key_value(&id).map(|(k, _)| k)
     }
 }

@@ -1,17 +1,14 @@
-use petgraph::{
-    csr::Csr,
-    graph6::{from_graph6_representation, get_graph6_representation, FromGraph6, ToGraph6},
-    Graph, Undirected,
-};
-
 #[cfg(feature = "graphmap")]
 use petgraph::graphmap::GraphMap;
-
 #[cfg(feature = "matrix_graph")]
 use petgraph::matrix_graph::UnMatrix;
-
 #[cfg(feature = "stable_graph")]
 use petgraph::stable_graph::StableGraph;
+use petgraph::{
+    Graph, Undirected,
+    csr::Csr,
+    graph6::{FromGraph6, ToGraph6, from_graph6_representation, get_graph6_representation},
+};
 
 #[test]
 fn generic_graph6_encoder_test_cases() {

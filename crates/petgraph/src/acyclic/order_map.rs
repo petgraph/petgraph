@@ -7,7 +7,7 @@ use alloc::{collections::BTreeMap, vec, vec::Vec};
 use core::{fmt, ops::RangeBounds};
 
 use crate::{
-    algo::{toposort, Cycle},
+    algo::{Cycle, toposort},
     visit::{GraphBase, IntoNeighborsDirected, IntoNodeIdentifiers, NodeIndexable, Visitable},
 };
 

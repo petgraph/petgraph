@@ -1,15 +1,15 @@
 use fixedbitset::FixedBitSet;
 
-use super::EdgeType;
-
-use super::graph::{Graph, IndexType, NodeIndex};
+use super::{
+    EdgeType,
+    graph::{Graph, IndexType, NodeIndex},
+    visit::GetAdjacencyMatrix,
+};
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph::StableGraph;
 use crate::visit::EdgeRef;
 #[cfg(feature = "stable_graph")]
 use crate::visit::{IntoEdgeReferences, NodeIndexable};
-
-use super::visit::GetAdjacencyMatrix;
 
 /// The adjacency matrix for **Graph** is a bitmap that's computed by
 /// `.adjacency_matrix()`.

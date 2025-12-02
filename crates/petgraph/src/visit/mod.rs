@@ -62,27 +62,21 @@
 
 // filter, reversed have their `mod` lines at the end,
 // so that they can use the trait template macros
-pub use self::filter::*;
-pub use self::reversed::*;
-pub use self::undirected_adaptor::*;
+pub use self::{filter::*, reversed::*, undirected_adaptor::*};
 
 #[macro_use]
 mod macros;
 
 mod dfsvisit;
 mod traversal;
-pub use self::dfsvisit::*;
-pub use self::traversal::*;
-
 use core::hash::{BuildHasher, Hash};
 
 use fixedbitset::FixedBitSet;
 use hashbrown::HashSet;
 
+pub use self::{dfsvisit::*, traversal::*};
 use super::EdgeType;
-use crate::prelude::Direction;
-
-use crate::graph::IndexType;
+use crate::{graph::IndexType, prelude::Direction};
 
 trait_template! {
 /// Base graph trait: defines the associated node identifier and
@@ -238,19 +232,22 @@ impl<N, E> EdgeRef for (N, N, &E)
 where
     N: Copy,
 {
-    type NodeId = N;
     type EdgeId = (N, N);
+    type NodeId = N;
     type Weight = E;
 
     fn source(&self) -> N {
         self.0
     }
+
     fn target(&self) -> N {
         self.1
     }
+
     fn weight(&self) -> &E {
         self.2
     }
+
     fn id(&self) -> (N, N) {
         (self.0, self.1)
     }
@@ -283,9 +280,11 @@ where
 {
     type NodeId = Id;
     type Weight = ();
+
     fn id(&self) -> Self::NodeId {
         self.0
     }
+
     fn weight(&self) -> &Self::Weight {
         static DUMMY: () = ();
         &DUMMY
@@ -298,9 +297,11 @@ where
 {
     type NodeId = Id;
     type Weight = W;
+
     fn id(&self) -> Self::NodeId {
         self.0
     }
+
     fn weight(&self) -> &Self::Weight {
         self.1
     }
@@ -407,7 +408,8 @@ pub trait VisitMap<N> {
 
     /// Mark `a` as unvisited.
     ///
-    /// Return **true** if this vertex was marked as visited at the time of unsetting it, false otherwise.
+    /// Return **true** if this vertex was marked as visited at the time of unsetting it, false
+    /// otherwise.
     fn unvisit(&mut self, _a: N) -> bool;
 }
 
@@ -418,6 +420,7 @@ where
     fn visit(&mut self, x: Ix) -> bool {
         !self.put(x.index())
     }
+
     fn is_visited(&self, x: &Ix) -> bool {
         self.contains(x.index())
     }
@@ -439,6 +442,7 @@ where
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
     }
+
     fn is_visited(&self, x: &N) -> bool {
         self.contains(x)
     }
@@ -457,6 +461,7 @@ where
     fn visit(&mut self, x: N) -> bool {
         self.insert(x)
     }
+
     fn is_visited(&self, x: &N) -> bool {
         self.contains(x)
     }

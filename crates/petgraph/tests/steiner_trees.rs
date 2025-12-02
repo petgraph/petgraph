@@ -1,8 +1,8 @@
 #[cfg(feature = "stable_graph")]
 #[cfg(test)]
 use petgraph::{
-    graph::{NodeIndex, UnGraph},
     Graph, Undirected,
+    graph::{NodeIndex, UnGraph},
 };
 
 #[cfg(feature = "stable_graph")]
@@ -346,8 +346,10 @@ fn example_kou_paper() -> (UnGraph<(), usize>, Vec<NodeIndex>) {
         (4, 8, 1),
         (4, 4, 1),
         (5, 6, 1),
-        (6, 7, 0), // Note: In the Kou Paper this is 0.5, but the nodes are not present in terminals, so we approximate this with 0
-        (7, 8, 0), // Note: In the Kou Paper this is 0.5, but the nodes are not present in terminals, so we approximate this with 0
+        (6, 7, 0), /* Note: In the Kou Paper this is 0.5, but the nodes are not present in
+                    * terminals, so we approximate this with 0 */
+        (7, 8, 0), /* Note: In the Kou Paper this is 0.5, but the nodes are not present in
+                    * terminals, so we approximate this with 0 */
     ];
 
     // Add edges to the graph
@@ -361,9 +363,12 @@ fn example_kou_paper() -> (UnGraph<(), usize>, Vec<NodeIndex>) {
 #[cfg(feature = "stable_graph")]
 #[cfg(test)]
 mod test {
+    use petgraph::{
+        algo::{connected_components, steiner_tree},
+        graph::UnGraph,
+    };
+
     use crate::{b01_example, b07_example, example_kou_paper};
-    use petgraph::algo::{connected_components, steiner_tree};
-    use petgraph::graph::UnGraph;
 
     #[test]
     fn b01_vienna_test() {

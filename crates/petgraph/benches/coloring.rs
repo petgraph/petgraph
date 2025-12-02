@@ -4,10 +4,9 @@ extern crate petgraph;
 extern crate test;
 
 use core::cmp::{max, min};
-use petgraph::prelude::*;
-use test::Bencher;
 
-use petgraph::algo::dsatur_coloring;
+use petgraph::{algo::dsatur_coloring, prelude::*};
+use test::Bencher;
 
 #[bench]
 fn dsatur_coloring_bench(bench: &mut Bencher) {

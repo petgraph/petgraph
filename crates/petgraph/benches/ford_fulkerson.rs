@@ -2,8 +2,10 @@
 extern crate petgraph;
 extern crate test;
 
-use petgraph::algo::ford_fulkerson;
-use petgraph::prelude::{Graph, NodeIndex};
+use petgraph::{
+    algo::ford_fulkerson,
+    prelude::{Graph, NodeIndex},
+};
 use test::Bencher;
 
 #[bench]

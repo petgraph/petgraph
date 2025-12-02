@@ -342,8 +342,7 @@ impl<G: GraphBase> PartialEq for Label<G> {
 /// # Examples
 ///
 /// ```
-/// use petgraph::prelude::*;
-/// use petgraph::algo::maximum_matching;
+/// use petgraph::{algo::maximum_matching, prelude::*};
 ///
 /// // The example graph:
 /// //

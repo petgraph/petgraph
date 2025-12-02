@@ -485,10 +485,9 @@ extern crate serde_derive;
 #[cfg(all(feature = "serde-1", test))]
 extern crate itertools;
 
+pub use crate::Direction::{Incoming, Outgoing};
 #[doc(no_inline)]
 pub use crate::graph::Graph;
-
-pub use crate::Direction::{Incoming, Outgoing};
 
 #[macro_use]
 mod macros;
@@ -631,6 +630,7 @@ where
 
 impl<Ix, E> IntoWeightedEdge<E> for (Ix, Ix, E) {
     type NodeId = Ix;
+
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         self
     }
@@ -641,6 +641,7 @@ where
     E: Clone,
 {
     type NodeId = Ix;
+
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (a, b, c) = self;
         (a, b, c.clone())
@@ -653,6 +654,7 @@ where
     E: Default,
 {
     type NodeId = Ix;
+
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         let (s, t) = *self;
         (s, t, E::default())
@@ -665,6 +667,7 @@ where
     E: Clone,
 {
     type NodeId = Ix;
+
     fn into_weighted_edge(self) -> (Ix, Ix, E) {
         self.clone()
     }

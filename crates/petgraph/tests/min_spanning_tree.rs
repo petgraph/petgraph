@@ -1,8 +1,8 @@
 use petgraph::{
+    Graph, Undirected,
     algo::{min_spanning_tree, min_spanning_tree_prim},
     dot::Dot,
     graph::{NodeIndex, UnGraph},
-    Graph, Undirected,
 };
 
 #[test]

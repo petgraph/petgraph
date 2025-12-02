@@ -1,17 +1,14 @@
 //! Johnson's algorithm implementation.
-use alloc::collections::VecDeque;
-use alloc::{vec, vec::Vec};
-use core::hash::Hash;
-use core::ops::Sub;
+use alloc::{collections::VecDeque, vec, vec::Vec};
+#[cfg(feature = "rayon")]
+use core::marker::{Send, Sync};
+use core::{hash::Hash, ops::Sub};
 
 use hashbrown::HashMap;
 
-use super::{dijkstra, spfa::spfa_loop};
 pub use super::{BoundedMeasure, NegativeCycle};
+use super::{dijkstra, spfa::spfa_loop};
 use crate::visit::{EdgeRef, IntoEdges, IntoNodeIdentifiers, NodeIndexable, Visitable};
-
-#[cfg(feature = "rayon")]
-use core::marker::{Send, Sync};
 
 /// [Johnson algorithm][johnson] for all pairs shortest path problem.
 ///
@@ -19,7 +16,8 @@ use core::marker::{Send, Sync};
 /// positive or negative edge weights, but no negative cycles.
 ///
 /// The time complexity of this implementation is **O(|V||E|log(|V|) + |V|²*log(|V|))**,
-/// which is faster than [`floyd_warshall`](fn@crate::algo::floyd_warshall) on sparse graphs and slower on dense ones.
+/// which is faster than [`floyd_warshall`](fn@crate::algo::floyd_warshall) on sparse graphs and
+/// slower on dense ones.
 ///
 /// If you are working with a sparse graph that is guaranteed to have no negative weights,
 /// it's preferable to run [`dijkstra`](fn@crate::algo::dijkstra) several times.
@@ -35,7 +33,8 @@ use core::marker::{Send, Sync};
 /// * `Ok`: `HashMap` of shortest distances.
 ///
 /// # Complexity
-/// * Time complexity: **O(|V||E|log(|V|) + |V|²log(|V|))** since the implementation is based on [`dijkstra`](fn@crate::algo::dijkstra).
+/// * Time complexity: **O(|V||E|log(|V|) + |V|²log(|V|))** since the implementation is based on
+///   [`dijkstra`](fn@crate::algo::dijkstra).
 /// * Auxiliary space: **O(|V|² + |V||E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
@@ -45,9 +44,9 @@ use core::marker::{Send, Sync};
 /// # Examples
 ///
 /// ```
-/// use petgraph::{prelude::*, Graph, Directed};
-/// use petgraph::algo::johnson;
 /// use std::collections::HashMap;
+///
+/// use petgraph::{Directed, Graph, algo::johnson, prelude::*};
 ///
 /// let mut graph: Graph<(), i32, Directed> = Graph::new();
 /// let a = graph.add_node(());
@@ -56,12 +55,12 @@ use core::marker::{Send, Sync};
 /// let d = graph.add_node(());
 ///
 /// graph.extend_with_edges(&[
-///    (a, b, 1),
-///    (a, c, 4),
-///    (a, d, 10),
-///    (b, c, 2),
-///    (b, d, 2),
-///    (c, d, 2)
+///     (a, b, 1),
+///     (a, c, 4),
+///     (a, d, 10),
+///     (b, c, 2),
+///     (b, d, 2),
+///     (c, d, 2),
 /// ]);
 ///
 /// //     ----- b --------
@@ -73,21 +72,30 @@ use core::marker::{Send, Sync};
 /// //     --->  d <-------
 ///
 /// let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
-///    ((a, a), 0), ((a, b), 1), ((a, c), 3), ((a, d), 3),
-///    ((b, b), 0), ((b, c), 2), ((b, d), 2),
-///    ((c, c), 0), ((c, d), 2),
-///    ((d, d), 0),
-/// ].iter().cloned().collect();
+///     ((a, a), 0),
+///     ((a, b), 1),
+///     ((a, c), 3),
+///     ((a, d), 3),
+///     ((b, b), 0),
+///     ((b, c), 2),
+///     ((b, d), 2),
+///     ((c, c), 0),
+///     ((c, d), 2),
+///     ((d, d), 0),
+/// ]
+/// .iter()
+/// .cloned()
+/// .collect();
 ///
-///
-/// let res = johnson(&graph, |edge| {
-///     *edge.weight()
-/// }).unwrap();
+/// let res = johnson(&graph, |edge| *edge.weight()).unwrap();
 ///
 /// let nodes = [a, b, c, d];
 /// for node1 in &nodes {
 ///     for node2 in &nodes {
-///         assert_eq!(res.get(&(*node1, *node2)), expected_res.get(&(*node1, *node2)));
+///         assert_eq!(
+///             res.get(&(*node1, *node2)),
+///             expected_res.get(&(*node1, *node2))
+///         );
 ///     }
 /// }
 /// ```
@@ -154,9 +162,9 @@ where
 /// # Examples
 ///
 /// ```
-/// use petgraph::{prelude::*, Graph, Directed};
-/// use petgraph::algo::parallel_johnson;
 /// use std::collections::HashMap;
+///
+/// use petgraph::{Directed, Graph, algo::parallel_johnson, prelude::*};
 ///
 /// let mut graph: Graph<(), i32, Directed> = Graph::new();
 /// let a = graph.add_node(());
@@ -165,12 +173,12 @@ where
 /// let d = graph.add_node(());
 ///
 /// graph.extend_with_edges(&[
-///    (a, b, 1),
-///    (a, c, 4),
-///    (a, d, 10),
-///    (b, c, 2),
-///    (b, d, 2),
-///    (c, d, 2)
+///     (a, b, 1),
+///     (a, c, 4),
+///     (a, d, 10),
+///     (b, c, 2),
+///     (b, d, 2),
+///     (c, d, 2),
 /// ]);
 ///
 /// //     ----- b --------
@@ -182,21 +190,30 @@ where
 /// //     --->  d <-------
 ///
 /// let expected_res: HashMap<(NodeIndex, NodeIndex), i32> = [
-///    ((a, a), 0), ((a, b), 1), ((a, c), 3), ((a, d), 3),
-///    ((b, b), 0), ((b, c), 2), ((b, d), 2),
-///    ((c, c), 0), ((c, d), 2),
-///    ((d, d), 0),
-/// ].iter().cloned().collect();
+///     ((a, a), 0),
+///     ((a, b), 1),
+///     ((a, c), 3),
+///     ((a, d), 3),
+///     ((b, b), 0),
+///     ((b, c), 2),
+///     ((b, d), 2),
+///     ((c, c), 0),
+///     ((c, d), 2),
+///     ((d, d), 0),
+/// ]
+/// .iter()
+/// .cloned()
+/// .collect();
 ///
-///
-/// let res = parallel_johnson(&graph, |edge| {
-///     *edge.weight()
-/// }).unwrap();
+/// let res = parallel_johnson(&graph, |edge| *edge.weight()).unwrap();
 ///
 /// let nodes = [a, b, c, d];
 /// for node1 in &nodes {
 ///     for node2 in &nodes {
-///         assert_eq!(res.get(&(*node1, *node2)), expected_res.get(&(*node1, *node2)));
+///         assert_eq!(
+///             res.get(&(*node1, *node2)),
+///             expected_res.get(&(*node1, *node2))
+///         );
 ///     }
 /// }
 /// ```

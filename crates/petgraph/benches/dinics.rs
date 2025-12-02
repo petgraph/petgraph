@@ -2,8 +2,10 @@
 extern crate petgraph;
 extern crate test;
 
-use petgraph::algo::dinics;
-use petgraph::prelude::{Graph, NodeIndex};
+use petgraph::{
+    algo::dinics,
+    prelude::{Graph, NodeIndex},
+};
 use test::Bencher;
 
 #[bench]

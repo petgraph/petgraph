@@ -1,19 +1,21 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 
 use super::super::serialization::{
-    invalid_hole_err, invalid_length_err, invalid_node_err, EdgeProperty,
+    EdgeProperty, invalid_hole_err, invalid_length_err, invalid_node_err,
 };
-use crate::graph::{Edge, IndexType, Node};
-use crate::prelude::*;
-use crate::serde_utils::{
-    CollectSeqWithLength, FromDeserialized, IntoSerializable, MappedSequenceVisitor,
+use crate::{
+    EdgeType,
+    graph::{Edge, IndexType, Node},
+    prelude::*,
+    serde_utils::{
+        CollectSeqWithLength, FromDeserialized, IntoSerializable, MappedSequenceVisitor,
+    },
+    stable_graph::StableGraph,
+    visit::{EdgeIndexable, NodeIndexable},
 };
-use crate::stable_graph::StableGraph;
-use crate::visit::{EdgeIndexable, NodeIndexable};
-use crate::EdgeType;
 
 // Serialization representation for StableGraph
 // Keep in sync with deserialization and Graph
@@ -154,6 +156,7 @@ where
     Ty: EdgeType,
 {
     type Output = SerStableGraph<'a, N, E, Ix>;
+
     fn into_serializable(self) -> Self::Output {
         let nodes = &self.raw_nodes()[..self.node_bound()];
         let node_count = self.node_count();
@@ -190,6 +193,7 @@ where
     Ty: EdgeType,
 {
     type Input = DeserStableGraph<N, E, Ix>;
+
     fn from_deserialized<E2>(input: Self::Input) -> Result<Self, E2>
     where
         E2: Error,
@@ -262,8 +266,7 @@ fn test_from_deserialized_with_holes() {
     use itertools::assert_equal;
     use serde::de::value::Error as SerdeError;
 
-    use crate::graph::node_index;
-    use crate::stable_graph::StableUnGraph;
+    use crate::{graph::node_index, stable_graph::StableUnGraph};
 
     let input = DeserStableGraph::<_, (), u32> {
         nodes: vec![

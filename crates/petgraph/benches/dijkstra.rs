@@ -7,8 +7,10 @@ extern crate test;
 mod common;
 
 use common::*;
-use petgraph::algo::{bidirectional_dijkstra, dijkstra};
-use petgraph::prelude::*;
+use petgraph::{
+    algo::{bidirectional_dijkstra, dijkstra},
+    prelude::*,
+};
 use test::Bencher;
 
 const RANDOM_GRAPH_SIZE: usize = 10_000;

@@ -38,17 +38,6 @@ pub mod tred;
 
 use alloc::{vec, vec::Vec};
 
-use crate::prelude::*;
-
-use super::graph::IndexType;
-use super::unionfind::UnionFind;
-use super::visit::{
-    GraphBase, GraphRef, IntoEdgeReferences, IntoNeighbors, IntoNeighborsDirected,
-    IntoNodeIdentifiers, NodeCompactIndexable, NodeIndexable, Reversed, VisitMap, Visitable,
-};
-use super::EdgeType;
-use crate::visit::Walker;
-
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
 pub use bridges::bridges;
@@ -61,8 +50,10 @@ pub use isomorphism::{
     subgraph_isomorphisms_iter,
 };
 pub use johnson::johnson;
+#[cfg(feature = "rayon")]
+pub use johnson::parallel_johnson;
 pub use k_shortest_path::k_shortest_path;
-pub use matching::{greedy_matching, maximum_matching, Matching};
+pub use matching::{Matching, greedy_matching, maximum_matching};
 pub use maximal_cliques::maximal_cliques;
 pub use maximum_flow::{dinics, ford_fulkerson};
 pub use min_spanning_tree::{min_spanning_tree, min_spanning_tree_prim};
@@ -71,15 +62,23 @@ pub use page_rank::page_rank;
 pub use scc::scc;
 pub use scc::{
     kosaraju_scc::kosaraju_scc,
-    tarjan_scc::{tarjan_scc, TarjanScc},
+    tarjan_scc::{TarjanScc, tarjan_scc},
 };
 pub use simple_paths::{all_simple_paths, all_simple_paths_multi};
 pub use spfa::spfa;
 #[cfg(feature = "stable_graph")]
 pub use steiner_tree::steiner_tree;
 
-#[cfg(feature = "rayon")]
-pub use johnson::parallel_johnson;
+use super::{
+    EdgeType,
+    graph::IndexType,
+    unionfind::UnionFind,
+    visit::{
+        GraphBase, GraphRef, IntoEdgeReferences, IntoNeighbors, IntoNeighborsDirected,
+        IntoNodeIdentifiers, NodeCompactIndexable, NodeIndexable, Reversed, VisitMap, Visitable,
+    },
+};
+use crate::{prelude::*, visit::Walker};
 
 /// Return the number of connected components of the graph.
 ///
@@ -89,8 +88,8 @@ pub use johnson::parallel_johnson;
 /// * `g`: an input graph.
 ///
 /// # Returns
-/// * `usize`: the number of connected components if `g` is undirected
-///   or number of *weakly* connected components if `g` is directed.
+/// * `usize`: the number of connected components if `g` is undirected or number of *weakly*
+///   connected components if `g` is directed.
 ///
 /// # Complexity
 /// * Time complexity: amortized **O(|E| + |V|log|V|)**.
@@ -100,11 +99,9 @@ pub use johnson::parallel_johnson;
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::connected_components;
-/// use petgraph::prelude::*;
+/// use petgraph::{Graph, algo::connected_components, prelude::*};
 ///
-/// let mut graph : Graph<(),(),Directed>= Graph::new();
+/// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
 /// let b = graph.add_node(());
 /// let c = graph.add_node(());
@@ -122,16 +119,16 @@ pub use johnson::parallel_johnson;
 ///     (e, f),
 ///     (f, g),
 ///     (g, h),
-///     (h, e)
+///     (h, e),
 /// ]);
 /// // a ----> b       e ----> f
 /// // ^       |       ^       |
 /// // |       v       |       v
 /// // d <---- c       h <---- g
 ///
-/// assert_eq!(connected_components(&graph),2);
-/// graph.add_edge(b,e,());
-/// assert_eq!(connected_components(&graph),1);
+/// assert_eq!(connected_components(&graph), 2);
+/// graph.add_edge(b, e, ());
+/// assert_eq!(connected_components(&graph), 1);
 /// ```
 pub fn connected_components<G>(g: G) -> usize
 where
@@ -195,12 +192,12 @@ where
 ///
 /// # Arguments
 /// * `g`: an acyclic directed graph.
-/// * `space`: optional [`DfsSpace`]. If `space` is not `None`,
-///   it is used instead of creating a new workspace for graph traversal.
+/// * `space`: optional [`DfsSpace`]. If `space` is not `None`, it is used instead of creating a new
+///   workspace for graph traversal.
 ///
 /// # Returns
-/// * `Ok`: a vector of nodes in topological order: each node is ordered before its successors
-///   (if the graph was acyclic).
+/// * `Ok`: a vector of nodes in topological order: each node is ordered before its successors (if
+///   the graph was acyclic).
 /// * `Err`: [`Cycle`] if the graph was not acyclic. Self loops are also cycles this case.
 ///
 /// # Complexity
@@ -285,7 +282,7 @@ pub fn is_cyclic_directed<G>(g: G) -> bool
 where
     G: IntoNodeIdentifiers + IntoNeighbors + Visitable,
 {
-    use crate::visit::{depth_first_search, DfsEvent};
+    use crate::visit::{DfsEvent, depth_first_search};
 
     depth_first_search(g, g.node_identifiers(), |event| match event {
         DfsEvent::BackEdge(_, _) => Err(()),
@@ -353,12 +350,12 @@ where
 /// * `g`: an input graph.
 /// * `from`: the first node of a desired path.
 /// * `to`: the last node of a desired path.
-/// * `space`: optional [`DfsSpace`]. If `space` is not `None`,
-///   it is used instead of creating a new workspace for graph traversal.
+/// * `space`: optional [`DfsSpace`]. If `space` is not `None`, it is used instead of creating a new
+///   workspace for graph traversal.
 ///
 /// # Returns
-/// * `true`: if there exists a path starting at `from` and reaching
-///   `to` or `from` and `to` are equal.
+/// * `true`: if there exists a path starting at `from` and reaching `to` or `from` and `to` are
+///   equal.
 /// * `false`: otherwise.
 ///
 /// # Complexity
@@ -386,8 +383,8 @@ where
 ///
 /// # Arguments
 /// * `g`: an input [`Graph`].
-/// * `make_acyclic`: if `true`, self-loops and multi edges are ignored, guaranteeing that
-///   the output is acyclic.
+/// * `make_acyclic`: if `true`, self-loops and multi edges are ignored, guaranteeing that the
+///   output is acyclic.
 ///
 /// # Returns
 /// Returns a `Graph` with nodes `Vec<N>` representing strongly connected components.
@@ -400,11 +397,9 @@ where
 ///
 /// # Examples
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::condensation;
-/// use petgraph::prelude::*;
+/// use petgraph::{Graph, algo::condensation, prelude::*};
 ///
-/// let mut graph : Graph<(),(),Directed> = Graph::new();
+/// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
 /// let b = graph.add_node(());
 /// let c = graph.add_node(());
@@ -423,7 +418,7 @@ where
 ///     (e, f),
 ///     (f, g),
 ///     (g, h),
-///     (h, e)
+///     (h, e),
 /// ]);
 ///
 /// // a ----> b ----> e ----> f
@@ -431,13 +426,19 @@ where
 /// // |       v       |       v
 /// // d <---- c       h <---- g
 ///
-/// let condensed_graph = condensation(graph,false);
+/// let condensed_graph = condensation(graph, false);
 /// let A = NodeIndex::new(0);
 /// let B = NodeIndex::new(1);
 /// assert_eq!(condensed_graph.node_count(), 2);
 /// assert_eq!(condensed_graph.edge_count(), 9);
-/// assert_eq!(condensed_graph.neighbors(A).collect::<Vec<_>>(), vec![A, A, A, A]);
-/// assert_eq!(condensed_graph.neighbors(B).collect::<Vec<_>>(), vec![A, B, B, B, B]);
+/// assert_eq!(
+///     condensed_graph.neighbors(A).collect::<Vec<_>>(),
+///     vec![A, A, A, A]
+/// );
+/// assert_eq!(
+///     condensed_graph.neighbors(B).collect::<Vec<_>>(),
+///     vec![A, B, B, B, B]
+/// );
 /// ```
 /// If `make_acyclic` is true, self-loops and multi edges are ignored:
 ///
@@ -472,7 +473,10 @@ where
 /// let B = NodeIndex::new(1);
 /// assert_eq!(acyclic_condensed_graph.node_count(), 2);
 /// assert_eq!(acyclic_condensed_graph.edge_count(), 1);
-/// assert_eq!(acyclic_condensed_graph.neighbors(B).collect::<Vec<_>>(), vec![A]);
+/// assert_eq!(
+///     acyclic_condensed_graph.neighbors(B).collect::<Vec<_>>(),
+///     vec![A]
+/// );
 /// ```
 pub fn condensation<N, E, Ty, Ix>(
     g: Graph<N, E, Ty, Ix>,
@@ -604,8 +608,7 @@ where
     true
 }
 
-use core::fmt::Debug;
-use core::ops::Add;
+use core::{fmt::Debug, ops::Add};
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Clone {}
@@ -624,12 +627,15 @@ impl FloatMeasure for f32 {
     fn zero() -> Self {
         0.
     }
+
     fn infinite() -> Self {
         1. / 0.
     }
+
     fn from_f32(val: f32) -> Self {
         val
     }
+
     fn from_f64(val: f64) -> Self {
         val as f32
     }
@@ -639,12 +645,15 @@ impl FloatMeasure for f64 {
     fn zero() -> Self {
         0.
     }
+
     fn infinite() -> Self {
         1. / 0.
     }
+
     fn from_f32(val: f32) -> Self {
         val as f64
     }
+
     fn from_f64(val: f64) -> Self {
         val
     }
@@ -686,7 +695,9 @@ macro_rules! impl_bounded_measure_integer(
     };
 );
 
-impl_bounded_measure_integer!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+impl_bounded_measure_integer!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
 
 macro_rules! impl_bounded_measure_float(
     ( $( $t:ident ),* ) => {
@@ -725,7 +736,7 @@ macro_rules! impl_bounded_measure_float(
 impl_bounded_measure_float!(f32, f64);
 
 /// A floating-point measure that can be computed from `usize`
-/// and with a default measure of proximity.  
+/// and with a default measure of proximity.
 pub trait UnitMeasure:
     Measure
     + core::ops::Sub<Self, Output = Self>

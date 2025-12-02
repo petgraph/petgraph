@@ -1,5 +1,4 @@
-use petgraph::algo::dinics;
-use petgraph::prelude::Graph;
+use petgraph::{algo::dinics, prelude::Graph};
 
 #[test]
 fn test_dinics_a() {

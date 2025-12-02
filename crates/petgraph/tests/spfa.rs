@@ -1,7 +1,5 @@
 use hashbrown::HashMap;
-use petgraph::algo::spfa;
-use petgraph::visit::NodeIndexable;
-use petgraph::{prelude::*, Directed, Graph, Undirected};
+use petgraph::{Directed, Graph, Undirected, algo::spfa, prelude::*, visit::NodeIndexable};
 
 #[test]
 fn spfa_uniform_weight() {
@@ -112,7 +110,11 @@ fn spfa_uniform_weight() {
             let n = graph.to_index(*node);
             let dist = res.distances[n];
             let expected_dist = *expected_res.get(&(source, *node)).unwrap();
-            assert_eq!(dist, expected_dist, "The distance between source '{s}' and target '{n}' is {dist}, but {expected_dist} is expected");
+            assert_eq!(
+                dist, expected_dist,
+                "The distance between source '{s}' and target '{n}' is {dist}, but \
+                 {expected_dist} is expected"
+            );
         }
     }
 }
@@ -167,7 +169,11 @@ fn spfa_weighted() {
             let n = graph.to_index(*node);
             let dist = res.distances[n];
             let expected_dist = *expected_res.get(&(source, *node)).unwrap();
-            assert_eq!(dist, expected_dist, "The distance between source '{s}' and target '{n}' is {dist}, but {expected_dist} is expected");
+            assert_eq!(
+                dist, expected_dist,
+                "The distance between source '{s}' and target '{n}' is {dist}, but \
+                 {expected_dist} is expected"
+            );
         }
     }
 }
@@ -221,7 +227,11 @@ fn spfa_weighted_undirected() {
             let n = graph.to_index(*node);
             let dist = res.distances[n];
             let expected_dist = *expected_res.get(&(source, *node)).unwrap();
-            assert_eq!(dist, expected_dist, "The distance between source '{s}' and target '{n}' is {dist}, but {expected_dist} is expected");
+            assert_eq!(
+                dist, expected_dist,
+                "The distance between source '{s}' and target '{n}' is {dist}, but \
+                 {expected_dist} is expected"
+            );
         }
     }
 }
@@ -294,7 +304,11 @@ fn spfa_multiple_edges() {
             let n = graph.to_index(*node);
             let dist = res.distances[n];
             let expected_dist = *expected_res.get(&(source, *node)).unwrap();
-            assert_eq!(dist, expected_dist, "The distance between source '{s}' and target '{n}' is {dist}, but {expected_dist} is expected");
+            assert_eq!(
+                dist, expected_dist,
+                "The distance between source '{s}' and target '{n}' is {dist}, but \
+                 {expected_dist} is expected"
+            );
         }
     }
 }

@@ -1,15 +1,14 @@
 extern crate petgraph;
 
-use std::collections::HashSet;
-use std::fs::File;
-use std::io::prelude::*;
+use std::{collections::HashSet, fs::File, io::prelude::*};
 
-use petgraph::graph::{edge_index, node_index};
-use petgraph::prelude::*;
-use petgraph::EdgeType;
-
-use petgraph::algo::{
-    is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, subgraph_isomorphisms_iter,
+use petgraph::{
+    EdgeType,
+    algo::{
+        is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, subgraph_isomorphisms_iter,
+    },
+    graph::{edge_index, node_index},
+    prelude::*,
 };
 
 /// Petersen A and B are isomorphic

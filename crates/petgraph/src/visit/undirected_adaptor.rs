@@ -1,9 +1,11 @@
-use crate::visit::{
-    Data, EdgeRef, GraphBase, GraphProp, GraphRef, IntoEdgeReferences, IntoEdges,
-    IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
-    IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, Visitable,
+use crate::{
+    Direction,
+    visit::{
+        Data, EdgeRef, GraphBase, GraphProp, GraphRef, IntoEdgeReferences, IntoEdges,
+        IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected, IntoNodeIdentifiers,
+        IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable, Visitable,
+    },
 };
-use crate::Direction;
 
 /// An edge direction removing graph adaptor.
 #[derive(Copy, Clone, Debug)]
@@ -16,6 +18,7 @@ where
     G: IntoNeighborsDirected,
 {
     type Neighbors = core::iter::Chain<G::NeighborsDirected, G::NeighborsDirected>;
+
     fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
         self.0
             .neighbors_directed(n, Direction::Incoming)
@@ -31,6 +34,7 @@ where
         MaybeReversedEdges<G::EdgesDirected>,
         MaybeReversedEdges<G::EdgesDirected>,
     >;
+
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         let incoming = MaybeReversedEdges {
             iter: self.0.edges_directed(a, Direction::Incoming),
@@ -68,12 +72,14 @@ where
     I::Item: EdgeRef,
 {
     type Item = MaybeReversedEdgeReference<I::Item>;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|x| MaybeReversedEdgeReference {
             inner: x,
             reversed: self.reversed,
         })
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -90,9 +96,10 @@ impl<R> EdgeRef for MaybeReversedEdgeReference<R>
 where
     R: EdgeRef,
 {
-    type NodeId = R::NodeId;
     type EdgeId = R::EdgeId;
+    type NodeId = R::NodeId;
     type Weight = R::Weight;
+
     fn source(&self) -> Self::NodeId {
         if self.reversed {
             self.inner.target()
@@ -100,6 +107,7 @@ where
             self.inner.source()
         }
     }
+
     fn target(&self) -> Self::NodeId {
         if self.reversed {
             self.inner.source()
@@ -107,9 +115,11 @@ where
             self.inner.target()
         }
     }
+
     fn weight(&self) -> &Self::Weight {
         self.inner.weight()
     }
+
     fn id(&self) -> Self::EdgeId {
         self.inner.id()
     }
@@ -127,12 +137,14 @@ where
     I::Item: EdgeRef,
 {
     type Item = MaybeReversedEdgeReference<I::Item>;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|x| MaybeReversedEdgeReference {
             inner: x,
             reversed: false,
         })
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -173,9 +185,11 @@ mod tests {
     use std::collections::HashSet;
 
     use super::*;
-    use crate::algo::astar::*;
-    use crate::graph::{DiGraph, Graph};
-    use crate::visit::Dfs;
+    use crate::{
+        algo::astar::*,
+        graph::{DiGraph, Graph},
+        visit::Dfs,
+    };
 
     static LINEAR_EDGES: [(u32, u32); 5] = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)];
 

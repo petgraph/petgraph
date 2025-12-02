@@ -5,20 +5,16 @@ use alloc::{
     vec,
     vec::Vec,
 };
-
-use crate::{csr::Csr, graph::IndexType, Graph, Undirected};
-
-#[cfg(feature = "graphmap")]
-use crate::graphmap::GraphMap;
-
 #[cfg(feature = "graphmap")]
 use core::hash::BuildHasher;
 
+#[cfg(feature = "graphmap")]
+use crate::graphmap::GraphMap;
 #[cfg(feature = "matrix_graph")]
 use crate::matrix_graph::{MatrixGraph, Nullable};
-
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph::{StableGraph, StableUnGraph};
+use crate::{Graph, Undirected, csr::Csr, graph::IndexType};
 
 const N: usize = 63;
 
@@ -46,7 +42,8 @@ where
 }
 
 // Converts a graph6 format string into a vector of bytes, converted from ASCII characters,
-// split into two parts, the first representing the graph order, and the second its adjacency matrix.
+// split into two parts, the first representing the graph order, and the second its adjacency
+// matrix.
 fn get_order_bytes_and_adj_matrix_bytes(graph6_representation: String) -> (Vec<usize>, Vec<usize>) {
     let bytes: Vec<usize> = graph6_representation
         .chars()

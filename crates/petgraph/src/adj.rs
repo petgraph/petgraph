@@ -4,14 +4,15 @@ use core::{fmt, ops::Range};
 
 use fixedbitset::FixedBitSet;
 
-use crate::data::{Build, DataMap, DataMapMut};
-use crate::iter_format::NoPretty;
-use crate::visit::{
-    self, EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount,
-};
-
 #[doc(no_inline)]
 pub use crate::graph::{DefaultIx, IndexType};
+use crate::{
+    data::{Build, DataMap, DataMapMut},
+    iter_format::NoPretty,
+    visit::{
+        self, EdgeCount, EdgeRef, GetAdjacencyMatrix, IntoEdgeReferences, IntoNeighbors, NodeCount,
+    },
+};
 
 /// Adjacency list node index type, a plain integer.
 pub type NodeIndex<Ix = DefaultIx> = Ix;
@@ -78,18 +79,22 @@ impl<E, Ix: IndexType> Clone for EdgeReference<'_, E, Ix> {
 }
 
 impl<E, Ix: IndexType> visit::EdgeRef for EdgeReference<'_, E, Ix> {
-    type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex<Ix>;
+    type NodeId = NodeIndex<Ix>;
     type Weight = E;
+
     fn source(&self) -> Self::NodeId {
         self.id.from
     }
+
     fn target(&self) -> Self::NodeId {
         self.edge.suc
     }
+
     fn id(&self) -> Self::EdgeId {
         self.id
     }
+
     fn weight(&self) -> &Self::Weight {
         &self.edge.weight
     }
@@ -105,6 +110,7 @@ pub struct EdgeIndices<'a, E, Ix: IndexType> {
 
 impl<E, Ix: IndexType> Iterator for EdgeIndices<'_, E, Ix> {
     type Item = EdgeIndex<Ix>;
+
     fn next(&mut self) -> Option<EdgeIndex<Ix>> {
         loop {
             if self.cur < self.row_len {
@@ -142,8 +148,8 @@ iterator_wrap! {
 /// Can be interpreted as a directed graph
 /// with unweighted nodes.
 ///
-/// This is the most simple adjacency list you can imagine. [`Graph`](../graph/struct.Graph.html), in contrast,
-/// maintains both the list of successors and predecessors for each node,
+/// This is the most simple adjacency list you can imagine. [`Graph`](../graph/struct.Graph.html),
+/// in contrast, maintains both the list of successors and predecessors for each node,
 /// which is a different trade-off.
 ///
 /// Allows parallel edges and self-loops.
@@ -416,8 +422,8 @@ impl<E, Ix> visit::GraphBase for List<E, Ix>
 where
     Ix: IndexType,
 {
-    type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex<Ix>;
+    type NodeId = NodeIndex<Ix>;
 }
 
 impl<E, Ix> visit::Visitable for List<E, Ix>
@@ -425,9 +431,11 @@ where
     Ix: IndexType,
 {
     type Map = FixedBitSet;
+
     fn visit_map(&self) -> FixedBitSet {
         FixedBitSet::with_capacity(self.node_count())
     }
+
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
         map.grow(self.node_count());
@@ -436,6 +444,7 @@ where
 
 impl<E, Ix: IndexType> visit::IntoNodeIdentifiers for &List<E, Ix> {
     type NodeIdentifiers = NodeIndices<Ix>;
+
     fn node_identifiers(self) -> NodeIndices<Ix> {
         self.node_indices()
     }
@@ -444,9 +453,11 @@ impl<E, Ix: IndexType> visit::IntoNodeIdentifiers for &List<E, Ix> {
 impl<Ix: IndexType> visit::NodeRef for NodeIndex<Ix> {
     type NodeId = NodeIndex<Ix>;
     type Weight = ();
+
     fn id(&self) -> Self::NodeId {
         *self
     }
+
     fn weight(&self) -> &Self::Weight {
         &()
     }
@@ -455,22 +466,24 @@ impl<Ix: IndexType> visit::NodeRef for NodeIndex<Ix> {
 impl<Ix: IndexType, E> visit::IntoNodeReferences for &List<E, Ix> {
     type NodeRef = NodeIndex<Ix>;
     type NodeReferences = NodeIndices<Ix>;
+
     fn node_references(self) -> Self::NodeReferences {
         self.node_indices()
     }
 }
 
 impl<E, Ix: IndexType> visit::Data for List<E, Ix> {
-    type NodeWeight = ();
     type EdgeWeight = E;
+    type NodeWeight = ();
 }
 
 impl<'a, E, Ix: IndexType> IntoNeighbors for &'a List<E, Ix> {
     type Neighbors = Neighbors<'a, E, Ix>;
+
     /// Returns an iterator of all nodes with an edge starting from `a`.
     /// Panics if `a` is out of bounds.
-    /// Use [`List::edge_indices_from`] instead if you do not want to borrow the adjacency list while
-    /// iterating.
+    /// Use [`List::edge_indices_from`] instead if you do not want to borrow the adjacency list
+    /// while iterating.
     #[track_caller]
     fn neighbors(self, a: NodeIndex<Ix>) -> Self::Neighbors {
         let proj: fn(&WSuc<E, Ix>) -> NodeIndex<Ix> = |x| x.suc;
@@ -527,6 +540,7 @@ fn proj2<E, Ix: IndexType>((row_index, row): (usize, &Vec<WSuc<E, Ix>>)) -> Some
 impl<'a, Ix: IndexType, E> visit::IntoEdgeReferences for &'a List<E, Ix> {
     type EdgeRef = EdgeReference<'a, E, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ix>;
+
     fn edge_references(self) -> Self::EdgeReferences {
         let iter = self.suc.iter().enumerate().flat_map(proj2 as _);
         EdgeReferences { iter }
@@ -544,6 +558,7 @@ iter: SomeIter<'a, E, Ix>,
 
 impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
     type Edges = OutgoingEdgeReferences<'a, E, Ix>;
+
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         let iter = self.suc[a.index()]
             .iter()
@@ -556,6 +571,7 @@ impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
 
 impl<E, Ix: IndexType> visit::GraphProp for List<E, Ix> {
     type EdgeType = crate::Directed;
+
     fn is_directed(&self) -> bool {
         true
     }
@@ -583,10 +599,12 @@ impl<E, Ix: IndexType> visit::NodeIndexable for List<E, Ix> {
     fn node_bound(&self) -> usize {
         self.node_count()
     }
+
     #[inline]
     fn to_index(&self, a: Self::NodeId) -> usize {
         a.index()
     }
+
     #[inline]
     fn from_index(&self, i: usize) -> Self::NodeId {
         Ix::new(i)
@@ -623,6 +641,7 @@ impl<E, Ix: IndexType> DataMapMut for List<E, Ix> {
             None
         }
     }
+
     /// Accesses the weight of edge `e`
     ///
     /// Computes in **O(1)**

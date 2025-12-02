@@ -6,10 +6,8 @@ extern crate test;
 #[allow(dead_code)]
 mod common;
 use common::*;
-
-use test::Bencher;
-
 use petgraph::algo::floyd_warshall;
+use test::Bencher;
 
 #[bench]
 fn floyd_warshall_sparse_100_nodes(bench: &mut Bencher) {

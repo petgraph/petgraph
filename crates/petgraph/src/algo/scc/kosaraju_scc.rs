@@ -1,8 +1,7 @@
-use crate::visit::VisitMap;
 use alloc::vec::Vec;
 
 use crate::visit::{
-    Dfs, DfsPostOrder, IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, Visitable,
+    Dfs, DfsPostOrder, IntoNeighborsDirected, IntoNodeIdentifiers, Reversed, VisitMap, Visitable,
 };
 
 /// Renamed to `kosaraju_scc`.
@@ -37,9 +36,7 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::kosaraju_scc;
-/// use petgraph::prelude::*;
+/// use petgraph::{Graph, algo::kosaraju_scc, prelude::*};
 ///
 /// let mut graph: Graph<i32, (), Directed> = Graph::new();
 /// let a = graph.add_node(1);
@@ -50,9 +47,13 @@ where
 /// let f = graph.add_node(6);
 ///
 /// graph.extend_with_edges(&[
-///     (a, b), (b, c), (c, a),  // First SCC: a -> b -> c -> a
-///     (d, e), (e, f), (f, d),  // Second SCC: d -> e -> f -> d
-///     (c, d),                  // Connection between SCCs
+///     (a, b),
+///     (b, c),
+///     (c, a), // First SCC: a -> b -> c -> a
+///     (d, e),
+///     (e, f),
+///     (f, d), // Second SCC: d -> e -> f -> d
+///     (c, d), // Connection between SCCs
 /// ]);
 ///
 /// // Graph structure:
@@ -71,9 +72,7 @@ where
 /// For a simple directed acyclic graph (DAG):
 ///
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::kosaraju_scc;
-/// use petgraph::prelude::*;
+/// use petgraph::{Graph, algo::kosaraju_scc, prelude::*};
 ///
 /// let mut dag: Graph<&str, (), Directed> = Graph::new();
 /// let a = dag.add_node("A");

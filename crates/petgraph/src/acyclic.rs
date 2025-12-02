@@ -8,23 +8,22 @@ use core::{
     ops::{Deref, RangeBounds},
 };
 
+#[cfg(feature = "stable_graph")]
+use crate::stable_graph::StableDiGraph;
 use crate::{
+    Direction,
     adj::IndexType,
     algo::Cycle,
     data::{Build, Create, DataMap, DataMapMut},
     graph::NodeIndex,
     prelude::DiGraph,
     visit::{
-        dfs_visitor, Control, Data, DfsEvent, EdgeCount, EdgeIndexable, GetAdjacencyMatrix,
-        GraphBase, GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
+        Control, Data, DfsEvent, EdgeCount, EdgeIndexable, GetAdjacencyMatrix, GraphBase,
+        GraphProp, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
         IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
-        NodeCount, NodeIndexable, Reversed, Time, Visitable,
+        NodeCount, NodeIndexable, Reversed, Time, Visitable, dfs_visitor,
     },
-    Direction,
 };
-
-#[cfg(feature = "stable_graph")]
-use crate::stable_graph::StableDiGraph;
 
 mod order_map;
 use fixedbitset::FixedBitSet;
@@ -407,8 +406,8 @@ where
 }
 
 impl<G: Visitable> GraphBase for Acyclic<G> {
-    type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
+    type NodeId = G::NodeId;
 }
 
 impl<G: Default + Visitable> Default for Acyclic<G> {
@@ -563,8 +562,8 @@ where
 // - IntoNodeReferences
 
 impl<G: Visitable + Data> Data for Acyclic<G> {
-    type NodeWeight = G::NodeWeight;
     type EdgeWeight = G::EdgeWeight;
+    type NodeWeight = G::NodeWeight;
 }
 
 impl<G: Visitable + DataMap> DataMap for Acyclic<G> {
@@ -774,11 +773,9 @@ mod tests {
     use alloc::vec::Vec;
 
     use super::*;
-    use crate::prelude::DiGraph;
-    use crate::visit::IntoNodeReferences;
-
     #[cfg(feature = "stable_graph")]
     use crate::prelude::StableDiGraph;
+    use crate::{prelude::DiGraph, visit::IntoNodeReferences};
 
     #[test]
     fn test_acyclic_graph() {
@@ -883,8 +880,7 @@ mod tests {
     #[cfg(feature = "graphmap")]
     #[test]
     fn test_multiedge_allowed() {
-        use crate::prelude::GraphMap;
-        use crate::Directed;
+        use crate::{Directed, prelude::GraphMap};
 
         let mut graph = Acyclic::<GraphMap<usize, (), Directed>>::new();
         graph.add_node(0);

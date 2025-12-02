@@ -13,9 +13,8 @@ pub use crate::graphmap::{DiGraphMap, GraphMap, UnGraphMap};
 #[cfg(feature = "stable_graph")]
 pub use crate::stable_graph::{StableDiGraph, StableGraph, StableUnGraph};
 #[doc(no_inline)]
+pub use crate::visit::EdgeRef;
+#[doc(no_inline)]
 pub use crate::visit::{Bfs, Dfs, DfsPostOrder};
 #[doc(no_inline)]
 pub use crate::{Directed, Direction, Incoming, Outgoing, Undirected};
-
-#[doc(no_inline)]
-pub use crate::visit::EdgeRef;

@@ -1,6 +1,4 @@
-use petgraph::operator::complement;
-use petgraph::prelude::*;
-use petgraph::Graph;
+use petgraph::{Graph, operator::complement, prelude::*};
 
 #[test]
 fn test_complement() {

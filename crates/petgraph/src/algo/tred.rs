@@ -12,18 +12,20 @@ use alloc::{vec, vec::Vec};
 
 use fixedbitset::FixedBitSet;
 
-use crate::adj::{List, UnweightedList};
-use crate::graph::IndexType;
-use crate::visit::{
-    GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount,
+use crate::{
+    Direction,
+    adj::{List, UnweightedList},
+    graph::IndexType,
+    visit::{GraphBase, IntoNeighbors, IntoNeighborsDirected, NodeCompactIndexable, NodeCount},
 };
-use crate::Direction;
 
-/// Creates a representation of the same graph respecting topological order for use in `tred::dag_transitive_reduction_closure`.
+/// Creates a representation of the same graph respecting topological order for use in
+/// `tred::dag_transitive_reduction_closure`.
 ///
 /// # Arguments
 /// * `g`: a directed acyclic graph.
-/// * `toposort`: a topological order on the node indices of `g` (for example obtained from [`toposort`](fn@crate::algo::toposort)).
+/// * `toposort`: a topological order on the node indices of `g` (for example obtained from
+///   [`toposort`](fn@crate::algo::toposort)).
 ///
 /// # Returns
 /// Returns a tuple of:
@@ -46,10 +48,10 @@ use crate::Direction;
 /// # Example
 ///
 /// ```rust
-/// use petgraph::prelude::*;
-/// use petgraph::graph::DefaultIx;
-/// use petgraph::visit::IntoNeighbors;
-/// use petgraph::algo::tred::dag_to_toposorted_adjacency_list;
+/// use petgraph::{
+///     algo::tred::dag_to_toposorted_adjacency_list, graph::DefaultIx, prelude::*,
+///     visit::IntoNeighbors,
+/// };
 ///
 /// let mut g = Graph::<&str, (), Directed, DefaultIx>::new();
 /// let second = g.add_node("second child");
@@ -101,19 +103,18 @@ where
 /// and Rampon.
 ///
 /// # Arguments
-/// * `g`: an input graph in a very specific format: an adjacency
-///   list such that node indices are a toposort, and the neighbors of all nodes are stored in topological order.
-///   To get such a representation, use the function [`dag_to_toposorted_adjacency_list`].
+/// * `g`: an input graph in a very specific format: an adjacency list such that node indices are a
+///   toposort, and the neighbors of all nodes are stored in topological order. To get such a
+///   representation, use the function [`dag_to_toposorted_adjacency_list`].
 ///
 /// # Returns
 /// The output is the pair of the transitive reduction and the transitive closure.
 ///
 /// # Complexity
-/// * Time complexity: **O(|V| + \sum_{(x, y) \in Er} d(y))** where **d(y)**
-///   denotes the outgoing degree of **y** in the transitive closure of **G**
-///   and **Er** the edge set of the transitive reduction.
-///   This is still **O(|V|³)** in the worst case like the naive algorithm but
-///   should perform better for some classes of graphs.
+/// * Time complexity: **O(|V| + \sum_{(x, y) \in Er} d(y))** where **d(y)** denotes the outgoing
+///   degree of **y** in the transitive closure of **G** and **Er** the edge set of the transitive
+///   reduction. This is still **O(|V|³)** in the worst case like the naive algorithm but should
+///   perform better for some classes of graphs.
 /// * Auxiliary space: **O(|E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.

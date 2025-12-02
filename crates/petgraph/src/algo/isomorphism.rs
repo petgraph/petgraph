@@ -1,21 +1,18 @@
 use alloc::{vec, vec::Vec};
 use core::convert::TryFrom;
 
-use crate::data::DataMap;
-use crate::visit::EdgeCount;
-use crate::visit::EdgeRef;
-use crate::visit::GetAdjacencyMatrix;
-use crate::visit::GraphBase;
-use crate::visit::GraphProp;
-use crate::visit::IntoEdgesDirected;
-use crate::visit::IntoNeighborsDirected;
-use crate::visit::NodeCompactIndexable;
-use crate::{Incoming, Outgoing};
-
-use self::semantic::EdgeMatcher;
-use self::semantic::NoSemanticMatch;
-use self::semantic::NodeMatcher;
-use self::state::Vf2State;
+use self::{
+    semantic::{EdgeMatcher, NoSemanticMatch, NodeMatcher},
+    state::Vf2State,
+};
+use crate::{
+    Incoming, Outgoing,
+    data::DataMap,
+    visit::{
+        EdgeCount, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgesDirected,
+        IntoNeighborsDirected, NodeCompactIndexable,
+    },
+};
 
 mod state {
     use super::*;
@@ -164,6 +161,7 @@ mod semantic {
         fn enabled() -> bool {
             false
         }
+
         #[inline]
         fn eq(&mut self, _g0: &G0, _g1: &G1, _n0: G0::NodeId, _n1: G1::NodeId) -> bool {
             true
@@ -180,6 +178,7 @@ mod semantic {
         fn enabled() -> bool {
             true
         }
+
         #[inline]
         fn eq(&mut self, g0: &G0, g1: &G1, n0: G0::NodeId, n1: G1::NodeId) -> bool {
             if let (Some(x), Some(y)) = (g0.node_weight(n0), g1.node_weight(n1)) {
@@ -206,6 +205,7 @@ mod semantic {
         fn enabled() -> bool {
             false
         }
+
         #[inline]
         fn eq(
             &mut self,
@@ -228,6 +228,7 @@ mod semantic {
         fn enabled() -> bool {
             true
         }
+
         #[inline]
         fn eq(
             &mut self,
@@ -293,16 +294,16 @@ mod matching {
         EM: EdgeMatcher<G0, G1>,
     {
         macro_rules! field {
-            ($x:ident,     0) => {
+            ($x:ident,0) => {
                 $x.0
             };
-            ($x:ident,     1) => {
+            ($x:ident,1) => {
                 $x.1
             };
-            ($x:ident, 1 - 0) => {
+            ($x:ident,1 - 0) => {
                 $x.1
             };
-            ($x:ident, 1 - 1) => {
+            ($x:ident,1 - 1) => {
                 $x.0
             };
         }
@@ -665,7 +666,8 @@ mod matching {
         edge_match: &'c mut EM,
         match_subgraph: bool,
         stack: Vec<Frame<G0, G1>>,
-        // if this is `Some(iter)` we're overriding any calls to `isomorphisms()` with calls to `iter` instead. that is, we return the single known mapping once.
+        // if this is `Some(iter)` we're overriding any calls to `isomorphisms()` with calls to
+        // `iter` instead. that is, we return the single known mapping once.
         iter_override: Option<Option<Vec<usize>>>,
     }
 
@@ -694,7 +696,8 @@ mod matching {
             let stack = vec![Frame::Outer];
             let st = (Vf2State::new(g0), Vf2State::new(g1));
             let iter_override = if st.0.is_complete() {
-                // the initial state is already complete. if this is the case, need to return the mapping immediately, because `next_candidate` in Frame::Outer will not succeed.
+                // the initial state is already complete. if this is the case, need to return the
+                // mapping immediately, because `next_candidate` in Frame::Outer will not succeed.
                 Some(Some(st.0.mapping.clone()))
             } else {
                 None
@@ -794,8 +797,8 @@ mod matching {
 ///
 /// **Reference**
 ///
-/// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento;
-///   *A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs*
+/// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento; *A (Sub)Graph Isomorphism
+///   Algorithm for Matching Large Graphs*
 ///
 /// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph
 pub fn is_isomorphic<G0, G1>(g0: G0, g1: G1) -> bool
@@ -886,8 +889,8 @@ where
 ///
 /// **Reference**
 ///
-/// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento;
-///   *A (Sub)Graph Isomorphism Algorithm for Matching Large Graphs*
+/// * Luigi P. Cordella, Pasquale Foggia, Carlo Sansone, Mario Vento; *A (Sub)Graph Isomorphism
+///   Algorithm for Matching Large Graphs*
 ///
 /// [networkx_vf2]: https://networkx.github.io/documentation/stable/reference/algorithms/isomorphism.vf2.html
 /// [multigraphs]: https://en.wikipedia.org/wiki/Multigraph

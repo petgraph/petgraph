@@ -1,10 +1,10 @@
 use alloc::{vec, vec::Vec};
 
-use super::UnitMeasure;
-use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
-
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
+
+use super::UnitMeasure;
+use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 
 /// Page Rank algorithm.
 ///
@@ -19,20 +19,21 @@ use rayon::prelude::*;
 /// * A `Vec` mapping each node index to its rank.
 ///
 /// # Panics
-/// The damping factor should be a measure (like `f32` or `f64`) between 0 and 1 (0 and 1 included). Otherwise, it panics.
+/// The damping factor should be a measure (like `f32` or `f64`) between 0 and 1 (0 and 1 included).
+/// Otherwise, it panics.
 ///
 /// # Complexity
 /// * Time complexity: **O(n|V|²|E|)**.
 /// * Auxiliary space: **O(|V| + |E|)**.
 ///
-/// where **n** is the number of iterations, **|V|** the number of vertices (i.e nodes) and **|E|** the number of edges.
+/// where **n** is the number of iterations, **|V|** the number of vertices (i.e nodes) and **|E|**
+/// the number of edges.
 ///
 /// [pr]: https://en.wikipedia.org/wiki/PageRank
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::page_rank;
+/// use petgraph::{Graph, algo::page_rank};
 /// let mut g: Graph<(), usize> = Graph::new();
 /// assert_eq!(page_rank(&g, 0.5_f64, 1), vec![]); // empty graphs have no node ranks.
 /// let a = g.add_node(());

@@ -1,13 +1,16 @@
-use crate::data::Create;
 use alloc::boxed::Box;
-use core::convert::TryFrom;
-use core::error::Error;
-use core::fmt::{Display, Formatter};
-use dot_parser::ast::AList;
-use dot_parser::ast::Graph as DotGraph;
-use dot_parser::ast::PestError as ParsingError;
-use dot_parser::canonical::Graph as CGraph;
-use dot_parser::canonical::Node;
+use core::{
+    convert::TryFrom,
+    error::Error,
+    fmt::{Display, Formatter},
+};
+
+use dot_parser::{
+    ast::{AList, Graph as DotGraph, PestError as ParsingError},
+    canonical::{Graph as CGraph, Node},
+};
+
+use crate::data::Create;
 
 pub type DotNodeWeight<'a> = Node<(&'a str, &'a str)>;
 pub type DotAttrList<'a> = AList<(&'a str, &'a str)>;
@@ -76,7 +79,8 @@ macro_rules! graph_from_str {
 }
 
 #[macro_export]
-/// Statically imports a Graph from a DOT/Graphviz file. The macro expects the file path as argument.
+/// Statically imports a Graph from a DOT/Graphviz file. The macro expects the file path as
+/// argument.
 ///
 /// Notice that, since the graph is imported *statically*, the file must exist at compile time, but
 /// can be removed at runtime.

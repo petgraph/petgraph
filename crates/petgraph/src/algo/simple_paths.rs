@@ -1,15 +1,15 @@
 use alloc::vec;
 use core::{
     hash::{BuildHasher, Hash},
-    iter::{from_fn, FromIterator},
+    iter::{FromIterator, from_fn},
 };
 
 use hashbrown::HashSet;
 use indexmap::IndexSet;
 
 use crate::{
-    visit::{IntoNeighborsDirected, NodeCount},
     Direction::Outgoing,
+    visit::{IntoNeighborsDirected, NodeCount},
 };
 
 /// Calculate all simple paths with specified constraints from node `from` to node `to`.
@@ -20,7 +20,9 @@ use crate::{
 ///
 /// So if you have a large enough graph, be prepared to wait on the results for years.
 /// Or consider extracting only part of the simple paths using the adapter [`Iterator::take`].
-/// Also note, that this algorithm does not check that a path exists between `from` and `to`. This may lead to very long running times and it may be worth it to check if a path exists before running this algorithm on large graphs.
+/// Also note, that this algorithm does not check that a path exists between `from` and `to`. This
+/// may lead to very long running times and it may be worth it to check if a path exists before
+/// running this algorithm on large graphs.
 ///
 /// This algorithm is adapted from [NetworkX](https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.simple_paths.all_simple_paths.html).
 /// # Arguments
@@ -30,11 +32,13 @@ use crate::{
 /// * `min_intermediate_nodes`: the minimum number of nodes in the desired paths.
 /// * `max_intermediate_nodes`: the maximum number of nodes in the desired paths (optional).
 /// # Returns
-/// Returns an iterator that produces all simple paths from `from` node to `to`, which contains at least `min_intermediate_nodes`
-/// and at most `max_intermediate_nodes` intermediate nodes, if given, or limited by the graph's order otherwise.
+/// Returns an iterator that produces all simple paths from `from` node to `to`, which contains at
+/// least `min_intermediate_nodes` and at most `max_intermediate_nodes` intermediate nodes, if
+/// given, or limited by the graph's order otherwise.
 ///
 /// # Complexity
-/// * Time complexity: for computing the first **k** paths, the running time will be **O(k|V| + k|E|)**.
+/// * Time complexity: for computing the first **k** paths, the running time will be **O(k|V| +
+///   k|E|)**.
 /// * Auxillary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
@@ -42,6 +46,7 @@ use crate::{
 /// # Example
 /// ```
 /// use std::collections::hash_map::RandomState;
+///
 /// use petgraph::{algo, prelude::*};
 ///
 /// let mut graph = DiGraph::<&str, i32>::new();
@@ -53,19 +58,17 @@ use crate::{
 ///
 /// graph.extend_with_edges(&[(a, b, 1), (b, c, 1), (c, d, 1), (a, b, 1), (b, d, 1)]);
 ///
-/// let paths = algo::all_simple_paths::<Vec<_>, _, RandomState>(&graph, a, d, 0, None)
-///   .collect::<Vec<_>>();
+/// let paths =
+///     algo::all_simple_paths::<Vec<_>, _, RandomState>(&graph, a, d, 0, None).collect::<Vec<_>>();
 ///
 /// assert_eq!(paths.len(), 4);
 ///
-///
 /// // Take only 2 paths.
 /// let paths = algo::all_simple_paths::<Vec<_>, _, RandomState>(&graph, a, d, 0, None)
-///   .take(2)
-///   .collect::<Vec<_>>();
+///     .take(2)
+///     .collect::<Vec<_>>();
 ///
 /// assert_eq!(paths.len(), 2);
-///
 /// ```
 pub fn all_simple_paths<TargetColl, G, S>(
     graph: G,
@@ -82,8 +85,8 @@ where
     S: BuildHasher + Default,
 {
     // how many nodes are allowed in simple path up to target node
-    // it is min/max allowed path length minus one, because it is more appropriate when implementing lookahead
-    // than constantly add 1 to length of current path
+    // it is min/max allowed path length minus one, because it is more appropriate when implementing
+    // lookahead than constantly add 1 to length of current path
     let max_length = if let Some(l) = max_intermediate_nodes {
         l + 1
     } else {
@@ -163,24 +166,28 @@ where
 /// # Arguments
 /// * `graph`: an input graph.
 /// * `from`: an initial node of desired paths.
-/// * `to`: a `HashSet` of target nodes. A path is yielded as soon as it reaches any node in this set.
+/// * `to`: a `HashSet` of target nodes. A path is yielded as soon as it reaches any node in this
+///   set.
 /// * `min_intermediate_nodes`: the minimum number of nodes in the desired paths.
 /// * `max_intermediate_nodes`: the maximum number of nodes in the desired paths (optional).
 /// # Returns
-/// Returns an iterator that produces all simple paths from `from` node to any node in the `to` set, which contains at least `min_intermediate_nodes`
-/// and at most `max_intermediate_nodes` intermediate nodes, if given, or limited by the graph's order otherwise.
+/// Returns an iterator that produces all simple paths from `from` node to any node in the `to` set,
+/// which contains at least `min_intermediate_nodes` and at most `max_intermediate_nodes`
+/// intermediate nodes, if given, or limited by the graph's order otherwise.
 ///
 /// # Complexity
-/// * Time complexity: for computing the first **k** paths, the running time will be **O(k|V| + k|E|)**.
+/// * Time complexity: for computing the first **k** paths, the running time will be **O(k|V| +
+///   k|E|)**.
 /// * Auxillary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// # Example
 /// ```
-/// use petgraph::{algo, prelude::*};
-/// use hashbrown::HashSet;
 /// use std::collections::hash_map::RandomState;
+///
+/// use hashbrown::HashSet;
+/// use petgraph::{algo, prelude::*};
 ///
 /// let mut graph = DiGraph::<&str, i32>::new();
 ///
@@ -192,17 +199,14 @@ where
 ///
 /// // Find paths from "a" to either "c" or "d".
 /// let targets = HashSet::from_iter([c, d]);
-/// let mut paths = algo::all_simple_paths_multi::<Vec<_>, _, RandomState>(&graph, a, &targets, 0, None)
-///     .collect::<Vec<_>>();
+/// let mut paths =
+///     algo::all_simple_paths_multi::<Vec<_>, _, RandomState>(&graph, a, &targets, 0, None)
+///         .collect::<Vec<_>>();
 ///
 /// paths.sort_by_key(|p| p.clone());
-/// let expected_paths = vec![
-///     vec![a, b, c],
-///     vec![a, b, d],
-/// ];
+/// let expected_paths = vec![vec![a, b, c], vec![a, b, d]];
 ///
 /// assert_eq!(paths, expected_paths);
-///
 /// ```
 pub fn all_simple_paths_multi<'a, TargetColl, G, S>(
     graph: G,

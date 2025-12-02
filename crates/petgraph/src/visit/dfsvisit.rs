@@ -1,5 +1,4 @@
-use crate::visit::IntoNeighbors;
-use crate::visit::{VisitMap, Visitable};
+use crate::visit::{IntoNeighbors, VisitMap, Visitable};
 
 /// Strictly monotonically increasing event time for a depth first search.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Default, Hash)]
@@ -61,6 +60,7 @@ impl<B> Control<B> {
     pub fn breaking() -> Control<()> {
         Control::Break(())
     }
+
     /// Get the value in `Control::Break(_)`, if present.
     pub fn break_value(self) -> Option<B> {
         match self {
@@ -81,10 +81,12 @@ pub trait ControlFlow {
 
 impl ControlFlow for () {
     fn continuing() {}
+
     #[inline]
     fn should_break(&self) -> bool {
         false
     }
+
     #[inline]
     fn should_prune(&self) -> bool {
         false
@@ -95,9 +97,11 @@ impl<B> ControlFlow for Control<B> {
     fn continuing() -> Self {
         Control::Continue
     }
+
     fn should_break(&self) -> bool {
         matches!(*self, Control::Break(_))
     }
+
     fn should_prune(&self) -> bool {
         matches!(*self, Control::Prune)
     }
@@ -107,6 +111,7 @@ impl<C: ControlFlow, E> ControlFlow for Result<C, E> {
     fn continuing() -> Self {
         Ok(C::continuing())
     }
+
     fn should_break(&self) -> bool {
         if let Ok(ref c) = *self {
             c.should_break()
@@ -114,6 +119,7 @@ impl<C: ControlFlow, E> ControlFlow for Result<C, E> {
             true
         }
     }
+
     fn should_prune(&self) -> bool {
         if let Ok(ref c) = *self {
             c.should_prune()
@@ -161,16 +167,21 @@ impl<B> Default for Control<B> {
 /// the goal node.
 ///
 /// ```
-/// use petgraph::prelude::*;
-/// use petgraph::graph::node_index as n;
-/// use petgraph::visit::depth_first_search;
-/// use petgraph::visit::{DfsEvent, Control};
+/// use petgraph::{
+///     graph::node_index as n,
+///     prelude::*,
+///     visit::{Control, DfsEvent, depth_first_search},
+/// };
 ///
 /// let gr: Graph<(), ()> = Graph::from_edges(&[
-///     (0, 1), (0, 2), (0, 3),
+///     (0, 1),
+///     (0, 2),
+///     (0, 3),
 ///     (1, 3),
-///     (2, 3), (2, 4),
-///     (4, 0), (4, 5),
+///     (2, 3),
+///     (2, 4),
+///     (4, 0),
+///     (4, 5),
 /// ]);
 ///
 /// // record each predecessor, mapping node → node
@@ -200,10 +211,11 @@ impl<B> Default for Control<B> {
 ///
 /// # Example returning a `Result`.
 /// ```
-/// use petgraph::graph::node_index as n;
-/// use petgraph::prelude::*;
-/// use petgraph::visit::depth_first_search;
-/// use petgraph::visit::{DfsEvent, Time};
+/// use petgraph::{
+///     graph::node_index as n,
+///     prelude::*,
+///     visit::{DfsEvent, Time, depth_first_search},
+/// };
 ///
 /// let gr: Graph<(), ()> = Graph::from_edges(&[(0, 1), (1, 2), (1, 1), (2, 1)]);
 /// let start = n(0);

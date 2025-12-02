@@ -3,10 +3,8 @@
 extern crate petgraph;
 extern crate test;
 
-use petgraph::prelude::*;
+use petgraph::{algo::bridges::bridges, prelude::*};
 use test::Bencher;
-
-use petgraph::algo::bridges::bridges;
 
 #[bench]
 fn bridges_bench(bench: &mut Bencher) {

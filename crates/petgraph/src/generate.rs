@@ -1,10 +1,8 @@
 //! ***Unstable.*** Graph generation.
 //!
 //! ***Unstable: API may change at any time.*** Depends on `feature = "generate"`.
-//!
 
-use crate::graph::NodeIndex;
-use crate::{Directed, EdgeType, Graph};
+use crate::{Directed, EdgeType, Graph, graph::NodeIndex};
 
 // A DAG has the property that the adjacency matrix is lower triangular,
 // diagonal zero.

@@ -1,10 +1,11 @@
 //! Shortest Path Faster Algorithm.
-use alloc::collections::VecDeque;
+use alloc::{collections::VecDeque, vec, vec::Vec};
 
-use super::{bellman_ford::Paths, BoundedMeasure, NegativeCycle};
-use crate::prelude::*;
-use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable};
-use alloc::{vec, vec::Vec};
+use super::{BoundedMeasure, NegativeCycle, bellman_ford::Paths};
+use crate::{
+    prelude::*,
+    visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable},
+};
 
 /// Compute shortest paths from node `source` to all other.
 ///
@@ -16,16 +17,18 @@ use alloc::{vec, vec::Vec};
 ///
 /// ## Arguments
 /// * `graph`: weighted graph.
-/// * `source`: the source vertex, for which we calculate the lengths of the shortest paths to all the others.
+/// * `source`: the source vertex, for which we calculate the lengths of the shortest paths to all
+///   the others.
 /// * `edge_cost`: closure that returns the cost of a particular edge.
 ///
 /// ## Returns
 /// * `Err`: if graph contains negative cycle.
-/// * `Ok`: a pair of a vector of shortest distances and a vector
-///   of predecessors of each vertex along the shortest path.
+/// * `Ok`: a pair of a vector of shortest distances and a vector of predecessors of each vertex
+///   along the shortest path.
 ///
 /// ## Complexity
-/// * Time complexity: **O(|V||E|)**, but it's generally assumed that in the average case it is **O(|E|)**.
+/// * Time complexity: **O(|V||E|)**, but it's generally assumed that in the average case it is
+///   **O(|E|)**.
 /// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
@@ -36,8 +39,7 @@ use alloc::{vec, vec::Vec};
 /// # Example
 ///
 /// ```
-/// use petgraph::Graph;
-/// use petgraph::algo::spfa;
+/// use petgraph::{Graph, algo::spfa};
 ///
 /// let mut g = Graph::new();
 /// let a = g.add_node(()); // node with no weight
@@ -68,13 +70,14 @@ use alloc::{vec, vec::Vec};
 /// let path = spfa(&g, a, |edge| *edge.weight());
 /// assert!(path.is_ok());
 /// let path = path.unwrap();
-/// assert_eq!(path.distances, vec![0.0 ,     3.0,     4.0,    2.0,     0.0,     1.0]);
-/// assert_eq!(path.predecessors, vec![None, Some(a), Some(b), Some(a), Some(c), Some(e)]);
-///
+/// assert_eq!(path.distances, vec![0.0, 3.0, 4.0, 2.0, 0.0, 1.0]);
+/// assert_eq!(
+///     path.predecessors,
+///     vec![None, Some(a), Some(b), Some(a), Some(c), Some(e)]
+/// );
 ///
 /// // Negative cycle.
-/// let graph = Graph::<(), f32>::from_edges(&[
-///     (0, 1, 2.0), (1, 2, 2.0), (2, 0, -10.0)]);
+/// let graph = Graph::<(), f32>::from_edges(&[(0, 1, 2.0), (1, 2, 2.0), (2, 0, -10.0)]);
 ///
 /// assert!(spfa(&graph, 0.into(), |edge| *edge.weight()).is_err());
 /// ```

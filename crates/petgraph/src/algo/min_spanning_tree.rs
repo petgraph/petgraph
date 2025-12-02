@@ -4,12 +4,13 @@ use alloc::collections::BinaryHeap;
 
 use hashbrown::{HashMap, HashSet};
 
-use crate::data::Element;
-use crate::prelude::*;
-use crate::scored::MinScored;
-use crate::unionfind::UnionFind;
-use crate::visit::{Data, IntoEdges, IntoNodeReferences, NodeRef};
-use crate::visit::{IntoEdgeReferences, NodeIndexable};
+use crate::{
+    data::Element,
+    prelude::*,
+    scored::MinScored,
+    unionfind::UnionFind,
+    visit::{Data, IntoEdgeReferences, IntoEdges, IntoNodeReferences, NodeIndexable, NodeRef},
+};
 
 /// Compute a *minimum spanning tree* of a graph.
 ///
@@ -28,8 +29,8 @@ use crate::visit::{IntoEdgeReferences, NodeIndexable};
 /// * `g`: an undirected graph.
 ///
 /// # Returns
-/// * [`MinSpanningTree`]: an iterator producing a minimum spanning forest of a graph.
-///   Use `from_elements` to create a graph from the resulting iterator.
+/// * [`MinSpanningTree`]: an iterator producing a minimum spanning forest of a graph. Use
+///   `from_elements` to create a graph from the resulting iterator.
 ///
 /// # Complexity
 /// * Time complexity: **O(|E| log |E|)**.
@@ -41,10 +42,7 @@ use crate::visit::{IntoEdgeReferences, NodeIndexable};
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::min_spanning_tree;
-/// use petgraph::data::FromElements;
-/// use petgraph::graph::UnGraph;
+/// use petgraph::{Graph, algo::min_spanning_tree, data::FromElements, graph::UnGraph};
 ///
 /// let mut g = Graph::new_undirected();
 /// let a = g.add_node(());
@@ -78,14 +76,14 @@ use crate::visit::{IntoEdgeReferences, NodeIndexable};
 /// // The resulting minimum spanning tree looks like this:
 /// //     2       1
 /// // a ----- b ----- c
-/// // | 4             
-/// // d       f       
-/// // | 1     | 1       
+/// // | 4
+/// // d       f
+/// // | 1     | 1
 /// // \------ e
 ///
 /// let mut edge_weight_vec = mst.edge_weights().cloned().collect::<Vec<_>>();
 /// edge_weight_vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
-/// assert_eq!(edge_weight_vec , vec![1.0, 1.0, 1.0, 2.0, 4.0]);
+/// assert_eq!(edge_weight_vec, vec![1.0, 1.0, 1.0, 2.0, 4.0]);
 /// ```
 pub fn min_spanning_tree<G>(g: G) -> MinSpanningTree<G>
 where
@@ -192,16 +190,18 @@ where
 /// graph will only contain edges for an arbitrary minimum spanning tree for a single component.
 ///
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
-/// and **|V| - 1** edges if input graph is connected, and |W| edges if disconnected, where |W| < |V| - 1.
+/// and **|V| - 1** edges if input graph is connected, and |W| edges if disconnected, where |W| <
+/// |V| - 1.
 ///
-/// See also: [`min_spanning_tree`][1] for an implementation using Kruskal's algorithm and support for minimum spanning forest.
+/// See also: [`min_spanning_tree`][1] for an implementation using Kruskal's algorithm and support
+/// for minimum spanning forest.
 ///
 /// # Arguments
 /// * `g`: an undirected graph.
 ///
 /// # Returns
-/// * [`MinSpanningTreePrim`]: an iterator producing a minimum spanning tree of a graph.
-///   Use `from_elements` to create a graph from the resulting iterator.
+/// * [`MinSpanningTreePrim`]: an iterator producing a minimum spanning tree of a graph. Use
+///   `from_elements` to create a graph from the resulting iterator.
 ///
 /// # Complexity
 /// * Time complexity: **O(|E| log |V|)**.
@@ -213,10 +213,7 @@ where
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::algo::min_spanning_tree_prim;
-/// use petgraph::data::FromElements;
-/// use petgraph::graph::UnGraph;
+/// use petgraph::{Graph, algo::min_spanning_tree_prim, data::FromElements, graph::UnGraph};
 ///
 /// let mut g = Graph::new_undirected();
 /// let a = g.add_node(());
@@ -257,7 +254,7 @@ where
 ///
 /// let mut edge_weight_vec = mst.edge_weights().cloned().collect::<Vec<_>>();
 /// edge_weight_vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
-/// assert_eq!(edge_weight_vec , vec![1.0, 1.0, 1.0, 2.0, 4.0]);
+/// assert_eq!(edge_weight_vec, vec![1.0, 1.0, 1.0, 2.0, 4.0]);
 /// ```
 pub fn min_spanning_tree_prim<G>(g: G) -> MinSpanningTreePrim<G>
 where
@@ -341,7 +338,8 @@ where
         };
 
         // Prim's algorithm:
-        // Iterate through Edge elements, adding an edge to the MST iff some of it's nodes are not part of MST yet.
+        // Iterate through Edge elements, adding an edge to the MST iff some of it's nodes are not
+        // part of MST yet.
         while let Some(MinScored(score, (source, target))) = self.sort_edges.pop() {
             let (source_index, target_index) = (g.to_index(source), g.to_index(target));
 

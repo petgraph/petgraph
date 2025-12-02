@@ -1,4 +1,5 @@
 use core::ops::Deref;
+
 use petgraph::{graph::DiGraph, graphmap::NodeTrait};
 use quickcheck::{Arbitrary, Gen, StdGen};
 
@@ -8,6 +9,7 @@ pub struct Small<T>(pub T);
 
 impl<T> Deref for Small<T> {
     type Target = T;
+
     fn deref(&self) -> &T {
         &self.0
     }

@@ -1,6 +1,8 @@
 //! Operators for creating new graphs from existing ones.
-use super::graph::{Graph, IndexType};
-use super::EdgeType;
+use super::{
+    EdgeType,
+    graph::{Graph, IndexType},
+};
 use crate::visit::IntoNodeReferences;
 
 /// \[Generic\] complement of the graph
@@ -16,21 +18,15 @@ use crate::visit::IntoNodeReferences;
 ///
 /// # Example
 /// ```rust
-/// use petgraph::Graph;
-/// use petgraph::operator::complement;
-/// use petgraph::prelude::*;
+/// use petgraph::{Graph, operator::complement, prelude::*};
 ///
-/// let mut graph: Graph<(),(),Directed> = Graph::new();
+/// let mut graph: Graph<(), (), Directed> = Graph::new();
 /// let a = graph.add_node(()); // node with no weight
 /// let b = graph.add_node(());
 /// let c = graph.add_node(());
 /// let d = graph.add_node(());
 ///
-/// graph.extend_with_edges(&[
-///     (a, b),
-///     (b, c),
-///     (c, d),
-/// ]);
+/// graph.extend_with_edges(&[(a, b), (b, c), (c, d)]);
 /// // a ----> b ----> c ----> d
 ///
 /// let mut output: Graph<(), (), Directed> = Graph::new();

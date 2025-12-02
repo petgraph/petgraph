@@ -6,9 +6,11 @@ use hashbrown::hash_map::{
     HashMap,
 };
 
-use crate::algo::Measure;
-use crate::scored::MinScored;
-use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
+use crate::{
+    algo::Measure,
+    scored::MinScored,
+    visit::{EdgeRef, GraphBase, IntoEdges, Visitable},
+};
 
 /// A* shortest path algorithm.
 ///
@@ -37,14 +39,14 @@ use crate::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
 /// * `None` - if such a path was not found.
 ///
 /// # Complexity
-/// The time complexity largely depends on the heuristic used. Feel free to contribute and provide the exact time complexity :)
+/// The time complexity largely depends on the heuristic used. Feel free to contribute and provide
+/// the exact time complexity :)
 ///
 /// With a trivial heuristic, the algorithm will behave like [`fn@crate::algo::dijkstra`].
 ///
 /// # Example
 /// ```
-/// use petgraph::Graph;
-/// use petgraph::algo::astar;
+/// use petgraph::{Graph, algo::astar};
 ///
 /// let mut g = Graph::new();
 /// let a = g.add_node((0., 0.));

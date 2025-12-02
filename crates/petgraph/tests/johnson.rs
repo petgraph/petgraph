@@ -1,12 +1,9 @@
-use core::fmt::Debug;
-use core::hash::Hash;
-use hashbrown::HashMap;
-use petgraph::algo::johnson;
-use petgraph::visit::GraphBase;
-use petgraph::{prelude::*, Directed, Graph, Undirected};
+use core::{fmt::Debug, hash::Hash};
 
+use hashbrown::HashMap;
 #[cfg(feature = "rayon")]
 use petgraph::algo::parallel_johnson;
+use petgraph::{Directed, Graph, Undirected, algo::johnson, prelude::*, visit::GraphBase};
 
 #[test]
 fn johnson_uniform_weight() {

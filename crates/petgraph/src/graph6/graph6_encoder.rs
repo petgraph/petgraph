@@ -5,25 +5,21 @@ use alloc::{
     vec,
     vec::Vec,
 };
-
-use crate::{
-    csr::Csr,
-    graph::IndexType,
-    visit::{GetAdjacencyMatrix, IntoNodeIdentifiers},
-    Graph, Undirected,
-};
-
-#[cfg(feature = "graphmap")]
-use crate::graphmap::{GraphMap, NodeTrait};
-
 #[cfg(feature = "graphmap")]
 use core::hash::BuildHasher;
 
+#[cfg(feature = "graphmap")]
+use crate::graphmap::{GraphMap, NodeTrait};
 #[cfg(feature = "matrix_graph")]
 use crate::matrix_graph::{MatrixGraph, Nullable};
-
 #[cfg(feature = "stable_graph")]
 use crate::stable_graph::StableGraph;
+use crate::{
+    Graph, Undirected,
+    csr::Csr,
+    graph::IndexType,
+    visit::{GetAdjacencyMatrix, IntoNodeIdentifiers},
+};
 
 const N: usize = 63;
 
@@ -48,8 +44,8 @@ where
     bits_to_ascii(graph_as_bits)
 }
 
-// Traverse graph nodes and construct the upper diagonal of its adjacency matrix as a vector of bits.
-// Returns a tuple containing:
+// Traverse graph nodes and construct the upper diagonal of its adjacency matrix as a vector of
+// bits. Returns a tuple containing:
 // - `n`: graph order (number of nodes in graph)
 // - `bits`: a vector of 0s and 1s encoding the upper diagonal of the graphs adjacency matrix.
 fn get_adj_matrix_upper_diagonal_as_bits<G>(graph: G) -> (usize, Vec<usize>)

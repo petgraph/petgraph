@@ -1,9 +1,10 @@
 use core::hash::Hash;
 
 use hashbrown::HashSet;
-
-use petgraph::algo::{greedy_matching, maximum_matching};
-use petgraph::prelude::*;
+use petgraph::{
+    algo::{greedy_matching, maximum_matching},
+    prelude::*,
+};
 
 macro_rules! assert_one_of {
     ($actual:expr, [$($expected:expr),+]) => {

@@ -3,13 +3,12 @@ use core::ops::{Index, IndexMut};
 
 use hashbrown::HashMap;
 
+use self::linked_list::{LinkedList, LinkedListEntry};
 use crate::{
+    Directed,
     graph::{GraphIndex, NodeIndex},
     visit::{EdgeRef, GraphProp, IntoEdgeReferences},
-    Directed,
 };
-
-use self::linked_list::{LinkedList, LinkedListEntry};
 
 /// Finds a [feedback arc set]: a set of edges in the given directed graph, which when
 /// removed, make the graph acyclic.

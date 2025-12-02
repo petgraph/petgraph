@@ -3,8 +3,10 @@ use core::hash::Hash;
 
 use hashbrown::{HashMap, HashSet};
 
-use crate::scored::MaxScored;
-use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visitable};
+use crate::{
+    scored::MaxScored,
+    visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visitable},
+};
 
 /// [DStatur algorithm][1] to properly color a non weighted undirected graph.
 ///
@@ -30,8 +32,7 @@ use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visi
 ///
 /// # Example
 /// ```rust
-/// use petgraph::{Graph, Undirected};
-/// use petgraph::algo::dsatur_coloring;
+/// use petgraph::{Graph, Undirected, algo::dsatur_coloring};
 ///
 /// let mut graph: Graph<(), (), Undirected> = Graph::new_undirected();
 /// let a = graph.add_node(());
@@ -41,14 +42,7 @@ use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visi
 /// let e = graph.add_node(());
 /// let f = graph.add_node(());
 ///
-/// graph.extend_with_edges(&[
-///     (a, b),
-///     (b, c),
-///     (c, d),
-///     (d, e),
-///     (e, f),
-///     (f, a),
-/// ]);
+/// graph.extend_with_edges(&[(a, b), (b, c), (c, d), (d, e), (e, f), (f, a)]);
 ///
 /// // a ----- b ----- c
 /// // |               |

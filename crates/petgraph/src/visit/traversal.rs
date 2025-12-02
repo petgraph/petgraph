@@ -19,10 +19,9 @@ use crate::Incoming;
 /// use it like the following example:
 ///
 /// ```
-/// use petgraph::Graph;
-/// use petgraph::visit::Dfs;
+/// use petgraph::{Graph, visit::Dfs};
 ///
-/// let mut graph = Graph::<_,()>::new();
+/// let mut graph = Graph::<_, ()>::new();
 /// let a = graph.add_node(0);
 ///
 /// let mut dfs = Dfs::new(&graph, a);
@@ -235,10 +234,9 @@ where
 /// use it like the following example:
 ///
 /// ```
-/// use petgraph::Graph;
-/// use petgraph::visit::Bfs;
+/// use petgraph::{Graph, visit::Bfs};
 ///
-/// let mut graph = Graph::<_,()>::new();
+/// let mut graph = Graph::<_, ()>::new();
 /// let a = graph.add_node(0);
 ///
 /// let mut bfs = Bfs::new(&graph, a);
@@ -484,6 +482,7 @@ where
     C: Clone,
 {
     type Item = W::Item;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.walker.walk_next(self.context.clone())
     }
@@ -494,6 +493,7 @@ where
     W: Walker<C>,
 {
     type Item = W::Item;
+
     fn walk_next(&mut self, context: C) -> Option<Self::Item> {
         (**self).walk_next(context)
     }
@@ -504,6 +504,7 @@ where
     G: IntoNeighbors + Visitable,
 {
     type Item = G::NodeId;
+
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
         self.next(context)
     }
@@ -514,6 +515,7 @@ where
     G: IntoNeighbors + Visitable,
 {
     type Item = G::NodeId;
+
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
         self.next(context)
     }
@@ -524,6 +526,7 @@ where
     G: IntoNeighbors + Visitable,
 {
     type Item = G::NodeId;
+
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
         self.next(context)
     }
@@ -534,6 +537,7 @@ where
     G: IntoNeighborsDirected + Visitable,
 {
     type Item = G::NodeId;
+
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
         self.next(context)
     }

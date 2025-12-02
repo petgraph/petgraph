@@ -1,9 +1,8 @@
+use hashbrown::HashSet;
 use petgraph::{
     algo::articulation_points::articulation_points,
     graph::{NodeIndex, UnGraph},
 };
-
-use hashbrown::HashSet;
 
 #[test]
 fn art_single_node() {

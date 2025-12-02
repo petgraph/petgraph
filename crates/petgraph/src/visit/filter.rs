@@ -88,8 +88,8 @@ impl<G, F> GraphBase for NodeFiltered<G, F>
 where
     G: GraphBase,
 {
-    type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
+    type NodeId = G::NodeId;
 }
 
 impl<'a, G, F> IntoNeighbors for &'a NodeFiltered<G, F>
@@ -98,6 +98,7 @@ where
     F: FilterNode<G::NodeId>,
 {
     type Neighbors = NodeFilteredNeighbors<'a, G::Neighbors, F>;
+
     fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
         NodeFilteredNeighbors {
             include_source: self.1.include_node(n),
@@ -122,6 +123,7 @@ where
     F: FilterNode<I::Item>,
 {
     type Item = I::Item;
+
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         if !self.include_source {
@@ -130,6 +132,7 @@ where
             self.iter.find(move |&target| f.include_node(target))
         }
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
@@ -142,6 +145,7 @@ where
     F: FilterNode<G::NodeId>,
 {
     type NeighborsDirected = NodeFilteredNeighbors<'a, G::NeighborsDirected, F>;
+
     fn neighbors_directed(self, n: G::NodeId, dir: Direction) -> Self::NeighborsDirected {
         NodeFilteredNeighbors {
             include_source: self.1.include_node(n),
@@ -157,6 +161,7 @@ where
     F: FilterNode<G::NodeId>,
 {
     type NodeIdentifiers = NodeFilteredNeighbors<'a, G::NodeIdentifiers, F>;
+
     fn node_identifiers(self) -> Self::NodeIdentifiers {
         NodeFilteredNeighbors {
             include_source: true,
@@ -173,6 +178,7 @@ where
 {
     type NodeRef = G::NodeRef;
     type NodeReferences = NodeFilteredNodes<'a, G::NodeReferences, F>;
+
     fn node_references(self) -> Self::NodeReferences {
         NodeFilteredNodes {
             include_source: true,
@@ -197,6 +203,7 @@ where
     F: FilterNode<<I::Item as NodeRef>::NodeId>,
 {
     type Item = I::Item;
+
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         if !self.include_source {
@@ -205,6 +212,7 @@ where
             self.iter.find(move |&target| f.include_node(target.id()))
         }
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
@@ -218,6 +226,7 @@ where
 {
     type EdgeRef = G::EdgeRef;
     type EdgeReferences = NodeFilteredEdgeReferences<'a, G, G::EdgeReferences, F>;
+
     fn edge_references(self) -> Self::EdgeReferences {
         NodeFilteredEdgeReferences {
             graph: PhantomData,
@@ -242,11 +251,13 @@ where
     I: Iterator<Item = G::EdgeRef>,
 {
     type Item = I::Item;
+
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         self.iter
             .find(move |&edge| f.include_node(edge.source()) && f.include_node(edge.target()))
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
@@ -259,6 +270,7 @@ where
     F: FilterNode<G::NodeId>,
 {
     type Edges = NodeFilteredEdges<'a, G, G::Edges, F>;
+
     fn edges(self, a: G::NodeId) -> Self::Edges {
         NodeFilteredEdges {
             graph: PhantomData,
@@ -276,6 +288,7 @@ where
     F: FilterNode<G::NodeId>,
 {
     type EdgesDirected = NodeFilteredEdges<'a, G, G::EdgesDirected, F>;
+
     fn edges_directed(self, a: G::NodeId, dir: Direction) -> Self::EdgesDirected {
         NodeFilteredEdges {
             graph: PhantomData,
@@ -304,6 +317,7 @@ where
     I: Iterator<Item = G::EdgeRef>,
 {
     type Item = I::Item;
+
     fn next(&mut self) -> Option<Self::Item> {
         if !self.include_source {
             None
@@ -318,6 +332,7 @@ where
             })
         }
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
@@ -395,8 +410,8 @@ impl<G, F> GraphBase for EdgeFiltered<G, F>
 where
     G: GraphBase,
 {
-    type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
+    type NodeId = G::NodeId;
 }
 
 impl<'a, G, F> IntoNeighbors for &'a EdgeFiltered<G, F>
@@ -405,6 +420,7 @@ where
     F: FilterEdge<G::EdgeRef>,
 {
     type Neighbors = EdgeFilteredNeighbors<'a, G, F>;
+
     fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
         EdgeFilteredNeighbors {
             iter: self.0.edges(n),
@@ -419,6 +435,7 @@ where
     F: FilterEdge<G::EdgeRef>,
 {
     type NeighborsDirected = EdgeFilteredNeighborsDirected<'a, G, F>;
+
     fn neighbors_directed(self, n: G::NodeId, dir: Direction) -> Self::NeighborsDirected {
         EdgeFilteredNeighborsDirected {
             iter: self.0.edges_directed(n, dir),
@@ -444,6 +461,7 @@ where
     G: IntoEdges,
 {
     type Item = G::NodeId;
+
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         (&mut self.iter)
@@ -456,6 +474,7 @@ where
             })
             .next()
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
@@ -469,6 +488,7 @@ where
 {
     type EdgeRef = G::EdgeRef;
     type EdgeReferences = EdgeFilteredEdges<'a, G, G::EdgeReferences, F>;
+
     fn edge_references(self) -> Self::EdgeReferences {
         EdgeFilteredEdges {
             graph: PhantomData,
@@ -484,6 +504,7 @@ where
     F: FilterEdge<G::EdgeRef>,
 {
     type Edges = EdgeFilteredEdges<'a, G, G::Edges, F>;
+
     fn edges(self, n: G::NodeId) -> Self::Edges {
         EdgeFilteredEdges {
             graph: PhantomData,
@@ -524,10 +545,12 @@ where
     I: Iterator<Item = G::EdgeRef>,
 {
     type Item = I::Item;
+
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         self.iter.find(move |&edge| f.include_edge(edge))
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
@@ -551,6 +574,7 @@ where
     G: IntoEdgesDirected,
 {
     type Item = G::NodeId;
+
     fn next(&mut self) -> Option<Self::Item> {
         let f = self.f;
         let from = self.from;
@@ -568,6 +592,7 @@ where
             })
             .next()
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)

@@ -15,7 +15,7 @@
 use alloc::{vec, vec::Vec};
 use core::{cmp::Ordering, hash::Hash};
 
-use hashbrown::{hash_map::Iter, HashMap, HashSet};
+use hashbrown::{HashMap, HashSet, hash_map::Iter};
 
 use crate::visit::{DfsPostOrder, GraphBase, IntoNeighbors, Visitable, Walker};
 
@@ -142,6 +142,7 @@ where
         }
         None
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
@@ -155,9 +156,9 @@ const UNDEFINED: usize = usize::MAX;
 /// This is an implementation of the engineered ["Simple, Fast Dominance
 /// Algorithm"][0] discovered by Cooper et al.
 ///
-/// This algorithm is **O(|V|²)** where V is the set of nodes, and therefore has slower theoretical running time
-/// than the Lengauer-Tarjan algorithm (which is **O(|E| log |V|)** where E is the set of edges). However,
-/// Cooper et al found it to be faster in practice on control flow graphs of up
+/// This algorithm is **O(|V|²)** where V is the set of nodes, and therefore has slower theoretical
+/// running time than the Lengauer-Tarjan algorithm (which is **O(|E| log |V|)** where E is the set
+/// of edges). However, Cooper et al found it to be faster in practice on control flow graphs of up
 /// to ~30,000 nodes.
 ///
 /// # Arguments
@@ -165,8 +166,8 @@ const UNDEFINED: usize = usize::MAX;
 /// * `root`: the *root* node of the `graph`.
 ///
 /// # Returns
-/// * `Dominators`: the dominance relation for given `graph` and `root`
-///   represented by [`struct@Dominators`].
+/// * `Dominators`: the dominance relation for given `graph` and `root` represented by
+///   [`struct@Dominators`].
 ///
 /// # Complexity
 /// * Time complexity: **O(|V|²)**.
@@ -223,9 +224,9 @@ where
                     .iter()
                     .filter(|&&p| dominators[p] != UNDEFINED);
                 let new_idom_idx = predecessors.next().expect(
-                    "Because the root is initialized to dominate itself, and is the \
-                     first node in every path, there must exist a predecessor to this \
-                     node that also has a dominator",
+                    "Because the root is initialized to dominate itself, and is the first node in \
+                     every path, there must exist a predecessor to this node that also has a \
+                     dominator",
                 );
                 predecessors.fold(*new_idom_idx, |new_idom_idx, &predecessor_idx| {
                     intersect(&dominators, new_idom_idx, predecessor_idx)

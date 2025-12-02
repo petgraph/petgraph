@@ -8,7 +8,6 @@ use test::Bencher;
 #[allow(dead_code)]
 mod common;
 use common::*;
-
 use petgraph::algo::is_isomorphic;
 
 #[bench]

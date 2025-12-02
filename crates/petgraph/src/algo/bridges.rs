@@ -1,8 +1,8 @@
+use alloc::{vec, vec::Vec};
+
 use crate::visit::{
     EdgeRef, IntoEdgeReferences, IntoNeighbors, IntoNodeIdentifiers, NodeIndexable,
 };
-
-use alloc::{vec, vec::Vec};
 
 /// Find all [bridges](https://en.wikipedia.org/wiki/Bridge_(graph_theory)) in a simple undirected graph.
 ///
@@ -10,8 +10,8 @@ use alloc::{vec, vec::Vec};
 /// * `graph`: a simple undirected graph.
 ///
 /// # Returns
-/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef` representing the edges
-///   of the input graph that are bridges. The order of the edges is arbitrary.
+/// * `impl Iterator`:  the iterator of edge references `G::EdgeRef` representing the edges of the
+///   input graph that are bridges. The order of the edges is arbitrary.
 ///
 /// # Complexity
 /// * Time complexity: **O(|V| + |E|)**.
@@ -23,9 +23,7 @@ use alloc::{vec, vec::Vec};
 /// # Examples
 ///
 /// ```
-/// use petgraph::algo::bridges::bridges;
-/// use petgraph::graph::UnGraph;
-/// use petgraph::visit::EdgeRef;
+/// use petgraph::{algo::bridges::bridges, graph::UnGraph, visit::EdgeRef};
 ///
 /// // Create the following graph:
 /// // 0----1    4
@@ -126,9 +124,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::EdgeReference;
-    use crate::graph::UnGraph;
-    use crate::visit::EdgeRef;
+    use crate::{
+        graph::{EdgeReference, UnGraph},
+        visit::EdgeRef,
+    };
 
     #[test]
     fn test_bridges() {

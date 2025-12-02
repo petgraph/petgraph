@@ -4,9 +4,13 @@ extern crate petgraph;
 extern crate test;
 
 use core::cmp::max;
-use petgraph::algo::{toposort, DfsSpace};
-use petgraph::prelude::*;
-use petgraph::{acyclic::Acyclic, data::Build};
+
+use petgraph::{
+    acyclic::Acyclic,
+    algo::{DfsSpace, toposort},
+    data::Build,
+    prelude::*,
+};
 use test::Bencher;
 
 /// Dynamic toposort using Acyclic<G>

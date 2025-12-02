@@ -1,7 +1,6 @@
-use petgraph::{algo::page_rank, Graph};
-
 #[cfg(feature = "rayon")]
 use petgraph::algo::page_rank::parallel_page_rank;
+use petgraph::{Graph, algo::page_rank};
 
 fn graph_example() -> Graph<String, f32> {
     // Taken and adapted from https://github.com/neo4j-labs/graph?tab=readme-ov-file#how-to-run-algorithms
@@ -73,10 +72,12 @@ fn test_page_rank() {
 fn test_par_page_rank() {
     let graph = graph_example();
     let output_ranks = parallel_page_rank(&graph, 0.85_f32, 100, Some(1e-12));
-    assert!(!expected_ranks()
-        .iter()
-        .zip(output_ranks)
-        .any(|(expected, computed)| ((expected - computed).abs() > 1e-6)
-            || computed.is_nan()
-            || expected.is_nan()));
+    assert!(
+        !expected_ranks()
+            .iter()
+            .zip(output_ranks)
+            .any(|(expected, computed)| ((expected - computed).abs() > 1e-6)
+                || computed.is_nan()
+                || expected.is_nan())
+    );
 }

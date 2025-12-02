@@ -24,7 +24,7 @@ mod serialize {
             let first = rng.gen_range(0, NUM_NODES + NUM_HOLES);
             let second = rng.gen_range(0, NUM_NODES + NUM_HOLES - 1);
             let second = second + (second >= first) as usize;
-            let weight: u32 = rng.gen();
+            let weight: u32 = rng.r#gen();
             (indices[first], indices[second], weight)
         }));
 

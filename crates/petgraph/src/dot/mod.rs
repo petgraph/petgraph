@@ -15,19 +15,17 @@ use crate::visit::{
 /// # Examples
 ///
 /// ```
-/// use petgraph::Graph;
-/// use petgraph::dot::{Dot, Config};
+/// use petgraph::{
+///     Graph,
+///     dot::{Config, Dot},
+/// };
 ///
 /// let mut graph = Graph::<_, ()>::new();
 /// graph.add_node("A");
 /// graph.add_node("B");
 /// graph.add_node("C");
 /// graph.add_node("D");
-/// graph.extend_with_edges(&[
-///     (0, 1), (0, 2), (0, 3),
-///     (1, 2), (1, 3),
-///     (2, 3),
-/// ]);
+/// graph.extend_with_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
 ///
 /// println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
 ///
@@ -84,18 +82,21 @@ where
     /// generate your own `label` attributes.
     /// The getter functions should return an attribute list as a String. For example, if you
     /// want to calculate a `label` for a node, then return `"label = \"your label here\""`.
-    /// Each function should take as arguments the graph and that graph's `EdgeRef` or `NodeRef`, respectively.
-    /// Check the documentation for the graph type to see how it implements `IntoNodeReferences`.
-    /// The [Graphviz docs] list the available attributes.
+    /// Each function should take as arguments the graph and that graph's `EdgeRef` or `NodeRef`,
+    /// respectively. Check the documentation for the graph type to see how it implements
+    /// `IntoNodeReferences`. The [Graphviz docs] list the available attributes.
     ///
-    /// Note that some attribute values, such as labels, should be strings and must be quoted. These can be
-    /// written using escapes (`"label = \"foo\""`) or [raw strings] (`r#"label = "foo""#`).
+    /// Note that some attribute values, such as labels, should be strings and must be quoted. These
+    /// can be written using escapes (`"label = \"foo\""`) or [raw strings] (`r#"label =
+    /// "foo""#`).
     ///
-    /// For example, using a `Graph<&str, &str>` where we want the node labels to be the nodes' weights
-    /// shortened to 4 characters, and all the edges are colored blue with no labels:
+    /// For example, using a `Graph<&str, &str>` where we want the node labels to be the nodes'
+    /// weights shortened to 4 characters, and all the edges are colored blue with no labels:
     /// ```
-    /// use petgraph::Graph;
-    /// use petgraph::dot::{Config, Dot};
+    /// use petgraph::{
+    ///     Graph,
+    ///     dot::{Config, Dot},
+    /// };
     ///
     /// let mut deps = Graph::<&str, &str>::new();
     /// let pg = deps.add_node("petgraph");
@@ -393,8 +394,7 @@ mod test {
     use core::fmt::Write;
 
     use super::{Config, Dot, Escaper, RankDir};
-    use crate::prelude::Graph;
-    use crate::visit::NodeRef;
+    use crate::{prelude::Graph, visit::NodeRef};
 
     #[test]
     fn test_escape() {
@@ -418,21 +418,33 @@ mod test {
     fn test_nodeindexlable_option() {
         let graph = simple_graph();
         let dot = format!("{:?}", Dot::with_config(&graph, &[Config::NodeIndexLabel]));
-        assert_eq!(dot, "digraph {\n    0 [ label = \"0\" ]\n    1 [ label = \"1\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n");
+        assert_eq!(
+            dot,
+            "digraph {\n    0 [ label = \"0\" ]\n    1 [ label = \"1\" ]\n    0 -> 1 [ label = \
+             \"\\\"edge_label\\\"\" ]\n}\n"
+        );
     }
 
     #[test]
     fn test_edgeindexlable_option() {
         let graph = simple_graph();
         let dot = format!("{:?}", Dot::with_config(&graph, &[Config::EdgeIndexLabel]));
-        assert_eq!(dot, "digraph {\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"0\" ]\n}\n");
+        assert_eq!(
+            dot,
+            "digraph {\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \"\\\"B\\\"\" ]\n    0 \
+             -> 1 [ label = \"0\" ]\n}\n"
+        );
     }
 
     #[test]
     fn test_edgenolable_option() {
         let graph = simple_graph();
         let dot = format!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
-        assert_eq!(dot, "digraph {\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ ]\n}\n");
+        assert_eq!(
+            dot,
+            "digraph {\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \"\\\"B\\\"\" ]\n    0 \
+             -> 1 [ ]\n}\n"
+        );
     }
 
     #[test]
@@ -454,8 +466,8 @@ mod test {
         );
         assert_eq!(
             dot,
-            "digraph {\n    rankdir=\"TB\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
-            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+            "digraph {\n    rankdir=\"TB\"\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \
+             \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
         );
     }
 
@@ -468,8 +480,8 @@ mod test {
         );
         assert_eq!(
             dot,
-            "digraph {\n    rankdir=\"BT\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
-            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+            "digraph {\n    rankdir=\"BT\"\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \
+             \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
         );
     }
 
@@ -482,8 +494,8 @@ mod test {
         );
         assert_eq!(
             dot,
-            "digraph {\n    rankdir=\"LR\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
-            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+            "digraph {\n    rankdir=\"LR\"\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \
+             \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
         );
     }
 
@@ -496,8 +508,8 @@ mod test {
         );
         assert_eq!(
             dot,
-            "digraph {\n    rankdir=\"RL\"\n    0 [ label = \"\\\"A\\\"\" ]\n    \
-            1 [ label = \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
+            "digraph {\n    rankdir=\"RL\"\n    0 [ label = \"\\\"A\\\"\" ]\n    1 [ label = \
+             \"\\\"B\\\"\" ]\n    0 -> 1 [ label = \"\\\"edge_label\\\"\" ]\n}\n"
         );
     }
 
@@ -513,6 +525,10 @@ mod test {
                 &|_, nr| format!("label = \"{}\"", nr.weight().to_lowercase()),
             ),
         );
-        assert_eq!(dot, "digraph {\n    0 [ label = \"a\"]\n    1 [ label = \"b\"]\n    0 -> 1 [ label = \"EDGE_LABEL\"]\n}\n");
+        assert_eq!(
+            dot,
+            "digraph {\n    0 [ label = \"a\"]\n    1 [ label = \"b\"]\n    0 -> 1 [ label = \
+             \"EDGE_LABEL\"]\n}\n"
+        );
     }
 }

@@ -8,9 +8,10 @@ use test::Bencher;
 #[allow(dead_code)]
 mod common;
 use common::*;
-
-use petgraph::algo::{greedy_matching, maximum_matching};
-use petgraph::graph::UnGraph;
+use petgraph::{
+    algo::{greedy_matching, maximum_matching},
+    graph::UnGraph,
+};
 
 fn huge() -> UnGraph<(), ()> {
     static NODE_COUNT: u32 = 1_000;

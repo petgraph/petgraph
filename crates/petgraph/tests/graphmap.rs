@@ -4,12 +4,12 @@ extern crate petgraph;
 use core::fmt;
 use std::collections::HashSet;
 
-use petgraph::prelude::*;
-use petgraph::visit::Walker;
-
-use petgraph::algo::dijkstra;
-
-use petgraph::dot::{Config, Dot};
+use petgraph::{
+    algo::dijkstra,
+    dot::{Config, Dot},
+    prelude::*,
+    visit::Walker,
+};
 
 #[test]
 fn simple() {

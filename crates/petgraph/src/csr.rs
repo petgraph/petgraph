@@ -4,23 +4,22 @@ use alloc::{vec, vec::Vec};
 use core::{
     cmp::{Ordering, max},
     fmt,
-    iter::zip,
-    iter::{Enumerate, Zip},
+    iter::{Enumerate, Zip, zip},
     marker::PhantomData,
     ops::{Index, IndexMut, Range},
     slice::Windows,
 };
 
-use crate::visit::{
-    Data, EdgeCount, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences,
-    IntoEdges, IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
-    NodeCount, NodeIndexable, Visitable,
-};
-
 #[doc(no_inline)]
 pub use crate::graph::{DefaultIx, IndexType};
-
-use crate::{Directed, EdgeType, IntoWeightedEdge};
+use crate::{
+    Directed, EdgeType, IntoWeightedEdge,
+    visit::{
+        Data, EdgeCount, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdgeReferences,
+        IntoEdges, IntoNeighbors, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
+        NodeCount, NodeIndexable, Visitable,
+    },
+};
 
 /// Csr node index type, a plain integer.
 pub type NodeIndex<Ix = DefaultIx> = Ix;
@@ -52,8 +51,8 @@ impl fmt::Display for CsrError {
 ///
 /// `CSR` is parameterized over:
 ///
-/// - Associated data `N` for nodes and `E` for edges, called *weights*.
-///   The associated data can be of arbitrary type.
+/// - Associated data `N` for nodes and `E` for edges, called *weights*. The associated data can be
+///   of arbitrary type.
 /// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
 /// - Index type `Ix`, which determines the maximum size of the graph.
 ///
@@ -119,21 +118,21 @@ where
         }
     }
 
-    /// Create a new `Csr` with `n` nodes. `N` must implement [`Default`] for the weight of each node.
+    /// Create a new `Csr` with `n` nodes. `N` must implement [`Default`] for the weight of each
+    /// node.
     ///
     /// [`Default`]: https://doc.rust-lang.org/nightly/core/default/trait.Default.html
     ///
     /// # Example
     /// ```rust
-    /// use petgraph::csr::Csr;
-    /// use petgraph::prelude::*;
+    /// use petgraph::{csr::Csr, prelude::*};
     ///
-    /// let graph = Csr::<u8,()>::with_nodes(5);
-    /// assert_eq!(graph.node_count(),5);
-    /// assert_eq!(graph.edge_count(),0);
+    /// let graph = Csr::<u8, ()>::with_nodes(5);
+    /// assert_eq!(graph.node_count(), 5);
+    /// assert_eq!(graph.edge_count(), 0);
     ///
-    /// assert_eq!(graph[0],0);
-    /// assert_eq!(graph[4],0);
+    /// assert_eq!(graph[0], 0);
+    /// assert_eq!(graph[4], 0);
     /// ```
     pub fn with_nodes(n: usize) -> Self
     where
@@ -175,15 +174,10 @@ where
     ///
     /// # Example
     /// ```rust
-    /// use petgraph::csr::Csr;
-    /// use petgraph::prelude::*;
+    /// use petgraph::{csr::Csr, prelude::*};
     ///
-    /// let graph = Csr::<(),()>::from_sorted_edges(&[
-    ///                     (0, 1), (0, 2),
-    ///                     (1, 0), (1, 2), (1, 3),
-    ///                     (2, 0),
-    ///                     (3, 1),
-    /// ]);
+    /// let graph =
+    ///     Csr::<(), ()>::from_sorted_edges(&[(0, 1), (0, 2), (1, 0), (1, 2), (1, 3), (2, 0), (3, 1)]);
     /// ```
     pub fn from_sorted_edges<Edge>(edges: &[Edge]) -> Result<Self, EdgesNotSorted>
     where
@@ -498,19 +492,22 @@ where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    type NodeId = NodeIndex<Ix>;
     type EdgeId = EdgeIndex;
+    type NodeId = NodeIndex<Ix>;
     type Weight = E;
 
     fn source(&self) -> Self::NodeId {
         self.source
     }
+
     fn target(&self) -> Self::NodeId {
         self.target
     }
+
     fn weight(&self) -> &E {
         self.weight
     }
+
     fn id(&self) -> Self::EdgeId {
         self.index
     }
@@ -522,6 +519,7 @@ where
     Ix: IndexType,
 {
     type Item = EdgeReference<'a, E, Ty, Ix>;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(move |(&j, w)| {
             let index = self.index;
@@ -535,6 +533,7 @@ where
             }
         })
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -545,8 +544,8 @@ where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    type NodeWeight = N;
     type EdgeWeight = E;
+    type NodeWeight = N;
 }
 
 impl<'a, N, E, Ty, Ix> IntoEdgeReferences for &'a Csr<N, E, Ty, Ix>
@@ -556,6 +555,7 @@ where
 {
     type EdgeRef = EdgeReference<'a, E, Ty, Ix>;
     type EdgeReferences = EdgeReferences<'a, E, Ty, Ix>;
+
     fn edge_references(self) -> Self::EdgeReferences {
         EdgeReferences {
             index: 0,
@@ -586,6 +586,7 @@ where
     Ix: IndexType,
 {
     type Item = EdgeReference<'a, E, Ty, Ix>;
+
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some((&j, w)) = self.iter.next() {
@@ -617,6 +618,7 @@ where
     Ix: IndexType,
 {
     type Edges = Edges<'a, E, Ty, Ix>;
+
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         self.edges(a)
     }
@@ -627,8 +629,8 @@ where
     Ty: EdgeType,
     Ix: IndexType,
 {
-    type NodeId = NodeIndex<Ix>;
-    type EdgeId = EdgeIndex; // index into edges vector
+    type EdgeId = EdgeIndex;
+    type NodeId = NodeIndex<Ix>; // index into edges vector
 }
 
 use fixedbitset::FixedBitSet;
@@ -639,9 +641,11 @@ where
     Ix: IndexType,
 {
     type Map = FixedBitSet;
+
     fn visit_map(&self) -> FixedBitSet {
         FixedBitSet::with_capacity(self.node_count())
     }
+
     fn reset_map(&self, map: &mut Self::Map) {
         map.clear();
         map.grow(self.node_count());
@@ -700,9 +704,11 @@ where
     fn node_bound(&self) -> usize {
         self.node_count()
     }
+
     fn to_index(&self, a: Self::NodeId) -> usize {
         a.index()
     }
+
     fn from_index(&self, ix: usize) -> Self::NodeId {
         Ix::new(ix)
     }
@@ -764,6 +770,7 @@ where
     Ix: IndexType,
 {
     type NodeIdentifiers = NodeIdentifiers<Ix>;
+
     fn node_identifiers(self) -> Self::NodeIdentifiers {
         NodeIdentifiers {
             r: 0..self.node_count(),
@@ -808,6 +815,7 @@ where
 {
     type NodeRef = (NodeIndex<Ix>, &'a N);
     type NodeReferences = NodeReferences<'a, N, Ix>;
+
     fn node_references(self) -> Self::NodeReferences {
         NodeReferences {
             iter: self.node_weights.iter().enumerate(),
@@ -902,12 +910,11 @@ mod tests {
     use std::println;
 
     use super::Csr;
-    use crate::Undirected;
-    use crate::algo::bellman_ford;
-    use crate::algo::find_negative_cycle;
-    use crate::algo::tarjan_scc;
-    use crate::visit::Dfs;
-    use crate::visit::VisitMap;
+    use crate::{
+        Undirected,
+        algo::{bellman_ford, find_negative_cycle, tarjan_scc},
+        visit::{Dfs, VisitMap},
+    };
 
     #[test]
     fn csr1() {
@@ -1150,8 +1157,7 @@ mod tests {
 
     #[test]
     fn test_edge_references() {
-        use crate::visit::EdgeRef;
-        use crate::visit::IntoEdgeReferences;
+        use crate::visit::{EdgeRef, IntoEdgeReferences};
         let m: Csr<(), _> = Csr::from_sorted_edges(&[
             (0, 1, 0.5),
             (0, 2, 2.),

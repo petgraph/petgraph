@@ -3,11 +3,11 @@
 extern crate petgraph;
 extern crate test;
 
+use petgraph::{
+    Directed, EdgeType, Incoming, Outgoing, algo,
+    matrix_graph::{MatrixGraph, node_index},
+};
 use test::Bencher;
-
-use petgraph::algo;
-use petgraph::matrix_graph::{node_index, MatrixGraph};
-use petgraph::{Directed, EdgeType, Incoming, Outgoing};
 
 #[bench]
 fn add_100_nodes(b: &mut test::Bencher) {

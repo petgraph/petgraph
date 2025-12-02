@@ -2,15 +2,13 @@
 extern crate petgraph;
 extern crate test;
 
-use test::Bencher;
-
 use petgraph::algo::page_rank;
+use test::Bencher;
 
 #[allow(dead_code)]
 mod common;
 
 use common::directed_fan;
-
 #[cfg(feature = "rayon")]
 use petgraph::algo::page_rank::parallel_page_rank;
 

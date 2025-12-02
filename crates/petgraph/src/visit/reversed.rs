@@ -1,10 +1,11 @@
-use crate::{Direction, Incoming};
-
-use crate::visit::{
-    Data, EdgeCount, EdgeIndexable, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp, GraphRef,
-    IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors, IntoNeighborsDirected,
-    IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeCount, NodeIndexable,
-    Visitable,
+use crate::{
+    Direction, Incoming,
+    visit::{
+        Data, EdgeCount, EdgeIndexable, EdgeRef, GetAdjacencyMatrix, GraphBase, GraphProp,
+        GraphRef, IntoEdgeReferences, IntoEdges, IntoEdgesDirected, IntoNeighbors,
+        IntoNeighborsDirected, IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable,
+        NodeCount, NodeIndexable, Visitable,
+    },
 };
 
 /// An edge-reversing graph adaptor.
@@ -14,8 +15,8 @@ use crate::visit::{
 pub struct Reversed<G>(pub G);
 
 impl<G: GraphBase> GraphBase for Reversed<G> {
-    type NodeId = G::NodeId;
     type EdgeId = G::EdgeId;
+    type NodeId = G::NodeId;
 }
 
 impl<G: GraphRef> GraphRef for Reversed<G> {}
@@ -27,6 +28,7 @@ where
     G: IntoNeighborsDirected,
 {
     type Neighbors = G::NeighborsDirected;
+
     fn neighbors(self, n: G::NodeId) -> G::NeighborsDirected {
         self.0.neighbors_directed(n, Incoming)
     }
@@ -37,6 +39,7 @@ where
     G: IntoNeighborsDirected,
 {
     type NeighborsDirected = G::NeighborsDirected;
+
     fn neighbors_directed(self, n: G::NodeId, d: Direction) -> G::NeighborsDirected {
         self.0.neighbors_directed(n, d.opposite())
     }
@@ -47,6 +50,7 @@ where
     G: IntoEdgesDirected,
 {
     type Edges = ReversedEdges<G::EdgesDirected>;
+
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         ReversedEdges {
             iter: self.0.edges_directed(a, Incoming),
@@ -59,6 +63,7 @@ where
     G: IntoEdgesDirected,
 {
     type EdgesDirected = ReversedEdges<G::EdgesDirected>;
+
     fn edges_directed(self, a: Self::NodeId, dir: Direction) -> Self::Edges {
         ReversedEdges {
             iter: self.0.edges_directed(a, dir.opposite()),
@@ -68,9 +73,11 @@ where
 
 impl<G: Visitable> Visitable for Reversed<G> {
     type Map = G::Map;
+
     fn visit_map(&self) -> G::Map {
         self.0.visit_map()
     }
+
     fn reset_map(&self, map: &mut Self::Map) {
         self.0.reset_map(map);
     }
@@ -88,9 +95,11 @@ where
     I::Item: EdgeRef,
 {
     type Item = ReversedEdgeReference<I::Item>;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(ReversedEdgeReference)
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -117,18 +126,22 @@ impl<R> EdgeRef for ReversedEdgeReference<R>
 where
     R: EdgeRef,
 {
-    type NodeId = R::NodeId;
     type EdgeId = R::EdgeId;
+    type NodeId = R::NodeId;
     type Weight = R::Weight;
+
     fn source(&self) -> Self::NodeId {
         self.0.target()
     }
+
     fn target(&self) -> Self::NodeId {
         self.0.source()
     }
+
     fn weight(&self) -> &Self::Weight {
         self.0.weight()
     }
+
     fn id(&self) -> Self::EdgeId {
         self.0.id()
     }
@@ -140,6 +153,7 @@ where
 {
     type EdgeRef = ReversedEdgeReference<G::EdgeRef>;
     type EdgeReferences = ReversedEdgeReferences<G::EdgeReferences>;
+
     fn edge_references(self) -> Self::EdgeReferences {
         ReversedEdgeReferences {
             iter: self.0.edge_references(),
@@ -159,9 +173,11 @@ where
     I::Item: EdgeRef,
 {
     type Item = ReversedEdgeReference<I::Item>;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(ReversedEdgeReference)
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }

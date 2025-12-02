@@ -1,15 +1,17 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 
 use super::{EdgeIndex, NodeIndex};
-use crate::graph::{Edge, IndexType, Node};
-use crate::prelude::*;
-use crate::serde_utils::{
-    CollectSeqWithLength, FromDeserialized, IntoSerializable, MappedSequenceVisitor,
+use crate::{
+    EdgeType,
+    graph::{Edge, IndexType, Node},
+    prelude::*,
+    serde_utils::{
+        CollectSeqWithLength, FromDeserialized, IntoSerializable, MappedSequenceVisitor,
+    },
 };
-use crate::EdgeType;
 
 /// Serialization representation for Graph
 /// Keep in sync with deserialization and StableGraph
@@ -148,14 +150,14 @@ where
     Ty: EdgeType,
 {
     type Input = EdgeProperty;
+
     fn from_deserialized<E2>(input: Self::Input) -> Result<Self, E2>
     where
         E2: Error,
     {
         if input.is_directed() != Ty::is_directed() {
             Err(E2::custom(format_args!(
-                "graph edge property mismatch, \
-                 expected {:?}, found {:?}",
+                "graph edge property mismatch, expected {:?}, found {:?}",
                 EdgeProperty::from(PhantomData::<Ty>),
                 input
             )))
@@ -242,6 +244,7 @@ where
     Ty: EdgeType,
 {
     type Output = SerGraph<'a, N, E, Ix>;
+
     fn into_serializable(self) -> Self::Output {
         SerGraph {
             nodes: &self.nodes,
@@ -273,8 +276,7 @@ where
     E: Error,
 {
     E::custom(format_args!(
-        "invalid value: node index `{node_index}` does not exist in graph \
-         with node bound {len}",
+        "invalid value: node index `{node_index}` does not exist in graph with node bound {len}",
     ))
 }
 
@@ -306,6 +308,7 @@ where
     Ty: EdgeType,
 {
     type Input = DeserGraph<N, E, Ix>;
+
     fn from_deserialized<E2>(input: Self::Input) -> Result<Self, E2>
     where
         E2: Error,

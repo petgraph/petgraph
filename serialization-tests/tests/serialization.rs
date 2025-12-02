@@ -8,19 +8,15 @@ extern crate serde_json;
 #[macro_use]
 extern crate defmac;
 
-use std::collections::HashSet;
-use std::fmt::Debug;
-use std::iter::FromIterator;
+use std::{collections::HashSet, fmt::Debug, iter::FromIterator};
 
-use itertools::assert_equal;
-use itertools::{repeat_n, Itertools};
-
-use petgraph::graph::{edge_index, node_index, IndexType};
-use petgraph::prelude::*;
-use petgraph::visit::EdgeRef;
-use petgraph::visit::IntoEdgeReferences;
-use petgraph::visit::NodeIndexable;
-use petgraph::EdgeType;
+use itertools::{Itertools, assert_equal, repeat_n};
+use petgraph::{
+    EdgeType,
+    graph::{IndexType, edge_index, node_index},
+    prelude::*,
+    visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
+};
 
 // graphs are the equal, down to graph indices
 // this is a strict notion of graph equivalence:
