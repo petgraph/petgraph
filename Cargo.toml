@@ -16,6 +16,9 @@ repository = "https://github.com/petgraph/petgraph"
 rust-version = "1.91"
 
 [workspace.dependencies]
+petgraph = { path = "crates/petgraph"}
+petgraph-core = { path = "crates/core"}
+
 ahash             = { version = "0.7.2", default-features = false }
 bincode           = { version = "1.3.3", default-features = false }
 defmac            = { version = "0.2.1", default-features = false }

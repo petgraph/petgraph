@@ -39,13 +39,13 @@ impl<K> Default for UnionFind<K> {
 #[inline]
 unsafe fn get_unchecked<K>(xs: &[K], index: usize) -> &K {
     debug_assert!(index < xs.len());
-    xs.get_unchecked(index)
+    unsafe { xs.get_unchecked(index) }
 }
 
 #[inline]
 unsafe fn get_unchecked_mut<K>(xs: &mut [K], index: usize) -> &mut K {
     debug_assert!(index < xs.len());
-    xs.get_unchecked_mut(index)
+    unsafe { xs.get_unchecked_mut(index) }
 }
 
 impl<K> UnionFind<K>
@@ -142,10 +142,10 @@ where
     }
 
     unsafe fn find_mut_recursive(&mut self, mut x: K) -> K {
-        let mut parent = *get_unchecked(&self.parent, x.index());
+        let mut parent = unsafe { *get_unchecked(&self.parent, x.index()) };
         while parent != x {
-            let grandparent = *get_unchecked(&self.parent, parent.index());
-            *get_unchecked_mut(&mut self.parent, x.index()) = grandparent;
+            let grandparent = unsafe { *get_unchecked(&self.parent, parent.index()) };
+            unsafe { *get_unchecked_mut(&mut self.parent, x.index()) = grandparent };
             x = parent;
             parent = grandparent;
         }

@@ -45,7 +45,7 @@ defmac    = { workspace = true }
 fxhash    = { workspace = true }
 itertools = { workspace = true }
 odds      = { workspace = true }
-rand      = { workspace = true }
+rand      = { workspace = true, features = ["std"] }
 
 [features]
 rayon      = ["std", "dep:rayon", "indexmap/rayon", "hashbrown/rayon"]

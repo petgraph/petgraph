@@ -16,7 +16,7 @@ repository    = "https://github.com/petgraph/petgraph"
 
 [dependencies]
 itertools = { version = "0.10.1" }
-petgraph  = { path = "..", features = ["serde-1", "quickcheck"] }
+petgraph  = { workspace = true, features = ["serde-1", "quickcheck"] }
 
 [dev-dependencies]
 bincode      = "1.3.3"

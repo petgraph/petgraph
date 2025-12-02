@@ -3,8 +3,8 @@ extern crate petgraph;
 use core::hash::Hash;
 use std::collections::HashSet;
 
-use petgraph::prelude::*;
 use petgraph::EdgeType;
+use petgraph::prelude::*;
 
 use petgraph as pg;
 
@@ -16,7 +16,7 @@ use petgraph::algo::{
 use petgraph::graph::node_index as n;
 use petgraph::graph::{GraphError, IndexType};
 
-use petgraph::algo::{astar, dijkstra, DfsSpace};
+use petgraph::algo::{DfsSpace, astar, dijkstra};
 use petgraph::visit::{
     IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, NodeIndexable, Reversed, Topo,
     VisitMap, Walker,
@@ -615,10 +615,10 @@ fn test_astar_admissible_inconsistent() {
 #[test]
 fn test_generate_undirected() {
     for size in 0..4 {
-        let mut gen = pg::generate::Generator::<Undirected>::all(size, true);
+        let mut r#gen = pg::generate::Generator::<Undirected>::all(size, true);
         let nedges = (size * size - size) / 2 + size;
         let mut n = 0;
-        while let Some(g) = gen.next_ref() {
+        while let Some(g) = r#gen.next_ref() {
             n += 1;
             println!("{g:?}");
         }
@@ -634,11 +634,11 @@ fn test_generate_directed() {
     //            0, 1, 2, 3,  4,   5 ..
     let n_dag = &[1, 1, 3, 25, 543, 29281, 3781503];
     for (size, &dags_exp) in (0..4).zip(n_dag) {
-        let mut gen = pg::generate::Generator::<Directed>::all(size, true);
+        let mut r#gen = pg::generate::Generator::<Directed>::all(size, true);
         let nedges = size * size;
         let mut n = 0;
         let mut dags = 0;
-        while let Some(g) = gen.next_ref() {
+        while let Some(g) = r#gen.next_ref() {
             n += 1;
             if !pg::algo::is_cyclic_directed(g) {
                 dags += 1;
@@ -661,9 +661,9 @@ fn test_generate_directed() {
 fn test_generate_dag() {
     use petgraph::visit::GetAdjacencyMatrix;
     for size in 1..5 {
-        let gen = pg::generate::Generator::directed_acyclic(size);
+        let r#gen = pg::generate::Generator::directed_acyclic(size);
         let nedges = (size - 1) * size / 2;
-        let graphs = gen.collect::<Vec<_>>();
+        let graphs = r#gen.collect::<Vec<_>>();
 
         assert_eq!(graphs.len(), 1 << nedges);
 
@@ -2176,7 +2176,7 @@ fn filtered_edge_reverse() {
 fn dfs_visit() {
     use petgraph::visit::Control;
     use petgraph::visit::DfsEvent::*;
-    use petgraph::visit::{depth_first_search, Time};
+    use petgraph::visit::{Time, depth_first_search};
     use petgraph::visit::{VisitMap, Visitable};
     let gr: Graph<(), ()> = Graph::from_edges([
         (0, 5),
@@ -2396,9 +2396,11 @@ fn test_edge_filtered() {
     assert_eq!(connected_components(&gr), 1);
     let positive_edges = EdgeFiltered::from_fn(&gr, |edge| *edge.weight() >= 0);
     assert_eq!(positive_edges.edge_references().count(), 6);
-    assert!(positive_edges
-        .edge_references()
-        .all(|edge| *edge.weight() >= 0));
+    assert!(
+        positive_edges
+            .edge_references()
+            .all(|edge| *edge.weight() >= 0)
+    );
     assert_eq!(connected_components(&positive_edges), 2);
 
     let mut dfs = DfsPostOrder::new(&positive_edges, n(0));
@@ -3230,7 +3232,9 @@ fn test_edges_connecting_iteration_order() {
 
     assert_eq!(
         edges_connecting_one_to_two,
-        vec![edge_two, edge_one, edge_zero, edge_five, edge_four, edge_three]
+        vec![
+            edge_two, edge_one, edge_zero, edge_five, edge_four, edge_three
+        ]
     );
 
     let edges_connecting_two_to_one: Vec<_> = g
@@ -3240,6 +3244,8 @@ fn test_edges_connecting_iteration_order() {
 
     assert_eq!(
         edges_connecting_two_to_one,
-        vec![edge_five, edge_four, edge_three, edge_two, edge_one, edge_zero]
+        vec![
+            edge_five, edge_four, edge_three, edge_two, edge_one, edge_zero
+        ]
     );
 }

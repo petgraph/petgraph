@@ -2,7 +2,7 @@ extern crate petgraph;
 extern crate rand;
 
 use petgraph::unionfind::UnionFind;
-use rand::{thread_rng, ChaChaRng, Rng, SeedableRng};
+use rand::{ChaChaRng, Rng, SeedableRng, thread_rng};
 use std::collections::HashSet;
 
 #[test]
@@ -140,8 +140,8 @@ fn uf_u8() {
     let mut rng = ChaChaRng::from_rng(thread_rng()).unwrap();
     let mut u = UnionFind::<u8>::new(n);
     for _ in 0..(n * 8) {
-        let a = rng.gen();
-        let b = rng.gen();
+        let a = rng.r#gen();
+        let b = rng.r#gen();
         let ar = u.find(a);
         let br = u.find(b);
         assert_eq!(ar != br, u.union(a, b));
@@ -154,8 +154,8 @@ fn uf_u8_checked() {
     let mut rng = ChaChaRng::from_rng(thread_rng()).unwrap();
     let mut u = UnionFind::<u8>::new(n);
     for _ in 0..(n * 8) {
-        let a = rng.gen();
-        let b = rng.gen();
+        let a = rng.r#gen();
+        let b = rng.r#gen();
         let ar = u.try_find(a).unwrap();
         let br = u.try_find(b).unwrap();
         assert_eq!(ar != br, u.try_union(a, b).unwrap());
