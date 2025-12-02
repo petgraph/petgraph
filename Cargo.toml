@@ -1,99 +1,50 @@
-[package]
-name = "petgraph"
-version = "0.8.3"
-readme = "README.md"
-license = "MIT OR Apache-2.0"
-authors = { workspace = true }
-
-description = "Graph data structure library. Provides graph types and graph algorithms."
-documentation = "https://docs.rs/petgraph/"
-repository = "https://github.com/petgraph/petgraph"
-
-keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
-categories = ["data-structures"]
-
-rust-version = { workspace = true }
-edition = { workspace = true }
-
-[package.metadata.docs.rs]
-features = ["rayon", "serde-1", "quickcheck"]
-
-[package.metadata.release]
-no-dev-version = true
+[workspace]
+members = ["crates/petgraph", "serialization-tests"]
 
 [workspace.package]
-rust-version = "1.64"
-edition = "2021"
-authors = ["bluss", "mitchmindtree"]
-
-[workspace]
-members = [".", "crates/petgraph", "serialization-tests"]
-
-[lib]
-bench = false
-
-name = "petgraph"
-
-[profile.release]
-
-[profile.bench]
-debug = true
-
-[dependencies]
-fixedbitset = { version = "0.5.7", default-features = false }
-indexmap = { version = "2.5.0", default-features = false }
-hashbrown = { version = "^0.15.0", default-features = false, features = ["default-hasher", "inline-more"] }
-quickcheck = { optional = true, version = "0.8", default-features = false }
-serde = { version = "1.0", default-features = false, optional = true }
-serde_derive = { version = "1.0", default-features = false, optional = true }
-rayon = { version = "1.5.3", optional = true }
-dot-parser = { version = "0.5.1", optional = true }
-dot-parser-macros = { version = "0.5.1", optional = true }
-
-[dev-dependencies]
-bincode = "1.3.3"
-defmac = "0.2.1"
-itertools = { version = "0.12.1", default-features = false }
-odds = { version = "0.4.0" }
-rand = "0.5.5"
-ahash = "0.7.2"
-fxhash = "0.2.1"
-
-[features]
-rayon = ["std", "dep:rayon", "indexmap/rayon", "hashbrown/rayon"]
-dot_parser = ["std", "dep:dot-parser", "dep:dot-parser-macros"]
-
-# feature flags for testing use only
-all = [
-    "unstable",
-    "quickcheck",
-    "matrix_graph",
-    "stable_graph",
-    "graphmap",
-    "rayon",
-    "dot_parser",
+authors = [
+    "Agustín Borgna <agustinborgna@gmail.com>",
+    "Anton Kochkov <xvilka@gmail.com>",
+    "Bilal Mahmoud <mahmoud@fastmail.com>",
+    "bluss",
+    "mitchmindtree",
 ]
-default = ["std", "graphmap", "stable_graph", "matrix_graph"]
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/petgraph/petgraph"
+rust-version = "1.91"
 
-generate = [] # For unstable features
+[workspace.dependencies]
+ahash             = { version = "0.7.2", default-features = false }
+bincode           = { version = "1.3.3", default-features = false }
+defmac            = { version = "0.2.1", default-features = false }
+dot-parser        = { version = "0.5.1", default-features = false }
+dot-parser-macros = { version = "0.5.1", default-features = false }
+fixedbitset       = { version = "0.5.7", default-features = false }
+fxhash            = { version = "0.2.1", default-features = false }
+hashbrown         = { version = "^0.15.0", default-features = false }
+indexmap          = { version = "2.5.0", default-features = false }
+itertools         = { version = "0.12.1", default-features = false }
+odds              = { version = "0.4.0", default-features = false }
+quickcheck        = { version = "0.8", default-features = false }
+rand              = { version = "0.5.5", default-features = false }
+rayon             = { version = "1.5.3", default-features = false }
+serde             = { version = "1.0", default-features = false }
+serde_derive      = { version = "1.0", default-features = false }
 
-graphmap = []
-matrix_graph = []
-quickcheck = ["std", "dep:quickcheck", "graphmap", "stable_graph"]
-serde-1 = ["serde", "serde_derive"]
-stable_graph = ["serde?/alloc"]
-unstable = ["generate"]
 
-std = ["indexmap/std"]
+[workspace.lints.rust]
+future_incompatible = { level = "warn", priority = -1 }
+nonstandard_style   = { level = "warn", priority = -1 }
 
-[lints.clippy]
-alloc_instead_of_core = "warn"
-std_instead_of_alloc = "warn"
-std_instead_of_core = "warn"
+unreachable_pub = "warn"
 
-[package.metadata.cargo-semver-checks.lints]
-# Lint temporarily disabled, as this bug is causing false positives:
-# https://github.com/obi1kenobi/cargo-semver-checks/issues/1200
-#
-# TODO: re-enable once the bug is fixed
-trait_newly_sealed = "allow"
+# TODO: Enable `cargo` lints when supported
+# [workspace.lints.cargo]
+
+[workspace.lints.clippy]
+all      = { level = "warn", priority = -1 }
+nursery  = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+self_named_module_files = "warn"
