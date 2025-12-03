@@ -9,6 +9,8 @@ authors = [
     "Bilal Mahmoud <mahmoud@fastmail.com>",
     "bluss",
     "mitchmindtree",
+    "Raoul Luqué <raoulsluque@gmail.com>",
+    "starovoid <prototyperailgun@gmail.com>",
 ]
 edition = "2024"
 license = "MIT OR Apache-2.0"
