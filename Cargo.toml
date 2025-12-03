@@ -52,3 +52,7 @@ nursery  = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 
 self_named_module_files = "warn"
+
+alloc_instead_of_core = "warn"
+std_instead_of_alloc  = "warn"
+std_instead_of_core   = "warn"

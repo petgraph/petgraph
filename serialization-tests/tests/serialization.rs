@@ -262,10 +262,10 @@ fn from_json_digraph_str_i32() {
         [4, 5, 6],
     ];
 
-    type GSI = DiGraph<String, i32>;
-    type GSISmall = DiGraph<String, i32, u8>;
+    type Gsi = DiGraph<String, i32>;
+    type GsiSmall = DiGraph<String, i32, u8>;
 
-    let g4: GSI = fromjson!(&DIGRAPH_STRI32);
+    let g4: Gsi = fromjson!(&DIGRAPH_STRI32);
 
     for ni in g4.node_indices() {
         assert_eq!(&g4nodes[ni.index()], &g4[ni]);
@@ -280,7 +280,7 @@ fn from_json_digraph_str_i32() {
         assert_eq!(edge_data[2], g4[e.id()]);
     }
 
-    let _g4small: GSISmall = fromjson!(&DIGRAPH_STRI32);
+    let _g4small: GsiSmall = fromjson!(&DIGRAPH_STRI32);
 }
 
 #[test]
