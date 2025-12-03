@@ -1602,34 +1602,36 @@ where
     /// ```
     /// use petgraph::graph::UnGraph;
     ///
-    /// // Create an undirected graph with city names as node data and their distances as edge data.
-    /// let mut g = UnGraph::<String, u32>::new_undirected();
+    /// fn main() {
+    ///     // Create an undirected graph with city names as node data and their distances as edge data.
+    ///     let mut g = UnGraph::<String, u32>::new_undirected();
     ///
-    /// let bie = g.add_node("Bielefeld".to_owned());
-    /// let del = g.add_node("New Delhi".to_owned());
-    /// let mex = g.add_node("Mexico City".to_owned());
-    /// let syd = g.add_node("Sydney".to_owned());
+    ///     let bie = g.add_node("Bielefeld".to_owned());
+    ///     let del = g.add_node("New Delhi".to_owned());
+    ///     let mex = g.add_node("Mexico City".to_owned());
+    ///     let syd = g.add_node("Sydney".to_owned());
     ///
-    /// // Add distances in kilometers as edge data.
-    /// g.extend_with_edges(&[
-    ///     (bie, del, 6_000),
-    ///     (bie, mex, 10_000),
-    ///     (bie, syd, 16_000),
-    ///     (del, mex, 14_000),
-    ///     (del, syd, 12_000),
-    ///     (mex, syd, 15_000),
-    /// ]);
+    ///     // Add distances in kilometers as edge data.
+    ///     g.extend_with_edges(&[
+    ///         (bie, del, 6_000),
+    ///         (bie, mex, 10_000),
+    ///         (bie, syd, 16_000),
+    ///         (del, mex, 14_000),
+    ///         (del, syd, 12_000),
+    ///         (mex, syd, 15_000),
+    ///     ]);
     ///
-    /// // We might now want to change up the distances to be in miles instead and to be strings.
-    /// // We can do this using the `map` method, which takes two closures for the node and edge
-    /// data, // respectively, and returns a new graph with the transformed data.
-    /// let g_miles: UnGraph<String, i32> = g.map_owned(
-    ///     |_, city| city,
-    ///     |_, distance| (distance as f64 * 0.621371).round() as i32,
-    /// );
+    ///     // We might now want to change up the distances to be in miles instead and to be strings.
+    ///     // We can do this using the `map` method, which takes two closures for the node and edge
+    ///     // data, respectively, and returns a new graph with the transformed data.
+    ///     let g_miles: UnGraph<String, i32> = g.map_owned(
+    ///         |_, city| city,
+    ///         |_, distance| (distance as f64 * 0.621371).round() as i32,
+    ///     );
     ///
-    /// for &edge_weight in g_miles.edge_weights() {
-    ///     assert!(edge_weight < 10_000);
+    ///     for &edge_weight in g_miles.edge_weights() {
+    ///         assert!(edge_weight < 10_000);
+    ///     }
     /// }
     /// ```
     pub fn map_owned<F, G, N2, E2>(self, mut node_map: F, mut edge_map: G) -> Graph<N2, E2, Ty, Ix>
