@@ -1597,7 +1597,9 @@ where
     /// as `self`.
     ///
     /// If you want a non-consuming version of this function, see
-    /// [`map`](struct.Graph.html#method.map). ```
+    /// [`map`](struct.Graph.html#method.map).
+    ///
+    /// ```
     /// use petgraph::graph::UnGraph;
     ///
     /// // Create an undirected graph with city names as node data and their distances as edge data.
