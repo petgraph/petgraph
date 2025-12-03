@@ -95,6 +95,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Remove repo toolchain pin so rustup won't use nightly
+      - run: rm -f rust-toolchain.toml rustup-toolchain.toml
       - uses: mozilla-actions/sccache-action@v0.0.8
       - uses: extractions/setup-just@v3
       - name: Install stable toolchain
