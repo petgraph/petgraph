@@ -1,0 +1,34 @@
+#![feature(test)]
+
+extern crate petgraph;
+extern crate test;
+
+use core::cmp::{max, min};
+
+use petgraph::{algo::spfa, prelude::*};
+use test::Bencher;
+
+#[bench]
+fn spfa_bench(bench: &mut Bencher) {
+    static NODE_COUNT: usize = 100;
+    let mut g = Graph::new();
+    let nodes: Vec<NodeIndex<_>> = (0..NODE_COUNT).map(|i| g.add_node(i)).collect();
+    for i in 0..NODE_COUNT {
+        let n1 = nodes[i];
+        let neighbour_count = i % 8 + 3;
+        let j_from = max(0, i as i32 - neighbour_count as i32 / 2) as usize;
+        let j_to = min(NODE_COUNT, j_from + neighbour_count);
+        for j in j_from..j_to {
+            let n2 = nodes[j];
+            let mut distance: f64 = ((i + 3) % 10) as f64;
+            if n1 != n2 {
+                distance -= 0.5
+            }
+            g.add_edge(n1, n2, distance);
+        }
+    }
+
+    bench.iter(|| {
+        let _scores = spfa(&g, nodes[0], |edge| *edge.weight());
+    });
+}

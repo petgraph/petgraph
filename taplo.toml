@@ -1,0 +1,30 @@
+[formatting]
+align_entries       = true
+array_auto_collapse = false
+array_auto_expand   = false
+indent_string       = "    "
+inline_table_expand = false
+reorder_keys        = true
+
+[[rule]]
+include = ["**/Cargo.toml"]
+
+[rule.formatting]
+reorder_keys = false
+
+[[rule]]
+include = ["**/Cargo.toml"]
+keys    = ["dependencies", "dev-dependencies", "build-dependencies", "workspace.dependencies"]
+
+[rule.formatting]
+align_entries = true
+reorder_keys  = true
+
+[[rule]]
+include = ["**/Cargo.toml"]
+keys    = ["workspace"]
+
+[rule.formatting]
+align_entries  = true
+reorder_arrays = true
+reorder_keys   = true

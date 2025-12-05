@@ -1,6 +1,6 @@
 [workspace]
-pr_draft = true
 git_tag_name = "{{ package }}@v{{ version }}"
+pr_draft     = true
 
 # Include a list of contributors in the release body
 git_release_body = """
@@ -14,8 +14,8 @@ git_release_body = """
 """
 
 [changelog]
-sort_commits = "oldest"
 protect_breaking_commits = true
+sort_commits             = "oldest"
 
 header = """# Changelog
 
