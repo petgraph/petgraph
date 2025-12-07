@@ -1440,25 +1440,28 @@ quickcheck! {
         true
     }
 }
+
 quickcheck! {
     fn test_bridges(g: Graph<(), (), Undirected>) -> bool {
-        let num = connected_components(&g);
-        let br = bridges(&g).map(|edge| edge.id()).collect::<HashSet<_>>();
+        // Test only small graphs to keep test time reasonable
+        if g.edge_count() <= 1000 && g.node_count() <= 1000 {
+            let num = connected_components(&g);
+            let br = bridges(&g).map(|edge| edge.id()).collect::<HashSet<_>>();
 
-        for &edge in &br {
-            let mut graph = g.clone();
-            graph.remove_edge(edge);
-            assert_eq!(connected_components(&graph), num+1);
+            for &edge in &br {
+                let mut graph = g.clone();
+                graph.remove_edge(edge);
+                assert_eq!(connected_components(&graph), num+1);
+            }
+
+            for e in g.edge_references() {
+                if !br.contains(&e.id()) {
+                    let mut graph = g.clone();
+                    graph.remove_edge(e.id());
+                    assert_eq!(connected_components(&graph), num);
+                }
+            }
         }
-
-        for e in g.edge_references() {
-            if !br.contains(&e.id()) {
-               let mut graph = g.clone();
-               graph.remove_edge(e.id());
-               assert_eq!(connected_components(&graph), num);
-           }
-        }
-
         true
     }
 }

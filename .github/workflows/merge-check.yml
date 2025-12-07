@@ -1,0 +1,41 @@
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ '*' ]
+  workflow_dispatch: { }
+
+name: Merge check
+
+jobs:
+  powerset_features_test:
+    # This job runs on pushes to master or pull_request with the `S-run-thorough-ci-tests` label.
+    if: (${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'S-run-thorough-ci-tests') }}) || (${{ github.event_name == 'push' }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crate:
+          - petgraph
+          - petgraph-core
+          - petgraph-serialization-tests
+    name: Powerset feature combination tests ${{ matrix.crate }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      # Remove repo toolchain pin so we can specify toolchain manually
+      - name: Remove toolchain pin
+        run: rm -f rust-toolchain.toml rustup-toolchain.toml
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
+      - name: Build and test
+        run: |
+          # Run tests with all possible feature combinations of combinations of size 0 to 1
+          cargo hack nextest run -clean-per-run --feature-powerset --depth 1 --package ${{ matrix.crate }}
