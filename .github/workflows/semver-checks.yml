@@ -79,7 +79,7 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
 
-      # Debug step
+      # Debug step 
       - run: |
           echo "breaking: ${{ steps.set-breaking.outputs.breaking }}"
           echo "breaking-pr: ${{ steps.breaking-pr.outputs.breaking }}"
