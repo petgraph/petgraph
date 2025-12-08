@@ -12,15 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crate:
-          - petgraph
-          - petgraph-core
-          - petgraph-serialization-tests
+        crate: [petgraph, petgraph-core, petgraph-serialization-tests]
+        rust: [stable, beta, nightly]
         include:
-          - rust: stable
-          - rust: beta
           - rust: nightly
             bench: true
+            
     name: Tests ${{ matrix.crate }} (Rust ${{ matrix.rust }})
 
     steps:
