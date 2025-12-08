@@ -1909,7 +1909,7 @@ where
     degree
 }
 
-#[cfg(feature = "graphmap")]
+#[cfg(all(feature = "graphmap", feature = "stable_graph"))]
 #[test]
 fn degree_sequence() {
     let mut gr = Graph::<usize, (), Undirected>::from_edges([
@@ -1931,7 +1931,7 @@ fn degree_sequence() {
     degree_sequence.sort_by(|x, y| Ord::cmp(y, x));
     assert_eq!(&degree_sequence, &[5, 3, 3, 2, 2, 1, 0]);
 
-    let mut gr = GraphMap::<_, (), Undirected>::from_edges(&[
+    let mut gr = GraphMap::<_, (), Undirected, fxhash::FxBuildHasher>::from_edges(&[
         (0, 1),
         (1, 2),
         (1, 3),

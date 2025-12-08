@@ -11,6 +11,26 @@ use petgraph::{
     visit::Walker,
 };
 
+// To properly handle imports in std and no_std, respectively.
+#[cfg(all(feature = "std", feature = "graphmap"))]
+type GraphMap<N, E, Ty = Directed, S = std::collections::hash_map::RandomState> =
+    petgraph::graphmap::GraphMap<N, E, Ty, S>;
+#[cfg(all(not(feature = "std"), feature = "graphmap"))]
+type GraphMap<N, E, Ty = Directed, S = fxhash::FxBuildHasher> =
+    petgraph::graphmap::GraphMap<N, E, Ty, S>;
+
+#[cfg(all(feature = "std", feature = "graphmap"))]
+type DiGraphMap<N, E, S = std::collections::hash_map::RandomState> =
+    petgraph::graphmap::DiGraphMap<N, E, S>;
+#[cfg(all(not(feature = "std"), feature = "graphmap"))]
+type DiGraphMap<N, E, S = fxhash::FxBuildHasher> = petgraph::graphmap::DiGraphMap<N, E, S>;
+
+#[cfg(all(feature = "std", feature = "graphmap"))]
+type UnGraphMap<N, E, S = std::collections::hash_map::RandomState> =
+    petgraph::graphmap::UnGraphMap<N, E, S>;
+#[cfg(all(not(feature = "std"), feature = "graphmap"))]
+type UnGraphMap<N, E, S = fxhash::FxBuildHasher> = petgraph::graphmap::UnGraphMap<N, E, S>;
+
 #[test]
 fn simple() {
     //let root = TypedArena::<Node<_>>::new();
@@ -114,7 +134,7 @@ fn remov() {
 #[test]
 fn remove_node() {
     // From #431
-    let mut graph = petgraph::graphmap::DiGraphMap::<u32, ()>::new();
+    let mut graph = DiGraphMap::<u32, ()>::new();
     graph.add_edge(1, 2, ());
     graph.remove_node(2);
 

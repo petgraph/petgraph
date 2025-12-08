@@ -1,7 +1,3 @@
-#[cfg(feature = "graphmap")]
-use petgraph::graphmap::GraphMap;
-#[cfg(feature = "matrix_graph")]
-use petgraph::matrix_graph::UnMatrix;
 #[cfg(feature = "stable_graph")]
 use petgraph::stable_graph::StableGraph;
 use petgraph::{
@@ -9,6 +5,18 @@ use petgraph::{
     csr::Csr,
     graph6::{FromGraph6, ToGraph6, from_graph6_representation, get_graph6_representation},
 };
+
+#[cfg(all(feature = "std", feature = "graphmap"))]
+type GraphMap<N, E, Ty> = petgraph::graphmap::GraphMap<N, E, Ty>;
+#[cfg(all(not(feature = "std"), feature = "graphmap"))]
+type GraphMap<N, E, Ty> = petgraph::graphmap::GraphMap<N, E, Ty, fxhash::FxBuildHasher>;
+
+#[cfg(all(feature = "std", feature = "matrix_graph"))]
+type UnMatrix<N, E, S = std::collections::hash_map::RandomState, Null = Option<E>> =
+    petgraph::matrix_graph::UnMatrix<N, E, S, Null>;
+#[cfg(all(not(feature = "std"), feature = "matrix_graph"))]
+type UnMatrix<N, E, S = fxhash::FxBuildHasher, Null = Option<E>> =
+    petgraph::matrix_graph::UnMatrix<N, E, S, Null>;
 
 #[test]
 fn generic_graph6_encoder_test_cases() {
@@ -152,7 +160,7 @@ fn test_graph6_for_graph_map(graph6_str: &str, order: usize, edges: Vec<(u16, u1
     assert_eq!(decoded_graph.graph6_string(), graph6_str);
 }
 
-#[cfg(feature = "matrix_graph")]
+#[cfg(all(feature = "matrix_graph", feature = "graphmap"))]
 #[test]
 fn graph6_for_matrix_graph_test_cases() {
     for (order, graph6_str, edges) in TEST_CASES {
@@ -160,7 +168,7 @@ fn graph6_for_matrix_graph_test_cases() {
     }
 }
 
-#[cfg(feature = "matrix_graph")]
+#[cfg(all(feature = "matrix_graph", feature = "graphmap"))]
 fn test_graph6_for_matrix_graph(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
     type G = UnMatrix<(), ()>;
     let size = edges.len();

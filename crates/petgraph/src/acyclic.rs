@@ -882,7 +882,7 @@ mod tests {
     fn test_multiedge_allowed() {
         use crate::{Directed, prelude::GraphMap};
 
-        let mut graph = Acyclic::<GraphMap<usize, (), Directed>>::new();
+        let mut graph = Acyclic::<GraphMap<usize, (), Directed, fxhash::FxBuildHasher>>::new();
         graph.add_node(0);
         graph.add_node(1);
         graph.try_update_edge(0, 1, ()).unwrap();
