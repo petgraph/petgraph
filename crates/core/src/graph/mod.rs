@@ -29,3 +29,9 @@ pub trait Graph {
     where
         Self: 'graph;
 }
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Cardinality {
+    order: usize,
+    size: usize,
+}
