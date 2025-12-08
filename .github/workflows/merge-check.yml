@@ -42,4 +42,4 @@ jobs:
       - name: Build and test
         run: |
           # Run tests with all possible feature combinations of combinations of size 0 to 1
-          cargo hack nextest run -clean-per-run --feature-powerset --depth 1 --package ${{ matrix.crate }}
+          cargo hack nextest run --clean-per-run --feature-powerset --depth 1 --package ${{ matrix.crate }}
