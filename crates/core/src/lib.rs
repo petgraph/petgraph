@@ -1,10 +1,9 @@
 #![no_std]
 
-mod density_hint;
-mod edge;
-mod graph;
-mod id;
-mod node;
+pub mod edge;
+pub mod graph;
+pub mod id;
+pub mod node;
 
 #[must_use]
 pub const fn add(left: u64, right: u64) -> u64 {

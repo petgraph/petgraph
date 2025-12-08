@@ -1,7 +1,7 @@
 use super::{Cardinality, DensityHint, Graph};
 use crate::{edge::Edge as _, node::Node as _};
 
-pub trait DirectedGraph: Graph {
+pub trait UndirectedGraph: Graph {
     fn density_hint(&self) -> DensityHint {
         DensityHint::Sparse
     }
@@ -17,18 +17,18 @@ pub trait DirectedGraph: Graph {
     fn node_count(&self) -> usize {
         self.nodes().count()
     }
+
     fn edge_count(&self) -> usize {
         self.edges().count()
     }
 
-    // Node Iteration
+    // Node iteration
 
     fn nodes(&self) -> impl Iterator<Item = Self::NodeRef<'_>>;
     fn nodes_mut(&mut self) -> impl Iterator<Item = Self::NodeMut<'_>>;
 
-    /// Nodes with degree 0 (no incident edges).
     fn isolated_nodes(&self) -> impl Iterator<Item = Self::NodeRef<'_>> {
-        self.nodes().filter(|node| self.degree(node.id()) == 0)
+        self.nodes().filter(|n| self.degree(n.id()) == 0)
     }
 
     // Edge iteration
@@ -56,41 +56,11 @@ pub trait DirectedGraph: Graph {
 
     // Degree
 
-    fn in_degree(&self, node: Self::NodeId) -> usize {
-        self.incoming_edges(node).count()
-    }
-
-    fn out_degree(&self, node: Self::NodeId) -> usize {
-        self.outgoing_edges(node).count()
-    }
-
     fn degree(&self, node: Self::NodeId) -> usize {
-        self.in_degree(node) + self.out_degree(node)
+        self.incident_edges(node).count()
     }
 
-    // Edges by direction
-
-    fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = Self::EdgeRef<'_>> {
-        self.edges().filter(move |edge| edge.target() == node)
-    }
-
-    fn incoming_edges_mut(
-        &mut self,
-        node: Self::NodeId,
-    ) -> impl Iterator<Item = Self::EdgeMut<'_>> {
-        self.edges_mut().filter(move |edge| edge.target() == node)
-    }
-
-    fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = Self::EdgeRef<'_>> {
-        self.edges().filter(move |edge| edge.source() == node)
-    }
-
-    fn outgoing_edges_mut(
-        &mut self,
-        node: Self::NodeId,
-    ) -> impl Iterator<Item = Self::EdgeMut<'_>> {
-        self.edges_mut().filter(move |edge| edge.source() == node)
-    }
+    // Incidence
 
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = Self::EdgeRef<'_>> {
         self.edges()
@@ -107,39 +77,19 @@ pub trait DirectedGraph: Graph {
 
     // Adjacency
 
-    fn predecessors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.incoming_edges(node).map(|edge| edge.source())
-    }
-
-    fn successors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.outgoing_edges(node).map(|edge| edge.target())
-    }
-
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.predecessors(node).chain(self.successors(node))
+        self.incident_edges(node).map(move |edge| {
+            if edge.source() == node {
+                edge.target()
+            } else {
+                edge.source()
+            }
+        })
     }
 
     // Edges between nodes
 
     fn edges_between(
-        &self,
-        source: Self::NodeId,
-        target: Self::NodeId,
-    ) -> impl Iterator<Item = Self::EdgeRef<'_>> {
-        self.edges()
-            .filter(move |edge| edge.source() == source && edge.target() == target)
-    }
-
-    fn edges_between_mut(
-        &mut self,
-        source: Self::NodeId,
-        target: Self::NodeId,
-    ) -> impl Iterator<Item = Self::EdgeMut<'_>> {
-        self.edges_mut()
-            .filter(move |edge| edge.source() == source && edge.target() == target)
-    }
-
-    fn edges_connecting(
         &self,
         lhs: Self::NodeId,
         rhs: Self::NodeId,
@@ -150,7 +100,7 @@ pub trait DirectedGraph: Graph {
         })
     }
 
-    fn edges_connecting_mut(
+    fn edges_between_mut(
         &mut self,
         lhs: Self::NodeId,
         rhs: Self::NodeId,
@@ -163,31 +113,19 @@ pub trait DirectedGraph: Graph {
 
     // Existence checks
 
-    fn contains_node(&self, node: Self::NodeId) -> bool {
-        self.node(node).is_some()
+    fn contains_node(&self, id: Self::NodeId) -> bool {
+        self.node(id).is_some()
     }
 
-    fn contains_edge(&self, edge: Self::EdgeId) -> bool {
-        self.edge(edge).is_some()
+    fn contains_edge(&self, id: Self::EdgeId) -> bool {
+        self.edge(id).is_some()
     }
 
-    fn is_adjacent(&self, source: Self::NodeId, target: Self::NodeId) -> bool {
-        self.edges_between(source, target).next().is_some()
+    fn is_adjacent(&self, lhs: Self::NodeId, rhs: Self::NodeId) -> bool {
+        self.edges_between(lhs, rhs).next().is_some()
     }
 
     fn is_empty(&self) -> bool {
         self.node_count() == 0
-    }
-
-    // Sources and sinks
-
-    /// Nodes with in_degree = 0.
-    fn sources(&self) -> impl Iterator<Item = Self::NodeRef<'_>> {
-        self.nodes().filter(|n| self.in_degree(n.id()) == 0)
-    }
-
-    /// Nodes with out_degree = 0.
-    fn sinks(&self) -> impl Iterator<Item = Self::NodeRef<'_>> {
-        self.nodes().filter(|n| self.out_degree(n.id()) == 0)
     }
 }
