@@ -44,11 +44,14 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       # Run cargo-semver-checks against the PR's target branch.
-      - name: Install latest cargo-semver-checks
-        run: cargo install --git https://github.com/obi1kenobi/cargo-semver-checks cargo-semver-checks
       - name: Check semver
         id: check-changes
-        run: cargo semver-checks check-release --baseline-rev ${{ github.event.pull_request.base.sha || github.event.inputs.base }} --release-type minor
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: all-features
+          manifest-path: PR_BRANCH/Cargo.toml
+          baseline-rev: ${{ github.event.pull_request.base.sha || github.event.inputs.base }}
+          release-type: minor
         continue-on-error: true
       
       - name: Set breaking flag
