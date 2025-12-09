@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::missing_errors_doc, reason = "bootstrap")]
 
 pub mod edge;
 pub mod graph;

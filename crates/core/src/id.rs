@@ -6,11 +6,11 @@ use core::{
 pub trait Id: Copy + PartialEq + Debug + Display {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum IdError {
+pub enum LinearIdTryFromIntError {
     OutOfRange { value: u64, range: (u64, u64) },
 }
 
-impl Display for IdError {
+impl Display for LinearIdTryFromIntError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::OutOfRange {
@@ -23,7 +23,7 @@ impl Display for IdError {
     }
 }
 
-impl core::error::Error for IdError {}
+impl core::error::Error for LinearIdTryFromIntError {}
 
 pub trait LinearId:
     Id
@@ -32,10 +32,10 @@ pub trait LinearId:
     + PartialOrd
     + Ord
     + Hash
-    + TryFrom<u16, Error = IdError>
-    + TryFrom<u32, Error = IdError>
-    + TryFrom<u64, Error = IdError>
-    + TryFrom<usize, Error = IdError>
+    + TryFrom<u16, Error = LinearIdTryFromIntError>
+    + TryFrom<u32, Error = LinearIdTryFromIntError>
+    + TryFrom<u64, Error = LinearIdTryFromIntError>
+    + TryFrom<usize, Error = LinearIdTryFromIntError>
 {
     const MIN: Self;
     const MAX: Self;
@@ -91,3 +91,5 @@ pub trait LinearId:
         *self = self.minus(amount);
     }
 }
+
+// TODO: macro that derives this, similar to the one available @ https://github.com/hashintel/hash/blob/ee22fac269143eb72f23dc9a168b1fd8f922c2f2/libs/%40local/hashql/core/src/id/mod.rs#L232
