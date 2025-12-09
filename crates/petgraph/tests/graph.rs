@@ -3243,3 +3243,109 @@ fn test_edges_connecting_iteration_order() {
         ]
     );
 }
+
+#[test]
+#[cfg(feature = "rayon")]
+fn test_parallel_iterator() {
+    use petgraph::{csr::DefaultIx, visit::*};
+    use rayon::prelude::*;
+
+    let mut gr = Graph::<u32, u32>::new();
+
+    for i in 0..1000 {
+        gr.add_node(i);
+    }
+    for i in 0..1000 {
+        gr.add_edge(NodeIndex::new(i / 2), NodeIndex::new(i), (i + i / 2) as u32);
+    }
+
+    let node_indices: Vec<_> = gr.node_indices().collect();
+    let par_node_indices: Vec<_> = gr.par_node_indices().collect();
+    assert_eq!(node_indices, par_node_indices);
+
+    let node_references: Vec<_> = gr.node_references().collect();
+    let par_node_references: Vec<_> = gr.par_node_references().collect();
+    assert_eq!(node_references, par_node_references);
+
+    let node_weights: Vec<_> = gr
+        .node_weights()
+        .map(|x| (x as *const u32).addr())
+        .collect();
+    let par_node_weights: Vec<_> = gr
+        .par_node_weights()
+        .map(|x| (x as *const u32).addr())
+        .collect();
+    assert_eq!(node_weights, par_node_weights);
+
+    let node_weights_mut: Vec<_> = gr
+        .node_weights_mut()
+        .map(|x| (x as *mut u32).addr())
+        .collect();
+    let par_node_weights_mut: Vec<_> = gr
+        .par_node_weights_mut()
+        .map(|x| (x as *mut u32).addr())
+        .collect();
+    assert_eq!(node_weights_mut, par_node_weights_mut);
+
+    let edge_indices: Vec<_> = gr.edge_indices().collect();
+    let par_edge_indices: Vec<_> = gr.par_edge_indices().collect();
+    assert_eq!(edge_indices, par_edge_indices);
+
+    let edge_references: Vec<_> = gr.edge_references().collect();
+    let par_edge_references: Vec<_> = gr.par_edge_references().collect();
+    assert_eq!(edge_references, par_edge_references);
+
+    let edge_weights: Vec<_> = gr
+        .edge_weights()
+        .map(|x| (x as *const u32).addr())
+        .collect();
+    let par_edge_weights: Vec<_> = gr
+        .par_edge_weights()
+        .map(|x| (x as *const u32).addr())
+        .collect();
+    assert_eq!(edge_weights, par_edge_weights);
+
+    let edge_weights_mut: Vec<_> = gr
+        .edge_weights_mut()
+        .map(|x| (x as *mut u32).addr())
+        .collect();
+    let par_edge_weights_mut: Vec<_> = gr
+        .par_edge_weights_mut()
+        .map(|x| (x as *mut u32).addr())
+        .collect();
+    assert_eq!(edge_weights_mut, par_edge_weights_mut);
+
+    fn node_map(idx: NodeIndex<DefaultIx>, weight: &u32) -> i32 {
+        *weight as i32 * 2 - idx.index() as i32
+    }
+    fn edge_map(idx: EdgeIndex<DefaultIx>, weight: &u32) -> i32 {
+        *weight as i32 - idx.index() as i32 * 2
+    }
+    let mgr = gr.map(node_map, edge_map);
+    let p_mgr = gr.par_map(node_map, edge_map);
+
+    let node_references: Vec<_> = mgr.node_references().collect();
+    let p_node_references: Vec<_> = p_mgr.node_references().collect();
+    assert_eq!(node_references, p_node_references);
+    
+    let edge_references: Vec<_> = mgr.edge_references().collect();
+    let p_edge_references: Vec<_> = p_mgr.edge_references().collect();
+    assert_eq!(edge_references, p_edge_references);
+
+    fn node_map_owned(idx: NodeIndex<DefaultIx>, weight: u32) -> i32 {
+        weight as i32 * 2 - idx.index() as i32
+    }
+    fn edge_map_owned(idx: EdgeIndex<DefaultIx>, weight: u32) -> i32 {
+        weight as i32 - idx.index() as i32 * 2
+    }
+    let mgr = gr.clone().map_owned(node_map_owned, edge_map_owned);
+    let p_mgr = gr.par_map_owned(node_map_owned, edge_map_owned);
+
+    let node_references: Vec<_> = mgr.node_references().collect();
+    let p_node_references: Vec<_> = p_mgr.node_references().collect();
+    assert_eq!(node_references, p_node_references);
+    
+    let edge_references: Vec<_> = mgr.edge_references().collect();
+    let p_edge_references: Vec<_> = p_mgr.edge_references().collect();
+    assert_eq!(edge_references, p_edge_references);
+}
