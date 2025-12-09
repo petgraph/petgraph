@@ -1,15 +1,10 @@
-use crate::id::Id;
+use crate::graph::Graph;
 
-pub trait Node<'graph> {
-    type Id: Id;
-    type Weight;
-
-    fn id(&self) -> Self::Id;
-
-    fn weight(&self) -> Self::Weight;
-    fn into_weight(self) -> Self::Weight;
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Node<I, D> {
+    pub id: I,
+    pub data: D,
 }
 
-pub trait NodeMut<'graph>: Node<'graph> {
-    fn weight_mut(&mut self) -> &mut Self::Weight;
-}
+pub type NodeRef<'graph, G> = Node<<G as Graph>::NodeId, <G as Graph>::NodeDataRef<'graph>>;
+pub type NodeMut<'graph, G> = Node<<G as Graph>::NodeId, <G as Graph>::NodeDataMut<'graph>>;

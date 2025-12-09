@@ -1,6 +1,7 @@
 use core::slice::GetDisjointMutError;
 
 use super::Graph;
+use crate::{edge::EdgeMut, node::NodeMut};
 
 pub trait DisjointMutGraph: Graph {
     // additional methods to a graph that allow for more performant mutable access
@@ -8,10 +9,10 @@ pub trait DisjointMutGraph: Graph {
     fn get_disjoint_nodes_mut<const N: usize>(
         &mut self,
         ids: [Self::NodeId; N],
-    ) -> Result<[Self::NodeMut<'_>; N], GetDisjointMutError>;
+    ) -> Result<[NodeMut<'_, Self>; N], GetDisjointMutError>;
 
     fn get_disjoint_edges_mut<const N: usize>(
         &mut self,
         ids: [Self::EdgeId; N],
-    ) -> Result<[Self::EdgeMut<'_>; N], GetDisjointMutError>;
+    ) -> Result<[EdgeMut<'_, Self>; N], GetDisjointMutError>;
 }
