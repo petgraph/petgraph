@@ -5,6 +5,8 @@ pub mod edge;
 pub mod graph;
 pub mod id;
 pub mod node;
+#[cfg(feature = "utils")]
+pub mod utils;
 
 #[must_use]
 pub const fn add(left: u64, right: u64) -> u64 {

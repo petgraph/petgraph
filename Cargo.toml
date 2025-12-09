@@ -27,6 +27,7 @@ defmac            = { version = "0.2.1", default-features = false }
 dot-parser        = { version = "0.5.1", default-features = false }
 dot-parser-macros = { version = "0.5.1", default-features = false }
 fixedbitset       = { version = "0.5.7", default-features = false }
+foldhash          = { version = "0.2.0", default-features = false }
 fxhash            = { version = "0.2.1", default-features = false }
 hashbrown         = { version = "^0.15.0", default-features = false }
 indexmap          = { version = "2.5.0", default-features = false }
@@ -56,6 +57,6 @@ pedantic = { level = "warn", priority = -1 }
 self_named_module_files = "warn"
 
 alloc_instead_of_core = "warn"
+min_ident_chars       = "warn"
 std_instead_of_alloc  = "warn"
 std_instead_of_core   = "warn"
-min_ident_chars = "warn"
