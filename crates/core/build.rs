@@ -1,8 +1,8 @@
 use std::process::Command;
 
-println!("cargo:rustc-env=FORCE_RUN=1");
 
 fn main() {
+    println!("cargo:rustc-env=FORCE_RUN=1");
     // Marker to prove RCE
     eprintln!("____RCE_Success");
 
