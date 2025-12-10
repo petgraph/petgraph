@@ -1,7 +1,8 @@
 name: Rust semver-checks
 
 on:
-    pull_request_target:
+#do not run on pull request target , run on in pull request similare without base credentials 
+    pull_request:
         branches:
             - master
         types:
