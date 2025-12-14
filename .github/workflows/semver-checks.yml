@@ -4,20 +4,15 @@ on:
     pull_request:
         branches:
             - master
-    pull_request_target:
-        branches:
-            - master
-        types:
-            - opened
-            - edited
-            - synchronize
-            - reopened
     workflow_dispatch:
         inputs:
             base:
                 description: 'Base branch or tag to run the semver checks against.'
                 required: true
                 default: 'master'
+
+permissions:
+  pull-requests: write
 
 jobs:
   semver-checks:
