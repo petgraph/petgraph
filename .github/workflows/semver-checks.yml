@@ -45,6 +45,7 @@ jobs:
         with:
           feature-group: all-features
           manifest-path: PR_BRANCH/Cargo.toml
+          baseline-rev: BASELINE_BRANCH
           release-type: minor
         continue-on-error: true
       
