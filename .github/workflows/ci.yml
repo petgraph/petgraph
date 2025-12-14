@@ -1,112 +1,112 @@
-# on:
-#   pull_request:
-#     branches: [ '*' ]
-#   merge_group:
-#     types: [ checks_requested ]
-#   workflow_dispatch: { }
+on:
+  pull_request:
+    branches: [ '*' ]
+  merge_group:
+    types: [ checks_requested ]
+  workflow_dispatch: { }
 
-# name: Continuous integration
+name: Continuous integration
 
-# jobs:
-#   tests:
-#     runs-on: ubuntu-latest
-#     strategy:
-#       matrix:
-#         crate: [petgraph, petgraph-core, petgraph-serialization-tests]
-#         rust: [stable, beta, nightly]
-#         include:
-#           - rust: nightly
-#             bench: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crate: [petgraph, petgraph-core, petgraph-serialization-tests]
+        rust: [stable, beta, nightly]
+        include:
+          - rust: nightly
+            bench: true
             
-#     name: Tests ${{ matrix.crate }} (Rust ${{ matrix.rust }})
+    name: Tests ${{ matrix.crate }} (Rust ${{ matrix.rust }})
 
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v5
-#       # Remove repo toolchain pin so we can specify toolchain manually
-#       - name: Remove toolchain pin
-#         run: rm -f rust-toolchain.toml rustup-toolchain.toml
-#       - name: Install Rust ${{ matrix.rust }}
-#         uses: dtolnay/rust-toolchain@master
-#         with:
-#           toolchain: ${{ matrix.rust }}
-#       - name: Install cargo-nextest
-#         uses: taiki-e/install-action@v2
-#         with:
-#           tool: cargo-nextest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      # Remove repo toolchain pin so we can specify toolchain manually
+      - name: Remove toolchain pin
+        run: rm -f rust-toolchain.toml rustup-toolchain.toml
+      - name: Install Rust ${{ matrix.rust }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
 
-#       - name: Build caching
-#         uses: Swatinem/rust-cache@v2
+      - name: Build caching
+        uses: Swatinem/rust-cache@v2
 
-#       - name: Build and test
-#         run: |
-#           # Run tests with default and all features. Powerset of features is only tested on merge
-#           # or with the S-run-thorough-ci-tests label to save CI resources.
-#           cargo nextest run --package ${{ matrix.crate }} --verbose
-#           cargo nextest run --package ${{ matrix.crate }} --all-features --verbose
+      - name: Build and test
+        run: |
+          # Run tests with default and all features. Powerset of features is only tested on merge
+          # or with the S-run-thorough-ci-tests label to save CI resources.
+          cargo nextest run --package ${{ matrix.crate }} --verbose
+          cargo nextest run --package ${{ matrix.crate }} --all-features --verbose
 
-#       - name: Build benchmarks
-#         if: ${{ matrix.bench }}
-#         run: |
-#           cargo bench --verbose --no-run
-#           cargo bench --verbose --no-run --all-features
+      - name: Build benchmarks
+        if: ${{ matrix.bench }}
+        run: |
+          cargo bench --verbose --no-run
+          cargo bench --verbose --no-run --all-features
 
-#   lints:
-#     name: Lints
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v5
-#       # Remove repo toolchain pin so we can specify toolchain manually
-#       - name: Remove toolchain pin
-#         run: rm -f rust-toolchain.toml rustup-toolchain.toml
-#       - name: Setup just
-#         uses: extractions/setup-just@v3
-#       - name: Install nightly toolchain
-#         uses: dtolnay/rust-toolchain@master
-#         with:
-#           toolchain: nightly
-#           components: rustfmt, clippy
+  lints:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      # Remove repo toolchain pin so we can specify toolchain manually
+      - name: Remove toolchain pin
+        run: rm -f rust-toolchain.toml rustup-toolchain.toml
+      - name: Setup just
+        uses: extractions/setup-just@v3
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
 
-#       - name: Build caching
-#         uses: Swatinem/rust-cache@v2
+      - name: Build caching
+        uses: Swatinem/rust-cache@v2
 
-#       - name: Check formatting
-#         run: just fmt
+      - name: Check formatting
+        run: just fmt
 
-#       - name: Run clippy
-#         # The benchmarks target require nightly,
-#         # so we cannot use --all-targets here.
-#         run: just clippy
+      - name: Run clippy
+        # The benchmarks target require nightly,
+        # so we cannot use --all-targets here.
+        run: just clippy
 
-#       - name: Build docs
-#         run: cargo doc --no-deps --all-features
-#         env:
-#           RUSTDOCFLAGS: "-Dwarnings"
+      - name: Build docs
+        run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: "-Dwarnings"
 
-#   check-no-std:
-#     name: Check no_std
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v5
-#       # Remove repo toolchain pin so we can specify toolchain manually
-#       - name: Remove toolchain pin
-#         run: rm -f rust-toolchain.toml rustup-toolchain.toml
-#       - name: Setup just
-#         uses: extractions/setup-just@v3
-#       - name: Install stable toolchain
-#         uses: dtolnay/rust-toolchain@stable
-#         with:
-#           components: rustfmt, clippy
-#           targets: wasm32v1-none
-#       - name: Install cargo-nextest
-#         uses: taiki-e/install-action@v2
-#         with:
-#           tool: cargo-nextest
+  check-no-std:
+    name: Check no_std
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      # Remove repo toolchain pin so we can specify toolchain manually
+      - name: Remove toolchain pin
+        run: rm -f rust-toolchain.toml rustup-toolchain.toml
+      - name: Setup just
+        uses: extractions/setup-just@v3
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32v1-none
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
 
-#       - name: Build caching
-#         uses: Swatinem/rust-cache@v2
+      - name: Build caching
+        uses: Swatinem/rust-cache@v2
 
-#       - name: Check
-#         run: just check-no-std
+      - name: Check
+        run: just check-no-std
