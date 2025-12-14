@@ -45,7 +45,6 @@ jobs:
         with:
           feature-group: all-features
           manifest-path: PR_BRANCH/Cargo.toml
-          baseline-rev: ${{ github.event.pull_request.base.sha || github.event.inputs.base }}
           release-type: minor
         continue-on-error: true
       
