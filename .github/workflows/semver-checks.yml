@@ -25,14 +25,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           path: PR_BRANCH
+          fetch-depth: 0
       # Remove repo toolchain pin so we can specify toolchain manually
       - name: Remove toolchain pin
         run: rm -f rust-toolchain.toml rustup-toolchain.toml
-      - name: Checkout baseline
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.sha || github.event.inputs.base }}
-          path: BASELINE_BRANCH
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Build caching
@@ -45,7 +41,7 @@ jobs:
         with:
           feature-group: all-features
           manifest-path: PR_BRANCH/Cargo.toml
-          baseline-rev: BASELINE_BRANCH
+          baseline-rev: ${{ github.event.pull_request.base.sha || github.event.inputs.base }}
           release-type: minor
         continue-on-error: true
       
