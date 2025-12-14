@@ -80,7 +80,7 @@ jobs:
 
           if [ "$BREAKING" = true ] && [ "$DECLARED" = false ]; then
             echo "🚨 ERROR: Undeclared breaking changes detected."
-            echo "Please deprecate the old API instead (if possible), or mark the PR with a `!` following the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) format to indicate a breaking change."
+            echo "Hey there and thank you for opening this pull request! 👋 Please deprecate the old API instead (if possible), or mark the PR with a `!` following the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) format to indicate a breaking change."
             exit 1
           fi
 
