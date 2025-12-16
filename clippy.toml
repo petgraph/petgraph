@@ -1,4 +1,4 @@
-msrv = "1.90.0"
+msrv = "1.91.0"
 
 allow-dbg-in-tests    = true
 allow-expect-in-tests = true
