@@ -57,9 +57,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      # Remove repo toolchain pin so we can specify toolchain manually
-      - name: Remove toolchain pin
-        run: rm -f rust-toolchain.toml rustup-toolchain.toml
       - name: Setup just
         uses: extractions/setup-just@v3
       - name: Install nightly toolchain
