@@ -11,7 +11,7 @@ use petgraph::{
 };
 
 #[test]
-fn extend_with_enwts_empty() {
+fn extend_with_edges_and_node_weights_empty() {
     let mut g = Graph::<i32, i32>::new();
     g.extend_with_edges_and_node_weights(&[] as &[(u32, u32, i32); 0], |_| None);
 
@@ -20,9 +20,9 @@ fn extend_with_enwts_empty() {
 }
 
 #[test]
-fn extend_with_enwts_none() {
+fn extend_with_edges_and_node_weights_none() {
     let mut g = Graph::<(), i32>::new();
-    g.extend_with_edges_and_node_weights(&[(0, 1, 7), (1, 2, 8)], |_| None);
+    g.extend_with_edges_and_node_weights([(0, 1, 7), (1, 2, 8)], |_| None);
 
     assert_eq!(g.node_count(), 3);
     assert_eq!(g.edge_count(), 2);
@@ -46,9 +46,9 @@ fn extend_with_enwts_none() {
 }
 
 #[test]
-fn extend_with_enwts_const() {
+fn extend_with_edges_and_node_weights_const() {
     let mut g = Graph::<i32, i32>::new();
-    g.extend_with_edges_and_node_weights(&[(0, 1, 7), (1, 2, 8)], |_| Some(42));
+    g.extend_with_edges_and_node_weights([(0, 1, 7), (1, 2, 8)], |_| Some(42));
 
     assert_eq!(g.node_count(), 3);
     assert_eq!(g.edge_count(), 2);
@@ -72,12 +72,12 @@ fn extend_with_enwts_const() {
 }
 
 #[test]
-fn extend_with_enwts_subset() {
+fn extend_with_edges_and_node_weights_subset() {
     let mut g = Graph::<i32, i32>::new();
 
     let node_weights: HashMap<usize, i32> = [(0, 10), (2, 20)].into();
 
-    g.extend_with_edges_and_node_weights(&[(0, 1, 7), (1, 2, 8)], |idx| {
+    g.extend_with_edges_and_node_weights([(0, 1, 7), (1, 2, 8)], |idx| {
         node_weights.get(&idx.index()).copied()
     });
 
@@ -104,7 +104,7 @@ fn extend_with_enwts_subset() {
 }
 
 #[test]
-fn extend_with_enwts_single_edge() {
+fn extend_with_edges_and_node_weights_single_edge() {
     let mut g = Graph::<String, f64>::new();
     g.extend_with_edges_and_node_weights([(0, 1, 3.15)], |idx| {
         Some(format!("Node {}", idx.index()))
@@ -126,7 +126,7 @@ fn extend_with_enwts_single_edge() {
 }
 
 #[test]
-fn extend_with_enwts_gaps_in_indices() {
+fn extend_with_edges_and_node_weights_gaps_in_indices() {
     let mut g = Graph::<u32, char>::new();
     g.extend_with_edges_and_node_weights([(0, 3, 'a'), (5, 6, 'b')], |idx| {
         Some(idx.index() as u32 * 10)
@@ -155,7 +155,7 @@ fn extend_with_enwts_gaps_in_indices() {
 }
 
 #[test]
-fn extend_with_enwts_existing_nodes_no_overwrite() {
+fn extend_with_edges_and_node_weights_existing_nodes_no_overwrite() {
     let mut g = Graph::<i32, i32>::new();
     let n0 = g.add_node(100); // Node 0
     let n1 = g.add_node(200); // Node 1
@@ -192,7 +192,7 @@ fn extend_with_enwts_existing_nodes_no_overwrite() {
 }
 
 #[test]
-fn extend_with_enwts_self_loop() {
+fn extend_with_edges_and_node_weights_self_loop() {
     let mut g = Graph::<bool, String>::new();
     g.extend_with_edges_and_node_weights(&[(2, 2, "loop".to_string())], |idx| {
         Some(idx.index() % 2 == 0)
@@ -215,7 +215,7 @@ fn extend_with_enwts_self_loop() {
 }
 
 #[test]
-fn extend_with_enwts_parallel_edges() {
+fn extend_with_edges_and_node_weights_parallel_edges() {
     let mut g = Graph::<(), u8>::new();
     g.extend_with_edges_and_node_weights([(0, 1, 1), (0, 1, 2), (0, 1, 3)], |_| None);
 
@@ -239,7 +239,7 @@ fn extend_with_enwts_parallel_edges() {
 }
 
 #[test]
-fn extend_with_enwts_undirected() {
+fn extend_with_edges_and_node_weights_undirected() {
     let mut g: Graph<i32, i32, Undirected> = Graph::new_undirected();
 
     // (1,0) is same as (0,1) in undirected, but different weight means parallel?
@@ -264,7 +264,7 @@ fn extend_with_enwts_undirected() {
 }
 
 #[test]
-fn extend_with_enwts_mixed_some_none() {
+fn extend_with_edges_and_node_weights_mixed_some_none() {
     let mut g = Graph::<Option<u32>, i64>::new();
     let node_weights: HashMap<usize, Option<u32>> =
         [(0, Some(100)), (2, None), (3, Some(300))].into();
@@ -297,7 +297,7 @@ fn extend_with_enwts_mixed_some_none() {
 }
 
 #[test]
-fn extend_with_enwts_large_indices() {
+fn extend_with_edges_and_node_weights_large_indices() {
     let mut g = Graph::<u64, i8>::new();
     let edges: Vec<(DefaultIx, DefaultIx, i8)> = (0..100)
         .map(|i| {
