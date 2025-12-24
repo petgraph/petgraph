@@ -13,6 +13,7 @@ hashbrown = { workspace = true, optional = true }
 
 [features]
 utils = ["dep:foldhash", "dep:hashbrown"]
+alloc = []
 
 [lints]
 workspace = true

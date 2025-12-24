@@ -60,6 +60,7 @@ where
     NI: Id + Eq + Hash + AddAssign<usize>,
     EI: Id + Eq + Hash + AddAssign<usize>,
 {
+    #[must_use]
     pub fn new() -> Self
     where
         NI: Default,
@@ -107,8 +108,6 @@ where
 
 impl<N, E, NI, EI> Graph for DirectedTestGraph<N, E, NI, EI>
 where
-    N: AsRef<N> + AsMut<N>,
-    E: AsRef<E> + AsMut<E>,
     NI: Id,
     EI: Id,
 {
@@ -142,8 +141,6 @@ where
 
 impl<N, E, NI, EI> DirectedGraph for DirectedTestGraph<N, E, NI, EI>
 where
-    N: AsRef<N> + AsMut<N>,
-    E: AsRef<E> + AsMut<E>,
     NI: Id,
     EI: Id,
 {

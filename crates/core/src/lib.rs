@@ -1,6 +1,9 @@
 #![no_std]
 #![allow(clippy::missing_errors_doc, reason = "bootstrap")]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 pub mod edge;
 pub mod graph;
 pub mod id;
