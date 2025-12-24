@@ -12,7 +12,7 @@
 //! strictly dominates **B** and there does not exist any node **C** where **A**
 //! dominates **C** and **C** dominates **B**.
 
-use alloc::{vec, vec::Vec};
+use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::{cmp::Ordering, hash::Hash};
 
 use hashbrown::{HashMap, HashSet, hash_map::Iter};
@@ -89,6 +89,34 @@ where
             node,
         }
     }
+
+    /// Iterate over all nodes dominated by the given node (including
+    /// indirectly dominated nodes, not including the given node itself).
+    ///
+    /// This returns all nodes that the given node dominates, including those
+    /// that are indirectly dominated (i.e., descendants in the dominance tree).
+    pub fn dominated_by(&self, node: N) -> DominatedByAllIter<'_, N> {
+        // Build a set of all nodes dominated by the given node using BFS
+        let mut visited = HashSet::new();
+        let mut queue = VecDeque::new();
+
+        // Start with all nodes immediately dominated by the given node
+        for (&dominator, dominated) in &self.dominators {
+            if dominated == &dominator {
+                continue; // Skip the root node that dominates itself
+            }
+            if dominated == &node {
+                queue.push_back(dominator);
+                visited.insert(dominator);
+            }
+        }
+
+        DominatedByAllIter {
+            dominators: self,
+            queue,
+            visited,
+        }
+    }
 }
 
 /// Iterator for a node's dominators.
@@ -146,6 +174,48 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         (0, upper)
+    }
+}
+
+/// Iterator for all nodes dominated by a given node (including indirectly
+/// dominated nodes).
+#[derive(Debug, Clone)]
+pub struct DominatedByAllIter<'a, N>
+where
+    N: 'a + Copy + Eq + Hash,
+{
+    dominators: &'a Dominators<N>,
+    queue: VecDeque<N>,
+    visited: HashSet<N>,
+}
+
+impl<'a, N> Iterator for DominatedByAllIter<'a, N>
+where
+    N: 'a + Copy + Eq + Hash,
+{
+    type Item = N;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(current) = self.queue.pop_front() {
+            // Add all nodes immediately dominated by current to the queue
+            for (&dominator, dominated) in &self.dominators.dominators {
+                if dominated == &dominator {
+                    continue; // Skip the root node that dominates itself
+                }
+                if dominated == &current && !self.visited.contains(&dominator) {
+                    self.visited.insert(dominator);
+                    self.queue.push_back(dominator);
+                }
+            }
+            return Some(current);
+        }
+        None
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let lower = self.queue.len();
+        let upper = self.dominators.dominators.len();
+        (lower, Some(upper))
     }
 }
 
@@ -344,5 +414,48 @@ mod tests {
         assert_eq!(vec![2], dom_by);
         assert_eq!(None, doms.immediately_dominated_by(99).next());
         assert_eq!(1, doms.immediately_dominated_by(0).count());
+    }
+
+    #[test]
+    fn test_dominated_by() {
+        // Test with a dominance tree:
+        //     0
+        //    / \
+        //   1   2
+        //  / \
+        // 3   4
+        let doms: Dominators<u32> = Dominators {
+            root: 0,
+            dominators: [(1, 0), (2, 0), (3, 1), (4, 1), (0, 0)]
+                .iter()
+                .cloned()
+                .collect(),
+        };
+
+        // Test dominated_by for root node (should return all other nodes)
+        let dom_by_root: Vec<_> = doms.dominated_by(0).collect();
+        let mut dom_by_root_sorted = dom_by_root.clone();
+        dom_by_root_sorted.sort();
+        assert_eq!(vec![1, 2, 3, 4], dom_by_root_sorted);
+        assert_eq!(4, dom_by_root.len());
+
+        // Test dominated_by for node 1 (should return 3 and 4)
+        let dom_by_1: Vec<_> = doms.dominated_by(1).collect();
+        let mut dom_by_1_sorted = dom_by_1.clone();
+        dom_by_1_sorted.sort();
+        assert_eq!(vec![3, 4], dom_by_1_sorted);
+        assert_eq!(2, dom_by_1.len());
+
+        // Test dominated_by for node 2 (should return nothing)
+        let dom_by_2: Vec<_> = doms.dominated_by(2).collect();
+        assert!(dom_by_2.is_empty());
+
+        // Test dominated_by for node 3 (should return nothing)
+        let dom_by_3: Vec<_> = doms.dominated_by(3).collect();
+        assert!(dom_by_3.is_empty());
+
+        // Test dominated_by for node that doesn't exist
+        let dom_by_99: Vec<_> = doms.dominated_by(99).collect();
+        assert!(dom_by_99.is_empty());
     }
 }
