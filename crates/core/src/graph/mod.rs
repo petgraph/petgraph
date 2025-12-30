@@ -15,7 +15,9 @@ use crate::id::Id;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Cardinality {
+    /// Number of nodes in the graph
     pub order: usize,
+    /// Number of edges in the graph
     pub size: usize,
 }
 
