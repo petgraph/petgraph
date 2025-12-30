@@ -218,3 +218,208 @@ pub trait DirectedGraph: Graph {
         self.nodes().filter(|node| self.out_degree(node.id) == 0)
     }
 }
+
+impl<G> DirectedGraph for &mut G
+where
+    G: DirectedGraph,
+{
+    #[inline]
+    fn density_hint(&self) -> DensityHint {
+        G::density_hint(self)
+    }
+
+    #[inline]
+    fn cardinality(&self) -> Cardinality {
+        G::cardinality(self)
+    }
+
+    #[inline]
+    fn node_count(&self) -> usize {
+        G::node_count(self)
+    }
+
+    #[inline]
+    fn edge_count(&self) -> usize {
+        G::edge_count(self)
+    }
+
+    #[inline]
+    fn nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
+        G::nodes(self)
+    }
+
+    #[inline]
+    fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
+        G::nodes_mut(self)
+    }
+
+    #[inline]
+    fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
+        G::isolated_nodes(self)
+    }
+
+    #[inline]
+    fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+        G::edges(self)
+    }
+
+    #[inline]
+    fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+        G::edges_mut(self)
+    }
+
+    #[inline]
+    fn node(&self, id: Self::NodeId) -> Option<NodeRef<'_, Self>> {
+        G::node(self, id)
+    }
+
+    #[inline]
+    fn node_mut(&mut self, id: Self::NodeId) -> Option<NodeMut<'_, Self>> {
+        G::node_mut(self, id)
+    }
+
+    #[inline]
+    fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
+        G::edge(self, id)
+    }
+
+    #[inline]
+    fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
+        G::edge_mut(self, id)
+    }
+
+    #[inline]
+    fn in_degree(&self, node: Self::NodeId) -> usize {
+        G::in_degree(self, node)
+    }
+
+    #[inline]
+    fn out_degree(&self, node: Self::NodeId) -> usize {
+        G::out_degree(self, node)
+    }
+
+    #[inline]
+    fn degree(&self, node: Self::NodeId) -> usize {
+        G::degree(self, node)
+    }
+
+    #[inline]
+    fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+        G::incoming_edges(self, node)
+    }
+
+    #[inline]
+    fn incoming_edges_mut(
+        &mut self,
+        node: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+        G::incoming_edges_mut(self, node)
+    }
+
+    #[inline]
+    fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+        G::outgoing_edges(self, node)
+    }
+
+    #[inline]
+    fn outgoing_edges_mut(
+        &mut self,
+        node: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+        G::outgoing_edges_mut(self, node)
+    }
+
+    #[inline]
+    fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+        G::incident_edges(self, node)
+    }
+
+    #[inline]
+    fn incident_edges_mut(
+        &mut self,
+        node: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+        G::incident_edges_mut(self, node)
+    }
+
+    #[inline]
+    fn predecessors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
+        G::predecessors(self, node)
+    }
+
+    #[inline]
+    fn successors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
+        G::successors(self, node)
+    }
+
+    #[inline]
+    fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
+        G::adjacencies(self, node)
+    }
+
+    #[inline]
+    fn edges_between(
+        &self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+        G::edges_between(self, source, target)
+    }
+
+    #[inline]
+    fn edges_between_mut(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+        G::edges_between_mut(self, source, target)
+    }
+
+    #[inline]
+    fn edges_connecting(
+        &self,
+        lhs: Self::NodeId,
+        rhs: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+        G::edges_connecting(self, lhs, rhs)
+    }
+
+    #[inline]
+    fn edges_connecting_mut(
+        &mut self,
+        lhs: Self::NodeId,
+        rhs: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+        G::edges_connecting_mut(self, lhs, rhs)
+    }
+
+    #[inline]
+    fn contains_node(&self, node: Self::NodeId) -> bool {
+        G::contains_node(self, node)
+    }
+
+    #[inline]
+    fn contains_edge(&self, edge: Self::EdgeId) -> bool {
+        G::contains_edge(self, edge)
+    }
+
+    #[inline]
+    fn is_adjacent(&self, source: Self::NodeId, target: Self::NodeId) -> bool {
+        G::is_adjacent(self, source, target)
+    }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        G::is_empty(self)
+    }
+
+    #[inline]
+    fn sources(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
+        G::sources(self)
+    }
+
+    #[inline]
+    fn sinks(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
+        G::sinks(self)
+    }
+}

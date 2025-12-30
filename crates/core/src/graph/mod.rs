@@ -91,14 +91,17 @@ impl<G: Graph> Graph for &mut G {
     impl_methods!(G);
 }
 
+#[cfg(feature = "alloc")]
 impl<G: Graph> Graph for alloc::boxed::Box<G> {
     impl_methods!(G);
 }
 
+#[cfg(feature = "alloc")]
 impl<G: Graph> Graph for alloc::rc::Rc<G> {
     impl_methods!(G);
 }
 
+#[cfg(feature = "alloc")]
 impl<G: Graph> Graph for alloc::sync::Arc<G> {
     impl_methods!(G);
 }
