@@ -6,11 +6,11 @@ use core::{
 pub trait Id: Copy + PartialEq + Debug + Display {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum LinearIdTryFromIntError {
+pub enum IndexIdTryFromIntError {
     OutOfRange { value: u64, range: (u64, u64) },
 }
 
-impl Display for LinearIdTryFromIntError {
+impl Display for IndexIdTryFromIntError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::OutOfRange {
@@ -23,19 +23,19 @@ impl Display for LinearIdTryFromIntError {
     }
 }
 
-impl core::error::Error for LinearIdTryFromIntError {}
+impl core::error::Error for IndexIdTryFromIntError {}
 
-pub trait LinearId:
+pub trait IndexId:
     Id
     + PartialEq
     + Eq
     + PartialOrd
     + Ord
     + Hash
-    + TryFrom<u16, Error = LinearIdTryFromIntError>
-    + TryFrom<u32, Error = LinearIdTryFromIntError>
-    + TryFrom<u64, Error = LinearIdTryFromIntError>
-    + TryFrom<usize, Error = LinearIdTryFromIntError>
+    + TryFrom<u16, Error = IndexIdTryFromIntError>
+    + TryFrom<u32, Error = IndexIdTryFromIntError>
+    + TryFrom<u64, Error = IndexIdTryFromIntError>
+    + TryFrom<usize, Error = IndexIdTryFromIntError>
 {
     const MIN: Self;
     const MAX: Self;
