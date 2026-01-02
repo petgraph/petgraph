@@ -36,7 +36,8 @@ pub mod spfa;
 pub mod steiner_tree;
 pub mod tred;
 
-use alloc::{vec, vec::Vec};
+use hashbrown::HashMap;
+use alloc::{collections::{BinaryHeap}, vec, vec::Vec};
 
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
@@ -260,6 +261,52 @@ where
 
         Ok(finish_stack)
     })
+}
+
+/// Perform a lexicographic topological sort of a directed graph.
+///
+/// `toposort` returns `Err` on graphs with cycles.
+/// To handle graphs with cycles, use the one of scc algorithms or
+/// [`DfsPostOrder`](struct@crate::visit::DfsPostOrder)
+///   instead of this function.
+pub fn lexicographic_toposort<G>(
+    g: G,
+) -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
+where
+    G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
+    G::NodeId: Ord + std::hash::Hash,
+{
+    let mut indegree_map: HashMap<G::NodeId, usize> = g.node_identifiers().filter_map(|n| {
+        let deg = g.neighbors_directed(n, Direction::Incoming).count();
+        if deg == 0 {
+            None
+        } else {
+            Some((n, deg))
+        }
+    })
+        .collect();
+    // collect all 0 in-degree nodes
+    let mut heap: BinaryHeap<G::NodeId> = g.node_identifiers().filter(|n| g.neighbors_directed(*n, Direction::Incoming).next().is_none())
+        .collect();
+    let mut result = Vec::new();
+    result.reserve(g.node_identifiers().count());
+    while let Some(node_id) = heap.pop() {
+        for child in g.neighbors_directed(node_id, Direction::Outgoing) {
+            let Some(deg) = indegree_map.get_mut(&child) else {
+                return Err(Cycle(child));
+            };
+            *deg -= 1;
+            if *deg == 0 {
+                heap.push(child);
+                indegree_map.remove(&child);
+            }
+        }
+        result.push(node_id);
+    }
+    if let Some((node_id, _)) = indegree_map.into_iter().next() {
+        return Err(Cycle(node_id));
+    }
+    Ok(result)
 }
 
 /// Return `true` if the input directed graph contains a cycle.
