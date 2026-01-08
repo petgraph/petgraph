@@ -63,12 +63,12 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
 
     #[inline]
     fn node_count(&self) -> usize {
-        self.node_count()
+        OldGraph::node_count(self)
     }
 
     #[inline]
     fn edge_count(&self) -> usize {
-        self.edge_count()
+        OldGraph::edge_count(self)
     }
 
     // Node Iteration
@@ -114,10 +114,8 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     /// that with the mutable edge weights iterator. Therefore, this may be inefficient and/or
     /// use more memory than expected for large graphs.
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        // This returns the correct EdgeIndexes because edge_weights_mut() guarantees the values
-        // to be in order and Graph uses gap-less EdgeIndexes from 0 to m-1 where m is the number of
-        // edges.
-        // TODO: We could avoid collecting into Vecs here by using unsafe
+        // This returns the EdgeWeights corresponding to the correct EdgeIndexes because
+        // old_petgraph::Graph internally stores them in order.
         let edge_info = self
             .edge_indices()
             .map(|edge_id| {
@@ -125,14 +123,14 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
                 (edge_id, source, target)
             })
             .collect::<Vec<_>>();
-        self.edge_weights_mut()
-            .enumerate()
-            .map(move |(idx, data)| EdgeMut::<'_, Self> {
-                id: edge_info[idx].0,
-                source: edge_info[idx].1,
-                target: edge_info[idx].2,
+        self.edge_weights_mut().zip(edge_info.into_iter()).map(
+            |(data, (edge_id, source, target))| EdgeMut::<'_, Self> {
+                id: edge_id,
+                source,
+                target,
                 data,
-            })
+            },
+        )
     }
 
     // Lookup
@@ -454,9 +452,8 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     }
 
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        // This returns the correct EdgeIndexes because edge_weights_mut() guarantees the values
-        // to be in order and Graph uses gap-less EdgeIndexes from 0 to m-1 where m is the number of
-        // edges.
+        // This returns the EdgeWeights corresponding to the correct EdgeIndexes because
+        // old_petgraph::Graph internally stores them in order.
         let edge_info = self
             .edge_indices()
             .map(|edge_id| {
@@ -464,14 +461,14 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
                 (edge_id, source, target)
             })
             .collect::<Vec<_>>();
-        self.edge_weights_mut()
-            .enumerate()
-            .map(move |(idx, data)| EdgeMut::<'_, Self> {
-                id: edge_info[idx].0,
-                source: edge_info[idx].1,
-                target: edge_info[idx].2,
+        self.edge_weights_mut().zip(edge_info.into_iter()).map(
+            |(data, (edge_id, source, target))| EdgeMut::<'_, Self> {
+                id: edge_id,
+                source,
+                target,
                 data,
-            })
+            },
+        )
     }
 
     // Lookup
