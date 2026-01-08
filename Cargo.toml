@@ -21,6 +21,8 @@ rust-version = "1.91"
 petgraph      = { path = "crates/petgraph" }
 petgraph-core = { path = "crates/core" }
 
+petgraph-old      = { git = "https://github.com/petgraph/petgraph", branch = "rl/impl_display_for_nodeindex", package = "petgraph" }
+
 ahash             = { version = "0.7.2", default-features = false }
 bincode           = { version = "1.3.3", default-features = false }
 defmac            = { version = "0.2.1", default-features = false }
