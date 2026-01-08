@@ -1,2 +1,2 @@
 mod graph;
-mod frozen_graph;
+mod stable_graph;
