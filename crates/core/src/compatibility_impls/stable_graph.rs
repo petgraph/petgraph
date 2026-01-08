@@ -5,20 +5,17 @@ use petgraph_old::{
     Directed, Direction, Undirected,
     csr::IndexType,
     graph::{EdgeIndex, Graph as OldGraph, NodeIndex},
+    prelude::StableGraph,
     visit::{EdgeRef as _, IntoNodeReferences},
 };
 
 use crate::{
     edge::{EdgeMut, EdgeRef},
     graph::{Cardinality, DensityHint, DirectedGraph, Graph as NewGraph, UndirectedGraph},
-    id::Id,
     node::{NodeMut, NodeRef},
 };
 
-impl<Ix: IndexType + Display> Id for NodeIndex<Ix> {}
-impl<Ix: IndexType + Display> Id for EdgeIndex<Ix> {}
-
-impl<N, E, Ty, Ix: IndexType + Display> NewGraph for OldGraph<N, E, Ty, Ix> {
+impl<N, E, Ty, Ix: IndexType + Display> NewGraph for StableGraph<N, E, Ty, Ix> {
     type EdgeData<'graph>
         = E
     where
@@ -47,7 +44,7 @@ impl<N, E, Ty, Ix: IndexType + Display> NewGraph for OldGraph<N, E, Ty, Ix> {
     type NodeId = NodeIndex<Ix>;
 }
 
-impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, Ix> {
+impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed, Ix> {
     #[inline]
     fn density_hint(&self) -> DensityHint {
         DensityHint::Dense
@@ -63,12 +60,12 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
 
     #[inline]
     fn node_count(&self) -> usize {
-        OldGraph::node_count(self)
+        StableGraph::node_count(self)
     }
 
     #[inline]
     fn edge_count(&self) -> usize {
-        OldGraph::edge_count(self)
+        StableGraph::edge_count(self)
     }
 
     // Node Iteration
@@ -99,12 +96,17 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     // Edge iteration
 
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        self.edge_references().map(|edge| EdgeRef::<'_, Self> {
-            id: edge.id(),
-            source: edge.source(),
-            target: edge.target(),
-            data: edge.weight(),
-        })
+        self.edge_indices()
+            .zip(self.edge_weights())
+            .map(|(edge_id, data)| {
+                let (source, target) = self.edge_endpoints(edge_id).unwrap();
+                EdgeRef::<'_, Self> {
+                    id: edge_id,
+                    source,
+                    target,
+                    data,
+                }
+            })
     }
 
     /// Mutable iterator over all edges.
@@ -114,8 +116,8 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     /// that with the mutable edge weights iterator. Therefore, this may be inefficient and/or
     /// use more memory than expected for large graphs.
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        // This returns the EdgeWeights corresponding to the correct EdgeIndexes because
-        // old_petgraph::Graph internally stores them in order.
+        // This returns the EdgeWeights corresponding to the correct EdgeIndexes because StableGraph
+        // internally stores them in order.
         let edge_info = self
             .edge_indices()
             .map(|edge_id| {
@@ -358,7 +360,7 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     // Existence checks
     #[inline]
     fn contains_node(&self, node: Self::NodeId) -> bool {
-        self.node_weight(node).is_some()
+        self.contains_node(node)
     }
 
     #[inline]
@@ -391,7 +393,7 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     }
 }
 
-impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirected, Ix> {
+impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undirected, Ix> {
     #[inline]
     fn density_hint(&self) -> DensityHint {
         DensityHint::Dense
@@ -443,17 +445,22 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     // Edge iteration
 
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        self.edge_references().map(|edge| EdgeRef::<'_, Self> {
-            id: edge.id(),
-            source: edge.source(),
-            target: edge.target(),
-            data: edge.weight(),
-        })
+        self.edge_indices()
+            .zip(self.edge_weights())
+            .map(|(edge_id, data)| {
+                let (source, target) = self.edge_endpoints(edge_id).unwrap();
+                EdgeRef::<'_, Self> {
+                    id: edge_id,
+                    source,
+                    target,
+                    data,
+                }
+            })
     }
 
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        // This returns the EdgeWeights corresponding to the correct EdgeIndexes because
-        // old_petgraph::Graph internally stores them in order.
+        // This returns the EdgeWeights corresponding to the correct EdgeIndexes because StableGraph
+        // internally stores them in order.
         let edge_info = self
             .edge_indices()
             .map(|edge_id| {
@@ -570,7 +577,7 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     // Existence checks
     #[inline]
     fn contains_node(&self, id: Self::NodeId) -> bool {
-        self.node_weight(id).is_some()
+        self.contains_node(id)
     }
 
     #[inline]
