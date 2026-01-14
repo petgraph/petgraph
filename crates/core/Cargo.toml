@@ -8,6 +8,12 @@ repository.workspace   = true
 rust-version.workspace = true
 
 [dependencies]
+foldhash  = { workspace = true, optional = true }
+hashbrown = { workspace = true, optional = true }
+
+[features]
+utils = ["dep:foldhash", "dep:hashbrown"]
+alloc = []
 
 [lints]
 workspace = true
