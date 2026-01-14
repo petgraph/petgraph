@@ -8,23 +8,11 @@ build:
 
 # Tests with all features enabled
 test:
-    cargo test --features all
+    cargo test --all-features
 
-# Miri with all tests (this might take very long). Consider the fast-miri recipe instead or specify individual tests
+# Miri with all tests (this might take very long)
 miri:
-    cargo miri test
-
-# Miri with the same configuration as in (non-thorough) CI. Uses nextest and excludes some tests that are known to be very slow
-miri-fast:
-    cargo miri nextest run -- \
-                --skip b01_vienna_test \
-                --skip b07_vienna_test \
-                --skip generic_graph6_encoder_test_cases \
-                --skip graph6_for_csr_test_cases \
-                --skip graph6_for_graph_map_test_cases \
-                --skip graph6_for_graph_test_cases \
-                --skip graph6_for_matrix_graph_test_case \
-                --skip graph6_for_stable_graph_test_cases
+    cargo miri nextest run
 
 # Fmt with the same configuration as in CI
 fmt:

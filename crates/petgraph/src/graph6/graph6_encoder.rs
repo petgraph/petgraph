@@ -5,7 +5,7 @@ use alloc::{
     vec,
     vec::Vec,
 };
-#[cfg(feature = "graphmap")]
+#[cfg(any(feature = "graphmap", feature = "matrix_graph"))]
 use core::hash::BuildHasher;
 
 #[cfg(feature = "graphmap")]
@@ -137,7 +137,7 @@ impl<N: NodeTrait, E, S: BuildHasher> ToGraph6 for GraphMap<N, E, Undirected, S>
     }
 }
 
-#[cfg(feature = "matrix_graph")]
+#[cfg(all(feature = "matrix_graph", feature = "graphmap"))]
 impl<N, E, S, Null, Ix> ToGraph6 for MatrixGraph<N, E, S, Undirected, Null, Ix>
 where
     N: NodeTrait,

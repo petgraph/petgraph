@@ -1472,10 +1472,58 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
 
 #[cfg(test)]
 mod tests {
-    use std::collections::hash_map::RandomState;
-
     use super::*;
     use crate::{Incoming, Outgoing};
+
+    // To properly handle imports in std and no_std, respectively.
+    #[cfg(all(feature = "std", feature = "matrix_graph"))]
+    type MatrixGraph<
+        N,
+        E,
+        S = std::collections::hash_map::RandomState,
+        Ty = Directed,
+        Null = Option<E>,
+        Ix = DefaultIx,
+    > = crate::matrix_graph::MatrixGraph<N, E, S, Ty, Null, Ix>;
+    #[cfg(all(not(feature = "std"), feature = "matrix_graph"))]
+    type MatrixGraph<
+        N,
+        E,
+        S = fxhash::FxBuildHasher,
+        Ty = Directed,
+        Null = Option<E>,
+        Ix = DefaultIx,
+    > = crate::matrix_graph::MatrixGraph<N, E, S, Ty, Null, Ix>;
+
+    #[cfg(all(feature = "std", feature = "matrix_graph"))]
+    type UnMatrix<
+        N,
+        E,
+        S = std::collections::hash_map::RandomState,
+        Null = Option<E>,
+        Ix = DefaultIx,
+    > = crate::matrix_graph::UnMatrix<N, E, S, Null, Ix>;
+    #[cfg(all(not(feature = "std"), feature = "matrix_graph"))]
+    type UnMatrix<N, E, S = fxhash::FxBuildHasher, Null = Option<E>, Ix = DefaultIx> =
+        crate::matrix_graph::UnMatrix<N, E, S, Null, Ix>;
+
+    #[cfg(all(feature = "std", feature = "matrix_graph"))]
+    type DiMatrix<
+        N,
+        E,
+        S = std::collections::hash_map::RandomState,
+        Null = Option<E>,
+        Ix = DefaultIx,
+    > = crate::matrix_graph::DiMatrix<N, E, S, Null, Ix>;
+    #[cfg(all(not(feature = "std"), feature = "matrix_graph"))]
+    type DiMatrix<N, E, S = fxhash::FxBuildHasher, Null = Option<E>, Ix = DefaultIx> =
+        crate::matrix_graph::DiMatrix<N, E, S, Null, Ix>;
+
+    #[cfg(all(feature = "std", feature = "matrix_graph"))]
+    type IdStorage<T, S = std::collections::hash_map::RandomState> =
+        crate::matrix_graph::IdStorage<T, S>;
+    #[cfg(all(not(feature = "std"), feature = "matrix_graph"))]
+    type IdStorage<T, S = fxhash::FxBuildHasher> = crate::matrix_graph::IdStorage<T, S>;
 
     #[test]
     fn test_new() {
@@ -1522,7 +1570,7 @@ mod tests {
 
     #[test]
     fn test_add_edge() {
-        let mut g = MatrixGraph::<_, _, RandomState>::new();
+        let mut g = MatrixGraph::<_, _>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1555,7 +1603,7 @@ mod tests {
 
     #[test]
     fn test_has_edge() {
-        let mut g = MatrixGraph::<_, _, RandomState>::new();
+        let mut g = MatrixGraph::<_, _>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1587,7 +1635,7 @@ mod tests {
 
     #[test]
     fn test_add_edge_with_weights() {
-        let mut g = MatrixGraph::<_, _, RandomState>::new();
+        let mut g = MatrixGraph::<_, _>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1599,7 +1647,7 @@ mod tests {
 
     #[test]
     fn test_add_edge_with_weights_undirected() {
-        let mut g = MatrixGraph::<_, _, RandomState, Undirected>::new_undirected();
+        let mut g = MatrixGraph::<_, _, fxhash::FxBuildHasher, Undirected>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1628,7 +1676,7 @@ mod tests {
 
     #[test]
     fn test_clear() {
-        let mut g = MatrixGraph::<_, _, RandomState>::new();
+        let mut g = MatrixGraph::<_, _>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1661,7 +1709,7 @@ mod tests {
 
     #[test]
     fn test_clear_undirected() {
-        let mut g = MatrixGraph::<_, _, RandomState, Undirected>::new_undirected();
+        let mut g = MatrixGraph::<_, _, fxhash::FxBuildHasher, Undirected>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1718,7 +1766,7 @@ mod tests {
 
     #[test]
     fn test_neighbors() {
-        let mut g = MatrixGraph::<_, _, RandomState>::new();
+        let mut g = MatrixGraph::<_, _>::new();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1737,7 +1785,7 @@ mod tests {
 
     #[test]
     fn test_neighbors_undirected() {
-        let mut g = MatrixGraph::<_, _, RandomState, Undirected>::new_undirected();
+        let mut g = MatrixGraph::<_, _, fxhash::FxBuildHasher, Undirected>::new_undirected();
         let a = g.add_node('a');
         let b = g.add_node('b');
         let c = g.add_node('c');
@@ -1914,8 +1962,6 @@ mod tests {
 
     #[test]
     fn test_id_storage() {
-        use super::IdStorage;
-
         let mut storage: IdStorage<char> =
             IdStorage::with_capacity_and_hasher(0, Default::default());
         let a = storage.add('a');
@@ -1939,7 +1985,7 @@ mod tests {
 
     #[test]
     fn test_not_zero() {
-        let mut g: MatrixGraph<(), i32, RandomState, Directed, NotZero<i32>> =
+        let mut g: MatrixGraph<(), i32, fxhash::FxBuildHasher, Directed, NotZero<i32>> =
             MatrixGraph::default();
 
         let a = g.add_node(());
@@ -1963,7 +2009,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_not_zero_asserted() {
-        let mut g: MatrixGraph<(), i32, RandomState, Directed, NotZero<i32>> =
+        let mut g: MatrixGraph<(), i32, fxhash::FxBuildHasher, Directed, NotZero<i32>> =
             MatrixGraph::default();
 
         let a = g.add_node(());
@@ -1974,7 +2020,7 @@ mod tests {
 
     #[test]
     fn test_not_zero_float() {
-        let mut g: MatrixGraph<(), f32, RandomState, Directed, NotZero<f32>> =
+        let mut g: MatrixGraph<(), f32, fxhash::FxBuildHasher, Directed, NotZero<f32>> =
             MatrixGraph::default();
 
         let a = g.add_node(());
@@ -2077,7 +2123,9 @@ mod tests {
     #[test]
     fn test_try_add_node() {
         let mut graph =
-            MatrixGraph::<(), u32, RandomState, Directed, Option<u32>, u8>::with_capacity(255);
+            MatrixGraph::<(), u32, fxhash::FxBuildHasher, Directed, Option<u32>, u8>::with_capacity(
+                255,
+            );
         for i in 0..255 {
             assert_eq!(graph.try_add_node(()), Ok(i.into()));
         }

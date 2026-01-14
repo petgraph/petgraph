@@ -5,7 +5,7 @@ use alloc::{
     vec,
     vec::Vec,
 };
-#[cfg(feature = "graphmap")]
+#[cfg(any(feature = "graphmap", feature = "matrix_graph"))]
 use core::hash::BuildHasher;
 
 #[cfg(feature = "graphmap")]

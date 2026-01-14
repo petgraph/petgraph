@@ -1,15 +1,8 @@
 name: Check Conventional Commits format
 
 on:
-  # Re-check whenever the PR is modified
-  pull_request_target:
-    branches:
-      - main
-      - master
-    types:
-      - opened
-      - edited
-      - synchronize
+  pull_request:
+    branches: [ '*' ]
   # The action does not support running on merge_group events,
   # but if the check succeeds in the PR there is no need to check it again.
   merge_group:
@@ -22,18 +15,19 @@ jobs:
   main:
     name: Validate Conventional Commit PR title
     runs-on: ubuntu-latest
-    outputs:
-      # Whether the PR title indicates a breaking change.
-      breaking: ${{ steps.breaking.outputs.breaking }}
-      # Whether the PR body contains a "BREAKING CHANGE:" footer describing the breaking change.
-      has_breaking_footer: ${{ steps.breaking.outputs.has_breaking_footer }}
-    # The following steps are only run on pull_request_target events. We add the
+    # outputs:
+    #   # Whether the PR title indicates a breaking change.
+    #   breaking: ${{ steps.breaking.outputs.breaking }}
+    #   # Whether the PR body contains a "BREAKING CHANGE:" footer describing the breaking change.
+    #   has_breaking_footer: ${{ steps.breaking.outputs.has_breaking_footer }}
+
+    # The following steps are only run on pull_request events. We add the
     # `if` statements to each individual step since we want the job to still
     # succeed in merge queues.
     steps:
       - name: Validate the PR title format
         uses: amannn/action-semantic-pull-request@v5
-        if: github.event_name == 'pull_request_target'
+        if: github.event_name == 'pull_request'
         id: lint_pr_title
         with:
           # Configure which types are allowed (newline-delimited).
@@ -48,10 +42,6 @@ jobs:
             ci
             chore
             revert
-          # Configure which scopes are allowed (newline-delimited).
-          # These are regex patterns auto-wrapped in `^ $`.
-          #scopes: |
-          #  .*
           # Configure that a scope must always be provided.
           requireScope: false
         env:
@@ -63,86 +53,74 @@ jobs:
       # Since at this point we know the PR title is a valid conventional commit,
       # we can use a simple regex that looks for a '!:' sequence. It could be
       # more complex, but we don't care about false positives.
-      - name: Check for breaking change flag
-        if: github.event_name == 'pull_request_target'
+      - name: Check for breaking change flag and footer
+        if: github.event_name == 'pull_request'
         id: breaking
         run: |
+          echo "=== Breaking change detection ==="
+
           if [[ "${PR_TITLE}" =~ ^.*\!:.*$ ]]; then
-            echo "breaking=true" >> $GITHUB_OUTPUT
+            BREAKING=true
+            echo "ℹ️ PR title declares a breaking change (!)"
           else
-            echo "breaking=false" >> $GITHUB_OUTPUT
+            BREAKING=false
+            echo "ℹ️ PR title does NOT declare a breaking change"
           fi
 
-          # Check if the PR comment has a "BREAKING CHANGE:" footer describing
-          # the breaking change.
-          if [[ "${PR_BODY}" != *"BREAKING CHANGE:"* ]]; then
-            echo "has_breaking_footer=false" >> $GITHUB_OUTPUT
+          if [[ "${PR_BODY}" == *"BREAKING CHANGE:"* ]]; then
+            HAS_FOOTER=true
+            echo "ℹ️ PR body contains BREAKING CHANGE footer"
           else
-            echo "has_breaking_footer=true" >> $GITHUB_OUTPUT
+            HAS_FOOTER=false
+            echo "ℹ️ PR body does NOT contain BREAKING CHANGE footer"
           fi
+
+          echo "breaking=$BREAKING" >> "$GITHUB_OUTPUT"
+          echo "has_breaking_footer=$HAS_FOOTER" >> "$GITHUB_OUTPUT"
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
 
-      # Post a help comment if the PR title indicates a breaking change but does
-      # not contain a "BREAKING CHANGE:" footer.
-      - name: Require "BREAKING CHANGE:" footer for breaking changes
-        id: breaking-comment
+      - name: Require BREAKING CHANGE footer for breaking changes
         if: ${{ github.event_name == 'pull_request_target' && steps.breaking.outputs.breaking == 'true' && steps.breaking.outputs.has_breaking_footer == 'false' }}
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: pr-title-lint-error
-          message: |
-            Hey there and thank you for opening this pull request! 👋
+        run: |
+          echo "Hey there and thank you for opening this pull request! 👋"
+          echo
+          echo "It looks like your proposed title indicates a breaking change. If that's the case, please make sure to include a \"BREAKING CHANGE:\" footer in the body of the pull request describing the breaking change and any migration instructions."
+          exit 1
 
-            It looks like your proposed title indicates a breaking change. If that's the case, please make sure to include a "BREAKING CHANGE:" footer in the body of the pull request describing the breaking change and any migration instructions.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Fail if the footer is required but missing
         if: ${{ github.event_name == 'pull_request_target' && steps.breaking.outputs.breaking == 'true' && steps.breaking.outputs.has_breaking_footer == 'false' }}
         run: exit 1
 
       - name: Post a comment if the PR badly formatted
-        uses: marocchino/sticky-pull-request-comment@v2
         # When the previous steps fails, the workflow would stop. By adding this
         # condition you can continue the execution with the populated error message.
-        if: always() && github.event_name == 'pull_request_target'  && (steps.lint_pr_title.outputs.error_message != null)
-        with:
-          header: pr-title-lint-error
-          message: |
-            Hey there and thank you for opening this pull request! 👋
-
-            We require pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/) and it looks like your proposed title needs to be adjusted.
-
-            Your title should look like this. The scope field is optional.
-            ```
-            <type>(<scope>): <description>
-            ```
-
-            If the PR includes a breaking change, mark it with an exclamation mark:
-            ```
-            <type>!: <description>
-            ```
-            and include a "BREAKING CHANGE:" footer in the body of the pull request.
-
-            Available types:
-            - feat: A new feature
-            - fix: A bug fix
-            - docs: Documentation only changes
-            - refactor: A code change that neither fixes a bug nor adds a feature
-            - perf: A code change that improves performance
-            - test: Adding missing tests or correcting existing tests
-            - ci: Changes to the CI configuration files and scripts
-            - chore: Other changes that don't affect the published crate
-            - revert: Reverts a previous commit
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-      # Delete previous comments when the issues have been resolved
-      # This step doesn't run if any of the previous checks fails.
-      - name: Delete previous comments
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request_target'
-        with:
-          header: pr-title-lint-error
-          delete: true
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: always() && github.event_name == 'pull_request'  && (steps.lint_pr_title.outputs.error_message != null)
+        run: |
+          echo "Hey there and thank you for opening this pull request! 👋"
+          echo ""
+          echo "We require pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/) and it looks like your proposed title needs to be adjusted."
+          echo ""
+          echo "Your title should look like this. The scope field is optional."
+          echo '```'
+          echo "<type>(<scope>): <description>"
+          echo '```'
+          echo ""
+          echo "If the PR includes a breaking change, mark it with an exclamation mark:"
+          echo '```'
+          echo "<type>!: <description>"
+          echo '```'
+          echo "and include a \"BREAKING CHANGE:\" footer in the body of the pull request."
+          echo ""
+          echo "Available types:"
+          echo "- feat: A new feature"
+          echo "- fix: A bug fix"
+          echo "- docs: Documentation only changes"
+          echo "- refactor: A code change that neither fixes a bug nor adds a feature"
+          echo "- perf: A code change that improves performance"
+          echo "- test: Adding missing tests or correcting existing tests"
+          echo "- ci: Changes to the CI configuration files and scripts"
+          echo "- chore: Other changes that don't affect the published crate"
+          echo "- revert: Reverts a previous commit"
+          exit 1

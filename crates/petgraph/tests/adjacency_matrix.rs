@@ -85,7 +85,8 @@ fn test_adjacency_matrix_for_stable_graph_undirected() {
 #[cfg(feature = "graphmap")]
 fn test_adjacency_matrix_for_graph_map<Ty: EdgeType>() {
     for (order, edges) in TEST_CASES {
-        let mut g: GraphMap<u16, (), Ty> = GraphMap::with_capacity(order, edges.len());
+        let mut g: GraphMap<u16, (), Ty, fxhash::FxBuildHasher> =
+            GraphMap::with_capacity(order, edges.len());
 
         for i in 0..order {
             g.add_node(i as u16);
