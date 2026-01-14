@@ -3,7 +3,7 @@ name: Rust semver-checks
 on:
     pull_request:
         branches:
-            - master
+            - 0.8
     workflow_dispatch:
         inputs:
             base:
