@@ -91,6 +91,9 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     }
 
     /// Nodes with degree 0 (no incident edges).
+    ///
+    /// Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is implemented by
+    /// filtering [Self::nodes], which may be inefficient for large graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.degree(node.id) == 0)
@@ -435,6 +438,10 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
             })
     }
 
+    /// Nodes with degree 0 (no incident edges).
+    ///
+    /// Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is implemented by
+    /// filtering [Self::nodes], which may be inefficient for large graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.degree(node.id) == 0)
