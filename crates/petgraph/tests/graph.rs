@@ -756,6 +756,12 @@ fn test_toposort() {
     assert_eq!(order.len(), gr.node_count());
 
     assert_is_topo_order(&gr, &order);
+
+    let order = petgraph::algo::lexicographic_toposort(&gr).unwrap();
+    println!("{order:?}");
+    assert_eq!(order.len(), gr.node_count());
+
+    assert_is_topo_order(&gr, &order);
 }
 
 #[test]
