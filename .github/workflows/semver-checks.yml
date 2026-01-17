@@ -1,14 +1,9 @@
 name: Rust semver-checks
 
 on:
-    pull_request_target:
+    pull_request:
         branches:
-            - master
-        types:
-            - opened
-            - edited
-            - synchronize
-            - reopened
+            - 0.8
     workflow_dispatch:
         inputs:
             base:
@@ -16,10 +11,8 @@ on:
                 required: true
                 default: 'master'
 
-env:
-  CARGO_TERM_COLOR: always
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: "sccache"
+permissions:
+  pull-requests: read
 
 jobs:
   semver-checks:
@@ -32,122 +25,70 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           path: PR_BRANCH
-      - name: Checkout baseline
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.sha || github.event.inputs.base }}
-          path: BASELINE_BRANCH
-      - uses: mozilla-actions/sccache-action@v0.0.8
+          fetch-depth: 0
+
+      # Remove repo toolchain pin so we can specify toolchain manually
+      - name: Remove toolchain pin
+        run: rm -f rust-toolchain.toml rustup-toolchain.toml
+
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      # Install a prebuilt binary of cargo-semver-checks
-      - uses: cargo-bins/cargo-binstall@main
-      - name: Install cargo-semver-checks
-        run: cargo binstall -y cargo-semver-checks
-
-      # Abort if the crate has build errors, without posting/deleting the comment.
-      - name: Check for build errors
-        id: build
-        run: |
-            cd PR_BRANCH
-            cargo check
+      - name: Build caching
+        uses: Swatinem/rust-cache@v2
 
       # Run cargo-semver-checks against the PR's target branch.
-      - name: Check for public API changes
-        id: check-changes
-        run: |
-          # Don't fail the workflow when semver-checks returns a non-zero exit code.
-          set +e
-
-          cd PR_BRANCH
-          cargo semver-checks --color never --baseline-root ../BASELINE_BRANCH --release-type minor > diagnostic.txt
-          if [ "$?" -ne 0 ]; then
-            echo "breaking=true" >> $GITHUB_OUTPUT
-          else
-            echo "breaking=false" >> $GITHUB_OUTPUT
-          fi
-
-          {
-            echo 'semver_checks_diagnostic<<EOF'
-            cat diagnostic.txt
-            echo
-            echo EOF
-          } >> $GITHUB_OUTPUT
-
-          echo "semver-checks diagnostic:\n"
-          cat diagnostic.txt
+      - name: Check semver changes
+        id: semver
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: all-features
+          manifest-path: PR_BRANCH/Cargo.toml
+          baseline-rev: ${{ github.event.pull_request.base.sha || github.event.inputs.base }}
+          release-type: minor
+        continue-on-error: true
       
-      # Check if the PR title contains a breaking change flag in its title,
-      # according to the conventional commits specification.
-      #
-      # When the PR is flagged as breaking we only post an informative comment
-      # instead of failing the workflow.
-      - name: Check for breaking change flag
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
-        id: breaking-pr
+      - name: Evaluate semver result
         run: |
-          if [[ "${PR_TITLE}" =~ ^.*\!:.*$ ]]; then
-            echo "breaking=true" >> $GITHUB_OUTPUT
+          echo "=== cargo-semver-checks result ==="
+
+          if [ "${{ steps.semver.outcome }}" = "failure" ]; then
+            BREAKING=true
+            echo "❌ Breaking changes detected in public Rust API"
           else
-            echo "breaking=false" >> $GITHUB_OUTPUT
+            BREAKING=false
+            echo "✅ No breaking changes detected"
           fi
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
 
-      # Debug step
-      - run: |
-          echo "breaking: ${{ steps.check-changes.outputs.breaking }}"
-          echo "breaking-pr: ${{ steps.breaking-pr.outputs.breaking }}"
+          echo
+          echo "=== cargo-semver-checks summary ==="
+          echo
+          printf "%s\n" "${{ steps.semver.outputs.semver-checks-output }}"
+          echo
 
-      # Post a diagnostics comment if there are breaking changes and the PR has been marked as breaking.
-      - name: Post a comment about the breaking changes. PR marked as breaking.
-        if: ${{ (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && steps.check-changes.outputs.breaking == 'true' && steps.breaking-pr.outputs.breaking == 'true' }}
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: rs-semver-checks
-          message: |
-            This PR contains breaking changes to the public Rust API.
+          # Check PR title for conventional-commit breaking marker
+          if [[ "${{ github.event.pull_request.title }}" =~ ^.*\!:.*$ ]]; then
+            DECLARED=true
+            echo "ℹ️ PR title declares a breaking change (!)"
+          else
+            DECLARED=false
+            echo "ℹ️ PR title does NOT declare a breaking change"
+          fi
 
-            <details>
-              <summary>cargo-semver-checks summary</summary>
-              
-              ```
-              ${{ steps.check-changes.outputs.semver_checks_diagnostic }}
-              ```
-              
-            </details>
-          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+          echo
+          echo "=== Decision ==="
 
-      # Post a help comment if there are breaking changes, and the PR hasn't been marked as breaking.
-      - name: Post a comment about the breaking changes. PR *not* marked as breaking.
-        if: ${{ (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && steps.check-changes.outputs.breaking == 'true' && steps.breaking-pr.outputs.breaking == 'false' }}
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: rs-semver-checks
-          message: |
-            This PR contains breaking changes to the public Rust API.
-            Please deprecate the old API instead (if possible), or mark the PR with a `!` following the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) format to indicate a breaking change.
+          if [ "$BREAKING" = true ] && [ "$DECLARED" = false ]; then
+            echo "🚨 ERROR: Undeclared breaking changes detected."
+            echo "Hey there and thank you for opening this pull request! 👋 Please deprecate the old API instead (if possible), or mark the PR with a `!` following the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) format to indicate a breaking change."
+            exit 1
+          fi
 
-            <details>
-              <summary>cargo-semver-checks summary</summary>
-              
-              ```
-              ${{ steps.check-changes.outputs.semver_checks_diagnostic }}
-              ```
-              
-            </details>
-          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
-      - name: Fail if there are undeclared breaking changes
-        if: ${{ steps.check-changes.outputs.breaking == 'true' && steps.breaking-pr.outputs.breaking == 'false' }}
-        run: exit 1
+          if [ "$BREAKING" = true ] && [ "$DECLARED" = true ]; then
+            echo "⚠️ Breaking changes detected but correctly declared."
+            echo "Workflow will succeed."
+          fi
 
-      # Delete previous comments when the issues have been resolved
-      # This step doesn't run if any of the previous checks fails.
-      - name: Delete previous comments
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: ${{ (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && steps.check-changes.outputs.breaking == 'false' }}
-        with:
-          header: rs-semver-checks
-          delete: true
-          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+          if [ "$BREAKING" = false ]; then
+            echo "✅ No breaking changes; workflow will succeed."
+          fi
