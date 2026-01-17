@@ -88,6 +88,10 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
     }
 
     /// Nodes with degree 0 (no incident edges).
+    ///
+    /// Due to restrictions in the API of [`StableGraph`](petgraph_old::stable_graph::StableGraph)
+    /// this is implemented by filtering [Self::nodes], which may be inefficient for large
+    /// graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.degree(node.id) == 0)
@@ -111,10 +115,11 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     /// Mutable iterator over all edges.
     ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by first collecting edges endpoints and ids into a Vec and then combining
-    /// that with the mutable edge weights iterator. Therefore, this may be inefficient and/or
-    /// use more memory than expected for large graphs.
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::StableGraph) this is implemented by first collecting edges
+    /// endpoints and ids into a Vec and then combining that with the mutable edge weights
+    /// iterator. Therefore, this may be inefficient and/or use more memory than expected for
+    /// large graphs.
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         // This returns the EdgeWeights corresponding to the correct EdgeIndexes because StableGraph
         // internally stores them in order.
@@ -176,9 +181,9 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     /// Number of incoming edges.
     ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this
-    /// iterates over the incoming neighbors to count them, which may be inefficient for large
-    /// graphs.
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this iterates over the incoming
+    /// neighbors to count them, which may be inefficient for large graphs.
     #[inline]
     fn in_degree(&self, node: Self::NodeId) -> usize {
         self.neighbors_directed(node, Direction::Incoming).count()
@@ -186,9 +191,9 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     /// Number of outgoing edges.
     ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this
-    /// iterates over the outgoing neighbors to count them, which may be inefficient for large
-    /// graphs.
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this iterates over the outgoing
+    /// neighbors to count them, which may be inefficient for large graphs.
     #[inline]
     fn out_degree(&self, node: Self::NodeId) -> usize {
         self.neighbors_directed(node, Direction::Outgoing).count()
@@ -196,8 +201,9 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     /// Number of incident edges.
     ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this
-    /// iterates over all neighbors to count them, which may be inefficient for large graphs.
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this iterates over all
+    /// neighbors to count them, which may be inefficient for large graphs.
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
         self.neighbors_undirected(node).count()
@@ -217,8 +223,9 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     /// Mutable iterator over incoming edges. That is, edges where `target == node`.
     ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this is implemented by
+    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
     #[inline]
     fn incoming_edges_mut(
         &mut self,
@@ -240,8 +247,9 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     /// Mutable iterator over outgoing edges. That is, edges where `source == node`.
     ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this is implemented by
+    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
     #[inline]
     fn outgoing_edges_mut(
         &mut self,
@@ -265,8 +273,9 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
     /// Mutable iterator over incident edges of node. That is, all edges where node is either
     /// source or target.
     ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this is implemented by
+    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
     #[inline]
     fn incident_edges_mut(
         &mut self,
@@ -314,8 +323,9 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
     /// edges where the provided source and target are actually the source and target of the edge.
     /// For an undirected equivalent, see [Self::edges_connecting_mut].
     ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this is implemented by
+    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
     #[inline]
     fn edges_between_mut(
         &mut self,
@@ -344,8 +354,9 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     /// Mutable iterator over all edges connecting lhs and rhs, regardless of direction.
     ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this is implemented by
+    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
     #[inline]
     fn edges_connecting_mut(
         &mut self,
@@ -437,6 +448,11 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
             })
     }
 
+    /// Nodes with degree 0 (no incident edges).
+    ///
+    /// Due to restrictions in the API of [`StableGraph`](petgraph_old::stable_graph::StableGraph)
+    /// this is implemented by filtering [Self::nodes], which may be inefficient for large
+    /// graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.degree(node.id) == 0)

@@ -98,6 +98,9 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     }
 
     /// Nodes with degree 0 (no incident edges).
+    ///
+    /// Due to restrictions in the API of [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph)
+    /// this is implemented by filtering [Self::nodes], which may be inefficient for large graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.degree(node.id) == 0)
@@ -115,12 +118,6 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
             })
     }
 
-    /// Mutable iterator over all edges.
-    ///
-    /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by first collecting edges endpoints and ids into a Vec and then combining
-    /// that with the mutable edge weights iterator. Therefore, this may be inefficient and/or
-    /// use more memory than expected for large graphs.
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.all_edges_mut()
             .map(|(source, target, data)| EdgeMut::<'_, Self> {
