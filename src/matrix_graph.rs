@@ -524,6 +524,11 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         None
     }
 
+    /// Return `true` if the node `a` exists.
+    pub fn has_node(&self, a: NodeIndex<Ix>) -> bool {
+        a.index() < self.node_capacity && self.nodes.removed_ids.contains(&a.index()) == false
+    }
+
     /// Return `true` if there is an edge between `a` and `b`.
     ///
     /// If any of the nodes don't exist - returns `false`.
