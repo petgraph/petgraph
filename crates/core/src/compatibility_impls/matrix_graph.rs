@@ -77,12 +77,12 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
 
     #[inline]
     fn node_count(&self) -> usize {
-        MatrixGraph::node_count(self)
+        Self::node_count(self)
     }
 
     #[inline]
     fn edge_count(&self) -> usize {
-        MatrixGraph::edge_count(self)
+        Self::edge_count(self)
     }
 
     // Node Iteration
@@ -100,7 +100,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     /// Nodes with degree 0 (no incident edges).
     ///
     /// Due to restrictions in the API of [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph)
-    /// this is implemented by filtering [Self::nodes], which may be inefficient for large graphs.
+    /// this is implemented by filtering [`Self::nodes`], which may be inefficient for large graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.degree(node.id) == 0)
@@ -237,7 +237,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by
-    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn incoming_edges_mut(
         &mut self,
@@ -261,7 +261,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by
-    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn outgoing_edges_mut(
         &mut self,
@@ -287,7 +287,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by
-    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn incident_edges_mut(
         &mut self,
@@ -301,13 +301,11 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     #[inline]
     fn predecessors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.neighbors_directed(node, Direction::Incoming)
-            .map(|n| n)
     }
 
     #[inline]
     fn successors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.neighbors_directed(node, Direction::Outgoing)
-            .map(|n| n)
     }
 
     #[inline]
@@ -332,25 +330,27 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
         target: Self::NodeId,
     ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(source, Direction::Outgoing)
-            .filter(move |(_s, t, _d)| *t == target)
-            .map(move |(s, t, d)| EdgeRef::<'_, Self> {
-                id: MatrixGraphEdgeId {
-                    source: s,
-                    target: t,
+            .filter(move |(_s, curr_target_idx, _d)| *curr_target_idx == target)
+            .map(
+                move |(curr_source_idx, curr_target_idx, data)| EdgeRef::<'_, Self> {
+                    id: MatrixGraphEdgeId {
+                        source: curr_source_idx,
+                        target: curr_target_idx,
+                    },
+                    source: curr_source_idx,
+                    target: curr_target_idx,
+                    data,
                 },
-                source: s,
-                target: t,
-                data: d,
-            })
+            )
     }
 
     /// Mutable iterator over all edges between source and target. Note that this only considers
     /// edges where the provided source and target are actually the source and target of the edge.
-    /// For an undirected equivalent, see [Self::edges_connecting_mut].
+    /// For an undirected equivalent, see [`Self::edges_connecting_mut`].
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::MatrixGraph) this is implemented by filtering
-    /// [Self::edges_mut], which may be inefficient for large graphs.
+    /// [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn edges_between_mut(
         &mut self,
@@ -365,7 +365,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by
-    /// chaining two [Self::edges_between] calls, which may be inefficient for large graphs.
+    /// chaining two [`Self::edges_between`] calls, which may be inefficient for large graphs.
     #[inline]
     fn edges_connecting(
         &self,
@@ -380,7 +380,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by filtering
-    /// [Self::edges_mut], which may be inefficient for large graphs.
+    /// [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn edges_connecting_mut(
         &mut self,
@@ -447,12 +447,12 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
 
     #[inline]
     fn node_count(&self) -> usize {
-        MatrixGraph::node_count(self)
+        Self::node_count(self)
     }
 
     #[inline]
     fn edge_count(&self) -> usize {
-        MatrixGraph::edge_count(self)
+        Self::edge_count(self)
     }
 
     // Node iteration
@@ -591,7 +591,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     // Adjacency
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.neighbors(node).map(|n| n)
+        self.neighbors(node)
     }
 
     // Edges between nodes
@@ -600,7 +600,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by
-    /// filtering [Self::incident_edges], which may be inefficient for large graphs.
+    /// filtering [`Self::incident_edges`], which may be inefficient for large graphs.
     #[inline]
     fn edges_connecting(
         &self,
