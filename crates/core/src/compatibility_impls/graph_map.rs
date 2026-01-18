@@ -73,28 +73,28 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
 
     #[inline]
     fn node_count(&self) -> usize {
-        GraphMap::node_count(self)
+        Self::node_count(self)
     }
 
     #[inline]
     fn edge_count(&self) -> usize {
-        GraphMap::edge_count(self)
+        Self::edge_count(self)
     }
 
     // Node Iteration
 
     fn nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
-        GraphMap::nodes(self).map(|id| NodeRef::<'_, Self> { id, data: () })
+        Self::nodes(self).map(|id| NodeRef::<'_, Self> { id, data: () })
     }
 
-    fn nodes_mut<'a>(&'a mut self) -> impl Iterator<Item = NodeMut<'a, Self>> {
-        GraphMap::nodes(self).map(|id| NodeMut::<'_, Self> { id, data: () })
+    fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
+        Self::nodes(self).map(|id| NodeMut::<'_, Self> { id, data: () })
     }
 
     /// Nodes with degree 0 (no incident edges).
     ///
     /// Due to restrictions in the API of [`GraphMap`](petgraph_old::graphmap::GraphMap)
-    /// this is implemented by filtering [Self::nodes], which may be inefficient for large graphs.
+    /// this is implemented by filtering [`Self::nodes`], which may be inefficient for large graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes()
@@ -215,7 +215,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`GraphMap`](petgraph_old::graphmap::GraphMap) this is implemented by
-    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn incoming_edges_mut(
         &mut self,
@@ -239,7 +239,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`GraphMap`](petgraph_old::graphmap::GraphMap) this is implemented by
-    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn outgoing_edges_mut(
         &mut self,
@@ -265,7 +265,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`GraphMap`](petgraph_old::graphmap::GraphMap) this is implemented by
-    /// filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn incident_edges_mut(
         &mut self,
@@ -279,13 +279,11 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     #[inline]
     fn predecessors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.neighbors_directed(node, Direction::Incoming)
-            .map(|n| n)
     }
 
     #[inline]
     fn successors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.neighbors_directed(node, Direction::Outgoing)
-            .map(|n| n)
     }
 
     #[inline]
@@ -310,25 +308,27 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
         target: Self::NodeId,
     ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(source, Direction::Outgoing)
-            .filter(move |(_s, t, _d)| *t == target)
-            .map(move |(s, t, d)| EdgeRef::<'_, Self> {
-                id: GraphMapEdgeId {
-                    source: s,
-                    target: t,
+            .filter(move |(_s, curr_target_idx, _d)| *curr_target_idx == target)
+            .map(
+                move |(curr_source_idx, curr_target_idx, data)| EdgeRef::<'_, Self> {
+                    id: GraphMapEdgeId {
+                        source: curr_source_idx,
+                        target: curr_target_idx,
+                    },
+                    source: curr_source_idx,
+                    target: curr_target_idx,
+                    data,
                 },
-                source: s,
-                target: t,
-                data: d,
-            })
+            )
     }
 
     /// Mutable iterator over all edges between source and target. Note that this only considers
     /// edges where the provided source and target are actually the source and target of the edge.
-    /// For an undirected equivalent, see [Self::edges_connecting_mut].
+    /// For an undirected equivalent, see [`Self::edges_connecting_mut`].
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`GraphMap`](petgraph_old::GraphMap) this is implemented by filtering
-    /// [Self::edges_mut], which may be inefficient for large graphs.
+    /// [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn edges_between_mut(
         &mut self,
@@ -343,7 +343,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`GraphMap`](petgraph_old::graphmap::GraphMap) this is implemented by
-    /// chaining two [Self::edges_between] calls, which may be inefficient for large graphs.
+    /// chaining two [`Self::edges_between`] calls, which may be inefficient for large graphs.
     #[inline]
     fn edges_connecting(
         &self,
@@ -358,7 +358,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`GraphMap`](petgraph_old::graphmap::GraphMap) this is implemented by filtering
-    /// [Self::edges_mut], which may be inefficient for large graphs.
+    /// [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn edges_connecting_mut(
         &mut self,
@@ -373,17 +373,17 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     // Existence checks
     #[inline]
     fn contains_node(&self, node: Self::NodeId) -> bool {
-        GraphMap::contains_node(self, node)
+        Self::contains_node(self, node)
     }
 
     #[inline]
     fn contains_edge(&self, edge: Self::EdgeId) -> bool {
-        GraphMap::contains_edge(self, edge.source, edge.target)
+        Self::contains_edge(self, edge.source, edge.target)
     }
 
     #[inline]
     fn is_adjacent(&self, source: Self::NodeId, target: Self::NodeId) -> bool {
-        GraphMap::contains_edge(self, source, target)
+        Self::contains_edge(self, source, target)
     }
 
     #[inline]
@@ -427,28 +427,28 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
 
     #[inline]
     fn node_count(&self) -> usize {
-        GraphMap::node_count(self)
+        Self::node_count(self)
     }
 
     #[inline]
     fn edge_count(&self) -> usize {
-        GraphMap::edge_count(self)
+        Self::edge_count(self)
     }
 
     // Node iteration
 
     fn nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
-        GraphMap::nodes(self).map(|id| NodeRef::<'_, Self> { id, data: () })
+        Self::nodes(self).map(|id| NodeRef::<'_, Self> { id, data: () })
     }
 
-    fn nodes_mut<'a>(&'a mut self) -> impl Iterator<Item = NodeMut<'a, Self>> {
-        GraphMap::nodes(self).map(|id| NodeMut::<'_, Self> { id, data: () })
+    fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
+        Self::nodes(self).map(|id| NodeMut::<'_, Self> { id, data: () })
     }
 
     /// Nodes with degree 0 (no incident edges).
     ///
     /// Due to restrictions in the API of [`GraphMap`](petgraph_old::graphmap::GraphMap)
-    /// this is implemented by filtering [Self::nodes], which may be inefficient for large graphs.
+    /// this is implemented by filtering [`Self::nodes`], which may be inefficient for large graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes()
@@ -557,7 +557,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
     // Adjacency
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.neighbors(node).map(|n| n)
+        self.neighbors(node)
     }
 
     // Edges between nodes
@@ -566,7 +566,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
     ///
     /// Performance note: Due to restrictions in the API of
     /// [`GraphMap`](petgraph_old::graphmap::GraphMap) this is implemented by
-    /// filtering [Self::incident_edges], which may be inefficient for large graphs.
+    /// filtering [`Self::incident_edges`], which may be inefficient for large graphs.
     #[inline]
     fn edges_connecting(
         &self,
@@ -592,17 +592,17 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
     // Existence checks
     #[inline]
     fn contains_node(&self, node: Self::NodeId) -> bool {
-        GraphMap::contains_node(self, node)
+        Self::contains_node(self, node)
     }
 
     #[inline]
     fn contains_edge(&self, edge: Self::EdgeId) -> bool {
-        GraphMap::contains_edge(self, edge.source, edge.target)
+        Self::contains_edge(self, edge.source, edge.target)
     }
 
     #[inline]
     fn is_adjacent(&self, source: Self::NodeId, target: Self::NodeId) -> bool {
-        GraphMap::contains_edge(self, source, target)
+        Self::contains_edge(self, source, target)
     }
 
     #[inline]
