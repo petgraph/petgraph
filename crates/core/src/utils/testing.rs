@@ -46,6 +46,7 @@ macro_rules! create_directed_test_graph {
     }};
 }
 
+/// TODO Check where it would be useful to have a remove_node and remove_edge function
 #[macro_export]
 macro_rules! test_directed_graph {
     ($graph_constructer:expr, $add_node:expr, $add_edge:expr) => {
@@ -319,15 +320,17 @@ macro_rules! test_directed_graph {
             );
         }
 
-        fn check_if_incoming_edges_matches<T: core::hash::Hash + Eq + core::fmt::Debug>(
+        fn check_if_edges_match<T: core::hash::Hash + Eq + core::fmt::Debug>(
             mut expected_edges: hashbrown::hash_set::HashSet<T, foldhash::fast::RandomState>,
             actual_edges: impl Iterator<Item = T>,
+            method_name: &'static str,
             node_number: usize,
         ) {
             for edge in actual_edges {
                 assert!(
                     expected_edges.contains(&edge),
-                    "graph.incoming_edges() contained unexpected edge id: {:?} for node {}",
+                    "graph.{}() contained unexpected edge id: {:?} for node {}",
+                    method_name,
                     edge,
                     node_number
                 );
@@ -335,7 +338,8 @@ macro_rules! test_directed_graph {
             }
             assert!(
                 expected_edges.is_empty(),
-                "graph.incoming_edges() did not return all expected edges for node {}",
+                "graph.{}() did not return all expected edges for node {}",
+                method_name,
                 node_number
             );
         }
@@ -353,9 +357,10 @@ macro_rules! test_directed_graph {
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[0]
                 ]);
-            check_if_incoming_edges_matches(
+            check_if_edges_match(
                 expected_edges_one,
                 graph.incoming_edges(nodes[1]).map(|edge| edge.id),
+                "incoming_edges",
                 1,
             );
 
@@ -363,9 +368,10 @@ macro_rules! test_directed_graph {
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[1], edges[3],
                 ]);
-            check_if_incoming_edges_matches(
+            check_if_edges_match(
                 expected_edges_two,
                 graph.incoming_edges(nodes[2]).map(|edge| edge.id),
+                "incoming_edges",
                 2,
             );
 
@@ -373,36 +379,16 @@ macro_rules! test_directed_graph {
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[2]
                 ]);
-            check_if_incoming_edges_matches(
+            check_if_edges_match(
                 expected_edges_three,
                 graph.incoming_edges(nodes[3]).map(|edge| edge.id),
+                "incoming_edges",
                 3,
             );
 
             assert!(
                 graph.incoming_edges(nodes[4]).next().is_none(),
                 "graph.incoming_edges() did not return an empty iterator for node 4"
-            );
-        }
-
-        fn check_if_incoming_edges_mut_matches<T: core::hash::Hash + Eq + core::fmt::Debug>(
-            mut expected_edges: hashbrown::hash_set::HashSet<T, foldhash::fast::RandomState>,
-            actual_edges: impl Iterator<Item = T>,
-            node_number: usize,
-        ) {
-            for edge in actual_edges {
-                assert!(
-                    expected_edges.contains(&edge),
-                    "graph.incoming_edges() contained unexpected edge id: {:?} for node {}",
-                    edge,
-                    node_number
-                );
-                expected_edges.remove(&edge);
-            }
-            assert!(
-                expected_edges.is_empty(),
-                "graph.incoming_edges() did not return all expected edges for node {}",
-                node_number
             );
         }
 
@@ -419,9 +405,10 @@ macro_rules! test_directed_graph {
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[0]
                 ]);
-            check_if_incoming_edges_mut_matches(
+            check_if_edges_match(
                 expected_edges_one,
                 graph.incoming_edges_mut(nodes[1]).map(|edge| edge.id),
+                "incoming_edges_mut",
                 1,
             );
 
@@ -429,9 +416,10 @@ macro_rules! test_directed_graph {
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[1], edges[3],
                 ]);
-            check_if_incoming_edges_mut_matches(
+            check_if_edges_match(
                 expected_edges_two,
                 graph.incoming_edges_mut(nodes[2]).map(|edge| edge.id),
+                "incoming_edges_mut",
                 2,
             );
 
@@ -439,15 +427,1153 @@ macro_rules! test_directed_graph {
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[2]
                 ]);
-            check_if_incoming_edges_mut_matches(
+            check_if_edges_match(
                 expected_edges_three,
                 graph.incoming_edges_mut(nodes[3]).map(|edge| edge.id),
+                "incoming_edges_mut",
                 3,
             );
 
             assert!(
                 graph.incoming_edges_mut(nodes[4]).next().is_none(),
                 "graph.incoming_edges_mut() did not return an empty iterator for node 4"
+            );
+        }
+
+        #[test]
+        fn test_outgoing_edges() {
+            let (graph, nodes, edges) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+            let expected_edges_zero =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0], edges[1],
+                ]);
+            check_if_edges_match(
+                expected_edges_zero,
+                graph.outgoing_edges(nodes[0]).map(|edge| edge.id),
+                "outgoing_edges",
+                0,
+            );
+
+            let expected_edges_one =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[2]
+                ]);
+            check_if_edges_match(
+                expected_edges_one,
+                graph.outgoing_edges(nodes[1]).map(|edge| edge.id),
+                "outgoing_edges",
+                1,
+            );
+
+            assert!(
+                graph.outgoing_edges(nodes[2]).next().is_none(),
+                "graph.outgoing_edges() did not return an empty iterator for node 2"
+            );
+
+            let expected_edges_three =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[3]
+                ]);
+            check_if_edges_match(
+                expected_edges_three,
+                graph.outgoing_edges(nodes[3]).map(|edge| edge.id),
+                "outgoing_edges",
+                3,
+            );
+
+            assert!(
+                graph.outgoing_edges(nodes[4]).next().is_none(),
+                "graph.outgoing_edges() did not return an empty iterator for node 4"
+            );
+        }
+
+        #[test]
+        fn test_outgoing_edges_mut() {
+            let (mut graph, nodes, edges) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+            let expected_edges_zero =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0], edges[1],
+                ]);
+            check_if_edges_match(
+                expected_edges_zero,
+                graph.outgoing_edges_mut(nodes[0]).map(|edge| edge.id),
+                "outgoing_edges_mut",
+                0,
+            );
+
+            let expected_edges_one =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[2]
+                ]);
+            check_if_edges_match(
+                expected_edges_one,
+                graph.outgoing_edges_mut(nodes[1]).map(|edge| edge.id),
+                "outgoing_edges_mut",
+                1,
+            );
+
+            assert!(
+                graph.outgoing_edges_mut(nodes[2]).next().is_none(),
+                "graph.outgoing_edges_mut() did not return an empty iterator for node 2"
+            );
+
+            let expected_edges_three =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[3]
+                ]);
+            check_if_edges_match(
+                expected_edges_three,
+                graph.outgoing_edges_mut(nodes[3]).map(|edge| edge.id),
+                "outgoing_edges_mut",
+                3,
+            );
+
+            assert!(
+                graph.outgoing_edges_mut(nodes[4]).next().is_none(),
+                "graph.outgoing_edges_mut() did not return an empty iterator for node 4"
+            );
+        }
+
+        #[test]
+        fn test_incident_edges() {
+            let (graph, nodes, edges) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+            let expected_edges_zero =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0], edges[1],
+                ]);
+            check_if_edges_match(
+                expected_edges_zero,
+                graph.incident_edges(nodes[0]).map(|edge| edge.id),
+                "incident_edges",
+                0,
+            );
+
+            let expected_edges_one =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0], edges[2],
+                ]);
+            check_if_edges_match(
+                expected_edges_one,
+                graph.incident_edges(nodes[1]).map(|edge| edge.id),
+                "incident_edges",
+                1,
+            );
+
+            let expected_edges_two =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[1], edges[3],
+                ]);
+            check_if_edges_match(
+                expected_edges_two,
+                graph.incident_edges(nodes[2]).map(|edge| edge.id),
+                "incident_edges",
+                2,
+            );
+
+            let expected_edges_three =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[2], edges[3],
+                ]);
+            check_if_edges_match(
+                expected_edges_three,
+                graph.incident_edges(nodes[3]).map(|edge| edge.id),
+                "incident_edges",
+                3,
+            );
+
+            assert!(
+                graph.incident_edges(nodes[4]).next().is_none(),
+                "graph.incident_edges() did not return an empty iterator for node 4"
+            );
+        }
+
+        #[test]
+        fn test_incident_edges_mut() {
+            let (mut graph, nodes, edges) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+            let expected_edges_zero =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0], edges[1],
+                ]);
+            check_if_edges_match(
+                expected_edges_zero,
+                graph.incident_edges_mut(nodes[0]).map(|edge| edge.id),
+                "incident_edges_mut",
+                0,
+            );
+
+            let expected_edges_one =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0], edges[2],
+                ]);
+            check_if_edges_match(
+                expected_edges_one,
+                graph.incident_edges_mut(nodes[1]).map(|edge| edge.id),
+                "incident_edges_mut",
+                1,
+            );
+
+            let expected_edges_two =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[1], edges[3],
+                ]);
+            check_if_edges_match(
+                expected_edges_two,
+                graph.incident_edges_mut(nodes[2]).map(|edge| edge.id),
+                "incident_edges_mut",
+                2,
+            );
+
+            let expected_edges_three =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[2], edges[3],
+                ]);
+            check_if_edges_match(
+                expected_edges_three,
+                graph.incident_edges_mut(nodes[3]).map(|edge| edge.id),
+                "incident_edges_mut",
+                3,
+            );
+
+            assert!(
+                graph.incident_edges_mut(nodes[4]).next().is_none(),
+                "graph.incident_edges_mut() did not return an empty iterator for node 4"
+            );
+        }
+
+        // TODO: Adjust to take node_number: Option<usize> and adjust messages accordingly
+        fn check_if_nodes_match<T: core::hash::Hash + Eq + core::fmt::Debug>(
+            mut expected_nodes: hashbrown::hash_set::HashSet<T, foldhash::fast::RandomState>,
+            actual_nodes: impl Iterator<Item = T>,
+            method_name: &'static str,
+            node_number: usize,
+        ) {
+            for node in actual_nodes {
+                assert!(
+                    expected_nodes.contains(&node),
+                    "graph.{}() contained unexpected node id: {:?} for node {}",
+                    method_name,
+                    node,
+                    node_number
+                );
+                expected_nodes.remove(&node);
+            }
+            assert!(
+                expected_nodes.is_empty(),
+                "graph.{}() did not return all expected nodes for node {}",
+                method_name,
+                node_number
+            );
+        }
+
+        #[test]
+        fn test_predecessors() {
+            let (graph, nodes, _) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+            assert!(
+                graph.predecessors(nodes[0]).next().is_none(),
+                "graph.predecessors() did not return an empty iterator for node 0"
+            );
+
+            let expected_predecessors_one = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[0]]);
+            check_if_nodes_match(
+                expected_predecessors_one,
+                graph.predecessors(nodes[1]),
+                "predecessors",
+                1,
+            );
+
+            let expected_predecessors_two = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[0], nodes[3]]);
+            check_if_nodes_match(
+                expected_predecessors_two,
+                graph.predecessors(nodes[2]),
+                "predecessors",
+                2,
+            );
+
+            let expected_predecessors_three = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[1]]);
+            check_if_nodes_match(
+                expected_predecessors_three,
+                graph.predecessors(nodes[3]),
+                "predecessors",
+                3,
+            );
+
+            assert!(
+                graph.predecessors(nodes[4]).next().is_none(),
+                "graph.predecessors() did not return an empty iterator for node 4"
+            );
+        }
+
+        #[test]
+        fn test_successors() {
+            let (graph, nodes, _) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+            let expected_successors_zero = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[1], nodes[2]]);
+            check_if_nodes_match(
+                expected_successors_zero,
+                graph.successors(nodes[0]),
+                "successors",
+                0,
+            );
+
+            let expected_successors_one = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[3]]);
+            check_if_nodes_match(
+                expected_successors_one,
+                graph.successors(nodes[1]),
+                "successors",
+                1,
+            );
+
+            assert!(
+                graph.successors(nodes[2]).next().is_none(),
+                "graph.successors() did not return an empty iterator for node 2"
+            );
+
+            let expected_successors_three = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[2]]);
+            check_if_nodes_match(
+                expected_successors_three,
+                graph.successors(nodes[3]),
+                "successors",
+                3,
+            );
+
+            assert!(
+                graph.successors(nodes[4]).next().is_none(),
+                "graph.successors() did not return an empty iterator for node 4"
+            );
+        }
+
+        #[test]
+        fn test_adjacencies() {
+            let (graph, nodes, _) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+            let expected_adjacencies_zero = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[1], nodes[2]]);
+            check_if_nodes_match(
+                expected_adjacencies_zero,
+                graph.adjacencies(nodes[0]),
+                "adjacencies",
+                0,
+            );
+
+            let expected_adjacencies_one = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[0], nodes[3]]);
+            check_if_nodes_match(
+                expected_adjacencies_one,
+                graph.adjacencies(nodes[1]),
+                "adjacencies",
+                1,
+            );
+
+            let expected_adjacencies_two = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[0], nodes[3]]);
+            check_if_nodes_match(
+                expected_adjacencies_two,
+                graph.adjacencies(nodes[2]),
+                "adjacencies",
+                2,
+            );
+
+            let expected_adjacencies_three = hashbrown::hash_set::HashSet::<
+                _,
+                foldhash::fast::RandomState,
+            >::from_iter([nodes[1], nodes[2]]);
+            check_if_nodes_match(
+                expected_adjacencies_three,
+                graph.adjacencies(nodes[3]),
+                "adjacencies",
+                3,
+            );
+
+            assert!(
+                graph.adjacencies(nodes[4]).next().is_none(),
+                "graph.adjacencies() did not return an empty iterator for node 4"
+            );
+        }
+
+        #[test]
+        #[allow(clippy::too_many_lines)]
+        fn test_edges_between() {
+            let (graph, nodes, edges) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            // Source 0
+            assert!(
+                graph.edges_between(nodes[0], nodes[0]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 0 and 0"
+            );
+
+            let expected_edges_0_1 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0]
+                ]);
+            check_if_edges_match(
+                expected_edges_0_1,
+                graph.edges_between(nodes[0], nodes[1]).map(|edge| edge.id),
+                "edges_between",
+                0,
+            );
+
+            let expected_edges_0_2 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[1]
+                ]);
+            check_if_edges_match(
+                expected_edges_0_2,
+                graph.edges_between(nodes[0], nodes[2]).map(|edge| edge.id),
+                "edges_between",
+                0,
+            );
+
+            assert!(
+                graph.edges_between(nodes[0], nodes[3]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 0 and 3"
+            );
+            assert!(
+                graph.edges_between(nodes[0], nodes[4]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 0 and 4"
+            );
+
+            // Source 1
+            assert!(
+                graph.edges_between(nodes[1], nodes[0]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 1 and 0"
+            );
+
+            assert!(
+                graph.edges_between(nodes[1], nodes[1]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 1 and 1"
+            );
+
+            assert!(
+                graph.edges_between(nodes[1], nodes[2]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 1 and 2"
+            );
+
+            let expected_edges_1_3 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[2]
+                ]);
+            check_if_edges_match(
+                expected_edges_1_3,
+                graph.edges_between(nodes[1], nodes[3]).map(|edge| edge.id),
+                "edges_between",
+                1,
+            );
+
+            assert!(
+                graph.edges_between(nodes[1], nodes[4]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 1 and 4"
+            );
+
+            // Source 2
+            assert!(
+                graph.edges_between(nodes[2], nodes[0]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 2 and 0"
+            );
+
+            assert!(
+                graph.edges_between(nodes[2], nodes[1]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 2 and 1"
+            );
+
+            assert!(
+                graph.edges_between(nodes[2], nodes[2]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 2 and 2"
+            );
+
+            assert!(
+                graph.edges_between(nodes[2], nodes[3]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 2 and 3"
+            );
+
+            assert!(
+                graph.edges_between(nodes[2], nodes[4]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 2 and 4"
+            );
+
+            // Source 3
+            assert!(
+                graph.edges_between(nodes[3], nodes[0]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 3 and 0"
+            );
+
+            assert!(
+                graph.edges_between(nodes[3], nodes[1]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 3 and 1"
+            );
+
+            let expected_edges_3_2 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[3]
+                ]);
+            check_if_edges_match(
+                expected_edges_3_2,
+                graph.edges_between(nodes[3], nodes[2]).map(|edge| edge.id),
+                "edges_between",
+                3,
+            );
+
+            assert!(
+                graph.edges_between(nodes[3], nodes[3]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 3 and 3"
+            );
+
+            assert!(
+                graph.edges_between(nodes[3], nodes[4]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 3 and 4"
+            );
+
+            // Source 4
+            assert!(
+                graph.edges_between(nodes[4], nodes[0]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 4 and 0"
+            );
+
+            assert!(
+                graph.edges_between(nodes[4], nodes[1]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 4 and 1"
+            );
+
+            assert!(
+                graph.edges_between(nodes[4], nodes[2]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 4 and 2"
+            );
+
+            assert!(
+                graph.edges_between(nodes[4], nodes[3]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 4 and 3"
+            );
+
+            assert!(
+                graph.edges_between(nodes[4], nodes[4]).next().is_none(),
+                "graph.edges_between() did not return an empty iterator for nodes 4 and 4"
+            );
+        }
+
+        #[test]
+        #[allow(clippy::too_many_lines)]
+        fn test_edges_between_mut() {
+            let (mut graph, nodes, edges) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            // Source 0
+            assert!(
+                graph.edges_between_mut(nodes[0], nodes[0]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 0 and 0"
+            );
+
+            let expected_edges_0_1 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0]
+                ]);
+            check_if_edges_match(
+                expected_edges_0_1,
+                graph
+                    .edges_between_mut(nodes[0], nodes[1])
+                    .map(|edge| edge.id),
+                "edges_between_mut",
+                0,
+            );
+
+            let expected_edges_0_2 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[1]
+                ]);
+            check_if_edges_match(
+                expected_edges_0_2,
+                graph
+                    .edges_between_mut(nodes[0], nodes[2])
+                    .map(|edge| edge.id),
+                "edges_between_mut",
+                0,
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[0], nodes[3]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 0 and 3"
+            );
+            assert!(
+                graph.edges_between_mut(nodes[0], nodes[4]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 0 and 4"
+            );
+
+            // Source 1
+            assert!(
+                graph.edges_between_mut(nodes[1], nodes[0]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 1 and 0"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[1], nodes[1]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 1 and 1"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[1], nodes[2]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 1 and 2"
+            );
+
+            let expected_edges_1_3 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[2]
+                ]);
+            check_if_edges_match(
+                expected_edges_1_3,
+                graph
+                    .edges_between_mut(nodes[1], nodes[3])
+                    .map(|edge| edge.id),
+                "edges_between_mut",
+                1,
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[1], nodes[4]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 1 and 4"
+            );
+
+            // Source 2
+            assert!(
+                graph.edges_between_mut(nodes[2], nodes[0]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 2 and 0"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[2], nodes[1]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 2 and 1"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[2], nodes[2]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 2 and 2"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[2], nodes[3]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 2 and 3"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[2], nodes[4]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 2 and 4"
+            );
+
+            // Source 3
+            assert!(
+                graph.edges_between_mut(nodes[3], nodes[0]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 3 and 0"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[3], nodes[1]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 3 and 1"
+            );
+
+            let expected_edges_3_2 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[3]
+                ]);
+            check_if_edges_match(
+                expected_edges_3_2,
+                graph
+                    .edges_between_mut(nodes[3], nodes[2])
+                    .map(|edge| edge.id),
+                "edges_between_mut",
+                3,
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[3], nodes[3]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 3 and 3"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[3], nodes[4]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 3 and 4"
+            );
+
+            // Source 4
+            assert!(
+                graph.edges_between_mut(nodes[4], nodes[0]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 4 and 0"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[4], nodes[1]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 4 and 1"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[4], nodes[2]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 4 and 2"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[4], nodes[3]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 4 and 3"
+            );
+
+            assert!(
+                graph.edges_between_mut(nodes[4], nodes[4]).next().is_none(),
+                "graph.edges_between_mut() did not return an empty iterator for nodes 4 and 4"
+            );
+        }
+
+        #[test]
+        #[allow(clippy::too_many_lines)]
+        fn test_edges_connecting() {
+            let (graph, nodes, edges) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            // Source 0
+            assert!(
+                graph.edges_connecting(nodes[0], nodes[0]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 0 and 0"
+            );
+
+            let expected_edges_0_1 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0]
+                ]);
+            check_if_edges_match(
+                expected_edges_0_1,
+                graph
+                    .edges_connecting(nodes[0], nodes[1])
+                    .map(|edge| edge.id),
+                "edges_connecting",
+                0,
+            );
+
+            let expected_edges_0_2 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[1]
+                ]);
+
+            check_if_edges_match(
+                expected_edges_0_2,
+                graph
+                    .edges_connecting(nodes[0], nodes[2])
+                    .map(|edge| edge.id),
+                "edges_connecting",
+                0,
+            );
+
+            assert!(
+                graph.edges_connecting(nodes[0], nodes[3]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 0 and 3"
+            );
+
+            assert!(
+                graph.edges_connecting(nodes[0], nodes[4]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 0 and 4"
+            );
+
+            // Source 1
+            assert!(
+                graph.edges_connecting(nodes[1], nodes[1]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 1 and
+                1"
+            );
+
+            assert!(
+                graph.edges_connecting(nodes[1], nodes[2]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 1 and
+                2"
+            );
+
+            let expected_edges_1_3 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[2]
+                ]);
+            check_if_edges_match(
+                expected_edges_1_3,
+                graph
+                    .edges_connecting(nodes[1], nodes[3])
+                    .map(|edge| edge.id),
+                "edges_connecting",
+                1,
+            );
+
+            assert!(
+                graph.edges_connecting(nodes[1], nodes[4]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 1 and
+                4"
+            );
+
+            // Source 2
+            assert!(
+                graph.edges_connecting(nodes[2], nodes[2]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 2 and
+                2"
+            );
+
+            let expected_edges_2_3 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[3]
+                ]);
+            check_if_edges_match(
+                expected_edges_2_3,
+                graph
+                    .edges_connecting(nodes[2], nodes[3])
+                    .map(|edge| edge.id),
+                "edges_connecting",
+                2,
+            );
+
+            assert!(
+                graph.edges_connecting(nodes[2], nodes[4]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 2 and
+                4"
+            );
+
+            // Source 3
+            assert!(
+                graph.edges_connecting(nodes[3], nodes[3]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 3 and
+                3"
+            );
+
+            assert!(
+                graph.edges_connecting(nodes[3], nodes[4]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 3 and
+                4"
+            );
+
+            // Source 4
+            assert!(
+                graph.edges_connecting(nodes[4], nodes[4]).next().is_none(),
+                "graph.edges_connecting() did not return an empty iterator for nodes 4 and
+                4"
+            );
+
+            // Check if swapping lhs and rhs matters
+            for i in nodes.iter() {
+                for j in nodes.iter() {
+                    let edges_lhs_rhs: hashbrown::HashSet<_, foldhash::fast::RandomState> =
+                        graph.edges_connecting(*i, *j).map(|edge| edge.id).collect();
+                    let edges_rhs_lhs: hashbrown::HashSet<_, foldhash::fast::RandomState> =
+                        graph.edges_connecting(*j, *i).map(|edge| edge.id).collect();
+                    assert_eq!(
+                        edges_lhs_rhs, edges_rhs_lhs,
+                        "graph.edges_connecting() returned different edges when swapping source \
+                         and target nodes: {:?} and {:?}",
+                        i, j
+                    );
+                }
+            }
+        }
+
+        #[test]
+        #[allow(clippy::too_many_lines)]
+        fn test_edges_connecting_mut() {
+            let (mut graph, nodes, edges) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            // Source 0
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[0], nodes[0])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 0 and 0"
+            );
+
+            let expected_edges_0_1 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[0]
+                ]);
+            check_if_edges_match(
+                expected_edges_0_1,
+                graph
+                    .edges_connecting_mut(nodes[0], nodes[1])
+                    .map(|edge| edge.id),
+                "edges_connecting_mut",
+                0,
+            );
+
+            let expected_edges_0_2 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[1]
+                ]);
+
+            check_if_edges_match(
+                expected_edges_0_2,
+                graph
+                    .edges_connecting_mut(nodes[0], nodes[2])
+                    .map(|edge| edge.id),
+                "edges_connecting_mut",
+                0,
+            );
+
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[0], nodes[3])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 0 and 3"
+            );
+
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[0], nodes[4])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 0 and 4"
+            );
+
+            // Source 1
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[1], nodes[1])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 1 and
+                1"
+            );
+
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[1], nodes[2])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 1 and
+                2"
+            );
+
+            let expected_edges_1_3 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[2]
+                ]);
+            check_if_edges_match(
+                expected_edges_1_3,
+                graph
+                    .edges_connecting_mut(nodes[1], nodes[3])
+                    .map(|edge| edge.id),
+                "edges_connecting_mut",
+                1,
+            );
+
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[1], nodes[4])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 1 and
+                4"
+            );
+
+            // Source 2
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[2], nodes[2])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 2 and
+                2"
+            );
+
+            let expected_edges_2_3 =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    edges[3]
+                ]);
+            check_if_edges_match(
+                expected_edges_2_3,
+                graph
+                    .edges_connecting_mut(nodes[2], nodes[3])
+                    .map(|edge| edge.id),
+                "edges_connecting_mut",
+                2,
+            );
+
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[2], nodes[4])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 2 and
+                4"
+            );
+
+            // Source 3
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[3], nodes[3])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 3 and
+                3"
+            );
+
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[3], nodes[4])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 3 and
+                4"
+            );
+
+            // Source 4
+            assert!(
+                graph
+                    .edges_connecting_mut(nodes[4], nodes[4])
+                    .next()
+                    .is_none(),
+                "graph.edges_connecting_mut() did not return an empty iterator for nodes 4 and
+                4"
+            );
+
+            // Check if swapping lhs and rhs matters
+            for i in nodes.iter() {
+                for j in nodes.iter() {
+                    let edges_lhs_rhs: hashbrown::HashSet<_, foldhash::fast::RandomState> = graph
+                        .edges_connecting_mut(*i, *j)
+                        .map(|edge| edge.id)
+                        .collect();
+                    let edges_rhs_lhs: hashbrown::HashSet<_, foldhash::fast::RandomState> = graph
+                        .edges_connecting_mut(*j, *i)
+                        .map(|edge| edge.id)
+                        .collect();
+                    assert_eq!(
+                        edges_lhs_rhs, edges_rhs_lhs,
+                        "graph.edges_connecting_mut() returned different edges when swapping \
+                         source and target nodes: {:?} and {:?}",
+                        i, j
+                    );
+                }
+            }
+        }
+
+        #[test]
+        fn test_contains_node() {
+            let (graph, nodes, _) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            for node in nodes.iter() {
+                assert!(
+                    graph.contains_node(*node),
+                    "graph.contains_node() returned false for existing node: {:?}",
+                    node
+                );
+            }
+        }
+
+        #[test]
+        fn test_contains_edge() {
+            let (graph, _, edges) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            for edge in edges.iter() {
+                assert!(
+                    graph.contains_edge(*edge),
+                    "graph.contains_edge() returned false for existing edge: {:?}",
+                    edge
+                );
+            }
+        }
+
+        #[test]
+        fn test_is_adjacent() {
+            let (graph, nodes, _) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            let adjacent_node_pairs = [
+                (nodes[0], nodes[1]),
+                (nodes[0], nodes[2]),
+                (nodes[1], nodes[3]),
+                (nodes[3], nodes[2]),
+            ];
+
+            for source in nodes.iter() {
+                for target in nodes.iter() {
+                    let expected_adjacency = adjacent_node_pairs.contains(&(*source, *target));
+                    assert_eq!(
+                        graph.is_adjacent(*source, *target),
+                        expected_adjacency,
+                        "graph.is_adjacent() returned incorrect result for nodes {:?} and {:?}",
+                        source,
+                        target
+                    );
+                }
+            }
+        }
+
+        #[test]
+        fn test_is_empty() {
+            let (graph, _, _) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            assert!(
+                !graph.is_empty(),
+                "graph.is_empty() returned true for a non-empty graph"
+            );
+
+            let new_graph = $graph_constructer();
+            assert!(
+                new_graph.is_empty(),
+                "graph.is_empty() returned false for an empty graph"
+            );
+        }
+
+        #[test]
+        fn test_sources() {
+            let (graph, nodes, _) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            let expected_sources =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    nodes[0], nodes[1], nodes[3],
+                ]);
+            check_if_nodes_match(
+                expected_sources,
+                graph.sources().map(|n| n.id),
+                "sources",
+                usize::MAX,
+            );
+        }
+
+        #[test]
+        fn test_sinks() {
+            let (graph, nodes, _) =
+                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+
+            let expected_sinks =
+                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
+                    nodes[2], nodes[4],
+                ]);
+            check_if_nodes_match(
+                expected_sinks,
+                graph.sinks().map(|n| n.id),
+                "sinks",
+                usize::MAX,
             );
         }
     };
