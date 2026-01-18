@@ -116,10 +116,10 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
     /// Mutable iterator over all edges.
     ///
     /// Performance note: Due to restrictions in the API of
-    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this is implemented by first collecting edges
-    /// endpoints and ids into a Vec and then combining that with the mutable edge weights
-    /// iterator. Therefore, this may be inefficient and/or use more memory than expected for
-    /// large graphs.
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this is implemented by first
+    /// collecting edges endpoints and ids into a Vec and then combining that with the mutable
+    /// edge weights iterator. Therefore, this may be inefficient and/or use more memory than
+    /// expected for large graphs.
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         // This returns the EdgeWeights corresponding to the correct EdgeIndexes because StableGraph
         // internally stores them in order.
