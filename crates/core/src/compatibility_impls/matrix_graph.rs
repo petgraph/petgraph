@@ -349,7 +349,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     /// For an undirected equivalent, see [`Self::edges_connecting_mut`].
     ///
     /// Performance note: Due to restrictions in the API of
-    /// [`MatrixGraph`](petgraph_old::MatrixGraph) this is implemented by filtering
+    /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by filtering
     /// [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn edges_between_mut(
