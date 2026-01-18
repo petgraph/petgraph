@@ -13,7 +13,7 @@ use crate::{
     node::{Node, NodeMut, NodeRef},
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub struct NodeId(usize);
 
 impl AddAssign<usize> for NodeId {
@@ -30,7 +30,7 @@ impl Display for NodeId {
 
 impl Id for NodeId {}
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub struct EdgeId(usize);
 
 impl AddAssign<usize> for EdgeId {
@@ -171,4 +171,25 @@ where
                 data,
             })
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::test_directed_graph;
+
+    fn add_edge_with_unwrap(
+        graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
+        source: NodeId,
+        target: NodeId,
+        _data: (),
+    ) -> EdgeId {
+        graph.add_edge(source, target, ()).unwrap()
+    }
+
+    test_directed_graph!(
+        DirectedTestGraph::<(), (), NodeId, EdgeId>::new,
+        DirectedTestGraph::<(), (), NodeId, EdgeId>::add_node,
+        add_edge_with_unwrap
+    );
 }
