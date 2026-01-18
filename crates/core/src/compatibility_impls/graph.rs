@@ -63,12 +63,12 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
 
     #[inline]
     fn node_count(&self) -> usize {
-        OldGraph::node_count(self)
+        Self::node_count(self)
     }
 
     #[inline]
     fn edge_count(&self) -> usize {
-        OldGraph::edge_count(self)
+        Self::edge_count(self)
     }
 
     // Node Iteration
@@ -78,7 +78,7 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
             .map(|(id, data)| NodeRef::<'_, Self> { id, data })
     }
 
-    fn nodes_mut<'a>(&'a mut self) -> impl Iterator<Item = NodeMut<'a, Self>> {
+    fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
         // This returns the correct NodeIndexes because node_weights_mut() guarantees the values
         // to be in order and Graph uses gap-less NodeIndexes from 0 to n-1 where n is the number of
         // nodes.
@@ -93,7 +93,7 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     /// Nodes with degree 0 (no incident edges).
     ///
     /// Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is implemented by
-    /// filtering [Self::nodes], which may be inefficient for large graphs.
+    /// filtering [`Self::nodes`], which may be inefficient for large graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.degree(node.id) == 0)
@@ -126,14 +126,14 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
                 (edge_id, source, target)
             })
             .collect::<Vec<_>>();
-        self.edge_weights_mut().zip(edge_info.into_iter()).map(
-            |(data, (edge_id, source, target))| EdgeMut::<'_, Self> {
+        self.edge_weights_mut()
+            .zip(edge_info)
+            .map(|(data, (edge_id, source, target))| EdgeMut::<'_, Self> {
                 id: edge_id,
                 source,
                 target,
                 data,
-            },
-        )
+            })
     }
 
     // Lookup
@@ -208,18 +208,18 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     #[inline]
     fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
-            .map(|e| EdgeRef::<'_, Self> {
-                id: e.id(),
-                source: e.source(),
-                target: e.target(),
-                data: e.weight(),
+            .map(|old_edge_ref| EdgeRef::<'_, Self> {
+                id: old_edge_ref.id(),
+                source: old_edge_ref.source(),
+                target: old_edge_ref.target(),
+                data: old_edge_ref.weight(),
             })
     }
 
     /// Mutable iterator over incoming edges. That is, edges where `target == node`.
     ///
     /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// implemented by filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn incoming_edges_mut(
         &mut self,
@@ -231,18 +231,18 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     #[inline]
     fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Outgoing)
-            .map(|e| EdgeRef::<'_, Self> {
-                id: e.id(),
-                source: e.source(),
-                target: e.target(),
-                data: e.weight(),
+            .map(|old_edge_ref| EdgeRef::<'_, Self> {
+                id: old_edge_ref.id(),
+                source: old_edge_ref.source(),
+                target: old_edge_ref.target(),
+                data: old_edge_ref.weight(),
             })
     }
 
     /// Mutable iterator over outgoing edges. That is, edges where `source == node`.
     ///
     /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// implemented by filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn outgoing_edges_mut(
         &mut self,
@@ -255,11 +255,11 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
             .chain(self.edges_directed(node, Direction::Outgoing))
-            .map(|e| EdgeRef::<'_, Self> {
-                id: e.id(),
-                source: e.source(),
-                target: e.target(),
-                data: e.weight(),
+            .map(|old_edge_ref| EdgeRef::<'_, Self> {
+                id: old_edge_ref.id(),
+                source: old_edge_ref.source(),
+                target: old_edge_ref.target(),
+                data: old_edge_ref.weight(),
             })
     }
 
@@ -267,7 +267,7 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     /// source or target.
     ///
     /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// implemented by filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn incident_edges_mut(
         &mut self,
@@ -281,18 +281,16 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     #[inline]
     fn predecessors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.neighbors_directed(node, Direction::Incoming)
-            .map(|n| n)
     }
 
     #[inline]
     fn successors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.neighbors_directed(node, Direction::Outgoing)
-            .map(|n| n)
     }
 
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.neighbors_undirected(node).map(|n| n)
+        self.neighbors_undirected(node)
     }
 
     // Edges between nodes
@@ -313,10 +311,10 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
 
     /// Mutable iterator over all edges between source and target. Note that this only considers
     /// edges where the provided source and target are actually the source and target of the edge.
-    /// For an undirected equivalent, see [Self::edges_connecting_mut].
+    /// For an undirected equivalent, see [`Self::edges_connecting_mut`].
     ///
     /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// implemented by filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn edges_between_mut(
         &mut self,
@@ -346,7 +344,7 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     /// Mutable iterator over all edges connecting lhs and rhs, regardless of direction.
     ///
     /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is
-    /// implemented by filtering [Self::edges_mut], which may be inefficient for large graphs.
+    /// implemented by filtering [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn edges_connecting_mut(
         &mut self,
@@ -441,7 +439,7 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     /// Nodes with degree 0 (no incident edges).
     ///
     /// Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this is implemented by
-    /// filtering [Self::nodes], which may be inefficient for large graphs.
+    /// filtering [`Self::nodes`], which may be inefficient for large graphs.
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.degree(node.id) == 0)
@@ -468,14 +466,14 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
                 (edge_id, source, target)
             })
             .collect::<Vec<_>>();
-        self.edge_weights_mut().zip(edge_info.into_iter()).map(
-            |(data, (edge_id, source, target))| EdgeMut::<'_, Self> {
+        self.edge_weights_mut()
+            .zip(edge_info)
+            .map(|(data, (edge_id, source, target))| EdgeMut::<'_, Self> {
                 id: edge_id,
                 source,
                 target,
                 data,
-            },
-        )
+            })
     }
 
     // Lookup
@@ -524,11 +522,11 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
             .chain(self.edges_directed(node, Direction::Outgoing))
-            .map(|e| EdgeRef::<'_, Self> {
-                id: e.id(),
-                source: e.source(),
-                target: e.target(),
-                data: e.weight(),
+            .map(|old_edge_ref| EdgeRef::<'_, Self> {
+                id: old_edge_ref.id(),
+                source: old_edge_ref.source(),
+                target: old_edge_ref.target(),
+                data: old_edge_ref.weight(),
             })
     }
 
@@ -544,7 +542,7 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     // Adjacency
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.neighbors(node).map(|n| n)
+        self.neighbors(node)
     }
 
     // Edges between nodes
