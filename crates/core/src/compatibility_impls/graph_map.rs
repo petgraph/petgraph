@@ -327,7 +327,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     /// For an undirected equivalent, see [`Self::edges_connecting_mut`].
     ///
     /// Performance note: Due to restrictions in the API of
-    /// [`GraphMap`](petgraph_old::GraphMap) this is implemented by filtering
+    /// [`GraphMap`](petgraph_old::graphmap::GraphMap) this is implemented by filtering
     /// [`Self::edges_mut`], which may be inefficient for large graphs.
     #[inline]
     fn edges_between_mut(
