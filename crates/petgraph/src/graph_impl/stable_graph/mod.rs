@@ -12,6 +12,8 @@ use core::{
 };
 
 use fixedbitset::FixedBitSet;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 
 use super::{DIRECTIONS, Edge, Frozen, GraphError, Node, Pair, index_twice};
 // reexport those things that are shared with Graph
@@ -671,6 +673,21 @@ where
             .filter_map(|maybe_node| maybe_node.as_ref())
     }
 
+    /// Return a parallel iterator yielding immutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their node
+    /// indices.
+    #[cfg(feature = "rayon")]
+    pub fn par_node_weights(&self) -> impl ParallelIterator<Item = &N>
+    where
+        N: Sync,
+        Ix: Send + Sync,
+    {
+        self.g
+            .par_node_weights()
+            .filter_map(|maybe_node| maybe_node.as_ref())
+    }
+
     /// Return an iterator yielding mutable access to all node weights.
     ///
     /// The order in which weights are yielded matches the order of their node
@@ -681,11 +698,52 @@ where
             .filter_map(|maybe_node| maybe_node.as_mut())
     }
 
+    /// Return a parallel iterator yielding mutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their node
+    /// indices.
+    #[cfg(feature = "rayon")]
+    pub fn par_node_weights_mut(&mut self) -> impl ParallelIterator<Item = &mut N>
+    where
+        N: Send,
+        Ix: Send + Sync,
+    {
+        self.g
+            .par_node_weights_mut()
+            .filter_map(|maybe_node| maybe_node.as_mut())
+    }
+
     /// Return an iterator over the node indices of the graph
     pub fn node_indices(&self) -> NodeIndices<'_, N, Ix> {
         NodeIndices {
             iter: self.raw_nodes().iter().enumerate(),
         }
+    }
+
+    /// Return a parallel iterator over the node indices of the graph
+    #[cfg(feature = "rayon")]
+    pub fn par_node_indices(&self) -> impl ParallelIterator<Item = NodeIndex<Ix>>
+    where
+        N: Sync,
+        Ix: Send + Sync,
+    {
+        self.raw_nodes()
+            .par_iter()
+            .enumerate()
+            .filter_map(|(i, node)| node.weight.as_ref().map(|_| node_index(i)))
+    }
+
+    /// Return a parallel iterator over the nodes of the graph.
+    #[cfg(feature = "rayon")]
+    pub fn par_node_references(&self) -> impl ParallelIterator<Item = (NodeIndex<Ix>, &'_ N)>
+    where
+        N: Sync,
+        Ix: Send + Sync,
+    {
+        self.raw_nodes()
+            .par_iter()
+            .enumerate()
+            .filter_map(|(i, node)| node.weight.as_ref().map(|weight| (node_index(i), weight)))
     }
 
     /// Access the weight for edge `e`.
@@ -718,6 +776,21 @@ where
             .filter_map(|maybe_edge| maybe_edge.as_ref())
     }
 
+    /// Return a parallel iterator yielding immutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their edge
+    /// indices.
+    #[cfg(feature = "rayon")]
+    pub fn par_edge_weights(&self) -> impl ParallelIterator<Item = &E>
+    where
+        E: Sync,
+        Ix: Send + Sync,
+    {
+        self.g
+            .par_edge_weights()
+            .filter_map(|maybe_edge| maybe_edge.as_ref())
+    }
+
     /// Return an iterator yielding mutable access to all edge weights.
     ///
     /// The order in which weights are yielded matches the order of their edge
@@ -726,6 +799,56 @@ where
         self.g
             .edge_weights_mut()
             .filter_map(|maybe_edge| maybe_edge.as_mut())
+    }
+
+    /// Return a parallel iterator yielding mutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their edge
+    /// indices.
+    #[cfg(feature = "rayon")]
+    pub fn par_edge_weights_mut(&mut self) -> impl ParallelIterator<Item = &mut E>
+    where
+        E: Send,
+        Ix: Send + Sync,
+    {
+        self.g
+            .par_edge_weights_mut()
+            .filter_map(|maybe_edge| maybe_edge.as_mut())
+    }
+
+    /// Return a parallel iterator over the edge indices of the graph
+    #[cfg(feature = "rayon")]
+    pub fn par_edge_indices(&self) -> ParEdgeIndices<'_, E, Ix>
+    where
+        E: Sync,
+        Ix: Send + Sync,
+    {
+        ParEdgeIndices {
+            iter: self
+                .g
+                .edges
+                .par_iter()
+                .enumerate()
+                .filter_map(|(i, edge)| edge.weight.as_ref().map(|_| edge_index(i))),
+        }
+    }
+
+    /// Create a parallel iterator over all edges, in indexed order.
+    #[cfg(feature = "rayon")]
+    pub fn par_edge_references(&self) -> ParEdgeReferences<'_, E, Ix>
+    where
+        E: Sync,
+        Ix: Send + Sync,
+    {
+        ParEdgeReferences {
+            iter: self.g.edges.par_iter().enumerate().filter_map(move |(i, edge)| {
+                edge.weight.as_ref().map(move |weight| EdgeReference {
+                    index: edge_index(i),
+                    node: edge.node,
+                    weight,
+                })
+            }),
+        }
     }
 
     /// Access the source and target nodes for `e`.
@@ -1161,6 +1284,76 @@ where
     }
 
     /// Create a new `StableGraph` by mapping node and
+    /// edge weights to new values through parallel processing.
+    ///
+    /// The resulting graph has the same structure and the same
+    /// graph indices as `self`.
+    ///
+    /// If you want a consuming version of this function, see
+    /// [`par_map_owned`](struct.StableGraph.html#method.par_map_owned).
+    ///
+    /// ```
+    /// use petgraph::stable_graph::StableGraph;
+    ///
+    /// // Create an undirected graph with city names as node data and their distances as edge data.
+    /// let mut g = StableGraph::<String, u32>::new();
+    ///
+    /// let bie = g.add_node("Bielefeld".to_owned());
+    /// let del = g.add_node("New Delhi".to_owned());
+    /// let mex = g.add_node("Mexico City".to_owned());
+    /// let syd = g.add_node("Sydney".to_owned());
+    ///
+    /// // Add distances in kilometers as edge data.
+    /// g.extend_with_edges(&[
+    ///     (bie, del, 6_000),
+    ///     (bie, mex, 10_000),
+    ///     (bie, syd, 16_000),
+    ///     (del, mex, 14_000),
+    ///     (del, syd, 12_000),
+    ///     (mex, syd, 15_000),
+    /// ]);
+    ///
+    /// // We might now want to change up the distances to be in miles instead and to be strings.
+    /// // We can do this using the `map` method, which takes two closures for the node and edge data,
+    /// // respectively, and returns a new graph with the transformed data.
+    /// let g_miles: StableGraph<String, i32> = g.par_map(
+    ///     |_, city| city.to_owned(),
+    ///     |_, &distance| (distance as f64 * 0.621371).round() as i32,
+    /// );
+    ///
+    /// for &edge_weight in g_miles.edge_weights() {
+    ///     assert!(edge_weight < 10_000);
+    /// }
+    /// ```
+    #[cfg(feature = "rayon")]
+    pub fn par_map<'a, F, G, N2, E2>(
+        &'a self,
+        node_map: F,
+        edge_map: G,
+    ) -> StableGraph<N2, E2, Ty, Ix>
+    where
+        Ix: Send + Sync,
+        N: Sync,
+        E: Sync,
+        N2: Send,
+        E2: Send,
+        F: Fn(NodeIndex<Ix>, &'a N) -> N2 + Send + Sync,
+        G: Fn(EdgeIndex<Ix>, &'a E) -> E2 + Send + Sync,
+    {
+        let g = self.g.par_map(
+            move |i, w| w.as_ref().map(|w| node_map(i, w)),
+            move |i, w| w.as_ref().map(|w| edge_map(i, w)),
+        );
+        StableGraph {
+            g,
+            node_count: self.node_count,
+            edge_count: self.edge_count,
+            free_node: self.free_node,
+            free_edge: self.free_edge,
+        }
+    }
+
+    /// Create a new `StableGraph` by mapping node and
     /// edge weights to new values, consuming the current graph.
     ///
     /// The resulting graph has the same structure and the same
@@ -1212,6 +1405,76 @@ where
         G: FnMut(EdgeIndex<Ix>, E) -> E2,
     {
         let g = self.g.map_owned(
+            move |i, w| w.map(|w| node_map(i, w)),
+            move |i, w| w.map(|w| edge_map(i, w)),
+        );
+        StableGraph {
+            g,
+            node_count: self.node_count,
+            edge_count: self.edge_count,
+            free_node: self.free_node,
+            free_edge: self.free_edge,
+        }
+    }
+
+    /// Create a new `StableGraph` by mapping node and
+    /// edge weights to new values, consuming the current graph through parallel processing.
+    ///
+    /// The resulting graph has the same structure and the same
+    /// graph indices as `self`.
+    ///
+    /// If you want a non-consuming version of this function, see
+    /// [`map`](struct.StableGraph.html#method.map).
+    ///
+    /// ```
+    /// use petgraph::stable_graph::StableGraph;
+    ///
+    /// // Create an undirected graph with city names as node data and their distances as edge data.
+    /// let mut g = StableGraph::<String, u32>::new();
+    ///
+    /// let bie = g.add_node("Bielefeld".to_owned());
+    /// let del = g.add_node("New Delhi".to_owned());
+    /// let mex = g.add_node("Mexico City".to_owned());
+    /// let syd = g.add_node("Sydney".to_owned());
+    ///
+    /// // Add distances in kilometers as edge data.
+    /// g.extend_with_edges(&[
+    ///     (bie, del, 6_000),
+    ///     (bie, mex, 10_000),
+    ///     (bie, syd, 16_000),
+    ///     (del, mex, 14_000),
+    ///     (del, syd, 12_000),
+    ///     (mex, syd, 15_000),
+    /// ]);
+    ///
+    /// // We might now want to change up the distances to be in miles instead and to be strings.
+    /// // We can do this using the `map` method, which takes two closures for the node and edge data,
+    /// // respectively, and returns a new graph with the transformed data.
+    /// let g_miles: StableGraph<String, i32> = g.par_map_owned(
+    ///     |_, city| city,
+    ///     |_, distance| (distance as f64 * 0.621371).round() as i32,
+    /// );
+    ///
+    /// for &edge_weight in g_miles.edge_weights() {
+    ///     assert!(edge_weight < 10_000);
+    /// }
+    /// ```
+    #[cfg(feature = "rayon")]
+    pub fn par_map_owned<F, G, N2, E2>(
+        self,
+        node_map: F,
+        edge_map: G,
+    ) -> StableGraph<N2, E2, Ty, Ix>
+    where
+        Ix: Send + Sync,
+        N: Send,
+        E: Send,
+        N2: Send,
+        E2: Send,
+        F: Fn(NodeIndex<Ix>, N) -> N2 + Send + Sync,
+        G: Fn(EdgeIndex<Ix>, E) -> E2 + Send + Sync,
+    {
+        let g = self.g.par_map_owned(
             move |i, w| w.map(|w| node_map(i, w)),
             move |i, w| w.map(|w| edge_map(i, w)),
         );
@@ -2011,6 +2274,32 @@ where
     }
 }
 
+/// [ParallelIterator] over all edges of a graph.
+#[derive(Debug, Clone)]
+#[cfg(feature = "rayon")]
+pub struct ParEdgeReferences<'a, E: 'a, Ix: 'a = DefaultIx> {
+    iter: rayon::iter::FilterMap<
+        rayon::iter::Enumerate<rayon::slice::Iter<'a, Edge<Option<E>, Ix>>>,
+        fn((usize, &Edge<Option<E>, Ix>)) -> Option<EdgeReference<'_, E, Ix>>,
+    >,
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, E, Ix> ParallelIterator for ParEdgeReferences<'a, E, Ix>
+where
+    E: Sync,
+    Ix: Send + Sync,
+{
+    type Item = EdgeReference<'a, E, Ix>;
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::UnindexedConsumer<Self::Item>,
+    {
+        self.iter.drive_unindexed(consumer)
+    }
+}
+
 /// An iterator over either the nodes without edges to them or from them.
 #[derive(Debug, Clone)]
 pub struct Externals<'a, N: 'a, Ty, Ix: IndexType = DefaultIx> {
@@ -2256,6 +2545,34 @@ impl<E, Ix: IndexType> DoubleEndedIterator for EdgeIndices<'_, E, Ix> {
                 None
             }
         })
+    }
+}
+
+/// [ParallelIterator] over the edge indices of a graph.
+///
+/// Note: `EdgeIndices` borrows a graph.
+#[derive(Debug, Clone)]
+#[cfg(feature = "rayon")]
+pub struct ParEdgeIndices<'a, E: 'a, Ix: 'a = DefaultIx> {
+    iter: rayon::iter::FilterMap<
+        rayon::iter::Enumerate<rayon::slice::Iter<'a, Edge<Option<E>, Ix>>>,
+        fn((usize, &Edge<Option<E>, Ix>)) -> Option<EdgeIndex<Ix>>,
+    >,
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, E, Ix> ParallelIterator for ParEdgeIndices<'a, E, Ix>
+where
+    E: Sync,
+    Ix: Send + Sync,
+{
+    type Item = EdgeIndex<Ix>;
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::UnindexedConsumer<Self::Item>,
+    {
+        self.iter.drive_unindexed(consumer)
     }
 }
 
