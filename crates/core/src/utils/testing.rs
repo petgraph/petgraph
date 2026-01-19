@@ -15,8 +15,8 @@ pub const DIRECTED_TEST_GRAPH_EDGE_COUNT: usize = 4;
 /// For ordering of added nodes and edges, see the implementation of the macro.
 #[macro_export]
 macro_rules! create_directed_test_graph {
-    ($graph_constructer:expr, $add_node:expr, $add_edge:expr) => {{
-        let mut graph = $graph_constructer();
+    ($graph_constructor:expr, $add_node:expr, $add_edge:expr) => {{
+        let mut graph = $graph_constructor();
 
         let node_zero = $add_node(&mut graph, ());
         let node_one = $add_node(&mut graph, ());
@@ -49,11 +49,11 @@ macro_rules! create_directed_test_graph {
 /// TODO Check where it would be useful to have a remove_node and remove_edge function
 #[macro_export]
 macro_rules! test_directed_graph {
-    ($graph_constructer:expr, $add_node:expr, $add_edge:expr) => {
+    ($graph_constructor:expr, $add_node:expr, $add_edge:expr) => {
         #[test]
         fn test_cardinality() {
             let (graph, _, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             assert_eq!(
                 graph.node_count(),
                 $crate::utils::testing::DIRECTED_TEST_GRAPH_NODE_COUNT,
@@ -81,7 +81,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_nodes() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let nodes_count = graph.nodes().count();
             assert_eq!(
                 nodes_count,
@@ -100,7 +100,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_nodes_mut() {
             let (mut graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let nodes_count = graph.nodes_mut().count();
             assert_eq!(
                 nodes_count,
@@ -119,7 +119,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_isolated_nodes() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let isolated_nodes_count = graph.isolated_nodes().count();
             assert_eq!(
                 isolated_nodes_count, 1,
@@ -140,7 +140,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_edges() {
             let (graph, _, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let edges_count = graph.edges().count();
             assert_eq!(
                 edges_count,
@@ -159,7 +159,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_edges_mut() {
             let (mut graph, _, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let edges_count = graph.edges_mut().count();
             assert_eq!(
                 edges_count,
@@ -178,7 +178,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_node() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &node_id in &nodes {
                 let node = graph.node(node_id).unwrap();
                 assert_eq!(
@@ -191,7 +191,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_node_mut() {
             let (mut graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &node_id in &nodes {
                 let node = graph.node_mut(node_id).unwrap();
                 assert_eq!(
@@ -204,7 +204,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_edge() {
             let (graph, _, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &edge_id in &edges {
                 let edge = graph.edge(edge_id).unwrap();
                 assert_eq!(
@@ -217,7 +217,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_edge_mut() {
             let (mut graph, _, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &edge_id in &edges {
                 let edge = graph.edge_mut(edge_id).unwrap();
                 assert_eq!(
@@ -230,7 +230,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_in_degree() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             assert_eq!(
                 graph.in_degree(nodes[0]),
                 0,
@@ -261,7 +261,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_out_degree() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             assert_eq!(
                 graph.out_degree(nodes[0]),
                 2,
@@ -292,7 +292,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_degree() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             assert_eq!(
                 graph.degree(nodes[0]),
                 2,
@@ -347,7 +347,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_incoming_edges() {
             let (graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             assert!(
                 graph.incoming_edges(nodes[0]).next().is_none(),
                 "graph.incoming_edges() did not return an empty iterator for node 0"
@@ -395,7 +395,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_incoming_edges_mut() {
             let (mut graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             assert!(
                 graph.incoming_edges_mut(nodes[0]).next().is_none(),
                 "graph.incoming_edges_mut() did not return an empty iterator for node 0"
@@ -443,7 +443,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_outgoing_edges() {
             let (graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let expected_edges_zero =
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[0], edges[1],
@@ -491,7 +491,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_outgoing_edges_mut() {
             let (mut graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let expected_edges_zero =
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[0], edges[1],
@@ -539,7 +539,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_incident_edges() {
             let (graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let expected_edges_zero =
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[0], edges[1],
@@ -593,7 +593,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_incident_edges_mut() {
             let (mut graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let expected_edges_zero =
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     edges[0], edges[1],
@@ -672,7 +672,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_predecessors() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             assert!(
                 graph.predecessors(nodes[0]).next().is_none(),
                 "graph.predecessors() did not return an empty iterator for node 0"
@@ -720,7 +720,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_successors() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let expected_successors_zero = hashbrown::hash_set::HashSet::<
                 _,
                 foldhash::fast::RandomState,
@@ -768,7 +768,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_adjacencies() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             let expected_adjacencies_zero = hashbrown::hash_set::HashSet::<
                 _,
                 foldhash::fast::RandomState,
@@ -823,7 +823,7 @@ macro_rules! test_directed_graph {
         #[allow(clippy::too_many_lines)]
         fn test_edges_between() {
             let (graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             // Source 0
             assert!(
@@ -983,7 +983,7 @@ macro_rules! test_directed_graph {
         #[allow(clippy::too_many_lines)]
         fn test_edges_between_mut() {
             let (mut graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             // Source 0
             assert!(
@@ -1151,7 +1151,7 @@ macro_rules! test_directed_graph {
         #[allow(clippy::too_many_lines)]
         fn test_edges_connecting() {
             let (graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             // Source 0
             assert!(
@@ -1295,7 +1295,7 @@ macro_rules! test_directed_graph {
         #[allow(clippy::too_many_lines)]
         fn test_edges_connecting_mut() {
             let (mut graph, nodes, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             // Source 0
             assert!(
@@ -1475,7 +1475,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_contains_node() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             for node in nodes.iter() {
                 assert!(
@@ -1489,7 +1489,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_contains_edge() {
             let (graph, _, edges) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             for edge in edges.iter() {
                 assert!(
@@ -1503,7 +1503,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_is_adjacent() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             let adjacent_node_pairs = [
                 (nodes[0], nodes[1]),
@@ -1529,14 +1529,14 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_is_empty() {
             let (graph, _, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             assert!(
                 !graph.is_empty(),
                 "graph.is_empty() returned true for a non-empty graph"
             );
 
-            let new_graph = $graph_constructer();
+            let new_graph = $graph_constructor();
             assert!(
                 new_graph.is_empty(),
                 "graph.is_empty() returned false for an empty graph"
@@ -1546,7 +1546,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_sources() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             let expected_sources =
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
@@ -1563,7 +1563,7 @@ macro_rules! test_directed_graph {
         #[test]
         fn test_sinks() {
             let (graph, nodes, _) =
-                $crate::create_directed_test_graph!($graph_constructer, $add_node, $add_edge);
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             let expected_sinks =
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
