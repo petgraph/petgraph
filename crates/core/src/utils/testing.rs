@@ -46,13 +46,41 @@ macro_rules! create_directed_test_graph {
     }};
 }
 
-/// TODO Check where it would be useful to have a remove_node and remove_edge function
+/// Generates a suite of tests for [`DirectedGraph`] implementations.
+///
+/// One test is generated for each method in the [`DirectedGraph`] trait.
+/// The following invariants are expected from the graph implementation:
+/// - If the most recently added node or edge is removed, its ID will no longer be valid. I.e.,
+///   calling methods with that ID should return `None` or indicate non-existence.
+///
+/// The arguments to this macro are as follows (`G` is used to denote the graph type being tested).
+/// For a reference usage, see the tests [`petgraph_core::utils::directed`].
+/// - `$graph_constructor`: An expression that constructs a new instance of the graph type to be
+///   tested. The generated graph must be empty (e.g. `G::new()`).
+/// - `$add_node`: An expression that adds a node to the graph. It must take two arguments: a
+///   mutable reference to the graph and the node weight. It must return the `<G as Graph>::NodeId`
+///   of the added node.
+/// - `$remove_node`: An expression that removes a node from the graph. It must take two arguments:
+///   a mutable reference to the graph and the `<G as Graph>::NodeId` of the node to be removed. The
+///   method should not return anything, i.e., it should panic on failure.
+/// - `$add_edge`: An expression that adds an edge to the graph. It must take four arguments: a
+///   mutable reference to the graph, the `<G as Graph>::NodeId` of the source and target nodes, and
+///   the edge weight. It must return the `<G as Graph>::EdgeId` of the added edge.
+/// - `$remove_edge`: An expression that removes an edge from the graph. It must take two arguments:
+///   a mutable reference to the graph and the `<G as Graph>::EdgeId` of the edge to be removed. The
+///   method should not return anything, i.e., it should panic on failure.
 #[macro_export]
 macro_rules! test_directed_graph {
-    ($graph_constructor:expr, $add_node:expr, $add_edge:expr) => {
+    (
+        $graph_constructor:expr,
+        $add_node:expr,
+        $remove_node:expr,
+        $add_edge:expr,
+        $remove_edge:expr
+    ) => {
         #[test]
         fn test_cardinality() {
-            let (graph, _, _) =
+            let (mut graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             assert_eq!(
                 graph.node_count(),
@@ -75,6 +103,18 @@ macro_rules! test_directed_graph {
                 cardinality.size,
                 $crate::utils::testing::DIRECTED_TEST_GRAPH_EDGE_COUNT,
                 "graph.cardinality().size did not match expected value"
+            );
+
+            $remove_node(&mut graph, nodes[0]);
+            assert_eq!(
+                graph.node_count(),
+                $crate::utils::testing::DIRECTED_TEST_GRAPH_NODE_COUNT - 1,
+                "graph.node_count() did not match expected value after removing node 0"
+            );
+            assert_eq!(
+                graph.edge_count(),
+                $crate::utils::testing::DIRECTED_TEST_GRAPH_EDGE_COUNT - 2,
+                "graph.edge_count() did not match expected value after removing node 0"
             );
         }
 
@@ -177,7 +217,7 @@ macro_rules! test_directed_graph {
 
         #[test]
         fn test_node() {
-            let (graph, nodes, _) =
+            let (mut graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &node_id in &nodes {
                 let node = graph.node(node_id).unwrap();
@@ -186,6 +226,15 @@ macro_rules! test_directed_graph {
                     "graph.node() did not return expected node id"
                 );
             }
+
+            // We remove node 4 here, as some graph implementations might not have stable node ids,
+            // but the newest node added is likely to be removable without another node taking its
+            // id.
+            $remove_node(&mut graph, nodes[4]);
+            assert!(
+                graph.node(nodes[4]).is_none(),
+                "graph.node() did not return None for removed node id"
+            );
         }
 
         #[test]
@@ -199,11 +248,20 @@ macro_rules! test_directed_graph {
                     "graph.node_mut() did not return expected node id"
                 );
             }
+
+            // We remove node 4 here, as some graph implementations might not have stable node ids,
+            // but the newest node added is likely to be removable without another node taking its
+            // id.
+            $remove_node(&mut graph, nodes[4]);
+            assert!(
+                graph.node_mut(nodes[4]).is_none(),
+                "graph.node_mut() did not return None for removed node id"
+            );
         }
 
         #[test]
         fn test_edge() {
-            let (graph, _, edges) =
+            let (mut graph, _, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &edge_id in &edges {
                 let edge = graph.edge(edge_id).unwrap();
@@ -212,6 +270,12 @@ macro_rules! test_directed_graph {
                     "graph.edge() did not return expected edge id"
                 );
             }
+
+            $remove_edge(&mut graph, edges[0]);
+            assert!(
+                graph.edge(edges[0]).is_none(),
+                "graph.edge() did not return None for removed edge id"
+            );
         }
 
         #[test]
@@ -225,6 +289,12 @@ macro_rules! test_directed_graph {
                     "graph.edge_mut() did not return expected edge id"
                 );
             }
+
+            $remove_edge(&mut graph, edges[0]);
+            assert!(
+                graph.edge_mut(edges[0]).is_none(),
+                "graph.edge_mut() did not return None for removed edge id"
+            );
         }
 
         #[test]
@@ -320,6 +390,9 @@ macro_rules! test_directed_graph {
             );
         }
 
+        /// Helper function to check if the edges returned by an iterator match the expected edges.
+        ///
+        /// The additional arguments are just for better error messages.
         fn check_if_edges_match<T: core::hash::Hash + Eq + core::fmt::Debug>(
             mut expected_edges: hashbrown::hash_set::HashSet<T, foldhash::fast::RandomState>,
             actual_edges: impl Iterator<Item = T>,
@@ -644,29 +717,50 @@ macro_rules! test_directed_graph {
             );
         }
 
-        // TODO: Adjust to take node_number: Option<usize> and adjust messages accordingly
+        /// Helper function to check if the nodes returned by an iterator match the expected nodes
+        ///
+        /// The additional arguments are just for better error messages.
         fn check_if_nodes_match<T: core::hash::Hash + Eq + core::fmt::Debug>(
             mut expected_nodes: hashbrown::hash_set::HashSet<T, foldhash::fast::RandomState>,
             actual_nodes: impl Iterator<Item = T>,
             method_name: &'static str,
-            node_number: usize,
+            node_number: Option<usize>,
         ) {
             for node in actual_nodes {
-                assert!(
-                    expected_nodes.contains(&node),
-                    "graph.{}() contained unexpected node id: {:?} for node {}",
-                    method_name,
-                    node,
-                    node_number
-                );
+                if let Some(node_number) = node_number {
+                    assert!(
+                        expected_nodes.contains(&node),
+                        "graph.{}() contained unexpected node id: {:?} for node {}",
+                        method_name,
+                        node,
+                        node_number
+                    );
+                } else {
+                    assert!(
+                        expected_nodes.contains(&node),
+                        "graph.{}() contained unexpected node id: {:?}",
+                        method_name,
+                        node,
+                    );
+                }
                 expected_nodes.remove(&node);
             }
-            assert!(
-                expected_nodes.is_empty(),
-                "graph.{}() did not return all expected nodes for node {}",
-                method_name,
-                node_number
-            );
+            if let Some(node_number) = node_number {
+                assert!(
+                    expected_nodes.is_empty(),
+                    "graph.{}() did not return all expected nodes for node {}: {:?}",
+                    method_name,
+                    node_number,
+                    expected_nodes
+                );
+            } else {
+                assert!(
+                    expected_nodes.is_empty(),
+                    "graph.{}() did not return all expected nodes: {:?}",
+                    method_name,
+                    expected_nodes
+                );
+            }
         }
 
         #[test]
@@ -686,7 +780,7 @@ macro_rules! test_directed_graph {
                 expected_predecessors_one,
                 graph.predecessors(nodes[1]),
                 "predecessors",
-                1,
+                Some(1),
             );
 
             let expected_predecessors_two = hashbrown::hash_set::HashSet::<
@@ -697,7 +791,7 @@ macro_rules! test_directed_graph {
                 expected_predecessors_two,
                 graph.predecessors(nodes[2]),
                 "predecessors",
-                2,
+                Some(2),
             );
 
             let expected_predecessors_three = hashbrown::hash_set::HashSet::<
@@ -708,7 +802,7 @@ macro_rules! test_directed_graph {
                 expected_predecessors_three,
                 graph.predecessors(nodes[3]),
                 "predecessors",
-                3,
+                Some(3),
             );
 
             assert!(
@@ -729,7 +823,7 @@ macro_rules! test_directed_graph {
                 expected_successors_zero,
                 graph.successors(nodes[0]),
                 "successors",
-                0,
+                Some(0),
             );
 
             let expected_successors_one = hashbrown::hash_set::HashSet::<
@@ -740,7 +834,7 @@ macro_rules! test_directed_graph {
                 expected_successors_one,
                 graph.successors(nodes[1]),
                 "successors",
-                1,
+                Some(1),
             );
 
             assert!(
@@ -756,7 +850,7 @@ macro_rules! test_directed_graph {
                 expected_successors_three,
                 graph.successors(nodes[3]),
                 "successors",
-                3,
+                Some(3),
             );
 
             assert!(
@@ -777,7 +871,7 @@ macro_rules! test_directed_graph {
                 expected_adjacencies_zero,
                 graph.adjacencies(nodes[0]),
                 "adjacencies",
-                0,
+                Some(0),
             );
 
             let expected_adjacencies_one = hashbrown::hash_set::HashSet::<
@@ -788,7 +882,7 @@ macro_rules! test_directed_graph {
                 expected_adjacencies_one,
                 graph.adjacencies(nodes[1]),
                 "adjacencies",
-                1,
+                Some(1),
             );
 
             let expected_adjacencies_two = hashbrown::hash_set::HashSet::<
@@ -799,7 +893,7 @@ macro_rules! test_directed_graph {
                 expected_adjacencies_two,
                 graph.adjacencies(nodes[2]),
                 "adjacencies",
-                2,
+                Some(2),
             );
 
             let expected_adjacencies_three = hashbrown::hash_set::HashSet::<
@@ -810,7 +904,7 @@ macro_rules! test_directed_graph {
                 expected_adjacencies_three,
                 graph.adjacencies(nodes[3]),
                 "adjacencies",
-                3,
+                Some(3),
             );
 
             assert!(
@@ -1474,7 +1568,7 @@ macro_rules! test_directed_graph {
 
         #[test]
         fn test_contains_node() {
-            let (graph, nodes, _) =
+            let (mut graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             for node in nodes.iter() {
@@ -1484,11 +1578,21 @@ macro_rules! test_directed_graph {
                     node
                 );
             }
+
+            // We remove node 4 here, as some graph implementations might not have stable node ids,
+            // but the newest node added is likely to be removable without another node taking its
+            // id.
+            $remove_node(&mut graph, nodes[4]);
+            assert!(
+                !graph.contains_node(nodes[4]),
+                "graph.contains_node() returned true for removed node: {:?}",
+                nodes[4]
+            );
         }
 
         #[test]
         fn test_contains_edge() {
-            let (graph, _, edges) =
+            let (mut graph, _, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
             for edge in edges.iter() {
@@ -1498,6 +1602,15 @@ macro_rules! test_directed_graph {
                     edge
                 );
             }
+            // We remove edge 3 here, as some graph implementations might not have stable edge ids,
+            // but the newest edge added is likely to be removable without another edge taking its
+            // id.
+            $remove_edge(&mut graph, edges[3]);
+            assert!(
+                !graph.contains_edge(edges[3]),
+                "graph.contains_edge() returned true for removed edge: {:?}",
+                edges[3]
+            );
         }
 
         #[test]
@@ -1536,10 +1649,22 @@ macro_rules! test_directed_graph {
                 "graph.is_empty() returned true for a non-empty graph"
             );
 
-            let new_graph = $graph_constructor();
+            let mut new_graph = $graph_constructor();
             assert!(
                 new_graph.is_empty(),
                 "graph.is_empty() returned false for an empty graph"
+            );
+
+            let node_one = $add_node(&mut new_graph, ());
+            assert!(
+                !new_graph.is_empty(),
+                "graph.is_empty() returned true for a graph with one node"
+            );
+
+            $remove_node(&mut new_graph, node_one);
+            assert!(
+                new_graph.is_empty(),
+                "graph.is_empty() returned false for an empty graph after removing the only node"
             );
         }
 
@@ -1550,13 +1675,13 @@ macro_rules! test_directed_graph {
 
             let expected_sources =
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    nodes[0], nodes[1], nodes[3],
+                    nodes[0], nodes[4],
                 ]);
             check_if_nodes_match(
                 expected_sources,
                 graph.sources().map(|n| n.id),
                 "sources",
-                usize::MAX,
+                None,
             );
         }
 
@@ -1569,12 +1694,7 @@ macro_rules! test_directed_graph {
                 hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
                     nodes[2], nodes[4],
                 ]);
-            check_if_nodes_match(
-                expected_sinks,
-                graph.sinks().map(|n| n.id),
-                "sinks",
-                usize::MAX,
-            );
+            check_if_nodes_match(expected_sinks, graph.sinks().map(|n| n.id), "sinks", None);
         }
     };
 }

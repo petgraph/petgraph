@@ -94,6 +94,16 @@ where
         self.edges.insert(id, (source, target, edge));
         Some(id)
     }
+
+    pub fn remove_node(&mut self, node_id: NI) -> Option<N> {
+        self.edges
+            .retain(|_, (source, target, _)| *source != node_id && *target != node_id);
+        self.nodes.remove(&node_id)
+    }
+
+    pub fn remove_edge(&mut self, edge_id: EI) -> Option<E> {
+        self.edges.remove(&edge_id).map(|(_, _, data)| data)
+    }
 }
 
 impl<N, E, NI, EI> Default for DirectedTestGraph<N, E, NI, EI>
@@ -178,6 +188,13 @@ mod test {
     use super::*;
     use crate::test_directed_graph;
 
+    fn remove_node_with_unwrap(
+        graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
+        node_id: NodeId,
+    ) {
+        graph.remove_node(node_id).unwrap();
+    }
+
     fn add_edge_with_unwrap(
         graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
         source: NodeId,
@@ -187,9 +204,18 @@ mod test {
         graph.add_edge(source, target, ()).unwrap()
     }
 
+    fn remove_edge_with_unwrap(
+        graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
+        edge_id: EdgeId,
+    ) {
+        graph.remove_edge(edge_id).unwrap();
+    }
+
     test_directed_graph!(
         DirectedTestGraph::<(), (), NodeId, EdgeId>::new,
         DirectedTestGraph::<(), (), NodeId, EdgeId>::add_node,
-        add_edge_with_unwrap
+        remove_node_with_unwrap,
+        add_edge_with_unwrap,
+        remove_edge_with_unwrap
     );
 }
