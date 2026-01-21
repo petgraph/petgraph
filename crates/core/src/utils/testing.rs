@@ -46,15 +46,16 @@ macro_rules! create_directed_test_graph {
     }};
 }
 
-/// Generates a suite of tests for [`DirectedGraph`] implementations.
+/// Generates a suite of tests for [`DirectedGraph`][crate::graph::DirectedGraph]
+/// implementations.
 ///
-/// One test is generated for each method in the [`DirectedGraph`] trait.
-/// The following invariants are expected from the graph implementation:
+/// One test is generated for each method in the [`DirectedGraph`][crate::graph::DirectedGraph]
+/// trait. The following invariants are expected from the graph implementation:
 /// - If the most recently added node or edge is removed, its ID will no longer be valid. I.e.,
 ///   calling methods with that ID should return `None` or indicate non-existence.
 ///
 /// The arguments to this macro are as follows (`G` is used to denote the graph type being tested).
-/// For a reference usage, see the tests [`petgraph_core::utils::directed`].
+/// For a reference usage, see the tests [`crate::utils::directed`].
 /// - `$graph_constructor`: An expression that constructs a new instance of the graph type to be
 ///   tested. The generated graph must be empty (e.g. `G::new()`).
 /// - `$add_node`: An expression that adds a node to the graph. It must take two arguments: a
