@@ -125,6 +125,12 @@ impl<Ix: IndexType> NodeIndex<Ix> {
     }
 }
 
+impl<Ix: fmt::Display> fmt::Display for NodeIndex<Ix> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "NodeIndex({})", self.0)
+    }
+}
+
 unsafe impl<Ix: IndexType> IndexType for NodeIndex<Ix> {
     fn index(&self) -> usize {
         self.0.index()
@@ -189,6 +195,12 @@ impl<Ix: IndexType> EdgeIndex<Ix> {
 impl<Ix: IndexType> From<Ix> for EdgeIndex<Ix> {
     fn from(ix: Ix) -> Self {
         EdgeIndex(ix)
+    }
+}
+
+impl<Ix: fmt::Display> fmt::Display for EdgeIndex<Ix> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "EdgeIndex({})", self.0)
     }
 }
 
