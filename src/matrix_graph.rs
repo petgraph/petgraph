@@ -526,7 +526,7 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
 
     /// Return `true` if the node `a` exists.
     pub fn has_node(&self, a: NodeIndex<Ix>) -> bool {
-        a.index() < self.node_capacity && self.nodes.removed_ids.contains(&a.index()) == false
+        a.index() < self.node_capacity && !self.nodes.removed_ids.contains(&a.index())
     }
 
     /// Return `true` if there is an edge between `a` and `b`.
@@ -988,10 +988,7 @@ impl<'a, N, Ix: IndexType> Iterator for AllNodes<'a, N, Ix> {
             let current_index = self.next_node;
 
             self.next_node += 1;
-
-            let Some(node_entry) = self.nodes.next() else {
-                return None;
-            };
+            let node_entry = self.nodes.next()?;
 
             if let Some(node) = node_entry.as_ref() {
                 return Some((NodeIndex::new(current_index), node));
@@ -1030,10 +1027,7 @@ impl<'a, N, Ix: IndexType> Iterator for AllNodesMut<'a, N, Ix> {
             let current_index = self.next_node;
 
             self.next_node += 1;
-
-            let Some(node_entry) = self.nodes.next() else {
-                return None;
-            };
+            let node_entry = self.nodes.next()?;
 
             if let Some(node) = node_entry.as_mut() {
                 return Some((NodeIndex::new(current_index), node));
@@ -1492,13 +1486,12 @@ impl<S: BuildHasher> Iterator for IdIterator<'_, S> {
     fn next(&mut self) -> Option<Self::Item> {
         // initialize / advance
         let current = {
-            if self.current.is_none() {
-                self.current = Some(0);
-                self.current.as_mut().unwrap()
-            } else {
-                let current = self.current.as_mut().unwrap();
+            if let Some(current) = self.current.as_mut() {
                 *current += 1;
                 current
+            } else {
+                self.current = Some(0);
+                self.current.as_mut().unwrap()
             }
         };
 
