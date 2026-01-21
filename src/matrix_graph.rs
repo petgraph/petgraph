@@ -1772,6 +1772,8 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
 
 #[cfg(test)]
 mod tests {
+    use hashbrown::HashSet;
+
     use super::*;
     use crate::{Incoming, Outgoing};
     use std::collections::hash_map::RandomState;
@@ -1850,6 +1852,20 @@ mod tests {
         assert!(g.has_edge(n2, n1));
         assert!(g.has_edge(n2, n3));
         assert!(g.has_edge(n2, n4));
+    }
+
+    #[test]
+    fn test_has_node() {
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, ());
+        g.add_edge(b, c, ());
+        assert!(g.has_node(a));
+        assert!(g.has_node(b));
+        assert!(g.has_node(c));
+        assert!(!g.has_node(10.into())); // Non-existent node.
     }
 
     #[test]
@@ -2169,6 +2185,88 @@ mod tests {
     fn test_edges_of_absent_node_is_empty_iterator() {
         let g: MatrixGraph<char, bool> = MatrixGraph::new();
         assert_eq!(g.edges(node_index(0)).count(), 0);
+    }
+
+    #[test]
+    fn test_all_edges() {
+        let g: MatrixGraph<(), ()> = MatrixGraph::from_edges([
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 5),
+            (1, 3),
+            (2, 3),
+            (2, 4),
+            (4, 0),
+            (6, 6),
+        ]);
+
+        assert_eq!(g.all_edges().count(), g.edge_count());
+
+        let mut expected_edges: HashSet<(usize, usize)> = HashSet::from_iter([
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 5),
+            (1, 3),
+            (2, 3),
+            (2, 4),
+            (4, 0),
+            (6, 6),
+        ]);
+
+        for (a, b, _) in g.all_edges() {
+            let edge = (a.index(), b.index());
+            assert!(expected_edges.remove(&edge));
+        }
+        assert!(expected_edges.is_empty());
+    }
+
+    #[test]
+    fn test_all_edges_mut() {
+        let mut g: MatrixGraph<(), ()> = MatrixGraph::from_edges([
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 5),
+            (1, 3),
+            (2, 3),
+            (2, 4),
+            (4, 0),
+            (6, 6),
+        ]);
+
+        assert_eq!(g.all_edges_mut().count(), g.edge_count());
+
+        let mut expected_edges: HashSet<(usize, usize)> = HashSet::from_iter([
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 5),
+            (1, 3),
+            (2, 3),
+            (2, 4),
+            (4, 0),
+            (6, 6),
+        ]);
+
+        for (a, b, _) in g.all_edges_mut() {
+            let edge = (a.index(), b.index());
+            assert!(expected_edges.remove(&edge));
+        }
+        assert!(expected_edges.is_empty());
+    }
+
+    #[test]
+    fn test_all_edges_empty_graph() {
+        let g: MatrixGraph<(), ()> = MatrixGraph::new();
+        assert_eq!(g.all_edges().count(), 0);
+    }
+
+    #[test]
+    fn test_all_edges_mut_empty_graph() {
+        let mut g: MatrixGraph<(), ()> = MatrixGraph::new();
+        assert_eq!(g.all_edges_mut().count(), 0);
     }
 
     #[test]
