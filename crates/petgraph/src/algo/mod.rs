@@ -338,7 +338,7 @@ where
 ///   instead of this function.
 pub fn lexicographic_toposort<G>(
     g: G,
-    space: Option<&mut LfsSpace<G::NodeId, G::NodeId>>,
+    space: Option<&mut LfsSpace<G::NodeId>>,
 ) -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
 where
     G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
@@ -411,16 +411,16 @@ where
     }
 }
 
-pub struct Proxy<N, K: Eq + Ord> {
+pub struct Proxy<N, K> {
     key: K,
     id: N,
 }
-impl<N, K: Eq + Ord> PartialEq for Proxy<N, K> {
+impl<N, K: Eq> PartialEq for Proxy<N, K> {
     fn eq(&self, other: &Self) -> bool {
         self.key.eq(&other.key)
     }
 }
-impl<N, K: Eq + Ord> Eq for Proxy<N, K> {}
+impl<N, K: Eq> Eq for Proxy<N, K> {}
 impl<N, K: Eq + Ord> PartialOrd for Proxy<N, K> {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         self.key.partial_cmp(&other.key)
@@ -433,7 +433,7 @@ impl<N, K: Eq + Ord> Ord for Proxy<N, K> {
 }
 
 /// Workspace for lexicographic graph traversal using some comparison key
-pub struct LfsSpace<N, K: Eq + Ord> {
+pub struct LfsSpace<N, K = N> {
     indegree: HashMap<N, usize>,
     sources: BinaryHeap<Reverse<Proxy<N, K>>>,
 }
