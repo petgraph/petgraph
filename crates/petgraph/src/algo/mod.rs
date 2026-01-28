@@ -263,9 +263,10 @@ where
     })
 }
 
-/// Perform a lexicographic topological sort of a directed graph.
+/// Perform a lexicographic topological sort of a directed graph using a custom
+/// key.
 ///
-/// `toposort` returns `Err` on graphs with cycles.
+/// `lexicographic_toposort_by_key` returns `Err` on graphs with cycles.
 /// To handle graphs with cycles, use the one of scc algorithms or
 /// [`DfsPostOrder`](struct@crate::visit::DfsPostOrder)
 ///   instead of this function.
@@ -326,6 +327,13 @@ where
     }
     Ok(result)
 }
+/// Perform a lexicographic topological sort of a directed graph using node id's
+/// as keys. Node id's must be `Ord`.
+///
+/// `lexicographic_toposort` returns `Err` on graphs with cycles.
+/// To handle graphs with cycles, use the one of scc algorithms or
+/// [`DfsPostOrder`](struct@crate::visit::DfsPostOrder)
+///   instead of this function.
 pub fn lexicographic_toposort<G>(
     g: G,
     space: Option<&mut LfsSpace<G::NodeId, G::NodeId>>,
@@ -422,6 +430,7 @@ impl<N, K: Eq + Ord> Ord for Proxy<N, K> {
     }
 }
 
+/// Workspace for lexicographic graph traversal using some comparison key
 pub struct LfsSpace<N, K: Eq + Ord> {
     indegree: HashMap<N, usize>,
     sources: BinaryHeap<Reverse<Proxy<N, K>>>,
