@@ -283,11 +283,13 @@ where
 {
     let mut local_space;
     let lfs = if let Some(v) = space {
+        v.clear();
         v
     } else {
         local_space = LfsSpace::default();
         &mut local_space
     };
+
 
     lfs.indegree.extend(g.node_identifiers().filter_map(|n| {
         let deg = g.neighbors_directed(n, Direction::Incoming).count();
@@ -441,6 +443,12 @@ impl<N, K: Eq + Ord> Default for LfsSpace<N, K> {
             indegree: Default::default(),
             sources: Default::default(),
         }
+    }
+}
+impl<N, K: Eq + Ord> LfsSpace<N, K> {
+    fn clear(&mut self) {
+        self.indegree.clear();
+        self.sources.clear();
     }
 }
 
