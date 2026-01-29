@@ -207,6 +207,7 @@ where
         };
         let mut self_ = Self::with_nodes(max_node_id + 1);
         let mut iter = edges.iter().cloned().peekable();
+        let mut self_loops = 0;
         {
             let mut rows = self_.row.iter_mut();
 
@@ -245,6 +246,9 @@ where
                                 first_error: (n.index(), m.index()),
                             });
                         }
+                        if !Ty::is_directed() && n.index() == m.index() {
+                            self_loops += 1;
+                        }
                         last_target = Some(m);
                         self_.column.push(m);
                         self_.edges.push(weight);
@@ -260,7 +264,9 @@ where
                 *r = rstart;
             }
         }
-
+        if !Ty::is_directed() {
+            self_.edge_count = (self_.edge_count - self_loops) / 2 + self_loops;
+        }
         Ok(self_)
     }
 
@@ -1002,7 +1008,18 @@ mod tests {
         assert_eq!(m.neighbors_slice(1), &[0, 1]);
         assert_eq!(m.neighbors_slice(2), &[0, 2, 4]);
         assert_eq!(m.node_count(), 5);
-        assert_eq!(m.edge_count(), 8);
+        assert_eq!(m.edge_count(), 5);
+    }
+
+    #[test]
+    fn csr_undirected_deduplication_check() {
+        let edges = std::vec![(0, 1), (1, 0), (2, 2)];
+        let g: Csr<(), (), Undirected> = Csr::from_sorted_edges(&edges).unwrap();
+        assert_eq!(
+            g.edge_count(),
+            2,
+            "Should count (0,1)/(1,0) as 1 edge and (2,2) as 1 edge"
+        );
     }
 
     #[test]
