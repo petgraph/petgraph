@@ -4,8 +4,7 @@ on:
   # Re-check whenever the PR is modified
   pull_request_target:
     branches:
-      - main
-      - master
+      - 0.8
     types:
       - opened
       - edited

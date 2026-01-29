@@ -1,8 +1,8 @@
 on:
   push:
-    branches: [ master ]
+    branches: [ 0.8 ]
   pull_request:
-    branches: [ '*' ]
+    branches: [ 0.8 ]
   merge_group:
     types: [ checks_requested ]
   workflow_dispatch: { }

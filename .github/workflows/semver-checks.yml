@@ -3,7 +3,7 @@ name: Rust semver-checks
 on:
     pull_request_target:
         branches:
-            - master
+            - 0.8
         types:
             - opened
             - edited
@@ -14,7 +14,7 @@ on:
             base:
                 description: 'Base branch or tag to run the semver checks against.'
                 required: true
-                default: 'master'
+                default: '0.8'
 
 env:
   CARGO_TERM_COLOR: always
