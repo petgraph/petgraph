@@ -2,7 +2,7 @@ on:
   push:
     branches: [ master ]
   pull_request:
-    branches: [ '*' ]
+    branches: [ master ]
   workflow_dispatch: { }
 
 name: Merge check
