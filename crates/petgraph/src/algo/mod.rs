@@ -37,6 +37,7 @@ pub mod steiner_tree;
 pub mod tred;
 
 use alloc::{collections::BinaryHeap, vec, vec::Vec};
+use hashbrown::HashMap;
 
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
@@ -45,7 +46,6 @@ pub use coloring::dsatur_coloring;
 pub use dijkstra::{bidirectional_dijkstra, dijkstra};
 pub use feedback_arc_set::greedy_feedback_arc_set;
 pub use floyd_warshall::floyd_warshall;
-use hashbrown::HashMap;
 pub use isomorphism::{
     is_isomorphic, is_isomorphic_matching, is_isomorphic_subgraph, is_isomorphic_subgraph_matching,
     subgraph_isomorphisms_iter,
