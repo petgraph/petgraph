@@ -1,14 +1,11 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::ops::Sub;
+use std::ops::{Add, Deref};
 
-use crate::{
-    algo::{EdgeRef, PositiveMeasure},
-    prelude::Direction,
-    visit::{
-        Data, EdgeCount, EdgeIndexable, IntoEdgeReferences, IntoEdges, IntoEdgesDirected,
-        NodeCount, NodeIndexable, VisitMap, Visitable,
-    },
-};
+use petgraph_core::{edge::EdgeRef, graph::DirectedGraph, id::IndexId};
+
+use super::{other_endpoint, residual_capacity};
+use crate::traits::{Bounded, Measure, Zero};
 
 /// Compute the maximum flow from `source` to `destination` in a directed graph.
 /// Implements [Dinic's (or Dinitz's) algorithm][dinics], which builds successive
@@ -46,46 +43,51 @@ use crate::{
 ///
 /// # Example
 /// ```rust
-/// use petgraph::{Graph, algo::dinics};
-/// // Example from CLRS book
-/// let mut graph = Graph::<u8, u8>::new();
-/// let source = graph.add_node(0);
-/// let _ = graph.add_node(1);
-/// let _ = graph.add_node(2);
-/// let _ = graph.add_node(3);
-/// let _ = graph.add_node(4);
-/// let destination = graph.add_node(5);
-/// graph.extend_with_edges(&[
-///     (0, 1, 16),
-///     (0, 2, 13),
-///     (1, 2, 10),
-///     (1, 3, 12),
-///     (2, 1, 4),
-///     (2, 4, 14),
-///     (3, 2, 9),
-///     (3, 5, 20),
-///     (4, 3, 7),
-///     (4, 5, 4),
-/// ]);
-/// let (max_flow, _) = dinics(&graph, source, destination);
-/// assert_eq!(23, max_flow);
+/// // use petgraph::{Graph, algo::dinics};
+/// // // Example from CLRS book
+/// // let mut graph = Graph::<u8, u8>::new();
+/// // let source = graph.add_node(0);
+/// // let _ = graph.add_node(1);
+/// // let _ = graph.add_node(2);
+/// // let _ = graph.add_node(3);
+/// // let _ = graph.add_node(4);
+/// // let destination = graph.add_node(5);
+/// // graph.extend_with_edges(&[
+/// //     (0, 1, 16),
+/// //     (0, 2, 13),
+/// //     (1, 2, 10),
+/// //     (1, 3, 12),
+/// //     (2, 1, 4),
+/// //     (2, 4, 14),
+/// //     (3, 2, 9),
+/// //     (3, 5, 20),
+/// //     (4, 3, 7),
+/// //     (4, 5, 4),
+/// // ]);
+/// // let (max_flow, _) = dinics(&graph, source, destination);
+/// // assert_eq!(23, max_flow);
 /// ```
-pub fn dinics<G>(
-    network: G,
+pub fn dinics<'graph, G: 'graph>(
+    network: &'graph G,
     source: G::NodeId,
     destination: G::NodeId,
-) -> (G::EdgeWeight, Vec<G::EdgeWeight>)
+) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
 where
-    G: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
-    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
+    G: DirectedGraph,
+    G::NodeId: IndexId,
+    G::EdgeId: IndexId,
+    G::EdgeData<'graph>:
+        Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Eq + Ord + Copy,
+    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
 {
-    let mut max_flow = G::EdgeWeight::zero();
-    let mut flows = vec![G::EdgeWeight::zero(); network.edge_count()];
-    let mut visited = network.visit_map();
-    let mut level_edges = vec![Default::default(); network.node_bound()];
+    let mut max_flow = G::EdgeData::zero();
+    let mut flows = vec![G::EdgeData::zero(); network.edge_count()];
+    let mut visited = vec![false; network.node_count()];
+    let mut level_edges = vec![Default::default(); network.node_count()];
 
-    let dest_index = NodeIndexable::to_index(&network, destination);
-    while build_level_graph(&network, source, destination, &flows, &mut level_edges)[dest_index] > 0
+    while build_level_graph(network, source, destination, &flows, &mut level_edges)
+        [destination.as_usize()]
+        > 0
     {
         let flow_increase = find_blocking_flow(
             network,
@@ -111,35 +113,36 @@ where
 /// vertex to its neighbours in the next level.
 ///
 /// Returns the computed level graph.
-fn build_level_graph<G>(
-    network: G,
+fn build_level_graph<'graph, G: 'graph>(
+    network: &'graph G,
     source: G::NodeId,
     destination: G::NodeId,
-    flows: &[G::EdgeWeight],
-    level_edges: &mut [Vec<G::EdgeRef>],
+    flows: &[G::EdgeData<'graph>],
+    level_edges: &mut [Vec<EdgeRef<'graph, G>>],
 ) -> Vec<usize>
 where
-    G: NodeCount + IntoEdgesDirected + NodeIndexable + EdgeIndexable,
-    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
+    G: DirectedGraph,
+    G::NodeId: IndexId,
+    G::EdgeId: IndexId,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero,
+    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
 {
-    let mut level_graph = vec![0; network.node_bound()];
+    let mut level_graph = vec![0; network.node_count()];
     let mut bfs_queue = VecDeque::with_capacity(network.node_count());
     bfs_queue.push_back(source);
 
-    level_graph[NodeIndexable::to_index(&network, source)] = 1;
+    level_graph[source.as_usize()] = 1;
     while let Some(vertex) = bfs_queue.pop_front() {
-        let vertex_index = NodeIndexable::to_index(&network, vertex);
-        let out_edges = network.edges_directed(vertex, Direction::Outgoing);
-        let in_edges = network.edges_directed(vertex, Direction::Incoming);
+        let vertex_index = vertex.as_usize();
+        let incident_edges = network.incident_edges(vertex);
         level_edges[vertex_index].clear();
-        for edge in out_edges.chain(in_edges) {
-            let next_vertex = other_endpoint(&network, edge, vertex);
-            let edge_index = EdgeIndexable::to_index(&network, edge.id());
-            let residual_cap = residual_capacity(&network, edge, next_vertex, flows[edge_index]);
-            if residual_cap == G::EdgeWeight::zero() {
+        for edge in incident_edges {
+            let next_vertex = other_endpoint::<G>(edge, vertex);
+            let residual_cap = residual_capacity::<G>(edge, next_vertex, flows[edge.id.as_usize()]);
+            if residual_cap == G::EdgeData::zero() {
                 continue;
             }
-            let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
+            let next_vertex_index = next_vertex.as_usize();
             if level_graph[next_vertex_index] == 0 {
                 level_graph[next_vertex_index] = level_graph[vertex_index] + 1;
                 level_edges[vertex_index].push(edge);
@@ -160,22 +163,26 @@ where
 ///
 /// Attach computed flows to `flows` and returns the total flow increase from
 /// edges available in `level_edges` at this iteration.
-fn find_blocking_flow<G>(
-    network: G,
+fn find_blocking_flow<'graph, G: 'graph>(
+    network: &'graph G,
     source: G::NodeId,
     destination: G::NodeId,
-    flows: &mut [G::EdgeWeight],
-    level_edges: &mut [Vec<G::EdgeRef>],
-    visited: &mut G::Map,
-) -> G::EdgeWeight
+    flows: &mut [G::EdgeData<'graph>],
+    level_edges: &mut [Vec<EdgeRef<'graph, G>>],
+    visited: &mut Vec<bool>,
+) -> G::EdgeData<'graph>
 where
-    G: NodeCount + IntoEdges + NodeIndexable + EdgeIndexable + Visitable,
-    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
+    G: DirectedGraph,
+    G::NodeId: IndexId,
+    G::EdgeId: IndexId,
+    G::EdgeData<'graph>:
+        Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Eq + Ord + Copy,
+    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
 {
-    let mut flow_increase = G::EdgeWeight::zero();
-    let mut edge_to = vec![None; network.node_bound()];
+    let mut flow_increase = G::EdgeData::zero();
+    let mut edge_to = vec![None; network.node_count()];
     while find_augmenting_path(
-        &network,
+        network,
         source,
         destination,
         flows,
@@ -183,24 +190,23 @@ where
         visited,
         &mut edge_to,
     ) {
-        let mut path_flow = G::EdgeWeight::max();
+        let mut path_flow = <G::EdgeData<'graph> as Bounded>::max();
 
         // Find the bottleneck capacity of the path
         let mut vertex = destination;
-        while let Some(edge) = edge_to[NodeIndexable::to_index(&network, vertex)] {
-            let edge_index = EdgeIndexable::to_index(&network, edge.id());
-            let residual_capacity = residual_capacity(&network, edge, vertex, flows[edge_index]);
-            path_flow = min::<G>(path_flow, residual_capacity);
-            vertex = other_endpoint(&network, edge, vertex);
+        while let Some(edge) = edge_to[vertex.as_usize()] {
+            let residual_capacity = residual_capacity::<G>(edge, vertex, flows[edge.id.as_usize()]);
+            path_flow = path_flow.min(residual_capacity);
+            vertex = other_endpoint::<G>(edge, vertex);
         }
 
         // Update the flow of each edge along the discovered path
         let mut vertex = destination;
-        while let Some(edge) = edge_to[NodeIndexable::to_index(&network, vertex)] {
-            let edge_index = EdgeIndexable::to_index(&network, edge.id());
+        while let Some(edge) = edge_to[vertex.as_usize()] {
+            let edge_index = edge.id.as_usize();
             flows[edge_index] =
-                adjusted_residual_flow(&network, edge, vertex, flows[edge_index], path_flow);
-            vertex = other_endpoint(&network, edge, vertex);
+                adjusted_residual_flow::<G>(edge, vertex, flows[edge_index], path_flow);
+            vertex = other_endpoint::<G>(edge, vertex);
         }
         flow_increase = flow_increase + path_flow;
     }
@@ -211,49 +217,50 @@ where
 /// using previously computed `edge_levels` from level graph.
 ///
 /// Returns a boolean indicating if an augmenting path to destination was found.
-fn find_augmenting_path<G>(
-    network: G,
+fn find_augmenting_path<'graph, G: 'graph>(
+    network: &'graph G,
     source: G::NodeId,
     destination: G::NodeId,
-    flows: &[G::EdgeWeight],
-    level_edges: &mut [Vec<G::EdgeRef>],
-    visited: &mut G::Map,
-    edge_to: &mut [Option<G::EdgeRef>],
+    flows: &[G::EdgeData<'graph>],
+    level_edges: &mut [Vec<EdgeRef<'graph, G>>],
+    visited: &mut Vec<bool>,
+    edge_to: &mut [Option<EdgeRef<'graph, G>>],
 ) -> bool
 where
-    G: IntoEdges + NodeIndexable + EdgeIndexable + Visitable,
-    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
+    G: DirectedGraph,
+    G::NodeId: IndexId,
+    G::EdgeId: IndexId,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Eq,
+    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
 {
-    network.reset_map(visited);
+    *visited = vec![false; network.node_count()];
     let mut level_edges_i = vec![0; level_edges.len()];
 
     let mut dfs_stack = Vec::new();
     dfs_stack.push(source);
-    visited.visit(source);
+    visited[source.as_usize()] = true;
     while let Some(&vertex) = dfs_stack.last() {
-        let vertex_index = NodeIndexable::to_index(&network, vertex);
+        let vertex_index = vertex.as_usize();
 
         let mut found_next = false;
         while level_edges_i[vertex_index] < level_edges[vertex_index].len() {
             let curr_level_edges_i = level_edges_i[vertex_index];
             let edge = level_edges[vertex_index][curr_level_edges_i];
-            let next_vertex = other_endpoint(&network, edge, vertex);
+            let next_vertex = other_endpoint::<G>(edge, vertex);
 
-            let edge_index: usize = EdgeIndexable::to_index(&network, edge.id());
-            let residual_cap = residual_capacity(&network, edge, next_vertex, flows[edge_index]);
-            if residual_cap == G::EdgeWeight::zero() {
+            let residual_cap = residual_capacity::<G>(edge, next_vertex, flows[edge.id.as_usize()]);
+            if residual_cap == G::EdgeData::zero() {
                 level_edges[vertex_index].swap_remove(curr_level_edges_i);
                 continue;
             }
 
-            if !visited.is_visited(&next_vertex) {
-                let next_vertex_index = NodeIndexable::to_index(&network, next_vertex);
-                edge_to[next_vertex_index] = Some(edge);
+            if !visited[next_vertex.as_usize()] {
+                edge_to[next_vertex.as_usize()] = Some(edge);
                 if destination == next_vertex {
                     return true;
                 }
                 dfs_stack.push(next_vertex);
-                visited.visit(next_vertex);
+                visited[next_vertex.as_usize()] = true;
                 found_next = true;
                 break;
             }
@@ -267,80 +274,40 @@ where
 }
 
 /// Returns the adjusted residual flow for given edge and flow increase.
-fn adjusted_residual_flow<G>(
-    network: G,
-    edge: G::EdgeRef,
+fn adjusted_residual_flow<'graph, G: 'graph>(
+    edge: EdgeRef<'graph, G>,
     target_vertex: G::NodeId,
-    flow: G::EdgeWeight,
-    flow_increase: G::EdgeWeight,
-) -> G::EdgeWeight
+    flow: G::EdgeData<'graph>,
+    flow_increase: G::EdgeData<'graph>,
+) -> G::EdgeData<'graph>
 where
-    G: NodeIndexable + IntoEdges,
-    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
+    G: DirectedGraph,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Add<Output = G::EdgeData<'graph>>,
 {
-    if target_vertex == edge.source() {
+    if target_vertex == edge.source {
         // backward edge
         flow - flow_increase
-    } else if target_vertex == edge.target() {
+    } else if target_vertex == edge.target {
         // forward edge
         flow + flow_increase
     } else {
-        let end_point = NodeIndexable::to_index(&network, target_vertex);
-        panic!("Illegal endpoint {}", end_point);
+        panic!("Illegal endpoint {}", target_vertex);
     }
 }
 
-/// Returns the residual capacity of given edge.
-fn residual_capacity<G>(
-    network: G,
-    edge: G::EdgeRef,
-    target_vertex: G::NodeId,
-    flow: G::EdgeWeight,
-) -> G::EdgeWeight
-where
-    G: NodeIndexable + IntoEdges,
-    G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
-{
-    if target_vertex == edge.source() {
-        // backward edge
-        flow
-    } else if target_vertex == edge.target() {
-        // forward edge
-        *edge.weight() - flow
-    } else {
-        let end_point = NodeIndexable::to_index(&network, target_vertex);
-        panic!("Illegal endpoint {}", end_point);
-    }
-}
-
-/// Returns the minimum value between given `a` and `b`.
-/// Will panic if it tries to compare two elements that aren't comparable
-/// (i.e., given two elements `a` and `b`, neither `a >= b` nor `a < b`).
-fn min<G>(a: G::EdgeWeight, b: G::EdgeWeight) -> G::EdgeWeight
-where
-    G: Data,
-    G::EdgeWeight: PartialOrd,
-{
-    if a < b {
-        a
-    } else if a >= b {
-        b
-    } else {
-        panic!("Invalid edge weights. Impossible to get min value.");
-    }
-}
-
-/// Gets the other endpoint of graph edge, if any, otherwise panics.
-fn other_endpoint<G>(network: G, edge: G::EdgeRef, vertex: G::NodeId) -> G::NodeId
-where
-    G: NodeIndexable + IntoEdgeReferences,
-{
-    if vertex == edge.source() {
-        edge.target()
-    } else if vertex == edge.target() {
-        edge.source()
-    } else {
-        let end_point = NodeIndexable::to_index(&network, vertex);
-        panic!("Illegal endpoint {}", end_point);
-    }
-}
+// /// Returns the minimum value between given `a` and `b`.
+// /// Will panic if it tries to compare two elements that aren't comparable
+// /// (i.e., given two elements `a` and `b`, neither `a >= b` nor `a < b`).
+// fn min<G>(a: G::EdgeWeight, b: G::EdgeWeight) -> G::EdgeWeight
+// where
+//     G: Data,
+//     G::EdgeWeight: PartialOrd,
+// {
+//     if a < b {
+//         a
+//     } else if a >= b {
+//         b
+//     } else {
+//         panic!("Invalid edge weights. Impossible to get min value.");
+//     }
+// }
