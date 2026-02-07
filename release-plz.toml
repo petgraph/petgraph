@@ -1,6 +1,8 @@
 [workspace]
 pr_draft = true
 git_tag_name = "{{ package }}@v{{ version }}"
+pr_base = "0.8"
+git_release_latest = false
 
 # Include a list of contributors in the release body
 git_release_body = """
