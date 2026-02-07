@@ -9,32 +9,33 @@ use crate::{
     traits::{Bounded, Measure, Zero},
 };
 
-/// [Ford-Fulkerson][ff] algorithm in the [Edmonds-Karp][ek] variation.
-/// Computes the [maximum flow] from `source` to `destination` in a weighted directed graph.
+/// Find a [maximum flow] from `source` to `destination` using [Edmond-Karp][ek] implementation of
+/// the [Ford-Fulkerson][ff] method. Weights of the provided graph are interpreted as capacities of
+/// edges.
 ///
-/// See also [`maximum_flow`][max flow mod] module for other maximum flow algorithms.
+/// See also [`maximum_flow`][maximum_flow] module for other maximum flow algorithms.
 ///
 /// # Arguments
-/// * `network`: a wieghted directed graph.
-/// * `source`: a stream *source* node.
-/// * `destination`: a stream *sink* node.
+/// - `network`: Directed graph where edge weights are capacities of edges.
+/// - `source`: Source node for the flow.
+/// - `destination`: Sink node for the flow.
 ///
 /// # Returns
 /// Returns a tuple of two values:
-/// * `N::EdgeWeight`: computed maximum flow;
-/// * `Vec<N::EdgeWeight>`: the flow of each edge. The vector is indexed by the graph's edge
+/// - `N::EdgeWeight`: computed maximum flow;
+/// - `Vec<N::EdgeWeight>`: the flow of each edge. The vector is indexed by the graph's edge
 ///   indices.
 ///
 /// # Complexity
-/// * Time complexity: **O(|V||E|²)**.
-/// * Auxiliary space: **O(|V| + |E|)**.
+/// - Time: **O(|V||E|²)**.
+/// - Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
 /// [maximum flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [ff]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 /// [ek]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
-/// [max flow mod]: index.html
+/// [maximum_flow]: index.html
 ///
 /// # Example
 /// ```rust
@@ -62,7 +63,7 @@ use crate::{
 /// // let (max_flow, _) = ford_fulkerson(&graph, source, destination);
 /// // assert_eq!(23, max_flow);
 /// ```
-pub fn ford_fulkerson<'graph, G: 'graph>(
+pub fn edmonds_karp<'graph, G: 'graph>(
     network: &'graph G,
     source: G::NodeId,
     destination: G::NodeId,
