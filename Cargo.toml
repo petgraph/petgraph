@@ -1,6 +1,32 @@
+<<<<<<< Updated upstream
 [workspace]
 members  = ["crates/core", "crates/petgraph", "serialization-tests"]
 resolver = "3"
+=======
+[package]
+
+name = "petgraph"
+version = "0.8.4"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+authors = { workspace = true }
+
+description = "Graph data structure library. Provides graph types and graph algorithms."
+documentation = "https://docs.rs/petgraph/"
+repository = "https://github.com/petgraph/petgraph"
+
+keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
+categories = ["data-structures"]
+
+rust-version = { workspace = true }
+edition = { workspace = true }
+
+[package.metadata.docs.rs]
+features = ["rayon", "serde-1", "quickcheck"]
+
+[package.metadata.release]
+no-dev-version = true
+>>>>>>> Stashed changes
 
 [workspace.package]
 authors = [
