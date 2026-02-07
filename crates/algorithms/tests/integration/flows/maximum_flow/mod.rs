@@ -1,6 +1,3 @@
-mod dinics;
-mod ford_fulkerson;
-
 use paste::paste;
 use petgraph_algorithms::flows::maximum_flow::{dinics, ford_fulkerson};
 use petgraph_core::{graph::DirectedGraph, utils::directed::DirectedTestGraph};
