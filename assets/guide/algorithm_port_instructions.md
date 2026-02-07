@@ -1,3 +1,12 @@
+TODOs:
+
+- Rename Ford Fulkerson to Edmonds Karp
+- Use Structs for Algorithms
+- Redo Docstrings for Algorithms
+- Adapt Algodocs according to changes to docstrings
+- Continue Algorithm Port Instructions
+- Solve Storage/IndexId problem
+
 # Checklist
 
 Algorithm
