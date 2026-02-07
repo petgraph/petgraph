@@ -9,3 +9,13 @@ rust-version.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+petgraph-core = { workspace = true }
+
+[dev-dependencies]
+petgraph-core = {workspace = true, features = ["utils", "alloc"]}
+
+[features]
+default = ["alloc"]
+alloc   = []

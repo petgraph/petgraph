@@ -485,6 +485,8 @@ extern crate serde_derive;
 #[cfg(all(feature = "serde-1", test))]
 extern crate itertools;
 
+pub use petgraph_algorithms as algorithms;
+
 pub use crate::Direction::{Incoming, Outgoing};
 #[doc(no_inline)]
 pub use crate::graph::Graph;
