@@ -1311,9 +1311,20 @@ where
         T: GraphIndex,
         U: GraphIndex,
     {
+        // Soundness relies on trusting GraphIndex impls both to be correct and prevent usage of
+        // unknown IndexMut impls. Methods on GraphIndex are marked doc(hidden) which suggests that
+        // external implementations aren't encouraged but this is not strictly enforced yet.
         assert!(T::is_node_index() != U::is_node_index() || i.index() != j.index());
 
         // Allow two mutable indexes here -- they are nonoverlapping
+        //
+        // We know this will either use the IndexMut impl for NodeIndex or EdgeIndex since
+        // GraphIndex is only implemented for those two types. Both of those IndexMut
+        // implementations avoid stacked borrows violations by using index_mut_no_sb_invalidation
+        // which avoids materializing a reference to the whole slice.
+        //
+        // This approach is taken to avoid breaking changes. This will ideally be removed or
+        // replaced with a cleaner solution in the next breaking version.
         unsafe {
             let self_mut = self as *mut _;
             (
@@ -2237,7 +2248,7 @@ where
     Ix: IndexType,
 {
     fn index_mut(&mut self, index: NodeIndex<Ix>) -> &mut N {
-        &mut self.nodes[index.index()].weight
+        &mut index_mut_no_sb_invalidation(&mut self.nodes, index.index()).weight
     }
 }
 
@@ -2264,7 +2275,7 @@ where
     Ix: IndexType,
 {
     fn index_mut(&mut self, index: EdgeIndex<Ix>) -> &mut E {
-        &mut self.edges[index.index()].weight
+        &mut index_mut_no_sb_invalidation(&mut self.edges, index.index()).weight
     }
 }
 
@@ -2772,3 +2783,24 @@ pub mod stable_graph;
 /// See indexing implementations and the traits `Data` and `DataMap`
 /// for read-write access to the graph's weights.
 pub struct Frozen<'a, G: 'a>(&'a mut G);
+
+/// Mutably index a `Vec` without invalidating extant references under stacked borrows.
+#[inline]
+fn index_mut_no_sb_invalidation<T>(vec: &mut Vec<T>, index: usize) -> &mut T {
+    #[inline(never)]
+    #[cold]
+    fn index_len_fail(index: usize, len: usize) -> ! {
+        panic!("index {} is out of range for Vec length {}", index, len);
+    }
+    // Note, `Vec::len` isn't explicitly guaranteed to preserve validity of existing pointers but I
+    // don't see any particular reason why it would and there is at least a test in the standard
+    // library that would notice if this changes.
+    let len = vec.len();
+    if index < len {
+        let ptr = vec.as_mut_ptr();
+        // SAFETY: This is in bounds.
+        unsafe { &mut *ptr.add(index) }
+    } else {
+        index_len_fail(index, len)
+    }
+}
