@@ -7,15 +7,9 @@ use petgraph_core::{edge::EdgeRef, graph::DirectedGraph, id::IndexId};
 use super::{other_endpoint, residual_capacity};
 use crate::traits::{Bounded, Measure, Zero};
 
-/// Compute the maximum flow from `source` to `destination` in a directed graph.
-/// Implements [Dinic's (or Dinitz's) algorithm][dinics], which builds successive
-/// level graphs using breadth-first search and finds blocking flows within
-/// them through depth-first searches.
-///
-/// For simplicity, the algorithm requires `N::EdgeWeight` to implement
-/// only [PartialOrd] trait, and not [Ord], but will panic if it tries to
-/// compare two elements that aren't comparable (i.e., given two edge weights `a`
-/// and `b`, where neither `a >= b` nor `a < b`).
+/// Find a [maximum flow] from `source` to `destination` using [Dinic's (or Dinitz's)
+/// algorithm][dinics], which builds successive level graphs using breadth-first search and finds
+/// blocking flows within them through depth-first searches.
 ///
 /// See also [`maximum_flow`][max flow mod] module for other maximum flow algorithms.
 ///
