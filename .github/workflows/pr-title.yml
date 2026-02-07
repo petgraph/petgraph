@@ -4,6 +4,10 @@ on:
   pull_request:
     branches:
       - 0.8
+    types:
+      - opened
+      - edited
+      - synchronize
   # The action does not support running on merge_group events,
   # but if the check succeeds in the PR there is no need to check it again.
   merge_group:
