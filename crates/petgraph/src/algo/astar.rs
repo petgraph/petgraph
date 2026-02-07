@@ -96,7 +96,7 @@ where
     // The Open set
     let mut visit_next = BinaryHeap::new();
     // A node -> (f, h, g) mapping
-    // TODO: Derive `g` from `f` and `h`.
+    // TODO(next): Derive `g` from `f` and `h`.
     let mut scores = HashMap::new();
     // The search tree
     let mut path_tracker = PathTracker::<G>::new();

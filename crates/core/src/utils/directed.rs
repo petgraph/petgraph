@@ -9,12 +9,12 @@ use hashbrown::HashMap;
 use crate::{
     edge::{Edge, EdgeMut, EdgeRef},
     graph::{DirectedGraph, Graph},
-    id::Id,
+    id::{Id, IndexId, IndexIdTryFromIntError},
     node::{Node, NodeMut, NodeRef},
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct NodeId(usize);
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
+pub struct NodeId(pub usize);
 
 impl AddAssign<usize> for NodeId {
     fn add_assign(&mut self, other: usize) {
@@ -30,8 +30,61 @@ impl Display for NodeId {
 
 impl Id for NodeId {}
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct EdgeId(usize);
+impl TryFrom<u16> for NodeId {
+    type Error = IndexIdTryFromIntError;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        Ok(Self(value as usize))
+    }
+}
+
+impl TryFrom<u32> for NodeId {
+    type Error = IndexIdTryFromIntError;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        Ok(Self(value as usize))
+    }
+}
+
+impl TryFrom<u64> for NodeId {
+    type Error = IndexIdTryFromIntError;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        Ok(Self(value as usize))
+    }
+}
+
+impl TryFrom<usize> for NodeId {
+    type Error = IndexIdTryFromIntError;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        Ok(Self(value as usize))
+    }
+}
+
+impl IndexId for NodeId {
+    const MAX: Self = Self(usize::MAX);
+    const MIN: Self = Self(0);
+
+    fn as_u16(self) -> u16 {
+        self.0 as u16
+    }
+
+    fn as_u32(self) -> u32 {
+        self.0 as u32
+    }
+
+    fn as_u64(self) -> u64 {
+        self.0 as u64
+    }
+
+    fn as_usize(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
+pub struct EdgeId(pub usize);
 
 impl AddAssign<usize> for EdgeId {
     fn add_assign(&mut self, other: usize) {
@@ -46,6 +99,59 @@ impl Display for EdgeId {
 }
 
 impl Id for EdgeId {}
+
+impl TryFrom<u16> for EdgeId {
+    type Error = IndexIdTryFromIntError;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        Ok(Self(value as usize))
+    }
+}
+
+impl TryFrom<u32> for EdgeId {
+    type Error = IndexIdTryFromIntError;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        Ok(Self(value as usize))
+    }
+}
+
+impl TryFrom<u64> for EdgeId {
+    type Error = IndexIdTryFromIntError;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        Ok(Self(value as usize))
+    }
+}
+
+impl TryFrom<usize> for EdgeId {
+    type Error = IndexIdTryFromIntError;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        Ok(Self(value as usize))
+    }
+}
+
+impl IndexId for EdgeId {
+    const MAX: Self = Self(usize::MAX);
+    const MIN: Self = Self(0);
+
+    fn as_u16(self) -> u16 {
+        self.0 as u16
+    }
+
+    fn as_u32(self) -> u32 {
+        self.0 as u32
+    }
+
+    fn as_u64(self) -> u64 {
+        self.0 as u64
+    }
+
+    fn as_usize(self) -> usize {
+        self.0
+    }
+}
 
 pub struct DirectedTestGraph<N, E, NI = NodeId, EI = EdgeId> {
     next_node: NI,
@@ -93,6 +199,29 @@ where
 
         self.edges.insert(id, (source, target, edge));
         Some(id)
+    }
+
+    pub fn remove_node(&mut self, node_id: NI) {
+        self.nodes.remove(&node_id);
+        self.edges
+            .retain(|_, (source, target, _)| *source != node_id && *target != node_id);
+    }
+
+    pub fn remove_edge(&mut self, edge_id: EI) {
+        self.edges.remove(&edge_id);
+    }
+
+    pub fn extend_with_edges<IntoNI: TryInto<NI>>(
+        &mut self,
+        edges: impl IntoIterator<Item = (IntoNI, IntoNI, E)>,
+    ) {
+        for (source, target, edge) in edges {
+            self.add_edge(
+                source.try_into().ok().unwrap(),
+                target.try_into().ok().unwrap(),
+                edge,
+            );
+        }
     }
 }
 

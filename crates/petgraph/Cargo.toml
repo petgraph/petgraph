@@ -28,15 +28,16 @@ no-dev-version = true
 trait_newly_sealed = "allow"
 
 [dependencies]
-dot-parser        = { workspace = true, optional = true }
-dot-parser-macros = { workspace = true, optional = true }
-fixedbitset       = { workspace = true }
-hashbrown         = { workspace = true, features = ["default-hasher"] }
-indexmap          = { workspace = true }
-quickcheck        = { workspace = true, optional = true }
-rayon             = { workspace = true, optional = true }
-serde             = { workspace = true, default-features = false, optional = true }
-serde_derive      = { workspace = true, default-features = false, optional = true }
+dot-parser          = { workspace = true, optional = true }
+dot-parser-macros   = { workspace = true, optional = true }
+fixedbitset         = { workspace = true }
+hashbrown           = { workspace = true, features = ["default-hasher"] }
+indexmap            = { workspace = true }
+petgraph-algorithms = { workspace = true }
+quickcheck          = { workspace = true, optional = true }
+rayon               = { workspace = true, optional = true }
+serde               = { workspace = true, default-features = false, optional = true }
+serde_derive        = { workspace = true, default-features = false, optional = true }
 
 [dev-dependencies]
 ahash     = { workspace = true }
