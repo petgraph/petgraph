@@ -4,11 +4,36 @@ mod flows;
 macro_rules! run_macro_for_all_graphs {
     ($macro:ident) => {
         $macro!(
-            DirectedTestGraph::<(), u32>::new,
-            DirectedTestGraph::<(), u32>::add_node,
-            DirectedTestGraph::<(), u32>::add_edge,
-            DirectedTestGraph::<(), u32>::remove_node,
-            DirectedTestGraph::<(), u32>::remove_edge
+            DirectedTestGraph::<
+                _,
+                _,
+                petgraph_core::utils::directed::NodeId,
+                petgraph_core::utils::directed::EdgeId,
+            >::new,
+            DirectedTestGraph::<
+                _,
+                _,
+                petgraph_core::utils::directed::NodeId,
+                petgraph_core::utils::directed::EdgeId,
+            >::add_node,
+            DirectedTestGraph::<
+                _,
+                _,
+                petgraph_core::utils::directed::NodeId,
+                petgraph_core::utils::directed::EdgeId,
+            >::add_edge,
+            DirectedTestGraph::<
+                _,
+                _,
+                petgraph_core::utils::directed::NodeId,
+                petgraph_core::utils::directed::EdgeId,
+            >::remove_node,
+            DirectedTestGraph::<
+                _,
+                _,
+                petgraph_core::utils::directed::NodeId,
+                petgraph_core::utils::directed::EdgeId,
+            >::remove_edge
         );
         // Add more graphs here as available
     };
