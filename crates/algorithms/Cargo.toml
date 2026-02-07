@@ -15,6 +15,7 @@ petgraph-core = { workspace = true }
 
 [dev-dependencies]
 petgraph-core = {workspace = true, features = ["utils", "alloc"]}
+paste = "1.0"
 
 [features]
 default = ["alloc"]
