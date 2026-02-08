@@ -38,8 +38,8 @@ use petgraph_core::{edge::EdgeRef, graph::DirectedGraph};
 use crate::traits::Measure;
 
 /// Returns the residual capacity of given edge.
-fn residual_capacity<'graph, G: 'graph>(
-    edge: EdgeRef<'graph, G>,
+fn residual_capacity<'graph, 'graph_ref, G: 'graph>(
+    edge: EdgeRef<'graph_ref, G>,
     vertex: G::NodeId,
     flow: G::EdgeData<'graph>,
 ) -> G::EdgeData<'graph>
@@ -48,7 +48,7 @@ where
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure,
     // For Review: Not sure if Deref trait bound makes sense here, or if this should be handled
     // differently
-    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>>,
+    G::EdgeDataRef<'graph_ref>: Deref<Target = G::EdgeData<'graph>>,
 {
     if vertex == edge.source {
         // backward edge
@@ -62,7 +62,7 @@ where
 }
 
 /// Gets the other endpoint of graph edge, if any, otherwise panics.
-fn other_endpoint<'graph, G: 'graph>(edge: EdgeRef<'graph, G>, vertex: G::NodeId) -> G::NodeId
+fn other_endpoint<G>(edge: EdgeRef<'_, G>, vertex: G::NodeId) -> G::NodeId
 where
     G: DirectedGraph,
 {
