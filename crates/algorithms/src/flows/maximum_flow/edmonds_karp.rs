@@ -1,13 +1,71 @@
 use core::ops::Sub;
 use std::ops::{Add, Deref};
 
-use petgraph_core::{edge::EdgeRef, graph::DirectedGraph, id::IndexId};
+use petgraph_core::{
+    edge::{Edge, EdgeRef},
+    graph::{DirectedGraph, Graph},
+    id::IndexId,
+};
 
 use crate::{
     alloc::collections::VecDeque,
     flows::maximum_flow::{other_endpoint, residual_capacity},
     traits::{Bounded, Measure, Zero},
 };
+
+enum EdmondsKarpError {
+    SourceNodeNotSet,
+    DestinationNodeNotSet,
+}
+
+struct EdmondsKarp<G: Graph> {
+    network: G,
+    source: Option<G::NodeId>,
+    destination: Option<G::NodeId>,
+}
+
+impl<G: Graph> EdmondsKarp<G> {
+    pub fn new(network: G) -> Self {
+        Self {
+            network,
+            source: None,
+            destination: None,
+        }
+    }
+
+    pub fn with_source(mut self, source: G::NodeId) -> Self {
+        self.source = Some(source);
+        self
+    }
+
+    pub fn with_destination(mut self, destination: G::NodeId) -> Self {
+        self.destination = Some(destination);
+        self
+    }
+}
+
+impl<'graph, G: 'graph> EdmondsKarp<G>
+where
+    G: DirectedGraph,
+    G::NodeId: IndexId,
+    G::EdgeId: IndexId,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>>
+        + Add<Output = G::EdgeData<'graph>>
+        + Zero
+        + Measure
+        + Bounded,
+    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
+{
+    pub fn compute(
+        self,
+    ) -> Result<(G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>), EdmondsKarpError> {
+        let source = self.source.ok_or(EdmondsKarpError::SourceNodeNotSet)?;
+        let destination = self
+            .destination
+            .ok_or(EdmondsKarpError::DestinationNodeNotSet)?;
+        Ok(edmonds_karp(&self.network, source, destination))
+    }
+}
 
 /// Find a [maximum flow] from `source` to `destination` using [Edmond-Karp][ek] implementation of
 /// the [Ford-Fulkerson][ff] method. Weights of the provided graph are interpreted as capacities of
@@ -64,7 +122,7 @@ use crate::{
 /// // assert_eq!(23, max_flow);
 /// ```
 pub fn edmonds_karp<'graph, G: 'graph>(
-    network: &'graph G,
+    network: &G,
     source: G::NodeId,
     destination: G::NodeId,
 ) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
@@ -111,11 +169,11 @@ where
 }
 
 /// Returns whether there is an augmenting path in the graph
-fn has_augmented_path<'graph, G: 'graph>(
-    network: &'graph G,
+fn has_augmented_path<'graph, 'graph_ref, G: 'graph>(
+    network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
-    edge_to: &mut [Option<EdgeRef<'graph, G>>],
+    edge_to: &mut [Option<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>],
     flows: &[G::EdgeData<'graph>],
 ) -> bool
 where
@@ -139,7 +197,7 @@ where
             let residual_cap = residual_capacity::<G>(edge, next, flows[edge_index]);
             if !visited[next.as_usize()] && (residual_cap > <G::EdgeData<'graph>>::zero()) {
                 visited[next.as_usize()] = true;
-                edge_to[next.as_usize()] = Some(edge);
+                edge_to[next.as_usize()] = Some(edge.to_owned_edge());
                 if destination == next {
                     return true;
                 }
