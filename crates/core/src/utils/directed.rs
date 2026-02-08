@@ -144,15 +144,26 @@ where
     NI: Id,
     EI: Id,
 {
-    fn nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
+    fn nodes<'graph_ref>(&'graph_ref self) -> impl Iterator<Item = NodeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.nodes.iter().map(|(&id, data)| Node { id, data })
     }
 
-    fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
+    fn nodes_mut<'graph_ref>(
+        &'graph_ref mut self,
+    ) -> impl Iterator<Item = NodeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.nodes.iter_mut().map(|(&id, data)| Node { id, data })
     }
 
-    fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+    fn edges<'graph_ref>(&'graph_ref self) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.edges.iter().map(|(&id, (source, target, data))| Edge {
             id,
             source: *source,
@@ -161,7 +172,12 @@ where
         })
     }
 
-    fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+    fn edges_mut<'graph_ref>(
+        &'graph_ref mut self,
+    ) -> impl Iterator<Item = EdgeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.edges
             .iter_mut()
             .map(|(&id, (source, target, data))| Edge {

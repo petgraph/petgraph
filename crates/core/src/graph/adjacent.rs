@@ -4,13 +4,23 @@ use crate::edge::EdgeRef;
 pub trait Predecessors: Graph {
     fn predecessors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
 
-    fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>>;
+    fn incoming_edges<'graph_ref>(
+        &'graph_ref self,
+        node: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref;
 }
 
 pub trait Successors: Graph {
     fn successors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
 
-    fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>>;
+    fn outgoing_edges<'graph_ref>(
+        &'graph_ref self,
+        node: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref;
 }
 
 impl<G> Predecessors for G
@@ -23,7 +33,13 @@ where
     }
 
     #[inline]
-    fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+    fn incoming_edges<'graph_ref>(
+        &'graph_ref self,
+        node: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         <G as DirectedGraph>::incoming_edges(self, node)
     }
 }
@@ -38,7 +54,13 @@ where
     }
 
     #[inline]
-    fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+    fn outgoing_edges<'graph_ref>(
+        &'graph_ref self,
+        node: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         <G as DirectedGraph>::outgoing_edges(self, node)
     }
 }

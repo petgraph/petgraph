@@ -31,37 +31,72 @@ pub trait UndirectedGraph: Graph {
 
     // Node iteration
 
-    fn nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>>;
-    fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>>;
+    fn nodes<'graph_ref>(&'graph_ref self) -> impl Iterator<Item = NodeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref;
+    fn nodes_mut<'graph_ref>(
+        &'graph_ref mut self,
+    ) -> impl Iterator<Item = NodeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref;
 
     #[inline]
-    fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
+    fn isolated_nodes<'graph_ref>(
+        &'graph_ref self,
+    ) -> impl Iterator<Item = NodeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.nodes().filter(|node| self.degree(node.id) == 0)
     }
 
     // Edge iteration
 
-    fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>>;
-    fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>>;
+    fn edges<'graph_ref>(&'graph_ref self) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref;
+    fn edges_mut<'graph_ref>(
+        &'graph_ref mut self,
+    ) -> impl Iterator<Item = EdgeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref;
 
     // Lookup
     #[inline]
-    fn node(&self, id: Self::NodeId) -> Option<NodeRef<'_, Self>> {
+    fn node<'graph_ref>(&'graph_ref self, id: Self::NodeId) -> Option<NodeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.nodes().find(|node| node.id == id)
     }
 
     #[inline]
-    fn node_mut(&mut self, id: Self::NodeId) -> Option<NodeMut<'_, Self>> {
+    fn node_mut<'graph_ref>(
+        &'graph_ref mut self,
+        id: Self::NodeId,
+    ) -> Option<NodeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.nodes_mut().find(|node| node.id == id)
     }
 
     #[inline]
-    fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
+    fn edge<'graph_ref>(&'graph_ref self, id: Self::EdgeId) -> Option<EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.edges().find(|edge| edge.id == id)
     }
 
     #[inline]
-    fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
+    fn edge_mut<'graph_ref>(
+        &'graph_ref mut self,
+        id: Self::EdgeId,
+    ) -> Option<EdgeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.edges_mut().find(|edge| edge.id == id)
     }
 
@@ -73,16 +108,25 @@ pub trait UndirectedGraph: Graph {
 
     // Incidence
     #[inline]
-    fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+    fn incident_edges<'graph_ref>(
+        &'graph_ref self,
+        node: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.edges()
             .filter(move |edge| edge.source == node || edge.target == node)
     }
 
     #[inline]
-    fn incident_edges_mut(
-        &mut self,
+    fn incident_edges_mut<'graph_ref>(
+        &'graph_ref mut self,
         node: Self::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+    ) -> impl Iterator<Item = EdgeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.edges_mut()
             .filter(move |edge| edge.source == node || edge.target == node)
     }
@@ -101,22 +145,28 @@ pub trait UndirectedGraph: Graph {
 
     // Edges between nodes
     #[inline]
-    fn edges_connecting(
-        &self,
+    fn edges_connecting<'graph_ref>(
+        &'graph_ref self,
         lhs: Self::NodeId,
         rhs: Self::NodeId,
-    ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+    ) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.edges().filter(move |edge| {
             (edge.source == lhs && edge.target == rhs) || (edge.source == rhs && edge.target == lhs)
         })
     }
 
     #[inline]
-    fn edges_connecting_mut(
-        &mut self,
+    fn edges_connecting_mut<'graph_ref>(
+        &'graph_ref mut self,
         lhs: Self::NodeId,
         rhs: Self::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+    ) -> impl Iterator<Item = EdgeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         self.edges_mut().filter(move |edge| {
             (edge.source == lhs && edge.target == rhs) || (edge.source == rhs && edge.target == lhs)
         })
@@ -169,47 +219,86 @@ where
     }
 
     #[inline]
-    fn nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
+    fn nodes<'graph_ref>(&'graph_ref self) -> impl Iterator<Item = NodeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::nodes(self)
     }
 
     #[inline]
-    fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
+    fn nodes_mut<'graph_ref>(
+        &'graph_ref mut self,
+    ) -> impl Iterator<Item = NodeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::nodes_mut(self)
     }
 
     #[inline]
-    fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
+    fn isolated_nodes<'graph_ref>(
+        &'graph_ref self,
+    ) -> impl Iterator<Item = NodeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::isolated_nodes(self)
     }
 
     #[inline]
-    fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+    fn edges<'graph_ref>(&'graph_ref self) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::edges(self)
     }
 
     #[inline]
-    fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+    fn edges_mut<'graph_ref>(
+        &'graph_ref mut self,
+    ) -> impl Iterator<Item = EdgeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::edges_mut(self)
     }
 
     #[inline]
-    fn node(&self, id: Self::NodeId) -> Option<NodeRef<'_, Self>> {
+    fn node<'graph_ref>(&'graph_ref self, id: Self::NodeId) -> Option<NodeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::node(self, id)
     }
 
     #[inline]
-    fn node_mut(&mut self, id: Self::NodeId) -> Option<NodeMut<'_, Self>> {
+    fn node_mut<'graph_ref>(
+        &'graph_ref mut self,
+        id: Self::NodeId,
+    ) -> Option<NodeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::node_mut(self, id)
     }
 
     #[inline]
-    fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
+    fn edge<'graph_ref>(&'graph_ref self, id: Self::EdgeId) -> Option<EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::edge(self, id)
     }
 
     #[inline]
-    fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
+    fn edge_mut<'graph_ref>(
+        &'graph_ref mut self,
+        id: Self::EdgeId,
+    ) -> Option<EdgeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::edge_mut(self, id)
     }
 
@@ -219,15 +308,24 @@ where
     }
 
     #[inline]
-    fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+    fn incident_edges<'graph_ref>(
+        &'graph_ref self,
+        node: Self::NodeId,
+    ) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::incident_edges(self, node)
     }
 
     #[inline]
-    fn incident_edges_mut(
-        &mut self,
+    fn incident_edges_mut<'graph_ref>(
+        &'graph_ref mut self,
         node: Self::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+    ) -> impl Iterator<Item = EdgeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::incident_edges_mut(self, node)
     }
 
@@ -237,20 +335,26 @@ where
     }
 
     #[inline]
-    fn edges_connecting(
-        &self,
+    fn edges_connecting<'graph_ref>(
+        &'graph_ref self,
         lhs: Self::NodeId,
         rhs: Self::NodeId,
-    ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
+    ) -> impl Iterator<Item = EdgeRef<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::edges_connecting(self, lhs, rhs)
     }
 
     #[inline]
-    fn edges_connecting_mut(
-        &mut self,
+    fn edges_connecting_mut<'graph_ref>(
+        &'graph_ref mut self,
         lhs: Self::NodeId,
         rhs: Self::NodeId,
-    ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
+    ) -> impl Iterator<Item = EdgeMut<'graph_ref, Self>>
+    where
+        Self: 'graph_ref,
+    {
         G::edges_connecting_mut(self, lhs, rhs)
     }
 
