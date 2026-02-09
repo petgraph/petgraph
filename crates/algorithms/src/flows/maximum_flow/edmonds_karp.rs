@@ -1,8 +1,12 @@
 use core::ops::Sub;
-use std::ops::{Add, Deref};
+use std::{
+    error::Error,
+    fmt::{Display, Formatter},
+    ops::Add,
+};
 
 use petgraph_core::{
-    edge::{Edge, EdgeRef},
+    edge::Edge,
     graph::{DirectedGraph, Graph},
     id::IndexId,
 };
@@ -13,19 +17,31 @@ use crate::{
     traits::{Bounded, Measure, Zero},
 };
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum EdmondsKarpError {
     SourceNodeNotSet,
     DestinationNodeNotSet,
 }
 
-struct EdmondsKarp<G: Graph> {
-    network: G,
+impl Display for EdmondsKarpError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            EdmondsKarpError::SourceNodeNotSet => write!(f, "Source node is not set"),
+            EdmondsKarpError::DestinationNodeNotSet => write!(f, "Destination node is not set"),
+        }
+    }
+}
+
+impl Error for EdmondsKarpError {}
+
+struct EdmondsKarp<'graph_ref, G: Graph> {
+    network: &'graph_ref G,
     source: Option<G::NodeId>,
     destination: Option<G::NodeId>,
 }
 
-impl<G: Graph> EdmondsKarp<G> {
-    pub fn new(network: G) -> Self {
+impl<'graph_ref, G: Graph> EdmondsKarp<'graph_ref, G> {
+    pub fn new(network: &'graph_ref G) -> Self {
         Self {
             network,
             source: None,
@@ -44,7 +60,7 @@ impl<G: Graph> EdmondsKarp<G> {
     }
 }
 
-impl<'graph, G: 'graph> EdmondsKarp<G>
+impl<'graph, 'graph_ref, G: 'graph> EdmondsKarp<'graph_ref, G>
 where
     G: DirectedGraph,
     G::NodeId: IndexId,
@@ -54,16 +70,14 @@ where
         + Zero
         + Measure
         + Bounded,
-    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
+    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
 {
-    pub fn compute(
-        self,
-    ) -> Result<(G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>), EdmondsKarpError> {
+    pub fn run(&self) -> Result<(G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>), EdmondsKarpError> {
         let source = self.source.ok_or(EdmondsKarpError::SourceNodeNotSet)?;
         let destination = self
             .destination
             .ok_or(EdmondsKarpError::DestinationNodeNotSet)?;
-        Ok(edmonds_karp(&self.network, source, destination))
+        Ok(inner_edmonds_karp(self.network, source, destination))
     }
 }
 
@@ -121,8 +135,8 @@ where
 /// // let (max_flow, _) = ford_fulkerson(&graph, source, destination);
 /// // assert_eq!(23, max_flow);
 /// ```
-pub fn edmonds_karp<'graph, G: 'graph>(
-    network: &G,
+pub fn edmonds_karp<'graph, 'graph_ref, G: 'graph>(
+    network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
 ) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
@@ -135,7 +149,30 @@ where
         + Zero
         + Measure
         + Bounded,
-    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
+    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
+{
+    EdmondsKarp::new(network)
+        .with_source(source)
+        .with_destination(destination)
+        .run()
+        .expect("Source and destination nodes should be set")
+}
+
+fn inner_edmonds_karp<'graph, 'graph_ref, G: 'graph>(
+    network: &'graph_ref G,
+    source: G::NodeId,
+    destination: G::NodeId,
+) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
+where
+    G: DirectedGraph,
+    G::NodeId: IndexId,
+    G::EdgeId: IndexId,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>>
+        + Add<Output = G::EdgeData<'graph>>
+        + Zero
+        + Measure
+        + Bounded,
+    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
 {
     let mut edge_to = vec![None; network.node_count()];
     let mut flows = vec![G::EdgeData::zero(); network.edge_count()];
@@ -153,15 +190,15 @@ where
             } else {
                 path_flow
             };
-            vertex = other_endpoint::<G>(edge, vertex);
+            vertex = other_endpoint::<G, _>(edge, vertex);
         }
 
         // Update the flow of each edge along the path
         let mut vertex = destination;
         while let Some(edge) = edge_to[vertex.as_usize()] {
             flows[edge.id.as_usize()] =
-                adjust_residual_flow::<G>(edge, vertex, flows[edge.id.as_usize()], path_flow);
-            vertex = other_endpoint::<G>(edge, vertex);
+                adjust_residual_flow::<G, _>(edge, vertex, flows[edge.id.as_usize()], path_flow);
+            vertex = other_endpoint::<G, _>(edge, vertex);
         }
         max_flow = max_flow + path_flow;
     }
@@ -181,7 +218,7 @@ where
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Zero + Measure,
-    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
+    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
 {
     // TODO(next): Replace by proper visit map
     let mut visited = vec![false; network.node_count()];
@@ -192,9 +229,10 @@ where
     while let Some(vertex) = queue.pop_front() {
         let incident_edges = network.incident_edges(vertex);
         for edge in incident_edges {
-            let next = other_endpoint::<G>(edge, vertex);
+            let next = other_endpoint::<G, _>(edge, vertex);
             let edge_index: usize = edge.id.as_usize();
-            let residual_cap = residual_capacity::<G>(edge, next, flows[edge_index]);
+            let residual_cap =
+                residual_capacity::<G>(edge.to_owned_edge(), next, flows[edge_index]);
             if !visited[next.as_usize()] && (residual_cap > <G::EdgeData<'graph>>::zero()) {
                 visited[next.as_usize()] = true;
                 edge_to[next.as_usize()] = Some(edge.to_owned_edge());
@@ -208,8 +246,8 @@ where
     false
 }
 
-fn adjust_residual_flow<'graph, G>(
-    edge: EdgeRef<'graph, G>,
+fn adjust_residual_flow<'graph, 'graph_ref, G, D>(
+    edge: Edge<G::EdgeId, D, G::NodeId>,
     vertex: G::NodeId,
     flow: G::EdgeData<'graph>,
     delta: G::EdgeData<'graph>,
