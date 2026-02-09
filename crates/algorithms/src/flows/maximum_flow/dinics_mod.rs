@@ -1,5 +1,6 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::ops::Sub;
+use std::error::Error;
 
 use petgraph_core::{
     edge::Edge,
@@ -13,6 +14,10 @@ use crate::{
     traits::{Bounded, Measure, Zero},
 };
 
+/// Struct to run Dinic's algorithm.
+///
+/// Offers more configuration options than [`dinics`]. For an explanation of the algorithm, see the
+/// documentation of [`dinics`].
 pub struct Dinics<'graph_ref, G: Graph> {
     network: &'graph_ref G,
     source: Option<G::NodeId>,
@@ -20,6 +25,10 @@ pub struct Dinics<'graph_ref, G: Graph> {
 }
 
 impl<'graph_ref, G: Graph> Dinics<'graph_ref, G> {
+    /// Creates a new instance of Dinic's algorithm with the provided graph.
+    ///
+    /// The source and destination nodes can be set using a builder pattern with the `with_source`
+    /// and `with_destination` methods.
     pub fn new(network: &'graph_ref G) -> Self {
         Self {
             network,
@@ -28,11 +37,13 @@ impl<'graph_ref, G: Graph> Dinics<'graph_ref, G> {
         }
     }
 
+    /// Sets the source node for the flow.
     pub fn with_source(mut self, source: G::NodeId) -> Self {
         self.source = Some(source);
         self
     }
 
+    /// Sets the destination node for the flow.
     pub fn with_destination(mut self, destination: G::NodeId) -> Self {
         self.destination = Some(destination);
         self
@@ -47,6 +58,10 @@ where
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
     G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
 {
+    /// Runs Dinic's algorithm with the current configuration.
+    ///
+    /// For an explanation of the algorithm, see the documentation of [`dinics`].
+    /// If an invalid configuration is detected, an appropriate error is returned.
     pub fn run(&self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
         let source = self.source.expect("Source node is not set");
         let destination = self.destination.expect("Destination node is not set");
@@ -54,33 +69,80 @@ where
     }
 }
 
-/// Find a [maximum flow] from `source` to `destination` using [Dinic's (or Dinitz's)
+/// Output of [`dinics`] algorithm.
+///
+/// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
+/// with [`DinicsOutput::into_max_flow_and_flow_vec`].
+pub struct DinicsOutput<'graph, G: Graph + 'graph> {
+    max_flow: G::EdgeData<'graph>,
+    flows: Vec<G::EdgeData<'graph>>,
+}
+
+impl<'graph, G: Graph + 'graph> DinicsOutput<'graph, G> {
+    /// Returns the maximum flow value computed by the algorithm.
+    pub fn max_flow(&self) -> &G::EdgeData<'graph> {
+        &self.max_flow
+    }
+
+    /// Returns the flow of each edge computed by the algorithm. The slice is indexed by the
+    /// graph's edge indices.
+    pub fn flows(&self) -> &[G::EdgeData<'graph>] {
+        &self.flows
+    }
+
+    /// Consumes the struct and returns a tuple of the maximum flow value and a vector of the flow
+    /// of each edge. The vector is indexed by the graph's edge indices.
+    pub fn into_max_flow_and_flow_vec(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
+        (self.max_flow, self.flows)
+    }
+}
+
+/// Errors that can occur in the configuration of Dinic's algorithm.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DinicsConfigError {
+    SourceNodeNotSet,
+    DestinationNodeNotSet,
+}
+
+impl core::fmt::Display for DinicsConfigError {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::SourceNodeNotSet => write!(fmt, "Source node is not set"),
+            Self::DestinationNodeNotSet => write!(fmt, "Destination node is not set"),
+        }
+    }
+}
+
+impl Error for DinicsConfigError {}
+
+/// Find a [maximum_flow_problem] from `source` to `destination` using [Dinic's (or Dinitz's)
 /// algorithm][dinics], which builds successive level graphs using breadth-first search and finds
 /// blocking flows within them through depth-first searches.
 ///
-/// See also [`maximum_flow`][max flow mod] module for other maximum flow algorithms.
+/// Edge Data of the provided graph is interpreted as capacities of edges.
+///
+/// See also [`maximum_flow`][maximum_flow_mod] module for other maximum flow algorithms.
 ///
 /// # Arguments
-/// * `network` — A directed graph with positive edge weights, namely "flow capacities".
-/// * `source` — The source node where flow originates.
-/// * `destination` — The destination node where flow terminates.
+/// - `network`: A directed graph with positive edge data which is interpreted as capacities of
+///   edges.
+/// - `source`: Source node for the flow.
+/// - `destination`: Sink node for the flow.
 ///
 /// # Returns
-/// Returns a tuple of two values:
-/// * `N::EdgeWeight`: computed maximum flow;
-/// * `Vec<N::EdgeWeight>`: the flow of each edge. The vector is indexed by the graph's edge
-///   indices.
+/// Returns a struct wrapping the maximum flow value and the flow of each edge.
 ///
 /// # Complexity
-/// * Time complexity:
-///   * In general: **O(|V|²|E|)**
-///   * In networks with only unit capacities: **O(min{|V|²ᐟ³, |E|¹ᐟ²} |E|)**
-/// * Auxiliary space: **O(|V| + |E|)**.
+/// - Time complexity:
+///   - In general: **O(|V|²|E|)**
+///   - In networks with only unit capacities: **O(min{|V|²ᐟ³, |E|¹ᐟ²} |E|)**
+/// - Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
+/// [maximum_flow_problem]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [dinics]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
-/// [max flow mod]: index.html
+/// [maximum_flow_mod]: index.html
 ///
 /// # Example
 /// ```rust
@@ -123,7 +185,7 @@ where
     dinics_inner(network, source, destination)
 }
 
-pub fn dinics_inner<'graph, 'graph_ref, G: 'graph>(
+fn dinics_inner<'graph, 'graph_ref, G: 'graph>(
     network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
