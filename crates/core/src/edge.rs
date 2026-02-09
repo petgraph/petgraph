@@ -1,7 +1,7 @@
+#[cfg(feature = "alloc")]
 use alloc::borrow::ToOwned;
-use core::{borrow::Borrow, ops::Deref};
 
-use crate::{graph::Graph, id::Id};
+use crate::graph::Graph;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Direction {
@@ -26,6 +26,7 @@ where
     D: ToOwned<Owned = DNew>,
     DNew: Copy,
 {
+    #[cfg(feature = "alloc")]
     pub fn to_owned_edge(&self) -> Edge<I, DNew, N> {
         Edge {
             id: self.id,

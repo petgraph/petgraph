@@ -1,11 +1,13 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::ops::Sub;
-use std::ops::{Add, Deref};
 
-use petgraph_core::{edge::EdgeRef, graph::DirectedGraph, id::IndexId};
+use petgraph_core::{edge::Edge, graph::DirectedGraph, id::IndexId};
 
 use super::{other_endpoint, residual_capacity};
-use crate::traits::{Bounded, Measure, Zero};
+use crate::{
+    flows::maximum_flow::adjusted_residual_flow,
+    traits::{Bounded, Measure, Zero},
+};
 
 /// Find a [maximum flow] from `source` to `destination` using [Dinic's (or Dinitz's)
 /// algorithm][dinics], which builds successive level graphs using breadth-first search and finds
@@ -61,8 +63,8 @@ use crate::traits::{Bounded, Measure, Zero};
 /// // let (max_flow, _) = dinics(&graph, source, destination);
 /// // assert_eq!(23, max_flow);
 /// ```
-pub fn dinics<'graph, G: 'graph>(
-    network: &'graph G,
+pub fn dinics<'graph, 'graph_ref, G: 'graph>(
+    network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
 ) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
@@ -70,9 +72,8 @@ where
     G: DirectedGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
-    G::EdgeData<'graph>:
-        Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Eq + Ord + Copy,
-    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
+    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
 {
     let mut max_flow = G::EdgeData::zero();
     let mut flows = vec![G::EdgeData::zero(); network.edge_count()];
@@ -107,19 +108,19 @@ where
 /// vertex to its neighbours in the next level.
 ///
 /// Returns the computed level graph.
-fn build_level_graph<'graph, G: 'graph>(
-    network: &'graph G,
+fn build_level_graph<'graph, 'graph_ref, G: 'graph>(
+    network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
     flows: &[G::EdgeData<'graph>],
-    level_edges: &mut [Vec<EdgeRef<'graph, G>>],
+    level_edges: &mut [Vec<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>],
 ) -> Vec<usize>
 where
     G: DirectedGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero,
-    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
+    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
 {
     let mut level_graph = vec![0; network.node_count()];
     let mut bfs_queue = VecDeque::with_capacity(network.node_count());
@@ -131,7 +132,8 @@ where
         let incident_edges = network.incident_edges(vertex);
         level_edges[vertex_index].clear();
         for edge in incident_edges {
-            let next_vertex = other_endpoint::<G>(edge, vertex);
+            let edge = edge.to_owned_edge();
+            let next_vertex = other_endpoint::<G, _>(edge, vertex);
             let residual_cap = residual_capacity::<G>(edge, next_vertex, flows[edge.id.as_usize()]);
             if residual_cap == G::EdgeData::zero() {
                 continue;
@@ -158,20 +160,18 @@ where
 /// Attach computed flows to `flows` and returns the total flow increase from
 /// edges available in `level_edges` at this iteration.
 fn find_blocking_flow<'graph, G: 'graph>(
-    network: &'graph G,
+    network: &G,
     source: G::NodeId,
     destination: G::NodeId,
     flows: &mut [G::EdgeData<'graph>],
-    level_edges: &mut [Vec<EdgeRef<'graph, G>>],
+    level_edges: &mut [Vec<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>],
     visited: &mut Vec<bool>,
 ) -> G::EdgeData<'graph>
 where
     G: DirectedGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
-    G::EdgeData<'graph>:
-        Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Eq + Ord + Copy,
-    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
 {
     let mut flow_increase = G::EdgeData::zero();
     let mut edge_to = vec![None; network.node_count()];
@@ -191,7 +191,7 @@ where
         while let Some(edge) = edge_to[vertex.as_usize()] {
             let residual_capacity = residual_capacity::<G>(edge, vertex, flows[edge.id.as_usize()]);
             path_flow = path_flow.min(residual_capacity);
-            vertex = other_endpoint::<G>(edge, vertex);
+            vertex = other_endpoint::<G, _>(edge, vertex);
         }
 
         // Update the flow of each edge along the discovered path
@@ -199,8 +199,8 @@ where
         while let Some(edge) = edge_to[vertex.as_usize()] {
             let edge_index = edge.id.as_usize();
             flows[edge_index] =
-                adjusted_residual_flow::<G>(edge, vertex, flows[edge_index], path_flow);
-            vertex = other_endpoint::<G>(edge, vertex);
+                adjusted_residual_flow::<G, _>(edge, vertex, flows[edge_index], path_flow);
+            vertex = other_endpoint::<G, _>(edge, vertex);
         }
         flow_increase = flow_increase + path_flow;
     }
@@ -212,20 +212,19 @@ where
 ///
 /// Returns a boolean indicating if an augmenting path to destination was found.
 fn find_augmenting_path<'graph, G: 'graph>(
-    network: &'graph G,
+    network: &G,
     source: G::NodeId,
     destination: G::NodeId,
     flows: &[G::EdgeData<'graph>],
-    level_edges: &mut [Vec<EdgeRef<'graph, G>>],
+    level_edges: &mut [Vec<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>],
     visited: &mut Vec<bool>,
-    edge_to: &mut [Option<EdgeRef<'graph, G>>],
+    edge_to: &mut [Option<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>],
 ) -> bool
 where
     G: DirectedGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Eq,
-    G::EdgeDataRef<'graph>: Deref<Target = G::EdgeData<'graph>> + Copy,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero,
 {
     *visited = vec![false; network.node_count()];
     let mut level_edges_i = vec![0; level_edges.len()];
@@ -240,7 +239,7 @@ where
         while level_edges_i[vertex_index] < level_edges[vertex_index].len() {
             let curr_level_edges_i = level_edges_i[vertex_index];
             let edge = level_edges[vertex_index][curr_level_edges_i];
-            let next_vertex = other_endpoint::<G>(edge, vertex);
+            let next_vertex = other_endpoint::<G, _>(edge, vertex);
 
             let residual_cap = residual_capacity::<G>(edge, next_vertex, flows[edge.id.as_usize()]);
             if residual_cap == G::EdgeData::zero() {
@@ -266,42 +265,3 @@ where
     }
     false
 }
-
-/// Returns the adjusted residual flow for given edge and flow increase.
-fn adjusted_residual_flow<'graph, G: 'graph>(
-    edge: EdgeRef<'graph, G>,
-    target_vertex: G::NodeId,
-    flow: G::EdgeData<'graph>,
-    flow_increase: G::EdgeData<'graph>,
-) -> G::EdgeData<'graph>
-where
-    G: DirectedGraph,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Add<Output = G::EdgeData<'graph>>,
-{
-    if target_vertex == edge.source {
-        // backward edge
-        flow - flow_increase
-    } else if target_vertex == edge.target {
-        // forward edge
-        flow + flow_increase
-    } else {
-        panic!("Illegal endpoint {}", target_vertex);
-    }
-}
-
-// /// Returns the minimum value between given `a` and `b`.
-// /// Will panic if it tries to compare two elements that aren't comparable
-// /// (i.e., given two elements `a` and `b`, neither `a >= b` nor `a < b`).
-// fn min<G>(a: G::EdgeWeight, b: G::EdgeWeight) -> G::EdgeWeight
-// where
-//     G: Data,
-//     G::EdgeWeight: PartialOrd,
-// {
-//     if a < b {
-//         a
-//     } else if a >= b {
-//         b
-//     } else {
-//         panic!("Invalid edge weights. Impossible to get min value.");
-//     }
-// }
