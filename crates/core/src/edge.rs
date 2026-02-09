@@ -1,3 +1,6 @@
+use alloc::borrow::ToOwned;
+use core::{borrow::Borrow, ops::Deref};
+
 use crate::{graph::Graph, id::Id};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -16,14 +19,19 @@ pub struct Edge<I, D, N> {
     pub data: D,
 }
 
-impl<I, D, N> Edge<I, D, N> {
-    pub const fn opposite_endpoint(&self, direction: Direction) -> N
-    where
-        N: Id,
-    {
-        match direction {
-            Direction::Incoming => self.source,
-            Direction::Outgoing => self.target,
+impl<I, D, N, DNew> Edge<I, D, N>
+where
+    I: Copy,
+    N: Copy,
+    D: ToOwned<Owned = DNew>,
+    DNew: Copy,
+{
+    pub fn to_owned_edge(&self) -> Edge<I, DNew, N> {
+        Edge {
+            id: self.id,
+            source: self.source,
+            target: self.target,
+            data: self.data.to_owned(),
         }
     }
 }
