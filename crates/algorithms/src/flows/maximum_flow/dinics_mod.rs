@@ -1,13 +1,58 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::ops::Sub;
 
-use petgraph_core::{edge::Edge, graph::DirectedGraph, id::IndexId};
+use petgraph_core::{
+    edge::Edge,
+    graph::{DirectedGraph, Graph},
+    id::IndexId,
+};
 
 use super::{other_endpoint, residual_capacity};
 use crate::{
     flows::maximum_flow::adjusted_residual_flow,
     traits::{Bounded, Measure, Zero},
 };
+
+pub struct Dinics<'graph_ref, G: Graph> {
+    network: &'graph_ref G,
+    source: Option<G::NodeId>,
+    destination: Option<G::NodeId>,
+}
+
+impl<'graph_ref, G: Graph> Dinics<'graph_ref, G> {
+    pub fn new(network: &'graph_ref G) -> Self {
+        Self {
+            network,
+            source: None,
+            destination: None,
+        }
+    }
+
+    pub fn with_source(mut self, source: G::NodeId) -> Self {
+        self.source = Some(source);
+        self
+    }
+
+    pub fn with_destination(mut self, destination: G::NodeId) -> Self {
+        self.destination = Some(destination);
+        self
+    }
+}
+
+impl<'graph, 'graph_ref, G: 'graph> Dinics<'graph_ref, G>
+where
+    G: DirectedGraph,
+    G::NodeId: IndexId,
+    G::EdgeId: IndexId,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
+    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
+{
+    pub fn run(&self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
+        let source = self.source.expect("Source node is not set");
+        let destination = self.destination.expect("Destination node is not set");
+        dinics_inner(self.network, source, destination)
+    }
+}
 
 /// Find a [maximum flow] from `source` to `destination` using [Dinic's (or Dinitz's)
 /// algorithm][dinics], which builds successive level graphs using breadth-first search and finds
@@ -75,6 +120,21 @@ where
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
     G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
 {
+    dinics_inner(network, source, destination)
+}
+
+pub fn dinics_inner<'graph, 'graph_ref, G: 'graph>(
+    network: &'graph_ref G,
+    source: G::NodeId,
+    destination: G::NodeId,
+) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
+where
+    G: DirectedGraph,
+    G::NodeId: IndexId,
+    G::EdgeId: IndexId,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
+    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
+{
     let mut max_flow = G::EdgeData::zero();
     let mut flows = vec![G::EdgeData::zero(); network.edge_count()];
     let mut visited = vec![false; network.node_count()];
@@ -96,7 +156,6 @@ where
     }
     (max_flow, flows)
 }
-
 /// Makes a BFS that labels network vertices with levels representing
 /// their distance to the source vertex, considering only edges with
 /// positive residual capacity.
