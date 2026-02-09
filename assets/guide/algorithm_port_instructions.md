@@ -1,7 +1,7 @@
 TODOs:
 
-- Add proper return types for Algorithms
 - Redo Docstrings for Algorithms
+- Add examples in algorithm docstrings
 - Open PR with adapted Lifetime names for Graph trait
 - Adapt Algodocs according to changes to docstrings
 - Continue Algorithm Port Instructions
@@ -13,6 +13,8 @@ Algorithm
 
 - [ ] Move algorithm to petgraph-algorithms crate into correct directory and module
 - [ ] Use new traits for algorithm
+- [ ] Use structs for algorithm
+- [ ] Use struct for algorithm output
 
 Docs
 
