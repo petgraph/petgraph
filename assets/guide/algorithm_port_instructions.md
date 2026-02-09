@@ -1,8 +1,8 @@
 TODOs:
 
-- Rename Ford Fulkerson to Edmonds Karp
-- Use Structs for Algorithms
+- Add proper return types for Algorithms
 - Redo Docstrings for Algorithms
+- Open PR with adapted Lifetime names for Graph trait
 - Adapt Algodocs according to changes to docstrings
 - Continue Algorithm Port Instructions
 - Solve Storage/IndexId problem
