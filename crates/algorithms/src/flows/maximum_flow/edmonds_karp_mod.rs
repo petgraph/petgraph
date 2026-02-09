@@ -17,23 +17,10 @@ use crate::{
     traits::{Bounded, Measure, Zero},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EdmondsKarpError {
-    SourceNodeNotSet,
-    DestinationNodeNotSet,
-}
-
-impl Display for EdmondsKarpError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        match self {
-            EdmondsKarpError::SourceNodeNotSet => write!(f, "Source node is not set"),
-            EdmondsKarpError::DestinationNodeNotSet => write!(f, "Destination node is not set"),
-        }
-    }
-}
-
-impl Error for EdmondsKarpError {}
-
+/// Struct to run the Edmonds-Karp algorithm.
+///
+/// Offers more configuration options than [`edmonds_karp`]. For an explanation of the algorithm,
+/// see the documentation of [`edmonds_karp`].
 pub struct EdmondsKarp<'graph_ref, G: Graph> {
     network: &'graph_ref G,
     source: Option<G::NodeId>,
@@ -41,6 +28,10 @@ pub struct EdmondsKarp<'graph_ref, G: Graph> {
 }
 
 impl<'graph_ref, G: Graph> EdmondsKarp<'graph_ref, G> {
+    /// Creates a new instance of the Edmonds-Karp algorithm with the provided graph.
+    ///
+    /// The source and destination nodes can be set using a builder pattern with the `with_source`
+    /// and `with_destination` methods.
     pub fn new(network: &'graph_ref G) -> Self {
         Self {
             network,
@@ -49,11 +40,13 @@ impl<'graph_ref, G: Graph> EdmondsKarp<'graph_ref, G> {
         }
     }
 
+    /// Sets the source node for the flow.
     pub fn with_source(mut self, source: G::NodeId) -> Self {
         self.source = Some(source);
         self
     }
 
+    /// Sets the destination node for the flow.
     pub fn with_destination(mut self, destination: G::NodeId) -> Self {
         self.destination = Some(destination);
         self
@@ -72,7 +65,11 @@ where
         + Bounded,
     G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
 {
-    pub fn run(&self) -> Result<(G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>), EdmondsKarpError> {
+    /// Runs the Edmonds-Karp algorithm with the current configuration.
+    ///
+    /// For an explanation of the algorithm, see the documentation of [`edmonds_karp`].
+    /// If an invalid configuration is detected, an appropriate error is returned.
+    pub fn run(&self) -> Result<EdmondsKarpOutput<'graph, G>, EdmondsKarpError> {
         let source = self.source.ok_or(EdmondsKarpError::SourceNodeNotSet)?;
         let destination = self
             .destination
@@ -81,22 +78,67 @@ where
     }
 }
 
-/// Find a [maximum flow] from `source` to `destination` using [Edmond-Karp][ek] implementation of
-/// the [Ford-Fulkerson][ff] method. Weights of the provided graph are interpreted as capacities of
-/// edges.
+/// Output of the Edmonds-Karp algorithm.
+///
+/// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
+/// with [`EdmondsKarpOutput::into_max_flow_and_flows`].
+pub struct EdmondsKarpOutput<'graph, G: Graph + 'graph> {
+    max_flow: G::EdgeData<'graph>,
+    flows: Vec<G::EdgeData<'graph>>,
+}
+
+impl<'graph, G: Graph + 'graph> EdmondsKarpOutput<'graph, G> {
+    /// Returns the maximum flow computed by the algorithm.
+    pub fn max_flow(&self) -> &G::EdgeData<'graph> {
+        &self.max_flow
+    }
+
+    /// Returns the flow of each edge computed by the algorithm. The slice is indexed by the
+    /// graph's edge indices.
+    pub fn flows(&self) -> &[G::EdgeData<'graph>] {
+        &self.flows
+    }
+
+    /// Consumes the struct and returns a tuple of the maximum flow value and a vector of the flow
+    /// of each edge. The vector is indexed by the graph's edge indices.
+    pub fn into_max_flow_and_flows(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
+        (self.max_flow, self.flows)
+    }
+}
+
+/// Errors that can occur when running the Edmonds-Karp algorithm.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EdmondsKarpError {
+    SourceNodeNotSet,
+    DestinationNodeNotSet,
+}
+
+impl Display for EdmondsKarpError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            EdmondsKarpError::SourceNodeNotSet => write!(f, "Source node is not set"),
+            EdmondsKarpError::DestinationNodeNotSet => write!(f, "Destination node is not set"),
+        }
+    }
+}
+
+impl Error for EdmondsKarpError {}
+
+/// Find a [maximum_flow_problem] from `source` to `destination` using the [Edmond-Karp][ek]
+/// implementation of the [Ford-Fulkerson][ff] method. Edge Data of the provided graph is
+/// interpreted as capacities of edges.
 ///
 /// See also [`maximum_flow`][maximum_flow] module for other maximum flow algorithms.
 ///
 /// # Arguments
-/// - `network`: Directed graph where edge weights are capacities of edges.
+/// - `network`: Directed graph where edge data are capacities of edges.
 /// - `source`: Source node for the flow.
 /// - `destination`: Sink node for the flow.
 ///
 /// # Returns
 /// Returns a tuple of two values:
-/// - `N::EdgeWeight`: computed maximum flow;
-/// - `Vec<N::EdgeWeight>`: the flow of each edge. The vector is indexed by the graph's edge
-///   indices.
+/// - `N::EdgeData`: computed maximum flow;
+/// - `Vec<N::EdgeData>`: the flow of each edge. The vector is indexed by the graph's edge indices.
 ///
 /// # Complexity
 /// - Time: **O(|V||E|²)**.
@@ -104,7 +146,7 @@ where
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
-/// [maximum flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+/// [maximum_flow_problem]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [ff]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 /// [ek]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
 /// [maximum_flow]: index.html
@@ -139,7 +181,7 @@ pub fn edmonds_karp<'graph, 'graph_ref, G: 'graph>(
     network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
-) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
+) -> EdmondsKarpOutput<'graph, G>
 where
     G: DirectedGraph,
     G::NodeId: IndexId,
@@ -158,7 +200,7 @@ fn inner_edmonds_karp<'graph, 'graph_ref, G: 'graph>(
     network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
-) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
+) -> EdmondsKarpOutput<'graph, G>
 where
     G: DirectedGraph,
     G::NodeId: IndexId,
@@ -198,7 +240,7 @@ where
         }
         max_flow = max_flow + path_flow;
     }
-    (max_flow, flows)
+    EdmondsKarpOutput { max_flow, flows }
 }
 
 /// Returns whether there is an augmenting path in the graph
