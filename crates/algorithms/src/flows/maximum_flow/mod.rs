@@ -23,19 +23,17 @@
 //! [max_flow_wikipedia]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 
 #[cfg(feature = "alloc")]
-mod dinics;
+pub mod dinics_mod;
 #[cfg(feature = "alloc")]
-mod edmonds_karp;
+pub mod edmonds_karp_mod;
 
-use std::ops::Sub;
+use std::ops::{Add, Sub};
 
 #[cfg(feature = "alloc")]
-pub use dinics::dinics;
+pub use dinics_mod::dinics;
 #[cfg(feature = "alloc")]
-pub use edmonds_karp::edmonds_karp;
+pub use edmonds_karp_mod::edmonds_karp;
 use petgraph_core::{edge::Edge, graph::DirectedGraph};
-
-use crate::traits::Measure;
 
 /// Returns the residual capacity of given edge.
 fn residual_capacity<'graph, 'graph_ref, G: 'graph>(
@@ -45,7 +43,7 @@ fn residual_capacity<'graph, 'graph_ref, G: 'graph>(
 ) -> G::EdgeData<'graph>
 where
     G: DirectedGraph,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>>,
 {
     if vertex == edge.source {
         // backward edge
@@ -69,5 +67,27 @@ where
         edge.source
     } else {
         panic!("Illegal endpoint {}", vertex);
+    }
+}
+
+/// Returns the adjusted residual flow for given edge and flow increase.
+fn adjusted_residual_flow<'graph, G: 'graph, D>(
+    edge: Edge<G::EdgeId, D, G::NodeId>,
+    target_vertex: G::NodeId,
+    flow: G::EdgeData<'graph>,
+    flow_increase: G::EdgeData<'graph>,
+) -> G::EdgeData<'graph>
+where
+    G: DirectedGraph,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Add<Output = G::EdgeData<'graph>>,
+{
+    if target_vertex == edge.source {
+        // backward edge
+        flow - flow_increase
+    } else if target_vertex == edge.target {
+        // forward edge
+        flow + flow_increase
+    } else {
+        panic!("Illegal endpoint {}", target_vertex);
     }
 }

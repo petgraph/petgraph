@@ -1,7 +1,7 @@
 use std::{fmt::Debug, ops::Add};
 
 /// Associated data that can be used for measures (such as length).
-pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Clone + Copy {}
+pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Copy {}
 
 impl<M> Measure for M where M: Debug + PartialOrd + Add<M, Output = M> + Default + Clone + Copy {}
 
