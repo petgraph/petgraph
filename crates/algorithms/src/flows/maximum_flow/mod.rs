@@ -27,42 +27,39 @@ mod dinics;
 #[cfg(feature = "alloc")]
 mod edmonds_karp;
 
-use std::ops::{Deref, Sub};
+use std::ops::Sub;
 
 #[cfg(feature = "alloc")]
 pub use dinics::dinics;
 #[cfg(feature = "alloc")]
 pub use edmonds_karp::edmonds_karp;
-use petgraph_core::{edge::EdgeRef, graph::DirectedGraph};
+use petgraph_core::{edge::Edge, graph::DirectedGraph};
 
 use crate::traits::Measure;
 
 /// Returns the residual capacity of given edge.
 fn residual_capacity<'graph, 'graph_ref, G: 'graph>(
-    edge: EdgeRef<'graph_ref, G>,
+    edge: Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>,
     vertex: G::NodeId,
     flow: G::EdgeData<'graph>,
 ) -> G::EdgeData<'graph>
 where
     G: DirectedGraph,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure,
-    // For Review: Not sure if Deref trait bound makes sense here, or if this should be handled
-    // differently
-    G::EdgeDataRef<'graph_ref>: Deref<Target = G::EdgeData<'graph>>,
 {
     if vertex == edge.source {
         // backward edge
         flow
     } else if vertex == edge.target {
         // forward edge
-        *edge.data - flow
+        edge.data - flow
     } else {
         panic!("Illegal endpoint {}", vertex);
     }
 }
 
 /// Gets the other endpoint of graph edge, if any, otherwise panics.
-fn other_endpoint<G>(edge: EdgeRef<'_, G>, vertex: G::NodeId) -> G::NodeId
+fn other_endpoint<G, D>(edge: Edge<G::EdgeId, D, G::NodeId>, vertex: G::NodeId) -> G::NodeId
 where
     G: DirectedGraph,
 {
