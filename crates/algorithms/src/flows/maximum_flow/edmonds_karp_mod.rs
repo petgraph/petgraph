@@ -13,12 +13,12 @@ use petgraph_core::{
 
 use crate::{
     alloc::collections::VecDeque,
-    flows::maximum_flow::{other_endpoint, residual_capacity},
+    flows::maximum_flow::{adjusted_residual_flow, other_endpoint, residual_capacity},
     traits::{Bounded, Measure, Zero},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum EdmondsKarpError {
+pub enum EdmondsKarpError {
     SourceNodeNotSet,
     DestinationNodeNotSet,
 }
@@ -34,7 +34,7 @@ impl Display for EdmondsKarpError {
 
 impl Error for EdmondsKarpError {}
 
-struct EdmondsKarp<'graph_ref, G: Graph> {
+pub struct EdmondsKarp<'graph_ref, G: Graph> {
     network: &'graph_ref G,
     source: Option<G::NodeId>,
     destination: Option<G::NodeId>,
@@ -151,11 +151,7 @@ where
         + Bounded,
     G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
 {
-    EdmondsKarp::new(network)
-        .with_source(source)
-        .with_destination(destination)
-        .run()
-        .expect("Source and destination nodes should be set")
+    inner_edmonds_karp(network, source, destination)
 }
 
 fn inner_edmonds_karp<'graph, 'graph_ref, G: 'graph>(
@@ -197,7 +193,7 @@ where
         let mut vertex = destination;
         while let Some(edge) = edge_to[vertex.as_usize()] {
             flows[edge.id.as_usize()] =
-                adjust_residual_flow::<G, _>(edge, vertex, flows[edge.id.as_usize()], path_flow);
+                adjusted_residual_flow::<G, _>(edge, vertex, flows[edge.id.as_usize()], path_flow);
             vertex = other_endpoint::<G, _>(edge, vertex);
         }
         max_flow = max_flow + path_flow;
@@ -244,25 +240,4 @@ where
         }
     }
     false
-}
-
-fn adjust_residual_flow<'graph, 'graph_ref, G, D>(
-    edge: Edge<G::EdgeId, D, G::NodeId>,
-    vertex: G::NodeId,
-    flow: G::EdgeData<'graph>,
-    delta: G::EdgeData<'graph>,
-) -> G::EdgeData<'graph>
-where
-    G: DirectedGraph,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Add<Output = G::EdgeData<'graph>>,
-{
-    if vertex == edge.source {
-        // backward edge
-        flow - delta
-    } else if vertex == edge.target {
-        // forward edge
-        flow + delta
-    } else {
-        panic!("Illegal endpoint {}", vertex);
-    }
 }
