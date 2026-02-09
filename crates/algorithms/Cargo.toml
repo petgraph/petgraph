@@ -19,4 +19,4 @@ paste = "1.0"
 
 [features]
 default = ["alloc"]
-alloc   = []
+alloc   = ["petgraph-core/alloc"]
