@@ -13,7 +13,7 @@ use crate::{
     node::{Node, NodeMut, NodeRef},
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, Ord, PartialOrd)]
 pub struct NodeId(usize);
 
 impl AddAssign<usize> for NodeId {
@@ -30,7 +30,7 @@ impl Display for NodeId {
 
 impl Id for NodeId {}
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, Ord, PartialOrd)]
 pub struct EdgeId(usize);
 
 impl AddAssign<usize> for EdgeId {

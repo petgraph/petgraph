@@ -1,4 +1,4 @@
-#![no_std]
+// #![no_std]
 #![allow(clippy::missing_errors_doc, reason = "bootstrap")]
 
 #[cfg(feature = "alloc")]
@@ -8,6 +8,8 @@ pub mod edge;
 pub mod graph;
 pub mod id;
 pub mod node;
+#[cfg(feature = "alloc")]
+pub mod storage;
 #[cfg(feature = "utils")]
 pub mod utils;
 

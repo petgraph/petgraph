@@ -27,7 +27,7 @@ defmac            = { version = "0.2.1", default-features = false }
 dot-parser        = { version = "0.5.1", default-features = false }
 dot-parser-macros = { version = "0.5.1", default-features = false }
 fixedbitset       = { version = "0.5.7", default-features = false }
-foldhash          = { version = "0.2.0", default-features = false }
+foldhash          = { version = "0.1.5", default-features = false }
 fxhash            = { version = "0.2.1", default-features = false }
 hashbrown         = { version = "^0.15.0", default-features = false }
 indexmap          = { version = "2.5.0", default-features = false }
