@@ -81,28 +81,29 @@ where
         .map(|i| graph.edges(nodeix(i)).map(|_| D::one()).sum::<D>())
         .collect();
 
+    let mut incoming_node = vec![vec![]; node_count];
+    for edge in graph.edge_references() {
+        incoming_node[graph.to_index(edge.target())].push(graph.to_index(edge.source()));
+    }
+    let mut next_ranks = vec![D::zero(); node_count];
+
+    let teleport = (D::one() - damping_factor) / nb;
+
     for _ in 0..nb_iter {
-        let pi = (0..node_count)
-            .enumerate()
-            .map(|(v, _)| {
-                ranks
-                    .iter()
-                    .enumerate()
-                    .map(|(w, r)| {
-                        let mut w_out_edges = graph.edges(nodeix(w));
-                        if w_out_edges.any(|e| e.target() == nodeix(v)) {
-                            damping_factor * *r / out_degrees[w]
-                        } else if out_degrees[w] == D::zero() {
-                            damping_factor * *r / nb // stochastic matrix condition
-                        } else {
-                            (D::one() - damping_factor) * *r / nb // random jumps
-                        }
-                    })
-                    .sum::<D>()
-            })
-            .collect::<Vec<D>>();
-        let sum = pi.iter().copied().sum::<D>();
-        ranks = pi.iter().map(|r| *r / sum).collect::<Vec<D>>();
+        let mut dangling_sum = D::zero();
+        for i in 0..node_count {
+            if out_degrees[i] == D::zero() {
+                dangling_sum = dangling_sum + ranks[i];
+            }
+        }
+        for (v_idx, next_rank) in next_ranks.iter_mut().enumerate() {
+            let incoming_sum = incoming_node[v_idx]
+                .iter()
+                .map(|&w| damping_factor * ranks[w] / out_degrees[w])
+                .sum::<D>();
+            *next_rank = teleport + (damping_factor * dangling_sum / nb) + incoming_sum;
+        }
+        core::mem::swap(&mut ranks, &mut next_ranks);
     }
     ranks
 }
