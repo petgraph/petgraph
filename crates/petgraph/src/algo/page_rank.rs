@@ -86,18 +86,24 @@ where
         incoming_node[graph.to_index(edge.target())].push(graph.to_index(edge.source()));
     }
     let mut next_ranks = vec![D::zero(); node_count];
-    
+
     let teleport = (D::one() - damping_factor) / nb;
 
     for _ in 0..nb_iter {
+        let mut dangling_sum = D::zero();
+        for i in 0..node_count {
+            if out_degrees[i] == D::zero() {
+                dangling_sum = dangling_sum + ranks[i];
+            }
+        }
         for (v_idx, next_rank) in next_ranks.iter_mut().enumerate() {
             let incoming_sum = incoming_node[v_idx]
                 .iter()
                 .map(|&w| damping_factor * ranks[w] / out_degrees[w])
                 .sum::<D>();
-            *next_rank = teleport + incoming_sum;
+            *next_rank = teleport + (damping_factor * dangling_sum / nb) + incoming_sum;
         }
-        std::mem::swap(&mut ranks, &mut next_ranks);
+        core::mem::swap(&mut ranks, &mut next_ranks);
     }
     ranks
 }
