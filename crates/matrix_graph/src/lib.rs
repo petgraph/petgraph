@@ -15,12 +15,7 @@ use std::fmt::Display;
 
 use foldhash::fast::RandomState;
 use indexmap::IndexSet;
-use petgraph_core::{
-    edge::{EdgeMut, EdgeRef},
-    graph::{Cardinality, DensityHint, DirectedGraph, Graph},
-    id::Id,
-    node::{NodeMut, NodeRef},
-};
+use petgraph_core::id::Id;
 
 use crate::private::Sealed;
 
@@ -44,11 +39,6 @@ impl Display for Undirected {
         write!(f, "Undirected")
     }
 }
-
-// The following types are used to control the max size of the adjacency matrix. Since the maximum
-// size of the matrix vector's is the square of the maximum number of nodes, the number of nodes
-// should be reasonably picked.
-type DefaultIx = u16;
 
 /// Node index type for the `MatrixGraph`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -76,6 +66,9 @@ pub struct EdgeId<Dir> {
     node2: NodeId,
     direction: PhantomData<Dir>,
 }
+
+pub use directed::DirEdgeId;
+pub use undirected::UndirEdgeId;
 
 impl<Dir> Display for EdgeId<Dir> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -792,58 +785,6 @@ impl<T, S> IndexMut<usize> for IdStorage<T, S> {
     }
 }
 
-#[derive(Debug, Clone)]
-struct IdStorageIterator<'a, T, S> {
-    storage: &'a IdStorage<T, S>,
-    current: Option<usize>,
-}
-
-impl<T, S> IdStorageIterator<'_, T, S> {
-    fn new(storage: &IdStorage<T, S>) -> IdStorageIterator<'_, T, S> {
-        IdStorageIterator {
-            storage,
-            current: None,
-        }
-    }
-}
-
-impl<'a, T, S: BuildHasher> Iterator for IdStorageIterator<'a, T, S> {
-    type Item = (usize, &'a T);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // initialize / advance
-        let current = {
-            if self.current.is_none() {
-                self.current = Some(0);
-                self.current.as_mut().unwrap()
-            } else {
-                let current = self.current.as_mut().unwrap();
-                *current += 1;
-                current
-            }
-        };
-
-        // skip removed ids
-        while self.storage.removed_ids.contains(current) && *current < self.storage.upper_bound {
-            *current += 1;
-        }
-
-        if *current < self.storage.upper_bound {
-            Some((
-                *current,
-                self.storage
-                    .elements
-                    .get(*current)
-                    .expect("Current index should be within upper bound")
-                    .as_ref()
-                    .expect("Current index should not be removed"),
-            ))
-        } else {
-            None
-        }
-    }
-}
-
 /// Create a new empty `MatrixGraph`.
 impl<N, E, S: BuildHasher + Default, Null: Nullable<Wrapped = E>, Dir> Default
     for MatrixGraph<N, E, S, Null, Dir>
@@ -872,6 +813,31 @@ impl<N, E> MatrixGraph<N, E, RandomState, Option<E>, Undirected> {
     /// a constructor that is generic in all the type parameters of `MatrixGraph`.
     pub fn new_undirected() -> Self {
         MatrixGraph::default()
+    }
+}
+
+/// This is a helper type for functions that return different types of iterators with the same item
+/// type. It is taken from the `itertools` crate, as it is the only type we need from the crate and
+/// thus we can avoid pulling in the entire dependency just for this.
+enum Either<L, R> {
+    /// A value of type `L`.
+    Left(L),
+    /// A value of type `R`.
+    Right(R),
+}
+
+impl<L, R> Iterator for Either<L, R>
+where
+    L: Iterator,
+    R: Iterator<Item = L::Item>,
+{
+    type Item = L::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Either::Left(l) => l.next(),
+            Either::Right(r) => r.next(),
+        }
     }
 }
 
