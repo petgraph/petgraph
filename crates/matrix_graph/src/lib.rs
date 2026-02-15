@@ -616,66 +616,6 @@ fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
     v.resize_with(size, T::default);
 }
 
-struct EdgeIterator<'a, It: Iterator<Item = &'a Null>, Null: Nullable + 'a> {
-    edges: It,
-    current_edge_tuple: (usize, usize),
-    node_capacity: usize,
-}
-
-impl<'a, It: Iterator<Item = &'a Null>, Null: Nullable> Iterator for EdgeIterator<'a, It, Null> {
-    type Item = (NodeId, NodeId, &'a Null::Wrapped);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(edge) = self.edges.next() {
-            let current_edge_tuple = self.current_edge_tuple;
-            self.current_edge_tuple.1 += 1;
-            if self.current_edge_tuple.1 == self.node_capacity {
-                self.current_edge_tuple.0 += 1;
-                self.current_edge_tuple.1 = 0;
-            }
-            if !edge.is_null() {
-                return Some((
-                    NodeId(current_edge_tuple.0),
-                    NodeId(current_edge_tuple.1),
-                    edge.as_ref().unwrap(),
-                ));
-            }
-        }
-        None
-    }
-}
-
-struct EdgeIteratorMut<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable + 'a> {
-    edges: It,
-    current_edge_tuple: (usize, usize),
-    node_capacity: usize,
-}
-
-impl<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable> Iterator
-    for EdgeIteratorMut<'a, It, Null>
-{
-    type Item = (NodeId, NodeId, &'a mut Null::Wrapped);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(edge) = self.edges.next() {
-            let current_edge_tuple = self.current_edge_tuple;
-            self.current_edge_tuple.1 += 1;
-            if self.current_edge_tuple.1 == self.node_capacity {
-                self.current_edge_tuple.0 += 1;
-                self.current_edge_tuple.1 = 0;
-            }
-            if !edge.is_null() {
-                return Some((
-                    NodeId(current_edge_tuple.0),
-                    NodeId(current_edge_tuple.1),
-                    edge.as_mut().unwrap(),
-                ));
-            }
-        }
-        None
-    }
-}
-
 #[derive(Debug, Clone)]
 struct IdStorage<T, S = RandomState> {
     elements: Vec<Option<T>>,
