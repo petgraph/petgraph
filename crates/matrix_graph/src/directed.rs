@@ -8,13 +8,13 @@ use petgraph_core::{
 };
 
 use crate::{
-    Directed, EdgeId, EdgeIterator, EdgeIteratorMut, Either, MatrixGraph, MatrixGraphExtras,
-    NodeId, Nullable, ensure_len, private::Sealed,
+    Directed, EdgeId, Either, MatrixGraph, MatrixGraphExtras, NodeId, Nullable, ensure_len,
+    private::Sealed,
 };
 
 pub type DirEdgeId = EdgeId<Directed>;
 
-impl EdgeId<Directed> {
+impl DirEdgeId {
     pub fn new_directed(source: NodeId, target: NodeId) -> Self {
         EdgeId {
             node1: source,
@@ -243,7 +243,7 @@ where
             node_capacity: self.node_capacity,
         }
         .map(|(source, target, data)| EdgeRef::<Self> {
-            id: EdgeId::<Directed>::new_directed(source, target),
+            id: DirEdgeId::new_directed(source, target),
             source,
             target,
             data,
@@ -258,7 +258,7 @@ where
             node_capacity: self.node_capacity,
         }
         .map(|(source, target, data)| EdgeMut::<Self> {
-            id: EdgeId::<Directed>::new_directed(source, target),
+            id: DirEdgeId::new_directed(source, target),
             source,
             target,
             data,
@@ -422,7 +422,6 @@ where
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         neighbor_iterator(&self.node_adjacencies, node, self.node_capacity)
-            .filter(move |(neighbor, _, _)| *neighbor != node)
             .map(|(neighbor, _, _)| neighbor)
     }
 
@@ -670,6 +669,70 @@ where
     #[inline]
     fn sinks(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.out_degree(node.id) == 0)
+    }
+}
+
+/// An iterator over the edges of a directed graph which yields the source and target of each edge
+/// along with a reference to the edge data.
+struct EdgeIterator<'a, It: Iterator<Item = &'a Null>, Null: Nullable + 'a> {
+    edges: It,
+    current_edge_tuple: (usize, usize),
+    node_capacity: usize,
+}
+
+impl<'a, It: Iterator<Item = &'a Null>, Null: Nullable> Iterator for EdgeIterator<'a, It, Null> {
+    type Item = (NodeId, NodeId, &'a Null::Wrapped);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(edge) = self.edges.next() {
+            let current_edge_tuple = self.current_edge_tuple;
+            self.current_edge_tuple.1 += 1;
+            if self.current_edge_tuple.1 == self.node_capacity {
+                self.current_edge_tuple.0 += 1;
+                self.current_edge_tuple.1 = 0;
+            }
+            if !edge.is_null() {
+                return Some((
+                    NodeId(current_edge_tuple.0),
+                    NodeId(current_edge_tuple.1),
+                    edge.as_ref().unwrap(),
+                ));
+            }
+        }
+        None
+    }
+}
+
+/// An iterator over the edges of a directed graph which yields the source and target of each edge
+/// along with a mutable reference to the edge data.
+struct EdgeIteratorMut<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable + 'a> {
+    edges: It,
+    current_edge_tuple: (usize, usize),
+    node_capacity: usize,
+}
+
+impl<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable> Iterator
+    for EdgeIteratorMut<'a, It, Null>
+{
+    type Item = (NodeId, NodeId, &'a mut Null::Wrapped);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(edge) = self.edges.next() {
+            let current_edge_tuple = self.current_edge_tuple;
+            self.current_edge_tuple.1 += 1;
+            if self.current_edge_tuple.1 == self.node_capacity {
+                self.current_edge_tuple.0 += 1;
+                self.current_edge_tuple.1 = 0;
+            }
+            if !edge.is_null() {
+                return Some((
+                    NodeId(current_edge_tuple.0),
+                    NodeId(current_edge_tuple.1),
+                    edge.as_mut().unwrap(),
+                ));
+            }
+        }
+        None
     }
 }
 
