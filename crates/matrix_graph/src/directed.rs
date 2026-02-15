@@ -1,17 +1,15 @@
 use core::{cmp, hash::BuildHasher, marker::PhantomData};
-use std::iter::Chain;
 
-use itertools::Either;
 use petgraph_core::{
-    edge::{Edge, EdgeMut, EdgeRef},
+    edge::{EdgeMut, EdgeRef},
     graph::{Cardinality, DensityHint, DirectedGraph, Graph},
     id::Id,
     node::{NodeMut, NodeRef},
 };
 
 use crate::{
-    Directed, EdgeId, EdgeIterator, EdgeIteratorMut, MatrixGraph, MatrixGraphExtras, NodeId,
-    Nullable, ensure_len, private::Sealed,
+    Directed, EdgeId, EdgeIterator, EdgeIteratorMut, Either, MatrixGraph, MatrixGraphExtras,
+    NodeId, Nullable, ensure_len, private::Sealed,
 };
 
 pub type DirEdgeId = EdgeId<Directed>;
@@ -216,12 +214,14 @@ where
 
     // Node Iteration
 
+    #[inline]
     fn nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes
             .iter()
             .map(|(id, data)| NodeRef::<Self> { id, data })
     }
 
+    #[inline]
     fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
         self.nodes
             .iter_mut()
@@ -231,12 +231,11 @@ where
     /// Nodes with degree 0 (no incident edges).
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
-        todo!();
         self.nodes().filter(|node| self.degree(node.id) == 0)
     }
 
     // Edge iteration
-
+    #[inline]
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         EdgeIterator {
             edges: self.node_adjacencies.iter(),
@@ -251,6 +250,7 @@ where
         })
     }
 
+    #[inline]
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         EdgeIteratorMut {
             edges: self.node_adjacencies.iter_mut(),
@@ -311,27 +311,30 @@ where
     // Degree
     #[inline]
     fn in_degree(&self, node: Self::NodeId) -> usize {
-        todo!();
-        self.incoming_edges(node).count()
+        incoming_neighbor_iterator(&self.node_adjacencies, node, self.node_capacity).count()
     }
 
     #[inline]
     fn out_degree(&self, node: Self::NodeId) -> usize {
-        todo!();
-        self.outgoing_edges(node).count()
+        outgoing_neighbor_iterator(&self.node_adjacencies, node, self.node_capacity).count()
     }
 
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
-        todo!();
         self.in_degree(node) + self.out_degree(node)
     }
 
     // Edges by direction
     #[inline]
     fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        todo!();
-        self.edges().filter(move |edge| edge.target == node)
+        incoming_neighbor_iterator(&self.node_adjacencies, node, self.node_capacity).map(
+            move |(source, data)| EdgeRef::<Self> {
+                id: EdgeId::new_directed(source, node),
+                source,
+                target: node,
+                data,
+            },
+        )
     }
 
     #[inline]
@@ -339,14 +342,26 @@ where
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        todo!();
-        self.edges_mut().filter(move |edge| edge.target == node)
+        incoming_neighbor_iterator_mut(&mut self.node_adjacencies, node, self.node_capacity).map(
+            move |(source, data)| EdgeMut::<Self> {
+                id: EdgeId::new_directed(source, node),
+                source,
+                target: node,
+                data,
+            },
+        )
     }
 
     #[inline]
     fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        todo!();
-        self.edges().filter(move |edge| edge.source == node)
+        outgoing_neighbor_iterator(&self.node_adjacencies, node, self.node_capacity).map(
+            move |(target, data)| EdgeRef::<Self> {
+                id: EdgeId::new_directed(node, target),
+                source: node,
+                target,
+                data,
+            },
+        )
     }
 
     #[inline]
@@ -354,15 +369,26 @@ where
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        todo!();
-        self.edges_mut().filter(move |edge| edge.source == node)
+        outgoing_neighbor_iterator_mut(&mut self.node_adjacencies, node, self.node_capacity).map(
+            move |(target, data)| EdgeMut::<Self> {
+                id: EdgeId::new_directed(node, target),
+                source: node,
+                target,
+                data,
+            },
+        )
     }
 
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        todo!();
-        self.edges()
-            .filter(move |edge| edge.source == node || edge.target == node)
+        neighbor_iterator(&self.node_adjacencies, node, self.node_capacity).map(
+            move |(source, target, data)| EdgeRef::<Self> {
+                id: EdgeId::new_directed(source, target),
+                source,
+                target,
+                data,
+            },
+        )
     }
 
     #[inline]
@@ -370,28 +396,34 @@ where
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        todo!();
-        self.edges_mut()
-            .filter(move |edge| edge.source == node || edge.target == node)
+        neighbor_iterator_mut(&mut self.node_adjacencies, node, self.node_capacity).map(
+            move |(source, target, data)| EdgeMut::<Self> {
+                id: EdgeId::new_directed(source, target),
+                source,
+                target,
+                data,
+            },
+        )
     }
 
     // Adjacency
     #[inline]
     fn predecessors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        todo!();
-        self.incoming_edges(node).map(|edge| edge.source)
+        incoming_neighbor_iterator(&self.node_adjacencies, node, self.node_capacity)
+            .map(|(source, _)| source)
     }
 
     #[inline]
     fn successors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        todo!();
-        self.outgoing_edges(node).map(|edge| edge.target)
+        outgoing_neighbor_iterator(&self.node_adjacencies, node, self.node_capacity)
+            .map(|(target, _)| target)
     }
 
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        todo!();
-        self.predecessors(node).chain(self.successors(node))
+        neighbor_iterator(&self.node_adjacencies, node, self.node_capacity)
+            .filter(move |(neighbor, _, _)| *neighbor != node)
+            .map(|(neighbor, _, _)| neighbor)
     }
 
     // Edges between nodes
@@ -628,18 +660,183 @@ where
     }
 
     // Sources and sinks
-
     /// Nodes with `in_degree = 0`.
     #[inline]
     fn sources(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
-        todo!();
         self.nodes().filter(|node| self.in_degree(node.id) == 0)
     }
 
     /// Nodes with `out_degree = 0`.
     #[inline]
     fn sinks(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
-        todo!();
         self.nodes().filter(|node| self.out_degree(node.id) == 0)
+    }
+}
+
+/// Returns an iterator over the neighbors of a node which correspond to incoming edges with the
+/// associated edge data.
+#[inline]
+fn incoming_neighbor_iterator<'a, Null: Nullable + 'a>(
+    node_adjacencies: &'a Vec<Null>,
+    target: NodeId,
+    num_nodes: usize,
+) -> impl Iterator<Item = (NodeId, &'a <Null as Nullable>::Wrapped)> {
+    let start_index = target.0;
+    node_adjacencies
+        .iter()
+        .skip(start_index)
+        .step_by(num_nodes)
+        .take(num_nodes)
+        .enumerate()
+        .filter_map(move |(i, adj)| adj.as_ref().map(|data| (NodeId(i), data)))
+}
+
+/// Returns an iterator over the neighbors of a node which correspond to incoming edges with the
+/// associated edge data.
+#[inline]
+fn incoming_neighbor_iterator_mut<'b, Null: Nullable + 'b>(
+    node_adjacencies: &'b mut Vec<Null>,
+    target: NodeId,
+    num_nodes: usize,
+) -> impl Iterator<Item = (NodeId, &'b mut <Null as Nullable>::Wrapped)> {
+    let start_index = target.0 * num_nodes;
+    node_adjacencies
+        .iter_mut()
+        .skip(start_index)
+        .step_by(num_nodes)
+        .take(num_nodes)
+        .enumerate()
+        .filter_map(move |(i, adj)| adj.as_mut().map(|data| (NodeId(i), data)))
+}
+
+/// Returns an iterator over the neighbors of a node which correspond to outgoing edges with the
+/// associated edge data.
+#[inline]
+fn outgoing_neighbor_iterator<'a, Null: Nullable + 'a>(
+    node_adjacencies: &'a Vec<Null>,
+    source: NodeId,
+    num_nodes: usize,
+) -> impl Iterator<Item = (NodeId, &'a <Null as Nullable>::Wrapped)> {
+    let start_index = source.0 * num_nodes;
+    node_adjacencies
+        .iter()
+        .skip(start_index)
+        .take(num_nodes)
+        .enumerate()
+        .filter_map(move |(i, adj)| adj.as_ref().map(|data| (NodeId(i), data)))
+}
+
+/// Returns an iterator over the neighbors of a node which correspond to outgoing edges with the
+/// associated edge data.
+#[inline]
+fn outgoing_neighbor_iterator_mut<'b, Null: Nullable + 'b>(
+    node_adjacencies: &'b mut Vec<Null>,
+    source: NodeId,
+    num_nodes: usize,
+) -> impl Iterator<Item = (NodeId, &'b mut <Null as Nullable>::Wrapped)> {
+    let start_index = source.0 * num_nodes;
+    node_adjacencies
+        .iter_mut()
+        .skip(start_index)
+        .take(num_nodes)
+        .enumerate()
+        .filter_map(move |(i, adj)| adj.as_mut().map(|data| (NodeId(i), data)))
+}
+
+/// Returns an iterator over the neighbors of a node with the edge data.
+///
+/// The item in the iterator is a tuple of the form `(source, target, edge_data)` where either
+/// `source` or `target` (or both) is the given node and the other is the neighbor.
+#[inline]
+fn neighbor_iterator<'a, Null: Nullable + 'a>(
+    node_adjacencies: &'a Vec<Null>,
+    node: NodeId,
+    num_nodes: usize,
+) -> impl Iterator<Item = (NodeId, NodeId, &'a <Null as Nullable>::Wrapped)> {
+    let mut slice = node_adjacencies.as_slice();
+    let first_iter = {
+        if node.0 == 0 {
+            None
+        } else {
+            let bound = (node.0 - 1) * num_nodes;
+            let (start, end) = slice.split_at(bound);
+            slice = end;
+            Some(
+                start
+                    .iter()
+                    .skip(node.0)
+                    .step_by(num_nodes)
+                    .enumerate()
+                    .filter_map(move |(i, adj)| adj.as_ref().map(|data| (NodeId(i), node, data))),
+            )
+        }
+    };
+    let (start, end) = slice.split_at(num_nodes);
+
+    let second_iter = start
+        .iter()
+        .enumerate()
+        .filter_map(move |(i, adj)| adj.as_ref().map(|data| (node, NodeId(i), data)));
+
+    let third_iter = end
+        .iter()
+        .skip(node.0)
+        .step_by(num_nodes)
+        .enumerate()
+        .filter_map(move |(i, adj)| adj.as_ref().map(|data| (NodeId(i), node, data)));
+
+    if let Some(first_iter) = first_iter {
+        Either::Left(first_iter.chain(second_iter).chain(third_iter))
+    } else {
+        Either::Right(second_iter.chain(third_iter))
+    }
+}
+
+/// Returns an iterator over the neighbors of a node with a mutable reference to the edge data.
+///
+/// The item in the iterator is a tuple of the form `(source, target, edge_data)` where either
+/// `source` or `target` (or both) is the given node and the other is the neighbor.
+#[inline]
+fn neighbor_iterator_mut<'a, Null: Nullable + 'a>(
+    node_adjacencies: &'a mut Vec<Null>,
+    node: NodeId,
+    num_nodes: usize,
+) -> impl Iterator<Item = (NodeId, NodeId, &'a mut <Null as Nullable>::Wrapped)> {
+    let mut slice = node_adjacencies.as_mut_slice();
+    let first_iter = {
+        if node.0 == 0 {
+            None
+        } else {
+            let bound = (node.0 - 1) * num_nodes;
+            let (start, end) = slice.split_at_mut(bound);
+            slice = end;
+            Some(
+                start
+                    .iter_mut()
+                    .skip(node.0)
+                    .step_by(num_nodes)
+                    .enumerate()
+                    .filter_map(move |(i, adj)| adj.as_mut().map(|data| (NodeId(i), node, data))),
+            )
+        }
+    };
+    let (start, end) = slice.split_at_mut(num_nodes);
+
+    let second_iter = start
+        .iter_mut()
+        .enumerate()
+        .filter_map(move |(i, adj)| adj.as_mut().map(|data| (node, NodeId(i), data)));
+
+    let third_iter = end
+        .iter_mut()
+        .skip(node.0)
+        .step_by(num_nodes)
+        .enumerate()
+        .filter_map(move |(i, adj)| adj.as_mut().map(|data| (NodeId(i), node, data)));
+
+    if let Some(first_iter) = first_iter {
+        Either::Left(first_iter.chain(second_iter).chain(third_iter))
+    } else {
+        Either::Right(second_iter.chain(third_iter))
     }
 }
