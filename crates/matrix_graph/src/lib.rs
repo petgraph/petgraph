@@ -4,13 +4,7 @@
 extern crate alloc;
 
 use alloc::{fmt, vec, vec::Vec};
-use core::{
-    cmp,
-    hash::BuildHasher,
-    marker::PhantomData,
-    mem,
-    ops::{Index, IndexMut},
-};
+use core::{cmp, hash::BuildHasher, marker::PhantomData, mem};
 use std::fmt::Display;
 
 use foldhash::fast::RandomState;
@@ -56,11 +50,24 @@ impl NodeId {
     const MAX: Self = NodeId(usize::MAX);
 }
 
+impl From<usize> for NodeId {
+    fn from(value: usize) -> Self {
+        NodeId(value)
+    }
+}
+
+impl From<u32> for NodeId {
+    fn from(value: u32) -> Self {
+        NodeId(value as usize)
+    }
+}
+
 /// Edge index type for `MatrixGraph`.
 ///
-/// Contains the two node indices. If the graph is directed, the node1 is the source and node2 is
-/// the target. If the graph is undirected, the order of the nodes is not relevant.
-#[derive(Debug, Clone, Copy, Hash)]
+/// Contains the two node indices. If the graph is directed, node1 is the source and node2 is
+/// the target. If the graph is undirected, the order of the nodes is irrelevant and traits such
+/// as `PartialEq` and `Hash` are implemented accordingly.
+#[derive(Debug, Clone, Copy)]
 pub struct EdgeId<Dir> {
     node1: NodeId,
     node2: NodeId,
@@ -222,28 +229,8 @@ not_zero_impls!(f32, f64);
 /// The error type for fallible `MatrixGraph` operations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MatrixError {
-    /// The `MatrixGraph` is at the maximum number of nodes for its index.
-    NodeIxLimit,
-
     /// The node with the specified index is missing from the graph.
     NodeMissed(usize),
-}
-
-impl core::error::Error for MatrixError {}
-
-impl fmt::Display for MatrixError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            MatrixError::NodeIxLimit => write!(
-                f,
-                "The MatrixGraph is at the maximum number of nodes for its index"
-            ),
-
-            MatrixError::NodeMissed(i) => {
-                write!(f, "The node with index {i} is missing from the graph.")
-            }
-        }
-    }
 }
 
 pub trait MatrixGraphExtras<N>: Sealed {
@@ -253,18 +240,18 @@ pub trait MatrixGraphExtras<N>: Sealed {
     fn remove_node(&mut self, a: NodeId) -> N;
 }
 
-/// `MatrixGraph<N, E, Ty, Null>` is a graph datastructure using an adjacency matrix
-/// representation.
+/// `MatrixGraph<N, E, S, Null, Ty>` is a graph using an adjacency matrix representation.
 ///
 /// `MatrixGraph` is parameterized over:
 ///
-/// - Associated data `N` for nodes and `E` for edges, called *data*. The associated data can be of
-///   arbitrary type.
-/// - Edge type `Ty` that determines whether the graph edges are directed or undirected.
+/// - Associated data `N` for nodes and `E` for edges. The associated data can be of arbitrary type.
+/// - Hasher type `S` that determines how node indices are hashed (defaults to `RandomState`). This
+///   is used to keep track of removed node indices and reuse them when adding new nodes, thus
+///   optimizing memory usage.
 /// - Nullable type `Null`, which denotes the edges' presence (defaults to `Option<E>`). You may
 ///   specify [`NotZero<E>`](struct.NotZero.html) if you want to use a sentinel value (such as 0) to
 ///   mark the absence of an edge.
-/// - Index type `Ix` that sets the maximum size for the graph (defaults to `DefaultIx`).
+/// - Edge type `Ty` determines whether the graph edges are directed or undirected.
 ///
 /// The graph uses **O(|V^2|)** space, with fast edge insertion & amortized node insertion, as well
 /// as efficient graph search and graph algorithms on dense graphs.
@@ -272,6 +259,11 @@ pub trait MatrixGraphExtras<N>: Sealed {
 /// This graph is backed by a flattened 2D array. For undirected graphs, only the lower triangular
 /// matrix is stored. Since the backing array stores edge data, it is recommended to box large
 /// edge data.
+///
+/// The graph uses [`NodeId`] and [`EdgeId`] as node and edge indices. Node indices are convertible
+/// to `usize`, however not guaranteed to be contiguous. When removing nodes, the graph will reuse
+/// the indices of removed nodes for new nodes filling in the gaps. For most use cases however, the
+/// graph is assumed to have dense node indices.
 #[derive(Clone)]
 pub struct MatrixGraph<
     N,
@@ -280,117 +272,44 @@ pub struct MatrixGraph<
     Null: Nullable<Wrapped = E> = Option<E>,
     Dir = Directed,
 > {
-    node_adjacencies: Vec<Null>,
+    /// Edge Data including presence information.
+    flattened_edge_data: Vec<Null>,
+    /// Node data and management of node indices.
+    node_data: IdStorage<N, S>,
+    /// The current edge capacity with respect to the number of nodes. This is used to determine
+    /// when the backing matrix needs to be resized.
     node_capacity: usize,
-    nodes: IdStorage<N, S>,
+    /// The number of edges currently in the graph.
     edge_count: usize,
     directionality: PhantomData<Dir>,
 }
 
-/// A `MatrixGraph` with directed edges.
+/// A [`MatrixGraph`] with directed edges.
 pub type DiMatrix<N, E, S = RandomState, Null = Option<E>> = MatrixGraph<N, E, S, Null, Directed>;
 
-/// A `MatrixGraph` with undirected edges.
+/// A [`MatrixGraph`] with undirected edges.
 pub type UnMatrix<N, E, S = RandomState, Null = Option<E>> = MatrixGraph<N, E, S, Null, Undirected>;
 
 impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Dir> MatrixGraph<N, E, S, Null, Dir> {
     /// Remove all nodes and edges.
     pub fn clear(&mut self) {
-        for edge in self.node_adjacencies.iter_mut() {
+        for edge in self.flattened_edge_data.iter_mut() {
             *edge = Default::default();
         }
-        self.nodes.clear();
+        self.node_data.clear();
         self.edge_count = 0;
-    }
-
-    /// Return the number of nodes (also called vertices) in the graph.
-    ///
-    /// Computes in **O(1)** time.
-    #[inline]
-    pub fn node_count(&self) -> usize {
-        self.nodes.len()
-    }
-
-    /// Return the number of edges in the graph.
-    ///
-    /// Computes in **O(1)** time.
-    #[inline]
-    pub fn edge_count(&self) -> usize {
-        self.edge_count
     }
 
     /// Add a node (also called vertex) with associated data to the graph.
     ///
     /// Computes in **O(1)** time.
     ///
-    /// Return the index of the new node.
+    /// Returns the index of the new node.
     ///
-    /// **Panics** if the MatrixGraph is at the maximum number of nodes for its index type.
+    /// **Panics** if the MatrixGraph contains usize::MAX nodes already.
     #[track_caller]
     pub fn add_node(&mut self, data: N) -> NodeId {
-        NodeId(self.nodes.add(data))
-    }
-
-    /// Try to add a node (also called vertex) with associated data to the graph.
-    ///
-    /// Computes in **O(1)** time.
-    ///
-    /// Return the index of the new node.
-    ///
-    /// Possible errors:
-    /// - [`MatrixError::NodeIxLimit`] if the `MatrixGraph` is at the maximum number of nodes for
-    ///   its index type.
-    pub fn try_add_node(&mut self, data: N) -> Result<NodeId, MatrixError> {
-        let node_idx = NodeId(self.nodes.len());
-        // TODO: Check whether the first condition here makes sense
-        if !(NodeId::MAX.0 == !0 || NodeId::MAX != node_idx) {
-            return Err(MatrixError::NodeIxLimit);
-        }
-        Ok(NodeId(self.nodes.add(data)))
-    }
-
-    /// Access the data for node `a`.
-    ///
-    /// Also available with indexing syntax: `&graph[a]`.
-    ///
-    /// **Panics** if the node doesn't exist.
-    #[track_caller]
-    pub fn node_weight(&self, a: NodeId) -> &N {
-        &self.nodes[a.0]
-    }
-
-    /// Try to access the weight for node `a`.
-    ///
-    /// Return `None` if the node doesn't exist.
-    pub fn get_node_weight(&self, a: NodeId) -> Option<&N> {
-        self.nodes.elements.get(a.0)?.as_ref()
-    }
-
-    /// Access the weight for node `a`, mutably.
-    ///
-    /// Also available with indexing syntax: `&mut graph[a]`.
-    ///
-    /// **Panics** if the node doesn't exist.
-    #[track_caller]
-    pub fn node_weight_mut(&mut self, a: NodeId) -> &mut N {
-        &mut self.nodes[a.0]
-    }
-
-    /// Try to access the weight for node `a`, mutably.
-    ///
-    /// Return `None` if the node doesn't exist.
-    pub fn get_node_weight_mut(&mut self, a: NodeId) -> Option<&mut N> {
-        self.nodes.elements.get_mut(a.0)?.as_mut()
-    }
-
-    fn assert_node_bounds(&self, a: NodeId, b: NodeId) -> Result<(), MatrixError> {
-        if a.0 >= self.node_capacity {
-            Err(MatrixError::NodeMissed(a.0))
-        } else if b.0 >= self.node_capacity {
-            Err(MatrixError::NodeMissed(b.0))
-        } else {
-            Ok(())
-        }
+        NodeId(self.node_data.add(data))
     }
 }
 
@@ -406,18 +325,19 @@ where
         Self::with_capacity_and_hasher(node_capacity, Default::default())
     }
 
-    /// Create a new `MatrixGraph` with estimated capacity for nodes and a provided hasher.
+    /// Create a new `MatrixGraph` which has the specified hasher and capacity sufficient
+    /// to hold the specified number of nodes (and any edges between them) without resizing.
     pub fn with_capacity_and_hasher(node_capacity: usize, hasher: S) -> Self {
         let mut m = Self {
-            node_adjacencies: vec![],
+            flattened_edge_data: vec![],
             node_capacity: 0,
-            nodes: IdStorage::with_capacity_and_hasher(node_capacity, hasher),
+            node_data: IdStorage::with_capacity_and_hasher(node_capacity, hasher),
             edge_count: 0,
             directionality: PhantomData,
         };
 
         assert!(
-            node_capacity <= usize::MAX,
+            node_capacity <= NodeId::MAX.0,
             "Node capacity cannot exceed maximum NodeId value"
         );
         if node_capacity > 0 {
@@ -435,7 +355,7 @@ where
         }
     }
 
-    /// Remove `a` from the graph.
+    /// Remove node `a` from the graph.
     ///
     /// Computes in **O(V)** time, due to the removal of edges with other nodes.
     ///
@@ -457,30 +377,11 @@ where
     pub fn update_edge(&mut self, a: NodeId, b: NodeId, weight: E) -> Option<E> {
         self.extend_capacity_for_edge(a, b);
         let p = self.to_edge_position_unchecked(a, b);
-        let old_weight = mem::replace(&mut self.node_adjacencies[p], Null::new(weight));
+        let old_weight = mem::replace(&mut self.flattened_edge_data[p], Null::new(weight));
         if old_weight.is_null() {
             self.edge_count += 1;
         }
         old_weight.into()
-    }
-
-    /// Try to update the edge from `a` to `b`, with its associated data `weight`.
-    ///
-    /// Return the previous data, if any.
-    ///
-    /// Computes in **O(1)** time, best case.
-    /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
-    ///
-    /// Possible errors:
-    /// - [`MatrixError::NodeMissed`] if any of the nodes don't exist.
-    pub fn try_update_edge(
-        &mut self,
-        a: NodeId,
-        b: NodeId,
-        weight: E,
-    ) -> Result<Option<E>, MatrixError> {
-        self.assert_node_bounds(a, b)?;
-        Ok(self.update_edge(a, b, weight))
     }
 
     /// Add an edge from `a` to `b` to the graph, with its associated
@@ -500,26 +401,6 @@ where
         assert!(old_edge_id.is_none());
     }
 
-    /// Add or update edge from `a` to `b` to the graph, with its associated
-    /// data `weight`.
-    ///
-    /// Return the previous data, if any.
-    ///
-    /// Computes in **O(1)** time, best case.
-    /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
-    ///
-    /// Possible errors:
-    /// - [`MatrixError::NodeMissed`] if any of the nodes don't exist.
-    pub fn add_or_update_edge(
-        &mut self,
-        a: NodeId,
-        b: NodeId,
-        weight: E,
-    ) -> Result<Option<E>, MatrixError> {
-        self.extend_capacity_for_edge(a, b);
-        self.try_update_edge(a, b, weight)
-    }
-
     /// Remove the edge from `a` to `b` to the graph.
     ///
     /// **Panics** if any of the nodes don't exist.
@@ -529,85 +410,10 @@ where
         let p = self
             .to_edge_position(a, b)
             .expect("No edge found between the nodes.");
-        let old_weight = mem::take(&mut self.node_adjacencies[p]).into().unwrap();
+        let old_weight = mem::take(&mut self.flattened_edge_data[p]).into().unwrap();
         let old_weight: Option<_> = old_weight.into();
         self.edge_count -= 1;
         old_weight.unwrap()
-    }
-
-    /// Try to remove the edge from `a` to `b`.
-    ///
-    /// Return old value if present.
-    pub fn try_remove_edge(&mut self, a: NodeId, b: NodeId) -> Option<E> {
-        let p = self.to_edge_position(a, b)?;
-        if let Some(entry) = self.node_adjacencies.get_mut(p) {
-            let old_weight = mem::take(entry).into()?;
-            self.edge_count -= 1;
-            return Some(old_weight);
-        }
-        None
-    }
-
-    /// Return `true` if there is an edge between `a` and `b`.
-    ///
-    /// If any of the nodes don't exist - returns `false`.
-    /// **Panics** if any of the nodes don't exist.
-    #[track_caller]
-    pub fn has_edge(&self, a: NodeId, b: NodeId) -> bool {
-        if let Some(p) = self.to_edge_position(a, b) {
-            return self
-                .node_adjacencies
-                .get(p)
-                .map(|e| !e.is_null())
-                .unwrap_or(false);
-        }
-        false
-    }
-
-    /// Access the weight for edge `e`.
-    ///
-    /// Also available with indexing syntax: `&graph[e]`.
-    ///
-    /// **Panics** if no edge exists between `a` and `b`.
-    #[track_caller]
-    pub fn edge_weight(&self, a: NodeId, b: NodeId) -> &E {
-        let p = self
-            .to_edge_position(a, b)
-            .expect("No edge found between the nodes.");
-        self.node_adjacencies[p]
-            .as_ref()
-            .expect("No edge found between the nodes.")
-    }
-
-    /// Access the weight for edge from `a` to `b`.
-    ///
-    /// Return `None` if the edge doesn't exist.
-    pub fn get_edge_weight(&self, a: NodeId, b: NodeId) -> Option<&E> {
-        let p = self.to_edge_position(a, b)?;
-        self.node_adjacencies.get(p)?.as_ref()
-    }
-
-    /// Access the weight for edge `e`, mutably.
-    ///
-    /// Also available with indexing syntax: `&mut graph[e]`.
-    ///
-    /// **Panics** if no edge exists between `a` and `b`.
-    #[track_caller]
-    pub fn edge_weight_mut(&mut self, a: NodeId, b: NodeId) -> &mut E {
-        let p = self
-            .to_edge_position(a, b)
-            .expect("No edge found between the nodes.");
-        self.node_adjacencies[p]
-            .as_mut()
-            .expect("No edge found between the nodes.")
-    }
-
-    /// Access the weight for edge from `a` to `b`, mutably.
-    ///
-    /// Return `None` if the edge doesn't exist.
-    pub fn get_edge_weight_mut(&mut self, a: NodeId, b: NodeId) -> Option<&mut E> {
-        let p = self.to_edge_position(a, b)?;
-        self.node_adjacencies.get_mut(p)?.as_mut()
     }
 }
 
@@ -618,8 +424,13 @@ fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
 
 #[derive(Debug, Clone)]
 struct IdStorage<T, S = RandomState> {
+    /// The elements of the storage. An element is `None` if and only if the corresponding node has
+    /// been removed.
     elements: Vec<Option<T>>,
+    /// The current highest index that has ever been used in the storage. Used to determine
+    /// the index of a new node.
     upper_bound: usize,
+    /// The set of removed node indices.
     removed_ids: IndexSet<usize, S>,
 }
 
@@ -711,21 +522,6 @@ impl<T, S: BuildHasher> IdStorage<T, S> {
     }
 }
 
-impl<T, S> Index<usize> for IdStorage<T, S> {
-    type Output = T;
-
-    fn index(&self, index: usize) -> &T {
-        self.elements[index].as_ref().unwrap()
-    }
-}
-
-impl<T, S> IndexMut<usize> for IdStorage<T, S> {
-    fn index_mut(&mut self, index: usize) -> &mut T {
-        self.elements[index].as_mut().unwrap()
-    }
-}
-
-/// Create a new empty `MatrixGraph`.
 impl<N, E, S: BuildHasher + Default, Null: Nullable<Wrapped = E>, Dir> Default
     for MatrixGraph<N, E, S, Null, Dir>
 where
@@ -783,6 +579,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use petgraph_core::graph::DirectedGraph;
+
     use super::*;
 
     #[test]
@@ -793,602 +591,29 @@ mod tests {
     }
 
     #[test]
-    fn test_default() {
-        let g = MatrixGraph::<i32, i32>::default();
-        assert_eq!(g.node_count(), 0);
-        assert_eq!(g.edge_count(), 0);
+    fn test_id_storage() {
+        let mut storage: IdStorage<char> =
+            IdStorage::with_capacity_and_hasher(0, Default::default());
+        let a = storage.add('a');
+        let b = storage.add('b');
+        let c = storage.add('c');
+
+        assert!(a < b && b < c);
+
+        assert_eq!(
+            storage.iter().map(|(id, _)| id.0).collect::<Vec<_>>(),
+            vec![a, b, c]
+        );
+
+        storage.remove(b);
+
+        let bb = storage.add('B');
+        assert_eq!(b, bb);
+
+        // list IDs
+        assert_eq!(
+            storage.iter().map(|(id, _)| id.0).collect::<Vec<_>>(),
+            vec![a, b, c]
+        );
     }
-
-    #[test]
-    fn test_with_capacity() {
-        let g = MatrixGraph::<i32, i32>::with_capacity(10);
-        assert_eq!(g.node_count(), 0);
-        assert_eq!(g.edge_count(), 0);
-    }
-
-    // #[test]
-    // fn test_node_indexing() {
-    //     let mut g: MatrixGraph<char, ()> = MatrixGraph::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     assert_eq!(g.node_count(), 2);
-    //     assert_eq!(g.edge_count(), 0);
-    //     assert_eq!(g[a], 'a');
-    //     assert_eq!(g[b], 'b');
-    // }
-
-    // #[test]
-    // fn test_remove_node() {
-    //     let mut g: MatrixGraph<char, ()> = MatrixGraph::new();
-    //     let a = g.add_node('a');
-
-    //     g.remove_node(a);
-
-    //     assert_eq!(g.node_count(), 0);
-    //     assert_eq!(g.edge_count(), 0);
-    // }
-
-    // #[test]
-    // fn test_add_edge() {
-    //     let mut g = MatrixGraph::<_, _>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     g.add_edge(a, b, ());
-    //     g.add_edge(b, c, ());
-    //     assert_eq!(g.node_count(), 3);
-    //     assert_eq!(g.edge_count(), 2);
-    // }
-
-    // #[test]
-    // /// Adds an edge that triggers a second extension of the matrix.
-    // /// From #425
-    // fn test_add_edge_with_extension() {
-    //     let mut g = DiMatrix::<u8, ()>::new();
-    //     let _n0 = g.add_node(0);
-    //     let n1 = g.add_node(1);
-    //     let n2 = g.add_node(2);
-    //     let n3 = g.add_node(3);
-    //     let n4 = g.add_node(4);
-    //     let _n5 = g.add_node(5);
-    //     g.add_edge(n2, n1, ());
-    //     g.add_edge(n2, n3, ());
-    //     g.add_edge(n2, n4, ());
-    //     assert_eq!(g.node_count(), 6);
-    //     assert_eq!(g.edge_count(), 3);
-    //     assert!(g.has_edge(n2, n1));
-    //     assert!(g.has_edge(n2, n3));
-    //     assert!(g.has_edge(n2, n4));
-    // }
-
-    // #[test]
-    // fn test_has_edge() {
-    //     let mut g = MatrixGraph::<_, _>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     g.add_edge(a, b, ());
-    //     g.add_edge(b, c, ());
-    //     assert!(g.has_edge(a, b));
-    //     assert!(g.has_edge(b, c));
-    //     assert!(!g.has_edge(a, c));
-    //     assert!(!g.has_edge(10.into(), 100.into())); // Non-existent nodes.
-    // }
-
-    // #[test]
-    // fn test_matrix_resize() {
-    //     let mut g = DiMatrix::<u8, ()>::with_capacity(3);
-    //     let n0 = g.add_node(0);
-    //     let n1 = g.add_node(1);
-    //     let n2 = g.add_node(2);
-    //     let n3 = g.add_node(3);
-    //     g.add_edge(n1, n0, ());
-    //     g.add_edge(n1, n1, ());
-    //     // Triggers a resize from capacity 3 to 4
-    //     g.add_edge(n2, n3, ());
-    //     assert_eq!(g.node_count(), 4);
-    //     assert_eq!(g.edge_count(), 3);
-    //     assert!(g.has_edge(n1, n0));
-    //     assert!(g.has_edge(n1, n1));
-    //     assert!(g.has_edge(n2, n3));
-    // }
-
-    // #[test]
-    // fn test_add_edge_with_weights() {
-    //     let mut g = MatrixGraph::<_, _>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     g.add_edge(a, b, true);
-    //     g.add_edge(b, c, false);
-    //     assert!(*g.edge_weight(a, b));
-    //     assert!(!*g.edge_weight(b, c));
-    // }
-
-    // #[test]
-    // fn test_add_edge_with_weights_undirected() {
-    //     let mut g = MatrixGraph::<_, _, fxhash::FxBuildHasher, Undirected>::new_undirected();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     let d = g.add_node('d');
-    //     g.add_edge(a, b, "ab");
-    //     g.add_edge(a, a, "aa");
-    //     g.add_edge(b, c, "bc");
-    //     g.add_edge(d, d, "dd");
-    //     assert_eq!(*g.edge_weight(a, b), "ab");
-    //     assert_eq!(*g.edge_weight(b, c), "bc");
-    // }
-
-    // /// Shorthand for `.collect::<Vec<_>>()`
-    // trait IntoVec<T> {
-    //     fn into_vec(self) -> Vec<T>;
-    // }
-
-    // impl<It, T> IntoVec<T> for It
-    // where
-    //     It: Iterator<Item = T>,
-    // {
-    //     fn into_vec(self) -> Vec<T> {
-    //         self.collect()
-    //     }
-    // }
-
-    // #[test]
-    // fn test_clear() {
-    //     let mut g = MatrixGraph::<_, _>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     assert_eq!(g.node_count(), 3);
-
-    //     g.add_edge(a, b, ());
-    //     g.add_edge(b, c, ());
-    //     g.add_edge(c, a, ());
-    //     assert_eq!(g.edge_count(), 3);
-
-    //     g.clear();
-
-    //     assert_eq!(g.node_count(), 0);
-    //     assert_eq!(g.edge_count(), 0);
-
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     assert_eq!(g.node_count(), 3);
-    //     assert_eq!(g.edge_count(), 0);
-
-    //     assert_eq!(g.neighbors_directed(a, Incoming).into_vec(), vec![]);
-    //     assert_eq!(g.neighbors_directed(b, Incoming).into_vec(), vec![]);
-    //     assert_eq!(g.neighbors_directed(c, Incoming).into_vec(), vec![]);
-
-    //     assert_eq!(g.neighbors_directed(a, Outgoing).into_vec(), vec![]);
-    //     assert_eq!(g.neighbors_directed(b, Outgoing).into_vec(), vec![]);
-    //     assert_eq!(g.neighbors_directed(c, Outgoing).into_vec(), vec![]);
-    // }
-
-    // #[test]
-    // fn test_clear_undirected() {
-    //     let mut g = MatrixGraph::<_, _, fxhash::FxBuildHasher, Undirected>::new_undirected();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     assert_eq!(g.node_count(), 3);
-
-    //     g.add_edge(a, b, ());
-    //     g.add_edge(b, c, ());
-    //     g.add_edge(c, a, ());
-    //     assert_eq!(g.edge_count(), 3);
-
-    //     g.clear();
-
-    //     assert_eq!(g.node_count(), 0);
-    //     assert_eq!(g.edge_count(), 0);
-
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     assert_eq!(g.node_count(), 3);
-    //     assert_eq!(g.edge_count(), 0);
-
-    //     assert_eq!(g.neighbors(a).into_vec(), vec![]);
-    //     assert_eq!(g.neighbors(b).into_vec(), vec![]);
-    //     assert_eq!(g.neighbors(c).into_vec(), vec![]);
-    // }
-
-    // /// Helper trait for always sorting before testing.
-    // trait IntoSortedVec<T> {
-    //     fn into_sorted_vec(self) -> Vec<T>;
-    // }
-
-    // impl<It, T> IntoSortedVec<T> for It
-    // where
-    //     It: Iterator<Item = T>,
-    //     T: Ord,
-    // {
-    //     fn into_sorted_vec(self) -> Vec<T> {
-    //         let mut v: Vec<T> = self.collect();
-    //         v.sort();
-    //         v
-    //     }
-    // }
-
-    // /// Helper macro for always sorting before testing.
-    // macro_rules! sorted_vec {
-    //     ($($x:expr),*) => {
-    //         {
-    //             let mut v = vec![$($x,)*];
-    //             v.sort();
-    //             v
-    //         }
-    //     }
-    // }
-
-    // #[test]
-    // fn test_neighbors() {
-    //     let mut g = MatrixGraph::<_, _>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     g.add_edge(a, b, ());
-    //     g.add_edge(a, c, ());
-
-    //     let a_neighbors = g.neighbors(a).into_sorted_vec();
-    //     assert_eq!(a_neighbors, sorted_vec![b, c]);
-
-    //     let b_neighbors = g.neighbors(b).into_sorted_vec();
-    //     assert_eq!(b_neighbors, vec![]);
-
-    //     let c_neighbors = g.neighbors(c).into_sorted_vec();
-    //     assert_eq!(c_neighbors, vec![]);
-    // }
-
-    // #[test]
-    // fn test_neighbors_undirected() {
-    //     let mut g = MatrixGraph::<_, _, fxhash::FxBuildHasher, Undirected>::new_undirected();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     g.add_edge(a, b, ());
-    //     g.add_edge(a, c, ());
-
-    //     let a_neighbors = g.neighbors(a).into_sorted_vec();
-    //     assert_eq!(a_neighbors, sorted_vec![b, c]);
-
-    //     let b_neighbors = g.neighbors(b).into_sorted_vec();
-    //     assert_eq!(b_neighbors, sorted_vec![a]);
-
-    //     let c_neighbors = g.neighbors(c).into_sorted_vec();
-    //     assert_eq!(c_neighbors, sorted_vec![a]);
-    // }
-
-    // #[test]
-    // fn test_remove_node_and_edges() {
-    //     let mut g = MatrixGraph::<_, _>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     g.add_edge(a, b, ());
-    //     g.add_edge(b, c, ());
-    //     g.add_edge(c, a, ());
-
-    //     // removing b should break the `a -> b` and `b -> c` edges
-    //     g.remove_node(b);
-
-    //     assert_eq!(g.node_count(), 2);
-
-    //     let a_neighbors = g.neighbors(a).into_sorted_vec();
-    //     assert_eq!(a_neighbors, vec![]);
-
-    //     let c_neighbors = g.neighbors(c).into_sorted_vec();
-    //     assert_eq!(c_neighbors, vec![a]);
-    // }
-
-    // #[test]
-    // fn test_remove_node_and_edges_undirected() {
-    //     let mut g = UnMatrix::<_, _>::new_undirected();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     g.add_edge(a, b, ());
-    //     g.add_edge(b, c, ());
-    //     g.add_edge(c, a, ());
-
-    //     // removing a should break the `a - b` and `a - c` edges
-    //     g.remove_node(a);
-
-    //     assert_eq!(g.node_count(), 2);
-
-    //     let b_neighbors = g.neighbors(b).into_sorted_vec();
-    //     assert_eq!(b_neighbors, vec![c]);
-
-    //     let c_neighbors = g.neighbors(c).into_sorted_vec();
-    //     assert_eq!(c_neighbors, vec![b]);
-    // }
-
-    // #[test]
-    // fn test_node_identifiers() {
-    //     let mut g = MatrixGraph::<_, _>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     let d = g.add_node('c');
-    //     g.add_edge(a, b, ());
-    //     g.add_edge(a, c, ());
-
-    //     let node_ids = g.node_identifiers().into_sorted_vec();
-    //     assert_eq!(node_ids, sorted_vec![a, b, c, d]);
-    // }
-
-    // #[test]
-    // fn test_edges_directed() {
-    //     let g: MatrixGraph<char, bool> = MatrixGraph::from_edges([
-    //         (0, 5),
-    //         (0, 2),
-    //         (0, 3),
-    //         (0, 1),
-    //         (1, 3),
-    //         (2, 3),
-    //         (2, 4),
-    //         (4, 0),
-    //         (6, 6),
-    //     ]);
-
-    //     assert_eq!(g.edges_directed(node_index(0), Outgoing).count(), 4);
-    //     assert_eq!(g.edges_directed(node_index(1), Outgoing).count(), 1);
-    //     assert_eq!(g.edges_directed(node_index(2), Outgoing).count(), 2);
-    //     assert_eq!(g.edges_directed(node_index(3), Outgoing).count(), 0);
-    //     assert_eq!(g.edges_directed(node_index(4), Outgoing).count(), 1);
-    //     assert_eq!(g.edges_directed(node_index(5), Outgoing).count(), 0);
-    //     assert_eq!(g.edges_directed(node_index(6), Outgoing).count(), 1);
-
-    //     assert_eq!(g.edges_directed(node_index(0), Incoming).count(), 1);
-    //     assert_eq!(g.edges_directed(node_index(1), Incoming).count(), 1);
-    //     assert_eq!(g.edges_directed(node_index(2), Incoming).count(), 1);
-    //     assert_eq!(g.edges_directed(node_index(3), Incoming).count(), 3);
-    //     assert_eq!(g.edges_directed(node_index(4), Incoming).count(), 1);
-    //     assert_eq!(g.edges_directed(node_index(5), Incoming).count(), 1);
-    //     assert_eq!(g.edges_directed(node_index(6), Incoming).count(), 1);
-    // }
-
-    // #[test]
-    // fn test_edges_undirected() {
-    //     let g: UnMatrix<char, bool> = UnMatrix::from_edges([
-    //         (0, 5),
-    //         (0, 2),
-    //         (0, 3),
-    //         (0, 1),
-    //         (1, 3),
-    //         (2, 3),
-    //         (2, 4),
-    //         (4, 0),
-    //         (6, 6),
-    //     ]);
-
-    //     assert_eq!(g.edges(node_index(0)).count(), 5);
-    //     assert_eq!(g.edges(node_index(1)).count(), 2);
-    //     assert_eq!(g.edges(node_index(2)).count(), 3);
-    //     assert_eq!(g.edges(node_index(3)).count(), 3);
-    //     assert_eq!(g.edges(node_index(4)).count(), 2);
-    //     assert_eq!(g.edges(node_index(5)).count(), 1);
-    //     assert_eq!(g.edges(node_index(6)).count(), 1);
-    // }
-
-    // #[test]
-    // fn test_edges_of_absent_node_is_empty_iterator() {
-    //     let g: MatrixGraph<char, bool> = MatrixGraph::new();
-    //     assert_eq!(g.edges(node_index(0)).count(), 0);
-    // }
-
-    // #[test]
-    // fn test_neighbors_of_absent_node_is_empty_iterator() {
-    //     let g: MatrixGraph<char, bool> = MatrixGraph::new();
-    //     assert_eq!(g.neighbors(node_index(0)).count(), 0);
-    // }
-
-    // #[test]
-    // fn test_edge_references() {
-    //     let g: MatrixGraph<char, bool> = MatrixGraph::from_edges([
-    //         (0, 5),
-    //         (0, 2),
-    //         (0, 3),
-    //         (0, 1),
-    //         (1, 3),
-    //         (2, 3),
-    //         (2, 4),
-    //         (4, 0),
-    //         (6, 6),
-    //     ]);
-
-    //     assert_eq!(g.edge_references().count(), 9);
-    // }
-
-    // #[test]
-    // fn test_edge_references_undirected() {
-    //     let g: UnMatrix<char, bool> = UnMatrix::from_edges([
-    //         (0, 5),
-    //         (0, 2),
-    //         (0, 3),
-    //         (0, 1),
-    //         (1, 3),
-    //         (2, 3),
-    //         (2, 4),
-    //         (4, 0),
-    //         (6, 6),
-    //     ]);
-
-    //     assert_eq!(g.edge_references().count(), 9);
-    // }
-
-    // #[test]
-    // fn test_id_storage() {
-    //     let mut storage: IdStorage<char> =
-    //         IdStorage::with_capacity_and_hasher(0, Default::default());
-    //     let a = storage.add('a');
-    //     let b = storage.add('b');
-    //     let c = storage.add('c');
-
-    //     assert!(a < b && b < c);
-
-    //     // list IDs
-    //     assert_eq!(storage.iter_ids().into_vec(), vec![a, b, c]);
-
-    //     storage.remove(b);
-
-    //     // re-use of IDs
-    //     let bb = storage.add('B');
-    //     assert_eq!(b, bb);
-
-    //     // list IDs
-    //     assert_eq!(storage.iter_ids().into_vec(), vec![a, b, c]);
-    // }
-
-    // #[test]
-    // fn test_not_zero() {
-    //     let mut g: MatrixGraph<(), i32, fxhash::FxBuildHasher, Directed, NotZero<i32>> =
-    //         MatrixGraph::default();
-
-    //     let a = g.add_node(());
-    //     let b = g.add_node(());
-
-    //     assert!(!g.has_edge(a, b));
-    //     assert_eq!(g.edge_count(), 0);
-
-    //     g.add_edge(a, b, 12);
-
-    //     assert!(g.has_edge(a, b));
-    //     assert_eq!(g.edge_count(), 1);
-    //     assert_eq!(g.edge_weight(a, b), &12);
-
-    //     g.remove_edge(a, b);
-
-    //     assert!(!g.has_edge(a, b));
-    //     assert_eq!(g.edge_count(), 0);
-    // }
-
-    // #[test]
-    // #[should_panic]
-    // fn test_not_zero_asserted() {
-    //     let mut g: MatrixGraph<(), i32, fxhash::FxBuildHasher, Directed, NotZero<i32>> =
-    //         MatrixGraph::default();
-
-    //     let a = g.add_node(());
-    //     let b = g.add_node(());
-
-    //     g.add_edge(a, b, 0); // this should trigger an assertion
-    // }
-
-    // #[test]
-    // fn test_not_zero_float() {
-    //     let mut g: MatrixGraph<(), f32, fxhash::FxBuildHasher, Directed, NotZero<f32>> =
-    //         MatrixGraph::default();
-
-    //     let a = g.add_node(());
-    //     let b = g.add_node(());
-
-    //     assert!(!g.has_edge(a, b));
-    //     assert_eq!(g.edge_count(), 0);
-
-    //     g.add_edge(a, b, 12.);
-
-    //     assert!(g.has_edge(a, b));
-    //     assert_eq!(g.edge_count(), 1);
-    //     assert_eq!(g.edge_weight(a, b), &12.);
-
-    //     g.remove_edge(a, b);
-
-    //     assert!(!g.has_edge(a, b));
-    //     assert_eq!(g.edge_count(), 0);
-    // }
-    // #[test]
-    // // From https://github.com/petgraph/petgraph/issues/523
-    // fn test_tarjan_scc_with_removed_node() {
-    //     let mut g: MatrixGraph<(), ()> = MatrixGraph::new();
-
-    //     g.add_node(());
-    //     let b = g.add_node(());
-    //     g.add_node(());
-
-    //     g.remove_node(b);
-
-    //     assert_eq!(
-    //         crate::algo::tarjan_scc(&g),
-    //         [[node_index(0)], [node_index(2)]]
-    //     );
-    // }
-
-    // #[test]
-    // // From https://github.com/petgraph/petgraph/issues/523
-    // fn test_kosaraju_scc_with_removed_node() {
-    //     let mut g: MatrixGraph<(), ()> = MatrixGraph::new();
-
-    //     g.add_node(());
-    //     let b = g.add_node(());
-    //     g.add_node(());
-
-    //     g.remove_node(b);
-
-    //     assert_eq!(
-    //         crate::algo::kosaraju_scc(&g),
-    //         [[node_index(2)], [node_index(0)]]
-    //     );
-    // }
-
-    // #[test]
-    // fn test_try_update_edge() {
-    //     let mut g = MatrixGraph::<char, u32>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     g.add_edge(a, b, 1);
-    //     g.add_edge(b, c, 2);
-    //     assert_eq!(g.try_update_edge(a, b, 10), Ok(Some(1)));
-    //     assert_eq!(g.try_update_edge(a, b, 100), Ok(Some(10)));
-    //     assert_eq!(g.try_update_edge(a, c, 33), Ok(None));
-    //     assert_eq!(g.try_update_edge(a, c, 66), Ok(Some(33)));
-    //     assert_eq!(
-    //         g.try_update_edge(10.into(), 20.into(), 5),
-    //         Err(MatrixError::NodeMissed(10))
-    //     );
-    // }
-
-    // #[test]
-    // fn test_add_or_update_edge() {
-    //     let mut g = MatrixGraph::<char, u32>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     assert_eq!(g.add_or_update_edge(a, b, 1), Ok(None));
-    //     assert_eq!(g.add_or_update_edge(b, c, 2), Ok(None));
-    //     assert_eq!(g.add_or_update_edge(a, b, 10), Ok(Some(1)));
-    //     assert_eq!(g.add_or_update_edge(a, c, 33), Ok(None));
-    //     assert_eq!(g.add_or_update_edge(10.into(), 20.into(), 5), Ok(None));
-    //     assert!(g.has_edge(10.into(), 20.into()));
-    //     assert!(g.node_capacity >= 20);
-    // }
-
-    // #[test]
-    // fn test_remove_edge() {
-    //     let mut g = MatrixGraph::<char, u32>::new();
-    //     let a = g.add_node('a');
-    //     let b = g.add_node('b');
-    //     let c = g.add_node('c');
-    //     g.add_edge(a, b, 1);
-    //     g.add_edge(b, c, 2);
-    //     assert_eq!(g.try_remove_edge(a, b), Some(1));
-    //     assert_eq!(g.try_remove_edge(a, b), None);
-    //     assert_eq!(g.try_remove_edge(a, c), None);
-    // }
-
-    // #[test]
-    // fn test_try_add_node() {
-    //     let mut graph =
-    //         MatrixGraph::<(), u32, fxhash::FxBuildHasher, Directed, Option<u32>,
-    // u8>::with_capacity(             255,
-    //         );
-    //     for i in 0..255 {
-    //         assert_eq!(graph.try_add_node(()), Ok(i.into()));
-    //     }
-    //     assert_eq!(graph.try_add_node(()), Err(MatrixError::NodeIxLimit));
-    // }
 }
