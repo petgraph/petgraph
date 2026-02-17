@@ -8,6 +8,7 @@ use core::{
     ops::{Index, IndexMut, Range},
     slice,
 };
+use std::collections::TryReserveError;
 
 use fixedbitset::FixedBitSet;
 
@@ -1363,7 +1364,7 @@ where
     /// Reserves capacity for at least `additional` more nodes to be inserted in
     /// the graph. Graph may reserve more space to avoid frequent reallocations.
     ///
-    /// **Panics** if the new capacity overflows `usize`.
+    /// **Panics** if the new capacity overflows `isize`.
     #[track_caller]
     pub fn reserve_nodes(&mut self, additional: usize) {
         self.nodes.reserve(additional);
@@ -1372,10 +1373,22 @@ where
     /// Reserves capacity for at least `additional` more edges to be inserted in
     /// the graph. Graph may reserve more space to avoid frequent reallocations.
     ///
-    /// **Panics** if the new capacity overflows `usize`.
+    /// **Panics** if the new capacity overflows `isize`.
     #[track_caller]
     pub fn reserve_edges(&mut self, additional: usize) {
         self.edges.reserve(additional);
+    }
+
+    /// Try to reserves capacity for at least `additional` more nodes to be inserted in
+    /// the graph. Graph may reserve more space to avoid frequent reallocations.
+    pub fn try_reserve_nodes(&mut self, additional: usize) -> Result<(), TryReserveError> {
+        self.nodes.try_reserve(additional)
+    }
+
+    /// Try to reserves capacity for at least `additional` more edges to be inserted in
+    /// the graph. Graph may reserve more space to avoid frequent reallocations.
+    pub fn try_reserve_edges(&mut self, additional: usize) -> Result<(), TryReserveError> {
+        self.edges.try_reserve(additional)
     }
 
     /// Reserves the minimum capacity for exactly `additional` more nodes to be
@@ -1384,22 +1397,38 @@ where
     ///
     /// Prefer `reserve_nodes` if future insertions are expected.
     ///
-    /// **Panics** if the new capacity overflows `usize`.
+    /// **Panics** if the new capacity overflows `isize`.
     #[track_caller]
     pub fn reserve_exact_nodes(&mut self, additional: usize) {
         self.nodes.reserve_exact(additional);
     }
 
     /// Reserves the minimum capacity for exactly `additional` more edges to be
-    /// inserted in the graph.
-    /// Does nothing if the capacity is already sufficient.
+    /// inserted in the graph. Does nothing if the capacity is already sufficient.
     ///
     /// Prefer `reserve_edges` if future insertions are expected.
     ///
-    /// **Panics** if the new capacity overflows `usize`.
+    /// **Panics** if the new capacity overflows `isize`.
     #[track_caller]
     pub fn reserve_exact_edges(&mut self, additional: usize) {
         self.edges.reserve_exact(additional);
+    }
+
+    /// Try to reserves the minimum capacity for exactly `additional` more nodes to be
+    /// inserted in the graph. Does nothing if the capacity is already
+    /// sufficient.
+    ///
+    /// Prefer `try_reserve_nodes` if future insertions are expected.
+    pub fn try_reserve_exact_nodes(&mut self, additional: usize) -> Result<(), TryReserveError> {
+        self.nodes.try_reserve_exact(additional)
+    }
+
+    /// Try to reserves the minimum capacity for exactly `additional` more edges to be
+    /// inserted in the graph. Does nothing if the capacity is already sufficient.
+    ///
+    /// Prefer `try_reserve_edges` if future insertions are expected.
+    pub fn try_reserve_exact_edges(&mut self, additional: usize) -> Result<(), TryReserveError> {
+        self.edges.try_reserve_exact(additional)
     }
 
     /// Shrinks the capacity of the underlying nodes collection as much as possible.
