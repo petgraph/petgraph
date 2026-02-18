@@ -14,10 +14,11 @@ use crate::{
 pub type UndirEdgeId = EdgeId<Undirected>;
 
 impl UndirEdgeId {
-    pub fn new_undirected(node1: NodeId, node2: NodeId) -> Self {
-        EdgeId {
-            node1,
-            node2,
+    #[must_use]
+    pub const fn new_undirected(node1: NodeId, node2: NodeId) -> Self {
+        Self {
+            node_a: node1,
+            node_b: node2,
             direction: PhantomData,
         }
     }
@@ -25,8 +26,8 @@ impl UndirEdgeId {
 
 impl PartialEq for UndirEdgeId {
     fn eq(&self, other: &Self) -> bool {
-        (self.node1 == other.node1 && self.node2 == other.node2)
-            || (self.node1 == other.node2 && self.node2 == other.node1)
+        (self.node_a == other.node_a && self.node_b == other.node_b)
+            || (self.node_a == other.node_b && self.node_b == other.node_a)
     }
 }
 
@@ -34,21 +35,21 @@ impl Eq for UndirEdgeId {}
 
 impl PartialOrd for UndirEdgeId {
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        let self_min = cmp::min(self.node1, self.node2);
-        let self_max = cmp::max(self.node1, self.node2);
-        let other_min = cmp::min(other.node1, other.node2);
-        let other_max = cmp::max(other.node1, other.node2);
-
-        match self_min.partial_cmp(&other_min) {
-            Some(cmp::Ordering::Equal) => self_max.partial_cmp(&other_max),
-            non_eq => non_eq,
-        }
+        Some(self.cmp(other))
     }
 }
 
 impl Ord for UndirEdgeId {
     fn cmp(&self, other: &Self) -> cmp::Ordering {
-        self.partial_cmp(other).unwrap()
+        let self_min = cmp::min(self.node_a, self.node_b);
+        let self_max = cmp::max(self.node_a, self.node_b);
+        let other_min = cmp::min(other.node_a, other.node_b);
+        let other_max = cmp::max(other.node_a, other.node_b);
+
+        match self_min.cmp(&other_min) {
+            cmp::Ordering::Equal => self_max.cmp(&other_max),
+            non_eq => non_eq,
+        }
     }
 }
 
@@ -60,17 +61,17 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N>
     for MatrixGraph<N, E, S, Null, Undirected>
 {
     #[inline]
-    fn to_edge_position(&self, a: NodeId, b: NodeId) -> Option<usize> {
-        if a.0 >= self.node_capacity || b.0 >= self.node_capacity {
+    fn to_edge_position(&self, node_a: NodeId, node_b: NodeId) -> Option<usize> {
+        if node_a.0 >= self.node_capacity || node_b.0 >= self.node_capacity {
             None
         } else {
-            Some(self.to_edge_position_unchecked(a, b))
+            Some(self.to_edge_position_unchecked(node_a, node_b))
         }
     }
 
     #[inline]
-    fn to_edge_position_unchecked(&self, a: NodeId, b: NodeId) -> usize {
-        to_lower_triangular_matrix_position(a.0, b.0)
+    fn to_edge_position_unchecked(&self, node_a: NodeId, node_b: NodeId) -> usize {
+        to_lower_triangular_matrix_position(node_a.0, node_b.0)
     }
 
     #[inline]
@@ -86,20 +87,20 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N>
     }
 
     #[inline]
-    fn remove_node(&mut self, a: NodeId) -> N {
+    fn remove_node(&mut self, node: NodeId) -> N {
         for (id, _) in self.node_data.iter() {
-            let position = self.to_edge_position(a, id);
+            let position = self.to_edge_position(node, NodeId(id));
             if let Some(pos) = position {
                 self.flattened_edge_data[pos] = Default::default();
             }
         }
 
-        self.node_data.remove(a.0)
+        self.node_data.remove(node.0)
     }
 }
 
 #[inline]
-fn to_lower_triangular_matrix_position(row: usize, column: usize) -> usize {
+const fn to_lower_triangular_matrix_position(row: usize, column: usize) -> usize {
     let (row, column) = if row > column {
         (row, column)
     } else {
@@ -153,7 +154,7 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> Graph
 impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> UndirectedGraph
     for MatrixGraph<N, E, S, Null, Undirected>
 where
-    MatrixGraph<N, E, S, Null, Undirected>: MatrixGraphExtras<N>,
+    Self: MatrixGraphExtras<N>,
 {
     #[inline]
     fn density_hint(&self) -> DensityHint {
@@ -183,16 +184,18 @@ where
 
     #[inline]
     fn nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
-        self.node_data
-            .iter()
-            .map(|(id, data)| NodeRef::<Self> { id, data })
+        self.node_data.iter().map(|(id, data)| NodeRef::<Self> {
+            id: NodeId(id),
+            data,
+        })
     }
 
     #[inline]
     fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
-        self.node_data
-            .iter_mut()
-            .map(|(id, data)| NodeMut::<Self> { id, data })
+        self.node_data.iter_mut().map(|(id, data)| NodeMut::<Self> {
+            id: NodeId(id),
+            data,
+        })
     }
 
     /// Nodes with degree 0 (no incident edges).
@@ -247,28 +250,28 @@ where
 
     #[inline]
     fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
-        let edge_index = self.to_edge_position(id.node1, id.node2)?;
+        let edge_index = self.to_edge_position(id.node_a, id.node_b)?;
         self.flattened_edge_data
             .get(edge_index)?
             .as_ref()
             .map(|data| EdgeRef::<Self> {
                 id,
-                source: id.node1,
-                target: id.node2,
+                source: id.node_a,
+                target: id.node_b,
                 data,
             })
     }
 
     #[inline]
     fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
-        let edge_index = self.to_edge_position(id.node1, id.node2)?;
+        let edge_index = self.to_edge_position(id.node_a, id.node_b)?;
         self.flattened_edge_data
             .get_mut(edge_index)?
             .as_mut()
             .map(|data| EdgeMut::<Self> {
                 id,
-                source: id.node1,
-                target: id.node2,
+                source: id.node_a,
+                target: id.node_b,
                 data,
             })
     }
@@ -328,21 +331,22 @@ where
         lhs: Self::NodeId,
         rhs: Self::NodeId,
     ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        if let Some(edge_index) = self.to_edge_position(lhs, rhs) {
-            self.flattened_edge_data
-                .get(edge_index)
-                .unwrap()
-                .as_ref()
-                .map(|data| EdgeRef::<Self> {
-                    id: EdgeId::new_undirected(lhs, rhs),
-                    source: lhs,
-                    target: rhs,
-                    data,
-                })
-                .into_iter()
-        } else {
-            None.into_iter()
-        }
+        self.to_edge_position(lhs, rhs).map_or_else(
+            || None.into_iter(),
+            |edge_index| {
+                self.flattened_edge_data
+                    .get(edge_index)
+                    .unwrap()
+                    .as_ref()
+                    .map(|data| EdgeRef::<Self> {
+                        id: EdgeId::new_undirected(lhs, rhs),
+                        source: lhs,
+                        target: rhs,
+                        data,
+                    })
+                    .into_iter()
+            },
+        )
     }
 
     #[inline]
@@ -376,13 +380,12 @@ where
 
     #[inline]
     fn contains_edge(&self, edge: Self::EdgeId) -> bool {
-        if let Some(edge_index) = self.to_edge_position(edge.node1, edge.node2) {
-            self.flattened_edge_data
-                .get(edge_index)
-                .is_some_and(|data| !data.is_null())
-        } else {
-            false
-        }
+        self.to_edge_position(edge.node_a, edge.node_b)
+            .is_some_and(|edge_index| {
+                self.flattened_edge_data
+                    .get(edge_index)
+                    .is_some_and(|data| !data.is_null())
+            })
     }
 
     #[inline]
@@ -407,7 +410,7 @@ impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIte
     type Item = (NodeId, NodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(edge) = self.edges.next() {
+        for edge in self.edges.by_ref() {
             let current_edge_tuple = self.next_edge_tuple;
             self.next_edge_tuple.1 += 1;
             if self.next_edge_tuple.1 > self.next_edge_tuple.0 {
@@ -439,7 +442,7 @@ impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
     type Item = (NodeId, NodeId, &'a mut Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(edge) = self.edges.next() {
+        for edge in self.edges.by_ref() {
             let current_edge_tuple = self.next_edge_tuple;
             self.next_edge_tuple.1 += 1;
             if self.next_edge_tuple.1 > self.next_edge_tuple.0 {
@@ -466,7 +469,7 @@ struct NeighborIterator<'a, Null: NicheWrapper + 'a> {
 }
 
 impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
-    fn new(edges: &'a [Null], start_node: NodeId, node_capacity: usize) -> Self {
+    const fn new(edges: &'a [Null], start_node: NodeId, node_capacity: usize) -> Self {
         Self {
             edges,
             start_node,
@@ -488,9 +491,8 @@ impl<'a, Null: NicheWrapper> Iterator for NeighborIterator<'a, Null> {
             if let Some(data) = self.edges[edge_index].as_ref() {
                 self.next_other_node.0 += 1;
                 return Some((this_other_node, data));
-            } else {
-                self.next_other_node.0 += 1;
             }
+            self.next_other_node.0 += 1;
         }
 
         None
@@ -519,7 +521,7 @@ struct NeighborIterMut<'a, T: 'a> {
 
 impl<'a, T> NeighborIterMut<'a, T> {
     #[inline]
-    fn new(
+    const fn new(
         neighbors: &'a mut [T],
         last_element_index: usize,
         source_node: NodeId,
@@ -564,8 +566,10 @@ impl<'a, Null: NicheWrapper> Iterator for NeighborIterMut<'a, Null> {
             let value = unsafe {
                 assert!(self.last_element_index < self.total_length);
                 assert!(
-                    (size_of::<Null>() as isize)
-                        .checked_mul(this_offset as isize)
+                    (isize::try_from(size_of::<Null>()).expect("Type size should fit in isize"))
+                        .checked_mul(
+                            isize::try_from(this_offset).expect("Offset should fit in isize")
+                        )
                         .is_some()
                 );
 
@@ -599,196 +603,218 @@ mod tests {
 
     #[test]
     fn test_default() {
-        let g =
+        let graph =
             MatrixGraph::<i32, i32, foldhash::fast::RandomState, Option<i32>, Undirected>::default(
             );
-        assert_eq!(g.node_count(), 0);
-        assert_eq!(g.edge_count(), 0);
+        assert_eq!(graph.node_count(), 0);
+        assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
     fn test_with_capacity() {
-        let g = MatrixGraph::<i32, i32, foldhash::fast::RandomState, Option<i32>, Undirected>::with_capacity(10);
-        assert_eq!(g.node_count(), 0);
-        assert_eq!(g.edge_count(), 0);
+        let graph = MatrixGraph::<i32, i32, foldhash::fast::RandomState, Option<i32>, Undirected>::with_capacity(10);
+        assert_eq!(graph.node_count(), 0);
+        assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
     fn test_remove_node() {
-        let mut g: MatrixGraph<char, (), foldhash::fast::RandomState, Option<()>, Undirected> =
+        let mut graph: MatrixGraph<char, (), foldhash::fast::RandomState, Option<()>, Undirected> =
             MatrixGraph::default();
-        let a = g.add_node('a');
+        let node_a = graph.add_node('a');
 
-        g.remove_node(a);
+        graph.remove_node(node_a);
 
-        assert_eq!(g.node_count(), 0);
-        assert_eq!(g.edge_count(), 0);
+        assert_eq!(graph.node_count(), 0);
+        assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
     fn test_add_edge() {
-        let mut g: MatrixGraph<char, (), foldhash::fast::RandomState, Option<()>, Undirected> =
+        let mut graph: MatrixGraph<char, (), foldhash::fast::RandomState, Option<()>, Undirected> =
             MatrixGraph::default();
-        let a = g.add_node('a');
-        let b = g.add_node('b');
-        let c = g.add_node('c');
-        g.add_edge(a, b, ());
-        g.add_edge(b, c, ());
-        assert_eq!(g.node_count(), 3);
-        assert_eq!(g.edge_count(), 2);
+        let node_a = graph.add_node('a');
+        let node_b = graph.add_node('b');
+        let node_c = graph.add_node('c');
+        graph.add_edge(node_a, node_b, ());
+        graph.add_edge(node_b, node_c, ());
+        assert_eq!(graph.node_count(), 3);
+        assert_eq!(graph.edge_count(), 2);
     }
 
     #[test]
     /// Adds an edge that triggers a second extension of the matrix.
     /// From #425
     fn test_add_edge_with_extension() {
-        let mut g = UnMatrix::<u8, ()>::default();
-        let _n0 = g.add_node(0);
-        let n1 = g.add_node(1);
-        let n2 = g.add_node(2);
-        let n3 = g.add_node(3);
-        let n4 = g.add_node(4);
-        let _n5 = g.add_node(5);
-        g.add_edge(n2, n1, ());
-        g.add_edge(n2, n3, ());
-        g.add_edge(n2, n4, ());
-        assert_eq!(g.node_count(), 6);
-        assert_eq!(g.edge_count(), 3);
-        assert!(g.contains_edge(UndirEdgeId::new_undirected(n2, n1)));
-        assert!(g.contains_edge(UndirEdgeId::new_undirected(n2, n3)));
-        assert!(g.contains_edge(UndirEdgeId::new_undirected(n2, n4)));
+        let mut graph = UnMatrix::<u8, ()>::default();
+        let _node_0 = graph.add_node(0);
+        let node_1 = graph.add_node(1);
+        let node_2 = graph.add_node(2);
+        let node_3 = graph.add_node(3);
+        let node_4 = graph.add_node(4);
+        let _node_5 = graph.add_node(5);
+        graph.add_edge(node_2, node_1, ());
+        graph.add_edge(node_2, node_3, ());
+        graph.add_edge(node_2, node_4, ());
+        assert_eq!(graph.node_count(), 6);
+        assert_eq!(graph.edge_count(), 3);
+        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_2, node_1)));
+        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_2, node_3)));
+        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_2, node_4)));
     }
 
     #[test]
     fn test_matrix_resize() {
-        let mut g = UnMatrix::<u8, ()>::with_capacity(3);
-        let n0 = g.add_node(0);
-        let n1 = g.add_node(1);
-        let n2 = g.add_node(2);
-        let n3 = g.add_node(3);
-        g.add_edge(n1, n0, ());
-        g.add_edge(n1, n1, ());
+        let mut graph = UnMatrix::<u8, ()>::with_capacity(3);
+        let node_0 = graph.add_node(0);
+        let node_1 = graph.add_node(1);
+        let node_2 = graph.add_node(2);
+        let node_3 = graph.add_node(3);
+        graph.add_edge(node_1, node_0, ());
+        graph.add_edge(node_1, node_1, ());
         // Triggers a resize from capacity 3 to 4
-        g.add_edge(n2, n3, ());
-        assert_eq!(g.node_count(), 4);
-        assert_eq!(g.edge_count(), 3);
-        assert!(g.contains_edge(UndirEdgeId::new_undirected(n1, n0)));
-        assert!(g.contains_edge(UndirEdgeId::new_undirected(n1, n1)));
-        assert!(g.contains_edge(UndirEdgeId::new_undirected(n2, n3)));
+        graph.add_edge(node_2, node_3, ());
+        assert_eq!(graph.node_count(), 4);
+        assert_eq!(graph.edge_count(), 3);
+        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_1, node_0)));
+        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_1, node_1)));
+        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_2, node_3)));
     }
 
     #[test]
-    fn test_add_edge_with_weights() {
-        let mut g = MatrixGraph::new_undirected();
-        let a = g.add_node('a');
-        let b = g.add_node('b');
-        let c = g.add_node('c');
-        g.add_edge(a, b, true);
-        g.add_edge(b, c, false);
-        assert!(g.edge(UndirEdgeId::new_undirected(a, b)).unwrap().data);
-        assert!(!*g.edge(UndirEdgeId::new_undirected(b, c)).unwrap().data);
+    fn test_add_edge_with_data() {
+        let mut graph = MatrixGraph::new_undirected();
+        let node_a = graph.add_node('a');
+        let node_b = graph.add_node('b');
+        let node_c = graph.add_node('c');
+        graph.add_edge(node_a, node_b, true);
+        graph.add_edge(node_b, node_c, false);
+        assert!(
+            graph
+                .edge(UndirEdgeId::new_undirected(node_a, node_b))
+                .unwrap()
+                .data
+        );
+        assert!(
+            !*graph
+                .edge(UndirEdgeId::new_undirected(node_b, node_c))
+                .unwrap()
+                .data
+        );
     }
 
     #[test]
     fn test_clear() {
-        let mut g = MatrixGraph::new_undirected();
-        let a = g.add_node('a');
-        let b = g.add_node('b');
-        let c = g.add_node('c');
-        assert_eq!(g.node_count(), 3);
+        let mut graph = MatrixGraph::new_undirected();
+        let node_a = graph.add_node('a');
+        let node_b = graph.add_node('b');
+        let node_c = graph.add_node('c');
+        assert_eq!(graph.node_count(), 3);
 
-        g.add_edge(a, b, ());
-        g.add_edge(b, c, ());
-        g.add_edge(c, a, ());
-        assert_eq!(g.edge_count(), 3);
+        graph.add_edge(node_a, node_b, ());
+        graph.add_edge(node_b, node_c, ());
+        graph.add_edge(node_c, node_a, ());
+        assert_eq!(graph.edge_count(), 3);
 
-        g.clear();
+        graph.clear();
 
-        assert_eq!(g.node_count(), 0);
-        assert_eq!(g.edge_count(), 0);
+        assert_eq!(graph.node_count(), 0);
+        assert_eq!(graph.edge_count(), 0);
 
-        let a = g.add_node('a');
-        let b = g.add_node('b');
-        let c = g.add_node('c');
-        assert_eq!(g.node_count(), 3);
-        assert_eq!(g.edge_count(), 0);
+        let node_a = graph.add_node('a');
+        let node_b = graph.add_node('b');
+        let node_c = graph.add_node('c');
+        assert_eq!(graph.node_count(), 3);
+        assert_eq!(graph.edge_count(), 0);
 
-        assert_eq!(g.adjacencies(a).collect::<Vec<_>>(), vec![]);
-        assert_eq!(g.adjacencies(b).collect::<Vec<_>>(), vec![]);
-        assert_eq!(g.adjacencies(c).collect::<Vec<_>>(), vec![]);
+        assert_eq!(graph.adjacencies(node_a).collect::<Vec<_>>(), vec![]);
+        assert_eq!(graph.adjacencies(node_b).collect::<Vec<_>>(), vec![]);
+        assert_eq!(graph.adjacencies(node_c).collect::<Vec<_>>(), vec![]);
     }
 
     #[test]
     fn test_alternative_null_type() {
-        let mut g: MatrixGraph<(), i32, foldhash::fast::RandomState, NotZero<i32>, Undirected> =
+        let mut graph: MatrixGraph<(), i32, foldhash::fast::RandomState, NotZero<i32>, Undirected> =
             MatrixGraph::default();
 
-        let a = g.add_node(());
-        let b = g.add_node(());
+        let node_a = graph.add_node(());
+        let node_b = graph.add_node(());
 
-        assert!(!g.contains_edge(UndirEdgeId::new_undirected(a, b)));
-        assert_eq!(g.edge_count(), 0);
+        assert!(!graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert_eq!(graph.edge_count(), 0);
 
-        g.add_edge(a, b, 12);
+        graph.add_edge(node_a, node_b, 12);
 
-        assert!(g.contains_edge(UndirEdgeId::new_undirected(a, b)));
-        assert_eq!(g.edge_count(), 1);
-        assert_eq!(g.edge(UndirEdgeId::new_undirected(a, b)).unwrap().data, &12);
+        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert_eq!(graph.edge_count(), 1);
+        assert_eq!(
+            graph
+                .edge(UndirEdgeId::new_undirected(node_a, node_b))
+                .unwrap()
+                .data,
+            &12
+        );
 
-        g.remove_edge(a, b);
+        graph.remove_edge(node_a, node_b);
 
-        assert!(!g.contains_edge(UndirEdgeId::new_undirected(a, b)));
-        assert_eq!(g.edge_count(), 0);
+        assert!(!graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "assertion failed: !value.is_zero()"]
     fn test_not_zero_asserted() {
-        let mut g: MatrixGraph<(), i32, foldhash::fast::RandomState, NotZero<i32>, Undirected> =
+        let mut graph: MatrixGraph<(), i32, foldhash::fast::RandomState, NotZero<i32>, Undirected> =
             MatrixGraph::default();
 
-        let a = g.add_node(());
-        let b = g.add_node(());
+        let node_a = graph.add_node(());
+        let node_b = graph.add_node(());
 
-        g.add_edge(a, b, 0);
+        graph.add_edge(node_a, node_b, 0);
     }
 
     #[test]
     fn test_not_zero_float() {
-        let mut g: MatrixGraph<(), f32, foldhash::fast::RandomState, NotZero<f32>, Undirected> =
+        let mut graph: MatrixGraph<(), f32, foldhash::fast::RandomState, NotZero<f32>, Undirected> =
             MatrixGraph::default();
 
-        let a = g.add_node(());
-        let b = g.add_node(());
+        let node_a = graph.add_node(());
+        let node_b = graph.add_node(());
 
-        assert!(!g.contains_edge(UndirEdgeId::new_undirected(a, b)));
-        assert_eq!(g.edge_count(), 0);
+        assert!(!graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert_eq!(graph.edge_count(), 0);
 
-        g.add_edge(a, b, 12.);
+        let val = 12.0;
+        graph.add_edge(node_a, node_b, val);
 
-        assert!(g.contains_edge(UndirEdgeId::new_undirected(a, b)));
-        assert_eq!(g.edge_count(), 1);
-        assert_eq!(
-            g.edge(UndirEdgeId::new_undirected(a, b)).unwrap().data,
-            &12.
+        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert_eq!(graph.edge_count(), 1);
+        assert!(
+            (graph
+                .edge(UndirEdgeId::new_undirected(node_a, node_b))
+                .unwrap()
+                .data
+                - val)
+                .abs()
+                <= 0.0
         );
 
-        g.remove_edge(a, b);
+        graph.remove_edge(node_a, node_b);
 
-        assert!(!g.contains_edge(UndirEdgeId::new_undirected(a, b)));
-        assert_eq!(g.edge_count(), 0);
+        assert!(!graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "called `Option::unwrap()` on a `None` value")]
     fn test_remove_edge() {
-        let mut g = MatrixGraph::<char, u32>::new();
-        let a = g.add_node('a');
-        let b = g.add_node('b');
-        let c = g.add_node('c');
-        g.add_edge(a, b, 1);
-        g.add_edge(b, c, 2);
-        assert_eq!(g.remove_edge(a, b), 1);
-        assert_eq!(g.remove_edge(a, b), 0);
+        let mut graph = MatrixGraph::<char, u32>::new();
+        let node_a = graph.add_node('a');
+        let node_b = graph.add_node('b');
+        let node_c = graph.add_node('c');
+        graph.add_edge(node_a, node_b, 1);
+        graph.add_edge(node_b, node_c, 2);
+        assert_eq!(graph.remove_edge(node_a, node_b), 1);
+        assert_eq!(graph.remove_edge(node_a, node_b), 0);
     }
 }
