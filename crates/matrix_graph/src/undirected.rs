@@ -8,7 +8,7 @@ use petgraph_core::{
 };
 
 use crate::{
-    EdgeId, MatrixGraph, MatrixGraphExtras, NodeId, Nullable, Undirected, ensure_len,
+    EdgeId, MatrixGraph, MatrixGraphExtras, NicheWrapper, NodeId, Undirected, ensure_len,
     private::Sealed,
 };
 pub type UndirEdgeId = EdgeId<Undirected>;
@@ -54,9 +54,9 @@ impl Ord for UndirEdgeId {
 
 impl Id for UndirEdgeId {}
 
-impl<N, E, S, Null: Nullable<Wrapped = E>> Sealed for MatrixGraph<N, E, S, Null, Undirected> {}
+impl<N, E, S, Null: NicheWrapper<Wrapped = E>> Sealed for MatrixGraph<N, E, S, Null, Undirected> {}
 
-impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>> MatrixGraphExtras<N>
+impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N>
     for MatrixGraph<N, E, S, Null, Undirected>
 {
     #[inline]
@@ -119,7 +119,7 @@ fn extend_lower_triangular_matrix<T: Default>(
     new_capacity
 }
 
-impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>> Graph
+impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> Graph
     for MatrixGraph<N, E, S, Null, Undirected>
 {
     type EdgeData<'graph>
@@ -150,7 +150,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>> Graph
     type NodeId = NodeId;
 }
 
-impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>> UndirectedGraph
+impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> UndirectedGraph
     for MatrixGraph<N, E, S, Null, Undirected>
 where
     MatrixGraph<N, E, S, Null, Undirected>: MatrixGraphExtras<N>,
@@ -398,12 +398,14 @@ where
 
 /// An iterator over the edges of a directed graph which yields the source and target of each edge
 /// along with a reference to the edge data.
-struct EdgeIterator<'a, It: Iterator<Item = &'a Null>, Null: Nullable + 'a> {
+struct EdgeIterator<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper + 'a> {
     edges: It,
     next_edge_tuple: (usize, usize),
 }
 
-impl<'a, It: Iterator<Item = &'a Null>, Null: Nullable> Iterator for EdgeIterator<'a, It, Null> {
+impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator
+    for EdgeIterator<'a, It, Null>
+{
     type Item = (NodeId, NodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -428,12 +430,12 @@ impl<'a, It: Iterator<Item = &'a Null>, Null: Nullable> Iterator for EdgeIterato
 
 /// An iterator over the edges of a directed graph which yields the source and target of each edge
 /// along with a mutable reference to the edge data.
-struct EdgeIteratorMut<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable + 'a> {
+struct EdgeIteratorMut<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper + 'a> {
     edges: It,
     next_edge_tuple: (usize, usize),
 }
 
-impl<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable> Iterator
+impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
     for EdgeIteratorMut<'a, It, Null>
 {
     type Item = (NodeId, NodeId, &'a mut Null::Wrapped);
@@ -458,14 +460,14 @@ impl<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable> Iterator
     }
 }
 
-struct NeighborIterator<'a, Null: Nullable + 'a> {
+struct NeighborIterator<'a, Null: NicheWrapper + 'a> {
     edges: &'a [Null],
     start_node: NodeId,
     next_other_node: NodeId,
     node_capacity: usize,
 }
 
-impl<'a, Null: Nullable + 'a> NeighborIterator<'a, Null> {
+impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
     fn new(edges: &'a [Null], start_node: NodeId, node_capacity: usize) -> Self {
         Self {
             edges,
@@ -476,7 +478,7 @@ impl<'a, Null: Nullable + 'a> NeighborIterator<'a, Null> {
     }
 }
 
-impl<'a, Null: Nullable> Iterator for NeighborIterator<'a, Null> {
+impl<'a, Null: NicheWrapper> Iterator for NeighborIterator<'a, Null> {
     type Item = (NodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -541,8 +543,8 @@ impl<'a, T> NeighborIterMut<'a, T> {
     }
 }
 
-impl<'a, Null: Nullable> Iterator for NeighborIterMut<'a, Null> {
-    type Item = (NodeId, &'a mut <Null as Nullable>::Wrapped);
+impl<'a, Null: NicheWrapper> Iterator for NeighborIterMut<'a, Null> {
+    type Item = (NodeId, &'a mut <Null as NicheWrapper>::Wrapped);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
