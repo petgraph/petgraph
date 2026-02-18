@@ -15,6 +15,7 @@ jobs:
         crate:
           - { name: petgraph, spec: petgraph@0.9.0 }
           - { name: petgraph-core, spec: petgraph-core }
+          - { name: petgraph-matrix-graph, spec: petgraph-matrix-graph }
         rust: [stable, beta, nightly]
         include:
           - rust: nightly
