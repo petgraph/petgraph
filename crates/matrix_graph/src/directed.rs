@@ -8,7 +8,7 @@ use petgraph_core::{
 };
 
 use crate::{
-    Directed, EdgeId, Either, NicheWrapper, MatrixGraph, MatrixGraphExtras, NodeId, ensure_len,
+    Directed, EdgeId, Either, MatrixGraph, MatrixGraphExtras, NicheWrapper, NodeId, ensure_len,
     private::Sealed,
 };
 
@@ -237,7 +237,7 @@ where
     // Edge iteration
     #[inline]
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        EdgeIterator {
+        EdgeIter {
             edges: self.flattened_edge_data.iter(),
             current_edge_tuple: (0, 0),
             node_capacity: self.node_capacity,
@@ -252,7 +252,7 @@ where
 
     #[inline]
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        EdgeIteratorMut {
+        EdgeIterMut {
             edges: self.flattened_edge_data.iter_mut(),
             current_edge_tuple: (0, 0),
             node_capacity: self.node_capacity,
@@ -311,12 +311,12 @@ where
     // Degree
     #[inline]
     fn in_degree(&self, node: Self::NodeId) -> usize {
-        incoming_neighbor_iterator(&self.flattened_edge_data, node, self.node_capacity).count()
+        incoming_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).count()
     }
 
     #[inline]
     fn out_degree(&self, node: Self::NodeId) -> usize {
-        outgoing_neighbor_iterator(&self.flattened_edge_data, node, self.node_capacity).count()
+        outgoing_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).count()
     }
 
     #[inline]
@@ -327,7 +327,7 @@ where
     // Edges by direction
     #[inline]
     fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        incoming_neighbor_iterator(&self.flattened_edge_data, node, self.node_capacity).map(
+        incoming_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).map(
             move |(source, data)| EdgeRef::<Self> {
                 id: EdgeId::new_directed(source, node),
                 source,
@@ -342,7 +342,7 @@ where
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        incoming_neighbor_iterator_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
+        incoming_neighbor_iter_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
             move |(source, data)| EdgeMut::<Self> {
                 id: EdgeId::new_directed(source, node),
                 source,
@@ -354,7 +354,7 @@ where
 
     #[inline]
     fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        outgoing_neighbor_iterator(&self.flattened_edge_data, node, self.node_capacity).map(
+        outgoing_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).map(
             move |(target, data)| EdgeRef::<Self> {
                 id: EdgeId::new_directed(node, target),
                 source: node,
@@ -369,7 +369,7 @@ where
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        outgoing_neighbor_iterator_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
+        outgoing_neighbor_iter_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
             move |(target, data)| EdgeMut::<Self> {
                 id: EdgeId::new_directed(node, target),
                 source: node,
@@ -381,7 +381,7 @@ where
 
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        neighbor_iterator(&self.flattened_edge_data, node, self.node_capacity).map(
+        neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).map(
             move |(source, target, data)| EdgeRef::<Self> {
                 id: EdgeId::new_directed(source, target),
                 source,
@@ -396,7 +396,7 @@ where
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        neighbor_iterator_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
+        neighbor_iter_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
             move |(source, target, data)| EdgeMut::<Self> {
                 id: EdgeId::new_directed(source, target),
                 source,
@@ -409,19 +409,19 @@ where
     // Adjacency
     #[inline]
     fn predecessors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        incoming_neighbor_iterator(&self.flattened_edge_data, node, self.node_capacity)
+        incoming_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity)
             .map(|(source, _)| source)
     }
 
     #[inline]
     fn successors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        outgoing_neighbor_iterator(&self.flattened_edge_data, node, self.node_capacity)
+        outgoing_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity)
             .map(|(target, _)| target)
     }
 
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        neighbor_iterator(&self.flattened_edge_data, node, self.node_capacity)
+        neighbor_iter(&self.flattened_edge_data, node, self.node_capacity)
             .map(|(neighbor, _, _)| neighbor)
     }
 
@@ -676,13 +676,13 @@ where
 
 /// An iterator over the edges of a directed graph which yields the source and target of each edge
 /// along with a reference to the edge data.
-struct EdgeIterator<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper + 'a> {
+struct EdgeIter<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper + 'a> {
     edges: It,
     current_edge_tuple: (usize, usize),
     node_capacity: usize,
 }
 
-impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIterator<'a, It, Null> {
+impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIter<'a, It, Null> {
     type Item = (NodeId, NodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -707,14 +707,14 @@ impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIte
 
 /// An iterator over the edges of a directed graph which yields the source and target of each edge
 /// along with a mutable reference to the edge data.
-struct EdgeIteratorMut<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper + 'a> {
+struct EdgeIterMut<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper + 'a> {
     edges: It,
     current_edge_tuple: (usize, usize),
     node_capacity: usize,
 }
 
 impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
-    for EdgeIteratorMut<'a, It, Null>
+    for EdgeIterMut<'a, It, Null>
 {
     type Item = (NodeId, NodeId, &'a mut Null::Wrapped);
 
@@ -741,7 +741,7 @@ impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
 /// Returns an iterator over the neighbors of a node which correspond to incoming edges with the
 /// associated edge data.
 #[inline]
-fn incoming_neighbor_iterator<'a, Null: NicheWrapper + 'a>(
+fn incoming_neighbor_iter<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a Vec<Null>,
     target: NodeId,
     num_nodes: usize,
@@ -759,7 +759,7 @@ fn incoming_neighbor_iterator<'a, Null: NicheWrapper + 'a>(
 /// Returns an iterator over the neighbors of a node which correspond to incoming edges with the
 /// associated edge data.
 #[inline]
-fn incoming_neighbor_iterator_mut<'b, Null: NicheWrapper + 'b>(
+fn incoming_neighbor_iter_mut<'b, Null: NicheWrapper + 'b>(
     node_adjacencies: &'b mut Vec<Null>,
     target: NodeId,
     num_nodes: usize,
@@ -777,7 +777,7 @@ fn incoming_neighbor_iterator_mut<'b, Null: NicheWrapper + 'b>(
 /// Returns an iterator over the neighbors of a node which correspond to outgoing edges with the
 /// associated edge data.
 #[inline]
-fn outgoing_neighbor_iterator<'a, Null: NicheWrapper + 'a>(
+fn outgoing_neighbor_iter<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a Vec<Null>,
     source: NodeId,
     num_nodes: usize,
@@ -794,7 +794,7 @@ fn outgoing_neighbor_iterator<'a, Null: NicheWrapper + 'a>(
 /// Returns an iterator over the neighbors of a node which correspond to outgoing edges with the
 /// associated edge data.
 #[inline]
-fn outgoing_neighbor_iterator_mut<'b, Null: NicheWrapper + 'b>(
+fn outgoing_neighbor_iter_mut<'b, Null: NicheWrapper + 'b>(
     node_adjacencies: &'b mut Vec<Null>,
     source: NodeId,
     num_nodes: usize,
@@ -813,7 +813,7 @@ fn outgoing_neighbor_iterator_mut<'b, Null: NicheWrapper + 'b>(
 /// The item in the iterator is a tuple of the form `(source, target, edge_data)` where either
 /// `source` or `target` (or both) is the given node and the other is the neighbor.
 #[inline]
-fn neighbor_iterator<'a, Null: NicheWrapper + 'a>(
+fn neighbor_iter<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a Vec<Null>,
     node: NodeId,
     num_nodes: usize,
@@ -862,7 +862,7 @@ fn neighbor_iterator<'a, Null: NicheWrapper + 'a>(
 /// The item in the iterator is a tuple of the form `(source, target, edge_data)` where either
 /// `source` or `target` (or both) is the given node and the other is the neighbor.
 #[inline]
-fn neighbor_iterator_mut<'a, Null: NicheWrapper + 'a>(
+fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a mut Vec<Null>,
     node: NodeId,
     num_nodes: usize,

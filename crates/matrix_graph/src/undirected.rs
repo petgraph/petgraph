@@ -204,7 +204,7 @@ where
     // Edge iteration
     #[inline]
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        EdgeIterator {
+        EdgeIter {
             edges: self.flattened_edge_data.iter(),
             next_edge_tuple: (0, 0),
         }
@@ -218,7 +218,7 @@ where
 
     #[inline]
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        EdgeIteratorMut {
+        EdgeIterMut {
             edges: self.flattened_edge_data.iter_mut(),
             next_edge_tuple: (0, 0),
         }
@@ -398,14 +398,12 @@ where
 
 /// An iterator over the edges of a directed graph which yields the source and target of each edge
 /// along with a reference to the edge data.
-struct EdgeIterator<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper + 'a> {
+struct EdgeIter<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper + 'a> {
     edges: It,
     next_edge_tuple: (usize, usize),
 }
 
-impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator
-    for EdgeIterator<'a, It, Null>
-{
+impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIter<'a, It, Null> {
     type Item = (NodeId, NodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -430,13 +428,13 @@ impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator
 
 /// An iterator over the edges of a directed graph which yields the source and target of each edge
 /// along with a mutable reference to the edge data.
-struct EdgeIteratorMut<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper + 'a> {
+struct EdgeIterMut<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper + 'a> {
     edges: It,
     next_edge_tuple: (usize, usize),
 }
 
 impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
-    for EdgeIteratorMut<'a, It, Null>
+    for EdgeIterMut<'a, It, Null>
 {
     type Item = (NodeId, NodeId, &'a mut Null::Wrapped);
 
