@@ -90,11 +90,16 @@ mod private {
     impl<T> Sealed for Option<T> {}
 }
 
-/// Wrapper trait for an `Option`, allowing user-defined structs to be input as containers when
-/// defining a null element.
+/// Wrapper trait for an `Option`.
+///
+/// Allows for user-defined structs to be input as containers for Edge Data in [`MatrixGraph`].
+/// Wraps types that have a notion of "null" or "empty" value, which is used to mark the absence of
+/// an edge in the graph.
 ///
 /// Note: this trait is currently *sealed* and cannot be implemented for types outside this crate.
-pub trait Nullable: Default + Into<Option<<Self as Nullable>::Wrapped>> + private::Sealed {
+pub trait NicheWrapper:
+    Default + Into<Option<<Self as NicheWrapper>::Wrapped>> + private::Sealed
+{
     #[doc(hidden)]
     type Wrapped;
 
@@ -113,7 +118,7 @@ pub trait Nullable: Default + Into<Option<<Self as Nullable>::Wrapped>> + privat
     }
 }
 
-impl<T> Nullable for Option<T> {
+impl<T> NicheWrapper for Option<T> {
     type Wrapped = T;
 
     fn new(value: T) -> Self {
@@ -138,13 +143,13 @@ impl<T> Nullable for Option<T> {
 /// have to use this wrapper and can leave the default `Null` type argument.
 pub struct NotZero<T>(T);
 
-impl<T: Zero> Default for NotZero<T> {
+impl<T: Zeroable> Default for NotZero<T> {
     fn default() -> Self {
         NotZero(T::zero())
     }
 }
 
-impl<T: Zero> Nullable for NotZero<T> {
+impl<T: Zeroable> NicheWrapper for NotZero<T> {
     #[doc(hidden)]
     type Wrapped = T;
 
@@ -175,7 +180,7 @@ impl<T: Zero> Nullable for NotZero<T> {
     }
 }
 
-impl<T: Zero> From<NotZero<T>> for Option<T> {
+impl<T: Zeroable> From<NotZero<T>> for Option<T> {
     fn from(not_zero: NotZero<T>) -> Self {
         if !not_zero.is_null() {
             Some(not_zero.0)
@@ -185,13 +190,14 @@ impl<T: Zero> From<NotZero<T>> for Option<T> {
     }
 }
 
-/// Base trait for types that can be wrapped in a [`NotZero`](struct.NotZero.html).
+/// Base trait for types that have a zero-like value and can thus be wrapped in a
+/// [`NotZero`](struct.NotZero.html).
 ///
-/// Implementors must provide a singleton object that will be used to mark empty edges in a
-/// [`MatrixGraph`](struct.MatrixGraph.html).
+/// Implementors must provide a singleton zero-like object that will be used to mark empty edges in
+/// a [`MatrixGraph`](struct.MatrixGraph.html).
 ///
 /// Note that this trait is already implemented for the base numeric types.
-pub trait Zero {
+pub trait Zeroable {
     /// Return the singleton object which can be used as a sentinel value.
     fn zero() -> Self;
 
@@ -199,9 +205,9 @@ pub trait Zero {
     fn is_zero(&self) -> bool;
 }
 
-macro_rules! not_zero_impl {
+macro_rules! zeroable_impl {
     ($t:ty, $z:expr) => {
-        impl Zero for $t {
+        impl Zeroable for $t {
             fn zero() -> Self {
                 $z as $t
             }
@@ -214,17 +220,17 @@ macro_rules! not_zero_impl {
     };
 }
 
-macro_rules! not_zero_impls {
+macro_rules! zeroable_impls {
     ($($t:ty),*) => {
         $(
-            not_zero_impl!($t, 0);
+            zeroable_impl!($t, 0);
         )*
     }
 }
 
-not_zero_impls!(u8, u16, u32, u64, usize);
-not_zero_impls!(i8, i16, i32, i64, isize);
-not_zero_impls!(f32, f64);
+zeroable_impls!(u8, u16, u32, u64, usize);
+zeroable_impls!(i8, i16, i32, i64, isize);
+zeroable_impls!(f32, f64);
 
 /// The error type for fallible `MatrixGraph` operations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -242,8 +248,13 @@ pub trait MatrixGraphExtras<N>: Sealed {
 
 /// `MatrixGraph<N, E, S, Null, Ty>` is a graph using an adjacency matrix representation.
 ///
-/// `MatrixGraph` is parameterized over:
+/// It uses a flattened 2D array to store edge data, and a separate storage for node data and
+/// management of node indices. The graph supports both directed and undirected edges.
 ///
+/// Edge data can be of arbitrary type that has a notion of "null" or "empty" value, which is used
+/// to mark the absence of an edge in the graph and allows for better memory optimization.
+///
+/// `MatrixGraph` is parameterized over:
 /// - Associated data `N` for nodes and `E` for edges. The associated data can be of arbitrary type.
 /// - Hasher type `S` that determines how node indices are hashed (defaults to `RandomState`). This
 ///   is used to keep track of removed node indices and reuse them when adding new nodes, thus
@@ -256,9 +267,8 @@ pub trait MatrixGraphExtras<N>: Sealed {
 /// The graph uses **O(|V^2|)** space, with fast edge insertion & amortized node insertion, as well
 /// as efficient graph search and graph algorithms on dense graphs.
 ///
-/// This graph is backed by a flattened 2D array. For undirected graphs, only the lower triangular
-/// matrix is stored. Since the backing array stores edge data, it is recommended to box large
-/// edge data.
+/// For undirected graphs, only the lower triangular part of the adjacency matrix is stored. Since
+/// the backing array stores edge data, it is recommended to box large edge data.
 ///
 /// The graph uses [`NodeId`] and [`EdgeId`] as node and edge indices. Node indices are convertible
 /// to `usize`, however not guaranteed to be contiguous. When removing nodes, the graph will reuse
@@ -269,7 +279,7 @@ pub struct MatrixGraph<
     N,
     E,
     S = RandomState,
-    Null: Nullable<Wrapped = E> = Option<E>,
+    Null: NicheWrapper<Wrapped = E> = Option<E>,
     Dir = Directed,
 > {
     /// Edge Data including presence information.
@@ -290,7 +300,7 @@ pub type DiMatrix<N, E, S = RandomState, Null = Option<E>> = MatrixGraph<N, E, S
 /// A [`MatrixGraph`] with undirected edges.
 pub type UnMatrix<N, E, S = RandomState, Null = Option<E>> = MatrixGraph<N, E, S, Null, Undirected>;
 
-impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Dir> MatrixGraph<N, E, S, Null, Dir> {
+impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>, Dir> MatrixGraph<N, E, S, Null, Dir> {
     /// Remove all nodes and edges.
     pub fn clear(&mut self) {
         for edge in self.flattened_edge_data.iter_mut() {
@@ -313,7 +323,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Dir> MatrixGraph<N, E, S
     }
 }
 
-impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Dir> MatrixGraph<N, E, S, Null, Dir>
+impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>, Dir> MatrixGraph<N, E, S, Null, Dir>
 where
     MatrixGraph<N, E, S, Null, Dir>: MatrixGraphExtras<N>,
 {
@@ -522,7 +532,7 @@ impl<T, S: BuildHasher> IdStorage<T, S> {
     }
 }
 
-impl<N, E, S: BuildHasher + Default, Null: Nullable<Wrapped = E>, Dir> Default
+impl<N, E, S: BuildHasher + Default, Null: NicheWrapper<Wrapped = E>, Dir> Default
     for MatrixGraph<N, E, S, Null, Dir>
 where
     MatrixGraph<N, E, S, Null, Dir>: MatrixGraphExtras<N>,
