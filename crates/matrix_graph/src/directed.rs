@@ -8,7 +8,7 @@ use petgraph_core::{
 };
 
 use crate::{
-    Directed, EdgeId, Either, MatrixGraph, MatrixGraphExtras, NodeId, Nullable, ensure_len,
+    Directed, EdgeId, Either, NicheWrapper, MatrixGraph, MatrixGraphExtras, NodeId, ensure_len,
     private::Sealed,
 };
 
@@ -49,9 +49,9 @@ impl Ord for DirEdgeId {
 
 impl Id for DirEdgeId {}
 
-impl<N, E, S, Null: Nullable<Wrapped = E>> Sealed for MatrixGraph<N, E, S, Null, Directed> {}
+impl<N, E, S, Null: NicheWrapper<Wrapped = E>> Sealed for MatrixGraph<N, E, S, Null, Directed> {}
 
-impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>> MatrixGraphExtras<N>
+impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N>
     for MatrixGraph<N, E, S, Null, Directed>
 {
     #[inline]
@@ -152,7 +152,7 @@ fn extend_flat_square_matrix<T: Default>(
     new_node_capacity
 }
 
-impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>> Graph
+impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> Graph
     for MatrixGraph<N, E, S, Null, Directed>
 {
     type EdgeData<'graph>
@@ -183,7 +183,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>> Graph
     type NodeId = NodeId;
 }
 
-impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>> DirectedGraph
+impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> DirectedGraph
     for MatrixGraph<N, E, S, Null, Directed>
 where
     MatrixGraph<N, E, S, Null, Directed>: MatrixGraphExtras<N>,
@@ -676,13 +676,13 @@ where
 
 /// An iterator over the edges of a directed graph which yields the source and target of each edge
 /// along with a reference to the edge data.
-struct EdgeIterator<'a, It: Iterator<Item = &'a Null>, Null: Nullable + 'a> {
+struct EdgeIterator<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper + 'a> {
     edges: It,
     current_edge_tuple: (usize, usize),
     node_capacity: usize,
 }
 
-impl<'a, It: Iterator<Item = &'a Null>, Null: Nullable> Iterator for EdgeIterator<'a, It, Null> {
+impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIterator<'a, It, Null> {
     type Item = (NodeId, NodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -707,13 +707,13 @@ impl<'a, It: Iterator<Item = &'a Null>, Null: Nullable> Iterator for EdgeIterato
 
 /// An iterator over the edges of a directed graph which yields the source and target of each edge
 /// along with a mutable reference to the edge data.
-struct EdgeIteratorMut<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable + 'a> {
+struct EdgeIteratorMut<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper + 'a> {
     edges: It,
     current_edge_tuple: (usize, usize),
     node_capacity: usize,
 }
 
-impl<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable> Iterator
+impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
     for EdgeIteratorMut<'a, It, Null>
 {
     type Item = (NodeId, NodeId, &'a mut Null::Wrapped);
@@ -741,11 +741,11 @@ impl<'a, It: Iterator<Item = &'a mut Null>, Null: Nullable> Iterator
 /// Returns an iterator over the neighbors of a node which correspond to incoming edges with the
 /// associated edge data.
 #[inline]
-fn incoming_neighbor_iterator<'a, Null: Nullable + 'a>(
+fn incoming_neighbor_iterator<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a Vec<Null>,
     target: NodeId,
     num_nodes: usize,
-) -> impl Iterator<Item = (NodeId, &'a <Null as Nullable>::Wrapped)> {
+) -> impl Iterator<Item = (NodeId, &'a <Null as NicheWrapper>::Wrapped)> {
     let start_index = target.0;
     node_adjacencies
         .iter()
@@ -759,11 +759,11 @@ fn incoming_neighbor_iterator<'a, Null: Nullable + 'a>(
 /// Returns an iterator over the neighbors of a node which correspond to incoming edges with the
 /// associated edge data.
 #[inline]
-fn incoming_neighbor_iterator_mut<'b, Null: Nullable + 'b>(
+fn incoming_neighbor_iterator_mut<'b, Null: NicheWrapper + 'b>(
     node_adjacencies: &'b mut Vec<Null>,
     target: NodeId,
     num_nodes: usize,
-) -> impl Iterator<Item = (NodeId, &'b mut <Null as Nullable>::Wrapped)> {
+) -> impl Iterator<Item = (NodeId, &'b mut <Null as NicheWrapper>::Wrapped)> {
     let start_index = target.0 * num_nodes;
     node_adjacencies
         .iter_mut()
@@ -777,11 +777,11 @@ fn incoming_neighbor_iterator_mut<'b, Null: Nullable + 'b>(
 /// Returns an iterator over the neighbors of a node which correspond to outgoing edges with the
 /// associated edge data.
 #[inline]
-fn outgoing_neighbor_iterator<'a, Null: Nullable + 'a>(
+fn outgoing_neighbor_iterator<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a Vec<Null>,
     source: NodeId,
     num_nodes: usize,
-) -> impl Iterator<Item = (NodeId, &'a <Null as Nullable>::Wrapped)> {
+) -> impl Iterator<Item = (NodeId, &'a <Null as NicheWrapper>::Wrapped)> {
     let start_index = source.0 * num_nodes;
     node_adjacencies
         .iter()
@@ -794,11 +794,11 @@ fn outgoing_neighbor_iterator<'a, Null: Nullable + 'a>(
 /// Returns an iterator over the neighbors of a node which correspond to outgoing edges with the
 /// associated edge data.
 #[inline]
-fn outgoing_neighbor_iterator_mut<'b, Null: Nullable + 'b>(
+fn outgoing_neighbor_iterator_mut<'b, Null: NicheWrapper + 'b>(
     node_adjacencies: &'b mut Vec<Null>,
     source: NodeId,
     num_nodes: usize,
-) -> impl Iterator<Item = (NodeId, &'b mut <Null as Nullable>::Wrapped)> {
+) -> impl Iterator<Item = (NodeId, &'b mut <Null as NicheWrapper>::Wrapped)> {
     let start_index = source.0 * num_nodes;
     node_adjacencies
         .iter_mut()
@@ -813,11 +813,11 @@ fn outgoing_neighbor_iterator_mut<'b, Null: Nullable + 'b>(
 /// The item in the iterator is a tuple of the form `(source, target, edge_data)` where either
 /// `source` or `target` (or both) is the given node and the other is the neighbor.
 #[inline]
-fn neighbor_iterator<'a, Null: Nullable + 'a>(
+fn neighbor_iterator<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a Vec<Null>,
     node: NodeId,
     num_nodes: usize,
-) -> impl Iterator<Item = (NodeId, NodeId, &'a <Null as Nullable>::Wrapped)> {
+) -> impl Iterator<Item = (NodeId, NodeId, &'a <Null as NicheWrapper>::Wrapped)> {
     let mut slice = node_adjacencies.as_slice();
     let first_iter = {
         if node.0 == 0 {
@@ -862,11 +862,11 @@ fn neighbor_iterator<'a, Null: Nullable + 'a>(
 /// The item in the iterator is a tuple of the form `(source, target, edge_data)` where either
 /// `source` or `target` (or both) is the given node and the other is the neighbor.
 #[inline]
-fn neighbor_iterator_mut<'a, Null: Nullable + 'a>(
+fn neighbor_iterator_mut<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a mut Vec<Null>,
     node: NodeId,
     num_nodes: usize,
-) -> impl Iterator<Item = (NodeId, NodeId, &'a mut <Null as Nullable>::Wrapped)> {
+) -> impl Iterator<Item = (NodeId, NodeId, &'a mut <Null as NicheWrapper>::Wrapped)> {
     let mut slice = node_adjacencies.as_mut_slice();
     let first_iter = {
         if node.0 == 0 {
