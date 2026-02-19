@@ -29,7 +29,8 @@ macro_rules! test_max_flow_on_graph {
             $graph_add_edge,
             $graph_remove_node,
             $graph_remove_edge,
-            |graph, source, destination| dinics(graph, source, destination),
+            |graph, source, destination| dinics(graph, source, destination)
+                .into_max_flow_and_flow_vec(),
             dinics
         );
     };
