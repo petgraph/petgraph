@@ -1,5 +1,6 @@
 #[cfg(feature = "alloc")]
 use alloc::borrow::ToOwned;
+use core::borrow::Borrow;
 
 use crate::graph::Graph;
 
@@ -19,20 +20,22 @@ pub struct Edge<I, D, N> {
     pub data: D,
 }
 
-impl<I, D, N, DNew> Edge<I, D, N>
+impl<I, D, N> Edge<I, D, N>
 where
     I: Copy,
     N: Copy,
-    D: ToOwned<Owned = DNew>,
-    DNew: Copy,
 {
     #[cfg(feature = "alloc")]
-    pub fn to_owned_edge(&self) -> Edge<I, DNew, N> {
+    pub fn to_owned_edge<DNew>(&self) -> Edge<I, DNew, N>
+    where
+        D: Borrow<DNew>,
+        DNew: Clone,
+    {
         Edge {
             id: self.id,
             source: self.source,
             target: self.target,
-            data: self.data.to_owned(),
+            data: self.data.borrow().to_owned(),
         }
     }
 }

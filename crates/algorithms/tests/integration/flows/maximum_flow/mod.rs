@@ -1,5 +1,5 @@
 use paste::paste;
-use petgraph_algorithms::flows::maximum_flow::{dinics, edmonds_karp, ford_fulkerson};
+use petgraph_algorithms::flows::maximum_flow::{dinics, edmonds_karp};
 use petgraph_core::{graph::DirectedGraph, utils::directed::DirectedTestGraph};
 
 use crate::run_macro_for_all_graphs;
@@ -18,9 +18,9 @@ macro_rules! test_max_flow_on_graph {
             $graph_add_edge,
             $graph_remove_node,
             $graph_remove_edge,
-            // Due to some lifetime magic, it is important to wrap the algorithm in a closure here.
-            |graph, source, destination| ford_fulkerson(graph, source, destination),
-            ford_fulkerson
+            |graph, source, destination| edmonds_karp(graph, source, destination)
+                .into_max_flow_and_flow_vec(),
+            edmonds_karp
         );
 
         test_max_flow_all_examples!(
@@ -29,7 +29,6 @@ macro_rules! test_max_flow_on_graph {
             $graph_add_edge,
             $graph_remove_node,
             $graph_remove_edge,
-            // Due to some lifetime magic, it is important to wrap the algorithm in a closure here.
             |graph, source, destination| dinics(graph, source, destination),
             dinics
         );

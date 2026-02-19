@@ -1,6 +1,5 @@
 use alloc::{collections::VecDeque, vec, vec::Vec};
-use core::ops::Sub;
-use std::error::Error;
+use core::{borrow::Borrow, error::Error, ops::Sub};
 
 use petgraph_core::{
     edge::Edge,
@@ -56,7 +55,7 @@ where
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
-    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
+    G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>>,
 {
     /// Runs Dinic's algorithm with the current configuration.
     ///
@@ -180,7 +179,7 @@ where
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
-    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
+    G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>>,
 {
     dinics_inner(network, source, destination)
 }
@@ -195,7 +194,7 @@ where
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
-    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
+    G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>>,
 {
     let mut max_flow = G::EdgeData::zero();
     let mut flows = vec![G::EdgeData::zero(); network.edge_count()];
@@ -241,7 +240,7 @@ where
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero,
-    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>>,
+    G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>>,
 {
     let mut level_graph = vec![0; network.node_count()];
     let mut bfs_queue = VecDeque::with_capacity(network.node_count());
@@ -253,7 +252,7 @@ where
         let incident_edges = network.incident_edges(vertex);
         level_edges[vertex_index].clear();
         for edge in incident_edges {
-            let edge = edge.to_owned_edge();
+            let edge = edge.to_owned_edge::<G::EdgeData<'graph>>();
             let next_vertex = other_endpoint::<G, _>(edge, vertex);
             let residual_cap = residual_capacity::<G>(edge, next_vertex, flows[edge.id.as_usize()]);
             if residual_cap == G::EdgeData::zero() {
