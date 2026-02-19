@@ -35,7 +35,7 @@ use petgraph::{
         maximal_cliques as maximal_cliques_algo, maximum_matching, min_spanning_tree, page_rank,
         spfa, tarjan_scc, toposort,
     },
-    algorithms::flows::maximum_flow::ford_fulkerson,
+    // algorithms::flows::maximum_flow::ford_fulkerson,
     data::FromElements,
     dot::{Config, Dot},
     graph::{IndexType, edge_index, node_index},
