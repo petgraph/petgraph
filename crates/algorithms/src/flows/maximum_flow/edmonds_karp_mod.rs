@@ -1,8 +1,8 @@
-use core::ops::Sub;
-use std::{
+use core::{
+    borrow::Borrow,
     error::Error,
     fmt::{Display, Formatter},
-    ops::Add,
+    ops::{Add, Sub},
 };
 
 use petgraph_core::{
@@ -63,7 +63,7 @@ where
         + Zero
         + Measure
         + Bounded,
-    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
+    G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>> + Copy,
 {
     /// Runs the Edmonds-Karp algorithm with the current configuration.
     ///
@@ -193,7 +193,7 @@ where
         + Zero
         + Measure
         + Bounded,
-    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
+    G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>> + Copy,
 {
     edmonds_karp_inner(network, source, destination)
 }
@@ -212,7 +212,7 @@ where
         + Zero
         + Measure
         + Bounded,
-    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
+    G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>> + Copy,
 {
     let mut edge_to = vec![None; network.node_count()];
     let mut flows = vec![G::EdgeData::zero(); network.edge_count()];
@@ -258,7 +258,7 @@ where
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Zero + Measure,
-    G::EdgeDataRef<'graph_ref>: ToOwned<Owned = G::EdgeData<'graph>> + Copy,
+    G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>> + Copy,
 {
     // TODO(next): Replace by proper visit map
     let mut visited = vec![false; network.node_count()];
@@ -267,15 +267,14 @@ where
     queue.push_back(source);
 
     while let Some(vertex) = queue.pop_front() {
-        let incident_edges = network.incident_edges(vertex);
-        for edge in incident_edges {
-            let next = other_endpoint::<G, _>(edge, vertex);
-            let edge_index: usize = edge.id.as_usize();
+        for edge_ref in network.incident_edges(vertex) {
+            let next = other_endpoint::<G, _>(edge_ref, vertex);
+            let edge_index: usize = edge_ref.id.as_usize();
             let residual_cap =
-                residual_capacity::<G>(edge.to_owned_edge(), next, flows[edge_index]);
+                residual_capacity::<G>(edge_ref.to_owned_edge(), next, flows[edge_index]);
             if !visited[next.as_usize()] && (residual_cap > <G::EdgeData<'graph>>::zero()) {
                 visited[next.as_usize()] = true;
-                edge_to[next.as_usize()] = Some(edge.to_owned_edge());
+                edge_to[next.as_usize()] = Some(edge_ref.to_owned_edge());
                 if destination == next {
                     return true;
                 }
