@@ -61,10 +61,12 @@ where
     ///
     /// For an explanation of the algorithm, see the documentation of [`dinics`].
     /// If an invalid configuration is detected, an appropriate error is returned.
-    pub fn run(&self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
-        let source = self.source.expect("Source node is not set");
-        let destination = self.destination.expect("Destination node is not set");
-        dinics_inner(self.network, source, destination)
+    pub fn run(&self) -> Result<DinicsOutput<'graph, G>, DinicsConfigError> {
+        let source = self.source.ok_or(DinicsConfigError::SourceNodeNotSet)?;
+        let destination = self
+            .destination
+            .ok_or(DinicsConfigError::DestinationNodeNotSet)?;
+        Ok(dinics_inner(self.network, source, destination))
     }
 }
 
@@ -173,7 +175,7 @@ pub fn dinics<'graph, 'graph_ref, G: 'graph>(
     network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
-) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
+) -> DinicsOutput<'graph, G>
 where
     G: DirectedGraph,
     G::NodeId: IndexId,
@@ -188,7 +190,7 @@ fn dinics_inner<'graph, 'graph_ref, G: 'graph>(
     network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
-) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>)
+) -> DinicsOutput<'graph, G>
 where
     G: DirectedGraph,
     G::NodeId: IndexId,
@@ -215,8 +217,9 @@ where
         );
         max_flow = max_flow + flow_increase;
     }
-    (max_flow, flows)
+    DinicsOutput { max_flow, flows }
 }
+
 /// Makes a BFS that labels network vertices with levels representing
 /// their distance to the source vertex, considering only edges with
 /// positive residual capacity.
