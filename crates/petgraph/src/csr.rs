@@ -617,6 +617,7 @@ where
     Ty: EdgeType,
     Ix: IndexType,
 {
+    type EdgeRef = <Self::Edges as Iterator>::Item;
     type Edges = Edges<'a, E, Ty, Ix>;
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {

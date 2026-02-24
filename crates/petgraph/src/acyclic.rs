@@ -712,6 +712,7 @@ macro_rules! impl_graph_traits {
         }
 
         impl<'a, N, E, Ix: IndexType> IntoEdges for &'a Acyclic<$graph_type<N, E, Ix>> {
+            type EdgeRef = <Self::Edges as Iterator>::Item;
             type Edges = <&'a $graph_type<N, E, Ix> as IntoEdges>::Edges;
 
             fn edges(self, a: Self::NodeId) -> Self::Edges {
