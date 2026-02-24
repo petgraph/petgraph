@@ -1405,6 +1405,7 @@ impl<'a, N, E, S, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> Into
 impl<'a, N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexType> IntoEdges
     for &'a MatrixGraph<N, E, S, Ty, Null, Ix>
 {
+    type EdgeRef = <Self::Edges as Iterator>::Item;
     type Edges = Edges<'a, Ty, Null, Ix>;
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {
