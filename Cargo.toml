@@ -29,7 +29,7 @@ dot-parser-macros = { version = "0.5.1", default-features = false }
 fixedbitset       = { version = "0.5.7", default-features = false }
 foldhash          = { version = "0.2.0", default-features = false }
 fxhash            = { version = "0.2.1", default-features = false }
-hashbrown         = { version = "^0.15.0", default-features = false }
+hashbrown         = { version = "^0.16.0", default-features = false }
 indexmap          = { version = "2.5.0", default-features = false }
 itertools         = { version = "0.12.1", default-features = false }
 odds              = { version = "0.4.0", default-features = false }
