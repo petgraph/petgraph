@@ -36,7 +36,8 @@ pub mod spfa;
 pub mod steiner_tree;
 pub mod tred;
 
-use alloc::{vec, vec::Vec};
+use alloc::{collections::BinaryHeap, vec, vec::Vec};
+use hashbrown::HashMap;
 
 pub use astar::astar;
 pub use bellman_ford::{bellman_ford, find_negative_cycle};
@@ -262,6 +263,90 @@ where
     })
 }
 
+/// Perform a lexicographic topological sort of a directed graph using a custom
+/// key.
+///
+/// `lexicographic_toposort_by_key` returns `Err` on graphs with cycles.
+/// To handle graphs with cycles, use the one of scc algorithms or
+/// [`DfsPostOrder`](struct@crate::visit::DfsPostOrder)
+///   instead of this function.
+pub fn lexicographic_toposort_by_key<G, K: Eq + Ord, F>(
+    g: G,
+    space: Option<&mut LfsSpace<G::NodeId, K>>,
+    mut f: F,
+) -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
+where
+    G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
+    G::NodeId: Eq + std::hash::Hash,
+    K: Eq + Ord,
+    F: FnMut(&G::NodeId) -> K,
+{
+    let mut local_space;
+    let lfs = if let Some(v) = space {
+        v.clear();
+        v
+    } else {
+        local_space = LfsSpace::default();
+        &mut local_space
+    };
+
+
+    lfs.indegree.extend(g.node_identifiers().filter_map(|n| {
+        let deg = g.neighbors_directed(n, Direction::Incoming).count();
+        if deg == 0 { None } else { Some((n, deg)) }
+    }));
+
+    lfs.sources.extend(
+        g.node_identifiers()
+            .filter(|n| {
+                g.neighbors_directed(*n, Direction::Incoming)
+                    .next()
+                    .is_none()
+            })
+            .map(|n| Reverse(Proxy { key: f(&n), id: n })),
+    );
+
+    let mut result = Vec::new();
+    result.reserve(g.node_identifiers().count());
+    while let Some(Reverse(Proxy { id: source, key: _ })) = lfs.sources.pop() {
+        for child in g.neighbors_directed(source, Direction::Outgoing) {
+            let Some(deg) = lfs.indegree.get_mut(&child) else {
+                return Err(Cycle(child));
+            };
+            *deg -= 1;
+            if *deg == 0 {
+                lfs.sources.push(Reverse(Proxy {
+                    key: f(&child),
+                    id: child,
+                }));
+                lfs.indegree.remove(&child);
+            }
+        }
+        result.push(source);
+    }
+    if let Some((node_id, _)) = lfs.indegree.iter().next() {
+        return Err(Cycle(*node_id));
+    }
+    Ok(result)
+}
+/// Perform a lexicographic topological sort of a directed graph using node id's
+/// as keys. Node id's must be `Ord`.
+///
+/// `lexicographic_toposort` returns `Err` on graphs with cycles.
+/// To handle graphs with cycles, use the one of scc algorithms or
+/// [`DfsPostOrder`](struct@crate::visit::DfsPostOrder)
+///   instead of this function.
+pub fn lexicographic_toposort<G>(
+    g: G,
+    space: Option<&mut LfsSpace<G::NodeId>>,
+) -> Result<Vec<G::NodeId>, Cycle<G::NodeId>>
+where
+    G: IntoNeighborsDirected + IntoNodeIdentifiers + Visitable,
+    G::NodeId: Ord + std::hash::Hash,
+{
+    lexicographic_toposort_by_key(g, space, |n| *n)
+}
+
 /// Return `true` if the input directed graph contains a cycle.
 ///
 /// This implementation is recursive; use [`toposort`] if an alternative is needed.
@@ -323,6 +408,47 @@ where
                 discovered: <_>::default(),
             },
         }
+    }
+}
+
+pub struct Proxy<N, K> {
+    key: K,
+    id: N,
+}
+impl<N, K: Eq> PartialEq for Proxy<N, K> {
+    fn eq(&self, other: &Self) -> bool {
+        self.key.eq(&other.key)
+    }
+}
+impl<N, K: Eq> Eq for Proxy<N, K> {}
+impl<N, K: Eq + Ord> PartialOrd for Proxy<N, K> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        self.key.partial_cmp(&other.key)
+    }
+}
+impl<N, K: Eq + Ord> Ord for Proxy<N, K> {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        self.key.cmp(&other.key)
+    }
+}
+
+/// Workspace for lexicographic graph traversal using some comparison key
+pub struct LfsSpace<N, K = N> {
+    indegree: HashMap<N, usize>,
+    sources: BinaryHeap<Reverse<Proxy<N, K>>>,
+}
+impl<N, K: Eq + Ord> Default for LfsSpace<N, K> {
+    fn default() -> Self {
+        Self {
+            indegree: Default::default(),
+            sources: Default::default(),
+        }
+    }
+}
+impl<N, K: Eq + Ord> LfsSpace<N, K> {
+    fn clear(&mut self) {
+        self.indegree.clear();
+        self.sources.clear();
     }
 }
 
@@ -608,7 +734,7 @@ where
     true
 }
 
-use core::{fmt::Debug, ops::Add};
+use core::{cmp::Reverse, fmt::Debug, ops::Add};
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Clone {}
