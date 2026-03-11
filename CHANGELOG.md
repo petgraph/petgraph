@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 
 ### New Features
 
+- Add parallel iterators to `Graph` and `StableGraph` ([#929](https://github.com/petgraph/petgraph/pull/929))
 - Add `into_nodes_edges_iters` to `StableGraph` ([#841](https://github.com/petgraph/petgraph/pull/841))
 - Add methods to reserve & shrink `StableGraph` capacity ([#846](https://github.com/petgraph/petgraph/pull/846))
 - Add Dinic's Maximum Flow Algorithm ([#739](https://github.com/petgraph/petgraph/pull/739))
