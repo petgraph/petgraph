@@ -557,6 +557,7 @@ iter: SomeIter<'a, E, Ix>,
 }
 
 impl<'a, Ix: IndexType, E> visit::IntoEdges for &'a List<E, Ix> {
+    type EdgeRef = <Self::Edges as Iterator>::Item;
     type Edges = OutgoingEdgeReferences<'a, E, Ix>;
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {

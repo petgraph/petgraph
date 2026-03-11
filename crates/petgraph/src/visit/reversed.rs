@@ -49,6 +49,7 @@ impl<G> IntoEdges for Reversed<G>
 where
     G: IntoEdgesDirected,
 {
+    type EdgeRef = <Self::Edges as Iterator>::Item;
     type Edges = ReversedEdges<G::EdgesDirected>;
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {
