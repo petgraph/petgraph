@@ -174,7 +174,7 @@ where
 ///
 /// On an empty graph, a single empty permutation will return.
 ///
-/// the On a graph with cycles, `TopologicalSortGenerator` will provide an empty list.
+/// On a graph with cycles, `TopologicalSortGenerator` will provide an empty list.
 ///
 /// # Arguments
 /// * `g`: an acyclic directed graph.
