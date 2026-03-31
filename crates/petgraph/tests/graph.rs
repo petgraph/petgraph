@@ -3243,3 +3243,33 @@ fn test_edges_connecting_iteration_order() {
         ]
     );
 }
+
+#[test]
+fn test_unsafe_node_weight() {
+    let mut g: UnGraph<i32, ()> = Graph::new_undirected();
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let c = g.add_node(2);
+    let d = g.add_node(3);
+    unsafe {
+        assert_eq!(&0, g.node_weight_unchecked(a));
+        assert_eq!(&1, g.node_weight_unchecked(b));
+        assert_eq!(&2, g.node_weight_unchecked(c));
+        assert_eq!(&3, g.node_weight_unchecked(d));
+    }
+}
+
+#[test]
+fn test_unsafe_node_weight_mut() {
+    let mut g: UnGraph<i32, ()> = Graph::new_undirected();
+    let a = g.add_node(0);
+    let b = g.add_node(1);
+    let c = g.add_node(2);
+    let d = g.add_node(3);
+    unsafe {
+        assert_eq!(&mut 0, g.node_weight_mut_unchecked(a));
+        assert_eq!(&mut 1, g.node_weight_mut_unchecked(b));
+        assert_eq!(&mut 2, g.node_weight_mut_unchecked(c));
+        assert_eq!(&mut 3, g.node_weight_mut_unchecked(d));
+    }
+}
