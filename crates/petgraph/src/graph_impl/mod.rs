@@ -614,6 +614,34 @@ where
         self.nodes.get_mut(a.index()).map(|n| &mut n.weight)
     }
 
+    /// Return a reference to a node without doing any bounds checking
+    ///
+    /// For a safe alternative see `node_weight`.
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with an out-of-bounds index or an index that has
+    /// been removed from the graph is undefined behavior even if the
+    /// resulting reference is not used. You can think of this like calling
+    /// `.get(a).unwrap_unchecked()`
+    pub unsafe fn node_weight_unchecked(&self, a: NodeIndex<Ix>) -> &N {
+        unsafe { &self.nodes.get_unchecked(a.index()).weight }
+    }
+
+    /// Return a mutable reference to a node without doing any bounds checking
+    ///
+    /// For a safe alternative see `node_weight_mut`.
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with an out-of-bounds index or an index that has
+    /// been removed from the graph is undefined behavior even if the
+    /// resulting reference is not used. You can think of this like calling
+    /// `.get(a).unwrap_unchecked()`
+    pub unsafe fn node_weight_mut_unchecked(&mut self, a: NodeIndex<Ix>) -> &mut N {
+        unsafe { &mut self.nodes.get_unchecked_mut(a.index()).weight }
+    }
+
     /// Add an edge from `a` to `b` to the graph, with its associated
     /// data `weight`.
     ///
