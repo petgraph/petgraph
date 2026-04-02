@@ -2,8 +2,8 @@
 //! Algorithm used is Donald Knuth's and Jayme Szwarcfiter's
 //! algorithm described in "A STRUCTURED PROGRAM TO
 //! GENERATE ALL TOPOLOGICAL SORTING ARRANGEMENTS"
+use alloc::{collections::VecDeque, vec::Vec};
 use core::hash::Hash;
-use std::{collections::VecDeque, iter::Iterator, vec::Vec};
 
 use hashbrown::{HashMap, HashSet};
 
