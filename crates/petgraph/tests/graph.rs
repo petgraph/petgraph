@@ -759,6 +759,101 @@ fn test_toposort() {
 }
 
 #[test]
+fn all_toposorts() {
+    //
+    //   A
+    //  / \
+    // B   C
+    // |   |
+    // |   D
+    // \  / \
+    //  E    F
+    //
+    // Seven Orderings possible:
+    // A - Always in front
+    // {BCD, CBD, CDB}
+    // {EF, FE}
+    // Special Ordering:
+    // ACDFBE
+
+    let mut gr = Graph::<_, _>::new();
+
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
+    gr.extend_with_edges([
+        (a, b, 1.),
+        (a, c, 1.),
+        (b, e, 1.),
+        (c, d, 1.),
+        (d, e, 1.),
+        (d, f, 1.),
+    ]);
+
+    let order = petgraph::algo::knuth_szwarcfiter::all_toposorts(&gr);
+
+    let mut iter_count = 0;
+    for ordering in order {
+        assert_is_topo_order(&gr, &ordering);
+        assert_eq!(ordering.len(), gr.node_count());
+        iter_count += 1;
+    }
+    assert_eq!(iter_count, 7);
+}
+
+#[test]
+fn disjoint_topsorts() {
+    //
+    //   A      X
+    //  / \     |
+    // B   C    Y
+
+    let mut gr = Graph::<&str, f64>::new();
+
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let x = gr.add_node("X");
+    let y = gr.add_node("Y");
+    gr.extend_with_edges([(a, b, 1.), (a, c, 1.), (x, y, 1.)]);
+
+    let order = petgraph::algo::knuth_szwarcfiter::all_toposorts(&gr);
+
+    let mut iter_count = 0;
+    for ordering in order {
+        assert_is_topo_order(&gr, &ordering);
+        assert_eq!(ordering.len(), gr.node_count());
+        iter_count += 1;
+    }
+    assert_eq!(iter_count, 20);
+}
+
+#[test]
+fn all_toposorts_empty() {
+    let gr = Graph::<&str, f64>::new();
+
+    let mut order = petgraph::algo::knuth_szwarcfiter::all_toposorts(&gr);
+
+    assert!(order.next() == Some(Vec::new()));
+    assert!(order.next().is_none());
+}
+
+#[test]
+fn all_toposorts_cycle() {
+    let mut gr = Graph::<&str, f64>::new();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    gr.extend_with_edges([(a, b, 1.), (b, c, 1.), (c, a, 1.)]);
+
+    let mut order = petgraph::algo::knuth_szwarcfiter::all_toposorts(&gr);
+    assert_eq!(order.next(), None);
+}
+
+#[test]
 fn test_toposort_eq() {
     let mut g = Graph::<_, _>::new();
     let a = g.add_node("A");
