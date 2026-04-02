@@ -156,6 +156,7 @@ where
             return None;
         }
 
+        // Initialization
         if self.seq.is_none() {
             self.seq = Some(Vec::new());
         }
