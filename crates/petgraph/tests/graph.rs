@@ -806,7 +806,6 @@ fn all_toposorts() {
 
 #[test]
 fn disjoint_topsorts() {
-
     //
     //   A      X
     //  / \     |
@@ -819,11 +818,7 @@ fn disjoint_topsorts() {
     let c = gr.add_node("C");
     let x = gr.add_node("X");
     let y = gr.add_node("Y");
-    gr.extend_with_edges([
-        (a, b, 1.),
-        (a, c, 1.),
-        (x, y, 1.),
-    ]);
+    gr.extend_with_edges([(a, b, 1.), (a, c, 1.), (x, y, 1.)]);
 
     let order = petgraph::algo::knuth_szwarcfiter::all_toposorts(&gr);
 
@@ -852,11 +847,7 @@ fn all_toposorts_cycle() {
     let a = gr.add_node("A");
     let b = gr.add_node("B");
     let c = gr.add_node("C");
-    gr.extend_with_edges([
-        (a, b, 1.),
-        (b, c, 1.),
-        (c, a, 1.),
-    ]);
+    gr.extend_with_edges([(a, b, 1.), (b, c, 1.), (c, a, 1.)]);
 
     let mut order = petgraph::algo::knuth_szwarcfiter::all_toposorts(&gr);
     assert_eq!(order.next(), None);
