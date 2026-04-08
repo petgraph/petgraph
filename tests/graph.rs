@@ -1269,6 +1269,42 @@ fn index_twice_mut() {
     }
 }
 
+// Test that index_twice_mut can be used to get two nodes, two edges, or a mixture.
+//
+// This is useful for testing the unsafe implementation with miri.
+#[test]
+fn index_twice_mut_variations() {
+    let mut gr = Graph::<_, _>::new();
+    let a = gr.add_node(1);
+    let b = gr.add_node(2);
+    let c = gr.add_node(3);
+    let ab = gr.add_edge(a, b, 4);
+    let ac = gr.add_edge(a, c, 5);
+    let (a_mut, b_mut) = gr.index_twice_mut(a, b);
+    // Mutate each twice to ensure both remain valid even after the other reference is used.
+    for _ in 0..2 {
+        *a_mut += 1;
+        *b_mut += 1;
+    }
+    let (ab_mut, ac_mut) = gr.index_twice_mut(ab, ac);
+    for _ in 0..2 {
+        *ab_mut += 1;
+        *ac_mut += 1;
+    }
+    let (a_mut, ab_mut) = gr.index_twice_mut(a, ab);
+    for _ in 0..2 {
+        *a_mut += 1;
+        *ab_mut += 1;
+    }
+    // Check that all additions happened as expected.
+    for (node, value) in [(a, 5), (b, 4), (c, 3)] {
+        assert_eq!(gr[node], value);
+    }
+    for (edge, value) in [(ab, 8), (ac, 7)] {
+        assert_eq!(gr[edge], value);
+    }
+}
+
 fn make_edge_iterator_graph<Ty: EdgeType>() -> Graph<f64, f64, Ty> {
     let mut gr = Graph::default();
     let a = gr.add_node(0.);
