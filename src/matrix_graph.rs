@@ -524,6 +524,11 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         None
     }
 
+    /// Return `true` if the node `a` exists.
+    pub fn has_node(&self, a: NodeIndex<Ix>) -> bool {
+        a.index() < self.node_capacity && !self.nodes.removed_ids.contains(&a.index())
+    }
+
     /// Return `true` if there is an edge between `a` and `b`.
     ///
     /// If any of the nodes don't exist - returns `false`.
@@ -635,6 +640,22 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         ))
     }
 
+    /// Return an iterator of all nodes in the graph with references to their weights.
+    ///
+    /// This was implemented for compatibility reasons with petgraph 0.9.
+    /// Iterator element type is `(NodeIndex<Ix>, &N)`.
+    pub fn all_nodes(&self) -> AllNodes<'_, N, Ix> {
+        AllNodes::new(&self.nodes)
+    }
+
+    /// Return an iterator of all nodes in the graph with mutable references to their weights.
+    ///
+    /// This was implemented for compatibility reasons with petgraph 0.9.
+    /// Iterator element type is `(NodeIndex<Ix>, &mut N)`.
+    pub fn all_nodes_mut(&mut self) -> AllNodesMut<'_, N, Ix> {
+        AllNodesMut::new(&mut self.nodes)
+    }
+
     /// Return an iterator of all edges of `a`.
     ///
     /// - `Directed`: Outgoing edges from `a`.
@@ -644,6 +665,22 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
     /// Iterator element type is `(NodeIndex<Ix>, NodeIndex<Ix>, &E)`.
     pub fn edges(&self, a: NodeIndex<Ix>) -> Edges<'_, Ty, Null, Ix> {
         Edges::on_columns(a.index(), &self.node_adjacencies, self.node_capacity)
+    }
+
+    /// Return an iterator of all edges in the graph with references to their weights.
+    ///
+    /// This was implemented for compatibility reasons with petgraph 0.9.
+    /// Iterator element type is `(NodeIndex<Ix>, NodeIndex<Ix>, &E)`.
+    pub fn all_edges(&self) -> AllEdges<'_, Ty, Null, Ix> {
+        AllEdges::new(&self.node_adjacencies, self.node_capacity)
+    }
+
+    /// Return an iterator of all edges in the graph with mutable references to their weights.
+    ///
+    /// This was implemented for compatibility reasons with petgraph 0.9.
+    /// Iterator element type is `(NodeIndex<Ix>, NodeIndex<Ix>, &mut E)`.
+    pub fn all_edges_mut(&mut self) -> AllEdgesMut<'_, Ty, Null, Ix> {
+        AllEdgesMut::new(&mut self.node_adjacencies, self.node_capacity)
     }
 
     /// Create a new `MatrixGraph` from an iterable of edges.
@@ -921,6 +958,84 @@ impl<Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Neighbors<'_, Ty,
     }
 }
 
+/// Iterator over all nodes with references to their weights.
+///
+/// Created with [`.all_nodes()`][1].
+///
+/// [1]: struct.MatrixGraph.html#method.all_nodes
+pub struct AllNodes<'a, N, Ix> {
+    nodes: ::core::slice::Iter<'a, Option<N>>,
+    // The index of the next node to yield
+    next_node: usize,
+    ix: PhantomData<Ix>,
+}
+
+impl<'a, N, Ix> AllNodes<'a, N, Ix> {
+    fn new<S>(nodes: &'a IdStorage<N, S>) -> Self {
+        AllNodes {
+            nodes: nodes.elements.iter(),
+            next_node: 0,
+            ix: PhantomData,
+        }
+    }
+}
+
+impl<'a, N, Ix: IndexType> Iterator for AllNodes<'a, N, Ix> {
+    type Item = (NodeIndex<Ix>, &'a N);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let current_index = self.next_node;
+
+            self.next_node += 1;
+            let node_entry = self.nodes.next()?;
+
+            if let Some(node) = node_entry.as_ref() {
+                return Some((NodeIndex::new(current_index), node));
+            }
+        }
+    }
+}
+
+/// Iterator over all nodes with mutable references to their weights.
+///
+/// Created with [`.all_nodes_mut()`][1].
+///
+/// [1]: struct.MatrixGraph.html#method.all_nodes_mut
+pub struct AllNodesMut<'a, N, Ix> {
+    nodes: ::core::slice::IterMut<'a, Option<N>>,
+    // The index of the next node to yield
+    next_node: usize,
+    ix: PhantomData<Ix>,
+}
+
+impl<'a, N, Ix> AllNodesMut<'a, N, Ix> {
+    fn new<S>(nodes: &'a mut IdStorage<N, S>) -> Self {
+        AllNodesMut {
+            nodes: nodes.elements.iter_mut(),
+            next_node: 0,
+            ix: PhantomData,
+        }
+    }
+}
+
+impl<'a, N, Ix: IndexType> Iterator for AllNodesMut<'a, N, Ix> {
+    type Item = (NodeIndex<Ix>, &'a mut N);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let current_index = self.next_node;
+
+            self.next_node += 1;
+            let node_entry = self.nodes.next()?;
+
+            if let Some(node) = node_entry.as_mut() {
+                return Some((NodeIndex::new(current_index), node));
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum NeighborIterDirection {
     Rows,
@@ -995,6 +1110,187 @@ impl<'a, Ty: EdgeType, Null: Nullable, Ix: IndexType> Iterator for Edges<'a, Ty,
                 };
 
                 return Some((NodeIndex::new(a), NodeIndex::new(b), e));
+            }
+        }
+    }
+}
+
+/// Iterator over all edges with references to their weights.
+///
+/// Created with [`.all_edges()`][1].
+///
+/// [1]: struct.MatrixGraph.html#method.edge_weights
+pub struct AllEdges<'a, Ty: EdgeType, Null: 'a + Nullable, Ix> {
+    node_adjacencies: ::core::slice::Iter<'a, Null>,
+    node_capacity: usize,
+    // Row and column of the next edge to yield
+    row: usize,
+    column: usize,
+    ty: PhantomData<Ty>,
+    ix: PhantomData<Ix>,
+}
+
+impl<'a, Ty: EdgeType, Null: 'a + Nullable, Ix> AllEdges<'a, Ty, Null, Ix> {
+    fn new(node_adjacencies: &'a [Null], node_capacity: usize) -> AllEdges<'a, Ty, Null, Ix> {
+        AllEdges {
+            node_adjacencies: node_adjacencies.iter(),
+            node_capacity,
+            row: 0,
+            column: 0,
+            ty: PhantomData,
+            ix: PhantomData,
+        }
+    }
+}
+
+impl<'a, Null: Nullable, Ix: IndexType> Iterator for AllEdges<'a, Directed, Null, Ix> {
+    type Item = (NodeIndex<Ix>, NodeIndex<Ix>, &'a Null::Wrapped);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            // Retrieve current position
+            let (row, column) = (self.row, self.column);
+            if row >= self.node_capacity {
+                return None;
+            }
+
+            // Update position for next iteration
+            self.column += 1;
+            if self.column >= self.node_capacity {
+                self.column = 0;
+                self.row += 1;
+            }
+
+            let edge_entry = self
+                .node_adjacencies
+                .next()
+                .expect("Iterator should not return None, since we would have exited earlier.");
+
+            if let Some(edge) = edge_entry.as_ref() {
+                return Some((NodeIndex::new(row), NodeIndex::new(column), edge));
+            }
+        }
+    }
+}
+
+impl<'a, Null: Nullable, Ix: IndexType> Iterator for AllEdges<'a, Undirected, Null, Ix> {
+    type Item = (NodeIndex<Ix>, NodeIndex<Ix>, &'a Null::Wrapped);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            // Retrieve current position
+            let (row, column) = (self.row, self.column);
+            if row >= self.node_capacity {
+                return None;
+            }
+
+            // Update position for next iteration
+            if self.column == self.row {
+                self.row += 1;
+                self.column = 0;
+            } else {
+                self.column += 1;
+            }
+
+            let edge_entry = self
+                .node_adjacencies
+                .next()
+                .expect("Iterator should not return None, since we would have exited earlier.");
+
+            if let Some(edge) = edge_entry.as_ref() {
+                return Some((NodeIndex::new(row), NodeIndex::new(column), edge));
+            }
+        }
+    }
+}
+
+/// Iterator over all edges with mutable references to their weights.
+///
+/// Created with [`.all_edges_mut()`][1].
+///
+/// [1]: struct.MatrixGraph.html#method.edge_weights_mut
+pub struct AllEdgesMut<'a, Ty: EdgeType, Null: 'a + Nullable, Ix> {
+    node_adjacencies: ::core::slice::IterMut<'a, Null>,
+    node_capacity: usize,
+    // Row and column of the next edge to yield
+    row: usize,
+    column: usize,
+    ty: PhantomData<Ty>,
+    ix: PhantomData<Ix>,
+}
+
+impl<'a, Ty: EdgeType, Null: 'a + Nullable, Ix> AllEdgesMut<'a, Ty, Null, Ix> {
+    fn new(
+        node_adjacencies: &'a mut [Null],
+        node_capacity: usize,
+    ) -> AllEdgesMut<'a, Ty, Null, Ix> {
+        AllEdgesMut {
+            node_adjacencies: node_adjacencies.iter_mut(),
+            node_capacity,
+            row: 0,
+            column: 0,
+            ty: PhantomData,
+            ix: PhantomData,
+        }
+    }
+}
+
+impl<'a, Null: Nullable, Ix: IndexType> Iterator for AllEdgesMut<'a, Directed, Null, Ix> {
+    type Item = (NodeIndex<Ix>, NodeIndex<Ix>, &'a mut Null::Wrapped);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            // Retrieve current position
+            let (row, column) = (self.row, self.column);
+            if row >= self.node_capacity {
+                return None;
+            }
+
+            // Update position for next iteration
+            self.column += 1;
+            if self.column >= self.node_capacity {
+                self.column = 0;
+                self.row += 1;
+            }
+
+            let edge_entry = self
+                .node_adjacencies
+                .next()
+                .expect("Iterator should not return None, since we would have exited earlier.");
+
+            if let Some(edge) = edge_entry.as_mut() {
+                return Some((NodeIndex::new(row), NodeIndex::new(column), edge));
+            }
+        }
+    }
+}
+
+impl<'a, Null: Nullable, Ix: IndexType> Iterator for AllEdgesMut<'a, Undirected, Null, Ix> {
+    type Item = (NodeIndex<Ix>, NodeIndex<Ix>, &'a mut Null::Wrapped);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            // Retrieve current position
+            let (row, column) = (self.row, self.column);
+            if row >= self.node_capacity {
+                return None;
+            }
+
+            // Update position for next iteration
+            if self.column == self.row {
+                self.row += 1;
+                self.column = 0;
+            } else {
+                self.column += 1;
+            }
+
+            let edge_entry = self
+                .node_adjacencies
+                .next()
+                .expect("Iterator should not return None, since we would have exited earlier.");
+
+            if let Some(edge) = edge_entry.as_mut() {
+                return Some((NodeIndex::new(row), NodeIndex::new(column), edge));
             }
         }
     }
@@ -1476,6 +1772,8 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
 
 #[cfg(test)]
 mod tests {
+    use hashbrown::HashSet;
+
     use super::*;
     use crate::{Incoming, Outgoing};
     use std::collections::hash_map::RandomState;
@@ -1554,6 +1852,20 @@ mod tests {
         assert!(g.has_edge(n2, n1));
         assert!(g.has_edge(n2, n3));
         assert!(g.has_edge(n2, n4));
+    }
+
+    #[test]
+    fn test_has_node() {
+        let mut g = MatrixGraph::<_, _, RandomState>::new();
+        let a = g.add_node('a');
+        let b = g.add_node('b');
+        let c = g.add_node('c');
+        g.add_edge(a, b, ());
+        g.add_edge(b, c, ());
+        assert!(g.has_node(a));
+        assert!(g.has_node(b));
+        assert!(g.has_node(c));
+        assert!(!g.has_node(10.into())); // Non-existent node.
     }
 
     #[test]
@@ -1873,6 +2185,88 @@ mod tests {
     fn test_edges_of_absent_node_is_empty_iterator() {
         let g: MatrixGraph<char, bool> = MatrixGraph::new();
         assert_eq!(g.edges(node_index(0)).count(), 0);
+    }
+
+    #[test]
+    fn test_all_edges() {
+        let g: MatrixGraph<(), ()> = MatrixGraph::from_edges([
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 5),
+            (1, 3),
+            (2, 3),
+            (2, 4),
+            (4, 0),
+            (6, 6),
+        ]);
+
+        assert_eq!(g.all_edges().count(), g.edge_count());
+
+        let mut expected_edges: HashSet<(usize, usize)> = HashSet::from_iter([
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 5),
+            (1, 3),
+            (2, 3),
+            (2, 4),
+            (4, 0),
+            (6, 6),
+        ]);
+
+        for (a, b, _) in g.all_edges() {
+            let edge = (a.index(), b.index());
+            assert!(expected_edges.remove(&edge));
+        }
+        assert!(expected_edges.is_empty());
+    }
+
+    #[test]
+    fn test_all_edges_mut() {
+        let mut g: MatrixGraph<(), ()> = MatrixGraph::from_edges([
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 5),
+            (1, 3),
+            (2, 3),
+            (2, 4),
+            (4, 0),
+            (6, 6),
+        ]);
+
+        assert_eq!(g.all_edges_mut().count(), g.edge_count());
+
+        let mut expected_edges: HashSet<(usize, usize)> = HashSet::from_iter([
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 5),
+            (1, 3),
+            (2, 3),
+            (2, 4),
+            (4, 0),
+            (6, 6),
+        ]);
+
+        for (a, b, _) in g.all_edges_mut() {
+            let edge = (a.index(), b.index());
+            assert!(expected_edges.remove(&edge));
+        }
+        assert!(expected_edges.is_empty());
+    }
+
+    #[test]
+    fn test_all_edges_empty_graph() {
+        let g: MatrixGraph<(), ()> = MatrixGraph::new();
+        assert_eq!(g.all_edges().count(), 0);
+    }
+
+    #[test]
+    fn test_all_edges_mut_empty_graph() {
+        let mut g: MatrixGraph<(), ()> = MatrixGraph::new();
+        assert_eq!(g.all_edges_mut().count(), 0);
     }
 
     #[test]
