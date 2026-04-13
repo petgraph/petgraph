@@ -10,6 +10,8 @@ use core::{
 };
 
 use fixedbitset::FixedBitSet;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 
 use crate::{
     Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected,
@@ -1183,6 +1185,26 @@ where
         }
     }
 
+    /// Return a parallel iterator yielding mutable access to all node weights.
+    #[cfg(feature = "rayon")]
+    pub fn par_node_weights_mut(&mut self) -> impl ParallelIterator<Item = &mut N>
+    where
+        N: Send + Sync,
+        Ix: Send + Sync,
+    {
+        self.nodes.par_iter_mut().map(|x| &mut x.weight)
+    }
+
+    /// Return a parallel iterator yielding immutable access to all node weights.
+    #[cfg(feature = "rayon")]
+    pub fn par_node_weights(&self) -> impl ParallelIterator<Item = &N>
+    where
+        N: Send + Sync,
+        Ix: Send + Sync,
+    {
+        self.nodes.par_iter().map(|x| &x.weight)
+    }
+
     /// Return an iterator over the edge indices of the graph
     pub fn edge_indices(&self) -> EdgeIndices<Ix> {
         EdgeIndices {
@@ -1218,6 +1240,26 @@ where
         EdgeWeightsMut {
             edges: self.edges.iter_mut(),
         }
+    }
+
+    /// Return a parallel iterator yielding mutable access to all edge weights.
+    #[cfg(feature = "rayon")]
+    pub fn par_edge_weights_mut(&mut self) -> impl ParallelIterator<Item = &mut E>
+    where
+        E: Send + Sync,
+        Ix: Send + Sync,
+    {
+        self.edges.par_iter_mut().map(|x| &mut x.weight)
+    }
+
+    /// Return an iterator yielding immutable access to all node weights.
+    #[cfg(feature = "rayon")]
+    pub fn par_edge_weights(&self) -> impl ParallelIterator<Item = &E>
+    where
+        E: Send + Sync,
+        Ix: Send + Sync,
+    {
+        self.edges.par_iter().map(|x| &x.weight)
     }
 
     // Remaining methods are of the more internal flavour, read-only access to
