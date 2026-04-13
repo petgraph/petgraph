@@ -3265,7 +3265,7 @@ fn test_parallel_node_weights_mut() {
     for i in 0..100 {
         graph.add_node(i);
     }
-    graph.par_node_weights_mut().for_each(|x| *x = *x * 2);
+    graph.par_node_weights_mut().for_each(|x| *x *= 2);
     let result = graph.par_node_weights().copied().collect::<Vec<_>>();
     let expected = (0..100).map(|x| x * 2).collect::<Vec<_>>();
     assert_eq!(result, expected);
@@ -3292,7 +3292,7 @@ fn test_parallel_edge_weights_mut() {
         graph.add_node(i);
         graph.add_edge(NodeIndex::new(i as usize), NodeIndex::new(i as usize), i);
     }
-    graph.par_edge_weights_mut().for_each(|x| *x = *x * 2);
+    graph.par_edge_weights_mut().for_each(|x| *x *= 2);
     let result = graph.par_edge_weights().copied().collect::<Vec<_>>();
     let expected = (0..100).map(|x| x * 2).collect::<Vec<_>>();
     assert_eq!(result, expected);
