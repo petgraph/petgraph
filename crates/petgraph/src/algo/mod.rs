@@ -270,7 +270,7 @@ where
 /// To handle graphs with cycles, use the one of scc algorithms or
 /// [`DfsPostOrder`](struct@crate::visit::DfsPostOrder)
 ///   instead of this function.
-pub fn lexicographic_toposort_by_key<G, K: Eq + Ord, F>(
+pub fn lexicographic_toposort_by_key<G, K, F>(
     g: G,
     space: Option<&mut LfsSpace<G::NodeId, K>>,
     mut f: F,
