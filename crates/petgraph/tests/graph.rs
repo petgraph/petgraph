@@ -756,6 +756,12 @@ fn test_toposort() {
     assert_eq!(order.len(), gr.node_count());
 
     assert_is_topo_order(&gr, &order);
+
+    let order = petgraph::algo::lexicographic_toposort(&gr, None).unwrap();
+    println!("{order:?}");
+    assert_eq!(order.len(), gr.node_count());
+
+    assert_is_topo_order(&gr, &order);
 }
 
 #[test]
@@ -766,6 +772,21 @@ fn test_toposort_eq() {
     g.add_edge(a, b, ());
 
     assert_eq!(petgraph::algo::toposort(&g, None), Ok(vec![a, b]));
+}
+
+#[test]
+fn test_lexicographic_toposort() {
+    let mut gr = Graph::<_, ()>::new();
+    let a = gr.add_node("AAAA");
+    let b = gr.add_node("BB");
+    let c = gr.add_node("CCC");
+    let d = gr.add_node("D");
+    let order = petgraph::algo::lexicographic_toposort_by_key(&gr, None, |n| {
+        gr.node_weight(*n).unwrap().len()
+    }).unwrap();
+
+    assert_eq!(order, vec![d, b, c, a]);
+    assert_is_topo_order(&gr, &order);
 }
 
 #[test]
