@@ -64,7 +64,17 @@ fn expected_ranks() -> Vec<f32> {
 fn test_page_rank() {
     let graph = graph_example();
     let output_ranks = page_rank(&graph, 0.85_f32, 100);
-    assert_eq!(expected_ranks(), output_ranks);
+    // Compared within tolerance, not bit-for-bit: exact f32 equality over 100
+    // iterations is reduction-order dependent. Mirrors `test_par_page_rank`
+    // below, which already compares against the same reference this way.
+    assert!(
+        !expected_ranks()
+            .iter()
+            .zip(output_ranks)
+            .any(|(expected, computed)| ((expected - computed).abs() > 1e-6)
+                || computed.is_nan()
+                || expected.is_nan())
+    );
 }
 
 #[test]

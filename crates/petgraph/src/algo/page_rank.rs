@@ -23,7 +23,7 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 /// Otherwise, it panics.
 ///
 /// # Complexity
-/// * Time complexity: **O(n|V|²|E|)**.
+/// * Time complexity: **O(n(|V| + |E|))**.
 /// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **n** is the number of iterations, **|V|** the number of vertices (i.e nodes) and **|E|**
@@ -57,7 +57,7 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 /// let damping_factor = 0.7_f32;
 /// let number_iterations = 10;
 /// let output_ranks = page_rank(&g, damping_factor, number_iterations);
-/// let expected_ranks = vec![0.14685437, 0.20267677, 0.22389607, 0.27971846, 0.14685437];
+/// let expected_ranks = vec![0.14685437, 0.20267676, 0.22389606, 0.27971846, 0.14685437];
 /// assert_eq!(expected_ranks, output_ranks);
 /// ```
 #[track_caller]
@@ -81,26 +81,54 @@ where
         .map(|i| graph.edges(nodeix(i)).map(|_| D::one()).sum::<D>())
         .collect();
 
+    // Same recurrence, computed sparsely. The dense form sums, for every node
+    // `v`, a term over *every* node `w` (probing `w`'s edges to test `w -> v`),
+    // which is O(|V|^2 |E|) per iteration. Algebraically that sum splits into
+    // two per-iteration scalars plus a contribution that is non-trivial only
+    // for the actual in-neighbours of `v`:
+    //
+    //   pi[v] = A + T + sum over distinct w with an edge w->v of
+    //               ( d * r[w] / outdeg[w]  -  (1 - d) * r[w] / nb )
+    //
+    //   A = sum over dangling w (outdeg 0) of  d * r[w] / nb     (rank sink)
+    //   T = sum over non-dangling w of        (1 - d) * r[w] / nb (random jump)
+    //
+    // so one pass over the edge set per iteration suffices: O(|V| + |E|).
+    // Parallel edges `w -> v` collapse to one contribution, matching the
+    // original `edges(w).any(target == v)` boolean. This reorders the
+    // floating-point reduction, so results match the previous implementation
+    // to within accumulation tolerance, not bit-for-bit.
+    let one_minus_d = D::one() - damping_factor;
+    let mut seen = vec![0usize; node_count];
+    let mut epoch = 0usize;
+
     for _ in 0..nb_iter {
-        let pi = (0..node_count)
-            .enumerate()
-            .map(|(v, _)| {
-                ranks
-                    .iter()
-                    .enumerate()
-                    .map(|(w, r)| {
-                        let mut w_out_edges = graph.edges(nodeix(w));
-                        if w_out_edges.any(|e| e.target() == nodeix(v)) {
-                            damping_factor * *r / out_degrees[w]
-                        } else if out_degrees[w] == D::zero() {
-                            damping_factor * *r / nb // stochastic matrix condition
-                        } else {
-                            (D::one() - damping_factor) * *r / nb // random jumps
-                        }
-                    })
-                    .sum::<D>()
-            })
-            .collect::<Vec<D>>();
+        let mut a = D::zero();
+        let mut t = D::zero();
+        for w in 0..node_count {
+            if out_degrees[w] == D::zero() {
+                a = a + damping_factor * ranks[w] / nb;
+            } else {
+                t = t + one_minus_d * ranks[w] / nb;
+            }
+        }
+
+        let mut pi = vec![a + t; node_count];
+        for w in 0..node_count {
+            if out_degrees[w] == D::zero() {
+                continue;
+            }
+            let contrib = damping_factor * ranks[w] / out_degrees[w] - one_minus_d * ranks[w] / nb;
+            epoch += 1; // unique stamp per (iteration, w) so the dedup resets for free
+            for edge in graph.edges(nodeix(w)) {
+                let v = graph.to_index(edge.target());
+                if seen[v] != epoch {
+                    seen[v] = epoch;
+                    pi[v] = pi[v] + contrib;
+                }
+            }
+        }
+
         let sum = pi.iter().copied().sum::<D>();
         ranks = pi.iter().map(|r| *r / sum).collect::<Vec<D>>();
     }
