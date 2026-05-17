@@ -123,6 +123,21 @@ fn test_ford_fulkerson() {
 
 #[cfg(feature = "stable_graph")]
 #[test]
+fn test_ford_fulkerson_stable_graph_node_hole_regression() {
+    let mut graph = StableDiGraph::<(), u32>::new();
+    let source = graph.add_node(());
+    let removed = graph.add_node(());
+    let sink = graph.add_node(());
+
+    graph.add_edge(source, sink, 1);
+    graph.remove_node(removed);
+
+    let (max_flow, _) = ford_fulkerson(&graph, source, sink);
+    assert_eq!(1, max_flow);
+}
+
+#[cfg(feature = "stable_graph")]
+#[test]
 fn test_ford_fulkerson_stable_graphs() {
     // See issue https://github.com/petgraph/petgraph/issues/792
     let mut g: StableGraph<(), u32, Directed> = StableDiGraph::new();
