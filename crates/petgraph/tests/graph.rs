@@ -623,6 +623,21 @@ fn test_generate_undirected() {
 
 #[cfg(feature = "generate")]
 #[test]
+fn test_generate_undirected_without_selfloops_counts_all_graphs() {
+    // 3 nodes, no self-loops => 3 possible edges => 2^3 = 8 graphs
+    assert_eq!(
+        pg::generate::Generator::<Undirected>::all(3, false).count(),
+        8
+    );
+    // guard against a `/2` regression: directed, no self-loops => 3*2 = 6 edges => 2^6 = 64 graphs
+    assert_eq!(
+        pg::generate::Generator::<Directed>::all(3, false).count(),
+        64
+    );
+}
+
+#[cfg(feature = "generate")]
+#[test]
 fn test_generate_directed() {
     // Number of DAG out of all graphs (all permutations) per node size
     //            0, 1, 2, 3,  4,   5 ..
