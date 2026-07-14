@@ -1,6 +1,16 @@
 use petgraph::{Graph, Undirected, algo::dsatur_coloring};
 
 #[test]
+fn dsatur_coloring_empty_graph_uses_zero_colors() {
+    let graph: Graph<(), (), Undirected> = Graph::new_undirected();
+
+    let (coloring, nb_colors) = dsatur_coloring(&graph);
+
+    assert!(coloring.is_empty());
+    assert_eq!(nb_colors, 0);
+}
+
+#[test]
 fn dsatur_coloring_cycle6() {
     let mut graph: Graph<(), (), Undirected> = Graph::new_undirected();
     let a = graph.add_node(());
