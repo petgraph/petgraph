@@ -13,6 +13,7 @@ repository.workspace = true
 
 keywords   = ["data-structure", "graph", "unionfind", "graph-algorithms"]
 categories = ["data-structures"]
+include = ["src/**/*", "README.md"]
 
 [package.metadata.docs.rs]
 features = ["rayon", "serde-1", "quickcheck"]
