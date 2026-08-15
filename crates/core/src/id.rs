@@ -5,6 +5,8 @@ use core::{
 
 pub trait Id: Copy + PartialEq + Debug + Display {}
 
+impl<T: Copy + PartialEq + Debug + Display> Id for T {}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum IndexIdTryFromIntError {
     OutOfRange { value: u64, range: (u64, u64) },
