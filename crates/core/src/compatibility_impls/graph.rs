@@ -593,3 +593,24 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
         self.node_count() == 0
     }
 }
+
+mod test {
+    use super::{Directed, EdgeIndex, NodeIndex, OldGraph};
+    use crate::{graph::DirectedGraph, test_directed_graph};
+
+    fn remove_node_with_unwrap(graph: &mut OldGraph<(), (), Directed>, node_id: NodeIndex) {
+        graph.remove_node(node_id).unwrap();
+    }
+
+    fn remove_edge_with_unwrap(graph: &mut OldGraph<(), (), Directed>, edge_id: EdgeIndex) {
+        graph.remove_edge(edge_id).unwrap();
+    }
+
+    test_directed_graph!(
+        OldGraph::<(), (), Directed>::new,
+        OldGraph::<(), (), Directed>::add_node,
+        remove_node_with_unwrap,
+        OldGraph::<(), (), Directed>::add_edge,
+        remove_edge_with_unwrap
+    );
+}
