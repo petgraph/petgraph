@@ -1190,13 +1190,12 @@ impl<S: BuildHasher> Iterator for IdIterator<'_, S> {
     fn next(&mut self) -> Option<Self::Item> {
         // initialize / advance
         let current = {
-            if self.current.is_none() {
-                self.current = Some(0);
-                self.current.as_mut().unwrap()
-            } else {
-                let current = self.current.as_mut().unwrap();
+            if let Some(current) = self.current.as_mut() {
                 *current += 1;
                 current
+            } else {
+                self.current = Some(0);
+                self.current.as_mut().unwrap()
             }
         };
 
