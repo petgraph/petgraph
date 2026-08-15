@@ -26,6 +26,8 @@ impl<N: Display> Display for GraphMapEdgeId<N> {
 
 trait NodeTraitBounds: Display + core::fmt::Debug + Eq + Copy + NodeTrait + Id {}
 
+impl<N: Display + core::fmt::Debug + Eq + Copy + NodeTrait + Id> NodeTraitBounds for N {}
+
 impl<N: NodeTraitBounds> Id for GraphMapEdgeId<N> {}
 
 impl<N: NodeTraitBounds, E, Ty, S: BuildHasher> NewGraph for GraphMap<N, E, Ty, S> {
@@ -289,8 +291,11 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.edges_directed(node, Direction::Incoming)
-            .chain(self.edges_directed(node, Direction::Outgoing))
-            .map(|(_source, target, _data)| target)
+            .map(|(source, _target, _data)| source)
+            .chain(
+                self.edges_directed(node, Direction::Outgoing)
+                    .map(|(_source, target, _data)| target),
+            )
     }
 
     // Edges between nodes
@@ -609,4 +614,60 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
     fn is_empty(&self) -> bool {
         self.node_count() == 0
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{Directed, Display, GraphMap, GraphMapEdgeId, Id};
+    use crate::{graph::DirectedGraph, test_directed_graph};
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
+    struct GraphMapNodeId(u32);
+
+    impl Display for GraphMapNodeId {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            write!(f, "Node({})", self.0)
+        }
+    }
+
+    impl Id for GraphMapNodeId {}
+
+    fn add_node_with_increment(
+        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
+        _dummy: (),
+    ) -> GraphMapNodeId {
+        graph.add_node(GraphMapNodeId(graph.node_count() as u32))
+    }
+
+    fn remove_node_with_unwrap(
+        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
+        node_id: GraphMapNodeId,
+    ) {
+        graph.remove_node(node_id);
+    }
+
+    fn add_edge_with_unwrap(
+        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
+        source: GraphMapNodeId,
+        target: GraphMapNodeId,
+        _data: (),
+    ) -> GraphMapEdgeId<GraphMapNodeId> {
+        graph.add_edge(source, target, ());
+        GraphMapEdgeId { source, target }
+    }
+
+    fn remove_edge_with_unwrap(
+        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
+        edge_id: GraphMapEdgeId<GraphMapNodeId>,
+    ) {
+        graph.remove_edge(edge_id.source, edge_id.target).unwrap();
+    }
+
+    test_directed_graph!(
+        GraphMap::<GraphMapNodeId, (), Directed>::new,
+        add_node_with_increment,
+        remove_node_with_unwrap,
+        add_edge_with_unwrap,
+        remove_edge_with_unwrap
+    );
 }
