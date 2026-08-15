@@ -621,9 +621,9 @@ where
         // every edge is part of two lists,
         // outgoing and incoming edges.
         // Remove it from both
-        let (is_edge, edge_node, edge_next) = match self.g.edges.get(e.index()) {
-            None => return None,
-            Some(x) => (x.weight.is_some(), x.node, x.next),
+        let (is_edge, edge_node, edge_next) = {
+            let x = self.g.edges.get(e.index())?;
+            (x.weight.is_some(), x.node, x.next)
         };
         if !is_edge {
             return None;
@@ -2506,7 +2506,7 @@ fn dfs() {
 
     let mut dfs = Dfs::new(&gr, a);
     while let Some(next) = dfs.next(&gr) {
-        println!("dfs visit => {:?}, weight={:?}", next, &gr[next]);
+        println!("dfs visit => {:?}, weight={:?}", next, gr[next]);
     }
 }
 

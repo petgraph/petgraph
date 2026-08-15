@@ -125,6 +125,12 @@ impl<Ix: IndexType> NodeIndex<Ix> {
     }
 }
 
+impl<Ix: fmt::Display> fmt::Display for NodeIndex<Ix> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "NodeIndex({})", self.0)
+    }
+}
+
 unsafe impl<Ix: IndexType> IndexType for NodeIndex<Ix> {
     fn index(&self) -> usize {
         self.0.index()
@@ -189,6 +195,12 @@ impl<Ix: IndexType> EdgeIndex<Ix> {
 impl<Ix: IndexType> From<Ix> for EdgeIndex<Ix> {
     fn from(ix: Ix) -> Self {
         EdgeIndex(ix)
+    }
+}
+
+impl<Ix: fmt::Display> fmt::Display for EdgeIndex<Ix> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "EdgeIndex({})", self.0)
     }
 }
 
@@ -853,10 +865,11 @@ where
         // every edge is part of two lists,
         // outgoing and incoming edges.
         // Remove it from both
-        let (edge_node, edge_next) = match self.edges.get(e.index()) {
-            None => return None,
-            Some(x) => (x.node, x.next),
+        let (edge_node, edge_next) = {
+            let x = self.edges.get(e.index())?;
+            (x.node, x.next)
         };
+
         // Remove the edge from its in and out lists by replacing it with
         // a link to the next in the list.
         self.change_edge_links(edge_node, e, edge_next);
