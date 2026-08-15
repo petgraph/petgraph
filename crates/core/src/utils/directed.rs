@@ -13,7 +13,7 @@ use crate::{
     node::{Node, NodeMut, NodeRef},
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub struct NodeId(usize);
 
 impl AddAssign<usize> for NodeId {
@@ -30,7 +30,7 @@ impl Display for NodeId {
 
 impl Id for NodeId {}
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub struct EdgeId(usize);
 
 impl AddAssign<usize> for EdgeId {
@@ -93,6 +93,16 @@ where
 
         self.edges.insert(id, (source, target, edge));
         Some(id)
+    }
+
+    pub fn remove_node(&mut self, node_id: NI) -> Option<N> {
+        self.edges
+            .retain(|_, (source, target, _)| *source != node_id && *target != node_id);
+        self.nodes.remove(&node_id)
+    }
+
+    pub fn remove_edge(&mut self, edge_id: EI) -> Option<E> {
+        self.edges.remove(&edge_id).map(|(_, _, data)| data)
     }
 }
 
@@ -171,4 +181,41 @@ where
                 data,
             })
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::test_directed_graph;
+
+    fn remove_node_with_unwrap(
+        graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
+        node_id: NodeId,
+    ) {
+        graph.remove_node(node_id).unwrap();
+    }
+
+    fn add_edge_with_unwrap(
+        graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
+        source: NodeId,
+        target: NodeId,
+        _data: (),
+    ) -> EdgeId {
+        graph.add_edge(source, target, ()).unwrap()
+    }
+
+    fn remove_edge_with_unwrap(
+        graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
+        edge_id: EdgeId,
+    ) {
+        graph.remove_edge(edge_id).unwrap();
+    }
+
+    test_directed_graph!(
+        DirectedTestGraph::<(), (), NodeId, EdgeId>::new,
+        DirectedTestGraph::<(), (), NodeId, EdgeId>::add_node,
+        remove_node_with_unwrap,
+        add_edge_with_unwrap,
+        remove_edge_with_unwrap
+    );
 }
