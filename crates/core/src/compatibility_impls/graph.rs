@@ -151,20 +151,18 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
 
     #[inline]
     fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
-        self.edge_weight(id).map(|data| {
-            let (source, target) = self.edge_endpoints(id).unwrap();
-            EdgeRef::<'_, Self> {
-                id,
-                source,
-                target,
-                data,
-            }
+        let (source, target) = self.edge_endpoints(id)?;
+        self.edge_weight(id).map(|data| EdgeRef::<'_, Self> {
+            id,
+            source,
+            target,
+            data,
         })
     }
 
     #[inline]
     fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
-        let (source, target) = self.edge_endpoints(id).unwrap();
+        let (source, target) = self.edge_endpoints(id)?;
         self.edge_weight_mut(id).map(|data| EdgeMut::<'_, Self> {
             id,
             source,
@@ -594,6 +592,7 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::{Directed, EdgeIndex, NodeIndex, OldGraph};
     use crate::{graph::DirectedGraph, test_directed_graph};
