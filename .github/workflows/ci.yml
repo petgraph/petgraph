@@ -1,6 +1,6 @@
 on:
   pull_request:
-    branches: [ '*' ]
+    branches: [ master ]
   merge_group:
     types: [ checks_requested ]
   workflow_dispatch: { }

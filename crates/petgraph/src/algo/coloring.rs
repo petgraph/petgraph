@@ -98,5 +98,7 @@ where
         }
     }
 
-    (colored, max_color + 1)
+    let nb_colors = if colored.is_empty() { 0 } else { max_color + 1 };
+
+    (colored, nb_colors)
 }
