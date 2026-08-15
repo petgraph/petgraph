@@ -272,9 +272,9 @@ macro_rules! test_directed_graph {
                 );
             }
 
-            $remove_edge(&mut graph, edges[0]);
+            $remove_edge(&mut graph, edges[3]);
             assert!(
-                DirectedGraph::edge(&graph, edges[0]).is_none(),
+                DirectedGraph::edge(&graph, edges[3]).is_none(),
                 "DirectedGraph::edge() did not return None for removed edge id"
             );
         }
@@ -291,9 +291,9 @@ macro_rules! test_directed_graph {
                 );
             }
 
-            $remove_edge(&mut graph, edges[0]);
+            $remove_edge(&mut graph, edges[3]);
             assert!(
-                DirectedGraph::edge_mut(&mut graph, edges[0]).is_none(),
+                DirectedGraph::edge_mut(&mut graph, edges[3]).is_none(),
                 "DirectedGraph::edge_mut() did not return None for removed edge id"
             );
         }
