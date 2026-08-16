@@ -364,9 +364,9 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
-            writeln!(&mut Escaper(f), "{:#}", &self.0)
+            writeln!(&mut Escaper(f), "{:#}", self.0)
         } else {
-            write!(&mut Escaper(f), "{}", &self.0)
+            write!(&mut Escaper(f), "{}", self.0)
         }
     }
 }
