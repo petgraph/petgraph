@@ -65,7 +65,7 @@ impl<Ty: EdgeType> Generator<Ty> {
         let nedges = if allow_selfloops {
             (nodes * nodes - nodes) / scale + nodes
         } else {
-            (nodes * nodes) / scale - nodes
+            (nodes * nodes - nodes) / scale
         };
         assert!(nedges < 64);
         Generator {
