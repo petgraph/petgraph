@@ -644,3 +644,35 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
         self.node_count() == 0
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::{MatrixGraph, MatrixGraphEdgeId, NodeIndex};
+    use crate::{graph::DirectedGraph, test_directed_graph};
+
+    fn remove_node_with_unwrap(graph: &mut MatrixGraph<(), ()>, node_id: NodeIndex) {
+        graph.remove_node(node_id);
+    }
+
+    fn add_edge_with_unwrap(
+        graph: &mut MatrixGraph<(), ()>,
+        source: NodeIndex,
+        target: NodeIndex,
+        _data: (),
+    ) -> MatrixGraphEdgeId<u16> {
+        graph.add_edge(source, target, ());
+        MatrixGraphEdgeId { source, target }
+    }
+
+    fn remove_edge_with_unwrap(graph: &mut MatrixGraph<(), ()>, edge_id: MatrixGraphEdgeId<u16>) {
+        graph.remove_edge(edge_id.source, edge_id.target);
+    }
+
+    test_directed_graph!(
+        MatrixGraph::<(), ()>::new,
+        MatrixGraph::<(), ()>::add_node,
+        remove_node_with_unwrap,
+        add_edge_with_unwrap,
+        remove_edge_with_unwrap
+    );
+}
