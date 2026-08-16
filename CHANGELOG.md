@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.8.4](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.3...petgraph@v0.8.4) - 2026-08-16
+
+### Bug Fixes
+
+- correct undirected edge count in Generator::all without self-loops ([#1012](https://github.com/petgraph/petgraph/pull/1012))
+
+### New Features
+
+- Add Display Implementation for NodeIndex<Ix> and EdgeIndex<Ix> whenever Ix: Display. ([#941](https://github.com/petgraph/petgraph/pull/941))
+- Expose mutable Edge Weight iterators for MatrixGraph ([#946](https://github.com/petgraph/petgraph/pull/946))
+
+### Performance
+
+- Kruskal's iterator creation 2x faster via O(E) bottom-up heapify ([#984](https://github.com/petgraph/petgraph/pull/984))
+
 ## [0.8.3](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.2...petgraph@v0.8.3) - 2025-09-30
 
 ### Bug Fixes
