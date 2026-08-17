@@ -190,3 +190,12 @@ fn test_dinics_stable_graph() {
     let (max_flow, _) = dinics(&graph, source, sink);
     assert_eq!(5, max_flow);
 }
+
+#[test]
+fn test_dinics_source_equals_destination() {
+    let mut graph = Graph::<(), u32>::new();
+    let source = graph.add_node(());
+    let (max_flow, flows) = dinics(&graph, source, source);
+    assert_eq!(0, max_flow);
+    assert!(flows.is_empty());
+}

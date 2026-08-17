@@ -79,6 +79,13 @@ where
     G: NodeCount + EdgeCount + IntoEdgesDirected + EdgeIndexable + NodeIndexable + Visitable,
     G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
+    if source == destination {
+        return (
+            G::EdgeWeight::zero(),
+            vec![G::EdgeWeight::zero(); network.edge_count()],
+        );
+    }
+
     let mut max_flow = G::EdgeWeight::zero();
     let mut flows = vec![G::EdgeWeight::zero(); network.edge_count()];
     let mut visited = network.visit_map();
