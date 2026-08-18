@@ -1842,10 +1842,10 @@ mod tests {
 
         let nodes = [node_zero, node_one, node_two, node_three];
 
-        let _ = graph.add_edge(nodes[0], nodes[1], ());
-        let _ = graph.add_edge(nodes[0], nodes[2], ());
-        let _ = graph.add_edge(nodes[1], nodes[3], ());
-        let _ = graph.add_edge(nodes[3], nodes[2], ());
+        graph.add_edge(nodes[0], nodes[1], ());
+        graph.add_edge(nodes[0], nodes[2], ());
+        graph.add_edge(nodes[1], nodes[3], ());
+        graph.add_edge(nodes[3], nodes[2], ());
 
         graph.remove_node(node_zero);
         assert_eq!(graph.edge_count(), 2);
