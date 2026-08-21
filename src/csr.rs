@@ -284,9 +284,7 @@ where
     pub fn clear_edges(&mut self) {
         self.column.clear();
         self.edges.clear();
-        for r in &mut self.row {
-            *r = 0;
-        }
+        self.row.fill(0);
         if !self.is_directed() {
             self.edge_count = 0;
         }

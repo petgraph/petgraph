@@ -389,13 +389,21 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
         for id in self.nodes.iter_ids() {
             let position = self.to_edge_position(a, NodeIndex::new(id));
             if let Some(pos) = position {
-                self.node_adjacencies[pos] = Default::default();
+                let entry = &mut self.node_adjacencies[pos];
+                if !entry.is_null() {
+                    *entry = Default::default();
+                    self.nb_edges -= 1;
+                }
             }
 
             if Ty::is_directed() {
                 let position = self.to_edge_position(NodeIndex::new(id), a);
                 if let Some(pos) = position {
-                    self.node_adjacencies[pos] = Default::default();
+                    let entry = &mut self.node_adjacencies[pos];
+                    if !entry.is_null() {
+                        *entry = Default::default();
+                        self.nb_edges -= 1;
+                    }
                 }
             }
         }
@@ -1819,6 +1827,28 @@ mod tests {
 
         assert_eq!(g.node_count(), 0);
         assert_eq!(g.edge_count(), 0);
+
+        // The graph looks as follows:
+        // 0 --> 1
+        // |      |
+        // v      v
+        // 2 <----3
+        let mut graph = MatrixGraph::<u32, ()>::new();
+
+        let node_zero = graph.add_node(0);
+        let node_one = graph.add_node(1);
+        let node_two = graph.add_node(2);
+        let node_three = graph.add_node(3);
+
+        let nodes = [node_zero, node_one, node_two, node_three];
+
+        graph.add_edge(nodes[0], nodes[1], ());
+        graph.add_edge(nodes[0], nodes[2], ());
+        graph.add_edge(nodes[1], nodes[3], ());
+        graph.add_edge(nodes[3], nodes[2], ());
+
+        graph.remove_node(node_zero);
+        assert_eq!(graph.edge_count(), 2);
     }
 
     #[test]
@@ -2083,6 +2113,7 @@ mod tests {
         g.remove_node(b);
 
         assert_eq!(g.node_count(), 2);
+        assert_eq!(g.edge_count(), 1);
 
         let a_neighbors = g.neighbors(a).into_sorted_vec();
         assert_eq!(a_neighbors, vec![]);
