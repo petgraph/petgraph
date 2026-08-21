@@ -534,7 +534,7 @@ impl<N, E, S: BuildHasher, Ty: EdgeType, Null: Nullable<Wrapped = E>, Ix: IndexT
 
     /// Return `true` if the node `a` exists.
     pub fn has_node(&self, a: NodeIndex<Ix>) -> bool {
-        a.index() < self.node_capacity && !self.nodes.removed_ids.contains(&a.index())
+        a.index() < self.nodes.upper_bound && !self.nodes.removed_ids.contains(&a.index())
     }
 
     /// Return `true` if there is an edge between `a` and `b`.
@@ -1896,6 +1896,35 @@ mod tests {
         assert!(g.has_node(b));
         assert!(g.has_node(c));
         assert!(!g.has_node(10.into())); // Non-existent node.
+
+        // The graph looks as follows:
+        // 0 --> 1
+        // |      |
+        // v      v
+        // 2 <----3     4
+        let mut graph = MatrixGraph::<u32, ()>::new();
+
+        let node_zero = graph.add_node(0);
+        let node_one = graph.add_node(1);
+        let node_two = graph.add_node(2);
+        let node_three = graph.add_node(3);
+        let node_four = graph.add_node(4);
+
+        let nodes = [node_zero, node_one, node_two, node_three, node_four];
+
+        graph.add_edge(nodes[0], nodes[1], ());
+        graph.add_edge(nodes[0], nodes[2], ());
+        graph.add_edge(nodes[1], nodes[3], ());
+        graph.add_edge(nodes[3], nodes[2], ());
+
+        // Check if all nodes are present in the graph, even if they have no adjacent edges.
+        for node_id in nodes.iter() {
+            assert!(
+                graph.has_node(*node_id),
+                "Graph should have node {:?}",
+                node_id
+            );
+        }
     }
 
     #[test]
