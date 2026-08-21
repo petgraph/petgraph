@@ -511,8 +511,8 @@ where
     /// Return an iterator of target nodes with an edge starting from `a`,
     /// paired with their respective edge weights.
     ///
-    /// - `Directed`, `Outgoing`: All edges from `a`.
-    /// - `Directed`, `Incoming`: All edges to `a`.
+    /// - `Directed`, `Outgoing`: All edges from `a`, with `a` being the source of each edge.
+    /// - `Directed`, `Incoming`: All edges to `a`, with `a` being the target of each edge.
     /// - `Undirected`, `Outgoing`: All edges connected to `a`, with `a` being the source of each
     ///   edge.
     /// - `Undirected`, `Incoming`: All edges connected to `a`, with `a` being the target of each
