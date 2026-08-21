@@ -609,3 +609,34 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
         self.node_count() == 0
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::{EdgeIndex, NodeIndex, StableGraph};
+    use crate::{graph::DirectedGraph, test_directed_graph};
+
+    fn remove_node_with_unwrap(graph: &mut StableGraph<(), ()>, node_id: NodeIndex) {
+        graph.remove_node(node_id);
+    }
+
+    fn add_edge_with_unwrap(
+        graph: &mut StableGraph<(), ()>,
+        source: NodeIndex,
+        target: NodeIndex,
+        _data: (),
+    ) -> EdgeIndex {
+        graph.add_edge(source, target, ())
+    }
+
+    fn remove_edge_with_unwrap(graph: &mut StableGraph<(), ()>, edge_id: EdgeIndex) {
+        graph.remove_edge(edge_id);
+    }
+
+    test_directed_graph!(
+        StableGraph::<(), ()>::new,
+        StableGraph::<(), ()>::add_node,
+        remove_node_with_unwrap,
+        add_edge_with_unwrap,
+        remove_edge_with_unwrap
+    );
+}
