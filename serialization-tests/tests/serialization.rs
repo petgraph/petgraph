@@ -123,7 +123,7 @@ where
     let d = g.add_node("D");
     let e = g.add_node("E");
     let f = g.add_node("F");
-    g.extend_with_edges(&[
+    g.extend_with_edges([
         (a, b, 7),
         (c, a, 9),
         (a, d, 14),
