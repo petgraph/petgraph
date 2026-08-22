@@ -167,7 +167,9 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::isolated_nodes().count() did not match expected value"
             );
             let mut isolated_nodes_iter = DirectedGraph::isolated_nodes(&graph);
-            let first_isolated_node = isolated_nodes_iter.next().unwrap();
+            let first_isolated_node = isolated_nodes_iter
+                .next()
+                .expect("Expected isolated node not found in test_isolated_nodes");
             assert_eq!(
                 first_isolated_node.id, nodes[4],
                 "DirectedGraph::isolated_nodes() did not return expected node id"
@@ -221,7 +223,8 @@ macro_rules! test_directed_graph {
             let (mut graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &node_id in &nodes {
-                let node = DirectedGraph::node(&graph, node_id).unwrap();
+                let node = DirectedGraph::node(&graph, node_id)
+                    .expect("Expected node not found in test_node");
                 assert_eq!(
                     node.id, node_id,
                     "DirectedGraph::node() did not return expected node id"
@@ -243,7 +246,8 @@ macro_rules! test_directed_graph {
             let (mut graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &node_id in &nodes {
-                let node = DirectedGraph::node_mut(&mut graph, node_id).unwrap();
+                let node = DirectedGraph::node_mut(&mut graph, node_id)
+                    .expect("Expected node not found in test_node_mut");
                 assert_eq!(
                     node.id, node_id,
                     "DirectedGraph::node_mut() did not return expected node id"
@@ -265,7 +269,8 @@ macro_rules! test_directed_graph {
             let (mut graph, _, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &edge_id in &edges {
-                let edge = DirectedGraph::edge(&graph, edge_id).unwrap();
+                let edge = DirectedGraph::edge(&graph, edge_id)
+                    .expect("Expected edge not found in test_edge");
                 assert_eq!(
                     edge.id, edge_id,
                     "DirectedGraph::edge() did not return expected edge id"
@@ -284,7 +289,8 @@ macro_rules! test_directed_graph {
             let (mut graph, _, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             for &edge_id in &edges {
-                let edge = DirectedGraph::edge_mut(&mut graph, edge_id).unwrap();
+                let edge = DirectedGraph::edge_mut(&mut graph, edge_id)
+                    .expect("Expected edge not found in test_edge_mut");
                 assert_eq!(
                     edge.id, edge_id,
                     "DirectedGraph::edge_mut() did not return expected edge id"
