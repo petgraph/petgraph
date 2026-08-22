@@ -225,7 +225,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     #[inline]
     fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
-            .map(|(source, target, data)| EdgeRef::<'_, Self> {
+            .map(|(target, source, data)| EdgeRef::<'_, Self> {
                 id: MatrixGraphEdgeId { source, target },
                 source,
                 target,
@@ -273,13 +273,21 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
-            .chain(self.edges_directed(node, Direction::Outgoing))
-            .map(|(source, target, data)| EdgeRef::<'_, Self> {
+            .map(|(target, source, data)| EdgeRef::<'_, Self> {
                 id: MatrixGraphEdgeId { source, target },
                 source,
                 target,
                 data,
             })
+            .chain(
+                self.edges_directed(node, Direction::Outgoing)
+                    .map(|(source, target, data)| EdgeRef::<'_, Self> {
+                        id: MatrixGraphEdgeId { source, target },
+                        source,
+                        target,
+                        data,
+                    }),
+            )
     }
 
     /// Mutable iterator over incident edges of node. That is, all edges where node is either
