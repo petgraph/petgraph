@@ -155,20 +155,18 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     #[inline]
     fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
-        self.edge_weight(id).map(|data| {
-            let (source, target) = self.edge_endpoints(id).unwrap();
-            EdgeRef::<'_, Self> {
-                id,
-                source,
-                target,
-                data,
-            }
+        let (source, target) = self.edge_endpoints(id)?;
+        self.edge_weight(id).map(|data| EdgeRef::<'_, Self> {
+            id,
+            source,
+            target,
+            data,
         })
     }
 
     #[inline]
     fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
-        let (source, target) = self.edge_endpoints(id).unwrap();
+        let (source, target) = self.edge_endpoints(id)?;
         self.edge_weight_mut(id).map(|data| EdgeMut::<'_, Self> {
             id,
             source,
@@ -507,7 +505,7 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
 
     #[inline]
     fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
-        let (source, target) = self.edge_endpoints(id).unwrap();
+        let (source, target) = self.edge_endpoints(id)?;
         self.edge_weight(id).map(|data| EdgeRef::<'_, Self> {
             id,
             source,
@@ -518,7 +516,7 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
 
     #[inline]
     fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
-        let (source, target) = self.edge_endpoints(id).unwrap();
+        let (source, target) = self.edge_endpoints(id)?;
         self.edge_weight_mut(id).map(|data| EdgeMut::<'_, Self> {
             id,
             source,
