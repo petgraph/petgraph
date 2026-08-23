@@ -4,10 +4,12 @@ pub const DIRECTED_TEST_GRAPH_EDGE_COUNT: usize = 4;
 /// A macro to create a simple directed graph for testing purposes.
 ///
 /// The graph looks as follows:
+/// ```text
 /// 0 --> 1
 /// |      |
 /// v      v
 /// 2 <----3     4
+/// ```
 ///
 /// The macro returns a tuple containing the constructed graph,
 /// a vector of the indices of added nodes, and a vector of the indices of added edges.
@@ -35,11 +37,11 @@ macro_rules! create_directed_test_graph {
 
         assert_eq!(
             nodes.len(),
-            $crate::utils::testing::DIRECTED_TEST_GRAPH_NODE_COUNT
+            $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_NODE_COUNT
         );
         assert_eq!(
             edges.len(),
-            $crate::utils::testing::DIRECTED_TEST_GRAPH_EDGE_COUNT
+            $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_EDGE_COUNT
         );
 
         (graph, nodes, edges)
@@ -85,36 +87,36 @@ macro_rules! test_directed_graph {
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
             assert_eq!(
                 DirectedGraph::node_count(&graph),
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_NODE_COUNT,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_NODE_COUNT,
                 "DirectedGraph::node_count() did not match expected value"
             );
             assert_eq!(
                 DirectedGraph::edge_count(&graph),
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_EDGE_COUNT,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_EDGE_COUNT,
                 "DirectedGraph::edge_count() did not match expected value"
             );
 
             let cardinality = DirectedGraph::cardinality(&graph);
             assert_eq!(
                 cardinality.order,
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_NODE_COUNT,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_NODE_COUNT,
                 "DirectedGraph::cardinality().order did not match expected value"
             );
             assert_eq!(
                 cardinality.size,
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_EDGE_COUNT,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_EDGE_COUNT,
                 "DirectedGraph::cardinality().size did not match expected value"
             );
 
             $remove_node(&mut graph, nodes[0]);
             assert_eq!(
                 DirectedGraph::node_count(&graph),
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_NODE_COUNT - 1,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_NODE_COUNT - 1,
                 "DirectedGraph::node_count() did not match expected value after removing node 0"
             );
             assert_eq!(
                 DirectedGraph::edge_count(&graph),
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_EDGE_COUNT - 2,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_EDGE_COUNT - 2,
                 "DirectedGraph::edge_count() did not match expected value after removing node 0"
             );
         }
@@ -126,7 +128,7 @@ macro_rules! test_directed_graph {
             let nodes_count = DirectedGraph::nodes(&graph).count();
             assert_eq!(
                 nodes_count,
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_NODE_COUNT,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_NODE_COUNT,
                 "DirectedGraph::nodes().count() did not match expected value"
             );
             for node in DirectedGraph::nodes(&graph) {
@@ -145,7 +147,7 @@ macro_rules! test_directed_graph {
             let nodes_count = DirectedGraph::nodes_mut(&mut graph).count();
             assert_eq!(
                 nodes_count,
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_NODE_COUNT,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_NODE_COUNT,
                 "DirectedGraph::nodes_mut().count() did not match expected value"
             );
             for node in DirectedGraph::nodes_mut(&mut graph) {
@@ -187,7 +189,7 @@ macro_rules! test_directed_graph {
             let edges_count = DirectedGraph::edges(&graph).count();
             assert_eq!(
                 edges_count,
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_EDGE_COUNT,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_EDGE_COUNT,
                 "DirectedGraph::edges().count() did not match expected value"
             );
             for edge in DirectedGraph::edges(&graph) {
@@ -206,7 +208,7 @@ macro_rules! test_directed_graph {
             let edges_count = DirectedGraph::edges_mut(&mut graph).count();
             assert_eq!(
                 edges_count,
-                $crate::utils::testing::DIRECTED_TEST_GRAPH_EDGE_COUNT,
+                $crate::utils::testing::directed::DIRECTED_TEST_GRAPH_EDGE_COUNT,
                 "DirectedGraph::edges_mut().count() did not match expected value"
             );
             for edge in DirectedGraph::edges_mut(&mut graph) {
