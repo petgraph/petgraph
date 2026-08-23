@@ -14,40 +14,40 @@ use crate::{
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
-pub struct NodeId(usize);
+pub struct UndirNodeId(usize);
 
-impl AddAssign<usize> for NodeId {
+impl AddAssign<usize> for UndirNodeId {
     fn add_assign(&mut self, other: usize) {
         self.0 += other;
     }
 }
 
-impl Display for NodeId {
+impl Display for UndirNodeId {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         Display::fmt(&self.0, fmt)
     }
 }
 
-impl Id for NodeId {}
+impl Id for UndirNodeId {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
-pub struct EdgeId(usize);
+pub struct UndirEdgeId(usize);
 
-impl AddAssign<usize> for EdgeId {
+impl AddAssign<usize> for UndirEdgeId {
     fn add_assign(&mut self, other: usize) {
         self.0 += other;
     }
 }
 
-impl Display for EdgeId {
+impl Display for UndirEdgeId {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         Display::fmt(&self.0, fmt)
     }
 }
 
-impl Id for EdgeId {}
+impl Id for UndirEdgeId {}
 
-pub struct UndirectedTestGraph<N, E, NI = NodeId, EI = EdgeId> {
+pub struct UndirectedTestGraph<N, E, NI = UndirNodeId, EI = UndirEdgeId> {
     next_node: NI,
     next_edge: EI,
 

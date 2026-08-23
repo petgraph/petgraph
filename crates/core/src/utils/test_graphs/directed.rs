@@ -14,40 +14,40 @@ use crate::{
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
-pub struct NodeId(usize);
+pub struct DirNodeId(usize);
 
-impl AddAssign<usize> for NodeId {
+impl AddAssign<usize> for DirNodeId {
     fn add_assign(&mut self, other: usize) {
         self.0 += other;
     }
 }
 
-impl Display for NodeId {
+impl Display for DirNodeId {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         Display::fmt(&self.0, fmt)
     }
 }
 
-impl Id for NodeId {}
+impl Id for DirNodeId {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
-pub struct EdgeId(usize);
+pub struct DirEdgeId(usize);
 
-impl AddAssign<usize> for EdgeId {
+impl AddAssign<usize> for DirEdgeId {
     fn add_assign(&mut self, other: usize) {
         self.0 += other;
     }
 }
 
-impl Display for EdgeId {
+impl Display for DirEdgeId {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         Display::fmt(&self.0, fmt)
     }
 }
 
-impl Id for EdgeId {}
+impl Id for DirEdgeId {}
 
-pub struct DirectedTestGraph<N, E, NI = NodeId, EI = EdgeId> {
+pub struct DirectedTestGraph<N, E, NI = DirNodeId, EI = DirEdgeId> {
     next_node: NI,
     next_edge: EI,
 
@@ -189,31 +189,31 @@ mod test {
     use crate::test_directed_graph;
 
     fn remove_node_with_unwrap(
-        graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
-        node_id: NodeId,
+        graph: &mut DirectedTestGraph<(), (), DirNodeId, DirEdgeId>,
+        node_id: DirNodeId,
     ) {
         graph.remove_node(node_id).unwrap();
     }
 
     fn add_edge_with_unwrap(
-        graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
-        source: NodeId,
-        target: NodeId,
+        graph: &mut DirectedTestGraph<(), (), DirNodeId, DirEdgeId>,
+        source: DirNodeId,
+        target: DirNodeId,
         _data: (),
-    ) -> EdgeId {
+    ) -> DirEdgeId {
         graph.add_edge(source, target, ()).unwrap()
     }
 
     fn remove_edge_with_unwrap(
-        graph: &mut DirectedTestGraph<(), (), NodeId, EdgeId>,
-        edge_id: EdgeId,
+        graph: &mut DirectedTestGraph<(), (), DirNodeId, DirEdgeId>,
+        edge_id: DirEdgeId,
     ) {
         graph.remove_edge(edge_id).unwrap();
     }
 
     test_directed_graph!(
-        DirectedTestGraph::<(), (), NodeId, EdgeId>::new,
-        DirectedTestGraph::<(), (), NodeId, EdgeId>::add_node,
+        DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,
+        DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::add_node,
         remove_node_with_unwrap,
         add_edge_with_unwrap,
         remove_edge_with_unwrap
