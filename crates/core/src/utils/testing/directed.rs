@@ -82,6 +82,15 @@ macro_rules! test_directed_graph {
         $remove_edge:expr
     ) => {
         #[test]
+        fn test_density_hint() {
+            let (graph, _, _) =
+                $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
+
+            // DensityHint is a hint, so this is intentionally only a smoke test.
+            let _density_hint = $crate::graph::DirectedGraph::density_hint(&graph);
+        }
+
+        #[test]
         fn test_cardinality() {
             let (mut graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
