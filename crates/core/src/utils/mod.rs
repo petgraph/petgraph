@@ -1,2 +1,2 @@
-pub mod directed;
+pub mod test_graphs;
 pub mod testing;
