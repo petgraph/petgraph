@@ -148,6 +148,7 @@ macro_rules! test_undirected_graph {
                 nodes.iter().copied(),
                 $crate::graph::UndirectedGraph::nodes(&graph).map(|node| node.id),
                 "nodes",
+                "UndirectedGraph",
                 "graph",
             );
         }
@@ -167,6 +168,7 @@ macro_rules! test_undirected_graph {
                 nodes.iter().copied(),
                 $crate::graph::UndirectedGraph::nodes_mut(&mut graph).map(|node| node.id),
                 "nodes_mut",
+                "UndirectedGraph",
                 "graph",
             );
         }
@@ -180,6 +182,7 @@ macro_rules! test_undirected_graph {
                 [nodes[4]],
                 $crate::graph::UndirectedGraph::isolated_nodes(&graph).map(|node| node.id),
                 "isolated_nodes",
+                "UndirectedGraph",
                 "graph",
             );
         }
@@ -421,6 +424,7 @@ macro_rules! test_undirected_graph {
                     core::iter::IntoIterator::into_iter(expected_nodes).flatten(),
                     $crate::graph::UndirectedGraph::adjacencies(&graph, nodes[node_number]),
                     "adjacencies",
+                    "UndirectedGraph",
                     format_args!("node {}", node_number),
                 );
             }
