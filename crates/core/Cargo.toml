@@ -6,6 +6,8 @@ edition.workspace      = true
 license.workspace      = true
 repository.workspace   = true
 rust-version.workspace = true
+# We can remove this this crate has been released at least once
+publish                = false
 
 [dependencies]
 foldhash  = { workspace = true, optional = true }
