@@ -54,7 +54,7 @@ macro_rules! create_directed_test_graph {
 /// One test is generated for each method in the [`DirectedGraph`][crate::graph::DirectedGraph]
 /// trait. The following invariants are expected from the graph implementation:
 /// - If the most recently added node or edge is removed, its ID will no longer be valid. I.e.,
-///   calling methods with that ID should return `None` or indicate non-existence.
+///   calling methods with that ID should return `None` or otherwise indicate non-existence.
 ///
 /// The arguments to this macro are as follows (`G` is used to denote the graph type being tested).
 /// For a reference usage, see the tests in [`crate::utils::test_graphs::directed`].
@@ -399,33 +399,6 @@ macro_rules! test_directed_graph {
             );
         }
 
-        /// Helper function to check if the edges returned by an iterator match the expected edges.
-        ///
-        /// The additional arguments are just for better error messages.
-        fn check_if_edges_match<T: core::hash::Hash + Eq + core::fmt::Debug>(
-            mut expected_edges: hashbrown::hash_set::HashSet<T, foldhash::fast::RandomState>,
-            actual_edges: impl Iterator<Item = T>,
-            method_name: &'static str,
-            node_number: usize,
-        ) {
-            for edge in actual_edges {
-                assert!(
-                    expected_edges.contains(&edge),
-                    "DirectedGraph::{}() contained unexpected edge id: {:?} for node {}",
-                    method_name,
-                    edge,
-                    node_number
-                );
-                expected_edges.remove(&edge);
-            }
-            assert!(
-                expected_edges.is_empty(),
-                "DirectedGraph::{}() did not return all expected edges for node {}",
-                method_name,
-                node_number
-            );
-        }
-
         #[test]
         fn test_incoming_edges() {
             let (graph, nodes, edges) =
@@ -437,36 +410,30 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::incoming_edges() did not return an empty iterator for node 0"
             );
 
-            let expected_edges_one =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0]
-                ]);
-            check_if_edges_match(
+            let expected_edges_one = [edges[0]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_one,
                 $crate::graph::DirectedGraph::incoming_edges(&graph, nodes[1]).map(|edge| edge.id),
                 "incoming_edges",
+                "DirectedGraph",
                 1,
             );
 
-            let expected_edges_two =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[1], edges[3],
-                ]);
-            check_if_edges_match(
+            let expected_edges_two = [edges[1], edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_two,
                 $crate::graph::DirectedGraph::incoming_edges(&graph, nodes[2]).map(|edge| edge.id),
                 "incoming_edges",
+                "DirectedGraph",
                 2,
             );
 
-            let expected_edges_three =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2]
-                ]);
-            check_if_edges_match(
+            let expected_edges_three = [edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_three,
                 $crate::graph::DirectedGraph::incoming_edges(&graph, nodes[3]).map(|edge| edge.id),
                 "incoming_edges",
+                "DirectedGraph",
                 3,
             );
 
@@ -489,39 +456,33 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::incoming_edges_mut() did not return an empty iterator for node 0"
             );
 
-            let expected_edges_one =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0]
-                ]);
-            check_if_edges_match(
+            let expected_edges_one = [edges[0]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_one,
                 $crate::graph::DirectedGraph::incoming_edges_mut(&mut graph, nodes[1])
                     .map(|edge| edge.id),
                 "incoming_edges_mut",
+                "DirectedGraph",
                 1,
             );
 
-            let expected_edges_two =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[1], edges[3],
-                ]);
-            check_if_edges_match(
+            let expected_edges_two = [edges[1], edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_two,
                 $crate::graph::DirectedGraph::incoming_edges_mut(&mut graph, nodes[2])
                     .map(|edge| edge.id),
                 "incoming_edges_mut",
+                "DirectedGraph",
                 2,
             );
 
-            let expected_edges_three =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2]
-                ]);
-            check_if_edges_match(
+            let expected_edges_three = [edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_three,
                 $crate::graph::DirectedGraph::incoming_edges_mut(&mut graph, nodes[3])
                     .map(|edge| edge.id),
                 "incoming_edges_mut",
+                "DirectedGraph",
                 3,
             );
 
@@ -537,25 +498,21 @@ macro_rules! test_directed_graph {
         fn test_outgoing_edges() {
             let (graph, nodes, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
-            let expected_edges_zero =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0], edges[1],
-                ]);
-            check_if_edges_match(
+            let expected_edges_zero = [edges[0], edges[1]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_zero,
                 $crate::graph::DirectedGraph::outgoing_edges(&graph, nodes[0]).map(|edge| edge.id),
                 "outgoing_edges",
+                "DirectedGraph",
                 0,
             );
 
-            let expected_edges_one =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2]
-                ]);
-            check_if_edges_match(
+            let expected_edges_one = [edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_one,
                 $crate::graph::DirectedGraph::outgoing_edges(&graph, nodes[1]).map(|edge| edge.id),
                 "outgoing_edges",
+                "DirectedGraph",
                 1,
             );
 
@@ -566,14 +523,12 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::outgoing_edges() did not return an empty iterator for node 2"
             );
 
-            let expected_edges_three =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[3]
-                ]);
-            check_if_edges_match(
+            let expected_edges_three = [edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_three,
                 $crate::graph::DirectedGraph::outgoing_edges(&graph, nodes[3]).map(|edge| edge.id),
                 "outgoing_edges",
+                "DirectedGraph",
                 3,
             );
 
@@ -589,27 +544,23 @@ macro_rules! test_directed_graph {
         fn test_outgoing_edges_mut() {
             let (mut graph, nodes, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
-            let expected_edges_zero =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0], edges[1],
-                ]);
-            check_if_edges_match(
+            let expected_edges_zero = [edges[0], edges[1]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_zero,
                 $crate::graph::DirectedGraph::outgoing_edges_mut(&mut graph, nodes[0])
                     .map(|edge| edge.id),
                 "outgoing_edges_mut",
+                "DirectedGraph",
                 0,
             );
 
-            let expected_edges_one =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2]
-                ]);
-            check_if_edges_match(
+            let expected_edges_one = [edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_one,
                 $crate::graph::DirectedGraph::outgoing_edges_mut(&mut graph, nodes[1])
                     .map(|edge| edge.id),
                 "outgoing_edges_mut",
+                "DirectedGraph",
                 1,
             );
 
@@ -620,15 +571,13 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::outgoing_edges_mut() did not return an empty iterator for node 2"
             );
 
-            let expected_edges_three =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[3]
-                ]);
-            check_if_edges_match(
+            let expected_edges_three = [edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_three,
                 $crate::graph::DirectedGraph::outgoing_edges_mut(&mut graph, nodes[3])
                     .map(|edge| edge.id),
                 "outgoing_edges_mut",
+                "DirectedGraph",
                 3,
             );
 
@@ -644,47 +593,39 @@ macro_rules! test_directed_graph {
         fn test_incident_edges() {
             let (graph, nodes, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
-            let expected_edges_zero =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0], edges[1],
-                ]);
-            check_if_edges_match(
+            let expected_edges_zero = [edges[0], edges[1]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_zero,
                 $crate::graph::DirectedGraph::incident_edges(&graph, nodes[0]).map(|edge| edge.id),
                 "incident_edges",
+                "DirectedGraph",
                 0,
             );
 
-            let expected_edges_one =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0], edges[2],
-                ]);
-            check_if_edges_match(
+            let expected_edges_one = [edges[0], edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_one,
                 $crate::graph::DirectedGraph::incident_edges(&graph, nodes[1]).map(|edge| edge.id),
                 "incident_edges",
+                "DirectedGraph",
                 1,
             );
 
-            let expected_edges_two =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[1], edges[3],
-                ]);
-            check_if_edges_match(
+            let expected_edges_two = [edges[1], edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_two,
                 $crate::graph::DirectedGraph::incident_edges(&graph, nodes[2]).map(|edge| edge.id),
                 "incident_edges",
+                "DirectedGraph",
                 2,
             );
 
-            let expected_edges_three =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2], edges[3],
-                ]);
-            check_if_edges_match(
+            let expected_edges_three = [edges[2], edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_three,
                 $crate::graph::DirectedGraph::incident_edges(&graph, nodes[3]).map(|edge| edge.id),
                 "incident_edges",
+                "DirectedGraph",
                 3,
             );
 
@@ -700,51 +641,43 @@ macro_rules! test_directed_graph {
         fn test_incident_edges_mut() {
             let (mut graph, nodes, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
-            let expected_edges_zero =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0], edges[1],
-                ]);
-            check_if_edges_match(
+            let expected_edges_zero = [edges[0], edges[1]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_zero,
                 $crate::graph::DirectedGraph::incident_edges_mut(&mut graph, nodes[0])
                     .map(|edge| edge.id),
                 "incident_edges_mut",
+                "DirectedGraph",
                 0,
             );
 
-            let expected_edges_one =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0], edges[2],
-                ]);
-            check_if_edges_match(
+            let expected_edges_one = [edges[0], edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_one,
                 $crate::graph::DirectedGraph::incident_edges_mut(&mut graph, nodes[1])
                     .map(|edge| edge.id),
                 "incident_edges_mut",
+                "DirectedGraph",
                 1,
             );
 
-            let expected_edges_two =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[1], edges[3],
-                ]);
-            check_if_edges_match(
+            let expected_edges_two = [edges[1], edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_two,
                 $crate::graph::DirectedGraph::incident_edges_mut(&mut graph, nodes[2])
                     .map(|edge| edge.id),
                 "incident_edges_mut",
+                "DirectedGraph",
                 2,
             );
 
-            let expected_edges_three =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2], edges[3],
-                ]);
-            check_if_edges_match(
+            let expected_edges_three = [edges[2], edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_three,
                 $crate::graph::DirectedGraph::incident_edges_mut(&mut graph, nodes[3])
                     .map(|edge| edge.id),
                 "incident_edges_mut",
+                "DirectedGraph",
                 3,
             );
 
@@ -754,52 +687,6 @@ macro_rules! test_directed_graph {
                     .is_none(),
                 "DirectedGraph::incident_edges_mut() did not return an empty iterator for node 4"
             );
-        }
-
-        /// Helper function to check if the nodes returned by an iterator match the expected nodes
-        ///
-        /// The additional arguments are just for better error messages.
-        fn check_if_nodes_match<T: core::hash::Hash + Eq + core::fmt::Debug>(
-            mut expected_nodes: hashbrown::hash_set::HashSet<T, foldhash::fast::RandomState>,
-            actual_nodes: impl Iterator<Item = T>,
-            method_name: &'static str,
-            node_number: Option<usize>,
-        ) {
-            for node in actual_nodes {
-                if let Some(node_number) = node_number {
-                    assert!(
-                        expected_nodes.contains(&node),
-                        "DirectedGraph::{}() contained unexpected node id: {:?} for node {}",
-                        method_name,
-                        node,
-                        node_number
-                    );
-                } else {
-                    assert!(
-                        expected_nodes.contains(&node),
-                        "DirectedGraph::{}() contained unexpected node id: {:?}",
-                        method_name,
-                        node,
-                    );
-                }
-                expected_nodes.remove(&node);
-            }
-            if let Some(node_number) = node_number {
-                assert!(
-                    expected_nodes.is_empty(),
-                    "DirectedGraph::{}() did not return all expected nodes for node {}: {:?}",
-                    method_name,
-                    node_number,
-                    expected_nodes
-                );
-            } else {
-                assert!(
-                    expected_nodes.is_empty(),
-                    "DirectedGraph::{}() did not return all expected nodes: {:?}",
-                    method_name,
-                    expected_nodes
-                );
-            }
         }
 
         #[test]
@@ -813,36 +700,30 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::predecessors() did not return an empty iterator for node 0"
             );
 
-            let expected_predecessors_one = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[0]]);
-            check_if_nodes_match(
+            let expected_predecessors_one = [nodes[0]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_predecessors_one,
                 $crate::graph::DirectedGraph::predecessors(&graph, nodes[1]),
                 "predecessors",
+                "DirectedGraph",
                 Some(1),
             );
 
-            let expected_predecessors_two = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[0], nodes[3]]);
-            check_if_nodes_match(
+            let expected_predecessors_two = [nodes[0], nodes[3]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_predecessors_two,
                 $crate::graph::DirectedGraph::predecessors(&graph, nodes[2]),
                 "predecessors",
+                "DirectedGraph",
                 Some(2),
             );
 
-            let expected_predecessors_three = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[1]]);
-            check_if_nodes_match(
+            let expected_predecessors_three = [nodes[1]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_predecessors_three,
                 $crate::graph::DirectedGraph::predecessors(&graph, nodes[3]),
                 "predecessors",
+                "DirectedGraph",
                 Some(3),
             );
 
@@ -858,25 +739,21 @@ macro_rules! test_directed_graph {
         fn test_successors() {
             let (graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
-            let expected_successors_zero = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[1], nodes[2]]);
-            check_if_nodes_match(
+            let expected_successors_zero = [nodes[1], nodes[2]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_successors_zero,
                 $crate::graph::DirectedGraph::successors(&graph, nodes[0]),
                 "successors",
+                "DirectedGraph",
                 Some(0),
             );
 
-            let expected_successors_one = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[3]]);
-            check_if_nodes_match(
+            let expected_successors_one = [nodes[3]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_successors_one,
                 $crate::graph::DirectedGraph::successors(&graph, nodes[1]),
                 "successors",
+                "DirectedGraph",
                 Some(1),
             );
 
@@ -887,14 +764,12 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::successors() did not return an empty iterator for node 2"
             );
 
-            let expected_successors_three = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[2]]);
-            check_if_nodes_match(
+            let expected_successors_three = [nodes[2]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_successors_three,
                 $crate::graph::DirectedGraph::successors(&graph, nodes[3]),
                 "successors",
+                "DirectedGraph",
                 Some(3),
             );
 
@@ -910,47 +785,39 @@ macro_rules! test_directed_graph {
         fn test_adjacencies() {
             let (graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
-            let expected_adjacencies_zero = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[1], nodes[2]]);
-            check_if_nodes_match(
+            let expected_adjacencies_zero = [nodes[1], nodes[2]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_adjacencies_zero,
                 $crate::graph::DirectedGraph::adjacencies(&graph, nodes[0]),
                 "adjacencies",
+                "DirectedGraph",
                 Some(0),
             );
 
-            let expected_adjacencies_one = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[0], nodes[3]]);
-            check_if_nodes_match(
+            let expected_adjacencies_one = [nodes[0], nodes[3]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_adjacencies_one,
                 $crate::graph::DirectedGraph::adjacencies(&graph, nodes[1]),
                 "adjacencies",
+                "DirectedGraph",
                 Some(1),
             );
 
-            let expected_adjacencies_two = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[0], nodes[3]]);
-            check_if_nodes_match(
+            let expected_adjacencies_two = [nodes[0], nodes[3]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_adjacencies_two,
                 $crate::graph::DirectedGraph::adjacencies(&graph, nodes[2]),
                 "adjacencies",
+                "DirectedGraph",
                 Some(2),
             );
 
-            let expected_adjacencies_three = hashbrown::hash_set::HashSet::<
-                _,
-                foldhash::fast::RandomState,
-            >::from_iter([nodes[1], nodes[2]]);
-            check_if_nodes_match(
+            let expected_adjacencies_three = [nodes[1], nodes[2]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_adjacencies_three,
                 $crate::graph::DirectedGraph::adjacencies(&graph, nodes[3]),
                 "adjacencies",
+                "DirectedGraph",
                 Some(3),
             );
 
@@ -976,27 +843,23 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::edges_between() did not return an empty iterator for nodes 0 and 0"
             );
 
-            let expected_edges_0_1 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0]
-                ]);
-            check_if_edges_match(
+            let expected_edges_0_1 = [edges[0]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_0_1,
                 $crate::graph::DirectedGraph::edges_between(&graph, nodes[0], nodes[1])
                     .map(|edge| edge.id),
                 "edges_between",
+                "DirectedGraph",
                 0,
             );
 
-            let expected_edges_0_2 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[1]
-                ]);
-            check_if_edges_match(
+            let expected_edges_0_2 = [edges[1]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_0_2,
                 $crate::graph::DirectedGraph::edges_between(&graph, nodes[0], nodes[2])
                     .map(|edge| edge.id),
                 "edges_between",
+                "DirectedGraph",
                 0,
             );
 
@@ -1035,15 +898,13 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::edges_between() did not return an empty iterator for nodes 1 and 2"
             );
 
-            let expected_edges_1_3 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2]
-                ]);
-            check_if_edges_match(
+            let expected_edges_1_3 = [edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_1_3,
                 $crate::graph::DirectedGraph::edges_between(&graph, nodes[1], nodes[3])
                     .map(|edge| edge.id),
                 "edges_between",
+                "DirectedGraph",
                 1,
             );
 
@@ -1105,15 +966,13 @@ macro_rules! test_directed_graph {
                 "DirectedGraph::edges_between() did not return an empty iterator for nodes 3 and 1"
             );
 
-            let expected_edges_3_2 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[3]
-                ]);
-            check_if_edges_match(
+            let expected_edges_3_2 = [edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_3_2,
                 $crate::graph::DirectedGraph::edges_between(&graph, nodes[3], nodes[2])
                     .map(|edge| edge.id),
                 "edges_between",
+                "DirectedGraph",
                 3,
             );
 
@@ -1183,27 +1042,23 @@ macro_rules! test_directed_graph {
                  and 0"
             );
 
-            let expected_edges_0_1 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0]
-                ]);
-            check_if_edges_match(
+            let expected_edges_0_1 = [edges[0]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_0_1,
                 $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[0], nodes[1])
                     .map(|edge| edge.id),
                 "edges_between_mut",
+                "DirectedGraph",
                 0,
             );
 
-            let expected_edges_0_2 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[1]
-                ]);
-            check_if_edges_match(
+            let expected_edges_0_2 = [edges[1]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_0_2,
                 $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[0], nodes[2])
                     .map(|edge| edge.id),
                 "edges_between_mut",
+                "DirectedGraph",
                 0,
             );
 
@@ -1247,15 +1102,13 @@ macro_rules! test_directed_graph {
                  and 2"
             );
 
-            let expected_edges_1_3 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2]
-                ]);
-            check_if_edges_match(
+            let expected_edges_1_3 = [edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_1_3,
                 $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[1], nodes[3])
                     .map(|edge| edge.id),
                 "edges_between_mut",
+                "DirectedGraph",
                 1,
             );
 
@@ -1325,15 +1178,13 @@ macro_rules! test_directed_graph {
                  and 1"
             );
 
-            let expected_edges_3_2 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[3]
-                ]);
-            check_if_edges_match(
+            let expected_edges_3_2 = [edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_3_2,
                 $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[3], nodes[2])
                     .map(|edge| edge.id),
                 "edges_between_mut",
+                "DirectedGraph",
                 3,
             );
 
@@ -1410,28 +1261,24 @@ macro_rules! test_directed_graph {
                  and 0"
             );
 
-            let expected_edges_0_1 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0]
-                ]);
-            check_if_edges_match(
+            let expected_edges_0_1 = [edges[0]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_0_1,
                 $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[0], nodes[1])
                     .map(|edge| edge.id),
                 "edges_connecting",
+                "DirectedGraph",
                 0,
             );
 
-            let expected_edges_0_2 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[1]
-                ]);
+            let expected_edges_0_2 = [edges[1]];
 
-            check_if_edges_match(
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_0_2,
                 $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[0], nodes[2])
                     .map(|edge| edge.id),
                 "edges_connecting",
+                "DirectedGraph",
                 0,
             );
 
@@ -1468,15 +1315,13 @@ macro_rules! test_directed_graph {
                  and 2"
             );
 
-            let expected_edges_1_3 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2]
-                ]);
-            check_if_edges_match(
+            let expected_edges_1_3 = [edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_1_3,
                 $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[1], nodes[3])
                     .map(|edge| edge.id),
                 "edges_connecting",
+                "DirectedGraph",
                 1,
             );
 
@@ -1497,15 +1342,13 @@ macro_rules! test_directed_graph {
                  and 2"
             );
 
-            let expected_edges_2_3 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[3]
-                ]);
-            check_if_edges_match(
+            let expected_edges_2_3 = [edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_2_3,
                 $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[2], nodes[3])
                     .map(|edge| edge.id),
                 "edges_connecting",
+                "DirectedGraph",
                 2,
             );
 
@@ -1579,28 +1422,24 @@ macro_rules! test_directed_graph {
                  0 and 0"
             );
 
-            let expected_edges_0_1 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[0]
-                ]);
-            check_if_edges_match(
+            let expected_edges_0_1 = [edges[0]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_0_1,
                 $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[0], nodes[1])
                     .map(|edge| edge.id),
                 "edges_connecting_mut",
+                "DirectedGraph",
                 0,
             );
 
-            let expected_edges_0_2 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[1]
-                ]);
+            let expected_edges_0_2 = [edges[1]];
 
-            check_if_edges_match(
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_0_2,
                 $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[0], nodes[2])
                     .map(|edge| edge.id),
                 "edges_connecting_mut",
+                "DirectedGraph",
                 0,
             );
 
@@ -1637,15 +1476,13 @@ macro_rules! test_directed_graph {
                  1 and 2"
             );
 
-            let expected_edges_1_3 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[2]
-                ]);
-            check_if_edges_match(
+            let expected_edges_1_3 = [edges[2]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_1_3,
                 $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[1], nodes[3])
                     .map(|edge| edge.id),
                 "edges_connecting_mut",
+                "DirectedGraph",
                 1,
             );
 
@@ -1666,15 +1503,13 @@ macro_rules! test_directed_graph {
                  2 and 2"
             );
 
-            let expected_edges_2_3 =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    edges[3]
-                ]);
-            check_if_edges_match(
+            let expected_edges_2_3 = [edges[3]];
+            $crate::utils::testing::check_if_edges_match(
                 expected_edges_2_3,
                 $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[2], nodes[3])
                     .map(|edge| edge.id),
                 "edges_connecting_mut",
+                "DirectedGraph",
                 2,
             );
 
@@ -1842,15 +1677,13 @@ macro_rules! test_directed_graph {
             let (graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
-            let expected_sources =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    nodes[0], nodes[4],
-                ]);
-            check_if_nodes_match(
+            let expected_sources = [nodes[0], nodes[4]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_sources,
                 $crate::graph::DirectedGraph::sources(&graph).map(|n| n.id),
                 "sources",
-                None,
+                "DirectedGraph",
+                Option::<usize>::None,
             );
         }
 
@@ -1859,15 +1692,13 @@ macro_rules! test_directed_graph {
             let (graph, nodes, _) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
-            let expected_sinks =
-                hashbrown::hash_set::HashSet::<_, foldhash::fast::RandomState>::from_iter([
-                    nodes[2], nodes[4],
-                ]);
-            check_if_nodes_match(
+            let expected_sinks = [nodes[2], nodes[4]];
+            $crate::utils::testing::check_if_nodes_match(
                 expected_sinks,
                 $crate::graph::DirectedGraph::sinks(&graph).map(|n| n.id),
                 "sinks",
-                None,
+                "DirectedGraph",
+                Option::<usize>::None,
             );
         }
     };
