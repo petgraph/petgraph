@@ -1,2 +1,2 @@
-pub mod undirected;
 pub mod directed;
+pub mod undirected;
