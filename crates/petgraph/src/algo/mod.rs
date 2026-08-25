@@ -30,6 +30,7 @@ pub mod maximum_flow;
 pub mod min_spanning_tree;
 pub mod page_rank;
 pub mod scc;
+pub mod seidel;
 pub mod simple_paths;
 pub mod spfa;
 #[cfg(feature = "stable_graph")]
@@ -64,6 +65,7 @@ pub use scc::{
     kosaraju_scc::kosaraju_scc,
     tarjan_scc::{TarjanScc, tarjan_scc},
 };
+pub use seidel::seidel;
 pub use simple_paths::{all_simple_paths, all_simple_paths_multi};
 pub use spfa::spfa;
 #[cfg(feature = "stable_graph")]
