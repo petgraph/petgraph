@@ -1418,6 +1418,23 @@ where
         result_g
     }
 
+    /// Convert the graph into either undirected or directed. No edge adjustments
+    /// are done, so you may want to go over the result to remove or add edges.
+    ///
+    /// Computes in **O(1)** time.
+    pub fn into_edge_type<NewTy>(self) -> StableGraph<N, E, NewTy, Ix>
+    where
+        NewTy: EdgeType,
+    {
+        StableGraph {
+            g: self.g.into_edge_type(),
+            node_count: self.node_count,
+            edge_count: self.edge_count,
+            free_node: self.free_node,
+            free_edge: self.free_edge
+        }
+    }
+
     /// Extend the graph from an iterable of edges.
     ///
     /// Node weights `N` are set to default values.
