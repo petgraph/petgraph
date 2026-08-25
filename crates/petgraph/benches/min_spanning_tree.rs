@@ -14,6 +14,14 @@ use petgraph::{
     visit::{Data, IntoEdgeReferences, IntoEdges, IntoNodeReferences, NodeIndexable},
 };
 
+use crate::common::build_2d_grid;
+
+#[bench]
+fn min_spanning_tree_kruskal_create_iter(bench: &mut Bencher) {
+    let g = build_2d_grid(100, 100);
+    bench.iter(|| std::hint::black_box(min_spanning_tree(&g)));
+}
+
 #[bench]
 fn min_spanning_tree_kruskal_praust_undir_bench(bench: &mut Bencher) {
     let a = ungraph().praust_a();

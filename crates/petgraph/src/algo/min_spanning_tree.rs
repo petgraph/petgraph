@@ -96,13 +96,9 @@ where
     let subgraphs = UnionFind::new(g.node_bound());
 
     let edges = g.edge_references();
-    let mut sort_edges = BinaryHeap::with_capacity(edges.size_hint().0);
-    for edge in edges {
-        sort_edges.push(MinScored(
-            edge.weight().clone(),
-            (edge.source(), edge.target()),
-        ));
-    }
+    let sort_edges = BinaryHeap::from_iter(
+        edges.map(|edge| MinScored(edge.weight().clone(), (edge.source(), edge.target()))),
+    );
 
     MinSpanningTree {
         graph: g,
