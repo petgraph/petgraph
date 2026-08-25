@@ -71,6 +71,24 @@ where
         dfs
     }
 
+    /// Create a new **Dfs**, using the graph's visitor map, and put **start**
+    /// in the stack of nodes to visit.
+    ///
+    /// The stack is pre-allocated with room for `capacity` nodes, which avoids
+    /// reallocations when you already have a rough idea of how many nodes the
+    /// traversal will visit.
+    pub fn with_capacity<G>(graph: G, start: N, capacity: usize) -> Self
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
+    {
+        let mut stack = Vec::with_capacity(capacity);
+        stack.push(start);
+        Dfs {
+            stack,
+            discovered: graph.visit_map(),
+        }
+    }
+
     /// Create a `Dfs` from a vector and a visit map
     pub fn from_parts(stack: Vec<N>, discovered: VM) -> Self {
         Dfs { stack, discovered }
@@ -166,6 +184,24 @@ where
         let mut dfs = Self::empty(graph);
         dfs.move_to(start);
         dfs
+    }
+
+    /// Create a new `DfsPostOrder` using the graph's visitor map, and put
+    /// `start` in the stack of nodes to visit.
+    ///
+    /// The stack is pre-allocated with room for `capacity` nodes to avoid
+    /// reallocations when the size of the traversal is known ahead of time.
+    pub fn with_capacity<G>(graph: G, start: N, capacity: usize) -> Self
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
+    {
+        let mut stack = Vec::with_capacity(capacity);
+        stack.push(start);
+        DfsPostOrder {
+            stack,
+            discovered: graph.visit_map(),
+            finished: graph.visit_map(),
+        }
     }
 
     /// Create a new `DfsPostOrder` using the graph's visitor map, and no stack.
@@ -288,6 +324,22 @@ where
         Bfs { stack, discovered }
     }
 
+    /// Create a new **Bfs**, using the graph's visitor map, and put **start**
+    /// in the queue of nodes to visit.
+    ///
+    /// The queue is pre-allocated with room for `capacity` nodes to avoid
+    /// reallocations when the size of the traversal is known ahead of time.
+    pub fn with_capacity<G>(graph: G, start: N, capacity: usize) -> Self
+    where
+        G: GraphRef + Visitable<NodeId = N, Map = VM>,
+    {
+        let mut discovered = graph.visit_map();
+        discovered.visit(start);
+        let mut stack = VecDeque::with_capacity(capacity);
+        stack.push_front(start);
+        Bfs { stack, discovered }
+    }
+
     /// Return the next node in the bfs, or **None** if the traversal is done.
     pub fn next<G>(&mut self, graph: G) -> Option<N>
     where
@@ -342,6 +394,24 @@ where
         G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable<NodeId = N, Map = VM>,
     {
         let mut topo = Self::empty(graph);
+        topo.extend_with_initials(graph);
+        topo
+    }
+
+    /// Create a new `Topo`, using the graph's visitor map, and put all
+    /// initial nodes in the to visit list.
+    ///
+    /// This behaves like [`Topo::new`], but pre-allocates the to visit list
+    /// with room for `capacity` nodes. Since the fields of `Topo` are private,
+    /// this is the way to reserve capacity for it up front.
+    pub fn with_capacity<G>(graph: G, capacity: usize) -> Self
+    where
+        G: IntoNodeIdentifiers + IntoNeighborsDirected + Visitable<NodeId = N, Map = VM>,
+    {
+        let mut topo = Topo {
+            tovisit: Vec::with_capacity(capacity),
+            ordered: graph.visit_map(),
+        };
         topo.extend_with_initials(graph);
         topo
     }
@@ -540,5 +610,68 @@ where
 
     fn walk_next(&mut self, context: G) -> Option<Self::Item> {
         self.next(context)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+
+    use super::{Bfs, Dfs, DfsPostOrder, Topo, Walker};
+    use crate::graph::{Graph, NodeIndex, node_index};
+
+    // A small DAG: 0 -> 1, 0 -> 2, 1 -> 3, 2 -> 3.
+    fn sample() -> (Graph<(), ()>, [NodeIndex; 4]) {
+        let mut g = Graph::new();
+        let nodes = [
+            g.add_node(()),
+            g.add_node(()),
+            g.add_node(()),
+            g.add_node(()),
+        ];
+        g.add_edge(nodes[0], nodes[1], ());
+        g.add_edge(nodes[0], nodes[2], ());
+        g.add_edge(nodes[1], nodes[3], ());
+        g.add_edge(nodes[2], nodes[3], ());
+        (g, nodes)
+    }
+
+    #[test]
+    fn dfs_with_capacity() {
+        let (g, nodes) = sample();
+        let dfs = Dfs::with_capacity(&g, nodes[0], 16);
+        assert!(dfs.stack.capacity() >= 16);
+        assert_eq!(dfs.iter(&g).count(), 4);
+    }
+
+    #[test]
+    fn dfs_post_order_with_capacity() {
+        let (g, nodes) = sample();
+        let dfs = DfsPostOrder::with_capacity(&g, nodes[0], 16);
+        assert!(dfs.stack.capacity() >= 16);
+        assert_eq!(dfs.iter(&g).count(), 4);
+    }
+
+    #[test]
+    fn bfs_with_capacity() {
+        let (g, nodes) = sample();
+        let bfs = Bfs::with_capacity(&g, nodes[0], 16);
+        assert!(bfs.stack.capacity() >= 16);
+        assert_eq!(bfs.iter(&g).count(), 4);
+    }
+
+    #[test]
+    fn topo_with_capacity() {
+        let (g, _) = sample();
+        let topo = Topo::with_capacity(&g, 16);
+        // `tovisit` is private, so this constructor is the only way to reserve
+        // its capacity. Being in the same module lets us check it directly.
+        assert!(topo.tovisit.capacity() >= 16);
+        let order: Vec<_> = topo.iter(&g).collect();
+        assert_eq!(order.len(), 4);
+        // The only node without incoming edges must come first.
+        assert_eq!(order[0], node_index(0));
+        // The sink must come last.
+        assert_eq!(order[3], node_index(3));
     }
 }
