@@ -661,6 +661,48 @@ where
         }
     }
 
+    /// Return a reference to a node without doing any bounds checking
+    ///
+    /// For a safe alternative see `node_weight`.
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with an out-of-bounds index or an index that has
+    /// been removed from the graph is undefined behavior even if the
+    /// resulting reference is not used. You can think of this like calling
+    /// `.get(a).unwrap_unchecked()`.
+    pub unsafe fn node_weight_unchecked(&self, a: NodeIndex<Ix>) -> &N {
+        unsafe {
+            self.g
+                .nodes
+                .get_unchecked(a.index())
+                .weight
+                .as_ref()
+                .unwrap()
+        }
+    }
+
+    /// Return a mutable reference to a node without doing any bounds checking
+    ///
+    /// For a safe alternative see `node_weight_mut`.
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with an out-of-bounds index or an index that has
+    /// been removed from the graph is undefined behavior even if the
+    /// resulting reference is not used. You can think of this like calling
+    /// `.get_mut(a).unwrap_unchecked()`.
+    pub unsafe fn node_weight_mut_unchecked(&mut self, a: NodeIndex<Ix>) -> &mut N {
+        unsafe {
+            self.g
+                .nodes
+                .get_unchecked_mut(a.index())
+                .weight
+                .as_mut()
+                .unwrap()
+        }
+    }
+
     /// Return an iterator yielding immutable access to all node weights.
     ///
     /// The order in which weights are yielded matches the order of their node
