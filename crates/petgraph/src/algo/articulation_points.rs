@@ -54,8 +54,6 @@ use crate::{
 pub fn articulation_points<G>(g: G) -> HashSet<G::NodeId>
 where
     G: IntoNodeReferences + IntoEdges + NodeIndexable + visit::GraphProp,
-    G::NodeWeight: Clone,
-    G::EdgeWeight: Clone + PartialOrd,
     G::NodeId: Eq + Hash,
 {
     let graph_size = g.node_references().size_hint().0;
