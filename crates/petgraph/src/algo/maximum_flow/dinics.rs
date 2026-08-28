@@ -5,8 +5,8 @@ use crate::{
     algo::{EdgeRef, PositiveMeasure},
     prelude::Direction,
     visit::{
-        Data, EdgeCount, EdgeIndexable, IntoEdgeReferences, IntoEdges, IntoEdgesDirected,
-        NodeCount, NodeIndexable, VisitMap, Visitable,
+        Data, EdgeCount, EdgeIndexable, IntoEdges, IntoEdgesDirected, NodeCount, NodeIndexable,
+        VisitMap, Visitable,
     },
 };
 
@@ -333,7 +333,7 @@ where
 /// Gets the other endpoint of graph edge, if any, otherwise panics.
 fn other_endpoint<G>(network: G, edge: G::EdgeRef, vertex: G::NodeId) -> G::NodeId
 where
-    G: NodeIndexable + IntoEdgeReferences,
+    G: NodeIndexable + IntoEdges,
 {
     if vertex == edge.source() {
         edge.target()

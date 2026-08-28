@@ -150,7 +150,10 @@ trait_template! {
 /// yields edge references (trait [`EdgeRef`][er]).
 ///
 /// [er]: trait.EdgeRef.html
-pub trait IntoEdges : IntoEdgeReferences + IntoNeighbors {
+pub trait IntoEdges : IntoNeighbors + Data {
+    @section type
+    type EdgeRef: EdgeRef<NodeId=Self::NodeId, EdgeId=Self::EdgeId,
+                          Weight=Self::EdgeWeight>;
     @section type
     type Edges: Iterator<Item=Self::EdgeRef>;
     @section self

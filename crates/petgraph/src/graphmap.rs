@@ -1323,6 +1323,7 @@ where
     Ty: EdgeType,
     S: BuildHasher,
 {
+    type EdgeRef = <Self::Edges as Iterator>::Item;
     type Edges = Edges<'a, N, E, Ty, S>;
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {

@@ -30,6 +30,7 @@ impl<G> IntoEdges for UndirectedAdaptor<G>
 where
     G: IntoEdgesDirected,
 {
+    type EdgeRef = <Self::Edges as Iterator>::Item;
     type Edges = core::iter::Chain<
         MaybeReversedEdges<G::EdgesDirected>,
         MaybeReversedEdges<G::EdgesDirected>,

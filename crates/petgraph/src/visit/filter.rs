@@ -269,6 +269,7 @@ where
     G: IntoEdges,
     F: FilterNode<G::NodeId>,
 {
+    type EdgeRef = G::EdgeRef;
     type Edges = NodeFilteredEdges<'a, G, G::Edges, F>;
 
     fn edges(self, a: G::NodeId) -> Self::Edges {
@@ -503,6 +504,7 @@ where
     G: IntoEdges,
     F: FilterEdge<G::EdgeRef>,
 {
+    type EdgeRef = G::EdgeRef;
     type Edges = EdgeFilteredEdges<'a, G, G::Edges, F>;
 
     fn edges(self, n: G::NodeId) -> Self::Edges {
@@ -538,11 +540,10 @@ pub struct EdgeFilteredEdges<'a, G, I, F: 'a> {
     f: &'a F,
 }
 
-impl<G, I, F> Iterator for EdgeFilteredEdges<'_, G, I, F>
+impl<G, I, F, EdgeRef: Copy> Iterator for EdgeFilteredEdges<'_, G, I, F>
 where
-    F: FilterEdge<G::EdgeRef>,
-    G: IntoEdgeReferences,
-    I: Iterator<Item = G::EdgeRef>,
+    F: FilterEdge<EdgeRef>,
+    I: Iterator<Item = EdgeRef>,
 {
     type Item = I::Item;
 
