@@ -236,7 +236,7 @@ impl<E, Ix: IndexType> List<E, Ix> {
         if b.index() >= self.suc.len() {
             panic!(
                 "{} is not a valid node index for a {} nodes adjacency list",
-                b.index(),
+                b,
                 self.suc.len()
             );
         }
