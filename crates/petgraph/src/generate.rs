@@ -1,6 +1,8 @@
 //! ***Unstable.*** Graph generation.
 //!
 //! ***Unstable: API may change at any time.*** Depends on `feature = "generate"`.
+//!
+//! This module provides utilities for generating different types of graphs.
 
 use crate::{Directed, EdgeType, Graph, graph::NodeIndex};
 
