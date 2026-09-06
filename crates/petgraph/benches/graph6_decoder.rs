@@ -33,5 +33,5 @@ fn from_graph6_str_63(bench: &mut Bencher) {
 }
 
 fn from_graph6_bench(bench: &mut Bencher, graph6_str: &str) {
-    bench.iter(|| (from_graph6_representation::<u16>(graph6_str.to_string())));
+    bench.iter(|| (from_graph6_representation::<u16>(graph6_str.to_string()).unwrap()));
 }
