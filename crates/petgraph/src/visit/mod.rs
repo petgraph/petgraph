@@ -2,7 +2,7 @@
 //!
 //! ### The `Into-` Traits
 //!
-//! Graph traits like [`IntoNeighbors`][in] create iterators and use the same
+//! Graph traits like [`IntoNeighbors`] create iterators and use the same
 //! pattern that `IntoIterator` does: the trait takes a reference to a graph,
 //! and produces an iterator. These traits are quite composable, but with the
 //! limitation that they only use shared references to graphs.
@@ -29,12 +29,8 @@
 //! but will develop a bit), and there are traits missing that could be added.
 //!
 //! Not much is needed to be able to use the visitors on a graph. A graph
-//! needs to define [`GraphBase`][gb], [`IntoNeighbors`][in] and
-//! [`Visitable`][vis] as a minimum.
-//!
-//! [gb]: trait.GraphBase.html
-//! [in]: trait.IntoNeighbors.html
-//! [vis]: trait.Visitable.html
+//! needs to define [`GraphBase`], [`IntoNeighbors`] and
+//! [`Visitable`] as a minimum.
 //!
 //! ### Graph Trait Implementations
 //!
@@ -147,9 +143,7 @@ trait_template! {
 ///
 /// This is an extended version of the trait `IntoNeighbors`; the former
 /// only iterates over the target node identifiers, while this trait
-/// yields edge references (trait [`EdgeRef`][er]).
-///
-/// [er]: trait.EdgeRef.html
+/// yields edge references (trait [`EdgeRef`]).
 pub trait IntoEdges : IntoEdgeReferences + IntoNeighbors {
     @section type
     type Edges: Iterator<Item=Self::EdgeRef>;
@@ -173,9 +167,7 @@ trait_template! {
 ///
 /// This is an extended version of the trait `IntoNeighborsDirected`; the former
 /// only iterates over the target node identifiers, while this trait
-/// yields edge references (trait [`EdgeRef`][er]).
-///
-/// [er]: trait.EdgeRef.html
+/// yields edge references (trait [`EdgeRef`]).
 pub trait IntoEdgesDirected : IntoEdges + IntoNeighborsDirected {
     @section type
     type EdgesDirected: Iterator<Item=Self::EdgeRef>;

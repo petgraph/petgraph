@@ -23,7 +23,7 @@ use crate::{
 /// The resulting graph has all the vertices of the input graph (with identical node indices),
 /// and **|V| - c** edges, where **c** is the number of connected components in `g`.
 ///
-/// See also: [`min_spanning_tree_prim`][1] for an implementation using Prim's algorithm.
+/// See also: [`min_spanning_tree_prim`] for an implementation using Prim's algorithm.
 ///
 /// # Arguments
 /// * `g`: an undirected graph.
@@ -37,8 +37,6 @@ use crate::{
 /// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
-///
-/// [1]: fn.min_spanning_tree_prim.html
 ///
 /// # Example
 /// ```rust
@@ -193,7 +191,7 @@ where
 /// and **|V| - 1** edges if input graph is connected, and |W| edges if disconnected, where |W| <
 /// |V| - 1.
 ///
-/// See also: [`min_spanning_tree`][1] for an implementation using Kruskal's algorithm and support
+/// See also: [`min_spanning_tree`] for an implementation using Kruskal's algorithm and support
 /// for minimum spanning forest.
 ///
 /// # Arguments
@@ -208,8 +206,6 @@ where
 /// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
-///
-/// [1]: fn.min_spanning_tree.html
 ///
 /// # Example
 /// ```rust
