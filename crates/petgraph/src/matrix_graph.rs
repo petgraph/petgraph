@@ -82,9 +82,9 @@ impl<T> Nullable for Option<T> {
 }
 
 /// `NotZero` is used to optimize the memory usage of edge weights `E` in a
-/// [`MatrixGraph`](struct.MatrixGraph.html), replacing the default `Option<E>` sentinel.
+/// [`MatrixGraph`], replacing the default `Option<E>` sentinel.
 ///
-/// Pre-requisite: edge weight should implement [`Zero`](trait.Zero.html).
+/// Pre-requisite: edge weight should implement [`Zero`].
 ///
 /// Note that if you're already using the standard non-zero types (such as `NonZeroU32`), you don't
 /// have to use this wrapper and can leave the default `Null` type argument.
@@ -137,10 +137,10 @@ impl<T: Zero> From<NotZero<T>> for Option<T> {
     }
 }
 
-/// Base trait for types that can be wrapped in a [`NotZero`](struct.NotZero.html).
+/// Base trait for types that can be wrapped in a [`NotZero`].
 ///
 /// Implementors must provide a singleton object that will be used to mark empty edges in a
-/// [`MatrixGraph`](struct.MatrixGraph.html).
+/// [`MatrixGraph`].
 ///
 /// Note that this trait is already implemented for the base numeric types.
 pub trait Zero {
@@ -746,10 +746,9 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType>
 
 /// Iterator over the node identifiers of a graph.
 ///
-/// Created from a call to [`.node_identifiers()`][1] on a [`MatrixGraph`][2].
+/// Created from a call to [`.node_identifiers()`][1] on a [`MatrixGraph`].
 ///
 /// [1]: ../visit/trait.IntoNodeIdentifiers.html#tymethod.node_identifiers
-/// [2]: struct.MatrixGraph.html
 #[derive(Debug, Clone)]
 pub struct NodeIdentifiers<
     'a,
@@ -784,10 +783,9 @@ impl<Ix: IndexType, S: BuildHasher> Iterator for NodeIdentifiers<'_, Ix, S> {
 
 /// Iterator over all nodes of a graph.
 ///
-/// Created from a call to [`.node_references()`][1] on a [`MatrixGraph`][2].
+/// Created from a call to [`.node_references()`][1] on a [`MatrixGraph`].
 ///
 /// [1]: ../visit/trait.IntoNodeReferences.html#tymethod.node_references
-/// [2]: struct.MatrixGraph.html
 #[derive(Debug, Clone)]
 pub struct NodeReferences<
     'a,
@@ -827,10 +825,9 @@ impl<'a, N: 'a, Ix: IndexType, S: BuildHasher> Iterator for NodeReferences<'a, N
 
 /// Iterator over all edges of a graph.
 ///
-/// Created from a call to [`.edge_references()`][1] on a [`MatrixGraph`][2].
+/// Created from a call to [`.edge_references()`][1] on a [`MatrixGraph`].
 ///
 /// [1]: ../visit/trait.IntoEdgeReferences.html#tymethod.edge_references
-/// [2]: struct.MatrixGraph.html
 #[derive(Debug, Clone)]
 pub struct EdgeReferences<'a, Ty: EdgeType, Null: 'a + Nullable, Ix> {
     row: usize,

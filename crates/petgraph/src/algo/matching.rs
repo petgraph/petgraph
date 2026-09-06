@@ -192,7 +192,7 @@ where
 /// guarantees about the output are given other than that it is a valid
 /// matching.
 ///
-/// If you require a maximum matching, use [`maximum_matching`][1] function
+/// If you require a maximum matching, use [`maximum_matching`] function
 /// instead.
 ///
 /// # Arguments
@@ -206,8 +206,6 @@ where
 /// * Auxiliary space: **O(|V|)**.
 ///
 /// where **|V|** is the number of nodes and **|E|** is the number of edges.
-///
-/// [1]: fn.maximum_matching.html
 pub fn greedy_matching<G>(graph: G) -> Matching<G>
 where
     G: Visitable + IntoNodeIdentifiers + NodeIndexable + IntoNeighbors,
