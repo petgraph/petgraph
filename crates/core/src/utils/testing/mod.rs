@@ -20,21 +20,14 @@ pub fn check_if_edges_match<T>(
     for edge in actual_edges {
         assert!(
             expected_edges.remove(&edge),
-            "{}::{}() contained unexpected edge id: {:?} for {}",
-            graph_type,
-            method_name,
-            edge,
-            context
+            "{graph_type}::{method_name}() contained unexpected edge id: {edge:?} for {context}",
         );
     }
 
     assert!(
         expected_edges.is_empty(),
-        "{}::{}() did not return all expected edges for {}: {:?}",
-        graph_type,
-        method_name,
-        context,
-        expected_edges
+        "{graph_type}::{method_name}() did not return all expected edges for {context}: \
+         {expected_edges:?}",
     );
 }
 
@@ -57,20 +50,13 @@ pub fn check_if_nodes_match<T>(
     for node in actual_nodes {
         assert!(
             expected_nodes.remove(&node),
-            "{}::{}() contained unexpected node id: {:?} for {:?}",
-            graph_type,
-            method_name,
-            node,
-            context
+            "{graph_type}::{method_name}() contained unexpected node id: {node:?} for {context:?}",
         );
     }
 
     assert!(
         expected_nodes.is_empty(),
-        "{}::{}() did not return all expected nodes for {:?}: {:?}",
-        graph_type,
-        method_name,
-        context,
-        expected_nodes
+        "{graph_type}::{method_name}() did not return all expected nodes for {context:?}: \
+         {expected_nodes:?}",
     );
 }
