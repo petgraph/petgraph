@@ -197,4 +197,15 @@ GraphProp! {delegate_impl [[G], G, Reversed<G>, access0]}
 NodeCount! {delegate_impl [[G], G, Reversed<G>, access0]}
 EdgeCount! {delegate_impl [[G], G, Reversed<G>, access0]}
 EdgeIndexable! {delegate_impl [[G], G, Reversed<G>, access0]}
-GetAdjacencyMatrix! {delegate_impl [[G], G, Reversed<G>, access0]}
+
+impl<G: GetAdjacencyMatrix> GetAdjacencyMatrix for Reversed<G> {
+    type AdjMatrix = G::AdjMatrix;
+
+    fn adjacency_matrix(&self) -> Self::AdjMatrix {
+        self.0.adjacency_matrix()
+    }
+
+    fn is_adjacent(&self, matrix: &Self::AdjMatrix, a: Self::NodeId, b: Self::NodeId) -> bool {
+        self.0.is_adjacent(matrix, b, a)
+    }
+}
