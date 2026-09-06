@@ -176,7 +176,10 @@ where
         + Visitable,
     G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
-    let mut edge_to = vec![None; network.node_count()];
+    // `edge_to` is indexed by `NodeIndexable::to_index`, so it has to be sized by the
+    // node index bound. On graphs with sparse node indices, such as `StableGraph` after
+    // a removal, the largest live index can exceed the node count.
+    let mut edge_to = vec![None; network.node_bound()];
     let mut flows = vec![G::EdgeWeight::zero(); network.edge_bound()];
     let mut max_flow = G::EdgeWeight::zero();
     while has_augmented_path(&network, source, destination, &mut edge_to, &flows) {

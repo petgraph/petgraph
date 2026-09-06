@@ -80,7 +80,10 @@ where
     G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
     let mut max_flow = G::EdgeWeight::zero();
-    let mut flows = vec![G::EdgeWeight::zero(); network.edge_count()];
+    // `flows` is indexed by `EdgeIndexable::to_index`, so it has to be sized by the edge
+    // index bound. On graphs with sparse edge indices, such as `StableGraph` after a
+    // removal, the largest live index can exceed the edge count.
+    let mut flows = vec![G::EdgeWeight::zero(); network.edge_bound()];
     let mut visited = network.visit_map();
     let mut level_edges = vec![Default::default(); network.node_bound()];
 

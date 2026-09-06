@@ -171,3 +171,19 @@ fn test_ford_fulkerson_stable_graphs() {
 
     assert_eq!(2, ford_fulkerson(&g, a, d).0);
 }
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn test_ford_fulkerson_stable_graph_node_hole() {
+    // Removing the middle node leaves live slots 0 and 2, so the largest node index is
+    // bigger than the node count.
+    let mut graph = StableDiGraph::<(), u32>::new();
+    let source = graph.add_node(());
+    let removed = graph.add_node(());
+    let sink = graph.add_node(());
+
+    graph.add_edge(source, sink, 1);
+    graph.remove_node(removed);
+
+    assert_eq!(1, ford_fulkerson(&graph, source, sink).0);
+}

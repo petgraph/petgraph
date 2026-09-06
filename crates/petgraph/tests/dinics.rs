@@ -189,3 +189,24 @@ fn test_dinics_stable_graph() {
     let (max_flow, _) = dinics(&graph, source, sink);
     assert_eq!(5, max_flow);
 }
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn test_dinics_stable_graph_edge_hole() {
+    use petgraph::prelude::StableDiGraph;
+
+    // Removing the middle edge leaves the two live edges in slots 0 and 2, so the
+    // largest edge index is bigger than the edge count.
+    let mut graph = StableDiGraph::<(), u32>::new();
+    let source = graph.add_node(());
+    let middle = graph.add_node(());
+    let sink = graph.add_node(());
+
+    graph.add_edge(source, middle, 1);
+    let removed = graph.add_edge(source, sink, 1);
+    graph.add_edge(middle, sink, 1);
+
+    graph.remove_edge(removed);
+
+    assert_eq!(1, dinics(&graph, source, sink).0);
+}
