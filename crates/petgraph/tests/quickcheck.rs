@@ -1477,10 +1477,7 @@ quickcheck! {
         let ranks: Vec<f64> = page_rank(&gr, 0.85_f64, 5);
         let at_least_one_neg_rank = ranks.iter().any(|rank| *rank < 0.);
         let not_sumup_to_one = (ranks.iter().sum::<f64>() - 1.).abs() > tol;
-        if  at_least_one_neg_rank | not_sumup_to_one{
-            return false;
-        }
-        true
+        !(at_least_one_neg_rank | not_sumup_to_one)
     }
 }
 
