@@ -844,196 +844,30 @@ macro_rules! test_directed_graph {
             let (graph, nodes, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
-            // Source 0
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[0], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 0 and 0"
-            );
+            let expected_edge_matrix = [
+                [None, Some(edges[0]), Some(edges[1]), None, None],
+                [None, None, None, Some(edges[2]), None],
+                [None, None, None, None, None],
+                [None, None, Some(edges[3]), None, None],
+                [None, None, None, None, None],
+            ];
 
-            let expected_edges_0_1 = [edges[0]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_0_1,
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[0], nodes[1])
-                    .map(|edge| edge.id),
-                "edges_between",
-                "DirectedGraph",
-                0,
-            );
-
-            let expected_edges_0_2 = [edges[1]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_0_2,
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[0], nodes[2])
-                    .map(|edge| edge.id),
-                "edges_between",
-                "DirectedGraph",
-                0,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[0], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 0 and 3"
-            );
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[0], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 0 and 4"
-            );
-
-            // Source 1
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[1], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 1 and 0"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[1], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 1 and 1"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[1], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 1 and 2"
-            );
-
-            let expected_edges_1_3 = [edges[2]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_1_3,
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[1], nodes[3])
-                    .map(|edge| edge.id),
-                "edges_between",
-                "DirectedGraph",
-                1,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[1], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 1 and 4"
-            );
-
-            // Source 2
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[2], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 2 and 0"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[2], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 2 and 1"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[2], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 2 and 2"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[2], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 2 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[2], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 2 and 4"
-            );
-
-            // Source 3
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[3], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 3 and 0"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[3], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 3 and 1"
-            );
-
-            let expected_edges_3_2 = [edges[3]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_3_2,
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[3], nodes[2])
-                    .map(|edge| edge.id),
-                "edges_between",
-                "DirectedGraph",
-                3,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[3], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 3 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[3], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 3 and 4"
-            );
-
-            // Source 4
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[4], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 4 and 0"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[4], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 4 and 1"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[4], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 4 and 2"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[4], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 4 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between(&graph, nodes[4], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between() did not return an empty iterator for nodes 4 and 4"
-            );
+            for lhs_number in 0..nodes.len() {
+                for rhs_number in 0..nodes.len() {
+                    $crate::utils::testing::check_if_edges_match(
+                        expected_edge_matrix[lhs_number][rhs_number],
+                        $crate::graph::DirectedGraph::edges_between(
+                            &graph,
+                            nodes[lhs_number],
+                            nodes[rhs_number],
+                        )
+                        .map(|edge| edge.id),
+                        "edges_between",
+                        "DirectedGraph",
+                        format_args!("node pair ({}, {})", lhs_number, rhs_number),
+                    );
+                }
+            }
         }
 
         #[test]
@@ -1042,217 +876,30 @@ macro_rules! test_directed_graph {
             let (mut graph, nodes, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
-            // Source 0
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[0], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 0 \
-                 and 0"
-            );
+            let expected_edge_matrix = [
+                [None, Some(edges[0]), Some(edges[1]), None, None],
+                [None, None, None, Some(edges[2]), None],
+                [None, None, None, None, None],
+                [None, None, Some(edges[3]), None, None],
+                [None, None, None, None, None],
+            ];
 
-            let expected_edges_0_1 = [edges[0]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_0_1,
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[0], nodes[1])
-                    .map(|edge| edge.id),
-                "edges_between_mut",
-                "DirectedGraph",
-                0,
-            );
-
-            let expected_edges_0_2 = [edges[1]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_0_2,
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[0], nodes[2])
-                    .map(|edge| edge.id),
-                "edges_between_mut",
-                "DirectedGraph",
-                0,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[0], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 0 \
-                 and 3"
-            );
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[0], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 0 \
-                 and 4"
-            );
-
-            // Source 1
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[1], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 1 \
-                 and 0"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[1], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 1 \
-                 and 1"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[1], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 1 \
-                 and 2"
-            );
-
-            let expected_edges_1_3 = [edges[2]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_1_3,
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[1], nodes[3])
-                    .map(|edge| edge.id),
-                "edges_between_mut",
-                "DirectedGraph",
-                1,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[1], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 1 \
-                 and 4"
-            );
-
-            // Source 2
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[2], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 2 \
-                 and 0"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[2], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 2 \
-                 and 1"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[2], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 2 \
-                 and 2"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[2], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 2 \
-                 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[2], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 2 \
-                 and 4"
-            );
-
-            // Source 3
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[3], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 3 \
-                 and 0"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[3], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 3 \
-                 and 1"
-            );
-
-            let expected_edges_3_2 = [edges[3]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_3_2,
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[3], nodes[2])
-                    .map(|edge| edge.id),
-                "edges_between_mut",
-                "DirectedGraph",
-                3,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[3], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 3 \
-                 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[3], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 3 \
-                 and 4"
-            );
-
-            // Source 4
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[4], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 4 \
-                 and 0"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[4], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 4 \
-                 and 1"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[4], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 4 \
-                 and 2"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[4], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 4 \
-                 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_between_mut(&mut graph, nodes[4], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_between_mut() did not return an empty iterator for nodes 4 \
-                 and 4"
-            );
+            for lhs_number in 0..nodes.len() {
+                for rhs_number in 0..nodes.len() {
+                    $crate::utils::testing::check_if_edges_match(
+                        expected_edge_matrix[lhs_number][rhs_number],
+                        $crate::graph::DirectedGraph::edges_between_mut(
+                            &mut graph,
+                            nodes[lhs_number],
+                            nodes[rhs_number],
+                        )
+                        .map(|edge| edge.id),
+                        "edges_between_mut",
+                        "DirectedGraph",
+                        format_args!("node pair ({}, {})", lhs_number, rhs_number),
+                    );
+                }
+            }
         }
 
         #[test]
@@ -1261,156 +908,27 @@ macro_rules! test_directed_graph {
             let (graph, nodes, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
-            // Source 0
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[0], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 0 \
-                 and 0"
-            );
+            let expected_edge_matrix = [
+                [None, Some(edges[0]), Some(edges[1]), None, None],
+                [Some(edges[0]), None, None, Some(edges[2]), None],
+                [Some(edges[1]), None, None, Some(edges[3]), None],
+                [None, Some(edges[2]), Some(edges[3]), None, None],
+                [None, None, None, None, None],
+            ];
 
-            let expected_edges_0_1 = [edges[0]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_0_1,
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[0], nodes[1])
-                    .map(|edge| edge.id),
-                "edges_connecting",
-                "DirectedGraph",
-                0,
-            );
-
-            let expected_edges_0_2 = [edges[1]];
-
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_0_2,
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[0], nodes[2])
-                    .map(|edge| edge.id),
-                "edges_connecting",
-                "DirectedGraph",
-                0,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[0], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 0 \
-                 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[0], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 0 \
-                 and 4"
-            );
-
-            // Source 1
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[1], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 1 \
-                 and 1"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[1], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 1 \
-                 and 2"
-            );
-
-            let expected_edges_1_3 = [edges[2]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_1_3,
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[1], nodes[3])
-                    .map(|edge| edge.id),
-                "edges_connecting",
-                "DirectedGraph",
-                1,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[1], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 1 \
-                 and 4"
-            );
-
-            // Source 2
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[2], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 2 \
-                 and 2"
-            );
-
-            let expected_edges_2_3 = [edges[3]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_2_3,
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[2], nodes[3])
-                    .map(|edge| edge.id),
-                "edges_connecting",
-                "DirectedGraph",
-                2,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[2], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 2 \
-                 and 4"
-            );
-
-            // Source 3
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[3], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 3 \
-                 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[3], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 3 \
-                 and 4"
-            );
-
-            // Source 4
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting(&graph, nodes[4], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting() did not return an empty iterator for nodes 4 \
-                 and 4"
-            );
-
-            // Check if swapping lhs and rhs matters
-            for i in nodes.iter() {
-                for j in nodes.iter() {
-                    let edges_lhs_rhs: hashbrown::HashSet<_, foldhash::fast::RandomState> =
-                        $crate::graph::DirectedGraph::edges_connecting(&graph, *i, *j)
-                            .map(|edge| edge.id)
-                            .collect();
-                    let edges_rhs_lhs: hashbrown::HashSet<_, foldhash::fast::RandomState> =
-                        $crate::graph::DirectedGraph::edges_connecting(&graph, *j, *i)
-                            .map(|edge| edge.id)
-                            .collect();
-                    assert_eq!(
-                        edges_lhs_rhs, edges_rhs_lhs,
-                        "DirectedGraph::edges_connecting() returned different edges when swapping \
-                         source and target nodes: {:?} and {:?}",
-                        i, j
+            for lhs_number in 0..nodes.len() {
+                for rhs_number in 0..nodes.len() {
+                    $crate::utils::testing::check_if_edges_match(
+                        expected_edge_matrix[lhs_number][rhs_number],
+                        $crate::graph::DirectedGraph::edges_connecting(
+                            &graph,
+                            nodes[lhs_number],
+                            nodes[rhs_number],
+                        )
+                        .map(|edge| edge.id),
+                        "edges_connecting",
+                        "DirectedGraph",
+                        format_args!("node pair ({}, {})", lhs_number, rhs_number),
                     );
                 }
             }
@@ -1422,156 +940,27 @@ macro_rules! test_directed_graph {
             let (mut graph, nodes, edges) =
                 $crate::create_directed_test_graph!($graph_constructor, $add_node, $add_edge);
 
-            // Source 0
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[0], nodes[0])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 0 and 0"
-            );
+            let expected_edge_matrix = [
+                [None, Some(edges[0]), Some(edges[1]), None, None],
+                [Some(edges[0]), None, None, Some(edges[2]), None],
+                [Some(edges[1]), None, None, Some(edges[3]), None],
+                [None, Some(edges[2]), Some(edges[3]), None, None],
+                [None, None, None, None, None],
+            ];
 
-            let expected_edges_0_1 = [edges[0]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_0_1,
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[0], nodes[1])
-                    .map(|edge| edge.id),
-                "edges_connecting_mut",
-                "DirectedGraph",
-                0,
-            );
-
-            let expected_edges_0_2 = [edges[1]];
-
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_0_2,
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[0], nodes[2])
-                    .map(|edge| edge.id),
-                "edges_connecting_mut",
-                "DirectedGraph",
-                0,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[0], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 0 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[0], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 0 and 4"
-            );
-
-            // Source 1
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[1], nodes[1])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 1 and 1"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[1], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 1 and 2"
-            );
-
-            let expected_edges_1_3 = [edges[2]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_1_3,
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[1], nodes[3])
-                    .map(|edge| edge.id),
-                "edges_connecting_mut",
-                "DirectedGraph",
-                1,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[1], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 1 and 4"
-            );
-
-            // Source 2
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[2], nodes[2])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 2 and 2"
-            );
-
-            let expected_edges_2_3 = [edges[3]];
-            $crate::utils::testing::check_if_edges_match(
-                expected_edges_2_3,
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[2], nodes[3])
-                    .map(|edge| edge.id),
-                "edges_connecting_mut",
-                "DirectedGraph",
-                2,
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[2], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 2 and 4"
-            );
-
-            // Source 3
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[3], nodes[3])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 3 and 3"
-            );
-
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[3], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 3 and 4"
-            );
-
-            // Source 4
-            assert!(
-                $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, nodes[4], nodes[4])
-                    .next()
-                    .is_none(),
-                "DirectedGraph::edges_connecting_mut() did not return an empty iterator for nodes \
-                 4 and 4"
-            );
-
-            // Check if swapping lhs and rhs matters
-            for i in nodes.iter() {
-                for j in nodes.iter() {
-                    let edges_lhs_rhs: hashbrown::HashSet<_, foldhash::fast::RandomState> =
-                        $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, *i, *j)
-                            .map(|edge| edge.id)
-                            .collect();
-                    let edges_rhs_lhs: hashbrown::HashSet<_, foldhash::fast::RandomState> =
-                        $crate::graph::DirectedGraph::edges_connecting_mut(&mut graph, *j, *i)
-                            .map(|edge| edge.id)
-                            .collect();
-                    assert_eq!(
-                        edges_lhs_rhs, edges_rhs_lhs,
-                        "DirectedGraph::edges_connecting_mut() returned different edges when \
-                         swapping source and target nodes: {:?} and {:?}",
-                        i, j
+            for lhs_number in 0..nodes.len() {
+                for rhs_number in 0..nodes.len() {
+                    $crate::utils::testing::check_if_edges_match(
+                        expected_edge_matrix[lhs_number][rhs_number],
+                        $crate::graph::DirectedGraph::edges_connecting_mut(
+                            &mut graph,
+                            nodes[lhs_number],
+                            nodes[rhs_number],
+                        )
+                        .map(|edge| edge.id),
+                        "edges_connecting_mut",
+                        "DirectedGraph",
+                        format_args!("node pair ({}, {})", lhs_number, rhs_number),
                     );
                 }
             }
