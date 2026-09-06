@@ -2,7 +2,6 @@ extern crate petgraph;
 #[macro_use]
 extern crate quickcheck;
 extern crate bincode;
-extern crate itertools;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]

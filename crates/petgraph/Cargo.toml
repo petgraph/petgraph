@@ -1,7 +1,6 @@
 [package]
 name                   = "petgraph"
 version                = "0.8.3"
-readme                 = "README.md"
 rust-version.workspace = true
 license.workspace      = true
 authors.workspace      = true
