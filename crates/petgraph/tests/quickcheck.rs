@@ -1630,6 +1630,27 @@ quickcheck! {
 
 #[cfg(feature = "stable_graph")]
 #[test]
+fn steiner_tree_is_a_tree() {
+    fn prop(g: UnGraph<(), u32>) -> bool {
+        // Squash the weights into a small range: ties in the metric closure decide which
+        // minimum spanning tree Kou's algorithm expands, and that is what the tree property is
+        // sensitive to.
+        let g = g.map(|_, _| (), |_, weight| weight % 2 + 1);
+        if g.node_count() <= 1 || connected_components(&g) != 1 {
+            return true; // `steiner_tree` wants a connected graph with at least two nodes
+        }
+
+        let terminals = g.node_indices().take(5).collect::<Vec<_>>();
+        let tree = steiner_tree(&g, &terminals);
+
+        tree.node_count() == tree.edge_count() + 1 && !is_cyclic_undirected(&tree)
+    }
+
+    quickcheck::quickcheck(prop as fn(Graph<(), u32, Undirected>) -> bool);
+}
+
+#[cfg(feature = "stable_graph")]
+#[test]
 fn steiner_tree_spans_terminals() {
     fn prop(g: UnGraph<(), u32>) -> bool {
         if g.node_count() <= 1 {

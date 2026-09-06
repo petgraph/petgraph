@@ -3,8 +3,6 @@ use core::{fmt::Debug, hash::Hash};
 
 use hashbrown::{HashMap, HashSet};
 
-#[cfg(feature = "stable_graph")]
-use crate::stable_graph::StableGraph;
 use crate::{
     Undirected,
     algo::{
@@ -17,6 +15,8 @@ use crate::{
         IntoNodeIdentifiers, IntoNodeReferences, NodeCompactIndexable, NodeIndexable, Visitable,
     },
 };
+#[cfg(feature = "stable_graph")]
+use crate::{graph::EdgeIndex, stable_graph::StableGraph, unionfind::UnionFind};
 
 type Edge<G> = (<G as GraphBase>::NodeId, <G as GraphBase>::NodeId);
 type Subgraph<G> = HashSet<<G as GraphBase>::NodeId>;
@@ -206,18 +206,51 @@ where
     });
     graph.retain_nodes(|_, n| subgraph_nodes.contains(&n));
 
+    let spanning_edges = spanning_tree_edges(&graph);
+    graph.retain_edges(|_, e| spanning_edges.contains(&e));
+
     let non_terminal_nodes = non_terminal_leaves(&graph, terminals);
     graph.retain_nodes(|_, n| !non_terminal_nodes.contains(&n));
 
     graph
 }
 
+/// Kruskal over `graph`, returning the indices of the edges that make up a minimum spanning
+/// forest. Unlike [`min_spanning_tree`] this keeps the identity of the input edges, so the caller
+/// can drop the remaining ones in place instead of rebuilding the graph and losing its indices.
+#[cfg(feature = "stable_graph")]
+fn spanning_tree_edges<N, E, Ix>(
+    graph: &StableGraph<N, E, Undirected, Ix>,
+) -> HashSet<EdgeIndex<Ix>>
+where
+    E: Copy + Ord,
+    Ix: IndexType,
+{
+    let mut edges = graph
+        .edge_references()
+        .map(|edge| (*edge.weight(), edge.id(), edge.source(), edge.target()))
+        .collect::<Vec<_>>();
+    edges.sort_unstable_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
+
+    let mut components = UnionFind::new(graph.node_bound());
+    let mut spanning_edges = HashSet::new();
+    for (_, edge_id, source, target) in edges {
+        if components.union(source.index(), target.index()) {
+            spanning_edges.insert(edge_id);
+        }
+    }
+
+    spanning_edges
+}
+
 #[cfg(test)]
 mod test {
-    use alloc::vec;
+    use alloc::{vec, vec::Vec};
 
     use hashbrown::{HashMap, HashSet};
 
+    #[cfg(feature = "stable_graph")]
+    use super::steiner_tree;
     use super::{compute_metric_closure, non_terminal_leaves, subgraph_edges_from_metric_closure};
     use crate::{
         Graph, Undirected,
@@ -225,6 +258,8 @@ mod test {
         data::FromElements,
         graph::NodeIndex,
     };
+    #[cfg(feature = "stable_graph")]
+    use crate::{algo::is_cyclic_undirected, visit::IntoEdgeReferences};
 
     #[test]
     fn test_compute_metric_closure() {
@@ -344,6 +379,49 @@ mod test {
             assert_eq!(graph.edge_weight(edge_index).unwrap(), ref_edge.weight());
             assert_eq!(edge_endpoints.0, ref_edge.source());
             assert_eq!(edge_endpoints.1, ref_edge.target());
+        }
+    }
+
+    /// Regression test for petgraph#922. The metric closure of this graph has four minimum
+    /// spanning trees of equal weight; two of them pair up terminals so that the expanded
+    /// shortest paths cover all three edges of the triangle `a`, `b`, `d`, and the returned
+    /// graph then has as many edges as nodes. Which spanning tree comes out follows the
+    /// iteration order of the metric closure `HashMap`, which is randomly seeded, so the
+    /// check is repeated.
+    #[cfg(feature = "stable_graph")]
+    #[test]
+    fn test_steiner_tree_is_a_tree() {
+        let mut graph = Graph::<(), i32, _>::new_undirected();
+
+        let a = graph.add_node(());
+        let b = graph.add_node(());
+        let c = graph.add_node(());
+        let d = graph.add_node(());
+        let e = graph.add_node(());
+        let f = graph.add_node(());
+        let g = graph.add_node(());
+        graph.extend_with_edges([
+            (a, b, 1),
+            (a, d, 1),
+            (b, d, 1),
+            (c, d, 1),
+            (c, e, 1),
+            (d, g, 1),
+            (f, g, 1),
+        ]);
+
+        let terminals = vec![a, b, e, f];
+        for _ in 0..64 {
+            let tree = steiner_tree(&graph, &terminals);
+            assert_eq!(
+                tree.node_count(),
+                tree.edge_count() + 1,
+                "not a tree: {:?}",
+                tree.edge_references()
+                    .map(|edge| (edge.source(), edge.target()))
+                    .collect::<Vec<_>>()
+            );
+            assert!(!is_cyclic_undirected(&tree));
         }
     }
 
