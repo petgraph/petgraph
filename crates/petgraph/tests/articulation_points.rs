@@ -179,3 +179,64 @@ fn art_simple2() {
 
     assert_eq!(articulation_points(&gr), set);
 }
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn art_stable_graph_linear_chain_regression() {
+    use petgraph::stable_graph::StableUnGraph;
+
+    let mut gr = StableUnGraph::<&str, ()>::default();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+
+    gr.add_edge(a, b, ());
+    gr.add_edge(b, c, ());
+
+    let set: HashSet<_> = [b].iter().cloned().collect();
+
+    assert_eq!(articulation_points(&gr), set);
+}
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn art_stable_graph_empty() {
+    use petgraph::stable_graph::StableUnGraph;
+
+    let gr = StableUnGraph::<&str, ()>::default();
+
+    let set: HashSet<NodeIndex> = HashSet::new();
+
+    assert_eq!(articulation_points(&gr), set);
+}
+
+#[cfg(feature = "stable_graph")]
+#[test]
+fn art_stable_graph_with_removed_nodes() {
+    use petgraph::stable_graph::StableUnGraph;
+
+    // The removals leave holes, so the remaining node indices are sparse: the largest
+    // one is 6, while only five nodes are left.
+    let mut gr = StableUnGraph::<&str, ()>::default();
+    let a = gr.add_node("A");
+    let b = gr.add_node("B");
+    let c = gr.add_node("C");
+    let d = gr.add_node("D");
+    let e = gr.add_node("E");
+    let f = gr.add_node("F");
+    let g = gr.add_node("G");
+
+    gr.remove_node(a);
+    gr.remove_node(d);
+
+    // B - C - E, with E, F and G forming a triangle.
+    gr.add_edge(b, c, ());
+    gr.add_edge(c, e, ());
+    gr.add_edge(e, f, ());
+    gr.add_edge(f, g, ());
+    gr.add_edge(g, e, ());
+
+    let set: HashSet<_> = [c, e].iter().cloned().collect();
+
+    assert_eq!(articulation_points(&gr), set);
+}
