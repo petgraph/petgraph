@@ -8,7 +8,9 @@ use petgraph::{
     Directed, EdgeType, Graph, Undirected,
     adj::List,
     csr::Csr,
-    visit::{EdgeRef, GetAdjacencyMatrix, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers},
+    visit::{
+        EdgeRef, GetAdjacencyMatrix, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers, Reversed,
+    },
 };
 
 fn test_adjacency_matrix<G>(g: G)
@@ -54,6 +56,20 @@ fn test_adjacency_matrix_for_graph_directed() {
 #[test]
 fn test_adjacency_matrix_for_graph_undirected() {
     test_adjacency_matrix_for_graph::<Undirected>();
+}
+
+#[test]
+fn test_adjacency_matrix_for_reversed() {
+    for (order, edges) in TEST_CASES {
+        let mut g: Graph<(), (), Directed, u16> = Graph::with_capacity(order, edges.len());
+
+        for _ in 0..order {
+            g.add_node(());
+        }
+        g.extend_with_edges(edges);
+
+        test_adjacency_matrix(Reversed(&g));
+    }
 }
 
 #[cfg(feature = "stable_graph")]
