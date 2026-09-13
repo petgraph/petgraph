@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crate: [petgraph, petgraph-core, petgraph-serialization-tests]
+        crate: [petgraph, petgraph-core, petgraph-serialization-tests, petgraph-matrix-graph]
         rust: [stable, beta, nightly]
         include:
           - rust: nightly
