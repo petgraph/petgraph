@@ -82,12 +82,12 @@ where
     if source == destination {
         return (
             G::EdgeWeight::zero(),
-            vec![G::EdgeWeight::zero(); network.edge_count()],
+            vec![G::EdgeWeight::zero(); network.edge_bound()],
         );
     }
 
     let mut max_flow = G::EdgeWeight::zero();
-    let mut flows = vec![G::EdgeWeight::zero(); network.edge_count()];
+    let mut flows = vec![G::EdgeWeight::zero(); network.edge_bound()];
     let mut visited = network.visit_map();
     let mut level_edges = vec![Default::default(); network.node_bound()];
 

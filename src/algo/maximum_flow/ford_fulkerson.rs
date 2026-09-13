@@ -176,7 +176,7 @@ where
         + Visitable,
     G::EdgeWeight: Sub<Output = G::EdgeWeight> + PositiveMeasure,
 {
-    let mut edge_to = vec![None; network.node_count()];
+    let mut edge_to = vec![None; network.node_bound()];
     let mut flows = vec![G::EdgeWeight::zero(); network.edge_bound()];
     let mut max_flow = G::EdgeWeight::zero();
     while has_augmented_path(&network, source, destination, &mut edge_to, &flows) {
