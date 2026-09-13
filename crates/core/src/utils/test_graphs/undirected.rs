@@ -182,3 +182,40 @@ where
             })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::test_undirected_graph;
+
+    fn remove_node_with_unwrap(
+        graph: &mut UndirectedTestGraph<(), (), UndirNodeId, UndirEdgeId>,
+        node_id: UndirNodeId,
+    ) {
+        graph.remove_node(node_id).unwrap();
+    }
+
+    fn add_edge_with_unwrap(
+        graph: &mut UndirectedTestGraph<(), (), UndirNodeId, UndirEdgeId>,
+        source: UndirNodeId,
+        target: UndirNodeId,
+        _data: (),
+    ) -> UndirEdgeId {
+        graph.add_edge(source, target, ()).unwrap()
+    }
+
+    fn remove_edge_with_unwrap(
+        graph: &mut UndirectedTestGraph<(), (), UndirNodeId, UndirEdgeId>,
+        edge_id: UndirEdgeId,
+    ) {
+        graph.remove_edge(edge_id).unwrap();
+    }
+
+    test_undirected_graph!(
+        UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,
+        UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::add_node,
+        remove_node_with_unwrap,
+        add_edge_with_unwrap,
+        remove_edge_with_unwrap
+    );
+}
