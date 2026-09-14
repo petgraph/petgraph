@@ -8,7 +8,7 @@ use crate::{
     visit::{IntoEdges, IntoNodeIdentifiers, NodeIndexable, VisitMap, Visitable},
 };
 
-/// [DStatur algorithm][1] to properly color a non weighted undirected graph.
+/// [DSatur algorithm][1] to properly color a non weighted undirected graph.
 ///
 ///
 /// This is a heuristic. So, it does not necessarily return a minimum coloring.
