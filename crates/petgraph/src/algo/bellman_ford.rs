@@ -164,7 +164,7 @@ where
 /// let path = find_negative_cycle(&graph_with_neg_cycle, NodeIndex::new(0));
 /// assert_eq!(
 ///     path,
-///     Some([NodeIndex::new(1), NodeIndex::new(3), NodeIndex::new(2)].to_vec())
+///     Some([NodeIndex::new(3), NodeIndex::new(2), NodeIndex::new(1)].to_vec())
 /// );
 /// ```
 pub fn find_negative_cycle<G>(g: G, source: G::NodeId) -> Option<Vec<G::NodeId>>
@@ -184,8 +184,29 @@ where
             let j = edge.target();
             let w = *edge.weight();
             if distance[ix(i)] + w < distance[ix(j)] {
-                // Step 3: negative cycle found
-                let start = j;
+                // Step 3: negative cycle found.
+                //
+                // The relaxable edge `(i, j)` proves that `j` is affected by a
+                // negative cycle, but neither `i` nor `j` is guaranteed to lie
+                // *on* the cycle -- they may only be reachable from it. Starting
+                // the reconstruction directly at `j` is therefore wrong: if `j`
+                // has no predecessor (e.g. it is the source, whose distance was
+                // never relaxed) the loop below would treat it as a bogus
+                // single-node self cycle and return a `j` that is not a cycle at
+                // all.
+                //
+                // Walk back `node_count` predecessor links from the affected
+                // vertex `i` first. Every affected vertex has a predecessor
+                // (its chain stays within the affected region and never reaches
+                // the source), so after at most `node_count` steps we are
+                // guaranteed to have landed on a vertex that lies on the cycle.
+                let mut start = i;
+                for _ in 0..g.node_count() {
+                    match predecessor[ix(start)] {
+                        Some(predecessor_node) => start = predecessor_node,
+                        None => break,
+                    }
+                }
                 let mut node = start;
                 let mut visited = g.visit_map();
                 // Go backward in the predecessor chain
