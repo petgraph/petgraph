@@ -410,7 +410,13 @@ where
     Ix: IndexType,
 {
     fn visit(&mut self, x: Ix) -> bool {
-        !self.put(x.index())
+        let index = x.index();
+        // The graph may have grown (e.g. `add_node` during iteration) after
+        // this map was created; grow instead of panicking (#1040).
+        if index >= self.len() {
+            self.grow(index + 1);
+        }
+        !self.put(index)
     }
 
     fn is_visited(&self, x: &Ix) -> bool {
