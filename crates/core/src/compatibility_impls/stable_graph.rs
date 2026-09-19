@@ -611,7 +611,7 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
 #[cfg(test)]
 mod test {
     use super::{EdgeIndex, NodeIndex, StableGraph};
-    use crate::{graph::DirectedGraph, test_directed_graph};
+    use crate::test_directed_graph;
 
     fn remove_node_with_unwrap(graph: &mut StableGraph<(), ()>, node_id: NodeIndex) {
         graph.remove_node(node_id);
