@@ -12,10 +12,11 @@ publish                = false
 [dependencies]
 foldhash  = { workspace = true, optional = true }
 hashbrown = { workspace = true, optional = true }
+petgraph-old = { workspace = true, optional = true}
 
 [features]
 utils = ["dep:foldhash", "dep:hashbrown"]
-alloc = []
+alloc = ["dep:petgraph-old"]
 
 [lints]
 workspace = true
