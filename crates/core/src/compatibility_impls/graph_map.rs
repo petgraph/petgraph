@@ -13,12 +13,23 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct GraphMapEdgeId<N> {
+pub struct DirGraphMapEdgeId<N> {
     pub source: N,
     pub target: N,
+    _private: core::marker::PhantomData<N>,
 }
 
-impl<N: Display> Display for GraphMapEdgeId<N> {
+impl<N> DirGraphMapEdgeId<N> {
+    pub const fn new(source: N, target: N) -> Self {
+        Self {
+            source,
+            target,
+            _private: core::marker::PhantomData,
+        }
+    }
+}
+
+impl<N: Display> Display for DirGraphMapEdgeId<N> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Edge({}, {})", self.source, self.target)
     }
@@ -28,9 +39,9 @@ trait NodeTraitBounds: Display + core::fmt::Debug + Eq + Copy + NodeTrait + Id {
 
 impl<N: Display + core::fmt::Debug + Eq + Copy + NodeTrait + Id> NodeTraitBounds for N {}
 
-impl<N: NodeTraitBounds> Id for GraphMapEdgeId<N> {}
+impl<N: NodeTraitBounds> Id for DirGraphMapEdgeId<N> {}
 
-impl<N: NodeTraitBounds, E, Ty, S: BuildHasher> NewGraph for GraphMap<N, E, Ty, S> {
+impl<N: NodeTraitBounds, E, S: BuildHasher> NewGraph for GraphMap<N, E, Directed, S> {
     type EdgeData<'graph>
         = E
     where
@@ -43,7 +54,7 @@ impl<N: NodeTraitBounds, E, Ty, S: BuildHasher> NewGraph for GraphMap<N, E, Ty, 
         = &'graph E
     where
         Self: 'graph;
-    type EdgeId = GraphMapEdgeId<N>;
+    type EdgeId = DirGraphMapEdgeId<N>;
     type NodeData<'graph>
         = ()
     where
@@ -109,7 +120,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.all_edges()
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: GraphMapEdgeId { source, target },
+                id: DirGraphMapEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -119,7 +130,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.all_edges_mut()
             .map(|(source, target, data)| EdgeMut::<'_, Self> {
-                id: GraphMapEdgeId { source, target },
+                id: DirGraphMapEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -206,7 +217,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: GraphMapEdgeId { source, target },
+                id: DirGraphMapEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -230,7 +241,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Outgoing)
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: GraphMapEdgeId { source, target },
+                id: DirGraphMapEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -255,7 +266,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
         self.edges_directed(node, Direction::Incoming)
             .chain(self.edges_directed(node, Direction::Outgoing))
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: GraphMapEdgeId { source, target },
+                id: DirGraphMapEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -316,10 +327,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
             .filter(move |(_s, curr_target_idx, _d)| *curr_target_idx == target)
             .map(
                 move |(curr_source_idx, curr_target_idx, data)| EdgeRef::<'_, Self> {
-                    id: GraphMapEdgeId {
-                        source: curr_source_idx,
-                        target: curr_target_idx,
-                    },
+                    id: DirGraphMapEdgeId::new(curr_source_idx, curr_target_idx),
                     source: curr_source_idx,
                     target: curr_target_idx,
                     data,
@@ -415,6 +423,69 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct UndirGraphMapEdgeId<N> {
+    pub source: N,
+    pub target: N,
+    _private: core::marker::PhantomData<N>,
+}
+
+impl<N: Ord> UndirGraphMapEdgeId<N> {
+    pub fn new(source: N, target: N) -> Self {
+        let (source, target) = if source <= target {
+            (source, target)
+        } else {
+            (target, source)
+        };
+        Self {
+            source,
+            target,
+            _private: core::marker::PhantomData,
+        }
+    }
+}
+
+impl<N: Display + Ord> Display for UndirGraphMapEdgeId<N> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if self.source <= self.target {
+            write!(f, "Edge({}, {})", self.source, self.target)
+        } else {
+            write!(f, "Edge({}, {})", self.target, self.source)
+        }
+    }
+}
+
+impl<N: NodeTraitBounds> Id for UndirGraphMapEdgeId<N> {}
+
+impl<N: NodeTraitBounds, E, S: BuildHasher> NewGraph for GraphMap<N, E, Undirected, S> {
+    type EdgeData<'graph>
+        = E
+    where
+        Self: 'graph;
+    type EdgeDataMut<'graph>
+        = &'graph mut E
+    where
+        Self: 'graph;
+    type EdgeDataRef<'graph>
+        = &'graph E
+    where
+        Self: 'graph;
+    type EdgeId = UndirGraphMapEdgeId<N>;
+    type NodeData<'graph>
+        = ()
+    where
+        Self: 'graph;
+    type NodeDataMut<'graph>
+        = ()
+    where
+        Self: 'graph;
+    type NodeDataRef<'graph>
+        = ()
+    where
+        Self: 'graph;
+    type NodeId = N;
+}
+
 impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, Undirected, S> {
     #[inline]
     fn density_hint(&self) -> DensityHint {
@@ -466,7 +537,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.all_edges()
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: GraphMapEdgeId { source, target },
+                id: UndirGraphMapEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -482,7 +553,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.all_edges_mut()
             .map(|(source, target, data)| EdgeMut::<'_, Self> {
-                id: GraphMapEdgeId { source, target },
+                id: UndirGraphMapEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -543,7 +614,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges(node)
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: GraphMapEdgeId { source, target },
+                id: UndirGraphMapEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -620,7 +691,7 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
 mod test {
     use petgraph_old::{EdgeType, Undirected};
 
-    use super::{Directed, Display, GraphMap, GraphMapEdgeId, Id};
+    use super::{DirGraphMapEdgeId, Directed, Display, GraphMap, Id, UndirGraphMapEdgeId};
     use crate::{test_directed_graph, test_undirected_graph};
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -638,7 +709,7 @@ mod test {
         graph: &mut GraphMap<GraphMapNodeId, (), Dir>,
         _dummy: (),
     ) -> GraphMapNodeId {
-        graph.add_node(GraphMapNodeId(graph.node_count() as u32))
+        graph.add_node(GraphMapNodeId(u32::try_from(graph.node_count()).unwrap()))
     }
 
     fn remove_node_with_unwrap<Dir: EdgeType>(
@@ -648,19 +719,36 @@ mod test {
         graph.remove_node(node_id);
     }
 
-    fn add_edge_with_unwrap<Dir: EdgeType>(
-        graph: &mut GraphMap<GraphMapNodeId, (), Dir>,
+    fn add_edge_with_unwrap_dir(
+        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
         source: GraphMapNodeId,
         target: GraphMapNodeId,
         _data: (),
-    ) -> GraphMapEdgeId<GraphMapNodeId> {
+    ) -> DirGraphMapEdgeId<GraphMapNodeId> {
         graph.add_edge(source, target, ());
-        GraphMapEdgeId { source, target }
+        DirGraphMapEdgeId::new(source, target)
     }
 
-    fn remove_edge_with_unwrap<Dir: EdgeType>(
-        graph: &mut GraphMap<GraphMapNodeId, (), Dir>,
-        edge_id: GraphMapEdgeId<GraphMapNodeId>,
+    fn remove_edge_with_unwrap_dir(
+        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
+        edge_id: DirGraphMapEdgeId<GraphMapNodeId>,
+    ) {
+        graph.remove_edge(edge_id.source, edge_id.target).unwrap();
+    }
+
+    fn add_edge_with_unwrap_undir(
+        graph: &mut GraphMap<GraphMapNodeId, (), Undirected>,
+        source: GraphMapNodeId,
+        target: GraphMapNodeId,
+        _data: (),
+    ) -> UndirGraphMapEdgeId<GraphMapNodeId> {
+        graph.add_edge(source, target, ());
+        UndirGraphMapEdgeId::new(source, target)
+    }
+
+    fn remove_edge_with_unwrap_undir(
+        graph: &mut GraphMap<GraphMapNodeId, (), Undirected>,
+        edge_id: UndirGraphMapEdgeId<GraphMapNodeId>,
     ) {
         graph.remove_edge(edge_id.source, edge_id.target).unwrap();
     }
@@ -672,8 +760,8 @@ mod test {
             GraphMap::<GraphMapNodeId, (), Directed>::new,
             add_node_with_increment::<Directed>,
             remove_node_with_unwrap::<Directed>,
-            add_edge_with_unwrap::<Directed>,
-            remove_edge_with_unwrap::<Directed>
+            add_edge_with_unwrap_dir,
+            remove_edge_with_unwrap_dir
         );
     }
 
@@ -684,8 +772,8 @@ mod test {
             GraphMap::<GraphMapNodeId, (), Undirected>::new,
             add_node_with_increment::<Undirected>,
             remove_node_with_unwrap::<Undirected>,
-            add_edge_with_unwrap::<Undirected>,
-            remove_edge_with_unwrap::<Undirected>
+            add_edge_with_unwrap_undir,
+            remove_edge_with_unwrap_undir
         );
     }
 }
