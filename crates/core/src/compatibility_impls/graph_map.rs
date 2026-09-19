@@ -12,7 +12,8 @@ use crate::{
     node::{NodeMut, NodeRef},
 };
 
-/// EdgeId type for the compatibility implementation of the `Graph` trait for directed `GraphMap`.
+/// EdgeId type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait for
+/// directed [`GraphMap`](petgraph_old::graphmap::GraphMap).
 ///
 /// This is a wrapper around the source and target node ids of the edge, since `GraphMap` does not
 /// have a unique edge id type.
@@ -429,7 +430,8 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     }
 }
 
-/// EdgeId type for the compatibility implementation of the `Graph` trait for undirected `GraphMap`.
+/// EdgeId type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait for
+/// undirected [`GraphMap`](petgraph_old::graphmap::GraphMap).
 ///
 /// This is a wrapper around the source and target node ids of the edge, since `GraphMap` does not
 /// have a unique edge id type.
