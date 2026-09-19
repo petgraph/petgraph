@@ -12,6 +12,12 @@ use crate::{
     node::{NodeMut, NodeRef},
 };
 
+/// EdgeId type for the compatibility implementation of the `Graph` trait for directed `GraphMap`.
+///
+/// This is a wrapper around the source and target node ids of the edge, since `GraphMap` does not
+/// have a unique edge id type.
+///
+/// For the undirected version, see [`UndirGraphMapEdgeId`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DirGraphMapEdgeId<N> {
     pub source: N,
@@ -423,6 +429,17 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Dir
     }
 }
 
+/// EdgeId type for the compatibility implementation of the `Graph` trait for undirected `GraphMap`.
+///
+/// This is a wrapper around the source and target node ids of the edge, since `GraphMap` does not
+/// have a unique edge id type.
+///
+/// When creating an instance of this type, the source and target node
+/// ids will be sorted so that the smaller node id is always the source and the larger node id is
+/// always the target. This ensures that the same (undirected) edge is always represented by the
+/// same `UndirGraphMapEdgeId` instance, regardless of the order of the node ids when creating it.
+///
+/// For the directed version, see [`DirGraphMapEdgeId`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct UndirGraphMapEdgeId<N> {
     pub source: N,
