@@ -14,22 +14,40 @@ use crate::{
     node::{NodeMut, NodeRef},
 };
 
+/// EdgeId type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait for
+/// directed [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph).
+///
+/// This is a wrapper around the source and target node ids of the edge, since `MatrixGraph` does
+/// not have a unique edge id type.
+///
+/// For the undirected version, see [`UndirMatrixGraphEdgeId`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MatrixGraphEdgeId<Ix> {
+pub struct DirMatrixGraphEdgeId<Ix> {
     pub source: NodeIndex<Ix>,
     pub target: NodeIndex<Ix>,
+    _private: (),
 }
 
-impl<Ix: Display> Display for MatrixGraphEdgeId<Ix> {
+impl<Ix> DirMatrixGraphEdgeId<Ix> {
+    pub fn new(source: NodeIndex<Ix>, target: NodeIndex<Ix>) -> Self {
+        Self {
+            source,
+            target,
+            _private: (),
+        }
+    }
+}
+
+impl<Ix: Display> Display for DirMatrixGraphEdgeId<Ix> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Edge({}, {})", self.source, self.target)
     }
 }
 
-impl<Ix: Display + IndexType> Id for MatrixGraphEdgeId<Ix> {}
+impl<Ix: Display + IndexType> Id for DirMatrixGraphEdgeId<Ix> {}
 
-impl<N, E, S, Ty, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> NewGraph
-    for MatrixGraph<N, E, S, Ty, Null, Ix>
+impl<N, E, S, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> NewGraph
+    for MatrixGraph<N, E, S, Directed, Null, Ix>
 {
     type EdgeData<'graph>
         = E
@@ -43,7 +61,7 @@ impl<N, E, S, Ty, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> NewGraph
         = &'graph E
     where
         Self: 'graph;
-    type EdgeId = MatrixGraphEdgeId<Ix>;
+    type EdgeId = DirMatrixGraphEdgeId<Ix>;
     type NodeData<'graph>
         = N
     where
@@ -111,7 +129,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.all_edges()
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: MatrixGraphEdgeId { source, target },
+                id: DirMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -121,7 +139,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.all_edges_mut()
             .map(|(source, target, data)| EdgeMut::<'_, Self> {
-                id: MatrixGraphEdgeId { source, target },
+                id: DirMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -226,7 +244,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
             .map(|(target, source, data)| EdgeRef::<'_, Self> {
-                id: MatrixGraphEdgeId { source, target },
+                id: DirMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -250,7 +268,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Outgoing)
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: MatrixGraphEdgeId { source, target },
+                id: DirMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -274,7 +292,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
             .map(|(target, source, data)| EdgeRef::<'_, Self> {
-                id: MatrixGraphEdgeId { source, target },
+                id: DirMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -282,7 +300,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
             .chain(
                 self.edges_directed(node, Direction::Outgoing)
                     .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                        id: MatrixGraphEdgeId { source, target },
+                        id: DirMatrixGraphEdgeId::new(source, target),
                         source,
                         target,
                         data,
@@ -341,10 +359,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
             .filter(move |(_s, curr_target_idx, _d)| *curr_target_idx == target)
             .map(
                 move |(curr_source_idx, curr_target_idx, data)| EdgeRef::<'_, Self> {
-                    id: MatrixGraphEdgeId {
-                        source: curr_source_idx,
-                        target: curr_target_idx,
-                    },
+                    id: DirMatrixGraphEdgeId::new(curr_source_idx, curr_target_idx),
                     source: curr_source_idx,
                     target: curr_target_idx,
                     data,
@@ -436,6 +451,87 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     }
 }
 
+/// EdgeId type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait for
+/// undirected [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph).
+///
+/// This is a wrapper around the source and target node ids of the edge, since `MatrixGraph` does
+/// not have a unique edge id type.
+///
+/// When creating an instance of this type, the source and target node
+/// ids will be sorted so that the smaller node id is always the source and the larger node id is
+/// always the target. This ensures that the same (undirected) edge is always represented by the
+/// same `UndirMatrixGraphEdgeId` instance, regardless of the order of the node ids when creating
+/// it.
+///
+/// For the directed version, see [`DirMatrixGraphEdgeId`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct UndirMatrixGraphEdgeId<Ix> {
+    pub source: NodeIndex<Ix>,
+    pub target: NodeIndex<Ix>,
+    _private: (),
+}
+
+impl<Ix: IndexType> UndirMatrixGraphEdgeId<Ix> {
+    pub fn new(source: NodeIndex<Ix>, target: NodeIndex<Ix>) -> Self {
+        if source.index() <= target.index() {
+            Self {
+                source,
+                target,
+                _private: (),
+            }
+        } else {
+            Self {
+                source: target,
+                target: source,
+                _private: (),
+            }
+        }
+    }
+}
+
+impl<Ix: IndexType + Display> Display for UndirMatrixGraphEdgeId<Ix> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if self.source.index() <= self.target.index() {
+            write!(f, "Edge({}, {})", self.source, self.target)
+        } else {
+            write!(f, "Edge({}, {})", self.target, self.source)
+        }
+    }
+}
+
+impl<Ix: IndexType + Display> Id for UndirMatrixGraphEdgeId<Ix> {}
+
+impl<N, E, S, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> NewGraph
+    for MatrixGraph<N, E, S, Undirected, Null, Ix>
+{
+    type EdgeData<'graph>
+        = E
+    where
+        Self: 'graph;
+    type EdgeDataMut<'graph>
+        = &'graph mut E
+    where
+        Self: 'graph;
+    type EdgeDataRef<'graph>
+        = &'graph E
+    where
+        Self: 'graph;
+    type EdgeId = UndirMatrixGraphEdgeId<Ix>;
+    type NodeData<'graph>
+        = N
+    where
+        Self: 'graph;
+    type NodeDataMut<'graph>
+        = &'graph mut N
+    where
+        Self: 'graph;
+    type NodeDataRef<'graph>
+        = &'graph N
+    where
+        Self: 'graph;
+    type NodeId = NodeIndex<Ix>;
+}
+
 impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> UndirectedGraph
     for MatrixGraph<N, E, S, Undirected, Null, Ix>
 {
@@ -485,7 +581,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.all_edges()
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: MatrixGraphEdgeId { source, target },
+                id: UndirMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -501,7 +597,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.all_edges_mut()
             .map(|(source, target, data)| EdgeMut::<'_, Self> {
-                id: MatrixGraphEdgeId { source, target },
+                id: UndirMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -580,7 +676,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges(node)
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: MatrixGraphEdgeId { source, target },
+                id: UndirMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -655,32 +751,78 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
 
 #[cfg(test)]
 mod test {
-    use super::{MatrixGraph, MatrixGraphEdgeId, NodeIndex};
-    use crate::test_directed_graph;
+    use petgraph_old::matrix_graph::{DiMatrix, MatrixGraph, NodeIndex, UnMatrix};
 
-    fn remove_node_with_unwrap(graph: &mut MatrixGraph<(), ()>, node_id: NodeIndex) {
-        graph.remove_node(node_id);
+    use super::{DirMatrixGraphEdgeId, UndirMatrixGraphEdgeId, Undirected};
+    use crate::{test_directed_graph, test_undirected_graph};
+
+    mod directed {
+        use super::*;
+
+        fn remove_node_with_unwrap_dir(graph: &mut DiMatrix<(), ()>, node_id: NodeIndex) {
+            graph.remove_node(node_id);
+        }
+
+        fn add_edge_with_unwrap_dir(
+            graph: &mut MatrixGraph<(), ()>,
+            source: NodeIndex,
+            target: NodeIndex,
+            _data: (),
+        ) -> DirMatrixGraphEdgeId<u16> {
+            graph.add_edge(source, target, ());
+            DirMatrixGraphEdgeId::new(source, target)
+        }
+
+        fn remove_edge_with_unwrap_dir(
+            graph: &mut MatrixGraph<(), ()>,
+            edge_id: DirMatrixGraphEdgeId<u16>,
+        ) {
+            graph.remove_edge(edge_id.source, edge_id.target);
+        }
+
+        test_directed_graph!(
+            MatrixGraph::<(), ()>::new,
+            MatrixGraph::<(), ()>::add_node,
+            remove_node_with_unwrap_dir,
+            add_edge_with_unwrap_dir,
+            remove_edge_with_unwrap_dir
+        );
     }
 
-    fn add_edge_with_unwrap(
-        graph: &mut MatrixGraph<(), ()>,
-        source: NodeIndex,
-        target: NodeIndex,
-        _data: (),
-    ) -> MatrixGraphEdgeId<u16> {
-        graph.add_edge(source, target, ());
-        MatrixGraphEdgeId { source, target }
-    }
+    mod undirected {
+        use super::*;
 
-    fn remove_edge_with_unwrap(graph: &mut MatrixGraph<(), ()>, edge_id: MatrixGraphEdgeId<u16>) {
-        graph.remove_edge(edge_id.source, edge_id.target);
-    }
+        fn new_undir() -> UnMatrix<(), ()> {
+            MatrixGraph::<(), (), _, Undirected>::with_capacity(0)
+        }
 
-    test_directed_graph!(
-        MatrixGraph::<(), ()>::new,
-        MatrixGraph::<(), ()>::add_node,
-        remove_node_with_unwrap,
-        add_edge_with_unwrap,
-        remove_edge_with_unwrap
-    );
+        fn remove_node_with_unwrap_undir(graph: &mut UnMatrix<(), ()>, node_id: NodeIndex) {
+            graph.remove_node(node_id);
+        }
+
+        fn add_edge_with_unwrap_undir(
+            graph: &mut UnMatrix<(), ()>,
+            source: NodeIndex,
+            target: NodeIndex,
+            _data: (),
+        ) -> UndirMatrixGraphEdgeId<u16> {
+            graph.add_edge(source, target, ());
+            UndirMatrixGraphEdgeId::new(source, target)
+        }
+
+        fn remove_edge_with_unwrap_undir(
+            graph: &mut UnMatrix<(), ()>,
+            edge_id: UndirMatrixGraphEdgeId<u16>,
+        ) {
+            graph.remove_edge(edge_id.source, edge_id.target);
+        }
+
+        test_undirected_graph!(
+            new_undir,
+            MatrixGraph::<(), (), _, Undirected>::add_node,
+            remove_node_with_unwrap_undir,
+            add_edge_with_unwrap_undir,
+            remove_edge_with_unwrap_undir
+        );
+    }
 }
