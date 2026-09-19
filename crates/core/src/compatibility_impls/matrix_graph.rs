@@ -14,8 +14,8 @@ use crate::{
     node::{NodeMut, NodeRef},
 };
 
-/// EdgeId type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait for
-/// directed [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph).
+/// `EdgeId` type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait
+/// for directed [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph).
 ///
 /// This is a wrapper around the source and target node ids of the edge, since `MatrixGraph` does
 /// not have a unique edge id type.
@@ -29,7 +29,7 @@ pub struct DirMatrixGraphEdgeId<Ix> {
 }
 
 impl<Ix> DirMatrixGraphEdgeId<Ix> {
-    pub fn new(source: NodeIndex<Ix>, target: NodeIndex<Ix>) -> Self {
+    pub const fn new(source: NodeIndex<Ix>, target: NodeIndex<Ix>) -> Self {
         Self {
             source,
             target,
@@ -451,8 +451,8 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     }
 }
 
-/// EdgeId type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait for
-/// undirected [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph).
+/// `EdgeId` type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait
+/// for undirected [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph).
 ///
 /// This is a wrapper around the source and target node ids of the edge, since `MatrixGraph` does
 /// not have a unique edge id type.
