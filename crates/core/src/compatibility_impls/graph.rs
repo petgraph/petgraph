@@ -489,7 +489,7 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
 
     #[inline]
     fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
-        let (source, target) = self.edge_endpoints(id).unwrap();
+        let (source, target) = self.edge_endpoints(id)?;
         self.edge_weight(id).map(|data| EdgeRef::<'_, Self> {
             id,
             source,
@@ -500,7 +500,7 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
 
     #[inline]
     fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
-        let (source, target) = self.edge_endpoints(id).unwrap();
+        let (source, target) = self.edge_endpoints(id)?;
         self.edge_weight_mut(id).map(|data| EdgeMut::<'_, Self> {
             id,
             source,
@@ -519,7 +519,6 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
-            .chain(self.edges_directed(node, Direction::Outgoing))
             .map(|old_edge_ref| EdgeRef::<'_, Self> {
                 id: old_edge_ref.id(),
                 source: old_edge_ref.source(),
@@ -594,22 +593,46 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
 
 #[cfg(test)]
 mod test {
-    use super::{Directed, EdgeIndex, NodeIndex, OldGraph};
-    use crate::test_directed_graph;
+    use petgraph_old::EdgeType;
 
-    fn remove_node_with_unwrap(graph: &mut OldGraph<(), (), Directed>, node_id: NodeIndex) {
+    use super::{Directed, EdgeIndex, NodeIndex, OldGraph, Undirected};
+    use crate::{test_directed_graph, test_undirected_graph};
+
+    fn remove_node_with_unwrap<Dir: EdgeType>(
+        graph: &mut OldGraph<(), (), Dir>,
+        node_id: NodeIndex,
+    ) {
         graph.remove_node(node_id).unwrap();
     }
 
-    fn remove_edge_with_unwrap(graph: &mut OldGraph<(), (), Directed>, edge_id: EdgeIndex) {
+    fn remove_edge_with_unwrap<Dir: EdgeType>(
+        graph: &mut OldGraph<(), (), Dir>,
+        edge_id: EdgeIndex,
+    ) {
         graph.remove_edge(edge_id).unwrap();
     }
 
-    test_directed_graph!(
-        OldGraph::<(), (), Directed>::new,
-        OldGraph::<(), (), Directed>::add_node,
-        remove_node_with_unwrap,
-        OldGraph::<(), (), Directed>::add_edge,
-        remove_edge_with_unwrap
-    );
+    mod directed {
+        use super::*;
+
+        test_directed_graph!(
+            OldGraph::<(), (), Directed>::new,
+            OldGraph::<(), (), Directed>::add_node,
+            remove_node_with_unwrap,
+            OldGraph::<(), (), Directed>::add_edge,
+            remove_edge_with_unwrap
+        );
+    }
+
+    mod undirected {
+        use super::*;
+
+        test_undirected_graph!(
+            OldGraph::<(), (), Undirected>::new_undirected,
+            OldGraph::<(), (), Undirected>::add_node,
+            remove_node_with_unwrap,
+            OldGraph::<(), (), Undirected>::add_edge,
+            remove_edge_with_unwrap
+        );
+    }
 }
