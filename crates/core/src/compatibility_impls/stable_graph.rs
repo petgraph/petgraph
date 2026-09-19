@@ -535,7 +535,6 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
-            .chain(self.edges_directed(node, Direction::Outgoing))
             .map(|old_edge_ref| EdgeRef::<'_, Self> {
                 id: old_edge_ref.id(),
                 source: old_edge_ref.source(),
@@ -610,15 +609,20 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
 
 #[cfg(test)]
 mod test {
-    use super::{EdgeIndex, NodeIndex, StableGraph};
-    use crate::test_directed_graph;
+    use petgraph_old::EdgeType;
 
-    fn remove_node_with_unwrap(graph: &mut StableGraph<(), ()>, node_id: NodeIndex) {
+    use super::{Directed, EdgeIndex, NodeIndex, StableGraph, Undirected};
+    use crate::{test_directed_graph, test_undirected_graph};
+
+    fn remove_node_with_unwrap<Dir: EdgeType>(
+        graph: &mut StableGraph<(), (), Dir>,
+        node_id: NodeIndex,
+    ) {
         graph.remove_node(node_id);
     }
 
-    fn add_edge_with_unwrap(
-        graph: &mut StableGraph<(), ()>,
+    fn add_edge_with_unwrap<Dir: EdgeType>(
+        graph: &mut StableGraph<(), (), Dir>,
         source: NodeIndex,
         target: NodeIndex,
         _data: (),
@@ -626,15 +630,38 @@ mod test {
         graph.add_edge(source, target, ())
     }
 
-    fn remove_edge_with_unwrap(graph: &mut StableGraph<(), ()>, edge_id: EdgeIndex) {
+    fn remove_edge_with_unwrap<Dir: EdgeType>(
+        graph: &mut StableGraph<(), (), Dir>,
+        edge_id: EdgeIndex,
+    ) {
         graph.remove_edge(edge_id);
     }
 
-    test_directed_graph!(
-        StableGraph::<(), ()>::new,
-        StableGraph::<(), ()>::add_node,
-        remove_node_with_unwrap,
-        add_edge_with_unwrap,
-        remove_edge_with_unwrap
-    );
+    mod directed {
+        use super::*;
+
+        test_directed_graph!(
+            StableGraph::<(), (), Directed>::new,
+            StableGraph::<(), (), Directed>::add_node,
+            remove_node_with_unwrap,
+            add_edge_with_unwrap,
+            remove_edge_with_unwrap
+        );
+    }
+
+    mod undirected {
+        use super::*;
+
+        fn new_undirected() -> StableGraph<(), (), Undirected> {
+            StableGraph::with_capacity(0, 0)
+        }
+
+        test_undirected_graph!(
+            new_undirected,
+            StableGraph::<(), (), Undirected>::add_node,
+            remove_node_with_unwrap,
+            add_edge_with_unwrap,
+            remove_edge_with_unwrap
+        );
+    }
 }
