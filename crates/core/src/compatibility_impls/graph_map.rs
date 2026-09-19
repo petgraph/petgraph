@@ -618,8 +618,10 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
 
 #[cfg(test)]
 mod test {
+    use petgraph_old::{EdgeType, Undirected};
+
     use super::{Directed, Display, GraphMap, GraphMapEdgeId, Id};
-    use crate::{graph::DirectedGraph, test_directed_graph};
+    use crate::{test_directed_graph, test_undirected_graph};
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
     struct GraphMapNodeId(u32);
@@ -632,22 +634,22 @@ mod test {
 
     impl Id for GraphMapNodeId {}
 
-    fn add_node_with_increment(
-        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
+    fn add_node_with_increment<Dir: EdgeType>(
+        graph: &mut GraphMap<GraphMapNodeId, (), Dir>,
         _dummy: (),
     ) -> GraphMapNodeId {
         graph.add_node(GraphMapNodeId(graph.node_count() as u32))
     }
 
-    fn remove_node_with_unwrap(
-        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
+    fn remove_node_with_unwrap<Dir: EdgeType>(
+        graph: &mut GraphMap<GraphMapNodeId, (), Dir>,
         node_id: GraphMapNodeId,
     ) {
         graph.remove_node(node_id);
     }
 
-    fn add_edge_with_unwrap(
-        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
+    fn add_edge_with_unwrap<Dir: EdgeType>(
+        graph: &mut GraphMap<GraphMapNodeId, (), Dir>,
         source: GraphMapNodeId,
         target: GraphMapNodeId,
         _data: (),
@@ -656,18 +658,34 @@ mod test {
         GraphMapEdgeId { source, target }
     }
 
-    fn remove_edge_with_unwrap(
-        graph: &mut GraphMap<GraphMapNodeId, (), Directed>,
+    fn remove_edge_with_unwrap<Dir: EdgeType>(
+        graph: &mut GraphMap<GraphMapNodeId, (), Dir>,
         edge_id: GraphMapEdgeId<GraphMapNodeId>,
     ) {
         graph.remove_edge(edge_id.source, edge_id.target).unwrap();
     }
 
-    test_directed_graph!(
-        GraphMap::<GraphMapNodeId, (), Directed>::new,
-        add_node_with_increment,
-        remove_node_with_unwrap,
-        add_edge_with_unwrap,
-        remove_edge_with_unwrap
-    );
+    mod directed {
+        use super::*;
+
+        test_directed_graph!(
+            GraphMap::<GraphMapNodeId, (), Directed>::new,
+            add_node_with_increment::<Directed>,
+            remove_node_with_unwrap::<Directed>,
+            add_edge_with_unwrap::<Directed>,
+            remove_edge_with_unwrap::<Directed>
+        );
+    }
+
+    mod undirected {
+        use super::*;
+
+        test_undirected_graph!(
+            GraphMap::<GraphMapNodeId, (), Undirected>::new,
+            add_node_with_increment::<Undirected>,
+            remove_node_with_unwrap::<Undirected>,
+            add_edge_with_unwrap::<Undirected>,
+            remove_edge_with_unwrap::<Undirected>
+        );
+    }
 }
