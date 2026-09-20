@@ -1483,6 +1483,112 @@ where
         g
     }
 
+    /// Extend the graph from an iterable of edges, with optional node weights
+    /// supplied by a closure.
+    ///
+    /// For each edge `(x, y, w)` in the input, an edge `x--y` with weight `w`
+    /// is added to the graph.
+    ///
+    /// If one or both endpoint nodes do not yet exist, they are created
+    /// automatically. The weight of each *newly created* node is determined
+    /// by the `node_weights` closure.
+    ///
+    /// The `node_weights` argument is a closure of type
+    /// `Fn(NodeIndex<Ix>) -> Option<N>`. It is invoked **only when a node is
+    /// created**. If the closure returns:
+    ///
+    /// - `Some(weight)`: the new node is created with that weight.
+    /// - `None`: the new node is created with `N::default()`.
+    ///
+    /// Existing nodes are never modified. In particular, the `node_weights`
+    /// closure is not consulted for nodes that already exist in the graph,
+    /// and it is impossible to change the weight of an existing node by
+    /// calling this function.
+    ///
+    /// Edge weights `E` may either be specified in the list, or they are
+    /// filled with default values.
+    ///
+    /// # Examples
+    ///
+    /// ## Backward-compatible behavior
+    ///
+    /// This behaves exactly like
+    /// [`extend_with_edges`](struct.Graph.html#method.extend_with_edges),
+    /// assigning default weights to all newly created nodes:
+    ///
+    /// ```
+    /// use petgraph::Graph;
+    ///
+    /// let mut g = Graph::<(), i32>::new();
+    ///
+    /// g.extend_with_edges_and_node_weights(&[(0, 1, 7), (1, 2, 8)], |_| None);
+    /// ```
+    ///
+    /// ## Assign a constant weight to all new nodes
+    ///
+    /// ```
+    /// use petgraph::Graph;
+    ///
+    /// let mut g = Graph::<i32, i32>::new();
+    ///
+    /// g.extend_with_edges_and_node_weights(&[(0, 1, 7), (1, 2, 8)], |_| Some(42));
+    /// ```
+    ///
+    /// ## Assign weights to a subset of new nodes
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    ///
+    /// use petgraph::Graph;
+    ///
+    /// let mut g = Graph::<i32, i32>::new();
+    ///
+    /// let weights: HashMap<usize, i32> = [(0, 10), (2, 20)].into();
+    ///
+    /// g.extend_with_edges_and_node_weights(&[(0, 1, 7), (1, 2, 8)], |idx| {
+    ///     weights.get(&idx.index()).copied()
+    /// });
+    /// ```
+    ///
+    /// ## Derive node weights from the node index
+    ///
+    /// ```
+    /// use petgraph::Graph;
+    ///
+    /// let mut g = Graph::<usize, i32>::new();
+    ///
+    /// g.extend_with_edges_and_node_weights(&[(0, 1, 7), (1, 2, 8)], |idx| Some(idx.index()));
+    /// ```
+    ///
+    /// In all cases, node weights are assigned only at node creation time,
+    /// preserving the semantics of `extend_with_edges`.
+
+    pub fn extend_with_edges_and_node_weights<I, W>(&mut self, edges: I, node_weights: W)
+    where
+        I: IntoIterator,
+        I::Item: IntoWeightedEdge<E>,
+        <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
+        W: Fn(NodeIndex<Ix>) -> Option<N>,
+        N: Default,
+    {
+        let iter = edges.into_iter();
+
+        for elt in iter {
+            let (s, t, w) = elt.into_weighted_edge();
+            let (s, t) = (s.into(), t.into());
+            let nx = cmp::max(s, t);
+
+            while nx.index() >= self.node_count() {
+                let idx = NodeIndex::new(self.node_count());
+
+                let weight = node_weights(idx).unwrap_or_else(N::default);
+                self.add_node(weight);
+            }
+
+            self.add_edge(s, t, w);
+        }
+    }
+
     /// Extend the graph from an iterable of edges.
     ///
     /// Node weights `N` are set to default values.
@@ -1509,19 +1615,7 @@ where
         <I::Item as IntoWeightedEdge<E>>::NodeId: Into<NodeIndex<Ix>>,
         N: Default,
     {
-        let iter = iterable.into_iter();
-        let (low, _) = iter.size_hint();
-        self.edges.reserve(low);
-
-        for elt in iter {
-            let (source, target, weight) = elt.into_weighted_edge();
-            let (source, target) = (source.into(), target.into());
-            let nx = cmp::max(source, target);
-            while nx.index() >= self.node_count() {
-                self.add_node(N::default());
-            }
-            self.add_edge(source, target, weight);
-        }
+        self.extend_with_edges_and_node_weights(iterable, |_| None);
     }
 
     /// Create a new `Graph` by mapping node and
