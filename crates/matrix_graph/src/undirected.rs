@@ -294,14 +294,11 @@ where
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        let len = self.flattened_edge_data.len();
         NeighborIterMut::new(
             &mut self.flattened_edge_data,
-            0,
             node,
             NodeId(0),
             self.node_capacity,
-            len,
         )
         .map(move |(neighbor, data)| EdgeMut::<Self> {
             id: UnMatrixEdgeId::new(node, neighbor),
@@ -464,11 +461,22 @@ struct NeighborIterator<'a, Null: NicheWrapper + 'a> {
 
 impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
     const fn new(edges: &'a [Null], start_node: NodeId, node_capacity: usize) -> Self {
-        Self {
-            edges,
-            start_node,
-            next_other_node: NodeId(0),
-            node_capacity,
+        if start_node.0 >= node_capacity {
+            // This iterator will be empty, since a node with an index greater than or equal to
+            // the node capacity cannot have any neighbors.
+            Self {
+                edges,
+                start_node,
+                next_other_node: start_node,
+                node_capacity,
+            }
+        } else {
+            Self {
+                edges,
+                start_node,
+                next_other_node: NodeId(0),
+                node_capacity,
+            }
         }
     }
 }
@@ -493,98 +501,68 @@ impl<'a, Null: NicheWrapper> Iterator for NeighborIterator<'a, Null> {
     }
 }
 
-/// An iterator over the neighbors of a node in a directed graph which yields the neighbor along
-/// with a mutable reference to the edge data for the edge connecting the source node to the
-/// neighbor.
-///
-/// This is implemented using unsafe code and raw pointers, since the neighbors of a node are not
-/// stored contiguously in memory. The implementation is based on the `std::slice::IterMut`
-/// implementation, but adapted to work with the non-contiguous storage of the neighbors in the
-/// lower triangular matrix.
-struct NeighborIterMut<'a, T: 'a> {
-    /// The pointer to the next element to return, or the past-the-end location
-    /// if the iterator is empty.
-    ptr: NonNull<T>,
-    last_element_index: usize,
+/// An iterator over the neighbors of a node (source_node) in a directed graph which yields the
+/// neighbor along with a mutable reference to the edge data for the edge connecting the source node
+/// to the neighbor.
+struct NeighborIterMut<'a, Null> {
+    /// The remaining slice of the flattened edge data that has not yet been consumed by the
+    /// iterator.
+    remaining_edge_data: &'a mut [Null],
+    /// Index in the flattened edge data of the edge sitting currently at remaining_edge_data[0]
+    consumed: usize,
     source_node: NodeId,
     next_node: NodeId,
     node_capacity: usize,
-    total_length: usize,
-    _marker: PhantomData<&'a mut T>,
 }
 
-impl<'a, T> NeighborIterMut<'a, T> {
+impl<'a, Null> NeighborIterMut<'a, Null> {
     #[inline]
     const fn new(
-        neighbors: &'a mut [T],
-        last_element_index: usize,
+        flattened_edge_data: &'a mut [Null],
         source_node: NodeId,
         next_node: NodeId,
         node_capacity: usize,
-        total_length: usize,
     ) -> Self {
-        let ptr: NonNull<T> = NonNull::from_mut(neighbors).cast();
-
-        Self {
-            ptr,
-            last_element_index,
-            source_node,
-            next_node,
-            node_capacity,
-            total_length,
-            _marker: PhantomData,
+        if source_node.0 >= node_capacity {
+            // This iterator will be empty, since a node with an index greater than or equal to
+            // the node capacity cannot have any neighbors.
+            Self {
+                remaining_edge_data: flattened_edge_data,
+                consumed: 0,
+                source_node,
+                next_node: source_node,
+                node_capacity,
+            }
+        } else {
+            Self {
+                remaining_edge_data: flattened_edge_data,
+                consumed: 0,
+                source_node,
+                next_node,
+                node_capacity,
+            }
         }
     }
 }
 
 impl<'a, Null: NicheWrapper> Iterator for NeighborIterMut<'a, Null> {
-    type Item = (NodeId, &'a mut <Null as NicheWrapper>::Wrapped);
+    type Item = (NodeId, &'a mut Null::Wrapped);
 
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         while self.next_node.0 < self.node_capacity {
-            // intentionally not using the helpers because this is
-            // one of the most mono'd things in the library.
-            let last_element_index = self.last_element_index;
-            let next_node = self.next_node;
-
-            let this_edge_index =
-                to_lower_triangular_matrix_position(self.source_node.0, next_node.0);
-            let this_offset = last_element_index - this_edge_index;
-            self.last_element_index = this_edge_index;
+            let this_node = self.next_node;
             self.next_node.0 += 1;
 
-            let ptr = self.ptr;
-            // SAFETY: See inner comments. (For some reason having multiple
-            // block breaks inlining this -- if you can fix that please do!)
-            let value = unsafe {
-                assert!(self.last_element_index < self.total_length);
-                assert!(
-                    (isize::try_from(size_of::<Null>()).expect("Type size should fit in isize"))
-                        .checked_mul(
-                            isize::try_from(this_offset).expect("Offset should fit in isize")
-                        )
-                        .is_some()
-                );
+            let index = to_lower_triangular_matrix_position(self.source_node.0, this_node.0);
+            let skip = index - self.consumed;
 
-                // SAFETY:
-                // - By the first assert we know that the offset is within bounds of the slice.
-                // - By the second assert we know that the computed offset does not overflow isize.
-                self.ptr = ptr.add(this_offset);
+            let rest = core::mem::take(&mut self.remaining_edge_data);
+            let (head, tail) = rest.get_mut(skip..)?.split_first_mut()?;
+            self.remaining_edge_data = tail;
+            self.consumed = index + 1;
 
-                assert!(this_offset > 0);
-
-                // SAFETY:
-                // - The third assert (the one right above this) guarantees that the offset is
-                //   always greater than 0. This way, we don't give out multiple mutable references
-                //   to the same element.
-                // - By the above Safety comments, we know that the pointer is always valid for the
-                //   offset we compute.
-                { ptr }.as_mut()
-            };
-
-            if let Some(edge_data) = value.as_mut() {
-                return Some((next_node, edge_data));
+            if let Some(data) = head.as_mut() {
+                return Some((this_node, data));
             }
         }
         None
