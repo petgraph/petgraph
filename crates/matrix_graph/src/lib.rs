@@ -8,30 +8,15 @@ use core::{cmp, fmt::Display, hash::BuildHasher, marker::PhantomData, mem};
 
 use foldhash::fast::RandomState;
 use indexmap::IndexSet;
-use petgraph_core::id::Id;
+use petgraph_core::{
+    graph::{Directed, Undirected},
+    id::Id,
+};
 
 use crate::private::Sealed;
 
 mod directed;
 mod undirected;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Directed;
-
-impl Display for Directed {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Directed")
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Undirected;
-
-impl Display for Undirected {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Undirected")
-    }
-}
 
 /// Node index type for the `MatrixGraph`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -57,26 +42,8 @@ impl From<u32> for NodeId {
     }
 }
 
-/// Edge index type for `MatrixGraph`.
-///
-/// Contains the two node indices. If the graph is directed, `node_a` is the source and `node_b` is
-/// the target. If the graph is undirected, the order of the nodes is irrelevant and traits such
-/// as `PartialEq` and `Hash` are implemented accordingly.
-#[derive(Debug, Clone, Copy)]
-pub struct EdgeId<Dir> {
-    node_a: NodeId,
-    node_b: NodeId,
-    direction: PhantomData<Dir>,
-}
-
-pub use directed::DirEdgeId;
-pub use undirected::UndirEdgeId;
-
-impl<Dir> Display for EdgeId<Dir> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Edge({}, {})", self.node_a.0, self.node_b.0)
-    }
-}
+pub use directed::DiMatrixEdgeId;
+pub use undirected::UnMatrixEdgeId;
 
 mod private {
     pub trait Sealed {}
@@ -532,7 +499,7 @@ impl<N, E> MatrixGraph<N, E, RandomState, Option<E>, Directed> {
     /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
     /// a constructor that is generic in all the type parameters of `MatrixGraph`.
     #[must_use]
-    pub fn new() -> Self {
+    pub fn new_directed() -> Self {
         Self::default()
     }
 }
@@ -581,7 +548,7 @@ mod tests {
 
     #[test]
     fn test_new() {
-        let graph = MatrixGraph::<i32, i32>::new();
+        let graph = MatrixGraph::<i32, i32>::new_directed();
         assert_eq!(graph.node_count(), 0);
         assert_eq!(graph.edge_count(), 0);
     }

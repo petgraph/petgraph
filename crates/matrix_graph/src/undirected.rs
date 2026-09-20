@@ -1,4 +1,4 @@
-use core::{cmp, hash::BuildHasher, marker::PhantomData, ptr::NonNull};
+use core::{hash::BuildHasher, marker::PhantomData, ptr::NonNull};
 
 use petgraph_core::{
     edge::{EdgeMut, EdgeRef},
@@ -8,52 +8,42 @@ use petgraph_core::{
 };
 
 use crate::{
-    EdgeId, MatrixGraph, MatrixGraphExtras, NicheWrapper, NodeId, Undirected, ensure_len,
-    private::Sealed,
+    MatrixGraph, MatrixGraphExtras, NicheWrapper, NodeId, Undirected, ensure_len, private::Sealed,
 };
-pub type UndirEdgeId = EdgeId<Undirected>;
 
-impl UndirEdgeId {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct UnMatrixEdgeId {
+    pub source: NodeId,
+    pub target: NodeId,
+    _private: (),
+}
+
+impl UnMatrixEdgeId {
     #[must_use]
-    pub const fn new_undirected(node1: NodeId, node2: NodeId) -> Self {
-        Self {
-            node_a: node1,
-            node_b: node2,
-            direction: PhantomData,
+    pub const fn new(source: NodeId, target: NodeId) -> Self {
+        if source.0 < target.0 {
+            Self {
+                source,
+                target,
+                _private: (),
+            }
+        } else {
+            Self {
+                source: target,
+                target: source,
+                _private: (),
+            }
         }
     }
 }
 
-impl PartialEq for UndirEdgeId {
-    fn eq(&self, other: &Self) -> bool {
-        (self.node_a == other.node_a && self.node_b == other.node_b)
-            || (self.node_a == other.node_b && self.node_b == other.node_a)
+impl core::fmt::Display for UnMatrixEdgeId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "UnMatrixEdgeId{{{}, {}}}", self.source.0, self.target.0)
     }
 }
 
-impl Eq for UndirEdgeId {}
-
-impl PartialOrd for UndirEdgeId {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for UndirEdgeId {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        let self_min = cmp::min(self.node_a, self.node_b);
-        let self_max = cmp::max(self.node_a, self.node_b);
-        let other_min = cmp::min(other.node_a, other.node_b);
-        let other_max = cmp::max(other.node_a, other.node_b);
-
-        match self_min.cmp(&other_min) {
-            cmp::Ordering::Equal => self_max.cmp(&other_max),
-            non_eq => non_eq,
-        }
-    }
-}
-
-impl Id for UndirEdgeId {}
+impl Id for UnMatrixEdgeId {}
 
 impl<N, E, S, Null: NicheWrapper<Wrapped = E>> Sealed for MatrixGraph<N, E, S, Null, Undirected> {}
 
@@ -135,7 +125,7 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> Graph
         = &'graph E
     where
         Self: 'graph;
-    type EdgeId = UndirEdgeId;
+    type EdgeId = UnMatrixEdgeId;
     type NodeData<'graph>
         = N
     where
@@ -212,7 +202,7 @@ where
             next_edge_tuple: (0, 0),
         }
         .map(|(source, target, data)| EdgeRef::<Self> {
-            id: UndirEdgeId::new_undirected(source, target),
+            id: UnMatrixEdgeId::new(source, target),
             source,
             target,
             data,
@@ -226,7 +216,7 @@ where
             next_edge_tuple: (0, 0),
         }
         .map(|(source, target, data)| EdgeMut::<Self> {
-            id: UndirEdgeId::new_undirected(source, target),
+            id: UnMatrixEdgeId::new(source, target),
             source,
             target,
             data,
@@ -250,28 +240,28 @@ where
 
     #[inline]
     fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
-        let edge_index = self.to_edge_position(id.node_a, id.node_b)?;
+        let edge_index = self.to_edge_position(id.source, id.target)?;
         self.flattened_edge_data
             .get(edge_index)?
             .as_ref()
             .map(|data| EdgeRef::<Self> {
                 id,
-                source: id.node_a,
-                target: id.node_b,
+                source: id.source,
+                target: id.target,
                 data,
             })
     }
 
     #[inline]
     fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
-        let edge_index = self.to_edge_position(id.node_a, id.node_b)?;
+        let edge_index = self.to_edge_position(id.source, id.target)?;
         self.flattened_edge_data
             .get_mut(edge_index)?
             .as_mut()
             .map(|data| EdgeMut::<Self> {
                 id,
-                source: id.node_a,
-                target: id.node_b,
+                source: id.source,
+                target: id.target,
                 data,
             })
     }
@@ -287,7 +277,7 @@ where
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         NeighborIterator::new(&self.flattened_edge_data, node, self.node_capacity).map(
             move |(neighbor, data)| EdgeRef::<Self> {
-                id: UndirEdgeId::new_undirected(node, neighbor),
+                id: UnMatrixEdgeId::new(node, neighbor),
                 source: node,
                 target: neighbor,
                 data,
@@ -310,7 +300,7 @@ where
             len,
         )
         .map(move |(neighbor, data)| EdgeMut::<Self> {
-            id: UndirEdgeId::new_undirected(node, neighbor),
+            id: UnMatrixEdgeId::new(node, neighbor),
             source: node,
             target: neighbor,
             data,
@@ -339,7 +329,7 @@ where
                     .unwrap()
                     .as_ref()
                     .map(|data| EdgeRef::<Self> {
-                        id: EdgeId::new_undirected(lhs, rhs),
+                        id: UnMatrixEdgeId::new(lhs, rhs),
                         source: lhs,
                         target: rhs,
                         data,
@@ -361,7 +351,7 @@ where
                 .unwrap()
                 .as_mut()
                 .map(|data| EdgeMut::<Self> {
-                    id: EdgeId::new_undirected(lhs, rhs),
+                    id: UnMatrixEdgeId::new(lhs, rhs),
                     source: lhs,
                     target: rhs,
                     data,
@@ -380,7 +370,7 @@ where
 
     #[inline]
     fn contains_edge(&self, edge: Self::EdgeId) -> bool {
-        self.to_edge_position(edge.node_a, edge.node_b)
+        self.to_edge_position(edge.source, edge.target)
             .is_some_and(|edge_index| {
                 self.flattened_edge_data
                     .get(edge_index)
@@ -390,7 +380,7 @@ where
 
     #[inline]
     fn is_adjacent(&self, source: Self::NodeId, target: Self::NodeId) -> bool {
-        self.contains_edge(EdgeId::new_undirected(source, target))
+        self.contains_edge(UnMatrixEdgeId::new(source, target))
     }
 
     #[inline]
@@ -599,6 +589,8 @@ impl<'a, Null: NicheWrapper> Iterator for NeighborIterMut<'a, Null> {
 
 #[cfg(test)]
 mod tests {
+    use petgraph_core::test_undirected_graph;
+
     use super::{super::*, *};
 
     #[test]
@@ -658,9 +650,9 @@ mod tests {
         graph.add_edge(node_2, node_4, ());
         assert_eq!(graph.node_count(), 6);
         assert_eq!(graph.edge_count(), 3);
-        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_2, node_1)));
-        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_2, node_3)));
-        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_2, node_4)));
+        assert!(graph.contains_edge(UnMatrixEdgeId::new(node_2, node_1)));
+        assert!(graph.contains_edge(UnMatrixEdgeId::new(node_2, node_3)));
+        assert!(graph.contains_edge(UnMatrixEdgeId::new(node_2, node_4)));
     }
 
     #[test]
@@ -676,9 +668,9 @@ mod tests {
         graph.add_edge(node_2, node_3, ());
         assert_eq!(graph.node_count(), 4);
         assert_eq!(graph.edge_count(), 3);
-        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_1, node_0)));
-        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_1, node_1)));
-        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_2, node_3)));
+        assert!(graph.contains_edge(UnMatrixEdgeId::new(node_1, node_0)));
+        assert!(graph.contains_edge(UnMatrixEdgeId::new(node_1, node_1)));
+        assert!(graph.contains_edge(UnMatrixEdgeId::new(node_2, node_3)));
     }
 
     #[test]
@@ -691,13 +683,13 @@ mod tests {
         graph.add_edge(node_b, node_c, false);
         assert!(
             graph
-                .edge(UndirEdgeId::new_undirected(node_a, node_b))
+                .edge(UnMatrixEdgeId::new(node_a, node_b))
                 .unwrap()
                 .data
         );
         assert!(
             !*graph
-                .edge(UndirEdgeId::new_undirected(node_b, node_c))
+                .edge(UnMatrixEdgeId::new(node_b, node_c))
                 .unwrap()
                 .data
         );
@@ -740,16 +732,16 @@ mod tests {
         let node_a = graph.add_node(());
         let node_b = graph.add_node(());
 
-        assert!(!graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert!(!graph.contains_edge(UnMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
 
         graph.add_edge(node_a, node_b, 12);
 
-        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert!(graph.contains_edge(UnMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 1);
         assert_eq!(
             graph
-                .edge(UndirEdgeId::new_undirected(node_a, node_b))
+                .edge(UnMatrixEdgeId::new(node_a, node_b))
                 .unwrap()
                 .data,
             &12
@@ -757,7 +749,7 @@ mod tests {
 
         graph.remove_edge(node_a, node_b);
 
-        assert!(!graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert!(!graph.contains_edge(UnMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
     }
 
@@ -781,17 +773,17 @@ mod tests {
         let node_a = graph.add_node(());
         let node_b = graph.add_node(());
 
-        assert!(!graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert!(!graph.contains_edge(UnMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
 
         let val = 12.0;
         graph.add_edge(node_a, node_b, val);
 
-        assert!(graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert!(graph.contains_edge(UnMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 1);
         assert!(
             (graph
-                .edge(UndirEdgeId::new_undirected(node_a, node_b))
+                .edge(UnMatrixEdgeId::new(node_a, node_b))
                 .unwrap()
                 .data
                 - val)
@@ -801,14 +793,14 @@ mod tests {
 
         graph.remove_edge(node_a, node_b);
 
-        assert!(!graph.contains_edge(UndirEdgeId::new_undirected(node_a, node_b)));
+        assert!(!graph.contains_edge(UnMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
     #[should_panic(expected = "called `Option::unwrap()` on a `None` value")]
     fn test_remove_edge() {
-        let mut graph = MatrixGraph::<char, u32>::new();
+        let mut graph = MatrixGraph::<char, u32>::new_directed();
         let node_a = graph.add_node('a');
         let node_b = graph.add_node('b');
         let node_c = graph.add_node('c');
@@ -817,4 +809,36 @@ mod tests {
         assert_eq!(graph.remove_edge(node_a, node_b), 1);
         assert_eq!(graph.remove_edge(node_a, node_b), 0);
     }
+
+    fn remove_node(
+        graph: &mut MatrixGraph<(), (), foldhash::fast::RandomState, Option<()>, Undirected>,
+        node: NodeId,
+    ) {
+        graph.remove_node(node);
+    }
+
+    fn add_edge(
+        graph: &mut MatrixGraph<(), (), foldhash::fast::RandomState, Option<()>, Undirected>,
+        source: NodeId,
+        target: NodeId,
+        _: (),
+    ) -> UnMatrixEdgeId {
+        graph.add_edge(source, target, ());
+        UnMatrixEdgeId::new(source, target)
+    }
+
+    fn remove_edge(
+        graph: &mut MatrixGraph<(), (), foldhash::fast::RandomState, Option<()>, Undirected>,
+        edge_id: UnMatrixEdgeId,
+    ) {
+        graph.remove_edge(edge_id.source, edge_id.target);
+    }
+
+    test_undirected_graph!(
+        MatrixGraph::<(), (), foldhash::fast::RandomState, Option<()>, Undirected>::new_undirected,
+        MatrixGraph::<(), (), foldhash::fast::RandomState, Option<()>, Undirected>::add_node,
+        remove_node,
+        add_edge,
+        remove_edge
+    );
 }

@@ -40,6 +40,8 @@ rayon             = { version = "1.5.3", default-features = false }
 serde             = { version = "1.0", default-features = false }
 serde_derive      = { version = "1.0", default-features = false }
 
+[workspace.dev-dependencies]
+petgraph-core         = { path = "crates/core", features = ["utils"] }
 
 [workspace.lints.rust]
 future_incompatible = { level = "warn", priority = -1 }
