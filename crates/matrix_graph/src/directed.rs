@@ -776,7 +776,7 @@ fn outgoing_neighbor_iter_mut<'b, Null: NicheWrapper + 'b>(
 /// `source` or `target` (or both) is the given node and the other is the neighbor.
 #[inline]
 fn neighbor_iter<'a, Null: NicheWrapper + 'a>(
-    node_adjacencies: &'a Vec<Null>,
+    node_adjacencies: &'a [Null],
     node: NodeId,
     num_nodes: usize,
 ) -> impl Iterator<Item = (NodeId, NodeId, &'a <Null as NicheWrapper>::Wrapped)> {
@@ -824,7 +824,7 @@ fn neighbor_iter<'a, Null: NicheWrapper + 'a>(
 /// `source` or `target` (or both) is the given node and the other is the neighbor.
 #[inline]
 fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
-    node_adjacencies: &'a mut Vec<Null>,
+    node_adjacencies: &'a mut [Null],
     node: NodeId,
     num_nodes: usize,
 ) -> impl Iterator<Item = (NodeId, NodeId, &'a mut <Null as NicheWrapper>::Wrapped)> {
