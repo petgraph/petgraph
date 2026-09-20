@@ -195,13 +195,6 @@ zeroable_impls!(u8, u16, u32, u64, usize);
 zeroable_impls!(i8, i16, i32, i64, isize);
 zeroable_impls!(f32, f64);
 
-/// The error type for fallible `MatrixGraph` operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MatrixError {
-    /// The node with the specified index is missing from the graph.
-    NodeMissed(usize),
-}
-
 pub trait MatrixGraphExtras<N>: Sealed {
     fn to_edge_position(&self, node_a: NodeId, node_b: NodeId) -> Option<usize>;
     fn to_edge_position_unchecked(&self, node_a: NodeId, node_b: NodeId) -> usize;
