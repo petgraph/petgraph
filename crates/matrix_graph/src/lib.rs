@@ -97,9 +97,9 @@ impl<T> NicheWrapper for Option<T> {
 }
 
 /// `NotZero` is used to optimize the memory usage of edge data `E` in a
-/// [`MatrixGraph`](struct.MatrixGraph.html), replacing the default `Option<E>` sentinel.
+/// [`MatrixGraph`], replacing the default `Option<E>` sentinel.
 ///
-/// Pre-requisite: edge data should implement [`Zero`](trait.Zero.html).
+/// Pre-requisite: edge data should implement [`Zeroable`].
 ///
 /// Note that if you're already using the standard non-zero types (such as `NonZeroU32`), you don't
 /// have to use this wrapper and can leave the default `Null` type argument.
@@ -153,10 +153,10 @@ impl<T: Zeroable> From<NotZero<T>> for Option<T> {
 }
 
 /// Base trait for types that have a zero-like value and can thus be wrapped in a
-/// [`NotZero`](struct.NotZero.html).
+/// [`NotZero`].
 ///
 /// Implementors must provide a singleton zero-like object that will be used to mark empty edges in
-/// a [`MatrixGraph`](struct.MatrixGraph.html).
+/// a [`MatrixGraph`].
 ///
 /// Note that this trait is already implemented for the base numeric types.
 pub trait Zeroable {
@@ -233,7 +233,8 @@ pub trait MatrixGraphExtras<N>: Sealed {
 /// For undirected graphs, only the lower triangular part of the adjacency matrix is stored. Since
 /// the backing array stores edge data, it is recommended to box large edge data.
 ///
-/// The graph uses [`NodeId`] and [`EdgeId`] as node and edge indices. Node indices are convertible
+/// The graph uses [`NodeId`] and [`DiMatrixEdgeId`] and [`UnMatrixEdgeId`] for directed and
+/// undirected graphs, respectively, as node and edge indices. Node indices are convertible
 /// to `usize`, however not guaranteed to be contiguous. When removing nodes, the graph will reuse
 /// the indices of removed nodes for new nodes filling in the gaps. For most use cases however, the
 /// graph is assumed to have dense node indices.
