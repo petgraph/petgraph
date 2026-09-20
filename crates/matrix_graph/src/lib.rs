@@ -19,7 +19,7 @@ use crate::private::Sealed;
 mod directed;
 mod undirected;
 
-/// NodeId type for the [`Graph`](petgraph_core::graph::Graph) implementation of [`MatrixGraph`].
+/// `NodeIds` type for the [`Graph`](petgraph_core::graph::Graph) implementation of [`MatrixGraph`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MatrixGraphNodeId(usize);
 
@@ -238,11 +238,11 @@ pub trait MatrixGraphExtras<N>: Sealed {
 /// For undirected graphs, only the lower triangular part of the adjacency matrix is stored. Since
 /// the backing array stores edge data, it is recommended to box large edge data.
 ///
-/// The graph uses [`MatrixGraphNodeId`] as NodeIds and [`DiMatrixEdgeId`] and [`UnMatrixEdgeId`] as
-/// EdgeIds for directed and undirected graphs, respectively. NodeIds
-/// are convertible to `usize`, however not guaranteed to be contiguous. When removing nodes, the
-/// graph will reuse the indices of removed nodes for new nodes filling in the gaps. For most use
-/// cases however, the graph is assumed to have dense node indices.
+/// The graph uses [`MatrixGraphNodeId`] as `NodeIds` and [`DiMatrixEdgeId`] and [`UnMatrixEdgeId`]
+/// as `EdgeIds` for directed and undirected graphs, respectively. `NodeIds`  are convertible to
+/// `usize`, however not guaranteed to be contiguous. When removing nodes, the graph will reuse the
+/// indices of removed nodes for new nodes filling in the gaps. For most use cases however, the
+/// graph is assumed to have dense node indices.
 #[derive(Clone)]
 pub struct MatrixGraph<
     N,
