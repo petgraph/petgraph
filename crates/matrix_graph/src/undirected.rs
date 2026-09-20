@@ -81,7 +81,11 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N>
         for (id, _) in self.node_data.iter() {
             let position = self.to_edge_position(node, NodeId(id));
             if let Some(pos) = position {
-                self.flattened_edge_data[pos] = Default::default();
+                let entry = &mut self.flattened_edge_data[pos];
+                if !entry.is_null() {
+                    *entry = Default::default();
+                    self.edge_count -= 1;
+                }
             }
         }
 
