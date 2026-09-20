@@ -222,9 +222,7 @@ pub trait MatrixGraphExtras<N>: Sealed {
 ///
 /// `MatrixGraph` is parameterized over:
 /// - Associated data `N` for nodes and `E` for edges. The associated data can be of arbitrary type.
-/// - Edge type `Dir` determines whether the graph edges are
-///   [`Directed`](petgraph_core::graph::Directed) or
-///   [`Undirected`](petgraph_core::graph::Undirected).
+/// - Edge type `Dir` determines whether the graph edges are [`Directed`] or [`Undirected`].
 /// - Nullable type `Null`, which denotes the edges' presence (defaults to `Option<E>`). You may
 ///   specify [`NotZero<E>`](struct.NotZero.html) if you want to use a sentinel value (such as 0) to
 ///   mark the absence of an edge.
