@@ -227,7 +227,6 @@ where
         })
     }
 
-    /// Nodes with degree 0 (no incident edges).
     #[inline]
     fn isolated_nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.degree(node.id) == 0)
@@ -626,13 +625,11 @@ where
     }
 
     // Sources and sinks
-    /// Nodes with `in_degree = 0`.
     #[inline]
     fn sources(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.in_degree(node.id) == 0)
     }
 
-    /// Nodes with `out_degree = 0`.
     #[inline]
     fn sinks(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.nodes().filter(|node| self.out_degree(node.id) == 0)
