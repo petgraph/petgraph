@@ -15,7 +15,7 @@ use crate::{
 pub struct UnMatrixEdgeId {
     pub source: NodeId,
     pub target: NodeId,
-    _private: (),
+    _private: PhantomData<()>,
 }
 
 impl UnMatrixEdgeId {
@@ -25,13 +25,13 @@ impl UnMatrixEdgeId {
             Self {
                 source,
                 target,
-                _private: (),
+                _private: PhantomData::<()>,
             }
         } else {
             Self {
                 source: target,
                 target: source,
-                _private: (),
+                _private: PhantomData::<()>,
             }
         }
     }
