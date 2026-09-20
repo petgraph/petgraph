@@ -1,4 +1,4 @@
-use core::{cmp, hash::BuildHasher};
+use core::{cmp, hash::BuildHasher, marker::PhantomData};
 
 use petgraph_core::{
     edge::{EdgeMut, EdgeRef},
@@ -16,7 +16,7 @@ use crate::{
 pub struct DiMatrixEdgeId {
     pub source: NodeId,
     pub target: NodeId,
-    _private: (),
+    _private: PhantomData<()>,
 }
 
 impl DiMatrixEdgeId {
@@ -25,7 +25,7 @@ impl DiMatrixEdgeId {
         Self {
             source,
             target,
-            _private: (),
+            _private: PhantomData::<()>,
         }
     }
 }
