@@ -1,4 +1,4 @@
-use core::{hash::BuildHasher, marker::PhantomData, ptr::NonNull};
+use core::{hash::BuildHasher, marker::PhantomData};
 
 use petgraph_core::{
     edge::{EdgeMut, EdgeRef},
@@ -501,14 +501,14 @@ impl<'a, Null: NicheWrapper> Iterator for NeighborIterator<'a, Null> {
     }
 }
 
-/// An iterator over the neighbors of a node (source_node) in a directed graph which yields the
+/// An iterator over the neighbors of a node (`source_node`) in a directed graph which yields the
 /// neighbor along with a mutable reference to the edge data for the edge connecting the source node
 /// to the neighbor.
 struct NeighborIterMut<'a, Null> {
     /// The remaining slice of the flattened edge data that has not yet been consumed by the
     /// iterator.
     remaining_edge_data: &'a mut [Null],
-    /// Index in the flattened edge data of the edge sitting currently at remaining_edge_data[0]
+    /// Index in the flattened edge data of the edge sitting currently at `remaining_edge_data[0]`,
     consumed: usize,
     source_node: NodeId,
     next_node: NodeId,
