@@ -8,19 +8,20 @@ use petgraph_core::{
 };
 
 use crate::{
-    MatrixGraph, MatrixGraphExtras, NicheWrapper, NodeId, Undirected, ensure_len, private::Sealed,
+    MatrixGraph, MatrixGraphExtras, MatrixGraphNodeId, NicheWrapper, Undirected, ensure_len,
+    private::Sealed,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct UnMatrixEdgeId {
-    pub source: NodeId,
-    pub target: NodeId,
+    pub source: MatrixGraphNodeId,
+    pub target: MatrixGraphNodeId,
     _private: PhantomData<()>,
 }
 
 impl UnMatrixEdgeId {
     #[must_use]
-    pub const fn new(source: NodeId, target: NodeId) -> Self {
+    pub const fn new(source: MatrixGraphNodeId, target: MatrixGraphNodeId) -> Self {
         if source.0 < target.0 {
             Self {
                 source,
@@ -45,13 +46,17 @@ impl core::fmt::Display for UnMatrixEdgeId {
 
 impl Id for UnMatrixEdgeId {}
 
-impl<N, E, S, Null: NicheWrapper<Wrapped = E>> Sealed for MatrixGraph<N, E, S, Null, Undirected> {}
+impl<N, E, Null: NicheWrapper<Wrapped = E>, S> Sealed for MatrixGraph<N, E, Undirected, Null, S> {}
 
-impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N>
-    for MatrixGraph<N, E, S, Null, Undirected>
+impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
+    for MatrixGraph<N, E, Undirected, Null, S>
 {
     #[inline]
-    fn to_edge_position(&self, node_a: NodeId, node_b: NodeId) -> Option<usize> {
+    fn to_edge_position(
+        &self,
+        node_a: MatrixGraphNodeId,
+        node_b: MatrixGraphNodeId,
+    ) -> Option<usize> {
         if node_a.0 >= self.node_capacity || node_b.0 >= self.node_capacity {
             None
         } else {
@@ -60,7 +65,11 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N>
     }
 
     #[inline]
-    fn to_edge_position_unchecked(&self, node_a: NodeId, node_b: NodeId) -> usize {
+    fn to_edge_position_unchecked(
+        &self,
+        node_a: MatrixGraphNodeId,
+        node_b: MatrixGraphNodeId,
+    ) -> usize {
         to_lower_triangular_matrix_position(node_a.0, node_b.0)
     }
 
@@ -77,9 +86,9 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N>
     }
 
     #[inline]
-    fn remove_node(&mut self, node: NodeId) -> N {
+    fn remove_node(&mut self, node: MatrixGraphNodeId) -> N {
         for (id, _) in self.node_data.iter() {
-            let position = self.to_edge_position(node, NodeId(id));
+            let position = self.to_edge_position(node, MatrixGraphNodeId(id));
             if let Some(pos) = position {
                 let entry = &mut self.flattened_edge_data[pos];
                 if !entry.is_null() {
@@ -114,8 +123,8 @@ fn extend_lower_triangular_matrix<T: Default>(
     new_capacity
 }
 
-impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> Graph
-    for MatrixGraph<N, E, S, Null, Undirected>
+impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> Graph
+    for MatrixGraph<N, E, Undirected, Null, S>
 {
     type EdgeData<'graph>
         = E
@@ -142,11 +151,11 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> Graph
         = &'graph N
     where
         Self: 'graph;
-    type NodeId = NodeId;
+    type NodeId = MatrixGraphNodeId;
 }
 
-impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> UndirectedGraph
-    for MatrixGraph<N, E, S, Null, Undirected>
+impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> UndirectedGraph
+    for MatrixGraph<N, E, Undirected, Null, S>
 where
     Self: MatrixGraphExtras<N>,
 {
@@ -179,7 +188,7 @@ where
     #[inline]
     fn nodes(&self) -> impl Iterator<Item = NodeRef<'_, Self>> {
         self.node_data.iter().map(|(id, data)| NodeRef::<Self> {
-            id: NodeId(id),
+            id: MatrixGraphNodeId(id),
             data,
         })
     }
@@ -187,7 +196,7 @@ where
     #[inline]
     fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
         self.node_data.iter_mut().map(|(id, data)| NodeMut::<Self> {
-            id: NodeId(id),
+            id: MatrixGraphNodeId(id),
             data,
         })
     }
@@ -297,7 +306,7 @@ where
         NeighborIterMut::new(
             &mut self.flattened_edge_data,
             node,
-            NodeId(0),
+            MatrixGraphNodeId(0),
             self.node_capacity,
         )
         .map(move |(neighbor, data)| EdgeMut::<Self> {
@@ -398,7 +407,7 @@ struct EdgeIter<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper + 'a> {
 }
 
 impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIter<'a, It, Null> {
-    type Item = (NodeId, NodeId, &'a Null::Wrapped);
+    type Item = (MatrixGraphNodeId, MatrixGraphNodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
         for edge in self.edges.by_ref() {
@@ -410,8 +419,8 @@ impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIte
             }
             if !edge.is_null() {
                 return Some((
-                    NodeId(current_edge_tuple.0),
-                    NodeId(current_edge_tuple.1),
+                    MatrixGraphNodeId(current_edge_tuple.0),
+                    MatrixGraphNodeId(current_edge_tuple.1),
                     edge.as_ref().unwrap(),
                 ));
             }
@@ -430,7 +439,7 @@ struct EdgeIterMut<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper + '
 impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
     for EdgeIterMut<'a, It, Null>
 {
-    type Item = (NodeId, NodeId, &'a mut Null::Wrapped);
+    type Item = (MatrixGraphNodeId, MatrixGraphNodeId, &'a mut Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
         for edge in self.edges.by_ref() {
@@ -442,8 +451,8 @@ impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
             }
             if !edge.is_null() {
                 return Some((
-                    NodeId(current_edge_tuple.0),
-                    NodeId(current_edge_tuple.1),
+                    MatrixGraphNodeId(current_edge_tuple.0),
+                    MatrixGraphNodeId(current_edge_tuple.1),
                     edge.as_mut().unwrap(),
                 ));
             }
@@ -454,13 +463,13 @@ impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
 
 struct NeighborIterator<'a, Null: NicheWrapper + 'a> {
     edges: &'a [Null],
-    start_node: NodeId,
-    next_other_node: NodeId,
+    start_node: MatrixGraphNodeId,
+    next_other_node: MatrixGraphNodeId,
     node_capacity: usize,
 }
 
 impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
-    const fn new(edges: &'a [Null], start_node: NodeId, node_capacity: usize) -> Self {
+    const fn new(edges: &'a [Null], start_node: MatrixGraphNodeId, node_capacity: usize) -> Self {
         if start_node.0 >= node_capacity {
             // This iterator will be empty, since a node with an index greater than or equal to
             // the node capacity cannot have any neighbors.
@@ -474,7 +483,7 @@ impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
             Self {
                 edges,
                 start_node,
-                next_other_node: NodeId(0),
+                next_other_node: MatrixGraphNodeId(0),
                 node_capacity,
             }
         }
@@ -482,7 +491,7 @@ impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
 }
 
 impl<'a, Null: NicheWrapper> Iterator for NeighborIterator<'a, Null> {
-    type Item = (NodeId, &'a Null::Wrapped);
+    type Item = (MatrixGraphNodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.next_other_node.0 < self.node_capacity {
@@ -510,8 +519,8 @@ struct NeighborIterMut<'a, Null> {
     remaining_edge_data: &'a mut [Null],
     /// Index in the flattened edge data of the edge sitting currently at `remaining_edge_data[0]`,
     consumed: usize,
-    source_node: NodeId,
-    next_node: NodeId,
+    source_node: MatrixGraphNodeId,
+    next_node: MatrixGraphNodeId,
     node_capacity: usize,
 }
 
@@ -519,8 +528,8 @@ impl<'a, Null> NeighborIterMut<'a, Null> {
     #[inline]
     const fn new(
         flattened_edge_data: &'a mut [Null],
-        source_node: NodeId,
-        next_node: NodeId,
+        source_node: MatrixGraphNodeId,
+        next_node: MatrixGraphNodeId,
         node_capacity: usize,
     ) -> Self {
         if source_node.0 >= node_capacity {
@@ -546,7 +555,7 @@ impl<'a, Null> NeighborIterMut<'a, Null> {
 }
 
 impl<'a, Null: NicheWrapper> Iterator for NeighborIterMut<'a, Null> {
-    type Item = (NodeId, &'a mut Null::Wrapped);
+    type Item = (MatrixGraphNodeId, &'a mut Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.next_node.0 < self.node_capacity {
@@ -578,7 +587,7 @@ mod tests {
     #[test]
     fn test_default() {
         let graph =
-            MatrixGraph::<i32, i32, foldhash::fast::RandomState, Option<i32>, Undirected>::default(
+            MatrixGraph::<i32, i32, Undirected, Option<i32>, foldhash::fast::RandomState>::default(
             );
         assert_eq!(graph.node_count(), 0);
         assert_eq!(graph.edge_count(), 0);
@@ -586,14 +595,14 @@ mod tests {
 
     #[test]
     fn test_with_capacity() {
-        let graph = MatrixGraph::<i32, i32, foldhash::fast::RandomState, Option<i32>, Undirected>::with_capacity(10);
+        let graph = MatrixGraph::<i32, i32, Undirected, Option<i32>, foldhash::fast::RandomState>::with_capacity(10);
         assert_eq!(graph.node_count(), 0);
         assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
     fn test_remove_node() {
-        let mut graph: MatrixGraph<char, (), foldhash::fast::RandomState, Option<()>, Undirected> =
+        let mut graph: MatrixGraph<char, (), Undirected, Option<()>, foldhash::fast::RandomState> =
             MatrixGraph::default();
         let node_a = graph.add_node('a');
 
@@ -605,7 +614,7 @@ mod tests {
 
     #[test]
     fn test_add_edge() {
-        let mut graph: MatrixGraph<char, (), foldhash::fast::RandomState, Option<()>, Undirected> =
+        let mut graph: MatrixGraph<char, (), Undirected, Option<()>, foldhash::fast::RandomState> =
             MatrixGraph::default();
         let node_a = graph.add_node('a');
         let node_b = graph.add_node('b');
@@ -708,7 +717,7 @@ mod tests {
 
     #[test]
     fn test_alternative_null_type() {
-        let mut graph: MatrixGraph<(), i32, foldhash::fast::RandomState, NotZero<i32>, Undirected> =
+        let mut graph: MatrixGraph<(), i32, Undirected, NotZero<i32>, foldhash::fast::RandomState> =
             MatrixGraph::default();
 
         let node_a = graph.add_node(());
@@ -738,7 +747,7 @@ mod tests {
     #[test]
     #[should_panic = "assertion failed: !value.is_zero()"]
     fn test_not_zero_asserted() {
-        let mut graph: MatrixGraph<(), i32, foldhash::fast::RandomState, NotZero<i32>, Undirected> =
+        let mut graph: MatrixGraph<(), i32, Undirected, NotZero<i32>, foldhash::fast::RandomState> =
             MatrixGraph::default();
 
         let node_a = graph.add_node(());
@@ -749,7 +758,7 @@ mod tests {
 
     #[test]
     fn test_not_zero_float() {
-        let mut graph: MatrixGraph<(), f32, foldhash::fast::RandomState, NotZero<f32>, Undirected> =
+        let mut graph: MatrixGraph<(), f32, Undirected, NotZero<f32>, foldhash::fast::RandomState> =
             MatrixGraph::default();
 
         let node_a = graph.add_node(());
@@ -793,16 +802,16 @@ mod tests {
     }
 
     fn remove_node(
-        graph: &mut MatrixGraph<(), (), foldhash::fast::RandomState, Option<()>, Undirected>,
-        node: NodeId,
+        graph: &mut MatrixGraph<(), (), Undirected, Option<()>, foldhash::fast::RandomState>,
+        node: MatrixGraphNodeId,
     ) {
         graph.remove_node(node);
     }
 
     fn add_edge(
-        graph: &mut MatrixGraph<(), (), foldhash::fast::RandomState, Option<()>, Undirected>,
-        source: NodeId,
-        target: NodeId,
+        graph: &mut MatrixGraph<(), (), Undirected, Option<()>, foldhash::fast::RandomState>,
+        source: MatrixGraphNodeId,
+        target: MatrixGraphNodeId,
         _: (),
     ) -> UnMatrixEdgeId {
         graph.add_edge(source, target, ());
@@ -810,15 +819,15 @@ mod tests {
     }
 
     fn remove_edge(
-        graph: &mut MatrixGraph<(), (), foldhash::fast::RandomState, Option<()>, Undirected>,
+        graph: &mut MatrixGraph<(), (), Undirected, Option<()>, foldhash::fast::RandomState>,
         edge_id: UnMatrixEdgeId,
     ) {
         graph.remove_edge(edge_id.source, edge_id.target);
     }
 
     test_undirected_graph!(
-        MatrixGraph::<(), (), foldhash::fast::RandomState, Option<()>, Undirected>::new_undirected,
-        MatrixGraph::<(), (), foldhash::fast::RandomState, Option<()>, Undirected>::add_node,
+        MatrixGraph::<(), (), Undirected, Option<()>, foldhash::fast::RandomState>::new_undirected,
+        MatrixGraph::<(), (), Undirected, Option<()>, foldhash::fast::RandomState>::add_node,
         remove_node,
         add_edge,
         remove_edge

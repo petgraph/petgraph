@@ -1,6 +1,7 @@
-//! `MatrixGraph<N, E, Ty, NullN, NullE, Ix>` is a graph datastructure backed by an adjacency
-//! matrix.
-
+//! [`MatrixGraph`] is a graph data structure backed by an adjacency matrix. It can represent both
+//! directed and undirected graphs and supports arbitrary associated data for nodes and edges.
+//!
+//! This module contains the implementation of [`MatrixGraph`].
 extern crate alloc;
 
 use alloc::{fmt, vec, vec::Vec};
@@ -18,25 +19,25 @@ use crate::private::Sealed;
 mod directed;
 mod undirected;
 
-/// Node index type for the `MatrixGraph`.
+/// NodeId type for the [`Graph`](petgraph_core::graph::Graph) implementation of [`MatrixGraph`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct NodeId(usize);
+pub struct MatrixGraphNodeId(usize);
 
-impl Display for NodeId {
+impl Display for MatrixGraphNodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Node({})", self.0)
     }
 }
 
-impl Id for NodeId {}
+impl Id for MatrixGraphNodeId {}
 
-impl From<usize> for NodeId {
+impl From<usize> for MatrixGraphNodeId {
     fn from(value: usize) -> Self {
         Self(value)
     }
 }
 
-impl From<u32> for NodeId {
+impl From<u32> for MatrixGraphNodeId {
     fn from(value: u32) -> Self {
         Self(value as usize)
     }
@@ -196,29 +197,40 @@ zeroable_impls!(i8, i16, i32, i64, isize);
 zeroable_impls!(f32, f64);
 
 pub trait MatrixGraphExtras<N>: Sealed {
-    fn to_edge_position(&self, node_a: NodeId, node_b: NodeId) -> Option<usize>;
-    fn to_edge_position_unchecked(&self, node_a: NodeId, node_b: NodeId) -> usize;
+    fn to_edge_position(
+        &self,
+        node_a: MatrixGraphNodeId,
+        node_b: MatrixGraphNodeId,
+    ) -> Option<usize>;
+    fn to_edge_position_unchecked(
+        &self,
+        node_a: MatrixGraphNodeId,
+        node_b: MatrixGraphNodeId,
+    ) -> usize;
     fn extend_capacity_for_node(&mut self, new_node_capacity: usize, exact: bool);
-    fn remove_node(&mut self, node: NodeId) -> N;
+    fn remove_node(&mut self, node: MatrixGraphNodeId) -> N;
 }
 
 /// `MatrixGraph<N, E, S, Null, Ty>` is a graph using an adjacency matrix representation.
 ///
 /// It uses a flattened 2D array to store edge data, and a separate storage for node data and
-/// management of node indices. The graph supports both directed and undirected edges.
+/// management of node indices. The graph can be instantiated as either directed or undirected.
+/// The default being directed.
 ///
 /// Edge data can be of arbitrary type that has a notion of "null" or "empty" value, which is used
 /// to mark the absence of an edge in the graph and allows for better memory optimization.
 ///
 /// `MatrixGraph` is parameterized over:
 /// - Associated data `N` for nodes and `E` for edges. The associated data can be of arbitrary type.
-/// - Hasher type `S` that determines how node indices are hashed (defaults to `RandomState`). This
-///   is used to keep track of removed node indices and reuse them when adding new nodes, thus
-///   optimizing memory usage.
+/// - Edge type `Dir` determines whether the graph edges are
+///   [`Directed`](petgraph_core::graph::Directed) or
+///   [`Undirected`](petgraph_core::graph::Undirected).
 /// - Nullable type `Null`, which denotes the edges' presence (defaults to `Option<E>`). You may
 ///   specify [`NotZero<E>`](struct.NotZero.html) if you want to use a sentinel value (such as 0) to
 ///   mark the absence of an edge.
-/// - Edge type `Ty` determines whether the graph edges are directed or undirected.
+/// - Hasher type `S` that determines how node indices are hashed (defaults to `RandomState`). This
+///   is used to keep track of removed node indices and reuse them when adding new nodes, thus
+///   optimizing memory usage.
 ///
 /// The graph uses **O(|V^2|)** space, with fast edge insertion & amortized node insertion, as well
 /// as efficient graph search and graph algorithms on dense graphs.
@@ -226,18 +238,18 @@ pub trait MatrixGraphExtras<N>: Sealed {
 /// For undirected graphs, only the lower triangular part of the adjacency matrix is stored. Since
 /// the backing array stores edge data, it is recommended to box large edge data.
 ///
-/// The graph uses [`NodeId`] and [`DiMatrixEdgeId`] and [`UnMatrixEdgeId`] for directed and
-/// undirected graphs, respectively, as node and edge indices. Node indices are convertible
-/// to `usize`, however not guaranteed to be contiguous. When removing nodes, the graph will reuse
-/// the indices of removed nodes for new nodes filling in the gaps. For most use cases however, the
-/// graph is assumed to have dense node indices.
+/// The graph uses [`MatrixGraphNodeId`] as NodeIds and [`DiMatrixEdgeId`] and [`UnMatrixEdgeId`] as
+/// EdgeIds for directed and undirected graphs, respectively. NodeIds
+/// are convertible to `usize`, however not guaranteed to be contiguous. When removing nodes, the
+/// graph will reuse the indices of removed nodes for new nodes filling in the gaps. For most use
+/// cases however, the graph is assumed to have dense node indices.
 #[derive(Clone)]
 pub struct MatrixGraph<
     N,
     E,
-    S = RandomState,
-    Null: NicheWrapper<Wrapped = E> = Option<E>,
     Dir = Directed,
+    Null: NicheWrapper<Wrapped = E> = Option<E>,
+    S = RandomState,
 > {
     /// Edge Data including presence information.
     flattened_edge_data: Vec<Null>,
@@ -252,12 +264,12 @@ pub struct MatrixGraph<
 }
 
 /// A [`MatrixGraph`] with directed edges.
-pub type DiMatrix<N, E, S = RandomState, Null = Option<E>> = MatrixGraph<N, E, S, Null, Directed>;
+pub type DiMatrix<N, E, Null = Option<E>, S = RandomState> = MatrixGraph<N, E, Directed, Null, S>;
 
 /// A [`MatrixGraph`] with undirected edges.
-pub type UnMatrix<N, E, S = RandomState, Null = Option<E>> = MatrixGraph<N, E, S, Null, Undirected>;
+pub type UnMatrix<N, E, Null = Option<E>, S = RandomState> = MatrixGraph<N, E, Undirected, Null, S>;
 
-impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>, Dir> MatrixGraph<N, E, S, Null, Dir> {
+impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraph<N, E, Dir, Null, S> {
     /// Remove all nodes and edges.
     pub fn clear(&mut self) {
         for edge in &mut self.flattened_edge_data {
@@ -276,12 +288,12 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>, Dir> MatrixGraph<N, 
     /// # Panics
     /// - If the `MatrixGraph` contains `usize::MAX` nodes already.
     #[track_caller]
-    pub fn add_node(&mut self, data: N) -> NodeId {
-        NodeId(self.node_data.add(data))
+    pub fn add_node(&mut self, data: N) -> MatrixGraphNodeId {
+        MatrixGraphNodeId(self.node_data.add(data))
     }
 }
 
-impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>, Dir> MatrixGraph<N, E, S, Null, Dir>
+impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraph<N, E, Dir, Null, S>
 where
     Self: MatrixGraphExtras<N>,
 {
@@ -313,7 +325,7 @@ where
     }
 
     #[inline]
-    fn extend_capacity_for_edge(&mut self, node_a: NodeId, node_b: NodeId) {
+    fn extend_capacity_for_edge(&mut self, node_a: MatrixGraphNodeId, node_b: MatrixGraphNodeId) {
         let min_node = cmp::max(node_a, node_b);
         if min_node.0 >= self.node_capacity {
             self.extend_capacity_for_node(min_node.0 + 1, false);
@@ -327,7 +339,7 @@ where
     /// # Panics
     /// - If the `node` does not exist.
     #[track_caller]
-    pub fn remove_node(&mut self, node: NodeId) -> N {
+    pub fn remove_node(&mut self, node: MatrixGraphNodeId) -> N {
         <Self as MatrixGraphExtras<N>>::remove_node(self, node)
     }
 
@@ -341,7 +353,12 @@ where
     /// # Panics
     /// - If either of the nodes doesn't exist.
     #[track_caller]
-    fn update_edge(&mut self, node_a: NodeId, node_b: NodeId, data: E) -> Option<E> {
+    fn update_edge(
+        &mut self,
+        node_a: MatrixGraphNodeId,
+        node_b: MatrixGraphNodeId,
+        data: E,
+    ) -> Option<E> {
         self.extend_capacity_for_edge(node_a, node_b);
         let position = self.to_edge_position_unchecked(node_a, node_b);
         let old_data = mem::replace(&mut self.flattened_edge_data[position], Null::new(data));
@@ -360,7 +377,7 @@ where
     /// - If either of the nodes doesn't exist.
     /// - If an edge already exists from `node_a` to `node_b`.
     #[track_caller]
-    pub fn add_edge(&mut self, node_a: NodeId, node_b: NodeId, data: E) {
+    pub fn add_edge(&mut self, node_a: MatrixGraphNodeId, node_b: MatrixGraphNodeId, data: E) {
         let old_edge_id = self.update_edge(node_a, node_b, data);
         assert!(old_edge_id.is_none());
     }
@@ -371,7 +388,7 @@ where
     /// - If either of the nodes doesn't exist.
     /// - If no edge exists between `node_a` and `node_b`.
     #[track_caller]
-    pub fn remove_edge(&mut self, node_a: NodeId, node_b: NodeId) -> E {
+    pub fn remove_edge(&mut self, node_a: MatrixGraphNodeId, node_b: MatrixGraphNodeId) -> E {
         let position = self
             .to_edge_position(node_a, node_b)
             .expect("No edge found between the nodes.");
@@ -477,8 +494,8 @@ impl<T, S: BuildHasher> IdStorage<T, S> {
     }
 }
 
-impl<N, E, S: BuildHasher + Default, Null: NicheWrapper<Wrapped = E>, Dir> Default
-    for MatrixGraph<N, E, S, Null, Dir>
+impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher + Default> Default
+    for MatrixGraph<N, E, Dir, Null, S>
 where
     Self: MatrixGraphExtras<N>,
 {
@@ -487,7 +504,7 @@ where
     }
 }
 
-impl<N, E> MatrixGraph<N, E, RandomState, Option<E>, Directed> {
+impl<N, E> MatrixGraph<N, E, Directed, Option<E>, RandomState> {
     /// Create a new `MatrixGraph` with directed edges.
     ///
     /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
@@ -498,7 +515,7 @@ impl<N, E> MatrixGraph<N, E, RandomState, Option<E>, Directed> {
     }
 }
 
-impl<N, E> MatrixGraph<N, E, RandomState, Option<E>, Undirected> {
+impl<N, E> MatrixGraph<N, E, Undirected, Option<E>, RandomState> {
     /// Create a new `MatrixGraph` with undirected edges.
     ///
     /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
