@@ -15,6 +15,9 @@ hashbrown = { workspace = true }
 indexmap  = { workspace = true }
 itertools = { workspace = true }
 
+[dev-dependencies]
+petgraph-core = {workspace = true, features = ["utils"]}
+
 [features]
 
 [lints]
