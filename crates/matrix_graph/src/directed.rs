@@ -1,4 +1,4 @@
-use core::{cmp, hash::BuildHasher, marker::PhantomData};
+use core::{cmp, hash::BuildHasher};
 
 use petgraph_core::{
     edge::{EdgeMut, EdgeRef},
@@ -8,47 +8,35 @@ use petgraph_core::{
 };
 
 use crate::{
-    Directed, EdgeId, Either, MatrixGraph, MatrixGraphExtras, NicheWrapper, NodeId, ensure_len,
+    Directed, Either, MatrixGraph, MatrixGraphExtras, NicheWrapper, NodeId, ensure_len,
     private::Sealed,
 };
 
-pub type DirEdgeId = EdgeId<Directed>;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct DiMatrixEdgeId {
+    pub source: NodeId,
+    pub target: NodeId,
+    _private: (),
+}
 
-impl DirEdgeId {
+impl DiMatrixEdgeId {
     #[must_use]
-    pub const fn new_directed(source: NodeId, target: NodeId) -> Self {
+    pub const fn new(source: NodeId, target: NodeId) -> Self {
         Self {
-            node_a: source,
-            node_b: target,
-            direction: PhantomData,
+            source,
+            target,
+            _private: (),
         }
     }
 }
 
-impl PartialEq for DirEdgeId {
-    fn eq(&self, other: &Self) -> bool {
-        self.node_a == other.node_a && self.node_b == other.node_b
+impl core::fmt::Display for DiMatrixEdgeId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DiMatrixEdgeId({}, {})", self.source.0, self.target.0)
     }
 }
 
-impl Eq for DirEdgeId {}
-
-impl PartialOrd for DirEdgeId {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for DirEdgeId {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        match self.node_a.cmp(&other.node_a) {
-            cmp::Ordering::Equal => self.node_b.cmp(&other.node_b),
-            non_eq => non_eq,
-        }
-    }
-}
-
-impl Id for DirEdgeId {}
+impl Id for DiMatrixEdgeId {}
 
 impl<N, E, S, Null: NicheWrapper<Wrapped = E>> Sealed for MatrixGraph<N, E, S, Null, Directed> {}
 
@@ -168,7 +156,7 @@ impl<N, E, S: BuildHasher, Null: NicheWrapper<Wrapped = E>> Graph
         = &'graph E
     where
         Self: 'graph;
-    type EdgeId = DirEdgeId;
+    type EdgeId = DiMatrixEdgeId;
     type NodeData<'graph>
         = N
     where
@@ -246,7 +234,7 @@ where
             node_capacity: self.node_capacity,
         }
         .map(|(source, target, data)| EdgeRef::<Self> {
-            id: DirEdgeId::new_directed(source, target),
+            id: DiMatrixEdgeId::new(source, target),
             source,
             target,
             data,
@@ -261,7 +249,7 @@ where
             node_capacity: self.node_capacity,
         }
         .map(|(source, target, data)| EdgeMut::<Self> {
-            id: DirEdgeId::new_directed(source, target),
+            id: DiMatrixEdgeId::new(source, target),
             source,
             target,
             data,
@@ -285,28 +273,28 @@ where
 
     #[inline]
     fn edge(&self, id: Self::EdgeId) -> Option<EdgeRef<'_, Self>> {
-        let edge_index = self.to_edge_position(id.node_a, id.node_b)?;
+        let edge_index = self.to_edge_position(id.source, id.target)?;
         self.flattened_edge_data
             .get(edge_index)?
             .as_ref()
             .map(|data| EdgeRef::<Self> {
                 id,
-                source: id.node_a,
-                target: id.node_b,
+                source: id.source,
+                target: id.target,
                 data,
             })
     }
 
     #[inline]
     fn edge_mut(&mut self, id: Self::EdgeId) -> Option<EdgeMut<'_, Self>> {
-        let edge_index = self.to_edge_position(id.node_a, id.node_b)?;
+        let edge_index = self.to_edge_position(id.source, id.target)?;
         self.flattened_edge_data
             .get_mut(edge_index)?
             .as_mut()
             .map(|data| EdgeMut::<Self> {
                 id,
-                source: id.node_a,
-                target: id.node_b,
+                source: id.source,
+                target: id.target,
                 data,
             })
     }
@@ -332,7 +320,7 @@ where
     fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         incoming_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).map(
             move |(source, data)| EdgeRef::<Self> {
-                id: EdgeId::new_directed(source, node),
+                id: DiMatrixEdgeId::new(source, node),
                 source,
                 target: node,
                 data,
@@ -347,7 +335,7 @@ where
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         incoming_neighbor_iter_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
             move |(source, data)| EdgeMut::<Self> {
-                id: EdgeId::new_directed(source, node),
+                id: DiMatrixEdgeId::new(source, node),
                 source,
                 target: node,
                 data,
@@ -359,7 +347,7 @@ where
     fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         outgoing_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).map(
             move |(target, data)| EdgeRef::<Self> {
-                id: EdgeId::new_directed(node, target),
+                id: DiMatrixEdgeId::new(node, target),
                 source: node,
                 target,
                 data,
@@ -374,7 +362,7 @@ where
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         outgoing_neighbor_iter_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
             move |(target, data)| EdgeMut::<Self> {
-                id: EdgeId::new_directed(node, target),
+                id: DiMatrixEdgeId::new(node, target),
                 source: node,
                 target,
                 data,
@@ -386,7 +374,7 @@ where
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).map(
             move |(source, target, data)| EdgeRef::<Self> {
-                id: EdgeId::new_directed(source, target),
+                id: DiMatrixEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -401,7 +389,7 @@ where
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         neighbor_iter_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
             move |(source, target, data)| EdgeMut::<Self> {
-                id: EdgeId::new_directed(source, target),
+                id: DiMatrixEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -444,7 +432,7 @@ where
                     .unwrap()
                     .as_ref()
                     .map(|data| EdgeRef::<Self> {
-                        id: EdgeId::new_directed(source, target),
+                        id: DiMatrixEdgeId::new(source, target),
                         source,
                         target,
                         data,
@@ -467,7 +455,7 @@ where
                 .unwrap()
                 .as_mut()
                 .map(|data| EdgeMut::<Self> {
-                    id: EdgeId::new_directed(source, target),
+                    id: DiMatrixEdgeId::new(source, target),
                     source,
                     target,
                     data,
@@ -493,7 +481,7 @@ where
                     .unwrap()
                     .as_ref()
                     .map(|data| EdgeRef::<Self> {
-                        id: EdgeId::new_directed(lhs, rhs),
+                        id: DiMatrixEdgeId::new(lhs, rhs),
                         source: lhs,
                         target: rhs,
                         data,
@@ -505,7 +493,7 @@ where
                             .unwrap()
                             .as_ref()
                             .map(|data| EdgeRef::<Self> {
-                                id: EdgeId::new_directed(rhs, lhs),
+                                id: DiMatrixEdgeId::new(rhs, lhs),
                                 source: rhs,
                                 target: lhs,
                                 data,
@@ -518,7 +506,7 @@ where
                     .unwrap()
                     .as_ref()
                     .map(|data| EdgeRef::<Self> {
-                        id: EdgeId::new_directed(lhs, rhs),
+                        id: DiMatrixEdgeId::new(lhs, rhs),
                         source: lhs,
                         target: rhs,
                         data,
@@ -531,7 +519,7 @@ where
                     .unwrap()
                     .as_ref()
                     .map(|data| EdgeRef::<Self> {
-                        id: EdgeId::new_directed(rhs, lhs),
+                        id: DiMatrixEdgeId::new(rhs, lhs),
                         source: rhs,
                         target: lhs,
                         data,
@@ -560,7 +548,7 @@ where
                         .unwrap()
                         .as_mut()
                         .map(|data| EdgeMut::<Self> {
-                            id: EdgeId::new_directed(lhs, rhs),
+                            id: DiMatrixEdgeId::new(lhs, rhs),
                             source: lhs,
                             target: rhs,
                             data,
@@ -571,7 +559,7 @@ where
                         .unwrap()
                         .as_mut()
                         .map(|data| EdgeMut::<Self> {
-                            id: EdgeId::new_directed(rhs, lhs),
+                            id: DiMatrixEdgeId::new(rhs, lhs),
                             source: rhs,
                             target: lhs,
                             data,
@@ -586,7 +574,7 @@ where
                         .unwrap()
                         .as_mut()
                         .map(|data| EdgeMut::<Self> {
-                            id: EdgeId::new_directed(rhs, lhs),
+                            id: DiMatrixEdgeId::new(rhs, lhs),
                             source: rhs,
                             target: lhs,
                             data,
@@ -597,7 +585,7 @@ where
                         .unwrap()
                         .as_mut()
                         .map(|data| EdgeMut::<Self> {
-                            id: EdgeId::new_directed(lhs, rhs),
+                            id: DiMatrixEdgeId::new(lhs, rhs),
                             source: lhs,
                             target: rhs,
                             data,
@@ -612,7 +600,7 @@ where
                     .unwrap()
                     .as_mut()
                     .map(|data| EdgeMut::<Self> {
-                        id: EdgeId::new_directed(lhs, rhs),
+                        id: DiMatrixEdgeId::new(lhs, rhs),
                         source: lhs,
                         target: rhs,
                         data,
@@ -625,7 +613,7 @@ where
                     .unwrap()
                     .as_mut()
                     .map(|data| EdgeMut::<Self> {
-                        id: EdgeId::new_directed(rhs, lhs),
+                        id: DiMatrixEdgeId::new(rhs, lhs),
                         source: rhs,
                         target: lhs,
                         data,
@@ -644,7 +632,7 @@ where
 
     #[inline]
     fn contains_edge(&self, edge: Self::EdgeId) -> bool {
-        self.to_edge_position(edge.node_a, edge.node_b)
+        self.to_edge_position(edge.source, edge.target)
             .is_some_and(|edge_index| {
                 self.flattened_edge_data
                     .get(edge_index)
@@ -654,7 +642,7 @@ where
 
     #[inline]
     fn is_adjacent(&self, source: Self::NodeId, target: Self::NodeId) -> bool {
-        self.contains_edge(EdgeId::new_directed(source, target))
+        self.contains_edge(DiMatrixEdgeId::new(source, target))
     }
 
     #[inline]
@@ -910,6 +898,8 @@ fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
 
 #[cfg(test)]
 mod tests {
+    use petgraph_core::test_directed_graph;
+
     use super::{super::*, *};
 
     #[test]
@@ -928,7 +918,7 @@ mod tests {
 
     #[test]
     fn test_remove_node() {
-        let mut graph: MatrixGraph<char, ()> = MatrixGraph::new();
+        let mut graph: MatrixGraph<char, ()> = MatrixGraph::new_directed();
         let node_a = graph.add_node('a');
 
         graph.remove_node(node_a);
@@ -939,7 +929,7 @@ mod tests {
 
     #[test]
     fn test_add_edge() {
-        let mut graph = MatrixGraph::<_, _>::new();
+        let mut graph = MatrixGraph::<_, _>::new_directed();
         let node_a = graph.add_node('a');
         let node_b = graph.add_node('b');
         let node_c = graph.add_node('c');
@@ -953,7 +943,7 @@ mod tests {
     /// Adds an edge that triggers a second extension of the matrix.
     /// From #425
     fn test_add_edge_with_extension() {
-        let mut graph = DiMatrix::<u8, ()>::new();
+        let mut graph = DiMatrix::<u8, ()>::new_directed();
         let _node_0 = graph.add_node(0);
         let node_1 = graph.add_node(1);
         let node_2 = graph.add_node(2);
@@ -965,9 +955,9 @@ mod tests {
         graph.add_edge(node_2, node_4, ());
         assert_eq!(graph.node_count(), 6);
         assert_eq!(graph.edge_count(), 3);
-        assert!(graph.contains_edge(DirEdgeId::new_directed(node_2, node_1)));
-        assert!(graph.contains_edge(DirEdgeId::new_directed(node_2, node_3)));
-        assert!(graph.contains_edge(DirEdgeId::new_directed(node_2, node_4)));
+        assert!(graph.contains_edge(DiMatrixEdgeId::new(node_2, node_1)));
+        assert!(graph.contains_edge(DiMatrixEdgeId::new(node_2, node_3)));
+        assert!(graph.contains_edge(DiMatrixEdgeId::new(node_2, node_4)));
     }
 
     #[test]
@@ -983,14 +973,14 @@ mod tests {
         graph.add_edge(node_2, node_3, ());
         assert_eq!(graph.node_count(), 4);
         assert_eq!(graph.edge_count(), 3);
-        assert!(graph.contains_edge(DirEdgeId::new_directed(node_1, node_0)));
-        assert!(graph.contains_edge(DirEdgeId::new_directed(node_1, node_1)));
-        assert!(graph.contains_edge(DirEdgeId::new_directed(node_2, node_3)));
+        assert!(graph.contains_edge(DiMatrixEdgeId::new(node_1, node_0)));
+        assert!(graph.contains_edge(DiMatrixEdgeId::new(node_1, node_1)));
+        assert!(graph.contains_edge(DiMatrixEdgeId::new(node_2, node_3)));
     }
 
     #[test]
     fn test_add_edge_with_data() {
-        let mut graph = MatrixGraph::<_, _>::new();
+        let mut graph = MatrixGraph::<_, _>::new_directed();
         let node_a = graph.add_node('a');
         let node_b = graph.add_node('b');
         let node_c = graph.add_node('c');
@@ -998,13 +988,13 @@ mod tests {
         graph.add_edge(node_b, node_c, false);
         assert!(
             graph
-                .edge(DirEdgeId::new_directed(node_a, node_b))
+                .edge(DiMatrixEdgeId::new(node_a, node_b))
                 .unwrap()
                 .data
         );
         assert!(
             !*graph
-                .edge(DirEdgeId::new_directed(node_b, node_c))
+                .edge(DiMatrixEdgeId::new(node_b, node_c))
                 .unwrap()
                 .data
         );
@@ -1012,7 +1002,7 @@ mod tests {
 
     #[test]
     fn test_clear() {
-        let mut graph = MatrixGraph::<_, _>::new();
+        let mut graph = MatrixGraph::<_, _>::new_directed();
         let node_a = graph.add_node('a');
         let node_b = graph.add_node('b');
         let node_c = graph.add_node('c');
@@ -1051,16 +1041,16 @@ mod tests {
         let node_a = graph.add_node(());
         let node_b = graph.add_node(());
 
-        assert!(!graph.contains_edge(DirEdgeId::new_directed(node_a, node_b)));
+        assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
 
         graph.add_edge(node_a, node_b, 12);
 
-        assert!(graph.contains_edge(DirEdgeId::new_directed(node_a, node_b)));
+        assert!(graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 1);
         assert_eq!(
             graph
-                .edge(DirEdgeId::new_directed(node_a, node_b))
+                .edge(DiMatrixEdgeId::new(node_a, node_b))
                 .unwrap()
                 .data,
             &12
@@ -1068,7 +1058,7 @@ mod tests {
 
         graph.remove_edge(node_a, node_b);
 
-        assert!(!graph.contains_edge(DirEdgeId::new_directed(node_a, node_b)));
+        assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
     }
 
@@ -1092,17 +1082,17 @@ mod tests {
         let node_a = graph.add_node(());
         let node_b = graph.add_node(());
 
-        assert!(!graph.contains_edge(DirEdgeId::new_directed(node_a, node_b)));
+        assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
 
         let val = 12.0;
         graph.add_edge(node_a, node_b, val);
 
-        assert!(graph.contains_edge(DirEdgeId::new_directed(node_a, node_b)));
+        assert!(graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 1);
         assert!(
             (graph
-                .edge(DirEdgeId::new_directed(node_a, node_b))
+                .edge(DiMatrixEdgeId::new(node_a, node_b))
                 .unwrap()
                 .data
                 - val)
@@ -1112,14 +1102,14 @@ mod tests {
 
         graph.remove_edge(node_a, node_b);
 
-        assert!(!graph.contains_edge(DirEdgeId::new_directed(node_a, node_b)));
+        assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
     #[should_panic = "called `Option::unwrap()` on a `None` value"]
     fn test_remove_edge() {
-        let mut graph = MatrixGraph::<char, u32>::new();
+        let mut graph = MatrixGraph::<char, u32>::new_directed();
         let node_a = graph.add_node('a');
         let node_b = graph.add_node('b');
         let node_c = graph.add_node('c');
@@ -1128,4 +1118,36 @@ mod tests {
         assert_eq!(graph.remove_edge(node_a, node_b), 1);
         assert_eq!(graph.remove_edge(node_a, node_b), 0);
     }
+
+    fn remove_node(
+        graph: &mut MatrixGraph<(), (), foldhash::fast::RandomState, Option<()>, Directed>,
+        node: NodeId,
+    ) {
+        graph.remove_node(node);
+    }
+
+    fn add_edge(
+        graph: &mut MatrixGraph<(), (), foldhash::fast::RandomState, Option<()>, Directed>,
+        source: NodeId,
+        target: NodeId,
+        _: (),
+    ) -> DiMatrixEdgeId {
+        graph.add_edge(source, target, ());
+        DiMatrixEdgeId::new(source, target)
+    }
+
+    fn remove_edge(
+        graph: &mut MatrixGraph<(), (), foldhash::fast::RandomState, Option<()>, Directed>,
+        edge_id: DiMatrixEdgeId,
+    ) {
+        graph.remove_edge(edge_id.source, edge_id.target);
+    }
+
+    test_directed_graph!(
+        MatrixGraph::<(), (), foldhash::fast::RandomState, Option<()>, Directed>::new_directed,
+        MatrixGraph::<(), (), foldhash::fast::RandomState, Option<()>, Directed>::add_node,
+        remove_node,
+        add_edge,
+        remove_edge
+    );
 }
