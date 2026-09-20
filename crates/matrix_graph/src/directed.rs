@@ -421,7 +421,7 @@ where
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         neighbor_iter(&self.flattened_edge_data, node, self.node_capacity)
-            .map(|(neighbor, _, _)| neighbor)
+            .map(move |(node_a, node_b, _)| if node == node_a { node_b } else { node_a })
     }
 
     // Edges between nodes
@@ -544,67 +544,18 @@ where
         lhs: Self::NodeId,
         rhs: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        let edge_index_one = self.to_edge_position(lhs, rhs);
-        let edge_index_two = self.to_edge_position(rhs, lhs);
-        match (edge_index_one, edge_index_two) {
-            (Some(edge_index_one), Some(edge_index_two)) => {
-                if edge_index_one < edge_index_two {
-                    let (first_part, second_part) =
-                        self.flattened_edge_data.split_at_mut(edge_index_two);
-                    let first_iter = first_part
-                        .get_mut(edge_index_one)
-                        .unwrap()
-                        .as_mut()
-                        .map(|data| EdgeMut::<Self> {
-                            id: DiMatrixEdgeId::new(lhs, rhs),
-                            source: lhs,
-                            target: rhs,
-                            data,
-                        })
-                        .into_iter();
-                    let second_iter = second_part
-                        .get_mut(0)
-                        .unwrap()
-                        .as_mut()
-                        .map(|data| EdgeMut::<Self> {
-                            id: DiMatrixEdgeId::new(rhs, lhs),
-                            source: rhs,
-                            target: lhs,
-                            data,
-                        })
-                        .into_iter();
-                    Either::Left(first_iter.chain(second_iter))
-                } else {
-                    let (first_part, second_part) =
-                        self.flattened_edge_data.split_at_mut(edge_index_one);
-                    let first_iter = second_part
-                        .get_mut(0)
-                        .unwrap()
-                        .as_mut()
-                        .map(|data| EdgeMut::<Self> {
-                            id: DiMatrixEdgeId::new(rhs, lhs),
-                            source: rhs,
-                            target: lhs,
-                            data,
-                        })
-                        .into_iter();
-                    let second_iter = first_part
-                        .get_mut(edge_index_two)
-                        .unwrap()
-                        .as_mut()
-                        .map(|data| EdgeMut::<Self> {
-                            id: DiMatrixEdgeId::new(lhs, rhs),
-                            source: lhs,
-                            target: rhs,
-                            data,
-                        })
-                        .into_iter();
-                    Either::Left(first_iter.chain(second_iter))
-                }
-            }
-            (Some(edge_index_one), None) => Either::Right(Either::Left(
+        if lhs.0 >= self.node_capacity || rhs.0 >= self.node_capacity {
+            return Either::Left(None.into_iter());
+        }
+
+        // We use to_edge_position_unchecked from now on, since we just checked that lhs and rhs are
+        // within bounds.
+        if rhs == lhs {
+            let edge_index = self.to_edge_position_unchecked(lhs, rhs);
+
+            return Either::Right(Either::Left(
                 self.flattened_edge_data
-                    .get_mut(edge_index_one)
+                    .get_mut(edge_index)
                     .unwrap()
                     .as_mut()
                     .map(|data| EdgeMut::<Self> {
@@ -614,22 +565,38 @@ where
                         data,
                     })
                     .into_iter(),
-            )),
-            (None, Some(edge_index_two)) => Either::Right(Either::Right(
-                self.flattened_edge_data
-                    .get_mut(edge_index_two)
-                    .unwrap()
-                    .as_mut()
-                    .map(|data| EdgeMut::<Self> {
-                        id: DiMatrixEdgeId::new(rhs, lhs),
-                        source: rhs,
-                        target: lhs,
-                        data,
-                    })
-                    .into_iter(),
-            )),
-            (None, None) => Either::Right(Either::Left(None.into_iter())),
+            ));
         }
+
+        let (node_a, node_b) = if lhs < rhs { (lhs, rhs) } else { (rhs, lhs) };
+
+        let edge_index_one = self.to_edge_position_unchecked(node_a, node_b);
+        let edge_index_two = self.to_edge_position_unchecked(node_b, node_a);
+
+        let (first_part, second_part) = self.flattened_edge_data.split_at_mut(edge_index_two);
+        let first_iter = first_part
+            .get_mut(edge_index_one)
+            .unwrap()
+            .as_mut()
+            .map(|data| EdgeMut::<Self> {
+                id: DiMatrixEdgeId::new(node_a, node_b),
+                source: node_a,
+                target: node_b,
+                data,
+            })
+            .into_iter();
+        let second_iter = second_part
+            .get_mut(0)
+            .unwrap()
+            .as_mut()
+            .map(|data| EdgeMut::<Self> {
+                id: DiMatrixEdgeId::new(node_b, node_a),
+                source: node_b,
+                target: node_a,
+                data,
+            })
+            .into_iter();
+        Either::Right(Either::Right(first_iter.chain(second_iter)))
     }
 
     // Existence checks
@@ -762,7 +729,7 @@ fn incoming_neighbor_iter_mut<'b, Null: NicheWrapper + 'b>(
     target: NodeId,
     num_nodes: usize,
 ) -> impl Iterator<Item = (NodeId, &'b mut <Null as NicheWrapper>::Wrapped)> {
-    let start_index = target.0 * num_nodes;
+    let start_index = target.0;
     node_adjacencies
         .iter_mut()
         .skip(start_index)
@@ -816,43 +783,42 @@ fn neighbor_iter<'a, Null: NicheWrapper + 'a>(
     node: NodeId,
     num_nodes: usize,
 ) -> impl Iterator<Item = (NodeId, NodeId, &'a <Null as NicheWrapper>::Wrapped)> {
-    let mut slice = node_adjacencies.as_slice();
-    let first_iter = {
-        if node.0 == 0 {
-            None
-        } else {
-            let bound = (node.0 - 1) * num_nodes;
-            let (start, end) = slice.split_at(bound);
-            slice = end;
-            Some(
-                start
-                    .iter()
-                    .skip(node.0)
-                    .step_by(num_nodes)
-                    .enumerate()
-                    .filter_map(move |(i, adj)| adj.as_ref().map(|data| (NodeId(i), node, data))),
-            )
-        }
-    };
-    let (start, end) = slice.split_at(num_nodes);
+    // If the node index is out of bounds, return an empty iterator.
+    if node.0 >= num_nodes {
+        return Either::Left(None.into_iter());
+    }
 
-    let second_iter = start
-        .iter()
-        .enumerate()
-        .filter_map(move |(i, adj)| adj.as_ref().map(|data| (node, NodeId(i), data)));
+    let node_row_start = node.0 * num_nodes;
+    let (rows_before, remaining) = node_adjacencies.split_at(node_row_start);
+    let (node_row, rows_after) = remaining.split_at(num_nodes);
 
-    let third_iter = end
+    let incoming_before = rows_before
         .iter()
         .skip(node.0)
         .step_by(num_nodes)
         .enumerate()
-        .filter_map(move |(i, adj)| adj.as_ref().map(|data| (NodeId(i), node, data)));
+        .filter_map(move |(source, adjacency)| {
+            adjacency.as_ref().map(|data| (NodeId(source), node, data))
+        });
 
-    if let Some(first_iter) = first_iter {
-        Either::Left(first_iter.chain(second_iter).chain(third_iter))
-    } else {
-        Either::Right(second_iter.chain(third_iter))
-    }
+    let outgoing = node_row
+        .iter()
+        .enumerate()
+        .filter_map(move |(target, adjacency)| {
+            adjacency.as_ref().map(|data| (node, NodeId(target), data))
+        });
+
+    let incoming_after = rows_after
+        .iter()
+        .skip(node.0)
+        .step_by(num_nodes)
+        .enumerate()
+        .filter_map(move |(offset, adjacency)| {
+            let source = NodeId(node.0 + 1 + offset);
+            adjacency.as_ref().map(|data| (source, node, data))
+        });
+
+    Either::Right(incoming_before.chain(outgoing).chain(incoming_after))
 }
 
 /// Returns an iterator over the neighbors of a node with a mutable reference to the edge data.
@@ -865,43 +831,42 @@ fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
     node: NodeId,
     num_nodes: usize,
 ) -> impl Iterator<Item = (NodeId, NodeId, &'a mut <Null as NicheWrapper>::Wrapped)> {
-    let mut slice = node_adjacencies.as_mut_slice();
-    let first_iter = {
-        if node.0 == 0 {
-            None
-        } else {
-            let bound = (node.0 - 1) * num_nodes;
-            let (start, end) = slice.split_at_mut(bound);
-            slice = end;
-            Some(
-                start
-                    .iter_mut()
-                    .skip(node.0)
-                    .step_by(num_nodes)
-                    .enumerate()
-                    .filter_map(move |(i, adj)| adj.as_mut().map(|data| (NodeId(i), node, data))),
-            )
-        }
-    };
-    let (start, end) = slice.split_at_mut(num_nodes);
+    // If the node index is out of bounds, return an empty iterator.
+    if node.0 >= num_nodes {
+        return Either::Left(None.into_iter());
+    }
 
-    let second_iter = start
-        .iter_mut()
-        .enumerate()
-        .filter_map(move |(i, adj)| adj.as_mut().map(|data| (node, NodeId(i), data)));
+    let node_row_start = node.0 * num_nodes;
+    let (rows_before, remaining) = node_adjacencies.split_at_mut(node_row_start);
+    let (node_row, rows_after) = remaining.split_at_mut(num_nodes);
 
-    let third_iter = end
+    let incoming_before = rows_before
         .iter_mut()
         .skip(node.0)
         .step_by(num_nodes)
         .enumerate()
-        .filter_map(move |(i, adj)| adj.as_mut().map(|data| (NodeId(i), node, data)));
+        .filter_map(move |(source, adjacency)| {
+            adjacency.as_mut().map(|data| (NodeId(source), node, data))
+        });
 
-    if let Some(first_iter) = first_iter {
-        Either::Left(first_iter.chain(second_iter).chain(third_iter))
-    } else {
-        Either::Right(second_iter.chain(third_iter))
-    }
+    let outgoing = node_row
+        .iter_mut()
+        .enumerate()
+        .filter_map(move |(target, adjacency)| {
+            adjacency.as_mut().map(|data| (node, NodeId(target), data))
+        });
+
+    let incoming_after = rows_after
+        .iter_mut()
+        .skip(node.0)
+        .step_by(num_nodes)
+        .enumerate()
+        .filter_map(move |(offset, adjacency)| {
+            let source = NodeId(node.0 + 1 + offset);
+            adjacency.as_mut().map(|data| (source, node, data))
+        });
+
+    Either::Right(incoming_before.chain(outgoing).chain(incoming_after))
 }
 
 #[cfg(test)]
