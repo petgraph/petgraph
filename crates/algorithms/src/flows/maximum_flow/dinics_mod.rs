@@ -9,7 +9,7 @@ use petgraph_core::{
 
 use super::{other_endpoint, residual_capacity};
 use crate::{
-    flows::maximum_flow::adjusted_residual_flow,
+    flows::maximum_flow::{MaxFlowReturn, adjusted_residual_flow},
     traits::{Bounded, Measure, Zero},
 };
 
@@ -79,21 +79,16 @@ pub struct DinicsOutput<'graph, G: Graph + 'graph> {
     flows: Vec<G::EdgeData<'graph>>,
 }
 
-impl<'graph, G: Graph + 'graph> DinicsOutput<'graph, G> {
-    /// Returns the maximum flow value computed by the algorithm.
-    pub fn max_flow(&self) -> &G::EdgeData<'graph> {
+impl<'graph, G: Graph + 'graph> MaxFlowReturn<'graph, G> for DinicsOutput<'graph, G> {
+    fn max_flow(&self) -> &G::EdgeData<'graph> {
         &self.max_flow
     }
 
-    /// Returns the flow of each edge computed by the algorithm. The slice is indexed by the
-    /// graph's edge indices.
-    pub fn flows(&self) -> &[G::EdgeData<'graph>] {
+    fn flows(&self) -> &[G::EdgeData<'graph>] {
         &self.flows
     }
 
-    /// Consumes the struct and returns a tuple of the maximum flow value and a vector of the flow
-    /// of each edge. The vector is indexed by the graph's edge indices.
-    pub fn into_max_flow_and_flow_vec(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
+    fn into_max_flow_and_flow_vec(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
         (self.max_flow, self.flows)
     }
 }

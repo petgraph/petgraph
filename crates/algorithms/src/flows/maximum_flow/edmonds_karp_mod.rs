@@ -13,7 +13,9 @@ use petgraph_core::{
 
 use crate::{
     alloc::collections::VecDeque,
-    flows::maximum_flow::{adjusted_residual_flow, other_endpoint, residual_capacity},
+    flows::maximum_flow::{
+        MaxFlowReturn, adjusted_residual_flow, other_endpoint, residual_capacity,
+    },
     traits::{Bounded, Measure, Zero},
 };
 
@@ -89,21 +91,16 @@ pub struct EdmondsKarpOutput<'graph, G: Graph + 'graph> {
     flows: Vec<G::EdgeData<'graph>>,
 }
 
-impl<'graph, G: Graph + 'graph> EdmondsKarpOutput<'graph, G> {
-    /// Returns the maximum flow value computed by the algorithm.
-    pub fn max_flow(&self) -> &G::EdgeData<'graph> {
+impl<'graph, G: Graph + 'graph> MaxFlowReturn<'graph, G> for EdmondsKarpOutput<'graph, G> {
+    fn max_flow(&self) -> &G::EdgeData<'graph> {
         &self.max_flow
     }
 
-    /// Returns the flow of each edge computed by the algorithm. The slice is indexed by the
-    /// graph's edge indices.
-    pub fn flows(&self) -> &[G::EdgeData<'graph>] {
+    fn flows(&self) -> &[G::EdgeData<'graph>] {
         &self.flows
     }
 
-    /// Consumes the struct and returns a tuple of the maximum flow value and a vector of the flow
-    /// of each edge. The vector is indexed by the graph's edge indices.
-    pub fn into_max_flow_and_flow_vec(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
+    fn into_max_flow_and_flow_vec(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
         (self.max_flow, self.flows)
     }
 }
