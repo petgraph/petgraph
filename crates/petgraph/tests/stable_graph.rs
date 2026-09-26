@@ -17,6 +17,8 @@ use petgraph::{
     stable_graph::{edge_index as e, node_index as n},
     visit::{EdgeIndexable, IntoEdgeReferences, IntoNodeReferences, NodeIndexable},
 };
+#[cfg(feature = "rayon")]
+use rayon::iter::ParallelIterator;
 
 fn assert_graph_consistent<N, E, Ty, Ix>(g: &StableGraph<N, E, Ty, Ix>)
 where
@@ -1307,4 +1309,56 @@ fn test_edges_connecting_iteration_order() {
             edge_five, edge_four, edge_three, edge_two, edge_one, edge_zero
         ]
     );
+}
+
+#[cfg(feature = "rayon")]
+#[test]
+fn test_parallel_node_weights() {
+    let mut graph: StableDiGraph<i32, i32> = StableGraph::new();
+    for i in 0..100 {
+        graph.add_node(i);
+    }
+    let result = graph.par_node_weights().copied().collect::<Vec<_>>();
+    let expected = (0..100).collect::<Vec<_>>();
+    assert_eq!(result, expected);
+}
+
+#[cfg(feature = "rayon")]
+#[test]
+fn test_parallel_node_weights_mut() {
+    let mut graph: StableDiGraph<i32, i32> = StableGraph::new();
+    for i in 0..100 {
+        graph.add_node(i);
+    }
+    graph.par_node_weights_mut().for_each(|x| *x *= 2);
+    let result = graph.par_node_weights().copied().collect::<Vec<_>>();
+    let expected = (0..100).map(|x| x * 2).collect::<Vec<_>>();
+    assert_eq!(result, expected);
+}
+
+#[cfg(feature = "rayon")]
+#[test]
+fn test_parallel_edge_weights() {
+    let mut graph: StableDiGraph<i32, i32> = StableGraph::new();
+    for i in 0..100 {
+        graph.add_node(i);
+        graph.add_edge(NodeIndex::new(i as usize), NodeIndex::new(i as usize), i);
+    }
+    let result = graph.par_edge_weights().copied().collect::<Vec<_>>();
+    let expected = (0..100).collect::<Vec<_>>();
+    assert_eq!(result, expected);
+}
+
+#[cfg(feature = "rayon")]
+#[test]
+fn test_parallel_edge_weights_mut() {
+    let mut graph: StableDiGraph<i32, i32> = StableGraph::new();
+    for i in 0..100 {
+        graph.add_node(i);
+        graph.add_edge(NodeIndex::new(i as usize), NodeIndex::new(i as usize), i);
+    }
+    graph.par_edge_weights_mut().for_each(|x| *x *= 2);
+    let result = graph.par_edge_weights().copied().collect::<Vec<_>>();
+    let expected = (0..100).map(|x| x * 2).collect::<Vec<_>>();
+    assert_eq!(result, expected);
 }

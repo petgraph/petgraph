@@ -12,6 +12,8 @@ use core::{
 };
 
 use fixedbitset::FixedBitSet;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 
 use super::{DIRECTIONS, Edge, Frozen, GraphError, Node, Pair, index_twice};
 // reexport those things that are shared with Graph
@@ -681,6 +683,30 @@ where
             .filter_map(|maybe_node| maybe_node.as_mut())
     }
 
+    /// Return a parallel iterator yielding immutable access to all node weights.
+    #[cfg(feature = "rayon")]
+    pub fn par_node_weights(&self) -> impl ParallelIterator<Item = &N>
+    where
+        N: Send + Sync,
+        Ix: Send + Sync,
+    {
+        self.g
+            .par_node_weights()
+            .filter_map(|maybe_node| maybe_node.as_ref())
+    }
+
+    /// Return a parallel iterator yielding mutable access to all node weights.
+    #[cfg(feature = "rayon")]
+    pub fn par_node_weights_mut(&mut self) -> impl ParallelIterator<Item = &mut N>
+    where
+        N: Send + Sync,
+        Ix: Send + Sync,
+    {
+        self.g
+            .par_node_weights_mut()
+            .filter_map(|maybe_node| maybe_node.as_mut())
+    }
+
     /// Return an iterator over the node indices of the graph
     pub fn node_indices(&self) -> NodeIndices<'_, N, Ix> {
         NodeIndices {
@@ -725,6 +751,30 @@ where
     pub fn edge_weights_mut(&mut self) -> impl Iterator<Item = &mut E> {
         self.g
             .edge_weights_mut()
+            .filter_map(|maybe_edge| maybe_edge.as_mut())
+    }
+
+    /// Return a parallel iterator yielding immutable access to all edge weights.
+    #[cfg(feature = "rayon")]
+    pub fn par_edge_weights(&self) -> impl ParallelIterator<Item = &E>
+    where
+        E: Send + Sync,
+        Ix: Send + Sync,
+    {
+        self.g
+            .par_edge_weights()
+            .filter_map(|maybe_edge| maybe_edge.as_ref())
+    }
+
+    /// Return an iterator yielding mutable access to all edge weights.
+    #[cfg(feature = "rayon")]
+    pub fn par_edge_weights_mut(&mut self) -> impl ParallelIterator<Item = &mut E>
+    where
+        E: Send + Sync,
+        Ix: Send + Sync,
+    {
+        self.g
+            .par_edge_weights_mut()
             .filter_map(|maybe_edge| maybe_edge.as_mut())
     }
 
