@@ -540,7 +540,7 @@ pub struct NegativeCycle(pub ());
 /// A graph is bipartite if its nodes can be divided into
 /// two disjoint and indepedent sets U and V such that every edge connects U to one in V.
 ///
-/// This algorithm implements 2-coloring algorithm based on the BFS algorithm.
+/// This algorithm implements 2-coloring algorithm based on the DFS algorithm.
 /// Always treats the input graph as if undirected.
 ///
 /// \* The algorithm checks only the subgraph that is reachable from the `start`.
@@ -561,50 +561,37 @@ pub struct NegativeCycle(pub ());
 pub fn is_bipartite_undirected<G, N, VM>(g: G, start: N) -> bool
 where
     G: GraphRef + Visitable<NodeId = N, Map = VM> + IntoNeighbors<NodeId = N>,
-    N: Copy + PartialEq + core::fmt::Debug,
+    N: Copy,
     VM: VisitMap<N>,
 {
+    #[derive(Copy, Clone)]
+    enum Color {
+        Red,
+        Blue,
+    }
+
     let mut red = g.visit_map();
-    red.visit(start);
     let mut blue = g.visit_map();
 
-    let mut stack = ::alloc::collections::VecDeque::new();
-    stack.push_front(start);
+    let mut dfs_stack = Vec::new();
+    red.visit(start);
+    dfs_stack.push((start, Color::Red));
 
-    while let Some(node) = stack.pop_front() {
-        let is_red = red.is_visited(&node);
-        let is_blue = blue.is_visited(&node);
-
-        assert!(is_red ^ is_blue);
+    while let Some((node, color)) = dfs_stack.pop() {
+        let (same_color, other_color, next_color) = match color {
+            Color::Red => (&red, &mut blue, Color::Blue),
+            Color::Blue => (&blue, &mut red, Color::Red),
+        };
 
         for neighbour in g.neighbors(node) {
-            let is_neigbour_red = red.is_visited(&neighbour);
-            let is_neigbour_blue = blue.is_visited(&neighbour);
-
-            if (is_red && is_neigbour_red) || (is_blue && is_neigbour_blue) {
+            if same_color.is_visited(&neighbour) {
                 return false;
             }
-
-            if !is_neigbour_red && !is_neigbour_blue {
-                //hasn't been visited yet
-
-                match (is_red, is_blue) {
-                    (true, false) => {
-                        blue.visit(neighbour);
-                    }
-                    (false, true) => {
-                        red.visit(neighbour);
-                    }
-                    (_, _) => {
-                        panic!("Invariant doesn't hold");
-                    }
-                }
-
-                stack.push_back(neighbour);
+            if other_color.visit(neighbour) {
+                dfs_stack.push((neighbour, next_color));
             }
         }
     }
-
     true
 }
 
