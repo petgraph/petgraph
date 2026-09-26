@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use petgraph::{Directed, Graph, Undirected, algo::floyd_warshall, prelude::*};
+use petgraph::{
+    Directed, Graph, Undirected,
+    algo::{floyd_warshall, floyd_warshall::floyd_warshall_path},
+    prelude::*,
+};
 
 #[test]
 fn floyd_warshall_uniform_weight() {
@@ -281,6 +285,38 @@ fn floyd_warshall_negative_cycle() {
     });
 
     assert!(res.is_err());
+}
+
+#[test]
+fn floyd_warshall_unreachable_negative_edge_stays_infinite() {
+    let mut graph: Graph<(), i32, Directed> = Graph::new();
+    let a = graph.add_node(());
+    let b = graph.add_node(());
+    let c = graph.add_node(());
+
+    graph.add_edge(b, c, -5);
+
+    let res = floyd_warshall(&graph, |edge| *edge.weight()).unwrap();
+
+    assert_eq!(res[&(a, a)], 0);
+    assert_eq!(res[&(a, b)], i32::MAX);
+    assert_eq!(res[&(a, c)], i32::MAX);
+}
+
+#[test]
+fn floyd_warshall_path_unreachable_negative_edge_stays_infinite() {
+    let mut graph: Graph<(), i32, Directed> = Graph::new();
+    let a = graph.add_node(());
+    let b = graph.add_node(());
+    let c = graph.add_node(());
+
+    graph.add_edge(b, c, -5);
+
+    let (res, prev) = floyd_warshall_path(&graph, |edge| *edge.weight()).unwrap();
+
+    assert_eq!(res[&(a, c)], i32::MAX);
+    assert_eq!(prev[a.index()][c.index()], None);
+    assert_eq!(prev[b.index()][c.index()], Some(b.index()));
 }
 
 #[test]

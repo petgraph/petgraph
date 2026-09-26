@@ -308,6 +308,7 @@ where
     K: BoundedMeasure + Copy,
 {
     let num_of_nodes = graph.node_count();
+    let unreachable = K::max();
 
     // Initialize distances and predecessors for edges
     for edge in graph.edge_references() {
@@ -337,6 +338,9 @@ where
         for i in 0..num_of_nodes {
             for j in 0..num_of_nodes {
                 if let Some(dist) = m_dist {
+                    if dist[i][k] >= unreachable || dist[k][j] >= unreachable {
+                        continue;
+                    }
                     let (result, overflow) = dist[i][k].overflowing_add(dist[k][j]);
                     if !overflow && dist[i][j] > result {
                         dist[i][j] = result;
