@@ -198,7 +198,7 @@ zeroable_impls!(f32, f64);
 
 /// Extra methods for directed and undirected [`MatrixGraph`]s, to simplify their implementations.
 pub trait MatrixGraphExtras<N>: Sealed {
-    type EdgeId;
+    type EdgeId: Copy + Clone;
 
     /// Return the position of the edge from `node_a` to `node_b` in the flattened adjacency matrix.
     ///
@@ -229,10 +229,10 @@ pub trait MatrixGraphExtras<N>: Sealed {
     fn remove_node(&mut self, node: MatrixGraphNodeId) -> Option<N>;
 
     /// Return the source node of the edge with the given `edge_id`.
-    fn edge_id_to_source(edge_id: &Self::EdgeId) -> MatrixGraphNodeId;
+    fn edge_id_to_source(edge_id: Self::EdgeId) -> MatrixGraphNodeId;
 
     /// Return the target node of the edge with the given `edge_id`.
-    fn edge_id_to_target(edge_id: &Self::EdgeId) -> MatrixGraphNodeId;
+    fn edge_id_to_target(edge_id: Self::EdgeId) -> MatrixGraphNodeId;
 }
 
 /// `MatrixGraph<N, E, S, Null, Ty>` is a graph using an adjacency matrix representation.
@@ -277,9 +277,9 @@ pub struct MatrixGraph<
     flattened_edge_data: Vec<Null>,
     /// Node data and management of node indices.
     ///
-    /// Nodes may be in node_data but not be within the current node_capacity, if they are isolated
-    /// nodes. The flattened edge data and thus node_capacity is updated lazily, that is, only once
-    /// an edge adjacent to such a node is actually created.
+    /// Nodes may be in `node_data` but not be within the current `node_capacity`, if they are
+    /// isolated nodes. The flattened edge data and thus `node_capacity` is updated lazily,
+    /// that is, only once an edge adjacent to such a node is actually created.
     node_data: IdStorage<N, S>,
     /// The current edge capacity with respect to the number of nodes. This is used to determine
     /// when the backing matrix needs to be resized.
@@ -399,8 +399,8 @@ where
         data: E,
     ) -> Option<E> {
         let position = self.to_edge_position(
-            <Self as MatrixGraphExtras<N>>::edge_id_to_source(&edge_id),
-            <Self as MatrixGraphExtras<N>>::edge_id_to_target(&edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_source(edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_target(edge_id),
         )?;
         let old_data = core::mem::replace(&mut self.flattened_edge_data[position], Null::new(data));
         if old_data.is_null() {
@@ -423,8 +423,8 @@ where
         data: E,
     ) -> E {
         let position = self.to_edge_position_unchecked(
-            <Self as MatrixGraphExtras<N>>::edge_id_to_source(&edge_id),
-            <Self as MatrixGraphExtras<N>>::edge_id_to_target(&edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_source(edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_target(edge_id),
         );
         let old_data = core::mem::replace(&mut self.flattened_edge_data[position], Null::new(data));
         if old_data.is_null() {
@@ -438,8 +438,8 @@ where
     /// Returns `None` if the edge didn't exist, otherwise returns the previous data.
     pub fn remove_edge(&mut self, edge_id: <Self as MatrixGraphExtras<N>>::EdgeId) -> Option<E> {
         let position = self.to_edge_position(
-            <Self as MatrixGraphExtras<N>>::edge_id_to_source(&edge_id),
-            <Self as MatrixGraphExtras<N>>::edge_id_to_target(&edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_source(edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_target(edge_id),
         )?;
         let old_data = core::mem::take(&mut self.flattened_edge_data[position]).into();
         self.edge_count -= 1;
@@ -455,8 +455,8 @@ where
     #[track_caller]
     pub fn remove_edge_unchecked(&mut self, edge_id: <Self as MatrixGraphExtras<N>>::EdgeId) -> E {
         let position = self.to_edge_position_unchecked(
-            <Self as MatrixGraphExtras<N>>::edge_id_to_source(&edge_id),
-            <Self as MatrixGraphExtras<N>>::edge_id_to_target(&edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_source(edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_target(edge_id),
         );
         let old_data = core::mem::take(&mut self.flattened_edge_data[position])
             .into()
@@ -497,7 +497,7 @@ impl<T, S: BuildHasher> IdStorage<T, S> {
     }
 
     fn contains(&self, id: usize) -> bool {
-        self.elements.get(id).map_or(false, |e| e.is_some())
+        self.elements.get(id).is_some()
     }
 
     fn get_mut(&mut self, id: usize) -> Option<&mut T> {
