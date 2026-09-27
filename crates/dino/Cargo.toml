@@ -1,0 +1,19 @@
+[package]
+name = "petgraph-dino"
+version                = "0.1.0"
+authors.workspace      = true
+edition.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+# We can remove this once crate has been released at least once
+publish                = false
+
+[dependencies]
+petgraph-core = { workspace = true, features = ['alloc'] }
+bitvec = "1.0.1"
+either = "1.9.0" # TODO: Remove
+error-stack = "0.4.0" # TODO: Remove
+
+[dev-dependencies]
+hashbrown = { workspace = true }

@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/core", "crates/matrix_graph", "crates/petgraph", "serialization-tests"]
+members  = ["crates/core", "crates/dino", "crates/matrix_graph", "crates/petgraph", "serialization-tests"]
 resolver = "3"
 
 [workspace.package]
