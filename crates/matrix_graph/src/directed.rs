@@ -43,6 +43,8 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S> Sealed for MatrixGraph<N, E, Dire
 impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
     for MatrixGraph<N, E, Directed, Null, S>
 {
+    type EdgeId = DiMatrixEdgeId;
+
     #[inline]
     fn to_edge_position(
         &self,
@@ -82,28 +84,47 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
     }
 
     #[inline]
-    fn remove_node(&mut self, node: MatrixGraphNodeId) -> N {
-        for (id, _) in self.node_data.iter() {
-            let position = self.to_edge_position(node, MatrixGraphNodeId(id));
-            if let Some(pos) = position {
-                let entry = &mut self.flattened_edge_data[pos];
-                if !entry.is_null() {
-                    *entry = Default::default();
-                    self.edge_count -= 1;
-                }
-            }
+    fn remove_node(&mut self, node: MatrixGraphNodeId) -> Option<N> {
+        if !self.node_data.contains(node.0) {
+            return None;
+        }
 
-            let position = self.to_edge_position(MatrixGraphNodeId(id), node);
-            if let Some(pos) = position {
-                let entry = &mut self.flattened_edge_data[pos];
-                if !entry.is_null() {
-                    *entry = Default::default();
-                    self.edge_count -= 1;
+        // If the node capacity is larger or equal to the node id, then there cannot exist any edges
+        // incident to the node. But the node might still be in the node_data (i.e. the
+        // graph) as an isolated node
+        if node.0 < self.node_capacity {
+            for (id, _) in self.node_data.iter() {
+                let position = self.to_edge_position(node, MatrixGraphNodeId(id));
+                if let Some(pos) = position {
+                    let entry = &mut self.flattened_edge_data[pos];
+                    if !entry.is_null() {
+                        *entry = Default::default();
+                        self.edge_count -= 1;
+                    }
+                }
+
+                let position = self.to_edge_position(MatrixGraphNodeId(id), node);
+                if let Some(pos) = position {
+                    let entry = &mut self.flattened_edge_data[pos];
+                    if !entry.is_null() {
+                        *entry = Default::default();
+                        self.edge_count -= 1;
+                    }
                 }
             }
         }
 
-        self.node_data.remove(node.0)
+        Some(self.node_data.remove(node.0))
+    }
+
+    #[inline]
+    fn edge_id_to_source(edge_id: &Self::EdgeId) -> MatrixGraphNodeId {
+        edge_id.source
+    }
+
+    #[inline]
+    fn edge_id_to_target(edge_id: &Self::EdgeId) -> MatrixGraphNodeId {
+        edge_id.target
     }
 }
 
@@ -1054,7 +1075,7 @@ mod tests {
             &12
         );
 
-        graph.remove_edge(node_a, node_b);
+        graph.remove_edge(DiMatrixEdgeId::new(node_a, node_b));
 
         assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
@@ -1098,7 +1119,7 @@ mod tests {
                 <= 0.0
         );
 
-        graph.remove_edge(node_a, node_b);
+        graph.remove_edge(DiMatrixEdgeId::new(node_a, node_b));
 
         assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
@@ -1113,8 +1134,18 @@ mod tests {
         let node_c = graph.add_node('c');
         graph.add_edge(node_a, node_b, 1);
         graph.add_edge(node_b, node_c, 2);
-        assert_eq!(graph.remove_edge(node_a, node_b), 1);
-        assert_eq!(graph.remove_edge(node_a, node_b), 0);
+        assert_eq!(
+            graph
+                .remove_edge(DiMatrixEdgeId::new(node_a, node_b))
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            graph
+                .remove_edge(DiMatrixEdgeId::new(node_a, node_b))
+                .unwrap(),
+            0
+        );
     }
 
     fn remove_node(
@@ -1138,7 +1169,7 @@ mod tests {
         graph: &mut MatrixGraph<(), (), Directed, Option<()>, foldhash::fast::RandomState>,
         edge_id: DiMatrixEdgeId,
     ) {
-        graph.remove_edge(edge_id.source, edge_id.target);
+        graph.remove_edge(edge_id);
     }
 
     test_directed_graph!(

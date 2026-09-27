@@ -5,7 +5,7 @@
 extern crate alloc;
 
 use alloc::{fmt, vec, vec::Vec};
-use core::{cmp, fmt::Display, hash::BuildHasher, marker::PhantomData, mem};
+use core::{cmp, fmt::Display, hash::BuildHasher, marker::PhantomData};
 
 use foldhash::fast::RandomState;
 use indexmap::IndexSet;
@@ -196,19 +196,43 @@ zeroable_impls!(u8, u16, u32, u64, usize);
 zeroable_impls!(i8, i16, i32, i64, isize);
 zeroable_impls!(f32, f64);
 
+/// Extra methods for directed and undirected [`MatrixGraph`]s, to simplify their implementations.
 pub trait MatrixGraphExtras<N>: Sealed {
+    type EdgeId;
+
+    /// Return the position of the edge from `node_a` to `node_b` in the flattened adjacency matrix.
+    ///
+    /// Returns `None` if either of the nodes doesn't exist or if no edge exists between them.
     fn to_edge_position(
         &self,
         node_a: MatrixGraphNodeId,
         node_b: MatrixGraphNodeId,
     ) -> Option<usize>;
+
+    /// Return the position of the edge from `node_a` to `node_b` in the flattened adjacency matrix.
+    ///
+    /// # Panics
+    /// May panic if either of the nodes doesn't exist or if no edge exists between them.
     fn to_edge_position_unchecked(
         &self,
         node_a: MatrixGraphNodeId,
         node_b: MatrixGraphNodeId,
     ) -> usize;
+
+    /// Extends the capacity of the underlying flattened edge data vec for the node.
     fn extend_capacity_for_node(&mut self, new_node_capacity: usize, exact: bool);
-    fn remove_node(&mut self, node: MatrixGraphNodeId) -> N;
+
+    /// Remove `node` from the graph.
+    ///
+    /// Returns `None` if the node doesn't exist, otherwise returns the associated data of the
+    /// removed node.
+    fn remove_node(&mut self, node: MatrixGraphNodeId) -> Option<N>;
+
+    /// Return the source node of the edge with the given `edge_id`.
+    fn edge_id_to_source(edge_id: &Self::EdgeId) -> MatrixGraphNodeId;
+
+    /// Return the target node of the edge with the given `edge_id`.
+    fn edge_id_to_target(edge_id: &Self::EdgeId) -> MatrixGraphNodeId;
 }
 
 /// `MatrixGraph<N, E, S, Null, Ty>` is a graph using an adjacency matrix representation.
@@ -252,6 +276,10 @@ pub struct MatrixGraph<
     /// Edge Data including presence information.
     flattened_edge_data: Vec<Null>,
     /// Node data and management of node indices.
+    ///
+    /// Nodes may be in node_data but not be within the current node_capacity, if they are isolated
+    /// nodes. The flattened edge data and thus node_capacity is updated lazily, that is, only once
+    /// an edge adjacent to such a node is actually created.
     node_data: IdStorage<N, S>,
     /// The current edge capacity with respect to the number of nodes. This is used to determine
     /// when the backing matrix needs to be resized.
@@ -282,9 +310,6 @@ impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraph<N, 
     /// Computes in **O(1)** time.
     ///
     /// Returns the index of the new node.
-    ///
-    /// # Panics
-    /// - If the `MatrixGraph` contains `usize::MAX` nodes already.
     #[track_caller]
     pub fn add_node(&mut self, data: N) -> MatrixGraphNodeId {
         MatrixGraphNodeId(self.node_data.add(data))
@@ -334,68 +359,110 @@ where
     ///
     /// Computes in **O(V)** time, due to the removal of edges with other nodes.
     ///
-    /// # Panics
-    /// - If the `node` does not exist.
+    /// Returns the associated data of the removed node, if it existed.
     #[track_caller]
-    pub fn remove_node(&mut self, node: MatrixGraphNodeId) -> N {
+    pub fn remove_node(&mut self, node: MatrixGraphNodeId) -> Option<N> {
         <Self as MatrixGraphExtras<N>>::remove_node(self, node)
     }
 
-    /// Update the edge from `node_a` to `node_b` to the graph, with its associated data.
+    /// Add an edge from `source` to `target` to the graph, with its associated data.
     ///
-    /// Return the previous data, if any.
+    /// Returns `None` if the edge didn't exist before, otherwise returns the previous data.
     ///
     /// Computes in **O(1)** time, best case.
     /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
-    ///
-    /// # Panics
-    /// - If either of the nodes doesn't exist.
-    #[track_caller]
-    fn update_edge(
+    pub fn add_edge(
         &mut self,
-        node_a: MatrixGraphNodeId,
-        node_b: MatrixGraphNodeId,
+        source: MatrixGraphNodeId,
+        target: MatrixGraphNodeId,
         data: E,
     ) -> Option<E> {
-        self.extend_capacity_for_edge(node_a, node_b);
-        let position = self.to_edge_position_unchecked(node_a, node_b);
-        let old_data = mem::replace(&mut self.flattened_edge_data[position], Null::new(data));
+        self.extend_capacity_for_edge(source, target);
+        // We can safely use the unchecked version here, since we just extended the capacity for the
+        // edge.
+        let position = self.to_edge_position_unchecked(source, target);
+        let old_data = core::mem::replace(&mut self.flattened_edge_data[position], Null::new(data));
         if old_data.is_null() {
             self.edge_count += 1;
         }
         old_data.into()
     }
 
-    /// Add an edge from `node_a` to `node_b` to the graph, with its associated data.
+    /// Update the edge from `node_a` to `node_b` to the graph, with its associated data.
     ///
-    /// Computes in **O(1)** time, best case.
-    /// Computes in **O(|V|^2)** time, worst case (matrix needs to be re-allocated).
+    /// Returns `None` if the edge didn't exist before, otherwise returns the previous data.
     ///
-    /// # Panics
-    /// - If either of the nodes doesn't exist.
-    /// - If an edge already exists from `node_a` to `node_b`.
-    #[track_caller]
-    pub fn add_edge(&mut self, node_a: MatrixGraphNodeId, node_b: MatrixGraphNodeId, data: E) {
-        let old_edge_id = self.update_edge(node_a, node_b, data);
-        assert!(old_edge_id.is_none());
+    /// Computes in **O(1)** time.
+    pub fn update_edge(
+        &mut self,
+        edge_id: <Self as MatrixGraphExtras<N>>::EdgeId,
+        data: E,
+    ) -> Option<E> {
+        let position = self.to_edge_position(
+            <Self as MatrixGraphExtras<N>>::edge_id_to_source(&edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_target(&edge_id),
+        )?;
+        let old_data = core::mem::replace(&mut self.flattened_edge_data[position], Null::new(data));
+        if old_data.is_null() {
+            self.edge_count += 1;
+        }
+        old_data.into()
     }
 
-    /// Remove the edge from `node_a` to `node_b` from the graph.
+    /// Update the edge from `node_a` to `node_b` to the graph, with its associated data.
+    ///
+    /// Returns the previous data for the edge.
+    ///
+    /// Computes in **O(1)** time.
     ///
     /// # Panics
-    /// - If either of the nodes doesn't exist.
-    /// - If no edge exists between `node_a` and `node_b`.
+    /// - If the edge does not exist in the graph.
+    pub fn update_edge_unchecked(
+        &mut self,
+        edge_id: <Self as MatrixGraphExtras<N>>::EdgeId,
+        data: E,
+    ) -> E {
+        let position = self.to_edge_position_unchecked(
+            <Self as MatrixGraphExtras<N>>::edge_id_to_source(&edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_target(&edge_id),
+        );
+        let old_data = core::mem::replace(&mut self.flattened_edge_data[position], Null::new(data));
+        if old_data.is_null() {
+            self.edge_count += 1;
+        }
+        old_data.into().unwrap()
+    }
+
+    /// Remove the edge with the given [`DiMatrixEdgeId`] from the graph.
+    ///
+    /// Returns `None` if the edge didn't exist, otherwise returns the previous data.
+    pub fn remove_edge(&mut self, edge_id: <Self as MatrixGraphExtras<N>>::EdgeId) -> Option<E> {
+        let position = self.to_edge_position(
+            <Self as MatrixGraphExtras<N>>::edge_id_to_source(&edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_target(&edge_id),
+        )?;
+        let old_data = core::mem::take(&mut self.flattened_edge_data[position]).into();
+        self.edge_count -= 1;
+        old_data
+    }
+
+    /// Remove the edge with the given [`DiMatrixEdgeId`] from the graph.
+    ///
+    /// Returns the previous data for the edge.
+    ///
+    /// # Panics
+    /// - If the edge does not exist in the graph.
     #[track_caller]
-    pub fn remove_edge(&mut self, node_a: MatrixGraphNodeId, node_b: MatrixGraphNodeId) -> E {
-        let position = self
-            .to_edge_position(node_a, node_b)
-            .expect("No edge found between the nodes.");
-        let old_data = mem::take(&mut self.flattened_edge_data[position])
+    pub fn remove_edge_unchecked(&mut self, edge_id: <Self as MatrixGraphExtras<N>>::EdgeId) -> E {
+        let position = self.to_edge_position_unchecked(
+            <Self as MatrixGraphExtras<N>>::edge_id_to_source(&edge_id),
+            <Self as MatrixGraphExtras<N>>::edge_id_to_target(&edge_id),
+        );
+        let old_data = core::mem::take(&mut self.flattened_edge_data[position])
             .into()
             .unwrap();
-        let old_data: Option<_> = old_data.into();
         self.edge_count -= 1;
-        old_data.unwrap()
+        old_data
     }
 }
 
@@ -427,6 +494,10 @@ impl<T, S: BuildHasher> IdStorage<T, S> {
 
     fn get(&self, id: usize) -> Option<&T> {
         self.elements.get(id)?.as_ref()
+    }
+
+    fn contains(&self, id: usize) -> bool {
+        self.elements.get(id).map_or(false, |e| e.is_some())
     }
 
     fn get_mut(&mut self, id: usize) -> Option<&mut T> {
