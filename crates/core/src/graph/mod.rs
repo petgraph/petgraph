@@ -7,9 +7,9 @@ use core::borrow::{Borrow, BorrowMut};
 
 pub use self::{
     adjacent::{Predecessors, Successors},
-    directed::DirectedGraph,
+    directed::{Directed, DirectedGraph},
     disjoint::DisjointMutGraph,
-    undirected::UndirectedGraph,
+    undirected::{Undirected, UndirectedGraph},
 };
 use crate::id::Id;
 

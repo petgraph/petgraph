@@ -4,6 +4,9 @@ use crate::{
     node::{NodeMut, NodeRef},
 };
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Directed;
+
 pub trait DirectedGraph: Graph {
     #[inline]
     fn density_hint(&self) -> DensityHint {
