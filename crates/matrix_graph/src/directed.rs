@@ -118,12 +118,12 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
     }
 
     #[inline]
-    fn edge_id_to_source(edge_id: &Self::EdgeId) -> MatrixGraphNodeId {
+    fn edge_id_to_source(edge_id: Self::EdgeId) -> MatrixGraphNodeId {
         edge_id.source
     }
 
     #[inline]
-    fn edge_id_to_target(edge_id: &Self::EdgeId) -> MatrixGraphNodeId {
+    fn edge_id_to_target(edge_id: Self::EdgeId) -> MatrixGraphNodeId {
         edge_id.target
     }
 }
