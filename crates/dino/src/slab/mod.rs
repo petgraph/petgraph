@@ -8,8 +8,6 @@ pub(crate) mod secondary;
 use alloc::{vec, vec::Vec};
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, ptr};
 
-use petgraph_core::storage::sequential::GraphIdBijection;
-
 use crate::slab::entry::{Entry, State};
 pub(crate) use crate::slab::{generation::Generation, id::EntryId, key::Key};
 
@@ -359,10 +357,12 @@ where
         }
     }
 
+    /// Returns the number of occupied entries in the slab.
     pub(crate) fn len(&self) -> usize {
         self.entries.len() - self.free.len()
     }
 
+    /// Returns the total number of entries in the slab, including free entries.
     pub(crate) fn total_len(&self) -> usize {
         self.entries.len()
     }
@@ -424,27 +424,6 @@ where
             reverse,
             _lifetime: PhantomData,
         }
-    }
-}
-
-impl<K> GraphIdBijection<K> for SlabIndexMapper<'_, K>
-where
-    K: Key,
-{
-    fn max(&self) -> usize {
-        self.reverse.len()
-    }
-
-    fn get(&self, from: K) -> Option<usize> {
-        self.lookup.get(from.into_id().index()).copied().flatten()
-    }
-
-    fn index(&self, from: K) -> usize {
-        self.lookup[from.into_id().index()].expect("tried to access vacant entry")
-    }
-
-    fn reverse(&self, to: usize) -> Option<K> {
-        self.reverse.get(to).copied().flatten()
     }
 }
 

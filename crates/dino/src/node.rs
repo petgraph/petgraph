@@ -1,7 +1,8 @@
-use petgraph_core::{edge::EdgeId, node::NodeId};
+use petgraph_core::id::Id;
 
 use crate::{
     closure::UniqueVec,
+    edge::DinoEdgeId,
     iter::closure::{
         EdgeBetweenIterator, EdgeIdClosureIter, EdgeIntersectionIterator, EdgeIterator,
         NeighbourIterator, NodeIdClosureIter,
@@ -9,27 +10,37 @@ use crate::{
     slab::{EntryId, Key},
 };
 
-impl Key for NodeId {
-    #[inline]
+/// TODO: Change
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct DinoNodeId(u32);
+
+impl Key for DinoNodeId {
     fn from_id(id: EntryId) -> Self {
-        Self::new(id.into_usize())
+        Self(id.raw())
     }
 
-    #[inline]
     fn into_id(self) -> EntryId {
-        EntryId::new_unchecked(self.into_inner())
+        EntryId::new_unchecked(self.0 as usize)
     }
 }
 
-pub(crate) type NodeSlab<T> = crate::slab::Slab<NodeId, Node<T>>;
+impl core::fmt::Display for DinoNodeId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DinoNodeId({})", self.0)
+    }
+}
+
+impl Id for DinoNodeId {}
+
+pub(crate) type NodeSlab<T> = crate::slab::Slab<DinoNodeId, Node<T>>;
 
 #[derive(Debug, Clone)]
 pub(crate) struct NodeClosures {
-    outgoing_nodes: UniqueVec<NodeId>,
-    incoming_nodes: UniqueVec<NodeId>,
+    outgoing_nodes: UniqueVec<DinoNodeId>,
+    incoming_nodes: UniqueVec<DinoNodeId>,
 
-    outgoing_edges: UniqueVec<EdgeId>,
-    incoming_edges: UniqueVec<EdgeId>,
+    outgoing_edges: UniqueVec<DinoEdgeId>,
+    incoming_edges: UniqueVec<DinoEdgeId>,
 }
 
 impl NodeClosures {
@@ -43,35 +54,35 @@ impl NodeClosures {
         }
     }
 
-    pub(crate) fn insert_outgoing_node(&mut self, node: NodeId) {
+    pub(crate) fn insert_outgoing_node(&mut self, node: DinoNodeId) {
         self.outgoing_nodes.insert(node);
     }
 
-    pub(crate) fn remove_outgoing_node(&mut self, node: NodeId) {
+    pub(crate) fn remove_outgoing_node(&mut self, node: DinoNodeId) {
         self.outgoing_nodes.remove(&node);
     }
 
-    pub(crate) fn insert_incoming_node(&mut self, node: NodeId) {
+    pub(crate) fn insert_incoming_node(&mut self, node: DinoNodeId) {
         self.incoming_nodes.insert(node);
     }
 
-    pub(crate) fn remove_incoming_node(&mut self, node: NodeId) {
+    pub(crate) fn remove_incoming_node(&mut self, node: DinoNodeId) {
         self.incoming_nodes.remove(&node);
     }
 
-    pub(crate) fn insert_outgoing_edge(&mut self, edge: EdgeId) {
+    pub(crate) fn insert_outgoing_edge(&mut self, edge: DinoEdgeId) {
         self.outgoing_edges.insert(edge);
     }
 
-    pub(crate) fn remove_outgoing_edge(&mut self, edge: EdgeId) {
+    pub(crate) fn remove_outgoing_edge(&mut self, edge: DinoEdgeId) {
         self.outgoing_edges.remove(&edge);
     }
 
-    pub(crate) fn insert_incoming_edge(&mut self, edge: EdgeId) {
+    pub(crate) fn insert_incoming_edge(&mut self, edge: DinoEdgeId) {
         self.incoming_edges.insert(edge);
     }
 
-    pub(crate) fn remove_incoming_edge(&mut self, edge: EdgeId) {
+    pub(crate) fn remove_incoming_edge(&mut self, edge: DinoEdgeId) {
         self.incoming_edges.remove(&edge);
     }
 
@@ -98,7 +109,7 @@ impl NodeClosures {
         self.incoming_edges.iter().copied()
     }
 
-    pub(crate) fn edges(&self) -> EdgeIterator {
+    pub(crate) fn incident_edges(&self) -> EdgeIterator {
         EdgeIterator::new(
             self.outgoing_edges.iter().copied(),
             self.incoming_edges.iter().copied(),
@@ -137,14 +148,14 @@ impl NodeClosures {
 
 #[derive(Debug, Clone)]
 pub(crate) struct Node<T> {
-    pub(crate) id: NodeId,
+    pub(crate) id: DinoNodeId,
     pub(crate) weight: T,
 
     pub(crate) closures: NodeClosures,
 }
 
 impl<T> Node<T> {
-    pub(crate) const fn new(id: NodeId, weight: T) -> Self {
+    pub(crate) const fn new(id: DinoNodeId, weight: T) -> Self {
         Self {
             id,
             weight,

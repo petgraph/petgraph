@@ -1,11 +1,12 @@
 use core::{cmp::Ordering, iter::Peekable};
 
-use petgraph_core::{edge::EdgeId, node::NodeId};
+use crate::{
+    edge::DinoEdgeId,
+    node::{DinoNodeId, NodeClosures},
+};
 
-use crate::node::NodeClosures;
-
-pub(crate) type NodeIdClosureIter<'a> = core::iter::Copied<core::slice::Iter<'a, NodeId>>;
-pub(crate) type EdgeIdClosureIter<'a> = core::iter::Copied<core::slice::Iter<'a, EdgeId>>;
+pub(crate) type NodeIdClosureIter<'a> = core::iter::Copied<core::slice::Iter<'a, DinoNodeId>>;
+pub(crate) type EdgeIdClosureIter<'a> = core::iter::Copied<core::slice::Iter<'a, DinoEdgeId>>;
 
 /// Computes the union of two sorted iterators with unique elements.
 ///
@@ -143,7 +144,7 @@ impl<'a> NeighbourIterator<'a> {
 }
 
 impl<'a> Iterator for NeighbourIterator<'a> {
-    type Item = NodeId;
+    type Item = DinoNodeId;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
@@ -162,7 +163,7 @@ impl<'a> EdgeIterator<'a> {
 }
 
 impl<'a> Iterator for EdgeIterator<'a> {
-    type Item = EdgeId;
+    type Item = DinoEdgeId;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
@@ -183,7 +184,7 @@ impl<'a> EdgeIntersectionIterator<'a> {
 }
 
 impl<'a> Iterator for EdgeIntersectionIterator<'a> {
-    type Item = EdgeId;
+    type Item = DinoEdgeId;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
@@ -204,7 +205,7 @@ impl<'a> EdgeBetweenIterator<'a> {
 }
 
 impl<'a> Iterator for EdgeBetweenIterator<'a> {
-    type Item = EdgeId;
+    type Item = DinoEdgeId;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
@@ -218,12 +219,12 @@ mod test {
     use super::*;
     use crate::slab::{EntryId, Generation, Key};
 
-    fn nid(id: usize) -> NodeId {
-        NodeId::from_id(EntryId::new(Generation::first(), id).expect("valid id"))
+    fn nid(id: usize) -> DinoNodeId {
+        DinoNodeId::from_id(EntryId::new(Generation::first(), id).expect("valid id"))
     }
 
-    fn eid(id: usize) -> EdgeId {
-        EdgeId::from_id(EntryId::new(Generation::first(), id).expect("valid id"))
+    fn eid(id: usize) -> DinoEdgeId {
+        DinoEdgeId::from_id(EntryId::new(Generation::first(), id).expect("valid id"))
     }
 
     #[test]

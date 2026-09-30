@@ -53,8 +53,8 @@
 //!
 //! ```rust
 //! use petgraph_core::{
-//!     edge::marker::{Directed, Undirected},
 //!     Graph,
+//!     edge::marker::{Directed, Undirected},
 //! };
 //! use petgraph_dino::{DiDinoGraph, DinoGraph, DinoStorage, UnDinoGraph};
 //!
@@ -111,14 +111,11 @@
 
 extern crate alloc;
 
-mod auxiliary;
 pub(crate) mod closure;
 mod directed;
 mod edge;
 mod iter;
-mod linear;
 mod node;
-mod retain;
 pub(crate) mod slab;
 #[cfg(test)]
 mod tests;
@@ -126,21 +123,18 @@ mod tests;
 use core::fmt::{Debug, Display};
 
 use either::Either;
-use error_stack::{Context, Report, Result};
+use error_stack::{Report, Result};
 use petgraph_core::{
-    edge::{
-        marker::{Directed, GraphDirectionality, Undirected},
-        DetachedEdge, EdgeId, EdgeMut,
-    },
-    node::{DetachedNode, NodeId, NodeMut},
-    storage::GraphStorage,
-    Graph,
+    edge::EdgeMut,
+    graph::{Directed, Graph, Undirected},
+    id::Id,
+    node::NodeMut,
 };
 
 use crate::{
     closure::Closures,
-    edge::Edge,
-    node::{Node, NodeClosures, NodeSlab},
+    edge::{DinoEdgeId, Edge},
+    node::{DinoNodeId, Node, NodeClosures, NodeSlab},
     slab::Slab,
 };
 
@@ -179,7 +173,7 @@ use crate::{
 ///
 /// let ab = *graph.insert_edge(Edge, &a, &b).id();
 /// ```
-pub type DinoGraph<N, E, D> = Graph<DinoStorage<N, E, D>>;
+pub type OldDinoGraph<N, E, D> = DinoGraph<N, E, D>;
 
 /// Alias for a directed [`Graph`] that uses [`DinoStorage`] as its backing storage.
 ///
@@ -334,20 +328,14 @@ pub type UnDinoGraph<N, E> = DinoGraph<N, E, Undirected>;
 /// let ab = *graph.insert_edge(Edge, &a, &b).id();
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DinoStorage<N, E, D = Directed>
-where
-    D: GraphDirectionality,
-{
-    nodes: Slab<NodeId, Node<N>>,
-    edges: Slab<EdgeId, Edge<E>>,
+pub struct DinoGraph<N, E, D = Directed> {
+    nodes: Slab<DinoNodeId, Node<N>>,
+    edges: Slab<DinoEdgeId, Edge<E>>,
 
-    _marker: core::marker::PhantomData<fn() -> *const D>,
+    directionality: core::marker::PhantomData<D>,
 }
 
-impl<N, E, D> DinoStorage<N, E, D>
-where
-    D: GraphDirectionality,
-{
+impl<N, E, D> DinoGraph<N, E, D> {
     /// Creates a new, empty [`DinoStorage`].
     ///
     /// # Example
@@ -364,10 +352,7 @@ where
     }
 }
 
-impl<N, E, D> Default for DinoStorage<N, E, D>
-where
-    D: GraphDirectionality,
-{
+impl<N, E, D> Default for DinoGraph<N, E, D> {
     fn default() -> Self {
         Self::new()
     }
@@ -375,7 +360,7 @@ where
 
 /// Error type for [`DinoStorage`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Error {
+pub enum DinoError {
     /// The requested node was not found.
     NodeNotFound,
     /// The requested edge was not found.
@@ -393,7 +378,7 @@ pub enum Error {
     InconsistentEdgeId,
 }
 
-impl Display for Error {
+impl Display for DinoError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::NodeNotFound => f.write_str("node not found"),
@@ -414,13 +399,40 @@ impl Display for Error {
     }
 }
 
-impl Context for Error {}
+impl<N, E, D> Graph for DinoGraph<N, E, D> {
+    type EdgeData<'graph>
+        = E
+    where
+        Self: 'graph;
+    type EdgeDataMut<'graph>
+        = &'graph mut E
+    where
+        Self: 'graph;
+    type EdgeDataRef<'graph>
+        = &'graph E
+    where
+        Self: 'graph;
+    type EdgeId = DinoEdgeId;
+    type NodeData<'graph>
+        = N
+    where
+        Self: 'graph;
+    type NodeDataMut<'graph>
+        = &'graph mut N
+    where
+        Self: 'graph;
+    type NodeDataRef<'graph>
+        = &'graph N
+    where
+        Self: 'graph;
+    type NodeId = DinoNodeId;
+}
 
 fn edges_between_undirected<N>(
     nodes: &NodeSlab<N>,
-    source: NodeId,
-    target: NodeId,
-) -> impl Iterator<Item = EdgeId> + '_ {
+    source: DinoNodeId,
+    target: DinoNodeId,
+) -> impl Iterator<Item = DinoEdgeId> + '_ {
     let source = nodes.get(source);
     let target = nodes.get(target);
 
@@ -430,74 +442,8 @@ fn edges_between_undirected<N>(
         .flat_map(|(source, target)| source.closures.edges_between_undirected(&target.closures))
 }
 
-impl<N, E, D> GraphStorage for DinoStorage<N, E, D>
-where
-    D: GraphDirectionality,
-{
-    type EdgeWeight = E;
-    type Error = Error;
-    type NodeWeight = N;
-
-    fn with_capacity(node_capacity: Option<usize>, edge_capacity: Option<usize>) -> Self {
-        Self {
-            nodes: Slab::with_capacity(node_capacity),
-            edges: Slab::with_capacity(edge_capacity),
-
-            _marker: core::marker::PhantomData,
-        }
-    }
-
-    fn from_parts(
-        nodes: impl IntoIterator<Item = DetachedNode<Self::NodeWeight>>,
-        edges: impl IntoIterator<Item = DetachedEdge<Self::EdgeWeight>>,
-    ) -> Result<Self, Self::Error> {
-        todo!();
-
-        // TODO: test-case c:
-        // TODO: this doesn't work if we remove a node
-        // TODO: NodeId rename is not of concern for us though
-        // TODO: what about nodes that are added or edges?
-        //      We don't know their ID yet (need a way to get those -> PartialNode/Edge)
-    }
-
-    fn into_parts(
-        self,
-    ) -> (
-        impl Iterator<Item = DetachedNode<Self::NodeWeight>>,
-        impl Iterator<Item = DetachedEdge<Self::EdgeWeight>>,
-    ) {
-        let nodes = self.nodes.into_iter().map(|node| DetachedNode {
-            id: node.id,
-            weight: node.weight,
-        });
-
-        let edges = self.edges.into_iter().map(|edge| DetachedEdge {
-            id: edge.id,
-            u: edge.source,
-            v: edge.target,
-            weight: edge.weight,
-        });
-
-        (nodes, edges)
-    }
-
-    fn num_nodes(&self) -> usize {
-        self.nodes.len()
-    }
-
-    fn num_edges(&self) -> usize {
-        self.edges.len()
-    }
-
-    fn next_node_id(&self) -> NodeId {
-        self.nodes.next_key()
-    }
-
-    fn insert_node(
-        &mut self,
-        id: NodeId,
-        weight: Self::NodeWeight,
-    ) -> Result<NodeMut<Self>, Self::Error> {
+impl<N, E, D> DinoGraph<N, E, D> {
+    fn insert_node(&mut self, id: DinoNodeId, weight: N) -> Result<NodeMut<Self>, DinoError> {
         let expected = id;
         let id = self.nodes.insert(Node::new(expected, weight));
 
@@ -506,31 +452,30 @@ where
             // we don't need to update the closures, since we haven't added the node to them yet
             self.nodes.remove(id);
 
-            return Err(Report::new(Error::InconsistentNodeId));
+            return Err(Report::new(DinoError::InconsistentNodeId));
         }
 
         let node = self
             .nodes
             .get_mut(id)
-            .ok_or_else(|| Report::new(Error::NodeNotFound))?;
+            .ok_or_else(|| Report::new(DinoError::NodeNotFound))?;
 
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
         Ok(NodeMut::new(node.id, &mut node.weight))
     }
 
-    fn next_edge_id(&self) -> EdgeId {
+    fn next_edge_id(&self) -> DinoEdgeId {
         self.edges.next_key()
     }
 
     fn insert_edge(
         &mut self,
-        id: EdgeId,
-        weight: Self::EdgeWeight,
-
-        source: NodeId,
-        target: NodeId,
-    ) -> Result<EdgeMut<Self>, Self::Error> {
+        id: DinoEdgeId,
+        weight: E,
+        source: DinoNodeId,
+        target: DinoNodeId,
+    ) -> Result<EdgeMut<Self>, DinoError> {
         // TODO: option to disallow self-loops and parallel edges
 
         // undirected edges in the graph are stored in a canonical form, where the source node id is
@@ -553,13 +498,13 @@ where
             // we don't need to update the closures, since we haven't added the edge to them yet
             self.edges.remove(id);
 
-            return Err(Report::new(Error::InconsistentEdgeId));
+            return Err(Report::new(DinoError::InconsistentEdgeId));
         }
 
         let edge = self
             .edges
             .get_mut(id)
-            .ok_or_else(|| Report::new(Error::EdgeNotFound))?;
+            .ok_or_else(|| Report::new(DinoError::EdgeNotFound))?;
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
 
@@ -573,10 +518,10 @@ where
         ))
     }
 
-    fn remove_node(&mut self, id: NodeId) -> Option<DetachedNode<Self::NodeWeight>> {
+    fn remove_node(&mut self, id: DinoNodeId) -> Option<N> {
         let node = self.nodes.remove(id)?;
 
-        for edge in node.closures.edges() {
+        for edge in node.closures.incident_edges() {
             if let Some(edge) = self.edges.remove(edge) {
                 Closures::remove_edge(&edge, &mut self.nodes);
             }
@@ -584,180 +529,13 @@ where
 
         let (id, weight) = Closures::remove_node(node, &mut self.nodes);
 
-        Some(DetachedNode::new(id, weight))
+        Some(weight)
     }
 
-    fn remove_edge(&mut self, id: EdgeId) -> Option<DetachedEdge<Self::EdgeWeight>> {
+    fn remove_edge(&mut self, id: DinoEdgeId) -> Option<E> {
         let edge = self.edges.remove(id)?;
         Closures::remove_edge(&edge, &mut self.nodes);
 
-        Some(DetachedEdge::new(
-            edge.id,
-            edge.weight,
-            edge.source,
-            edge.target,
-        ))
-    }
-
-    fn clear(&mut self) {
-        self.nodes.clear();
-        self.edges.clear();
-        Closures::clear(&mut self.nodes);
-    }
-
-    fn node(&self, id: NodeId) -> Option<petgraph_core::node::Node<Self>> {
-        self.nodes
-            .get(id)
-            .map(|node| petgraph_core::node::Node::new(self, node.id, &node.weight))
-    }
-
-    fn node_mut(&mut self, id: NodeId) -> Option<NodeMut<Self>> {
-        self.nodes
-            .get_mut(id)
-            .map(|node| NodeMut::new(node.id, &mut node.weight))
-    }
-
-    fn contains_node(&self, id: NodeId) -> bool {
-        self.nodes.contains_key(id)
-    }
-
-    fn edge(&self, id: EdgeId) -> Option<petgraph_core::edge::Edge<Self>> {
-        self.edges.get(id).map(|edge| {
-            petgraph_core::edge::Edge::new(self, edge.id, &edge.weight, edge.source, edge.target)
-        })
-    }
-
-    fn edge_mut(&mut self, id: EdgeId) -> Option<EdgeMut<Self>> {
-        self.edges
-            .get_mut(id)
-            .map(|edge| EdgeMut::new(edge.id, &mut edge.weight, edge.source, edge.target))
-    }
-
-    fn contains_edge(&self, id: EdgeId) -> bool {
-        self.edges.contains_key(id)
-    }
-
-    fn edges_between(
-        &self,
-        source: NodeId,
-        target: NodeId,
-    ) -> impl Iterator<Item = petgraph_core::edge::Edge<Self>> {
-        edges_between_undirected(&self.nodes, source, target)
-            .filter_map(move |edge| self.edge(edge))
-    }
-
-    fn edges_between_mut(
-        &mut self,
-        source: NodeId,
-        target: NodeId,
-    ) -> impl Iterator<Item = EdgeMut<Self>> {
-        let available = edges_between_undirected(&self.nodes, source, target);
-
-        self.edges
-            .filter_mut(available)
-            .map(move |edge| EdgeMut::new(edge.id, &mut edge.weight, edge.source, edge.target))
-    }
-
-    fn node_connections(
-        &self,
-        id: NodeId,
-    ) -> impl Iterator<Item = petgraph_core::edge::Edge<Self>> {
-        self.nodes
-            .get(id)
-            .into_iter()
-            .flat_map(move |node| node.closures.edges())
-            .filter_map(move |edge| self.edge(edge))
-    }
-
-    fn node_connections_mut(&mut self, id: NodeId) -> impl Iterator<Item = EdgeMut<Self>> {
-        let Self { nodes, edges, .. } = self;
-
-        let available = nodes
-            .get(id)
-            .into_iter()
-            .flat_map(move |node| node.closures.edges());
-
-        edges
-            .filter_mut(available)
-            .map(move |edge| EdgeMut::new(edge.id, &mut edge.weight, edge.source, edge.target))
-    }
-
-    fn node_neighbours(&self, id: NodeId) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
-        self.nodes
-            .get(id)
-            .into_iter()
-            .flat_map(move |node| node.closures.neighbours())
-            .filter_map(move |node| self.node(node))
-    }
-
-    fn node_neighbours_mut(&mut self, id: NodeId) -> impl Iterator<Item = NodeMut<Self>> {
-        let Some(node) = self.nodes.get(id) else {
-            return Either::Right(core::iter::empty());
-        };
-
-        // SAFETY: we never access the closure argument mutably, only the weight.
-        // Therefore it is safe for us to access both at the same time.
-        let closure: &NodeClosures = unsafe { &*core::ptr::addr_of!(node.closures) };
-        let neighbours = closure.neighbours();
-
-        Either::Left(
-            self.nodes
-                .filter_mut(neighbours)
-                .map(move |node| NodeMut::new(node.id, &mut node.weight)),
-        )
-    }
-
-    fn isolated_nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
-        self.nodes
-            .iter()
-            .filter(|node| node.closures.is_isolated())
-            .map(move |node| petgraph_core::node::Node::new(self, node.id, &node.weight))
-    }
-
-    fn isolated_nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
-        self.nodes
-            .iter_mut()
-            .filter(move |node| node.closures.is_isolated())
-            .map(move |node| NodeMut::new(node.id, &mut node.weight))
-    }
-
-    fn nodes(&self) -> impl Iterator<Item = petgraph_core::node::Node<Self>> {
-        self.nodes
-            .iter()
-            .map(move |node| petgraph_core::node::Node::new(self, node.id, &node.weight))
-    }
-
-    fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<Self>> {
-        self.nodes
-            .iter_mut()
-            .map(move |node| NodeMut::new(node.id, &mut node.weight))
-    }
-
-    fn edges(&self) -> impl Iterator<Item = petgraph_core::edge::Edge<Self>> {
-        self.edges.iter().map(move |edge| {
-            petgraph_core::edge::Edge::new(self, edge.id, &edge.weight, edge.source, edge.target)
-        })
-    }
-
-    fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<Self>> {
-        self.edges
-            .iter_mut()
-            .map(move |edge| EdgeMut::new(edge.id, &mut edge.weight, edge.source, edge.target))
-    }
-
-    fn reserve_nodes(&mut self, additional: usize) {
-        self.nodes.reserve(additional);
-    }
-
-    fn reserve_edges(&mut self, additional: usize) {
-        self.edges.reserve(additional);
-    }
-
-    fn shrink_to_fit_nodes(&mut self) {
-        self.nodes.shrink_to_fit();
-    }
-
-    fn shrink_to_fit_edges(&mut self) {
-        self.edges.shrink_to_fit();
+        Some(edge.weight)
     }
 }

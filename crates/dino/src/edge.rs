@@ -1,32 +1,50 @@
-use petgraph_core::{edge::EdgeId, node::NodeId};
+use petgraph_core::id::Id;
 
-use crate::slab::{EntryId, Key};
+use crate::{
+    node::DinoNodeId,
+    slab::{EntryId, Key},
+};
 
-impl Key for EdgeId {
-    #[inline]
+/// TODO: Change
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct DinoEdgeId(u32);
+
+impl Key for DinoEdgeId {
     fn from_id(id: EntryId) -> Self {
-        Self::new(id.into_usize())
+        Self(id.raw())
     }
 
-    #[inline]
     fn into_id(self) -> EntryId {
-        EntryId::new_unchecked(self.into_inner())
+        EntryId::new_unchecked(self.0 as usize)
     }
 }
 
-pub(crate) type EdgeSlab<T> = crate::slab::Slab<EdgeId, Edge<T>>;
+impl core::fmt::Display for DinoEdgeId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DinoEdgeId({})", self.0)
+    }
+}
+
+impl Id for DinoEdgeId {}
+
+pub(crate) type EdgeSlab<T> = crate::slab::Slab<DinoEdgeId, Edge<T>>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Edge<T> {
-    pub(crate) id: EdgeId,
+    pub(crate) id: DinoEdgeId,
     pub(crate) weight: T,
 
-    pub(crate) source: NodeId,
-    pub(crate) target: NodeId,
+    pub(crate) source: DinoNodeId,
+    pub(crate) target: DinoNodeId,
 }
 
 impl<T> Edge<T> {
-    pub(crate) const fn new(id: EdgeId, weight: T, source: NodeId, target: NodeId) -> Self {
+    pub(crate) const fn new(
+        id: DinoEdgeId,
+        weight: T,
+        source: DinoNodeId,
+        target: DinoNodeId,
+    ) -> Self {
         Self {
             id,
             weight,
