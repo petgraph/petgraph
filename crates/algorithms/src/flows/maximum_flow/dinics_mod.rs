@@ -3,7 +3,7 @@ use core::{borrow::Borrow, error::Error, ops::Sub};
 
 use petgraph_core::{
     edge::Edge,
-    graph::{DirectedGraph, Graph, Storable},
+    graph::{Container, DirectedGraph, Graph, Storable},
     id::IndexId,
 };
 
@@ -194,11 +194,12 @@ where
     G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>>,
 {
     let mut max_flow = G::EdgeData::zero();
+    let mut flows_new = G::edge_data_container::<G::EdgeData<'graph>>(&network);
     let mut flows = vec![G::EdgeData::zero(); network.edge_count()];
     let mut visited = vec![false; network.node_count()];
     let mut level_edges = vec![Default::default(); network.node_count()];
 
-    while build_level_graph(network, source, destination, &flows, &mut level_edges)
+    while build_level_graph(network, source, destination, &flows_new, &mut level_edges)
         [destination.as_usize()]
         > 0
     {
@@ -230,7 +231,7 @@ fn build_level_graph<'graph, 'graph_ref, G: 'graph>(
     network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
-    flows: &[G::EdgeData<'graph>],
+    flows: &impl Container<G::EdgeId, G::EdgeData<'graph>>,
     level_edges: &mut [Vec<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>],
 ) -> Vec<usize>
 where
@@ -252,7 +253,7 @@ where
         for edge in incident_edges {
             let edge = edge.to_owned_edge::<G::EdgeData<'graph>>();
             let next_vertex = other_endpoint::<G, _>(edge, vertex);
-            let residual_cap = residual_capacity::<G>(edge, next_vertex, flows[edge.id.as_usize()]);
+            let residual_cap = residual_capacity::<G>(edge, next_vertex, *flos.get(edge.id));
             if residual_cap == G::EdgeData::zero() {
                 continue;
             }
