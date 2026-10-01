@@ -7,23 +7,11 @@ pub trait Container<Id, Data> {
 }
 
 pub trait Storable: Graph {
-    fn node_visit_container<'graph>(&'graph self) -> impl Container<Self::NodeId, ()>
-    where
-        Self: 'graph;
+    fn node_visit_container(&self) -> impl Container<Self::NodeId, ()>;
 
-    fn node_data_container<'graph>(
-        &'graph self,
-    ) -> impl Container<Self::NodeId, Self::NodeData<'graph>>
-    where
-        Self: 'graph;
+    fn node_data_container<Data>(&self) -> impl Container<Self::NodeId, Data>;
 
-    fn edge_visit_container<'graph>(&'graph self) -> impl Container<Self::EdgeId, ()>
-    where
-        Self: 'graph;
+    fn edge_visit_container(&self) -> impl Container<Self::EdgeId, ()>;
 
-    fn edge_data_container<'graph>(
-        &'graph self,
-    ) -> impl Container<Self::EdgeId, Self::EdgeData<'graph>>
-    where
-        Self: 'graph;
+    fn edge_data_container<Data>(&self) -> impl Container<Self::EdgeId, Data>;
 }
