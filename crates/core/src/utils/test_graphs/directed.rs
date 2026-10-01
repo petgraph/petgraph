@@ -18,10 +18,8 @@ use crate::{
     utils::test_graphs::DefaultMap,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
-pub struct DirNodeId(usize);
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
-pub struct NodeId(pub usize);
+pub struct DirNodeId(usize);
 
 impl AddAssign<usize> for DirNodeId {
     fn add_assign(&mut self, other: usize) {
@@ -37,10 +35,10 @@ impl Display for DirNodeId {
 
 impl Id for DirNodeId {}
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
 pub struct DirEdgeId(usize);
 
-impl TryFrom<u16> for NodeId {
+impl TryFrom<u16> for DirNodeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
@@ -48,7 +46,7 @@ impl TryFrom<u16> for NodeId {
     }
 }
 
-impl TryFrom<u32> for NodeId {
+impl TryFrom<u32> for DirNodeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
@@ -56,7 +54,7 @@ impl TryFrom<u32> for NodeId {
     }
 }
 
-impl TryFrom<u64> for NodeId {
+impl TryFrom<u64> for DirNodeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
@@ -64,7 +62,7 @@ impl TryFrom<u64> for NodeId {
     }
 }
 
-impl TryFrom<usize> for NodeId {
+impl TryFrom<usize> for DirNodeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
@@ -72,7 +70,7 @@ impl TryFrom<usize> for NodeId {
     }
 }
 
-impl IndexId for NodeId {
+impl IndexId for DirNodeId {
     const MAX: Self = Self(usize::MAX);
     const MIN: Self = Self(0);
 
@@ -92,9 +90,6 @@ impl IndexId for NodeId {
         self.0
     }
 }
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
-pub struct EdgeId(pub usize);
 
 impl AddAssign<usize> for DirEdgeId {
     fn add_assign(&mut self, other: usize) {
@@ -110,7 +105,7 @@ impl Display for DirEdgeId {
 
 impl Id for DirEdgeId {}
 
-impl TryFrom<u16> for EdgeId {
+impl TryFrom<u16> for DirEdgeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
@@ -118,7 +113,7 @@ impl TryFrom<u16> for EdgeId {
     }
 }
 
-impl TryFrom<u32> for EdgeId {
+impl TryFrom<u32> for DirEdgeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
@@ -126,7 +121,7 @@ impl TryFrom<u32> for EdgeId {
     }
 }
 
-impl TryFrom<u64> for EdgeId {
+impl TryFrom<u64> for DirEdgeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
@@ -134,7 +129,7 @@ impl TryFrom<u64> for EdgeId {
     }
 }
 
-impl TryFrom<usize> for EdgeId {
+impl TryFrom<usize> for DirEdgeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
@@ -142,7 +137,7 @@ impl TryFrom<usize> for EdgeId {
     }
 }
 
-impl IndexId for EdgeId {
+impl IndexId for DirEdgeId {
     const MAX: Self = Self(usize::MAX);
     const MIN: Self = Self(0);
 
@@ -163,7 +158,7 @@ impl IndexId for EdgeId {
     }
 }
 
-pub struct DirectedTestGraph<N, E, NI = NodeId, EI = EdgeId> {
+pub struct DirectedTestGraph<N, E, NI = DirNodeId, EI = DirEdgeId> {
     next_node: NI,
     next_edge: EI,
 
