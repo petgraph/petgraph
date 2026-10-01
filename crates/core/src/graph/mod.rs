@@ -1,6 +1,7 @@
 mod adjacent;
 mod directed;
 mod disjoint;
+mod storable;
 mod undirected;
 
 use core::borrow::{Borrow, BorrowMut};
