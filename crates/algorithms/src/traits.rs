@@ -35,11 +35,11 @@ macro_rules! impl_bounded(
         $(
             impl Bounded for $t {
                 fn min() -> Self {
-                    std::$t::MIN
+                    $t::MIN
                 }
 
                 fn max() -> Self {
-                    std::$t::MAX
+                    $t::MAX
                 }
             }
         )*
