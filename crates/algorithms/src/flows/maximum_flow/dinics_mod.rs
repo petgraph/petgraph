@@ -253,7 +253,7 @@ where
         for edge in incident_edges {
             let edge = edge.to_owned_edge::<G::EdgeData<'graph>>();
             let next_vertex = other_endpoint::<G, _>(edge, vertex);
-            let residual_cap = residual_capacity::<G>(edge, next_vertex, *flos.get(edge.id));
+            let residual_cap = residual_capacity::<G>(edge, next_vertex, *flows.get(edge.id));
             if residual_cap == G::EdgeData::zero() {
                 continue;
             }

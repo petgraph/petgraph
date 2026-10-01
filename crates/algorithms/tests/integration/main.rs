@@ -7,32 +7,32 @@ macro_rules! run_macro_for_all_graphs {
             DirectedTestGraph::<
                 _,
                 _,
-                petgraph_core::utils::directed::NodeId,
-                petgraph_core::utils::directed::EdgeId,
+                petgraph_core::utils::test_graphs::directed::DirNodeId,
+                petgraph_core::utils::test_graphs::directed::DirEdgeId,
             >::new,
             DirectedTestGraph::<
                 _,
                 _,
-                petgraph_core::utils::directed::NodeId,
-                petgraph_core::utils::directed::EdgeId,
+                petgraph_core::utils::test_graphs::directed::DirNodeId,
+                petgraph_core::utils::test_graphs::directed::DirEdgeId,
             >::add_node,
             DirectedTestGraph::<
                 _,
                 _,
-                petgraph_core::utils::directed::NodeId,
-                petgraph_core::utils::directed::EdgeId,
+                petgraph_core::utils::test_graphs::directed::DirNodeId,
+                petgraph_core::utils::test_graphs::directed::DirEdgeId,
             >::add_edge,
             DirectedTestGraph::<
                 _,
                 _,
-                petgraph_core::utils::directed::NodeId,
-                petgraph_core::utils::directed::EdgeId,
+                petgraph_core::utils::test_graphs::directed::DirNodeId,
+                petgraph_core::utils::test_graphs::directed::DirEdgeId,
             >::remove_node,
             DirectedTestGraph::<
                 _,
                 _,
-                petgraph_core::utils::directed::NodeId,
-                petgraph_core::utils::directed::EdgeId,
+                petgraph_core::utils::test_graphs::directed::DirNodeId,
+                petgraph_core::utils::test_graphs::directed::DirEdgeId,
             >::remove_edge
         );
         // Add more graphs here as available
