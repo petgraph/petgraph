@@ -1,7 +1,8 @@
 use crate::graph::Graph;
 
 pub trait Container<Id, Data> {
-    fn get(&self, node_id: Id) -> Option<&Data>;
+    fn get(&self, node_id: Id) -> &Data;
+    fn get_mut(&mut self, node_id: Id) -> &mut Data;
     fn insert(&mut self, node_id: Id, data: Data);
     fn remove(&mut self, node_id: Id);
 }
