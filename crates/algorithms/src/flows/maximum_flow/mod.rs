@@ -41,7 +41,7 @@ pub use dinics_mod::dinics;
 pub use edmonds_karp_mod::edmonds_karp;
 use petgraph_core::{
     edge::Edge,
-    graph::{DirectedGraph, Graph},
+    graph::{DirectedGraph, Graph, Storable},
     id::IndexId,
 };
 
@@ -63,10 +63,11 @@ pub trait MaxFlowReturn<'graph, G: Graph + 'graph> {
 
 /// Solves the [Max Flow Problem] from `source` to `destination`.
 ///
-/// This function selects a maximum flow algorithm internally and may change which one it uses in future
-/// releases as better implementations become available. If you need a specific algorithm's guarantees
-/// (e.g. its exact complexity bounds, or reproducible behavior across versions), call that algorithm
-/// directly instead. See the [`maximum_flow`][maximum_flow_mod] module for the full list.
+/// This function selects a maximum flow algorithm internally and may change which one it uses in
+/// future releases as better implementations become available. If you need a specific algorithm's
+/// guarantees (e.g. its exact complexity bounds, or reproducible behavior across versions), call
+/// that algorithm directly instead. See the [`maximum_flow`][maximum_flow_mod] module for the full
+/// list.
 ///
 /// Edge data of the provided graph is interpreted as capacities of edges.
 ///
@@ -78,8 +79,8 @@ pub trait MaxFlowReturn<'graph, G: Graph + 'graph> {
 ///
 /// # Returns
 /// Returns an implementation of [`MaxFlowReturn`], from which the maximum flow value and the
-/// flow of each edge can be obtained, either by reference (via [`max_flow`][MaxFlowReturn::max_flow]
-/// / [`flows`][MaxFlowReturn::flows]) or by consuming it (via
+/// flow of each edge can be obtained, either by reference (via
+/// [`max_flow`][MaxFlowReturn::max_flow] / [`flows`][MaxFlowReturn::flows]) or by consuming it (via
 /// [`into_max_flow_and_flow_vec`][MaxFlowReturn::into_max_flow_and_flow_vec]).
 ///
 /// # Complexity
@@ -123,7 +124,7 @@ pub fn max_flow<'graph, 'graph_ref, G>(
     destination: G::NodeId,
 ) -> impl MaxFlowReturn<'graph, G>
 where
-    G: Graph + DirectedGraph + 'graph,
+    G: DirectedGraph + Storable + 'graph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,

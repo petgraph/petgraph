@@ -3,7 +3,7 @@ use core::{borrow::Borrow, error::Error, ops::Sub};
 
 use petgraph_core::{
     edge::Edge,
-    graph::{DirectedGraph, Graph},
+    graph::{DirectedGraph, Graph, Storable},
     id::IndexId,
 };
 
@@ -51,7 +51,7 @@ impl<'graph_ref, G: Graph> Dinics<'graph_ref, G> {
 
 impl<'graph, 'graph_ref, G: 'graph> Dinics<'graph_ref, G>
 where
-    G: DirectedGraph,
+    G: DirectedGraph + Storable,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
@@ -172,7 +172,7 @@ pub fn dinics<'graph, 'graph_ref, G: 'graph>(
     destination: G::NodeId,
 ) -> DinicsOutput<'graph, G>
 where
-    G: DirectedGraph,
+    G: DirectedGraph + Storable,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
@@ -187,7 +187,7 @@ fn dinics_inner<'graph, 'graph_ref, G: 'graph>(
     destination: G::NodeId,
 ) -> DinicsOutput<'graph, G>
 where
-    G: DirectedGraph,
+    G: DirectedGraph + Storable,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
