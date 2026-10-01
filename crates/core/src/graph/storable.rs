@@ -1,12 +1,12 @@
 use crate::graph::Graph;
 
-trait Container<Id, Data> {
+pub trait Container<Id, Data> {
     fn get(&self, node_id: Id) -> Option<&Data>;
     fn insert(&mut self, node_id: Id, data: Data);
     fn remove(&mut self, node_id: Id);
 }
 
-trait Storable: Graph {
+pub trait Storable: Graph {
     fn node_visit_container<'graph>(&'graph self) -> impl Container<Self::NodeId, ()>
     where
         Self: 'graph;
