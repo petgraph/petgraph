@@ -12,7 +12,7 @@ pub use self::{
     directed::DirectedGraph,
     disjoint::DisjointMutGraph,
     editable::EditableGraph,
-    storable::{Container, Storable},
+    storable::{DataContainer, Storable},
     undirected::UndirectedGraph,
 };
 use crate::id::Id;
