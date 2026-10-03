@@ -100,12 +100,18 @@ where
 ///
 /// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
 /// with [`DinicsOutput::into_max_flow_and_flow_vec`].
-pub struct DinicsOutput<'graph, G: Graph + Storable + 'graph> {
+pub struct DinicsOutput<'graph, G: Graph + Storable + 'graph>
+where
+    G::EdgeData<'graph>: Default,
+{
     max_flow: G::EdgeData<'graph>,
     flows: G::EdgeDataContainer<G::EdgeData<'graph>>,
 }
 
-impl<'graph, G: Graph + Storable + 'graph> MaxFlowReturn<'graph, G> for DinicsOutput<'graph, G> {
+impl<'graph, G: Graph + Storable + 'graph> MaxFlowReturn<'graph, G> for DinicsOutput<'graph, G>
+where
+    G::EdgeData<'graph>: Default,
+{
     fn max_flow(&self) -> &G::EdgeData<'graph> {
         &self.max_flow
     }
