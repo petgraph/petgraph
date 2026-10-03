@@ -7,7 +7,10 @@ use core::{
 
 use petgraph_core::{
     edge::Edge,
-    graph::{DirectedGraph, Graph},
+    graph::{
+        DirectedGraph, Graph,
+        storable::{DataContainer, QueueContainer, Storable},
+    },
     id::IndexId,
 };
 
@@ -86,21 +89,28 @@ where
 ///
 /// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
 /// with [`EdmondsKarpOutput::into_max_flow_and_flows`].
-pub struct EdmondsKarpOutput<'graph, G: Graph + 'graph> {
+pub struct EdmondsKarpOutput<'graph, G: Graph + Storable + 'graph> {
     max_flow: G::EdgeData<'graph>,
-    flows: Vec<G::EdgeData<'graph>>,
+    flows: G::EdgeDataContainer<G::EdgeData<'graph>>,
 }
 
-impl<'graph, G: Graph + 'graph> MaxFlowReturn<'graph, G> for EdmondsKarpOutput<'graph, G> {
+impl<'graph, G: Graph + Storable + 'graph> MaxFlowReturn<'graph, G>
+    for EdmondsKarpOutput<'graph, G>
+{
     fn max_flow(&self) -> &G::EdgeData<'graph> {
         &self.max_flow
     }
 
-    fn flows(&self) -> &[G::EdgeData<'graph>] {
+    fn flows(&self) -> &G::EdgeDataContainer<G::EdgeData<'graph>> {
         &self.flows
     }
 
-    fn into_max_flow_and_flow_data(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
+    fn into_max_flow_and_flow_data(
+        self,
+    ) -> (
+        G::EdgeData<'graph>,
+        G::EdgeDataContainer<G::EdgeData<'graph>>,
+    ) {
         (self.max_flow, self.flows)
     }
 }
@@ -182,7 +192,7 @@ pub fn edmonds_karp<'graph, 'graph_ref, G: 'graph>(
     destination: G::NodeId,
 ) -> EdmondsKarpOutput<'graph, G>
 where
-    G: DirectedGraph,
+    G: DirectedGraph + Storable,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>>
@@ -201,25 +211,22 @@ fn edmonds_karp_inner<'graph, 'graph_ref, G: 'graph>(
     destination: G::NodeId,
 ) -> EdmondsKarpOutput<'graph, G>
 where
-    G: DirectedGraph,
+    G: DirectedGraph + Storable,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>>
-        + Add<Output = G::EdgeData<'graph>>
-        + Zero
-        + Measure
-        + Bounded,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Zero + Measure + Bounded,
     G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>> + Copy,
 {
-    let mut edge_to = vec![None; network.node_count()];
-    let mut flows = vec![G::EdgeData::zero(); network.edge_count()];
+    let mut edge_to =
+        G::node_data_container::<Option<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>>(network);
+    let mut flows = G::edge_data_container::<G::EdgeData<'graph>>(network);
     let mut max_flow = G::EdgeData::zero();
     while has_augmented_path(network, source, destination, &mut edge_to, &flows) {
         let mut path_flow = G::EdgeData::max();
 
         // Find the bottleneck capacity of the path
         let mut vertex = destination;
-        while let Some(edge) = edge_to[vertex.as_usize()] {
+        while let Some(edge) = edge_to.get(vertex) {
             let residual_capacity = residual_capacity::<G>(edge, vertex, flows[edge.id.as_usize()]);
             // Minimum between the current path flow and the residual capacity.
             path_flow = if path_flow > residual_capacity {
@@ -232,10 +239,10 @@ where
 
         // Update the flow of each edge along the path
         let mut vertex = destination;
-        while let Some(edge) = edge_to[vertex.as_usize()] {
-            flows[edge.id.as_usize()] =
-                adjusted_residual_flow::<G, _>(edge, vertex, flows[edge.id.as_usize()], path_flow);
-            vertex = other_endpoint::<G, _>(edge, vertex);
+        while let Some(edge) = edge_to.get(vertex) {
+            *flows.get_mut(edge.id) =
+                adjusted_residual_flow::<G, _>(*edge, vertex, *flows.get(edge.id), path_flow);
+            vertex = other_endpoint::<G, _>(*edge, vertex);
         }
         max_flow = max_flow + path_flow;
     }
@@ -247,11 +254,11 @@ fn has_augmented_path<'graph, 'graph_ref, G: 'graph>(
     network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
-    edge_to: &mut [Option<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>],
-    flows: &[G::EdgeData<'graph>],
+    edge_to: &mut G::NodeDataContainer<Option<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>>,
+    flows: &G::EdgeDataContainer<G::EdgeData<'graph>>,
 ) -> bool
 where
-    G: DirectedGraph,
+    G: DirectedGraph + Storable,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Zero + Measure,
@@ -259,19 +266,19 @@ where
 {
     // TODO(next): Replace by proper visit map
     let mut visited = vec![false; network.node_count()];
-    let mut queue = VecDeque::new();
+    let mut queue = G::queue_container::<G::NodeId>(network);
     visited[source.as_usize()] = true;
     queue.push_back(source);
 
     while let Some(vertex) = queue.pop_front() {
         for edge_ref in network.incident_edges(vertex) {
             let next = other_endpoint::<G, _>(edge_ref, vertex);
-            let edge_index: usize = edge_ref.id.as_usize();
+            let edge_index = edge_ref.id;
             let residual_cap =
-                residual_capacity::<G>(edge_ref.to_owned_edge(), next, flows[edge_index]);
+                residual_capacity::<G>(edge_ref.to_owned_edge(), next, *flows.get(edge_index));
             if !visited[next.as_usize()] && (residual_cap > <G::EdgeData<'graph>>::zero()) {
                 visited[next.as_usize()] = true;
-                edge_to[next.as_usize()] = Some(edge_ref.to_owned_edge());
+                *edge_to.get_mut(next) = Some(edge_ref.to_owned_edge());
                 if destination == next {
                     return true;
                 }
