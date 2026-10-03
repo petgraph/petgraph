@@ -8,6 +8,7 @@ pub trait DataContainer<Id, Data> {
     fn insert(&mut self, node_id: Id, data: Data);
     fn remove(&mut self, node_id: Id);
     fn clear(&mut self);
+    fn into_iter(self) -> impl Iterator<Item = (Id, Data)>;
 }
 
 pub trait VisitContainer<Id> {
@@ -25,8 +26,8 @@ pub trait StackContainer<Data> {
 }
 
 pub trait QueueContainer<Data> {
-    fn enqueue(&mut self, data: Data);
-    fn dequeue(&mut self) -> Option<Data>;
+    fn push_back(&mut self, data: Data);
+    fn pop_front(&mut self) -> Option<Data>;
     fn peek_first(&self) -> Option<&Data>;
     fn clear(&mut self);
 }
