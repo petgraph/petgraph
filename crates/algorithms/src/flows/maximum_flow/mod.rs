@@ -48,7 +48,10 @@ use petgraph_core::{
 use crate::traits::{Bounded, Measure, Zero};
 
 /// The return trait that is implemented by Max Flow algorithms
-pub trait MaxFlowReturn<'graph, G: Graph + Storable + 'graph> {
+pub trait MaxFlowReturn<'graph, G: Graph + Storable + 'graph>
+where
+    G::EdgeData<'graph>: Default,
+{
     /// Returns the maximum flow value computed by the algorithm.
     fn max_flow(&self) -> &G::EdgeData<'graph>;
 

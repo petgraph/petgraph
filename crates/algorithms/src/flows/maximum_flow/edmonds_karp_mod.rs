@@ -104,13 +104,17 @@ where
 ///
 /// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
 /// with [`EdmondsKarpOutput::into_max_flow_and_flows`].
-pub struct EdmondsKarpOutput<'graph, G: Graph + Storable + 'graph> {
+pub struct EdmondsKarpOutput<'graph, G: Graph + Storable + 'graph>
+where
+    G::EdgeData<'graph>: Default,
+{
     max_flow: G::EdgeData<'graph>,
     flows: G::EdgeDataContainer<G::EdgeData<'graph>>,
 }
 
-impl<'graph, G: Graph + Storable + 'graph> MaxFlowReturn<'graph, G>
-    for EdmondsKarpOutput<'graph, G>
+impl<'graph, G: Graph + Storable + 'graph> MaxFlowReturn<'graph, G> for EdmondsKarpOutput<'graph, G>
+where
+    G::EdgeData<'graph>: Default,
 {
     fn max_flow(&self) -> &G::EdgeData<'graph> {
         &self.max_flow
