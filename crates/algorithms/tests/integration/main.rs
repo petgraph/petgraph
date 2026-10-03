@@ -1,7 +1,7 @@
 mod flows;
 
 #[macro_export]
-macro_rules! run_macro_for_all_graphs {
+macro_rules! run_macro_for_all_dir_graphs {
     ($macro:ident) => {
         $macro!(
             DirectedTestGraph::<
