@@ -15,12 +15,31 @@ use petgraph_core::{
 };
 
 use crate::{
-    alloc::collections::VecDeque,
     flows::maximum_flow::{
         MaxFlowReturn, adjusted_residual_flow, other_endpoint, residual_capacity,
     },
     traits::{Bounded, Measure, Zero},
 };
+
+/// Errors that can occur in the configuration
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EdmondsKarpConfigError {
+    SourceNodeNotSet,
+    DestinationNodeNotSet,
+}
+
+impl Display for EdmondsKarpConfigError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            EdmondsKarpConfigError::SourceNodeNotSet => write!(f, "Source node is not set"),
+            EdmondsKarpConfigError::DestinationNodeNotSet => {
+                write!(f, "Destination node is not set")
+            }
+        }
+    }
+}
+
+impl Error for EdmondsKarpConfigError {}
 
 /// Struct to run the Edmonds-Karp algorithm.
 ///
@@ -60,14 +79,10 @@ impl<'graph_ref, G: Graph> EdmondsKarp<'graph_ref, G> {
 
 impl<'graph, 'graph_ref, G: 'graph> EdmondsKarp<'graph_ref, G>
 where
-    G: DirectedGraph,
+    G: DirectedGraph + Storable,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>>
-        + Add<Output = G::EdgeData<'graph>>
-        + Zero
-        + Measure
-        + Bounded,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Zero + Measure + Bounded,
     G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>> + Copy,
 {
     /// Runs the Edmonds-Karp algorithm with the current configuration.
@@ -114,26 +129,6 @@ impl<'graph, G: Graph + Storable + 'graph> MaxFlowReturn<'graph, G>
         (self.max_flow, self.flows)
     }
 }
-
-/// Errors that can occur in the configuration
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EdmondsKarpConfigError {
-    SourceNodeNotSet,
-    DestinationNodeNotSet,
-}
-
-impl Display for EdmondsKarpConfigError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        match self {
-            EdmondsKarpConfigError::SourceNodeNotSet => write!(f, "Source node is not set"),
-            EdmondsKarpConfigError::DestinationNodeNotSet => {
-                write!(f, "Destination node is not set")
-            }
-        }
-    }
-}
-
-impl Error for EdmondsKarpConfigError {}
 
 /// Find a [maximum_flow_problem] from `source` to `destination` using the
 /// [Edmond-Karp][edmonds_karp] implementation of the [Ford-Fulkerson][ford_fulkerson] method. Edge
@@ -227,7 +222,8 @@ where
         // Find the bottleneck capacity of the path
         let mut vertex = destination;
         while let Some(edge) = edge_to.get(vertex) {
-            let residual_capacity = residual_capacity::<G>(edge, vertex, flows[edge.id.as_usize()]);
+            let residual_capacity =
+                residual_capacity::<G>(edge.to_owned_edge(), vertex, *flows.get(edge.id));
             // Minimum between the current path flow and the residual capacity.
             path_flow = if path_flow > residual_capacity {
                 residual_capacity
@@ -241,8 +237,8 @@ where
         let mut vertex = destination;
         while let Some(edge) = edge_to.get(vertex) {
             *flows.get_mut(edge.id) =
-                adjusted_residual_flow::<G, _>(*edge, vertex, *flows.get(edge.id), path_flow);
-            vertex = other_endpoint::<G, _>(*edge, vertex);
+                adjusted_residual_flow::<G, _>(edge, vertex, *flows.get(edge.id), path_flow);
+            vertex = other_endpoint::<G, _>(edge, vertex);
         }
         max_flow = max_flow + path_flow;
     }
@@ -271,14 +267,14 @@ where
     queue.push_back(source);
 
     while let Some(vertex) = queue.pop_front() {
-        for edge_ref in network.incident_edges(vertex) {
-            let next = other_endpoint::<G, _>(edge_ref, vertex);
-            let edge_index = edge_ref.id;
+        for edge in network.incident_edges(vertex) {
+            let next = other_endpoint::<G, _>(&edge, vertex);
+            let edge_index = edge.id;
             let residual_cap =
-                residual_capacity::<G>(edge_ref.to_owned_edge(), next, *flows.get(edge_index));
+                residual_capacity::<G>(edge.to_owned_edge(), next, *flows.get(edge_index));
             if !visited[next.as_usize()] && (residual_cap > <G::EdgeData<'graph>>::zero()) {
                 visited[next.as_usize()] = true;
-                *edge_to.get_mut(next) = Some(edge_ref.to_owned_edge());
+                *edge_to.get_mut(next) = Some(edge.to_owned_edge());
                 if destination == next {
                     return true;
                 }
