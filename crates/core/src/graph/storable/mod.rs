@@ -34,17 +34,17 @@ pub trait QueueContainer<Data> {
 
 pub trait Storable: Graph {
     type NodeVisitContainer: VisitContainer<Self::NodeId>;
-    type NodeDataContainer<Data>: DataContainer<Self::NodeId, Data>;
+    type NodeDataContainer<Data: Default>: DataContainer<Self::NodeId, Data>;
     type EdgeVisitContainer: VisitContainer<Self::EdgeId>;
-    type EdgeDataContainer<Data>: DataContainer<Self::EdgeId, Data>;
+    type EdgeDataContainer<Data: Default>: DataContainer<Self::EdgeId, Data>;
     type StackContainer<Data>: StackContainer<Data>;
     type QueueContainer<Data>: QueueContainer<Data>;
 
     fn node_visit_container(&self) -> Self::NodeVisitContainer;
-    fn node_data_container<Data>(&self) -> Self::NodeDataContainer<Data>;
+    fn node_data_container<Data: Default>(&self) -> Self::NodeDataContainer<Data>;
 
     fn edge_visit_container(&self) -> Self::EdgeVisitContainer;
-    fn edge_data_container<Data>(&self) -> Self::EdgeDataContainer<Data>;
+    fn edge_data_container<Data: Default>(&self) -> Self::EdgeDataContainer<Data>;
 
     fn stack_container<Data>(&self) -> Self::StackContainer<Data>;
     fn queue_container<Data>(&self) -> Self::QueueContainer<Data>;

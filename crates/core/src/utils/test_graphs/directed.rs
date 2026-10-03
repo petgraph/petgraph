@@ -1,14 +1,18 @@
+use alloc::{collections::VecDeque, vec::Vec};
 use core::{
     fmt::{self, Display},
     hash::Hash,
     ops::AddAssign,
 };
 
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 
 use crate::{
     edge::{Edge, EdgeMut, EdgeRef},
-    graph::{DirectedGraph, Graph},
+    graph::{
+        DirectedGraph, Graph,
+        storable::{DataContainer, Storable},
+    },
     id::Id,
     node::{Node, NodeMut, NodeRef},
 };
@@ -180,6 +184,76 @@ where
                 target: *target,
                 data,
             })
+    }
+}
+
+pub struct DefaultMap<Id, Data> {
+    map: HashMap<Id, Data>,
+    default: Data,
+}
+
+impl<Id: Eq + Hash, Data: Default> DataContainer<Id, Data> for DefaultMap<Id, Data> {
+    fn get(&self, node_id: Id) -> &Data {
+        self.map.get(&node_id).unwrap_or(&self.default)
+    }
+
+    fn get_mut(&mut self, node_id: Id) -> &mut Data {
+        self.map.entry(node_id).or_insert_with(Default::default)
+    }
+
+    fn insert(&mut self, node_id: Id, data: Data) {
+        self.map.insert(node_id, data);
+    }
+
+    fn remove(&mut self, node_id: Id) {
+        self.map.remove(&node_id);
+    }
+
+    fn clear(&mut self) {
+        self.map.clear();
+    }
+
+    fn into_iter(self) -> impl Iterator<Item = (Id, Data)> {
+        self.map.into_iter()
+    }
+}
+
+impl<N, E> Storable for DirectedTestGraph<N, E, DirNodeId, DirEdgeId> {
+    type EdgeDataContainer<Data: Default> = DefaultMap<DirEdgeId, Data>;
+    type EdgeVisitContainer = HashSet<DirEdgeId, foldhash::fast::RandomState>;
+    type NodeDataContainer<Data: Default> = DefaultMap<DirNodeId, Data>;
+    type NodeVisitContainer = HashSet<DirNodeId, foldhash::fast::RandomState>;
+    type QueueContainer<Data> = VecDeque<Data>;
+    type StackContainer<Data> = Vec<Data>;
+
+    fn node_visit_container(&self) -> Self::NodeVisitContainer {
+        HashSet::default()
+    }
+
+    fn node_data_container<Data: Default>(&self) -> Self::NodeDataContainer<Data> {
+        DefaultMap {
+            map: HashMap::default(),
+            default: Data::default(),
+        }
+    }
+
+    fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
+        HashSet::default()
+    }
+
+    fn edge_data_container<Data: Default>(&self) -> Self::EdgeDataContainer<Data> {
+        DefaultMap {
+            map: HashMap::default(),
+            default: Data::default(),
+        }
+    }
+
+    fn stack_container<Data>(&self) -> Self::StackContainer<Data> {
+        Vec::new()
+    }
+
+    fn queue_container<Data>(&self) -> Self::QueueContainer<Data> {
+        VecDeque::new()
     }
 }
 

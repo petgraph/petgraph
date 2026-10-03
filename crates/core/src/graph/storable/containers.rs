@@ -1,124 +1,109 @@
-// use alloc::{collections::VecDeque, vec::Vec};
-// use core::hash::Hash;
+use alloc::{collections::VecDeque, vec::Vec};
+use core::hash::{BuildHasher, Hash};
 
-// use hashbrown::{HashMap, HashSet};
+use hashbrown::HashSet;
 
-// use super::{QueueContainer, StackContainer, VisitContainer};
-// use crate::{graph::DataContainer, id::IndexId};
+use super::{DataContainer, QueueContainer, StackContainer, VisitContainer};
+use crate::id::IndexId;
 
-// pub struct DefaultMap<Id, Data> {
-//     map: HashMap<Id, Data>,
-//     default: Data,
-// }
+impl<Id: IndexId, Data: Default> DataContainer<Id, Data> for Vec<(Id, Data)> {
+    fn get(&self, node_id: Id) -> &Data {
+        &self[node_id.as_usize()].1
+    }
 
-// impl<Id: Eq + Hash, Data: Default> DataContainer<Id, Data> for DefaultMap<Id, Data> {
-//     fn get(&self, node_id: Id) -> &Data {
-//         self.map.get(&node_id).unwrap_or(&self.default)
-//     }
+    fn get_mut(&mut self, node_id: Id) -> &mut Data {
+        &mut self[node_id.as_usize()].1
+    }
 
-//     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-//         self.map.entry(node_id).or_insert_with(Default::default)
-//     }
+    fn insert(&mut self, node_id: Id, data: Data) {
+        *&mut self[node_id.as_usize()].1 = data;
+    }
 
-//     fn insert(&mut self, node_id: Id, data: Data) {
-//         self.map.insert(node_id, data);
-//     }
+    fn remove(&mut self, node_id: Id) {
+        *&mut self[node_id.as_usize()].1 = Data::default();
+    }
 
-//     fn remove(&mut self, node_id: Id) {
-//         self.map.remove(&node_id);
-//     }
+    fn clear(&mut self) {
+        for (_, data) in self.iter_mut() {
+            *data = Data::default();
+        }
+    }
 
-//     fn clear(&mut self) {
-//         self.map.clear();
-//     }
-// }
+    fn into_iter(self) -> impl Iterator<Item = (Id, Data)> {
+        IntoIterator::into_iter(self)
+    }
+}
 
-// impl<Id: IndexId, Data: Default> DataContainer<Id, Data> for Vec<(Id, Data)> {
-//     fn get(&self, node_id: Id) -> &Data {
-//         &self[node_id.as_usize()].1
-//     }
+impl<Id: Eq + Hash, S: BuildHasher> VisitContainer<Id> for HashSet<Id, S> {
+    fn mark_visited(&mut self, node_id: Id) {
+        self.insert(node_id);
+    }
 
-//     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-//         &mut self[node_id.as_usize()].1
-//     }
+    fn mark_unvisited(&mut self, node_id: Id) {
+        self.remove(&node_id);
+    }
 
-//     fn insert(&mut self, node_id: Id, data: Data) {
-//         *&mut self[node_id.as_usize()].1 = data;
-//     }
+    fn is_visited(&self, node_id: Id) -> bool {
+        self.contains(&node_id)
+    }
 
-//     fn remove(&mut self, node_id: Id) {
-//         *&mut self[node_id.as_usize()].1 = Data::default();
-//     }
+    fn clear(&mut self) {
+        self.clear();
+    }
+}
 
-//     fn clear(&mut self) {
-//         for (_, data) in self.iter_mut() {
-//             *data = Data::default();
-//         }
-//     }
-// }
+impl<Id: IndexId> VisitContainer<Id> for Vec<Option<()>> {
+    fn mark_visited(&mut self, node_id: Id) {
+        *&mut self[node_id.as_usize()] = Some(());
+    }
 
-// impl<Id: Eq + Hash> VisitContainer<Id> for HashSet<Id> {
-//     fn mark_visited(&mut self, node_id: Id) {
-//         self.insert(node_id);
-//     }
+    fn mark_unvisited(&mut self, node_id: Id) {
+        *&mut self[node_id.as_usize()] = None;
+    }
 
-//     fn mark_unvisited(&mut self, node_id: Id) {
-//         self.remove(&node_id);
-//     }
+    fn is_visited(&self, node_id: Id) -> bool {
+        self[node_id.as_usize()].is_some()
+    }
 
-//     fn is_visited(&self, node_id: Id) -> bool {
-//         self.contains(&node_id)
-//     }
+    fn clear(&mut self) {
+        for v in self.iter_mut() {
+            *v = None;
+        }
+    }
+}
 
-//     fn clear(&mut self) {
-//         self.clear();
-//     }
-// }
+impl<Data> StackContainer<Data> for Vec<Data> {
+    fn push(&mut self, data: Data) {
+        self.push(data);
+    }
 
-// impl<Id: IndexId> VisitContainer<Id> for Vec<Option<()>> {
-//     fn mark_visited(&mut self, node_id: Id) {
-//         *&mut self[node_id.as_usize()] = Some(());
-//     }
+    fn pop(&mut self) -> Option<Data> {
+        self.pop()
+    }
 
-//     fn mark_unvisited(&mut self, node_id: Id) {
-//         *&mut self[node_id.as_usize()] = None;
-//     }
+    fn peek_last(&self) -> Option<&Data> {
+        self.last()
+    }
 
-//     fn is_visited(&self, node_id: Id) -> bool {
-//         self[node_id.as_usize()].is_some()
-//     }
+    fn clear(&mut self) {
+        self.clear();
+    }
+}
 
-//     fn clear(&mut self) {
-//         for v in self.iter_mut() {
-//             *v = None;
-//         }
-//     }
-// }
+impl<Data> QueueContainer<Data> for VecDeque<Data> {
+    fn push_back(&mut self, data: Data) {
+        self.push_back(data);
+    }
 
-// impl<Data> StackContainer<Data> for Vec<Data> {
-//     fn push(&mut self, data: Data) {
-//         self.push(data);
-//     }
+    fn pop_front(&mut self) -> Option<Data> {
+        self.pop_front()
+    }
 
-//     fn pop(&mut self) -> Option<Data> {
-//         self.pop()
-//     }
+    fn peek_first(&self) -> Option<&Data> {
+        self.front()
+    }
 
-//     fn clear(&mut self) {
-//         self.clear();
-//     }
-// }
-
-// impl<Data> QueueContainer<Data> for VecDeque<Data> {
-//     fn enqueue(&mut self, data: Data) {
-//         self.push_back(data);
-//     }
-
-//     fn dequeue(&mut self) -> Option<Data> {
-//         self.pop_front()
-//     }
-
-//     fn clear(&mut self) {
-//         self.clear();
-//     }
-// }
+    fn clear(&mut self) {
+        self.clear();
+    }
+}
