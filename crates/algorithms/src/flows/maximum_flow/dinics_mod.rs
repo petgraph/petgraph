@@ -1,11 +1,12 @@
-use alloc::{collections::VecDeque, vec, vec::Vec};
+// TODO: Get rid of alloc here (replace level_edges somehow)
+use alloc::{vec, vec::Vec};
 use core::{borrow::Borrow, error::Error, ops::Sub};
 
 use petgraph_core::{
     edge::Edge,
     graph::{
         DirectedGraph, Graph,
-        storable::{DataContainer, StackContainer, Storable, VisitContainer},
+        storable::{DataContainer, QueueContainer, StackContainer, Storable, VisitContainer},
     },
     id::IndexId,
 };
@@ -15,6 +16,28 @@ use crate::{
     flows::maximum_flow::{MaxFlowReturn, adjusted_residual_flow},
     traits::{Bounded, Measure, Zero},
 };
+
+/// Errors that can occur in the configuration of Dinic's algorithm.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DinicsConfigError {
+    SourceNodeNotSet,
+    DestinationNodeNotSet,
+}
+
+impl core::fmt::Display for DinicsConfigError {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::SourceNodeNotSet => write!(fmt, "Source node is not set"),
+            Self::DestinationNodeNotSet => write!(fmt, "Destination node is not set"),
+        }
+    }
+}
+
+impl Error for DinicsConfigError {}
+
+/// Edge with its capacity copied out of the graph.
+type FlowEdge<'graph, G> =
+    Edge<<G as Graph>::EdgeId, <G as Graph>::EdgeData<'graph>, <G as Graph>::NodeId>;
 
 /// Struct to run Dinic's algorithm.
 ///
@@ -101,24 +124,6 @@ impl<'graph, G: Graph + Storable + 'graph> MaxFlowReturn<'graph, G> for DinicsOu
     }
 }
 
-/// Errors that can occur in the configuration of Dinic's algorithm.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DinicsConfigError {
-    SourceNodeNotSet,
-    DestinationNodeNotSet,
-}
-
-impl core::fmt::Display for DinicsConfigError {
-    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::SourceNodeNotSet => write!(fmt, "Source node is not set"),
-            Self::DestinationNodeNotSet => write!(fmt, "Destination node is not set"),
-        }
-    }
-}
-
-impl Error for DinicsConfigError {}
-
 /// Find a [maximum_flow_problem] from `source` to `destination` using [Dinic's (or Dinitz's)
 /// algorithm][dinics], which builds successive level graphs using breadth-first search and finds
 /// blocking flows within them through depth-first searches.
@@ -150,29 +155,6 @@ impl Error for DinicsConfigError {}
 ///
 /// # Example
 /// ```rust
-/// // use petgraph::{Graph, algo::dinics};
-/// // // Example from CLRS book
-/// // let mut graph = Graph::<u8, u8>::new();
-/// // let source = graph.add_node(0);
-/// // let _ = graph.add_node(1);
-/// // let _ = graph.add_node(2);
-/// // let _ = graph.add_node(3);
-/// // let _ = graph.add_node(4);
-/// // let destination = graph.add_node(5);
-/// // graph.extend_with_edges(&[
-/// //     (0, 1, 16),
-/// //     (0, 2, 13),
-/// //     (1, 2, 10),
-/// //     (1, 3, 12),
-/// //     (2, 1, 4),
-/// //     (2, 4, 14),
-/// //     (3, 2, 9),
-/// //     (3, 5, 20),
-/// //     (4, 3, 7),
-/// //     (4, 5, 4),
-/// // ]);
-/// // let (max_flow, _) = dinics(&graph, source, destination);
-/// // assert_eq!(23, max_flow);
 /// ```
 pub fn dinics<'graph, 'graph_ref, G: 'graph>(
     network: &'graph_ref G,
@@ -204,8 +186,7 @@ where
     let mut max_flow = G::EdgeData::zero();
     let mut flows = G::edge_data_container::<G::EdgeData<'graph>>(network);
     let mut visited = G::node_visit_container(network);
-    let mut level_edges =
-        G::node_data_container::<Vec<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>>(network);
+    let mut level_edges = G::node_data_container::<Vec<FlowEdge<'graph, G>>>(network);
 
     while *build_level_graph(network, source, destination, &flows, &mut level_edges)
         .get(destination)
@@ -240,10 +221,7 @@ fn build_level_graph<'graph, 'graph_ref, G: 'graph>(
     source: G::NodeId,
     destination: G::NodeId,
     flows: &impl DataContainer<G::EdgeId, G::EdgeData<'graph>>,
-    level_edges: &mut impl DataContainer<
-        G::NodeId,
-        Vec<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>,
-    >,
+    level_edges: &mut impl DataContainer<G::NodeId, Vec<FlowEdge<'graph, G>>>,
 ) -> impl DataContainer<G::NodeId, usize>
 where
     G: DirectedGraph + Storable,
@@ -253,7 +231,7 @@ where
     G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>>,
 {
     let mut level_graph = G::node_data_container::<usize>(network);
-    let mut bfs_queue = VecDeque::with_capacity(network.node_count());
+    let mut bfs_queue = G::queue_container::<G::NodeId>(network);
     bfs_queue.push_back(source);
 
     *level_graph.get_mut(source) = 1;
@@ -261,8 +239,8 @@ where
         let incident_edges = network.incident_edges(vertex);
         level_edges.get_mut(vertex).clear();
         for edge in incident_edges {
-            let edge = edge.to_owned_edge::<G::EdgeData<'graph>>();
-            let next_vertex = other_endpoint::<G, _>(edge, vertex);
+            let edge: FlowEdge<'graph, G> = edge.to_owned_edge();
+            let next_vertex = other_endpoint::<G, _>(&edge, vertex);
             let residual_cap = residual_capacity::<G>(edge, next_vertex, *flows.get(edge.id));
             if residual_cap == G::EdgeData::zero() {
                 continue;
@@ -292,10 +270,7 @@ fn find_blocking_flow<'graph, G: 'graph>(
     source: G::NodeId,
     destination: G::NodeId,
     flows: &mut impl DataContainer<G::EdgeId, G::EdgeData<'graph>>,
-    level_edges: &mut impl DataContainer<
-        G::NodeId,
-        Vec<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>,
-    >,
+    level_edges: &mut impl DataContainer<G::NodeId, Vec<FlowEdge<'graph, G>>>,
     visited: &mut impl VisitContainer<G::NodeId>,
 ) -> G::EdgeData<'graph>
 where
@@ -322,15 +297,15 @@ where
         while let Some(edge) = edge_to[vertex.as_usize()] {
             let residual_capacity = residual_capacity::<G>(edge, vertex, *flows.get(edge.id));
             path_flow = path_flow.min(residual_capacity);
-            vertex = other_endpoint::<G, _>(edge, vertex);
+            vertex = other_endpoint::<G, _>(&edge, vertex);
         }
 
         // Update the flow of each edge along the discovered path
         let mut vertex = destination;
         while let Some(edge) = edge_to[vertex.as_usize()] {
             *flows.get_mut(edge.id) =
-                adjusted_residual_flow::<G, _>(edge, vertex, *flows.get(edge.id), path_flow);
-            vertex = other_endpoint::<G, _>(edge, vertex);
+                adjusted_residual_flow::<G, _>(&edge, vertex, *flows.get(edge.id), path_flow);
+            vertex = other_endpoint::<G, _>(&edge, vertex);
         }
         flow_increase = flow_increase + path_flow;
     }
@@ -346,12 +321,9 @@ fn find_augmenting_path<'graph, G: 'graph>(
     source: G::NodeId,
     destination: G::NodeId,
     flows: &impl DataContainer<G::EdgeId, G::EdgeData<'graph>>,
-    level_edges: &mut impl DataContainer<
-        G::NodeId,
-        Vec<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>,
-    >,
+    level_edges: &mut impl DataContainer<G::NodeId, Vec<FlowEdge<'graph, G>>>,
     visited: &mut impl VisitContainer<G::NodeId>,
-    edge_to: &mut [Option<Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>>],
+    edge_to: &mut [Option<FlowEdge<'graph, G>>],
 ) -> bool
 where
     G: DirectedGraph + Storable,
@@ -370,7 +342,7 @@ where
         while *level_edges_i.get(vertex) < level_edges.get(vertex).len() {
             let curr_level_edges_i = level_edges_i.get(vertex);
             let edge = level_edges.get(vertex)[*curr_level_edges_i];
-            let next_vertex = other_endpoint::<G, _>(edge, vertex);
+            let next_vertex = other_endpoint::<G, _>(&edge, vertex);
 
             let residual_cap = residual_capacity::<G>(edge, next_vertex, *flows.get(edge.id));
             if residual_cap == G::EdgeData::zero() {

@@ -30,7 +30,7 @@ pub mod dinics_mod;
 #[cfg(feature = "alloc")]
 pub mod edmonds_karp_mod;
 
-use std::{
+use core::{
     borrow::Borrow,
     ops::{Add, Sub},
 };
@@ -41,7 +41,7 @@ pub use dinics_mod::dinics;
 pub use edmonds_karp_mod::edmonds_karp;
 use petgraph_core::{
     edge::Edge,
-    graph::{DirectedGraph, Graph, Storable, storable::Storable},
+    graph::{DirectedGraph, Graph, storable::Storable},
     id::IndexId,
 };
 
@@ -127,7 +127,7 @@ pub fn max_flow<'graph, 'graph_ref, G>(
     network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
-) -> impl MaxFlowReturn<'graph, G>
+) -> impl MaxFlowReturn<'graph, G> + use<'graph, G>
 where
     G: DirectedGraph + Storable + 'graph,
     G::NodeId: IndexId,
@@ -139,14 +139,14 @@ where
 }
 
 /// Returns the residual capacity of given edge.
-fn residual_capacity<'graph, 'graph_ref, G: 'graph>(
+fn residual_capacity<'graph, G: 'graph>(
     edge: Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>,
     vertex: G::NodeId,
     flow: G::EdgeData<'graph>,
 ) -> G::EdgeData<'graph>
 where
     G: DirectedGraph,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>>,
+    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Copy,
 {
     if vertex == edge.source {
         // backward edge
@@ -160,7 +160,7 @@ where
 }
 
 /// Gets the other endpoint of graph edge, if any, otherwise panics.
-fn other_endpoint<G, D>(edge: Edge<G::EdgeId, D, G::NodeId>, vertex: G::NodeId) -> G::NodeId
+fn other_endpoint<G, D>(edge: &Edge<G::EdgeId, D, G::NodeId>, vertex: G::NodeId) -> G::NodeId
 where
     G: DirectedGraph,
 {
@@ -175,7 +175,7 @@ where
 
 /// Returns the adjusted residual flow for given edge and flow increase.
 fn adjusted_residual_flow<'graph, G: 'graph, D>(
-    edge: Edge<G::EdgeId, D, G::NodeId>,
+    edge: &Edge<G::EdgeId, D, G::NodeId>,
     target_vertex: G::NodeId,
     flow: G::EdgeData<'graph>,
     flow_increase: G::EdgeData<'graph>,
