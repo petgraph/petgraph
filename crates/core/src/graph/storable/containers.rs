@@ -6,25 +6,30 @@ use hashbrown::{HashMap, HashSet};
 use super::{QueueContainer, StackContainer, VisitContainer};
 use crate::{graph::DataContainer, id::IndexId};
 
-impl<Id: Eq + Hash, Data: Default> DataContainer<Id, Data> for HashMap<Id, Data> {
-    fn get(&mut self, node_id: Id) -> &Data {
-        self.entry(node_id).or_insert_with(Default::default)
+pub struct DefaultMap<Id, Data> {
+    map: HashMap<Id, Data>,
+    default: Data,
+}
+
+impl<Id: Eq + Hash, Data: Default> DataContainer<Id, Data> for DefaultMap<Id, Data> {
+    fn get(&self, node_id: Id) -> &Data {
+        self.map.get(&node_id).unwrap_or(&self.default)
     }
 
     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-        self.entry(node_id).or_insert_with(Default::default)
+        self.map.entry(node_id).or_insert_with(Default::default)
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {
-        self.insert(node_id, data);
+        self.map.insert(node_id, data);
     }
 
     fn remove(&mut self, node_id: Id) {
-        self.remove(&node_id);
+        self.map.remove(&node_id);
     }
 
     fn clear(&mut self) {
-        self.clear();
+        self.map.clear();
     }
 }
 
