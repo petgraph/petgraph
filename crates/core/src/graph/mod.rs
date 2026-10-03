@@ -10,7 +10,7 @@ pub use self::{
     adjacent::{Predecessors, Successors},
     directed::DirectedGraph,
     disjoint::DisjointMutGraph,
-    storable::{Container, Storable},
+    storable::{DataContainer, Storable},
     undirected::UndirectedGraph,
 };
 use crate::id::Id;
