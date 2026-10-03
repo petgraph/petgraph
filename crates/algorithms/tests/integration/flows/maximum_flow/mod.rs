@@ -2,7 +2,7 @@ use paste::paste;
 use petgraph_algorithms::flows::maximum_flow::{MaxFlowReturn, dinics, edmonds_karp};
 use petgraph_core::{graph::DirectedGraph, utils::test_graphs::directed::DirectedTestGraph};
 
-use crate::run_macro_for_all_graphs;
+use crate::run_macro_for_all_dir_graphs;
 
 macro_rules! test_max_flow_on_graph {
     (
@@ -19,7 +19,7 @@ macro_rules! test_max_flow_on_graph {
             $graph_remove_node,
             $graph_remove_edge,
             |graph, source, destination| edmonds_karp(graph, source, destination)
-                .into_max_flow_and_flow_vec(),
+                .into_max_flow_and_flow_data(),
             edmonds_karp
         );
 
@@ -30,7 +30,7 @@ macro_rules! test_max_flow_on_graph {
             $graph_remove_node,
             $graph_remove_edge,
             |graph, source, destination| dinics(graph, source, destination)
-                .into_max_flow_and_flow_vec(),
+                .into_max_flow_and_flow_data(),
             dinics
         );
     };
@@ -147,8 +147,7 @@ macro_rules! test_max_flow_all_examples {
     };
 }
 
-// TODO: Uncomment and fix tests:
-// run_macro_for_all_graphs!(test_max_flow_on_graph);
+run_macro_for_all_dir_graphs!(test_max_flow_on_graph);
 
 pub(crate) fn test_max_flow_one_call_me<G: DirectedGraph>(
     graph_constructor: impl Fn() -> G,
