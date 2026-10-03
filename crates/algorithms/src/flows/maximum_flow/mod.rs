@@ -41,24 +41,29 @@ pub use dinics_mod::dinics;
 pub use edmonds_karp_mod::edmonds_karp;
 use petgraph_core::{
     edge::Edge,
-    graph::{DirectedGraph, Graph, Storable},
+    graph::{DirectedGraph, Graph, Storable, storable::Storable},
     id::IndexId,
 };
 
 use crate::traits::{Bounded, Measure, Zero};
 
 /// The return trait that is implemented by Max Flow algorithms
-pub trait MaxFlowReturn<'graph, G: Graph + 'graph> {
+pub trait MaxFlowReturn<'graph, G: Graph + Storable + 'graph> {
     /// Returns the maximum flow value computed by the algorithm.
     fn max_flow(&self) -> &G::EdgeData<'graph>;
 
-    /// Returns the flow of each edge computed by the algorithm. The slice is indexed by the
-    /// graph's edge indices.
-    fn flows(&self) -> &[G::EdgeData<'graph>];
+    /// Returns the flow of each edge computed by the algorithm in an EdgeDataContainer
+    /// corresponding to the respective graph type.
+    fn flows(&self) -> &G::EdgeDataContainer<G::EdgeData<'graph>>;
 
-    /// Consumes the struct and returns a tuple of the maximum flow value and a vector of the flow
-    /// of each edge. The vector is indexed by the graph's edge indices.
-    fn into_max_flow_and_flow_vec(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>);
+    /// Consumes the return value and returns the maximum flow value and the flow of each edge in an
+    /// EdgeDataContainer corresponding to the respective graph type.
+    fn into_max_flow_and_flow_data(
+        self,
+    ) -> (
+        G::EdgeData<'graph>,
+        G::EdgeDataContainer<G::EdgeData<'graph>>,
+    );
 }
 
 /// Solves the [Max Flow Problem] from `source` to `destination`.

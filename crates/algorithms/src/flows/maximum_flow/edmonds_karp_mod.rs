@@ -100,7 +100,7 @@ impl<'graph, G: Graph + 'graph> MaxFlowReturn<'graph, G> for EdmondsKarpOutput<'
         &self.flows
     }
 
-    fn into_max_flow_and_flow_vec(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
+    fn into_max_flow_and_flow_data(self) -> (G::EdgeData<'graph>, Vec<G::EdgeData<'graph>>) {
         (self.max_flow, self.flows)
     }
 }
