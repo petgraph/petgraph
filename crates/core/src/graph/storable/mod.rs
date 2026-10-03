@@ -20,12 +20,14 @@ pub trait VisitContainer<Id> {
 pub trait StackContainer<Data> {
     fn push(&mut self, data: Data);
     fn pop(&mut self) -> Option<Data>;
+    fn peek_last(&self) -> Option<&Data>;
     fn clear(&mut self);
 }
 
 pub trait QueueContainer<Data> {
     fn enqueue(&mut self, data: Data);
     fn dequeue(&mut self) -> Option<Data>;
+    fn peek_first(&self) -> Option<&Data>;
     fn clear(&mut self);
 }
 
