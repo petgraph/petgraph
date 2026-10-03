@@ -1,0 +1,22 @@
+[package]
+name                   = "petgraph-algorithms"
+version                = "0.1.0"
+authors.workspace      = true
+edition.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+petgraph-core = { workspace = true }
+
+[dev-dependencies]
+petgraph-core = {workspace = true, features = ["utils", "alloc"]}
+paste = "1.0"
+
+[features]
+default = ["alloc"]
+alloc   = ["petgraph-core/alloc"]

@@ -1,4 +1,6 @@
-use crate::{graph::Graph, id::Id};
+use core::borrow::Borrow;
+
+use crate::graph::Graph;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Direction {
@@ -16,14 +18,21 @@ pub struct Edge<I, D, N> {
     pub data: D,
 }
 
-impl<I, D, N> Edge<I, D, N> {
-    pub const fn opposite_endpoint(&self, direction: Direction) -> N
+impl<I, D, N> Edge<I, D, N>
+where
+    I: Copy,
+    N: Copy,
+{
+    pub fn to_owned_edge<DNew>(&self) -> Edge<I, DNew, N>
     where
-        N: Id,
+        D: Borrow<DNew>,
+        DNew: Clone,
     {
-        match direction {
-            Direction::Incoming => self.source,
-            Direction::Outgoing => self.target,
+        Edge {
+            id: self.id,
+            source: self.source,
+            target: self.target,
+            data: self.data.borrow().clone(),
         }
     }
 }
