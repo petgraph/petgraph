@@ -37,4 +37,7 @@ pub trait Storable: Graph {
 
     fn edge_visit_container(&self) -> impl VisitContainer<Self::EdgeId>;
     fn edge_data_container<Data>(&self) -> impl DataContainer<Self::EdgeId, Data>;
+
+    fn stack_container<Data>(&self) -> impl StackContainer<Data>;
+    fn queue_container<Data>(&self) -> impl QueueContainer<Data>;
 }
