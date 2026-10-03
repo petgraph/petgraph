@@ -1,7 +1,7 @@
 mod adjacent;
 mod directed;
 mod disjoint;
-mod storable;
+pub mod storable;
 mod undirected;
 
 use core::borrow::{Borrow, BorrowMut};
@@ -10,7 +10,6 @@ pub use self::{
     adjacent::{Predecessors, Successors},
     directed::DirectedGraph,
     disjoint::DisjointMutGraph,
-    storable::{DataContainer, Storable},
     undirected::UndirectedGraph,
 };
 use crate::id::Id;
