@@ -117,7 +117,7 @@ impl<'graph, G: Graph + Storable + 'graph> MaxFlowReturn<'graph, G> for DinicsOu
     fn into_max_flow_and_flow_data(
         self,
     ) -> (
-        <G as Graph>::EdgeData<'graph>,
+        G::EdgeData<'graph>,
         G::EdgeDataContainer<G::EdgeData<'graph>>,
     ) {
         (self.max_flow, self.flows)
