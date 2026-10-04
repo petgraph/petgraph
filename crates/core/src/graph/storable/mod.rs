@@ -1,6 +1,6 @@
 use crate::graph::Graph;
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "default-impls")]
 mod containers;
 
 /// A container for storing data associated with nodes or edges in a graph.
