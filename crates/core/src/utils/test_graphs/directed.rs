@@ -198,7 +198,7 @@ impl<Id: Eq + Hash, Data: Default> DataContainer<Id, Data> for DefaultMap<Id, Da
     }
 
     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-        self.map.entry(node_id).or_insert_with(Default::default)
+        self.map.entry(node_id).or_default()
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {

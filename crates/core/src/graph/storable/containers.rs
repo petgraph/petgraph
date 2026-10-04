@@ -16,11 +16,11 @@ impl<Id: IndexId, Data: Default> DataContainer<Id, Data> for Vec<(Id, Data)> {
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {
-        *&mut self[node_id.as_usize()].1 = data;
+        self[node_id.as_usize()].1 = data;
     }
 
     fn remove(&mut self, node_id: Id) {
-        *&mut self[node_id.as_usize()].1 = Data::default();
+        self[node_id.as_usize()].1 = Data::default();
     }
 
     fn clear(&mut self) {
@@ -54,11 +54,11 @@ impl<Id: Eq + Hash, S: BuildHasher> VisitContainer<Id> for HashSet<Id, S> {
 
 impl<Id: IndexId> VisitContainer<Id> for Vec<Option<()>> {
     fn mark_visited(&mut self, node_id: Id) {
-        *&mut self[node_id.as_usize()] = Some(());
+        self[node_id.as_usize()] = Some(());
     }
 
     fn mark_unvisited(&mut self, node_id: Id) {
-        *&mut self[node_id.as_usize()] = None;
+        self[node_id.as_usize()] = None;
     }
 
     fn is_visited(&self, node_id: Id) -> bool {
@@ -66,8 +66,8 @@ impl<Id: IndexId> VisitContainer<Id> for Vec<Option<()>> {
     }
 
     fn clear(&mut self) {
-        for v in self.iter_mut() {
-            *v = None;
+        for entry in self.iter_mut() {
+            *entry = None;
         }
     }
 }
