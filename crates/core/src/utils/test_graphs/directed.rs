@@ -1,7 +1,7 @@
 use alloc::{collections::VecDeque, vec::Vec};
 use core::{
     fmt::{self, Display},
-    hash::Hash,
+    hash::{BuildHasher, Hash},
     ops::AddAssign,
 };
 
@@ -187,12 +187,14 @@ where
     }
 }
 
-pub struct DefaultMap<Id, Data> {
-    map: HashMap<Id, Data>,
+pub struct DefaultMap<Id, Data, S = foldhash::fast::RandomState> {
+    map: HashMap<Id, Data, S>,
     default: Data,
 }
 
-impl<Id: Eq + Hash, Data: Default> DataContainer<Id, Data> for DefaultMap<Id, Data> {
+impl<Id: Eq + Hash, Data: Default, S: BuildHasher> DataContainer<Id, Data>
+    for DefaultMap<Id, Data, S>
+{
     fn get(&self, node_id: Id) -> &Data {
         self.map.get(&node_id).unwrap_or(&self.default)
     }

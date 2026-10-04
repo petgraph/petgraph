@@ -14,7 +14,7 @@ foldhash  = { workspace = true, optional = true }
 hashbrown = { workspace = true, optional = true }
 
 [features]
-utils = ["dep:foldhash", "dep:hashbrown"]
+utils = ["dep:foldhash", "dep:hashbrown", "alloc"]
 alloc = []
 
 [lints]
