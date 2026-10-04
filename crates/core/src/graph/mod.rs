@@ -1,6 +1,7 @@
 mod adjacent;
 mod directed;
 mod disjoint;
+pub mod editable;
 pub mod storable;
 mod undirected;
 
