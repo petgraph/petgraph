@@ -215,19 +215,6 @@ where
     pub fn remove_edge(&mut self, edge_id: EI) -> Option<E> {
         self.edges.remove(&edge_id).map(|(_, _, data)| data)
     }
-
-    pub fn extend_with_edges<IntoNI: TryInto<NI>>(
-        &mut self,
-        edges: impl IntoIterator<Item = (IntoNI, IntoNI, E)>,
-    ) {
-        for (source, target, edge) in edges {
-            self.add_edge(
-                source.try_into().ok().unwrap(),
-                target.try_into().ok().unwrap(),
-                edge,
-            );
-        }
-    }
 }
 
 impl<N, E, NI, EI> Default for DirectedTestGraph<N, E, NI, EI>
