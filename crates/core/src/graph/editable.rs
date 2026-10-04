@@ -1,3 +1,5 @@
+use core::error::Error;
+
 use crate::graph::Graph;
 
 /// A graph that can be modified by adding and removing nodes and edges.
@@ -8,8 +10,8 @@ use crate::graph::Graph;
 pub trait EditableGraph: Graph {
     type OwnedNodeData;
     type OwnedEdgeData;
-    type AddNodeError;
-    type AddEdgeError;
+    type AddNodeError: Error;
+    type AddEdgeError: Error;
 
     /// Add a node to the graph and return its `NodeId`.
     ///
@@ -19,7 +21,8 @@ pub trait EditableGraph: Graph {
 
     /// Add an edge to the graph and return its `EdgeId`.
     ///
-    /// For `UndirectedGraph`s the order of `source` and `target` is irrelevant.
+    /// For [`UndirectedGraph`](crate::graph::UndirectedGraph)s the order of `source` and `target`
+    /// is irrelevant.
     ///
     /// # Errors
     /// May return an error, whose causes depend on the implementation.
@@ -39,4 +42,67 @@ pub trait EditableGraph: Graph {
     ///
     /// Returns `None` if the edge was not in the graph.
     fn remove_edge(&mut self, id: Self::EdgeId) -> Option<Self::OwnedEdgeData>;
+}
+
+impl<G> EditableGraph for &mut G
+where
+    G: EditableGraph,
+{
+    type AddEdgeError = G::AddEdgeError;
+    type AddNodeError = G::AddNodeError;
+    type OwnedEdgeData = G::OwnedEdgeData;
+    type OwnedNodeData = G::OwnedNodeData;
+
+    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
+        (**self).add_node(data)
+    }
+
+    fn add_edge(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+        data: Self::OwnedEdgeData,
+    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
+        (**self).add_edge(source, target, data)
+    }
+
+    fn remove_node(&mut self, id: Self::NodeId) -> Option<Self::OwnedNodeData> {
+        (**self).remove_node(id)
+    }
+
+    fn remove_edge(&mut self, id: Self::EdgeId) -> Option<Self::OwnedEdgeData> {
+        (**self).remove_edge(id)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<G> EditableGraph for alloc::boxed::Box<G>
+where
+    G: EditableGraph,
+{
+    type AddEdgeError = G::AddEdgeError;
+    type AddNodeError = G::AddNodeError;
+    type OwnedEdgeData = G::OwnedEdgeData;
+    type OwnedNodeData = G::OwnedNodeData;
+
+    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
+        (**self).add_node(data)
+    }
+
+    fn add_edge(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+        data: Self::OwnedEdgeData,
+    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
+        (**self).add_edge(source, target, data)
+    }
+
+    fn remove_node(&mut self, id: Self::NodeId) -> Option<Self::OwnedNodeData> {
+        (**self).remove_node(id)
+    }
+
+    fn remove_edge(&mut self, id: Self::EdgeId) -> Option<Self::OwnedEdgeData> {
+        (**self).remove_edge(id)
+    }
 }
