@@ -8,4 +8,4 @@
 //!
 //! [flow_problems_wikipedia]: https://en.wikipedia.org/wiki/Network_flow_problem
 
-pub mod maximum_flow;
+pub mod max_flow;

@@ -1,1 +1,1 @@
-mod maximum_flow;
+mod max_flow;

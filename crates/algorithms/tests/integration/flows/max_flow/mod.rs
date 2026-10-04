@@ -1,5 +1,5 @@
 use paste::paste;
-use petgraph_algorithms::flows::maximum_flow::{MaxFlowReturn, dinics, edmonds_karp};
+use petgraph_algorithms::flows::max_flow::{MaxFlowReturn, dinics, edmonds_karp};
 use petgraph_core::{
     graph::{DirectedGraph, storable::Storable},
     utils::test_graphs::directed::DirectedTestGraph,

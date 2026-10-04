@@ -13,7 +13,7 @@ use petgraph_core::{
 
 use super::{other_endpoint, residual_capacity};
 use crate::{
-    flows::maximum_flow::{MaxFlowReturn, adjusted_residual_flow},
+    flows::max_flow::{MaxFlowReturn, adjusted_residual_flow},
     traits::{Bounded, Measure, Zero},
 };
 
