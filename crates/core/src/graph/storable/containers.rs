@@ -6,31 +6,33 @@ use hashbrown::HashSet;
 use super::{DataContainer, QueueContainer, StackContainer, VisitContainer};
 use crate::id::IndexId;
 
-impl<Id: IndexId, Data: Default> DataContainer<Id, Data> for Vec<(Id, Data)> {
+impl<Id: IndexId, Data: Default> DataContainer<Id, Data> for Vec<Data> {
     fn get(&self, node_id: Id) -> &Data {
-        &self[node_id.as_usize()].1
+        &self[node_id.as_usize()]
     }
 
     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-        &mut self[node_id.as_usize()].1
+        &mut self[node_id.as_usize()]
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {
-        self[node_id.as_usize()].1 = data;
+        self[node_id.as_usize()] = data;
     }
 
     fn remove(&mut self, node_id: Id) {
-        self[node_id.as_usize()].1 = Data::default();
+        self[node_id.as_usize()] = Data::default();
     }
 
     fn clear(&mut self) {
-        for (_, data) in self.iter_mut() {
+        for data in self.iter_mut() {
             *data = Data::default();
         }
     }
 
     fn into_iter(self) -> impl Iterator<Item = (Id, Data)> {
         IntoIterator::into_iter(self)
+            .enumerate()
+            .map(|(index, data)| (Id::from_usize(index), data))
     }
 }
 
