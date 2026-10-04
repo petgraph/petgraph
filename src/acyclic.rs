@@ -683,6 +683,20 @@ macro_rules! impl_graph_traits {
                 self.order_map.remove_node(n, &self.graph);
                 self.graph.remove_node(n)
             }
+
+            /// Return an iterator yielding mutable access to all node weights.
+            ///
+            /// Pass through to the underlying graph.
+            pub fn node_weights_mut(&mut self) -> impl Iterator<Item = &mut N> {
+                self.graph.node_weights_mut()
+            }
+
+            /// Return an iterator yielding mutable access to all edge weights.
+            ///
+            /// Pass through to the underlying graph.
+            pub fn edge_weights_mut(&mut self) -> impl Iterator<Item = &mut E> {
+                self.graph.edge_weights_mut()
+            }
         }
 
         impl<N, E, Ix: IndexType> TryFrom<$graph_type<N, E, Ix>>

@@ -2,8 +2,7 @@ use core::ops::{Deref, Index, IndexMut};
 
 use super::Frozen;
 use crate::data::{DataMap, DataMapMut};
-use crate::graph::Graph;
-use crate::graph::{GraphIndex, IndexType};
+use crate::graph::{EdgeWeightsMut, Graph, GraphIndex, IndexType, NodeWeightsMut};
 use crate::visit::{
     Data, EdgeCount, EdgeIndexable, GetAdjacencyMatrix, GraphBase, GraphProp, IntoEdges,
     IntoEdgesDirected, IntoNeighborsDirected, IntoNodeIdentifiers, NodeCompactIndexable, NodeCount,
@@ -52,6 +51,22 @@ where
     Ty: EdgeType,
     Ix: IndexType,
 {
+    /// Return an iterator yielding mutable access to all node weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// node indices.
+    pub fn node_weights_mut(&mut self) -> NodeWeightsMut<'_, N, Ix> {
+        self.0.node_weights_mut()
+    }
+
+    /// Return an iterator yielding mutable access to all edge weights.
+    ///
+    /// The order in which weights are yielded matches the order of their
+    /// edge indices.
+    pub fn edge_weights_mut(&mut self) -> EdgeWeightsMut<'_, E, Ix> {
+        self.0.edge_weights_mut()
+    }
+
     #[allow(clippy::type_complexity)]
     /// Index the `Graph` by two indices, any combination of
     /// node or edge indices is fine.
