@@ -1,5 +1,10 @@
 use crate::graph::Graph;
 
+/// A graph that can be modified by adding and removing nodes and edges.
+///
+/// Data is moved in and out of the graph using owned types, which may be different from the types
+/// used to view the data in the graph. This is mostly an implementation detail and used to detach
+/// the lifetime of the returned data from the lifetime of the graph itself in generic code.
 pub trait EditableGraph: Graph {
     type OwnedNodeData;
     type OwnedEdgeData;
