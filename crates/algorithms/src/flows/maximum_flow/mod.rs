@@ -48,25 +48,17 @@ use petgraph_core::{
 use crate::traits::{Bounded, Measure, Zero};
 
 /// The return trait that is implemented by Max Flow algorithms
-pub trait MaxFlowReturn<'graph, G: Graph + Storable + 'graph>
-where
-    G::EdgeData<'graph>: Default,
-{
+pub trait MaxFlowReturn<G: Graph + Storable, C: Default> {
     /// Returns the maximum flow value computed by the algorithm.
-    fn max_flow(&self) -> &G::EdgeData<'graph>;
+    fn max_flow(&self) -> &C;
 
     /// Returns the flow of each edge computed by the algorithm in an EdgeDataContainer
     /// corresponding to the respective graph type.
-    fn flows(&self) -> &G::EdgeDataContainer<G::EdgeData<'graph>>;
+    fn flows(&self) -> &G::EdgeDataContainer<C>;
 
     /// Consumes the return value and returns the maximum flow value and the flow of each edge in an
     /// EdgeDataContainer corresponding to the respective graph type.
-    fn into_max_flow_and_flow_data(
-        self,
-    ) -> (
-        G::EdgeData<'graph>,
-        G::EdgeDataContainer<G::EdgeData<'graph>>,
-    );
+    fn into_max_flow_and_flow_data(self) -> (C, G::EdgeDataContainer<C>);
 }
 
 /// Solves the [Max Flow Problem] from `source` to `destination`.
@@ -101,7 +93,9 @@ where
 ///
 /// # Example
 /// ```rust
-/// use petgraph::{Graph, algo::max_flow};
+/// use petgraph_algorithms::flows::maximum_flow::{MaxFlowReturn, max_flow};
+/// use petgraph_core::utils::test_graphs::directed::DirectedTestGraph as Graph;
+///
 /// // Example from CLRS book
 /// let mut graph = Graph::<u8, u8>::new();
 /// let source = graph.add_node(0);
@@ -123,33 +117,29 @@ where
 ///     (4, 5, 4),
 /// ]);
 ///
-/// let result = max_flow(&graph, source, destination);
+/// let result = max_flow::<_, u8>(&graph, source, destination);
 /// assert_eq!(&23, result.max_flow());
 /// ```
-pub fn max_flow<'graph, 'graph_ref, G>(
+pub fn max_flow<'graph_ref, G, C>(
     network: &'graph_ref G,
     source: G::NodeId,
     destination: G::NodeId,
-) -> impl MaxFlowReturn<'graph, G> + use<'graph, G>
+) -> impl MaxFlowReturn<G, C> + use<G, C>
 where
-    G: DirectedGraph + Storable + 'graph,
+    G: DirectedGraph + Storable,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Measure + Zero + Bounded + Ord,
-    G::EdgeDataRef<'graph_ref>: Borrow<G::EdgeData<'graph>>,
+    G::EdgeDataRef<'graph_ref>: Borrow<C>,
+    C: Sub<Output = C> + Measure + Zero + Bounded + Ord,
 {
     dinics(network, source, destination)
 }
 
 /// Returns the residual capacity of given edge.
-fn residual_capacity<'graph, G: 'graph>(
-    edge: Edge<G::EdgeId, G::EdgeData<'graph>, G::NodeId>,
-    vertex: G::NodeId,
-    flow: G::EdgeData<'graph>,
-) -> G::EdgeData<'graph>
+fn residual_capacity<G, C>(edge: Edge<G::EdgeId, C, G::NodeId>, vertex: G::NodeId, flow: C) -> C
 where
     G: DirectedGraph,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Copy,
+    C: Sub<Output = C> + Copy,
 {
     if vertex == edge.source {
         // backward edge
@@ -177,15 +167,15 @@ where
 }
 
 /// Returns the adjusted residual flow for given edge and flow increase.
-fn adjusted_residual_flow<'graph, G: 'graph, D>(
+fn adjusted_residual_flow<G, D, C>(
     edge: &Edge<G::EdgeId, D, G::NodeId>,
     target_vertex: G::NodeId,
-    flow: G::EdgeData<'graph>,
-    flow_increase: G::EdgeData<'graph>,
-) -> G::EdgeData<'graph>
+    flow: C,
+    flow_increase: C,
+) -> C
 where
     G: DirectedGraph,
-    G::EdgeData<'graph>: Sub<Output = G::EdgeData<'graph>> + Add<Output = G::EdgeData<'graph>>,
+    C: Sub<Output = C> + Add<Output = C>,
 {
     if target_vertex == edge.source {
         // backward edge

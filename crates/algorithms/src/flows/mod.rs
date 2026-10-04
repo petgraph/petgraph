@@ -1,5 +1,5 @@
 //! # Flows
-//! 
+//!
 //! In this module, we provide algorithms to solve various flow problems in graphs.
 //! [Flow problems](flow_problems_wikipedia), are a class of problems in which the input is a flow
 //! network (a graph with attributes like capacity, cost or demand on its edges), and the goal is to
