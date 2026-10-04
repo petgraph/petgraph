@@ -8,7 +8,7 @@ pub mod edge;
 pub mod graph;
 pub mod id;
 pub mod node;
-#[cfg(feature = "utils")]
+#[cfg(feature = "test-utils")]
 pub mod utils;
 
 #[must_use]
