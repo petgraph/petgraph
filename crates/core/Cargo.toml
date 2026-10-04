@@ -14,6 +14,7 @@ foldhash  = { workspace = true, optional = true }
 hashbrown = { workspace = true, optional = true }
 
 [features]
+default-impls = ["dep:hashbrown", "alloc"]
 utils = ["dep:foldhash", "dep:hashbrown", "alloc"]
 alloc = []
 
