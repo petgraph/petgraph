@@ -496,11 +496,13 @@ where
         weight: E,
     ) -> Result<EdgeIndex<Ix>, GraphError> {
         let edge_idx;
+        let reused_edge;
         let mut new_edge = None::<Edge<_, _>>;
         {
             let edge: &mut Edge<_, _>;
 
-            if self.free_edge != EdgeIndex::end() {
+            reused_edge = self.free_edge != EdgeIndex::end();
+            if reused_edge {
                 edge_idx = self.free_edge;
                 edge = &mut self.g.edges[edge_idx.index()];
                 let _old = edge.weight.replace(weight);
@@ -547,6 +549,11 @@ where
                 }
             };
             if let Some(i) = wrong_index {
+                if reused_edge {
+                    edge.weight = None;
+                    edge.node = [NodeIndex::end(); 2];
+                    self.free_edge = edge_idx;
+                }
                 return Err(GraphError::NodeMissed(i));
             }
             self.edge_count += 1;
@@ -2450,6 +2457,30 @@ where
     fn edge_count(&self) -> usize {
         self.edge_count()
     }
+}
+
+#[test]
+fn try_add_edge_missing_node_does_not_consume_free_edge() {
+    let mut graph = StableDiGraph::<&str, i32>::new();
+    let a = graph.add_node("a");
+    let b = graph.add_node("b");
+    let edge = graph.add_edge(a, b, 10);
+
+    assert_eq!(graph.remove_edge(edge), Some(10));
+    assert_eq!(graph.remove_node(b), Some("b"));
+
+    assert_eq!(
+        graph.try_add_edge(a, b, 99),
+        Err(GraphError::NodeMissed(b.index()))
+    );
+    assert_eq!(graph.edge_count(), 0);
+    assert_eq!(graph.edge_indices().count(), 0);
+    assert_eq!(graph.edge_weight(edge), None);
+
+    let c = graph.add_node("c");
+    assert_eq!(graph.try_add_edge(a, c, 20), Ok(edge));
+    assert_eq!(graph.edge_count(), 1);
+    assert_eq!(graph.edge_weight(edge), Some(&20));
 }
 
 #[test]
