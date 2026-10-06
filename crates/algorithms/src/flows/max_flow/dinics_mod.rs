@@ -53,7 +53,8 @@ impl<'graph_ref, G: Graph> Dinics<'graph_ref, G> {
     ///
     /// The source and destination nodes can be set using a builder pattern with the `with_source`
     /// and `with_destination` methods.
-    pub fn new(network: &'graph_ref G) -> Self {
+    #[must_use]
+    pub const fn new(network: &'graph_ref G) -> Self {
         Self {
             network,
             source: None,
@@ -62,13 +63,15 @@ impl<'graph_ref, G: Graph> Dinics<'graph_ref, G> {
     }
 
     /// Sets the source node for the flow.
-    pub fn with_source(mut self, source: G::NodeId) -> Self {
+    #[must_use]
+    pub const fn with_source(mut self, source: G::NodeId) -> Self {
         self.source = Some(source);
         self
     }
 
     /// Sets the destination node for the flow.
-    pub fn with_destination(mut self, destination: G::NodeId) -> Self {
+    #[must_use]
+    pub const fn with_destination(mut self, destination: G::NodeId) -> Self {
         self.destination = Some(destination);
         self
     }
@@ -84,6 +87,9 @@ where
     ///
     /// For an explanation of the algorithm, see the documentation of [`dinics`].
     /// If an invalid configuration is detected, an appropriate error is returned.
+    ///
+    /// # Errors
+    /// Returns an error if the source or destination node is not set.
     pub fn run<C>(&self) -> Result<DinicsOutput<G, C>, DinicsConfigError>
     where
         G::EdgeDataRef<'graph_ref>: Borrow<C>,

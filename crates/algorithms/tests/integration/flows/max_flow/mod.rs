@@ -152,7 +152,7 @@ macro_rules! test_max_flow_all_examples {
 
 run_macro_for_all_dir_graphs!(test_max_flow_on_graph);
 
-pub(crate) fn test_max_flow_one_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_one_call_me<G: DirectedGraph + Storable>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -162,11 +162,12 @@ pub(crate) fn test_max_flow_one_call_me<G: DirectedGraph + Storable>(
 ) {
     // Example from https://downey.io/blog/max-flow-ford-fulkerson-algorithm-explanation/
     let mut graph = graph_constructor();
-    let mut nodes = Vec::new();
-    nodes.push(graph_add_node(&mut graph, ()));
-    nodes.push(graph_add_node(&mut graph, ()));
-    nodes.push(graph_add_node(&mut graph, ()));
-    nodes.push(graph_add_node(&mut graph, ()));
+    let nodes = [
+        graph_add_node(&mut graph, ()),
+        graph_add_node(&mut graph, ()),
+        graph_add_node(&mut graph, ()),
+        graph_add_node(&mut graph, ()),
+    ];
     for (source, sink, weight) in [(0, 1, 3), (0, 2, 2), (1, 2, 5), (1, 3, 2), (2, 3, 3)] {
         graph_add_edge(&mut graph, nodes[source], nodes[sink], weight);
     }
@@ -174,7 +175,7 @@ pub(crate) fn test_max_flow_one_call_me<G: DirectedGraph + Storable>(
     assert_eq!(5, max_flow);
 }
 
-pub(crate) fn test_max_flow_two_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_two_call_me<G: DirectedGraph + Storable>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -203,7 +204,7 @@ pub(crate) fn test_max_flow_two_call_me<G: DirectedGraph + Storable>(
     assert_eq!(7, max_flow);
 }
 
-pub(crate) fn test_max_flow_three_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_three_call_me<G: DirectedGraph + Storable>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -234,7 +235,7 @@ pub(crate) fn test_max_flow_three_call_me<G: DirectedGraph + Storable>(
     assert_eq!(10, max_flow);
 }
 
-pub(crate) fn test_max_flow_four_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_four_call_me<G: DirectedGraph + Storable>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -263,7 +264,7 @@ pub(crate) fn test_max_flow_four_call_me<G: DirectedGraph + Storable>(
     assert_eq!(5, max_flow);
 }
 
-pub(crate) fn test_max_flow_five_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_five_call_me<G: DirectedGraph + Storable>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -294,7 +295,7 @@ pub(crate) fn test_max_flow_five_call_me<G: DirectedGraph + Storable>(
     assert_eq!(23, max_flow);
 }
 
-pub(crate) fn test_max_flow_six_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_six_call_me<G: DirectedGraph + Storable>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -325,7 +326,7 @@ pub(crate) fn test_max_flow_six_call_me<G: DirectedGraph + Storable>(
     assert_eq!(19, max_flow);
 }
 
-pub(crate) fn test_max_flow_seven_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_seven_call_me<G: DirectedGraph + Storable>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -336,25 +337,24 @@ pub(crate) fn test_max_flow_seven_call_me<G: DirectedGraph + Storable>(
     // Example that can lead to invalid answers if backward edges
     // in residual network are not considered, resulting in a flow of 3
     // instead of the maximum 4
+    let mut graph = graph_constructor();
 
-    let mut g = graph_constructor();
+    let node_s = graph_add_node(&mut graph, ());
+    let node_a = graph_add_node(&mut graph, ());
+    let node_b = graph_add_node(&mut graph, ());
+    let node_c = graph_add_node(&mut graph, ());
+    let node_d = graph_add_node(&mut graph, ());
+    let node_t = graph_add_node(&mut graph, ());
 
-    let s = graph_add_node(&mut g, ());
-    let a = graph_add_node(&mut g, ());
-    let b = graph_add_node(&mut g, ());
-    let c = graph_add_node(&mut g, ());
-    let d = graph_add_node(&mut g, ());
-    let t = graph_add_node(&mut g, ());
+    graph_add_edge(&mut graph, node_s, node_a, 2);
+    graph_add_edge(&mut graph, node_s, node_b, 2);
+    graph_add_edge(&mut graph, node_a, node_c, 1); // misleading edge
+    graph_add_edge(&mut graph, node_a, node_d, 2);
+    graph_add_edge(&mut graph, node_b, node_c, 2);
+    graph_add_edge(&mut graph, node_c, node_t, 2);
+    graph_add_edge(&mut graph, node_d, node_t, 2);
 
-    graph_add_edge(&mut g, s, a, 2);
-    graph_add_edge(&mut g, s, b, 2);
-    graph_add_edge(&mut g, a, c, 1); // misleading edge
-    graph_add_edge(&mut g, a, d, 2);
-    graph_add_edge(&mut g, b, c, 2);
-    graph_add_edge(&mut g, c, t, 2);
-    graph_add_edge(&mut g, d, t, 2);
-
-    let (flow, _) = flow_algorithm(&g, s, t);
+    let (flow, _) = flow_algorithm(&graph, node_s, node_t);
 
     assert_eq!(flow, 4);
 }

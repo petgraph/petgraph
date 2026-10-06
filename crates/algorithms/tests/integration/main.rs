@@ -46,8 +46,8 @@ macro_rules! run_macro_for_all_dir_graphs {
                 petgraph_core::utils::test_graphs::directed::DirNodeId,
                 petgraph_core::utils::test_graphs::directed::DirEdgeId,
             >::add_edge,
-            crate::directed_test_graph_remove_node_with_unwrap,
-            crate::directed_test_graph_remove_edge_with_unwrap
+            $crate::directed_test_graph_remove_node_with_unwrap,
+            $crate::directed_test_graph_remove_edge_with_unwrap
         );
         // Add more graphs here as available
     };
