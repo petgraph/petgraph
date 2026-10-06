@@ -15,9 +15,7 @@ use petgraph_core::{
 };
 
 use crate::{
-    flows::max_flow::{
-        MaxFlowReturn, adjusted_residual_flow, other_endpoint, residual_capacity,
-    },
+    flows::max_flow::{MaxFlowReturn, adjusted_residual_flow, other_endpoint, residual_capacity},
     traits::{Bounded, Measure, Zero},
 };
 
