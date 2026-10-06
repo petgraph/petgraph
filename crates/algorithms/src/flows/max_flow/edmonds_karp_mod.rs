@@ -109,7 +109,7 @@ where
 /// Output of the [`edmonds_karp`] algorithm.
 ///
 /// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
-/// with [`EdmondsKarpOutput::into_max_flow_and_flows`].
+/// with [`EdmondsKarpOutput::into_max_flow_and_flow_data`].
 pub struct EdmondsKarpOutput<G: Graph + Storable, C: Default> {
     max_flow: C,
     flows: G::EdgeDataContainer<C>,
@@ -156,9 +156,7 @@ impl<G: Graph + Storable, C: Default> MaxFlowReturn<G, C> for EdmondsKarpOutput<
 /// [edmonds_karp]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
 ///
 /// # Example
-/// ```rust
 /// // TODO
-/// ```
 pub fn edmonds_karp<'graph_ref, G, C>(
     network: &'graph_ref G,
     source: G::NodeId,

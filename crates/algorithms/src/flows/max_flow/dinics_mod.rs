@@ -106,7 +106,7 @@ where
 /// Output of [`dinics`] algorithm.
 ///
 /// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
-/// with [`DinicsOutput::into_max_flow_and_flow_vec`].
+/// with [`DinicsOutput::into_max_flow_and_flow_data`].
 pub struct DinicsOutput<G: Graph + Storable, C: Default> {
     max_flow: C,
     flows: G::EdgeDataContainer<C>,
@@ -157,9 +157,7 @@ impl<G: Graph + Storable, C: Default> MaxFlowReturn<G, C> for DinicsOutput<G, C>
 /// [dinics]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
 ///
 /// # Example
-/// ```rust
 /// // TODO: Add example
-/// ```
 pub fn dinics<'graph_ref, G, C>(
     network: &'graph_ref G,
     source: G::NodeId,
