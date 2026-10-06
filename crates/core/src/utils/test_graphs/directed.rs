@@ -58,7 +58,7 @@ impl TryFrom<u64> for DirNodeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        Ok(Self(value as usize))
+        Ok(Self(usize::try_from(value).unwrap()))
     }
 }
 
@@ -66,7 +66,7 @@ impl TryFrom<usize> for DirNodeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
-        Ok(Self(value as usize))
+        Ok(Self(value))
     }
 }
 
@@ -75,11 +75,11 @@ impl IndexId for DirNodeId {
     const MIN: Self = Self(0);
 
     fn as_u16(self) -> u16 {
-        self.0 as u16
+        u16::try_from(self.0).unwrap()
     }
 
     fn as_u32(self) -> u32 {
-        self.0 as u32
+        u32::try_from(self.0).unwrap()
     }
 
     fn as_u64(self) -> u64 {
@@ -125,7 +125,7 @@ impl TryFrom<u64> for DirEdgeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        Ok(Self(value as usize))
+        Ok(Self(usize::try_from(value).unwrap()))
     }
 }
 
@@ -133,7 +133,7 @@ impl TryFrom<usize> for DirEdgeId {
     type Error = IndexIdTryFromIntError;
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
-        Ok(Self(value as usize))
+        Ok(Self(value))
     }
 }
 
@@ -142,11 +142,11 @@ impl IndexId for DirEdgeId {
     const MIN: Self = Self(0);
 
     fn as_u16(self) -> u16 {
-        self.0 as u16
+        u16::try_from(self.0).unwrap()
     }
 
     fn as_u32(self) -> u32 {
-        self.0 as u32
+        u32::try_from(self.0).unwrap()
     }
 
     fn as_u64(self) -> u64 {

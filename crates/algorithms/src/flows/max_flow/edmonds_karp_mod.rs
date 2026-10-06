@@ -29,8 +29,8 @@ pub enum EdmondsKarpConfigError {
 impl Display for EdmondsKarpConfigError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            EdmondsKarpConfigError::SourceNodeNotSet => write!(f, "Source node is not set"),
-            EdmondsKarpConfigError::DestinationNodeNotSet => {
+            Self::SourceNodeNotSet => write!(f, "Source node is not set"),
+            Self::DestinationNodeNotSet => {
                 write!(f, "Destination node is not set")
             }
         }
@@ -54,7 +54,8 @@ impl<'graph_ref, G: Graph> EdmondsKarp<'graph_ref, G> {
     ///
     /// The source and destination nodes can be set using a builder pattern with the `with_source`
     /// and `with_destination` methods.
-    pub fn new(network: &'graph_ref G) -> Self {
+    #[must_use]
+    pub const fn new(network: &'graph_ref G) -> Self {
         Self {
             network,
             source: None,
@@ -63,13 +64,15 @@ impl<'graph_ref, G: Graph> EdmondsKarp<'graph_ref, G> {
     }
 
     /// Sets the source node for the flow.
-    pub fn with_source(mut self, source: G::NodeId) -> Self {
+    #[must_use]
+    pub const fn with_source(mut self, source: G::NodeId) -> Self {
         self.source = Some(source);
         self
     }
 
     /// Sets the destination node for the flow.
-    pub fn with_destination(mut self, destination: G::NodeId) -> Self {
+    #[must_use]
+    pub const fn with_destination(mut self, destination: G::NodeId) -> Self {
         self.destination = Some(destination);
         self
     }
@@ -85,6 +88,9 @@ where
     ///
     /// For an explanation of the algorithm, see the documentation of [`edmonds_karp`].
     /// If an invalid configuration is detected, an appropriate error is returned.
+    ///
+    /// # Errors
+    /// Returns an error if the source or destination node is not set.
     pub fn run<C>(&self) -> Result<EdmondsKarpOutput<G, C>, EdmondsKarpConfigError>
     where
         G::EdgeDataRef<'graph_ref>: Borrow<C> + Copy,
@@ -123,14 +129,16 @@ impl<G: Graph + Storable, C: Default> MaxFlowReturn<G, C> for EdmondsKarpOutput<
     }
 }
 
-/// Find a [maximum_flow_problem] from `source` to `destination` using the
-/// [Edmond-Karp][edmonds_karp] implementation of the [Ford-Fulkerson][ford_fulkerson] method. Edge
-/// Data of the provided graph is interpreted as capacities of edges.
+/// Find a [Maximum Flow][maximum_flow] from `source` to `destination` using the
+/// [Edmond-Karp][edmonds_karp] implementation of the [Ford-Fulkerson][ford_fulkerson] method.
 ///
-/// See also [`maximum_flow`][maximum_flow_mod] module for other maximum flow algorithms.
+/// Edge Data of the provided graph is interpreted as capacities of edges.
+///
+/// See also [`maximum_flow`](../index.html) module for other maximum flow algorithms.
 ///
 /// # Arguments
-/// - `network`: Directed graph where edge data are capacities of edges.
+/// - `network`: A directed graph with positive edge data which is interpreted as capacities of
+///   edges.
 /// - `source`: Source node for the flow.
 /// - `destination`: Sink node for the flow.
 ///
@@ -138,41 +146,18 @@ impl<G: Graph + Storable, C: Default> MaxFlowReturn<G, C> for EdmondsKarpOutput<
 /// Returns a struct wrapping the maximum flow value and the flow of each edge.
 ///
 /// # Complexity
-/// - Time: **O(|V||E|²)**.
-/// - Auxiliary space: **O(|V| + |E|)**.
+/// - Time complexity: **O(|V||E|²)**
+/// - Auxiliary space: **O(|V| + |E|)**
 ///
-/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+/// Where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
-/// [maximum_flow_problem]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+/// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [ford_fulkerson]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 /// [edmonds_karp]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
-/// [maximum_flow_mod]: index.html
 ///
 /// # Example
 /// ```rust
-/// // use petgraph::{Graph, algo::ford_fulkerson};
-/// // // Example from CLRS book
-/// // let mut graph = Graph::<u8, u8>::new();
-/// // let source = graph.add_node(0);
-/// // let _ = graph.add_node(1);
-/// // let _ = graph.add_node(2);
-/// // let _ = graph.add_node(3);
-/// // let _ = graph.add_node(4);
-/// // let destination = graph.add_node(5);
-/// // graph.extend_with_edges(&[
-/// //     (0, 1, 16),
-/// //     (0, 2, 13),
-/// //     (1, 2, 10),
-/// //     (1, 3, 12),
-/// //     (2, 1, 4),
-/// //     (2, 4, 14),
-/// //     (3, 2, 9),
-/// //     (3, 5, 20),
-/// //     (4, 3, 7),
-/// //     (4, 5, 4),
-/// // ]);
-/// // let (max_flow, _) = ford_fulkerson(&graph, source, destination);
-/// // assert_eq!(23, max_flow);
+/// // TODO
 /// ```
 pub fn edmonds_karp<'graph_ref, G, C>(
     network: &'graph_ref G,
@@ -234,6 +219,7 @@ where
 }
 
 /// Returns whether there is an augmenting path in the graph
+#[allow(clippy::type_complexity)]
 fn has_augmented_path<'graph_ref, G, C>(
     network: &'graph_ref G,
     source: G::NodeId,

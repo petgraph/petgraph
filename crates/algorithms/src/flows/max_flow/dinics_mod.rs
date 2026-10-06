@@ -120,13 +120,15 @@ impl<G: Graph + Storable, C: Default> MaxFlowReturn<G, C> for DinicsOutput<G, C>
     }
 }
 
-/// Find a [maximum_flow_problem] from `source` to `destination` using [Dinic's (or Dinitz's)
-/// algorithm][dinics], which builds successive level graphs using breadth-first search and finds
+/// Find a [Maximum Flow][maximum_flow] from `source` to `destination` using [Dinic's (or Dinitz's)
+/// algorithm][dinics].
+///
+/// The algorithm works by building successive level graphs using breadth-first search and finds
 /// blocking flows within them through depth-first searches.
 ///
 /// Edge Data of the provided graph is interpreted as capacities of edges.
 ///
-/// See also [`maximum_flow`][maximum_flow_mod] module for other maximum flow algorithms.
+/// See also the [`max_flow`](../index.html) module for other maximum flow algorithms.
 ///
 /// # Arguments
 /// - `network`: A directed graph with positive edge data which is interpreted as capacities of
@@ -143,14 +145,14 @@ impl<G: Graph + Storable, C: Default> MaxFlowReturn<G, C> for DinicsOutput<G, C>
 ///   - In networks with only unit capacities: **O(min{|V|²ᐟ³, |E|¹ᐟ²} |E|)**
 /// - Auxiliary space: **O(|V| + |E|)**.
 ///
-/// where **|V|** is the number of nodes and **|E|** is the number of edges.
+/// Where **|V|** is the number of nodes and **|E|** is the number of edges.
 ///
-/// [maximum_flow_problem]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+/// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [dinics]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
-/// [maximum_flow_mod]: index.html
 ///
 /// # Example
 /// ```rust
+/// // TODO: Add example
 /// ```
 pub fn dinics<'graph_ref, G, C>(
     network: &'graph_ref G,

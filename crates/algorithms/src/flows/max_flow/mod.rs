@@ -52,21 +52,21 @@ pub trait MaxFlowReturn<G: Graph + Storable, C: Default> {
     /// Returns the maximum flow value computed by the algorithm.
     fn max_flow(&self) -> &C;
 
-    /// Returns the flow of each edge computed by the algorithm in an EdgeDataContainer
+    /// Returns the flow of each edge computed by the algorithm in an `EdgeDataContainer`
     /// corresponding to the respective graph type.
     fn flows(&self) -> &G::EdgeDataContainer<C>;
 
     /// Consumes the return value and returns the maximum flow value and the flow of each edge in an
-    /// EdgeDataContainer corresponding to the respective graph type.
+    /// `EdgeDataContainer` corresponding to the respective graph type.
     fn into_max_flow_and_flow_data(self) -> (C, G::EdgeDataContainer<C>);
 }
 
-/// Solves the [Max Flow Problem] from `source` to `destination`.
+/// Computes a [Max Flow][maximum_flow] from `source` to `destination`.
 ///
 /// This function selects a maximum flow algorithm internally and may change which one it uses in
 /// future releases as better implementations become available. If you need a specific algorithm's
 /// guarantees (e.g. its exact complexity bounds, or reproducible behavior across versions), call
-/// that algorithm directly instead. See the [`maximum_flow`][maximum_flow_mod] module for the full
+/// that algorithm directly instead. See the [`maximum_flow`](./index.html) module for the full
 /// list.
 ///
 /// Edge data of the provided graph is interpreted as capacities of edges.
@@ -79,20 +79,18 @@ pub trait MaxFlowReturn<G: Graph + Storable, C: Default> {
 ///
 /// # Returns
 /// Returns an implementation of [`MaxFlowReturn`], from which the maximum flow value and the
-/// flow of each edge can be obtained, either by reference (via
-/// [`max_flow`][MaxFlowReturn::max_flow] / [`flows`][MaxFlowReturn::flows]) or by consuming it (via
-/// [`into_max_flow_and_flow_vec`][MaxFlowReturn::into_max_flow_and_flow_vec]).
+/// flow of each edge can be obtained.
 ///
 /// # Complexity
 /// Currently delegates to [`dinics`], so its complexity bounds apply; this may change in future
 /// releases as the underlying algorithm is swapped out. Use specific algorithms directly if you
 /// depend on specific complexity guarantees.
 ///
-/// [Max Flow Problem]: https://en.wikipedia.org/wiki/Maximum_flow_problem
-/// [maximum_flow_mod]: index.html
+/// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 ///
 /// # Example
 /// ```rust
+/// // TODO: Make sure this example works
 /// use petgraph_algorithms::flows::maximum_flow::{MaxFlowReturn, max_flow};
 /// use petgraph_core::utils::test_graphs::directed::DirectedTestGraph as Graph;
 ///
@@ -148,7 +146,7 @@ where
         // forward edge
         edge.data - flow
     } else {
-        panic!("Illegal endpoint {}", vertex);
+        panic!("Illegal endpoint {vertex}");
     }
 }
 
@@ -162,7 +160,7 @@ where
     } else if vertex == edge.target {
         edge.source
     } else {
-        panic!("Illegal endpoint {}", vertex);
+        panic!("Illegal endpoint {vertex}");
     }
 }
 
@@ -184,6 +182,6 @@ where
         // forward edge
         flow + flow_increase
     } else {
-        panic!("Illegal endpoint {}", target_vertex);
+        panic!("Illegal endpoint {target_vertex}");
     }
 }

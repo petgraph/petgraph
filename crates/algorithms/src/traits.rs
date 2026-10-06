@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Add};
+use core::{fmt::Debug, ops::Add};
 
 /// Associated data that can be used for measures (such as length).
 pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Default + Copy {}
@@ -15,7 +15,7 @@ macro_rules! impl_zero(
         $(
             impl Zero for $t {
                 fn zero() -> Self {
-                    0 as $t
+                    <$t as Default>::default()
                 }
             }
         )*
