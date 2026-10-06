@@ -52,7 +52,7 @@ macro_rules! test_max_flow_all_examples {
         paste! {
             #[test]
             fn [<test_$max_flow_algorithm_name _one>]() {
-                crate::flows::maximum_flow::test_max_flow_one_call_me(
+                crate::flows::max_flow::test_max_flow_one_call_me(
                     $graph_constructor,
                     $graph_add_node,
                     $graph_add_edge,
@@ -65,7 +65,7 @@ macro_rules! test_max_flow_all_examples {
         paste! {
             #[test]
             fn [<test_$max_flow_algorithm_name _two>]() {
-                crate::flows::maximum_flow::test_max_flow_two_call_me(
+                crate::flows::max_flow::test_max_flow_two_call_me(
                     $graph_constructor,
                     $graph_add_node,
                     $graph_add_edge,
@@ -79,7 +79,7 @@ macro_rules! test_max_flow_all_examples {
         paste! {
             #[test]
             fn [<test_$max_flow_algorithm_name _three>]() {
-                crate::flows::maximum_flow::test_max_flow_three_call_me(
+                crate::flows::max_flow::test_max_flow_three_call_me(
                     $graph_constructor,
                     $graph_add_node,
                     $graph_add_edge,
@@ -93,7 +93,7 @@ macro_rules! test_max_flow_all_examples {
         paste! {
             #[test]
             fn [<test_$max_flow_algorithm_name _four>]() {
-                crate::flows::maximum_flow::test_max_flow_four_call_me(
+                crate::flows::max_flow::test_max_flow_four_call_me(
                     $graph_constructor,
                     $graph_add_node,
                     $graph_add_edge,
@@ -107,7 +107,7 @@ macro_rules! test_max_flow_all_examples {
         paste! {
             #[test]
             fn [<test_$max_flow_algorithm_name _five>]() {
-                crate::flows::maximum_flow::test_max_flow_five_call_me(
+                crate::flows::max_flow::test_max_flow_five_call_me(
                     $graph_constructor,
                     $graph_add_node,
                     $graph_add_edge,
@@ -121,7 +121,7 @@ macro_rules! test_max_flow_all_examples {
         paste! {
             #[test]
             fn [<test_$max_flow_algorithm_name _six>]() {
-                crate::flows::maximum_flow::test_max_flow_six_call_me(
+                crate::flows::max_flow::test_max_flow_six_call_me(
                     $graph_constructor,
                     $graph_add_node,
                     $graph_add_edge,
@@ -135,7 +135,7 @@ macro_rules! test_max_flow_all_examples {
         paste! {
             #[test]
             fn [<test_$max_flow_algorithm_name _seven>]() {
-                crate::flows::maximum_flow::test_max_flow_seven_call_me(
+                crate::flows::max_flow::test_max_flow_seven_call_me(
                     $graph_constructor,
                     $graph_add_node,
                     $graph_add_edge,
