@@ -1,3 +1,4 @@
+pub mod adaptors;
 mod adjacent;
 mod directed;
 mod disjoint;
@@ -51,7 +52,7 @@ pub trait Graph {
         Self: 'graph;
 }
 
-macro_rules! impl_methods {
+macro_rules! delegate_impl {
     ($G:ident) => {
         type NodeId = <$G>::NodeId;
         type NodeData<'graph>
@@ -83,25 +84,27 @@ macro_rules! impl_methods {
     };
 }
 
+pub(crate) use delegate_impl;
+
 impl<G: Graph> Graph for &G {
-    impl_methods!(G);
+    delegate_impl!(G);
 }
 
 impl<G: Graph> Graph for &mut G {
-    impl_methods!(G);
+    delegate_impl!(G);
 }
 
 #[cfg(feature = "alloc")]
 impl<G: Graph> Graph for alloc::boxed::Box<G> {
-    impl_methods!(G);
+    delegate_impl!(G);
 }
 
 #[cfg(feature = "alloc")]
 impl<G: Graph> Graph for alloc::rc::Rc<G> {
-    impl_methods!(G);
+    delegate_impl!(G);
 }
 
 #[cfg(feature = "alloc")]
 impl<G: Graph> Graph for alloc::sync::Arc<G> {
-    impl_methods!(G);
+    delegate_impl!(G);
 }
