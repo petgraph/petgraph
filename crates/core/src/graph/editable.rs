@@ -12,6 +12,8 @@ pub trait EditableGraph: Graph {
     type OwnedEdgeData;
     type AddNodeError: Error;
     type AddEdgeError: Error;
+    type RemoveNodeError: Error;
+    type RemoveEdgeError: Error;
 
     /// Add a node to the graph and return its `NodeId`.
     ///
@@ -35,13 +37,21 @@ pub trait EditableGraph: Graph {
 
     /// Removes the node and all edges incident to it, returning the node's data.
     ///
-    /// Returns `None` if the node was not in the graph.
-    fn remove_node(&mut self, id: Self::NodeId) -> Option<Self::OwnedNodeData>;
+    /// # Errors
+    /// May return an error, whose causes depend on the implementation.
+    fn remove_node(
+        &mut self,
+        id: Self::NodeId,
+    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError>;
 
     /// Removes the edge, returning its data.
     ///
-    /// Returns `None` if the edge was not in the graph.
-    fn remove_edge(&mut self, id: Self::EdgeId) -> Option<Self::OwnedEdgeData>;
+    /// # Errors
+    /// May return an error, whose causes depend on the implementation.
+    fn remove_edge(
+        &mut self,
+        id: Self::EdgeId,
+    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError>;
 }
 
 impl<G> EditableGraph for &mut G
@@ -52,6 +62,8 @@ where
     type AddNodeError = G::AddNodeError;
     type OwnedEdgeData = G::OwnedEdgeData;
     type OwnedNodeData = G::OwnedNodeData;
+    type RemoveEdgeError = G::RemoveEdgeError;
+    type RemoveNodeError = G::RemoveNodeError;
 
     fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
         (**self).add_node(data)
@@ -66,11 +78,17 @@ where
         (**self).add_edge(source, target, data)
     }
 
-    fn remove_node(&mut self, id: Self::NodeId) -> Option<Self::OwnedNodeData> {
+    fn remove_node(
+        &mut self,
+        id: Self::NodeId,
+    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
         (**self).remove_node(id)
     }
 
-    fn remove_edge(&mut self, id: Self::EdgeId) -> Option<Self::OwnedEdgeData> {
+    fn remove_edge(
+        &mut self,
+        id: Self::EdgeId,
+    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
         (**self).remove_edge(id)
     }
 }
@@ -84,6 +102,8 @@ where
     type AddNodeError = G::AddNodeError;
     type OwnedEdgeData = G::OwnedEdgeData;
     type OwnedNodeData = G::OwnedNodeData;
+    type RemoveEdgeError = G::RemoveEdgeError;
+    type RemoveNodeError = G::RemoveNodeError;
 
     fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
         (**self).add_node(data)
@@ -98,11 +118,17 @@ where
         (**self).add_edge(source, target, data)
     }
 
-    fn remove_node(&mut self, id: Self::NodeId) -> Option<Self::OwnedNodeData> {
+    fn remove_node(
+        &mut self,
+        id: Self::NodeId,
+    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
         (**self).remove_node(id)
     }
 
-    fn remove_edge(&mut self, id: Self::EdgeId) -> Option<Self::OwnedEdgeData> {
+    fn remove_edge(
+        &mut self,
+        id: Self::EdgeId,
+    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
         (**self).remove_edge(id)
     }
 }
