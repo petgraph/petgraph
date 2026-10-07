@@ -14,18 +14,18 @@ config:
   layout: elk
 ---
 graph TD
-    G[Graph] -- Supertrait --> U[UndirectedGraph]
     G -- Supertrait --> D[DirectedGraph]
     G -- Supertrait --> DI([DirectedImmutableGraph])
-    G -- Supertrait --> UI([UndirectedImmutableGraph])
-    G -- Supertrait --> E(EditableGraph)
-    G -- Supertrait --> S(StorableGraph)
     G -- Supertrait --> SU([Successor])
     G -- Supertrait --> P([Predecessor])
+    G[Graph] -- Supertrait --> U[UndirectedGraph]
+    G -- Supertrait --> UI([UndirectedImmutableGraph])
     D -- Blanket Impl --> DI
     U -- Blanket Impl --> UI
     DI -- Blanket Impl --> SU
     DI -- Blanket Impl --> P
+    G -- Supertrait --> E(EditableGraph)
+    G -- Supertrait --> S(StorableGraph)
 ```
 
 ## `Graph`
