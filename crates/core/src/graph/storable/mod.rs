@@ -1,6 +1,6 @@
 use crate::graph::Graph;
 
-#[cfg(feature = "default-impls")]
+#[cfg(feature = "alloc")]
 mod containers;
 
 /// A container for storing data associated with nodes or edges in a graph.
@@ -93,8 +93,6 @@ pub trait StorableGraph: Graph {
     type NodeDataContainer<Data: Default>: DataContainer<Self::NodeId, Data>;
     type EdgeVisitContainer: VisitContainer<Self::EdgeId>;
     type EdgeDataContainer<Data: Default>: DataContainer<Self::EdgeId, Data>;
-    type StackContainer<Data>: StackContainer<Data>;
-    type QueueContainer<Data>: QueueContainer<Data>;
 
     /// Returns a new container for tracking visited nodes.
     ///
@@ -113,9 +111,4 @@ pub trait StorableGraph: Graph {
     ///
     /// Holds enough capacity to store data for all edges in the graph or can grow dynamically.
     fn edge_data_container<Data: Default>(&self) -> Self::EdgeDataContainer<Data>;
-
-    /// Returns a new container for storing data on a stack.
-    fn stack_container<Data>(&self) -> Self::StackContainer<Data>;
-    /// Returns a new container for storing data in a queue.
-    fn queue_container<Data>(&self) -> Self::QueueContainer<Data>;
 }

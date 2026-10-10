@@ -36,24 +36,6 @@ impl<Id: IndexId, Data: Default> DataContainer<Id, Data> for Vec<Data> {
     }
 }
 
-impl<Id: Eq + Hash, S: BuildHasher> VisitContainer<Id> for HashSet<Id, S> {
-    fn mark_visited(&mut self, node_id: Id) {
-        self.insert(node_id);
-    }
-
-    fn mark_unvisited(&mut self, node_id: Id) {
-        self.remove(&node_id);
-    }
-
-    fn is_visited(&self, node_id: Id) -> bool {
-        self.contains(&node_id)
-    }
-
-    fn clear(&mut self) {
-        self.clear();
-    }
-}
-
 impl<Id: IndexId> VisitContainer<Id> for Vec<Option<()>> {
     fn mark_visited(&mut self, node_id: Id) {
         self[node_id.as_usize()] = Some(());
