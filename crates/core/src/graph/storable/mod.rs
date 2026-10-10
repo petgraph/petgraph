@@ -88,7 +88,7 @@ pub trait QueueContainer<Data> {
 /// # Caution
 /// The trait expects that all containers are created with sufficient capacity to hold data for all
 /// nodes and/or edges respectively, or that they can grow dynamically.
-pub trait Storable: Graph {
+pub trait StorableGraph: Graph {
     type NodeVisitContainer: VisitContainer<Self::NodeId>;
     type NodeDataContainer<Data: Default>: DataContainer<Self::NodeId, Data>;
     type EdgeVisitContainer: VisitContainer<Self::EdgeId>;
