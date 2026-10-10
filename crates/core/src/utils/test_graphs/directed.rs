@@ -4,13 +4,14 @@ use core::{
     ops::AddAssign,
 };
 
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 
 use crate::{
     edge::{Edge, EdgeMut, EdgeRef},
-    graph::{DirectedGraph, Graph},
+    graph::{DirectedGraph, Graph, storable::StorableGraph},
     id::Id,
     node::{Node, NodeMut, NodeRef},
+    utils::test_graphs::DefaultMap,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
@@ -180,6 +181,35 @@ where
                 target: *target,
                 data,
             })
+    }
+}
+
+impl<N, E> StorableGraph for DirectedTestGraph<N, E, DirNodeId, DirEdgeId> {
+    type EdgeDataContainer<Data: Default> = DefaultMap<DirEdgeId, Data>;
+    type EdgeVisitContainer = HashSet<DirEdgeId, foldhash::fast::RandomState>;
+    type NodeDataContainer<Data: Default> = DefaultMap<DirNodeId, Data>;
+    type NodeVisitContainer = HashSet<DirNodeId, foldhash::fast::RandomState>;
+
+    fn node_visit_container(&self) -> Self::NodeVisitContainer {
+        HashSet::default()
+    }
+
+    fn node_data_container<Data: Default>(&self) -> Self::NodeDataContainer<Data> {
+        DefaultMap {
+            map: HashMap::default(),
+            default: Data::default(),
+        }
+    }
+
+    fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
+        HashSet::default()
+    }
+
+    fn edge_data_container<Data: Default>(&self) -> Self::EdgeDataContainer<Data> {
+        DefaultMap {
+            map: HashMap::default(),
+            default: Data::default(),
+        }
     }
 }
 
