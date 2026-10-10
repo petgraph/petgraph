@@ -101,7 +101,7 @@ pub struct DefaultMapStd<Id, Data, S = std::hash::RandomState> {
 }
 
 #[cfg(feature = "std")]
-impl<Id: std::hash::Hash + std::cmp::Eq, Data: Default, S: std::hash::BuildHasher>
+impl<Id: core::hash::Hash + core::cmp::Eq, Data: Default, S: core::hash::BuildHasher>
     DataContainer<Id, Data> for DefaultMapStd<Id, Data, S>
 {
     fn get(&self, node_id: Id) -> &Data {
@@ -109,7 +109,7 @@ impl<Id: std::hash::Hash + std::cmp::Eq, Data: Default, S: std::hash::BuildHashe
     }
 
     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-        self.map.entry(node_id).or_insert_with(Data::default)
+        self.map.entry(node_id).or_default()
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {
@@ -130,7 +130,7 @@ impl<Id: std::hash::Hash + std::cmp::Eq, Data: Default, S: std::hash::BuildHashe
 }
 
 #[cfg(feature = "std")]
-impl<Id: std::hash::Hash + std::cmp::Eq, S: std::hash::BuildHasher> VisitContainer<Id>
+impl<Id: core::hash::Hash + core::cmp::Eq, S: core::hash::BuildHasher> VisitContainer<Id>
     for StdHashSet<Id, S>
 {
     fn mark_visited(&mut self, node_id: Id) {
@@ -165,7 +165,7 @@ impl<Id: core::hash::Hash + core::cmp::Eq, Data: Default, S: core::hash::BuildHa
     }
 
     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-        self.map.entry(node_id).or_insert_with(Data::default)
+        self.map.entry(node_id).or_default()
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {
