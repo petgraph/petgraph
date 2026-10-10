@@ -10,7 +10,7 @@ use petgraph_core::{
     edge::Edge,
     graph::{
         DirectedGraph, Graph,
-        storable::{DataContainer, StorableGraph},
+        storable::{DataContainer, StorableGraph, VisitContainer},
     },
     id::IndexId,
 };
@@ -165,8 +165,6 @@ pub fn edmonds_karp<'graph_ref, G, C>(
 ) -> EdmondsKarpOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C> + Copy,
     C: Sub<Output = C> + Add<Output = C> + Zero + Measure + Bounded,
 {
@@ -180,8 +178,6 @@ fn edmonds_karp_inner<'graph_ref, G, C>(
 ) -> EdmondsKarpOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C> + Copy,
     C: Sub<Output = C> + Zero + Measure + Bounded,
 {
@@ -228,15 +224,12 @@ fn has_augmented_path<'graph_ref, G, C>(
 ) -> bool
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C> + Copy,
     C: Sub<Output = C> + Zero + Measure,
 {
-    // TODO(next): Replace by proper visit map
-    let mut visited = vec![false; network.node_count()];
+    let mut visited = G::node_visit_container(network);
     let mut queue = VecDeque::new();
-    visited[source.as_usize()] = true;
+    visited.mark_visited(source);
     queue.push_back(source);
 
     while let Some(vertex) = queue.pop_front() {
@@ -245,8 +238,8 @@ where
             let edge_index = edge.id;
             let residual_cap =
                 residual_capacity::<G, C>(edge.to_owned_edge(), next, *flows.get(edge_index));
-            if !visited[next.as_usize()] && (residual_cap > C::zero()) {
-                visited[next.as_usize()] = true;
+            if !visited.is_visited(next) && (residual_cap > C::zero()) {
+                visited.mark_visited(next);
                 *edge_to.get_mut(next) = Some(edge.to_owned_edge());
                 if destination == next {
                     return true;

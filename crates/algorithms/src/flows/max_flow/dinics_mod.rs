@@ -80,8 +80,6 @@ impl<'graph_ref, G: Graph> Dinics<'graph_ref, G> {
 impl<'graph_ref, G> Dinics<'graph_ref, G>
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
 {
     /// Runs Dinic's algorithm with the current configuration.
     ///
@@ -165,8 +163,6 @@ pub fn dinics<'graph_ref, G, C>(
 ) -> DinicsOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C>,
     C: Sub<Output = C> + Measure + Zero + Bounded + Ord,
 {
@@ -180,8 +176,6 @@ fn dinics_inner<'graph_ref, G, C>(
 ) -> DinicsOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C>,
     C: Sub<Output = C> + Measure + Zero + Bounded + Ord,
 {
@@ -227,8 +221,6 @@ fn build_level_graph<'graph_ref, G, C>(
 ) -> impl DataContainer<G::NodeId, usize>
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C>,
     C: Sub<Output = C> + Measure + Zero,
 {
@@ -277,12 +269,10 @@ fn find_blocking_flow<G, C>(
 ) -> C
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
     C: Sub<Output = C> + Measure + Zero + Bounded + Ord,
 {
     let mut flow_increase = C::zero();
-    let mut edge_to = vec![None; network.node_count()];
+    let mut edge_to = G::node_data_container::<Option<FlowEdge<G, C>>>(network);
     while find_augmenting_path(
         network,
         source,
@@ -296,15 +286,16 @@ where
 
         // Find the bottleneck capacity of the path
         let mut vertex = destination;
-        while let Some(edge) = edge_to[vertex.as_usize()] {
-            let residual_capacity = residual_capacity::<G, C>(edge, vertex, *flows.get(edge.id));
+        while let Some(edge) = edge_to.get(vertex) {
+            let residual_capacity =
+                residual_capacity::<G, C>(edge.to_owned_edge(), vertex, *flows.get(edge.id));
             path_flow = path_flow.min(residual_capacity);
             vertex = other_endpoint::<G, _>(&edge, vertex);
         }
 
         // Update the flow of each edge along the discovered path
         let mut vertex = destination;
-        while let Some(edge) = edge_to[vertex.as_usize()] {
+        while let Some(edge) = edge_to.get(vertex) {
             *flows.get_mut(edge.id) =
                 adjusted_residual_flow::<G, _, C>(&edge, vertex, *flows.get(edge.id), path_flow);
             vertex = other_endpoint::<G, _>(&edge, vertex);
@@ -325,12 +316,10 @@ fn find_augmenting_path<G, C>(
     flows: &impl DataContainer<G::EdgeId, C>,
     level_edges: &mut impl DataContainer<G::NodeId, Vec<FlowEdge<G, C>>>,
     visited: &mut impl VisitContainer<G::NodeId>,
-    edge_to: &mut [Option<FlowEdge<G, C>>],
+    edge_to: &mut impl DataContainer<G::NodeId, Option<FlowEdge<G, C>>>,
 ) -> bool
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
     C: Sub<Output = C> + Measure + Zero,
 {
     visited.clear();
@@ -353,7 +342,7 @@ where
             }
 
             if !visited.is_visited(next_vertex) {
-                edge_to[next_vertex.as_usize()] = Some(edge);
+                edge_to.get_mut(next_vertex).replace(edge);
                 if destination == next_vertex {
                     return true;
                 }
