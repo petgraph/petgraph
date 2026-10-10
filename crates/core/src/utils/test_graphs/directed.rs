@@ -9,10 +9,7 @@ use hashbrown::{HashMap, HashSet};
 
 use crate::{
     edge::{Edge, EdgeMut, EdgeRef},
-    graph::{
-        DirectedGraph, EditableGraph, Graph,
-        storable::{DataContainer, StorableGraph},
-    },
+    graph::{DirectedGraph, EditableGraph, Graph, storable::StorableGraph},
     id::{Id, IndexId, IndexIdTryFromIntError},
     node::{Node, NodeMut, NodeRef},
     utils::test_graphs::DefaultMap,
