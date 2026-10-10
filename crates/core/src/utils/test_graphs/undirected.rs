@@ -77,7 +77,7 @@ where
         }
     }
 
-    pub fn add_node(&mut self, node: N) -> NI {
+    fn add_node(&mut self, node: N) -> NI {
         let id = self.next_node;
         self.next_node += 1;
 
@@ -85,7 +85,7 @@ where
         id
     }
 
-    pub fn add_edge(&mut self, source: NI, target: NI, edge: E) -> Option<EI> {
+    fn add_edge(&mut self, source: NI, target: NI, edge: E) -> Option<EI> {
         if !self.nodes.contains_key(&source) || !self.nodes.contains_key(&target) {
             return None;
         }
@@ -97,13 +97,13 @@ where
         Some(id)
     }
 
-    pub fn remove_node(&mut self, node_id: NI) -> Option<N> {
+    fn remove_node(&mut self, node_id: NI) -> Option<N> {
         self.edges
             .retain(|_, (source, target, _)| *source != node_id && *target != node_id);
         self.nodes.remove(&node_id)
     }
 
-    pub fn remove_edge(&mut self, edge_id: EI) -> Option<E> {
+    fn remove_edge(&mut self, edge_id: EI) -> Option<E> {
         self.edges.remove(&edge_id).map(|(_, _, data)| data)
     }
 }
