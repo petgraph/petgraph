@@ -1,7 +1,7 @@
 use paste::paste;
 use petgraph_algorithms::flows::max_flow::{MaxFlowReturn, dinics, edmonds_karp};
 use petgraph_core::{
-    graph::{DirectedGraph, storable::Storable},
+    graph::{DirectedGraph, storable::StorableGraph},
     utils::test_graphs::directed::DirectedTestGraph,
 };
 
@@ -152,7 +152,7 @@ macro_rules! test_max_flow_all_examples {
 
 run_macro_for_all_dir_graphs!(test_max_flow_on_graph);
 
-fn test_max_flow_one_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_one_call_me<G: DirectedGraph + StorableGraph>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -175,7 +175,7 @@ fn test_max_flow_one_call_me<G: DirectedGraph + Storable>(
     assert_eq!(5, max_flow);
 }
 
-fn test_max_flow_two_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_two_call_me<G: DirectedGraph + StorableGraph>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -204,7 +204,7 @@ fn test_max_flow_two_call_me<G: DirectedGraph + Storable>(
     assert_eq!(7, max_flow);
 }
 
-fn test_max_flow_three_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_three_call_me<G: DirectedGraph + StorableGraph>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -235,7 +235,7 @@ fn test_max_flow_three_call_me<G: DirectedGraph + Storable>(
     assert_eq!(10, max_flow);
 }
 
-fn test_max_flow_four_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_four_call_me<G: DirectedGraph + StorableGraph>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -264,7 +264,7 @@ fn test_max_flow_four_call_me<G: DirectedGraph + Storable>(
     assert_eq!(5, max_flow);
 }
 
-fn test_max_flow_five_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_five_call_me<G: DirectedGraph + StorableGraph>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -295,7 +295,7 @@ fn test_max_flow_five_call_me<G: DirectedGraph + Storable>(
     assert_eq!(23, max_flow);
 }
 
-fn test_max_flow_six_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_six_call_me<G: DirectedGraph + StorableGraph>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
@@ -326,7 +326,7 @@ fn test_max_flow_six_call_me<G: DirectedGraph + Storable>(
     assert_eq!(19, max_flow);
 }
 
-fn test_max_flow_seven_call_me<G: DirectedGraph + Storable>(
+fn test_max_flow_seven_call_me<G: DirectedGraph + StorableGraph>(
     graph_constructor: impl Fn() -> G,
     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,

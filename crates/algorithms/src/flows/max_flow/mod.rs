@@ -41,14 +41,14 @@ pub use dinics_mod::dinics;
 pub use edmonds_karp_mod::edmonds_karp;
 use petgraph_core::{
     edge::Edge,
-    graph::{DirectedGraph, Graph, storable::Storable},
+    graph::{DirectedGraph, Graph, storable::StorableGraph},
     id::IndexId,
 };
 
 use crate::traits::{Bounded, Measure, Zero};
 
 /// The return trait that is implemented by Max Flow algorithms
-pub trait MaxFlowReturn<G: Graph + Storable, C: Default> {
+pub trait MaxFlowReturn<G: Graph + StorableGraph, C: Default> {
     /// Returns the maximum flow value computed by the algorithm.
     fn max_flow(&self) -> &C;
 
@@ -124,7 +124,7 @@ pub fn max_flow<'graph_ref, G, C>(
     destination: G::NodeId,
 ) -> impl MaxFlowReturn<G, C> + use<G, C>
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C>,

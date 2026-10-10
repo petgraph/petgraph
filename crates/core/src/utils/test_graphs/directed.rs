@@ -11,7 +11,7 @@ use crate::{
     edge::{Edge, EdgeMut, EdgeRef},
     graph::{
         DirectedGraph, EditableGraph, Graph,
-        storable::{DataContainer, Storable, StorableGraph},
+        storable::{DataContainer, StorableGraph},
     },
     id::{Id, IndexId, IndexIdTryFromIntError},
     node::{Node, NodeMut, NodeRef},

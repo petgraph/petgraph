@@ -1,3 +1,4 @@
+use alloc::collections::VecDeque;
 use core::{
     borrow::Borrow,
     error::Error,
@@ -9,7 +10,7 @@ use petgraph_core::{
     edge::Edge,
     graph::{
         DirectedGraph, Graph,
-        storable::{DataContainer, QueueContainer, Storable},
+        storable::{DataContainer, StorableGraph},
     },
     id::IndexId,
 };
@@ -80,7 +81,7 @@ impl<'graph_ref, G: Graph> EdmondsKarp<'graph_ref, G> {
 
 impl<'graph_ref, G> EdmondsKarp<'graph_ref, G>
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
 {
@@ -110,12 +111,12 @@ where
 ///
 /// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
 /// with [`EdmondsKarpOutput::into_max_flow_and_flow_data`].
-pub struct EdmondsKarpOutput<G: Graph + Storable, C: Default> {
+pub struct EdmondsKarpOutput<G: Graph + StorableGraph, C: Default> {
     max_flow: C,
     flows: G::EdgeDataContainer<C>,
 }
 
-impl<G: Graph + Storable, C: Default> MaxFlowReturn<G, C> for EdmondsKarpOutput<G, C> {
+impl<G: Graph + StorableGraph, C: Default> MaxFlowReturn<G, C> for EdmondsKarpOutput<G, C> {
     fn max_flow(&self) -> &C {
         &self.max_flow
     }
@@ -163,7 +164,7 @@ pub fn edmonds_karp<'graph_ref, G, C>(
     destination: G::NodeId,
 ) -> EdmondsKarpOutput<G, C>
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C> + Copy,
@@ -178,7 +179,7 @@ fn edmonds_karp_inner<'graph_ref, G, C>(
     destination: G::NodeId,
 ) -> EdmondsKarpOutput<G, C>
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C> + Copy,
@@ -226,7 +227,7 @@ fn has_augmented_path<'graph_ref, G, C>(
     flows: &G::EdgeDataContainer<C>,
 ) -> bool
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C> + Copy,
@@ -234,7 +235,7 @@ where
 {
     // TODO(next): Replace by proper visit map
     let mut visited = vec![false; network.node_count()];
-    let mut queue = G::queue_container::<G::NodeId>(network);
+    let mut queue = VecDeque::new();
     visited[source.as_usize()] = true;
     queue.push_back(source);
 

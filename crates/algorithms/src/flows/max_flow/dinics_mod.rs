@@ -1,12 +1,12 @@
 // TODO: Get rid of alloc here (replace level_edges somehow)
-use alloc::{vec, vec::Vec};
+use alloc::{collections::VecDeque, vec, vec::Vec};
 use core::{borrow::Borrow, error::Error, ops::Sub};
 
 use petgraph_core::{
     edge::Edge,
     graph::{
         DirectedGraph, Graph,
-        storable::{DataContainer, QueueContainer, StackContainer, Storable, VisitContainer},
+        storable::{DataContainer, StackContainer, StorableGraph, VisitContainer},
     },
     id::IndexId,
 };
@@ -79,7 +79,7 @@ impl<'graph_ref, G: Graph> Dinics<'graph_ref, G> {
 
 impl<'graph_ref, G> Dinics<'graph_ref, G>
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
 {
@@ -107,12 +107,12 @@ where
 ///
 /// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
 /// with [`DinicsOutput::into_max_flow_and_flow_data`].
-pub struct DinicsOutput<G: Graph + Storable, C: Default> {
+pub struct DinicsOutput<G: Graph + StorableGraph, C: Default> {
     max_flow: C,
     flows: G::EdgeDataContainer<C>,
 }
 
-impl<G: Graph + Storable, C: Default> MaxFlowReturn<G, C> for DinicsOutput<G, C> {
+impl<G: Graph + StorableGraph, C: Default> MaxFlowReturn<G, C> for DinicsOutput<G, C> {
     fn max_flow(&self) -> &C {
         &self.max_flow
     }
@@ -164,7 +164,7 @@ pub fn dinics<'graph_ref, G, C>(
     destination: G::NodeId,
 ) -> DinicsOutput<G, C>
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C>,
@@ -179,7 +179,7 @@ fn dinics_inner<'graph_ref, G, C>(
     destination: G::NodeId,
 ) -> DinicsOutput<G, C>
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C>,
@@ -226,14 +226,14 @@ fn build_level_graph<'graph_ref, G, C>(
     level_edges: &mut impl DataContainer<G::NodeId, Vec<FlowEdge<G, C>>>,
 ) -> impl DataContainer<G::NodeId, usize>
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     G::EdgeDataRef<'graph_ref>: Borrow<C>,
     C: Sub<Output = C> + Measure + Zero,
 {
     let mut level_graph = G::node_data_container::<usize>(network);
-    let mut bfs_queue = G::queue_container::<G::NodeId>(network);
+    let mut bfs_queue = VecDeque::new();
     bfs_queue.push_back(source);
 
     *level_graph.get_mut(source) = 1;
@@ -276,7 +276,7 @@ fn find_blocking_flow<G, C>(
     visited: &mut impl VisitContainer<G::NodeId>,
 ) -> C
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     C: Sub<Output = C> + Measure + Zero + Bounded + Ord,
@@ -328,7 +328,7 @@ fn find_augmenting_path<G, C>(
     edge_to: &mut [Option<FlowEdge<G, C>>],
 ) -> bool
 where
-    G: DirectedGraph + Storable,
+    G: DirectedGraph + StorableGraph,
     G::NodeId: IndexId,
     G::EdgeId: IndexId,
     C: Sub<Output = C> + Measure + Zero,
@@ -336,7 +336,7 @@ where
     visited.clear();
     let mut level_edges_i = G::node_data_container::<usize>(network);
 
-    let mut dfs_stack = G::stack_container::<G::NodeId>(network);
+    let mut dfs_stack = Vec::new();
     dfs_stack.push(source);
     visited.mark_visited(source);
     while let Some(&vertex) = dfs_stack.peek_last() {
