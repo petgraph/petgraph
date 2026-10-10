@@ -1,6 +1,9 @@
 #![no_std]
 #![allow(clippy::missing_errors_doc, reason = "bootstrap")]
 
+#[cfg(feature = "std")]
+extern crate std;
+
 #[cfg(feature = "alloc")]
 extern crate alloc;
 

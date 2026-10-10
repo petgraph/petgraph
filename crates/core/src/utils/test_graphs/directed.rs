@@ -11,7 +11,7 @@ use crate::{
     edge::{Edge, EdgeMut, EdgeRef},
     graph::{
         DirectedGraph, Graph,
-        storable::{DataContainer, Storable},
+        storable::{DataContainer, StorableGraph, VisitContainer},
     },
     id::Id,
     node::{Node, NodeMut, NodeRef},
@@ -220,13 +220,11 @@ impl<Id: Eq + Hash, Data: Default, S: BuildHasher> DataContainer<Id, Data>
     }
 }
 
-impl<N, E> Storable for DirectedTestGraph<N, E, DirNodeId, DirEdgeId> {
+impl<N, E> StorableGraph for DirectedTestGraph<N, E, DirNodeId, DirEdgeId> {
     type EdgeDataContainer<Data: Default> = DefaultMap<DirEdgeId, Data>;
     type EdgeVisitContainer = HashSet<DirEdgeId, foldhash::fast::RandomState>;
     type NodeDataContainer<Data: Default> = DefaultMap<DirNodeId, Data>;
     type NodeVisitContainer = HashSet<DirNodeId, foldhash::fast::RandomState>;
-    type QueueContainer<Data> = VecDeque<Data>;
-    type StackContainer<Data> = Vec<Data>;
 
     fn node_visit_container(&self) -> Self::NodeVisitContainer {
         HashSet::default()
@@ -248,14 +246,6 @@ impl<N, E> Storable for DirectedTestGraph<N, E, DirNodeId, DirEdgeId> {
             map: HashMap::default(),
             default: Data::default(),
         }
-    }
-
-    fn stack_container<Data>(&self) -> Self::StackContainer<Data> {
-        Vec::new()
-    }
-
-    fn queue_container<Data>(&self) -> Self::QueueContainer<Data> {
-        VecDeque::new()
     }
 }
 
