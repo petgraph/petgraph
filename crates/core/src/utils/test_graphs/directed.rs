@@ -1,4 +1,5 @@
 use core::{
+    convert::Infallible,
     fmt::{self, Display},
     hash::Hash,
     ops::AddAssign,
@@ -8,7 +9,7 @@ use hashbrown::{HashMap, HashSet};
 
 use crate::{
     edge::{Edge, EdgeMut, EdgeRef},
-    graph::{DirectedGraph, Graph, storable::StorableGraph},
+    graph::{DirectedGraph, EditableGraph, Graph, storable::StorableGraph},
     id::Id,
     node::{Node, NodeMut, NodeRef},
     utils::test_graphs::DefaultMap,
@@ -210,6 +211,75 @@ impl<N, E> StorableGraph for DirectedTestGraph<N, E, DirNodeId, DirEdgeId> {
             map: HashMap::default(),
             default: Data::default(),
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceOrTargetNotFound {}
+
+impl Display for SourceOrTargetNotFound {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Source or target node not found")
+    }
+}
+
+impl core::error::Error for SourceOrTargetNotFound {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EdgeNotFoundError {}
+impl Display for EdgeNotFoundError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Edge not found")
+    }
+}
+
+impl core::error::Error for EdgeNotFoundError {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NodeNotFoundError {}
+
+impl Display for NodeNotFoundError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Node not found")
+    }
+}
+
+impl core::error::Error for NodeNotFoundError {}
+
+impl<N, E> EditableGraph for DirectedTestGraph<N, E, DirNodeId, DirEdgeId> {
+    type AddEdgeError = SourceOrTargetNotFound;
+    type AddNodeError = Infallible;
+    type OwnedEdgeData = E;
+    type OwnedNodeData = N;
+    type RemoveEdgeError = EdgeNotFoundError;
+    type RemoveNodeError = NodeNotFoundError;
+
+    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
+        Ok(self.add_node(data))
+    }
+
+    fn remove_node(
+        &mut self,
+        node_id: Self::NodeId,
+    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
+        self.remove_node(node_id).ok_or(NodeNotFoundError {})
+    }
+
+    fn add_edge(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+        data: Self::OwnedEdgeData,
+    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
+        self.add_edge(source, target, data)
+            .ok_or(SourceOrTargetNotFound {})
+    }
+
+    fn remove_edge(
+        &mut self,
+        edge_id: Self::EdgeId,
+    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
+        self.remove_edge(edge_id).ok_or(EdgeNotFoundError {})
     }
 }
 
