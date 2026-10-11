@@ -12,7 +12,7 @@ pub struct DefaultMap<Id, Data, S = foldhash::fast::RandomState> {
     default: Data,
 }
 
-impl<Id: Eq + Hash, Data: Default, S: BuildHasher> DataContainer<Id, Data>
+impl<Id: Eq + Hash, Data: Clone, S: BuildHasher> DataContainer<Id, Data>
     for DefaultMap<Id, Data, S>
 {
     fn get(&self, node_id: Id) -> &Data {
@@ -20,7 +20,9 @@ impl<Id: Eq + Hash, Data: Default, S: BuildHasher> DataContainer<Id, Data>
     }
 
     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-        self.map.entry(node_id).or_default()
+        self.map
+            .entry(node_id)
+            .or_insert_with(|| self.default.clone())
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {
