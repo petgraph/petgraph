@@ -9,6 +9,8 @@ pub trait DataContainer<Id, Data> {
     fn get(&self, node_id: Id) -> &Data;
 
     /// Returns a mutable reference to the data associated with the given id.
+    ///
+    /// May return a mutable reference to a default value if no data is associated with the id.
     fn get_mut(&mut self, node_id: Id) -> &mut Data;
 
     /// Inserts data associated with the given id. If data already exists for the id, it will be
@@ -54,6 +56,12 @@ pub trait StackContainer<Data> {
 
     /// Pops data from the top of the stack. Returns `None` if the stack is empty.
     fn pop(&mut self) -> Option<Data>;
+
+    /// Removes and returns the data at the given index in the stack. Returns `None` if the index is
+    /// out of bounds.
+    ///
+    /// The removed element is replaced by the element on top of the stack.
+    fn swap_remove(&mut self, index: usize) -> Option<Data>;
 
     /// Peeks at the data on the top of the stack without removing it. Returns `None` if the stack
     /// is empty.
