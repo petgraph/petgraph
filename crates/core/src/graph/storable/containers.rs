@@ -31,7 +31,7 @@ impl<Id: IndexId, Data: Clone> DataContainer<Id, Data> for DefaultVec<Data> {
     }
 
     fn clear(&mut self) {
-        for data in self.vec.iter_mut() {
+        for data in &mut self.vec {
             *data = self.default.clone();
         }
     }
