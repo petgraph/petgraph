@@ -1410,7 +1410,7 @@ fn is_maximum_matching<G: NodeIndexable + IntoEdges + IntoNodeIdentifiers + Visi
 
 fn is_perfect_matching<G: NodeCount + NodeIndexable>(g: G, m: &Matching<G>) -> bool {
     // By definition.
-    g.node_count().is_multiple_of(2) && m.edges().count() == g.node_count() / 2
+    (g.node_count() % 2 == 0) && m.edges().count() == g.node_count() / 2
 }
 
 quickcheck! {
