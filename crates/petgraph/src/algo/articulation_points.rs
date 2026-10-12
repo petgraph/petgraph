@@ -58,8 +58,10 @@ where
     G::EdgeWeight: Clone + PartialOrd,
     G::NodeId: Eq + Hash,
 {
-    let graph_size = g.node_references().size_hint().0;
-    let mut auxiliary_const = ArticulationPointTracker::new(graph_size);
+    // The scratch state below is indexed by `to_index`, so it has to be sized by the
+    // index bound and not by the node count: graphs such as `StableGraph` have sparse
+    // node indices, where the largest index can exceed the number of nodes.
+    let mut auxiliary_const = ArticulationPointTracker::new(g.node_bound());
 
     for node in g.node_references() {
         let node_id = g.to_index(node.id());
@@ -94,13 +96,13 @@ struct ArticulationPointTracker {
 }
 
 impl ArticulationPointTracker {
-    fn new(graph_size: usize) -> Self {
+    fn new(node_bound: usize) -> Self {
         Self {
-            visited: FixedBitSet::with_capacity(graph_size),
-            low: vec![usize::MAX; graph_size],
-            disc: vec![usize::MAX; graph_size],
-            parent: vec![usize::MAX; graph_size],
-            articulation_points: HashSet::with_capacity(graph_size),
+            visited: FixedBitSet::with_capacity(node_bound),
+            low: vec![usize::MAX; node_bound],
+            disc: vec![usize::MAX; node_bound],
+            parent: vec![usize::MAX; node_bound],
+            articulation_points: HashSet::with_capacity(node_bound),
             time: 0,
         }
     }
