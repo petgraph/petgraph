@@ -6,9 +6,13 @@ pub mod containers;
 /// A container for storing data associated with nodes or edges in a graph.
 pub trait DataContainer<Id, Data> {
     /// Returns a reference to the data associated with the given id.
+    ///
+    /// May return a reference to a default value if no data is associated with the id.
     fn get(&self, node_id: Id) -> &Data;
 
     /// Returns a mutable reference to the data associated with the given id.
+    ///
+    /// May return a mutable reference to a default value if no data is associated with the id.
     fn get_mut(&mut self, node_id: Id) -> &mut Data;
 
     /// Inserts data associated with the given id. If data already exists for the id, it will be
@@ -55,6 +59,12 @@ pub trait StackContainer<Data> {
     /// Pops data from the top of the stack. Returns `None` if the stack is empty.
     fn pop(&mut self) -> Option<Data>;
 
+    /// Removes and returns the data at the given index in the stack. Returns `None` if the index is
+    /// out of bounds.
+    ///
+    /// The removed element is replaced by the element on top of the stack.
+    fn swap_remove(&mut self, index: usize) -> Option<Data>;
+
     /// Peeks at the data on the top of the stack without removing it. Returns `None` if the stack
     /// is empty.
     fn peek_last(&self) -> Option<&Data>;
@@ -90,9 +100,9 @@ pub trait QueueContainer<Data> {
 /// nodes and/or edges respectively, or that they can grow dynamically.
 pub trait StorableGraph: Graph {
     type NodeVisitContainer: VisitContainer<Self::NodeId>;
-    type NodeDataContainer<Data: Default>: DataContainer<Self::NodeId, Data>;
+    type NodeDataContainer<Data: Clone>: DataContainer<Self::NodeId, Data>;
     type EdgeVisitContainer: VisitContainer<Self::EdgeId>;
-    type EdgeDataContainer<Data: Default>: DataContainer<Self::EdgeId, Data>;
+    type EdgeDataContainer<Data: Clone>: DataContainer<Self::EdgeId, Data>;
 
     /// Returns a new container for tracking visited nodes.
     ///
@@ -101,7 +111,10 @@ pub trait StorableGraph: Graph {
     /// Returns a new container for storing data associated with nodes.
     ///
     /// Holds enough capacity to store data for all nodes in the graph or can grow dynamically.
-    fn node_data_container<Data: Default>(&self) -> Self::NodeDataContainer<Data>;
+    fn node_data_container<Data: Clone>(
+        &self,
+        default_constructor: impl Fn() -> Data,
+    ) -> Self::NodeDataContainer<Data>;
 
     /// Returns a new container for tracking visited edges.
     ///
@@ -110,5 +123,8 @@ pub trait StorableGraph: Graph {
     /// Returns a new container for storing data associated with edges.
     ///
     /// Holds enough capacity to store data for all edges in the graph or can grow dynamically.
-    fn edge_data_container<Data: Default>(&self) -> Self::EdgeDataContainer<Data>;
+    fn edge_data_container<Data: Clone>(
+        &self,
+        default_constructor: impl Fn() -> Data,
+    ) -> Self::EdgeDataContainer<Data>;
 }

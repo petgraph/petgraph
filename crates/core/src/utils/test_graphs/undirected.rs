@@ -186,19 +186,22 @@ where
 }
 
 impl<N, E> StorableGraph for UndirectedTestGraph<N, E, UndirNodeId, UndirEdgeId> {
-    type EdgeDataContainer<Data: Default> = DefaultMap<UndirEdgeId, Data>;
+    type EdgeDataContainer<Data: Clone> = DefaultMap<UndirEdgeId, Data>;
     type EdgeVisitContainer = HashSet<UndirEdgeId, foldhash::fast::RandomState>;
-    type NodeDataContainer<Data: Default> = DefaultMap<UndirNodeId, Data>;
+    type NodeDataContainer<Data: Clone> = DefaultMap<UndirNodeId, Data>;
     type NodeVisitContainer = HashSet<UndirNodeId, foldhash::fast::RandomState>;
 
     fn node_visit_container(&self) -> Self::NodeVisitContainer {
         HashSet::default()
     }
 
-    fn node_data_container<Data: Default>(&self) -> Self::NodeDataContainer<Data> {
+    fn node_data_container<Data: Clone>(
+        &self,
+        default_constructor: impl Fn() -> Data,
+    ) -> Self::NodeDataContainer<Data> {
         DefaultMap {
             map: HashMap::default(),
-            default: Data::default(),
+            default: default_constructor(),
         }
     }
 
@@ -206,10 +209,13 @@ impl<N, E> StorableGraph for UndirectedTestGraph<N, E, UndirNodeId, UndirEdgeId>
         HashSet::default()
     }
 
-    fn edge_data_container<Data: Default>(&self) -> Self::EdgeDataContainer<Data> {
+    fn edge_data_container<Data: Clone>(
+        &self,
+        default_constructor: impl Fn() -> Data,
+    ) -> Self::EdgeDataContainer<Data> {
         DefaultMap {
             map: HashMap::default(),
-            default: Data::default(),
+            default: default_constructor(),
         }
     }
 }

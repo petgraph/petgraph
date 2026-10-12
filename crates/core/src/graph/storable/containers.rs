@@ -8,31 +8,36 @@ use hashbrown::{HashMap as HashbrownHashMap, HashSet as HashbrownHashSet};
 use super::{DataContainer, QueueContainer, StackContainer, VisitContainer};
 use crate::id::IndexId;
 
-impl<Id: IndexId, Data: Default> DataContainer<Id, Data> for Vec<Data> {
+pub struct DefaultVec<Data> {
+    vec: Vec<Data>,
+    default: Data,
+}
+
+impl<Id: IndexId, Data: Clone> DataContainer<Id, Data> for DefaultVec<Data> {
     fn get(&self, node_id: Id) -> &Data {
-        &self[node_id.as_usize()]
+        &self.vec[node_id.as_usize()]
     }
 
     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-        &mut self[node_id.as_usize()]
+        &mut self.vec[node_id.as_usize()]
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {
-        self[node_id.as_usize()] = data;
+        self.vec[node_id.as_usize()] = data;
     }
 
     fn remove(&mut self, node_id: Id) {
-        self[node_id.as_usize()] = Data::default();
+        self.vec[node_id.as_usize()] = self.default.clone();
     }
 
     fn clear(&mut self) {
-        for data in self.iter_mut() {
-            *data = Data::default();
+        for data in &mut self.vec {
+            *data = self.default.clone();
         }
     }
 
     fn into_iter(self) -> impl Iterator<Item = (Id, Data)> {
-        IntoIterator::into_iter(self)
+        IntoIterator::into_iter(self.vec)
             .enumerate()
             .map(|(index, data)| (Id::from_usize(index), data))
     }
@@ -65,6 +70,14 @@ impl<Data> StackContainer<Data> for Vec<Data> {
 
     fn pop(&mut self) -> Option<Data> {
         self.pop()
+    }
+
+    fn swap_remove(&mut self, index: usize) -> Option<Data> {
+        if index < self.len() {
+            Some(self.swap_remove(index))
+        } else {
+            None
+        }
     }
 
     fn peek_last(&self) -> Option<&Data> {
