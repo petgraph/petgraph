@@ -1,6 +1,8 @@
 mod adjacent;
 mod directed;
-mod disjoint;
+pub mod disjoint;
+mod editable;
+pub mod storable;
 mod undirected;
 
 use core::borrow::{Borrow, BorrowMut};
@@ -8,7 +10,7 @@ use core::borrow::{Borrow, BorrowMut};
 pub use self::{
     adjacent::{Predecessors, Successors},
     directed::DirectedGraph,
-    disjoint::DisjointMutGraph,
+    editable::EditableGraph,
     undirected::UndirectedGraph,
 };
 use crate::id::Id;
