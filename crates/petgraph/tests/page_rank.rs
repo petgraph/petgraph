@@ -43,20 +43,25 @@ fn graph_example() -> Graph<String, f32> {
 }
 
 fn expected_ranks() -> Vec<f32> {
+    // Corrected values: standard PageRank with teleportation summed for every
+    // node and dangling rank redistributed uniformly (matches networkx
+    // `pagerank(graph, alpha=0.85)` to within 1e-7). The previous values were
+    // produced by the old implementation whose mutually exclusive if/else
+    // branches dropped terms from the recurrence (see issue #960).
     vec![
-        0.029228685,
-        0.38176042,
-        0.3410649,
-        0.014170233,
-        0.035662483,
-        0.077429585,
-        0.035662483,
-        0.014170233,
-        0.014170233,
-        0.014170233,
-        0.014170233,
-        0.014170233,
-        0.014170233,
+        0.030145930,
+        0.378964203,
+        0.336574242,
+        0.014454654,
+        0.036920650,
+        0.079291752,
+        0.036920650,
+        0.014454654,
+        0.014454654,
+        0.014454654,
+        0.014454654,
+        0.014454654,
+        0.014454654,
     ]
 }
 
@@ -64,7 +69,14 @@ fn expected_ranks() -> Vec<f32> {
 fn test_page_rank() {
     let graph = graph_example();
     let output_ranks = page_rank(&graph, 0.85_f32, 100);
-    assert_eq!(expected_ranks(), output_ranks);
+    assert!(
+        !expected_ranks()
+            .iter()
+            .zip(output_ranks.iter())
+            .any(|(expected, computed)| ((expected - computed).abs() > 1e-6)
+                || computed.is_nan()
+                || expected.is_nan())
+    );
 }
 
 #[test]
