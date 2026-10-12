@@ -1070,6 +1070,22 @@ quickcheck! {
             if i >= 10 { break; } // testing all is too slow
             if let Some(path) = find_negative_cycle(&gr, start) {
                 assert!(!path.is_empty());
+                // The returned path must be an actual cycle: every consecutive
+                // pair (wrapping around) is connected by an edge, and the total
+                // weight of the closed walk is strictly negative.
+                let mut total = 0.0f32;
+                for k in 0..path.len() {
+                    let u = path[k];
+                    let v = path[(k + 1) % path.len()];
+                    // Use the lightest parallel edge between `u` and `v`.
+                    let w = gr
+                        .edges_connecting(u, v)
+                        .map(|e| *e.weight())
+                        .fold(f32::INFINITY, f32::min);
+                    assert!(w.is_finite(), "returned path is not a cycle: no edge {:?} -> {:?}", u, v);
+                    total += w;
+                }
+                assert!(total < 0.0, "returned cycle is not negative: total weight {}", total);
             }
         }
         true
