@@ -26,7 +26,7 @@ jobs:
     # succeed in merge queues.
     steps:
       - name: Validate the PR title format
-        uses: amannn/action-semantic-pull-request@v5
+        uses: amannn/action-semantic-pull-request@v6
         if: github.event_name == 'pull_request'
         id: lint_pr_title
         with:
