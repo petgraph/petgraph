@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       # Remove repo toolchain pin so we can specify toolchain manually
       - name: Remove toolchain pin
         run: rm -f rust-toolchain.toml rustup-toolchain.toml
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: Setup just
         uses: extractions/setup-just@v3
       - name: Install nightly toolchain
@@ -86,12 +86,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       # Remove repo toolchain pin so we can specify toolchain manually
       - name: Remove toolchain pin
         run: rm -f rust-toolchain.toml rustup-toolchain.toml
       - name: Setup just
-        uses: extractions/setup-just@v3
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
