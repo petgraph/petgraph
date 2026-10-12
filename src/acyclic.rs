@@ -12,7 +12,7 @@ use crate::{
     adj::IndexType,
     algo::Cycle,
     data::{Build, Create, DataMap, DataMapMut},
-    graph::NodeIndex,
+    graph::{Frozen, NodeIndex},
     prelude::DiGraph,
     visit::{
         dfs_visitor, Control, Data, DfsEvent, EdgeCount, EdgeIndexable, GetAdjacencyMatrix,
@@ -135,6 +135,11 @@ impl<G: Visitable> Acyclic<G> {
     /// Consume the `Acyclic` wrapper and return the underlying graph.
     pub fn into_inner(self) -> G {
         self.graph
+    }
+
+    /// Get a view of the inner graph that permits weight mutations, but not structural ones.
+    pub fn as_frozen(&mut self) -> Frozen<'_, G> {
+        Frozen::new(&mut self.graph)
     }
 }
 
