@@ -325,10 +325,12 @@ where
         }
     }
 
-    // Distance of each node to itself is the default value
+    // Set zero-length paths without overwriting negative self-loops.
     for node in graph.node_identifiers() {
         let index = graph.to_index(node);
-        set_object(m_dist, index, index, K::default());
+        if is_greater(m_dist, index, index, K::default()) {
+            set_object(m_dist, index, index, K::default());
+        }
         set_object(m_prev, index, index, Some(index));
     }
 

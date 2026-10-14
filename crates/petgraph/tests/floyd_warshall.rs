@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use petgraph::{Directed, Graph, Undirected, algo::floyd_warshall, prelude::*};
+use petgraph::{
+    Directed, Graph, Undirected,
+    algo::{NegativeCycle, floyd_warshall, floyd_warshall::floyd_warshall_path},
+    prelude::*,
+};
 
 #[test]
 fn floyd_warshall_uniform_weight() {
@@ -281,6 +285,32 @@ fn floyd_warshall_negative_cycle() {
     });
 
     assert!(res.is_err());
+}
+
+#[test]
+fn floyd_warshall_negative_self_loop() {
+    let mut graph = Graph::<(), i32>::new();
+    let node = graph.add_node(());
+    graph.add_edge(node, node, -1);
+
+    assert_eq!(
+        floyd_warshall(&graph, |edge| *edge.weight()),
+        Err(NegativeCycle(()))
+    );
+    assert_eq!(
+        floyd_warshall_path(&graph, |edge| *edge.weight()),
+        Err(NegativeCycle(()))
+    );
+
+    let graph = graph.into_edge_type::<Undirected>();
+    assert_eq!(
+        floyd_warshall(&graph, |edge| *edge.weight()),
+        Err(NegativeCycle(()))
+    );
+    assert_eq!(
+        floyd_warshall_path(&graph, |edge| *edge.weight()),
+        Err(NegativeCycle(()))
+    );
 }
 
 #[test]
