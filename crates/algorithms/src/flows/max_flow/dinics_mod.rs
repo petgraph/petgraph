@@ -14,7 +14,7 @@ use super::{other_endpoint, residual_capacity};
 #[cfg(feature = "alloc")]
 use crate::flows::max_flow::MaxFlowConfigError;
 use crate::{
-    flows::max_flow::{MaxFlowReturn, adjusted_residual_flow},
+    flows::max_flow::{MaxFlowOutput, adjusted_residual_flow},
     traits::{Bounded, Measure, MinMax, Zero},
 };
 
@@ -129,7 +129,7 @@ where
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     /// [dinics]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
     #[cfg(feature = "alloc")]
-    pub fn run(&self) -> Result<DinicsOutput<G, C>, MaxFlowConfigError>
+    pub fn run(&self) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
     {
@@ -144,7 +144,7 @@ where
         &self,
         stack_container_builder_node_id: impl Fn() -> SContainer,
         stack_container_builder_flow_edge: impl Fn() -> SContainerFlowEdge,
-    ) -> Result<DinicsOutput<G, C>, MaxFlowConfigError>
+    ) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
         SContainer: StackContainer<G::NodeId> + Clone,
@@ -165,29 +165,6 @@ where
     }
 }
 
-/// Output of [`dinics`] algorithm.
-///
-/// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
-/// with [`DinicsOutput::into_max_flow_and_flow_data`].
-pub struct DinicsOutput<G: Graph + StorableGraph, C: Clone> {
-    max_flow: C,
-    flows: G::EdgeDataContainer<C>,
-}
-
-impl<G: Graph + StorableGraph, C: Clone> MaxFlowReturn<G, C> for DinicsOutput<G, C> {
-    fn max_flow(&self) -> &C {
-        &self.max_flow
-    }
-
-    fn flows(&self) -> &G::EdgeDataContainer<C> {
-        &self.flows
-    }
-
-    fn into_max_flow_and_flow_data(self) -> (C, G::EdgeDataContainer<C>) {
-        (self.max_flow, self.flows)
-    }
-}
-
 fn dinics_inner<G, C, SContainerNodeId, SContainerFlowEdge>(
     network: &G,
     source: G::NodeId,
@@ -195,7 +172,7 @@ fn dinics_inner<G, C, SContainerNodeId, SContainerFlowEdge>(
     capacities: impl Fn(G::EdgeId) -> C,
     stack_container_builder_node_id: impl Fn() -> SContainerNodeId,
     stack_container_builder_flow_edge: impl Fn() -> SContainerFlowEdge,
-) -> DinicsOutput<G, C>
+) -> MaxFlowOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
@@ -230,7 +207,7 @@ where
         );
         max_flow = max_flow + flow_increase;
     }
-    DinicsOutput { max_flow, flows }
+    MaxFlowOutput { max_flow, flows }
 }
 
 /// Makes a BFS that labels network vertices with levels representing
