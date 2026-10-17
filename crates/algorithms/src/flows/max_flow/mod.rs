@@ -34,7 +34,7 @@ use core::{
     ops::{Add, Sub},
 };
 
-use dinics_mod::{Dinics, DinicsOutput};
+use dinics_mod::Dinics;
 use petgraph_core::{
     edge::Edge,
     graph::{DirectedGraph, Graph, storable::StorableGraph},
@@ -60,35 +60,31 @@ impl core::fmt::Display for MaxFlowConfigError {
 
 impl Error for MaxFlowConfigError {}
 
-/// The return trait that is implemented by Max Flow algorithms
-pub trait MaxFlowReturn<G: Graph + StorableGraph, C: Clone> {
+/// Output of max flow algorithms, containing the maximum flow value and the flow of each edge.
+///
+/// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
+/// with [`into_max_flow_and_flow_data`][Self::into_max_flow_and_flow_data].
+pub struct MaxFlowOutput<G: Graph + StorableGraph, C: Clone> {
+    max_flow: C,
+    flows: G::EdgeDataContainer<C>,
+}
+
+impl<G: Graph + StorableGraph, C: Clone> MaxFlowOutput<G, C> {
     /// Returns the maximum flow value computed by the algorithm.
-    fn max_flow(&self) -> &C;
+    pub fn max_flow(&self) -> &C {
+        &self.max_flow
+    }
 
     /// Returns the flow of each edge computed by the algorithm in an `EdgeDataContainer`
     /// corresponding to the respective graph type.
-    fn flows(&self) -> &G::EdgeDataContainer<C>;
+    pub fn flow_data(&self) -> &G::EdgeDataContainer<C> {
+        &self.flows
+    }
 
     /// Consumes the return value and returns the maximum flow value and the flow of each edge in an
-    /// `EdgeDataContainer` corresponding to the respective graph type.
-    fn into_max_flow_and_flow_data(self) -> (C, G::EdgeDataContainer<C>);
-}
-
-/// Wrapper struct for the output of the `max_flow` function, which implements the `MaxFlowReturn`
-/// trait.
-pub struct MaxFlowOutput<G: Graph + StorableGraph, C: Clone>(DinicsOutput<G, C>);
-
-impl<G: Graph + StorableGraph, C: Clone> MaxFlowReturn<G, C> for MaxFlowOutput<G, C> {
-    fn max_flow(&self) -> &C {
-        self.0.max_flow()
-    }
-
-    fn flows(&self) -> &G::EdgeDataContainer<C> {
-        self.0.flows()
-    }
-
-    fn into_max_flow_and_flow_data(self) -> (C, G::EdgeDataContainer<C>) {
-        self.0.into_max_flow_and_flow_data()
+    /// `DataContainer` corresponding to the respective graph type.
+    pub fn into_max_flow_and_flow_data(self) -> (C, G::EdgeDataContainer<C>) {
+        (self.max_flow, self.flows)
     }
 }
 
@@ -235,7 +231,7 @@ where
         // TODO: Consider switching to num_traits traits.
         C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
     {
-        Ok(MaxFlowOutput(self.wrapped.run()?))
+        self.wrapped.run()
     }
 }
 

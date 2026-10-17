@@ -11,7 +11,7 @@ use petgraph_core::{
 
 use crate::{
     flows::max_flow::{
-        MaxFlowConfigError, MaxFlowReturn, adjusted_residual_flow, other_endpoint,
+        MaxFlowConfigError, MaxFlowOutput, adjusted_residual_flow, other_endpoint,
         residual_capacity,
     },
     traits::{Bounded, Measure, Zero},
@@ -102,7 +102,7 @@ where
     ///
     /// # Errors
     /// Returns an error if the source or destination node is not set.
-    pub fn run(&self) -> Result<EdmondsKarpOutput<G, C>, MaxFlowConfigError>
+    pub fn run(&self) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Zero + Measure + Bounded + Default,
     {
@@ -116,29 +116,6 @@ where
             destination,
             &self.capacities,
         ))
-    }
-}
-
-/// Output of the [`edmonds_karp`] algorithm.
-///
-/// The wrapped data can be accessed using the provided getter methods, or by consuming the struct
-/// with [`EdmondsKarpOutput::into_max_flow_and_flow_data`].
-pub struct EdmondsKarpOutput<G: Graph + StorableGraph, C: Clone> {
-    max_flow: C,
-    flows: G::EdgeDataContainer<C>,
-}
-
-impl<G: Graph + StorableGraph, C: Clone> MaxFlowReturn<G, C> for EdmondsKarpOutput<G, C> {
-    fn max_flow(&self) -> &C {
-        &self.max_flow
-    }
-
-    fn flows(&self) -> &G::EdgeDataContainer<C> {
-        &self.flows
-    }
-
-    fn into_max_flow_and_flow_data(self) -> (C, G::EdgeDataContainer<C>) {
-        (self.max_flow, self.flows)
     }
 }
 
@@ -175,7 +152,7 @@ pub fn edmonds_karp<G, C>(
     source: G::NodeId,
     destination: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
-) -> EdmondsKarpOutput<G, C>
+) -> MaxFlowOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + Zero + Bounded + Default,
@@ -188,7 +165,7 @@ fn edmonds_karp_inner<G, C>(
     source: G::NodeId,
     destination: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
-) -> EdmondsKarpOutput<G, C>
+) -> MaxFlowOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Zero + Measure + Bounded + Default,
@@ -229,7 +206,7 @@ where
         }
         max_flow = max_flow + path_flow;
     }
-    EdmondsKarpOutput { max_flow, flows }
+    MaxFlowOutput { max_flow, flows }
 }
 
 /// Returns whether there is an augmenting path in the graph
