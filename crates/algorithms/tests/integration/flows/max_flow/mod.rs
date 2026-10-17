@@ -1,5 +1,5 @@
 use petgraph_algorithms::flows::max_flow::{
-    MaxFlowReturn, dinics_mod::dinics, edmonds_karp_mod::edmonds_karp,
+    MaxFlow, MaxFlowReturn, dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp,
 };
 use petgraph_core::{
     graph::{DirectedGraph, EditableGraph, storable::StorableGraph},
@@ -13,21 +13,41 @@ macro_rules! test_max_flow_on_graph {
         mod edmonds_karp {
             use super::*;
             test_max_flow_all_examples!($graph_constructor, |graph, source, destination| {
-                edmonds_karp(graph, source, destination, |edge_id| {
+                EdmondsKarp::new_with_capacities(graph, |edge_id| {
                     graph.edge(edge_id).unwrap().data.clone()
                 })
+                .with_source(source)
+                .with_destination(destination)
+                .run()
+                .unwrap()
                 .into_max_flow_and_flow_data()
             });
         }
         mod dinics {
             use super::*;
-            test_max_flow_all_examples!($graph_constructor, |graph, source, destination| dinics(
-                graph,
-                source,
-                destination,
-                |edge_id| graph.edge(edge_id).unwrap().data.clone()
-            )
-            .into_max_flow_and_flow_data());
+            test_max_flow_all_examples!($graph_constructor, |graph, source, destination| {
+                Dinics::new_with_capacities(graph, |edge_id| {
+                    graph.edge(edge_id).unwrap().data.clone()
+                })
+                .with_source(source)
+                .with_destination(destination)
+                .run()
+                .unwrap()
+                .into_max_flow_and_flow_data()
+            });
+        }
+        mod max_flow_auto {
+            use super::*;
+            test_max_flow_all_examples!($graph_constructor, |graph, source, destination| {
+                MaxFlow::new_with_capacities(graph, |edge_id| {
+                    graph.edge(edge_id).unwrap().data.clone()
+                })
+                .with_source(source)
+                .with_destination(destination)
+                .run()
+                .unwrap()
+                .into_max_flow_and_flow_data()
+            });
         }
     };
 }
