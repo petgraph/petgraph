@@ -99,6 +99,7 @@ impl<G: Graph + StorableGraph, C: Clone> MaxFlowOutput<G, C> {
 /// versions), call that algorithm directly instead. See the [`maximum_flow`](./index.html) module
 /// for the full list.
 pub struct MaxFlow<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> {
+    // Compare to implementing push relabel and using that as the wrapped max flow alg
     wrapped: Dinics<'graph_ref, G, CapFn, C>,
 }
 
