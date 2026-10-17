@@ -1,6 +1,6 @@
-// TODO: Get rid of alloc here (replace level_edges somehow)
+#[cfg(feature = "alloc")]
 use alloc::{collections::VecDeque, vec::Vec};
-use core::{borrow::Borrow, error::Error, ops::Sub};
+use core::{borrow::Borrow, ops::Sub};
 
 use petgraph_core::{
     edge::Edge,
@@ -11,41 +11,25 @@ use petgraph_core::{
 };
 
 use super::{other_endpoint, residual_capacity};
+#[cfg(feature = "alloc")]
+use crate::flows::max_flow::MaxFlowConfigError;
 use crate::{
     flows::max_flow::{MaxFlowReturn, adjusted_residual_flow},
     traits::{Bounded, Measure, MinMax, Zero},
 };
-
-/// Errors that can occur in the configuration of Dinic's algorithm.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DinicsConfigError {
-    SourceNodeNotSet,
-    DestinationNodeNotSet,
-}
-
-impl core::fmt::Display for DinicsConfigError {
-    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::SourceNodeNotSet => write!(fmt, "Source node is not set"),
-            Self::DestinationNodeNotSet => write!(fmt, "Destination node is not set"),
-        }
-    }
-}
-
-impl Error for DinicsConfigError {}
 
 /// Edge with its capacity copied out of the graph.
 type FlowEdge<G, C> = Edge<<G as Graph>::EdgeId, C, <G as Graph>::NodeId>;
 
 /// Struct to run Dinic's algorithm.
 ///
-/// Offers more configuration options than [`dinics`]. For an explanation of the algorithm, see the
-/// documentation of [`dinics`].
+/// Uses the builder pattern to set parameters and can be run with the [`run`][Self::run] method.
+/// Details of the algorithm can be found in [`run`][Self::run].
 pub struct Dinics<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> {
-    network: &'graph_ref G,
-    source: Option<G::NodeId>,
-    destination: Option<G::NodeId>,
-    capacities: CapFn,
+    pub(super) network: &'graph_ref G,
+    pub(super) source: Option<G::NodeId>,
+    pub(super) destination: Option<G::NodeId>,
+    pub(super) capacities: CapFn,
 }
 
 impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, CapFn, C> {
@@ -145,35 +129,38 @@ where
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     /// [dinics]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
     #[cfg(feature = "alloc")]
-    pub fn run(&self) -> Result<DinicsOutput<G, C>, DinicsConfigError>
+    pub fn run(&self) -> Result<DinicsOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
     {
-        self.run_with_stack_container(|| Vec::new())
+        self.run_with_stack_container(|| Vec::new(), || Vec::new())
     }
 
     /// Run [Dinic's (or Dinitz's) algorithm][dinics] to find a [Maximum Flow][maximum_flow] from
     /// `source` to `destination` using a custom stack container.
     ///
     /// For further details, see the [`run`][Self::run] method.
-    pub fn run_with_stack_container<SContainer>(
+    pub fn run_with_stack_container<SContainer, SContainerFlowEdge>(
         &self,
-        stack_container_builder: impl Fn() -> SContainer,
-    ) -> Result<DinicsOutput<G, C>, DinicsConfigError>
+        stack_container_builder_node_id: impl Fn() -> SContainer,
+        stack_container_builder_flow_edge: impl Fn() -> SContainerFlowEdge,
+    ) -> Result<DinicsOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
-        SContainer: StackContainer<G::NodeId>,
+        SContainer: StackContainer<G::NodeId> + Clone,
+        SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
     {
-        let source = self.source.ok_or(DinicsConfigError::SourceNodeNotSet)?;
+        let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
         let destination = self
             .destination
-            .ok_or(DinicsConfigError::DestinationNodeNotSet)?;
+            .ok_or(MaxFlowConfigError::DestinationNodeNotSet)?;
         Ok(dinics_inner(
             self.network,
             source,
             destination,
             &self.capacities,
-            stack_container_builder,
+            stack_container_builder_node_id,
+            stack_container_builder_flow_edge,
         ))
     }
 }

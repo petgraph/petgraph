@@ -1,10 +1,5 @@
 use alloc::collections::VecDeque;
-use core::{
-    borrow::Borrow,
-    error::Error,
-    fmt::{Display, Formatter},
-    ops::Sub,
-};
+use core::{borrow::Borrow, ops::Sub};
 
 use petgraph_core::{
     edge::Edge,
@@ -12,33 +7,15 @@ use petgraph_core::{
         DirectedGraph, Graph,
         storable::{DataContainer, StorableGraph, VisitContainer},
     },
-    id::IndexId,
 };
 
 use crate::{
-    flows::max_flow::{MaxFlowReturn, adjusted_residual_flow, other_endpoint, residual_capacity},
+    flows::max_flow::{
+        MaxFlowConfigError, MaxFlowReturn, adjusted_residual_flow, other_endpoint,
+        residual_capacity,
+    },
     traits::{Bounded, Measure, Zero},
 };
-
-/// Errors that can occur in the configuration
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EdmondsKarpConfigError {
-    SourceNodeNotSet,
-    DestinationNodeNotSet,
-}
-
-impl Display for EdmondsKarpConfigError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::SourceNodeNotSet => write!(f, "Source node is not set"),
-            Self::DestinationNodeNotSet => {
-                write!(f, "Destination node is not set")
-            }
-        }
-    }
-}
-
-impl Error for EdmondsKarpConfigError {}
 
 /// Struct to run the Edmonds-Karp algorithm.
 ///
@@ -117,8 +94,6 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'graph_ref,
 impl<G, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'_, G, CapFn, C>
 where
     G: DirectedGraph + StorableGraph,
-    G::NodeId: IndexId,
-    G::EdgeId: IndexId,
 {
     /// Runs the Edmonds-Karp algorithm with the current configuration.
     ///
@@ -127,16 +102,14 @@ where
     ///
     /// # Errors
     /// Returns an error if the source or destination node is not set.
-    pub fn run(&self) -> Result<EdmondsKarpOutput<G, C>, EdmondsKarpConfigError>
+    pub fn run(&self) -> Result<EdmondsKarpOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Zero + Measure + Bounded + Default,
     {
-        let source = self
-            .source
-            .ok_or(EdmondsKarpConfigError::SourceNodeNotSet)?;
+        let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
         let destination = self
             .destination
-            .ok_or(EdmondsKarpConfigError::DestinationNodeNotSet)?;
+            .ok_or(MaxFlowConfigError::DestinationNodeNotSet)?;
         Ok(edmonds_karp_inner(
             self.network,
             source,
