@@ -35,12 +35,6 @@ impl<Id: IndexId, Data: Clone> DataContainer<Id, Data> for DefaultVec<Data> {
             *data = self.default.clone();
         }
     }
-
-    fn into_iter(self) -> impl Iterator<Item = (Id, Data)> {
-        IntoIterator::into_iter(self.vec)
-            .enumerate()
-            .map(|(index, data)| (Id::from_usize(index), data))
-    }
 }
 
 impl<Id: IndexId> VisitContainer<Id> for Vec<Option<()>> {
@@ -108,21 +102,23 @@ impl<Data> QueueContainer<Data> for VecDeque<Data> {
 }
 
 #[cfg(feature = "std")]
-pub struct DefaultMapStd<Id, Data, S = std::hash::RandomState> {
+pub struct DefaultHashMapStd<Id, Data, S = std::hash::RandomState> {
     map: StdHashMap<Id, Data, S>,
     default: Data,
 }
 
 #[cfg(feature = "std")]
-impl<Id: core::hash::Hash + core::cmp::Eq, Data: Default, S: core::hash::BuildHasher>
-    DataContainer<Id, Data> for DefaultMapStd<Id, Data, S>
+impl<Id: core::hash::Hash + core::cmp::Eq, Data: Clone, S: core::hash::BuildHasher>
+    DataContainer<Id, Data> for DefaultHashMapStd<Id, Data, S>
 {
     fn get(&self, node_id: Id) -> &Data {
         self.map.get(&node_id).unwrap_or(&self.default)
     }
 
     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-        self.map.entry(node_id).or_default()
+        self.map
+            .entry(node_id)
+            .or_insert_with(|| self.default.clone())
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {
@@ -135,10 +131,6 @@ impl<Id: core::hash::Hash + core::cmp::Eq, Data: Default, S: core::hash::BuildHa
 
     fn clear(&mut self) {
         self.map.clear();
-    }
-
-    fn into_iter(self) -> impl Iterator<Item = (Id, Data)> {
-        IntoIterator::into_iter(self.map)
     }
 }
 
@@ -164,21 +156,23 @@ impl<Id: core::hash::Hash + core::cmp::Eq, S: core::hash::BuildHasher> VisitCont
 }
 
 #[cfg(feature = "hashbrown")]
-pub struct DefaultMapHashbrown<Id, Data, S = hashbrown::DefaultHashBuilder> {
+pub struct DefaultHashMapHashbrown<Id, Data, S = hashbrown::DefaultHashBuilder> {
     map: HashbrownHashMap<Id, Data, S>,
     default: Data,
 }
 
 #[cfg(feature = "hashbrown")]
-impl<Id: core::hash::Hash + core::cmp::Eq, Data: Default, S: core::hash::BuildHasher>
-    DataContainer<Id, Data> for DefaultMapHashbrown<Id, Data, S>
+impl<Id: core::hash::Hash + core::cmp::Eq, Data: Clone, S: core::hash::BuildHasher>
+    DataContainer<Id, Data> for DefaultHashMapHashbrown<Id, Data, S>
 {
     fn get(&self, node_id: Id) -> &Data {
         self.map.get(&node_id).unwrap_or(&self.default)
     }
 
     fn get_mut(&mut self, node_id: Id) -> &mut Data {
-        self.map.entry(node_id).or_default()
+        self.map
+            .entry(node_id)
+            .or_insert_with(|| self.default.clone())
     }
 
     fn insert(&mut self, node_id: Id, data: Data) {
@@ -191,10 +185,6 @@ impl<Id: core::hash::Hash + core::cmp::Eq, Data: Default, S: core::hash::BuildHa
 
     fn clear(&mut self) {
         self.map.clear();
-    }
-
-    fn into_iter(self) -> impl Iterator<Item = (Id, Data)> {
-        IntoIterator::into_iter(self.map)
     }
 }
 
