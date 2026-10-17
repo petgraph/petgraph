@@ -1,5 +1,5 @@
 use petgraph_algorithms::flows::max_flow::{
-    MaxFlow, MaxFlowReturn, dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp,
+    MaxFlow, dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp,
 };
 use petgraph_core::{
     graph::{DirectedGraph, EditableGraph, storable::StorableGraph},
@@ -86,7 +86,10 @@ macro_rules! test_max_flow_all_examples {
 
         #[test]
         fn test_seven() {
-            crate::flows::max_flow::test_max_flow_seven($graph_constructor, $max_flow_algorithm);
+            crate::flows::max_flow::test_max_flow_back_edges(
+                $graph_constructor,
+                $max_flow_algorithm,
+            );
         }
 
         // TODO Add missing test functions once proper IndexId etc handling in Algorithms is done.
@@ -257,7 +260,7 @@ fn test_max_flow_six<
     assert_eq!(19, max_flow);
 }
 
-fn test_max_flow_seven<
+fn test_max_flow_back_edges<
     G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,
 >(
     graph_constructor: impl Fn() -> G,
