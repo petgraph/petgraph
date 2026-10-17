@@ -197,11 +197,11 @@ impl<N, E> StorableGraph for UndirectedTestGraph<N, E, UndirNodeId, UndirEdgeId>
 
     fn node_data_container<Data: Clone>(
         &self,
-        default_constructor: impl Fn() -> Data,
+        default_value: Data,
     ) -> Self::NodeDataContainer<Data> {
         DefaultMap {
             map: HashMap::default(),
-            default: default_constructor(),
+            default: default_value,
         }
     }
 
@@ -211,11 +211,11 @@ impl<N, E> StorableGraph for UndirectedTestGraph<N, E, UndirNodeId, UndirEdgeId>
 
     fn edge_data_container<Data: Clone>(
         &self,
-        default_constructor: impl Fn() -> Data,
+        default_value: Data,
     ) -> Self::EdgeDataContainer<Data> {
         DefaultMap {
             map: HashMap::default(),
-            default: default_constructor(),
+            default: default_value,
         }
     }
 }

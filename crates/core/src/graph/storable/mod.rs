@@ -114,7 +114,7 @@ pub trait StorableGraph: Graph {
     /// Holds enough capacity to store data for all nodes in the graph or can grow dynamically.
     fn node_data_container<Data: Clone>(
         &self,
-        default_constructor: impl Fn() -> Data,
+        default_value: Data,
     ) -> Self::NodeDataContainer<Data>;
 
     /// Returns a new container for tracking visited edges.
@@ -126,6 +126,6 @@ pub trait StorableGraph: Graph {
     /// Holds enough capacity to store data for all edges in the graph or can grow dynamically.
     fn edge_data_container<Data: Clone>(
         &self,
-        default_constructor: impl Fn() -> Data,
+        default_value: Data,
     ) -> Self::EdgeDataContainer<Data>;
 }

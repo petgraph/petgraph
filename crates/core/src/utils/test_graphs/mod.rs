@@ -36,8 +36,4 @@ impl<Id: Eq + Hash, Data: Clone, S: BuildHasher> DataContainer<Id, Data>
     fn clear(&mut self) {
         self.map.clear();
     }
-
-    fn into_iter(self) -> impl Iterator<Item = (Id, Data)> {
-        self.map.into_iter()
-    }
 }
