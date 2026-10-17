@@ -2,6 +2,7 @@
 /target/
 Cargo.lock
 rustc-ice-*
+.cargo/
 
 .DS_Store
 .vscode/
