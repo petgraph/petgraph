@@ -78,6 +78,14 @@ impl<Data> StackContainer<Data> for Vec<Data> {
         self.last()
     }
 
+    fn get(&self, index: usize) -> Option<&Data> {
+        <[Data]>::get(&self, index)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
     fn clear(&mut self) {
         self.clear();
     }
@@ -94,6 +102,14 @@ impl<Data> QueueContainer<Data> for VecDeque<Data> {
 
     fn peek_first(&self) -> Option<&Data> {
         self.front()
+    }
+
+    fn get(&self, index: usize) -> Option<&Data> {
+        self.get(index)
+    }
+
+    fn len(&self) -> usize {
+        self.len()
     }
 
     fn clear(&mut self) {
