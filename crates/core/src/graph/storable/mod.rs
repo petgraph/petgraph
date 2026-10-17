@@ -25,15 +25,16 @@ pub trait DataContainer<Id, Data> {
     /// Clears all data in the container, resetting it to its default state.
     fn clear(&mut self);
 
-    /// Consumes the container and returns an iterator over the (id, data) pairs. All data
-    /// with non-default values will be included in the iterator.
-    ///
-    /// The iterator is in no particular order.
-    ///
-    /// # Caution
-    /// The iterator may not iterate over all existing ids. That is, it only guarantees to iterate
-    /// over ids that have non-default data values.
-    fn into_iter(self) -> impl Iterator<Item = (Id, Data)>;
+    // ToDo: Possibly re-add such a method, if it can be designed/implemented in a consistent way.
+    // /// Consumes the container and returns an iterator over the (id, data) pairs. All data
+    // /// with non-default values will be included in the iterator.
+    // ///
+    // /// The iterator is in no particular order.
+    // ///
+    // /// # Caution
+    // /// The iterator may not iterate over all existing ids. That is, it only guarantees to
+    // /// iterate over ids that have non-default data values.
+    // fn into_iter(self) -> impl Iterator<Item = (Id, Data)>;
 }
 
 /// A container for tracking visited nodes or edges in a graph.
@@ -113,7 +114,7 @@ pub trait StorableGraph: Graph {
     /// Holds enough capacity to store data for all nodes in the graph or can grow dynamically.
     fn node_data_container<Data: Clone>(
         &self,
-        default_constructor: impl Fn() -> Data,
+        default_value: Data,
     ) -> Self::NodeDataContainer<Data>;
 
     /// Returns a new container for tracking visited edges.
@@ -125,6 +126,6 @@ pub trait StorableGraph: Graph {
     /// Holds enough capacity to store data for all edges in the graph or can grow dynamically.
     fn edge_data_container<Data: Clone>(
         &self,
-        default_constructor: impl Fn() -> Data,
+        default_value: Data,
     ) -> Self::EdgeDataContainer<Data>;
 }
