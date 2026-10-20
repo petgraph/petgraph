@@ -86,13 +86,18 @@ macro_rules! test_max_flow_all_examples {
 
         #[test]
         fn test_seven() {
-            crate::flows::max_flow::test_max_flow_back_edges(
-                $graph_constructor,
-                $max_flow_algorithm,
-            );
+            crate::flows::max_flow::test_max_flow_seven($graph_constructor, $max_flow_algorithm);
         }
 
-        // TODO Add missing test functions once proper IndexId etc handling in Algorithms is done.
+        #[test]
+        fn test_eight() {
+            crate::flows::max_flow::test_max_flow_eight($graph_constructor, $max_flow_algorithm);
+        }
+
+        #[test]
+        fn test_nine() {
+            crate::flows::max_flow::test_max_flow_nine($graph_constructor, $max_flow_algorithm);
+        }
     };
 }
 
@@ -260,7 +265,7 @@ fn test_max_flow_six<
     assert_eq!(19, max_flow);
 }
 
-fn test_max_flow_back_edges<
+fn test_max_flow_seven<
     G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,
 >(
     graph_constructor: impl Fn() -> G,
@@ -292,92 +297,88 @@ fn test_max_flow_back_edges<
 }
 
 // // TODO: Re-Add this, once proper IndexId etc handling in Algorithms is done.
-// pub(crate) fn test_max_flow_eight_call_me<G: DirectedGraph>(
-//     graph_constructor: impl Fn() -> G,
-//     graph_add_node: impl Fn(&mut G, u32) -> G::NodeId,
-//     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
-//     graph_remove_node: impl Fn(&mut G, G::NodeId),
-//     _graph_remove_edge: impl Fn(&mut G, G::EdgeId),
-//     flow_algorithm: impl Fn(&G, G::NodeId, G::NodeId) -> (u32, Vec<u32>),
-// ) {
-//     // Example from https://downey.io/blog/max-flow-ford-fulkerson-algorithm-explanation/
-//     // Graph Image: https://images.downey.io/max-flow/max-flow-3.png
-//     let mut graph = graph_constructor();
-//     let mut nodes = Vec::new();
-//     nodes.push(graph_add_node(&mut graph, 0));
-//     nodes.push(graph_add_node(&mut graph, 1));
-//     nodes.push(graph_add_node(&mut graph, 2));
-//     nodes.push(graph_add_node(&mut graph, 3));
-//     nodes.push(graph_add_node(&mut graph, 4));
-//     for (source, sink, weight) in [
-//         (0, 1, 3),
-//         (0, 2, 2),
-//         (1, 2, 5),
-//         (1, 4, 2),
-//         (2, 4, 3),
-//         (0, 3, 1),
-//         (3, 4, 3),
-//         (1, 3, 3),
-//     ] {
-//         graph_add_edge(&mut graph, nodes[source], nodes[sink], weight);
-//     }
-//     graph_remove_node(&mut graph, nodes[3]);
-//     let (max_flow, _) = flow_algorithm(&graph, nodes[0], nodes[4]);
-//     assert_eq!(5, max_flow);
-// }
+pub(crate) fn test_max_flow_eight<
+    G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,
+>(
+    graph_constructor: impl Fn() -> G,
+    flow_algorithm: impl Fn(&G, G::NodeId, G::NodeId) -> (u32, G::EdgeDataContainer<u32>),
+) {
+    // Example from https://downey.io/blog/max-flow-ford-fulkerson-algorithm-explanation/
+    // Graph Image: https://images.downey.io/max-flow/max-flow-3.png
+    let mut graph = graph_constructor();
+    let mut nodes = Vec::new();
+    nodes.push(graph.add_node(()).unwrap());
+    nodes.push(graph.add_node(()).unwrap());
+    nodes.push(graph.add_node(()).unwrap());
+    nodes.push(graph.add_node(()).unwrap());
+    nodes.push(graph.add_node(()).unwrap());
+    for (source, sink, weight) in [
+        (0, 1, 3),
+        (0, 2, 2),
+        (1, 2, 5),
+        (1, 4, 2),
+        (2, 4, 3),
+        (0, 3, 1),
+        (3, 4, 3),
+        (1, 3, 3),
+    ] {
+        graph.add_edge(nodes[source], nodes[sink], weight).unwrap();
+    }
+    graph.remove_node(nodes[3]);
+    let (max_flow, _) = flow_algorithm(&graph, nodes[0], nodes[4]);
+    assert_eq!(5, max_flow);
+}
 
-// pub(crate) fn test_max_flow_nine_call_me<G: DirectedGraph>(
-//     graph_constructor: impl Fn() -> G,
-//     graph_add_node: impl Fn(&mut G, ()) -> G::NodeId,
-//     graph_add_edge: impl Fn(&mut G, G::NodeId, G::NodeId, u32) -> Option<G::EdgeId>,
-//     _graph_remove_node: impl Fn(&mut G, G::NodeId),
-//     graph_remove_edge: impl Fn(&mut G, G::EdgeId),
-//     flow_algorithm: impl Fn(&G, G::NodeId, G::NodeId) -> (u32, Vec<u32>),
-// ) {
-//     // See issue https://github.com/petgraph/petgraph/issues/792
-//     let mut g = graph_constructor();
+pub(crate) fn test_max_flow_nine<
+    G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,
+>(
+    graph_constructor: impl Fn() -> G,
+    flow_algorithm: impl Fn(&G, G::NodeId, G::NodeId) -> (u32, G::EdgeDataContainer<u32>),
+) {
+    // See issue https://github.com/petgraph/petgraph/issues/792
+    let mut graph = graph_constructor();
 
-//     let a = graph_add_node(&mut g, ());
-//     let b = graph_add_node(&mut g, ());
-//     let c = graph_add_node(&mut g, ());
-//     let d = graph_add_node(&mut g, ());
+    let node_a = graph.add_node(()).unwrap();
+    let node_b = graph.add_node(()).unwrap();
+    let node_c = graph.add_node(()).unwrap();
+    let node_d = graph.add_node(()).unwrap();
 
-//     let ac = graph_add_edge(&mut g, a, c, 1).unwrap();
-//     let _ = graph_add_edge(&mut g, a, b, 1);
-//     let _ = graph_add_edge(&mut g, b, c, 1).unwrap();
-//     let _ = graph_add_edge(&mut g, b, d, 1);
+    let ac = graph.add_edge(node_a, node_c, 1).unwrap();
+    let _ = graph.add_edge(node_a, node_b, 1).unwrap();
+    let bc = graph.add_edge(node_b, node_c, 1).unwrap();
+    let _ = graph.add_edge(node_b, node_d, 1).unwrap();
 
-//     // Current state of graph:
-//     // a --1-- b --1-- c --1-- d
-//     // |               |
-//     // - -- -- 1 -- -- -
+    // Current state of graph:
+    // a --1-- b --1-- c --1-- d
+    // |               |
+    // - -- -- 1 -- -- -
 
-//     graph_remove_edge(&mut g, ac);
+    graph.remove_edge(bc).unwrap();
 
-//     // Current state of graph:
-//     // a --1-- b       c --1-- d
-//     // |               |
-//     // - -- -- 1 -- -- -
+    // Current state of graph:
+    // a --1-- b       c --1-- d
+    // |               |
+    // - -- -- 1 -- -- -
 
-//     assert_eq!(1, flow_algorithm(&g, a, d).0);
+    assert_eq!(1, flow_algorithm(&graph, node_a, node_d).0);
 
-//     let _ = graph_add_edge(&mut g, b, c, 1);
-//     graph_remove_edge(&mut g, ac);
+    let _ = graph.add_edge(node_b, node_c, 1).unwrap();
+    graph.remove_edge(ac).unwrap();
 
-//     // Current state of graph:
-//     // a --1-- b --1-- c --1-- d
+    // Current state of graph:
+    // a --1-- b --1-- c --1-- d
 
-//     assert_eq!(1, flow_algorithm(&g, a, d).0);
+    assert_eq!(1, flow_algorithm(&graph, node_a, node_d).0);
 
-//     let _ = graph_add_edge(&mut g, a, c, 1);
-//     let _ = graph_add_edge(&mut g, c, d, 1);
+    let _ = graph.add_edge(node_a, node_c, 1).unwrap();
+    let _ = graph.add_edge(node_c, node_d, 1).unwrap();
 
-//     // Current state of graph:
-//     //                 - --1-- -
-//     //                 |       |
-//     // a --1-- b --1-- c --1-- d
-//     // |               |
-//     // - -- -- 1 -- -- -
+    // Current state of graph:
+    //                 - --1-- -
+    //                 |       |
+    // a --1-- b --1-- c --1-- d
+    // |               |
+    // - -- -- 1 -- -- -
 
-//     assert_eq!(2, flow_algorithm(&g, a, d).0);
-// }
+    assert_eq!(2, flow_algorithm(&graph, node_a, node_d).0);
+}
