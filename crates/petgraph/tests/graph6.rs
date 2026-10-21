@@ -3,7 +3,9 @@ use petgraph::stable_graph::StableGraph;
 use petgraph::{
     Graph, Undirected,
     csr::Csr,
-    graph6::{FromGraph6, ToGraph6, from_graph6_representation, get_graph6_representation},
+    graph6::{
+        FromGraph6, Graph6Error, ToGraph6, from_graph6_representation, get_graph6_representation,
+    },
 };
 
 #[cfg(all(feature = "std", feature = "graphmap"))]
@@ -53,7 +55,7 @@ fn test_graph6_generic_decoder(
 ) {
     type G = (usize, Vec<(u16, u16)>);
 
-    let (order, mut edges): G = from_graph6_representation(graph6_str.to_string());
+    let (order, mut edges): G = from_graph6_representation(graph6_str.to_string()).unwrap();
     assert_eq!(order, expected_order, "order should be the same");
 
     edges.sort();
@@ -84,7 +86,7 @@ fn test_graph6_for_graph(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>)
     assert_eq!(graph6_string, graph6_str);
 
     // Assert decoded graph properties
-    let decoded_graph = G::from_graph6_string(graph6_string);
+    let decoded_graph = G::from_graph6_string(graph6_string).unwrap();
     assert_eq!(decoded_graph.node_count(), order);
     assert_eq!(decoded_graph.edge_count(), size);
 
@@ -117,7 +119,7 @@ fn test_graph6_for_stable_graph(graph6_str: &str, order: usize, edges: Vec<(u16,
     assert_eq!(graph6_string, graph6_str);
 
     // Assert decoded graph properties
-    let decoded_graph = G::from_graph6_string(graph6_string);
+    let decoded_graph = G::from_graph6_string(graph6_string).unwrap();
     assert_eq!(decoded_graph.node_count(), order);
     assert_eq!(decoded_graph.edge_count(), size);
 
@@ -152,7 +154,7 @@ fn test_graph6_for_graph_map(graph6_str: &str, order: usize, edges: Vec<(u16, u1
     assert_eq!(graph6_string, graph6_str);
 
     // Assert decoded graph properties
-    let decoded_graph = G::from_graph6_string(graph6_string);
+    let decoded_graph = G::from_graph6_string(graph6_string).unwrap();
     assert_eq!(decoded_graph.node_count(), order);
     assert_eq!(decoded_graph.edge_count(), size);
 
@@ -185,7 +187,7 @@ fn test_graph6_for_matrix_graph(graph6_str: &str, order: usize, edges: Vec<(u16,
     assert_eq!(graph6_string, graph6_str);
 
     // Assert decoded graph properties
-    let decoded_graph = G::from_graph6_string(graph6_string);
+    let decoded_graph = G::from_graph6_string(graph6_string).unwrap();
     assert_eq!(decoded_graph.node_count(), order);
     assert_eq!(decoded_graph.edge_count(), size);
 
@@ -220,12 +222,66 @@ fn test_graph6_for_csr(graph6_str: &str, order: usize, edges: Vec<(u16, u16)>) {
     assert_eq!(graph6_string, graph6_str);
 
     // Assert decoded graph properties
-    let decoded_graph = G::from_graph6_string(graph6_string);
+    let decoded_graph = G::from_graph6_string(graph6_string).unwrap();
     assert_eq!(decoded_graph.node_count(), order);
     assert_eq!(decoded_graph.edge_count(), size);
 
     // Assert re-encoded graph6 string is the same
     assert_eq!(decoded_graph.graph6_string(), graph6_str);
+}
+
+#[test]
+fn malformed_graph6_is_an_error() {
+    type G = (usize, Vec<(u16, u16)>);
+
+    let cases: [(&str, Graph6Error); 8] = [
+        // No order byte at all.
+        ("", Graph6Error::Empty),
+        // Below the printable range: '\n' used to underflow the `- 63` bias.
+        ("\n", Graph6Error::InvalidCharacter('\n')),
+        // Above the printable range: 0x7f used to be masked down to a valid byte.
+        ("\u{7f}?", Graph6Error::InvalidCharacter('\u{7f}')),
+        // Long form with none of the three order bytes.
+        ("~", Graph6Error::TruncatedOrder),
+        // Long form with two of the three order bytes.
+        ("~AA", Graph6Error::TruncatedOrder),
+        // The 8-byte order form, which the encoder never emits.
+        ("~~??????", Graph6Error::UnsupportedOrder),
+        // Order 3 needs 3 adjacency bits and gets none.
+        (
+            "B",
+            Graph6Error::TruncatedAdjacencyMatrix {
+                expected: 3,
+                found: 0,
+            },
+        ),
+        // Order 8322 in long form, with no adjacency bytes.
+        (
+            "~AAA",
+            Graph6Error::TruncatedAdjacencyMatrix {
+                expected: 8322 * 8321 / 2,
+                found: 0,
+            },
+        ),
+    ];
+
+    for (graph6_str, expected) in cases {
+        let decoded: Result<G, _> = from_graph6_representation(graph6_str.to_string());
+        assert_eq!(decoded, Err(expected), "input {graph6_str:?}");
+    }
+}
+
+#[test]
+fn malformed_graph6_is_an_error_for_graph() {
+    type G = Graph<(), (), Undirected, u16>;
+
+    assert_eq!(
+        G::from_graph6_string("B".to_string()).unwrap_err(),
+        Graph6Error::TruncatedAdjacencyMatrix {
+            expected: 3,
+            found: 0
+        }
+    );
 }
 
 // Test cases format: (graph order, expected ghaph6 representation, graph edges)
