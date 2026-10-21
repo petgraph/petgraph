@@ -9,6 +9,7 @@ use petgraph::{
     },
     graph::{edge_index, node_index},
     prelude::*,
+    visit::Reversed,
 };
 
 /// Petersen A and B are isomorphic
@@ -582,6 +583,30 @@ fn iter_subgraph() {
             .collect::<Vec<_>>(),
         vec![vec![2, 3]]
     );
+}
+
+#[test]
+fn iso_reversed() {
+    // https://github.com/petgraph/petgraph/issues/912
+    let g = DiGraph::<(), ()>::from_edges([(0, 1)]);
+    let rg = Reversed(&g);
+    assert!(is_isomorphic(rg, rg));
+    assert!(is_isomorphic(&g, rg));
+
+    let mut node_match = { |x: &(), y: &()| x == y };
+    let mut edge_match = { |x: &(), y: &()| x == y };
+    assert!(
+        subgraph_isomorphisms_iter(&rg, &rg, &mut node_match, &mut edge_match)
+            .unwrap()
+            .next()
+            .is_some()
+    );
+
+    // Outdegree sequences (2,1,0,0) vs (1,1,1,0): a graph that is not
+    // isomorphic to its transpose.
+    let h = DiGraph::<(), ()>::from_edges([(0, 1), (1, 2), (0, 3)]);
+    assert!(is_isomorphic(Reversed(&h), Reversed(&h)));
+    assert!(!is_isomorphic(&h, Reversed(&h)));
 }
 
 /// Isomorphic pair
