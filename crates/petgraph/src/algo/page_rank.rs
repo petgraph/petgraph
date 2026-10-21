@@ -23,7 +23,7 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 /// Otherwise, it panics.
 ///
 /// # Complexity
-/// * Time complexity: **O(n|V|²|E|)**.
+/// * Time complexity: **O(n(|V| + |E|))**.
 /// * Auxiliary space: **O(|V| + |E|)**.
 ///
 /// where **n** is the number of iterations, **|V|** the number of vertices (i.e nodes) and **|E|**
@@ -57,8 +57,10 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable};
 /// let damping_factor = 0.7_f32;
 /// let number_iterations = 10;
 /// let output_ranks = page_rank(&g, damping_factor, number_iterations);
-/// let expected_ranks = vec![0.14685437, 0.20267677, 0.22389607, 0.27971846, 0.14685437];
-/// assert_eq!(expected_ranks, output_ranks);
+/// let expected_ranks = vec![0.15048909, 0.20316027, 0.22159518, 0.27426637, 0.15048909];
+/// for (got, want) in output_ranks.iter().zip(&expected_ranks) {
+///     assert!((got - want).abs() < 1e-6);
+/// }
 /// ```
 #[track_caller]
 pub fn page_rank<G, D>(graph: G, damping_factor: D, nb_iter: usize) -> Vec<D>
@@ -75,34 +77,46 @@ where
         "Damping factor should be between 0 et 1."
     );
     let nb = D::from_usize(node_count);
-    let mut ranks = vec![D::one() / nb; node_count];
-    let nodeix = |i| graph.from_index(i);
-    let out_degrees: Vec<D> = (0..node_count)
-        .map(|i| graph.edges(nodeix(i)).map(|_| D::one()).sum::<D>())
-        .collect();
+
+    // Incoming adjacency lists, built in one pass over the edges.
+    let mut incoming: Vec<Vec<usize>> = alloc::vec![alloc::vec::Vec::new(); node_count];
+    let mut out_degrees = alloc::vec![D::zero(); node_count];
+    for edge in graph.edge_references() {
+        let source = graph.to_index(edge.source());
+        let target = graph.to_index(edge.target());
+        incoming[target].push(source);
+        out_degrees[source] = out_degrees[source] + D::one();
+    }
+
+    let mut ranks = alloc::vec![D::one() / nb; node_count];
+    let teleport = (D::one() - damping_factor) / nb;
 
     for _ in 0..nb_iter {
-        let pi = (0..node_count)
-            .enumerate()
-            .map(|(v, _)| {
-                ranks
-                    .iter()
-                    .enumerate()
-                    .map(|(w, r)| {
-                        let mut w_out_edges = graph.edges(nodeix(w));
-                        if w_out_edges.any(|e| e.target() == nodeix(v)) {
-                            damping_factor * *r / out_degrees[w]
-                        } else if out_degrees[w] == D::zero() {
-                            damping_factor * *r / nb // stochastic matrix condition
-                        } else {
-                            (D::one() - damping_factor) * *r / nb // random jumps
-                        }
-                    })
-                    .sum::<D>()
-            })
-            .collect::<Vec<D>>();
-        let sum = pi.iter().copied().sum::<D>();
-        ranks = pi.iter().map(|r| *r / sum).collect::<Vec<D>>();
+        // Redistribute the rank of dangling nodes (no out-edges) uniformly.
+        let mut dangling = D::zero();
+        for i in 0..node_count {
+            if out_degrees[i] == D::zero() {
+                dangling = dangling + ranks[i];
+            }
+        }
+        let dangling_share = damping_factor * dangling / nb;
+
+        let mut next = alloc::vec![teleport + dangling_share; node_count];
+        for (v, slot) in next.iter_mut().enumerate() {
+            let mut incoming_sum = D::zero();
+            for &w in &incoming[v] {
+                incoming_sum = incoming_sum + damping_factor * ranks[w] / out_degrees[w];
+            }
+            *slot = *slot + incoming_sum;
+        }
+        // Normalize so the ranks sum to one.
+        let sum = next.iter().copied().fold(D::zero(), |acc, r| acc + r);
+        if sum != D::zero() {
+            for r in next.iter_mut() {
+                *r = *r / sum;
+            }
+        }
+        ranks = next;
     }
     ranks
 }
