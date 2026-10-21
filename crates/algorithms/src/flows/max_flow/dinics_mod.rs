@@ -87,6 +87,29 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, C
         self.destination = Some(destination);
         self
     }
+
+    /// Creates a new instance of Dinic's algorithm with the provided graph and capacity function.
+    ///
+    /// The source and destination nodes can be set using a builder pattern with the
+    /// [`with_source`][Self::with_source] and [`with_destination`][Self::with_destination] methods.
+    ///
+    /// To run the algorithm, call the [`run`][Self::run] method on the returned struct.
+    #[must_use]
+    pub const fn with_capacities<NewCapFn, NewC>(
+        network: &'graph_ref G,
+        capacities: NewCapFn,
+    ) -> Dinics<'graph_ref, G, NewCapFn, NewC>
+    where
+        G: DirectedGraph,
+        NewCapFn: Fn(G::EdgeId) -> NewC,
+    {
+        Dinics {
+            network,
+            source: None,
+            destination: None,
+            capacities,
+        }
+    }
 }
 
 impl<G, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'_, G, CapFn, C>
@@ -103,14 +126,12 @@ where
     ///
     /// See also the [`max_flow`](../index.html) module for other maximum flow algorithms.
     ///
-    /// # Example
-    /// TODO: Add example
-    ///
     /// # Arguments
-    /// - `network`: A directed graph with positive edge data which is interpreted as capacities of
-    ///   edges.
+    /// The following arguments need to be set in the algorithm struct before calling this method:
     /// - `source`: Source node for the flow.
     /// - `destination`: Sink node for the flow.
+    /// - `capacities` (optional): Function that returns the capacity of an edge given its ID. If
+    ///   not set, the edge data of the graph is used as capacity.
     ///
     /// # Returns
     /// Returns a struct wrapping the maximum flow value and the flow of each edge.
@@ -121,10 +142,15 @@ where
     ///   - In networks with only unit capacities: **O(min{|V|²ᐟ³, |E|¹ᐟ²} |E|)**
     /// - Auxiliary space: **O(|V| + |E|)**.
     ///
-    /// Where **|V|** is the number of nodes and **|E|** is the number of edges.
+    /// Where **|V|** is the number of nodes and **|E|** is the number of edges in the graph.
+    /// The exact complexity depends on the graph backend. That is, an algorithm with runtime O(|V|)
+    /// may have effective running time O(|V|^2) if accessing the graph is O(|V|) instead of O(1).
     ///
     /// # Errors
     /// Returns an error if the source or destination node is not set.
+    ///
+    /// # Example
+    ///
     ///
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     /// [dinics]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
