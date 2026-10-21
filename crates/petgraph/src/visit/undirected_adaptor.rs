@@ -92,6 +92,23 @@ pub struct MaybeReversedEdgeReference<R> {
     reversed: bool,
 }
 
+impl<R> MaybeReversedEdgeReference<R> {
+    /// Return whether the edge reference has been reversed.
+    pub fn is_reversed(&self) -> bool {
+        self.reversed
+    }
+
+    /// Return the original, unreversed edge reference.
+    pub fn as_unreversed(&self) -> &R {
+        &self.inner
+    }
+
+    /// Consume `self` and return the original, unreversed edge reference.
+    pub fn into_unreversed(self) -> R {
+        self.inner
+    }
+}
+
 impl<R> EdgeRef for MaybeReversedEdgeReference<R>
 where
     R: EdgeRef,
@@ -275,6 +292,39 @@ mod tests {
             let mut nodes = graph.node_identifiers().collect::<Vec<_>>();
             nodes.sort();
             assert_eq!(graph.neighbors(nodes[1]).count(), 2);
+        }
+    }
+
+    #[test]
+    pub fn test_maybe_reversed_edge_reference_methods() {
+        let graph = DiGraph::<(), ()>::from_edges([(0, 1), (1, 2)]);
+        let mut nodes = graph.node_identifiers().collect::<Vec<_>>();
+        nodes.sort();
+        let ungraph = UndirectedAdaptor(&graph);
+
+        let edges: Vec<_> = ungraph.edges(nodes[1]).collect();
+        assert_eq!(edges.len(), 2);
+
+        let incoming = edges
+            .iter()
+            .find(|e| e.target() == nodes[0])
+            .expect("reversed incoming edge from 0 -> 1");
+        assert!(incoming.is_reversed());
+        assert_eq!(incoming.as_unreversed().source(), nodes[0]);
+        assert_eq!(incoming.as_unreversed().target(), nodes[1]);
+        assert_eq!(incoming.into_unreversed().source(), nodes[0]);
+
+        let outgoing = edges
+            .iter()
+            .find(|e| e.target() == nodes[2])
+            .expect("unreversed outgoing edge 1 -> 2");
+        assert!(!outgoing.is_reversed());
+        assert_eq!(outgoing.as_unreversed().source(), nodes[1]);
+        assert_eq!(outgoing.as_unreversed().target(), nodes[2]);
+        assert_eq!(outgoing.into_unreversed().target(), nodes[2]);
+
+        for edge in ungraph.edge_references() {
+            assert!(!edge.is_reversed());
         }
     }
 }
