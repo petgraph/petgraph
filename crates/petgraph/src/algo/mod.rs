@@ -24,6 +24,7 @@ pub mod ford_fulkerson;
 pub mod isomorphism;
 pub mod johnson;
 pub mod k_shortest_path;
+pub mod knuth_szwarcfiter;
 pub mod matching;
 pub mod maximal_cliques;
 pub mod maximum_flow;
