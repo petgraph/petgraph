@@ -24,6 +24,7 @@ petgraph-algorithms = { path = "crates/algorithms" }
 
 ahash             = { version = "0.7.2", default-features = false }
 bincode           = { version = "1.3.3", default-features = false }
+criterion         = { version = "0.8.2", default-features = false }
 defmac            = { version = "0.2.1", default-features = false }
 dot-parser        = { version = "0.5.1", default-features = false }
 dot-parser-macros = { version = "0.5.1", default-features = false }

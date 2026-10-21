@@ -14,8 +14,13 @@ workspace = true
 petgraph-core = { workspace = true }
 
 [dev-dependencies]
+criterion     = { workspace = true, features = ["cargo_bench_support", "plotters"] }
 petgraph-core = {workspace = true, features = ["test-utils", "alloc"]}
 
 [features]
 default = ["alloc"]
 alloc   = ["petgraph-core/alloc"]
+
+[[bench]]
+name    = "max_flow"
+harness = false
