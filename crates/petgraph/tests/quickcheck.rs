@@ -1626,6 +1626,29 @@ quickcheck! {
 }
 
 #[cfg(feature = "stable_graph")]
+quickcheck! {
+    // Test that articulation points do not depend on how dense the node indices are: a
+    // `StableGraph` with holes must agree with the equivalent compacted `Graph`.
+    fn test_articulation_points_stable_graph(g: StableGraph<(), (), Undirected>) -> bool {
+        let mut compacted = UnGraph::<(), ()>::default();
+        let mut compacted_ix = HashMap::new();
+        for node in g.node_indices() {
+            compacted_ix.insert(node, compacted.add_node(()));
+        }
+        for edge in g.edge_references() {
+            compacted.add_edge(compacted_ix[&edge.source()], compacted_ix[&edge.target()], ());
+        }
+
+        let from_stable: HashSet<_> = articulation_points(&g)
+            .into_iter()
+            .map(|node| compacted_ix[&node])
+            .collect();
+
+        from_stable == articulation_points(&compacted)
+    }
+}
+
+#[cfg(feature = "stable_graph")]
 #[test]
 fn steiner_tree_spans_terminals() {
     fn prop(g: UnGraph<(), u32>) -> bool {
