@@ -1008,6 +1008,8 @@ where
         assert!(T::is_node_index() != U::is_node_index() || i.index() != j.index());
 
         // Allow two mutable indexes here -- they are nonoverlapping
+        //
+        // See more extensive notes in Graph::index_twice_mut.
         unsafe {
             let self_mut = self as *mut _;
             (
@@ -1647,7 +1649,10 @@ where
     Ix: IndexType,
 {
     fn index_mut(&mut self, index: NodeIndex<Ix>) -> &mut N {
-        self.node_weight_mut(index).unwrap()
+        super::index_mut_no_sb_invalidation(&mut self.g.nodes, index.index())
+            .weight
+            .as_mut()
+            .unwrap()
     }
 }
 
@@ -1674,7 +1679,10 @@ where
     Ix: IndexType,
 {
     fn index_mut(&mut self, index: EdgeIndex<Ix>) -> &mut E {
-        self.edge_weight_mut(index).unwrap()
+        super::index_mut_no_sb_invalidation(&mut self.g.edges, index.index())
+            .weight
+            .as_mut()
+            .unwrap()
     }
 }
 
