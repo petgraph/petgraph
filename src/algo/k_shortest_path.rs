@@ -27,10 +27,12 @@ use crate::visit::{EdgeRef, IntoEdges, NodeCount, NodeIndexable, Visitable};
 /// * `HashMap`: [`struct@hashbrown::HashMap`] that maps `NodeId` to path cost.
 ///
 /// # Complexity
-/// * Time complexity: **O(k|E| log(k|E|))**.
-/// * Auxiliary space: **O(|V| + k|E|)**.
+/// * Time complexity: **O(B + k|E| log(k|E|))**.
+/// * Auxiliary space: **O(B + k|E|)**.
 ///
-/// where **|V|** is the number of nodes, **|E|** is the number of edges and **k** is the provided parameter.
+/// where **B** is `graph.node_bound()`, **|E|** is the number of edges and **k** is
+/// the provided parameter. The node index bound can exceed the number of nodes
+/// when the graph has removed nodes.
 ///
 /// # Example
 /// ```rust
@@ -94,7 +96,7 @@ where
     F: FnMut(G::EdgeRef) -> K,
     K: Measure + Copy,
 {
-    let mut counter: Vec<usize> = vec![0; graph.node_count()];
+    let mut counter: Vec<usize> = vec![0; graph.node_bound()];
     let mut scores = HashMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score = K::default();
