@@ -1,0 +1,4 @@
+contact_links:
+  - name: Question
+    url: https://github.com/petgraph/petgraph/discussions
+    about: Questions about petgraph should be posted as a GitHub discussion or asked on the Discord (see README).
