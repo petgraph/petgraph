@@ -200,7 +200,7 @@ impl<N> TarjanScc<N> {
 ///
 /// // Graph structure:
 /// // A --> B ---> D ---> E
-/// // ↑    ↑
+/// // ↑    ↓
 /// // └--- C
 ///
 /// let sccs = tarjan_scc(&graph);
