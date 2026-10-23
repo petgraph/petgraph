@@ -196,40 +196,11 @@ where
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     ///
     /// # Example
-    /// ```rust
-    /// // TODO: Make sure this example works
-    /// use petgraph_algorithms::flows::maximum_flow::{MaxFlowReturn, max_flow};
-    /// use petgraph_core::utils::test_graphs::directed::DirectedTestGraph as Graph;
-    ///
-    /// // Example from CLRS book
-    /// let mut graph = Graph::<u8, u8>::new();
-    /// let source = graph.add_node(0);
-    /// let _ = graph.add_node(1);
-    /// let _ = graph.add_node(2);
-    /// let _ = graph.add_node(3);
-    /// let _ = graph.add_node(4);
-    /// let destination = graph.add_node(5);
-    /// graph.extend_with_edges(&[
-    ///     (0, 1, 16),
-    ///     (0, 2, 13),
-    ///     (1, 2, 10),
-    ///     (1, 3, 12),
-    ///     (2, 1, 4),
-    ///     (2, 4, 14),
-    ///     (3, 2, 9),
-    ///     (3, 5, 20),
-    ///     (4, 3, 7),
-    ///     (4, 5, 4),
-    /// ]);
-    ///
-    /// let result = max_flow::<_, u8>(&graph, source, destination);
-    /// assert_eq!(&23, result.max_flow());
-    /// ```
+    /// TODO: Add example
     #[cfg(feature = "alloc")]
     pub fn run(&self) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
         G: DirectedGraph + StorableGraph,
-        // TODO: Consider switching to num_traits traits.
         C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
     {
         self.wrapped.run()

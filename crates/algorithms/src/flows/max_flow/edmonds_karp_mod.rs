@@ -146,7 +146,7 @@ where
 /// [edmonds_karp]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
 ///
 /// # Example
-/// // TODO
+/// // TODO: Add example
 pub fn edmonds_karp<G, C>(
     network: &G,
     source: G::NodeId,
