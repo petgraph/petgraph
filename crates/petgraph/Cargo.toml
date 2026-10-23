@@ -1,6 +1,6 @@
 [package]
 name                   = "petgraph"
-version                = "0.8.3"
+version                = "0.9.0"
 rust-version.workspace = true
 license.workspace      = true
 authors.workspace      = true
@@ -14,66 +14,20 @@ keywords   = ["data-structure", "graph", "unionfind", "graph-algorithms"]
 categories = ["data-structures"]
 
 [package.metadata.docs.rs]
-features = ["rayon", "serde-1", "quickcheck"]
-
-[package.metadata.release]
-no-dev-version = true
-
-[package.metadata.cargo-semver-checks.lints]
-# Lint temporarily disabled, as this bug is causing false positives:
-# https://github.com/obi1kenobi/cargo-semver-checks/issues/1200
-#
-# TODO: re-enable once the bug is fixed
-trait_newly_sealed = "allow"
+all-features = true
 
 [dependencies]
-dot-parser        = { workspace = true, optional = true }
-dot-parser-macros = { workspace = true, optional = true }
-fixedbitset       = { workspace = true }
-hashbrown         = { workspace = true, features = ["default-hasher"] }
-indexmap          = { workspace = true }
-quickcheck        = { workspace = true, optional = true }
-rayon             = { workspace = true, optional = true }
-serde             = { workspace = true, default-features = false, optional = true }
-serde_derive      = { workspace = true, default-features = false, optional = true }
+petgraph-core = { workspace = true}
+petgraph-old  = { workspace = true, optional = true }
 
 [dev-dependencies]
-ahash     = { workspace = true }
-bincode   = { workspace = true }
-defmac    = { workspace = true }
-fxhash    = { workspace = true }
-itertools = { workspace = true }
-odds      = { workspace = true }
-rand      = { workspace = true, features = ["std"] }
 
 [features]
-rayon      = ["std", "dep:rayon", "indexmap/rayon", "hashbrown/rayon"]
-dot_parser = ["std", "dep:dot-parser", "dep:dot-parser-macros"]
+std = ["alloc", "petgraph-core/std"]
+alloc = ["petgraph-core/alloc"]
+petgraph-old = ["dep:petgraph-old"]
 
-# feature flags for testing use only
-all = [
-    "unstable",
-    "quickcheck",
-    "matrix_graph",
-    "stable_graph",
-    "graphmap",
-    "rayon",
-    "dot_parser",
-]
-default = ["std", "graphmap", "stable_graph", "matrix_graph"]
+default = ["std"]
 
-generate = [] # For unstable features
-
-graphmap     = []
-matrix_graph = []
-quickcheck   = ["std", "dep:quickcheck", "graphmap", "stable_graph"]
-serde-1      = ["serde", "serde_derive"]
-stable_graph = ["serde?/alloc"]
-unstable     = ["generate"]
-
-std = ["indexmap/std"]
-
-[lints.clippy]
-alloc_instead_of_core = "warn"
-std_instead_of_alloc  = "warn"
-std_instead_of_core   = "warn"
+[lints]
+workspace = true
