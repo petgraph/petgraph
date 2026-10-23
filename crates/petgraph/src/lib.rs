@@ -20,4 +20,5 @@ extern crate alloc;
 extern crate std;
 
 pub use petgraph_core as core;
+#[cfg(feature = "petgraph-old")]
 pub use petgraph_old;
