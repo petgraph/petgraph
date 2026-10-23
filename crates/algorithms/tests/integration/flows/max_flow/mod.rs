@@ -296,7 +296,6 @@ fn test_max_flow_seven<
     assert_eq!(flow, 4);
 }
 
-// // TODO: Re-Add this, once proper IndexId etc handling in Algorithms is done.
 pub(crate) fn test_max_flow_eight<
     G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,
 >(
