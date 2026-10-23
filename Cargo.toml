@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/core", "crates/petgraph", "serialization-tests"]
+members  = ["crates/core", "crates/petgraph"]
 resolver = "3"
 
 [workspace.package]
@@ -18,26 +18,12 @@ repository = "https://github.com/petgraph/petgraph"
 rust-version = "1.85"
 
 [workspace.dependencies]
-petgraph      = { path = "crates/petgraph" }
 petgraph-core = { path = "crates/core" }
+# TODO: Change this to crates io, once new minor version is released.
+petgraph-old  = { git = "https://github.com/petgraph/petgraph", branch = "0.8", package = "petgraph" }
 
-ahash             = { version = "0.7.2", default-features = false }
-bincode           = { version = "1.3.3", default-features = false }
-defmac            = { version = "0.2.1", default-features = false }
-dot-parser        = { version = "0.5.1", default-features = false }
-dot-parser-macros = { version = "0.5.1", default-features = false }
-fixedbitset       = { version = "0.5.7", default-features = false }
 foldhash          = { version = "0.2.0", default-features = false }
-fxhash            = { version = "0.2.1", default-features = false }
 hashbrown         = { version = "^0.17.0", default-features = false }
-indexmap          = { version = "2.5.0", default-features = false }
-itertools         = { version = "0.15.0", default-features = false }
-odds              = { version = "0.4.0", default-features = false }
-quickcheck        = { version = "0.8", default-features = false }
-rand              = { version = "0.5.5", default-features = false }
-rayon             = { version = "1.5.3", default-features = false }
-serde             = { version = "1.0", default-features = false }
-serde_derive      = { version = "1.0", default-features = false }
 
 
 [workspace.lints.rust]
