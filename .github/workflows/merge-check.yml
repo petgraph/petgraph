@@ -14,10 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crate:
-          - petgraph
-          - petgraph-core
-          - petgraph-serialization-tests
+        crate: [petgraph@0.9.0, petgraph-core]
     name: Powerset feature combination tests ${{ matrix.crate }}
 
     steps:

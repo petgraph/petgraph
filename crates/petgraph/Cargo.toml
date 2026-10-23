@@ -27,7 +27,7 @@ std = ["alloc", "petgraph-core/std"]
 alloc = ["petgraph-core/alloc"]
 petgraph-old = ["dep:petgraph-old"]
 
-default = ["std", "petgraph-old"]
+default = ["std"]
 
 [lints]
 workspace = true
