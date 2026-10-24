@@ -79,6 +79,10 @@ pub trait StackContainer<Data>: Index<usize, Output = Data> {
     /// Returns the number of elements in the stack.
     fn len(&self) -> usize;
 
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Clears all data in the stack and leaves it empty.
     fn clear(&mut self);
 }
@@ -101,6 +105,10 @@ pub trait QueueContainer<Data>: Index<usize, Output = Data> {
 
     /// Returns the number of elements in the queue.
     fn len(&self) -> usize;
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 
     /// Clears all data in the queue and leaves it empty.
     fn clear(&mut self);

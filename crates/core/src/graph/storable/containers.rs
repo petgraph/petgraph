@@ -79,7 +79,7 @@ impl<Data> StackContainer<Data> for Vec<Data> {
     }
 
     fn get(&self, index: usize) -> Option<&Data> {
-        <[Data]>::get(&self, index)
+        <[Data]>::get(self, index)
     }
 
     fn len(&self) -> usize {
