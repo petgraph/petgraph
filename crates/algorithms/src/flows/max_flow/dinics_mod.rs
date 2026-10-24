@@ -6,16 +6,14 @@ use petgraph_core::{
     edge::Edge,
     graph::{
         DirectedGraph, Graph,
-        storable::{DataContainer, StackContainer, StorableGraph, VisitContainer},
+        storable::{DataContainer, QueueContainer, StackContainer, StorableGraph, VisitContainer},
     },
 };
 
 use super::{other_endpoint, residual_capacity};
-#[cfg(feature = "alloc")]
-use crate::{flows::max_flow::MaxFlowConfigError, traits::NonNegative};
 use crate::{
-    flows::max_flow::{MaxFlowOutput, adjusted_residual_flow},
-    traits::{Bounded, Measure, MinMax, Zero},
+    flows::max_flow::{MaxFlowConfigError, MaxFlowOutput, adjusted_residual_flow},
+    traits::{Bounded, Measure, MinMax, NonNegative, Zero},
 };
 
 /// Edge with its capacity copied out of the graph.
@@ -159,25 +157,27 @@ where
     where
         C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
     {
-        self.run_with_stack_container(|| Vec::new(), || Vec::new())
+        self.run_with_stack_container(|| Vec::new(), || Vec::new(), || VecDeque::new())
     }
 
     /// Run [Dinic's (or Dinitz's) algorithm][dinics_link] to find a [Maximum Flow][maximum_flow]
     /// from `source` to `sink` using a custom stack container.
     ///
-    /// For further details, see the [`run`](Dinics::run) method of the [Dinics](Dinics) struct.
+    /// For further details, see the [`run`](Dinics::run) method of the [Dinics] struct.
     ///
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     /// [dinics_link]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
-    pub fn run_with_stack_container<SContainer, SContainerFlowEdge>(
+    pub fn run_with_stack_container<SContainer, SContainerFlowEdge, QContainer>(
         &self,
-        stack_container_builder_node_id: impl Fn() -> SContainer,
-        stack_container_builder_flow_edge: impl Fn() -> SContainerFlowEdge,
+        stack_container_node_id_constructor: impl Fn() -> SContainer,
+        stack_container_flow_edge_constructor: impl Fn() -> SContainerFlowEdge,
+        queue_container_node_id_constructor: impl Fn() -> QContainer,
     ) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
         SContainer: StackContainer<G::NodeId> + Clone,
         SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
+        QContainer: QueueContainer<G::NodeId> + Clone,
     {
         let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
         let sink = self.sink.ok_or(MaxFlowConfigError::SinkNodeNotSet)?;
@@ -186,8 +186,9 @@ where
             source,
             sink,
             &self.capacities,
-            stack_container_builder_node_id,
-            stack_container_builder_flow_edge,
+            stack_container_node_id_constructor,
+            stack_container_flow_edge_constructor,
+            queue_container_node_id_constructor,
         ))
     }
 }
@@ -195,7 +196,7 @@ where
 /// Run [Dinic's (or Dinitz's) algorithm][dinics_link] to find a [Maximum Flow][maximum_flow] from
 /// `source` to `sink`.
 ///
-/// For further details, see the [`run`](Dinics::run) method of the [Dinics](Dinics) struct.
+/// For further details, see the [`run`](Dinics::run) method of the [Dinics] struct.
 ///
 /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [dinics_link]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
@@ -217,19 +218,21 @@ where
         .expect("All required parameters should be set.")
 }
 
-fn dinics_inner<G, C, SContainerNodeId, SContainerFlowEdge>(
+fn dinics_inner<G, C, SContainerNodeId, SContainerFlowEdge, QContainer>(
     network: &G,
     source: G::NodeId,
     sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
-    stack_container_builder_node_id: impl Fn() -> SContainerNodeId,
-    stack_container_builder_flow_edge: impl Fn() -> SContainerFlowEdge,
+    stack_container_node_id_constructor: impl Fn() -> SContainerNodeId,
+    stack_container_flow_edge_constructor: impl Fn() -> SContainerFlowEdge,
+    queue_container_node_id_constructor: impl Fn() -> QContainer,
 ) -> MaxFlowOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
     SContainerNodeId: StackContainer<G::NodeId> + Clone,
     SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
+    QContainer: QueueContainer<G::NodeId> + Clone,
 {
     if source == sink {
         return MaxFlowOutput {
@@ -242,9 +245,18 @@ where
     let mut flows = network.edge_data_container::<C>(C::zero());
     let mut visited = network.node_visit_container();
     let mut level_edges =
-        network.node_data_container::<SContainerFlowEdge>(stack_container_builder_flow_edge());
+        network.node_data_container::<SContainerFlowEdge>(stack_container_flow_edge_constructor());
 
-    while *build_level_graph(network, source, sink, &capacities, &flows, &mut level_edges).get(sink)
+    while *build_level_graph(
+        network,
+        source,
+        sink,
+        &capacities,
+        &flows,
+        &mut level_edges,
+        &queue_container_node_id_constructor,
+    )
+    .get(sink)
         > 0
     {
         let flow_increase = find_blocking_flow(
@@ -254,7 +266,7 @@ where
             &mut flows,
             &mut level_edges,
             &mut visited,
-            &stack_container_builder_node_id,
+            &stack_container_node_id_constructor,
         );
         max_flow = max_flow + flow_increase;
     }
@@ -272,21 +284,23 @@ where
 /// vertex to its neighbours in the next level.
 ///
 /// Returns the computed level graph.
-fn build_level_graph<G, C, SContainer>(
+fn build_level_graph<G, C, SContainer, QContainer>(
     network: &G,
     source: G::NodeId,
     sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
     flows: &impl DataContainer<G::EdgeId, C>,
     level_edges: &mut impl DataContainer<G::NodeId, SContainer>,
+    queue_container_node_id_constructor: impl Fn() -> QContainer,
 ) -> impl DataContainer<G::NodeId, usize>
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + NonNegative + Zero,
     SContainer: StackContainer<FlowEdge<G, C>>,
+    QContainer: QueueContainer<G::NodeId> + Clone,
 {
     let mut level_graph = network.node_data_container::<usize>(0);
-    let mut bfs_queue = VecDeque::new();
+    let mut bfs_queue = queue_container_node_id_constructor();
     bfs_queue.push_back(source);
 
     *level_graph.get_mut(source) = 1;

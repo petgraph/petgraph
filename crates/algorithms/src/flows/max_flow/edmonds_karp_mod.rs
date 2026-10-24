@@ -1,3 +1,4 @@
+#[cfg(feature = "alloc")]
 use alloc::collections::VecDeque;
 use core::{borrow::Borrow, ops::Sub};
 
@@ -5,7 +6,7 @@ use petgraph_core::{
     edge::Edge,
     graph::{
         DirectedGraph, Graph,
-        storable::{DataContainer, StorableGraph, VisitContainer},
+        storable::{DataContainer, QueueContainer, StorableGraph, VisitContainer},
     },
 };
 
@@ -127,6 +128,7 @@ where
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     /// [ford_fulkerson]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
     /// [edmonds_karp_link]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
+    #[cfg(feature = "alloc")]
     pub fn run(&self) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Zero + Measure + NonNegative + Bounded + Default,
@@ -138,20 +140,51 @@ where
             source,
             sink,
             &self.capacities,
+            || VecDeque::new(),
+        ))
+    }
+
+    /// Run the [Edmonds-Karp algorithm][edmonds_karp_link] implementation of the
+    /// [Ford-Fulkerson][ford_fulkerson] method to find a [Maximum Flow][maximum_flow] from `source`
+    /// to `sink` using a custom queue container.
+    ///
+    /// For further details, see the [`run`](EdmondsKarp::run) method of the
+    /// [EdmondsKarp] struct.
+    ///
+    /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+    /// [ford_fulkerson]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
+    /// [edmonds_karp_link]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
+    pub fn run_with_queue_container<QContainer>(
+        &self,
+        queue_container_builder_node_id: impl Fn() -> QContainer,
+    ) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
+    where
+        C: Sub<Output = C> + Zero + Measure + NonNegative + Bounded + Default,
+        QContainer: QueueContainer<G::NodeId> + Clone,
+    {
+        let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
+        let sink = self.sink.ok_or(MaxFlowConfigError::SinkNodeNotSet)?;
+        Ok(edmonds_karp_inner(
+            self.network,
+            source,
+            sink,
+            &self.capacities,
+            queue_container_builder_node_id,
         ))
     }
 }
 
-/// Run the [Edmonds-Karp algorithm][dinics_link] implementation of the
+/// Run the [Edmonds-Karp algorithm][edmonds_karp_link] implementation of the
 /// [Ford-Fulkerson][ford_fulkerson] method to find a [Maximum Flow][maximum_flow] from `source` to
 /// `sink`.
 ///
-/// For further details, see the [`run`](EdmondsKarp::run) method of the [EdmondsKarp](EdmondsKarp)
+/// For further details, see the [`run`](EdmondsKarp::run) method of the [EdmondsKarp]
 /// struct.
 ///
 /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [ford_fulkerson]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 /// [edmonds_karp_link]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
+#[cfg(feature = "alloc")]
 pub fn edmonds_karp<G, C>(
     network: &G,
     source: G::NodeId,
@@ -169,20 +202,30 @@ where
         .unwrap()
 }
 
-fn edmonds_karp_inner<G, C>(
+fn edmonds_karp_inner<G, C, QContainer>(
     network: &G,
     source: G::NodeId,
     sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
+    queue_container_node_id_constructor: impl Fn() -> QContainer,
 ) -> MaxFlowOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Zero + Measure + NonNegative + Bounded + Default,
+    QContainer: QueueContainer<G::NodeId> + Clone,
 {
     let mut edge_to = network.node_data_container::<Option<Edge<G::EdgeId, C, G::NodeId>>>(None);
     let mut flows = network.edge_data_container::<C>(C::zero());
     let mut max_flow = C::zero();
-    while has_augmented_path(network, source, sink, &capacities, &mut edge_to, &flows) {
+    while has_augmented_path(
+        network,
+        source,
+        sink,
+        &capacities,
+        &mut edge_to,
+        &flows,
+        &queue_container_node_id_constructor,
+    ) {
         let mut path_flow = <C as Bounded>::max();
 
         // Find the bottleneck capacity of the path
@@ -213,20 +256,22 @@ where
 
 /// Returns whether there is an augmenting path in the graph
 #[allow(clippy::type_complexity)]
-fn has_augmented_path<G, C>(
+fn has_augmented_path<G, C, QContainer>(
     network: &G,
     source: G::NodeId,
     sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
     edge_to: &mut G::NodeDataContainer<Option<Edge<G::EdgeId, C, G::NodeId>>>,
     flows: &G::EdgeDataContainer<C>,
+    queue_container_node_id_constructor: impl Fn() -> QContainer,
 ) -> bool
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + NonNegative + Zero + Measure + Default,
+    QContainer: QueueContainer<G::NodeId> + Clone,
 {
     let mut visited = network.node_visit_container();
-    let mut queue = VecDeque::new();
+    let mut queue = queue_container_node_id_constructor();
     visited.mark_visited(source);
     queue.push_back(source);
 
