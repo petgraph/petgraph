@@ -5,17 +5,16 @@
 //!
 //! Currently, `petgraph` provides two algorithms to compute the maximum flow
 //! in a flow network:
-//! - [Dinic's Algorithm][dinics] [(Wikipedia)][dinics_wikipedia]
-//! - [Edmonds-Karp Algorithm][edmonds_karp] [(Wikipedia)][edmonds_karp_wikipedia]
+//! - [Dinic's Algorithm](dinics_mod::Dinics) [(Wikipedia)][dinics_wikipedia]
+//! - [Edmonds-Karp Algorithm](edmonds_karp_mod::EdmondsKarp) [(Wikipedia)][edmonds_karp_wikipedia]
 //!
-//! They are implemented in the functions [`dinics`] and [`edmonds_karp`] and can be found
-//! in their respective submodules.
+//! They can be found in their respective submodules.
 //!
-//! [Dinics][dinics] and [Edmonds][edmonds_karp] have different time complexities, and
+//! Dinics and Edmonds-Karp have different time complexities, and
 //! their performance can vary significantly depending on the input graph.
-//! In general, [dinics] is faster, especially on dense graphs, graphs with
+//! In general, Dinics is faster, especially on dense graphs, graphs with
 //! unit capacities, and bipartite graphs.
-//! [Edmonds Karp][edmonds_karp] may be a better choice when working with small or
+//! Edmonds-Karp may be a better choice when working with small or
 //! sparse graphs.
 //!
 //! For more information about each algorithm and their detailed time
@@ -40,8 +39,8 @@ use petgraph_core::{
     graph::{DirectedGraph, Graph, storable::StorableGraph},
 };
 
-#[cfg(feature = "alloc")]
 use crate::traits::NonNegative;
+#[cfg(feature = "alloc")]
 use crate::traits::{Bounded, Measure, MinMax, Zero};
 
 /// Errors that can occur in the configuration of max flow algorithms.
@@ -187,13 +186,13 @@ where
     /// - `sink`: Sink node for the flow.
     ///
     /// # Returns
-    /// Returns an implementation of [`MaxFlowReturn`], from which the maximum flow value and the
+    /// Returns an instance of [`MaxFlowOutput`], from which the maximum flow value and the
     /// flow of each edge can be obtained.
     ///
     /// # Complexity
-    /// Currently delegates to [`dinics`], so its complexity bounds apply; this may change in future
-    /// releases as the underlying algorithm is swapped out. Use specific algorithms directly if you
-    /// depend on specific complexity guarantees.
+    /// Currently delegates to [`Dinics`](dinics_mod::Dinics::run), so its complexity bounds apply;
+    /// this may change in future releases as the underlying algorithm is swapped out. Use
+    /// specific algorithms directly if you depend on specific complexity guarantees.
     ///
     /// # Errors
     /// Returns an error if the source or sink node is not set.
@@ -220,7 +219,7 @@ where
 /// across versions), call that algorithm directly instead. See the
 /// [`maximum_flow`](./index.html) module for the full list.
 ///
-/// For further details, see the [`run`](MaxFlow::run) method of the [MaxFlow](MaxFlow) struct.
+/// For further details, see the [`run`](MaxFlow::run) method of the [MaxFlow] struct.
 ///
 /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 #[cfg(feature = "alloc")]
