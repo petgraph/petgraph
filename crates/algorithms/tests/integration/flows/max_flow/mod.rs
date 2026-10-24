@@ -3,6 +3,7 @@ use petgraph_algorithms::flows::max_flow::{
 };
 use petgraph_core::{
     graph::{DirectedGraph, EditableGraph, storable::StorableGraph},
+    node,
     utils::test_graphs::directed::DirectedTestGraph,
 };
 
@@ -12,12 +13,12 @@ macro_rules! test_max_flow_on_graph {
     ($graph_constructor:expr) => {
         mod edmonds_karp {
             use super::*;
-            test_max_flow_all_examples!($graph_constructor, |graph, source, destination| {
+            test_max_flow_all_examples!($graph_constructor, |graph, source, sink| {
                 EdmondsKarp::new_with_capacities(graph, |edge_id| {
                     graph.edge(edge_id).unwrap().data.clone()
                 })
                 .with_source(source)
-                .with_destination(destination)
+                .with_sink(sink)
                 .run()
                 .unwrap()
                 .into_max_flow_and_flow_data()
@@ -25,12 +26,12 @@ macro_rules! test_max_flow_on_graph {
         }
         mod dinics {
             use super::*;
-            test_max_flow_all_examples!($graph_constructor, |graph, source, destination| {
+            test_max_flow_all_examples!($graph_constructor, |graph, source, sink| {
                 Dinics::new_with_capacities(graph, |edge_id| {
                     graph.edge(edge_id).unwrap().data.clone()
                 })
                 .with_source(source)
-                .with_destination(destination)
+                .with_sink(sink)
                 .run()
                 .unwrap()
                 .into_max_flow_and_flow_data()
@@ -38,12 +39,12 @@ macro_rules! test_max_flow_on_graph {
         }
         mod max_flow_auto {
             use super::*;
-            test_max_flow_all_examples!($graph_constructor, |graph, source, destination| {
+            test_max_flow_all_examples!($graph_constructor, |graph, source, sink| {
                 MaxFlow::new_with_capacities(graph, |edge_id| {
                     graph.edge(edge_id).unwrap().data.clone()
                 })
                 .with_source(source)
-                .with_destination(destination)
+                .with_sink(sink)
                 .run()
                 .unwrap()
                 .into_max_flow_and_flow_data()
@@ -54,6 +55,14 @@ macro_rules! test_max_flow_on_graph {
 
 macro_rules! test_max_flow_all_examples {
     ($graph_constructor:expr, $max_flow_algorithm:expr) => {
+        #[test]
+        fn test_source_equals_sink() {
+            crate::flows::max_flow::test_max_flow_source_equals_sink(
+                $graph_constructor,
+                $max_flow_algorithm,
+            );
+        }
+
         #[test]
         fn test_one() {
             crate::flows::max_flow::test_max_flow_one($graph_constructor, $max_flow_algorithm);
@@ -102,6 +111,20 @@ macro_rules! test_max_flow_all_examples {
 }
 
 run_macro_for_all_dir_graphs!(test_max_flow_on_graph);
+
+fn test_max_flow_source_equals_sink<
+    G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,
+>(
+    graph_constructor: impl Fn() -> G,
+    flow_algorithm: impl Fn(&G, G::NodeId, G::NodeId) -> (u32, G::EdgeDataContainer<u32>),
+) {
+    let mut graph = graph_constructor();
+    let node = graph.add_node(()).unwrap();
+    let node2 = graph.add_node(()).unwrap();
+    graph.add_edge(node, node2, 1).unwrap();
+    let (max_flow, _) = flow_algorithm(&graph, node, node);
+    assert_eq!(0, max_flow);
+}
 
 fn test_max_flow_one<
     G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,

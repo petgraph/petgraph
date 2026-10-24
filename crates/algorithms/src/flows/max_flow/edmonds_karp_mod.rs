@@ -24,7 +24,7 @@ use crate::{
 pub struct EdmondsKarp<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> {
     network: &'graph_ref G,
     source: Option<G::NodeId>,
-    destination: Option<G::NodeId>,
+    sink: Option<G::NodeId>,
     capacities: CapFn,
 }
 
@@ -32,8 +32,8 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'graph_ref,
     /// Creates a new instance of the Edmonds-Karp algorithm with the provided graph.
     ///
     /// Data of the graph's edges is interpreted as capacities of edges.
-    /// The source and destination nodes can be set using a builder pattern with the
-    /// [`with_source`][Self::with_source] and [`with_destination`][Self::with_destination] methods.
+    /// The source and sink nodes can be set using a builder pattern with the
+    /// [`with_source`][Self::with_source] and [`with_sink`][Self::with_sink] methods.
     ///
     /// To run the algorithm, call the [`run`][Self::run] method on the returned struct.
     #[must_use]
@@ -58,8 +58,8 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'graph_ref,
     /// Creates a new instance of the Edmonds-Karp algorithm with the provided graph and capacity
     /// function.
     ///
-    /// The source and destination nodes can be set using a builder pattern with the
-    /// [`with_source`][Self::with_source] and [`with_destination`][Self::with_destination] methods.
+    /// The source and sink nodes can be set using a builder pattern with the
+    /// [`with_source`][Self::with_source] and [`with_sink`][Self::with_sink] methods.
     ///
     /// To run the algorithm, call the [`run`][Self::run] method on the returned struct.
     #[must_use]
@@ -71,7 +71,7 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'graph_ref,
         Self {
             network,
             source: None,
-            destination: None,
+            sink: None,
             capacities,
         }
     }
@@ -83,10 +83,10 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'graph_ref,
         self
     }
 
-    /// Sets the destination node for the flow.
+    /// Sets the sink node for the flow.
     #[must_use]
-    pub const fn with_destination(mut self, destination: G::NodeId) -> Self {
-        self.destination = Some(destination);
+    pub const fn with_sink(mut self, sink: G::NodeId) -> Self {
+        self.sink = Some(sink);
         self
     }
 }
@@ -101,25 +101,25 @@ where
     /// If an invalid configuration is detected, an appropriate error is returned.
     ///
     /// # Errors
-    /// Returns an error if the source or destination node is not set.
+    /// Returns an error if the source or sink node is not set.
     pub fn run(&self) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Zero + Measure + Bounded + Default,
     {
         let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
-        let destination = self
-            .destination
-            .ok_or(MaxFlowConfigError::DestinationNodeNotSet)?;
+        let sink = self
+            .sink
+            .ok_or(MaxFlowConfigError::SinkNodeNotSet)?;
         Ok(edmonds_karp_inner(
             self.network,
             source,
-            destination,
+            sink,
             &self.capacities,
         ))
     }
 }
 
-/// Find a [Maximum Flow][maximum_flow] from `source` to `destination` using the
+/// Find a [Maximum Flow][maximum_flow] from `source` to `sink` using the
 /// [Edmond-Karp][edmonds_karp] implementation of the [Ford-Fulkerson][ford_fulkerson] method.
 ///
 /// Edge Data of the provided graph is interpreted as capacities of edges.
@@ -130,7 +130,7 @@ where
 /// - `network`: A directed graph with positive edge data which is interpreted as capacities of
 ///   edges.
 /// - `source`: Source node for the flow.
-/// - `destination`: Sink node for the flow.
+/// - `sink`: Sink node for the flow.
 ///
 /// # Returns
 /// Returns a struct wrapping the maximum flow value and the flow of each edge.
@@ -150,20 +150,20 @@ where
 pub fn edmonds_karp<G, C>(
     network: &G,
     source: G::NodeId,
-    destination: G::NodeId,
+    sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
 ) -> MaxFlowOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + Zero + Bounded + Default,
 {
-    edmonds_karp_inner(network, source, destination, &capacities)
+    edmonds_karp_inner(network, source, sink, &capacities)
 }
 
 fn edmonds_karp_inner<G, C>(
     network: &G,
     source: G::NodeId,
-    destination: G::NodeId,
+    sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
 ) -> MaxFlowOutput<G, C>
 where
@@ -176,7 +176,7 @@ where
     while has_augmented_path(
         network,
         source,
-        destination,
+        sink,
         &capacities,
         &mut edge_to,
         &flows,
@@ -184,7 +184,7 @@ where
         let mut path_flow = <C as Bounded>::max();
 
         // Find the bottleneck capacity of the path
-        let mut vertex = destination;
+        let mut vertex = sink;
         while let Some(edge) = edge_to.get(vertex) {
             let residual_capacity =
                 residual_capacity::<G, C>(edge.to_owned_edge(), vertex, *flows.get(edge.id));
@@ -198,7 +198,7 @@ where
         }
 
         // Update the flow of each edge along the path
-        let mut vertex = destination;
+        let mut vertex = sink;
         while let Some(edge) = edge_to.get(vertex) {
             *flows.get_mut(edge.id) =
                 adjusted_residual_flow::<G, _, C>(edge, vertex, *flows.get(edge.id), path_flow);
@@ -214,7 +214,7 @@ where
 fn has_augmented_path<G, C>(
     network: &G,
     source: G::NodeId,
-    destination: G::NodeId,
+    sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
     edge_to: &mut G::NodeDataContainer<Option<Edge<G::EdgeId, C, G::NodeId>>>,
     flows: &G::EdgeDataContainer<C>,
@@ -243,7 +243,7 @@ where
             if !visited.is_visited(next) && (residual_cap > C::zero()) {
                 visited.mark_visited(next);
                 edge_to.get_mut(next).replace(edge);
-                if destination == next {
+                if sink == next {
                     return true;
                 }
                 queue.push_back(next);
