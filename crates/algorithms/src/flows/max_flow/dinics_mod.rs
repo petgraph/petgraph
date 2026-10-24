@@ -28,7 +28,7 @@ type FlowEdge<G, C> = Edge<<G as Graph>::EdgeId, C, <G as Graph>::NodeId>;
 pub struct Dinics<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> {
     pub(super) network: &'graph_ref G,
     pub(super) source: Option<G::NodeId>,
-    pub(super) destination: Option<G::NodeId>,
+    pub(super) sink: Option<G::NodeId>,
     pub(super) capacities: CapFn,
 }
 
@@ -36,8 +36,8 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, C
     /// Creates a new instance of Dinic's algorithm with the provided graph.
     ///
     /// Data of the graph's edges is interpreted as capacities of edges.
-    /// The source and destination nodes can be set using a builder pattern with the
-    /// [`with_source`][Self::with_source] and [`with_destination`][Self::with_destination] methods.
+    /// The source and sink nodes can be set using a builder pattern with the
+    /// [`with_source`][Self::with_source] and [`with_sink`][Self::with_sink] methods.
     ///
     /// To run the algorithm, call the [`run`][Self::run] method on the returned struct.
     #[must_use]
@@ -56,8 +56,8 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, C
 
     /// Creates a new instance of Dinic's algorithm with the provided graph and capacity function.
     ///
-    /// The source and destination nodes can be set using a builder pattern with the
-    /// [`with_source`][Self::with_source] and [`with_destination`][Self::with_destination] methods.
+    /// The source and sink nodes can be set using a builder pattern with the
+    /// [`with_source`][Self::with_source] and [`with_sink`][Self::with_sink] methods.
     ///
     /// To run the algorithm, call the [`run`][Self::run] method on the returned struct.
     #[must_use]
@@ -69,7 +69,7 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, C
         Self {
             network,
             source: None,
-            destination: None,
+            sink: None,
             capacities,
         }
     }
@@ -81,17 +81,17 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, C
         self
     }
 
-    /// Sets the destination node for the flow.
+    /// Sets the sink node for the flow.
     #[must_use]
-    pub const fn with_destination(mut self, destination: G::NodeId) -> Self {
-        self.destination = Some(destination);
+    pub const fn with_sink(mut self, sink: G::NodeId) -> Self {
+        self.sink = Some(sink);
         self
     }
 
     /// Creates a new instance of Dinic's algorithm with the provided graph and capacity function.
     ///
-    /// The source and destination nodes can be set using a builder pattern with the
-    /// [`with_source`][Self::with_source] and [`with_destination`][Self::with_destination] methods.
+    /// The source and sink nodes can be set using a builder pattern with the
+    /// [`with_source`][Self::with_source] and [`with_sink`][Self::with_sink] methods.
     ///
     /// To run the algorithm, call the [`run`][Self::run] method on the returned struct.
     #[must_use]
@@ -106,7 +106,7 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, C
         Dinics {
             network,
             source: None,
-            destination: None,
+            sink: None,
             capacities,
         }
     }
@@ -117,7 +117,7 @@ where
     G: DirectedGraph + StorableGraph,
 {
     /// Run [Dinic's (or Dinitz's) algorithm][dinics] to find a [Maximum Flow][maximum_flow] from
-    /// `source` to `destination` using .
+    /// `source` to `sink` using .
     ///
     /// The algorithm works by building successive level graphs using breadth-first search and finds
     /// blocking flows within them through depth-first searches.
@@ -129,7 +129,7 @@ where
     /// # Arguments
     /// The following arguments need to be set in the algorithm struct before calling this method:
     /// - `source`: Source node for the flow.
-    /// - `destination`: Sink node for the flow.
+    /// - `sink`: Sink node for the flow.
     /// - `capacities` (optional): Function that returns the capacity of an edge given its ID. If
     ///   not set, the edge data of the graph is used as capacity.
     ///
@@ -147,7 +147,7 @@ where
     /// may have effective running time O(|V|^2) if accessing the graph is O(|V|) instead of O(1).
     ///
     /// # Errors
-    /// Returns an error if the source or destination node is not set.
+    /// Returns an error if the source or sink node is not set.
     ///
     /// # Example
     ///
@@ -163,7 +163,7 @@ where
     }
 
     /// Run [Dinic's (or Dinitz's) algorithm][dinics] to find a [Maximum Flow][maximum_flow] from
-    /// `source` to `destination` using a custom stack container.
+    /// `source` to `sink` using a custom stack container.
     ///
     /// For further details, see the [`run`][Self::run] method.
     pub fn run_with_stack_container<SContainer, SContainerFlowEdge>(
@@ -177,13 +177,11 @@ where
         SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
     {
         let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
-        let destination = self
-            .destination
-            .ok_or(MaxFlowConfigError::DestinationNodeNotSet)?;
+        let sink = self.sink.ok_or(MaxFlowConfigError::SinkNodeNotSet)?;
         Ok(dinics_inner(
             self.network,
             source,
-            destination,
+            sink,
             &self.capacities,
             stack_container_builder_node_id,
             stack_container_builder_flow_edge,
@@ -194,7 +192,7 @@ where
 fn dinics_inner<G, C, SContainerNodeId, SContainerFlowEdge>(
     network: &G,
     source: G::NodeId,
-    destination: G::NodeId,
+    sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
     stack_container_builder_node_id: impl Fn() -> SContainerNodeId,
     stack_container_builder_flow_edge: impl Fn() -> SContainerFlowEdge,
@@ -205,27 +203,26 @@ where
     SContainerNodeId: StackContainer<G::NodeId> + Clone,
     SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
 {
+    if source == sink {
+        return MaxFlowOutput {
+            max_flow: C::zero(),
+            flows: network.edge_data_container::<C>(C::zero()),
+        };
+    }
+
     let mut max_flow = C::zero();
     let mut flows = network.edge_data_container::<C>(C::zero());
     let mut visited = network.node_visit_container();
     let mut level_edges =
         network.node_data_container::<SContainerFlowEdge>(stack_container_builder_flow_edge());
 
-    while *build_level_graph(
-        network,
-        source,
-        destination,
-        &capacities,
-        &flows,
-        &mut level_edges,
-    )
-    .get(destination)
+    while *build_level_graph(network, source, sink, &capacities, &flows, &mut level_edges).get(sink)
         > 0
     {
         let flow_increase = find_blocking_flow(
             network,
             source,
-            destination,
+            sink,
             &mut flows,
             &mut level_edges,
             &mut visited,
@@ -250,7 +247,7 @@ where
 fn build_level_graph<G, C, SContainer>(
     network: &G,
     source: G::NodeId,
-    destination: G::NodeId,
+    sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
     flows: &impl DataContainer<G::EdgeId, C>,
     level_edges: &mut impl DataContainer<G::NodeId, SContainer>,
@@ -284,7 +281,7 @@ where
             if *level_graph.get(next_vertex) == 0 {
                 *level_graph.get_mut(next_vertex) = *level_graph.get(vertex) + 1;
                 level_edges.get_mut(vertex).push(edge);
-                if next_vertex != destination {
+                if next_vertex != sink {
                     bfs_queue.push_back(next_vertex);
                 }
             } else if *level_graph.get(next_vertex) == *level_graph.get(vertex) + 1 {
@@ -304,7 +301,7 @@ where
 fn find_blocking_flow<G, C, SContainerNodeId, SContainerFlowEdge>(
     network: &G,
     source: G::NodeId,
-    destination: G::NodeId,
+    sink: G::NodeId,
     flows: &mut G::EdgeDataContainer<C>,
     level_edges: &mut G::NodeDataContainer<SContainerFlowEdge>,
     visited: &mut G::NodeVisitContainer,
@@ -321,7 +318,7 @@ where
     while find_augmenting_path(
         network,
         source,
-        destination,
+        sink,
         flows,
         level_edges,
         visited,
@@ -331,7 +328,7 @@ where
         let mut path_flow = <C as Bounded>::max();
 
         // Find the bottleneck capacity of the path
-        let mut vertex = destination;
+        let mut vertex = sink;
         while let Some(edge) = edge_to.get(vertex) {
             let residual_capacity =
                 residual_capacity::<G, C>(edge.to_owned_edge(), vertex, *flows.get(edge.id));
@@ -340,7 +337,7 @@ where
         }
 
         // Update the flow of each edge along the discovered path
-        let mut vertex = destination;
+        let mut vertex = sink;
         while let Some(edge) = edge_to.get(vertex) {
             *flows.get_mut(edge.id) =
                 adjusted_residual_flow::<G, _, C>(edge, vertex, *flows.get(edge.id), path_flow);
@@ -351,14 +348,14 @@ where
     flow_increase
 }
 
-/// Makes a DFS to find an augmenting path from source to destination vertex
+/// Makes a DFS to find an augmenting path from source to sink vertex
 /// using previously computed `edge_levels` from level graph.
 ///
-/// Returns a boolean indicating if an augmenting path to destination was found.
+/// Returns a boolean indicating if an augmenting path to sink was found.
 fn find_augmenting_path<G, C, SContainerNodeId, SContainerFlowEdge>(
     network: &G,
     source: G::NodeId,
-    destination: G::NodeId,
+    sink: G::NodeId,
     flows: &impl DataContainer<G::EdgeId, C>,
     level_edges: &mut G::NodeDataContainer<SContainerFlowEdge>,
     visited: &mut G::NodeVisitContainer,
@@ -392,7 +389,7 @@ where
 
             if !visited.is_visited(next_vertex) {
                 edge_to.get_mut(next_vertex).replace(edge);
-                if destination == next_vertex {
+                if sink == next_vertex {
                     return true;
                 }
                 dfs_stack.push(next_vertex);

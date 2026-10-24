@@ -46,14 +46,14 @@ use crate::traits::{Bounded, Measure, MinMax, Zero};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MaxFlowConfigError {
     SourceNodeNotSet,
-    DestinationNodeNotSet,
+    SinkNodeNotSet,
 }
 
 impl core::fmt::Display for MaxFlowConfigError {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::SourceNodeNotSet => write!(fmt, "Source node is not set"),
-            Self::DestinationNodeNotSet => write!(fmt, "Destination node is not set"),
+            Self::SinkNodeNotSet => write!(fmt, "Sink node is not set"),
         }
     }
 }
@@ -107,8 +107,8 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> MaxFlow<'graph_ref, G, 
     /// Creates a new instance of the maximum flow algorithm with the provided graph.
     ///
     /// Data of the graph's edges is interpreted as capacities of edges.
-    /// The source and destination nodes can be set using a builder pattern with the
-    /// [`with_source`][Self::with_source] and [`with_destination`][Self::with_destination] methods.
+    /// The source and sink nodes can be set using a builder pattern with the
+    /// [`with_source`][Self::with_source] and [`with_sink`][Self::with_sink] methods.
     ///
     /// To run the algorithm, call the [`run`][Self::run] method on the returned struct.
     #[must_use]
@@ -134,8 +134,8 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> MaxFlow<'graph_ref, G, 
 
     /// Creates a new instance of Dinic's algorithm with the provided graph and capacity function.
     ///
-    /// The source and destination nodes can be set using a builder pattern with the
-    /// [`with_source`][Self::with_source] and [`with_destination`][Self::with_destination] methods.
+    /// The source and sink nodes can be set using a builder pattern with the
+    /// [`with_source`][Self::with_source] and [`with_sink`][Self::with_sink] methods.
     ///
     /// To run the algorithm, call the [`run`][Self::run] method on the returned struct.
     #[must_use]
@@ -156,10 +156,10 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> MaxFlow<'graph_ref, G, 
         self
     }
 
-    /// Sets the destination node for the flow.
+    /// Sets the sink node for the flow.
     #[must_use]
-    pub const fn with_destination(mut self, destination: G::NodeId) -> Self {
-        self.wrapped.destination = Some(destination);
+    pub const fn with_sink(mut self, sink: G::NodeId) -> Self {
+        self.wrapped.sink = Some(sink);
         self
     }
 }
@@ -168,7 +168,7 @@ impl<G, CapFn: Fn(G::EdgeId) -> C, C> MaxFlow<'_, G, CapFn, C>
 where
     G: DirectedGraph + StorableGraph,
 {
-    /// Computes a [Max Flow][maximum_flow] from `source` to `destination`.
+    /// Computes a [Max Flow][maximum_flow] from `source` to `sink`.
     ///
     /// This function selects a maximum flow algorithm internally and may change which one it uses
     /// in future releases as better implementations become available. If you need a specific
@@ -182,7 +182,7 @@ where
     /// - `network`: A directed graph with positive edge data which is interpreted as capacities of
     ///   edges.
     /// - `source`: Source node for the flow.
-    /// - `destination`: Sink node for the flow.
+    /// - `sink`: Sink node for the flow.
     ///
     /// # Returns
     /// Returns an implementation of [`MaxFlowReturn`], from which the maximum flow value and the
