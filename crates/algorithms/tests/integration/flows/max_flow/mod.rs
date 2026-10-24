@@ -3,7 +3,6 @@ use petgraph_algorithms::flows::max_flow::{
 };
 use petgraph_core::{
     graph::{DirectedGraph, EditableGraph, storable::StorableGraph},
-    node,
     utils::test_graphs::directed::DirectedTestGraph,
 };
 
@@ -346,7 +345,7 @@ pub(crate) fn test_max_flow_eight<
     ] {
         graph.add_edge(nodes[source], nodes[sink], weight).unwrap();
     }
-    graph.remove_node(nodes[3]);
+    graph.remove_node(nodes[3]).unwrap();
     let (max_flow, _) = flow_algorithm(&graph, nodes[0], nodes[4]);
     assert_eq!(5, max_flow);
 }
