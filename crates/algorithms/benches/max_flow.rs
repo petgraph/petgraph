@@ -126,7 +126,7 @@ where
         bencher.iter(|| {
             EdmondsKarp::new_with_capacities(black_box(graph), capacities)
                 .with_source(*source)
-                .with_destination(*destination)
+                .with_source(*destination)
                 .run()
                 .unwrap()
         });
