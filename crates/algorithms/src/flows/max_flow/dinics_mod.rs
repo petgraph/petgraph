@@ -12,7 +12,7 @@ use petgraph_core::{
 
 use super::{other_endpoint, residual_capacity};
 #[cfg(feature = "alloc")]
-use crate::flows::max_flow::MaxFlowConfigError;
+use crate::{flows::max_flow::MaxFlowConfigError, traits::NonNegative};
 use crate::{
     flows::max_flow::{MaxFlowOutput, adjusted_residual_flow},
     traits::{Bounded, Measure, MinMax, Zero},
@@ -116,8 +116,8 @@ impl<G, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'_, G, CapFn, C>
 where
     G: DirectedGraph + StorableGraph,
 {
-    /// Run [Dinic's (or Dinitz's) algorithm][dinics] to find a [Maximum Flow][maximum_flow] from
-    /// `source` to `sink` using .
+    /// Run [Dinic's (or Dinitz's) algorithm][dinics_link] to find a [Maximum Flow][maximum_flow]
+    /// from `source` to `sink` using .
     ///
     /// The algorithm works by building successive level graphs using breadth-first search and finds
     /// blocking flows within them through depth-first searches.
@@ -153,26 +153,29 @@ where
     ///
     ///
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
-    /// [dinics]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
+    /// [dinics_link]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
     #[cfg(feature = "alloc")]
     pub fn run(&self) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
-        C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
+        C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
     {
         self.run_with_stack_container(|| Vec::new(), || Vec::new())
     }
 
-    /// Run [Dinic's (or Dinitz's) algorithm][dinics] to find a [Maximum Flow][maximum_flow] from
-    /// `source` to `sink` using a custom stack container.
+    /// Run [Dinic's (or Dinitz's) algorithm][dinics_link] to find a [Maximum Flow][maximum_flow]
+    /// from `source` to `sink` using a custom stack container.
     ///
-    /// For further details, see the [`run`][Self::run] method.
+    /// For further details, see the [`run`](Dinics::run) method of the [Dinics](Dinics) struct.
+    ///
+    /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+    /// [dinics_link]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
     pub fn run_with_stack_container<SContainer, SContainerFlowEdge>(
         &self,
         stack_container_builder_node_id: impl Fn() -> SContainer,
         stack_container_builder_flow_edge: impl Fn() -> SContainerFlowEdge,
     ) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
-        C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
+        C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
         SContainer: StackContainer<G::NodeId> + Clone,
         SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
     {
@@ -189,6 +192,31 @@ where
     }
 }
 
+/// Run [Dinic's (or Dinitz's) algorithm][dinics_link] to find a [Maximum Flow][maximum_flow] from
+/// `source` to `sink`.
+///
+/// For further details, see the [`run`](Dinics::run) method of the [Dinics](Dinics) struct.
+///
+/// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+/// [dinics_link]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
+#[cfg(feature = "alloc")]
+pub fn dinics<'graph_ref, G, C>(
+    network: &'graph_ref G,
+    source: G::NodeId,
+    sink: G::NodeId,
+    capacities: impl Fn(G::EdgeId) -> C,
+) -> MaxFlowOutput<G, C>
+where
+    G: DirectedGraph + StorableGraph,
+    C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
+{
+    Dinics::new_with_capacities(network, capacities)
+        .with_source(source)
+        .with_sink(sink)
+        .run()
+        .expect("All required parameters should be set.")
+}
+
 fn dinics_inner<G, C, SContainerNodeId, SContainerFlowEdge>(
     network: &G,
     source: G::NodeId,
@@ -199,7 +227,7 @@ fn dinics_inner<G, C, SContainerNodeId, SContainerFlowEdge>(
 ) -> MaxFlowOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
-    C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
+    C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
     SContainerNodeId: StackContainer<G::NodeId> + Clone,
     SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
 {
@@ -254,7 +282,7 @@ fn build_level_graph<G, C, SContainer>(
 ) -> impl DataContainer<G::NodeId, usize>
 where
     G: DirectedGraph + StorableGraph,
-    C: Sub<Output = C> + Measure + Zero,
+    C: Sub<Output = C> + Measure + NonNegative + Zero,
     SContainer: StackContainer<FlowEdge<G, C>>,
 {
     let mut level_graph = network.node_data_container::<usize>(0);
@@ -309,7 +337,7 @@ fn find_blocking_flow<G, C, SContainerNodeId, SContainerFlowEdge>(
 ) -> C
 where
     G: DirectedGraph + StorableGraph,
-    C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
+    C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
     SContainerNodeId: StackContainer<G::NodeId>,
     SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
 {
@@ -364,7 +392,7 @@ fn find_augmenting_path<G, C, SContainerNodeId, SContainerFlowEdge>(
 ) -> bool
 where
     G: DirectedGraph + StorableGraph,
-    C: Sub<Output = C> + Measure + Zero,
+    C: Sub<Output = C> + Measure + NonNegative + Zero,
     SContainerNodeId: StackContainer<G::NodeId>,
     SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
 {

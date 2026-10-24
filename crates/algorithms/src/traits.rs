@@ -26,6 +26,20 @@ impl_zero!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
 );
 
+/// A type that can only have non-negative values.
+pub trait NonNegative {}
+
+macro_rules! impl_non_negative(
+    ( $( $t:ty ),* )=> {
+        $(
+            impl NonNegative for $t {
+            }
+        )*
+    }
+);
+
+impl_non_negative!(u8, u16, u32, u64, u128, usize);
+
 /// A type that has minimum and maximum values.
 pub trait Bounded {
     fn min() -> Self;

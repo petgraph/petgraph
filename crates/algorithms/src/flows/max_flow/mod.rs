@@ -40,6 +40,8 @@ use petgraph_core::{
     graph::{DirectedGraph, Graph, storable::StorableGraph},
 };
 
+#[cfg(feature = "alloc")]
+use crate::traits::NonNegative;
 use crate::traits::{Bounded, Measure, MinMax, Zero};
 
 /// Errors that can occur in the configuration of max flow algorithms.
@@ -193,6 +195,9 @@ where
     /// releases as the underlying algorithm is swapped out. Use specific algorithms directly if you
     /// depend on specific complexity guarantees.
     ///
+    /// # Errors
+    /// Returns an error if the source or sink node is not set.
+    ///
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     ///
     /// # Example
@@ -201,17 +206,46 @@ where
     pub fn run(&self) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
         G: DirectedGraph + StorableGraph,
-        C: Sub<Output = C> + Measure + Zero + Bounded + MinMax + Default,
+        C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
     {
         self.wrapped.run()
     }
+}
+
+/// Computes a [Max Flow][maximum_flow] from `source` to `sink`.
+///
+/// This function selects a maximum flow algorithm internally and may change which one it uses
+/// in future releases as better implementations become available. If you need a specific
+/// algorithm's guarantees (e.g. its exact complexity bounds, or reproducible behavior
+/// across versions), call that algorithm directly instead. See the
+/// [`maximum_flow`](./index.html) module for the full list.
+///
+/// For further details, see the [`run`](MaxFlow::run) method of the [MaxFlow](MaxFlow) struct.
+///
+/// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+#[cfg(feature = "alloc")]
+pub fn max_flow<'graph_ref, G, C>(
+    network: &'graph_ref G,
+    source: G::NodeId,
+    sink: G::NodeId,
+    capacities: impl Fn(G::EdgeId) -> C,
+) -> MaxFlowOutput<G, C>
+where
+    G: DirectedGraph + StorableGraph,
+    C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
+{
+    MaxFlow::new_with_capacities(network, capacities)
+        .with_source(source)
+        .with_sink(sink)
+        .run()
+        .expect("All required parameters should be set.")
 }
 
 /// Returns the residual capacity of given edge.
 fn residual_capacity<G, C>(edge: Edge<G::EdgeId, C, G::NodeId>, vertex: G::NodeId, flow: C) -> C
 where
     G: DirectedGraph,
-    C: Sub<Output = C> + Copy,
+    C: Sub<Output = C> + Copy + NonNegative,
 {
     if vertex == edge.source {
         // backward edge
@@ -247,7 +281,7 @@ fn adjusted_residual_flow<G, D, C>(
 ) -> C
 where
     G: DirectedGraph,
-    C: Sub<Output = C> + Add<Output = C>,
+    C: Sub<Output = C> + Add<Output = C> + NonNegative,
 {
     if target_vertex == edge.source {
         // backward edge
