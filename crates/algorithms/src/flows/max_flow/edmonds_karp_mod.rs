@@ -14,7 +14,7 @@ use crate::{
         MaxFlowConfigError, MaxFlowOutput, adjusted_residual_flow, other_endpoint,
         residual_capacity,
     },
-    traits::{Bounded, Measure, Zero},
+    traits::{Bounded, Measure, NonNegative, Zero},
 };
 
 /// Struct to run the Edmonds-Karp algorithm.
@@ -95,21 +95,44 @@ impl<G, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'_, G, CapFn, C>
 where
     G: DirectedGraph + StorableGraph,
 {
-    /// Runs the Edmonds-Karp algorithm with the current configuration.
+    /// Find a [Maximum Flow][maximum_flow] from `source` to `sink` using the
+    /// [Edmond-Karp][edmonds_karp_link] implementation of the [Ford-Fulkerson][ford_fulkerson]
+    /// method.
     ///
-    /// For an explanation of the algorithm, see the documentation of [`edmonds_karp`].
-    /// If an invalid configuration is detected, an appropriate error is returned.
+    /// Edge Data of the provided graph is interpreted as capacities of edges.
+    ///
+    /// See also [`maximum_flow`](../index.html) module for other maximum flow algorithms.
+    ///
+    /// # Arguments
+    /// - `network`: A directed graph with positive edge data which is interpreted as capacities of
+    ///   edges.
+    /// - `source`: Source node for the flow.
+    /// - `sink`: Sink node for the flow.
+    ///
+    /// # Returns
+    /// Returns a struct wrapping the maximum flow value and the flow of each edge.
+    ///
+    /// # Complexity
+    /// - Time complexity: **O(|V||E|²)**
+    /// - Auxiliary space: **O(|V| + |E|)**
+    ///
+    /// Where **|V|** is the number of nodes and **|E|** is the number of edges.
     ///
     /// # Errors
     /// Returns an error if the source or sink node is not set.
+    ///
+    /// # Example
+    /// // TODO: Add example
+    ///
+    /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
+    /// [ford_fulkerson]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
+    /// [edmonds_karp_link]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
     pub fn run(&self) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
-        C: Sub<Output = C> + Zero + Measure + Bounded + Default,
+        C: Sub<Output = C> + Zero + Measure + NonNegative + Bounded + Default,
     {
         let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
-        let sink = self
-            .sink
-            .ok_or(MaxFlowConfigError::SinkNodeNotSet)?;
+        let sink = self.sink.ok_or(MaxFlowConfigError::SinkNodeNotSet)?;
         Ok(edmonds_karp_inner(
             self.network,
             source,
@@ -119,34 +142,16 @@ where
     }
 }
 
-/// Find a [Maximum Flow][maximum_flow] from `source` to `sink` using the
-/// [Edmond-Karp][edmonds_karp] implementation of the [Ford-Fulkerson][ford_fulkerson] method.
+/// Run the [Edmonds-Karp algorithm][dinics_link] implementation of the
+/// [Ford-Fulkerson][ford_fulkerson] method to find a [Maximum Flow][maximum_flow] from `source` to
+/// `sink`.
 ///
-/// Edge Data of the provided graph is interpreted as capacities of edges.
-///
-/// See also [`maximum_flow`](../index.html) module for other maximum flow algorithms.
-///
-/// # Arguments
-/// - `network`: A directed graph with positive edge data which is interpreted as capacities of
-///   edges.
-/// - `source`: Source node for the flow.
-/// - `sink`: Sink node for the flow.
-///
-/// # Returns
-/// Returns a struct wrapping the maximum flow value and the flow of each edge.
-///
-/// # Complexity
-/// - Time complexity: **O(|V||E|²)**
-/// - Auxiliary space: **O(|V| + |E|)**
-///
-/// Where **|V|** is the number of nodes and **|E|** is the number of edges.
+/// For further details, see the [`run`](EdmondsKarp::run) method of the [EdmondsKarp](EdmondsKarp)
+/// struct.
 ///
 /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [ford_fulkerson]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
-/// [edmonds_karp]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
-///
-/// # Example
-/// // TODO: Add example
+/// [edmonds_karp_link]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
 pub fn edmonds_karp<G, C>(
     network: &G,
     source: G::NodeId,
@@ -155,9 +160,13 @@ pub fn edmonds_karp<G, C>(
 ) -> MaxFlowOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
-    C: Sub<Output = C> + Measure + Zero + Bounded + Default,
+    C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + Default,
 {
-    edmonds_karp_inner(network, source, sink, &capacities)
+    EdmondsKarp::new_with_capacities(network, capacities)
+        .with_source(source)
+        .with_sink(sink)
+        .run()
+        .unwrap()
 }
 
 fn edmonds_karp_inner<G, C>(
@@ -168,19 +177,12 @@ fn edmonds_karp_inner<G, C>(
 ) -> MaxFlowOutput<G, C>
 where
     G: DirectedGraph + StorableGraph,
-    C: Sub<Output = C> + Zero + Measure + Bounded + Default,
+    C: Sub<Output = C> + Zero + Measure + NonNegative + Bounded + Default,
 {
     let mut edge_to = network.node_data_container::<Option<Edge<G::EdgeId, C, G::NodeId>>>(None);
     let mut flows = network.edge_data_container::<C>(C::zero());
     let mut max_flow = C::zero();
-    while has_augmented_path(
-        network,
-        source,
-        sink,
-        &capacities,
-        &mut edge_to,
-        &flows,
-    ) {
+    while has_augmented_path(network, source, sink, &capacities, &mut edge_to, &flows) {
         let mut path_flow = <C as Bounded>::max();
 
         // Find the bottleneck capacity of the path
@@ -221,7 +223,7 @@ fn has_augmented_path<G, C>(
 ) -> bool
 where
     G: DirectedGraph + StorableGraph,
-    C: Sub<Output = C> + Zero + Measure + Default,
+    C: Sub<Output = C> + NonNegative + Zero + Measure + Default,
 {
     let mut visited = network.node_visit_container();
     let mut queue = VecDeque::new();
