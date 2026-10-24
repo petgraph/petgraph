@@ -97,7 +97,7 @@ where
     G: DirectedGraph + StorableGraph,
 {
     /// Find a [Maximum Flow][maximum_flow] from `source` to `sink` using the
-    /// [Edmond-Karp][edmonds_karp_link] implementation of the [Ford-Fulkerson][ford_fulkerson]
+    /// [Edmonds-Karp][edmonds_karp_link] implementation of the [Ford-Fulkerson][ford_fulkerson]
     /// method.
     ///
     /// Edge Data of the provided graph is interpreted as capacities of edges.
@@ -105,10 +105,11 @@ where
     /// See also [`maximum_flow`](../index.html) module for other maximum flow algorithms.
     ///
     /// # Arguments
-    /// - `network`: A directed graph with positive edge data which is interpreted as capacities of
-    ///   edges.
+    /// The following arguments need to be set in the algorithm struct before calling this method:
     /// - `source`: Source node for the flow.
-    /// - `sink`: Sink node for the flow.
+    /// - `destination`: Sink node for the flow.
+    /// - `capacities` (optional): Function that returns the non-negative capacity of an edge given
+    ///   its ID. If not set, the edge data of the graph is used as capacity.
     ///
     /// # Returns
     /// Returns a struct wrapping the maximum flow value and the flow of each edge.
@@ -133,15 +134,7 @@ where
     where
         C: Sub<Output = C> + Zero + Measure + NonNegative + Bounded + Default,
     {
-        let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
-        let sink = self.sink.ok_or(MaxFlowConfigError::SinkNodeNotSet)?;
-        Ok(edmonds_karp_inner(
-            self.network,
-            source,
-            sink,
-            &self.capacities,
-            || VecDeque::new(),
-        ))
+        self.run_with_queue_container(|| VecDeque::new())
     }
 
     /// Run the [Edmonds-Karp algorithm][edmonds_karp_link] implementation of the
@@ -156,11 +149,11 @@ where
     /// [edmonds_karp_link]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
     pub fn run_with_queue_container<QContainer>(
         &self,
-        queue_container_builder_node_id: impl Fn() -> QContainer,
+        queue_container_node_id_constructor: impl Fn() -> QContainer,
     ) -> Result<MaxFlowOutput<G, C>, MaxFlowConfigError>
     where
         C: Sub<Output = C> + Zero + Measure + NonNegative + Bounded + Default,
-        QContainer: QueueContainer<G::NodeId> + Clone,
+        QContainer: QueueContainer<G::NodeId>,
     {
         let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
         let sink = self.sink.ok_or(MaxFlowConfigError::SinkNodeNotSet)?;
@@ -169,7 +162,7 @@ where
             source,
             sink,
             &self.capacities,
-            queue_container_builder_node_id,
+            queue_container_node_id_constructor,
         ))
     }
 }
@@ -212,7 +205,7 @@ fn edmonds_karp_inner<G, C, QContainer>(
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Zero + Measure + NonNegative + Bounded + Default,
-    QContainer: QueueContainer<G::NodeId> + Clone,
+    QContainer: QueueContainer<G::NodeId>,
 {
     let mut edge_to = network.node_data_container::<Option<Edge<G::EdgeId, C, G::NodeId>>>(None);
     let mut flows = network.edge_data_container::<C>(C::zero());
@@ -268,7 +261,7 @@ fn has_augmented_path<G, C, QContainer>(
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + NonNegative + Zero + Measure + Default,
-    QContainer: QueueContainer<G::NodeId> + Clone,
+    QContainer: QueueContainer<G::NodeId>,
 {
     let mut visited = network.node_visit_container();
     let mut queue = queue_container_node_id_constructor();

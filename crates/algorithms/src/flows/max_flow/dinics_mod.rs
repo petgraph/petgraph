@@ -115,7 +115,7 @@ where
     G: DirectedGraph + StorableGraph,
 {
     /// Run [Dinic's (or Dinitz's) algorithm][dinics_link] to find a [Maximum Flow][maximum_flow]
-    /// from `source` to `sink` using .
+    /// from `source` to `sink`.
     ///
     /// The algorithm works by building successive level graphs using breadth-first search and finds
     /// blocking flows within them through depth-first searches.
@@ -127,9 +127,9 @@ where
     /// # Arguments
     /// The following arguments need to be set in the algorithm struct before calling this method:
     /// - `source`: Source node for the flow.
-    /// - `sink`: Sink node for the flow.
-    /// - `capacities` (optional): Function that returns the capacity of an edge given its ID. If
-    ///   not set, the edge data of the graph is used as capacity.
+    /// - `destination`: Sink node for the flow.
+    /// - `capacities` (optional): Function that returns the non-negative capacity of an edge given
+    ///   its ID. If not set, the edge data of the graph is used as capacity.
     ///
     /// # Returns
     /// Returns a struct wrapping the maximum flow value and the flow of each edge.
@@ -157,17 +157,17 @@ where
     where
         C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
     {
-        self.run_with_stack_container(|| Vec::new(), || Vec::new(), || VecDeque::new())
+        self.run_with_stack_and_queue_container(|| Vec::new(), || Vec::new(), || VecDeque::new())
     }
 
     /// Run [Dinic's (or Dinitz's) algorithm][dinics_link] to find a [Maximum Flow][maximum_flow]
-    /// from `source` to `sink` using a custom stack container.
+    /// from `source` to `sink` using a custom stack and queue containers.
     ///
     /// For further details, see the [`run`](Dinics::run) method of the [Dinics] struct.
     ///
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     /// [dinics_link]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
-    pub fn run_with_stack_container<SContainer, SContainerFlowEdge, QContainer>(
+    pub fn run_with_stack_and_queue_container<SContainer, SContainerFlowEdge, QContainer>(
         &self,
         stack_container_node_id_constructor: impl Fn() -> SContainer,
         stack_container_flow_edge_constructor: impl Fn() -> SContainerFlowEdge,

@@ -109,14 +109,14 @@ fn bench_algorithms<G>(group: &mut BenchmarkGroup<'_, WallTime>, network: &FlowN
 where
     for<'graph> G: DirectedGraph + StorableGraph + Graph<EdgeData<'graph> = u32> + 'graph,
 {
-    let (graph, source, destination) = network;
+    let (graph, source, sink) = network;
     let capacities = |edge_id| *graph.edge(edge_id).unwrap().data.borrow();
 
     group.bench_function("dinics", |bencher| {
         bencher.iter(|| {
             Dinics::new_with_capacities(black_box(graph), capacities)
                 .with_source(*source)
-                .with_destination(*destination)
+                .with_sink(*sink)
                 .run()
                 .unwrap()
         });
@@ -126,7 +126,7 @@ where
         bencher.iter(|| {
             EdmondsKarp::new_with_capacities(black_box(graph), capacities)
                 .with_source(*source)
-                .with_source(*destination)
+                .with_source(*sink)
                 .run()
                 .unwrap()
         });
