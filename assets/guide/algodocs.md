@@ -49,7 +49,7 @@ The [`dinics`](../../crates/algorithms/src/flows/max_flow/dinics_mod.rs) algorit
 
 ```rust
 /// Run [Dinic's (or Dinitz's) algorithm][dinics] to find a [Maximum Flow][maximum_flow] from
-/// `source` to `destination` using .
+/// `source` to `destination`.
 ///
 /// The algorithm works by building successive level graphs using breadth-first search and finds
 /// blocking flows within them through depth-first searches.
@@ -62,8 +62,8 @@ The [`dinics`](../../crates/algorithms/src/flows/max_flow/dinics_mod.rs) algorit
 /// The following arguments need to be set in the algorithm struct before calling this method:
 /// - `source`: Source node for the flow.
 /// - `destination`: Sink node for the flow.
-/// - `capacities` (optional): Function that returns the capacity of an edge given its ID. If
-///   not set, the edge data of the graph is used as capacity.
+/// - `capacities` (optional): Function that returns the non-negative capacity of an edge given
+///   its ID. If not set, the edge data of the graph is used as capacity.
 ///
 /// # Returns
 /// Returns a struct wrapping the maximum flow value and the flow of each edge.

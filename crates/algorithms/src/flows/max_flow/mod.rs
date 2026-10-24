@@ -1,6 +1,6 @@
 //! Collection of algorithms for the [Maximum Flow Problem][max_flow_wikipedia].
 //!
-//! Using the `max_flow` function will select an algorithm. The algorithm(s) it use
+//! Using the `max_flow` function will select an algorithm. The algorithm(s) it uses
 //! are subject to change in the future
 //!
 //! Currently, `petgraph` provides two algorithms to compute the maximum flow
@@ -180,10 +180,11 @@ where
     /// Edge data of the provided graph is interpreted as capacities of edges.
     ///
     /// # Arguments
-    /// - `network`: A directed graph with positive edge data which is interpreted as capacities of
-    ///   edges.
+    /// The following arguments need to be set in the algorithm struct before calling this method:
     /// - `source`: Source node for the flow.
-    /// - `sink`: Sink node for the flow.
+    /// - `destination`: Sink node for the flow.
+    /// - `capacities` (optional): Function that returns the non-negative capacity of an edge given
+    ///   its ID. If not set, the edge data of the graph is used as capacity.
     ///
     /// # Returns
     /// Returns an instance of [`MaxFlowOutput`], from which the maximum flow value and the
