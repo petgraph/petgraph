@@ -17,12 +17,16 @@ impl<G> IntoNeighbors for UndirectedAdaptor<G>
 where
     G: IntoNeighborsDirected,
 {
-    type Neighbors = core::iter::Chain<G::NeighborsDirected, G::NeighborsDirected>;
+    type Neighbors =
+        core::iter::Chain<G::NeighborsDirected, SkipSelfLoops<G::NeighborsDirected, G::NodeId>>;
 
     fn neighbors(self, n: G::NodeId) -> Self::Neighbors {
         self.0
             .neighbors_directed(n, Direction::Incoming)
-            .chain(self.0.neighbors_directed(n, Direction::Outgoing))
+            .chain(SkipSelfLoops {
+                iter: self.0.neighbors_directed(n, Direction::Outgoing),
+                node: n,
+            })
     }
 }
 
@@ -32,7 +36,7 @@ where
 {
     type Edges = core::iter::Chain<
         MaybeReversedEdges<G::EdgesDirected>,
-        MaybeReversedEdges<G::EdgesDirected>,
+        SkipSelfLoopEdges<MaybeReversedEdges<G::EdgesDirected>, G::NodeId>,
     >;
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {
@@ -44,7 +48,10 @@ where
             iter: self.0.edges_directed(a, Direction::Outgoing),
             reversed: false,
         };
-        incoming.chain(outgoing)
+        incoming.chain(SkipSelfLoopEdges {
+            iter: outgoing,
+            node: a,
+        })
     }
 }
 
@@ -66,6 +73,29 @@ pub struct MaybeReversedEdges<I> {
     reversed: bool,
 }
 
+#[derive(Debug, Clone)]
+pub struct SkipSelfLoops<I, N> {
+    iter: I,
+    node: N,
+}
+
+impl<I, N> Iterator for SkipSelfLoops<I, N>
+where
+    I: Iterator<Item = N>,
+    N: Copy + PartialEq,
+{
+    type Item = N;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.find(|node| *node != self.node)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
+    }
+}
+
 impl<I> Iterator for MaybeReversedEdges<I>
 where
     I: Iterator,
@@ -82,6 +112,30 @@ where
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SkipSelfLoopEdges<I, N> {
+    iter: I,
+    node: N,
+}
+
+impl<I, N> Iterator for SkipSelfLoopEdges<I, N>
+where
+    I: Iterator,
+    I::Item: EdgeRef<NodeId = N>,
+    N: Copy + PartialEq,
+{
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.find(|edge| edge.target() != self.node)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
     }
 }
 
@@ -181,7 +235,7 @@ NodeCount! {delegate_impl [[G], G, UndirectedAdaptor<G>, access0]}
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec::Vec;
+    use alloc::{vec, vec::Vec};
     use std::collections::HashSet;
 
     use super::*;
@@ -276,5 +330,31 @@ mod tests {
             nodes.sort();
             assert_eq!(graph.neighbors(nodes[1]).count(), 2);
         }
+    }
+
+    #[test]
+    fn test_self_loop_neighbor_is_not_duplicated() {
+        let mut graph = DiGraph::<(), ()>::new();
+        let node = graph.add_node(());
+        graph.add_edge(node, node, ());
+
+        let graph = UndirectedAdaptor(&graph);
+
+        let neighbors = graph.neighbors(node).collect::<Vec<_>>();
+        assert_eq!(neighbors, vec![node]);
+    }
+
+    #[test]
+    fn test_self_loop_edge_is_not_duplicated() {
+        let mut graph = DiGraph::<(), ()>::new();
+        let node = graph.add_node(());
+        graph.add_edge(node, node, ());
+
+        let graph = UndirectedAdaptor(&graph);
+
+        let edges = graph.edges(node).collect::<Vec<_>>();
+        assert_eq!(edges.len(), 1);
+        assert_eq!(edges[0].source(), node);
+        assert_eq!(edges[0].target(), node);
     }
 }
