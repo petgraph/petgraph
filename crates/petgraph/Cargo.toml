@@ -24,7 +24,7 @@ petgraph-algorithms = { workspace = true, optional = true }
 [dev-dependencies]
 
 [features]
-std = ["alloc", "petgraph-core/std"]
+std = ["alloc", "petgraph-core/std", "petgraph-old?/std"]
 alloc = ["petgraph-core/alloc", "petgraph-algorithms?/alloc"]
 hashbrown = ["petgraph-core/hashbrown"]
 petgraph-old = ["dep:petgraph-old"]
