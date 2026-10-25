@@ -1,4 +1,4 @@
-mod common;
+pub mod common;
 
 use core::{borrow::Borrow, hint::black_box};
 
@@ -126,7 +126,7 @@ where
         bencher.iter(|| {
             EdmondsKarp::new_with_capacities(black_box(graph), capacities)
                 .with_source(*source)
-                .with_source(*sink)
+                .with_sink(*sink)
                 .run()
                 .unwrap()
         });
