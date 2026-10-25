@@ -1,9 +1,9 @@
 //! Collection of algorithms for the [Maximum Flow Problem][max_flow_wikipedia].
 //!
 //! Using the `max_flow` function will select an algorithm. The algorithm(s) it uses
-//! are subject to change in the future
+//! are subject to change in the future.
 //!
-//! Currently, `petgraph` provides two algorithms to compute the maximum flow
+//! Currently, `petgraph-algorithms` provides two algorithms to compute the maximum flow
 //! in a flow network:
 //! - [Dinic's Algorithm](dinics_mod::Dinics) [(Wikipedia)][dinics_wikipedia]
 //! - [Edmonds-Karp Algorithm](edmonds_karp_mod::EdmondsKarp) [(Wikipedia)][edmonds_karp_wikipedia]
@@ -227,6 +227,7 @@ where
 ///
 /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 #[cfg(feature = "alloc")]
+#[expect(clippy::missing_panics_doc, reason = "source and sink are always set")]
 pub fn max_flow<G, C>(
     network: &G,
     source: G::NodeId,
@@ -237,7 +238,6 @@ where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
 {
-    #[allow(clippy::missing_panics_doc)]
     MaxFlow::new_with_capacities(network, capacities)
         .with_source(source)
         .with_sink(sink)
