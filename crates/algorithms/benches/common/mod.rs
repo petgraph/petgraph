@@ -9,7 +9,7 @@ where
     G: EditableGraph<OwnedNodeData = ()>,
 {
     (0..count)
-        .map(|_| graph.add_node(()).ok().expect("failed to add node"))
+        .map(|_| graph.add_node(()).expect("failed to add node"))
         .collect()
 }
 
@@ -27,6 +27,5 @@ pub(crate) fn add_edge<G>(
 {
     graph
         .add_edge(source, target, data)
-        .ok()
         .expect("failed to add edge");
 }
