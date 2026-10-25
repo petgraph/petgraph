@@ -10,8 +10,7 @@ rust-version.workspace = true
 [dependencies]
 petgraph-core = { workspace = true }
 
-foldhash = { workspace = true }
-indexmap = { workspace = true }
+slab = { workspace = true }
 
 [dev-dependencies]
 petgraph-core = { workspace = true, features = ["test-utils"] }
