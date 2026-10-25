@@ -23,6 +23,7 @@ petgraph-old  = { git = "https://github.com/petgraph/petgraph", branch = "0.8", 
 petgraph-core = { path = "crates/core" }
 petgraph-algorithms = { path = "crates/algorithms" }
 
+criterion         = { version = "0.8.2"}
 foldhash          = { version = "0.2.0", default-features = false }
 hashbrown         = { version = "^0.17.0", default-features = false }
 
