@@ -1,5 +1,6 @@
 use core::{hash::BuildHasher, marker::PhantomData};
 
+use foldhash::fast::RandomState;
 use petgraph_core::{
     edge::{EdgeMut, EdgeRef},
     graph::{Cardinality, DensityHint, Graph, UndirectedGraph},
@@ -12,6 +13,11 @@ use crate::{
     private::Sealed,
 };
 
+/// A [`MatrixGraph`] with undirected edges.
+pub type UnMatrixGraph<N, E, Null = Option<E>, S = RandomState> =
+    MatrixGraph<N, E, Undirected, Null, S>;
+
+/// Edge identifier type for an undirected [`MatrixGraph`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct UnMatrixEdgeId {
     pub source: MatrixGraphNodeId,
@@ -46,13 +52,11 @@ impl core::fmt::Display for UnMatrixEdgeId {
 
 impl Id for UnMatrixEdgeId {}
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>, S> Sealed for MatrixGraph<N, E, Undirected, Null, S> {}
+impl<N, E, Null: NicheWrapper<Wrapped = E>, S> Sealed for UnMatrixGraph<N, E, Null, S> {}
 
 impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
-    for MatrixGraph<N, E, Undirected, Null, S>
+    for UnMatrixGraph<N, E, Null, S>
 {
-    type EdgeId = UnMatrixEdgeId;
-
     #[inline]
     fn to_edge_position(
         &self,
@@ -121,6 +125,14 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
     fn edge_id_to_target(edge_id: Self::EdgeId) -> MatrixGraphNodeId {
         edge_id.target
     }
+
+    #[inline]
+    fn edge_id_from_source_target(
+        source: MatrixGraphNodeId,
+        target: MatrixGraphNodeId,
+    ) -> Self::EdgeId {
+        UnMatrixEdgeId::new(source, target)
+    }
 }
 
 #[inline]
@@ -144,9 +156,7 @@ fn extend_lower_triangular_matrix<T: Default>(
     new_capacity
 }
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> Graph
-    for MatrixGraph<N, E, Undirected, Null, S>
-{
+impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> Graph for UnMatrixGraph<N, E, Null, S> {
     type EdgeData<'graph>
         = E
     where
@@ -176,9 +186,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> Graph
 }
 
 impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> UndirectedGraph
-    for MatrixGraph<N, E, Undirected, Null, S>
-where
-    Self: MatrixGraphExtras<N>,
+    for UnMatrixGraph<N, E, Null, S>
 {
     #[inline]
     fn density_hint(&self) -> DensityHint {

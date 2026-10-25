@@ -1,5 +1,6 @@
 use core::{cmp, hash::BuildHasher, marker::PhantomData};
 
+use foldhash::fast::RandomState;
 use petgraph_core::{
     edge::{EdgeMut, EdgeRef},
     graph::{Cardinality, DensityHint, DirectedGraph, Graph},
@@ -12,6 +13,11 @@ use crate::{
     private::Sealed,
 };
 
+/// A [`MatrixGraph`] with directed edges.
+pub type DiMatrixGraph<N, E, Null = Option<E>, S = RandomState> =
+    MatrixGraph<N, E, Directed, Null, S>;
+
+/// Edge identifier type for a directed [`MatrixGraph`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DiMatrixEdgeId {
     pub source: MatrixGraphNodeId,
@@ -38,13 +44,11 @@ impl core::fmt::Display for DiMatrixEdgeId {
 
 impl Id for DiMatrixEdgeId {}
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>, S> Sealed for MatrixGraph<N, E, Directed, Null, S> {}
+impl<N, E, Null: NicheWrapper<Wrapped = E>, S> Sealed for DiMatrixGraph<N, E, Null, S> {}
 
 impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
-    for MatrixGraph<N, E, Directed, Null, S>
+    for DiMatrixGraph<N, E, Null, S>
 {
-    type EdgeId = DiMatrixEdgeId;
-
     #[inline]
     fn to_edge_position(
         &self,
@@ -126,6 +130,14 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
     fn edge_id_to_target(edge_id: Self::EdgeId) -> MatrixGraphNodeId {
         edge_id.target
     }
+
+    #[inline]
+    fn edge_id_from_source_target(
+        source: MatrixGraphNodeId,
+        target: MatrixGraphNodeId,
+    ) -> Self::EdgeId {
+        DiMatrixEdgeId::new(source, target)
+    }
 }
 
 #[inline]
@@ -178,9 +190,7 @@ fn extend_flat_square_matrix<T: Default>(
     new_node_capacity
 }
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> Graph
-    for MatrixGraph<N, E, Directed, Null, S>
-{
+impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> Graph for DiMatrixGraph<N, E, Null, S> {
     type EdgeData<'graph>
         = E
     where
@@ -210,9 +220,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> Graph
 }
 
 impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> DirectedGraph
-    for MatrixGraph<N, E, Directed, Null, S>
-where
-    Self: MatrixGraphExtras<N>,
+    for DiMatrixGraph<N, E, Null, S>
 {
     #[inline]
     fn density_hint(&self) -> DensityHint {
