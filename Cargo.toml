@@ -20,7 +20,7 @@ rust-version = "1.85"
 [workspace.dependencies]
 petgraph-core = { path = "crates/core", default-features = false }
 # TODO: Change this to crates io, once new minor version is released.
-petgraph-matrix-graph = { path = "crates/matrix_graph" }
+petgraph-matrix-graph = { path = "crates/matrix_graph", default-features = false }
 petgraph-old          = { git = "https://github.com/petgraph/petgraph", branch = "0.8", package = "petgraph" }
 
 fixedbitset = { version = "0.5.7", default-features = false }

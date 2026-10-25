@@ -182,7 +182,7 @@ fn extend_flat_square_matrix<T: Default>(
             }
         } else {
             for i in (0..old_node_capacity).rev() {
-                node_adjacencies.as_mut_slice().swap(pos + i, new_pos + i);
+                node_adjacencies.swap(pos + i, new_pos + i);
             }
         }
     }
@@ -1071,7 +1071,7 @@ mod tests {
         assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
 
-        graph.add_edge(node_a, node_b, 12);
+        graph.add_edge(node_a, node_b, 12).unwrap();
 
         assert!(graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 1);
@@ -1083,7 +1083,9 @@ mod tests {
             &12
         );
 
-        graph.remove_edge(DiMatrixEdgeId::new(node_a, node_b));
+        graph
+            .remove_edge(DiMatrixEdgeId::new(node_a, node_b))
+            .unwrap();
 
         assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
@@ -1098,7 +1100,7 @@ mod tests {
         let node_a = graph.add_node(()).unwrap();
         let node_b = graph.add_node(()).unwrap();
 
-        graph.add_edge(node_a, node_b, 0);
+        graph.add_edge(node_a, node_b, 0).unwrap();
     }
 
     #[test]
@@ -1113,7 +1115,7 @@ mod tests {
         assert_eq!(graph.edge_count(), 0);
 
         let val = 12.0;
-        graph.add_edge(node_a, node_b, val);
+        graph.add_edge(node_a, node_b, val).unwrap();
 
         assert!(graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 1);
@@ -1127,14 +1129,16 @@ mod tests {
                 <= 0.0
         );
 
-        graph.remove_edge(DiMatrixEdgeId::new(node_a, node_b));
+        graph
+            .remove_edge(DiMatrixEdgeId::new(node_a, node_b))
+            .unwrap();
 
         assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
-    #[should_panic = "called `Option::unwrap()` on a `None` value"]
+    #[should_panic = "called `Result::unwrap()` on an `Err` value"]
     fn test_remove_edge() {
         let mut graph = MatrixGraph::<char, u32>::new_directed();
         let node_a = graph.add_node('a').unwrap();
@@ -1184,7 +1188,7 @@ mod tests {
         graph: &mut MatrixGraph<(), (), Directed, Option<()>, foldhash::fast::RandomState>,
         edge_id: DiMatrixEdgeId,
     ) {
-        graph.remove_edge(edge_id);
+        graph.remove_edge(edge_id).unwrap();
     }
 
     test_directed_graph!(
