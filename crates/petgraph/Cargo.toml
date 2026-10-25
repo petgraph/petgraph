@@ -26,7 +26,7 @@ petgraph-algorithms = { workspace = true, optional = true }
 [features]
 std = ["alloc", "petgraph-core/std"]
 alloc = ["petgraph-core/alloc", "petgraph-algorithms?/alloc"]
-hashbrown = ["petgraph-core/hashbrown", "petgraph-algorithms?/hashbrown"]
+hashbrown = ["petgraph-core/hashbrown"]
 petgraph-old = ["dep:petgraph-old"]
 petgraph-algorithms = ["dep:petgraph-algorithms"]
 default = ["std", "hashbrown", "petgraph-algorithms"]
