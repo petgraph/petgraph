@@ -1,9 +1,18 @@
-use petgraph_algorithms::flows::max_flow::{
-    MaxFlow, dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp,
+use core::ops::{Add, Sub};
+
+use derive_more::{Add, Display, Sub};
+use petgraph_algorithms::{
+    flows::max_flow::{
+        MaxFlow, MaxFlowConfigError, dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp,
+    },
+    traits::{Bounded, Measure, MinMax, NonNegative, Zero},
 };
 use petgraph_core::{
-    graph::{DirectedGraph, EditableGraph, storable::StorableGraph},
-    utils::test_graphs::directed::DirectedTestGraph,
+    graph::{
+        DirectedGraph, EditableGraph,
+        storable::{DataContainer, StorableGraph},
+    },
+    utils::test_graphs::directed::{DirEdgeId, DirNodeId, DirectedTestGraph},
 };
 
 use crate::run_macro_for_all_dir_graphs;
@@ -63,6 +72,14 @@ macro_rules! test_max_flow_all_examples {
         }
 
         #[test]
+        fn test_float_rounding() {
+            crate::flows::max_flow::test_max_flow_float_rounding(
+                $graph_constructor,
+                $max_flow_algorithm,
+            );
+        }
+
+        #[test]
         fn test_one() {
             crate::flows::max_flow::test_max_flow_one($graph_constructor, $max_flow_algorithm);
         }
@@ -111,6 +128,50 @@ macro_rules! test_max_flow_all_examples {
 
 run_macro_for_all_dir_graphs!(test_max_flow_on_graph);
 
+#[test]
+fn test_max_flow_no_source_or_sink() {
+    let mut graph = DirectedTestGraph::<(), u32, DirNodeId, DirEdgeId>::new();
+    let node = graph.add_node(());
+    let node2 = graph.add_node(());
+    graph.add_edge(node, node2, 1).unwrap();
+
+    let edmonds_karp_result = EdmondsKarp::new(&graph).with_sink(node2).run();
+    assert!(matches!(
+        edmonds_karp_result,
+        Err(MaxFlowConfigError::SourceNodeNotSet)
+    ));
+
+    let dinics_result = Dinics::new(&graph).with_sink(node2).run();
+    assert!(matches!(
+        dinics_result,
+        Err(MaxFlowConfigError::SourceNodeNotSet)
+    ));
+
+    let max_flow_result = MaxFlow::new(&graph).with_sink(node2).run();
+    assert!(matches!(
+        max_flow_result,
+        Err(MaxFlowConfigError::SourceNodeNotSet)
+    ));
+
+    let edmonds_karp_result = EdmondsKarp::new(&graph).with_source(node2).run();
+    assert!(matches!(
+        edmonds_karp_result,
+        Err(MaxFlowConfigError::SinkNodeNotSet)
+    ));
+
+    let dinics_result = Dinics::new(&graph).with_source(node2).run();
+    assert!(matches!(
+        dinics_result,
+        Err(MaxFlowConfigError::SinkNodeNotSet)
+    ));
+
+    let max_flow_result = MaxFlow::new(&graph).with_source(node2).run();
+    assert!(matches!(
+        max_flow_result,
+        Err(MaxFlowConfigError::SinkNodeNotSet)
+    ));
+}
+
 fn test_max_flow_source_equals_sink<
     G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,
 >(
@@ -123,6 +184,81 @@ fn test_max_flow_source_equals_sink<
     graph.add_edge(node, node2, 1).unwrap();
     let (max_flow, _) = flow_algorithm(&graph, node, node);
     assert_eq!(0, max_flow);
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default, Add, Sub, Display)]
+struct NonNegativef64(f64);
+
+impl NonNegative for NonNegativef64 {}
+
+impl MinMax for NonNegativef64 {
+    fn min_cmp(&self, b: &Self) -> Self {
+        if self.0 < b.0 { *self } else { *b }
+    }
+
+    fn max_cmp(&self, b: &Self) -> Self {
+        if self.0 > b.0 { *self } else { *b }
+    }
+}
+
+impl Bounded for NonNegativef64 {
+    fn min() -> Self {
+        NonNegativef64(0.0)
+    }
+
+    fn max() -> Self {
+        NonNegativef64(f64::MAX)
+    }
+}
+
+impl Zero for NonNegativef64 {
+    fn zero() -> Self {
+        NonNegativef64(0.0)
+    }
+}
+
+fn test_max_flow_float_rounding<
+    G: DirectedGraph
+        + StorableGraph
+        + EditableGraph<OwnedNodeData = (), OwnedEdgeData = NonNegativef64>,
+>(
+    graph_constructor: impl Fn() -> G,
+    flow_algorithm: impl Fn(
+        &G,
+        G::NodeId,
+        G::NodeId,
+    ) -> (NonNegativef64, G::EdgeDataContainer<NonNegativef64>),
+) {
+    // Pushing 0.3 and then the remaining `0.9 - 0.3` through edge 0 -> 1 makes its flow
+    // 0.9000000000000001, so its residual capacity drops to -1.1e-16 instead of exactly 0.
+    // We test, that the algorithm correctly handles this rounding error.
+    let mut graph = graph_constructor();
+    let mut nodes = Vec::new();
+    for _ in 0..5 {
+        nodes.push(graph.add_node(()).unwrap());
+    }
+    let mut edges = Vec::new();
+    for (start, end, capacity) in [
+        (0, 1, NonNegativef64(0.9)),
+        (1, 4, NonNegativef64(0.3)),
+        (1, 2, NonNegativef64(0.9 - 0.3)),
+        (2, 4, NonNegativef64(0.9 - 0.3)),
+        (1, 3, NonNegativef64(0.9 - 0.3)),
+        (3, 4, NonNegativef64(0.9 - 0.3)),
+    ] {
+        let edge = graph.add_edge(nodes[start], nodes[end], capacity).unwrap();
+        edges.push((edge, capacity));
+    }
+    let (max_flow, flows) = flow_algorithm(&graph, nodes[0], nodes[4]);
+    assert!((max_flow.0 - 0.9).abs() < 1e-9, "max flow {max_flow}");
+    for (edge, capacity) in edges {
+        let flow = *flows.get(edge);
+        assert!(flow.0 >= 0.0, "negative flow {flow}");
+        assert!(
+            flow.0 <= capacity.0 + 1e-9,
+            "flow {flow} exceeds capacity {capacity}"
+        );
+    }
 }
 
 fn test_max_flow_one<

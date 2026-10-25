@@ -29,7 +29,12 @@ pub struct EdmondsKarp<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> {
     capacities: CapFn,
 }
 
-impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'graph_ref, G, CapFn, C> {
+impl<'graph_ref, G>
+    EdmondsKarp<'graph_ref, G, fn(G::EdgeId) -> G::EdgeData<'graph_ref>, G::EdgeData<'graph_ref>>
+where
+    G: DirectedGraph,
+    G::EdgeData<'graph_ref>: Clone,
+{
     /// Creates a new instance of the Edmonds-Karp algorithm with the provided graph.
     ///
     /// Data of the graph's edges is interpreted as capacities of edges.
@@ -55,7 +60,9 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'graph_ref,
             network.edge(edge_id).unwrap().data.borrow().clone()
         })
     }
+}
 
+impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> EdmondsKarp<'graph_ref, G, CapFn, C> {
     /// Creates a new instance of the Edmonds-Karp algorithm with the provided graph and capacity
     /// function.
     ///
