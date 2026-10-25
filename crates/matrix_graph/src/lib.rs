@@ -8,11 +8,11 @@ use alloc::{fmt, vec, vec::Vec};
 use core::{
     cmp,
     convert::Infallible,
+    error::Error,
     fmt::{Debug, Display},
     hash::BuildHasher,
     marker::PhantomData,
 };
-use std::error::Error;
 
 use foldhash::fast::RandomState;
 use indexmap::IndexSet;
@@ -390,8 +390,7 @@ impl<N, E> MatrixGraph<N, E, Undirected, Option<E>, RandomState> {
 impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> EditableGraph
     for MatrixGraph<N, E, Dir, Null, S>
 where
-    Self: MatrixGraphExtras<N>,
-    Self: Graph<NodeId = MatrixGraphNodeId>,
+    Self: Graph<NodeId = MatrixGraphNodeId> + MatrixGraphExtras<N>,
 {
     type AddEdgeError = AddEdgeError;
     type AddNodeError = Infallible;
@@ -410,9 +409,9 @@ where
         target: Self::NodeId,
         data: Self::OwnedEdgeData,
     ) -> Result<Self::EdgeId, Self::AddEdgeError> {
-        if !self.node_data.get(source.0).is_some() {
+        if self.node_data.get(source.0).is_none() {
             return Err(AddEdgeError::SourceNodeDoesNotExist(source));
-        } else if !self.node_data.get(target.0).is_some() {
+        } else if self.node_data.get(target.0).is_none() {
             return Err(AddEdgeError::TargetNodeDoesNotExist(target));
         }
         self.extend_capacity_for_edge(source, target);
@@ -439,7 +438,7 @@ where
                 <Self as MatrixGraphExtras<N>>::edge_id_to_source(id),
                 <Self as MatrixGraphExtras<N>>::edge_id_to_target(id),
             )
-            .ok_or_else(|| EdgeRemovalError::EdgeDoesNotExist(id))?;
+            .ok_or(EdgeRemovalError::EdgeDoesNotExist(id))?;
         let old_data = core::mem::take(&mut self.flattened_edge_data[position]).into();
         let Some(edge_data) = old_data else {
             return Err(EdgeRemovalError::EdgeDoesNotExist(id));
@@ -452,8 +451,7 @@ where
         &mut self,
         id: Self::NodeId,
     ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
-        <Self as MatrixGraphExtras<N>>::remove_node_internal(self, id)
-            .ok_or_else(|| RemoveNodeError::NodeDoesNotExist(id))
+        Self::remove_node_internal(self, id).ok_or(RemoveNodeError::NodeDoesNotExist(id))
     }
 }
 
@@ -466,8 +464,8 @@ pub enum RemoveNodeError {
 impl Display for RemoveNodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RemoveNodeError::NodeDoesNotExist(node_id) => {
-                write!(f, "Node {} does not exist in the graph", node_id)
+            Self::NodeDoesNotExist(node_id) => {
+                write!(f, "Node {node_id} does not exist in the graph")
             }
         }
     }
@@ -488,17 +486,16 @@ pub enum AddEdgeError {
 impl Display for AddEdgeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AddEdgeError::SourceNodeDoesNotExist(node_id) => {
-                write!(f, "Source node {} does not exist in the graph", node_id)
+            Self::SourceNodeDoesNotExist(node_id) => {
+                write!(f, "Source node {node_id} does not exist in the graph")
             }
-            AddEdgeError::TargetNodeDoesNotExist(node_id) => {
-                write!(f, "Target node {} does not exist in the graph", node_id)
+            Self::TargetNodeDoesNotExist(node_id) => {
+                write!(f, "Target node {node_id} does not exist in the graph")
             }
-            AddEdgeError::EdgeAlreadyExists(source, target) => {
+            Self::EdgeAlreadyExists(source, target) => {
                 write!(
                     f,
-                    "Edge from {} to {} already exists in the graph",
-                    source, target
+                    "Edge from {source} to {target} already exists in the graph",
                 )
             }
         }
@@ -516,8 +513,8 @@ pub enum EdgeRemovalError<EdgeId> {
 impl<EdgeId: Display> Display for EdgeRemovalError<EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EdgeRemovalError::EdgeDoesNotExist(edge_id) => {
-                write!(f, "Edge {} does not exist in the graph", edge_id)
+            Self::EdgeDoesNotExist(edge_id) => {
+                write!(f, "Edge {edge_id} does not exist in the graph")
             }
         }
     }
