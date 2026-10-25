@@ -1,6 +1,5 @@
-use core::{cmp, hash::BuildHasher, marker::PhantomData};
+use core::{cmp, marker::PhantomData};
 
-use foldhash::fast::RandomState;
 use petgraph_core::{
     edge::{EdgeMut, EdgeRef},
     graph::{Cardinality, DensityHint, DirectedGraph, Graph},
@@ -14,8 +13,7 @@ use crate::{
 };
 
 /// A [`MatrixGraph`] with directed edges.
-pub type DiMatrixGraph<N, E, Null = Option<E>, S = RandomState> =
-    MatrixGraph<N, E, Directed, Null, S>;
+pub type DiMatrixGraph<N, E, Null = Option<E>> = MatrixGraph<N, E, Directed, Null>;
 
 /// Edge identifier type for a directed [`MatrixGraph`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -44,11 +42,9 @@ impl core::fmt::Display for DiMatrixEdgeId {
 
 impl Id for DiMatrixEdgeId {}
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>, S> Sealed for DiMatrixGraph<N, E, Null, S> {}
+impl<N, E, Null: NicheWrapper<Wrapped = E>> Sealed for DiMatrixGraph<N, E, Null> {}
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
-    for DiMatrixGraph<N, E, Null, S>
-{
+impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for DiMatrixGraph<N, E, Null> {
     #[inline]
     fn to_edge_position(
         &self,
@@ -97,7 +93,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
         // incident to the node. But the node might still be in the node_data (i.e. the
         // graph) as an isolated node
         if node.0 < self.node_capacity {
-            for (id, _) in self.node_data.iter() {
+            for (id, _) in &self.node_data {
                 let position = self.to_edge_position(node, MatrixGraphNodeId(id));
                 if let Some(pos) = position {
                     let entry = &mut self.flattened_edge_data[pos];
@@ -190,7 +186,7 @@ fn extend_flat_square_matrix<T: Default>(
     new_node_capacity
 }
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> Graph for DiMatrixGraph<N, E, Null, S> {
+impl<N, E, Null: NicheWrapper<Wrapped = E>> Graph for DiMatrixGraph<N, E, Null> {
     type EdgeData<'graph>
         = E
     where
@@ -219,9 +215,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> Graph for DiMatrixGr
     type NodeId = MatrixGraphNodeId;
 }
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> DirectedGraph
-    for DiMatrixGraph<N, E, Null, S>
-{
+impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E, Null> {
     #[inline]
     fn density_hint(&self) -> DensityHint {
         DensityHint::Dense
@@ -638,7 +632,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> DirectedGraph
     // Existence checks
     #[inline]
     fn contains_node(&self, node: Self::NodeId) -> bool {
-        self.node_data.get(node.0).is_some()
+        self.node_data.contains(node.0)
     }
 
     #[inline]
@@ -1062,8 +1056,7 @@ mod tests {
 
     #[test]
     fn test_alternative_null_type() {
-        let mut graph: MatrixGraph<(), i32, Directed, NotZero<i32>, foldhash::fast::RandomState> =
-            MatrixGraph::default();
+        let mut graph: MatrixGraph<(), i32, Directed, NotZero<i32>> = MatrixGraph::default();
 
         let node_a = graph.add_node(()).unwrap();
         let node_b = graph.add_node(()).unwrap();
@@ -1094,8 +1087,7 @@ mod tests {
     #[test]
     #[should_panic = "assertion failed: !value.is_zero()"]
     fn test_not_zero_asserted() {
-        let mut graph: MatrixGraph<(), i32, Directed, NotZero<i32>, foldhash::fast::RandomState> =
-            MatrixGraph::default();
+        let mut graph: MatrixGraph<(), i32, Directed, NotZero<i32>> = MatrixGraph::default();
 
         let node_a = graph.add_node(()).unwrap();
         let node_b = graph.add_node(()).unwrap();
@@ -1105,8 +1097,7 @@ mod tests {
 
     #[test]
     fn test_not_zero_float() {
-        let mut graph: MatrixGraph<(), f32, Directed, NotZero<f32>, foldhash::fast::RandomState> =
-            MatrixGraph::default();
+        let mut graph: MatrixGraph<(), f32, Directed, NotZero<f32>> = MatrixGraph::default();
 
         let node_a = graph.add_node(()).unwrap();
         let node_b = graph.add_node(()).unwrap();
@@ -1160,22 +1151,16 @@ mod tests {
         );
     }
 
-    fn add_node(
-        graph: &mut MatrixGraph<(), (), Directed, Option<()>, foldhash::fast::RandomState>,
-        _: (),
-    ) -> MatrixGraphNodeId {
+    fn add_node(graph: &mut MatrixGraph<(), (), Directed, Option<()>>, _: ()) -> MatrixGraphNodeId {
         graph.add_node(()).unwrap()
     }
 
-    fn remove_node(
-        graph: &mut MatrixGraph<(), (), Directed, Option<()>, foldhash::fast::RandomState>,
-        node: MatrixGraphNodeId,
-    ) {
+    fn remove_node(graph: &mut MatrixGraph<(), (), Directed, Option<()>>, node: MatrixGraphNodeId) {
         EditableGraph::remove_node(graph, node).unwrap();
     }
 
     fn add_edge_unwrap(
-        graph: &mut MatrixGraph<(), (), Directed, Option<()>, foldhash::fast::RandomState>,
+        graph: &mut MatrixGraph<(), (), Directed, Option<()>>,
         source: MatrixGraphNodeId,
         target: MatrixGraphNodeId,
         _: (),
@@ -1184,15 +1169,12 @@ mod tests {
         DiMatrixEdgeId::new(source, target)
     }
 
-    fn remove_edge(
-        graph: &mut MatrixGraph<(), (), Directed, Option<()>, foldhash::fast::RandomState>,
-        edge_id: DiMatrixEdgeId,
-    ) {
+    fn remove_edge(graph: &mut MatrixGraph<(), (), Directed, Option<()>>, edge_id: DiMatrixEdgeId) {
         graph.remove_edge(edge_id).unwrap();
     }
 
     test_directed_graph!(
-        MatrixGraph::<(), (), Directed, Option<()>, foldhash::fast::RandomState>::new_directed,
+        MatrixGraph::<(), (), Directed, Option<()>>::new_directed,
         add_node,
         remove_node,
         add_edge_unwrap,

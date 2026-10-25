@@ -27,6 +27,7 @@ fixedbitset = { version = "0.5.7", default-features = false }
 foldhash    = { version = "0.2.0", default-features = false }
 hashbrown   = { version = "^0.17.0", default-features = false }
 indexmap  = { version = "2.14.2", default-features = false }
+slab      = { version = "0.4.12", default-features = false }
 
 [workspace.dev-dependencies]
 petgraph-core = { path = "crates/core", features = ["utils"] }
