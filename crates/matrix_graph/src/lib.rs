@@ -10,16 +10,14 @@ use core::{
     convert::Infallible,
     error::Error,
     fmt::{Debug, Display},
-    hash::BuildHasher,
     marker::PhantomData,
 };
 
-use foldhash::fast::RandomState;
-use indexmap::IndexSet;
 use petgraph_core::{
     graph::{Directed, EditableGraph, Graph, Undirected},
     id::Id,
 };
+use slab::Slab;
 
 use crate::private::Sealed;
 
@@ -247,7 +245,7 @@ pub trait MatrixGraphExtras<N>: Sealed + Graph {
     ) -> Self::EdgeId;
 }
 
-/// `MatrixGraph<N, E, S, Null, Ty>` is a graph using an adjacency matrix representation.
+/// `MatrixGraph<N, E, Dir, Null>` is a graph using an adjacency matrix representation.
 ///
 /// It uses a flattened 2D array to store edge data, and a separate storage for node data and
 /// management of node indices. The graph can be instantiated as either directed or undirected.
@@ -265,9 +263,6 @@ pub trait MatrixGraphExtras<N>: Sealed + Graph {
 /// - Nullable type `Null`, which denotes the edges' presence (defaults to `Option<E>`). You may
 ///   specify [`NotZero<E>`](struct.NotZero.html) if you want to use a sentinel value (such as 0) to
 ///   mark the absence of an edge.
-/// - Hasher type `S` that determines how node indices are hashed (defaults to `RandomState`). This
-///   is used to keep track of removed node indices and reuse them when adding new nodes, thus
-///   optimizing memory usage.
 ///
 /// The graph uses **O(|V^2|)** space, with fast edge insertion & amortized node insertion, as well
 /// as efficient graph search and graph algorithms on dense graphs.
@@ -281,13 +276,7 @@ pub trait MatrixGraphExtras<N>: Sealed + Graph {
 /// indices of removed nodes for new nodes filling in the gaps. For most use cases however, the
 /// graph is assumed to have dense node indices.
 #[derive(Clone)]
-pub struct MatrixGraph<
-    N,
-    E,
-    Dir = Directed,
-    Null: NicheWrapper<Wrapped = E> = Option<E>,
-    S = RandomState,
-> {
+pub struct MatrixGraph<N, E, Dir = Directed, Null: NicheWrapper<Wrapped = E> = Option<E>> {
     /// Edge Data including presence information.
     flattened_edge_data: Vec<Null>,
     /// Node data and management of node indices.
@@ -295,7 +284,7 @@ pub struct MatrixGraph<
     /// Nodes may be in `node_data` but not be within the current `node_capacity`, if they are
     /// isolated nodes. The flattened edge data and thus `node_capacity` is updated lazily,
     /// that is, only once an edge adjacent to such a node is actually created.
-    node_data: IdStorage<N, S>,
+    node_data: Slab<N>,
     /// The current edge capacity with respect to the number of nodes. This is used to determine
     /// when the backing matrix needs to be resized.
     node_capacity: usize,
@@ -304,7 +293,7 @@ pub struct MatrixGraph<
     directionality: PhantomData<Dir>,
 }
 
-impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraph<N, E, Dir, Null, S> {
+impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>> MatrixGraph<N, E, Dir, Null> {
     /// Remove all nodes and edges.
     pub fn clear(&mut self) {
         for edge in &mut self.flattened_edge_data {
@@ -315,26 +304,18 @@ impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraph<N, 
     }
 }
 
-impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraph<N, E, Dir, Null, S>
+impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>> MatrixGraph<N, E, Dir, Null>
 where
     Self: MatrixGraphExtras<N>,
 {
-    /// Create a new `MatrixGraph` with estimated capacity for nodes.
+    /// Create a new `MatrixGraph` with capacity sufficient to hold the specified number of nodes
+    /// (and any edges between them) without resizing.
     #[must_use]
-    pub fn with_capacity(node_capacity: usize) -> Self
-    where
-        S: Default,
-    {
-        Self::with_capacity_and_hasher(node_capacity, Default::default())
-    }
-
-    /// Create a new `MatrixGraph` which has the specified hasher and capacity sufficient
-    /// to hold the specified number of nodes (and any edges between them) without resizing.
-    pub fn with_capacity_and_hasher(node_capacity: usize, hasher: S) -> Self {
+    pub fn with_capacity(node_capacity: usize) -> Self {
         let mut graph = Self {
             flattened_edge_data: vec![],
             node_capacity: 0,
-            node_data: IdStorage::with_capacity_and_hasher(node_capacity, hasher),
+            node_data: Slab::with_capacity(node_capacity),
             edge_count: 0,
             directionality: PhantomData,
         };
@@ -355,8 +336,7 @@ where
     }
 }
 
-impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher + Default> Default
-    for MatrixGraph<N, E, Dir, Null, S>
+impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>> Default for MatrixGraph<N, E, Dir, Null>
 where
     Self: MatrixGraphExtras<N>,
 {
@@ -365,7 +345,7 @@ where
     }
 }
 
-impl<N, E> MatrixGraph<N, E, Directed, Option<E>, RandomState> {
+impl<N, E> MatrixGraph<N, E, Directed, Option<E>> {
     /// Create a new `MatrixGraph` with directed edges.
     ///
     /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
@@ -376,7 +356,7 @@ impl<N, E> MatrixGraph<N, E, Directed, Option<E>, RandomState> {
     }
 }
 
-impl<N, E> MatrixGraph<N, E, Undirected, Option<E>, RandomState> {
+impl<N, E> MatrixGraph<N, E, Undirected, Option<E>> {
     /// Create a new `MatrixGraph` with undirected edges.
     ///
     /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
@@ -387,8 +367,7 @@ impl<N, E> MatrixGraph<N, E, Undirected, Option<E>, RandomState> {
     }
 }
 
-impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> EditableGraph
-    for MatrixGraph<N, E, Dir, Null, S>
+impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>> EditableGraph for MatrixGraph<N, E, Dir, Null>
 where
     Self: Graph<NodeId = MatrixGraphNodeId> + MatrixGraphExtras<N>,
 {
@@ -400,7 +379,7 @@ where
     type RemoveNodeError = RemoveNodeError;
 
     fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
-        Ok(MatrixGraphNodeId(self.node_data.add(data)))
+        Ok(MatrixGraphNodeId(self.node_data.insert(data)))
     }
 
     fn add_edge(
@@ -409,9 +388,9 @@ where
         target: Self::NodeId,
         data: Self::OwnedEdgeData,
     ) -> Result<Self::EdgeId, Self::AddEdgeError> {
-        if self.node_data.get(source.0).is_none() {
+        if !self.node_data.contains(source.0) {
             return Err(AddEdgeError::SourceNodeDoesNotExist(source));
-        } else if self.node_data.get(target.0).is_none() {
+        } else if !self.node_data.contains(target.0) {
             return Err(AddEdgeError::TargetNodeDoesNotExist(target));
         }
         self.extend_capacity_for_edge(source, target);
@@ -522,98 +501,6 @@ impl<EdgeId: Display> Display for EdgeRemovalError<EdgeId> {
 
 impl<EdgeId: Display + Debug> Error for EdgeRemovalError<EdgeId> {}
 
-#[derive(Debug, Clone)]
-struct IdStorage<T, S = RandomState> {
-    /// The elements of the storage. An element is `None` if and only if the corresponding node has
-    /// been removed.
-    elements: Vec<Option<T>>,
-    /// The current highest index that has ever been used in the storage. Used to determine
-    /// the index of a new node.
-    upper_bound: usize,
-    /// The set of removed node indices.
-    removed_ids: IndexSet<usize, S>,
-}
-
-impl<T, S: BuildHasher> IdStorage<T, S> {
-    fn with_capacity_and_hasher(capacity: usize, hasher: S) -> Self {
-        Self {
-            elements: Vec::with_capacity(capacity),
-            upper_bound: 0,
-            removed_ids: IndexSet::with_hasher(hasher),
-        }
-    }
-
-    fn get(&self, id: usize) -> Option<&T> {
-        self.elements.get(id)?.as_ref()
-    }
-
-    fn contains(&self, id: usize) -> bool {
-        self.elements.get(id).is_some()
-    }
-
-    fn get_mut(&mut self, id: usize) -> Option<&mut T> {
-        self.elements.get_mut(id)?.as_mut()
-    }
-
-    fn add(&mut self, element: T) -> usize {
-        let id = if let Some(id) = self.removed_ids.pop() {
-            id
-        } else {
-            let id = self.upper_bound;
-            self.upper_bound += 1;
-
-            self.elements.resize_with(id + 1, || None);
-
-            id
-        };
-
-        self.elements[id] = Some(element);
-
-        id
-    }
-
-    fn remove(&mut self, id: usize) -> T {
-        let data = self.elements[id].take().unwrap();
-        if self.upper_bound - id == 1 {
-            self.upper_bound -= 1;
-        } else {
-            self.removed_ids.insert(id);
-        }
-        data
-    }
-
-    /// Remove all elements from the storage.
-    fn clear(&mut self) {
-        self.upper_bound = 0;
-        self.elements.clear();
-        self.removed_ids.clear();
-    }
-
-    /// Returns the number of existing elements in the storage.
-    #[inline]
-    fn len(&self) -> usize {
-        self.upper_bound - self.removed_ids.len()
-    }
-
-    /// Returns an iterator over the (usize, data) pairs in the storage / graph for all existing
-    /// nodes.
-    fn iter(&self) -> impl Iterator<Item = (usize, &T)> {
-        self.elements
-            .iter()
-            .enumerate()
-            .filter_map(|(id, element)| element.as_ref().map(|element| (id, element)))
-    }
-
-    /// Returns an iterator over the `(usize, data)` tuples in the storage for all existing
-    /// nodes, with mutable access to the data.
-    fn iter_mut(&mut self) -> impl Iterator<Item = (usize, &mut T)> {
-        self.elements
-            .iter_mut()
-            .enumerate()
-            .filter_map(|(id, element)| element.as_mut().map(|element| (id, element)))
-    }
-}
-
 /// This is a helper type for functions that return different types of iterators with the same item
 /// type. It is taken from the `itertools` crate, as it is the only type we need from the crate and
 /// thus we can avoid pulling in the entire dependency just for this.
@@ -653,29 +540,29 @@ mod tests {
     }
 
     #[test]
-    fn test_id_storage() {
-        let mut storage: IdStorage<char> =
-            IdStorage::with_capacity_and_hasher(0, RandomState::default());
-        let element_a = storage.add('a');
-        let element_b = storage.add('b');
-        let element_c = storage.add('c');
+    fn test_node_id_reuse() {
+        let mut graph = MatrixGraph::<char, ()>::new_directed();
+        let node_a = graph.add_node('a').unwrap();
+        let node_b = graph.add_node('b').unwrap();
+        let node_c = graph.add_node('c').unwrap();
 
-        assert!(element_a < element_b && element_b < element_c);
-
+        assert!(node_a < node_b && node_b < node_c);
         assert_eq!(
-            storage.iter().map(|(id, _)| id).collect::<Vec<_>>(),
-            vec![element_a, element_b, element_c]
+            graph.nodes().map(|node| node.id).collect::<Vec<_>>(),
+            vec![node_a, node_b, node_c]
         );
 
-        storage.remove(element_b);
-
-        let bb = storage.add('B');
-        assert_eq!(element_b, bb);
-
-        // list IDs
+        graph.remove_node(node_b).unwrap();
         assert_eq!(
-            storage.iter().map(|(id, _)| id).collect::<Vec<_>>(),
-            vec![element_a, element_b, element_c]
+            graph.remove_node(node_b),
+            Err(RemoveNodeError::NodeDoesNotExist(node_b))
+        );
+
+        let node_bb = graph.add_node('B').unwrap();
+        assert_eq!(node_b, node_bb);
+        assert_eq!(
+            graph.nodes().map(|node| node.id).collect::<Vec<_>>(),
+            vec![node_a, node_b, node_c]
         );
     }
 }
