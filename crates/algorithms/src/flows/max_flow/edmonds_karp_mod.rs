@@ -189,6 +189,7 @@ where
 /// [ford_fulkerson]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 /// [edmonds_karp_link]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
 #[cfg(feature = "alloc")]
+#[expect(clippy::missing_panics_doc, reason = "source and sink are always set")]
 pub fn edmonds_karp<G, C>(
     network: &G,
     source: G::NodeId,
@@ -199,7 +200,6 @@ where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + Default,
 {
-    #[allow(clippy::missing_panics_doc)]
     EdmondsKarp::new_with_capacities(network, capacities)
         .with_source(source)
         .with_sink(sink)

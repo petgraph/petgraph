@@ -1,4 +1,9 @@
-use derive_more::{Add, Display, Sub};
+use core::{
+    fmt,
+    fmt::Display,
+    ops::{Add, Sub},
+};
+
 use petgraph_algorithms::{
     flows::max_flow::{
         MaxFlow, MaxFlowConfigError, dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp,
@@ -184,48 +189,17 @@ fn test_max_flow_source_equals_sink<
     assert_eq!(0, max_flow);
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default, Add, Sub, Display)]
-struct NonNegativef64(f64);
-
-impl NonNegative for NonNegativef64 {}
-
-impl MinMax for NonNegativef64 {
-    fn min_cmp(&self, other: &Self) -> Self {
-        if self.0 < other.0 { *self } else { *other }
-    }
-
-    fn max_cmp(&self, other: &Self) -> Self {
-        if self.0 > other.0 { *self } else { *other }
-    }
-}
-
-impl Bounded for NonNegativef64 {
-    fn min() -> Self {
-        Self(0.0)
-    }
-
-    fn max() -> Self {
-        Self(f64::MAX)
-    }
-}
-
-impl Zero for NonNegativef64 {
-    fn zero() -> Self {
-        Self(0.0)
-    }
-}
-
 fn test_max_flow_float_rounding<
     G: DirectedGraph
         + StorableGraph
-        + EditableGraph<OwnedNodeData = (), OwnedEdgeData = NonNegativef64>,
+        + EditableGraph<OwnedNodeData = (), OwnedEdgeData = NonNegativeF64>,
 >(
     graph_constructor: impl Fn() -> G,
     flow_algorithm: impl Fn(
         &G,
         G::NodeId,
         G::NodeId,
-    ) -> (NonNegativef64, G::EdgeDataContainer<NonNegativef64>),
+    ) -> (NonNegativeF64, G::EdgeDataContainer<NonNegativeF64>),
 ) {
     // Pushing 0.3 and then the remaining `0.9 - 0.3` through edge 0 -> 1 makes its flow
     // 0.9000000000000001, so its residual capacity drops to -1.1e-16 instead of exactly 0.
@@ -237,12 +211,12 @@ fn test_max_flow_float_rounding<
     }
     let mut edges = Vec::new();
     for (start, end, capacity) in [
-        (0, 1, NonNegativef64(0.9)),
-        (1, 4, NonNegativef64(0.3)),
-        (1, 2, NonNegativef64(0.9 - 0.3)),
-        (2, 4, NonNegativef64(0.9 - 0.3)),
-        (1, 3, NonNegativef64(0.9 - 0.3)),
-        (3, 4, NonNegativef64(0.9 - 0.3)),
+        (0, 1, NonNegativeF64(0.9)),
+        (1, 4, NonNegativeF64(0.3)),
+        (1, 2, NonNegativeF64(0.9 - 0.3)),
+        (2, 4, NonNegativeF64(0.9 - 0.3)),
+        (1, 3, NonNegativeF64(0.9 - 0.3)),
+        (3, 4, NonNegativeF64(0.9 - 0.3)),
     ] {
         let edge = graph.add_edge(nodes[start], nodes[end], capacity).unwrap();
         edges.push((edge, capacity));
@@ -537,4 +511,57 @@ fn test_max_flow_nine<
     // - -- -- 1 -- -- -
 
     assert_eq!(2, flow_algorithm(&graph, node_a, node_d).0);
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
+struct NonNegativeF64(f64);
+
+impl NonNegative for NonNegativeF64 {}
+
+impl MinMax for NonNegativeF64 {
+    fn min_cmp(&self, other: &Self) -> Self {
+        if self.0 < other.0 { *self } else { *other }
+    }
+
+    fn max_cmp(&self, other: &Self) -> Self {
+        if self.0 > other.0 { *self } else { *other }
+    }
+}
+
+impl Bounded for NonNegativeF64 {
+    fn min() -> Self {
+        Self(0.0)
+    }
+
+    fn max() -> Self {
+        Self(f64::MAX)
+    }
+}
+
+impl Zero for NonNegativeF64 {
+    fn zero() -> Self {
+        Self(0.0)
+    }
+}
+
+impl Display for NonNegativeF64 {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.0, fmt)
+    }
+}
+
+impl Add for NonNegativeF64 {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self(self.0 + other.0)
+    }
+}
+
+impl Sub for NonNegativeF64 {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self(self.0 - other.0)
+    }
 }

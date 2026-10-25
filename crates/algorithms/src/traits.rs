@@ -26,7 +26,9 @@ impl_zero!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
 );
 
-/// A type that can only have non-negative values.
+/// A marker for types that only have non-negative values.
+///
+/// May be implemented for wrapper types of types like f32 and f64 at own caution.
 pub trait NonNegative {}
 
 macro_rules! impl_non_negative(

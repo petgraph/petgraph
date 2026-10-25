@@ -47,9 +47,6 @@ where
     pub const fn new(
         network: &'graph_ref G,
     ) -> Dinics<'graph_ref, G, impl Fn(G::EdgeId) -> G::EdgeData<'graph_ref>, G::EdgeData<'graph_ref>>
-    where
-        G: DirectedGraph,
-        G::EdgeData<'graph_ref>: Clone,
     {
         Dinics::new_with_capacities(network, |edge_id| {
             #[expect(clippy::missing_panics_doc, reason = "infallible")]
@@ -188,7 +185,7 @@ where
         C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
         SContainer: StackContainer<G::NodeId> + Clone,
         SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
-        QContainer: QueueContainer<G::NodeId> + Clone,
+        QContainer: QueueContainer<G::NodeId>,
     {
         let source = self.source.ok_or(MaxFlowConfigError::SourceNodeNotSet)?;
         let sink = self.sink.ok_or(MaxFlowConfigError::SinkNodeNotSet)?;
@@ -212,7 +209,7 @@ where
 /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [dinics_link]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
 #[cfg(feature = "alloc")]
-#[allow(clippy::missing_panics_doc)]
+#[expect(clippy::missing_panics_doc, reason = "source and sink are always set")]
 pub fn dinics<G, C>(
     network: &G,
     source: G::NodeId,
@@ -244,7 +241,7 @@ where
     C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
     SContainerNodeId: StackContainer<G::NodeId> + Clone,
     SContainerFlowEdge: StackContainer<FlowEdge<G, C>> + Clone,
-    QContainer: QueueContainer<G::NodeId> + Clone,
+    QContainer: QueueContainer<G::NodeId>,
 {
     if source == sink {
         return MaxFlowOutput {
@@ -309,7 +306,7 @@ where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + NonNegative + Zero,
     SContainer: StackContainer<FlowEdge<G, C>>,
-    QContainer: QueueContainer<G::NodeId> + Clone,
+    QContainer: QueueContainer<G::NodeId>,
 {
     let mut level_graph = network.node_data_container::<usize>(0);
     let mut bfs_queue = queue_container_node_id_constructor();
