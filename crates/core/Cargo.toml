@@ -7,17 +7,17 @@ license.workspace      = true
 repository.workspace   = true
 rust-version.workspace = true
 # We can remove this this crate has been released at least once
-publish                = false
+publish = false
 
 [dependencies]
 foldhash  = { workspace = true, optional = true }
 hashbrown = { workspace = true, optional = true }
 
 [features]
-default = ["std"]
-std = ["alloc"]
-alloc = []
-hashbrown = ["dep:hashbrown"]
+default    = ["std"]
+alloc      = []
+std        = ["alloc"]
+hashbrown  = ["dep:hashbrown"]
 
 # For testing
 test-utils = ["dep:foldhash", "hashbrown", "alloc"]
