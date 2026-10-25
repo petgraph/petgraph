@@ -9,7 +9,7 @@ use petgraph_core::{
 };
 
 use crate::{
-    Directed, Either, MatrixGraph, MatrixGraphExtras, MatrixGraphNodeId, NicheWrapper, ensure_len,
+    Directed, Either, MatrixGraph, MatrixGraphExtras, MatrixGraphNodeId, NicheWrapper,
     private::Sealed,
 };
 
@@ -88,7 +88,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
     }
 
     #[inline]
-    fn remove_node(&mut self, node: MatrixGraphNodeId) -> Option<N> {
+    fn remove_node_internal(&mut self, node: MatrixGraphNodeId) -> Option<N> {
         if !self.node_data.contains(node.0) {
             return None;
         }
@@ -165,7 +165,7 @@ fn extend_flat_square_matrix<T: Default>(
     // Optimization: when resizing the matrix this way we skip the first few grows to make
     // small matrices a bit faster to work with.
 
-    ensure_len(node_adjacencies, new_node_capacity.pow(2));
+    node_adjacencies.resize_with(new_node_capacity.pow(2), || T::default());
     for current in (1..old_node_capacity).rev() {
         let pos = current * old_node_capacity;
         let new_pos = current * new_node_capacity;
@@ -946,9 +946,9 @@ mod tests {
     #[test]
     fn test_remove_node() {
         let mut graph: MatrixGraph<char, ()> = MatrixGraph::new_directed();
-        let node_a = graph.add_node('a');
+        let node_a = graph.add_node('a').unwrap();
 
-        graph.remove_node(node_a);
+        graph.remove_node(node_a).unwrap();
 
         assert_eq!(graph.node_count(), 0);
         assert_eq!(graph.edge_count(), 0);
@@ -957,11 +957,11 @@ mod tests {
     #[test]
     fn test_add_edge() {
         let mut graph = MatrixGraph::<_, _>::new_directed();
-        let node_a = graph.add_node('a');
-        let node_b = graph.add_node('b');
-        let node_c = graph.add_node('c');
-        graph.add_edge(node_a, node_b, ());
-        graph.add_edge(node_b, node_c, ());
+        let node_a = graph.add_node('a').unwrap();
+        let node_b = graph.add_node('b').unwrap();
+        let node_c = graph.add_node('c').unwrap();
+        graph.add_edge(node_a, node_b, ()).unwrap();
+        graph.add_edge(node_b, node_c, ()).unwrap();
         assert_eq!(graph.node_count(), 3);
         assert_eq!(graph.edge_count(), 2);
     }
@@ -970,16 +970,16 @@ mod tests {
     /// Adds an edge that triggers a second extension of the matrix.
     /// From #425
     fn test_add_edge_with_extension() {
-        let mut graph = DiMatrix::<u8, ()>::new_directed();
-        let _node_0 = graph.add_node(0);
-        let node_1 = graph.add_node(1);
-        let node_2 = graph.add_node(2);
-        let node_3 = graph.add_node(3);
-        let node_4 = graph.add_node(4);
-        let _node_5 = graph.add_node(5);
-        graph.add_edge(node_2, node_1, ());
-        graph.add_edge(node_2, node_3, ());
-        graph.add_edge(node_2, node_4, ());
+        let mut graph = DiMatrixGraph::<u8, ()>::new_directed();
+        let _node_0 = graph.add_node(0).unwrap();
+        let node_1 = graph.add_node(1).unwrap();
+        let node_2 = graph.add_node(2).unwrap();
+        let node_3 = graph.add_node(3).unwrap();
+        let node_4 = graph.add_node(4).unwrap();
+        let _node_5 = graph.add_node(5).unwrap();
+        graph.add_edge(node_2, node_1, ()).unwrap();
+        graph.add_edge(node_2, node_3, ()).unwrap();
+        graph.add_edge(node_2, node_4, ()).unwrap();
         assert_eq!(graph.node_count(), 6);
         assert_eq!(graph.edge_count(), 3);
         assert!(graph.contains_edge(DiMatrixEdgeId::new(node_2, node_1)));
@@ -989,15 +989,15 @@ mod tests {
 
     #[test]
     fn test_matrix_resize() {
-        let mut graph = DiMatrix::<u8, ()>::with_capacity(3);
-        let node_0 = graph.add_node(0);
-        let node_1 = graph.add_node(1);
-        let node_2 = graph.add_node(2);
-        let node_3 = graph.add_node(3);
-        graph.add_edge(node_1, node_0, ());
-        graph.add_edge(node_1, node_1, ());
+        let mut graph = DiMatrixGraph::<u8, ()>::with_capacity(3);
+        let node_0 = graph.add_node(0).unwrap();
+        let node_1 = graph.add_node(1).unwrap();
+        let node_2 = graph.add_node(2).unwrap();
+        let node_3 = graph.add_node(3).unwrap();
+        graph.add_edge(node_1, node_0, ()).unwrap();
+        graph.add_edge(node_1, node_1, ()).unwrap();
         // Triggers a resize from capacity 3 to 4
-        graph.add_edge(node_2, node_3, ());
+        graph.add_edge(node_2, node_3, ()).unwrap();
         assert_eq!(graph.node_count(), 4);
         assert_eq!(graph.edge_count(), 3);
         assert!(graph.contains_edge(DiMatrixEdgeId::new(node_1, node_0)));
@@ -1008,11 +1008,11 @@ mod tests {
     #[test]
     fn test_add_edge_with_data() {
         let mut graph = MatrixGraph::<_, _>::new_directed();
-        let node_a = graph.add_node('a');
-        let node_b = graph.add_node('b');
-        let node_c = graph.add_node('c');
-        graph.add_edge(node_a, node_b, true);
-        graph.add_edge(node_b, node_c, false);
+        let node_a = graph.add_node('a').unwrap();
+        let node_b = graph.add_node('b').unwrap();
+        let node_c = graph.add_node('c').unwrap();
+        graph.add_edge(node_a, node_b, true).unwrap();
+        graph.add_edge(node_b, node_c, false).unwrap();
         assert!(
             graph
                 .edge(DiMatrixEdgeId::new(node_a, node_b))
@@ -1030,14 +1030,14 @@ mod tests {
     #[test]
     fn test_clear() {
         let mut graph = MatrixGraph::<_, _>::new_directed();
-        let node_a = graph.add_node('a');
-        let node_b = graph.add_node('b');
-        let node_c = graph.add_node('c');
+        let node_a = graph.add_node('a').unwrap();
+        let node_b = graph.add_node('b').unwrap();
+        let node_c = graph.add_node('c').unwrap();
         assert_eq!(graph.node_count(), 3);
 
-        graph.add_edge(node_a, node_b, ());
-        graph.add_edge(node_b, node_c, ());
-        graph.add_edge(node_c, node_a, ());
+        graph.add_edge(node_a, node_b, ()).unwrap();
+        graph.add_edge(node_b, node_c, ()).unwrap();
+        graph.add_edge(node_c, node_a, ()).unwrap();
         assert_eq!(graph.edge_count(), 3);
 
         graph.clear();
@@ -1045,9 +1045,9 @@ mod tests {
         assert_eq!(graph.node_count(), 0);
         assert_eq!(graph.edge_count(), 0);
 
-        let node_a = graph.add_node('a');
-        let node_b = graph.add_node('b');
-        let node_c = graph.add_node('c');
+        let node_a = graph.add_node('a').unwrap();
+        let node_b = graph.add_node('b').unwrap();
+        let node_c = graph.add_node('c').unwrap();
         assert_eq!(graph.node_count(), 3);
         assert_eq!(graph.edge_count(), 0);
 
@@ -1065,8 +1065,8 @@ mod tests {
         let mut graph: MatrixGraph<(), i32, Directed, NotZero<i32>, foldhash::fast::RandomState> =
             MatrixGraph::default();
 
-        let node_a = graph.add_node(());
-        let node_b = graph.add_node(());
+        let node_a = graph.add_node(()).unwrap();
+        let node_b = graph.add_node(()).unwrap();
 
         assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
@@ -1095,8 +1095,8 @@ mod tests {
         let mut graph: MatrixGraph<(), i32, Directed, NotZero<i32>, foldhash::fast::RandomState> =
             MatrixGraph::default();
 
-        let node_a = graph.add_node(());
-        let node_b = graph.add_node(());
+        let node_a = graph.add_node(()).unwrap();
+        let node_b = graph.add_node(()).unwrap();
 
         graph.add_edge(node_a, node_b, 0);
     }
@@ -1106,8 +1106,8 @@ mod tests {
         let mut graph: MatrixGraph<(), f32, Directed, NotZero<f32>, foldhash::fast::RandomState> =
             MatrixGraph::default();
 
-        let node_a = graph.add_node(());
-        let node_b = graph.add_node(());
+        let node_a = graph.add_node(()).unwrap();
+        let node_b = graph.add_node(()).unwrap();
 
         assert!(!graph.contains_edge(DiMatrixEdgeId::new(node_a, node_b)));
         assert_eq!(graph.edge_count(), 0);
@@ -1137,11 +1137,11 @@ mod tests {
     #[should_panic = "called `Option::unwrap()` on a `None` value"]
     fn test_remove_edge() {
         let mut graph = MatrixGraph::<char, u32>::new_directed();
-        let node_a = graph.add_node('a');
-        let node_b = graph.add_node('b');
-        let node_c = graph.add_node('c');
-        graph.add_edge(node_a, node_b, 1);
-        graph.add_edge(node_b, node_c, 2);
+        let node_a = graph.add_node('a').unwrap();
+        let node_b = graph.add_node('b').unwrap();
+        let node_c = graph.add_node('c').unwrap();
+        graph.add_edge(node_a, node_b, 1).unwrap();
+        graph.add_edge(node_b, node_c, 2).unwrap();
         assert_eq!(
             graph
                 .remove_edge(DiMatrixEdgeId::new(node_a, node_b))
@@ -1156,20 +1156,27 @@ mod tests {
         );
     }
 
+    fn add_node(
+        graph: &mut MatrixGraph<(), (), Directed, Option<()>, foldhash::fast::RandomState>,
+        _: (),
+    ) -> MatrixGraphNodeId {
+        graph.add_node(()).unwrap()
+    }
+
     fn remove_node(
         graph: &mut MatrixGraph<(), (), Directed, Option<()>, foldhash::fast::RandomState>,
         node: MatrixGraphNodeId,
     ) {
-        graph.remove_node(node);
+        EditableGraph::remove_node(graph, node).unwrap();
     }
 
-    fn add_edge(
+    fn add_edge_unwrap(
         graph: &mut MatrixGraph<(), (), Directed, Option<()>, foldhash::fast::RandomState>,
         source: MatrixGraphNodeId,
         target: MatrixGraphNodeId,
         _: (),
     ) -> DiMatrixEdgeId {
-        graph.add_edge(source, target, ());
+        graph.add_edge(source, target, ()).unwrap();
         DiMatrixEdgeId::new(source, target)
     }
 
@@ -1182,9 +1189,9 @@ mod tests {
 
     test_directed_graph!(
         MatrixGraph::<(), (), Directed, Option<()>, foldhash::fast::RandomState>::new_directed,
-        MatrixGraph::<(), (), Directed, Option<()>, foldhash::fast::RandomState>::add_node,
+        add_node,
         remove_node,
-        add_edge,
+        add_edge_unwrap,
         remove_edge
     );
 }

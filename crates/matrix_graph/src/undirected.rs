@@ -92,7 +92,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> MatrixGraphExtras<N>
     }
 
     #[inline]
-    fn remove_node(&mut self, node: MatrixGraphNodeId) -> Option<N> {
+    fn remove_node_internal(&mut self, node: MatrixGraphNodeId) -> Option<N> {
         if !self.node_data.contains(node.0) {
             return None;
         }
@@ -152,7 +152,7 @@ fn extend_lower_triangular_matrix<T: Default>(
 ) -> usize {
     let max_node = new_capacity - 1;
     let max_pos = to_lower_triangular_matrix_position(max_node, max_node);
-    ensure_len(node_adjacencies, max_pos + 1);
+    node_adjacencies.resize_with(max_pos + 1, || T::default());
     new_capacity
 }
 

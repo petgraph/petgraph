@@ -203,8 +203,9 @@ zeroable_impls!(u8, u16, u32, u64, usize);
 zeroable_impls!(i8, i16, i32, i64, isize);
 zeroable_impls!(f32, f64);
 
-/// Extra methods for directed and undirected [`MatrixGraph`]s, to simplify their implementations.
-trait MatrixGraphExtras<N>: Sealed + Graph {
+/// Internal trait for extra methods for directed and undirected [`MatrixGraph`]s, to simplify their
+/// implementations.
+pub trait MatrixGraphExtras<N>: Sealed + Graph {
     /// Return the position of the edge from `node_a` to `node_b` in the flattened adjacency matrix.
     ///
     /// Returns `None` if either of the nodes doesn't exist.
@@ -231,7 +232,7 @@ trait MatrixGraphExtras<N>: Sealed + Graph {
     ///
     /// Returns `None` if the node doesn't exist, otherwise returns the associated data of the
     /// removed node.
-    fn remove_node(&mut self, node: MatrixGraphNodeId) -> Option<N>;
+    fn remove_node_internal(&mut self, node: MatrixGraphNodeId) -> Option<N>;
 
     /// Return the source node of the edge with the given `EdgeId`.
     fn edge_id_to_source(edge_id: Self::EdgeId) -> MatrixGraphNodeId;
@@ -354,6 +355,38 @@ where
     }
 }
 
+impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher + Default> Default
+    for MatrixGraph<N, E, Dir, Null, S>
+where
+    Self: MatrixGraphExtras<N>,
+{
+    fn default() -> Self {
+        Self::with_capacity(0)
+    }
+}
+
+impl<N, E> MatrixGraph<N, E, Directed, Option<E>, RandomState> {
+    /// Create a new `MatrixGraph` with directed edges.
+    ///
+    /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
+    /// a constructor that is generic in all the type parameters of `MatrixGraph`.
+    #[must_use]
+    pub fn new_directed() -> Self {
+        Self::default()
+    }
+}
+
+impl<N, E> MatrixGraph<N, E, Undirected, Option<E>, RandomState> {
+    /// Create a new `MatrixGraph` with undirected edges.
+    ///
+    /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
+    /// a constructor that is generic in all the type parameters of `MatrixGraph`.
+    #[must_use]
+    pub fn new_undirected() -> Self {
+        Self::default()
+    }
+}
+
 impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher> EditableGraph
     for MatrixGraph<N, E, Dir, Null, S>
 where
@@ -419,7 +452,7 @@ where
         &mut self,
         id: Self::NodeId,
     ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
-        <Self as MatrixGraphExtras<N>>::remove_node(self, id)
+        <Self as MatrixGraphExtras<N>>::remove_node_internal(self, id)
             .ok_or_else(|| RemoveNodeError::NodeDoesNotExist(id))
     }
 }
@@ -492,11 +525,6 @@ impl<EdgeId: Display> Display for EdgeRemovalError<EdgeId> {
 
 impl<EdgeId: Display + Debug> Error for EdgeRemovalError<EdgeId> {}
 
-/// Grow a Vec by appending the type's default value until the `size` is reached.
-fn ensure_len<T: Default>(vec: &mut Vec<T>, size: usize) {
-    vec.resize_with(size, T::default);
-}
-
 #[derive(Debug, Clone)]
 struct IdStorage<T, S = RandomState> {
     /// The elements of the storage. An element is `None` if and only if the corresponding node has
@@ -537,7 +565,7 @@ impl<T, S: BuildHasher> IdStorage<T, S> {
             let id = self.upper_bound;
             self.upper_bound += 1;
 
-            ensure_len(&mut self.elements, id + 1);
+            self.elements.resize_with(id + 1, || None);
 
             id
         };
@@ -586,38 +614,6 @@ impl<T, S: BuildHasher> IdStorage<T, S> {
             .iter_mut()
             .enumerate()
             .filter_map(|(id, element)| element.as_mut().map(|element| (id, element)))
-    }
-}
-
-impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>, S: BuildHasher + Default> Default
-    for MatrixGraph<N, E, Dir, Null, S>
-where
-    Self: MatrixGraphExtras<N>,
-{
-    fn default() -> Self {
-        Self::with_capacity(0)
-    }
-}
-
-impl<N, E> MatrixGraph<N, E, Directed, Option<E>, RandomState> {
-    /// Create a new `MatrixGraph` with directed edges.
-    ///
-    /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
-    /// a constructor that is generic in all the type parameters of `MatrixGraph`.
-    #[must_use]
-    pub fn new_directed() -> Self {
-        Self::default()
-    }
-}
-
-impl<N, E> MatrixGraph<N, E, Undirected, Option<E>, RandomState> {
-    /// Create a new `MatrixGraph` with undirected edges.
-    ///
-    /// This is a convenience method. Use `MatrixGraph::with_capacity` or `MatrixGraph::default` for
-    /// a constructor that is generic in all the type parameters of `MatrixGraph`.
-    #[must_use]
-    pub fn new_undirected() -> Self {
-        Self::default()
     }
 }
 
