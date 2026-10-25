@@ -252,6 +252,9 @@ trait MatrixGraphExtras<N>: Sealed + Graph {
 /// management of node indices. The graph can be instantiated as either directed or undirected.
 /// The default being directed.
 ///
+/// See [`DiMatrixGraph`] and [`UnMatrixGraph`] for the directed and undirected versions,
+/// respectively.
+///
 /// Edge data can be of arbitrary type that has a notion of "null" or "empty" value, which is used
 /// to mark the absence of an edge in the graph and allows for better memory optimization.
 ///
