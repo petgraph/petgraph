@@ -28,7 +28,6 @@ pub mod dinics_mod;
 pub mod edmonds_karp_mod;
 
 use core::{
-    borrow::Borrow,
     error::Error,
     ops::{Add, Sub},
 };
@@ -104,7 +103,12 @@ pub struct MaxFlow<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> {
     wrapped: Dinics<'graph_ref, G, CapFn, C>,
 }
 
-impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> MaxFlow<'graph_ref, G, CapFn, C> {
+impl<'graph_ref, G>
+    MaxFlow<'graph_ref, G, fn(G::EdgeId) -> G::EdgeData<'graph_ref>, G::EdgeData<'graph_ref>>
+where
+    G: DirectedGraph,
+    G::EdgeData<'graph_ref>: Clone,
+{
     /// Creates a new instance of the maximum flow algorithm with the provided graph.
     ///
     /// Data of the graph's edges is interpreted as capacities of edges.
@@ -126,13 +130,12 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> MaxFlow<'graph_ref, G, 
         G::EdgeData<'graph_ref>: Clone,
     {
         MaxFlow {
-            wrapped: Dinics::new_with_capacities(network, |edge_id| {
-                #[expect(clippy::missing_panics_doc, reason = "infallible")]
-                network.edge(edge_id).unwrap().data.borrow().clone()
-            }),
+            wrapped: Dinics::new(network),
         }
     }
+}
 
+impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> MaxFlow<'graph_ref, G, CapFn, C> {
     /// Creates a new instance of Dinic's algorithm with the provided graph and capacity function.
     ///
     /// The source and sink nodes can be set using a builder pattern with the

@@ -30,7 +30,12 @@ pub struct Dinics<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> {
     pub(super) capacities: CapFn,
 }
 
-impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, CapFn, C> {
+impl<'graph_ref, G>
+    Dinics<'graph_ref, G, fn(G::EdgeId) -> G::EdgeData<'graph_ref>, G::EdgeData<'graph_ref>>
+where
+    G: DirectedGraph,
+    G::EdgeData<'graph_ref>: Clone,
+{
     /// Creates a new instance of Dinic's algorithm with the provided graph.
     ///
     /// Data of the graph's edges is interpreted as capacities of edges.
@@ -51,7 +56,9 @@ impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, C
             network.edge(edge_id).unwrap().data.borrow().clone()
         })
     }
+}
 
+impl<'graph_ref, G: Graph, CapFn: Fn(G::EdgeId) -> C, C> Dinics<'graph_ref, G, CapFn, C> {
     /// Creates a new instance of Dinic's algorithm with the provided graph and capacity function.
     ///
     /// The source and sink nodes can be set using a builder pattern with the
@@ -317,7 +324,7 @@ where
             };
             let next_vertex = other_endpoint::<G, _>(&edge, vertex);
             let residual_cap = residual_capacity::<G, C>(edge, next_vertex, *flows.get(edge.id));
-            if residual_cap == C::zero() {
+            if residual_cap <= C::zero() {
                 continue;
             }
             if *level_graph.get(next_vertex) == 0 {
@@ -424,7 +431,7 @@ where
             let next_vertex = other_endpoint::<G, _>(&edge, vertex);
 
             let residual_cap = residual_capacity::<G, C>(edge, next_vertex, *flows.get(edge.id));
-            if residual_cap == C::zero() {
+            if residual_cap <= C::zero() {
                 level_edges.get_mut(vertex).swap_remove(*curr_level_edges_i);
                 continue;
             }
