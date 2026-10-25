@@ -141,7 +141,7 @@ where
     where
         C: Sub<Output = C> + Zero + Measure + NonNegative + Bounded + Default,
     {
-        self.run_with_queue_container(|| VecDeque::new())
+        self.run_with_queue_container(VecDeque::new)
     }
 
     /// Run the [Edmonds-Karp algorithm][edmonds_karp_link] implementation of the
@@ -149,11 +149,15 @@ where
     /// to `sink` using a custom queue container.
     ///
     /// For further details, see the [`run`](EdmondsKarp::run) method of the
-    /// [EdmondsKarp] struct.
+    /// [`EdmondsKarp`] struct.
     ///
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     /// [ford_fulkerson]: https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
     /// [edmonds_karp_link]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
+    #[allow(
+        clippy::missing_errors_doc,
+        reason = "errors are documented in the run() method"
+    )]
     pub fn run_with_queue_container<QContainer>(
         &self,
         queue_container_node_id_constructor: impl Fn() -> QContainer,
@@ -178,7 +182,7 @@ where
 /// [Ford-Fulkerson][ford_fulkerson] method to find a [Maximum Flow][maximum_flow] from `source` to
 /// `sink`.
 ///
-/// For further details, see the [`run`](EdmondsKarp::run) method of the [EdmondsKarp]
+/// For further details, see the [`run`](EdmondsKarp::run) method of the [`EdmondsKarp`]
 /// struct.
 ///
 /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
@@ -195,6 +199,7 @@ where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + Default,
 {
+    #[allow(clippy::missing_panics_doc)]
     EdmondsKarp::new_with_capacities(network, capacities)
         .with_source(source)
         .with_sink(sink)

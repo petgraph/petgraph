@@ -1,11 +1,9 @@
-use core::ops::{Add, Sub};
-
 use derive_more::{Add, Display, Sub};
 use petgraph_algorithms::{
     flows::max_flow::{
         MaxFlow, MaxFlowConfigError, dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp,
     },
-    traits::{Bounded, Measure, MinMax, NonNegative, Zero},
+    traits::{Bounded, MinMax, NonNegative, Zero},
 };
 use petgraph_core::{
     graph::{
@@ -192,28 +190,28 @@ struct NonNegativef64(f64);
 impl NonNegative for NonNegativef64 {}
 
 impl MinMax for NonNegativef64 {
-    fn min_cmp(&self, b: &Self) -> Self {
-        if self.0 < b.0 { *self } else { *b }
+    fn min_cmp(&self, other: &Self) -> Self {
+        if self.0 < other.0 { *self } else { *other }
     }
 
-    fn max_cmp(&self, b: &Self) -> Self {
-        if self.0 > b.0 { *self } else { *b }
+    fn max_cmp(&self, other: &Self) -> Self {
+        if self.0 > other.0 { *self } else { *other }
     }
 }
 
 impl Bounded for NonNegativef64 {
     fn min() -> Self {
-        NonNegativef64(0.0)
+        Self(0.0)
     }
 
     fn max() -> Self {
-        NonNegativef64(f64::MAX)
+        Self(f64::MAX)
     }
 }
 
 impl Zero for NonNegativef64 {
     fn zero() -> Self {
-        NonNegativef64(0.0)
+        Self(0.0)
     }
 }
 
@@ -454,7 +452,7 @@ fn test_max_flow_seven<
     assert_eq!(flow, 4);
 }
 
-pub(crate) fn test_max_flow_eight<
+fn test_max_flow_eight<
     G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,
 >(
     graph_constructor: impl Fn() -> G,
@@ -463,12 +461,13 @@ pub(crate) fn test_max_flow_eight<
     // Example from https://downey.io/blog/max-flow-ford-fulkerson-algorithm-explanation/
     // Graph Image: https://images.downey.io/max-flow/max-flow-3.png
     let mut graph = graph_constructor();
-    let mut nodes = Vec::new();
-    nodes.push(graph.add_node(()).unwrap());
-    nodes.push(graph.add_node(()).unwrap());
-    nodes.push(graph.add_node(()).unwrap());
-    nodes.push(graph.add_node(()).unwrap());
-    nodes.push(graph.add_node(()).unwrap());
+    let nodes = [
+        graph.add_node(()).unwrap(),
+        graph.add_node(()).unwrap(),
+        graph.add_node(()).unwrap(),
+        graph.add_node(()).unwrap(),
+        graph.add_node(()).unwrap(),
+    ];
     for (source, sink, weight) in [
         (0, 1, 3),
         (0, 2, 2),
@@ -486,7 +485,7 @@ pub(crate) fn test_max_flow_eight<
     assert_eq!(5, max_flow);
 }
 
-pub(crate) fn test_max_flow_nine<
+fn test_max_flow_nine<
     G: DirectedGraph + StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = u32>,
 >(
     graph_constructor: impl Fn() -> G,

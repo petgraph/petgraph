@@ -71,13 +71,13 @@ pub struct MaxFlowOutput<G: Graph + StorableGraph, C: Clone> {
 
 impl<G: Graph + StorableGraph, C: Clone> MaxFlowOutput<G, C> {
     /// Returns the maximum flow value computed by the algorithm.
-    pub fn max_flow(&self) -> &C {
+    pub const fn max_flow(&self) -> &C {
         &self.max_flow
     }
 
     /// Returns the flow of each edge computed by the algorithm in an `EdgeDataContainer`
     /// corresponding to the respective graph type.
-    pub fn flow_data(&self) -> &G::EdgeDataContainer<C> {
+    pub const fn flow_data(&self) -> &G::EdgeDataContainer<C> {
         &self.flows
     }
 
@@ -223,12 +223,12 @@ where
 /// across versions), call that algorithm directly instead. See the
 /// [`maximum_flow`](./index.html) module for the full list.
 ///
-/// For further details, see the [`run`](MaxFlow::run) method of the [MaxFlow] struct.
+/// For further details, see the [`run`](MaxFlow::run) method of the [`MaxFlow`] struct.
 ///
 /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 #[cfg(feature = "alloc")]
-pub fn max_flow<'graph_ref, G, C>(
-    network: &'graph_ref G,
+pub fn max_flow<G, C>(
+    network: &G,
     source: G::NodeId,
     sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
@@ -237,6 +237,7 @@ where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
 {
+    #[allow(clippy::missing_panics_doc)]
     MaxFlow::new_with_capacities(network, capacities)
         .with_source(source)
         .with_sink(sink)

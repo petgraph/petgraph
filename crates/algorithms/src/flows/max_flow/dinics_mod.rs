@@ -164,7 +164,7 @@ where
     where
         C: Sub<Output = C> + Measure + NonNegative + Zero + Bounded + MinMax + Default,
     {
-        self.run_with_stack_and_queue_container(|| Vec::new(), || Vec::new(), || VecDeque::new())
+        self.run_with_stack_and_queue_container(Vec::new, Vec::new, VecDeque::new)
     }
 
     /// Run [Dinic's (or Dinitz's) algorithm][dinics_link] to find a [Maximum Flow][maximum_flow]
@@ -174,6 +174,10 @@ where
     ///
     /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
     /// [dinics_link]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
+    #[allow(
+        clippy::missing_errors_doc,
+        reason = "errors are documented in the run() method"
+    )]
     pub fn run_with_stack_and_queue_container<SContainer, SContainerFlowEdge, QContainer>(
         &self,
         stack_container_node_id_constructor: impl Fn() -> SContainer,
@@ -208,8 +212,9 @@ where
 /// [maximum_flow]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 /// [dinics_link]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
 #[cfg(feature = "alloc")]
-pub fn dinics<'graph_ref, G, C>(
-    network: &'graph_ref G,
+#[allow(clippy::missing_panics_doc)]
+pub fn dinics<G, C>(
+    network: &G,
     source: G::NodeId,
     sink: G::NodeId,
     capacities: impl Fn(G::EdgeId) -> C,
@@ -401,6 +406,7 @@ where
 /// using previously computed `edge_levels` from level graph.
 ///
 /// Returns a boolean indicating if an augmenting path to sink was found.
+#[allow(clippy::too_many_arguments)]
 fn find_augmenting_path<G, C, SContainerNodeId, SContainerFlowEdge>(
     network: &G,
     source: G::NodeId,
