@@ -26,9 +26,11 @@ impl_zero!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
 );
 
-/// A marker for types that only have non-negative values.
+/// Marker for capacity types whose values are never negative.
 ///
-/// May be implemented for wrapper types of types like f32 and f64 at own caution.
+/// Implemented for the unsigned integer types. `f32` and `f64` can hold negative values and
+/// `NaN`, so they don't implement it. To use floating-point capacities, wrap them in a newtype
+/// that implements this trait and make sure every capacity is finite and `>= 0.0`.
 pub trait NonNegative {}
 
 macro_rules! impl_non_negative(
