@@ -67,7 +67,9 @@ impl_bounded!(
 );
 
 pub trait MinMax {
+    #[must_use]
     fn min_cmp(&self, other: &Self) -> Self;
+    #[must_use]
     fn max_cmp(&self, other: &Self) -> Self;
 }
 
