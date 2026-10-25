@@ -4,7 +4,7 @@ use petgraph_core::graph::EditableGraph;
 ///
 /// # Panics
 /// Panics if any node could not be added.
-pub(crate) fn add_nodes<G>(graph: &mut G, count: usize) -> Vec<G::NodeId>
+pub fn add_nodes<G>(graph: &mut G, count: usize) -> Vec<G::NodeId>
 where
     G: EditableGraph<OwnedNodeData = ()>,
 {
@@ -17,12 +17,8 @@ where
 ///
 /// # Panics
 /// Panics if the edge could not be added.
-pub(crate) fn add_edge<G>(
-    graph: &mut G,
-    source: G::NodeId,
-    target: G::NodeId,
-    data: G::OwnedEdgeData,
-) where
+pub fn add_edge<G>(graph: &mut G, source: G::NodeId, target: G::NodeId, data: G::OwnedEdgeData)
+where
     G: EditableGraph,
 {
     graph
