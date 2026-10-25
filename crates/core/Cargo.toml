@@ -15,10 +15,12 @@ hashbrown = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
-test-utils = ["dep:foldhash", "hashbrown", "alloc"]
-alloc = []
 std = ["alloc"]
+alloc = []
 hashbrown = ["dep:hashbrown"]
+
+# For testing
+test-utils = ["dep:foldhash", "hashbrown", "alloc"]
 
 [lints]
 workspace = true

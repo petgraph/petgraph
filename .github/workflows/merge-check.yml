@@ -15,10 +15,9 @@ jobs:
     strategy:
       matrix:
         crate:
-          - petgraph
-          - petgraph-core
-          - petgraph-serialization-tests
-    name: Powerset feature combination tests ${{ matrix.crate }}
+          - { name: petgraph, spec: petgraph@0.9.0 }
+          - { name: petgraph-core, spec: petgraph-core }
+    name: Powerset feature combination tests ${{ matrix.crate.name }}
 
     steps:
       - name: Checkout code
@@ -42,4 +41,4 @@ jobs:
       - name: Build and test
         run: |
           # Run tests with all possible feature combinations of combinations of size 0 to 1
-          cargo hack nextest run --clean-per-run --feature-powerset --depth 1 --package ${{ matrix.crate }}
+          cargo hack nextest run --clean-per-run --feature-powerset --depth 1 --package ${{ matrix.crate.spec }}
