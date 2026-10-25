@@ -20,7 +20,6 @@ rust-version = "1.85"
 [workspace.dependencies]
 # TODO: Change this to crates io, once new minor version is released.
 petgraph-old  = { git = "https://github.com/petgraph/petgraph", branch = "0.8", package = "petgraph" }
-petgraph      = { path = "crates/petgraph" }
 petgraph-core = { path = "crates/core" }
 petgraph-algorithms = { path = "crates/algorithms" }
 
