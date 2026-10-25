@@ -1,3 +1,5 @@
+use core::ops::Index;
+
 use crate::graph::Graph;
 
 #[cfg(feature = "alloc")]
@@ -53,7 +55,7 @@ pub trait VisitContainer<Id> {
 }
 
 /// A container for storing data in a stack-like structure.
-pub trait StackContainer<Data> {
+pub trait StackContainer<Data>: Index<usize, Output = Data> {
     /// Pushes data onto the top of the stack.
     fn push(&mut self, data: Data);
 
@@ -70,12 +72,23 @@ pub trait StackContainer<Data> {
     /// is empty.
     fn peek_last(&self) -> Option<&Data>;
 
+    /// Returns a reference to the data at the given index in the stack. Returns `None` if the index
+    /// is out of bounds.
+    fn get(&self, index: usize) -> Option<&Data>;
+
+    /// Returns the number of elements in the stack.
+    fn len(&self) -> usize;
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Clears all data in the stack and leaves it empty.
     fn clear(&mut self);
 }
 
 /// A container for storing data in a queue-like structure.
-pub trait QueueContainer<Data> {
+pub trait QueueContainer<Data>: Index<usize, Output = Data> {
     /// Pushes data onto the back of the queue.
     fn push_back(&mut self, data: Data);
 
@@ -85,6 +98,17 @@ pub trait QueueContainer<Data> {
     /// Peeks at the data at the front of the queue without removing it. Returns `None` if the queue
     /// is empty.
     fn peek_first(&self) -> Option<&Data>;
+
+    /// Returns a reference to the data at the given index in the queue. Returns `None` if the index
+    /// is out of bounds.
+    fn get(&self, index: usize) -> Option<&Data>;
+
+    /// Returns the number of elements in the queue.
+    fn len(&self) -> usize;
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 
     /// Clears all data in the queue and leaves it empty.
     fn clear(&mut self);
