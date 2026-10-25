@@ -19,6 +19,8 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+#[cfg(feature = "petgraph-algorithms")]
+pub use petgraph_algorithms as algo;
 pub use petgraph_core as core;
 #[cfg(feature = "petgraph-old")]
 pub use petgraph_old;
