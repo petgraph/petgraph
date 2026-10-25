@@ -12,13 +12,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crate: [petgraph@0.9.0, petgraph-core]
+        crate:
+          - { name: petgraph, spec: petgraph@0.9.0 }
+          - { name: petgraph-core, spec: petgraph-core }
         rust: [stable, beta, nightly]
         include:
           - rust: nightly
             bench: true
-            
-    name: Tests ${{ matrix.crate }} (Rust ${{ matrix.rust }})
+
+    name: Tests ${{ matrix.crate.name }} (Rust ${{ matrix.rust }})
 
     steps:
       - name: Checkout code
@@ -42,8 +44,8 @@ jobs:
         run: |
           # Run tests with default and all features. Powerset of features is only tested on merge
           # or with the S-run-thorough-ci-tests label to save CI resources.
-          cargo nextest run --package ${{ matrix.crate }} --verbose
-          cargo nextest run --package ${{ matrix.crate }} --all-features --verbose
+          cargo nextest run --package ${{ matrix.crate.spec }} --verbose
+          cargo nextest run --package ${{ matrix.crate.spec }} --all-features --verbose
 
       - name: Build benchmarks
         if: ${{ matrix.bench }}
