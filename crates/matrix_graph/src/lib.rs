@@ -13,6 +13,7 @@ use core::{
     marker::PhantomData,
 };
 
+use fixedbitset::FixedBitSet;
 use petgraph_core::{
     graph::{Directed, EditableGraph, Graph, Undirected},
     id::{Id, IndexId},
@@ -398,6 +399,19 @@ impl<N, E> MatrixGraph<N, E, Undirected, Option<E>> {
     pub fn new_undirected() -> Self {
         Self::default()
     }
+}
+
+pub struct MatrixGraphVisitMap<EdgeId> {
+    visit_map: FixedBitSet,
+    node_capacity: usize,
+    phantom: PhantomData<EdgeId>,
+}
+
+pub struct MatrixGraphEdgeDataContainer<EdgeId, Data> {
+    data: Vec<Data>,
+    node_capacity: usize,
+    default_value: Data,
+    phantom: PhantomData<EdgeId>,
 }
 
 impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>> EditableGraph for MatrixGraph<N, E, Dir, Null>
