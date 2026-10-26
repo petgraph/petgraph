@@ -386,6 +386,9 @@ pub mod __private_testing {
     ) {
         let (mut graph, nodes, edges) = create_editable_test_graph(graph_constructor);
 
+        // The newest node is removed, as some graph implementations might not have stable node
+        // ids, but the newest node added is likely to be removable without another node taking
+        // its id.
         let removed_node = graph.add_node(()).unwrap();
         graph.remove_node(removed_node).unwrap();
 
