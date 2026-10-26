@@ -11,8 +11,8 @@ publish = false
 
 [dependencies]
 fixedbitset = { workspace = true }
-foldhash  = { workspace = true, optional = true }
-hashbrown = { workspace = true, optional = true }
+foldhash    = { workspace = true, optional = true }
+hashbrown   = { workspace = true, optional = true }
 
 [features]
 default   = ["std"]

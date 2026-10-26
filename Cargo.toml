@@ -20,10 +20,11 @@ rust-version = "1.85"
 [workspace.dependencies]
 petgraph-core = { path = "crates/core", default-features = false }
 # TODO: Change this to crates io, once new minor version is released.
-petgraph-old  = { git = "https://github.com/petgraph/petgraph", branch = "0.8", package = "petgraph" }
+petgraph-old = { git = "https://github.com/petgraph/petgraph", branch = "0.8", package = "petgraph" }
 
-foldhash          = { version = "0.2.0", default-features = false }
-hashbrown         = { version = "^0.17.0", default-features = false }
+fixedbitset = { version = "0.5.7", default-features = false }
+foldhash    = { version = "0.2.0", default-features = false }
+hashbrown   = { version = "^0.17.0", default-features = false }
 
 
 [workspace.lints.rust]
