@@ -52,7 +52,7 @@ fn create_directed_test_graph<G: EditableGraph<OwnedNodeData = (), OwnedEdgeData
 ///   calling methods with that ID should return `None` or otherwise indicate non-existence.
 ///
 /// The arguments to this macro are as follows (`G` is used to denote the graph type being tested):
-/// - `$graph_constructor`: impl Fn() -> G. An expression that constructs a new instance of the
+/// - `$graph_constructor`: `impl Fn() -> G`. An expression that constructs a new instance of the
 ///   graph type to be tested. The generated graph must be empty (e.g. `G::new()`).
 ///
 /// For a reference usage, see the tests in [`crate::utils::test_graphs::directed`].

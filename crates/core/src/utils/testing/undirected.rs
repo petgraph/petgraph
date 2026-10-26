@@ -56,7 +56,7 @@ fn create_undirected_test_graph<G: EditableGraph<OwnedNodeData = (), OwnedEdgeDa
 /// The arguments to this macro are as follows (`G` is used to denote the graph type being tested):
 /// - `$graph_constructor`: `impl Fn() -> G`. An expression that constructs a new instance of the
 ///   graph type to be tested. The generated graph must be empty (e.g. `G::new()`).
-/// 
+///
 /// For a reference usage, see the tests in [`crate::utils::test_graphs::undirected`].
 #[macro_export]
 macro_rules! test_undirected_graph {
