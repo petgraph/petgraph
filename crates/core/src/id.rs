@@ -32,10 +32,10 @@ pub trait IndexId:
     + PartialOrd
     + Ord
     + Hash
-    + TryFrom<u16, Error = IndexIdTryFromIntError>
-    + TryFrom<u32, Error = IndexIdTryFromIntError>
-    + TryFrom<u64, Error = IndexIdTryFromIntError>
-    + TryFrom<usize, Error = IndexIdTryFromIntError>
+    + TryFrom<u16, Error: Debug>
+    + TryFrom<u32, Error: Debug>
+    + TryFrom<u64, Error: Debug>
+    + TryFrom<usize, Error: Debug>
 {
     const MIN: Self;
     const MAX: Self;
