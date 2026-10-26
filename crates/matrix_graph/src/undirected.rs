@@ -1,14 +1,19 @@
 use core::marker::PhantomData;
 
+use fixedbitset::FixedBitSet;
 use petgraph_core::{
     edge::{EdgeMut, EdgeRef},
-    graph::{Cardinality, DensityHint, Graph, UndirectedGraph},
+    graph::{
+        Cardinality, DensityHint, Graph, UndirectedGraph,
+        storable::{DataContainer, StorableGraph, VisitContainer, containers::DefaultVec},
+    },
     id::Id,
     node::{NodeMut, NodeRef},
 };
 
 use crate::{
-    MatrixGraph, MatrixGraphExtras, MatrixGraphNodeId, NicheWrapper, Undirected, private::Sealed,
+    MatrixGraph, MatrixGraphEdgeDataContainer, MatrixGraphExtras, MatrixGraphNodeId,
+    MatrixGraphVisitMap, NicheWrapper, Undirected, private::Sealed,
 };
 
 /// A [`MatrixGraph`] with undirected edges.
@@ -597,6 +602,93 @@ impl<'a, Null: NicheWrapper> Iterator for NeighborIterMut<'a, Null> {
             }
         }
         None
+    }
+}
+
+impl VisitContainer<UnMatrixEdgeId> for MatrixGraphVisitMap<UnMatrixEdgeId> {
+    fn mark_visited(&mut self, id: UnMatrixEdgeId) {
+        let index = to_lower_triangular_matrix_position(id.source.0, id.target.0);
+        self.visit_map.set(index, true);
+    }
+
+    fn mark_unvisited(&mut self, id: UnMatrixEdgeId) {
+        let index = to_lower_triangular_matrix_position(id.source.0, id.target.0);
+        self.visit_map.set(index, false);
+    }
+
+    fn is_visited(&self, id: UnMatrixEdgeId) -> bool {
+        let index = to_lower_triangular_matrix_position(id.source.0, id.target.0);
+        self.visit_map.contains(index) && self.visit_map[index]
+    }
+
+    fn clear(&mut self) {
+        self.visit_map.clear();
+    }
+}
+
+impl<Data: Clone> DataContainer<UnMatrixEdgeId, Data>
+    for MatrixGraphEdgeDataContainer<UnMatrixEdgeId, Data>
+{
+    fn get(&self, id: UnMatrixEdgeId) -> &Data {
+        let index = to_lower_triangular_matrix_position(id.source.0, id.target.0);
+        &self.data[index]
+    }
+
+    fn get_mut(&mut self, id: UnMatrixEdgeId) -> &mut Data {
+        let index = to_lower_triangular_matrix_position(id.source.0, id.target.0);
+        &mut self.data[index]
+    }
+
+    fn insert(&mut self, id: UnMatrixEdgeId, data: Data) {
+        let index = to_lower_triangular_matrix_position(id.source.0, id.target.0);
+        self.data[index] = data;
+    }
+
+    fn remove(&mut self, id: UnMatrixEdgeId) {
+        let index = to_lower_triangular_matrix_position(id.source.0, id.target.0);
+        self.data[index] = self.default_value.clone();
+    }
+
+    fn clear(&mut self) {
+        self.data.fill(self.default_value.clone());
+    }
+}
+
+impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, Undirected, Null> {
+    type EdgeDataContainer<Data: Clone> = MatrixGraphEdgeDataContainer<UnMatrixEdgeId, Data>;
+    type EdgeVisitContainer = MatrixGraphVisitMap<UnMatrixEdgeId>;
+    type NodeDataContainer<Data: Clone> = DefaultVec<Data>;
+    type NodeVisitContainer = FixedBitSet;
+
+    fn node_visit_container(&self) -> Self::NodeVisitContainer {
+        FixedBitSet::with_capacity(self.node_data.capacity())
+    }
+
+    fn node_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::NodeDataContainer<Data> {
+        DefaultVec::new_with_capacity(default_value, self.node_data.capacity())
+    }
+
+    fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
+        MatrixGraphVisitMap {
+            visit_map: FixedBitSet::with_capacity(self.flattened_edge_data.len()),
+            node_capacity: self.node_capacity,
+            phantom: PhantomData,
+        }
+    }
+
+    fn edge_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::EdgeDataContainer<Data> {
+        MatrixGraphEdgeDataContainer {
+            data: vec![default_value.clone(); self.flattened_edge_data.len()],
+            node_capacity: self.node_capacity,
+            default_value,
+            phantom: PhantomData,
+        }
     }
 }
 

@@ -12,8 +12,8 @@ use petgraph_core::{
 };
 
 use crate::{
-    Directed, Either, MatrixGraph, MatrixGraphExtras, MatrixGraphNodeId, NicheWrapper,
-    private::Sealed,
+    Directed, Either, MatrixGraph, MatrixGraphEdgeDataContainer, MatrixGraphExtras,
+    MatrixGraphNodeId, MatrixGraphVisitMap, NicheWrapper, private::Sealed,
 };
 
 /// A [`MatrixGraph`] with directed edges.
@@ -921,28 +921,19 @@ fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
     Either::Right(incoming_before.chain(outgoing).chain(incoming_after))
 }
 
-pub struct MatrixGraphVisitMap<EdgeId> {
-    visit_map: FixedBitSet,
-    node_capacity: usize,
-    phantom: PhantomData<EdgeId>,
-}
-
 impl VisitContainer<DiMatrixEdgeId> for MatrixGraphVisitMap<DiMatrixEdgeId> {
-    fn mark_visited(&mut self, node_id: DiMatrixEdgeId) {
-        let index =
-            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+    fn mark_visited(&mut self, id: DiMatrixEdgeId) {
+        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
         self.visit_map.set(index, true);
     }
 
-    fn mark_unvisited(&mut self, node_id: DiMatrixEdgeId) {
-        let index =
-            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+    fn mark_unvisited(&mut self, id: DiMatrixEdgeId) {
+        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
         self.visit_map.set(index, false);
     }
 
-    fn is_visited(&self, node_id: DiMatrixEdgeId) -> bool {
-        let index =
-            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+    fn is_visited(&self, id: DiMatrixEdgeId) -> bool {
+        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
         self.visit_map.contains(index) && self.visit_map[index]
     }
 
@@ -951,37 +942,26 @@ impl VisitContainer<DiMatrixEdgeId> for MatrixGraphVisitMap<DiMatrixEdgeId> {
     }
 }
 
-pub struct MatrixGraphEdgeDataContainer<EdgeId, Data> {
-    data: Vec<Data>,
-    node_capacity: usize,
-    default_value: Data,
-    phantom: PhantomData<EdgeId>,
-}
-
 impl<Data: Clone> DataContainer<DiMatrixEdgeId, Data>
     for MatrixGraphEdgeDataContainer<DiMatrixEdgeId, Data>
 {
-    fn get(&self, node_id: DiMatrixEdgeId) -> &Data {
-        let index =
-            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+    fn get(&self, id: DiMatrixEdgeId) -> &Data {
+        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
         &self.data[index]
     }
 
-    fn get_mut(&mut self, node_id: DiMatrixEdgeId) -> &mut Data {
-        let index =
-            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+    fn get_mut(&mut self, id: DiMatrixEdgeId) -> &mut Data {
+        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
         &mut self.data[index]
     }
 
-    fn insert(&mut self, node_id: DiMatrixEdgeId, data: Data) {
-        let index =
-            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+    fn insert(&mut self, id: DiMatrixEdgeId, data: Data) {
+        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
         self.data[index] = data;
     }
 
-    fn remove(&mut self, node_id: DiMatrixEdgeId) {
-        let index =
-            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+    fn remove(&mut self, id: DiMatrixEdgeId) {
+        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
         self.data[index] = self.default_value.clone();
     }
 
