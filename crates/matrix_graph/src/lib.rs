@@ -408,7 +408,7 @@ where
     type AddNodeError = Infallible;
     type OwnedEdgeData = E;
     type OwnedNodeData = N;
-    type RemoveEdgeError = EdgeRemovalError<Self::EdgeId>;
+    type RemoveEdgeError = RemoveEdgeError<Self::EdgeId>;
     type RemoveNodeError = RemoveNodeError;
 
     fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
@@ -450,10 +450,10 @@ where
                 <Self as MatrixGraphExtras<N>>::edge_id_to_source(id),
                 <Self as MatrixGraphExtras<N>>::edge_id_to_target(id),
             )
-            .ok_or(EdgeRemovalError::EdgeDoesNotExist(id))?;
+            .ok_or(RemoveEdgeError::EdgeDoesNotExist(id))?;
         let old_data = core::mem::take(&mut self.flattened_edge_data[position]).into();
         let Some(edge_data) = old_data else {
-            return Err(EdgeRemovalError::EdgeDoesNotExist(id));
+            return Err(RemoveEdgeError::EdgeDoesNotExist(id));
         };
         self.edge_count -= 1;
         Ok(edge_data)
@@ -517,12 +517,12 @@ impl Display for AddEdgeError {
 impl Error for AddEdgeError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum EdgeRemovalError<EdgeId> {
+pub enum RemoveEdgeError<EdgeId> {
     /// The edge does not exist in the graph.
     EdgeDoesNotExist(EdgeId),
 }
 
-impl<EdgeId: Display> Display for EdgeRemovalError<EdgeId> {
+impl<EdgeId: Display> Display for RemoveEdgeError<EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::EdgeDoesNotExist(edge_id) => {
@@ -532,7 +532,7 @@ impl<EdgeId: Display> Display for EdgeRemovalError<EdgeId> {
     }
 }
 
-impl<EdgeId: Display + Debug> Error for EdgeRemovalError<EdgeId> {}
+impl<EdgeId: Display + Debug> Error for RemoveEdgeError<EdgeId> {}
 
 /// This is a helper type for functions that return different types of iterators with the same item
 /// type. It is taken from the `itertools` crate, as it is the only type we need from the crate and

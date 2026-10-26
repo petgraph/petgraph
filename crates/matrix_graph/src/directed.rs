@@ -1240,7 +1240,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "called `Result::unwrap()` on an `Err` value"]
     fn test_remove_edge() {
         let mut graph = MatrixGraph::<char, u32>::new_directed();
         let node_a = graph.add_node('a').unwrap();
@@ -1249,16 +1248,14 @@ mod tests {
         graph.add_edge(node_a, node_b, 1).unwrap();
         graph.add_edge(node_b, node_c, 2).unwrap();
         assert_eq!(
-            graph
-                .remove_edge(DiMatrixEdgeId::new(node_a, node_b))
-                .unwrap(),
-            1
+            graph.remove_edge(DiMatrixEdgeId::new(node_a, node_b)),
+            Ok(1)
         );
         assert_eq!(
-            graph
-                .remove_edge(DiMatrixEdgeId::new(node_a, node_b))
-                .unwrap(),
-            0
+            graph.remove_edge(DiMatrixEdgeId::new(node_a, node_b)),
+            Err(RemoveEdgeError::EdgeDoesNotExist(DiMatrixEdgeId::new(
+                node_a, node_b
+            )))
         );
     }
 
