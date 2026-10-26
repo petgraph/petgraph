@@ -58,9 +58,11 @@ impl From<u32> for MatrixGraphNodeId {
     }
 }
 
-impl From<u64> for MatrixGraphNodeId {
-    fn from(value: u64) -> Self {
-        Self(value as usize)
+impl TryFrom<u64> for MatrixGraphNodeId {
+    type Error = <usize as TryFrom<u64>>::Error;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        Ok(Self(usize::try_from(value)?))
     }
 }
 
@@ -69,11 +71,11 @@ impl IndexId for MatrixGraphNodeId {
     const MIN: Self = Self(0);
 
     fn as_u16(self) -> u16 {
-        self.0 as u16
+        u16::try_from(self.0).unwrap()
     }
 
     fn as_u32(self) -> u32 {
-        self.0 as u32
+        u32::try_from(self.0).unwrap()
     }
 
     fn as_u64(self) -> u64 {
